@@ -32,12 +32,14 @@ var GPU_jsToWebclgl = (function() {
 	///
 	/// @param ast   the AST object to parse
 	/// 
-	/// @returns  the prased openclgl string
-	function ast_generic(ast) {
-		switch(ast) {
+	/// @returns  the prased openclgl string array
+	function ast_generic(ast, retArr) {
+		switch(ast.type) {
 			case "FunctionExpression":
 				return ast_FunctionExpression(ast);
 		}
+		
+		throw "Invalid AST";
 	}
 	
 	/// Prases the abstract syntax tree, genericially to its respective function
@@ -45,8 +47,8 @@ var GPU_jsToWebclgl = (function() {
 	/// @param ast   the AST object to parse
 	/// 
 	/// @returns  the prased openclgl string
-	function ast_FunctionExpression(ast) {
-		
+	function ast_FunctionExpression(ast, retArr) {
+		return retArr;
 	}
 	
 	
@@ -67,9 +69,9 @@ var GPU_jsToWebclgl = (function() {
 		}
 		
 		var astOutputObj = jison_parseFuncStr(funcStr);
-		var openclglString = "";
+		var openclglStrArr = ast_generic(ast, []);
 		
-		return null;
+		return openclglStrArr.join(" ");
 	}
 	
 	return jsToWebclgl;
