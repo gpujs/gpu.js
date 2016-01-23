@@ -143,6 +143,12 @@ var GPU_jsStrToWebclglStr = (function() {
 		// Function opening bracket
 		retArr.push(") { ");
 		
+		// Argument state obj main prefix injection
+		if( argStateObj && argStateObj.mainBodyPrefix && ast.id == "main" ) {
+			retArr.push(mainBodyPrefix);
+			retArr.push(" ");
+		}
+		
 		// Body statement iteration
 		for(var i=0; i<ast.body.length; ++i) {
 			ast_generic(ast.body[i], retArr, stateParam);
@@ -255,7 +261,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		retArr.push("]");
 		
 		// @TODO: FIXME
-		return;
+		return retArr;
 		
 		throw ast_errorOutput("Unsupported MemberExpression: "+ast.name+"["+ast.property+"]", ast, stateParam);
 		return retArr;
@@ -338,8 +344,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		
 		// Boiler plate code, only if argStateObj is passed
 		if( argStateObj != null ) {
-			var boilerplate = generateBoilerCode( funcStr, _threadDim, _blockDim, paramObj, argStateObj );
-			//retArr.push(boilerplate);
+			argStateObj.mainBodyPrefix = generateBoilerCode( funcStr, _threadDim, _blockDim, paramObj, argStateObj );
 		}
 		
 		ast_generic( astOutputObj, retArr, stateObj, argStateObj );
@@ -490,12 +495,15 @@ var GPU_jsToWebclgl = (function() {
 			    var str = this;
 			    return str.replace(new RegExp(find, 'g'), replace);
 			};
-
+			
+			//
+			// EVIL, like EVAL is EVIL, function string replacement
+			// @TODO: Banish this EVIL
+			//
 			funcStr = funcStr.replaceAll('this.thread.x', '_threadX_');
 			funcStr = funcStr.replaceAll('this.thread.y', '_threadY_');
 			funcStr = funcStr.replaceAll('this.thread.z', '_threadZ_');
 			var webclglStr = GPU_jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj, argStateObj );
-			console.log(webclglStr);
 			var kernel = webCLGL.createKernel(webclglStr);
 			
 			//
