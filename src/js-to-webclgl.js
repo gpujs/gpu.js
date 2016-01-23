@@ -244,36 +244,35 @@ var GPU_jsStrToWebclglStr = (function() {
 		
 		return retArr;
 	}
-
-	/// Prases the abstract syntax tree, member expression
+	
+	//-------------------------------------------------------------------
+	
+	/// Prases the abstract syntax tree, math expression
 	///
 	/// @param ast          the AST object to parse
 	/// @param retArr       return array string
 	/// @param stateParam   the compiled state tracking
 	///
 	/// @returns  the appened retArr
-	function ast_MemberExpression(ast, retArr, stateParam) {
-		
-		// Name identifier support
-		/*if( ast.object && ast.object.type == "Identifier" && ast.object.name ) {
-			retArr.push( ast.object.name );
-			retArr.push("[");
-			ast_generic(ast.property, retArr, stateParam);
-			retArr.push("]");
-		}*/
-		
-		retArr.push( ast.name || ast.object.name );
-		retArr.push("[");
-		ast_generic(ast.property, retArr, stateParam);
-		retArr.push("]");
-		
-		// @TODO: FIXME
-		return retArr;
-		
-		throw ast_errorOutput("Unsupported MemberExpression: "+ast.name+"["+ast.property+"]", ast, stateParam);
+	function ast_MathExpression(MathNode, retArr, stateParam) {
+		ast_generic(MathNode.expr, retArr, stateParam);
 		return retArr;
 	}
 	
+	/// Prases the abstract syntax tree, indentifier expression
+	///
+	/// @param ast          the AST object to parse
+	/// @param retArr       return array string
+	/// @param stateParam   the compiled state tracking
+	///
+	/// @returns  the appened retArr
+	function ast_IdentifierExpression(idtNode, retArr, stateParam) {
+		if (idtNode.type != "Identifier") {
+			throw "error";
+		}
+
+		retArr.push(idtNode.name);
+	}
 	/*
 	/// Prases the abstract syntax tree, genericially to its respective function
 	///
@@ -296,6 +295,7 @@ var GPU_jsStrToWebclglStr = (function() {
 	}
 	*/
 
+	/*
 	function ast_ExpressionStatement(expNode, retArr, stateParam) {
 		if (expNode.type != "ExpressionStatement") {
 			throw "error";
@@ -315,29 +315,28 @@ var GPU_jsStrToWebclglStr = (function() {
 		ast_generic(assNode.right, retArr, stateParam);
 	}
 
-	function ast_MathExpression(MathNode, retArr, stateParam) {
-		ast_generic(MathNode.expr, retArr, stateParam);
-		return retArr;
-	}
-	
 	function ast_VariableDeclarator(vdNode, retArr, stateParam) {
 			
 	}
 
-	function ast_IdentifierExpression(idtNode, retArr, stateParam) {
-		if (idtNode.type != "Identifier") {
-			throw "error";
-		}
-
-		retArr.push(idtNode.name);
-	}
+	*/
 	
 	/// Does the conversion of the index to the vec2 reseved var name
+	///
+	/// This is used to substitue the this.thread.X/Y calls to the respective vector,
+	/// and add its respective used flag to the stateObj. This will be used during the main 
+	/// body prefix string injection of boiler plate code
+	///
+	/// @param  stateObj   the compilation state object tracker, used to list used vector names
+	/// @param  XY         X or Y thread dimemsion
+	/// @param  index      offset index, if used
+	///
+	/// @returns  the vector name to use
 	function get_2dIndex_vec2Name( stateObj, XY, index ) {
 		var indexFlag = stateObj["used_2dIndex_"+XY] = stateObj["used_2dIndex_"+XY] || {};
 		indexFlag[index] = true;
 		
-		var ret = stateObj.reservedNamespace+"_"+XY+"_";
+		var ret = stateObj.reservedNamespace+"_2d_"+XY+"_";
 		if(idx >= 0) {
 			ret += "p"+idx;
 		} else {
@@ -346,29 +345,59 @@ var GPU_jsStrToWebclglStr = (function() {
 		return ret;
 	}
 	
-	/// Boiler plate code generation
+	/// Does the conversion of the index to the vec3 reseved var name
+	///
+	/// This is used to substitue the this.thread.X/Y/Z calls to the respective vector,
+	/// and add its respective used flag to the stateObj. This will be used during the main 
+	/// body prefix string injection of boiler plate code
+	///
+	/// @param  stateObj   the compilation state object tracker, used to list used vector names
+	/// @param  XYZ        X or Y or Z thread dimemsion
+	/// @param  index      offset index, if used
+	///
+	/// @returns  the vector name to use
+	function get_3dIndex_vec3Name( stateObj, XYZ, index ) {
+		var indexFlag = stateObj["used_3dIndex_"+XYZ] = stateObj["used_3dIndex_"+XYZ] || {};
+		indexFlag[index] = true;
+		
+		var ret = stateObj.reservedNamespace+"_3d_"+XYZ+"_";
+		if(idx >= 0) {
+			ret += "p"+idx;
+		} else {
+			ret += "n"+idx;
+		}
+		return ret;
+	}
+	
+	/// Boiler plate code generation, this is to be injected inside main function. 
+	///
+	/// @param   funcStr       original function string
+	/// @param   paramObj      prarameter state object
+	/// @param   _threadDim    thread dimension config
+	/// @param   _blockDim     block dimension config
+	/// @param   argStateObj   calling argument state object
+	///
+	/// @returns webCLGL competible function string, to be injected
 	function generateBoilerCode( funcStr, _threadDim, _blockDim, stateObj ) {
 		var argStateObj = stateObj.argStateObj;
 		
 		//
 		// Basic boiler plate code
 		//
-		var boilerplate = "";
-		boilerplate += "float _threadDimX_ = " + ensureFloat(argStateObj.threadDimX) +"; ";
-		boilerplate += "float _threadDimY_ = " + ensureFloat(argStateObj.threadDimY) +"; ";
-		//boilerplate += "float _threadDimZ_ = " + ensureFloat(argStateObj.threadDimZ) +"; ";
-		boilerplate += "vec2 _vecId_ = get_global_id(); ";
-		boilerplate += "float _id_ = (_vecId_.x * " +
-			ensureFloat(argStateObj.result_w) + ") + " +
-			ensureFloat(argStateObj.result_w) + " * (_vecId_.y * " +
-			ensureFloat(argStateObj.result_h) + "); ";
-		//boilerplate += "_threadZ_ = round(_id_ / (_threadDimX_ * _threadDimY_)); ";
-		boilerplate += "_threadY_ = round((_id_ - _threadZ_ * _threadDimY_) / _threadDimX_); ";
-		boilerplate += "_threadX_ = _id_ - _threadDimX_ * (_threadY_ + _threadDimY_ * _threadZ_); ";
+		var boilerplate = "" + 
+			"vec2 _vecId_ = get_global_id(); "+
+			"float _threadDimX_ = " + ensureFloat(argStateObj.threadDimX) +"; "+
+			"float _threadDimY_ = " + ensureFloat(argStateObj.threadDimY) +"; "+
+			"float _threadDimZ_ = " + ensureFloat(argStateObj.threadDimZ) +"; "+
+			"float _id_ = ( _vecId_.x * " + ensureFloat(argStateObj.result_w) + ") + " +
+				ensureFloat(argStateObj.result_w) + " * (_vecId_.y * " + ensureFloat(argStateObj.result_h) + "); "+
+			"float _threadZ_ = round(_id_ / (_threadDimX_ * _threadDimY_)); "+
+			"float _threadY_ = round((_id_ - _threadZ_ * _threadDimY_) / _threadDimX_); "+
+			"float _threadX_ = _id_ - _threadDimX_ * (_threadY_ + _threadDimY_ * _threadZ_); ";
 		
 		//
 		// 2D vector code at index, for X and Y respectively
-		//
+		//------------------------------------------------------------------
 		function _indexToVectorCode_2d_atIdx( XY, idx ) {
 			var vecName = get_2dIndex_vec2Name( stateObj, XY, idx );
 			
@@ -394,12 +423,46 @@ var GPU_jsStrToWebclglStr = (function() {
 			}
 			
 			for( var idx in stateObj["used_2dIndex_"+XY] ) {
-				_indexToVectorCode_2d_atIdx( XY, idx );
+				boilerplate += _indexToVectorCode_2d_atIdx( XY, idx );
 			}
 		}
-		
 		_indexToVectorCode_2d_allIdx("X");
 		_indexToVectorCode_2d_allIdx("Y");
+		
+		//
+		// 3D vector code at index, for X, Y and z respectively
+		//------------------------------------------------------------------
+		function _indexToVectorCode_3d_atIdx( XYZ, idx ) {
+			var vecName = get_3dIndex_vec2Name( stateObj, XYZ, idx );
+			
+			var indexStr = "_thread"+XY+"_";
+			if( idx > 0 ) {
+				indexStr += "+ "+ensureFloat(idx);
+				indexStr = "(" + indexStr + ")";
+			} else if( idx < 0 ) {
+				indexStr += "- "+ensureFloat(idx);
+				indexStr = "(" + indexStr + ")";
+			}
+			
+			var ret = ""+
+				"vec2 "+vecName+"; "+
+				vecName+".y = mod( "+indexStr+", " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_h)+"; "+
+				vecName+".x = round( "+indexStr+" / " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_w)+"; ";
+			
+			return ret;
+		}
+		function _indexToVectorCode_3d_allIdx( XYZ ) {
+			if( stateObj["used_3dIndex_"+XYZ] == null ) {
+				return;
+			}
+			
+			for( var idx in stateObj["used_3dIndex_"+XYZ] ) {
+				boilerplate += _indexToVectorCode_3d_atIdx( XYZ, idx );
+			}
+		}
+		_indexToVectorCode_3d_allIdx("X");
+		_indexToVectorCode_3d_allIdx("Y");
+		_indexToVectorCode_3d_allIdx("Z");
 		
 		return boilerplate;
 	}
@@ -407,7 +470,15 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// _indexTo3DCoord_ conversion
 	
 	
-	/// The function string to openslgl code generator
+	/// The function string to webCLGL code generator
+	///
+	/// @param   funcStr       original function string
+	/// @param   paramObj      prarameter state object
+	/// @param   _threadDim    thread dimension config
+	/// @param   _blockDim     block dimension config
+	/// @param   argStateObj   calling argument state object
+	///
+	/// @returns webCLGL competible function string
 	function jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj, argStateObj ) {
 		
 		var stateObj = jison_defaultStateParam(funcStr, paramObj, argStateObj);
