@@ -253,7 +253,7 @@ var GPU_jsStrToWebclglStr = (function() {
 			retArr.push("]");
 		}*/
 		
-		retArr.push( ast.object.name );
+		retArr.push( ast.name || ast.object.name );
 		retArr.push("[");
 		ast_generic(ast.property, retArr, stateParam);
 		retArr.push("]");
@@ -486,21 +486,23 @@ var GPU_jsToWebclgl = (function() {
 			}
 			
 			//
-			// Compile the kernal code, from JS, to webclgl, to Shader (via unknown vodoo)
-			// @TODO: Consider precreating the object as optimization?, check if this crashses shit
-			//
-			String.prototype.replaceAll = function (find, replace) {
-			    var str = this;
-			    return str.replace(new RegExp(find, 'g'), replace);
-			};
-			
-			//
 			// EVIL, like EVAL is EVIL, function string replacement
 			// @TODO: Banish this EVIL
+			// @TODO: Remove replaceAll
 			//
+			String.prototype.replaceAll = String.prototype.replaceAll || function (find, replace) {
+				var str = this;
+				return str.replace(new RegExp(find, 'g'), replace);
+			};
 			funcStr = funcStr.replaceAll('this.thread.x', '_threadX_');
 			funcStr = funcStr.replaceAll('this.thread.y', '_threadY_');
 			funcStr = funcStr.replaceAll('this.thread.z', '_threadZ_');
+			funcStr = funcStr.replaceAll('Math.', '_math_');
+			
+			//
+			// Compile the kernal code, from JS, to webclgl, to Shader (via unknown vodoo)
+			// @TODO: Consider precreating the object as optimization?, check if this crashses shit
+			//
 			var webclglStr = GPU_jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj, argStateObj );
 			var kernel = webCLGL.createKernel(webclglStr);
 			
