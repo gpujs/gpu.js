@@ -371,6 +371,13 @@ var GPU_jsToWebclgl = (function() {
 			//
 			var result = webCLGL.enqueueReadBuffer_Float(resultBuffer);
 			result = Array.prototype.slice.call(result[0]);
+			
+			if (_threadDim.length == 1) {
+				return result[0];
+			} else if (_threadDim.length == 2) {
+				//ret = ret[0];
+			}
+			
 			return result;
 		};
 		
