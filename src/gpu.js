@@ -2,16 +2,17 @@
 ///
 /// The parameter object contains the following sub parameters
 /// 
-/// +---------+---------------+---------------------------------------------------------------------------+
-/// | Name    | Default value | Description                                                               |
-/// +---------+---------------+---------------------------------------------------------------------------+
-/// | thread  | [1024]        | Thread dimension array                                                    |
-/// | block   | [1]           | Block dimension array                                                     |
-/// | mode    | null          | The CPU / GPU configuration mode, "auto" / null. Has the following modes. |
-/// |         |               |     + null / "auto" : Attempts to build GPU mode, else fallbacks          |
-/// |         |               |     + "gpu" : Attempts to build GPU mode, else fallbacks                  |
-/// |         |               |     + "cpu" : Forces JS fallback mode only                                |
-/// +---------+---------------+---------------------------------------------------------------------------+
+/// +---------------+---------------+---------------------------------------------------------------------------+
+/// | Name          | Default value | Description                                                               |
+/// +---------------+---------------+---------------------------------------------------------------------------+
+/// | thread        | [1024]        | Thread dimension array                                                    |
+/// | block         | [1]           | Block dimension array                                                     |
+/// | mode          | null          | CPU / GPU configuration mode, "auto" / null. Has the following modes.     |
+/// |               |               |     + null / "auto" : Attempts to build GPU mode, else fallbacks          |
+/// |               |               |     + "gpu" : Attempts to build GPU mode, else fallbacks                  |
+/// |               |               |     + "cpu" : Forces JS fallback mode only                                |
+/// | floatOffset   | 65535         | Float values offset range                                                 |
+/// +---------------+---------------+---------------------------------------------------------------------------+
 ///
 /// @param inputFunction   The calling to perform the conversion
 /// @param paramObj        The parameter configuration object

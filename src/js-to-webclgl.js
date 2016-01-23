@@ -225,6 +225,23 @@ var GPU_jsStrToWebclglStr = (function() {
 
 var GPU_jsToWebclgl = (function() {
 	
+	///----------------------------------------------------------------------------------------
+	/// Misc utility functions, copy pasta from somewhere >_>
+	///----------------------------------------------------------------------------------------
+	var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+	var ARGUMENT_NAMES = /([^\s,]+)/g;
+	function getParamNames(func) {
+		var fnStr = func.toString().replace(STRIP_COMMENTS, '');
+		var result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
+		if(result === null)
+			result = [];
+		return result;
+	}
+	
+	///----------------------------------------------------------------------------------------
+	/// Actual SHIT
+	///----------------------------------------------------------------------------------------
+	
 	/// Does simple validation of the provided function string if it is a function
 	/// this is a basic sanity testing before Jison conversion
 	///
@@ -248,15 +265,116 @@ var GPU_jsToWebclgl = (function() {
 	///
 	/// @returns callable function if converted, else returns null
 	function jsToWebclgl( inputFunction, _threadDim, _blockDim, paramObj ) {
-		var funcStr = inputFunction.toString();
 		
+		//
+		// Webclgl String generation and basic checks
+		//--------------------------------------------
+		
+		//
+		// Function stringify, and basic validation
+		//
+		var funcStr = inputFunction.toString();
 		if( !validateStringIsFunction(funcStr) ) {
 			return null;
 		}
 		
+		//
+		// JS String to Webclgl String
+		//
 		var webclglStr = GPU_jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj );
 		
-		return null;
+		//
+		// Webclgl String to function conversion
+		//--------------------------------------------
+		
+		//
+		// Fetching arguments name
+		//
+		var argNames = getParamNames(inputFunction);
+		
+		//
+		// Normalizing threadDim & blockDim
+		//
+		var threadDim = _threadDim.slice(0);
+		var blockDim  = _blockDim.slice(0);
+		while (threadDim.length < 3) {
+			threadDim.push(1);
+		}
+		while (blockDim.length < 3) {
+			blockDim.push(1);
+		}
+		
+		//
+		// Global dim, and total size
+		//
+		var globalDim = [
+			threadDim[0] * blockDim[0],
+			threadDim[1] * blockDim[1],
+			threadDim[2] * blockDim[2]
+		];
+		var totalSize = globalDim[0] * globalDim[1] * globalDim[2];
+		
+		//
+		// Return function caller
+		//--------------------------------------------
+		var retFunc = function webclglCaller() {
+			//
+			// Argument safety check
+			//
+			if(argNames.length != arguments.length) {
+				throw "Invalid argument count ("+arguments.length+") expected ("+argNames.length+")";
+			}
+			
+			//
+			// webclgl core class setup
+			// @TODO: Consider precreating the object as optimization?, check if this crashses shit
+			//
+			var webCLGL = new WebCLGL();
+			
+			//
+			// Float offset and result buffer setup
+			//
+			var floatOffset = paramObj.floatOffset || 65535.0;
+			var resultBuffer = webCLGL.createBuffer(totalSize, "FLOAT", floatOffset);
+			
+			// 
+			// Argument buffer handling
+			// 
+			var argBuffers = [];
+			for (var i=0; i<argNames.length; i++) {
+				argBuffers[i] = webCLGL.createBuffer(arguments[i].length, "FLOAT", offset);
+				webCLGL.enqueueWriteBuffer(argBuffers[i], arguments[i]);
+			}
+			
+			//
+			// Compile the kernal code
+			// @TODO: Consider precreating the object as optimization?, check if this crashses shit
+			//
+			var kernel = webCLGL.createKernel(webclglStr);
+			
+			//
+			// Link up the argument and result buffer
+			//
+			for (var i=0; i<argNames.length; i++) {
+				kernel.setKernelArg(i, argBuffers[i]);
+			}
+			webCLGL.enqueueNDRangeKernel(kernel, resultBuffer);
+			
+			//
+			// Fetch the result
+			// @TODO : Async support????
+			//
+			var result = webCLGL.enqueueReadBuffer_Float(resultBuffer);
+			result = Array.prototype.slice.call(result[0]);
+			return result;
+		};
+		
+		//
+		// async extension ??? 
+		//
+		//retFunc.async()???
+		
+		return retFunc;
 	}
 	
 	return jsToWebclgl;
