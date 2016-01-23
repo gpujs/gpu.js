@@ -293,6 +293,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		ast_generic(forNode.body, retArr);
 		return retArr;
 	}
+	*/
 
 	function ast_ExpressionStatement(expNode, retArr, stateParam) {
 		if (expNode.type != "ExpressionStatement") {
@@ -329,7 +330,6 @@ var GPU_jsStrToWebclglStr = (function() {
 
 		retArr.push(idtNode.name);
 	}
-	*/
 	
 	
 	/// Boiler plate code generation
@@ -367,7 +367,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		var astOutputObj = jison_parseFuncStr(funcStr, stateObj);
 		var retArr = [];
 		
-		ast_generic( astOutputObj, retArr, stateObj, argStateObj );
+		ast_generic( astOutputObj, retArr, stateObj );
 		var outputStr = retArr.join("");
 		
 		// Boiler plate code, only if argStateObj is passed
