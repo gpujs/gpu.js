@@ -276,7 +276,9 @@ var GPU_jsStrToWebclglStr = (function() {
 		}
 		retArr.push("for (");
 		ast_generic(forNode.init, retArr);
+		retArr.push(";");
 		ast_generic(forNode.test, retArr);
+		retArr.push(";");
 		ast_generic(forNode.update, retArr);
 		retArr.push(")");
 		ast_generic(forNode.body, retArr);
@@ -297,12 +299,14 @@ var GPU_jsStrToWebclglStr = (function() {
 			throw "error";
 		}
 
-		retArr.push("float");
 		ast_generic(assNode.left, retArr);
 		retArr.push(assNode.operator);
 		ast_generic(assNode.right, retArr);
 	}
 	
+	function ast_VariableDeclarator(vdNode, retArr) {
+		
+	}
 
 	function ast_IdentifierExpression(idtNode, retArr) {
 		if (idtNode.type != "Identifier") {
