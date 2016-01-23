@@ -108,8 +108,25 @@ var GPU_jsStrToWebclglStr = (function() {
 		}
 		stateParam.currentFunctionNamespace = ast.id;
 		
-		// @TODO : Handle parameters tokens
-		// retArr.push(float* a, float* b)
+		// Handle parameters tokens
+		var paramsNode = ast.params;
+		if(paramsNode) {
+			for(var i=0; i<paramsNode.length; ++i) {
+				if( paramsNode[i].type != "Identifier" ) {
+					throw ast_errorOutput(
+						"Unexpected function parameter identifier"+paramsNode[i].type, 
+						paramsNode[i], stateParam
+					);
+				}
+				
+				retArr.push(" float* ");
+				retArr.push(paramsNode[i].name);
+				
+				if(i+1 < paramsNode.length) {
+					retArr.push(", ");
+				}
+			}
+		}
 		
 		// Function opening bracket
 		retArr.push(") { ");
