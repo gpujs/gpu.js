@@ -12,7 +12,11 @@ function basic_return( assert, mode ) {
 }
 
 QUnit.test( "basic_return (string)", function( assert ) {
-	assert.equal( GPU._jsStrToWebclglStr( "function() { return 42.0; }" ), "", "Basic return string conversion" );
+	assert.equal( 
+		GPU._jsStrToWebclglStr( "function() { return 42.0; }" ), 
+		"void main() { out_float = 42.0; return; }", 
+		"Basic return string conversion" 
+	);
 });
 
 QUnit.test( "basic_return (auto)", function( assert ) {
