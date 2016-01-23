@@ -334,7 +334,7 @@ var GPU_jsStrToWebclglStr = (function() {
 	
 	/// Does the conversion of the index to the vec2 reseved var name
 	function get_2dIndex_vec2Name( stateObj, XY, index ) {
-		var indexFlag = stateObj["used_2dIndex_"+XY] = stateObj["used_2dIndex_"+XY] || [];
+		var indexFlag = stateObj["used_2dIndex_"+XY] = stateObj["used_2dIndex_"+XY] || {};
 		indexFlag[index] = true;
 		
 		var ret = stateObj.reservedNamespace+"_"+XY+"_";
@@ -350,21 +350,26 @@ var GPU_jsStrToWebclglStr = (function() {
 	function generateBoilerCode( funcStr, _threadDim, _blockDim, stateObj ) {
 		var argStateObj = stateObj.argStateObj;
 		
+		//
+		// Basic boiler plate code
+		//
 		var boilerplate = "";
 		boilerplate += "float _threadDimX_ = " + ensureFloat(argStateObj.threadDimX) +"; ";
 		boilerplate += "float _threadDimY_ = " + ensureFloat(argStateObj.threadDimY) +"; ";
-		boilerplate += "float _threadDimZ_ = " + ensureFloat(argStateObj.threadDimZ) +"; ";
+		//boilerplate += "float _threadDimZ_ = " + ensureFloat(argStateObj.threadDimZ) +"; ";
 		boilerplate += "vec2 _vecId_ = get_global_id(); ";
 		boilerplate += "float _id_ = (_vecId_.x * " +
 			ensureFloat(argStateObj.result_w) + ") + " +
 			ensureFloat(argStateObj.result_w) + " * (_vecId_.y * " +
 			ensureFloat(argStateObj.result_h) + "); ";
-		boilerplate += "_threadZ_ = round(_id_ / (_threadDimX_ * _threadDimY_)); ";
+		//boilerplate += "_threadZ_ = round(_id_ / (_threadDimX_ * _threadDimY_)); ";
 		boilerplate += "_threadY_ = round((_id_ - _threadZ_ * _threadDimY_) / _threadDimX_); ";
 		boilerplate += "_threadX_ = _id_ - _threadDimX_ * (_threadY_ + _threadDimY_ * _threadZ_); ";
 		
-		/// 2D vector code
-		function _indexToVectorCode_2d( stateObj, XY, idx ) {
+		//
+		// 2D vector code at index, for X and Y respectively
+		//
+		function _indexToVectorCode_2d_atIdx( XY, idx ) {
 			var vecName = get_2dIndex_vec2Name( stateObj, XY, idx );
 			
 			var indexStr = "_thread"+XY+"_";
@@ -383,6 +388,18 @@ var GPU_jsStrToWebclglStr = (function() {
 			
 			return ret;
 		}
+		function _indexToVectorCode_2d_allIdx( XY ) {
+			if( stateObj["used_2dIndex_"+XY] == null ) {
+				return;
+			}
+			
+			for( var idx in stateObj["used_2dIndex_"+XY] ) {
+				_indexToVectorCode_2d_atIdx( XY, idx );
+			}
+		}
+		
+		_indexToVectorCode_2d_allIdx("X");
+		_indexToVectorCode_2d_allIdx("Y");
 		
 		return boilerplate;
 	}
@@ -557,10 +574,10 @@ var GPU_jsToWebclgl = (function() {
 				var str = this;
 				return str.replace(new RegExp(find, 'g'), replace);
 			};
-			funcStr = funcStr.replaceAll('this.thread.x', 'threadX');
-			funcStr = funcStr.replaceAll('this.thread.y', 'threadY');
-			funcStr = funcStr.replaceAll('this.thread.z', 'threadZ');
-			funcStr = funcStr.replaceAll('Math.', '_math_');
+			funcStr = funcStr.replaceAll('this.thread.x', 'gpu_threadX');
+			funcStr = funcStr.replaceAll('this.thread.y', 'gpu_threadY');
+			funcStr = funcStr.replaceAll('this.thread.z', 'gpu_threadZ');
+			funcStr = funcStr.replaceAll('Math.', 'gpu_math_');
 			
 			//
 			// Compile the kernal code, from JS, to webclgl, to Shader (via unknown vodoo)
