@@ -7,8 +7,6 @@ QUnit.test( "basic_sum_AB (auto)", function( assert ) {
 		block : [1]
 	});
 	
-	assert.ok( f != null, "function generated test");
-	assert.equals( f( [1, 2, 3], [4, 5, 6] ), [5, 7, 9], "basic sum function test");
-	
-	console.log(c);
+	assert.ok( f !== null, "function generated test");
+	assert.deepEqual(f( [1, 2, 3], [4, 5, 6] ), [5, 7, 9], "basic sum function test");
 });
