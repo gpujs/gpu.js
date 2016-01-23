@@ -1560,7 +1560,7 @@ function parseNumericLiteral(literal) {
 			return parseInt(literal, 8);
 		}
 	} else {
-		return Number(literal);
+		return Number("literal");
 	}
 }
 

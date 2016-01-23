@@ -85,6 +85,8 @@ var GPU_jsStrToWebclglStr = (function() {
 				return ast_BinaryExpression(ast, retArr,  stateParam);
 			case "Identifier":
 				return ast_IdentifierExpression(ast, retArr, stateParam);
+			case "MathExpression":
+				return ast_MathExpression(ast, retArr, stateParam);
 		}
 		
 		throw ast_errorOutput("Unknown ast type : "+ast.type, ast, stateParam);
@@ -270,7 +272,7 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param ast   the AST object to parse
 	///
 	/// @returns  the prased openclgl string
-	function ast_ForStatement(forNode, retArr) {
+	function ast_ForStatement(forNode, retArr, stateParam) {
 		if (forNode.type != "ForStatement") {
 			throw "error";
 		}
@@ -285,30 +287,35 @@ var GPU_jsStrToWebclglStr = (function() {
 		return retArr;
 	}
 
-	function ast_ExpressionStatement(expNode, retArr) {
+	function ast_ExpressionStatement(expNode, retArr, stateParam) {
 		if (expNode.type != "ExpressionStatement") {
 			throw "error";
 		}
-		ast_generic(expNode.expression, retArr);
+		ast_generic(expNode.expression, retArr, stateParam);
 		retArr.push(";");
 		return retArr;
 	}
 
-	function ast_AssignmentExpression(assNode, retArr) {
+	function ast_AssignmentExpression(assNode, retArr, stateParam) {
 		if (assNode.type != "AssignmentExpression") {
 			throw "error";
 		}
 
-		ast_generic(assNode.left, retArr);
+		ast_generic(assNode.left, retArr, stateParam);
 		retArr.push(assNode.operator);
-		ast_generic(assNode.right, retArr);
+		ast_generic(assNode.right, retArr, stateParam);
+	}
+
+	function ast_MathExpression(MathNode, retArr, stateParam) {
+		ast_generic(MathNode.expr, retArr, stateParam);
+		return retArr;
 	}
 	
-	function ast_VariableDeclarator(vdNode, retArr) {
+	function ast_VariableDeclarator(vdNode, retArr, stateParam) {
 		
 	}
 
-	function ast_IdentifierExpression(idtNode, retArr) {
+	function ast_IdentifierExpression(idtNode, retArr, stateParam) {
 		if (idtNode.type != "Identifier") {
 			throw "error";
 		}
