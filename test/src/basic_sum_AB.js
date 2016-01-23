@@ -23,3 +23,12 @@ QUnit.test( "basic_sum_AB (GPU)", function( assert ) {
 QUnit.test( "basic_sum_AB (CPU)", function( assert ) {
 	basic_sum_AB_test(assert, "cpu");
 });
+
+/*
+// EXAMPLE GLSL
+void main(float* a, float* b) {
+     vec2 _x_ = get_global_id();
+	float ret = a[_x_] + b[_x_];
+	out_float = ret;
+}
+ */
