@@ -10,7 +10,7 @@
 var threadDim = [3];
 var blockDim = [1];
 
-var f = GPU.makeKernel(function(a, b) {
+var f = GPU(function(a, b) {
     var ret = a[this.thread.x] + b[this.thread.x];
     return ret;
 }, threadDim, blockDim);
