@@ -47,7 +47,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		}
 		
 		// take out the function object, outside the main var declarations
-		var mainAst = mainObj.body[0].declarations[0].init;
+		var mainAst = mainObj.body[0].init;
 		
 		// Capture the original statment code
 		stateParam.customMainFunctionName = mainAst.id;
@@ -75,7 +75,7 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @returns  the prased openclgl string array
 	function ast_generic(ast, retArr, stateParam ) {
 		switch(ast.type) {
-			case "FunctionExpression":
+			case "FunctionDeclaration":
 				return ast_FunctionExpression(ast, retArr, stateParam);
 			case "ReturnStatement":
 				return ast_ReturnStatement(ast, retArr, stateParam);

@@ -115,6 +115,124 @@ StringLiteral (\"{DoubleStringCharacter}*\")|(\'{SingleStringCharacter}*\')
 %start Program /* Define Start Production */
 %% /* Define Grammar Productions */
 
+Statement
+    : Block
+    | VariableStatement
+    | ExpressionStatement
+    | ForStatement
+    | IfStatement
+    | BreakStatement
+    | ContinueStatement
+    | ReturnStatement
+    ;
+
+Block
+    : "{" StatementList "}"
+        {
+            $$ = new BlockStatementNode($2);
+        }
+    ;
+
+StatementList
+    : StatementList Statement
+        {
+            $$ = $1.concat($2);
+        }
+    |
+        {
+            $$ = [];
+        }
+    ;
+
+VariableStatement
+    : "VAR" Variable ";" 
+        {
+            $$ = new VariableDeclaratorNode($2, null);
+        }
+    | "VAR" AssignmentExpression ";"
+        {
+            $$ = new VariableDeclaratorNode($2.left, $2.right);
+        }
+    ;
+
+ExpressionStatement
+    : Expression ";"
+        {
+            $$ = new ExpressionStatementNode($1);
+        }
+    ;
+
+ContinueStatement
+    : "CONTINUE" ";"
+        {
+            $$ = new ContinueStatementNode();
+        }
+    ;
+
+BreakStatement
+    : "BREAK" ";"
+        {
+            $$ = new BreakStatementNode();
+        }
+    ;
+
+ReturnStatement
+    : "RETURN" ";"
+        {
+            $$ = new ReturnStatementNode(null);
+        }
+    | "RETURN" Expression ";"
+        {
+            $$ = new ReturnStatementNode($2);
+        }
+    ;
+
+ForStatement
+    : "FOR" "(" Expression ";" Expression ";" Expression ")" Statement
+        {
+            $$ = new ForStatementNode($3, $5, $7, $9);
+        }
+    | "FOR" "(" Expression ";" Expression ";" ")" Statement
+        {
+            $$ = new ForStatementNode($3, $5, null, $8);
+        }
+    | "FOR" "(" Expression ";" ";" Expression ")" Statement
+        {
+            $$ = new ForStatementNode($3, null, $6, $8);
+        }
+    | "FOR" "(" Expression ";" ";" ")" Statement
+        {
+            $$ = new ForStatementNode($3, null, null, $7);
+        }
+    | "FOR" "(" ";" Expression ";" Expression ")" Statement
+        {
+            $$ = new ForStatementNode(null, $4, $6, $8);
+        }
+    | "FOR" "(" ";" Expression ";" ")" Statement
+        {
+            $$ = new ForStatementNode(null, $4, null, $7);
+        }
+    | "FOR" "(" ";" ";" Expression ")" Statement
+        {
+            $$ = new ForStatementNode(null, null, $5, $7);
+        }
+    | "FOR" "(" ";" ";" ")" Statement
+        {
+            $$ = new ForStatementNode(null, null, null, $6);
+        }
+    ;
+
+IfStatement
+    : "IF" "(" Expression ")" Statement
+        {
+            $$ = new IfStatementNode($3, $5, null);
+        }
+    | "IF" "(" Expression ")" Statement "ELSE" Statement
+        {
+            $$ = new IfStatementNode($3, $5, $7);
+        }
+    ;
+
 Expression
     : Variable
     | AssignmentExpression
@@ -167,6 +285,10 @@ Variable
 
 AssignmentExpression
     : Variable "=" MathExpression
+        {
+            $$ = new AssignmentExpressionNode("=", $1, $3);
+        }
+    | Variable "=" FunctionExpression
         {
             $$ = new AssignmentExpressionNode("=", $1, $3);
         }
@@ -242,7 +364,7 @@ MathExpression
     ;
 
 PostfixMathExpression
-    : NumberLiteral
+    : NumericLiteral
     | Variable "++"
         {
             $$ = new UpdateExpressionNode("++", $1, false);
@@ -371,117 +493,6 @@ UnaryBoolExpr
     | BooleanLiteral
     ;
 
-Statement
-    : Block
-    | VariableStatement
-    | ExpressionStatement
-    | ForStatement
-    | IfStatement
-    | BreakStatement
-    | ContinueStatement
-    | ReturnStatement
-    ;
-
-Block
-    : "{" StatementList "}"
-        {
-            $$ = new BlockStatementNode($2);
-        }
-    ;
-
-StatementList
-    : StatementList Statement
-        {
-            $$ = $1.concat($2);
-        }
-    |
-        {
-            $$ = [];
-        }
-    ;
-
-VariableStatement
-    : "VAR" Variable ";" 
-        {
-            $$ = new VariableDeclaratorNode($2, null);
-        }
-    | "VAR" AssignmentExpression ";"
-        {
-            $$ = new VariableDeclaratorNode($2.left, $2.right);
-        }
-    ;
-
-ContinueStatement
-    : "CONTINUE" ";"
-        {
-            $$ = new ContinueStatementNode();
-        }
-    ;
-
-BreakStatement
-    : "BREAK" ";"
-        {
-            $$ = new BreakStatementNode();
-        }
-    ;
-
-ReturnStatement
-    : "RETURN" ";"
-        {
-            $$ = new ReturnStatementNode(null);
-        }
-    | "RETURN" Expression ";"
-        {
-            $$ = new ReturnStatementNode($2);
-        }
-    ;
-
-ForStatement
-    : "FOR" "(" Expression ";" Expression ";" Expression ")" Statement
-        {
-            $$ = new ForStatementNode($3, $5, $7, $9);
-        }
-    | "FOR" "(" Expression ";" Expression ";" ")" Statement
-        {
-            $$ = new ForStatementNode($3, $5, null, $8);
-        }
-    | "FOR" "(" Expression ";" ";" Expression ")" Statement
-        {
-            $$ = new ForStatementNode($3, null, $6, $8);
-        }
-    | "FOR" "(" Expression ";" ";" ")" Statement
-        {
-            $$ = new ForStatementNode($3, null, null, $7);
-        }
-    | "FOR" "(" ";" Expression ";" Expression ")" Statement
-        {
-            $$ = new ForStatementNode(null, $4, $6, $8);
-        }
-    | "FOR" "(" ";" Expression ";" ")" Statement
-        {
-            $$ = new ForStatementNode(null, $4, null, $7);
-        }
-    | "FOR" "(" ";" ";" Expression ")" Statement
-        {
-            $$ = new ForStatementNode(null, null, $5, $7);
-        }
-    | "FOR" "(" ";" ";" ")" Statement
-        {
-            $$ = new ForStatementNode(null, null, null, $6);
-        }
-    ;
-
-IfStatement
-    : "IF" "(" Expression ")" Statement
-        {
-            $$ = new IfStatementNode($3, $5, null);
-        }
-    | "IF" "(" Expression ")" Statement "ELSE" Statement
-        {
-            $$ = new IfStatementNode($3, $5, $7);
-        }
-    ;
-
 Program
     : SourceElements EOF
         {
@@ -514,6 +525,25 @@ FunctionDeclaration
     | "FUNCTION" "IDENTIFIER" "(" FormalParameterList ")" "{" FunctionBody "}"
         {
             $$ = new FunctionDeclarationNode(new IdentifierNode($2), $4, $7, false, false);
+        }
+    ;
+
+FunctionExpression
+    : "FUNCTION" "IDENTIFIER" "(" ")" "{" FunctionBody "}"
+        {
+            $$ = new FunctionDeclarationNode(new IdentifierNode($2), [], $6, false, false);
+        }
+    | "FUNCTION" "IDENTIFIER" "(" FormalParameterList ")" "{" FunctionBody "}"
+        {
+            $$ = new FunctionDeclarationNode(new IdentifierNode($2), $4, $7, false, false);
+        }
+    | "FUNCTION" "(" ")" "{" FunctionBody "}"
+        {
+        $$ = new FunctionDeclarationNode(null, [], $5, false, false);
+        }
+    | "FUNCTION" "(" FormalParameterList ")" "{" FunctionBody "}"
+        {
+        $$ = new FunctionDeclarationNode(null, $3, $6, false, false);
         }
     ;
 
