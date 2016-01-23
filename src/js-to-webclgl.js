@@ -50,7 +50,44 @@ var GPU_jsToWebclgl = (function() {
 	function ast_FunctionExpression(ast, retArr) {
 		return retArr;
 	}
-	
+
+	/// Prases the abstract syntax tree, genericially to its respective function
+	///
+	/// @param ast   the AST object to parse
+	/// 
+	/// @returns  the prased openclgl string
+	function ast_ForStatement(forNode, retArr) {
+		if (forNode.type != "ForStatement") {
+			throw "error";
+		}
+		retArr.push("for (");
+		ast_generic(forNode.init, retArr);
+		ast_generic(forNode.test, retArr);
+		ast_generic(forNode.update, retArr);
+		retArr.push(")");
+		ast_generic(forNode.body, retArr);
+		return retArr;
+	}
+
+	function ast_ExpressionStatement(expNode, retArr) {
+		if (expNode.type != "ExpressionStatement") {
+			throw "error";
+		}
+		ast_generic(expNode.expression, retArr);
+		retArr.push(";");
+		return retArr;
+	}
+
+	function ast_AssignmentExpression(assNode, retArr) {
+		if (assNode.type != "AssignmentExpression") {
+			throw "error";
+		}
+
+		retArr.push("float");
+		ast_generic(assNode.left, retArr);
+		retArr.push(assNode.operator);
+		ast_generic(assNode.right, retArr);
+	}
 	
 	/// Does the core conversion of a basic Javascript function into a webclgl
 	/// and returns a callable function if valid
