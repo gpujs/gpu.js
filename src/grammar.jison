@@ -121,16 +121,10 @@ Expression
     | MatrixAccess
     | MathExpression
     | BooleanExpression
-    | Literal
+    | StringLiteral
     | "(" Expression ")"
     ;
 
-Literal
-    : NullLiteral
-    | BooleanLiteral
-    | NumericLiteral
-    | StringLiteral
-    ;
 
 NullLiteral
     : "NULL"
@@ -169,7 +163,7 @@ Variable
         {
             $$ = new IdentifierNode($1);
         }
-    |
+    ;
 
 AssignmentExpression
     : Variable "=" MathExpression
@@ -202,14 +196,14 @@ MatrixIndexList
         {
             $$ = $1.concat($2);
         }
-    |
+    | MatrixIndex
         {
-            $$ = [];
+            $$ = [$1];
         }
     ;
 
 MatrixIndex
-    : [MathExpression] 
+    : "[" MathExpression "]"
         {
             $$ = $1;
         }
@@ -230,8 +224,7 @@ MathExpression
     ;
 
 PostfixMathExpression
-    : Variable
-    | NumberLiteral
+    : NumberLiteral
     | Variable "++"
         {
             $$ = new UpdateExpressionNode("++", $1, false);
@@ -405,18 +398,10 @@ ContinueStatement
         {
             $$ = new ContinueStatementNode();
         }
-    | "CONTINUE" error
-        {
-            $$ = new ContinueStatementNode();
-        }
     ;
 
 BreakStatement
     : "BREAK" ";"
-        {
-            $$ = new BreakStatementNode();
-        }
-    | "BREAK" error
         {
             $$ = new BreakStatementNode();
         }
@@ -427,15 +412,7 @@ ReturnStatement
         {
             $$ = new ReturnStatementNode(null);
         }
-    | "RETURN" error
-        {
-            $$ = new ReturnStatementNode(null);
-        }
     | "RETURN" Expression ";"
-        {
-            $$ = new ReturnStatementNode($2);
-        }
-    | "RETURN" Expression error
         {
             $$ = new ReturnStatementNode($2);
         }
