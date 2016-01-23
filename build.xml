@@ -3,14 +3,13 @@
 	The following lists the target sets supported by ant
 	
 	+ build
-	+ clean
-	+ compile / build / source
-	+ src-beautify
 	
 	************************************************** -->
 	
 	<!-- convinent aliases -->
 	<target name="source" depends="build">
+	</target>
+	<target name="src" depends="build">
 	</target>
 	
 	<!-- The build ant script -->
