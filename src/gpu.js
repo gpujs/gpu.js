@@ -2,9 +2,16 @@
 ///
 /// The parameter object contains the following sub parameters
 /// 
-/// + thread (default: [1024])
-/// + block  (default: [1]) 
-/// + mode   (default: null)
+/// +---------+---------------+---------------------------------------------------------------------------+
+/// | Name    | Default value | Description                                                               |
+/// +---------+---------------+---------------------------------------------------------------------------+
+/// | thread  | [1024]        | Thread dimension array                                                    |
+/// | block   | [1]           | Block dimension array                                                     |
+/// | mode    | null          | The CPU / GPU configuration mode, "auto" / null. Has the following modes. |
+/// |         |               |     + null / "auto" : Attempts to build GPU mode, else fallbacks          |
+/// |         |               |     + "gpu" : Attempts to build GPU mode, else fallbacks                  |
+/// |         |               |     + "cpu" : Forces JS fallback mode only                                |
+/// +---------+---------------+---------------------------------------------------------------------------+
 ///
 /// @param inputFunction   The calling to perform the conversion
 /// @param paramObj        The parameter configuration object
@@ -30,13 +37,23 @@ var GPU = function(kernal, paramObj) {
 	//
 	var thread = paramObj.thread || [1024];
 	var block  = paramObj.block  || [1];
+	var mode   = paramObj.mode   && paramObj.mode.toLowerCase();
 	
 	//
 	// Attempts to do the webclgl conversion, returns if success
 	//
-	var ret = GPU_jsToWebclgl(kernal, thread, block, paramObj);
-	if(ret != null) {
-		return ret;
+	var ret = null;
+	
+	if( mode == null || mode == "gpu" ) {
+		// Attempts to do the conversion to webclgl
+		if( (ret = GPU_jsToWebclgl(kernal, thread, block, paramObj)) != null) {
+			return ret;
+		}
+		
+		// GPU only mode failed, return null
+		if( mode == "gpu" ) {
+			return null;
+		}
 	}
 	
 	//
