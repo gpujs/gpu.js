@@ -324,6 +324,19 @@ var GPU_jsStrToWebclglStr = (function() {
 	}
 	*/
 	
+	/// Does the conversion of the index to the vec2 reseved var name
+	function get_2dIndex_vec2Name( stateObj, XY, index ) {
+		var indexFlag = stateObj["used_2dIndex_"+XY] = stateObj["used_2dIndex_"+XY] || [];
+		indexFlag[index] = true;
+		
+		var ret = stateObj.reservedNamespace+"_"+XY+"_";
+		if(idx >= 0) {
+			ret += "p"+idx;
+		} else {
+			ret += "n"+idx;
+		}
+		return ret;
+	}
 	
 	/// Boiler plate code generation
 	function generateBoilerCode( funcStr, _threadDim, _blockDim, stateObj ) {
@@ -343,8 +356,24 @@ var GPU_jsStrToWebclglStr = (function() {
 		boilerplate += "_threadX_ = _id_ - _threadDimX_ * (_threadY_ + _threadDimY_ * _threadZ_); ";
 		
 		/// 2D vector code
-		function _vectorCode_2d( XY, idx ) {
+		function _indexToVectorCode_2d( stateObj, XY, idx ) {
+			var vecName = get_2dIndex_vec2Name( stateObj, XY, idx );
 			
+			var indexStr = "_thread"+XY+"_";
+			if( idx > 0 ) {
+				indexStr += "+ "+ensureFloat(idx);
+				indexStr = "(" + indexStr + ")";
+			} else if( idx < 0 ) {
+				indexStr += "- "+ensureFloat(idx);
+				indexStr = "(" + indexStr + ")";
+			}
+			
+			var ret = ""+
+				"vec2 "+vecName+"; "+
+				vecName+".y = mod( "+indexStr+", " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_h)+"; "+
+				vecName+".x = round( "+indexStr+" / " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_w)+"; ";
+			
+			return ret;
 		}
 		
 		return boilerplate;
@@ -520,9 +549,9 @@ var GPU_jsToWebclgl = (function() {
 				var str = this;
 				return str.replace(new RegExp(find, 'g'), replace);
 			};
-			funcStr = funcStr.replaceAll('this.thread.x', '_threadX_');
-			funcStr = funcStr.replaceAll('this.thread.y', '_threadY_');
-			funcStr = funcStr.replaceAll('this.thread.z', '_threadZ_');
+			funcStr = funcStr.replaceAll('this.thread.x', 'threadX');
+			funcStr = funcStr.replaceAll('this.thread.y', 'threadY');
+			funcStr = funcStr.replaceAll('this.thread.z', 'threadZ');
 			funcStr = funcStr.replaceAll('Math.', '_math_');
 			
 			//
