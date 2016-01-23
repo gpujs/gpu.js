@@ -522,7 +522,7 @@ function EmptyStatementNode() {
     this.type = "EmptyStatement";
 }
 
-function BkStatementNode(body) {
+function BlockStatementNode(body) {
     this.type = "BlockStatement";
     this.body = body;
 }

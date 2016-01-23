@@ -83,8 +83,6 @@ var GPU_jsStrToWebclglStr = (function() {
 				return ast_Literal(ast, retArr,  stateParam);
 			case "BinaryExpression":
 				return ast_BinaryExpression(ast, retArr,  stateParam);
-			case "MemberExpression":
-				return ast_MemberExpression(ast, retArr,  stateParam);
 			case "Identifier":
 				return ast_IdentifierExpression(ast, retArr, stateParam);
 		}
@@ -237,7 +235,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		
 		return retArr;
 	}
-	
+
 	/// Prases the abstract syntax tree, member expression
 	///
 	/// @param ast          the AST object to parse
@@ -266,10 +264,6 @@ var GPU_jsStrToWebclglStr = (function() {
 		throw ast_errorOutput("Unsupported MemberExpression: "+ast.name+"["+ast.property+"]", ast, stateParam);
 		return retArr;
 	}
-	
-	
-	
-	/*
 	
 	/// Prases the abstract syntax tree, genericially to its respective function
 	///
@@ -308,7 +302,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		retArr.push(assNode.operator);
 		ast_generic(assNode.right, retArr);
 	}
-	*/
+	
 
 	function ast_IdentifierExpression(idtNode, retArr) {
 		if (idtNode.type != "Identifier") {
