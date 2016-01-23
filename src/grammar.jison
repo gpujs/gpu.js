@@ -210,9 +210,27 @@ MatrixIndex
     ;
 
 ContextAccess
-    : "THIS" "." "IDENTIFIER" "." "IDENTIFIER"
+    : "THIS" ContextAccessList
         {
-            $$ = new ContextAccessNode($3, $5);
+            $$ = new ContextAccessNode($2);
+        }
+    ;
+
+ContextAccessList
+    : ContextAccessList ContextAccessObject
+        {
+            $$ = $1.concat($2);
+        }
+    | ContextAccessObject
+        {
+            $$ = [$1];
+        }
+    ;
+
+ContextAccessObject
+    : "." "IDENTIFIER"
+        {
+            $$ = $2;
         }
     ;
 
@@ -605,10 +623,9 @@ function BoolExpressionNode(expr) {
     this.expr = expr;
 }
 
-function ContextAccessNode(layer1, layer2) {
+function ContextAccessNode(layers) {
     this.type = "ContextAccess";
-    this.layer1 = layer1;
-    this.layer2 = layer2;
+    this.layers = layers;
 }
 
 function FunctionDeclarationNode(id, params, body, generator, expression) {
