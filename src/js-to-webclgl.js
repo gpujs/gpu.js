@@ -13,6 +13,45 @@ var GPU_jsToWebclgl = (function() {
 		return false;;
 	}
 	
+	/// Parses the source code string
+	///
+	/// @param funcStr  the input function string
+	///
+	/// @returns the parsed json obj
+	function jison_parseFuncStr( funcStr ) {
+		var mainObj = parser.parse( "var main = "+funcStr+";" );
+		if( mainObj == null ) {
+			throw "Failed to parse JS code via JISON";
+		}
+		
+		// take out the function object, outside the main var declarations
+		return mainObj.body[0].declarations[0].init;
+	}
+	
+	/// Prases the abstract syntax tree, genericially to its respective function
+	///
+	/// @param ast   the AST object to parse
+	/// 
+	/// @returns  the prased openclgl string array
+	function ast_generic(ast, retArr) {
+		switch(ast.type) {
+			case "FunctionExpression":
+				return ast_FunctionExpression(ast);
+		}
+		
+		throw "Invalid AST";
+	}
+	
+	/// Prases the abstract syntax tree, genericially to its respective function
+	///
+	/// @param ast   the AST object to parse
+	/// 
+	/// @returns  the prased openclgl string
+	function ast_FunctionExpression(ast, retArr) {
+		return retArr;
+	}
+	
+	
 	/// Does the core conversion of a basic Javascript function into a webclgl
 	/// and returns a callable function if valid
 	///
@@ -29,9 +68,10 @@ var GPU_jsToWebclgl = (function() {
 			return null;
 		}
 		
+		var astOutputObj = jison_parseFuncStr(funcStr);
+		var openclglStrArr = ast_generic(ast, []);
 		
-		
-		return null;
+		return openclglStrArr.join(" ");
 	}
 	
 	return jsToWebclgl;
