@@ -1,7 +1,14 @@
 var GPU_jsStrToWebclglStr = (function() {
+	/// @returns always a literal float
+	function ensureFloat(f) {
+		if( Number.isInteger(f) ) {
+			return f + ".0";
+		}
+		return f;
+	}
 	
 	/// @returns  the default state paramater set, used across the parser
-	function jison_defaultStateParam(funcStr, inParamObj) {
+	function jison_defaultStateParam(funcStr, inParamObj, inArgStateObj) {
 		return {
 			// The source code rows array
 			src : funcStr,
@@ -9,6 +16,9 @@ var GPU_jsStrToWebclglStr = (function() {
 			
 			// The compiler parameter options
 			paramObj : inParamObj,
+			
+			// The argument state object
+			argStateObj : inArgStateObj,
 			
 			// Original main function naming
 			customMainFunctionName : null,
@@ -61,9 +71,9 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param ast          the AST object to parse
 	/// @param retArr       return array string
 	/// @param stateParam   the compiled state tracking
-	/// 
+	///
 	/// @returns  the prased openclgl string array
-	function ast_generic(ast, retArr, stateParam) {
+	function ast_generic(ast, retArr, stateParam ) {
 		switch(ast.type) {
 			case "FunctionExpression":
 				return ast_FunctionExpression(ast, retArr, stateParam);
@@ -75,6 +85,8 @@ var GPU_jsStrToWebclglStr = (function() {
 				return ast_BinaryExpression(ast, retArr,  stateParam);
 			case "MemberExpression":
 				return ast_MemberExpression(ast, retArr,  stateParam);
+			case "Identifier":
+				return ast_IdentifierExpression(ast, retArr, stateParam);
 		}
 		
 		throw ast_errorOutput("Unknown ast type : "+ast.type, ast, stateParam);
@@ -85,9 +97,9 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param ast   the AST object to parse
 	/// @param retArr       return array string
 	/// @param stateParam   the compiled state tracking
-	/// 
+	///
 	/// @returns  the appened retArr
-	function ast_FunctionExpression(ast, retArr, stateParam) {
+	function ast_FunctionExpression(ast, retArr, stateParam, argStateObj) {
 		
 		// Setup the main function
 		if( ast.id == "main" ) {
@@ -114,7 +126,7 @@ var GPU_jsStrToWebclglStr = (function() {
 			for(var i=0; i<paramsNode.length; ++i) {
 				if( paramsNode[i].type != "Identifier" ) {
 					throw ast_errorOutput(
-						"Unexpected function parameter identifier"+paramsNode[i].type, 
+						"Unexpected function parameter identifier"+paramsNode[i].type,
 						paramsNode[i], stateParam
 					);
 				}
@@ -146,7 +158,7 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param ast          the AST object to parse
 	/// @param retArr       return array string
 	/// @param stateParam   the compiled state tracking
-	/// 
+	///
 	/// @returns  the appened retArr
 	function ast_ReturnStatement(ast, retArr, stateParam) {
 		if( stateParam.currentFunctionNamespace == "main" ) {
@@ -155,7 +167,7 @@ var GPU_jsStrToWebclglStr = (function() {
 			retArr.push("; ");
 		} else {
 			throw ast_errorOutput(
-				"Non main function return, is not supported : "+stateParam.currentFunctionNamespace, 
+				"Non main function return, is not supported : "+stateParam.currentFunctionNamespace,
 				ast, stateParam
 			);
 		}
@@ -168,14 +180,14 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param ast          the AST object to parse
 	/// @param retArr       return array string
 	/// @param stateParam   the compiled state tracking
-	/// 
+	///
 	/// @returns  the appened retArr
 	function ast_Literal(ast, retArr, stateParam) {
 		
 		// Reject non numeric literals
 		if( isNaN(ast.value) ) {
 			throw ast_errorOutput(
-				"Non-numeric literal not supported : "+ast.value, 
+				"Non-numeric literal not supported : "+ast.value,
 				ast, stateParam
 			);
 		}
@@ -196,13 +208,13 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param ast          the AST object to parse
 	/// @param retArr       return array string
 	/// @param stateParam   the compiled state tracking
-	/// 
+	///
 	/// @returns  the appened retArr
 	function ast_BinaryExpression(ast, retArr, stateParam) {
 		if(
-			ast.operator == "+" || 
-			ast.operator == "-" || 
-			ast.operator == "*" || 
+			ast.operator == "+" ||
+			ast.operator == "-" ||
+			ast.operator == "*" ||
 			ast.operator == "/"
 		) {
 			ast_generic(ast.left, retArr, stateParam);
@@ -225,17 +237,25 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param ast          the AST object to parse
 	/// @param retArr       return array string
 	/// @param stateParam   the compiled state tracking
-	/// 
+	///
 	/// @returns  the appened retArr
 	function ast_MemberExpression(ast, retArr, stateParam) {
 		
 		// Name identifier support
-		if( ast.object && ast.object.type == "Identifier" && ast.object.name ) {
+		/*if( ast.object && ast.object.type == "Identifier" && ast.object.name ) {
 			retArr.push( ast.object.name );
 			retArr.push("[");
 			ast_generic(ast.property, retArr, stateParam);
 			retArr.push("]");
-		}
+		}*/
+		
+		retArr.push( ast.object.name );
+		retArr.push("[");
+		ast_generic(ast.property, retArr, stateParam);
+		retArr.push("]");
+		
+		// @TODO: FIXME
+		return;
 		
 		throw ast_errorOutput("Unsupported MemberExpression: "+ast.name+"["+ast.property+"]", ast, stateParam);
 		return retArr;
@@ -248,7 +268,7 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// Prases the abstract syntax tree, genericially to its respective function
 	///
 	/// @param ast   the AST object to parse
-	/// 
+	///
 	/// @returns  the prased openclgl string
 	function ast_ForStatement(forNode, retArr) {
 		if (forNode.type != "ForStatement") {
@@ -283,14 +303,46 @@ var GPU_jsStrToWebclglStr = (function() {
 		ast_generic(assNode.right, retArr);
 	}
 	*/
+
+	function ast_IdentifierExpression(idtNode, retArr) {
+		if (idtNode.type != "Identifier") {
+			throw "error";
+		}
+
+		retArr.push(idtNode.name);
+	}
+	
+	/// Boiler plate code generation
+	function generateBoilerCode( funcStr, _threadDim, _blockDim, paramObj, argStateObj ) {
+		var boilerplate = "";
+		boilerplate += "float _threadDimX_ = " + ensureFloat(argStateObj.threadDimX) +";\n";
+		boilerplate += "float _threadDimY_ = " + ensureFloat(argStateObj.threadDimY) +";\n";
+		boilerplate += "float _threadDimZ_ = " + ensureFloat(argStateObj.threadDimZ) +";\n";
+		boilerplate += "vec2 _vecId_ = get_global_id();\n";
+		boilerplate += "float _id_ = (_vecId_.x * " +
+			ensureFloat(argStateObj.result_w) + ") + " +
+			ensureFloat(argStateObj.result_w) + " * (_vecId_.y * " +
+			ensureFloat(argStateObj.result_h) + ");\n";
+		boilerplate += "_threadZ_ = round(_id_ / (_threadDimX_ * _threadDimY_));\n";
+		boilerplate += "_threadY_ = round((_id_ - _threadZ_ * _threadDimY_) / _threadDimX_);\n";
+		boilerplate += "_threadX_ = _id_ - _threadDimX_ * (_threadY_ + _threadDimY_ * _threadZ_);\n";
+		return boilerplate;
+	}
 	
 	/// The function string to openslgl code generator
-	function jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj ) {
+	function jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj, argStateObj ) {
 		
-		var stateObj = jison_defaultStateParam(funcStr, paramObj);
+		var stateObj = jison_defaultStateParam(funcStr, paramObj, argStateObj);
 		var astOutputObj = jison_parseFuncStr(funcStr, stateObj);
+		var retArr = [];
 		
-		var retArr = ast_generic( astOutputObj, [], stateObj );
+		// Boiler plate code, only if argStateObj is passed
+		if( argStateObj != null ) {
+			var boilerplate = generateBoilerCode( funcStr, _threadDim, _blockDim, paramObj, argStateObj );
+			//retArr.push(boilerplate);
+		}
+		
+		ast_generic( astOutputObj, retArr, stateObj, argStateObj );
 		return retArr.join("");
 	}
 	
@@ -353,12 +405,7 @@ var GPU_jsToWebclgl = (function() {
 		}
 		
 		//
-		// JS String to Webclgl String
-		//
-		var webclglStr = GPU_jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj );
-		
-		//
-		// Webclgl String to function conversion
+		// Precalculating some of the vars
 		//--------------------------------------------
 		
 		//
@@ -392,12 +439,17 @@ var GPU_jsToWebclgl = (function() {
 		// Return function caller
 		//--------------------------------------------
 		var retFunc = function webclglCaller() {
+			
 			//
 			// Argument safety check
-			//
+			//----------------------------------
 			if(argNames.length != arguments.length) {
 				throw "Invalid argument count ("+arguments.length+") expected ("+argNames.length+")";
 			}
+			
+			//
+			// String conversion and exec
+			//----------------------------------
 			
 			//
 			// webclgl core class setup
@@ -411,9 +463,19 @@ var GPU_jsToWebclgl = (function() {
 			var floatOffset = paramObj.floatOffset || 65535.0;
 			var resultBuffer = webCLGL.createBuffer(totalSize, "FLOAT", floatOffset);
 			
-			// 
+			//
+			// Argument State obj init
+			//----------------------------------
+			var argStateObj = {};
+			argStateObj.result_w = resultBuffer.W;
+			argStateObj.result_h = resultBuffer.H;
+			argStateObj.threadDimX = threadDim[0];
+			argStateObj.threadDimY = threadDim[1];
+			argStateObj.threadDimZ = threadDim[2];
+			
+			//
 			// Argument buffer handling
-			// 
+			//
 			var argBuffers = [];
 			for (var i=0; i<argNames.length; i++) {
 				argBuffers[i] = webCLGL.createBuffer(arguments[i].length, "FLOAT", floatOffset);
@@ -421,9 +483,19 @@ var GPU_jsToWebclgl = (function() {
 			}
 			
 			//
-			// Compile the kernal code
+			// Compile the kernal code, from JS, to webclgl, to Shader (via unknown vodoo)
 			// @TODO: Consider precreating the object as optimization?, check if this crashses shit
 			//
+			String.prototype.replaceAll = function (find, replace) {
+			    var str = this;
+			    return str.replace(new RegExp(find, 'g'), replace);
+			};
+
+			funcStr = funcStr.replaceAll('this.thread.x', '_threadX_');
+			funcStr = funcStr.replaceAll('this.thread.y', '_threadY_');
+			funcStr = funcStr.replaceAll('this.thread.z', '_threadZ_');
+			var webclglStr = GPU_jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj, argStateObj );
+			console.log(webclglStr);
 			var kernel = webCLGL.createKernel(webclglStr);
 			
 			//
@@ -456,7 +528,7 @@ var GPU_jsToWebclgl = (function() {
 		};
 		
 		//
-		// async extension ??? 
+		// async extension ???
 		//
 		//retFunc.async()???
 		
