@@ -60,4 +60,6 @@ var GPU = function(kernal, paramObj) {
 	// Fallback to pure native JS 
 	//
 	return GPU_jsFallback(kernal, thread, block, paramObj);
-}
+};
+
+GPU._jsStrToWebclglStr = GPU_jsStrToWebclglStr;
