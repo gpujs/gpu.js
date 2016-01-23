@@ -1,7 +1,7 @@
 var GPU_jsStrToWebclglStr = (function() {
 	
 	/// @returns  the default state paramater set, used across the parser
-	function jison_defaultStateParam(funcStr, inParamObj) {
+	function jison_defaultStateParam(funcStr, inParamObj, inArgStateObj) {
 		return {
 			// The source code rows array
 			src : funcStr,
@@ -9,6 +9,9 @@ var GPU_jsStrToWebclglStr = (function() {
 			
 			// The compiler parameter options
 			paramObj : inParamObj,
+			
+			// The argument state object
+			argStateObj : inArgStateObj,
 			
 			// Original main function naming
 			customMainFunctionName : null,
@@ -284,13 +287,32 @@ var GPU_jsStrToWebclglStr = (function() {
 	}
 	*/
 	
+	/// Boiler plate code generation
+	function generateBoilerCode( retArr, funcStr, _threadDim, _blockDim, paramObj, argStateObj ) {
+		//
+		// @TODO
+		//
+		//  #####  #   # #####
+		//  #      #   #    #
+		//  #####  #   #   #
+		//  #      #   #  #
+		//  #      ##### #####
+		//
+	}
+	
 	/// The function string to openslgl code generator
-	function jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj ) {
+	function jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj, argStateObj ) {
 		
-		var stateObj = jison_defaultStateParam(funcStr, paramObj);
+		var stateObj = jison_defaultStateParam(funcStr, paramObj, argStateObj);
 		var astOutputObj = jison_parseFuncStr(funcStr, stateObj);
+		var retArr = [];
 		
-		var retArr = ast_generic( astOutputObj, [], stateObj );
+		// Boiler plate code, only if argStateObj is passed
+		if( argStateObj != null ) {
+			generateBoilerCode( retArr, funcStr, _threadDim, _blockDim, paramObj, argStateObj );
+		}
+		
+		ast_generic( astOutputObj, retArr, stateObj );
 		return retArr.join("");
 	}
 	
@@ -353,12 +375,7 @@ var GPU_jsToWebclgl = (function() {
 		}
 		
 		//
-		// JS String to Webclgl String
-		//
-		var webclglStr = GPU_jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj );
-		
-		//
-		// Webclgl String to function conversion
+		// Precalculating some of the vars
 		//--------------------------------------------
 		
 		//
@@ -392,12 +409,24 @@ var GPU_jsToWebclgl = (function() {
 		// Return function caller
 		//--------------------------------------------
 		var retFunc = function webclglCaller() {
+			
 			//
 			// Argument safety check
-			//
+			//----------------------------------
 			if(argNames.length != arguments.length) {
 				throw "Invalid argument count ("+arguments.length+") expected ("+argNames.length+")";
 			}
+			
+			//
+			// Argument State obj init
+			//----------------------------------
+			var argStateObj = {
+				
+			};
+			
+			//
+			// String conversion and exec
+			//----------------------------------
 			
 			//
 			// webclgl core class setup
@@ -411,6 +440,9 @@ var GPU_jsToWebclgl = (function() {
 			var floatOffset = paramObj.floatOffset || 65535.0;
 			var resultBuffer = webCLGL.createBuffer(totalSize, "FLOAT", floatOffset);
 			
+			argStateObj.result_w = resultBuffer.W;
+			argStateObj.result_h = resultBuffer.H;
+			
 			// 
 			// Argument buffer handling
 			// 
@@ -421,9 +453,10 @@ var GPU_jsToWebclgl = (function() {
 			}
 			
 			//
-			// Compile the kernal code
+			// Compile the kernal code, from JS, to webclgl, to Shader (via unknown vodoo)
 			// @TODO: Consider precreating the object as optimization?, check if this crashses shit
 			//
+			var webclglStr = GPU_jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj, argStateObj );
 			var kernel = webCLGL.createKernel(webclglStr);
 			
 			//
