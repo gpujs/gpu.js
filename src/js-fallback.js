@@ -9,6 +9,22 @@
 // }
 
 var GPU_jsFallback = (function() {
+	function clone(obj) {
+	    if(obj === null || typeof(obj) !== 'object' || 'isActiveClone' in obj)
+	        return obj;
+
+	    var temp = obj.constructor(); // changed
+
+	    for(var key in obj) {
+	        if(Object.prototype.hasOwnProperty.call(obj, key)) {
+	            obj['isActiveClone'] = null;
+	            temp[key] = clone(obj[key]);
+	            delete obj['isActiveClone'];
+	        }
+	    }
+
+	    return temp;
+	}
 	
 	/// JS fallback transformation, basically pure JS
 	///
@@ -19,8 +35,8 @@ var GPU_jsFallback = (function() {
 	///
 	/// @returns callable function if converted, else returns null
 	function jsFallback(kernel, _threadDim, _blockDim, paramObj) {
-		var threadDim = new Array(_threadDim);
-		var blockDim = new Array(_blockDim);
+		var threadDim = clone(_threadDim);
+		var blockDim = clone(_blockDim);
 		
 		while (threadDim.length < 3) {
 			threadDim.push(1);
