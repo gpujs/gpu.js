@@ -24,7 +24,7 @@ HexEscapeSequence       [x]{HexDigit}{2}
 /* ------------------------ */
 
 /* Identifiers and string literals */
-IdentifierStart 		[a-zA-Z]
+IdentifierStart 		[?_a-zA-Z]
 IdentifierPart 			{IdentifierStart}|[0-9]
 Identifier 				{IdentifierStart}{IdentifierPart}*
 LineContinuation        \\(\r\n|\r|\n)
@@ -76,14 +76,8 @@ StringLiteral (\"{DoubleStringCharacter}*\")|(\'{SingleStringCharacter}*\')
 "!=="                              return "!==";
 "!="                               return "!=";
 "!"                                return "!";
-"<<="                              return "<<=";
-"<<"                               return "<<";
 "<="                               return "<=";
 "<"                                return "<";
-">>>="                             return ">>>=";
-">>>"                              return ">>>";
-">>="                              return ">>=";
-">>"                               return ">>";
 ">="                               return ">=";
 ">"                                return ">";
 "+="                               return "+=";
@@ -106,7 +100,6 @@ StringLiteral (\"{DoubleStringCharacter}*\")|(\'{SingleStringCharacter}*\')
 "|"                                return "|";
 "^="                               return "^=";
 "^"                                return "^";
-"~"                                return "~";
 <<EOF>>                            return "EOF";
 .                                  return "ERROR";
 
@@ -134,18 +127,12 @@ Statement
     | ContinueStatement
     | BreakStatement
     | ReturnStatement
-    | WithStatement
-    | LabelledStatement
-    | SwitchStatement
-    | ThrowStatement
-    | TryStatement
-    | DebuggerStatement
     ;
 
 Block
     : "{" StatementList "}"
         {
-            $$ = new BlockStatementNode($2, createSourceLocation(null, @1, @3));
+            $$ = new BlockStatementNode($2);
         }
     ;
 
@@ -163,7 +150,7 @@ StatementList
 VariableStatement
     : "VAR" VariableDeclarationList
         {
-            $$ = new VariableDeclarationNode($2, "var", createSourceLocation(null, @1, @2));
+            $$ = new VariableDeclarationNode($2, "var");
         }
     ;
 
@@ -178,36 +165,14 @@ VariableDeclarationList
         }
     ;
 
-VariableDeclarationListNoIn
-    : VariableDeclarationNoIn
-        {
-            $$ = [$1];
-        }
-    | VariableDeclarationListNoIn "," VariableDeclarationNoIn
-        {
-            $$ = $1.concat($3);
-        }
-    ;
-
 VariableDeclaration
     : "IDENTIFIER"
         {
-            $$ = new VariableDeclaratorNode(new IdentifierNode($1, createSourceLocation(null, @1, @1)), null, createSourceLocation(null, @1, @1));
+            $$ = new VariableDeclaratorNode(new IdentifierNode($1), null);
         }
     | "IDENTIFIER" Initialiser
         {
-            $$ = new VariableDeclaratorNode(new IdentifierNode($1, createSourceLocation(null, @1, @1)), $2, createSourceLocation(null, @1, @2));
-        }
-    ;
-
-VariableDeclarationNoIn
-    : "IDENTIFIER"
-        {
-            $$ = new VariableDeclaratorNode(new IdentifierNode($1, createSourceLocation(null, @1, @1)), null, createSourceLocation(null, @1, @1));
-        }
-    | "IDENTIFIER" InitialiserNoIn
-        {
-            $$ = new VariableDeclaratorNode(new IdentifierNode($1, createSourceLocation(null, @1, @1)), $2, createSourceLocation(null, @1, @2));
+            $$ = new VariableDeclaratorNode(new IdentifierNode($1), $2);
         }
     ;
 
@@ -218,17 +183,10 @@ Initialiser
         }
     ;
 
-InitialiserNoIn
-    : "=" AssignmentExpressionNoIn
-        {
-            $$ = $2;
-        }
-    ;
-
 EmptyStatement
     : ";"
         {
-            $$ = new EmptyStatementNode(createSourceLocation(null, @1, @1));
+            $$ = new EmptyStatementNode();
         }
     ;
 
@@ -255,279 +213,151 @@ IfStatement
     ;
 
 IterationStatement
-    : "DO" Statement "WHILE" "(" Expression ")" ";"
+    : "FOR" "(" Expression ";" Expression ";" Expression ")" Statement
         {
-            $$ = new DoWhileStatementNode($2, $5, createSourceLocation(null, @1, @7));
+            $$ = new ForStatementNode($3, $5, $7, $9);
         }
-    | "DO" Statement "WHILE" "(" Expression ")" error
+    | "FOR" "(" Expression ";" Expression ";" ")" Statement
         {
-            $$ = new DoWhileStatementNode($2, $5, createSourceLocation(null, @1, @6));
+            $$ = new ForStatementNode($3, $5, null, $8);
         }
-    | "WHILE" "(" Expression ")" Statement
+    | "FOR" "(" Expression ";" ";" Expression ")" Statement
         {
-            $$ = new WhileStatementNode($3, $5, createSourceLocation(null, @1, @5));
+            $$ = new ForStatementNode($3, null, $6, $8);
         }
-    | "FOR" "(" ExpressionNoIn ";" Expression ";" Expression ")" Statement
+    | "FOR" "(" Expression ";" ";" ")" Statement
         {
-            $$ = new ForStatementNode($3, $5, $7, $9, createSourceLocation(null, @1, @9));
-        }
-    | "FOR" "(" ExpressionNoIn ";" Expression ";" ")" Statement
-        {
-            $$ = new ForStatementNode($3, $5, null, $8, createSourceLocation(null, @1, @8));
-        }
-    | "FOR" "(" ExpressionNoIn ";" ";" Expression ")" Statement
-        {
-            $$ = new ForStatementNode($3, null, $6, $8, createSourceLocation(null, @1, @8));
-        }
-    | "FOR" "(" ExpressionNoIn ";" ";" ")" Statement
-        {
-            $$ = new ForStatementNode($3, null, null, $7, createSourceLocation(null, @1, @7));
+            $$ = new ForStatementNode($3, null, null, $7);
         }
     | "FOR" "(" ";" Expression ";" Expression ")" Statement
         {
-            $$ = new ForStatementNode(null, $4, $6, $8, createSourceLocation(null, @1, @8));
+            $$ = new ForStatementNode(null, $4, $6, $8);
         }
     | "FOR" "(" ";" Expression ";" ")" Statement
         {
-            $$ = new ForStatementNode(null, $4, null, $7, createSourceLocation(null, @1, @7));
+            $$ = new ForStatementNode(null, $4, null, $7);
         }
     | "FOR" "(" ";" ";" Expression ")" Statement
         {
-            $$ = new ForStatementNode(null, null, $5, $7, createSourceLocation(null, @1, @7));
+            $$ = new ForStatementNode(null, null, $5, $7);
         }
     | "FOR" "(" ";" ";" ")" Statement
         {
-            $$ = new ForStatementNode(null, null, null, $6, createSourceLocation(null, @1, @6));
+            $$ = new ForStatementNode(null, null, null, $6);
         }
-    | "FOR" "(" "VAR" VariableDeclarationListNoIn ";" Expression ";" Expression ")" Statement
+    | "FOR" "(" "VAR" VariableDeclarationList ";" Expression ";" Expression ")" Statement
         {
-            $$ = new ForStatementNode($4, $6, $8, $10, createSourceLocation(null, @1, @10));
+            $$ = new ForStatementNode($4, $6, $8, $10);
         }
-    | "FOR" "(" "VAR" VariableDeclarationListNoIn ";" Expression ";" ")" Statement
+    | "FOR" "(" "VAR" VariableDeclarationList ";" Expression ";" ")" Statement
         {
-            $$ = new ForStatementNode($4, $6, null, $9, createSourceLocation(null, @1, @9));
+            $$ = new ForStatementNode($4, $6, null, $9);
         }
-    | "FOR" "(" "VAR" VariableDeclarationListNoIn ";" ";" Expression ")" Statement
+    | "FOR" "(" "VAR" VariableDeclarationList ";" ";" Expression ")" Statement
         {
-            $$ = new ForStatementNode($4, null, $7, $9, createSourceLocation(null, @1, @9));
+            $$ = new ForStatementNode($4, null, $7, $9);
         }
-    | "FOR" "(" "VAR" VariableDeclarationListNoIn ";" ";" ")" Statement
+    | "FOR" "(" "VAR" VariableDeclarationList ";" ";" ")" Statement
         {
-            $$ = new ForStatementNode($4, null, null, $8, createSourceLocation(null, @1, @8));
-        }
-    | "FOR" "(" LeftHandSideExpression "IN" Expression ")" Statement
-        {
-            $$ = new ForInStatementNode($3, $5, $7, createSourceLocation(null, @1, @7));
-        }
-    | "FOR" "(" "VAR" VariableDeclarationNoIn "IN" Expression ")" Statement
-        {
-            $$ = new ForInStatementNode($4, $6, $8, createSourceLocation(null, @1, @8));
+            $$ = new ForStatementNode($4, null, null, $8);
         }
     ;
 
 ContinueStatement
     : "CONTINUE" ";"
         {
-            $$ = new ContinueStatementNode(null, createSourceLocation(null, @1, @2));
+            $$ = new ContinueStatementNode(null);
         }
     | "CONTINUE" error
         {
-            $$ = new ContinueStatementNode(null, createSourceLocation(null, @1, @1));
+            $$ = new ContinueStatementNode(null);
         }
     | "CONTINUE" "IDENTIFIER" ";"
         {
-            $$ = new ContinueStatementNode(new IdentifierNode($2, createSourceLocation(null, @2, @2)), createSourceLocation(null, @1, @3));
+            $$ = new ContinueStatementNode(new IdentifierNode($2));
         }
     | "CONTINUE" "IDENTIFIER" error
         {
-            $$ = new ContinueStatementNode(new IdentifierNode($2, createSourceLocation(null, @2, @2)), createSourceLocation(null, @1, @2));
+            $$ = new ContinueStatementNode(new IdentifierNode($2));
         }
     ;
 
 BreakStatement
     : "BREAK" ";"
         {
-            $$ = new BreakStatementNode(null, createSourceLocation(null, @1, @2));
+            $$ = new BreakStatementNode(null);
         }
     | "BREAK" error
         {
-            $$ = new BreakStatementNode(null, createSourceLocation(null, @1, @1));
+            $$ = new BreakStatementNode(null);
         }
     | "BREAK" "IDENTIFIER" ";"
         {
-            $$ = new BreakStatementNode(new IdentifierNode($2, createSourceLocation(null, @2, @2)), createSourceLocation(null, @1, @3));
+            $$ = new BreakStatementNode(new IdentifierNode($2));
         }
     | "BREAK" "IDENTIFIER" error
         {
-            $$ = new BreakStatementNode(new IdentifierNode($2, createSourceLocation(null, @2, @2)), createSourceLocation(null, @1, @2));
+            $$ = new BreakStatementNode(new IdentifierNode($2));
         }
     ;
 
 ReturnStatement
     : "RETURN" ";"
         {
-            $$ = new ReturnStatementNode(null, createSourceLocation(null, @1, @2));
+            $$ = new ReturnStatementNode(null);
         }
     | "RETURN" error
         {
-            $$ = new ReturnStatementNode(null, createSourceLocation(null, @1, @1));
+            $$ = new ReturnStatementNode(null);
         }
     | "RETURN" Expression ";"
         {
-            $$ = new ReturnStatementNode($2, createSourceLocation(null, @1, @3));
+            $$ = new ReturnStatementNode($2);
         }
     | "RETURN" Expression error
         {
-            $$ = new ReturnStatementNode($2, createSourceLocation(null, @1, @2));
-        }
-    ;
-
-WithStatement
-    : "WITH" "(" Expression ")" Statement
-        {
-            $$ = new WithStatementNode($3, $5, createSourceLocation(null, @1, @5));
-        }
-    ;
-
-SwitchStatement
-    : "SWITCH" "(" Expression ")" CaseBlock
-        {
-            $$ = new SwitchStatementNode($3, $5, createSourceLocation(null, @1, @5));
-        }
-    ;
-
-CaseBlock
-    : "{" CaseClauses "}"
-        {
-            $$ = $2;
-        }
-    | "{" CaseClauses DefaultClause CaseClauses "}"
-        {
-            $$ = $2.concat($3).concat($4);
-        }
-    ;
-
-CaseClauses
-    : CaseClauses CaseClause
-        {
-            $$ = $1.concat($2);
-        }
-    |
-        {
-            $$ = [];
-        }
-    ;
-
-CaseClause
-    : "CASE" Expression ":" StatementList
-        {
-            $$ = new SwitchCaseNode($2, $4, createSourceLocation(null, @1, @4));
-        }
-    ;
-
-DefaultClause
-    : "DEFAULT" ":" StatementList
-        {
-            $$ = new SwitchCaseNode(null, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
-LabelledStatement
-    : "IDENTIFIER" ":" Statement
-        {
-            $$ = new LabeledStatementNode(new IdentifierNode($1, createSourceLocation(null, @1, @1)), $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
-ThrowStatement
-    : "THROW" Expression ";"
-        {
-            $$ = new ThrowStatementNode($2, createSourceLocation(null, @1, @3));
-        }
-    | "THROW" Expression error
-        {
-            $$ = new ThrowStatementNode($2, createSourceLocation(null, @1, @2));
-        }
-    ;
-
-TryStatement
-    : "TRY" Block Catch
-        {
-            $$ = new TryStatementNode($2, $3, null, createSourceLocation(null, @1, @3));
-        }
-    | "TRY" Block Finally
-        {
-            $$ = new TryStatementNode($2, null, $3, createSourceLocation(null, @1, @3));
-        }
-    | "TRY" Block Catch Finally
-        {
-            $$ = new TryStatementNode($2, $3, $4, createSourceLocation(null, @1, @4));
-        }
-    ;
-
-Catch
-    : "CATCH" "(" "IDENTIFIER" ")" Block
-        {
-            $$ = new CatchClauseNode(new IdentifierNode($3, createSourceLocation(null, @3, @3)), $5, createSourceLocation(null, @1, @5));
-        }
-    ;
-
-Finally
-    : "FINALLY" Block
-        {
-            $$ = $2;
-        }
-    ;
-
-DebuggerStatement
-    : "DEBUGGER" ";"
-        {
-            $$ = new DebugggerStatementNode(createSourceLocation(null, @1, @2));
-        }
-    | "DEBUGGER" error
-        {
-            $$ = new DebugggerStatementNode(createSourceLocation(null, @1, @1));
+            $$ = new ReturnStatementNode($2);
         }
     ;
 
 FunctionDeclaration
     : "FUNCTION" "IDENTIFIER" "(" ")" "{" FunctionBody "}"
         {
-	    $$ = new FunctionDeclarationNode(new IdentifierNode($2, createSourceLocation(null, @2, @2)), [], $6, false, false, createSourceLocation(null, @1, @7));
+	    $$ = new FunctionDeclarationNode(new IdentifierNode($2), [], $6, false, false);
         }
     | "FUNCTION" "IDENTIFIER" "(" FormalParameterList ")" "{" FunctionBody "}"
         {
-	    $$ = new FunctionDeclarationNode(new IdentifierNode($2, createSourceLocation(null, @2, @2)), $4, $7, false, false, createSourceLocation(null, @1, @8));
+	    $$ = new FunctionDeclarationNode(new IdentifierNode($2), $4, $7, false, false);
         }
     ;
 
 FunctionExpression
     : "FUNCTION" "IDENTIFIER" "(" ")" "{" FunctionBody "}"
         {
-	    $$ = new FunctionExpressionNode(new IdentifierNode($2, createSourceLocation(null, @2, @2)), [], $6, false, false, createSourceLocation(null, @1, @7));
+	    $$ = new FunctionExpressionNode(new IdentifierNode($2), [], $6, false, false);
         }
     | "FUNCTION" "IDENTIFIER" "(" FormalParameterList ")" "{" FunctionBody "}"
         {
-	    $$ = new FunctionExpressionNode(new IdentifierNode($2, createSourceLocation(null, @2, @2)), $4, $7, false, false, createSourceLocation(null, @1, @8));
+	    $$ = new FunctionExpressionNode(new IdentifierNode($2), $4, $7, false, false);
         }
     | "FUNCTION" "(" ")" "{" FunctionBody "}"
         {
-	    $$ = new FunctionExpressionNode(null, [], $5, false, false, createSourceLocation(null, @1, @6));
+	    $$ = new FunctionExpressionNode(null, [], $5, false, false);
         }
     | "FUNCTION" "(" FormalParameterList ")" "{" FunctionBody "}"
         {
-	    $$ = new FunctionExpressionNode(null, $3, $6, false, false, createSourceLocation(null, @1, @7));
+	    $$ = new FunctionExpressionNode(null, $3, $6, false, false);
         }
     ;
 
 FormalParameterList
     : "IDENTIFIER"
         {
-            $$ = [new IdentifierNode($1, createSourceLocation(null, @1, @1))];
+            $$ = [new IdentifierNode($1)];
         }
     | FormalParameterList "," "IDENTIFIER"
         {
-            $$ = $1.concat(new IdentifierNode($3, createSourceLocation(null, @3, @3)));
+            $$ = $1.concat(new IdentifierNode($3));
         }
     ;
 
@@ -538,7 +368,7 @@ FunctionBody
 Program
     : SourceElements EOF
         {
-            $$ = new ProgramNode($1, createSourceLocation(null, @1, @2));
+            $$ = new ProgramNode($1);
             return $$;
         }
     ;
@@ -567,11 +397,11 @@ PrimaryExpression
 PrimaryExpressionNoBrace
     : "THIS"
         {
-            $$ = new ThisExpressionNode(createSourceLocation(null, @1, @1));
+            $$ = new ThisExpressionNode();
         }
     | "IDENTIFIER"
         {
-            $$ = new IdentifierNode($1, createSourceLocation(null, @1, @1));
+            $$ = new IdentifierNode($1);
         }
     | Literal
     | ArrayLiteral
@@ -584,23 +414,23 @@ PrimaryExpressionNoBrace
 ArrayLiteral
     : "[" "]"
         {
-            $$ = new ArrayExpressionNode([], createSourceLocation(null, @1, @2));
+            $$ = new ArrayExpressionNode([]);
         }
     | "[" Elision "]"
         {
-            $$ = new ArrayExpressionNode($2, createSourceLocation(null, @1, @3));
+            $$ = new ArrayExpressionNode($2);
         }
     | "[" ElementList "]"
         {
-            $$ = new ArrayExpressionNode($2, createSourceLocation(null, @1, @3));
+            $$ = new ArrayExpressionNode($2);
         }
     | "[" ElementList "," "]"
         {
-            $$ = new ArrayExpressionNode($2.concat(null), createSourceLocation(null, @1, @4));
+            $$ = new ArrayExpressionNode($2.concat(null));
         }
     | "[" ElementList "," Elision "]"
         {
-            $$ = new ArrayExpressionNode($2.concat($4), createSourceLocation(null, @1, @5));
+            $$ = new ArrayExpressionNode($2.concat($4));
         }
     ;
 
@@ -637,15 +467,15 @@ Elision
 ObjectLiteral
     : "{" "}"
         {
-            $$ = new ObjectExpressionNode([], createSourceLocation(null, @1, @2));
+            $$ = new ObjectExpressionNode([]);
         }
     | "{" PropertyNameAndValueList "}"
         {
-            $$ = new ObjectExpressionNode($2, createSourceLocation(null, @1, @3));
+            $$ = new ObjectExpressionNode($2);
         }
     | "{" PropertyNameAndValueList "," "}"
         {
-            $$ = new ObjectExpressionNode($2, createSourceLocation(null, @1, @4));
+            $$ = new ObjectExpressionNode($2);
         }
     ;
 
@@ -668,7 +498,7 @@ PropertyAssignment
     | "IDENTIFIER" PropertyName "(" ")" "{" FunctionBody "}"
         {
             if ($1 === "get") {
-                $$ = {key: $2, value: (new FunctionExpressionNode(null, [], $6, false, false, createSourceLocation(null, @2, @7))), kind: "get"};
+                $$ = {key: $2, value: (new FunctionExpressionNode(null, [], $6, false, false)), kind: "get"};
             } else {
                 this.parseError("Invalid getter", {});
             }
@@ -676,7 +506,7 @@ PropertyAssignment
     | "IDENTIFIER" PropertyName "(" PropertySetParameterList ")" "{" FunctionBody "}"
         {
             if ($1 === "set") {
-                $$ = {key: $2, value: (new FunctionExpressionNode(null, $4, $7, false, false, createSourceLocation(null, @2, @8))), kind: "set"};
+                $$ = {key: $2, value: (new FunctionExpressionNode(null, $4, $7, false, false)), kind: "set"};
             } else {
                 this.parseError("Invalid setter", {});
             }
@@ -692,7 +522,7 @@ PropertyName
 PropertySetParameterList
     : "IDENTIFIER"
         {
-            $$ = [new IdentifierNode($1, createSourceLocation(null, @1, @1))];
+            $$ = [new IdentifierNode($1)];
         }
     ;
 
@@ -701,15 +531,15 @@ MemberExpression
     | FunctionExpression
     | MemberExpression "[" Expression "]"
         {
-            $$ = new MemberExpressionNode($1, $3, true, createSourceLocation(null, @1, @4));
+            $$ = new MemberExpressionNode($1, $3, true);
         }
     | MemberExpression "." IdentifierName
         {
-            $$ = new MemberExpressionNode($1, $3, false, createSourceLocation(null, @1, @3));
+            $$ = new MemberExpressionNode($1, $3, false);
         }
     | "NEW" MemberExpression Arguments
         {
-            $$ = new NewExpressionNode($2, $3, createSourceLocation(null, @1, @3));
+            $$ = new NewExpressionNode($2, $3);
         }
     ;
 
@@ -717,15 +547,15 @@ MemberExpressionNoBF
     : PrimaryExpressionNoBrace
     | MemberExpressionNoBF "[" Expression "]"
         {
-            $$ = new MemberExpressionNode($1, $3, true, createSourceLocation(null, @1, @4));
+            $$ = new MemberExpressionNode($1, $3, true);
         }
     | MemberExpressionNoBF "." IdentifierName
         {
-            $$ = new MemberExpressionNode($1, $3, false, createSourceLocation(null, @1, @3));
+            $$ = new MemberExpressionNode($1, $3, false);
         }
     | "NEW" MemberExpression Arguments
         {
-            $$ = new NewExpressionNode($2, $3, createSourceLocation(null, @1, @3));
+            $$ = new NewExpressionNode($2, $3);
         }
     ;
 
@@ -733,7 +563,7 @@ NewExpression
     : MemberExpression
     | "NEW" NewExpression
         {
-            $$ = new NewExpressionNode($2, null, createSourceLocation(null, @1, @2));
+            $$ = new NewExpressionNode($2, null);
         }
     ;
 
@@ -741,7 +571,7 @@ NewExpressionNoBF
     : MemberExpressionNoBF
     | "NEW" NewExpression
         {
-            $$ = new NewExpressionNode($2, null, createSourceLocation(null, @1, @2));
+            $$ = new NewExpressionNode($2, null);
         }
     ;
 
@@ -861,17 +691,9 @@ UnaryExpressionNoBF
     ;
 
 UnaryExpr
-    : "DELETE" UnaryExpression
-        {
-            $$ = new UnaryExpressionNode("delete", true, $2, createSourceLocation(null, @1, @2));
-        }
-    | "VOID" UnaryExpression
+    : "VOID" UnaryExpression
         {
             $$ = new UnaryExpressionNode("void", true, $2, createSourceLocation(null, @1, @2));
-        }
-    | "TYPEOF" UnaryExpression
-        {
-            $$ = new UnaryExpressionNode("typeof", true, $2, createSourceLocation(null, @1, @2));
         }
     | "BR++" UnaryExpression
         {
@@ -1017,66 +839,6 @@ RelationalExpression
         {
             $$ = new BinaryExpressionNode(">=", $1, $3, createSourceLocation(null, @1, @3));
         }
-    | RelationalExpression "INSTANCEOF" ShiftExpression
-        {
-            $$ = new BinaryExpressionNode("instanceof", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | RelationalExpression "IN" ShiftExpression
-        {
-            $$ = new BinaryExpressionNode("in", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
-RelationalExpressionNoIn
-    : ShiftExpression
-    | RelationalExpressionNoIn "<" ShiftExpression
-        {
-            $$ = new BinaryExpressionNode("<", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | RelationalExpressionNoIn ">" ShiftExpression
-        {
-            $$ = new BinaryExpressionNode(">", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | RelationalExpressionNoIn "<=" ShiftExpression
-        {
-            $$ = new BinaryExpressionNode("<=", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | RelationalExpressionNoIn ">=" ShiftExpression
-        {
-            $$ = new BinaryExpressionNode(">=", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | RelationalExpressionNoIn "INSTANCEOF" ShiftExpression
-        {
-            $$ = new BinaryExpressionNode("instanceof", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
-RelationalExpressionNoBF
-    : ShiftExpressionNoBF
-    | RelationalExpressionNoBF "<" ShiftExpression
-        {
-            $$ = new BinaryExpressionNode("<", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | RelationalExpressionNoBF ">" ShiftExpression
-        {
-            $$ = new BinaryExpressionNode(">", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | RelationalExpressionNoBF "<=" ShiftExpression
-        {
-            $$ = new BinaryExpressionNode("<=", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | RelationalExpressionNoBF ">=" ShiftExpression
-        {
-            $$ = new BinaryExpressionNode(">=", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | RelationalExpressionNoBF "INSTANCEOF" ShiftExpression
-        {
-            $$ = new BinaryExpressionNode("instanceof", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | RelationalExpressionNoBF "IN" ShiftExpression
-        {
-            $$ = new BinaryExpressionNode("in", $1, $3, createSourceLocation(null, @1, @3));
-        }
     ;
 
 EqualityExpression
@@ -1099,65 +861,9 @@ EqualityExpression
         }
     ;
 
-EqualityExpressionNoIn
-    : RelationalExpressionNoIn
-    | EqualityExpressionNoIn "==" RelationalExpressionNoIn
-        {
-            $$ = new BinaryExpressionNode("==", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | EqualityExpressionNoIn "!=" RelationalExpressionNoIn
-        {
-            $$ = new BinaryExpressionNode("!=", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | EqualityExpressionNoIn "===" RelationalExpressionNoIn
-        {
-            $$ = new BinaryExpressionNode("===", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | EqualityExpressionNoIn "!==" RelationalExpressionNoIn
-        {
-            $$ = new BinaryExpressionNode("!==", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
-EqualityExpressionNoBF
-    : RelationalExpressionNoBF
-    | EqualityExpressionNoBF "==" RelationalExpression
-        {
-            $$ = new BinaryExpressionNode("==", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | EqualityExpressionNoBF "!=" RelationalExpression
-        {
-            $$ = new BinaryExpressionNode("!=", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | EqualityExpressionNoBF "===" RelationalExpression
-        {
-            $$ = new BinaryExpressionNode("===", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | EqualityExpressionNoBF "!==" RelationalExpression
-        {
-            $$ = new BinaryExpressionNode("!==", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
 BitwiseANDExpression
     : EqualityExpression
     | BitwiseANDExpression "&" EqualityExpression
-        {
-            $$ = new BinaryExpressionNode("&", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
-BitwiseANDExpressionNoIn
-    : EqualityExpressionNoIn
-    | BitwiseANDExpressionNoIn "&" EqualityExpressionNoIn
-        {
-            $$ = new BinaryExpressionNode("&", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
-BitwiseANDExpressionNoBF
-    : EqualityExpressionNoBF
-    | BitwiseANDExpressionNoBF "&" EqualityExpression
         {
             $$ = new BinaryExpressionNode("&", $1, $3, createSourceLocation(null, @1, @3));
         }
@@ -1171,41 +877,9 @@ BitwiseXORExpression
         }
     ;
 
-BitwiseXORExpressionNoIn
-    : BitwiseANDExpressionNoIn
-    | BitwiseXORExpressionNoIn "^" BitwiseANDExpressionNoIn
-        {
-            $$ = new BinaryExpressionNode("^", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
-BitwiseXORExpressionNoBF
-    : BitwiseANDExpressionNoBF
-    | BitwiseXORExpressionNoBF "^" BitwiseANDExpression
-        {
-            $$ = new BinaryExpressionNode("^", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
 BitwiseORExpression
     : BitwiseXORExpression
     | BitwiseORExpression "|" BitwiseXORExpression
-        {
-            $$ = new BinaryExpressionNode("|", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
-BitwiseORExpressionNoIn
-    : BitwiseXORExpressionNoIn
-    | BitwiseORExpressionNoIn "|" BitwiseXORExpressionNoIn
-        {
-            $$ = new BinaryExpressionNode("|", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
-BitwiseORExpressionNoBF
-    : BitwiseXORExpressionNoBF
-    | BitwiseORExpressionNoBF "|" BitwiseXORExpression
         {
             $$ = new BinaryExpressionNode("|", $1, $3, createSourceLocation(null, @1, @3));
         }
@@ -1219,22 +893,6 @@ LogicalANDExpression
         }
     ;
 
-LogicalANDExpressionNoIn
-    : BitwiseORExpressionNoIn
-    | LogicalANDExpressionNoIn "&&" BitwiseORExpressionNoIn
-        {
-            $$ = new LogicalExpressionNode("&&", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
-LogicalANDExpressionNoBF
-    : BitwiseORExpressionNoBF
-    | LogicalANDExpressionNoBF "&&" BitwiseORExpression
-        {
-            $$ = new LogicalExpressionNode("&&", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
 LogicalORExpression
     : LogicalANDExpression
     | LogicalORExpression "||" LogicalANDExpression
@@ -1243,33 +901,9 @@ LogicalORExpression
         }
     ;
 
-LogicalORExpressionNoIn
-    : LogicalANDExpressionNoIn
-    | LogicalORExpressionNoIn "||" LogicalANDExpressionNoIn
-        {
-            $$ = new LogicalExpressionNode("||", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
-LogicalORExpressionNoBF
-    : LogicalANDExpressionNoBF
-    | LogicalORExpressionNoBF "||" LogicalANDExpression
-        {
-            $$ = new LogicalExpressionNode("||", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
 ConditionalExpression
     : LogicalORExpression
     | LogicalORExpression "?" AssignmentExpression ":" AssignmentExpression
-        {
-            $$ = new ConditionalExpressionNode($1, $3, $5, createSourceLocation(null, @1, @5));
-        }
-    ;
-
-ConditionalExpressionNoIn
-    : LogicalORExpressionNoIn
-    | LogicalORExpressionNoIn "?" AssignmentExpression ":" AssignmentExpressionNoIn
         {
             $$ = new ConditionalExpressionNode($1, $3, $5, createSourceLocation(null, @1, @5));
         }
@@ -1295,18 +929,6 @@ AssignmentExpression
         }
     ;
 
-AssignmentExpressionNoIn
-    : ConditionalExpressionNoIn
-    | LeftHandSideExpression "=" AssignmentExpressionNoIn
-        {
-            $$ = new AssignmentExpressionNode("=", $1, $3, createSourceLocation(null, @1, @3));
-        }
-    | LeftHandSideExpression AssignmentOperator AssignmentExpressionNoIn
-        {
-            $$ = new AssignmentExpressionNode($2, $1, $3, createSourceLocation(null, @1, @3));
-        }
-    ;
-
 AssignmentExpressionNoBF
     : ConditionalExpressionNoBF
     | LeftHandSideExpressionNoBF "=" AssignmentExpression
@@ -1325,9 +947,6 @@ AssignmentOperator
     | "%="
     | "+="
     | "-="
-    | "<<="
-    | ">>="
-    | ">>>="
     | "&="
     | "^="
     | "|="
@@ -1336,20 +955,6 @@ AssignmentOperator
 Expression
     : AssignmentExpression
     | Expression "," AssignmentExpression
-        {
-            if ($1.type === "SequenceExpression") {
-                $1.expressions.concat($3);
-                $1.loc = createSourceLocation(null, @1, @3);
-                $$ = $1;
-            } else {
-                $$ = new SequenceExpressionNode([$1, $3], createSourceLocation(null, @1, @3));
-            }
-        }
-    ;
-
-ExpressionNoIn
-    : AssignmentExpressionNoIn
-    | ExpressionNoIn "," AssignmentExpressionNoIn
         {
             if ($1.type === "SequenceExpression") {
                 $1.expressions.concat($3);
@@ -1380,7 +985,6 @@ Literal
     | BooleanLiteral
     | NumericLiteral
     | StringLiteral
-    | RegularExpressionLiteral
     ;
 
 NullLiteral
@@ -1415,68 +1019,25 @@ StringLiteral
         }
     ;
 
-RegularExpressionLiteral
-    : RegularExpressionLiteralBegin "REGEXP_LITERAL"
-        {
-            $$ = new LiteralNode(parseRegularExpressionLiteral($1 + $2), createSourceLocation(null, @1, @2));
-        }
-    ;
-
-RegularExpressionLiteralBegin
-    : "/"
-        {
-            yy.lexer.begin("REGEXP");
-        }
-    | "/="
-        {
-            yy.lexer.begin("REGEXP");
-        }
-    ;
-
 ReservedWord
     : "BREAK"
-    | "CASE"
-    | "CATCH"
     | "CONTINUE"
-    | "DEBUGGER"
-    | "DEFAULT"
-    | "DELETE"
-    | "DO"
     | "ELSE"
     | "FINALLY"
     | "FOR"
     | "FUNCTION"
     | "IF"
-    | "IN"
-    | "INSTANCEOF"
-    | "NEW"
     | "RETURN"
-    | "SWITCH"
     | "THIS"
-    | "THROW"
-    | "TRY"
-    | "TYPEOF"
     | "VAR"
     | "VOID"
     | "WHILE"
-    | "WITH"
     | "TRUE"
     | "FALSE"
     | "NULL"
-    | "CLASS"
-    | "CONST"
-    | "ENUM"
-    | "EXPORT"
-    | "EXTENDS"
-    | "IMPORT"
-    | "SUPER"
     ;
 
 %%
-
-function createSourceLocation(source, firstToken, lastToken) {
-	return new SourceLocation(source, new Position(firstToken.first_line, firstToken.first_column), new Position(lastToken.last_line, lastToken.last_column));
-}
 
 function parseRegularExpressionLiteral(literal) {
 	var last = literal.lastIndexOf("/");
@@ -1518,278 +1079,173 @@ parser.parseError = function(str, hash) {
 /* End Parser Customization Methods */
 
 /* Begin AST Node Constructors */
-function ProgramNode(body, loc) {
+function ProgramNode(body) {
 	this.type = "Program";
 	this.body = body;
-	this.loc = loc;
 }
 
-function EmptyStatementNode(loc) {
+function EmptyStatementNode() {
 	this.type = "EmptyStatement";
-	this.loc = loc;
 }
 
-function BlockStatementNode(body, loc) {
+function BkStatementNode(body) {
 	this.type = "BlockStatement";
 	this.body = body;
-	this.loc = loc;
 }
 
-function ExpressionStatementNode(expression, loc) {
+function ExpressionStatementNode(expression) {
 	this.type = "ExpressionStatement";
 	this.expression = expression;
-	this.loc = loc;
 }
 
-function IfStatementNode(test, consequent, alternate, loc) {
+function IfStatementNode(test, consequent, alternate) {
 	this.type = "IfStatement";
 	this.test = test;
 	this.consequent = consequent;
 	this.alternate = alternate;
-	this.loc = loc;
 }
 
-function LabeledStatementNode(label, body, loc) {
+function LabeledStatementNode(label, body) {
 	this.type = "LabeledStatement";
 	this.label = label;
 	this.body = body;
-	this.loc = loc;
 }
 
-function BreakStatementNode(label, loc) {
+function BreakStatementNode(label) {
 	this.type = "BreakStatement";
 	this.label = label;
-	this.loc = loc;
 }
 
-function ContinueStatementNode(label, loc) {
+function ContinueStatementNode(label) {
 	this.type = "ContinueStatement";
 	this.label = label;
-	this.loc = loc;
 }
 
-function WithStatementNode(object, body, loc) {
-	this.type = "WithStatement";
-	this.object = object;
-	this.body = body;
-	this.loc = loc;
-}
-
-function SwitchStatementNode(discriminant, cases, loc) {
-	this.type = "SwitchStatement";
-	this.discriminant = discriminant;
-	this.cases = cases;
-	this.loc = loc;
-}
-
-function ReturnStatementNode(argument, loc) {
+function ReturnStatementNode(argument) {
 	this.type = "ReturnStatement";
 	this.argument = argument;
-	this.loc = loc;
 }
 
-function ThrowStatementNode(argument, loc) {
-	this.type = "ThrowStatement";
-	this.argument = argument;
-	this.loc = loc;
-}
-
-function TryStatementNode(block, handlers, finalizer, loc) {
-	this.type = "TryStatement";
-	this.block = block;
-	this.handlers = handlers; // Multiple catch clauses are SpiderMonkey specific
-	this.finalizer = finalizer;
-	this.loc = loc;
-}
-
-function WhileStatementNode(test, body, loc) {
-	this.type = "WhileStatement";
-	this.test = test;
-	this.body = body;
-	this.loc = loc;
-}
-
-function DoWhileStatementNode(body, test, loc) {
-	this.type = "DoWhileStatement";
-	this.body = body;
-	this.test = test;
-	this.loc = loc;
-}
-
-function ForStatementNode(init, test, update, body, loc) {
+function ForStatementNode(init, test, update, body) {
 	this.type = "ForStatement";
 	this.init = init;
 	this.test = test;
 	this.update = update;
 	this.body = body;
-	this.loc = loc;
 }
 
-function ForInStatementNode(left, right, body, loc) {
-	this.type = "ForInStatement";
-	this.left = left;
-	this.right = right;
-	this.body = body;
-	this.loc = loc;
-}
-
-function DebugggerStatementNode(loc) {
-	this.type = "DebuggerStatement";
-	this.loc = loc;
-}
-
-function FunctionDeclarationNode(id, params, body, generator, expression, loc) {
+function FunctionDeclarationNode(id, params, body, generator, expression) {
 	this.type = "FunctionDeclaration";
 	this.id = id;
 	this.params = params;
 	this.body = body;
 	this.generator = generator;
 	this.expression = expression;
-	this.loc = loc;
 }
 
-function VariableDeclarationNode(declarations, kind, loc) {
+function VariableDeclarationNode(declarations, kind) {
 	this.type = "VariableDeclaration";
 	this.declarations = declarations;
 	this.kind = kind;
-	this.loc = loc;
 }
 
-function VariableDeclaratorNode(id, init, loc) {
+function VariableDeclaratorNode(id, init) {
 	this.type = "VariableDeclarator";
 	this.id = id;
 	this.init = init;
-	this.loc = loc;
 }
 
-function ThisExpressionNode(loc) {
+function ThisExpressionNode() {
 	this.type = "ThisExpression";
-	this.loc = loc;
 }
 
-function ArrayExpressionNode(elements, loc) {
+function ArrayExpressionNode(elements) {
 	this.type = "ArrayExpression";
 	this.elements = elements;
-	this.loc = loc;
 }
 
-function ObjectExpressionNode(properties, loc) {
+function ObjectExpressionNode(properties) {
 	this.type = "ObjectExpression";
 	this.properties = properties;
-	this.loc = loc;
 }
 
-function FunctionExpressionNode(id, params, body, generator, expression, loc) {
+function FunctionExpressionNode(id, params, body, generator, expression) {
 	this.type = "FunctionExpression";
 	this.id = id;
 	this.params = params;
 	this.body = body;
 	this.generator = generator;
 	this.expression = expression;
-	this.loc = loc;
 }
 
-function SequenceExpressionNode(expressions, loc) {
+function SequenceExpressionNode(expressions) {
 	this.type = "SequenceExpression";
 	this.expressions = expressions;
-	this.loc = loc;
 }
 
-function UnaryExpressionNode(operator, prefix, argument, loc) {
+function UnaryExpressionNode(operator, prefix, argument) {
 	this.type = "UnaryExpression";
 	this.operator = operator;
 	this.prefix = prefix;
 	this.argument = argument;
-	this.loc = loc;
 }
 
-function BinaryExpressionNode(operator, left, right, loc) {
+function BinaryExpressionNode(operator, left, right) {
 	this.type = "BinaryExpression";
 	this.operator = operator;
 	this.left = left;
 	this.right = right;
-	this.loc = loc;
 }
 
-function AssignmentExpressionNode(operator, left, right, loc) {
+function AssignmentExpressionNode(operator, left, right) {
 	this.type = "AssignmentExpression";
 	this.operator = operator;
 	this.left = left;
 	this.right = right;
-	this.loc = loc;
 }
 
-function UpdateExpressionNode(operator, argument, prefix, loc) {
+function UpdateExpressionNode(operator, argument, prefix) {
 	this.type = "UpdateExpression";
 	this.operator = operator;
 	this.argument = argument;
 	this.prefix = prefix;
-	this.loc = loc;
 }
 
-function LogicalExpressionNode(operator, left, right, loc) {
+function LogicalExpressionNode(operator, left, right) {
 	this.type = "LogicalExpression";
 	this.operator = operator;
 	this.left = left;
 	this.right = right;
-	this.loc = loc;
 }
 
-function ConditionalExpressionNode(test, consequent, alternate, loc) {
+function ConditionalExpressionNode(test, consequent, alternate) {
 	this.type = "ConditionalExpression";
 	this.test = test;
 	this.consequent = consequent;
 	this.alternate = alternate;
-	this.loc = loc;
 }
 
-function NewExpressionNode(callee, args, loc) {
+function NewExpressionNode(callee, args) {
 	this.type = "NewExpression";
 	this.callee = callee;
 	this.arguments = args;
-	this.loc = loc;
 }
 
-function CallExpressionNode(callee, args, loc) {
-	this.type = "CallExpression";
-	this.callee = callee;
-	this.arguments = args;
-	this.loc = loc;
-}
-
-function MemberExpressionNode(object, property, computed, loc) {
+function MemberExpressionNode(object, property, computed) {
 	this.type = "MemberExpression";
 	this.object = object;
 	this.property = property;
 	this.computed = computed;
-	this.loc = loc;
 }
 
-function SwitchCaseNode(test, consequent, loc) {
-	this.type = "SwitchCase";
-	this.test = test;
-	this.consequent = consequent;
-	this.loc = loc;
-}
-
-function CatchClauseNode(param, body, loc) {
-	this.type = "CatchClause";
-	this.param = param;
-	this.guard = null; /* Firefox specific */
-	this.body = body;
-	this.loc = loc;
-}
-
-function IdentifierNode(name, loc) {
+function IdentifierNode(name) {
 	this.type = "Identifier";
 	this.name = name;
-	this.loc = loc;
 }
 
-function LiteralNode(value, loc) {
+function LiteralNode(value) {
 	this.type = "Literal";
 	this.value = value;
-	this.loc = loc;
 }
 
 function SourceLocation(source, start, end) {
@@ -1823,19 +1279,10 @@ parser.ast.EmptyStatementNode = EmptyStatementNode;
 parser.ast.BlockStatementNode = BlockStatementNode;
 parser.ast.ExpressionStatementNode = ExpressionStatementNode;
 parser.ast.IfStatementNode = IfStatementNode;
-parser.ast.LabeledStatementNode = LabeledStatementNode;
 parser.ast.BreakStatementNode = BreakStatementNode;
 parser.ast.ContinueStatementNode = ContinueStatementNode;
-parser.ast.WithStatementNode = WithStatementNode;
-parser.ast.SwitchStatementNode = SwitchStatementNode;
 parser.ast.ReturnStatementNode = ReturnStatementNode;
-parser.ast.ThrowStatementNode = ThrowStatementNode;
-parser.ast.TryStatementNode = TryStatementNode;
-parser.ast.WhileStatementNode = WhileStatementNode;
-parser.ast.DoWhileStatementNode = DoWhileStatementNode;
 parser.ast.ForStatementNode = ForStatementNode;
-parser.ast.ForInStatementNode = ForInStatementNode;
-parser.ast.DebugggerStatementNode = DebugggerStatementNode;
 parser.ast.FunctionDeclarationNode = FunctionDeclarationNode;
 parser.ast.VariableDeclarationNode = VariableDeclarationNode;
 parser.ast.VariableDeclaratorNode = VariableDeclaratorNode;
@@ -1851,9 +1298,5 @@ parser.ast.UpdateExpressionNode = UpdateExpressionNode;
 parser.ast.LogicalExpressionNode = LogicalExpressionNode;
 parser.ast.ConditionalExpressionNode = ConditionalExpressionNode;
 parser.ast.NewExpressionNode = NewExpressionNode;
-parser.ast.CallExpressionNode = CallExpressionNode;
-parser.ast.MemberExpressionNode = MemberExpressionNode;
-parser.ast.SwitchCaseNode = SwitchCaseNode;
-parser.ast.CatchClauseNode = CatchClauseNode;
 parser.ast.IdentifierNode = IdentifierNode;
 parser.ast.LiteralNode = LiteralNode;
