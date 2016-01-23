@@ -130,7 +130,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		if( stateParam.currentFunctionNamespace == "main" ) {
 			retArr.push("out_float = ");
 			ast_generic(ast.argument, retArr, stateParam);
-			retArr.push("; return; ");
+			retArr.push("; ");
 		} else {
 			throw ast_errorOutput(
 				"Non main function return, is not supported : "+stateParam.currentFunctionNamespace, 
@@ -334,7 +334,7 @@ var GPU_jsToWebclgl = (function() {
 			//
 			// Float offset and result buffer setup
 			//
-			var floatOffset = 1.0; //paramObj.floatOffset || 65535.0;
+			var floatOffset = paramObj.floatOffset || 65535.0;
 			var resultBuffer = webCLGL.createBuffer(totalSize, "FLOAT", floatOffset);
 			
 			// 
@@ -358,6 +358,11 @@ var GPU_jsToWebclgl = (function() {
 			for (var i=0; i<argNames.length; i++) {
 				kernel.setKernelArg(i, argBuffers[i]);
 			}
+			
+			// Does not need the kernel.compile optimiztion, as code is recompiled on each run
+			// @TODO: consider this ??
+			//kernel.compile();
+			
 			webCLGL.enqueueNDRangeKernel(kernel, resultBuffer);
 			
 			//
