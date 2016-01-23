@@ -52,6 +52,7 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param ast          the AST object where the error is
 	/// @param stateParam   the compiled state tracking
 	function ast_errorOutput(error, ast, stateParam) {
+		console.error(error, ast, stateParam);
 		return error;
 	}
 	
@@ -70,6 +71,10 @@ var GPU_jsStrToWebclglStr = (function() {
 				return ast_ReturnStatement(ast, retArr, stateParam);
 			case "Literal":
 				return ast_Literal(ast, retArr,  stateParam);
+			case "BinaryExpression":
+				return ast_BinaryExpression(ast, retArr,  stateParam);
+			case "MemberExpression":
+				return ast_MemberExpression(ast, retArr,  stateParam);
 		}
 		
 		throw ast_errorOutput("Unknown ast type : "+ast.type, ast, stateParam);
@@ -168,6 +173,58 @@ var GPU_jsStrToWebclglStr = (function() {
 		
 		return retArr;
 	}
+	
+	/// Prases the abstract syntax tree, binary expression
+	///
+	/// @param ast          the AST object to parse
+	/// @param retArr       return array string
+	/// @param stateParam   the compiled state tracking
+	/// 
+	/// @returns  the appened retArr
+	function ast_BinaryExpression(ast, retArr, stateParam) {
+		if(
+			ast.operator == "+" || 
+			ast.operator == "-" || 
+			ast.operator == "*" || 
+			ast.operator == "/"
+		) {
+			ast_generic(ast.left, retArr, stateParam);
+			retArr.push( " "+ast.operator+" " );
+			ast_generic(ast.right, retArr, stateParam);
+		} else if(ast.operator == "%") {
+			ast_generic(ast.left, retArr, stateParam);
+			retArr.push( " , " );
+			ast_generic(ast.right, retArr, stateParam);
+			retArr.push( ")" );
+		} else {
+			throw ast_errorOutput("Unsupported BinaryExpression: "+ast.operator, ast, stateParam);
+		}
+		
+		return retArr;
+	}
+	
+	/// Prases the abstract syntax tree, member expression
+	///
+	/// @param ast          the AST object to parse
+	/// @param retArr       return array string
+	/// @param stateParam   the compiled state tracking
+	/// 
+	/// @returns  the appened retArr
+	function ast_MemberExpression(ast, retArr, stateParam) {
+		
+		// Name identifier support
+		if( ast.object && ast.object.type == "Identifier" && ast.object.name ) {
+			retArr.push( ast.object.name );
+			retArr.push("[");
+			ast_generic(ast.property, retArr, stateParam);
+			retArr.push("]");
+		}
+		
+		throw ast_errorOutput("Unsupported MemberExpression: "+ast.name+"["+ast.property+"]", ast, stateParam);
+		return retArr;
+	}
+	
+	
 	
 	/*
 	
