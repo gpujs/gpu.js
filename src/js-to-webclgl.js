@@ -288,7 +288,7 @@ var GPU_jsStrToWebclglStr = (function() {
 	*/
 	
 	/// Boiler plate code generation
-	function generateBoilerCode( retArr, funcStr, _threadDim, _blockDim, paramObj, argStateObj ) {
+	function generateBoilerCode( funcStr, _threadDim, _blockDim, paramObj, argStateObj ) {
 		//
 		// @TODO
 		//
@@ -309,7 +309,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		
 		// Boiler plate code, only if argStateObj is passed
 		if( argStateObj != null ) {
-			generateBoilerCode( retArr, funcStr, _threadDim, _blockDim, paramObj, argStateObj );
+			generateBoilerCode( funcStr, _threadDim, _blockDim, paramObj, argStateObj );
 		}
 		
 		ast_generic( astOutputObj, retArr, stateObj );
