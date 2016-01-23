@@ -72,7 +72,7 @@ void main(float* a, float* b) {
     vec2 _vecId_ = get_global_id();
 	float _id_ = _vecId_.x + _vecId_.y * _W_;
 	
-	float _thread_ = _indexTo3D_(_id_);
+	vec3 _thread_ = _indexTo3D_(_id_);
 	
 	float _threadZ_ =  _thread_.z;
 	float _threadY_ =  _thread_.y;
