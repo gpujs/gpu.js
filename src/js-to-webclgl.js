@@ -235,9 +235,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		
 		return retArr;
 	}
-	
-<<<<<<< HEAD
-=======
+
 	/// Prases the abstract syntax tree, member expression
 	///
 	/// @param ast          the AST object to parse
@@ -266,10 +264,6 @@ var GPU_jsStrToWebclglStr = (function() {
 		throw ast_errorOutput("Unsupported MemberExpression: "+ast.name+"["+ast.property+"]", ast, stateParam);
 		return retArr;
 	}
-	
->>>>>>> 440baed66f75561135933c6662b5b9d070307320
-	
-	
 	
 	/// Prases the abstract syntax tree, genericially to its respective function
 	///
