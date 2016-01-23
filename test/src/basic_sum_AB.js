@@ -58,14 +58,14 @@ vec3 _indexTo3DCoord_(float index) {
 vec2 _indexTo2DCoord_(float index) {
 	vec2 ret;
 	
-	ret.y = mod(index, _W_);
-	ret.x = round(index / _W_);
+	ret.y = mod(index, _W_) / _H_;
+	ret.x = (round(index / _W_)) / _W_;
 	
 	return ret;
 }
 
 float _coordToIndex_(vec2 coord) {
-	return coord.x + _W_ * coord.y;
+	return (coord.x * _W_) + _W_ * (coord.y * _H_);
 }
 
 void main(float* a, float* b) {
