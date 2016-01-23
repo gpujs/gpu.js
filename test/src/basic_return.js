@@ -50,14 +50,14 @@ function basic_booleanBranch( mode ) {
 	QUnit.close(f(), 42.0, 0.01, "basic return function test");
 }
 
-QUnit.test( "basic_return (auto)", function() {
+QUnit.test( "basic_booleanBranch (auto)", function() {
 	basic_booleanBranch(null);
 });
 
-QUnit.test( "basic_return (GPU)", function() {
+QUnit.test( "basic_booleanBranch (GPU)", function() {
 	basic_booleanBranch("gpu");
 });
 
-QUnit.test( "basic_return (CPU)", function() {
+QUnit.test( "basic_booleanBranch (CPU)", function() {
 	basic_booleanBranch("cpu");
 });
