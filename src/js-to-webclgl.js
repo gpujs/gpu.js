@@ -28,4 +28,4 @@ var jsToWebclgl = (function() {
 	}
 	
 	return jsToWebclgl;
-}
+})();
