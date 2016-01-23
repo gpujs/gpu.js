@@ -1,4 +1,9 @@
 var GPU_jsStrToWebclglStr = (function() {
+	
+	/// Temporary replacment token string, to do search and replace for injection of boiler code AFTER
+	/// full AST token parsing. Basically its MAGIC!!!
+	var bodyPrefixVodooReplacementString = "/* GPU.JS void main() body prefix voodoo injection */";
+	
 	/// @returns always a literal float
 	function ensureFloat(f) {
 		if( Number.isInteger(f) ) {
@@ -12,7 +17,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		return {
 			// The source code rows array
 			src : funcStr,
-			srcArr : funcStr.split("\n"),
+			srcArr : funcStr.split(" "),
 			
 			// The compiler parameter options
 			paramObj : inParamObj,
@@ -97,7 +102,7 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param stateParam   the compiled state tracking
 	///
 	/// @returns  the appened retArr
-	function ast_FunctionExpression(ast, retArr, stateParam, argStateObj) {
+	function ast_FunctionExpression(ast, retArr, stateParam) {
 		
 		// Setup the main function
 		if( ast.id == "main" ) {
@@ -143,7 +148,8 @@ var GPU_jsStrToWebclglStr = (function() {
 		
 		// Argument state obj main prefix injection
 		if( argStateObj && argStateObj.mainBodyPrefix && ast.id == "main" ) {
-			retArr.push(mainBodyPrefix);
+			retArr.push(" ");
+			retArr.push(bodyPrefixVodooReplacementString);
 			retArr.push(" ");
 		}
 		
@@ -265,6 +271,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		return retArr;
 	}
 	
+	/*
 	/// Prases the abstract syntax tree, genericially to its respective function
 	///
 	/// @param ast   the AST object to parse
@@ -305,7 +312,7 @@ var GPU_jsStrToWebclglStr = (function() {
 	}
 	
 	function ast_VariableDeclarator(vdNode, retArr) {
-		
+			
 	}
 
 	function ast_IdentifierExpression(idtNode, retArr) {
@@ -315,23 +322,36 @@ var GPU_jsStrToWebclglStr = (function() {
 
 		retArr.push(idtNode.name);
 	}
+	*/
+	
 	
 	/// Boiler plate code generation
-	function generateBoilerCode( funcStr, _threadDim, _blockDim, paramObj, argStateObj ) {
+	function generateBoilerCode( funcStr, _threadDim, _blockDim, stateObj ) {
+		var argStateObj = stateObj.argStateObj;
+		
 		var boilerplate = "";
-		boilerplate += "float _threadDimX_ = " + ensureFloat(argStateObj.threadDimX) +";\n";
-		boilerplate += "float _threadDimY_ = " + ensureFloat(argStateObj.threadDimY) +";\n";
-		boilerplate += "float _threadDimZ_ = " + ensureFloat(argStateObj.threadDimZ) +";\n";
-		boilerplate += "vec2 _vecId_ = get_global_id();\n";
+		boilerplate += "float _threadDimX_ = " + ensureFloat(argStateObj.threadDimX) +"; ";
+		boilerplate += "float _threadDimY_ = " + ensureFloat(argStateObj.threadDimY) +"; ";
+		boilerplate += "float _threadDimZ_ = " + ensureFloat(argStateObj.threadDimZ) +"; ";
+		boilerplate += "vec2 _vecId_ = get_global_id(); ";
 		boilerplate += "float _id_ = (_vecId_.x * " +
 			ensureFloat(argStateObj.result_w) + ") + " +
 			ensureFloat(argStateObj.result_w) + " * (_vecId_.y * " +
-			ensureFloat(argStateObj.result_h) + ");\n";
-		boilerplate += "_threadZ_ = round(_id_ / (_threadDimX_ * _threadDimY_));\n";
-		boilerplate += "_threadY_ = round((_id_ - _threadZ_ * _threadDimY_) / _threadDimX_);\n";
-		boilerplate += "_threadX_ = _id_ - _threadDimX_ * (_threadY_ + _threadDimY_ * _threadZ_);\n";
+			ensureFloat(argStateObj.result_h) + "); ";
+		boilerplate += "_threadZ_ = round(_id_ / (_threadDimX_ * _threadDimY_)); ";
+		boilerplate += "_threadY_ = round((_id_ - _threadZ_ * _threadDimY_) / _threadDimX_); ";
+		boilerplate += "_threadX_ = _id_ - _threadDimX_ * (_threadY_ + _threadDimY_ * _threadZ_); ";
+		
+		/// 2D vector code
+		function _vectorCode_2d( XY, idx ) {
+			
+		}
+		
 		return boilerplate;
 	}
+	
+	/// _indexTo3DCoord_ conversion
+	
 	
 	/// The function string to openslgl code generator
 	function jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj, argStateObj ) {
@@ -340,13 +360,18 @@ var GPU_jsStrToWebclglStr = (function() {
 		var astOutputObj = jison_parseFuncStr(funcStr, stateObj);
 		var retArr = [];
 		
+		ast_generic( astOutputObj, retArr, stateObj, argStateObj );
+		var outputStr = retArr.join("");
+		
 		// Boiler plate code, only if argStateObj is passed
 		if( argStateObj != null ) {
-			argStateObj.mainBodyPrefix = generateBoilerCode( funcStr, _threadDim, _blockDim, paramObj, argStateObj );
+			var mainBodyPrefix = generateBoilerCode( funcStr, _threadDim, _blockDim, stateObj );
+			outputStr = outputStr.replace(bodyPrefixVodooReplacementString, mainBodyPrefix);
+		} else {
+			outputStr = outputStr.replace(bodyPrefixVodooReplacementString, "");
 		}
 		
-		ast_generic( astOutputObj, retArr, stateObj, argStateObj );
-		return retArr.join("");
+		return outputStr;
 	}
 	
 	return jsStrToWebclglStr;
@@ -469,12 +494,13 @@ var GPU_jsToWebclgl = (function() {
 			//
 			// Argument State obj init
 			//----------------------------------
-			var argStateObj = {};
-			argStateObj.result_w = resultBuffer.W;
-			argStateObj.result_h = resultBuffer.H;
-			argStateObj.threadDimX = threadDim[0];
-			argStateObj.threadDimY = threadDim[1];
-			argStateObj.threadDimZ = threadDim[2];
+			var argStateObj = {
+				result_w : resultBuffer.W,
+				result_h : resultBuffer.H,
+				threadDimX : threadDim[0],
+				threadDimY : threadDim[1],
+				threadDimZ : threadDim[2]
+			};
 			
 			//
 			// Argument buffer handling
@@ -516,7 +542,6 @@ var GPU_jsToWebclgl = (function() {
 			// Does not need the kernel.compile optimiztion, as code is recompiled on each run
 			// @TODO: consider this ??
 			//kernel.compile();
-			
 			webCLGL.enqueueNDRangeKernel(kernel, resultBuffer);
 			
 			//
