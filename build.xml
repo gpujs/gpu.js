@@ -1,0 +1,19 @@
+<project name="gpu.js" default="source">
+	<!-- **************************************************
+	The following lists the target sets supported by ant
+	
+	+ build
+	+ clean
+	+ compile / build / source
+	+ src-beautify
+	
+	************************************************** -->
+	
+	<!-- convinent aliases -->
+	<target name="source" depends="build">
+	</target>
+	
+	<!-- The build ant script -->
+	<target name="build">
+	</target>
+</project>
