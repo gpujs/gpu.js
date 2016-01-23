@@ -1,6 +1,6 @@
 function basic_sum_AB_test( assert, mode ) {
 	var f = GPU(function(a, b) {
-		return (a[this.thread.x] + b[this.thread.x]);
+		return (a[threadX] + b[threadY]);
 	}, {
 		thread : [3],
 		block : [1],

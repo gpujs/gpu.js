@@ -234,13 +234,14 @@ IfStatement
     ;
 
 Expression
-    : Variable
-    | AssignmentExpression
-    | MatrixAccess
+    : AssignmentExpression
     | MathExpression
     | BooleanExpression
     | StringLiteral
     | "(" Expression ")"
+        {
+            $$ = $2;
+        }
     ;
 
 
@@ -327,7 +328,7 @@ MatrixIndexList
 MatrixIndex
     : "[" MathExpression "]"
         {
-            $$ = $1;
+            $$ = $2;
         }
     ;
 
@@ -365,6 +366,9 @@ MathExpression
 
 PostfixMathExpression
     : NumericLiteral
+    | Variable
+    | MatrixAccess
+    | ContextAccess
     | Variable "++"
         {
             $$ = new UpdateExpressionNode("++", $1, false);
@@ -401,7 +405,6 @@ UnaryMathExpr
 
 MultiplicativeExpression
     : UnaryMathExpression
-    | ContextAccess
     | MultiplicativeExpression "*" UnaryExpression
         {
             $$ = new BinaryExpressionNode("*", $1, $3);
@@ -491,6 +494,7 @@ UnaryBoolExpr
             $$ = new UnaryExpressionNode("!", true, $2);
         }
     | BooleanLiteral
+    | Variable
     ;
 
 Program
