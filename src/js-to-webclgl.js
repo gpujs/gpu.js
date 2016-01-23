@@ -149,6 +149,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		retArr.push(") { ");
 		
 		// Argument state obj main prefix injection
+		var argStateObj = stateParam.argStateObj;
 		if( argStateObj && argStateObj.mainBodyPrefix && ast.id == "main" ) {
 			retArr.push(" ");
 			retArr.push(bodyPrefixVodooReplacementString);
