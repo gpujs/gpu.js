@@ -334,7 +334,7 @@ var GPU_jsToWebclgl = (function() {
 			//
 			// Float offset and result buffer setup
 			//
-			var floatOffset = paramObj.floatOffset || 65535.0;
+			var floatOffset = 1.0; //paramObj.floatOffset || 65535.0;
 			var resultBuffer = webCLGL.createBuffer(totalSize, "FLOAT", floatOffset);
 			
 			// 
@@ -342,7 +342,7 @@ var GPU_jsToWebclgl = (function() {
 			// 
 			var argBuffers = [];
 			for (var i=0; i<argNames.length; i++) {
-				argBuffers[i] = webCLGL.createBuffer(arguments[i].length, "FLOAT", offset);
+				argBuffers[i] = webCLGL.createBuffer(arguments[i].length, "FLOAT", floatOffset);
 				webCLGL.enqueueWriteBuffer(argBuffers[i], arguments[i]);
 			}
 			
