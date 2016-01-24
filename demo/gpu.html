@@ -97,17 +97,17 @@ var bench = function (method, iterations, args, context) {
     return execTime;
 };
 
-var _length = 2048;
-var a = [];
-var b = [];
-for(var n = 0; n < _length; n++) {
-    var randA = Math.random()*10000.0;
-    var randB = Math.random()*10000.0;
-    a.push(randA);
-    b.push(randB);
-}
-
 function f(mode) {
+    var _length = 2048;
+    var a = [];
+    var b = [];
+    for(var n = 0; n < _length; n++) {
+        var randA = Math.random()/100.0;
+        var randB = Math.random()/100.0;
+        a.push(randA);
+        b.push(randB);
+    }
+    
     var f = GPU(function(a, b) {
         return a[this.thread.x] + b[this.thread.x];
     }, {
@@ -120,7 +120,7 @@ function f(mode) {
 
 bench(function(){
     f('gpu');
-}, 10, [], this);
+}, 100, [], this);
 
 bench(function(){
     f('cpu');
