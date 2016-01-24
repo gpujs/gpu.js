@@ -52,7 +52,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		}
 		
 		// take out the function object, outside the main var declarations
-		var mainAst = mainObj.body[0].init;
+		var mainAst = mainObj.body[0].declarations[0].init;
 		
 		// Capture the original statment code
 		stateParam.customMainFunctionName = mainAst.id;
@@ -78,23 +78,27 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param stateParam   the compiled state tracking
 	///
 	/// @returns  the prased openclgl string array
-	function ast_generic(ast, retArr, stateParam ) {
-		switch(ast.type) {
-			case "FunctionDeclaration":
-				return ast_FunctionExpression(ast, retArr, stateParam);
-			case "ReturnStatement":
-				return ast_ReturnStatement(ast, retArr, stateParam);
-			case "Literal":
-				return ast_Literal(ast, retArr,  stateParam);
-			case "BinaryExpression":
-				return ast_BinaryExpression(ast, retArr,  stateParam);
-			case "Identifier":
-				return ast_IdentifierExpression(ast, retArr, stateParam);
-			case "MathExpression":
-				return ast_MathExpression(ast, retArr, stateParam);
+	function ast_generic(ast, retArr, stateParam) {
+		if(ast == null) {
+			Console.log("null AST");
+		} else {
+			switch(ast.type) {
+				case "FunctionExpression":
+					return ast_FunctionExpression(ast, retArr, stateParam);
+				case "ReturnStatement":
+					return ast_ReturnStatement(ast, retArr, stateParam);
+				case "Literal":
+					return ast_Literal(ast, retArr,  stateParam);
+				case "BinaryExpression":
+					return ast_BinaryExpression(ast, retArr,  stateParam);
+				case "Identifier":
+					return ast_IdentifierExpression(ast, retArr, stateParam);
+				case "AssignmentExpression":
+					return ast_AssignmentExpression(ast, retArr, stateParam);
+			}
+			
+			throw ast_errorOutput("Unknown ast type : "+ast.type, ast, stateParam);
 		}
-		
-		throw ast_errorOutput("Unknown ast type : "+ast.type, ast, stateParam);
 	}
 	
 	/// Prases the abstract syntax tree, to its named function
@@ -245,21 +249,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		return retArr;
 	}
 	
-	//-------------------------------------------------------------------
-	
-	/// Prases the abstract syntax tree, math expression
-	///
-	/// @param ast          the AST object to parse
-	/// @param retArr       return array string
-	/// @param stateParam   the compiled state tracking
-	///
-	/// @returns  the appened retArr
-	function ast_MathExpression(MathNode, retArr, stateParam) {
-		ast_generic(MathNode.expr, retArr, stateParam);
-		return retArr;
-	}
-	
-	/// Prases the abstract syntax tree, indentifier expression
+	/// Prases the abstract syntax tree, identifier expression
 	///
 	/// @param ast          the AST object to parse
 	/// @param retArr       return array string
@@ -272,8 +262,9 @@ var GPU_jsStrToWebclglStr = (function() {
 		}
 
 		retArr.push(idtNode.name);
+		return retArr;
 	}
-	/*
+	
 	/// Prases the abstract syntax tree, genericially to its respective function
 	///
 	/// @param ast   the AST object to parse
@@ -293,33 +284,63 @@ var GPU_jsStrToWebclglStr = (function() {
 		ast_generic(forNode.body, retArr);
 		return retArr;
 	}
-	*/
+	
 
-	/*
-	function ast_ExpressionStatement(expNode, retArr, stateParam) {
-		if (expNode.type != "ExpressionStatement") {
-			throw "error";
-		}
-		ast_generic(expNode.expression, retArr, stateParam);
+	function ast_AssignmentExpression(assNode, retArr, stateParam) {
+		ast_generic(assNode.left, retArr, stateParam);
+		retArr.push(assNode.operator);
+		ast_generic(assNode.right, retArr, stateParam);
+		return retArr;
+	}
+
+	function ast_EmptyStatement(eNode, retArr, stateParam) {
 		retArr.push(";");
 		return retArr;
 	}
 
-	function ast_AssignmentExpression(assNode, retArr, stateParam) {
-		if (assNode.type != "AssignmentExpression") {
-			throw "error";
+	function ast_BlockStatement(bNode, retArr, stateParam) {
+		retArr.push("{");
+		for (var i = 0; i < bNode.body.length; i++) {
+			ast_generic(bNode.body[i], retArr, stateParam);
 		}
-
-		ast_generic(assNode.left, retArr, stateParam);
-		retArr.push(assNode.operator);
-		ast_generic(assNode.right, retArr, stateParam);
+		retArr.push("}");
+		return retArr;
 	}
 
-	function ast_VariableDeclarator(vdNode, retArr, stateParam) {
-			
+	function ast_ExpressionStatement(esNode, retArr, stateParam) {
+		ast_generic(esNode.expression, retArr, stateParam);
+		retArr.push(";");
+		return retArr;
 	}
 
-	*/
+	function ast_VariableDeclaration(vardecNode, retArr, stateParam) {
+		retArr.push("float");
+		for (var i = 0; i < vardecNode.declarations.length; i++) {
+			if (i > 0) {
+				retArr.push(",");
+			}
+			ast_generic(vardecNode.declarations[i], retArr, stateParam);
+		}
+		retArr.push(";");
+		return retArr;
+	}
+
+	function ast_VariableDeclarator(ivardecNode, retArr, stateParam) {
+		ast_generic(ivardecNode.id, retArr, stateParam);
+		retArr.push("=");
+		ast_generic(ivardecNode.init, retArr, stateParam);
+		return retArr;
+	}
+
+	function ast_IfStatement(ifNode, retArr, stateParam) {
+		retArr.push("if(");
+		ast_generic(ifNode.test, retArr, stateParam);
+		retArr.push(")");
+		ast.generic(ifNode.consequent, retArr, stateParam);
+		retArr.push("else");
+		ast.generic(ifNode.alternate, retArr, stateParam);
+
+	}
 	
 	/// Does the conversion of the index to the vec2 reseved var name
 	///

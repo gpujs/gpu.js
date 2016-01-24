@@ -118,6 +118,7 @@ StringLiteral (\"{DoubleStringCharacter}*\")|(\'{SingleStringCharacter}*\')
 Statement
     : Block
     | VariableStatement
+    | AssignmentStatement
     | ExpressionStatement
     | ForStatement
     | IfStatement
@@ -149,10 +150,37 @@ VariableStatement
         {
             $$ = new VariableDeclaratorNode($2, null);
         }
-    | "VAR" AssignmentExpression ";"
+    | "VAR" Variable "=" MathExpression ";" 
         {
-            $$ = new VariableDeclaratorNode($2.left, $2.right);
+            $$ = new VariableDeclaratorNode("=", $1, $3);
         }
+    | "VAR" Variable "=" FunctionExpression ";" 
+        {
+            $$ = new VariableDeclaratorNode("=", $1, $3);
+        }
+    ;
+
+AssignmentStatement
+    : Variable "=" MathExpression ";" 
+        {
+            $$ = new AssignmentStatementNode("=", $1, $3);
+        }
+    | Variable "=" FunctionExpression ";" 
+        {
+            $$ = new AssignmentStatementNode("=", $1, $3);
+        }
+    | Variable AssignmentOperator MathExpression ";" 
+        {
+            $$ = new AssignmentStatementNode($2, $1, $3);
+        }
+    ;
+
+AssignmentOperator
+    : "*="
+    | "/="
+    | "%="
+    | "+="
+    | "-="
     ;
 
 ExpressionStatement
@@ -233,17 +261,11 @@ IfStatement
         }
     ;
 
-Expression
-    : AssignmentExpression
-    | MathExpression
-    | BooleanExpression
-    | StringLiteral
-    | "(" Expression ")"
-        {
-            $$ = $2;
-        }
+Literal
+    : NullLiteral
+    | BooleanLiteral
+    | NumericLiteral
     ;
-
 
 NullLiteral
     : "NULL"
@@ -270,41 +292,11 @@ NumericLiteral
         }
     ;
 
-StringLiteral
-    : "STRING_LITERAL"
-        {
-            $$ = new LiteralNode($1);
-        }
-    ;
-
 Variable
     : "IDENTIFIER"
         {
             $$ = new IdentifierNode($1);
         }
-    ;
-
-AssignmentExpression
-    : Variable "=" MathExpression
-        {
-            $$ = new AssignmentExpressionNode("=", $1, $3);
-        }
-    | Variable "=" FunctionExpression
-        {
-            $$ = new AssignmentExpressionNode("=", $1, $3);
-        }
-    | Variable AssignmentOperator MathExpression
-        {
-            $$ = new AssignmentExpressionNode($2, $1, $3);
-        }
-    ;
-
-AssignmentOperator
-    : "*="
-    | "/="
-    | "%="
-    | "+="
-    | "-="
     ;
 
 MatrixAccess
@@ -357,23 +349,24 @@ ContextAccessObject
         }
     ;
 
-MathExpression
-    : AdditiveExpression
+PrimaryExpression
+    : Literal
+    | MatrixAccess
+    | ContextAccess
+    | Variable
+    | "(" Expression ")"
         {
-            $$ = new MathExpressionNode($1);
+            $$ = %2;
         }
     ;
 
 PostfixMathExpression
-    : NumericLiteral
-    | Variable
-    | MatrixAccess
-    | ContextAccess
-    | Variable "++"
+    : PrimaryExpression
+    | PrimaryExpression "++"
         {
             $$ = new UpdateExpressionNode("++", $1, false);
         }
-    | Variable "--"
+    | PrimaryExpression "--"
         {
             $$ = new UpdateExpressionNode("--", $1, false);
         }
@@ -405,15 +398,15 @@ UnaryMathExpr
 
 MultiplicativeExpression
     : UnaryMathExpression
-    | MultiplicativeExpression "*" UnaryExpression
+    | MultiplicativeExpression "*" UnaryMathExpression
         {
             $$ = new BinaryExpressionNode("*", $1, $3);
         }
-    | MultiplicativeExpression "/" UnaryExpression
+    | MultiplicativeExpression "/" UnaryMathExpression
         {
             $$ = new BinaryExpressionNode("/", $1, $3);
         }
-    | MultiplicativeExpression "%" UnaryExpression
+    | MultiplicativeExpression "%" UnaryMathExpression
         {
             $$ = new BinaryExpressionNode("%", $1, $3);
         }
@@ -431,22 +424,44 @@ AdditiveExpression
         }
     ;
 
-RelationalExpression
+MathExpression
     : AdditiveExpression
-    | UnaryBoolExpression
-    | RelationalExpression "<" AdditiveExpression
+        {
+            $$ = new MathExpressionNode($1);
+        }
+    ;
+
+UnaryBoolExpression
+    : "!" UnaryBoolExpression
+        {
+            $$ = new UnaryExpressionNode("!", true, $2);
+        }
+    | "!" "(" BoolExpression ")"
+        {
+            $$ = new UnaryExpressionNode("!", true, $3);
+        }
+    ;
+
+LowLevelBoolExpression 
+    : UnaryBoolExpression
+    | MathExpression
+    ;
+
+RelationalExpression
+    : LowLevelBoolExpression
+    | RelationalExpression "<" UnaryBoolExpression
         {
             $$ = new BinaryExpressionNode("<", $1, $3);
         }
-    | RelationalExpression ">" AdditiveExpression
+    | RelationalExpression ">" UnaryBoolExpression
         {
             $$ = new BinaryExpressionNode(">", $1, $3);
         }
-    | RelationalExpression "<=" AdditiveExpression
+    | RelationalExpression "<=" UnaryBoolExpression
         {
             $$ = new BinaryExpressionNode("<=", $1, $3);
         }
-    | RelationalExpression ">=" AdditiveExpression
+    | RelationalExpression ">=" UnaryBoolExpression
         {
             $$ = new BinaryExpressionNode(">=", $1, $3);
         }
@@ -474,7 +489,7 @@ EqualityExpression
 
 LogicalANDExpression
     : EqualityExpression
-    | LogicalANDExpression "&&" BitwiseORExpression
+    | LogicalANDExpression "&&" EqualityExpression
         {
             $$ = new LogicalExpressionNode("&&", $1, $3);
         }
@@ -488,13 +503,15 @@ LogicalORExpression
         }
     ;
 
-UnaryBoolExpr
-    : "!" UnaryBoolExpr
-        {
-            $$ = new UnaryExpressionNode("!", true, $2);
-        }
-    | BooleanLiteral
-    | Variable
+BoolExpression
+    : LogicalORExpression
+    ;
+
+Expression
+    : BoolExpression
+    	{
+    		$$ = new ExpressionNode($1);
+    	}
     ;
 
 Program
@@ -652,8 +669,8 @@ function MathExpressionNode(expr) {
     this.expr = expr;
 }
 
-function BoolExpressionNode(expr) {
-    this.type = "BoolExpression";
+function ExpressionNode(expr) {
+    this.type = "Expression";
     this.expr = expr;
 }
 
@@ -691,8 +708,8 @@ function BinaryExpressionNode(operator, left, right) {
 	this.right = right;
 }
 
-function AssignmentExpressionNode(operator, left, right) {
-	this.type = "AssignmentExpression";
+function AssignmentStatementNode(operator, left, right) {
+	this.type = "AssignmentStatement";
 	this.operator = operator;
 	this.left = left;
 	this.right = right;
@@ -744,7 +761,7 @@ parser.ast.BlockStatementNode = BlockStatementNode;
 parser.ast.ExpressionStatementNode = ExpressionStatementNode;
 parser.ast.IfStatementNode = IfStatementNode;
 parser.ast.ForStatementNode = ForStatementNode;
-parser.ast.BoolExpressionNode = BoolExpressionNode;
+parser.ast.ExpressionNode = ExpressionNode;
 parser.ast.MathExpressionNode = MathExpressionNode;
 parser.ast.MatrixAccessNode = MatrixAccessNode;
 parser.ast.BreakStatementNode = BreakStatementNode;
@@ -755,7 +772,7 @@ parser.ast.FunctionDeclarationNode = FunctionDeclarationNode;
 parser.ast.VariableDeclaratorNode = VariableDeclaratorNode;
 parser.ast.UnaryExpressionNode = UnaryExpressionNode;
 parser.ast.BinaryExpressionNode = BinaryExpressionNode;
-parser.ast.AssignmentExpressionNode = AssignmentExpressionNode;
+parser.ast.AssignmentStatementNode = AssignmentStatementNode;
 parser.ast.UpdateExpressionNode = UpdateExpressionNode;
 parser.ast.LogicalExpressionNode = LogicalExpressionNode;
 parser.ast.IdentifierNode = IdentifierNode;
