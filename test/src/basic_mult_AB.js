@@ -1,9 +1,9 @@
 QUnit.test( "basic_sum_AB (auto)", function( assert ) {
 	var f = GPU(function(a, b) {
 		var sum = 0;
-		for (var k=0; k<3; k++) {
-			sum += a[this.thread.y][k] * b[k][this.thread.x];
-		}
+		sum += a[this.thread.y][0] * b[0][this.thread.x];
+		sum += a[this.thread.y][1] * b[1][this.thread.x];
+		sum += a[this.thread.y][2] * b[2][this.thread.x];
 		return sum;
 	}, {
 		thread : [3, 3],
