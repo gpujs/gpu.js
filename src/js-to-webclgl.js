@@ -80,7 +80,7 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @returns  the prased openclgl string array
 	function ast_generic(ast, retArr, stateParam) {
 		if(ast == null) {
-			Console.log("null AST");
+			throw ast_errorOutput("NULL ast", ast, stateParam);
 		} else {
 			switch(ast.type) {
 				case "FunctionExpression":
@@ -125,6 +125,8 @@ var GPU_jsStrToWebclglStr = (function() {
 					return ast_LogicalExpression(ast, retArr, stateParam);
 				case "MemberExpression":
 					return ast_MemberExpression(ast, retArr, stateParam);
+				case "CallExpression": 
+					return ast_CallExpression(ast, retArr, stateParam);
 			}
 			
 			throw ast_errorOutput("Unknown ast type : "+ast.type, ast, stateParam);
@@ -184,7 +186,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		
 		// Argument state obj main prefix injection
 		var argStateObj = stateParam.argStateObj;
-		if( argStateObj && argStateObj.mainBodyPrefix && ast.id == "main" ) {
+		if( argStateObj && ast.id == "main" ) {
 			retArr.push(" ");
 			retArr.push(bodyPrefixVodooReplacementString);
 			retArr.push(" ");
@@ -282,10 +284,24 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @returns  the appened retArr
 	function ast_IdentifierExpression(idtNode, retArr, stateParam) {
 		if (idtNode.type != "Identifier") {
-			throw "error";
+			throw ast_errorOutput(
+				"IdentifierExpression - not an Identifier",
+				ast, stateParam
+			);
+		}
+		
+		if( 
+			idtNode.name == "gpu_threadX" || 
+			idtNode.name == "gpu_threadY" || 
+			idtNode.name == "gpu_threadZ" 
+		) {
+			retArr.push(
+				get_2dIndex_vec2Name( stateParam, idtNode.name.slice( idtNode.name.length - 1 ), 0 )
+			);
+		} else {
+			retArr.push(idtNode.name);
 		}
 
-		retArr.push(idtNode.name);
 		return retArr;
 	}
 	
@@ -347,7 +363,7 @@ var GPU_jsStrToWebclglStr = (function() {
 	}
 
 	function ast_VariableDeclaration(vardecNode, retArr, stateParam) {
-		retArr.push("float");
+		retArr.push("float ");
 		for (var i = 0; i < vardecNode.declarations.length; i++) {
 			if (i > 0) {
 				retArr.push(",");
@@ -359,6 +375,7 @@ var GPU_jsStrToWebclglStr = (function() {
 	}
 
 	function ast_VariableDeclarator(ivardecNode, retArr, stateParam) {
+		
 		ast_generic(ivardecNode.id, retArr, stateParam);
 		if (ivardecNode.init != null) {
 			retArr.push("=");
@@ -449,6 +466,35 @@ var GPU_jsStrToWebclglStr = (function() {
 		return retArr;
 	}
 	
+	/// Prases the abstract syntax tree, binary expression
+	///
+	/// @param ast          the AST object to parse
+	/// @param retArr       return array string
+	/// @param stateParam   the compiled state tracking
+	///
+	/// @returns  the appened retArr
+	function ast_CallExpression(ast, retArr, stateParam) {
+		var mathPrefix = "gpu_math_";
+		var mathPrefixLen = mathPrefix.length;
+		
+		var fName = ast.callee.name;
+		if( fName.slice(0,mathPrefixLen) == mathPrefix ) {
+			var mathSuffix = fName.slice(mathPrefixLen);
+			
+			retArr.push(mathSuffix);
+			retArr.push("(");
+			retArr.push(")");
+		} else {
+			throw ast_errorOutput(
+				"Unknown CallExpression : "+mathPrefix,
+				ast, stateParam
+			);
+		}
+		
+		return retArr;
+	}
+	
+	
 	/// Does the conversion of the index to the vec2 reseved var name
 	///
 	/// This is used to substitue the this.thread.X/Y calls to the respective vector,
@@ -460,15 +506,15 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param  index      offset index, if used
 	///
 	/// @returns  the vector name to use
-	function get_2dIndex_vec2Name( stateObj, XY, index ) {
+	function get_2dIndex_vec2Name( stateObj, XY, idx ) {
 		var indexFlag = stateObj["used_2dIndex_"+XY] = stateObj["used_2dIndex_"+XY] || {};
-		indexFlag[index] = true;
+		indexFlag[idx] = true;
 		
-		var ret = stateObj.reservedNamespace+"_2d_"+XY+"_";
+		var ret = stateObj.reservedNamespace+"2d_"+XY+"";
 		if(idx >= 0) {
-			ret += "p"+idx;
+			ret += "_p"+idx;
 		} else {
-			ret += "n"+idx;
+			ret += "_n"+idx;
 		}
 		return ret;
 	}
@@ -484,17 +530,46 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param  index      offset index, if used
 	///
 	/// @returns  the vector name to use
-	function get_3dIndex_vec3Name( stateObj, XYZ, index ) {
+	function get_3dIndex_vec3Name( stateObj, XYZ, idx ) {
 		var indexFlag = stateObj["used_3dIndex_"+XYZ] = stateObj["used_3dIndex_"+XYZ] || {};
-		indexFlag[index] = true;
+		indexFlag[idx] = true;
 		
-		var ret = stateObj.reservedNamespace+"_3d_"+XYZ+"_";
+		var ret = stateObj.reservedNamespace+"3d_"+XYZ+"";
 		if(idx >= 0) {
-			ret += "p"+idx;
+			ret += "_p"+idx;
 		} else {
-			ret += "n"+idx;
+			ret += "_n"+idx;
 		}
 		return ret;
+	}
+	
+	/// Raw opengl header injections
+	///
+	/// @param   funcStr       original function string
+	/// @param   paramObj      prarameter state object
+	/// @param   _threadDim    thread dimension config
+	/// @param   _blockDim     block dimension config
+	/// @param   argStateObj   calling argument state object
+	///
+	/// @returns webCLGL competible function string, to be injected
+	function generateBoilerHeader( funcStr, _threadDim, _blockDim, stateObj ) {
+		var header = ""+
+			"float round(float inFloat) { \n"+
+				"return floor(inFloat + 0.4); "+
+			"} \n"+
+			"float get_global_index(vec2 vecID) { \n"+
+				"float ts = 1.0/(uBufferWidth-1.0); "+
+				
+				"float column = vecID.x / ts; "+
+				"float row = round(vecID.y / ts); "+
+				
+				"return round((row*uBufferWidth/uGeometryLength) + column/uGeometryLength); "+
+			"}\n"+
+			"float get_global_index() {\n "+
+				"return get_global_index( get_global_id() );\n "+
+			"}\n ";
+			
+		return header;
 	}
 	
 	/// Boiler plate code generation, this is to be injected inside main function. 
@@ -512,16 +587,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		//
 		// Basic boiler plate code
 		//
-		var boilerplate = "" + 
-			"vec2 _vecId_ = get_global_id(); "+
-			"float _threadDimX_ = " + ensureFloat(argStateObj.threadDimX) +"; "+
-			"float _threadDimY_ = " + ensureFloat(argStateObj.threadDimY) +"; "+
-			"float _threadDimZ_ = " + ensureFloat(argStateObj.threadDimZ) +"; "+
-			"float _id_ = ( _vecId_.x * " + ensureFloat(argStateObj.result_w) + ") + " +
-				ensureFloat(argStateObj.result_w) + " * (_vecId_.y * " + ensureFloat(argStateObj.result_h) + "); "+
-			"float _threadZ_ = round(_id_ / (_threadDimX_ * _threadDimY_)); "+
-			"float _threadY_ = round((_id_ - _threadZ_ * _threadDimY_) / _threadDimX_); "+
-			"float _threadX_ = _id_ - _threadDimX_ * (_threadY_ + _threadDimY_ * _threadZ_); ";
+		var boilerplate = "";
 		
 		//
 		// 2D vector code at index, for X and Y respectively
@@ -529,7 +595,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		function _indexToVectorCode_2d_atIdx( XY, idx ) {
 			var vecName = get_2dIndex_vec2Name( stateObj, XY, idx );
 			
-			var indexStr = "_thread"+XY+"_";
+			var indexStr = "";
 			if( idx > 0 ) {
 				indexStr += "+ "+ensureFloat(idx);
 				indexStr = "(" + indexStr + ")";
@@ -539,9 +605,7 @@ var GPU_jsStrToWebclglStr = (function() {
 			}
 			
 			var ret = ""+
-				"vec2 "+vecName+"; "+
-				vecName+".y = mod( "+indexStr+", " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_h)+"; "+
-				vecName+".x = round( "+indexStr+" / " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_w)+"; ";
+				"vec2 "+vecName+" = get_global_id( get_global_index() "+indexStr+" ); ";//+
 			
 			return ret;
 		}
@@ -562,22 +626,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		//------------------------------------------------------------------
 		function _indexToVectorCode_3d_atIdx( XYZ, idx ) {
 			var vecName = get_3dIndex_vec2Name( stateObj, XYZ, idx );
-			
-			var indexStr = "_thread"+XY+"_";
-			if( idx > 0 ) {
-				indexStr += "+ "+ensureFloat(idx);
-				indexStr = "(" + indexStr + ")";
-			} else if( idx < 0 ) {
-				indexStr += "- "+ensureFloat(idx);
-				indexStr = "(" + indexStr + ")";
-			}
-			
-			var ret = ""+
-				"vec2 "+vecName+"; "+
-				vecName+".y = mod( "+indexStr+", " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_h)+"; "+
-				vecName+".x = round( "+indexStr+" / " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_w)+"; ";
-			
-			return ret;
+			throw "Not finished";
 		}
 		function _indexToVectorCode_3d_allIdx( XYZ ) {
 			if( stateObj["used_3dIndex_"+XYZ] == null ) {
@@ -618,6 +667,8 @@ var GPU_jsStrToWebclglStr = (function() {
 		
 		// Boiler plate code, only if argStateObj is passed
 		if( argStateObj != null ) {
+			argStateObj.webgl_header = generateBoilerHeader( funcStr, _threadDim, _blockDim, stateObj );
+			
 			var mainBodyPrefix = generateBoilerCode( funcStr, _threadDim, _blockDim, stateObj );
 			outputStr = outputStr.replace(bodyPrefixVodooReplacementString, mainBodyPrefix);
 		} else {
@@ -748,11 +799,7 @@ var GPU_jsToWebclgl = (function() {
 			// Argument State obj init
 			//----------------------------------
 			var argStateObj = {
-				result_w : resultBuffer.W,
-				result_h : resultBuffer.H,
-				threadDimX : threadDim[0],
-				threadDimY : threadDim[1],
-				threadDimZ : threadDim[2]
+				webgl_header : ""
 			};
 			
 			//
@@ -760,7 +807,7 @@ var GPU_jsToWebclgl = (function() {
 			//
 			var argBuffers = [];
 			for (var i=0; i<argNames.length; i++) {
-				argBuffers[i] = webCLGL.createBuffer(arguments[i].length, "FLOAT", floatOffset);
+				argBuffers[i] = webCLGL.createBuffer(totalSize, "FLOAT", floatOffset);
 				webCLGL.enqueueWriteBuffer(argBuffers[i], arguments[i]);
 			}
 			
@@ -783,7 +830,7 @@ var GPU_jsToWebclgl = (function() {
 			// @TODO: Consider precreating the object as optimization?, check if this crashses shit
 			//
 			var webclglStr = GPU_jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj, argStateObj );
-			var kernel = webCLGL.createKernel(webclglStr);
+			var kernel = webCLGL.createKernel(webclglStr, argStateObj.webgl_header);
 			
 			//
 			// Link up the argument and result buffer
@@ -802,12 +849,12 @@ var GPU_jsToWebclgl = (function() {
 			// @TODO : Async support????
 			//
 			var result = webCLGL.enqueueReadBuffer_Float(resultBuffer);
-			result = Array.prototype.slice.call(result[0]);
+			result = Array.prototype.slice.call(result[0], 0, totalSize);
 			
-			if (_threadDim.length == 1) {
-				return result[0];
+			if (totalSize == 1) { //_threadDim.length == 1) {
+				return result[0][0];
 			} else if (_threadDim.length == 2) {
-				//ret = ret[0];
+				return result[0];
 			}
 			
 			return result;
