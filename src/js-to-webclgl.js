@@ -125,6 +125,8 @@ var GPU_jsStrToWebclglStr = (function() {
 					return ast_LogicalExpression(ast, retArr, stateParam);
 				case "MemberExpression":
 					return ast_MemberExpression(ast, retArr, stateParam);
+				case "CallExpression": 
+					return ast_CallExpression(ast, retArr, stateParam);
 			}
 			
 			throw ast_errorOutput("Unknown ast type : "+ast.type, ast, stateParam);
@@ -287,8 +289,19 @@ var GPU_jsStrToWebclglStr = (function() {
 				ast, stateParam
 			);
 		}
+		
+		if( 
+			idtNode.name == "gpu_threadX" || 
+			idtNode.name == "gpu_threadY" || 
+			idtNode.name == "gpu_threadZ" 
+		) {
+			retArr.push(
+				get_2dIndex_vec2Name( stateParam, idtNode.name.slice( idtNode.name.length - 1 ), 0 )
+			);
+		} else {
+			retArr.push(idtNode.name);
+		}
 
-		retArr.push(idtNode.name);
 		return retArr;
 	}
 	
@@ -350,7 +363,7 @@ var GPU_jsStrToWebclglStr = (function() {
 	}
 
 	function ast_VariableDeclaration(vardecNode, retArr, stateParam) {
-		retArr.push("float");
+		retArr.push("float ");
 		for (var i = 0; i < vardecNode.declarations.length; i++) {
 			if (i > 0) {
 				retArr.push(",");
@@ -362,9 +375,12 @@ var GPU_jsStrToWebclglStr = (function() {
 	}
 
 	function ast_VariableDeclarator(ivardecNode, retArr, stateParam) {
+		
 		ast_generic(ivardecNode.id, retArr, stateParam);
-		retArr.push("=");
-		ast_generic(ivardecNode.init, retArr, stateParam);
+		if (ivardecNode.init != null) {
+			retArr.push("=");
+			ast_generic(ivardecNode.init, retArr, stateParam);
+		}
 		return retArr;
 	}
 
@@ -449,6 +465,35 @@ var GPU_jsStrToWebclglStr = (function() {
 		}
 		return retArr;
 	}
+	
+	/// Prases the abstract syntax tree, binary expression
+	///
+	/// @param ast          the AST object to parse
+	/// @param retArr       return array string
+	/// @param stateParam   the compiled state tracking
+	///
+	/// @returns  the appened retArr
+	function ast_CallExpression(ast, retArr, stateParam) {
+		var mathPrefix = "gpu_math_";
+		var mathPrefixLen = mathPrefix.length;
+		
+		var fName = ast.callee.name;
+		if( fName.slice(0,mathPrefixLen) == mathPrefix ) {
+			var mathSuffix = fName.slice(mathPrefixLen);
+			
+			retArr.push(mathSuffix);
+			retArr.push("(");
+			retArr.push(")");
+		} else {
+			throw ast_errorOutput(
+				"Unknown CallExpression : "+mathPrefix,
+				ast, stateParam
+			);
+		}
+		
+		return retArr;
+	}
+	
 	
 	/// Does the conversion of the index to the vec2 reseved var name
 	///
@@ -550,7 +595,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		function _indexToVectorCode_2d_atIdx( XY, idx ) {
 			var vecName = get_2dIndex_vec2Name( stateObj, XY, idx );
 			
-			var indexStr = "_thread"+XY+"_";
+			var indexStr = "";
 			if( idx > 0 ) {
 				indexStr += "+ "+ensureFloat(idx);
 				indexStr = "(" + indexStr + ")";
