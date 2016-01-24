@@ -483,6 +483,13 @@ var GPU_jsStrToWebclglStr = (function() {
 			
 			retArr.push(mathSuffix);
 			retArr.push("(");
+			
+			if(ast.arguments) {
+				for( var i = 0; i < ast.arguments.length; ++i ) {
+					ast_generic(ast.arguments[i], retArr, stateParam);
+				}
+			}
+			
 			retArr.push(")");
 		} else {
 			throw ast_errorOutput(
