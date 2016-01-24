@@ -31,6 +31,7 @@ QUnit.test( "basic_return (CPU)", function() {
 	basic_return("cpu");
 });
 
+/*
 function basic_booleanBranch( mode ) {
 	var f = GPU(function() {
 		var ret = 0.0;
@@ -61,3 +62,4 @@ QUnit.test( "basic_booleanBranch (GPU)", function() {
 QUnit.test( "basic_booleanBranch (CPU)", function() {
 	basic_booleanBranch("cpu");
 });
+*/

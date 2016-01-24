@@ -52,7 +52,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		}
 		
 		// take out the function object, outside the main var declarations
-		var mainAst = mainObj.body[0].init;
+		var mainAst = mainObj.body[0].declarations[0].init;
 		
 		// Capture the original statment code
 		stateParam.customMainFunctionName = mainAst.id;
@@ -78,25 +78,57 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param stateParam   the compiled state tracking
 	///
 	/// @returns  the prased openclgl string array
-	function ast_generic(ast, retArr, stateParam ) {
-		switch(ast.type) {
-			case "FunctionDeclaration":
-				return ast_FunctionExpression(ast, retArr, stateParam);
-			case "ReturnStatement":
-				return ast_ReturnStatement(ast, retArr, stateParam);
-			case "Literal":
-				return ast_Literal(ast, retArr,  stateParam);
-			case "BinaryExpression":
-				return ast_BinaryExpression(ast, retArr,  stateParam);
-			case "Identifier":
-				return ast_IdentifierExpression(ast, retArr, stateParam);
-			case "MathExpression":
-				return ast_MathExpression(ast, retArr, stateParam);
-			case "MatrixAccess":
-				return ast_MatrixAccess(ast, retArr, stateParam);
+	function ast_generic(ast, retArr, stateParam) {
+		if(ast == null) {
+			throw ast_errorOutput("NULL ast", ast, stateParam);
+		} else {
+			switch(ast.type) {
+				case "FunctionExpression":
+					return ast_FunctionExpression(ast, retArr, stateParam);
+				case "ReturnStatement":
+					return ast_ReturnStatement(ast, retArr, stateParam);
+				case "Literal":
+					return ast_Literal(ast, retArr,  stateParam);
+				case "BinaryExpression":
+					return ast_BinaryExpression(ast, retArr,  stateParam);
+				case "Identifier":
+					return ast_IdentifierExpression(ast, retArr, stateParam);
+				case "AssignmentExpression":
+					return ast_AssignmentExpression(ast, retArr, stateParam);
+				case "ExpressionStatement":
+					return ast_ExpressionStatement(ast, retArr, stateParam);
+				case "EmptyStatement":
+					return ast_EmptyStatement(ast, retArr, stateParam);
+				case "BlockStatement":
+					return ast_BlockStatement(ast, retArr, stateParam);
+				case "IfStatement":
+					return ast_IfStatement(ast, retArr, stateParam);
+				case "BreakStatement":
+					return ast_BreakStatement(ast, retArr, stateParam);
+				case "ContinueStatement":
+					return ast_ContinueStatement(ast, retArr, stateParam);
+				case "ForStatement":
+					return ast_ForStatement(ast, retArr, stateParam);
+				case "VariableDeclaration":
+					return ast_VariableDeclaration(ast, retArr, stateParam);
+				case "VariableDeclarator":
+					return ast_VariableDeclarator(ast, retArr, stateParam);
+				case "ThisExpression":
+					return ast_ThisExpression(ast, retArr, stateParam);
+				case "SequenceExpression":
+					return ast_SequenceExpression(ast, retArr, stateParam);
+				case "UnaryExpression":
+					return ast_UnaryExpression(ast, retArr, stateParam);
+				case "UpdateExpression":
+					return ast_UpdateExpression(ast, retArr, stateParam);
+				case "LogicalExpression":
+					return ast_LogicalExpression(ast, retArr, stateParam);
+				case "MemberExpression":
+					return ast_MemberExpression(ast, retArr, stateParam);
+			}
+			
+			throw ast_errorOutput("Unknown ast type : "+ast.type, ast, stateParam);
 		}
-		
-		throw ast_errorOutput("Unknown ast type : "+ast.type, ast, stateParam);
 	}
 	
 	/// Prases the abstract syntax tree, to its named function
@@ -226,90 +258,40 @@ var GPU_jsStrToWebclglStr = (function() {
 	///
 	/// @returns  the appened retArr
 	function ast_BinaryExpression(ast, retArr, stateParam) {
-		if(
-			ast.operator == "+" ||
-			ast.operator == "-" ||
-			ast.operator == "*" ||
-			ast.operator == "/"
-		) {
+		if (ast.operator == "%") {
+			retArr.push("mod(");
 			ast_generic(ast.left, retArr, stateParam);
-			retArr.push( " "+ast.operator+" " );
+			retArr.push(",");
 			ast_generic(ast.right, retArr, stateParam);
-		} else if(ast.operator == "%") {
+			retArr.push(")");
+		} else {
 			ast_generic(ast.left, retArr, stateParam);
-			retArr.push( " , " );
+			retArr.push(ast.operator);
 			ast_generic(ast.right, retArr, stateParam);
-			retArr.push( ")" );
-		} else {
-			throw ast_errorOutput("Unsupported BinaryExpression: "+ast.operator, ast, stateParam);
 		}
-		
+
 		return retArr;
 	}
 	
-	/// Prases the abstract syntax tree, binary expression
+	/// Prases the abstract syntax tree, identifier expression
 	///
 	/// @param ast          the AST object to parse
 	/// @param retArr       return array string
 	/// @param stateParam   the compiled state tracking
 	///
 	/// @returns  the appened retArr
-	function ast_MatrixAccess(ast, retArr, stateParam) {
-		if( !ast.name ) {
-			throw ast_errorOutput("MatrixAccess : Missing name parameter", ast, stateParam);
+	function ast_IdentifierExpression(idtNode, retArr, stateParam) {
+		if (idtNode.type != "Identifier") {
+			throw ast_errorOutput(
+				"IdentifierExpression - not an Identifier",
+				ast, stateParam
+			);
 		}
-		
-		ast_generic(ast.name, retArr, stateParam);
-		for( var i = 0; i < ast.indexes.length; ++i ) {
-			retArr.push("[");
-			ast_generic(ast.indexes[i], retArr, stateParam);
-			retArr.push("]");
-		}
-		
-		//throw ast_errorOutput("MatrixAccess", ast, stateParam);
+
+		retArr.push(idtNode.name);
 		return retArr;
 	}
 	
-	
-	
-	//-------------------------------------------------------------------
-	
-	/// Prases the abstract syntax tree, math expression
-	///
-	/// @param ast          the AST object to parse
-	/// @param retArr       return array string
-	/// @param stateParam   the compiled state tracking
-	///
-	/// @returns  the appened retArr
-	function ast_MathExpression(ast, retArr, stateParam) {
-		ast_generic(ast.expr, retArr, stateParam);
-		return retArr;
-	}
-	
-	/// Prases the abstract syntax tree, indentifier expression
-	///
-	/// @param ast          the AST object to parse
-	/// @param retArr       return array string
-	/// @param stateParam   the compiled state tracking
-	///
-	/// @returns  the appened retArr
-	function ast_IdentifierExpression(ast, retArr, stateParam) {
-		if (ast.type != "Identifier") {
-			throw ast_errorOutput("IdentifierExpression", ast, stateParam);
-		}
-		
-		// Reserved namespace overwrites
-		if(ast.name == "gpu_threadX" ) {
-			retArr.push( get_2dIndex_vec2Name(stateParam, "X", 0) );
-		} else if(ast.name == "gpu_threadY" ) {
-			retArr.push( get_2dIndex_vec2Name(stateParam, "Y", 0) );
-		} else {
-			//Default
-			retArr.push(ast.name);
-		}
-		
-	}
-	/*
 	/// Prases the abstract syntax tree, genericially to its respective function
 	///
 	/// @param ast   the AST object to parse
@@ -329,33 +311,144 @@ var GPU_jsStrToWebclglStr = (function() {
 		ast_generic(forNode.body, retArr);
 		return retArr;
 	}
-	*/
 
-	/*
-	function ast_ExpressionStatement(expNode, retArr, stateParam) {
-		if (expNode.type != "ExpressionStatement") {
-			throw "error";
+	function ast_AssignmentExpression(assNode, retArr, stateParam) {
+		if(assNode.operator == "%=") {
+			ast_generic(assNode.left, retArr, stateParam);
+			retArr.push("=");
+			retArr.push("mod(");
+			ast_generic(assNode.left, retArr, stateParam);
+			retArr.push(",");
+			ast_generic(assNode.right, retArr, stateParam);
+			retArr.push(")");
+		} else {
+			ast_generic(assNode.left, retArr, stateParam);
+			retArr.push(assNode.operator);
+			ast_generic(assNode.right, retArr, stateParam);
+			return retArr;
 		}
-		ast_generic(expNode.expression, retArr, stateParam);
+	}
+
+	function ast_EmptyStatement(eNode, retArr, stateParam) {
 		retArr.push(";");
 		return retArr;
 	}
 
-	function ast_AssignmentExpression(assNode, retArr, stateParam) {
-		if (assNode.type != "AssignmentExpression") {
-			throw "error";
+	function ast_BlockStatement(bNode, retArr, stateParam) {
+		retArr.push("{");
+		for (var i = 0; i < bNode.body.length; i++) {
+			ast_generic(bNode.body[i], retArr, stateParam);
+		}
+		retArr.push("}");
+		return retArr;
+	}
+
+	function ast_ExpressionStatement(esNode, retArr, stateParam) {
+		ast_generic(esNode.expression, retArr, stateParam);
+		retArr.push(";");
+		return retArr;
+	}
+
+	function ast_VariableDeclaration(vardecNode, retArr, stateParam) {
+		retArr.push("float");
+		for (var i = 0; i < vardecNode.declarations.length; i++) {
+			if (i > 0) {
+				retArr.push(",");
+			}
+			ast_generic(vardecNode.declarations[i], retArr, stateParam);
+		}
+		retArr.push(";");
+		return retArr;
+	}
+
+	function ast_VariableDeclarator(ivardecNode, retArr, stateParam) {
+		ast_generic(ivardecNode.id, retArr, stateParam);
+		retArr.push("=");
+		ast_generic(ivardecNode.init, retArr, stateParam);
+		return retArr;
+	}
+
+	function ast_IfStatement(ifNode, retArr, stateParam) {
+		retArr.push("if(");
+		ast_generic(ifNode.test, retArr, stateParam);
+		retArr.push(")");
+		ast_generic(ifNode.consequent, retArr, stateParam);
+		retArr.push("else");
+		ast_generic(ifNode.alternate, retArr, stateParam);
+		return retArr;
+
+	}
+
+	function ast_Break(brNode, retArr, stateParam) {
+		retArr.push("break;");
+		return retArr;
+	}
+
+	function ast_Continue(crNode, retArr, stateParam) {
+		retArr.push("continue;");
+		return retArr;
+	}
+
+	function ast_LogicalExpression(logNode, retArr, stateParam) {
+		ast_generic(logNode.left, retArr, stateParam);
+		ast_generic(logNode.operator, retArr, stateParam);
+		ast_generic(logNode.right, retArr, stateParam);
+		return retArr;
+	}
+
+	function ast_UpdateExpression(uNode, retArr, stateParam) {
+		if(uNode.prefix) {
+			retArr.push(uNode.operator);
+			ast_generic(uNode.argument, retArr, stateParam);
+		} else {
+			ast_generic(uNode.argument, retArr, stateParam);
+			retArr.push(uNode.operator);
 		}
 
-		ast_generic(assNode.left, retArr, stateParam);
-		retArr.push(assNode.operator);
-		ast_generic(assNode.right, retArr, stateParam);
+		return retArr;
 	}
 
-	function ast_VariableDeclarator(vdNode, retArr, stateParam) {
-			
+	function ast_UnaryExpression(uNode, retArr, stateParam) {
+		if(uNode.prefix) {
+			retArr.push(uNode.operator);
+			ast_generic(uNode.argument, retArr, stateParam);
+		} else {
+			ast_generic(uNode.argument, retArr, stateParam);
+			retArr.push(uNode.operator);
+		}
+
+		return retArr;
 	}
 
-	*/
+	function ast_ThisExpression(tNode, retArr, stateParam) {
+		retArr.push("this");
+
+		return retArr;
+	}
+
+	function ast_MemberExpression(mNode, retArr, stateParam) {
+		if(mNode.computed) {
+			ast_generic(mNode.object, retArr, stateParam);
+			retArr.push("[");
+			ast_generic(mNode.property, retArr, stateParam);
+			retArr.push("]");
+		} else {
+			ast_generic(mNode.object, retArr, stateParam);
+			retArr.push(".");
+			ast_generic(mNode.property, retArr, stateParam);
+		}
+		return retArr;
+	}
+
+	function ast_SequenceExpression(sNode, retArr, stateParam) {
+		for (var i = 0; i < sNode.expressions.length; i++) {
+			if (i > 0) {
+				retArr.push(",");
+			}
+			ast_generic(sNode.expressions, retArr, stateParam);
+		}
+		return retArr;
+	}
 	
 	/// Does the conversion of the index to the vec2 reseved var name
 	///
@@ -467,7 +560,7 @@ var GPU_jsStrToWebclglStr = (function() {
 			}
 			
 			var ret = ""+
-				"vec2 "+vecName+" = get_global_id( get_global_index() ); ";//+
+				"vec2 "+vecName+" = get_global_id( get_global_index() "+indexStr+" ); ";//+
 			
 			return ret;
 		}
@@ -488,25 +581,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		//------------------------------------------------------------------
 		function _indexToVectorCode_3d_atIdx( XYZ, idx ) {
 			var vecName = get_3dIndex_vec2Name( stateObj, XYZ, idx );
-			
-			var indexStr = "_thread"+XY+"_";
-			if( idx > 0 ) {
-				indexStr += "+ "+ensureFloat(idx);
-				indexStr = "(" + indexStr + ")";
-			} else if( idx < 0 ) {
-				indexStr += "- "+ensureFloat(idx);
-				indexStr = "(" + indexStr + ")";
-			}
-			
 			throw "Not finished";
-			
-			var ret = ""+
-				"vec2 "+vecName+"; "+
-				vecName+".y = mod( "+indexStr+", " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_h)+"; "+
-				vecName+".x = ( "+indexStr+" / " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_w)+"; "+
-				vecName+".x = sign("+vecName+".x) * floor(abs("+vecName+".x)+0.5); ";
-			
-			return ret;
 		}
 		function _indexToVectorCode_3d_allIdx( XYZ ) {
 			if( stateObj["used_3dIndex_"+XYZ] == null ) {
