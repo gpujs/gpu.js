@@ -78,21 +78,22 @@ function benchmarkCode(mode) {
 }
 
 function runBenchmark() {
-	var execTime;
 	$('.run_btn').prop('disabled', true);
 	
+	$(".cpu_result_ovl").removeClass("alert-success").addClass("alert-warning").html("Percentage Gain: Running ...");
 	$(".cpu_result_gpu").removeClass("alert-success").addClass("alert-warning").html("GPU: Running ... ");
-	execTime = bench(function(){
+	var gpuTime = bench(function(){
 		benchmarkCode('gpu');
 	}, 10, [], this);
-	$(".cpu_result_gpu").removeClass("alert-warning").addClass("alert-success").html("GPU: "+execTime+" ms");
+	$(".cpu_result_gpu").removeClass("alert-warning").addClass("alert-success").html("GPU: "+gpuTime+" ms");
 	
 	$(".cpu_result_cpu").removeClass("alert-success").addClass("alert-warning").html("CPU: Running ... ");
-	execTime = bench(function(){
+	cpuTime = bench(function(){
 		benchmarkCode('cpu');
 	}, 10, [], this);
-	$(".cpu_result_cpu").removeClass("alert-warning").addClass("alert-success").html("CPU: "+execTime+" ms");
+	$(".cpu_result_cpu").removeClass("alert-warning").addClass("alert-success").html("CPU: "+cpuTime+" ms");
 	
+	$(".cpu_result_ovl").removeClass("alert-warning").addClass("alert-success").html("Percentage Gain: "+Math.round(cpuTime/gpuTime*100)+"%");
 	$('.run_btn').prop('disabled', false);
 }
 
