@@ -405,6 +405,35 @@ var GPU_jsStrToWebclglStr = (function() {
 		return ret;
 	}
 	
+	/// Raw opengl header injections
+	///
+	/// @param   funcStr       original function string
+	/// @param   paramObj      prarameter state object
+	/// @param   _threadDim    thread dimension config
+	/// @param   _blockDim     block dimension config
+	/// @param   argStateObj   calling argument state object
+	///
+	/// @returns webCLGL competible function string, to be injected
+	function generateBoilerHeader( funcStr, _threadDim, _blockDim, stateObj ) {
+		var header = ""+
+			"float round(float inFloat) { \n"+
+				"return floor(inFloat + 0.4); "+
+			"} \n"+
+			"float get_global_index(vec2 vecID) { \n"+
+				"float ts = 1.0/(uBufferWidth-1.0); "+
+				
+				"float column = vecID.x / ts; "+
+				"float row = round(vecID.y / ts); "+
+				
+				"return round((row*uBufferWidth/uGeometryLength) + column/uGeometryLength); "+
+			"}\n"+
+			"float get_global_index() {\n "+
+				"return get_global_index( get_global_id() );\n "+
+			"}\n ";
+			
+		return header;
+	}
+	
 	/// Boiler plate code generation, this is to be injected inside main function. 
 	///
 	/// @param   funcStr       original function string
@@ -420,31 +449,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		//
 		// Basic boiler plate code
 		//
-		/*var boilerplate = "" + 
-			"vec2 _vecId_ = get_global_id(); "+
-			"float _threadDimX_ = " + ensureFloat(argStateObj.threadDimX) +"; "+
-			"float _threadDimY_ = " + ensureFloat(argStateObj.threadDimY) +"; "+
-			"float _threadDimZ_ = " + ensureFloat(argStateObj.threadDimZ) +"; "+
-			"float _id_ = ( _vecId_.x * " + ensureFloat(argStateObj.result_w) + ") + " +
-				ensureFloat(argStateObj.result_w) + " * (_vecId_.y * " + ensureFloat(argStateObj.result_h) + "); "+
-				
-			"float _threadZ_ = (_id_ / (_threadDimX_ * _threadDimY_)); "+
-			"_threadZ_ = sign(_threadZ_) * floor(abs(_threadZ_) + 0.5); "+
-			
-			"float _threadY_ = ((_id_ - _threadZ_ * _threadDimY_) / _threadDimX_); "+
-			"_threadY_ = sign(_threadY_) * floor(abs(_threadY_) + 0.5); "+
-			
-			"float _threadX_ = _id_ - _threadDimX_ * (_threadY_ + _threadDimY_ * _threadZ_); "+
-			*/
-			
-			/*var boilerplate = "" + 
-				"vec2 _threadX_ = get_global_id(); ";*/
-				
-			var boilerplate = "" + 
-				"vec2 _vecId_ = get_global_id(); "
-				/*"float _id_ = ( _vecId_.x * " + ensureFloat(argStateObj.W) + ") + " +
-				ensureFloat(argStateObj.W) + " * (_vecId_.y * " + ensureFloat(argStateObj.W) + "); "+
-				"float _threadX_ = _id_; ";*/
+		var boilerplate = "";
 		
 		//
 		// 2D vector code at index, for X and Y respectively
@@ -462,11 +467,7 @@ var GPU_jsStrToWebclglStr = (function() {
 			}
 			
 			var ret = ""+
-				"vec2 "+vecName+" = _vecId_; "
-				/*vecName+".x = floor(mod( "+indexStr+", " + ensureFloat(argStateObj.W) + ")-0.6) / "+ensureFloat(argStateObj.W)+"; "+
-				vecName+".y = floor( "+indexStr+" / " + ensureFloat(argStateObj.W) + ") / "+ensureFloat(argStateObj.W)+"; ";
-				/*vecName+".y = (sign("+vecName+".y) * floor(abs("+vecName+".y)+0.5)) / "+ensureFloat(argStateObj.W)+"; ";*/
-			
+				"vec2 "+vecName+" = get_global_id( get_global_index() ); ";//+
 			
 			return ret;
 		}
@@ -546,6 +547,8 @@ var GPU_jsStrToWebclglStr = (function() {
 		
 		// Boiler plate code, only if argStateObj is passed
 		if( argStateObj != null ) {
+			argStateObj.webgl_header = generateBoilerHeader( funcStr, _threadDim, _blockDim, stateObj );
+			
 			var mainBodyPrefix = generateBoilerCode( funcStr, _threadDim, _blockDim, stateObj );
 			outputStr = outputStr.replace(bodyPrefixVodooReplacementString, mainBodyPrefix);
 		} else {
@@ -672,19 +675,11 @@ var GPU_jsToWebclgl = (function() {
 			var floatOffset = paramObj.floatOffset || 65535.0;
 			var resultBuffer = webCLGL.createBuffer(totalSize, "FLOAT", floatOffset);
 			
-			console.warn("T",totalSize);
-			
 			//
 			// Argument State obj init
 			//----------------------------------
 			var argStateObj = {
-				result_w : resultBuffer.W || resultBuffer.items[0].W,
-				result_h : resultBuffer.H || resultBuffer.items[0].H,
-				threadDimX : threadDim[0],
-				threadDimY : threadDim[1],
-				threadDimZ : threadDim[2],
-				W : Math.ceil(Math.sqrt(totalSize)),
-				workW : 1.0/Math.ceil(Math.sqrt(totalSize))
+				webgl_header : ""
 			};
 			
 			//
@@ -692,10 +687,8 @@ var GPU_jsToWebclgl = (function() {
 			//
 			var argBuffers = [];
 			for (var i=0; i<argNames.length; i++) {
-				argBuffers[i] = webCLGL.createBuffer(arguments[i].length, "FLOAT", floatOffset);
+				argBuffers[i] = webCLGL.createBuffer(totalSize, "FLOAT", floatOffset);
 				webCLGL.enqueueWriteBuffer(argBuffers[i], arguments[i]);
-				
-				console.warn("A",arguments[i].length);
 			}
 			
 			//
@@ -717,7 +710,7 @@ var GPU_jsToWebclgl = (function() {
 			// @TODO: Consider precreating the object as optimization?, check if this crashses shit
 			//
 			var webclglStr = GPU_jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj, argStateObj );
-			var kernel = webCLGL.createKernel(webclglStr);
+			var kernel = webCLGL.createKernel(webclglStr, argStateObj.webgl_header);
 			
 			//
 			// Link up the argument and result buffer
@@ -736,7 +729,7 @@ var GPU_jsToWebclgl = (function() {
 			// @TODO : Async support????
 			//
 			var result = webCLGL.enqueueReadBuffer_Float(resultBuffer);
-			result = Array.prototype.slice.call(result[0]);
+			result = Array.prototype.slice.call(result[0], 0, totalSize);
 			
 			if (totalSize == 1) { //_threadDim.length == 1) {
 				return result[0][0];
