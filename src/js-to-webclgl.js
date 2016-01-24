@@ -298,7 +298,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		if (forNode.type != "ForStatement") {
 			throw "error";
 		}
-		retArr.push("for (");
+		retArr.push("for (float");
 		ast_generic(forNode.init, retArr);
 		retArr.push(";");
 		ast_generic(forNode.test, retArr);
@@ -360,8 +360,10 @@ var GPU_jsStrToWebclglStr = (function() {
 
 	function ast_VariableDeclarator(ivardecNode, retArr, stateParam) {
 		ast_generic(ivardecNode.id, retArr, stateParam);
-		retArr.push("=");
-		ast_generic(ivardecNode.init, retArr, stateParam);
+		if (ivardecNode.init != null) {
+			retArr.push("=");
+			ast_generic(ivardecNode.init, retArr, stateParam);
+		}
 		return retArr;
 	}
 
