@@ -102,14 +102,14 @@ function f(mode) {
     var a = [];
     var b = [];
     for(var n = 0; n < _length; n++) {
-    	var randA = Math.random()/2.0;
-    	var randB = Math.random()/2.0;
-    	a.push(randA);
-    	b.push(randB);
+        var randA = Math.random()/10000.0;
+        var randB = Math.random()/10000.0;
+        a.push(randA);
+        b.push(randB);
     }
-
+    
     var f = GPU(function(a, b) {
-    	return a[threadX] + b[threadY];
+        return a[this.thread.x] * b[this.thread.x];
     }, {
     	thread : [2048],
         mode : mode
@@ -119,12 +119,12 @@ function f(mode) {
 }
 
 bench(function(){
-    f('gpu');
-}, 1, [], this);
+    f('auto');
+}, 100, [], this);
 
 bench(function(){
     f('cpu');
-}, 1, [], this);
+}, 100, [], this);
 
 </script>
         <button class="btn btn-default" onclick="$('.result').removeClass('hide');">Run!</button>
