@@ -92,6 +92,8 @@ var GPU_jsStrToWebclglStr = (function() {
 				return ast_IdentifierExpression(ast, retArr, stateParam);
 			case "MathExpression":
 				return ast_MathExpression(ast, retArr, stateParam);
+			case "MatrixAccess":
+				return ast_MatrixAccess(ast, retArr, stateParam);
 		}
 		
 		throw ast_errorOutput("Unknown ast type : "+ast.type, ast, stateParam);
@@ -150,7 +152,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		
 		// Argument state obj main prefix injection
 		var argStateObj = stateParam.argStateObj;
-		if( argStateObj && argStateObj.mainBodyPrefix && ast.id == "main" ) {
+		if( argStateObj && ast.id == "main" ) {
 			retArr.push(" ");
 			retArr.push(bodyPrefixVodooReplacementString);
 			retArr.push(" ");
@@ -245,6 +247,31 @@ var GPU_jsStrToWebclglStr = (function() {
 		return retArr;
 	}
 	
+	/// Prases the abstract syntax tree, binary expression
+	///
+	/// @param ast          the AST object to parse
+	/// @param retArr       return array string
+	/// @param stateParam   the compiled state tracking
+	///
+	/// @returns  the appened retArr
+	function ast_MatrixAccess(ast, retArr, stateParam) {
+		if( !ast.name ) {
+			throw ast_errorOutput("MatrixAccess : Missing name parameter", ast, stateParam);
+		}
+		
+		ast_generic(ast.name, retArr, stateParam);
+		for( var i = 0; i < ast.indexes.length; ++i ) {
+			retArr.push("[");
+			ast_generic(ast.indexes[i], retArr, stateParam);
+			retArr.push("]");
+		}
+		
+		//throw ast_errorOutput("MatrixAccess", ast, stateParam);
+		return retArr;
+	}
+	
+	
+	
 	//-------------------------------------------------------------------
 	
 	/// Prases the abstract syntax tree, math expression
@@ -254,8 +281,8 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param stateParam   the compiled state tracking
 	///
 	/// @returns  the appened retArr
-	function ast_MathExpression(MathNode, retArr, stateParam) {
-		ast_generic(MathNode.expr, retArr, stateParam);
+	function ast_MathExpression(ast, retArr, stateParam) {
+		ast_generic(ast.expr, retArr, stateParam);
 		return retArr;
 	}
 	
@@ -266,12 +293,21 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param stateParam   the compiled state tracking
 	///
 	/// @returns  the appened retArr
-	function ast_IdentifierExpression(idtNode, retArr, stateParam) {
-		if (idtNode.type != "Identifier") {
-			throw "error";
+	function ast_IdentifierExpression(ast, retArr, stateParam) {
+		if (ast.type != "Identifier") {
+			throw ast_errorOutput("IdentifierExpression", ast, stateParam);
 		}
-
-		retArr.push(idtNode.name);
+		
+		// Reserved namespace overwrites
+		if(ast.name == "gpu_threadX" ) {
+			retArr.push( get_2dIndex_vec2Name(stateParam, "X", 0) );
+		} else if(ast.name == "gpu_threadY" ) {
+			retArr.push( get_2dIndex_vec2Name(stateParam, "Y", 0) );
+		} else {
+			//Default
+			retArr.push(ast.name);
+		}
+		
 	}
 	/*
 	/// Prases the abstract syntax tree, genericially to its respective function
@@ -332,15 +368,15 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param  index      offset index, if used
 	///
 	/// @returns  the vector name to use
-	function get_2dIndex_vec2Name( stateObj, XY, index ) {
+	function get_2dIndex_vec2Name( stateObj, XY, idx ) {
 		var indexFlag = stateObj["used_2dIndex_"+XY] = stateObj["used_2dIndex_"+XY] || {};
-		indexFlag[index] = true;
+		indexFlag[idx] = true;
 		
-		var ret = stateObj.reservedNamespace+"_2d_"+XY+"_";
+		var ret = stateObj.reservedNamespace+"2d_"+XY+"";
 		if(idx >= 0) {
-			ret += "p"+idx;
+			ret += "_p"+idx;
 		} else {
-			ret += "n"+idx;
+			ret += "_n"+idx;
 		}
 		return ret;
 	}
@@ -356,15 +392,15 @@ var GPU_jsStrToWebclglStr = (function() {
 	/// @param  index      offset index, if used
 	///
 	/// @returns  the vector name to use
-	function get_3dIndex_vec3Name( stateObj, XYZ, index ) {
+	function get_3dIndex_vec3Name( stateObj, XYZ, idx ) {
 		var indexFlag = stateObj["used_3dIndex_"+XYZ] = stateObj["used_3dIndex_"+XYZ] || {};
-		indexFlag[index] = true;
+		indexFlag[idx] = true;
 		
-		var ret = stateObj.reservedNamespace+"_3d_"+XYZ+"_";
+		var ret = stateObj.reservedNamespace+"3d_"+XYZ+"";
 		if(idx >= 0) {
-			ret += "p"+idx;
+			ret += "_p"+idx;
 		} else {
-			ret += "n"+idx;
+			ret += "_n"+idx;
 		}
 		return ret;
 	}
@@ -384,16 +420,31 @@ var GPU_jsStrToWebclglStr = (function() {
 		//
 		// Basic boiler plate code
 		//
-		var boilerplate = "" + 
+		/*var boilerplate = "" + 
 			"vec2 _vecId_ = get_global_id(); "+
 			"float _threadDimX_ = " + ensureFloat(argStateObj.threadDimX) +"; "+
 			"float _threadDimY_ = " + ensureFloat(argStateObj.threadDimY) +"; "+
 			"float _threadDimZ_ = " + ensureFloat(argStateObj.threadDimZ) +"; "+
 			"float _id_ = ( _vecId_.x * " + ensureFloat(argStateObj.result_w) + ") + " +
 				ensureFloat(argStateObj.result_w) + " * (_vecId_.y * " + ensureFloat(argStateObj.result_h) + "); "+
-			"float _threadZ_ = round(_id_ / (_threadDimX_ * _threadDimY_)); "+
-			"float _threadY_ = round((_id_ - _threadZ_ * _threadDimY_) / _threadDimX_); "+
-			"float _threadX_ = _id_ - _threadDimX_ * (_threadY_ + _threadDimY_ * _threadZ_); ";
+				
+			"float _threadZ_ = (_id_ / (_threadDimX_ * _threadDimY_)); "+
+			"_threadZ_ = sign(_threadZ_) * floor(abs(_threadZ_) + 0.5); "+
+			
+			"float _threadY_ = ((_id_ - _threadZ_ * _threadDimY_) / _threadDimX_); "+
+			"_threadY_ = sign(_threadY_) * floor(abs(_threadY_) + 0.5); "+
+			
+			"float _threadX_ = _id_ - _threadDimX_ * (_threadY_ + _threadDimY_ * _threadZ_); "+
+			*/
+			
+			/*var boilerplate = "" + 
+				"vec2 _threadX_ = get_global_id(); ";*/
+				
+			var boilerplate = "" + 
+				"vec2 _vecId_ = get_global_id(); "
+				/*"float _id_ = ( _vecId_.x * " + ensureFloat(argStateObj.W) + ") + " +
+				ensureFloat(argStateObj.W) + " * (_vecId_.y * " + ensureFloat(argStateObj.W) + "); "+
+				"float _threadX_ = _id_; ";*/
 		
 		//
 		// 2D vector code at index, for X and Y respectively
@@ -411,9 +462,11 @@ var GPU_jsStrToWebclglStr = (function() {
 			}
 			
 			var ret = ""+
-				"vec2 "+vecName+"; "+
-				vecName+".y = mod( "+indexStr+", " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_h)+"; "+
-				vecName+".x = round( "+indexStr+" / " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_w)+"; ";
+				"vec2 "+vecName+" = _vecId_; "
+				/*vecName+".x = floor(mod( "+indexStr+", " + ensureFloat(argStateObj.W) + ")-0.6) / "+ensureFloat(argStateObj.W)+"; "+
+				vecName+".y = floor( "+indexStr+" / " + ensureFloat(argStateObj.W) + ") / "+ensureFloat(argStateObj.W)+"; ";
+				/*vecName+".y = (sign("+vecName+".y) * floor(abs("+vecName+".y)+0.5)) / "+ensureFloat(argStateObj.W)+"; ";*/
+			
 			
 			return ret;
 		}
@@ -444,10 +497,13 @@ var GPU_jsStrToWebclglStr = (function() {
 				indexStr = "(" + indexStr + ")";
 			}
 			
+			throw "Not finished";
+			
 			var ret = ""+
 				"vec2 "+vecName+"; "+
 				vecName+".y = mod( "+indexStr+", " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_h)+"; "+
-				vecName+".x = round( "+indexStr+" / " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_w)+"; ";
+				vecName+".x = ( "+indexStr+" / " + ensureFloat(argStateObj.result_w) + ") / "+ensureFloat(argStateObj.result_w)+"; "+
+				vecName+".x = sign("+vecName+".x) * floor(abs("+vecName+".x)+0.5); ";
 			
 			return ret;
 		}
@@ -616,15 +672,19 @@ var GPU_jsToWebclgl = (function() {
 			var floatOffset = paramObj.floatOffset || 65535.0;
 			var resultBuffer = webCLGL.createBuffer(totalSize, "FLOAT", floatOffset);
 			
+			console.warn("T",totalSize);
+			
 			//
 			// Argument State obj init
 			//----------------------------------
 			var argStateObj = {
-				result_w : resultBuffer.W,
-				result_h : resultBuffer.H,
+				result_w : resultBuffer.W || resultBuffer.items[0].W,
+				result_h : resultBuffer.H || resultBuffer.items[0].H,
 				threadDimX : threadDim[0],
 				threadDimY : threadDim[1],
-				threadDimZ : threadDim[2]
+				threadDimZ : threadDim[2],
+				W : Math.ceil(Math.sqrt(totalSize)),
+				workW : 1.0/Math.ceil(Math.sqrt(totalSize))
 			};
 			
 			//
@@ -634,6 +694,8 @@ var GPU_jsToWebclgl = (function() {
 			for (var i=0; i<argNames.length; i++) {
 				argBuffers[i] = webCLGL.createBuffer(arguments[i].length, "FLOAT", floatOffset);
 				webCLGL.enqueueWriteBuffer(argBuffers[i], arguments[i]);
+				
+				console.warn("A",arguments[i].length);
 			}
 			
 			//
@@ -676,10 +738,10 @@ var GPU_jsToWebclgl = (function() {
 			var result = webCLGL.enqueueReadBuffer_Float(resultBuffer);
 			result = Array.prototype.slice.call(result[0]);
 			
-			if (_threadDim.length == 1) {
-				return result[0];
+			if (totalSize == 1) { //_threadDim.length == 1) {
+				return result[0][0];
 			} else if (_threadDim.length == 2) {
-				//ret = ret[0];
+				return result[0];
 			}
 			
 			return result;

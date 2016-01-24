@@ -1,14 +1,14 @@
 function basic_sum_AB_test( assert, mode ) {
 	var f = GPU(function(a, b) {
-		return (a[threadX] + b[threadY]);
+		return (a[this.thread.x] + b[this.thread.x]);
 	}, {
-		thread : [3],
+		thread : [6],
 		block : [1],
 		mode : mode
 	});
 	
 	assert.ok( f !== null, "function generated test");
-	assert.deepEqual(f( [1, 2, 3], [4, 5, 6] ), [5, 7, 9], "basic sum function test");
+	assert.deepEqual(f( [1, 2, 3, 5, 6, 7], [4, 5, 6, 1, 2, 3] ), [5, 7, 9, 6, 8, 10], "basic sum function test");
 }
 
 QUnit.test( "basic_sum_AB (auto)", function( assert ) {
@@ -44,7 +44,7 @@ float _coordToIndex_(vec3 coord) {
 	return coord.x + _threadDimX_ * (coord.y + _threadDimY_ * coord.z);
 }
 
-vec3 _indexTo3DCoord_(float index) {
+vec3 _indexTo3Dindex_(float index) {
 	vec3 ret;
 	
 	ret.z = round(index / (_threadDimX_ * _threadDimY_));
@@ -54,7 +54,7 @@ vec3 _indexTo3DCoord_(float index) {
 	return ret;
 }
 
-vec2 _indexTo2DCoord_(float index) {
+vec2 _indexTo2Dindex_(float index) {
 	vec2 ret;
 	
 	ret.y = mod(index, _W_) / _H_;
@@ -69,8 +69,8 @@ float _coordToIndex_(vec2 coord) {
 
 void main(float* a, float* b) {
     vec2 _vecId_ = get_global_id();
-	float _id_ = _coordToIndex_(_vecId_);
 	
+	float _id_ = _coordToIndex_(_vecId_);
 	vec3 _thread_ = _indexTo3D_(_id_);
 	
 	float _threadZ_ =  _thread_.z;
