@@ -66,6 +66,7 @@ QUnit.test( "basic_sqrt_AB (CPU)", function( assert ) {
 	basic_sqrt_AB_test(assert, "cpu");
 });
 
+/*
 function basic_forlp_AB_test( assert, mode ) {
 	var f = GPU(function(a, b) {
 		for (var i = 0; i < 100; i++) {
@@ -101,3 +102,4 @@ QUnit.test( "basic_forlp_AB (GPU)", function( assert ) {
 QUnit.test( "basic_forlp_AB (CPU)", function( assert ) {
 	basic_forlp_AB_test(assert, "cpu");
 });
+*/
