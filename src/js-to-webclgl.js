@@ -95,6 +95,36 @@ var GPU_jsStrToWebclglStr = (function() {
 					return ast_IdentifierExpression(ast, retArr, stateParam);
 				case "AssignmentExpression":
 					return ast_AssignmentExpression(ast, retArr, stateParam);
+				case "ExpressionStatement":
+					return ast_ExpressionStatement(ast, retArr, stateParam);
+				case "EmptyStatement":
+					return ast_EmptyStatement(ast, retArr, stateParam);
+				case "BlockStatement":
+					return ast_BlockStatement(ast, retArr, stateParam);
+				case "IfStatement":
+					return ast_IfStatement(ast, retArr, stateParam);
+				case "BreakStatement":
+					return ast_BreakStatement(ast, retArr, stateParam);
+				case "ContinueStatement":
+					return ast_ContinueStatement(ast, retArr, stateParam);
+				case "ForStatement":
+					return ast_ForStatement(ast, retArr, stateParam);
+				case "VariableDeclaration":
+					return ast_VariableDeclaration(ast, retArr, stateParam);
+				case "VariableDeclarator":
+					return ast_VariableDeclarator(ast, retArr, stateParam);
+				case "ThisExpression":
+					return ast_ThisExpression(ast, retArr, stateParam);
+				case "SequenceExpression":
+					return ast_SequenceExpression(ast, retArr, stateParam);
+				case "UnaryExpression":
+					return ast_UnaryExpression(ast, retArr, stateParam);
+				case "UpdateExpression":
+					return ast_UpdateExpression(ast, retArr, stateParam);
+				case "LogicalExpression":
+					return ast_LogicalExpression(ast, retArr, stateParam);
+				case "MemberExpression":
+					return ast_MemberExpression(ast, retArr, stateParam);
 			}
 			
 			throw ast_errorOutput("Unknown ast type : "+ast.type, ast, stateParam);
@@ -228,24 +258,18 @@ var GPU_jsStrToWebclglStr = (function() {
 	///
 	/// @returns  the appened retArr
 	function ast_BinaryExpression(ast, retArr, stateParam) {
-		if(
-			ast.operator == "+" ||
-			ast.operator == "-" ||
-			ast.operator == "*" ||
-			ast.operator == "/"
-		) {
+		if (ast.operator == "%") {
+			retArr.push("mod(");
 			ast_generic(ast.left, retArr, stateParam);
-			retArr.push( " "+ast.operator+" " );
+			retArr.push(",");
 			ast_generic(ast.right, retArr, stateParam);
-		} else if(ast.operator == "%") {
-			ast_generic(ast.left, retArr, stateParam);
-			retArr.push( " , " );
-			ast_generic(ast.right, retArr, stateParam);
-			retArr.push( ")" );
+			retArr.push(")");
 		} else {
-			throw ast_errorOutput("Unsupported BinaryExpression: "+ast.operator, ast, stateParam);
+			ast_generic(ast.left, retArr, stateParam);
+			retArr.push(ast.operator);
+			ast_generic(ast.right, retArr, stateParam);
 		}
-		
+
 		return retArr;
 	}
 	
@@ -284,13 +308,22 @@ var GPU_jsStrToWebclglStr = (function() {
 		ast_generic(forNode.body, retArr);
 		return retArr;
 	}
-	
 
 	function ast_AssignmentExpression(assNode, retArr, stateParam) {
-		ast_generic(assNode.left, retArr, stateParam);
-		retArr.push(assNode.operator);
-		ast_generic(assNode.right, retArr, stateParam);
-		return retArr;
+		if(assNode.operator == "%=") {
+			ast_generic(assNode.left, retArr, stateParam);
+			retArr.push("=");
+			retArr.push("mod(");
+			ast_generic(assNode.left, retArr, stateParam);
+			retArr.push(",");
+			ast_generic(assNode.right, retArr, stateParam);
+			retArr.push(")");
+		} else {
+			ast_generic(assNode.left, retArr, stateParam);
+			retArr.push(assNode.operator);
+			ast_generic(assNode.right, retArr, stateParam);
+			return retArr;
+		}
 	}
 
 	function ast_EmptyStatement(eNode, retArr, stateParam) {
@@ -336,10 +369,82 @@ var GPU_jsStrToWebclglStr = (function() {
 		retArr.push("if(");
 		ast_generic(ifNode.test, retArr, stateParam);
 		retArr.push(")");
-		ast.generic(ifNode.consequent, retArr, stateParam);
+		ast_generic(ifNode.consequent, retArr, stateParam);
 		retArr.push("else");
-		ast.generic(ifNode.alternate, retArr, stateParam);
+		ast_generic(ifNode.alternate, retArr, stateParam);
+		return retArr;
 
+	}
+
+	function ast_Break(brNode, retArr, stateParam) {
+		retArr.push("break;");
+		return retArr;
+	}
+
+	function ast_Continue(crNode, retArr, stateParam) {
+		retArr.push("continue;");
+		return retArr;
+	}
+
+	function ast_LogicalExpression(logNode, retArr, stateParam) {
+		ast_generic(logNode.left, retArr, stateParam);
+		ast_generic(logNode.operator, retArr, stateParam);
+		ast_generic(logNode.right, retArr, stateParam);
+		return retArr;
+	}
+
+	function ast_UpdateExpression(uNode, retArr, stateParam) {
+		if(uNode.prefix) {
+			retArr.push(uNode.operator);
+			ast_generic(uNode.argument, retArr, stateParam);
+		} else {
+			ast_generic(uNode.argument, retArr, stateParam);
+			retArr.push(uNode.operator);
+		}
+
+		return retArr;
+	}
+
+	function ast_UnaryExpression(uNode, retArr, stateParam) {
+		if(uNode.prefix) {
+			retArr.push(uNode.operator);
+			ast_generic(uNode.argument, retArr, stateParam);
+		} else {
+			ast_generic(uNode.argument, retArr, stateParam);
+			retArr.push(uNode.operator);
+		}
+
+		return retArr;
+	}
+
+	function ast_ThisExpression(tNode, retArr, stateParam) {
+		retArr.push("this");
+
+		return retArr;
+	}
+
+	function ast_MemberExpression(mNode, retArr, stateParam) {
+		if(mNode.computed) {
+			ast_generic(mNode.object, retArr, stateParam);
+			retArr.push("[");
+			ast_generic(mNode.property, retArr, stateParam);
+			retArr.push("]");
+		} else {
+			ast_generic(mNode.object, retArr, stateParam);
+			retArr.push(".");
+			ast_generic(mNode.property, retArr, stateParam);
+		}
+		return retArr;
+	}
+
+	function ast_SequenceExpression(sNode, retArr, stateParam) {
+		for (var i = 0; i < sNode.expressions.length; i++) {
+			if (i > 0) {
+				retArr.push(",");
+			}
+			ast_generic(sNode.expressions, retArr, stateParam);
+		}
+		return retArr;
 	}
 	
 	/// Does the conversion of the index to the vec2 reseved var name
