@@ -102,14 +102,14 @@ function f(mode) {
     var a = [];
     var b = [];
     for(var n = 0; n < _length; n++) {
-        var randA = Math.random()/10000.0;
-        var randB = Math.random()/10000.0;
+        var randA = Math.random()/100.0;
+        var randB = Math.random()/100.0;
         a.push(randA);
         b.push(randB);
     }
     
     var f = GPU(function(a, b) {
-        return a[this.thread.x] * b[this.thread.x];
+        return Math.sqrt( Math.pow( a[this.thread.x] , b[this.thread.x] ) );
     }, {
     	thread : [2048],
         mode : mode

@@ -45,7 +45,7 @@ var GPU = function(kernal, paramObj) {
 	//
 	var ret = null;
 	
-	if( mode == null || mode == "gpu" ) {
+	if( mode == null || mode == "gpu" || mode == "auto" ) {
 		// Attempts to do the conversion to webclgl
 		if( (ret = GPU_jsToWebclgl(kernal, thread, block, paramObj)) != null) {
 			return ret;

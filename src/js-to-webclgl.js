@@ -485,8 +485,13 @@ var GPU_jsStrToWebclglStr = (function() {
 			retArr.push("(");
 			
 			if(ast.arguments) {
-				for( var i = 0; i < ast.arguments.length; ++i ) {
+				var aLen = ast.arguments.length;
+				for( var i = 0; i < aLen; ++i ) {
 					ast_generic(ast.arguments[i], retArr, stateParam);
+					
+					if( i+1 < aLen ) {
+						retArr.push(", ");
+					}
 				}
 			}
 			
@@ -690,6 +695,11 @@ var GPU_jsStrToWebclglStr = (function() {
 
 var GPU_jsToWebclgl = (function() {
 	
+	//
+	// webclgl core class setup
+	//
+	var webCLGL = new WebCLGL();
+	
 	///----------------------------------------------------------------------------------------
 	/// Misc utility functions, copy pasta from somewhere >_>
 	///----------------------------------------------------------------------------------------
@@ -789,12 +799,6 @@ var GPU_jsToWebclgl = (function() {
 			//
 			// String conversion and exec
 			//----------------------------------
-			
-			//
-			// webclgl core class setup
-			// @TODO: Consider precreating the object as optimization?, check if this crashses shit
-			//
-			var webCLGL = new WebCLGL();
 			
 			//
 			// Float offset and result buffer setup
