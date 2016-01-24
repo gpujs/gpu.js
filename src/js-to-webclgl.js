@@ -298,7 +298,7 @@ var GPU_jsStrToWebclglStr = (function() {
 		if (forNode.type != "ForStatement") {
 			throw "error";
 		}
-		retArr.push("for (");
+		retArr.push("for (float");
 		ast_generic(forNode.init, retArr);
 		retArr.push(";");
 		ast_generic(forNode.test, retArr);
