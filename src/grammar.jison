@@ -117,6 +117,7 @@ RegularExpressionLiteral {RegularExpressionBody}\/{RegularExpressionFlags}
 "extends"                          return "EXTENDS";
 "import"                           return "IMPORT";
 "super"                            return "SUPER";
+"Math."							   return "GPU_Math_"
 {Identifier}                       parser.restricted = false; return "IDENTIFIER";
 {DecimalLiteral}                   parser.restricted = false; return "NUMERIC_LITERAL";
 {HexIntegerLiteral}                parser.restricted = false; return "NUMERIC_LITERAL";
@@ -765,6 +766,10 @@ PropertySetParameterList
 MemberExpression
     : PrimaryExpression
     | FunctionExpression
+    | MemberExpression "[" Expression "]"
+        {
+            $$ = new MemberExpressionNode($1, $3, true, createSourceLocation(null, @1, @4));
+        }
     | MemberExpression "." IdentifierName
         {
             $$ = new MemberExpressionNode($1, $3, false, createSourceLocation(null, @1, @3));
@@ -777,6 +782,10 @@ MemberExpression
 
 MemberExpressionNoBF
     : PrimaryExpressionNoBrace
+    | MemberExpressionNoBF "[" Expression "]"
+        {
+            $$ = new MemberExpressionNode($1, $3, true, createSourceLocation(null, @1, @4));
+        }
     | MemberExpressionNoBF "." IdentifierName
         {
             $$ = new MemberExpressionNode($1, $3, false, createSourceLocation(null, @1, @3));
