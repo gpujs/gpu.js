@@ -146,3 +146,14 @@ WebGL_wrapper.prototype.enqueueReadBuffer_Float = function(buffers) {
 
 	return Float_Un;
 };
+
+/**
+* Bind float or a WebCLGLBuffer to a kernel argument
+* @type Void
+* @param {WebCLGLKernel} kernel created via createKernel()
+* @param {Int|String} argument Id of argument or name of this
+* @param {Float|Int|Array<Float4>|Array<Mat4>|WebCLGLBuffer} data
+*/
+WebGL_wrapper.prototype.setKernelArg = function(kernel, argument, data) {
+	kernel.setKernelArg(argument, data);
+};

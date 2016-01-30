@@ -847,7 +847,7 @@ var GPU_jsToWebclgl = (function() {
 			// Link up the argument and result buffer
 			//
 			for (var i=0; i<argNames.length; i++) {
-				kernel.setKernelArg(i, argBuffers[i]);
+				webGL.setKernelArg(kernel, i, argBuffers[i]);
 			}
 			
 			// Does not need the kernel.compile optimiztion, as code is recompiled on each run
