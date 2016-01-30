@@ -698,7 +698,7 @@ var GPU_jsToWebclgl = (function() {
 	//
 	// webclgl core class setup
 	//
-	var webCLGL = new WebCLGL();
+	var webGL = new WebGL_wrapper();
 	
 	///----------------------------------------------------------------------------------------
 	/// Misc utility functions, copy pasta from somewhere >_>
@@ -803,8 +803,8 @@ var GPU_jsToWebclgl = (function() {
 			//
 			// Float offset and result buffer setup
 			//
-			var floatOffset = paramObj.floatOffset || 65535.0;
-			var resultBuffer = webCLGL.createBuffer(totalSize, "FLOAT", floatOffset);
+			var floatOffset = paramObj.floatOffset || 65535;
+			var resultBuffer = webGL.createBuffer(totalSize, "FLOAT", floatOffset);
 			
 			//
 			// Argument State obj init
@@ -818,8 +818,8 @@ var GPU_jsToWebclgl = (function() {
 			//
 			var argBuffers = [];
 			for (var i=0; i<argNames.length; i++) {
-				argBuffers[i] = webCLGL.createBuffer(totalSize, "FLOAT", floatOffset);
-				webCLGL.enqueueWriteBuffer(argBuffers[i], arguments[i]);
+				argBuffers[i] = webGL.createBuffer(totalSize, "FLOAT", floatOffset);
+				webGL.enqueueWriteBuffer(argBuffers[i], arguments[i]);
 			}
 			
 			//
@@ -841,7 +841,7 @@ var GPU_jsToWebclgl = (function() {
 			// @TODO: Consider precreating the object as optimization?, check if this crashses shit
 			//
 			var webclglStr = GPU_jsStrToWebclglStr( funcStr, _threadDim, _blockDim, paramObj, argStateObj );
-			var kernel = webCLGL.createKernel(webclglStr, argStateObj.webgl_header);
+			var kernel = webGL.createKernel(webclglStr, argStateObj.webgl_header);
 			
 			//
 			// Link up the argument and result buffer
@@ -853,13 +853,13 @@ var GPU_jsToWebclgl = (function() {
 			// Does not need the kernel.compile optimiztion, as code is recompiled on each run
 			// @TODO: consider this ??
 			//kernel.compile();
-			webCLGL.enqueueNDRangeKernel(kernel, resultBuffer);
+			webGL.enqueueNDRangeKernel(kernel, resultBuffer);
 			
 			//
 			// Fetch the result
 			// @TODO : Async support????
 			//
-			var result = webCLGL.enqueueReadBuffer_Float(resultBuffer);
+			var result = webGL.enqueueReadBuffer_Float(resultBuffer);
 			result = Array.prototype.slice.call(result[0], 0, totalSize);
 			
 			if (totalSize == 1) { //_threadDim.length == 1) {
