@@ -65,8 +65,8 @@ console.log("startup code", [set_a, set_b]);
 function benchmarkCode(mode) {
 	var runFunction = gpu.createKernel(function(a, b) {
 		var res = 0.0;
-		var i = 0.0;
-		for(i = 0.0; i < 500000; ++i) {
+		
+		for(var i = 0.0; i < 500000; i++) {
 			res += Math.sqrt( a[this.thread.x] * b[this.thread.x] );
 		}
 		 
@@ -86,13 +86,13 @@ function runBenchmark() {
 	$(".cpu_result_gpu").removeClass("alert-success").addClass("alert-warning").html("GPU: Running ... ");
 	var gpuTime = bench(function(){
 		benchmarkCode('gpu');
-	}, 10, [], this);
+	}, 1, [], this);
 	$(".cpu_result_gpu").removeClass("alert-warning").addClass("alert-success").html("GPU: "+gpuTime+" ms");
 	
 	$(".cpu_result_cpu").removeClass("alert-success").addClass("alert-warning").html("CPU: Running ... ");
 	cpuTime = bench(function(){
 		benchmarkCode('cpu');
-	}, 10, [], this);
+	}, 1, [], this);
 	$(".cpu_result_cpu").removeClass("alert-warning").addClass("alert-success").html("CPU: "+cpuTime+" ms");
 	
 	$(".cpu_result_ovl").removeClass("alert-warning").addClass("alert-success").html("Percentage Gain: "+Math.round(cpuTime/gpuTime*100)+"%");

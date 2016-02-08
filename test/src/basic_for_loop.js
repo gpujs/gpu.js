@@ -2,8 +2,7 @@ function basic_for_loop_test( assert, mode ) {
 	var gpu = new GPU();
 	var f = gpu.createKernel(function(a, b) {
 		var x = 0.0;
-		var i = 0.0;
-		for(i = 0.0; i<10.0; ++i) {
+		for(var i = 0.0; i<10.0; i++) {
 			x = x + 1.0;
 		}
 		

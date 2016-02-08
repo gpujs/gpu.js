@@ -377,6 +377,13 @@
 			if(ast === null) {
 				throw ast_errorOutput("NULL ast", ast, stateParam);
 			} else {
+				if (Array.isArray(ast)) {
+					for (var i=0; i<ast.length; i++) {
+						ast_generic(ast[i], retArr, stateParam);
+					}
+					return retArr;
+				}
+				
 				switch(ast.type) {
 					case "FunctionExpression":
 						return ast_FunctionExpression(ast, retArr, stateParam);
