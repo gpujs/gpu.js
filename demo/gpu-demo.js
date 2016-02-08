@@ -42,7 +42,7 @@ var bench = function (method, iterations, args, context) {
 		console.log("Result of the method call was:", result[0]);
 	}
 
-	return execTime;
+	return execTime / iterations;
 };
 
 //

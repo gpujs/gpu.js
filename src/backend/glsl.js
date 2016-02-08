@@ -69,12 +69,11 @@
 		return tmp;
 	}
 
-	var programs = [];
-
 	GPU.prototype._backendGLSL = function(kernel, opt) {
 		var gl = this.gl;
 		var canvas = this.canvas;
 		var compileToGlsl = this._compileToGlsl;
+		var programCache = this.programCache;
 		
 		return function() {
 			var funcStr = kernel.toString();
@@ -84,7 +83,7 @@
 			
 			paramNames = getParamNames(funcStr);
 			
-			var program = programs[funcStr];
+			var program = programCache[this];
 			
 			if (program === undefined) {
 				var paramStr = '';
@@ -207,9 +206,8 @@
 				gl.attachShader(program, vertShader);
 				gl.attachShader(program, fragShader);
 				gl.linkProgram(program);
-				gl.useProgram(program);
 				
-				programs[funcStr] = program;
+				programCache[this] = program;
 			}
 			gl.useProgram(program);
 			

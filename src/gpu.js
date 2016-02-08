@@ -20,6 +20,7 @@ GPU = (function() {
 		
 		this.gl = gl;
 		this.canvas = canvas;
+		this.programCache = {};
 	}
 	
 	GPU.prototype.getGl = function() {
