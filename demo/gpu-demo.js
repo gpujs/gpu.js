@@ -86,13 +86,13 @@ function runBenchmark() {
 	$(".cpu_result_gpu").removeClass("alert-success").addClass("alert-warning").html("GPU: Running ... ");
 	var gpuTime = bench(function(){
 		benchmarkCode('gpu');
-	}, 1, [], this);
+	}, 10, [], this);
 	$(".cpu_result_gpu").removeClass("alert-warning").addClass("alert-success").html("GPU: "+gpuTime+" ms");
 	
 	$(".cpu_result_cpu").removeClass("alert-success").addClass("alert-warning").html("CPU: Running ... ");
 	cpuTime = bench(function(){
 		benchmarkCode('cpu');
-	}, 1, [], this);
+	}, 10, [], this);
 	$(".cpu_result_cpu").removeClass("alert-warning").addClass("alert-success").html("CPU: "+cpuTime+" ms");
 	
 	$(".cpu_result_ovl").removeClass("alert-warning").addClass("alert-success").html("Percentage Gain: "+Math.round(cpuTime/gpuTime*100)+"%");

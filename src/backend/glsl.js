@@ -75,140 +75,141 @@
 		var compileToGlsl = this._compileToGlsl;
 		var programCache = this.programCache;
 		
-		return function() {
-			var funcStr = kernel.toString();
-			if( !validateStringIsFunction(funcStr) ) {
+		var funcStr = kernel.toString();
+		if( !validateStringIsFunction(funcStr) ) {
+			return null;
+		}
+		
+		paramNames = getParamNames(funcStr);
+		
+		var program = programCache[this];
+		
+		if (program === undefined) {
+			var paramStr = '';
+			
+			for (var i=0; i<paramNames.length; i++) {
+				paramStr += 'uniform sampler2D user_' + paramNames[i] + ';\n';
+				paramStr += 'uniform vec2 user_' + paramNames[i] + 'Size;\n';
+				paramStr += 'uniform vec3 user_' + paramNames[i] + 'Dim;\n';
+			}
+			
+			funcStr = funcStr.replace(new RegExp('this.thread.x', 'g'), 'gpu_threadX');
+			funcStr = funcStr.replace(new RegExp('this.thread.y', 'g'), 'gpu_threadY');
+			funcStr = funcStr.replace(new RegExp('this.thread.z', 'g'), 'gpu_threadZ');
+			funcStr = funcStr.replace(new RegExp('Math.', 'g'), 'gpu_math_');
+			
+			var vertShaderSrc = [
+				'precision highp float;',
+				'precision highp int;',
+				'',
+				'attribute vec2 aPos;',
+				'attribute vec2 aTexCoord;',
+				'',
+				'varying vec2 vTexCoord;',
+				'',
+				'void main(void) {',
+				'   gl_Position = vec4(aPos, 0, 1);',
+				'   vTexCoord = aTexCoord;',
+				'}'
+			].join('\n');
+			
+			var fragShaderSrc = [
+				'precision highp float;',
+				'precision highp int;',
+				'',
+				'uniform vec3 uOutputDim;',
+				'uniform vec2 uTexSize;',
+				'varying vec2 vTexCoord;',
+				'',
+				'/* Begin: http://stackoverflow.com/questions/7059962/how-do-i-convert-a-vec4-rgba-value-to-a-float */',
+				'highp vec4 encode32(highp float f) {',
+				'	highp float e =5.0;',
+				'	highp float F = abs(f); ',
+				'	highp float sign = step(0.0,-f);',
+				'	highp float exponent = floor(log2(F)); ',
+				'	highp float mantissa = (exp2(- exponent) * F);',
+				'	exponent = floor(log2(F) + 127.0) + floor(log2(mantissa));',
+				'	highp vec4 rgba;',
+				'	rgba.a = 128.0 * sign + floor(exponent*exp2(-1.0));',
+				'	rgba.b = 128.0 * mod(exponent,2.0) + mod(floor(mantissa*128.0),128.0);',
+				'	rgba.g = floor(mod(floor(mantissa*exp2(23.0 -8.0)),exp2(8.0)));',
+				'	rgba.r = floor(exp2(23.0)*mod(mantissa,exp2(-15.0)));',
+				'	return rgba / 255.0;',
+				'}',
+				'',
+				'highp float decode32(highp vec4 rgba) {',
+				'	rgba *= 255.0;',
+				'	highp float sign = 1.0 - step(128.0,rgba.a)*2.0;',
+				'	highp float exponent = 2.0 * mod(rgba.a,128.0) + step(128.0,rgba.b) - 127.0; ',
+				'	highp float mantissa = mod(rgba.b,128.0)*65536.0 + rgba.g*256.0 +rgba.r + float(0x800000);',
+				'	highp float result =  sign * exp2(exponent) * (mantissa * exp2(-23.0 )); ',
+				'	return result;',
+				'}',
+				'/* End: http://stackoverflow.com/questions/7059962/how-do-i-convert-a-vec4-rgba-value-to-a-float */',
+				'',
+				'float index;',
+				'vec3 threadId;',
+				'',
+				'vec3 indexTo3D(float idx, vec3 texDim) {',
+				'	float z = floor(idx / (texDim.x * texDim.y));',
+				'	idx -= z * texDim.x * texDim.y;',
+				'	float y = floor(idx / texDim.x);',
+				'	float x = mod(idx, texDim.x);',
+				'	return vec3(x, y, z);',
+				'}',
+				'',
+				'float get(sampler2D tex, vec2 texSize, vec3 texDim, float z, float y, float x) {',
+				'	float index = (z * texDim.x * texDim.y) + (y * texDim.x) + x;',
+				'	float t = (floor(index / texSize.x) + 0.5) / texSize.y;',
+				'	float s = (mod(index, texSize.x) + 0.5) / texSize.x;',
+				'	return decode32(texture2D(tex, vec2(s, t)));',
+				'}',
+				'',
+				'float get(sampler2D tex, vec2 texSize, vec3 texDim, float y, float x) {',
+				'	return get(tex, texSize, texDim, 0.0, y, x);',
+				'}',
+				'',
+				'float get(sampler2D tex, vec2 texSize, vec3 texDim, float x) {',
+				'	return get(tex, texSize, texDim, 0.0, 0.0, x);',
+				'}',
+				'',
+				paramStr,
+				compileToGlsl(funcStr, {}),
+				'',
+				'void main(void) {',
+				'	index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize[0];',
+				'	threadId = indexTo3D(index, uOutputDim);',
+				'	gl_FragColor = kernel();',
+				'}'
+			].join('\n');
+			
+			var vertShader = gl.createShader(gl.VERTEX_SHADER);
+			var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+			
+			gl.shaderSource(vertShader, vertShaderSrc);
+			gl.shaderSource(fragShader, fragShaderSrc);
+			
+			gl.compileShader(vertShader);
+			gl.compileShader(fragShader);
+			
+			if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
+				console.error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(vertShader));
+				return null;
+			}
+			if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
+				console.error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(fragShader));
 				return null;
 			}
 			
-			paramNames = getParamNames(funcStr);
+			program = gl.createProgram();
+			gl.attachShader(program, vertShader);
+			gl.attachShader(program, fragShader);
+			gl.linkProgram(program);
 			
-			var program = programCache[this];
-			
-			if (program === undefined) {
-				var paramStr = '';
-				
-				for (var i=0; i<paramNames.length; i++) {
-					paramStr += 'uniform sampler2D user_' + paramNames[i] + ';\n';
-					paramStr += 'uniform vec2 user_' + paramNames[i] + 'Size;\n';
-					paramStr += 'uniform vec3 user_' + paramNames[i] + 'Dim;\n';
-				}
-				
-				funcStr = funcStr.replace(new RegExp('this.thread.x', 'g'), 'gpu_threadX');
-				funcStr = funcStr.replace(new RegExp('this.thread.y', 'g'), 'gpu_threadY');
-				funcStr = funcStr.replace(new RegExp('this.thread.z', 'g'), 'gpu_threadZ');
-				funcStr = funcStr.replace(new RegExp('Math.', 'g'), 'gpu_math_');
-				
-				var vertShaderSrc = [
-					'precision highp float;',
-					'precision highp int;',
-					'',
-					'attribute vec2 aPos;',
-					'attribute vec2 aTexCoord;',
-					'',
-					'varying vec2 vTexCoord;',
-					'',
-					'void main(void) {',
-					'   gl_Position = vec4(aPos, 0, 1);',
-					'   vTexCoord = aTexCoord;',
-					'}'
-				].join('\n');
-				
-				var fragShaderSrc = [
-					'precision highp float;',
-					'precision highp int;',
-					'',
-					'uniform vec3 uOutputDim;',
-					'uniform vec2 uTexSize;',
-					'varying vec2 vTexCoord;',
-					'',
-					'/* Begin: http://stackoverflow.com/questions/7059962/how-do-i-convert-a-vec4-rgba-value-to-a-float */',
-					'highp vec4 encode32(highp float f) {',
-					'	highp float e =5.0;',
-					'	highp float F = abs(f); ',
-					'	highp float sign = step(0.0,-f);',
-					'	highp float exponent = floor(log2(F)); ',
-					'	highp float mantissa = (exp2(- exponent) * F);',
-					'	exponent = floor(log2(F) + 127.0) + floor(log2(mantissa));',
-					'	highp vec4 rgba;',
-					'	rgba.a = 128.0 * sign + floor(exponent*exp2(-1.0));',
-					'	rgba.b = 128.0 * mod(exponent,2.0) + mod(floor(mantissa*128.0),128.0);',
-					'	rgba.g = floor(mod(floor(mantissa*exp2(23.0 -8.0)),exp2(8.0)));',
-					'	rgba.r = floor(exp2(23.0)*mod(mantissa,exp2(-15.0)));',
-					'	return rgba / 255.0;',
-					'}',
-					'',
-					'highp float decode32(highp vec4 rgba) {',
-					'	rgba *= 255.0;',
-					'	highp float sign = 1.0 - step(128.0,rgba.a)*2.0;',
-					'	highp float exponent = 2.0 * mod(rgba.a,128.0) + step(128.0,rgba.b) - 127.0; ',
-					'	highp float mantissa = mod(rgba.b,128.0)*65536.0 + rgba.g*256.0 +rgba.r + float(0x800000);',
-					'	highp float result =  sign * exp2(exponent) * (mantissa * exp2(-23.0 )); ',
-					'	return result;',
-					'}',
-					'/* End: http://stackoverflow.com/questions/7059962/how-do-i-convert-a-vec4-rgba-value-to-a-float */',
-					'',
-					'float index;',
-					'vec3 threadId;',
-					'',
-					'vec3 indexTo3D(float idx, vec3 texDim) {',
-					'	float z = floor(idx / (texDim.x * texDim.y));',
-					'	idx -= z * texDim.x * texDim.y;',
-					'	float y = floor(idx / texDim.x);',
-					'	float x = mod(idx, texDim.x);',
-					'	return vec3(x, y, z);',
-					'}',
-					'',
-					'float get(sampler2D tex, vec2 texSize, vec3 texDim, float z, float y, float x) {',
-					'	float index = (z * texDim.x * texDim.y) + (y * texDim.x) + x;',
-					'	float t = (floor(index / texSize.x) + 0.5) / texSize.y;',
-					'	float s = (mod(index, texSize.x) + 0.5) / texSize.x;',
-					'	return decode32(texture2D(tex, vec2(s, t)));',
-					'}',
-					'',
-					'float get(sampler2D tex, vec2 texSize, vec3 texDim, float y, float x) {',
-					'	return get(tex, texSize, texDim, 0.0, y, x);',
-					'}',
-					'',
-					'float get(sampler2D tex, vec2 texSize, vec3 texDim, float x) {',
-					'	return get(tex, texSize, texDim, 0.0, 0.0, x);',
-					'}',
-					'',
-					paramStr,
-					compileToGlsl(funcStr, {}),
-					'',
-					'void main(void) {',
-					'	index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize[0];',
-					'	threadId = indexTo3D(index, uOutputDim);',
-					'	gl_FragColor = kernel();',
-					'}'
-				].join('\n');
-				
-				var vertShader = gl.createShader(gl.VERTEX_SHADER);
-				var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-				
-				gl.shaderSource(vertShader, vertShaderSrc);
-				gl.shaderSource(fragShader, fragShaderSrc);
-				
-				gl.compileShader(vertShader);
-				gl.compileShader(fragShader);
-				
-				if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
-					console.error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(vertShader));
-					return null;
-				}
-				if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
-					console.error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(fragShader));
-					return null;
-				}
-				
-				program = gl.createProgram();
-				gl.attachShader(program, vertShader);
-				gl.attachShader(program, fragShader);
-				gl.linkProgram(program);
-				
-				programCache[this] = program;
-			}
+			programCache[this] = program;
+		}
+		
+		return function() {
 			gl.useProgram(program);
 			
 			var texSize = dimToTexSize(gl, opt.dimensions);
