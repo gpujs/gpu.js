@@ -1,23 +1,15 @@
 function basic_return( mode ) {
-	var f = GPU(function() {
+	var gpu = new GPU();
+	var f = gpu.createKernel(function() {
 		return 42.0;
 	}, {
-		thread : [1],
-		block : [1],
+		dimensions : [1],
 		mode : mode
 	});
 	
 	QUnit.ok( f !== null, "function generated test");
 	QUnit.close(f(), 42.0, 0.01, "basic return function test");
 }
-
-QUnit.test( "basic_return (string)", function() {
-	QUnit.equal( 
-		GPU._jsStrToWebclglStr( "function() { return 42.0; }" ), 
-		"void main() { out_float = 42.0; }", 
-		"Basic return string conversion" 
-	);
-});
 
 QUnit.test( "basic_return (auto)", function() {
 	basic_return(null);

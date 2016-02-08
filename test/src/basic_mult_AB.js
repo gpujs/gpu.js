@@ -1,13 +1,14 @@
-QUnit.test( "basic_sum_AB (auto)", function( assert ) {
-	var f = GPU(function(a, b) {
+QUnit.test( "basic_mult_AB (auto)", function( assert ) {
+	var gpu = new GPU();
+	var f = gpu.createKernel(function(a, b) {
 		var sum = 0;
 		sum += a[this.thread.y][0] * b[0][this.thread.x];
 		sum += a[this.thread.y][1] * b[1][this.thread.x];
 		sum += a[this.thread.y][2] * b[2][this.thread.x];
 		return sum;
 	}, {
-		thread : [3, 3],
-		block : [1, 1]
+		dimensions : [3, 3],
+		mode: 'gpu'
 	});
 	
 	assert.ok( f !== null, "function generated test");

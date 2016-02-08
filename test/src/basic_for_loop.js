@@ -1,5 +1,6 @@
 function basic_for_loop_test( assert, mode ) {
-	var f = GPU(function(a, b) {
+	var gpu = new GPU();
+	var f = gpu.createKernel(function(a, b) {
 		var x = 0.0;
 		var i = 0.0;
 		for(i = 0.0; i<10.0; ++i) {
@@ -8,8 +9,7 @@ function basic_for_loop_test( assert, mode ) {
 		
 		return (a[this.thread.x] + b[this.thread.x] + x);
 	}, {
-		thread : [6],
-		block : [1],
+		dimensions : [6],
 		mode : mode
 	});
 	

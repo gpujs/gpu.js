@@ -1,3 +1,5 @@
+var gpu = new GPU();
+
 /**
  * Figure out how long it takes for a method to execute.
  *
@@ -61,16 +63,16 @@ console.log("startup code", [set_a, set_b]);
 // GPU.JS setup code
 //
 function benchmarkCode(mode) {
-	var runFunction = GPU(function(a, b) {
+	var runFunction = gpu.createKernel(function(a, b) {
 		var res = 0.0;
 		var i = 0.0;
 		for(i = 0.0; i < 500000; ++i) {
-			res += Math.sqrt( Math.pow( a[this.thread.x] , b[this.thread.x] ) );
+			res += Math.sqrt( a[this.thread.x] * b[this.thread.x] );
 		}
 		 
 		return res;
 	}, {
-		thread : [2048],
+		dimensions : [2048],
 		mode : mode
 	});
 	 
