@@ -22,6 +22,8 @@
 			numTexels *= dimensions[i];
 		}
 		
+		// TODO: find out why this is broken in Safari
+		/*
 		var maxSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
 		if (numTexels < maxSize) {
 			return [numTexels, 1];
@@ -29,6 +31,10 @@
 			var height = Math.ceil(numTexels / maxSize);
 			return [maxSize, height];
 		}
+		*/
+	
+		var w = Math.ceil(Math.sqrt(numTexels));
+		return [w, w];
 	}
 
 	function validateStringIsFunction( funcStr ) {
@@ -292,8 +298,8 @@
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 			var bytes = new Uint8Array(texSize[0]*texSize[1]*4);
 			gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
-			
 			var result = Array.prototype.slice.call(new Float32Array(bytes.buffer));
+			result.length = threadDim[0] * threadDim[1] * threadDim[2];
 			
 			if (opt.dimensions.length == 1) {
 				return result;

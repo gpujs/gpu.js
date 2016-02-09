@@ -8,10 +8,12 @@ GPU = (function() {
 			canvas = document.createElement('canvas');
 			canvas.width = 2;
 			canvas.height = 2;
-			gl = canvas.getContext("experimental-webgl", {
+			var glOpt = {
 		        depth: false,
 				antialias: false
-		    });
+		    };
+
+			gl = canvas.getContext("experimental-webgl", glOpt) || canvas.getContext("webgl", glOpt);
 		}
 		
 		gl.getExtension('OES_texture_float');
