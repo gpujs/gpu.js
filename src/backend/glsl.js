@@ -57,8 +57,12 @@
 		return dim.reverse();
 	}
 
-	function flatten(arrays) {
-		return [].concat.apply([], arrays);
+	function flatten(arr) {
+		if (Array.isArray(arr[0])) {
+			return [].concat.apply([], arr);
+		} else {
+			return arr;
+		}
 	}
 
 	function splitArray(array, part) {
@@ -266,7 +270,14 @@
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array((new Float32Array(flatten(arguments[i]))).buffer));
+				
+				var paramArray = flatten(arguments[i]);
+				while (paramArray.length < paramSize[0] * paramSize[1]) {
+					paramArray.push(0);
+				}
+				var argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
+				
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
 				textures.push(texture);
 				
 				var paramLoc = gl.getUniformLocation(program, "user_" + paramNames[i]);
