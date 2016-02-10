@@ -45,7 +45,8 @@
 					x: 0,
 					y: 0,
 					z: 0
-				}
+				},
+				dimensions: threadDim
 			};
 			
 			for (ctx.thread.z=0; ctx.thread.z<threadDim[2]; ctx.thread.z++) {

@@ -107,6 +107,9 @@
 			funcStr = funcStr.replace(new RegExp('this.thread.x', 'g'), 'gpu_threadX');
 			funcStr = funcStr.replace(new RegExp('this.thread.y', 'g'), 'gpu_threadY');
 			funcStr = funcStr.replace(new RegExp('this.thread.z', 'g'), 'gpu_threadZ');
+			funcStr = funcStr.replace(new RegExp('this.dimensions.x', 'g'), 'gpu_dimensionsX');
+			funcStr = funcStr.replace(new RegExp('this.dimensions.y', 'g'), 'gpu_dimensionsY');
+			funcStr = funcStr.replace(new RegExp('this.dimensions.z', 'g'), 'gpu_dimensionsZ');
 			funcStr = funcStr.replace(new RegExp('Math.', 'g'), 'gpu_math_');
 			
 			var vertShaderSrc = [
@@ -623,6 +626,12 @@
 	            retArr.push('threadId.y');
 	        } else if (idtNode.name == "gpu_threadZ") {
 	            retArr.push('threadId.z');
+			} else if (idtNode.name == "gpu_dimensionsX") {
+	            retArr.push('uOutputDim.x');
+	        } else if (idtNode.name == "gpu_dimensionsY") {
+	            retArr.push('uOutputDim.y');
+	        } else if (idtNode.name == "gpu_dimensionsZ") {
+	            retArr.push('uOutputDim.z');
 	        } else {
 				retArr.push('user_' + idtNode.name);
 			}
