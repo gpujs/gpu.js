@@ -77,7 +77,7 @@ GPU = (function() {
 		//
 		var ret = null;
 		
-		if( mode === null || mode === "gpu" || mode === "auto" ) {
+		if( mode === undefined || mode === "gpu" || mode === "auto" ) {
 			// Attempts to do the conversion to glsl
 			if( (ret = this._backendGLSL(kernel, paramObj)) !== null) {
 				return ret;

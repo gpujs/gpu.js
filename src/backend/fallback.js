@@ -66,10 +66,8 @@
 		}
 		
 		ret.dimensions = function(dim) {
-			if (dim !== undefined) {
-				opt.dimensions = dim;
-			}
-			return opt.dimensions;
+			paramObj.dimensions = dim;
+			return ret;
 		};
 		
 		ret.mode = "cpu";
