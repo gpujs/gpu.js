@@ -56,20 +56,20 @@ GPU = (function() {
 		//
 		// basic parameters safety checks
 		//
-		if( kernel === null ) {
+		if( kernel === undefined ) {
 			throw "Missing kernel parameter";
 		}
-		if( {}.toString.call(kernel) !== '[object Function]' ) {
+		if( !(kernel instanceof Function) ) {
 			throw "kernel parameter not a function";
 		}
-		if( paramObj === null ) {
+		if( paramObj === undefined ) {
 			paramObj = {};
 		}
 		
 		//
 		// Get theconfig, fallbacks to default value if not set
 		//
-		paramObj.dimensions = paramObj.dimensions || [1024];
+		paramObj.dimensions = paramObj.dimensions || [1];
 		mode = paramObj.mode && paramObj.mode.toLowerCase();
 		
 		//
