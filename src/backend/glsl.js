@@ -307,10 +307,9 @@
 				return splitArray(result, opt.dimensions[0]);
 			} else if (opt.dimensions.length == 3) {
 				var cube = splitArray(result, opt.dimensions[0] * opt.dimensions[1]);
-				cube.map(function(x) {
+				return cube.map(function(x) {
 					return splitArray(x, opt.dimensions[0]);
 				});
-				return cube;
 			}
 		};
 	};
