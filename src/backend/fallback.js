@@ -72,6 +72,8 @@
 			return opt.dimensions;
 		};
 		
+		ret.mode = "cpu";
+		
 		return ret;
 	};
 })(GPU);

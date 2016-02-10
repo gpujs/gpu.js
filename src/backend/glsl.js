@@ -262,63 +262,102 @@
 			gl.uniform2fv(uTexSizeLoc, texSize);
 			
 			var textures = [];
-			for (var i=0; i<paramNames.length; i++) {
-				var paramDim = getDimensions(arguments[i]);
-				while (paramDim.length < 3) {
-					paramDim.push(1);
+			var textureCount = 0;
+			for (textureCount=0; textureCount<paramNames.length; textureCount++) {
+				var paramDim, paramSize, texture;
+				if (Array.isArray(arguments[textureCount])) {
+					paramDim = getDimensions(arguments[textureCount]);
+					while (paramDim.length < 3) {
+						paramDim.push(1);
+					}
+					paramSize = dimToTexSize(gl, paramDim);
+					
+					texture = gl.createTexture();
+					gl.activeTexture(gl["TEXTURE"+textureCount]);
+					gl.bindTexture(gl.TEXTURE_2D, texture);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+					
+					var paramArray = flatten(arguments[textureCount]);
+					while (paramArray.length < paramSize[0] * paramSize[1]) {
+						paramArray.push(0);
+					}
+					var argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
+					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
+				} else {
+					paramDim = arguments[textureCount].dimensions;
+					paramSize = arguments[textureCount].size;
+					texture = arguments[textureCount].texture;
+					
+					gl.activeTexture(gl["TEXTURE"+textureCount]);
+					gl.bindTexture(gl.TEXTURE_2D, texture);
 				}
-				var paramSize = dimToTexSize(gl, paramDim);
 				
-				var texture = gl.createTexture();
-				gl.activeTexture(gl["TEXTURE"+i]);
-				gl.bindTexture(gl.TEXTURE_2D, texture);
+				textures.push(texture);
+				
+				var paramLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount]);
+				var paramSizeLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Size");
+				var paramDimLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Dim");
+				
+				gl.uniform3fv(paramDimLoc, paramDim);
+				gl.uniform2fv(paramSizeLoc, paramSize);
+				gl.uniform1i(paramLoc, textureCount);
+			}
+			
+			if (opt.outputToTexture) {
+				var outputTexture = gl.createTexture();
+				gl.activeTexture(gl["TEXTURE"+textureCount]);
+				gl.bindTexture(gl.TEXTURE_2D, outputTexture);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 				
-				var paramArray = flatten(arguments[i]);
-				while (paramArray.length < paramSize[0] * paramSize[1]) {
-					paramArray.push(0);
+				var framebuffer = gl.createFramebuffer();
+				framebuffer.width = texSize[0];
+				framebuffer.height = texSize[1];
+				gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
+				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+				return {
+					texture: outputTexture,
+					size: texSize,
+					dimensions: threadDim
+				};
+			} else {
+				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+				var bytes = new Uint8Array(texSize[0]*texSize[1]*4);
+				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
+				var result = Array.prototype.slice.call(new Float32Array(bytes.buffer));
+				result.length = threadDim[0] * threadDim[1] * threadDim[2];
+				
+				if (opt.dimensions.length == 1) {
+					return result;
+				} else if (opt.dimensions.length == 2) {
+					return splitArray(result, opt.dimensions[0]);
+				} else if (opt.dimensions.length == 3) {
+					var cube = splitArray(result, opt.dimensions[0] * opt.dimensions[1]);
+					return cube.map(function(x) {
+						return splitArray(x, opt.dimensions[0]);
+					});
 				}
-				var argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
-				
-				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
-				textures.push(texture);
-				
-				var paramLoc = gl.getUniformLocation(program, "user_" + paramNames[i]);
-				var paramSizeLoc = gl.getUniformLocation(program, "user_" + paramNames[i] + "Size");
-				var paramDimLoc = gl.getUniformLocation(program, "user_" + paramNames[i] + "Dim");
-				
-				gl.uniform3fv(paramDimLoc, paramDim);
-				gl.uniform2fv(paramSizeLoc, paramSize);
-				gl.uniform1i(paramLoc, i);
-			}
-			
-			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-			var bytes = new Uint8Array(texSize[0]*texSize[1]*4);
-			gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
-			var result = Array.prototype.slice.call(new Float32Array(bytes.buffer));
-			result.length = threadDim[0] * threadDim[1] * threadDim[2];
-			
-			if (opt.dimensions.length == 1) {
-				return result;
-			} else if (opt.dimensions.length == 2) {
-				return splitArray(result, opt.dimensions[0]);
-			} else if (opt.dimensions.length == 3) {
-				var cube = splitArray(result, opt.dimensions[0] * opt.dimensions[1]);
-				return cube.map(function(x) {
-					return splitArray(x, opt.dimensions[0]);
-				});
 			}
 		}
 		
 		ret.dimensions = function(dim) {
-			if (dim !== undefined) {
-				opt.dimensions = dim;
-			}
-			return opt.dimensions;
+			opt.dimensions = dim;
+			return ret;
 		};
+		
+		ret.outputToTexture = function(outputToTexture) {
+			opt.outputToTexture = outputToTexture;
+			return ret;
+		};
+		
+		ret.mode = "gpu";
 		
 		return ret;
 	};
