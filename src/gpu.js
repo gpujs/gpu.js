@@ -1,6 +1,17 @@
 GPU = (function() {
 	var gl, canvas;
 	
+	// https://gist.github.com/TooTallNate/4750953
+	function endianness() {
+		var b = new ArrayBuffer(4);
+		var a = new Uint32Array(b);
+		var c = new Uint8Array(b);
+		a[0] = 0xdeadbeef;
+		if (c[0] == 0xef) return 'LE';
+		if (c[0] == 0xde) return 'BE';
+		throw new Error('unknown endianness');
+	}
+	
 	function GPU(ctx) {
 		canvas = undefined;
 		gl = ctx;
@@ -23,6 +34,7 @@ GPU = (function() {
 		this.gl = gl;
 		this.canvas = canvas;
 		this.programCache = {};
+		this.endianness = endianness();
 	}
 	
 	GPU.prototype.getGl = function() {

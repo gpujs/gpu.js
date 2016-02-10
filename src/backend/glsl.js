@@ -84,6 +84,7 @@
 		var canvas = this.canvas;
 		var compileToGlsl = this._compileToGlsl;
 		var programCache = this.programCache;
+		var endianness = this.endianness;
 		
 		var funcStr = kernel.toString();
 		if( !validateStringIsFunction(funcStr) ) {
@@ -144,10 +145,12 @@
 				'	rgba.b = 128.0 * mod(exponent,2.0) + mod(floor(mantissa*128.0),128.0);',
 				'	rgba.g = floor(mod(floor(mantissa*exp2(23.0 -8.0)),exp2(8.0)));',
 				'	rgba.r = floor(exp2(23.0)*mod(mantissa,exp2(-15.0)));',
+				(endianness == 'LE' ? '' : 'rgba.rgba = rgba.abgr;'),
 				'	return rgba / 255.0;',
 				'}',
 				'',
 				'highp float decode32(highp vec4 rgba) {',
+				(endianness == 'LE' ? '' : 'rgba.rgba = rgba.abgr;'),
 				'	rgba *= 255.0;',
 				'	highp float sign = 1.0 - step(128.0,rgba.a)*2.0;',
 				'	highp float exponent = 2.0 * mod(rgba.a,128.0) + step(128.0,rgba.b) - 127.0; ',
