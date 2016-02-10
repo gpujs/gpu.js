@@ -40,13 +40,11 @@ GPU = (function() {
 	/// +---------------+---------------+---------------------------------------------------------------------------+
 	/// | Name          | Default value | Description                                                               |
 	/// +---------------+---------------+---------------------------------------------------------------------------+
-	/// | thread        | [1024]        | Thread dimension array                                                    |
-	/// | block         | [1]           | Block dimension array                                                     |
+	/// | dimensions    | [1024]        | Thread dimension array                                                    |
 	/// | mode          | null          | CPU / GPU configuration mode, "auto" / null. Has the following modes.     |
 	/// |               |               |     + null / "auto" : Attempts to build GPU mode, else fallbacks          |
 	/// |               |               |     + "gpu" : Attempts to build GPU mode, else fallbacks                  |
 	/// |               |               |     + "cpu" : Forces JS fallback mode only                                |
-	/// | floatOffset   | 65535         | Float values offset range                                                 |
 	/// +---------------+---------------+---------------------------------------------------------------------------+
 	///
 	/// @param inputFunction   The calling to perform the conversion
@@ -69,18 +67,18 @@ GPU = (function() {
 		}
 		
 		//
-		// Get the thread and block config, fallbacks to default value if not set
+		// Get theconfig, fallbacks to default value if not set
 		//
 		paramObj.dimensions = paramObj.dimensions || [1024];
 		mode = paramObj.mode && paramObj.mode.toLowerCase();
 		
 		//
-		// Attempts to do the webclgl conversion, returns if success
+		// Attempts to do the glsl conversion, returns if success
 		//
 		var ret = null;
 		
 		if( mode === null || mode === "gpu" || mode === "auto" ) {
-			// Attempts to do the conversion to webclgl
+			// Attempts to do the conversion to glsl
 			if( (ret = this._backendGLSL(kernel, paramObj)) !== null) {
 				return ret;
 			}
