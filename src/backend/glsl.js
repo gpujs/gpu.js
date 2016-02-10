@@ -219,7 +219,7 @@
 			programCache[this] = program;
 		}
 		
-		return function() {
+		function ret() {
 			gl.useProgram(program);
 			
 			var texSize = dimToTexSize(gl, opt.dimensions);
@@ -311,7 +311,16 @@
 					return splitArray(x, opt.dimensions[0]);
 				});
 			}
+		}
+		
+		ret.dimensions = function(dim) {
+			if (dim !== undefined) {
+				opt.dimensions = dim;
+			}
+			return opt.dimensions;
 		};
+		
+		return ret;
 	};
 
 	GPU.prototype._compileToGlsl = (function() {

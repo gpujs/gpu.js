@@ -25,13 +25,13 @@
 	///
 	/// @returns callable function if converted, else returns null
 	GPU.prototype._backendFallback = function(kernel, paramObj) {
-		var threadDim = clone(paramObj.dimensions);
-		
-		while (threadDim.length < 3) {
-			threadDim.push(1);
-		}
-		
-		return function() {
+		function ret() {
+			var threadDim = clone(paramObj.dimensions);
+			
+			while (threadDim.length < 3) {
+				threadDim.push(1);
+			}
+			
 			var ret = new Array(threadDim[2]);
 			for (var i=0; i<threadDim[2]; i++) {
 				ret[i] = new Array(threadDim[1]);
@@ -63,6 +63,15 @@
 			}
 			
 			return ret;
+		}
+		
+		ret.dimensions = function(dim) {
+			if (dim !== undefined) {
+				opt.dimensions = dim;
+			}
+			return opt.dimensions;
 		};
+		
+		return ret;
 	};
 })(GPU);
