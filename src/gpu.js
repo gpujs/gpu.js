@@ -84,27 +84,23 @@ GPU = (function() {
 		paramObj.dimensions = paramObj.dimensions || [1];
 		mode = paramObj.mode && paramObj.mode.toLowerCase();
 		
-		//
-		// Attempts to do the glsl conversion, returns if success
-		//
-		var ret = null;
-		
-		if( mode === undefined || mode === "gpu" || mode === "auto" ) {
-			// Attempts to do the conversion to glsl
-			if( (ret = this._backendGLSL(kernel, paramObj)) !== null) {
-				return ret;
-			}
-			
-			// GPU only mode failed, return null
-			if( mode == "gpu" ) {
-				return null;
-			}
+		if ( mode == "cpu" ) {
+			return this._backendFallback(kernel, paramObj);
 		}
 		
 		//
-		// Fallback to pure native JS
+		// Attempts to do the glsl conversion
 		//
-		return this._backendFallback(kernel, paramObj);
+		try {
+			return this._backendGLSL(kernel, paramObj);
+		} catch (e) {
+			if ( mode != "gpu") {
+				console.warning("Falling back to CPU!");
+				return this._backendFallback(kernel, paramObj);
+			} else {
+				return null;
+			}
+		}
 	};
 
 	return GPU;

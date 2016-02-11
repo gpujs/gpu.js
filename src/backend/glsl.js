@@ -107,7 +107,7 @@
 		
 		var funcStr = kernel.toString();
 		if( !validateStringIsFunction(funcStr) ) {
-			return null;
+			throw "Unable to get body of kernel function";
 		}
 		
 		paramNames = getParamNames(funcStr);
@@ -238,12 +238,12 @@
 				if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
 					console.error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(vertShader));
 					console.log(vertShaderSrc);
-					return null;
+					throw "Error compiling vertex shader";
 				}
 				if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
 					console.error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(fragShader));
 					console.log(fragShaderSrc);
-					return null;
+					throw "Error compiling fragment shader";
 				}
 				
 				program = gl.createProgram();
