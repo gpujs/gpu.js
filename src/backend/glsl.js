@@ -79,18 +79,22 @@
 		return tmp;
 	}
 	
+	function getArgumentType(arg) {
+		if (Array.isArray(arg)) {
+			return 'Array';
+		} else if (typeof arg == "number") {
+			return 'Number';
+		} else if (arg.texture instanceof WebGLTexture) {
+			return 'Texture';
+		} else {
+			return 'Unknown';
+		}
+	}
+	
 	function getProgramCacheKey(args) {
 		var key = '';
 		for (var i=0; i<args.length; i++) {
-			if (Array.isArray(args[i])) {
-				key += 'Array';
-			} else if (typeof args[i] == "number") {
-				key += 'Number';
-			} else if (args[i].texture instanceof WebGLTexture) {
-				key += 'Texture';
-			} else {
-				key += 'Unknown';
-			}
+			key += getArgumentType(args[i]);
 		}
 		return key;
 	}
@@ -117,9 +121,14 @@
 				var paramStr = '';
 				
 				for (var i=0; i<paramNames.length; i++) {
-					paramStr += 'uniform sampler2D user_' + paramNames[i] + ';\n';
-					paramStr += 'uniform vec2 user_' + paramNames[i] + 'Size;\n';
-					paramStr += 'uniform vec3 user_' + paramNames[i] + 'Dim;\n';
+					var argType = getArgumentType(arguments[i]);
+					if (argType == "Array" || argType == "Texture") {
+						paramStr += 'uniform sampler2D user_' + paramNames[i] + ';\n';
+						paramStr += 'uniform vec2 user_' + paramNames[i] + 'Size;\n';
+						paramStr += 'uniform vec3 user_' + paramNames[i] + 'Dim;\n';
+					} else if (argType == "Number") {
+						paramStr += 'uniform float user_' + paramNames[i] + ';\n';
+					}
 				}
 				
 				funcStr = funcStr.replace(new RegExp('this.thread.x', 'g'), 'gpu_threadX');
@@ -228,10 +237,12 @@
 				
 				if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
 					console.error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(vertShader));
+					console.log(vertShaderSrc);
 					return null;
 				}
 				if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
 					console.error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(fragShader));
+					console.log(fragShaderSrc);
 					return null;
 				}
 				
@@ -309,28 +320,38 @@
 					}
 					var argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
 					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
-				} else if (typeof arguments[textureCount] == "number") {
 					
+					textures[textureCount] = texture;
+					
+					var paramLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount]);
+					var paramSizeLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Size");
+					var paramDimLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Dim");
+					
+					gl.uniform3fv(paramDimLoc, paramDim);
+					gl.uniform2fv(paramSizeLoc, paramSize);
+					gl.uniform1i(paramLoc, textureCount);
+				} else if (typeof arguments[textureCount] == "number") {
+					var argLoc = gl.getUniformLocation(program, "user_"+paramNames[textureCount]);
+					gl.uniform1f(argLoc, arguments[textureCount]);
 				} else if (arguments[textureCount].texture instanceof WebGLTexture) {
 					paramDim = arguments[textureCount].dimensions;
 					paramSize = arguments[textureCount].size;
 					texture = arguments[textureCount].texture;
+					textures[textureCount] = texture;
 					
 					gl.activeTexture(gl["TEXTURE"+textureCount]);
 					gl.bindTexture(gl.TEXTURE_2D, texture);
+					
+					var paramLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount]);
+					var paramSizeLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Size");
+					var paramDimLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Dim");
+					
+					gl.uniform3fv(paramDimLoc, paramDim);
+					gl.uniform2fv(paramSizeLoc, paramSize);
+					gl.uniform1i(paramLoc, textureCount);
 				} else {
 					throw "Input type not supported";
 				}
-				
-				textures.push(texture);
-				
-				var paramLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount]);
-				var paramSizeLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Size");
-				var paramDimLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Dim");
-				
-				gl.uniform3fv(paramDimLoc, paramDim);
-				gl.uniform2fv(paramSizeLoc, paramSize);
-				gl.uniform1i(paramLoc, textureCount);
 			}
 			
 			if (opt.outputToTexture) {
