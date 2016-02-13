@@ -84,7 +84,7 @@
 			return 'Array';
 		} else if (typeof arg == "number") {
 			return 'Number';
-		} else if (arg.texture instanceof WebGLTexture) {
+		} else if (arg instanceof GPUTexture) {
 			return 'Texture';
 		} else {
 			return 'Unknown';
@@ -110,6 +110,7 @@
 	}
 
 	GPU.prototype._backendGLSL = function(kernel, opt) {
+		var gpu = this;
 		var gl = this.gl;
 		var canvas = this.canvas;
 		var compileToGlsl = this._compileToGlsl;
@@ -125,6 +126,21 @@
 		var programCache = [];
 		
 		function ret() {
+			if (!opt.dimensions || opt.dimensions.length === 0) {
+				if (arguments.length != 1) {
+					throw "Auto dimensions only supported for kernels with only one input";
+				}
+				
+				var argType = getArgumentType(arguments[0]);
+				if (argType == "Array") {
+					opt.dimensions = getDimensions(argType);
+				} else if (argType == "Texture") {
+					opt.dimensions = arguments[0].dimensions;
+				} else {
+					throw "Auto dimensions not supported for input type: " + argType;
+				}
+			}
+			
 			var programCacheKey = getProgramCacheKey(arguments, opt);
 			var program = programCache[programCacheKey];
 			
@@ -346,7 +362,7 @@
 				} else if (typeof arguments[textureCount] == "number") {
 					var argLoc = gl.getUniformLocation(program, "user_"+paramNames[textureCount]);
 					gl.uniform1f(argLoc, arguments[textureCount]);
-				} else if (arguments[textureCount].texture instanceof WebGLTexture) {
+				} else if (arguments[textureCount] instanceof GPUTexture) {
 					paramDim = arguments[textureCount].dimensions;
 					paramSize = arguments[textureCount].size;
 					texture = arguments[textureCount].texture;
@@ -363,7 +379,7 @@
 					gl.uniform2fv(paramSizeLoc, paramSize);
 					gl.uniform1i(paramLoc, textureCount);
 				} else {
-					throw "Input type not supported";
+					throw "Input type not supported: " + arguments[textureCount];
 				}
 			}
 			
@@ -383,11 +399,7 @@
 				gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-				return {
-					texture: outputTexture,
-					size: texSize,
-					dimensions: threadDim
-				};
+				return new GPUTexture(gpu, outputTexture, texSize, threadDim);
 			} else {
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 				var bytes = new Uint8Array(texSize[0]*texSize[1]*4);
