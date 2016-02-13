@@ -401,6 +401,9 @@
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 				return new GPUTexture(gpu, outputTexture, texSize, threadDim);
 			} else {
+				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+   				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+   				
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 				var bytes = new Uint8Array(texSize[0]*texSize[1]*4);
 				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
