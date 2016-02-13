@@ -435,7 +435,10 @@
 			return ret;
 		};
 		
-		ret.mode = "gpu";
+		ret.mode = function(mode) {
+			opt.mode = mode;
+			return gpu.createKernel(kernel, opt);
+		};
 		
 		return ret;
 	};

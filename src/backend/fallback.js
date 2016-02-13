@@ -35,6 +35,8 @@
 	///
 	/// @returns callable function if converted, else returns null
 	GPU.prototype._backendFallback = function(kernel, opt) {
+		var gpu = this;
+		
 		function ret() {
 			if (!opt.dimensions || opt.dimensions.length === 0) {
 				if (arguments.length != 1) {
@@ -118,7 +120,10 @@
 			return ret;
 		};
 		
-		ret.mode = "cpu";
+		ret.mode = function(mode) {
+			opt.mode = mode;
+			return gpu.createKernel(kernel, opt);
+		};
 		
 		return ret;
 	};
