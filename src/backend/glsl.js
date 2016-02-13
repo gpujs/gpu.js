@@ -91,11 +91,21 @@
 		}
 	}
 	
-	function getProgramCacheKey(args) {
+	function getProgramCacheKey(args, opt) {
 		var key = '';
 		for (var i=0; i<args.length; i++) {
 			key += getArgumentType(args[i]);
 		}
+		
+		var specialFlags = '';
+		if (opt.wraparound) {
+			specialFlags += "Wraparound";
+		}
+		
+		if (specialFlags) {
+			key = key + '-' + specialFlags;
+		}
+		
 		return key;
 	}
 
@@ -115,7 +125,8 @@
 		var programCache = [];
 		
 		function ret() {
-			var program = programCache[getProgramCacheKey(arguments)];
+			var programCacheKey = getProgramCacheKey(arguments, opt);
+			var program = programCache[programCacheKey];
 			
 			if (program === undefined) {
 				var paramStr = '';
@@ -175,12 +186,12 @@
 					'	rgba.b = 128.0 * mod(exponent,2.0) + mod(floor(mantissa*128.0),128.0);',
 					'	rgba.g = floor(mod(floor(mantissa*exp2(23.0 -8.0)),exp2(8.0)));',
 					'	rgba.r = floor(exp2(23.0)*mod(mantissa,exp2(-15.0)));',
-					(endianness == 'LE' ? '' : 'rgba.rgba = rgba.abgr;'),
+					(endianness == 'LE' ? '' : '	rgba.rgba = rgba.abgr;'),
 					'	return rgba / 255.0;',
 					'}',
 					'',
 					'highp float decode32(highp vec4 rgba) {',
-					(endianness == 'LE' ? '' : 'rgba.rgba = rgba.abgr;'),
+					(endianness == 'LE' ? '' : '	rgba.rgba = rgba.abgr;'),
 					'	rgba *= 255.0;',
 					'	highp float sign = 1.0 - step(128.0,rgba.a)*2.0;',
 					'	highp float exponent = 2.0 * mod(rgba.a,128.0) + step(128.0,rgba.b) - 127.0; ',
@@ -202,7 +213,9 @@
 					'}',
 					'',
 					'float get(sampler2D tex, vec2 texSize, vec3 texDim, float z, float y, float x) {',
-					'	float index = (z * texDim.x * texDim.y) + (y * texDim.x) + x;',
+					'	vec3 xyz = vec3(x, y, z);',
+					(opt.wraparound ? '	xyz = mod(xyz, texDim);' : ''),
+					'	float index = (xyz.z * texDim.x * texDim.y) + (xyz.y * texDim.x) + xyz.x;',
 					'	float t = (floor(index / texSize.x) + 0.5) / texSize.y;',
 					'	float s = (mod(index, texSize.x) + 0.5) / texSize.x;',
 					'	return decode32(texture2D(tex, vec2(s, t)));',
@@ -251,7 +264,7 @@
 				gl.attachShader(program, fragShader);
 				gl.linkProgram(program);
 				
-				programCache[getProgramCacheKey(arguments)] = program;
+				programCache[programCacheKey] = program;
 			}
 			
 			gl.useProgram(program);
@@ -397,6 +410,11 @@
 		
 		ret.dimensions = function(dim) {
 			opt.dimensions = dim;
+			return ret;
+		};
+		
+		ret.wraparound = function(flag) {
+			opt.wraparound = flag;
 			return ret;
 		};
 		
