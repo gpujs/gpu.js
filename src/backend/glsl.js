@@ -363,10 +363,14 @@
 					var argLoc = gl.getUniformLocation(program, "user_"+paramNames[textureCount]);
 					gl.uniform1f(argLoc, arguments[textureCount]);
 				} else if (arguments[textureCount] instanceof GPUTexture) {
-					paramDim = arguments[textureCount].dimensions;
+					paramDim = clone(arguments[textureCount].dimensions);
 					paramSize = arguments[textureCount].size;
 					texture = arguments[textureCount].texture;
 					textures[textureCount] = texture;
+					
+					while (paramDim.length < 3) {
+						paramDim.push(1);
+					}
 					
 					gl.activeTexture(gl["TEXTURE"+textureCount]);
 					gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -399,7 +403,7 @@
 				gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-				return new GPUTexture(gpu, outputTexture, texSize, threadDim);
+				return new GPUTexture(gpu, outputTexture, texSize, opt.dimensions);
 			} else {
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
    				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
