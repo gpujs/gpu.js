@@ -9,6 +9,8 @@
 /// @property  {[String,...]}  paramNames         Parameter names of the function
 /// @property  {[String,...]}  paramType          Shader land parameter type assumption
 ///
+/// @property  {String}        webglFunctionString   jsFunction.toString()
+///
 var functionNode = (function() {
 	
 	//
@@ -45,6 +47,9 @@ var functionNode = (function() {
 		// Setup the function name property
 		//
 		this.functionName = functionName || jsFunction.name;
+		if( !(this.functionName) ) {
+			throw "jsFunction, missing name argument or value";
+		}
 		
 		//
 		// Extract parameter name, and its argument types
@@ -113,11 +118,45 @@ var functionNode = (function() {
 		return result;
 	}
 
-	// Passing it to the prototype node, in case it is needed elsewhere
+	// Passing it to the class object, in case it is needed elsewhere
 	// Note, support for this is not guranteed across versions.
-	functionNode.prototype._isFunction = isFunction;
-	functionNode.prototype._validateStringIsFunction = validateStringIsFunction;
-	functionNode.prototype._getParamNames = getParamNames;
+	functionNode._isFunction = isFunction;
+	functionNode._validateStringIsFunction = validateStringIsFunction;
+	functionNode._getParamNames = getParamNames;
+	
+	//
+	// Core function
+	//----------------------------------------------------------------------------------------------------
+	
+	///
+	/// @function functionNode.getJS_AST
+	///
+	/// @param {JISON Parser}  Parser to use, assumes in scope "parser" if null
+	/// 
+	/// @return {AST Object}   The function AST Object, note that result is cached under this.jsFunctionAST;
+	///
+	functionNode.prototype.getJS_AST = function getJS_AST( inParser ) {
+		if( this.jsFunctionAST ) {
+			return this.jsFunctionAST;
+		}
+		
+		inParser = inParser || parser;
+		if( inParser == null ) {
+			throw "Missing JS to AST parser";
+		}
+		
+		var prasedObj = parser.parse( "var "+this.functionName+" = "+funcStr+";" );
+		if( prasedObj === null ) {
+			throw "Failed to parse JS code via JISON";
+		}
+			
+		// take out the function object, outside the var declarations
+		var funcAST = prasedObj.body[0].declarations[0].init;
+		this.jsFunctionAST = funcAST;
+		
+		return funcAST;
+	}
+	
 	
 	
 	return functionNode;
