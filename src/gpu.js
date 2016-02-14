@@ -3,7 +3,7 @@
 ///
 /// GPU.JS core class =D
 ///
-GPU = (function() {
+var GPU = (function() {
 	var gl, canvas;
 	
 	// https://gist.github.com/TooTallNate/4750953

@@ -1,4 +1,4 @@
-GPUTexture = (function() {
+var GPUTexture = (function() {
     function GPUTexture(gpu, texture, size, dimensions) {
         this.gpu = gpu;
         this.texture = texture;
