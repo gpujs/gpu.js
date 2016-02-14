@@ -109,7 +109,11 @@ var functionNode_webgl = (function() {
 	function ast_FunctionExpression(ast, retArr, funcParam) {
 		
 		// Setup function return type and name
-		retArr.push(funcParam.returnType);
+		if(funcParam.isRootKernal) {
+			retArr.push("vec4");
+		} else {
+			retArr.push(funcParam.returnType);
+		}
 		retArr.push(" ");
 		retArr.push(funcParam.functionName);
 		retArr.push("(");
@@ -243,6 +247,8 @@ var functionNode_webgl = (function() {
 			retArr.push('uOutputDim.y');
 		} else if (idtNode.name == "gpu_dimensionsZ") {
 			retArr.push('uOutputDim.z');
+		} else if(funcParam.isRootKernal) {
+			retArr.push("user_"+idtNode.name);
 		} else {
 			retArr.push(idtNode.name);
 		}
@@ -415,9 +421,26 @@ var functionNode_webgl = (function() {
 			ast_generic(mNode.property, retArr, funcParam);
 			retArr.push(")");
 		} else {
-			ast_generic(mNode.object, retArr, funcParam);
-			retArr.push(".");
-			ast_generic(mNode.property, retArr, funcParam);
+			
+			// Unroll the member expression
+			var unrolled = ast_MemberExpression_unroll(mNode);
+			var unrolled_lc = unrolled.toLowerCase()
+			
+			if (unrolled_lc == "this.thread.x") {
+				retArr.push('threadId.x');
+			} else if (unrolled_lc == "this.thread.y") {
+				retArr.push('threadId.y');
+			} else if (unrolled_lc == "this.thread.z") {
+				retArr.push('threadId.z');
+			} else if (unrolled_lc == "this.dimensions.x") {
+				retArr.push('uOutputDim.x');
+			} else if (unrolled_lc == "this.dimensions.y") {
+				retArr.push('uOutputDim.y');
+			} else if (unrolled_lc == "this.dimensions.z") {
+				retArr.push('uOutputDim.z');
+			} else {
+				retArr.push(unrolled);
+			}
 		}
 		return retArr;
 	}
@@ -439,17 +462,19 @@ var functionNode_webgl = (function() {
 	/// @param ast          the AST object to parse
 	///
 	/// @returns  {String} the function namespace call, unrolled
-	function ast_CallExpression_unroll(ast, funcParam) {
+	function ast_MemberExpression_unroll(ast, funcParam) {
 		if( ast.type == "Identifier" ) {
 			return ast.name;
-		}
+		} else if( ast.type == "ThisExpression" ) {
+			return "this";
+		} 
 		
 		if( ast.type == "MemberExpression" ) {
 			if( ast.object && ast.property ) {
 				return (
-					ast_CallExpression_unroll( ast.object, funcParam ) + 
+					ast_MemberExpression_unroll( ast.object, funcParam ) + 
 					"." + 
-					ast_CallExpression_unroll( ast.property, funcParam )
+					ast_MemberExpression_unroll( ast.property, funcParam )
 				);
 			}
 		}  
@@ -474,7 +499,7 @@ var functionNode_webgl = (function() {
 	function ast_CallExpression(ast, retArr, funcParam) {
 		if( ast.callee ) {
 			// Get the full function call, unrolled
-			var funcName = ast_CallExpression_unroll(ast.callee);
+			var funcName = ast_MemberExpression_unroll(ast.callee);
 			
 			// Its a math operator, remove the prefix
 			if( funcName.indexOf(jsMathPrefix) === 0 ) {

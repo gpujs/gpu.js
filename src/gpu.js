@@ -35,6 +35,8 @@ GPU = (function() {
 		this.canvas = canvas;
 		this.programCache = {};
 		this.endianness = endianness();
+		
+		this.functionBuilder = new functionBuilder();
 	}
 	
 	GPU.prototype.getGl = function() {
@@ -98,7 +100,7 @@ GPU = (function() {
 				console.warning("Falling back to CPU!");
 				return this._backendFallback(kernel, paramObj);
 			} else {
-				return null;
+				throw e;
 			}
 		}
 	};

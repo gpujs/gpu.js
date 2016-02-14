@@ -54,6 +54,7 @@ var functionBuilder = (function() {
 	/// Trace all the depending functions being called, from a single function
 	///
 	/// This allow for "uneeded" functions to be automatically optimized out.
+	/// Note that the 0-index, is the starting function trace.
 	///
 	/// Parameters: 
 	/// 	functionName  - {String}        Function name to trace from, default to "kernel"
@@ -83,6 +84,41 @@ var functionBuilder = (function() {
 		return retList;
 	}
 	functionBuilder.prototype.traceFunctionCalls = traceFunctionCalls;
+	
+	///
+	/// Function: webglString_fromFunctionNames
+	///
+	/// Parameters: 
+	/// 	functionList  - {[String,...]} List of function to build the webgl string.
+	///
+	/// Returns:
+	/// 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
+	///
+	function webglString_fromFunctionNames(functionList) {
+		var ret = [];
+		for(var i=0; i<functionList.length; ++i) {
+			ret.push( this.nodeMap[functionList[i]].getWebglFunctionString() );
+		}
+		return ret.join("\n");
+	}
+	functionBuilder.prototype.webglString_fromFunctionNames = webglString_fromFunctionNames;
+	
+	///
+	/// Function: webglString
+	///
+	/// Parameters: 
+	/// 	functionName  - {String} Function name to trace from. If null, it returns the WHOLE builder stack
+	///
+	/// Returns:
+	/// 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
+	///
+	function webglString(functionName) {
+		if(functionName) {
+			return this.webglString_fromFunctionNames( this.traceFunctionCalls(functionName, []).reverse() );
+		} 
+		return this.webglString_fromFunctionNames(Object.keys(this.nodeMap));
+	}
+	functionBuilder.prototype.webglString = webglString;
 	
 	return functionBuilder;
 })();
