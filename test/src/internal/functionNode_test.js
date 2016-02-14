@@ -73,7 +73,7 @@ QUnit.test( "Math.round implementation: A function with arguments", function( as
 
 /// Test creation of function, that calls another function, with ARGS
 QUnit.test( "Two arguments test", function( assert ) {
-	// Math.round node
+	
 	var node = new functionNode(
 		"add_together",
 		function(a,b) {

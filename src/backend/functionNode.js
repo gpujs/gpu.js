@@ -1,27 +1,22 @@
 ///
-/// @class functionNode
+/// Class: functionNode
 ///
-/// Represents a single function, inside JS, webGL, or openGL.
-/// This handles the raw state, converted state, etc.
+/// [INTERNAL] Represents a single function, inside JS, webGL, or openGL.
+/// 
+/// This handles all the raw state, converted state, etc. Of a single function.
 ///
-/// # JS Related properties 
-///
-/// @property  {JS Function}   jsFunction            The JS Function the node represents
-/// @property  {String}        jsFunctionString      jsFunction.toString()
-/// @property  {[String,...]}  paramNames            Parameter names of the function
-/// @property  {[String,...]}  paramType             Shader land parameter type assumption
-/// @property  {Boolean}       isRootKernal          Special indicator, for kernal function
-///
-/// # Webgl related properties
-///
-/// @property  {String}        webglFunctionString   webgl converted function string
-///
-/// # Code analysis properties (after converting to webgl)
-///
-/// @property  {[String,...]}  calledFunctions       List of all the functions called
-/// @property  {[String,...]}  initVariables         List of variables initialized in the function
-/// @property  {[String,...]}  readVariables         List of variables read operations occur
-/// @property  {[String,...]}  writeVariables        List of variables write operations occur
+/// Properties:
+/// 	jsFunction           - {JS Function}   The JS Function the node represents
+/// 	jsFunctionString     - {String}        jsFunction.toString()
+/// 	paramNames           - {[String,...]}  Parameter names of the function
+/// 	paramType            - {[String,...]}  Shader land parameter type assumption
+/// 	isRootKernal         - {Boolean}       Special indicator, for kernal function
+/// 	webglFunctionString  - {String}        webgl converted function string
+/// 	openglFunctionString - {String}        opengl converted function string
+/// 	calledFunctions      - {[String,...]}  List of all the functions called
+/// 	initVariables        - {[String,...]}  List of variables initialized in the function
+/// 	readVariables        - {[String,...]}  List of variables read operations occur
+/// 	writeVariables       - {[String,...]}  List of variables write operations occur
 ///
 var functionNode = (function() {
 	
@@ -30,15 +25,15 @@ var functionNode = (function() {
 	//----------------------------------------------------------------------------------------------------
 	
 	///
-	/// @function functionNode
+	/// Function: functionNode
 	///
-	/// [Constructor] Builds the function with the given JS function, and argument type array. 
-	/// If argument types are not provided, they are assumed to be "float*"
+	/// [Constructor] Builds the function with the given JS function, and argument type array.
 	///
-	/// @param  {String}        Function name to assume, if its null, it attempts to extract from the function
-	/// @param  {JS Function}   JS Function to do conversion   
-	/// @param  {[String,...]}  Parameter type array, assumes "float" if not given
-	/// @param  {String}        The return type, assumes float
+	/// Parameters: 
+	/// 	functionName    - {String}       -Function name to assume, if its null, it attempts to extract from the function
+	/// 	jsFunction      - {JS Function}  JS Function to do conversion   
+	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are "float" if not given
+	/// 	returnType      - {String}       The return type, assumes "float" if not given
 	///
 	function functionNode( functionName, jsFunction, paramTypeArray, returnType ) {
 		
@@ -101,22 +96,34 @@ var functionNode = (function() {
 	//----------------------------------------------------------------------------------------------------
 	
 	///
-	/// @function isFunction
+	/// Function: isFunction
 	///
-	/// @param {JS Function}  Object to validate if its a function
+	/// [static] Return TRUE, on a JS function
 	///
-	/// @return {Boolean}  TRUE if the object is a JS function
+	/// This is 'static' function, not a class function (functionNode.prototype)
+	///
+	/// Parameters:
+	/// 	funcObj - {JS Function} Object to validate if its a function
+	///
+	/// Returns: 
+	/// 	{Boolean} TRUE if the object is a JS function
 	///
 	function isFunction( funcObj ) {
 		return typeof(funcObj) === 'function';
 	}
 	
 	///
-	/// @function validateStringIsFunction
+	/// Function: validateStringIsFunction
 	///
-	/// @param {String}  String of JS function to validate
+	/// [static] Return TRUE, on a valid JS function string
 	///
-	/// @return {Boolean}  TRUE if the string passes basic validation
+	/// This is 'static' function, not a class function (functionNode.prototype)
+	///
+	/// Parameters:
+	/// 	funcStr - {String}  String of JS function to validate
+	///
+	/// Returns: 
+	/// 	{Boolean} TRUE if the string passes basic validation
 	///
 	function validateStringIsFunction( funcStr ) {
 		if( funcStr !== null ) {
@@ -129,11 +136,17 @@ var functionNode = (function() {
 	var ARGUMENT_NAMES = /([^\s,]+)/g;
 	
 	///
-	/// @function getParamNames
+	/// Function: getParamNames
 	///
-	/// @param {String}  String of JS function to extract parameter names
-	/// 
-	/// @return {[String, ...]}  Array representing all the parameter names
+	/// [static] Return list of parameter names extracted from the JS function string
+	///
+	/// This is 'static' function, not a class function (functionNode.prototype)
+	///
+	/// Parameters:
+	/// 	funcStr - {String}  String of JS function to validate
+	///
+	/// Returns: 
+	/// 	{[String, ...]}  Array representing all the parameter names
 	///
 	function getParamNames(func) {
 		var fnStr = func.toString().replace(STRIP_COMMENTS, '');
@@ -145,20 +158,26 @@ var functionNode = (function() {
 
 	// Passing it to the class object, in case it is needed elsewhere
 	// Note, support for this is not guranteed across versions.
-	functionNode._isFunction = isFunction;
-	functionNode._validateStringIsFunction = validateStringIsFunction;
-	functionNode._getParamNames = getParamNames;
+	functionNode.isFunction = isFunction;
+	functionNode.validateStringIsFunction = validateStringIsFunction;
+	functionNode.getParamNames = getParamNames;
 	
 	//
 	// Core function
 	//----------------------------------------------------------------------------------------------------
 	
 	///
-	/// @function functionNode.getJS_AST
+	/// Function: getJS_AST
 	///
-	/// @param {JISON Parser}  Parser to use, assumes in scope "parser" if null
+	/// Parses the class function JS, and returns its Abstract Syntax Tree object. 
+	///
+	/// This is used internally to convert to shader code
+	///
+	/// Parameters:
+	/// 	inParser - {JISON Parser}  Parser to use, assumes in scope "parser" if null
 	/// 
-	/// @return {AST Object}   The function AST Object, note that result is cached under this.jsFunctionAST;
+	/// Returns:
+	/// 	{AST Object} The function AST Object, note that result is cached under this.jsFunctionAST;
 	///
 	functionNode.prototype.getJS_AST = function getJS_AST( inParser ) {
 		if( this.jsFunctionAST ) {
@@ -183,9 +202,12 @@ var functionNode = (function() {
 	}
 	
 	///
-	/// @function functionNode.getWebglString
+	/// Function: getWebglString
 	/// 
-	/// @return {String}  webgl function string, result is cached under this.webglFunctionString
+	/// Returns the converted webgl shader function equivalent of the JS function
+	///
+	/// Returns:
+	/// 	{String} webgl function string, result is cached under this.webglFunctionString
 	///
 	functionNode.prototype.getWebglFunctionString = function getWebglFunctionString() {
 		if( this.webglFunctionString ) {
@@ -194,6 +216,19 @@ var functionNode = (function() {
 		
 		return this.webglFunctionString = functionNode_webgl(this);
 	}
+	
+	///
+	/// Function: setWebglString
+	/// 
+	/// Set the webglFunctionString value, overwriting it
+	///
+	/// Parameters:
+	/// 	shaderCode - {String}  Shader code string, representing the function
+	/// 
+	functionNode.prototype.getWebglFunctionString = function getWebglFunctionString(shaderCode) {
+		this.webglFunctionString = shaderCode;
+	}
+	
 	
 	return functionNode;
 })();
