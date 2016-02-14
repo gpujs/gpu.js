@@ -94,7 +94,7 @@ GPU = (function() {
 		//
 		// Get theconfig, fallbacks to default value if not set
 		//
-		paramObj.dimensions = paramObj.dimensions || [1];
+		paramObj.dimensions = paramObj.dimensions || [];
 		mode = paramObj.mode && paramObj.mode.toLowerCase();
 		
 		if ( mode == "cpu" ) {
@@ -136,5 +136,15 @@ GPU = (function() {
 	}
 	GPU.prototype.addFunction = addFunction;
 	
+	
+	
+	GPU.prototype.textureToArray = function(texture) {
+		var copy = this.createKernel(function(x) {
+			return x[this.thread.z][this.thread.y][this.thread.x];
+		});
+		
+		return copy(texture);
+	};
+
 	return GPU;
 })();

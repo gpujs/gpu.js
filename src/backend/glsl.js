@@ -53,14 +53,30 @@
 		return result;
 	}
 
-	function getDimensions(x) {
-		var dim = [];
-		var temp = x;
-		while (Array.isArray(temp)) {
-			dim.push(temp.length);
-			temp = temp[0];
+	function getDimensions(x, pad) {
+		var ret;
+		if (Array.isArray(x)) {
+			var dim = [];
+			var temp = x;
+			while (Array.isArray(temp)) {
+				dim.push(temp.length);
+				temp = temp[0];
+			}
+			ret = dim.reverse();
+		} else if (x instanceof GPUTexture) {
+			ret = x.dimensions;
+		} else {
+			throw "Unknown dimensions of " + x;
 		}
-		return dim.reverse();
+		
+		if (pad) {
+			ret = clone(ret);
+			while (ret.length < 3) {
+				ret.push(1);
+			}
+		}
+		
+		return ret;
 	}
 
 	function flatten(arr) {
@@ -84,22 +100,46 @@
 			return 'Array';
 		} else if (typeof arg == "number") {
 			return 'Number';
-		} else if (arg.texture instanceof WebGLTexture) {
+		} else if (arg instanceof GPUTexture) {
 			return 'Texture';
 		} else {
 			return 'Unknown';
 		}
 	}
 	
-	function getProgramCacheKey(args) {
+	function getProgramCacheKey(args, opt, outputDim) {
 		var key = '';
 		for (var i=0; i<args.length; i++) {
-			key += getArgumentType(args[i]);
+			var argType = getArgumentType(args[i]);
+			key += argType;
+			if (opt.hardcodeConstants) {
+				var dimensions;
+				if (argType == "Array" || argType == "Texture") {
+					dimensions = getDimensions(args[i], true);
+					key += '['+dimensions[0]+','+dimensions[1]+','+dimensions[2]+']';
+				}
+			}
 		}
+		
+		var specialFlags = '';
+		if (opt.wraparound) {
+			specialFlags += "Wraparound";
+		}
+		
+		if (opt.hardcodeConstants) {
+			specialFlags += "Hardcode";
+			specialFlags += '['+outputDim[0]+','+outputDim[1]+','+outputDim[2]+']';
+		}
+		
+		if (specialFlags) {
+			key = key + '-' + specialFlags;
+		}
+		
 		return key;
 	}
 
 	GPU.prototype._backendGLSL = function(kernel, opt) {
+		var gpu = this;
 		var gl = this.gl;
 		var canvas = this.canvas;
 		
@@ -117,24 +157,63 @@
 			throw "Unable to get body of kernel function";
 		}
 		
-		paramNames = getParamNames(funcStr);
+		var paramNames = getParamNames(funcStr);
 		
 		var programCache = [];
 		
 		function ret() {
-			var program = programCache[getProgramCacheKey(arguments)];
+			if (!opt.dimensions || opt.dimensions.length === 0) {
+				if (arguments.length != 1) {
+					throw "Auto dimensions only supported for kernels with only one input";
+				}
+				
+				var argType = getArgumentType(arguments[0]);
+				if (argType == "Array") {
+					opt.dimensions = getDimensions(argType);
+				} else if (argType == "Texture") {
+					opt.dimensions = arguments[0].dimensions;
+				} else {
+					throw "Auto dimensions not supported for input type: " + argType;
+				}
+			}
+			
+			var texSize = dimToTexSize(gl, opt.dimensions);
+			canvas.width = texSize[0];
+			canvas.height = texSize[1];
+			gl.viewport(0, 0, texSize[0], texSize[1]);
+			
+			var threadDim = clone(opt.dimensions);
+			while (threadDim.length < 3) {
+				threadDim.push(1);
+			}
+			
+			var programCacheKey = getProgramCacheKey(arguments, opt, opt.dimensions);
+			var program = programCache[programCacheKey];
 			
 			if (program === undefined) {
 				var paramStr = '';
 				
 				for (var i=0; i<paramNames.length; i++) {
 					var argType = getArgumentType(arguments[i]);
-					if (argType == "Array" || argType == "Texture") {
-						paramStr += 'uniform sampler2D user_' + paramNames[i] + ';\n';
-						paramStr += 'uniform vec2 user_' + paramNames[i] + 'Size;\n';
-						paramStr += 'uniform vec3 user_' + paramNames[i] + 'Dim;\n';
-					} else if (argType == "Number") {
-						paramStr += 'uniform float user_' + paramNames[i] + ';\n';
+					if (opt.hardcodeConstants) {
+						if (argType == "Array" || argType == "Texture") {
+							var paramDim = getDimensions(arguments[i], true);
+							var paramSize = dimToTexSize(gl, paramDim);
+							
+							paramStr += 'uniform sampler2D user_' + paramNames[i] + ';\n';
+							paramStr += 'vec2 user_' + paramNames[i] + 'Size = vec2(' + paramSize[0] + ',' + paramSize[1] + ');\n';
+							paramStr += 'vec3 user_' + paramNames[i] + 'Dim = vec3(' + paramDim[0] + ', ' + paramDim[1] + ', ' + paramDim[2] + ');\n';
+						} else if (argType == "Number") {
+							paramStr += 'float user_' + paramNames[i] + ' = ' + arguments[i] + ';\n';
+						}
+					} else {
+						if (argType == "Array" || argType == "Texture") {
+							paramStr += 'uniform sampler2D user_' + paramNames[i] + ';\n';
+							paramStr += 'uniform vec2 user_' + paramNames[i] + 'Size;\n';
+							paramStr += 'uniform vec3 user_' + paramNames[i] + 'Dim;\n';
+						} else if (argType == "Number") {
+							paramStr += 'uniform float user_' + paramNames[i] + ';\n';
+						}
 					}
 				}
 				
@@ -157,8 +236,8 @@
 					'precision highp float;',
 					'precision highp int;',
 					'',
-					'uniform vec3 uOutputDim;',
-					'uniform vec2 uTexSize;',
+					opt.hardcodeConstants ? 'vec3 uOutputDim = vec3('+threadDim[0]+','+threadDim[1]+', '+ threadDim[2]+');' : 'uniform vec3 uOutputDim;',
+					opt.hardcodeConstants ? 'vec2 uTexSize = vec2('+texSize[0]+','+texSize[1]+');' : 'uniform vec2 uTexSize;',
 					'varying vec2 vTexCoord;',
 					'',
 					'/* Begin: http://stackoverflow.com/questions/7059962/how-do-i-convert-a-vec4-rgba-value-to-a-float */',
@@ -174,12 +253,12 @@
 					'	rgba.b = 128.0 * mod(exponent,2.0) + mod(floor(mantissa*128.0),128.0);',
 					'	rgba.g = floor(mod(floor(mantissa*exp2(23.0 -8.0)),exp2(8.0)));',
 					'	rgba.r = floor(exp2(23.0)*mod(mantissa,exp2(-15.0)));',
-					(endianness == 'LE' ? '' : 'rgba.rgba = rgba.abgr;'),
+					(endianness == 'LE' ? '' : '	rgba.rgba = rgba.abgr;'),
 					'	return rgba / 255.0;',
 					'}',
 					'',
 					'highp float decode32(highp vec4 rgba) {',
-					(endianness == 'LE' ? '' : 'rgba.rgba = rgba.abgr;'),
+					(endianness == 'LE' ? '' : '	rgba.rgba = rgba.abgr;'),
 					'	rgba *= 255.0;',
 					'	highp float sign = 1.0 - step(128.0,rgba.a)*2.0;',
 					'	highp float exponent = 2.0 * mod(rgba.a,128.0) + step(128.0,rgba.b) - 127.0; ',
@@ -201,7 +280,9 @@
 					'}',
 					'',
 					'float get(sampler2D tex, vec2 texSize, vec3 texDim, float z, float y, float x) {',
-					'	float index = (z * texDim.x * texDim.y) + (y * texDim.x) + x;',
+					'	vec3 xyz = vec3(x, y, z);',
+					(opt.wraparound ? '	xyz = mod(xyz, texDim);' : ''),
+					'	float index = (xyz.z * texDim.x * texDim.y) + (xyz.y * texDim.x) + xyz.x;',
 					'	float t = (floor(index / texSize.x) + 0.5) / texSize.y;',
 					'	float s = (mod(index, texSize.x) + 0.5) / texSize.x;',
 					'	return decode32(texture2D(tex, vec2(s, t)));',
@@ -251,20 +332,10 @@
 				gl.attachShader(program, fragShader);
 				gl.linkProgram(program);
 				
-				programCache[getProgramCacheKey(arguments)] = program;
+				programCache[programCacheKey] = program;
 			}
 			
 			gl.useProgram(program);
-			
-			var texSize = dimToTexSize(gl, opt.dimensions);
-			canvas.width = texSize[0];
-			canvas.height = texSize[1];
-			gl.viewport(0, 0, texSize[0], texSize[1]);
-			
-			var threadDim = clone(opt.dimensions);
-			while (threadDim.length < 3) {
-				threadDim.push(1);
-			}
 			
 			var vertices = new Float32Array([
 				-1, -1,
@@ -290,20 +361,19 @@
 			gl.enableVertexAttribArray(aTexCoordLoc);
 			gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 			
-			var uOutputDimLoc = gl.getUniformLocation(program, "uOutputDim");
-			gl.uniform3fv(uOutputDimLoc, threadDim);
-			var uTexSizeLoc = gl.getUniformLocation(program, "uTexSize");
-			gl.uniform2fv(uTexSizeLoc, texSize);
+			if (!opt.hardcodeConstants) {
+				var uOutputDimLoc = gl.getUniformLocation(program, "uOutputDim");
+				gl.uniform3fv(uOutputDimLoc, threadDim);
+				var uTexSizeLoc = gl.getUniformLocation(program, "uTexSize");
+				gl.uniform2fv(uTexSizeLoc, texSize);
+			}
 			
 			var textures = [];
 			var textureCount = 0;
 			for (textureCount=0; textureCount<paramNames.length; textureCount++) {
 				var paramDim, paramSize, texture;
 				if (Array.isArray(arguments[textureCount])) {
-					paramDim = getDimensions(arguments[textureCount]);
-					while (paramDim.length < 3) {
-						paramDim.push(1);
-					}
+					paramDim = getDimensions(arguments[textureCount], true);
 					paramSize = dimToTexSize(gl, paramDim);
 					
 					texture = gl.createTexture();
@@ -327,14 +397,16 @@
 					var paramSizeLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Size");
 					var paramDimLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Dim");
 					
-					gl.uniform3fv(paramDimLoc, paramDim);
-					gl.uniform2fv(paramSizeLoc, paramSize);
+					if (!opt.hardcodeConstants) {
+						gl.uniform3fv(paramDimLoc, paramDim);
+						gl.uniform2fv(paramSizeLoc, paramSize);
+					}
 					gl.uniform1i(paramLoc, textureCount);
 				} else if (typeof arguments[textureCount] == "number") {
 					var argLoc = gl.getUniformLocation(program, "user_"+paramNames[textureCount]);
 					gl.uniform1f(argLoc, arguments[textureCount]);
-				} else if (arguments[textureCount].texture instanceof WebGLTexture) {
-					paramDim = arguments[textureCount].dimensions;
+				} else if (arguments[textureCount] instanceof GPUTexture) {
+					paramDim = getDimensions(arguments[textureCount]);
 					paramSize = arguments[textureCount].size;
 					texture = arguments[textureCount].texture;
 					textures[textureCount] = texture;
@@ -350,7 +422,7 @@
 					gl.uniform2fv(paramSizeLoc, paramSize);
 					gl.uniform1i(paramLoc, textureCount);
 				} else {
-					throw "Input type not supported";
+					throw "Input type not supported: " + arguments[textureCount];
 				}
 			}
 			
@@ -370,12 +442,11 @@
 				gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-				return {
-					texture: outputTexture,
-					size: texSize,
-					dimensions: threadDim
-				};
+				return new GPUTexture(gpu, outputTexture, texSize, opt.dimensions);
 			} else {
+				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+   				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+   				
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 				var bytes = new Uint8Array(texSize[0]*texSize[1]*4);
 				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
@@ -400,12 +471,25 @@
 			return ret;
 		};
 		
+		ret.wraparound = function(flag) {
+			opt.wraparound = flag;
+			return ret;
+		};
+		
+		ret.hardcodeConstants = function(flag) {
+			opt.hardcodeConstants = flag;
+			return ret;
+		};
+		
 		ret.outputToTexture = function(outputToTexture) {
 			opt.outputToTexture = outputToTexture;
 			return ret;
 		};
 		
-		ret.mode = "gpu";
+		ret.mode = function(mode) {
+			opt.mode = mode;
+			return gpu.createKernel(kernel, opt);
+		};
 		
 		return ret;
 	};

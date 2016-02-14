@@ -5,6 +5,7 @@ var uglify = require('gulp-uglify');
 gulp.task('default', function() {
     return gulp.src([
 			'src/parser.js', 
+			'src/texture.js',
 			'src/gpu.js', 
 			'src/backend/functionNode_webgl.js', 
 			'src/backend/functionNode.js'
@@ -13,6 +14,6 @@ gulp.task('default', function() {
 			'src/backend/glsl.js'
 		])
         .pipe(concat('gpu.js'))
-        .pipe(uglify())
+        .pipe(uglify({ mangle: false }))
         .pipe(gulp.dest('bin'));
 });
