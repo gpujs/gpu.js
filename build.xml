@@ -12,7 +12,53 @@
 	<target name="src" depends="build">
 	</target>
 	
+	
 	<!-- The build ant script -->
 	<target name="build">
+		<exec executable="gulp">
+		</exec>
+	</target>
+	
+	<target name="build-docs">
+		<mkdir dir="doc/html"/>
+		<mkdir dir="doc/tmp"/>
+		<exec executable="./doc/NaturalDocs/NaturalDocs">
+			<arg value="-i"/>
+			<arg value="./src"/>
+			<arg value="-o"/>
+			<arg value="HTML"/>
+			<arg value="./doc/html"/>
+			<arg value="-p"/>
+			<arg value="./doc/tmp"/>
+			<arg value="-r"/>
+		</exec>
+	</target>
+	
+	<!-- **************************************************
+	*
+	*	Onetime setup ant calls
+	*
+	************************************************** -->
+	<target name="setup-gulp">
+		<exec executable="npm">
+			<arg value="install"/>
+			<arg value="--global"/>
+			<arg value="gulp-cli"/>
+		</exec>
+	</target>
+	
+	<target name="setup-naturalDocs">
+		<mkdir dir="doc"/>
+		<exec executable="git" dir="doc">
+			<arg value="clone"/>
+			<arg value="https://github.com/picoded/NaturalDocs.git"/>
+		</exec>
+		<exec executable="git" dir="doc/NaturalDocs">
+			<arg value="pull"/>
+		</exec>
+	</target>
+	
+	<!-- Calls all the one time setup functions -->
+	<target name="setup" depends="setup-gulp, setup-naturalDocs">
 	</target>
 </project>
