@@ -37,8 +37,7 @@ function basic_sqrt_AB_test( assert, mode ) {
 	var f = gpu.createKernel(function(a, b) {
 		return Math.sqrt(a[ this.thread.x ] * b[ this.thread.x ]);
 	}, {
-		thread : [8],
-		block : [1],
+		dimensions : [6],
 		mode : mode
 	});
 	
