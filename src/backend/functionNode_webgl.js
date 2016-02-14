@@ -510,33 +510,6 @@ var functionNode_webgl = (function() {
 			ast, funcParam
 		);
 		
-		/*
-		var mathPrefix = "gpu_math_";
-		var mathPrefixLen = mathPrefix.length;
-		
-		var fName = ast.callee.name || "";
-		if( fName.slice(0,mathPrefixLen) == mathPrefix ) {
-			var mathSuffix = fName.slice(mathPrefixLen);
-			
-			retArr.push(mathSuffix);
-			retArr.push("(");
-			
-			if(ast.arguments) {
-				var aLen = ast.arguments.length;
-				for( var i = 0; i < aLen; ++i ) {
-					ast_generic(ast.arguments[i], retArr, funcParam);
-					
-					if( i+1 < aLen ) {
-						retArr.push(", ");
-					}
-				}
-			}
-			
-			retArr.push(")");
-		} 
-		*/
-		
-		
 		return retArr;
 	}
 	
