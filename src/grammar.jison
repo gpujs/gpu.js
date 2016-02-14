@@ -1557,6 +1557,8 @@ function parseNumericLiteral(literal) {
     if (literal.charAt(0) === "0") {
         if (literal.charAt(1).toLowerCase() === "x") {
             return parseInt(literal, 16);
+        } else if(literal.charAt(1) === ".") {
+            return parseFloat(literal);
         } else {
             return parseInt(literal, 8);
         }
