@@ -97,7 +97,10 @@ var functionBuilder = (function() {
 	function webglString_fromFunctionNames(functionList) {
 		var ret = [];
 		for(var i=0; i<functionList.length; ++i) {
-			ret.push( this.nodeMap[functionList[i]].getWebglFunctionString() );
+			var node = this.nodeMap[functionList[i]];
+			if(node) {
+				ret.push( this.nodeMap[functionList[i]].getWebglFunctionString() );
+			}
 		}
 		return ret.join("\n");
 	}
@@ -119,6 +122,25 @@ var functionBuilder = (function() {
 		return this.webglString_fromFunctionNames(Object.keys(this.nodeMap));
 	}
 	functionBuilder.prototype.webglString = webglString;
+	
+	//---------------------------------------------------------
+	//
+	//  Polyfill stuff
+	//
+	//---------------------------------------------------------
+	
+	// Round function used in polyfill
+	function round(a) { return Math.floor( a + 0.5 ); }
+	
+	///
+	/// Function: polyfillStandardFunctions
+	///
+	/// Polyfill in the missing Math funcitons (round)
+	///
+	function polyfillStandardFunctions() {
+		this.addFunction(null, round);
+	}
+	functionBuilder.prototype.polyfillStandardFunctions = polyfillStandardFunctions;
 	
 	return functionBuilder;
 })();
