@@ -1,3 +1,8 @@
+///
+/// Class: GPU
+///
+/// GPU.JS core class =D
+///
 GPU = (function() {
 	var gl, canvas;
 	
@@ -37,6 +42,7 @@ GPU = (function() {
 		this.endianness = endianness();
 		
 		this.functionBuilder = new functionBuilder();
+		this.functionBuilder.polyfillStandardFunctions();
 	}
 	
 	GPU.prototype.getGl = function() {
@@ -47,26 +53,31 @@ GPU = (function() {
 		return this.canvas;
 	};
 
+	/// 
+	/// Function: createKernel
+	///
 	/// The core GPU.js function
 	///
 	/// The parameter object contains the following sub parameters
 	///
-	/// +---------------+---------------+---------------------------------------------------------------------------+
+	/// |---------------|---------------|---------------------------------------------------------------------------|
 	/// | Name          | Default value | Description                                                               |
-	/// +---------------+---------------+---------------------------------------------------------------------------+
+	/// |---------------|---------------|---------------------------------------------------------------------------|
 	/// | dimensions    | [1024]        | Thread dimension array                                                    |
 	/// | mode          | null          | CPU / GPU configuration mode, "auto" / null. Has the following modes.     |
 	/// |               |               |     + null / "auto" : Attempts to build GPU mode, else fallbacks          |
 	/// |               |               |     + "gpu" : Attempts to build GPU mode, else fallbacks                  |
 	/// |               |               |     + "cpu" : Forces JS fallback mode only                                |
-	/// +---------------+---------------+---------------------------------------------------------------------------+
+	/// |---------------|---------------|---------------------------------------------------------------------------|
 	///
-	/// @param inputFunction   The calling to perform the conversion
-	/// @param paramObj        The parameter configuration object
+	/// Parameters:
+	/// 	inputFunction   {JS Function} The calling to perform the conversion
+	/// 	paramObj        {Object}      The parameter configuration object
 	///
-	/// @returns callable function to run
-	GPU.prototype.createKernel = function(kernel, paramObj) {
-		
+	/// Returns:
+	/// 	callable function to run
+	/// 
+	function createKernel(kernel, paramObj) {
 		//
 		// basic parameters safety checks
 		//
@@ -104,6 +115,26 @@ GPU = (function() {
 			}
 		}
 	};
-
+	GPU.prototype.createKernel = createKernel;
+	
+	///
+	/// Function: addFunction
+	///
+	/// Adds additional functions, that the kernel may call.
+	///
+	/// Parameters: 
+	/// 	jsFunction      - {JS Function}  JS Function to do conversion   
+	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are "float" if null
+	/// 	returnType      - {String}       The return type, assumes "float" if null
+	///
+	/// Retuns:
+	/// 	{GPU} returns itself
+	///
+	function addFunction( jsFunction, paramTypeArray, returnType  ) {
+		this.functionBuilder.addFunction( null, jsFunction, paramTypeArray, returnType );
+		return this;
+	}
+	GPU.prototype.addFunction = addFunction;
+	
 	return GPU;
 })();
