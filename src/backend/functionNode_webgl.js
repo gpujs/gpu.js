@@ -2,13 +2,15 @@
 var functionNode_webgl = (function() {
 	
 	///
-	/// @function  functionNode_webgl
+	/// Function: functionNode_webgl
 	///
 	/// Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
 	/// 
-	/// @param {functionNode}  The function node object
+	/// Parameter: 
+	/// 	inNode - {functionNode} The function node object
 	/// 
-	/// @returns the webGL function string
+	/// Returns: 
+	/// 	the converted webGL function string
 	///
 	function functionNode_webgl( inNode ) {
 		inNode.webglFunctionString_array = ast_generic( inNode.getJS_AST(), [], inNode );
