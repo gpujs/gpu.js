@@ -4,7 +4,7 @@ var functionNode_webgl = (function() {
 	///
 	/// Function: functionNode_webgl
 	///
-	/// Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
+	/// [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
 	/// 
 	/// Parameter: 
 	/// 	inNode - {functionNode} The function node object

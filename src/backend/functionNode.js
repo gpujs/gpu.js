@@ -179,7 +179,7 @@ var functionNode = (function() {
 	/// Returns:
 	/// 	{AST Object} The function AST Object, note that result is cached under this.jsFunctionAST;
 	///
-	functionNode.prototype.getJS_AST = function getJS_AST( inParser ) {
+	function getJS_AST( inParser ) {
 		if( this.jsFunctionAST ) {
 			return this.jsFunctionAST;
 		}
@@ -200,6 +200,7 @@ var functionNode = (function() {
 		
 		return funcAST;
 	}
+	functionNode.prototype.getJS_AST = getJS_AST;
 	
 	///
 	/// Function: getWebglString
@@ -209,13 +210,14 @@ var functionNode = (function() {
 	/// Returns:
 	/// 	{String} webgl function string, result is cached under this.webglFunctionString
 	///
-	functionNode.prototype.getWebglFunctionString = function getWebglFunctionString() {
+	function getWebglFunctionString() {
 		if( this.webglFunctionString ) {
 			return this.webglFunctionString;
 		}
 		
 		return this.webglFunctionString = functionNode_webgl(this);
 	}
+	functionNode.prototype.getWebglFunctionString = getWebglFunctionString;
 	
 	///
 	/// Function: setWebglString
@@ -225,10 +227,10 @@ var functionNode = (function() {
 	/// Parameters:
 	/// 	shaderCode - {String}  Shader code string, representing the function
 	/// 
-	functionNode.prototype.getWebglFunctionString = function getWebglFunctionString(shaderCode) {
+	function setWebglFunctionString(shaderCode) {
 		this.webglFunctionString = shaderCode;
 	}
-	
+	functionNode.prototype.setWebglFunctionString = setWebglFunctionString;
 	
 	return functionNode;
 })();
