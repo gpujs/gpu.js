@@ -115,6 +115,11 @@
 			return ret;
 		};
 		
+		ret.hardcodeConstants = function() {
+			opt.hardcodeConstants = false;
+			return ret;
+		};
+		
 		ret.outputToTexture = function() {
 			opt.outputToTexture = false;
 			return ret;
