@@ -150,7 +150,7 @@
 			throw "Unable to get body of kernel function";
 		}
 		
-		paramNames = getParamNames(funcStr);
+		var paramNames = getParamNames(funcStr);
 		
 		var programCache = [];
 		
