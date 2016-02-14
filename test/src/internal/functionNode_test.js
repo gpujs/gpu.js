@@ -1,4 +1,3 @@
-/// @file functionNode_test.js
 ///
 /// Test the various basic functionality of functionNode
 ///
@@ -49,6 +48,8 @@ QUnit.test( "hello_inner: call a funciton inside a function", function( assert )
 		"float hello_inner() { return inner(); }",
 		"webgl function conversion check"
 	);
+	
+	assert.deepEqual( node.calledFunctions, ["inner"] );
 });
 
 /// Test creation of function, that calls another function, with ARGS
@@ -69,6 +70,8 @@ QUnit.test( "Math.round implementation: A function with arguments", function( as
 		"float round(float a) { return floor(a+0.5); }",
 		"webgl function conversion check"
 	);
+	
+	assert.deepEqual( node.calledFunctions, ["floor"] );
 });
 
 /// Test creation of function, that calls another function, with ARGS
@@ -89,4 +92,17 @@ QUnit.test( "Two arguments test", function( assert ) {
 		"float add_together(float a, float b) { return a+b; }",
 		"webgl function conversion check"
 	);
+});
+
+/// Test the creation of a hello_world function
+QUnit.test( "Automatic naming support", function( assert ) {
+	assert.notEqual( functionNode, null, "script include check" );
+	
+	function hello_world() {
+		return 42;
+	}
+	// Create a function hello node
+	var node = new functionNode(null, hello_world);
+	assert.notEqual( node, null, "class creation check" );
+	assert.equal( node.functionName, "hello_world" );
 });

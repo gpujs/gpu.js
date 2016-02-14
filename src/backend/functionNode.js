@@ -6,6 +6,7 @@
 /// This handles all the raw state, converted state, etc. Of a single function.
 ///
 /// Properties:
+/// 	functionName         - {String}        Name of the function
 /// 	jsFunction           - {JS Function}   The JS Function the node represents
 /// 	jsFunctionString     - {String}        jsFunction.toString()
 /// 	paramNames           - {[String,...]}  Parameter names of the function
@@ -30,10 +31,10 @@ var functionNode = (function() {
 	/// [Constructor] Builds the function with the given JS function, and argument type array.
 	///
 	/// Parameters: 
-	/// 	functionName    - {String}       -Function name to assume, if its null, it attempts to extract from the function
+	/// 	functionName    - {String}       Function name to assume, if its null, it attempts to extract from the function
 	/// 	jsFunction      - {JS Function}  JS Function to do conversion   
-	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are "float" if not given
-	/// 	returnType      - {String}       The return type, assumes "float" if not given
+	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are "float" if null
+	/// 	returnType      - {String}       The return type, assumes "float" if null
 	///
 	function functionNode( functionName, jsFunction, paramTypeArray, returnType ) {
 		
