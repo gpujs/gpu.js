@@ -1,5 +1,6 @@
-# gpu.js
-GPU Accelerated Javascript
+![Logo](http://gpu.rocks/img/ogimage.png)
+
+[Link to website](http://gpu.rocks/)
 
 **TODO: Write a README**
 
