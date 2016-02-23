@@ -343,8 +343,11 @@ var functionNode_webgl = (function() {
 		ast_generic(ifNode.test, retArr, funcParam);
 		retArr.push(")");
 		ast_generic(ifNode.consequent, retArr, funcParam);
-		retArr.push("else");
-		ast_generic(ifNode.alternate, retArr, funcParam);
+		
+		if (ifNode.alternate) {
+			retArr.push("else");
+			ast_generic(ifNode.alternate, retArr, funcParam);
+		}
 		return retArr;
 
 	}
