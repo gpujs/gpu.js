@@ -22,7 +22,7 @@
 	<target name="build-docs">
 		<mkdir dir="doc/html"/>
 		<mkdir dir="doc/tmp"/>
-		<exec executable="./doc/NaturalDocs/NaturalDocs">
+		<exec executable="NaturalDocs">
 			<arg value="-i"/>
 			<arg value="./src"/>
 			<arg value="-o"/>
