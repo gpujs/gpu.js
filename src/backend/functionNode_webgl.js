@@ -339,7 +339,7 @@ var functionNode_webgl = (function() {
 	}
 
 	function ast_IfStatement(ifNode, retArr, funcParam) {
-		retArr.push("if(");
+		retArr.push(" if(");
 		ast_generic(ifNode.test, retArr, funcParam);
 		retArr.push(")");
 		ast_generic(ifNode.consequent, retArr, funcParam);
