@@ -146,11 +146,11 @@
 		var builder = this.functionBuilder;
 		var endianness = this.endianness;
 		
-		var kernalNode = new functionNode("kernel", kernel);
-		kernalNode.paramNames = [];
-		kernalNode.paramType = [];
-		kernalNode.isRootKernal = true;
-		builder.addFunctionNode(kernalNode);
+		var kernelNode = new functionNode("kernel", kernel);
+		kernelNode.paramNames = [];
+		kernelNode.paramType = [];
+		kernelNode.isRootKernel = true;
+		builder.addFunctionNode(kernelNode);
 		
 		var funcStr = kernel.toString();
 		if( !validateStringIsFunction(funcStr) ) {
@@ -294,6 +294,14 @@
 					'',
 					'float get(sampler2D tex, vec2 texSize, vec3 texDim, float x) {',
 					'	return get(tex, texSize, texDim, 0.0, 0.0, x);',
+					'}',
+					'',
+					'float color(float r, float g, float b) {',
+					'	return decode32(vec4(r,g,b,1.0));',
+					'}',
+					'',
+					'float color(float r, float g, float b, float a) {',
+					'	return decode32(vec4(r,g,b,a));',
 					'}',
 					'',
 					paramStr,

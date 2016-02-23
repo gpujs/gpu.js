@@ -2,7 +2,7 @@
 /// Class: functionNode
 ///
 /// [INTERNAL] Represents a single function, inside JS, webGL, or openGL.
-/// 
+///
 /// This handles all the raw state, converted state, etc. Of a single function.
 ///
 /// Properties:
@@ -11,7 +11,7 @@
 /// 	jsFunctionString     - {String}        jsFunction.toString()
 /// 	paramNames           - {[String,...]}  Parameter names of the function
 /// 	paramType            - {[String,...]}  Shader land parameter type assumption
-/// 	isRootKernal         - {Boolean}       Special indicator, for kernal function
+/// 	isRootKernel         - {Boolean}       Special indicator, for kernel function
 /// 	webglFunctionString  - {String}        webgl converted function string
 /// 	openglFunctionString - {String}        opengl converted function string
 /// 	calledFunctions      - {[String,...]}  List of all the functions called
@@ -30,9 +30,9 @@ var functionNode = (function() {
 	///
 	/// [Constructor] Builds the function with the given JS function, and argument type array.
 	///
-	/// Parameters: 
+	/// Parameters:
 	/// 	functionName    - {String}       Function name to assume, if its null, it attempts to extract from the function
-	/// 	jsFunction      - {JS Function}  JS Function to do conversion   
+	/// 	jsFunction      - {JS Function}  JS Function to do conversion
 	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are "float" if null
 	/// 	returnType      - {String}       The return type, assumes "float" if null
 	///
@@ -93,7 +93,7 @@ var functionNode = (function() {
 	}
 	
 	//
-	// Utility functions 
+	// Utility functions
 	//----------------------------------------------------------------------------------------------------
 	
 	///
@@ -106,7 +106,7 @@ var functionNode = (function() {
 	/// Parameters:
 	/// 	funcObj - {JS Function} Object to validate if its a function
 	///
-	/// Returns: 
+	/// Returns:
 	/// 	{Boolean} TRUE if the object is a JS function
 	///
 	function isFunction( funcObj ) {
@@ -123,7 +123,7 @@ var functionNode = (function() {
 	/// Parameters:
 	/// 	funcStr - {String}  String of JS function to validate
 	///
-	/// Returns: 
+	/// Returns:
 	/// 	{Boolean} TRUE if the string passes basic validation
 	///
 	function validateStringIsFunction( funcStr ) {
@@ -146,7 +146,7 @@ var functionNode = (function() {
 	/// Parameters:
 	/// 	funcStr - {String}  String of JS function to validate
 	///
-	/// Returns: 
+	/// Returns:
 	/// 	{[String, ...]}  Array representing all the parameter names
 	///
 	function getParamNames(func) {
@@ -170,13 +170,13 @@ var functionNode = (function() {
 	///
 	/// Function: getJS_AST
 	///
-	/// Parses the class function JS, and returns its Abstract Syntax Tree object. 
+	/// Parses the class function JS, and returns its Abstract Syntax Tree object.
 	///
 	/// This is used internally to convert to shader code
 	///
 	/// Parameters:
 	/// 	inParser - {JISON Parser}  Parser to use, assumes in scope "parser" if null
-	/// 
+	///
 	/// Returns:
 	/// 	{AST Object} The function AST Object, note that result is cached under this.jsFunctionAST;
 	///
@@ -205,7 +205,7 @@ var functionNode = (function() {
 	
 	///
 	/// Function: getWebglString
-	/// 
+	///
 	/// Returns the converted webgl shader function equivalent of the JS function
 	///
 	/// Returns:
@@ -222,12 +222,12 @@ var functionNode = (function() {
 	
 	///
 	/// Function: setWebglString
-	/// 
+	///
 	/// Set the webglFunctionString value, overwriting it
 	///
 	/// Parameters:
 	/// 	shaderCode - {String}  Shader code string, representing the function
-	/// 
+	///
 	function setWebglFunctionString(shaderCode) {
 		this.webglFunctionString = shaderCode;
 	}
