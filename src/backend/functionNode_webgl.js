@@ -5,11 +5,11 @@ var functionNode_webgl = (function() {
 	/// Function: functionNode_webgl
 	///
 	/// [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
-	/// 
-	/// Parameter: 
+	///
+	/// Parameter:
 	/// 	inNode - {functionNode} The function node object
-	/// 
-	/// Returns: 
+	///
+	/// Returns:
 	/// 	the converted webGL function string
 	///
 	function functionNode_webgl( inNode ) {
@@ -18,7 +18,7 @@ var functionNode_webgl = (function() {
 		return inNode.webglFunctionString;
 	}
 	
-	/// the AST error, with its location. To throw 
+	/// the AST error, with its location. To throw
 	///
 	/// @TODO: add location support fpr the AST error
 	///
@@ -109,7 +109,7 @@ var functionNode_webgl = (function() {
 	function ast_FunctionExpression(ast, retArr, funcParam) {
 		
 		// Setup function return type and name
-		if(funcParam.isRootKernal) {
+		if(funcParam.isRootKernel) {
 			retArr.push("vec4");
 		} else {
 			retArr.push(funcParam.returnType);
@@ -151,7 +151,7 @@ var functionNode_webgl = (function() {
 	///
 	/// @returns  the appened retArr
 	function ast_ReturnStatement(ast, retArr, funcParam) {
-		if( funcParam.isRootKernal ) {
+		if( funcParam.isRootKernel ) {
 			retArr.push("return encode32(");
 			ast_generic(ast.argument, retArr, funcParam);
 			retArr.push("); ");
@@ -247,7 +247,7 @@ var functionNode_webgl = (function() {
 			retArr.push('uOutputDim.y');
 		} else if (idtNode.name == "gpu_dimensionsZ") {
 			retArr.push('uOutputDim.z');
-		} else if(funcParam.isRootKernal) {
+		} else if(funcParam.isRootKernel) {
 			retArr.push("user_"+idtNode.name);
 		} else {
 			retArr.push(idtNode.name);
@@ -467,17 +467,17 @@ var functionNode_webgl = (function() {
 			return ast.name;
 		} else if( ast.type == "ThisExpression" ) {
 			return "this";
-		} 
+		}
 		
 		if( ast.type == "MemberExpression" ) {
 			if( ast.object && ast.property ) {
 				return (
-					ast_MemberExpression_unroll( ast.object, funcParam ) + 
-					"." + 
+					ast_MemberExpression_unroll( ast.object, funcParam ) +
+					"." +
 					ast_MemberExpression_unroll( ast.property, funcParam )
 				);
 			}
-		}  
+		}
 		
 		// Failure, unknown expression
 		throw ast_errorOutput(
