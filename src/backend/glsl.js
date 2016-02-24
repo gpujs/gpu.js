@@ -17,6 +17,10 @@
 	}
 
 	function dimToTexSize(gl, dimensions) {
+		if (dimensions.length == 2) {
+			return dimensions;
+		}
+		
 		var numTexels = dimensions[0];
 		for (var i=1; i<dimensions.length; i++) {
 			numTexels *= dimensions[i];
@@ -296,12 +300,14 @@
 					'	return get(tex, texSize, texDim, 0.0, 0.0, x);',
 					'}',
 					'',
-					'float color(float r, float g, float b) {',
-					'	return decode32(vec4(r,g,b,1.0));',
+					'const bool outputToColor = ' + (opt.graphical? 'true' : 'false') + ';',
+					'vec4 actualColor;',
+					'void color(float r, float g, float b, float a) {',
+					'	actualColor = vec4(r,g,b,a);',
 					'}',
 					'',
-					'float color(float r, float g, float b, float a) {',
-					'	return decode32(vec4(r,g,b,a));',
+					'void color(float r, float g, float b) {',
+					'	color(r,g,b,1.0);',
 					'}',
 					'',
 					paramStr,
@@ -311,7 +317,12 @@
 					'void main(void) {',
 					'	index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize[0];',
 					'	threadId = indexTo3D(index, uOutputDim);',
-					'	gl_FragColor = kernel();',
+					'	vec4 outputColor = kernel();',
+					'	if (outputToColor == true) {',
+					'		gl_FragColor = actualColor;',
+					'	} else {',
+					'		gl_FragColor = outputColor;',
+					'	}',
 					'}'
 				].join('\n');
 				
@@ -333,6 +344,10 @@
 					console.error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(fragShader));
 					console.log(fragShaderSrc);
 					throw "Error compiling fragment shader";
+				}
+				
+				if (opt.debug) {
+					console.log(fragShaderSrc);
 				}
 				
 				program = gl.createProgram();
