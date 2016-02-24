@@ -1,6 +1,8 @@
 // Closure capture for the ast function, prevent collision with existing AST functions
 var functionNode_webgl = (function() {
 	
+	var gpu, jsFunctionString;
+	
 	///
 	/// Function: functionNode_webgl
 	///
@@ -13,6 +15,8 @@ var functionNode_webgl = (function() {
 	/// 	the converted webGL function string
 	///
 	function functionNode_webgl( inNode ) {
+		gpu = inNode.gpu;
+		jsFunctionString = inNode.jsFunctionString;
 		inNode.webglFunctionString_array = ast_generic( inNode.getJS_AST(), [], inNode );
 		inNode.webglFunctionString = inNode.webglFunctionString_array.join("").trim();
 		return inNode.webglFunctionString;
@@ -49,6 +53,8 @@ var functionNode_webgl = (function() {
 			}
 			
 			switch(ast.type) {
+				case "FunctionDeclaration":
+					return ast_FunctionDeclaration(ast, retArr, funcParam);
 				case "FunctionExpression":
 					return ast_FunctionExpression(ast, retArr, funcParam);
 				case "ReturnStatement":
@@ -99,6 +105,38 @@ var functionNode_webgl = (function() {
 		}
 	}
 	
+	/// Prases the abstract syntax tree, to its named function declartion
+	///
+	/// @param ast   the AST object to parse
+	/// @param retArr       return array string
+	/// @param funcParam    FunctionNode, that tracks compilation state
+	///
+	/// @returns  the appened retArr
+	function ast_FunctionDeclaration(ast, retArr, funcParam) {
+		// TODO: make this less hacky?
+		var lines = jsFunctionString.split(/\r?\n/);
+		
+		var start = ast.loc.start;
+		var end = ast.loc.end;
+		
+		var funcArr = [];
+		
+		funcArr.push(lines[start.line-1].slice(start.column));
+		for (var i=start.line; i<end.line-1; i++) {
+			funcArr.push(lines[i]);
+		}
+		funcArr.push(lines[end.line-1].slice(0,end.column));
+		
+		var funcStr = funcArr.join('\n');
+		
+		// TODO: fix this evil!
+		eval('var funcObj = ' + funcStr);
+		
+		gpu.addFunction(funcObj);
+		
+		return retArr;
+	}
+	
 	/// Prases the abstract syntax tree, to its named function
 	///
 	/// @param ast   the AST object to parse
@@ -126,6 +164,7 @@ var functionNode_webgl = (function() {
 			
 			retArr.push( funcParam.paramType[i] );
 			retArr.push(" ");
+			retArr.push("user_");
 			retArr.push( funcParam.paramNames[i] );
 		}
 		
@@ -251,10 +290,8 @@ var functionNode_webgl = (function() {
 			retArr.push('uOutputDim.y');
 		} else if (idtNode.name == "gpu_dimensionsZ") {
 			retArr.push('uOutputDim.z');
-		} else if(funcParam.isRootKernel) {
-			retArr.push("user_"+idtNode.name);
 		} else {
-			retArr.push(idtNode.name);
+			retArr.push("user_"+idtNode.name);
 		}
 
 		return retArr;

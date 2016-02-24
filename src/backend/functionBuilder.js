@@ -15,8 +15,9 @@ var functionBuilder = (function() {
 	///
 	/// [Constructor] Blank constructor, which initializes the properties
 	///
-	function functionBuilder() {
+	function functionBuilder(gpu) {
 		this.nodeMap = {};
+		this.gpu = gpu;
 	}
 	
 	///
@@ -24,14 +25,15 @@ var functionBuilder = (function() {
 	///
 	/// Creates the functionNode, and add it to the nodeMap
 	///
-	/// Parameters: 
+	/// Parameters:
+	/// 	gpu             - {GPU}          The GPU instance
 	/// 	functionName    - {String}       Function name to assume, if its null, it attempts to extract from the function
-	/// 	jsFunction      - {JS Function}  JS Function to do conversion   
+	/// 	jsFunction      - {JS Function}  JS Function to do conversion
 	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are "float" if null
 	/// 	returnType      - {String}       The return type, assumes "float" if null
 	///
 	function addFunction( functionName, jsFunction, paramTypeArray, returnType ) {
-		this.addFunctionNode( new functionNode( functionName, jsFunction, paramTypeArray, returnType ) );
+		this.addFunctionNode( new functionNode( this.gpu, functionName, jsFunction, paramTypeArray, returnType ) );
 	}
 	functionBuilder.prototype.addFunction = addFunction;
 	
@@ -40,7 +42,7 @@ var functionBuilder = (function() {
 	///
 	/// Add the funciton node directly
 	///
-	/// Parameters: 
+	/// Parameters:
 	/// 	inNode    - {functionNode}       functionNode to add
 	///
 	function addFunctionNode( inNode ) {
@@ -56,7 +58,7 @@ var functionBuilder = (function() {
 	/// This allow for "uneeded" functions to be automatically optimized out.
 	/// Note that the 0-index, is the starting function trace.
 	///
-	/// Parameters: 
+	/// Parameters:
 	/// 	functionName  - {String}        Function name to trace from, default to "kernel"
 	/// 	retList       - {[String,...]}  Returning list of function names that is traced. Including itself.
 	///
@@ -88,7 +90,7 @@ var functionBuilder = (function() {
 	///
 	/// Function: webglString_fromFunctionNames
 	///
-	/// Parameters: 
+	/// Parameters:
 	/// 	functionList  - {[String,...]} List of function to build the webgl string.
 	///
 	/// Returns:
@@ -109,7 +111,7 @@ var functionBuilder = (function() {
 	///
 	/// Function: webglString
 	///
-	/// Parameters: 
+	/// Parameters:
 	/// 	functionName  - {String} Function name to trace from. If null, it returns the WHOLE builder stack
 	///
 	/// Returns:
@@ -118,7 +120,7 @@ var functionBuilder = (function() {
 	function webglString(functionName) {
 		if(functionName) {
 			return this.webglString_fromFunctionNames( this.traceFunctionCalls(functionName, []).reverse() );
-		} 
+		}
 		return this.webglString_fromFunctionNames(Object.keys(this.nodeMap));
 	}
 	functionBuilder.prototype.webglString = webglString;

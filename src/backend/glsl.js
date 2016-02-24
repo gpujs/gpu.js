@@ -150,7 +150,7 @@
 		var builder = this.functionBuilder;
 		var endianness = this.endianness;
 		
-		var kernelNode = new functionNode("kernel", kernel);
+		var kernelNode = new functionNode(gpu, "kernel", kernel);
 		kernelNode.paramNames = [];
 		kernelNode.paramType = [];
 		kernelNode.isRootKernel = true;

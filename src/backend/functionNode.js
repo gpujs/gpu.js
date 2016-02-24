@@ -31,12 +31,15 @@ var functionNode = (function() {
 	/// [Constructor] Builds the function with the given JS function, and argument type array.
 	///
 	/// Parameters:
+	/// 	gpu             - {GPU}          The GPU instance
 	/// 	functionName    - {String}       Function name to assume, if its null, it attempts to extract from the function
 	/// 	jsFunction      - {JS Function}  JS Function to do conversion
 	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are "float" if null
 	/// 	returnType      - {String}       The return type, assumes "float" if null
 	///
-	function functionNode( functionName, jsFunction, paramTypeArray, returnType ) {
+	function functionNode( gpu, functionName, jsFunction, paramTypeArray, returnType ) {
+		
+		this.gpu = gpu;
 		
 		//
 		// Internal vars setup

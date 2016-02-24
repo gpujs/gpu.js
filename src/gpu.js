@@ -43,7 +43,7 @@ var GPU = (function() {
 		this.programCache = {};
 		this.endianness = endianness();
 		
-		this.functionBuilder = new functionBuilder();
+		this.functionBuilder = new functionBuilder(this);
 		this.functionBuilder.polyfillStandardFunctions();
 	}
 	

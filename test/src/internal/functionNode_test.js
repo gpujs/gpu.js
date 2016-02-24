@@ -8,6 +8,7 @@ QUnit.test( "hello_world: just return magic 42", function( assert ) {
 	
 	// Create a function hello node
 	var node = new functionNode(
+		null,
 		"hello_world",
 		function() {
 			return 42;
@@ -17,7 +18,7 @@ QUnit.test( "hello_world: just return magic 42", function( assert ) {
 	assert.notEqual( node, null, "class creation check" );
 	assert.notEqual( node.getJS_AST(), null, "AST fetch check" );
 	
-	assert.equal( 
+	assert.equal(
 		node.getWebglFunctionString().replace(/\s+/g,' '),
 		"float hello_world() { return 42.0; }",
 		"webgl function conversion check"
@@ -34,6 +35,7 @@ QUnit.test( "hello_inner: call a funciton inside a function", function( assert )
 	
 	// Create a function hello node
 	var node = new functionNode(
+		null,
 		"hello_inner",
 		function() {
 			return inner();
@@ -43,7 +45,7 @@ QUnit.test( "hello_inner: call a funciton inside a function", function( assert )
 	assert.notEqual( node, null, "class creation check" );
 	assert.notEqual( node.getJS_AST(), null, "AST fetch check" );
 	
-	assert.equal( 
+	assert.equal(
 		node.getWebglFunctionString().replace(/\s+/g,' '),
 		"float hello_inner() { return inner(); }",
 		"webgl function conversion check"
@@ -56,6 +58,7 @@ QUnit.test( "hello_inner: call a funciton inside a function", function( assert )
 QUnit.test( "Math.round implementation: A function with arguments", function( assert ) {
 	// Math.round node
 	var node = new functionNode(
+		null,
 		"round",
 		function(a) {
 			return Math.floor( a + 0.5 );
@@ -65,7 +68,7 @@ QUnit.test( "Math.round implementation: A function with arguments", function( as
 	assert.notEqual( node, null, "class creation check" );
 	assert.notEqual( node.getJS_AST(), null, "AST fetch check" );
 	
-	assert.equal( 
+	assert.equal(
 		node.getWebglFunctionString().replace(/\s+/g,' '),
 		"float round(float a) { return floor(a+0.5); }",
 		"webgl function conversion check"
@@ -78,6 +81,7 @@ QUnit.test( "Math.round implementation: A function with arguments", function( as
 QUnit.test( "Two arguments test", function( assert ) {
 	
 	var node = new functionNode(
+		null,
 		"add_together",
 		function(a,b) {
 			return a+b;
@@ -87,7 +91,7 @@ QUnit.test( "Two arguments test", function( assert ) {
 	assert.notEqual( node, null, "class creation check" );
 	assert.notEqual( node.getJS_AST(), null, "AST fetch check" );
 	
-	assert.equal( 
+	assert.equal(
 		node.getWebglFunctionString().replace(/\s+/g,' '),
 		"float add_together(float a, float b) { return a+b; }",
 		"webgl function conversion check"
@@ -102,7 +106,7 @@ QUnit.test( "Automatic naming support", function( assert ) {
 		return 42;
 	}
 	// Create a function hello node
-	var node = new functionNode(null, hello_world);
+	var node = new functionNode(null, null, hello_world);
 	assert.notEqual( node, null, "class creation check" );
 	assert.equal( node.functionName, "hello_world" );
 });
