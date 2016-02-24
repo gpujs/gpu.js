@@ -1,5 +1,5 @@
 language: node_js
-sudo: false
+sudo: required
 
 node_js:
 - "0.10"
@@ -19,5 +19,5 @@ addons:
             - ant
             
 script:
-- apt-get install -y naturaldocs
+- sudo apt-get install -y naturaldocs
 - ant build-docs
