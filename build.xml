@@ -20,16 +20,31 @@
 	</target>
 	
 	<target name="build-docs">
-		<mkdir dir="doc/html"/>
-		<mkdir dir="doc/tmp"/>
+		<mkdir dir="doc/dev-docs"/>
+		<mkdir dir="doc/usr-docs"/>
+		<mkdir dir="doc/dev-tmp"/>
+		<mkdir dir="doc/usr-tmp"/>
+		
 		<exec executable="./doc/NaturalDocs/NaturalDocs">
 			<arg value="-i"/>
 			<arg value="./src"/>
 			<arg value="-o"/>
 			<arg value="HTML"/>
-			<arg value="./doc/html"/>
+			<arg value="./doc/dev-docs"/>
 			<arg value="-p"/>
-			<arg value="./doc/tmp"/>
+			<arg value="./doc/dev-tmp"/>
+			<arg value="-r"/>
+		</exec>
+		<exec executable="./doc/NaturalDocs/NaturalDocs">
+			<arg value="-i"/>
+			<arg value="./src"/>
+			<arg value="-xi"/>
+			<arg value="./src/backend"/>
+			<arg value="-o"/>
+			<arg value="HTML"/>
+			<arg value="./doc/usr-docs"/>
+			<arg value="-p"/>
+			<arg value="./doc/usr-tmp"/>
 			<arg value="-r"/>
 		</exec>
 	</target>
