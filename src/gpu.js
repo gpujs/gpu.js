@@ -25,9 +25,9 @@ var GPU = (function() {
 			canvas.width = 2;
 			canvas.height = 2;
 			var glOpt = {
-		        depth: false,
+				depth: false,
 				antialias: false
-		    };
+			};
 
 			gl = canvas.getContext("experimental-webgl", glOpt) || canvas.getContext("webgl", glOpt);
 		}
@@ -53,7 +53,7 @@ var GPU = (function() {
 		return this.canvas;
 	};
 
-	/// 
+	///
 	/// Function: createKernel
 	///
 	/// The core GPU.js function
@@ -76,7 +76,7 @@ var GPU = (function() {
 	///
 	/// Returns:
 	/// 	callable function to run
-	/// 
+	///
 	function createKernel(kernel, paramObj) {
 		//
 		// basic parameters safety checks
@@ -122,8 +122,8 @@ var GPU = (function() {
 	///
 	/// Adds additional functions, that the kernel may call.
 	///
-	/// Parameters: 
-	/// 	jsFunction      - {JS Function}  JS Function to do conversion   
+	/// Parameters:
+	/// 	jsFunction      - {JS Function}  JS Function to do conversion
 	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are "float" if null
 	/// 	returnType      - {String}       The return type, assumes "float" if null
 	///

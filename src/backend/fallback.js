@@ -79,13 +79,20 @@
 				}
 			}
 			
+			if (opt.graphical) {
+				throw "CPU fallback for graphical output is not supported!";
+			}
+			
 			var ctx = {
 				thread: {
 					x: 0,
 					y: 0,
 					z: 0
 				},
-				dimensions: threadDim
+				dimensions: threadDim,
+				color: function(r, g, b, a) {
+					console.warn("color() does nothing on fallback mode");
+				}
 			};
 			
 			for (ctx.thread.z=0; ctx.thread.z<threadDim[2]; ctx.thread.z++) {

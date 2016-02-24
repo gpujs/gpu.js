@@ -138,6 +138,10 @@ var functionNode_webgl = (function() {
 			retArr.push("\n");
 		}
 		
+		if(funcParam.isRootKernel) {
+			retArr.push("\nreturn vec4(0.0);");
+		}
+		
 		// Function closing
 		retArr.push("}\n");
 		return retArr;
@@ -339,13 +343,13 @@ var functionNode_webgl = (function() {
 	}
 
 	function ast_IfStatement(ifNode, retArr, funcParam) {
-		retArr.push(" if(");
+		retArr.push("if(");
 		ast_generic(ifNode.test, retArr, funcParam);
 		retArr.push(")");
 		ast_generic(ifNode.consequent, retArr, funcParam);
 		
 		if (ifNode.alternate) {
-			retArr.push("else");
+			retArr.push("else ");
 			ast_generic(ifNode.alternate, retArr, funcParam);
 		}
 		return retArr;
@@ -489,8 +493,9 @@ var functionNode_webgl = (function() {
 		);
 	}
 	
-	// The math prefix to use
+	// The prefixes to use
 	var jsMathPrefix = "Math.";
+	var localPrefix = "this.";
 	
 	/// Prases the abstract syntax tree, binary expression
 	///
@@ -507,6 +512,11 @@ var functionNode_webgl = (function() {
 			// Its a math operator, remove the prefix
 			if( funcName.indexOf(jsMathPrefix) === 0 ) {
 				funcName = funcName.slice( jsMathPrefix.length );
+			}
+			
+			// Its a local function, remove this
+			if( funcName.indexOf(localPrefix) === 0 ) {
+				funcName = funcName.slice( localPrefix.length );
 			}
 			
 			// Register the function into the called registry
