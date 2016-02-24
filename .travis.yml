@@ -19,4 +19,5 @@ addons:
             - ant
             
 script:
+- apt-get install -y naturaldocs
 - ant build-docs
