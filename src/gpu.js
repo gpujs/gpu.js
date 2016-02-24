@@ -4,8 +4,6 @@
 /// GPU.JS core class =D
 ///
 var GPU = (function() {
-	var gl, canvas;
-	
 	// https://gist.github.com/TooTallNate/4750953
 	function endianness() {
 		var b = new ArrayBuffer(4);
@@ -18,9 +16,12 @@ var GPU = (function() {
 	}
 	
 	function GPU(ctx) {
+		var gl, canvas, canvasCpu;
+		
 		canvas = undefined;
 		gl = ctx;
 		if (gl === undefined) {
+			canvasCpu = document.createElement('canvas');
 			canvas = document.createElement('canvas');
 			canvas.width = 2;
 			canvas.height = 2;
@@ -38,6 +39,7 @@ var GPU = (function() {
 		
 		this.gl = gl;
 		this.canvas = canvas;
+		this.canvasCpu = canvasCpu;
 		this.programCache = {};
 		this.endianness = endianness();
 		
@@ -49,7 +51,11 @@ var GPU = (function() {
 		return this.gl;
 	};
 	
-	GPU.prototype.getCanvas = function() {
+	GPU.prototype.getCanvas = function(mode) {
+		if (mode == "cpu") {
+			return this.canvasCpu;
+		}
+		
 		return this.canvas;
 	};
 

@@ -494,6 +494,16 @@
 			return ret;
 		};
 		
+		ret.debug = function(flag) {
+			opt.debug = flag;
+			return ret;
+		};
+		
+		ret.graphical = function(flag) {
+			opt.graphical = flag;
+			return ret;
+		};
+		
 		ret.wraparound = function(flag) {
 			opt.wraparound = flag;
 			return ret;
@@ -512,6 +522,10 @@
 		ret.mode = function(mode) {
 			opt.mode = mode;
 			return gpu.createKernel(kernel, opt);
+		};
+		
+		ret.getCanvas = function() {
+			return gpu.getCanvas();
 		};
 		
 		return ret;

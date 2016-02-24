@@ -79,8 +79,18 @@
 				}
 			}
 			
+			var canvas;
+			var canvasCtx;
+			var imageData;
+			var data;
 			if (opt.graphical) {
-				throw "CPU fallback for graphical output is not supported!";
+				canvas = gpu.getCanvas('cpu');
+				canvas.width = threadDim[0];
+				canvas.height = threadDim[1];
+				
+				canvasCtx = canvas.getContext("2d");
+				imageData = canvasCtx.createImageData(threadDim[0], threadDim[1]);
+				data = new Uint8ClampedArray(threadDim[0]*threadDim[1]*4);
 			}
 			
 			var ctx = {
@@ -89,10 +99,35 @@
 					y: 0,
 					z: 0
 				},
-				dimensions: threadDim,
-				color: function(r, g, b, a) {
-					console.warn("color() does nothing on fallback mode");
+				dimensions: {
+					x: threadDim[0],
+					y: threadDim[1],
+					z: threadDim[2]
 				}
+			};
+			
+			ctx.color = function(r, g, b, a) {
+				if (a == undefined) {
+					a = 1.0;
+				}
+				
+				r = Math.floor(r * 255);
+				g = Math.floor(g * 255);
+				b = Math.floor(b * 255);
+				a = Math.floor(a * 255);
+				
+				var width = ctx.dimensions.x;
+				var height = ctx.dimensions.y;
+				
+				var x = ctx.thread.x;
+				var y = height - ctx.thread.y - 1;
+				
+				var index = x + y*width;
+				
+				data[index*4+0] = r;
+				data[index*4+1] = g;
+				data[index*4+2] = b;
+				data[index*4+3] = a;
 			};
 			
 			for (ctx.thread.z=0; ctx.thread.z<threadDim[2]; ctx.thread.z++) {
@@ -102,7 +137,12 @@
 					}
 				}
 			}
-					
+			
+			if (opt.graphical) {
+				imageData.data.set(data);
+				canvasCtx.putImageData(imageData, 0, 0);
+			}
+			
 			if (opt.dimensions.length == 1) {
 				ret = ret[0][0];
 			} else if (opt.dimensions.length == 2) {
@@ -114,6 +154,16 @@
 		
 		ret.dimensions = function(dim) {
 			opt.dimensions = dim;
+			return ret;
+		};
+		
+		ret.debug = function(flag) {
+			opt.debug = flag;
+			return ret;
+		};
+		
+		ret.graphical = function(flag) {
+			opt.graphical = flag;
 			return ret;
 		};
 		
@@ -135,6 +185,10 @@
 		ret.mode = function(mode) {
 			opt.mode = mode;
 			return gpu.createKernel(kernel, opt);
+		};
+		
+		ret.getCanvas = function() {
+			return gpu.getCanvas('cpu');
 		};
 		
 		return ret;
