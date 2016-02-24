@@ -1,2 +1,0 @@
-Title: GPU.JS
-SubTitle: GPU Accelerated JavaScript
