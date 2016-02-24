@@ -2,7 +2,7 @@
 
 [Link to website](http://gpu.rocks/)
 
-**TODO: Write a README**
+**TODO: Add more stuff to this README =# **
 
 # HOWTO: Build / Generate Docs
 - The following is required to be installed
