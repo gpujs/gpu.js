@@ -35,9 +35,31 @@ var functionNode_webgl = (function() {
 		gpu = inNode.gpu;
 		jsFunctionString = inNode.jsFunctionString;
 		inNode.webglFunctionString_array = ast_generic( inNode.getJS_AST(), [], inNode );
-		inNode.webglFunctionString = inNode.webglFunctionString_array.join("").trim();
+		inNode.webglFunctionString = webgl_regex_optimize( 
+			inNode.webglFunctionString_array.join("").trim()
+		);
 		return inNode.webglFunctionString;
 	}
+	
+	var DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
+	var ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
+	
+	///
+	/// Function: webgl_regex_optimize
+	///
+	/// [INTERNAL] Takes the near final webgl function string, and do regex search and replacments.
+	/// For voodoo optimize out the following
+	///
+	/// - decode32(encode32(
+	/// - encode32(decode32(
+	///
+	function webgl_regex_optimize( inStr ) {
+		return inStr
+			.replace(DECODE32_ENCODE32, "((")
+			.replace(ENCODE32_DECODE32, "((")
+		;
+	}
+	
 	
 	/// the AST error, with its location. To throw
 	///
