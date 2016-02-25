@@ -1,12 +1,11 @@
-function basic_sum_AB_test( assert, mode ) {
+function nested_sum_AB_test( assert, mode ) {
 	var gpu = new GPU();
 	
-	function custom_adder(a,b) {
-		return a+b;
-	}
-	gpu.addFunction(custom_adder);
-	
 	var f = gpu.createKernel(function(a, b) {
+		function custom_adder(a,b) {
+			return a+b;
+		}
+		
 		return custom_adder(a[this.thread.x], b[this.thread.x]);
 	}, {
 		dimensions : [6],
@@ -26,14 +25,14 @@ function basic_sum_AB_test( assert, mode ) {
 	}
 }
 
-QUnit.test( "basic_sum_AB (auto)", function( assert ) {
-	basic_sum_AB_test(assert, null);
+QUnit.test( "nested_sum (auto)", function( assert ) {
+	nested_sum_AB_test(assert, null);
 });
 
-QUnit.test( "basic_sum_AB (GPU)", function( assert ) {
-	basic_sum_AB_test(assert, "gpu");
+QUnit.test( "nested_sum (GPU)", function( assert ) {
+	nested_sum_AB_test(assert, "gpu");
 });
 
-QUnit.test( "basic_sum_AB (CPU)", function( assert ) {
-	basic_sum_AB_test(assert, "cpu");
+QUnit.test( "nested_sum (CPU)", function( assert ) {
+	nested_sum_AB_test(assert, "cpu");
 });

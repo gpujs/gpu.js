@@ -128,11 +128,7 @@ var functionNode_webgl = (function() {
 		funcArr.push(lines[end.line-1].slice(0,end.column));
 		
 		var funcStr = funcArr.join('\n');
-		
-		// TODO: fix this evil!
-		eval('var funcObj = ' + funcStr);
-		
-		gpu.addFunction(funcObj);
+		gpu.addFunction(funcStr);
 		
 		return retArr;
 	}
