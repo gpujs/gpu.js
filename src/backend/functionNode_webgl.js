@@ -373,25 +373,24 @@ var functionNode_webgl = (function() {
 	///
 	/// @returns  the prased openclgl string
 	function ast_WhileStatement(whileNode, retArr, funcParam) {
-		throw ast_errorOutput(
-			"While statements are not allowed",
-			ast, funcParam
-		);
-		
-		/*
 		if (whileNode.type != "WhileStatement") {
 			throw ast_errorOutput(
 				"Invalid while statment",
 				ast, funcParam
 			);
 		}
-		retArr.push("while (");
+		
+		retArr.push("for (float i=0.0; i<LOOP_MAX; i++) {");
+		retArr.push("if (");
 		ast_generic(whileNode.test, retArr, funcParam);
 		retArr.push(") {\n");
 		ast_generic(whileNode.body, retArr, funcParam);
+		retArr.push("} else {\n");
+		retArr.push("break;\n");
 		retArr.push("}\n");
+		retArr.push("}\n");
+		
 		return retArr;
-		*/
 	}
 
 	function ast_AssignmentExpression(assNode, retArr, funcParam) {
