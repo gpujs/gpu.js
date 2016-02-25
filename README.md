@@ -4,6 +4,11 @@
 
 **TODO: Add more stuff to this README =# **
 
+# Documentation
+Automatically built via a butler. Note that these documentations are quite prelimary, and **needs much cleanup**
+- Usr Docs : http://gpujs.github.io/usr-docs/
+- Dev Docs : http://gpujs.github.io/dev-docs/
+
 # HOWTO: Build / Generate Docs
 - The following is required to be installed
 	- node.js
