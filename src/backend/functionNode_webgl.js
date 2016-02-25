@@ -3,6 +3,23 @@ var functionNode_webgl = (function() {
 	
 	var gpu, jsFunctionString;
 	
+	function isIdentifierKernelParam(paramName, ast, funcParam) {
+		return funcParam.paramNames.indexOf(paramName) != -1;
+	}
+	
+	function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
+		var start = ast.loc.start;
+		
+		if (!isIdentifierKernelParam(paramName, funcParam) && expectedType != 'float') {
+			throw "Error unxpected identifier " + paramName + " on line " + start.line;
+		} else {
+			var actualType = funcParam.paramType[funcParam.paramNames.indexOf(paramName)];
+			if (actualType != expectedType) {
+				throw "Error unxpected identifier " + paramName + " on line " + start.line;
+			}
+		}
+	}
+	
 	///
 	/// Function: functionNode_webgl
 	///
@@ -101,6 +118,8 @@ var functionNode_webgl = (function() {
 					return ast_ContinueStatement(ast, retArr, funcParam);
 				case "ForStatement":
 					return ast_ForStatement(ast, retArr, funcParam);
+				case "WhileStatement":
+					return ast_WhileStatement(ast, retArr, funcParam);
 				case "VariableDeclaration":
 					return ast_VariableDeclaration(ast, retArr, funcParam);
 				case "VariableDeclarator":
@@ -164,7 +183,7 @@ var functionNode_webgl = (function() {
 		
 		// Setup function return type and name
 		if(funcParam.isRootKernel) {
-			retArr.push("vec4");
+			retArr.push("float");
 		} else {
 			retArr.push(funcParam.returnType);
 		}
@@ -172,16 +191,18 @@ var functionNode_webgl = (function() {
 		retArr.push(funcParam.functionName);
 		retArr.push("(");
 		
-		// Arguments handling
-		for( var i = 0; i < funcParam.paramNames.length; ++i ) {
-			if( i > 0 ) {
-				retArr.push(", ");
+		if(!funcParam.isRootKernel) {
+			// Arguments handling
+			for( var i = 0; i < funcParam.paramNames.length; ++i ) {
+				if( i > 0 ) {
+					retArr.push(", ");
+				}
+				
+				retArr.push( funcParam.paramType[i] );
+				retArr.push(" ");
+				retArr.push("user_");
+				retArr.push( funcParam.paramNames[i] );
 			}
-			
-			retArr.push( funcParam.paramType[i] );
-			retArr.push(" ");
-			retArr.push("user_");
-			retArr.push( funcParam.paramNames[i] );
 		}
 		
 		// Function opening
@@ -194,7 +215,7 @@ var functionNode_webgl = (function() {
 		}
 		
 		if(funcParam.isRootKernel) {
-			retArr.push("\nreturn vec4(0.0);");
+			retArr.push("\nreturn 0.0;");
 		}
 		
 		// Function closing
@@ -210,15 +231,9 @@ var functionNode_webgl = (function() {
 	///
 	/// @returns  the appened retArr
 	function ast_ReturnStatement(ast, retArr, funcParam) {
-		if( funcParam.isRootKernel ) {
-			retArr.push("return encode32(");
-			ast_generic(ast.argument, retArr, funcParam);
-			retArr.push("); ");
-		} else {
-			retArr.push("return ");
-			ast_generic(ast.argument, retArr, funcParam);
-			retArr.push(";");
-		}
+		retArr.push("return ");
+		ast_generic(ast.argument, retArr, funcParam);
+		retArr.push(";");
 		
 		//throw ast_errorOutput(
 		//	"Non main function return, is not supported : "+funcParam.currentFunctionNamespace,
@@ -325,15 +340,78 @@ var functionNode_webgl = (function() {
 				ast, funcParam
 			);
 		}
-		retArr.push("for (float ");
-		ast_generic(forNode.init, retArr, funcParam);
-		retArr.push(";");
-		ast_generic(forNode.test, retArr, funcParam);
-		retArr.push(";");
-		ast_generic(forNode.update, retArr, funcParam);
-		retArr.push(")");
-		ast_generic(forNode.body, retArr, funcParam);
+		
+		if (forNode.test && forNode.test.type == "BinaryExpression") {
+			if (forNode.test.right.type != "Literal") {
+				retArr.push("for (float ");
+				ast_generic(forNode.init, retArr, funcParam);
+				retArr.push(";");
+				ast_generic(forNode.test.left, retArr, funcParam);
+				retArr.push(forNode.test.operator);
+				retArr.push("LOOP_MAX");
+				retArr.push(";");
+				ast_generic(forNode.update, retArr, funcParam);
+				retArr.push(")");
+				
+				retArr.push("{\n");
+				retArr.push("if (");
+				ast_generic(forNode.test.left, retArr, funcParam);
+				retArr.push(forNode.test.operator);
+				ast_generic(forNode.test.right, retArr, funcParam);
+				retArr.push(") {\n");
+				for (var i = 0; i < forNode.body.body.length; i++) {
+					ast_generic(forNode.body.body[i], retArr, funcParam);
+				}
+				retArr.push("} else {\n");
+				retArr.push("break;\n");
+				retArr.push("}\n");
+				retArr.push("}\n");
+				
+				return retArr;
+			} else {
+				retArr.push("for (float ");
+				ast_generic(forNode.init, retArr, funcParam);
+				retArr.push(";");
+				ast_generic(forNode.test, retArr, funcParam);
+				retArr.push(";");
+				ast_generic(forNode.update, retArr, funcParam);
+				retArr.push(")");
+				ast_generic(forNode.body, retArr, funcParam);
+				return retArr;
+			}
+		}
+		
+		throw ast_errorOutput(
+			"Invalid for statment",
+			ast, funcParam
+		);
+	}
+	
+	/// Prases the abstract syntax tree, genericially to its respective function
+	///
+	/// @param ast   the AST object to parse
+	///
+	/// @returns  the prased openclgl string
+	function ast_WhileStatement(whileNode, retArr, funcParam) {
+		throw ast_errorOutput(
+			"While statements are not allowed",
+			ast, funcParam
+		);
+		
+		/*
+		if (whileNode.type != "WhileStatement") {
+			throw ast_errorOutput(
+				"Invalid while statment",
+				ast, funcParam
+			);
+		}
+		retArr.push("while (");
+		ast_generic(whileNode.test, retArr, funcParam);
+		retArr.push(") {\n");
+		ast_generic(whileNode.body, retArr, funcParam);
+		retArr.push("}\n");
 		return retArr;
+		*/
 	}
 
 	function ast_AssignmentExpression(assNode, retArr, funcParam) {

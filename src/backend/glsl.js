@@ -150,12 +150,6 @@
 		var builder = this.functionBuilder;
 		var endianness = this.endianness;
 		
-		var kernelNode = new functionNode(gpu, "kernel", kernel);
-		kernelNode.paramNames = [];
-		kernelNode.paramType = [];
-		kernelNode.isRootKernel = true;
-		builder.addFunctionNode(kernelNode);
-		
 		var funcStr = kernel.toString();
 		if( !validateStringIsFunction(funcStr) ) {
 			throw "Unable to get body of kernel function";
@@ -197,8 +191,10 @@
 			if (program === undefined) {
 				var paramStr = '';
 				
+				var paramType = [];
 				for (var i=0; i<paramNames.length; i++) {
 					var argType = getArgumentType(arguments[i]);
+					paramType.push(argType);
 					if (opt.hardcodeConstants) {
 						if (argType == "Array" || argType == "Texture") {
 							var paramDim = getDimensions(arguments[i], true);
@@ -221,6 +217,12 @@
 					}
 				}
 				
+				var kernelNode = new functionNode(gpu, "kernel", kernel);
+				kernelNode.paramNames = paramNames;
+				kernelNode.paramType = paramType;
+				kernelNode.isRootKernel = true;
+				builder.addFunctionNode(kernelNode);
+				
 				var vertShaderSrc = [
 					'precision highp float;',
 					'precision highp int;',
@@ -239,6 +241,8 @@
 				var fragShaderSrc = [
 					'precision highp float;',
 					'precision highp int;',
+					'',
+					'#define LOOP_MAX 100.0',
 					'',
 					opt.hardcodeConstants ? 'vec3 uOutputDim = vec3('+threadDim[0]+','+threadDim[1]+', '+ threadDim[2]+');' : 'uniform vec3 uOutputDim;',
 					opt.hardcodeConstants ? 'vec2 uTexSize = vec2('+texSize[0]+','+texSize[1]+');' : 'uniform vec2 uTexSize;',
@@ -312,12 +316,11 @@
 					'',
 					paramStr,
 					builder.webglString("kernel"),
-					//compileToGlsl(funcStr, {}),
 					'',
 					'void main(void) {',
 					'	index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize[0];',
 					'	threadId = indexTo3D(index, uOutputDim);',
-					'	vec4 outputColor = kernel();',
+					'	vec4 outputColor = encode32(kernel());',
 					'	if (outputToColor == true) {',
 					'		gl_FragColor = actualColor;',
 					'	} else {',
@@ -471,6 +474,11 @@
    				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
    				
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+				
+				if (opt.graphical) {
+					return;
+				}
+				
 				var bytes = new Uint8Array(texSize[0]*texSize[1]*4);
 				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
 				var result = Array.prototype.slice.call(new Float32Array(bytes.buffer));
