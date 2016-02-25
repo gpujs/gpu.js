@@ -31,11 +31,11 @@ var functionNode = (function() {
 	/// [Constructor] Builds the function with the given JS function, and argument type array.
 	///
 	/// Parameters:
-	/// 	gpu             - {GPU}          The GPU instance
-	/// 	functionName    - {String}       Function name to assume, if its null, it attempts to extract from the function
-	/// 	jsFunction      - {JS Function}  JS Function to do conversion
-	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are "float" if null
-	/// 	returnType      - {String}       The return type, assumes "float" if null
+	/// 	gpu             - {GPU}                   The GPU instance
+	/// 	functionName    - {String}                Function name to assume, if its null, it attempts to extract from the function
+	/// 	jsFunction      - {JS Function / String}  JS Function to do conversion
+	/// 	paramTypeArray  - {[String,...]}          Parameter type array, assumes all parameters are "float" if null
+	/// 	returnType      - {String}                The return type, assumes "float" if null
 	///
 	function functionNode( gpu, functionName, jsFunction, paramTypeArray, returnType ) {
 		
@@ -50,22 +50,32 @@ var functionNode = (function() {
 		this.writeVariables   = [];
 		
 		//
-		// Setup jsFunction and its string property + validate them
+		// Missing jsFunction object exception
 		//
-		this.jsFunction = jsFunction;
-		if( !isFunction(this.jsFunction) ) {
-			throw "jsFunction, is not a valid JS Function";
+		if( jsFunction == null ) {
+			throw "jsFunction, parameter is null";
 		}
 		
+		//
+		// Setup jsFunction and its string property + validate them
+		//
 		this.jsFunctionString = jsFunction.toString();
 		if( !validateStringIsFunction(this.jsFunctionString) ) {
-			throw "jsFunction, to string conversion falied";
+			console.error("jsFunction, to string conversion check falied: not a function?", this.jsFunctionString);
+			throw "jsFunction, to string conversion check falied: not a function?";
+		}
+		
+		if( !isFunction(jsFunction) ) {
+			//throw "jsFunction, is not a valid JS Function";
+			this.jsFunction = null;
+		} else {
+			this.jsFunction = jsFunction;
 		}
 		
 		//
 		// Setup the function name property
 		//
-		this.functionName = functionName || jsFunction.name;
+		this.functionName = functionName || (jsFunction && jsFunction.name) || FUNCTION_NAME.exec(this.jsFunctionString)[1];
 		if( !(this.functionName) ) {
 			throw "jsFunction, missing name argument or value";
 		}
@@ -136,6 +146,7 @@ var functionNode = (function() {
 		return false;
 	}
 	
+	var FUNCTION_NAME = /function ([^(]*)/;
 	var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
 	var ARGUMENT_NAMES = /([^\s,]+)/g;
 	
@@ -169,6 +180,29 @@ var functionNode = (function() {
 	//
 	// Core function
 	//----------------------------------------------------------------------------------------------------
+	
+	///
+	/// Function: getJSFunction
+	///
+	/// Gets and return the stored JS Function.
+	/// Note: that this internally eval the function, if only the string was provided on construction
+	///
+	/// Returns:
+	/// 	{JS Function} The function object 
+	///
+	function getJSFunction() {
+		if( this.jsFunction ) {
+			return this.jsFunction;
+		}
+		
+		if( this.jsFunctionString ) {
+			this.jsFunction = eval( this.jsFunctionString );
+			return this.jsFunction;
+		}
+		
+		throw "Missin jsFunction, and jsFunctionString parameter";
+	}
+	functionNode.prototype.getJSFunction = getJSFunction;
 	
 	///
 	/// Function: getJS_AST

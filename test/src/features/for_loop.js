@@ -1,4 +1,4 @@
-function basic_for_loop_test( assert, mode ) {
+function for_loop_test( assert, mode ) {
 	var gpu = new GPU();
 	var f = gpu.createKernel(function(a, b) {
 		var x = 0.0;
@@ -25,14 +25,14 @@ function basic_for_loop_test( assert, mode ) {
 	}
 }
 
-QUnit.test( "basic_for_loop (auto)", function( assert ) {
-	basic_for_loop_test(assert, null);
+QUnit.test( "for_loop (auto)", function( assert ) {
+	for_loop_test(assert, null);
 });
 
-QUnit.test( "basic_for_loop (GPU)", function( assert ) {
-	basic_for_loop_test(assert, "gpu");
+QUnit.test( "for_loop (GPU)", function( assert ) {
+	for_loop_test(assert, "gpu");
 });
 
-QUnit.test( "basic_for_loop (CPU)", function( assert ) {
-	basic_for_loop_test(assert, "cpu");
+QUnit.test( "for_loop (CPU)", function( assert ) {
+	for_loop_test(assert, "cpu");
 });
