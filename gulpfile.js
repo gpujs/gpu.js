@@ -2,6 +2,7 @@ var gulp = require('gulp');
 var concat = require('gulp-concat');
 var rename = require("gulp-rename");
 var uglify = require('gulp-uglify');
+var gutil = require('gulp-util');
 
 gulp.task('build', function() {
     return gulp.src([
@@ -26,7 +27,7 @@ gulp.task('minify', ['build'], function() {
         .pipe(uglify({
             mangle: false,
             preserveComments: "license"
-        }))
+        }).on('error', gutil.log))
         .pipe(gulp.dest('bin'));
 });
 
