@@ -75,7 +75,7 @@ var functionNode = (function() {
 		//
 		// Setup the function name property
 		//
-		this.functionName = functionName || jsFunction.name;
+		this.functionName = functionName || (jsFunction && jsFunction.name) || FUNCTION_NAME.exec(this.jsFunctionString)[1];
 		if( !(this.functionName) ) {
 			throw "jsFunction, missing name argument or value";
 		}
@@ -146,6 +146,7 @@ var functionNode = (function() {
 		return false;
 	}
 	
+	var FUNCTION_NAME = /function ([^(]*)/;
 	var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
 	var ARGUMENT_NAMES = /([^\s,]+)/g;
 	
