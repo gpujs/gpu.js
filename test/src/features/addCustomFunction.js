@@ -1,4 +1,4 @@
-function basic_sum_AB_test( assert, mode ) {
+function addCustomFunction_sumAB( assert, mode ) {
 	var gpu = new GPU();
 	
 	function custom_adder(a,b) {
@@ -26,14 +26,14 @@ function basic_sum_AB_test( assert, mode ) {
 	}
 }
 
-QUnit.test( "basic_sum_AB (auto)", function( assert ) {
-	basic_sum_AB_test(assert, null);
+QUnit.test( "addCustomFunction_sumAB (auto)", function( assert ) {
+	addCustomFunction_sumAB(assert, null);
 });
 
-QUnit.test( "basic_sum_AB (GPU)", function( assert ) {
-	basic_sum_AB_test(assert, "gpu");
+QUnit.test( "addCustomFunction_sumAB (GPU)", function( assert ) {
+	addCustomFunction_sumAB(assert, "gpu");
 });
 
-QUnit.test( "basic_sum_AB (CPU)", function( assert ) {
-	basic_sum_AB_test(assert, "cpu");
+QUnit.test( "addCustomFunction_sumAB (CPU)", function( assert ) {
+	addCustomFunction_sumAB(assert, "cpu");
 });
