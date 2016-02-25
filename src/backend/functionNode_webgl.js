@@ -322,8 +322,7 @@ var functionNode_webgl = (function() {
 		}
 		
 		if (forNode.test && forNode.test.type == "BinaryExpression") {
-			console.log(forNode);
-			if (forNode.test.right.type == "Identifier") {
+			if (forNode.test.right.type != "Literal") {
 				retArr.push("for (float ");
 				ast_generic(forNode.init, retArr, funcParam);
 				retArr.push(";");
