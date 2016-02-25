@@ -35,7 +35,9 @@ var functionNode_webgl = (function() {
 		gpu = inNode.gpu;
 		jsFunctionString = inNode.jsFunctionString;
 		inNode.webglFunctionString_array = ast_generic( inNode.getJS_AST(), [], inNode );
-		inNode.webglFunctionString = inNode.webglFunctionString_array.join("").trim();
+		inNode.webglFunctionString = webgl_regex_optimize( 
+			inNode.webglFunctionString_array.join("").trim()
+		);
 		return inNode.webglFunctionString;
 	}
 	
