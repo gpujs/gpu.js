@@ -43,7 +43,9 @@ QUnit.test( "for_loop (CPU)", function( assert ) {
 	function evil_while_kernalFunction(a, b) {
 		var x = 0.0;
 		var i = 0;
-		while(i<100) {
+
+		//10000000 or 10 million is the approx upper limit on a chrome + GTX 780
+		while(i<1000) {
 			x = x + 1.0;
 			++i;
 		}

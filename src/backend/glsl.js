@@ -20,12 +20,12 @@
 		if (dimensions.length == 2) {
 			return dimensions;
 		}
-		
+
 		var numTexels = dimensions[0];
 		for (var i=1; i<dimensions.length; i++) {
 			numTexels *= dimensions[i];
 		}
-		
+
 		// TODO: find out why this is broken in Safari
 		/*
 		var maxSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
@@ -36,7 +36,7 @@
 			return [maxSize, height];
 		}
 		*/
-	
+
 		var w = Math.ceil(Math.sqrt(numTexels));
 		return [w, w];
 	}
@@ -72,14 +72,14 @@
 		} else {
 			throw "Unknown dimensions of " + x;
 		}
-		
+
 		if (pad) {
 			ret = clone(ret);
 			while (ret.length < 3) {
 				ret.push(1);
 			}
 		}
-		
+
 		return ret;
 	}
 
@@ -98,7 +98,7 @@
 		}
 		return tmp;
 	}
-	
+
 	function getArgumentType(arg) {
 		if (Array.isArray(arg)) {
 			return 'Array';
@@ -110,7 +110,7 @@
 			return 'Unknown';
 		}
 	}
-	
+
 	function getProgramCacheKey(args, opt, outputDim) {
 		var key = '';
 		for (var i=0; i<args.length; i++) {
@@ -124,21 +124,21 @@
 				}
 			}
 		}
-		
+
 		var specialFlags = '';
 		if (opt.wraparound) {
 			specialFlags += "Wraparound";
 		}
-		
+
 		if (opt.hardcodeConstants) {
 			specialFlags += "Hardcode";
 			specialFlags += '['+outputDim[0]+','+outputDim[1]+','+outputDim[2]+']';
 		}
-		
+
 		if (specialFlags) {
 			key = key + '-' + specialFlags;
 		}
-		
+
 		return key;
 	}
 
@@ -146,25 +146,25 @@
 		var gpu = this;
 		var gl = this.gl;
 		var canvas = this.canvas;
-		
+
 		var builder = this.functionBuilder;
 		var endianness = this.endianness;
-		
+
 		var funcStr = kernel.toString();
 		if( !validateStringIsFunction(funcStr) ) {
 			throw "Unable to get body of kernel function";
 		}
-		
+
 		var paramNames = getParamNames(funcStr);
-		
+
 		var programCache = [];
-		
+
 		function ret() {
 			if (!opt.dimensions || opt.dimensions.length === 0) {
 				if (arguments.length != 1) {
 					throw "Auto dimensions only supported for kernels with only one input";
 				}
-				
+
 				var argType = getArgumentType(arguments[0]);
 				if (argType == "Array") {
 					opt.dimensions = getDimensions(argType);
@@ -174,23 +174,23 @@
 					throw "Auto dimensions not supported for input type: " + argType;
 				}
 			}
-			
+
 			var texSize = dimToTexSize(gl, opt.dimensions);
 			canvas.width = texSize[0];
 			canvas.height = texSize[1];
 			gl.viewport(0, 0, texSize[0], texSize[1]);
-			
+
 			var threadDim = clone(opt.dimensions);
 			while (threadDim.length < 3) {
 				threadDim.push(1);
 			}
-			
+
 			var programCacheKey = getProgramCacheKey(arguments, opt, opt.dimensions);
 			var program = programCache[programCacheKey];
-			
+
 			if (program === undefined) {
 				var paramStr = '';
-				
+
 				var paramType = [];
 				for (var i=0; i<paramNames.length; i++) {
 					var argType = getArgumentType(arguments[i]);
@@ -199,7 +199,7 @@
 						if (argType == "Array" || argType == "Texture") {
 							var paramDim = getDimensions(arguments[i], true);
 							var paramSize = dimToTexSize(gl, paramDim);
-							
+
 							paramStr += 'uniform sampler2D user_' + paramNames[i] + ';\n';
 							paramStr += 'vec2 user_' + paramNames[i] + 'Size = vec2(' + paramSize[0] + ',' + paramSize[1] + ');\n';
 							paramStr += 'vec3 user_' + paramNames[i] + 'Dim = vec3(' + paramDim[0] + ', ' + paramDim[1] + ', ' + paramDim[2] + ');\n';
@@ -216,13 +216,13 @@
 						}
 					}
 				}
-				
+
 				var kernelNode = new functionNode(gpu, "kernel", kernel);
 				kernelNode.paramNames = paramNames;
 				kernelNode.paramType = paramType;
 				kernelNode.isRootKernel = true;
 				builder.addFunctionNode(kernelNode);
-				
+
 				var vertShaderSrc = [
 					'precision highp float;',
 					'precision highp int;',
@@ -237,12 +237,12 @@
 					'   vTexCoord = aTexCoord;',
 					'}'
 				].join('\n');
-				
+
 				var fragShaderSrc = [
 					'precision highp float;',
 					'precision highp int;',
 					'',
-					'#define LOOP_MAX 100.0',
+					'#define LOOP_MAX 10000000.0',
 					'',
 					opt.hardcodeConstants ? 'vec3 uOutputDim = vec3('+threadDim[0]+','+threadDim[1]+', '+ threadDim[2]+');' : 'uniform vec3 uOutputDim;',
 					opt.hardcodeConstants ? 'vec2 uTexSize = vec2('+texSize[0]+','+texSize[1]+');' : 'uniform vec2 uTexSize;',
@@ -328,16 +328,16 @@
 					'	}',
 					'}'
 				].join('\n');
-				
+
 				var vertShader = gl.createShader(gl.VERTEX_SHADER);
 				var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-				
+
 				gl.shaderSource(vertShader, vertShaderSrc);
 				gl.shaderSource(fragShader, fragShaderSrc);
-				
+
 				gl.compileShader(vertShader);
 				gl.compileShader(fragShader);
-				
+
 				if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
 					console.error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(vertShader));
 					console.log(vertShaderSrc);
@@ -348,21 +348,21 @@
 					console.log(fragShaderSrc);
 					throw "Error compiling fragment shader";
 				}
-				
+
 				if (opt.debug) {
 					console.log(fragShaderSrc);
 				}
-				
+
 				program = gl.createProgram();
 				gl.attachShader(program, vertShader);
 				gl.attachShader(program, fragShader);
 				gl.linkProgram(program);
-				
+
 				programCache[programCacheKey] = program;
 			}
-			
+
 			gl.useProgram(program);
-			
+
 			var vertices = new Float32Array([
 				-1, -1,
 				1, -1,
@@ -379,21 +379,21 @@
 			gl.bufferData(gl.ARRAY_BUFFER, vertices.byteLength + texCoords.byteLength, gl.STATIC_DRAW);
 			gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices);
 			gl.bufferSubData(gl.ARRAY_BUFFER, texCoordOffset, texCoords);
-			
+
 			var aPosLoc = gl.getAttribLocation(program, "aPos");
 			gl.enableVertexAttribArray(aPosLoc);
 			gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, gl.FALSE, 0, 0);
 			var aTexCoordLoc = gl.getAttribLocation(program, "aTexCoord");
 			gl.enableVertexAttribArray(aTexCoordLoc);
 			gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
-			
+
 			if (!opt.hardcodeConstants) {
 				var uOutputDimLoc = gl.getUniformLocation(program, "uOutputDim");
 				gl.uniform3fv(uOutputDimLoc, threadDim);
 				var uTexSizeLoc = gl.getUniformLocation(program, "uTexSize");
 				gl.uniform2fv(uTexSizeLoc, texSize);
 			}
-			
+
 			var textures = [];
 			var textureCount = 0;
 			for (textureCount=0; textureCount<paramNames.length; textureCount++) {
@@ -401,7 +401,7 @@
 				if (Array.isArray(arguments[textureCount])) {
 					paramDim = getDimensions(arguments[textureCount], true);
 					paramSize = dimToTexSize(gl, paramDim);
-					
+
 					texture = gl.createTexture();
 					gl.activeTexture(gl["TEXTURE"+textureCount]);
 					gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -409,20 +409,20 @@
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-					
+
 					var paramArray = flatten(arguments[textureCount]);
 					while (paramArray.length < paramSize[0] * paramSize[1]) {
 						paramArray.push(0);
 					}
 					var argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
 					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
-					
+
 					textures[textureCount] = texture;
-					
+
 					var paramLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount]);
 					var paramSizeLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Size");
 					var paramDimLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Dim");
-					
+
 					if (!opt.hardcodeConstants) {
 						gl.uniform3fv(paramDimLoc, paramDim);
 						gl.uniform2fv(paramSizeLoc, paramSize);
@@ -436,14 +436,14 @@
 					paramSize = arguments[textureCount].size;
 					texture = arguments[textureCount].texture;
 					textures[textureCount] = texture;
-					
+
 					gl.activeTexture(gl["TEXTURE"+textureCount]);
 					gl.bindTexture(gl.TEXTURE_2D, texture);
-					
+
 					var paramLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount]);
 					var paramSizeLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Size");
 					var paramDimLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Dim");
-					
+
 					gl.uniform3fv(paramDimLoc, paramDim);
 					gl.uniform2fv(paramSizeLoc, paramSize);
 					gl.uniform1i(paramLoc, textureCount);
@@ -451,7 +451,7 @@
 					throw "Input type not supported: " + arguments[textureCount];
 				}
 			}
-			
+
 			if (opt.outputToTexture) {
 				var outputTexture = gl.createTexture();
 				gl.activeTexture(gl["TEXTURE"+textureCount]);
@@ -461,7 +461,7 @@
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-				
+
 				var framebuffer = gl.createFramebuffer();
 				framebuffer.width = texSize[0];
 				framebuffer.height = texSize[1];
@@ -472,18 +472,18 @@
 			} else {
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
    				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-   				
+
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-				
+
 				if (opt.graphical) {
 					return;
 				}
-				
+
 				var bytes = new Uint8Array(texSize[0]*texSize[1]*4);
 				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
 				var result = Array.prototype.slice.call(new Float32Array(bytes.buffer));
 				result.length = threadDim[0] * threadDim[1] * threadDim[2];
-				
+
 				if (opt.dimensions.length == 1) {
 					return result;
 				} else if (opt.dimensions.length == 2) {
@@ -496,46 +496,46 @@
 				}
 			}
 		}
-		
+
 		ret.dimensions = function(dim) {
 			opt.dimensions = dim;
 			return ret;
 		};
-		
+
 		ret.debug = function(flag) {
 			opt.debug = flag;
 			return ret;
 		};
-		
+
 		ret.graphical = function(flag) {
 			opt.graphical = flag;
 			return ret;
 		};
-		
+
 		ret.wraparound = function(flag) {
 			opt.wraparound = flag;
 			return ret;
 		};
-		
+
 		ret.hardcodeConstants = function(flag) {
 			opt.hardcodeConstants = flag;
 			return ret;
 		};
-		
+
 		ret.outputToTexture = function(outputToTexture) {
 			opt.outputToTexture = outputToTexture;
 			return ret;
 		};
-		
+
 		ret.mode = function(mode) {
 			opt.mode = mode;
 			return gpu.createKernel(kernel, opt);
 		};
-		
+
 		ret.getCanvas = function() {
 			return gpu.getCanvas();
 		};
-		
+
 		return ret;
 	};
 
