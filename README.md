@@ -40,7 +40,7 @@ var myFunc = gpu.createKernel(function() {
 }, opt);
 ```
 
-The created function is a regular JavaScript function, you can use like regular functions.
+The created function is a regular JavaScript function, you can use it like regular functions.
 
 ```js
 myFunc();
