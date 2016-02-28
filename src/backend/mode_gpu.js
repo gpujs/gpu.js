@@ -142,7 +142,7 @@
 		return key;
 	}
 
-	GPU.prototype._backendGLSL = function(kernel, opt) {
+	GPU.prototype._mode_gpu = function(kernel, opt) {
 		var gpu = this;
 		var gl = this.gl;
 		var canvas = this.canvas;
@@ -511,7 +511,7 @@
 			opt.graphical = flag;
 			return ret;
 		};
-		
+
 		ret.loopMaxIterations = function(max) {
 			opt.loopMaxIterations = max;
 			return ret;
