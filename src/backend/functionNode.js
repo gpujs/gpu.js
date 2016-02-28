@@ -60,12 +60,12 @@ var functionNode = (function() {
 		// Setup jsFunction and its string property + validate them
 		//
 		this.jsFunctionString = jsFunction.toString();
-		if( !validateStringIsFunction(this.jsFunctionString) ) {
+		if( !gpu_utils.isFunctionString(this.jsFunctionString) ) {
 			console.error("jsFunction, to string conversion check falied: not a function?", this.jsFunctionString);
 			throw "jsFunction, to string conversion check falied: not a function?";
 		}
 
-		if( !isFunction(jsFunction) ) {
+		if( !gpu_utils.isFunction(jsFunction) ) {
 			//throw "jsFunction, is not a valid JS Function";
 			this.jsFunction = null;
 		} else {
@@ -75,7 +75,10 @@ var functionNode = (function() {
 		//
 		// Setup the function name property
 		//
-		this.functionName = functionName || (jsFunction && jsFunction.name) || FUNCTION_NAME.exec(this.jsFunctionString)[1];
+		this.functionName = functionName ||
+			(jsFunction && jsFunction.name) ||
+			gpu_utils.getFunctionName_fromString(this.jsFunctionString);
+
 		if( !(this.functionName) ) {
 			throw "jsFunction, missing name argument or value";
 		}
@@ -83,7 +86,7 @@ var functionNode = (function() {
 		//
 		// Extract parameter name, and its argument types
 		//
-		this.paramNames = getParamNames(this.jsFunctionString);
+		this.paramNames = gpu_utils.getParamNames_fromString(this.jsFunctionString);
 		if( paramTypeArray != null ) {
 			if( paramTypeArray.length != this.paramNames.length ) {
 				throw "Invalid argument type array length, against function length -> ("+
@@ -104,78 +107,6 @@ var functionNode = (function() {
 		//
 		this.returnType = returnType || "float";
 	}
-
-	//
-	// Utility functions
-	//----------------------------------------------------------------------------------------------------
-
-	///
-	/// Function: isFunction
-	///
-	/// [static] Return TRUE, on a JS function
-	///
-	/// This is 'static' function, not a class function functionNode.isFunction(...)
-	///
-	/// Parameters:
-	/// 	funcObj - {JS Function} Object to validate if its a function
-	///
-	/// Returns:
-	/// 	{Boolean} TRUE if the object is a JS function
-	///
-	function isFunction( funcObj ) {
-		return typeof(funcObj) === 'function';
-	}
-
-	///
-	/// Function: validateStringIsFunction
-	///
-	/// [static] Return TRUE, on a valid JS function string
-	///
-	/// This is 'static' function, not a class function functionNode.validateStringIsFunction(...)
-	///
-	/// Parameters:
-	/// 	funcStr - {String}  String of JS function to validate
-	///
-	/// Returns:
-	/// 	{Boolean} TRUE if the string passes basic validation
-	///
-	function validateStringIsFunction( funcStr ) {
-		if( funcStr !== null ) {
-			return (funcStr.slice(0, "function".length).toLowerCase() == "function");
-		}
-		return false;
-	}
-
-	var FUNCTION_NAME = /function ([^(]*)/;
-	var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-	var ARGUMENT_NAMES = /([^\s,]+)/g;
-
-	///
-	/// Function: getParamNames
-	///
-	/// [static] Return list of parameter names extracted from the JS function string
-	///
-	/// This is 'static' function, not a class function: functionNode.getParamNames(...)
-	///
-	/// Parameters:
-	/// 	funcStr - {String}  String of JS function to validate
-	///
-	/// Returns:
-	/// 	{[String, ...]}  Array representing all the parameter names
-	///
-	function getParamNames(func) {
-		var fnStr = func.toString().replace(STRIP_COMMENTS, '');
-		var result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
-		if(result === null)
-			result = [];
-		return result;
-	}
-
-	// Passing it to the class object, in case it is needed elsewhere
-	// Note, support for this is not guranteed across versions.
-	functionNode.isFunction = isFunction;
-	functionNode.validateStringIsFunction = validateStringIsFunction;
-	functionNode.getParamNames = getParamNames;
 
 	//
 	// Core function
