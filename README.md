@@ -70,7 +70,7 @@ The created function is a regular JavaScript function, you can use it like regul
 
 ```js
 myFunc();
-// Result: [0, 1, 2, 3, ... 100]
+// Result: [0, 1, 2, 3, ... 99]
 ```
 
 Note: Instead of creating an object, you can use the chainable shortcut methods as a neater way of specificying options.
@@ -81,7 +81,7 @@ var myFunc = gpu.createKernel(function() {
 }).dimensions([100]);
     
 myFunc();
-// Result: [0, 1, 2, 3, ... 100]
+// Result: [0, 1, 2, 3, ... 99]
 ```
 ### Accepting Input
 
