@@ -10,6 +10,7 @@ gulp.task('build', function() {
 			'src/parser.js',
 			'src/texture.js',
 			'src/backend/gpu_utils.js',
+			'src/backend/gpu_core.js',
 			'src/gpu.js',
 			'src/backend/functionNode_webgl.js',
 			'src/backend/functionNode.js',
