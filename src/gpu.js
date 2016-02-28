@@ -4,17 +4,7 @@
 /// GPU.JS core class =D
 ///
 var GPU = (function() {
-	// https://gist.github.com/TooTallNate/4750953
-	function endianness() {
-		var b = new ArrayBuffer(4);
-		var a = new Uint32Array(b);
-		var c = new Uint8Array(b);
-		a[0] = 0xdeadbeef;
-		if (c[0] == 0xef) return 'LE';
-		if (c[0] == 0xde) return 'BE';
-		throw new Error('unknown endianness');
-	}
-
+	
 	function GPU(ctx) {
 		var gl, canvas, canvasCpu;
 
@@ -31,9 +21,6 @@ var GPU = (function() {
 			};
 
 			gl = canvas.getContext("experimental-webgl", glOpt) || canvas.getContext("webgl", glOpt);
-		} else {
-			canvas = ctx.canvas;
-			canvasCpu = document.createElement('canvas');
 		}
 
 		gl.getExtension('OES_texture_float');
@@ -44,7 +31,7 @@ var GPU = (function() {
 		this.canvas = canvas;
 		this.canvasCpu = canvasCpu;
 		this.programCache = {};
-		this.endianness = endianness();
+		this.endianness = gpu_utils.system_endianness();
 
 		this.functionBuilder = new functionBuilder(this);
 		this.functionBuilder.polyfillStandardFunctions();
