@@ -1,6 +1,32 @@
 [![Logo](http://gpu.rocks/img/ogimage.png)](http://gpu.rocks/)
 
-gpu.js is a single-file JavaScript library for GPGPU using WebGL. There is graceful fallback to JavaScript if WebGL is not available.
+gpu.js is a single-file JavaScript library for GPGPU in the browser. gpu.js will automatically compile specially written JavaScript functions into shader language and run it on the GPU using the WebGL API. There is graceful fallback to JavaScript if WebGL is not available.
+
+# Example
+
+Matrix multiplication written in gpu.js:
+
+```js
+var gpu = new GPU();
+
+// Create the GPU accelerated function from a kernel
+// function that computes a single element in the
+// 512 x 512 matrix (2D array). The kernel function
+// is run in a parallel manner in the GPU resulting
+// in very fast computations! (...sometimes)
+var mat_mult = gpu.createKernel(function(A, B) {
+    var sum = 0;
+    for (var i=0; i<512; i++) {
+        sum += A[this.thread.y][i] * B[i][this.thread.x];
+    }
+    return sum;
+}).dimensions([512, 512]);
+
+// Perform matrix multiplication on 2 matrices of size 512 x 512
+var C = mat_mult(A, B);
+```
+
+You can run a benchmark of this [here](http://gpu.rocks). Typically, it will run at 1-15x speedup depending on your hardware.
 
 # Getting Started
 
@@ -21,10 +47,10 @@ var gpu = new GPU();
 Depnding on your output type, specify the intended dimensions of your output. You cannot have a accelerated function that does not specify any dimensions.
 
 Dimensions of Output	|	How to specify dimensions
----			|	---
-1D			|	`[length]`
-2D			|	`[width, height]`
-3D			|	`[width, height, depth]`
+----------------------- |-------------------------------
+1D			            |	`[length]`
+2D		            	|	`[width, height]`
+3D		            	|	`[width, height, depth]`
 
 ```js
 var opt = {
