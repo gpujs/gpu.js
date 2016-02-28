@@ -167,6 +167,11 @@
 			return ret;
 		};
 		
+		ret.loopMaxIterations = function(max) {
+			opt.loopMaxIterations = max;
+			return ret;
+		};
+		
 		ret.wraparound = function() {
 			opt.wraparound = false;
 			return ret;

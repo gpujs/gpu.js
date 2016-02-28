@@ -179,12 +179,12 @@ var functionNode = (function() {
 	/// Returns:
 	/// 	{String} webgl function string, result is cached under this.webglFunctionString
 	///
-	function getWebglFunctionString() {
+	function getWebglFunctionString(opt) {
 		if( this.webglFunctionString ) {
 			return this.webglFunctionString;
 		}
 
-		return this.webglFunctionString = functionNode_webgl(this);
+		return this.webglFunctionString = functionNode_webgl(this, opt);
 	}
 	functionNode.prototype.getWebglFunctionString = getWebglFunctionString;
 
