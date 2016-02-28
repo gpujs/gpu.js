@@ -20,11 +20,11 @@
 /// 	writeVariables       - {[String,...]}  List of variables write operations occur
 ///
 var functionNode = (function() {
-	
+
 	//
 	// Constructor
 	//----------------------------------------------------------------------------------------------------
-	
+
 	///
 	/// Function: functionNode
 	///
@@ -38,9 +38,9 @@ var functionNode = (function() {
 	/// 	returnType      - {String}                The return type, assumes "float" if null
 	///
 	function functionNode( gpu, functionName, jsFunction, paramTypeArray, returnType ) {
-		
+
 		this.gpu = gpu;
-		
+
 		//
 		// Internal vars setup
 		//
@@ -48,14 +48,14 @@ var functionNode = (function() {
 		this.initVariables    = [];
 		this.readVariables    = [];
 		this.writeVariables   = [];
-		
+
 		//
 		// Missing jsFunction object exception
 		//
 		if( jsFunction == null ) {
 			throw "jsFunction, parameter is null";
 		}
-		
+
 		//
 		// Setup jsFunction and its string property + validate them
 		//
@@ -64,14 +64,14 @@ var functionNode = (function() {
 			console.error("jsFunction, to string conversion check falied: not a function?", this.jsFunctionString);
 			throw "jsFunction, to string conversion check falied: not a function?";
 		}
-		
+
 		if( !isFunction(jsFunction) ) {
 			//throw "jsFunction, is not a valid JS Function";
 			this.jsFunction = null;
 		} else {
 			this.jsFunction = jsFunction;
 		}
-		
+
 		//
 		// Setup the function name property
 		//
@@ -79,7 +79,7 @@ var functionNode = (function() {
 		if( !(this.functionName) ) {
 			throw "jsFunction, missing name argument or value";
 		}
-		
+
 		//
 		// Extract parameter name, and its argument types
 		//
@@ -98,23 +98,23 @@ var functionNode = (function() {
 				this.paramType.push("float");
 			}
 		}
-		
+
 		//
 		// Return type handling
 		//
 		this.returnType = returnType || "float";
 	}
-	
+
 	//
 	// Utility functions
 	//----------------------------------------------------------------------------------------------------
-	
+
 	///
 	/// Function: isFunction
 	///
 	/// [static] Return TRUE, on a JS function
 	///
-	/// This is 'static' function, not a class function (functionNode.prototype)
+	/// This is 'static' function, not a class function functionNode.isFunction(...)
 	///
 	/// Parameters:
 	/// 	funcObj - {JS Function} Object to validate if its a function
@@ -125,13 +125,13 @@ var functionNode = (function() {
 	function isFunction( funcObj ) {
 		return typeof(funcObj) === 'function';
 	}
-	
+
 	///
 	/// Function: validateStringIsFunction
 	///
 	/// [static] Return TRUE, on a valid JS function string
 	///
-	/// This is 'static' function, not a class function (functionNode.prototype)
+	/// This is 'static' function, not a class function functionNode.validateStringIsFunction(...)
 	///
 	/// Parameters:
 	/// 	funcStr - {String}  String of JS function to validate
@@ -145,17 +145,17 @@ var functionNode = (function() {
 		}
 		return false;
 	}
-	
+
 	var FUNCTION_NAME = /function ([^(]*)/;
 	var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
 	var ARGUMENT_NAMES = /([^\s,]+)/g;
-	
+
 	///
 	/// Function: getParamNames
 	///
 	/// [static] Return list of parameter names extracted from the JS function string
 	///
-	/// This is 'static' function, not a class function (functionNode.prototype)
+	/// This is 'static' function, not a class function: functionNode.getParamNames(...)
 	///
 	/// Parameters:
 	/// 	funcStr - {String}  String of JS function to validate
@@ -176,11 +176,11 @@ var functionNode = (function() {
 	functionNode.isFunction = isFunction;
 	functionNode.validateStringIsFunction = validateStringIsFunction;
 	functionNode.getParamNames = getParamNames;
-	
+
 	//
 	// Core function
 	//----------------------------------------------------------------------------------------------------
-	
+
 	///
 	/// Function: getJSFunction
 	///
@@ -188,22 +188,22 @@ var functionNode = (function() {
 	/// Note: that this internally eval the function, if only the string was provided on construction
 	///
 	/// Returns:
-	/// 	{JS Function} The function object 
+	/// 	{JS Function} The function object
 	///
 	function getJSFunction() {
 		if( this.jsFunction ) {
 			return this.jsFunction;
 		}
-		
+
 		if( this.jsFunctionString ) {
 			this.jsFunction = eval( this.jsFunctionString );
 			return this.jsFunction;
 		}
-		
+
 		throw "Missin jsFunction, and jsFunctionString parameter";
 	}
 	functionNode.prototype.getJSFunction = getJSFunction;
-	
+
 	///
 	/// Function: getJS_AST
 	///
@@ -221,25 +221,25 @@ var functionNode = (function() {
 		if( this.jsFunctionAST ) {
 			return this.jsFunctionAST;
 		}
-		
+
 		inParser = inParser || parser;
 		if( inParser == null ) {
 			throw "Missing JS to AST parser";
 		}
-		
+
 		var prasedObj = parser.parse( "var "+this.functionName+" = "+this.jsFunctionString+";" );
 		if( prasedObj === null ) {
 			throw "Failed to parse JS code via JISON";
 		}
-			
+
 		// take out the function object, outside the var declarations
 		var funcAST = prasedObj.body[0].declarations[0].init;
 		this.jsFunctionAST = funcAST;
-		
+
 		return funcAST;
 	}
 	functionNode.prototype.getJS_AST = getJS_AST;
-	
+
 	///
 	/// Function: getWebglString
 	///
@@ -252,11 +252,11 @@ var functionNode = (function() {
 		if( this.webglFunctionString ) {
 			return this.webglFunctionString;
 		}
-		
+
 		return this.webglFunctionString = functionNode_webgl(this);
 	}
 	functionNode.prototype.getWebglFunctionString = getWebglFunctionString;
-	
+
 	///
 	/// Function: setWebglString
 	///
@@ -269,6 +269,6 @@ var functionNode = (function() {
 		this.webglFunctionString = shaderCode;
 	}
 	functionNode.prototype.setWebglFunctionString = setWebglFunctionString;
-	
+
 	return functionNode;
 })();

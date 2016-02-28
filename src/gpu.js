@@ -14,10 +14,10 @@ var GPU = (function() {
 		if (c[0] == 0xde) return 'BE';
 		throw new Error('unknown endianness');
 	}
-	
+
 	function GPU(ctx) {
 		var gl, canvas, canvasCpu;
-		
+
 		canvas = undefined;
 		gl = ctx;
 		if (gl === undefined) {
@@ -35,30 +35,30 @@ var GPU = (function() {
 			canvas = ctx.canvas;
 			canvasCpu = document.createElement('canvas');
 		}
-		
+
 		gl.getExtension('OES_texture_float');
 		gl.getExtension('OES_texture_float_linear');
 		gl.getExtension('OES_element_index_uint');
-		
+
 		this.gl = gl;
 		this.canvas = canvas;
 		this.canvasCpu = canvasCpu;
 		this.programCache = {};
 		this.endianness = endianness();
-		
+
 		this.functionBuilder = new functionBuilder(this);
 		this.functionBuilder.polyfillStandardFunctions();
 	}
-	
+
 	GPU.prototype.getGl = function() {
 		return this.gl;
 	};
-	
+
 	GPU.prototype.getCanvas = function(mode) {
 		if (mode == "cpu") {
 			return this.canvasCpu;
 		}
-		
+
 		return this.canvas;
 	};
 
@@ -99,17 +99,17 @@ var GPU = (function() {
 		if( paramObj === undefined ) {
 			paramObj = {};
 		}
-		
+
 		//
 		// Get theconfig, fallbacks to default value if not set
 		//
 		paramObj.dimensions = paramObj.dimensions || [];
-		mode = paramObj.mode && paramObj.mode.toLowerCase();
-		
+		var mode = paramObj.mode && paramObj.mode.toLowerCase();
+
 		if ( mode == "cpu" ) {
 			return this._backendFallback(kernel, paramObj);
 		}
-		
+
 		//
 		// Attempts to do the glsl conversion
 		//
@@ -125,7 +125,7 @@ var GPU = (function() {
 		}
 	};
 	GPU.prototype.createKernel = createKernel;
-	
+
 	///
 	/// Function: addFunction
 	///
@@ -144,14 +144,14 @@ var GPU = (function() {
 		return this;
 	}
 	GPU.prototype.addFunction = addFunction;
-	
-	
-	
+
+
+
 	GPU.prototype.textureToArray = function(texture) {
 		var copy = this.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];
 		});
-		
+
 		return copy(texture);
 	};
 

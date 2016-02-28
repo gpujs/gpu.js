@@ -1,6 +1,6 @@
-/*
 function booleanBranch( mode ) {
-	var f = GPU(function() {
+	var gpu = new GPU();
+	var f = gpu.createKernel(function() {
 		var ret = 0.0;
 		if(true) {
 			ret = 4.0;
@@ -9,13 +9,12 @@ function booleanBranch( mode ) {
 		}
 		return ret;
 	}, {
-		thread : [1],
-		block : [1],
+		dimensions : [1],
 		mode : mode
 	});
-	
+
 	QUnit.ok( f !== null, "function generated test");
-	QUnit.close(f(), 42.0, 0.01, "basic return function test");
+	QUnit.close(f(), 4, 0.01, "basic return function test");
 }
 
 QUnit.test( "booleanBranch (auto)", function() {
@@ -29,7 +28,7 @@ QUnit.test( "booleanBranch (GPU)", function() {
 QUnit.test( "booleanBranch (CPU)", function() {
 	booleanBranch("cpu");
 });
-*/
+
 
 function if_else( mode ) {
 	var gpu = new GPU();
@@ -43,7 +42,7 @@ function if_else( mode ) {
 		dimensions : [4],
 		mode : mode
 	});
-	
+
 	QUnit.ok( f !== null, "function generated test");
 	QUnit.deepEqual(f([1, 1, 0, 0]), [0, 0, 1, 1], "basic return function test");
 }
