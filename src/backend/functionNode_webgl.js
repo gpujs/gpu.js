@@ -3,6 +3,10 @@ var functionNode_webgl = (function() {
 	
 	var gpu, opt, jsFunctionString;
 	
+	function isIdentifierConstant(paramName) {
+		return opt.constants.indexOf(paramName) != -1;
+	}
+	
 	function isIdentifierKernelParam(paramName, ast, funcParam) {
 		return funcParam.paramNames.indexOf(paramName) != -1;
 	}
@@ -346,7 +350,8 @@ var functionNode_webgl = (function() {
 		
 		if (forNode.test && forNode.test.type == "BinaryExpression") {
 			if (forNode.test.right.type == "Identifier"
-				&& forNode.test.operator == "<") {
+				&& forNode.test.operator == "<"
+				&& isIdentifierConstant(forNode.test.right.name) == false) {
 				
 				if (opt.loopMaxIterations === undefined) {
 					console.warn("Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.");
