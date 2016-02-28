@@ -94,18 +94,18 @@ var GPU = (function() {
 		var mode = paramObj.mode && paramObj.mode.toLowerCase();
 
 		if ( mode == "cpu" ) {
-			return this._backendFallback(kernel, paramObj);
+			return this._mode_cpu(kernel, paramObj);
 		}
 
 		//
 		// Attempts to do the glsl conversion
 		//
 		try {
-			return this._backendGLSL(kernel, paramObj);
+			return this._mode_gpu(kernel, paramObj);
 		} catch (e) {
 			if ( mode != "gpu") {
 				console.warning("Falling back to CPU!");
-				return this._backendFallback(kernel, paramObj);
+				return this._mode_cpu(kernel, paramObj);
 			} else {
 				throw e;
 			}
