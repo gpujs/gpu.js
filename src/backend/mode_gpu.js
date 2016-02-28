@@ -144,7 +144,7 @@
 
 	GPU.prototype._mode_gpu = function(kernel, opt) {
 		var gpu = this;
-		var gl = this.gl;
+		var gl = this.webgl;
 		var canvas = this.canvas;
 
 		var builder = this.functionBuilder;

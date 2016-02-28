@@ -5,35 +5,22 @@
 /// *gpu.js* PUBLIC function namespace
 ///
 /// I know @private makes more sense, but since the documentation engine state is undetirmined.
-/// See https://github.com/gpujs/gpu.js/issues/19 regarding documentation engine issue
+/// (See https://github.com/gpujs/gpu.js/issues/19 regarding documentation engine issue)
+/// File isolation is currently the best way to go
 ///
 var gpu_core = (function() {
 
-	function gpu_core(ctx) {
-		var gl, canvas, canvasCpu;
+	function gpu_core() {
+		var gl, canvas;
 
 		canvas = undefined;
-		gl = ctx;
 		if (gl === undefined) {
-			canvasCpu = document.createElement('canvas');
-			canvas = document.createElement('canvas');
-			canvas.width = 2;
-			canvas.height = 2;
-			var glOpt = {
-				depth: false,
-				antialias: false
-			};
-
-			gl = canvas.getContext("experimental-webgl", glOpt) || canvas.getContext("webgl", glOpt);
+			canvas = gpu_utils.init_canvas();
+			gl = gpu_utils.init_webgl(canvas);
 		}
 
-		gl.getExtension('OES_texture_float');
-		gl.getExtension('OES_texture_float_linear');
-		gl.getExtension('OES_element_index_uint');
-
-		this.gl = gl;
+		this.webgl = gl;
 		this.canvas = canvas;
-		this.canvasCpu = canvasCpu;
 		this.programCache = {};
 		this.endianness = gpu_utils.system_endianness();
 
@@ -41,15 +28,15 @@ var gpu_core = (function() {
 		this.functionBuilder.polyfillStandardFunctions();
 	}
 
-	gpu_core.prototype.getGl = function() {
-		return this.gl;
+	gpu_core.prototype.getWebgl = function() {
+		return this.webgl;
 	};
 
 	gpu_core.prototype.getCanvas = function(mode) {
 		if (mode == "cpu") {
-			return this.canvasCpu;
+			return null;
 		}
-
+		
 		return this.canvas;
 	};
 
