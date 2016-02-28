@@ -31,6 +31,9 @@ var GPU = (function() {
 			};
 
 			gl = canvas.getContext("experimental-webgl", glOpt) || canvas.getContext("webgl", glOpt);
+		} else {
+			canvas = ctx.canvas;
+			canvasCpu = document.createElement('canvas');
 		}
 
 		gl.getExtension('OES_texture_float');
