@@ -14,8 +14,8 @@ gulp.task('build', function() {
 			'src/backend/functionNode_webgl.js',
 			'src/backend/functionNode.js',
 			'src/backend/functionBuilder.js',
-			'src/backend/fallback.js',
-			'src/backend/glsl.js',
+			'src/backend/mode_cpu.js',
+			'src/backend/mode_gpu.js',
 			'src/wrapper/suffix.js'
 		])
 		.pipe(concat('gpu.js'))
