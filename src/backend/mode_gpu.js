@@ -163,6 +163,14 @@
 			var program = programCache[programCacheKey];
 
 			if (program === undefined) {
+				var constantsStr = '';
+				if (opt.constants) {
+					for (var name in opt.constants) {
+						var value = opt.constants[name];
+						constantsStr += 'const float constants_' + name + '=' + parseInt(value) + '.0;\n';
+					}
+				}
+				
 				var paramStr = '';
 
 				var paramType = [];
@@ -289,6 +297,7 @@
 					'}',
 					'',
 					paramStr,
+					constantsStr,
 					builder.webglString("kernel", opt),
 					'',
 					'void main(void) {',
@@ -488,6 +497,11 @@
 
 		ret.loopMaxIterations = function(max) {
 			opt.loopMaxIterations = max;
+			return ret;
+		};
+		
+		ret.constants = function(constants) {
+			opt.constants = constants;
 			return ret;
 		};
 

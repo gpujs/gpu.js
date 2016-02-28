@@ -542,6 +542,11 @@ var functionNode_webgl = (function() {
 
 		return retArr;
 	}
+	
+	// The prefixes to use
+	var jsMathPrefix = "Math.";
+	var localPrefix = "this.";
+	var constantsPrefix = "this.constants.";
 
 	function ast_MemberExpression(mNode, retArr, funcParam) {
 		if(mNode.computed) {
@@ -571,7 +576,12 @@ var functionNode_webgl = (function() {
 			
 			// Unroll the member expression
 			var unrolled = ast_MemberExpression_unroll(mNode);
-			var unrolled_lc = unrolled.toLowerCase()
+			var unrolled_lc = unrolled.toLowerCase();
+			
+			// Its a constant, remove this.constants.
+			if( unrolled.indexOf(constantsPrefix) === 0 ) {
+				unrolled = 'constants_'+unrolled.slice( constantsPrefix.length );
+			}
 			
 			if (unrolled_lc == "this.thread.x") {
 				retArr.push('threadId.x');
@@ -632,10 +642,6 @@ var functionNode_webgl = (function() {
 			ast, funcParam
 		);
 	}
-	
-	// The prefixes to use
-	var jsMathPrefix = "Math.";
-	var localPrefix = "this.";
 	
 	/// Prases the abstract syntax tree, binary expression
 	///
