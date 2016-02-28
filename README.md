@@ -1,6 +1,6 @@
 [![Logo](http://gpu.rocks/img/ogimage.png)](http://gpu.rocks/)
 
-gpu.js is a single-file JavaScript library for GPGPU in the browser. gpu.js will automatically compile specially written JavaScript functions into shader language and run it on the GPU using the WebGL API. There is graceful fallback to JavaScript if WebGL is not available.
+gpu.js is a single-file JavaScript library for GPGPU in the browser. gpu.js will automatically compile specially written JavaScript functions into shader language and run them on the GPU using the WebGL API. In the case where WebGL is not available, the functions will still run in regular JavaScript.
 
 # Example
 
