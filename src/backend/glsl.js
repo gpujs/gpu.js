@@ -242,7 +242,7 @@
 					'precision highp float;',
 					'precision highp int;',
 					'',
-					'#define LOOP_MAX 10000000.0',
+					'#define LOOP_MAX '+ (opt.loopMaxIterations ? parseInt(opt.loopMaxIterations)+'.0' : '100.0'),
 					'',
 					opt.hardcodeConstants ? 'vec3 uOutputDim = vec3('+threadDim[0]+','+threadDim[1]+', '+ threadDim[2]+');' : 'uniform vec3 uOutputDim;',
 					opt.hardcodeConstants ? 'vec2 uTexSize = vec2('+texSize[0]+','+texSize[1]+');' : 'uniform vec2 uTexSize;',
@@ -315,7 +315,7 @@
 					'}',
 					'',
 					paramStr,
-					builder.webglString("kernel"),
+					builder.webglString("kernel", opt),
 					'',
 					'void main(void) {',
 					'	index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize[0];',
@@ -509,6 +509,11 @@
 
 		ret.graphical = function(flag) {
 			opt.graphical = flag;
+			return ret;
+		};
+		
+		ret.loopMaxIterations = function(max) {
+			opt.loopMaxIterations = max;
 			return ret;
 		};
 

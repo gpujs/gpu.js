@@ -1,7 +1,7 @@
 // Closure capture for the ast function, prevent collision with existing AST functions
 var functionNode_webgl = (function() {
 	
-	var gpu, jsFunctionString;
+	var gpu, opt, jsFunctionString;
 	
 	function isIdentifierKernelParam(paramName, ast, funcParam) {
 		return funcParam.paramNames.indexOf(paramName) != -1;
@@ -31,8 +31,9 @@ var functionNode_webgl = (function() {
 	/// Returns:
 	/// 	the converted webGL function string
 	///
-	function functionNode_webgl( inNode ) {
+	function functionNode_webgl( inNode, _opt ) {
 		gpu = inNode.gpu;
+		opt = _opt;
 		jsFunctionString = inNode.jsFunctionString;
 		inNode.webglFunctionString_array = ast_generic( inNode.getJS_AST(), [], inNode );
 		inNode.webglFunctionString = webgl_regex_optimize(
@@ -344,15 +345,26 @@ var functionNode_webgl = (function() {
 		}
 		
 		if (forNode.test && forNode.test.type == "BinaryExpression") {
-			if (forNode.test.right.type != "Literal") {
-				retArr.push("{\n");
-				retArr.push("float ");
-				ast_generic(forNode.init, retArr, funcParam);
-				retArr.push(";\n");
-				retArr.push("for (float i=0.0; i<LOOP_MAX; i++, ");
-				ast_generic(forNode.update, retArr, funcParam);
-				retArr.push(") {\n");
+			if (forNode.test.right.type == "Identifier"
+				&& forNode.test.operator == "<") {
 				
+				console.log(opt.loopMaxIterations);
+				if (opt.loopMaxIterations === undefined) {
+					console.warn("Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.");
+					console.warn("Set loopMaxIterations or use a for loop of fixed length to silence this message.");
+				}
+				
+				retArr.push("for (float ");
+				ast_generic(forNode.init, retArr, funcParam);
+				retArr.push(";");
+				ast_generic(forNode.test.left, retArr, funcParam);
+				retArr.push(forNode.test.operator);
+				retArr.push("LOOP_MAX");
+				retArr.push(";");
+				ast_generic(forNode.update, retArr, funcParam);
+				retArr.push(")");
+				
+				retArr.push("{\n");
 				retArr.push("if (");
 				ast_generic(forNode.test.left, retArr, funcParam);
 				retArr.push(forNode.test.operator);
@@ -363,8 +375,6 @@ var functionNode_webgl = (function() {
 				}
 				retArr.push("} else {\n");
 				retArr.push("break;\n");
-				retArr.push("}\n");
-				
 				retArr.push("}\n");
 				retArr.push("}\n");
 				

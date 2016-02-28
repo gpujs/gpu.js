@@ -64,7 +64,7 @@ var functionBuilder = (function() {
 	///
 	/// Returns:
 	/// 	{[String,...]}  Returning list of function names that is traced. Including itself.
-	function traceFunctionCalls( functionName, retList ) {
+	function traceFunctionCalls( functionName, retList, opt ) {
 		functionName = functionName || "kernel";
 		retList = retList || [];
 		
@@ -76,9 +76,9 @@ var functionBuilder = (function() {
 			} else {
 				retList.push(functionName);
 				
-				fNode.getWebglFunctionString(); //ensure JS trace is done
+				fNode.getWebglFunctionString(opt); //ensure JS trace is done
 				for(var i=0; i<fNode.calledFunctions.length; ++i) {
-					this.traceFunctionCalls( fNode.calledFunctions[i], retList );
+					this.traceFunctionCalls( fNode.calledFunctions[i], retList, opt );
 				}
 			}
 		}
@@ -96,12 +96,12 @@ var functionBuilder = (function() {
 	/// Returns:
 	/// 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	///
-	function webglString_fromFunctionNames(functionList) {
+	function webglString_fromFunctionNames(functionList, opt) {
 		var ret = [];
 		for(var i=0; i<functionList.length; ++i) {
 			var node = this.nodeMap[functionList[i]];
 			if(node) {
-				ret.push( this.nodeMap[functionList[i]].getWebglFunctionString() );
+				ret.push( this.nodeMap[functionList[i]].getWebglFunctionString(opt) );
 			}
 		}
 		return ret.join("\n");
@@ -117,11 +117,15 @@ var functionBuilder = (function() {
 	/// Returns:
 	/// 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	///
-	function webglString(functionName) {
-		if(functionName) {
-			return this.webglString_fromFunctionNames( this.traceFunctionCalls(functionName, []).reverse() );
+	function webglString(functionName, opt) {
+		if (opt == undefined) {
+			opt = {};
 		}
-		return this.webglString_fromFunctionNames(Object.keys(this.nodeMap));
+		
+		if(functionName) {
+			return this.webglString_fromFunctionNames( this.traceFunctionCalls(functionName, [], opt).reverse(), opt );
+		}
+		return this.webglString_fromFunctionNames( Object.keys(this.nodeMap), opt );
 	}
 	functionBuilder.prototype.webglString = webglString;
 	
