@@ -348,7 +348,6 @@ var functionNode_webgl = (function() {
 			if (forNode.test.right.type == "Identifier"
 				&& forNode.test.operator == "<") {
 				
-				console.log(opt.loopMaxIterations);
 				if (opt.loopMaxIterations === undefined) {
 					console.warn("Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.");
 					console.warn("Set loopMaxIterations or use a for loop of fixed length to silence this message.");
