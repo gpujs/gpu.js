@@ -60,12 +60,12 @@ var functionNode = (function() {
 		// Setup jsFunction and its string property + validate them
 		//
 		this.jsFunctionString = jsFunction.toString();
-		if( !gpu_utils.isFunctionString(this.jsFunctionString) ) {
+		if( !GPUUtils.isFunctionString(this.jsFunctionString) ) {
 			console.error("jsFunction, to string conversion check falied: not a function?", this.jsFunctionString);
 			throw "jsFunction, to string conversion check falied: not a function?";
 		}
 
-		if( !gpu_utils.isFunction(jsFunction) ) {
+		if( !GPUUtils.isFunction(jsFunction) ) {
 			//throw "jsFunction, is not a valid JS Function";
 			this.jsFunction = null;
 		} else {
@@ -77,7 +77,7 @@ var functionNode = (function() {
 		//
 		this.functionName = functionName ||
 			(jsFunction && jsFunction.name) ||
-			gpu_utils.getFunctionName_fromString(this.jsFunctionString);
+			GPUUtils.getFunctionName_fromString(this.jsFunctionString);
 
 		if( !(this.functionName) ) {
 			throw "jsFunction, missing name argument or value";
@@ -86,7 +86,7 @@ var functionNode = (function() {
 		//
 		// Extract parameter name, and its argument types
 		//
-		this.paramNames = gpu_utils.getParamNames_fromString(this.jsFunctionString);
+		this.paramNames = GPUUtils.getParamNames_fromString(this.jsFunctionString);
 		if( paramTypeArray != null ) {
 			if( paramTypeArray.length != this.paramNames.length ) {
 				throw "Invalid argument type array length, against function length -> ("+

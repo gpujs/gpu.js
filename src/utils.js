@@ -1,19 +1,17 @@
 ///
-/// Class: gpu_utils
+/// Class: GPUUtils
 ///
 /// Various utility functions / snippets of code that GPU.JS uses internally.\
 /// This covers various snippets of code that is NOT gpu.js specific
 ///
-/// Note that all moethods in this class is "static" by nature `gpu_utils.functionName()`
+/// Note that all moethods in this class is "static" by nature `GPUUtils.functionName()`
 ///
-var gpu_utils = (function() {
+var GPUUtils = (function() {
 
-	function gpu_utils() {
-		throw new Error("This is a utility class - do not construct it");
-	}
+	var GPUUtils = {};
 
 	// system_endianness closure based memoizer
-	var system_endianness_memoizer = null;
+	var endianness = null;
 
 	///
 	/// Function: system_endianness
@@ -21,23 +19,23 @@ var gpu_utils = (function() {
 	/// Gets the system endianness, and cache it
 	///
 	/// Returns:
-	///	{String} "LE" or "BE" depending on system settings
+	///	{String} "LE" or "BE" depending on system architecture
 	///
 	/// Credit: https://gist.github.com/TooTallNate/4750953
-	function system_endianness() {
-		if( system_endianness_memoizer !== null ) {
-			return system_endianness_memoizer;
+	function systemEndianness() {
+		if( endianness !== null ) {
+			return endianness;
 		}
 
 		var b = new ArrayBuffer(4);
 		var a = new Uint32Array(b);
 		var c = new Uint8Array(b);
 		a[0] = 0xdeadbeef;
-		if (c[0] == 0xef) return system_endianness_memoizer = 'LE';
-		if (c[0] == 0xde) return system_endianness_memoizer = 'BE';
+		if (c[0] == 0xef) return endianness = 'LE';
+		if (c[0] == 0xde) return endianness = 'BE';
 		throw new Error('unknown endianness');
 	}
-	gpu_utils.system_endianness = system_endianness;
+	GPUUtils.systemEndianness = systemEndianness;
 
 	///
 	/// Function: isFunction
@@ -53,7 +51,7 @@ var gpu_utils = (function() {
 	function isFunction( funcObj ) {
 		return typeof(funcObj) === 'function';
 	}
-	gpu_utils.isFunction = isFunction;
+	GPUUtils.isFunction = isFunction;
 
 	///
 	/// Function: isFunctionString
@@ -74,7 +72,7 @@ var gpu_utils = (function() {
 		}
 		return false;
 	}
-	gpu_utils.isFunctionString = isFunctionString;
+	GPUUtils.isFunctionString = isFunctionString;
 
 	// FUNCTION_NAME regex
 	var FUNCTION_NAME = /function ([^(]*)/;
@@ -93,7 +91,7 @@ var gpu_utils = (function() {
 	function getFunctionName_fromString( funcStr ) {
 		return FUNCTION_NAME.exec(funcStr)[1];
 	}
-	gpu_utils.getFunctionName_fromString = getFunctionName_fromString;
+	GPUUtils.getFunctionName_fromString = getFunctionName_fromString;
 
 	// STRIP COMMENTS regex
 	var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
@@ -119,7 +117,36 @@ var gpu_utils = (function() {
 			result = [];
 		return result;
 	}
-	gpu_utils.getParamNames_fromString = getParamNames_fromString;
+	GPUUtils.getParamNames_fromString = getParamNames_fromString;
+	
+	///
+	/// Function: clone
+	///
+	/// Returns a clone
+	///
+	/// Parameters:
+	/// 	obj - {Object}  Object to clone
+	///
+	/// Returns:
+	/// 	{Object}  Cloned object
+	///
+	function clone(obj) {
+		if(obj === null || typeof(obj) !== 'object' || 'isActiveClone' in obj)
+			return obj;
 
-	return gpu_utils;
+		var temp = obj.constructor(); // changed
+
+		for(var key in obj) {
+			if(Object.prototype.hasOwnProperty.call(obj, key)) {
+				obj.isActiveClone = null;
+				temp[key] = clone(obj[key]);
+				delete obj.isActiveClone;
+			}
+		}
+
+		return temp;
+	}
+	GPUUtils.clone = clone;
+
+	return GPUUtils;
 })();

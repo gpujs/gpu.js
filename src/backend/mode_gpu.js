@@ -1,21 +1,4 @@
 (function(GPU) {
-	function clone(obj) {
-		if(obj === null || typeof(obj) !== 'object' || 'isActiveClone' in obj)
-			return obj;
-
-		var temp = obj.constructor(); // changed
-
-		for(var key in obj) {
-			if(Object.prototype.hasOwnProperty.call(obj, key)) {
-				obj.isActiveClone = null;
-				temp[key] = clone(obj[key]);
-				delete obj.isActiveClone;
-			}
-		}
-
-		return temp;
-	}
-
 	function dimToTexSize(gl, dimensions) {
 		if (dimensions.length == 2) {
 			return dimensions;
@@ -47,15 +30,6 @@
 		}
 		return false;
 	}
-	var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-	var ARGUMENT_NAMES = /([^\s,]+)/g;
-	function getParamNames(func) {
-		var fnStr = func.toString().replace(STRIP_COMMENTS, '');
-		var result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
-		if(result === null)
-			result = [];
-		return result;
-	}
 
 	function getDimensions(x, pad) {
 		var ret;
@@ -74,7 +48,7 @@
 		}
 
 		if (pad) {
-			ret = clone(ret);
+			ret = GPUUtils.clone(ret);
 			while (ret.length < 3) {
 				ret.push(1);
 			}
@@ -155,7 +129,7 @@
 			throw "Unable to get body of kernel function";
 		}
 
-		var paramNames = getParamNames(funcStr);
+		var paramNames = GPUUtils.getParamNames_fromString(funcStr);
 
 		var programCache = [];
 
@@ -180,7 +154,7 @@
 			canvas.height = texSize[1];
 			gl.viewport(0, 0, texSize[0], texSize[1]);
 
-			var threadDim = clone(opt.dimensions);
+			var threadDim = GPUUtils.clone(opt.dimensions);
 			while (threadDim.length < 3) {
 				threadDim.push(1);
 			}

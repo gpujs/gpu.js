@@ -31,7 +31,7 @@ var GPU = (function() {
 		this.canvas = canvas;
 		this.canvasCpu = canvasCpu;
 		this.programCache = {};
-		this.endianness = gpu_utils.system_endianness();
+		this.endianness = GPUUtils.systemEndianness();
 
 		this.functionBuilder = new functionBuilder(this);
 		this.functionBuilder.polyfillStandardFunctions();
