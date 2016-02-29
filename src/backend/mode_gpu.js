@@ -275,7 +275,7 @@
 					'}',
 					'',
 					'float get(sampler2D tex, vec2 texSize, vec3 texDim, float z, float y, float x) {',
-					'	vec3 xyz = vec3(x, y, z);',
+					'	vec3 xyz = vec3(floor(x), floor(y), floor(z));',
 					(opt.wraparound ? '	xyz = mod(xyz, texDim);' : ''),
 					'	float index = (xyz.z * texDim.x * texDim.y) + (xyz.y * texDim.x) + xyz.x;',
 					'	float t = (floor(index / texSize.x) + 0.5) / texSize.y;',

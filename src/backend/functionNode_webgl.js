@@ -278,6 +278,8 @@ var functionNode_webgl = (function() {
 		return retArr;
 	}
 	
+	var epsilon = 0.00001;
+	
 	/// Prases the abstract syntax tree, binary expression
 	///
 	/// @param ast          the AST object to parse
@@ -292,12 +294,18 @@ var functionNode_webgl = (function() {
 			retArr.push(",");
 			ast_generic(ast.right, retArr, funcParam);
 			retArr.push(")");
+		} else if (ast.operator == "==" || ast.operator == "===") {
+			retArr.push("abs((");
+			ast_generic(ast.left, retArr, funcParam);
+			retArr.push(") - (");
+			ast_generic(ast.right, retArr, funcParam);
+			retArr.push(")) < " + epsilon);
 		} else {
 			ast_generic(ast.left, retArr, funcParam);
 			retArr.push(ast.operator);
 			ast_generic(ast.right, retArr, funcParam);
 		}
-
+		
 		return retArr;
 	}
 	
@@ -512,9 +520,17 @@ var functionNode_webgl = (function() {
 	}
 
 	function ast_LogicalExpression(logNode, retArr, funcParam) {
-		ast_generic(logNode.left, retArr, funcParam);
-		ast_generic(logNode.operator, retArr, funcParam);
-		ast_generic(logNode.right, retArr, funcParam);
+		if (logNode.operator == "==" || logNode.operator == "===") {
+			retArr.push("abs((");
+			ast_generic(logNode.left, retArr, funcParam);
+			retArr.push(") - (");
+			ast_generic(logNode.right, retArr, funcParam);
+			retArr.push(")) < " + epsilon);
+		} else {
+			ast_generic(logNode.left, retArr, funcParam);
+			ast_generic(logNode.operator, retArr, funcParam);
+			ast_generic(logNode.right, retArr, funcParam);
+		}
 		return retArr;
 	}
 
