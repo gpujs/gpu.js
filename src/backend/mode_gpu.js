@@ -52,21 +52,28 @@
 
 		return ret;
 	}
-
-	function flatten(arr, padding) {
+	
+	function pad(arr, padding) {
 		function zeros(n) {
 			return Array.apply(null, Array(n)).map(Number.prototype.valueOf,0);
 		}
-		function concatWithPadding(a, b) {
-		   return [].concat(a, zeros(padding), b);
+		
+		var len = arr.length + padding * 2;
+		
+		var ret = arr.map(function(x) {
+			return [].concat(zeros(padding), x, zeros(padding));
+		});
+		
+		for (var i=0; i<padding; i++) {
+			ret = [].concat([zeros(len)], ret, [zeros(len)]);
 		}
 		
+		return ret;
+	}
+
+	function flatten(arr, padding) {
 		if (Array.isArray(arr[0])) {
-			if (padding) {
-				return (concatWithPadding.apply([], arr)).concat(zeros(padding));
-			} else {
-				return [].concat.apply([], arr);
-			}
+			return [].concat.apply([], arr);
 		} else {
 			return arr;
 		}
@@ -297,7 +304,9 @@
 					'	float index = (xyz.z * texDim.x * texDim.y) + (xyz.y * texDim.x) + xyz.x;',
 					'	float t = (floor(index / texSize.x) + 0.5);',
 					'	float s = mod(index, texSize.x);',
+					(opt.safeTextureReadHack ? 's += 1.0; t += 1.0;' : ''),
 					'	s = (s < 0.5) ? 0.0 : s + 0.5;',
+					(opt.safeTextureReadHack ? 'return decode32(texture2D(tex, vec2(s / (texSize.x + 2.0), t / (texSize.y + 2.0))));' : ''),
 					'	return decode32(texture2D(tex, vec2(s / texSize.x, t / texSize.y)));',
 					'}',
 					'',
@@ -416,13 +425,23 @@
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-					
 					var paramArray = flatten(arguments[textureCount]);
 					while (paramArray.length < paramSize[0] * paramSize[1]) {
 						paramArray.push(0);
 					}
+					
+					if (opt.safeTextureReadHack) {
+						paramArray = splitArray(paramArray, paramSize[0]);
+						paramArray = pad(paramArray, 1);
+						paramArray = flatten(paramArray);
+					}
+					
 					var argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
-					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
+					if (opt.safeTextureReadHack) {
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0]+2, paramSize[1]+2, 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
+					} else {
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
+					}
 
 					textures[textureCount] = texture;
 
