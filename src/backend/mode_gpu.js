@@ -53,9 +53,20 @@
 		return ret;
 	}
 
-	function flatten(arr) {
+	function flatten(arr, padding) {
+		function zeros(n) {
+			return Array.apply(null, Array(n)).map(Number.prototype.valueOf,0);
+		}
+		function concatWithPadding(a, b) {
+		   return [].concat(a, zeros(padding), b);
+		}
+		
 		if (Array.isArray(arr[0])) {
-			return [].concat.apply([], arr);
+			if (padding) {
+				return (concatWithPadding.apply([], arr)).concat(zeros(padding));
+			} else {
+				return [].concat.apply([], arr);
+			}
 		} else {
 			return arr;
 		}
@@ -272,6 +283,7 @@
 					'vec3 threadId;',
 					'',
 					'vec3 indexTo3D(float idx, vec3 texDim) {',
+					'	idx = floor(idx + 0.5);',
 					'	float z = floor(idx / (texDim.x * texDim.y));',
 					'	idx -= z * texDim.x * texDim.y;',
 					'	float y = floor(idx / texDim.x);',
@@ -283,9 +295,10 @@
 					'	vec3 xyz = vec3(floor(x + 0.5), floor(y + 0.5), floor(z + 0.5));',
 					(opt.wraparound ? '	xyz = mod(xyz, texDim);' : ''),
 					'	float index = (xyz.z * texDim.x * texDim.y) + (xyz.y * texDim.x) + xyz.x;',
-					'	float t = (floor(index / texSize.x) + 0.5) / texSize.y;',
-					'	float s = (mod(index, texSize.x) + 0.5) / texSize.x;',
-					'	return decode32(texture2D(tex, vec2(s, t)));',
+					'	float t = (floor(index / texSize.x) + 0.5);',
+					'	float s = mod(index, texSize.x);',
+					'	s = (s < 0.5) ? 0.0 : s + 0.5;',
+					'	return decode32(texture2D(tex, vec2(s / texSize.x, t / texSize.y)));',
 					'}',
 					'',
 					'float get(sampler2D tex, vec2 texSize, vec3 texDim, float y, float x) {',
@@ -311,7 +324,7 @@
 					builder.webglString("kernel", opt),
 					'',
 					'void main(void) {',
-					'	index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize[0];',
+					'	index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;',
 					'	threadId = indexTo3D(index, uOutputDim);',
 					'	vec4 outputColor = encode32(kernel());',
 					'	if (outputToColor == true) {',
@@ -403,6 +416,7 @@
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
+					
 					var paramArray = flatten(arguments[textureCount]);
 					while (paramArray.length < paramSize[0] * paramSize[1]) {
 						paramArray.push(0);
