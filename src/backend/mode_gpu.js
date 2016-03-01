@@ -1,4 +1,35 @@
 (function(GPU) {
+	function dot4(vector4A,vector4B) {
+		return vector4A[0]*vector4B[0] + vector4A[1]*vector4B[1] + vector4A[2]*vector4B[2] + vector4A[3]*vector4B[3];
+	}
+	
+	function offset(v, off) { return (v+off)/(off*2.0); }
+	
+	function unoffset(v, off) { return v * (off*2.0) - off; }
+	
+	function fract(x) {
+		return x - Math.floor(x);
+	}
+	
+	function pack(v) {
+		var bias = [1.0 / 255.0, 1.0 / 255.0, 1.0 / 255.0, 0.0];
+
+		var r = v;
+		var g = fract(r * 255.0);
+		var b = fract(g * 255.0);
+		var a = fract(b * 255.0);
+		var colour = [r, g, b, a];
+		
+		var dd = [colour[1]*bias[0],colour[2]*bias[1],colour[3]*bias[2],colour[3]*bias[3]];
+		
+		return [colour[0]-dd[0],colour[1]-dd[1],colour[2]-dd[2],colour[3]-dd[3] ];
+	}
+	
+	function unpack(colour) {
+		var bitShifts = [1.0, 1.0/255.0, 1.0/(255.0*255.0), 1.0/(255.0*255.0*255.0)];
+		return dot4(colour, bitShifts);
+	};
+	
 	function dimToTexSize(gl, dimensions) {
 		var numTexels = dimensions[0];
 		for (var i=1; i<dimensions.length; i++) {
@@ -258,6 +289,8 @@
 					opt.hardcodeConstants ? 'vec2 uTexSize = vec2('+texSize[0]+','+texSize[1]+');' : 'uniform vec2 uTexSize;',
 					'varying vec2 vTexCoord;',
 					'',
+					opt.offsetRangeHack ? '#define OFFSET_HACK' : '',
+					'#ifndef OFFSET_HACK',
 					'/* Begin: http://stackoverflow.com/questions/7059962/how-do-i-convert-a-vec4-rgba-value-to-a-float */',
 					'highp vec4 encode32(highp float f) {',
 					'	highp float e =5.0;',
@@ -285,6 +318,33 @@
 					'	return result;',
 					'}',
 					'/* End: http://stackoverflow.com/questions/7059962/how-do-i-convert-a-vec4-rgba-value-to-a-float */',
+					'#else',
+					(opt.offsetRangeHack ? 'float offset = ' + parseInt(opt.offsetRangeHack) + '.0;' : ''),
+					'',
+					'float offsetFloat(float v, float off) {',
+					'	return (v+off)/(off*2.0);',
+					'}',
+					'float unoffsetFloat(float v, float off) {',
+					'	return v * (off*2.0) - off;',
+					'}',
+					'',
+					'highp vec4 encode32(highp float f) {',
+					'	f = offsetFloat(f, offset);',
+					'	const vec4 bias = vec4(vec3(1.0 / 255.0), 0.0);',
+					'	float r = f;',
+					'	float g = fract(r * 255.0);',
+					'	float b = fract(g * 255.0);',
+					'	float a = fract(b * 255.0);',
+					'	vec4 rgba = vec4(r, g, b, a);',
+					'	return rgba;',
+					'}',
+					'highp float decode32(highp vec4 rgba) {',
+					'	const vec4 bitShifts = vec4(1.0, 1.0 / 255.0, 1.0 / (255.0 * 255.0), 1.0 / (255.0 * 255.0 * 255.0));',
+					'	float f = dot(rgba, bitShifts);',
+					'	f = unoffsetFloat(f, offset);',
+					'	return f;',
+					'}',
+					'#endif',
 					'',
 					'float index;',
 					'vec3 threadId;',
@@ -436,7 +496,19 @@
 						paramArray = flatten(paramArray);
 					}
 					
-					var argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
+					var argBuffer;
+					
+					if (opt.offsetRangeHack) {
+						argBuffer = new Uint8Array([].concat.apply([], paramArray.map(function(x) {
+							return pack(offset(x, opt.offsetRangeHack)).map(function(x) {
+								return x * 255;
+							});
+						})));
+						console.log(argBuffer);
+					} else {
+						argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
+					}
+					
 					if (opt.safeTextureReadHack) {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0]+2, paramSize[1]+2, 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
 					} else {
@@ -507,7 +579,20 @@
 
 				var bytes = new Uint8Array(texSize[0]*texSize[1]*4);
 				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
-				var result = Array.prototype.slice.call(new Float32Array(bytes.buffer));
+				var result;
+				if (opt.offsetRangeHack) {
+					bytes = Array.prototype.slice.call(bytes);
+					bytes = bytes.map(function(x) {
+						return x / 255.0;
+					});
+					var colors = splitArray(bytes, 4);
+					console.log(colors);
+					result = splitArray(bytes, 4).map(function(color) {
+						return unoffset(unpack(color), opt.offsetRangeHack);
+					});
+				} else {
+					result = Array.prototype.slice.call(new Float32Array(bytes.buffer));
+				}
 				result.length = threadDim[0] * threadDim[1] * threadDim[2];
 
 				if (opt.dimensions.length == 1) {
