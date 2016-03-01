@@ -504,7 +504,6 @@
 								return x * 255;
 							});
 						})));
-						console.log(argBuffer);
 					} else {
 						argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
 					}
@@ -586,7 +585,6 @@
 						return x / 255.0;
 					});
 					var colors = splitArray(bytes, 4);
-					console.log(colors);
 					result = splitArray(bytes, 4).map(function(color) {
 						return unoffset(unpack(color), opt.offsetRangeHack);
 					});
