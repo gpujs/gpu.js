@@ -190,7 +190,7 @@ var functionNode_webgl = (function() {
 		
 		// Setup function return type and name
 		if(funcParam.isRootKernel) {
-			retArr.push("float");
+			retArr.push("void");
 		} else {
 			retArr.push(funcParam.returnType);
 		}
@@ -221,10 +221,6 @@ var functionNode_webgl = (function() {
 			retArr.push("\n");
 		}
 		
-		if(funcParam.isRootKernel) {
-			retArr.push("\nreturn 0.0;");
-		}
-		
 		// Function closing
 		retArr.push("}\n");
 		return retArr;
@@ -238,9 +234,16 @@ var functionNode_webgl = (function() {
 	///
 	/// @returns  the appened retArr
 	function ast_ReturnStatement(ast, retArr, funcParam) {
-		retArr.push("return ");
-		ast_generic(ast.argument, retArr, funcParam);
-		retArr.push(";");
+		if(funcParam.isRootKernel) {
+			retArr.push("kernelResult = ");
+			ast_generic(ast.argument, retArr, funcParam);
+			retArr.push(";");
+			retArr.push("return;");
+		} else {
+			retArr.push("return ");
+			ast_generic(ast.argument, retArr, funcParam);
+			retArr.push(";");
+		}
 		
 		//throw ast_errorOutput(
 		//	"Non main function return, is not supported : "+funcParam.currentFunctionNamespace,
