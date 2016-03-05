@@ -345,7 +345,7 @@
 					(opt.floatTextures ? '	if (channel == 1) return texel.g;' : ''),
 					(opt.floatTextures ? '	if (channel == 2) return texel.b;' : ''),
 					(opt.floatTextures ? '	if (channel == 3) return texel.a;' : ''),
-					(opt.floatTextures ? '' : '	return decode32(texel);',
+					(opt.floatTextures ? '' : '	return decode32(texel);'),
 					'}',
 					'',
 					'highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {',
