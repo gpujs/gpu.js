@@ -161,18 +161,24 @@
 			return ret;
 		};
 
-		ret.wraparound = function() {
-			opt.wraparound = false;
+		ret.wraparound = function(flag) {
+			console.warn("Wraparound mode is not supported and undocumented.");
+			opt.wraparound = flag;
 			return ret;
 		};
 
-		ret.hardcodeConstants = function() {
-			opt.hardcodeConstants = false;
+		ret.hardcodeConstants = function(flag) {
+			opt.hardcodeConstants = flag;
 			return ret;
 		};
 
-		ret.outputToTexture = function() {
-			opt.outputToTexture = false;
+		ret.outputToTexture = function(flag) {
+			opt.outputToTexture = flag;
+			return ret;
+		};
+		
+		ret.floatTextures = function(flag) {
+			opt.floatTextures = flag;
 			return ret;
 		};
 
