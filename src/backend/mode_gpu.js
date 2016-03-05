@@ -280,7 +280,6 @@
 					'highp float decode32(highp vec4 rgba) {',
 					(endianness == 'LE' ? '' : '	rgba.rgba = rgba.abgr;'),
 					'	rgba *= 255.0;',
-					'	rgba = floor(rgba+0.5);',
 					'	highp float sign = rgba.a > 127.0 ? -1.0 : 1.0;',
 					'	highp float exponent = 2.0 * integerMod(rgba.a, 128.0) + (rgba.b > 127.0 ? 1.0 : 0.0);',
 					'	highp float res;',
@@ -467,7 +466,6 @@
 					
 					var argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
 					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
-
 					textures[textureCount] = texture;
 
 					var paramLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount]);
