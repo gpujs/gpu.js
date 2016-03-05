@@ -23,9 +23,9 @@ var GPU = (function() {
 			gl = canvas.getContext("experimental-webgl", glOpt) || canvas.getContext("webgl", glOpt);
 		}
 
-		gl.getExtension('OES_texture_float');
-		gl.getExtension('OES_texture_float_linear');
-		gl.getExtension('OES_element_index_uint');
+		this.OES_texture_float = gl.getExtension('OES_texture_float');
+		this.OES_texture_float_linear = gl.getExtension('OES_texture_float_linear');
+		this.OES_texture_index_uint = gl.getExtension('OES_element_index_uint');
 
 		this.gl = gl;
 		this.canvas = canvas;
