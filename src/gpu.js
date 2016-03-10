@@ -4,7 +4,7 @@
 /// Initialises the GPU.js library class which manages the WebGL context for the created functions.
 ///
 var GPU = (function() {
-	var GPU = gpu_core;
+	var GPU = GPUCore;
 	
 	GPU.prototype.getGl = function() {
 		return this.gl;
