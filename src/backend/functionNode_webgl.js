@@ -3,6 +3,10 @@ var functionNode_webgl = (function() {
 	
 	var gpu, opt, jsFunctionString;
 	
+	function isIdentifierConstant(paramName) {
+		return opt.constants.indexOf(paramName) != -1;
+	}
+	
 	function isIdentifierKernelParam(paramName, ast, funcParam) {
 		return funcParam.paramNames.indexOf(paramName) != -1;
 	}
@@ -186,7 +190,7 @@ var functionNode_webgl = (function() {
 		
 		// Setup function return type and name
 		if(funcParam.isRootKernel) {
-			retArr.push("float");
+			retArr.push("void");
 		} else {
 			retArr.push(funcParam.returnType);
 		}
@@ -217,10 +221,6 @@ var functionNode_webgl = (function() {
 			retArr.push("\n");
 		}
 		
-		if(funcParam.isRootKernel) {
-			retArr.push("\nreturn 0.0;");
-		}
-		
 		// Function closing
 		retArr.push("}\n");
 		return retArr;
@@ -234,9 +234,16 @@ var functionNode_webgl = (function() {
 	///
 	/// @returns  the appened retArr
 	function ast_ReturnStatement(ast, retArr, funcParam) {
-		retArr.push("return ");
-		ast_generic(ast.argument, retArr, funcParam);
-		retArr.push(";");
+		if(funcParam.isRootKernel) {
+			retArr.push("kernelResult = ");
+			ast_generic(ast.argument, retArr, funcParam);
+			retArr.push(";");
+			retArr.push("return;");
+		} else {
+			retArr.push("return ");
+			ast_generic(ast.argument, retArr, funcParam);
+			retArr.push(";");
+		}
 		
 		//throw ast_errorOutput(
 		//	"Non main function return, is not supported : "+funcParam.currentFunctionNamespace,
@@ -293,7 +300,7 @@ var functionNode_webgl = (function() {
 			retArr.push(ast.operator);
 			ast_generic(ast.right, retArr, funcParam);
 		}
-
+		
 		return retArr;
 	}
 	
@@ -346,7 +353,8 @@ var functionNode_webgl = (function() {
 		
 		if (forNode.test && forNode.test.type == "BinaryExpression") {
 			if (forNode.test.right.type == "Identifier"
-				&& forNode.test.operator == "<") {
+				&& forNode.test.operator == "<"
+				&& isIdentifierConstant(forNode.test.right.name) == false) {
 				
 				if (opt.loopMaxIterations === undefined) {
 					console.warn("Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.");
@@ -508,7 +516,7 @@ var functionNode_webgl = (function() {
 
 	function ast_LogicalExpression(logNode, retArr, funcParam) {
 		ast_generic(logNode.left, retArr, funcParam);
-		ast_generic(logNode.operator, retArr, funcParam);
+		retArr.push(logNode.operator);
 		ast_generic(logNode.right, retArr, funcParam);
 		return retArr;
 	}
@@ -542,6 +550,11 @@ var functionNode_webgl = (function() {
 
 		return retArr;
 	}
+	
+	// The prefixes to use
+	var jsMathPrefix = "Math.";
+	var localPrefix = "this.";
+	var constantsPrefix = "this.constants.";
 
 	function ast_MemberExpression(mNode, retArr, funcParam) {
 		if(mNode.computed) {
@@ -571,7 +584,12 @@ var functionNode_webgl = (function() {
 			
 			// Unroll the member expression
 			var unrolled = ast_MemberExpression_unroll(mNode);
-			var unrolled_lc = unrolled.toLowerCase()
+			var unrolled_lc = unrolled.toLowerCase();
+			
+			// Its a constant, remove this.constants.
+			if( unrolled.indexOf(constantsPrefix) === 0 ) {
+				unrolled = 'constants_'+unrolled.slice( constantsPrefix.length );
+			}
 			
 			if (unrolled_lc == "this.thread.x") {
 				retArr.push('threadId.x');
@@ -632,10 +650,6 @@ var functionNode_webgl = (function() {
 			ast, funcParam
 		);
 	}
-	
-	// The prefixes to use
-	var jsMathPrefix = "Math.";
-	var localPrefix = "this.";
 	
 	/// Prases the abstract syntax tree, binary expression
 	///

@@ -111,7 +111,7 @@ myFunc([1, 2, 3]);
 
 Sometimes, you want to produce a `canvas` image instead of doing numeric computations. To achieve this, set the `graphical` flag to `true` and the output dimensions to `[width, height]`. The thread identifiers will now refer to the `x` and `y` coordinate of the pixel you are producing. Inside your kernel function, use `this.color(r,g,b)` or `this.color(r,g,b,a)` to specify the color of the pixel.
 
-For performance reasons, the return value for your function will no longer be anything useful. Instead, to add the image input your page, retrieve the `canvas` DOM node and insert it into your page.
+For performance reasons, the return value for your function will no longer be anything useful. Instead, to display the image, retrieve the `canvas` DOM node and insert it into your page.
 
 ```js
 var render = gpu.createKernel(function(X) {

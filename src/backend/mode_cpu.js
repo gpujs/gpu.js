@@ -1,21 +1,4 @@
 (function (GPU) {
-	function clone(obj) {
-		if(obj === null || typeof(obj) !== 'object' || 'isActiveClone' in obj)
-			return obj;
-
-		var temp = obj.constructor(); // changed
-
-		for(var key in obj) {
-			if(Object.prototype.hasOwnProperty.call(obj, key)) {
-				obj.isActiveClone = null;
-				temp[key] = clone(obj[key]);
-				delete obj.isActiveClone;
-			}
-		}
-
-		return temp;
-	}
-
 	function getArgumentType(arg) {
 		if (Array.isArray(arg)) {
 			return 'Array';
@@ -65,7 +48,7 @@
 				}
 			}
 
-			var threadDim = clone(opt.dimensions);
+			var threadDim = GPUUtils.clone(opt.dimensions);
 
 			while (threadDim.length < 3) {
 				threadDim.push(1);
@@ -79,6 +62,20 @@
 				}
 			}
 
+			var ctx = {
+				thread: {
+					x: 0,
+					y: 0,
+					z: 0
+				},
+				dimensions: {
+					x: threadDim[0],
+					y: threadDim[1],
+					z: threadDim[2]
+				},
+				constants: opt.constants
+			};
+
 			var canvas;
 			var canvasCtx;
 			var imageData;
@@ -91,44 +88,31 @@
 				canvasCtx = canvas.getContext("2d");
 				imageData = canvasCtx.createImageData(threadDim[0], threadDim[1]);
 				data = new Uint8ClampedArray(threadDim[0]*threadDim[1]*4);
+				
+				ctx.color = function(r, g, b, a) {
+					if (a == undefined) {
+						a = 1.0;
+					}
+
+					r = Math.floor(r * 255);
+					g = Math.floor(g * 255);
+					b = Math.floor(b * 255);
+					a = Math.floor(a * 255);
+
+					var width = ctx.dimensions.x;
+					var height = ctx.dimensions.y;
+
+					var x = ctx.thread.x;
+					var y = height - ctx.thread.y - 1;
+
+					var index = x + y*width;
+
+					data[index*4+0] = r;
+					data[index*4+1] = g;
+					data[index*4+2] = b;
+					data[index*4+3] = a;
+				};
 			}
-
-			var ctx = {
-				thread: {
-					x: 0,
-					y: 0,
-					z: 0
-				},
-				dimensions: {
-					x: threadDim[0],
-					y: threadDim[1],
-					z: threadDim[2]
-				}
-			};
-
-			ctx.color = function(r, g, b, a) {
-				if (a == undefined) {
-					a = 1.0;
-				}
-
-				r = Math.floor(r * 255);
-				g = Math.floor(g * 255);
-				b = Math.floor(b * 255);
-				a = Math.floor(a * 255);
-
-				var width = ctx.dimensions.x;
-				var height = ctx.dimensions.y;
-
-				var x = ctx.thread.x;
-				var y = height - ctx.thread.y - 1;
-
-				var index = x + y*width;
-
-				data[index*4+0] = r;
-				data[index*4+1] = g;
-				data[index*4+2] = b;
-				data[index*4+3] = a;
-			};
 
 			for (ctx.thread.z=0; ctx.thread.z<threadDim[2]; ctx.thread.z++) {
 				for (ctx.thread.y=0; ctx.thread.y<threadDim[1]; ctx.thread.y++) {
@@ -171,19 +155,30 @@
 			opt.loopMaxIterations = max;
 			return ret;
 		};
-
-		ret.wraparound = function() {
-			opt.wraparound = false;
+		
+		ret.constants = function(constants) {
+			opt.constants = constants;
 			return ret;
 		};
 
-		ret.hardcodeConstants = function() {
-			opt.hardcodeConstants = false;
+		ret.wraparound = function(flag) {
+			console.warn("Wraparound mode is not supported and undocumented.");
+			opt.wraparound = flag;
 			return ret;
 		};
 
-		ret.outputToTexture = function() {
-			opt.outputToTexture = false;
+		ret.hardcodeConstants = function(flag) {
+			opt.hardcodeConstants = flag;
+			return ret;
+		};
+
+		ret.outputToTexture = function(flag) {
+			opt.outputToTexture = flag;
+			return ret;
+		};
+		
+		ret.floatTextures = function(flag) {
+			opt.floatTextures = flag;
 			return ret;
 		};
 

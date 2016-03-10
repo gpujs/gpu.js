@@ -8,8 +8,8 @@ gulp.task('build', function() {
 	return gulp.src([
 			'src/wrapper/prefix.js',
 			'src/parser.js',
+			'src/utils.js',
 			'src/texture.js',
-			'src/backend/gpu_utils.js',
 			'src/backend/gpu_core.js',
 			'src/gpu.js',
 			'src/backend/functionNode_webgl.js',

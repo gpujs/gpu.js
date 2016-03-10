@@ -1,41 +1,13 @@
 (function(GPU) {
-	function clone(obj) {
-		if(obj === null || typeof(obj) !== 'object' || 'isActiveClone' in obj)
-			return obj;
-
-		var temp = obj.constructor(); // changed
-
-		for(var key in obj) {
-			if(Object.prototype.hasOwnProperty.call(obj, key)) {
-				obj.isActiveClone = null;
-				temp[key] = clone(obj[key]);
-				delete obj.isActiveClone;
-			}
-		}
-
-		return temp;
-	}
-
-	function dimToTexSize(gl, dimensions) {
-		if (dimensions.length == 2) {
-			return dimensions;
-		}
-
+	function dimToTexSize(opt, dimensions, output) {
 		var numTexels = dimensions[0];
 		for (var i=1; i<dimensions.length; i++) {
 			numTexels *= dimensions[i];
 		}
-
-		// TODO: find out why this is broken in Safari
-		/*
-		var maxSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-		if (numTexels < maxSize) {
-			return [numTexels, 1];
-		} else {
-			var height = Math.ceil(numTexels / maxSize);
-			return [maxSize, height];
+		
+		if (opt.floatTextures && !output) {
+			numTexels = Math.ceil(numTexels / 4);
 		}
-		*/
 
 		var w = Math.ceil(Math.sqrt(numTexels));
 		return [w, w];
@@ -46,15 +18,6 @@
 			return (funcStr.slice(0, "function".length).toLowerCase() == "function");
 		}
 		return false;
-	}
-	var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-	var ARGUMENT_NAMES = /([^\s,]+)/g;
-	function getParamNames(func) {
-		var fnStr = func.toString().replace(STRIP_COMMENTS, '');
-		var result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
-		if(result === null)
-			result = [];
-		return result;
 	}
 
 	function getDimensions(x, pad) {
@@ -74,7 +37,7 @@
 		}
 
 		if (pad) {
-			ret = clone(ret);
+			ret = GPUUtils.clone(ret);
 			while (ret.length < 3) {
 				ret.push(1);
 			}
@@ -82,8 +45,26 @@
 
 		return ret;
 	}
+	
+	function pad(arr, padding) {
+		function zeros(n) {
+			return Array.apply(null, Array(n)).map(Number.prototype.valueOf,0);
+		}
+		
+		var len = arr.length + padding * 2;
+		
+		var ret = arr.map(function(x) {
+			return [].concat(zeros(padding), x, zeros(padding));
+		});
+		
+		for (var i=0; i<padding; i++) {
+			ret = [].concat([zeros(len)], ret, [zeros(len)]);
+		}
+		
+		return ret;
+	}
 
-	function flatten(arr) {
+	function flatten(arr, padding) {
 		if (Array.isArray(arr[0])) {
 			return [].concat.apply([], arr);
 		} else {
@@ -134,6 +115,11 @@
 			specialFlags += "Hardcode";
 			specialFlags += '['+outputDim[0]+','+outputDim[1]+','+outputDim[2]+']';
 		}
+		
+		if (opt.constants) {
+			specialFlags += "Constants";
+			specialFlags += JSON.stringify(opt.constants);
+		}
 
 		if (specialFlags) {
 			key = key + '-' + specialFlags;
@@ -155,11 +141,15 @@
 			throw "Unable to get body of kernel function";
 		}
 
-		var paramNames = getParamNames(funcStr);
+		var paramNames = GPUUtils.getParamNames_fromString(funcStr);
 
 		var programCache = [];
 
 		function ret() {
+			if (opt.floatTextures && !gpu.OES_texture_float) {
+				throw "Float textures are not supported on this browser";
+			}
+			
 			if (!opt.dimensions || opt.dimensions.length === 0) {
 				if (arguments.length != 1) {
 					throw "Auto dimensions only supported for kernels with only one input";
@@ -175,12 +165,21 @@
 				}
 			}
 
-			var texSize = dimToTexSize(gl, opt.dimensions);
+			var texSize = dimToTexSize(gpu, opt.dimensions, true);
+			
+			if (opt.graphical) {
+				if (opt.dimensions.length != 2) {
+					throw "Output must have 2 dimensions on graphical mode";
+				}
+				
+				texSize = GPUUtils.clone(opt.dimensions);
+			}
+			
 			canvas.width = texSize[0];
 			canvas.height = texSize[1];
 			gl.viewport(0, 0, texSize[0], texSize[1]);
 
-			var threadDim = clone(opt.dimensions);
+			var threadDim = GPUUtils.clone(opt.dimensions);
 			while (threadDim.length < 3) {
 				threadDim.push(1);
 			}
@@ -189,6 +188,14 @@
 			var program = programCache[programCacheKey];
 
 			if (program === undefined) {
+				var constantsStr = '';
+				if (opt.constants) {
+					for (var name in opt.constants) {
+						var value = opt.constants[name];
+						constantsStr += 'const float constants_' + name + '=' + parseInt(value) + '.0;\n';
+					}
+				}
+				
 				var paramStr = '';
 
 				var paramType = [];
@@ -198,21 +205,23 @@
 					if (opt.hardcodeConstants) {
 						if (argType == "Array" || argType == "Texture") {
 							var paramDim = getDimensions(arguments[i], true);
-							var paramSize = dimToTexSize(gl, paramDim);
+							var paramSize = dimToTexSize(gpu, paramDim);
 
-							paramStr += 'uniform sampler2D user_' + paramNames[i] + ';\n';
-							paramStr += 'vec2 user_' + paramNames[i] + 'Size = vec2(' + paramSize[0] + ',' + paramSize[1] + ');\n';
-							paramStr += 'vec3 user_' + paramNames[i] + 'Dim = vec3(' + paramDim[0] + ', ' + paramDim[1] + ', ' + paramDim[2] + ');\n';
+							paramStr += 'uniform highp sampler2D user_' + paramNames[i] + ';\n';
+							paramStr += 'highp vec2 user_' + paramNames[i] + 'Size = vec2(' + paramSize[0] + '.0, ' + paramSize[1] + '.0);\n';
+							paramStr += 'highp vec3 user_' + paramNames[i] + 'Dim = vec3(' + paramDim[0] + '.0, ' + paramDim[1] + '.0, ' + paramDim[2] + '.0);\n';
+						} else if (argType == "Number" && Number.isInteger(arguments[i])) {
+							paramStr += 'highp float user_' + paramNames[i] + ' = ' + arguments[i] + '.0;\n';
 						} else if (argType == "Number") {
-							paramStr += 'float user_' + paramNames[i] + ' = ' + arguments[i] + ';\n';
+							paramStr += 'highp float user_' + paramNames[i] + ' = ' + arguments[i] + ';\n';
 						}
 					} else {
 						if (argType == "Array" || argType == "Texture") {
-							paramStr += 'uniform sampler2D user_' + paramNames[i] + ';\n';
-							paramStr += 'uniform vec2 user_' + paramNames[i] + 'Size;\n';
-							paramStr += 'uniform vec3 user_' + paramNames[i] + 'Dim;\n';
+							paramStr += 'uniform highp sampler2D user_' + paramNames[i] + ';\n';
+							paramStr += 'uniform highp vec2 user_' + paramNames[i] + 'Size;\n';
+							paramStr += 'uniform highp vec3 user_' + paramNames[i] + 'Dim;\n';
 						} else if (argType == "Number") {
-							paramStr += 'uniform float user_' + paramNames[i] + ';\n';
+							paramStr += 'uniform highp float user_' + paramNames[i] + ';\n';
 						}
 					}
 				}
@@ -226,11 +235,12 @@
 				var vertShaderSrc = [
 					'precision highp float;',
 					'precision highp int;',
+					'precision highp sampler2D;',
 					'',
-					'attribute vec2 aPos;',
-					'attribute vec2 aTexCoord;',
+					'attribute highp vec2 aPos;',
+					'attribute highp vec2 aTexCoord;',
 					'',
-					'varying vec2 vTexCoord;',
+					'varying highp vec2 vTexCoord;',
 					'',
 					'void main(void) {',
 					'   gl_Position = vec4(aPos, 0, 1);',
@@ -241,71 +251,117 @@
 				var fragShaderSrc = [
 					'precision highp float;',
 					'precision highp int;',
+					'precision highp sampler2D;',
 					'',
 					'#define LOOP_MAX '+ (opt.loopMaxIterations ? parseInt(opt.loopMaxIterations)+'.0' : '100.0'),
+					'#define EPSILON 0.0000001',
 					'',
-					opt.hardcodeConstants ? 'vec3 uOutputDim = vec3('+threadDim[0]+','+threadDim[1]+', '+ threadDim[2]+');' : 'uniform vec3 uOutputDim;',
-					opt.hardcodeConstants ? 'vec2 uTexSize = vec2('+texSize[0]+','+texSize[1]+');' : 'uniform vec2 uTexSize;',
-					'varying vec2 vTexCoord;',
+					opt.hardcodeConstants ? 'highp vec3 uOutputDim = vec3('+threadDim[0]+','+threadDim[1]+', '+ threadDim[2]+');' : 'uniform highp vec3 uOutputDim;',
+					opt.hardcodeConstants ? 'highp vec2 uTexSize = vec2('+texSize[0]+','+texSize[1]+');' : 'uniform highp vec2 uTexSize;',
+					'varying highp vec2 vTexCoord;',
 					'',
-					'/* Begin: http://stackoverflow.com/questions/7059962/how-do-i-convert-a-vec4-rgba-value-to-a-float */',
-					'highp vec4 encode32(highp float f) {',
-					'	highp float e =5.0;',
-					'	highp float F = abs(f); ',
-					'	highp float sign = step(0.0,-f);',
-					'	highp float exponent = floor(log2(F)); ',
-					'	highp float mantissa = (exp2(- exponent) * F);',
-					'	exponent = floor(log2(F) + 127.0) + floor(log2(mantissa));',
-					'	highp vec4 rgba;',
-					'	rgba.a = 128.0 * sign + floor(exponent*exp2(-1.0));',
-					'	rgba.b = 128.0 * mod(exponent,2.0) + mod(floor(mantissa*128.0),128.0);',
-					'	rgba.g = floor(mod(floor(mantissa*exp2(23.0 -8.0)),exp2(8.0)));',
-					'	rgba.r = floor(exp2(23.0)*mod(mantissa,exp2(-15.0)));',
-					(endianness == 'LE' ? '' : '	rgba.rgba = rgba.abgr;'),
-					'	return rgba / 255.0;',
+					'highp float integerMod(highp float x, highp float y) {',
+					'	highp float res = floor(mod(x, y));',
+					'	if (res > floor(y) - 1.0) res = 0.0;',
+					'	return res;',
 					'}',
 					'',
+					'highp int integerMod(highp int x, highp int y) {',
+					'	return int(integerMod(float(x), float(y)));',
+					'}',
+					'',
+					'// Here be dragons!',
+					'// DO NOT OPTIMIZE THIS CODE',
+					'// YOU WILL BREAK SOMETHING ON SOMEBODY\'S MACHINE',
+					'// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME',
 					'highp float decode32(highp vec4 rgba) {',
 					(endianness == 'LE' ? '' : '	rgba.rgba = rgba.abgr;'),
 					'	rgba *= 255.0;',
-					'	highp float sign = 1.0 - step(128.0,rgba.a)*2.0;',
-					'	highp float exponent = 2.0 * mod(rgba.a,128.0) + step(128.0,rgba.b) - 127.0; ',
-					'	highp float mantissa = mod(rgba.b,128.0)*65536.0 + rgba.g*256.0 +rgba.r + float(0x800000);',
-					'	highp float result =  sign * exp2(exponent) * (mantissa * exp2(-23.0 )); ',
-					'	return result;',
+					'	int r = int(rgba.r+0.5);',
+					'	int g = int(rgba.g+0.5);',
+					'	int b = int(rgba.b+0.5);',
+					'	int a = int(rgba.a+0.5);',
+					'	int sign = a > 127 ? -1 : 1;',
+					'	int exponent = 2 * (a > 127 ? a - 128 : a) + (b > 127 ? 1 : 0);',
+					'	float res;',
+					'	if (exponent == 0) {',
+					'		res = float(sign) * 0.0;',
+					'	} else {',
+					'		exponent -= 127;',
+					'		res = exp2(float(exponent));',
+					'		res += float(b > 127 ? b - 128 : b) * exp2(float(exponent-7));',
+					'		res += float(g) * exp2(float(exponent-15));',
+					'		res += float(r) * exp2(float(exponent-23));',
+					'		res *= float(sign);',
+					'	}',
+					'	return res;',
 					'}',
-					'/* End: http://stackoverflow.com/questions/7059962/how-do-i-convert-a-vec4-rgba-value-to-a-float */',
 					'',
-					'float index;',
-					'vec3 threadId;',
+					'highp vec4 encode32(highp float f) {',
+					'	if (f == 0.0) return vec4(0.0);',
+					'	highp float F = abs(f);',
+					'	highp float sign = f < 0.0 ? 1.0 : 0.0;',
+					'	highp float log2F = log2(F);',
+					'	highp float exponent = floor(log2F);',
+					'	highp float mantissa = (exp2(-exponent) * F);',
+					'	exponent = floor(log2F) + floor(log2(mantissa));',
+					'	highp float mantissa_part1 = integerMod(F * exp2(23.0-exponent), 256.0);',
+					'	highp float mantissa_part2 = integerMod(F * exp2(15.0-exponent), 256.0);',
+					'	highp float mantissa_part3 = integerMod(F * exp2(7.0-exponent), 128.0);',
+					'	exponent += 127.0;',
+					'	vec4 rgba;',
+					'	rgba.a = 128.0 * sign + exponent/2.0;',
+					'	rgba.b = 128.0 * integerMod(exponent, 2.0) + mantissa_part3;',
+					'	rgba.g = mantissa_part2;',
+					'	rgba.r = mantissa_part1;',
+					(endianness == 'LE' ? '' : '	rgba.rgba = rgba.abgr;'),
+					'	rgba *= 0.003921569;',
+					'	return rgba;',
+					'}',
+					'// Dragons end here',
 					'',
-					'vec3 indexTo3D(float idx, vec3 texDim) {',
-					'	float z = floor(idx / (texDim.x * texDim.y));',
+					'highp float index;',
+					'highp vec3 threadId;',
+					'',
+					'highp vec3 indexTo3D(highp float idx, highp vec3 texDim) {',
+					'	idx = floor(idx + 0.5);',
+					'	highp float z = floor(idx / (texDim.x * texDim.y));',
 					'	idx -= z * texDim.x * texDim.y;',
-					'	float y = floor(idx / texDim.x);',
-					'	float x = mod(idx, texDim.x);',
+					'	highp float y = floor(idx / texDim.x);',
+					'	highp float x = integerMod(idx, texDim.x);',
 					'	return vec3(x, y, z);',
 					'}',
 					'',
-					'float get(sampler2D tex, vec2 texSize, vec3 texDim, float z, float y, float x) {',
-					'	vec3 xyz = vec3(x, y, z);',
+					'highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {',
+					'	highp vec3 xyz = vec3(floor(x + 0.5), floor(y + 0.5), floor(z + 0.5));',
 					(opt.wraparound ? '	xyz = mod(xyz, texDim);' : ''),
-					'	float index = (xyz.z * texDim.x * texDim.y) + (xyz.y * texDim.x) + xyz.x;',
-					'	float t = (floor(index / texSize.x) + 0.5) / texSize.y;',
-					'	float s = (mod(index, texSize.x) + 0.5) / texSize.x;',
-					'	return decode32(texture2D(tex, vec2(s, t)));',
+					'	highp float index = floor((xyz.z * texDim.x * texDim.y) + (xyz.y * texDim.x) + xyz.x + 0.5);',
+					(opt.floatTextures ? '	int channel = int(integerMod(index, 4.0));' : ''),
+					(opt.floatTextures ? '	index = float(int(index)/4);' : ''),
+					'	highp float w = floor(texSize.x + 0.5);',
+					'	highp float s = integerMod(index, w);',
+					'	highp float t = float(int(index) / int(w));',
+					'	s += 0.5;',
+					'	t += 0.5;',
+					(opt.floatTextures ? '	index = float(int(index)/4);' : ''),
+					'	highp vec4 texel = texture2D(tex, vec2(s / texSize.x, t / texSize.y));',
+					(opt.floatTextures ? '	if (channel == 0) return texel.r;' : ''),
+					(opt.floatTextures ? '	if (channel == 1) return texel.g;' : ''),
+					(opt.floatTextures ? '	if (channel == 2) return texel.b;' : ''),
+					(opt.floatTextures ? '	if (channel == 3) return texel.a;' : ''),
+					(opt.floatTextures ? '' : '	return decode32(texel);'),
 					'}',
 					'',
-					'float get(sampler2D tex, vec2 texSize, vec3 texDim, float y, float x) {',
+					'highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {',
 					'	return get(tex, texSize, texDim, 0.0, y, x);',
 					'}',
 					'',
-					'float get(sampler2D tex, vec2 texSize, vec3 texDim, float x) {',
+					'highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {',
 					'	return get(tex, texSize, texDim, 0.0, 0.0, x);',
 					'}',
 					'',
 					'const bool outputToColor = ' + (opt.graphical? 'true' : 'false') + ';',
-					'vec4 actualColor;',
+					'highp vec4 actualColor;',
 					'void color(float r, float g, float b, float a) {',
 					'	actualColor = vec4(r,g,b,a);',
 					'}',
@@ -314,17 +370,19 @@
 					'	color(r,g,b,1.0);',
 					'}',
 					'',
+					'highp float kernelResult = 0.0;',
 					paramStr,
+					constantsStr,
 					builder.webglString("kernel", opt),
 					'',
 					'void main(void) {',
-					'	index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize[0];',
+					'	index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;',
 					'	threadId = indexTo3D(index, uOutputDim);',
-					'	vec4 outputColor = encode32(kernel());',
+					'	kernel();',
 					'	if (outputToColor == true) {',
 					'		gl_FragColor = actualColor;',
 					'	} else {',
-					'		gl_FragColor = outputColor;',
+					'		gl_FragColor = encode32(kernelResult);',
 					'	}',
 					'}'
 				].join('\n');
@@ -400,7 +458,7 @@
 				var paramDim, paramSize, texture;
 				if (Array.isArray(arguments[textureCount])) {
 					paramDim = getDimensions(arguments[textureCount], true);
-					paramSize = dimToTexSize(gl, paramDim);
+					paramSize = dimToTexSize(gpu, paramDim);
 
 					texture = gl.createTexture();
 					gl.activeTexture(gl["TEXTURE"+textureCount]);
@@ -411,12 +469,22 @@
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
 					var paramArray = flatten(arguments[textureCount]);
-					while (paramArray.length < paramSize[0] * paramSize[1]) {
+					var paramLength = paramSize[0] * paramSize[1];
+					if (opt.floatTextures) {
+						paramLength *= 4;
+					}
+					while (paramArray.length < paramLength) {
 						paramArray.push(0);
 					}
-					var argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
-					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
-
+					
+					var argBuffer;
+					if (opt.floatTextures) {
+						argBuffer = new Float32Array(paramArray);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.FLOAT, argBuffer);
+					} else {
+						argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
+					}
 					textures[textureCount] = texture;
 
 					var paramLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount]);
@@ -516,8 +584,14 @@
 			opt.loopMaxIterations = max;
 			return ret;
 		};
+		
+		ret.constants = function(constants) {
+			opt.constants = constants;
+			return ret;
+		};
 
 		ret.wraparound = function(flag) {
+			console.warn("Wraparound mode is not supported and undocumented.");
 			opt.wraparound = flag;
 			return ret;
 		};
@@ -527,8 +601,13 @@
 			return ret;
 		};
 
-		ret.outputToTexture = function(outputToTexture) {
-			opt.outputToTexture = outputToTexture;
+		ret.outputToTexture = function(flag) {
+			opt.outputToTexture = flag;
+			return ret;
+		};
+		
+		ret.floatTextures = function(flag) {
+			opt.floatTextures = flag;
 			return ret;
 		};
 

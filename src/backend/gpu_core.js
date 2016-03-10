@@ -15,14 +15,14 @@ var gpu_core = (function() {
 
 		canvas = undefined;
 		if (gl === undefined) {
-			canvas = gpu_utils.init_canvas();
-			gl = gpu_utils.init_webgl(canvas);
+			canvas = GPUUtils.init_canvas();
+			gl = GPUUtils.init_webgl(canvas);
 		}
 
 		this.webgl = gl;
 		this.canvas = canvas;
 		this.programCache = {};
-		this.endianness = gpu_utils.system_endianness();
+		this.endianness = GPUUtils.systemEndianness();
 
 		this.functionBuilder = new functionBuilder(this);
 		this.functionBuilder.polyfillStandardFunctions();
