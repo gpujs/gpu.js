@@ -1,16 +1,16 @@
 ///
-/// Class: gpu_core
+/// Class: GPUCore
 ///
-/// *gpu_core.js* internal functions namespace
+/// *GPUCore.js* internal functions namespace
 /// *gpu.js* PUBLIC function namespace
 ///
 /// I know @private makes more sense, but since the documentation engine state is undetirmined.
 /// (See https://github.com/gpujs/gpu.js/issues/19 regarding documentation engine issue)
 /// File isolation is currently the best way to go
 ///
-var gpu_core = (function() {
+var GPUCore = (function() {
 
-	function gpu_core() {
+	function GPUCore() {
 		var gl, canvas;
 
 		canvas = undefined;
@@ -28,11 +28,11 @@ var gpu_core = (function() {
 		this.functionBuilder.polyfillStandardFunctions();
 	}
 
-	gpu_core.prototype.getWebgl = function() {
+	GPUCore.prototype.getWebgl = function() {
 		return this.webgl;
 	};
 
-	gpu_core.prototype.getCanvas = function(mode) {
+	GPUCore.prototype.getCanvas = function(mode) {
 		if (mode == "cpu") {
 			return null;
 		}
@@ -102,7 +102,7 @@ var gpu_core = (function() {
 			}
 		}
 	};
-	gpu_core.prototype.createKernel = createKernel;
+	GPUCore.prototype.createKernel = createKernel;
 
 	///
 	/// Function: addFunction
@@ -121,11 +121,11 @@ var gpu_core = (function() {
 		this.functionBuilder.addFunction( null, jsFunction, paramTypeArray, returnType );
 		return this;
 	}
-	gpu_core.prototype.addFunction = addFunction;
+	GPUCore.prototype.addFunction = addFunction;
 
 
 
-	gpu_core.prototype.textureToArray = function(texture) {
+	GPUCore.prototype.textureToArray = function(texture) {
 		var copy = this.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];
 		});
@@ -133,5 +133,5 @@ var gpu_core = (function() {
 		return copy(texture);
 	};
 
-	return gpu_core;
+	return GPUCore;
 })();
