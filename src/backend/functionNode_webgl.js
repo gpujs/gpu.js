@@ -38,6 +38,9 @@ var functionNode_webgl = (function() {
 	function functionNode_webgl( inNode, _opt ) {
 		gpu = inNode.gpu;
 		opt = _opt;
+		if (opt.debug) {
+			console.log(inNode);
+		}
 		jsFunctionString = inNode.jsFunctionString;
 		inNode.webglFunctionString_array = ast_generic( inNode.getJS_AST(), [], inNode );
 		inNode.webglFunctionString = webgl_regex_optimize(
@@ -289,6 +292,8 @@ var functionNode_webgl = (function() {
 	///
 	/// @returns  the appened retArr
 	function ast_BinaryExpression(ast, retArr, funcParam) {
+		retArr.push("(");
+		
 		if (ast.operator == "%") {
 			retArr.push("mod(");
 			ast_generic(ast.left, retArr, funcParam);
@@ -300,6 +305,8 @@ var functionNode_webgl = (function() {
 			retArr.push(ast.operator);
 			ast_generic(ast.right, retArr, funcParam);
 		}
+		
+		retArr.push(")");
 		
 		return retArr;
 	}
