@@ -13,13 +13,6 @@
 		return [w, w];
 	}
 
-	function validateStringIsFunction( funcStr ) {
-		if( funcStr !== null ) {
-			return (funcStr.slice(0, "function".length).toLowerCase() == "function");
-		}
-		return false;
-	}
-
 	function getDimensions(x, pad) {
 		var ret;
 		if (Array.isArray(x)) {
@@ -137,7 +130,7 @@
 		var endianness = this.endianness;
 
 		var funcStr = kernel.toString();
-		if( !validateStringIsFunction(funcStr) ) {
+		if( !GPUUtils.isFunctionString(funcStr) ) {
 			throw "Unable to get body of kernel function";
 		}
 

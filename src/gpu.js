@@ -9,7 +9,7 @@ var GPU = (function() {
 	///
 	/// Function: createKernel
 	///
-	/// The core GPU.js function
+	/// This creates a callable function object to call the kernel function with the argument parameter set
 	///
 	/// The parameter object contains the following sub parameters
 	///
@@ -62,6 +62,7 @@ var GPU = (function() {
 		} catch (e) {
 			if ( mode != "gpu") {
 				console.warning("Falling back to CPU!");
+				mode = "cpu";
 				return this._mode_cpu(kernel, paramObj);
 			} else {
 				throw e;
@@ -69,7 +70,7 @@ var GPU = (function() {
 		}
 	};
 	GPU.prototype.createKernel = createKernel;
-
+	
 	///
 	/// Function: addFunction
 	///
