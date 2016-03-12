@@ -4,6 +4,7 @@ var functionNode_webgl = (function() {
 	var gpu, opt, jsFunctionString;
 	
 	function isIdentifierConstant(paramName) {
+		if (!opt.constants) return false;
 		return opt.constants.indexOf(paramName) != -1;
 	}
 	
@@ -384,8 +385,12 @@ var functionNode_webgl = (function() {
 				retArr.push(forNode.test.operator);
 				ast_generic(forNode.test.right, retArr, funcParam);
 				retArr.push(") {\n");
-				for (var i = 0; i < forNode.body.body.length; i++) {
-					ast_generic(forNode.body.body[i], retArr, funcParam);
+				if (forNode.body.type == "BlockStatement") {
+					for (var i = 0; i < forNode.body.body.length; i++) {
+						ast_generic(forNode.body.body[i], retArr, funcParam);
+					}
+				} else {
+					ast_generic(forNode.body, retArr, funcParam);
 				}
 				retArr.push("} else {\n");
 				retArr.push("break;\n");
@@ -501,11 +506,23 @@ var functionNode_webgl = (function() {
 		retArr.push("if(");
 		ast_generic(ifNode.test, retArr, funcParam);
 		retArr.push(")");
-		ast_generic(ifNode.consequent, retArr, funcParam);
+		if (ifNode.consequent.type == "BlockStatement") {
+			ast_generic(ifNode.consequent, retArr, funcParam);
+		} else {
+			retArr.push(" {\n");
+			ast_generic(ifNode.consequent, retArr, funcParam);
+			retArr.push("\n}\n");
+		}
 		
 		if (ifNode.alternate) {
 			retArr.push("else ");
-			ast_generic(ifNode.alternate, retArr, funcParam);
+			if (ifNode.alternate.type == "BlockStatement") {
+				ast_generic(ifNode.alternate, retArr, funcParam);
+			} else {
+				retArr.push(" {\n");
+				ast_generic(ifNode.alternate, retArr, funcParam);
+				retArr.push("\n}\n");
+			}
 		}
 		return retArr;
 
