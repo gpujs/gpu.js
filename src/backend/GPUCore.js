@@ -42,6 +42,52 @@ var GPUCore = (function() {
 
 		return copy(texture);
 	};
+	
+	///
+	/// Get and returns the Synchronous executor, of a class and kernel
+	/// Which returns the result directly after passing the arguments.
+	///
+	function getSynchronousModeExecutor() {
+		var kernel = this._kernelFunction;
+		var paramObj = this._kernelParamObj;
+		paramObj.dimensions = paramObj.dimensions || [];
+		
+		var mode = this.computeMode;
+		
+		//
+		// CPU mode
+		//
+		if ( mode == "cpu" ) {
+			return this._mode_cpu(kernel, paramObj);
+		}
 
+		//
+		// Attempts to do the glsl conversion
+		//
+		try {
+			return this._mode_gpu(kernel, paramObj);
+		} catch (e) {
+			if ( mode != "gpu") {
+				console.warning("Falling back to CPU!");
+				this.computeMode = mode = "cpu";
+				return this._mode_cpu(kernel, paramObj);
+			} else {
+				throw e;
+			}
+		}
+	}
+	GPUCore.prototype.getSynchronousModeExecutor = getSynchronousModeExecutor;
+	
+	///
+	/// Get and returns the ASYNCRONUS executor, of a class and kernel
+	/// This returns a Promise object from an argument set.
+	///
+	/// Note that there is no current implmentation.
+	///
+	function getPromiseModeExecutor() {
+		return null;
+	}
+	GPUCore.prototype.getPromiseModeExecutor = getPromiseModeExecutor;
+	
 	return GPUCore;
 })();

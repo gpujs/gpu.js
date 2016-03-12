@@ -186,6 +186,30 @@ var GPUUtils = (function() {
 	}
 	GPUUtils.newPromise = newPromise;
 	
+	///
+	/// Function: functionBinder
+	///
+	/// Limited implmentation of Function.bind, with fallback
+	///
+	/// Parameters:
+	/// 	inFunc   - {JS Function}  to setup bind on
+	/// 	thisObj  - {Object} The this parameter to assume inside the binded function
+	///
+	/// Returns:
+	/// 	{JS Function}  The binded function
+	///
+	function functionBinder( inFunc, thisObj ) {
+		if( inFunc.bind ) {
+			return inFunc.bind(thisObj);
+		}
+		
+		return function() {
+			var args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
+			return inFunc.apply( thisObj, args );
+		}
+	}
+	GPUUtils.functionBinder = functionBinder;
+	
 	//-----------------------------------------------------------------------------
 	//
 	//  Canvas validation and support

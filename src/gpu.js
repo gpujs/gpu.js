@@ -43,83 +43,39 @@ var GPU = (function() {
 		if( paramObj === undefined ) {
 			paramObj = {};
 		}
-
-		//
-		// Get the config, fallbacks to default value if not set
-		//
-		paramObj.dimensions = paramObj.dimensions || [];
-		var mode = paramObj.mode && paramObj.mode.toLowerCase();
-		this.computeMode = mode || "auto";
-		
-		if ( mode == "cpu" ) {
-			return this._mode_cpu(kernel, paramObj);
-		}
-
-		//
-		// Attempts to do the glsl conversion
-		//
-		try {
-			return this._mode_gpu(kernel, paramObj);
-		} catch (e) {
-			if ( mode != "gpu") {
-				console.warning("Falling back to CPU!");
-				this.computeMode = mode = "cpu";
-				return this._mode_cpu(kernel, paramObj);
-			} else {
-				throw e;
-			}
-		}
-	};
-	GPU.prototype.createKernel = createKernel;
-	
-	///
-	/// Function: setKernel
-	///
-	/// Set the kernel function and its configuration settings
-	///
-	/// This is the ASYNC alternative to createKernel, when used in conjuncture to executeKernel
-	///
-	/// |---------------|---------------|---------------------------------------------------------------------------|
-	/// | Name          | Default value | Description                                                               |
-	/// |---------------|---------------|---------------------------------------------------------------------------|
-	/// | dimensions    | [1024]        | Thread dimension array                                                    |
-	/// | mode          | null          | CPU / GPU configuration mode, "auto" / null. Has the following modes.     |
-	/// |               |               |     + null / "auto" : Attempts to build GPU mode, else fallbacks          |
-	/// |               |               |     + "gpu" : Attempts to build GPU mode, else fallbacks                  |
-	/// |               |               |     + "cpu" : Forces JS fallback mode only                                |
-	/// |---------------|---------------|---------------------------------------------------------------------------|
-	///
-	/// Parameters:
-	/// 	inputFunction   {JS Function} The calling input function to perform the conversion
-	/// 	paramObj        {Object}      [Optional] The parameter configuration object (see above), 
-	///                                   uses previously set param object or blank object if not specified
-	///
-	/// Returns:
-	/// 	{GPU} returns itself
-	///
-	function setKernel(kernel, paramObj) {
-		//
-		// basic parameters safety checks
-		//
-		if( kernel === undefined ) {
-			throw "Missing kernel parameter";
-		}
-		if( !GPUUtils.isFunction(kernel) ) {
-			throw "kernel parameter not a function";
-		}
 		
 		//
 		// Replace the kernel function and param object
 		//
 		this._kernelFunction = kernel;
 		this._kernelParamObj = paramObj || this._kernelParamObj || {};
-	}
-	GPU.prototype.setKernel = setKernel;
+		
+		//
+		// Get the config, fallbacks to default value if not set
+		//
+		var mode = paramObj.mode && paramObj.mode.toLowerCase();
+		this.computeMode = mode || "auto";
+		
+		//
+		// Get the Synchronous executor
+		//
+		var ret = this.getSynchronousModeExecutor();
+		// Allow class refence from function
+		ret.gpujs = this; 
+		// Execute callback
+		ret.exec = ret.execute = GPUUtils.functionBinder( this.execute, this );
+		
+		// The Synchronous kernel
+		this._kernelSynchronousExecutor = ret; //For exec to reference
+		
+		return ret;
+	};
+	GPU.prototype.createKernel = createKernel;
 	
 	///
 	/// Function: getKernelFunction
 	///
-	/// Get and returns the kernel function previously set by `setKernel`
+	/// Get and returns the kernel function previously set by `createKernel`
 	///
 	/// Returns:
 	/// 	{JS Function}  The calling input function  
@@ -132,7 +88,7 @@ var GPU = (function() {
 	///
 	/// Function: getKernelParamObj
 	///
-	/// Get and returns the kernel parameter object previously set by `setKernel`
+	/// Get and returns the kernel parameter object previously set by `createKernel`
 	///
 	/// Returns:
 	/// 	{JS Function}  The calling input function  
@@ -153,64 +109,19 @@ var GPU = (function() {
 	/// Returns:
 	/// 	{Promise} returns the promise object for the result / failure
 	///
-	function executeKernel() {
+	function execute() {
 		//
-		// Get the arguments
-		//
-		var args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
-		
-		// 
 		// Prepare the required objects
 		//
-		var kernel = this._kernelFunction;
-		var paramObj = this._kernelParamObj;
+		var args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
 		var self = this;
 		
 		//
-		// Get the config, fallbacks to default value if not set
-		//
-		paramObj.dimensions = paramObj.dimensions || [];
-		var mode = paramObj.mode && paramObj.mode.toLowerCase();
-		self.computeMode = mode = mode || "auto";
-		
-		//
-		// Setup and return the promise, and execute the function
+		// Setup and return the promise, and execute the function, in synchronous mode
 		//
 		return GPUUtils.newPromise(function(accept,reject) {
 			try {
-				//
-				// Does computation in CPU mode
-				//
-				if ( mode == "cpu" ) {
-					self.computeMode = "cpu";
-					accept( self._mode_cpu(kernel, paramObj).apply(self,args) );
-					return;
-				}
-				
-				//
-				// Attempts to do computation in GPU mode
-				//
-				try {
-					self.computeMode = "gpu";
-					accept( self._mode_gpu(kernel, paramObj).apply(self,args) );
-					return;
-				} catch (e) {
-					if ( mode != "gpu") {
-						//
-						// CPU fallback after GPU failure
-						//
-						console.warn("Falling back to CPU!");
-						self.computeMode = "cpu";
-						accept( self._mode_cpu(kernel, paramObj).apply(self,args) );
-						return;
-					} else {
-						//
-						// Error : throw rejection
-						//
-						reject(e);
-						return;
-					}
-				}
+				accept( self._kernelSynchronousExecutor.apply(self, args) );
 			} catch (e) {
 				//
 				// Error : throw rejection
@@ -220,7 +131,8 @@ var GPU = (function() {
 			}
 		});
 	}
-	GPU.prototype.executeKernel = executeKernel;
+	GPU.prototype.execute = execute;
+	GPU.prototype.exec = execute;
 	
 	///
 	/// Function: addFunction

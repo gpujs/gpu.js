@@ -15,10 +15,10 @@ function promiseApi_function_return( assert, mode ) {
 	var promiseObj = null;
 	
 	// Setup kernel
-	gpu.setKernel(kernel, paramObj);
+	gpu.createKernel(kernel, paramObj);
 	
 	// Get promise objet
-	promiseObj = gpu.executeKernel();
+	promiseObj = gpu.execute();
 	assert.ok( promiseObj !== null, "Promise object generated test");
 	promiseObj.then(function(res) {
 		assert.equal( res, 42.0 );
