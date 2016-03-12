@@ -154,6 +154,14 @@ var GPU = (function() {
 	/// 	{Promise} returns the promise object for the result / failure
 	///
 	function executeKernel() {
+		//
+		// Get the arguments
+		//
+		var args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
+		
+		// 
+		// Prepare the required objects
+		//
 		var kernel = this._kernelFunction;
 		var paramObj = this._kernelParamObj;
 		var self = this;
@@ -175,7 +183,7 @@ var GPU = (function() {
 				//
 				if ( mode == "cpu" ) {
 					self.computeMode = "cpu";
-					accept( self._mode_cpu(kernel, paramObj) );
+					accept( self._mode_cpu(kernel, paramObj).apply(self,args) );
 					return;
 				}
 				
@@ -184,16 +192,16 @@ var GPU = (function() {
 				//
 				try {
 					self.computeMode = "gpu";
-					accept( this._mode_gpu(kernel, paramObj) );
+					accept( self._mode_gpu(kernel, paramObj).apply(self,args) );
 					return;
 				} catch (e) {
 					if ( mode != "gpu") {
 						//
 						// CPU fallback after GPU failure
 						//
-						console.warning("Falling back to CPU!");
+						console.warn("Falling back to CPU!");
 						self.computeMode = "cpu";
-						accept( self._mode_cpu(kernel, paramObj) );
+						accept( self._mode_cpu(kernel, paramObj).apply(self,args) );
 						return;
 					} else {
 						//
