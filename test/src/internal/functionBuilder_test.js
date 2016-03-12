@@ -52,7 +52,7 @@ QUnit.test( "webglString: 3 layer test", function( assert ) {
 	
 	assert.equal( 
 		builder.webglString_fromFunctionNames(["layerOne","layerTwo"]),
-		"float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn layerOne()*2.0;\n}" 
+		"float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}" 
 	);
 	assert.equal( 
 		builder.webglString("layerTwo"),
@@ -62,7 +62,7 @@ QUnit.test( "webglString: 3 layer test", function( assert ) {
 	
 	assert.equal( 
 		builder.webglString_fromFunctionNames(["layerOne","layerTwo","layerThree"]),
-		"float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn layerOne()*2.0;\n}\nfloat layerThree() {\nreturn layerTwo()*2.0;\n}" 
+		"float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}\nfloat layerThree() {\nreturn (layerTwo()*2.0);\n}" 
 	);
 	assert.equal( 
 		builder.webglString("layerThree"),

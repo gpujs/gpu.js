@@ -70,7 +70,7 @@ QUnit.test( "Math.round implementation: A function with arguments", function( as
 	
 	assert.equal(
 		node.getWebglFunctionString().replace(/\s+/g,' ').replace(/user_/g,''),
-		"float round(float a) { return floor(a+0.5); }",
+		"float round(float a) { return floor((a+0.5)); }",
 		"webgl function conversion check"
 	);
 	
@@ -93,7 +93,7 @@ QUnit.test( "Two arguments test", function( assert ) {
 	
 	assert.equal(
 		node.getWebglFunctionString().replace(/\s+/g,' ').replace(/user_/g,''),
-		"float add_together(float a, float b) { return a+b; }",
+		"float add_together(float a, float b) { return (a+b); }",
 		"webgl function conversion check"
 	);
 });
