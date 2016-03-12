@@ -133,7 +133,7 @@ var GPUUtils = (function() {
 	
 	//-----------------------------------------------------------------------------
 	//
-	//  Object cloning and manipulation
+	//  Object cloning and setup
 	//
 	//-----------------------------------------------------------------------------
 
@@ -165,7 +165,27 @@ var GPUUtils = (function() {
 		return temp;
 	}
 	GPUUtils.clone = clone;
-
+	
+	///
+	/// Function: newPromise
+	///
+	/// Returns a `new Promise` object based on the underlying implmentation
+	///
+	/// Parameters:
+	/// 	executor - {function(resolve,reject)}  Promise builder function
+	///
+	/// Returns:
+	/// 	{Promise}  Promise object
+	///
+	function newPromise(executor) {
+		var imple = Promise || small_promise;
+		if(imple === null) {
+			throw TypeError("Browser is missing Promise implmentation. Consider adding small_promise.js polyfill");
+		}
+		return (new imple(executor));
+	}
+	GPUUtils.newPromise = newPromise;
+	
 	//-----------------------------------------------------------------------------
 	//
 	//  Canvas validation and support

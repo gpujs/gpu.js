@@ -25,7 +25,7 @@ var GPU = (function() {
 	///
 	/// Parameters:
 	/// 	inputFunction   {JS Function} The calling to perform the conversion
-	/// 	paramObj        {Object}      The parameter configuration object
+	/// 	paramObj        {Object}      The parameter configuration object (see above)
 	///
 	/// Returns:
 	/// 	callable function to run
@@ -37,7 +37,7 @@ var GPU = (function() {
 		if( kernel === undefined ) {
 			throw "Missing kernel parameter";
 		}
-		if( !(kernel instanceof Function) ) {
+		if( !GPUUtils.isFunction(kernel) ) {
 			throw "kernel parameter not a function";
 		}
 		if( paramObj === undefined ) {
@@ -45,11 +45,12 @@ var GPU = (function() {
 		}
 
 		//
-		// Get theconfig, fallbacks to default value if not set
+		// Get the config, fallbacks to default value if not set
 		//
 		paramObj.dimensions = paramObj.dimensions || [];
 		var mode = paramObj.mode && paramObj.mode.toLowerCase();
-
+		this.computeMode = mode || "auto";
+		
 		if ( mode == "cpu" ) {
 			return this._mode_cpu(kernel, paramObj);
 		}
@@ -62,7 +63,7 @@ var GPU = (function() {
 		} catch (e) {
 			if ( mode != "gpu") {
 				console.warning("Falling back to CPU!");
-				mode = "cpu";
+				this.computeMode = mode = "cpu";
 				return this._mode_cpu(kernel, paramObj);
 			} else {
 				throw e;
@@ -70,6 +71,148 @@ var GPU = (function() {
 		}
 	};
 	GPU.prototype.createKernel = createKernel;
+	
+	///
+	/// Function: setKernel
+	///
+	/// Set the kernel function and its configuration settings
+	///
+	/// This is the ASYNC alternative to createKernel, when used in conjuncture to executeKernel
+	///
+	/// |---------------|---------------|---------------------------------------------------------------------------|
+	/// | Name          | Default value | Description                                                               |
+	/// |---------------|---------------|---------------------------------------------------------------------------|
+	/// | dimensions    | [1024]        | Thread dimension array                                                    |
+	/// | mode          | null          | CPU / GPU configuration mode, "auto" / null. Has the following modes.     |
+	/// |               |               |     + null / "auto" : Attempts to build GPU mode, else fallbacks          |
+	/// |               |               |     + "gpu" : Attempts to build GPU mode, else fallbacks                  |
+	/// |               |               |     + "cpu" : Forces JS fallback mode only                                |
+	/// |---------------|---------------|---------------------------------------------------------------------------|
+	///
+	/// Parameters:
+	/// 	inputFunction   {JS Function} The calling input function to perform the conversion
+	/// 	paramObj        {Object}      [Optional] The parameter configuration object (see above), 
+	///                                   uses previously set param object or blank object if not specified
+	///
+	/// Returns:
+	/// 	{GPU} returns itself
+	///
+	function setKernel(kernel, paramObj) {
+		//
+		// basic parameters safety checks
+		//
+		if( kernel === undefined ) {
+			throw "Missing kernel parameter";
+		}
+		if( !GPUUtils.isFunction(kernel) ) {
+			throw "kernel parameter not a function";
+		}
+		
+		//
+		// Replace the kernel function and param object
+		//
+		this._kernelFunction = kernel;
+		this._kernelParamObj = paramObj || this._kernelParamObj || {};
+	}
+	GPU.prototype.setKernel = setKernel;
+	
+	///
+	/// Function: getKernelFunction
+	///
+	/// Get and returns the kernel function previously set by `setKernel`
+	///
+	/// Returns:
+	/// 	{JS Function}  The calling input function  
+	///
+	function getKernelFunction() {
+		return this._kernelFunction;
+	}
+	GPU.prototype.getKernelFunction = getKernelFunction;
+	
+	///
+	/// Function: getKernelParamObj
+	///
+	/// Get and returns the kernel parameter object previously set by `setKernel`
+	///
+	/// Returns:
+	/// 	{JS Function}  The calling input function  
+	///
+	function getKernelParamObj() {
+		return this._kernelParamObj;
+	}
+	GPU.prototype.getKernelParamObj = getKernelParamObj;
+	
+	///
+	/// Function: executeKernel
+	///
+	/// Executes the kernel previously set by setKernel
+	///
+	/// Parameters:
+	/// 	.....  {Arguments} Various argument arrays used by the kernel
+	///
+	/// Returns:
+	/// 	{Promise} returns the promise object for the result / failure
+	///
+	function executeKernel() {
+		var kernel = this._kernelFunction;
+		var paramObj = this._kernelParamObj;
+		var self = this;
+		
+		//
+		// Get the config, fallbacks to default value if not set
+		//
+		paramObj.dimensions = paramObj.dimensions || [];
+		var mode = paramObj.mode && paramObj.mode.toLowerCase();
+		self.computeMode = mode = mode || "auto";
+		
+		//
+		// Setup and return the promise, and execute the function
+		//
+		return GPUUtils.newPromise(function(accept,reject) {
+			try {
+				//
+				// Does computation in CPU mode
+				//
+				if ( mode == "cpu" ) {
+					self.computeMode = "cpu";
+					accept( self._mode_cpu(kernel, paramObj) );
+					return;
+				}
+				
+				//
+				// Attempts to do computation in GPU mode
+				//
+				try {
+					self.computeMode = "gpu";
+					accept( this._mode_gpu(kernel, paramObj) );
+					return;
+				} catch (e) {
+					if ( mode != "gpu") {
+						//
+						// CPU fallback after GPU failure
+						//
+						console.warning("Falling back to CPU!");
+						self.computeMode = "cpu";
+						accept( self._mode_cpu(kernel, paramObj) );
+						return;
+					} else {
+						//
+						// Error : throw rejection
+						//
+						reject(e);
+						return;
+					}
+				}
+			} catch (e) {
+				//
+				// Error : throw rejection
+				//
+				reject(e);
+				return;
+			}
+		});
+	}
+	GPU.prototype.executeKernel = executeKernel;
 	
 	///
 	/// Function: addFunction
@@ -98,9 +241,10 @@ var GPU = (function() {
 	/// Retuns:
 	/// 	{WebGL object} that the instance use
 	///
-	GPU.prototype.getWebgl = function() {
+	function getWebgl() {
 		return this.webgl;
 	};
+	GPU.prototype.getWebgl = getWebgl;
 	
 	///
 	/// Function: getCanvas
@@ -110,27 +254,29 @@ var GPU = (function() {
 	/// Retuns:
 	/// 	{Canvas object} that the instance use
 	///
-	GPU.prototype.getCanvas = function(mode) {
+	function getCanvas(mode) {
 		if (mode == "cpu") {
 			return null;
 		}
 		return this.canvas;
 	};
+	GPU.prototype.getCanvas = getCanvas;
 	
 	///
-	/// Function: support_webgl
+	/// Function: supportWebgl
 	///
 	/// Return TRUE, if browser supports webgl AND canvas
 	///
-	/// Note: This function can also be called directly `GPU.support_webgl()`
+	/// Note: This function can also be called directly `GPU.supportWebgl()`
 	///
 	/// Returns:
 	/// 	{Boolean} TRUE if browser supports webgl
 	///
-	function support_webgl() {
+	function supportWebgl() {
 		return GPUUtils.browserSupport_webgl();
 	}
-	GPU.prototype.support_webgl = support_webgl;
+	GPU.prototype.supportWebgl = supportWebgl;
+	GPU.supportWebgl = supportWebgl;
 	
 	return GPU;
 })();
