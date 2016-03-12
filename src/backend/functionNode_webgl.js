@@ -38,7 +38,7 @@ var functionNode_webgl = (function() {
 	///
 	function functionNode_webgl( inNode, _opt ) {
 		gpu = inNode.gpu;
-		opt = _opt;
+		opt = _opt || opt;
 		if (opt && opt.debug) {
 			console.log(inNode);
 		}
