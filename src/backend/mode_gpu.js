@@ -456,7 +456,8 @@
 			var textureCount = 0;
 			for (textureCount=0; textureCount<paramNames.length; textureCount++) {
 				var paramDim, paramSize, texture;
-				if (Array.isArray(arguments[textureCount])) {
+				var argType = getArgumentType(arguments[textureCount]);
+				if (argType == "Array") {
 					paramDim = getDimensions(arguments[textureCount], true);
 					paramSize = dimToTexSize(gpu, paramDim);
 
@@ -496,11 +497,11 @@
 						gl.uniform2fv(paramSizeLoc, paramSize);
 					}
 					gl.uniform1i(paramLoc, textureCount);
-				} else if (typeof arguments[textureCount] == "number") {
+				} else if (argType == "Number") {
 					var argLoc = gl.getUniformLocation(program, "user_"+paramNames[textureCount]);
 					gl.uniform1f(argLoc, arguments[textureCount]);
-				} else if (arguments[textureCount] instanceof GPUTexture) {
-					paramDim = getDimensions(arguments[textureCount]);
+				} else if (argType == "Texture") {
+					paramDim = getDimensions(arguments[textureCount], true);
 					paramSize = arguments[textureCount].size;
 					texture = arguments[textureCount].texture;
 					textures[textureCount] = texture;
