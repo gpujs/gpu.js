@@ -89,5 +89,85 @@ var GPUCore = (function() {
 	}
 	GPUCore.prototype.getPromiseModeExecutor = getPromiseModeExecutor;
 	
+	
+	///
+	/// Prepare the synchrnous mode executor,
+	/// With additional functionalities attached (standard)
+	///
+	/// Parameters:
+	/// 	ret      {JS Function} Function object to extend
+	/// 	opt      {Object} Options object
+	///
+	/// Returns:
+	///     {JS Function} the same ret object
+	///
+	function setupExecutorExtendedFunctions(ret, opt) {
+		var gpu = this;
+		
+		// Allow original class object reference from kernel
+		ret.gpujs = gpu;
+		
+		ret.dimensions = function(dim) {
+			opt.dimensions = dim;
+			return ret;
+		};
+
+		ret.debug = function(flag) {
+			opt.debug = flag;
+			return ret;
+		};
+
+		ret.graphical = function(flag) {
+			opt.graphical = flag;
+			return ret;
+		};
+
+		ret.loopMaxIterations = function(max) {
+			opt.loopMaxIterations = max;
+			return ret;
+		};
+		
+		ret.constants = function(constants) {
+			opt.constants = constants;
+			return ret;
+		};
+
+		ret.wraparound = function(flag) {
+			console.warn("Wraparound mode is not supported and undocumented.");
+			opt.wraparound = flag;
+			return ret;
+		};
+
+		ret.hardcodeConstants = function(flag) {
+			opt.hardcodeConstants = flag;
+			return ret;
+		};
+
+		ret.outputToTexture = function(flag) {
+			opt.outputToTexture = flag;
+			return ret;
+		};
+		
+		ret.floatTextures = function(flag) {
+			opt.floatTextures = flag;
+			return ret;
+		};
+
+		ret.mode = function(mode) {
+			opt.mode = mode;
+			return gpu.createKernel(
+				gpu._kernelFunction, 
+				gpu._kernelParamObj
+			);
+		};
+
+		ret.getCanvas = function() {
+			return gpu.getCanvas();
+		};
+		
+		return ret;
+	}
+	GPUCore.prototype.setupExecutorExtendedFunctions = setupExecutorExtendedFunctions;
+	
 	return GPUCore;
 })();

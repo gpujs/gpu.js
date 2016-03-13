@@ -175,9 +175,6 @@ var GPU = (function() {
 	/// 	{Canvas object} that the instance use
 	///
 	function getCanvas(mode) {
-		if (mode == "cpu") {
-			return null;
-		}
 		return this.canvas;
 	};
 	GPU.prototype.getCanvas = getCanvas;

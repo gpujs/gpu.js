@@ -1,16 +1,5 @@
 (function (GPU) {
-	function getArgumentType(arg) {
-		if (Array.isArray(arg)) {
-			return 'Array';
-		} else if (typeof arg == "number") {
-			return 'Number';
-		} else if (arg instanceof GPUTexture) {
-			return 'Texture';
-		} else {
-			return 'Unknown';
-		}
-	}
-
+	
 	/// JS fallback transformation, basically pure JS
 	///
 	/// @param inputFunction   The calling to perform the conversion
@@ -26,7 +15,7 @@
 					throw "Auto dimensions only supported for kernels with only one input";
 				}
 
-				var argType = getArgumentType(arguments[0]);
+				var argType = GPUUtils.getArgumentType(arguments[0]);
 				if (argType == "Array") {
 					opt.dimensions = getDimensions(argType);
 				} else if (argType == "Texture") {
@@ -38,7 +27,7 @@
 
 			var kernelArgs = [];
 			for (var i=0; i<arguments.length; i++) {
-				var argType = getArgumentType(arguments[i]);
+				var argType = GPUUtils.getArgumentType(arguments[i]);
 				if (argType == "Array" || argType == "Number") {
 					kernelArgs[i] = arguments[i];
 				} else if (argType == "Texture") {
@@ -135,62 +124,7 @@
 
 			return ret;
 		}
-
-		ret.dimensions = function(dim) {
-			opt.dimensions = dim;
-			return ret;
-		};
-
-		ret.debug = function(flag) {
-			opt.debug = flag;
-			return ret;
-		};
-
-		ret.graphical = function(flag) {
-			opt.graphical = flag;
-			return ret;
-		};
-
-		ret.loopMaxIterations = function(max) {
-			opt.loopMaxIterations = max;
-			return ret;
-		};
 		
-		ret.constants = function(constants) {
-			opt.constants = constants;
-			return ret;
-		};
-
-		ret.wraparound = function(flag) {
-			console.warn("Wraparound mode is not supported and undocumented.");
-			opt.wraparound = flag;
-			return ret;
-		};
-
-		ret.hardcodeConstants = function(flag) {
-			opt.hardcodeConstants = flag;
-			return ret;
-		};
-
-		ret.outputToTexture = function(flag) {
-			opt.outputToTexture = flag;
-			return ret;
-		};
-		
-		ret.floatTextures = function(flag) {
-			opt.floatTextures = flag;
-			return ret;
-		};
-
-		ret.mode = function(mode) {
-			opt.mode = mode;
-			return gpu.createKernel(kernel, opt);
-		};
-
-		ret.getCanvas = function() {
-			return gpu.getCanvas('cpu');
-		};
-
-		return ret;
+		return gpu.setupExecutorExtendedFunctions(ret, opt);
 	};
 })(GPU);

@@ -133,7 +133,7 @@ var GPUUtils = (function() {
 	
 	//-----------------------------------------------------------------------------
 	//
-	//  Object cloning and setup
+	//  Object / function cloning and manipulation
 	//
 	//-----------------------------------------------------------------------------
 
@@ -209,6 +209,30 @@ var GPUUtils = (function() {
 		}
 	}
 	GPUUtils.functionBinder = functionBinder;
+	
+	///
+	/// Function: getArgumentType
+	///
+	/// Evaluate the argument type, to apply respective logic for it
+	///
+	/// Parameters:
+	/// 	arg   - {Object} The argument object to evaluate type
+	///
+	/// Returns:
+	/// 	{String}  Argument type Array/Number/Texture/Unknown
+	///
+	function getArgumentType(arg) {
+		if (Array.isArray(arg)) {
+			return 'Array';
+		} else if (typeof arg == "number") {
+			return 'Number';
+		} else if (arg instanceof GPUTexture) {
+			return 'Texture';
+		} else {
+			return 'Unknown';
+		}
+	}
+	GPUUtils.getArgumentType = getArgumentType;
 	
 	//-----------------------------------------------------------------------------
 	//
