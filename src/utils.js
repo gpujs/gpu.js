@@ -2,7 +2,7 @@
 /// Class: GPUUtils
 ///
 /// Various utility functions / snippets of code that GPU.JS uses internally.\
-/// This covers various snippets of code that is NOT gpu.js specific
+/// This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
 ///
 /// Note that all moethods in this class is "static" by nature `GPUUtils.functionName()`
 ///
@@ -10,11 +10,17 @@ var GPUUtils = (function() {
 
 	var GPUUtils = {};
 
-	// system_endianness closure based memoizer
+	//-----------------------------------------------------------------------------
+	//
+	//  System values support (currently only endianness)
+	//
+	//-----------------------------------------------------------------------------
+	
+	// systemEndianness closure based memoizer
 	var endianness = null;
 
 	///
-	/// Function: system_endianness
+	/// Function: systemEndianness
 	///
 	/// Gets the system endianness, and cache it
 	///
@@ -36,6 +42,12 @@ var GPUUtils = (function() {
 		throw new Error('unknown endianness');
 	}
 	GPUUtils.systemEndianness = systemEndianness;
+
+	//-----------------------------------------------------------------------------
+	//
+	//  Function and function string validations
+	//
+	//-----------------------------------------------------------------------------
 
 	///
 	/// Function: isFunction
@@ -119,6 +131,12 @@ var GPUUtils = (function() {
 	}
 	GPUUtils.getParamNames_fromString = getParamNames_fromString;
 	
+	//-----------------------------------------------------------------------------
+	//
+	//  Object / function cloning and manipulation
+	//
+	//-----------------------------------------------------------------------------
+
 	///
 	/// Function: clone
 	///
@@ -147,6 +165,255 @@ var GPUUtils = (function() {
 		return temp;
 	}
 	GPUUtils.clone = clone;
+	
+	///
+	/// Function: newPromise
+	///
+	/// Returns a `new Promise` object based on the underlying implmentation
+	///
+	/// Parameters:
+	/// 	executor - {function(resolve,reject)}  Promise builder function
+	///
+	/// Returns:
+	/// 	{Promise}  Promise object
+	///
+	function newPromise(executor) {
+		var imple = Promise || small_promise;
+		if(imple === null) {
+			throw TypeError("Browser is missing Promise implmentation. Consider adding small_promise.js polyfill");
+		}
+		return (new imple(executor));
+	}
+	GPUUtils.newPromise = newPromise;
+	
+	///
+	/// Function: functionBinder
+	///
+	/// Limited implmentation of Function.bind, with fallback
+	///
+	/// Parameters:
+	/// 	inFunc   - {JS Function}  to setup bind on
+	/// 	thisObj  - {Object} The this parameter to assume inside the binded function
+	///
+	/// Returns:
+	/// 	{JS Function}  The binded function
+	///
+	function functionBinder( inFunc, thisObj ) {
+		if( inFunc.bind ) {
+			return inFunc.bind(thisObj);
+		}
+		
+		return function() {
+			var args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
+			return inFunc.apply( thisObj, args );
+		}
+	}
+	GPUUtils.functionBinder = functionBinder;
+	
+	///
+	/// Function: getArgumentType
+	///
+	/// Evaluate the argument type, to apply respective logic for it
+	///
+	/// Parameters:
+	/// 	arg   - {Object} The argument object to evaluate type
+	///
+	/// Returns:
+	/// 	{String}  Argument type Array/Number/Texture/Unknown
+	///
+	function getArgumentType(arg) {
+		if (Array.isArray(arg)) {
+			return 'Array';
+		} else if (typeof arg == "number") {
+			return 'Number';
+		} else if (arg instanceof GPUTexture) {
+			return 'Texture';
+		} else {
+			return 'Unknown';
+		}
+	}
+	GPUUtils.getArgumentType = getArgumentType;
+	
+	//-----------------------------------------------------------------------------
+	//
+	//  Canvas validation and support
+	//
+	//-----------------------------------------------------------------------------
 
+	///
+	/// Function: isCanvas
+	///
+	/// Return TRUE, on a valid DOM canvas object
+	///
+	/// Note: This does just a VERY simply sanity check. And may give false positives.
+	///
+	/// Parameters:
+	/// 	canvasObj - {Canvas DOM object} Object to validate
+	///
+	/// Returns:
+	/// 	{Boolean} TRUE if the object is a DOM canvas
+	///
+	function isCanvas( canvasObj ) {
+		return ( 
+			canvasObj != null &&
+			canvasObj.nodeName &&
+			canvasObj.getContext &&
+			canvasObj.nodeName.toUpperCase() === "CANVAS"
+		);
+	}
+	GPUUtils.isCanvas = isCanvas;
+	
+	// browserSupport_canvas closure based memoizer
+	var browserSupport_canvas_memoizer = null;
+	///
+	/// Function: browserSupport_canvas
+	///
+	/// Return TRUE, if browser supports canvas
+	///
+	/// Returns:
+	/// 	{Boolean} TRUE if browser supports canvas
+	///
+	function browserSupport_canvas() {
+		if( browserSupport_canvas_memoizer !== null ) {
+			return browserSupport_canvas_memoizer;
+		}
+		return browserSupport_canvas_memoizer = isCanvas(document.createElement('canvas'));
+	}
+	GPUUtils.browserSupport_canvas = browserSupport_canvas;
+	
+	///
+	/// Function: init_canvas
+	///
+	/// Initiate and returns a canvas, for usage in init_webgl.
+	/// Returns only if canvas is supported by browser.
+	///
+	/// Returns:
+	/// 	{Canvas DOM object} Canvas dom object if supported by browser, else null
+	///
+	function init_canvas() {
+		// Fail fast if browser previously detected no support
+		if( browserSupport_canvas_memoizer === false ) {
+			return null;
+		}
+		
+		// Create a new canvas DOM
+		var canvas = document.createElement('canvas');
+		
+		// First time setup, does the browser support check memoizer
+		if( browserSupport_canvas_memoizer === null ) {
+			browserSupport_canvas_memoizer = isCanvas(canvas);
+			if( browserSupport_canvas_memoizer === false ) {
+				return null;
+			}
+		}
+		
+		// Default width and height, to fix webgl issue in safari
+		canvas.width = 2;
+		canvas.height = 2;
+		
+		// Returns the canvas
+		return canvas;
+	}
+	GPUUtils.init_canvas = init_canvas;
+	
+	//-----------------------------------------------------------------------------
+	//
+	//  Webgl validation and support
+	//
+	//-----------------------------------------------------------------------------
+
+	///
+	/// Function: isWebgl
+	///
+	/// Return TRUE, on a valid webgl context object
+	///
+	/// Note: This does just a VERY simply sanity check. And may give false positives.
+	///
+	/// Parameters:
+	/// 	webglObj - {webgl context} Object to validate
+	///
+	/// Returns:
+	/// 	{Boolean} TRUE if the object is a webgl context object
+	///
+	function isWebgl( webglObj ) {
+		return ( 
+			webglObj != null &&
+			webglObj.getExtension
+		);
+	}
+	GPUUtils.isWebgl = isWebgl;
+	
+	// browserSupport_canvas closure based memoizer
+	var browserSupport_webgl_memoizer = null;
+	///
+	/// Function: browserSupport_webgl
+	///
+	/// Return TRUE, if browser supports webgl
+	///
+	/// Returns:
+	/// 	{Boolean} TRUE if browser supports webgl
+	///
+	function browserSupport_webgl() {
+		if( browserSupport_webgl_memoizer !== null ) {
+			return browserSupport_webgl_memoizer;
+		}
+		return browserSupport_webgl_memoizer = isWebgl(init_webgl(init_canvas()));
+	}
+	GPUUtils.browserSupport_webgl = browserSupport_webgl;
+	
+	// Default webgl options to use
+	var init_webgl_defaultOptions = {
+		depth: false,
+		antialias: false
+	}
+	
+	///
+	/// Function: init_webgl
+	///
+	/// Initiate and returns a webgl, from a canvas object
+	/// Returns only if webgl is supported by browser.
+	///
+	/// Parameters:
+	/// 	canvasObj - {Canvas DOM object} Object to validate
+	///
+	/// Returns:
+	/// 	{Canvas DOM object} Canvas dom object if supported by browser, else null
+	///
+	function init_webgl(canvasObj) {
+		
+		// Fail fast for invalid canvas object
+		if( !isCanvas(canvasObj) ) {
+			throw new Error("Invalid canvas object - "+canvasObj);
+		}
+		
+		// Fail fast if browser previously detected no support
+		if( browserSupport_canvas_memoizer === false || browserSupport_webgl_memoizer === false ) {
+			return null;
+		}
+		
+		// Create a new canvas DOM
+		var webgl = (
+			canvasObj.getContext("experimental-webgl", init_webgl_defaultOptions) || 
+			canvasObj.getContext("webgl", init_webgl_defaultOptions)
+		);
+		
+		// First time setup, does the browser support check memoizer
+		if( browserSupport_webgl_memoizer === null ) {
+			browserSupport_webgl_memoizer = isWebgl(webgl);
+			if( browserSupport_webgl_memoizer === false ) {
+				return null;
+			}
+		}
+		
+		// Get the extension that is needed
+		webgl.getExtension('OES_texture_float');
+		webgl.getExtension('OES_texture_float_linear');
+		webgl.getExtension('OES_element_index_uint');
+
+		// Returns the canvas
+		return webgl;
+	}
+	GPUUtils.init_webgl = init_webgl;
+	
 	return GPUUtils;
 })();

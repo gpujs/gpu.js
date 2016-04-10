@@ -43,6 +43,8 @@ In JavaScript, initialise the library:
 var gpu = new GPU();
 ```
 
+Note that this **requires** the Promise API, if you need to polyfill it, you can give our 'untested polyfill' a try [here](https://github.com/picoded/small_promise.js)
+
 ### Creating and Running Functions
 Depnding on your output type, specify the intended dimensions of your output. You cannot have a accelerated function that does not specify any dimensions.
 

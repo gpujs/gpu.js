@@ -13,13 +13,6 @@
 		return [w, w];
 	}
 
-	function validateStringIsFunction( funcStr ) {
-		if( funcStr !== null ) {
-			return (funcStr.slice(0, "function".length).toLowerCase() == "function");
-		}
-		return false;
-	}
-
 	function getDimensions(x, pad) {
 		var ret;
 		if (Array.isArray(x)) {
@@ -80,22 +73,10 @@
 		return tmp;
 	}
 
-	function getArgumentType(arg) {
-		if (Array.isArray(arg)) {
-			return 'Array';
-		} else if (typeof arg == "number") {
-			return 'Number';
-		} else if (arg instanceof GPUTexture) {
-			return 'Texture';
-		} else {
-			return 'Unknown';
-		}
-	}
-
 	function getProgramCacheKey(args, opt, outputDim) {
 		var key = '';
 		for (var i=0; i<args.length; i++) {
-			var argType = getArgumentType(args[i]);
+			var argType = GPUUtils.getArgumentType(args[i]);
 			key += argType;
 			if (opt.hardcodeConstants) {
 				var dimensions;
@@ -130,14 +111,14 @@
 
 	GPU.prototype._mode_gpu = function(kernel, opt) {
 		var gpu = this;
-		var gl = this.gl;
+		var gl = this.webgl;
 		var canvas = this.canvas;
 
 		var builder = this.functionBuilder;
 		var endianness = this.endianness;
 
 		var funcStr = kernel.toString();
-		if( !validateStringIsFunction(funcStr) ) {
+		if( !GPUUtils.isFunctionString(funcStr) ) {
 			throw "Unable to get body of kernel function";
 		}
 
@@ -156,7 +137,7 @@
 					throw "Auto dimensions only supported for kernels with only one input";
 				}
 
-				var argType = getArgumentType(arguments[0]);
+				var argType = GPUUtils.getArgumentType(arguments[0]);
 				if (argType == "Array") {
 					opt.dimensions = getDimensions(argType);
 				} else if (argType == "Texture") {
@@ -210,7 +191,7 @@
 
 				var paramType = [];
 				for (var i=0; i<paramNames.length; i++) {
-					var argType = getArgumentType(arguments[i]);
+					var argType = GPUUtils.getArgumentType(arguments[i]);
 					paramType.push(argType);
 					if (opt.hardcodeConstants) {
 						if (argType == "Array" || argType == "Texture") {
@@ -280,10 +261,10 @@
 					'	return int(integerMod(float(x), float(y)));',
 					'}',
 					'',
-					'// Here be dragons!',
-					'// DO NOT OPTIMIZE THIS CODE',
-					'// YOU WILL BREAK SOMETHING ON SOMEBODY\'S MACHINE',
-					'// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME',
+					//'// Here be dragons!',
+					//'// DO NOT OPTIMIZE THIS CODE',
+					//'// YOU WILL BREAK SOMETHING ON SOMEBODY\'S MACHINE',
+					//'// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME',
 					'highp float decode32(highp vec4 rgba) {',
 					(endianness == 'LE' ? '' : '	rgba.rgba = rgba.abgr;'),
 					'	rgba *= 255.0;',
@@ -467,7 +448,7 @@
 			var textureCount = 0;
 			for (textureCount=0; textureCount<paramNames.length; textureCount++) {
 				var paramDim, paramSize, texture;
-				var argType = getArgumentType(arguments[textureCount]);
+				var argType = GPUUtils.getArgumentType(arguments[textureCount]);
 				if (argType == "Array") {
 					paramDim = getDimensions(arguments[textureCount], true);
 					paramSize = dimToTexSize(gpu, paramDim);
@@ -576,63 +557,8 @@
 				}
 			}
 		}
-
-		ret.dimensions = function(dim) {
-			opt.dimensions = dim;
-			return ret;
-		};
-
-		ret.debug = function(flag) {
-			opt.debug = flag;
-			return ret;
-		};
-
-		ret.graphical = function(flag) {
-			opt.graphical = flag;
-			return ret;
-		};
-
-		ret.loopMaxIterations = function(max) {
-			opt.loopMaxIterations = max;
-			return ret;
-		};
 		
-		ret.constants = function(constants) {
-			opt.constants = constants;
-			return ret;
-		};
-
-		ret.wraparound = function(flag) {
-			console.warn("Wraparound mode is not supported and undocumented.");
-			opt.wraparound = flag;
-			return ret;
-		};
-
-		ret.hardcodeConstants = function(flag) {
-			opt.hardcodeConstants = flag;
-			return ret;
-		};
-
-		ret.outputToTexture = function(flag) {
-			opt.outputToTexture = flag;
-			return ret;
-		};
-		
-		ret.floatTextures = function(flag) {
-			opt.floatTextures = flag;
-			return ret;
-		};
-
-		ret.mode = function(mode) {
-			opt.mode = mode;
-			return gpu.createKernel(kernel, opt);
-		};
-
-		ret.getCanvas = function() {
-			return gpu.getCanvas();
-		};
-
-		return ret;
+		return gpu.setupExecutorExtendedFunctions(ret, opt);
 	};
 
 })(GPU);
