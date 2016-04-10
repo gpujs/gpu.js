@@ -36,7 +36,7 @@
 				} else if (argType == "Texture") {
 					kernelArgs[i] = arguments[i].toArray();
 				} else {
-					throw "Input type not supported: " + arguments[i];
+					throw "Input type not supported (CPU): " + arguments[i];
 				}
 			}
 

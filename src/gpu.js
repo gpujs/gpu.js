@@ -165,7 +165,10 @@ var GPU = (function() {
 		// if( this.webgl == null ) {
 		// 	this.webgl = GPUUtils.init_webgl( getCanvas("gpu") );
 		// }
-		return this.webgl;
+		if( this.webgl ) {
+			return this.webgl;
+		}
+		throw "only call getWebgl after createKernel(gpu)"
 	};
 	GPU.prototype.getWebgl = getWebgl;
 	
@@ -197,7 +200,10 @@ var GPU = (function() {
 		// 	// }
 		// 	throw "Missing valid mode parameter in getCanvas("+mode+")"
 		// }
-		return this.canvas;
+		if( this.canvas ) {
+			return this.canvas;
+		}
+		throw "only call getCanvas after createKernel()"
 	};
 	GPU.prototype.getCanvas = getCanvas;
 	

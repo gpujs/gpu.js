@@ -515,7 +515,7 @@
 					gl.uniform2fv(paramSizeLoc, paramSize);
 					gl.uniform1i(paramLoc, textureCount);
 				} else {
-					throw "Input type not supported: " + arguments[textureCount];
+					throw "Input type not supported (GPU): " + arguments[textureCount];
 				}
 			}
 
