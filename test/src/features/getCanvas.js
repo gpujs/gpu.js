@@ -1,8 +1,8 @@
 function getCanvasTest( assert, mode ) {
 	var gpu = new GPU();
 	
-	//assert.ok( f.getCanvas(), "testing for canvas before createKernel" );
-	assert.ok( gpu.getCanvas(), "testing for canvas before createKernel" );
+	//assert.ok( gpu.getCanvas("cpu"), "testing for canvas before createKernel" );
+	//assert.ok( gpu.getCanvas("gpu"), "testing for canvas before createKernel" );
 	
 	var render = gpu.createKernel(function(a, b) {
 		this.color(0, 0, 0, 1);
@@ -13,13 +13,13 @@ function getCanvasTest( assert, mode ) {
 	
 	assert.ok( render !== null, "function generated test");
 	
-	assert.ok( render.getCanvas(), "testing for canvas before createKernel" );
-	assert.ok( gpu.getCanvas(), "testing for canvas before createKernel" );
+	//assert.ok( render.getCanvas(mode), "testing for canvas after createKernel" );
+	//assert.ok( gpu.getCanvas(mode), "testing for canvas after createKernel" );
 	
-	var res = render();
+	assert.ok( render(), "rendering" );
 	
-	assert.ok( render.getCanvas(), "testing for canvas before createKernel" );
-	assert.ok( gpu.getCanvas(), "testing for canvas before createKernel" );
+	assert.ok( render.getCanvas(mode), "testing for canvas after render" );
+	assert.ok( gpu.getCanvas(mode), "testing for canvas after render" );
 	
 }
 

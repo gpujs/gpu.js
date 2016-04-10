@@ -13,16 +13,16 @@
 var GPUCore = (function() {
 
 	function GPUCore() {
-		var gl, canvas;
-
-		canvas = undefined;
-		if (gl === undefined) {
-			canvas = GPUUtils.init_canvas();
-			gl = GPUUtils.init_webgl(canvas);
-		}
-
-		this.webgl = gl;
-		this.canvas = canvas;
+		// var gl, canvas;
+		// 
+		// canvas = undefined;
+		// if (gl === undefined) {
+		// 	canvas = GPUUtils.init_canvas();
+		// 	gl = GPUUtils.init_webgl(canvas);
+		// }
+		// 
+		// this.webgl = gl;
+		// this.canvas = canvas;
 		this.programCache = {};
 		this.endianness = GPUUtils.systemEndianness();
 
@@ -160,9 +160,13 @@ var GPUCore = (function() {
 				gpu._kernelParamObj
 			);
 		};
-
-		ret.getCanvas = function() {
-			return gpu.getCanvas();
+		
+		ret.getCanvas = function(mode) {
+			return gpu.canvas;
+		};
+		
+		ret.getWebgl = function(mode) {
+			return gpu.webgl;
 		};
 		
 		return ret;

@@ -156,12 +156,15 @@ var GPU = (function() {
 	///
 	/// Function: getWebgl
 	///
-	/// Returns the internal gpu webgl instance only if it has been initiated
+	/// [DEPRECIATED] Returns the internal gpu webgl instance only if it has been initiated
 	///
 	/// Retuns:
 	/// 	{WebGL object} that the instance use
 	///
 	function getWebgl() {
+		// if( this.webgl == null ) {
+		// 	this.webgl = GPUUtils.init_webgl( getCanvas("gpu") );
+		// }
 		return this.webgl;
 	};
 	GPU.prototype.getWebgl = getWebgl;
@@ -169,12 +172,31 @@ var GPU = (function() {
 	///
 	/// Function: getCanvas
 	///
-	/// Returns the internal canvas instance only if it has been initiated
+	/// [DEPRECIATED] Returns the internal canvas instance only if it has been initiated
 	///
 	/// Retuns:
 	/// 	{Canvas object} that the instance use
 	///
 	function getCanvas(mode) {
+		// if(mode == "gpu") {
+		// 	if(this._canvas_gpu == null) {
+		// 		this._canvas_gpu = GPUUtils.init_canvas();
+		// 	}
+		// 	return this._canvas_gpu;
+		// } else if(mode == "cpu") {
+		// 	if(this._canvas_cpu == null) {
+		// 		this._canvas_cpu = GPUUtils.init_canvas();
+		// 	}
+		// 	return this._canvas_cpu;
+		// } else {
+		// 	if( this._canvas_gpu || this._canvas_cpu ) {
+		// 		return (this._canvas_gpu || this._canvas_cpu );
+		// 	}
+		// 	// if( this._canvas_gpu || this._canvas_cpu ) {
+		// 	// 	
+		// 	// }
+		// 	throw "Missing valid mode parameter in getCanvas("+mode+")"
+		// }
 		return this.canvas;
 	};
 	GPU.prototype.getCanvas = getCanvas;

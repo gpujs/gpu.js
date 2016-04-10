@@ -8,6 +8,9 @@
 	/// @returns callable function if converted, else returns null
 	GPU.prototype._mode_cpu = function(kernel, opt) {
 		var gpu = this;
+		
+		var canvas = gpu.canvas = GPUUtils.init_canvas();
+		//var gl = gpu.webgl = GPUUtils.init_webgl(canvas);
 
 		function ret() {
 			if (!opt.dimensions || opt.dimensions.length === 0) {
