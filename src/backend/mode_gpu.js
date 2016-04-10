@@ -144,7 +144,8 @@
 		var paramNames = GPUUtils.getParamNames_fromString(funcStr);
 
 		var programCache = [];
-
+		var programUniformLocationCache = [];
+		
 		function ret() {
 			if (opt.floatTextures && !gpu.OES_texture_float) {
 				throw "Float textures are not supported on this browser";
@@ -186,6 +187,15 @@
 
 			var programCacheKey = getProgramCacheKey(arguments, opt, opt.dimensions);
 			var program = programCache[programCacheKey];
+			
+			function getUniformLocation(name) {
+				var location = programUniformLocationCache[programCacheKey][name];
+				if (!location) {
+					location = gl.getUniformLocation(program, name);
+					programUniformLocationCache[programCacheKey][name] = location;
+				}
+				return location;
+			}
 
 			if (program === undefined) {
 				var constantsStr = '';
@@ -417,6 +427,7 @@
 				gl.linkProgram(program);
 
 				programCache[programCacheKey] = program;
+				programUniformLocationCache[programCacheKey] = [];
 			}
 
 			gl.useProgram(program);
@@ -446,9 +457,9 @@
 			gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 
 			if (!opt.hardcodeConstants) {
-				var uOutputDimLoc = gl.getUniformLocation(program, "uOutputDim");
+				var uOutputDimLoc = getUniformLocation("uOutputDim");
 				gl.uniform3fv(uOutputDimLoc, threadDim);
-				var uTexSizeLoc = gl.getUniformLocation(program, "uTexSize");
+				var uTexSizeLoc = getUniformLocation("uTexSize");
 				gl.uniform2fv(uTexSizeLoc, texSize);
 			}
 
@@ -488,9 +499,9 @@
 					}
 					textures[textureCount] = texture;
 
-					var paramLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount]);
-					var paramSizeLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Size");
-					var paramDimLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Dim");
+					var paramLoc = getUniformLocation("user_" + paramNames[textureCount]);
+					var paramSizeLoc = getUniformLocation("user_" + paramNames[textureCount] + "Size");
+					var paramDimLoc = getUniformLocation("user_" + paramNames[textureCount] + "Dim");
 
 					if (!opt.hardcodeConstants) {
 						gl.uniform3fv(paramDimLoc, paramDim);
@@ -498,7 +509,7 @@
 					}
 					gl.uniform1i(paramLoc, textureCount);
 				} else if (argType == "Number") {
-					var argLoc = gl.getUniformLocation(program, "user_"+paramNames[textureCount]);
+					var argLoc = getUniformLocation("user_"+paramNames[textureCount]);
 					gl.uniform1f(argLoc, arguments[textureCount]);
 				} else if (argType == "Texture") {
 					paramDim = getDimensions(arguments[textureCount], true);
@@ -509,9 +520,9 @@
 					gl.activeTexture(gl["TEXTURE"+textureCount]);
 					gl.bindTexture(gl.TEXTURE_2D, texture);
 
-					var paramLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount]);
-					var paramSizeLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Size");
-					var paramDimLoc = gl.getUniformLocation(program, "user_" + paramNames[textureCount] + "Dim");
+					var paramLoc = getUniformLocation("user_" + paramNames[textureCount]);
+					var paramSizeLoc = getUniformLocation("user_" + paramNames[textureCount] + "Size");
+					var paramDimLoc = getUniformLocation("user_" + paramNames[textureCount] + "Dim");
 
 					gl.uniform3fv(paramDimLoc, paramDim);
 					gl.uniform2fv(paramSizeLoc, paramSize);
