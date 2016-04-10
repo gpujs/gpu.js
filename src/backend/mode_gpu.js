@@ -564,6 +564,9 @@
 			}
 		}
 		
+		ret.canvas = canvas;
+		ret.webgl = gl;
+		
 		return gpu.setupExecutorExtendedFunctions(ret, opt);
 	};
 

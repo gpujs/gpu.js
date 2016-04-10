@@ -128,6 +128,8 @@
 			return ret;
 		}
 		
+		ret.canvas = canvas;
+		
 		return gpu.setupExecutorExtendedFunctions(ret, opt);
 	};
 })(GPU);

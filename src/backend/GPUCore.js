@@ -162,11 +162,11 @@ var GPUCore = (function() {
 		};
 		
 		ret.getCanvas = function(mode) {
-			return gpu.canvas;
+			return ret.canvas;
 		};
 		
 		ret.getWebgl = function(mode) {
-			return gpu.webgl;
+			return ret.webgl;
 		};
 		
 		return ret;
