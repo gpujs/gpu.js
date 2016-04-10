@@ -4,27 +4,23 @@ function getCanvasTest( assert, mode ) {
 	//assert.ok( f.getCanvas(), "testing for canvas before createKernel" );
 	assert.ok( gpu.getCanvas(), "testing for canvas before createKernel" );
 	
-	var f = gpu.createKernel(function(a, b) {
-		return (a[this.thread.x] + b[this.thread.x]);
+	var render = gpu.createKernel(function(a, b) {
+		this.color(0, 0, 0, 1);
 	}, {
-		dimensions : [6],
+		dimensions : [30,30],
 		mode : mode
-	});
+	}).graphical(true);;
 	
-	assert.ok( f.getCanvas(), "testing for canvas before createKernel" );
+	assert.ok( render !== null, "function generated test");
+	
+	assert.ok( render.getCanvas(), "testing for canvas before createKernel" );
 	assert.ok( gpu.getCanvas(), "testing for canvas before createKernel" );
 	
-	// assert.ok( f !== null, "function generated test");
-	// 
-	// var a = [1, 2, 3, 5, 6, 7];
-	// var b = [4, 5, 6, 1, 2, 3];
-	// 
-	// var res = f(a,b);
-	// var exp = [5, 7, 9, 6, 8, 10];
-	// 
-	// for(var i = 0; i < exp.length; ++i) {
-	// 	QUnit.close(res[i], exp[i], 0.1, "Result arr idx: "+i);
-	// }
+	var res = render();
+	
+	assert.ok( render.getCanvas(), "testing for canvas before createKernel" );
+	assert.ok( gpu.getCanvas(), "testing for canvas before createKernel" );
+	
 }
 
 QUnit.test( "getCanvas (auto)", function( assert ) {
