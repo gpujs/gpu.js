@@ -1,12 +1,15 @@
+var fs = require('fs');
 var gulp = require('gulp');
 var concat = require('gulp-concat');
 var rename = require("gulp-rename");
 var uglify = require('gulp-uglify');
 var gutil = require('gulp-util');
+var header = require('gulp-header');
+
+var pkg = require('./package.json');
 
 gulp.task('build', function() {
 	return gulp.src([
-			'src/wrapper/prefix.js',
 			'src/parser.js',
 			'src/utils.js',
 			'src/texture.js',
@@ -20,6 +23,7 @@ gulp.task('build', function() {
 			'src/wrapper/suffix.js'
 		])
 		.pipe(concat('gpu.js'))
+		.pipe(header(fs.readFileSync('src/wrapper/prefix.js', 'utf8'), { pkg : pkg } ))
 		.pipe(gulp.dest('bin'));
 });
 

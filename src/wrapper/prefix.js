@@ -1,16 +1,16 @@
 ///
-/// gpu.js
-/// http://gpu.rocks
+/// <%= pkg.name %>
+/// <%= pkg.homepage %>
 ///
-/// GPU Accelerated JavaScript
+/// <%= pkg.description %>
 ///
-/// @version 0.0.0
-/// @date    2016-02-23
+/// @version <%= pkg.version %>
+/// @date    <%= new Date() %>
 ///
-/// @license
+/// @license <%= pkg.license %>
 /// The MIT License
 ///
-/// Copyright (c) 2016 Fazli Sapuan, Matthew Saw, Eugene Cheah and Julia Low
+/// Copyright (c) <%= new Date().getFullYear() %> Fazli Sapuan, Matthew Saw, Eugene Cheah and Julia Low
 ///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,7 @@
 /// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
-/// 
+///
 
 /// Making sure the parser, and all the various messy class files
 /// have proper closure, and does not leak out
