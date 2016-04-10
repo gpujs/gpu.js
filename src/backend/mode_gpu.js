@@ -183,7 +183,12 @@
 				if (opt.constants) {
 					for (var name in opt.constants) {
 						var value = opt.constants[name];
-						constantsStr += 'const float constants_' + name + '=' + parseInt(value) + '.0;\n';
+						
+						if (Number.isInteger(value)) {
+							constantsStr += 'const float constants_' + name + '=' + parseInt(value) + '.0;\n';
+						} else {
+							constantsStr += 'const float constants_' + name + '=' + parseFloat(value) + ';\n';
+						}
 					}
 				}
 				
