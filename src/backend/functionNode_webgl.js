@@ -539,9 +539,11 @@ var functionNode_webgl = (function() {
 	}
 
 	function ast_LogicalExpression(logNode, retArr, funcParam) {
+		retArr.push("(");
 		ast_generic(logNode.left, retArr, funcParam);
 		retArr.push(logNode.operator);
 		ast_generic(logNode.right, retArr, funcParam);
+		retArr.push(")");
 		return retArr;
 	}
 
