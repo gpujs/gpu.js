@@ -1,8 +1,9 @@
 function getCanvasTest( assert, mode ) {
 	var gpu = new GPU();
 	
-	//assert.ok( gpu.getCanvas("cpu"), "testing for canvas before createKernel" );
-	//assert.ok( gpu.getCanvas("gpu"), "testing for canvas before createKernel" );
+	assert.throws( function() { 
+		gpu.getCanvas()
+	}, "testing for canvas exception createKernel" );
 	
 	var render = gpu.createKernel(function() {
 		this.color(0, 0, 0, 1);
@@ -13,8 +14,8 @@ function getCanvasTest( assert, mode ) {
 	
 	assert.ok( render !== null, "function generated test");
 	
-	//assert.ok( render.getCanvas(mode), "testing for canvas after createKernel" );
-	//assert.ok( gpu.getCanvas(mode), "testing for canvas after createKernel" );
+	assert.ok( render.getCanvas(), "testing for canvas after createKernel" );
+	assert.ok( gpu.getCanvas(), "testing for canvas after createKernel" );
 	
 	//
 	// NOTE: GPU mode somehow return null when render()
