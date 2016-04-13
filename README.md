@@ -116,7 +116,7 @@ Sometimes, you want to produce a `canvas` image instead of doing numeric computa
 For performance reasons, the return value for your function will no longer be anything useful. Instead, to display the image, retrieve the `canvas` DOM node and insert it into your page.
 
 ```js
-var render = gpu.createKernel(function(X) {
+var render = gpu.createKernel(function() {
     this.color(0, 0, 0, 1);
 }).dimensions([20, 20]).graphical(true);
     
