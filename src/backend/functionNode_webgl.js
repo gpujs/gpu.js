@@ -301,6 +301,14 @@ var functionNode_webgl = (function() {
 			retArr.push(",");
 			ast_generic(ast.right, retArr, funcParam);
 			retArr.push(")");
+		} else if (ast.operator == "===") {
+			ast_generic(ast.left, retArr, funcParam);
+			retArr.push("==");
+			ast_generic(ast.right, retArr, funcParam);
+		} else if (ast.operator == "!==") {
+			ast_generic(ast.left, retArr, funcParam);
+			retArr.push("!=");
+			ast_generic(ast.right, retArr, funcParam);
 		} else {
 			ast_generic(ast.left, retArr, funcParam);
 			retArr.push(ast.operator);
