@@ -59,7 +59,11 @@
 
 	function flatten(arr, padding) {
 		if (Array.isArray(arr[0])) {
-			return [].concat.apply([], arr);
+			if (Array.isArray(arr[0][0])) {
+				return [].concat.apply([], [].concat.apply([], arr));
+			} else {
+				return [].concat.apply([], arr);
+			}
 		} else {
 			return arr;
 		}
@@ -330,9 +334,10 @@
 					'}',
 					'',
 					'highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {',
-					'	highp vec3 xyz = vec3(floor(x + 0.5), floor(y + 0.5), floor(z + 0.5));',
+					'	highp vec3 xyz = vec3(x, y, z);',
+					'	xyz = floor(xyz + vec3(0.5));',
 					(opt.wraparound ? '	xyz = mod(xyz, texDim);' : ''),
-					'	highp float index = floor((xyz.z * texDim.x * texDim.y) + (xyz.y * texDim.x) + xyz.x + 0.5);',
+					'	highp float index = floor(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z) + 0.5);',
 					(opt.floatTextures ? '	int channel = int(integerMod(index, 4.0));' : ''),
 					(opt.floatTextures ? '	index = float(int(index)/4);' : ''),
 					'	highp float w = floor(texSize.x + 0.5);',
@@ -485,7 +490,7 @@
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
 					}
 					textures[textureCount] = texture;
-
+					
 					var paramLoc = getUniformLocation("user_" + paramNames[textureCount]);
 					var paramSizeLoc = getUniformLocation("user_" + paramNames[textureCount] + "Size");
 					var paramDimLoc = getUniformLocation("user_" + paramNames[textureCount] + "Dim");
