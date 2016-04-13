@@ -65,7 +65,7 @@
 				return [].concat.apply([], arr);
 			}
 		} else {
-			return arr;
+			return GPUUtils.clone(arr);
 		}
 	}
 
