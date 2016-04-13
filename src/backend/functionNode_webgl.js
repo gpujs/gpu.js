@@ -442,7 +442,7 @@ var functionNode_webgl = (function() {
 		
 		return retArr;
 	}
-
+	
 	function ast_AssignmentExpression(assNode, retArr, funcParam) {
 		if(assNode.operator == "%=") {
 			ast_generic(assNode.left, retArr, funcParam);
@@ -528,12 +528,12 @@ var functionNode_webgl = (function() {
 
 	}
 
-	function ast_Break(brNode, retArr, funcParam) {
+	function ast_BreakStatement(brNode, retArr, funcParam) {
 		retArr.push("break;\n");
 		return retArr;
 	}
 
-	function ast_Continue(crNode, retArr, funcParam) {
+	function ast_ContinueStatemnt(crNode, retArr, funcParam) {
 		retArr.push("continue;\n");
 		return retArr;
 	}
