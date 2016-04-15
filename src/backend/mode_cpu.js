@@ -73,7 +73,6 @@
 			var imageData;
 			var data;
 			if (opt.graphical) {
-				canvas = gpu.getCanvas('cpu');
 				canvas.width = threadDim[0];
 				canvas.height = threadDim[1];
 
