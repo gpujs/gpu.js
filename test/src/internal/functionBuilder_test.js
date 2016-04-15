@@ -41,34 +41,34 @@ QUnit.test( "webglString: 3 layer test", function( assert ) {
 	var builder = threeLayerTemplate();
 	assert.notEqual( builder, null, "class creation check" );
 	
-	assert.equal( 
+	assert.equal(
 		builder.webglString_fromFunctionNames(["layerOne"]),
-		"float layerOne() {\nreturn 42.0;\n}" 
+		"float layerOne() {\nreturn 42.0;\n}"
 	);
-	assert.equal( 
+	assert.equal(
 		builder.webglString("layerOne"),
 		builder.webglString_fromFunctionNames(["layerOne"])
 	);
 	
-	assert.equal( 
+	assert.equal(
 		builder.webglString_fromFunctionNames(["layerOne","layerTwo"]),
-		"float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}" 
+		"float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}"
 	);
-	assert.equal( 
+	assert.equal(
 		builder.webglString("layerTwo"),
 		builder.webglString_fromFunctionNames(["layerOne","layerTwo"])
 	);
 	
 	
-	assert.equal( 
+	assert.equal(
 		builder.webglString_fromFunctionNames(["layerOne","layerTwo","layerThree"]),
-		"float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}\nfloat layerThree() {\nreturn (layerTwo()*2.0);\n}" 
+		"float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}\nfloat layerThree() {\nreturn (layerTwo()*2.0);\n}"
 	);
-	assert.equal( 
+	assert.equal(
 		builder.webglString("layerThree"),
 		builder.webglString_fromFunctionNames(["layerOne","layerTwo","layerThree"])
 	);
-	assert.equal( 
+	assert.equal(
 		builder.webglString(null),
 		builder.webglString("layerThree")
 	);

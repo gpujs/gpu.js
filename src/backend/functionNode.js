@@ -172,7 +172,7 @@ var functionNode = (function() {
 	functionNode.prototype.getJS_AST = getJS_AST;
 
 	///
-	/// Function: getWebglString
+	/// Function: getWebglFunctionString
 	///
 	/// Returns the converted webgl shader function equivalent of the JS function
 	///
@@ -187,6 +187,26 @@ var functionNode = (function() {
 		return this.webglFunctionString = functionNode_webgl(this, opt);
 	}
 	functionNode.prototype.getWebglFunctionString = getWebglFunctionString;
+	
+	///
+	/// Function: getWebglFunctionPrototypeString
+	///
+	/// Returns the converted webgl shader function equivalent of the JS function
+	///
+	/// Returns:
+	/// 	{String} webgl function string, result is cached under this.getWebglFunctionPrototypeString
+	///
+	function getWebglFunctionPrototypeString(opt) {
+		opt = opt || {};
+		if( this.webglFunctionPrototypeString ) {
+			return this.webglFunctionPrototypeString;
+		}
+		return this.webglFunctionPrototypeString = functionNode_webgl(this, {
+			prototypeOnly:true,
+			isRootKernel: opt.isRootKernel
+		});
+	}
+	functionNode.prototype.getWebglFunctionPrototypeString = getWebglFunctionPrototypeString;
 
 	///
 	/// Function: setWebglString

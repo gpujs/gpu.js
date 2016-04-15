@@ -375,6 +375,7 @@
 					'highp float kernelResult = 0.0;',
 					paramStr,
 					constantsStr,
+					builder.webglPrototypeString("kernel", opt),
 					builder.webglString("kernel", opt),
 					'',
 					'void main(void) {',

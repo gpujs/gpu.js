@@ -38,12 +38,16 @@ var functionNode_webgl = (function() {
 	///
 	function functionNode_webgl( inNode, _opt ) {
 		gpu = inNode.gpu;
-		opt = _opt || opt;
-		if (opt && opt.debug) {
+		opt = _opt || {};
+		if (opt.debug) {
 			console.log(inNode);
 		}
 		jsFunctionString = inNode.jsFunctionString;
-		inNode.webglFunctionString_array = ast_generic( inNode.getJS_AST(), [], inNode );
+		if (opt.prototypeOnly) {
+			return ast_FunctionPrototype( inNode.getJS_AST(), [], inNode ).join("").trim();
+		} else {
+			inNode.webglFunctionString_array = ast_generic( inNode.getJS_AST(), [], inNode );
+		}
 		inNode.webglFunctionString = webgl_regex_optimize(
 			inNode.webglFunctionString_array.join("").trim()
 		);
@@ -179,6 +183,41 @@ var functionNode_webgl = (function() {
 		
 		var funcStr = funcArr.join('\n');
 		gpu.addFunction(funcStr);
+		
+		return retArr;
+	}
+	
+	/// Prases the abstract syntax tree, to its named function prototype
+	///
+	/// @param ast   the AST object to parse
+	/// @param retArr       return array string
+	/// @param funcParam    FunctionNode, that tracks compilation state
+	///
+	/// @returns  the appened retArr
+	function ast_FunctionPrototype(ast, retArr, funcParam) {
+		// Setup function return type and name
+		if(funcParam.isRootKernel) {
+			return retArr;
+		}
+		
+		retArr.push(funcParam.returnType);
+		retArr.push(" ");
+		retArr.push(funcParam.functionName);
+		retArr.push("(");
+		
+		// Arguments handling
+		for( var i = 0; i < funcParam.paramNames.length; ++i ) {
+			if( i > 0 ) {
+				retArr.push(", ");
+			}
+			
+			retArr.push( funcParam.paramType[i] );
+			retArr.push(" ");
+			retArr.push("user_");
+			retArr.push( funcParam.paramNames[i] );
+		}
+		
+		retArr.push(");\n");
 		
 		return retArr;
 	}

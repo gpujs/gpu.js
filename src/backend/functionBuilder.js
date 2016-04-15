@@ -108,6 +108,18 @@ var functionBuilder = (function() {
 	}
 	functionBuilder.prototype.webglString_fromFunctionNames = webglString_fromFunctionNames;
 	
+	function webglPrototypeString_fromFunctionNames(functionList, opt) {
+		var ret = [];
+		for(var i=0; i<functionList.length; ++i) {
+			var node = this.nodeMap[functionList[i]];
+			if(node) {
+				ret.push( this.nodeMap[functionList[i]].getWebglFunctionPrototypeString(opt) );
+			}
+		}
+		return ret.join("\n");
+	}
+	functionBuilder.prototype.webglPrototypeString_fromFunctionNames = webglPrototypeString_fromFunctionNames;
+	
 	///
 	/// Function: webglString
 	///
@@ -128,6 +140,27 @@ var functionBuilder = (function() {
 		return this.webglString_fromFunctionNames( Object.keys(this.nodeMap), opt );
 	}
 	functionBuilder.prototype.webglString = webglString;
+	
+	///
+	/// Function: webglPrototypeString
+	///
+	/// Parameters:
+	/// 	functionName  - {String} Function name to trace from. If null, it returns the WHOLE builder stack
+	///
+	/// Returns:
+	/// 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
+	///
+	function webglPrototypeString(functionName, opt) {
+		if (opt == undefined) {
+			opt = {};
+		}
+		
+		if(functionName) {
+			return this.webglPrototypeString_fromFunctionNames( this.traceFunctionCalls(functionName, [], opt).reverse(), opt );
+		}
+		return this.webglPrototypeString_fromFunctionNames( Object.keys(this.nodeMap), opt );
+	}
+	functionBuilder.prototype.webglPrototypeString = webglPrototypeString;
 	
 	//---------------------------------------------------------
 	//
