@@ -68,7 +68,6 @@
 				constants: opt.constants
 			};
 
-			var canvas;
 			var canvasCtx;
 			var imageData;
 			var data;
