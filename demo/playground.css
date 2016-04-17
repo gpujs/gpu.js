@@ -16,3 +16,8 @@
 	max-width: 100%;
 	width:100%;
 }
+
+.kernelGroupInner textarea,
+.kernel_function {
+	width:100%;
+}

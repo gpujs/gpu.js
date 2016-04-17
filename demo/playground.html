@@ -10,8 +10,9 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.js"></script>
 		
 		<!-- code mirror -->
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.13.4/codemirror.js"></script>
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.13.4/codemirror.css">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.13.4/codemirror.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.13.4/mode/javascript/javascript.js"></script>
 		
 		<!-- gpu.js scripts -->
 		<script src="../bin/gpu.js"></script>
@@ -40,7 +41,7 @@
 		<div class="container">
 			<h3>Step 1) Setup your input parameters generator</h3>
 			<blockquote>
-				Setup your various argument generator settings here.
+				(to-be-implmented) - Setup your various argument generator settings here.
 				<br/>
 				<br/>
 				- Number of parameters : To pass to the final GPU.js function<br/>
@@ -57,7 +58,7 @@
 							<span class="glyphicon glyphicon-minus"></span>
 						</button>
 					</span>
-					<input type="text" name="arg_count" id="arg_count" class="form-control input-number" value="1" min="0" max="10">
+					<input type="text" name="arg_count" id="arg_count" class="form-control input-number" value="2" min="0" max="10">
 					<span class="input-group-btn">
 						<button type="button" class="btn btn-default btn-number" data-type="plus" data-field="arg_count">
 							<span class="glyphicon glyphicon-plus"></span>
@@ -100,6 +101,100 @@
 				</div>
 			</div>
 		</div>
-		
+		<div class="container">
+			<h3>Step 2) Program your kernel function</h3>
+			<blockquote>
+				Code out the kernel, do note the following tips.
+				<br/>
+				<br/>
+				- Parameter functions is automatically called to provide args<br/>
+				- if/else is expensive in GPU, if/else in loops is even more expensive
+			</blockquote>
+		</div>
+		<div class="container kernelContainer">
+			<div class="kernelGroupInner form-group">
+				<label class="control-label" for="param_function">Kernel Function</label><br/>
+				<textarea name="kernel_function" class="kernel_function" id="kernel_function"></textarea>
+				<br/>
+				<button id="kernel_sample_btn" type="button" class="btn btn-primary btn-lg btn-block kernel_sample_btn">Generate kernel sample</button>
+				<label class="control-label" for="kernel_sample">Sample Output</label>
+				<pre id="kernel_sample" name="kernel_sample"></pre>
+			</div>
+		</div>
+		<div class="container">
+			<h3>Step 3) CPU vs GPU</h3>
+			<blockquote>
+				Setup your sample size upper, lower bounds. Its increment size. Benchmark iterations
+				<br/>
+				And bench it!
+			</blockquote>
+		</div>
+		<div class="container">
+			<div class="col-sm-3">
+				<label class="control-label" for="arg_count">Lower bounds</label>  
+				<div class="input-group">
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-default btn-number" data-type="minus" data-field="bench_lower">
+							<span class="glyphicon glyphicon-minus"></span>
+						</button>
+					</span>
+					<input type="text" name="bench_lower" id="bench_lower" class="form-control input-number" value="10" min="0" max="4294967295">
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-default btn-number" data-type="plus" data-field="bench_lower">
+							<span class="glyphicon glyphicon-plus"></span>
+						</button>
+					</span>
+				</div>
+			</div>
+			<div class="col-sm-3">
+				<label class="control-label" for="arg_count">Upper bounds</label>  
+				<div class="input-group">
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-default btn-number" data-type="minus" data-field="bench_upper">
+							<span class="glyphicon glyphicon-minus"></span>
+						</button>
+					</span>
+					<input type="text" name="bench_upper" id="bench_upper" class="form-control input-number" value="10000" min="0" max="4294967295">
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-default btn-number" data-type="plus" data-field="bench_upper">
+							<span class="glyphicon glyphicon-plus"></span>
+						</button>
+					</span>
+				</div>
+			</div>
+			<div class="col-sm-3">
+				<label class="control-label" for="arg_count">Increment size</label>  
+				<div class="input-group">
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-default btn-number" data-type="minus" data-field="bench_increment">
+							<span class="glyphicon glyphicon-minus"></span>
+						</button>
+					</span>
+					<input type="text" name="bench_increment" id="bench_increment" class="form-control input-number" value="10" min="0" max="4294967295">
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-default btn-number" data-type="plus" data-field="bench_increment">
+							<span class="glyphicon glyphicon-plus"></span>
+						</button>
+					</span>
+				</div>
+			</div>
+			<div class="col-sm-3">
+				<label class="control-label" for="arg_count">Bench Size</label>  
+				<div class="input-group">
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-default btn-number" data-type="minus" data-field="bench_size">
+							<span class="glyphicon glyphicon-minus"></span>
+						</button>
+					</span>
+					<input type="text" name="bench_size" id="bench_size" class="form-control input-number" value="10" min="0" max="4294967295">
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-default btn-number" data-type="plus" data-field="bench_size">
+							<span class="glyphicon glyphicon-plus"></span>
+						</button>
+					</span>
+				</div>
+			</div>
+		</div>
+		<br/>
 	</body>
 </html>

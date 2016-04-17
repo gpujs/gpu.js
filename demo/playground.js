@@ -1,5 +1,5 @@
 $(function() {
-	(function setupInputNumbers() {
+	function setupInputNumbers() {
 		//plugin bootstrap minus and plus
 		//http://jsfiddle.net/laelitenetwork/puJ6G/
 		$('.btn-number').click(function(e){
@@ -73,9 +73,92 @@ $(function() {
 				e.preventDefault();
 			}
 		});
+	}
+	
+	(function updateParamsList() {
+		
 	})();
 	
-	function updateParamsList() {
+	/// Kernel code mirror object
+	var CM_kernel = null;
+	
+	/// One time setup of the kernel editor
+	function setupKernelEditor() {
 		
+		// Setup the kernel code mirror
+		var kernel_textArea = document.getElementById("kernel_function");
+		CM_kernel = CodeMirror.fromTextArea(kernel_textArea, {
+			lineNumbers: true,
+			mode: {name: "javascript", json: true},
+			indentUnit: 3,
+			tabSize: 3
+		});
+		
+		// Reset the value if needed
+		var val = CM_kernel.getValue().trim();
+		if(val.length <= 0) {
+			CM_kernel.setValue("function kernel(A,B) {\n	return (A[this.thread.x] * B[this.thread.x]);\n}")
+		}
+		
+		// Block edits for first and last line
+		CM_kernel.on('beforeChange', function(cm,change) {
+			if( change.from.line <= 0 || cm.lineCount() - 1 <= change.to.line) {
+				change.cancel();
+			}
+		});
+		
+		// Setup the kernel sample click call
+		$("#kernel_sample_btn").click(updateKernelSampleDisplay);
 	}
+	
+	/// Get single argument sample
+	function getOneKernelArgument(idx, sampleSize) {
+		var pf = (function(s) {
+			var ret = [];
+			for(var a=0; a<s; ++a) {
+				ret[a] = a;
+			}
+			return ret;
+		})
+		return pf(sampleSize);
+	}
+	
+	/// Get the argument array, with given sample size
+	function getKernelArguments(sampleSize) {
+		var ret = [ getOneKernelArgument(0,sampleSize), getOneKernelArgument(1,sampleSize) ];
+		//console.log(ret);
+		return ret;
+	}
+	
+	/// Get the kernel raw JS function
+	function getKernelRawFunction() {
+		eval("var ret = "+CM_kernel.getValue());
+		return ret;
+	}
+	
+	/// Generate the kernel sample result
+	function getKernelSampleResult(sampleSize) {
+		var raw = getKernelRawFunction();
+		var gpu = new GPU();
+		var ker = gpu.createKernel(raw,{
+			dimensions : [sampleSize]
+		});
+		
+		var args = getKernelArguments(sampleSize);
+		return ker.apply(ker, args);
+	}
+	
+	function updateKernelSampleDisplay() {
+		// Fixed sample size @TODO implmentation
+		var res = getKernelSampleResult(10);
+		console.log("Kernel code sample result : ", res);
+		$("#kernel_sample").html( JSON.stringify(res) );
+	}
+	
+	// The various setup actual call
+	setupInputNumbers();
+	setupKernelEditor();
+	
+	window.CM_kernel = CM_kernel;
+	window.updateKernelSampleDisplay = updateKernelSampleDisplay;
 });
