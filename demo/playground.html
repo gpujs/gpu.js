@@ -35,6 +35,8 @@
 				This page here, is meant to help "play" with various algorithms, random data sets, etc.<br/>
 				And benchmark their performance on your computer (CPU vs GPU) respective to the datasize.<br/>
 				<br/>
+				[SECURITY WARNING] : This playground here does an "evil" eval on the input funcitons. So obviously do not carlessly copy and paste things here.
+				<br/><br/>
 				<a href="https://gpu.rocks">Our main site is found at https://gpu.rocks</a>
 				<br/><br/>
 				Enjoy =) 
@@ -159,15 +161,15 @@
 			</blockquote>
 		</div>
 		<div class="container">
-			<div class="col-sm-3">
-				<label class="control-label" for="arg_count">Lower bounds</label>  
+			<div class="col-sm-4">
+				<label class="control-label" for="bench_lower">Lower bounds</label>  
 				<div class="input-group">
 					<span class="input-group-btn">
 						<button type="button" class="btn btn-default btn-number" data-type="minus" data-field="bench_lower">
 							<span class="glyphicon glyphicon-minus"></span>
 						</button>
 					</span>
-					<input type="text" name="bench_lower" id="bench_lower" class="form-control input-number" value="10" min="0" max="4294967295">
+					<input type="text" name="bench_lower" id="bench_lower" class="form-control input-number" value="100" min="0" max="4294967295">
 					<span class="input-group-btn">
 						<button type="button" class="btn btn-default btn-number" data-type="plus" data-field="bench_lower">
 							<span class="glyphicon glyphicon-plus"></span>
@@ -175,8 +177,8 @@
 					</span>
 				</div>
 			</div>
-			<div class="col-sm-3">
-				<label class="control-label" for="arg_count">Upper bounds</label>  
+			<div class="col-sm-4">
+				<label class="control-label" for="bench_upper">Upper bounds</label>  
 				<div class="input-group">
 					<span class="input-group-btn">
 						<button type="button" class="btn btn-default btn-number" data-type="minus" data-field="bench_upper">
@@ -191,15 +193,15 @@
 					</span>
 				</div>
 			</div>
-			<div class="col-sm-3">
-				<label class="control-label" for="arg_count">Increment size</label>  
+			<div class="col-sm-4">
+				<label class="control-label" for="bench_increment">Increment size</label>  
 				<div class="input-group">
 					<span class="input-group-btn">
 						<button type="button" class="btn btn-default btn-number" data-type="minus" data-field="bench_increment">
 							<span class="glyphicon glyphicon-minus"></span>
 						</button>
 					</span>
-					<input type="text" name="bench_increment" id="bench_increment" class="form-control input-number" value="10" min="0" max="4294967295">
+					<input type="text" name="bench_increment" id="bench_increment" class="form-control input-number" value="100" min="0" max="4294967295">
 					<span class="input-group-btn">
 						<button type="button" class="btn btn-default btn-number" data-type="plus" data-field="bench_increment">
 							<span class="glyphicon glyphicon-plus"></span>
@@ -207,7 +209,7 @@
 					</span>
 				</div>
 			</div>
-			<div class="col-sm-3">
+			<div class="col-sm-4">
 				<label class="control-label" for="arg_count">Bench Size</label>  
 				<div class="input-group">
 					<span class="input-group-btn">
@@ -215,9 +217,25 @@
 							<span class="glyphicon glyphicon-minus"></span>
 						</button>
 					</span>
-					<input type="text" name="bench_size" id="bench_size" class="form-control input-number" value="10" min="0" max="4294967295">
+					<input type="text" name="bench_size" id="bench_size" class="form-control input-number" value="20" min="0" max="4294967295">
 					<span class="input-group-btn">
 						<button type="button" class="btn btn-default btn-number" data-type="plus" data-field="bench_size">
+							<span class="glyphicon glyphicon-plus"></span>
+						</button>
+					</span>
+				</div>
+			</div>
+			<div class="col-sm-4">
+				<label class="control-label" for="arg_count">Warmup Size</label>  
+				<div class="input-group">
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-default btn-number" data-type="minus" data-field="warmup_size">
+							<span class="glyphicon glyphicon-minus"></span>
+						</button>
+					</span>
+					<input type="text" name="bench_size" id="warmup_size" class="form-control input-number" value="5" min="0" max="4294967295">
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-default btn-number" data-type="plus" data-field="warmup_size">
 							<span class="glyphicon glyphicon-plus"></span>
 						</button>
 					</span>
