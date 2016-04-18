@@ -14,6 +14,10 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.13.4/codemirror.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.13.4/mode/javascript/javascript.js"></script>
 		
+		<!-- chartist -->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.9.7/chartist.min.css">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.9.7/chartist.js"></script>
+		
 		<!-- gpu.js scripts -->
 		<script src="../bin/gpu.js"></script>
 		<script src="playground.js"></script>
@@ -41,7 +45,8 @@
 		<div class="container">
 			<h3>Step 1) Setup your input parameters generator</h3>
 			<blockquote>
-				(to-be-implmented) - Setup your various argument generator settings here.
+				(to-be-implmented : currently do an array of [0-samplesize], for 2 arguments)<br/>
+				- Setup your various argument generator settings here.
 				<br/>
 				<br/>
 				- Number of parameters : To pass to the final GPU.js function<br/>
@@ -93,13 +98,38 @@
 			<div class="col-sm-6 paramGroup" id="paramGroupSample">
 				<div class="paramGroupInner form-group">
 					<label class="control-label" for="param_name">Parameter Name</label>  
-					<input type="text" name="param_name" class="form-control" value="a">
+					<input type="text" name="param_name" class="form-control" value="A">
 					<label class="control-label" for="param_function">Parameter Function</label>  
-					<textarea name="param_function"></textarea>
+					<textarea name="param_function">function(size,rand) { 
+	var ret = []; 
+	for(var i=0; i<size; ++i){ 
+		ret[i] = i; 
+	} 
+	return ret; 
+}
+					</textarea>
 					<label class="control-label" for="param_sample">Sample Output</label>  
-					<pre></pre>
+					<pre class="param_sample"></pre>
 				</div>
 			</div>
+			<div class="col-sm-6 paramGroup" id="paramGroupSample">
+				<div class="paramGroupInner form-group">
+					<label class="control-label" for="param_name">Parameter Name</label>  
+					<input type="text" name="param_name" class="form-control" value="B">
+					<label class="control-label" for="param_function">Parameter Function</label>  
+					<textarea name="param_function">function(size,rand) { 
+	var ret = []; 
+	for(var i=0; i<size; ++i){ 
+		ret[i] = i; 
+	} 
+	return ret; 
+}
+					</textarea>
+					<label class="control-label" for="param_sample">Sample Output</label>  
+					<pre class="param_sample"></pre>
+				</div>
+			</div>
+			<button id="paramset_btn" type="button" class="btn btn-primary btn-lg btn-block paramset_btn">Generate parameter samples</button>
 		</div>
 		<div class="container">
 			<h3>Step 2) Program your kernel function</h3>
@@ -115,10 +145,9 @@
 			<div class="kernelGroupInner form-group">
 				<label class="control-label" for="param_function">Kernel Function</label><br/>
 				<textarea name="kernel_function" class="kernel_function" id="kernel_function"></textarea>
-				<br/>
 				<button id="kernel_sample_btn" type="button" class="btn btn-primary btn-lg btn-block kernel_sample_btn">Generate kernel sample</button>
 				<label class="control-label" for="kernel_sample">Sample Output</label>
-				<pre id="kernel_sample" name="kernel_sample"></pre>
+				<pre id="kernel_sample" name="kernel_sample" class="kernel_sample"></pre>
 			</div>
 		</div>
 		<div class="container">
@@ -194,6 +223,11 @@
 					</span>
 				</div>
 			</div>
+		</div>
+		<div class="container chartContainer">
+			<button id="bench_btn" type="button" class="btn btn-primary btn-lg btn-block bench_btn">Run the benchmark!</button>
+			<div id="chart_time" class="chart_time bench_chart"></div>
+			<div id="chart_gain" class="chart_gain bench_chart"></div>
 		</div>
 		<br/>
 	</body>
