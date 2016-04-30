@@ -1,0 +1,40 @@
+.paramContainer {
+	margin-top: 20px;
+}
+
+.paramGroup {
+	background: rgba(0,0,0,0.2);
+}
+
+.paramGroup .paramGroupInner {
+	padding-top:10px;
+}
+
+.paramGroup .paramGroupInner input,
+.paramGroup .paramGroupInner textarea {
+	min-width: 100%;
+	max-width: 100%;
+	width:100%;
+}
+
+.paramGroup .paramGroupInner textarea {
+	min-height:150px;
+}
+
+.kernelGroupInner textarea,
+.kernel_function {
+	width:100%;
+}
+
+.kernel_sample, .param_sample {
+	min-height:40px;
+}
+
+.chartContainer {
+	padding-top:20px;
+}
+
+.bench_chart {
+	margin-top:20px;
+	height: 400px;
+}
