@@ -4,6 +4,8 @@ gpu.js is a single-file JavaScript library for GPGPU in the browser. gpu.js will
 
 # Example
 
+[![Join the chat at https://gitter.im/gpujs/gpu.js](https://badges.gitter.im/gpujs/gpu.js.svg)](https://gitter.im/gpujs/gpu.js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Matrix multiplication written in gpu.js:
 
 ```js
