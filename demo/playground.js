@@ -366,7 +366,7 @@ $(function() {
 		"function kernel(A,B) {\n"+
 		"	var sum = 0;\n"+
 		"	for (var i=0; i<512; i++) {\n"+
-		"		sum = (sum*A[this.thread.x] + i)/B[this.thread.x];\n"+
+		"		sum = Math.pow((A[this.thread.x]-sum)/B[this.thread.x],2);\n"+
 		"	}\n"+
 		"	return sum;\n"+
 		"}";
@@ -563,9 +563,9 @@ $(function() {
 			if( cpu_time == gpu_time ) {
 				gain_per = 0;
 			} else if( gpu_time < cpu_time ) {
-				gain_per = cpu_time / gpu_time * 100.0;
+				gain_per = cpu_time / gpu_time * 100.0 - 100.0;
 			} else {
-				gain_per = -(gpu_time / cpu_time * 100.0);
+				gain_per = -(gpu_time / cpu_time * 100.0) + 100.0;
 			}
 			
 			bench_labels.push( sampleSize );
