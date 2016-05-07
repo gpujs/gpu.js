@@ -28,6 +28,8 @@ var C = mat_mult(A, B);
 
 You can run a benchmark of this [here](http://gpu.rocks). Typically, it will run at 1-15x speedup depending on your hardware.
 
+Or alternatively you can experiment around with the [kernel playground here](http://gpu.rocks/playground/playground.html)
+
 # Getting Started
 
 ## Installation
