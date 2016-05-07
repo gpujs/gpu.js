@@ -14,6 +14,9 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.13.4/codemirror.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.13.4/mode/javascript/javascript.js"></script>
 		
+		<!-- seed random : https://github.com/davidbau/seedrandom -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.4.0/lib/xor4096.min.js"></script>
+		
 		<!-- chartist -->
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.9.7/chartist.min.css">
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.9.7/chartist.js"></script>
@@ -47,13 +50,18 @@
 		<div class="container">
 			<h3>Step 1) Setup your input parameters generator</h3>
 			<blockquote>
-				(to-be-implmented : currently do an array of [0-samplesize], for 2 arguments)<br/>
-				- Setup your various argument generator settings here.
-				<br/>
+				Setup your various argument generator settings here.<br/>
 				<br/>
 				- Number of parameters : To pass to the final GPU.js function<br/>
 				- Sample size : Size for the sample display<br/>
-				- Random seed : Seed value, used by the random function
+				- Random seed : Seed value, used by the random function<br/>
+				<br/>
+				Each parameter function are passed in 2 attributes<br/>
+				<br/>
+				- size : The sample size used for this iteration<br/>
+				- rand : The 0-1 floating value, pesudo random generator used for this sample size, and parameter count.<br/>
+				<br/>
+				(Pesudo random is choosen to make testing and debugging the parameter function generator easier and consistent)
 			</blockquote>
 		</div>
 		<div class="container">
@@ -97,38 +105,17 @@
 			</div>
 		</div>
 		<div class="container paramContainer">
-			<div class="col-sm-6 paramGroup" id="paramGroupSample">
-				<div class="paramGroupInner form-group">
-					<label class="control-label" for="param_name">Parameter Name</label>  
-					<input type="text" name="param_name" class="form-control" value="A">
-					<label class="control-label" for="param_function">Parameter Function</label>  
-					<textarea name="param_function">function(size,rand) { 
-	var ret = []; 
-	for(var i=0; i<size; ++i){ 
-		ret[i] = i; 
-	} 
-	return ret; 
-}
-					</textarea>
-					<label class="control-label" for="param_sample">Sample Output</label>  
-					<pre class="param_sample"></pre>
-				</div>
-			</div>
-			<div class="col-sm-6 paramGroup" id="paramGroupSample">
-				<div class="paramGroupInner form-group">
-					<label class="control-label" for="param_name">Parameter Name</label>  
-					<input type="text" name="param_name" class="form-control" value="B">
-					<label class="control-label" for="param_function">Parameter Function</label>  
-					<textarea name="param_function">function(size,rand) { 
-	var ret = []; 
-	for(var i=0; i<size; ++i){ 
-		ret[i] = i; 
-	} 
-	return ret; 
-}
-					</textarea>
-					<label class="control-label" for="param_sample">Sample Output</label>  
-					<pre class="param_sample"></pre>
+			<div class="paramGroupContainer" id="paramGroupContainer">
+				<div class="col-sm-6 paramGroup" id="paramGroupTemplate" style="display:none;">
+					<div class="paramGroupInner form-group">
+						<label class="control-label" for="param_name">Parameter Name</label>  
+						<input type="text" name="param_name" class="param_name form-control" value="A">
+						<label class="control-label" for="param_function">Parameter Function</label>  
+						<textarea name="param_function" class="param_function">
+						</textarea>
+						<label class="control-label" for="param_sample">Sample Output</label>  
+						<pre class="param_sample"></pre>
+					</div>
 				</div>
 			</div>
 			<button id="paramset_btn" type="button" class="btn btn-primary btn-lg btn-block paramset_btn">Generate parameter samples</button>
