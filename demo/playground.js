@@ -85,13 +85,271 @@ $(function() {
 	
 	//-------------------------------------------
 	//
-	// Parameter setup
+	// Utility functions
 	//
 	//-------------------------------------------
 	
-	/// @TODO setup and normalize the parameter list
+	// Used to indicate to the CM_blockFirstAndLastLine to ignore cancel step
+	var CM_doNotCancelOrigin = "do-not-cancel";
+	
+	// Blocks the first and last line inside the code mirror from being editted
+	function CM_blockFirstAndLastLine(cm,change) {
+		
+		// If origin is set to "not-cancel" ignore
+		if( change.origin == CM_doNotCancelOrigin ) {
+			return;
+		}
+		
+		if( change.from.line <= 0 || cm.lineCount() - 1 <= change.to.line) {
+			change.cancel();
+		}
+	}
+	
+	var CM_defaultConfig = {
+		lineNumbers: true,
+		mode: {name: "javascript", json: true},
+		indentUnit: 3,
+		tabSize: 3
+	};
+	
+	//-------------------------------------------
+	//
+	// Code mirror parameters generator setup
+	//
+	//-------------------------------------------
+	
+	/// Default parameter names : alphabectical
+	var paramDefaultNames = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+	
+	/// Default parameter function
+	var paramDefaultFunction = ""+
+		"function(size,rand) {\n"+
+		"	var ret = [];\n"+
+		"	for(var i=0; i<size; ++i){\n"+
+		"		ret[i] = parseInt(rand()*100);\n"+
+		"	}\n"+
+		"	return ret;\n"+
+		"}";
+	
+	/// Parameter code mirror objects
+	var CM_parameters = [];
+	var paramNameInputs = [];
+	var paramSampleOutputs = [];
+	
+	/// Get the parameter count
+	function getParamCount() {
+		return parseInt( $("#arg_count").val() );
+	}
+	
+	/// Update the parameter display list, to match the number of parameters
 	function updateParamsList() {
 		
+		// Get the main parameter container to update
+		var pContainer = $("#paramGroupContainer");
+		var template = pContainer.find("#paramGroupTemplate")
+		
+		// Hide everything : handle the case for reduced parameters
+		pContainer.find(".paramGroup").hide();
+		
+		// Get desired parameter count
+		var pCount = getParamCount();
+		
+		// Time to iterate, and create/reveal those paramGroups
+		for(var p=0; p<pCount; ++p) {
+			var pNode = $("#paramGroup_"+p);
+			
+			if( pNode == null || pNode.length == 0 ) {
+				pNode = template.clone();
+				
+				pNode.attr("id", "#paramGroup_"+p);
+				pNode.find(".param_name").val( paramDefaultNames[p] );
+				
+				// Setup code mirror
+				CM_parameters[p] = CodeMirror.fromTextArea(pNode.find(".param_function")[0], CM_defaultConfig);
+				
+				// Setup default value
+				CM_parameters[p].setValue(paramDefaultFunction);
+				
+				// Block edits for first and last line
+				CM_parameters[p].on('beforeChange', CM_blockFirstAndLastLine);
+				
+				// Add param name, and sample output nodes to array (for easy refence)
+				paramNameInputs[p] = pNode.find(".param_name");
+				paramSampleOutputs[p] = pNode.find(".param_sample");
+				
+				pContainer.append(pNode);
+			}
+			
+			pNode.show();
+			CM_parameters[p].refresh();
+		}
+		
+		// Update parameter names 
+		updateKernelParamNames();
+	}
+	
+	/// Get the configured parameter functions
+	function getParameterFunctions() {
+		var ret = [];
+		var pCount = getParamCount();
+		
+		for( var p=0; p<pCount; ++p ) {
+			try {
+				eval("ret[p] = "+CM_parameters[p].getValue());
+			} catch(e) {
+				paramSampleOutputs[p].html(e.toString());
+				console.error("Failed to process parameter "+p, e);
+				alert("Failed to process parameter "+p+" : "+e);
+				return null;
+			}
+		}
+		
+		return ret;
+	}
+	
+	/// The random seed dom
+	var rand_seed_jqDom = $("#rand_seed");
+	
+	/// Get the pesudo random number generator for the sample size / parameter count
+	function getRandom(parameterCount, sampleSize, rand_seed) {
+		if(rand_seed == null) {
+			rand_seed = rand_seed_jqDom.val();
+		}
+		
+		return new xor4096(parameterCount+"-"+rand_seed+"-"+sampleSize);
+	}
+	
+	/// Update the parameter samples
+	function updateParameterSamples() {
+		// Get the param functions
+		var paramFunctions = getParameterFunctions();
+		
+		// Invalid parameter function
+		if(paramFunctions == null) {
+			$("#paramGroupContainer .param_sample").html("");
+			return;
+		}
+		
+		// Get demo sample size
+		var sample_size = parseInt($("#sample_size").val());
+		
+		// Iterate, execute
+		var pCount = paramFunctions.length;
+		for(var p=0; p<pCount; ++p) {
+			var rand = getRandom(p, sample_size);
+			var sample = paramFunctions[p](sample_size, rand);
+			
+			paramSampleOutputs[p].html( JSON.stringify(sample) );
+		}
+		
+		// Update parameter names 
+		updateKernelParamNames();
+	}
+	
+	/// Get the parameter names, after NORMALIZING them (just in case)
+	function getParameterNames() {
+		var ret = [];
+		
+		// Get desired parameter count
+		var pCount = getParamCount();
+		
+		// Iterate through
+		for( var p = 0; p < pCount; ++p ) {
+			var name = paramNameInputs[p].val();
+			name = name.replace(/\W/g, '');
+			
+			if( name == null || name.length <= 0 ) {
+				name = paramDefaultNames[p];
+			}
+			paramNameInputs[p].val(name);
+			ret[p] = name;
+		}
+		
+		return ret;
+	}
+	
+	/// Updates the kernel first line, with the parameter names
+	function updateKernelParamNames() {
+		// Out of order initialzing =(
+		if(CM_kernel == null) {
+			return;
+		}
+		
+		var paramNames = getParameterNames();
+		
+		var kernelHeader = "function kernel("+paramNames.toString()+") {";
+		var originalHeader = CM_kernel.getLine(0);
+		
+		if( kernelHeader != originalHeader ) {
+			CM_kernel.replaceRange(kernelHeader, CodeMirror.Pos(0,0), CodeMirror.Pos(0, originalHeader.length), CM_doNotCancelOrigin);
+			//CM_kernel.refresh();
+		}
+	}
+	
+	/// Setup the parameter generators
+	function setupParameterGenerator() {
+		updateParamsList();
+		$("#arg_count").change(updateParamsList);
+		$("#paramset_btn").click(updateParameterSamples);
+	}
+	
+	//-------------------------------------------
+	//
+	// Code mirror dimensions setup
+	//
+	//-------------------------------------------
+	
+	/// Default parameter function
+	var dimensionsDefaultFunction = ""+
+		"function(size) {\n"+
+		"	return [size];\n"+
+		"}";
+		
+	/// The dimension generator code mirror
+	var CM_dimension = null;
+	
+	/// Get the configured dim functions
+	function getDimensionFunction() {
+		var ret = null;
+		try {
+			eval("ret = "+CM_dimension.getValue());
+		} catch(e) {
+			$("#dim_sample").html(e.toString());
+			console.error("Failed to process dimension function", e);
+			alert("Failed to process dimension function : "+e);
+			return null;
+		}
+		return ret;
+	}
+	
+	/// Update the dim sample
+	function updateDimensionSample() {
+		// Get the dim function
+		var dimFunc = getDimensionFunction();
+		
+		if( dimFunc == null ) {
+			return;
+		}
+		
+		// Get demo sample size
+		var sample_size = parseInt($("#sample_size").val());
+		var res = dimFunc(sample_size);
+		
+		$("#dim_sample").html(JSON.stringify(res));
+	}
+	
+	/// Setup the dimensions generator
+	function setupDimensionGenerator() {
+		CM_dimension = CodeMirror.fromTextArea( document.getElementById("dim_function"), CM_defaultConfig);
+		
+		// Reset the value
+		CM_dimension.setValue(dimensionsDefaultFunction);
+		
+		// Block edits for first and last line
+		CM_dimension.on('beforeChange', CM_blockFirstAndLastLine);
+		
+		// Dimension samples
+		$("#paramset_btn").click(updateDimensionSample);
 	}
 	
 	//-------------------------------------------
@@ -103,40 +361,28 @@ $(function() {
 	/// Kernel code mirror object
 	var CM_kernel = null;
 	
+	/// Default parameter function
+	var kernelDefaultFunction = ""+
+		"function kernel(A,B) {\n"+
+		"	var sum = 0;\n"+
+		"	for (var i=0; i<512; i++) {\n"+
+		"		sum = (sum*A[this.thread.x] + i)/B[this.thread.x];\n"+
+		"	}\n"+
+		"	return sum;\n"+
+		"}";
+	
 	/// One time setup of the kernel editor
 	function setupKernelEditor() {
 		
 		// Setup the kernel code mirror
 		var kernel_textArea = document.getElementById("kernel_function");
-		CM_kernel = CodeMirror.fromTextArea(kernel_textArea, {
-			lineNumbers: true,
-			mode: {name: "javascript", json: true},
-			indentUnit: 3,
-			tabSize: 3
-		});
+		CM_kernel = CodeMirror.fromTextArea(kernel_textArea, CM_defaultConfig);
 		
-		// Reset the value if needed
-		var val = CM_kernel.getValue().trim();
-		if(val.length <= 0) {
-			
-// The default kernel value
-function kernel(A,B) {
-	var sum = 0;
-	for (var i=0; i<512; i++) {
-		sum = (sum*A[this.thread.x] + i)/B[this.thread.x];
-	}
-	return sum;
-}
-			
-			CM_kernel.setValue(kernel.toString())
-		}
+		// Reset the value 
+		CM_kernel.setValue(kernelDefaultFunction);
 		
 		// Block edits for first and last line
-		CM_kernel.on('beforeChange', function(cm,change) {
-			if( change.from.line <= 0 || cm.lineCount() - 1 <= change.to.line) {
-				change.cancel();
-			}
-		});
+		CM_kernel.on('beforeChange', CM_blockFirstAndLastLine);
 		
 		// Setup the kernel sample click call
 		$("#kernel_sample_btn").click(updateKernelSampleDisplay);
@@ -148,53 +394,65 @@ function kernel(A,B) {
 	//
 	//-------------------------------------------
 	
-	/// Get single argument sample
-	function getOneKernelArgument(idx, sampleSize) {
-		var pf = (function(s) {
-			var ret = [];
-			for(var a=0; a<s; ++a) {
-				ret[a] = a;
-			}
-			return ret;
-		})
-		return pf(sampleSize);
-	}
-	
-	/// Get the argument array, with given sample size
-	function getKernelArguments(sampleSize) {
-		var ret = [ getOneKernelArgument(0,sampleSize), getOneKernelArgument(1,sampleSize) ];
-		//console.log(ret);
-		return ret;
-	}
-	
 	/// Get the kernel raw JS function
 	function getKernelRawFunction() {
-		eval("var ret = "+CM_kernel.getValue());
+		var ret = null;
+		try {
+			eval("ret = "+CM_kernel.getValue());
+		} catch(e) {
+			$("#kernel_sample").html(e.toString());
+			console.error("Failed to process kernel function", e);
+			alert("Failed to process kernel function : "+e);
+			return null;
+		}
 		return ret;
 	}
 	
-	/// Get the kerenel configured dimensions
-	function getKernelDimensions(sampleSize) {
-		return [sampleSize];
+	/// Generate the paramater set
+	function getKernelParameters(sampleSize, paramFunctions) {
+		if(paramFunctions == null) {
+			paramFunctions = getParameterFunctions();
+		}
+		var ret = [];
+		if(paramFunctions == null) {
+			return ret;
+		}
+		
+		var rand_seed = rand_seed_jqDom.val();
+		var pCount = paramFunctions.length;
+		for(var p=0; p<pCount; ++p) {
+			ret[p] = paramFunctions[p](sampleSize, getRandom(p, sampleSize, rand_seed));
+		}
+		
+		return ret;
 	}
 	
 	/// Generate the kernel sample result
 	function getKernelSampleResult(sampleSize) {
-		var raw = getKernelRawFunction();
+		var rawFunction = getKernelRawFunction();
+		var dimFunction = getDimensionFunction();
+		var paramFunctions = getParameterFunctions();
+		
 		var gpu = new GPU();
-		var ker = gpu.createKernel(raw,{
-			dimensions : getKernelDimensions(sampleSize)
+		var ker = gpu.createKernel(rawFunction,{
+			dimensions : dimFunction(sampleSize)
 		});
 		
-		var args = getKernelArguments(sampleSize);
+		var args = getKernelParameters(sampleSize, paramFunctions);
 		return ker.apply(ker, args);
 	}
 	
 	/// Update the kernel sample results
 	function updateKernelSampleDisplay() {
-		// Fixed sample size @TODO implmentation
-		var res = getKernelSampleResult(10);
-		console.log("Kernel code sample result : ", res);
+		// Forces the paramset button to update the param samples
+		$("#paramset_btn").click();
+		
+		// Get demo sample size
+		var sample_size = parseInt($("#sample_size").val());
+		
+		// Get kernel sample result
+		var res = getKernelSampleResult(sample_size);
+		//console.log("Kernel code sample result : ", res);
 		$("#kernel_sample").html( JSON.stringify(res) );
 	}
 	
@@ -207,13 +465,16 @@ function kernel(A,B) {
 	/// Run a single benchmark, for the sample size, in a single mode
 	function singleBenchmark(sampleSize, mode) {
 		var rawFunction = getKernelRawFunction();
+		var dimFunction = getDimensionFunction();
+		var paramFunctions = getParameterFunctions();
+		
 		var gpu = new GPU();
 		var kernel = gpu.createKernel(rawFunction,{
-			dimensions : getKernelDimensions(sampleSize),
+			dimensions : dimFunction(sampleSize),
 			mode : mode
 		});
 		
-		var args = getKernelArguments(sampleSize);
+		var args = getKernelParameters(sampleSize, paramFunctions);
 		var warmup_size = parseInt( $("#warmup_size").val() );
 		var bench_size = parseInt( $("#bench_size").val() );
 		
@@ -375,6 +636,8 @@ function kernel(A,B) {
 	
 	// The various setup actual call
 	setupInputNumbers();
+	setupParameterGenerator();
+	setupDimensionGenerator();
 	setupKernelEditor();
 	setupBenchmarking();
 	
