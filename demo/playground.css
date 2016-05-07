@@ -2,23 +2,27 @@
 	margin-top: 20px;
 }
 
-.paramGroup {
+.sampleSet {
 	background: rgba(0,0,0,0.2);
 }
 
-.paramGroup .paramGroupInner {
+.sampleSet .sampleSetInner {
 	padding-top:10px;
 }
 
-.paramGroup .paramGroupInner input,
-.paramGroup .paramGroupInner textarea {
+.sampleSet .sampleSetInner input,
+.sampleSet .sampleSetInner textarea {
 	min-width: 100%;
 	max-width: 100%;
 	width:100%;
 }
 
-.paramGroup .paramGroupInner textarea {
+.sampleSet .sampleSetInner textarea {
 	min-height:150px;
+}
+
+.sampleSet .sample_output {
+	min-height:40px;
 }
 
 .kernelGroupInner textarea,

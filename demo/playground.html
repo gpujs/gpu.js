@@ -55,13 +55,16 @@
 				- Number of parameters : To pass to the final GPU.js function<br/>
 				- Sample size : Size for the sample display<br/>
 				- Random seed : Seed value, used by the random function<br/>
+				(Pesudo random is choosen to make testing and debugging the parameter function generator easier and consistent)<br/>
 				<br/>
 				Each parameter function are passed in 2 attributes<br/>
 				<br/>
 				- size : The sample size used for this iteration<br/>
 				- rand : The 0-1 floating value, pesudo random generator used for this sample size, and parameter count.<br/>
 				<br/>
-				(Pesudo random is choosen to make testing and debugging the parameter function generator easier and consistent)
+				Additionally a dimension generator function, is required to declare the dimensions used<br/>
+				<br/>
+				- size : The sample size used for this iteration<br/>
 			</blockquote>
 		</div>
 		<div class="container">
@@ -106,16 +109,23 @@
 		</div>
 		<div class="container paramContainer">
 			<div class="paramGroupContainer" id="paramGroupContainer">
-				<div class="col-sm-6 paramGroup" id="paramGroupTemplate" style="display:none;">
-					<div class="paramGroupInner form-group">
+				<div class="col-sm-6 paramGroup sampleSet" id="paramGroupTemplate" style="display:none;">
+					<div class="paramGroupInner sampleSetInner form-group">
 						<label class="control-label" for="param_name">Parameter Name</label>  
 						<input type="text" name="param_name" class="param_name form-control" value="A">
 						<label class="control-label" for="param_function">Parameter Function</label>  
-						<textarea name="param_function" class="param_function">
-						</textarea>
+						<textarea name="param_function" class="param_function"></textarea>
 						<label class="control-label" for="param_sample">Sample Output</label>  
 						<pre class="param_sample"></pre>
 					</div>
+				</div>
+			</div>
+			<div class="col-sm-12 dim_group sampleSet" id="dim_group">
+				<div class="sampleSetInner form-group">
+					<label class="control-label" for="dim_function">Dimension Function</label>  
+					<textarea name="dim_function" class="dim_function" id="dim_function"></textarea>
+					<label class="control-label" for="dim_sample">Sample Dimensions</label>  
+					<pre class="dim_sample sample_output" id="dim_sample"></pre>
 				</div>
 			</div>
 			<button id="paramset_btn" type="button" class="btn btn-primary btn-lg btn-block paramset_btn">Generate parameter samples</button>
@@ -140,7 +150,7 @@
 			</div>
 		</div>
 		<div class="container">
-			<h3>Step 3) CPU vs GPU</h3>
+			<h3>Step 3) BENCH! CPU vs GPU</h3>
 			<blockquote>
 				Setup your sample size upper, lower bounds. Its increment size. Benchmark iterations
 				<br/>
@@ -172,7 +182,7 @@
 							<span class="glyphicon glyphicon-minus"></span>
 						</button>
 					</span>
-					<input type="text" name="bench_upper" id="bench_upper" class="form-control input-number" value="10000" min="0" max="4294967295">
+					<input type="text" name="bench_upper" id="bench_upper" class="form-control input-number" value="2500" min="0" max="4294967295">
 					<span class="input-group-btn">
 						<button type="button" class="btn btn-default btn-number" data-type="plus" data-field="bench_upper">
 							<span class="glyphicon glyphicon-plus"></span>
@@ -188,7 +198,7 @@
 							<span class="glyphicon glyphicon-minus"></span>
 						</button>
 					</span>
-					<input type="text" name="bench_increment" id="bench_increment" class="form-control input-number" value="250" min="0" max="4294967295">
+					<input type="text" name="bench_increment" id="bench_increment" class="form-control input-number" value="50" min="0" max="4294967295">
 					<span class="input-group-btn">
 						<button type="button" class="btn btn-default btn-number" data-type="plus" data-field="bench_increment">
 							<span class="glyphicon glyphicon-plus"></span>
@@ -231,7 +241,9 @@
 		</div>
 		<div class="container chartContainer">
 			<button id="bench_btn" type="button" class="btn btn-primary btn-lg btn-block bench_btn">Run the benchmark!</button>
+			<h4>Average Time taken</h4>
 			<div id="chart_time" class="chart_time bench_chart"></div>
+			<h4>GPU Performance improvement</h4>
 			<div id="chart_gain" class="chart_gain bench_chart"></div>
 		</div>
 		<br/>
