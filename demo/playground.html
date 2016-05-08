@@ -162,9 +162,11 @@
 		<div class="container">
 			<h3>Step 3) BENCH! CPU vs GPU</h3>
 			<blockquote>
-				Setup your sample size upper, lower bounds. Its increment size. Benchmark iterations
+				Setup your sample size upper, lower bounds. Its increment size. Benchmark iterations. And bench it!<br/><br/>
+				Generally speaking however, these are common learning notes.<br/><br/>
+				- Due to the non-negligable overhead of running the webgl engine, small data sample sizes (such as <= 250) tends to be slower on GPU. Cut off point varies between kernel and machines<br/>
 				<br/>
-				And bench it!
+				- There is a small data transfer cost, to move from JS to GPU, paid by the CPU. Which is propotional to the data size. As such extremely simple kernel (such as A+B) will always be slower in GPU<br/>
 			</blockquote>
 		</div>
 		<div class="container">
@@ -176,7 +178,7 @@
 							<span class="glyphicon glyphicon-minus"></span>
 						</button>
 					</span>
-					<input type="text" name="bench_lower" id="bench_lower" class="form-control input-number" value="250" min="0" max="4294967295">
+					<input type="text" name="bench_lower" id="bench_lower" class="form-control input-number" value="50" min="0" max="4294967295">
 					<span class="input-group-btn">
 						<button type="button" class="btn btn-default btn-number" data-type="plus" data-field="bench_lower">
 							<span class="glyphicon glyphicon-plus"></span>
@@ -192,7 +194,7 @@
 							<span class="glyphicon glyphicon-minus"></span>
 						</button>
 					</span>
-					<input type="text" name="bench_upper" id="bench_upper" class="form-control input-number" value="2500" min="0" max="4294967295">
+					<input type="text" name="bench_upper" id="bench_upper" class="form-control input-number" value="1500" min="0" max="4294967295">
 					<span class="input-group-btn">
 						<button type="button" class="btn btn-default btn-number" data-type="plus" data-field="bench_upper">
 							<span class="glyphicon glyphicon-plus"></span>
