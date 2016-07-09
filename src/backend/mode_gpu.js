@@ -325,6 +325,7 @@
 					'	rgba.b = integerMod(rgba.b, 128.0);',
 					'	rgba.a = exponent*0.5 + 63.5;',
 					'	rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;',
+					'	rgba = floor(rgba);',
 					'	rgba *= 0.003921569; // 1/255',
 					(endianness == 'LE' ? '' : '	rgba.rgba = rgba.abgr;'),
 					'	return rgba;',
