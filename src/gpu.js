@@ -61,7 +61,7 @@ var GPU = (function() {
 		//
 		var ret = this.getSynchronousModeExecutor();
 		// Allow class refence from function
-		ret.gpujs = this; 
+		ret.gpujs = this;
 		// Execute callback
 		ret.exec = ret.execute = GPUUtils.functionBinder( this.execute, this );
 		
@@ -78,7 +78,7 @@ var GPU = (function() {
 	/// Get and returns the kernel function previously set by `createKernel`
 	///
 	/// Returns:
-	/// 	{JS Function}  The calling input function  
+	/// 	{JS Function}  The calling input function
 	///
 	function getKernelFunction() {
 		return this._kernelFunction;
@@ -91,7 +91,7 @@ var GPU = (function() {
 	/// Get and returns the kernel parameter object previously set by `createKernel`
 	///
 	/// Returns:
-	/// 	{JS Function}  The calling input function  
+	/// 	{JS Function}  The calling input function
 	///
 	function getKernelParamObj() {
 		return this._kernelParamObj;
@@ -156,7 +156,7 @@ var GPU = (function() {
 	///
 	/// Function: getWebgl
 	///
-	/// [DEPRECIATED] Returns the internal gpu webgl instance only if it has been initiated
+	/// [DEPRECATED] Returns the internal gpu webgl instance only if it has been initiated
 	///
 	/// Retuns:
 	/// 	{WebGL object} that the instance use
@@ -175,7 +175,7 @@ var GPU = (function() {
 	///
 	/// Function: getCanvas
 	///
-	/// [DEPRECIATED] Returns the internal canvas instance only if it has been initiated
+	/// [DEPRECATED] Returns the internal canvas instance only if it has been initiated
 	///
 	/// Retuns:
 	/// 	{Canvas object} that the instance use
@@ -196,7 +196,7 @@ var GPU = (function() {
 		// 		return (this._canvas_gpu || this._canvas_cpu );
 		// 	}
 		// 	// if( this._canvas_gpu || this._canvas_cpu ) {
-		// 	// 	
+		// 	//
 		// 	// }
 		// 	throw "Missing valid mode parameter in getCanvas("+mode+")"
 		// }
