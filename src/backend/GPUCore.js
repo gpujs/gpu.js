@@ -14,13 +14,13 @@ var GPUCore = (function() {
 
 	function GPUCore() {
 		// var gl, canvas;
-		// 
+		//
 		// canvas = undefined;
 		// if (gl === undefined) {
 		// 	canvas = GPUUtils.init_canvas();
 		// 	gl = GPUUtils.init_webgl(canvas);
 		// }
-		// 
+		//
 		// this.webgl = gl;
 		// this.canvas = canvas;
 		this.programCache = {};
@@ -152,11 +152,16 @@ var GPUCore = (function() {
 			opt.floatTextures = flag;
 			return ret;
 		};
+		
+		ret.floatOutput = function(flag) {
+			opt.floatOutput = flag;
+			return ret;
+		};
 
 		ret.mode = function(mode) {
 			opt.mode = mode;
 			return gpu.createKernel(
-				gpu._kernelFunction, 
+				gpu._kernelFunction,
 				gpu._kernelParamObj
 			);
 		};

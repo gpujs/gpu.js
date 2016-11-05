@@ -254,7 +254,7 @@ var GPUUtils = (function() {
 	/// 	{Boolean} TRUE if the object is a DOM canvas
 	///
 	function isCanvas( canvasObj ) {
-		return ( 
+		return (
 			canvasObj != null &&
 			canvasObj.nodeName &&
 			canvasObj.getContext &&
@@ -336,7 +336,7 @@ var GPUUtils = (function() {
 	/// 	{Boolean} TRUE if the object is a webgl context object
 	///
 	function isWebgl( webglObj ) {
-		return ( 
+		return (
 			webglObj != null &&
 			webglObj.getExtension
 		);
@@ -363,6 +363,7 @@ var GPUUtils = (function() {
 	
 	// Default webgl options to use
 	var init_webgl_defaultOptions = {
+		alpha: false,
 		depth: false,
 		antialias: false
 	}
@@ -393,7 +394,7 @@ var GPUUtils = (function() {
 		
 		// Create a new canvas DOM
 		var webgl = (
-			canvasObj.getContext("experimental-webgl", init_webgl_defaultOptions) || 
+			canvasObj.getContext("experimental-webgl", init_webgl_defaultOptions) ||
 			canvasObj.getContext("webgl", init_webgl_defaultOptions)
 		);
 		
@@ -406,9 +407,9 @@ var GPUUtils = (function() {
 		}
 		
 		// Get the extension that is needed
-		webgl.getExtension('OES_texture_float');
-		webgl.getExtension('OES_texture_float_linear');
-		webgl.getExtension('OES_element_index_uint');
+		GPUUtils.OES_texture_float = webgl.getExtension('OES_texture_float');
+		GPUUtils.OES_texture_float_linear = webgl.getExtension('OES_texture_float_linear');
+		GPUUtils.OES_element_index_uint = webgl.getExtension('OES_element_index_uint');
 
 		// Returns the canvas
 		return webgl;
