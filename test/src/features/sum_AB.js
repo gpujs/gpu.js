@@ -4,7 +4,8 @@ function sum_AB_test( assert, mode ) {
 		return (a[this.thread.x] + b[this.thread.x]);
 	}, {
 		dimensions : [6],
-		mode : mode
+		mode : mode,
+		normalizeResult : true
 	});
 	
 	assert.ok( f !== null, "function generated test");

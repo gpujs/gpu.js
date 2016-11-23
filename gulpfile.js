@@ -41,7 +41,10 @@ gulp.task('minify', ['build'], function() {
 });
 
 /// The browser sync prototyping
-gulp.task("bsync", function(){
+gulp.task("bsync", ["minify"], function(){
+	// Detect change -> rebuild TS
+	gulp.watch(["src/**.js"], ["minify"]);
+	
 	// Syncs browser
 	browserSync.init({
 		server: {
@@ -49,9 +52,6 @@ gulp.task("bsync", function(){
 		},
 		open: true
 	});
-
-	// Detect change -> rebuild TS
-	gulp.watch(["src/**.js"], ["minify"]);
 });
 
 /// Auto rebuild and host

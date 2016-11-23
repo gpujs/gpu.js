@@ -4,7 +4,8 @@ function function_return( mode ) {
 		return 42.0;
 	}, {
 		dimensions : [1],
-		mode : mode
+		mode : mode,
+		normalizeResult : true
 	});
 	
 	QUnit.ok( f !== null, "function generated test");

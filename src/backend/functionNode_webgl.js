@@ -336,27 +336,48 @@ var functionNode_webgl = (function() {
 	/// @returns  the appened retArr
 	function ast_BinaryExpression(ast, retArr, funcParam) {
 		retArr.push("(");
-
-		if (ast.operator == "%") {
-			retArr.push("mod(");
-			ast_generic(ast.left, retArr, funcParam);
-			retArr.push(",");
-			ast_generic(ast.right, retArr, funcParam);
-			retArr.push(")");
-		} else if (ast.operator == "===") {
-			ast_generic(ast.left, retArr, funcParam);
-			retArr.push("==");
-			ast_generic(ast.right, retArr, funcParam);
-		} else if (ast.operator == "!==") {
-			ast_generic(ast.left, retArr, funcParam);
-			retArr.push("!=");
-			ast_generic(ast.right, retArr, funcParam);
-		} else {
-			ast_generic(ast.left, retArr, funcParam);
-			retArr.push(ast.operator);
-			ast_generic(ast.right, retArr, funcParam);
+		
+		switch( ast.operator ) {
+			case "%" :
+				retArr.push("mod(");
+				ast_generic(ast.left, retArr, funcParam);
+				retArr.push(",");
+				ast_generic(ast.right, retArr, funcParam);
+				retArr.push(")");
+				break;
+				
+			case "===" : 
+			case "==" : 
+				ast_generic(ast.left, retArr, funcParam);
+				retArr.push("==");
+				ast_generic(ast.right, retArr, funcParam);
+				break;
+				
+			case "!==" : 
+			case "!=" : 
+				ast_generic(ast.left, retArr, funcParam);
+				retArr.push("!=");
+				ast_generic(ast.right, retArr, funcParam);
+				break;
+			
+			case "-" :
+			case "+" :
+			case "<" :
+			case ">" :
+			case "*" :
+				ast_generic(ast.left, retArr, funcParam);
+				retArr.push(ast.operator);
+				ast_generic(ast.right, retArr, funcParam);
+				break;
+				
+			default :
+				ast_generic(ast.left, retArr, funcParam);
+				retArr.push(ast.operator);
+				console.log("Unknown binary operator, possibly unsupported", ast.operator);
+				ast_generic(ast.right, retArr, funcParam);
+				break;
 		}
-
+		
 		retArr.push(")");
 
 		return retArr;
@@ -543,7 +564,6 @@ var functionNode_webgl = (function() {
 	}
 
 	function ast_VariableDeclarator(ivardecNode, retArr, funcParam) {
-
 		ast_generic(ivardecNode.id, retArr, funcParam);
 		if (ivardecNode.init !== null) {
 			retArr.push("=");

@@ -36,8 +36,9 @@ var functionNode = (function() {
 	/// 	jsFunction      - {JS Function / String}  JS Function to do conversion
 	/// 	paramTypeArray  - {[String,...]}          Parameter type array, assumes all parameters are "float" if null
 	/// 	returnType      - {String}                The return type, assumes "float" if null
+	/// 	webglString     - {String}                Webgl string to use instead, this disable the automated conversions. This calls setWebglFunctionString
 	///
-	function functionNode( gpu, functionName, jsFunction, paramTypeArray, returnType ) {
+	function functionNode( gpu, functionName, jsFunction, paramTypeArray, returnType, webglString ) {
 
 		this.gpu = gpu;
 
@@ -106,6 +107,13 @@ var functionNode = (function() {
 		// Return type handling
 		//
 		this.returnType = returnType || "float";
+		
+		//
+		// Webgl string handling
+		//
+		if( webglString != null && webglString.length > 0 ) {
+			this.setWebglFunctionString(webglString);
+		}
 	}
 
 	//

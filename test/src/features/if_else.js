@@ -10,7 +10,8 @@ function booleanBranch( mode ) {
 		return ret;
 	}, {
 		dimensions : [1],
-		mode : mode
+		mode : mode,
+		normalizeResult : true
 	});
 
 	QUnit.ok( f !== null, "function generated test");
@@ -40,7 +41,8 @@ function if_else( mode ) {
 		}
 	}, {
 		dimensions : [4],
-		mode : mode
+		mode : mode,
+		normalizeResult : true
 	});
 
 	QUnit.ok( f !== null, "function generated test");

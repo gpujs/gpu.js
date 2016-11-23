@@ -112,7 +112,34 @@
 
 		return key;
 	}
-
+	
+	/// Normalize the result output to an array
+	/// format, so that it will be consistent 
+	/// with CPU mode array output. 
+	/// 
+	/// This is useful mainly for Unit testing
+	function normalizeResult(res, enable) {
+		if( enable ) {
+			// Typed array
+			if( res instanceof Float32Array || 
+				res instanceof Uint8Array ) {
+				return Array.prototype.slice.call(res);
+			} else if( res.constructor === Array ) {
+				// non typed array
+				for(var i=0; i<res.length; ++i) {
+					// Nested array?
+					if( res[i].constructor !== Array &&
+						(res[i] instanceof Float32Array ||
+						res[i] instanceof Uint8Array) ) {
+						// Nested normalize
+						res[i] = normalizeResult(res[i], enable);
+					}
+				}
+			}
+		}
+		return res;
+	}
+	
 	GPU.prototype._mode_gpu = function(kernel, opt) {
 		var gpu = this;
 		
@@ -592,14 +619,14 @@
 				result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
 
 				if (opt.dimensions.length == 1) {
-					return result;
+					return normalizeResult(result, opt.normalizeResult);
 				} else if (opt.dimensions.length == 2) {
-					return splitArray(result, opt.dimensions[0]);
+					return normalizeResult(splitArray(result, opt.dimensions[0]), opt.normalizeResult);
 				} else if (opt.dimensions.length == 3) {
 					var cube = splitArray(result, opt.dimensions[0] * opt.dimensions[1]);
-					return cube.map(function(x) {
+					return normalizeResult(cube.map(function(x) {
 						return splitArray(x, opt.dimensions[0]);
-					});
+					}), opt.normalizeResult);
 				}
 			}
 		}

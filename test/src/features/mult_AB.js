@@ -8,7 +8,8 @@ function mult_AB_test( assert, mode ) {
 		return sum;
 	}, {
 		dimensions : [3, 3],
-		mode: mode
+		mode: mode,
+		normalizeResult : true
 	});
 	
 	assert.ok( f !== null, "function generated test");

@@ -157,6 +157,11 @@ var GPUCore = (function() {
 			opt.floatOutput = flag;
 			return ret;
 		};
+		
+		ret.normalizeResult = function(flag) {
+			opt.normalizeResult = flag;
+			return ret;
+		};
 
 		ret.mode = function(mode) {
 			opt.mode = mode;

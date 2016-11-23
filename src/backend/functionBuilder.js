@@ -171,6 +171,13 @@ var functionBuilder = (function() {
 	// Round function used in polyfill
 	function round(a) { return Math.floor( a + 0.5 ); }
 	
+	// Bitwise operator
+	function bitwiseAND(a,b) { return a & b; }
+	var bitwiseAND_webgl = "highp float bitwiseAND( float n1, float n2 ) { \n"+
+		
+	"}";
+	
+	
 	///
 	/// Function: polyfillStandardFunctions
 	///

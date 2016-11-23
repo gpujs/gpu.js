@@ -9,7 +9,8 @@ function for_loop_test( assert, mode ) {
 		return (a[this.thread.x] + b[this.thread.x] + x);
 	}, {
 		dimensions : [6],
-		mode : mode
+		mode : mode,
+		normalizeResult : true
 	});
 
 	assert.ok( f !== null, "function generated test");
@@ -59,7 +60,8 @@ QUnit.test( "for_loop (CPU)", function( assert ) {
 	var evil_while_cpuRef_f =  evil_while_cpuRef.createKernel(evil_while_kernalFunction, {
 		dimensions : [6],
 		mode : "cpu",
-		loopMaxIterations: 10000
+		loopMaxIterations: 10000,
+		normalizeResult : true
 	});
 
 	var evil_while_exp = evil_while_cpuRef_f(evil_while_a,evil_while_b);
@@ -69,7 +71,8 @@ QUnit.test( "for_loop (CPU)", function( assert ) {
 
 		var f = gpu.createKernel(evil_while_kernalFunction, {
 			dimensions : [6],
-			mode : mode
+			mode : mode,
+			normalizeResult : true
 		});
 
 		assert.ok( f !== null, "function generated test");

@@ -49,8 +49,16 @@ QUnit.test( "MD5: short circuting in JS", function(assert) {
 QUnit.test( "MD5: via GPU", function(assert) {
 	var gpu = new GPU();
 	assert.ok(gpu);
-
-	gpu.addFunction( binlMD5, ["float", "float"], "float" );
+	
+	// Binary string support
+	gpu.addFunction( safeAdd );
+	gpu.addFunction( bitRotateLeft );
+	gpu.addFunction( md5cmn );
+	gpu.addFunction( md5ff );
+	gpu.addFunction( md5gg );
+	gpu.addFunction( md5hh );
+	gpu.addFunction( md5ii );
+	gpu.addFunction( binlMD5 );
 
 	var func = gpu.createKernel(function( inBin, inBinLen, targetBin ) {
 		var binHash = binlMD5(inBin, inBinLen);
