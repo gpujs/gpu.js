@@ -685,24 +685,52 @@ var functionNode_webgl = (function() {
 	}
 
 	function ast_UpdateExpression(uNode, retArr, funcParam) {
+		var operator = uNode.operator;
+		
+		switch(operator) {
+			case "++":
+			case "--":
+				break;
+			default:
+				console.warn("Unknown Update Expression operator, possibly unsupported", operator, uNode, funcParam);
+		}
+		
 		if(uNode.prefix) {
-			retArr.push(uNode.operator);
+			retArr.push(operator);
 			ast_generic(uNode.argument, retArr, funcParam);
 		} else {
 			ast_generic(uNode.argument, retArr, funcParam);
-			retArr.push(uNode.operator);
+			retArr.push(operator);
 		}
-
+		
 		return retArr;
 	}
 
 	function ast_UnaryExpression(uNode, retArr, funcParam) {
+		var operator = uNode.operator;
+		
+		switch(operator) {
+			case "-":
+			case "!":
+			case "~":
+				break;
+			default:
+				console.warn("Unknown Unary Expression operator, possibly unsupported", operator, uNode, funcParam);
+		}
+		
 		if(uNode.prefix) {
-			retArr.push(uNode.operator);
-			ast_generic(uNode.argument, retArr, funcParam);
+			if(operator == "~") {
+				funcParam.calledFunctions = addToArrayIfNotExists(funcParam.calledFunctions, "bitwiseNOT");
+				retArr.push("bitwiseNOT(");
+				ast_generic(uNode.argument, retArr, funcParam);
+				retArr.push(")");
+			} else {
+				retArr.push(operator);
+				ast_generic(uNode.argument, retArr, funcParam);
+			}
 		} else {
 			ast_generic(uNode.argument, retArr, funcParam);
-			retArr.push(uNode.operator);
+			retArr.push(operator);
 		}
 
 		return retArr;

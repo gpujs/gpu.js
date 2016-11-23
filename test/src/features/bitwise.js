@@ -161,3 +161,28 @@ QUnit.test( "bitwise URShift (cpu)", function() {
 QUnit.test( "bitwise URShift (gpu)", function() {
 	bitwiseURShift_test("gpu");
 });
+
+//------------------------------------
+//
+//   bitwise NOT
+//
+//------------------------------------
+
+function bitwiseNOT_test( mode ) {
+	bitwiseTest("~1", mode, function() { return ~1 }, -2);
+	bitwiseTest("~12354", mode, function() { return ~12354 }, -12355);
+	bitwiseTest("~(-5)", mode, function() { return ~(-5) }, 4);
+	bitwiseTest("~(-12345)", mode, function() { return ~(-12345) }, 12344);
+}
+
+QUnit.test( "bitwise NOT (auto)", function() {
+	bitwiseNOT_test(null);
+});
+
+QUnit.test( "bitwise NOT (cpu)", function() {
+	bitwiseNOT_test("cpu");
+});
+
+QUnit.test( "bitwise NOT (gpu)", function() {
+	bitwiseNOT_test("gpu");
+});

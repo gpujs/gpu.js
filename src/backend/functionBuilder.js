@@ -240,6 +240,12 @@ var functionBuilder = (function() {
 	var bitwiseURShift_webgl = "highp float bitwiseURShift( float a, float b ) { \n"+
 	"	return float(floor(a / pow(2.0,b)));\n"+
 	"}";
+	
+	// Bitwise NOT
+	function bitwiseNOT(a) { return ~a; }
+	var bitwiseNOT_webgl = "highp float bitwiseNOT( float a ) { \n"+
+	"	return - a - 1.0;\n"+
+	"}";
 
 	///
 	/// Function: polyfillStandardFunctions
@@ -265,6 +271,9 @@ var functionBuilder = (function() {
 		);
 		this.addFunctionNode( 
 			new functionNode( this.gpu, "bitwiseURShift", bitwiseURShift, ["float","float"], "highp float", bitwiseURShift_webgl ) 
+		);
+		this.addFunctionNode( 
+			new functionNode( this.gpu, "bitwiseNOT", bitwiseNOT, ["float"], "highp float", bitwiseNOT_webgl ) 
 		);
 	}
 	functionBuilder.prototype.polyfillStandardFunctions = polyfillStandardFunctions;
