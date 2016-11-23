@@ -24,6 +24,13 @@ var functionNode_webgl = (function() {
 			}
 		}
 	}
+	
+	function addToArrayIfNotExists(arr, val) {
+		if( arr.indexOf(val) === -1 ) {
+			arr.push(val);
+		}
+		return arr;
+	}
 
 	///
 	/// Function: functionNode_webgl
@@ -337,7 +344,8 @@ var functionNode_webgl = (function() {
 	function ast_BinaryExpression(ast, retArr, funcParam) {
 		retArr.push("(");
 		
-		switch( ast.operator ) {
+		var operator = ast.operator;
+		switch( operator ) {
 			case "%" :
 				retArr.push("mod(");
 				ast_generic(ast.left, retArr, funcParam);
@@ -366,14 +374,41 @@ var functionNode_webgl = (function() {
 			case ">" :
 			case "*" :
 				ast_generic(ast.left, retArr, funcParam);
-				retArr.push(ast.operator);
+				retArr.push(operator);
 				ast_generic(ast.right, retArr, funcParam);
 				break;
+			case "&" :
+			case "|" :
+			case "^" :
+			case ">>" :
+			case "<<" :
+			case ">>>" :
+				var bitwiseFuncName = null;
+				if(operator == "&") {
+					bitwiseFuncName = "bitwiseAND";
+				} else if(operator == "|") {
+					bitwiseFuncName = "bitwiseOR";
+				} else if(operator == "^") {
+					bitwiseFuncName = "bitwiseXOR";
+				} else if(operator == ">>") {
+					bitwiseFuncName = "bitwiseRShift";
+				} else if(operator == "<<") {
+					bitwiseFuncName = "bitwiseLShift";
+				} else if(operator == ">>>") {
+					bitwiseFuncName = "bitwiseURShift";
+				}
 				
+				funcParam.calledFunctions = addToArrayIfNotExists(funcParam.calledFunctions, bitwiseFuncName);
+				retArr.push(bitwiseFuncName+"(");
+				ast_generic(ast.left, retArr, funcParam);
+				retArr.push(",");
+				ast_generic(ast.right, retArr, funcParam);
+				retArr.push(")");
+				break;
 			default :
 				ast_generic(ast.left, retArr, funcParam);
 				retArr.push(ast.operator);
-				console.log("Unknown binary operator, possibly unsupported", ast.operator);
+				console.log("Unknown binary operator, possibly unsupported", ast.operator, ast, funcParam);
 				ast_generic(ast.right, retArr, funcParam);
 				break;
 		}

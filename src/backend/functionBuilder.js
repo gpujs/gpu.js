@@ -164,27 +164,108 @@ var functionBuilder = (function() {
 	
 	//---------------------------------------------------------
 	//
-	//  Polyfill stuff
+	//  Polyfill Math stuff
 	//
 	//---------------------------------------------------------
 	
 	// Round function used in polyfill
 	function round(a) { return Math.floor( a + 0.5 ); }
 	
-	// Bitwise operator
+	//---------------------------------------------------------
+	//
+	//  Polyfill bitwise operations
+	//
+	//---------------------------------------------------------
+	
+	// Webgl bitwise hack. int bit iteration - function prefix template
+	//
+	// @TODO Support negative numbers
+	var bitwiseWebglFunction_prefix = ""+
+	"	int byteVal = 1; int result = 0; \n"+
+	"	for(int i=0; i < 32; i++) { \n"+
+	"		bool keepGoing = v1 > 0.0 || v2 > 0.0; \n "+
+	"		if(keepGoing) {\n"+
+	"			bool b1 = mod(v1,2.0) > 0.0;\n"+
+	"			bool b2 = mod(v2,2.0) > 0.0;\n"+
+	"			";
+	
+	// Webgl bitwise hack. int bit iteration - function suffix template
+	//
+	// @TODO Support negative numbers
+	var bitwiseWebglFunction_suffix = ""+
+	"			if(addOn) { result += byteVal; }\n"+
+	"			v1 = floor(v1 / 2.0);\n"+
+	"			v2 = floor(v2 / 2.0);\n"+
+	"			byteVal *= 2;\n"+
+	"		}\n"+
+	"	} \n"+
+	"	return float(result);\n"+
+	"}\n";
+	
+	// Bitwise AND operator
 	function bitwiseAND(a,b) { return a & b; }
-	var bitwiseAND_webgl = "highp float bitwiseAND( float n1, float n2 ) { \n"+
+	var bitwiseAND_webgl = "highp float bitwiseAND( float v1, float v2 ) { \n"+
+		bitwiseWebglFunction_prefix +
+		"bool addOn = b1 && b2;\n"+
+		bitwiseWebglFunction_suffix;
 		
+	// Bitwise OR operator
+	function bitwiseOR(a,b) { return a & b; }
+	var bitwiseOR_webgl = "highp float bitwiseOR( float v1, float v2 ) { \n"+
+		bitwiseWebglFunction_prefix +
+		"bool addOn = b1 || b2;\n"+
+		bitwiseWebglFunction_suffix;
+		
+	// Bitwise XOR operator
+	function bitwiseXOR(a,b) { return a & b; }
+	var bitwiseXOR_webgl = "highp float bitwiseXOR( float v1, float v2 ) { \n"+
+		bitwiseWebglFunction_prefix +
+		"bool addOn = (b1 || b2) && !(b1 && b2);\n"+
+		bitwiseWebglFunction_suffix;
+		
+	// Bitwise right shift
+	function bitwiseRShift(a,b) { return a >> b; }
+	var bitwiseRShift_webgl = "highp float bitwiseRShift( float a, float b ) { \n"+
+	"	return float(floor(a / pow(2.0,b)));\n"+
 	"}";
 	
+	// Bitwise right shift
+	function bitwiseLShift(a,b) { return a << b; }
+	var bitwiseLShift_webgl = "highp float bitwiseLShift( float a, float b ) { \n"+
+	"	return float(floor(a * pow(2.0,b)));\n"+
+	"}";
 	
+	// Bitwise unsigned right shift
+	function bitwiseURShift(a,b) { return a >>> b; }
+	var bitwiseURShift_webgl = "highp float bitwiseURShift( float a, float b ) { \n"+
+	"	return float(floor(a / pow(2.0,b)));\n"+
+	"}";
+
 	///
 	/// Function: polyfillStandardFunctions
 	///
 	/// Polyfill in the missing Math funcitons (round)
 	///
 	function polyfillStandardFunctions() {
-		this.addFunction(null, round);
+		this.addFunction("round", round);
+		this.addFunctionNode( 
+			new functionNode( this.gpu, "bitwiseAND", bitwiseAND, ["float","float"], "highp float", bitwiseAND_webgl ) 
+		);
+		this.addFunctionNode( 
+			new functionNode( this.gpu, "bitwiseOR", bitwiseOR, ["float","float"], "highp float", bitwiseOR_webgl ) 
+		);
+		this.addFunctionNode( 
+			new functionNode( this.gpu, "bitwiseXOR", bitwiseXOR, ["float","float"], "highp float", bitwiseXOR_webgl ) 
+		);
+		this.addFunctionNode( 
+			new functionNode( this.gpu, "bitwiseRShift", bitwiseRShift, ["float","float"], "highp float", bitwiseRShift_webgl ) 
+		);
+		this.addFunctionNode( 
+			new functionNode( this.gpu, "bitwiseLShift", bitwiseLShift, ["float","float"], "highp float", bitwiseLShift_webgl ) 
+		);
+		this.addFunctionNode( 
+			new functionNode( this.gpu, "bitwiseURShift", bitwiseURShift, ["float","float"], "highp float", bitwiseURShift_webgl ) 
+		);
 	}
 	functionBuilder.prototype.polyfillStandardFunctions = polyfillStandardFunctions;
 	
