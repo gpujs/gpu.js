@@ -650,11 +650,11 @@ var functionNode_webgl = (function() {
 				if(assumeNotTexture) {
 					// Get from array
 					ast_generic(mNode.object, retArr, funcParam);
-					retArr.push("[(int)(");
+					retArr.push("[int(");
 					ast_generic(mNode.property, retArr, funcParam);
 					retArr.push(")]");
 
-					console.log(mNode.property.operator);
+					//console.log(mNode.property.operator);
 				} else {
 					// Get from texture
 					// This normally refers to the global read only input vars
@@ -682,7 +682,7 @@ var functionNode_webgl = (function() {
 				ast_generic(mNode.property, retArr, funcParam);
 				retArr.push(")");
 
-									console.log(mNode.property.operator);
+				//console.log(mNode.property.operator);
 			}
 		} else {
 

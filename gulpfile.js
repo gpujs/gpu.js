@@ -5,9 +5,11 @@ var rename = require("gulp-rename");
 var uglify = require('gulp-uglify');
 var gutil = require('gulp-util');
 var header = require('gulp-header');
+var browserSync = require("browser-sync");
 
 var pkg = require('./package.json');
 
+/// Build the scripts
 gulp.task('build', function() {
 	return gulp.src([
 			'src/parser.js',
@@ -27,6 +29,7 @@ gulp.task('build', function() {
 		.pipe(gulp.dest('bin'));
 });
 
+/// Minify the build script, after building it
 gulp.task('minify', ['build'], function() {
 	return gulp.src(['bin/gpu.js'])
 		.pipe(rename('gpu.min.js'))
@@ -37,4 +40,19 @@ gulp.task('minify', ['build'], function() {
 		.pipe(gulp.dest('bin'));
 });
 
-gulp.task('default', ['minify']);
+/// The browser sync prototyping
+gulp.task("bsync", function(){
+	// Syncs browser
+	browserSync.init({
+		server: {
+			baseDir: "./"
+		},
+		open: true
+	});
+
+	// Detect change -> rebuild TS
+	gulp.watch(["src/**.js"], ["minify"]);
+});
+
+/// Auto rebuild and host
+gulp.task('default', ['bsync']);
