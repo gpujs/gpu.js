@@ -408,7 +408,7 @@ var functionNode_webgl = (function() {
 			default :
 				ast_generic(ast.left, retArr, funcParam);
 				retArr.push(ast.operator);
-				console.log("Unknown binary operator, possibly unsupported", ast.operator, ast, funcParam);
+				console.warn("Unknown binary operator, possibly unsupported", operator, ast, funcParam);
 				ast_generic(ast.right, retArr, funcParam);
 				break;
 		}
@@ -550,15 +550,47 @@ var functionNode_webgl = (function() {
 	}
 
 	function ast_AssignmentExpression(assNode, retArr, funcParam) {
-		if(assNode.operator == "%=") {
+		var operator = assNode.operator;
+		var operatorFuncName = null;
+		var operatorIsNative = false;
+		
+		// Assignment operator detection
+		switch( operator ) {
+			case "=":
+			case "+=":
+			case "-=":
+				operatorIsNative = true;
+				break;
+			case "%=":
+				operatorFuncName = "mod";
+				break;
+			case "&=":
+				operatorFuncName = "bitwiseAND";
+				break;
+			case "|=":
+				operatorFuncName = "bitwiseOR";
+				break;
+			case "^=":
+				operatorFuncName = "bitwiseXOR";
+				break;
+		}
+		
+		if( operatorFuncName ) {
+			funcParam.calledFunctions = addToArrayIfNotExists(funcParam.calledFunctions, operatorFuncName);
+		
 			ast_generic(assNode.left, retArr, funcParam);
-			retArr.push("=");
-			retArr.push("mod(");
+			retArr.push("= ");
+			retArr.push(operatorFuncName);
+			retArr.push("(");
 			ast_generic(assNode.left, retArr, funcParam);
 			retArr.push(",");
 			ast_generic(assNode.right, retArr, funcParam);
 			retArr.push(")");
 		} else {
+			if( !operatorIsNative ) {
+				console.warn("Unknown assignment operator, possibly unsupported", operator, assNode, funcParam);
+			}
+			
 			ast_generic(assNode.left, retArr, funcParam);
 			retArr.push(assNode.operator);
 			ast_generic(assNode.right, retArr, funcParam);

@@ -210,14 +210,14 @@ var functionBuilder = (function() {
 		bitwiseWebglFunction_suffix;
 		
 	// Bitwise OR operator
-	function bitwiseOR(a,b) { return a & b; }
+	function bitwiseOR(a,b) { return a | b; }
 	var bitwiseOR_webgl = "highp float bitwiseOR( float v1, float v2 ) { \n"+
 		bitwiseWebglFunction_prefix +
 		"bool addOn = b1 || b2;\n"+
 		bitwiseWebglFunction_suffix;
 		
 	// Bitwise XOR operator
-	function bitwiseXOR(a,b) { return a & b; }
+	function bitwiseXOR(a,b) { return a ^ b; }
 	var bitwiseXOR_webgl = "highp float bitwiseXOR( float v1, float v2 ) { \n"+
 		bitwiseWebglFunction_prefix +
 		"bool addOn = (b1 || b2) && !(b1 && b2);\n"+
