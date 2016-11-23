@@ -757,7 +757,7 @@ var functionNode_webgl = (function() {
 				// Possibly an array request - handle it as such
 				if(funcParam != "kernel" && funcParam.paramNames ) {
 					var idx = funcParam.paramNames.indexOf(reqName);
-					if( idx >= 0 && funcParam.paramType[idx] == "float") {
+					if( idx >= 0 && funcParam.paramType[idx].startsWith("float")) {
 						assumeNotTexture = true;
 					}
 				}

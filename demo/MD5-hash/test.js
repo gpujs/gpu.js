@@ -40,6 +40,10 @@ QUnit.test( "MD5: short circuting in JS", function(assert) {
 	// Hashes the binary representation
 	assert.deepEqual(binlMD5(testBins, testTextBits), [ -1153714594, -789700896, -1155347565, -1009952113 ]);
 	var resultBins = binlMD5(testBins, testTextBits);
+	
+	// With padding?
+	assert.deepEqual(binlMD5([ 1819043176, 1870078063, 6581362, 0 ], testTextBits), [ -1153714594, -789700896, -1155347565, -1009952113 ]);
+	var resultBins = binlMD5([ 1819043176, 1870078063, 6581362, 0 ], testTextBits);
 
 	// Result to hash conversion
 	assert.equal(rstr2hex(binl2rstr(resultBins)), "5eb63bbbe01eeed093cb22bb8f5acdc3");
@@ -58,13 +62,38 @@ QUnit.test( "MD5: via GPU", function(assert) {
 	gpu.addFunction( md5gg );
 	gpu.addFunction( md5hh );
 	gpu.addFunction( md5ii );
-	gpu.addFunction( binlMD5 );
-
-	var func = gpu.createKernel(function( inBin, inBinLen, targetBin ) {
-		var binHash = binlMD5(inBin, inBinLen);
-		return 1;
+	gpu.addFunction( binlMD5_gpujs, ["float[4]", "float[4]", "float", "float"], "void" );
+	
+	function testMD5bin(inRawBin, inRawBinLen, targetBin) {
+		var res = [0,0,0,0];
+		binlMD5_gpujs(res, inBin, 4, inRawBinLen);
+		return (
+			targetBin[0] == res[0] &&
+			targetBin[1] == res[1] &&
+			targetBin[2] == res[2] &&
+			targetBin[3] == res[3]
+		);
+	}
+	gpu._addFunctionWebgl( 
+		"testMD5bin", testMD5bin, 
+		["float[4]","float","float[4]"], "float",
+		"highp float testMD5bin(float[4] inRawBin, float inRawBinLen, float[4] targetBin) { \n"+
+		"	float res = float[4](0,0,0,0); \n"+
+		"	binlMD5_gpujs(res, inRawBin, 4, inRawBinLen); \n"+
+		"	return ( \n"+
+		"		targetBin[0] == res[0] && \n"+
+		"		targetBin[1] == res[1] && \n"+
+		"		targetBin[2] == res[2] && \n"+
+		"		targetBin[3] == res[3] \n"+
+		"	); \n"+
+		"}\n"
+	);
+	console.log("addFunction", gpu.addFunction, gpu);
+	
+	var func = gpu.createKernel(function( inBin, inBinLen, targetMD5 ) {
+		return testMD5bin(inBin, inBinLen, targetMD5);
 	}).dimensions([1]);
 
 	assert.ok(func);
-	assert.equal(func( [ 1819043176, 1870078063, 6581362 ], 88, [ -1153714594, -789700896, -1155347565, -1009952113 ] ), 1);
+	assert.equal(func( [ 1819043176, 1870078063, 6581362, 0 ], 88, [ -1153714594, -789700896, -1155347565, -1009952113 ] ), 1);
 });

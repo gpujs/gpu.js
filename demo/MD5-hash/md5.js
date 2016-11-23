@@ -59,6 +59,12 @@ function md5ii (a, b, c, d, x, s, t) {
 * Calculate the MD5 of an array of little-endian words, and a bit length.
 */
 function binlMD5 (x, len) {
+	var res = [0,0,0,0];
+	binlMD5_gpujs(res, x, x.length, len);
+	return res;
+}
+
+function binlMD5_gpujs(res, x, xlen, len) {
 	/* append padding */
 	x[len >> 5] |= 0x80 << (len % 32)
 	x[(((len + 64) >>> 9) << 4) + 14] = len
@@ -72,8 +78,8 @@ function binlMD5 (x, len) {
 	var b = -271733879
 	var c = -1732584194
 	var d = 271733878
-
-	for (i = 0; i < x.length; i += 16) {
+	
+	for (i = 0; i < xlen; i += 16) {
 		olda = a
 		oldb = b
 		oldc = c
@@ -152,7 +158,12 @@ function binlMD5 (x, len) {
 		c = safeAdd(c, oldc)
 		d = safeAdd(d, oldd)
 	}
-	return [a, b, c, d]
+	
+	res[0] = a;
+	res[1] = b;
+	res[2] = c;
+	res[3] = d;
+	//return [a, b, c, d]
 }
 
 /*

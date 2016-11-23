@@ -154,6 +154,31 @@ var GPU = (function() {
 	GPU.prototype.addFunction = addFunction;
 	
 	///
+	/// Function: _addFunctionWebgl
+	///
+	/// @private :  Experimental, do not use!
+	/// 
+	/// Adds additional functions, that the kernel may call.
+	///
+	/// Parameters:
+	/// 	functionName    - {String}       Function name string
+	/// 	jsFunction      - {JS Function}  JS Function to do conversion
+	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are "float" if null
+	/// 	returnType      - {String}       The return type, assumes "float" if null
+	/// 	webglString     - {String}       String overwriting of the webgl function
+	///
+	/// Retuns:
+	/// 	{GPU} returns itself
+	///
+	function _addFunctionWebgl( functionName, jsFunction, paramTypeArray, returnType, webglString ) {
+		this.functionBuilder.addFunctionNode( 
+			new functionNode( this, functionName, jsFunction, paramTypeArray, returnType, webglString )
+		);
+		return this;
+	}
+	GPU.prototype._addFunctionWebgl = _addFunctionWebgl;
+	
+	///
 	/// Function: getWebgl
 	///
 	/// [DEPRECATED] Returns the internal gpu webgl instance only if it has been initiated
