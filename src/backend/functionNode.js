@@ -112,6 +112,7 @@ var functionNode = (function() {
 		// Webgl string handling
 		//
 		if( webglString != null && webglString.length > 0 ) {
+			this.getWebglFunctionString({});
 			this.setWebglFunctionString(webglString);
 		}
 	}

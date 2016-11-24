@@ -59,12 +59,6 @@ function md5ii (a, b, c, d, x, s, t) {
 * Calculate the MD5 of an array of little-endian words, and a bit length.
 */
 function binlMD5 (x, len) {
-	var res = [0,0,0,0];
-	binlMD5_gpujs(res, x, x.length, len);
-	return res;
-}
-
-function binlMD5_gpujs(res, x, xlen, len) {
 	/* append padding */
 	x[len >> 5] |= 0x80 << (len % 32)
 	x[(((len + 64) >>> 9) << 4) + 14] = len
@@ -79,7 +73,7 @@ function binlMD5_gpujs(res, x, xlen, len) {
 	var c = -1732584194
 	var d = 271733878
 	
-	for (i = 0; i < xlen; i += 16) {
+	for (i = 0; i < x.length; i += 16) {
 		olda = a
 		oldb = b
 		oldc = c
@@ -159,10 +153,142 @@ function binlMD5_gpujs(res, x, xlen, len) {
 		d = safeAdd(d, oldd)
 	}
 	
-	res[0] = a;
-	res[1] = b;
-	res[2] = c;
-	res[3] = d;
+	return [a, b, c, d]
+}
+
+// This is a heavily stripped down version 
+//
+// @param   {float[4] / vec4}  Result array of 4 32bit int (faked as float)
+// @param   {float[4] / vec4}  Input binary array of 4 32bit int (faked as float)
+//
+//
+function binlMD5_128bit(inRes, x, len) {
+	
+	// // XLen is regarding the amount of "32 bit" values
+	// if( xlen > 4 ) {
+	// 	xlen = 4;
+	// }
+	
+	// // Len maxes out to 128 bits
+	// if( len > 128 ) {
+	// 	len = 128;
+	// }
+	
+	/* append padding */
+	//
+	// x[len >> 5] |= 0x80 << (len % 32);
+	//
+	// Len is regarding the total bits : Assume multiples of 8
+	// This loop iteration with if block. Is a work around for
+	// static array reference requirment
+	for(var tLen = 0; tLen <= 128; tLen+=8) {
+		if(tLen == len) {
+			x[tLen >> 5] |= 0x80 << (tLen % 32);
+		}
+	}
+	
+	//
+	// x[(((len + 64) >>> 9) << 4) + 14] = len;
+	//
+	// This is normalized to x14, as "(((len + 64) >>> 9) << 4) + 14"
+	// for the value 0~448 of len : Result to the 14
+	//
+	var x14 = len;
+	
+	var i = 0;
+	var olda
+	var oldb
+	var oldc
+	var oldd
+	var a = 1732584193
+	var b = -271733879
+	var c = -1732584194
+	var d = 271733878
+	
+	// for (i = 0; i < xlen; i += 16) {
+		olda = a
+		oldb = b
+		oldc = c
+		oldd = d
+
+		a = md5ff(a, b, c, d, x[0], 7, -680876936)
+		d = md5ff(d, a, b, c, x[1], 12, -389564586)
+		c = md5ff(c, d, a, b, x[2], 17, 606105819)
+		b = md5ff(b, c, d, a, x[3], 22, -1044525330)
+		a = md5ff(a, b, c, d, 0.0, 7, -176418897)
+		d = md5ff(d, a, b, c, 0.0, 12, 1200080426)
+		c = md5ff(c, d, a, b, 0.0, 17, -1473231341)
+		b = md5ff(b, c, d, a, 0.0, 22, -45705983)
+		a = md5ff(a, b, c, d, 0.0, 7, 1770035416)
+		d = md5ff(d, a, b, c, 0.0, 12, -1958414417)
+		c = md5ff(c, d, a, b, 0.0, 17, -42063)
+		b = md5ff(b, c, d, a, 0.0, 22, -1990404162)
+		a = md5ff(a, b, c, d, 0.0, 7, 1804603682)
+		d = md5ff(d, a, b, c, 0.0, 12, -40341101)
+		c = md5ff(c, d, a, b, x14, 17, -1502002290)
+		b = md5ff(b, c, d, a, 0.0, 22, 1236535329)
+
+		a = md5gg(a, b, c, d, x[1], 5, -165796510)
+		d = md5gg(d, a, b, c, 0.0, 9, -1069501632)
+		c = md5gg(c, d, a, b, 0.0, 14, 643717713)
+		b = md5gg(b, c, d, a, x[0], 20, -373897302)
+		a = md5gg(a, b, c, d, 0.0, 5, -701558691)
+		d = md5gg(d, a, b, c, 0.0, 9, 38016083)
+		c = md5gg(c, d, a, b, 0.0, 14, -660478335)
+		b = md5gg(b, c, d, a, 0.0, 20, -405537848)
+		a = md5gg(a, b, c, d, 0.0, 5, 568446438)
+		d = md5gg(d, a, b, c, x14, 9, -1019803690)
+		c = md5gg(c, d, a, b, x[3], 14, -187363961)
+		b = md5gg(b, c, d, a, 0.0, 20, 1163531501)
+		a = md5gg(a, b, c, d, 0.0, 5, -1444681467)
+		d = md5gg(d, a, b, c, x[2], 9, -51403784)
+		c = md5gg(c, d, a, b, 0.0, 14, 1735328473)
+		b = md5gg(b, c, d, a, 0.0, 20, -1926607734)
+
+		a = md5hh(a, b, c, d, 0.0, 4, -378558)
+		d = md5hh(d, a, b, c, 0.0, 11, -2022574463)
+		c = md5hh(c, d, a, b, 0.0, 16, 1839030562)
+		b = md5hh(b, c, d, a, x14, 23, -35309556)
+		a = md5hh(a, b, c, d, x[1], 4, -1530992060)
+		d = md5hh(d, a, b, c, 0.0, 11, 1272893353)
+		c = md5hh(c, d, a, b, 0.0, 16, -155497632)
+		b = md5hh(b, c, d, a, 0.0, 23, -1094730640)
+		a = md5hh(a, b, c, d, 0.0, 4, 681279174)
+		d = md5hh(d, a, b, c, x[0], 11, -358537222)
+		c = md5hh(c, d, a, b, x[3], 16, -722521979)
+		b = md5hh(b, c, d, a, 0.0, 23, 76029189)
+		a = md5hh(a, b, c, d, 0.0, 4, -640364487)
+		d = md5hh(d, a, b, c, 0.0, 11, -421815835)
+		c = md5hh(c, d, a, b, 0.0, 16, 530742520)
+		b = md5hh(b, c, d, a, x[2], 23, -995338651)
+
+		a = md5ii(a, b, c, d, x[0], 6, -198630844)
+		d = md5ii(d, a, b, c, 0.0, 10, 1126891415)
+		c = md5ii(c, d, a, b, x14, 15, -1416354905)
+		b = md5ii(b, c, d, a, 0.0, 21, -57434055)
+		a = md5ii(a, b, c, d, 0.0, 6, 1700485571)
+		d = md5ii(d, a, b, c, x[3], 10, -1894986606)
+		c = md5ii(c, d, a, b, 0.0, 15, -1051523)
+		b = md5ii(b, c, d, a, x[1], 21, -2054922799)
+		a = md5ii(a, b, c, d, 0.0, 6, 1873313359)
+		d = md5ii(d, a, b, c, 0.0, 10, -30611744)
+		c = md5ii(c, d, a, b, 0.0, 15, -1560198380)
+		b = md5ii(b, c, d, a, 0.0, 21, 1309151649)
+		a = md5ii(a, b, c, d, 0.0, 6, -145523070)
+		d = md5ii(d, a, b, c, 0.0, 10, -1120210379)
+		c = md5ii(c, d, a, b, x[2], 15, 718787259)
+		b = md5ii(b, c, d, a, 0.0, 21, -343485551)
+
+		a = safeAdd(a, olda)
+		b = safeAdd(b, oldb)
+		c = safeAdd(c, oldc)
+		d = safeAdd(d, oldd)
+	// }
+	
+	inRes[0] = a;
+	inRes[1] = b;
+	inRes[2] = c;
+	inRes[3] = d;
 	//return [a, b, c, d]
 }
 

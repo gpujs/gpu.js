@@ -49,8 +49,7 @@ QUnit.test( "MD5: short circuting in JS", function(assert) {
 	assert.equal(rstr2hex(binl2rstr(resultBins)), "5eb63bbbe01eeed093cb22bb8f5acdc3");
 });
 
-/// MD5 short circuting
-QUnit.test( "MD5: via GPU", function(assert) {
+function md5_pocRun(assert, mode) {
 	var gpu = new GPU();
 	assert.ok(gpu);
 	
@@ -62,11 +61,27 @@ QUnit.test( "MD5: via GPU", function(assert) {
 	gpu.addFunction( md5gg );
 	gpu.addFunction( md5hh );
 	gpu.addFunction( md5ii );
-	gpu.addFunction( binlMD5_gpujs, ["float[4]", "float[4]", "float", "float"], "void" );
+	gpu.addFunction( binlMD5_128bit, ["vec4", "vec4", "float"], "void" );
+	
+	function floatToVec4(a,b,c,d) {
+		return [a,b,c,d];
+	}
+	gpu._addFunctionWebgl(
+		"floatToVec4", floatToVec4,
+		["float","float","float","float"], "vec4",
+		"vec4 floatToVec4(float a, float b, float c, float d) { \n"+
+		"	vec4 res; \n"+
+		"	res[0] = a; \n"+
+		"	res[1] = b; \n"+
+		"	res[2] = c; \n"+
+		"	res[3] = d; \n"+
+		"	return res; \n"+
+		"}"
+	)
 	
 	function testMD5bin(inRawBin, inRawBinLen, targetBin) {
 		var res = [0,0,0,0];
-		binlMD5_gpujs(res, inBin, 4, inRawBinLen);
+		binlMD5_128bit(res, inRawBin, inRawBinLen);
 		return (
 			targetBin[0] == res[0] &&
 			targetBin[1] == res[1] &&
@@ -76,11 +91,11 @@ QUnit.test( "MD5: via GPU", function(assert) {
 	}
 	gpu._addFunctionWebgl( 
 		"testMD5bin", testMD5bin, 
-		["float[4]","float","float[4]"], "float",
-		"highp float testMD5bin(float[4] inRawBin, float inRawBinLen, float[4] targetBin) { \n"+
-		"	float res = float[4](0,0,0,0); \n"+
-		"	binlMD5_gpujs(res, inRawBin, 4, inRawBinLen); \n"+
-		"	return ( \n"+
+		["vec4","float","vec4"], "float",
+		"highp float testMD5bin(vec4 inRawBin, float inRawBinLen, vec4 targetBin) { \n"+
+		"	vec4 res; \n"+
+		"	binlMD5_128bit(res, inRawBin, inRawBinLen); \n"+
+		"	return float( \n"+
 		"		targetBin[0] == res[0] && \n"+
 		"		targetBin[1] == res[1] && \n"+
 		"		targetBin[2] == res[2] && \n"+
@@ -88,12 +103,30 @@ QUnit.test( "MD5: via GPU", function(assert) {
 		"	); \n"+
 		"}\n"
 	);
-	console.log("addFunction", gpu.addFunction, gpu);
+	//console.log("addFunction", gpu.addFunction, gpu);
 	
 	var func = gpu.createKernel(function( inBin, inBinLen, targetMD5 ) {
-		return testMD5bin(inBin, inBinLen, targetMD5);
-	}).dimensions([1]);
+		return testMD5bin(
+			floatToVec4(inBin[0],inBin[1],inBin[2],inBin[3]), 
+			inBinLen, floatToVec4(targetMD5[0],targetMD5[1],targetMD5[2],targetMD5[3]));
+	}, {
+		dimensions : [1],
+		mode : mode
+	});
 
 	assert.ok(func);
-	assert.equal(func( [ 1819043176, 1870078063, 6581362, 0 ], 88, [ -1153714594, -789700896, -1155347565, -1009952113 ] ), 1);
+	assert.equal(func( [ 1819043176, 1870078063, 6581362, 0 ], 88, [ -1153714594, -789700896, -1155347565, -1009952113 ] )[0], true);
+	assert.equal(func( [ 1819043176, 1870078063, 0, 0 ], 88, [ -1153714594, -789700896, -1155347565, -1009952113 ] )[0], false);
+	assert.equal(func( [ 1819043176, 1870078063, 6581362, 0 ], 88, [ -1153714594, -789700896, -1155347565, 0 ] )[0], false);
+}
+
+/// MD5 short circuting
+// QUnit.test( "MD5: POC run (auto)", function(assert) {
+// 	md5_pocRun(assert,null);
+// });
+QUnit.test( "MD5: POC run (cpu)", function(assert) {
+	md5_pocRun(assert,"cpu");
+});
+QUnit.test( "MD5: POC run (gpu)", function(assert) {
+	md5_pocRun(assert,"gpu");
 });

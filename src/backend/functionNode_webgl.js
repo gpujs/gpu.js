@@ -373,6 +373,8 @@ var functionNode_webgl = (function() {
 			case "<" :
 			case ">" :
 			case "*" :
+			case "<=" :
+			case ">=" :
 				ast_generic(ast.left, retArr, funcParam);
 				retArr.push(operator);
 				ast_generic(ast.right, retArr, funcParam);
@@ -751,14 +753,18 @@ var functionNode_webgl = (function() {
 			if (mNode.object.type == "Identifier") {
 				// Working logger
 				var reqName = mNode.object.name;
-				var funcName = funcParam.funcName || "kernel";
+				var funcName = funcParam.functionName || "kernel";
 				var assumeNotTexture = false;
 
 				// Possibly an array request - handle it as such
-				if(funcParam != "kernel" && funcParam.paramNames ) {
+				if(funcName != "kernel" && funcParam.paramNames ) {
 					var idx = funcParam.paramNames.indexOf(reqName);
-					if( idx >= 0 && funcParam.paramType[idx].startsWith("float")) {
-						assumeNotTexture = true;
+					if( idx >= 0 ) {
+						var paramType = funcParam.paramType[idx].trim();
+						if( paramType.startsWith("float") || paramType.startsWith("vec")) {
+							assumeNotTexture = true;
+							//console.log(funcParam);
+						}
 					}
 				}
 
