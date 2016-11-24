@@ -48,12 +48,17 @@ var GPU = (function() {
 		// Replace the kernel function and param object
 		//
 		this._kernelFunction = kernel;
-		this._kernelParamObj = paramObj || this._kernelParamObj || {};
+		
+		var kernelParam = this._kernelParamObj || {};
+		for(var nme in paramObj) {
+			kernelParam[nme] = paramObj[nme];
+		}
+		this._kernelParamObj = kernelParam;
 		
 		//
 		// Get the config, fallbacks to default value if not set
 		//
-		var mode = paramObj.mode && paramObj.mode.toLowerCase();
+		var mode = kernelParam.mode && kernelParam.mode.toLowerCase();
 		this.computeMode = mode || "auto";
 		
 		//
@@ -247,6 +252,20 @@ var GPU = (function() {
 	}
 	GPU.prototype.supportWebgl = supportWebgl;
 	GPU.supportWebgl = supportWebgl;
+	
+	///
+	/// Set the default var type
+	///
+	function _setDefaultVarType( inType ) {
+		this._kernelParamObj.defaultVarType = inType;
+	}
+	
+	///
+	/// Get the default var type
+	///
+	function _getDefaultVarType() {
+		return this._kernelParamObj.defaultVarType || "float";
+	}
 	
 	return GPU;
 })();
