@@ -621,9 +621,8 @@ var functionNode_webgl = (function() {
 	}
 
 	function ast_VariableDeclaration(vardecNode, retArr, funcParam) {
-		console.log(vardecNode, opt, this, gpu);
-		
-		retArr.push("float ");
+		//console.log(vardecNode, opt, this, gpu);
+		retArr.push(gpu._getDefaultVarType()+" ");
 		for (var i = 0; i < vardecNode.declarations.length; i++) {
 			if (i > 0) {
 				retArr.push(",");

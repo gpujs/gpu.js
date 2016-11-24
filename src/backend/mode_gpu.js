@@ -325,7 +325,7 @@
 					'}',
 					'',
 					'highp int integerMod(highp int x, highp int y) {',
-					'	return int(integerMod(float(x), float(y)));',
+					'	return x - (y * (x/y));',
 					'}',
 					'',
 					'// Here be dragons!',

@@ -53,6 +53,9 @@ function md5_pocRun(assert, mode) {
 	var gpu = new GPU();
 	assert.ok(gpu);
 	
+	// Change default var mode to unsigned long
+	gpu._setDefaultVarType("int")
+	
 	// Binary string support
 	gpu.addFunction( safeAdd );
 	gpu.addFunction( bitRotateLeft );

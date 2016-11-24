@@ -394,6 +394,7 @@ var GPUUtils = (function() {
 		
 		// Create a new canvas DOM
 		var webgl = (
+			canvasObj.getContext("experimental-webgl2", init_webgl_defaultOptions) ||
 			canvasObj.getContext("experimental-webgl", init_webgl_defaultOptions) ||
 			canvasObj.getContext("webgl", init_webgl_defaultOptions)
 		);

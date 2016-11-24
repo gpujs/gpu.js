@@ -257,8 +257,13 @@ var GPU = (function() {
 	/// Set the default var type
 	///
 	function _setDefaultVarType( inType ) {
+		if( this._kernelParamObj == null ) {
+			this._kernelParamObj = {};
+		}
 		this._kernelParamObj.defaultVarType = inType;
+		return this;
 	}
+	GPU.prototype._setDefaultVarType = _setDefaultVarType;
 	
 	///
 	/// Get the default var type
@@ -266,6 +271,7 @@ var GPU = (function() {
 	function _getDefaultVarType() {
 		return this._kernelParamObj.defaultVarType || "float";
 	}
+	GPU.prototype._getDefaultVarType = _getDefaultVarType;
 	
 	return GPU;
 })();

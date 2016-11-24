@@ -202,27 +202,42 @@ var functionBuilder = (function() {
 	"	return float(result);\n"+
 	"}\n";
 	
+	function bititerationFunctionTemplate(name, addOnOperator) {
+		return ""+
+			"highp int "+name+"( int v1, int v2 ) { \n"+
+			"	int byteVal = 1; int result = 0; \n"+
+			"	for(int i=0; i < 32; i++) { \n"+
+			"		bool keepGoing = v1 > 0 || v2 > 0; \n "+
+			"		if(keepGoing) {\n"+
+			"			bool b1 = integerMod(v1,2) > 0;\n"+
+			"			bool b2 = integerMod(v2,2) > 0;\n"+
+			"			bool addOn = "+addOnOperator+"; \n"+
+			"			if(addOn) { result += byteVal; }\n"+
+			"			v1 = (v1 / 2);\n"+
+			"			v2 = (v2 / 2);\n"+
+			"			byteVal *= 2;\n"+
+			"		}\n"+
+			"	} \n"+
+			"	return result;\n"+
+			"}\n"+
+			"\n"+
+			"highp float "+name+"( float v1, float v2 ) { \n"+
+			"	return float( "+name+"( int(v1), int(v2) ) );\n"+
+			"}\n";
+	}
+	
 	// Bitwise AND operator
 	function bitwiseAND(a,b) { return a & b; }
-	var bitwiseAND_webgl = "highp float bitwiseAND( float v1, float v2 ) { \n"+
-		bitwiseWebglFunction_prefix +
-		"bool addOn = b1 && b2;\n"+
-		bitwiseWebglFunction_suffix;
+	var bitwiseAND_webgl = bititerationFunctionTemplate("bitwiseAND", "b1 && b2");
 		
 	// Bitwise OR operator
 	function bitwiseOR(a,b) { return a | b; }
-	var bitwiseOR_webgl = "highp float bitwiseOR( float v1, float v2 ) { \n"+
-		bitwiseWebglFunction_prefix +
-		"bool addOn = b1 || b2;\n"+
-		bitwiseWebglFunction_suffix;
-		
+	var bitwiseOR_webgl = bititerationFunctionTemplate("bitwiseOR", "b1 || b2");
+	
 	// Bitwise XOR operator
 	function bitwiseXOR(a,b) { return a ^ b; }
-	var bitwiseXOR_webgl = "highp float bitwiseXOR( float v1, float v2 ) { \n"+
-		bitwiseWebglFunction_prefix +
-		"bool addOn = (b1 || b2) && !(b1 && b2);\n"+
-		bitwiseWebglFunction_suffix;
-		
+	var bitwiseXOR_webgl = bititerationFunctionTemplate("bitwiseXOR", "(b1 || b2) && !(b1 && b2)");
+	
 	// Bitwise right shift
 	function bitwiseRShift(a,b) { return a >> b; }
 	var bitwiseRShift_webgl = "highp float bitwiseRShift( float a, float b ) { \n"+
