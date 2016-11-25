@@ -325,11 +325,15 @@ var functionNode_webgl = (function() {
 
 		// Push the literal value as a float/int
 		retArr.push( ast.value );
-
+		
+		//var vType = (gpu && gpu._getDefaultVarType()) || "float";
+		//if( vType.startsWith("float") ) {
 		// If it was an int, node made a float
 		if( Number.isInteger(ast.value) ) {
 			retArr.push(".0");
 		}
+		//}
+		
 
 		return retArr;
 	}
@@ -622,7 +626,8 @@ var functionNode_webgl = (function() {
 
 	function ast_VariableDeclaration(vardecNode, retArr, funcParam) {
 		//console.log(vardecNode, opt, this, gpu);
-		retArr.push(gpu._getDefaultVarType()+" ");
+		var vType = (gpu && gpu._getDefaultVarType()) || "float";
+		retArr.push(vType+" ");
 		for (var i = 0; i < vardecNode.declarations.length; i++) {
 			if (i > 0) {
 				retArr.push(",");

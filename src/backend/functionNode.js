@@ -37,8 +37,9 @@ var functionNode = (function() {
 	/// 	paramTypeArray  - {[String,...]}          Parameter type array, assumes all parameters are "float" if null
 	/// 	returnType      - {String}                The return type, assumes "float" if null
 	/// 	webglString     - {String}                Webgl string to use instead, this disable the automated conversions. This calls setWebglFunctionString
+	/// 	webglString     - {String}                Webgl PROTOTYPE HEADER string to use instead, this disable the automated conversions. This calls setWebglFunctionPrototypeString
 	///
-	function functionNode( gpu, functionName, jsFunction, paramTypeArray, returnType, webglString ) {
+	function functionNode( gpu, functionName, jsFunction, paramTypeArray, returnType, webglString, webglStringHeader ) {
 
 		this.gpu = gpu;
 
@@ -114,6 +115,9 @@ var functionNode = (function() {
 		if( webglString != null && webglString.length > 0 ) {
 			this.getWebglFunctionString({});
 			this.setWebglFunctionString(webglString);
+		}
+		if( webglStringHeader != null && webglStringHeader.length > 0 ) {
+			this.setWebglFunctionPrototypeString(webglStringHeader);
 		}
 	}
 
@@ -216,6 +220,19 @@ var functionNode = (function() {
 		});
 	}
 	functionNode.prototype.getWebglFunctionPrototypeString = getWebglFunctionPrototypeString;
+	
+	///
+	/// Function: getWebglFunctionPrototypeString
+	///
+	/// Set the webglFunctionString value, overwriting it - this is strictly the header definition
+	///
+	/// Parameters:
+	/// 	shaderCode - {String}  Shader code string, representing the function
+	///
+	function setWebglFunctionPrototypeString(shaderCode) {
+		this.webglFunctionPrototypeString = shaderCode;
+	}
+	functionNode.prototype.setWebglFunctionPrototypeString = setWebglFunctionPrototypeString;
 
 	///
 	/// Function: setWebglString

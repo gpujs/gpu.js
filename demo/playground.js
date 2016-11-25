@@ -122,11 +122,20 @@ $(function() {
 	var paramDefaultNames = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
 	
 	/// Default parameter function
+	var paramDefaultFunction_A = ""+
+		"function(size,rand) {\n"+
+		"	return size;\n"+
+		"}";
+	
+	/// Default parameter function
 	var paramDefaultFunction = ""+
 		"function(size,rand) {\n"+
 		"	var ret = [];\n"+
-		"	for(var i=0; i<size; ++i){\n"+
-		"		ret[i] = parseInt(rand()*100);\n"+
+		"	for(var a=0; a<size; ++a){\n"+
+		"		ret[a] = [];\n"+
+		"		for(var i=0; i<size; ++i){\n"+
+		"			ret[a][i] = parseInt(rand()*100);\n"+
+		"		}\n"+
 		"	}\n"+
 		"	return ret;\n"+
 		"}";
@@ -168,7 +177,11 @@ $(function() {
 				CM_parameters[p] = CodeMirror.fromTextArea(pNode.find(".param_function")[0], CM_defaultConfig);
 				
 				// Setup default value
-				CM_parameters[p].setValue(paramDefaultFunction);
+				if( p == 0 ) {
+					CM_parameters[p].setValue(paramDefaultFunction_A);
+				} else {
+					CM_parameters[p].setValue(paramDefaultFunction);
+				}
 				
 				// Block edits for first and last line
 				CM_parameters[p].on('beforeChange', CM_blockFirstAndLastLine);
@@ -363,10 +376,10 @@ $(function() {
 	
 	/// Default parameter function
 	var kernelDefaultFunction = ""+
-		"function kernel(A,B) {\n"+
+		"function kernel(A,B,C) {\n"+
 		"	var sum = 0;\n"+
-		"	for (var i=0; i<512; i++) {\n"+
-		"		sum = Math.pow((A[this.thread.x]-sum)/B[this.thread.x],2);\n"+
+		"	for (var i=0; i<A; i++) {\n"+
+		"		sum += B[this.thread.y][i] * C[i][this.thread.x];\n"+
 		"	}\n"+
 		"	return sum;\n"+
 		"}";
@@ -471,7 +484,8 @@ $(function() {
 		var gpu = new GPU();
 		var kernel = gpu.createKernel(rawFunction,{
 			dimensions : dimFunction(sampleSize),
-			mode : mode
+			mode : mode,
+			loopMaxIterations : sampleSize + 1
 		});
 		
 		var args = getKernelParameters(sampleSize, paramFunctions);

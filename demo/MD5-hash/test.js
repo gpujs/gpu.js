@@ -54,16 +54,25 @@ function md5_pocRun(assert, mode) {
 	assert.ok(gpu);
 	
 	// Change default var mode to unsigned long
-	gpu._setDefaultVarType("int")
+	var vTyp = "highp int";
+	
+	// vTyp arrays
+	var vTyp_2 = [vTyp,vTyp];
+	var vTyp_5 = [vTyp,vTyp,vTyp,vTyp,vTyp];
+	var vTyp_6 = [vTyp,vTyp,vTyp,vTyp,vTyp,vTyp];
+	var vTyp_7 = [vTyp,vTyp,vTyp,vTyp,vTyp,vTyp,vTyp];
+	
+	// Set default var type
+	gpu._setDefaultVarType( vTyp )
 	
 	// Binary string support
-	gpu.addFunction( safeAdd );
-	gpu.addFunction( bitRotateLeft );
-	gpu.addFunction( md5cmn );
-	gpu.addFunction( md5ff );
-	gpu.addFunction( md5gg );
-	gpu.addFunction( md5hh );
-	gpu.addFunction( md5ii );
+	gpu.addFunction( safeAdd, vTyp_2, vTyp );
+	gpu.addFunction( bitRotateLeft, vTyp_2, vTyp );
+	gpu.addFunction( md5cmn, vTyp_6, vTyp );
+	gpu.addFunction( md5ff, vTyp_7, vTyp );
+	gpu.addFunction( md5gg, vTyp_7, vTyp );
+	gpu.addFunction( md5hh, vTyp_7, vTyp );
+	gpu.addFunction( md5ii, vTyp_7, vTyp );
 	gpu.addFunction( binlMD5_128bit, ["vec4", "vec4", "float"], "void" );
 	
 	function floatToVec4(a,b,c,d) {
