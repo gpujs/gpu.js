@@ -416,5 +416,36 @@ var GPUUtils = (function() {
 	}
 	GPUUtils.init_webgl = init_webgl;
 	
+	// test_readPixels closure based memoizer
+	var test_floatReadPixels_memoizer = null;
+	///
+	/// Function: test_floatReadPixels_memoizer
+	///
+	/// Checks if the browser supports readPixels with float type
+	///
+	/// Parameters:
+	/// 	gpu - {gpu.js object} the gpu object
+	///
+	/// Returns:
+	/// 	{Boolean} true if browser supports
+	///
+	function test_floatReadPixels(gpu) {
+		if (test_floatReadPixels_memoizer !== null) {
+			return test_floatReadPixels_memoizer
+		}
+		
+		var x = gpu.createKernel(function() {
+			return 1;
+		}, {
+			'dimensions': [2],
+			'floatTextures': true,
+			'floatOutput': true,
+			'floatOutputForce': true
+		}).dimensions([2])();
+		
+		return x[0] == 1;
+	}
+	GPUUtils.test_floatReadPixels = test_floatReadPixels;
+	
 	return GPUUtils;
 })();
