@@ -116,8 +116,15 @@
 	GPU.prototype._mode_gpu = function(kernel, opt) {
 		var gpu = this;
 		
-		var canvas = gpu.canvas = GPUUtils.init_canvas();
-		var gl = gpu.webgl = GPUUtils.init_webgl(canvas);
+		var canvas = gpu._canvas;
+		if (!gpu._canvas) {
+			canvas = gpu._canvas = GPUUtils.init_canvas();
+		}
+		
+		var gl = gpu._webgl;
+		if (!gpu._webgl) {
+			gl = gpu._webgl = GPUUtils.init_webgl(canvas);
+		}
 
 		var builder = this.functionBuilder;
 		var endianness = this.endianness;

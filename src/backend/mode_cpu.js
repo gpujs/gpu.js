@@ -9,9 +9,11 @@
 	GPU.prototype._mode_cpu = function(kernel, opt) {
 		var gpu = this;
 		
-		var canvas = gpu.canvas = GPUUtils.init_canvas();
-		//var gl = gpu.webgl = GPUUtils.init_webgl(canvas);
-
+		var canvas = gpu._canvasCpu;
+		if (!canvas) {
+			canvas = gpu._canvasCpu = GPUUtils.init_canvas();
+		}
+		
 		function ret() {
 			if (!opt.dimensions || opt.dimensions.length === 0) {
 				if (arguments.length != 1) {
