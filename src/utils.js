@@ -211,6 +211,23 @@ var GPUUtils = (function() {
 	GPUUtils.functionBinder = functionBinder;
 	
 	///
+	/// Function: isArray
+	///
+	/// Checks if is an array or Array-like object
+	///
+	/// Parameters:
+	/// 	arg   - {Object} The argument object to check if is array
+	///
+	/// Returns:
+	/// 	{Boolean}  true if is array or Array-like object
+	///
+	function isArray(arr) {
+		var tag = Object.prototype.toString.call(arr);
+		return tag.indexOf('Array]', tag.length - 6) !== -1;
+	}
+	GPUUtils.isArray = isArray;
+	
+	///
 	/// Function: getArgumentType
 	///
 	/// Evaluate the argument type, to apply respective logic for it
@@ -222,7 +239,7 @@ var GPUUtils = (function() {
 	/// 	{String}  Argument type Array/Number/Texture/Unknown
 	///
 	function getArgumentType(arg) {
-		if (Array.isArray(arg)) {
+		if (GPUUtils.isArray(arg)) {
 			return 'Array';
 		} else if (typeof arg == "number") {
 			return 'Number';

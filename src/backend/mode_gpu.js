@@ -15,10 +15,10 @@
 
 	function getDimensions(x, pad) {
 		var ret;
-		if (Array.isArray(x)) {
+		if (GPUUtils.isArray(x)) {
 			var dim = [];
 			var temp = x;
-			while (Array.isArray(temp)) {
+			while (GPUUtils.isArray(temp)) {
 				dim.push(temp.length);
 				temp = temp[0];
 			}
@@ -57,15 +57,15 @@
 		return ret;
 	}
 
-	function flatten(arr, padding) {
-		if (Array.isArray(arr[0])) {
-			if (Array.isArray(arr[0][0])) {
+	function flatten(arr) {
+		if (GPUUtils.isArray(arr[0])) {
+			if (GPUUtils.isArray(arr[0][0])) {
 				return [].concat.apply([], [].concat.apply([], arr));
 			} else {
 				return [].concat.apply([], arr);
 			}
 		} else {
-			return GPUUtils.clone(arr);
+			return arr;
 		}
 	}
 
@@ -509,14 +509,13 @@
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-					var paramArray = flatten(arguments[textureCount]);
 					var paramLength = paramSize[0] * paramSize[1];
 					if (opt.floatTextures) {
 						paramLength *= 4;
 					}
-					while (paramArray.length < paramLength) {
-						paramArray.push(0);
-					}
+					
+					var paramArray = new Float32Array(paramLength);
+					paramArray.set(flatten(arguments[textureCount]))
 					
 					var argBuffer;
 					if (opt.floatTextures) {
