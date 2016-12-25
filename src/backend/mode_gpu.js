@@ -116,14 +116,14 @@
 	GPU.prototype._mode_gpu = function(kernel, opt) {
 		var gpu = this;
 		
-		var canvas = gpu._canvas;
-		if (!gpu._canvas) {
-			canvas = gpu._canvas = GPUUtils.init_canvas();
+		var canvas = this._canvas;
+		if (!canvas) {
+			canvas = this._canvas = GPUUtils.init_canvas();
 		}
 		
-		var gl = gpu._webgl;
-		if (!gpu._webgl) {
-			gl = gpu._webgl = GPUUtils.init_webgl(canvas);
+		var gl = this._webgl;
+		if (!gl) {
+			gl = this._webgl = GPUUtils.init_webgl(canvas);
 		}
 
 		var builder = this.functionBuilder;
@@ -573,6 +573,13 @@
 			} else {
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 			}
+			
+			if (opt.graphical) {
+				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+   				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+				return;
+			}
 
 			var framebuffer = gl.createFramebuffer();
 			framebuffer.width = texSize[0];
@@ -585,10 +592,6 @@
 			if (opt.outputToTexture) {
 				return new GPUTexture(gpu, outputTexture, texSize, opt.dimensions);
 			} else {
-				if (opt.graphical) {
-					return;
-				}
-
 				var result;
 				if (opt.floatOutput) {
 					result = new Float32Array(texSize[0]*texSize[1]*4);
