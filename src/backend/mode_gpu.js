@@ -146,7 +146,7 @@
 				throw "Float texture outputs are not supported on this browser";
 			} else if (opt.floatTextures === undefined && GPUUtils.OES_texture_float) {
 				opt.floatTextures = true;
-				opt.floatOutput = GPUUtils.test_floatReadPixels(gpu);
+				opt.floatOutput = GPUUtils.test_floatReadPixels(gpu) && !opt.graphical;
 			}
 			
 			if (!opt.dimensions || opt.dimensions.length === 0) {
