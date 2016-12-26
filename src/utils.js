@@ -355,7 +355,7 @@ var GPUUtils = (function() {
 	function isWebgl( webglObj ) {
 		return (
 			webglObj != null &&
-			!!webglObj.getExtension
+			webglObj.hasOwnProperty('getExtension')
 		);
 	}
 	GPUUtils.isWebgl = isWebgl;
