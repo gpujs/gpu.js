@@ -10,7 +10,7 @@
 /// @license <%= pkg.license %>
 /// The MIT License
 ///
-/// Copyright (c) <%= new Date().getFullYear() %> Fazli Sapuan, Matthew Saw, Eugene Cheah and Julia Low
+/// Copyright (c) <%= new Date().getFullYear() %> Fazli Sapuan, Matthew Saw and Eugene Cheah
 ///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the "Software"), to deal

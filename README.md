@@ -144,7 +144,7 @@ Documentation of the codebase is [automatically built](https://github.com/gpujs/
 
 The MIT License
 
-Copyright (c) 2016 Fazli Sapuan, Matthew Saw, Eugene Cheah and Julia Low
+Copyright (c) 2016 Fazli Sapuan, Matthew Saw and Eugene Cheah
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
