@@ -4,7 +4,7 @@
 		for (var i=1; i<dimensions.length; i++) {
 			numTexels *= dimensions[i];
 		}
-		
+
 		if (opt.floatTextures && (!output || opt.floatOutput)) {
 			numTexels = Math.ceil(numTexels / 4);
 		}
@@ -38,28 +38,35 @@
 
 		return ret;
 	}
-	
+
 	function pad(arr, padding) {
 		function zeros(n) {
 			return Array.apply(null, Array(n)).map(Number.prototype.valueOf,0);
 		}
-		
+
 		var len = arr.length + padding * 2;
-		
+
 		var ret = arr.map(function(x) {
 			return [].concat(zeros(padding), x, zeros(padding));
 		});
-		
+
 		for (var i=0; i<padding; i++) {
 			ret = [].concat([zeros(len)], ret, [zeros(len)]);
 		}
-		
+
 		return ret;
 	}
 
 	function flatten(arr) {
 		if (GPUUtils.isArray(arr[0])) {
 			if (GPUUtils.isArray(arr[0][0])) {
+				// Annoyingly typed arrays do not have concat so we turn them into arrays first
+				if (!Array.isArray(arr[0][0])) {
+					return [].concat.apply([], [].concat.apply([], arr).map(function(x) {
+						return Array.prototype.slice.call(x);
+					}));
+				}
+
 				return [].concat.apply([], [].concat.apply([], arr));
 			} else {
 				return [].concat.apply([], arr);
@@ -100,7 +107,7 @@
 			specialFlags += "Hardcode";
 			specialFlags += '['+outputDim[0]+','+outputDim[1]+','+outputDim[2]+']';
 		}
-		
+
 		if (opt.constants) {
 			specialFlags += "Constants";
 			specialFlags += JSON.stringify(opt.constants);
@@ -115,12 +122,12 @@
 
 	GPU.prototype._mode_gpu = function(kernel, opt) {
 		var gpu = this;
-		
+
 		var canvas = this._canvas;
 		if (!canvas) {
 			canvas = this._canvas = GPUUtils.init_canvas();
 		}
-		
+
 		var gl = this._webgl;
 		if (!gl) {
 			gl = this._webgl = GPUUtils.init_webgl(canvas);
@@ -138,7 +145,7 @@
 
 		var programCache = [];
 		var programUniformLocationCache = [];
-		
+
 		function ret() {
 			if (opt.floatTextures === true && !GPUUtils.OES_texture_float) {
 				throw "Float textures are not supported on this browser";
@@ -148,7 +155,7 @@
 				opt.floatTextures = true;
 				opt.floatOutput = GPUUtils.test_floatReadPixels(gpu) && !opt.graphical;
 			}
-			
+
 			if (!opt.dimensions || opt.dimensions.length === 0) {
 				if (arguments.length != 1) {
 					throw "Auto dimensions only supported for kernels with only one input";
@@ -165,21 +172,21 @@
 			}
 
 			var texSize = dimToTexSize(opt, opt.dimensions, true);
-						
+
 			if (opt.graphical) {
 				if (opt.dimensions.length != 2) {
 					throw "Output must have 2 dimensions on graphical mode";
 				}
-				
+
 				if (opt.floatOutput) {
 					throw "Cannot use graphical mode and float output at the same time";
 				}
-				
+
 				texSize = GPUUtils.clone(opt.dimensions);
 			} else if (opt.floatOutput === undefined && GPUUtils.OES_texture_float) {
 				opt.floatOutput = true;
 			}
-			
+
 			canvas.width = texSize[0];
 			canvas.height = texSize[1];
 			gl.viewport(0, 0, texSize[0], texSize[1]);
@@ -191,7 +198,7 @@
 
 			var programCacheKey = getProgramCacheKey(arguments, opt, opt.dimensions);
 			var program = programCache[programCacheKey];
-			
+
 			function getUniformLocation(name) {
 				var location = programUniformLocationCache[programCacheKey][name];
 				if (!location) {
@@ -206,7 +213,7 @@
 				if (opt.constants) {
 					for (var name in opt.constants) {
 						var value = parseFloat(opt.constants[name]);
-						
+
 						if (Number.isInteger(value)) {
 							constantsStr += 'const float constants_' + name + '=' + parseInt(value) + '.0;\n';
 						} else {
@@ -214,7 +221,7 @@
 						}
 					}
 				}
-				
+
 				var paramStr = '';
 
 				var paramType = [];
@@ -513,10 +520,10 @@
 					if (opt.floatTextures) {
 						paramLength *= 4;
 					}
-					
+
 					var paramArray = new Float32Array(paramLength);
 					paramArray.set(flatten(arguments[textureCount]))
-					
+
 					var argBuffer;
 					if (opt.floatTextures) {
 						argBuffer = new Float32Array(paramArray);
@@ -526,7 +533,7 @@
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
 					}
 					textures[textureCount] = texture;
-					
+
 					var paramLoc = getUniformLocation("user_" + paramNames[textureCount]);
 					var paramSizeLoc = getUniformLocation("user_" + paramNames[textureCount] + "Size");
 					var paramDimLoc = getUniformLocation("user_" + paramNames[textureCount] + "Dim");
@@ -559,7 +566,7 @@
 					throw "Input type not supported (GPU): " + arguments[textureCount];
 				}
 			}
-			
+
 			var outputTexture = gl.createTexture();
 			gl.activeTexture(gl["TEXTURE"+textureCount]);
 			gl.bindTexture(gl.TEXTURE_2D, outputTexture);
@@ -572,7 +579,7 @@
 			} else {
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 			}
-			
+
 			if (opt.graphical) {
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
    				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -585,7 +592,7 @@
 			framebuffer.height = texSize[1];
 			gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
-			
+
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
 			if (opt.outputToTexture) {
@@ -600,7 +607,7 @@
 					gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
 					result = Float32Array.prototype.slice.call(new Float32Array(bytes.buffer));
 				}
-				
+
 				result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
 
 				if (opt.dimensions.length == 1) {
@@ -615,10 +622,10 @@
 				}
 			}
 		}
-		
+
 		ret.canvas = canvas;
 		ret.webgl = gl;
-		
+
 		return gpu.setupExecutorExtendedFunctions(ret, opt);
 	};
 
