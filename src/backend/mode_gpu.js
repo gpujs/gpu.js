@@ -513,7 +513,6 @@
 			if (!textureCache[programCacheKey]) {
 				textureCache[programCacheKey] = [];
 			}
-			var texturesForCleanup = [];
 			var textureCount = 0;
 			for (textureCount=0; textureCount<paramNames.length; textureCount++) {
 				var paramDim, paramSize, texture;
@@ -552,7 +551,6 @@
 						argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
 					}
-					//texturesForCleanup.push(texture);
 
 					var paramLoc = getUniformLocation("user_" + paramNames[textureCount]);
 					var paramSizeLoc = getUniformLocation("user_" + paramNames[textureCount] + "Size");
@@ -621,12 +619,11 @@
 
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-			for (var i=0; i<texturesForCleanup.length; i++) {
-				var texture = texturesForCleanup[i];
-				gl.deleteTexture(texture);
-			}
-
 			if (opt.outputToTexture) {
+				// Don't retain a handle on the output texture, we might need to render on the same texture later
+				delete textureCache[programCacheKey][textureCount];
+				delete framebufferCache[programCacheKey];
+				
 				return new GPUTexture(gpu, outputTexture, texSize, opt.dimensions);
 			} else {
 				var result;
