@@ -622,8 +622,7 @@
 			if (opt.outputToTexture) {
 				// Don't retain a handle on the output texture, we might need to render on the same texture later
 				delete textureCache[programCacheKey][textureCount];
-				delete framebufferCache[programCacheKey];
-				
+
 				return new GPUTexture(gpu, outputTexture, texSize, opt.dimensions);
 			} else {
 				var result;
