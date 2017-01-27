@@ -5,10 +5,14 @@ var GPUTexture = (function() {
         this.size = size;
         this.dimensions = dimensions;
     }
-    
+
     GPUTexture.prototype.toArray = function() {
         return this.gpu.textureToArray(this);
     };
-    
+
+    GPUTexture.prototype.delete = function() {
+        return this.gpu.deleteTexture(this);
+    };
+
     return GPUTexture;
 })();

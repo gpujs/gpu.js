@@ -29,10 +29,10 @@ var GPUCore = (function() {
 		this.functionBuilder = new functionBuilder(this);
 		this.functionBuilder.polyfillStandardFunctions();
 	}
-	
+
 	// Legacy method to get webgl : Preseved for backwards compatibility
 	GPUCore.prototype.getGl = function() {
-		return this.webgl;
+		return this._webgl;
 	};
 
 	GPUCore.prototype.textureToArray = function(texture) {
@@ -42,7 +42,12 @@ var GPUCore = (function() {
 
 		return copy(texture);
 	};
-	
+
+	GPUCore.prototype.deleteTexture = function(texture) {
+		var gl = this._webgl;
+		gl.deleteTexture(texture.texture);
+	}
+
 	///
 	/// Get and returns the Synchronous executor, of a class and kernel
 	/// Which returns the result directly after passing the arguments.
@@ -51,9 +56,9 @@ var GPUCore = (function() {
 		var kernel = this._kernelFunction;
 		var paramObj = this._kernelParamObj;
 		paramObj.dimensions = paramObj.dimensions || [];
-		
+
 		var mode = this.computeMode;
-		
+
 		//
 		// CPU mode
 		//
@@ -77,7 +82,7 @@ var GPUCore = (function() {
 		}
 	}
 	GPUCore.prototype.getSynchronousModeExecutor = getSynchronousModeExecutor;
-	
+
 	///
 	/// Get and returns the ASYNCRONUS executor, of a class and kernel
 	/// This returns a Promise object from an argument set.
@@ -88,8 +93,8 @@ var GPUCore = (function() {
 		return null;
 	}
 	GPUCore.prototype.getPromiseModeExecutor = getPromiseModeExecutor;
-	
-	
+
+
 	///
 	/// Prepare the synchrnous mode executor,
 	/// With additional functionalities attached (standard)
@@ -103,10 +108,10 @@ var GPUCore = (function() {
 	///
 	function setupExecutorExtendedFunctions(ret, opt) {
 		var gpu = this;
-		
+
 		// Allow original class object reference from kernel
 		ret.gpujs = gpu;
-		
+
 		ret.dimensions = function(dim) {
 			opt.dimensions = dim;
 			return ret;
@@ -126,7 +131,7 @@ var GPUCore = (function() {
 			opt.loopMaxIterations = max;
 			return ret;
 		};
-		
+
 		ret.constants = function(constants) {
 			opt.constants = constants;
 			return ret;
@@ -147,12 +152,12 @@ var GPUCore = (function() {
 			opt.outputToTexture = flag;
 			return ret;
 		};
-		
+
 		ret.floatTextures = function(flag) {
 			opt.floatTextures = flag;
 			return ret;
 		};
-		
+
 		ret.floatOutput = function(flag) {
 			opt.floatOutput = flag;
 			return ret;
@@ -165,18 +170,18 @@ var GPUCore = (function() {
 				gpu._kernelParamObj
 			);
 		};
-		
+
 		ret.getCanvas = function(mode) {
 			return ret.canvas;
 		};
-		
+
 		ret.getWebgl = function(mode) {
 			return ret.webgl;
 		};
-		
+
 		return ret;
 	}
 	GPUCore.prototype.setupExecutorExtendedFunctions = setupExecutorExtendedFunctions;
-	
+
 	return GPUCore;
 })();

@@ -145,6 +145,20 @@
 
 		var programCache = [];
 		var programUniformLocationCache = [];
+		var bufferCache = [];
+		var textureCache = [];
+		var framebufferCache = [];
+
+		var vertices = new Float32Array([
+			-1, -1,
+			1, -1,
+			-1, 1,
+			1, 1]);
+		var texCoords = new Float32Array([
+			0.0, 0.0,
+			1.0, 0.0,
+			0.0, 1.0,
+			1.0, 1.0]);
 
 		function ret() {
 			if (opt.floatTextures === true && !GPUUtils.OES_texture_float) {
@@ -468,20 +482,17 @@
 
 			gl.useProgram(program);
 
-			var vertices = new Float32Array([
-				-1, -1,
-				1, -1,
-				-1, 1,
-				1, 1]);
-			var texCoords = new Float32Array([
-				0.0, 0.0,
-				1.0, 0.0,
-				0.0, 1.0,
-				1.0, 1.0]);
 			var texCoordOffset = vertices.byteLength;
-			var buffer = gl.createBuffer();
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-			gl.bufferData(gl.ARRAY_BUFFER, vertices.byteLength + texCoords.byteLength, gl.STATIC_DRAW);
+			var buffer = bufferCache[programCacheKey];
+			if (!buffer) {
+				buffer = gl.createBuffer();
+				bufferCache[programCacheKey] = buffer;
+
+				gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+				gl.bufferData(gl.ARRAY_BUFFER, vertices.byteLength + texCoords.byteLength, gl.STATIC_DRAW);
+			} else {
+				gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+			}
 			gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices);
 			gl.bufferSubData(gl.ARRAY_BUFFER, texCoordOffset, texCoords);
 
@@ -499,7 +510,10 @@
 				gl.uniform2fv(uTexSizeLoc, texSize);
 			}
 
-			var textures = [];
+			if (!textureCache[programCacheKey]) {
+				textureCache[programCacheKey] = [];
+			}
+			var texturesForCleanup = [];
 			var textureCount = 0;
 			for (textureCount=0; textureCount<paramNames.length; textureCount++) {
 				var paramDim, paramSize, texture;
@@ -508,7 +522,13 @@
 					paramDim = getDimensions(arguments[textureCount], true);
 					paramSize = dimToTexSize(opt, paramDim);
 
-					texture = gl.createTexture();
+					if (textureCache[programCacheKey][textureCount]) {
+						texture = textureCache[programCacheKey][textureCount];
+					} else {
+						texture = gl.createTexture();
+						textureCache[programCacheKey][textureCount] = texture;
+					}
+
 					gl.activeTexture(gl["TEXTURE"+textureCount]);
 					gl.bindTexture(gl.TEXTURE_2D, texture);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -532,7 +552,7 @@
 						argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
 					}
-					textures[textureCount] = texture;
+					//texturesForCleanup.push(texture);
 
 					var paramLoc = getUniformLocation("user_" + paramNames[textureCount]);
 					var paramSizeLoc = getUniformLocation("user_" + paramNames[textureCount] + "Size");
@@ -550,7 +570,6 @@
 					paramDim = getDimensions(arguments[textureCount], true);
 					paramSize = arguments[textureCount].size;
 					texture = arguments[textureCount].texture;
-					textures[textureCount] = texture;
 
 					gl.activeTexture(gl["TEXTURE"+textureCount]);
 					gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -567,7 +586,11 @@
 				}
 			}
 
-			var outputTexture = gl.createTexture();
+			var outputTexture = textureCache[programCacheKey][textureCount];
+			if (!outputTexture) {
+				outputTexture = gl.createTexture();
+				textureCache[programCacheKey][textureCount] = outputTexture;
+			}
 			gl.activeTexture(gl["TEXTURE"+textureCount]);
 			gl.bindTexture(gl.TEXTURE_2D, outputTexture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -587,13 +610,21 @@
 				return;
 			}
 
-			var framebuffer = gl.createFramebuffer();
+			var framebuffer = framebufferCache[programCacheKey];
+			if (!framebuffer) {
+				framebuffer = gl.createFramebuffer();
+			}
 			framebuffer.width = texSize[0];
 			framebuffer.height = texSize[1];
 			gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+			for (var i=0; i<texturesForCleanup.length; i++) {
+				var texture = texturesForCleanup[i];
+				gl.deleteTexture(texture);
+			}
 
 			if (opt.outputToTexture) {
 				return new GPUTexture(gpu, outputTexture, texSize, opt.dimensions);
