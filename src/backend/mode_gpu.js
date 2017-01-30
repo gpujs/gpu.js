@@ -143,11 +143,11 @@
 
 		var paramNames = GPUUtils.getParamNames_fromString(funcStr);
 
-		var programCache = [];
-		var programUniformLocationCache = [];
-		var bufferCache = [];
-		var textureCache = [];
-		var framebufferCache = [];
+		var programCache = {};
+		var programUniformLocationCache = {};
+		var bufferCache = {};
+		var textureCache = {};
+		var framebufferCache = {};
 
 		var vertices = new Float32Array([
 			-1, -1,
@@ -611,6 +611,7 @@
 			var framebuffer = framebufferCache[programCacheKey];
 			if (!framebuffer) {
 				framebuffer = gl.createFramebuffer();
+				framebufferCache[programCacheKey] = framebuffer;
 			}
 			framebuffer.width = texSize[0];
 			framebuffer.height = texSize[1];
