@@ -1,13 +1,13 @@
-var fs = require('fs');
-var gulp = require('gulp');
-var concat = require('gulp-concat');
-var rename = require("gulp-rename");
-var uglify = require('gulp-uglify');
-var gutil = require('gulp-util');
-var header = require('gulp-header');
-var browserSync = require("browser-sync");
+const fs = require('fs');
+const gulp = require('gulp');
+const concat = require('gulp-concat');
+const rename = require('gulp-rename');
+const uglify = require('gulp-uglify');
+const gutil = require('gulp-util');
+const header = require('gulp-header');
+const browserSync = require('browser-sync');
 
-var pkg = require('./package.json');
+const pkg = require('./package.json');
 
 /// Build the scripts
 gulp.task('build', function() {
@@ -15,13 +15,13 @@ gulp.task('build', function() {
 			'src/parser.js',
 			'src/utils.js',
 			'src/texture.js',
-			'src/backend/GPUCore.js',
+			'src/backend/gpu-core.js',
 			'src/gpu.js',
-			'src/backend/functionNode_webgl.js',
-			'src/backend/functionNode.js',
-			'src/backend/functionBuilder.js',
-			'src/backend/mode_cpu.js',
-			'src/backend/mode_gpu.js',
+			'src/backend/function-node-web-gl.js',
+			'src/backend/function-node.js',
+			'src/backend/function-builder.js',
+			'src/backend/mode-cpu.js',
+			'src/backend/mode-gpu.js',
 			'src/wrapper/suffix.js'
 		])
 		.pipe(concat('gpu.js'))

@@ -1,3 +1,4 @@
+const FunctionNode = require('function-node');
 ///
 /// Class: functionBuilder
 ///
@@ -6,16 +7,16 @@
 /// This handles all the raw state, converted state, etc. Of a single function.
 ///
 /// Properties:
-/// 	nodeMap - {Object} Object map, where nodeMap[function] = functionNode;
+/// 	nodeMap - {Object} Object map, where nodeMap[function] = new FunctionNode;
 ///
-var functionBuilder = (function() {
+export default class FunctionBuilder {
 	
 	///
 	/// Function: functionBuilder
 	///
 	/// [Constructor] Blank constructor, which initializes the properties
 	///
-	function functionBuilder(gpu) {
+	constructor(gpu) {
 		this.nodeMap = {};
 		this.gpu = gpu;
 	}
@@ -23,7 +24,7 @@ var functionBuilder = (function() {
 	///
 	/// Function: addFunction
 	///
-	/// Creates the functionNode, and add it to the nodeMap
+	/// Instantiates a FunctionNode, and add it to the nodeMap
 	///
 	/// Parameters:
 	/// 	gpu             - {GPU}          The GPU instance
@@ -32,10 +33,9 @@ var functionBuilder = (function() {
 	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are "float" if null
 	/// 	returnType      - {String}       The return type, assumes "float" if null
 	///
-	function addFunction( functionName, jsFunction, paramTypeArray, returnType ) {
-		this.addFunctionNode( new functionNode( this.gpu, functionName, jsFunction, paramTypeArray, returnType ) );
+	addFunction(functionName, jsFunction, paramTypeArray, returnType) {
+		this.addFunctionNode(new FunctionNode(this.gpu, functionName, jsFunction, paramTypeArray, returnType));
 	}
-	functionBuilder.prototype.addFunction = addFunction;
 	
 	///
 	/// Function: addFunctionNode
@@ -45,11 +45,10 @@ var functionBuilder = (function() {
 	/// Parameters:
 	/// 	inNode    - {functionNode}       functionNode to add
 	///
-	function addFunctionNode( inNode ) {
+	addFunctionNode(inNode) {
 		this.nodeMap[ inNode.functionName ] = inNode;
 	}
-	functionBuilder.prototype.addFunctionNode = addFunctionNode;
-	
+
 	///
 	/// Function: traceFunctionCalls
 	///
@@ -64,31 +63,30 @@ var functionBuilder = (function() {
 	///
 	/// Returns:
 	/// 	{[String,...]}  Returning list of function names that is traced. Including itself.
-	function traceFunctionCalls( functionName, retList, opt ) {
-		functionName = functionName || "kernel";
+  traceFunctionCalls(functionName, retList, opt) {
+		functionName = functionName || 'kernel';
 		retList = retList || [];
 		
-		var fNode = this.nodeMap[functionName];
-		if( fNode ) {
+		const fNode = this.nodeMap[functionName];
+		if(fNode) {
 			// Check if function already exists
-			if( retList.indexOf(functionName) >= 0 ) {
+			if(retList.indexOf(functionName) >= 0) {
 				// Does nothing if already traced
 			} else {
 				retList.push(functionName);
 				
-				fNode.getWebglFunctionString(opt); //ensure JS trace is done
-				for(var i=0; i<fNode.calledFunctions.length; ++i) {
-					this.traceFunctionCalls( fNode.calledFunctions[i], retList, opt );
+				fNode.getWebGlFunctionString(opt); //ensure JS trace is done
+				for(let i = 0; i < fNode.calledFunctions.length; ++i) {
+					this.traceFunctionCalls(fNode.calledFunctions[i], retList, opt);
 				}
 			}
 		}
 		
 		return retList;
 	}
-	functionBuilder.prototype.traceFunctionCalls = traceFunctionCalls;
 	
 	///
-	/// Function: webglString_fromFunctionNames
+	/// Function: webGlStringFromFunctionNames
 	///
 	/// Parameters:
 	/// 	functionList  - {[String,...]} List of function to build the webgl string.
@@ -96,32 +94,30 @@ var functionBuilder = (function() {
 	/// Returns:
 	/// 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	///
-	function webglString_fromFunctionNames(functionList, opt) {
-		var ret = [];
-		for(var i=0; i<functionList.length; ++i) {
-			var node = this.nodeMap[functionList[i]];
+  webGlStringFromFunctionNames(functionList, opt) {
+		const ret = [];
+		for(let i = 0; i < functionList.length; ++i) {
+			const node = this.nodeMap[functionList[i]];
 			if(node) {
-				ret.push( this.nodeMap[functionList[i]].getWebglFunctionString(opt) );
+				ret.push(this.nodeMap[functionList[i]].getWebGlFunctionString(opt));
 			}
 		}
 		return ret.join("\n");
 	}
-	functionBuilder.prototype.webglString_fromFunctionNames = webglString_fromFunctionNames;
 	
-	function webglPrototypeString_fromFunctionNames(functionList, opt) {
-		var ret = [];
-		for(var i=0; i<functionList.length; ++i) {
-			var node = this.nodeMap[functionList[i]];
+  webGlPrototypeStringFromFunctionNames(functionList, opt) {
+		const ret = [];
+		for(let i = 0; i < functionList.length; ++i) {
+			const node = this.nodeMap[functionList[i]];
 			if(node) {
-				ret.push( this.nodeMap[functionList[i]].getWebglFunctionPrototypeString(opt) );
+				ret.push(this.nodeMap[functionList[i]].getWebGlFunctionPrototypeString(opt));
 			}
 		}
 		return ret.join("\n");
 	}
-	functionBuilder.prototype.webglPrototypeString_fromFunctionNames = webglPrototypeString_fromFunctionNames;
 	
 	///
-	/// Function: webglString
+	/// Function: webGlString
 	///
 	/// Parameters:
 	/// 	functionName  - {String} Function name to trace from. If null, it returns the WHOLE builder stack
@@ -129,20 +125,19 @@ var functionBuilder = (function() {
 	/// Returns:
 	/// 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	///
-	function webglString(functionName, opt) {
+  webGlString(functionName, opt) {
 		if (opt == undefined) {
 			opt = {};
 		}
 		
 		if(functionName) {
-			return this.webglString_fromFunctionNames( this.traceFunctionCalls(functionName, [], opt).reverse(), opt );
+			return this.webGlStringFromFunctionNames(this.traceFunctionCalls(functionName, [], opt).reverse(), opt);
 		}
-		return this.webglString_fromFunctionNames( Object.keys(this.nodeMap), opt );
+		return this.webGlStringFromFunctionNames(Object.keys(this.nodeMap), opt);
 	}
-	functionBuilder.prototype.webglString = webglString;
 	
 	///
-	/// Function: webglPrototypeString
+	/// Function: webGlPrototypeString
 	///
 	/// Parameters:
 	/// 	functionName  - {String} Function name to trace from. If null, it returns the WHOLE builder stack
@@ -150,17 +145,16 @@ var functionBuilder = (function() {
 	/// Returns:
 	/// 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	///
-	function webglPrototypeString(functionName, opt) {
+  webGlPrototypeString(functionName, opt) {
 		if (opt == undefined) {
 			opt = {};
 		}
 		
 		if(functionName) {
-			return this.webglPrototypeString_fromFunctionNames( this.traceFunctionCalls(functionName, [], opt).reverse(), opt );
+			return this.webGlPrototypeStringFromFunctionNames(this.traceFunctionCalls(functionName, [], opt).reverse(), opt);
 		}
-		return this.webglPrototypeString_fromFunctionNames( Object.keys(this.nodeMap), opt );
+		return this.webGlPrototypeStringFromFunctionNames(Object.keys(this.nodeMap), opt);
 	}
-	functionBuilder.prototype.webglPrototypeString = webglPrototypeString;
 	
 	//---------------------------------------------------------
 	//
@@ -169,17 +163,14 @@ var functionBuilder = (function() {
 	//---------------------------------------------------------
 	
 	// Round function used in polyfill
-	function round(a) { return Math.floor( a + 0.5 ); }
+  round(a) { return Math.floor(a + 0.5); }
 	
 	///
 	/// Function: polyfillStandardFunctions
 	///
 	/// Polyfill in the missing Math funcitons (round)
 	///
-	function polyfillStandardFunctions() {
+  polyfillStandardFunctions() {
 		this.addFunction(null, round);
 	}
-	functionBuilder.prototype.polyfillStandardFunctions = polyfillStandardFunctions;
-	
-	return functionBuilder;
-})();
+}

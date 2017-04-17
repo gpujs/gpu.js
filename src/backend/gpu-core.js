@@ -1,3 +1,6 @@
+const FunctionBuilder = require('function-builder');
+const GPUUtils = require('../gpu-utils');
+
 ///
 /// Class: GPUCore
 ///
@@ -10,9 +13,9 @@
 /// (See https://github.com/gpujs/gpu.js/issues/19 regarding documentation engine issue)
 /// File isolation is currently the best way to go
 ///
-var GPUCore = (function() {
+export default class GPUCore {
 
-	function GPUCore() {
+	constructor() {
 		// var gl, canvas;
 		//
 		// canvas = undefined;
@@ -26,24 +29,24 @@ var GPUCore = (function() {
 		this.programCache = {};
 		this.endianness = GPUUtils.systemEndianness();
 
-		this.functionBuilder = new functionBuilder(this);
+		this.functionBuilder = new FunctionBuilder(this);
 		this.functionBuilder.polyfillStandardFunctions();
 	}
 
 	// Legacy method to get webgl : Preseved for backwards compatibility
-	GPUCore.prototype.getGl = function() {
+	getGl() {
 		return this._webgl;
-	};
+	}
 
-	GPUCore.prototype.textureToArray = function(texture) {
+	textureToArray(texture) {
 		var copy = this.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];
 		});
 
 		return copy(texture);
-	};
+	}
 
-	GPUCore.prototype.deleteTexture = function(texture) {
+	deleteTexture(texture) {
 		var gl = this._webgl;
 		gl.deleteTexture(texture.texture);
 	}
@@ -52,7 +55,7 @@ var GPUCore = (function() {
 	/// Get and returns the Synchronous executor, of a class and kernel
 	/// Which returns the result directly after passing the arguments.
 	///
-	function getSynchronousModeExecutor() {
+	getSynchronousModeExecutor() {
 		var kernel = this._kernelFunction;
 		var paramObj = this._kernelParamObj;
 		paramObj.dimensions = paramObj.dimensions || [];
@@ -81,7 +84,6 @@ var GPUCore = (function() {
 			}
 		}
 	}
-	GPUCore.prototype.getSynchronousModeExecutor = getSynchronousModeExecutor;
 
 	///
 	/// Get and returns the ASYNCRONUS executor, of a class and kernel
@@ -89,10 +91,9 @@ var GPUCore = (function() {
 	///
 	/// Note that there is no current implmentation.
 	///
-	function getPromiseModeExecutor() {
+	getPromiseModeExecutor() {
 		return null;
 	}
-	GPUCore.prototype.getPromiseModeExecutor = getPromiseModeExecutor;
 
 
 	///
@@ -106,7 +107,7 @@ var GPUCore = (function() {
 	/// Returns:
 	///     {JS Function} the same ret object
 	///
-	function setupExecutorExtendedFunctions(ret, opt) {
+	setupExecutorExtendedFunctions(ret, opt) {
 		var gpu = this;
 
 		// Allow original class object reference from kernel
@@ -181,7 +182,4 @@ var GPUCore = (function() {
 
 		return ret;
 	}
-	GPUCore.prototype.setupExecutorExtendedFunctions = setupExecutorExtendedFunctions;
-
-	return GPUCore;
-})();
+}

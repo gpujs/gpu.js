@@ -1,11 +1,10 @@
+const GPUUtils = require('./gpu-utils');
 ///
 /// Class: GPU
 ///
 /// Initialises the GPU.js library class which manages the WebGL context for the created functions.
 ///
-var GPU = (function() {
-	var GPU = GPUCore;
-	
+export default class GPU {
 	///
 	/// Function: createKernel
 	///
@@ -17,10 +16,10 @@ var GPU = (function() {
 	/// | Name          | Default value | Description                                                               |
 	/// |---------------|---------------|---------------------------------------------------------------------------|
 	/// | dimensions    | [1024]        | Thread dimension array                                                    |
-	/// | mode          | null          | CPU / GPU configuration mode, "auto" / null. Has the following modes.     |
-	/// |               |               |     + null / "auto" : Attempts to build GPU mode, else fallbacks          |
-	/// |               |               |     + "gpu" : Attempts to build GPU mode, else fallbacks                  |
-	/// |               |               |     + "cpu" : Forces JS fallback mode only                                |
+	/// | mode          | null          | CPU / GPU configuration mode, 'auto' / null. Has the following modes.     |
+	/// |               |               |     + null / 'auto' : Attempts to build GPU mode, else fallbacks          |
+	/// |               |               |     + 'gpu' : Attempts to build GPU mode, else fallbacks                  |
+	/// |               |               |     + 'cpu' : Forces JS fallback mode only                                |
 	/// |---------------|---------------|---------------------------------------------------------------------------|
 	///
 	/// Parameters:
@@ -30,48 +29,47 @@ var GPU = (function() {
 	/// Returns:
 	/// 	callable function to run
 	///
-	function createKernel(kernel, paramObj) {
+  createKernel(kernel, paramObj) {
 		//
 		// basic parameters safety checks
 		//
-		if( kernel === undefined ) {
-			throw "Missing kernel parameter";
+		if(kernel === undefined) {
+			throw 'Missing kernel parameter';
 		}
-		if( !GPUUtils.isFunction(kernel) ) {
-			throw "kernel parameter not a function";
+		if(!GPUUtils.isFunction(kernel)) {
+			throw 'kernel parameter not a function';
 		}
 		if( paramObj === undefined ) {
 			paramObj = {};
 		}
-		
+
 		//
 		// Replace the kernel function and param object
 		//
 		this._kernelFunction = kernel;
 		this._kernelParamObj = paramObj || this._kernelParamObj || {};
-		
+
 		//
 		// Get the config, fallbacks to default value if not set
 		//
-		var mode = paramObj.mode && paramObj.mode.toLowerCase();
-		this.computeMode = mode || "auto";
-		
+		const mode = paramObj.mode && paramObj.mode.toLowerCase();
+		this.computeMode = mode || 'auto';
+
 		//
 		// Get the Synchronous executor
 		//
-		var ret = this.getSynchronousModeExecutor();
+		const ret = this.getSynchronousModeExecutor();
 		// Allow class refence from function
 		ret.gpujs = this;
 		// Execute callback
 		ret.exec = ret.execute = GPUUtils.functionBinder( this.execute, this );
-		
+
 		// The Synchronous kernel
 		this._kernelSynchronousExecutor = ret; //For exec to reference
-		
+
 		return ret;
-	};
-	GPU.prototype.createKernel = createKernel;
-	
+	}
+
 	///
 	/// Function: getKernelFunction
 	///
@@ -80,11 +78,10 @@ var GPU = (function() {
 	/// Returns:
 	/// 	{JS Function}  The calling input function
 	///
-	function getKernelFunction() {
+	getKernelFunction() {
 		return this._kernelFunction;
 	}
-	GPU.prototype.getKernelFunction = getKernelFunction;
-	
+
 	///
 	/// Function: getKernelParamObj
 	///
@@ -93,11 +90,10 @@ var GPU = (function() {
 	/// Returns:
 	/// 	{JS Function}  The calling input function
 	///
-	function getKernelParamObj() {
+  getKernelParamObj() {
 		return this._kernelParamObj;
 	}
-	GPU.prototype.getKernelParamObj = getKernelParamObj;
-	
+
 	///
 	/// Function: executeKernel
 	///
@@ -109,31 +105,31 @@ var GPU = (function() {
 	/// Returns:
 	/// 	{Promise} returns the promise object for the result / failure
 	///
-	function execute() {
+  execute() {
 		//
 		// Prepare the required objects
 		//
-		var args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
-		var self = this;
-		
+		const args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
+
 		//
 		// Setup and return the promise, and execute the function, in synchronous mode
 		//
-		return GPUUtils.newPromise(function(accept,reject) {
+		return GPUUtils.newPromise((accept,reject) => {
 			try {
-				accept( self._kernelSynchronousExecutor.apply(self, args) );
+				accept( this._kernelSynchronousExecutor.apply(this, args) );
 			} catch (e) {
 				//
 				// Error : throw rejection
 				//
 				reject(e);
-				return;
 			}
 		});
 	}
-	GPU.prototype.execute = execute;
-	GPU.prototype.exec = execute;
-	
+
+	get exec() {
+    return this.execute.bind(this);
+  }
+
 	///
 	/// Function: addFunction
 	///
@@ -141,18 +137,17 @@ var GPU = (function() {
 	///
 	/// Parameters:
 	/// 	jsFunction      - {JS Function}  JS Function to do conversion
-	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are "float" if null
-	/// 	returnType      - {String}       The return type, assumes "float" if null
+	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are 'float' if null
+	/// 	returnType      - {String}       The return type, assumes 'float' if null
 	///
 	/// Retuns:
 	/// 	{GPU} returns itself
 	///
-	function addFunction( jsFunction, paramTypeArray, returnType  ) {
+  addFunction( jsFunction, paramTypeArray, returnType  ) {
 		this.functionBuilder.addFunction( null, jsFunction, paramTypeArray, returnType );
 		return this;
 	}
-	GPU.prototype.addFunction = addFunction;
-	
+
 	///
 	/// Function: getWebgl
 	///
@@ -161,17 +156,16 @@ var GPU = (function() {
 	/// Retuns:
 	/// 	{WebGL object} that the instance use
 	///
-	function getWebgl() {
-		// if( this.webgl == null ) {
-		// 	this.webgl = GPUUtils.init_webgl( getCanvas("gpu") );
-		// }
-		if( this.webgl ) {
-			return this.webgl;
-		}
-		throw "only call getWebgl after createKernel(gpu)"
-	};
-	GPU.prototype.getWebgl = getWebgl;
-	
+  getWebGl() {
+    // if( this.webgl == null ) {
+    // 	this.webgl = GPUUtils.init_webgl( getCanvas('gpu') );
+    // }
+    if (this.webgl) {
+      return this.webgl;
+    }
+    throw 'only call getWebGl after createKernel(gpu)'
+  }
+
 	///
 	/// Function: getCanvas
 	///
@@ -180,13 +174,13 @@ var GPU = (function() {
 	/// Retuns:
 	/// 	{Canvas object} that the instance use
 	///
-	function getCanvas(mode) {
-		// if(mode == "gpu") {
+  getCanvas(mode) {
+		// if(mode == 'gpu') {
 		// 	if(this._canvas_gpu == null) {
 		// 		this._canvas_gpu = GPUUtils.init_canvas();
 		// 	}
 		// 	return this._canvas_gpu;
-		// } else if(mode == "cpu") {
+		// } else if(mode == 'cpu') {
 		// 	if(this._canvas_cpu == null) {
 		// 		this._canvas_cpu = GPUUtils.init_canvas();
 		// 	}
@@ -198,30 +192,30 @@ var GPU = (function() {
 		// 	// if( this._canvas_gpu || this._canvas_cpu ) {
 		// 	//
 		// 	// }
-		// 	throw "Missing valid mode parameter in getCanvas("+mode+")"
+		// 	throw 'Missing valid mode parameter in getCanvas('+mode+')'
 		// }
 		if( this.canvas ) {
 			return this.canvas;
 		}
-		throw "only call getCanvas after createKernel()"
-	};
-	GPU.prototype.getCanvas = getCanvas;
-	
+		throw 'only call getCanvas after createKernel()';
+	}
+
 	///
-	/// Function: supportWebgl
+	/// Function: supportWebGl
 	///
-	/// Return TRUE, if browser supports webgl AND canvas
+	/// Return TRUE, if browser supports WebGl AND Canvas
 	///
 	/// Note: This function can also be called directly `GPU.supportWebgl()`
 	///
 	/// Returns:
 	/// 	{Boolean} TRUE if browser supports webgl
 	///
-	function supportWebgl() {
-		return GPUUtils.browserSupport_webgl();
+  static supportWebGl() {
+		return GPUUtils.isWebGlSupported;
 	}
-	GPU.prototype.supportWebgl = supportWebgl;
-	GPU.supportWebgl = supportWebgl;
-	
-	return GPU;
-})();
+
+  supportWebGl() {
+    return GPUUtils.isWebGlSupported;
+  }
+}
+

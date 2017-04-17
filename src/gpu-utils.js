@@ -4,20 +4,39 @@
 /// Various utility functions / snippets of code that GPU.JS uses internally.\
 /// This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
 ///
-/// Note that all moethods in this class is "static" by nature `GPUUtils.functionName()`
+/// Note that all methods in this class is 'static' by nature `GPUUtils.functionName()`
 ///
-var GPUUtils = (function() {
 
-	var GPUUtils = {};
+// FUNCTION_NAME regex
+const FUNCTION_NAME = /function ([^(]*)/;
 
+// STRIP COMMENTS regex
+const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+
+// ARGUMENT NAMES regex
+const ARGUMENT_NAMES = /([^\s,]+)/g;
+
+const isCanvasSupported = GPUUtils.isCanvas(document.createElement('canvas'));
+const isWebGlSupported = GPUUtils.isWebGl(GPUUtils.initWebGl(GPUUtils.initCanvas()));
+
+const systemEndianness = (() => {
+  const b = new ArrayBuffer(4);
+  const a = new Uint32Array(b);
+  const c = new Uint8Array(b);
+  a[0] = 0xdeadbeef;
+  if (c[0] == 0xef) return 'LE';
+  if (c[0] == 0xde) return 'BE';
+  throw new Error('unknown endianness');
+})();
+
+let isFloatReadPixelsSupported = null;
+
+export default class GPUUtils {
 	//-----------------------------------------------------------------------------
 	//
 	//  System values support (currently only endianness)
 	//
 	//-----------------------------------------------------------------------------
-
-	// systemEndianness closure based memoizer
-	var endianness = null;
 
 	///
 	/// Function: systemEndianness
@@ -25,23 +44,12 @@ var GPUUtils = (function() {
 	/// Gets the system endianness, and cache it
 	///
 	/// Returns:
-	///	{String} "LE" or "BE" depending on system architecture
+	///	{String} 'LE' or 'BE' depending on system architecture
 	///
 	/// Credit: https://gist.github.com/TooTallNate/4750953
-	function systemEndianness() {
-		if( endianness !== null ) {
-			return endianness;
-		}
-
-		var b = new ArrayBuffer(4);
-		var a = new Uint32Array(b);
-		var c = new Uint8Array(b);
-		a[0] = 0xdeadbeef;
-		if (c[0] == 0xef) return endianness = 'LE';
-		if (c[0] == 0xde) return endianness = 'BE';
-		throw new Error('unknown endianness');
+	static get systemEndianness() {
+    return systemEndianness;
 	}
-	GPUUtils.systemEndianness = systemEndianness;
 
 	//-----------------------------------------------------------------------------
 	//
@@ -60,10 +68,9 @@ var GPUUtils = (function() {
 	/// Returns:
 	/// 	{Boolean} TRUE if the object is a JS function
 	///
-	function isFunction( funcObj ) {
+  static isFunction(funcObj) {
 		return typeof(funcObj) === 'function';
 	}
-	GPUUtils.isFunction = isFunction;
 
 	///
 	/// Function: isFunctionString
@@ -78,16 +85,14 @@ var GPUUtils = (function() {
 	/// Returns:
 	/// 	{Boolean} TRUE if the string passes basic validation
 	///
-	function isFunctionString( funcStr ) {
-		if( funcStr !== null ) {
-			return (funcStr.toString().slice(0, "function".length).toLowerCase() == "function");
+  static isFunctionString(funcStr) {
+		if(funcStr !== null) {
+			return (funcStr.toString()
+        .slice(0, 'function'.length)
+        .toLowerCase() == 'function');
 		}
 		return false;
 	}
-	GPUUtils.isFunctionString = isFunctionString;
-
-	// FUNCTION_NAME regex
-	var FUNCTION_NAME = /function ([^(]*)/;
 
 	///
 	/// Function: getFunctionName_fromString
@@ -100,16 +105,9 @@ var GPUUtils = (function() {
 	/// Returns:
 	/// 	{String} Function name string (if found)
 	///
-	function getFunctionName_fromString( funcStr ) {
+  static getFunctionNameFromString(funcStr) {
 		return FUNCTION_NAME.exec(funcStr)[1];
 	}
-	GPUUtils.getFunctionName_fromString = getFunctionName_fromString;
-
-	// STRIP COMMENTS regex
-	var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-
-	// ARGUMENT NAMES regex
-	var ARGUMENT_NAMES = /([^\s,]+)/g;
 
 	///
 	/// Function: getParamNames_fromString
@@ -122,14 +120,13 @@ var GPUUtils = (function() {
 	/// Returns:
 	/// 	{[String, ...]}  Array representing all the parameter names
 	///
-	function getParamNames_fromString(func) {
-		var fnStr = func.toString().replace(STRIP_COMMENTS, '');
-		var result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
+  static getParamNamesFromString(func) {
+		const fnStr = func.toString().replace(STRIP_COMMENTS, '');
+		let result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
 		if(result === null)
 			result = [];
 		return result;
 	}
-	GPUUtils.getParamNames_fromString = getParamNames_fromString;
 
 	//-----------------------------------------------------------------------------
 	//
@@ -148,13 +145,13 @@ var GPUUtils = (function() {
 	/// Returns:
 	/// 	{Object}  Cloned object
 	///
-	function clone(obj) {
+  static clone(obj) {
 		if(obj === null || typeof(obj) !== 'object' || 'isActiveClone' in obj)
 			return obj;
 
-		var temp = obj.constructor(); // changed
+		const temp = obj.constructor(); // changed
 
-		for(var key in obj) {
+		for(let key in obj) {
 			if(Object.prototype.hasOwnProperty.call(obj, key)) {
 				obj.isActiveClone = null;
 				temp[key] = clone(obj[key]);
@@ -164,7 +161,6 @@ var GPUUtils = (function() {
 
 		return temp;
 	}
-	GPUUtils.clone = clone;
 
 	///
 	/// Function: newPromise
@@ -177,14 +173,13 @@ var GPUUtils = (function() {
 	/// Returns:
 	/// 	{Promise}  Promise object
 	///
-	function newPromise(executor) {
-		var imple = Promise || small_promise;
+  static newPromise(executor) {
+		const imple = Promise || small_promise;
 		if(imple === null) {
-			throw TypeError("Browser is missing Promise implmentation. Consider adding small_promise.js polyfill");
+			throw TypeError('Browser is missing Promise implementation. Consider adding small_promise.js polyfill');
 		}
 		return (new imple(executor));
 	}
-	GPUUtils.newPromise = newPromise;
 
 	///
 	/// Function: functionBinder
@@ -198,17 +193,16 @@ var GPUUtils = (function() {
 	/// Returns:
 	/// 	{JS Function}  The binded function
 	///
-	function functionBinder( inFunc, thisObj ) {
-		if( inFunc.bind ) {
+  static functionBinder(inFunc, thisObj) {
+		if(inFunc.bind) {
 			return inFunc.bind(thisObj);
 		}
 
 		return function() {
-			var args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
-			return inFunc.apply( thisObj, args );
+			const args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
+			return inFunc.apply(thisObj, args);
 		}
 	}
-	GPUUtils.functionBinder = functionBinder;
 
 	///
 	/// Function: isArray
@@ -221,11 +215,10 @@ var GPUUtils = (function() {
 	/// Returns:
 	/// 	{Boolean}  true if is array or Array-like object
 	///
-	function isArray(arr) {
-		var tag = Object.prototype.toString.call(arr);
+  static isArray(arr) {
+		const tag = Object.prototype.toString.call(arr);
 		return tag.indexOf('Array]', tag.length - 6) !== -1;
 	}
-	GPUUtils.isArray = isArray;
 
 	///
 	/// Function: getArgumentType
@@ -238,10 +231,10 @@ var GPUUtils = (function() {
 	/// Returns:
 	/// 	{String}  Argument type Array/Number/Texture/Unknown
 	///
-	function getArgumentType(arg) {
+  static getArgumentType(arg) {
 		if (GPUUtils.isArray(arg)) {
 			return 'Array';
-		} else if (typeof arg == "number") {
+		} else if (typeof arg == 'number') {
 			return 'Number';
 		} else if (arg instanceof GPUTexture) {
 			return 'Texture';
@@ -249,7 +242,6 @@ var GPUUtils = (function() {
 			return 'Unknown';
 		}
 	}
-	GPUUtils.getArgumentType = getArgumentType;
 
 	//-----------------------------------------------------------------------------
 	//
@@ -270,36 +262,29 @@ var GPUUtils = (function() {
 	/// Returns:
 	/// 	{Boolean} TRUE if the object is a DOM canvas
 	///
-	function isCanvas( canvasObj ) {
+  static isCanvas(canvasObj) {
 		return (
-			canvasObj != null &&
-			canvasObj.nodeName &&
-			canvasObj.getContext &&
-			canvasObj.nodeName.toUpperCase() === "CANVAS"
+			canvasObj != null
+      && canvasObj.nodeName
+      && canvasObj.getContext
+      && canvasObj.nodeName.toUpperCase() === 'CANVAS'
 		);
 	}
-	GPUUtils.isCanvas = isCanvas;
 
-	// browserSupport_canvas closure based memoizer
-	var browserSupport_canvas_memoizer = null;
 	///
-	/// Function: browserSupport_canvas
+	/// Function: isCanvasSupported
 	///
 	/// Return TRUE, if browser supports canvas
 	///
 	/// Returns:
 	/// 	{Boolean} TRUE if browser supports canvas
 	///
-	function browserSupport_canvas() {
-		if( browserSupport_canvas_memoizer !== null ) {
-			return browserSupport_canvas_memoizer;
-		}
-		return browserSupport_canvas_memoizer = isCanvas(document.createElement('canvas'));
+	static get isCanvasSupported() {
+	  return isCanvasSupported;
 	}
-	GPUUtils.browserSupport_canvas = browserSupport_canvas;
 
 	///
-	/// Function: init_canvas
+	/// Function: initCanvas
 	///
 	/// Initiate and returns a canvas, for usage in init_webgl.
 	/// Returns only if canvas is supported by browser.
@@ -307,31 +292,21 @@ var GPUUtils = (function() {
 	/// Returns:
 	/// 	{Canvas DOM object} Canvas dom object if supported by browser, else null
 	///
-	function init_canvas() {
+  static initCanvas() {
 		// Fail fast if browser previously detected no support
-		if( browserSupport_canvas_memoizer === false ) {
+		if(!isCanvasSupport) {
 			return null;
 		}
 
-		// Create a new canvas DOM
-		var canvas = document.createElement('canvas');
-
-		// First time setup, does the browser support check memoizer
-		if( browserSupport_canvas_memoizer === null ) {
-			browserSupport_canvas_memoizer = isCanvas(canvas);
-			if( browserSupport_canvas_memoizer === false ) {
-				return null;
-			}
-		}
-
 		// Default width and height, to fix webgl issue in safari
+    // Create a new canvas DOM
+    const canvas = document.createElement('canvas');
 		canvas.width = 2;
 		canvas.height = 2;
 
 		// Returns the canvas
 		return canvas;
 	}
-	GPUUtils.init_canvas = init_canvas;
 
 	//-----------------------------------------------------------------------------
 	//
@@ -340,7 +315,7 @@ var GPUUtils = (function() {
 	//-----------------------------------------------------------------------------
 
 	///
-	/// Function: isWebgl
+	/// Function: isWebGl
 	///
 	/// Return TRUE, on a valid webgl context object
 	///
@@ -352,41 +327,36 @@ var GPUUtils = (function() {
 	/// Returns:
 	/// 	{Boolean} TRUE if the object is a webgl context object
 	///
-	function isWebgl( webglObj ) {
+  static isWebGl(webglObj) {
 		return (
 			webglObj != null &&
-			webglObj.getExtension
+			webglObj.hasOwnProperty('getExtension')
 		);
 	}
-	GPUUtils.isWebgl = isWebgl;
 
-	// browserSupport_canvas closure based memoizer
-	var browserSupport_webgl_memoizer = null;
 	///
-	/// Function: browserSupport_webgl
+	/// Function: isWebGlSupported
 	///
 	/// Return TRUE, if browser supports webgl
 	///
 	/// Returns:
 	/// 	{Boolean} TRUE if browser supports webgl
 	///
-	function browserSupport_webgl() {
-		if( browserSupport_webgl_memoizer !== null ) {
-			return browserSupport_webgl_memoizer;
-		}
-		return browserSupport_webgl_memoizer = isWebgl(init_webgl(init_canvas()));
+	static get isWebGlSupported() {
+		return isWebGlSupported;
 	}
-	GPUUtils.browserSupport_webgl = browserSupport_webgl;
 
 	// Default webgl options to use
-	var init_webgl_defaultOptions = {
-		alpha: false,
-		depth: false,
-		antialias: false
-	}
+	static get initWebglDefaultOptions() {
+	  return {
+      alpha: false,
+      depth: false,
+      antialias: false
+    };
+  }
 
 	///
-	/// Function: init_webgl
+	/// Function: initWebgGl
 	///
 	/// Initiate and returns a webgl, from a canvas object
 	/// Returns only if webgl is supported by browser.
@@ -397,31 +367,23 @@ var GPUUtils = (function() {
 	/// Returns:
 	/// 	{Canvas DOM object} Canvas dom object if supported by browser, else null
 	///
-	function init_webgl(canvasObj) {
+  static initWebGl(canvasObj) {
+
+    // First time setup, does the browser support check memoizer
+    if(!isWebGlSupported || !isCanvasSupported) {
+      return null;
+    }
 
 		// Fail fast for invalid canvas object
-		if( !isCanvas(canvasObj) ) {
-			throw new Error("Invalid canvas object - "+canvasObj);
-		}
-
-		// Fail fast if browser previously detected no support
-		if( browserSupport_canvas_memoizer === false || browserSupport_webgl_memoizer === false ) {
-			return null;
+		if(!GPUUtils.isCanvas(canvasObj)) {
+			throw new Error('Invalid canvas object - '+canvasObj);
 		}
 
 		// Create a new canvas DOM
-		var webgl = (
-			canvasObj.getContext("experimental-webgl", init_webgl_defaultOptions) ||
-			canvasObj.getContext("webgl", init_webgl_defaultOptions)
+		const webgl = (
+			canvasObj.getContext('experimental-webgl', GPUUtils.initWebglDefaultOptions)
+      || canvasObj.getContext('webgl', GPUUtils.initWebglDefaultOptions)
 		);
-
-		// First time setup, does the browser support check memoizer
-		if( browserSupport_webgl_memoizer === null ) {
-			browserSupport_webgl_memoizer = isWebgl(webgl);
-			if( browserSupport_webgl_memoizer === false ) {
-				return null;
-			}
-		}
 
 		// Get the extension that is needed
 		GPUUtils.OES_texture_float = webgl.getExtension('OES_texture_float');
@@ -431,12 +393,9 @@ var GPUUtils = (function() {
 		// Returns the canvas
 		return webgl;
 	}
-	GPUUtils.init_webgl = init_webgl;
 
-	// test_readPixels closure based memoizer
-	var test_floatReadPixels_memoizer = null;
 	///
-	/// Function: test_floatReadPixels_memoizer
+	/// Function: isFloatReadPixelsSupported
 	///
 	/// Checks if the browser supports readPixels with float type
 	///
@@ -446,12 +405,12 @@ var GPUUtils = (function() {
 	/// Returns:
 	/// 	{Boolean} true if browser supports
 	///
-	function test_floatReadPixels(gpu) {
-		if (test_floatReadPixels_memoizer !== null) {
-			return test_floatReadPixels_memoizer
+  static isFloatReadPixelsSupported(gpu) {
+		if (isFloatReadPixelsSupported !== null) {
+			return isFloatReadPixelsSupported
 		}
 
-		var x = gpu.createKernel(function() {
+		const x = gpu.createKernel(function() {
 			return 1;
 		}, {
 			'dimensions': [2],
@@ -460,11 +419,8 @@ var GPUUtils = (function() {
 			'floatOutputForce': true
 		}).dimensions([2])();
 
-		test_floatReadPixels_memoizer = x[0] == 1;
+    isFloatReadPixelsSupported = x[0] == 1;
 
-		return test_floatReadPixels_memoizer;
+		return isFloatReadPixelsSupported;
 	}
-	GPUUtils.test_floatReadPixels = test_floatReadPixels;
-
-	return GPUUtils;
-})();
+}

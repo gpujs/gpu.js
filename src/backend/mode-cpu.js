@@ -1,4 +1,4 @@
-(function (GPU) {
+export default class ModeCPU extends GPUCore {
 	
 	/// JS fallback transformation, basically pure JS
 	///
@@ -6,7 +6,7 @@
 	/// @param opt             The parameter object
 	///
 	/// @returns callable function if converted, else returns null
-	GPU.prototype._mode_cpu = function(kernel, opt) {
+	modeCpu(kernel, opt) {
 		var gpu = this;
 		
 		var canvas = gpu._canvasCpu;
@@ -131,5 +131,5 @@
 		ret.canvas = canvas;
 		
 		return gpu.setupExecutorExtendedFunctions(ret, opt);
-	};
-})(GPU);
+	}
+}
