@@ -347,7 +347,7 @@ export default class GPUUtils {
 	}
 
 	// Default webgl options to use
-	static get initWebglDefaultOptions() {
+	static get initWebGlDefaultOptions() {
 	  return {
       alpha: false,
       depth: false,
@@ -381,8 +381,8 @@ export default class GPUUtils {
 
 		// Create a new canvas DOM
 		const webgl = (
-			canvasObj.getContext('experimental-webgl', GPUUtils.initWebglDefaultOptions)
-      || canvasObj.getContext('webgl', GPUUtils.initWebglDefaultOptions)
+			canvasObj.getContext('experimental-webgl', GPUUtils.initWebGlDefaultOptions)
+      || canvasObj.getContext('webgl', GPUUtils.initWebGlDefaultOptions)
 		);
 
 		// Get the extension that is needed
@@ -413,14 +413,107 @@ export default class GPUUtils {
 		const x = gpu.createKernel(function() {
 			return 1;
 		}, {
-			'dimensions': [2],
-			'floatTextures': true,
-			'floatOutput': true,
-			'floatOutputForce': true
+			dimensions: [2],
+			floatTextures: true,
+			floatOutput: true,
+			floatOutputForce: true
 		}).dimensions([2])();
 
     isFloatReadPixelsSupported = x[0] == 1;
 
 		return isFloatReadPixelsSupported;
 	}
+
+
+  static dimToTexSize(opt, dimensions, output) {
+    let numTexels = dimensions[0];
+    for (let i = 1; i < dimensions.length; i++) {
+      numTexels *= dimensions[i];
+    }
+
+    if (opt.floatTextures && (!output || opt.floatOutput)) {
+      numTexels = Math.ceil(numTexels / 4);
+    }
+
+    var w = Math.ceil(Math.sqrt(numTexels));
+    return [w, w];
+  }
+
+  static getDimensions(x, pad) {
+    var ret;
+    if (GPUUtils.isArray(x)) {
+      var dim = [];
+      var temp = x;
+      while (GPUUtils.isArray(temp)) {
+        dim.push(temp.length);
+        temp = temp[0];
+      }
+      ret = dim.reverse();
+    } else if (x instanceof GPUTexture) {
+      ret = x.dimensions;
+    } else {
+      throw "Unknown dimensions of " + x;
+    }
+
+    if (pad) {
+      ret = GPUUtils.clone(ret);
+      while (ret.length < 3) {
+        ret.push(1);
+      }
+    }
+
+    return ret;
+  }
+
+  static pad(arr, padding) {
+    function zeros(n) {
+      return Array.apply(null, Array(n)).map(Number.prototype.valueOf,0);
+    }
+
+    var len = arr.length + padding * 2;
+
+    var ret = arr.map(function(x) {
+      return [].concat(zeros(padding), x, zeros(padding));
+    });
+
+    for (var i=0; i<padding; i++) {
+      ret = [].concat([zeros(len)], ret, [zeros(len)]);
+    }
+
+    return ret;
+  }
+
+  static flatten(arr) {
+    const result = [];
+
+    if (GPUUtils.isArray(arr[0])) {
+      if (GPUUtils.isArray(arr[0][0])) {
+        if (Array.isArray(arr[0][0])) {
+          for (let i = 0; i < arr.length; i++) {
+            const nestedArray = arr[i];
+            for (let j = 0; j < nestedArray.length; j++) {
+              result.push.apply(result, nestedArray[j]);
+            }
+          }
+        } else {
+          for (let i = 0; i < arr.length; i++) {
+            result.push.apply(result, arr[i]);
+          }
+        }
+      } else {
+        result.push.apply(result, arr);
+      }
+    } else {
+      return arr;
+    }
+    return result;
+  }
+
+  static splitArray(array, part) {
+    const result = [];
+    for(let i = 0; i < array.length; i += part) {
+      result.push(array.slice(i, i + part));
+    }
+    return result;
+  }
 }

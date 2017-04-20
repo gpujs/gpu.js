@@ -1,3 +1,4 @@
+
 // Closure capture for the ast function, prevent collision with existing AST functions
 /// Function: functionNodeWebGl
 ///
@@ -11,23 +12,23 @@
 ///
 
 // The prefixes to use
-const jsMathPrefix = "Math.";
-const localPrefix = "this.";
-const constantsPrefix = "this.constants.";
+const jsMathPrefix = 'Math.';
+const localPrefix = 'this.';
+const constantsPrefix = 'this.constants.';
 
 function isIdentifierKernelParam(paramName, ast, funcParam) {
   return funcParam.paramNames.indexOf(paramName) != -1;
 }
 
 function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
-  var start = ast.loc.start;
+  const start = ast.loc.start;
 
   if (!isIdentifierKernelParam(paramName, funcParam) && expectedType != 'float') {
-    throw "Error unxpected identifier " + paramName + " on line " + start.line;
+    throw 'Error unexpected identifier ' + paramName + ' on line ' + start.line;
   } else {
-    var actualType = funcParam.paramType[funcParam.paramNames.indexOf(paramName)];
+    const actualType = funcParam.paramType[funcParam.paramNames.indexOf(paramName)];
     if (actualType != expectedType) {
-      throw "Error unxpected identifier " + paramName + " on line " + start.line;
+      throw 'Error unexpected identifier ' + paramName + ' on line ' + start.line;
     }
   }
 }
@@ -44,11 +45,10 @@ const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 /// - decode32(encode32(
 /// - encode32(decode32(
 ///
-function webGlRegexOptimize( inStr ) {
+function webGlRegexOptimize(inStr) {
   return inStr
-    .replace(DECODE32_ENCODE32, "((")
-    .replace(ENCODE32_DECODE32, "((")
-    ;
+    .replace(DECODE32_ENCODE32, '((')
+    .replace(ENCODE32_DECODE32, '((');
 }
 
 
@@ -64,14 +64,15 @@ function astErrorOutput(error, ast, funcParam) {
   return error;
 }
 
-export default class FunctionNodeWebGl {
+export default class GPUFunctionNode {
   constructor() {
     this.gpu = null;
     this.opt = null;
     this.jsFunctionString = null;
+    this.webGlFunctionPrototypeString = null;
   }
 
-  generate( inNode, _opt ) {
+  generate(inNode, _opt) {
     this.gpu = inNode.gpu;
     const opt = this.opt = _opt || {};
     if (opt.debug) {
@@ -79,14 +80,14 @@ export default class FunctionNodeWebGl {
     }
     this.jsFunctionString = inNode.jsFunctionString;
     if (opt.prototypeOnly) {
-      return astFunctionPrototype( inNode.getJS_AST(), [], inNode ).join("").trim();
+      return GPUFunctionNode.astFunctionPrototype(inNode.getJsAST(), [], inNode).join('').trim();
     } else {
-      inNode.webglFunctionString_array = this.astGeneric( inNode.getJsAST(), [], inNode );
+      inNode.functionStringArray = this.astGeneric(inNode.getJsAST(), [], inNode);
     }
-    inNode.webglFunctionString = webGlRegexOptimize(
-      inNode.webglFunctionString_array.join('').trim()
-    );
-    return inNode.webglFunctionString;
+    inNode.functionString = webGlRegexOptimize(
+      inNode.functionStringArray.join('').trim()
+   );
+    return inNode.functionString;
   }
 
   isIdentifierConstant(paramName) {
@@ -102,70 +103,70 @@ export default class FunctionNodeWebGl {
   ///
   /// @returns  the prased openclgl string array
   astGeneric(ast, retArr, funcParam) {
-    if(ast === null) {
-      throw astErrorOutput("NULL ast", ast, funcParam);
+    if (ast === null) {
+      throw astErrorOutput('NULL ast', ast, funcParam);
     } else {
       if (Array.isArray(ast)) {
-        for (var i=0; i<ast.length; i++) {
+        for (let i = 0; i < ast.length; i++) {
           this.astGeneric(ast[i], retArr, funcParam);
         }
         return retArr;
       }
 
       switch(ast.type) {
-        case "FunctionDeclaration":
+        case 'FunctionDeclaration':
           return this.astFunctionDeclaration(ast, retArr, funcParam);
-        case "FunctionExpression":
+        case 'FunctionExpression':
           return this.astFunctionExpression(ast, retArr, funcParam);
-        case "ReturnStatement":
+        case 'ReturnStatement':
           return this.astReturnStatement(ast, retArr, funcParam);
-        case "Literal":
+        case 'Literal':
           return this.astLiteral(ast, retArr,  funcParam);
-        case "BinaryExpression":
+        case 'BinaryExpression':
           return this.astBinaryExpression(ast, retArr,  funcParam);
-        case "Identifier":
+        case 'Identifier':
           return this.astIdentifierExpression(ast, retArr, funcParam);
-        case "AssignmentExpression":
+        case 'AssignmentExpression':
           return this.astAssignmentExpression(ast, retArr, funcParam);
-        case "ExpressionStatement":
+        case 'ExpressionStatement':
           return this.astExpressionStatement(ast, retArr, funcParam);
-        case "EmptyStatement":
+        case 'EmptyStatement':
           return this.astEmptyStatement(ast, retArr, funcParam);
-        case "BlockStatement":
+        case 'BlockStatement':
           return this.astBlockStatement(ast, retArr, funcParam);
-        case "IfStatement":
+        case 'IfStatement':
           return this.astIfStatement(ast, retArr, funcParam);
-        case "BreakStatement":
+        case 'BreakStatement':
           return this.astBreakStatement(ast, retArr, funcParam);
-        case "ContinueStatement":
+        case 'ContinueStatement':
           return this.astContinueStatement(ast, retArr, funcParam);
-        case "ForStatement":
+        case 'ForStatement':
           return this.astForStatement(ast, retArr, funcParam);
-        case "WhileStatement":
+        case 'WhileStatement':
           return this.astWhileStatement(ast, retArr, funcParam);
-        case "VariableDeclaration":
+        case 'VariableDeclaration':
           return this.astVariableDeclaration(ast, retArr, funcParam);
-        case "VariableDeclarator":
+        case 'VariableDeclarator':
           return this.astVariableDeclarator(ast, retArr, funcParam);
-        case "ThisExpression":
+        case 'ThisExpression':
           return this.astThisExpression(ast, retArr, funcParam);
-        case "SequenceExpression":
+        case 'SequenceExpression':
           return this.astSequenceExpression(ast, retArr, funcParam);
-        case "UnaryExpression":
+        case 'UnaryExpression':
           return this.astUnaryExpression(ast, retArr, funcParam);
-        case "UpdateExpression":
+        case 'UpdateExpression':
           return this.astUpdateExpression(ast, retArr, funcParam);
-        case "LogicalExpression":
+        case 'LogicalExpression':
           return this.astLogicalExpression(ast, retArr, funcParam);
-        case "MemberExpression":
+        case 'MemberExpression':
           return this.astMemberExpression(ast, retArr, funcParam);
-        case "CallExpression":
+        case 'CallExpression':
           return this.astCallExpression(ast, retArr, funcParam);
-        case "ArrayExpression":
+        case 'ArrayExpression':
           return this.astArrayExpression(ast, retArr, funcParam);
       }
 
-      throw astErrorOutput("Unknown ast type : "+ast.type, ast, funcParam);
+      throw astErrorOutput('Unknown ast type : '+ast.type, ast, funcParam);
     }
   }
 
@@ -175,23 +176,23 @@ export default class FunctionNodeWebGl {
   /// @param retArr       return array string
   /// @param funcParam    FunctionNode, that tracks compilation state
   ///
-  /// @returns  the appened retArr
+  /// @returns  the append retArr
   astFunctionDeclaration(ast, retArr, funcParam) {
     // TODO: make this less hacky?
-    var lines = this.jsFunctionString.split(/\r?\n/);
+    const lines = this.jsFunctionString.split(/\r?\n/);
 
-    var start = ast.loc.start;
-    var end = ast.loc.end;
+    const start = ast.loc.start;
+    const end = ast.loc.end;
 
-    var funcArr = [];
+    const funcArr = [];
 
     funcArr.push(lines[start.line-1].slice(start.column));
-    for (var i=start.line; i<end.line-1; i++) {
+    for (let i = start.line; i < end.line-1; i++) {
       funcArr.push(lines[i]);
     }
-    funcArr.push(lines[end.line-1].slice(0,end.column));
+    funcArr.push(lines[end.line-1].slice(0, end.column));
 
-    var funcStr = funcArr.join('\n');
+    const funcStr = funcArr.join('\n');
     this.gpu.addFunction(funcStr);
 
     return retArr;
@@ -203,31 +204,31 @@ export default class FunctionNodeWebGl {
   /// @param retArr       return array string
   /// @param funcParam    FunctionNode, that tracks compilation state
   ///
-  /// @returns  the appened retArr
-  astFunctionPrototype(ast, retArr, funcParam) {
+  /// @returns  the append retArr
+  static astFunctionPrototype(ast, retArr, funcParam) {
     // Setup function return type and name
-    if(funcParam.isRootKernel) {
+    if (funcParam.isRootKernel) {
       return retArr;
     }
 
     retArr.push(funcParam.returnType);
-    retArr.push(" ");
+    retArr.push(' ');
     retArr.push(funcParam.functionName);
-    retArr.push("(");
+    retArr.push('(');
 
     // Arguments handling
-    for( var i = 0; i < funcParam.paramNames.length; ++i ) {
-      if( i > 0 ) {
-        retArr.push(", ");
+    for (let i = 0; i < funcParam.paramNames.length; ++i) {
+      if (i > 0) {
+        retArr.push(', ');
       }
 
-      retArr.push( funcParam.paramType[i] );
-      retArr.push(" ");
-      retArr.push("user_");
-      retArr.push( funcParam.paramNames[i] );
+      retArr.push(funcParam.paramType[i]);
+      retArr.push(' ');
+      retArr.push('user_');
+      retArr.push(funcParam.paramNames[i]);
     }
 
-    retArr.push(");\n");
+    retArr.push(');\n');
 
     return retArr;
   }
@@ -238,45 +239,45 @@ export default class FunctionNodeWebGl {
   /// @param retArr       return array string
   /// @param funcParam    FunctionNode, that tracks compilation state
   ///
-  /// @returns  the appened retArr
+  /// @returns  the append retArr
   astFunctionExpression(ast, retArr, funcParam) {
 
     // Setup function return type and name
-    if(funcParam.isRootKernel) {
-      retArr.push("void");
+    if (funcParam.isRootKernel) {
+      retArr.push('void');
       funcParam.kernalAst = ast;
     } else {
       retArr.push(funcParam.returnType);
     }
-    retArr.push(" ");
+    retArr.push(' ');
     retArr.push(funcParam.functionName);
-    retArr.push("(");
+    retArr.push('(');
 
-    if(!funcParam.isRootKernel) {
+    if (!funcParam.isRootKernel) {
       // Arguments handling
-      for( var i = 0; i < funcParam.paramNames.length; ++i ) {
-        if( i > 0 ) {
-          retArr.push(", ");
+      for (let i = 0; i < funcParam.paramNames.length; ++i) {
+        if (i > 0) {
+          retArr.push(', ');
         }
 
-        retArr.push( funcParam.paramType[i] );
-        retArr.push(" ");
-        retArr.push("user_");
-        retArr.push( funcParam.paramNames[i] );
+        retArr.push(funcParam.paramType[i]);
+        retArr.push(' ');
+        retArr.push('user_');
+        retArr.push(funcParam.paramNames[i]);
       }
     }
 
     // Function opening
-    retArr.push(") {\n");
+    retArr.push(') {\n');
 
     // Body statement iteration
-    for(var i=0; i<ast.body.length; ++i) {
+    for (let i = 0; i < ast.body.length; ++i) {
       this.astGeneric(ast.body[i], retArr, funcParam);
-      retArr.push("\n");
+      retArr.push('\n');
     }
 
     // Function closing
-    retArr.push("}\n");
+    retArr.push('}\n');
     return retArr;
   }
 
@@ -286,21 +287,21 @@ export default class FunctionNodeWebGl {
   /// @param retArr       return array string
   /// @param funcParam    FunctionNode, that tracks compilation state
   ///
-  /// @returns  the appened retArr
+  /// @returns  the append retArr
   astReturnStatement(ast, retArr, funcParam) {
-    if(funcParam.isRootKernel) {
-      retArr.push("kernelResult = ");
-      this.astgeneric(ast.argument, retArr, funcParam);
-      retArr.push(";");
-      retArr.push("return;");
+    if (funcParam.isRootKernel) {
+      retArr.push('kernelResult = ');
+      this.astGeneric(ast.argument, retArr, funcParam);
+      retArr.push(';');
+      retArr.push('return;');
     } else {
-      retArr.push("return ");
-      this.astgeneric(ast.argument, retArr, funcParam);
-      retArr.push(";");
+      retArr.push('return ');
+      this.astGeneric(ast.argument, retArr, funcParam);
+      retArr.push(';');
     }
 
-    //throw asterrorOutput(
-    //	"Non main function return, is not supported : "+funcParam.currentFunctionNamespace,
+    //throw astErrorOutput(
+    //	'Non main function return, is not supported : '+funcParam.currentFunctionNamespace,
     //	ast, funcParam
     //);
 
@@ -313,23 +314,23 @@ export default class FunctionNodeWebGl {
   /// @param retArr       return array string
   /// @param funcParam    FunctionNode, that tracks compilation state
   ///
-  /// @returns  the appened retArr
+  /// @returns  the append retArr
   astLiteral(ast, retArr, funcParam) {
 
     // Reject non numeric literals
-    if( isNaN(ast.value) ) {
+    if (isNaN(ast.value)) {
       throw astErrorOutput(
-        "Non-numeric literal not supported : "+ast.value,
+        'Non-numeric literal not supported : '+ast.value,
         ast, funcParam
-      );
+     );
     }
 
     // Push the literal value as a float/int
-    retArr.push( ast.value );
+    retArr.push(ast.value);
 
     // If it was an int, node made a float
-    if( Number.isInteger(ast.value) ) {
-      retArr.push(".0");
+    if (Number.isInteger(ast.value)) {
+      retArr.push('.0');
     }
 
     return retArr;
@@ -341,23 +342,23 @@ export default class FunctionNodeWebGl {
   /// @param retArr       return array string
   /// @param funcParam    FunctionNode, that tracks compilation state
   ///
-  /// @returns  the appened retArr
+  /// @returns  the append retArr
   astBinaryExpression(ast, retArr, funcParam) {
-    retArr.push("(");
+    retArr.push('(');
 
-    if (ast.operator == "%") {
-      retArr.push("mod(");
+    if (ast.operator == '%') {
+      retArr.push('mod(');
       this.astGeneric(ast.left, retArr, funcParam);
-      retArr.push(",");
+      retArr.push(',');
       this.astGeneric(ast.right, retArr, funcParam);
-      retArr.push(")");
-    } else if (ast.operator == "===") {
+      retArr.push(')');
+    } else if (ast.operator == '===') {
       this.astGeneric(ast.left, retArr, funcParam);
-      retArr.push("==");
+      retArr.push('==');
       this.astGeneric(ast.right, retArr, funcParam);
-    } else if (ast.operator == "!==") {
+    } else if (ast.operator == '!==') {
       this.astGeneric(ast.left, retArr, funcParam);
-      retArr.push("!=");
+      retArr.push('!=');
       this.astGeneric(ast.right, retArr, funcParam);
     } else {
       this.astGeneric(ast.left, retArr, funcParam);
@@ -365,7 +366,7 @@ export default class FunctionNodeWebGl {
       this.astGeneric(ast.right, retArr, funcParam);
     }
 
-    retArr.push(")");
+    retArr.push(')');
 
     return retArr;
   }
@@ -376,29 +377,29 @@ export default class FunctionNodeWebGl {
   /// @param retArr       return array string
   /// @param funcParam    FunctionNode, that tracks compilation state
   ///
-  /// @returns  the appened retArr
+  /// @returns  the append retArr
   astIdentifierExpression(idtNode, retArr, funcParam) {
-    if (idtNode.type != "Identifier") {
-      throw asterrorOutput(
-        "IdentifierExpression - not an Identifier",
+    if (idtNode.type != 'Identifier') {
+      throw astErrorOutput(
+        'IdentifierExpression - not an Identifier',
         ast, funcParam
-      );
+     );
     }
 
-    if (idtNode.name == "gpu_threadX") {
+    if (idtNode.name == 'gpu_threadX') {
       retArr.push('threadId.x');
-    } else if (idtNode.name == "gpu_threadY") {
+    } else if (idtNode.name == 'gpu_threadY') {
       retArr.push('threadId.y');
-    } else if (idtNode.name == "gpu_threadZ") {
+    } else if (idtNode.name == 'gpu_threadZ') {
       retArr.push('threadId.z');
-    } else if (idtNode.name == "gpu_dimensionsX") {
+    } else if (idtNode.name == 'gpu_dimensionsX') {
       retArr.push('uOutputDim.x');
-    } else if (idtNode.name == "gpu_dimensionsY") {
+    } else if (idtNode.name == 'gpu_dimensionsY') {
       retArr.push('uOutputDim.y');
-    } else if (idtNode.name == "gpu_dimensionsZ") {
+    } else if (idtNode.name == 'gpu_dimensionsZ') {
       retArr.push('uOutputDim.z');
     } else {
-      retArr.push("user_"+idtNode.name);
+      retArr.push('user_'+idtNode.name);
     }
 
     return retArr;
@@ -410,69 +411,69 @@ export default class FunctionNodeWebGl {
   ///
   /// @returns  the prased openclgl string
   astForStatement(forNode, retArr, funcParam) {
-    if (forNode.type != "ForStatement") {
-      throw asterrorOutput(
-        "Invalid for statment",
+    if (forNode.type != 'ForStatement') {
+      throw astErrorOutput(
+        'Invalid for statment',
         ast, funcParam
-      );
+     );
     }
 
-    if (forNode.test && forNode.test.type == "BinaryExpression") {
-      if (forNode.test.right.type == "Identifier"
-        && forNode.test.operator == "<"
+    if (forNode.test && forNode.test.type == 'BinaryExpression') {
+      if (forNode.test.right.type == 'Identifier'
+        && forNode.test.operator == '<'
         && this.isIdentifierConstant(forNode.test.right.name) == false) {
 
         if (this.opt.loopMaxIterations === undefined) {
-          console.warn("Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.");
-          console.warn("Set loopMaxIterations or use a for loop of fixed length to silence this message.");
+          console.warn('Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.');
+          console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
         }
 
-        retArr.push("for (float ");
+        retArr.push('for (float ');
         this.astGeneric(forNode.init, retArr, funcParam);
-        retArr.push(";");
+        retArr.push(';');
         this.astGeneric(forNode.test.left, retArr, funcParam);
         retArr.push(forNode.test.operator);
-        retArr.push("LOOP_MAX");
-        retArr.push(";");
+        retArr.push('LOOP_MAX');
+        retArr.push(';');
         this.astGeneric(forNode.update, retArr, funcParam);
-        retArr.push(")");
+        retArr.push(')');
 
-        retArr.push("{\n");
-        retArr.push("if (");
+        retArr.push('{\n');
+        retArr.push('if (');
         this.astGeneric(forNode.test.left, retArr, funcParam);
         retArr.push(forNode.test.operator);
         this.astGeneric(forNode.test.right, retArr, funcParam);
-        retArr.push(") {\n");
-        if (forNode.body.type == "BlockStatement") {
+        retArr.push(') {\n');
+        if (forNode.body.type == 'BlockStatement') {
           for (var i = 0; i < forNode.body.body.length; i++) {
             this.astGeneric(forNode.body.body[i], retArr, funcParam);
           }
         } else {
           this.astGeneric(forNode.body, retArr, funcParam);
         }
-        retArr.push("} else {\n");
-        retArr.push("break;\n");
-        retArr.push("}\n");
-        retArr.push("}\n");
+        retArr.push('} else {\n');
+        retArr.push('break;\n');
+        retArr.push('}\n');
+        retArr.push('}\n');
 
         return retArr;
       } else {
-        retArr.push("for (float ");
+        retArr.push('for (float ');
         this.astGeneric(forNode.init, retArr, funcParam);
-        retArr.push(";");
+        retArr.push(';');
         this.astGeneric(forNode.test, retArr, funcParam);
-        retArr.push(";");
+        retArr.push(';');
         this.astGeneric(forNode.update, retArr, funcParam);
-        retArr.push(")");
+        retArr.push(')');
         this.astGeneric(forNode.body, retArr, funcParam);
         return retArr;
       }
     }
 
-    throw asterrorOutput(
-      "Invalid for statment",
+    throw astErrorOutput(
+      'Invalid for statement',
       ast, funcParam
-    );
+   );
   }
 
   /// Prases the abstract syntax tree, genericially to its respective function
@@ -481,35 +482,35 @@ export default class FunctionNodeWebGl {
   ///
   /// @returns  the prased openclgl string
   astWhileStatement(whileNode, retArr, funcParam) {
-    if (whileNode.type != "WhileStatement") {
-      throw asterrorOutput(
-        "Invalid while statment",
+    if (whileNode.type != 'WhileStatement') {
+      throw astErrorOutput(
+        'Invalid while statment',
         ast, funcParam
-      );
+     );
     }
 
-    retArr.push("for (float i=0.0; i<LOOP_MAX; i++) {");
-    retArr.push("if (");
+    retArr.push('for (float i=0.0; i<LOOP_MAX; i++) {');
+    retArr.push('if (');
     this.astGeneric(whileNode.test, retArr, funcParam);
-    retArr.push(") {\n");
+    retArr.push(') {\n');
     this.astGeneric(whileNode.body, retArr, funcParam);
-    retArr.push("} else {\n");
-    retArr.push("break;\n");
-    retArr.push("}\n");
-    retArr.push("}\n");
+    retArr.push('} else {\n');
+    retArr.push('break;\n');
+    retArr.push('}\n');
+    retArr.push('}\n');
 
     return retArr;
   }
 
   astAssignmentExpression(assNode, retArr, funcParam) {
-    if(assNode.operator == "%=") {
+    if (assNode.operator == '%=') {
       this.astGeneric(assNode.left, retArr, funcParam);
-      retArr.push("=");
-      retArr.push("mod(");
+      retArr.push('=');
+      retArr.push('mod(');
       this.astGeneric(assNode.left, retArr, funcParam);
-      retArr.push(",");
+      retArr.push(',');
       this.astGeneric(assNode.right, retArr, funcParam);
-      retArr.push(")");
+      retArr.push(')');
     } else {
       this.astGeneric(assNode.left, retArr, funcParam);
       retArr.push(assNode.operator);
@@ -519,34 +520,34 @@ export default class FunctionNodeWebGl {
   }
 
   astEmptyStatement(eNode, retArr, funcParam) {
-    retArr.push(";\n");
+    retArr.push(';\n');
     return retArr;
   }
 
-   astBlockStatement(bNode, retArr, funcParam) {
-    retArr.push("{\n");
+  astBlockStatement(bNode, retArr, funcParam) {
+    retArr.push('{\n');
     for (var i = 0; i < bNode.body.length; i++) {
       this.astGeneric(bNode.body[i], retArr, funcParam);
     }
-    retArr.push("}\n");
+    retArr.push('}\n');
     return retArr;
   }
 
    astExpressionStatement(esNode, retArr, funcParam) {
     this.astGeneric(esNode.expression, retArr, funcParam);
-    retArr.push(";\n");
+    retArr.push(';\n');
     return retArr;
   }
 
    astVariableDeclaration(vardecNode, retArr, funcParam) {
-    retArr.push("float ");
-    for (var i = 0; i < vardecNode.declarations.length; i++) {
+    retArr.push('float ');
+    for (let i = 0; i < vardecNode.declarations.length; i++) {
       if (i > 0) {
-        retArr.push(",");
+        retArr.push(',');
       }
       this.astGeneric(vardecNode.declarations[i], retArr, funcParam);
     }
-    retArr.push(";");
+    retArr.push(';');
     return retArr;
   }
 
@@ -554,32 +555,32 @@ export default class FunctionNodeWebGl {
 
     this.astGeneric(ivardecNode.id, retArr, funcParam);
     if (ivardecNode.init !== null) {
-      retArr.push("=");
+      retArr.push('=');
       this.astGeneric(ivardecNode.init, retArr, funcParam);
     }
     return retArr;
   }
 
    astIfStatement(ifNode, retArr, funcParam) {
-    retArr.push("if(");
+    retArr.push('if (');
     this.astGeneric(ifNode.test, retArr, funcParam);
-    retArr.push(")");
-    if (ifNode.consequent.type == "BlockStatement") {
+    retArr.push(')');
+    if (ifNode.consequent.type == 'BlockStatement') {
       this.astGeneric(ifNode.consequent, retArr, funcParam);
     } else {
-      retArr.push(" {\n");
+      retArr.push(' {\n');
       this.astGeneric(ifNode.consequent, retArr, funcParam);
-      retArr.push("\n}\n");
+      retArr.push('\n}\n');
     }
 
     if (ifNode.alternate) {
-      retArr.push("else ");
-      if (ifNode.alternate.type == "BlockStatement") {
+      retArr.push('else ');
+      if (ifNode.alternate.type == 'BlockStatement') {
         this.astGeneric(ifNode.alternate, retArr, funcParam);
       } else {
-        retArr.push(" {\n");
+        retArr.push(' {\n');
         this.astGeneric(ifNode.alternate, retArr, funcParam);
-        retArr.push("\n}\n");
+        retArr.push('\n}\n');
       }
     }
     return retArr;
@@ -587,26 +588,26 @@ export default class FunctionNodeWebGl {
   }
 
    astBreakStatement(brNode, retArr, funcParam) {
-    retArr.push("break;\n");
+    retArr.push('break;\n');
     return retArr;
   }
 
    astContinueStatement(crNode, retArr, funcParam) {
-    retArr.push("continue;\n");
+    retArr.push('continue;\n');
     return retArr;
   }
 
    astLogicalExpression(logNode, retArr, funcParam) {
-    retArr.push("(");
+    retArr.push('(');
     this.astGeneric(logNode.left, retArr, funcParam);
     retArr.push(logNode.operator);
     this.astGeneric(logNode.right, retArr, funcParam);
-    retArr.push(")");
+    retArr.push(')');
     return retArr;
   }
 
    astUpdateExpression(uNode, retArr, funcParam) {
-    if(uNode.prefix) {
+    if (uNode.prefix) {
       retArr.push(uNode.operator);
       this.astGeneric(uNode.argument, retArr, funcParam);
     } else {
@@ -618,7 +619,7 @@ export default class FunctionNodeWebGl {
   }
 
    astUnaryExpression(uNode, retArr, funcParam) {
-    if(uNode.prefix) {
+    if (uNode.prefix) {
       retArr.push(uNode.operator);
       this.astGeneric(uNode.argument, retArr, funcParam);
     } else {
@@ -630,86 +631,86 @@ export default class FunctionNodeWebGl {
   }
 
    astThisExpression(tNode, retArr, funcParam) {
-    retArr.push("this");
+    retArr.push('this');
     return retArr;
   }
 
 
   astMemberExpression(mNode, retArr, funcParam) {
-    if(mNode.computed) {
-      if (mNode.object.type == "Identifier") {
+    if (mNode.computed) {
+      if (mNode.object.type == 'Identifier') {
         // Working logger
-        var reqName = mNode.object.name;
-        var funcName = funcParam.funcName || "kernel";
-        var assumeNotTexture = false;
+        const reqName = mNode.object.name;
+        const funcName = funcParam.funcName || 'kernel';
+        let assumeNotTexture = false;
 
         // Possibly an array request - handle it as such
-        if(funcParam != "kernel" && funcParam.paramNames ) {
+        if (funcParam != 'kernel' && funcParam.paramNames) {
           var idx = funcParam.paramNames.indexOf(reqName);
-          if( idx >= 0 && funcParam.paramType[idx] == "float") {
+          if (idx >= 0 && funcParam.paramType[idx] == 'float') {
             assumeNotTexture = true;
           }
         }
 
-        if(assumeNotTexture) {
+        if (assumeNotTexture) {
           // Get from array
           this.astGeneric(mNode.object, retArr, funcParam);
-          retArr.push("[int(");
+          retArr.push('[int(');
           this.astGeneric(mNode.property, retArr, funcParam);
-          retArr.push(")]");
+          retArr.push(')]');
 
           //console.log(mNode.property.operator);
         } else {
           // Get from texture
           // This normally refers to the global read only input vars
-          retArr.push("get(");
+          retArr.push('get(');
           this.astGeneric(mNode.object, retArr, funcParam);
-          retArr.push(", vec2(");
+          retArr.push(', vec2(');
           this.astGeneric(mNode.object, retArr, funcParam);
-          retArr.push("Size[0],");
+          retArr.push('Size[0],');
           this.astGeneric(mNode.object, retArr, funcParam);
-          retArr.push("Size[1]), vec3(");
+          retArr.push('Size[1]), vec3(');
           this.astGeneric(mNode.object, retArr, funcParam);
-          retArr.push("Dim[0],");
+          retArr.push('Dim[0],');
           this.astGeneric(mNode.object, retArr, funcParam);
-          retArr.push("Dim[1],");
+          retArr.push('Dim[1],');
           this.astGeneric(mNode.object, retArr, funcParam);
-          retArr.push("Dim[2]");
-          retArr.push("), ");
+          retArr.push('Dim[2]');
+          retArr.push('), ');
           this.astGeneric(mNode.property, retArr, funcParam);
-          retArr.push(")");
+          retArr.push(')');
         }
       } else {
         this.astGeneric(mNode.object, retArr, funcParam);
-        var last = retArr.pop();
-        retArr.push(",");
+        const last = retArr.pop();
+        retArr.push(',');
         this.astGeneric(mNode.property, retArr, funcParam);
-        retArr.push(")");
+        retArr.push(')');
 
         //console.log(mNode.property.operator);
       }
     } else {
 
       // Unroll the member expression
-      var unrolled = astMemberExpression_unroll(mNode);
+      var unrolled = this.astMemberExpressionUnroll(mNode);
       var unrolled_lc = unrolled.toLowerCase();
 
       // Its a constant, remove this.constants.
-      if( unrolled.indexOf(constantsPrefix) === 0 ) {
-        unrolled = 'constants_'+unrolled.slice( constantsPrefix.length );
+      if (unrolled.indexOf(constantsPrefix) === 0) {
+        unrolled = 'constants_'+unrolled.slice(constantsPrefix.length);
       }
 
-      if (unrolled_lc == "this.thread.x") {
+      if (unrolled_lc == 'this.thread.x') {
         retArr.push('threadId.x');
-      } else if (unrolled_lc == "this.thread.y") {
+      } else if (unrolled_lc == 'this.thread.y') {
         retArr.push('threadId.y');
-      } else if (unrolled_lc == "this.thread.z") {
+      } else if (unrolled_lc == 'this.thread.z') {
         retArr.push('threadId.z');
-      } else if (unrolled_lc == "this.dimensions.x") {
+      } else if (unrolled_lc == 'this.dimensions.x') {
         retArr.push('uOutputDim.x');
-      } else if (unrolled_lc == "this.dimensions.y") {
+      } else if (unrolled_lc == 'this.dimensions.y') {
         retArr.push('uOutputDim.y');
-      } else if (unrolled_lc == "this.dimensions.z") {
+      } else if (unrolled_lc == 'this.dimensions.z') {
         retArr.push('uOutputDim.z');
       } else {
         retArr.push(unrolled);
@@ -719,9 +720,9 @@ export default class FunctionNodeWebGl {
   }
 
   astSequenceExpression(sNode, retArr, funcParam) {
-    for (var i = 0; i < sNode.expressions.length; i++) {
+    for (let i = 0; i < sNode.expressions.length; i++) {
       if (i > 0) {
-        retArr.push(",");
+        retArr.push(',');
       }
       this.astGeneric(sNode.expressions, retArr, funcParam);
     }
@@ -736,27 +737,27 @@ export default class FunctionNodeWebGl {
   ///
   /// @returns  {String} the function namespace call, unrolled
   astMemberExpressionUnroll(ast, funcParam) {
-    if( ast.type == "Identifier" ) {
+    if (ast.type == 'Identifier') {
       return ast.name;
-    } else if( ast.type == "ThisExpression" ) {
-      return "this";
+    } else if (ast.type == 'ThisExpression') {
+      return 'this';
     }
 
-    if( ast.type == "MemberExpression" ) {
-      if( ast.object && ast.property ) {
+    if (ast.type == 'MemberExpression') {
+      if (ast.object && ast.property) {
         return (
-          astMemberExpression_unroll( ast.object, funcParam ) +
-          "." +
-          astMemberExpression_unroll( ast.property, funcParam )
-        );
+          this.astMemberExpressionUnroll(ast.object, funcParam) +
+          '.' +
+          this.astMemberExpressionUnroll(ast.property, funcParam)
+       );
       }
     }
 
     // Failure, unknown expression
-    throw asterrorOutput(
-      "Unknown CallExpression_unroll",
+    throw astErrorOutput(
+      'Unknown CallExpression_unroll',
       ast, funcParam
-    );
+   );
   }
 
   /// Prases the abstract syntax tree, binary expression
@@ -765,52 +766,52 @@ export default class FunctionNodeWebGl {
   /// @param retArr       return array string
   /// @param funcParam    FunctionNode, that tracks compilation state
   ///
-  /// @returns  the appened retArr
+  /// @returns  the appended retArr
   astCallExpression(ast, retArr, funcParam) {
-    if( ast.callee ) {
+    if (ast.callee) {
       // Get the full function call, unrolled
-      var funcName = astMemberExpression_unroll(ast.callee);
+      let funcName = this.astMemberExpressionUnroll(ast.callee);
 
       // Its a math operator, remove the prefix
-      if( funcName.indexOf(jsMathPrefix) === 0 ) {
-        funcName = funcName.slice( jsMathPrefix.length );
+      if (funcName.indexOf(jsMathPrefix) === 0) {
+        funcName = funcName.slice(jsMathPrefix.length);
       }
 
       // Its a local function, remove this
-      if( funcName.indexOf(localPrefix) === 0 ) {
-        funcName = funcName.slice( localPrefix.length );
+      if (funcName.indexOf(localPrefix) === 0) {
+        funcName = funcName.slice(localPrefix.length);
       }
 
       // Register the function into the called registry
-      if( funcParam.calledFunctions.indexOf(funcName) < 0 ) {
+      if (funcParam.calledFunctions.indexOf(funcName) < 0) {
         funcParam.calledFunctions.push(funcName);
       }
 
       // Call the function
-      retArr.push( funcName );
+      retArr.push(funcName);
 
       // Open arguments space
-      retArr.push( "(" );
+      retArr.push('(');
 
       // Add the vars
-      for(var i=0; i<ast.arguments.length; ++i) {
-        if(i > 0) {
-          retArr.push(", ");
+      for (let i = 0; i < ast.arguments.length; ++i) {
+        if (i > 0) {
+          retArr.push(', ');
         }
         this.astGeneric(ast.arguments[i],retArr,funcParam);
       }
 
       // Close arguments space
-      retArr.push( ")" );
+      retArr.push(')');
 
       return retArr;
     }
 
     // Failure, unknown expression
-    throw asterrorOutput(
-      "Unknown CallExpression",
+    throw astErrorOutput(
+      'Unknown CallExpression',
       ast, funcParam
-    );
+   );
 
     return retArr;
   }
@@ -821,27 +822,46 @@ export default class FunctionNodeWebGl {
   /// @param retArr       return array string
   /// @param funcParam    FunctionNode, that tracks compilation state
   ///
-  /// @returns  the appened retArr
+  /// @returns  the append retArr
   astArrayExpression(arrNode, retArr, funcParam) {
     // console.log(arrNode);
-    var arrLen = arrNode.elements.length;
+    const arrLen = arrNode.elements.length;
 
-    retArr.push("float["+arrLen+"](");
-    for(var i=0; i<arrLen; ++i) {
-      if(i > 0) {
-        retArr.push(", ");
+    retArr.push('float['+arrLen+'](');
+    for (let i = 0; i < arrLen; ++i) {
+      if (i > 0) {
+        retArr.push(', ');
       }
-      var subNode = arrNode.elements[i];
+      const subNode = arrNode.elements[i];
       this.astGeneric(subNode, retArr, funcParam)
     }
-    retArr.push(")");
+    retArr.push(')');
 
     return retArr;
 
     // // Failure, unknown expression
-    // throw asterrorOutput(
-    // 	"Unknown  ArrayExpression",
+    // throw astErrorOutput(
+    // 	'Unknown  ArrayExpression',
     // 	arrNode, funcParam
-    // );
+    //);
+  }
+
+  ///
+  /// Function: getFunctionPrototypeString
+  ///
+  /// Returns the converted webgl shader function equivalent of the JS function
+  ///
+  /// Returns:
+  /// 	{String} webgl function string, result is cached under this.getFunctionPrototypeString
+  ///
+  getFunctionPrototypeString(opt) {
+    opt = opt || {};
+    if(this.webGlFunctionPrototypeString) {
+      return this.webGlFunctionPrototypeString;
+    }
+    return this.functionPrototypeString = new FunctionNodeWebGl(this, {
+      prototypeOnly: true,
+      isRootKernel: opt.isRootKernel
+    });
   }
 }

@@ -1,10 +1,19 @@
 const GPUUtils = require('./gpu-utils');
+const FunctionBuilder = require('./backend/function-builder');
+const GPURunner = require('./backend/gpu/gpu-runner');
+const CPURunner = require('./backend/cpu/cpu-runner');
 ///
 /// Class: GPU
 ///
 /// Initialises the GPU.js library class which manages the WebGL context for the created functions.
 ///
 export default class GPU {
+  constructor() {
+    this.functionBuilder = new FunctionBuilder();
+    this.runner = GPUUtils.isWebGlSupported
+      ? new GPURunner()
+      : new CPURunner();
+  }
 	///
 	/// Function: createKernel
 	///
@@ -24,48 +33,52 @@ export default class GPU {
 	///
 	/// Parameters:
 	/// 	inputFunction   {JS Function} The calling to perform the conversion
-	/// 	paramObj        {Object}      The parameter configuration object (see above)
+	/// 	settings        {Object}      The parameter configuration object (see above)
 	///
 	/// Returns:
 	/// 	callable function to run
 	///
-  createKernel(kernel, paramObj) {
+  createKernel(fn, settings) {
 		//
 		// basic parameters safety checks
 		//
-		if(kernel === undefined) {
-			throw 'Missing kernel parameter';
+		if(fn === undefined) {
+			throw 'Missing fn parameter';
 		}
-		if(!GPUUtils.isFunction(kernel)) {
-			throw 'kernel parameter not a function';
+		if(!GPUUtils.isFunction(fn)) {
+			throw 'fn parameter not a function';
 		}
-		if( paramObj === undefined ) {
-			paramObj = {};
+
+		if(settings === undefined) {
+      settings = {};
 		}
 
 		//
 		// Replace the kernel function and param object
 		//
-		this._kernelFunction = kernel;
-		this._kernelParamObj = paramObj || this._kernelParamObj || {};
+		this._fn = fn;
+		this._kernelParamObj = settings || this._kernelParamObj || {};
 
 		//
 		// Get the config, fallbacks to default value if not set
 		//
-		const mode = paramObj.mode && paramObj.mode.toLowerCase();
+		const mode = settings.mode && settings.mode.toLowerCase();
 		this.computeMode = mode || 'auto';
 
+    this.runner
+      .setFn(fn)
+      .buildKernel();
 		//
 		// Get the Synchronous executor
 		//
-		const ret = this.getSynchronousModeExecutor();
+		const ret =
 		// Allow class refence from function
 		ret.gpujs = this;
 		// Execute callback
-		ret.exec = ret.execute = GPUUtils.functionBinder( this.execute, this );
+		ret.exec = ret.execute = GPUUtils.functionBinder(this.execute, this);
 
 		// The Synchronous kernel
-		this._kernelSynchronousExecutor = ret; //For exec to reference
+		this._runner = ret; //For exec to reference
 
 		return ret;
 	}
@@ -78,8 +91,8 @@ export default class GPU {
 	/// Returns:
 	/// 	{JS Function}  The calling input function
 	///
-	getKernelFunction() {
-		return this._kernelFunction;
+	getFn() {
+		return this._fn;
 	}
 
 	///
@@ -116,7 +129,7 @@ export default class GPU {
 		//
 		return GPUUtils.newPromise((accept,reject) => {
 			try {
-				accept( this._kernelSynchronousExecutor.apply(this, args) );
+				accept(this._runner.apply(this, args));
 			} catch (e) {
 				//
 				// Error : throw rejection
@@ -143,8 +156,8 @@ export default class GPU {
 	/// Retuns:
 	/// 	{GPU} returns itself
 	///
-  addFunction( jsFunction, paramTypeArray, returnType  ) {
-		this.functionBuilder.addFunction( null, jsFunction, paramTypeArray, returnType );
+  addFunction(jsFunction, paramTypeArray, returnType) {
+		this.functionBuilder.addFunction(null, jsFunction, paramTypeArray, returnType);
 		return this;
 	}
 
