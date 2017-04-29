@@ -3,8 +3,8 @@
 ///
 
 QUnit.test( "GPUUtils: systemEndianness not null", function( assert ) {
-	assert.ok( GPUUtils.systemEndianness() != null, "not null check" );
-	assert.ok( GPUUtils.systemEndianness() == "LE" ||  GPUUtils.systemEndianness() == "BE", "value = "+GPUUtils.systemEndianness() );
+	assert.ok( GPUUtils.systemEndianness !== null, "not null check" );
+	assert.ok( GPUUtils.systemEndianness === "LE" ||  GPUUtils.systemEndianness == "BE", "value = "+GPUUtils.systemEndianness );
 });
 
 QUnit.test( "GPUUtils: isFunction", function( assert ) {
@@ -18,9 +18,9 @@ QUnit.test( "GPUUtils: isFunctionString", function( assert ) {
 });
 
 QUnit.test( "GPUUtils: getFunctionName_fromString", function( assert ) {
-	assert.equal( "test", GPUUtils.getFunctionName_fromString( "function test() { }" ) );
+	assert.equal( "test", GPUUtils.getFunctionNameFromString( "function test() { }" ) );
 });
 
 QUnit.test( "GPUUtils: getParamNames_fromString", function( assert ) {
-	assert.deepEqual( ["a","b","c"], GPUUtils.getParamNames_fromString( "function test(a,b,c) { }" ) );
+	assert.deepEqual( ["a","b","c"], GPUUtils.getParamNamesFromString( "function test(a,b,c) { }" ) );
 });

@@ -1,3 +1,3 @@
 const GPU = require('./gpu');
 
-export default GPU;
+module.exports = GPU;

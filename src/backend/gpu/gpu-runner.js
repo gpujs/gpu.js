@@ -2,7 +2,7 @@ const BaseRunner = require('../base-runner');
 const GPUUtils = require('../../gpu-utils');
 const GPUKernel = require('./gpu-kernel');
 
-export default class GPURunner extends BaseRunner {
+module.exports = class GPURunner extends BaseRunner {
   constructor(opt) {
     super();
     this.programUniformLocationCache = {};
@@ -17,31 +17,30 @@ export default class GPURunner extends BaseRunner {
   }
 
   getProgramCacheKey(args, opt, outputDim) {
-		var key = '';
-		for (var i=0; i<args.length; i++) {
-			var argType = GPUUtils.getArgumentType(args[i]);
+		let key = '';
+		for (let i = 0; i < args.length; i++) {
+			const argType = GPUUtils.getArgumentType(args[i]);
 			key += argType;
 			if (opt.hardcodeConstants) {
-				var dimensions;
-				if (argType == "Array" || argType == "Texture") {
-					dimensions = this.getDimensions(args[i], true);
+				if (argType === 'Array' || argType === 'Texture') {
+					const dimensions = this.getDimensions(args[i], true);
 					key += '['+dimensions[0]+','+dimensions[1]+','+dimensions[2]+']';
 				}
 			}
 		}
 
-		var specialFlags = '';
+		let specialFlags = '';
 		if (opt.wraparound) {
-			specialFlags += "Wraparound";
+			specialFlags += 'Wraparound';
 		}
 
 		if (opt.hardcodeConstants) {
-			specialFlags += "Hardcode";
+			specialFlags += 'Hardcode';
 			specialFlags += '['+outputDim[0]+','+outputDim[1]+','+outputDim[2]+']';
 		}
 
 		if (opt.constants) {
-			specialFlags += "Constants";
+			specialFlags += 'Constants';
 			specialFlags += JSON.stringify(opt.constants);
 		}
 
@@ -53,7 +52,7 @@ export default class GPURunner extends BaseRunner {
 	}
 
   getUniformLocation(name) {
-    var location = this.programUniformLocationCache[this.programCacheKey][name];
+    let location = this.programUniformLocationCache[this.programCacheKey][name];
     if (!location) {
       location = gl.getUniformLocation(program, name);
       this.programUniformLocationCache[this.programCacheKey][name] = location;
@@ -64,4 +63,4 @@ export default class GPURunner extends BaseRunner {
 	get mode() {
     return 'gpu';
   }
-}
+};

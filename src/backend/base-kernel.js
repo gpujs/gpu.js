@@ -1,9 +1,11 @@
 const GPUUtils = require('../gpu-utils');
-export default class BaseKernel extends Function {
-  constructor(fnString, runner) {
+module.exports = class BaseKernel extends Function {
+  constructor(fnString, settings) {
     const args = GPUUtils.getParamNamesFromString(fnString);
-    super(args, );
-    this.gpujs = runner;
+    super(args, 'console.log("hi mom 2");return this.run.apply(this, arguments);');
+    this._paramNames = GPUUtils.getParamNamesFromString(fnString);
+    this._fnString = fnString;
+    this._processor = null;
     this._dimensions = null;
     this._debug = false;
     this._graphical = false;
@@ -15,7 +17,13 @@ export default class BaseKernel extends Function {
     this._floatTextures = null;
     this._floatOutput = null;
     this._floatOutputForce = null;
-    this.texSize = null;
+    this._texSize = null;
+    this._runner = null;
+
+    for (let p in settings) {
+      if (!settings.hasOwnProperty(p) && !this.hasOwnProperty('_' + p)) continue;
+      this['_' + p] = settings[p];
+    }
   }
 
   build() {
@@ -89,4 +97,4 @@ export default class BaseKernel extends Function {
   validateOptions() {
     throw new Error('"validateOptions not defined');
   }
-}
+};

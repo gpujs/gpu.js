@@ -1,4 +1,4 @@
-export default class GPUTexture {
+module.exports = class GPUTexture {
     constructor(gpu, texture, size, dimensions) {
         this.gpu = gpu;
         this.texture = texture;

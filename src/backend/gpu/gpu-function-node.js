@@ -64,7 +64,7 @@ function astErrorOutput(error, ast, funcParam) {
   return error;
 }
 
-export default class GPUFunctionNode {
+module.exports = class GPUFunctionNode {
   constructor() {
     this.gpu = null;
     this.opt = null;

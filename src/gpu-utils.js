@@ -16,9 +16,6 @@ const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
 // ARGUMENT NAMES regex
 const ARGUMENT_NAMES = /([^\s,]+)/g;
 
-const isCanvasSupported = GPUUtils.isCanvas(document.createElement('canvas'));
-const isWebGlSupported = GPUUtils.isWebGl(GPUUtils.initWebGl(GPUUtils.initCanvas()));
-
 const systemEndianness = (() => {
   const b = new ArrayBuffer(4);
   const a = new Uint32Array(b);
@@ -31,7 +28,7 @@ const systemEndianness = (() => {
 
 let isFloatReadPixelsSupported = null;
 
-export default class GPUUtils {
+const GPUUtils = class GPUUtils {
 	//-----------------------------------------------------------------------------
 	//
 	//  System values support (currently only endianness)
@@ -109,6 +106,10 @@ export default class GPUUtils {
 		return FUNCTION_NAME.exec(funcStr)[1];
 	}
 
+	static getFunctionBodyFromString(funcStr) {
+    return funcStr.substring(funcStr.indexOf('{') + 1, funcStr.lastIndexOf('}'));
+  }
+
 	///
 	/// Function: getParamNames_fromString
 	///
@@ -146,15 +147,14 @@ export default class GPUUtils {
 	/// 	{Object}  Cloned object
 	///
   static clone(obj) {
-		if(obj === null || typeof(obj) !== 'object' || 'isActiveClone' in obj)
-			return obj;
+		if(obj === null || typeof obj !== 'object' || obj.hasOwnProperty('isActiveClone')) return obj;
 
 		const temp = obj.constructor(); // changed
 
 		for(let key in obj) {
 			if(Object.prototype.hasOwnProperty.call(obj, key)) {
 				obj.isActiveClone = null;
-				temp[key] = clone(obj[key]);
+				temp[key] = GPUUtils.clone(obj[key]);
 				delete obj.isActiveClone;
 			}
 		}
@@ -294,7 +294,7 @@ export default class GPUUtils {
 	///
   static initCanvas() {
 		// Fail fast if browser previously detected no support
-		if(!isCanvasSupport) {
+		if(!isCanvasSupported) {
 			return null;
 		}
 
@@ -370,7 +370,7 @@ export default class GPUUtils {
   static initWebGl(canvasObj) {
 
     // First time setup, does the browser support check memoizer
-    if(!isWebGlSupported || !isCanvasSupported) {
+    if(!isCanvasSupported || !isWebGlSupported) {
       return null;
     }
 
@@ -452,7 +452,7 @@ export default class GPUUtils {
     } else if (x instanceof GPUTexture) {
       ret = x.dimensions;
     } else {
-      throw "Unknown dimensions of " + x;
+      throw 'Unknown dimensions of ' + x;
     }
 
     if (pad) {
@@ -483,28 +483,31 @@ export default class GPUUtils {
     return ret;
   }
 
-  static flatten(arr) {
-    const result = [];
-
-    if (GPUUtils.isArray(arr[0])) {
-      if (GPUUtils.isArray(arr[0][0])) {
-        if (Array.isArray(arr[0][0])) {
-          for (let i = 0; i < arr.length; i++) {
-            const nestedArray = arr[i];
-            for (let j = 0; j < nestedArray.length; j++) {
-              result.push.apply(result, nestedArray[j]);
-            }
-          }
-        } else {
-          for (let i = 0; i < arr.length; i++) {
-            result.push.apply(result, arr[i]);
+  static flatten(arr, result) {
+    let i = 0;
+    result = result || [];
+    if (GPUUtils.isArray(arr)) {
+      if (!GPUUtils.isArray(arr[0])) {
+        result.push.apply(result, arr);
+      } else {
+        for (; i < arr.length; i++) {
+          if (GPUUtils.isArray(arr[i])) {
+            GPUUtils.flatten(arr[i], result);
+          } else {
+            result.push(result, arr[i]);
           }
         }
-      } else {
-        result.push.apply(result, arr);
       }
-    } else {
-      return arr;
+    } else if (typeof arr === 'object') {
+      const keys = Object.keys(arr);
+      for (;i < keys.length; i++) {
+        const objectValue = arr[keys[i]];
+        if (GPUUtils.isArray(objectValue)) {
+          GPUUtils.flatten(objectValue, result);
+        } else {
+          result.push(objectValue);
+        }
+      }
     }
     return result;
   }
@@ -516,4 +519,9 @@ export default class GPUUtils {
     }
     return result;
   }
-}
+};
+
+const isCanvasSupported = typeof document !== 'undefined' ? GPUUtils.isCanvas(document.createElement('canvas')) : false;
+const isWebGlSupported = GPUUtils.isWebGl(GPUUtils.initWebGl(GPUUtils.initCanvas()));
+
+module.exports = GPUUtils;

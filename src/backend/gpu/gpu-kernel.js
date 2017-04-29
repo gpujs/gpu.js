@@ -3,7 +3,14 @@ const GPUUtils = require('../../gpu-utils');
 const GPUTexture = require('../../gpu-texture');
 const GPUFunctionNode = require('./gpu-function-node');
 
-export default class GPUKernel extends BaseKernel {
+module.exports = class GPUKernel extends BaseKernel {
+  constructor(fnString, settings) {
+    super(fnString, settings);
+    this.textureCache = {};
+    this.threadDim = {};
+    this.buffer = null;
+    this.program = null;
+  }
   validateOptions() {
     const isReadPixel = GPUUtils.isFloatReadPixelsSupported(this.gpujs);
     if (this._floatTextures === true && !GPUUtils.OES_texture_float) {
@@ -16,14 +23,14 @@ export default class GPUKernel extends BaseKernel {
     }
 
     if (!this._dimensions || this._dimensions.length === 0) {
-      if (arguments.length != 1) {
+      if (arguments.length !== 1) {
         throw 'Auto dimensions only supported for kernels with only one input';
       }
 
       const argType = GPUUtils.getArgumentType(arguments[0]);
-      if (argType == "Array") {
+      if (argType === 'Array') {
         this._dimensions = GPUUtils.getDimensions(argType);
-      } else if (argType == "Texture") {
+      } else if (argType === 'Texture') {
         this._dimensions = arguments[0]._dimensions;
       } else {
         throw 'Auto dimensions not supported for input type: ' + argType;
@@ -33,7 +40,7 @@ export default class GPUKernel extends BaseKernel {
     this.texSize = GPUUtils.dimToTexSize(this, this._dimensions, true);
 
     if (this._graphical) {
-      if (this._dimensions.length != 2) {
+      if (this._dimensions.length !== 2) {
         throw 'Output must have 2 dimensions on graphical mode';
       }
 
@@ -49,82 +56,70 @@ export default class GPUKernel extends BaseKernel {
 
   build(fnString, fn) {
     this.validateOptions();
-    const paramNames = GPUUtils.getParamNamesFromString(fnString);
-
-    const vertices = new Float32Array([
-      -1, -1,
-      1, -1,
-      -1, 1,
-      1, 1]);
-    const texCoords = new Float32Array([
-      0.0, 0.0,
-      1.0, 0.0,
-      0.0, 1.0,
-      1.0, 1.0]);
-
+    const paramNames = this.paramNames;
     const builder = this.functionBuilder;
     const endianness = this.endianness;
     const texSize = this.texSize;
+    const gl = this._webgl;
     this.canvas.width = texSize[0];
     this.canvas.height = texSize[1];
     gl.viewport(0, 0, texSize[0], texSize[1]);
 
-    const threadDim = GPUUtils.clone(this._dimensions);
+    const threadDim = this.threadDim = GPUUtils.clone(this._dimensions);
     while (threadDim.length < 3) {
       threadDim.push(1);
     }
 
-    if (program === undefined) {
-      let constantsStr = '';
-      if (this._constants) {
-        for (let name in this._constants) {
-          let value = parseFloat(this._constants[name]);
+    let constantsStr = '';
+    if (this._constants) {
+      for (let name in this._constants) {
+        let value = parseFloat(this._constants[name]);
 
-          if (Number.isInteger(value)) {
-            constantsStr += 'const float constants_' + name + '=' + parseInt(value) + '.0;\n';
-          } else {
-            constantsStr += 'const float constants_' + name + '=' + parseFloat(value) + ';\n';
-          }
-        }
-      }
-
-      let paramStr = '';
-
-      const paramType = [];
-      for (let i = 0; i < paramNames.length; i++) {
-        const argType = GPUUtils.getArgumentType(arguments[i]);
-        paramType.push(argType);
-        if (this._hardcodeConstants) {
-          if (argType == "Array" || argType == "Texture") {
-            const paramDim = GPUUtils.getDimensions(arguments[i], true);
-            const paramSize = GPUUtils.dimToTexSize(gpu, paramDim);
-
-            paramStr += 'uniform highp sampler2D user_' + paramNames[i] + ';\n';
-            paramStr += 'highp vec2 user_' + paramNames[i] + 'Size = vec2(' + paramSize[0] + '.0, ' + paramSize[1] + '.0);\n';
-            paramStr += 'highp vec3 user_' + paramNames[i] + 'Dim = vec3(' + paramDim[0] + '.0, ' + paramDim[1] + '.0, ' + paramDim[2] + '.0);\n';
-          } else if (argType == "Number" && Number.isInteger(arguments[i])) {
-            paramStr += 'highp float user_' + paramNames[i] + ' = ' + arguments[i] + '.0;\n';
-          } else if (argType == "Number") {
-            paramStr += 'highp float user_' + paramNames[i] + ' = ' + arguments[i] + ';\n';
-          }
+        if (Number.isInteger(value)) {
+          constantsStr += 'const float constants_' + name + '=' + parseInt(value) + '.0;\n';
         } else {
-          if (argType == "Array" || argType == "Texture") {
-            paramStr += 'uniform highp sampler2D user_' + paramNames[i] + ';\n';
-            paramStr += 'uniform highp vec2 user_' + paramNames[i] + 'Size;\n';
-            paramStr += 'uniform highp vec3 user_' + paramNames[i] + 'Dim;\n';
-          } else if (argType == "Number") {
-            paramStr += 'uniform highp float user_' + paramNames[i] + ';\n';
-          }
+          constantsStr += 'const float constants_' + name + '=' + parseFloat(value) + ';\n';
         }
       }
+    }
 
-      const kernelNode = new GPUFunctionNode(gpu, "kernel", kernel);
-      kernelNode.paramNames = paramNames;
-      kernelNode.paramType = paramType;
-      kernelNode.isRootKernel = true;
-      builder.addFunctionNode(kernelNode);
+    let paramStr = '';
 
-      const vertShaderSrc = `
+    const paramType = [];
+    for (let i = 0; i < paramNames.length; i++) {
+      const argType = GPUUtils.getArgumentType(arguments[i]);
+      paramType.push(argType);
+      if (this._hardcodeConstants) {
+        if (argType === 'Array' || argType === 'Texture') {
+          const paramDim = GPUUtils.getDimensions(arguments[i], true);
+          const paramSize = GPUUtils.dimToTexSize(gpu, paramDim);
+
+          paramStr += 'uniform highp sampler2D user_' + paramNames[i] + ';\n';
+          paramStr += 'highp vec2 user_' + paramNames[i] + 'Size = vec2(' + paramSize[0] + '.0, ' + paramSize[1] + '.0);\n';
+          paramStr += 'highp vec3 user_' + paramNames[i] + 'Dim = vec3(' + paramDim[0] + '.0, ' + paramDim[1] + '.0, ' + paramDim[2] + '.0);\n';
+        } else if (argType === 'Number' && Number.isInteger(arguments[i])) {
+          paramStr += 'highp float user_' + paramNames[i] + ' = ' + arguments[i] + '.0;\n';
+        } else if (argType === 'Number') {
+          paramStr += 'highp float user_' + paramNames[i] + ' = ' + arguments[i] + ';\n';
+        }
+      } else {
+        if (argType === 'Array' || argType === 'Texture') {
+          paramStr += 'uniform highp sampler2D user_' + paramNames[i] + ';\n';
+          paramStr += 'uniform highp vec2 user_' + paramNames[i] + 'Size;\n';
+          paramStr += 'uniform highp vec3 user_' + paramNames[i] + 'Dim;\n';
+        } else if (argType === 'Number') {
+          paramStr += 'uniform highp float user_' + paramNames[i] + ';\n';
+        }
+      }
+    }
+
+    const kernelNode = new GPUFunctionNode(gpu, 'kernel', kernel);
+    kernelNode.paramNames = paramNames;
+    kernelNode.paramType = paramType;
+    kernelNode.isRootKernel = true;
+    builder.addFunctionNode(kernelNode);
+
+    const vertShaderSrc = `
 precision highp float;
 precision highp int;
 precision highp sampler2D;
@@ -199,7 +194,7 @@ const vec2 MAGIC_VEC = vec2(1.0, -256.0);
 const vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);
 const vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536
 highp float decode32(highp vec4 rgba) {
-  ${ endianness == 'LE'
+  ${ endianness === 'LE'
     ? ''
     : 'rgba.rgba = rgba.abgr;'
   }
@@ -289,8 +284,8 @@ void color(float r, float g, float b) {
 highp float kernelResult = 0.0;
 ${ paramStr }
 ${ constantsStr }
-builder.webGlPrototypeString("kernel", opt)
-builder.webGlString("kernel", opt)
+builder.webGlPrototypeString('kernel', opt)
+builder.webGlString('kernel', opt)
 
 void main(void) {
   index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;
@@ -311,48 +306,64 @@ void main(void) {
   }
 }`;
 
-      const vertShader = gl.createShader(gl.VERTEX_SHADER);
-      const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+    const vertShader = gl.createShader(gl.VERTEX_SHADER);
+    const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 
-      gl.shaderSource(vertShader, vertShaderSrc);
-      gl.shaderSource(fragShader, fragShaderSrc);
+    gl.shaderSource(vertShader, vertShaderSrc);
+    gl.shaderSource(fragShader, fragShaderSrc);
 
-      gl.compileShader(vertShader);
-      gl.compileShader(fragShader);
+    gl.compileShader(vertShader);
+    gl.compileShader(fragShader);
 
-      if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
-        console.log(vertShaderSrc);
-        console.error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(vertShader));
-        throw "Error compiling vertex shader";
-      }
-      if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
-        console.log(fragShaderSrc);
-        console.error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(fragShader));
-        throw "Error compiling fragment shader";
-      }
-
-      if (this._debug) {
-        console.log('Options:');
-        console.dir(opt);
-        console.log('GLSL Shader Output:');
-        console.log(fragShaderSrc);
-      }
-
-      const program = this.program = gl.createProgram();
-      gl.attachShader(program, vertShader);
-      gl.attachShader(program, fragShader);
-      gl.linkProgram(program);
-
-      programCache[programCacheKey] = program;
-      programUniformLocationCache[programCacheKey] = [];
+    if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
+      console.log(vertShaderSrc);
+      console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(vertShader));
+      throw 'Error compiling vertex shader';
+    }
+    if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
+      console.log(fragShaderSrc);
+      console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(fragShader));
+      throw 'Error compiling fragment shader';
     }
 
-    gl.useProgram(program);
+    if (this._debug) {
+      console.log('Options:');
+      console.dir(opt);
+      console.log('GLSL Shader Output:');
+      console.log(fragShaderSrc);
+    }
+
+    const program = this.program = gl.createProgram();
+    gl.attachShader(program, vertShader);
+    gl.attachShader(program, fragShader);
+    gl.linkProgram(program);
+
+    programCache[programCacheKey] = program;
+    programUniformLocationCache[programCacheKey] = [];
+
+  }
+
+  run() {
+    const textureCache = this.textureCache;
+    const texSize = this.texSize;
+    const threadDim = this.threadDim;
+    const vertices = new Float32Array([
+      -1, -1,
+      1, -1,
+      -1, 1,
+      1, 1]);
+    const texCoords = new Float32Array([
+      0.0, 0.0,
+      1.0, 0.0,
+      0.0, 1.0,
+      1.0, 1.0]);
+    const gl = this._webgl;
+    gl.useProgram(this.program);
 
     const texCoordOffset = vertices.byteLength;
-    let buffer = bufferCache[programCacheKey];
+    let buffer = this.buffer;
     if (!buffer) {
-      buffer = gl.createBuffer();
+      buffer = this.buffer = gl.createBuffer();
       bufferCache[programCacheKey] = buffer;
 
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -363,28 +374,27 @@ void main(void) {
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices);
     gl.bufferSubData(gl.ARRAY_BUFFER, texCoordOffset, texCoords);
 
-    var aPosLoc = gl.getAttribLocation(program, "aPos");
+    const aPosLoc = gl.getAttribLocation(this.program, 'aPos');
     gl.enableVertexAttribArray(aPosLoc);
     gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, gl.FALSE, 0, 0);
-    var aTexCoordLoc = gl.getAttribLocation(program, "aTexCoord");
+    const aTexCoordLoc = gl.getAttribLocation(this.program, 'aTexCoord');
     gl.enableVertexAttribArray(aTexCoordLoc);
     gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 
     if (!this._hardcodeConstants) {
-      var uOutputDimLoc = this.getUniformLocation("uOutputDim");
+      const uOutputDimLoc = this.getUniformLocation('uOutputDim');
       gl.uniform3fv(uOutputDimLoc, threadDim);
-      var uTexSizeLoc = this.getUniformLocation("uTexSize");
+      const uTexSizeLoc = this.getUniformLocation('uTexSize');
       gl.uniform2fv(uTexSizeLoc, texSize);
     }
 
     if (!textureCache[programCacheKey]) {
       textureCache[programCacheKey] = [];
     }
-    let textureCount = 0;
-    for (textureCount=0; textureCount<paramNames.length; textureCount++) {
+    for (let textureCount = 0; textureCount<paramNames.length; textureCount++) {
       let paramDim, paramSize, texture;
-      var argType = GPUUtils.getArgumentType(arguments[textureCount]);
-      if (argType == "Array") {
+      const argType = GPUUtils.getArgumentType(arguments[textureCount]);
+      if (argType === 'Array') {
         paramDim = GPUUtils.getDimensions(arguments[textureCount], true);
         paramSize = GPUUtils.dimToTexSize(opt, paramDim);
 
@@ -395,22 +405,22 @@ void main(void) {
           textureCache[programCacheKey][textureCount] = texture;
         }
 
-        gl.activeTexture(gl["TEXTURE"+textureCount]);
+        gl.activeTexture(gl['TEXTURE'+textureCount]);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-        var paramLength = paramSize[0] * paramSize[1];
+        let paramLength = paramSize[0] * paramSize[1];
         if (this._floatTextures) {
           paramLength *= 4;
         }
 
-        var paramArray = new Float32Array(paramLength);
-        paramArray.set(flatten(arguments[textureCount]));
+        const paramArray = new Float32Array(paramLength);
+        paramArray.set(GPUUtils.flatten(arguments[textureCount]));
 
-        var argBuffer;
+        let argBuffer;
         if (this._floatTextures) {
           argBuffer = new Float32Array(paramArray);
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.FLOAT, argBuffer);
@@ -419,44 +429,44 @@ void main(void) {
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
         }
 
-        var paramLoc = this.getUniformLocation("user_" + paramNames[textureCount]);
-        var paramSizeLoc = this.getUniformLocation("user_" + paramNames[textureCount] + "Size");
-        var paramDimLoc = this.getUniformLocation("user_" + paramNames[textureCount] + "Dim");
+        const paramLoc = this.getUniformLocation('user_' + paramNames[textureCount]);
+        const paramSizeLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Size');
+        const paramDimLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Dim');
 
         if (!this._hardcodeConstants) {
           gl.uniform3fv(paramDimLoc, paramDim);
           gl.uniform2fv(paramSizeLoc, paramSize);
         }
         gl.uniform1i(paramLoc, textureCount);
-      } else if (argType == "Number") {
-        var argLoc = this.getUniformLocation("user_"+paramNames[textureCount]);
+      } else if (argType === 'Number') {
+        const argLoc = this.getUniformLocation('user_'+paramNames[textureCount]);
         gl.uniform1f(argLoc, arguments[textureCount]);
-      } else if (argType == "Texture") {
+      } else if (argType === 'Texture') {
         paramDim = this.getDimensions(arguments[textureCount], true);
         paramSize = arguments[textureCount].size;
         texture = arguments[textureCount].texture;
 
-        gl.activeTexture(gl["TEXTURE"+textureCount]);
+        gl.activeTexture(gl['TEXTURE'+textureCount]);
         gl.bindTexture(gl.TEXTURE_2D, texture);
 
-        var paramLoc = this.getUniformLocation("user_" + paramNames[textureCount]);
-        var paramSizeLoc = this.getUniformLocation("user_" + paramNames[textureCount] + "Size");
-        var paramDimLoc = this.getUniformLocation("user_" + paramNames[textureCount] + "Dim");
+        const paramLoc = this.getUniformLocation('user_' + paramNames[textureCount]);
+        const paramSizeLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Size');
+        const paramDimLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Dim');
 
         gl.uniform3fv(paramDimLoc, paramDim);
         gl.uniform2fv(paramSizeLoc, paramSize);
         gl.uniform1i(paramLoc, textureCount);
       } else {
-        throw "Input type not supported (GPU): " + arguments[textureCount];
+        throw 'Input type not supported (GPU): ' + arguments[textureCount];
       }
     }
 
-    var outputTexture = textureCache[programCacheKey][textureCount];
+    let outputTexture = textureCache[programCacheKey][textureCount];
     if (!outputTexture) {
       outputTexture = gl.createTexture();
       textureCache[programCacheKey][textureCount] = outputTexture;
     }
-    gl.activeTexture(gl["TEXTURE"+textureCount]);
+    gl.activeTexture(gl['TEXTURE' + textureCount]);
     gl.bindTexture(gl.TEXTURE_2D, outputTexture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -475,7 +485,7 @@ void main(void) {
       return;
     }
 
-    var framebuffer = framebufferCache[programCacheKey];
+    let framebuffer = framebufferCache[programCacheKey];
     if (!framebuffer) {
       framebuffer = gl.createFramebuffer();
       framebufferCache[programCacheKey] = framebuffer;
@@ -493,23 +503,23 @@ void main(void) {
 
       return new GPUTexture(gpu, outputTexture, texSize, this._dimensions);
     } else {
-      var result;
+      let result;
       if (this._floatOutput) {
         result = new Float32Array(texSize[0]*texSize[1]*4);
         gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.FLOAT, result);
       } else {
-        var bytes = new Uint8Array(texSize[0]*texSize[1]*4);
+        const bytes = new Uint8Array(texSize[0]*texSize[1]*4);
         gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
         result = Float32Array.prototype.slice.call(new Float32Array(bytes.buffer));
       }
 
       result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
 
-      if (this._dimensions.length == 1) {
+      if (this._dimensions.length === 1) {
         return result;
-      } else if (this._dimensions.length == 2) {
+      } else if (this._dimensions.length === 2) {
         return GPUUtils.splitArray(result, this._dimensions[0]);
-      } else if (this._dimensions.length == 3) {
+      } else if (this._dimensions.length === 3) {
         const cube = GPUUtils.splitArray(result, this._dimensions[0] * this._dimensions[1]);
         return cube.map(function(x) {
           return GPUUtils.splitArray(x, this._dimensions[0]);

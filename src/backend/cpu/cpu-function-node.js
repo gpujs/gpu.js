@@ -21,6 +21,6 @@ const BaseFunctionNode = require('../base-function-node');
 /// 	readVariables        - {[String,...]}  List of variables read operations occur
 /// 	writeVariables       - {[String,...]}  List of variables write operations occur
 ///
-export default class CPUFunctionNode extends BaseFunctionNode {
+module.exports = class CPUFunctionNode extends BaseFunctionNode {
 
-}
+};

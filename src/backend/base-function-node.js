@@ -22,7 +22,7 @@ const parser = require('../parser').parser;
 /// 	readVariables        - {[String,...]}  List of variables read operations occur
 /// 	writeVariables       - {[String,...]}  List of variables write operations occur
 ///
-export default class CPUFunctionNode {
+module.exports = class BaseFunctionNode {
 
   //
   // Constructor
@@ -193,4 +193,4 @@ export default class CPUFunctionNode {
   setFunctionString(functionString) {
     this.functionString = functionString;
   }
-}
+};

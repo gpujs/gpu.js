@@ -1,4 +1,5 @@
-const FunctionNode = require('./function-node');
+const CPUFunctionNode = require('./cpu/cpu-function-node');
+const GPUFunctionNode = require('./gpu/gpu-function-node');
 ///
 /// Class: functionBuilder
 ///
@@ -9,7 +10,7 @@ const FunctionNode = require('./function-node');
 /// Properties:
 /// 	nodeMap - {Object} Object map, where nodeMap[function] = new FunctionNode;
 ///
-export default class FunctionBuilder {
+module.exports = class FunctionBuilder {
 	
 	///
 	/// Function: functionBuilder
@@ -19,6 +20,7 @@ export default class FunctionBuilder {
 	constructor(gpu) {
 		this.nodeMap = {};
 		this.gpu = gpu;
+		this.FunctioNode = typeof gpu === 'undefined' ? CPUFunctionNode : GPUFunctionNode;
 	}
 	
 	///
@@ -34,7 +36,7 @@ export default class FunctionBuilder {
 	/// 	returnType      - {String}       The return type, assumes 'float' if null
 	///
 	addFunction(functionName, jsFunction, paramTypeArray, returnType) {
-		this.addFunctionNode(new FunctionNode(this.gpu, functionName, jsFunction, paramTypeArray, returnType));
+		this.addFunctionNode(new this.FunctioNode(this.gpu, functionName, jsFunction, paramTypeArray, returnType));
 	}
 	
 	///
@@ -126,7 +128,7 @@ export default class FunctionBuilder {
 	/// 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	///
   webGlString(functionName, opt) {
-		if (opt == undefined) {
+		if (opt === undefined) {
 			opt = {};
 		}
 		
@@ -146,7 +148,7 @@ export default class FunctionBuilder {
 	/// 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	///
   webGlPrototypeString(functionName, opt) {
-		if (opt == undefined) {
+		if (opt === undefined) {
 			opt = {};
 		}
 		
@@ -173,4 +175,4 @@ export default class FunctionBuilder {
   polyfillStandardFunctions() {
 		this.addFunction(null, FunctionBuilder.round);
 	}
-}
+};

@@ -7,7 +7,7 @@ const CPURunner = require('./backend/cpu/cpu-runner');
 ///
 /// Initialises the GPU.js library class which manages the WebGL context for the created functions.
 ///
-export default class GPU {
+module.exports = class GPU {
   constructor() {
     this.functionBuilder = new FunctionBuilder();
     this.runner = GPUUtils.isWebGlSupported
@@ -58,30 +58,14 @@ export default class GPU {
 		//
 		this._fn = fn;
 		this._kernelParamObj = settings || this._kernelParamObj || {};
+    const kernel = this.runner.buildKernel(fn, settings);
 
-		//
-		// Get the config, fallbacks to default value if not set
-		//
-		const mode = settings.mode && settings.mode.toLowerCase();
-		this.computeMode = mode || 'auto';
-
-    this.runner
-      .setFn(fn)
-      .buildKernel();
-		//
-		// Get the Synchronous executor
-		//
-		const ret =
-		// Allow class refence from function
-		ret.gpujs = this;
-		// Execute callback
-		ret.exec = ret.execute = GPUUtils.functionBinder(this.execute, this);
-
-		// The Synchronous kernel
-		this._runner = ret; //For exec to reference
-
-		return ret;
+		return kernel;
 	}
+
+	get computeMode() {
+    return this.runner.mode;
+  }
 
 	///
 	/// Function: getKernelFunction
