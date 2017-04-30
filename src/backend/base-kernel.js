@@ -1,28 +1,29 @@
 const GPUUtils = require('../gpu-utils');
-module.exports = class BaseKernel extends Function {
+
+module.exports = class BaseKernel {
   constructor(fnString, settings) {
-    const args = GPUUtils.getParamNamesFromString(fnString);
-    super(args, 'console.log("hi mom 2");return this.run.apply(this, arguments);');
-    this._paramNames = GPUUtils.getParamNamesFromString(fnString);
-    this._fnString = fnString;
-    this._processor = null;
-    this._dimensions = null;
-    this._debug = false;
-    this._graphical = false;
-    this._loopMaxIterations = 0;
-    this._constants = 0;
-    this._wraparound = null;
-    this._hardcodeConstants = null;
-    this._outputToTexture = null;
-    this._floatTextures = null;
-    this._floatOutput = null;
-    this._floatOutputForce = null;
-    this._texSize = null;
-    this._runner = null;
+    this.paramNames = GPUUtils.getParamNamesFromString(fnString);
+    this.fnString = fnString;
+    this.processor = null;
+    this.dimensions = [];
+    this.debug = false;
+    this.graphical = false;
+    this.loopMaxIterations = 0;
+    this.constants = 0;
+    this.wraparound = null;
+    this.hardcodeConstants = null;
+    this.outputToTexture = null;
+    this.texSize = null;
+    this.canvas = GPUUtils.initCanvas();
+    this.webGl = GPUUtils.initWebGl(this._canvas);
+    this.threadDim = null;
+    this.floatTextures = null;
+    this.floatOutput = null;
+    this.floatOutputForce = null;
 
     for (let p in settings) {
-      if (!settings.hasOwnProperty(p) && !this.hasOwnProperty('_' + p)) continue;
-      this['_' + p] = settings[p];
+      if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
+      this[p] = settings[p];
     }
   }
 
@@ -30,59 +31,59 @@ module.exports = class BaseKernel extends Function {
     throw new Error('"build" not defined on Base');
   }
 
-  dimensions(dim) {
-    this._dimensions = dim;
+  setDimensions(dimensions) {
+    this.dimensions = dimensions;
     return this;
   }
 
-  debug(flag) {
-    this._debug = flag;
+  setDebug(flag) {
+    this.debug = flag;
     return this;
   }
 
-  graphical(flag) {
-    this._graphical = flag;
+  setGraphical(flag) {
+    this.graphical = flag;
     return this;
   }
 
-  loopMaxIterations(max) {
-    this._loopMaxIterations = max;
+  setLoopMaxIterations(max) {
+    this.loopMaxIterations = max;
     return this;
   }
 
-  constants(constants) {
-    this._constants = constants;
+  setConstants(constants) {
+    this.constants = constants;
     return this;
   }
 
-  wraparound(flag) {
+  setWraparound(flag) {
     console.warn('Wraparound mode is not supported and undocumented.');
-    this._wraparound = flag;
+    this.wraparound = flag;
     return this;
   }
 
-  hardcodeConstants(flag) {
-    this._hardcodeConstants = flag;
+  setHardcodeConstants(flag) {
+    this.hardcodeConstants = flag;
     return this;
   }
 
-  outputToTexture(flag) {
-    this._outputToTexture = flag;
+  setOutputToTexture(flag) {
+    this.outputToTexture = flag;
     return this;
   }
 
-  floatTextures(flag) {
-    this._floatTextures = flag;
+  setFloatTextures(flag) {
+    this.floatTextures = flag;
     return this;
   }
 
-  floatOutput(flag) {
-    this._floatOutput = flag;
+  setFloatOutput(flag) {
+    this.floatOutput = flag;
     return this;
   }
 
-  floatOutputForce(flag) {
-    this._floatOutputForce = flag;
+  setFloatOutputForce(flag) {
+    this.floatOutputForce = flag;
     return this;
   }
 
@@ -91,10 +92,10 @@ module.exports = class BaseKernel extends Function {
   }
 
   getWebgl() {
-    return this.webgl;
+    return this.webGl;
   }
 
   validateOptions() {
-    throw new Error('"validateOptions not defined');
+    throw new Error('validateOptions not defined');
   }
 };

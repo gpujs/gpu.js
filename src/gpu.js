@@ -9,8 +9,8 @@ const CPURunner = require('./backend/cpu/cpu-runner');
 ///
 module.exports = class GPU {
   constructor() {
-    this.functionBuilder = new FunctionBuilder();
-    this.runner = GPUUtils.isWebGlSupported
+    this._functionBuilder = new FunctionBuilder();
+    this._runner = GPUUtils.isWebGlSupported
       ? new GPURunner()
       : new CPURunner();
   }
@@ -42,54 +42,19 @@ module.exports = class GPU {
 		//
 		// basic parameters safety checks
 		//
-		if(fn === undefined) {
+		if(typeof fn === 'undefined') {
 			throw 'Missing fn parameter';
 		}
 		if(!GPUUtils.isFunction(fn)) {
 			throw 'fn parameter not a function';
 		}
 
-		if(settings === undefined) {
-      settings = {};
-		}
-
-		//
-		// Replace the kernel function and param object
-		//
-		this._fn = fn;
-		this._kernelParamObj = settings || this._kernelParamObj || {};
-    const kernel = this.runner.buildKernel(fn, settings);
-
-		return kernel;
+    return this._runner.buildKernel(fn, settings || {});
 	}
 
 	get computeMode() {
-    return this.runner.mode;
+    return this._runner.mode;
   }
-
-	///
-	/// Function: getKernelFunction
-	///
-	/// Get and returns the kernel function previously set by `createKernel`
-	///
-	/// Returns:
-	/// 	{JS Function}  The calling input function
-	///
-	getFn() {
-		return this._fn;
-	}
-
-	///
-	/// Function: getKernelParamObj
-	///
-	/// Get and returns the kernel parameter object previously set by `createKernel`
-	///
-	/// Returns:
-	/// 	{JS Function}  The calling input function
-	///
-  getKernelParamObj() {
-		return this._kernelParamObj;
-	}
 
 	///
 	/// Function: executeKernel
@@ -137,82 +102,30 @@ module.exports = class GPU {
 	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are 'float' if null
 	/// 	returnType      - {String}       The return type, assumes 'float' if null
 	///
-	/// Retuns:
+	/// Returns:
 	/// 	{GPU} returns itself
 	///
   addFunction(jsFunction, paramTypeArray, returnType) {
-		this.functionBuilder.addFunction(null, jsFunction, paramTypeArray, returnType);
+		this._functionBuilder.addFunction(null, jsFunction, paramTypeArray, returnType);
 		return this;
 	}
 
 	///
-	/// Function: getWebgl
-	///
-	/// [DEPRECATED] Returns the internal gpu webgl instance only if it has been initiated
-	///
-	/// Retuns:
-	/// 	{WebGL object} that the instance use
-	///
-  getWebGl() {
-    // if( this.webgl == null ) {
-    // 	this.webgl = GPUUtils.init_webgl( getCanvas('gpu') );
-    // }
-    if (this.webgl) {
-      return this.webgl;
-    }
-    throw 'only call getWebGl after createKernel(gpu)'
-  }
-
-	///
-	/// Function: getCanvas
-	///
-	/// [DEPRECATED] Returns the internal canvas instance only if it has been initiated
-	///
-	/// Retuns:
-	/// 	{Canvas object} that the instance use
-	///
-  getCanvas(mode) {
-		// if(mode == 'gpu') {
-		// 	if(this._canvas_gpu == null) {
-		// 		this._canvas_gpu = GPUUtils.init_canvas();
-		// 	}
-		// 	return this._canvas_gpu;
-		// } else if(mode == 'cpu') {
-		// 	if(this._canvas_cpu == null) {
-		// 		this._canvas_cpu = GPUUtils.init_canvas();
-		// 	}
-		// 	return this._canvas_cpu;
-		// } else {
-		// 	if( this._canvas_gpu || this._canvas_cpu ) {
-		// 		return (this._canvas_gpu || this._canvas_cpu );
-		// 	}
-		// 	// if( this._canvas_gpu || this._canvas_cpu ) {
-		// 	//
-		// 	// }
-		// 	throw 'Missing valid mode parameter in getCanvas('+mode+')'
-		// }
-		if( this.canvas ) {
-			return this.canvas;
-		}
-		throw 'only call getCanvas after createKernel()';
-	}
-
-	///
-	/// Function: supportWebGl
+	/// Function: isWebGlSupported
 	///
 	/// Return TRUE, if browser supports WebGl AND Canvas
 	///
-	/// Note: This function can also be called directly `GPU.supportWebgl()`
+	/// Note: This function can also be called directly `GPU.isWebGlSupported()`
 	///
 	/// Returns:
 	/// 	{Boolean} TRUE if browser supports webgl
 	///
-  static supportWebGl() {
+  static isWebGlSupported() {
 		return GPUUtils.isWebGlSupported;
 	}
 
-  supportWebGl() {
+  isWebGlSupported() {
     return GPUUtils.isWebGlSupported;
   }
-}
+};
 

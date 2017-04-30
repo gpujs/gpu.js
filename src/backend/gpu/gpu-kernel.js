@@ -10,47 +10,49 @@ module.exports = class GPUKernel extends BaseKernel {
     this.threadDim = {};
     this.buffer = null;
     this.program = null;
+    return this.bind(this);
   }
+
   validateOptions() {
-    const isReadPixel = GPUUtils.isFloatReadPixelsSupported(this.gpujs);
-    if (this._floatTextures === true && !GPUUtils.OES_texture_float) {
+    const isReadPixel = GPUUtils.isFloatReadPixelsSupported(this);
+    if (this.floatTextures === true && !GPUUtils.OES_texture_float) {
       throw 'Float textures are not supported on this browser';
-    } else if (this._floatOutput === true && this._floatOutputForce !== true && !isReadPixel) {
+    } else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
       throw 'Float texture outputs are not supported on this browser';
-    } else if (this._floatTextures === undefined && GPUUtils.OES_texture_float) {
-      this._floatTextures = true;
-      this._floatOutput = isReadPixel && !this._graphical;
+    } else if (this.floatTextures === undefined && GPUUtils.OES_texture_float) {
+      this.floatTextures = true;
+      this.floatOutput = isReadPixel && !this.graphical;
     }
 
-    if (!this._dimensions || this._dimensions.length === 0) {
+    if (!this.dimensions || this.dimensions.length === 0) {
       if (arguments.length !== 1) {
         throw 'Auto dimensions only supported for kernels with only one input';
       }
 
       const argType = GPUUtils.getArgumentType(arguments[0]);
       if (argType === 'Array') {
-        this._dimensions = GPUUtils.getDimensions(argType);
+        this.dimensions = GPUUtils.getDimensions(argType);
       } else if (argType === 'Texture') {
-        this._dimensions = arguments[0]._dimensions;
+        this.dimensions = arguments[0].dimensions;
       } else {
         throw 'Auto dimensions not supported for input type: ' + argType;
       }
     }
 
-    this.texSize = GPUUtils.dimToTexSize(this, this._dimensions, true);
+    this.texSize = GPUUtils.dimToTexSize(this, this.dimensions, true);
 
-    if (this._graphical) {
-      if (this._dimensions.length !== 2) {
+    if (this.graphical) {
+      if (this.dimensions.length !== 2) {
         throw 'Output must have 2 dimensions on graphical mode';
       }
 
-      if (this._floatOutput) {
+      if (this.floatOutput) {
         throw 'Cannot use graphical mode and float output at the same time';
       }
 
-      this.texSize = GPUUtils.clone(this._dimensions);
-    } else if (this._floatOutput === undefined && GPUUtils.OES_texture_float) {
-      this._floatOutput = true;
+      this.texSize = GPUUtils.clone(this.dimensions);
+    } else if (this.floatOutput === undefined && GPUUtils.OES_texture_float) {
+      this.floatOutput = true;
     }
   }
 
@@ -60,20 +62,21 @@ module.exports = class GPUKernel extends BaseKernel {
     const builder = this.functionBuilder;
     const endianness = this.endianness;
     const texSize = this.texSize;
-    const gl = this._webgl;
+    const gl = this.webGl;
     this.canvas.width = texSize[0];
     this.canvas.height = texSize[1];
     gl.viewport(0, 0, texSize[0], texSize[1]);
 
-    const threadDim = this.threadDim = GPUUtils.clone(this._dimensions);
+    const threadDim = this.threadDim = GPUUtils.clone(this.dimensions);
     while (threadDim.length < 3) {
       threadDim.push(1);
     }
 
     let constantsStr = '';
-    if (this._constants) {
-      for (let name in this._constants) {
-        let value = parseFloat(this._constants[name]);
+    if (this.constants) {
+      for (let name in this.constants) {
+        if (!this.constants.hasOwnProperty(name)) continue;
+        let value = parseFloat(this.constants[name]);
 
         if (Number.isInteger(value)) {
           constantsStr += 'const float constants_' + name + '=' + parseInt(value) + '.0;\n';
@@ -89,7 +92,7 @@ module.exports = class GPUKernel extends BaseKernel {
     for (let i = 0; i < paramNames.length; i++) {
       const argType = GPUUtils.getArgumentType(arguments[i]);
       paramType.push(argType);
-      if (this._hardcodeConstants) {
+      if (this.hardcodeConstants) {
         if (argType === 'Array' || argType === 'Texture') {
           const paramDim = GPUUtils.getDimensions(arguments[i], true);
           const paramSize = GPUUtils.dimToTexSize(gpu, paramDim);
@@ -140,14 +143,14 @@ precision highp float;
 precision highp int;
 precision highp sampler2D;
 
-#define LOOP_MAX ${ (this._loopMaxIterations ? parseInt(this._loopMaxIterations)+'.0' : '100.0') };
+#define LOOP_MAX ${ (this.loopMaxIterations ? parseInt(this.loopMaxIterations)+'.0' : '100.0') };
 #define EPSILON 0.0000001;
 
-${ this._hardcodeConstants
+${ this.hardcodeConstants
   ? `highp vec3 uOutputDim = vec3(${ threadDim[0] },${ threadDim[1] }, ${ threadDim[2] });`
   : 'uniform highp vec3 uOutputDim};'
 }
-${ this._hardcodeConstants
+${ this.hardcodeConstants
   ? `highp vec2 uTexSize = vec2(${ texSize[0] }, ${ texSize[1] });`
   : 'uniform highp vec2 uTexSize;'
 }
@@ -223,7 +226,7 @@ rgba.a = exponent*0.5 + 63.5;
 rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;
 rgba = floor(rgba);
 rgba *= 0.003921569; // 1/255
-${ endianness == 'LE'
+${ endianness === 'LE'
   ? ''
   : 'rgba.rgba = rgba.abgr;'
 }
@@ -245,22 +248,22 @@ highp vec3 indexTo3D(highp float idx, highp vec3 texDim) {
 highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {
   highp vec3 xyz = vec3(x, y, z);
   xyz = floor(xyz + 0.5);
-  ${ this._wraparound
+  ${ this.wraparound
     ? '	xyz = mod(xyz, texDim);'
     : ''
   }
   highp float index = round(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z));
-  ${ this._floatTextures ? '	int channel = int(integerMod(index, 4.0));' : '' }
-  ${ this._floatTextures ? '	index = float(int(index)/4);' : ''}
+  ${ this.floatTextures ? '	int channel = int(integerMod(index, 4.0));' : '' }
+  ${ this.floatTextures ? '	index = float(int(index)/4);' : ''}
   highp float w = round(texSize.x);
   vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;
-  ${ this._floatTextures ? '	index = float(int(index)/4);' : ''}
+  ${ this.floatTextures ? '	index = float(int(index)/4);' : ''}
   highp vec4 texel = texture2D(tex, st / texSize);
-  ${ this._floatTextures ? '	if (channel == 0) return texel.r;' : '' }
-  ${ this._floatTextures ? '	if (channel == 1) return texel.g;' : '' }
-  ${ this._floatTextures ? '	if (channel == 2) return texel.b;' : '' }
-  ${ this._floatTextures ? '	if (channel == 3) return texel.a;' : '' }
-  ${ this._floatTextures ? '' : '	return decode32(texel);' }
+  ${ this.floatTextures ? '	if (channel == 0) return texel.r;' : '' }
+  ${ this.floatTextures ? '	if (channel == 1) return texel.g;' : '' }
+  ${ this.floatTextures ? '	if (channel == 2) return texel.b;' : '' }
+  ${ this.floatTextures ? '	if (channel == 3) return texel.a;' : '' }
+  ${ this.floatTextures ? '' : '	return decode32(texel);' }
 }
 
 highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {
@@ -271,7 +274,7 @@ highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, high
   return get(tex, texSize, texDim, 0.0, 0.0, x);
 }
 
-const bool outputToColor = ${ this._graphical ? 'true' : 'false' };
+const bool outputToColor = ${ this.graphical ? 'true' : 'false' };
 highp vec4 actualColor;
 void color(float r, float g, float b, float a) {
   actualColor = vec4(r,g,b,a);
@@ -289,20 +292,20 @@ builder.webGlString('kernel', opt)
 
 void main(void) {
   index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;
-  ${ this._floatOutput ? 'index *= 4.0;' : '' }
+  ${ this.floatOutput ? 'index *= 4.0;' : '' }
   threadId = indexTo3D(index, uOutputDim);
   kernel();
   if (outputToColor == true) {
     gl_FragColor = actualColor;
   } else {
-    ${ this._floatOutput ? '' : 'gl_FragColor = encode32(kernelResult);' }
-    ${ this._floatOutput ? 'gl_FragColor.r = kernelResult;' : '' }
-    ${ this._floatOutput ? 'index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();' : '' }
-    ${ this._floatOutput ? 'gl_FragColor.g = kernelResult;' : '' }
-    ${ this._floatOutput ? 'index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();' : '' }
-    ${ this._floatOutput ? 'gl_FragColor.b = kernelResult;' : '' }
-    ${ this._floatOutput ? 'index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();' : '' }
-    ${ this._floatOutput ? 'gl_FragColor.a = kernelResult;' : '' }
+    ${ this.floatOutput ? '' : 'gl_FragColor = encode32(kernelResult);' }
+    ${ this.floatOutput ? 'gl_FragColor.r = kernelResult;' : '' }
+    ${ this.floatOutput ? 'index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();' : '' }
+    ${ this.floatOutput ? 'gl_FragColor.g = kernelResult;' : '' }
+    ${ this.floatOutput ? 'index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();' : '' }
+    ${ this.floatOutput ? 'gl_FragColor.b = kernelResult;' : '' }
+    ${ this.floatOutput ? 'index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();' : '' }
+    ${ this.floatOutput ? 'gl_FragColor.a = kernelResult;' : '' }
   }
 }`;
 
@@ -326,7 +329,7 @@ void main(void) {
       throw 'Error compiling fragment shader';
     }
 
-    if (this._debug) {
+    if (this.debug) {
       console.log('Options:');
       console.dir(opt);
       console.log('GLSL Shader Output:');
@@ -357,7 +360,7 @@ void main(void) {
       1.0, 0.0,
       0.0, 1.0,
       1.0, 1.0]);
-    const gl = this._webgl;
+    const gl = this.webGl;
     gl.useProgram(this.program);
 
     const texCoordOffset = vertices.byteLength;
@@ -381,7 +384,7 @@ void main(void) {
     gl.enableVertexAttribArray(aTexCoordLoc);
     gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 
-    if (!this._hardcodeConstants) {
+    if (!this.hardcodeConstants) {
       const uOutputDimLoc = this.getUniformLocation('uOutputDim');
       gl.uniform3fv(uOutputDimLoc, threadDim);
       const uTexSizeLoc = this.getUniformLocation('uTexSize');
@@ -413,7 +416,7 @@ void main(void) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
         let paramLength = paramSize[0] * paramSize[1];
-        if (this._floatTextures) {
+        if (this.floatTextures) {
           paramLength *= 4;
         }
 
@@ -421,7 +424,7 @@ void main(void) {
         paramArray.set(GPUUtils.flatten(arguments[textureCount]));
 
         let argBuffer;
-        if (this._floatTextures) {
+        if (this.floatTextures) {
           argBuffer = new Float32Array(paramArray);
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.FLOAT, argBuffer);
         } else {
@@ -433,13 +436,13 @@ void main(void) {
         const paramSizeLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Size');
         const paramDimLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Dim');
 
-        if (!this._hardcodeConstants) {
+        if (!this.hardcodeConstants) {
           gl.uniform3fv(paramDimLoc, paramDim);
           gl.uniform2fv(paramSizeLoc, paramSize);
         }
         gl.uniform1i(paramLoc, textureCount);
       } else if (argType === 'Number') {
-        const argLoc = this.getUniformLocation('user_'+paramNames[textureCount]);
+        const argLoc = this.getUniformLocation('user_' + paramNames[textureCount]);
         gl.uniform1f(argLoc, arguments[textureCount]);
       } else if (argType === 'Texture') {
         paramDim = this.getDimensions(arguments[textureCount], true);
@@ -472,13 +475,13 @@ void main(void) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    if (this._floatOutput) {
+    if (this.floatOutput) {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
     } else {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     }
 
-    if (this._graphical) {
+    if (this.graphical) {
       gl.bindRenderbuffer(gl.RENDERBUFFER, null);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -497,14 +500,14 @@ void main(void) {
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-    if (this._outputToTexture) {
+    if (this.outputToTexture) {
       // Don't retain a handle on the output texture, we might need to render on the same texture later
       delete textureCache[programCacheKey][textureCount];
 
-      return new GPUTexture(gpu, outputTexture, texSize, this._dimensions);
+      return new GPUTexture(gpu, outputTexture, texSize, this.dimensions);
     } else {
       let result;
-      if (this._floatOutput) {
+      if (this.floatOutput) {
         result = new Float32Array(texSize[0]*texSize[1]*4);
         gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.FLOAT, result);
       } else {
@@ -515,16 +518,16 @@ void main(void) {
 
       result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
 
-      if (this._dimensions.length === 1) {
+      if (this.dimensions.length === 1) {
         return result;
-      } else if (this._dimensions.length === 2) {
-        return GPUUtils.splitArray(result, this._dimensions[0]);
-      } else if (this._dimensions.length === 3) {
-        const cube = GPUUtils.splitArray(result, this._dimensions[0] * this._dimensions[1]);
+      } else if (this.dimensions.length === 2) {
+        return GPUUtils.splitArray(result, this.dimensions[0]);
+      } else if (this.dimensions.length === 3) {
+        const cube = GPUUtils.splitArray(result, this.dimensions[0] * this.dimensions[1]);
         return cube.map(function(x) {
-          return GPUUtils.splitArray(x, this._dimensions[0]);
+          return GPUUtils.splitArray(x, this.dimensions[0]);
         });
       }
     }
   }
-}
+};

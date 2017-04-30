@@ -1,5 +1,6 @@
 const FunctionBuilder = require('./function-builder');
 const GPUUtils = require('../gpu-utils');
+const kernelRunShortcut = require('./kernel-run-shortcut');
 
 ///
 /// Class: Base
@@ -18,9 +19,6 @@ module.exports = class BaseRunner {
 	  this.kernel = null;
     this.fn = null;
     this.fnString = null;
-
-    this._canvas = GPUUtils.initCanvas();
-    this._webgl = GPUUtils.initWebGl(this._canvas);
 		this.programCache = {};
 		this.endianness = GPUUtils.systemEndianness;
 
@@ -70,9 +68,6 @@ module.exports = class BaseRunner {
       throw 'Unable to get body of kernel function';
     }
 
-    settings.runner = this;
-    let kernel = new this.Kernel(fnString, settings);
-    kernel.build();
-    return kernel.bind(kernel);
+    return kernelRunShortcut(new this.Kernel(fnString, settings));
   }
 };

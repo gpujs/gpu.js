@@ -6,7 +6,7 @@
 ///
 /// Note that all methods in this class is 'static' by nature `GPUUtils.functionName()`
 ///
-
+const GPUTexture = require('./gpu-texture');
 // FUNCTION_NAME regex
 const FUNCTION_NAME = /function ([^(]*)/;
 
@@ -21,8 +21,8 @@ const systemEndianness = (() => {
   const a = new Uint32Array(b);
   const c = new Uint8Array(b);
   a[0] = 0xdeadbeef;
-  if (c[0] == 0xef) return 'LE';
-  if (c[0] == 0xde) return 'BE';
+  if (c[0] === 0xef) return 'LE';
+  if (c[0] === 0xde) return 'BE';
   throw new Error('unknown endianness');
 })();
 
@@ -86,7 +86,7 @@ const GPUUtils = class GPUUtils {
 		if(funcStr !== null) {
 			return (funcStr.toString()
         .slice(0, 'function'.length)
-        .toLowerCase() == 'function');
+        .toLowerCase() === 'function');
 		}
 		return false;
 	}
@@ -174,17 +174,17 @@ const GPUUtils = class GPUUtils {
 	/// 	{Promise}  Promise object
 	///
   static newPromise(executor) {
-		const imple = Promise || small_promise;
-		if(imple === null) {
+		const simple = Promise || small_promise;
+		if(simple === null) {
 			throw TypeError('Browser is missing Promise implementation. Consider adding small_promise.js polyfill');
 		}
-		return (new imple(executor));
+		return (new simple(executor));
 	}
 
 	///
 	/// Function: functionBinder
 	///
-	/// Limited implmentation of Function.bind, with fallback
+	/// Limited implementation of Function.bind, with fallback
 	///
 	/// Parameters:
 	/// 	inFunc   - {JS Function}  to setup bind on
@@ -234,7 +234,7 @@ const GPUUtils = class GPUUtils {
   static getArgumentType(arg) {
 		if (GPUUtils.isArray(arg)) {
 			return 'Array';
-		} else if (typeof arg == 'number') {
+		} else if (typeof arg === 'number') {
 			return 'Number';
 		} else if (arg instanceof GPUTexture) {
 			return 'Texture';
@@ -264,7 +264,7 @@ const GPUUtils = class GPUUtils {
 	///
   static isCanvas(canvasObj) {
 		return (
-			canvasObj != null
+			canvasObj !== null
       && canvasObj.nodeName
       && canvasObj.getContext
       && canvasObj.nodeName.toUpperCase() === 'CANVAS'
@@ -317,19 +317,19 @@ const GPUUtils = class GPUUtils {
 	///
 	/// Function: isWebGl
 	///
-	/// Return TRUE, on a valid webgl context object
+	/// Return TRUE, on a valid webGl context object
 	///
 	/// Note: This does just a VERY simply sanity check. And may give false positives.
 	///
 	/// Parameters:
-	/// 	webglObj - {webgl context} Object to validate
+	/// 	webGlObj - {webGl context} Object to validate
 	///
 	/// Returns:
 	/// 	{Boolean} TRUE if the object is a webgl context object
 	///
-  static isWebGl(webglObj) {
+  static isWebGl(webGlObj) {
 		return (
-			webglObj != null &&
+			webglObj !== null &&
 			webglObj.hasOwnProperty('getExtension')
 		);
 	}
@@ -356,10 +356,10 @@ const GPUUtils = class GPUUtils {
   }
 
 	///
-	/// Function: initWebgGl
+	/// Function: initWebGl
 	///
-	/// Initiate and returns a webgl, from a canvas object
-	/// Returns only if webgl is supported by browser.
+	/// Initiate and returns a webGl, from a canvas object
+	/// Returns only if webGl is supported by browser.
 	///
 	/// Parameters:
 	/// 	canvasObj - {Canvas DOM object} Object to validate
@@ -369,7 +369,7 @@ const GPUUtils = class GPUUtils {
 	///
   static initWebGl(canvasObj) {
 
-    // First time setup, does the browser support check memoizer
+    // First time setup, does the browser support check memorizer
     if(!isCanvasSupported || !isWebGlSupported) {
       return null;
     }
@@ -380,18 +380,18 @@ const GPUUtils = class GPUUtils {
 		}
 
 		// Create a new canvas DOM
-		const webgl = (
+		const webGl = (
 			canvasObj.getContext('experimental-webgl', GPUUtils.initWebGlDefaultOptions)
       || canvasObj.getContext('webgl', GPUUtils.initWebGlDefaultOptions)
 		);
 
 		// Get the extension that is needed
-		GPUUtils.OES_texture_float = webgl.getExtension('OES_texture_float');
-		GPUUtils.OES_texture_float_linear = webgl.getExtension('OES_texture_float_linear');
-		GPUUtils.OES_element_index_uint = webgl.getExtension('OES_element_index_uint');
+		GPUUtils.OES_texture_float = webGl.getExtension('OES_texture_float');
+		GPUUtils.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
+		GPUUtils.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
 
 		// Returns the canvas
-		return webgl;
+		return webGl;
 	}
 
 	///
@@ -419,7 +419,7 @@ const GPUUtils = class GPUUtils {
 			floatOutputForce: true
 		}).dimensions([2])();
 
-    isFloatReadPixelsSupported = x[0] == 1;
+    isFloatReadPixelsSupported = x[0] === 1;
 
 		return isFloatReadPixelsSupported;
 	}
@@ -435,15 +435,15 @@ const GPUUtils = class GPUUtils {
       numTexels = Math.ceil(numTexels / 4);
     }
 
-    var w = Math.ceil(Math.sqrt(numTexels));
+    const w = Math.ceil(Math.sqrt(numTexels));
     return [w, w];
   }
 
   static getDimensions(x, pad) {
-    var ret;
+    let ret;
     if (GPUUtils.isArray(x)) {
-      var dim = [];
-      var temp = x;
+      const dim = [];
+      let temp = x;
       while (GPUUtils.isArray(temp)) {
         dim.push(temp.length);
         temp = temp[0];
@@ -467,16 +467,16 @@ const GPUUtils = class GPUUtils {
 
   static pad(arr, padding) {
     function zeros(n) {
-      return Array.apply(null, Array(n)).map(Number.prototype.valueOf,0);
+      return Array.apply(null, new Array(n)).map(Number.prototype.valueOf,0);
     }
 
-    var len = arr.length + padding * 2;
+    const len = arr.length + padding * 2;
 
-    var ret = arr.map(function(x) {
+    let ret = arr.map(function(x) {
       return [].concat(zeros(padding), x, zeros(padding));
     });
 
-    for (var i=0; i<padding; i++) {
+    for (let i = 0; i < padding; i++) {
       ret = [].concat([zeros(len)], ret, [zeros(len)]);
     }
 

@@ -4,32 +4,37 @@ const GPUUtils = require('../../gpu-utils');
 module.exports = class CPUKernel extends BaseKernel {
   constructor(fnString, settings) {
     super(fnString, settings);
-    this._threadDim = null;
     this._fnBody = GPUUtils.getFunctionBodyFromString(fnString);
     this.run = null;
+    this.canvas = GPUUtils.initCanvas();
     this.thread = {
       x: 0,
       y: 0,
       z: 0
     };
-    this.dimensions = {
+    this.runDimensions = {
       x: null,
       y: null,
       z: null
     };
+
+    this.run = function() {
+      this.build();
+      return this.run.apply(this, arguments);
+    }.bind(this);
   }
 
   validateOptions() {
-    if (!this._dimensions || this._dimensions.length === 0) {
+    if (!this.dimensions || this.dimensions.length === 0) {
       if (arguments.length !== 1) {
         throw 'Auto dimensions only supported for kernels with only one input';
       }
 
       const argType = GPUUtils.getArgumentType(arguments[0]);
       if (argType === 'Array') {
-        this._dimensions = GPUUtils.getDimensions(argType);
+        this.dimensions = GPUUtils.getDimensions(argType);
       } else if (argType === 'Texture') {
-        this._dimensions = arguments[0].dimensions;
+        this.dimensions = arguments[0].dimensions;
       } else {
         throw 'Auto dimensions not supported for input type: ' + argType;
       }
@@ -49,7 +54,7 @@ module.exports = class CPUKernel extends BaseKernel {
       }
     }
 
-    const threadDim = this.threadDim = GPUUtils.clone(this._dimensions);
+    const threadDim = this.threadDim = GPUUtils.clone(this.dimensions);
 
     while (threadDim.length < 3) {
       threadDim.push(1);
@@ -76,37 +81,38 @@ module.exports = class CPUKernel extends BaseKernel {
       }
     }
 
-    if (this._dimensions.length === 1) {
+    if (this.dimensions.length === 1) {
       runBody.push('ret = ret[0][0]');
-    } else if (this._dimensions.length === 2) {
+    } else if (this.dimensions.length === 2) {
       runBody.push('ret = ret[0]');
+    }
+
+
+    if (this.graphical) {
+      const canvas = this.canvas;
+      canvas.width = threadDim[0];
+      canvas.height = threadDim[1];
+
+      const canvasCtx = canvas.getContext('2d');
+      const imageData = canvasCtx.createImageData(threadDim[0], threadDim[1]);
+      const data = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
+
+      ctx.color = '';
+    }
+
+    if (this.graphical) {
+      imageData.data.set(data);
+      canvasCtx.putImageData(imageData, 0, 0);
     }
 
     runBody.push('return ret');
 
-    // TODO: hangle this
-    // if (this._graphical) {
-    //   canvas.width = threadDim[0];
-    //   canvas.height = threadDim[1];
-    //
-    //   canvasCtx = canvas.getContext('2d');
-    //   imageData = canvasCtx.createImageData(threadDim[0], threadDim[1]);
-    //   data = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
-    //
-    //   ctx.color =
-    // }
-    //
-    // if (this._graphical) {
-    //   imageData.data.set(data);
-    //   canvasCtx.putImageData(imageData, 0, 0);
-    // }
-
-    this.run = new Function(this._paramNames, '  ' + runBody.join(';\n  '));
+    this.run = new Function(this.paramNames, '  ' + runBody.join(';\n  '));
   }
 
   color(r, g, b, a) {
-    if (a === undefined) {
-      a = 1.0;
+    if (typeof a === 'undefined') {
+      a = 1;
     }
 
     const data = new Uint8ClampedArray(this.threadDim[0] * this.threadDim[1] * 4);
@@ -116,8 +122,8 @@ module.exports = class CPUKernel extends BaseKernel {
     b = Math.floor(b * 255);
     a = Math.floor(a * 255);
 
-    const width = this.dimensions.x;
-    const height = this.dimensions.y;
+    const width = this.runDimensions.x;
+    const height = this.runDimensions.y;
 
     const x = this.thread.x;
     const y = height - this.thread.y - 1;
