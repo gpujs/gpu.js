@@ -1,12 +1,12 @@
 ///
-/// Class: GPUUtils
+/// Class: utils
 ///
 /// Various utility functions / snippets of code that GPU.JS uses internally.\
 /// This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
 ///
-/// Note that all methods in this class is 'static' by nature `GPUUtils.functionName()`
+/// Note that all methods in this class is 'static' by nature `utils.functionName()`
 ///
-const GPUTexture = require('./gpu-texture');
+const Texture = require('./texture');
 // FUNCTION_NAME regex
 const FUNCTION_NAME = /function ([^(]*)/;
 
@@ -28,7 +28,7 @@ const systemEndianness = (() => {
 
 let isFloatReadPixelsSupported = null;
 
-const GPUUtils = class GPUUtils {
+const utils = class utils {
 	//-----------------------------------------------------------------------------
 	//
 	//  System values support (currently only endianness)
@@ -154,7 +154,7 @@ const GPUUtils = class GPUUtils {
 		for(let key in obj) {
 			if(Object.prototype.hasOwnProperty.call(obj, key)) {
 				obj.isActiveClone = null;
-				temp[key] = GPUUtils.clone(obj[key]);
+				temp[key] = utils.clone(obj[key]);
 				delete obj.isActiveClone;
 			}
 		}
@@ -232,11 +232,11 @@ const GPUUtils = class GPUUtils {
 	/// 	{String}  Argument type Array/Number/Texture/Unknown
 	///
   static getArgumentType(arg) {
-		if (GPUUtils.isArray(arg)) {
+		if (utils.isArray(arg)) {
 			return 'Array';
 		} else if (typeof arg === 'number') {
 			return 'Number';
-		} else if (arg instanceof GPUTexture) {
+		} else if (arg instanceof Texture) {
 			return 'Texture';
 		} else {
 			return 'Unknown';
@@ -329,8 +329,8 @@ const GPUUtils = class GPUUtils {
 	///
   static isWebGl(webGlObj) {
 		return (
-			webglObj !== null &&
-			webglObj.hasOwnProperty('getExtension')
+      webGlObj !== null &&
+      webGlObj.hasOwnProperty('getExtension')
 		);
 	}
 
@@ -370,25 +370,27 @@ const GPUUtils = class GPUUtils {
   static initWebGl(canvasObj) {
 
     // First time setup, does the browser support check memorizer
-    if(!isCanvasSupported || !isWebGlSupported) {
-      return null;
+    if (typeof isCanvasSupported !== 'undefined' && typeof isWebGlSupported !== 'undefined') {
+      if (!isCanvasSupported || typeof !isWebGlSupported) {
+        return null;
+      }
     }
 
 		// Fail fast for invalid canvas object
-		if(!GPUUtils.isCanvas(canvasObj)) {
+		if(!utils.isCanvas(canvasObj)) {
 			throw new Error('Invalid canvas object - '+canvasObj);
 		}
 
 		// Create a new canvas DOM
 		const webGl = (
-			canvasObj.getContext('experimental-webgl', GPUUtils.initWebGlDefaultOptions)
-      || canvasObj.getContext('webgl', GPUUtils.initWebGlDefaultOptions)
+			canvasObj.getContext('experimental-webgl', utils.initWebGlDefaultOptions)
+      || canvasObj.getContext('webgl', utils.initWebGlDefaultOptions)
 		);
 
 		// Get the extension that is needed
-		GPUUtils.OES_texture_float = webGl.getExtension('OES_texture_float');
-		GPUUtils.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
-		GPUUtils.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
+		utils.OES_texture_float = webGl.getExtension('OES_texture_float');
+		utils.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
+		utils.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
 
 		// Returns the canvas
 		return webGl;
@@ -441,22 +443,22 @@ const GPUUtils = class GPUUtils {
 
   static getDimensions(x, pad) {
     let ret;
-    if (GPUUtils.isArray(x)) {
+    if (utils.isArray(x)) {
       const dim = [];
       let temp = x;
-      while (GPUUtils.isArray(temp)) {
+      while (utils.isArray(temp)) {
         dim.push(temp.length);
         temp = temp[0];
       }
       ret = dim.reverse();
-    } else if (x instanceof GPUTexture) {
+    } else if (x instanceof Texture) {
       ret = x.dimensions;
     } else {
       throw 'Unknown dimensions of ' + x;
     }
 
     if (pad) {
-      ret = GPUUtils.clone(ret);
+      ret = utils.clone(ret);
       while (ret.length < 3) {
         ret.push(1);
       }
@@ -486,13 +488,13 @@ const GPUUtils = class GPUUtils {
   static flatten(arr, result) {
     let i = 0;
     result = result || [];
-    if (GPUUtils.isArray(arr)) {
-      if (!GPUUtils.isArray(arr[0])) {
+    if (utils.isArray(arr)) {
+      if (!utils.isArray(arr[0])) {
         result.push.apply(result, arr);
       } else {
         for (; i < arr.length; i++) {
-          if (GPUUtils.isArray(arr[i])) {
-            GPUUtils.flatten(arr[i], result);
+          if (utils.isArray(arr[i])) {
+            utils.flatten(arr[i], result);
           } else {
             result.push(result, arr[i]);
           }
@@ -502,8 +504,8 @@ const GPUUtils = class GPUUtils {
       const keys = Object.keys(arr);
       for (;i < keys.length; i++) {
         const objectValue = arr[keys[i]];
-        if (GPUUtils.isArray(objectValue)) {
-          GPUUtils.flatten(objectValue, result);
+        if (utils.isArray(objectValue)) {
+          utils.flatten(objectValue, result);
         } else {
           result.push(objectValue);
         }
@@ -520,8 +522,8 @@ const GPUUtils = class GPUUtils {
     return result;
   }
 };
+let isWebGlSupported;
+const isCanvasSupported = typeof document !== 'undefined' ? utils.isCanvas(document.createElement('canvas')) : false;
+isWebGlSupported = utils.isWebGl(utils.initWebGl(utils.initCanvas()));
 
-const isCanvasSupported = typeof document !== 'undefined' ? GPUUtils.isCanvas(document.createElement('canvas')) : false;
-const isWebGlSupported = GPUUtils.isWebGl(GPUUtils.initWebGl(GPUUtils.initCanvas()));
-
-module.exports = GPUUtils;
+module.exports = utils;

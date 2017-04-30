@@ -1,4 +1,4 @@
-
+const BaseFunctionNode = require('../base-function-node');
 // Closure capture for the ast function, prevent collision with existing AST functions
 /// Function: functionNodeWebGl
 ///
@@ -64,8 +64,9 @@ function astErrorOutput(error, ast, funcParam) {
   return error;
 }
 
-module.exports = class GPUFunctionNode {
+module.exports = class GPUFunctionNode extends BaseFunctionNode {
   constructor() {
+    super();
     this.gpu = null;
     this.opt = null;
     this.jsFunctionString = null;

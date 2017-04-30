@@ -1,7 +1,5 @@
-const CPUFunctionNode = require('./cpu/cpu-function-node');
-const GPUFunctionNode = require('./gpu/gpu-function-node');
 ///
-/// Class: functionBuilder
+/// Class: BaseFunctionBuilder
 ///
 /// [INTERNAL] A collection of functionNodes.
 ///
@@ -10,7 +8,7 @@ const GPUFunctionNode = require('./gpu/gpu-function-node');
 /// Properties:
 /// 	nodeMap - {Object} Object map, where nodeMap[function] = new FunctionNode;
 ///
-module.exports = class FunctionBuilder {
+module.exports = class BaseFunctionBuilder {
 	
 	///
 	/// Function: functionBuilder
@@ -20,7 +18,6 @@ module.exports = class FunctionBuilder {
 	constructor(gpu) {
 		this.nodeMap = {};
 		this.gpu = gpu;
-		this.FunctioNode = typeof gpu === 'undefined' ? CPUFunctionNode : GPUFunctionNode;
 	}
 	
 	///
@@ -36,7 +33,7 @@ module.exports = class FunctionBuilder {
 	/// 	returnType      - {String}       The return type, assumes 'float' if null
 	///
 	addFunction(functionName, jsFunction, paramTypeArray, returnType) {
-		this.addFunctionNode(new this.FunctioNode(this.gpu, functionName, jsFunction, paramTypeArray, returnType));
+	  throw new Error('addFunction not supported on base');
 	}
 	
 	///
@@ -165,7 +162,9 @@ module.exports = class FunctionBuilder {
 	//---------------------------------------------------------
 	
 	// Round function used in polyfill
-  static round(a) { return Math.floor(a + 0.5); }
+  static round(a) {
+	  return round(a);
+	}
 	
 	///
 	/// Function: polyfillStandardFunctions
@@ -173,6 +172,10 @@ module.exports = class FunctionBuilder {
 	/// Polyfill in the missing Math functions (round)
 	///
   polyfillStandardFunctions() {
-		this.addFunction(null, FunctionBuilder.round);
+		this.addFunction('round', round);
 	}
 };
+
+function round(a) {
+  return Math.floor(a + 0.5);
+}

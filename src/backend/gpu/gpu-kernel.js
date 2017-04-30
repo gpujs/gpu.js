@@ -1,6 +1,6 @@
 const BaseKernel = require('../base-kernel');
-const GPUUtils = require('../../gpu-utils');
-const GPUTexture = require('../../gpu-texture');
+const utils = require('../../utils');
+const Texture = require('../../texture');
 const GPUFunctionNode = require('./gpu-function-node');
 
 module.exports = class GPUKernel extends BaseKernel {
@@ -14,12 +14,12 @@ module.exports = class GPUKernel extends BaseKernel {
   }
 
   validateOptions() {
-    const isReadPixel = GPUUtils.isFloatReadPixelsSupported(this);
-    if (this.floatTextures === true && !GPUUtils.OES_texture_float) {
+    const isReadPixel = utils.isFloatReadPixelsSupported(this);
+    if (this.floatTextures === true && !utils.OES_texture_float) {
       throw 'Float textures are not supported on this browser';
     } else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
       throw 'Float texture outputs are not supported on this browser';
-    } else if (this.floatTextures === undefined && GPUUtils.OES_texture_float) {
+    } else if (this.floatTextures === undefined && utils.OES_texture_float) {
       this.floatTextures = true;
       this.floatOutput = isReadPixel && !this.graphical;
     }
@@ -29,9 +29,9 @@ module.exports = class GPUKernel extends BaseKernel {
         throw 'Auto dimensions only supported for kernels with only one input';
       }
 
-      const argType = GPUUtils.getArgumentType(arguments[0]);
+      const argType = utils.getArgumentType(arguments[0]);
       if (argType === 'Array') {
-        this.dimensions = GPUUtils.getDimensions(argType);
+        this.dimensions = utils.getDimensions(argType);
       } else if (argType === 'Texture') {
         this.dimensions = arguments[0].dimensions;
       } else {
@@ -39,7 +39,7 @@ module.exports = class GPUKernel extends BaseKernel {
       }
     }
 
-    this.texSize = GPUUtils.dimToTexSize(this, this.dimensions, true);
+    this.texSize = utils.dimToTexSize(this, this.dimensions, true);
 
     if (this.graphical) {
       if (this.dimensions.length !== 2) {
@@ -50,8 +50,8 @@ module.exports = class GPUKernel extends BaseKernel {
         throw 'Cannot use graphical mode and float output at the same time';
       }
 
-      this.texSize = GPUUtils.clone(this.dimensions);
-    } else if (this.floatOutput === undefined && GPUUtils.OES_texture_float) {
+      this.texSize = utils.clone(this.dimensions);
+    } else if (this.floatOutput === undefined && utils.OES_texture_float) {
       this.floatOutput = true;
     }
   }
@@ -67,7 +67,7 @@ module.exports = class GPUKernel extends BaseKernel {
     this.canvas.height = texSize[1];
     gl.viewport(0, 0, texSize[0], texSize[1]);
 
-    const threadDim = this.threadDim = GPUUtils.clone(this.dimensions);
+    const threadDim = this.threadDim = utils.clone(this.dimensions);
     while (threadDim.length < 3) {
       threadDim.push(1);
     }
@@ -90,12 +90,12 @@ module.exports = class GPUKernel extends BaseKernel {
 
     const paramType = [];
     for (let i = 0; i < paramNames.length; i++) {
-      const argType = GPUUtils.getArgumentType(arguments[i]);
+      const argType = utils.getArgumentType(arguments[i]);
       paramType.push(argType);
       if (this.hardcodeConstants) {
         if (argType === 'Array' || argType === 'Texture') {
-          const paramDim = GPUUtils.getDimensions(arguments[i], true);
-          const paramSize = GPUUtils.dimToTexSize(gpu, paramDim);
+          const paramDim = utils.getDimensions(arguments[i], true);
+          const paramSize = utils.dimToTexSize(gpu, paramDim);
 
           paramStr += 'uniform highp sampler2D user_' + paramNames[i] + ';\n';
           paramStr += 'highp vec2 user_' + paramNames[i] + 'Size = vec2(' + paramSize[0] + '.0, ' + paramSize[1] + '.0);\n';
@@ -396,10 +396,10 @@ void main(void) {
     }
     for (let textureCount = 0; textureCount<paramNames.length; textureCount++) {
       let paramDim, paramSize, texture;
-      const argType = GPUUtils.getArgumentType(arguments[textureCount]);
+      const argType = utils.getArgumentType(arguments[textureCount]);
       if (argType === 'Array') {
-        paramDim = GPUUtils.getDimensions(arguments[textureCount], true);
-        paramSize = GPUUtils.dimToTexSize(opt, paramDim);
+        paramDim = utils.getDimensions(arguments[textureCount], true);
+        paramSize = utils.dimToTexSize(opt, paramDim);
 
         if (textureCache[programCacheKey][textureCount]) {
           texture = textureCache[programCacheKey][textureCount];
@@ -421,7 +421,7 @@ void main(void) {
         }
 
         const paramArray = new Float32Array(paramLength);
-        paramArray.set(GPUUtils.flatten(arguments[textureCount]));
+        paramArray.set(utils.flatten(arguments[textureCount]));
 
         let argBuffer;
         if (this.floatTextures) {
@@ -504,7 +504,7 @@ void main(void) {
       // Don't retain a handle on the output texture, we might need to render on the same texture later
       delete textureCache[programCacheKey][textureCount];
 
-      return new GPUTexture(gpu, outputTexture, texSize, this.dimensions);
+      return new Texture(gpu, outputTexture, texSize, this.dimensions);
     } else {
       let result;
       if (this.floatOutput) {
@@ -521,11 +521,11 @@ void main(void) {
       if (this.dimensions.length === 1) {
         return result;
       } else if (this.dimensions.length === 2) {
-        return GPUUtils.splitArray(result, this.dimensions[0]);
+        return utils.splitArray(result, this.dimensions[0]);
       } else if (this.dimensions.length === 3) {
-        const cube = GPUUtils.splitArray(result, this.dimensions[0] * this.dimensions[1]);
+        const cube = utils.splitArray(result, this.dimensions[0] * this.dimensions[1]);
         return cube.map(function(x) {
-          return GPUUtils.splitArray(x, this.dimensions[0]);
+          return utils.splitArray(x, this.dimensions[0]);
         });
       }
     }

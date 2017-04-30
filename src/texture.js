@@ -1,4 +1,4 @@
-module.exports = class GPUTexture {
+module.exports = class Texture {
     constructor(gpu, texture, size, dimensions) {
         this.gpu = gpu;
         this.texture = texture;

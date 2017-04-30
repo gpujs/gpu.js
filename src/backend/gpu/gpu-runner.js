@@ -1,10 +1,11 @@
 const BaseRunner = require('../base-runner');
-const GPUUtils = require('../../gpu-utils');
+const utils = require('../../utils');
 const GPUKernel = require('./gpu-kernel');
+const GPUFunctionBuilder = require('./gpu-function-builder');
 
 module.exports = class GPURunner extends BaseRunner {
   constructor(opt) {
-    super();
+    super(new GPUFunctionBuilder());
     this.programUniformLocationCache = {};
     this.programCacheKey = this.getProgramCacheKey(arguments, opt, opt.dimensions);
     this.programCache = {};
@@ -19,7 +20,7 @@ module.exports = class GPURunner extends BaseRunner {
   getProgramCacheKey(args, opt, outputDim) {
 		let key = '';
 		for (let i = 0; i < args.length; i++) {
-			const argType = GPUUtils.getArgumentType(args[i]);
+			const argType = utils.getArgumentType(args[i]);
 			key += argType;
 			if (opt.hardcodeConstants) {
 				if (argType === 'Array' || argType === 'Texture') {

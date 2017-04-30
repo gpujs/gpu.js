@@ -1,5 +1,4 @@
-const GPUUtils = require('./gpu-utils');
-const FunctionBuilder = require('./backend/function-builder');
+const utils = require('./utils');
 const GPURunner = require('./backend/gpu/gpu-runner');
 const CPURunner = require('./backend/cpu/cpu-runner');
 ///
@@ -9,8 +8,8 @@ const CPURunner = require('./backend/cpu/cpu-runner');
 ///
 module.exports = class GPU {
   constructor() {
-    this._functionBuilder = new FunctionBuilder();
-    this._runner = GPUUtils.isWebGlSupported
+    this._kernelSynchronousExecutor = null;
+    this._runner = utils.isWebGlSupported
       ? new GPURunner()
       : new CPURunner();
   }
@@ -45,11 +44,11 @@ module.exports = class GPU {
 		if(typeof fn === 'undefined') {
 			throw 'Missing fn parameter';
 		}
-		if(!GPUUtils.isFunction(fn)) {
+		if(!utils.isFunction(fn)) {
 			throw 'fn parameter not a function';
 		}
 
-    return this._runner.buildKernel(fn, settings || {});
+    return this._kernelSynchronousExecutor = this._runner.buildKernel(fn, settings || {});
 	}
 
 	get computeMode() {
@@ -76,9 +75,9 @@ module.exports = class GPU {
 		//
 		// Setup and return the promise, and execute the function, in synchronous mode
 		//
-		return GPUUtils.newPromise((accept,reject) => {
+		return utils.newPromise((accept,reject) => {
 			try {
-				accept(this._runner.apply(this, args));
+				accept(this._kernelSynchronousExecutor.apply(this._kernelSynchronousExecutor, args));
 			} catch (e) {
 				//
 				// Error : throw rejection
@@ -106,7 +105,7 @@ module.exports = class GPU {
 	/// 	{GPU} returns itself
 	///
   addFunction(jsFunction, paramTypeArray, returnType) {
-		this._functionBuilder.addFunction(null, jsFunction, paramTypeArray, returnType);
+		this._runner.functionBuilder.addFunction(null, jsFunction, paramTypeArray, returnType);
 		return this;
 	}
 
@@ -121,11 +120,11 @@ module.exports = class GPU {
 	/// 	{Boolean} TRUE if browser supports webgl
 	///
   static isWebGlSupported() {
-		return GPUUtils.isWebGlSupported;
+		return utils.isWebGlSupported;
 	}
 
   isWebGlSupported() {
-    return GPUUtils.isWebGlSupported;
+    return utils.isWebGlSupported;
   }
 };
 

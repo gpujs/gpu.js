@@ -1,12 +1,12 @@
 const BaseKernel = require('../base-kernel');
-const GPUUtils = require('../../gpu-utils');
+const utils = require('../../utils');
 
 module.exports = class CPUKernel extends BaseKernel {
   constructor(fnString, settings) {
     super(fnString, settings);
-    this._fnBody = GPUUtils.getFunctionBodyFromString(fnString);
+    this._fnBody = utils.getFunctionBodyFromString(fnString);
     this.run = null;
-    this.canvas = GPUUtils.initCanvas();
+    this.canvas = utils.initCanvas();
     this.thread = {
       x: 0,
       y: 0,
@@ -30,9 +30,9 @@ module.exports = class CPUKernel extends BaseKernel {
         throw 'Auto dimensions only supported for kernels with only one input';
       }
 
-      const argType = GPUUtils.getArgumentType(arguments[0]);
+      const argType = utils.getArgumentType(arguments[0]);
       if (argType === 'Array') {
-        this.dimensions = GPUUtils.getDimensions(argType);
+        this.dimensions = utils.getDimensions(argType);
       } else if (argType === 'Texture') {
         this.dimensions = arguments[0].dimensions;
       } else {
@@ -44,7 +44,7 @@ module.exports = class CPUKernel extends BaseKernel {
   build() {
     const kernelArgs = [];
     for (let i = 0; i < arguments.length; i++) {
-      const argType = GPUUtils.getArgumentType(arguments[i]);
+      const argType = utils.getArgumentType(arguments[i]);
       if (argType === 'Array' || argType === 'Number') {
         kernelArgs[i] = arguments[i];
       } else if (argType === 'Texture') {
@@ -54,7 +54,7 @@ module.exports = class CPUKernel extends BaseKernel {
       }
     }
 
-    const threadDim = this.threadDim = GPUUtils.clone(this.dimensions);
+    const threadDim = this.threadDim = utils.clone(this.dimensions);
 
     while (threadDim.length < 3) {
       threadDim.push(1);

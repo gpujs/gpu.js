@@ -1,5 +1,4 @@
-const FunctionBuilder = require('./function-builder');
-const GPUUtils = require('../gpu-utils');
+const utils = require('../utils');
 const kernelRunShortcut = require('./kernel-run-shortcut');
 
 ///
@@ -15,14 +14,13 @@ const kernelRunShortcut = require('./kernel-run-shortcut');
 /// File isolation is currently the best way to go
 ///
 module.exports = class BaseRunner {
-	constructor() {
+	constructor(functionBuilder) {
 	  this.kernel = null;
     this.fn = null;
+    this.functionBuilder = functionBuilder;
     this.fnString = null;
 		this.programCache = {};
-		this.endianness = GPUUtils.systemEndianness;
-
-		this.functionBuilder = new FunctionBuilder(this);
+		this.endianness = utils.systemEndianness;
 		this.functionBuilder.polyfillStandardFunctions();
 	}
 
@@ -64,7 +62,7 @@ module.exports = class BaseRunner {
   buildKernel(fn, settings) {
 	  settings = settings || {};
     const fnString = fn.toString();
-    if(!GPUUtils.isFunctionString(fnString)) {
+    if(!utils.isFunctionString(fnString)) {
       throw 'Unable to get body of kernel function';
     }
 

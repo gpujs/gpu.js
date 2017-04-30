@@ -1,4 +1,4 @@
-const GPUUtils = require('../gpu-utils');
+const utils = require('../utils');
 const parser = require('../parser').parser;
 
 ///
@@ -60,12 +60,12 @@ module.exports = class BaseFunctionNode {
     // Setup jsFunction and its string property + validate them
     //
     this.jsFunctionString = jsFunction.toString();
-    if(!GPUUtils.isFunctionString(this.jsFunctionString)) {
+    if(!utils.isFunctionString(this.jsFunctionString)) {
       console.error('jsFunction, to string conversion check failed: not a function?', this.jsFunctionString);
       throw 'jsFunction, to string conversion check failed: not a function?';
     }
 
-    if(!GPUUtils.isFunction(jsFunction)) {
+    if(!utils.isFunction(jsFunction)) {
       //throw 'jsFunction, is not a valid JS Function';
       this.jsFunction = null;
     } else {
@@ -77,7 +77,7 @@ module.exports = class BaseFunctionNode {
     //
     this.functionName = functionName
       || (jsFunction && jsFunction.name)
-      || GPUUtils.getFunctionNameFromString(this.jsFunctionString);
+      || utils.getFunctionNameFromString(this.jsFunctionString);
 
     if(!(this.functionName)) {
       throw 'jsFunction, missing name argument or value';
@@ -86,7 +86,7 @@ module.exports = class BaseFunctionNode {
     //
     // Extract parameter name, and its argument types
     //
-    this.paramNames = GPUUtils.getParamNamesFromString(this.jsFunctionString);
+    this.paramNames = utils.getParamNamesFromString(this.jsFunctionString);
     if(paramTypeArray != null) {
       if(paramTypeArray.length != this.paramNames.length) {
         throw 'Invalid argument type array length, against function length -> ('+

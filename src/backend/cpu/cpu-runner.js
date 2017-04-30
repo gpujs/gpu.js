@@ -1,11 +1,12 @@
-const GPUUtils = require('../../gpu-utils');
+const utils = require('../../utils');
 const BaseRunner = require('../base-runner');
 const CPUKernel = require('./cpu-kernel');
+const CPUFunctionBuilder = require('./cpu-function-builder');
 
 module.exports = class CPURunner extends BaseRunner {
   constructor() {
-    super();
-    this._canvas = GPUUtils.initCanvas();
+    super(new CPUFunctionBuilder());
+    this._canvas = utils.initCanvas();
     this.Kernel = CPUKernel;
     this.kernel = null;
   }

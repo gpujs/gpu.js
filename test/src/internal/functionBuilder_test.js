@@ -1,4 +1,3 @@
-const FunctionBuilder = require('../../../src/backend/function-builder');
 ///
 /// Test the various basic functionality of functionBuilder
 ///
@@ -27,7 +26,7 @@ function threeLayerTemplate() {
 
 /// Test the function tracing of 3 layers
 QUnit.test( "traceFunctionCalls: 3 layer test", function( assert ) {
-	assert.notEqual( FunctionBuilder, null, "script include check" );
+	assert.notEqual( GPU.CPUFunctionBuilder, null, "script include check" );
 	var builder = threeLayerTemplate();
 	assert.notEqual( builder, null, "class creation check" );
 	
@@ -38,7 +37,7 @@ QUnit.test( "traceFunctionCalls: 3 layer test", function( assert ) {
 
 /// Test the function tracing of 3 layers
 QUnit.test( "webglString: 3 layer test", function( assert ) {
-	assert.notEqual( FunctionBuilder, null, "script include check" );
+	assert.notEqual( GPU.FunctionBuilder, null, "script include check" );
 	var builder = threeLayerTemplate();
 	assert.notEqual( builder, null, "class creation check" );
 	

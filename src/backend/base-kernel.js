@@ -1,8 +1,8 @@
-const GPUUtils = require('../gpu-utils');
+const utils = require('../utils');
 
 module.exports = class BaseKernel {
   constructor(fnString, settings) {
-    this.paramNames = GPUUtils.getParamNamesFromString(fnString);
+    this.paramNames = utils.getParamNamesFromString(fnString);
     this.fnString = fnString;
     this.processor = null;
     this.dimensions = [];
@@ -14,8 +14,8 @@ module.exports = class BaseKernel {
     this.hardcodeConstants = null;
     this.outputToTexture = null;
     this.texSize = null;
-    this.canvas = GPUUtils.initCanvas();
-    this.webGl = GPUUtils.initWebGl(this._canvas);
+    this.canvas = utils.initCanvas();
+    this.webGl = utils.initWebGl(this._canvas);
     this.threadDim = null;
     this.floatTextures = null;
     this.floatOutput = null;
