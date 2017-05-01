@@ -666,6 +666,7 @@
 			ret.opt = opt;
 			ret.paramType = paramType;
 			ret.jsKernelFunc = funcStr;
+			ret.paramNames = GPUUtils.getParamNames_fromString(funcStr);
 
 			// Generate the kernel for the builder object
 			var kernelNode = new functionNode(gpu, "kernel", kernel);
@@ -674,9 +675,10 @@
 			kernelNode.isRootKernel = true;
 			builder.addFunctionNode(kernelNode);
 
+			// Build the gpu kernel str
+			ret.gpuKernelFunc = [builder.webglPrototypeString("kernel", opt),builder.webglString("kernel", opt)].join("\n");
 
-			ret.gpuKernelFunc = [builder.webglPrototypeString("kernel", opt),builder.webglString("kernel", opt)];
-
+			// Return the compilled config
 			return ret;
 		}
 
