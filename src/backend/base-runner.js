@@ -26,7 +26,7 @@ module.exports = class BaseRunner {
 
 	// Legacy method to get webgl : Preserved for backwards compatibility
 	getGl() {
-		return this._webgl;
+		return this._webGl;
 	}
 
 	textureToArray(texture) {

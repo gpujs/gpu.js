@@ -329,8 +329,17 @@ const utils = class utils {
 	///
   static isWebGl(webGlObj) {
 		return (
-      webGlObj !== null &&
-      webGlObj.hasOwnProperty('getExtension')
+      webGlObj !== null
+      && (
+        (
+          webGlObj.__proto__
+          && webGlObj.__proto__.hasOwnProperty('getExtension')
+        )
+        || (
+          webGlObj.prototype
+          && webGlObj.prototype.hasOwnProperty('getExtension')
+        )
+      )
 		);
 	}
 
@@ -371,7 +380,7 @@ const utils = class utils {
 
     // First time setup, does the browser support check memorizer
     if (typeof isCanvasSupported !== 'undefined' && typeof isWebGlSupported !== 'undefined') {
-      if (!isCanvasSupported || typeof !isWebGlSupported) {
+      if (!isCanvasSupported || !isWebGlSupported) {
         return null;
       }
     }

@@ -19,6 +19,7 @@ module.exports = class CPUKernel extends BaseKernel {
     };
 
     this.run = function() {
+      this.run = null;
       this.build();
       return this.run.apply(this, arguments);
     }.bind(this);
@@ -107,7 +108,7 @@ module.exports = class CPUKernel extends BaseKernel {
 
     runBody.push('return ret');
 
-    this.run = new Function(this.paramNames, '  ' + runBody.join(';\n  '));
+    this.run = new Function(this.paramNames, '  ' + runBody.join(';\n  ') + ';');
   }
 
   color(r, g, b, a) {

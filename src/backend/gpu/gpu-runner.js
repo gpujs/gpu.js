@@ -5,6 +5,7 @@ const GPUFunctionBuilder = require('./gpu-function-builder');
 
 module.exports = class GPURunner extends BaseRunner {
   constructor(opt) {
+    opt = opt || {};
     super(new GPUFunctionBuilder());
     this.programUniformLocationCache = {};
     this.programCacheKey = this.getProgramCacheKey(arguments, opt, opt.dimensions);

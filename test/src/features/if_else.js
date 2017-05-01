@@ -1,16 +1,17 @@
 function booleanBranch( mode ) {
-	var gpu = new GPU();
+	var gpu = new GPU({
+    mode: mode
+  });
 	var f = gpu.createKernel(function() {
-		var ret = 0.0;
+		var result = 0.0;
 		if(true) {
-			ret = 4.0;
+      result = 4.0;
 		} else {
-			ret = 2.0;
+      result = 2.0;
 		}
-		return ret;
+		return result;
 	}, {
-		dimensions : [1],
-		mode : mode
+		dimensions : [1]
 	});
 
 	QUnit.ok( f !== null, "function generated test");

@@ -65,8 +65,8 @@ function astErrorOutput(error, ast, funcParam) {
 }
 
 module.exports = class GPUFunctionNode extends BaseFunctionNode {
-  constructor() {
-    super();
+  constructor(functionName, jsFunction, paramTypeArray, returnType) {
+    super(functionName, jsFunction, paramTypeArray, returnType);
     this.gpu = null;
     this.opt = null;
     this.jsFunctionString = null;

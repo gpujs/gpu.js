@@ -10,7 +10,6 @@ module.exports = class GPUKernel extends BaseKernel {
     this.threadDim = {};
     this.buffer = null;
     this.program = null;
-    return this.bind(this);
   }
 
   validateOptions() {

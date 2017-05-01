@@ -7,8 +7,24 @@ const CPURunner = require('./backend/cpu/cpu-runner');
 /// Initialises the GPU.js library class which manages the WebGL context for the created functions.
 ///
 module.exports = class GPU {
-  constructor() {
+  constructor(settings) {
+    settings = settings || {};
     this._kernelSynchronousExecutor = null;
+    if (settings.mode) {
+      console.log(settings);
+      switch (settings.mode.toLowerCase()) {
+        case 'cpu':
+          this._runner = new CPURunner();
+          break;
+        case 'gpu':
+          this._runner = new GPURunner();
+          break;
+        default:
+          throw new Error(`"${settings.mode}" mode is not defined`);
+      }
+      return;
+    }
+
     this._runner = utils.isWebGlSupported
       ? new GPURunner()
       : new CPURunner();
