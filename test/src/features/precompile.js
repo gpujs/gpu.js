@@ -12,19 +12,18 @@ function precompileTest( assert, inMode ) {
 	// Gpu test instance
 	var g = new GPU();
 
-	// Create the sample kernel
-	var sampleK = g.createKernel(kFunc).dimensions([5000]);
+	// Create the sample kernel, and precompile the kernel
+	// Note that currently you MUST use GPU mode for precompiliation
+	var sampleK = g.createKernel(kFunc, { mode : "gpu" }).dimensions([5000]);
+	var precompille = sampleK.outputPrecompiledKernel(["Array"]);
 
-	// Get sample args
+	// Get sample args, to test later
 	var sampleArgs = [];
 	for(var i=0; i<5000; ++i) {
 		sampleArgs[i] = i;
 	}
 
-	// Precompiled output
-	var precompille = sampleK.outputPrecompiledKernel(["Array"]);
-
-	// Get the sample result
+	// Get the base sample result
 	var baseResult = g.createKernel(kFunc, { mode : inMode }).dimensions([5000])(sampleArgs);
 
 	// Prebuilt GPU.JS mode
