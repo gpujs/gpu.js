@@ -1,4 +1,4 @@
-/// Normalize the precompilled string or object as an object
+/// Normalize the precompiled string or object as an object
 ///
 /// @param  Compilled kernel as an object or string
 ///
@@ -33,7 +33,7 @@ function checkArguments(paramType, args) {
 /// The precompiled GPU create kernel build function
 ///
 /// @param  Compilled kernel as an object or string
-function PrecompilledGPU(kernelObj, inOpt) {
+function PrecompiledGPU(kernelObj, inOpt) {
 
 	// Normalize the kernel
 	kernelObj = normalizeKernelObj(kernelObj);
@@ -336,7 +336,7 @@ function PrecompilledGPU(kernelObj, inOpt) {
 
 		// Dimensions are compulsory
 		if (!opt.dimensions || opt.dimensions.length === 0) {
-			throw "Dimensions must be configured for precompilled mode";
+			throw "Dimensions must be configured for precompiled mode";
 		}
 
 		// Gets textual size to use
@@ -585,7 +585,7 @@ function PrecompilledGPU(kernelObj, inOpt) {
 				'highp float kernelResult = 0.0;',
 				paramStr,
 				constantsStr,
-				// The precompilled gpu kernel str
+				// The precompiled gpu kernel str
 				gpuKernelFuncStr,
 				'',
 				'void main(void) {',

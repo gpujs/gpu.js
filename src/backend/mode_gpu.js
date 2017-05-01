@@ -660,7 +660,7 @@
 		///          With the following types "Array", "Texture", "Number"
 		///
 		/// @return  The precompiled kernel object
-		ret.outputPrecompiledKernel = function outputPrecompilledKernel( paramType ) {
+		ret.outputPrecompiledKernel = function outputPrecompiledKernel( paramType ) {
 			// Setup return object with basic options, jsFunction and param types
 			var ret = {};
 			ret.opt = opt;
