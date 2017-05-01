@@ -654,6 +654,32 @@
 		ret.canvas = canvas;
 		ret.webgl = gl;
 
+		/// Gets and return a precompiled version of the GPU.js script - usuable with CompilledGPU.js
+		///
+		/// @param   Input types to support as an array
+		///          With the following types "Array", "Texture", "Number"
+		///
+		/// @return  The precompiled kernel object
+		ret.outputPrecompiledKernel = function outputPrecompilledKernel( paramType ) {
+			// Setup return object with basic options, jsFunction and param types
+			var ret = {};
+			ret.opt = opt;
+			ret.paramType = paramType;
+			ret.jsKernelFunc = funcStr;
+
+			// Generate the kernel for the builder object
+			var kernelNode = new functionNode(gpu, "kernel", kernel);
+			kernelNode.paramNames = paramNames;
+			kernelNode.paramType = paramType;
+			kernelNode.isRootKernel = true;
+			builder.addFunctionNode(kernelNode);
+
+
+			ret.gpuKernelFunc = [builder.webglPrototypeString("kernel", opt),builder.webglString("kernel", opt)];
+
+			return ret;
+		}
+
 		return gpu.setupExecutorExtendedFunctions(ret, opt);
 	};
 
