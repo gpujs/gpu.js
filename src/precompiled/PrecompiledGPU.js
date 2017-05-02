@@ -44,8 +44,12 @@ function PrecompiledGPU(kernelObj, inOpt) {
 	var jsKernelFuncStr = kernelObj.jsKernelFunc;
 	var gpuKernelFuncStr = kernelObj.gpuKernelFunc;
 
-	// The option overwrite
-	opt = Object.assign(opt, inOpt);
+	// The option overwrite, isolate
+	if( inOpt ) {
+		opt = Object.assign({}, opt, inOpt);
+	} else {
+		opt = Object.assign({}, opt);
+	}
 
 	//-----------------------------------------------------------------------------------------
 	//
@@ -325,9 +329,12 @@ function PrecompiledGPU(kernelObj, inOpt) {
 			1.0, 1.0]);
 
 		// Does float texture support checks
+		//
+		// @TODO : Reuse test_floatReadPixels test, this is assumed true as of now
+		//         After they are not dependent on the transpiller anymore
 		if (opt.floatTextures === true && !GPUUtils.OES_texture_float) {
 			throw "Float textures are not supported on this browser";
-		} else if (opt.floatOutput === true && opt.floatOutputForce !== true && !GPUUtils.test_floatReadPixels(gpu)) {
+		} else if (opt.floatOutput === true && opt.floatOutputForce !== true && false /*&& !GPUUtils.test_floatReadPixels(gpu)*/ ) {
 			throw "Float texture outputs are not supported on this browser";
 		} else if (opt.floatTextures === undefined && GPUUtils.OES_texture_float) {
 			opt.floatTextures = true;
@@ -825,7 +832,7 @@ function PrecompiledGPU(kernelObj, inOpt) {
 		checkArguments(paramType, args);
 
 		//  Get the mode
-		var mode = opt.computeMode || opt.mode;
+		var mode = opt.mode;
 
 		//
 		// CPU mode
@@ -851,7 +858,9 @@ function PrecompiledGPU(kernelObj, inOpt) {
 	}
 
 	/// Get and check webgl support
-	run.supportWebgl = GPUUtils.browserSupport_webgl();
+	run.supportWebgl = function supportWebgl() {
+		return !!GPUUtils.browserSupport_webgl();
+	}
 
 	// Return the actual run function
 	return run;
