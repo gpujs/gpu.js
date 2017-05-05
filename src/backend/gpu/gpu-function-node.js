@@ -92,7 +92,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     return this.opt.constants.indexOf(paramName) !== -1;
   }
 
-  /// Prases the abstract syntax tree, genericially to its respective function
+  /// Parses the abstract syntax tree, generically to its respective function
   ///
   /// @param ast          the AST object to parse
   /// @param retArr       return array string
@@ -418,7 +418,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     if (forNode.test && forNode.test.type === 'BinaryExpression') {
       if (forNode.test.right.type === 'Identifier'
         && forNode.test.operator === '<'
-        && this.isIdentifierConstant(forNode.test.right.name) == false) {
+        && this.isIdentifierConstant(forNode.test.right.name) === false) {
 
         if (this.opt.loopMaxIterations === undefined) {
           console.warn('Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.');
@@ -473,11 +473,11 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
    );
   }
 
-  /// Prases the abstract syntax tree, genericially to its respective function
+  /// Parses the abstract syntax tree, generically to its respective function
   ///
   /// @param ast   the AST object to parse
   ///
-  /// @returns  the prased openclgl string
+  /// @returns  the parsed openclgl string
   astWhileStatement(whileNode, retArr, funcParam) {
     if (whileNode.type !== 'WhileStatement') {
       throw astErrorOutput(
@@ -486,7 +486,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
      );
     }
 
-    retArr.push('for (float i=0.0; i<LOOP_MAX; i++) {');
+    retArr.push('for (float i = 0.0; i < LOOP_MAX; i++) {');
     retArr.push('if (');
     this.astGeneric(whileNode.test, retArr, funcParam);
     retArr.push(') {\n');
@@ -517,13 +517,13 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
   }
 
   astEmptyStatement(eNode, retArr, funcParam) {
-    retArr.push(';\n');
+    //retArr.push(';\n');
     return retArr;
   }
 
   astBlockStatement(bNode, retArr, funcParam) {
     retArr.push('{\n');
-    for (var i = 0; i < bNode.body.length; i++) {
+    for (let i = 0; i < bNode.body.length; i++) {
       this.astGeneric(bNode.body[i], retArr, funcParam);
     }
     retArr.push('}\n');
@@ -689,8 +689,8 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     } else {
 
       // Unroll the member expression
-      var unrolled = this.astMemberExpressionUnroll(mNode);
-      var unrolled_lc = unrolled.toLowerCase();
+      let unrolled = this.astMemberExpressionUnroll(mNode);
+      let unrolled_lc = unrolled.toLowerCase();
 
       // Its a constant, remove this.constants.
       if (unrolled.indexOf(constantsPrefix) === 0) {
@@ -851,10 +851,10 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
   /// Returns:
   /// 	{String} webgl function string, result is cached under this.getFunctionPrototypeString
   ///
-  getFunctionPrototypeString(isRootKernel, options) {
+  getFunctionPrototypeString(options) {
     if(this.webGlFunctionPrototypeString) {
       return this.webGlFunctionPrototypeString;
     }
-    return this.functionPrototypeString = this.generate(options);
+    return this.webGlFunctionPrototypeString = this.generate(options);
   }
 };

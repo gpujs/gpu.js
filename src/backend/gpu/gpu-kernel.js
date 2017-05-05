@@ -153,7 +153,7 @@ precision highp float;
 precision highp int;
 precision highp sampler2D;
 
-#define LOOP_MAX ${ (this.loopMaxIterations ? parseInt(this.loopMaxIterations)+'.0' : '100.0') };
+const float LOOP_MAX = ${ (this.loopMaxIterations ? parseInt(this.loopMaxIterations)+'.0' : '100.0') };
 #define EPSILON 0.0000001;
 
 ${ this.hardcodeConstants
