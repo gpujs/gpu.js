@@ -15,6 +15,7 @@ module.exports = class GPUKernel extends BaseKernel {
     this.buffer = null;
     this.program = null;
     this.functionBuilder = new GPUFunctionBuilder();
+    this.endianness = utils.systemEndianness;
   }
 
   validateOptions() {
@@ -341,7 +342,7 @@ void main(void) {
 
     if (this.debug) {
       console.log('Options:');
-      console.dir(opt);
+      console.dir(this);
       console.log('GLSL Shader Output:');
       console.log(fragShaderSrc);
     }
@@ -355,7 +356,7 @@ void main(void) {
 
   run() {
     if (this.program === null) {
-      this.build();
+      this.build.apply(this, arguments);
     }
     const paramNames = this.paramNames;
     const textureCache = this.textureCache;
@@ -406,7 +407,7 @@ void main(void) {
       const argType = utils.getArgumentType(arguments[textureCount]);
       if (argType === 'Array') {
         paramDim = utils.getDimensions(arguments[textureCount], true);
-        paramSize = utils.dimToTexSize(opt, paramDim);
+        paramSize = utils.dimToTexSize(this, paramDim);
 
         if (textureCache[textureCount]) {
           texture = textureCache[textureCount];
