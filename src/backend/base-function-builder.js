@@ -62,7 +62,7 @@ module.exports = class BaseFunctionBuilder {
 	///
 	/// Returns:
 	/// 	{[String,...]}  Returning list of function names that is traced. Including itself.
-  traceFunctionCalls(functionName, retList, opt) {
+  traceFunctionCalls(functionName, retList) {
 		functionName = functionName || 'kernel';
 		retList = retList || [];
 		
@@ -74,9 +74,9 @@ module.exports = class BaseFunctionBuilder {
 			} else {
 				retList.push(functionName);
 				
-				fNode.getFunctionString(opt); //ensure JS trace is done
+				fNode.getFunctionString(); //ensure JS trace is done
 				for(let i = 0; i < fNode.calledFunctions.length; ++i) {
-					this.traceFunctionCalls(fNode.calledFunctions[i], retList, opt);
+					this.traceFunctionCalls(fNode.calledFunctions[i], retList);
 				}
 			}
 		}
@@ -93,12 +93,12 @@ module.exports = class BaseFunctionBuilder {
 	/// Returns:
 	/// 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	///
-  webGlStringFromFunctionNames(functionList, opt) {
+  webGlStringFromFunctionNames(functionList) {
 		const ret = [];
 		for(let i = 0; i < functionList.length; ++i) {
 			const node = this.nodeMap[functionList[i]];
 			if(node) {
-				ret.push(this.nodeMap[functionList[i]].getFunctionString(opt));
+				ret.push(this.nodeMap[functionList[i]].getFunctionString());
 			}
 		}
 		return ret.join('\n');
@@ -144,15 +144,11 @@ module.exports = class BaseFunctionBuilder {
 	/// Returns:
 	/// 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	///
-  webGlPrototypeString(functionName, opt) {
-		if (opt === undefined) {
-			opt = {};
-		}
-		
+  webGlPrototypeString(functionName) {
 		if(functionName) {
-			return this.webGlPrototypeStringFromFunctionNames(this.traceFunctionCalls(functionName, [], opt).reverse(), opt);
+			return this.webGlPrototypeStringFromFunctionNames(this.traceFunctionCalls(functionName, []).reverse());
 		}
-		return this.webGlPrototypeStringFromFunctionNames(Object.keys(this.nodeMap), opt);
+		return this.webGlPrototypeStringFromFunctionNames(Object.keys(this.nodeMap));
 	}
 	
 	//---------------------------------------------------------

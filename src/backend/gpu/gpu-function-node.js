@@ -17,7 +17,7 @@ const localPrefix = 'this.';
 const constantsPrefix = 'this.constants.';
 
 function isIdentifierKernelParam(paramName, ast, funcParam) {
-  return funcParam.paramNames.indexOf(paramName) != -1;
+  return funcParam.paramNames.indexOf(paramName) !== -1;
 }
 
 function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
@@ -27,7 +27,7 @@ function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
     throw 'Error unexpected identifier ' + paramName + ' on line ' + start.line;
   } else {
     const actualType = funcParam.paramType[funcParam.paramNames.indexOf(paramName)];
-    if (actualType != expectedType) {
+    if (actualType !== expectedType) {
       throw 'Error unexpected identifier ' + paramName + ' on line ' + start.line;
     }
   }
@@ -69,31 +69,27 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     super(functionName, jsFunction, paramTypeArray, returnType);
     this.gpu = null;
     this.opt = null;
-    this.jsFunctionString = null;
-    this.webGlFunctionPrototypeString = null;
   }
 
-  generate(inNode, _opt) {
-    this.gpu = inNode.gpu;
+  generate(_opt) {
     const opt = this.opt = _opt || {};
     if (opt.debug) {
-      console.log(inNode);
+      console.log(this);
     }
-    this.jsFunctionString = inNode.jsFunctionString;
     if (opt.prototypeOnly) {
-      return GPUFunctionNode.astFunctionPrototype(inNode.getJsAST(), [], inNode).join('').trim();
+      return GPUFunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
     } else {
-      inNode.functionStringArray = this.astGeneric(inNode.getJsAST(), [], inNode);
+      this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
     }
-    inNode.functionString = webGlRegexOptimize(
-      inNode.functionStringArray.join('').trim()
-   );
-    return inNode.functionString;
+    this.functionString = webGlRegexOptimize(
+      this.functionStringArray.join('').trim()
+    );
+    return this.functionString;
   }
 
   isIdentifierConstant(paramName) {
     if (!this.opt.constants) return false;
-    return this.opt.constants.indexOf(paramName) != -1;
+    return this.opt.constants.indexOf(paramName) !== -1;
   }
 
   /// Prases the abstract syntax tree, genericially to its respective function
@@ -347,17 +343,17 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
   astBinaryExpression(ast, retArr, funcParam) {
     retArr.push('(');
 
-    if (ast.operator == '%') {
+    if (ast.operator === '%') {
       retArr.push('mod(');
       this.astGeneric(ast.left, retArr, funcParam);
       retArr.push(',');
       this.astGeneric(ast.right, retArr, funcParam);
       retArr.push(')');
-    } else if (ast.operator == '===') {
+    } else if (ast.operator === '===') {
       this.astGeneric(ast.left, retArr, funcParam);
       retArr.push('==');
       this.astGeneric(ast.right, retArr, funcParam);
-    } else if (ast.operator == '!==') {
+    } else if (ast.operator === '!==') {
       this.astGeneric(ast.left, retArr, funcParam);
       retArr.push('!=');
       this.astGeneric(ast.right, retArr, funcParam);
@@ -380,24 +376,24 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
   ///
   /// @returns  the append retArr
   astIdentifierExpression(idtNode, retArr, funcParam) {
-    if (idtNode.type != 'Identifier') {
+    if (idtNode.type !== 'Identifier') {
       throw astErrorOutput(
         'IdentifierExpression - not an Identifier',
         ast, funcParam
      );
     }
 
-    if (idtNode.name == 'gpu_threadX') {
+    if (idtNode.name === 'gpu_threadX') {
       retArr.push('threadId.x');
-    } else if (idtNode.name == 'gpu_threadY') {
+    } else if (idtNode.name === 'gpu_threadY') {
       retArr.push('threadId.y');
-    } else if (idtNode.name == 'gpu_threadZ') {
+    } else if (idtNode.name === 'gpu_threadZ') {
       retArr.push('threadId.z');
-    } else if (idtNode.name == 'gpu_dimensionsX') {
+    } else if (idtNode.name === 'gpu_dimensionsX') {
       retArr.push('uOutputDim.x');
-    } else if (idtNode.name == 'gpu_dimensionsY') {
+    } else if (idtNode.name === 'gpu_dimensionsY') {
       retArr.push('uOutputDim.y');
-    } else if (idtNode.name == 'gpu_dimensionsZ') {
+    } else if (idtNode.name === 'gpu_dimensionsZ') {
       retArr.push('uOutputDim.z');
     } else {
       retArr.push('user_'+idtNode.name);
@@ -412,16 +408,16 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
   ///
   /// @returns  the prased openclgl string
   astForStatement(forNode, retArr, funcParam) {
-    if (forNode.type != 'ForStatement') {
+    if (forNode.type !== 'ForStatement') {
       throw astErrorOutput(
         'Invalid for statment',
         ast, funcParam
      );
     }
 
-    if (forNode.test && forNode.test.type == 'BinaryExpression') {
-      if (forNode.test.right.type == 'Identifier'
-        && forNode.test.operator == '<'
+    if (forNode.test && forNode.test.type === 'BinaryExpression') {
+      if (forNode.test.right.type === 'Identifier'
+        && forNode.test.operator === '<'
         && this.isIdentifierConstant(forNode.test.right.name) == false) {
 
         if (this.opt.loopMaxIterations === undefined) {
@@ -445,8 +441,8 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
         retArr.push(forNode.test.operator);
         this.astGeneric(forNode.test.right, retArr, funcParam);
         retArr.push(') {\n');
-        if (forNode.body.type == 'BlockStatement') {
-          for (var i = 0; i < forNode.body.body.length; i++) {
+        if (forNode.body.type === 'BlockStatement') {
+          for (let i = 0; i < forNode.body.body.length; i++) {
             this.astGeneric(forNode.body.body[i], retArr, funcParam);
           }
         } else {
@@ -483,7 +479,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
   ///
   /// @returns  the prased openclgl string
   astWhileStatement(whileNode, retArr, funcParam) {
-    if (whileNode.type != 'WhileStatement') {
+    if (whileNode.type !== 'WhileStatement') {
       throw astErrorOutput(
         'Invalid while statment',
         ast, funcParam
@@ -504,7 +500,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
   }
 
   astAssignmentExpression(assNode, retArr, funcParam) {
-    if (assNode.operator == '%=') {
+    if (assNode.operator === '%=') {
       this.astGeneric(assNode.left, retArr, funcParam);
       retArr.push('=');
       retArr.push('mod(');
@@ -566,7 +562,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     retArr.push('if (');
     this.astGeneric(ifNode.test, retArr, funcParam);
     retArr.push(')');
-    if (ifNode.consequent.type == 'BlockStatement') {
+    if (ifNode.consequent.type === 'BlockStatement') {
       this.astGeneric(ifNode.consequent, retArr, funcParam);
     } else {
       retArr.push(' {\n');
@@ -576,7 +572,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
 
     if (ifNode.alternate) {
       retArr.push('else ');
-      if (ifNode.alternate.type == 'BlockStatement') {
+      if (ifNode.alternate.type === 'BlockStatement') {
         this.astGeneric(ifNode.alternate, retArr, funcParam);
       } else {
         retArr.push(' {\n');
@@ -639,16 +635,16 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
 
   astMemberExpression(mNode, retArr, funcParam) {
     if (mNode.computed) {
-      if (mNode.object.type == 'Identifier') {
+      if (mNode.object.type === 'Identifier') {
         // Working logger
         const reqName = mNode.object.name;
         const funcName = funcParam.funcName || 'kernel';
         let assumeNotTexture = false;
 
         // Possibly an array request - handle it as such
-        if (funcParam != 'kernel' && funcParam.paramNames) {
+        if (funcParam !== 'kernel' && funcParam.paramNames) {
           var idx = funcParam.paramNames.indexOf(reqName);
-          if (idx >= 0 && funcParam.paramType[idx] == 'float') {
+          if (idx >= 0 && funcParam.paramType[idx] === 'float') {
             assumeNotTexture = true;
           }
         }
@@ -701,17 +697,17 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
         unrolled = 'constants_'+unrolled.slice(constantsPrefix.length);
       }
 
-      if (unrolled_lc == 'this.thread.x') {
+      if (unrolled_lc === 'this.thread.x') {
         retArr.push('threadId.x');
-      } else if (unrolled_lc == 'this.thread.y') {
+      } else if (unrolled_lc === 'this.thread.y') {
         retArr.push('threadId.y');
-      } else if (unrolled_lc == 'this.thread.z') {
+      } else if (unrolled_lc === 'this.thread.z') {
         retArr.push('threadId.z');
-      } else if (unrolled_lc == 'this.dimensions.x') {
+      } else if (unrolled_lc === 'this.dimensions.x') {
         retArr.push('uOutputDim.x');
-      } else if (unrolled_lc == 'this.dimensions.y') {
+      } else if (unrolled_lc === 'this.dimensions.y') {
         retArr.push('uOutputDim.y');
-      } else if (unrolled_lc == 'this.dimensions.z') {
+      } else if (unrolled_lc === 'this.dimensions.z') {
         retArr.push('uOutputDim.z');
       } else {
         retArr.push(unrolled);
@@ -738,13 +734,13 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
   ///
   /// @returns  {String} the function namespace call, unrolled
   astMemberExpressionUnroll(ast, funcParam) {
-    if (ast.type == 'Identifier') {
+    if (ast.type === 'Identifier') {
       return ast.name;
-    } else if (ast.type == 'ThisExpression') {
+    } else if (ast.type === 'ThisExpression') {
       return 'this';
     }
 
-    if (ast.type == 'MemberExpression') {
+    if (ast.type === 'MemberExpression') {
       if (ast.object && ast.property) {
         return (
           this.astMemberExpressionUnroll(ast.object, funcParam) +
@@ -855,14 +851,10 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
   /// Returns:
   /// 	{String} webgl function string, result is cached under this.getFunctionPrototypeString
   ///
-  getFunctionPrototypeString(opt) {
-    opt = opt || {};
+  getFunctionPrototypeString(isRootKernel, options) {
     if(this.webGlFunctionPrototypeString) {
       return this.webGlFunctionPrototypeString;
     }
-    return this.functionPrototypeString = new FunctionNodeWebGl(this, {
-      prototypeOnly: true,
-      isRootKernel: opt.isRootKernel
-    });
+    return this.functionPrototypeString = this.generate(options);
   }
-}
+};

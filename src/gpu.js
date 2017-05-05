@@ -1,6 +1,8 @@
 const utils = require('./utils');
 const GPURunner = require('./backend/gpu/gpu-runner');
 const CPURunner = require('./backend/cpu/cpu-runner');
+const GPUValidatorKernel = require('./backend/gpu/gpu-validator-kernel');
+
 ///
 /// Class: GPU
 ///
@@ -11,13 +13,16 @@ module.exports = class GPU {
     settings = settings || {};
     this._kernelSynchronousExecutor = null;
     if (settings.mode) {
-      console.log(settings);
       switch (settings.mode.toLowerCase()) {
         case 'cpu':
           this._runner = new CPURunner();
           break;
         case 'gpu':
           this._runner = new GPURunner();
+          break;
+        case 'gpu-validator':
+          this._runner = new GPURunner();
+          this._runner.Kernel = GPUValidatorKernel;
           break;
         default:
           throw new Error(`"${settings.mode}" mode is not defined`);

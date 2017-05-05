@@ -17,7 +17,7 @@ gulp.task('build', function() {
     .bundle()
     .pipe(source('gpu.js'))
     .pipe(buffer())
-		.pipe(header(fs.readFileSync('./src/wrapper/prefix.js', 'utf8'), { pkg : pkg } ))
+		.pipe(header(fs.readFileSync('./src/wrapper/prefix.js', 'utf8'), { pkg : pkg }))
 		.pipe(gulp.dest('bin'));
 });
 

@@ -379,7 +379,7 @@ const utils = class utils {
   static initWebGl(canvasObj) {
 
     // First time setup, does the browser support check memorizer
-    if (typeof isCanvasSupported !== 'undefined' && typeof isWebGlSupported !== 'undefined') {
+    if (typeof isCanvasSupported !== 'undefined' && typeof isWebGlSupported !== 'undefined' || canvasObj === null) {
       if (!isCanvasSupported || !isWebGlSupported) {
         return null;
       }
@@ -416,19 +416,21 @@ const utils = class utils {
 	/// Returns:
 	/// 	{Boolean} true if browser supports
 	///
-  static isFloatReadPixelsSupported(gpu) {
+  static get isFloatReadPixelsSupported() {
 		if (isFloatReadPixelsSupported !== null) {
 			return isFloatReadPixelsSupported
 		}
 
-		const x = gpu.createKernel(function() {
+    const GPU = require('./');
+
+		const x = new GPU({ mode: 'gpu-validator' }).createKernel(function() {
 			return 1;
 		}, {
 			dimensions: [2],
 			floatTextures: true,
 			floatOutput: true,
 			floatOutputForce: true
-		}).dimensions([2])();
+		})();
 
     isFloatReadPixelsSupported = x[0] === 1;
 
@@ -474,6 +476,41 @@ const utils = class utils {
     }
 
     return ret;
+  }
+
+  static getProgramCacheKey(args, opt, outputDim) {
+    let key = '';
+    for (let i = 0; i < args.length; i++) {
+      const argType = utils.getArgumentType(args[i]);
+      key += argType;
+      if (opt.hardcodeConstants) {
+        if (argType === 'Array' || argType === 'Texture') {
+          const dimensions = utils.getDimensions(args[i], true);
+          key += '['+dimensions[0]+','+dimensions[1]+','+dimensions[2]+']';
+        }
+      }
+    }
+
+    let specialFlags = '';
+    if (opt.wraparound) {
+      specialFlags += 'Wraparound';
+    }
+
+    if (opt.hardcodeConstants) {
+      specialFlags += 'Hardcode';
+      specialFlags += '['+outputDim[0]+','+outputDim[1]+','+outputDim[2]+']';
+    }
+
+    if (opt.constants) {
+      specialFlags += 'Constants';
+      specialFlags += JSON.stringify(opt.constants);
+    }
+
+    if (specialFlags) {
+      key = key + '-' + specialFlags;
+    }
+
+    return key;
   }
 
   static pad(arr, padding) {

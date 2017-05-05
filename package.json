@@ -13,6 +13,7 @@
   "devDependencies": {
     "babel-plugin-syntax-async-functions": "^6.5.0",
     "browser-sync": "^2.18.2",
+    "browserify": "^14.3.0",
     "gulp": "^3.9.1",
     "gulp-concat": "^2.6.0",
     "gulp-header": "^1.7.1",

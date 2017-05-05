@@ -52,7 +52,7 @@ module.exports = class BaseFunctionNode {
     //
     // Missing jsFunction object exception
     //
-    if(jsFunction == null) {
+    if(jsFunction === null) {
       throw 'jsFunction, parameter is null';
     }
 
@@ -88,7 +88,7 @@ module.exports = class BaseFunctionNode {
     //
     this.paramNames = utils.getParamNamesFromString(this.jsFunctionString);
     if(paramTypeArray != null) {
-      if(paramTypeArray.length != this.paramNames.length) {
+      if(paramTypeArray.length !== this.paramNames.length) {
         throw 'Invalid argument type array length, against function length -> ('+
         paramTypeArray.length+','+
         this.paramNames.length+
@@ -176,9 +176,9 @@ module.exports = class BaseFunctionNode {
   /// Returns the converted webgl shader function equivalent of the JS function
   ///
   /// Returns:
-  /// 	{String} webgl function string, result is cached under this.webglFunctionString
+  /// 	{String} webgl function string, result is cached under this.webGlFunctionString
   ///
-  getFunctionString(opt) {
+  getFunctionString() {
     return this.functionString;
   }
 

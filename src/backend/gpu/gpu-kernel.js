@@ -2,18 +2,23 @@ const BaseKernel = require('../base-kernel');
 const utils = require('../../utils');
 const Texture = require('../../texture');
 const GPUFunctionNode = require('./gpu-function-node');
+const GPUFunctionBuilder = require('./gpu-function-builder');
 
 module.exports = class GPUKernel extends BaseKernel {
   constructor(fnString, settings) {
     super(fnString, settings);
     this.textureCache = {};
     this.threadDim = {};
+    this.programUniformLocationCache = {};
+    this.frameBuffer = null;
+    this.framebufferCache = {};
     this.buffer = null;
     this.program = null;
+    this.functionBuilder = new GPUFunctionBuilder();
   }
 
   validateOptions() {
-    const isReadPixel = utils.isFloatReadPixelsSupported(this);
+    const isReadPixel = utils.isFloatReadPixelsSupported;
     if (this.floatTextures === true && !utils.OES_texture_float) {
       throw 'Float textures are not supported on this browser';
     } else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
@@ -38,7 +43,10 @@ module.exports = class GPUKernel extends BaseKernel {
       }
     }
 
-    this.texSize = utils.dimToTexSize(this, this.dimensions, true);
+    this.texSize = utils.dimToTexSize({
+      floatTextures: this.floatTextures,
+      floatOutput: this.floatOutput
+    }, this.dimensions, true);
 
     if (this.graphical) {
       if (this.dimensions.length !== 2) {
@@ -55,7 +63,7 @@ module.exports = class GPUKernel extends BaseKernel {
     }
   }
 
-  build(fnString, fn) {
+  build() {
     this.validateOptions();
     const paramNames = this.paramNames;
     const builder = this.functionBuilder;
@@ -115,7 +123,7 @@ module.exports = class GPUKernel extends BaseKernel {
       }
     }
 
-    const kernelNode = new GPUFunctionNode(gpu, 'kernel', kernel);
+    const kernelNode = new GPUFunctionNode('kernel', this.fnString);
     kernelNode.paramNames = paramNames;
     kernelNode.paramType = paramType;
     kernelNode.isRootKernel = true;
@@ -137,7 +145,9 @@ void main(void) {
 }
 `;
 
-      const fragShaderSrc = `
+    const vertShader = gl.createShader(gl.VERTEX_SHADER);
+
+    const fragShaderSrc = `
 precision highp float;
 precision highp int;
 precision highp sampler2D;
@@ -146,13 +156,13 @@ precision highp sampler2D;
 #define EPSILON 0.0000001;
 
 ${ this.hardcodeConstants
-  ? `highp vec3 uOutputDim = vec3(${ threadDim[0] },${ threadDim[1] }, ${ threadDim[2] });`
-  : 'uniform highp vec3 uOutputDim};'
-}
+      ? `highp vec3 uOutputDim = vec3(${ threadDim[0] },${ threadDim[1] }, ${ threadDim[2] });`
+      : 'uniform highp vec3 uOutputDim;'
+      }
 ${ this.hardcodeConstants
-  ? `highp vec2 uTexSize = vec2(${ texSize[0] }, ${ texSize[1] });`
-  : 'uniform highp vec2 uTexSize;'
-}
+      ? `highp vec2 uTexSize = vec2(${ texSize[0] }, ${ texSize[1] });`
+      : 'uniform highp vec2 uTexSize;'
+      }
 
 varying highp vec2 vTexCoord;
 
@@ -197,9 +207,9 @@ const vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);
 const vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536
 highp float decode32(highp vec4 rgba) {
   ${ endianness === 'LE'
-    ? ''
-    : 'rgba.rgba = rgba.abgr;'
-  }
+      ? ''
+      : 'rgba.rgba = rgba.abgr;'
+      }
   rgba *= 255.0;
   vec2 gte128;
   gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;
@@ -213,23 +223,23 @@ highp float decode32(highp vec4 rgba) {
 }
 
 highp vec4 encode32(highp float f) {
-highp float F = abs(f);
-highp float sign = f < 0.0 ? 1.0 : 0.0;
-highp float exponent = floor(log2(F));
-highp float mantissa = (exp2(-exponent) * F);
-// exponent += floor(log2(mantissa));
-vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;
-rgba.rg = integerMod(rgba.rg, 256.0);
-rgba.b = integerMod(rgba.b, 128.0);
-rgba.a = exponent*0.5 + 63.5;
-rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;
-rgba = floor(rgba);
-rgba *= 0.003921569; // 1/255
-${ endianness === 'LE'
-  ? ''
-  : 'rgba.rgba = rgba.abgr;'
-}
-return rgba;',
+  highp float F = abs(f);
+  highp float sign = f < 0.0 ? 1.0 : 0.0;
+  highp float exponent = floor(log2(F));
+  highp float mantissa = (exp2(-exponent) * F);
+  // exponent += floor(log2(mantissa));
+  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;
+  rgba.rg = integerMod(rgba.rg, 256.0);
+  rgba.b = integerMod(rgba.b, 128.0);
+  rgba.a = exponent*0.5 + 63.5;
+  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;
+  rgba = floor(rgba);
+  rgba *= 0.003921569; // 1/255
+  ${ endianness === 'LE'
+      ? ''
+      : 'rgba.rgba = rgba.abgr;'
+      }
+  return rgba;
 }
 // Dragons end here
 
@@ -248,20 +258,20 @@ highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, high
   highp vec3 xyz = vec3(x, y, z);
   xyz = floor(xyz + 0.5);
   ${ this.wraparound
-    ? '	xyz = mod(xyz, texDim);'
-    : ''
-  }
+      ? 'xyz = mod(xyz, texDim);'
+      : ''
+      }
   highp float index = round(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z));
-  ${ this.floatTextures ? '	int channel = int(integerMod(index, 4.0));' : '' }
-  ${ this.floatTextures ? '	index = float(int(index)/4);' : ''}
+  ${ this.floatTextures ? 'int channel = int(integerMod(index, 4.0));' : '' }
+  ${ this.floatTextures ? 'index = float(int(index)/4);' : ''}
   highp float w = round(texSize.x);
   vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;
   ${ this.floatTextures ? '	index = float(int(index)/4);' : ''}
   highp vec4 texel = texture2D(tex, st / texSize);
-  ${ this.floatTextures ? '	if (channel == 0) return texel.r;' : '' }
-  ${ this.floatTextures ? '	if (channel == 1) return texel.g;' : '' }
-  ${ this.floatTextures ? '	if (channel == 2) return texel.b;' : '' }
-  ${ this.floatTextures ? '	if (channel == 3) return texel.a;' : '' }
+  ${ this.floatTextures ? 'if (channel == 0) return texel.r;' : '' }
+  ${ this.floatTextures ? 'if (channel == 1) return texel.g;' : '' }
+  ${ this.floatTextures ? 'if (channel == 2) return texel.b;' : '' }
+  ${ this.floatTextures ? 'if (channel == 3) return texel.a;' : '' }
   ${ this.floatTextures ? '' : '	return decode32(texel);' }
 }
 
@@ -286,8 +296,7 @@ void color(float r, float g, float b) {
 highp float kernelResult = 0.0;
 ${ paramStr }
 ${ constantsStr }
-builder.webGlPrototypeString('kernel', opt)
-builder.webGlString('kernel', opt)
+${ builder.webGlPrototypeString('kernel') }
 
 void main(void) {
   index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;
@@ -297,18 +306,20 @@ void main(void) {
   if (outputToColor == true) {
     gl_FragColor = actualColor;
   } else {
-    ${ this.floatOutput ? '' : 'gl_FragColor = encode32(kernelResult);' }
-    ${ this.floatOutput ? 'gl_FragColor.r = kernelResult;' : '' }
-    ${ this.floatOutput ? 'index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();' : '' }
-    ${ this.floatOutput ? 'gl_FragColor.g = kernelResult;' : '' }
-    ${ this.floatOutput ? 'index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();' : '' }
-    ${ this.floatOutput ? 'gl_FragColor.b = kernelResult;' : '' }
-    ${ this.floatOutput ? 'index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();' : '' }
-    ${ this.floatOutput ? 'gl_FragColor.a = kernelResult;' : '' }
+    ${ this.floatOutput
+      ? `
+    gl_FragColor.r = kernelResult;
+    index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();
+    gl_FragColor.g = kernelResult;
+    index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();
+    gl_FragColor.b = kernelResult;
+    index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();
+    gl_FragColor.a = kernelResult;`
+      : `gl_FragColor = encode32(kernelResult);`
+      }
   }
 }`;
-
-    const vertShader = gl.createShader(gl.VERTEX_SHADER);
+    console.log(builder.webGlPrototypeString('kernel'));
     const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 
     gl.shaderSource(vertShader, vertShaderSrc);
@@ -339,16 +350,18 @@ void main(void) {
     gl.attachShader(program, vertShader);
     gl.attachShader(program, fragShader);
     gl.linkProgram(program);
-
-    programCache[programCacheKey] = program;
-    programUniformLocationCache[programCacheKey] = [];
-
+    this.framebuffer = gl.createFramebuffer();
   }
 
   run() {
+    if (this.program === null) {
+      this.build();
+    }
+    const paramNames = this.paramNames;
     const textureCache = this.textureCache;
     const texSize = this.texSize;
     const threadDim = this.threadDim;
+    const framebuffer = this.framebuffer;
     const vertices = new Float32Array([
       -1, -1,
       1, -1,
@@ -366,8 +379,6 @@ void main(void) {
     let buffer = this.buffer;
     if (!buffer) {
       buffer = this.buffer = gl.createBuffer();
-      bufferCache[programCacheKey] = buffer;
-
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
       gl.bufferData(gl.ARRAY_BUFFER, vertices.byteLength + texCoords.byteLength, gl.STATIC_DRAW);
     } else {
@@ -390,24 +401,21 @@ void main(void) {
       gl.uniform2fv(uTexSizeLoc, texSize);
     }
 
-    if (!textureCache[programCacheKey]) {
-      textureCache[programCacheKey] = [];
-    }
-    for (let textureCount = 0; textureCount<paramNames.length; textureCount++) {
+    for (let textureCount = 0; textureCount < paramNames.length; textureCount++) {
       let paramDim, paramSize, texture;
       const argType = utils.getArgumentType(arguments[textureCount]);
       if (argType === 'Array') {
         paramDim = utils.getDimensions(arguments[textureCount], true);
         paramSize = utils.dimToTexSize(opt, paramDim);
 
-        if (textureCache[programCacheKey][textureCount]) {
-          texture = textureCache[programCacheKey][textureCount];
+        if (textureCache[textureCount]) {
+          texture = textureCache[textureCount];
         } else {
           texture = gl.createTexture();
-          textureCache[programCacheKey][textureCount] = texture;
+          textureCache[textureCount] = texture;
         }
 
-        gl.activeTexture(gl['TEXTURE'+textureCount]);
+        gl.activeTexture(gl['TEXTURE' + textureCount]);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -462,11 +470,11 @@ void main(void) {
         throw 'Input type not supported (GPU): ' + arguments[textureCount];
       }
     }
-
-    let outputTexture = textureCache[programCacheKey][textureCount];
+    let textureCount = paramNames.length;
+    let outputTexture = textureCache[textureCount];
     if (!outputTexture) {
       outputTexture = gl.createTexture();
-      textureCache[programCacheKey][textureCount] = outputTexture;
+      textureCache[textureCount] = outputTexture;
     }
     gl.activeTexture(gl['TEXTURE' + textureCount]);
     gl.bindTexture(gl.TEXTURE_2D, outputTexture);
@@ -487,11 +495,6 @@ void main(void) {
       return;
     }
 
-    let framebuffer = framebufferCache[programCacheKey];
-    if (!framebuffer) {
-      framebuffer = gl.createFramebuffer();
-      framebufferCache[programCacheKey] = framebuffer;
-    }
     framebuffer.width = texSize[0];
     framebuffer.height = texSize[1];
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
@@ -501,8 +504,7 @@ void main(void) {
 
     if (this.outputToTexture) {
       // Don't retain a handle on the output texture, we might need to render on the same texture later
-      delete textureCache[programCacheKey][textureCount];
-
+      delete textureCache[textureCount];
       return new Texture(gpu, outputTexture, texSize, this.dimensions);
     } else {
       let result;
@@ -528,5 +530,14 @@ void main(void) {
         });
       }
     }
+  }
+
+  getUniformLocation(name) {
+    let location = this.programUniformLocationCache[name];
+    if (!location) {
+      location = this.webGl.getUniformLocation(this.program, name);
+      this.programUniformLocationCache[name] = location;
+    }
+    return location;
   }
 };

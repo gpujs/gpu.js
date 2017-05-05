@@ -13,4 +13,4 @@ module.exports = class Texture {
     delete() {
         return this.gpu.deleteTexture(this);
     }
-}
+};

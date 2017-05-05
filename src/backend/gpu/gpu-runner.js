@@ -8,7 +8,7 @@ module.exports = class GPURunner extends BaseRunner {
     opt = opt || {};
     super(new GPUFunctionBuilder());
     this.programUniformLocationCache = {};
-    this.programCacheKey = this.getProgramCacheKey(arguments, opt, opt.dimensions);
+    this.programCacheKey = utils.getProgramCacheKey(arguments, opt, opt.dimensions);
     this.programCache = {};
     this.bufferCache = {};
     this.textureCache = {};
@@ -18,45 +18,10 @@ module.exports = class GPURunner extends BaseRunner {
     this.kernel = null;
   }
 
-  getProgramCacheKey(args, opt, outputDim) {
-		let key = '';
-		for (let i = 0; i < args.length; i++) {
-			const argType = utils.getArgumentType(args[i]);
-			key += argType;
-			if (opt.hardcodeConstants) {
-				if (argType === 'Array' || argType === 'Texture') {
-					const dimensions = this.getDimensions(args[i], true);
-					key += '['+dimensions[0]+','+dimensions[1]+','+dimensions[2]+']';
-				}
-			}
-		}
-
-		let specialFlags = '';
-		if (opt.wraparound) {
-			specialFlags += 'Wraparound';
-		}
-
-		if (opt.hardcodeConstants) {
-			specialFlags += 'Hardcode';
-			specialFlags += '['+outputDim[0]+','+outputDim[1]+','+outputDim[2]+']';
-		}
-
-		if (opt.constants) {
-			specialFlags += 'Constants';
-			specialFlags += JSON.stringify(opt.constants);
-		}
-
-		if (specialFlags) {
-			key = key + '-' + specialFlags;
-		}
-
-		return key;
-	}
-
   getUniformLocation(name) {
     let location = this.programUniformLocationCache[this.programCacheKey][name];
     if (!location) {
-      location = gl.getUniformLocation(program, name);
+      location = this._webGl.getUniformLocation(this.kernel.program, name);
       this.programUniformLocationCache[this.programCacheKey][name] = location;
     }
     return location;
