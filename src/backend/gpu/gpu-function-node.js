@@ -190,7 +190,9 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     funcArr.push(lines[end.line-1].slice(0, end.column));
 
     const funcStr = funcArr.join('\n');
-    this.gpu.addFunction(funcStr);
+    if (this.addFunction) {
+      this.addFunction(funcStr);
+    }
 
     return retArr;
   }
@@ -856,5 +858,9 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
       return this.webGlFunctionPrototypeString;
     }
     return this.webGlFunctionPrototypeString = this.generate(options);
+  }
+
+  build(options) {
+    return this.getFunctionPrototypeString(options).length > 0;
   }
 };

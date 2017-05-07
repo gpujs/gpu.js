@@ -3,6 +3,9 @@ const CPUFunctionNode = require('./cpu-function-node');
 
 module.exports = class CPUFunctionBuilder extends BaseFunctionBuilder {
   addFunction(functionName, jsFunction, paramTypeArray, returnType) {
-    this.addFunctionNode(new CPUFunctionNode(functionName, jsFunction, paramTypeArray, returnType));
+    this.addFunctionNode(
+      new CPUFunctionNode(functionName, jsFunction, paramTypeArray, returnType)
+        .setAddFunction(this.addFunction.bind(this))
+    );
   }
 };

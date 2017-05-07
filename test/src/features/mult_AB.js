@@ -1,5 +1,5 @@
 function mult_AB_test( assert, mode ) {
-	var gpu = new GPU();
+	var gpu = new GPU({ mode });
 	var f = gpu.createKernel(function(a, b) {
 		var sum = 0;
 		sum += a[this.thread.y][0] * b[0][this.thread.x];
@@ -7,8 +7,7 @@ function mult_AB_test( assert, mode ) {
 		sum += a[this.thread.y][2] * b[2][this.thread.x];
 		return sum;
 	}, {
-		dimensions : [3, 3],
-		mode: mode
+		dimensions : [3, 3]
 	});
 	
 	assert.ok( f !== null, "function generated test");
@@ -27,7 +26,7 @@ function mult_AB_test( assert, mode ) {
 			[30, 36, 42],
 			[66, 81, 96],
 			[102, 126, 150]
-		], 
+		],
 		"basic mult function test"
 	);
 }

@@ -14,7 +14,7 @@ module.exports = class GPUKernel extends BaseKernel {
     this.framebufferCache = {};
     this.buffer = null;
     this.program = null;
-    this.functionBuilder = new GPUFunctionBuilder();
+    this.functionBuilder = settings.functionBuilder;
     this.endianness = utils.systemEndianness;
   }
 
@@ -125,6 +125,7 @@ module.exports = class GPUKernel extends BaseKernel {
     }
 
     const kernelNode = new GPUFunctionNode('kernel', this.fnString);
+    kernelNode.setAddFunction(builder.addFunction.bind(builder));
     kernelNode.paramNames = paramNames;
     kernelNode.paramType = paramType;
     kernelNode.isRootKernel = true;
@@ -320,7 +321,6 @@ void main(void) {
       }
   }
 }`;
-    console.log(builder.webGlPrototypeString('kernel'));
     const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 
     gl.shaderSource(vertShader, vertShaderSrc);

@@ -66,6 +66,10 @@ module.exports = class BaseRunner {
       throw 'Unable to get body of kernel function';
     }
 
+    if (!settings.functionBuilder) {
+      settings.functionBuilder = this.functionBuilder;
+    }
+
     return kernelRunShortcut(new this.Kernel(fnString, settings));
   }
 };

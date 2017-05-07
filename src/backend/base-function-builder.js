@@ -18,6 +18,7 @@ module.exports = class BaseFunctionBuilder {
 	constructor(gpu) {
 		this.nodeMap = {};
 		this.gpu = gpu;
+		this.rootKernel = null;
 	}
 	
 	///
@@ -46,6 +47,12 @@ module.exports = class BaseFunctionBuilder {
 	///
 	addFunctionNode(inNode) {
 		this.nodeMap[inNode.functionName] = inNode;
+		if (inNode.isRootKernel) {
+		  if (this.rootKernel) {
+		    throw new Error('root kernel already defined');
+      }
+		  this.rootKernel = inNode;
+    }
 	}
 
 	///
@@ -65,7 +72,7 @@ module.exports = class BaseFunctionBuilder {
   traceFunctionCalls(functionName, retList) {
 		functionName = functionName || 'kernel';
 		retList = retList || [];
-		
+
 		const fNode = this.nodeMap[functionName];
 		if(fNode) {
 			// Check if function already exists
@@ -145,6 +152,7 @@ module.exports = class BaseFunctionBuilder {
 	/// 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	///
   webGlPrototypeString(functionName) {
+    this.rootKernel.build();
 		if(functionName) {
 			return this.webGlPrototypeStringFromFunctionNames(this.traceFunctionCalls(functionName, []).reverse());
 		}

@@ -48,6 +48,7 @@ module.exports = class BaseFunctionNode {
     this.initVariables = [];
     this.readVariables = [];
     this.writeVariables = [];
+    this.addFunction = null;
 
     //
     // Missing jsFunction object exception
@@ -87,7 +88,7 @@ module.exports = class BaseFunctionNode {
     // Extract parameter name, and its argument types
     //
     this.paramNames = utils.getParamNamesFromString(this.jsFunctionString);
-    if(paramTypeArray != null) {
+    if(paramTypeArray) {
       if(paramTypeArray.length !== this.paramNames.length) {
         throw 'Invalid argument type array length, against function length -> ('+
         paramTypeArray.length+','+
@@ -106,6 +107,11 @@ module.exports = class BaseFunctionNode {
     // Return type handling
     //
     this.returnType = returnType || 'float';
+  }
+
+  setAddFunction(fn) {
+    this.addFunction = fn;
+    return this;
   }
 
   //
@@ -153,7 +159,7 @@ module.exports = class BaseFunctionNode {
     }
 
     inParser = inParser || parser;
-    if(inParser == null) {
+    if(inParser === null) {
       throw 'Missing JS to AST parser';
     }
 
@@ -192,5 +198,9 @@ module.exports = class BaseFunctionNode {
   ///
   setFunctionString(functionString) {
     this.functionString = functionString;
+  }
+
+  build(options) {
+    throw new Error('build not defined on BaseFunctionNode');
   }
 };

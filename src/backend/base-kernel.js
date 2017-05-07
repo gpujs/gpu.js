@@ -20,6 +20,7 @@ module.exports = class BaseKernel {
     this.floatTextures = null;
     this.floatOutput = null;
     this.floatOutputForce = null;
+    this.addFunction = null;
 
     for (let p in settings) {
       if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -29,6 +30,11 @@ module.exports = class BaseKernel {
 
   build() {
     throw new Error('"build" not defined on Base');
+  }
+
+  setAddFunction(cb) {
+    this.addFunction = cb;
+    return this;
   }
 
   setDimensions(dimensions) {
