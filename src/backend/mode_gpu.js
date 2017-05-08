@@ -57,24 +57,34 @@
 		return ret;
 	}
 
-	function flatten(arr) {
-		if (GPUUtils.isArray(arr[0])) {
-			if (GPUUtils.isArray(arr[0][0])) {
-				// Annoyingly typed arrays do not have concat so we turn them into arrays first
-				if (!Array.isArray(arr[0][0])) {
-					return [].concat.apply([], [].concat.apply([], arr).map(function(x) {
-						return Array.prototype.slice.call(x);
-					}));
-				}
-
-				return [].concat.apply([], [].concat.apply([], arr));
-			} else {
-				return [].concat.apply([], arr);
-			}
-		} else {
-			return arr;
-		}
-	}
+  function flatten(arr, result) {
+    var i = 0;
+    result = result || [];
+    if (GPUUtils.isArray(arr)) {
+      if (!GPUUtils.isArray(arr[0])) {
+        result.push.apply(result, arr);
+      } else {
+        for (; i < arr.length; i++) {
+          if (GPUUtils.isArray(arr[i])) {
+            flatten(arr[i], result);
+          } else {
+            result.push(result, arr[i]);
+          }
+        }
+      }
+    } else if (typeof arr === 'object') {
+      var keys = Object.keys(arr);
+      for (;i < keys.length; i++) {
+        var objectValue = arr[keys[i]];
+        if (GPUUtils.isArray(objectValue)) {
+          flatten(objectValue, result);
+        } else {
+          result.push(objectValue);
+        }
+      }
+    }
+    return result;
+  }
 
 	function splitArray(array, part) {
 		var tmp = [];
