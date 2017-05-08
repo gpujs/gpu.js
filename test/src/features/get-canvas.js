@@ -10,7 +10,7 @@ function getCanvasTest( assert, mode ) {
 	}, {
 		dimensions : [30,30],
 		mode : mode
-	}).graphical(true);;
+	}).setGraphical(true);
 	
 	assert.ok( render !== null, "function generated test");
 	

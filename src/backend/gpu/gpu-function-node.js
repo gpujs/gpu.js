@@ -23,7 +23,7 @@ function isIdentifierKernelParam(paramName, ast, funcParam) {
 function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
   const start = ast.loc.start;
 
-  if (!isIdentifierKernelParam(paramName, funcParam) && expectedType != 'float') {
+  if (!isIdentifierKernelParam(paramName, funcParam) && expectedType !== 'float') {
     throw 'Error unexpected identifier ' + paramName + ' on line ' + start.line;
   } else {
     const actualType = funcParam.paramType[funcParam.paramNames.indexOf(paramName)];
@@ -167,7 +167,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     }
   }
 
-  /// Prases the abstract syntax tree, to its named function declartion
+  /// Parses the abstract syntax tree, to its named function declaration
   ///
   /// @param ast   the AST object to parse
   /// @param retArr       return array string
@@ -191,13 +191,13 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
 
     const funcStr = funcArr.join('\n');
     if (this.addFunction) {
-      this.addFunction(funcStr);
+      this.addFunction(null, new Function(`return ${ funcStr };`)());
     }
 
     return retArr;
   }
 
-  /// Prases the abstract syntax tree, to its named function prototype
+  /// Parses the abstract syntax tree, to its named function prototype
   ///
   /// @param ast   the AST object to parse
   /// @param retArr       return array string
@@ -232,7 +232,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     return retArr;
   }
 
-  /// Prases the abstract syntax tree, to its named function
+  /// Parses the abstract syntax tree, to its named function
   ///
   /// @param ast   the AST object to parse
   /// @param retArr       return array string
@@ -280,7 +280,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     return retArr;
   }
 
-  /// Prases the abstract syntax tree, to return function
+  /// Parses the abstract syntax tree, to return function
   ///
   /// @param ast          the AST object to parse
   /// @param retArr       return array string
@@ -307,7 +307,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     return retArr;
   }
 
-  /// Prases the abstract syntax tree, literal value
+  /// Parses the abstract syntax tree, literal value
   ///
   /// @param ast          the AST object to parse
   /// @param retArr       return array string
@@ -335,7 +335,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     return retArr;
   }
 
-  /// Prases the abstract syntax tree, binary expression
+  /// Parses the abstract syntax tree, binary expression
   ///
   /// @param ast          the AST object to parse
   /// @param retArr       return array string
@@ -370,7 +370,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     return retArr;
   }
 
-  /// Prases the abstract syntax tree, identifier expression
+  /// Parses the abstract syntax tree, identifier expression
   ///
   /// @param ast          the AST object to parse
   /// @param retArr       return array string
@@ -404,7 +404,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     return retArr;
   }
 
-  /// Prases the abstract syntax tree, genericially to its respective function
+  /// Parses the abstract syntax tree, genericially to its respective function
   ///
   /// @param ast   the AST object to parse
   ///
@@ -730,7 +730,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
 
   /// Utility function for astCallExpression.
   ///
-  /// Prases the abstract syntax tree, binary expression.
+  /// Parses the abstract syntax tree, binary expression.
   ///
   /// @param ast          the AST object to parse
   ///
@@ -759,7 +759,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
    );
   }
 
-  /// Prases the abstract syntax tree, binary expression
+  /// Parses the abstract syntax tree, binary expression
   ///
   /// @param ast          the AST object to parse
   /// @param retArr       return array string
@@ -815,7 +815,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     return retArr;
   }
 
-  /// Prases the abstract syntax tree, Array Expression
+  /// Parses the abstract syntax tree, Array Expression
   ///
   /// @param ast          the AST object to parse
   /// @param retArr       return array string

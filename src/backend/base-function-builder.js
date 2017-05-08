@@ -152,7 +152,7 @@ module.exports = class BaseFunctionBuilder {
 	/// 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	///
   webGlPrototypeString(functionName) {
-    this.rootKernel.build();
+    this.rootKernel.generate();
 		if(functionName) {
 			return this.webGlPrototypeStringFromFunctionNames(this.traceFunctionCalls(functionName, []).reverse());
 		}

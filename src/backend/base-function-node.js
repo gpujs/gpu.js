@@ -53,8 +53,8 @@ module.exports = class BaseFunctionNode {
     //
     // Missing jsFunction object exception
     //
-    if(jsFunction === null) {
-      throw 'jsFunction, parameter is null';
+    if(!jsFunction) {
+      throw 'jsFunction, parameter is missing';
     }
 
     //
@@ -185,6 +185,7 @@ module.exports = class BaseFunctionNode {
   /// 	{String} webgl function string, result is cached under this.webGlFunctionString
   ///
   getFunctionString() {
+    this.generate();
     return this.functionString;
   }
 
@@ -200,7 +201,7 @@ module.exports = class BaseFunctionNode {
     this.functionString = functionString;
   }
 
-  build(options) {
-    throw new Error('build not defined on BaseFunctionNode');
+  generate(options) {
+    throw new Error('generate not defined on BaseFunctionNode');
   }
 };

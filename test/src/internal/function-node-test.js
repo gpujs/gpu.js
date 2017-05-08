@@ -4,19 +4,18 @@
 
 /// Test the creation of a hello_world function
 QUnit.test( "hello_world: just return magic 42", function( assert ) {
-	assert.notEqual( functionNode, null, "script include check" );
+	assert.notEqual( GPU.CPUFunctionNode, null, "script include check" );
 	
 	// Create a function hello node
-	var node = new functionNode(
-		null,
+	var node = new GPU.GPUFunctionNode(
 		"hello_world",
 		function() {
 			return 42;
 		}
-	)
+	);
 	
 	assert.notEqual( node, null, "class creation check" );
-	assert.notEqual( node.getJS_AST(), null, "AST fetch check" );
+	assert.notEqual( node.getJsAST(), null, "AST fetch check" );
 	
 	assert.equal(
 		node.getFunctionString().replace(/\s+/g,' '),
@@ -27,23 +26,22 @@ QUnit.test( "hello_world: just return magic 42", function( assert ) {
 
 /// Test creation of function, that calls another function
 QUnit.test( "hello_inner: call a funciton inside a function", function( assert ) {
-	assert.notEqual( functionNode, null, "script include check" );
+	assert.notEqual( GPU.CPUFunctionNode, null, "script include check" );
 	
 	function inner() {
 		return 42;
 	}
 	
 	// Create a function hello node
-	var node = new functionNode(
-		null,
+	var node = new GPU.GPUFunctionNode(
 		"hello_inner",
 		function() {
 			return inner();
 		}
-	)
+	);
 	
 	assert.notEqual( node, null, "class creation check" );
-	assert.notEqual( node.getJS_AST(), null, "AST fetch check" );
+	assert.notEqual( node.getJsAST(), null, "AST fetch check" );
 	
 	assert.equal(
 		node.getFunctionString().replace(/\s+/g,' '),
@@ -57,16 +55,15 @@ QUnit.test( "hello_inner: call a funciton inside a function", function( assert )
 /// Test creation of function, that calls another function, with ARGS
 QUnit.test( "Math.round implementation: A function with arguments", function( assert ) {
 	// Math.round node
-	var node = new functionNode(
-		null,
+	var node = new GPU.GPUFunctionNode(
 		"round",
 		function(a) {
 			return Math.floor( a + 0.5 );
 		}
-	)
+	);
 	
 	assert.notEqual( node, null, "class creation check" );
-	assert.notEqual( node.getJS_AST(), null, "AST fetch check" );
+	assert.notEqual( node.getJsAST(), null, "AST fetch check" );
 	
 	assert.equal(
 		node.getFunctionString().replace(/\s+/g,' ').replace(/user_/g,''),
@@ -80,16 +77,15 @@ QUnit.test( "Math.round implementation: A function with arguments", function( as
 /// Test creation of function, that calls another function, with ARGS
 QUnit.test( "Two arguments test", function( assert ) {
 	
-	var node = new functionNode(
-		null,
+	var node = new GPU.GPUFunctionNode(
 		"add_together",
 		function(a,b) {
 			return a+b;
 		}
-	)
+	);
 	
 	assert.notEqual( node, null, "class creation check" );
-	assert.notEqual( node.getJS_AST(), null, "AST fetch check" );
+	assert.notEqual( node.getJsAST(), null, "AST fetch check" );
 	
 	assert.equal(
 		node.getFunctionString().replace(/\s+/g,' ').replace(/user_/g,''),
@@ -100,13 +96,13 @@ QUnit.test( "Two arguments test", function( assert ) {
 
 /// Test the creation of a hello_world function
 QUnit.test( "Automatic naming support", function( assert ) {
-	assert.notEqual( functionNode, null, "script include check" );
+	assert.notEqual( GPU.CPUFunctionNode, null, "script include check" );
 	
 	function hello_world() {
 		return 42;
 	}
 	// Create a function hello node
-	var node = new functionNode(null, null, hello_world);
+	var node = new GPU.CPUFunctionNode(null, hello_world);
 	assert.notEqual( node, null, "class creation check" );
 	assert.equal( node.functionName, "hello_world" );
 });

@@ -6,7 +6,6 @@ const CPUFunctionBuilder = require('./cpu-function-builder');
 module.exports = class CPURunner extends BaseRunner {
   constructor() {
     super(new CPUFunctionBuilder());
-    this._canvas = utils.initCanvas();
     this.Kernel = CPUKernel;
     this.kernel = null;
   }

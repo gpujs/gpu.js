@@ -1,5 +1,5 @@
 function nested_sum_AB_test( assert, mode ) {
-	var gpu = new GPU();
+	var gpu = new GPU({ mode: mode });
 	
 	var f = gpu.createKernel(function(a, b) {
 		function custom_adder(a,b) {
@@ -8,8 +8,7 @@ function nested_sum_AB_test( assert, mode ) {
 		
 		return custom_adder(a[this.thread.x], b[this.thread.x]);
 	}, {
-		dimensions : [6],
-		mode : mode
+		dimensions : [6]
 	});
 	
 	assert.ok( f !== null, "function generated test");

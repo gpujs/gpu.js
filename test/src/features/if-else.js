@@ -32,7 +32,7 @@ QUnit.test( "booleanBranch (CPU)", function() {
 
 
 function if_else( mode ) {
-	var gpu = new GPU();
+	var gpu = new GPU({ mode });
 	var f = gpu.createKernel(function(x) {
 		if (x[this.thread.x] > 0) {
 			return 0;
@@ -40,12 +40,11 @@ function if_else( mode ) {
 			return 1;
 		}
 	}, {
-		dimensions : [4],
-		mode : mode
+		dimensions : [4]
 	});
 
 	QUnit.ok( f !== null, "function generated test");
-	QUnit.deepEqual(f([1, 1, 0, 0]), [0, 0, 1, 1], "basic return function test");
+	QUnit.deepEqual(QUnit.extend([], f([1, 1, 0, 0])), [0, 0, 1, 1], "basic return function test");
 }
 
 QUnit.test( "if_else (auto)", function() {
