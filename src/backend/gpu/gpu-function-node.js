@@ -458,6 +458,12 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
         return retArr;
       } else {
         retArr.push('for (float ');
+
+        if (!Array.isArray(forNode.init) || forNode.init.length < 1) {
+          console.log(this.jsFunctionString);
+          console.warn('Warning: Incompatible for loop declaration');
+        }
+
         this.astGeneric(forNode.init, retArr, funcParam);
         retArr.push(';');
         this.astGeneric(forNode.test, retArr, funcParam);
@@ -532,13 +538,13 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     return retArr;
   }
 
-   astExpressionStatement(esNode, retArr, funcParam) {
+  astExpressionStatement(esNode, retArr, funcParam) {
     this.astGeneric(esNode.expression, retArr, funcParam);
     retArr.push(';\n');
     return retArr;
   }
 
-   astVariableDeclaration(vardecNode, retArr, funcParam) {
+  astVariableDeclaration(vardecNode, retArr, funcParam) {
     retArr.push('float ');
     for (let i = 0; i < vardecNode.declarations.length; i++) {
       if (i > 0) {
@@ -550,8 +556,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     return retArr;
   }
 
-   astVariableDeclarator(ivardecNode, retArr, funcParam) {
-
+  astVariableDeclarator(ivardecNode, retArr, funcParam) {
     this.astGeneric(ivardecNode.id, retArr, funcParam);
     if (ivardecNode.init !== null) {
       retArr.push('=');
@@ -560,7 +565,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     return retArr;
   }
 
-   astIfStatement(ifNode, retArr, funcParam) {
+  astIfStatement(ifNode, retArr, funcParam) {
     retArr.push('if (');
     this.astGeneric(ifNode.test, retArr, funcParam);
     retArr.push(')');
@@ -586,17 +591,17 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
 
   }
 
-   astBreakStatement(brNode, retArr, funcParam) {
+  astBreakStatement(brNode, retArr, funcParam) {
     retArr.push('break;\n');
     return retArr;
   }
 
-   astContinueStatement(crNode, retArr, funcParam) {
+  astContinueStatement(crNode, retArr, funcParam) {
     retArr.push('continue;\n');
     return retArr;
   }
 
-   astLogicalExpression(logNode, retArr, funcParam) {
+  astLogicalExpression(logNode, retArr, funcParam) {
     retArr.push('(');
     this.astGeneric(logNode.left, retArr, funcParam);
     retArr.push(logNode.operator);
@@ -605,7 +610,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     return retArr;
   }
 
-   astUpdateExpression(uNode, retArr, funcParam) {
+  astUpdateExpression(uNode, retArr, funcParam) {
     if (uNode.prefix) {
       retArr.push(uNode.operator);
       this.astGeneric(uNode.argument, retArr, funcParam);
@@ -617,7 +622,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     return retArr;
   }
 
-   astUnaryExpression(uNode, retArr, funcParam) {
+  astUnaryExpression(uNode, retArr, funcParam) {
     if (uNode.prefix) {
       retArr.push(uNode.operator);
       this.astGeneric(uNode.argument, retArr, funcParam);
@@ -629,7 +634,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
     return retArr;
   }
 
-   astThisExpression(tNode, retArr, funcParam) {
+  astThisExpression(tNode, retArr, funcParam) {
     retArr.push('this');
     return retArr;
   }
@@ -657,8 +662,6 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
           retArr.push('[int(');
           this.astGeneric(mNode.property, retArr, funcParam);
           retArr.push(')]');
-
-          //console.log(mNode.property.operator);
         } else {
           // Get from texture
           // This normally refers to the global read only input vars
@@ -685,8 +688,6 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
         retArr.push(',');
         this.astGeneric(mNode.property, retArr, funcParam);
         retArr.push(')');
-
-        //console.log(mNode.property.operator);
       }
     } else {
 
@@ -823,7 +824,6 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
   ///
   /// @returns  the append retArr
   astArrayExpression(arrNode, retArr, funcParam) {
-    // console.log(arrNode);
     const arrLen = arrNode.elements.length;
 
     retArr.push('float['+arrLen+'](');
