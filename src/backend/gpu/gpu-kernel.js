@@ -298,7 +298,7 @@ void color(float r, float g, float b) {
 highp float kernelResult = 0.0;
 ${ paramStr }
 ${ constantsStr }
-${ builder.webGlPrototypeString('kernel') }
+${ builder.getPrototypeString('kernel') }
 
 void main(void) {
   index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;

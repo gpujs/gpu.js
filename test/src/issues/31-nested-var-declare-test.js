@@ -2,27 +2,28 @@
 // See: https://github.com/gpujs/gpu.js/issues/31
 //
 function nestedVarDeclareFunction() {
-	var ret = 0.0;
+	var result = 0.0;
 	
 	// outer loop limit is effectively skipped in CPU
 	for(var i=0; i<10; ++i) {
 		// inner loop limit should be higher, to avoid infinite loops
-		for(var j=0; j<20; ++j) {
-			ret += 1;
+		for(i=0; i<20; ++i) {
+      result += 1;
 		}
 	}
 	
-	return ret;
+	return result;
 }
 
 function nestedVarDeclareTest( mode ) {
 	var gpu = new GPU({ mode: mode });
 	var f = gpu.createKernel(nestedVarDeclareFunction, {
-		dimensions : [1]
+		dimensions : [1],
+    debug: mode === 'cpu'
 	});
 
 	QUnit.ok( f !== null, "function generated test");
-	QUnit.close(f(), 20, 0.00, "basic return function test");
+	QUnit.close(f(), (mode === null || mode === 'gpu' ? 200 : 20), 0.00, "basic return function test");
 }
 
 QUnit.test( "Issue #31 - nestedVarDeclare (auto)", function() {
@@ -42,17 +43,17 @@ QUnit.test( "Issue #31 - nestedVarDeclare : AST handling", function() {
 	builder.addFunction(null, nestedVarDeclareFunction);
 	
 	QUnit.equal(
-		builder.webGlStringFromFunctionNames(["nestedVarDeclareFunction"]).replace(new RegExp("\n", "g"), ""),
+		builder.getStringFromFunctionNames(["nestedVarDeclareFunction"]).replace(new RegExp("\n", "g"), ""),
 		"float nestedVarDeclareFunction() {"+
-			"float user_ret=0.0;"+
+			"float user_result=0.0;"+
 			""+
 			"for (float user_i=0.0;(user_i<10.0);++user_i){"+
-				"for (float user_j=0.0;(user_j<20.0);++user_j){"+
-					"user_ret+=1.0;"+
+				"for (float user_i=0.0;(user_i<20.0);++user_i){"+ //<-- Note: don't do this in real life!
+					"user_result+=1.0;"+
 				"}"+
 			"}"+
 			""+
-			"return user_ret;"+
+			"return user_result;"+
 		"}"
 	);
 });

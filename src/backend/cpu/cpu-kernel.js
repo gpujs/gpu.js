@@ -108,7 +108,15 @@ module.exports = class CPUKernel extends BaseKernel {
 
     runBody.push('return ret');
 
-    this.run = new Function(this.paramNames, '  ' + runBody.join(';\n  ') + ';');
+    const fnBodySrc = ` ${ runBody.join(';\n  ') };`;
+    if (this.debug) {
+      console.log('Options:');
+      console.dir(this);
+      console.log('Function Body Output:');
+      console.log(fnBodySrc);
+    }
+
+    this.run = new Function(this.paramNames, fnBodySrc);
   }
 
   color(r, g, b, a) {
