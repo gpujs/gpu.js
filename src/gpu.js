@@ -11,28 +11,34 @@ const GPUValidatorKernel = require('./backend/gpu/gpu-validator-kernel');
 module.exports = class GPU {
   constructor(settings) {
     settings = settings || {};
+    this.canvas = settings.canvas || utils.initCanvas();
+    this.webGl = settings.webGl;
     this._kernelSynchronousExecutor = null;
-    if (settings.mode) {
-      switch (settings.mode.toLowerCase()) {
+    let mode = settings.mode || 'gpu';
+    if (!utils.isWebGlSupported) {
+      console.warn('Warning: gpu not supported, falling back to cpu support');
+      mode = 'cpu';
+    }
+    const runnerSettings = {
+      canvas: this.canvas
+    };
+
+    if (mode) {
+      switch (mode.toLowerCase()) {
         case 'cpu':
-          this._runner = new CPURunner();
+          this._runner = new CPURunner(runnerSettings);
           break;
         case 'gpu':
-          this._runner = new GPURunner();
+          this._runner = new GPURunner(runnerSettings);
           break;
         case 'gpu-validator':
-          this._runner = new GPURunner();
+          this._runner = new GPURunner(runnerSettings);
           this._runner.Kernel = GPUValidatorKernel;
           break;
         default:
-          throw new Error(`"${settings.mode}" mode is not defined`);
+          throw new Error(`"${mode}" mode is not defined`);
       }
-      return;
     }
-
-    this._runner = utils.isWebGlSupported
-      ? new GPURunner()
-      : new CPURunner();
   }
 	///
 	/// Function: createKernel

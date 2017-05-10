@@ -14,19 +14,16 @@ const kernelRunShortcut = require('./kernel-run-shortcut');
 /// File isolation is currently the best way to go
 ///
 module.exports = class BaseRunner {
-	constructor(functionBuilder) {
-	  this.kernel = null;
+	constructor(functionBuilder, settings) {
+    settings = settings || {};
+	  this.kernel = settings.kernel;
+	  this.canvas = settings.canvas;
+	  this.webGl = settings.webGl;
     this.fn = null;
     this.functionBuilder = functionBuilder;
     this.fnString = null;
-		this.programCache = {};
 		this.endianness = utils.systemEndianness;
 		this.functionBuilder.polyfillStandardFunctions();
-	}
-
-	// Legacy method to get webgl : Preserved for backwards compatibility
-	getGl() {
-		return this._webGl;
 	}
 
 	textureToArray(texture) {
@@ -38,7 +35,7 @@ module.exports = class BaseRunner {
 	}
 
 	deleteTexture(texture) {
-		this._webgl.deleteTexture(texture.texture);
+		this.webGl.deleteTexture(texture.texture);
 	}
 
 	///
@@ -68,6 +65,14 @@ module.exports = class BaseRunner {
 
     if (!settings.functionBuilder) {
       settings.functionBuilder = this.functionBuilder;
+    }
+
+    if (!settings.canvas) {
+      settings.canvas = this.canvas;
+    }
+
+    if (!settings.webGl) {
+      settings.webGl = this.webGl;
     }
 
     return kernelRunShortcut(new this.Kernel(fnString, settings));
