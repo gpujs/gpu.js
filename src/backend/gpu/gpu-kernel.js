@@ -2,7 +2,6 @@ const BaseKernel = require('../base-kernel');
 const utils = require('../../utils');
 const Texture = require('../../texture');
 const GPUFunctionNode = require('./gpu-function-node');
-const GPUFunctionBuilder = require('./gpu-function-builder');
 
 module.exports = class GPUKernel extends BaseKernel {
   constructor(fnString, settings) {
@@ -10,11 +9,11 @@ module.exports = class GPUKernel extends BaseKernel {
     this.textureCache = {};
     this.threadDim = {};
     this.programUniformLocationCache = {};
-    this.frameBuffer = null;
-    this.framebufferCache = {};
+    this.framebuffer = null;
     this.buffer = null;
     this.program = null;
     this.functionBuilder = settings.functionBuilder;
+    this.outputToTexture = settings.outputToTexture;
     this.endianness = utils.systemEndianness;
   }
 
@@ -103,11 +102,13 @@ module.exports = class GPUKernel extends BaseKernel {
       if (this.hardcodeConstants) {
         if (argType === 'Array' || argType === 'Texture') {
           const paramDim = utils.getDimensions(arguments[i], true);
-          const paramSize = utils.dimToTexSize(gpu, paramDim);
+          const paramSize = utils.dimToTexSize(paramDim);
 
-          paramStr += 'uniform highp sampler2D user_' + paramNames[i] + ';\n';
-          paramStr += 'highp vec2 user_' + paramNames[i] + 'Size = vec2(' + paramSize[0] + '.0, ' + paramSize[1] + '.0);\n';
-          paramStr += 'highp vec3 user_' + paramNames[i] + 'Dim = vec3(' + paramDim[0] + '.0, ' + paramDim[1] + '.0, ' + paramDim[2] + '.0);\n';
+          paramStr += `
+  uniform highp sampler2D user_${ paramNames[i] };
+  highp vec2 user_${ paramNames[i] }Size = vec2(${ paramSize[0] }.0, ${ paramSize[1] }.0);
+  highp vec3 user_${ paramNames[i] }Dim = vec3(${ paramDim[0] }.0, ${ paramDim[1]}.0, ${ paramDim[2] }.0);
+`
         } else if (argType === 'Number' && Number.isInteger(arguments[i])) {
           paramStr += 'highp float user_' + paramNames[i] + ' = ' + arguments[i] + '.0;\n';
         } else if (argType === 'Number') {
@@ -115,11 +116,13 @@ module.exports = class GPUKernel extends BaseKernel {
         }
       } else {
         if (argType === 'Array' || argType === 'Texture') {
-          paramStr += 'uniform highp sampler2D user_' + paramNames[i] + ';\n';
-          paramStr += 'uniform highp vec2 user_' + paramNames[i] + 'Size;\n';
-          paramStr += 'uniform highp vec3 user_' + paramNames[i] + 'Dim;\n';
+          paramStr += `
+  uniform highp sampler2D user_${ paramNames[i] };
+  uniform highp vec2 user_${ paramNames[i] }Size;
+  uniform highp vec3 user_${ paramNames[i] }Dim;
+`;
         } else if (argType === 'Number') {
-          paramStr += 'uniform highp float user_' + paramNames[i] + ';\n';
+          paramStr += `uniform highp float user_${ paramNames[i] };\n`;
         }
       }
     }
@@ -154,17 +157,17 @@ precision highp float;
 precision highp int;
 precision highp sampler2D;
 
-const float LOOP_MAX = ${ (this.loopMaxIterations ? parseInt(this.loopMaxIterations)+'.0' : '100.0') };
+const float LOOP_MAX = ${ (this.loopMaxIterations ? parseInt(this.loopMaxIterations) + '.0' : '100.0') };
 #define EPSILON 0.0000001;
 
 ${ this.hardcodeConstants
-      ? `highp vec3 uOutputDim = vec3(${ threadDim[0] },${ threadDim[1] }, ${ threadDim[2] });`
-      : 'uniform highp vec3 uOutputDim;'
-      }
+  ? `highp vec3 uOutputDim = vec3(${ threadDim[0] },${ threadDim[1] }, ${ threadDim[2] });`
+  : 'uniform highp vec3 uOutputDim;'
+}
 ${ this.hardcodeConstants
-      ? `highp vec2 uTexSize = vec2(${ texSize[0] }, ${ texSize[1] });`
-      : 'uniform highp vec2 uTexSize;'
-      }
+  ? `highp vec2 uTexSize = vec2(${ texSize[0] }, ${ texSize[1] });`
+  : 'uniform highp vec2 uTexSize;'
+}
 
 varying highp vec2 vTexCoord;
 
@@ -209,9 +212,9 @@ const vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);
 const vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536
 highp float decode32(highp vec4 rgba) {
   ${ endianness === 'LE'
-      ? ''
-      : 'rgba.rgba = rgba.abgr;'
-      }
+    ? ''
+    : 'rgba.rgba = rgba.abgr;'
+  }
   rgba *= 255.0;
   vec2 gte128;
   gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;
@@ -238,9 +241,9 @@ highp vec4 encode32(highp float f) {
   rgba = floor(rgba);
   rgba *= 0.003921569; // 1/255
   ${ endianness === 'LE'
-      ? ''
-      : 'rgba.rgba = rgba.abgr;'
-      }
+    ? ''
+    : 'rgba.rgba = rgba.abgr;'
+  }
   return rgba;
 }
 // Dragons end here
@@ -260,21 +263,32 @@ highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, high
   highp vec3 xyz = vec3(x, y, z);
   xyz = floor(xyz + 0.5);
   ${ this.wraparound
-      ? 'xyz = mod(xyz, texDim);'
-      : ''
-      }
+    ? 'xyz = mod(xyz, texDim);'
+    : ''
+  }
   highp float index = round(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z));
-  ${ this.floatTextures ? 'int channel = int(integerMod(index, 4.0));' : '' }
-  ${ this.floatTextures ? 'index = float(int(index)/4);' : ''}
+  ${ this.floatTextures
+    ? `
+  int channel = int(integerMod(index, 4.0));
+  index = float(int(index)/4);
+`
+    : ''
+  }
   highp float w = round(texSize.x);
   vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;
-  ${ this.floatTextures ? '	index = float(int(index)/4);' : ''}
+  ${ this.floatTextures
+    ? 'index = float(int(index)/4);'
+    : ''
+  }
   highp vec4 texel = texture2D(tex, st / texSize);
-  ${ this.floatTextures ? 'if (channel == 0) return texel.r;' : '' }
-  ${ this.floatTextures ? 'if (channel == 1) return texel.g;' : '' }
-  ${ this.floatTextures ? 'if (channel == 2) return texel.b;' : '' }
-  ${ this.floatTextures ? 'if (channel == 3) return texel.a;' : '' }
-  ${ this.floatTextures ? '' : '	return decode32(texel);' }
+  ${ this.floatTextures
+    ? `
+  if (channel == 0) return texel.r;
+  if (channel == 1) return texel.g;
+  if (channel == 2) return texel.b;
+  if (channel == 3) return texel.a;
+`   : 'return decode32(texel);'
+  }
 }
 
 highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {
@@ -318,7 +332,7 @@ void main(void) {
     index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();
     gl_FragColor.a = kernelResult;`
       : `gl_FragColor = encode32(kernelResult);`
-      }
+    }
   }
 }`;
     const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -344,7 +358,7 @@ void main(void) {
       console.log('Options:');
       console.dir(this);
       console.log('GLSL Shader Output:');
-      console.log(fragShaderSrc);
+      console.log(fragShaderSrc, vertShaderSrc);
     }
 
     const program = this.program = gl.createProgram();
@@ -367,12 +381,14 @@ void main(void) {
       -1, -1,
       1, -1,
       -1, 1,
-      1, 1]);
+      1, 1
+    ]);
     const texCoords = new Float32Array([
-      0.0, 0.0,
-      1.0, 0.0,
-      0.0, 1.0,
-      1.0, 1.0]);
+      0, 0,
+      1, 0,
+      0, 1,
+      1, 1
+    ]);
     const gl = this.webGl;
     gl.useProgram(this.program);
 
@@ -457,7 +473,7 @@ void main(void) {
         paramSize = arguments[textureCount].size;
         texture = arguments[textureCount].texture;
 
-        gl.activeTexture(gl['TEXTURE'+textureCount]);
+        gl.activeTexture(gl['TEXTURE' + textureCount]);
         gl.bindTexture(gl.TEXTURE_2D, texture);
 
         const paramLoc = this.getUniformLocation('user_' + paramNames[textureCount]);
@@ -506,14 +522,14 @@ void main(void) {
     if (this.outputToTexture) {
       // Don't retain a handle on the output texture, we might need to render on the same texture later
       delete textureCache[textureCount];
-      return new Texture(gpu, outputTexture, texSize, this.dimensions);
+      return new Texture(outputTexture, texSize, this.dimensions, this.webGl);
     } else {
       let result;
       if (this.floatOutput) {
-        result = new Float32Array(texSize[0]*texSize[1]*4);
+        result = new Float32Array(texSize[0] * texSize[1] * 4);
         gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.FLOAT, result);
       } else {
-        const bytes = new Uint8Array(texSize[0]*texSize[1]*4);
+        const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
         gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
         result = Float32Array.prototype.slice.call(new Float32Array(bytes.buffer));
       }

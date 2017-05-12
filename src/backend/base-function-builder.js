@@ -48,9 +48,6 @@ module.exports = class BaseFunctionBuilder {
 	addFunctionNode(inNode) {
 		this.nodeMap[inNode.functionName] = inNode;
 		if (inNode.isRootKernel) {
-		  if (this.rootKernel) {
-		    throw new Error('root kernel already defined');
-      }
 		  this.rootKernel = inNode;
     }
 	}

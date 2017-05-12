@@ -64,76 +64,35 @@ module.exports = class CPUKernel extends BaseKernel {
       threadDim.push(1);
     }
 
-    const fnBody = this._fnBody;
-    const canOptimize = fnBody.length < 500;
-    const runBody = [`var ret = new Array(${ threadDim[2] })`];
-
-    if (canOptimize) {
-      for (let z = 0; z < threadDim[2]; z++) {
-        runBody.push(
-          `ret[${ z }] = new Array(${ threadDim[1] })`,
-          `this.thread.z = ${ z }`
-        );
-        for (let y = 0; y < threadDim[1]; y++) {
-          runBody.push(
-            `ret[${ z }][${ y }] = new Array(${ threadDim[0] })`,
-            `this.thread.y = ${ y }`
-          );
-          for (let x = 0; x < threadDim[0]; x++) {
-            runBody.push(
-              `this.thread.x = ${ x }`,
-              fnBody.replace(/return[ ]/g, `ret[${ z }][${ y }][${ x }] = `)
-            );
-          }
-        }
-      }
-      if (this.dimensions.length === 1) {
-        runBody.push('ret = ret[0][0]');
-      } else if (this.dimensions.length === 2) {
-        runBody.push('ret = ret[0]');
-      }
-
-      runBody.push('return ret');
-
-      const fnBodySrc = ` ${ runBody.join(';') };`;
-      if (this.debug) {
-        console.log('Options:');
-        console.dir(this);
-        console.log('Function Body Output:');
-        console.log(fnBodySrc);
-      }
-
-      this.run = new Function(this.paramNames, fnBodySrc);
-    } else {
-      this._fn = new Function(this.paramNames, this._fnBody);
-      if (this.debug) {
-        console.log('Options:');
-        console.dir(this);
-      }
-      this.run = function() {
-        if (this.graphical) {
-          this._imageData = this._canvasCtx.createImageData(threadDim[0], threadDim[1]);
-          this._colorData = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
-        }
-
-        const ret = new Array(threadDim[2]);
-        for (this.thread.z = 0; this.thread.z < threadDim[2]; this.thread.z++) {
-          ret[this.thread.z] = new Array(threadDim[1]);
-          for (this.thread.y = 0; this.thread.y < threadDim[1]; this.thread.y++) {
-            ret[this.thread.z][this.thread.y] = new Array(threadDim[0]);
-            for (this.thread.x = 0; this.thread.x < threadDim[0]; this.thread.x++) {
-              ret[this.thread.z][this.thread.y][this.thread.x] = this._fn.apply(this, arguments);
-            }
-          }
-        }
-
-        if (this.graphical) {
-          this._imageData.data.set(this._colorData);
-          this._canvasCtx.putImageData(this._imageData, 0, 0);
-        }
-        return ret;
-      }.bind(this);
+    this._fn = new Function(this.paramNames, this._fnBody);
+    if (this.debug) {
+      console.log('Options:');
+      console.dir(this);
     }
+    this.run = function() {
+      if (this.graphical) {
+        this._imageData = this._canvasCtx.createImageData(threadDim[0], threadDim[1]);
+        this._colorData = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
+      }
+
+      const ret = new Array(threadDim[2]);
+      for (this.thread.z = 0; this.thread.z < threadDim[2]; this.thread.z++) {
+        ret[this.thread.z] = new Array(threadDim[1]);
+        for (this.thread.y = 0; this.thread.y < threadDim[1]; this.thread.y++) {
+          ret[this.thread.z][this.thread.y] = new Array(threadDim[0]);
+          for (this.thread.x = 0; this.thread.x < threadDim[0]; this.thread.x++) {
+            ret[this.thread.z][this.thread.y][this.thread.x] = this._fn.apply(this, arguments);
+          }
+        }
+      }
+
+      if (this.graphical) {
+        this._imageData.data.set(this._colorData);
+        this._canvasCtx.putImageData(this._imageData, 0, 0);
+      }
+      return ret;
+    }.bind(this);
+
 
     if (this.graphical) {
       const canvas = this.canvas;

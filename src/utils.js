@@ -422,7 +422,6 @@ const utils = class utils {
 		}
 
     const GPU = require('./');
-
 		const x = new GPU({ mode: 'gpu-validator' }).createKernel(function() {
 			return 1;
 		}, {

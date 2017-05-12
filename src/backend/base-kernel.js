@@ -4,7 +4,6 @@ module.exports = class BaseKernel {
   constructor(fnString, settings) {
     this.paramNames = utils.getParamNamesFromString(fnString);
     this.fnString = fnString;
-    this.processor = null;
     this.dimensions = [];
     this.debug = false;
     this.graphical = false;
