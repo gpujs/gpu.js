@@ -1,31 +1,23 @@
-var fs = require('fs');
-var gulp = require('gulp');
-var concat = require('gulp-concat');
-var rename = require("gulp-rename");
-var uglify = require('gulp-uglify');
-var gutil = require('gulp-util');
-var header = require('gulp-header');
-var browserSync = require("browser-sync");
-
-var pkg = require('./package.json');
+const fs = require('fs');
+const gulp = require('gulp');
+const concat = require('gulp-concat');
+const rename = require('gulp-rename');
+const uglify = require('gulp-uglify');
+const gutil = require('gulp-util');
+const header = require('gulp-header');
+const browserSync = require('browser-sync');
+const browserify = require('browserify');
+const source = require('vinyl-source-stream');
+const buffer = require('vinyl-buffer');
+const pkg = require('./package.json');
 
 /// Build the scripts
 gulp.task('build', function() {
-	return gulp.src([
-			'src/parser.js',
-			'src/utils.js',
-			'src/texture.js',
-			'src/backend/GPUCore.js',
-			'src/gpu.js',
-			'src/backend/functionNode_webgl.js',
-			'src/backend/functionNode.js',
-			'src/backend/functionBuilder.js',
-			'src/backend/mode_cpu.js',
-			'src/backend/mode_gpu.js',
-			'src/wrapper/suffix.js'
-		])
-		.pipe(concat('gpu.js'))
-		.pipe(header(fs.readFileSync('src/wrapper/prefix.js', 'utf8'), { pkg : pkg } ))
+  browserify('./src/index.js')
+    .bundle()
+    .pipe(source('gpu.js'))
+    .pipe(buffer())
+		.pipe(header(fs.readFileSync('./src/wrapper/prefix.js', 'utf8'), { pkg : pkg }))
 		.pipe(gulp.dest('bin'));
 });
 
@@ -35,23 +27,23 @@ gulp.task('minify', ['build'], function() {
 		.pipe(rename('gpu.min.js'))
 		.pipe(uglify({
 			mangle: false,
-			preserveComments: "license"
+			preserveComments: 'license'
 		}).on('error', gutil.log))
 		.pipe(gulp.dest('bin'));
 });
 
 /// The browser sync prototyping
-gulp.task("bsync", function(){
+gulp.task('bsync', function(){
 	// Syncs browser
 	browserSync.init({
 		server: {
-			baseDir: "./"
+			baseDir: './'
 		},
 		open: true
 	});
 
 	// Detect change -> rebuild TS
-	gulp.watch(["src/**.js"], ["minify"]);
+	gulp.watch(['src/**.js'], ['minify']);
 });
 
 /// Auto rebuild and host

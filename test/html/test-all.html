@@ -6,16 +6,37 @@
 	<link rel="stylesheet" href="../lib/qunit-1.20.0.css">
 
 	<!-- gpu.js scripts -->
-	<script src="../../src/parser.js"></script>
-	<script src="../../src/backend/GPUCore.js"></script>
-	<script src="../../src/gpu.js"></script>
-	<script src="../../src/utils.js"></script>
-	<script src="../../src/texture.js"></script>
-	<script src="../../src/backend/functionNode_webgl.js"></script>
-	<script src="../../src/backend/functionNode.js"></script>
-	<script src="../../src/backend/functionBuilder.js"></script>
-	<script src="../../src/backend/mode_gpu.js"></script>
-	<script src="../../src/backend/mode_cpu.js"></script>
+	<script src="../../bin/gpu.js"></script>
+  <!--<script>-->
+    <!--var gpu = new GPU({ mode: 'gpu' });-->
+
+    <!--var sum1 = gpu.createKernel(function(a, b) {-->
+      <!--function custom_adder(a,b) {-->
+        <!--return a+b;-->
+      <!--}-->
+
+      <!--return custom_adder(a[this.thread.x], b[this.thread.x]);-->
+    <!--}, {-->
+      <!--dimensions : [6],-->
+      <!--outputToTexture: true-->
+    <!--});-->
+
+    <!--var sum2 = gpu.createKernel(function(a, b) {-->
+      <!--return a+b;-->
+    <!--}, {-->
+      <!--dimensions : [6],-->
+      <!--outputToTexture: true-->
+    <!--});-->
+
+    <!--var a = [1, 2, 3, 5, 6, 7];-->
+    <!--var b = [4, 5, 6, 1, 2, 3];-->
+    <!--var c = [2, 1, 4, .5, 9, 0];-->
+
+    <!--console.log(sum1(a,b));-->
+    <!--var res = sum2(sum1(a,b).toArray(), c);-->
+
+    <!--console.log(res);-->
+  <!--</script>-->
 </head>
 <body>
 	<div id="qunit"></div>
@@ -23,22 +44,22 @@
 	<script src="../lib/qunit-1.20.0.js"></script>
 
 	<!-- features -->
-	<script src="../src/features/promiseApi.js"></script>
-	<script src="../src/features/function_return.js"></script>
-	<script src="../src/features/sum_AB.js"></script>
-	<script src="../src/features/mult_AB.js"></script>
-	<script src="../src/features/if_else.js"></script>
-	<script src="../src/features/for_loop.js"></script>
-	<script src="../src/features/addCustomFunction.js"></script>
-	<script src="../src/features/nestedFunction.js"></script>
-	<script src="../src/features/getCanvas.js"></script>
+	<script src="../src/features/promise-api.js"></script>
+	<script src="../src/features/function-return.js"></script>
+	<script src="../src/features/sum-ab.js"></script>
+	<script src="../src/features/mult-ab.js"></script>
+	<script src="../src/features/if-else.js"></script>
+	<script src="../src/features/for-loop.js"></script>
+	<script src="../src/features/add-custom-function.js"></script>
+	<script src="../src/features/nested-function.js"></script>
+	<script src="../src/features/get-canvas.js"></script>
 
 	<!-- internal -->
-	<script src="../src/internal/GPUUtils_test.js"></script>
-	<script src="../src/internal/functionNode_test.js"></script>
-	<script src="../src/internal/functionBuilder_test.js"></script>
-	
+	<script src="../src/internal/utils-test.js"></script>
+	<script src="../src/internal/function-node-test.js"></script>
+	<script src="../src/internal/function-builder-test.js"></script>
+
 	<!-- bug issues -->
-	<script src="../src/issues/31-nested-var-declare_test.js"></script>
+	<script src="../src/issues/31-nested-var-declare-test.js"></script>
 </body>
 </html>

@@ -24,8 +24,8 @@ QUnit.test( "sum_AB (auto)", function( assert ) {
 	sum_AB_test(assert, null);
 });
 
-QUnit.test( "sum_AB (GPU)", function( assert ) {
-	sum_AB_test(assert, "gpu");
+QUnit.test( "sum_AB (WebGL)", function( assert ) {
+	sum_AB_test(assert, "webgl");
 });
 
 QUnit.test( "sum_AB (CPU)", function( assert ) {

@@ -17,7 +17,7 @@ function threeLayerTemplate() {
 	}
 
 	// Create a function hello node
-	var builder = new functionBuilder();
+	var builder = new GPU.WebGLFunctionBuilder();
 	builder.addFunction(null, layerOne);
 	builder.addFunction(null, layerTwo);
 	builder.addFunction(null, layerThree);
@@ -26,7 +26,7 @@ function threeLayerTemplate() {
 
 /// Test the function tracing of 3 layers
 QUnit.test( "traceFunctionCalls: 3 layer test", function( assert ) {
-	assert.notEqual( functionBuilder, null, "script include check" );
+	assert.notEqual( GPU.WebGLFunctionBuilder, null, "script include check" );
 	var builder = threeLayerTemplate();
 	assert.notEqual( builder, null, "class creation check" );
 	
@@ -37,39 +37,39 @@ QUnit.test( "traceFunctionCalls: 3 layer test", function( assert ) {
 
 /// Test the function tracing of 3 layers
 QUnit.test( "webglString: 3 layer test", function( assert ) {
-	assert.notEqual( functionBuilder, null, "script include check" );
+	assert.notEqual( GPU.WebGLFunctionBuilder, null, "script include check" );
 	var builder = threeLayerTemplate();
 	assert.notEqual( builder, null, "class creation check" );
 	
 	assert.equal(
-		builder.webglString_fromFunctionNames(["layerOne"]),
+		builder.getStringFromFunctionNames(["layerOne"]),
 		"float layerOne() {\nreturn 42.0;\n}"
 	);
 	assert.equal(
-		builder.webglString("layerOne"),
-		builder.webglString_fromFunctionNames(["layerOne"])
+		builder.getString("layerOne"),
+		builder.getStringFromFunctionNames(["layerOne"])
 	);
 	
 	assert.equal(
-		builder.webglString_fromFunctionNames(["layerOne","layerTwo"]),
+		builder.getStringFromFunctionNames(["layerOne","layerTwo"]),
 		"float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}"
 	);
 	assert.equal(
-		builder.webglString("layerTwo"),
-		builder.webglString_fromFunctionNames(["layerOne","layerTwo"])
+		builder.getString("layerTwo"),
+		builder.getStringFromFunctionNames(["layerOne","layerTwo"])
 	);
 	
 	
 	assert.equal(
-		builder.webglString_fromFunctionNames(["layerOne","layerTwo","layerThree"]),
+		builder.getStringFromFunctionNames(["layerOne","layerTwo","layerThree"]),
 		"float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}\nfloat layerThree() {\nreturn (layerTwo()*2.0);\n}"
 	);
 	assert.equal(
-		builder.webglString("layerThree"),
-		builder.webglString_fromFunctionNames(["layerOne","layerTwo","layerThree"])
+		builder.getString("layerThree"),
+		builder.getStringFromFunctionNames(["layerOne","layerTwo","layerThree"])
 	);
 	assert.equal(
-		builder.webglString(null),
-		builder.webglString("layerThree")
+		builder.getString(null),
+		builder.getString("layerThree")
 	);
 });

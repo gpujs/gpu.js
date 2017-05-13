@@ -1,11 +1,47 @@
+const utils = require('./utils');
+const WebGLRunner = require('./backend/web-gl/runner');
+const CPURunner = require('./backend/cpu/runner');
+const WebGLValidatorKernel = require('./backend/web-gl/validator-kernel');
+
 ///
 /// Class: GPU
 ///
 /// Initialises the GPU.js library class which manages the WebGL context for the created functions.
 ///
-var GPU = (function() {
-	var GPU = GPUCore;
-	
+module.exports = class GPU {
+  constructor(settings) {
+    settings = settings || {};
+    this.canvas = settings.canvas;
+    this.webGl = settings.webGl;
+    this._kernelSynchronousExecutor = null;
+    let mode = settings.mode || 'webgl';
+    if (!utils.isWebGlSupported) {
+      console.warn('Warning: gpu not supported, falling back to cpu support');
+      mode = 'cpu';
+    }
+    const runnerSettings = {
+      canvas: this.canvas,
+      webGl: this.webGl
+    };
+
+    if (mode) {
+      switch (mode.toLowerCase()) {
+        case 'cpu':
+          this._runner = new CPURunner(runnerSettings);
+          break;
+        case 'gpu':
+        case 'webgl':
+          this._runner = new WebGLRunner(runnerSettings);
+          break;
+        case 'webgl-validator':
+          this._runner = new WebGLRunner(runnerSettings);
+          this._runner.Kernel = WebGLValidatorKernel;
+          break;
+        default:
+          throw new Error(`"${mode}" mode is not defined`);
+      }
+    }
+  }
 	///
 	/// Function: createKernel
 	///
@@ -17,87 +53,37 @@ var GPU = (function() {
 	/// | Name          | Default value | Description                                                               |
 	/// |---------------|---------------|---------------------------------------------------------------------------|
 	/// | dimensions    | [1024]        | Thread dimension array                                                    |
-	/// | mode          | null          | CPU / GPU configuration mode, "auto" / null. Has the following modes.     |
-	/// |               |               |     + null / "auto" : Attempts to build GPU mode, else fallbacks          |
-	/// |               |               |     + "gpu" : Attempts to build GPU mode, else fallbacks                  |
-	/// |               |               |     + "cpu" : Forces JS fallback mode only                                |
+	/// | mode          | null          | CPU / GPU configuration mode, 'auto' / null. Has the following modes.     |
+	/// |               |               |     + null / 'auto' : Attempts to build GPU mode, else fallbacks          |
+	/// |               |               |     + 'gpu' : Attempts to build GPU mode, else fallbacks                  |
+	/// |               |               |     + 'cpu' : Forces JS fallback mode only                                |
 	/// |---------------|---------------|---------------------------------------------------------------------------|
 	///
 	/// Parameters:
 	/// 	inputFunction   {JS Function} The calling to perform the conversion
-	/// 	paramObj        {Object}      The parameter configuration object (see above)
+	/// 	settings        {Object}      The parameter configuration object (see above)
 	///
 	/// Returns:
 	/// 	callable function to run
 	///
-	function createKernel(kernel, paramObj) {
+  createKernel(fn, settings) {
 		//
 		// basic parameters safety checks
 		//
-		if( kernel === undefined ) {
-			throw "Missing kernel parameter";
+		if(typeof fn === 'undefined') {
+			throw 'Missing fn parameter';
 		}
-		if( !GPUUtils.isFunction(kernel) ) {
-			throw "kernel parameter not a function";
+		if(!utils.isFunction(fn)) {
+			throw 'fn parameter not a function';
 		}
-		if( paramObj === undefined ) {
-			paramObj = {};
-		}
-		
-		//
-		// Replace the kernel function and param object
-		//
-		this._kernelFunction = kernel;
-		this._kernelParamObj = paramObj || this._kernelParamObj || {};
-		
-		//
-		// Get the config, fallbacks to default value if not set
-		//
-		var mode = paramObj.mode && paramObj.mode.toLowerCase();
-		this.computeMode = mode || "auto";
-		
-		//
-		// Get the Synchronous executor
-		//
-		var ret = this.getSynchronousModeExecutor();
-		// Allow class refence from function
-		ret.gpujs = this;
-		// Execute callback
-		ret.exec = ret.execute = GPUUtils.functionBinder( this.execute, this );
-		
-		// The Synchronous kernel
-		this._kernelSynchronousExecutor = ret; //For exec to reference
-		
-		return ret;
-	};
-	GPU.prototype.createKernel = createKernel;
-	
-	///
-	/// Function: getKernelFunction
-	///
-	/// Get and returns the kernel function previously set by `createKernel`
-	///
-	/// Returns:
-	/// 	{JS Function}  The calling input function
-	///
-	function getKernelFunction() {
-		return this._kernelFunction;
+
+    return this._kernelSynchronousExecutor = this._runner.buildKernel(fn, settings || {});
 	}
-	GPU.prototype.getKernelFunction = getKernelFunction;
-	
-	///
-	/// Function: getKernelParamObj
-	///
-	/// Get and returns the kernel parameter object previously set by `createKernel`
-	///
-	/// Returns:
-	/// 	{JS Function}  The calling input function
-	///
-	function getKernelParamObj() {
-		return this._kernelParamObj;
-	}
-	GPU.prototype.getKernelParamObj = getKernelParamObj;
-	
+
+	get computeMode() {
+    return this._runner.mode;
+  }
+
 	///
 	/// Function: executeKernel
 	///
@@ -109,31 +95,31 @@ var GPU = (function() {
 	/// Returns:
 	/// 	{Promise} returns the promise object for the result / failure
 	///
-	function execute() {
+  execute() {
 		//
 		// Prepare the required objects
 		//
-		var args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
-		var self = this;
-		
+		const args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
+
 		//
 		// Setup and return the promise, and execute the function, in synchronous mode
 		//
-		return GPUUtils.newPromise(function(accept,reject) {
+		return utils.newPromise((accept,reject) => {
 			try {
-				accept( self._kernelSynchronousExecutor.apply(self, args) );
+				accept(this._kernelSynchronousExecutor.apply(this._kernelSynchronousExecutor, args));
 			} catch (e) {
 				//
 				// Error : throw rejection
 				//
 				reject(e);
-				return;
 			}
 		});
 	}
-	GPU.prototype.execute = execute;
-	GPU.prototype.exec = execute;
-	
+
+	get exec() {
+    return this.execute.bind(this);
+  }
+
 	///
 	/// Function: addFunction
 	///
@@ -141,87 +127,37 @@ var GPU = (function() {
 	///
 	/// Parameters:
 	/// 	jsFunction      - {JS Function}  JS Function to do conversion
-	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are "float" if null
-	/// 	returnType      - {String}       The return type, assumes "float" if null
+	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are 'float' if null
+	/// 	returnType      - {String}       The return type, assumes 'float' if null
 	///
-	/// Retuns:
+	/// Returns:
 	/// 	{GPU} returns itself
 	///
-	function addFunction( jsFunction, paramTypeArray, returnType  ) {
-		this.functionBuilder.addFunction( null, jsFunction, paramTypeArray, returnType );
+  addFunction(jsFunction, paramTypeArray, returnType) {
+		this._runner.functionBuilder.addFunction(null, jsFunction, paramTypeArray, returnType);
 		return this;
 	}
-	GPU.prototype.addFunction = addFunction;
-	
+
 	///
-	/// Function: getWebgl
+	/// Function: isWebGlSupported
 	///
-	/// [DEPRECATED] Returns the internal gpu webgl instance only if it has been initiated
+	/// Return TRUE, if browser supports WebGl AND Canvas
 	///
-	/// Retuns:
-	/// 	{WebGL object} that the instance use
-	///
-	function getWebgl() {
-		// if( this.webgl == null ) {
-		// 	this.webgl = GPUUtils.init_webgl( getCanvas("gpu") );
-		// }
-		if( this.webgl ) {
-			return this.webgl;
-		}
-		throw "only call getWebgl after createKernel(gpu)"
-	};
-	GPU.prototype.getWebgl = getWebgl;
-	
-	///
-	/// Function: getCanvas
-	///
-	/// [DEPRECATED] Returns the internal canvas instance only if it has been initiated
-	///
-	/// Retuns:
-	/// 	{Canvas object} that the instance use
-	///
-	function getCanvas(mode) {
-		// if(mode == "gpu") {
-		// 	if(this._canvas_gpu == null) {
-		// 		this._canvas_gpu = GPUUtils.init_canvas();
-		// 	}
-		// 	return this._canvas_gpu;
-		// } else if(mode == "cpu") {
-		// 	if(this._canvas_cpu == null) {
-		// 		this._canvas_cpu = GPUUtils.init_canvas();
-		// 	}
-		// 	return this._canvas_cpu;
-		// } else {
-		// 	if( this._canvas_gpu || this._canvas_cpu ) {
-		// 		return (this._canvas_gpu || this._canvas_cpu );
-		// 	}
-		// 	// if( this._canvas_gpu || this._canvas_cpu ) {
-		// 	//
-		// 	// }
-		// 	throw "Missing valid mode parameter in getCanvas("+mode+")"
-		// }
-		if( this.canvas ) {
-			return this.canvas;
-		}
-		throw "only call getCanvas after createKernel()"
-	};
-	GPU.prototype.getCanvas = getCanvas;
-	
-	///
-	/// Function: supportWebgl
-	///
-	/// Return TRUE, if browser supports webgl AND canvas
-	///
-	/// Note: This function can also be called directly `GPU.supportWebgl()`
+	/// Note: This function can also be called directly `GPU.isWebGlSupported()`
 	///
 	/// Returns:
 	/// 	{Boolean} TRUE if browser supports webgl
 	///
-	function supportWebgl() {
-		return GPUUtils.browserSupport_webgl();
+  static isWebGlSupported() {
+		return utils.isWebGlSupported;
 	}
-	GPU.prototype.supportWebgl = supportWebgl;
-	GPU.supportWebgl = supportWebgl;
-	
-	return GPU;
-})();
+
+  isWebGlSupported() {
+    return utils.isWebGlSupported;
+  }
+
+  getCanvas() {
+    return this._kernelSynchronousExecutor.canvas;
+  }
+};
+

@@ -251,7 +251,8 @@ VariableDeclarationListNoIn
         }
     | VariableDeclarationListNoIn "," VariableDeclarationNoIn
         {
-            $$ = $1.concat($3);
+            $1.push.apply($1, $3);
+            $$ = $1;
         }
     ;
 
