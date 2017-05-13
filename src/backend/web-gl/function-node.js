@@ -644,12 +644,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
       if (mNode.object.type === 'Identifier') {
         // Working logger
         const reqName = mNode.object.name;
-        const funcName = funcParam.funcName || 'kernel';
+        const funcName = funcParam.functionName || 'kernel';
         let assumeNotTexture = false;
 
         // Possibly an array request - handle it as such
-        if (funcParam !== 'kernel' && funcParam.paramNames) {
-          var idx = funcParam.paramNames.indexOf(reqName);
+        if (funcParam.paramNames) {
+          const idx = funcParam.paramNames.indexOf(reqName);
           if (idx >= 0 && funcParam.paramType[idx] === 'float') {
             assumeNotTexture = true;
           }
@@ -686,7 +686,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
         const last = retArr.pop();
         retArr.push(',');
         this.astGeneric(mNode.property, retArr, funcParam);
-        retArr.push(')');
+        retArr.push(last);
       }
     } else {
 
