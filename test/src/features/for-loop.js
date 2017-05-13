@@ -29,8 +29,8 @@ QUnit.test( "for_loop (auto)", function( assert ) {
 	for_loop_test(assert, null);
 });
 
-QUnit.test( "for_loop (GPU)", function( assert ) {
-	for_loop_test(assert, "gpu");
+QUnit.test( "for_loop (WebGL)", function( assert ) {
+	for_loop_test(assert, "webgl");
 });
 
 QUnit.test( "for_loop (CPU)", function( assert ) {
@@ -85,8 +85,8 @@ QUnit.test( "for_loop (CPU)", function( assert ) {
 		evil_while_loop_test(assert, null);
 	});
 
-	QUnit.test( "evil_while_loop (GPU)", function( assert ) {
-		evil_while_loop_test(assert, "gpu");
+	QUnit.test( "evil_while_loop (WebGL)", function( assert ) {
+		evil_while_loop_test(assert, "webgl");
 	});
 
 	QUnit.test( "evil_while_loop (CPU)", function( assert ) {

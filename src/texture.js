@@ -1,18 +1,24 @@
-var GPUTexture = (function() {
-    function GPUTexture(gpu, texture, size, dimensions) {
-        this.gpu = gpu;
-        this.texture = texture;
-        this.size = size;
-        this.dimensions = dimensions;
+let gpu = null;
+module.exports = class Texture {
+  constructor(texture, size, dimensions, webGl) {
+    this.texture = texture;
+    this.size = size;
+    this.dimensions = dimensions;
+    this.webGl = webGl;
+  }
+
+  toArray() {
+    if (gpu === null) {
+      gpu = new GPU({ mode: 'webgl' });
     }
+    const copy = gpu.createKernel(function(x) {
+      return x[this.thread.z][this.thread.y][this.thread.x];
+    });
 
-    GPUTexture.prototype.toArray = function() {
-        return this.gpu.textureToArray(this);
-    };
+    return copy(this.texture);
+  }
 
-    GPUTexture.prototype.delete = function() {
-        return this.gpu.deleteTexture(this);
-    };
-
-    return GPUTexture;
-})();
+  delete() {
+    return this.webGl.deleteTexture(this.texture);
+  }
+};

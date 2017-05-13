@@ -2,7 +2,7 @@ function getCanvasTest( assert, mode ) {
 	var gpu = new GPU();
 	
 	assert.throws( function() { 
-		gpu.getCanvas()
+		gpu.getCanvas();
 	}, "testing for canvas exception createKernel" );
 	
 	var render = gpu.createKernel(function() {
@@ -10,7 +10,7 @@ function getCanvasTest( assert, mode ) {
 	}, {
 		dimensions : [30,30],
 		mode : mode
-	}).graphical(true);;
+	}).setGraphical(true);
 	
 	assert.ok( render !== null, "function generated test");
 	
@@ -33,8 +33,8 @@ QUnit.test( "getCanvas (auto)", function( assert ) {
 	getCanvasTest(assert, null);
 });
 
-QUnit.test( "getCanvas (GPU)", function( assert ) {
-	getCanvasTest(assert, "gpu");
+QUnit.test( "getCanvas (WebGL)", function( assert ) {
+	getCanvasTest(assert, "webgl");
 });
 
 QUnit.test( "getCanvas (CPU)", function( assert ) {

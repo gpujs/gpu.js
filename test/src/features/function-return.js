@@ -15,8 +15,8 @@ QUnit.test( "function_return (auto)", function() {
 	function_return(null);
 });
 
-QUnit.test( "function_return (GPU)", function() {
-	function_return("gpu");
+QUnit.test( "function_return (WebGL)", function() {
+	function_return("webgl");
 });
 
 QUnit.test( "function_return (CPU)", function() {

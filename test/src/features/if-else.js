@@ -1,16 +1,17 @@
 function booleanBranch( mode ) {
-	var gpu = new GPU();
+	var gpu = new GPU({
+    mode: mode
+  });
 	var f = gpu.createKernel(function() {
-		var ret = 0.0;
+		var result = 0.0;
 		if(true) {
-			ret = 4.0;
+      result = 4.0;
 		} else {
-			ret = 2.0;
+      result = 2.0;
 		}
-		return ret;
+		return result;
 	}, {
-		dimensions : [1],
-		mode : mode
+		dimensions : [1]
 	});
 
 	QUnit.ok( f !== null, "function generated test");
@@ -21,8 +22,8 @@ QUnit.test( "booleanBranch (auto)", function() {
 	booleanBranch(null);
 });
 
-QUnit.test( "booleanBranch (GPU)", function() {
-	booleanBranch("gpu");
+QUnit.test( "booleanBranch (WebGL)", function() {
+	booleanBranch("webgl");
 });
 
 QUnit.test( "booleanBranch (CPU)", function() {
@@ -31,7 +32,7 @@ QUnit.test( "booleanBranch (CPU)", function() {
 
 
 function if_else( mode ) {
-	var gpu = new GPU();
+	var gpu = new GPU({ mode });
 	var f = gpu.createKernel(function(x) {
 		if (x[this.thread.x] > 0) {
 			return 0;
@@ -39,20 +40,19 @@ function if_else( mode ) {
 			return 1;
 		}
 	}, {
-		dimensions : [4],
-		mode : mode
+		dimensions : [4]
 	});
 
 	QUnit.ok( f !== null, "function generated test");
-	QUnit.deepEqual(f([1, 1, 0, 0]), [0, 0, 1, 1], "basic return function test");
+	QUnit.deepEqual(QUnit.extend([], f([1, 1, 0, 0])), [0, 0, 1, 1], "basic return function test");
 }
 
 QUnit.test( "if_else (auto)", function() {
 	if_else(null);
 });
 
-QUnit.test( "if_else (GPU)", function() {
-	if_else("gpu");
+QUnit.test( "if_else (WebGL)", function() {
+	if_else("webgl");
 });
 
 QUnit.test( "if_else (CPU)", function() {
