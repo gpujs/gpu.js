@@ -10,5 +10,5 @@
 /// @license <%= pkg.license %>
 /// The MIT License
 ///
-/// Copyright (c) <%= new Date().getFullYear() %> Fazli Sapuan, Matthew Saw and Eugene Cheah
+/// Copyright (c) <%= new Date().getFullYear() %> gpu.js Team
 ///
