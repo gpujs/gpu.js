@@ -17,7 +17,7 @@ function threeLayerTemplate() {
 	}
 
 	// Create a function hello node
-	var builder = new GPU.GPUFunctionBuilder();
+	var builder = new GPU.WebGLFunctionBuilder();
 	builder.addFunction(null, layerOne);
 	builder.addFunction(null, layerTwo);
 	builder.addFunction(null, layerThree);
@@ -26,7 +26,7 @@ function threeLayerTemplate() {
 
 /// Test the function tracing of 3 layers
 QUnit.test( "traceFunctionCalls: 3 layer test", function( assert ) {
-	assert.notEqual( GPU.GPUFunctionBuilder, null, "script include check" );
+	assert.notEqual( GPU.WebGLFunctionBuilder, null, "script include check" );
 	var builder = threeLayerTemplate();
 	assert.notEqual( builder, null, "class creation check" );
 	
@@ -37,7 +37,7 @@ QUnit.test( "traceFunctionCalls: 3 layer test", function( assert ) {
 
 /// Test the function tracing of 3 layers
 QUnit.test( "webglString: 3 layer test", function( assert ) {
-	assert.notEqual( GPU.GPUFunctionBuilder, null, "script include check" );
+	assert.notEqual( GPU.WebGLFunctionBuilder, null, "script include check" );
 	var builder = threeLayerTemplate();
 	assert.notEqual( builder, null, "class creation check" );
 	

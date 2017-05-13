@@ -32,8 +32,8 @@ QUnit.test( "Promise API : function_return (auto)", function(assert) {
 	promiseApi_function_return(assert, null);
 });
 
-QUnit.test( "Promise API : function_return (GPU)", function(assert) {
-	promiseApi_function_return(assert, "gpu");
+QUnit.test( "Promise API : function_return (WebGL)", function(assert) {
+	promiseApi_function_return(assert, "webgl");
 });
 
 QUnit.test( "Promise API : function_return (CPU)", function(assert) {

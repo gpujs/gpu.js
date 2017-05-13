@@ -1,10 +1,10 @@
-const BaseFunctionBuilder = require('../base-function-builder');
-const GPUFunctionNode = require('./gpu-function-node');
+const FunctionBuilderBase = require('../function-builder-base');
+const WebGLFunctionNode = require('./function-node');
 
-module.exports = class GPUFunctionBuilder extends BaseFunctionBuilder {
+module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
   addFunction(functionName, jsFunction, paramTypeArray, returnType) {
     this.addFunctionNode(
-      new GPUFunctionNode(functionName, jsFunction, paramTypeArray, returnType)
+      new WebGLFunctionNode(functionName, jsFunction, paramTypeArray, returnType)
         .setAddFunction(this.addFunction.bind(this))
     );
   }

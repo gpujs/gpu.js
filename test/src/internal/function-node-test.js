@@ -7,7 +7,7 @@ QUnit.test( "hello_world: just return magic 42", function( assert ) {
 	assert.notEqual( GPU.CPUFunctionNode, null, "script include check" );
 	
 	// Create a function hello node
-	var node = new GPU.GPUFunctionNode(
+	var node = new GPU.WebGLFunctionNode(
 		"hello_world",
 		function() {
 			return 42;
@@ -33,7 +33,7 @@ QUnit.test( "hello_inner: call a funciton inside a function", function( assert )
 	}
 	
 	// Create a function hello node
-	var node = new GPU.GPUFunctionNode(
+	var node = new GPU.WebGLFunctionNode(
 		"hello_inner",
 		function() {
 			return inner();
@@ -55,7 +55,7 @@ QUnit.test( "hello_inner: call a funciton inside a function", function( assert )
 /// Test creation of function, that calls another function, with ARGS
 QUnit.test( "Math.round implementation: A function with arguments", function( assert ) {
 	// Math.round node
-	var node = new GPU.GPUFunctionNode(
+	var node = new GPU.WebGLFunctionNode(
 		"round",
 		function(a) {
 			return Math.floor( a + 0.5 );
@@ -77,7 +77,7 @@ QUnit.test( "Math.round implementation: A function with arguments", function( as
 /// Test creation of function, that calls another function, with ARGS
 QUnit.test( "Two arguments test", function( assert ) {
 	
-	var node = new GPU.GPUFunctionNode(
+	var node = new GPU.WebGLFunctionNode(
 		"add_together",
 		function(a,b) {
 			return a+b;

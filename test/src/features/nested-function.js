@@ -28,8 +28,8 @@ QUnit.test( "nested_sum (auto)", function( assert ) {
 	nested_sum_AB_test(assert, null);
 });
 
-QUnit.test( "nested_sum (GPU)", function( assert ) {
-	nested_sum_AB_test(assert, "gpu");
+QUnit.test( "nested_sum (WebGL)", function( assert ) {
+	nested_sum_AB_test(assert, "webgl");
 });
 
 QUnit.test( "nested_sum (CPU)", function( assert ) {

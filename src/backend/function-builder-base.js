@@ -8,7 +8,7 @@
 /// Properties:
 /// 	nodeMap - {Object} Object map, where nodeMap[function] = new FunctionNode;
 ///
-module.exports = class BaseFunctionBuilder {
+module.exports = class FunctionBuilderBase {
 	
 	///
 	/// Function: functionBuilder

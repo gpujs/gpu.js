@@ -1,7 +1,7 @@
-const GPUKernel = require('./gpu-kernel');
+const WebGLKernel = require('./kernel');
 const utils = require('../../utils');
 
-module.exports = class GPUValidatorKernel extends GPUKernel {
+module.exports = class WebGLValidatorKernel extends WebGLKernel {
   validateOptions() {
     this.texSize = utils.dimToTexSize({
       floatTextures: this.floatTextures,

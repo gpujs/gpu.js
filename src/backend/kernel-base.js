@@ -25,6 +25,8 @@ module.exports = class BaseKernel {
       if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
       this[p] = settings[p];
     }
+
+    if (!this.canvas) this.canvas = utils.initCanvas();
   }
 
   build() {

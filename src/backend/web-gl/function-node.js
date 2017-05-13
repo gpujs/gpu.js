@@ -1,4 +1,4 @@
-const BaseFunctionNode = require('../base-function-node');
+const FunctionNodeBase = require('../function-node-base');
 // Closure capture for the ast function, prevent collision with existing AST functions
 /// Function: functionNodeWebGl
 ///
@@ -64,10 +64,9 @@ function astErrorOutput(error, ast, funcParam) {
   return error;
 }
 
-module.exports = class GPUFunctionNode extends BaseFunctionNode {
+module.exports = class WebGLFunctionNode extends FunctionNodeBase {
   constructor(functionName, jsFunction, paramTypeArray, returnType) {
     super(functionName, jsFunction, paramTypeArray, returnType);
-    this.gpu = null;
     this.opt = null;
   }
 
@@ -77,7 +76,7 @@ module.exports = class GPUFunctionNode extends BaseFunctionNode {
       console.log(this);
     }
     if (opt.prototypeOnly) {
-      return GPUFunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
+      return WebGLFunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
     } else {
       this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
     }

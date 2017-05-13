@@ -1,7 +1,7 @@
 const utils = require('./utils');
-const GPURunner = require('./backend/gpu/gpu-runner');
-const CPURunner = require('./backend/cpu/cpu-runner');
-const GPUValidatorKernel = require('./backend/gpu/gpu-validator-kernel');
+const WebGLRunner = require('./backend/web-gl/runner');
+const CPURunner = require('./backend/cpu/runner');
+const WebGLValidatorKernel = require('./backend/web-gl/validator-kernel');
 
 ///
 /// Class: GPU
@@ -11,16 +11,17 @@ const GPUValidatorKernel = require('./backend/gpu/gpu-validator-kernel');
 module.exports = class GPU {
   constructor(settings) {
     settings = settings || {};
-    this.canvas = settings.canvas || utils.initCanvas();
+    this.canvas = settings.canvas;
     this.webGl = settings.webGl;
     this._kernelSynchronousExecutor = null;
-    let mode = settings.mode || 'gpu';
+    let mode = settings.mode || 'webgl';
     if (!utils.isWebGlSupported) {
       console.warn('Warning: gpu not supported, falling back to cpu support');
       mode = 'cpu';
     }
     const runnerSettings = {
-      canvas: this.canvas
+      canvas: this.canvas,
+      webGl: this.webGl
     };
 
     if (mode) {
@@ -29,11 +30,12 @@ module.exports = class GPU {
           this._runner = new CPURunner(runnerSettings);
           break;
         case 'gpu':
-          this._runner = new GPURunner(runnerSettings);
+        case 'webgl':
+          this._runner = new WebGLRunner(runnerSettings);
           break;
-        case 'gpu-validator':
-          this._runner = new GPURunner(runnerSettings);
-          this._runner.Kernel = GPUValidatorKernel;
+        case 'webgl-validator':
+          this._runner = new WebGLRunner(runnerSettings);
+          this._runner.Kernel = WebGLValidatorKernel;
           break;
         default:
           throw new Error(`"${mode}" mode is not defined`);
@@ -152,6 +154,10 @@ module.exports = class GPU {
 
   isWebGlSupported() {
     return utils.isWebGlSupported;
+  }
+
+  getCanvas() {
+    return this._kernelSynchronousExecutor.canvas;
   }
 };
 

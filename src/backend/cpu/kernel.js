@@ -1,7 +1,7 @@
-const BaseKernel = require('../base-kernel');
+const KernelBase = require('../kernel-base');
 const utils = require('../../utils');
 
-module.exports = class CPUKernel extends BaseKernel {
+module.exports = class CPUKernel extends KernelBase {
   constructor(fnString, settings) {
     super(fnString, settings);
     this._fnBody = utils.getFunctionBodyFromString(fnString);
@@ -75,7 +75,7 @@ module.exports = class CPUKernel extends BaseKernel {
         this._colorData = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
       }
 
-      const ret = new Array(threadDim[2]);
+      let ret = new Array(threadDim[2]);
       for (this.thread.z = 0; this.thread.z < threadDim[2]; this.thread.z++) {
         ret[this.thread.z] = new Array(threadDim[1]);
         for (this.thread.y = 0; this.thread.y < threadDim[1]; this.thread.y++) {
@@ -90,6 +90,13 @@ module.exports = class CPUKernel extends BaseKernel {
         this._imageData.data.set(this._colorData);
         this._canvasCtx.putImageData(this._imageData, 0, 0);
       }
+
+      if (this.dimensions.length === 1) {
+        ret = ret[0][0];
+      } else if (this.dimensions.length === 2) {
+        ret = ret[0];
+      }
+
       return ret;
     }.bind(this);
 

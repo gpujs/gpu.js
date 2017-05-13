@@ -30,8 +30,8 @@ QUnit.test( "addCustomFunction_sumAB (auto)", function( assert ) {
 	addCustomFunction_sumAB(assert, null);
 });
 
-QUnit.test( "addCustomFunction_sumAB (GPU)", function( assert ) {
-	addCustomFunction_sumAB(assert, "gpu");
+QUnit.test( "addCustomFunction_sumAB (WebGL)", function( assert ) {
+	addCustomFunction_sumAB(assert, "webgl");
 });
 
 QUnit.test( "addCustomFunction_sumAB (CPU)", function( assert ) {

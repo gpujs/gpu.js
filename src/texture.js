@@ -9,7 +9,7 @@ module.exports = class Texture {
 
   toArray() {
     if (gpu === null) {
-      gpu = new GPU({ mode: 'gpu' });
+      gpu = new GPU({ mode: 'webgl' });
     }
     const copy = gpu.createKernel(function(x) {
       return x[this.thread.z][this.thread.y][this.thread.x];

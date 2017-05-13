@@ -23,15 +23,15 @@ function nestedVarDeclareTest( mode ) {
 	});
 
 	QUnit.ok( f !== null, "function generated test");
-	QUnit.close(f(), (mode === null || mode === 'gpu' ? 200 : 20), 0.00, "basic return function test");
+	QUnit.close(f(), (mode === null || mode === 'webgl' ? 200 : 20), 0.00, "basic return function test");
 }
 
 QUnit.test( "Issue #31 - nestedVarDeclare (auto)", function() {
 	nestedVarDeclareTest(null);
 });
 
-QUnit.test( "Issue #31 - nestedVarDeclare (GPU)", function() {
-	nestedVarDeclareTest("gpu");
+QUnit.test( "Issue #31 - nestedVarDeclare (WebGL)", function() {
+	nestedVarDeclareTest("webgl");
 });
 
 QUnit.test( "Issue #31 - nestedVarDeclare (CPU)", function() {
@@ -39,7 +39,7 @@ QUnit.test( "Issue #31 - nestedVarDeclare (CPU)", function() {
 });
 
 QUnit.test( "Issue #31 - nestedVarDeclare : AST handling", function() {
-	var builder = new GPU.GPUFunctionBuilder();
+	var builder = new GPU.WebGLFunctionBuilder();
 	builder.addFunction(null, nestedVarDeclareFunction);
 	
 	QUnit.equal(

@@ -1,7 +1,7 @@
-const BaseFunctionBuilder = require('../base-function-builder');
-const CPUFunctionNode = require('./cpu-function-node');
+const FunctionBuilderBase = require('../function-builder-base');
+const CPUFunctionNode = require('./function-node');
 
-module.exports = class CPUFunctionBuilder extends BaseFunctionBuilder {
+module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
   addFunction(functionName, jsFunction, paramTypeArray, returnType) {
     this.addFunctionNode(
       new CPUFunctionNode(functionName, jsFunction, paramTypeArray, returnType)

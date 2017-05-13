@@ -1,9 +1,9 @@
-const BaseKernel = require('../base-kernel');
+const KernelBase = require('../kernel-base');
 const utils = require('../../utils');
 const Texture = require('../../texture');
-const GPUFunctionNode = require('./gpu-function-node');
+const WebGLFunctionNode = require('./function-node');
 
-module.exports = class GPUKernel extends BaseKernel {
+module.exports = class WebGLKernel extends KernelBase {
   constructor(fnString, settings) {
     super(fnString, settings);
     this.textureCache = {};
@@ -15,6 +15,7 @@ module.exports = class GPUKernel extends BaseKernel {
     this.functionBuilder = settings.functionBuilder;
     this.outputToTexture = settings.outputToTexture;
     this.endianness = utils.systemEndianness;
+    if (!this.webGl) this.webGl = utils.initWebGl(this.canvas);
   }
 
   validateOptions() {
@@ -127,7 +128,7 @@ module.exports = class GPUKernel extends BaseKernel {
       }
     }
 
-    const kernelNode = new GPUFunctionNode('kernel', this.fnString);
+    const kernelNode = new WebGLFunctionNode('kernel', this.fnString);
     kernelNode.setAddFunction(builder.addFunction.bind(builder));
     kernelNode.paramNames = paramNames;
     kernelNode.paramType = paramType;
@@ -484,7 +485,7 @@ void main(void) {
         gl.uniform2fv(paramSizeLoc, paramSize);
         gl.uniform1i(paramLoc, textureCount);
       } else {
-        throw 'Input type not supported (GPU): ' + arguments[textureCount];
+        throw 'Input type not supported (WebGL): ' + arguments[textureCount];
       }
     }
     let textureCount = paramNames.length;

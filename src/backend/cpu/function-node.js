@@ -1,4 +1,4 @@
-const BaseFunctionNode = require('../base-function-node');
+const BaseFunctionNode = require('../function-node-base');
 
 ///
 /// Class: functionNode

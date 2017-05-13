@@ -9,7 +9,7 @@ function mult_AB_test( assert, mode ) {
 	}, {
 		dimensions : [3, 3]
 	});
-	
+
 	assert.ok( f !== null, "function generated test");
 	assert.deepEqual(f(
 		[
@@ -34,8 +34,8 @@ function mult_AB_test( assert, mode ) {
 QUnit.test( "mult_AB (auto)", function( assert ) {
 	mult_AB_test(assert, null);
 });
-QUnit.test( "mult_AB (GPU)", function( assert ) {
-	mult_AB_test(assert, "gpu");
+QUnit.test( "mult_AB (WebGL)", function( assert ) {
+	mult_AB_test(assert, "webgl");
 });
 QUnit.test( "mult_AB (CPU)", function( assert ) {
 	mult_AB_test(assert, "cpu");
@@ -48,12 +48,12 @@ function sqrt_AB_test( assert, mode ) {
 	}, {
 		dimensions : [6]
 	});
-	
+
 	assert.ok( f !== null, "function generated test");
-	
+
 	var a = [3, 4, 5, 6, 7, 8];
 	var b = [3, 4, 5, 6, 7, 8];
-	
+
 	var res = f(a,b);
 	var exp = [3, 4, 5, 6, 7, 8];
 
@@ -66,8 +66,8 @@ QUnit.test( "sqrt_AB (auto)", function( assert ) {
 	sqrt_AB_test(assert, null);
 });
 
-QUnit.test( "sqrt_AB (GPU)", function( assert ) {
-	sqrt_AB_test(assert, "gpu");
+QUnit.test( "sqrt_AB (WebGL)", function( assert ) {
+	sqrt_AB_test(assert, "webgl");
 });
 
 QUnit.test( "sqrt_AB (CPU)", function( assert ) {

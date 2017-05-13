@@ -22,8 +22,8 @@ QUnit.test( "booleanBranch (auto)", function() {
 	booleanBranch(null);
 });
 
-QUnit.test( "booleanBranch (GPU)", function() {
-	booleanBranch("gpu");
+QUnit.test( "booleanBranch (WebGL)", function() {
+	booleanBranch("webgl");
 });
 
 QUnit.test( "booleanBranch (CPU)", function() {
@@ -51,8 +51,8 @@ QUnit.test( "if_else (auto)", function() {
 	if_else(null);
 });
 
-QUnit.test( "if_else (GPU)", function() {
-	if_else("gpu");
+QUnit.test( "if_else (WebGL)", function() {
+	if_else("webgl");
 });
 
 QUnit.test( "if_else (CPU)", function() {

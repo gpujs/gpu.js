@@ -1,15 +1,15 @@
 const GPU = require('./gpu');
 const utils = require('./utils');
 
-const CPUFunctionBuilder = require('./backend/cpu/cpu-function-builder');
-const CPUFunctionNode = require('./backend/cpu/cpu-function-node');
-const CPUKernel = require('./backend/cpu/cpu-kernel');
-const CPURunner = require('./backend/cpu/cpu-runner');
+const CPUFunctionBuilder = require('./backend/cpu/function-builder');
+const CPUFunctionNode = require('./backend/cpu/function-node');
+const CPUKernel = require('./backend/cpu/kernel');
+const CPURunner = require('./backend/cpu/runner');
 
-const GPUFunctionBuilder = require('./backend/gpu/gpu-function-builder');
-const GPUFunctionNode = require('./backend/gpu/gpu-function-node');
-const GPUKernel = require('./backend/gpu/gpu-kernel');
-const GPURunner = require('./backend/gpu/gpu-runner');
+const WebGLFunctionBuilder = require('./backend/web-gl/function-builder');
+const WebGLFunctionNode = require('./backend/web-gl/function-node');
+const WebGLKernel = require('./backend/web-gl/kernel');
+const WebGLRunner = require('./backend/web-gl/runner');
 
 
 GPU.utils = utils;
@@ -19,10 +19,10 @@ GPU.CPUFunctionNode = CPUFunctionNode;
 GPU.CPUKernel = CPUKernel;
 GPU.CPURunner = CPURunner;
 
-GPU.GPUFunctionBuilder = GPUFunctionBuilder;
-GPU.GPUFunctionNode = GPUFunctionNode;
-GPU.GPUKernel = GPUKernel;
-GPU.GPURunner = GPURunner;
+GPU.WebGLFunctionBuilder = WebGLFunctionBuilder;
+GPU.WebGLFunctionNode = WebGLFunctionNode;
+GPU.WebGLKernel = WebGLKernel;
+GPU.WebGLRunner = WebGLRunner;
 
 if (typeof module !== 'undefined') {
   module.exports = GPU;
