@@ -140,12 +140,32 @@ You can find a [complete API reference here](http://gpu.rocks/api/).
 
 Documentation of the codebase is [automatically built](https://github.com/gpujs/gpu.js/wiki/Automatic-Documentation).
 
+# Contributors
+ 
+* Fazli Sapuan
+* Eugene Cheah
+* Matthew Saw
+* Robert Plummer
+* Juan Cazala
+* Daniel X Moore
+* Mark Theng
+* Varun Patro
+ 
+# Contributing
+ 
+Contributors are welcome! Create a merge request to the `develop` branch and we
+will gladly review it. If you wish to get write access to the repository,
+please email us and we will review your application and grant you access to
+the `develop` branch.
+ 
+We promise never to pass off your code as if we have written it.
+ 
 # License 
 
 The MIT License
 
-Copyright (c) 2016 Fazli Sapuan, Matthew Saw and Eugene Cheah
-
+Copyright (c) 2017 gpu.js Team
+ 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
