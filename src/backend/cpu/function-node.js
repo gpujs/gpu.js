@@ -22,7 +22,7 @@ const BaseFunctionNode = require('../function-node-base');
 /// 	writeVariables       - {[String,...]}  List of variables write operations occur
 ///
 module.exports = class CPUFunctionNode extends BaseFunctionNode {
-  generate(options) {
-    this.functionString = this.jsFunctionString;
-  }
+	generate(options) {
+		this.functionString = this.jsFunctionString;
+	}
 };

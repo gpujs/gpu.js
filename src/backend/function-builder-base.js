@@ -9,7 +9,7 @@
 /// 	nodeMap - {Object} Object map, where nodeMap[function] = new FunctionNode;
 ///
 module.exports = class FunctionBuilderBase {
-	
+
 	///
 	/// Function: functionBuilder
 	///
@@ -20,7 +20,7 @@ module.exports = class FunctionBuilderBase {
 		this.gpu = gpu;
 		this.rootKernel = null;
 	}
-	
+
 	///
 	/// Function: addFunction
 	///
@@ -34,9 +34,9 @@ module.exports = class FunctionBuilderBase {
 	/// 	returnType      - {String}       The return type, assumes 'float' if null
 	///
 	addFunction(functionName, jsFunction, paramTypeArray, returnType) {
-	  throw new Error('addFunction not supported on base');
+		throw new Error('addFunction not supported on base');
 	}
-	
+
 	///
 	/// Function: addFunctionNode
 	///
@@ -48,8 +48,8 @@ module.exports = class FunctionBuilderBase {
 	addFunctionNode(inNode) {
 		this.nodeMap[inNode.functionName] = inNode;
 		if (inNode.isRootKernel) {
-		  this.rootKernel = inNode;
-    }
+			this.rootKernel = inNode;
+		}
 	}
 
 	///
@@ -66,51 +66,51 @@ module.exports = class FunctionBuilderBase {
 	///
 	/// Returns:
 	/// 	{[String,...]}  Returning list of function names that is traced. Including itself.
-  traceFunctionCalls(functionName, retList) {
+	traceFunctionCalls(functionName, retList) {
 		functionName = functionName || 'kernel';
 		retList = retList || [];
 
 		const fNode = this.nodeMap[functionName];
-		if(fNode) {
+		if (fNode) {
 			// Check if function already exists
-			if(retList.indexOf(functionName) >= 0) {
+			if (retList.indexOf(functionName) >= 0) {
 				// Does nothing if already traced
 			} else {
 				retList.push(functionName);
-				
+
 				fNode.getFunctionString(); //ensure JS trace is done
-				for(let i = 0; i < fNode.calledFunctions.length; ++i) {
+				for (let i = 0; i < fNode.calledFunctions.length; ++i) {
 					this.traceFunctionCalls(fNode.calledFunctions[i], retList);
 				}
 			}
 		}
-		
+
 		return retList;
 	}
-	
 
-	
+
+
 	//---------------------------------------------------------
 	//
 	//  Polyfill stuff
 	//
 	//---------------------------------------------------------
-	
+
 	// Round function used in polyfill
-  static round(a) {
-	  return round(a);
+	static round(a) {
+		return round(a);
 	}
-	
+
 	///
 	/// Function: polyfillStandardFunctions
 	///
 	/// Polyfill in the missing Math functions (round)
 	///
-  polyfillStandardFunctions() {
+	polyfillStandardFunctions() {
 		this.addFunction('round', round);
 	}
 };
 
 function round(a) {
-  return Math.floor(a + 0.5);
+	return Math.floor(a + 0.5);
 }

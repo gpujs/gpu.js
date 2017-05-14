@@ -25,9 +25,8 @@ GPU.WebGLKernel = WebGLKernel;
 GPU.WebGLRunner = WebGLRunner;
 
 if (typeof module !== 'undefined') {
-  module.exports = GPU;
+	module.exports = GPU;
 }
 if (typeof window !== 'undefined') {
-  window.GPU = GPU;
+	window.GPU = GPU;
 }
-

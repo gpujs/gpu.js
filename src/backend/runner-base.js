@@ -15,13 +15,13 @@ const kernelRunShortcut = require('./kernel-run-shortcut');
 ///
 module.exports = class BaseRunner {
 	constructor(functionBuilder, settings) {
-    settings = settings || {};
-	  this.kernel = settings.kernel;
-	  this.canvas = settings.canvas;
-	  this.webGl = settings.webGl;
-    this.fn = null;
-    this.functionBuilder = functionBuilder;
-    this.fnString = null;
+		settings = settings || {};
+		this.kernel = settings.kernel;
+		this.canvas = settings.canvas;
+		this.webGl = settings.webGl;
+		this.fn = null;
+		this.functionBuilder = functionBuilder;
+		this.fnString = null;
 		this.endianness = utils.systemEndianness;
 		this.functionBuilder.polyfillStandardFunctions();
 	}
@@ -44,37 +44,37 @@ module.exports = class BaseRunner {
 	///
 	/// Note that there is no current implementation.
 	///
-  buildPromiseKernel() {
+	buildPromiseKernel() {
 		throw new Error('not yet implemented');
 	}
 
-  get mode() {
-    throw new Error('"mode" not implemented on BaseRunner');
-  }
+	get mode() {
+		throw new Error('"mode" not implemented on BaseRunner');
+	}
 
-  ///
-  /// Get and returns the Synchronous executor, of a class and kernel
-  /// Which returns the result directly after passing the arguments.
-  ///
-  buildKernel(fn, settings) {
-	  settings = Object.assign({}, settings || {});
-    const fnString = fn.toString();
-    if(!utils.isFunctionString(fnString)) {
-      throw 'Unable to get body of kernel function';
-    }
+	///
+	/// Get and returns the Synchronous executor, of a class and kernel
+	/// Which returns the result directly after passing the arguments.
+	///
+	buildKernel(fn, settings) {
+		settings = Object.assign({}, settings || {});
+		const fnString = fn.toString();
+		if (!utils.isFunctionString(fnString)) {
+			throw 'Unable to get body of kernel function';
+		}
 
-    if (!settings.functionBuilder) {
-      settings.functionBuilder = this.functionBuilder;
-    }
+		if (!settings.functionBuilder) {
+			settings.functionBuilder = this.functionBuilder;
+		}
 
-    if (!settings.canvas) {
-      settings.canvas = this.canvas;
-    }
+		if (!settings.canvas) {
+			settings.canvas = this.canvas;
+		}
 
-    if (!settings.webGl) {
-      settings.webGl = this.webGl;
-    }
+		if (!settings.webGl) {
+			settings.webGl = this.webGl;
+		}
 
-    return kernelRunShortcut(new this.Kernel(fnString, settings));
-  }
+		return kernelRunShortcut(new this.Kernel(fnString, settings));
+	}
 };
