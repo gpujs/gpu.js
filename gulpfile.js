@@ -10,13 +10,14 @@ const browserify = require('browserify');
 const source = require('vinyl-source-stream');
 const buffer = require('vinyl-buffer');
 const pkg = require('./package.json');
+const jsprettify = require('gulp-jsbeautifier');
 
 /// Build the scripts
 gulp.task('build', function() {
-  browserify('./src/index.js')
-    .bundle()
-    .pipe(source('gpu.js'))
-    .pipe(buffer())
+	browserify('./src/index.js')
+	.bundle()
+	.pipe(source('gpu.js'))
+	.pipe(buffer())
 		.pipe(header(fs.readFileSync('./src/wrapper/prefix.js', 'utf8'), { pkg : pkg }))
 		.pipe(gulp.dest('bin'));
 });
@@ -48,3 +49,17 @@ gulp.task('bsync', function(){
 
 /// Auto rebuild and host
 gulp.task('default', ['bsync']);
+
+
+/// Beautify source code
+/// Use before merge request
+/// Excludes the parser.js that was jison generated
+gulp.task('beautify', function() {
+	gulp.src(['src/**/*.js', '!src/parser.js'])
+		.pipe(jsprettify({
+			"indent_size": 3,
+			"indent_char": " ",
+			"indent_with_tabs": true
+		}))
+		.pipe(gulp.dest('src'));
+});
