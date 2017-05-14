@@ -4,138 +4,138 @@ const Texture = require('../../texture');
 const WebGLFunctionNode = require('./function-node');
 
 module.exports = class WebGLKernel extends KernelBase {
-  constructor(fnString, settings) {
-    super(fnString, settings);
-    this.textureCache = {};
-    this.threadDim = {};
-    this.programUniformLocationCache = {};
-    this.framebuffer = null;
-    this.buffer = null;
-    this.program = null;
-    this.functionBuilder = settings.functionBuilder;
-    this.outputToTexture = settings.outputToTexture;
-    this.endianness = utils.systemEndianness;
-    if (!this.webGl) this.webGl = utils.initWebGl(this.canvas);
-  }
+	constructor(fnString, settings) {
+		super(fnString, settings);
+		this.textureCache = {};
+		this.threadDim = {};
+		this.programUniformLocationCache = {};
+		this.framebuffer = null;
+		this.buffer = null;
+		this.program = null;
+		this.functionBuilder = settings.functionBuilder;
+		this.outputToTexture = settings.outputToTexture;
+		this.endianness = utils.systemEndianness;
+		if (!this.webGl) this.webGl = utils.initWebGl(this.canvas);
+	}
 
-  validateOptions() {
-    const isReadPixel = utils.isFloatReadPixelsSupported;
-    if (this.floatTextures === true && !utils.OES_texture_float) {
-      throw 'Float textures are not supported on this browser';
-    } else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
-      throw 'Float texture outputs are not supported on this browser';
-    } else if (this.floatTextures === undefined && utils.OES_texture_float) {
-      this.floatTextures = true;
-      this.floatOutput = isReadPixel && !this.graphical;
-    }
+	validateOptions() {
+		const isReadPixel = utils.isFloatReadPixelsSupported;
+		if (this.floatTextures === true && !utils.OES_texture_float) {
+			throw 'Float textures are not supported on this browser';
+		} else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
+			throw 'Float texture outputs are not supported on this browser';
+		} else if (this.floatTextures === undefined && utils.OES_texture_float) {
+			this.floatTextures = true;
+			this.floatOutput = isReadPixel && !this.graphical;
+		}
 
-    if (!this.dimensions || this.dimensions.length === 0) {
-      if (arguments.length !== 1) {
-        throw 'Auto dimensions only supported for kernels with only one input';
-      }
+		if (!this.dimensions || this.dimensions.length === 0) {
+			if (arguments.length !== 1) {
+				throw 'Auto dimensions only supported for kernels with only one input';
+			}
 
-      const argType = utils.getArgumentType(arguments[0]);
-      if (argType === 'Array') {
-        this.dimensions = utils.getDimensions(argType);
-      } else if (argType === 'Texture') {
-        this.dimensions = arguments[0].dimensions;
-      } else {
-        throw 'Auto dimensions not supported for input type: ' + argType;
-      }
-    }
+			const argType = utils.getArgumentType(arguments[0]);
+			if (argType === 'Array') {
+				this.dimensions = utils.getDimensions(argType);
+			} else if (argType === 'Texture') {
+				this.dimensions = arguments[0].dimensions;
+			} else {
+				throw 'Auto dimensions not supported for input type: ' + argType;
+			}
+		}
 
-    this.texSize = utils.dimToTexSize({
-      floatTextures: this.floatTextures,
-      floatOutput: this.floatOutput
-    }, this.dimensions, true);
+		this.texSize = utils.dimToTexSize({
+			floatTextures: this.floatTextures,
+			floatOutput: this.floatOutput
+		}, this.dimensions, true);
 
-    if (this.graphical) {
-      if (this.dimensions.length !== 2) {
-        throw 'Output must have 2 dimensions on graphical mode';
-      }
+		if (this.graphical) {
+			if (this.dimensions.length !== 2) {
+				throw 'Output must have 2 dimensions on graphical mode';
+			}
 
-      if (this.floatOutput) {
-        throw 'Cannot use graphical mode and float output at the same time';
-      }
+			if (this.floatOutput) {
+				throw 'Cannot use graphical mode and float output at the same time';
+			}
 
-      this.texSize = utils.clone(this.dimensions);
-    } else if (this.floatOutput === undefined && utils.OES_texture_float) {
-      this.floatOutput = true;
-    }
-  }
+			this.texSize = utils.clone(this.dimensions);
+		} else if (this.floatOutput === undefined && utils.OES_texture_float) {
+			this.floatOutput = true;
+		}
+	}
 
-  build() {
-    this.validateOptions();
-    const paramNames = this.paramNames;
-    const builder = this.functionBuilder;
-    const endianness = this.endianness;
-    const texSize = this.texSize;
-    const gl = this.webGl;
-    this.canvas.width = texSize[0];
-    this.canvas.height = texSize[1];
-    gl.viewport(0, 0, texSize[0], texSize[1]);
+	build() {
+		this.validateOptions();
+		const paramNames = this.paramNames;
+		const builder = this.functionBuilder;
+		const endianness = this.endianness;
+		const texSize = this.texSize;
+		const gl = this.webGl;
+		this.canvas.width = texSize[0];
+		this.canvas.height = texSize[1];
+		gl.viewport(0, 0, texSize[0], texSize[1]);
 
-    const threadDim = this.threadDim = utils.clone(this.dimensions);
-    while (threadDim.length < 3) {
-      threadDim.push(1);
-    }
+		const threadDim = this.threadDim = utils.clone(this.dimensions);
+		while (threadDim.length < 3) {
+			threadDim.push(1);
+		}
 
-    let constantsStr = '';
-    if (this.constants) {
-      for (let name in this.constants) {
-        if (!this.constants.hasOwnProperty(name)) continue;
-        let value = parseFloat(this.constants[name]);
+		let constantsStr = '';
+		if (this.constants) {
+			for (let name in this.constants) {
+				if (!this.constants.hasOwnProperty(name)) continue;
+				let value = parseFloat(this.constants[name]);
 
-        if (Number.isInteger(value)) {
-          constantsStr += 'const float constants_' + name + '=' + parseInt(value) + '.0;\n';
-        } else {
-          constantsStr += 'const float constants_' + name + '=' + parseFloat(value) + ';\n';
-        }
-      }
-    }
+				if (Number.isInteger(value)) {
+					constantsStr += 'const float constants_' + name + '=' + parseInt(value) + '.0;\n';
+				} else {
+					constantsStr += 'const float constants_' + name + '=' + parseFloat(value) + ';\n';
+				}
+			}
+		}
 
-    let paramStr = '';
+		let paramStr = '';
 
-    const paramType = [];
-    for (let i = 0; i < paramNames.length; i++) {
-      const argType = utils.getArgumentType(arguments[i]);
-      paramType.push(argType);
-      if (this.hardcodeConstants) {
-        if (argType === 'Array' || argType === 'Texture') {
-          const paramDim = utils.getDimensions(arguments[i], true);
-          const paramSize = utils.dimToTexSize(paramDim);
+		const paramType = [];
+		for (let i = 0; i < paramNames.length; i++) {
+			const argType = utils.getArgumentType(arguments[i]);
+			paramType.push(argType);
+			if (this.hardcodeConstants) {
+				if (argType === 'Array' || argType === 'Texture') {
+					const paramDim = utils.getDimensions(arguments[i], true);
+					const paramSize = utils.dimToTexSize(paramDim);
 
-          paramStr += `
+					paramStr += `
   uniform highp sampler2D user_${ paramNames[i] };
   highp vec2 user_${ paramNames[i] }Size = vec2(${ paramSize[0] }.0, ${ paramSize[1] }.0);
   highp vec3 user_${ paramNames[i] }Dim = vec3(${ paramDim[0] }.0, ${ paramDim[1]}.0, ${ paramDim[2] }.0);
 `
-        } else if (argType === 'Number' && Number.isInteger(arguments[i])) {
-          paramStr += 'highp float user_' + paramNames[i] + ' = ' + arguments[i] + '.0;\n';
-        } else if (argType === 'Number') {
-          paramStr += 'highp float user_' + paramNames[i] + ' = ' + arguments[i] + ';\n';
-        }
-      } else {
-        if (argType === 'Array' || argType === 'Texture') {
-          paramStr += `
+				} else if (argType === 'Number' && Number.isInteger(arguments[i])) {
+					paramStr += 'highp float user_' + paramNames[i] + ' = ' + arguments[i] + '.0;\n';
+				} else if (argType === 'Number') {
+					paramStr += 'highp float user_' + paramNames[i] + ' = ' + arguments[i] + ';\n';
+				}
+			} else {
+				if (argType === 'Array' || argType === 'Texture') {
+					paramStr += `
   uniform highp sampler2D user_${ paramNames[i] };
   uniform highp vec2 user_${ paramNames[i] }Size;
   uniform highp vec3 user_${ paramNames[i] }Dim;
 `;
-        } else if (argType === 'Number') {
-          paramStr += `uniform highp float user_${ paramNames[i] };\n`;
-        }
-      }
-    }
+				} else if (argType === 'Number') {
+					paramStr += `uniform highp float user_${ paramNames[i] };\n`;
+				}
+			}
+		}
 
-    const kernelNode = new WebGLFunctionNode('kernel', this.fnString);
-    kernelNode.setAddFunction(builder.addFunction.bind(builder));
-    kernelNode.paramNames = paramNames;
-    kernelNode.paramType = paramType;
-    kernelNode.isRootKernel = true;
-    builder.addFunctionNode(kernelNode);
+		const kernelNode = new WebGLFunctionNode('kernel', this.fnString);
+		kernelNode.setAddFunction(builder.addFunction.bind(builder));
+		kernelNode.paramNames = paramNames;
+		kernelNode.paramType = paramType;
+		kernelNode.isRootKernel = true;
+		builder.addFunctionNode(kernelNode);
 
-    const vertShaderSrc = `
+		const vertShaderSrc = `
 precision highp float;
 precision highp int;
 precision highp sampler2D;
@@ -151,9 +151,9 @@ void main(void) {
 }
 `;
 
-    const vertShader = gl.createShader(gl.VERTEX_SHADER);
+		const vertShader = gl.createShader(gl.VERTEX_SHADER);
 
-    const fragShaderSrc = `
+		const fragShaderSrc = `
 precision highp float;
 precision highp int;
 precision highp sampler2D;
@@ -336,226 +336,224 @@ void main(void) {
     }
   }
 }`;
-    const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+		const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 
-    gl.shaderSource(vertShader, vertShaderSrc);
-    gl.shaderSource(fragShader, fragShaderSrc);
+		gl.shaderSource(vertShader, vertShaderSrc);
+		gl.shaderSource(fragShader, fragShaderSrc);
 
-    gl.compileShader(vertShader);
-    gl.compileShader(fragShader);
+		gl.compileShader(vertShader);
+		gl.compileShader(fragShader);
 
-    if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
-      console.log(vertShaderSrc);
-      console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(vertShader));
-      throw 'Error compiling vertex shader';
-    }
-    if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
-      console.log(fragShaderSrc);
-      console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(fragShader));
-      throw 'Error compiling fragment shader';
-    }
+		if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
+			console.log(vertShaderSrc);
+			console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(vertShader));
+			throw 'Error compiling vertex shader';
+		}
+		if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
+			console.log(fragShaderSrc);
+			console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(fragShader));
+			throw 'Error compiling fragment shader';
+		}
 
-    if (this.debug) {
-      console.log('Options:');
-      console.dir(this);
-      console.log('GLSL Shader Output:');
-      console.log(fragShaderSrc, vertShaderSrc);
-    }
+		if (this.debug) {
+			console.log('Options:');
+			console.dir(this);
+			console.log('GLSL Shader Output:');
+			console.log(fragShaderSrc, vertShaderSrc);
+		}
 
-    const program = this.program = gl.createProgram();
-    gl.attachShader(program, vertShader);
-    gl.attachShader(program, fragShader);
-    gl.linkProgram(program);
-    this.framebuffer = gl.createFramebuffer();
-  }
+		const program = this.program = gl.createProgram();
+		gl.attachShader(program, vertShader);
+		gl.attachShader(program, fragShader);
+		gl.linkProgram(program);
+		this.framebuffer = gl.createFramebuffer();
+	}
 
-  run() {
-    if (this.program === null) {
-      this.build.apply(this, arguments);
-    }
-    const paramNames = this.paramNames;
-    const textureCache = this.textureCache;
-    const texSize = this.texSize;
-    const threadDim = this.threadDim;
-    const framebuffer = this.framebuffer;
-    const vertices = new Float32Array([
-      -1, -1,
-      1, -1,
-      -1, 1,
-      1, 1
-    ]);
-    const texCoords = new Float32Array([
-      0, 0,
-      1, 0,
-      0, 1,
-      1, 1
-    ]);
-    const gl = this.webGl;
-    gl.useProgram(this.program);
+	run() {
+		if (this.program === null) {
+			this.build.apply(this, arguments);
+		}
+		const paramNames = this.paramNames;
+		const textureCache = this.textureCache;
+		const texSize = this.texSize;
+		const threadDim = this.threadDim;
+		const framebuffer = this.framebuffer;
+		const vertices = new Float32Array([-1, -1,
+			1, -1, -1, 1,
+			1, 1
+		]);
+		const texCoords = new Float32Array([
+			0, 0,
+			1, 0,
+			0, 1,
+			1, 1
+		]);
+		const gl = this.webGl;
+		gl.useProgram(this.program);
 
-    const texCoordOffset = vertices.byteLength;
-    let buffer = this.buffer;
-    if (!buffer) {
-      buffer = this.buffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      gl.bufferData(gl.ARRAY_BUFFER, vertices.byteLength + texCoords.byteLength, gl.STATIC_DRAW);
-    } else {
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    }
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices);
-    gl.bufferSubData(gl.ARRAY_BUFFER, texCoordOffset, texCoords);
+		const texCoordOffset = vertices.byteLength;
+		let buffer = this.buffer;
+		if (!buffer) {
+			buffer = this.buffer = gl.createBuffer();
+			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+			gl.bufferData(gl.ARRAY_BUFFER, vertices.byteLength + texCoords.byteLength, gl.STATIC_DRAW);
+		} else {
+			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+		}
+		gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices);
+		gl.bufferSubData(gl.ARRAY_BUFFER, texCoordOffset, texCoords);
 
-    const aPosLoc = gl.getAttribLocation(this.program, 'aPos');
-    gl.enableVertexAttribArray(aPosLoc);
-    gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, gl.FALSE, 0, 0);
-    const aTexCoordLoc = gl.getAttribLocation(this.program, 'aTexCoord');
-    gl.enableVertexAttribArray(aTexCoordLoc);
-    gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
+		const aPosLoc = gl.getAttribLocation(this.program, 'aPos');
+		gl.enableVertexAttribArray(aPosLoc);
+		gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, gl.FALSE, 0, 0);
+		const aTexCoordLoc = gl.getAttribLocation(this.program, 'aTexCoord');
+		gl.enableVertexAttribArray(aTexCoordLoc);
+		gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 
-    if (!this.hardcodeConstants) {
-      const uOutputDimLoc = this.getUniformLocation('uOutputDim');
-      gl.uniform3fv(uOutputDimLoc, threadDim);
-      const uTexSizeLoc = this.getUniformLocation('uTexSize');
-      gl.uniform2fv(uTexSizeLoc, texSize);
-    }
+		if (!this.hardcodeConstants) {
+			const uOutputDimLoc = this.getUniformLocation('uOutputDim');
+			gl.uniform3fv(uOutputDimLoc, threadDim);
+			const uTexSizeLoc = this.getUniformLocation('uTexSize');
+			gl.uniform2fv(uTexSizeLoc, texSize);
+		}
 
-    for (let textureCount = 0; textureCount < paramNames.length; textureCount++) {
-      let paramDim, paramSize, texture;
-      const argType = utils.getArgumentType(arguments[textureCount]);
-      if (argType === 'Array') {
-        paramDim = utils.getDimensions(arguments[textureCount], true);
-        paramSize = utils.dimToTexSize(this, paramDim);
+		for (let textureCount = 0; textureCount < paramNames.length; textureCount++) {
+			let paramDim, paramSize, texture;
+			const argType = utils.getArgumentType(arguments[textureCount]);
+			if (argType === 'Array') {
+				paramDim = utils.getDimensions(arguments[textureCount], true);
+				paramSize = utils.dimToTexSize(this, paramDim);
 
-        if (textureCache[textureCount]) {
-          texture = textureCache[textureCount];
-        } else {
-          texture = gl.createTexture();
-          textureCache[textureCount] = texture;
-        }
+				if (textureCache[textureCount]) {
+					texture = textureCache[textureCount];
+				} else {
+					texture = gl.createTexture();
+					textureCache[textureCount] = texture;
+				}
 
-        gl.activeTexture(gl['TEXTURE' + textureCount]);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+				gl.activeTexture(gl['TEXTURE' + textureCount]);
+				gl.bindTexture(gl.TEXTURE_2D, texture);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-        let paramLength = paramSize[0] * paramSize[1];
-        if (this.floatTextures) {
-          paramLength *= 4;
-        }
+				let paramLength = paramSize[0] * paramSize[1];
+				if (this.floatTextures) {
+					paramLength *= 4;
+				}
 
-        const paramArray = new Float32Array(paramLength);
-        paramArray.set(utils.flatten(arguments[textureCount]));
+				const paramArray = new Float32Array(paramLength);
+				paramArray.set(utils.flatten(arguments[textureCount]));
 
-        let argBuffer;
-        if (this.floatTextures) {
-          argBuffer = new Float32Array(paramArray);
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.FLOAT, argBuffer);
-        } else {
-          argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
-        }
+				let argBuffer;
+				if (this.floatTextures) {
+					argBuffer = new Float32Array(paramArray);
+					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.FLOAT, argBuffer);
+				} else {
+					argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
+					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
+				}
 
-        const paramLoc = this.getUniformLocation('user_' + paramNames[textureCount]);
-        const paramSizeLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Size');
-        const paramDimLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Dim');
+				const paramLoc = this.getUniformLocation('user_' + paramNames[textureCount]);
+				const paramSizeLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Size');
+				const paramDimLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Dim');
 
-        if (!this.hardcodeConstants) {
-          gl.uniform3fv(paramDimLoc, paramDim);
-          gl.uniform2fv(paramSizeLoc, paramSize);
-        }
-        gl.uniform1i(paramLoc, textureCount);
-      } else if (argType === 'Number') {
-        const argLoc = this.getUniformLocation('user_' + paramNames[textureCount]);
-        gl.uniform1f(argLoc, arguments[textureCount]);
-      } else if (argType === 'Texture') {
-        paramDim = this.getDimensions(arguments[textureCount], true);
-        paramSize = arguments[textureCount].size;
-        texture = arguments[textureCount].texture;
+				if (!this.hardcodeConstants) {
+					gl.uniform3fv(paramDimLoc, paramDim);
+					gl.uniform2fv(paramSizeLoc, paramSize);
+				}
+				gl.uniform1i(paramLoc, textureCount);
+			} else if (argType === 'Number') {
+				const argLoc = this.getUniformLocation('user_' + paramNames[textureCount]);
+				gl.uniform1f(argLoc, arguments[textureCount]);
+			} else if (argType === 'Texture') {
+				paramDim = this.getDimensions(arguments[textureCount], true);
+				paramSize = arguments[textureCount].size;
+				texture = arguments[textureCount].texture;
 
-        gl.activeTexture(gl['TEXTURE' + textureCount]);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
+				gl.activeTexture(gl['TEXTURE' + textureCount]);
+				gl.bindTexture(gl.TEXTURE_2D, texture);
 
-        const paramLoc = this.getUniformLocation('user_' + paramNames[textureCount]);
-        const paramSizeLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Size');
-        const paramDimLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Dim');
+				const paramLoc = this.getUniformLocation('user_' + paramNames[textureCount]);
+				const paramSizeLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Size');
+				const paramDimLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Dim');
 
-        gl.uniform3fv(paramDimLoc, paramDim);
-        gl.uniform2fv(paramSizeLoc, paramSize);
-        gl.uniform1i(paramLoc, textureCount);
-      } else {
-        throw 'Input type not supported (WebGL): ' + arguments[textureCount];
-      }
-    }
-    let textureCount = paramNames.length;
-    let outputTexture = textureCache[textureCount];
-    if (!outputTexture) {
-      outputTexture = gl.createTexture();
-      textureCache[textureCount] = outputTexture;
-    }
-    gl.activeTexture(gl['TEXTURE' + textureCount]);
-    gl.bindTexture(gl.TEXTURE_2D, outputTexture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    if (this.floatOutput) {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-    } else {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    }
+				gl.uniform3fv(paramDimLoc, paramDim);
+				gl.uniform2fv(paramSizeLoc, paramSize);
+				gl.uniform1i(paramLoc, textureCount);
+			} else {
+				throw 'Input type not supported (WebGL): ' + arguments[textureCount];
+			}
+		}
+		let textureCount = paramNames.length;
+		let outputTexture = textureCache[textureCount];
+		if (!outputTexture) {
+			outputTexture = gl.createTexture();
+			textureCache[textureCount] = outputTexture;
+		}
+		gl.activeTexture(gl['TEXTURE' + textureCount]);
+		gl.bindTexture(gl.TEXTURE_2D, outputTexture);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		if (this.floatOutput) {
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+		} else {
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		}
 
-    if (this.graphical) {
-      gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      return;
-    }
+		if (this.graphical) {
+			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+			return;
+		}
 
-    framebuffer.width = texSize[0];
-    framebuffer.height = texSize[1];
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
+		framebuffer.width = texSize[0];
+		framebuffer.height = texSize[1];
+		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-    if (this.outputToTexture) {
-      // Don't retain a handle on the output texture, we might need to render on the same texture later
-      delete textureCache[textureCount];
-      return new Texture(outputTexture, texSize, this.dimensions, this.webGl);
-    } else {
-      let result;
-      if (this.floatOutput) {
-        result = new Float32Array(texSize[0] * texSize[1] * 4);
-        gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.FLOAT, result);
-      } else {
-        const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
-        gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
-        result = Float32Array.prototype.slice.call(new Float32Array(bytes.buffer));
-      }
+		if (this.outputToTexture) {
+			// Don't retain a handle on the output texture, we might need to render on the same texture later
+			delete textureCache[textureCount];
+			return new Texture(outputTexture, texSize, this.dimensions, this.webGl);
+		} else {
+			let result;
+			if (this.floatOutput) {
+				result = new Float32Array(texSize[0] * texSize[1] * 4);
+				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.FLOAT, result);
+			} else {
+				const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
+				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
+				result = Float32Array.prototype.slice.call(new Float32Array(bytes.buffer));
+			}
 
-      result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
+			result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
 
-      if (this.dimensions.length === 1) {
-        return result;
-      } else if (this.dimensions.length === 2) {
-        return utils.splitArray(result, this.dimensions[0]);
-      } else if (this.dimensions.length === 3) {
-        const cube = utils.splitArray(result, this.dimensions[0] * this.dimensions[1]);
-        return cube.map(function(x) {
-          return utils.splitArray(x, this.dimensions[0]);
-        });
-      }
-    }
-  }
+			if (this.dimensions.length === 1) {
+				return result;
+			} else if (this.dimensions.length === 2) {
+				return utils.splitArray(result, this.dimensions[0]);
+			} else if (this.dimensions.length === 3) {
+				const cube = utils.splitArray(result, this.dimensions[0] * this.dimensions[1]);
+				return cube.map(function(x) {
+					return utils.splitArray(x, this.dimensions[0]);
+				});
+			}
+		}
+	}
 
-  getUniformLocation(name) {
-    let location = this.programUniformLocationCache[name];
-    if (!location) {
-      location = this.webGl.getUniformLocation(this.program, name);
-      this.programUniformLocationCache[name] = location;
-    }
-    return location;
-  }
+	getUniformLocation(name) {
+		let location = this.programUniformLocationCache[name];
+		if (!location) {
+			location = this.webGl.getUniformLocation(this.program, name);
+			this.programUniformLocationCache[name] = location;
+		}
+		return location;
+	}
 };

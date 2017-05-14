@@ -9,39 +9,39 @@ const WebGLValidatorKernel = require('./backend/web-gl/validator-kernel');
 /// Initialises the GPU.js library class which manages the WebGL context for the created functions.
 ///
 module.exports = class GPU {
-  constructor(settings) {
-    settings = settings || {};
-    this.canvas = settings.canvas;
-    this.webGl = settings.webGl;
-    this._kernelSynchronousExecutor = null;
-    let mode = settings.mode || 'webgl';
-    if (!utils.isWebGlSupported) {
-      console.warn('Warning: gpu not supported, falling back to cpu support');
-      mode = 'cpu';
-    }
-    const runnerSettings = {
-      canvas: this.canvas,
-      webGl: this.webGl
-    };
+	constructor(settings) {
+		settings = settings || {};
+		this.canvas = settings.canvas;
+		this.webGl = settings.webGl;
+		this._kernelSynchronousExecutor = null;
+		let mode = settings.mode || 'webgl';
+		if (!utils.isWebGlSupported) {
+			console.warn('Warning: gpu not supported, falling back to cpu support');
+			mode = 'cpu';
+		}
+		const runnerSettings = {
+			canvas: this.canvas,
+			webGl: this.webGl
+		};
 
-    if (mode) {
-      switch (mode.toLowerCase()) {
-        case 'cpu':
-          this._runner = new CPURunner(runnerSettings);
-          break;
-        case 'gpu':
-        case 'webgl':
-          this._runner = new WebGLRunner(runnerSettings);
-          break;
-        case 'webgl-validator':
-          this._runner = new WebGLRunner(runnerSettings);
-          this._runner.Kernel = WebGLValidatorKernel;
-          break;
-        default:
-          throw new Error(`"${mode}" mode is not defined`);
-      }
-    }
-  }
+		if (mode) {
+			switch (mode.toLowerCase()) {
+				case 'cpu':
+					this._runner = new CPURunner(runnerSettings);
+					break;
+				case 'gpu':
+				case 'webgl':
+					this._runner = new WebGLRunner(runnerSettings);
+					break;
+				case 'webgl-validator':
+					this._runner = new WebGLRunner(runnerSettings);
+					this._runner.Kernel = WebGLValidatorKernel;
+					break;
+				default:
+					throw new Error(`"${mode}" mode is not defined`);
+			}
+		}
+	}
 	///
 	/// Function: createKernel
 	///
@@ -66,23 +66,23 @@ module.exports = class GPU {
 	/// Returns:
 	/// 	callable function to run
 	///
-  createKernel(fn, settings) {
+	createKernel(fn, settings) {
 		//
 		// basic parameters safety checks
 		//
-		if(typeof fn === 'undefined') {
+		if (typeof fn === 'undefined') {
 			throw 'Missing fn parameter';
 		}
-		if(!utils.isFunction(fn)) {
+		if (!utils.isFunction(fn)) {
 			throw 'fn parameter not a function';
 		}
 
-    return this._kernelSynchronousExecutor = this._runner.buildKernel(fn, settings || {});
+		return this._kernelSynchronousExecutor = this._runner.buildKernel(fn, settings || {});
 	}
 
 	get computeMode() {
-    return this._runner.mode;
-  }
+		return this._runner.mode;
+	}
 
 	///
 	/// Function: executeKernel
@@ -95,7 +95,7 @@ module.exports = class GPU {
 	/// Returns:
 	/// 	{Promise} returns the promise object for the result / failure
 	///
-  execute() {
+	execute() {
 		//
 		// Prepare the required objects
 		//
@@ -104,7 +104,7 @@ module.exports = class GPU {
 		//
 		// Setup and return the promise, and execute the function, in synchronous mode
 		//
-		return utils.newPromise((accept,reject) => {
+		return utils.newPromise((accept, reject) => {
 			try {
 				accept(this._kernelSynchronousExecutor.apply(this._kernelSynchronousExecutor, args));
 			} catch (e) {
@@ -117,8 +117,8 @@ module.exports = class GPU {
 	}
 
 	get exec() {
-    return this.execute.bind(this);
-  }
+		return this.execute.bind(this);
+	}
 
 	///
 	/// Function: addFunction
@@ -133,7 +133,7 @@ module.exports = class GPU {
 	/// Returns:
 	/// 	{GPU} returns itself
 	///
-  addFunction(jsFunction, paramTypeArray, returnType) {
+	addFunction(jsFunction, paramTypeArray, returnType) {
 		this._runner.functionBuilder.addFunction(null, jsFunction, paramTypeArray, returnType);
 		return this;
 	}
@@ -148,16 +148,15 @@ module.exports = class GPU {
 	/// Returns:
 	/// 	{Boolean} TRUE if browser supports webgl
 	///
-  static isWebGlSupported() {
+	static isWebGlSupported() {
 		return utils.isWebGlSupported;
 	}
 
-  isWebGlSupported() {
-    return utils.isWebGlSupported;
-  }
+	isWebGlSupported() {
+		return utils.isWebGlSupported;
+	}
 
-  getCanvas() {
-    return this._kernelSynchronousExecutor.canvas;
-  }
+	getCanvas() {
+		return this._kernelSynchronousExecutor.canvas;
+	}
 };
-
