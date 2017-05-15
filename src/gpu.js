@@ -19,6 +19,7 @@ module.exports = class GPU {
 			console.warn('Warning: gpu not supported, falling back to cpu support');
 			mode = 'cpu';
 		}
+    
 		const runnerSettings = {
 			canvas: this.canvas,
 			webGl: this.webGl
@@ -80,7 +81,7 @@ module.exports = class GPU {
 		return this._kernelSynchronousExecutor = this._runner.buildKernel(fn, settings || {});
 	}
 
-	get computeMode() {
+	get mode() {
 		return this._runner.mode;
 	}
 
