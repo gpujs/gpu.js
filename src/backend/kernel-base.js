@@ -1,4 +1,6 @@
 const utils = require('../utils');
+const WebGLFunctionNode = require('./web-gl/function-node');
+const WebGLFunctionBuilder = require('./web-gl/function-builder');
 
 module.exports = class BaseKernel {
 	constructor(fnString, settings) {
@@ -104,5 +106,45 @@ module.exports = class BaseKernel {
 
 	validateOptions() {
 		throw new Error('validateOptions not defined');
+	}
+
+	/// Precompiles the kernel object, this is used by GPUCore
+	///
+	/// @param   Input types to support as an array
+	///          With the following types "Array", "Texture", "Number"
+	///
+	/// @return  The precompiled kernel object
+	precompileKernelObj(paramType) {
+
+		// Currently this relies on WebGLFunctionBuilder
+		// Eventually this will be generalised into the base function-builder
+		if(this.functionBuilder == null) {
+			this.functionBuilder = new WebGLFunctionBuilder();
+		}
+
+		// Setup return object with basic options, jsFunction and param types
+		var ret = {};
+		ret.opt = this.opt;
+
+		// Get the JS kernel string, and parameter types
+		ret.jsKernel = this.fnString;
+		ret.paramNames = utils.getParamNamesFromString(this.fnString);
+		ret.paramType = paramType;
+
+		// Setup the kernel node to run
+		const builder = this.functionBuilder;
+		const kernelNode = new WebGLFunctionNode('kernel', this.fnString);
+		kernelNode.setAddFunction(builder.addFunction.bind(builder));
+		kernelNode.paramNames = this.paramNames;
+		//kernelNode.paramType = paramType;
+		kernelNode.isRootKernel = true;
+		builder.addFunctionNode(kernelNode);
+
+		// Lets spit out those processed webgl headers and codes
+		ret.glHeaders = builder.getPrototypeString("kernel", ret.opt);
+		ret.glKernel = builder.getString("kernel", ret.opt);
+
+		// Returns the result set
+		return ret;
 	}
 };
