@@ -468,7 +468,7 @@ void main(void) {
 				const argLoc = this.getUniformLocation('user_' + paramNames[textureCount]);
 				gl.uniform1f(argLoc, arguments[textureCount]);
 			} else if (argType === 'Texture') {
-				paramDim = this.getDimensions(arguments[textureCount], true);
+				paramDim = utils.getDimensions(arguments[textureCount], true);
 				paramSize = arguments[textureCount].size;
 				texture = arguments[textureCount].texture;
 

@@ -19,7 +19,7 @@ module.exports = class GPU {
 			console.warn('Warning: gpu not supported, falling back to cpu support');
 			mode = 'cpu';
 		}
-    
+
 		const runnerSettings = {
 			canvas: this.canvas,
 			webGl: this.webGl
