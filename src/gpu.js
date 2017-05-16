@@ -128,14 +128,14 @@ module.exports = class GPU {
 	///
 	/// Parameters:
 	/// 	jsFunction      - {JS Function}  JS Function to do conversion
-	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are 'float' if null
+	/// 	paramTypes      - {[String,...]|{variableName: Type,...}} Parameter type array, assumes all parameters are 'float' if null
 	/// 	returnType      - {String}       The return type, assumes 'float' if null
 	///
 	/// Returns:
 	/// 	{GPU} returns itself
 	///
-	addFunction(jsFunction, paramTypeArray, returnType) {
-		this._runner.functionBuilder.addFunction(null, jsFunction, paramTypeArray, returnType);
+	addFunction(jsFunction, paramTypes, returnType) {
+		this._runner.functionBuilder.addFunction(null, jsFunction, paramTypes, returnType);
 		return this;
 	}
 

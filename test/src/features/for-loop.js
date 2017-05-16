@@ -1,4 +1,4 @@
-function for_loop_test( assert, mode ) {
+function for_loop_test(mode) {
 	var gpu = new GPU();
 	var f = gpu.createKernel(function(a, b) {
 		var x = 0.0;
@@ -12,7 +12,7 @@ function for_loop_test( assert, mode ) {
 		mode : mode
 	});
 
-	assert.ok( f !== null, "function generated test");
+	QUnit.assert.ok( f !== null, "function generated test");
 
 	var a = [1, 2, 3, 5, 6, 7];
 	var b = [4, 5, 6, 1, 2, 3];
@@ -21,20 +21,20 @@ function for_loop_test( assert, mode ) {
 	var exp = [15, 17, 19, 16, 18, 20];
 
 	for(var i = 0; i < exp.length; ++i) {
-		QUnit.close(exp[i], res[i], 0.1, "Result arr idx: "+i);
+		QUnit.assert.close(exp[i], res[i], 0.1, "Result arr idx: "+i);
 	}
 }
 
-QUnit.test( "for_loop (auto)", function( assert ) {
-	for_loop_test(assert, null);
+QUnit.test( "for_loop (auto)", function() {
+	for_loop_test(null);
 });
 
-QUnit.test( "for_loop (WebGL)", function( assert ) {
-	for_loop_test(assert, "webgl");
+QUnit.test( "for_loop (WebGL)", function() {
+	for_loop_test("webgl");
 });
 
-QUnit.test( "for_loop (CPU)", function( assert ) {
-	for_loop_test(assert, "cpu");
+QUnit.test( "for_loop (CPU)", function() {
+	for_loop_test("cpu");
 });
 
 // Prevent test function leak
@@ -64,7 +64,7 @@ QUnit.test( "for_loop (CPU)", function( assert ) {
 
 	var evil_while_exp = evil_while_cpuRef_f(evil_while_a,evil_while_b);
 
-	function evil_while_loop_test( assert, mode ) {
+	function evil_while_loop_test(mode ) {
 		var gpu = new GPU();
 
 		var f = gpu.createKernel(evil_while_kernalFunction, {
@@ -72,25 +72,25 @@ QUnit.test( "for_loop (CPU)", function( assert ) {
 			mode : mode
 		});
 
-		assert.ok( f !== null, "function generated test");
+		QUnit.assert.ok( f !== null, "function generated test");
 
 		var res = f(evil_while_a,evil_while_b);
 
 		for(var i = 0; i < evil_while_exp.length; ++i) {
-			QUnit.close(evil_while_exp[i], res[i], 0.1, "Result arr idx: "+i);
+			QUnit.assert.close(evil_while_exp[i], res[i], 0.1, "Result arr idx: "+i);
 		}
 	}
 
-	QUnit.test( "evil_while_loop (auto)", function( assert ) {
-		evil_while_loop_test(assert, null);
+	QUnit.test( "evil_while_loop (auto)", function() {
+		evil_while_loop_test(null);
 	});
 
-	QUnit.test( "evil_while_loop (WebGL)", function( assert ) {
-		evil_while_loop_test(assert, "webgl");
+	QUnit.test( "evil_while_loop (WebGL)", function() {
+		evil_while_loop_test("webgl");
 	});
 
-	QUnit.test( "evil_while_loop (CPU)", function( assert ) {
-		evil_while_loop_test(assert, "cpu");
+	QUnit.test( "evil_while_loop (CPU)", function() {
+		evil_while_loop_test("cpu");
 	});
 
 })();

@@ -40,7 +40,7 @@ module.exports = class BaseFunctionNode {
 	/// 	paramTypeArray  - {[String,...]}          Parameter type array, assumes all parameters are 'float' if null
 	/// 	returnType      - {String}                The return type, assumes 'float' if null
 	///
-	constructor(functionName, jsFunction, paramTypeArray, returnType) {
+	constructor(functionName, jsFunction, paramTypes, returnType) {
 		//
 		// Internal vars setup
 		//
@@ -88,14 +88,14 @@ module.exports = class BaseFunctionNode {
 		// Extract parameter name, and its argument types
 		//
 		this.paramNames = utils.getParamNamesFromString(this.jsFunctionString);
-		if (paramTypeArray) {
-			if (paramTypeArray.length !== this.paramNames.length) {
+		if (paramTypes) {
+			if (paramTypes.length !== this.paramNames.length) {
 				throw 'Invalid argument type array length, against function length -> (' +
-					paramTypeArray.length + ',' +
+					paramTypes.length + ',' +
 					this.paramNames.length +
 					')';
 			}
-			this.paramType = paramTypeArray;
+			this.paramType = paramTypes;
 		} else {
 			this.paramType = [];
 			for (let a = 0; a < this.paramNames.length; ++a) {

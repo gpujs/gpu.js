@@ -30,10 +30,10 @@ module.exports = class FunctionBuilderBase {
 	/// 	gpu             - {GPU}          The GPU instance
 	/// 	functionName    - {String}       Function name to assume, if its null, it attempts to extract from the function
 	/// 	jsFunction      - {JS Function}  JS Function to do conversion
-	/// 	paramTypeArray  - {[String,...]} Parameter type array, assumes all parameters are 'float' if null
+	/// 	paramTypes      - {[String,...]|{variableName: Type,...}} Parameter type array, assumes all parameters are 'float' if null
 	/// 	returnType      - {String}       The return type, assumes 'float' if null
 	///
-	addFunction(functionName, jsFunction, paramTypeArray, returnType) {
+	addFunction(functionName, jsFunction, paramTypes, returnType) {
 		throw new Error('addFunction not supported on base');
 	}
 

@@ -2,9 +2,9 @@ const FunctionBuilderBase = require('../function-builder-base');
 const WebGLFunctionNode = require('./function-node');
 
 module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
-	addFunction(functionName, jsFunction, paramTypeArray, returnType) {
+	addFunction(functionName, jsFunction, paramTypes, returnType) {
 		this.addFunctionNode(
-			new WebGLFunctionNode(functionName, jsFunction, paramTypeArray, returnType)
+			new WebGLFunctionNode(functionName, jsFunction, paramTypes, returnType)
 			.setAddFunction(this.addFunction.bind(this))
 		);
 	}

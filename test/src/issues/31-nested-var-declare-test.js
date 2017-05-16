@@ -22,16 +22,20 @@ function nestedVarDeclareTest( mode ) {
     debug: mode === 'cpu'
 	});
 
-	QUnit.ok( f !== null, "function generated test");
-	QUnit.close(f(), (mode === null || mode === 'webgl' ? 200 : 20), 0.00, "basic return function test");
+	QUnit.assert.ok( f !== null, "function generated test");
+	QUnit.assert.close(f(), (mode === null || mode === 'webgl' ? 200 : 20), 0.00, "basic return function test");
 }
 
 QUnit.test( "Issue #31 - nestedVarDeclare (auto)", function() {
-	nestedVarDeclareTest(null);
+	QUnit.assert.throws(function() {
+		nestedVarDeclareTest(null);
+	});
 });
 
 QUnit.test( "Issue #31 - nestedVarDeclare (WebGL)", function() {
-	nestedVarDeclareTest("webgl");
+	QUnit.assert.throws(function() {
+		nestedVarDeclareTest("webgl");
+	});
 });
 
 QUnit.test( "Issue #31 - nestedVarDeclare (CPU)", function() {
@@ -40,20 +44,22 @@ QUnit.test( "Issue #31 - nestedVarDeclare (CPU)", function() {
 
 QUnit.test( "Issue #31 - nestedVarDeclare : AST handling", function() {
 	var builder = new GPU.WebGLFunctionBuilder();
-	builder.addFunction(null, nestedVarDeclareFunction);
-	
-	QUnit.equal(
-		builder.getStringFromFunctionNames(["nestedVarDeclareFunction"]).replace(new RegExp("\n", "g"), ""),
-		"float nestedVarDeclareFunction() {"+
-			"float user_result=0.0;"+
-			""+
-			"for (float user_i=0.0;(user_i<10.0);++user_i){"+
-				"for (float user_i=0.0;(user_i<20.0);++user_i){"+ //<-- Note: don't do this in real life!
-					"user_result+=1.0;"+
+	QUnit.assert.throws(function() {
+		builder.addFunction(null, nestedVarDeclareFunction);
+		
+		QUnit.assert.equal(
+			builder.getStringFromFunctionNames(["nestedVarDeclareFunction"]).replace(new RegExp("\n", "g"), ""),
+			"float nestedVarDeclareFunction() {"+
+				"float user_result=0.0;"+
+				""+
+				"for (float user_i=0.0;(user_i<10.0);++user_i){"+
+					"for (float user_i=0.0;(user_i<20.0);++user_i){"+ //<-- Note: don't do this in real life!
+						"user_result+=1.0;"+
+					"}"+
 				"}"+
-			"}"+
-			""+
-			"return user_result;"+
-		"}"
-	);
+				""+
+				"return user_result;"+
+			"}"
+		);
+	});
 });

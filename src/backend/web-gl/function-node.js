@@ -65,8 +65,8 @@ function astErrorOutput(error, ast, funcParam) {
 }
 
 module.exports = class WebGLFunctionNode extends FunctionNodeBase {
-	constructor(functionName, jsFunction, paramTypeArray, returnType) {
-		super(functionName, jsFunction, paramTypeArray, returnType);
+	constructor(functionName, jsFunction, paramTypes, returnType) {
+		super(functionName, jsFunction, paramTypes, returnType);
 		this.opt = null;
 	}
 
@@ -460,7 +460,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 
 				if (!Array.isArray(forNode.init) || forNode.init.length < 1) {
 					console.log(this.jsFunctionString);
-					console.warn('Warning: Incompatible for loop declaration');
+					throw new Error('Error: Incompatible for loop declaration');
 				}
 
 				this.astGeneric(forNode.init, retArr, funcParam);

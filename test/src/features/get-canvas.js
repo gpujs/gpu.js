@@ -1,7 +1,7 @@
-function getCanvasTest( assert, mode ) {
+function getCanvasTest(mode ) {
 	var gpu = new GPU();
 	
-	assert.throws( function() { 
+	QUnit.assert.throws( function() {
 		gpu.getCanvas();
 	}, "testing for canvas exception createKernel" );
 	
@@ -11,32 +11,31 @@ function getCanvasTest( assert, mode ) {
 		dimensions : [30,30],
 		mode : mode
 	}).setGraphical(true);
-	
-	assert.ok( render !== null, "function generated test");
-	
-	assert.ok( render.getCanvas(), "testing for canvas after createKernel" );
-	assert.ok( gpu.getCanvas(), "testing for canvas after createKernel" );
+
+	QUnit.assert.ok( render !== null, "function generated test");
+
+	QUnit.assert.ok( render.getCanvas(), "testing for canvas after createKernel" );
+	QUnit.assert.ok( gpu.getCanvas(), "testing for canvas after createKernel" );
 	
 	//
 	// NOTE: GPU mode somehow return null when render()
 	//
-	var r = null;
-	assert.ok( (r = render()) || true, "rendering" );
+	QUnit.assert.ok( (r = render()) || true, "rendering" );
 	console.log("getCanvasTest render result", r, "for mode", mode);
-	
-	assert.ok( render.getCanvas(), "testing for canvas after render" );
-	assert.ok( gpu.getCanvas(), "testing for canvas after render" );
+
+	QUnit.assert.ok( render.getCanvas(), "testing for canvas after render" );
+	QUnit.assert.ok( gpu.getCanvas(), "testing for canvas after render" );
 	
 }
 
-QUnit.test( "getCanvas (auto)", function( assert ) {
-	getCanvasTest(assert, null);
+QUnit.test( "getCanvas (auto)", function() {
+	getCanvasTest(null);
 });
 
-QUnit.test( "getCanvas (WebGL)", function( assert ) {
-	getCanvasTest(assert, "webgl");
+QUnit.test( "getCanvas (WebGL)", function() {
+	getCanvasTest("webgl");
 });
 
-QUnit.test( "getCanvas (CPU)", function( assert ) {
-	getCanvasTest(assert, "cpu");
+QUnit.test( "getCanvas (CPU)", function() {
+	getCanvasTest("cpu");
 });

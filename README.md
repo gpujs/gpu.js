@@ -9,23 +9,23 @@ gpu.js is a single-file JavaScript library for GPGPU in the browser. gpu.js will
 Matrix multiplication written in gpu.js:
 
 ```js
-var gpu = new GPU();
+const gpu = new GPU();
 
 // Create the GPU accelerated function from a kernel
 // function that computes a single element in the
 // 512 x 512 matrix (2D array). The kernel function
 // is run in a parallel manner in the GPU resulting
 // in very fast computations! (...sometimes)
-var mat_mult = gpu.createKernel(function(A, B) {
+const matMult = gpu.createKernel(function(a, b) {
     var sum = 0;
-    for (var i=0; i<512; i++) {
-        sum += A[this.thread.y][i] * B[i][this.thread.x];
+    for (var i = 0; i < 512; i++) {
+        sum += a[this.thread.y][i] * b[i][this.thread.x];
     }
     return sum;
-}).dimensions([512, 512]);
+}).setDimensions([512, 512]);
 
 // Perform matrix multiplication on 2 matrices of size 512 x 512
-var C = mat_mult(A, B);
+const c = matMult(a, b);
 ```
 
 You can run a benchmark of this [here](http://gpu.rocks). Typically, it will run at 1-15x speedup depending on your hardware.
@@ -44,13 +44,13 @@ Download the latest version of gpu.js and include the file in your HTML page usi
 In JavaScript, initialise the library:
 
 ```js
-var gpu = new GPU();
+const gpu = new GPU();
 ```
 
 Note that this **requires** the Promise API, if you need to polyfill it, you can give our 'untested polyfill' a try [here](https://github.com/picoded/small_promise.js)
 
 ### Creating and Running Functions
-Depnding on your output type, specify the intended dimensions of your output. You cannot have a accelerated function that does not specify any dimensions.
+Depending on your output type, specify the intended dimensions of your output. You cannot have a accelerated function that does not specify any dimensions.
 
 Dimensions of Output	|	How to specify dimensions
 ----------------------- |-------------------------------
@@ -59,7 +59,7 @@ Dimensions of Output	|	How to specify dimensions
 3D		            	|	`[width, height, depth]`
 
 ```js
-var opt = {
+const opt = {
     dimensions: [100]
 };
 ```
@@ -67,7 +67,7 @@ var opt = {
 Create the function you want to run on the GPU. The first input parameter to `createKernel` is a kernel function which will compute a single number in the output. The thread identifiers, `this.thread.x`, `this.thread.y` or `this.thread.z` will allow you to specify the appropriate behavior of the kernel function at specific positions of the output.
 
 ```js
-var myFunc = gpu.createKernel(function() {
+const myFunc = gpu.createKernel(function() {
     return this.thread.x;
 }, opt);
 ```
@@ -82,9 +82,9 @@ myFunc();
 Note: Instead of creating an object, you can use the chainable shortcut methods as a neater way of specificying options.
 
 ```js
-var myFunc = gpu.createKernel(function() {
+const myFunc = gpu.createKernel(function() {
     return this.thread.x;
-}).dimensions([100]);
+}).setDimensions([100]);
     
 myFunc();
 // Result: [0, 1, 2, 3, ... 99]
@@ -94,9 +94,9 @@ myFunc();
 Kernel functions may accept numbers, or 1D, 2D or 3D array of numbers as input. To define an argument, simply add it to the kernel function like regular JavaScript.
 
 ```js
-var myFunc = gpu.createKernel(function(x) {
+const myFunc = gpu.createKernel(function(x) {
     return x;
-}).dimensions([100]);
+}).setDimensions([100]);
     
 myFunc(42);
 // Result: [42, 42, 42, 42, ... 42]
@@ -105,9 +105,9 @@ myFunc(42);
 Similarly, with array inputs:
 
 ```js
-var myFunc = gpu.createKernel(function(X) {
-    return X[this.thread.x % 3];
-}).dimensions([100]);
+const myFunc = gpu.createKernel(function(x) {
+    return x[this.thread.x % 3];
+}).setDimensions([100]);
     
 myFunc([1, 2, 3]);
 // Result: [1, 2, 3, 1, ... 1 ]
@@ -120,13 +120,15 @@ Sometimes, you want to produce a `canvas` image instead of doing numeric computa
 For performance reasons, the return value for your function will no longer be anything useful. Instead, to display the image, retrieve the `canvas` DOM node and insert it into your page.
 
 ```js
-var render = gpu.createKernel(function() {
+const render = gpu.createKernel(function() {
     this.color(0, 0, 0, 1);
-}).dimensions([20, 20]).graphical(true);
+})
+  .setDimensions([20, 20])
+  .setGraphical(true);
     
 render();
 
-var canvas = render.getCanvas();
+const canvas = render.getCanvas();
 document.getElementsByTagName('body')[0].appendChild(canvas);
 ```
 

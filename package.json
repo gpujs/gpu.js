@@ -7,9 +7,6 @@
     "doc": "doc",
     "test": "test"
   },
-  "dependencies": {
-    "browserify": "^14.3.0"
-  },
   "devDependencies": {
     "babel-plugin-syntax-async-functions": "^6.5.0",
     "browser-sync": "^2.18.2",
@@ -21,6 +18,7 @@
     "gulp-rename": "^1.2.2",
     "gulp-uglify": "^1.5.2",
     "gulp-util": "^3.0.7",
+    "qunit-assert-close": "^2.1.2",
     "qunitjs": "^2.3.2",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0"
