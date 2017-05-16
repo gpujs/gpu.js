@@ -98,32 +98,34 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		const paramType = [];
 		for (let i = 0; i < paramNames.length; i++) {
-			const argType = utils.getArgumentType(arguments[i]);
+      const argument = arguments[i];
+      const paramName = paramNames[i];
+		  const argType = utils.getArgumentType(argument);
 			paramType.push(argType);
 			if (this.hardcodeConstants) {
 				if (argType === 'Array' || argType === 'Texture') {
-					const paramDim = utils.getDimensions(arguments[i], true);
+					const paramDim = utils.getDimensions(argument, true);
 					const paramSize = utils.dimToTexSize(paramDim);
 
 					paramStr += `
-  uniform highp sampler2D user_${ paramNames[i] };
-  highp vec2 user_${ paramNames[i] }Size = vec2(${ paramSize[0] }.0, ${ paramSize[1] }.0);
-  highp vec3 user_${ paramNames[i] }Dim = vec3(${ paramDim[0] }.0, ${ paramDim[1]}.0, ${ paramDim[2] }.0);
+  uniform highp sampler2D user_${ paramName };
+  highp vec2 user_${ paramName }Size = vec2(${ paramSize[0] }.0, ${ paramSize[1] }.0);
+  highp vec3 user_${ paramName }Dim = vec3(${ paramDim[0] }.0, ${ paramDim[1]}.0, ${ paramDim[2] }.0);
 `
-				} else if (argType === 'Number' && Number.isInteger(arguments[i])) {
-					paramStr += 'highp float user_' + paramNames[i] + ' = ' + arguments[i] + '.0;\n';
+				} else if (argType === 'Number' && Number.isInteger(argument)) {
+					paramStr += 'highp float user_' + paramName + ' = ' + argument + '.0;\n';
 				} else if (argType === 'Number') {
-					paramStr += 'highp float user_' + paramNames[i] + ' = ' + arguments[i] + ';\n';
+					paramStr += 'highp float user_' + paramName + ' = ' + argument + ';\n';
 				}
 			} else {
 				if (argType === 'Array' || argType === 'Texture') {
 					paramStr += `
-  uniform highp sampler2D user_${ paramNames[i] };
-  uniform highp vec2 user_${ paramNames[i] }Size;
-  uniform highp vec3 user_${ paramNames[i] }Dim;
+  uniform highp sampler2D user_${ paramName };
+  uniform highp vec2 user_${ paramName }Size;
+  uniform highp vec3 user_${ paramName }Dim;
 `;
 				} else if (argType === 'Number') {
-					paramStr += `uniform highp float user_${ paramNames[i] };\n`;
+					paramStr += `uniform highp float user_${ paramName };\n`;
 				}
 			}
 		}
@@ -419,9 +421,11 @@ void main(void) {
 
 		for (let textureCount = 0; textureCount < paramNames.length; textureCount++) {
 			let paramDim, paramSize, texture;
-			const argType = utils.getArgumentType(arguments[textureCount]);
+			const argument = arguments[textureCount];
+			const paramName = paramNames[textureCount];
+			const argType = utils.getArgumentType(argument);
 			if (argType === 'Array') {
-				paramDim = utils.getDimensions(arguments[textureCount], true);
+				paramDim = utils.getDimensions(argument, true);
 				paramSize = utils.dimToTexSize(this, paramDim);
 
 				if (textureCache[textureCount]) {
@@ -444,7 +448,7 @@ void main(void) {
 				}
 
 				const paramArray = new Float32Array(paramLength);
-				paramArray.set(utils.flatten(arguments[textureCount]));
+				paramArray.set(utils.flatten(argument));
 
 				let argBuffer;
 				if (this.floatTextures) {
@@ -455,9 +459,9 @@ void main(void) {
 					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
 				}
 
-				const paramLoc = this.getUniformLocation('user_' + paramNames[textureCount]);
-				const paramSizeLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Size');
-				const paramDimLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Dim');
+				const paramLoc = this.getUniformLocation('user_' + paramName);
+				const paramSizeLoc = this.getUniformLocation('user_' + paramName + 'Size');
+				const paramDimLoc = this.getUniformLocation('user_' + paramName + 'Dim');
 
 				if (!this.hardcodeConstants) {
 					gl.uniform3fv(paramDimLoc, paramDim);
@@ -465,25 +469,25 @@ void main(void) {
 				}
 				gl.uniform1i(paramLoc, textureCount);
 			} else if (argType === 'Number') {
-				const argLoc = this.getUniformLocation('user_' + paramNames[textureCount]);
-				gl.uniform1f(argLoc, arguments[textureCount]);
+				const argLoc = this.getUniformLocation('user_' + paramName);
+				gl.uniform1f(argLoc, argument);
 			} else if (argType === 'Texture') {
-				paramDim = utils.getDimensions(arguments[textureCount], true);
-				paramSize = arguments[textureCount].size;
-				texture = arguments[textureCount].texture;
+				paramDim = utils.getDimensions(argument, true);
+				paramSize = argument.size;
+				texture = argument.texture;
 
 				gl.activeTexture(gl['TEXTURE' + textureCount]);
 				gl.bindTexture(gl.TEXTURE_2D, texture);
 
-				const paramLoc = this.getUniformLocation('user_' + paramNames[textureCount]);
-				const paramSizeLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Size');
-				const paramDimLoc = this.getUniformLocation('user_' + paramNames[textureCount] + 'Dim');
+				const paramLoc = this.getUniformLocation('user_' + paramName);
+				const paramSizeLoc = this.getUniformLocation('user_' + paramName + 'Size');
+				const paramDimLoc = this.getUniformLocation('user_' + paramName + 'Dim');
 
 				gl.uniform3fv(paramDimLoc, paramDim);
 				gl.uniform2fv(paramSizeLoc, paramSize);
 				gl.uniform1i(paramLoc, textureCount);
 			} else {
-				throw 'Input type not supported (WebGL): ' + arguments[textureCount];
+				throw 'Input type not supported (WebGL): ' + argument;
 			}
 		}
 		let textureCount = paramNames.length;

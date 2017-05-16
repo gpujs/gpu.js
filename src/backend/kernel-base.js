@@ -94,11 +94,21 @@ module.exports = class BaseKernel {
 		return this;
 	}
 
+	setCanvas(canvas) {
+	  this.canvas = canvas;
+	  return this;
+  }
+
+  setWebGl(webGl) {
+	  this.webGl = webGl;
+	  return this;
+  }
+
 	getCanvas() {
 		return this.canvas;
 	}
 
-	getWebgl() {
+	getWebGl() {
 		return this.webGl;
 	}
 
