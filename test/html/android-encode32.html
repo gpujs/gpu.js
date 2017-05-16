@@ -1,0 +1,15 @@
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>GPU.JS : Android test</title>
+</head>
+<body>
+<script src="../../src/parser.js"></script>
+<script src="../../src/gpu.js"></script>
+<script>
+document.write(new GPU().createKernel(function(){
+    return -this.thread.x / 5
+}).dimensions([15, 1])()[0].join('<br/>'));
+</script>
+</body>
+</html>

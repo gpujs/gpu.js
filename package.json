@@ -21,6 +21,7 @@
     "gulp-rename": "^1.2.2",
     "gulp-uglify": "^1.5.2",
     "gulp-util": "^3.0.7",
+    "qunitjs": "^2.3.2",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0"
   },
