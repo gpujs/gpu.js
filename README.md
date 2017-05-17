@@ -134,6 +134,26 @@ document.getElementsByTagName('body')[0].appendChild(canvas);
 
 Note: To animate the rendering, use requestAnimationFrame instead of setTimeout for optimal performance. For more information, see [this link](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame).
 
+### Combining kernels
+
+Sometimes you want to do multiple math operations on the gpu without the round trip penalty of data transfer from cpu to gpu to cpu to gpu, etc.  To aid this there is the `combineKernels` method.
+```js
+const add = gpu.createKernel(function(a, b) {
+	return a[this.thread.x] + b[this.thread.x];
+}).setDimensions([20]);
+
+const multiply = gpu.createKernel(function(a, b) {
+	return a[this.thread.x] * b[this.thread.x];
+}).setDimensions([20]);
+
+const superKernel = gpu.combineKernels(add, multiply, function(a, b, c) {
+	return multiply(add(a, b), c);
+});
+
+superKernel(a, b, c);
+```
+This gives you the flexibility of using multiple transformations but without the performance penalty, resulting in a much much MUCH faster operation.  
+
 # Full API Reference
 
 You can find a [complete API reference here](http://gpu.rocks/api/).
