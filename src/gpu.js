@@ -81,6 +81,51 @@ module.exports = class GPU {
 		return this._kernelSynchronousExecutor = this._runner.buildKernel(fn, settings || {});
 	}
 
+	combineKernels() {
+		const lastKernel = arguments[arguments.length - 2];
+		const combinedKernel = arguments[arguments.length - 1];
+		if (this.mode === 'cpu') return combinedKernel;
+
+		const canvas = arguments[0].canvas;
+		let webGl =  arguments[0].webGl;
+
+		for (let i = 0; i < arguments.length - 1; i++) {
+			arguments[i]
+				.setCanvas(canvas)
+				.setWebGl(webGl)
+				.setOutputToTexture(true);
+		}
+
+		return function() {
+			combinedKernel.apply(null, arguments);
+			const texSize = lastKernel.texSize;
+			const gl = lastKernel.webGl;
+			const threadDim = lastKernel.threadDim;
+			let result;
+			if (lastKernel.floatOutput) {
+				result = new Float32Array(texSize[0] * texSize[1] * 4);
+				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.FLOAT, result);
+			} else {
+				const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
+				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
+				result = Float32Array.prototype.slice.call(new Float32Array(bytes.buffer));
+			}
+
+			result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
+
+			if (lastKernel.dimensions.length === 1) {
+				return result;
+			} else if (lastKernel.dimensions.length === 2) {
+				return utils.splitArray(result, lastKernel.dimensions[0]);
+			} else if (lastKernel.dimensions.length === 3) {
+				const cube = utils.splitArray(result, lastKernel.dimensions[0] * lastKernel.dimensions[1]);
+				return cube.map(function(x) {
+					return utils.splitArray(x, lastKernel.dimensions[0]);
+				});
+			}
+		};
+	}
+
 	get mode() {
 		return this._runner.mode;
 	}

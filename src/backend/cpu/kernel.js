@@ -95,6 +95,7 @@ module.exports = class CPUKernel extends KernelBase {
 			if (this.graphical) {
 				this._imageData.data.set(this._colorData);
 				this._canvasCtx.putImageData(this._imageData, 0, 0);
+				return;
 			}
 
 			if (this.dimensions.length === 1) {
