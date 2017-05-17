@@ -154,6 +154,21 @@ superKernel(a, b, c);
 ```
 This gives you the flexibility of using multiple transformations but without the performance penalty, resulting in a much much MUCH faster operation.  
 
+### Adding custom functions
+You have a custom function you'd like to use on the gpu?  Although limited, you can:
+```js
+gpu.addFunction(function mySuperFunction(a, b) {
+	return a - b;
+});
+function anotherFunction(value) {
+	return value + 1;
+}
+gpu.addFunction(anotherFunction);
+const kernel = gpu.createKernel(function(a, b) {
+	return anotherFunction(mySuperFunction(a[this.thread.x], b[this.thread.x]));
+}).setDimensions([20]);
+```
+
 # Full API Reference
 
 You can find a [complete API reference here](http://gpu.rocks/api/).
