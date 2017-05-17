@@ -37,7 +37,7 @@ module.exports = class BaseFunctionNode {
 	/// 	gpu             - {GPU}                   The GPU instance
 	/// 	functionName    - {String}                Function name to assume, if its null, it attempts to extract from the function
 	/// 	jsFunction      - {JS Function / String}  JS Function to do conversion
-	/// 	paramTypeArray  - {[String,...]}          Parameter type array, assumes all parameters are 'float' if null
+	/// 	paramTypes      - {[String,...]|{variableName: Type}}          Parameter type array, assumes all parameters are 'float' if null
 	/// 	returnType      - {String}                The return type, assumes 'float' if null
 	///
 	constructor(functionName, jsFunction, paramTypes, returnType) {
@@ -89,13 +89,35 @@ module.exports = class BaseFunctionNode {
 		//
 		this.paramNames = utils.getParamNamesFromString(this.jsFunctionString);
 		if (paramTypes) {
-			if (paramTypes.length !== this.paramNames.length) {
-				throw 'Invalid argument type array length, against function length -> (' +
+			if (Array.isArray(paramTypes)) {
+				if (paramTypes.length !== this.paramNames.length) {
+					throw 'Invalid argument type array length, against function length -> (' +
 					paramTypes.length + ',' +
 					this.paramNames.length +
 					')';
+				}
+				this.paramType = paramTypes;
+			} else if (typeof paramTypes === 'object') {
+				const paramVariableNames = Object.keys(paramTypes);
+				if (paramTypes.hasOwnProperty('returns')) {
+					this.returnType = paramTypes.returns;
+					paramVariableNames.splice(paramVariableNames.indexOf('returns'), 1);
+				}
+				if (paramVariableNames.length > 0 && paramVariableNames.length !== this.paramNames.length) {
+					throw 'Invalid argument type array length, against function length -> (' +
+					paramVariableNames.length + ',' +
+					this.paramNames.length +
+					')';
+				} else {
+					this.paramType = this.paramNames.map((key) => {
+						if (paramTypes.hasOwnProperty(key)) {
+							return paramTypes[key];
+						} else {
+							return 'float';
+						}
+					});
+				}
 			}
-			this.paramType = paramTypes;
 		} else {
 			this.paramType = [];
 			for (let a = 0; a < this.paramNames.length; ++a) {
@@ -106,7 +128,9 @@ module.exports = class BaseFunctionNode {
 		//
 		// Return type handling
 		//
-		this.returnType = returnType || 'float';
+		if (!this.returnType) {
+			this.returnType = returnType || 'float';
+		}
 	}
 
 	setAddFunction(fn) {

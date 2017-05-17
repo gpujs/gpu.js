@@ -18,8 +18,7 @@ function nestedVarDeclareFunction() {
 function nestedVarDeclareTest( mode ) {
 	var gpu = new GPU({ mode: mode });
 	var f = gpu.createKernel(nestedVarDeclareFunction, {
-		dimensions : [1],
-    debug: mode === 'cpu'
+		dimensions : [1]
 	});
 
 	QUnit.assert.ok( f !== null, "function generated test");
@@ -46,7 +45,7 @@ QUnit.test( "Issue #31 - nestedVarDeclare : AST handling", function() {
 	var builder = new GPU.WebGLFunctionBuilder();
 	QUnit.assert.throws(function() {
 		builder.addFunction(null, nestedVarDeclareFunction);
-		
+
 		QUnit.assert.equal(
 			builder.getStringFromFunctionNames(["nestedVarDeclareFunction"]).replace(new RegExp("\n", "g"), ""),
 			"float nestedVarDeclareFunction() {"+

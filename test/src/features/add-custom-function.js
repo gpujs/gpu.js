@@ -1,5 +1,5 @@
 function addCustomFunction_sumAB(mode) {
-	var gpu = new GPU();
+	var gpu = new GPU({ mode: mode });
 	
 	function custom_adder(a,b) {
 		return a+b;

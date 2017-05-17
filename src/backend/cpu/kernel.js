@@ -5,6 +5,7 @@ module.exports = class CPUKernel extends KernelBase {
 	constructor(fnString, settings) {
 		super(fnString, settings);
 		this._fnBody = utils.getFunctionBodyFromString(fnString);
+		this.functionBuilder = settings.functionBuilder;
 		this._fn = null;
 		this.run = null;
 		this._canvasCtx = null;
@@ -47,6 +48,8 @@ module.exports = class CPUKernel extends KernelBase {
 
 	build() {
 		const kernelArgs = [];
+		const builder = this.functionBuilder;
+		const paramNames = this.paramNames;
 		for (let i = 0; i < arguments.length; i++) {
 			const argType = utils.getArgumentType(arguments[i]);
 			if (argType === 'Array' || argType === 'Number') {
@@ -64,10 +67,13 @@ module.exports = class CPUKernel extends KernelBase {
 			threadDim.push(1);
 		}
 
-		this._fn = new Function(this.paramNames, this._fnBody);
+		const fnString = this._fnBody + ';' + builder.getPrototypeString();
+		this._fn = new Function(this.paramNames, fnString);
 		if (this.debug) {
 			console.log('Options:');
 			console.dir(this);
+			console.log('Function output:');
+			console.log(fnString);
 		}
 		this.run = function() {
 			if (this.graphical) {

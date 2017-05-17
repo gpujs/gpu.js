@@ -5,7 +5,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	addFunction(functionName, jsFunction, paramTypes, returnType) {
 		this.addFunctionNode(
 			new WebGLFunctionNode(functionName, jsFunction, paramTypes, returnType)
-			.setAddFunction(this.addFunction.bind(this))
+				.setAddFunction(this.addFunction.bind(this))
 		);
 	}
 

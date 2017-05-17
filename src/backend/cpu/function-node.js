@@ -25,4 +25,16 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	generate(options) {
 		this.functionString = this.jsFunctionString;
 	}
+
+	///
+	/// Function: getFunctionPrototypeString
+	///
+	/// Returns the converted webgl shader function equivalent of the JS function
+	///
+	/// Returns:
+	/// 	{String} webgl function string, result is cached under this.getFunctionPrototypeString
+	///
+	getFunctionPrototypeString(options) {
+		return this.functionString;
+	}
 };

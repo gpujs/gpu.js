@@ -57,7 +57,7 @@ module.exports = class FunctionBuilderBase {
 	///
 	/// Trace all the depending functions being called, from a single function
 	///
-	/// This allow for 'uneeded' functions to be automatically optimized out.
+	/// This allow for 'unneeded' functions to be automatically optimized out.
 	/// Note that the 0-index, is the starting function trace.
 	///
 	/// Parameters:
