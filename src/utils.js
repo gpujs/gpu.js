@@ -532,33 +532,16 @@ const utils = class utils {
 		return ret;
 	}
 
-	static flatten(arr, result) {
-		let i = 0;
-		result = result || [];
-		if (utils.isArray(arr)) {
-			if (!utils.isArray(arr[0])) {
-				result.push.apply(result, arr);
-			} else {
-				for (; i < arr.length; i++) {
-					if (utils.isArray(arr[i])) {
-						utils.flatten(arr[i], result);
-					} else {
-						result.push(result, arr[i]);
-					}
-				}
-			}
-		} else if (typeof arr === 'object') {
-			const keys = Object.keys(arr);
-			for (; i < keys.length; i++) {
-				const objectValue = arr[keys[i]];
-				if (utils.isArray(objectValue)) {
-					utils.flatten(objectValue, result);
-				} else {
-					result.push(objectValue);
-				}
+	static flatten(arr) {
+		for (let i = 0; i < arr.length; ++i) {
+			if (Array.isArray(arr[i])) {
+				arr[i].splice(0, 0, i, 1);
+				Array.prototype.splice.apply(arr, arr[i]);
+				--i;
 			}
 		}
-		return result;
+
+		return arr;
 	}
 
 	static splitArray(array, part) {
