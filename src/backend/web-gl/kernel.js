@@ -302,7 +302,6 @@ highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, high
   return get(tex, texSize, texDim, 0.0, 0.0, x);
 }
 
-const bool outputToColor = ${ this.graphical ? 'true' : 'false' };
 highp vec4 actualColor;
 void color(float r, float g, float b, float a) {
   actualColor = vec4(r,g,b,a);
@@ -322,20 +321,19 @@ void main(void) {
   ${ this.floatOutput ? 'index *= 4.0;' : '' }
   threadId = indexTo3D(index, uOutputDim);
   kernel();
-  if (outputToColor == true) {
-    gl_FragColor = actualColor;
-  } else {
-    ${ this.floatOutput
-      ? `
-    gl_FragColor.r = kernelResult;
-    index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();
-    gl_FragColor.g = kernelResult;
-    index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();
-    gl_FragColor.b = kernelResult;
-    index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();
-    gl_FragColor.a = kernelResult;`
-      : `gl_FragColor = encode32(kernelResult);`
-    }
+  ${ (this.graphical
+		? `gl_FragColor = actualColor;`
+    : (this.floatOutput
+      	? `gl_FragColor.r = kernelResult;
+	index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();
+	gl_FragColor.g = kernelResult;
+	index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();
+	gl_FragColor.b = kernelResult;
+	index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();
+	gl_FragColor.a = kernelResult;`
+      	: `gl_FragColor = encode32(kernelResult);`
+			)
+		)
   }
 }`;
 		const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
