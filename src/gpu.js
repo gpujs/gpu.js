@@ -78,7 +78,17 @@ module.exports = class GPU {
 			throw 'fn parameter not a function';
 		}
 
-		return this._kernelSynchronousExecutor = this._runner.buildKernel(fn, settings || {});
+		const kernel = this._runner.buildKernel(fn, settings || {});
+
+		//if canvas didn't come from this, propagate from kernel
+		if (!this.canvas) {
+			this.canvas = kernel.canvas;
+		}
+		if (!this._runner.canvas) {
+			this._runner.canvas = kernel.canvas;
+		}
+
+		return this._kernelSynchronousExecutor = kernel;
 	}
 
 	combineKernels() {
