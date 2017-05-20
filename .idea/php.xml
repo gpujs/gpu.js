@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="PhpUnit">
-    <phpunit_settings>
-      <PhpUnitSettings load_method="CUSTOM_LOADER" />
-    </phpunit_settings>
-  </component>
-</project>
