@@ -533,15 +533,17 @@ const utils = class utils {
 	}
 
 	static flatten(arr) {
-		for (let i = 0; i < arr.length; ++i) {
-			if (Array.isArray(arr[i])) {
-				arr[i].splice(0, 0, i, 1);
-				Array.prototype.splice.apply(arr, arr[i]);
+		const _arr = arr.slice(0);
+		for (let i = 0; i < _arr.length; ++i) {
+			if (Array.isArray(_arr[i])) {
+				_arr[i] = _arr[i].slice(0);
+				_arr[i].splice(0, 0, i, 1);
+				Array.prototype.splice.apply(_arr, _arr[i]);
 				--i;
 			}
 		}
 
-		return arr;
+		return _arr;
 	}
 
 	static splitArray(array, part) {
