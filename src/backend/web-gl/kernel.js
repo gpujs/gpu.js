@@ -105,7 +105,10 @@ module.exports = class WebGLKernel extends KernelBase {
 			if (this.hardcodeConstants) {
 				if (argType === 'Array' || argType === 'Texture') {
 					const paramDim = utils.getDimensions(argument, true);
-					const paramSize = utils.dimToTexSize(paramDim);
+					const paramSize = utils.dimToTexSize({
+						floatTextures: this.floatTextures,
+						floatOutput: this.floatOutput
+					}, paramDim);
 
 					paramStr += `
   uniform highp sampler2D user_${ paramName };
@@ -273,7 +276,7 @@ highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, high
   ${ this.floatTextures
     ? `
   int channel = int(integerMod(index, 4.0));
-  index = float(int(index)/4);
+  index = float(int(index) / 4);
 `
     : ''
   }
@@ -325,11 +328,17 @@ void main(void) {
 		? `gl_FragColor = actualColor;`
     : (this.floatOutput
       	? `gl_FragColor.r = kernelResult;
-	index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();
+	index += 1.0;
+	threadId = indexTo3D(index, uOutputDim);
+	kernel();
 	gl_FragColor.g = kernelResult;
-	index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();
+	index += 1.0;
+	threadId = indexTo3D(index, uOutputDim);
+	kernel();
 	gl_FragColor.b = kernelResult;
-	index += 1.0; threadId = indexTo3D(index, uOutputDim); kernel();
+	index += 1.0;
+	threadId = indexTo3D(index, uOutputDim);
+	kernel();
 	gl_FragColor.a = kernelResult;`
       	: `gl_FragColor = encode32(kernelResult);`
 			)
@@ -424,7 +433,10 @@ void main(void) {
 			const argType = utils.getArgumentType(argument);
 			if (argType === 'Array') {
 				paramDim = utils.getDimensions(argument, true);
-				paramSize = utils.dimToTexSize(this, paramDim);
+				paramSize = utils.dimToTexSize({
+					floatTextures: this.floatTextures,
+					floatOutput: this.floatOutput
+				}, paramDim);
 
 				if (textureCache[textureCount]) {
 					texture = textureCache[textureCount];
@@ -470,12 +482,12 @@ void main(void) {
 				const argLoc = this.getUniformLocation('user_' + paramName);
 				gl.uniform1f(argLoc, argument);
 			} else if (argType === 'Texture') {
-				paramDim = utils.getDimensions(argument, true);
-				paramSize = argument.size;
-				texture = argument.texture;
+				const texture = argument;
+				paramDim = utils.getDimensions(texture.dimensions, true);
+				paramSize = texture.size;
 
 				gl.activeTexture(gl['TEXTURE' + textureCount]);
-				gl.bindTexture(gl.TEXTURE_2D, texture);
+				gl.bindTexture(gl.TEXTURE_2D, texture.texture);
 
 				const paramLoc = this.getUniformLocation('user_' + paramName);
 				const paramSizeLoc = this.getUniformLocation('user_' + paramName + 'Size');
