@@ -13,8 +13,8 @@ module.exports = class BaseKernel {
 		this.hardcodeConstants = null;
 		this.outputToTexture = null;
 		this.texSize = null;
-		this.canvas = null;
-		this.webGl = null;
+		this._canvas = null;
+		this._webGl = null;
 		this.threadDim = null;
 		this.floatTextures = null;
 		this.floatOutput = null;
@@ -26,7 +26,11 @@ module.exports = class BaseKernel {
 			this[p] = settings[p];
 		}
 
-		if (!this.canvas) this.canvas = utils.initCanvas();
+		if (settings.hasOwnProperty('canvas')) {
+			this._canvas = settings.canvas;
+		}
+
+		if (!this._canvas) this._canvas = utils.initCanvas();
 	}
 
 	build() {
@@ -95,24 +99,49 @@ module.exports = class BaseKernel {
 	}
 
 	setCanvas(canvas) {
-	  this.canvas = canvas;
+	  this._canvas = canvas;
 	  return this;
   }
 
   setWebGl(webGl) {
-	  this.webGl = webGl;
+	  this._webGl = webGl;
 	  return this;
   }
 
-	getCanvas() {
-		return this.canvas;
+	get canvas() {
+		return this._canvas;
 	}
 
-	getWebGl() {
-		return this.webGl;
+	get webGl() {
+		return this._webGl;
 	}
 
 	validateOptions() {
 		throw new Error('validateOptions not defined');
+	}
+
+	exec() {
+		return this.execute.apply(this, arguments);
+	}
+
+	execute() {
+		//
+		// Prepare the required objects
+		//
+		const args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
+
+		//
+		// Setup and return the promise, and execute the function, in synchronous mode
+		//
+		return utils.newPromise((accept, reject) => {
+			try {
+				accept(this.run.apply(this, args));
+			} catch (e) {
+				//
+				// Error : throw rejection
+				//
+				reject(e);
+			}
+		});
 	}
 };

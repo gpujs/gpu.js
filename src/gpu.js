@@ -11,18 +11,19 @@ const WebGLValidatorKernel = require('./backend/web-gl/validator-kernel');
 module.exports = class GPU {
 	constructor(settings) {
 		settings = settings || {};
-		this.canvas = settings.canvas;
-		this.webGl = settings.webGl;
-		this._kernelSynchronousExecutor = null;
+		this._canvas = settings.canvas || null;
+		this._webGl = settings.webGl || null;
 		let mode = settings.mode || 'webgl';
 		if (!utils.isWebGlSupported) {
 			console.warn('Warning: gpu not supported, falling back to cpu support');
 			mode = 'cpu';
 		}
 
+		this.kernels = [];
+
 		const runnerSettings = {
-			canvas: this.canvas,
-			webGl: this.webGl
+			canvas: this._canvas,
+			webGl: this._webGl
 		};
 
 		if (mode) {
@@ -81,14 +82,16 @@ module.exports = class GPU {
 		const kernel = this._runner.buildKernel(fn, settings || {});
 
 		//if canvas didn't come from this, propagate from kernel
-		if (!this.canvas) {
-			this.canvas = kernel.canvas;
+		if (!this._canvas) {
+			this._canvas = kernel.canvas;
 		}
 		if (!this._runner.canvas) {
 			this._runner.canvas = kernel.canvas;
 		}
 
-		return this._kernelSynchronousExecutor = kernel;
+		this.kernels.push(kernel);
+
+		return kernel;
 	}
 
 	combineKernels() {
@@ -141,56 +144,20 @@ module.exports = class GPU {
 	}
 
 	///
-	/// Function: executeKernel
-	///
-	/// Executes the kernel previously set by setKernel
-	///
-	/// Parameters:
-	/// 	.....  {Arguments} Various argument arrays used by the kernel
-	///
-	/// Returns:
-	/// 	{Promise} returns the promise object for the result / failure
-	///
-	execute() {
-		//
-		// Prepare the required objects
-		//
-		const args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
-
-		//
-		// Setup and return the promise, and execute the function, in synchronous mode
-		//
-		return utils.newPromise((accept, reject) => {
-			try {
-				accept(this._kernelSynchronousExecutor.apply(this._kernelSynchronousExecutor, args));
-			} catch (e) {
-				//
-				// Error : throw rejection
-				//
-				reject(e);
-			}
-		});
-	}
-
-	get exec() {
-		return this.execute.bind(this);
-	}
-
-	///
 	/// Function: addFunction
 	///
 	/// Adds additional functions, that the kernel may call.
 	///
 	/// Parameters:
-	/// 	jsFunction      - {JS Function}  JS Function to do conversion
+	/// 	fn              - {Function|String}  JS Function to do conversion
 	/// 	paramTypes      - {[String,...]|{variableName: Type,...}} Parameter type array, assumes all parameters are 'float' if null
 	/// 	returnType      - {String}       The return type, assumes 'float' if null
 	///
 	/// Returns:
 	/// 	{GPU} returns itself
 	///
-	addFunction(jsFunction, paramTypes, returnType) {
-		this._runner.functionBuilder.addFunction(null, jsFunction, paramTypes, returnType);
+	addFunction(fn, paramTypes, returnType) {
+		this._runner.functionBuilder.addFunction(null, fn, paramTypes, returnType);
 		return this;
 	}
 
@@ -202,17 +169,21 @@ module.exports = class GPU {
 	/// Note: This function can also be called directly `GPU.isWebGlSupported()`
 	///
 	/// Returns:
-	/// 	{Boolean} TRUE if browser supports webgl
+	/// 	{Boolean} TRUE if browser supports webGl
 	///
-	static isWebGlSupported() {
+	static get isWebGlSupported() {
 		return utils.isWebGlSupported;
 	}
 
-	isWebGlSupported() {
+	get isWebGlSupported() {
 		return utils.isWebGlSupported;
 	}
 
-	getCanvas() {
-		return this._kernelSynchronousExecutor.canvas;
+	get canvas() {
+		return this._canvas;
+	}
+
+	get webGl() {
+		return this._webGl;
 	}
 };

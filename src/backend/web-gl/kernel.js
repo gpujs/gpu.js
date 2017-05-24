@@ -15,7 +15,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.functionBuilder = settings.functionBuilder;
 		this.outputToTexture = settings.outputToTexture;
 		this.endianness = utils.systemEndianness;
-		if (!this.webGl) this.webGl = utils.initWebGl(this.canvas);
+		if (!this._webGl) this._webGl = utils.initWebGl(this.canvas);
 	}
 
 	validateOptions() {
@@ -376,6 +376,7 @@ void main(void) {
 		gl.attachShader(program, fragShader);
 		gl.linkProgram(program);
 		this.framebuffer = gl.createFramebuffer();
+		return this;
 	}
 
 	run() {
