@@ -532,11 +532,9 @@ const utils = class utils {
 		return ret;
 	}
 
-	static flatten(arr) {
-		const _arr = arr.slice(0);
+	static flatten(_arr) {
 		for (let i = 0; i < _arr.length; ++i) {
 			if (Array.isArray(_arr[i])) {
-				_arr[i] = _arr[i].slice(0);
 				_arr[i].splice(0, 0, i, 1);
 				Array.prototype.splice.apply(_arr, _arr[i]);
 				--i;
@@ -545,6 +543,19 @@ const utils = class utils {
 
 		return _arr;
 	}
+
+  static copyFlatten(arr) {
+    return utils.isArray(arr[0])
+      ? utils.isArray(arr[0][0])
+        ? Array.isArray(arr[0][0])
+          ? [].concat.apply([], [].concat.apply([], arr))
+          : [].concat.apply([], [].concat.apply([], arr)
+            .map(function(x) {
+              return Array.prototype.slice.call(x)
+            }))
+        : [].concat.apply([], arr)
+      : arr;
+  }
 
 	static splitArray(array, part) {
 		const result = [];

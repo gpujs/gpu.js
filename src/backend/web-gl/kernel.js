@@ -328,18 +328,18 @@ void main(void) {
 		? `gl_FragColor = actualColor;`
     : (this.floatOutput
       	? `gl_FragColor.r = kernelResult;
-	index += 1.0;
-	threadId = indexTo3D(index, uOutputDim);
-	kernel();
-	gl_FragColor.g = kernelResult;
-	index += 1.0;
-	threadId = indexTo3D(index, uOutputDim);
-	kernel();
-	gl_FragColor.b = kernelResult;
-	index += 1.0;
-	threadId = indexTo3D(index, uOutputDim);
-	kernel();
-	gl_FragColor.a = kernelResult;`
+  index += 1.0;
+  threadId = indexTo3D(index, uOutputDim);
+  kernel();
+  gl_FragColor.g = kernelResult;
+  index += 1.0;
+  threadId = indexTo3D(index, uOutputDim);
+  kernel();
+  gl_FragColor.b = kernelResult;
+  index += 1.0;
+  threadId = indexTo3D(index, uOutputDim);
+  kernel();
+  gl_FragColor.a = kernelResult;`
       	: `gl_FragColor = encode32(kernelResult);`
 			)
 		)
@@ -459,7 +459,11 @@ void main(void) {
 				}
 
 				const paramArray = new Float32Array(paramLength);
-				paramArray.set(utils.flatten(argument));
+				if (this.copyData) {
+          paramArray.set(utils.copyFlatten(argument));
+        } else {
+          paramArray.set(utils.flatten(argument));
+        }
 
 				let argBuffer;
 				if (this.floatTextures) {

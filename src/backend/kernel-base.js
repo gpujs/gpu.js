@@ -20,6 +20,7 @@ module.exports = class BaseKernel {
 		this.floatOutput = null;
 		this.floatOutputForce = null;
 		this.addFunction = null;
+		this.copyData = true;
 
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -105,6 +106,11 @@ module.exports = class BaseKernel {
 
   setWebGl(webGl) {
 	  this._webGl = webGl;
+	  return this;
+  }
+
+  setCopyData(copyData) {
+	  this.copyData = copyData;
 	  return this;
   }
 
