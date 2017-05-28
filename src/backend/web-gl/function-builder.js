@@ -34,7 +34,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 		for (let i = 0; i < functionList.length; ++i) {
 			const node = this.nodeMap[functionList[i]];
 			if (node) {
-				ret.push(this.nodeMap[functionList[i]].getFunctionPrototypeString(opt));
+				ret.push(node.getFunctionPrototypeString(opt));
 			}
 		}
 		return ret.join('\n');

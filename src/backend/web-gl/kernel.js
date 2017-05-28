@@ -140,6 +140,31 @@ module.exports = class WebGLKernel extends KernelBase {
 		kernelNode.isRootKernel = true;
 		builder.addFunctionNode(kernelNode);
 
+		if (this.subKernels !== null && this.subKernels.length > 0) {
+      for (let i = 0; i < this.subKernels.length; i++) {
+        const subKernelFunctionString = this.subKernels[i];
+        const subKernelName = utils.getFunctionNameFromString(subKernelFunctionString);
+        const subKernelNode = new WebGLFunctionNode(subKernelName, subKernelFunctionString);
+        subKernelNode.setAddFunction(builder.addFunction.bind(builder));
+        subKernelNode.paramNames = utils.getParamNamesFromString(subKernelFunctionString);
+        subKernelNode.paramType = paramType;
+        subKernelNode.isSubKernel = true;
+        builder.addFunctionNode(subKernelNode);
+      }
+		} else if (this.subKernelProperties !== null && Object.keys(this.subKernelProperties).length > 0) {
+      for (let p in this.subKernelProperties) {
+        if (!this.subKernelProperties.hasOwnProperty(p)) continue;
+        const subKernelFunctionString = this.subKernelProperties[p];
+        const subKernelName = utils.getFunctionNameFromString(subKernelFunctionString);
+        const subKernelNode = new WebGLFunctionNode(subKernelName, subKernelFunctionString);
+        subKernelNode.setAddFunction(builder.addFunction.bind(builder));
+        subKernelNode.paramNames = utils.getParamNamesFromString(subKernelFunctionString);
+        subKernelNode.paramType = paramType;
+        subKernelNode.isSubKernel = true;
+        builder.addFunctionNode(subKernelNode);
+      }
+    }
+
 		const vertShaderSrc = `
 precision highp float;
 precision highp int;
@@ -317,6 +342,12 @@ void color(float r, float g, float b) {
 highp float kernelResult = 0.0;
 ${ paramStr }
 ${ constantsStr }
+${ (this.subKernelNames !== null
+    ? this.subKernelNames.map((subKernelName) => {
+        return `highp float ${ subKernelName }Result = 0.0;\n`
+       }).join('')
+    : '')
+}
 ${ builder.getPrototypeString('kernel') }
 
 void main(void) {
@@ -340,7 +371,11 @@ void main(void) {
   threadId = indexTo3D(index, uOutputDim);
   kernel();
   gl_FragColor.a = kernelResult;`
-      	: `gl_FragColor = encode32(kernelResult);`
+      	: this.subKernelNames !== null && this.subKernelNames.length > 0
+          ? 'gl_FragData[0] = encode32(kernelResult);\n' + this.subKernelNames.map((subKernelName, i) => {
+              `gl_FragData[${ i + 1 }] = encode32(${ subKernelName }Result);\n`
+              }).join(';')
+          : `gl_FragColor = encode32(kernelResult);`
 			)
 		)
   }

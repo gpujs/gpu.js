@@ -21,6 +21,10 @@ module.exports = class BaseKernel {
 		this.floatOutputForce = null;
 		this.addFunction = null;
 		this.copyData = true;
+		this.subKernels = null;
+		this.subKernelProperties = null;
+		this.subKernelNames = null;
+
 
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -150,4 +154,27 @@ module.exports = class BaseKernel {
 			}
 		});
 	}
+
+  addSubKernel(fnString) {
+	  if (this.subKernels === null) {
+	    this.subKernels = [];
+	    this.subKernelNames = [];
+    }
+	  this.subKernels.push(fnString);
+    this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
+	  return this;
+  }
+
+  addSubKernelProperty(property, fnString) {
+    if (this.subKernelProperties === null) {
+      this.subKernelProperties = {};
+      this.subKernelNames = [];
+    }
+    if (this.subKernelProperties.hasOwnProperty(property)) {
+      throw new Error(`cannot add sub kernel ${ property }, already defined`);
+    }
+	  this.subKernelProperties[property] = fnString;
+    this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
+    return this;
+  }
 };

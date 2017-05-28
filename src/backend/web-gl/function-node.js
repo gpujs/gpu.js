@@ -205,7 +205,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	/// @returns  the append retArr
 	static astFunctionPrototype(ast, retArr, funcParam) {
 		// Setup function return type and name
-		if (funcParam.isRootKernel) {
+		if (funcParam.isRootKernel || funcParam.isSubKernel) {
 			return retArr;
 		}
 
@@ -258,7 +258,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					retArr.push(', ');
 				}
 
-				retArr.push(funcParam.paramType[i]);
+				if (funcParam.paramType[i] === 'Array') {
+				  retArr.push('sampler2D');
+        } else {
+          retArr.push(funcParam.paramType[i]);
+        }
+
 				retArr.push(' ');
 				retArr.push('user_');
 				retArr.push(funcParam.paramNames[i]);
@@ -292,7 +297,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			this.astGeneric(ast.argument, retArr, funcParam);
 			retArr.push(';');
 			retArr.push('return;');
-		} else {
+		} else if (funcParam.isSubKernel) {
+      retArr.push(`${ funcParam.functionName }Result = `);
+      this.astGeneric(ast.argument, retArr, funcParam);
+      retArr.push(';');
+      retArr.push(`return ${ funcParam.functionName }Result;`);
+    } else {
 			retArr.push('return ');
 			this.astGeneric(ast.argument, retArr, funcParam);
 			retArr.push(';');

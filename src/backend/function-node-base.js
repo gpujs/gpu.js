@@ -49,6 +49,8 @@ module.exports = class BaseFunctionNode {
 		this.readVariables = [];
 		this.writeVariables = [];
 		this.addFunction = null;
+		this.isRootKernel = false;
+		this.isSubKernel = false;
 
 		//
 		// Missing jsFunction object exception
