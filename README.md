@@ -137,6 +137,7 @@ Note: To animate the rendering, use requestAnimationFrame instead of setTimeout 
 ### Combining kernels
 
 Sometimes you want to do multiple math operations on the gpu without the round trip penalty of data transfer from cpu to gpu to cpu to gpu, etc.  To aid this there is the `combineKernels` method.
+Note: Kernels can have different dimensions.
 ```js
 const add = gpu.createKernel(function(a, b) {
 	return a[this.thread.x] + b[this.thread.x];
