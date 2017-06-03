@@ -13,7 +13,7 @@ const parser = require('../parser').parser;
 /// 	jsFunction           - {JS Function}   The JS Function the node represents
 /// 	jsFunctionString     - {String}        jsFunction.toString()
 /// 	paramNames           - {[String,...]}  Parameter names of the function
-/// 	paramType            - {[String,...]}  Shader land parameter type assumption
+/// 	paramTypes           - {[String,...]}  Shader land parameters type assumption
 /// 	isRootKernel         - {Boolean}       Special indicator, for kernel function
 /// 	webglFunctionString  - {String}        webgl converted function string
 /// 	openglFunctionString - {String}        opengl converted function string
@@ -98,7 +98,7 @@ module.exports = class BaseFunctionNode {
 					this.paramNames.length +
 					')';
 				}
-				this.paramType = paramTypes;
+				this.paramTypes = paramTypes;
 			} else if (typeof paramTypes === 'object') {
 				const paramVariableNames = Object.keys(paramTypes);
 				if (paramTypes.hasOwnProperty('returns')) {
@@ -111,7 +111,7 @@ module.exports = class BaseFunctionNode {
 					this.paramNames.length +
 					')';
 				} else {
-					this.paramType = this.paramNames.map((key) => {
+					this.paramTypes = this.paramNames.map((key) => {
 						if (paramTypes.hasOwnProperty(key)) {
 							return paramTypes[key];
 						} else {
@@ -121,9 +121,9 @@ module.exports = class BaseFunctionNode {
 				}
 			}
 		} else {
-			this.paramType = [];
+			this.paramTypes = [];
 			for (let a = 0; a < this.paramNames.length; ++a) {
-				this.paramType.push('float');
+				this.paramTypes.push('float');
 			}
 		}
 

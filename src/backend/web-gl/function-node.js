@@ -26,7 +26,7 @@ function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
 	if (!isIdentifierKernelParam(paramName, funcParam) && expectedType !== 'float') {
 		throw 'Error unexpected identifier ' + paramName + ' on line ' + start.line;
 	} else {
-		const actualType = funcParam.paramType[funcParam.paramNames.indexOf(paramName)];
+		const actualType = funcParam.paramTypes[funcParam.paramNames.indexOf(paramName)];
 		if (actualType !== expectedType) {
 			throw 'Error unexpected identifier ' + paramName + ' on line ' + start.line;
 		}
@@ -220,7 +220,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				retArr.push(', ');
 			}
 
-			retArr.push(funcParam.paramType[i]);
+			retArr.push(funcParam.paramTypes[i]);
 			retArr.push(' ');
 			retArr.push('user_');
 			retArr.push(funcParam.paramNames[i]);
@@ -258,10 +258,10 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					retArr.push(', ');
 				}
 
-				if (funcParam.paramType[i] === 'Array') {
+				if (funcParam.paramTypes[i] === 'Array') {
 				  retArr.push('sampler2D');
         } else {
-          retArr.push(funcParam.paramType[i]);
+          retArr.push(funcParam.paramTypes[i]);
         }
 
 				retArr.push(' ');
@@ -660,7 +660,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				// Possibly an array request - handle it as such
 				if (funcParam.paramNames) {
 					const idx = funcParam.paramNames.indexOf(reqName);
-					if (idx >= 0 && funcParam.paramType[idx] === 'float') {
+					if (idx >= 0 && funcParam.paramTypes[idx] === 'float') {
 						assumeNotTexture = true;
 					}
 				}

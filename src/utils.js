@@ -355,6 +355,10 @@ const utils = class utils {
 		return isWebGlSupported;
 	}
 
+	static get isWebGlDrawBuffersSupported() {
+    return isWebGlDrawBuffersSupported;
+  }
+
 	// Default webgl options to use
 	static get initWebGlDefaultOptions() {
 		return {
@@ -479,41 +483,6 @@ const utils = class utils {
 		return ret;
 	}
 
-	static getProgramCacheKey(args, opt, outputDim) {
-		let key = '';
-		for (let i = 0; i < args.length; i++) {
-			const argType = utils.getArgumentType(args[i]);
-			key += argType;
-			if (opt.hardcodeConstants) {
-				if (argType === 'Array' || argType === 'Texture') {
-					const dimensions = utils.getDimensions(args[i], true);
-					key += '[' + dimensions[0] + ',' + dimensions[1] + ',' + dimensions[2] + ']';
-				}
-			}
-		}
-
-		let specialFlags = '';
-		if (opt.wraparound) {
-			specialFlags += 'Wraparound';
-		}
-
-		if (opt.hardcodeConstants) {
-			specialFlags += 'Hardcode';
-			specialFlags += '[' + outputDim[0] + ',' + outputDim[1] + ',' + outputDim[2] + ']';
-		}
-
-		if (opt.constants) {
-			specialFlags += 'Constants';
-			specialFlags += JSON.stringify(opt.constants);
-		}
-
-		if (specialFlags) {
-			key = key + '-' + specialFlags;
-		}
-
-		return key;
-	}
-
 	static pad(arr, padding) {
 		function zeros(n) {
 			return Array.apply(null, new Array(n)).map(Number.prototype.valueOf, 0);
@@ -567,6 +536,7 @@ const utils = class utils {
 };
 let isWebGlSupported;
 const isCanvasSupported = typeof document !== 'undefined' ? utils.isCanvas(document.createElement('canvas')) : false;
-isWebGlSupported = utils.isWebGl(utils.initWebGl(utils.initCanvas()));
-
+const tempWebGl = utils.initWebGl(utils.initCanvas());
+isWebGlSupported = utils.isWebGl(tempWebGl);
+const isWebGlDrawBuffersSupported = Boolean(tempWebGl.getExtension('WEBGL_draw_buffers'));
 module.exports = utils;

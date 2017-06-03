@@ -7,6 +7,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	constructor(fnString, settings) {
 		super(fnString, settings);
 		this.textureCache = {};
+		this.subTextures = null;
 		this.threadDim = {};
 		this.programUniformLocationCache = {};
 		this.framebuffer = null;
@@ -96,15 +97,15 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		let paramStr = '';
 
-		const paramType = [];
+		const paramTypes = [];
 		for (let i = 0; i < paramNames.length; i++) {
-      const argument = arguments[i];
+      const param = arguments[i];
       const paramName = paramNames[i];
-		  const argType = utils.getArgumentType(argument);
-			paramType.push(argType);
+		  const paramType = utils.getArgumentType(param);
+			paramTypes.push(paramType);
 			if (this.hardcodeConstants) {
-				if (argType === 'Array' || argType === 'Texture') {
-					const paramDim = utils.getDimensions(argument, true);
+				if (paramType === 'Array' || paramType === 'Texture') {
+					const paramDim = utils.getDimensions(param, true);
 					const paramSize = utils.dimToTexSize({
 						floatTextures: this.floatTextures,
 						floatOutput: this.floatOutput
@@ -115,53 +116,46 @@ module.exports = class WebGLKernel extends KernelBase {
   highp vec2 user_${ paramName }Size = vec2(${ paramSize[0] }.0, ${ paramSize[1] }.0);
   highp vec3 user_${ paramName }Dim = vec3(${ paramDim[0] }.0, ${ paramDim[1]}.0, ${ paramDim[2] }.0);
 `
-				} else if (argType === 'Number' && Number.isInteger(argument)) {
-					paramStr += 'highp float user_' + paramName + ' = ' + argument + '.0;\n';
-				} else if (argType === 'Number') {
-					paramStr += 'highp float user_' + paramName + ' = ' + argument + ';\n';
+				} else if (paramType === 'Number' && Number.isInteger(param)) {
+					paramStr += 'highp float user_' + paramName + ' = ' + param + '.0;\n';
+				} else if (paramType === 'Number') {
+					paramStr += 'highp float user_' + paramName + ' = ' + param + ';\n';
 				}
 			} else {
-				if (argType === 'Array' || argType === 'Texture') {
+				if (paramType === 'Array' || paramType === 'Texture') {
 					paramStr += `
   uniform highp sampler2D user_${ paramName };
   uniform highp vec2 user_${ paramName }Size;
   uniform highp vec3 user_${ paramName }Dim;
 `;
-				} else if (argType === 'Number') {
+				} else if (paramType === 'Number') {
 					paramStr += `uniform highp float user_${ paramName };\n`;
 				}
 			}
 		}
 
-		const kernelNode = new WebGLFunctionNode('kernel', this.fnString);
-		kernelNode.setAddFunction(builder.addFunction.bind(builder));
-		kernelNode.paramNames = paramNames;
-		kernelNode.paramType = paramType;
-		kernelNode.isRootKernel = true;
-		builder.addFunctionNode(kernelNode);
+    builder.addKernel(this.fnString, this.paramNames, paramTypes);
 
 		if (this.subKernels !== null && this.subKernels.length > 0) {
+      this.subKernelNames = [];
+      this.subTextures = [];
       for (let i = 0; i < this.subKernels.length; i++) {
-        const subKernelFunctionString = this.subKernels[i];
-        const subKernelName = utils.getFunctionNameFromString(subKernelFunctionString);
-        const subKernelNode = new WebGLFunctionNode(subKernelName, subKernelFunctionString);
-        subKernelNode.setAddFunction(builder.addFunction.bind(builder));
-        subKernelNode.paramNames = utils.getParamNamesFromString(subKernelFunctionString);
-        subKernelNode.paramType = paramType;
-        subKernelNode.isSubKernel = true;
-        builder.addFunctionNode(subKernelNode);
+        const subKernel = builder.addSubKernel(this.subKernels[i], paramTypes);
+        this.subKernelNames.push(subKernel.functionName);
+        const subTextureName = `SUB_TEXTURE${ i }`;
+        this.subTextures.push(subTextureName);
+        this.getTextureCache(subTextureName);
       }
 		} else if (this.subKernelProperties !== null && Object.keys(this.subKernelProperties).length > 0) {
+      this.subKernelNames = [];
+      this.subTextures = [];
       for (let p in this.subKernelProperties) {
         if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-        const subKernelFunctionString = this.subKernelProperties[p];
-        const subKernelName = utils.getFunctionNameFromString(subKernelFunctionString);
-        const subKernelNode = new WebGLFunctionNode(subKernelName, subKernelFunctionString);
-        subKernelNode.setAddFunction(builder.addFunction.bind(builder));
-        subKernelNode.paramNames = utils.getParamNamesFromString(subKernelFunctionString);
-        subKernelNode.paramType = paramType;
-        subKernelNode.isSubKernel = true;
-        builder.addFunctionNode(subKernelNode);
+        const subKernel = builder.addSubKernel(this.subKernelProperties[p], paramTypes);
+        this.subKernelNames.push(subKernel.functionName);
+        const subTextureName = `SUB_TEXTURE${ p }`;
+        this.subTextures.push(subTextureName);
+        this.getTextureCache(subTextureName);
       }
     }
 
@@ -419,7 +413,6 @@ void main(void) {
 			this.build.apply(this, arguments);
 		}
 		const paramNames = this.paramNames;
-		const textureCache = this.textureCache;
 		const texSize = this.texSize;
 		const threadDim = this.threadDim;
 		const framebuffer = this.framebuffer;
@@ -463,7 +456,9 @@ void main(void) {
 		}
 
 		for (let textureCount = 0; textureCount < paramNames.length; textureCount++) {
-			let paramDim, paramSize, texture;
+			let paramDim, paramSize;
+			const argumentTextureName = `TEXTURE${ textureCount }`;
+			const argumentTexture = this.getTextureCache(argumentTextureName);
 			const argument = arguments[textureCount];
 			const paramName = paramNames[textureCount];
 			const argType = utils.getArgumentType(argument);
@@ -474,15 +469,8 @@ void main(void) {
 					floatOutput: this.floatOutput
 				}, paramDim);
 
-				if (textureCache[textureCount]) {
-					texture = textureCache[textureCount];
-				} else {
-					texture = gl.createTexture();
-					textureCache[textureCount] = texture;
-				}
-
-				gl.activeTexture(gl['TEXTURE' + textureCount]);
-				gl.bindTexture(gl.TEXTURE_2D, texture);
+				gl.activeTexture(gl[argumentTextureName]);
+				gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -522,12 +510,12 @@ void main(void) {
 				const argLoc = this.getUniformLocation('user_' + paramName);
 				gl.uniform1f(argLoc, argument);
 			} else if (argType === 'Texture') {
-				const texture = argument;
-				paramDim = utils.getDimensions(texture.dimensions, true);
-				paramSize = texture.size;
+				const inputTexture = argument;
+				paramDim = utils.getDimensions(inputTexture.dimensions, true);
+				paramSize = inputTexture.size;
 
-				gl.activeTexture(gl['TEXTURE' + textureCount]);
-				gl.bindTexture(gl.TEXTURE_2D, texture.texture);
+				gl.activeTexture(gl[argumentTextureName]);
+				gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
 				const paramLoc = this.getUniformLocation('user_' + paramName);
 				const paramSizeLoc = this.getUniformLocation('user_' + paramName + 'Size');
@@ -540,13 +528,9 @@ void main(void) {
 				throw 'Input type not supported (WebGL): ' + argument;
 			}
 		}
-		let textureCount = paramNames.length;
-		let outputTexture = textureCache[textureCount];
-		if (!outputTexture) {
-			outputTexture = gl.createTexture();
-			textureCache[textureCount] = outputTexture;
-		}
-		gl.activeTexture(gl['TEXTURE' + textureCount]);
+    const outputTextureName = `TEXTURE${ paramNames.length }`;
+		let outputTexture = this.getTextureCache(outputTextureName);
+		gl.activeTexture(gl[outputTextureName]);
 		gl.bindTexture(gl.TEXTURE_2D, outputTexture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -574,7 +558,7 @@ void main(void) {
 
 		if (this.outputToTexture) {
 			// Don't retain a handle on the output texture, we might need to render on the same texture later
-			delete textureCache[textureCount];
+			this.deleteTextureCache(outputTextureName);
 			return new Texture(outputTexture, texSize, this.dimensions, this.webGl);
 		} else {
 			let result;
@@ -601,6 +585,21 @@ void main(void) {
 			}
 		}
 	}
+
+	getTextureCache(name) {
+    const textureCache = this.textureCache;
+    if (textureCache.hasOwnProperty(name)) {
+      return textureCache[name];
+    }
+    return textureCache[name] = this._webGl.createTexture();
+  }
+
+  deleteTextureCache(name) {
+    const textureCache = this.textureCache;
+    if (textureCache.hasOwnProperty(name)) {
+      delete textureCache[name];
+    }
+  }
 
 	getUniformLocation(name) {
 		let location = this.programUniformLocationCache[name];
