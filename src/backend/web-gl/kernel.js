@@ -7,15 +7,18 @@ module.exports = class WebGLKernel extends KernelBase {
 	constructor(fnString, settings) {
 		super(fnString, settings);
 		this.textureCache = {};
-		this.subTextures = null;
 		this.threadDim = {};
 		this.programUniformLocationCache = {};
 		this.framebuffer = null;
+
 		this.buffer = null;
 		this.program = null;
 		this.functionBuilder = settings.functionBuilder;
 		this.outputToTexture = settings.outputToTexture;
 		this.endianness = utils.systemEndianness;
+		this.subKernelOutputTextures = null;
+		this.subKernelOutputTextureNames = null;
+		this.subKernelOutputVariableNames = null
 		if (!this._webGl) this._webGl = utils.initWebGl(this.canvas);
 	}
 
@@ -137,25 +140,35 @@ module.exports = class WebGLKernel extends KernelBase {
     builder.addKernel(this.fnString, this.paramNames, paramTypes);
 
 		if (this.subKernels !== null && this.subKernels.length > 0) {
-      this.subKernelNames = [];
-      this.subTextures = [];
+      this.subKernelOutputTextureNames = [];
+      this.subKernelOutputTextures = [];
+			this.subKernelFramebuffers = [];
+			this.subKernelOutputVariableNames = [];
       for (let i = 0; i < this.subKernels.length; i++) {
-        const subKernel = builder.addSubKernel(this.subKernels[i], paramTypes);
-        this.subKernelNames.push(subKernel.functionName);
-        const subTextureName = `SUB_TEXTURE${ i }`;
-        this.subTextures.push(subTextureName);
-        this.getTextureCache(subTextureName);
+        builder.addSubKernel(this.subKernels[i], paramTypes);
+	      const subKernelOutputTextureName = `TEXTURE${ paramNames.length + i + 1 }`;
+	      const subKernelOutputVariableName = this.subKernelProperties[i].name + 'Result';
+        this.subKernelOutputTextureNames.push(subKernelOutputTextureName);
+        this.subKernelOutputTextures.push(this.getTextureCache(subKernelOutputTextureName));
+        this.subKernelFramebuffers.push(this.createFramebuffer());
+	      this.subKernelOutputVariableNames.push(subKernelOutputVariableName);
       }
 		} else if (this.subKernelProperties !== null && Object.keys(this.subKernelProperties).length > 0) {
-      this.subKernelNames = [];
-      this.subTextures = [];
+      this.subKernelOutputTextureNames = [];
+      this.subKernelOutputTextures = [];
+			this.subKernelFramebuffers = [];
+			this.subKernelOutputVariableNames = [];
+			let i = 0;
       for (let p in this.subKernelProperties) {
         if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-        const subKernel = builder.addSubKernel(this.subKernelProperties[p], paramTypes);
-        this.subKernelNames.push(subKernel.functionName);
-        const subTextureName = `SUB_TEXTURE${ p }`;
-        this.subTextures.push(subTextureName);
-        this.getTextureCache(subTextureName);
+        builder.addSubKernel(this.subKernelProperties[p], paramTypes);
+        const subKernelOutputTextureName = `TEXTURE${ paramNames.length + i + 1 }`;
+	      const subKernelOutputVariableName = this.subKernelProperties[p].name + 'Result';
+	      this.subKernelOutputTextureNames.push(subKernelOutputTextureName);
+        this.subKernelOutputTextures.push(this.getTextureCache(subKernelOutputTextureName));
+	      this.subKernelFramebuffers.push(this.createFramebuffer());
+	      this.subKernelOutputVariableNames.push(subKernelOutputVariableName);
+	      i++;
       }
     }
 
@@ -336,9 +349,9 @@ void color(float r, float g, float b) {
 highp float kernelResult = 0.0;
 ${ paramStr }
 ${ constantsStr }
-${ (this.subKernelNames !== null
-    ? this.subKernelNames.map((subKernelName) => {
-        return `highp float ${ subKernelName }Result = 0.0;\n`
+${ (this.subKernelOutputVariableNames !== null && this.subKernelOutputVariableNames.length > 0
+    ? this.subKernelOutputVariableNames.map((variableName) => {
+        return `highp float ${ variableName } = 0.0;\n`
        }).join('')
     : '')
 }
@@ -365,9 +378,9 @@ void main(void) {
   threadId = indexTo3D(index, uOutputDim);
   kernel();
   gl_FragColor.a = kernelResult;`
-      	: this.subKernelNames !== null && this.subKernelNames.length > 0
-          ? 'gl_FragData[0] = encode32(kernelResult);\n' + this.subKernelNames.map((subKernelName, i) => {
-              `gl_FragData[${ i + 1 }] = encode32(${ subKernelName }Result);\n`
+      	: this.subKernelOutputVariableNames !== null && this.subKernelOutputVariableNames.length > 0
+          ? 'gl_FragData[0] = encode32(kernelResult);\n' + this.subKernelOutputVariableNames.map((variableName, i) => {
+              `gl_FragData[${ i + 1 }] = encode32(${ variableName });\n`
               }).join(';')
           : `gl_FragColor = encode32(kernelResult);`
 			)
@@ -404,7 +417,7 @@ void main(void) {
 		gl.attachShader(program, vertShader);
 		gl.attachShader(program, fragShader);
 		gl.linkProgram(program);
-		this.framebuffer = gl.createFramebuffer();
+		this.framebuffer = this.createFramebuffer();
 		return this;
 	}
 
@@ -532,6 +545,15 @@ void main(void) {
 		let outputTexture = this.getTextureCache(outputTextureName);
 		gl.activeTexture(gl[outputTextureName]);
 		gl.bindTexture(gl.TEXTURE_2D, outputTexture);
+		if (this.subKernelOutputTextures !== null) {
+			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
+				const subKernelOutputTextureName = this.subKernelOutputTextureNames[i];
+				const outputTextureName = `TEXTURE${ paramNames.length + i + 1 }`;
+				const subKernelOutputTexture = this.subKernelOutputTextures[i];
+				gl.activeTexture(gl[outputTextureName]);
+				gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
+			}
+		}
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -549,17 +571,38 @@ void main(void) {
 			return;
 		}
 
-		framebuffer.width = texSize[0];
-		framebuffer.height = texSize[1];
-		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
-
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+		if (this.subKernelOutputTextures !== null) {
+			const output = {
+				result: this.framebufferToOutput(framebuffer, outputTexture, outputTextureName)
+			};
+			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
+				output[this.subKernelOutputTextureNames[i]] = this.framebufferToOutput(
+					this.subKernelFramebuffers[i],
+					this.subKernelOutputTextures[i],
+					this.subKernelOutputTextureNames[i]
+				);
+			}
+
+			return output;
+		}
+
+		return this.framebufferToOutput(framebuffer, outputTexture, outputTextureName);
+	}
+
+	framebufferToOutput(framebuffer, texture, name) {
+		const gl = this._webGl;
+		const texSize = this.texSize;
+		const threadDim = this.threadDim;
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
 
 		if (this.outputToTexture) {
 			// Don't retain a handle on the output texture, we might need to render on the same texture later
-			this.deleteTextureCache(outputTextureName);
-			return new Texture(outputTexture, texSize, this.dimensions, this.webGl);
+			this.deleteTextureCache(name);
+			return new Texture(texture, texSize, this.dimensions, this.webGl);
 		} else {
 			let result;
 			if (this.floatOutput) {
@@ -584,6 +627,13 @@ void main(void) {
 				});
 			}
 		}
+	}
+
+	createFramebuffer() {
+		const framebuffer = this._webGl.createFramebuffer();
+		framebuffer.width = this.texSize[0];
+		framebuffer.height = this.texSize[1];
+		return framebuffer;
 	}
 
 	getTextureCache(name) {
