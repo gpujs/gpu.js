@@ -18,7 +18,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.endianness = utils.systemEndianness;
 		this.subKernelOutputTextures = null;
 		this.subKernelOutputTextureNames = null;
-		this.subKernelOutputVariableNames = null
+		this.subKernelOutputVariableNames = null;
 		if (!this._webGl) this._webGl = utils.initWebGl(this.canvas);
 	}
 
@@ -139,37 +139,46 @@ module.exports = class WebGLKernel extends KernelBase {
 
     builder.addKernel(this.fnString, this.paramNames, paramTypes);
 
+    let ext = null;
+    if (this.subKernelProperties) {
+      ext = gl.getExtension('WEBGL_draw_buffers');
+    }
 		if (this.subKernels !== null && this.subKernels.length > 0) {
+      if (!ext) throw new Error('could not instantiate draw buffers extension');
       this.subKernelOutputTextureNames = [];
       this.subKernelOutputTextures = [];
-			this.subKernelFramebuffers = [];
 			this.subKernelOutputVariableNames = [];
+			const extDrawBuffers = [ext.COLOR_ATTACHMENT0_WEBGL];
       for (let i = 0; i < this.subKernels.length; i++) {
         builder.addSubKernel(this.subKernels[i], paramTypes);
 	      const subKernelOutputTextureName = `TEXTURE${ paramNames.length + i + 1 }`;
 	      const subKernelOutputVariableName = this.subKernelProperties[i].name + 'Result';
-        this.subKernelOutputTextureNames.push(subKernelOutputTextureName);
+        this.subKernelOutputTextureNames.push(i);
         this.subKernelOutputTextures.push(this.getTextureCache(subKernelOutputTextureName));
-        this.subKernelFramebuffers.push(this.createFramebuffer());
 	      this.subKernelOutputVariableNames.push(subKernelOutputVariableName);
+	      extDrawBuffers.push(ext[`COLOR_ATTACHMENT${i + 1}_WEBGL`]);
       }
+
+      ext.drawBuffersWEBGL(extDrawBuffers);
 		} else if (this.subKernelProperties !== null && Object.keys(this.subKernelProperties).length > 0) {
+      if (!ext) throw new Error('could not instantiate draw buffers extension');
       this.subKernelOutputTextureNames = [];
       this.subKernelOutputTextures = [];
-			this.subKernelFramebuffers = [];
 			this.subKernelOutputVariableNames = [];
+      const extDrawBuffers = [ext.COLOR_ATTACHMENT0_WEBGL];
 			let i = 0;
       for (let p in this.subKernelProperties) {
         if (!this.subKernelProperties.hasOwnProperty(p)) continue;
         builder.addSubKernel(this.subKernelProperties[p], paramTypes);
         const subKernelOutputTextureName = `TEXTURE${ paramNames.length + i + 1 }`;
 	      const subKernelOutputVariableName = this.subKernelProperties[p].name + 'Result';
-	      this.subKernelOutputTextureNames.push(subKernelOutputTextureName);
+	      this.subKernelOutputTextureNames.push(p);
         this.subKernelOutputTextures.push(this.getTextureCache(subKernelOutputTextureName));
-	      this.subKernelFramebuffers.push(this.createFramebuffer());
 	      this.subKernelOutputVariableNames.push(subKernelOutputVariableName);
+        extDrawBuffers.push(ext[`COLOR_ATTACHMENT${i + 1}_WEBGL`]);
 	      i++;
       }
+      ext.drawBuffersWEBGL(extDrawBuffers);
     }
 
 		const vertShaderSrc = `
@@ -189,8 +198,8 @@ void main(void) {
 `;
 
 		const vertShader = gl.createShader(gl.VERTEX_SHADER);
-
 		const fragShaderSrc = `
+${ this.subKernelOutputVariableNames !== null ? '#extension GL_EXT_draw_buffers : require' : '' }
 precision highp float;
 precision highp int;
 precision highp sampler2D;
@@ -380,8 +389,8 @@ void main(void) {
   gl_FragColor.a = kernelResult;`
       	: this.subKernelOutputVariableNames !== null && this.subKernelOutputVariableNames.length > 0
           ? 'gl_FragData[0] = encode32(kernelResult);\n' + this.subKernelOutputVariableNames.map((variableName, i) => {
-              `gl_FragData[${ i + 1 }] = encode32(${ variableName });\n`
-              }).join(';')
+              return `gl_FragData[${ i + 1 }] = encode32(${ variableName });\n`
+              }).join('')
           : `gl_FragColor = encode32(kernelResult);`
 			)
 		)
@@ -417,192 +426,205 @@ void main(void) {
 		gl.attachShader(program, vertShader);
 		gl.attachShader(program, fragShader);
 		gl.linkProgram(program);
-		this.framebuffer = this.createFramebuffer();
+		this.framebuffer = this._webGl.createFramebuffer();
+    this.framebuffer.width = this.texSize[0];
+    this.framebuffer.height = this.texSize[1];
 		return this;
 	}
 
 	run() {
-		if (this.program === null) {
-			this.build.apply(this, arguments);
-		}
-		const paramNames = this.paramNames;
-		const texSize = this.texSize;
-		const threadDim = this.threadDim;
-		const framebuffer = this.framebuffer;
-		const vertices = new Float32Array([-1, -1,
-			1, -1, -1, 1,
-			1, 1
-		]);
-		const texCoords = new Float32Array([
-			0, 0,
-			1, 0,
-			0, 1,
-			1, 1
-		]);
-		const gl = this.webGl;
-		gl.useProgram(this.program);
+    if (this.program === null) {
+      this.build.apply(this, arguments);
+    }
+    const paramNames = this.paramNames;
+    const texSize = this.texSize;
+    const threadDim = this.threadDim;
+    const framebuffer = this.framebuffer;
+    const vertices = new Float32Array([-1, -1,
+      1, -1, -1, 1,
+      1, 1
+    ]);
+    const texCoords = new Float32Array([
+      0, 0,
+      1, 0,
+      0, 1,
+      1, 1
+    ]);
+    const gl = this.webGl;
+    gl.useProgram(this.program);
 
-		const texCoordOffset = vertices.byteLength;
-		let buffer = this.buffer;
-		if (!buffer) {
-			buffer = this.buffer = gl.createBuffer();
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-			gl.bufferData(gl.ARRAY_BUFFER, vertices.byteLength + texCoords.byteLength, gl.STATIC_DRAW);
-		} else {
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-		}
-		gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices);
-		gl.bufferSubData(gl.ARRAY_BUFFER, texCoordOffset, texCoords);
+    const texCoordOffset = vertices.byteLength;
+    let buffer = this.buffer;
+    if (!buffer) {
+      buffer = this.buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, vertices.byteLength + texCoords.byteLength, gl.STATIC_DRAW);
+    } else {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    }
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices);
+    gl.bufferSubData(gl.ARRAY_BUFFER, texCoordOffset, texCoords);
 
-		const aPosLoc = gl.getAttribLocation(this.program, 'aPos');
-		gl.enableVertexAttribArray(aPosLoc);
-		gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, gl.FALSE, 0, 0);
-		const aTexCoordLoc = gl.getAttribLocation(this.program, 'aTexCoord');
-		gl.enableVertexAttribArray(aTexCoordLoc);
-		gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
+    const aPosLoc = gl.getAttribLocation(this.program, 'aPos');
+    gl.enableVertexAttribArray(aPosLoc);
+    gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, gl.FALSE, 0, 0);
+    const aTexCoordLoc = gl.getAttribLocation(this.program, 'aTexCoord');
+    gl.enableVertexAttribArray(aTexCoordLoc);
+    gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 
-		if (!this.hardcodeConstants) {
-			const uOutputDimLoc = this.getUniformLocation('uOutputDim');
-			gl.uniform3fv(uOutputDimLoc, threadDim);
-			const uTexSizeLoc = this.getUniformLocation('uTexSize');
-			gl.uniform2fv(uTexSizeLoc, texSize);
-		}
+    if (!this.hardcodeConstants) {
+      const uOutputDimLoc = this.getUniformLocation('uOutputDim');
+      gl.uniform3fv(uOutputDimLoc, threadDim);
+      const uTexSizeLoc = this.getUniformLocation('uTexSize');
+      gl.uniform2fv(uTexSizeLoc, texSize);
+    }
 
-		for (let textureCount = 0; textureCount < paramNames.length; textureCount++) {
-			let paramDim, paramSize;
-			const argumentTextureName = `TEXTURE${ textureCount }`;
-			const argumentTexture = this.getTextureCache(argumentTextureName);
-			const argument = arguments[textureCount];
-			const paramName = paramNames[textureCount];
-			const argType = utils.getArgumentType(argument);
-			if (argType === 'Array') {
-				paramDim = utils.getDimensions(argument, true);
-				paramSize = utils.dimToTexSize({
-					floatTextures: this.floatTextures,
-					floatOutput: this.floatOutput
-				}, paramDim);
+    for (let textureCount = 0; textureCount < paramNames.length; textureCount++) {
+      let paramDim, paramSize;
+      const argumentTextureName = `TEXTURE${ textureCount }`;
+      const argumentTexture = this.getTextureCache(argumentTextureName);
+      const argument = arguments[textureCount];
+      const paramName = paramNames[textureCount];
+      const argType = utils.getArgumentType(argument);
+      if (argType === 'Array') {
+        paramDim = utils.getDimensions(argument, true);
+        paramSize = utils.dimToTexSize({
+          floatTextures: this.floatTextures,
+          floatOutput: this.floatOutput
+        }, paramDim);
 
-				gl.activeTexture(gl[argumentTextureName]);
-				gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.activeTexture(gl[argumentTextureName]);
+        gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-				let paramLength = paramSize[0] * paramSize[1];
-				if (this.floatTextures) {
-					paramLength *= 4;
-				}
+        let paramLength = paramSize[0] * paramSize[1];
+        if (this.floatTextures) {
+          paramLength *= 4;
+        }
 
-				const paramArray = new Float32Array(paramLength);
-				if (this.copyData) {
+        const paramArray = new Float32Array(paramLength);
+        if (this.copyData) {
           paramArray.set(utils.copyFlatten(argument));
         } else {
           paramArray.set(utils.flatten(argument));
         }
 
-				let argBuffer;
-				if (this.floatTextures) {
-					argBuffer = new Float32Array(paramArray);
-					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.FLOAT, argBuffer);
-				} else {
-					argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
-					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
-				}
+        let argBuffer;
+        if (this.floatTextures) {
+          argBuffer = new Float32Array(paramArray);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.FLOAT, argBuffer);
+        } else {
+          argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
+        }
 
-				const paramLoc = this.getUniformLocation('user_' + paramName);
-				const paramSizeLoc = this.getUniformLocation('user_' + paramName + 'Size');
-				const paramDimLoc = this.getUniformLocation('user_' + paramName + 'Dim');
+        const paramLoc = this.getUniformLocation('user_' + paramName);
+        const paramSizeLoc = this.getUniformLocation('user_' + paramName + 'Size');
+        const paramDimLoc = this.getUniformLocation('user_' + paramName + 'Dim');
 
-				if (!this.hardcodeConstants) {
-					gl.uniform3fv(paramDimLoc, paramDim);
-					gl.uniform2fv(paramSizeLoc, paramSize);
-				}
-				gl.uniform1i(paramLoc, textureCount);
-			} else if (argType === 'Number') {
-				const argLoc = this.getUniformLocation('user_' + paramName);
-				gl.uniform1f(argLoc, argument);
-			} else if (argType === 'Texture') {
-				const inputTexture = argument;
-				paramDim = utils.getDimensions(inputTexture.dimensions, true);
-				paramSize = inputTexture.size;
+        if (!this.hardcodeConstants) {
+          gl.uniform3fv(paramDimLoc, paramDim);
+          gl.uniform2fv(paramSizeLoc, paramSize);
+        }
+        gl.uniform1i(paramLoc, textureCount);
+      } else if (argType === 'Number') {
+        const argLoc = this.getUniformLocation('user_' + paramName);
+        gl.uniform1f(argLoc, argument);
+      } else if (argType === 'Texture') {
+        const inputTexture = argument;
+        paramDim = utils.getDimensions(inputTexture.dimensions, true);
+        paramSize = inputTexture.size;
 
-				gl.activeTexture(gl[argumentTextureName]);
-				gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
+        gl.activeTexture(gl[argumentTextureName]);
+        gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-				const paramLoc = this.getUniformLocation('user_' + paramName);
-				const paramSizeLoc = this.getUniformLocation('user_' + paramName + 'Size');
-				const paramDimLoc = this.getUniformLocation('user_' + paramName + 'Dim');
+        const paramLoc = this.getUniformLocation('user_' + paramName);
+        const paramSizeLoc = this.getUniformLocation('user_' + paramName + 'Size');
+        const paramDimLoc = this.getUniformLocation('user_' + paramName + 'Dim');
 
-				gl.uniform3fv(paramDimLoc, paramDim);
-				gl.uniform2fv(paramSizeLoc, paramSize);
-				gl.uniform1i(paramLoc, textureCount);
-			} else {
-				throw 'Input type not supported (WebGL): ' + argument;
-			}
-		}
+        gl.uniform3fv(paramDimLoc, paramDim);
+        gl.uniform2fv(paramSizeLoc, paramSize);
+        gl.uniform1i(paramLoc, textureCount);
+      } else {
+        throw 'Input type not supported (WebGL): ' + argument;
+      }
+    }
     const outputTextureName = `TEXTURE${ paramNames.length }`;
-		let outputTexture = this.getTextureCache(outputTextureName);
-		gl.activeTexture(gl[outputTextureName]);
-		gl.bindTexture(gl.TEXTURE_2D, outputTexture);
-		if (this.subKernelOutputTextures !== null) {
-			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
-				const subKernelOutputTextureName = this.subKernelOutputTextureNames[i];
-				const outputTextureName = `TEXTURE${ paramNames.length + i + 1 }`;
-				const subKernelOutputTexture = this.subKernelOutputTextures[i];
-				gl.activeTexture(gl[outputTextureName]);
-				gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
-			}
-		}
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		if (this.floatOutput) {
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-		} else {
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-		}
+    let outputTexture = this.getTextureCache(outputTextureName);
+    gl.activeTexture(gl[outputTextureName]);
+    gl.bindTexture(gl.TEXTURE_2D, outputTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    if (this.floatOutput) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+    } else {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    }
 
-		if (this.graphical) {
-			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-			return;
-		}
+    if (this.subKernelOutputTextures !== null) {
+      for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
+        const outputTextureName = `TEXTURE${ paramNames.length + i + 1 }`;
+        const subKernelOutputTexture = this.subKernelOutputTextures[i];
+        gl.activeTexture(gl[outputTextureName]);
+        gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        if (this.floatOutput) {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+        } else {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        }
+      }
+    }
 
-		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    if (this.graphical) {
+      gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      return;
+    }
 
-		if (this.subKernelOutputTextures !== null) {
-			const output = {
-				result: this.framebufferToOutput(framebuffer, outputTexture, outputTextureName)
-			};
-			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
-				output[this.subKernelOutputTextureNames[i]] = this.framebufferToOutput(
-					this.subKernelFramebuffers[i],
-					this.subKernelOutputTextures[i],
-					this.subKernelOutputTextureNames[i]
-				);
-			}
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
-			return output;
-		}
+    if (this.subKernelOutputTextures !== null) {
+      for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.subKernelOutputTextures[i], 0);
+      }
+    }
 
-		return this.framebufferToOutput(framebuffer, outputTexture, outputTextureName);
-	}
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-	framebufferToOutput(framebuffer, texture, name) {
-		const gl = this._webGl;
-		const texSize = this.texSize;
-		const threadDim = this.threadDim;
+    if (this.subKernelOutputTextures !== null) {
+      const output = {
+        result: this.renderOutput(outputTexture, name)
+      };
+      for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
+        output[this.subKernelOutputTextureNames[i]] = new Texture(this.subKernelOutputTextures[i], texSize, this.dimensions, this.webGl);
+      }
 
-		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      return output;
+    }
+
+    return this.renderOutput(outputTexture, name);
+  }
+
+  renderOutput(outputTexture, name) {
+	  const texSize = this.texSize;
+	  const gl = this._webGl;
+	  const threadDim = this.threadDim;
 
 		if (this.outputToTexture) {
 			// Don't retain a handle on the output texture, we might need to render on the same texture later
 			this.deleteTextureCache(name);
-			return new Texture(texture, texSize, this.dimensions, this.webGl);
+			return new Texture(outputTexture, texSize, this.dimensions, this.webGl);
 		} else {
 			let result;
 			if (this.floatOutput) {
@@ -627,13 +649,6 @@ void main(void) {
 				});
 			}
 		}
-	}
-
-	createFramebuffer() {
-		const framebuffer = this._webGl.createFramebuffer();
-		framebuffer.width = this.texSize[0];
-		framebuffer.height = this.texSize[1];
-		return framebuffer;
 	}
 
 	getTextureCache(name) {

@@ -258,11 +258,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					retArr.push(', ');
 				}
 
-				if (funcParam.paramTypes[i] === 'Array') {
-				  retArr.push('sampler2D');
-        } else {
-          retArr.push(funcParam.paramTypes[i]);
-        }
+        retArr.push('float');
 
 				retArr.push(' ');
 				retArr.push('user_');
