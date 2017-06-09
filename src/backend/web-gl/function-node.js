@@ -258,7 +258,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					retArr.push(', ');
 				}
 
-        retArr.push('float');
+				retArr.push('float');
 
 				retArr.push(' ');
 				retArr.push('user_');
@@ -294,11 +294,11 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			retArr.push(';');
 			retArr.push('return;');
 		} else if (funcParam.isSubKernel) {
-      retArr.push(`${ funcParam.functionName }Result = `);
-      this.astGeneric(ast.argument, retArr, funcParam);
-      retArr.push(';');
-      retArr.push(`return ${ funcParam.functionName }Result;`);
-    } else {
+			retArr.push(`${ funcParam.functionName }Result = `);
+			this.astGeneric(ast.argument, retArr, funcParam);
+			retArr.push(';');
+			retArr.push(`return ${ funcParam.functionName }Result;`);
+		} else {
 			retArr.push('return ');
 			this.astGeneric(ast.argument, retArr, funcParam);
 			retArr.push(';');

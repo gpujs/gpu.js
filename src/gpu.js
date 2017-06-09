@@ -95,24 +95,24 @@ module.exports = class GPU {
 	}
 
 	createKernels() {
-	  const fn = arguments[arguments.length - 2];
-	  const settings = arguments[arguments.length - 1];
-	  const kernel = this.createKernel(fn, settings);
+		const fn = arguments[arguments.length - 2];
+		const settings = arguments[arguments.length - 1];
+		const kernel = this.createKernel(fn, settings);
 
-	  if (typeof arguments[0] === 'function') {
-	    for (let i = 0; i < arguments.length - 2; i++) {
-        kernel.addSubKernel(arguments[i]);
-      }
-    } else {
-	    const functions = arguments[0];
-      for (let p in functions) {
-        if (!functions.hasOwnProperty(p)) continue;
-        kernel.addSubKernelProperty(p, functions[p]);
-      }
-    }
+		if (typeof arguments[0] === 'function') {
+			for (let i = 0; i < arguments.length - 2; i++) {
+				kernel.addSubKernel(arguments[i]);
+			}
+		} else {
+			const functions = arguments[0];
+			for (let p in functions) {
+				if (!functions.hasOwnProperty(p)) continue;
+				kernel.addSubKernelProperty(p, functions[p]);
+			}
+		}
 
-	  return kernel;
-  }
+		return kernel;
+	}
 
 	combineKernels() {
 		const lastKernel = arguments[arguments.length - 2];
@@ -120,7 +120,7 @@ module.exports = class GPU {
 		if (this.mode === 'cpu') return combinedKernel;
 
 		const canvas = arguments[0].canvas;
-		let webGl =  arguments[0].webGl;
+		let webGl = arguments[0].webGl;
 
 		for (let i = 0; i < arguments.length - 1; i++) {
 			arguments[i]

@@ -94,9 +94,9 @@ module.exports = class BaseFunctionNode {
 			if (Array.isArray(paramTypes)) {
 				if (paramTypes.length !== this.paramNames.length) {
 					throw 'Invalid argument type array length, against function length -> (' +
-					paramTypes.length + ',' +
-					this.paramNames.length +
-					')';
+						paramTypes.length + ',' +
+						this.paramNames.length +
+						')';
 				}
 				this.paramTypes = paramTypes;
 			} else if (typeof paramTypes === 'object') {
@@ -107,9 +107,9 @@ module.exports = class BaseFunctionNode {
 				}
 				if (paramVariableNames.length > 0 && paramVariableNames.length !== this.paramNames.length) {
 					throw 'Invalid argument type array length, against function length -> (' +
-					paramVariableNames.length + ',' +
-					this.paramNames.length +
-					')';
+						paramVariableNames.length + ',' +
+						this.paramNames.length +
+						')';
 				} else {
 					this.paramTypes = this.paramNames.map((key) => {
 						if (paramTypes.hasOwnProperty(key)) {

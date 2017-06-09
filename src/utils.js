@@ -356,8 +356,8 @@ const utils = class utils {
 	}
 
 	static get isWebGlDrawBuffersSupported() {
-    return isWebGlDrawBuffersSupported;
-  }
+		return isWebGlDrawBuffersSupported;
+	}
 
 	// Default webgl options to use
 	static get initWebGlDefaultOptions() {
@@ -513,18 +513,15 @@ const utils = class utils {
 		return _arr;
 	}
 
-  static copyFlatten(arr) {
-    return utils.isArray(arr[0])
-      ? utils.isArray(arr[0][0])
-        ? Array.isArray(arr[0][0])
-          ? [].concat.apply([], [].concat.apply([], arr))
-          : [].concat.apply([], [].concat.apply([], arr)
-            .map(function(x) {
-              return Array.prototype.slice.call(x)
-            }))
-        : [].concat.apply([], arr)
-      : arr;
-  }
+	static copyFlatten(arr) {
+		return utils.isArray(arr[0]) ?
+			utils.isArray(arr[0][0]) ?
+			Array.isArray(arr[0][0]) ? [].concat.apply([], [].concat.apply([], arr)) : [].concat.apply([], [].concat.apply([], arr)
+				.map(function(x) {
+					return Array.prototype.slice.call(x)
+				})) : [].concat.apply([], arr) :
+			arr;
+	}
 
 	static splitArray(array, part) {
 		const result = [];

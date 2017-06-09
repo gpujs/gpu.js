@@ -103,19 +103,19 @@ module.exports = class BaseKernel {
 	}
 
 	setCanvas(canvas) {
-	  this._canvas = canvas;
-	  return this;
-  }
+		this._canvas = canvas;
+		return this;
+	}
 
-  setWebGl(webGl) {
-	  this._webGl = webGl;
-	  return this;
-  }
+	setWebGl(webGl) {
+		this._webGl = webGl;
+		return this;
+	}
 
-  setCopyData(copyData) {
-	  this.copyData = copyData;
-	  return this;
-  }
+	setCopyData(copyData) {
+		this.copyData = copyData;
+		return this;
+	}
 
 	get canvas() {
 		return this._canvas;
@@ -154,26 +154,26 @@ module.exports = class BaseKernel {
 		});
 	}
 
-  addSubKernel(fnString) {
-	  if (this.subKernels === null) {
-	    this.subKernels = [];
-	    this.subKernelNames = [];
-    }
-	  this.subKernels.push(fnString);
-    this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
-	  return this;
-  }
+	addSubKernel(fnString) {
+		if (this.subKernels === null) {
+			this.subKernels = [];
+			this.subKernelNames = [];
+		}
+		this.subKernels.push(fnString);
+		this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
+		return this;
+	}
 
-  addSubKernelProperty(property, fnString) {
-    if (this.subKernelProperties === null) {
-      this.subKernelProperties = {};
-      this.subKernelNames = [];
-    }
-    if (this.subKernelProperties.hasOwnProperty(property)) {
-      throw new Error(`cannot add sub kernel ${ property }, already defined`);
-    }
-	  this.subKernelProperties[property] = fnString;
-    this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
-    return this;
-  }
+	addSubKernelProperty(property, fnString) {
+		if (this.subKernelProperties === null) {
+			this.subKernelProperties = {};
+			this.subKernelNames = [];
+		}
+		if (this.subKernelProperties.hasOwnProperty(property)) {
+			throw new Error(`cannot add sub kernel ${ property }, already defined`);
+		}
+		this.subKernelProperties[property] = fnString;
+		this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
+		return this;
+	}
 };

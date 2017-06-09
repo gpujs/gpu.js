@@ -15,9 +15,9 @@ const jsprettify = require('gulp-jsbeautifier');
 /// Build the scripts
 gulp.task('build', function() {
 	browserify('./src/index.js')
-	.bundle()
-	.pipe(source('gpu.js'))
-	.pipe(buffer())
+    .bundle()
+    .pipe(source('gpu.js'))
+    .pipe(buffer())
 		.pipe(header(fs.readFileSync('./src/wrapper/prefix.js', 'utf8'), { pkg : pkg }))
 		.pipe(gulp.dest('bin'));
 });
@@ -26,10 +26,13 @@ gulp.task('build', function() {
 gulp.task('minify', ['build'], function() {
 	return gulp.src(['bin/gpu.js'])
 		.pipe(rename('gpu.min.js'))
-		.pipe(uglify({
-			mangle: false,
-			preserveComments: 'license'
-		}).on('error', gutil.log))
+		.pipe(
+		  uglify({
+        mangle: false,
+        preserveComments: 'license'
+      })
+      .on('error', gutil.log)
+    )
 		.pipe(gulp.dest('bin'));
 });
 
@@ -57,9 +60,9 @@ gulp.task('default', ['bsync']);
 gulp.task('beautify', function() {
 	gulp.src(['src/**/*.js', '!src/parser.js'])
 		.pipe(jsprettify({
-			"indent_size": 3,
-			"indent_char": " ",
-			"indent_with_tabs": true
+			indent_size: 3,
+			indent_char: ' ',
+			indent_with_tabs: true
 		}))
 		.pipe(gulp.dest('src'));
 });

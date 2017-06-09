@@ -6,7 +6,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	addFunction(functionName, jsFunction, paramTypes, returnType) {
 		this.addFunctionNode(
 			new WebGLFunctionNode(functionName, jsFunction, paramTypes, returnType)
-				.setAddFunction(this.addFunction.bind(this))
+			.setAddFunction(this.addFunction.bind(this))
 		);
 	}
 
@@ -79,22 +79,22 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	addKernel(fnString, paramNames, paramTypes) {
-    const kernelNode = new WebGLFunctionNode('kernel', fnString);
-    kernelNode.setAddFunction(this.addFunction.bind(this));
-    kernelNode.paramNames = paramNames;
-    kernelNode.paramTypes = paramTypes;
-    kernelNode.isRootKernel = true;
-    this.addFunctionNode(kernelNode);
-    return kernelNode;
-  }
+		const kernelNode = new WebGLFunctionNode('kernel', fnString);
+		kernelNode.setAddFunction(this.addFunction.bind(this));
+		kernelNode.paramNames = paramNames;
+		kernelNode.paramTypes = paramTypes;
+		kernelNode.isRootKernel = true;
+		this.addFunctionNode(kernelNode);
+		return kernelNode;
+	}
 
-  addSubKernel(fnString, paramTypes) {
-    const kernelNode = new WebGLFunctionNode(utils.getFunctionNameFromString(fnString), fnString);
-    kernelNode.setAddFunction(this.addFunction.bind(this));
-    kernelNode.paramNames = utils.getParamNamesFromString(fnString);
-    kernelNode.paramTypes = paramTypes;
-    kernelNode.isSubKernel = true;
-    this.addFunctionNode(kernelNode);
-    return kernelNode;
-  }
+	addSubKernel(fnString, paramTypes) {
+		const kernelNode = new WebGLFunctionNode(utils.getFunctionNameFromString(fnString), fnString);
+		kernelNode.setAddFunction(this.addFunction.bind(this));
+		kernelNode.paramNames = utils.getParamNamesFromString(fnString);
+		kernelNode.paramTypes = paramTypes;
+		kernelNode.isSubKernel = true;
+		this.addFunctionNode(kernelNode);
+		return kernelNode;
+	}
 };
