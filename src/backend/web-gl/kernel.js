@@ -40,6 +40,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.subKernelOutputTextureNames = null;
 		this.subKernelOutputVariableNames = null;
 		this.paramTypes = null;
+		this.extDrawBuffers = null;
 		if (!this._webGl) this._webGl = utils.initWebGl(this.canvas);
 	}
 
@@ -113,7 +114,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			this.subKernelOutputTextureNames = [];
 			this.subKernelOutputTextures = [];
 			this.subKernelOutputVariableNames = [];
-			const extDrawBuffers = [ext.COLOR_ATTACHMENT0_WEBGL];
+			const extDrawBuffers = this.extDrawBuffers = [];
 			for (let i = 0; i < this.subKernels.length; i++) {
 				builder.addSubKernel(this.subKernels[i], this.paramTypes);
 				const subKernelOutputTextureName = `TEXTURE${ paramNames.length + i + 1 }`;
@@ -131,7 +132,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			this.subKernelOutputTextureNames = [];
 			this.subKernelOutputTextures = [];
 			this.subKernelOutputVariableNames = [];
-			const extDrawBuffers = [ext.COLOR_ATTACHMENT0_WEBGL];
+			const extDrawBuffers = this.extDrawBuffers = [];
 			let i = 0;
 			for (let p in this.subKernelProperties) {
 				if (!this.subKernelProperties.hasOwnProperty(p)) continue;
@@ -334,6 +335,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				} else {
 					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 				}
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, this.extDrawBuffers[i], gl.TEXTURE_2D, this.subKernelOutputTextures[i], 0);
 			}
 		}
 
@@ -346,12 +348,6 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
-
-		if (this.subKernelOutputTextures !== null) {
-			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
-				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.subKernelOutputTextures[i], 0);
-			}
-		}
 
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
