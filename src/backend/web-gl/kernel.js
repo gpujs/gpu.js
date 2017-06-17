@@ -40,7 +40,6 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.subKernelOutputTextureNames = null;
 		this.subKernelOutputVariableNames = null;
 		this.paramTypes = null;
-		this.extDrawBuffers = null;
 		if (!this._webGl) this._webGl = utils.initWebGl(this.canvas);
 	}
 
@@ -114,7 +113,6 @@ module.exports = class WebGLKernel extends KernelBase {
 			this.subKernelOutputTextureNames = [];
 			this.subKernelOutputTextures = [];
 			this.subKernelOutputVariableNames = [];
-			const extDrawBuffers = this.extDrawBuffers = [];
 			for (let i = 0; i < this.subKernels.length; i++) {
 				builder.addSubKernel(this.subKernels[i], this.paramTypes);
 				const subKernelOutputTextureName = `TEXTURE${ paramNames.length + i + 1 }`;
@@ -122,17 +120,14 @@ module.exports = class WebGLKernel extends KernelBase {
 				this.subKernelOutputTextureNames.push(i);
 				this.subKernelOutputTextures.push(this.getTextureCache(subKernelOutputTextureName));
 				this.subKernelOutputVariableNames.push(subKernelOutputVariableName);
-				extDrawBuffers.push(ext[`COLOR_ATTACHMENT${i + 1}_WEBGL`]);
 			}
 
-			ext.drawBuffersWEBGL(extDrawBuffers);
 		} else if (this.subKernelProperties !== null) {
 			const ext = gl.getExtension('WEBGL_draw_buffers');
 			if (!ext) throw new Error('could not instantiate draw buffers extension');
 			this.subKernelOutputTextureNames = [];
 			this.subKernelOutputTextures = [];
 			this.subKernelOutputVariableNames = [];
-			const extDrawBuffers = this.extDrawBuffers = [];
 			let i = 0;
 			for (let p in this.subKernelProperties) {
 				if (!this.subKernelProperties.hasOwnProperty(p)) continue;
@@ -142,10 +137,8 @@ module.exports = class WebGLKernel extends KernelBase {
 				this.subKernelOutputTextureNames.push(p);
 				this.subKernelOutputTextures.push(this.getTextureCache(subKernelOutputTextureName));
 				this.subKernelOutputVariableNames.push(subKernelOutputVariableName);
-				extDrawBuffers.push(ext[`COLOR_ATTACHMENT${i + 1}_WEBGL`]);
 				i++;
 			}
-			ext.drawBuffersWEBGL(extDrawBuffers);
 		}
 
 		const vertShader = gl.createShader(gl.VERTEX_SHADER);
@@ -320,25 +313,6 @@ module.exports = class WebGLKernel extends KernelBase {
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 		}
 
-		if (this.subKernelOutputTextures !== null) {
-			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
-				const outputTextureName = `TEXTURE${ paramNames.length + i + 1 }`;
-				const subKernelOutputTexture = this.subKernelOutputTextures[i];
-				gl.activeTexture(gl[outputTextureName]);
-				gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-				if (this.floatOutput) {
-					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-				} else {
-					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-				}
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, this.extDrawBuffers[i], gl.TEXTURE_2D, this.subKernelOutputTextures[i], 0);
-			}
-		}
-
 		if (this.graphical) {
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -348,6 +322,30 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
+
+    if (this.subKernelOutputTextures !== null) {
+      const extDrawBuffers = [gl.COLOR_ATTACHMENT0];
+      for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
+        const outputTextureName = `TEXTURE${ paramNames.length + i + 1 }`;
+        const subKernelOutputTexture = this.subKernelOutputTextures[i];
+        extDrawBuffers.push(gl.COLOR_ATTACHMENT0 + i + 1);
+        gl.activeTexture(gl[outputTextureName]);
+        gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        if (this.floatOutput) {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+        } else {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        }
+        const ext = gl.getExtension('WEBGL_draw_buffers');
+        if (!ext) throw new Error('could not instantiate draw buffers extension');
+        ext.drawBuffersWEBGL(extDrawBuffers);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, this.subKernelOutputTextures[i], 0);
+      }
+    }
 
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
