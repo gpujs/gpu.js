@@ -95,7 +95,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		const paramNames = this.paramNames;
 		const builder = this.functionBuilder;
 		const texSize = this.texSize;
-		const gl = this.webGl;
+		const gl = this._webGl;
 		this.canvas.width = texSize[0];
 		this.canvas.height = texSize[1];
 		gl.viewport(0, 0, texSize[0], texSize[1]);
