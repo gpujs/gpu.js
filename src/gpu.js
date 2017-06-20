@@ -95,14 +95,14 @@ module.exports = class GPU {
 	}
 
 	createKernels() {
-	  let fn;
-	  let settings;
-	  if (typeof arguments[arguments.length - 2] === 'function') {
-	    fn = arguments[arguments.length - 2];
-      settings = arguments[arguments.length - 1];
-    } else {
-	    fn = arguments[arguments.length - 1];
-    }
+		let fn;
+		let settings;
+		if (typeof arguments[arguments.length - 2] === 'function') {
+			fn = arguments[arguments.length - 2];
+			settings = arguments[arguments.length - 1];
+		} else {
+			fn = arguments[arguments.length - 1];
+		}
 		const kernel = this.createKernel(fn, settings);
 
 		if (typeof arguments[0] === 'function') {
