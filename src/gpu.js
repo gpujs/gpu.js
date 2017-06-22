@@ -104,10 +104,10 @@ module.exports = class GPU {
 			fn = arguments[arguments.length - 1];
 		}
 		const kernel = this.createKernel(fn, settings);
-
 		if (Array.isArray(arguments[0])) {
-			for (let i = 0; i < arguments.length - 2; i++) {
-				kernel.addSubKernel(arguments[i]);
+      const functions = arguments[0];
+			for (let i = 0; i < functions.length; i++) {
+				kernel.addSubKernel(functions[i]);
 			}
 		} else {
 			const functions = arguments[0];

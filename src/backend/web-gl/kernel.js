@@ -108,7 +108,6 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		builder.addKernel(this.fnString, this.paramNames, this.paramTypes);
 
-//    const ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
 		if (this.subKernels !== null) {
 			const ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
 			if (!ext) throw new Error('could not instantiate draw buffers extension');
@@ -250,8 +249,6 @@ module.exports = class WebGLKernel extends KernelBase {
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
 		if (this.subKernelOutputTextures !== null) {
-			const ext = gl.getExtension('WEBGL_draw_buffers');
-			if (!ext) throw new Error('could not instantiate draw buffers extension');
 			const extDrawBuffers = [gl.COLOR_ATTACHMENT0];
 			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
 				const subKernelOutputTexture = this.subKernelOutputTextures[i];
@@ -269,7 +266,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				}
 				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, subKernelOutputTexture, 0);
 			}
-			ext.drawBuffersWEBGL(extDrawBuffers);
+			this.ext.drawBuffersWEBGL(extDrawBuffers);
 		}
 
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -278,8 +275,8 @@ module.exports = class WebGLKernel extends KernelBase {
 			if (this.subKernels !== null) {
 				const output = [];
 				output.result = this.renderOutput(outputTexture);
-				for (let i = 0; i < this.subKernels; i++) {
-					output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.dimensions, gl));
+				for (let i = 0; i < this.subKernels.length; i++) {
+					output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.dimensions, this._webGl));
 				}
 				return output;
 			} else if (this.subKernelProperties !== null) {
@@ -289,7 +286,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				let i = 0;
 				for (let p in this.subKernelProperties) {
 					if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-					output[p] = new Texture(this.subKernelOutputTextures[i], texSize, this.dimensions, gl);
+					output[p] = new Texture(this.subKernelOutputTextures[i], texSize, this.dimensions, this._webGl);
 					i++;
 				}
 				return output;
