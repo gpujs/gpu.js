@@ -37,9 +37,10 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.outputToTexture = settings.outputToTexture;
 		this.endianness = utils.systemEndianness;
 		this.subKernelOutputTextures = null;
-		this.subKernelOutputTextureNames = null;
 		this.subKernelOutputVariableNames = null;
 		this.paramTypes = null;
+		this.argumentsLength = 0;
+		this.ext = null;
 		if (!this._webGl) this._webGl = utils.initWebGl(this.canvas);
 	}
 
@@ -50,6 +51,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		} else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
 			throw 'Float texture outputs are not supported on this browser';
 		} else if (this.floatTextures === undefined && utils.OES_texture_float) {
+		  //NOTE: handle
 			this.floatTextures = true;
 			this.floatOutput = isReadPixel && !this.graphical;
 		}
@@ -92,7 +94,6 @@ module.exports = class WebGLKernel extends KernelBase {
 	build() {
 		this.validateOptions();
 		this.setupParams(arguments);
-		const paramNames = this.paramNames;
 		const builder = this.functionBuilder;
 		const texSize = this.texSize;
 		const gl = this._webGl;
@@ -107,31 +108,31 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		builder.addKernel(this.fnString, this.paramNames, this.paramTypes);
 
+//    const ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
 		if (this.subKernels !== null) {
-			const ext = gl.getExtension('WEBGL_draw_buffers');
+			const ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
 			if (!ext) throw new Error('could not instantiate draw buffers extension');
 			this.subKernelOutputTextures = [];
+      this.subKernelOutputVariableNames = [];
 			for (let i = 0; i < this.subKernels.length; i++) {
-				builder.addSubKernel(this.subKernels[i], this.paramTypes);
-				const subKernelOutputVariableName = this.subKernelProperties[i].name + 'Result';
+        const subKernel = this.subKernels[i];
+				builder.addSubKernel(subKernel);
 				this.subKernelOutputTextures.push(this.getSubKernelTexture(i));
-				this.subKernelOutputVariableNames.push(subKernelOutputVariableName);
+				this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
 			}
 
 		} else if (this.subKernelProperties !== null) {
-			const ext = gl.getExtension('WEBGL_draw_buffers');
+			const ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
 			if (!ext) throw new Error('could not instantiate draw buffers extension');
 			this.subKernelOutputTextures = [];
 			this.subKernelOutputVariableNames = [];
-			this.subKernelOutputTextureNames = [];
 			let i = 0;
 			for (let p in this.subKernelProperties) {
 				if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-				builder.addSubKernel(this.subKernelProperties[p], this.paramTypes);
-				const subKernelOutputVariableName = this.subKernelProperties[p].name + 'Result';
-				this.subKernelOutputTextureNames.push(p);
+				const subKernel = this.subKernelProperties[p];
+				builder.addSubKernel(subKernel);
 				this.subKernelOutputTextures.push(this.getSubKernelTexture(p));
-				this.subKernelOutputVariableNames.push(subKernelOutputVariableName);
+				this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
 				i++;
 			}
 		}
@@ -192,7 +193,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			0, 1,
 			1, 1
 		]);
-		const gl = this.webGl;
+		const gl = this._webGl;
 		gl.useProgram(this.program);
 
 		const texCoordOffset = vertices.byteLength;
@@ -222,79 +223,11 @@ module.exports = class WebGLKernel extends KernelBase {
 		}
 
 		for (let texIndex = 0; texIndex < paramNames.length; texIndex++) {
-			let paramDim, paramSize;
-			const argumentTexture = this.getArgumentTexture(texIndex);
-			const argument = arguments[texIndex];
-			const paramName = paramNames[texIndex];
-			const paramType = paramTypes[texIndex];
-			if (paramType === 'Array') {
-				paramDim = utils.getDimensions(argument, true);
-				paramSize = utils.dimToTexSize({
-					floatTextures: this.floatTextures,
-					floatOutput: this.floatOutput
-				}, paramDim);
-
-				gl.activeTexture(gl.TEXTURE0 + texIndex);
-				gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-				let paramLength = paramSize[0] * paramSize[1];
-				if (this.floatTextures) {
-					paramLength *= 4;
-				}
-
-				const paramArray = new Float32Array(paramLength);
-				if (this.copyData) {
-					paramArray.set(utils.copyFlatten(argument));
-				} else {
-					paramArray.set(utils.flatten(argument));
-				}
-
-				let argBuffer;
-				if (this.floatTextures) {
-					argBuffer = new Float32Array(paramArray);
-					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.FLOAT, argBuffer);
-				} else {
-					argBuffer = new Uint8Array((new Float32Array(paramArray)).buffer);
-					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, paramSize[0], paramSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, argBuffer);
-				}
-
-				const paramLoc = this.getUniformLocation('user_' + paramName);
-				const paramSizeLoc = this.getUniformLocation('user_' + paramName + 'Size');
-				const paramDimLoc = this.getUniformLocation('user_' + paramName + 'Dim');
-
-				if (!this.hardcodeConstants) {
-					gl.uniform3fv(paramDimLoc, paramDim);
-					gl.uniform2fv(paramSizeLoc, paramSize);
-				}
-				gl.uniform1i(paramLoc, texIndex);
-			} else if (paramType === 'Number') {
-				const argLoc = this.getUniformLocation('user_' + paramName);
-				gl.uniform1f(argLoc, argument);
-			} else if (paramType === 'Texture') {
-				const inputTexture = argument;
-				paramDim = utils.getDimensions(inputTexture.dimensions, true);
-				paramSize = inputTexture.size;
-
-				gl.activeTexture(gl.TEXTURE0 + texIndex);
-				gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
-
-				const paramLoc = this.getUniformLocation('user_' + paramName);
-				const paramSizeLoc = this.getUniformLocation('user_' + paramName + 'Size');
-				const paramDimLoc = this.getUniformLocation('user_' + paramName + 'Dim');
-
-				gl.uniform3fv(paramDimLoc, paramDim);
-				gl.uniform2fv(paramSizeLoc, paramSize);
-				gl.uniform1i(paramLoc, texIndex);
-			} else {
-				throw 'Input type not supported (WebGL): ' + argument;
-			}
+      this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
 		}
+
 		let outputTexture = this.getOutputTexture();
-		gl.activeTexture(gl.TEXTURE0 + paramNames.length);
+		gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 		gl.bindTexture(gl.TEXTURE_2D, outputTexture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -323,7 +256,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
 				const subKernelOutputTexture = this.subKernelOutputTextures[i];
 				extDrawBuffers.push(gl.COLOR_ATTACHMENT0 + i + 1);
-				gl.activeTexture(gl.TEXTURE0 + paramNames.length + i + 1);
+				gl.activeTexture(gl.TEXTURE0 + paramNames.length + i);
 				gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -334,7 +267,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				} else {
 					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 				}
-				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, this.subKernelOutputTextures[i], 0);
+				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, subKernelOutputTexture, 0);
 			}
 			ext.drawBuffersWEBGL(extDrawBuffers);
 		}
@@ -346,7 +279,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				const output = [];
 				output.result = this.renderOutput(outputTexture);
 				for (let i = 0; i < this.subKernels; i++) {
-					output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.dimensions, this.webGl));
+					output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.dimensions, gl));
 				}
 				return output;
 			} else if (this.subKernelProperties !== null) {
@@ -356,7 +289,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				let i = 0;
 				for (let p in this.subKernelProperties) {
 					if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-					output[p] = new Texture(this.subKernelOutputTextures[i], texSize, this.dimensions, this.webGl);
+					output[p] = new Texture(this.subKernelOutputTextures[i], texSize, this.dimensions, gl);
 					i++;
 				}
 				return output;
@@ -372,7 +305,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		const threadDim = this.threadDim;
 
 		if (this.outputToTexture) {
-			return new Texture(outputTexture, texSize, this.dimensions, this.webGl);
+			return new Texture(outputTexture, texSize, this.dimensions, this._webGl);
 		} else {
 			let result;
 			if (this.floatOutput) {
@@ -434,15 +367,92 @@ module.exports = class WebGLKernel extends KernelBase {
 	getUniformLocation(name) {
 		let location = this.programUniformLocationCache[name];
 		if (!location) {
-			location = this.webGl.getUniformLocation(this.program, name);
+			location = this._webGl.getUniformLocation(this.program, name);
 			this.programUniformLocationCache[name] = location;
 		}
 		return location;
 	}
 
+	_addArgument(value, type, name) {
+	  const gl = this._webGl;
+    const argumentTexture = this.getArgumentTexture(name);
+    switch (type) {
+      case 'Array': {
+        const dim = utils.getDimensions(value, true);
+        const size = utils.dimToTexSize({
+          floatTextures: this.floatTextures,
+          floatOutput: this.floatOutput
+        }, dim);
+
+        gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+        gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+        let length = size[0] * size[1];
+        if (this.floatTextures) {
+          length *= 4;
+        }
+
+        const valuesFlat = new Float32Array(length);
+        if (this.copyData) {
+          valuesFlat.set(utils.copyFlatten(value));
+        } else {
+          valuesFlat.set(utils.flatten(value));
+        }
+
+        let buffer;
+        if (this.floatTextures) {
+          buffer = new Float32Array(valuesFlat);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, buffer);
+        } else {
+          buffer = new Uint8Array((new Float32Array(valuesFlat)).buffer);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+        }
+
+        const loc = this.getUniformLocation('user_' + name);
+        const locSize = this.getUniformLocation('user_' + name + 'Size');
+        const dimLoc = this.getUniformLocation('user_' + name + 'Dim');
+
+        if (!this.hardcodeConstants) {
+          gl.uniform3fv(dimLoc, dim);
+          gl.uniform2fv(locSize, size);
+        }
+        gl.uniform1i(loc, this.argumentsLength);
+        break;
+      }
+      case 'Number': {
+        const loc = this.getUniformLocation('user_' + name);
+        gl.uniform1f(loc, value);
+        break;
+      }
+      case 'Texture': {
+        const inputTexture = value;
+        const dim = utils.getDimensions(inputTexture.dimensions, true);
+        const size = inputTexture.size;
+
+        gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+        gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
+
+        const loc = this.getUniformLocation('user_' + name);
+        const locSize = this.getUniformLocation('user_' + name + 'Size');
+        const dimLoc = this.getUniformLocation('user_' + name + 'Dim');
+
+        gl.uniform3fv(dimLoc, dim);
+        gl.uniform2fv(locSize, size);
+        gl.uniform1i(loc, this.argumentsLength);
+        break;
+      }
+      default: throw 'Input type not supported (WebGL): ' + value;
+    }
+    this.argumentsLength++;
+  }
+
 	_getHeaderString() {
 		return (
-			this.subKernelOutputVariableNames !== null ?
+			this.subKernels !== null || this.subKernelProperties !== null ?
 			//webgl2 '#version 300 es\n' :
 			'#extension GL_EXT_draw_buffers : require\n' :
 			''
@@ -504,7 +514,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	_getGetWraparoundString() {
 		return (
 			this.wraparound ?
-			'  xyz = mod(xyz, texDim);' :
+			'  xyz = mod(xyz, texDim);\n' :
 			''
 		);
 	}
@@ -650,6 +660,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				'  gl_FragColor.a = kernelResult'
 			);
 		} else if (names !== null) {
+		  result.push('  threadId = indexTo3D(index, uOutputDim)');
 			result.push('  kernel()');
 			result.push('  gl_FragData[0] = encode32(kernelResult)');
 			for (let i = 0; i < names.length; i++) {

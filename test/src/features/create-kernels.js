@@ -1,5 +1,5 @@
-function createKernels(mode, dimensions, canvas) {
-  var gpu = new GPU({ mode: mode, canvas: canvas });
+function createKernels(mode, dimensions, canvas, it) {
+  var gpu = new GPU({mode: mode, canvas: canvas});
   return gpu.createKernels({
     addResult: function add(v1, v2) {
       return v1 + v2;
@@ -7,16 +7,25 @@ function createKernels(mode, dimensions, canvas) {
     divideResult: function divide(v1, v2) {
       return v1 / v2;
     }
-  }, function(a, b, c) {
+  }, function (a, b, c) {
     return divide(add(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
   }).setDimensions(dimensions);
 }
 
-function createKernel(mode, dimensions, canvas) {
-  var gpu = new GPU({ mode: mode, canvas: canvas });
-  return gpu.createKernel(function(a) {
-    return a[this.thread.x];
-  }).setDimensions(dimensions);
+function createKernel(mode, dimensions, canvas, it) {
+  if (it) {
+    var gpu = new GPU({mode: mode, canvas: canvas});
+    return gpu.createKernel(function (a) {
+
+        return a[this.thread.x][this.thread.y];
+
+    }).setDimensions(dimensions);
+  } else {
+    var gpu = new GPU({mode: mode, canvas: canvas});
+    return gpu.createKernel(function (a) {
+      return a[this.thread.x][this.thread.y];
+    }).setDimensions(dimensions);
+  }
 }
 
 QUnit.test( "createKernels (auto)", function() {
@@ -61,8 +70,8 @@ QUnit.test( "createKernels (cpu)", function() {
 
 QUnit.test( "createKernels (auto)", function() {
   var canvas = document.createElement('canvas');
-  var superKernel = createKernels(null, [5], canvas);
-  var kernel = createKernel(null, [5], canvas);
+  var superKernel = createKernels(null, [5], canvas, true);
+  var kernel = createKernel(null, [5], canvas, true);
   var output = superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]);
   var result = QUnit.extend([], output.result);
   console.log(kernel(output.addResult));
@@ -83,7 +92,7 @@ QUnit.test( "createKernels (gpu)", function() {
   var divideResult = QUnit.extend([], kernel(output.divideResult));
   QUnit.assert.deepEqual(result, [2, 2, 2, 2, 2]);
   QUnit.assert.deepEqual(addResult, [2, 4, 6, 8, 10]);
-  QUnit.assert.deepEqual(result, [2, 2, 2, 2, 2]);
+  QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
 });
 
 /** TODO: uncomment and support

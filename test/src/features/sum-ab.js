@@ -1,5 +1,5 @@
 function sum_AB_test(mode) {
-	var gpu = new GPU();
+	var gpu = new GPU({ mode });
 	var f = gpu.createKernel(function(a, b) {
 		return (a[this.thread.x] + b[this.thread.x]);
 	}, {
