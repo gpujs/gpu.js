@@ -1,4 +1,5 @@
 const FunctionNodeBase = require('../function-node-base');
+const utils = require('../../utils');
 // Closure capture for the ast function, prevent collision with existing AST functions
 /// Function: functionNodeWebGl
 ///
@@ -174,25 +175,9 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	///
 	/// @returns  the append retArr
 	astFunctionDeclaration(ast, retArr, funcParam) {
-		// TODO: make this less hacky?
-		const lines = this.jsFunctionString.split(/\r?\n/);
-
-		const start = ast.loc.start;
-		const end = ast.loc.end;
-
-		const funcArr = [];
-
-		funcArr.push(lines[start.line - 1].slice(start.column));
-		for (let i = start.line; i < end.line - 1; i++) {
-			funcArr.push(lines[i]);
-		}
-		funcArr.push(lines[end.line - 1].slice(0, end.column));
-
-		const funcStr = funcArr.join('\n');
 		if (this.addFunction) {
-			this.addFunction(null, new Function(`return ${ funcStr };`)());
+			this.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
 		}
-
 		return retArr;
 	}
 

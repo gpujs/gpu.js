@@ -24,6 +24,7 @@ module.exports = class BaseKernel {
 		this.subKernels = null;
 		this.subKernelProperties = null;
 		this.subKernelNames = null;
+		this.subKernelOutputVariableNames = null;
 
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
