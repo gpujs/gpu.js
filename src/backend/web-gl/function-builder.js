@@ -79,7 +79,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	addKernel(fnString, paramNames, paramTypes) {
-		const kernelNode = new WebGLFunctionNode('kernel', fnString);
+		const kernelNode = new WebGLFunctionNode('kernel', fnString, paramTypes);
 		kernelNode.setAddFunction(this.addFunction.bind(this));
 		kernelNode.paramNames = paramNames;
 		kernelNode.paramTypes = paramTypes;
