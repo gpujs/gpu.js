@@ -1,7 +1,7 @@
 module.exports = function kernelRunShortcut(kernel) {
 	const shortcut = function() {
-		return this.run.apply(this, arguments);
-	}.bind(kernel);
+		return kernel.run.apply(kernel, arguments);
+	};
 
 	allPropertiesOf(kernel).forEach((key) => {
 		if (key[0] === '_' && key[1] === '_') return;
@@ -23,6 +23,8 @@ module.exports = function kernelRunShortcut(kernel) {
 			});
 		}
 	});
+
+  shortcut.kernel = kernel;
 
 	return shortcut;
 };

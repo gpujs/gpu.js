@@ -22,7 +22,7 @@ module.exports = class CPUKernel extends KernelBase {
 			z: null
 		};
 
-		this.run = function() {
+		this.run = function () {
 			this.run = null;
 			this.build();
 			return this.run.apply(this, arguments);
@@ -88,17 +88,27 @@ module.exports = class CPUKernel extends KernelBase {
 			threadDim.push(1);
 		}
 
+    if (this.graphical) {
+      const canvas = this.canvas;
+      this.runDimensions.x = canvas.width = threadDim[0];
+      this.runDimensions.y = canvas.height = threadDim[1];
+      this._canvasCtx = canvas.getContext('2d');
+      this._imageData = this._canvasCtx.createImageData(threadDim[0], threadDim[1]);
+      this._colorData = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
+    }
+
 		const kernelString = `
+${ this.subKernelOutputVariableNames === null
+  ? ''
+  : this.subKernelOutputVariableNames.map((name) => `  var ${ name } = null;\n`).join('')
+}
 		${ builder.getPrototypeString() }
-  if (this.graphical) {
-    this._imageData = this._canvasCtx.createImageData(${ threadDim[0] }, ${ threadDim[1] });
-    this._colorData = new Uint8ClampedArray(${ threadDim[0] * threadDim[1] * 4 });
-  }
-  
+		var fn = function fn(${ this.paramNames.join(', ') }) { ${ this._fnBody } }.bind(this);
+  return function (${ this.paramNames.join(', ') }) {
   var ret = new Array(${ threadDim[2] });
 ${ this.subKernelOutputVariableNames === null
   ? ''
-  : this.subKernelOutputVariableNames.map((name) => `  var ${ name } = new Array(${ threadDim[2] });\n`).join('')
+  : this.subKernelOutputVariableNames.map((name) => `  ${ name } = new Array(${ threadDim[2] });\n`).join('')
 }
   for (this.thread.z = 0; this.thread.z < ${ threadDim[2] }; this.thread.z++) {
     ret[this.thread.z] = new Array(${ threadDim[1] });
@@ -113,7 +123,7 @@ ${ this.subKernelOutputVariableNames === null
   : this.subKernelOutputVariableNames.map((name) => `      ${ name }[this.thread.z][this.thread.y] = new Array(${ threadDim[0] });\n`).join('')
 }
       for (this.thread.x = 0; this.thread.x < ${ threadDim[0] }; this.thread.x++) {
-        ret[this.thread.z][this.thread.y][this.thread.x] = fn.apply(this, arguments);
+        ret[this.thread.z][this.thread.y][this.thread.x] = fn(${ this.paramNames.join(', ') });
       }
     }
   }
@@ -152,10 +162,7 @@ ${ this.subKernelOutputVariableNames === null
       ${ this.subKernelOutputVariableNames.map((name) => `${ name }: ${ name }`).join(',\n') }
     };`
   }
-  
-  function fn(${ this.paramNames.join(',') }) {
-    ${ this._fnBody }
-  }`;
+  }.bind(this);`;
 
 		if (this.debug) {
 			console.log('Options:');
@@ -164,15 +171,7 @@ ${ this.subKernelOutputVariableNames === null
 			console.log(kernelString);
 		}
 
-		this.run = new Function(this.paramNames, kernelString).bind(this);
-
-
-		if (this.graphical) {
-			const canvas = this.canvas;
-			this.runDimensions.x = canvas.width = threadDim[0];
-			this.runDimensions.y = canvas.height = threadDim[1];
-			this._canvasCtx = canvas.getContext('2d');
-		}
+		this.run = new Function([], kernelString).bind(this)();
 	}
 
 	color(r, g, b, a) {
