@@ -160,12 +160,6 @@ Sometimes you want to do multiple math operations in one kernel, and save the ou
 
 #### object outputs
 ```js
-const add = gpu.createKernel(function(a, b) {
-	return a[this.thread.x] + b[this.thread.x];
-}).setDimensions([20]);
-
-const multiply = gpu.createKernel().setDimensions([20]);
-
 const megaKernel = gpu.createKernels({
   addResult: function add(a, b) {
     return a[this.thread.x] + b[this.thread.x];
@@ -182,12 +176,6 @@ megaKernel(a, b, c);
 ```
 #### array outputs
 ```js
-const add = gpu.createKernel(function(a, b) {
-	return a[this.thread.x] + b[this.thread.x];
-}).setDimensions([20]);
-
-const multiply = gpu.createKernel().setDimensions([20]);
-
 const megaKernel = gpu.createKernels([
   function add(a, b) {
     return a[this.thread.x] + b[this.thread.x];
