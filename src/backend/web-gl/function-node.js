@@ -1,4 +1,5 @@
 const FunctionNodeBase = require('../function-node-base');
+const utils = require('../../utils');
 // Closure capture for the ast function, prevent collision with existing AST functions
 /// Function: functionNodeWebGl
 ///
@@ -26,7 +27,7 @@ function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
 	if (!isIdentifierKernelParam(paramName, funcParam) && expectedType !== 'float') {
 		throw 'Error unexpected identifier ' + paramName + ' on line ' + start.line;
 	} else {
-		const actualType = funcParam.paramType[funcParam.paramNames.indexOf(paramName)];
+		const actualType = funcParam.paramTypes[funcParam.paramNames.indexOf(paramName)];
 		if (actualType !== expectedType) {
 			throw 'Error unexpected identifier ' + paramName + ' on line ' + start.line;
 		}
@@ -174,25 +175,9 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	///
 	/// @returns  the append retArr
 	astFunctionDeclaration(ast, retArr, funcParam) {
-		// TODO: make this less hacky?
-		const lines = this.jsFunctionString.split(/\r?\n/);
-
-		const start = ast.loc.start;
-		const end = ast.loc.end;
-
-		const funcArr = [];
-
-		funcArr.push(lines[start.line - 1].slice(start.column));
-		for (let i = start.line; i < end.line - 1; i++) {
-			funcArr.push(lines[i]);
-		}
-		funcArr.push(lines[end.line - 1].slice(0, end.column));
-
-		const funcStr = funcArr.join('\n');
 		if (this.addFunction) {
-			this.addFunction(null, new Function(`return ${ funcStr };`)());
+			this.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
 		}
-
 		return retArr;
 	}
 
@@ -205,7 +190,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	/// @returns  the append retArr
 	static astFunctionPrototype(ast, retArr, funcParam) {
 		// Setup function return type and name
-		if (funcParam.isRootKernel) {
+		if (funcParam.isRootKernel || funcParam.isSubKernel) {
 			return retArr;
 		}
 
@@ -220,7 +205,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				retArr.push(', ');
 			}
 
-			retArr.push(funcParam.paramType[i]);
+			retArr.push(funcParam.paramTypes[i]);
 			retArr.push(' ');
 			retArr.push('user_');
 			retArr.push(funcParam.paramNames[i]);
@@ -254,14 +239,23 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		if (!funcParam.isRootKernel) {
 			// Arguments handling
 			for (let i = 0; i < funcParam.paramNames.length; ++i) {
+				const paramName = funcParam.paramNames[i];
+
 				if (i > 0) {
 					retArr.push(', ');
 				}
+				const type = funcParam.getParamType(paramName);
+				switch (type) {
+					case 'Array':
+						retArr.push('sampler2D');
+						break;
+					default:
+						retArr.push('float');
+				}
 
-				retArr.push(funcParam.paramType[i]);
 				retArr.push(' ');
 				retArr.push('user_');
-				retArr.push(funcParam.paramNames[i]);
+				retArr.push(paramName);
 			}
 		}
 
@@ -292,6 +286,11 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			this.astGeneric(ast.argument, retArr, funcParam);
 			retArr.push(';');
 			retArr.push('return;');
+		} else if (funcParam.isSubKernel) {
+			retArr.push(`${ funcParam.functionName }Result = `);
+			this.astGeneric(ast.argument, retArr, funcParam);
+			retArr.push(';');
+			retArr.push(`return ${ funcParam.functionName }Result;`);
 		} else {
 			retArr.push('return ');
 			this.astGeneric(ast.argument, retArr, funcParam);
@@ -650,7 +649,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				// Possibly an array request - handle it as such
 				if (funcParam.paramNames) {
 					const idx = funcParam.paramNames.indexOf(reqName);
-					if (idx >= 0 && funcParam.paramType[idx] === 'float') {
+					if (idx >= 0 && funcParam.paramTypes[idx] === 'float') {
 						assumeNotTexture = true;
 					}
 				}
@@ -785,6 +784,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			if (funcParam.calledFunctions.indexOf(funcName) < 0) {
 				funcParam.calledFunctions.push(funcName);
 			}
+			if (!funcParam.hasOwnProperty('funcName')) {
+				funcParam.calledFunctionsArguments[funcName] = [];
+			}
+
+			const functionArguments = [];
+			funcParam.calledFunctionsArguments[funcName].push(functionArguments);
 
 			// Call the function
 			retArr.push(funcName);
@@ -794,10 +799,24 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 
 			// Add the vars
 			for (let i = 0; i < ast.arguments.length; ++i) {
+				const argument = ast.arguments[i];
 				if (i > 0) {
 					retArr.push(', ');
 				}
-				this.astGeneric(ast.arguments[i], retArr, funcParam);
+				this.astGeneric(argument, retArr, funcParam);
+				if (argument.type === 'Identifier') {
+					const paramIndex = funcParam.paramNames.indexOf(argument.name);
+					if (paramIndex === -1) {
+						functionArguments.push(null);
+					} else {
+						functionArguments.push({
+							name: argument.name,
+							type: funcParam.paramTypes[paramIndex]
+						});
+					}
+				} else {
+					functionArguments.push(null);
+				}
 			}
 
 			// Close arguments space

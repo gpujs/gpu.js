@@ -13,7 +13,7 @@ const parser = require('../parser').parser;
 /// 	jsFunction           - {JS Function}   The JS Function the node represents
 /// 	jsFunctionString     - {String}        jsFunction.toString()
 /// 	paramNames           - {[String,...]}  Parameter names of the function
-/// 	paramType            - {[String,...]}  Shader land parameter type assumption
+/// 	paramTypes           - {[String,...]}  Shader land parameters type assumption
 /// 	isRootKernel         - {Boolean}       Special indicator, for kernel function
 /// 	webglFunctionString  - {String}        webgl converted function string
 /// 	openglFunctionString - {String}        opengl converted function string
@@ -45,10 +45,14 @@ module.exports = class BaseFunctionNode {
 		// Internal vars setup
 		//
 		this.calledFunctions = [];
+		this.calledFunctionsArguments = {};
 		this.initVariables = [];
 		this.readVariables = [];
 		this.writeVariables = [];
 		this.addFunction = null;
+		this.isRootKernel = false;
+		this.isSubKernel = false;
+		this.parent = null;
 
 		//
 		// Missing jsFunction object exception
@@ -92,11 +96,11 @@ module.exports = class BaseFunctionNode {
 			if (Array.isArray(paramTypes)) {
 				if (paramTypes.length !== this.paramNames.length) {
 					throw 'Invalid argument type array length, against function length -> (' +
-					paramTypes.length + ',' +
-					this.paramNames.length +
-					')';
+						paramTypes.length + ',' +
+						this.paramNames.length +
+						')';
 				}
-				this.paramType = paramTypes;
+				this.paramTypes = paramTypes;
 			} else if (typeof paramTypes === 'object') {
 				const paramVariableNames = Object.keys(paramTypes);
 				if (paramTypes.hasOwnProperty('returns')) {
@@ -105,11 +109,11 @@ module.exports = class BaseFunctionNode {
 				}
 				if (paramVariableNames.length > 0 && paramVariableNames.length !== this.paramNames.length) {
 					throw 'Invalid argument type array length, against function length -> (' +
-					paramVariableNames.length + ',' +
-					this.paramNames.length +
-					')';
+						paramVariableNames.length + ',' +
+						this.paramNames.length +
+						')';
 				} else {
-					this.paramType = this.paramNames.map((key) => {
+					this.paramTypes = this.paramNames.map((key) => {
 						if (paramTypes.hasOwnProperty(key)) {
 							return paramTypes[key];
 						} else {
@@ -119,10 +123,11 @@ module.exports = class BaseFunctionNode {
 				}
 			}
 		} else {
-			this.paramType = [];
-			for (let a = 0; a < this.paramNames.length; ++a) {
-				this.paramType.push('float');
-			}
+			this.paramTypes = [];
+			//TODO: Remove when we have proper type detection
+			// for (let a = 0; a < this.paramNames.length; ++a) {
+			// 	this.paramTypes.push();
+			// }
 		}
 
 		//
@@ -223,6 +228,20 @@ module.exports = class BaseFunctionNode {
 	///
 	setFunctionString(functionString) {
 		this.functionString = functionString;
+	}
+
+	getParamType(paramName) {
+		const paramIndex = this.paramNames.indexOf(paramName);
+		if (this.parent === null) return null;
+		if (this.paramTypes[paramIndex]) return this.paramTypes[paramIndex];
+		const calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
+		for (let i = 0; i < calledFunctionArguments.length; i++) {
+			const calledFunctionArgument = calledFunctionArguments[i];
+			if (calledFunctionArgument[paramIndex] !== null) {
+				return this.paramTypes[paramIndex] = calledFunctionArgument[paramIndex].type;
+			}
+		}
+		return null;
 	}
 
 	generate(options) {

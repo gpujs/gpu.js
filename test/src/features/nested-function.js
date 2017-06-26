@@ -23,14 +23,14 @@ function nested_sum_AB_test(mode) {
 		QUnit.assert.close(res[i], exp[i], 0.1, "Result arr idx: "+i);
 	}
 }
-
-QUnit.test( "nested_sum (auto)", function() {
-	nested_sum_AB_test(null);
-});
-
-QUnit.test( "nested_sum (WebGL)", function() {
-	nested_sum_AB_test("webgl");
-});
+//
+// QUnit.test( "nested_sum (auto)", function() {
+// 	nested_sum_AB_test(null);
+// });
+//
+// QUnit.test( "nested_sum (WebGL)", function() {
+// 	nested_sum_AB_test("webgl");
+// });
 
 QUnit.test( "nested_sum (CPU)", function() {
 	nested_sum_AB_test("cpu");

@@ -1,15 +1,15 @@
 function for_loop_test(mode) {
-	var gpu = new GPU();
+	var gpu = new GPU({ mode: mode });
 	var f = gpu.createKernel(function(a, b) {
-		var x = 0.0;
-		for(var i = 0.0; i<10.0; i++) {
-			x = x + 1.0;
+		var x = 0;
+		for(var i = 0; i < 10; i++) {
+			x = x + 1;
 		}
 
 		return (a[this.thread.x] + b[this.thread.x] + x);
 	}, {
 		dimensions : [6],
-		mode : mode
+    debug: true
 	});
 
 	QUnit.assert.ok( f !== null, "function generated test");
@@ -21,7 +21,7 @@ function for_loop_test(mode) {
 	var exp = [15, 17, 19, 16, 18, 20];
 
 	for(var i = 0; i < exp.length; ++i) {
-		QUnit.assert.close(exp[i], res[i], 0.1, "Result arr idx: "+i);
+		QUnit.assert.close(res[i], exp[i], 0.1, "Result arr idx: "+i);
 	}
 }
 

@@ -12,7 +12,7 @@ const BaseFunctionNode = require('../function-node-base');
 /// 	jsFunction           - {JS Function}   The JS Function the node represents
 /// 	jsFunctionString     - {String}        jsFunction.toString()
 /// 	paramNames           - {[String,...]}  Parameter names of the function
-/// 	paramType            - {[String,...]}  Shader land parameter type assumption
+/// 	paramTypes           - {[String,...]}  Shader land parameters type assumption
 /// 	isRootKernel         - {Boolean}       Special indicator, for kernel function
 /// 	webglFunctionString  - {String}        webgl converted function string
 /// 	openglFunctionString - {String}        opengl converted function string

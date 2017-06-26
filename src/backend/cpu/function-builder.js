@@ -5,7 +5,7 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 	addFunction(functionName, jsFunction, paramTypes, returnType) {
 		this.addFunctionNode(
 			new CPUFunctionNode(functionName, jsFunction, paramTypes, returnType)
-				.setAddFunction(this.addFunction.bind(this))
+			.setAddFunction(this.addFunction.bind(this))
 		);
 	}
 
@@ -13,8 +13,20 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 		let ret = '';
 		for (let p in this.nodeMap) {
 			if (!this.nodeMap.hasOwnProperty(p)) continue;
-			ret += this.nodeMap[p].jsFunctionString + ';';
+			const node = this.nodeMap[p];
+			if (node.isSubKernel) {
+				ret += `var ${ node.functionName } = ` + node.jsFunctionString.replace('return', `return ${ node.functionName }Result[this.thread.z][this.thread.y][this.thread.x] =`) + '.bind(this);\n';
+			} else {
+				ret += `var ${ node.functionName } = ${ node.jsFunctionString };\n`;
+			}
 		}
 		return ret;
+	}
+
+	addSubKernel(jsFunction, paramTypes, returnType) {
+		const node = new CPUFunctionNode(null, jsFunction, paramTypes, returnType)
+			.setAddFunction(this.addFunction.bind(this));
+		node.isSubKernel = true;
+		this.addFunctionNode(node);
 	}
 };
