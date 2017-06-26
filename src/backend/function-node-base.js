@@ -232,6 +232,7 @@ module.exports = class BaseFunctionNode {
 
 	getParamType(paramName) {
 		const paramIndex = this.paramNames.indexOf(paramName);
+		if (this.parent === null) return null;
 		if (this.paramTypes[paramIndex]) return this.paramTypes[paramIndex];
 		const calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
 		for (let i = 0; i < calledFunctionArguments.length; i++) {
@@ -240,6 +241,7 @@ module.exports = class BaseFunctionNode {
 				return this.paramTypes[paramIndex] = calledFunctionArgument[paramIndex].type;
 			}
 		}
+		return null;
 	}
 
 	generate(options) {
