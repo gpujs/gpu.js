@@ -105,7 +105,7 @@ module.exports = class GPU {
 		}
 		const kernel = this.createKernel(fn, settings);
 		if (Array.isArray(arguments[0])) {
-      const functions = arguments[0];
+			const functions = arguments[0];
 			for (let i = 0; i < functions.length; i++) {
 				kernel.addSubKernel(functions[i]);
 			}

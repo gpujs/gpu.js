@@ -532,17 +532,17 @@ const utils = class utils {
 	}
 
 	static getAstString(source, ast) {
-	  let lines = Array.isArray(source) ? source : source.split(/\r?\n/g);
-    const start = ast.loc.start;
-    const end = ast.loc.end;
-    const result = [];
-    result.push(lines[start.line - 1].slice(start.column));
-    for (let i = start.line; i < end.line - 1; i++) {
-      result.push(lines[i]);
-    }
-    result.push(lines[end.line - 1].slice(0, end.column));
-    return result.join('\n');
-  }
+		let lines = Array.isArray(source) ? source : source.split(/\r?\n/g);
+		const start = ast.loc.start;
+		const end = ast.loc.end;
+		const result = [];
+		result.push(lines[start.line - 1].slice(start.column));
+		for (let i = start.line; i < end.line - 1; i++) {
+			result.push(lines[i]);
+		}
+		result.push(lines[end.line - 1].slice(0, end.column));
+		return result.join('\n');
+	}
 };
 let isWebGlSupported;
 const isCanvasSupported = typeof document !== 'undefined' ? utils.isCanvas(document.createElement('canvas')) : false;

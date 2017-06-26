@@ -24,7 +24,7 @@ module.exports = function kernelRunShortcut(kernel) {
 		}
 	});
 
-  shortcut.kernel = kernel;
+	shortcut.kernel = kernel;
 
 	return shortcut;
 };

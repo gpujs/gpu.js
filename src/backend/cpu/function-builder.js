@@ -15,18 +15,18 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 			if (!this.nodeMap.hasOwnProperty(p)) continue;
 			const node = this.nodeMap[p];
 			if (node.isSubKernel) {
-			  ret += `var ${ node.functionName } = ` + node.jsFunctionString.replace('return', `return ${ node.functionName }Result[this.thread.z][this.thread.y][this.thread.x] =`) + '.bind(this);\n';
-      } else {
-        ret += `var ${ node.functionName } = ${ node.jsFunctionString };\n`;
-      }
+				ret += `var ${ node.functionName } = ` + node.jsFunctionString.replace('return', `return ${ node.functionName }Result[this.thread.z][this.thread.y][this.thread.x] =`) + '.bind(this);\n';
+			} else {
+				ret += `var ${ node.functionName } = ${ node.jsFunctionString };\n`;
+			}
 		}
 		return ret;
 	}
 
-  addSubKernel(jsFunction, paramTypes, returnType) {
-    const node = new CPUFunctionNode(null, jsFunction, paramTypes, returnType)
-      .setAddFunction(this.addFunction.bind(this));
-    node.isSubKernel = true;
-    this.addFunctionNode(node);
-  }
+	addSubKernel(jsFunction, paramTypes, returnType) {
+		const node = new CPUFunctionNode(null, jsFunction, paramTypes, returnType)
+			.setAddFunction(this.addFunction.bind(this));
+		node.isSubKernel = true;
+		this.addFunctionNode(node);
+	}
 };

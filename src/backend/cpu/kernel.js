@@ -22,7 +22,7 @@ module.exports = class CPUKernel extends KernelBase {
 			z: null
 		};
 
-		this.run = function () {
+		this.run = function() {
 			this.run = null;
 			this.build();
 			return this.run.apply(this, arguments);
@@ -61,26 +61,26 @@ module.exports = class CPUKernel extends KernelBase {
 			}
 		}
 
-    if (this.subKernels !== null) {
-      this.subKernelOutputTextures = [];
-      this.subKernelOutputVariableNames = [];
-      for (let i = 0; i < this.subKernels.length; i++) {
-        const subKernel = this.subKernels[i];
-        builder.addSubKernel(subKernel);
-        this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
-      }
+		if (this.subKernels !== null) {
+			this.subKernelOutputTextures = [];
+			this.subKernelOutputVariableNames = [];
+			for (let i = 0; i < this.subKernels.length; i++) {
+				const subKernel = this.subKernels[i];
+				builder.addSubKernel(subKernel);
+				this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
+			}
 
-    } else if (this.subKernelProperties !== null) {
-      this.subKernelOutputVariableNames = [];
-      let i = 0;
-      for (let p in this.subKernelProperties) {
-        if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-        const subKernel = this.subKernelProperties[p];
-        builder.addSubKernel(subKernel);
-        this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
-        i++;
-      }
-    }
+		} else if (this.subKernelProperties !== null) {
+			this.subKernelOutputVariableNames = [];
+			let i = 0;
+			for (let p in this.subKernelProperties) {
+				if (!this.subKernelProperties.hasOwnProperty(p)) continue;
+				const subKernel = this.subKernelProperties[p];
+				builder.addSubKernel(subKernel);
+				this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
+				i++;
+			}
+		}
 
 		const threadDim = this.threadDim = utils.clone(this.dimensions);
 
@@ -88,14 +88,14 @@ module.exports = class CPUKernel extends KernelBase {
 			threadDim.push(1);
 		}
 
-    if (this.graphical) {
-      const canvas = this.canvas;
-      this.runDimensions.x = canvas.width = threadDim[0];
-      this.runDimensions.y = canvas.height = threadDim[1];
-      this._canvasCtx = canvas.getContext('2d');
-      this._imageData = this._canvasCtx.createImageData(threadDim[0], threadDim[1]);
-      this._colorData = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
-    }
+		if (this.graphical) {
+			const canvas = this.canvas;
+			this.runDimensions.x = canvas.width = threadDim[0];
+			this.runDimensions.y = canvas.height = threadDim[1];
+			this._canvasCtx = canvas.getContext('2d');
+			this._imageData = this._canvasCtx.createImageData(threadDim[0], threadDim[1]);
+			this._colorData = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
+		}
 
 		const kernelString = `
 ${ this.subKernelOutputVariableNames === null

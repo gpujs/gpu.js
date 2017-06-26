@@ -45,12 +45,14 @@ module.exports = class BaseFunctionNode {
 		// Internal vars setup
 		//
 		this.calledFunctions = [];
+		this.calledFunctionsArguments = {};
 		this.initVariables = [];
 		this.readVariables = [];
 		this.writeVariables = [];
 		this.addFunction = null;
 		this.isRootKernel = false;
 		this.isSubKernel = false;
+		this.parent = null;
 
 		//
 		// Missing jsFunction object exception
@@ -122,9 +124,10 @@ module.exports = class BaseFunctionNode {
 			}
 		} else {
 			this.paramTypes = [];
-			for (let a = 0; a < this.paramNames.length; ++a) {
-				this.paramTypes.push('float');
-			}
+			//TODO: Remove when we have proper type detection
+			// for (let a = 0; a < this.paramNames.length; ++a) {
+			// 	this.paramTypes.push();
+			// }
 		}
 
 		//
@@ -225,6 +228,18 @@ module.exports = class BaseFunctionNode {
 	///
 	setFunctionString(functionString) {
 		this.functionString = functionString;
+	}
+
+	getParamType(paramName) {
+		const paramIndex = this.paramNames.indexOf(paramName);
+		if (this.paramTypes[paramIndex]) return this.paramTypes[paramIndex];
+		const calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
+		for (let i = 0; i < calledFunctionArguments.length; i++) {
+			const calledFunctionArgument = calledFunctionArguments[i];
+			if (calledFunctionArgument[paramIndex] !== null) {
+				return this.paramTypes[paramIndex] = calledFunctionArgument[paramIndex].type;
+			}
+		}
 	}
 
 	generate(options) {

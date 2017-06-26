@@ -88,11 +88,11 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 		return kernelNode;
 	}
 
-  addSubKernel(jsFunction, paramTypes, returnType) {
-	  const kernelNode = new WebGLFunctionNode(null, jsFunction, paramTypes, returnType);
-    kernelNode.setAddFunction(this.addFunction.bind(this));
-    kernelNode.isSubKernel = true;
-    this.addFunctionNode(kernelNode);
-    return kernelNode;
-  }
+	addSubKernel(jsFunction, paramTypes, returnType) {
+		const kernelNode = new WebGLFunctionNode(null, jsFunction, paramTypes, returnType);
+		kernelNode.setAddFunction(this.addFunction.bind(this));
+		kernelNode.isSubKernel = true;
+		this.addFunctionNode(kernelNode);
+		return kernelNode;
+	}
 };

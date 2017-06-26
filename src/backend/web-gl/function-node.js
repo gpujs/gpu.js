@@ -239,15 +239,23 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		if (!funcParam.isRootKernel) {
 			// Arguments handling
 			for (let i = 0; i < funcParam.paramNames.length; ++i) {
+				const paramName = funcParam.paramNames[i];
+
 				if (i > 0) {
 					retArr.push(', ');
 				}
-
-				retArr.push('float');
+				const type = funcParam.getParamType(paramName);
+				switch (type) {
+					case 'Array':
+						retArr.push('sampler2D');
+						break;
+					default:
+						retArr.push('float');
+				}
 
 				retArr.push(' ');
 				retArr.push('user_');
-				retArr.push(funcParam.paramNames[i]);
+				retArr.push(paramName);
 			}
 		}
 
@@ -776,6 +784,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			if (funcParam.calledFunctions.indexOf(funcName) < 0) {
 				funcParam.calledFunctions.push(funcName);
 			}
+			if (!funcParam.hasOwnProperty('funcName')) {
+				funcParam.calledFunctionsArguments[funcName] = [];
+			}
+
+			const functionArguments = [];
+			funcParam.calledFunctionsArguments[funcName].push(functionArguments);
 
 			// Call the function
 			retArr.push(funcName);
@@ -785,10 +799,24 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 
 			// Add the vars
 			for (let i = 0; i < ast.arguments.length; ++i) {
+				const argument = ast.arguments[i];
 				if (i > 0) {
 					retArr.push(', ');
 				}
-				this.astGeneric(ast.arguments[i], retArr, funcParam);
+				this.astGeneric(argument, retArr, funcParam);
+				if (argument.type === 'Identifier') {
+					const paramIndex = funcParam.paramNames.indexOf(argument.name);
+					if (paramIndex === -1) {
+						functionArguments.push(null);
+					} else {
+						functionArguments.push({
+							name: argument.name,
+							type: funcParam.paramTypes[paramIndex]
+						});
+					}
+				} else {
+					functionArguments.push(null);
+				}
 			}
 
 			// Close arguments space
