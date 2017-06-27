@@ -66,17 +66,11 @@ function astErrorOutput(error, ast, funcParam) {
 }
 
 module.exports = class WebGLFunctionNode extends FunctionNodeBase {
-	constructor(functionName, jsFunction, paramTypes, returnType) {
-		super(functionName, jsFunction, paramTypes, returnType);
-		this.opt = null;
-	}
-
-	generate(_opt) {
-		const opt = this.opt = _opt || {};
-		if (opt.debug) {
+	generate() {
+		if (this.debug) {
 			console.log(this);
 		}
-		if (opt.prototypeOnly) {
+		if (this.prototypeOnly) {
 			return WebGLFunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
 		} else {
 			this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
@@ -88,8 +82,8 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	isIdentifierConstant(paramName) {
-		if (!this.opt.constants) return false;
-		return this.opt.constants.indexOf(paramName) !== -1;
+		if (!this.constants) return false;
+		return this.constants.hasOwnProperty(paramName);
 	}
 
 	/// Parses the abstract syntax tree, generically to its respective function
@@ -383,20 +377,31 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			);
 		}
 
-		if (idtNode.name === 'gpu_threadX') {
-			retArr.push('threadId.x');
-		} else if (idtNode.name === 'gpu_threadY') {
-			retArr.push('threadId.y');
-		} else if (idtNode.name === 'gpu_threadZ') {
-			retArr.push('threadId.z');
-		} else if (idtNode.name === 'gpu_dimensionsX') {
-			retArr.push('uOutputDim.x');
-		} else if (idtNode.name === 'gpu_dimensionsY') {
-			retArr.push('uOutputDim.y');
-		} else if (idtNode.name === 'gpu_dimensionsZ') {
-			retArr.push('uOutputDim.z');
-		} else {
-			retArr.push('user_' + idtNode.name);
+		switch (idtNode.name) {
+			case 'gpu_threadX':
+				retArr.push('threadId.x');
+				break;
+			case 'gpu_threadY':
+				retArr.push('threadId.y');
+				break;
+			case 'gpu_threadZ':
+				retArr.push('threadId.z');
+				break;
+			case 'gpu_dimensionsX':
+				retArr.push('uOutputDim.x');
+				break;
+			case 'gpu_dimensionsY':
+				retArr.push('uOutputDim.y');
+				break;
+			case 'gpu_dimensionsZ':
+				retArr.push('uOutputDim.z');
+				break;
+			default:
+				if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
+					retArr.push('constants_' + idtNode.name);
+				} else {
+					retArr.push('user_' + idtNode.name);
+				}
 		}
 
 		return retArr;
@@ -871,14 +876,14 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	/// Returns:
 	/// 	{String} webgl function string, result is cached under this.getFunctionPrototypeString
 	///
-	getFunctionPrototypeString(options) {
+	getFunctionPrototypeString() {
 		if (this.webGlFunctionPrototypeString) {
 			return this.webGlFunctionPrototypeString;
 		}
-		return this.webGlFunctionPrototypeString = this.generate(options);
+		return this.webGlFunctionPrototypeString = this.generate();
 	}
 
-	build(options) {
-		return this.getFunctionPrototypeString(options).length > 0;
+	build() {
+		return this.getFunctionPrototypeString().length > 0;
 	}
 };

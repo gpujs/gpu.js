@@ -98,6 +98,7 @@ module.exports = class CPUKernel extends KernelBase {
 		}
 
 		const kernelString = `
+${ this.constants ? Object.keys(this.constants).map((key) => { return `var ${ key } = ${ this.constants[key] }`; }).join(';\n') + ';\n' : '' }
 ${ this.subKernelOutputVariableNames === null
   ? ''
   : this.subKernelOutputVariableNames.map((name) => `  var ${ name } = null;\n`).join('')
