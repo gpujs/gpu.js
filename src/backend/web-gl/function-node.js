@@ -400,7 +400,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
 					retArr.push('constants_' + idtNode.name);
 				} else {
-					retArr.push('user_' + idtNode.name);
+					const userParamName = funcParam.getUserParamName(idtNode.name);
+					if (userParamName !== null) {
+						retArr.push('user_' + userParamName);
+					} else {
+						retArr.push('user_' + idtNode.name);
+					}
 				}
 		}
 
