@@ -2,7 +2,8 @@
 
 [![Join the chat at https://gitter.im/gpujs/gpu.js](https://badges.gitter.im/gpujs/gpu.js.svg)](https://gitter.im/gpujs/gpu.js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-gpu.js is a single-file JavaScript library for GPGPU in the browser. gpu.js will automatically compile specially written JavaScript functions into shader language and run them on the GPU using the WebGL API. In the case where WebGL is not available, the functions will still run in regular JavaScript.
+# gpu.js
+gpu.js is a **single-file** JavaScript library for GPGPU (General purpose computing on GPUs) in the browser. gpu.js will automatically compile specially written JavaScript functions into shader language and run them on the GPU using the WebGL API. In case WebGL is not available, the functions will still run in regular JavaScript.
 
 # Example
 
@@ -28,11 +29,23 @@ const matMult = gpu.createKernel(function(a, b) {
 const c = matMult(a, b);
 ```
 
-You can run a benchmark of this [here](http://gpu.rocks). Typically, it will run at 1-15x speedup depending on your hardware.
+You can run a benchmark of this [here](http://gpu.rocks). Typically, it will run 1-15x faster depending on your hardware.
 
 Or alternatively you can experiment around with the [kernel playground here](http://gpu.rocks/playground/playground.html)
 
-# Getting Started
+# Table of Contents
+
+* [Installation](#installation)
+* [Creating and Running Functions](#creating-and-running-functions)
+* [Accepting Input](#accepting-input)
+* [Graphical Output](#graphical-output)
+* [Combining Kernels](#combining-kernels)
+* [Create Kernels](#create-kernels)
+* [Adding Custom Functions](#adding-custom-functions)
+* [Full API reference](#full-api-reference)
+* [Automatically-built Documentation](#automatically-built-documentation)
+* [Contributors](#contributors)
+* [Contributing](#contributing)
 
 ## Installation
 Download the latest version of gpu.js and include the file in your HTML page using the following tags:
@@ -50,7 +63,7 @@ const gpu = new GPU();
 Note that this **requires** the Promise API, if you need to polyfill it, you can give our 'untested polyfill' a try [here](https://github.com/picoded/small_promise.js)
 
 ### Creating and Running Functions
-Depending on your output type, specify the intended dimensions of your output. You cannot have a accelerated function that does not specify any dimensions.
+Depending on your output type, specify the intended dimensions of your output. You cannot have an accelerated function that does not specify any dimensions.
 
 Dimensions of Output	|	How to specify dimensions
 ----------------------- |-------------------------------
@@ -72,7 +85,7 @@ const myFunc = gpu.createKernel(function() {
 }, opt);
 ```
 
-The created function is a regular JavaScript function, you can use it like regular functions.
+The created function is a regular JavaScript function, and you can use it like one.
 
 ```js
 myFunc();
@@ -91,7 +104,7 @@ myFunc();
 ```
 ### Accepting Input
 
-Kernel functions may accept numbers, or 1D, 2D or 3D array of numbers as input. To define an argument, simply add it to the kernel function like regular JavaScript.
+Kernel functions can accept numbers, or 1D, 2D or 3D array of numbers as input. To define an argument, simply add it to the kernel function like regular JavaScript.
 
 ```js
 const myFunc = gpu.createKernel(function(x) {
@@ -117,7 +130,7 @@ myFunc([1, 2, 3]);
 
 Sometimes, you want to produce a `canvas` image instead of doing numeric computations. To achieve this, set the `graphical` flag to `true` and the output dimensions to `[width, height]`. The thread identifiers will now refer to the `x` and `y` coordinate of the pixel you are producing. Inside your kernel function, use `this.color(r,g,b)` or `this.color(r,g,b,a)` to specify the color of the pixel.
 
-For performance reasons, the return value for your function will no longer be anything useful. Instead, to display the image, retrieve the `canvas` DOM node and insert it into your page.
+For performance reasons, the return value of your function will no longer be anything useful. Instead, to display the image, retrieve the `canvas` DOM node and insert it into your page.
 
 ```js
 const render = gpu.createKernel(function() {
@@ -132,12 +145,12 @@ const canvas = render.getCanvas();
 document.getElementsByTagName('body')[0].appendChild(canvas);
 ```
 
-Note: To animate the rendering, use requestAnimationFrame instead of setTimeout for optimal performance. For more information, see [this link](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame).
+Note: To animate the rendering, use `requestAnimationFrame` instead of `setTimeout` for optimal performance. For more information, see [this](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame).
 
 ### Combining kernels
 
 Sometimes you want to do multiple math operations on the gpu without the round trip penalty of data transfer from cpu to gpu to cpu to gpu, etc.  To aid this there is the `combineKernels` method.
-Note: Kernels can have different dimensions.
+_**Note:**_ Kernels can have different dimensions.
 ```js
 const add = gpu.createKernel(function(a, b) {
 	return a[this.thread.x] + b[this.thread.x];
@@ -157,7 +170,7 @@ This gives you the flexibility of using multiple transformations but without the
 
 ### Create kernels
 
-Sometimes you want to do multiple math operations in one kernel, and save the output of each of those operations.  An example is machine learning where using the output for back propagation.  To aid this there is the `createKernels` method.
+Sometimes you want to do multiple math operations in one kernel, and save the output of each of those operations. An example is **Machine Learning** where the previous output is required for back propagation. To aid this there is the `createKernels` method.
 
 #### object outputs
 ```js
@@ -191,10 +204,10 @@ const megaKernel = gpu.createKernels([
 megaKernel(a, b, c);
 //Result: [ [], [] ].result []
 ```
-This gives you the flexibility of using parts of s single transformation without the performance penalty, resulting in a much much MUCH faster operation.
+This gives you the flexibility of using parts of a single transformation without the performance penalty, resulting in much much _MUCH_ faster operation.
 
 ### Adding custom functions
-You have a custom function you'd like to use on the gpu?  Although limited, you can:
+Do you have a custom function you'd like to use on the gpu? Although limited, you can:
 ```js
 gpu.addFunction(function mySuperFunction(a, b) {
 	return a - b;
@@ -259,8 +272,8 @@ will gladly review it. If you wish to get write access to the repository,
 please email us and we will review your application and grant you access to
 the `develop` branch.
  
-We promise never to pass off your code as if we have written it.
- 
+We promise never to pass off your code as ours.
+
 # License 
 
 The MIT License
