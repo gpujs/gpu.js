@@ -59,10 +59,6 @@ module.exports = class BaseRunner {
 	buildKernel(fn, settings) {
 		settings = Object.assign({}, settings || {});
 		const fnString = fn.toString();
-		if (!utils.isFunctionString(fnString)) {
-			throw 'Unable to get body of kernel function';
-		}
-
 		if (!settings.functionBuilder) {
 			settings.functionBuilder = this.functionBuilder;
 		}

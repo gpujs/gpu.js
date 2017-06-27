@@ -21,6 +21,10 @@ module.exports = class BaseKernel {
 		this.floatOutputForce = null;
 		this.addFunction = null;
 		this.copyData = true;
+		this.subKernels = null;
+		this.subKernelProperties = null;
+		this.subKernelNames = null;
+		this.subKernelOutputVariableNames = null;
 
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -100,19 +104,19 @@ module.exports = class BaseKernel {
 	}
 
 	setCanvas(canvas) {
-	  this._canvas = canvas;
-	  return this;
-  }
+		this._canvas = canvas;
+		return this;
+	}
 
-  setWebGl(webGl) {
-	  this._webGl = webGl;
-	  return this;
-  }
+	setWebGl(webGl) {
+		this._webGl = webGl;
+		return this;
+	}
 
-  setCopyData(copyData) {
-	  this.copyData = copyData;
-	  return this;
-  }
+	setCopyData(copyData) {
+		this.copyData = copyData;
+		return this;
+	}
 
 	get canvas() {
 		return this._canvas;
@@ -149,5 +153,28 @@ module.exports = class BaseKernel {
 				reject(e);
 			}
 		});
+	}
+
+	addSubKernel(fnString) {
+		if (this.subKernels === null) {
+			this.subKernels = [];
+			this.subKernelNames = [];
+		}
+		this.subKernels.push(fnString);
+		this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
+		return this;
+	}
+
+	addSubKernelProperty(property, fnString) {
+		if (this.subKernelProperties === null) {
+			this.subKernelProperties = {};
+			this.subKernelNames = [];
+		}
+		if (this.subKernelProperties.hasOwnProperty(property)) {
+			throw new Error(`cannot add sub kernel ${ property }, already defined`);
+		}
+		this.subKernelProperties[property] = fnString;
+		this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
+		return this;
 	}
 };

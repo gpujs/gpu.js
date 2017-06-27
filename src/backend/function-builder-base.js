@@ -66,7 +66,7 @@ module.exports = class FunctionBuilderBase {
 	///
 	/// Returns:
 	/// 	{[String,...]}  Returning list of function names that is traced. Including itself.
-	traceFunctionCalls(functionName, retList) {
+	traceFunctionCalls(functionName, retList, parent) {
 		functionName = functionName || 'kernel';
 		retList = retList || [];
 
@@ -77,16 +77,17 @@ module.exports = class FunctionBuilderBase {
 				// Does nothing if already traced
 			} else {
 				retList.push(functionName);
-
+				fNode.parent = parent;
 				fNode.getFunctionString(); //ensure JS trace is done
 				for (let i = 0; i < fNode.calledFunctions.length; ++i) {
-					this.traceFunctionCalls(fNode.calledFunctions[i], retList);
+					this.traceFunctionCalls(fNode.calledFunctions[i], retList, fNode);
 				}
 			}
 		}
 
 		return retList;
 	}
+
 
 
 

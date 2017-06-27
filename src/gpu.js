@@ -94,13 +94,39 @@ module.exports = class GPU {
 		return kernel;
 	}
 
+	createKernels() {
+		let fn;
+		let settings;
+		if (typeof arguments[arguments.length - 2] === 'function') {
+			fn = arguments[arguments.length - 2];
+			settings = arguments[arguments.length - 1];
+		} else {
+			fn = arguments[arguments.length - 1];
+		}
+		const kernel = this.createKernel(fn, settings);
+		if (Array.isArray(arguments[0])) {
+			const functions = arguments[0];
+			for (let i = 0; i < functions.length; i++) {
+				kernel.addSubKernel(functions[i]);
+			}
+		} else {
+			const functions = arguments[0];
+			for (let p in functions) {
+				if (!functions.hasOwnProperty(p)) continue;
+				kernel.addSubKernelProperty(p, functions[p]);
+			}
+		}
+
+		return kernel;
+	}
+
 	combineKernels() {
 		const lastKernel = arguments[arguments.length - 2];
 		const combinedKernel = arguments[arguments.length - 1];
 		if (this.mode === 'cpu') return combinedKernel;
 
 		const canvas = arguments[0].canvas;
-		let webGl =  arguments[0].webGl;
+		let webGl = arguments[0].webGl;
 
 		for (let i = 0; i < arguments.length - 1; i++) {
 			arguments[i]

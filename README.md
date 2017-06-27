@@ -153,7 +153,45 @@ const superKernel = gpu.combineKernels(add, multiply, function(a, b, c) {
 
 superKernel(a, b, c);
 ```
-This gives you the flexibility of using multiple transformations but without the performance penalty, resulting in a much much MUCH faster operation.  
+This gives you the flexibility of using multiple transformations but without the performance penalty, resulting in a much much MUCH faster operation.
+
+### Create kernels
+
+Sometimes you want to do multiple math operations in one kernel, and save the output of each of those operations.  An example is machine learning where using the output for back propagation.  To aid this there is the `createKernels` method.
+
+#### object outputs
+```js
+const megaKernel = gpu.createKernels({
+  addResult: function add(a, b) {
+    return a[this.thread.x] + b[this.thread.x];
+  },
+  multiplyResult: function multiply(a, b) {
+    return a[this.thread.x] * b[this.thread.x];
+  },
+}, function(a, b, c) {
+	return multiply(add(a, b), c);
+});
+
+megaKernel(a, b, c);
+//Result: { addResult: [], multiplyResult: [], result: [] }
+```
+#### array outputs
+```js
+const megaKernel = gpu.createKernels([
+  function add(a, b) {
+    return a[this.thread.x] + b[this.thread.x];
+  },
+  function multiply(a, b) {
+    return a[this.thread.x] * b[this.thread.x];
+  }
+], function(a, b, c) {
+	return multiply(add(a, b), c);
+});
+
+megaKernel(a, b, c);
+//Result: [ [], [] ].result []
+```
+This gives you the flexibility of using parts of s single transformation without the performance penalty, resulting in a much much MUCH faster operation.
 
 ### Adding custom functions
 You have a custom function you'd like to use on the gpu?  Although limited, you can:
