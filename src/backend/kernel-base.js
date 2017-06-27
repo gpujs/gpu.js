@@ -1,5 +1,17 @@
 const utils = require('../utils');
 
+///
+/// Class: BaseKernel
+///
+/// Implements the base class for Kernels, and is used as a 
+/// parent class for all Kernel implementations.
+///
+/// This contains the basic methods needed by all Kernel implementations, 
+/// like setDimensions, addSubKernel, etc.
+///
+/// Properties:
+///		paramNames
+///
 module.exports = class BaseKernel {
 	constructor(fnString, settings) {
 		this.paramNames = utils.getParamNamesFromString(fnString);
@@ -30,7 +42,6 @@ module.exports = class BaseKernel {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
 			this[p] = settings[p];
 		}
-
 		if (settings.hasOwnProperty('canvas')) {
 			this._canvas = settings.canvas;
 		}
@@ -41,7 +52,6 @@ module.exports = class BaseKernel {
 	build() {
 		throw new Error('"build" not defined on Base');
 	}
-
 	setAddFunction(cb) {
 		this.addFunction = cb;
 		return this;
