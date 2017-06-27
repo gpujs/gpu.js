@@ -106,7 +106,12 @@ module.exports = class WebGLKernel extends KernelBase {
 			threadDim.push(1);
 		}
 
-		builder.addKernel(this.fnString, this.paramNames, this.paramTypes);
+		builder.addKernel(this.fnString, {
+			prototypeOnly: false,
+			constants: this.constants,
+			debug: this.debug,
+			loopMaxIterations: this.loopMaxIterations
+		}, this.paramNames, this.paramTypes);
 
 		if (this.subKernels !== null) {
 			const ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
@@ -115,7 +120,12 @@ module.exports = class WebGLKernel extends KernelBase {
 			this.subKernelOutputVariableNames = [];
 			for (let i = 0; i < this.subKernels.length; i++) {
 				const subKernel = this.subKernels[i];
-				builder.addSubKernel(subKernel);
+				builder.addSubKernel(subKernel, {
+					prototypeOnly: false,
+					constants: this.constants,
+					debug: this.debug,
+					loopMaxIterations: this.loopMaxIterations
+				});
 				this.subKernelOutputTextures.push(this.getSubKernelTexture(i));
 				this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
 			}
@@ -129,7 +139,12 @@ module.exports = class WebGLKernel extends KernelBase {
 			for (let p in this.subKernelProperties) {
 				if (!this.subKernelProperties.hasOwnProperty(p)) continue;
 				const subKernel = this.subKernelProperties[p];
-				builder.addSubKernel(subKernel);
+				builder.addSubKernel(subKernel, {
+					prototypeOnly: false,
+					constants: this.constants,
+					debug: this.debug,
+					loopMaxIterations: this.loopMaxIterations
+				});
 				this.subKernelOutputTextures.push(this.getSubKernelTexture(p));
 				this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
 				i++;

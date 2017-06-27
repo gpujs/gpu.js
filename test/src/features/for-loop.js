@@ -8,8 +8,7 @@ function for_loop_test(mode) {
 
 		return (a[this.thread.x] + b[this.thread.x] + x);
 	}, {
-		dimensions : [6],
-    debug: true
+		dimensions : [6]
 	});
 
 	QUnit.assert.ok( f !== null, "function generated test");
@@ -94,3 +93,44 @@ QUnit.test( "for_loop (CPU)", function() {
 	});
 
 })();
+
+function for_constant_loop_test(mode) {
+  var gpu = new GPU({ mode: mode });
+  var f = gpu.createKernel(function(a, b) {
+    var x = 0;
+    for(var i = 0; i < max; i++) {
+      x = x + 1;
+    }
+
+    return (a[this.thread.x] + b[this.thread.x] + x);
+  }, {
+    dimensions : [6],
+    constants: {
+      max: 10
+    }
+  });
+
+  QUnit.assert.ok( f !== null, "function generated test");
+
+  var a = [1, 2, 3, 5, 6, 7];
+  var b = [4, 5, 6, 1, 2, 3];
+
+  var res = f(a,b);
+  var exp = [15, 17, 19, 16, 18, 20];
+
+  for(var i = 0; i < exp.length; ++i) {
+    QUnit.assert.close(res[i], exp[i], 0.1, "Result arr idx: "+i);
+  }
+}
+
+QUnit.test( "for_constant_loop_test (auto)", function() {
+  for_constant_loop_test(null);
+});
+
+QUnit.test( "for_constant_loop_test (WebGL)", function() {
+  for_constant_loop_test("webgl");
+});
+
+QUnit.test( "for_constant_loop_test (CPU)", function() {
+  for_constant_loop_test("cpu");
+});

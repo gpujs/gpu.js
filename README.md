@@ -207,6 +207,31 @@ const kernel = gpu.createKernel(function(a, b) {
 	return anotherFunction(mySuperFunction(a[this.thread.x], b[this.thread.x]));
 }).setDimensions([20]);
 ```
+### Loops
+Loops just work
+#### Dynamic sized via constants
+```js
+const matMult = gpu.createKernel(function(a, b) {
+    var sum = 0;
+    for (var i = 0; i < size; i++) {
+        sum += a[this.thread.y][i] * b[i][this.thread.x];
+    }
+    return sum;
+}, {
+  constants: { size: 512 },
+  dimensions: [512, 512],
+});
+```
+#### Fixed sized
+```js
+const matMult = gpu.createKernel(function(a, b) {
+    var sum = 0;
+    for (var i = 0; i < 512; i++) {
+        sum += a[this.thread.y][i] * b[i][this.thread.x];
+    }
+    return sum;
+}).setDimensions([512, 512]);
+```
 
 # Full API Reference
 

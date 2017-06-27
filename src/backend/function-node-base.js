@@ -40,7 +40,7 @@ module.exports = class BaseFunctionNode {
 	/// 	paramTypes      - {[String,...]|{variableName: Type}}          Parameter type array, assumes all parameters are 'float' if null
 	/// 	returnType      - {String}                The return type, assumes 'float' if null
 	///
-	constructor(functionName, jsFunction, paramTypes, returnType) {
+	constructor(functionName, jsFunction, options, paramTypes, returnType) {
 		//
 		// Internal vars setup
 		//
@@ -53,6 +53,24 @@ module.exports = class BaseFunctionNode {
 		this.isRootKernel = false;
 		this.isSubKernel = false;
 		this.parent = null;
+		this.debug = null;
+		this.prototypeOnly = null;
+		this.constants = null;
+
+		if (options) {
+			if (options.hasOwnProperty('debug')) {
+				this.debug = options.debug;
+			}
+			if (options.hasOwnProperty('prototypeOnly')) {
+				this.prototypeOnly = options.prototypeOnly;
+			}
+			if (options.hasOwnProperty('constants')) {
+				this.constants = options.constants;
+			}
+			if (options.hasOwnProperty('loopMaxIterations')) {
+				this.loopMaxIterations = options.loopMaxIterations;
+			}
+		}
 
 		//
 		// Missing jsFunction object exception
