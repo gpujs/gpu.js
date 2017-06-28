@@ -66,7 +66,7 @@ module.exports = class GPU {
 	/// 	settings        {Object}      The parameter configuration object (see above)
 	///
 	/// Returns:
-	/// 	callable function to run
+	/// 	{Function} callable function to run
 	///
 	createKernel(fn, settings) {
 		//
@@ -94,6 +94,41 @@ module.exports = class GPU {
 		return kernel;
 	}
 
+	///
+	///
+	/// Function: createKernels
+	///
+	/// Create a super kernel which executes sub kernels 
+	/// and saves their output to be used with the next sub kernel.
+	/// This can be useful if we want to save the output on one kernel,
+	///	and then use it as an input to another kernel. *Machine Learning*
+	///
+	/// Example:
+	/// (start code)
+	///	 		const megaKernel = gpu.createKernels({
+	///				addResult: function add(a, b) {
+	///	  				return a[this.thread.x] + b[this.thread.x];
+	///				},
+	///				multiplyResult: function multiply(a, b) {
+	///					return a[this.thread.x] * b[this.thread.x];
+	///				},
+	///			  }, function(a, b, c) {
+	///				return multiply(add(a, b), c);
+	///			});
+	///	
+	///			megaKernel(a, b, c);
+	/// (end code) 
+	/// 
+	/// *Note:* You can also define subKernels as an array of functions. 
+	/// > [add, multiply]
+	///
+	/// Parameters:
+	///      subKernels - {Object|Array}  Sub kernels for this kernel
+	///		 rootKernel - {Function}  	  Root kernel
+	/// 
+	/// Returns:
+	/// 	{Function} callable kernel function
+	///
 	createKernels() {
 		let fn;
 		let settings;
@@ -120,6 +155,29 @@ module.exports = class GPU {
 		return kernel;
 	}
 
+	///
+	/// Function: combineKernels
+	///
+	/// Combine different kernels into one super Kernel, 
+	/// useful to perform multiple operations inside one 
+	/// kernel without the penalty of data transfer between 
+	/// cpu and gpu.
+	///
+	/// The number of kernel functions sent to this method can be variable.
+	/// You can send in one, two, etc.
+	///
+	/// Example: 
+	/// >	combineKernels(add, multiply, function(a,b,c){
+	///	>	 	return add(multiply(a,b), c)
+	///	>	})
+	///
+	/// Parameters:
+	///      subKernels - {Function}  Kernel function(s) to combine.
+	///		 rootKernel - {Function}  Root kernel to combine kernels into
+	/// 
+	/// Returns:
+	/// 	{Function} callable kernel function
+	///
 	combineKernels() {
 		const lastKernel = arguments[arguments.length - 2];
 		const combinedKernel = arguments[arguments.length - 1];
@@ -165,9 +223,6 @@ module.exports = class GPU {
 		};
 	}
 
-	get mode() {
-		return this._runner.mode;
-	}
 
 	///
 	/// Function: addFunction
@@ -188,27 +243,51 @@ module.exports = class GPU {
 	}
 
 	///
-	/// Function: isWebGlSupported
+	/// Function: get mode()
 	///
-	/// Return TRUE, if browser supports WebGl AND Canvas
+	/// [GETTER] Return the current mode in which gpu.js is executing.
+	/// 
+	/// Returns:
+	/// 	{String} The current mode, "cpu", "webgl", etc.
+	///
+	get mode() {
+		return this._runner.mode;
+	}
+
+	///
+	/// Function: get isWebGlSupported()
+	///
+	/// [GETTER] Return TRUE, if browser supports WebGl AND Canvas
 	///
 	/// Note: This function can also be called directly `GPU.isWebGlSupported()`
 	///
 	/// Returns:
 	/// 	{Boolean} TRUE if browser supports webGl
 	///
-	static get isWebGlSupported() {
-		return utils.isWebGlSupported;
-	}
-
 	get isWebGlSupported() {
 		return utils.isWebGlSupported;
 	}
 
+	///
+	/// Function: get canvas()
+	///
+	/// [GETTER] Return the canvas object bound to this gpu instance.
+	///
+	/// Returns:
+	/// 	{Object} Canvas object if present
+	///
 	get canvas() {
 		return this._canvas;
 	}
 
+	///
+	/// Function: get webGl()
+	///
+	/// [GETTER] Return the webGl object bound to this gpu instance.
+	///
+	/// Returns:
+	/// 	{Object} WebGl object if present
+	///
 	get webGl() {
 		return this._webGl;
 	}
