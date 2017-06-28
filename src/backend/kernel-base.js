@@ -24,7 +24,7 @@ const utils = require('../utils');
 module.exports = class BaseKernel {
 	
 	///
-	/// Function: baseKernel
+	/// Function: BaseKernel
 	///
 	/// [Constructor] Blank constructor, which initializes the properties
 	///

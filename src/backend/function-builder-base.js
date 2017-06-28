@@ -1,12 +1,14 @@
 ///
-/// Class: BaseFunctionBuilder
+/// Class: FunctionBuilderBase
 ///
 /// [INTERNAL] A collection of functionNodes.
 ///
 /// This handles all the raw state, converted state, etc. Of a single function.
 ///
 /// Properties:
-/// 	nodeMap - {Object} Object map, where nodeMap[function] = new FunctionNode;
+/// 	nodeMap 		- {Object} 			Object map, where nodeMap[function] = new FunctionNode;
+///     gpu     		- {Object} 			The current gpu instance bound to this builder
+///     rootKernel 		- {Object} 			The root kernel object, contains the paramNames, dimensions etc.
 ///
 module.exports = class FunctionBuilderBase {
 

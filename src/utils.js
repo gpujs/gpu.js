@@ -457,6 +457,18 @@ const utils = class utils {
 		return [w, w];
 	}
 
+	///
+	/// Function: getDimensions
+	///
+	/// Return the dimension of an array.
+	/// 
+	/// Parameters:
+	///		x       - {Array} The array
+	///		pad     - {Number} To include padding in the dimension calculation [Optional]
+	///
+	///
+	///
+	
 	static getDimensions(x, pad) {
 		let ret;
 		if (utils.isArray(x)) {
@@ -483,6 +495,17 @@ const utils = class utils {
 		return ret;
 	}
 
+	///
+	/// Function: pad
+	///
+	/// Pad an array AND its elements with leading and ending zeros
+	/// Parameters:
+	/// 	arr 		- {Array} the array to pad zeros to
+	/// 	padding 	- {Number} amount of padding
+	///
+	/// Returns:
+	/// 	{Array} Array with leading and ending zeros, and all the elements padded by zeros.
+	///
 	static pad(arr, padding) {
 		function zeros(n) {
 			return Array.apply(null, new Array(n)).map(Number.prototype.valueOf, 0);
@@ -501,6 +524,17 @@ const utils = class utils {
 		return ret;
 	}
 
+	///
+	/// Function: flatten
+	///
+	/// Converts a nested array into a one-dimensional array
+	///
+	/// Parameters:
+	/// 	_arr - {Array} the nested array to flatten
+	///
+	/// Returns:
+	/// 	{Array} 1D Array
+	///
 	static flatten(_arr) {
 		for (let i = 0; i < _arr.length; ++i) {
 			if (Array.isArray(_arr[i])) {
@@ -523,6 +557,19 @@ const utils = class utils {
 			arr;
 	}
 
+	///
+	/// Function: splitArray
+	///
+	/// Splits an array into smaller arrays.
+	/// Number of elements in one small chunk is given by `part`
+  	///
+	/// Parameters:
+	/// 	array - {Array} The array to split into chunks
+	/// 	part  - {Array} elements in one chunk
+	///
+	/// Returns:
+	/// 	{Array} An array of smaller chunks
+	///
 	static splitArray(array, part) {
 		const result = [];
 		for (let i = 0; i < array.length; i += part) {
