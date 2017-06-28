@@ -1,14 +1,14 @@
 function createPropertyKernels(mode, dimensions, canvas) {
   var gpu = new GPU({mode: mode, canvas: canvas});
   return gpu.createKernels({
-    addResult: function add(v1, v2) {
+    addResult: GPU.alias('adder', function add(v1, v2) {
       return v1 + v2;
-    },
+    }),
     divideResult: function divide(v1, v2) {
       return v1 / v2;
     }
   }, function (a, b, c) {
-    return divide(add(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
+    return divide(adder(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
   }).setDimensions(dimensions)
     .setDebug(mode === 'cpu');
 }

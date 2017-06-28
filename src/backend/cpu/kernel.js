@@ -160,7 +160,7 @@ ${ this.subKernelOutputVariableNames === null
     return result;\n`
         : `return {
       result: ret,
-      ${ this.subKernelOutputVariableNames.map((name) => `${ name }: ${ name }`).join(',\n') }
+      ${ Object.keys(this.subKernelProperties).map((name, i) => `${ name }: ${ this.subKernelOutputVariableNames[i] }`).join(',\n') }
     };`
   }
   }.bind(this);`;

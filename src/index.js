@@ -1,4 +1,5 @@
 const GPU = require('./gpu');
+const alias = require('./alias');
 const utils = require('./utils');
 
 const CPUFunctionBuilder = require('./backend/cpu/function-builder');
@@ -11,7 +12,7 @@ const WebGLFunctionNode = require('./backend/web-gl/function-node');
 const WebGLKernel = require('./backend/web-gl/kernel');
 const WebGLRunner = require('./backend/web-gl/runner');
 
-
+GPU.alias = alias;
 GPU.utils = utils;
 
 GPU.CPUFunctionBuilder = CPUFunctionBuilder;
