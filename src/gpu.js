@@ -106,16 +106,16 @@ module.exports = class GPU {
 	/// Example:
 	/// (start code)
 	///	 		const megaKernel = gpu.createKernels({
-    ///				addResult: function add(a, b) {
-    ///	  				return a[this.thread.x] + b[this.thread.x];
-  	///				},
-  	///				multiplyResult: function multiply(a, b) {
+	///				addResult: function add(a, b) {
+	///	  				return a[this.thread.x] + b[this.thread.x];
+	///				},
+	///				multiplyResult: function multiply(a, b) {
 	///					return a[this.thread.x] * b[this.thread.x];
 	///				},
 	///			  }, function(a, b, c) {
 	///				return multiply(add(a, b), c);
 	///			});
-    ///	
+	///	
 	///			megaKernel(a, b, c);
 	/// (end code) 
 	/// 
