@@ -65,11 +65,11 @@ Note that this **requires** the Promise API, if you need to polyfill it, you can
 ### Creating and Running Functions
 Depending on your output type, specify the intended dimensions of your output. You cannot have an accelerated function that does not specify any dimensions.
 
-Dimensions of Output	|	How to specify dimensions
------------------------ |-------------------------------
-1D			            |	`[length]`
-2D		            	|	`[width, height]`
-3D		            	|	`[width, height, depth]`
+Dimensions of Output	 |	How to specify dimensions    |	How to reference in kernel
+-----------------------|-------------------------------|--------------------------------
+1D			               |	`[length]`                   |	`myVar[this.thread.x]`
+2D		            	   |	`[width, height]`            |	`myVar[this.thread.y][this.thread.x]`
+3D		            	   |	`[width, height, depth]`     |	`myVar[this.thread.z][this.thread.y][this.thread.x]`
 
 ```js
 const opt = {
