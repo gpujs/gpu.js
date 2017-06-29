@@ -13,7 +13,7 @@
 module.exports = class FunctionBuilderBase {
 
 	///
-	/// Function: functionBuilder
+	/// Function: FunctionBuilderBase
 	///
 	/// [Constructor] Blank constructor, which initializes the properties
 	///

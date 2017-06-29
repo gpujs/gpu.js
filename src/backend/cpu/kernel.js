@@ -2,6 +2,9 @@ const KernelBase = require('../kernel-base');
 const utils = require('../../utils');
 const kernelString = require('./kernel-string');
 
+///
+/// Class: CPUKernel
+///
 module.exports = class CPUKernel extends KernelBase {
 	constructor(fnString, settings) {
 		super(fnString, settings);
@@ -106,7 +109,7 @@ module.exports = class CPUKernel extends KernelBase {
 		const y = height - this.thread.y - 1;
 
 		const index = x + y * width;
-
+		
 		this._colorData[index * 4 + 0] = r;
 		this._colorData[index * 4 + 1] = g;
 		this._colorData[index * 4 + 2] = b;

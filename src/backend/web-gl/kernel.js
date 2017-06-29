@@ -6,6 +6,9 @@ const fragShaderString = require('./shader-frag');
 const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
 
+///
+/// Class: WebGLKernel
+///
 module.exports = class WebGLKernel extends KernelBase {
 	_getFragShaderArtifactMap(args) {
 		return {
