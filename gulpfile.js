@@ -11,6 +11,7 @@ const source = require('vinyl-source-stream');
 const buffer = require('vinyl-buffer');
 const pkg = require('./package.json');
 const jsprettify = require('gulp-jsbeautifier');
+const babel = require("gulp-babel");
 
 /// Build the scripts
 gulp.task('build', function() {
@@ -18,13 +19,14 @@ gulp.task('build', function() {
     .bundle()
     .pipe(source('gpu.js'))
     .pipe(buffer())
+	.pipe(babel())
 		.pipe(header(fs.readFileSync('./src/wrapper/prefix.js', 'utf8'), { pkg : pkg }))
 		.pipe(gulp.dest('bin'));
 });
 
 /// Minify the build script, after building it
 gulp.task('minify', ['build'], function() {
-	return gulp.src(['bin/gpu.js'])
+	return gulp.src(['./bin/gpu.js'])
 		.pipe(rename('gpu.min.js'))
 		.pipe(
 		  uglify({
