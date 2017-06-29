@@ -26,7 +26,7 @@ gulp.task('build', function() {
 
 /// Minify the build script, after building it
 gulp.task('minify', ['build'], function() {
-	return gulp.src(['./bin/gpu.js'])
+	return gulp.src('bin/gpu.js')
 		.pipe(rename('gpu.min.js'))
 		.pipe(
 		  uglify({
