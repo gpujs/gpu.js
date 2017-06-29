@@ -9,7 +9,6 @@ const utils = require('../../utils');
 ///
 /// Builds webGl functions (shaders) from JavaScript function Strings
 ///
-
 module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	addFunction(functionName, jsFunction, paramTypes, returnType) {
 		this.addFunctionNode(

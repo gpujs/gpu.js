@@ -4,7 +4,6 @@ const utils = require('../../utils');
 ///
 /// Class: CPUKernel
 ///
-
 module.exports = class CPUKernel extends KernelBase {
 	constructor(fnString, settings) {
 		super(fnString, settings);

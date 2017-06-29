@@ -8,7 +8,6 @@ const vertShaderString = require('./shader-vert');
 ///
 /// Class: WebGLKernel
 ///
-
 module.exports = class WebGLKernel extends KernelBase {
 	_getFragShaderArtifactMap(args) {
 		return {

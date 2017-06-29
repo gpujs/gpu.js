@@ -11,7 +11,6 @@ const WebGLFunctionBuilder = require('./function-builder');
 /// Extends: 
 ///		RunnerBase
 ///
-
 module.exports = class WebGLRunner extends RunnerBase {
 	
 	//
