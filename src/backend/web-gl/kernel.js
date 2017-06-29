@@ -4,6 +4,7 @@ const utils = require('../../utils');
 const Texture = require('../../texture');
 const fragShaderString = require('./shader-frag');
 const vertShaderString = require('./shader-vert');
+const kernelString = require('./kernel-string');
 
 module.exports = class WebGLKernel extends KernelBase {
 	_getFragShaderArtifactMap(args) {
@@ -41,6 +42,8 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.paramTypes = null;
 		this.argumentsLength = 0;
 		this.ext = null;
+		this.compiledFragShaderString = null;
+		this.compiledVertShaderString = null;
 		if (!this._webGl) this._webGl = utils.initWebGl(this.canvas);
 	}
 
@@ -94,11 +97,10 @@ module.exports = class WebGLKernel extends KernelBase {
 	build() {
 		this.validateOptions();
 		this.setupParams(arguments);
-		const builder = this.functionBuilder;
 		const texSize = this.texSize;
 		const gl = this._webGl;
-		this.canvas.width = texSize[0];
-		this.canvas.height = texSize[1];
+		this._canvas.width = texSize[0];
+		this._canvas.height = texSize[1];
 		gl.viewport(0, 0, texSize[0], texSize[1]);
 
 		const threadDim = this.threadDim = utils.clone(this.dimensions);
@@ -106,62 +108,20 @@ module.exports = class WebGLKernel extends KernelBase {
 			threadDim.push(1);
 		}
 
-		builder.addKernel(this.fnString, {
-			prototypeOnly: false,
-			constants: this.constants,
-			debug: this.debug,
-			loopMaxIterations: this.loopMaxIterations
-		}, this.paramNames, this.paramTypes);
+		if (this.functionBuilder) this._addKernels();
 
-		if (this.subKernels !== null) {
-			const ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
-			if (!ext) throw new Error('could not instantiate draw buffers extension');
-			this.subKernelOutputTextures = [];
-			this.subKernelOutputVariableNames = [];
-			for (let i = 0; i < this.subKernels.length; i++) {
-				const subKernel = this.subKernels[i];
-				builder.addSubKernel(subKernel, {
-					prototypeOnly: false,
-					constants: this.constants,
-					debug: this.debug,
-					loopMaxIterations: this.loopMaxIterations
-				});
-				this.subKernelOutputTextures.push(this.getSubKernelTexture(i));
-				this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
-			}
-
-		} else if (this.subKernelProperties !== null) {
-			const ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
-			if (!ext) throw new Error('could not instantiate draw buffers extension');
-			this.subKernelOutputTextures = [];
-			this.subKernelOutputVariableNames = [];
-			let i = 0;
-			for (let p in this.subKernelProperties) {
-				if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-				const subKernel = this.subKernelProperties[p];
-				builder.addSubKernel(subKernel, {
-					prototypeOnly: false,
-					constants: this.constants,
-					debug: this.debug,
-					loopMaxIterations: this.loopMaxIterations
-				});
-				this.subKernelOutputTextures.push(this.getSubKernelTexture(p));
-				this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
-				i++;
-			}
-		}
-
+		const compiledVertShaderString = this._getVertShaderString(arguments);
 		const vertShader = gl.createShader(gl.VERTEX_SHADER);
-		gl.shaderSource(vertShader, vertShaderString);
+		gl.shaderSource(vertShader, compiledVertShaderString);
 		gl.compileShader(vertShader);
 
-		const compiledFragShaderString = this._replaceArtifacts(fragShaderString, this._getFragShaderArtifactMap(arguments));
+		const compiledFragShaderString = this._getFragShaderString(arguments);
 		const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 		gl.shaderSource(fragShader, compiledFragShaderString);
 		gl.compileShader(fragShader);
 
 		if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
-			console.log(vertShaderString);
+			console.log(compiledVertShaderString);
 			console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(vertShader));
 			throw 'Error compiling vertex shader';
 		}
@@ -714,5 +674,73 @@ module.exports = class WebGLKernel extends KernelBase {
 			}
 			throw `unhandled artifact ${ artifact }`;
 		});
+	}
+
+	_addKernels() {
+		const builder = this.functionBuilder;
+		const gl = this._webGl;
+		builder.addKernel(this.fnString, {
+			prototypeOnly: false,
+			constants: this.constants,
+			debug: this.debug,
+			loopMaxIterations: this.loopMaxIterations
+		}, this.paramNames, this.paramTypes);
+
+		if (this.subKernels !== null) {
+			const ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
+			if (!ext) throw new Error('could not instantiate draw buffers extension');
+			this.subKernelOutputTextures = [];
+			this.subKernelOutputVariableNames = [];
+			for (let i = 0; i < this.subKernels.length; i++) {
+				const subKernel = this.subKernels[i];
+				builder.addSubKernel(subKernel, {
+					prototypeOnly: false,
+					constants: this.constants,
+					debug: this.debug,
+					loopMaxIterations: this.loopMaxIterations
+				});
+				this.subKernelOutputTextures.push(this.getSubKernelTexture(i));
+				this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
+			}
+
+		} else if (this.subKernelProperties !== null) {
+			const ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
+			if (!ext) throw new Error('could not instantiate draw buffers extension');
+			this.subKernelOutputTextures = [];
+			this.subKernelOutputVariableNames = [];
+			let i = 0;
+			for (let p in this.subKernelProperties) {
+				if (!this.subKernelProperties.hasOwnProperty(p)) continue;
+				const subKernel = this.subKernelProperties[p];
+				builder.addSubKernel(subKernel, {
+					prototypeOnly: false,
+					constants: this.constants,
+					debug: this.debug,
+					loopMaxIterations: this.loopMaxIterations
+				});
+				this.subKernelOutputTextures.push(this.getSubKernelTexture(p));
+				this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
+				i++;
+			}
+		}
+	}
+
+	_getFragShaderString(args) {
+		if (this.compiledFragShaderString !== null) {
+			return this.compiledFragShaderString;
+		}
+		return this.compiledFragShaderString = this._replaceArtifacts(fragShaderString, this._getFragShaderArtifactMap(args));
+	}
+
+	_getVertShaderString(args) {
+		if (this.compiledVertShaderString !== null) {
+			return this.compiledVertShaderString;
+		}
+		//TODO: webgl2 compile like frag shader
+		return this.compiledVertShaderString = vertShaderString;
+	}
+
+	toString() {
+		return kernelString(this);
 	}
 };

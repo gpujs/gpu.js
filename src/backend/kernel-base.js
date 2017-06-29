@@ -22,7 +22,7 @@ const utils = require('../utils');
 ///		subKernelOutputVariableNames   	- {Array} 	   Names of the variables outputted by the subkerls
 
 module.exports = class BaseKernel {
-	
+
 	///
 	/// Function: BaseKernel
 	///
@@ -148,7 +148,7 @@ module.exports = class BaseKernel {
 		this.outputToTexture = flag;
 		return this;
 	}
-	
+
 	///
 	/// Function: setFloatTextures
 	///
@@ -257,7 +257,7 @@ module.exports = class BaseKernel {
 			}
 		});
 	}
-	
+
 	/// Function: addSubKernel
 	///
 	/// Add a sub kernel to the root kernel instance.

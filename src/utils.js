@@ -468,7 +468,7 @@ const utils = class utils {
 	///
 	///
 	///
-	
+
 	static getDimensions(x, pad) {
 		let ret;
 		if (utils.isArray(x)) {
@@ -562,7 +562,7 @@ const utils = class utils {
 	///
 	/// Splits an array into smaller arrays.
 	/// Number of elements in one small chunk is given by `part`
-  	///
+	///
 	/// Parameters:
 	/// 	array - {Array} The array to split into chunks
 	/// 	part  - {Array} elements in one chunk
@@ -589,6 +589,16 @@ const utils = class utils {
 		}
 		result.push(lines[end.line - 1].slice(0, end.column));
 		return result.join('\n');
+	}
+
+	static allPropertiesOf(obj) {
+		const props = [];
+
+		do {
+			props.push.apply(props, Object.getOwnPropertyNames(obj));
+		} while (obj = Object.getPrototypeOf(obj));
+
+		return props;
 	}
 };
 let isWebGlSupported;

@@ -26,7 +26,7 @@ const kernelRunShortcut = require('./kernel-run-shortcut');
 ///
 
 module.exports = class BaseRunner {
-	
+
 	///
 	/// Function: BaseRunner
 	///
@@ -88,7 +88,7 @@ module.exports = class BaseRunner {
 	///
 	/// Get and returns the Synchronous executor, of a class and kernel
 	/// Which returns the result directly after passing the arguments.
-		///
+	///
 	buildKernel(fn, settings) {
 		settings = Object.assign({}, settings || {});
 		const fnString = fn.toString();

@@ -64,11 +64,10 @@ QUnit.test( "for_loop (CPU)", function() {
 	var evil_while_exp = evil_while_cpuRef_f(evil_while_a,evil_while_b);
 
 	function evil_while_loop_test(mode ) {
-		var gpu = new GPU();
+		var gpu = new GPU({ mode: mode });
 
 		var f = gpu.createKernel(evil_while_kernalFunction, {
-			dimensions : [6],
-			mode : mode
+			dimensions : [6]
 		});
 
 		QUnit.assert.ok( f !== null, "function generated test");

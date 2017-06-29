@@ -1,16 +1,16 @@
 QUnit.test( "Issue #96 - param names (GPU only)", function() {
-  const A = [
+  var A = [
     [1, 1],
     [1, 1],
     [1, 1]
   ];
 
-  const B = [
+  var B = [
     [1, 1, 1],
     [1, 1, 1]
   ];
 
-  const gpu = new GPU();
+  var gpu = new GPU();
 
   function multiply(m, n, y, x) {
     var sum = 0;
@@ -27,7 +27,7 @@ QUnit.test( "Issue #96 - param names (GPU only)", function() {
   })
     .setDimensions([B.length, A.length]);
 
-  const result = kernels(A, B).result;
+  var result = kernels(A, B).result;
   QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2]);
   QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2]);
   QUnit.assert.deepEqual(QUnit.extend([], result[2]), [0,0]);

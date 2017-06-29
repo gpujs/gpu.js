@@ -1,9 +1,11 @@
+const utils = require('../utils');
+
 module.exports = function kernelRunShortcut(kernel) {
 	const shortcut = function() {
 		return kernel.run.apply(kernel, arguments);
 	};
 
-	allPropertiesOf(kernel).forEach((key) => {
+	utils.allPropertiesOf(kernel).forEach((key) => {
 		if (key[0] === '_' && key[1] === '_') return;
 		if (typeof kernel[key] === 'function') {
 			if (key.substring(0, 3) === 'set') {
@@ -28,13 +30,3 @@ module.exports = function kernelRunShortcut(kernel) {
 
 	return shortcut;
 };
-
-function allPropertiesOf(obj) {
-	const props = [];
-
-	do {
-		props.push.apply(props, Object.getOwnPropertyNames(obj));
-	} while (obj = Object.getPrototypeOf(obj));
-
-	return props;
-}
