@@ -2,6 +2,13 @@ const FunctionBuilderBase = require('../function-builder-base');
 const WebGLFunctionNode = require('./function-node');
 const utils = require('../../utils');
 
+///
+/// Class: WebGLFunctionBuilder
+///
+/// Extends: FunctionBuilderBase
+///
+/// Builds webGl functions (shaders) from JavaScript function Strings
+///
 module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	addFunction(functionName, jsFunction, paramTypes, returnType) {
 		this.addFunctionNode(
@@ -30,6 +37,17 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 		return ret.join('\n');
 	}
 
+	///
+	/// Function: getPrototypeStringFromFunctionNames
+	/// 
+	/// Return webgl String of all functions converted to webgl shader form
+	/// Parameters:
+	/// 	functionList  - {[String,...]} List of function names to build the webgl string.
+	///		opt 		  - {Object} 	   Settings object passed to functionNode. See functionNode for more details.	
+	///
+	/// Returns:
+	///		{String} Prototype String of all functions converted to webgl shader form
+	///
 	getPrototypeStringFromFunctionNames(functionList, opt) {
 		const ret = [];
 		for (let i = 0; i < functionList.length; ++i) {
@@ -64,6 +82,8 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	///
 	/// Function: getPrototypeString
 	///
+	/// Return the webgl string for a function converted to glsl (webgl shaders)
+	///
 	/// Parameters:
 	/// 	functionName  - {String} Function name to trace from. If null, it returns the WHOLE builder stack
 	///
@@ -78,6 +98,21 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 		return this.getPrototypeStringFromFunctionNames(Object.keys(this.nodeMap));
 	}
 
+	///
+	/// Function: addKernel 
+	///
+	/// Add a new kernel to this instance
+	///
+	/// Parameters:
+	///		fnString 	- {String} Kernel function as a String
+	///		options 	- {Object} Settings object to set constants, debug mode, etc.
+	///		paramNames  - {Array} Parameters of the kernel
+	///		paramTypes  - {Array} Types of the parameters
+	///		
+	///
+	/// Returns:
+	/// 	{Object} The inserted kernel as a Kernel Node
+	///
 	addKernel(fnString, options, paramNames, paramTypes) {
 		const kernelNode = new WebGLFunctionNode('kernel', fnString, options, paramTypes);
 		kernelNode.setAddFunction(this.addFunction.bind(this));
@@ -88,6 +123,20 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 		return kernelNode;
 	}
 
+	///
+	/// Function: addSubKernel
+	///
+	/// Add a new sub-kernel to the current kernel instance
+	///
+	/// Parameters:
+	///		jsFunction 	- {Function} Sub-kernel function (JavaScript)
+	///		options 	- {Object} Settings object to set constants, debug mode, etc.
+	///		paramNames  - {Array} Parameters of the sub-kernel
+	///		returnType  - {Array} Return type of the subKernel
+	///
+	/// Returns:
+	/// 	{Object} The inserted sub-kernel as a Kernel Node
+	///
 	addSubKernel(jsFunction, options, paramTypes, returnType) {
 		const kernelNode = new WebGLFunctionNode(null, jsFunction, options, paramTypes, returnType);
 		kernelNode.setAddFunction(this.addFunction.bind(this));

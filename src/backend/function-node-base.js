@@ -2,7 +2,7 @@ const utils = require('../utils');
 const parser = require('../parser').parser;
 
 ///
-/// Class: CPUFunctionNode
+/// Class: FunctionNodeBase
 ///
 /// [INTERNAL] Represents a single function, inside JS, webGL, or openGL.
 ///
@@ -29,7 +29,7 @@ module.exports = class BaseFunctionNode {
 	//----------------------------------------------------------------------------------------------------
 
 	///
-	/// Function: functionNode
+	/// Function: FunctionNodeBase
 	///
 	/// [Constructor] Builds the function with the given JS function, and argument type array.
 	///
@@ -248,6 +248,17 @@ module.exports = class BaseFunctionNode {
 		this.functionString = functionString;
 	}
 
+	///
+	/// Function: getParamType
+	///
+	/// Return the type of parameter sent to subKernel/Kernel.
+	///
+	/// Parameters:
+	/// 	paramName 		- {String}  Name of the parameter
+	///
+	/// Returns:
+	/// 	{String} Type of the parameter
+	///
 	getParamType(paramName) {
 		const paramIndex = this.paramNames.indexOf(paramName);
 		if (paramIndex === -1) return null;
@@ -263,6 +274,18 @@ module.exports = class BaseFunctionNode {
 		return null;
 	}
 
+	///
+	/// Function: getUserParamName
+	///
+	/// Return the name of the *user parameter*(subKernel parameter) corresponding 
+	/// to the parameter supplied to the kernel
+	///
+	/// Parameters:
+	/// 	paramName 		- {String}  Name of the parameter
+	///
+	/// Returns:
+	/// 	{String} Name of the parameter
+	///
 	getUserParamName(paramName) {
 		const paramIndex = this.paramNames.indexOf(paramName);
 		if (paramIndex === -1) return null;
