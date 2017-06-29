@@ -1,7 +1,7 @@
 const BaseFunctionNode = require('../function-node-base');
 
 ///
-/// Class: functionNode
+/// Class: CPUFunctionNode
 ///
 /// [INTERNAL] Represents a single function, inside JS, webGL, or openGL.
 ///
