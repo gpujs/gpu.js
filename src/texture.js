@@ -1,4 +1,5 @@
 let gpu = null;
+
 ///
 /// Class: Texture
 ///
@@ -11,6 +12,8 @@ module.exports = class Texture {
 		this.webGl = webGl;
 	}
 
+	///
+	/// Function: toArray
 	///
 	/// Converts the Texture into a JavaScript Array.
 	///
@@ -26,6 +29,8 @@ module.exports = class Texture {
 
 		return copy(this.texture);
 	}
+	///
+	/// Function: delete
 	///
 	/// Deletes the Texture.
 	///
