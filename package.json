@@ -18,6 +18,7 @@
     "gulp-header": "^1.7.1",
     "gulp-jsbeautifier": "^2.1.0",
     "gulp-rename": "^1.2.2",
+    "gulp-strip-comments": "^2.4.5",
     "gulp-uglify": "^1.5.2",
     "gulp-util": "^3.0.7",
     "qunit-assert-close": "^2.1.2",
