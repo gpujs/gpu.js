@@ -130,6 +130,13 @@ module.exports = class GPU {
 	/// 	{Function} callable kernel function
 	///
 	createKernels() {
+		if (!utils.isWebGlDrawBuffersSupported) {
+			this._runner = new CPURunner({
+				canvas: this._canvas, 
+				webGl: this._webGl
+			});
+		}
+
 		let fn;
 		let settings;
 		if (typeof arguments[arguments.length - 2] === 'function') {
