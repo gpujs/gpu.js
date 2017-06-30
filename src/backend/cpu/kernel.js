@@ -5,7 +5,28 @@ const kernelString = require('./kernel-string');
 ///
 /// Class: CPUKernel
 ///
+/// Kernel Implementation for CPU. 
+///
+/// Extends:
+/// 	KernelBase
+///
+/// Parameters: 	
+///		thread 					- {Object} 		The thread dimensions, x, y and z
+///		runDimensions 			- {Object} 		The canvas dimensions
+///		functionBuilder 		- {Object} 		Function Builder instance bound to this Kernel
+///		run 					- {Function} 	Method to run the kernel
+///
 module.exports = class CPUKernel extends KernelBase {
+
+	//
+	// [Constructor]
+	//
+	
+	///
+	/// Function: CPUKernel
+	///
+	/// Instantiates properties to the CPU Kernel.
+	///
 	constructor(fnString, settings) {
 		super(fnString, settings);
 		this._fnBody = utils.getFunctionBodyFromString(fnString);
@@ -34,6 +55,12 @@ module.exports = class CPUKernel extends KernelBase {
 		}.bind(this);
 	}
 
+	///
+	/// Function: validateOptions
+	/// 
+	/// Validate options related to CPU Kernel, such as 
+	/// dimensions size, and auto dimension support.
+	///
 	validateOptions() {
 		if (!this.dimensions || this.dimensions.length === 0) {
 			if (arguments.length !== 1) {
@@ -49,8 +76,17 @@ module.exports = class CPUKernel extends KernelBase {
 				throw 'Auto dimensions not supported for input type: ' + argType;
 			}
 		}
-	}
-
+	}	
+	
+	///
+	/// Function: build
+	///
+	/// Builds the Kernel, by generating the kernel 
+	///	string using thread dimensions, and arguments 
+	///	supplied to the kernel.
+	///
+	/// If the graphical flag is enabled, canvas is used.
+	///
 	build() {
 		const kernelArgs = [];
 		for (let i = 0; i < arguments.length; i++) {
@@ -116,6 +152,18 @@ module.exports = class CPUKernel extends KernelBase {
 		this._colorData[index * 4 + 3] = a;
 	}
 
+	///
+	/// Function: getKernelString
+	///
+	/// Generates kernel string for this kernel program.
+	/// 
+	/// If sub-kernels are supplied, they are also factored in.
+	/// This string can be saved by calling the `toString` method
+	/// and then can be reused later.
+	///
+	/// Returns:
+	///		result {String}
+	///
 	getKernelString() {
 		if (this._kernelString !== null) return this._kernelString;
 
@@ -213,6 +261,11 @@ module.exports = class CPUKernel extends KernelBase {
     }.bind(this);`;
 	}
 
+	///
+	/// Function: toString
+	///
+	/// Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
+	///
 	toString() {
 		return kernelString(this);
 	}
