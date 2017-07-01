@@ -140,10 +140,7 @@ module.exports = class GPU {
 		}
 		
 		if (!utils.isWebGlDrawBuffersSupported) {
-			this._runner = new CPURunner({
-				canvas: this._canvas, 
-				webGl: this._webGl
-			});
+			this._runner = new CPURunner(settings);
 		}
 		
 		const kernel = this.createKernel(fn, settings);
