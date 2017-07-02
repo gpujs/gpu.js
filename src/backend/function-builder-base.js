@@ -1,52 +1,56 @@
-///
-/// Class: FunctionBuilderBase
-///
-/// [INTERNAL] A collection of functionNodes.
-///
-/// This handles all the raw state, converted state, etc. Of a single function.
-///
-/// Properties:
-/// 	nodeMap 		- {Object} 			Object map, where nodeMap[function] = new FunctionNode;
-///     gpu     		- {Object} 			The current gpu instance bound to this builder
-///     rootKernel 		- {Object} 			The root kernel object, contains the paramNames, dimensions etc.
-///
+/**
+ * Class: FunctionBuilderBase
+ *
+ * [INTERNAL] A collection of functionNodes.
+ *
+ * This handles all the raw state, converted state, etc. Of a single function.
+ *
+ * Properties:
+ * 	nodeMap 		- {Object} 			Object map, where nodeMap[function] = new FunctionNode;
+ *     gpu     		- {Object} 			The current gpu instance bound to this builder
+ *     rootKernel 		- {Object} 			The root kernel object, contains the paramNames, dimensions etc.
+ *
+ */
 module.exports = class FunctionBuilderBase {
 
-	///
-	/// Function: FunctionBuilderBase
-	///
-	/// [Constructor] Blank constructor, which initializes the properties
-	///
+	/**
+	 * Function: FunctionBuilderBase
+	 *
+	 * [Constructor] Blank constructor, which initializes the properties
+	 *
+	 */
 	constructor(gpu) {
 		this.nodeMap = {};
 		this.gpu = gpu;
 		this.rootKernel = null;
 	}
 
-	///
-	/// Function: addFunction
-	///
-	/// Instantiates a FunctionNode, and add it to the nodeMap
-	///
-	/// Parameters:
-	/// 	gpu             - {GPU}          The GPU instance
-	/// 	functionName    - {String}       Function name to assume, if its null, it attempts to extract from the function
-	/// 	jsFunction      - {JS Function}  JS Function to do conversion
-	/// 	paramTypes      - {[String,...]|{variableName: Type,...}} Parameter type array, assumes all parameters are 'float' if null
-	/// 	returnType      - {String}       The return type, assumes 'float' if null
-	///
+	/**
+	 * Function: addFunction
+	 *
+	 * Instantiates a FunctionNode, and add it to the nodeMap
+	 *
+	 * Parameters:
+	 * 	gpu             - {GPU}          The GPU instance
+	 * 	functionName    - {String}       Function name to assume, if its null, it attempts to extract from the function
+	 * 	jsFunction      - {JS Function}  JS Function to do conversion
+	 * 	paramTypes      - {[String,...]|{variableName: Type,...}} Parameter type array, assumes all parameters are 'float' if null
+	 * 	returnType      - {String}       The return type, assumes 'float' if null
+	 *
+	 */
 	addFunction(functionName, jsFunction, paramTypes, returnType) {
 		throw new Error('addFunction not supported on base');
 	}
 
-	///
-	/// Function: addFunctionNode
-	///
-	/// Add the funciton node directly
-	///
-	/// Parameters:
-	/// 	inNode    - {functionNode}       functionNode to add
-	///
+	/**
+	 * Function: addFunctionNode
+	 *
+	 * Add the funciton node directly
+	 *
+	 * Parameters:
+	 * 	inNode    - {functionNode}       functionNode to add
+	 *
+	 */
 	addFunctionNode(inNode) {
 		this.nodeMap[inNode.functionName] = inNode;
 		if (inNode.isRootKernel) {
@@ -54,20 +58,21 @@ module.exports = class FunctionBuilderBase {
 		}
 	}
 
-	///
-	/// Function: traceFunctionCalls
-	///
-	/// Trace all the depending functions being called, from a single function
-	///
-	/// This allow for 'unneeded' functions to be automatically optimized out.
-	/// Note that the 0-index, is the starting function trace.
-	///
-	/// Parameters:
-	/// 	functionName  - {String}        Function name to trace from, default to 'kernel'
-	/// 	retList       - {[String,...]}  Returning list of function names that is traced. Including itself.
-	///
-	/// Returns:
-	/// 	{[String,...]}  Returning list of function names that is traced. Including itself.
+	/**
+	 * Function: traceFunctionCalls
+	 *
+	 * Trace all the depending functions being called, from a single function
+	 *
+	 * This allow for 'unneeded' functions to be automatically optimized out.
+	 * Note that the 0-index, is the starting function trace.
+	 *
+	 * Parameters:
+	 * 	functionName  - {String}        Function name to trace from, default to 'kernel'
+	 * 	retList       - {[String,...]}  Returning list of function names that is traced. Including itself.
+	 *
+	 * Returns:
+	 * 	{[String,...]}  Returning list of function names that is traced. Including itself.
+	 */
 	traceFunctionCalls(functionName, retList, parent) {
 		functionName = functionName || 'kernel';
 		retList = retList || [];
@@ -104,11 +109,12 @@ module.exports = class FunctionBuilderBase {
 		return round(a);
 	}
 
-	///
-	/// Function: polyfillStandardFunctions
-	///
-	/// Polyfill in the missing Math functions (round)
-	///
+	/**
+	 * Function: polyfillStandardFunctions
+	 *
+	 * Polyfill in the missing Math functions (round)
+	 *
+	 */
 	polyfillStandardFunctions() {
 		this.addFunction('round', round);
 	}

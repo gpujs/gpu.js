@@ -2,31 +2,33 @@ const KernelBase = require('../kernel-base');
 const utils = require('../../core/utils');
 const kernelString = require('./kernel-string');
 
-///
-/// Class: CPUKernel
-///
-/// Kernel Implementation for CPU. 
-///
-/// Extends:
-/// 	KernelBase
-///
-/// Parameters: 	
-///		thread 					- {Object} 		The thread dimensions, x, y and z
-///		runDimensions 			- {Object} 		The canvas dimensions
-///		functionBuilder 		- {Object} 		Function Builder instance bound to this Kernel
-///		run 					- {Function} 	Method to run the kernel
-///
+/**
+ * Class: CPUKernel
+ *
+ * Kernel Implementation for CPU. 
+ *
+ * Extends:
+ * 	KernelBase
+ *
+ * Parameters: 	
+ *		thread 					- {Object} 		The thread dimensions, x, y and z
+ *		runDimensions 			- {Object} 		The canvas dimensions
+ *		functionBuilder 		- {Object} 		Function Builder instance bound to this Kernel
+ *		run 					- {Function} 	Method to run the kernel
+ *
+ */
 module.exports = class CPUKernel extends KernelBase {
 
 	//
 	// [Constructor]
 	//
 	
-	///
-	/// Function: CPUKernel
-	///
-	/// Instantiates properties to the CPU Kernel.
-	///
+	/**
+	 * Function: CPUKernel
+	 *
+	 * Instantiates properties to the CPU Kernel.
+	 *
+	 */
 	constructor(fnString, settings) {
 		super(fnString, settings);
 		this._fnBody = utils.getFunctionBodyFromString(fnString);
@@ -55,12 +57,13 @@ module.exports = class CPUKernel extends KernelBase {
 		}.bind(this);
 	}
 
-	///
-	/// Function: validateOptions
-	/// 
-	/// Validate options related to CPU Kernel, such as 
-	/// dimensions size, and auto dimension support.
-	///
+	/**
+	 * Function: validateOptions
+	 * 
+	 * Validate options related to CPU Kernel, such as 
+	 * dimensions size, and auto dimension support.
+	 *
+	 */
 	validateOptions() {
 		if (!this.dimensions || this.dimensions.length === 0) {
 			if (arguments.length !== 1) {
@@ -78,15 +81,16 @@ module.exports = class CPUKernel extends KernelBase {
 		}
 	}	
 	
-	///
-	/// Function: build
-	///
-	/// Builds the Kernel, by generating the kernel 
-	///	string using thread dimensions, and arguments 
-	///	supplied to the kernel.
-	///
-	/// If the graphical flag is enabled, canvas is used.
-	///
+	/**
+	 * Function: build
+	 *
+	 * Builds the Kernel, by generating the kernel 
+	 *	string using thread dimensions, and arguments 
+	 *	supplied to the kernel.
+	 *
+	 * If the graphical flag is enabled, canvas is used.
+	 *
+	 */
 	build() {
 
 		//
@@ -157,18 +161,19 @@ module.exports = class CPUKernel extends KernelBase {
 		this._colorData[index * 4 + 3] = a;
 	}
 
-	///
-	/// Function: getKernelString
-	///
-	/// Generates kernel string for this kernel program.
-	/// 
-	/// If sub-kernels are supplied, they are also factored in.
-	/// This string can be saved by calling the `toString` method
-	/// and then can be reused later.
-	///
-	/// Returns:
-	///		result {String}
-	///
+	/**
+	 * Function: getKernelString
+	 *
+	 * Generates kernel string for this kernel program.
+	 * 
+	 * If sub-kernels are supplied, they are also factored in.
+	 * This string can be saved by calling the `toString` method
+	 * and then can be reused later.
+	 *
+	 * Returns:
+	 *		result {String}
+	 *
+	 */
 	getKernelString() {
 		if (this._kernelString !== null) return this._kernelString;
 
@@ -271,27 +276,29 @@ module.exports = class CPUKernel extends KernelBase {
     }.bind(this);`;
 	}
 
-	///
-	/// Function: toString
-	///
-	/// Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
-	///
+	/**
+	 * Function: toString
+	 *
+	 * Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
+	 *
+	 */
 	toString() {
 		return kernelString(this);
 	}
 
-	///
-	/// Function: precompileKernelObj
-	///
-	/// Precompile the kernel into a single object, 
-	/// that can be used for building the execution kernel subsequently.
-	///
-	/// Parameters:
-	///     argTypes     - {Array}    Array of argument types
-	///     
-	/// Return:
-	///     Compiled kernel {Object}
-	///
+	/**
+	 * Function: precompileKernelObj
+	 *
+	 * Precompile the kernel into a single object, 
+	 * that can be used for building the execution kernel subsequently.
+	 *
+	 * Parameters:
+	 *     argTypes     - {Array}    Array of argument types
+	 *     
+	 * Return:
+	 *     Compiled kernel {Object}
+	 *
+	 */
 	precompileKernelObj(argTypes) {
 
 		const threadDim = this.threadDim || (this.threadDim = utils.clone(this.dimensions));
@@ -302,15 +309,16 @@ module.exports = class CPUKernel extends KernelBase {
 		};
 	}
 	
-	///
-	/// Function: compileKernel
-	/// 
-	/// Takes a previously precompiled kernel object,
-	/// and complete compilation into a full kernel
-	///
-	/// Return:
-	///     Compiled kernel {Function}
-	///
+	/**
+	 * Function: compileKernel
+	 * 
+	 * Takes a previously precompiled kernel object,
+	 * and complete compilation into a full kernel
+	 *
+	 * Return:
+	 *     Compiled kernel {Function}
+	 *
+	 */
 	static compileKernel( precompileObj ) {
 
 		// Extract values from precompiled obj

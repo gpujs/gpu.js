@@ -1,45 +1,47 @@
 const utils = require('../core/utils');
 const parser = require('../core/parser').parser;
 
-///
-/// Class: FunctionNodeBase
-///
-/// [INTERNAL] Represents a single function, inside JS, webGL, or openGL.
-///
-/// This handles all the raw state, converted state, etc. Of a single function.
-///
-/// Properties:
-/// 	functionName         - {String}        Name of the function
-/// 	jsFunction           - {JS Function}   The JS Function the node represents
-/// 	jsFunctionString     - {String}        jsFunction.toString()
-/// 	paramNames           - {[String,...]}  Parameter names of the function
-/// 	paramTypes           - {[String,...]}  Shader land parameters type assumption
-/// 	isRootKernel         - {Boolean}       Special indicator, for kernel function
-/// 	webglFunctionString  - {String}        webgl converted function string
-/// 	openglFunctionString - {String}        opengl converted function string
-/// 	calledFunctions      - {[String,...]}  List of all the functions called
-/// 	initVariables        - {[String,...]}  List of variables initialized in the function
-/// 	readVariables        - {[String,...]}  List of variables read operations occur
-/// 	writeVariables       - {[String,...]}  List of variables write operations occur
-///
+/**
+ * Class: FunctionNodeBase
+ *
+ * [INTERNAL] Represents a single function, inside JS, webGL, or openGL.
+ *
+ * This handles all the raw state, converted state, etc. Of a single function.
+ *
+ * Properties:
+ * 	functionName         - {String}        Name of the function
+ * 	jsFunction           - {JS Function}   The JS Function the node represents
+ * 	jsFunctionString     - {String}        jsFunction.toString()
+ * 	paramNames           - {[String,...]}  Parameter names of the function
+ * 	paramTypes           - {[String,...]}  Shader land parameters type assumption
+ * 	isRootKernel         - {Boolean}       Special indicator, for kernel function
+ * 	webglFunctionString  - {String}        webgl converted function string
+ * 	openglFunctionString - {String}        opengl converted function string
+ * 	calledFunctions      - {[String,...]}  List of all the functions called
+ * 	initVariables        - {[String,...]}  List of variables initialized in the function
+ * 	readVariables        - {[String,...]}  List of variables read operations occur
+ * 	writeVariables       - {[String,...]}  List of variables write operations occur
+ *
+ */
 module.exports = class BaseFunctionNode {
 
 	//
 	// Constructor
 	//----------------------------------------------------------------------------------------------------
 
-	///
-	/// Function: FunctionNodeBase
-	///
-	/// [Constructor] Builds the function with the given JS function, and argument type array.
-	///
-	/// Parameters:
-	/// 	gpu             - {GPU}                   The GPU instance
-	/// 	functionName    - {String}                Function name to assume, if its null, it attempts to extract from the function
-	/// 	jsFunction      - {JS Function / String}  JS Function to do conversion
-	/// 	paramTypes      - {[String,...]|{variableName: Type}}          Parameter type array, assumes all parameters are 'float' if null
-	/// 	returnType      - {String}                The return type, assumes 'float' if null
-	///
+	/**
+	 * Function: FunctionNodeBase
+	 *
+	 * [Constructor] Builds the function with the given JS function, and argument type array.
+	 *
+	 * Parameters:
+	 * 	gpu             - {GPU}                   The GPU instance
+	 * 	functionName    - {String}                Function name to assume, if its null, it attempts to extract from the function
+	 * 	jsFunction      - {JS Function / String}  JS Function to do conversion
+	 * 	paramTypes      - {[String,...]|{variableName: Type}}          Parameter type array, assumes all parameters are 'float' if null
+	 * 	returnType      - {String}                The return type, assumes 'float' if null
+	 *
+	 */
 	constructor(functionName, jsFunction, options, paramTypes, returnType) {
 		//
 		// Internal vars setup
@@ -165,15 +167,16 @@ module.exports = class BaseFunctionNode {
 	// Core function
 	//----------------------------------------------------------------------------------------------------
 
-	///
-	/// Function: getJSFunction
-	///
-	/// Gets and return the stored JS Function.
-	/// Note: that this internally eval the function, if only the string was provided on construction
-	///
-	/// Returns:
-	/// 	{JS Function} The function object
-	///
+	/**
+	 * Function: getJSFunction
+	 *
+	 * Gets and return the stored JS Function.
+	 * Note: that this internally eval the function, if only the string was provided on construction
+	 *
+	 * Returns:
+	 * 	{JS Function} The function object
+	 *
+	 */
 	getJsFunction() {
 		if (this.jsFunction) {
 			return this.jsFunction;
@@ -187,19 +190,20 @@ module.exports = class BaseFunctionNode {
 		throw 'Missing jsFunction, and jsFunctionString parameter';
 	}
 
-	///
-	/// Function: getJS_AST
-	///
-	/// Parses the class function JS, and returns its Abstract Syntax Tree object.
-	///
-	/// This is used internally to convert to shader code
-	///
-	/// Parameters:
-	/// 	inParser - {JISON Parser}  Parser to use, assumes in scope 'parser' if null
-	///
-	/// Returns:
-	/// 	{AST Object} The function AST Object, note that result is cached under this.jsFunctionAST;
-	///
+	/**
+	 * Function: getJS_AST
+	 *
+	 * Parses the class function JS, and returns its Abstract Syntax Tree object.
+	 *
+	 * This is used internally to convert to shader code
+	 *
+	 * Parameters:
+	 * 	inParser - {JISON Parser}  Parser to use, assumes in scope 'parser' if null
+	 *
+	 * Returns:
+	 * 	{AST Object} The function AST Object, note that result is cached under this.jsFunctionAST;
+	 *
+	 */
 	getJsAST(inParser) {
 		if (this.jsFunctionAST) {
 			return this.jsFunctionAST;
@@ -223,42 +227,45 @@ module.exports = class BaseFunctionNode {
 	}
 
 
-	///
-	/// Function: getFunctionString
-	///
-	/// Returns the converted webgl shader function equivalent of the JS function
-	///
-	/// Returns:
-	/// 	{String} webgl function string, result is cached under this.webGlFunctionString
-	///
+	/**
+	 * Function: getFunctionString
+	 *
+	 * Returns the converted webgl shader function equivalent of the JS function
+	 *
+	 * Returns:
+	 * 	{String} webgl function string, result is cached under this.webGlFunctionString
+	 *
+	 */
 	getFunctionString() {
 		this.generate();
 		return this.functionString;
 	}
 
-	///
-	/// Function: setFunctionString
-	///
-	/// Set the functionString value, overwriting it
-	///
-	/// Parameters:
-	/// 	functionString - {String}  Shader code string, representing the function
-	///
+	/**
+	 * Function: setFunctionString
+	 *
+	 * Set the functionString value, overwriting it
+	 *
+	 * Parameters:
+	 * 	functionString - {String}  Shader code string, representing the function
+	 *
+	 */
 	setFunctionString(functionString) {
 		this.functionString = functionString;
 	}
 
-	///
-	/// Function: getParamType
-	///
-	/// Return the type of parameter sent to subKernel/Kernel.
-	///
-	/// Parameters:
-	/// 	paramName 		- {String}  Name of the parameter
-	///
-	/// Returns:
-	/// 	{String} Type of the parameter
-	///
+	/**
+	 * Function: getParamType
+	 *
+	 * Return the type of parameter sent to subKernel/Kernel.
+	 *
+	 * Parameters:
+	 * 	paramName 		- {String}  Name of the parameter
+	 *
+	 * Returns:
+	 * 	{String} Type of the parameter
+	 *
+	 */
 	getParamType(paramName) {
 		const paramIndex = this.paramNames.indexOf(paramName);
 		if (paramIndex === -1) return null;
@@ -274,18 +281,19 @@ module.exports = class BaseFunctionNode {
 		return null;
 	}
 
-	///
-	/// Function: getUserParamName
-	///
-	/// Return the name of the *user parameter*(subKernel parameter) corresponding 
-	/// to the parameter supplied to the kernel
-	///
-	/// Parameters:
-	/// 	paramName 		- {String}  Name of the parameter
-	///
-	/// Returns:
-	/// 	{String} Name of the parameter
-	///
+	/**
+	 * Function: getUserParamName
+	 *
+	 * Return the name of the *user parameter*(subKernel parameter) corresponding 
+	 * to the parameter supplied to the kernel
+	 *
+	 * Parameters:
+	 * 	paramName 		- {String}  Name of the parameter
+	 *
+	 * Returns:
+	 * 	{String} Name of the parameter
+	 *
+	 */
 	getUserParamName(paramName) {
 		const paramIndex = this.paramNames.indexOf(paramName);
 		if (paramIndex === -1) return null;

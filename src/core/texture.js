@@ -1,9 +1,10 @@
 let gpu = null;
 
-///
-/// Class: Texture
-///
-///
+/**
+ * Class: Texture
+ *
+ *
+ */
 module.exports = class Texture {
 	constructor(texture, size, dimensions, webGl) {
 		this.texture = texture;
@@ -12,11 +13,12 @@ module.exports = class Texture {
 		this.webGl = webGl;
 	}
 
-	///
-	/// Function: toArray
-	///
-	/// Converts the Texture into a JavaScript Array.
-	///
+	/**
+	 * Function: toArray
+	 *
+	 * Converts the Texture into a JavaScript Array.
+	 *
+	 */
 	toArray() {
 		if (gpu === null) {
 			gpu = new GPU({
@@ -29,11 +31,12 @@ module.exports = class Texture {
 
 		return copy(this.texture);
 	}
-	///
-	/// Function: delete
-	///
-	/// Deletes the Texture.
-	///
+	/**
+	 * Function: delete
+	 *
+	 * Deletes the Texture.
+	 *
+	 */
 	delete() {
 		return this.webGl.deleteTexture(this.texture);
 	}

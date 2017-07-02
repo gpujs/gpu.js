@@ -13,51 +13,6 @@ const pkg = require('./package.json');
 const jsprettify = require('gulp-jsbeautifier');
 const babel = require('gulp-babel');
 const stripComments = require('gulp-strip-comments');
-const glob = require('glob');
-
-gulp.task('refactor', function(){
-	glob('src/**/*.js', (err, files)=>{
-			files.forEach(file=>{
-			fs.readFile(file, (err, data)=>{
-
-				if(file !== 'src/parser.js'){
-				
-				let chunks = [];
-				const dataString = data.toString();
-				chunks = dataString.split("\n");
-				let stream = false;
-				
-				for (let i = 0; i < chunks.length; i++) {
-					if(chunks[i].startsWith('///') || chunks[i].startsWith('\t///')){
-						if(stream){
-							chunks[i] = chunks[i].replace('///', ' *');
-						} else {
-							stream = !stream;
-							chunks[i] = chunks[i].replace('///', '/**');
-						}
-					}else{
-						if(stream){
-							stream = !stream;
-							if(chunks[i-1] === '///' || chunks[i-1] === '\t///'){
-								chunks[i-1] = chunks[i-1].replace('*', '*/');
-							}else{
-								if(chunks[i-1].startsWith('\t')){
-									chunks[i] = `\t */\n${chunks[i]}`;
-								}else{
-									chunks[i] = ` */\n${chunks[i]}`;									
-								}
-							}
-						}
-					}
-				}
-				const finalData = chunks.join("\n");
-				
-				fs.writeFile(file, finalData);
-				}
-			});
-		});
-	});
-});
 
 /// Build the scripts
 gulp.task('build', function() {

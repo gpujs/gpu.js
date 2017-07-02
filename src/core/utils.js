@@ -1,11 +1,12 @@
-///
-/// Class: Utils
-///
-/// Various utility functions / snippets of code that GPU.JS uses internally.\
-/// This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
-///
-/// Note that all methods in this class is 'static' by nature `Utils.functionName()`
-///
+/**
+ * Class: Utils
+ *
+ * Various utility functions / snippets of code that GPU.JS uses internally.\
+ * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
+ *
+ * Note that all methods in this class is 'static' by nature `Utils.functionName()`
+ *
+ */
 const UtilsCore = require("./utils-core");
 const Texture = require('./texture');
 // FUNCTION_NAME regex
@@ -37,15 +38,16 @@ class Utils extends UtilsCore {
 	//
 	//-----------------------------------------------------------------------------
 
-	///
-	/// Function: systemEndianness
-	///
-	/// Gets the system endianness, and cache it
-	///
-	/// Returns:
-	///	{String} 'LE' or 'BE' depending on system architecture
-	///
-	/// Credit: https://gist.github.com/TooTallNate/4750953
+	/**
+	 * Function: systemEndianness
+	 *
+	 * Gets the system endianness, and cache it
+	 *
+	 * Returns:
+	 *	{String} 'LE' or 'BE' depending on system architecture
+	 *
+	 * Credit: https://gist.github.com/TooTallNate/4750953
+	 */
 	static systemEndianness() {
 		return _systemEndianness;
 	}
@@ -56,34 +58,36 @@ class Utils extends UtilsCore {
 	//
 	//-----------------------------------------------------------------------------
 
-	///
-	/// Function: isFunction
-	///
-	/// Return TRUE, on a JS function
-	///
-	/// Parameters:
-	/// 	funcObj - {JS Function} Object to validate if its a function
-	///
-	/// Returns:
-	/// 	{Boolean} TRUE if the object is a JS function
-	///
+	/**
+	 * Function: isFunction
+	 *
+	 * Return TRUE, on a JS function
+	 *
+	 * Parameters:
+	 * 	funcObj - {JS Function} Object to validate if its a function
+	 *
+	 * Returns:
+	 * 	{Boolean} TRUE if the object is a JS function
+	 *
+	 */
 	static isFunction(funcObj) {
 		return typeof(funcObj) === 'function';
 	}
 
-	///
-	/// Function: isFunctionString
-	///
-	/// Return TRUE, on a valid JS function string
-	///
-	/// Note: This does just a VERY simply sanity check. And may give false positives.
-	///
-	/// Parameters:
-	/// 	funcStr - {String}  String of JS function to validate
-	///
-	/// Returns:
-	/// 	{Boolean} TRUE if the string passes basic validation
-	///
+	/**
+	 * Function: isFunctionString
+	 *
+	 * Return TRUE, on a valid JS function string
+	 *
+	 * Note: This does just a VERY simply sanity check. And may give false positives.
+	 *
+	 * Parameters:
+	 * 	funcStr - {String}  String of JS function to validate
+	 *
+	 * Returns:
+	 * 	{Boolean} TRUE if the string passes basic validation
+	 *
+	 */
 	static isFunctionString(funcStr) {
 		if (funcStr !== null) {
 			return (funcStr.toString()
@@ -93,17 +97,18 @@ class Utils extends UtilsCore {
 		return false;
 	}
 
-	///
-	/// Function: getFunctionName_fromString
-	///
-	/// Return the function name from a JS function string
-	///
-	/// Parameters:
-	/// 	funcStr - {String}  String of JS function to validate
-	///
-	/// Returns:
-	/// 	{String} Function name string (if found)
-	///
+	/**
+	 * Function: getFunctionName_fromString
+	 *
+	 * Return the function name from a JS function string
+	 *
+	 * Parameters:
+	 * 	funcStr - {String}  String of JS function to validate
+	 *
+	 * Returns:
+	 * 	{String} Function name string (if found)
+	 *
+	 */
 	static getFunctionNameFromString(funcStr) {
 		return FUNCTION_NAME.exec(funcStr)[1];
 	}
@@ -112,17 +117,18 @@ class Utils extends UtilsCore {
 		return funcStr.substring(funcStr.indexOf('{') + 1, funcStr.lastIndexOf('}'));
 	}
 
-	///
-	/// Function: getParamNames_fromString
-	///
-	/// Return list of parameter names extracted from the JS function string
-	///
-	/// Parameters:
-	/// 	funcStr - {String}  String of JS function to validate
-	///
-	/// Returns:
-	/// 	{[String, ...]}  Array representing all the parameter names
-	///
+	/**
+	 * Function: getParamNames_fromString
+	 *
+	 * Return list of parameter names extracted from the JS function string
+	 *
+	 * Parameters:
+	 * 	funcStr - {String}  String of JS function to validate
+	 *
+	 * Returns:
+	 * 	{[String, ...]}  Array representing all the parameter names
+	 *
+	 */
 	static getParamNamesFromString(func) {
 		const fnStr = func.toString().replace(STRIP_COMMENTS, '');
 		let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
@@ -137,17 +143,18 @@ class Utils extends UtilsCore {
 	//
 	//-----------------------------------------------------------------------------
 
-	///
-	/// Function: clone
-	///
-	/// Returns a clone
-	///
-	/// Parameters:
-	/// 	obj - {Object}  Object to clone
-	///
-	/// Returns:
-	/// 	{Object}  Cloned object
-	///
+	/**
+	 * Function: clone
+	 *
+	 * Returns a clone
+	 *
+	 * Parameters:
+	 * 	obj - {Object}  Object to clone
+	 *
+	 * Returns:
+	 * 	{Object}  Cloned object
+	 *
+	 */
 	static clone(obj) {
 		if (obj === null || typeof obj !== 'object' || obj.hasOwnProperty('isActiveClone')) return obj;
 
@@ -164,17 +171,18 @@ class Utils extends UtilsCore {
 		return temp;
 	}
 
-	///
-	/// Function: newPromise
-	///
-	/// Returns a `new Promise` object based on the underlying implmentation
-	///
-	/// Parameters:
-	/// 	executor - {function(resolve,reject)}  Promise builder function
-	///
-	/// Returns:
-	/// 	{Promise}  Promise object
-	///
+	/**
+	 * Function: newPromise
+	 *
+	 * Returns a `new Promise` object based on the underlying implmentation
+	 *
+	 * Parameters:
+	 * 	executor - {function(resolve,reject)}  Promise builder function
+	 *
+	 * Returns:
+	 * 	{Promise}  Promise object
+	 *
+	 */
 	static newPromise(executor) {
 		const simple = Promise || small_promise;
 		if (simple === null) {
@@ -183,18 +191,19 @@ class Utils extends UtilsCore {
 		return (new simple(executor));
 	}
 
-	///
-	/// Function: functionBinder
-	///
-	/// Limited implementation of Function.bind, with fallback
-	///
-	/// Parameters:
-	/// 	inFunc   - {JS Function}  to setup bind on
-	/// 	thisObj  - {Object} The this parameter to assume inside the binded function
-	///
-	/// Returns:
-	/// 	{JS Function}  The binded function
-	///
+	/**
+	 * Function: functionBinder
+	 *
+	 * Limited implementation of Function.bind, with fallback
+	 *
+	 * Parameters:
+	 * 	inFunc   - {JS Function}  to setup bind on
+	 * 	thisObj  - {Object} The this parameter to assume inside the binded function
+	 *
+	 * Returns:
+	 * 	{JS Function}  The binded function
+	 *
+	 */
 	static functionBinder(inFunc, thisObj) {
 		if (inFunc.bind) {
 			return inFunc.bind(thisObj);
@@ -206,33 +215,35 @@ class Utils extends UtilsCore {
 		}
 	}
 
-	///
-	/// Function: isArray
-	///
-	/// Checks if is an array or Array-like object
-	///
-	/// Parameters:
-	/// 	arg   - {Object} The argument object to check if is array
-	///
-	/// Returns:
-	/// 	{Boolean}  true if is array or Array-like object
-	///
+	/**
+	 * Function: isArray
+	 *
+	 * Checks if is an array or Array-like object
+	 *
+	 * Parameters:
+	 * 	arg   - {Object} The argument object to check if is array
+	 *
+	 * Returns:
+	 * 	{Boolean}  true if is array or Array-like object
+	 *
+	 */
 	static isArray(arr) {
 		const tag = Object.prototype.toString.call(arr);
 		return tag.indexOf('Array]', tag.length - 6) !== -1;
 	}
 
-	///
-	/// Function: getArgumentType
-	///
-	/// Evaluate the argument type, to apply respective logic for it
-	///
-	/// Parameters:
-	/// 	arg   - {Object} The argument object to evaluate type
-	///
-	/// Returns:
-	/// 	{String}  Argument type Array/Number/Texture/Unknown
-	///
+	/**
+	 * Function: getArgumentType
+	 *
+	 * Evaluate the argument type, to apply respective logic for it
+	 *
+	 * Parameters:
+	 * 	arg   - {Object} The argument object to evaluate type
+	 *
+	 * Returns:
+	 * 	{String}  Argument type Array/Number/Texture/Unknown
+	 *
+	 */
 	static getArgumentType(arg) {
 		if (Utils.isArray(arg)) {
 			return 'Array';
@@ -245,17 +256,18 @@ class Utils extends UtilsCore {
 		}
 	}
 
-	///
-	/// Function: isFloatReadPixelsSupported
-	///
-	/// Checks if the browser supports readPixels with float type
-	///
-	/// Parameters:
-	/// 	gpu - {gpu.js object} the gpu object
-	///
-	/// Returns:
-	/// 	{Boolean} true if browser supports
-	///
+	/**
+	 * Function: isFloatReadPixelsSupported
+	 *
+	 * Checks if the browser supports readPixels with float type
+	 *
+	 * Parameters:
+	 * 	gpu - {gpu.js object} the gpu object
+	 *
+	 * Returns:
+	 * 	{Boolean} true if browser supports
+	 *
+	 */
 	static isFloatReadPixelsSupported() {
 		if (_isFloatReadPixelsSupported !== null) {
 			return _isFloatReadPixelsSupported
@@ -293,17 +305,18 @@ class Utils extends UtilsCore {
 		return [w, w];
 	}
 
-	///
-	/// Function: getDimensions
-	///
-	/// Return the dimension of an array.
-	/// 
-	/// Parameters:
-	///		x       - {Array} The array
-	///		pad     - {Number} To include padding in the dimension calculation [Optional]
-	///
-	///
-	///
+	/**
+	 * Function: getDimensions
+	 *
+	 * Return the dimension of an array.
+	 * 
+	 * Parameters:
+	 *		x       - {Array} The array
+	 *		pad     - {Number} To include padding in the dimension calculation [Optional]
+	 *
+	 *
+	 *
+	 */
 
 	static getDimensions(x, pad) {
 		let ret;
@@ -331,17 +344,18 @@ class Utils extends UtilsCore {
 		return ret;
 	}
 
-	///
-	/// Function: pad
-	///
-	/// Pad an array AND its elements with leading and ending zeros
-	/// Parameters:
-	/// 	arr 		- {Array} the array to pad zeros to
-	/// 	padding 	- {Number} amount of padding
-	///
-	/// Returns:
-	/// 	{Array} Array with leading and ending zeros, and all the elements padded by zeros.
-	///
+	/**
+	 * Function: pad
+	 *
+	 * Pad an array AND its elements with leading and ending zeros
+	 * Parameters:
+	 * 	arr 		- {Array} the array to pad zeros to
+	 * 	padding 	- {Number} amount of padding
+	 *
+	 * Returns:
+	 * 	{Array} Array with leading and ending zeros, and all the elements padded by zeros.
+	 *
+	 */
 	static pad(arr, padding) {
 		function zeros(n) {
 			return Array.apply(null, new Array(n)).map(Number.prototype.valueOf, 0);
@@ -360,17 +374,18 @@ class Utils extends UtilsCore {
 		return ret;
 	}
 
-	///
-	/// Function: flatten
-	///
-	/// Converts a nested array into a one-dimensional array
-	///
-	/// Parameters:
-	/// 	_arr - {Array} the nested array to flatten
-	///
-	/// Returns:
-	/// 	{Array} 1D Array
-	///
+	/**
+	 * Function: flatten
+	 *
+	 * Converts a nested array into a one-dimensional array
+	 *
+	 * Parameters:
+	 * 	_arr - {Array} the nested array to flatten
+	 *
+	 * Returns:
+	 * 	{Array} 1D Array
+	 *
+	 */
 	static flatten(_arr) {
 		for (let i = 0; i < _arr.length; ++i) {
 			if (Array.isArray(_arr[i])) {
@@ -393,19 +408,20 @@ class Utils extends UtilsCore {
 			arr;
 	}
 
-	///
-	/// Function: splitArray
-	///
-	/// Splits an array into smaller arrays.
-	/// Number of elements in one small chunk is given by `part`
-	///
-	/// Parameters:
-	/// 	array - {Array} The array to split into chunks
-	/// 	part  - {Array} elements in one chunk
-	///
-	/// Returns:
-	/// 	{Array} An array of smaller chunks
-	///
+	/**
+	 * Function: splitArray
+	 *
+	 * Splits an array into smaller arrays.
+	 * Number of elements in one small chunk is given by `part`
+	 *
+	 * Parameters:
+	 * 	array - {Array} The array to split into chunks
+	 * 	part  - {Array} elements in one chunk
+	 *
+	 * Returns:
+	 * 	{Array} An array of smaller chunks
+	 *
+	 */
 	static splitArray(array, part) {
 		const result = [];
 		for (let i = 0; i < array.length; i += part) {
