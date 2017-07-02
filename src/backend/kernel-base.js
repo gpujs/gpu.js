@@ -108,13 +108,17 @@ module.exports = class BaseKernel {
 		throw new Error('validateOptions not defined');
 	}
 
+	///
+	/// Function: precompileKernelObj
+	///
 	/// Precompiles the kernel object, this is used by GPUCore
 	///
 	/// @param   Input types to support as an array
 	///          With the following types "Array", "Texture", "Number"
 	///
 	/// @return  The precompiled kernel object
-	precompileKernelObj(paramType) {
+	///
+	exportKernelObj(paramType) {
 
 		// Currently this relies on WebGLFunctionBuilder
 		// Eventually this will be generalised into the base function-builder
