@@ -2,25 +2,25 @@
 /// Test the GPUUtils functions
 ///
 
-QUnit.test( "GPU.utils: systemEndianness not null", function( assert ) {
-	assert.ok( GPU.utils.systemEndianness() !== null, "not null check" );
-	assert.ok( GPU.utils.systemEndianness() === "LE" ||  GPU.utils.systemEndianness() === "BE", "value = " + GPU.utils.systemEndianness() );
+QUnit.test( "Utils: systemEndianness not null", function( assert ) {
+	assert.ok( Utils.systemEndianness() !== null, "not null check" );
+	assert.ok( Utils.systemEndianness() === "LE" ||  Utils.systemEndianness() === "BE", "value = " + Utils.systemEndianness() );
 });
 
-QUnit.test( "GPU.utils: isFunction", function( assert ) {
-	assert.ok( GPU.utils.isFunction( function() { } ) );
-	assert.notOk( GPU.utils.isFunction( {} ) );
+QUnit.test( "Utils: isFunction", function( assert ) {
+	assert.ok( Utils.isFunction( function() { } ) );
+	assert.notOk( Utils.isFunction( {} ) );
 });
 
-QUnit.test( "GPU.utils: isFunctionString", function( assert ) {
-	assert.ok( GPU.utils.isFunctionString( "function() { }" ) );
-	assert.notOk( GPU.utils.isFunctionString( {} ) );
+QUnit.test( "Utils: isFunctionString", function( assert ) {
+	assert.ok( Utils.isFunctionString( "function() { }" ) );
+	assert.notOk( Utils.isFunctionString( {} ) );
 });
 
-QUnit.test( "GPU.utils: getFunctionName_fromString", function( assert ) {
-	assert.equal( "test", GPU.utils.getFunctionNameFromString( "function test() { }" ) );
+QUnit.test( "Utils: getFunctionName_fromString", function( assert ) {
+	assert.equal( "test", Utils.getFunctionNameFromString( "function test() { }" ) );
 });
 
-QUnit.test( "GPU.utils: getParamNames_fromString", function( assert ) {
-	assert.deepEqual( ["a","b","c"], GPU.utils.getParamNamesFromString( "function test(a,b,c) { }" ) );
+QUnit.test( "Utils: getParamNames_fromString", function( assert ) {
+	assert.deepEqual( ["a","b","c"], Utils.getParamNamesFromString( "function test(a,b,c) { }" ) );
 });
