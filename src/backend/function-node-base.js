@@ -8,18 +8,18 @@ const parser = require('../core/parser').parser;
  *
  * This handles all the raw state, converted state, etc. Of a single function.
  *
- * @param functionName         - {String}        Name of the function
- * @param jsFunction           - {JS Function}   The JS Function the node represents
- * @param jsFunctionString     - {String}        jsFunction.toString()
- * @param paramNames           - {[String,...]}  Parameter names of the function
- * @param paramTypes           - {[String,...]}  Shader land parameters type assumption
- * @param isRootKernel         - {Boolean}       Special indicator, for kernel function
- * @param webglFunctionString  - {String}        webgl converted function string
- * @param openglFunctionString - {String}        opengl converted function string
- * @param calledFunctions      - {[String,...]}  List of all the functions called
- * @param initVariables        - {[String,...]}  List of variables initialized in the function
- * @param readVariables        - {[String,...]}  List of variables read operations occur
- * @param writeVariables       - {[String,...]}  List of variables write operations occur
+ * @param functionName         		{String}        	Name of the function
+ * @param jsFunction           		{JS Function}   	The JS Function the node represents
+ * @param jsFunctionString     		{String}        	jsFunction.toString()
+ * @param paramNames           		{[String,...]}  	Parameter names of the function
+ * @param paramTypes           		{[String,...]}  	Shader land parameters type assumption
+ * @param isRootKernel         		{Boolean}       	Special indicator, for kernel function
+ * @param webglFunctionString  		{String}        	webgl converted function string
+ * @param openglFunctionString 		{String}        	opengl converted function string
+ * @param calledFunctions      		{[String,...]}  	List of all the functions called
+ * @param initVariables        		{[String,...]}  	List of variables initialized in the function
+ * @param readVariables        		{[String,...]}  	List of variables read operations occur
+ * @param writeVariables       		{[String,...]}  	List of variables write operations occur
  *
  */
 module.exports = class BaseFunctionNode {

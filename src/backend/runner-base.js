@@ -14,14 +14,14 @@ const kernelRunShortcut = require('./kernel-run-shortcut');
  * File isolation is currently the best way to go
  *
  *
- * @param settings 				- {Object}      		Settings object used to set Dimensions, etc.
- * @param kernel   				- {String} 	   			Current kernel instance
- * @param canvas 					- {Object} 	   			Canvas instance attached to the kernel
- * @param webGl   				- {Object}     			WebGl instance attached to the kernel
- * @param fn   					- {Function} 			Kernel function to run
- * @param functionBuilder  		- {Object} 				FunctionBuilder instance
- * @param fnString   				- {String} 	   			Kernel function (as a String)
- * @param endianness   			- {String} 	   			endian information like Little-endian, Big-endian.
+ * @param settings 				{Object}      			Settings object used to set Dimensions, etc.
+ * @param kernel   				{String} 	   			Current kernel instance
+ * @param canvas 				{Object} 	   			Canvas instance attached to the kernel
+ * @param webGl   				{Object}     			WebGl instance attached to the kernel
+ * @param fn   					{Function} 				Kernel function to run
+ * @param functionBuilder  		{Object} 				FunctionBuilder instance
+ * @param fnString   			{String} 	   			Kernel function (as a String)
+ * @param endianness   			{String} 	   			endian information like Little-endian, Big-endian.
  *
  */
 

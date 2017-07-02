@@ -5,9 +5,9 @@
  *
  * This handles all the raw state, converted state, etc. Of a single function.
  *
- * @param nodeMap 		- {Object} 			Object map, where nodeMap[function] = new FunctionNode;
- * @param gpu     		- {Object} 			The current gpu instance bound to this builder
- * @param rootKernel 		- {Object} 			The root kernel object, contains the paramNames, dimensions etc.
+ * @param nodeMap 		{Object} 			Object map, where nodeMap[function] = new FunctionNode;
+ * @param gpu     		{Object} 			The current gpu instance bound to this builder
+ * @param rootKernel 	{Object} 			The root kernel object, contains the paramNames, dimensions etc.
  *
  */
 module.exports = class FunctionBuilderBase {

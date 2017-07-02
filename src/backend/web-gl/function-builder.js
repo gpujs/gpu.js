@@ -42,8 +42,8 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 * 
 	 * Return webgl String of all functions converted to webgl shader form
 	 *
-	 * @param functionList {[String,...]} List of function names to build the webgl string.
-	 * @param opt {Object} 	   Settings object passed to functionNode. See functionNode for more details.	
+	 * @param functionList 	{[String,...]} 		List of function names to build the webgl string.
+	 * @param opt 			{Object} 	   		Settings object passed to functionNode. See functionNode for more details.	
 	 *
 	 * @returns {String} Prototype String of all functions converted to webgl shader form
 	 *
@@ -101,10 +101,10 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 *
 	 * Add a new kernel to this instance
 	 *
-	 * @param fnString {String} Kernel function as a String
-	 * @param options {Object} Settings object to set constants, debug mode, etc.
-	 * @param paramNames {Array} Parameters of the kernel
-	 * @param paramTypes {Array} Types of the parameters
+	 * @param fnString 		{String} 	Kernel function as a String
+	 * @param options 		{Object} 	Settings object to set constants, debug mode, etc.
+	 * @param paramNames 	{Array} 	Parameters of the kernel
+	 * @param paramTypes 	{Array} 	Types of the parameters
 	 *		
 	 *
 	 * @returns {Object} The inserted kernel as a Kernel Node
@@ -126,9 +126,9 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 * Add a new sub-kernel to the current kernel instance
 	 *
 	 * @param jsFunction {Function} Sub-kernel function (JavaScript)
-	 * @param options {Object} Settings object to set constants, debug mode, etc.
-	 * @param paramNames {Array} Parameters of the sub-kernel
-	 * @param returnType {Array} Return type of the subKernel
+	 * @param options 	 {Object} 	Settings object to set constants, debug mode, etc.
+	 * @param paramNames {Array} 	Parameters of the sub-kernel
+	 * @param returnType {Array} 	Return type of the subKernel
 	 *
 	 * @returns {Object} The inserted sub-kernel as a Kernel Node
 	 *

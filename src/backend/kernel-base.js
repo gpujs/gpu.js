@@ -9,16 +9,16 @@ const utils = require('../core/utils');
  * This contains the basic methods needed by all Kernel implementations, 
  * like setDimensions, addSubKernel, etc.
  *
- * @param paramNames 						- {Array}      Name of the parameters of the kernel function
- * @param fnString   						- {String} 	   Kernel function as a String
- * @param dimensions 						- {Array} 	   Dimensions of the kernel function, this.thread.x, etc.
- * @param debug   						- {Boolean}    Toggle debug mode
- * @param graphical   					- {String} 	   Toggle graphical mode
- * @param loopMaxIterations  				- {Number} 	   Maximum number of loop iterations
- * @param constants   					- {Object} 	   Global constants
- * @param subKernels   					- {Array} 	   Sub kernels bound to this kernel instance
- * @param subKernelProperties 			- {Object} 	   Sub kernels bound to this kernel instance as key/value pairs
- * @param subKernelOutputVariableNames   	- {Array} 	   Names of the variables outputted by the subkerls
+ * @param paramNames 					{Array}        Name of the parameters of the kernel function
+ * @param fnString   					{String} 	   Kernel function as a String
+ * @param dimensions 					{Array} 	   Dimensions of the kernel function, this.thread.x, etc.
+ * @param debug   						{Boolean}      Toggle debug mode
+ * @param graphical   					{String} 	   Toggle graphical mode
+ * @param loopMaxIterations  			{Number} 	   Maximum number of loop iterations
+ * @param constants   					{Object} 	   Global constants
+ * @param subKernels   					{Array} 	   Sub kernels bound to this kernel instance
+ * @param subKernelProperties 			{Object} 	   Sub kernels bound to this kernel instance as key/value pairs
+ * @param subKernelOutputVariableNames  {Array} 	   Names of the variables outputted by the subkerls
  *
  */
 module.exports = class BaseKernel {
