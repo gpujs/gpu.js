@@ -6,7 +6,7 @@ const CPUFunctionBuilder = require('./function-builder');
 /**
  * @class CPURunner
  *
- * Extends: RunnerBase
+ * @extends RunnerBase
  *
  * Instantiates a Runner instance for the kernel.
  *

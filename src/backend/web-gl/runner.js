@@ -8,8 +8,7 @@ const WebGLFunctionBuilder = require('./function-builder');
  *
  * Instantiates a Runner instance for the kernel.
  *
- * Extends: 
- *		RunnerBase
+ * @extends RunnerBase
  *
  */
 module.exports = class WebGLRunner extends RunnerBase {

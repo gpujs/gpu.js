@@ -14,8 +14,7 @@ const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
  *
  * [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
  *
- * Extends: 
- *		FunctionNodeBase
+ * @extends FunctionNodeBase
  *
  * Parameter:
  * 	inNode - {functionNode} The function node object

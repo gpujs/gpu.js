@@ -7,8 +7,7 @@ const kernelString = require('./kernel-string');
  *
  * Kernel Implementation for CPU. 
  *
- * Extends:
- * 	KernelBase
+ * @extends KernelBase
  *
  * @param thread {Object} 		The thread dimensions, x, y and z
  * @param runDimensions {Object} 		The canvas dimensions

@@ -25,12 +25,13 @@ gulp.task('refactor', ()=>{
 		
 			chunks = dataString.split("\n");
 			for (var i = 0; i < chunks.length; i++) {
-				if(chunks[i].includes('Returns:')){
+				if(chunks[i].includes('Extends:')){
 					chunks[i] = '';
 					temp = chunks[i+1];
 					temp1 = temp.match(/(\t+\*|\s+\*)\s+/g);
 					temp2 = temp.match(/(\t+\*|\s+\*)/g);
-					temp3 = temp.replace(temp1, temp2 + ' @returns ');
+					temp3 = temp.replace(temp1, temp2 + ' @extends ');
+					// console.log(temp3);
 					chunks[i+1] = temp3;
 					break;
 				}else{

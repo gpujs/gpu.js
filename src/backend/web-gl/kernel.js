@@ -13,8 +13,7 @@ const kernelString = require('./kernel-string');
  * This builds the shaders and runs them on the GPU, 
  * the outputs the result back as float(enabled by default) and Texture.
  *
- * Extends:
- * 	KernelBase
+ * @extends KernelBase
  *
  * @param textureCache 				- {Object} 		webGl Texture cache
  * @param threadDim 					- {Object} 		The thread dimensions, x, y and z

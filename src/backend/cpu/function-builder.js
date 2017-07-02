@@ -4,7 +4,7 @@ const CPUFunctionNode = require('./function-node');
 /**
  * @class CPUFunctionBuilder
  *
- * Extends: FunctionBuilderBase
+ * @extends FunctionBuilderBase
  *
  * Builds functions to execute on CPU from JavaScript function Strings
  *

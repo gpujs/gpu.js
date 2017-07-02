@@ -5,7 +5,7 @@ const utils = require('../../core/utils');
 /**
  * @class WebGLFunctionBuilder
  *
- * Extends: FunctionBuilderBase
+ * @extends FunctionBuilderBase
  *
  * Builds webGl functions (shaders) from JavaScript function Strings
  *
