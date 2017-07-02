@@ -31,7 +31,7 @@ function createArrayKernels(mode, dimensions, canvas) {
 function createKernel(mode, dimensions, canvas) {
   var gpu = new GPU({mode: mode, canvas: canvas});
   return gpu.createKernel(function (a) {
-    return a[this.thread.x][this.thread.y];
+    return a[this.thread.x];
   }).setDimensions(dimensions);
 }
 
