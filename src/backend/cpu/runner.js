@@ -1,4 +1,4 @@
-const utils = require('../../utils');
+const utils = require('../../core/utils');
 const RunnerBase = require('../runner-base');
 const CPUKernel = require('./kernel');
 const CPUFunctionBuilder = require('./function-builder');

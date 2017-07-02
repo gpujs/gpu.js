@@ -1,6 +1,6 @@
-const GPU = require('./gpu');
-const alias = require('./alias');
-const utils = require('./utils');
+const GPU = require('./core/gpu');
+const alias = require('./core/alias');
+const utils = require('./core/utils');
 
 const CPUFunctionBuilder = require('./backend/cpu/function-builder');
 const CPUFunctionNode = require('./backend/cpu/function-node');

@@ -1,5 +1,5 @@
 const FunctionNodeBase = require('../function-node-base');
-const utils = require('../../utils');
+const utils = require('../../core/utils');
 // Closure capture for the ast function, prevent collision with existing AST functions
 // The prefixes to use
 const jsMathPrefix = 'Math.';

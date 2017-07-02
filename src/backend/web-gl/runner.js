@@ -1,6 +1,6 @@
 const RunnerBase = require('../runner-base');
 const WebGLKernel = require('./kernel');
-const utils = require('../../utils');
+const utils = require('../../core/utils');
 const WebGLFunctionBuilder = require('./function-builder');
 
 ///

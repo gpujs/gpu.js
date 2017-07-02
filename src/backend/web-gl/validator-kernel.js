@@ -1,5 +1,5 @@
 const WebGLKernel = require('./kernel');
-const utils = require('../../utils');
+const utils = require('../../core/utils');
 
 ///
 /// Class: WebGLValidatorKernel

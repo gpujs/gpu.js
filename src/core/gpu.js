@@ -1,7 +1,7 @@
 const utils = require('./utils');
-const WebGLRunner = require('./backend/web-gl/runner');
-const CPURunner = require('./backend/cpu/runner');
-const WebGLValidatorKernel = require('./backend/web-gl/validator-kernel');
+const WebGLRunner = require('../backend/web-gl/runner');
+const CPURunner = require('../backend/cpu/runner');
+const WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
 
 ///
 /// Class: GPU

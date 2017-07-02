@@ -425,7 +425,7 @@ const utils = class utils {
 			return isFloatReadPixelsSupported
 		}
 
-		const GPU = require('./');
+		const GPU = require('../index');
 		const x = new GPU({
 			mode: 'webgl-validator'
 		}).createKernel(function() {
