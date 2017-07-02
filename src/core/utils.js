@@ -1,11 +1,12 @@
 ///
-/// Class: utils
+/// Class: Utils
 ///
 /// Various utility functions / snippets of code that GPU.JS uses internally.\
 /// This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
 ///
-/// Note that all methods in this class is 'static' by nature `utils.functionName()`
+/// Note that all methods in this class is 'static' by nature `Utils.functionName()`
 ///
+const UtilsCore = require("./Utils-core");
 const Texture = require('./texture');
 // FUNCTION_NAME regex
 const FUNCTION_NAME = /function ([^(]*)/;
@@ -28,7 +29,7 @@ const systemEndianness = (() => {
 
 let isFloatReadPixelsSupported = null;
 
-const utils = class utils {
+const Utils = class Utils {
 	//-----------------------------------------------------------------------------
 	//
 	//  System values support (currently only endianness)
@@ -154,7 +155,7 @@ const utils = class utils {
 		for (let key in obj) {
 			if (Object.prototype.hasOwnProperty.call(obj, key)) {
 				obj.isActiveClone = null;
-				temp[key] = utils.clone(obj[key]);
+				temp[key] = Utils.clone(obj[key]);
 				delete obj.isActiveClone;
 			}
 		}
@@ -232,7 +233,7 @@ const utils = class utils {
 	/// 	{String}  Argument type Array/Number/Texture/Unknown
 	///
 	static getArgumentType(arg) {
-		if (utils.isArray(arg)) {
+		if (Utils.isArray(arg)) {
 			return 'Array';
 		} else if (typeof arg === 'number') {
 			return 'Number';
@@ -390,20 +391,20 @@ const utils = class utils {
 		}
 
 		// Fail fast for invalid canvas object
-		if (!utils.isCanvas(canvasObj)) {
+		if (!Utils.isCanvas(canvasObj)) {
 			throw new Error('Invalid canvas object - ' + canvasObj);
 		}
 
 		// Create a new canvas DOM
 		const webGl = (
-			canvasObj.getContext('experimental-webgl', utils.initWebGlDefaultOptions) ||
-			canvasObj.getContext('webgl', utils.initWebGlDefaultOptions)
+			canvasObj.getContext('experimental-webgl', Utils.initWebGlDefaultOptions) ||
+			canvasObj.getContext('webgl', Utils.initWebGlDefaultOptions)
 		);
 
 		// Get the extension that is needed
-		utils.OES_texture_float = webGl.getExtension('OES_texture_float');
-		utils.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
-		utils.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
+		Utils.OES_texture_float = webGl.getExtension('OES_texture_float');
+		Utils.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
+		Utils.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
 
 		// Returns the canvas
 		return webGl;
@@ -471,10 +472,10 @@ const utils = class utils {
 
 	static getDimensions(x, pad) {
 		let ret;
-		if (utils.isArray(x)) {
+		if (Utils.isArray(x)) {
 			const dim = [];
 			let temp = x;
-			while (utils.isArray(temp)) {
+			while (Utils.isArray(temp)) {
 				dim.push(temp.length);
 				temp = temp[0];
 			}
@@ -486,7 +487,7 @@ const utils = class utils {
 		}
 
 		if (pad) {
-			ret = utils.clone(ret);
+			ret = Utils.clone(ret);
 			while (ret.length < 3) {
 				ret.push(1);
 			}
@@ -548,8 +549,8 @@ const utils = class utils {
 	}
 
 	static copyFlatten(arr) {
-		return utils.isArray(arr[0]) ?
-			utils.isArray(arr[0][0]) ?
+		return Utils.isArray(arr[0]) ?
+			Utils.isArray(arr[0][0]) ?
 			Array.isArray(arr[0][0]) ? [].concat.apply([], [].concat.apply([], arr)) : [].concat.apply([], [].concat.apply([], arr)
 				.map(function(x) {
 					return Array.prototype.slice.call(x)
@@ -602,8 +603,8 @@ const utils = class utils {
 	}
 };
 let isWebGlSupported;
-const isCanvasSupported = typeof document !== 'undefined' ? utils.isCanvas(document.createElement('canvas')) : false;
-const tempWebGl = utils.initWebGl(utils.initCanvas());
-isWebGlSupported = utils.isWebGl(tempWebGl);
+const isCanvasSupported = typeof document !== 'undefined' ? Utils.isCanvas(document.createElement('canvas')) : false;
+const tempWebGl = Utils.initWebGl(Utils.initCanvas());
+isWebGlSupported = Utils.isWebGl(tempWebGl);
 const isWebGlDrawBuffersSupported = Boolean(tempWebGl.getExtension('WEBGL_draw_buffers'));
-module.exports = utils;
+module.exports = Utils;

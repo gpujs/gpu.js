@@ -11,7 +11,7 @@
 /// | Name          | Value Type    | Description                                                               |
 /// |---------------|---------------|---------------------------------------------------------------------------|
 /// | isKernelObj   | <Boolean>     | Boolean true flag, that is compulsory in the kernel obj validation        |
-/// | opt           | <Object>      | { option object }                                                         |
+/// | optObj        | <Object>      | { option object }                                                         |
 /// | jsFunctions   | <String>      | String representation of the JS functions                                 |
 /// | jsKernel      | <String>      | String representation of the JS kernel                                    |
 /// | glHeaders     | <String>      | Precompiled webgl prototype function headers                              |
