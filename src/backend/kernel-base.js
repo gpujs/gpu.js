@@ -9,17 +9,16 @@ const utils = require('../core/utils');
  * This contains the basic methods needed by all Kernel implementations, 
  * like setDimensions, addSubKernel, etc.
  *
- * Properties:
- *		paramNames 						- {Array}      Name of the parameters of the kernel function
- *		fnString   						- {String} 	   Kernel function as a String
- *		dimensions 						- {Array} 	   Dimensions of the kernel function, this.thread.x, etc.
- *		debug   						- {Boolean}    Toggle debug mode
- *		graphical   					- {String} 	   Toggle graphical mode
- *		loopMaxIterations  				- {Number} 	   Maximum number of loop iterations
- *		constants   					- {Object} 	   Global constants
- *		subKernels   					- {Array} 	   Sub kernels bound to this kernel instance
- *		subKernelProperties 			- {Object} 	   Sub kernels bound to this kernel instance as key/value pairs
- *		subKernelOutputVariableNames   	- {Array} 	   Names of the variables outputted by the subkerls
+ * @param paramNames 						- {Array}      Name of the parameters of the kernel function
+ * @param fnString   						- {String} 	   Kernel function as a String
+ * @param dimensions 						- {Array} 	   Dimensions of the kernel function, this.thread.x, etc.
+ * @param debug   						- {Boolean}    Toggle debug mode
+ * @param graphical   					- {String} 	   Toggle graphical mode
+ * @param loopMaxIterations  				- {Number} 	   Maximum number of loop iterations
+ * @param constants   					- {Object} 	   Global constants
+ * @param subKernels   					- {Array} 	   Sub kernels bound to this kernel instance
+ * @param subKernelProperties 			- {Object} 	   Sub kernels bound to this kernel instance as key/value pairs
+ * @param subKernelOutputVariableNames   	- {Array} 	   Names of the variables outputted by the subkerls
  *
  */
 module.exports = class BaseKernel {
@@ -27,7 +26,7 @@ module.exports = class BaseKernel {
 	/**
 	 * @name BaseKernel
 	 *
-	 * [Constructor] Blank constructor, which initializes the properties
+	 * @constructor Blank constructor, which initializes the properties
 	 *
 	 */
 	constructor(fnString, settings) {
@@ -80,7 +79,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Set dimensions of the kernel function
 	 *
-	 * 	@param dimensions {Array}       The dimensions array set the dimensions to
+	 * @param dimensions {Array}       The dimensions array set the dimensions to
 	 *
 	 */
 	setDimensions(dimensions) {
@@ -93,7 +92,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Toggle debug mode
 	 *
-	 * 	@param flag {Boolean}       true to enable debug
+	 * @param flag {Boolean}       true to enable debug
 	 *
 	 */
 	setDebug(flag) {
@@ -106,7 +105,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Toggle graphical output mode
 	 *
-	 * 	@param flag {Boolean}       true to enable graphical output
+	 * @param flag {Boolean}       true to enable graphical output
 	 *
 	 */
 	setGraphical(flag) {
@@ -119,7 +118,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Set the maximum number of loop iterations
 	 *
-	 * 	@param max {Number}       iterations count
+	 * @param max {Number}       iterations count
 	 *
 	 */
 	setLoopMaxIterations(max) {
@@ -157,7 +156,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Toggle texture output mode
 	 *
-	 * 	@param flag {Boolean}       true to enable floatTextures
+	 * @param flag {Boolean}       true to enable floatTextures
 	 *
 	 */
 	setFloatTextures(flag) {
@@ -170,7 +169,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Toggle output mode
 	 *
-	 * 	@param flag {Boolean}       true to enable float
+	 * @param flag {Boolean}       true to enable float
 	 *
 	 */
 	setFloatOutput(flag) {
@@ -188,7 +187,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Bind the canvas to kernel
 	 * 
-	 * 	@param canvas {Canvas}        Canvas to bind
+	 * @param canvas {Canvas}        Canvas to bind
 	 *
 	 */
 	setCanvas(canvas) {
@@ -201,7 +200,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Bind the webGL instance to kernel
 	 * 
-	 * 	@param webGL {Canvas}        webGL instance to bind
+	 * @param webGL {Canvas}        webGL instance to bind
 	 *
 	 */
 	setWebGl(webGl) {
@@ -268,7 +267,7 @@ module.exports = class BaseKernel {
 	 * Add a sub kernel to the root kernel instance.
 	 * This is what `createKernels` uses.
 	 *
-	 * 	@param fnString {String}       function (as a String) of the subKernel to add
+	 * @param fnString {String}       function (as a String) of the subKernel to add
 	 *
 	 */
 	addSubKernel(fnString) {
@@ -286,8 +285,8 @@ module.exports = class BaseKernel {
 	 * Add a sub kernel to the root kernel instance, indexed by a property name
 	 * This is what `createKernels` uses.
 	 *
-	 * 	@param property {String}       property key for the subKernel
-	 * 	@param fnString {String}       function (as a String) of the subKernel to add
+	 * @param property {String}       property key for the subKernel
+	 * @param fnString {String}       function (as a String) of the subKernel to add
 	 *
 	 */
 	addSubKernelProperty(property, fnString) {

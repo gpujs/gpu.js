@@ -19,7 +19,7 @@ const kernelString = require('./kernel-string');
 module.exports = class CPUKernel extends KernelBase {
 
 	//
-	// [Constructor]
+	// @constructor
 	//
 	
 	/**

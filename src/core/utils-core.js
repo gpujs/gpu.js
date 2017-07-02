@@ -24,7 +24,7 @@ class UtilsCore {
 	 *
 	 * Note: This does just a VERY simply sanity check. And may give false positives.
 	 *
-	 * 	@param canvasObj {Canvas DOM object} Object to validate
+	 * @param canvasObj {Canvas DOM object} Object to validate
 	 *
 	 * Returns:
 	 * 	{Boolean} TRUE if the object is a DOM canvas
@@ -92,7 +92,7 @@ class UtilsCore {
 	 *
 	 * Note: This does just a VERY simply sanity check. And may give false positives.
 	 *
-	 * 	@param webGlObj {webGl context} Object to validate
+	 * @param webGlObj {webGl context} Object to validate
 	 *
 	 * Returns:
 	 * 	{Boolean} TRUE if the object is a webgl context object
@@ -146,7 +146,7 @@ class UtilsCore {
 	 * Initiate and returns a webGl, from a canvas object
 	 * Returns only if webGl is supported by browser.
 	 *
-	 * 	@param canvasObj {Canvas DOM object} Object to validate
+	 * @param canvasObj {Canvas DOM object} Object to validate
 	 *
 	 * Returns:
 	 * 	{Canvas DOM object} Canvas dom object if supported by browser, else null

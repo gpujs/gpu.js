@@ -22,7 +22,7 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 	 *
 	 * Return the JS Function String optimized for cpu.
 	 *
-	 * 	@param functionName {String} Function name to trace from. If null, it returns the WHOLE builder stack
+	 * @param functionName {String} Function name to trace from. If null, it returns the WHOLE builder stack
 	 *
 	 * Returns:
 	 * 	{String} Function String
@@ -47,9 +47,9 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 	 *
 	 * Add a new sub-kernel to the current kernel instance
 	 *
-	 *		@param jsFunction {Function} Sub-kernel function (JavaScript)
-	 *		@param paramNames {Array} Parameters of the sub-kernel
-	 *		@param returnType {Array} Return type of the subKernel
+	 * @param jsFunction {Function} Sub-kernel function (JavaScript)
+	 * @param paramNames {Array} Parameters of the sub-kernel
+	 * @param returnType {Array} Return type of the subKernel
 	 *
 	 */
 	addSubKernel(jsFunction, paramTypes, returnType) {

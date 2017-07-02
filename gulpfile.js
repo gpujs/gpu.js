@@ -13,6 +13,83 @@ const pkg = require('./package.json');
 const jsprettify = require('gulp-jsbeautifier');
 const babel = require('gulp-babel');
 const stripComments = require('gulp-strip-comments');
+const glob = require('glob');
+
+gulp.task('refactor', ()=>{
+	glob('src/**/*.js', (err, files)=>{
+		files.forEach(file=>{
+			fs.readFile(file, (err,data)=>{
+			let dataString = data.toString();
+			let chunks = [];
+			let stream = false;
+		
+			chunks = dataString.split("\n");
+			for (var i = 0; i < chunks.length; i++) {
+				if(stream){
+					if(chunks[i]===/(\s+\*\s+)|(\*\/)/g){
+						stream = !stream;
+					}else{
+						let temp7 = chunks[i].match(/\t+\s+\*\s+/g); 
+						// console.log(temp7)
+						let temp = chunks[i].replace(/\t+\s+\*\s+/g, '');
+						// console.log(temp);
+						let paramName = temp.match(/(^\w+)/g);
+						if(paramName){
+							paramName = paramName[0];
+							let typeAndRest =  temp.match(/(^\w+)+(\s+-\s+{)/g);
+							if(typeAndRest){
+								temp1 = temp.replace(typeAndRest, '');
+								temp2 = paramName + ' {' + temp1;
+								temp3 =  temp7 + '@param ' + temp2;
+								// console.log(temp3);
+								chunks[i] = temp3
+							}
+					}
+						}
+				}else{
+					
+					if(chunks[i].includes('Properties:')){
+						chunks[i] = chunks[i].slice(0,chunks[i].indexOf('P')) + '*';
+						stream = !stream;
+					}
+
+				}
+
+
+			}
+
+				// if(stream){
+				// 	if(chunks[i]===' *' || chunks[i]===' */'){
+				// 		stream = !stream;
+				// 	}else{
+				// 		chunks[i] = chunks[i].replace(/\*\s+/g, '');
+				// 		console.log(chunks[i]);
+				// 		let paramName = chunks[i].match(/(^\w+)/g)[0];
+				// 		let typeAndRest =  chunks[i].match(/(^\w+)+(\s+-\s+{)/g)[0];
+				// 		chunks[i] = chunks[i].replace(typeAndRest, '');
+				// 		chunks[i] = paramName + ' {' + chunks[i];
+				// 		chunks[i] = ' * @param' + chunks[i];
+				// 	}			
+				// }else{
+					// if(chunks[i].match(/^\s+\* Function:/g)){
+						// console.log(chunks[i]);
+					// console.log(chunks[i]);
+						// chunks[i] = chunks[i].replace('Function:','@name');
+						// chunks[i] = '';
+					/*} else if (chunks[i].startsWith('  ')){
+						stream = !stream;
+					} else if (chunks[i].startsWith(' * Returns:')) {
+						chunks[i] = '';
+						chunks[i+1] = ' * @returns' + chunks[i+1].replace(/^\*\s+/g, '');
+					}*/
+			// }
+			const finalData = chunks.join('\n');
+			fs.writeFile(file, finalData);
+
+			})
+		})
+	})
+})
 
 /// Build the scripts
 gulp.task('build', function() {

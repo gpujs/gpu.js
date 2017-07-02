@@ -7,7 +7,7 @@ const BaseFunctionNode = require('../function-node-base');
  *
  * This handles all the raw state, converted state, etc. Of a single function.
  *
- * Properties:
+ * *
  * 	functionName         - {String}        Name of the function
  * 	jsFunction           - {JS Function}   The JS Function the node represents
  * 	jsFunctionString     - {String}        jsFunction.toString()

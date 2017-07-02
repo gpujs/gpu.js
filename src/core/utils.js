@@ -63,7 +63,7 @@ class Utils extends UtilsCore {
 	 *
 	 * Return TRUE, on a JS function
 	 *
-	 * 	@param funcObj {JS Function} Object to validate if its a function
+	 * @param funcObj {JS Function} Object to validate if its a function
 	 *
 	 * Returns:
 	 * 	{Boolean} TRUE if the object is a JS function
@@ -80,7 +80,7 @@ class Utils extends UtilsCore {
 	 *
 	 * Note: This does just a VERY simply sanity check. And may give false positives.
 	 *
-	 * 	@param funcStr {String}  String of JS function to validate
+	 * @param funcStr {String}  String of JS function to validate
 	 *
 	 * Returns:
 	 * 	{Boolean} TRUE if the string passes basic validation
@@ -100,7 +100,7 @@ class Utils extends UtilsCore {
 	 *
 	 * Return the function name from a JS function string
 	 *
-	 * 	@param funcStr {String}  String of JS function to validate
+	 * @param funcStr {String}  String of JS function to validate
 	 *
 	 * Returns:
 	 * 	{String} Function name string (if found)
@@ -119,7 +119,7 @@ class Utils extends UtilsCore {
 	 *
 	 * Return list of parameter names extracted from the JS function string
 	 *
-	 * 	@param funcStr {String}  String of JS function to validate
+	 * @param funcStr {String}  String of JS function to validate
 	 *
 	 * Returns:
 	 * 	{[String, ...]}  Array representing all the parameter names
@@ -144,7 +144,7 @@ class Utils extends UtilsCore {
 	 *
 	 * Returns a clone
 	 *
-	 * 	@param obj {Object}  Object to clone
+	 * @param obj {Object}  Object to clone
 	 *
 	 * Returns:
 	 * 	{Object}  Cloned object
@@ -171,7 +171,7 @@ class Utils extends UtilsCore {
 	 *
 	 * Returns a `new Promise` object based on the underlying implmentation
 	 *
-	 * 	@param executor {function(resolve,reject)}  Promise builder function
+	 * @param executor {function(resolve,reject)}  Promise builder function
 	 *
 	 * Returns:
 	 * 	{Promise}  Promise object
@@ -190,8 +190,8 @@ class Utils extends UtilsCore {
 	 *
 	 * Limited implementation of Function.bind, with fallback
 	 *
-	 * 	@param inFunc {JS Function}  to setup bind on
-	 * 	@param thisObj {Object} The this parameter to assume inside the binded function
+	 * @param inFunc {JS Function}  to setup bind on
+	 * @param thisObj {Object} The this parameter to assume inside the binded function
 	 *
 	 * Returns:
 	 * 	{JS Function}  The binded function
@@ -213,7 +213,7 @@ class Utils extends UtilsCore {
 	 *
 	 * Checks if is an array or Array-like object
 	 *
-	 * 	@param arg {Object} The argument object to check if is array
+	 * @param arg {Object} The argument object to check if is array
 	 *
 	 * Returns:
 	 * 	{Boolean}  true if is array or Array-like object
@@ -229,7 +229,7 @@ class Utils extends UtilsCore {
 	 *
 	 * Evaluate the argument type, to apply respective logic for it
 	 *
-	 * 	@param arg {Object} The argument object to evaluate type
+	 * @param arg {Object} The argument object to evaluate type
 	 *
 	 * Returns:
 	 * 	{String}  Argument type Array/Number/Texture/Unknown
@@ -252,7 +252,7 @@ class Utils extends UtilsCore {
 	 *
 	 * Checks if the browser supports readPixels with float type
 	 *
-	 * 	@param gpu {gpu.js object} the gpu object
+	 * @param gpu {gpu.js object} the gpu object
 	 *
 	 * Returns:
 	 * 	{Boolean} true if browser supports
@@ -300,8 +300,8 @@ class Utils extends UtilsCore {
 	 *
 	 * Return the dimension of an array.
 	 * 
-	 *		@param x {Array} The array
-	 *		@param pad {Number} To include padding in the dimension calculation [Optional]
+	 * @param x {Array} The array
+	 * @param pad {Number} To include padding in the dimension calculation [Optional]
 	 *
 	 *
 	 *
@@ -338,8 +338,8 @@ class Utils extends UtilsCore {
 	 *
 	 * Pad an array AND its elements with leading and ending zeros
 	 *
-	 * 	@param arr {Array} the array to pad zeros to
-	 * 	@param padding {Number} amount of padding
+	 * @param arr {Array} the array to pad zeros to
+	 * @param padding {Number} amount of padding
 	 *
 	 * Returns:
 	 * 	{Array} Array with leading and ending zeros, and all the elements padded by zeros.
@@ -368,7 +368,7 @@ class Utils extends UtilsCore {
 	 *
 	 * Converts a nested array into a one-dimensional array
 	 *
-	 * 	@param _arr {Array} the nested array to flatten
+	 * @param _arr {Array} the nested array to flatten
 	 *
 	 * Returns:
 	 * 	{Array} 1D Array
@@ -402,8 +402,8 @@ class Utils extends UtilsCore {
 	 * Splits an array into smaller arrays.
 	 * Number of elements in one small chunk is given by `part`
 	 *
-	 * 	@param array {Array} The array to split into chunks
-	 * 	@param part {Array} elements in one chunk
+	 * @param array {Array} The array to split into chunks
+	 * @param part {Array} elements in one chunk
 	 *
 	 * Returns:
 	 * 	{Array} An array of smaller chunks
