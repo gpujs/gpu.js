@@ -26,8 +26,7 @@ class UtilsCore {
 	 *
 	 * @param canvasObj {Canvas DOM object} Object to validate
 	 *
-	 * Returns:
-	 * 	{Boolean} TRUE if the object is a DOM canvas
+	 * @returns {Boolean} TRUE if the object is a DOM canvas
 	 *
 	 */
 	static isCanvas(canvasObj) {
@@ -44,8 +43,7 @@ class UtilsCore {
 	 *
 	 * Return TRUE, if browser supports canvas
 	 *
-	 * Returns:
-	 * 	{Boolean} TRUE if browser supports canvas
+	 * @returns {Boolean} TRUE if browser supports canvas
 	 *
 	 */
 	static isCanvasSupported() {
@@ -58,8 +56,7 @@ class UtilsCore {
 	 * Initiate and returns a canvas, for usage in init_webgl.
 	 * Returns only if canvas is supported by browser.
 	 *
-	 * Returns:
-	 * 	{Canvas DOM object} Canvas dom object if supported by browser, else null
+	 * @returns {Canvas DOM object} Canvas dom object if supported by browser, else null
 	 *
 	 */
 	static initCanvas() {
@@ -94,8 +91,8 @@ class UtilsCore {
 	 *
 	 * @param webGlObj {webGl context} Object to validate
 	 *
-	 * Returns:
-	 * 	{Boolean} TRUE if the object is a webgl context object
+
+	 * @returns {Boolean} TRUE if the object is a webgl context object
 	 *
 	 */
 	static isWebGl(webGlObj) {
@@ -119,8 +116,8 @@ class UtilsCore {
 	 *
 	 * Return TRUE, if browser supports webgl
 	 *
-	 * Returns:
-	 * 	{Boolean} TRUE if browser supports webgl
+
+	 * @returns {Boolean} TRUE if browser supports webgl
 	 *
 	 */
 	static isWebGlSupported() {
@@ -148,8 +145,8 @@ class UtilsCore {
 	 *
 	 * @param canvasObj {Canvas DOM object} Object to validate
 	 *
-	 * Returns:
-	 * 	{Canvas DOM object} Canvas dom object if supported by browser, else null
+
+	 * @returns {Canvas DOM object} Canvas dom object if supported by browser, else null
 	 *
 	 */
 	static initWebGl(canvasObj) {

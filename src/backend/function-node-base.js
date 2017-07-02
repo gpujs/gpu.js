@@ -171,8 +171,7 @@ module.exports = class BaseFunctionNode {
 	 * Gets and return the stored JS Function.
 	 * Note: that this internally eval the function, if only the string was provided on construction
 	 *
-	 * Returns:
-	 * 	{JS Function} The function object
+	 * @returns {JS Function} The function object
 	 *
 	 */
 	getJsFunction() {
@@ -197,8 +196,7 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * @param inParser {JISON Parser}  Parser to use, assumes in scope 'parser' if null
 	 *
-	 * Returns:
-	 * 	{AST Object} The function AST Object, note that result is cached under this.jsFunctionAST;
+	 * @returns {AST Object} The function AST Object, note that result is cached under this.jsFunctionAST;
 	 *
 	 */
 	getJsAST(inParser) {
@@ -229,8 +227,7 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * Returns the converted webgl shader function equivalent of the JS function
 	 *
-	 * Returns:
-	 * 	{String} webgl function string, result is cached under this.webGlFunctionString
+	 * @returns {String} webgl function string, result is cached under this.webGlFunctionString
 	 *
 	 */
 	getFunctionString() {
@@ -257,8 +254,7 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * @param paramName {String}  Name of the parameter
 	 *
-	 * Returns:
-	 * 	{String} Type of the parameter
+	 * @returns {String} Type of the parameter
 	 *
 	 */
 	getParamType(paramName) {
@@ -284,8 +280,7 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * @param paramName {String}  Name of the parameter
 	 *
-	 * Returns:
-	 * 	{String} Name of the parameter
+	 * @returns {String} Name of the parameter
 	 *
 	 */
 	getUserParamName(paramName) {

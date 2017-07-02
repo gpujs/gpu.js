@@ -68,8 +68,7 @@ class GPU extends GPUCore {
 	 * @param inputFunction   {JS Function} The calling to perform the conversion
 	 * @param settings        {Object}      The parameter configuration object (see above)
 	 *
-	 * Returns:
-	 * 	{Function} callable function to run
+	 * @returns {Function} callable function to run
 	 *
 	 */
 	createKernel(fn, settings) {
@@ -129,8 +128,7 @@ class GPU extends GPUCore {
 	 * @param subKernels {Object|Array}  Sub kernels for this kernel
 	 * @param rootKernel {Function}  	  Root kernel
 	 * 
-	 * Returns:
-	 * 	{Function} callable kernel function
+	 * @returns {Function} callable kernel function
 	 *
 	 */
 	createKernels() {
@@ -183,8 +181,7 @@ class GPU extends GPUCore {
 	 * @param subKernels {Function}  Kernel function(s) to combine.
 	 * @param rootKernel {Function}  Root kernel to combine kernels into
 	 * 
-	 * Returns:
-	 * 	{Function} callable kernel function
+	 * @returns {Function} callable kernel function
 	 *
 	 */
 	combineKernels() {
@@ -242,8 +239,7 @@ class GPU extends GPUCore {
 	 * @param paramTypes {[String,...]|{variableName: Type,...}} Parameter type array, assumes all parameters are 'float' if null
 	 * @param returnType {String}       The return type, assumes 'float' if null
 	 *
-	 * Returns:
-	 * 	{GPU} returns itself
+	 * @returns {GPU} returns itself
 	 *
 	 */
 	addFunction(fn, paramTypes, returnType) {
@@ -256,8 +252,7 @@ class GPU extends GPUCore {
 	 *
 	 * Return the current mode in which gpu.js is executing.
 	 * 
-	 * Returns:
-	 * 	{String} The current mode, "cpu", "webgl", etc.
+	 * @returns {String} The current mode, "cpu", "webgl", etc.
 	 *
 	 */
 	getMode() {
@@ -271,8 +266,7 @@ class GPU extends GPUCore {
 	 *
 	 * Note: This function can also be called directly `GPU.isWebGlSupported()`
 	 *
-	 * Returns:
-	 * 	{Boolean} TRUE if browser supports webGl
+	 * @returns {Boolean} TRUE if browser supports webGl
 	 *
 	 */
 	isWebGlSupported() {
@@ -284,8 +278,7 @@ class GPU extends GPUCore {
 	 *
 	 * Return the canvas object bound to this gpu instance.
 	 *
-	 * Returns:
-	 * 	{Object} Canvas object if present
+	 * @returns {Object} Canvas object if present
 	 *
 	 */
 	getCanvas() {
@@ -297,8 +290,7 @@ class GPU extends GPUCore {
 	 *
 	 * Return the webGl object bound to this gpu instance.
 	 *
-	 * Returns:
-	 * 	{Object} WebGl object if present
+	 * @returns {Object} WebGl object if present
 	 *
 	 */
 	getWebGl() {

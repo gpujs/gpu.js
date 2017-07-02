@@ -24,8 +24,7 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 	 *
 	 * @param functionName {String} Function name to trace from. If null, it returns the WHOLE builder stack
 	 *
-	 * Returns:
-	 * 	{String} Function String
+	 * @returns {String} Function String
 	 *
 	 */
 	getPrototypeString() {

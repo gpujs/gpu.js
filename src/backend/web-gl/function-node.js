@@ -20,8 +20,7 @@ const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
  * Parameter:
  * 	inNode - {functionNode} The function node object
  *
- * Returns:
- * 	the converted webGL function string
+ * @returns the converted webGL function string
  *
  */
 module.exports = class WebGLFunctionNode extends FunctionNodeBase {
@@ -55,8 +54,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns:
-	 *		the prased openclgl string array
+	 * @returns {String} the prased openclgl string array
 	 */
 	astGeneric(ast, retArr, funcParam) {
 		if (ast === null) {
@@ -135,8 +133,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astFunctionDeclaration(ast, retArr, funcParam) {
 		if (this.addFunction) {
@@ -154,8 +151,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	static astFunctionPrototype(ast, retArr, funcParam) {
 		// Setup function return type and name
@@ -194,8 +190,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astFunctionExpression(ast, retArr, funcParam) {
 
@@ -257,8 +252,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astReturnStatement(ast, retArr, funcParam) {
 		if (funcParam.isRootKernel) {
@@ -295,8 +289,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astLiteral(ast, retArr, funcParam) {
 
@@ -329,8 +322,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astBinaryExpression(ast, retArr, funcParam) {
 		retArr.push('(');
@@ -370,8 +362,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astIdentifierExpression(idtNode, retArr, funcParam) {
 		if (idtNode.type !== 'Identifier') {
@@ -427,7 +418,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
 	 *		 the prased openclgl string
 	 */
 	astForStatement(forNode, retArr, funcParam) {
@@ -513,7 +503,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
 	 *		 the parsed openclgl string
 	 */
 	astWhileStatement(whileNode, retArr, funcParam) {
@@ -547,8 +536,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astAssignmentExpression(assNode, retArr, funcParam) {
 		if (assNode.operator === '%=') {
@@ -577,8 +565,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astEmptyStatement(eNode, retArr, funcParam) {
 		//retArr.push(';\n');
@@ -595,8 +582,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astBlockStatement(bNode, retArr, funcParam) {
 		retArr.push('{\n');
@@ -617,8 +603,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astExpressionStatement(esNode, retArr, funcParam) {
 		this.astGeneric(esNode.expression, retArr, funcParam);
@@ -636,8 +621,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astVariableDeclaration(vardecNode, retArr, funcParam) {
 		retArr.push('float ');
@@ -661,8 +645,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astVariableDeclarator(ivardecNode, retArr, funcParam) {
 		this.astGeneric(ivardecNode.id, retArr, funcParam);
@@ -683,8 +666,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astIfStatement(ifNode, retArr, funcParam) {
 		retArr.push('if (');
@@ -722,8 +704,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astBreakStatement(brNode, retArr, funcParam) {
 		retArr.push('break;\n');
@@ -740,8 +721,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astContinueStatement(crNode, retArr, funcParam) {
 		retArr.push('continue;\n');
@@ -758,8 +738,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astLogicalExpression(logNode, retArr, funcParam) {
 		retArr.push('(');
@@ -780,8 +759,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astUpdateExpression(uNode, retArr, funcParam) {
 		if (uNode.prefix) {
@@ -805,8 +783,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astUnaryExpression(uNode, retArr, funcParam) {
 		if (uNode.prefix) {
@@ -830,8 +807,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astThisExpression(tNode, retArr, funcParam) {
 		retArr.push('this');
@@ -848,8 +824,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 the append retArr
+	 * @returns {Array} the append retArr
 	 */
 	astMemberExpression(mNode, retArr, funcParam) {
 		if (mNode.computed) {
@@ -948,8 +923,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param ast         the AST object to parse
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		 {String} the function namespace call, unrolled
+	 * @returns {String} the function namespace call, unrolled
 	 */
 	astMemberExpressionUnroll(ast, funcParam) {
 		if (ast.type === 'Identifier') {
@@ -980,14 +954,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *call* expression
 	 *
-	 
 	 *
 	 * @param ast   		- the AST object to parse
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns: 
-	 *		the appended retArr
+	 * @returns  {Array} the append retArr
 	 */
 	astCallExpression(ast, retArr, funcParam) {
 		if (ast.callee) {
@@ -1068,7 +1040,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param retArr      - return array string
 	 * @param funcParam   - FunctionNode, that tracks compilation state
 	 *
-	 * Returns:  
 	 *		the append retArr
 	 */
 	astArrayExpression(arrNode, retArr, funcParam) {
@@ -1098,8 +1069,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Returns the converted webgl shader function equivalent of the JS function
 	 *
-	 * Returns:
-	 * 	{String} webgl function string, result is cached under this.getFunctionPrototypeString
+	 * @returns {String} webgl function string, result is cached under this.getFunctionPrototypeString
 	 *
 	 */
 	getFunctionPrototypeString() {

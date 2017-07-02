@@ -23,8 +23,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 *
 	 * @param functionList {[String,...]} List of function to build the webgl string.
 	 *
-	 * Returns:
-	 * 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
+	 * @returns {String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	 *
 	 */
 	getStringFromFunctionNames(functionList) {
@@ -46,8 +45,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 * @param functionList {[String,...]} List of function names to build the webgl string.
 	 * @param opt {Object} 	   Settings object passed to functionNode. See functionNode for more details.	
 	 *
-	 * Returns:
-	 *		{String} Prototype String of all functions converted to webgl shader form
+	 * @returns {String} Prototype String of all functions converted to webgl shader form
 	 *
 	 */
 	getPrototypeStringFromFunctionNames(functionList, opt) {
@@ -66,8 +64,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 *
 	 * @param functionName {String} Function name to trace from. If null, it returns the WHOLE builder stack
 	 *
-	 * Returns:
-	 * 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
+	 * @returns {String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	 *
 	 */
 	getString(functionName, opt) {
@@ -88,8 +85,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 *
 	 * @param functionName {String} Function name to trace from. If null, it returns the WHOLE builder stack
 	 *
-	 * Returns:
-	 * 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
+	 * @returns {String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	 *
 	 */
 	getPrototypeString(functionName) {
@@ -111,8 +107,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 * @param paramTypes {Array} Types of the parameters
 	 *		
 	 *
-	 * Returns:
-	 * 	{Object} The inserted kernel as a Kernel Node
+	 * @returns {Object} The inserted kernel as a Kernel Node
 	 *
 	 */
 	addKernel(fnString, options, paramNames, paramTypes) {
@@ -135,8 +130,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 * @param paramNames {Array} Parameters of the sub-kernel
 	 * @param returnType {Array} Return type of the subKernel
 	 *
-	 * Returns:
-	 * 	{Object} The inserted sub-kernel as a Kernel Node
+	 * @returns {Object} The inserted sub-kernel as a Kernel Node
 	 *
 	 */
 	addSubKernel(jsFunction, options, paramTypes, returnType) {

@@ -34,8 +34,7 @@ module.exports = class CPURunner extends RunnerBase {
 	 *
 	 * Return the current mode in which gpu.js is executing.
 	 * 
-	 * Returns:
-	 * 	{String} The current mode; "cpu".
+	 * @returns {String} The current mode; "cpu".
 	 *
 	 */
 	getMode() {

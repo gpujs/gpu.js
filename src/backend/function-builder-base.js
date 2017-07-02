@@ -66,8 +66,7 @@ module.exports = class FunctionBuilderBase {
 	 * @param functionName {String}        Function name to trace from, default to 'kernel'
 	 * @param retList {[String,...]}  Returning list of function names that is traced. Including itself.
 	 *
-	 * Returns:
-	 * 	{[String,...]}  Returning list of function names that is traced. Including itself.
+	 * @returns {[String,...]}  Returning list of function names that is traced. Including itself.
 	 */
 	traceFunctionCalls(functionName, retList, parent) {
 		functionName = functionName || 'kernel';

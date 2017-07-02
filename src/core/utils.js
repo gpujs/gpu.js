@@ -43,8 +43,7 @@ class Utils extends UtilsCore {
 	 *
 	 * Gets the system endianness, and cache it
 	 *
-	 * Returns:
-	 *	{String} 'LE' or 'BE' depending on system architecture
+	 * @returns {String} 'LE' or 'BE' depending on system architecture
 	 *
 	 * Credit: https://gist.github.com/TooTallNate/4750953
 	 */
@@ -65,8 +64,7 @@ class Utils extends UtilsCore {
 	 *
 	 * @param funcObj {JS Function} Object to validate if its a function
 	 *
-	 * Returns:
-	 * 	{Boolean} TRUE if the object is a JS function
+	 * @returns	{Boolean} TRUE if the object is a JS function
 	 *
 	 */
 	static isFunction(funcObj) {
@@ -82,8 +80,8 @@ class Utils extends UtilsCore {
 	 *
 	 * @param funcStr {String}  String of JS function to validate
 	 *
-	 * Returns:
-	 * 	{Boolean} TRUE if the string passes basic validation
+
+	 * @returns {Boolean} TRUE if the string passes basic validation
 	 *
 	 */
 	static isFunctionString(funcStr) {
@@ -102,8 +100,8 @@ class Utils extends UtilsCore {
 	 *
 	 * @param funcStr {String}  String of JS function to validate
 	 *
-	 * Returns:
-	 * 	{String} Function name string (if found)
+
+	 * @returns {String} Function name string (if found)
 	 *
 	 */
 	static getFunctionNameFromString(funcStr) {
@@ -121,7 +119,7 @@ class Utils extends UtilsCore {
 	 *
 	 * @param funcStr {String}  String of JS function to validate
 	 *
-	 * Returns:
+
 	 * 	{[String, ...]}  Array representing all the parameter names
 	 *
 	 */
@@ -146,8 +144,8 @@ class Utils extends UtilsCore {
 	 *
 	 * @param obj {Object}  Object to clone
 	 *
-	 * Returns:
-	 * 	{Object}  Cloned object
+
+	 * @returns {Object}  Cloned object
 	 *
 	 */
 	static clone(obj) {
@@ -173,8 +171,7 @@ class Utils extends UtilsCore {
 	 *
 	 * @param executor {function(resolve,reject)}  Promise builder function
 	 *
-	 * Returns:
-	 * 	{Promise}  Promise object
+	 * @returns {Promise}  Promise object
 	 *
 	 */
 	static newPromise(executor) {
@@ -193,8 +190,7 @@ class Utils extends UtilsCore {
 	 * @param inFunc {JS Function}  to setup bind on
 	 * @param thisObj {Object} The this parameter to assume inside the binded function
 	 *
-	 * Returns:
-	 * 	{JS Function}  The binded function
+	 * @returns {JS Function}  The binded function
 	 *
 	 */
 	static functionBinder(inFunc, thisObj) {
@@ -215,8 +211,7 @@ class Utils extends UtilsCore {
 	 *
 	 * @param arg {Object} The argument object to check if is array
 	 *
-	 * Returns:
-	 * 	{Boolean}  true if is array or Array-like object
+	 * @returns {Boolean}  true if is array or Array-like object
 	 *
 	 */
 	static isArray(arr) {
@@ -231,8 +226,7 @@ class Utils extends UtilsCore {
 	 *
 	 * @param arg {Object} The argument object to evaluate type
 	 *
-	 * Returns:
-	 * 	{String}  Argument type Array/Number/Texture/Unknown
+	 * @returns {String}  Argument type Array/Number/Texture/Unknown
 	 *
 	 */
 	static getArgumentType(arg) {
@@ -254,8 +248,7 @@ class Utils extends UtilsCore {
 	 *
 	 * @param gpu {gpu.js object} the gpu object
 	 *
-	 * Returns:
-	 * 	{Boolean} true if browser supports
+	 * @returns {Boolean} true if browser supports
 	 *
 	 */
 	static isFloatReadPixelsSupported() {
@@ -341,8 +334,7 @@ class Utils extends UtilsCore {
 	 * @param arr {Array} the array to pad zeros to
 	 * @param padding {Number} amount of padding
 	 *
-	 * Returns:
-	 * 	{Array} Array with leading and ending zeros, and all the elements padded by zeros.
+	 * @returns {Array} Array with leading and ending zeros, and all the elements padded by zeros.
 	 *
 	 */
 	static pad(arr, padding) {
@@ -370,8 +362,7 @@ class Utils extends UtilsCore {
 	 *
 	 * @param _arr {Array} the nested array to flatten
 	 *
-	 * Returns:
-	 * 	{Array} 1D Array
+	 * @returns {Array} 1D Array
 	 *
 	 */
 	static flatten(_arr) {
@@ -405,8 +396,8 @@ class Utils extends UtilsCore {
 	 * @param array {Array} The array to split into chunks
 	 * @param part {Array} elements in one chunk
 	 *
-	 * Returns:
-	 * 	{Array} An array of smaller chunks
+
+	 * @returns {Array} An array of smaller chunks
 	 *
 	 */
 	static splitArray(array, part) {
