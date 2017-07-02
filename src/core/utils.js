@@ -100,7 +100,6 @@ class Utils extends UtilsCore {
 	 *
 	 * Return the function name from a JS function string
 	 *
-	 * Parameters:
 	 * 	@param funcStr {String}  String of JS function to validate
 	 *
 	 * Returns:
@@ -120,7 +119,6 @@ class Utils extends UtilsCore {
 	 *
 	 * Return list of parameter names extracted from the JS function string
 	 *
-	 * Parameters:
 	 * 	@param funcStr {String}  String of JS function to validate
 	 *
 	 * Returns:
@@ -146,7 +144,6 @@ class Utils extends UtilsCore {
 	 *
 	 * Returns a clone
 	 *
-	 * Parameters:
 	 * 	@param obj {Object}  Object to clone
 	 *
 	 * Returns:
@@ -174,7 +171,6 @@ class Utils extends UtilsCore {
 	 *
 	 * Returns a `new Promise` object based on the underlying implmentation
 	 *
-	 * Parameters:
 	 * 	@param executor {function(resolve,reject)}  Promise builder function
 	 *
 	 * Returns:
@@ -194,7 +190,6 @@ class Utils extends UtilsCore {
 	 *
 	 * Limited implementation of Function.bind, with fallback
 	 *
-	 * Parameters:
 	 * 	@param inFunc {JS Function}  to setup bind on
 	 * 	@param thisObj {Object} The this parameter to assume inside the binded function
 	 *
@@ -218,7 +213,6 @@ class Utils extends UtilsCore {
 	 *
 	 * Checks if is an array or Array-like object
 	 *
-	 * Parameters:
 	 * 	@param arg {Object} The argument object to check if is array
 	 *
 	 * Returns:
@@ -235,7 +229,6 @@ class Utils extends UtilsCore {
 	 *
 	 * Evaluate the argument type, to apply respective logic for it
 	 *
-	 * Parameters:
 	 * 	@param arg {Object} The argument object to evaluate type
 	 *
 	 * Returns:
@@ -259,7 +252,6 @@ class Utils extends UtilsCore {
 	 *
 	 * Checks if the browser supports readPixels with float type
 	 *
-	 * Parameters:
 	 * 	@param gpu {gpu.js object} the gpu object
 	 *
 	 * Returns:
@@ -308,7 +300,6 @@ class Utils extends UtilsCore {
 	 *
 	 * Return the dimension of an array.
 	 * 
-	 * Parameters:
 	 *		@param x {Array} The array
 	 *		@param pad {Number} To include padding in the dimension calculation [Optional]
 	 *
@@ -346,7 +337,7 @@ class Utils extends UtilsCore {
 	 * @name pad
 	 *
 	 * Pad an array AND its elements with leading and ending zeros
-	 * Parameters:
+	 *
 	 * 	@param arr {Array} the array to pad zeros to
 	 * 	@param padding {Number} amount of padding
 	 *
@@ -377,7 +368,6 @@ class Utils extends UtilsCore {
 	 *
 	 * Converts a nested array into a one-dimensional array
 	 *
-	 * Parameters:
 	 * 	@param _arr {Array} the nested array to flatten
 	 *
 	 * Returns:
@@ -412,7 +402,6 @@ class Utils extends UtilsCore {
 	 * Splits an array into smaller arrays.
 	 * Number of elements in one small chunk is given by `part`
 	 *
-	 * Parameters:
 	 * 	@param array {Array} The array to split into chunks
 	 * 	@param part {Array} elements in one chunk
 	 *

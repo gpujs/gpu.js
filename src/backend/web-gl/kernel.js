@@ -16,7 +16,7 @@ const kernelString = require('./kernel-string');
  * Extends:
  * 	KernelBase
  *
- * Parameters: 	
+ * Properties:	
  *		textureCache 				- {Object} 		webGl Texture cache
  *		threadDim 					- {Object} 		The thread dimensions, x, y and z
  *		programUniformLocationCache - {Object} 		Location of program variables in memory
@@ -328,8 +328,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *
 	 * *Note*: This should not be called directly.
 	 * 
-	 * Parameters:
-	 * 	outputTexture 			Output Texture returned by webGl program
+	 * @param	outputTexture 			Output Texture returned by webGl program
 	 *
 	 * Returns:
 	 *		result {Object|Array}
@@ -387,8 +386,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *	
 	 * This uses *getTextureCache** to get the Texture Cache of the argument supplied
 	 *	
-	 * Parameters:
-	 *		name 	{String} 	Name of the argument 
+	 * @param name 	{String} 	Name of the argument 
 	 *
 	 * Returns: 
 	 * 	Texture cache for the supplied argument
@@ -403,8 +401,8 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *	
 	 * This uses *getTextureCache* to get the Texture Cache of the sub-kernel
 	 *
-	 * Parameters:
-	 *		name 	{String} 	Name of the subKernel
+	 
+	 * @param name 	{String} 	Name of the subKernel
 	 *
 	 * Returns:
 	 *		Texture cache for the subKernel
@@ -419,8 +417,8 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *
 	 * Returns the Texture Cache of the supplied parameter (can be kernel, sub-kernel or argument)
 	 *
-	 * Parameters:
-	 *		name 	{String} 	Name of the subkernel, argument, or kernel.
+	 
+	 * @param name 	{String} 	Name of the subkernel, argument, or kernel.
 	 *
 	 * Returns:
 	 *		Texture cache
@@ -443,8 +441,8 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * Setup the parameter types for the parameters 
 	 * supplied to the Kernel function
 	 *
-	 * Parameters:
-	 *		args 	{Array} 	The actual parameters sent to the Kernel
+	 
+	 * @param args 	{Array} 	The actual parameters sent to the Kernel
 	 *
 	 */
 	setupParams(args) {
@@ -479,8 +477,8 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * Generate Shader artifacts for the kernel program.
 	 * The final object contains HEADER, KERNEL, MAIN_RESULT, and others.
 	 *
-	 * Parameters:
-	 *		args 	{Array} 	The actual parameters sent to the Kernel
+	 
+	 * @param args 	{Array} 	The actual parameters sent to the Kernel
 	 *
 	 * Returns:
 	 *		{Object} An object containing the Shader Artifacts(CONSTANTS, HEADER, KERNEL, etc.)
@@ -510,10 +508,10 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * Adds kernel parameters to the Argument Texture, 
 	 * binding it to the webGl instance, etc.
 	 *
-	 * Parameters: 
-	 *		value 		{Array|Texture|Number} 	The actual argument supplied to the kernel
-	 *		type 		{String} 				Type of the argument
-	 *		name 		{String} 				Name of the argument
+	  
+	 * @param value 	{Array|Texture|Number} 	The actual argument supplied to the kernel
+	 * @param type 		{String} 				Type of the argument
+	 * @param name 		{String} 				Name of the argument
 	 *
 	 */
 	_addArgument(value, type, name) {
@@ -775,8 +773,8 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *
 	 * Generate transpiled glsl Strings for user-defined parameters sent to a kernel
 	 *
-	 * Parameters:
-	 *		args 	{Array} 	The actual parameters sent to the Kernel
+	 
+	 * @param args 	{Array} 	The actual parameters sent to the Kernel
 	 *
 	 * Returns:
 	 *		result {String}
@@ -950,8 +948,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	/**
 	 * @name _linesToString
 	 *
-	 * Parameters:
-	 *		lines 	{Array} 	An Array of strings
+	 * @param lines 	{Array} 	An Array of strings
 	 *
 	 * Returns:
 	 *		Single combined String, seperated by *\n*
@@ -968,9 +965,9 @@ module.exports = class WebGLKernel extends KernelBase {
 	/**
 	 * @name _replaceArtifacts
 	 *
-	 * Parameters:
-	 *		src 	{String} 	Name of the subkernel, argument, or kernel.
-	 *		map 	{String} 	Name of the subkernel, argument, or kernel.
+	 
+	 * @param src 	{String} 	Name of the subkernel, argument, or kernel.
+	 * @param map 	{String} 	Name of the subkernel, argument, or kernel.
 	 *
 	 * Returns:
 	 *		Texture cache
@@ -1047,8 +1044,8 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * If the String hasn't been compiled yet, 
 	 *	then this method compiles it as well
 	 *
-	 * Parameters:
-	 *		args 	{Array} 	The actual parameters sent to the Kernel
+	 
+	 * @param args 	{Array} 	The actual parameters sent to the Kernel
 	 *
 	 * Returns:
 	 *		{String} Fragment Shader string
@@ -1066,8 +1063,8 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *
 	 * Get the vertical shader String
 	 *
-	 * Parameters:
-	 *		args 	{Array} 	The actual parameters sent to the Kernel
+	 
+	 * @param args 	{Array} 	The actual parameters sent to the Kernel
 	 *
 	 * Returns:
 	 *		{String} Vertical Shader string

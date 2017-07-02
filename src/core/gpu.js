@@ -65,9 +65,8 @@ class GPU extends GPUCore {
 	 * |               |               |     + 'cpu' : Forces JS fallback mode only                                |
 	 * |---------------|---------------|---------------------------------------------------------------------------|
 	 *
-	 * Parameters:
-	 * 	inputFunction   {JS Function} The calling to perform the conversion
-	 * 	settings        {Object}      The parameter configuration object (see above)
+	 * @param inputFunction   {JS Function} The calling to perform the conversion
+	 * @param settings        {Object}      The parameter configuration object (see above)
 	 *
 	 * Returns:
 	 * 	{Function} callable function to run
@@ -127,9 +126,8 @@ class GPU extends GPUCore {
 	 * *Note:* You can also define subKernels as an array of functions. 
 	 * > [add, multiply]
 	 *
-	 * Parameters:
-	 *      subKernels - {Object|Array}  Sub kernels for this kernel
-	 *		 rootKernel - {Function}  	  Root kernel
+	 * @param subKernels {Object|Array}  Sub kernels for this kernel
+	 * @param rootKernel {Function}  	  Root kernel
 	 * 
 	 * Returns:
 	 * 	{Function} callable kernel function
@@ -182,9 +180,8 @@ class GPU extends GPUCore {
 	 *	>	 	return add(multiply(a,b), c)
 	 *	>	})
 	 *
-	 * Parameters:
-	 *      subKernels - {Function}  Kernel function(s) to combine.
-	 *		 rootKernel - {Function}  Root kernel to combine kernels into
+	 * @param subKernels {Function}  Kernel function(s) to combine.
+	 * @param rootKernel {Function}  Root kernel to combine kernels into
 	 * 
 	 * Returns:
 	 * 	{Function} callable kernel function
@@ -241,10 +238,9 @@ class GPU extends GPUCore {
 	 *
 	 * Adds additional functions, that the kernel may call.
 	 *
-	 * Parameters:
-	 * 	fn              - {Function|String}  JS Function to do conversion
-	 * 	paramTypes      - {[String,...]|{variableName: Type,...}} Parameter type array, assumes all parameters are 'float' if null
-	 * 	returnType      - {String}       The return type, assumes 'float' if null
+	 * @param fn {Function|String}  JS Function to do conversion
+	 * @param paramTypes {[String,...]|{variableName: Type,...}} Parameter type array, assumes all parameters are 'float' if null
+	 * @param returnType {String}       The return type, assumes 'float' if null
 	 *
 	 * Returns:
 	 * 	{GPU} returns itself
