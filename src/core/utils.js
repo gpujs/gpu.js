@@ -29,7 +29,8 @@ const systemEndianness = (() => {
 
 let isFloatReadPixelsSupported = null;
 
-const Utils = class Utils {
+class Utils extends UtilsCore {
+
 	//-----------------------------------------------------------------------------
 	//
 	//  System values support (currently only endianness)
@@ -244,172 +245,6 @@ const Utils = class Utils {
 		}
 	}
 
-	//-----------------------------------------------------------------------------
-	//
-	//  Canvas validation and support
-	//
-	//-----------------------------------------------------------------------------
-
-	///
-	/// Function: isCanvas
-	///
-	/// Return TRUE, on a valid DOM canvas object
-	///
-	/// Note: This does just a VERY simply sanity check. And may give false positives.
-	///
-	/// Parameters:
-	/// 	canvasObj - {Canvas DOM object} Object to validate
-	///
-	/// Returns:
-	/// 	{Boolean} TRUE if the object is a DOM canvas
-	///
-	static isCanvas(canvasObj) {
-		return (
-			canvasObj !== null &&
-			canvasObj.nodeName &&
-			canvasObj.getContext &&
-			canvasObj.nodeName.toUpperCase() === 'CANVAS'
-		);
-	}
-
-	///
-	/// Function: isCanvasSupported
-	///
-	/// Return TRUE, if browser supports canvas
-	///
-	/// Returns:
-	/// 	{Boolean} TRUE if browser supports canvas
-	///
-	static get isCanvasSupported() {
-		return isCanvasSupported;
-	}
-
-	///
-	/// Function: initCanvas
-	///
-	/// Initiate and returns a canvas, for usage in init_webgl.
-	/// Returns only if canvas is supported by browser.
-	///
-	/// Returns:
-	/// 	{Canvas DOM object} Canvas dom object if supported by browser, else null
-	///
-	static initCanvas() {
-		// Fail fast if browser previously detected no support
-		if (!isCanvasSupported) {
-			return null;
-		}
-
-		// Default width and height, to fix webgl issue in safari
-		// Create a new canvas DOM
-		const canvas = document.createElement('canvas');
-		canvas.width = 2;
-		canvas.height = 2;
-
-		// Returns the canvas
-		return canvas;
-	}
-
-	//-----------------------------------------------------------------------------
-	//
-	//  Webgl validation and support
-	//
-	//-----------------------------------------------------------------------------
-
-	///
-	/// Function: isWebGl
-	///
-	/// Return TRUE, on a valid webGl context object
-	///
-	/// Note: This does just a VERY simply sanity check. And may give false positives.
-	///
-	/// Parameters:
-	/// 	webGlObj - {webGl context} Object to validate
-	///
-	/// Returns:
-	/// 	{Boolean} TRUE if the object is a webgl context object
-	///
-	static isWebGl(webGlObj) {
-		return (
-			webGlObj !== null &&
-			(
-				(
-					webGlObj.__proto__ &&
-					webGlObj.__proto__.hasOwnProperty('getExtension')
-				) ||
-				(
-					webGlObj.prototype &&
-					webGlObj.prototype.hasOwnProperty('getExtension')
-				)
-			)
-		);
-	}
-
-	///
-	/// Function: isWebGlSupported
-	///
-	/// Return TRUE, if browser supports webgl
-	///
-	/// Returns:
-	/// 	{Boolean} TRUE if browser supports webgl
-	///
-	static get isWebGlSupported() {
-		return isWebGlSupported;
-	}
-
-	static get isWebGlDrawBuffersSupported() {
-		return isWebGlDrawBuffersSupported;
-	}
-
-	// Default webgl options to use
-	static get initWebGlDefaultOptions() {
-		return {
-			alpha: false,
-			depth: false,
-			antialias: false
-		};
-	}
-
-	///
-	/// Function: initWebGl
-	///
-	/// Initiate and returns a webGl, from a canvas object
-	/// Returns only if webGl is supported by browser.
-	///
-	/// Parameters:
-	/// 	canvasObj - {Canvas DOM object} Object to validate
-	///
-	/// Returns:
-	/// 	{Canvas DOM object} Canvas dom object if supported by browser, else null
-	///
-	static initWebGl(canvasObj) {
-
-		// First time setup, does the browser support check memorizer
-		if (typeof isCanvasSupported !== 'undefined' && typeof isWebGlSupported !== 'undefined' || canvasObj === null) {
-			if (!isCanvasSupported || !isWebGlSupported) {
-				return null;
-			}
-		}
-
-		// Fail fast for invalid canvas object
-		if (!Utils.isCanvas(canvasObj)) {
-			throw new Error('Invalid canvas object - ' + canvasObj);
-		}
-
-		// Create a new canvas DOM
-		const webGl = (
-			canvasObj.getContext('experimental-webgl', Utils.initWebGlDefaultOptions) ||
-			canvasObj.getContext('webgl', Utils.initWebGlDefaultOptions)
-		);
-
-		// Get the extension that is needed
-		Utils.OES_texture_float = webGl.getExtension('OES_texture_float');
-		Utils.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
-		Utils.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
-
-		// Returns the canvas
-		return webGl;
-	}
-
 	///
 	/// Function: isFloatReadPixelsSupported
 	///
@@ -602,9 +437,9 @@ const Utils = class Utils {
 		return props;
 	}
 };
-let isWebGlSupported;
-const isCanvasSupported = typeof document !== 'undefined' ? Utils.isCanvas(document.createElement('canvas')) : false;
-const tempWebGl = Utils.initWebGl(Utils.initCanvas());
-isWebGlSupported = Utils.isWebGl(tempWebGl);
-const isWebGlDrawBuffersSupported = Boolean(tempWebGl.getExtension('WEBGL_draw_buffers'));
+
+// This ensure static methods are "inherited"
+// See: https://stackoverflow.com/questions/5441508/how-to-inherit-static-methods-from-base-class-in-javascript
+Object.assign(Utils, UtilsCore);
+
 module.exports = Utils;
