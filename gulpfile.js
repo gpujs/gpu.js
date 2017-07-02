@@ -44,7 +44,8 @@ gulp.task('bsync', function(){
 		server: {
 			baseDir: './'
 		},
-		open: true
+		open: true,
+		startPath: "/test/html/test-all.html"
 	});
 
 	// Detect change -> rebuild TS
