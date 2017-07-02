@@ -53,7 +53,7 @@ gulp.task('bsync', function(){
 });
 
 /// Auto rebuild and host
-gulp.task('default', ['bsync']);
+gulp.task('default', ['build','bsync']);
 
 
 /// Beautify source code
