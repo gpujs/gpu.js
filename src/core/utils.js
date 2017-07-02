@@ -17,7 +17,7 @@ const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
 // ARGUMENT NAMES regex
 const ARGUMENT_NAMES = /([^\s,]+)/g;
 
-const systemEndianness = (() => {
+const _systemEndianness = (() => {
 	const b = new ArrayBuffer(4);
 	const a = new Uint32Array(b);
 	const c = new Uint8Array(b);
@@ -27,7 +27,7 @@ const systemEndianness = (() => {
 	throw new Error('unknown endianness');
 })();
 
-let isFloatReadPixelsSupported = null;
+let _isFloatReadPixelsSupported = null;
 
 class Utils extends UtilsCore {
 
@@ -46,8 +46,8 @@ class Utils extends UtilsCore {
 	///	{String} 'LE' or 'BE' depending on system architecture
 	///
 	/// Credit: https://gist.github.com/TooTallNate/4750953
-	static get systemEndianness() {
-		return systemEndianness;
+	static systemEndianness() {
+		return _systemEndianness;
 	}
 
 	//-----------------------------------------------------------------------------
@@ -256,9 +256,9 @@ class Utils extends UtilsCore {
 	/// Returns:
 	/// 	{Boolean} true if browser supports
 	///
-	static get isFloatReadPixelsSupported() {
-		if (isFloatReadPixelsSupported !== null) {
-			return isFloatReadPixelsSupported
+	static isFloatReadPixelsSupported() {
+		if (_isFloatReadPixelsSupported !== null) {
+			return _isFloatReadPixelsSupported
 		}
 
 		const GPU = require('../index');
@@ -273,9 +273,9 @@ class Utils extends UtilsCore {
 			floatOutputForce: true
 		})();
 
-		isFloatReadPixelsSupported = x[0] === 1;
+		_isFloatReadPixelsSupported = x[0] === 1;
 
-		return isFloatReadPixelsSupported;
+		return _isFloatReadPixelsSupported;
 	}
 
 

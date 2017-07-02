@@ -53,7 +53,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.program = null;
 		this.functionBuilder = settings.functionBuilder;
 		this.outputToTexture = settings.outputToTexture;
-		this.endianness = utils.systemEndianness;
+		this.endianness = utils.systemEndianness();
 		this.subKernelOutputTextures = null;
 		this.subKernelOutputVariableNames = null;
 		this.paramTypes = null;
@@ -72,7 +72,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	/// graphical output.
 	///
 	validateOptions() {
-		const isReadPixel = utils.isFloatReadPixelsSupported;
+		const isReadPixel = utils.isFloatReadPixelsSupported();
 		if (this.floatTextures === true && !utils.OES_texture_float) {
 			throw 'Float textures are not supported on this browser';
 		} else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {

@@ -46,7 +46,7 @@ class UtilsCore {
 	/// Returns:
 	/// 	{Boolean} TRUE if browser supports canvas
 	///
-	static get isCanvasSupported() {
+	static isCanvasSupported() {
 		return _isCanvasSupported;
 	}
 
@@ -119,16 +119,16 @@ class UtilsCore {
 	/// Returns:
 	/// 	{Boolean} TRUE if browser supports webgl
 	///
-	static get isWebGlSupported() {
+	static isWebGlSupported() {
 		return _isWebGlSupported;
 	}
 
-	static get isWebGlDrawBuffersSupported() {
+	static isWebGlDrawBuffersSupported() {
 		return _isWebGlDrawBuffersSupported;
 	}
 
 	// Default webgl options to use
-	static get initWebGlDefaultOptions() {
+	static initWebGlDefaultOptions() {
 		return {
 			alpha: false,
 			depth: false,
@@ -151,8 +151,8 @@ class UtilsCore {
 	static initWebGl(canvasObj) {
 
 		// First time setup, does the browser support check memorizer
-		if (typeof isCanvasSupported !== 'undefined' && typeof isWebGlSupported !== 'undefined' || canvasObj === null) {
-			if (!isCanvasSupported || !isWebGlSupported) {
+		if (typeof _isCanvasSupported !== 'undefined' && typeof _isWebGlSupported !== 'undefined' || canvasObj === null) {
+			if (!_isCanvasSupported || !_isWebGlSupported) {
 				return null;
 			}
 		}
@@ -164,8 +164,8 @@ class UtilsCore {
 
 		// Create a new canvas DOM
 		const webGl = (
-			canvasObj.getContext('experimental-webgl', UtilsCore.initWebGlDefaultOptions) ||
-			canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions)
+			canvasObj.getContext('experimental-webgl', UtilsCore.initWebGlDefaultOptions()) ||
+			canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions())
 		);
 
 		// Get the extension that is needed

@@ -40,7 +40,7 @@ module.exports = class BaseRunner {
 		this.fn = null;
 		this.functionBuilder = functionBuilder;
 		this.fnString = null;
-		this.endianness = utils.systemEndianness;
+		this.endianness = utils.systemEndianness();
 		this.functionBuilder.polyfillStandardFunctions();
 	}
 

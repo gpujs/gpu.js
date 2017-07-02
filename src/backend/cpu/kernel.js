@@ -112,7 +112,7 @@ module.exports = class CPUKernel extends KernelBase {
 		}
 
 		if (this.graphical) {
-			const canvas = this.canvas;
+			const canvas = this.getCanvas();
 			this.runDimensions.x = canvas.width = threadDim[0];
 			this.runDimensions.y = canvas.height = threadDim[1];
 			this._canvasCtx = canvas.getContext('2d');

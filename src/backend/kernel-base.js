@@ -20,7 +20,7 @@ const utils = require('../core/utils');
 ///		subKernels   					- {Array} 	   Sub kernels bound to this kernel instance
 ///		subKernelProperties 			- {Object} 	   Sub kernels bound to this kernel instance as key/value pairs
 ///		subKernelOutputVariableNames   	- {Array} 	   Names of the variables outputted by the subkerls
-
+///
 module.exports = class BaseKernel {
 
 	///

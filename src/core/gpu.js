@@ -17,7 +17,7 @@ class GPU extends GPUCore {
 		this._canvas = settings.canvas || null;
 		this._webGl = settings.webGl || null;
 		let mode = settings.mode || 'webgl';
-		if (!utils.isWebGlSupported) {
+		if (!utils.isWebGlSupported()) {
 			console.warn('Warning: gpu not supported, falling back to cpu support');
 			mode = 'cpu';
 		}
@@ -142,7 +142,7 @@ class GPU extends GPUCore {
 			fn = arguments[arguments.length - 1];
 		}
 		
-		if (!utils.isWebGlDrawBuffersSupported) {
+		if (!utils.isWebGlDrawBuffersSupported()) {
 			this._runner = new CPURunner(settings);
 		}
 		
@@ -272,8 +272,8 @@ class GPU extends GPUCore {
 	/// Returns:
 	/// 	{Boolean} TRUE if browser supports webGl
 	///
-	get isWebGlSupported() {
-		return utils.isWebGlSupported;
+	isWebGlSupported() {
+		return utils.isWebGlSupported();
 	}
 
 	///
