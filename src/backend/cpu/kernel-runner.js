@@ -15,6 +15,7 @@ class CPUKernelRunner {
 	 *    runCache      - {Object}  Represents the common cache object, to store run time results, such as _canvas. 
 	 *                              This is commonly the kernel function itself, that was executed.
 	 *    kernelObj     - {Object}  Precompiled JS kernel obj (see below)
+	 *    args          - {Array}   Array of arguments, to pass as input
 	 * 
 	 * kernelObj Format:
 	 *    headerStr     - {String}  Header kernel strings, containing possibly other sub kernel functions
@@ -24,10 +25,15 @@ class CPUKernelRunner {
 	 *    dimensions    - {Array}   dimensions settings, also known as threadDim
 	 *    constants     - {Object}  constant values to use
 	 * 
+	 * runCache Format:
+	 *    _cpuCanvas    - {Canvas}    Specifically for the CPU runtime
+	 *    _canvas       - {Canvas}    For either the CPU or the GPU, defaults to latest run
+	 *    _cpuKernel    - {Function}  The CPU run kernel
+	 * 
 	 * Return:
 	 *    Run result {Array}, in the respective configured dimension, etc.
 	 */
-	static run(runCache, kernelObj) {
+	static run(runCache, kernelObj, args) {
 		
 		// Pre-extract key vars
 		let headerStr  = kernelObj.headerStr || "";
@@ -35,6 +41,9 @@ class CPUKernelRunner {
 		let paramNames = kernelObj.paramNames || [];
 		let graphical  = kernelObj.graphical || false;
 		let threadDim  = UtilsCore.clone(kernelObj.dimensions);
+
+		// Normalize args as an array
+		args = args || [];
 
 		// Normalize thread dim, for CPU mode to be a mimum 3 dimensional computation,
 		// Hence the "clone" previously, to not modify the existing configuration.
@@ -63,10 +72,11 @@ class CPUKernelRunner {
 				y: threadDim[1],
 				z: threadDim[2]
 			},
-			constants: opt.constants
+			constants: kernelObj.constants || {}
 		};
 
 		// Canvas and image data (only intialized and used in graphical mode)
+		let canvas = runCache._canvasCpu;
 		let canvasCtx;
 		let imageData;
 		let data;
@@ -87,6 +97,7 @@ class CPUKernelRunner {
 			imageData = canvasCtx.createImageData(threadDim[0], threadDim[1]);
 			data = new Uint8ClampedArray(threadDim[0]*threadDim[1]*4);
 			
+			// Color manipulation function, for the runtime kernel
 			ctx.color = function(r, g, b, a) {
 				if (a == undefined) {
 					a = 1.0;
@@ -116,21 +127,40 @@ class CPUKernelRunner {
 			}
 		}
 
-		// The actual runKernel
-		let runKernel = null;
+		// The actual runKernel, taken from cache first
+		let runKernel = runCache._cpuKernel;
 
-		// Checks for header string
-		if( headerStr != null && headerStr.length > 0) {
-			// The header string exists, and is required, eval it!
-			runKernel = (function() {
-				// Loads the header string, for other possible header functions
-				eval(headerStr);
-				// Build the actual kernel
-				return new Function(paramNames, kernelStr);
-			})();
-		} else {
-			// Else build it as a "normal" function
-			runKernel = new Function(paramNames, kernelStr);
+		if( runKernel == null ) {
+			// Checks for header string
+			if( headerStr != null && headerStr.length > 0) {
+				// The header string exists, and is required, eval it!
+				runKernel = (function() {
+					// The GPU_jsRunKernel to return subsequently
+					// this is a reserved key word (as per the GPU_ prefix)
+					var GPU_jsRunKernel = null;
+					
+					// Execute everything in an eval
+					eval(
+						// Loads the header string, for other possible header functions
+						headerStr+
+						"\n"+
+						// Build the actual kernel
+						"GPU_jsRunKernel = function("+paramNames.join(",")+") {\n"+
+							kernelStr+
+							"\n"+
+						"}"
+					);
+
+					// Return the kernel
+					return GPU_jsRunKernel;
+				})();
+			} else {
+				// Else build it as a "normal" function
+				runKernel = new Function(paramNames, kernelStr);
+			}
+
+			// Cache the prebuilt _cpuKernel
+			runCache._cpuKernel = runKernel;
 		}
 		
 		// Runs and return the kernel result, over each combination
@@ -143,7 +173,7 @@ class CPUKernelRunner {
 		}
 
 		// Update the graphical canvas (for graphical mode)
-		if (opt.graphical) {
+		if (graphical) {
 			imageData.data.set(data);
 			canvasCtx.putImageData(imageData, 0, 0);
 		}
@@ -151,7 +181,7 @@ class CPUKernelRunner {
 		// Collapsing and normalizing the results based on original dimensions settings
 		if(kernelObj.dimensions.length == 1) {
 			ret = ret[0][0];
-		} else if(kernelObj.dimensions == 2) {
+		} else if(kernelObj.dimensions.length == 2) {
 			ret = ret[0];
 		}
 		
@@ -159,3 +189,4 @@ class CPUKernelRunner {
 		return ret;
 	}
 }
+module.exports = CPUKernelRunner;

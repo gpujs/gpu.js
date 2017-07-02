@@ -9,7 +9,7 @@ let componentsMap = {
 	// Core components
 	Utils : require("./core/utils"),
 	UtilsCore : require("./core/utils-core"),
-	
+
 	// CPU components
 	CPUKernelRunner : require("./backend/cpu/kernel-runner")
 }
