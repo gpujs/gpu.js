@@ -1,4 +1,4 @@
-const utils = require('../utils');
+const utils = require('../core/utils');
 const kernelRunShortcut = require('./kernel-run-shortcut');
 
 ///
@@ -40,7 +40,7 @@ module.exports = class BaseRunner {
 		this.fn = null;
 		this.functionBuilder = functionBuilder;
 		this.fnString = null;
-		this.endianness = utils.systemEndianness;
+		this.endianness = utils.systemEndianness();
 		this.functionBuilder.polyfillStandardFunctions();
 	}
 
@@ -81,7 +81,7 @@ module.exports = class BaseRunner {
 		throw new Error('not yet implemented');
 	}
 
-	get mode() {
+	getMode() {
 		throw new Error('"mode" not implemented on BaseRunner');
 	}
 
@@ -101,7 +101,7 @@ module.exports = class BaseRunner {
 		}
 
 		if (!settings.webGl) {
-			settings.webGl = this.webGl;
+			settings.webGl = this.webgl;
 		}
 
 		return kernelRunShortcut(new this.Kernel(fnString, settings));

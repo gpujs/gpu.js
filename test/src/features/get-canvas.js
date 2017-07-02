@@ -1,7 +1,7 @@
 function getCanvasTest(mode ) {
 	var gpu = new GPU();
 
-	QUnit.assert.ok( gpu.canvas === null, "canvas is initially null");
+	QUnit.assert.ok( gpu.getCanvas() === null, "canvas is initially null");
 	
 	var render = gpu.createKernel(function() {
 		this.color(0, 0, 0, 1);
@@ -12,8 +12,8 @@ function getCanvasTest(mode ) {
 
 	QUnit.assert.ok( render !== null, "function generated test");
 
-	QUnit.assert.ok( render.canvas, "testing for canvas after createKernel" );
-	QUnit.assert.ok( gpu.canvas, "testing for canvas after createKernel" );
+	QUnit.assert.ok( render.getCanvas(), "testing for canvas after createKernel" );
+	QUnit.assert.ok( gpu.getCanvas(), "testing for canvas after createKernel" );
 	
 	//
 	// NOTE: GPU mode somehow return null when render()
@@ -21,8 +21,8 @@ function getCanvasTest(mode ) {
 	QUnit.assert.ok( (r = render()) || true, "rendering" );
 	console.log("getCanvasTest render result", r, "for mode", mode);
 
-	QUnit.assert.ok( render.canvas, "testing for canvas after render" );
-	QUnit.assert.ok( gpu.canvas, "testing for canvas after render" );
+	QUnit.assert.ok( render.getCanvas(), "testing for canvas after render" );
+	QUnit.assert.ok( gpu.getCanvas(), "testing for canvas after render" );
 	
 }
 

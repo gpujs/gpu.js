@@ -1,4 +1,4 @@
-const utils = require('../../utils');
+const utils = require('../../core/utils');
 const kernelRunShortcut = require('../kernel-run-shortcut');
 
 module.exports = function(cpuKernel, name) {
@@ -13,7 +13,7 @@ module.exports = function(cpuKernel, name) {
       dimToTexSize: function ${ utils.dimToTexSize.toString() },
       copyFlatten: function ${ utils.copyFlatten.toString() },
       flatten: function ${ utils.flatten.toString() },
-      systemEndianness: '${ utils.systemEndianness }',
+      systemEndianness: '${ utils.systemEndianness() }',
       initWebGl: function ${ utils.initWebGl.toString() },
       isArray: function ${ utils.isArray.toString() }*/
     };

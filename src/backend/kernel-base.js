@@ -1,4 +1,4 @@
-const utils = require('../utils');
+const utils = require('../core/utils');
 
 ///
 /// Class: BaseKernel
@@ -20,7 +20,7 @@ const utils = require('../utils');
 ///		subKernels   					- {Array} 	   Sub kernels bound to this kernel instance
 ///		subKernelProperties 			- {Object} 	   Sub kernels bound to this kernel instance as key/value pairs
 ///		subKernelOutputVariableNames   	- {Array} 	   Names of the variables outputted by the subkerls
-
+///
 module.exports = class BaseKernel {
 
 	///
@@ -212,20 +212,20 @@ module.exports = class BaseKernel {
 	}
 
 	///
-	/// Function: get canvas()
+	/// Function: getCanvas()
 	///
-	/// [GETTER] Returns the current canvas instance bound to the kernel
+	/// Returns the current canvas instance bound to the kernel
 	///
-	get canvas() {
+	getCanvas() {
 		return this._canvas;
 	}
 
 	///
-	/// Function: get webGl()
+	/// Function: getWebGl()
 	///
-	/// [GETTER] Returns the current webGl instance bound to the kernel
+	/// Returns the current webGl instance bound to the kernel
 	///
-	get webGl() {
+	getWebGl() {
 		return this._webGl;
 	}
 

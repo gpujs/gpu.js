@@ -1,4 +1,4 @@
-const utils = require('../../utils');
+const utils = require('../../core/utils');
 const RunnerBase = require('../runner-base');
 const CPUKernel = require('./kernel');
 const CPUFunctionBuilder = require('./function-builder');
@@ -29,14 +29,14 @@ module.exports = class CPURunner extends RunnerBase {
 	}
 
 	///
-	/// Function: get mode()
+	/// Function: getMode()
 	///
-	/// [GETTER] Return the current mode in which gpu.js is executing.
+	/// Return the current mode in which gpu.js is executing.
 	/// 
 	/// Returns:
 	/// 	{String} The current mode; "cpu".
 	///
-	get mode() {
+	getMode() {
 		return 'cpu';
 	}
 };

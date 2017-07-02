@@ -1,6 +1,6 @@
 const FunctionBuilderBase = require('../function-builder-base');
 const WebGLFunctionNode = require('./function-node');
-const utils = require('../../utils');
+const utils = require('../../core/utils');
 
 ///
 /// Class: WebGLFunctionBuilder

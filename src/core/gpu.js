@@ -1,20 +1,23 @@
 const utils = require('./utils');
-const WebGLRunner = require('./backend/web-gl/runner');
-const CPURunner = require('./backend/cpu/runner');
-const WebGLValidatorKernel = require('./backend/web-gl/validator-kernel');
+const WebGLRunner = require('../backend/web-gl/runner');
+const CPURunner = require('../backend/cpu/runner');
+const WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
+const GPUCore = require("./gpu-core");
 
 ///
 /// Class: GPU
 ///
 /// Initialises the GPU.js library class which manages the WebGL context for the created functions.
 ///
-module.exports = class GPU {
+class GPU extends GPUCore {
 	constructor(settings) {
+		super(settings);
+
 		settings = settings || {};
 		this._canvas = settings.canvas || null;
 		this._webGl = settings.webGl || null;
 		let mode = settings.mode || 'webgl';
-		if (!utils.isWebGlSupported) {
+		if (!utils.isWebGlSupported()) {
 			console.warn('Warning: gpu not supported, falling back to cpu support');
 			mode = 'cpu';
 		}
@@ -83,10 +86,10 @@ module.exports = class GPU {
 
 		//if canvas didn't come from this, propagate from kernel
 		if (!this._canvas) {
-			this._canvas = kernel.canvas;
+			this._canvas = kernel.getCanvas();
 		}
 		if (!this._runner.canvas) {
-			this._runner.canvas = kernel.canvas;
+			this._runner.canvas = kernel.getCanvas();
 		}
 
 		this.kernels.push(kernel);
@@ -139,7 +142,7 @@ module.exports = class GPU {
 			fn = arguments[arguments.length - 1];
 		}
 		
-		if (!utils.isWebGlDrawBuffersSupported) {
+		if (!utils.isWebGlDrawBuffersSupported()) {
 			this._runner = new CPURunner(settings);
 		}
 		
@@ -186,10 +189,10 @@ module.exports = class GPU {
 	combineKernels() {
 		const lastKernel = arguments[arguments.length - 2];
 		const combinedKernel = arguments[arguments.length - 1];
-		if (this.mode === 'cpu') return combinedKernel;
+		if (this.getMode() === 'cpu') return combinedKernel;
 
-		const canvas = arguments[0].canvas;
-		let webGl = arguments[0].webGl;
+		const canvas = arguments[0].getCanvas();
+		let webGl = arguments[0].getWebGl();
 
 		for (let i = 0; i < arguments.length - 1; i++) {
 			arguments[i]
@@ -201,7 +204,7 @@ module.exports = class GPU {
 		return function() {
 			combinedKernel.apply(null, arguments);
 			const texSize = lastKernel.texSize;
-			const gl = lastKernel.webGl;
+			const gl = lastKernel.getWebGl();
 			const threadDim = lastKernel.threadDim;
 			let result;
 			if (lastKernel.floatOutput) {
@@ -248,52 +251,58 @@ module.exports = class GPU {
 	}
 
 	///
-	/// Function: get mode()
+	/// Function: getMode()
 	///
-	/// [GETTER] Return the current mode in which gpu.js is executing.
+	/// Return the current mode in which gpu.js is executing.
 	/// 
 	/// Returns:
 	/// 	{String} The current mode, "cpu", "webgl", etc.
 	///
-	get mode() {
-		return this._runner.mode;
+	getMode() {
+		return this._runner.getMode();
 	}
 
 	///
 	/// Function: get isWebGlSupported()
 	///
-	/// [GETTER] Return TRUE, if browser supports WebGl AND Canvas
+	/// Return TRUE, if browser supports WebGl AND Canvas
 	///
 	/// Note: This function can also be called directly `GPU.isWebGlSupported()`
 	///
 	/// Returns:
 	/// 	{Boolean} TRUE if browser supports webGl
 	///
-	get isWebGlSupported() {
-		return utils.isWebGlSupported;
+	isWebGlSupported() {
+		return utils.isWebGlSupported();
 	}
 
 	///
-	/// Function: get canvas()
+	/// Function: getCanvas()
 	///
-	/// [GETTER] Return the canvas object bound to this gpu instance.
+	/// Return the canvas object bound to this gpu instance.
 	///
 	/// Returns:
 	/// 	{Object} Canvas object if present
 	///
-	get canvas() {
+	getCanvas() {
 		return this._canvas;
 	}
 
 	///
-	/// Function: get webGl()
+	/// Function: getWebGl()
 	///
-	/// [GETTER] Return the webGl object bound to this gpu instance.
+	/// Return the webGl object bound to this gpu instance.
 	///
 	/// Returns:
 	/// 	{Object} WebGl object if present
 	///
-	get webGl() {
+	getWebGl() {
 		return this._webGl;
 	}
 };
+
+// This ensure static methods are "inherited"
+// See: https://stackoverflow.com/questions/5441508/how-to-inherit-static-methods-from-base-class-in-javascript
+Object.assign(GPU, GPUCore);
+
+module.exports = GPU;

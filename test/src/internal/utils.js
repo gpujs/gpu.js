@@ -3,8 +3,8 @@
 ///
 
 QUnit.test( "GPU.utils: systemEndianness not null", function( assert ) {
-	assert.ok( GPU.utils.systemEndianness !== null, "not null check" );
-	assert.ok( GPU.utils.systemEndianness === "LE" ||  GPU.utils.systemEndianness === "BE", "value = " + GPU.utils.systemEndianness );
+	assert.ok( GPU.utils.systemEndianness() !== null, "not null check" );
+	assert.ok( GPU.utils.systemEndianness() === "LE" ||  GPU.utils.systemEndianness() === "BE", "value = " + GPU.utils.systemEndianness() );
 });
 
 QUnit.test( "GPU.utils: isFunction", function( assert ) {

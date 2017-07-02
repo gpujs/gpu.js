@@ -1,5 +1,5 @@
-const utils = require('../utils');
-const parser = require('../parser').parser;
+const utils = require('../core/utils');
+const parser = require('../core/parser').parser;
 
 ///
 /// Class: FunctionNodeBase
