@@ -33,6 +33,15 @@ gulp.task('build', function() {
 	.pipe(babel())
 		.pipe(header(fs.readFileSync('./src/wrapper/header.js', 'utf8'), { pkg : pkg }))
 		.pipe(gulp.dest('bin'));
+
+	browserify('./src/index-test.js')
+	.bundle()
+	.pipe(source('gpu-test.js'))
+	.pipe(buffer())
+	.pipe(stripComments())
+	.pipe(babel())
+		.pipe(header(fs.readFileSync('./src/wrapper/header.js', 'utf8'), { pkg : pkg }))
+		.pipe(gulp.dest('bin'));
 });
 
 /// Minify the build script, after building it
