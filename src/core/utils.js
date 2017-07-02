@@ -144,34 +144,6 @@ class Utils extends UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * Function: clone
-	 *
-	 * Returns a clone
-	 *
-	 * Parameters:
-	 * 	obj - {Object}  Object to clone
-	 *
-	 * Returns:
-	 * 	{Object}  Cloned object
-	 *
-	 */
-	static clone(obj) {
-		if (obj === null || typeof obj !== 'object' || obj.hasOwnProperty('isActiveClone')) return obj;
-
-		const temp = obj.constructor(); // changed
-
-		for (let key in obj) {
-			if (Object.prototype.hasOwnProperty.call(obj, key)) {
-				obj.isActiveClone = null;
-				temp[key] = Utils.clone(obj[key]);
-				delete obj.isActiveClone;
-			}
-		}
-
-		return temp;
-	}
-
-	/**
 	 * Function: newPromise
 	 *
 	 * Returns a `new Promise` object based on the underlying implmentation

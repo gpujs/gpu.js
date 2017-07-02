@@ -184,6 +184,93 @@ class UtilsCore {
 		return webGl;
 	}
 
+	//-----------------------------------------------------------------------------
+	//
+	//  Object / function cloning and manipulation
+	//
+	//-----------------------------------------------------------------------------
+
+	/**
+	 * Function: clone
+	 *
+	 * Returns a clone
+	 *
+	 * Parameters:
+	 * 	obj - {Object}  Object to clone
+	 *
+	 * Returns:
+	 * 	{Object}  Cloned object
+	 *
+	 */
+	static clone(obj) {
+		if (obj === null || typeof obj !== 'object' || obj.hasOwnProperty('isActiveClone')) return obj;
+
+		const temp = obj.constructor(); // changed
+
+		for (let key in obj) {
+			if (Object.prototype.hasOwnProperty.call(obj, key)) {
+				obj.isActiveClone = null;
+				temp[key] = UtilsCore.clone(obj[key]);
+				delete obj.isActiveClone;
+			}
+		}
+
+		return temp;
+	}
+
+	//-----------------------------------------------------------------------------
+	//
+	//  Precompiled kernel obj checks / parsing
+	//
+	//-----------------------------------------------------------------------------
+
+	/**
+	 * Function: validateKernelObj
+	 *
+	 * Validates the KernelObj to comply with the defined format
+	 * Note that this does only a limited sanity check, and does not  
+	 * gurantee a full working validation.
+	 *
+	 * For the kernel object format see : <kernelObj-format>
+	 *
+	 * Parameters:
+	 * 	kernelObj     - <Object>/<String> KernelObj used to validate
+	 *
+	 * Returns:
+	 * 	<Object> The validated kernel object, converted from JSON if needed
+	 *
+	 */
+	static validateKernelObj(kernelObj) {
+
+		// NULL validation
+		if( kernelObj == null ) {
+			throw "KernelObj being validated is NULL";
+		}
+
+		// String JSON conversion
+		if( typeof kernelObj === "string" ) {
+			try {
+				kernelObj = JSON.parse(kernelObj);
+			} catch(e) {
+				console.error(e);
+				throw "Failed to convert KernelObj from JSON string";
+			}
+
+			// NULL validation
+			if( kernelObj == null ) {
+				throw "Invalid (NULL) KernelObj JSON string representation";
+			}
+		}
+
+		// Check for kernel obj flag
+		if( kernelObj.isKernelObj != true ) {
+			throw "Failed missing isKernelObj flag check";
+		}
+
+		// Return the validated kernelObj
+		return kernelObj;
+	}
+
 }
 
 //-----------------------------------------------------------------------------
