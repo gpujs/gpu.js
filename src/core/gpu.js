@@ -106,8 +106,7 @@ class GPU extends GPUCore {
 	 * This can be useful if we want to save the output on one kernel,
 	 *	and then use it as an input to another kernel. *Machine Learning*
 	 *
-	 * Example:
-	 * (start code)
+	 * @example
 	 *	 		const megaKernel = gpu.createKernels({
 	 *				addResult: function add(a, b) {
 	 *	  				return a[this.thread.x] + b[this.thread.x];
@@ -120,9 +119,8 @@ class GPU extends GPUCore {
 	 *			});
 	 *	
 	 *			megaKernel(a, b, c);
-	 * (end code) 
 	 * 
-	 * *Note:* You can also define subKernels as an array of functions. 
+	 * Note: You can also define subKernels as an array of functions. 
 	 * > [add, multiply]
 	 *
 	 * @param subKernels {Object|Array}  Sub kernels for this kernel
@@ -173,10 +171,10 @@ class GPU extends GPUCore {
 	 * The number of kernel functions sent to this method can be variable.
 	 * You can send in one, two, etc.
 	 *
-	 * Example: 
-	 * >	combineKernels(add, multiply, function(a,b,c){
-	 *	>	 	return add(multiply(a,b), c)
-	 *	>	})
+	 * @example 
+	 * 	combineKernels(add, multiply, function(a,b,c){
+	 *	 	return add(multiply(a,b), c)
+	 *	})
 	 *
 	 * @param subKernels {Function}  Kernel function(s) to combine.
 	 * @param rootKernel {Function}  Root kernel to combine kernels into

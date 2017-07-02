@@ -22,7 +22,7 @@ module.exports = class GPUCore {
 	 *
 	 * @param kernelObj {Object|String} KernelObj used to validate
 	 *
-	 * @returns <Object> The validated kernel object, converted from JSON if needed
+	 * @returns {Object} The validated kernel object, converted from JSON if needed
 	 *
 	 */
 	static validateKernelObj(kernelObj) {

@@ -3,7 +3,6 @@ let gpu = null;
 /**
  * @class Texture
  *
- *
  */
 module.exports = class Texture {
 	constructor(texture, size, dimensions, webGl) {
