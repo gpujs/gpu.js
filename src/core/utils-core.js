@@ -1,13 +1,14 @@
-///
-/// Class: UtilsCore
-///
-/// Reduced subset of Utils, used exclusively in gpu-core.js
-///
-/// Various utility functions / snippets of code that GPU.JS uses internally.\
-/// This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
-///
-/// Note that all methods in this class is 'static' by nature `UtilsCore.functionName()`
-///
+/**
+ * Class: UtilsCore
+ *
+ * Reduced subset of Utils, used exclusively in gpu-core.js
+ *
+ * Various utility functions / snippets of code that GPU.JS uses internally.\
+ * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
+ *
+ * Note that all methods in this class is 'static' by nature `UtilsCore.functionName()`
+ *
+ */
 class UtilsCore {
 
 	//-----------------------------------------------------------------------------
@@ -16,19 +17,20 @@ class UtilsCore {
 	//
 	//-----------------------------------------------------------------------------
 
-	///
-	/// Function: isCanvas
-	///
-	/// Return TRUE, on a valid DOM canvas object
-	///
-	/// Note: This does just a VERY simply sanity check. And may give false positives.
-	///
-	/// Parameters:
-	/// 	canvasObj - {Canvas DOM object} Object to validate
-	///
-	/// Returns:
-	/// 	{Boolean} TRUE if the object is a DOM canvas
-	///
+	/**
+	 * Function: isCanvas
+	 *
+	 * Return TRUE, on a valid DOM canvas object
+	 *
+	 * Note: This does just a VERY simply sanity check. And may give false positives.
+	 *
+	 * Parameters:
+	 * 	canvasObj - {Canvas DOM object} Object to validate
+	 *
+	 * Returns:
+	 * 	{Boolean} TRUE if the object is a DOM canvas
+	 *
+	 */
 	static isCanvas(canvasObj) {
 		return (
 			canvasObj !== null &&
@@ -38,27 +40,29 @@ class UtilsCore {
 		);
 	}
 
-	///
-	/// Function: isCanvasSupported
-	///
-	/// Return TRUE, if browser supports canvas
-	///
-	/// Returns:
-	/// 	{Boolean} TRUE if browser supports canvas
-	///
+	/**
+	 * Function: isCanvasSupported
+	 *
+	 * Return TRUE, if browser supports canvas
+	 *
+	 * Returns:
+	 * 	{Boolean} TRUE if browser supports canvas
+	 *
+	 */
 	static isCanvasSupported() {
 		return _isCanvasSupported;
 	}
 
-	///
-	/// Function: initCanvas
-	///
-	/// Initiate and returns a canvas, for usage in init_webgl.
-	/// Returns only if canvas is supported by browser.
-	///
-	/// Returns:
-	/// 	{Canvas DOM object} Canvas dom object if supported by browser, else null
-	///
+	/**
+	 * Function: initCanvas
+	 *
+	 * Initiate and returns a canvas, for usage in init_webgl.
+	 * Returns only if canvas is supported by browser.
+	 *
+	 * Returns:
+	 * 	{Canvas DOM object} Canvas dom object if supported by browser, else null
+	 *
+	 */
 	static initCanvas() {
 		// Fail fast if browser previously detected no support
 		if (!_isCanvasSupported) {
@@ -82,19 +86,20 @@ class UtilsCore {
 	//
 	//-----------------------------------------------------------------------------
 
-	///
-	/// Function: isWebGl
-	///
-	/// Return TRUE, on a valid webGl context object
-	///
-	/// Note: This does just a VERY simply sanity check. And may give false positives.
-	///
-	/// Parameters:
-	/// 	webGlObj - {webGl context} Object to validate
-	///
-	/// Returns:
-	/// 	{Boolean} TRUE if the object is a webgl context object
-	///
+	/**
+	 * Function: isWebGl
+	 *
+	 * Return TRUE, on a valid webGl context object
+	 *
+	 * Note: This does just a VERY simply sanity check. And may give false positives.
+	 *
+	 * Parameters:
+	 * 	webGlObj - {webGl context} Object to validate
+	 *
+	 * Returns:
+	 * 	{Boolean} TRUE if the object is a webgl context object
+	 *
+	 */
 	static isWebGl(webGlObj) {
 		return (
 			webGlObj !== null &&
@@ -111,14 +116,15 @@ class UtilsCore {
 		);
 	}
 
-	///
-	/// Function: isWebGlSupported
-	///
-	/// Return TRUE, if browser supports webgl
-	///
-	/// Returns:
-	/// 	{Boolean} TRUE if browser supports webgl
-	///
+	/**
+	 * Function: isWebGlSupported
+	 *
+	 * Return TRUE, if browser supports webgl
+	 *
+	 * Returns:
+	 * 	{Boolean} TRUE if browser supports webgl
+	 *
+	 */
 	static isWebGlSupported() {
 		return _isWebGlSupported;
 	}
@@ -136,18 +142,19 @@ class UtilsCore {
 		};
 	}
 
-	///
-	/// Function: initWebGl
-	///
-	/// Initiate and returns a webGl, from a canvas object
-	/// Returns only if webGl is supported by browser.
-	///
-	/// Parameters:
-	/// 	canvasObj - {Canvas DOM object} Object to validate
-	///
-	/// Returns:
-	/// 	{Canvas DOM object} Canvas dom object if supported by browser, else null
-	///
+	/**
+	 * Function: initWebGl
+	 *
+	 * Initiate and returns a webGl, from a canvas object
+	 * Returns only if webGl is supported by browser.
+	 *
+	 * Parameters:
+	 * 	canvasObj - {Canvas DOM object} Object to validate
+	 *
+	 * Returns:
+	 * 	{Canvas DOM object} Canvas dom object if supported by browser, else null
+	 *
+	 */
 	static initWebGl(canvasObj) {
 
 		// First time setup, does the browser support check memorizer

@@ -1,13 +1,14 @@
 const FunctionBuilderBase = require('../function-builder-base');
 const CPUFunctionNode = require('./function-node');
 
-///
-/// Class: CPUFunctionBuilder
-///
-/// Extends: FunctionBuilderBase
-///
-/// Builds functions to execute on CPU from JavaScript function Strings
-///
+/**
+ * Class: CPUFunctionBuilder
+ *
+ * Extends: FunctionBuilderBase
+ *
+ * Builds functions to execute on CPU from JavaScript function Strings
+ *
+ */
 module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 	addFunction(functionName, jsFunction, paramTypes, returnType) {
 		this.addFunctionNode(
@@ -16,17 +17,18 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 		);
 	}
 
-	///
-	/// Function: getPrototypeString
-	///
-	/// Return the JS Function String optimized for cpu.
-	///
-	/// Parameters:
-	/// 	functionName  - {String} Function name to trace from. If null, it returns the WHOLE builder stack
-	///
-	/// Returns:
-	/// 	{String} Function String
-	///
+	/**
+	 * Function: getPrototypeString
+	 *
+	 * Return the JS Function String optimized for cpu.
+	 *
+	 * Parameters:
+	 * 	functionName  - {String} Function name to trace from. If null, it returns the WHOLE builder stack
+	 *
+	 * Returns:
+	 * 	{String} Function String
+	 *
+	 */
 	getPrototypeString() {
 		let ret = '';
 		for (let p in this.nodeMap) {
@@ -41,16 +43,17 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 		return ret;
 	}
 
-	///
-	/// Function: addSubKernel
-	///
-	/// Add a new sub-kernel to the current kernel instance
-	///
-	/// Parameters:
-	///		jsFunction 	- {Function} Sub-kernel function (JavaScript)
-	///		paramNames  - {Array} Parameters of the sub-kernel
-	///		returnType  - {Array} Return type of the subKernel
-	///
+	/**
+	 * Function: addSubKernel
+	 *
+	 * Add a new sub-kernel to the current kernel instance
+	 *
+	 * Parameters:
+	 *		jsFunction 	- {Function} Sub-kernel function (JavaScript)
+	 *		paramNames  - {Array} Parameters of the sub-kernel
+	 *		returnType  - {Array} Return type of the subKernel
+	 *
+	 */
 	addSubKernel(jsFunction, paramTypes, returnType) {
 		const node = new CPUFunctionNode(null, jsFunction, paramTypes, returnType)
 			.setAddFunction(this.addFunction.bind(this));

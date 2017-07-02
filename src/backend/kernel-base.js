@@ -1,33 +1,35 @@
 const utils = require('../core/utils');
 
-///
-/// Class: BaseKernel
-///
-/// Implements the base class for Kernels, and is used as a 
-/// parent class for all Kernel implementations.
-///
-/// This contains the basic methods needed by all Kernel implementations, 
-/// like setDimensions, addSubKernel, etc.
-///
-/// Properties:
-///		paramNames 						- {Array}      Name of the parameters of the kernel function
-///		fnString   						- {String} 	   Kernel function as a String
-///		dimensions 						- {Array} 	   Dimensions of the kernel function, this.thread.x, etc.
-///		debug   						- {Boolean}    Toggle debug mode
-///		graphical   					- {String} 	   Toggle graphical mode
-///		loopMaxIterations  				- {Number} 	   Maximum number of loop iterations
-///		constants   					- {Object} 	   Global constants
-///		subKernels   					- {Array} 	   Sub kernels bound to this kernel instance
-///		subKernelProperties 			- {Object} 	   Sub kernels bound to this kernel instance as key/value pairs
-///		subKernelOutputVariableNames   	- {Array} 	   Names of the variables outputted by the subkerls
-///
+/**
+ * Class: BaseKernel
+ *
+ * Implements the base class for Kernels, and is used as a 
+ * parent class for all Kernel implementations.
+ *
+ * This contains the basic methods needed by all Kernel implementations, 
+ * like setDimensions, addSubKernel, etc.
+ *
+ * Properties:
+ *		paramNames 						- {Array}      Name of the parameters of the kernel function
+ *		fnString   						- {String} 	   Kernel function as a String
+ *		dimensions 						- {Array} 	   Dimensions of the kernel function, this.thread.x, etc.
+ *		debug   						- {Boolean}    Toggle debug mode
+ *		graphical   					- {String} 	   Toggle graphical mode
+ *		loopMaxIterations  				- {Number} 	   Maximum number of loop iterations
+ *		constants   					- {Object} 	   Global constants
+ *		subKernels   					- {Array} 	   Sub kernels bound to this kernel instance
+ *		subKernelProperties 			- {Object} 	   Sub kernels bound to this kernel instance as key/value pairs
+ *		subKernelOutputVariableNames   	- {Array} 	   Names of the variables outputted by the subkerls
+ *
+ */
 module.exports = class BaseKernel {
 
-	///
-	/// Function: BaseKernel
-	///
-	/// [Constructor] Blank constructor, which initializes the properties
-	///
+	/**
+	 * Function: BaseKernel
+	 *
+	 * [Constructor] Blank constructor, which initializes the properties
+	 *
+	 */
 	constructor(fnString, settings) {
 		this.paramNames = utils.getParamNamesFromString(fnString);
 		this.fnString = fnString;
@@ -73,61 +75,66 @@ module.exports = class BaseKernel {
 		return this;
 	}
 
-	///
-	/// Function: setDimensions
-	///
-	/// Set dimensions of the kernel function
-	///
-	/// Parameters:
-	/// 	dimensions      - {Array}       The dimensions array set the dimensions to
-	///
+	/**
+	 * Function: setDimensions
+	 *
+	 * Set dimensions of the kernel function
+	 *
+	 * Parameters:
+	 * 	dimensions      - {Array}       The dimensions array set the dimensions to
+	 *
+	 */
 	setDimensions(dimensions) {
 		this.dimensions = dimensions;
 		return this;
 	}
 
-	///
-	/// Function: setDebug
-	///
-	/// Toggle debug mode
-	///
-	/// Parameters:
-	/// 	flag      - {Boolean}       true to enable debug
-	///
+	/**
+	 * Function: setDebug
+	 *
+	 * Toggle debug mode
+	 *
+	 * Parameters:
+	 * 	flag      - {Boolean}       true to enable debug
+	 *
+	 */
 	setDebug(flag) {
 		this.debug = flag;
 		return this;
 	}
 
-	///
-	/// Function: setGraphical
-	///
-	/// Toggle graphical output mode
-	///
-	/// Parameters:
-	/// 	flag      - {Boolean}       true to enable graphical output
-	///
+	/**
+	 * Function: setGraphical
+	 *
+	 * Toggle graphical output mode
+	 *
+	 * Parameters:
+	 * 	flag      - {Boolean}       true to enable graphical output
+	 *
+	 */
 	setGraphical(flag) {
 		this.graphical = flag;
 		return this;
 	}
 
-	///
-	/// Function: setLoopMaxIterations
-	///
-	/// Set the maximum number of loop iterations
-	///
-	/// Parameters:
-	/// 	max      - {Number}       iterations count
-	///
+	/**
+	 * Function: setLoopMaxIterations
+	 *
+	 * Set the maximum number of loop iterations
+	 *
+	 * Parameters:
+	 * 	max      - {Number}       iterations count
+	 *
+	 */
 	setLoopMaxIterations(max) {
 		this.loopMaxIterations = max;
 		return this;
 	}
 
-	///
-	/// Function: setConstants
-	///
+	/**
+	 * Function: setConstants
+	 *
+	 */
 	setConstants(constants) {
 		this.constants = constants;
 		return this;
@@ -149,27 +156,29 @@ module.exports = class BaseKernel {
 		return this;
 	}
 
-	///
-	/// Function: setFloatTextures
-	///
-	/// Toggle texture output mode
-	///
-	/// Parameters:
-	/// 	flag      - {Boolean}       true to enable floatTextures
-	///
+	/**
+	 * Function: setFloatTextures
+	 *
+	 * Toggle texture output mode
+	 *
+	 * Parameters:
+	 * 	flag      - {Boolean}       true to enable floatTextures
+	 *
+	 */
 	setFloatTextures(flag) {
 		this.floatTextures = flag;
 		return this;
 	}
 
-	///
-	/// Function: setFloatOutput
-	///
-	/// Toggle output mode
-	///
-	/// Parameters:
-	/// 	flag      - {Boolean}       true to enable float
-	///
+	/**
+	 * Function: setFloatOutput
+	 *
+	 * Toggle output mode
+	 *
+	 * Parameters:
+	 * 	flag      - {Boolean}       true to enable float
+	 *
+	 */
 	setFloatOutput(flag) {
 		this.floatOutput = flag;
 		return this;
@@ -180,27 +189,29 @@ module.exports = class BaseKernel {
 		return this;
 	}
 
-	///
-	/// Function: setCanvas
-	///
-	/// Bind the canvas to kernel
-	/// 
-	/// Parameters:
-	/// 	canvas     - {Canvas}        Canvas to bind
-	///
+	/**
+	 * Function: setCanvas
+	 *
+	 * Bind the canvas to kernel
+	 * 
+	 * Parameters:
+	 * 	canvas     - {Canvas}        Canvas to bind
+	 *
+	 */
 	setCanvas(canvas) {
 		this._canvas = canvas;
 		return this;
 	}
 
-	///
-	/// Function: setCanvas
-	///
-	/// Bind the webGL instance to kernel
-	/// 
-	/// Parameters:
-	/// 	webGL     - {Canvas}        webGL instance to bind
-	///
+	/**
+	 * Function: setCanvas
+	 *
+	 * Bind the webGL instance to kernel
+	 * 
+	 * Parameters:
+	 * 	webGL     - {Canvas}        webGL instance to bind
+	 *
+	 */
 	setWebGl(webGl) {
 		this._webGl = webGl;
 		return this;
@@ -211,20 +222,22 @@ module.exports = class BaseKernel {
 		return this;
 	}
 
-	///
-	/// Function: getCanvas()
-	///
-	/// Returns the current canvas instance bound to the kernel
-	///
+	/**
+	 * Function: getCanvas()
+	 *
+	 * Returns the current canvas instance bound to the kernel
+	 *
+	 */
 	getCanvas() {
 		return this._canvas;
 	}
 
-	///
-	/// Function: getWebGl()
-	///
-	/// Returns the current webGl instance bound to the kernel
-	///
+	/**
+	 * Function: getWebGl()
+	 *
+	 * Returns the current webGl instance bound to the kernel
+	 *
+	 */
 	getWebGl() {
 		return this._webGl;
 	}
@@ -258,14 +271,15 @@ module.exports = class BaseKernel {
 		});
 	}
 
-	/// Function: addSubKernel
-	///
-	/// Add a sub kernel to the root kernel instance.
-	/// This is what `createKernels` uses.
-	///
-	/// Parameters:
-	/// 	fnString      - {String}       function (as a String) of the subKernel to add
-	///
+	/** Function: addSubKernel
+	 *
+	 * Add a sub kernel to the root kernel instance.
+	 * This is what `createKernels` uses.
+	 *
+	 * Parameters:
+	 * 	fnString      - {String}       function (as a String) of the subKernel to add
+	 *
+	 */
 	addSubKernel(fnString) {
 		if (this.subKernels === null) {
 			this.subKernels = [];
@@ -276,15 +290,16 @@ module.exports = class BaseKernel {
 		return this;
 	}
 
-	/// Function: addSubKernelProperty
-	///
-	/// Add a sub kernel to the root kernel instance, indexed by a property name
-	/// This is what `createKernels` uses.
-	///
-	/// Parameters:
-	/// 	property      - {String}       property key for the subKernel
-	/// 	fnString      - {String}       function (as a String) of the subKernel to add
-	///
+	/** Function: addSubKernelProperty
+	 *
+	 * Add a sub kernel to the root kernel instance, indexed by a property name
+	 * This is what `createKernels` uses.
+	 *
+	 * Parameters:
+	 * 	property      - {String}       property key for the subKernel
+	 * 	fnString      - {String}       function (as a String) of the subKernel to add
+	 *
+	 */
 	addSubKernelProperty(property, fnString) {
 		if (this.subKernelProperties === null) {
 			this.subKernelProperties = {};
