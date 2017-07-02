@@ -12,7 +12,7 @@ const GPUCore = require("./gpu-core");
 class GPU extends GPUCore {
 	constructor(settings) {
 		super(settings);
-		
+
 		settings = settings || {};
 		this._canvas = settings.canvas || null;
 		this._webGl = settings.webGl || null;
@@ -189,7 +189,7 @@ class GPU extends GPUCore {
 	combineKernels() {
 		const lastKernel = arguments[arguments.length - 2];
 		const combinedKernel = arguments[arguments.length - 1];
-		if (this.mode === 'cpu') return combinedKernel;
+		if (this.getMode() === 'cpu') return combinedKernel;
 
 		const canvas = arguments[0].canvas;
 		let webGl = arguments[0].webGl;
@@ -251,15 +251,15 @@ class GPU extends GPUCore {
 	}
 
 	///
-	/// Function: get mode()
+	/// Function: getMode()
 	///
-	/// [GETTER] Return the current mode in which gpu.js is executing.
+	/// Return the current mode in which gpu.js is executing.
 	/// 
 	/// Returns:
 	/// 	{String} The current mode, "cpu", "webgl", etc.
 	///
-	get mode() {
-		return this._runner.mode;
+	getMode() {
+		return this._runner.getMode();
 	}
 
 	///

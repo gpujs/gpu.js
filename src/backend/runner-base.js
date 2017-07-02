@@ -81,7 +81,7 @@ module.exports = class BaseRunner {
 		throw new Error('not yet implemented');
 	}
 
-	get mode() {
+	getMode() {
 		throw new Error('"mode" not implemented on BaseRunner');
 	}
 

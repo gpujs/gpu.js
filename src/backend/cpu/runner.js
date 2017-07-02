@@ -29,14 +29,14 @@ module.exports = class CPURunner extends RunnerBase {
 	}
 
 	///
-	/// Function: get mode()
+	/// Function: getMode()
 	///
-	/// [GETTER] Return the current mode in which gpu.js is executing.
+	/// Return the current mode in which gpu.js is executing.
 	/// 
 	/// Returns:
 	/// 	{String} The current mode; "cpu".
 	///
-	get mode() {
+	getMode() {
 		return 'cpu';
 	}
 };
