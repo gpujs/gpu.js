@@ -17,9 +17,9 @@ const stripComments = require('gulp-strip-comments');
 /// Build the scripts
 gulp.task('build', function() {
 	browserify('./src/index.js')
-    .bundle()
-    .pipe(source('gpu.js'))
-    .pipe(buffer())
+	.bundle()
+	.pipe(source('gpu.js'))
+	.pipe(buffer())
 	.pipe(stripComments())
 	.pipe(babel())
 		.pipe(header(fs.readFileSync('./src/wrapper/prefix.js', 'utf8'), { pkg : pkg }))
@@ -31,8 +31,8 @@ gulp.task('minify', ['build'], function() {
 	return gulp.src('bin/gpu.js')
 		.pipe(rename('gpu.min.js'))
 		.pipe(
-		  uglify({preserveComments: 'license'})
-		  .on('error', gutil.log)
+			uglify({preserveComments: 'license'})
+			.on('error', gutil.log)
 		)
 		.pipe(gulp.dest('bin'));
 });
