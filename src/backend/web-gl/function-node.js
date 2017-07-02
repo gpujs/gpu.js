@@ -10,7 +10,7 @@ const DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
 const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
 /** 
- * Class: WebGLFunctionNode
+ * @class WebGLFunctionNode
  *
  * [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
  *
@@ -46,7 +46,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astGeneric
+	 * @name astGeneric
 	 *
 	 * Parses the abstract syntax tree for generically to its respective function
 	 *
@@ -127,7 +127,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astFunctionDeclaration
+	 * @name astFunctionDeclaration
 	 *
 	 * Parses the abstract syntax tree for to its *named function declaration*
 	 *
@@ -146,7 +146,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astFunctionPrototype
+	 * @name astFunctionPrototype
 	 *
 	 * Parses the abstract syntax tree for to its *named function prototype*
 	 *
@@ -187,7 +187,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astFunctionExpression
+	 * @name astFunctionExpression
 	 *
 	 * Parses the abstract syntax tree for to its *named function*
 	 *
@@ -250,7 +250,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astReturnStatement
+	 * @name astReturnStatement
 	 *
 	 * Parses the abstract syntax tree for to *return* statement
 	 *
@@ -288,7 +288,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astLiteral
+	 * @name astLiteral
 	 *
 	 * Parses the abstract syntax tree for *literal value*
 	 *
@@ -322,7 +322,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astBinaryExpression
+	 * @name astBinaryExpression
 	 *
 	 * Parses the abstract syntax tree for *binary* expression
 	 *
@@ -363,7 +363,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astIdentifierExpression
+	 * @name astIdentifierExpression
 	 *
 	 * Parses the abstract syntax tree for *identifier* expression
 	 *
@@ -419,7 +419,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astForStatement
+	 * @name astForStatement
 	 *
 	 * Parses the abstract syntax tree forfor *for-loop* expression
 	 *
@@ -505,7 +505,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astWhileStatement
+	 * @name astWhileStatement
 	 *
 	 * Parses the abstract syntax tree for *while* loop
 	 *
@@ -540,7 +540,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astAssignmentExpression
+	 * @name astAssignmentExpression
 	 *
 	 * Parses the abstract syntax tree for *Assignment* Expression
 	 *
@@ -570,7 +570,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astEmptyStatement
+	 * @name astEmptyStatement
 	 *
 	 * Parses the abstract syntax tree for an *Empty* Statement
 	 *
@@ -588,7 +588,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astBlockStatement
+	 * @name astBlockStatement
 	 *
 	 * Parses the abstract syntax tree for *Block* statement
 	 *
@@ -610,7 +610,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astExpressionStatement
+	 * @name astExpressionStatement
 	 *
 	 * Parses the abstract syntax tree for *generic expression* statement
 	 *
@@ -629,7 +629,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astVariableDeclaration
+	 * @name astVariableDeclaration
 	 *
 	 * Parses the abstract syntax tree for *Variable Declaration*
 	 *
@@ -654,7 +654,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astVariableDeclarator
+	 * @name astVariableDeclarator
 	 *
 	 * Parses the abstract syntax tree for *Variable Declarator*
 	 *
@@ -676,7 +676,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astIfStatement
+	 * @name astIfStatement
 	 *
 	 * Parses the abstract syntax tree for *If* Statement
 	 *
@@ -715,7 +715,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astBreakStatement
+	 * @name astBreakStatement
 	 *
 	 * Parses the abstract syntax tree for *Break* Statement
 	 *
@@ -733,7 +733,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astContinueStatement
+	 * @name astContinueStatement
 	 *
 	 * Parses the abstract syntax tree for *Continue* Statement
 	 *
@@ -751,7 +751,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astLogicalExpression
+	 * @name astLogicalExpression
 	 *
 	 * Parses the abstract syntax tree for *Logical* Expression
 	 *
@@ -773,7 +773,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astUpdateExpression
+	 * @name astUpdateExpression
 	 *
 	 * Parses the abstract syntax tree for *Update* Expression
 	 *
@@ -798,7 +798,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astUnaryExpression
+	 * @name astUnaryExpression
 	 *
 	 * Parses the abstract syntax tree for *Unary* Expression
 	 *
@@ -823,7 +823,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astThisExpression
+	 * @name astThisExpression
 	 *
 	 * Parses the abstract syntax tree for *This* expression
 	 *
@@ -841,7 +841,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astMemberExpression
+	 * @name astMemberExpression
 	 *
 	 * Parses the abstract syntax tree for *Member* Expression
 	 *
@@ -977,7 +977,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astCallExpression
+	 * @name astCallExpression
 	 *
 	 * Parses the abstract syntax tree for *call* expression
 	 *
@@ -1060,7 +1060,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: astArrayExpression
+	 * @name astArrayExpression
 	 *
 	 * Parses the abstract syntax tree for *Array* Expression
 	 *
@@ -1095,7 +1095,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * Function: getFunctionPrototypeString
+	 * @name getFunctionPrototypeString
 	 *
 	 * Returns the converted webgl shader function equivalent of the JS function
 	 *
@@ -1133,7 +1133,7 @@ function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
 }
 
 /**
- * Function: webgl_regex_optimize
+ * @name webgl_regex_optimize
  *
  * [INTERNAL] Takes the near final webgl function string, and do regex search and replacments.
  * For voodoo optimize out the following
@@ -1152,7 +1152,7 @@ function webGlRegexOptimize(inStr) {
 }
 
 /**
- * Function: astErrorOutput
+ * @name astErrorOutput
  *
  * To throw the AST error, with its location.
  *

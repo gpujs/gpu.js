@@ -1,5 +1,5 @@
 /**
- * Class: FunctionBuilderBase
+ * @class FunctionBuilderBase
  *
  * [INTERNAL] A collection of functionNodes.
  *
@@ -14,7 +14,7 @@
 module.exports = class FunctionBuilderBase {
 
 	/**
-	 * Function: FunctionBuilderBase
+	 * @name FunctionBuilderBase
 	 *
 	 * [Constructor] Blank constructor, which initializes the properties
 	 *
@@ -26,7 +26,7 @@ module.exports = class FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: addFunction
+	 * @name addFunction
 	 *
 	 * Instantiates a FunctionNode, and add it to the nodeMap
 	 *
@@ -43,7 +43,7 @@ module.exports = class FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: addFunctionNode
+	 * @name addFunctionNode
 	 *
 	 * Add the funciton node directly
 	 *
@@ -59,7 +59,7 @@ module.exports = class FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: traceFunctionCalls
+	 * @name traceFunctionCalls
 	 *
 	 * Trace all the depending functions being called, from a single function
 	 *
@@ -110,7 +110,7 @@ module.exports = class FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: polyfillStandardFunctions
+	 * @name polyfillStandardFunctions
 	 *
 	 * Polyfill in the missing Math functions (round)
 	 *

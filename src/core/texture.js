@@ -1,7 +1,7 @@
 let gpu = null;
 
 /**
- * Class: Texture
+ * @class Texture
  *
  *
  */
@@ -14,7 +14,7 @@ module.exports = class Texture {
 	}
 
 	/**
-	 * Function: toArray
+	 * @name toArray
 	 *
 	 * Converts the Texture into a JavaScript Array.
 	 *
@@ -32,7 +32,7 @@ module.exports = class Texture {
 		return copy(this.texture);
 	}
 	/**
-	 * Function: delete
+	 * @name delete
 	 *
 	 * Deletes the Texture.
 	 *

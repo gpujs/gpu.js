@@ -2,7 +2,7 @@ const FunctionBuilderBase = require('../function-builder-base');
 const CPUFunctionNode = require('./function-node');
 
 /**
- * Class: CPUFunctionBuilder
+ * @class CPUFunctionBuilder
  *
  * Extends: FunctionBuilderBase
  *
@@ -18,7 +18,7 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: getPrototypeString
+	 * @name getPrototypeString
 	 *
 	 * Return the JS Function String optimized for cpu.
 	 *
@@ -44,7 +44,7 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: addSubKernel
+	 * @name addSubKernel
 	 *
 	 * Add a new sub-kernel to the current kernel instance
 	 *

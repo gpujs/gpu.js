@@ -4,7 +4,7 @@ const utils = require('../../core/utils');
 const WebGLFunctionBuilder = require('./function-builder');
 
 /**
- * Class: WebGLRunner
+ * @class WebGLRunner
  *
  * Instantiates a Runner instance for the kernel.
  *
@@ -19,7 +19,7 @@ module.exports = class WebGLRunner extends RunnerBase {
 	//
 	
 	/**
-	 * Function: WebGLRunner
+	 * @name WebGLRunner
 	 *
 	 * Parameters:
 	 * 	settings         - {Object}     Settings to instantiate properties in RunnerBase, with given values
@@ -32,7 +32,7 @@ module.exports = class WebGLRunner extends RunnerBase {
 	}
 
 	/**
-	 * Function: getMode()
+	 * @name getMode()
 	 *
 	 * Return the current mode in which gpu.js is executing.
 	 * 

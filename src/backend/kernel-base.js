@@ -1,7 +1,7 @@
 const utils = require('../core/utils');
 
 /**
- * Class: BaseKernel
+ * @class BaseKernel
  *
  * Implements the base class for Kernels, and is used as a 
  * parent class for all Kernel implementations.
@@ -25,7 +25,7 @@ const utils = require('../core/utils');
 module.exports = class BaseKernel {
 
 	/**
-	 * Function: BaseKernel
+	 * @name BaseKernel
 	 *
 	 * [Constructor] Blank constructor, which initializes the properties
 	 *
@@ -76,7 +76,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * Function: setDimensions
+	 * @name setDimensions
 	 *
 	 * Set dimensions of the kernel function
 	 *
@@ -90,7 +90,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * Function: setDebug
+	 * @name setDebug
 	 *
 	 * Toggle debug mode
 	 *
@@ -104,7 +104,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * Function: setGraphical
+	 * @name setGraphical
 	 *
 	 * Toggle graphical output mode
 	 *
@@ -118,7 +118,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * Function: setLoopMaxIterations
+	 * @name setLoopMaxIterations
 	 *
 	 * Set the maximum number of loop iterations
 	 *
@@ -132,7 +132,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * Function: setConstants
+	 * @name setConstants
 	 *
 	 */
 	setConstants(constants) {
@@ -157,7 +157,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * Function: setFloatTextures
+	 * @name setFloatTextures
 	 *
 	 * Toggle texture output mode
 	 *
@@ -171,7 +171,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * Function: setFloatOutput
+	 * @name setFloatOutput
 	 *
 	 * Toggle output mode
 	 *
@@ -190,7 +190,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * Function: setCanvas
+	 * @name setCanvas
 	 *
 	 * Bind the canvas to kernel
 	 * 
@@ -204,7 +204,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * Function: setCanvas
+	 * @name setCanvas
 	 *
 	 * Bind the webGL instance to kernel
 	 * 
@@ -223,7 +223,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * Function: getCanvas()
+	 * @name getCanvas()
 	 *
 	 * Returns the current canvas instance bound to the kernel
 	 *
@@ -233,7 +233,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * Function: getWebGl()
+	 * @name getWebGl()
 	 *
 	 * Returns the current webGl instance bound to the kernel
 	 *

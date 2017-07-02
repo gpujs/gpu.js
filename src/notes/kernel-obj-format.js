@@ -1,7 +1,7 @@
 /**
  * File: kernel-obj-format
  *
- * Class: KernelObjFormat
+ * @class KernelObjFormat
  *
  * The kernelObj is a standard JS object that matches the following format.
  *

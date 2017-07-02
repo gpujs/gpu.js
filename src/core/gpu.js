@@ -5,7 +5,7 @@ const WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
 const GPUCore = require("./gpu-core");
 
 /**
- * Class: GPU
+ * @class GPU
  *
  * Initialises the GPU.js library class which manages the WebGL context for the created functions.
  *
@@ -49,7 +49,7 @@ class GPU extends GPUCore {
 		}
 	}
 	/**
-	 * Function: createKernel
+	 * @name createKernel
 	 *
 	 * This creates a callable function object to call the kernel function with the argument parameter set
 	 *
@@ -101,7 +101,7 @@ class GPU extends GPUCore {
 
 	/**
 	 *
-	 * Function: createKernels
+	 * @name createKernels
 	 *
 	 * Create a super kernel which executes sub kernels 
 	 * and saves their output to be used with the next sub kernel.
@@ -167,7 +167,7 @@ class GPU extends GPUCore {
 	}
 
 	/**
-	 * Function: combineKernels
+	 * @name combineKernels
 	 *
 	 * Combine different kernels into one super Kernel, 
 	 * useful to perform multiple operations inside one 
@@ -237,7 +237,7 @@ class GPU extends GPUCore {
 
 
 	/**
-	 * Function: addFunction
+	 * @name addFunction
 	 *
 	 * Adds additional functions, that the kernel may call.
 	 *
@@ -256,7 +256,7 @@ class GPU extends GPUCore {
 	}
 
 	/**
-	 * Function: getMode()
+	 * @name getMode()
 	 *
 	 * Return the current mode in which gpu.js is executing.
 	 * 
@@ -269,7 +269,7 @@ class GPU extends GPUCore {
 	}
 
 	/**
-	 * Function: get isWebGlSupported()
+	 * @name get isWebGlSupported()
 	 *
 	 * Return TRUE, if browser supports WebGl AND Canvas
 	 *
@@ -284,7 +284,7 @@ class GPU extends GPUCore {
 	}
 
 	/**
-	 * Function: getCanvas()
+	 * @name getCanvas()
 	 *
 	 * Return the canvas object bound to this gpu instance.
 	 *
@@ -297,7 +297,7 @@ class GPU extends GPUCore {
 	}
 
 	/**
-	 * Function: getWebGl()
+	 * @name getWebGl()
 	 *
 	 * Return the webGl object bound to this gpu instance.
 	 *

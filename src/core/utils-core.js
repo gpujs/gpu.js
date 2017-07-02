@@ -1,5 +1,5 @@
 /**
- * Class: UtilsCore
+ * @class UtilsCore
  *
  * Reduced subset of Utils, used exclusively in gpu-core.js
  *
@@ -18,7 +18,7 @@ class UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * Function: isCanvas
+	 * @name isCanvas
 	 *
 	 * Return TRUE, on a valid DOM canvas object
 	 *
@@ -41,7 +41,7 @@ class UtilsCore {
 	}
 
 	/**
-	 * Function: isCanvasSupported
+	 * @name isCanvasSupported
 	 *
 	 * Return TRUE, if browser supports canvas
 	 *
@@ -54,7 +54,7 @@ class UtilsCore {
 	}
 
 	/**
-	 * Function: initCanvas
+	 * @name initCanvas
 	 *
 	 * Initiate and returns a canvas, for usage in init_webgl.
 	 * Returns only if canvas is supported by browser.
@@ -87,7 +87,7 @@ class UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * Function: isWebGl
+	 * @name isWebGl
 	 *
 	 * Return TRUE, on a valid webGl context object
 	 *
@@ -117,7 +117,7 @@ class UtilsCore {
 	}
 
 	/**
-	 * Function: isWebGlSupported
+	 * @name isWebGlSupported
 	 *
 	 * Return TRUE, if browser supports webgl
 	 *
@@ -143,7 +143,7 @@ class UtilsCore {
 	}
 
 	/**
-	 * Function: initWebGl
+	 * @name initWebGl
 	 *
 	 * Initiate and returns a webGl, from a canvas object
 	 * Returns only if webGl is supported by browser.

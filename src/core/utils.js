@@ -1,5 +1,5 @@
 /**
- * Class: Utils
+ * @class Utils
  *
  * Various utility functions / snippets of code that GPU.JS uses internally.\
  * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
@@ -39,7 +39,7 @@ class Utils extends UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * Function: systemEndianness
+	 * @name systemEndianness
 	 *
 	 * Gets the system endianness, and cache it
 	 *
@@ -59,7 +59,7 @@ class Utils extends UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * Function: isFunction
+	 * @name isFunction
 	 *
 	 * Return TRUE, on a JS function
 	 *
@@ -75,7 +75,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: isFunctionString
+	 * @name isFunctionString
 	 *
 	 * Return TRUE, on a valid JS function string
 	 *
@@ -98,7 +98,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: getFunctionName_fromString
+	 * @name getFunctionName_fromString
 	 *
 	 * Return the function name from a JS function string
 	 *
@@ -118,7 +118,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: getParamNames_fromString
+	 * @name getParamNames_fromString
 	 *
 	 * Return list of parameter names extracted from the JS function string
 	 *
@@ -144,7 +144,7 @@ class Utils extends UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * Function: clone
+	 * @name clone
 	 *
 	 * Returns a clone
 	 *
@@ -172,7 +172,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: newPromise
+	 * @name newPromise
 	 *
 	 * Returns a `new Promise` object based on the underlying implmentation
 	 *
@@ -192,7 +192,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: functionBinder
+	 * @name functionBinder
 	 *
 	 * Limited implementation of Function.bind, with fallback
 	 *
@@ -216,7 +216,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: isArray
+	 * @name isArray
 	 *
 	 * Checks if is an array or Array-like object
 	 *
@@ -233,7 +233,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: getArgumentType
+	 * @name getArgumentType
 	 *
 	 * Evaluate the argument type, to apply respective logic for it
 	 *
@@ -257,7 +257,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: isFloatReadPixelsSupported
+	 * @name isFloatReadPixelsSupported
 	 *
 	 * Checks if the browser supports readPixels with float type
 	 *
@@ -306,7 +306,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: getDimensions
+	 * @name getDimensions
 	 *
 	 * Return the dimension of an array.
 	 * 
@@ -345,7 +345,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: pad
+	 * @name pad
 	 *
 	 * Pad an array AND its elements with leading and ending zeros
 	 * Parameters:
@@ -375,7 +375,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: flatten
+	 * @name flatten
 	 *
 	 * Converts a nested array into a one-dimensional array
 	 *
@@ -409,7 +409,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: splitArray
+	 * @name splitArray
 	 *
 	 * Splits an array into smaller arrays.
 	 * Number of elements in one small chunk is given by `part`

@@ -1,7 +1,7 @@
 const BaseFunctionNode = require('../function-node-base');
 
 /**
- * Class: CPUFunctionNode
+ * @class CPUFunctionNode
  *
  * [INTERNAL] Represents a single function, inside JS, webGL, or openGL.
  *
@@ -28,7 +28,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * Function: getFunctionPrototypeString
+	 * @name getFunctionPrototypeString
 	 *
 	 * Returns the converted webgl shader function equivalent of the JS function
 	 *

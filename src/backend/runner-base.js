@@ -2,7 +2,7 @@ const utils = require('../core/utils');
 const kernelRunShortcut = require('./kernel-run-shortcut');
 
 /**
- * Class: BaseRunner
+ * @class BaseRunner
  *
  * Represents the 'private/protected' namespace of the GPU class
  *
@@ -29,7 +29,7 @@ const kernelRunShortcut = require('./kernel-run-shortcut');
 module.exports = class BaseRunner {
 
 	/**
-	 * Function: BaseRunner
+	 * @name BaseRunner
 	 *
 	 * [Constructor] Blank constructor, which initializes the properties related to runner
 	 *
@@ -47,7 +47,7 @@ module.exports = class BaseRunner {
 	}
 
 	/**
-	 * Function: textureToArray
+	 * @name textureToArray
 	 *
 	 * Converts the provided Texture instance to a JavaScript Array 
 	 *	
@@ -64,7 +64,7 @@ module.exports = class BaseRunner {
 	}
 
 	/**
-	 * Function: deleteTexture
+	 * @name deleteTexture
 	 *
 	 * Deletes the provided Texture instance 
 	 *

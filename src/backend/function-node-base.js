@@ -2,7 +2,7 @@ const utils = require('../core/utils');
 const parser = require('../core/parser').parser;
 
 /**
- * Class: FunctionNodeBase
+ * @class FunctionNodeBase
  *
  * [INTERNAL] Represents a single function, inside JS, webGL, or openGL.
  *
@@ -30,7 +30,7 @@ module.exports = class BaseFunctionNode {
 	//----------------------------------------------------------------------------------------------------
 
 	/**
-	 * Function: FunctionNodeBase
+	 * @name FunctionNodeBase
 	 *
 	 * [Constructor] Builds the function with the given JS function, and argument type array.
 	 *
@@ -168,7 +168,7 @@ module.exports = class BaseFunctionNode {
 	//----------------------------------------------------------------------------------------------------
 
 	/**
-	 * Function: getJSFunction
+	 * @name getJSFunction
 	 *
 	 * Gets and return the stored JS Function.
 	 * Note: that this internally eval the function, if only the string was provided on construction
@@ -191,7 +191,7 @@ module.exports = class BaseFunctionNode {
 	}
 
 	/**
-	 * Function: getJS_AST
+	 * @name getJS_AST
 	 *
 	 * Parses the class function JS, and returns its Abstract Syntax Tree object.
 	 *
@@ -228,7 +228,7 @@ module.exports = class BaseFunctionNode {
 
 
 	/**
-	 * Function: getFunctionString
+	 * @name getFunctionString
 	 *
 	 * Returns the converted webgl shader function equivalent of the JS function
 	 *
@@ -242,7 +242,7 @@ module.exports = class BaseFunctionNode {
 	}
 
 	/**
-	 * Function: setFunctionString
+	 * @name setFunctionString
 	 *
 	 * Set the functionString value, overwriting it
 	 *
@@ -255,7 +255,7 @@ module.exports = class BaseFunctionNode {
 	}
 
 	/**
-	 * Function: getParamType
+	 * @name getParamType
 	 *
 	 * Return the type of parameter sent to subKernel/Kernel.
 	 *
@@ -282,7 +282,7 @@ module.exports = class BaseFunctionNode {
 	}
 
 	/**
-	 * Function: getUserParamName
+	 * @name getUserParamName
 	 *
 	 * Return the name of the *user parameter*(subKernel parameter) corresponding 
 	 * to the parameter supplied to the kernel

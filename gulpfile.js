@@ -13,6 +13,53 @@ const pkg = require('./package.json');
 const jsprettify = require('gulp-jsbeautifier');
 const babel = require('gulp-babel');
 const stripComments = require('gulp-strip-comments');
+const glob = require('glob');
+
+gulp.task('refactor', ()=>{
+	glob('src/**/*.js', (err, files)=>{
+		files.forEach(file=>{
+			
+			fs.readFile(file, (err,data)=>{
+			let dataString = data.toString();
+			let chunks = [];
+			let stream = false;
+		
+			chunks = dataString.split("\n");
+			// console.log(chunks);
+			for (var i = 0; i < chunks.length; i++) {
+				// if(stream){
+				// 	if(chunks[i]===' *' || chunks[i]===' */'){
+				// 		stream = !stream;
+				// 	}else{
+				// 		chunks[i] = chunks[i].replace(/\*\s+/g, '');
+				// 		console.log(chunks[i]);
+				// 		let paramName = chunks[i].match(/(^\w+)/g)[0];
+				// 		let typeAndRest =  chunks[i].match(/(^\w+)+(\s+-\s+{)/g)[0];
+				// 		chunks[i] = chunks[i].replace(typeAndRest, '');
+				// 		chunks[i] = paramName + ' {' + chunks[i];
+				// 		chunks[i] = ' * @param' + chunks[i];
+				// 	}			
+				// }else{
+					if(chunks[i].match(/^\s+\* Function:/g)){
+						// console.log(chunks[i]);
+					// console.log(chunks[i]);
+						chunks[i] = chunks[i].replace('Function:','@name');
+						// chunks[i] = '';
+					} /*else if (chunks[i].startsWith(' * Parameters: ')){
+						stream = !stream;
+					} else if (chunks[i].startsWith(' * Returns:')) {
+						chunks[i] = '';
+						chunks[i+1] = ' * @returns' + chunks[i+1].replace(/^\*\s+/g, '');
+					}*/
+			}
+			// }
+			const finalData = chunks.join('\n');
+			fs.writeFile(file, finalData);
+
+			})
+		})
+	})
+})
 
 /// Build the scripts
 gulp.task('build', function() {

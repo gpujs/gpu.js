@@ -3,7 +3,7 @@ const WebGLFunctionNode = require('./function-node');
 const utils = require('../../core/utils');
 
 /**
- * Class: WebGLFunctionBuilder
+ * @class WebGLFunctionBuilder
  *
  * Extends: FunctionBuilderBase
  *
@@ -19,7 +19,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: getStringFromFunctionNames
+	 * @name getStringFromFunctionNames
 	 *
 	 * Parameters:
 	 * 	functionList  - {[String,...]} List of function to build the webgl string.
@@ -40,7 +40,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: getPrototypeStringFromFunctionNames
+	 * @name getPrototypeStringFromFunctionNames
 	 * 
 	 * Return webgl String of all functions converted to webgl shader form
 	 * Parameters:
@@ -63,7 +63,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: getString
+	 * @name getString
 	 *
 	 * Parameters:
 	 * 	functionName  - {String} Function name to trace from. If null, it returns the WHOLE builder stack
@@ -84,7 +84,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: getPrototypeString
+	 * @name getPrototypeString
 	 *
 	 * Return the webgl string for a function converted to glsl (webgl shaders)
 	 *
@@ -104,7 +104,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: addKernel 
+	 * @name addKernel 
 	 *
 	 * Add a new kernel to this instance
 	 *
@@ -130,7 +130,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: addSubKernel
+	 * @name addSubKernel
 	 *
 	 * Add a new sub-kernel to the current kernel instance
 	 *
