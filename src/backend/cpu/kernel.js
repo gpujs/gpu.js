@@ -88,6 +88,11 @@ module.exports = class CPUKernel extends KernelBase {
 	/// If the graphical flag is enabled, canvas is used.
 	///
 	build() {
+
+		//
+		// NOTE: these are optional safety checks
+		//       does not actually do anything
+		//
 		const kernelArgs = [];
 		for (let i = 0; i < arguments.length; i++) {
 			const argType = utils.getArgumentType(arguments[i]);
@@ -168,8 +173,13 @@ module.exports = class CPUKernel extends KernelBase {
 		if (this._kernelString !== null) return this._kernelString;
 
 		const paramNames = this.paramNames;
-		const threadDim = this.threadDim;
 		const builder = this.functionBuilder;
+
+		// Thread dim fix (to make compilable)
+		const threadDim = this.threadDim || (this.threadDim = utils.clone(this.dimensions));
+		while (threadDim.length < 3) {
+			threadDim.push(1);
+		}
 
 		if (this.subKernels !== null) {
 			this.subKernelOutputTextures = [];
@@ -269,4 +279,49 @@ module.exports = class CPUKernel extends KernelBase {
 	toString() {
 		return kernelString(this);
 	}
+
+	///
+	/// Function: precompileKernelObj
+	///
+	/// Precompile the kernel into a single object, 
+	/// that can be used for building the execution kernel subsequently.
+	///
+	/// Parameters:
+	///     argTypes     - {Array}    Array of argument types
+	///     
+	/// Return:
+	///     Compiled kernel {Object}
+	///
+	precompileKernelObj(argTypes) {
+
+		const threadDim = this.threadDim || (this.threadDim = utils.clone(this.dimensions));
+
+
+		return {
+			threadDim : threadDim
+		};
+	}
+	
+	///
+	/// Function: compileKernel
+	/// 
+	/// Takes a previously precompiled kernel object,
+	/// and complete compilation into a full kernel
+	///
+	/// Return:
+	///     Compiled kernel {Function}
+	///
+	static compileKernel( precompileObj ) {
+
+		// Extract values from precompiled obj
+		const threadDim = precompileObj.threadDim;
+
+		// Normalize certain values : For actual build
+		while (threadDim.length < 3) {
+			threadDim.push(1);
+		}
+
+	}
+
+
 };
