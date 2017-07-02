@@ -12,6 +12,7 @@
     "babel-preset-env": "^1.5.2",
     "browser-sync": "^2.18.2",
     "browserify": "^14.3.0",
+    "glob": "^7.1.2",
     "gulp": "^3.9.1",
     "gulp-babel": "^6.1.2",
     "gulp-concat": "^2.6.0",

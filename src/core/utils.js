@@ -6,7 +6,7 @@
 ///
 /// Note that all methods in this class is 'static' by nature `Utils.functionName()`
 ///
-const UtilsCore = require("./Utils-core");
+const UtilsCore = require("./utils-core");
 const Texture = require('./texture');
 // FUNCTION_NAME regex
 const FUNCTION_NAME = /function ([^(]*)/;
