@@ -1,3 +1,5 @@
+const UtilsCore = require("./utils-core");
+
 ///
 /// Class: GPUCore
 ///
@@ -23,7 +25,7 @@ module.exports = class GPUCore {
 	/// Returns:
 	/// 	<Object> The validated kernel object, converted from JSON if needed
 	///
-	validateKernelObj(kernelObj) {
+	static validateKernelObj(kernelObj) {
 
 		// NULL validation
 		if( kernelObj == null ) {
@@ -73,9 +75,11 @@ module.exports = class GPUCore {
 	/// Returns:  
 	/// 	<Function> The kernel function
 	/// 
-	loadKernelObj(kernelObj, inOpt) {
+	static loadKernelObj(kernelObj, inOpt) {
 
 		// Validates the kernelObj, throws an exception if it fails
 		kernelObj = validateKernelObj(kernelObj);
+
+		
 	}
 }

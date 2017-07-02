@@ -2,14 +2,17 @@ const utils = require('./utils');
 const WebGLRunner = require('../backend/web-gl/runner');
 const CPURunner = require('../backend/cpu/runner');
 const WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
+const GPUCore = require("./gpu-core");
 
 ///
 /// Class: GPU
 ///
 /// Initialises the GPU.js library class which manages the WebGL context for the created functions.
 ///
-module.exports = class GPU {
+class GPU extends GPUCore {
 	constructor(settings) {
+		super(settings);
+		
 		settings = settings || {};
 		this._canvas = settings.canvas || null;
 		this._webGl = settings.webGl || null;
@@ -297,3 +300,9 @@ module.exports = class GPU {
 		return this._webGl;
 	}
 };
+
+// This ensure static methods are "inherited"
+// See: https://stackoverflow.com/questions/5441508/how-to-inherit-static-methods-from-base-class-in-javascript
+Object.assign(GPU, GPUCore);
+
+module.exports = GPU;

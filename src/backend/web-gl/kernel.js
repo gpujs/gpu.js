@@ -190,7 +190,6 @@ module.exports = class WebGLKernel extends KernelBase {
 	/// 	Result  {Object}     The final output of the program, as float, and as Textures for reuse.
 	///
 	///
-
 	run() {
 		if (this.program === null) {
 			this.build.apply(this, arguments);
