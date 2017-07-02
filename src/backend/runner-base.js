@@ -101,7 +101,7 @@ module.exports = class BaseRunner {
 		}
 
 		if (!settings.webGl) {
-			settings.webGl = this.webGl;
+			settings.webGl = this.webgl;
 		}
 
 		return kernelRunShortcut(new this.Kernel(fnString, settings));

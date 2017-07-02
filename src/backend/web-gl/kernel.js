@@ -61,7 +61,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.ext = null;
 		this.compiledFragShaderString = null;
 		this.compiledVertShaderString = null;
-		if (!this._webGl) this._webGl = utils.initWebGl(this.canvas);
+		if (!this._webGl) this._webGl = utils.initWebGl(this.getCanvas());
 	}
 
 	///

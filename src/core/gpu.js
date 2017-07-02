@@ -86,10 +86,10 @@ class GPU extends GPUCore {
 
 		//if canvas didn't come from this, propagate from kernel
 		if (!this._canvas) {
-			this._canvas = kernel.canvas;
+			this._canvas = kernel.getCanvas();
 		}
 		if (!this._runner.canvas) {
-			this._runner.canvas = kernel.canvas;
+			this._runner.canvas = kernel.getCanvas();
 		}
 
 		this.kernels.push(kernel);
@@ -191,8 +191,8 @@ class GPU extends GPUCore {
 		const combinedKernel = arguments[arguments.length - 1];
 		if (this.getMode() === 'cpu') return combinedKernel;
 
-		const canvas = arguments[0].canvas;
-		let webGl = arguments[0].webGl;
+		const canvas = arguments[0].getCanvas();
+		let webGl = arguments[0].getWebGl();
 
 		for (let i = 0; i < arguments.length - 1; i++) {
 			arguments[i]
@@ -204,7 +204,7 @@ class GPU extends GPUCore {
 		return function() {
 			combinedKernel.apply(null, arguments);
 			const texSize = lastKernel.texSize;
-			const gl = lastKernel.webGl;
+			const gl = lastKernel.getWebGl();
 			const threadDim = lastKernel.threadDim;
 			let result;
 			if (lastKernel.floatOutput) {
@@ -265,7 +265,7 @@ class GPU extends GPUCore {
 	///
 	/// Function: get isWebGlSupported()
 	///
-	/// [GETTER] Return TRUE, if browser supports WebGl AND Canvas
+	/// Return TRUE, if browser supports WebGl AND Canvas
 	///
 	/// Note: This function can also be called directly `GPU.isWebGlSupported()`
 	///
@@ -277,26 +277,26 @@ class GPU extends GPUCore {
 	}
 
 	///
-	/// Function: get canvas()
+	/// Function: getCanvas()
 	///
-	/// [GETTER] Return the canvas object bound to this gpu instance.
+	/// Return the canvas object bound to this gpu instance.
 	///
 	/// Returns:
 	/// 	{Object} Canvas object if present
 	///
-	get canvas() {
+	getCanvas() {
 		return this._canvas;
 	}
 
 	///
-	/// Function: get webGl()
+	/// Function: getWebGl()
 	///
-	/// [GETTER] Return the webGl object bound to this gpu instance.
+	/// Return the webGl object bound to this gpu instance.
 	///
 	/// Returns:
 	/// 	{Object} WebGl object if present
 	///
-	get webGl() {
+	getWebGl() {
 		return this._webGl;
 	}
 };

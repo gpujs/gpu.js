@@ -212,20 +212,20 @@ module.exports = class BaseKernel {
 	}
 
 	///
-	/// Function: get canvas()
+	/// Function: getCanvas()
 	///
-	/// [GETTER] Returns the current canvas instance bound to the kernel
+	/// Returns the current canvas instance bound to the kernel
 	///
-	get canvas() {
+	getCanvas() {
 		return this._canvas;
 	}
 
 	///
-	/// Function: get webGl()
+	/// Function: getWebGl()
 	///
-	/// [GETTER] Returns the current webGl instance bound to the kernel
+	/// Returns the current webGl instance bound to the kernel
 	///
-	get webGl() {
+	getWebGl() {
 		return this._webGl;
 	}
 
