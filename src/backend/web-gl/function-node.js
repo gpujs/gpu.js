@@ -50,7 +50,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for generically to its respective function
 	 *
-	 * Parameters:
+	 * *
 	 *  	ast         - the AST object to parse
 	 *  	retArr      - return array string
 	 *  	funcParam   - FunctionNode, that tracks compilation state

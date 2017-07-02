@@ -20,8 +20,7 @@ module.exports = class CPURunner extends RunnerBase {
 	/**
 	 * @name CPURunner
 	 *
-	 * Parameters:
-	 * 	settings         - {Object}     Settings to instantiate properties in RunnerBase, with given values
+	 * 	@param settings {Object}     Settings to instantiate properties in RunnerBase, with given values
 	 *
 	 */
 	constructor(settings) {

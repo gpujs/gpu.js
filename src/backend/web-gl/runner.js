@@ -21,8 +21,7 @@ module.exports = class WebGLRunner extends RunnerBase {
 	/**
 	 * @name WebGLRunner
 	 *
-	 * Parameters:
-	 * 	settings         - {Object}     Settings to instantiate properties in RunnerBase, with given values
+	 * 	@param settings {Object}     Settings to instantiate properties in RunnerBase, with given values
 	 *
 	 */
 	constructor(settings) {

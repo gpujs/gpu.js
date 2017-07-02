@@ -6,7 +6,7 @@
  * This handles all the raw state, converted state, etc. Of a single function.
  *
  * Properties:
- * 	nodeMap 		- {Object} 			Object map, where nodeMap[function] = new FunctionNode;
+ * 	   nodeMap 		- {Object} 			Object map, where nodeMap[function] = new FunctionNode;
  *     gpu     		- {Object} 			The current gpu instance bound to this builder
  *     rootKernel 		- {Object} 			The root kernel object, contains the paramNames, dimensions etc.
  *
@@ -30,12 +30,11 @@ module.exports = class FunctionBuilderBase {
 	 *
 	 * Instantiates a FunctionNode, and add it to the nodeMap
 	 *
-	 * Parameters:
-	 * 	gpu             - {GPU}          The GPU instance
-	 * 	functionName    - {String}       Function name to assume, if its null, it attempts to extract from the function
-	 * 	jsFunction      - {JS Function}  JS Function to do conversion
-	 * 	paramTypes      - {[String,...]|{variableName: Type,...}} Parameter type array, assumes all parameters are 'float' if null
-	 * 	returnType      - {String}       The return type, assumes 'float' if null
+	 * 	@param gpu {GPU}          The GPU instance
+	 * 	@param functionName {String}       Function name to assume, if its null, it attempts to extract from the function
+	 * 	@param jsFunction {JS Function}  JS Function to do conversion
+	 * 	@param paramTypes {[String,...]|{variableName: Type,...}} Parameter type array, assumes all parameters are 'float' if null
+	 * 	@param returnType {String}       The return type, assumes 'float' if null
 	 *
 	 */
 	addFunction(functionName, jsFunction, paramTypes, returnType) {
@@ -47,8 +46,7 @@ module.exports = class FunctionBuilderBase {
 	 *
 	 * Add the funciton node directly
 	 *
-	 * Parameters:
-	 * 	inNode    - {functionNode}       functionNode to add
+	 * 	@param inNode {functionNode}       functionNode to add
 	 *
 	 */
 	addFunctionNode(inNode) {
@@ -66,9 +64,8 @@ module.exports = class FunctionBuilderBase {
 	 * This allow for 'unneeded' functions to be automatically optimized out.
 	 * Note that the 0-index, is the starting function trace.
 	 *
-	 * Parameters:
-	 * 	functionName  - {String}        Function name to trace from, default to 'kernel'
-	 * 	retList       - {[String,...]}  Returning list of function names that is traced. Including itself.
+	 * 	@param functionName {String}        Function name to trace from, default to 'kernel'
+	 * 	@param retList {[String,...]}  Returning list of function names that is traced. Including itself.
 	 *
 	 * Returns:
 	 * 	{[String,...]}  Returning list of function names that is traced. Including itself.

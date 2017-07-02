@@ -34,12 +34,11 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * [Constructor] Builds the function with the given JS function, and argument type array.
 	 *
-	 * Parameters:
-	 * 	gpu             - {GPU}                   The GPU instance
-	 * 	functionName    - {String}                Function name to assume, if its null, it attempts to extract from the function
-	 * 	jsFunction      - {JS Function / String}  JS Function to do conversion
-	 * 	paramTypes      - {[String,...]|{variableName: Type}}          Parameter type array, assumes all parameters are 'float' if null
-	 * 	returnType      - {String}                The return type, assumes 'float' if null
+	 * 	@param gpu {GPU}                   The GPU instance
+	 * 	@param functionName {String}                Function name to assume, if its null, it attempts to extract from the function
+	 * 	@param jsFunction {JS Function / String}  JS Function to do conversion
+	 * 	@param paramTypes {[String,...]|{variableName: Type}}          Parameter type array, assumes all parameters are 'float' if null
+	 * 	@param returnType {String}                The return type, assumes 'float' if null
 	 *
 	 */
 	constructor(functionName, jsFunction, options, paramTypes, returnType) {
@@ -197,8 +196,7 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * This is used internally to convert to shader code
 	 *
-	 * Parameters:
-	 * 	inParser - {JISON Parser}  Parser to use, assumes in scope 'parser' if null
+	 * 	@param inParser {JISON Parser}  Parser to use, assumes in scope 'parser' if null
 	 *
 	 * Returns:
 	 * 	{AST Object} The function AST Object, note that result is cached under this.jsFunctionAST;
@@ -246,8 +244,7 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * Set the functionString value, overwriting it
 	 *
-	 * Parameters:
-	 * 	functionString - {String}  Shader code string, representing the function
+	 * 	@param functionString {String}  Shader code string, representing the function
 	 *
 	 */
 	setFunctionString(functionString) {
@@ -259,8 +256,7 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * Return the type of parameter sent to subKernel/Kernel.
 	 *
-	 * Parameters:
-	 * 	paramName 		- {String}  Name of the parameter
+	 * 	@param paramName {String}  Name of the parameter
 	 *
 	 * Returns:
 	 * 	{String} Type of the parameter
@@ -287,8 +283,7 @@ module.exports = class BaseFunctionNode {
 	 * Return the name of the *user parameter*(subKernel parameter) corresponding 
 	 * to the parameter supplied to the kernel
 	 *
-	 * Parameters:
-	 * 	paramName 		- {String}  Name of the parameter
+	 * 	@param paramName {String}  Name of the parameter
 	 *
 	 * Returns:
 	 * 	{String} Name of the parameter

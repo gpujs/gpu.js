@@ -51,8 +51,7 @@ module.exports = class BaseRunner {
 	 *
 	 * Converts the provided Texture instance to a JavaScript Array 
 	 *	
-	 * Parameters: 
-	 * 	texture      - {Object}
+	 * 	@param texture {Object}
 	 *
 	 */
 	textureToArray(texture) {
@@ -68,8 +67,7 @@ module.exports = class BaseRunner {
 	 *
 	 * Deletes the provided Texture instance 
 	 *
-	 * Parameters: 
-	 * 	texture      - {Object}
+	 * 	@param texture {Object}
 	 */
 	deleteTexture(texture) {
 		this.webGl.deleteTexture(texture.texture);

@@ -80,8 +80,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Set dimensions of the kernel function
 	 *
-	 * Parameters:
-	 * 	dimensions      - {Array}       The dimensions array set the dimensions to
+	 * 	@param dimensions {Array}       The dimensions array set the dimensions to
 	 *
 	 */
 	setDimensions(dimensions) {
@@ -94,8 +93,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Toggle debug mode
 	 *
-	 * Parameters:
-	 * 	flag      - {Boolean}       true to enable debug
+	 * 	@param flag {Boolean}       true to enable debug
 	 *
 	 */
 	setDebug(flag) {
@@ -108,8 +106,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Toggle graphical output mode
 	 *
-	 * Parameters:
-	 * 	flag      - {Boolean}       true to enable graphical output
+	 * 	@param flag {Boolean}       true to enable graphical output
 	 *
 	 */
 	setGraphical(flag) {
@@ -122,8 +119,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Set the maximum number of loop iterations
 	 *
-	 * Parameters:
-	 * 	max      - {Number}       iterations count
+	 * 	@param max {Number}       iterations count
 	 *
 	 */
 	setLoopMaxIterations(max) {
@@ -161,8 +157,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Toggle texture output mode
 	 *
-	 * Parameters:
-	 * 	flag      - {Boolean}       true to enable floatTextures
+	 * 	@param flag {Boolean}       true to enable floatTextures
 	 *
 	 */
 	setFloatTextures(flag) {
@@ -175,8 +170,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Toggle output mode
 	 *
-	 * Parameters:
-	 * 	flag      - {Boolean}       true to enable float
+	 * 	@param flag {Boolean}       true to enable float
 	 *
 	 */
 	setFloatOutput(flag) {
@@ -194,8 +188,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Bind the canvas to kernel
 	 * 
-	 * Parameters:
-	 * 	canvas     - {Canvas}        Canvas to bind
+	 * 	@param canvas {Canvas}        Canvas to bind
 	 *
 	 */
 	setCanvas(canvas) {
@@ -208,8 +201,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Bind the webGL instance to kernel
 	 * 
-	 * Parameters:
-	 * 	webGL     - {Canvas}        webGL instance to bind
+	 * 	@param webGL {Canvas}        webGL instance to bind
 	 *
 	 */
 	setWebGl(webGl) {
@@ -276,8 +268,7 @@ module.exports = class BaseKernel {
 	 * Add a sub kernel to the root kernel instance.
 	 * This is what `createKernels` uses.
 	 *
-	 * Parameters:
-	 * 	fnString      - {String}       function (as a String) of the subKernel to add
+	 * 	@param fnString {String}       function (as a String) of the subKernel to add
 	 *
 	 */
 	addSubKernel(fnString) {
@@ -295,9 +286,8 @@ module.exports = class BaseKernel {
 	 * Add a sub kernel to the root kernel instance, indexed by a property name
 	 * This is what `createKernels` uses.
 	 *
-	 * Parameters:
-	 * 	property      - {String}       property key for the subKernel
-	 * 	fnString      - {String}       function (as a String) of the subKernel to add
+	 * 	@param property {String}       property key for the subKernel
+	 * 	@param fnString {String}       function (as a String) of the subKernel to add
 	 *
 	 */
 	addSubKernelProperty(property, fnString) {
