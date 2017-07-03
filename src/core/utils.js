@@ -5,6 +5,7 @@
  * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
  *
  * Note that all methods in this class is 'static' by nature `Utils.functionName()`
+ * @typedef {Object} gpuJSObject
  *
  */
 const UtilsCore = require("./utils-core");
@@ -80,7 +81,6 @@ class Utils extends UtilsCore {
 	 *
 	 * @param {String} funcStr - String of JS function to validate
 	 *
-
 	 * @returns {Boolean} TRUE if the string passes basic validation
 	 *
 	 */
@@ -100,7 +100,6 @@ class Utils extends UtilsCore {
 	 *
 	 * @param {String} funcStr - String of JS function to validate
 	 *
-
 	 * @returns {String} Function name string (if found)
 	 *
 	 */
@@ -119,8 +118,7 @@ class Utils extends UtilsCore {
 	 *
 	 * @param {String} funcStr - String of JS function to validate
 	 *
-
-	 * 	{[String, ...]}  Array representing all the parameter names
+	 * @returns {String[]}  Array representing all the parameter names
 	 *
 	 */
 	static getParamNamesFromString(func) {
@@ -144,7 +142,6 @@ class Utils extends UtilsCore {
 	 *
 	 * @param {Object} obj - Object to clone
 	 *
-
 	 * @returns {Object}  Cloned object
 	 *
 	 */
@@ -246,7 +243,7 @@ class Utils extends UtilsCore {
 	 *
 	 * Checks if the browser supports readPixels with float type
 	 *
-	 * @param {gpu.js object} gpu - the gpu object
+	 * @param {gpuJSObject} gpu - the gpu object
 	 *
 	 * @returns {Boolean} true if browser supports
 	 *
