@@ -12,6 +12,14 @@
 
 class UtilsCore {
 
+	/**
+	 * @typedef {Object} webGlContext
+	 */
+	
+	/**
+	 * @typedef {Object} CanvasDOMObject
+	 */ 
+
 	//-----------------------------------------------------------------------------
 	//
 	//  Canvas validation and support
@@ -24,7 +32,6 @@ class UtilsCore {
 	 * @function
 	 * @memberOf UtilsCore
 	 * 
-	 * @typedef {Object} CanvasDOMObject
 	 *
 	 * @desc Return TRUE, on a valid DOM canvas object
 	 *
@@ -94,13 +101,13 @@ class UtilsCore {
 	//
 	//-----------------------------------------------------------------------------
 
+
 	/**
+	 * 
 	 * @name isWebGl
 	 * @function
 	 * @static
 	 * @memberOf UtilsCore
-	 * 
-	 * @typedef {Object} webGlContext
 	 *
 	 * @desc Return TRUE, on a valid webGlContext object
 	 *
@@ -133,9 +140,8 @@ class UtilsCore {
 	 * @static
 	 * @memberOf UtilsCore
 	 *
-	 * Return TRUE, if browser supports webgl
+	 * @desc Return TRUE, if browser supports webgl
 	 *
-
 	 * @returns {Boolean} TRUE if browser supports webgl
 	 *
 	 */

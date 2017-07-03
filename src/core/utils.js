@@ -1,13 +1,15 @@
 /**
- * @class Utils
- *
- * Various utility functions / snippets of code that GPU.JS uses internally.\
+ * 
+ * @classdesc Various utility functions / snippets of code that GPU.JS uses internally.\
  * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
  *
- * Note that all methods in this class is 'static' by nature `Utils.functionName()`
- * @typedef {Object} gpuJSObject
+ * Note that all methods in this class is *static* by nature `Utils.functionName()`
+ * 
+ * @class Utils
+ * @extends UtilsCore
  *
  */
+
 const UtilsCore = require("./utils-core");
 const Texture = require('./texture');
 // FUNCTION_NAME regex
@@ -40,6 +42,7 @@ class Utils extends UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
+	 * @memberOf Utils
 	 * @name systemEndianness
 	 * @function
 	 * @static
@@ -61,6 +64,7 @@ class Utils extends UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
+	 * @memberOf Utils
 	 * @name isFunction
 	 * @function
 	 * @static
@@ -77,6 +81,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
+	 * @memberOf Utils
 	 * @name isFunctionString
 	 * @function
 	 * @static
@@ -100,6 +105,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
+	 * @memberOf Utils
 	 * @name getFunctionName_fromString
 	 * @function
 	 * @static
@@ -120,6 +126,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
+	 * @memberOf Utils
 	 * @name getParamNames_fromString
 	 * @function
 	 * @static
@@ -146,6 +153,7 @@ class Utils extends UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
+	 * @memberOf Utils
 	 * @name clone
 	 * @function
 	 * @static
@@ -174,6 +182,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
+	 * @memberOf Utils
 	 * @name newPromise
 	 * @function
 	 * @static
@@ -194,6 +203,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
+	 * @memberOf Utils
 	 * @name functionBinder
 	 * @function
 	 * @static
@@ -218,6 +228,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
+	 * @memberOf Utils
 	 * @name isArray
 	 * @function
 	 * @static
@@ -235,6 +246,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
+	 * @memberOf Utils
 	 * @name getArgumentType
 	 * @function
 	 * @static
@@ -257,8 +269,12 @@ class Utils extends UtilsCore {
 			return 'Unknown';
 		}
 	}
+	/**
+	 * @typedef {Object} gpuJSObject
+	 */
 
 	/**
+	 * @memberOf Utils
 	 * @name isFloatReadPixelsSupported
 	 * @function
 	 * @static
@@ -308,6 +324,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
+	 * @memberOf Utils
 	 * @name getDimensions
 	 * @function
 	 * @static
@@ -348,6 +365,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
+	 * @memberOf Utils
 	 * @name pad
 	 * @function
 	 * @static
@@ -379,6 +397,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
+	 * @memberOf Utils
 	 * @name flatten
 	 * @function
 	 * @static
@@ -413,6 +432,7 @@ class Utils extends UtilsCore {
 	}
 
 	/**
+	 * @memberOf Utils
 	 * @name splitArray
 	 * @function
 	 * @static
