@@ -1,9 +1,7 @@
 /**
  * @class FunctionBuilderBase
- *
- * [INTERNAL] A collection of functionNodes.
- *
  * This handles all the raw state, converted state, etc. Of a single function.
+ * [INTERNAL] A collection of functionNodes.
  *
  * @param {Object} nodeMap - Object map, where nodeMap[function] = new FunctionNode;
  * @param {Object} gpu - The current gpu instance bound to this builder
@@ -34,7 +32,7 @@ module.exports = class FunctionBuilderBase {
 	 * @param {GPU} gpu - The GPU instance
 	 * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
 	 * @param {Function} jsFunction - JS Function to do conversion
-	 * @param {[String,...]|{variableName: Type,...}} paramTypes - Parameter type array, assumes all parameters are 'float' if null
+	 * @param {String[]|Object} paramTypes - Parameter type array, assumes all parameters are 'float' if null
 	 * @param {String} returnType - The return type, assumes 'float' if null
 	 *
 	 */
