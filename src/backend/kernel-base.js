@@ -14,7 +14,7 @@ const utils = require('../core/utils');
  * @param {Array} dimensions - Dimensions of the kernel function, this.thread.x, etc.
  * @param {Boolean} debug - Toggle debug mode
  * @param {String} graphical - Toggle graphical mode
- * @param {Number} loopMaxIterations - Maximum number of loop iterations
+ * @param {number} loopMaxIterations - Maximum number of loop iterations
  * @param {Object} constants - Global constants
  * @param {Array} subKernels - Sub kernels bound to this kernel instance
  * @param {Object} subKernelProperties - Sub kernels bound to this kernel instance as key/value pairs
@@ -118,7 +118,7 @@ module.exports = class BaseKernel {
 	 *
 	 * Set the maximum number of loop iterations
 	 *
-	 * @param {Number} max - iterations count
+	 * @param {number} max - iterations count
 	 *
 	 */
 	setLoopMaxIterations(max) {

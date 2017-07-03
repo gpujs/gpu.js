@@ -25,7 +25,7 @@ const kernelString = require('./kernel-string');
  * @param {Boolean} outputToTexture - Set output type to Texture, instead of float
  * @param {String} endianness - Endian information like Little-endian, Big-endian.
  * @param {Array} paramTypes - Types of parameters sent to the Kernel
- * @param {Number} argumentsLength - Number of parameters sent to the Kernel
+ * @param {number} argumentsLength - Number of parameters sent to the Kernel
  * @param {String} compiledFragShaderString - Compiled fragment shader string
  * @param {String} compiledVertShaderString - Compiled Vertical shader string
  *

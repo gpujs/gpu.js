@@ -294,7 +294,7 @@ class Utils extends UtilsCore {
 	 * Return the dimension of an array.
 	 * 
 	 * @param {Array} x - The array
-	 * @param {Number} pad - To include padding in the dimension calculation [Optional]
+	 * @param {number} pad - To include padding in the dimension calculation [Optional]
 	 *
 	 *
 	 *
@@ -332,7 +332,7 @@ class Utils extends UtilsCore {
 	 * Pad an array AND its elements with leading and ending zeros
 	 *
 	 * @param {Array} arr - the array to pad zeros to
-	 * @param {Number} padding - amount of padding
+	 * @param {number} padding - amount of padding
 	 *
 	 * @returns {Array} Array with leading and ending zeros, and all the elements padded by zeros.
 	 *
