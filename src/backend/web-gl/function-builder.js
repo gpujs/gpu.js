@@ -20,6 +20,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 
 	/**
 	 * @name getStringFromFunctionNames
+	 * @function
 	 *
 	 * @param {[String,...]} functionList - List of function to build the webgl string.
 	 *
@@ -39,7 +40,8 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 
 	/**
 	 * @name getPrototypeStringFromFunctionNames
-	 * 
+	 *  @function
+	 *
 	 * Return webgl String of all functions converted to webgl shader form
 	 *
 	 * @param {[String,...]} functionList - List of function names to build the webgl string.
@@ -61,6 +63,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 
 	/**
 	 * @name getString
+	 * @function
 	 *
 	 * @param {String} functionName - Function name to trace from. If null, it returns the WHOLE builder stack
 	 *
@@ -80,6 +83,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 
 	/**
 	 * @name getPrototypeString
+	 * @function
 	 *
 	 * Return the webgl string for a function converted to glsl (webgl shaders)
 	 *
@@ -98,6 +102,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 
 	/**
 	 * @name addKernel 
+	 * @function
 	 *
 	 * Add a new kernel to this instance
 	 *
@@ -122,6 +127,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 
 	/**
 	 * @name addSubKernel
+	 * @function
 	 *
 	 * Add a new sub-kernel to the current kernel instance
 	 *

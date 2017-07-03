@@ -19,6 +19,7 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 
 	/**
 	 * @name getPrototypeString
+	 * @function
 	 *
 	 * Return the JS Function String optimized for cpu.
 	 *
@@ -43,6 +44,7 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 
 	/**
 	 * @name addSubKernel
+	 * @function
 	 *
 	 * Add a new sub-kernel to the current kernel instance
 	 *

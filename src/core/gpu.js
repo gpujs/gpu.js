@@ -50,6 +50,7 @@ class GPU extends GPUCore {
 	}
 	/**
 	 * @name createKernel
+	 * @function
 	 *
 	 * This creates a callable function object to call the kernel function with the argument parameter set
 	 *
@@ -100,6 +101,7 @@ class GPU extends GPUCore {
 	/**
 	 *
 	 * @name createKernels
+	 * @function
 	 *
 	 * Create a super kernel which executes sub kernels 
 	 * and saves their output to be used with the next sub kernel.
@@ -162,6 +164,7 @@ class GPU extends GPUCore {
 
 	/**
 	 * @name combineKernels
+	 * @function
 	 *
 	 * Combine different kernels into one super Kernel, 
 	 * useful to perform multiple operations inside one 
@@ -230,6 +233,7 @@ class GPU extends GPUCore {
 
 	/**
 	 * @name addFunction
+	 * @function
 	 *
 	 * Adds additional functions, that the kernel may call.
 	 *
@@ -247,6 +251,7 @@ class GPU extends GPUCore {
 
 	/**
 	 * @name getMode()
+	 * @function
 	 *
 	 * Return the current mode in which gpu.js is executing.
 	 * 
@@ -259,6 +264,7 @@ class GPU extends GPUCore {
 
 	/**
 	 * @name get isWebGlSupported()
+	 * @function
 	 *
 	 * Return TRUE, if browser supports WebGl AND Canvas
 	 *
@@ -273,6 +279,7 @@ class GPU extends GPUCore {
 
 	/**
 	 * @name getCanvas()
+	 * @function
 	 *
 	 * Return the canvas object bound to this gpu instance.
 	 *
@@ -285,6 +292,7 @@ class GPU extends GPUCore {
 
 	/**
 	 * @name getWebGl()
+	 * @function
 	 *
 	 * Return the webGl object bound to this gpu instance.
 	 *

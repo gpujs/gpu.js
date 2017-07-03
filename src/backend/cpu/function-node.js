@@ -29,6 +29,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 
 	/**
 	 * @name getFunctionPrototypeString
+	 * @function
 	 *
 	 * Returns the converted webgl shader function equivalent of the JS function
 	 *

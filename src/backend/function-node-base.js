@@ -30,6 +30,7 @@ module.exports = class BaseFunctionNode {
 
 	/**
 	 * @name FunctionNodeBase
+	 * @function
 	 *
 	 * @constructor Builds the function with the given JS function, and argument type array.
 	 *
@@ -167,6 +168,7 @@ module.exports = class BaseFunctionNode {
 
 	/**
 	 * @name getJSFunction
+	 * @function
 	 *
 	 * Gets and return the stored JS Function.
 	 * Note: that this internally eval the function, if only the string was provided on construction
@@ -189,6 +191,7 @@ module.exports = class BaseFunctionNode {
 
 	/**
 	 * @name getJS_AST
+	 * @function
 	 *
 	 * Parses the class function JS, and returns its Abstract Syntax Tree object.
 	 *
@@ -224,6 +227,7 @@ module.exports = class BaseFunctionNode {
 
 	/**
 	 * @name getFunctionString
+	 * @function
 	 *
 	 * Returns the converted webgl shader function equivalent of the JS function
 	 *
@@ -237,6 +241,7 @@ module.exports = class BaseFunctionNode {
 
 	/**
 	 * @name setFunctionString
+	 * @function
 	 *
 	 * Set the functionString value, overwriting it
 	 *
@@ -249,6 +254,7 @@ module.exports = class BaseFunctionNode {
 
 	/**
 	 * @name getParamType
+	 * @function
 	 *
 	 * Return the type of parameter sent to subKernel/Kernel.
 	 *
@@ -274,6 +280,7 @@ module.exports = class BaseFunctionNode {
 
 	/**
 	 * @name getUserParamName
+	 * @function
 	 *
 	 * Return the name of the *user parameter*(subKernel parameter) corresponding 
 	 * to the parameter supplied to the kernel

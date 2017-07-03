@@ -19,6 +19,7 @@ module.exports = class WebGLRunner extends RunnerBase {
 	
 	/**
 	 * @name WebGLRunner
+	 * @function
 	 *
 	 * 	@param {Object} settings - Settings to instantiate properties in RunnerBase, with given values
 	 *
@@ -31,6 +32,7 @@ module.exports = class WebGLRunner extends RunnerBase {
 
 	/**
 	 * @name getMode()
+	 * @function
 	 *
 	 * Return the current mode in which gpu.js is executing.
 	 * 

@@ -14,6 +14,7 @@ module.exports = class Texture {
 
 	/**
 	 * @name toArray
+	 * @function
 	 *
 	 * Converts the Texture into a JavaScript Array.
 	 *
@@ -32,6 +33,7 @@ module.exports = class Texture {
 	}
 	/**
 	 * @name delete
+	 * @function
 	 *
 	 * Deletes the Texture.
 	 *

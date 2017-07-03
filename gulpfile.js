@@ -14,6 +14,31 @@ const jsprettify = require('gulp-jsbeautifier');
 const babel = require('gulp-babel');
 const stripComments = require('gulp-strip-comments');
 
+const glob = require('glob');
+
+gulp.task('refactor', ()=>{
+	glob('./src/**/*.js', (err, files)=>{
+		var count = 0;
+		files.forEach(file=>{
+			fs.readFile(file, (err, data)=>{
+				
+				const dataString = data.toString();
+				let chunks = dataString.split('\n');
+				// console.log(chunks);
+				for (var i = 0; i < chunks.length; i++) {
+					if(chunks[i].includes('@name')){
+						const uptoStar = chunks[i+1].match(/(\s+|\t+)+\*/g)[0];
+						const functionNamespace = chunks[i+1] + ' @function';
+						chunks[i+1] = functionNamespace + '\n' + uptoStar;
+					}
+				}
+				const finalData = chunks.join('\n');
+				fs.writeFile(file, finalData);
+			});
+		});
+	});
+});
+
 /// Build the scripts
 gulp.task('build', function() {
 	browserify('./src/index.js')

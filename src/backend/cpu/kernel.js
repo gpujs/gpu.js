@@ -23,6 +23,7 @@ module.exports = class CPUKernel extends KernelBase {
 	
 	/**
 	 * @name CPUKernel
+	 * @function
 	 *
 	 * Instantiates properties to the CPU Kernel.
 	 *
@@ -57,7 +58,8 @@ module.exports = class CPUKernel extends KernelBase {
 
 	/**
 	 * @name validateOptions
-	 * 
+	 *  @function
+	 *
 	 * Validate options related to CPU Kernel, such as 
 	 * dimensions size, and auto dimension support.
 	 *
@@ -81,6 +83,7 @@ module.exports = class CPUKernel extends KernelBase {
 	
 	/**
 	 * @name build
+	 * @function
 	 *
 	 * Builds the Kernel, by generating the kernel 
 	 *	string using thread dimensions, and arguments 
@@ -161,6 +164,7 @@ module.exports = class CPUKernel extends KernelBase {
 
 	/**
 	 * @name getKernelString
+	 * @function
 	 *
 	 * Generates kernel string for this kernel program.
 	 * 
@@ -275,6 +279,7 @@ module.exports = class CPUKernel extends KernelBase {
 
 	/**
 	 * @name toString
+	 * @function
 	 *
 	 * Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
 	 *
@@ -285,6 +290,7 @@ module.exports = class CPUKernel extends KernelBase {
 
 	/**
 	 * @name precompileKernelObj
+	 * @function
 	 *
 	 * Precompile the kernel into a single object, 
 	 * that can be used for building the execution kernel subsequently.
@@ -307,7 +313,8 @@ module.exports = class CPUKernel extends KernelBase {
 	
 	/**
 	 * @name compileKernel
-	 * 
+	 *  @function
+	 *
 	 * Takes a previously precompiled kernel object,
 	 * and complete compilation into a full kernel
 	 *

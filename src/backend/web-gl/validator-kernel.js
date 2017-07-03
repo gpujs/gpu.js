@@ -11,6 +11,7 @@ module.exports = class WebGLValidatorKernel extends WebGLKernel {
 	
 	/** 
 	 * @name validateOptions
+	 * @function
 	 *
 	 */
 	validateOptions() {

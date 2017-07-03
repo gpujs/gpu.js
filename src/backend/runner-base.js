@@ -29,6 +29,7 @@ module.exports = class BaseRunner {
 
 	/**
 	 * @name BaseRunner
+	 * @function
 	 *
 	 * @constructor Blank constructor, which initializes the properties related to runner
 	 *
@@ -47,6 +48,7 @@ module.exports = class BaseRunner {
 
 	/**
 	 * @name textureToArray
+	 * @function
 	 *
 	 * Converts the provided Texture instance to a JavaScript Array 
 	 *	
@@ -63,6 +65,7 @@ module.exports = class BaseRunner {
 
 	/**
 	 * @name deleteTexture
+	 * @function
 	 *
 	 * Deletes the provided Texture instance 
 	 *

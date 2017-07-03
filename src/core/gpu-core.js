@@ -13,6 +13,7 @@ module.exports = class GPUCore {
 
 	/**
 	 * @name validateKernelObj
+	 * @function
 	 *
 	 * Validates the KernelObj to comply with the defined format
 	 * Note that this does only a limited sanity check, and does not  
@@ -58,6 +59,7 @@ module.exports = class GPUCore {
 
 	/**
 	 * @name loadKernelObj
+	 * @function
 	 *
 	 * Loads the precompilled kernel object. For GPUCore this is the ONLY way to create the kernel.
 	 * To generate the kernelObj use <Kernel.exportKernelObj>

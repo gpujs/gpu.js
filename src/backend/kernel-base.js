@@ -25,6 +25,7 @@ module.exports = class BaseKernel {
 
 	/**
 	 * @name BaseKernel
+	 * @function
 	 *
 	 * @constructor Blank constructor, which initializes the properties
 	 *
@@ -76,6 +77,7 @@ module.exports = class BaseKernel {
 
 	/**
 	 * @name setDimensions
+	 * @function
 	 *
 	 * Set dimensions of the kernel function
 	 *
@@ -89,6 +91,7 @@ module.exports = class BaseKernel {
 
 	/**
 	 * @name setDebug
+	 * @function
 	 *
 	 * Toggle debug mode
 	 *
@@ -102,6 +105,7 @@ module.exports = class BaseKernel {
 
 	/**
 	 * @name setGraphical
+	 * @function
 	 *
 	 * Toggle graphical output mode
 	 *
@@ -115,6 +119,7 @@ module.exports = class BaseKernel {
 
 	/**
 	 * @name setLoopMaxIterations
+	 * @function
 	 *
 	 * Set the maximum number of loop iterations
 	 *
@@ -128,6 +133,7 @@ module.exports = class BaseKernel {
 
 	/**
 	 * @name setConstants
+	 * @function
 	 *
 	 */
 	setConstants(constants) {
@@ -153,6 +159,7 @@ module.exports = class BaseKernel {
 
 	/**
 	 * @name setFloatTextures
+	 * @function
 	 *
 	 * Toggle texture output mode
 	 *
@@ -166,6 +173,7 @@ module.exports = class BaseKernel {
 
 	/**
 	 * @name setFloatOutput
+	 * @function
 	 *
 	 * Toggle output mode
 	 *
@@ -184,6 +192,7 @@ module.exports = class BaseKernel {
 
 	/**
 	 * @name setCanvas
+	 * @function
 	 *
 	 * Bind the canvas to kernel
 	 * 
@@ -197,6 +206,7 @@ module.exports = class BaseKernel {
 
 	/**
 	 * @name setCanvas
+	 * @function
 	 *
 	 * Bind the webGL instance to kernel
 	 * 
@@ -215,6 +225,7 @@ module.exports = class BaseKernel {
 
 	/**
 	 * @name getCanvas()
+	 * @function
 	 *
 	 * Returns the current canvas instance bound to the kernel
 	 *
@@ -225,6 +236,7 @@ module.exports = class BaseKernel {
 
 	/**
 	 * @name getWebGl()
+	 * @function
 	 *
 	 * Returns the current webGl instance bound to the kernel
 	 *

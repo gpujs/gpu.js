@@ -41,6 +41,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name systemEndianness
+	 * @function
 	 *
 	 * Gets the system endianness, and cache it
 	 *
@@ -60,6 +61,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name isFunction
+	 * @function
 	 *
 	 * Return TRUE, on a JS function
 	 *
@@ -74,6 +76,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name isFunctionString
+	 * @function
 	 *
 	 * Return TRUE, on a valid JS function string
 	 *
@@ -95,6 +98,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name getFunctionName_fromString
+	 * @function
 	 *
 	 * Return the function name from a JS function string
 	 *
@@ -113,6 +117,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name getParamNames_fromString
+	 * @function
 	 *
 	 * Return list of parameter names extracted from the JS function string
 	 *
@@ -137,6 +142,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name clone
+	 * @function
 	 *
 	 * Returns a clone
 	 *
@@ -163,6 +169,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name newPromise
+	 * @function
 	 *
 	 * Returns a `new Promise` object based on the underlying implmentation
 	 *
@@ -181,6 +188,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name functionBinder
+	 * @function
 	 *
 	 * Limited implementation of Function.bind, with fallback
 	 *
@@ -203,6 +211,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name isArray
+	 * @function
 	 *
 	 * Checks if is an array or Array-like object
 	 *
@@ -218,6 +227,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name getArgumentType
+	 * @function
 	 *
 	 * Evaluate the argument type, to apply respective logic for it
 	 *
@@ -240,6 +250,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name isFloatReadPixelsSupported
+	 * @function
 	 *
 	 * Checks if the browser supports readPixels with float type
 	 *
@@ -287,6 +298,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name getDimensions
+	 * @function
 	 *
 	 * Return the dimension of an array.
 	 * 
@@ -325,6 +337,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name pad
+	 * @function
 	 *
 	 * Pad an array AND its elements with leading and ending zeros
 	 *
@@ -354,6 +367,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name flatten
+	 * @function
 	 *
 	 * Converts a nested array into a one-dimensional array
 	 *
@@ -386,6 +400,7 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @name splitArray
+	 * @function
 	 *
 	 * Splits an array into smaller arrays.
 	 * Number of elements in one small chunk is given by `part`

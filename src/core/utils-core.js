@@ -19,6 +19,7 @@ class UtilsCore {
 
 	/**
 	 * @name isCanvas
+	 * @function
 	 *
 	 * Return TRUE, on a valid DOM canvas object
 	 *
@@ -40,6 +41,7 @@ class UtilsCore {
 
 	/**
 	 * @name isCanvasSupported
+	 * @function
 	 *
 	 * Return TRUE, if browser supports canvas
 	 *
@@ -52,6 +54,7 @@ class UtilsCore {
 
 	/**
 	 * @name initCanvas
+	 * @function
 	 *
 	 * Initiate and returns a canvas, for usage in init_webgl.
 	 * Returns only if canvas is supported by browser.
@@ -84,6 +87,7 @@ class UtilsCore {
 
 	/**
 	 * @name isWebGl
+	 * @function
 	 *
 	 * Return TRUE, on a valid webGl context object
 	 *
@@ -113,6 +117,7 @@ class UtilsCore {
 
 	/**
 	 * @name isWebGlSupported
+	 * @function
 	 *
 	 * Return TRUE, if browser supports webgl
 	 *
@@ -139,6 +144,7 @@ class UtilsCore {
 
 	/**
 	 * @name initWebGl
+	 * @function
 	 *
 	 * Initiate and returns a webGl, from a canvas object
 	 * Returns only if webGl is supported by browser.
