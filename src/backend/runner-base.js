@@ -2,7 +2,7 @@ const utils = require('../core/utils');
 const kernelRunShortcut = require('./kernel-run-shortcut');
 
 /**
- * Class: BaseRunner
+ * @class BaseRunner
  *
  * Represents the 'private/protected' namespace of the GPU class
  *
@@ -14,24 +14,23 @@ const kernelRunShortcut = require('./kernel-run-shortcut');
  * File isolation is currently the best way to go
  *
  *
- * Properties:
- *		settings 				- {Object}      		Settings object used to set Dimensions, etc.
- *		kernel   				- {String} 	   			Current kernel instance
- *		canvas 					- {Object} 	   			Canvas instance attached to the kernel
- *		webGl   				- {Object}     			WebGl instance attached to the kernel
- *		fn   					- {Function} 			Kernel function to run
- *		functionBuilder  		- {Object} 				FunctionBuilder instance
- *		fnString   				- {String} 	   			Kernel function (as a String)
- *		endianness   			- {String} 	   			endian information like Little-endian, Big-endian.
+ * @param settings 				{Object}      			Settings object used to set Dimensions, etc.
+ * @param kernel   				{String} 	   			Current kernel instance
+ * @param canvas 				{Object} 	   			Canvas instance attached to the kernel
+ * @param webGl   				{Object}     			WebGl instance attached to the kernel
+ * @param fn   					{Function} 				Kernel function to run
+ * @param functionBuilder  		{Object} 				FunctionBuilder instance
+ * @param fnString   			{String} 	   			Kernel function (as a String)
+ * @param endianness   			{String} 	   			endian information like Little-endian, Big-endian.
  *
  */
 
 module.exports = class BaseRunner {
 
 	/**
-	 * Function: BaseRunner
+	 * @name BaseRunner
 	 *
-	 * [Constructor] Blank constructor, which initializes the properties related to runner
+	 * @constructor Blank constructor, which initializes the properties related to runner
 	 *
 	 */
 	constructor(functionBuilder, settings) {
@@ -47,12 +46,11 @@ module.exports = class BaseRunner {
 	}
 
 	/**
-	 * Function: textureToArray
+	 * @name textureToArray
 	 *
 	 * Converts the provided Texture instance to a JavaScript Array 
 	 *	
-	 * Parameters: 
-	 * 	texture      - {Object}
+	 * @param texture {Object}
 	 *
 	 */
 	textureToArray(texture) {
@@ -64,12 +62,11 @@ module.exports = class BaseRunner {
 	}
 
 	/**
-	 * Function: deleteTexture
+	 * @name deleteTexture
 	 *
 	 * Deletes the provided Texture instance 
 	 *
-	 * Parameters: 
-	 * 	texture      - {Object}
+	 * @param texture {Object}
 	 */
 	deleteTexture(texture) {
 		this.webGl.deleteTexture(texture.texture);

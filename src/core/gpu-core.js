@@ -1,7 +1,7 @@
 const UtilsCore = require("./utils-core");
 
 /**
- * Class: GPUCore
+ * @class GPUCore
  *
  * This is a minimalistic version of GPU.js used 
  * To run precompiled GPU.JS code
@@ -12,7 +12,7 @@ const UtilsCore = require("./utils-core");
 module.exports = class GPUCore {
 
 	/**
-	 * Function: validateKernelObj
+	 * @name validateKernelObj
 	 *
 	 * Validates the KernelObj to comply with the defined format
 	 * Note that this does only a limited sanity check, and does not  
@@ -20,11 +20,9 @@ module.exports = class GPUCore {
 	 *
 	 * For the kernel object format see : <kernelObj-format>
 	 *
-	 * Parameters:
-	 * 	kernelObj     - <Object>/<String> KernelObj used to validate
+	 * @param kernelObj {Object|String} KernelObj used to validate
 	 *
-	 * Returns:
-	 * 	<Object> The validated kernel object, converted from JSON if needed
+	 * @returns {Object} The validated kernel object, converted from JSON if needed
 	 *
 	 */
 	static validateKernelObj(kernelObj) {
@@ -59,7 +57,7 @@ module.exports = class GPUCore {
 	}
 
 	/**
-	 * Function: loadKernelObj
+	 * @name loadKernelObj
 	 *
 	 * Loads the precompilled kernel object. For GPUCore this is the ONLY way to create the kernel.
 	 * To generate the kernelObj use <Kernel.exportKernelObj>
@@ -70,12 +68,10 @@ module.exports = class GPUCore {
 	 * 	<GPUCore.validateKernelObj>,
 	 * 	<Kernel.exportKernelObj>
 	 *
-	 * Parameters: 
-	 * 	kernelObj - <Object> The precompilled kernel object
-	 * 	inOpt     - <Object> [Optional] the option overrides to use
+	 * @param kernelObj {Object} The precompilled kernel object
+	 * @param inOpt     {Object} [Optional] the option overrides to use
 	 *
-	 * Returns:  
-	 * 	<Function> The kernel function
+	 * @returns {Function} The kernel function
 	 * 
 	 */
 	static loadKernelObj(kernelObj, inOpt) {

@@ -3,9 +3,9 @@ const WebGLFunctionNode = require('./function-node');
 const utils = require('../../core/utils');
 
 /**
- * Class: WebGLFunctionBuilder
+ * @class WebGLFunctionBuilder
  *
- * Extends: FunctionBuilderBase
+ * @extends FunctionBuilderBase
  *
  * Builds webGl functions (shaders) from JavaScript function Strings
  *
@@ -19,13 +19,11 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: getStringFromFunctionNames
+	 * @name getStringFromFunctionNames
 	 *
-	 * Parameters:
-	 * 	functionList  - {[String,...]} List of function to build the webgl string.
+	 * @param functionList {[String,...]} List of function to build the webgl string.
 	 *
-	 * Returns:
-	 * 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
+	 * @returns {String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	 *
 	 */
 	getStringFromFunctionNames(functionList) {
@@ -40,15 +38,14 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: getPrototypeStringFromFunctionNames
+	 * @name getPrototypeStringFromFunctionNames
 	 * 
 	 * Return webgl String of all functions converted to webgl shader form
-	 * Parameters:
-	 * 	functionList  - {[String,...]} List of function names to build the webgl string.
-	 *		opt 		  - {Object} 	   Settings object passed to functionNode. See functionNode for more details.	
 	 *
-	 * Returns:
-	 *		{String} Prototype String of all functions converted to webgl shader form
+	 * @param functionList 	{[String,...]} 		List of function names to build the webgl string.
+	 * @param opt 			{Object} 	   		Settings object passed to functionNode. See functionNode for more details.	
+	 *
+	 * @returns {String} Prototype String of all functions converted to webgl shader form
 	 *
 	 */
 	getPrototypeStringFromFunctionNames(functionList, opt) {
@@ -63,13 +60,11 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: getString
+	 * @name getString
 	 *
-	 * Parameters:
-	 * 	functionName  - {String} Function name to trace from. If null, it returns the WHOLE builder stack
+	 * @param functionName {String} Function name to trace from. If null, it returns the WHOLE builder stack
 	 *
-	 * Returns:
-	 * 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
+	 * @returns {String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	 *
 	 */
 	getString(functionName, opt) {
@@ -84,15 +79,13 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: getPrototypeString
+	 * @name getPrototypeString
 	 *
 	 * Return the webgl string for a function converted to glsl (webgl shaders)
 	 *
-	 * Parameters:
-	 * 	functionName  - {String} Function name to trace from. If null, it returns the WHOLE builder stack
+	 * @param functionName {String} Function name to trace from. If null, it returns the WHOLE builder stack
 	 *
-	 * Returns:
-	 * 	{String} The full webgl string, of all the various functions. Trace optimized if functionName given
+	 * @returns {String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	 *
 	 */
 	getPrototypeString(functionName) {
@@ -104,19 +97,17 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: addKernel 
+	 * @name addKernel 
 	 *
 	 * Add a new kernel to this instance
 	 *
-	 * Parameters:
-	 *		fnString 	- {String} Kernel function as a String
-	 *		options 	- {Object} Settings object to set constants, debug mode, etc.
-	 *		paramNames  - {Array} Parameters of the kernel
-	 *		paramTypes  - {Array} Types of the parameters
+	 * @param fnString 		{String} 	Kernel function as a String
+	 * @param options 		{Object} 	Settings object to set constants, debug mode, etc.
+	 * @param paramNames 	{Array} 	Parameters of the kernel
+	 * @param paramTypes 	{Array} 	Types of the parameters
 	 *		
 	 *
-	 * Returns:
-	 * 	{Object} The inserted kernel as a Kernel Node
+	 * @returns {Object} The inserted kernel as a Kernel Node
 	 *
 	 */
 	addKernel(fnString, options, paramNames, paramTypes) {
@@ -130,18 +121,16 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: addSubKernel
+	 * @name addSubKernel
 	 *
 	 * Add a new sub-kernel to the current kernel instance
 	 *
-	 * Parameters:
-	 *		jsFunction 	- {Function} Sub-kernel function (JavaScript)
-	 *		options 	- {Object} Settings object to set constants, debug mode, etc.
-	 *		paramNames  - {Array} Parameters of the sub-kernel
-	 *		returnType  - {Array} Return type of the subKernel
+	 * @param jsFunction {Function} Sub-kernel function (JavaScript)
+	 * @param options 	 {Object} 	Settings object to set constants, debug mode, etc.
+	 * @param paramNames {Array} 	Parameters of the sub-kernel
+	 * @param returnType {Array} 	Return type of the subKernel
 	 *
-	 * Returns:
-	 * 	{Object} The inserted sub-kernel as a Kernel Node
+	 * @returns {Object} The inserted sub-kernel as a Kernel Node
 	 *
 	 */
 	addSubKernel(jsFunction, options, paramTypes, returnType) {

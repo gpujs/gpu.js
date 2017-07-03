@@ -7,39 +7,37 @@ const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
 
 /**
- * Class: WebGLKernel
+ * @class WebGLKernel
  *
  * Kernel Implementation for WebGL. 
  * This builds the shaders and runs them on the GPU, 
  * the outputs the result back as float(enabled by default) and Texture.
  *
- * Extends:
- * 	KernelBase
+ * @extends KernelBase
  *
- * Parameters: 	
- *		textureCache 				- {Object} 		webGl Texture cache
- *		threadDim 					- {Object} 		The thread dimensions, x, y and z
- *		programUniformLocationCache - {Object} 		Location of program variables in memory
- *		framebuffer 				- {Object} 		Webgl frameBuffer
- *		buffer 						- {Object} 		WebGL buffer
- *		program 					- {Object} 		The webGl Program
- *		functionBuilder 			- {Object} 		Function Builder instance bound to this Kernel
- *		outputToTexture 			- {Boolean} 	Set output type to Texture, instead of float
- *		endianness   				- {String} 		Endian information like Little-endian, Big-endian.
- *		paramTypes 					- {Array} 		Types of parameters sent to the Kernel
- *		argumentsLength 			- {Number} 		Number of parameters sent to the Kernel
- *		compiledFragShaderString 	- {String} 		Compiled fragment shader string 
- *		compiledVertShaderString 	- {String} 		Compiled Vertical shader string
+ * @param textureCache 				- {Object} 		webGl Texture cache
+ * @param threadDim 					- {Object} 		The thread dimensions, x, y and z
+ * @param programUniformLocationCache - {Object} 		Location of program variables in memory
+ * @param framebuffer 				- {Object} 		Webgl frameBuffer
+ * @param buffer 						- {Object} 		WebGL buffer
+ * @param program 					- {Object} 		The webGl Program
+ * @param functionBuilder 			- {Object} 		Function Builder instance bound to this Kernel
+ * @param outputToTexture 			- {Boolean} 	Set output type to Texture, instead of float
+ * @param endianness   				- {String} 		Endian information like Little-endian, Big-endian.
+ * @param paramTypes 					- {Array} 		Types of parameters sent to the Kernel
+ * @param argumentsLength 			- {Number} 		Number of parameters sent to the Kernel
+ * @param compiledFragShaderString 	- {String} 		Compiled fragment shader string 
+ * @param compiledVertShaderString 	- {String} 		Compiled Vertical shader string
  *
  */
 module.exports = class WebGLKernel extends KernelBase {
 	
 	//
-	// [Constructor]
+	// @constructor
 	//
 	
 	/**
-	 * Function: WebGLKernel
+	 * @name WebGLKernel
 	 *
 	 * Instantiates properties to the WebGl Kernel.
 	 *
@@ -67,7 +65,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: validateOptions
+	 * @name validateOptions
 	 * 
 	 * Validate options related to Kernel, such as 
 	 * floatOutputs and Textures, texSize, dimensions, 
@@ -122,7 +120,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: build
+	 * @name build
 	 *
 	 * Builds the Kernel, by compiling Fragment and Vertical Shaders,
 	 * and instantiates the program.
@@ -184,14 +182,13 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: run
+	 * @name run
 	 *
 	 * Run the kernel program, and send the output to renderOutput
 	 *
 	 * This method calls a helper method *renderOutput* to return the result.
 	 * 
-	 * Returns:
-	 * 	Result  {Object}     The final output of the program, as float, and as Textures for reuse.
+	 * @returns Result {Object}     The final output of the program, as float, and as Textures for reuse.
 	 *
 	 *
 	 */
@@ -319,7 +316,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: renderOutput
+	 * @name renderOutput
 	 * 
 	 * 
 	 * Helper function to return webGl function's output.
@@ -328,11 +325,9 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *
 	 * *Note*: This should not be called directly.
 	 * 
-	 * Parameters:
-	 * 	outputTexture 			Output Texture returned by webGl program
+	 * @param	outputTexture 			Output Texture returned by webGl program
 	 *
-	 * Returns:
-	 *		result {Object|Array}
+	 * @returns result {Object|Array}
 	 *
 	 *
 	 */
@@ -370,12 +365,12 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: getOutputTexture
+	 * @name getOutputTexture
 	 *	
 	 * This uses *getTextureCache* to get the Texture Cache of the Output
 	 *
-	 * Returns: 
-	 * 	Ouptut Texture Cache
+ 
+	 * @returns {Object} Ouptut Texture Cache
 	 *
 	 */
 	getOutputTexture() {
@@ -383,14 +378,12 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: getArgumentTexture
+	 * @name getArgumentTexture
 	 *	
 	 * This uses *getTextureCache** to get the Texture Cache of the argument supplied
 	 *	
-	 * Parameters:
-	 *		name 	{String} 	Name of the argument 
+	 * @param name 	{String} 	Name of the argument 
 	 *
-	 * Returns: 
 	 * 	Texture cache for the supplied argument
 	 *
 	 */
@@ -399,15 +392,14 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: getSubKernelTexture
+	 * @name getSubKernelTexture
 	 *	
 	 * This uses *getTextureCache* to get the Texture Cache of the sub-kernel
 	 *
-	 * Parameters:
-	 *		name 	{String} 	Name of the subKernel
+	 
+	 * @param name 	{String} 	Name of the subKernel
 	 *
-	 * Returns:
-	 *		Texture cache for the subKernel
+	 * @returns {Object} Texture cache for the subKernel
 	 *
 	 */
 	getSubKernelTexture(name) {
@@ -415,15 +407,14 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: getTextureCache
+	 * @name getTextureCache
 	 *
 	 * Returns the Texture Cache of the supplied parameter (can be kernel, sub-kernel or argument)
 	 *
-	 * Parameters:
-	 *		name 	{String} 	Name of the subkernel, argument, or kernel.
+	 
+	 * @param name 	{String} 	Name of the subkernel, argument, or kernel.
 	 *
-	 * Returns:
-	 *		Texture cache
+	 * @returns {Object} Texture cache
 	 *
 	 */
 	getTextureCache(name) {
@@ -438,13 +429,12 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: setupParams
+	 * @name setupParams
 	 *
 	 * Setup the parameter types for the parameters 
 	 * supplied to the Kernel function
 	 *
-	 * Parameters:
-	 *		args 	{Array} 	The actual parameters sent to the Kernel
+	 * @param args 	{Array} 	The actual parameters sent to the Kernel
 	 *
 	 */
 	setupParams(args) {
@@ -457,7 +447,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: getUniformLocation
+	 * @name getUniformLocation
 	 *
 	 * Return WebGlUniformLocation for various variables 
 	 * related to webGl program, such as user-defiend variables,
@@ -474,16 +464,15 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getFragShaderArtifactMap
+	 * @name _getFragShaderArtifactMap
 	 *
 	 * Generate Shader artifacts for the kernel program.
 	 * The final object contains HEADER, KERNEL, MAIN_RESULT, and others.
 	 *
-	 * Parameters:
-	 *		args 	{Array} 	The actual parameters sent to the Kernel
+	 * @param args 	{Array} 	The actual parameters sent to the Kernel
 	 *
-	 * Returns:
-	 *		{Object} An object containing the Shader Artifacts(CONSTANTS, HEADER, KERNEL, etc.)
+
+	 * @returns {Object} An object containing the Shader Artifacts(CONSTANTS, HEADER, KERNEL, etc.)
 	 *
 	 */
 	_getFragShaderArtifactMap(args) {
@@ -505,15 +494,14 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _addArgument 
+	 * @name _addArgument 
 	 *
 	 * Adds kernel parameters to the Argument Texture, 
 	 * binding it to the webGl instance, etc.
 	 *
-	 * Parameters: 
-	 *		value 		{Array|Texture|Number} 	The actual argument supplied to the kernel
-	 *		type 		{String} 				Type of the argument
-	 *		name 		{String} 				Name of the argument
+	 * @param value 	{Array|Texture|Number} 	The actual argument supplied to the kernel
+	 * @param type 		{String} 				Type of the argument
+	 * @param name 		{String} 				Name of the argument
 	 *
 	 */
 	_addArgument(value, type, name) {
@@ -598,13 +586,12 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getHeaderString
+	 * @name _getHeaderString
 	 *
 	 * Get the header string for the program.
 	 * This returns an empty string if no sub-kernels are defined.
 	 *
-	 * Returns:
-	 *		result {String}
+	 * @returns result {String}
 	 *
 	 */
 	_getHeaderString() {
@@ -617,12 +604,11 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getLoopMaxString
+	 * @name _getLoopMaxString
 	 *
 	 * Get the maximum loop size String.
 	 *
-	 * Returns:
-	 *		result {String}
+	 * @returns result {String}
 	 *
 	 */
 	_getLoopMaxString() {
@@ -634,14 +620,13 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getConstantsString
+	 * @name _getConstantsString
 	 *
 	 * Generate transpiled glsl Strings for constant parameters sent to a kernel
 	 *
 	 * They can be defined by *hardcodeConstants*
 	 *
-	 * Returns:
-	 *		result {String}
+	 * @returns result {String}
 	 *
 	 */
 	_getConstantsString() {
@@ -664,12 +649,11 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getTextureCoordinate
+	 * @name _getTextureCoordinate
 	 *
 	 * Get texture coordinate string for the program
 	 *
-	 * Returns:
-	 *		result {String}
+	 * @returns result {String}
 	 *
 	 */
 	_getTextureCoordinate() {
@@ -682,12 +666,11 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getDecode32EndiannessString
+	 * @name _getDecode32EndiannessString
 	 *
 	 * Get Decode32 endianness string for little-endian and big-endian
 	 *
-	 * Returns:
-	 *		result {String}
+	 * @returns result {String}
 	 *
 	 */
 	_getDecode32EndiannessString() {
@@ -699,12 +682,11 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getEncode32EndiannessString
+	 * @name _getEncode32EndiannessString
 	 *
 	 * Get Encode32 endianness string for little-endian and big-endian
 	 *
-	 * Returns:
-	 *		result {String}
+	 * @returns result {String}
 	 *
 	 */
 	_getEncode32EndiannessString() {
@@ -716,7 +698,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getGetWraparoundString
+	 * @name _getGetWraparoundString
 	 *
 	 */
 	_getGetWraparoundString() {
@@ -728,7 +710,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getGetTextureChannelString
+	 * @name _getGetTextureChannelString
 	 *
 	 */
 	_getGetTextureChannelString() {
@@ -741,7 +723,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getGetTextureIndexString
+	 * @name _getGetTextureIndexString
 	 *
 	 * Get generic texture index string, if floatTextures flag is true.
 	 *
@@ -757,7 +739,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getGetResultString
+	 * @name _getGetResultString
 	 *
 	 */
 	_getGetResultString() {
@@ -771,15 +753,14 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getMainParamsString
+	 * @name _getMainParamsString
 	 *
 	 * Generate transpiled glsl Strings for user-defined parameters sent to a kernel
 	 *
-	 * Parameters:
-	 *		args 	{Array} 	The actual parameters sent to the Kernel
+	 
+	 * @param args 	{Array} 	The actual parameters sent to the Kernel
 	 *
-	 * Returns:
-	 *		result {String}
+	 * @returns result {String}
 	 *
 	 */
 	_getMainParamsString(args) {
@@ -824,10 +805,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getMainConstantsString
-	 *
-	 * Returns:
-	 *		Texture cache
+	 * @name _getMainConstantsString
 	 *
 	 */
 	_getMainConstantsString() {
@@ -848,12 +826,11 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getKernelString
+	 * @name _getKernelString
 	 *
 	 * Get Kernel program string (in *glsl*) for a kernel. 
 	 *
-	 * Returns:
-	 *		result {String}
+	 * @returns result {String}
 	 *
 	 */
 	_getKernelString() {
@@ -884,12 +861,11 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getMainResultString
+	 * @name _getMainResultString
 	 *
 	 *	Get main result string with checks for floatOutput, graphical, subKernelsOutputs, etc.
 	 *
-	 * Returns:
-	 *		result {String}
+	 * @returns result {String}
 	 *
 	 */
 	_getMainResultString() {
@@ -948,13 +924,11 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _linesToString
+	 * @name _linesToString
 	 *
-	 * Parameters:
-	 *		lines 	{Array} 	An Array of strings
+	 * @param lines 	{Array} 	An Array of strings
 	 *
-	 * Returns:
-	 *		Single combined String, seperated by *\n*
+	 * @returns {String} Single combined String, seperated by *\n*
 	 *
 	 */
 	_linesToString(lines) {
@@ -966,14 +940,10 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _replaceArtifacts
+	 * @name _replaceArtifacts
 	 *
-	 * Parameters:
-	 *		src 	{String} 	Name of the subkernel, argument, or kernel.
-	 *		map 	{String} 	Name of the subkernel, argument, or kernel.
-	 *
-	 * Returns:
-	 *		Texture cache
+	 * @param src 	{String} Shader string
+	 * @param map 	{Array} Variables/Constants associated with shader
 	 *
 	 */
 	_replaceArtifacts(src, map) {
@@ -986,7 +956,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _addKernels
+	 * @name _addKernels
 	 *
 	 * Adds all the sub-kernels supplied with this Kernel instance.
 	 *
@@ -1041,17 +1011,15 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getFragShaderString
+	 * @name _getFragShaderString
 	 *
 	 * Get the fragment shader String.
 	 * If the String hasn't been compiled yet, 
 	 *	then this method compiles it as well
 	 *
-	 * Parameters:
-	 *		args 	{Array} 	The actual parameters sent to the Kernel
+	 * @param args 	{Array} 	The actual parameters sent to the Kernel
 	 *
-	 * Returns:
-	 *		{String} Fragment Shader string
+	 * @returns {String} Fragment Shader string
 	 *
 	 */
 	_getFragShaderString(args) {
@@ -1062,15 +1030,13 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: _getVertShaderString
+	 * @name _getVertShaderString
 	 *
 	 * Get the vertical shader String
 	 *
-	 * Parameters:
-	 *		args 	{Array} 	The actual parameters sent to the Kernel
+	 * @param args 	{Array} 	The actual parameters sent to the Kernel
 	 *
-	 * Returns:
-	 *		{String} Vertical Shader string
+	 * @returns {String} Vertical Shader string
 	 *
 	 */
 	_getVertShaderString(args) {
@@ -1082,7 +1048,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: toString
+	 * @name toString
 	 *
 	 * Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
 	 *

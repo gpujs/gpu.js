@@ -2,9 +2,9 @@ const FunctionBuilderBase = require('../function-builder-base');
 const CPUFunctionNode = require('./function-node');
 
 /**
- * Class: CPUFunctionBuilder
+ * @class CPUFunctionBuilder
  *
- * Extends: FunctionBuilderBase
+ * @extends FunctionBuilderBase
  *
  * Builds functions to execute on CPU from JavaScript function Strings
  *
@@ -18,15 +18,13 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: getPrototypeString
+	 * @name getPrototypeString
 	 *
 	 * Return the JS Function String optimized for cpu.
 	 *
-	 * Parameters:
-	 * 	functionName  - {String} Function name to trace from. If null, it returns the WHOLE builder stack
+	 * @param functionName {String} Function name to trace from. If null, it returns the WHOLE builder stack
 	 *
-	 * Returns:
-	 * 	{String} Function String
+	 * @returns {String} Function String
 	 *
 	 */
 	getPrototypeString() {
@@ -44,14 +42,13 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: addSubKernel
+	 * @name addSubKernel
 	 *
 	 * Add a new sub-kernel to the current kernel instance
 	 *
-	 * Parameters:
-	 *		jsFunction 	- {Function} Sub-kernel function (JavaScript)
-	 *		paramNames  - {Array} Parameters of the sub-kernel
-	 *		returnType  - {Array} Return type of the subKernel
+	 * @param jsFunction {Function} Sub-kernel function (JavaScript)
+	 * @param paramNames {Array} Parameters of the sub-kernel
+	 * @param returnType {Array} Return type of the subKernel
 	 *
 	 */
 	addSubKernel(jsFunction, paramTypes, returnType) {

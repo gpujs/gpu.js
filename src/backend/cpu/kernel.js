@@ -3,28 +3,26 @@ const utils = require('../../core/utils');
 const kernelString = require('./kernel-string');
 
 /**
- * Class: CPUKernel
+ * @class CPUKernel
  *
  * Kernel Implementation for CPU. 
  *
- * Extends:
- * 	KernelBase
+ * @extends KernelBase
  *
- * Parameters: 	
- *		thread 					- {Object} 		The thread dimensions, x, y and z
- *		runDimensions 			- {Object} 		The canvas dimensions
- *		functionBuilder 		- {Object} 		Function Builder instance bound to this Kernel
- *		run 					- {Function} 	Method to run the kernel
+ * @param thread {Object} 		The thread dimensions, x, y and z
+ * @param runDimensions {Object} 		The canvas dimensions
+ * @param functionBuilder {Object} 		Function Builder instance bound to this Kernel
+ * @param run {Function} 	Method to run the kernel
  *
  */
 module.exports = class CPUKernel extends KernelBase {
 
 	//
-	// [Constructor]
+	// @constructor
 	//
 	
 	/**
-	 * Function: CPUKernel
+	 * @name CPUKernel
 	 *
 	 * Instantiates properties to the CPU Kernel.
 	 *
@@ -58,7 +56,7 @@ module.exports = class CPUKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: validateOptions
+	 * @name validateOptions
 	 * 
 	 * Validate options related to CPU Kernel, such as 
 	 * dimensions size, and auto dimension support.
@@ -82,7 +80,7 @@ module.exports = class CPUKernel extends KernelBase {
 	}	
 	
 	/**
-	 * Function: build
+	 * @name build
 	 *
 	 * Builds the Kernel, by generating the kernel 
 	 *	string using thread dimensions, and arguments 
@@ -162,7 +160,7 @@ module.exports = class CPUKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: getKernelString
+	 * @name getKernelString
 	 *
 	 * Generates kernel string for this kernel program.
 	 * 
@@ -170,8 +168,7 @@ module.exports = class CPUKernel extends KernelBase {
 	 * This string can be saved by calling the `toString` method
 	 * and then can be reused later.
 	 *
-	 * Returns:
-	 *		result {String}
+	 * @returns result {String}
 	 *
 	 */
 	getKernelString() {
@@ -277,7 +274,7 @@ module.exports = class CPUKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: toString
+	 * @name toString
 	 *
 	 * Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
 	 *
@@ -287,13 +284,12 @@ module.exports = class CPUKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: precompileKernelObj
+	 * @name precompileKernelObj
 	 *
 	 * Precompile the kernel into a single object, 
 	 * that can be used for building the execution kernel subsequently.
 	 *
-	 * Parameters:
-	 *     argTypes     - {Array}    Array of argument types
+	 * @param argTypes   {Array}    Array of argument types
 	 *     
 	 * Return:
 	 *     Compiled kernel {Object}
@@ -310,7 +306,7 @@ module.exports = class CPUKernel extends KernelBase {
 	}
 	
 	/**
-	 * Function: compileKernel
+	 * @name compileKernel
 	 * 
 	 * Takes a previously precompiled kernel object,
 	 * and complete compilation into a full kernel

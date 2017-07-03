@@ -4,9 +4,9 @@ const CPUKernel = require('./kernel');
 const CPUFunctionBuilder = require('./function-builder');
 
 /**
- * Class: CPURunner
+ * @class CPURunner
  *
- * Extends: RunnerBase
+ * @extends RunnerBase
  *
  * Instantiates a Runner instance for the kernel.
  *
@@ -18,10 +18,9 @@ module.exports = class CPURunner extends RunnerBase {
 	//
 	
 	/**
-	 * Function: CPURunner
+	 * @name CPURunner
 	 *
-	 * Parameters:
-	 * 	settings         - {Object}     Settings to instantiate properties in RunnerBase, with given values
+	 * @param settings {Object}     Settings to instantiate properties in RunnerBase, with given values
 	 *
 	 */
 	constructor(settings) {
@@ -31,12 +30,11 @@ module.exports = class CPURunner extends RunnerBase {
 	}
 
 	/**
-	 * Function: getMode()
+	 * @name getMode()
 	 *
 	 * Return the current mode in which gpu.js is executing.
 	 * 
-	 * Returns:
-	 * 	{String} The current mode; "cpu".
+	 * @returns {String} The current mode; "cpu".
 	 *
 	 */
 	getMode() {

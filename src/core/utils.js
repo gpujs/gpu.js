@@ -1,5 +1,5 @@
 /**
- * Class: Utils
+ * @class Utils
  *
  * Various utility functions / snippets of code that GPU.JS uses internally.\
  * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
@@ -39,12 +39,11 @@ class Utils extends UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * Function: systemEndianness
+	 * @name systemEndianness
 	 *
 	 * Gets the system endianness, and cache it
 	 *
-	 * Returns:
-	 *	{String} 'LE' or 'BE' depending on system architecture
+	 * @returns {String} 'LE' or 'BE' depending on system architecture
 	 *
 	 * Credit: https://gist.github.com/TooTallNate/4750953
 	 */
@@ -59,15 +58,13 @@ class Utils extends UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * Function: isFunction
+	 * @name isFunction
 	 *
 	 * Return TRUE, on a JS function
 	 *
-	 * Parameters:
-	 * 	funcObj - {JS Function} Object to validate if its a function
+	 * @param funcObj {JS Function} Object to validate if its a function
 	 *
-	 * Returns:
-	 * 	{Boolean} TRUE if the object is a JS function
+	 * @returns	{Boolean} TRUE if the object is a JS function
 	 *
 	 */
 	static isFunction(funcObj) {
@@ -75,17 +72,16 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: isFunctionString
+	 * @name isFunctionString
 	 *
 	 * Return TRUE, on a valid JS function string
 	 *
 	 * Note: This does just a VERY simply sanity check. And may give false positives.
 	 *
-	 * Parameters:
-	 * 	funcStr - {String}  String of JS function to validate
+	 * @param funcStr {String}  String of JS function to validate
 	 *
-	 * Returns:
-	 * 	{Boolean} TRUE if the string passes basic validation
+
+	 * @returns {Boolean} TRUE if the string passes basic validation
 	 *
 	 */
 	static isFunctionString(funcStr) {
@@ -98,15 +94,14 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: getFunctionName_fromString
+	 * @name getFunctionName_fromString
 	 *
 	 * Return the function name from a JS function string
 	 *
-	 * Parameters:
-	 * 	funcStr - {String}  String of JS function to validate
+	 * @param funcStr {String}  String of JS function to validate
 	 *
-	 * Returns:
-	 * 	{String} Function name string (if found)
+
+	 * @returns {String} Function name string (if found)
 	 *
 	 */
 	static getFunctionNameFromString(funcStr) {
@@ -118,14 +113,13 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: getParamNames_fromString
+	 * @name getParamNames_fromString
 	 *
 	 * Return list of parameter names extracted from the JS function string
 	 *
-	 * Parameters:
-	 * 	funcStr - {String}  String of JS function to validate
+	 * @param funcStr {String}  String of JS function to validate
 	 *
-	 * Returns:
+
 	 * 	{[String, ...]}  Array representing all the parameter names
 	 *
 	 */
@@ -144,15 +138,14 @@ class Utils extends UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * Function: clone
+	 * @name clone
 	 *
 	 * Returns a clone
 	 *
-	 * Parameters:
-	 * 	obj - {Object}  Object to clone
+	 * @param obj {Object}  Object to clone
 	 *
-	 * Returns:
-	 * 	{Object}  Cloned object
+
+	 * @returns {Object}  Cloned object
 	 *
 	 */
 	static clone(obj) {
@@ -172,15 +165,13 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: newPromise
+	 * @name newPromise
 	 *
 	 * Returns a `new Promise` object based on the underlying implmentation
 	 *
-	 * Parameters:
-	 * 	executor - {function(resolve,reject)}  Promise builder function
+	 * @param executor {function(resolve,reject)}  Promise builder function
 	 *
-	 * Returns:
-	 * 	{Promise}  Promise object
+	 * @returns {Promise}  Promise object
 	 *
 	 */
 	static newPromise(executor) {
@@ -192,16 +183,14 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: functionBinder
+	 * @name functionBinder
 	 *
 	 * Limited implementation of Function.bind, with fallback
 	 *
-	 * Parameters:
-	 * 	inFunc   - {JS Function}  to setup bind on
-	 * 	thisObj  - {Object} The this parameter to assume inside the binded function
+	 * @param inFunc {JS Function}  to setup bind on
+	 * @param thisObj {Object} The this parameter to assume inside the binded function
 	 *
-	 * Returns:
-	 * 	{JS Function}  The binded function
+	 * @returns {JS Function}  The binded function
 	 *
 	 */
 	static functionBinder(inFunc, thisObj) {
@@ -216,15 +205,13 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: isArray
+	 * @name isArray
 	 *
 	 * Checks if is an array or Array-like object
 	 *
-	 * Parameters:
-	 * 	arg   - {Object} The argument object to check if is array
+	 * @param arg {Object} The argument object to check if is array
 	 *
-	 * Returns:
-	 * 	{Boolean}  true if is array or Array-like object
+	 * @returns {Boolean}  true if is array or Array-like object
 	 *
 	 */
 	static isArray(arr) {
@@ -233,15 +220,13 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: getArgumentType
+	 * @name getArgumentType
 	 *
 	 * Evaluate the argument type, to apply respective logic for it
 	 *
-	 * Parameters:
-	 * 	arg   - {Object} The argument object to evaluate type
+	 * @param arg {Object} The argument object to evaluate type
 	 *
-	 * Returns:
-	 * 	{String}  Argument type Array/Number/Texture/Unknown
+	 * @returns {String}  Argument type Array/Number/Texture/Unknown
 	 *
 	 */
 	static getArgumentType(arg) {
@@ -257,15 +242,13 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: isFloatReadPixelsSupported
+	 * @name isFloatReadPixelsSupported
 	 *
 	 * Checks if the browser supports readPixels with float type
 	 *
-	 * Parameters:
-	 * 	gpu - {gpu.js object} the gpu object
+	 * @param gpu {gpu.js object} the gpu object
 	 *
-	 * Returns:
-	 * 	{Boolean} true if browser supports
+	 * @returns {Boolean} true if browser supports
 	 *
 	 */
 	static isFloatReadPixelsSupported() {
@@ -306,13 +289,12 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: getDimensions
+	 * @name getDimensions
 	 *
 	 * Return the dimension of an array.
 	 * 
-	 * Parameters:
-	 *		x       - {Array} The array
-	 *		pad     - {Number} To include padding in the dimension calculation [Optional]
+	 * @param x {Array} The array
+	 * @param pad {Number} To include padding in the dimension calculation [Optional]
 	 *
 	 *
 	 *
@@ -345,15 +327,14 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: pad
+	 * @name pad
 	 *
 	 * Pad an array AND its elements with leading and ending zeros
-	 * Parameters:
-	 * 	arr 		- {Array} the array to pad zeros to
-	 * 	padding 	- {Number} amount of padding
 	 *
-	 * Returns:
-	 * 	{Array} Array with leading and ending zeros, and all the elements padded by zeros.
+	 * @param arr {Array} the array to pad zeros to
+	 * @param padding {Number} amount of padding
+	 *
+	 * @returns {Array} Array with leading and ending zeros, and all the elements padded by zeros.
 	 *
 	 */
 	static pad(arr, padding) {
@@ -375,15 +356,13 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: flatten
+	 * @name flatten
 	 *
 	 * Converts a nested array into a one-dimensional array
 	 *
-	 * Parameters:
-	 * 	_arr - {Array} the nested array to flatten
+	 * @param _arr {Array} the nested array to flatten
 	 *
-	 * Returns:
-	 * 	{Array} 1D Array
+	 * @returns {Array} 1D Array
 	 *
 	 */
 	static flatten(_arr) {
@@ -409,17 +388,16 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: splitArray
+	 * @name splitArray
 	 *
 	 * Splits an array into smaller arrays.
 	 * Number of elements in one small chunk is given by `part`
 	 *
-	 * Parameters:
-	 * 	array - {Array} The array to split into chunks
-	 * 	part  - {Array} elements in one chunk
+	 * @param array {Array} The array to split into chunks
+	 * @param part {Array} elements in one chunk
 	 *
-	 * Returns:
-	 * 	{Array} An array of smaller chunks
+
+	 * @returns {Array} An array of smaller chunks
 	 *
 	 */
 	static splitArray(array, part) {

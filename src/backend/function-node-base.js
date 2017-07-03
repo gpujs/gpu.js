@@ -2,25 +2,24 @@ const utils = require('../core/utils');
 const parser = require('../core/parser').parser;
 
 /**
- * Class: FunctionNodeBase
+ * @class FunctionNodeBase
  *
  * [INTERNAL] Represents a single function, inside JS, webGL, or openGL.
  *
  * This handles all the raw state, converted state, etc. Of a single function.
  *
- * Properties:
- * 	functionName         - {String}        Name of the function
- * 	jsFunction           - {JS Function}   The JS Function the node represents
- * 	jsFunctionString     - {String}        jsFunction.toString()
- * 	paramNames           - {[String,...]}  Parameter names of the function
- * 	paramTypes           - {[String,...]}  Shader land parameters type assumption
- * 	isRootKernel         - {Boolean}       Special indicator, for kernel function
- * 	webglFunctionString  - {String}        webgl converted function string
- * 	openglFunctionString - {String}        opengl converted function string
- * 	calledFunctions      - {[String,...]}  List of all the functions called
- * 	initVariables        - {[String,...]}  List of variables initialized in the function
- * 	readVariables        - {[String,...]}  List of variables read operations occur
- * 	writeVariables       - {[String,...]}  List of variables write operations occur
+ * @param functionName         		{String}        	Name of the function
+ * @param jsFunction           		{JS Function}   	The JS Function the node represents
+ * @param jsFunctionString     		{String}        	jsFunction.toString()
+ * @param paramNames           		{[String,...]}  	Parameter names of the function
+ * @param paramTypes           		{[String,...]}  	Shader land parameters type assumption
+ * @param isRootKernel         		{Boolean}       	Special indicator, for kernel function
+ * @param webglFunctionString  		{String}        	webgl converted function string
+ * @param openglFunctionString 		{String}        	opengl converted function string
+ * @param calledFunctions      		{[String,...]}  	List of all the functions called
+ * @param initVariables        		{[String,...]}  	List of variables initialized in the function
+ * @param readVariables        		{[String,...]}  	List of variables read operations occur
+ * @param writeVariables       		{[String,...]}  	List of variables write operations occur
  *
  */
 module.exports = class BaseFunctionNode {
@@ -30,16 +29,15 @@ module.exports = class BaseFunctionNode {
 	//----------------------------------------------------------------------------------------------------
 
 	/**
-	 * Function: FunctionNodeBase
+	 * @name FunctionNodeBase
 	 *
-	 * [Constructor] Builds the function with the given JS function, and argument type array.
+	 * @constructor Builds the function with the given JS function, and argument type array.
 	 *
-	 * Parameters:
-	 * 	gpu             - {GPU}                   The GPU instance
-	 * 	functionName    - {String}                Function name to assume, if its null, it attempts to extract from the function
-	 * 	jsFunction      - {JS Function / String}  JS Function to do conversion
-	 * 	paramTypes      - {[String,...]|{variableName: Type}}          Parameter type array, assumes all parameters are 'float' if null
-	 * 	returnType      - {String}                The return type, assumes 'float' if null
+	 * @param gpu {GPU}                   The GPU instance
+	 * @param functionName {String}                Function name to assume, if its null, it attempts to extract from the function
+	 * @param jsFunction {JS Function / String}  JS Function to do conversion
+	 * @param paramTypes {[String,...]|{variableName: Type}}          Parameter type array, assumes all parameters are 'float' if null
+	 * @param returnType {String}                The return type, assumes 'float' if null
 	 *
 	 */
 	constructor(functionName, jsFunction, options, paramTypes, returnType) {
@@ -168,13 +166,12 @@ module.exports = class BaseFunctionNode {
 	//----------------------------------------------------------------------------------------------------
 
 	/**
-	 * Function: getJSFunction
+	 * @name getJSFunction
 	 *
 	 * Gets and return the stored JS Function.
 	 * Note: that this internally eval the function, if only the string was provided on construction
 	 *
-	 * Returns:
-	 * 	{JS Function} The function object
+	 * @returns {JS Function} The function object
 	 *
 	 */
 	getJsFunction() {
@@ -191,17 +188,15 @@ module.exports = class BaseFunctionNode {
 	}
 
 	/**
-	 * Function: getJS_AST
+	 * @name getJS_AST
 	 *
 	 * Parses the class function JS, and returns its Abstract Syntax Tree object.
 	 *
 	 * This is used internally to convert to shader code
 	 *
-	 * Parameters:
-	 * 	inParser - {JISON Parser}  Parser to use, assumes in scope 'parser' if null
+	 * @param inParser {JISON Parser}  Parser to use, assumes in scope 'parser' if null
 	 *
-	 * Returns:
-	 * 	{AST Object} The function AST Object, note that result is cached under this.jsFunctionAST;
+	 * @returns {AST Object} The function AST Object, note that result is cached under this.jsFunctionAST;
 	 *
 	 */
 	getJsAST(inParser) {
@@ -228,12 +223,11 @@ module.exports = class BaseFunctionNode {
 
 
 	/**
-	 * Function: getFunctionString
+	 * @name getFunctionString
 	 *
 	 * Returns the converted webgl shader function equivalent of the JS function
 	 *
-	 * Returns:
-	 * 	{String} webgl function string, result is cached under this.webGlFunctionString
+	 * @returns {String} webgl function string, result is cached under this.webGlFunctionString
 	 *
 	 */
 	getFunctionString() {
@@ -242,12 +236,11 @@ module.exports = class BaseFunctionNode {
 	}
 
 	/**
-	 * Function: setFunctionString
+	 * @name setFunctionString
 	 *
 	 * Set the functionString value, overwriting it
 	 *
-	 * Parameters:
-	 * 	functionString - {String}  Shader code string, representing the function
+	 * @param functionString {String}  Shader code string, representing the function
 	 *
 	 */
 	setFunctionString(functionString) {
@@ -255,15 +248,13 @@ module.exports = class BaseFunctionNode {
 	}
 
 	/**
-	 * Function: getParamType
+	 * @name getParamType
 	 *
 	 * Return the type of parameter sent to subKernel/Kernel.
 	 *
-	 * Parameters:
-	 * 	paramName 		- {String}  Name of the parameter
+	 * @param paramName {String}  Name of the parameter
 	 *
-	 * Returns:
-	 * 	{String} Type of the parameter
+	 * @returns {String} Type of the parameter
 	 *
 	 */
 	getParamType(paramName) {
@@ -282,16 +273,14 @@ module.exports = class BaseFunctionNode {
 	}
 
 	/**
-	 * Function: getUserParamName
+	 * @name getUserParamName
 	 *
 	 * Return the name of the *user parameter*(subKernel parameter) corresponding 
 	 * to the parameter supplied to the kernel
 	 *
-	 * Parameters:
-	 * 	paramName 		- {String}  Name of the parameter
+	 * @param paramName {String}  Name of the parameter
 	 *
-	 * Returns:
-	 * 	{String} Name of the parameter
+	 * @returns {String} Name of the parameter
 	 *
 	 */
 	getUserParamName(paramName) {
