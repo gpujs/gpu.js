@@ -144,6 +144,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	/**
 	 * @name astFunctionPrototype
 	 * @function
+	 * @static
 	 *
 	 * Parses the abstract syntax tree for to its *named function prototype*
 	 *

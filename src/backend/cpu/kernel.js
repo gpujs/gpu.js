@@ -58,7 +58,7 @@ module.exports = class CPUKernel extends KernelBase {
 
 	/**
 	 * @name validateOptions
-	 *  @function
+	 * @function
 	 *
 	 * Validate options related to CPU Kernel, such as 
 	 * dimensions size, and auto dimension support.
@@ -313,7 +313,8 @@ module.exports = class CPUKernel extends KernelBase {
 	
 	/**
 	 * @name compileKernel
-	 *  @function
+	 * @function
+	 * @static
 	 *
 	 * Takes a previously precompiled kernel object,
 	 * and complete compilation into a full kernel

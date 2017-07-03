@@ -14,35 +14,6 @@ const jsprettify = require('gulp-jsbeautifier');
 const babel = require('gulp-babel');
 const stripComments = require('gulp-strip-comments');
 
-const glob = require('glob');
-
-gulp.task('refactor', ()=>{
-	glob('./src/**/*.js', (err, files)=>{
-		var count = 0;
-		files.forEach(file=>{
-			fs.readFile(file, (err, data)=>{
-				
-				const dataString = data.toString();
-				let chunks = dataString.split('\n');
-				var stream = false;
-				// console.log(chunks);
-				for (var i = 0; i < chunks.length; i++) {
-					if(chunks[i].includes(' @function')){
-						stream = !stream;
-					}else if(stream){
-						if(chunks[i].includes(/(\t+|\s+)\*\//g)){
-							stream = !stream;
-							console.log(chunks[i]);
-						}
-					}
-				}
-				const finalData = chunks.join('\n');
-				fs.writeFile(file, finalData);
-			});
-		});
-	});
-});
-
 /// Build the scripts
 gulp.task('build', function() {
 	browserify('./src/index.js')
