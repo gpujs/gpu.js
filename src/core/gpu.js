@@ -65,8 +65,8 @@ class GPU extends GPUCore {
 	 * |               |               |     + 'cpu' : Forces JS fallback mode only                                |
 	 * |---------------|---------------|---------------------------------------------------------------------------|
 	 *
-	 * @param inputFunction   {JS Function} The calling to perform the conversion
-	 * @param settings        {Object}      The parameter configuration object (see above)
+	 * @param {Function} inputFunction - The calling to perform the conversion
+	 * @param {Object} settings - The parameter configuration object (see above)
 	 *
 	 * @returns {Function} callable function to run
 	 *
@@ -123,8 +123,8 @@ class GPU extends GPUCore {
 	 * Note: You can also define subKernels as an array of functions. 
 	 * > [add, multiply]
 	 *
-	 * @param subKernels {Object|Array}  Sub kernels for this kernel
-	 * @param rootKernel {Function}  	  Root kernel
+	 * @param {Object|Array} subKernels - Sub kernels for this kernel
+	 * @param {Function} rootKernel - Root kernel
 	 * 
 	 * @returns {Function} callable kernel function
 	 *
@@ -176,8 +176,8 @@ class GPU extends GPUCore {
 	 *	 	return add(multiply(a,b), c)
 	 *	})
 	 *
-	 * @param subKernels {Function}  Kernel function(s) to combine.
-	 * @param rootKernel {Function}  Root kernel to combine kernels into
+	 * @param {Function} subKernels - Kernel function(s) to combine.
+	 * @param {Function} rootKernel - Root kernel to combine kernels into
 	 * 
 	 * @returns {Function} callable kernel function
 	 *
@@ -233,9 +233,9 @@ class GPU extends GPUCore {
 	 *
 	 * Adds additional functions, that the kernel may call.
 	 *
-	 * @param fn {Function|String}  JS Function to do conversion
-	 * @param paramTypes {[String,...]|{variableName: Type,...}} Parameter type array, assumes all parameters are 'float' if null
-	 * @param returnType {String}       The return type, assumes 'float' if null
+	 * @param {Function|String} fn - JS Function to do conversion
+	 * @param {[String,...]|{variableName: Type,...}} paramTypes - Parameter type array, assumes all parameters are 'float' if null
+	 * @param {String} returnType - The return type, assumes 'float' if null
 	 *
 	 * @returns {GPU} returns itself
 	 *

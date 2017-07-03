@@ -8,18 +8,18 @@ const parser = require('../core/parser').parser;
  *
  * This handles all the raw state, converted state, etc. Of a single function.
  *
- * @param functionName         		{String}        	Name of the function
- * @param jsFunction           		{JS Function}   	The JS Function the node represents
- * @param jsFunctionString     		{String}        	jsFunction.toString()
- * @param paramNames           		{[String,...]}  	Parameter names of the function
- * @param paramTypes           		{[String,...]}  	Shader land parameters type assumption
- * @param isRootKernel         		{Boolean}       	Special indicator, for kernel function
- * @param webglFunctionString  		{String}        	webgl converted function string
- * @param openglFunctionString 		{String}        	opengl converted function string
- * @param calledFunctions      		{[String,...]}  	List of all the functions called
- * @param initVariables        		{[String,...]}  	List of variables initialized in the function
- * @param readVariables        		{[String,...]}  	List of variables read operations occur
- * @param writeVariables       		{[String,...]}  	List of variables write operations occur
+ * @param {String} functionName - Name of the function
+ * @param {Function} jsFunction - The JS Function the node represents
+ * @param {String} jsFunctionString - jsFunction.toString()
+ * @param {[String,...]} paramNames - Parameter names of the function
+ * @param {[String,...]} paramTypes - Shader land parameters type assumption
+ * @param {Boolean} isRootKernel - Special indicator, for kernel function
+ * @param {String} webglFunctionString - webgl converted function string
+ * @param {String} openglFunctionString - opengl converted function string
+ * @param {[String,...]} calledFunctions - List of all the functions called
+ * @param {[String,...]} initVariables - List of variables initialized in the function
+ * @param {[String,...]} readVariables - List of variables read operations occur
+ * @param {[String,...]} writeVariables - List of variables write operations occur
  *
  */
 module.exports = class BaseFunctionNode {
@@ -33,11 +33,11 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * @constructor Builds the function with the given JS function, and argument type array.
 	 *
-	 * @param gpu {GPU}                   The GPU instance
-	 * @param functionName {String}                Function name to assume, if its null, it attempts to extract from the function
-	 * @param jsFunction {JS Function / String}  JS Function to do conversion
-	 * @param paramTypes {[String,...]|{variableName: Type}}          Parameter type array, assumes all parameters are 'float' if null
-	 * @param returnType {String}                The return type, assumes 'float' if null
+	 * @param {GPU} gpu - The GPU instance
+	 * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
+	 * @param {JS Function / String} jsFunction - JS Function to do conversion
+	 * @param {[String,...]|{variableName: Type}} paramTypes - Parameter type array, assumes all parameters are 'float' if null
+	 * @param {String} returnType - The return type, assumes 'float' if null
 	 *
 	 */
 	constructor(functionName, jsFunction, options, paramTypes, returnType) {
@@ -171,7 +171,7 @@ module.exports = class BaseFunctionNode {
 	 * Gets and return the stored JS Function.
 	 * Note: that this internally eval the function, if only the string was provided on construction
 	 *
-	 * @returns {JS Function} The function object
+	 * @returns {Function} The function object
 	 *
 	 */
 	getJsFunction() {
@@ -194,7 +194,7 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * This is used internally to convert to shader code
 	 *
-	 * @param inParser {JISON Parser}  Parser to use, assumes in scope 'parser' if null
+	 * @param {JISON Parser} inParser - Parser to use, assumes in scope 'parser' if null
 	 *
 	 * @returns {AST Object} The function AST Object, note that result is cached under this.jsFunctionAST;
 	 *
@@ -240,7 +240,7 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * Set the functionString value, overwriting it
 	 *
-	 * @param functionString {String}  Shader code string, representing the function
+	 * @param {String} functionString - Shader code string, representing the function
 	 *
 	 */
 	setFunctionString(functionString) {
@@ -252,7 +252,7 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * Return the type of parameter sent to subKernel/Kernel.
 	 *
-	 * @param paramName {String}  Name of the parameter
+	 * @param {String} paramName - Name of the parameter
 	 *
 	 * @returns {String} Type of the parameter
 	 *
@@ -278,7 +278,7 @@ module.exports = class BaseFunctionNode {
 	 * Return the name of the *user parameter*(subKernel parameter) corresponding 
 	 * to the parameter supplied to the kernel
 	 *
-	 * @param paramName {String}  Name of the parameter
+	 * @param {String} paramName - Name of the parameter
 	 *
 	 * @returns {String} Name of the parameter
 	 *

@@ -21,7 +21,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	/**
 	 * @name getStringFromFunctionNames
 	 *
-	 * @param functionList {[String,...]} List of function to build the webgl string.
+	 * @param {[String,...]} functionList - List of function to build the webgl string.
 	 *
 	 * @returns {String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	 *
@@ -42,8 +42,8 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 * 
 	 * Return webgl String of all functions converted to webgl shader form
 	 *
-	 * @param functionList 	{[String,...]} 		List of function names to build the webgl string.
-	 * @param opt 			{Object} 	   		Settings object passed to functionNode. See functionNode for more details.	
+	 * @param {[String,...]} functionList - List of function names to build the webgl string.
+	 * @param {Object} opt - Settings object passed to functionNode. See functionNode for more details.
 	 *
 	 * @returns {String} Prototype String of all functions converted to webgl shader form
 	 *
@@ -62,7 +62,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	/**
 	 * @name getString
 	 *
-	 * @param functionName {String} Function name to trace from. If null, it returns the WHOLE builder stack
+	 * @param {String} functionName - Function name to trace from. If null, it returns the WHOLE builder stack
 	 *
 	 * @returns {String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	 *
@@ -83,7 +83,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 *
 	 * Return the webgl string for a function converted to glsl (webgl shaders)
 	 *
-	 * @param functionName {String} Function name to trace from. If null, it returns the WHOLE builder stack
+	 * @param {String} functionName - Function name to trace from. If null, it returns the WHOLE builder stack
 	 *
 	 * @returns {String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	 *
@@ -101,10 +101,10 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 *
 	 * Add a new kernel to this instance
 	 *
-	 * @param fnString 		{String} 	Kernel function as a String
-	 * @param options 		{Object} 	Settings object to set constants, debug mode, etc.
-	 * @param paramNames 	{Array} 	Parameters of the kernel
-	 * @param paramTypes 	{Array} 	Types of the parameters
+	 * @param {String} fnString - Kernel function as a String
+	 * @param {Object} options - Settings object to set constants, debug mode, etc.
+	 * @param {Array} paramNames - Parameters of the kernel
+	 * @param {Array} paramTypes - Types of the parameters
 	 *		
 	 *
 	 * @returns {Object} The inserted kernel as a Kernel Node
@@ -125,10 +125,10 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 *
 	 * Add a new sub-kernel to the current kernel instance
 	 *
-	 * @param jsFunction {Function} Sub-kernel function (JavaScript)
-	 * @param options 	 {Object} 	Settings object to set constants, debug mode, etc.
-	 * @param paramNames {Array} 	Parameters of the sub-kernel
-	 * @param returnType {Array} 	Return type of the subKernel
+	 * @param {Function} jsFunction - Sub-kernel function (JavaScript)
+	 * @param {Object} options - Settings object to set constants, debug mode, etc.
+	 * @param {Array} paramNames - Parameters of the sub-kernel
+	 * @param {Array} returnType - Return type of the subKernel
 	 *
 	 * @returns {Object} The inserted sub-kernel as a Kernel Node
 	 *

@@ -20,7 +20,7 @@ module.exports = class GPUCore {
 	 *
 	 * For the kernel object format see : <kernelObj-format>
 	 *
-	 * @param kernelObj {Object|String} KernelObj used to validate
+	 * @param {Object|String} kernelObj - KernelObj used to validate
 	 *
 	 * @returns {Object} The validated kernel object, converted from JSON if needed
 	 *
@@ -68,8 +68,8 @@ module.exports = class GPUCore {
 	 * 	<GPUCore.validateKernelObj>,
 	 * 	<Kernel.exportKernelObj>
 	 *
-	 * @param kernelObj {Object} The precompilled kernel object
-	 * @param inOpt     {Object} [Optional] the option overrides to use
+	 * @param {Object} kernelObj - The precompilled kernel object
+	 * @param {Object} inOpt - [Optional] the option overrides to use
 	 *
 	 * @returns {Function} The kernel function
 	 * 

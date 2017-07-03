@@ -14,14 +14,14 @@ const kernelRunShortcut = require('./kernel-run-shortcut');
  * File isolation is currently the best way to go
  *
  *
- * @param settings 				{Object}      			Settings object used to set Dimensions, etc.
- * @param kernel   				{String} 	   			Current kernel instance
- * @param canvas 				{Object} 	   			Canvas instance attached to the kernel
- * @param webGl   				{Object}     			WebGl instance attached to the kernel
- * @param fn   					{Function} 				Kernel function to run
- * @param functionBuilder  		{Object} 				FunctionBuilder instance
- * @param fnString   			{String} 	   			Kernel function (as a String)
- * @param endianness   			{String} 	   			endian information like Little-endian, Big-endian.
+ * @param {Object} settings - Settings object used to set Dimensions, etc.
+ * @param {String} kernel - Current kernel instance
+ * @param {Object} canvas - Canvas instance attached to the kernel
+ * @param {Object} webGl - WebGl instance attached to the kernel
+ * @param {Function} fn - Kernel function to run
+ * @param {Object} functionBuilder - FunctionBuilder instance
+ * @param {String} fnString - Kernel function (as a String)
+ * @param {String} endianness - endian information like Little-endian, Big-endian.
  *
  */
 
@@ -50,7 +50,7 @@ module.exports = class BaseRunner {
 	 *
 	 * Converts the provided Texture instance to a JavaScript Array 
 	 *	
-	 * @param texture {Object}
+	 * @param {Object} texture - Texture Object
 	 *
 	 */
 	textureToArray(texture) {
@@ -66,7 +66,7 @@ module.exports = class BaseRunner {
 	 *
 	 * Deletes the provided Texture instance 
 	 *
-	 * @param texture {Object}
+	 * @param {Object} texture - Texture Object
 	 */
 	deleteTexture(texture) {
 		this.webGl.deleteTexture(texture.texture);

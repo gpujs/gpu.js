@@ -9,10 +9,10 @@ const kernelString = require('./kernel-string');
  *
  * @extends KernelBase
  *
- * @param thread {Object} 		The thread dimensions, x, y and z
- * @param runDimensions {Object} 		The canvas dimensions
- * @param functionBuilder {Object} 		Function Builder instance bound to this Kernel
- * @param run {Function} 	Method to run the kernel
+ * @param {Object} thread - The thread dimensions, x, y and z
+ * @param {Object} runDimensions - The canvas dimensions
+ * @param {Object} functionBuilder - Function Builder instance bound to this Kernel
+ * @param {Function} run - Method to run the kernel
  *
  */
 module.exports = class CPUKernel extends KernelBase {
@@ -289,7 +289,7 @@ module.exports = class CPUKernel extends KernelBase {
 	 * Precompile the kernel into a single object, 
 	 * that can be used for building the execution kernel subsequently.
 	 *
-	 * @param argTypes   {Array}    Array of argument types
+	 * @param {Array} argTypes - Array of argument types
 	 *     
 	 * Return:
 	 *     Compiled kernel {Object}

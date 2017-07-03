@@ -9,7 +9,7 @@ const BaseFunctionNode = require('../function-node-base');
  *
  * *
  * 	functionName         - {String}        Name of the function
- * 	jsFunction           - {JS Function}   The JS Function the node represents
+ * 	jsFunction           - {Function}   The JS Function the node represents
  * 	jsFunctionString     - {String}        jsFunction.toString()
  * 	paramNames           - {[String,...]}  Parameter names of the function
  * 	paramTypes           - {[String,...]}  Shader land parameters type assumption
