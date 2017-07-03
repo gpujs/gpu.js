@@ -22,7 +22,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 * @name getStringFromFunctionNames
 	 * @function
 	 *
-	 * @param {[String,...]} functionList - List of function to build the webgl string.
+	 * @param {String[]} functionList - List of function to build the webgl string.
 	 *
 	 * @returns {String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	 *
@@ -44,7 +44,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	 *
 	 * Return webgl String of all functions converted to webgl shader form
 	 *
-	 * @param {[String,...]} functionList - List of function names to build the webgl string.
+	 * @param {String[]} functionList - List of function names to build the webgl string.
 	 * @param {Object} opt - Settings object passed to functionNode. See functionNode for more details.
 	 *
 	 * @returns {String} Prototype String of all functions converted to webgl shader form
