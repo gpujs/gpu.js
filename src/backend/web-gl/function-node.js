@@ -48,7 +48,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for generically to its respective function
 	 *
-	 * *
 	 * @param ast         - the AST object to parse
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -246,7 +245,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for to *return* statement
 	 *
-	  
 	 * @param ast   	   the AST object to parse
 	 * @param retArr       return array string
 	 * @param funcParam    FunctionNode, that tracks compilation state
@@ -283,7 +281,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *literal value*
 	 *
-	 
 	 * @param ast   	  the AST object to parse
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -316,7 +313,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *binary* expression
 	 *
-	 
 	 * @param ast   	  the AST object to parse
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -356,7 +352,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *identifier* expression
 	 *
-	 
 	 * @param idtNode     An ast Node
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -410,8 +405,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @name astForStatement
 	 *
 	 * Parses the abstract syntax tree forfor *for-loop* expression
-	 *
-	 
 	 *
 	 * @param forNode     An ast Node
 	 * @param retArr      return array string
@@ -496,7 +489,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *while* loop
 	 *
-	 
 	 *
 	 * @param whileNode   An ast Node
 	 * @param retArr      return array string
@@ -530,7 +522,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *Assignment* Expression
 	 *
-	 
 	 * @param assNode     An ast Node
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -559,7 +550,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for an *Empty* Statement
 	 *
-	 
 	 * @param eNode     An ast Node
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -576,7 +566,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *Block* statement
 	 *
-	 
 	 * @param bnode        the AST object to parse
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -597,7 +586,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *generic expression* statement
 	 *
-	 
 	 * @param esNode     An ast Node
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -615,7 +603,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *Variable Declaration*
 	 *
-	 
 	 * @param vardecNode     An ast Node
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -639,7 +626,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *Variable Declarator*
 	 *
-	 
 	 * @param ivardecNode     An ast Node
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -660,7 +646,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *If* Statement
 	 *
-	 
 	 * @param ifNode     An ast Node
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -698,7 +683,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *Break* Statement
 	 *
-	 
 	 * @param brNode     An ast Node
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -715,7 +699,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *Continue* Statement
 	 *
-	 
 	 * @param crNode     An ast Node
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -732,7 +715,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *Logical* Expression
 	 *
-	 
 	 * @param logNode     An ast Node
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -753,7 +735,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *Update* Expression
 	 *
-	 
 	 * @param uNode     An ast Node
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -777,7 +758,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *Unary* Expression
 	 *
-	 
 	 * @param uNode     An ast Node
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -801,7 +781,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *This* expression
 	 *
-	 
 	 * @param tNode     An ast Node
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -818,7 +797,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *Member* Expression
 	 *
-	 
 	 * @param mNode     An ast Node
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -918,7 +896,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for binary expression.
 	 *
-	 
 	 * @param ast         the AST object to parse
 	 * @param funcParam   FunctionNode, that tracks compilation state
 	 *
@@ -952,7 +929,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @name astCallExpression
 	 *
 	 * Parses the abstract syntax tree for *call* expression
-	 *
 	 *
 	 * @param ast   	  the AST object to parse
 	 * @param retArr      return array string
@@ -1034,7 +1010,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * Parses the abstract syntax tree for *Array* Expression
 	 *
-	 
 	 * @param ast   	  the AST object to parse
 	 * @param retArr      return array string
 	 * @param funcParam   FunctionNode, that tracks compilation state
@@ -1123,9 +1098,8 @@ function webGlRegexOptimize(inStr) {
  *
  * To throw the AST error, with its location.
  *
- * @TODO: add location support fpr the AST error
+ * @todo add location support fpr the AST error
  *
- 
  * @param error        the error message output
  * @param ast          the AST object where the error is
  * @param funcParam    FunctionNode, that tracks compilation state
