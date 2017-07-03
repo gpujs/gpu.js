@@ -7,7 +7,7 @@ const GPUCore = require("./gpu-core");
 /**
  * @class GPU
  *
- * Initialises the GPU.js library class which manages the WebGL context for the created functions.
+ * Initialises the GPU.js library class which manages the webGlContext for the created functions.
  *
  */
 class GPU extends GPUCore {

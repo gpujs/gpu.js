@@ -24,12 +24,16 @@ gulp.task('refactor', ()=>{
 				
 				const dataString = data.toString();
 				let chunks = dataString.split('\n');
+				var stream = false;
 				// console.log(chunks);
 				for (var i = 0; i < chunks.length; i++) {
-					if(chunks[i].includes('@name')){
-						const uptoStar = chunks[i+1].match(/(\s+|\t+)+\*/g)[0];
-						const functionNamespace = chunks[i+1] + ' @function';
-						chunks[i+1] = functionNamespace + '\n' + uptoStar;
+					if(chunks[i].includes(' @function')){
+						stream = !stream;
+					}else if(stream){
+						if(chunks[i].includes(/(\t+|\s+)\*\//g)){
+							stream = !stream;
+							console.log(chunks[i]);
+						}
 					}
 				}
 				const finalData = chunks.join('\n');
