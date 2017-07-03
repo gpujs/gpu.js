@@ -7,7 +7,7 @@ const utils = require('../../core/utils');
  *
  * @extends FunctionBuilderBase
  *
- * Builds webGl functions (shaders) from JavaScript function Strings
+ * @desc Builds webGl functions (shaders) from JavaScript function Strings
  *
  */
 module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
@@ -19,8 +19,11 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * @name getStringFromFunctionNames
+	 * @memberOf WebGLFunctionBuilder
 	 * @function
+	 * @name getStringFromFunctionNames
+	 * 
+	 * @desc Get the webGl string from function names
 	 *
 	 * @param {String[]} functionList - List of function to build the webgl string.
 	 *
@@ -39,10 +42,11 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
+	 * @memberOf WebGLFunctionBuilder
+	 * @function
 	 * @name getPrototypeStringFromFunctionNames
-	 *  @function
 	 *
-	 * Return webgl String of all functions converted to webgl shader form
+	 * @desc Return webgl String of all functions converted to webgl shader form
 	 *
 	 * @param {String[]} functionList - List of function names to build the webgl string.
 	 * @param {Object} opt - Settings object passed to functionNode. See functionNode for more details.
@@ -62,9 +66,12 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * @name getString
+	 * @memberOf WebGLFunctionBuilder
 	 * @function
+	 * @name getString
 	 *
+	 * Get webGl string for a particular function name
+	 * 
 	 * @param {String} functionName - Function name to trace from. If null, it returns the WHOLE builder stack
 	 *
 	 * @returns {String} The full webgl string, of all the various functions. Trace optimized if functionName given
@@ -82,10 +89,11 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
+	 * @memberOf WebGLFunctionBuilder
 	 * @name getPrototypeString
 	 * @function
 	 *
-	 * Return the webgl string for a function converted to glsl (webgl shaders)
+	 * @desc Return the webgl string for a function converted to glsl (webgl shaders)
 	 *
 	 * @param {String} functionName - Function name to trace from. If null, it returns the WHOLE builder stack
 	 *
@@ -101,10 +109,11 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * @name addKernel 
+	 * @memberOf WebGLFunctionBuilder
 	 * @function
+	 * @name addKernel 
 	 *
-	 * Add a new kernel to this instance
+	 * @desc Add a new kernel to this instance
 	 *
 	 * @param {String} fnString - Kernel function as a String
 	 * @param {Object} options - Settings object to set constants, debug mode, etc.
@@ -126,10 +135,11 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * @name addSubKernel
+	 * @memberOf WebGLFunctionBuilder
 	 * @function
+	 * @name addSubKernel
 	 *
-	 * Add a new sub-kernel to the current kernel instance
+	 * @desc Add a new sub-kernel to the current kernel instance
 	 *
 	 * @param {Function} jsFunction - Sub-kernel function (JavaScript)
 	 * @param {Object} options - Settings object to set constants, debug mode, etc.

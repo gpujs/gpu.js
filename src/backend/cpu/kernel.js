@@ -166,7 +166,7 @@ module.exports = class CPUKernel extends KernelBase {
 	 * This string can be saved by calling the `toString` method
 	 * and then can be reused later.</p>
 	 *
-	 * @returns result {String}
+	 * @returns {String} result
 	 *
 	 */
 	getKernelString() {
