@@ -1,10 +1,15 @@
 let gpu = null;
 
-/**
- * @class Texture
- *
- */
 module.exports = class Texture {
+	
+	/**
+ 	 * @desc WebGl Texture implementation in JS
+	 * @constructor Texture
+	 * @param {Object} texture 
+	 * @param {Array} size 
+	 * @param {Array} dimensions 
+	 * @param {Object} webGl
+	 */
 	constructor(texture, size, dimensions, webGl) {
 		this.texture = texture;
 		this.size = size;
@@ -15,8 +20,9 @@ module.exports = class Texture {
 	/**
 	 * @name toArray
 	 * @function
+	 * @memberOf Texture
 	 *
-	 * Converts the Texture into a JavaScript Array.
+	 * @desc Converts the Texture into a JavaScript Array.
 	 *
 	 */
 	toArray() {
@@ -31,11 +37,13 @@ module.exports = class Texture {
 
 		return copy(this.texture);
 	}
+
 	/**
 	 * @name delete
+	 * @desc Deletes the Texture.
 	 * @function
+	 * @memberOf Texture
 	 *
-	 * Deletes the Texture.
 	 *
 	 */
 	delete() {
