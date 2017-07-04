@@ -23,7 +23,7 @@ module.exports = class CPURunner extends RunnerBase {
 	}
 
 	/**
-	 * @memberOf CPURunner
+	 * @memberOf CPURunner#
 	 * @function
 	 * @name getMode()
 	 *

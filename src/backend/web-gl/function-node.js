@@ -43,7 +43,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astGeneric
 	 *
@@ -124,7 +124,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astFunctionDeclaration
 	 *
@@ -144,7 +144,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astFunctionPrototype
 	 * @static
@@ -186,7 +186,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astFunctionExpression
 	 *
@@ -249,7 +249,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astReturnStatement
 	 *
@@ -287,7 +287,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astLiteral
 	 *
@@ -321,7 +321,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astBinaryExpression
 	 *
@@ -362,7 +362,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astIdentifierExpression
 	 *
@@ -418,7 +418,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astForStatement
 	 *
@@ -503,7 +503,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astWhileStatement
 	 *
@@ -538,7 +538,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astAssignmentExpression
 	 *
@@ -568,7 +568,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astEmptyStatement
 	 *
@@ -586,7 +586,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astBlockStatement
 	 *
@@ -608,7 +608,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astExpressionStatement
 	 *
@@ -627,7 +627,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astVariableDeclaration
 	 *
@@ -652,7 +652,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astVariableDeclarator
 	 *
@@ -674,7 +674,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astIfStatement
 	 *
@@ -713,7 +713,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astBreakStatement
 	 *
@@ -731,7 +731,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astContinueStatement
 	 *
@@ -749,7 +749,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astLogicalExpression
 	 *
@@ -771,7 +771,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astUpdateExpression
 	 *
@@ -796,7 +796,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astUnaryExpression
 	 *
@@ -821,7 +821,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astThisExpression
 	 *
@@ -839,7 +839,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astMemberExpression
 	 *
@@ -941,7 +941,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/** 
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astMemberExpressionUnroll
 	 * @desc Parses the abstract syntax tree for binary expression.
@@ -978,7 +978,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astCallExpression
 	 *
@@ -1060,7 +1060,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name astArrayExpression
 	 *
@@ -1095,7 +1095,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode
+	 * @memberOf WebGLFunctionNode#
 	 * @function
 	 * @name getFunctionPrototypeString
 	 *
@@ -1134,7 +1134,7 @@ function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
 }
 
 /**
- * @memberOf WebGLFunctionNode
+ * @ignore
  * @function
  * @name webgl_regex_optimize
  *
@@ -1154,10 +1154,9 @@ function webGlRegexOptimize(inStr) {
 }
 
 /**
- * @memberOf WebGLFunctionNode
  * @function
  * @name astErrorOutput
- *
+ * @ignore
  * @desc To throw the AST error, with its location.
  *
  * @todo add location support fpr the AST error

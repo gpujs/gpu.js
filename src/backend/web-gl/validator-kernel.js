@@ -10,7 +10,7 @@ const utils = require('../../core/utils');
 module.exports = class WebGLValidatorKernel extends WebGLKernel {
 	
 	/** 
-	 * @memberOf WebGLValidatorKernel
+	 * @memberOf WebGLValidatorKernel#
 	 * @function
 	 * @name validateOptions
 	 *
