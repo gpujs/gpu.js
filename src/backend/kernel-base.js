@@ -1,32 +1,26 @@
 const utils = require('../core/utils');
 
-/**
- * @class BaseKernel
- *
- * Implements the base class for Kernels, and is used as a 
- * parent class for all Kernel implementations.
- *
- * This contains the basic methods needed by all Kernel implementations, 
- * like setDimensions, addSubKernel, etc.
- *
- * @param paramNames 					{Array}        Name of the parameters of the kernel function
- * @param fnString   					{String} 	   Kernel function as a String
- * @param dimensions 					{Array} 	   Dimensions of the kernel function, this.thread.x, etc.
- * @param debug   						{Boolean}      Toggle debug mode
- * @param graphical   					{String} 	   Toggle graphical mode
- * @param loopMaxIterations  			{Number} 	   Maximum number of loop iterations
- * @param constants   					{Object} 	   Global constants
- * @param subKernels   					{Array} 	   Sub kernels bound to this kernel instance
- * @param subKernelProperties 			{Object} 	   Sub kernels bound to this kernel instance as key/value pairs
- * @param subKernelOutputVariableNames  {Array} 	   Names of the variables outputted by the subkerls
- *
- */
 module.exports = class BaseKernel {
 
 	/**
-	 * @name BaseKernel
-	 *
-	 * @constructor Blank constructor, which initializes the properties
+	 * @constructor BaseKernel
+	 * 
+	 * @desc Implements the base class for Kernels, and is used as a 
+ 	 * parent class for all Kernel implementations.
+ 	 *
+ 	 * <p>This contains the basic methods needed by all Kernel implementations, 
+ 	 * like setDimensions, addSubKernel, etc.</p>
+	 * 
+	 * @prop {Array} paramNames - Name of the parameters of the kernel function
+ 	 * @prop {String} fnString - Kernel function as a String
+ 	 * @prop {Array} dimensions - Dimensions of the kernel function, this.thread.x, etc.
+ 	 * @prop {Boolean} debug - Toggle debug mode
+ 	 * @prop {String} graphical - Toggle graphical mode
+ 	 * @prop {number} loopMaxIterations - Maximum number of loop iterations
+ 	 * @prop {Object} constants - Global constants
+ 	 * @prop {Array} subKernels - Sub kernels bound to this kernel instance
+ 	 * @prop {Object} subKernelProperties - Sub kernels bound to this kernel instance as key/value pairs
+ 	 * @prop {Array} subKernelOutputVariableNames - Names of the variables outputted by the subkerls
 	 *
 	 */
 	constructor(fnString, settings) {
@@ -75,11 +69,13 @@ module.exports = class BaseKernel {
 	}
 
 	/**
+	 * @memberOf BaseKernel
+	 * @function
 	 * @name setDimensions
 	 *
-	 * Set dimensions of the kernel function
+	 * @desc Set dimensions of the kernel function
 	 *
-	 * @param dimensions {Array}       The dimensions array set the dimensions to
+	 * @param {Array} dimensions - The dimensions array set the dimensions to
 	 *
 	 */
 	setDimensions(dimensions) {
@@ -88,11 +84,13 @@ module.exports = class BaseKernel {
 	}
 
 	/**
+	 * @memberOf BaseKernel 
+	 * @function
 	 * @name setDebug
 	 *
-	 * Toggle debug mode
+	 * @desc Toggle debug mode
 	 *
-	 * @param flag {Boolean}       true to enable debug
+	 * @param {Boolean} flag - true to enable debug
 	 *
 	 */
 	setDebug(flag) {
@@ -101,11 +99,13 @@ module.exports = class BaseKernel {
 	}
 
 	/**
+	 * @memberOf BaseKernel
+	 * @function
 	 * @name setGraphical
 	 *
-	 * Toggle graphical output mode
+	 * @desc Toggle graphical output mode
 	 *
-	 * @param flag {Boolean}       true to enable graphical output
+	 * @param {Boolean} flag - true to enable graphical output
 	 *
 	 */
 	setGraphical(flag) {
@@ -114,11 +114,13 @@ module.exports = class BaseKernel {
 	}
 
 	/**
+	 * @memberOf BaseKernel
+	 * @function
 	 * @name setLoopMaxIterations
 	 *
-	 * Set the maximum number of loop iterations
+	 * @desc Set the maximum number of loop iterations
 	 *
-	 * @param max {Number}       iterations count
+	 * @param {number} max - iterations count
 	 *
 	 */
 	setLoopMaxIterations(max) {
@@ -127,8 +129,10 @@ module.exports = class BaseKernel {
 	}
 
 	/**
+	 * @memberOf BaseKernel
+	 * @function
 	 * @name setConstants
-	 *
+	 * @desc Set Constants
 	 */
 	setConstants(constants) {
 		this.constants = constants;
@@ -152,11 +156,13 @@ module.exports = class BaseKernel {
 	}
 
 	/**
+	 * @memberOf BaseKernel
+	 * @function
 	 * @name setFloatTextures
 	 *
-	 * Toggle texture output mode
+	 * @desc Toggle texture output mode
 	 *
-	 * @param flag {Boolean}       true to enable floatTextures
+	 * @param {Boolean} flag - true to enable floatTextures
 	 *
 	 */
 	setFloatTextures(flag) {
@@ -165,11 +171,13 @@ module.exports = class BaseKernel {
 	}
 
 	/**
+	 * @memberOf BaseKernel
+	 * @function
 	 * @name setFloatOutput
 	 *
-	 * Toggle output mode
+	 * @desc Toggle output mode
 	 *
-	 * @param flag {Boolean}       true to enable float
+	 * @param {Boolean} flag - true to enable float
 	 *
 	 */
 	setFloatOutput(flag) {
@@ -183,11 +191,13 @@ module.exports = class BaseKernel {
 	}
 
 	/**
+	 * @memberOf BaseKernel
+	 * @function
 	 * @name setCanvas
 	 *
-	 * Bind the canvas to kernel
+	 * @desc Bind the canvas to kernel
 	 * 
-	 * @param canvas {Canvas}        Canvas to bind
+	 * @param {Canvas} canvas - Canvas to bind
 	 *
 	 */
 	setCanvas(canvas) {
@@ -196,11 +206,13 @@ module.exports = class BaseKernel {
 	}
 
 	/**
+	 * @memberOf BaseKernel
+	 * @function
 	 * @name setCanvas
 	 *
-	 * Bind the webGL instance to kernel
+	 * @desc Bind the webGL instance to kernel
 	 * 
-	 * @param webGL {Canvas}        webGL instance to bind
+	 * @param {Canvas} webGL - webGL instance to bind
 	 *
 	 */
 	setWebGl(webGl) {
@@ -214,9 +226,11 @@ module.exports = class BaseKernel {
 	}
 
 	/**
+	 * @memberOf BaseKernel
+	 * @function
 	 * @name getCanvas()
 	 *
-	 * Returns the current canvas instance bound to the kernel
+	 * @desc Returns the current canvas instance bound to the kernel
 	 *
 	 */
 	getCanvas() {
@@ -224,9 +238,11 @@ module.exports = class BaseKernel {
 	}
 
 	/**
+	 * @memberOf BaseKernel
+	 * @function
 	 * @name getWebGl()
 	 *
-	 * Returns the current webGl instance bound to the kernel
+	 * @desc Returns the current webGl instance bound to the kernel
 	 *
 	 */
 	getWebGl() {
@@ -262,12 +278,15 @@ module.exports = class BaseKernel {
 		});
 	}
 
-	/** Function: addSubKernel
+	/** 
+	 * @memberOf BaseKernel
+	 * @function
+	 * @name addSubKernel
 	 *
-	 * Add a sub kernel to the root kernel instance.
+	 * @desc Add a sub kernel to the root kernel instance.
 	 * This is what `createKernels` uses.
 	 *
-	 * @param fnString {String}       function (as a String) of the subKernel to add
+	 * @param {String} fnString - function (as a String) of the subKernel to add
 	 *
 	 */
 	addSubKernel(fnString) {
@@ -280,13 +299,16 @@ module.exports = class BaseKernel {
 		return this;
 	}
 
-	/** Function: addSubKernelProperty
+	/** 
+	 * @memberOf BaseKernel
+	 * @function
+	 * @name addSubKernelProperty
 	 *
-	 * Add a sub kernel to the root kernel instance, indexed by a property name
+	 * @desc Add a sub kernel to the root kernel instance, indexed by a property name
 	 * This is what `createKernels` uses.
 	 *
-	 * @param property {String}       property key for the subKernel
-	 * @param fnString {String}       function (as a String) of the subKernel to add
+	 * @param {String} property - property key for the subKernel
+	 * @param {String} fnString - function (as a String) of the subKernel to add
 	 *
 	 */
 	addSubKernelProperty(property, fnString) {

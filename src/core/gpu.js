@@ -5,12 +5,16 @@ const WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
 const GPUCore = require("./gpu-core");
 
 /**
- * @class GPU
- *
- * Initialises the GPU.js library class which manages the WebGL context for the created functions.
- *
+ * Initialises the GPU.js library class which manages the webGlContext for the created functions.
+ * @class
+ * @extends GPUCore
  */
 class GPU extends GPUCore {
+	/**
+	 * Creates an instance of GPU.
+	 * @param {any} settings - Settings to set mode, andother properties. See #GPUCore
+	 * @memberof GPU
+	 */
 	constructor(settings) {
 		super(settings);
 
@@ -49,24 +53,23 @@ class GPU extends GPUCore {
 		}
 	}
 	/**
-	 * @name createKernel
 	 *
 	 * This creates a callable function object to call the kernel function with the argument parameter set
 	 *
-	 * The parameter object contains the following sub parameters
+	 * @name createKernel
+	 * @function
+	 * @memberOf GPU
+	 * 
+	 * @param {Function} inputFunction - The calling to perform the conversion
+	 * @param {Object} settings - The parameter configuration object
+	 * @property {String} settings.dimensions - Thread dimension array (Defeaults to [1024])                                                    
+	 * @property {String} settings.mode - CPU / GPU configuration mode (Defaults to null)
+	 * 
+	 * The following modes are supported
+	 * *null* / *'auto'* : Attempts to build GPU mode, else fallbacks
+	 * *'gpu'* : Attempts to build GPU mode, else fallbacks
+	 * *'cpu'* : Forces JS fallback mode only
 	 *
-	 * |---------------|---------------|---------------------------------------------------------------------------|
-	 * | Name          | Default value | Description                                                               |
-	 * |---------------|---------------|---------------------------------------------------------------------------|
-	 * | dimensions    | [1024]        | Thread dimension array                                                    |
-	 * | mode          | null          | CPU / GPU configuration mode, 'auto' / null. Has the following modes.     |
-	 * |               |               |     + null / 'auto' : Attempts to build GPU mode, else fallbacks          |
-	 * |               |               |     + 'gpu' : Attempts to build GPU mode, else fallbacks                  |
-	 * |               |               |     + 'cpu' : Forces JS fallback mode only                                |
-	 * |---------------|---------------|---------------------------------------------------------------------------|
-	 *
-	 * @param inputFunction   {JS Function} The calling to perform the conversion
-	 * @param settings        {Object}      The parameter configuration object (see above)
 	 *
 	 * @returns {Function} callable function to run
 	 *
@@ -99,34 +102,36 @@ class GPU extends GPUCore {
 
 	/**
 	 *
-	 * @name createKernels
-	 *
 	 * Create a super kernel which executes sub kernels 
 	 * and saves their output to be used with the next sub kernel.
 	 * This can be useful if we want to save the output on one kernel,
-	 *	and then use it as an input to another kernel. *Machine Learning*
-	 *
+	 * and then use it as an input to another kernel. *Machine Learning*
+	 * 
+	 * @name createKernels
+	 * @function
+	 * @memberOf GPU
+	 * 
+	 * @param {Object|Array} subKernels - Sub kernels for this kernel
+	 * @param {Function} rootKernel - Root kernel
+	 * 
+	 * @returns {Function} callable kernel function
+	 * 
 	 * @example
-	 *	 		const megaKernel = gpu.createKernels({
-	 *				addResult: function add(a, b) {
-	 *	  				return a[this.thread.x] + b[this.thread.x];
-	 *				},
-	 *				multiplyResult: function multiply(a, b) {
-	 *					return a[this.thread.x] * b[this.thread.x];
-	 *				},
-	 *			  }, function(a, b, c) {
-	 *				return multiply(add(a, b), c);
-	 *			});
-	 *	
-	 *			megaKernel(a, b, c);
+	 * const megaKernel = gpu.createKernels({
+	 *   addResult: function add(a, b) {
+	 *     return a[this.thread.x] + b[this.thread.x];
+	 *   },
+	 *   multiplyResult: function multiply(a, b) {
+	 *     return a[this.thread.x] * b[this.thread.x];
+	 *   },
+	 *  }, function(a, b, c) {
+	 *       return multiply(add(a, b), c);
+	 * });
+	 *		
+	 * megaKernel(a, b, c);
 	 * 
 	 * Note: You can also define subKernels as an array of functions. 
 	 * > [add, multiply]
-	 *
-	 * @param subKernels {Object|Array}  Sub kernels for this kernel
-	 * @param rootKernel {Function}  	  Root kernel
-	 * 
-	 * @returns {Function} callable kernel function
 	 *
 	 */
 	createKernels() {
@@ -161,25 +166,28 @@ class GPU extends GPUCore {
 	}
 
 	/**
-	 * @name combineKernels
-	 *
+	 * 
 	 * Combine different kernels into one super Kernel, 
 	 * useful to perform multiple operations inside one 
 	 * kernel without the penalty of data transfer between 
 	 * cpu and gpu.
-	 *
+	 * 
 	 * The number of kernel functions sent to this method can be variable.
 	 * You can send in one, two, etc.
-	 *
+	 * 
+	 * @name combineKernels
+	 * @function
+	 * @memberOf GPU
+	 * 
+	 * @param {Function} subKernels - Kernel function(s) to combine.
+	 * @param {Function} rootKernel - Root kernel to combine kernels into
+	 * 
 	 * @example 
 	 * 	combineKernels(add, multiply, function(a,b,c){
 	 *	 	return add(multiply(a,b), c)
 	 *	})
-	 *
-	 * @param subKernels {Function}  Kernel function(s) to combine.
-	 * @param rootKernel {Function}  Root kernel to combine kernels into
 	 * 
-	 * @returns {Function} callable kernel function
+	 * @returns {Function} Callable kernel function
 	 *
 	 */
 	combineKernels() {
@@ -229,13 +237,16 @@ class GPU extends GPUCore {
 
 
 	/**
-	 * @name addFunction
 	 *
 	 * Adds additional functions, that the kernel may call.
 	 *
-	 * @param fn {Function|String}  JS Function to do conversion
-	 * @param paramTypes {[String,...]|{variableName: Type,...}} Parameter type array, assumes all parameters are 'float' if null
-	 * @param returnType {String}       The return type, assumes 'float' if null
+	 * @name addFunction
+	 * @function
+	 * @memberOf GPU
+	 *
+	 * @param {Function|String} fn - JS Function to do conversion
+	 * @param {String[]|Object} paramTypes - Parameter type array, assumes all parameters are 'float' if null
+	 * @param {String} returnType - The return type, assumes 'float' if null
 	 *
 	 * @returns {GPU} returns itself
 	 *
@@ -246,9 +257,11 @@ class GPU extends GPUCore {
 	}
 
 	/**
-	 * @name getMode()
 	 *
 	 * Return the current mode in which gpu.js is executing.
+	 * @name getMode
+	 * @function
+	 * @memberOf GPU
 	 * 
 	 * @returns {String} The current mode, "cpu", "webgl", etc.
 	 *
@@ -258,10 +271,13 @@ class GPU extends GPUCore {
 	}
 
 	/**
-	 * @name get isWebGlSupported()
 	 *
 	 * Return TRUE, if browser supports WebGl AND Canvas
 	 *
+	 * @name get isWebGlSupported
+	 * @function
+	 * @memberOf GPU
+	 * 
 	 * Note: This function can also be called directly `GPU.isWebGlSupported()`
 	 *
 	 * @returns {Boolean} TRUE if browser supports webGl
@@ -272,10 +288,13 @@ class GPU extends GPUCore {
 	}
 
 	/**
-	 * @name getCanvas()
 	 *
 	 * Return the canvas object bound to this gpu instance.
 	 *
+	 * @name getCanvas
+	 * @function
+	 * @memberOf GPU
+	 * 
 	 * @returns {Object} Canvas object if present
 	 *
 	 */
@@ -284,10 +303,13 @@ class GPU extends GPUCore {
 	}
 
 	/**
-	 * @name getWebGl()
 	 *
 	 * Return the webGl object bound to this gpu instance.
 	 *
+	 * @name getWebGl
+	 * @function
+	 * @memberOf GPU
+	 * 
 	 * @returns {Object} WebGl object if present
 	 *
 	 */

@@ -7,7 +7,7 @@ const utils = require('../../core/utils');
  *
  * @extends FunctionBuilderBase
  *
- * Builds webGl functions (shaders) from JavaScript function Strings
+ * @desc Builds webGl functions (shaders) from JavaScript function Strings
  *
  */
 module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
@@ -19,9 +19,13 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
+	 * @memberOf WebGLFunctionBuilder
+	 * @function
 	 * @name getStringFromFunctionNames
+	 * 
+	 * @desc Get the webGl string from function names
 	 *
-	 * @param functionList {[String,...]} List of function to build the webgl string.
+	 * @param {String[]} functionList - List of function to build the webgl string.
 	 *
 	 * @returns {String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	 *
@@ -38,12 +42,14 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
+	 * @memberOf WebGLFunctionBuilder
+	 * @function
 	 * @name getPrototypeStringFromFunctionNames
-	 * 
-	 * Return webgl String of all functions converted to webgl shader form
 	 *
-	 * @param functionList 	{[String,...]} 		List of function names to build the webgl string.
-	 * @param opt 			{Object} 	   		Settings object passed to functionNode. See functionNode for more details.	
+	 * @desc Return webgl String of all functions converted to webgl shader form
+	 *
+	 * @param {String[]} functionList - List of function names to build the webgl string.
+	 * @param {Object} opt - Settings object passed to functionNode. See functionNode for more details.
 	 *
 	 * @returns {String} Prototype String of all functions converted to webgl shader form
 	 *
@@ -60,9 +66,13 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
+	 * @memberOf WebGLFunctionBuilder
+	 * @function
 	 * @name getString
 	 *
-	 * @param functionName {String} Function name to trace from. If null, it returns the WHOLE builder stack
+	 * Get webGl string for a particular function name
+	 * 
+	 * @param {String} functionName - Function name to trace from. If null, it returns the WHOLE builder stack
 	 *
 	 * @returns {String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	 *
@@ -79,11 +89,13 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
+	 * @memberOf WebGLFunctionBuilder
 	 * @name getPrototypeString
+	 * @function
 	 *
-	 * Return the webgl string for a function converted to glsl (webgl shaders)
+	 * @desc Return the webgl string for a function converted to glsl (webgl shaders)
 	 *
-	 * @param functionName {String} Function name to trace from. If null, it returns the WHOLE builder stack
+	 * @param {String} functionName - Function name to trace from. If null, it returns the WHOLE builder stack
 	 *
 	 * @returns {String} The full webgl string, of all the various functions. Trace optimized if functionName given
 	 *
@@ -97,14 +109,16 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
+	 * @memberOf WebGLFunctionBuilder
+	 * @function
 	 * @name addKernel 
 	 *
-	 * Add a new kernel to this instance
+	 * @desc Add a new kernel to this instance
 	 *
-	 * @param fnString 		{String} 	Kernel function as a String
-	 * @param options 		{Object} 	Settings object to set constants, debug mode, etc.
-	 * @param paramNames 	{Array} 	Parameters of the kernel
-	 * @param paramTypes 	{Array} 	Types of the parameters
+	 * @param {String} fnString - Kernel function as a String
+	 * @param {Object} options - Settings object to set constants, debug mode, etc.
+	 * @param {Array} paramNames - Parameters of the kernel
+	 * @param {Array} paramTypes - Types of the parameters
 	 *		
 	 *
 	 * @returns {Object} The inserted kernel as a Kernel Node
@@ -121,14 +135,16 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
+	 * @memberOf WebGLFunctionBuilder
+	 * @function
 	 * @name addSubKernel
 	 *
-	 * Add a new sub-kernel to the current kernel instance
+	 * @desc Add a new sub-kernel to the current kernel instance
 	 *
-	 * @param jsFunction {Function} Sub-kernel function (JavaScript)
-	 * @param options 	 {Object} 	Settings object to set constants, debug mode, etc.
-	 * @param paramNames {Array} 	Parameters of the sub-kernel
-	 * @param returnType {Array} 	Return type of the subKernel
+	 * @param {Function} jsFunction - Sub-kernel function (JavaScript)
+	 * @param {Object} options - Settings object to set constants, debug mode, etc.
+	 * @param {Array} paramNames - Parameters of the sub-kernel
+	 * @param {Array} returnType - Return type of the subKernel
 	 *
 	 * @returns {Object} The inserted sub-kernel as a Kernel Node
 	 *
