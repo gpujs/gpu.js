@@ -90,3 +90,35 @@ gulp.task('beautify', function() {
 		}))
 		.pipe(gulp.dest('src'));
 });
+
+gulp.task('injectCSS', function(){
+	let signatureColor = '#ff75cf';
+	let linkColor = '#4c7fbd';
+	let themeColor = '#186384';
+
+	// !important is used because the original rule is using it.
+	let cssRules = `
+	.signature, a {
+		color: ${signatureColor};
+	}
+
+	h4.name {
+		background: ${themeColor};
+	}
+
+	nav > ul > li > a, nav a:hover, nav > h2 > a {
+		color: ${linkColor} !important;
+	}
+
+	span.param-type, .params td .param-type {
+	color: ${themeColor};
+	}
+	`;
+	fs.appendFile('./doc/styles/jsdoc.css', cssRules, (err)=>{
+		if(err){
+			throw new Error(err);
+		}
+		
+		console.log('CSS Injected');
+	});
+})

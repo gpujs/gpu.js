@@ -20,32 +20,18 @@
 	</target>
 	
 	<target name="build-docs">
-		<mkdir dir="doc/dev-docs"/>
-		<mkdir dir="doc/usr-docs"/>
-		<mkdir dir="doc/dev-tmp"/>
-		<mkdir dir="doc/usr-tmp"/>
-		
-		<exec executable="./doc/NaturalDocs/NaturalDocs">
-			<arg value="-i"/>
-			<arg value="./src"/>
-			<arg value="-o"/>
-			<arg value="HTML"/>
-			<arg value="./doc/dev-docs"/>
-			<arg value="-p"/>
-			<arg value="./doc/dev-tmp"/>
+		<exec executable="./node_modules/.bin/jsdoc">
+			<arg value="-c"/>
+			<arg value="jsdoc.json"/>
+			<arg value="src"/>
 			<arg value="-r"/>
+			<arg value="-d"/>
+			<arg value="doc"/>
+			<arg value="--debug"/>
 		</exec>
-		<exec executable="./doc/NaturalDocs/NaturalDocs">
-			<arg value="-i"/>
-			<arg value="./src"/>
-			<arg value="-xi"/>
-			<arg value="./src/backend"/>
-			<arg value="-o"/>
-			<arg value="HTML"/>
-			<arg value="./doc/usr-docs"/>
-			<arg value="-p"/>
-			<arg value="./doc/usr-tmp"/>
-			<arg value="-r"/>
+
+		<exec executable="gulp">
+			<arg value="injectCSS"/>
 		</exec>
 	</target>
 	
@@ -62,18 +48,15 @@
 		</exec>
 	</target>
 	
-	<target name="setup-naturalDocs">
-		<mkdir dir="doc"/>
-		<exec executable="git" dir="doc">
-			<arg value="clone"/>
-			<arg value="https://github.com/picoded/NaturalDocs.git"/>
-		</exec>
-		<exec executable="git" dir="doc/NaturalDocs">
-			<arg value="pull"/>
+	<target name="setup-docs">
+		<exec executable="npm">
+			<arg value="install"/>
+			<arg value="jsdoc"/>
+			<arg value="docdash"/>
 		</exec>
 	</target>
 	
 	<!-- Calls all the one time setup functions -->
-	<target name="setup" depends="setup-gulp, setup-naturalDocs">
+	<target name="setup" depends="setup-gulp, setup-docs">
 	</target>
 </project>

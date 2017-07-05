@@ -18,7 +18,7 @@ module.exports = class FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf FunctionBuilderBase
+	 * @memberOf FunctionBuilderBase#
 	 * @function
 	 * @name addFunction
 	 *
@@ -36,7 +36,7 @@ module.exports = class FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf FunctionBuilderBase
+	 * @memberOf FunctionBuilderBase#
 	 * @function
 	 * @name addFunctionNode
 	 *
@@ -53,7 +53,7 @@ module.exports = class FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf FunctionBuilderBase
+	 * @memberOf FunctionBuilderBase#
 	 * @function
 	 * @name traceFunctionCalls
 	 *
@@ -104,7 +104,7 @@ module.exports = class FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf FunctionBuilderBase
+	 * @memberOf FunctionBuilderBase#
 	 * @function
 	 * @name polyfillStandardFunctions
 	 *

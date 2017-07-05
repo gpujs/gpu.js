@@ -19,7 +19,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionBuilder
+	 * @memberOf WebGLFunctionBuilder#
 	 * @function
 	 * @name getStringFromFunctionNames
 	 * 
@@ -42,7 +42,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionBuilder
+	 * @memberOf WebGLFunctionBuilder#
 	 * @function
 	 * @name getPrototypeStringFromFunctionNames
 	 *
@@ -66,7 +66,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionBuilder
+	 * @memberOf WebGLFunctionBuilder#
 	 * @function
 	 * @name getString
 	 *
@@ -89,7 +89,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionBuilder
+	 * @memberOf WebGLFunctionBuilder#
 	 * @name getPrototypeString
 	 * @function
 	 *
@@ -109,7 +109,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionBuilder
+	 * @memberOf WebGLFunctionBuilder#
 	 * @function
 	 * @name addKernel 
 	 *
@@ -135,7 +135,7 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionBuilder
+	 * @memberOf WebGLFunctionBuilder#
 	 * @function
 	 * @name addSubKernel
 	 *

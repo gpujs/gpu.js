@@ -54,7 +54,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name validateOptions
 	 *
@@ -111,7 +111,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name build
 	 *
@@ -175,7 +175,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name run
 	 *
@@ -312,7 +312,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name renderOutput
 	 *
@@ -363,7 +363,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name getOutputTexture
 	 *
@@ -377,7 +377,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name getArgumentTexture
 	 *
@@ -393,7 +393,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @name getSubKernelTexture
 	 * @function
 	 *
@@ -409,7 +409,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @name getTextureCache
 	 * @function
 	 *
@@ -432,7 +432,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name setupParams
 	 *
@@ -452,7 +452,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name getUniformLocation
 	 *
@@ -471,7 +471,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getFragShaderArtifactMap
 	 *
@@ -502,7 +502,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _addArgument 
 	 *
@@ -596,7 +596,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getHeaderString
 	 *
@@ -616,7 +616,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getLoopMaxString
 	 *
@@ -634,7 +634,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getConstantsString
 	 *
@@ -665,7 +665,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getTextureCoordinate
 	 *
@@ -684,7 +684,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getDecode32EndiannessString
 	 *
@@ -702,7 +702,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getEncode32EndiannessString
 	 *
@@ -721,7 +721,7 @@ module.exports = class WebGLKernel extends KernelBase {
 
 	/**
 	 * @function
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @name _getGetWraparoundString
 	 *
 	 * @returns {String} wraparound string
@@ -735,7 +735,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getGetTextureChannelString
 	 *
@@ -750,7 +750,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getGetTextureIndexString
 	 *
@@ -769,7 +769,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getGetResultString
 	 *
@@ -785,7 +785,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getMainParamsString
 	 *
@@ -838,7 +838,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getMainConstantsString
 	 *
@@ -861,7 +861,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getKernelString
 	 *
@@ -899,7 +899,7 @@ module.exports = class WebGLKernel extends KernelBase {
 
 	/**
 	 * 
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getMainResultString
 	 *
@@ -964,7 +964,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _linesToString
 	 *
@@ -982,7 +982,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _replaceArtifacts
 	 *
@@ -1000,7 +1000,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _addKernels
 	 *
@@ -1057,7 +1057,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getFragShaderString
 	 *
@@ -1078,7 +1078,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getVertShaderString
 	 *
@@ -1098,7 +1098,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf WebGLKernel
+	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name toString
 	 *

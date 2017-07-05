@@ -29,7 +29,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name getFunctionPrototypeString
 	 *

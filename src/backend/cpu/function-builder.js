@@ -18,7 +18,7 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf CPUFunctionBuilder
+	 * @memberOf CPUFunctionBuilder#
 	 * @function
 	 * @name getPrototypeString
 	 *
@@ -44,7 +44,7 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf CPUFunctionBuilder
+	 * @memberOf CPUFunctionBuilder#
 	 * @function
 	 * @name addSubKernel
 	 *

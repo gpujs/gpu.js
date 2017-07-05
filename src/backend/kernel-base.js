@@ -8,8 +8,8 @@ module.exports = class BaseKernel {
 	 * @desc Implements the base class for Kernels, and is used as a 
  	 * parent class for all Kernel implementations.
  	 *
- 	 * <p>This contains the basic methods needed by all Kernel implementations, 
- 	 * like setDimensions, addSubKernel, etc.</p>
+ 	 * This contains the basic methods needed by all Kernel implementations, 
+ 	 * like setDimensions, addSubKernel, etc.
 	 * 
 	 * @prop {Array} paramNames - Name of the parameters of the kernel function
  	 * @prop {String} fnString - Kernel function as a String
@@ -69,7 +69,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel
+	 * @memberOf BaseKernel#
 	 * @function
 	 * @name setDimensions
 	 *
@@ -84,7 +84,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel 
+	 * @memberOf BaseKernel# 
 	 * @function
 	 * @name setDebug
 	 *
@@ -99,7 +99,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel
+	 * @memberOf BaseKernel#
 	 * @function
 	 * @name setGraphical
 	 *
@@ -114,7 +114,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel
+	 * @memberOf BaseKernel#
 	 * @function
 	 * @name setLoopMaxIterations
 	 *
@@ -129,7 +129,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel
+	 * @memberOf BaseKernel#
 	 * @function
 	 * @name setConstants
 	 * @desc Set Constants
@@ -156,7 +156,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel
+	 * @memberOf BaseKernel#
 	 * @function
 	 * @name setFloatTextures
 	 *
@@ -171,7 +171,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel
+	 * @memberOf BaseKernel#
 	 * @function
 	 * @name setFloatOutput
 	 *
@@ -191,7 +191,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel
+	 * @memberOf BaseKernel#
 	 * @function
 	 * @name setCanvas
 	 *
@@ -206,7 +206,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel
+	 * @memberOf BaseKernel#
 	 * @function
 	 * @name setCanvas
 	 *
@@ -226,7 +226,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel
+	 * @memberOf BaseKernel#
 	 * @function
 	 * @name getCanvas()
 	 *
@@ -238,7 +238,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel
+	 * @memberOf BaseKernel#
 	 * @function
 	 * @name getWebGl()
 	 *
@@ -279,7 +279,7 @@ module.exports = class BaseKernel {
 	}
 
 	/** 
-	 * @memberOf BaseKernel
+	 * @memberOf BaseKernel#
 	 * @function
 	 * @name addSubKernel
 	 *
@@ -300,7 +300,7 @@ module.exports = class BaseKernel {
 	}
 
 	/** 
-	 * @memberOf BaseKernel
+	 * @memberOf BaseKernel#
 	 * @function
 	 * @name addSubKernelProperty
 	 *
