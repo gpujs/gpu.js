@@ -7,7 +7,7 @@ const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
 
 module.exports = class WebGLKernel extends KernelBase {
-	
+
 	/**
 	 * @constructor WebGLKernel
 	 *
@@ -235,6 +235,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			gl.uniform2fv(uTexSizeLoc, texSize);
 		}
 
+		this.argumentsLength = 0;
 		for (let texIndex = 0; texIndex < paramNames.length; texIndex++) {
 			this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
 		}
