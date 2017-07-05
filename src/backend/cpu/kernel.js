@@ -48,7 +48,7 @@ module.exports = class CPUKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf CPUKernel
+	 * @memberOf CPUKernel#
 	 * @function
 	 * @name validateOptions
 	 *
@@ -74,7 +74,7 @@ module.exports = class CPUKernel extends KernelBase {
 	}	
 	
 	/**
-	 * @memberOf CPUKernel
+	 * @memberOf CPUKernel#
 	 * @function
 	 * @name build
 	 *
@@ -156,7 +156,7 @@ module.exports = class CPUKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf CPUKernel
+	 * @memberOf CPUKernel#
 	 * @function
 	 * @name getKernelString
 	 *
@@ -272,7 +272,7 @@ module.exports = class CPUKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf CPUKernel
+	 * @memberOf CPUKernel#
 	 * @function
 	 * @name toString
 	 *
@@ -284,7 +284,7 @@ module.exports = class CPUKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf CPUKernel
+	 * @memberOf CPUKernel#
 	 * @function
 	 * @name precompileKernelObj
 	 *

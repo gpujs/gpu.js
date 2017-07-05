@@ -13,7 +13,7 @@ class GPU extends GPUCore {
 	/**
 	 * Creates an instance of GPU.
 	 * @param {any} settings - Settings to set mode, andother properties. See #GPUCore
-	 * @memberof GPU
+	 * @memberOf GPU#
 	 */
 	constructor(settings) {
 		super(settings);
@@ -58,7 +58,7 @@ class GPU extends GPUCore {
 	 *
 	 * @name createKernel
 	 * @function
-	 * @memberOf GPU
+	 * @memberOf GPU##
 	 * 
 	 * @param {Function} inputFunction - The calling to perform the conversion
 	 * @param {Object} settings - The parameter configuration object
@@ -109,7 +109,7 @@ class GPU extends GPUCore {
 	 * 
 	 * @name createKernels
 	 * @function
-	 * @memberOf GPU
+	 * @memberOf GPU#
 	 * 
 	 * @param {Object|Array} subKernels - Sub kernels for this kernel
 	 * @param {Function} rootKernel - Root kernel
@@ -177,7 +177,7 @@ class GPU extends GPUCore {
 	 * 
 	 * @name combineKernels
 	 * @function
-	 * @memberOf GPU
+	 * @memberOf GPU#
 	 * 
 	 * @param {Function} subKernels - Kernel function(s) to combine.
 	 * @param {Function} rootKernel - Root kernel to combine kernels into
@@ -242,7 +242,7 @@ class GPU extends GPUCore {
 	 *
 	 * @name addFunction
 	 * @function
-	 * @memberOf GPU
+	 * @memberOf GPU#
 	 *
 	 * @param {Function|String} fn - JS Function to do conversion
 	 * @param {String[]|Object} paramTypes - Parameter type array, assumes all parameters are 'float' if null
@@ -261,7 +261,7 @@ class GPU extends GPUCore {
 	 * Return the current mode in which gpu.js is executing.
 	 * @name getMode
 	 * @function
-	 * @memberOf GPU
+	 * @memberOf GPU#
 	 * 
 	 * @returns {String} The current mode, "cpu", "webgl", etc.
 	 *
@@ -276,7 +276,7 @@ class GPU extends GPUCore {
 	 *
 	 * @name get isWebGlSupported
 	 * @function
-	 * @memberOf GPU
+	 * @memberOf GPU#
 	 * 
 	 * Note: This function can also be called directly `GPU.isWebGlSupported()`
 	 *
@@ -293,7 +293,7 @@ class GPU extends GPUCore {
 	 *
 	 * @name getCanvas
 	 * @function
-	 * @memberOf GPU
+	 * @memberOf GPU#
 	 * 
 	 * @returns {Object} Canvas object if present
 	 *
@@ -308,7 +308,7 @@ class GPU extends GPUCore {
 	 *
 	 * @name getWebGl
 	 * @function
-	 * @memberOf GPU
+	 * @memberOf GPU#
 	 * 
 	 * @returns {Object} WebGl object if present
 	 *

@@ -157,7 +157,7 @@ module.exports = class BaseFunctionNode {
 	 */
 
 	/**
-	 * @memberOf FunctionNodeBase
+	 * @memberOf FunctionNodeBase#
 	 * @function
 	 * @name getJSFunction
 	 *
@@ -189,7 +189,7 @@ module.exports = class BaseFunctionNode {
 	 */
 
 	/**
-	 * @memberOf FunctionNodeBase
+	 * @memberOf FunctionNodeBase#
 	 * @function
 	 * @name getJsAST
 	 *
@@ -226,7 +226,7 @@ module.exports = class BaseFunctionNode {
 
 
 	/**
-	 * @memberOf FunctionNodeBase
+	 * @memberOf FunctionNodeBase#
 	 * @function
 	 * @name getFunctionString
 	 *
@@ -241,7 +241,7 @@ module.exports = class BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNodeBase
+	 * @memberOf FunctionNodeBase#
 	 * @function
 	 * @name setFunctionString
 	 *
@@ -255,7 +255,7 @@ module.exports = class BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNodeBase
+	 * @memberOf FunctionNodeBase#
 	 * @function
 	 * @name getParamType
 	 *
@@ -282,7 +282,7 @@ module.exports = class BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNodeBase
+	 * @memberOf FunctionNodeBase#
 	 * @function
 	 * @name getUserParamName
 	 *

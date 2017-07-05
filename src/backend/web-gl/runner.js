@@ -23,10 +23,11 @@ module.exports = class WebGLRunner extends RunnerBase {
 	}
 
 	/**
-	 * @name getMode()
+	 * @memberOf WebGLRunner#
 	 * @function
+	 * @name getMode
 	 *
-	 * Return the current mode in which gpu.js is executing.
+	 * @desc Return the current mode in which gpu.js is executing.
 	 * 
 	 * @returns {String} The current mode; "cpu".
 	 *

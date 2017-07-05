@@ -39,7 +39,7 @@ module.exports = class BaseRunner {
 	}
 
 	/**
-	 * @memberOf BaseRunner
+	 * @memberOf BaseRunner#
 	 * @function
 	 * @name textureToArray
 	 *
@@ -57,7 +57,7 @@ module.exports = class BaseRunner {
 	}
 
 	/**
-	 * @memberOf BaseRunner
+	 * @memberOf BaseRunner#
 	 * @function
 	 * 
 	 * @name deleteTexture
@@ -71,7 +71,7 @@ module.exports = class BaseRunner {
 	}
 
 	/**
-	 * @memberOf BaseRunner
+	 * @memberOf BaseRunner#
 	 * @function
 	 * @name buildPromiseKernel
 	 * 
@@ -90,7 +90,7 @@ module.exports = class BaseRunner {
 	}
 
 	/**
-	 * @memberOf BaseRunner
+	 * @memberOf BaseRunner#
 	 * @function
 	 * 
 	 * @name buildKernel
