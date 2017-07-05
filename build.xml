@@ -29,6 +29,10 @@
 			<arg value="doc"/>
 			<arg value="--debug"/>
 		</exec>
+
+		<exec executable="gulp">
+			<arg value="injectCSS"/>
+		</exec>
 	</target>
 	
 	<!-- **************************************************
