@@ -179,8 +179,8 @@ class UtilsCore {
 	static initWebGl(canvasObj) {
 
 		// First time setup, does the browser support check memorizer
-		if (typeof _isCanvasSupported !== 'undefined' && typeof _isWebGlSupported !== 'undefined' || canvasObj === null) {
-			if (!_isCanvasSupported || !_isWebGlSupported) {
+		if (typeof _isCanvasSupported !== 'undefined' || canvasObj === null) {
+			if (!_isCanvasSupported) {
 				return null;
 			}
 		}
