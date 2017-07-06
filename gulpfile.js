@@ -1,3 +1,5 @@
+'use strict';
+
 const fs = require('fs');
 const gulp = require('gulp');
 const concat = require('gulp-concat');
@@ -121,4 +123,4 @@ gulp.task('injectCSS', function(){
 		
 		console.log('CSS Injected');
 	});
-})
+});
