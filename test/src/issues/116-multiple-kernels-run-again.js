@@ -1,6 +1,6 @@
 QUnit.test( "Issue #116 - multiple kernels run again", function() {
 
-  const gpu = new GPU();
+  const gpu = new GPU({mode: 'webgl'});
   const A = [1, 2, 3, 4, 5];
   const B = [1, 2, 3, 4, 5];
   
@@ -12,10 +12,10 @@ QUnit.test( "Issue #116 - multiple kernels run again", function() {
 
   const layerForward = [];
 
-  for (let i = 1;  i <= 2; i++) {
+  for (let i = 0;  i < 2; i++) {
         const kernels = gpu.createKernels([add],function(a, b){
             return add(a,b, gpu_threadX);
-        }).setDimensions([sizes[i]]);
+        }).setDimensions([sizes[i + 1]]); // First: 5. Second: 1.
 
         layerForward.push(kernels);
   }
