@@ -107,7 +107,7 @@ class GPU extends GPUCore {
 	 * This can be useful if we want to save the output on one kernel,
 	 * and then use it as an input to another kernel. *Machine Learning*
 	 * 
-	 * @name createKernels
+	 * @name createKernelMap
 	 * @function
 	 * @memberOf GPU#
 	 * 
@@ -117,7 +117,7 @@ class GPU extends GPUCore {
 	 * @returns {Function} callable kernel function
 	 * 
 	 * @example
-	 * const megaKernel = gpu.createKernels({
+	 * const megaKernel = gpu.createKernelMap({
 	 *   addResult: function add(a, b) {
 	 *     return a[this.thread.x] + b[this.thread.x];
 	 *   },
@@ -134,7 +134,7 @@ class GPU extends GPUCore {
 	 * > [add, multiply]
 	 *
 	 */
-	createKernels() {
+	createKernelMap() {
 		let fn;
 		let settings;
 		if (typeof arguments[arguments.length - 2] === 'function') {

@@ -284,7 +284,7 @@ module.exports = class BaseKernel {
 	 * @name addSubKernel
 	 *
 	 * @desc Add a sub kernel to the root kernel instance.
-	 * This is what `createKernels` uses.
+	 * This is what `createKernelMap` uses.
 	 *
 	 * @param {String} fnString - function (as a String) of the subKernel to add
 	 *
@@ -305,7 +305,7 @@ module.exports = class BaseKernel {
 	 * @name addSubKernelProperty
 	 *
 	 * @desc Add a sub kernel to the root kernel instance, indexed by a property name
-	 * This is what `createKernels` uses.
+	 * This is what `createKernelMap` uses.
 	 *
 	 * @param {String} property - property key for the subKernel
 	 * @param {String} fnString - function (as a String) of the subKernel to add

@@ -1,4 +1,4 @@
-QUnit.test( "Issue #114 - run createKernels the second time", function() {
+QUnit.test( "Issue #114 - run createKernelMap the second time", function() {
 
   const gpu = new GPU();
   const A = [1, 2, 3, 4, 5];
@@ -6,7 +6,7 @@ QUnit.test( "Issue #114 - run createKernels the second time", function() {
   function add(a,b){
       return a + b;
   }
-  const kernels = gpu.createKernels([add],function(a, b){
+  const kernels = gpu.createKernelMap([add],function(a, b){
       return a[this.thread.x] + b[this.thread.x];
   }).setDimensions([5]);
 

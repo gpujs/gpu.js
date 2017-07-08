@@ -1,6 +1,6 @@
 function createPropertyKernels(mode, dimensions, canvas) {
   var gpu = new GPU({mode: mode, canvas: canvas});
-  return gpu.createKernels({
+  return gpu.createKernelMap({
     addResult: GPU.alias('adder', function add(v1, v2) {
       return v1 + v2;
     }),
@@ -15,7 +15,7 @@ function createPropertyKernels(mode, dimensions, canvas) {
 
 function createArrayKernels(mode, dimensions, canvas) {
   var gpu = new GPU({mode: mode, canvas: canvas});
-  return gpu.createKernels([
+  return gpu.createKernelMap([
     function add(v1, v2) {
       return v1 + v2;
     },
@@ -35,7 +35,7 @@ function createKernel(mode, dimensions, canvas) {
   }).setDimensions(dimensions);
 }
 
-QUnit.test( "createKernels object 1 dimension 1 length (auto)", function() {
+QUnit.test( "createKernelMap object 1 dimension 1 length (auto)", function() {
   var canvas = document.createElement('canvas');
   var superKernel = createPropertyKernels(null, [1], canvas);
   var kernel = createKernel(null, [1], canvas);
@@ -48,7 +48,7 @@ QUnit.test( "createKernels object 1 dimension 1 length (auto)", function() {
   QUnit.assert.deepEqual(divideResult, [8]);
 });
 
-QUnit.test( "createKernels object 1 dimension 1 length (gpu)", function() {
+QUnit.test( "createKernelMap object 1 dimension 1 length (gpu)", function() {
   var canvas = document.createElement('canvas');
   var superKernel = createPropertyKernels('gpu', [1], canvas);
   var kernel = createKernel('gpu', [1], canvas);
@@ -61,7 +61,7 @@ QUnit.test( "createKernels object 1 dimension 1 length (gpu)", function() {
   QUnit.assert.deepEqual(divideResult, [8]);
 });
 
-QUnit.test( "createKernels (cpu)", function() {
+QUnit.test( "createKernelMap (cpu)", function() {
   var canvas = document.createElement('canvas');
   var superKernel = createPropertyKernels('cpu', [1], canvas);
   var output = superKernel([2], [2], [0.5]);
@@ -73,7 +73,7 @@ QUnit.test( "createKernels (cpu)", function() {
   QUnit.assert.deepEqual(divideResult, [8]);
 });
 
-QUnit.test( "createKernels array 1 dimension 1 length (auto)", function() {
+QUnit.test( "createKernelMap array 1 dimension 1 length (auto)", function() {
   var canvas = document.createElement('canvas');
   var superKernel = createArrayKernels('gpu', [1], canvas);
   var kernel = createKernel('gpu', [1], canvas);
@@ -86,7 +86,7 @@ QUnit.test( "createKernels array 1 dimension 1 length (auto)", function() {
   QUnit.assert.deepEqual(divideResult, [8]);
 });
 
-QUnit.test( "createKernels array 1 dimension 1 length (gpu)", function() {
+QUnit.test( "createKernelMap array 1 dimension 1 length (gpu)", function() {
   var canvas = document.createElement('canvas');
   var superKernel = createArrayKernels('gpu', [1], canvas);
   var kernel = createKernel('gpu', [1], canvas);
@@ -99,7 +99,7 @@ QUnit.test( "createKernels array 1 dimension 1 length (gpu)", function() {
   QUnit.assert.deepEqual(divideResult, [8]);
 });
 
-QUnit.test( "createKernels array 1 dimension 1 length (cpu)", function() {
+QUnit.test( "createKernelMap array 1 dimension 1 length (cpu)", function() {
   var canvas = document.createElement('canvas');
   var superKernel = createArrayKernels('cpu', [1], canvas);
   var output = superKernel([2], [2], [0.5]);
@@ -111,7 +111,7 @@ QUnit.test( "createKernels array 1 dimension 1 length (cpu)", function() {
   QUnit.assert.deepEqual(divideResult, [8]);
 });
 
-QUnit.test( "createKernels object 1 dimension 5 length (auto)", function() {
+QUnit.test( "createKernelMap object 1 dimension 5 length (auto)", function() {
   var canvas = document.createElement('canvas');
   var superKernel = createPropertyKernels(null, [5], canvas, true);
   var kernel = createKernel(null, [5], canvas, true);
@@ -124,7 +124,7 @@ QUnit.test( "createKernels object 1 dimension 5 length (auto)", function() {
   QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
 });
 
-QUnit.test( "createKernels object 1 dimension 5 length (gpu)", function() {
+QUnit.test( "createKernelMap object 1 dimension 5 length (gpu)", function() {
   var canvas = document.createElement('canvas');
   var superKernel = createPropertyKernels('gpu', [5], canvas);
   var kernel = createKernel('gpu', [5], canvas);
@@ -137,7 +137,7 @@ QUnit.test( "createKernels object 1 dimension 5 length (gpu)", function() {
   QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
 });
 
-QUnit.test( "createKernels array (auto)", function() {
+QUnit.test( "createKernelMap array (auto)", function() {
   var canvas = document.createElement('canvas');
   var superKernel = createArrayKernels(null, [5], canvas, true);
   var kernel = createKernel(null, [5], canvas, true);
@@ -150,7 +150,7 @@ QUnit.test( "createKernels array (auto)", function() {
   QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
 });
 
-QUnit.test( "createKernels array (gpu)", function() {
+QUnit.test( "createKernelMap array (gpu)", function() {
   var canvas = document.createElement('canvas');
   var superKernel = createArrayKernels('gpu', [5], canvas);
   var kernel = createKernel('gpu', [5], canvas);
@@ -163,7 +163,7 @@ QUnit.test( "createKernels array (gpu)", function() {
   QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
 });
 
-QUnit.test( "createKernels array (cpu)", function() {
+QUnit.test( "createKernelMap array (cpu)", function() {
   var canvas = document.createElement('canvas');
   var superKernel = createArrayKernels('cpu', [5], canvas);
   var output = superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]);
