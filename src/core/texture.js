@@ -28,6 +28,7 @@ module.exports = class Texture {
 	 *
 	 */
 	toArray(gpu) {
+		if(!gpu) throw new Error('You need to pass the GPU object for toArray to work.');
 		const copy = gpu.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];
 		}).setDimensions(this.dimensions);
