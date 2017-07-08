@@ -40,7 +40,7 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 * [Accepting Input](#accepting-input)
 * [Graphical Output](#graphical-output)
 * [Combining Kernels](#combining-kernels)
-* [Create Kernel Map](#create-kernels)
+* [Create Kernel Map](#create-kernel-map)
 * [Adding Custom Functions](#adding-custom-functions)
 * [Full API reference](#full-api-reference)
 * [Automatically-built Documentation](#automatically-built-documentation)
