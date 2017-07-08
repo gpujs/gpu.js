@@ -170,11 +170,11 @@ This gives you the flexibility of using multiple transformations but without the
 
 ### Create kernels
 
-Sometimes you want to do multiple math operations in one kernel, and save the output of each of those operations. An example is **Machine Learning** where the previous output is required for back propagation. To aid this there is the `createKernels` method.
+Sometimes you want to do multiple math operations in one kernel, and save the output of each of those operations. An example is **Machine Learning** where the previous output is required for back propagation. To aid this there is the `createKernelMap` method.
 
 #### object outputs
 ```js
-const megaKernel = gpu.createKernels({
+const megaKernel = gpu.createKernelMap({
   addResult: function add(a, b) {
     return a[this.thread.x] + b[this.thread.x];
   },
@@ -190,7 +190,7 @@ megaKernel(a, b, c);
 ```
 #### array outputs
 ```js
-const megaKernel = gpu.createKernels([
+const megaKernel = gpu.createKernelMap([
   function add(a, b) {
     return a[this.thread.x] + b[this.thread.x];
   },
