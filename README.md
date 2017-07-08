@@ -40,7 +40,7 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 * [Accepting Input](#accepting-input)
 * [Graphical Output](#graphical-output)
 * [Combining Kernels](#combining-kernels)
-* [Create Kernels](#create-kernels)
+* [Create Kernel Map](#create-kernels)
 * [Adding Custom Functions](#adding-custom-functions)
 * [Full API reference](#full-api-reference)
 * [Automatically-built Documentation](#automatically-built-documentation)
@@ -168,7 +168,7 @@ superKernel(a, b, c);
 ```
 This gives you the flexibility of using multiple transformations but without the performance penalty, resulting in a much much MUCH faster operation.
 
-### Create kernels
+### Create Kernel Map
 
 Sometimes you want to do multiple math operations in one kernel, and save the output of each of those operations. An example is **Machine Learning** where the previous output is required for back propagation. To aid this there is the `createKernelMap` method.
 
