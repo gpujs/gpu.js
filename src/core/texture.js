@@ -33,9 +33,11 @@ module.exports = class Texture {
 		}
 		const copy = gpu.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];
-		});
+		}, {
+		  dimensions: this.dimensions
+    });
 
-		return copy(this.texture);
+		return copy(this);
 	}
 
 	/**

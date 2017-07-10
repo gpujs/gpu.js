@@ -1,3 +1,5 @@
+'use strict';
+
 const KernelBase = require('../kernel-base');
 const utils = require('../../core/utils');
 const kernelString = require('./kernel-string');

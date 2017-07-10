@@ -1,3 +1,5 @@
+'use strict';
+
 const FunctionNodeBase = require('../function-node-base');
 const utils = require('../../core/utils');
 // Closure capture for the ast function, prevent collision with existing AST functions

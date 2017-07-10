@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * 
  * @classdesc Various utility functions / snippets of code that GPU.JS uses internally.\

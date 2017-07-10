@@ -1,3 +1,5 @@
+'use strict';
+
 const utils = require('../core/utils');
 const kernelRunShortcut = require('./kernel-run-shortcut');
 

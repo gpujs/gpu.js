@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  *
  * @desc Reduced subset of Utils, used exclusively in gpu-core.js

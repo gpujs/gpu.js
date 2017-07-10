@@ -1,3 +1,5 @@
+'use strict';
+
 const GPUCore = require("./core/gpu-core");
 if (typeof module !== 'undefined') {
 	module.exports = GPUCore;
