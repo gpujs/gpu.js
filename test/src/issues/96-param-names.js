@@ -20,7 +20,7 @@ QUnit.test( "Issue #96 - param names (GPU only)", function() {
     return sum;
   }
 
-  var kernels = gpu.createKernels({
+  var kernels = gpu.createKernelMap({
     multiplyResult: multiply
   }, function (a, b) {
     return multiply(b, a, this.thread.y, this.thread.x);

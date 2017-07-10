@@ -23,19 +23,15 @@ module.exports = class Texture {
 	 * @memberOf Texture#
 	 *
 	 * @desc Converts the Texture into a JavaScript Array.
+	 * 
+	 * @param {Object} The `gpu` Object
 	 *
 	 */
-	toArray() {
-		if (gpu === null) {
-			gpu = new GPU({
-				mode: 'webgl'
-			});
-		}
+	toArray(gpu) {
+		if(!gpu) throw new Error('You need to pass the GPU object for toArray to work.');
 		const copy = gpu.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];
-		}, {
-		  dimensions: this.dimensions
-    });
+		}).setDimensions(this.dimensions);
 
 		return copy(this);
 	}
