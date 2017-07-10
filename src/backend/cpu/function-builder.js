@@ -1,3 +1,5 @@
+'use strict';
+
 const FunctionBuilderBase = require('../function-builder-base');
 const CPUFunctionNode = require('./function-node');
 

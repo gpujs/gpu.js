@@ -1,3 +1,5 @@
+'use strict';
+
 const utils = require('../core/utils');
 
 module.exports = class BaseKernel {
