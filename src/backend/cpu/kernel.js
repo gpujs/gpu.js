@@ -2,31 +2,21 @@ const KernelBase = require('../kernel-base');
 const utils = require('../../core/utils');
 const kernelString = require('./kernel-string');
 
-/**
- * Class: CPUKernel
- *
- * Kernel Implementation for CPU. 
- *
- * Extends:
- * 	KernelBase
- *
- * Parameters: 	
- *		thread 					- {Object} 		The thread dimensions, x, y and z
- *		runDimensions 			- {Object} 		The canvas dimensions
- *		functionBuilder 		- {Object} 		Function Builder instance bound to this Kernel
- *		run 					- {Function} 	Method to run the kernel
- *
- */
 module.exports = class CPUKernel extends KernelBase {
-
-	//
-	// [Constructor]
-	//
 	
 	/**
-	 * Function: CPUKernel
+	 * @constructor CPUKernel
 	 *
-	 * Instantiates properties to the CPU Kernel.
+	 * @desc Kernel Implementation for CPU.
+	 * 
+	 * <p>Instantiates properties to the CPU Kernel.</p>
+	 *
+	 * @extends KernelBase
+	 *
+	 * @prop {Object} thread - The thread dimensions, x, y and z
+	 * @prop {Object} runDimensions - The canvas dimensions
+	 * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
+	 * @prop {Function} run - Method to run the kernel
 	 *
 	 */
 	constructor(fnString, settings) {
@@ -58,9 +48,11 @@ module.exports = class CPUKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: validateOptions
-	 * 
-	 * Validate options related to CPU Kernel, such as 
+	 * @memberOf CPUKernel#
+	 * @function
+	 * @name validateOptions
+	 *
+	 * @desc Validate options related to CPU Kernel, such as 
 	 * dimensions size, and auto dimension support.
 	 *
 	 */
@@ -82,13 +74,15 @@ module.exports = class CPUKernel extends KernelBase {
 	}	
 	
 	/**
-	 * Function: build
+	 * @memberOf CPUKernel#
+	 * @function
+	 * @name build
 	 *
-	 * Builds the Kernel, by generating the kernel 
-	 *	string using thread dimensions, and arguments 
-	 *	supplied to the kernel.
+	 * @desc Builds the Kernel, by generating the kernel 
+	 * string using thread dimensions, and arguments 
+	 * supplied to the kernel.
 	 *
-	 * If the graphical flag is enabled, canvas is used.
+	 * <p>If the graphical flag is enabled, canvas is used.</p>
 	 *
 	 */
 	build() {
@@ -162,16 +156,17 @@ module.exports = class CPUKernel extends KernelBase {
 	}
 
 	/**
-	 * Function: getKernelString
+	 * @memberOf CPUKernel#
+	 * @function
+	 * @name getKernelString
 	 *
-	 * Generates kernel string for this kernel program.
+	 * @desc Generates kernel string for this kernel program.
 	 * 
-	 * If sub-kernels are supplied, they are also factored in.
+	 * <p>If sub-kernels are supplied, they are also factored in.
 	 * This string can be saved by calling the `toString` method
-	 * and then can be reused later.
+	 * and then can be reused later.</p>
 	 *
-	 * Returns:
-	 *		result {String}
+	 * @returns {String} result
 	 *
 	 */
 	getKernelString() {
@@ -276,24 +271,27 @@ module.exports = class CPUKernel extends KernelBase {
     }.bind(this);`;
 	}
 
-	// /**
-	//  * Function: toString
-	//  *
-	//  * Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
-	//  *
-	//  */
-	// toString() {
-	// 	return kernelString(this);
-	// }
+	/**
+	 * @memberOf CPUKernel#
+	 * @function
+	 * @name toString
+	 *
+	 * @desc Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
+	 *
+	 */
+	toString() {
+		return kernelString(this);
+	}
 
 	/**
-	 * Function: precompileKernelObj
+	 * @memberOf CPUKernel#
+	 * @function
+	 * @name precompileKernelObj
 	 *
-	 * Precompile the kernel into a single object, 
+	 * @desc Precompile the kernel into a single object, 
 	 * that can be used for building the execution kernel subsequently.
 	 *
-	 * Parameters:
-	 *     argTypes     - {Array}    Array of argument types
+	 * @param {Array} argTypes - Array of argument types
 	 *     
 	 * Return:
 	 *     Compiled kernel {Object}
@@ -310,13 +308,15 @@ module.exports = class CPUKernel extends KernelBase {
 	}
 	
 	/**
-	 * Function: compileKernel
-	 * 
-	 * Takes a previously precompiled kernel object,
-	 * and complete compilation into a full kernel
+	 * @memberOf CPUKernel
+	 * @function
+	 * @name compileKernel
+	 * @static
 	 *
-	 * Return:
-	 *     Compiled kernel {Function}
+	 * @desc Takes a previously precompiled kernel object,
+	 * and complete compilation into a full kernel
+	 * 
+	 * @returns {Function} Compiled kernel
 	 *
 	 */
 	static compileKernel( precompileObj ) {

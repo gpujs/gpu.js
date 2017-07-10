@@ -1,39 +1,31 @@
 const utils = require('../core/utils');
 const kernelRunShortcut = require('./kernel-run-shortcut');
 
-/**
- * Class: BaseRunner
- *
- * Represents the 'private/protected' namespace of the GPU class
- *
- * *base.js* internal functions namespace
- * *gpu.js* PUBLIC function namespace
- *
- * I know @private makes more sense, but since the documentation engine state is undetirmined.
- * (See https://github.com/gpujs/gpu.js/issues/19 regarding documentation engine issue)
- * File isolation is currently the best way to go
- *
- *
- * Properties:
- *		settings 				- {Object}      		Settings object used to set Dimensions, etc.
- *		kernel   				- {String} 	   			Current kernel instance
- *		canvas 					- {Object} 	   			Canvas instance attached to the kernel
- *		webGl   				- {Object}     			WebGl instance attached to the kernel
- *		fn   					- {Function} 			Kernel function to run
- *		functionBuilder  		- {Object} 				FunctionBuilder instance
- *		fnString   				- {String} 	   			Kernel function (as a String)
- *		endianness   			- {String} 	   			endian information like Little-endian, Big-endian.
- *
- */
-
 module.exports = class BaseRunner {
 
 	/**
-	 * Function: BaseRunner
+	 * @constructor BaseRunner
 	 *
-	 * [Constructor] Blank constructor, which initializes the properties related to runner
+	 * @desc Represents the 'private/protected' namespace of the GPU class
+	 *
+	 * <p>I know @private makes more sense, but since the documentation engine state is undetirmined.
+	 * (See https://github.com/gpujs/gpu.js/issues/19 regarding documentation engine issue)
+	 * File isolation is currently the best way to go. </p>
+	 * 
+	 * *base.js* internal functions namespace <br>
+	 * *gpu.js* PUBLIC function namespace <br>
+	 *
+	 * @prop {Object} settings - Settings object used to set Dimensions, etc.
+	 * @prop {String} kernel - Current kernel instance
+	 * @prop {Object} canvas - Canvas instance attached to the kernel
+	 * @prop {Object} webGl - WebGl instance attached to the kernel
+	 * @prop {Function} fn - Kernel function to run
+	 * @prop {Object} functionBuilder - FunctionBuilder instance
+	 * @prop {String} fnString - Kernel function (as a String)
+	 * @prop {String} endianness - endian information like Little-endian, Big-endian.
 	 *
 	 */
+
 	constructor(functionBuilder, settings) {
 		settings = settings || {};
 		this.kernel = settings.kernel;
@@ -47,12 +39,13 @@ module.exports = class BaseRunner {
 	}
 
 	/**
-	 * Function: textureToArray
+	 * @memberOf BaseRunner#
+	 * @function
+	 * @name textureToArray
 	 *
-	 * Converts the provided Texture instance to a JavaScript Array 
+	 * @desc Converts the provided Texture instance to a JavaScript Array 
 	 *	
-	 * Parameters: 
-	 * 	texture      - {Object}
+	 * @param {Object} texture - Texture Object
 	 *
 	 */
 	textureToArray(texture) {
@@ -64,19 +57,25 @@ module.exports = class BaseRunner {
 	}
 
 	/**
-	 * Function: deleteTexture
+	 * @memberOf BaseRunner#
+	 * @function
+	 * 
+	 * @name deleteTexture
 	 *
-	 * Deletes the provided Texture instance 
+	 * @desc Deletes the provided Texture instance 
 	 *
-	 * Parameters: 
-	 * 	texture      - {Object}
+	 * @param {Object} texture - Texture Object
 	 */
 	deleteTexture(texture) {
 		this.webGl.deleteTexture(texture.texture);
 	}
 
 	/**
-	 * Get and returns the ASYNCHRONOUS executor, of a class and kernel
+	 * @memberOf BaseRunner#
+	 * @function
+	 * @name buildPromiseKernel
+	 * 
+	 * @desc Get and returns the ASYNCHRONOUS executor, of a class and kernel
 	 * This returns a Promise object from an argument set.
 	 *
 	 * Note that there is no current implementation.
@@ -91,9 +90,14 @@ module.exports = class BaseRunner {
 	}
 
 	/**
-	 * Get and returns the Synchronous executor, of a class and kernel
+	 * @memberOf BaseRunner#
+	 * @function
+	 * 
+	 * @name buildKernel
+	 * 
+	 * @desc Get and returns the Synchronous executor, of a class and kernel
 	 * Which returns the result directly after passing the arguments.
-	 *
+	 * 
 	 */
 	buildKernel(fn, settings) {
 		settings = Object.assign({}, settings || {});

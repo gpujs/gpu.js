@@ -2,15 +2,17 @@ const WebGLKernel = require('./kernel');
 const utils = require('../../core/utils');
 
 /**
- * Class: WebGLValidatorKernel
+ * @class WebGLValidatorKernel
  *
- * Helper class for WebGLKernel to validate texture size and dimensions.
+ * @desc Helper class for WebGLKernel to validate texture size and dimensions.
  *
  */
 module.exports = class WebGLValidatorKernel extends WebGLKernel {
 	
 	/** 
-	 * Function: validateOptions
+	 * @memberOf WebGLValidatorKernel#
+	 * @function
+	 * @name validateOptions
 	 *
 	 */
 	validateOptions() {

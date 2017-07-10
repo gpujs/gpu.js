@@ -1,12 +1,15 @@
 /**
- * Class: Utils
- *
- * Various utility functions / snippets of code that GPU.JS uses internally.\
+ * 
+ * @classdesc Various utility functions / snippets of code that GPU.JS uses internally.\
  * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
  *
- * Note that all methods in this class is 'static' by nature `Utils.functionName()`
+ * Note that all methods in this class are *static* by nature `Utils.functionName()`
+ * 
+ * @class Utils
+ * @extends UtilsCore
  *
  */
+
 const UtilsCore = require("./utils-core");
 const Texture = require('./texture');
 // FUNCTION_NAME regex
@@ -39,12 +42,14 @@ class Utils extends UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * Function: systemEndianness
+	 * @memberOf Utils
+	 * @name systemEndianness
+	 * @function
+	 * @static
 	 *
 	 * Gets the system endianness, and cache it
 	 *
-	 * Returns:
-	 *	{String} 'LE' or 'BE' depending on system architecture
+	 * @returns {String} 'LE' or 'BE' depending on system architecture
 	 *
 	 * Credit: https://gist.github.com/TooTallNate/4750953
 	 */
@@ -59,15 +64,16 @@ class Utils extends UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * Function: isFunction
+	 * @memberOf Utils
+	 * @name isFunction
+	 * @function
+	 * @static
 	 *
 	 * Return TRUE, on a JS function
 	 *
-	 * Parameters:
-	 * 	funcObj - {JS Function} Object to validate if its a function
+	 * @param {Function} funcObj - Object to validate if its a function
 	 *
-	 * Returns:
-	 * 	{Boolean} TRUE if the object is a JS function
+	 * @returns	{Boolean} TRUE if the object is a JS function
 	 *
 	 */
 	static isFunction(funcObj) {
@@ -75,17 +81,18 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: isFunctionString
+	 * @memberOf Utils
+	 * @name isFunctionString
+	 * @function
+	 * @static
 	 *
 	 * Return TRUE, on a valid JS function string
 	 *
 	 * Note: This does just a VERY simply sanity check. And may give false positives.
 	 *
-	 * Parameters:
-	 * 	funcStr - {String}  String of JS function to validate
+	 * @param {String} funcStr - String of JS function to validate
 	 *
-	 * Returns:
-	 * 	{Boolean} TRUE if the string passes basic validation
+	 * @returns {Boolean} TRUE if the string passes basic validation
 	 *
 	 */
 	static isFunctionString(funcStr) {
@@ -98,15 +105,16 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: getFunctionName_fromString
+	 * @memberOf Utils
+	 * @name getFunctionName_fromString
+	 * @function
+	 * @static
 	 *
 	 * Return the function name from a JS function string
 	 *
-	 * Parameters:
-	 * 	funcStr - {String}  String of JS function to validate
+	 * @param {String} funcStr - String of JS function to validate
 	 *
-	 * Returns:
-	 * 	{String} Function name string (if found)
+	 * @returns {String} Function name string (if found)
 	 *
 	 */
 	static getFunctionNameFromString(funcStr) {
@@ -119,15 +127,16 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: getParamNames_fromString
+	 * @memberOf Utils
+	 * @name getParamNames_fromString
+	 * @function
+	 * @static
 	 *
 	 * Return list of parameter names extracted from the JS function string
 	 *
-	 * Parameters:
-	 * 	funcStr - {String}  String of JS function to validate
+	 * @param {String} funcStr - String of JS function to validate
 	 *
-	 * Returns:
-	 * 	{[String, ...]}  Array representing all the parameter names
+	 * @returns {String[]}  Array representing all the parameter names
 	 *
 	 */
 	static getParamNamesFromString(func) {
@@ -145,15 +154,45 @@ class Utils extends UtilsCore {
 	//-----------------------------------------------------------------------------
 
 	/**
-	 * Function: newPromise
+	 * @memberOf Utils
+	 * @name clone
+	 * @function
+	 * @static
+	 *
+	 * Returns a clone
+	 *
+	 * @param {Object} obj - Object to clone
+	 *
+	 * @returns {Object}  Cloned object
+	 *
+	 */
+	static clone(obj) {
+		if (obj === null || typeof obj !== 'object' || obj.hasOwnProperty('isActiveClone')) return obj;
+
+		const temp = obj.constructor(); // changed
+
+		for (let key in obj) {
+			if (Object.prototype.hasOwnProperty.call(obj, key)) {
+				obj.isActiveClone = null;
+				temp[key] = Utils.clone(obj[key]);
+				delete obj.isActiveClone;
+			}
+		}
+
+		return temp;
+	}
+
+	/**
+	 * @memberOf Utils
+	 * @name newPromise
+	 * @function
+	 * @static
 	 *
 	 * Returns a `new Promise` object based on the underlying implmentation
 	 *
-	 * Parameters:
-	 * 	executor - {function(resolve,reject)}  Promise builder function
+	 * @param {Function} executor - Promise builder function
 	 *
-	 * Returns:
-	 * 	{Promise}  Promise object
+	 * @returns {Promise}  Promise object
 	 *
 	 */
 	static newPromise(executor) {
@@ -165,16 +204,17 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: functionBinder
+	 * @memberOf Utils
+	 * @name functionBinder
+	 * @function
+	 * @static
 	 *
 	 * Limited implementation of Function.bind, with fallback
 	 *
-	 * Parameters:
-	 * 	inFunc   - {JS Function}  to setup bind on
-	 * 	thisObj  - {Object} The this parameter to assume inside the binded function
+	 * @param {Function} inFunc - to setup bind on
+	 * @param {Object} thisObj - The this parameter to assume inside the binded function
 	 *
-	 * Returns:
-	 * 	{JS Function}  The binded function
+	 * @returns {Function}  The binded function
 	 *
 	 */
 	static functionBinder(inFunc, thisObj) {
@@ -189,15 +229,16 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: isArray
+	 * @memberOf Utils
+	 * @name isArray
+	 * @function
+	 * @static
 	 *
 	 * Checks if is an array or Array-like object
 	 *
-	 * Parameters:
-	 * 	arg   - {Object} The argument object to check if is array
+	 * @param {Object} arg - The argument object to check if is array
 	 *
-	 * Returns:
-	 * 	{Boolean}  true if is array or Array-like object
+	 * @returns {Boolean}  true if is array or Array-like object
 	 *
 	 */
 	static isArray(arr) {
@@ -206,15 +247,16 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: getArgumentType
+	 * @memberOf Utils
+	 * @name getArgumentType
+	 * @function
+	 * @static
 	 *
 	 * Evaluate the argument type, to apply respective logic for it
 	 *
-	 * Parameters:
-	 * 	arg   - {Object} The argument object to evaluate type
+	 * @param {Object} arg - The argument object to evaluate type
 	 *
-	 * Returns:
-	 * 	{String}  Argument type Array/Number/Texture/Unknown
+	 * @returns {String}  Argument type Array/Number/Texture/Unknown
 	 *
 	 */
 	static getArgumentType(arg) {
@@ -228,17 +270,21 @@ class Utils extends UtilsCore {
 			return 'Unknown';
 		}
 	}
+	/**
+	 * @typedef {Object} gpuJSObject
+	 */
 
 	/**
-	 * Function: isFloatReadPixelsSupported
+	 * @memberOf Utils
+	 * @name isFloatReadPixelsSupported
+	 * @function
+	 * @static
 	 *
 	 * Checks if the browser supports readPixels with float type
 	 *
-	 * Parameters:
-	 * 	gpu - {gpu.js object} the gpu object
+	 * @param {gpuJSObject} gpu - the gpu object
 	 *
-	 * Returns:
-	 * 	{Boolean} true if browser supports
+	 * @returns {Boolean} true if browser supports
 	 *
 	 */
 	static isFloatReadPixelsSupported() {
@@ -279,13 +325,15 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: getDimensions
+	 * @memberOf Utils
+	 * @name getDimensions
+	 * @function
+	 * @static
 	 *
 	 * Return the dimension of an array.
 	 * 
-	 * Parameters:
-	 *		x       - {Array} The array
-	 *		pad     - {Number} To include padding in the dimension calculation [Optional]
+	 * @param {Array} x - The array
+	 * @param {number} pad - To include padding in the dimension calculation [Optional]
 	 *
 	 *
 	 *
@@ -318,15 +366,17 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: pad
+	 * @memberOf Utils
+	 * @name pad
+	 * @function
+	 * @static
 	 *
 	 * Pad an array AND its elements with leading and ending zeros
-	 * Parameters:
-	 * 	arr 		- {Array} the array to pad zeros to
-	 * 	padding 	- {Number} amount of padding
 	 *
-	 * Returns:
-	 * 	{Array} Array with leading and ending zeros, and all the elements padded by zeros.
+	 * @param {Array} arr - the array to pad zeros to
+	 * @param {number} padding - amount of padding
+	 *
+	 * @returns {Array} Array with leading and ending zeros, and all the elements padded by zeros.
 	 *
 	 */
 	static pad(arr, padding) {
@@ -348,15 +398,16 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: flatten
+	 * @memberOf Utils
+	 * @name flatten
+	 * @function
+	 * @static
 	 *
 	 * Converts a nested array into a one-dimensional array
 	 *
-	 * Parameters:
-	 * 	_arr - {Array} the nested array to flatten
+	 * @param {Array} _arr - the nested array to flatten
 	 *
-	 * Returns:
-	 * 	{Array} 1D Array
+	 * @returns {Array} 1D Array
 	 *
 	 */
 	static flatten(_arr) {
@@ -382,17 +433,19 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * Function: splitArray
+	 * @memberOf Utils
+	 * @name splitArray
+	 * @function
+	 * @static
 	 *
 	 * Splits an array into smaller arrays.
 	 * Number of elements in one small chunk is given by `part`
 	 *
-	 * Parameters:
-	 * 	array - {Array} The array to split into chunks
-	 * 	part  - {Array} elements in one chunk
+	 * @param {Array} array - The array to split into chunks
+	 * @param {Array} part - elements in one chunk
 	 *
-	 * Returns:
-	 * 	{Array} An array of smaller chunks
+
+	 * @returns {Array} An array of smaller chunks
 	 *
 	 */
 	static splitArray(array, part) {

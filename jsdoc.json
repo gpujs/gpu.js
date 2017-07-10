@@ -1,0 +1,11 @@
+{
+    "source": {
+        "excludePattern": "(parser.js$)"
+    },
+    "opts": {
+        "template": "node_modules/docdash"
+    },
+    "plugins": [
+        "plugins/markdown"
+    ]
+}

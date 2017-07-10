@@ -1,23 +1,15 @@
-/**
- * Class: FunctionBuilderBase
- *
- * [INTERNAL] A collection of functionNodes.
- *
- * This handles all the raw state, converted state, etc. Of a single function.
- *
- * Properties:
- * 	nodeMap 		- {Object} 			Object map, where nodeMap[function] = new FunctionNode;
- *     gpu     		- {Object} 			The current gpu instance bound to this builder
- *     rootKernel 		- {Object} 			The root kernel object, contains the paramNames, dimensions etc.
- *
- */
 module.exports = class FunctionBuilderBase {
 
 	/**
-	 * Function: FunctionBuilderBase
+	 * @constructor FunctionBuilderBase
 	 *
-	 * [Constructor] Blank constructor, which initializes the properties
-	 *
+	 * @desc This handles all the raw state, converted state, etc. of a single function.
+	 * [INTERNAL] A collection of functionNodes.
+	 * 
+	 * @prop {Object} nodeMap - Object map, where nodeMap[function] = new FunctionNode;
+	 * @prop {Object} gpu - The current gpu instance bound to this builder
+	 * @prop {Object} rootKernel - The root kernel object, contains the paramNames, dimensions etc.
+	 * 
 	 */
 	constructor(gpu) {
 		this.nodeMap = {};
@@ -26,16 +18,17 @@ module.exports = class FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: addFunction
+	 * @memberOf FunctionBuilderBase#
+	 * @function
+	 * @name addFunction
 	 *
-	 * Instantiates a FunctionNode, and add it to the nodeMap
+	 * @desc Instantiates a FunctionNode, and add it to the nodeMap
 	 *
-	 * Parameters:
-	 * 	gpu             - {GPU}          The GPU instance
-	 * 	functionName    - {String}       Function name to assume, if its null, it attempts to extract from the function
-	 * 	jsFunction      - {JS Function}  JS Function to do conversion
-	 * 	paramTypes      - {[String,...]|{variableName: Type,...}} Parameter type array, assumes all parameters are 'float' if null
-	 * 	returnType      - {String}       The return type, assumes 'float' if null
+	 * @param {GPU} gpu - The GPU instance
+	 * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
+	 * @param {Function} jsFunction - JS Function to do conversion
+	 * @param {String[]|Object} paramTypes - Parameter type array, assumes all parameters are 'float' if null
+	 * @param {String} returnType - The return type, assumes 'float' if null
 	 *
 	 */
 	addFunction(functionName, jsFunction, paramTypes, returnType) {
@@ -43,12 +36,13 @@ module.exports = class FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: addFunctionNode
+	 * @memberOf FunctionBuilderBase#
+	 * @function
+	 * @name addFunctionNode
 	 *
-	 * Add the funciton node directly
+	 * @desc Add the funciton node directly
 	 *
-	 * Parameters:
-	 * 	inNode    - {functionNode}       functionNode to add
+	 * @param {functionNode} inNode - functionNode to add
 	 *
 	 */
 	addFunctionNode(inNode) {
@@ -59,19 +53,19 @@ module.exports = class FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: traceFunctionCalls
+	 * @memberOf FunctionBuilderBase#
+	 * @function
+	 * @name traceFunctionCalls
 	 *
-	 * Trace all the depending functions being called, from a single function
+	 * @desc Trace all the depending functions being called, from a single function
 	 *
 	 * This allow for 'unneeded' functions to be automatically optimized out.
 	 * Note that the 0-index, is the starting function trace.
 	 *
-	 * Parameters:
-	 * 	functionName  - {String}        Function name to trace from, default to 'kernel'
-	 * 	retList       - {[String,...]}  Returning list of function names that is traced. Including itself.
+	 * @param {String} functionName - Function name to trace from, default to 'kernel'
+	 * @param {String[]} retList - Returning list of function names that is traced. Including itself.
 	 *
-	 * Returns:
-	 * 	{[String,...]}  Returning list of function names that is traced. Including itself.
+	 * @returns {String[]}  Returning list of function names that is traced. Including itself.
 	 */
 	traceFunctionCalls(functionName, retList, parent) {
 		functionName = functionName || 'kernel';
@@ -110,9 +104,11 @@ module.exports = class FunctionBuilderBase {
 	}
 
 	/**
-	 * Function: polyfillStandardFunctions
+	 * @memberOf FunctionBuilderBase#
+	 * @function
+	 * @name polyfillStandardFunctions
 	 *
-	 * Polyfill in the missing Math functions (round)
+	 * @desc Polyfill in the missing Math functions (round)
 	 *
 	 */
 	polyfillStandardFunctions() {

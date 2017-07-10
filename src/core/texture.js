@@ -1,11 +1,15 @@
 let gpu = null;
 
-/**
- * Class: Texture
- *
- *
- */
 module.exports = class Texture {
+	
+	/**
+ 	 * @desc WebGl Texture implementation in JS
+	 * @constructor Texture
+	 * @param {Object} texture 
+	 * @param {Array} size 
+	 * @param {Array} dimensions 
+	 * @param {Object} webGl
+	 */
 	constructor(texture, size, dimensions, webGl) {
 		this.texture = texture;
 		this.size = size;
@@ -14,27 +18,30 @@ module.exports = class Texture {
 	}
 
 	/**
-	 * Function: toArray
+	 * @name toArray
+	 * @function
+	 * @memberOf Texture#
 	 *
-	 * Converts the Texture into a JavaScript Array.
+	 * @desc Converts the Texture into a JavaScript Array.
+	 * 
+	 * @param {Object} The `gpu` Object
 	 *
 	 */
-	toArray() {
-		if (gpu === null) {
-			gpu = new GPU({
-				mode: 'webgl'
-			});
-		}
+	toArray(gpu) {
+		if(!gpu) throw new Error('You need to pass the GPU object for toArray to work.');
 		const copy = gpu.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];
-		});
+		}).setDimensions(this.dimensions);
 
-		return copy(this.texture);
+		return copy(this);
 	}
+
 	/**
-	 * Function: delete
+	 * @name delete
+	 * @desc Deletes the Texture.
+	 * @function
+	 * @memberOf Texture#
 	 *
-	 * Deletes the Texture.
 	 *
 	 */
 	delete() {

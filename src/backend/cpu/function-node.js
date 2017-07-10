@@ -1,25 +1,26 @@
 const BaseFunctionNode = require('../function-node-base');
 
 /**
- * Class: CPUFunctionNode
+ * @class CPUFunctionNode
+ * 
+ * @extends BaseFunctionNode
  *
- * [INTERNAL] Represents a single function, inside JS, webGL, or openGL.
+ * @desc [INTERNAL] Represents a single function, inside JS, webGL, or openGL.
  *
- * This handles all the raw state, converted state, etc. Of a single function.
+ * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
  *
- * Properties:
- * 	functionName         - {String}        Name of the function
- * 	jsFunction           - {JS Function}   The JS Function the node represents
- * 	jsFunctionString     - {String}        jsFunction.toString()
- * 	paramNames           - {[String,...]}  Parameter names of the function
- * 	paramTypes           - {[String,...]}  Shader land parameters type assumption
- * 	isRootKernel         - {Boolean}       Special indicator, for kernel function
- * 	webglFunctionString  - {String}        webgl converted function string
- * 	openglFunctionString - {String}        opengl converted function string
- * 	calledFunctions      - {[String,...]}  List of all the functions called
- * 	initVariables        - {[String,...]}  List of variables initialized in the function
- * 	readVariables        - {[String,...]}  List of variables read operations occur
- * 	writeVariables       - {[String,...]}  List of variables write operations occur
+ * @prop functionName         - {String}        Name of the function
+ * @prop jsFunction           - {Function}   The JS Function the node represents
+ * @prop jsFunctionString     - {String}        jsFunction.toString()
+ * @prop paramNames           - {String[]}  Parameter names of the function
+ * @prop paramTypes           - {String[]}  Shader land parameters type assumption
+ * @prop isRootKernel         - {Boolean}       Special indicator, for kernel function
+ * @prop webglFunctionString  - {String}        webgl converted function string
+ * @prop openglFunctionString - {String}        opengl converted function string
+ * @prop calledFunctions      - {String[]}  List of all the functions called
+ * @prop initVariables        - {String[]}  List of variables initialized in the function
+ * @prop readVariables        - {String[]}  List of variables read operations occur
+ * @prop writeVariables       - {String[]}  List of variables write operations occur
  *
  */
 module.exports = class CPUFunctionNode extends BaseFunctionNode {
@@ -28,12 +29,13 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * Function: getFunctionPrototypeString
+	 * @memberOf CPUFunctionNode#
+	 * @function
+	 * @name getFunctionPrototypeString
 	 *
-	 * Returns the converted webgl shader function equivalent of the JS function
+	 * @desc Returns the converted webgl shader function equivalent of the JS function
 	 *
-	 * Returns:
-	 * 	{String} webgl function string, result is cached under this.getFunctionPrototypeString
+	 * @returns {String} webgl function string, result is cached under this.getFunctionPrototypeString
 	 *
 	 */
 	getFunctionPrototypeString(options) {
