@@ -110,7 +110,8 @@ class Utils extends UtilsCore {
 	 *
 	 */
 	static getFunctionNameFromString(funcStr) {
-		return FUNCTION_NAME.exec(funcStr)[1];
+		let resArr = FUNCTION_NAME.exec(funcStr)
+		return (resArr.length >= 1)? resArr[1] : null;
 	}
 
 	static getFunctionBodyFromString(funcStr) {

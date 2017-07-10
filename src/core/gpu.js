@@ -191,9 +191,15 @@ class GPU extends GPUCore {
 	 *
 	 */
 	combineKernels() {
+		let args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
+
 		const lastKernel = arguments[arguments.length - 2];
 		const combinedKernel = arguments[arguments.length - 1];
-		if (this.getMode() === 'cpu') return combinedKernel;
+
+		// Properly build the super kernel
+		if (this.getMode() === 'cpu') {
+			return this.createKernels( args.slice(0, args.length - 1), combinedKernel );
+		}
 
 		const canvas = arguments[0].getCanvas();
 		let webGl = arguments[0].getWebGl();

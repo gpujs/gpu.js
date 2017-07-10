@@ -1,15 +1,15 @@
 function combineKernels(mode) {
 	var gpu = new GPU({ mode: mode });
 
-	var kernel1 = gpu.createKernel(function(a, b) {
+	var kernel1 = gpu.createKernel(function kernel1(a, b) {
 		return a[this.thread.x] + b[this.thread.x];
 	}, { dimensions: [5] }).setDebug(true);
 
-	var kernel2 = gpu.createKernel(function(c, d) {
+	var kernel2 = gpu.createKernel(function kernel2(c, d) {
 		return c[this.thread.x] * d[this.thread.x];
 	}, { dimensions: [5] });
 
-	return gpu.combineKernels(kernel1, kernel2, function(array1, array2, array3) {
+	return gpu.combineKernels(kernel1, kernel2, function superKernel(array1, array2, array3) {
 		return kernel2(kernel1(array1, array2), array3);
 	});
 }

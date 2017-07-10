@@ -276,15 +276,15 @@ module.exports = class CPUKernel extends KernelBase {
     }.bind(this);`;
 	}
 
-	/**
-	 * Function: toString
-	 *
-	 * Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
-	 *
-	 */
-	toString() {
-		return kernelString(this);
-	}
+	// /**
+	//  * Function: toString
+	//  *
+	//  * Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
+	//  *
+	//  */
+	// toString() {
+	// 	return kernelString(this);
+	// }
 
 	/**
 	 * Function: precompileKernelObj
