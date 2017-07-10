@@ -1,3 +1,5 @@
+'use strict';
+
 let gpu = null;
 
 module.exports = class Texture {

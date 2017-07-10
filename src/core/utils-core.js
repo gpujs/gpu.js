@@ -218,10 +218,16 @@ class UtilsCore {
 const _isCanvasSupported = typeof document !== 'undefined' ? UtilsCore.isCanvas(document.createElement('canvas')) : false;
 const _testingWebGl = UtilsCore.initWebGl(UtilsCore.initCanvas());
 const _isWebGlSupported = UtilsCore.isWebGl(_testingWebGl);
-const _isWebGlDrawBuffersSupported = Boolean(_testingWebGl.getExtension('WEBGL_draw_buffers'));
+const _isWebGlDrawBuffersSupported = _isWebGlSupported && Boolean(_testingWebGl.getExtension('WEBGL_draw_buffers'));
 
-UtilsCore.OES_texture_float         = _testingWebGl.OES_texture_float;
-UtilsCore.OES_texture_float_linear  = _testingWebGl.OES_texture_float_linear;
-UtilsCore.OES_element_index_uint    = _testingWebGl.OES_element_index_uint;
+if (_isWebGlSupported) {
+  UtilsCore.OES_texture_float = _testingWebGl.OES_texture_float;
+  UtilsCore.OES_texture_float_linear = _testingWebGl.OES_texture_float_linear;
+  UtilsCore.OES_element_index_uint = _testingWebGl.OES_element_index_uint;
+} else {
+  UtilsCore.OES_texture_float = false;
+  UtilsCore.OES_texture_float_linear = false;
+  UtilsCore.OES_element_index_uint = false;
+}
 
 module.exports = UtilsCore;
