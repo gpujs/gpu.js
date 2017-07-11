@@ -17,15 +17,14 @@ QUnit.test( "Issue #127: Three dimensional Arrays", function() {
   }
   
   const kernel1 = gpu.createKernelMap({
-  multiplyResult: add
+    multiplyResult: add
   }, function (a, b) {
-  return add(b, a, this.thread.y, this.thread.x);
+    return add(b, a, this.thread.y, this.thread.x);
   })
   .setDimensions([A[1].length - 1, B[1].length]);
   
-  const kernel2 = gpu.createKernel(
-  function (a, b) {
-  return a[this.thread.y][this.thread.x] + b[this.thread.y][this.thread.x];
+  const kernel2 = gpu.createKernel(function (a, b) {
+    return a[this.thread.y][this.thread.x] + b[this.thread.y][this.thread.x];
   })
   .setDimensions([A[2][0].length, B[2].length]);
   
