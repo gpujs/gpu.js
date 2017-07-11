@@ -1,3 +1,5 @@
+'use strict';
+
 const utils = require('./utils');
 const WebGLRunner = require('../backend/web-gl/runner');
 const CPURunner = require('../backend/cpu/runner');

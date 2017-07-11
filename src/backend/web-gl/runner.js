@@ -1,3 +1,5 @@
+'use strict';
+
 const RunnerBase = require('../runner-base');
 const WebGLKernel = require('./kernel');
 const utils = require('../../core/utils');

@@ -1,3 +1,5 @@
+'use strict';
+
 const UtilsCore = require("./utils-core");
 
 /**

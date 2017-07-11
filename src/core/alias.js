@@ -1,3 +1,5 @@
+'use strict';
+
 const utils = require('./utils');
 module.exports = function alias(name, fn) {
 	const fnString = fn.toString();

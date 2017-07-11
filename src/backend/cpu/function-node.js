@@ -1,3 +1,5 @@
+'use strict';
+
 const BaseFunctionNode = require('../function-node-base');
 
 /**

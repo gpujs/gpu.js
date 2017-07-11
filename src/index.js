@@ -1,3 +1,5 @@
+'use strict';
+
 const GPU = require('./core/gpu');
 const alias = require('./core/alias');
 const utils = require('./core/utils');

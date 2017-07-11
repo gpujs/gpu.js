@@ -1,3 +1,5 @@
+'use strict';
+
 const FunctionBuilderBase = require('../function-builder-base');
 const WebGLFunctionNode = require('./function-node');
 const utils = require('../../core/utils');
