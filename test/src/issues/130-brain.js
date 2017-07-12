@@ -215,11 +215,18 @@ QUnit.test( "Issue #130 - brain.js ", function() {
         }  
     }
     buildChangeWeights();
+
     changeWeights();
 
     console.log(weights[1][0]);
 
-    QUnit.assert.deepEqual(keepNetworkIntact, false);
+    for (let i = 1; i <= weights.length; i++) {
+        for (let j = 0; j < weights[i].length; j++) {
+            for (let k = 0; k < weights[i][j].length; k++) {
+                QUnit.assert.equal((weights[i][j][k] < 10) && (weights[i][j][k] > -10), true);
+            }
+        }
+    }
 
 
 });
