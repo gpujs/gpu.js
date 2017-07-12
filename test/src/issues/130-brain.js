@@ -196,11 +196,12 @@ QUnit.test( "Issue #130 - brain.js ", function() {
         }
         
         for (let layer = 1; layer <= outputLayer; layer++) {
-        const kernel = gpu.createKernelMap([addR], function(changes, weights){
-            return addR(changes, weights, this.thread.x, this.thread.y);        
-        }).setDimensions([sizes[layer-1], sizes[layer]]);
-        
-        weightsPropagate[layer] = kernel;
+            const kernel = gpu.createKernelMap([addR], function(changes, weights){
+                return addR(changes, weights, this.thread.x, this.thread.y);        
+            }).setDimensions([sizes[layer-1], sizes[layer]]);
+            
+            weightsPropagate[layer] = kernel;
+            
         }    
     }
 
@@ -214,6 +215,7 @@ QUnit.test( "Issue #130 - brain.js ", function() {
             weights[layer] = output.result;
         }  
     }
+
     buildChangeWeights();
 
     changeWeights();
