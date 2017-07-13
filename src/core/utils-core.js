@@ -17,17 +17,17 @@ class UtilsCore {
 	/**
 	 * @typedef {Object} webGlContext
 	 */
-	
+
 	/**
 	 * @typedef {Object} CanvasDOMObject
-	 */ 
+	 */
 
 	//-----------------------------------------------------------------------------
 	//
 	//  Canvas validation and support
 	//
 	//-----------------------------------------------------------------------------
-	
+
 	/**
 	 * @name isCanvas
 	 * @static
@@ -199,9 +199,9 @@ class UtilsCore {
 		);
 
 		// Get the extension that is needed
-		webGl.OES_texture_float        = webGl.getExtension('OES_texture_float');
+		webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
 		webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
-		webGl.OES_element_index_uint   = webGl.getExtension('OES_element_index_uint');
+		webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
 
 		// Returns the canvas
 		return webGl;
@@ -221,13 +221,13 @@ const _isWebGlSupported = UtilsCore.isWebGl(_testingWebGl);
 const _isWebGlDrawBuffersSupported = _isWebGlSupported && Boolean(_testingWebGl.getExtension('WEBGL_draw_buffers'));
 
 if (_isWebGlSupported) {
-  UtilsCore.OES_texture_float = _testingWebGl.OES_texture_float;
-  UtilsCore.OES_texture_float_linear = _testingWebGl.OES_texture_float_linear;
-  UtilsCore.OES_element_index_uint = _testingWebGl.OES_element_index_uint;
+	UtilsCore.OES_texture_float = _testingWebGl.OES_texture_float;
+	UtilsCore.OES_texture_float_linear = _testingWebGl.OES_texture_float_linear;
+	UtilsCore.OES_element_index_uint = _testingWebGl.OES_element_index_uint;
 } else {
-  UtilsCore.OES_texture_float = false;
-  UtilsCore.OES_texture_float_linear = false;
-  UtilsCore.OES_element_index_uint = false;
+	UtilsCore.OES_texture_float = false;
+	UtilsCore.OES_texture_float_linear = false;
+	UtilsCore.OES_element_index_uint = false;
 }
 
 module.exports = UtilsCore;

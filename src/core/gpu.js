@@ -145,11 +145,11 @@ class GPU extends GPUCore {
 		} else {
 			fn = arguments[arguments.length - 1];
 		}
-		
+
 		if (!utils.isWebGlDrawBuffersSupported()) {
 			this._runner = new CPURunner(settings);
 		}
-		
+
 		const kernel = this.createKernel(fn, settings);
 		if (Array.isArray(arguments[0])) {
 			const functions = arguments[0];
