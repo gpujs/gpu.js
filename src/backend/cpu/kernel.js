@@ -5,7 +5,7 @@ const utils = require('../../core/utils');
 const kernelString = require('./kernel-string');
 
 module.exports = class CPUKernel extends KernelBase {
-	
+
 	/**
 	 * @constructor CPUKernel
 	 *
@@ -73,8 +73,8 @@ module.exports = class CPUKernel extends KernelBase {
 				throw 'Auto dimensions not supported for input type: ' + argType;
 			}
 		}
-	}	
-	
+	}
+
 	/**
 	 * @memberOf CPUKernel#
 	 * @function
@@ -150,7 +150,7 @@ module.exports = class CPUKernel extends KernelBase {
 		const y = height - this.thread.y - 1;
 
 		const index = x + y * width;
-		
+
 		this._colorData[index * 4 + 0] = r;
 		this._colorData[index * 4 + 1] = g;
 		this._colorData[index * 4 + 2] = b;
@@ -305,10 +305,10 @@ module.exports = class CPUKernel extends KernelBase {
 
 
 		return {
-			threadDim : threadDim
+			threadDim: threadDim
 		};
 	}
-	
+
 	/**
 	 * @memberOf CPUKernel
 	 * @function
@@ -321,7 +321,7 @@ module.exports = class CPUKernel extends KernelBase {
 	 * @returns {Function} Compiled kernel
 	 *
 	 */
-	static compileKernel( precompileObj ) {
+	static compileKernel(precompileObj) {
 
 		// Extract values from precompiled obj
 		const threadDim = precompileObj.threadDim;

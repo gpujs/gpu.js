@@ -7,7 +7,7 @@ const WebGLFunctionBuilder = require('./function-builder');
 
 
 module.exports = class WebGLRunner extends RunnerBase {
-	
+
 	/**
 	 * @constructor WebGLRunner
 	 *

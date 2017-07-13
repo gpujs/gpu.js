@@ -6,7 +6,7 @@ const CPUKernel = require('./kernel');
 const CPUFunctionBuilder = require('./function-builder');
 
 module.exports = class CPURunner extends RunnerBase {
-	
+
 	/**
 	 * @constructor CPURunner
 	 *
@@ -17,7 +17,7 @@ module.exports = class CPURunner extends RunnerBase {
 	 * @param {Object} settings - Settings to instantiate properties in RunnerBase, with given values
 	 *
 	 */
-	
+
 	constructor(settings) {
 		super(new CPUFunctionBuilder(), settings);
 		this.Kernel = CPUKernel;
