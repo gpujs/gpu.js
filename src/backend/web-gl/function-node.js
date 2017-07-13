@@ -223,6 +223,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				}
 				const type = funcParam.getParamType(paramName);
 				switch (type) {
+					case 'Texture':
 					case 'Array':
 						retArr.push('sampler2D');
 						break;

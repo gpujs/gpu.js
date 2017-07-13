@@ -543,12 +543,22 @@ module.exports = class WebGLKernel extends KernelBase {
 						length *= 4;
 					}
 
-					const valuesFlat = new Float32Array(length);
-					if (this.copyData) {
-						valuesFlat.set(utils.copyFlatten(value));
-					} else {
-						valuesFlat.set(utils.flatten(value));
+					let valuesFlat = new Float32Array(length);
+                    if (this.copyData) {
+           				const flattenedValue = utils.copyFlatten(value);
+						valuesFlat.set(flattenedValue);
+                    } else {
+            			const flattenedValue = utils.flatten(value);
+                        valuesFlat.set(flattenedValue);
 					}
+					
+					valuesFlat = valuesFlat.map(num => {
+						if (isNaN(num)) {
+							return 0;
+						} else {
+							return num;
+						}
+					});
 
 					let buffer;
 					if (this.floatTextures) {
