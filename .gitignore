@@ -1,5 +1,6 @@
 # Built files
 bin/*.js
+bin/*.js.map
 doc/*
 
 # Logs
