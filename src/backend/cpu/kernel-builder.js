@@ -34,7 +34,7 @@ class CPUKernelBuilder {
 		let fNodeMap = fBuilder.nodeMap;
 
 		// Get the kernel function param names
-
+		
 		// Start a kernel trace (for relevent function)
 
 		// Get the depenent functions (headerStr)

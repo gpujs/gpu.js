@@ -197,7 +197,7 @@ module.exports = class BaseFunctionNode {
 			return this.jsFunctionString;
 		}
 
-		if (this.jsFunction=) {
+		if (this.jsFunction) {
 			this.jsFunctionString = this.jsFunction.toString();
 			return this.jsFunctionString;
 		}
