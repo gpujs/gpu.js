@@ -124,6 +124,18 @@ class Utils extends UtilsCore {
 		return (resArr.length >= 1)? resArr[1] : null;
 	}
 
+	/**
+	 * @memberOf Utils
+	 * @name getFunctionBodyFromString
+	 * @function
+	 * @static
+	 * 
+	 * Strips a function string, of its function wrapper,
+	 * And returns its body content. 
+	 * (note this is done in a hackerish way, without safety checks)
+	 * 
+	 * @param {String} funcStr 
+	 */
 	static getFunctionBodyFromString(funcStr) {
 		return funcStr.substring(funcStr.indexOf('{') + 1, funcStr.lastIndexOf('}'));
 	}

@@ -190,7 +190,6 @@ module.exports = class BaseFunctionNode {
 	 * @desc Gets and return the stored JS Function. As a string
 	 *
 	 * @returns {Function} The function object
-	 *
 	 */
 	getJsFunctionString() {
 		if (this.jsFunctionString) {
@@ -203,6 +202,27 @@ module.exports = class BaseFunctionNode {
 		}
 
 		throw 'Missing jsFunction, and jsFunctionString parameter';
+	}
+
+	/**
+	 * @memberOf FunctionNodeBase#
+	 * @function
+	 * @name getJSFunction
+	 *
+	 * @desc Gets and return the stored JS Function Body. As a string
+	 *
+	 * @returns {Function} The function object
+	 */
+	getJsFunctionBody() {
+		if(this._jsFunctionBodyString) {
+			return this._jsFunctionBodyString;
+		}
+
+		this._jsFunctionBodyString = utils.getFunctionBodyFromString( //
+			getJsFunctionString() // The full function string
+		);
+
+		return this._jsFunctionBodyString;
 	}
 
 	/**

@@ -143,12 +143,10 @@ class CPUKernelRunner {
 					// Execute everything in an eval
 					eval(
 						// Loads the header string, for other possible header functions
-						headerStr+
-						"\n"+
+						headerStr+"\n"+
 						// Build the actual kernel
 						"GPU_jsRunKernel = function("+paramNames.join(",")+") {\n"+
-							kernelStr+
-							"\n"+
+							kernelStr+"\n"+
 						"}"
 					);
 
