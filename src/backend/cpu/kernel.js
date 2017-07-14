@@ -4,6 +4,9 @@ const KernelBase = require('../kernel-base');
 const utils = require('../../core/utils');
 const kernelString = require('./kernel-string');
 
+const CPUKernelBuilder = require('./kernel-builder');
+const CPUKernelRunner = require('./kernel-runner');
+
 module.exports = class CPUKernel extends KernelBase {
 
 	/**
@@ -23,6 +26,7 @@ module.exports = class CPUKernel extends KernelBase {
 	 */
 	constructor(fnString, settings) {
 		super(fnString, settings);
+		this._rawKernelString = fnString;
 		this._fnBody = utils.getFunctionBodyFromString(fnString);
 		this.functionBuilder = settings.functionBuilder;
 		this._fn = null;
@@ -88,6 +92,40 @@ module.exports = class CPUKernel extends KernelBase {
 	 *
 	 */
 	build() {
+
+		//
+		// PROTOTYPE : Lets slowly try the new builder/runner pair
+		//             Without subKernel, cause i know thats not working
+		//
+		if( this.subKernels == null || this.subKernels.length == 0 ) {
+			let functionNodeMap = this.functionBuilder.nodeMap;
+
+			if( functionNodeMap['kernel'] == null ) {
+				this.functionBuilder.addFunction('kernel', this._rawKernelString);
+				functionNodeMap['kernel'].isRootKernel = true;
+			}
+
+			// OK : Probably only the kernel (and round poly-fill)
+			// lets do this !
+			if( Object.getOwnPropertyNames(functionNodeMap).length <= 2 ) {
+				// Build the kernel object
+				this._cpuKernelObj = CPUKernelBuilder.build( this.functionBuilder, this );
+
+				// Runner to "run" the kernel object
+				this.run = (function() {
+					var args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
+
+					console.log("[USING EXPERIMENTAL CPU KERNEL]", this);
+
+					return CPUKernelRunner.run(this, this._cpuKernelObj, args);
+				}).bind(this);
+				return this;
+			}
+		}
+
+
+		//this.subKernels 
+		//
 
 		//
 		// NOTE: these are optional safety checks

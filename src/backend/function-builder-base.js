@@ -26,7 +26,6 @@ module.exports = class FunctionBuilderBase {
 	 *
 	 * @desc Instantiates a FunctionNode, and add it to the nodeMap
 	 *
-	 * @param {GPU} gpu - The GPU instance
 	 * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
 	 * @param {Function} jsFunction - JS Function to do conversion
 	 * @param {String[]|Object} paramTypes - Parameter type array, assumes all parameters are 'float' if null

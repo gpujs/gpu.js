@@ -55,7 +55,7 @@ class CPUKernelBuilder {
 		// @TODO : Deprecate all cpu/web-gl specific functionBuilder / Node
 		// 
 		// Till then assume ALL functions are "required"
-		let kernelTrace = functionNodeMap.keys();
+		let kernelTrace = Object.getOwnPropertyNames(functionNodeMap);
 		kernelTrace.splice( kernelTrace.indexOf('kernel'), 1 );
 
 		// Get the dependent functions (headerStr)
@@ -68,3 +68,6 @@ class CPUKernelBuilder {
 		return kernelObj;
 	} 
 }
+
+// Actual class export
+module.exports = CPUKernelBuilder;

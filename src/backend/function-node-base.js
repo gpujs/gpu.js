@@ -219,7 +219,7 @@ module.exports = class BaseFunctionNode {
 		}
 
 		this._jsFunctionBodyString = utils.getFunctionBodyFromString( //
-			getJsFunctionString() // The full function string
+			this.getJsFunctionString() // The full function string
 		);
 
 		return this._jsFunctionBodyString;

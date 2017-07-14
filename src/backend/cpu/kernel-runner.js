@@ -4,7 +4,7 @@ const UtilsCore = require("../../core/utils-core");
  * Class: CPUKernelRunner
  * 
  * Core static class which does the actual execution process. For the CPU.
- * This class forces seperation of kernel runner from builder
+ * This class forces a seperation of kernel runner from builder
  */
 class CPUKernelRunner {
 	/**
@@ -131,6 +131,7 @@ class CPUKernelRunner {
 		// The actual runKernel, taken from cache first
 		let runKernel = runCache._cpuKernel;
 
+		// Build the run kernel from scratch sadly
 		if( runKernel == null ) {
 			// Checks for header string
 			if( headerStr != null && headerStr.length > 0) {
@@ -188,4 +189,6 @@ class CPUKernelRunner {
 		return ret;
 	}
 }
+
+// Actual class export
 module.exports = CPUKernelRunner;
