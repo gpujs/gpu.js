@@ -133,8 +133,18 @@ class CPUKernelRunner {
 
 		// Build the run kernel from scratch sadly
 		if( runKernel == null ) {
+			// Add in constants values into scope string, and eval it D=
+			var GPU_constantKeys = Object.getOwnPropertyNames(ctx.constants);
+			var GPU_constantScoping = [];
+
 			// Checks for header string
-			if( headerStr != null && headerStr.length > 0) {
+			if( GPU_constantKeys.length > 0 || (headerStr != null && headerStr.length > 0) ) {
+
+				// Constant values scoping
+				for(var i=0; i<GPU_constantKeys.length; ++i) {
+					GPU_constantScoping.push("var "+GPU_constantKeys[i]+" = ctx.constants['"+GPU_constantKeys[i]+"'];");
+				}
+
 				// The header string exists, and is required, eval it!
 				runKernel = (function() {
 					// The GPU_jsRunKernel to return subsequently
@@ -143,6 +153,7 @@ class CPUKernelRunner {
 					
 					// Execute everything in an eval
 					eval(
+						GPU_constantScoping.join("\n")+
 						// Loads the header string, for other possible header functions
 						headerStr+"\n"+
 						// Build the actual kernel
