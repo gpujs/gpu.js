@@ -209,9 +209,9 @@ module.exports = class WebGLKernel extends KernelBase {
 			1, 1
 		]);
 		const gl = this._webGl;
-    this._canvas.width = texSize[0];
-    this._canvas.height = texSize[1];
-    gl.viewport(0, 0, texSize[0], texSize[1]);
+		this._canvas.width = texSize[0];
+		this._canvas.height = texSize[1];
+		gl.viewport(0, 0, texSize[0], texSize[1]);
 		gl.useProgram(this.program);
 
 		const texCoordOffset = vertices.byteLength;
@@ -543,12 +543,22 @@ module.exports = class WebGLKernel extends KernelBase {
 						length *= 4;
 					}
 
-					const valuesFlat = new Float32Array(length);
+					let valuesFlat = new Float32Array(length);
 					if (this.copyData) {
-						valuesFlat.set(utils.copyFlatten(value));
+						const flattenedValue = utils.copyFlatten(value);
+						valuesFlat.set(flattenedValue);
 					} else {
-						valuesFlat.set(utils.flatten(value));
+						const flattenedValue = utils.flatten(value);
+						valuesFlat.set(flattenedValue);
 					}
+
+					valuesFlat = valuesFlat.map(num => {
+						if (isNaN(num)) {
+							return 0;
+						} else {
+							return num;
+						}
+					});
 
 					let buffer;
 					if (this.floatTextures) {

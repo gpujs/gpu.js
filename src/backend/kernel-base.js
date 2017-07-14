@@ -8,21 +8,21 @@ module.exports = class BaseKernel {
 	 * @constructor BaseKernel
 	 * 
 	 * @desc Implements the base class for Kernels, and is used as a 
- 	 * parent class for all Kernel implementations.
- 	 *
- 	 * This contains the basic methods needed by all Kernel implementations, 
- 	 * like setDimensions, addSubKernel, etc.
+	 * parent class for all Kernel implementations.
+	 *
+	 * This contains the basic methods needed by all Kernel implementations, 
+	 * like setDimensions, addSubKernel, etc.
 	 * 
 	 * @prop {Array} paramNames - Name of the parameters of the kernel function
- 	 * @prop {String} fnString - Kernel function as a String
- 	 * @prop {Array} dimensions - Dimensions of the kernel function, this.thread.x, etc.
- 	 * @prop {Boolean} debug - Toggle debug mode
- 	 * @prop {String} graphical - Toggle graphical mode
- 	 * @prop {number} loopMaxIterations - Maximum number of loop iterations
- 	 * @prop {Object} constants - Global constants
- 	 * @prop {Array} subKernels - Sub kernels bound to this kernel instance
- 	 * @prop {Object} subKernelProperties - Sub kernels bound to this kernel instance as key/value pairs
- 	 * @prop {Array} subKernelOutputVariableNames - Names of the variables outputted by the subkerls
+	 * @prop {String} fnString - Kernel function as a String
+	 * @prop {Array} dimensions - Dimensions of the kernel function, this.thread.x, etc.
+	 * @prop {Boolean} debug - Toggle debug mode
+	 * @prop {String} graphical - Toggle graphical mode
+	 * @prop {number} loopMaxIterations - Maximum number of loop iterations
+	 * @prop {Object} constants - Global constants
+	 * @prop {Array} subKernels - Sub kernels bound to this kernel instance
+	 * @prop {Object} subKernelProperties - Sub kernels bound to this kernel instance as key/value pairs
+	 * @prop {Array} subKernelOutputVariableNames - Names of the variables outputted by the subkerls
 	 *
 	 */
 	constructor(fnString, settings) {

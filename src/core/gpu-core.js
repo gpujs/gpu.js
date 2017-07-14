@@ -32,27 +32,27 @@ module.exports = class GPUCore {
 	static validateKernelObj(kernelObj) {
 
 		// NULL validation
-		if( kernelObj == null ) {
+		if (kernelObj == null) {
 			throw "KernelObj being validated is NULL";
 		}
 
 		// String JSON conversion
-		if( typeof kernelObj === "string" ) {
+		if (typeof kernelObj === "string") {
 			try {
 				kernelObj = JSON.parse(kernelObj);
-			} catch(e) {
+			} catch (e) {
 				console.error(e);
 				throw "Failed to convert KernelObj from JSON string";
 			}
 
 			// NULL validation
-			if( kernelObj == null ) {
+			if (kernelObj == null) {
 				throw "Invalid (NULL) KernelObj JSON string representation";
 			}
 		}
 
 		// Check for kernel obj flag
-		if( kernelObj.isKernelObj != true ) {
+		if (kernelObj.isKernelObj != true) {
 			throw "Failed missing isKernelObj flag check";
 		}
 
@@ -85,6 +85,6 @@ module.exports = class GPUCore {
 		// Validates the kernelObj, throws an exception if it fails
 		// kernelObj = validateKernelObj(kernelObj);
 
-		
+
 	}
 }

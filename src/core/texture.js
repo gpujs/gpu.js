@@ -3,9 +3,9 @@
 let gpu = null;
 
 module.exports = class Texture {
-	
+
 	/**
- 	 * @desc WebGl Texture implementation in JS
+	 * @desc WebGl Texture implementation in JS
 	 * @constructor Texture
 	 * @param {Object} texture 
 	 * @param {Array} size 
@@ -30,7 +30,7 @@ module.exports = class Texture {
 	 *
 	 */
 	toArray(gpu) {
-		if(!gpu) throw new Error('You need to pass the GPU object for toArray to work.');
+		if (!gpu) throw new Error('You need to pass the GPU object for toArray to work.');
 		const copy = gpu.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];
 		}).setDimensions(this.dimensions);

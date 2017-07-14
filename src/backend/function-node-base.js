@@ -10,20 +10,20 @@ module.exports = class BaseFunctionNode {
 	 * 
 	 * @desc Represents a single function, inside JS, webGL, or openGL.
 	 * 
- 	 * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
+	 * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
 	 * 
- 	 * @prop {String} functionName - Name of the function
- 	 * @prop {Function} jsFunction - The JS Function the node represents
- 	 * @prop {String} jsFunctionString - jsFunction.toString()
- 	 * @prop {String[]} paramNames - Parameter names of the function
- 	 * @prop {String[]} paramTypes - Shader land parameters type assumption
- 	 * @prop {Boolean} isRootKernel - Special indicator, for kernel function
- 	 * @prop {String} webglFunctionString - webgl converted function string
- 	 * @prop {String} openglFunctionString - opengl converted function string
- 	 * @prop {String[]} calledFunctions - List of all the functions called
- 	 * @prop {String[]} initVariables - List of variables initialized in the function
- 	 * @prop {String[]} readVariables - List of variables read operations occur
- 	 * @prop {String[]} writeVariables - List of variables write operations occur
+	 * @prop {String} functionName - Name of the function
+	 * @prop {Function} jsFunction - The JS Function the node represents
+	 * @prop {String} jsFunctionString - jsFunction.toString()
+	 * @prop {String[]} paramNames - Parameter names of the function
+	 * @prop {String[]} paramTypes - Shader land parameters type assumption
+	 * @prop {Boolean} isRootKernel - Special indicator, for kernel function
+	 * @prop {String} webglFunctionString - webgl converted function string
+	 * @prop {String} openglFunctionString - opengl converted function string
+	 * @prop {String[]} calledFunctions - List of all the functions called
+	 * @prop {String[]} initVariables - List of variables initialized in the function
+	 * @prop {String[]} readVariables - List of variables read operations occur
+	 * @prop {String[]} writeVariables - List of variables write operations occur
 	 * 
 	 * @param {GPU} gpu - The GPU instance
 	 * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function

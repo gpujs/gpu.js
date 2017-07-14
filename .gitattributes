@@ -2,6 +2,5 @@
 # Fixing language bar in github. To make this pure JS
 # See: https://github.com/github/linguist#overrides
 #
-src/* linguist-vendored
-test/src/* linguist-vendored
-gulpfile.js linguist-vendored
+test/html/* linguist-vendored
+src/jison/* linguist-vendored

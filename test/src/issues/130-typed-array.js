@@ -1,0 +1,24 @@
+
+function typedArrayTest(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function(changes) {
+    return changes[this.thread.y][this.thread.x];
+  })
+    .setDimensions([2, 1]);
+
+  const values = [new Float32Array(2)];
+  values[0][0] = 0;
+  values[0][1] = 0;
+  const result = kernel(values);
+  console.log(result);
+  QUnit.assert.equal(result[0][0], 0);
+  QUnit.assert.equal(result[0][1], 0);
+}
+
+QUnit.test( "Issue #130 - typed array cpu", function() {
+  typedArrayTest('cpu');
+});
+
+QUnit.test( "Issue #130 - typed array gpu", function() {
+  typedArrayTest('gpu');
+});
