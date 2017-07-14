@@ -273,6 +273,13 @@ module.exports = class CPUKernel extends KernelBase {
     }.bind(this);`;
 	}
 
+
+	//-------------------------------------
+	//
+	//  Below here is experimental WIP
+	//
+	//-------------------------------------
+
 	/**
 	 * @memberOf CPUKernel#
 	 * @function

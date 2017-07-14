@@ -200,7 +200,7 @@ class GPU extends GPUCore {
 
 		// Properly build the super kernel
 		if (this.getMode() === 'cpu') {
-			return this.createKernels( args.slice(0, args.length - 1), combinedKernel );
+			return this.createKernelMap( args.slice(0, args.length - 1), combinedKernel );
 		}
 
 		const canvas = arguments[0].getCanvas();

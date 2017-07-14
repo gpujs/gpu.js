@@ -183,6 +183,29 @@ module.exports = class BaseFunctionNode {
 	}
 
 	/**
+	 * @memberOf FunctionNodeBase#
+	 * @function
+	 * @name getJSFunction
+	 *
+	 * @desc Gets and return the stored JS Function. As a string
+	 *
+	 * @returns {Function} The function object
+	 *
+	 */
+	getJsFunctionString() {
+		if (this.jsFunctionString) {
+			return this.jsFunctionString;
+		}
+
+		if (this.jsFunction=) {
+			this.jsFunctionString = this.jsFunction.toString();
+			return this.jsFunctionString;
+		}
+
+		throw 'Missing jsFunction, and jsFunctionString parameter';
+	}
+
+	/**
 	 * @typedef {Object} ASTObject
 	 */
 

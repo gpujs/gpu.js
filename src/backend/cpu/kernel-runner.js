@@ -4,6 +4,7 @@ const UtilsCore = require("../../core/utils-core");
  * Class: CPUKernelRunner
  * 
  * Core static class which does the actual execution process. For the CPU.
+ * This class forces seperation of kernel runner from builder
  */
 class CPUKernelRunner {
 	/**
@@ -12,7 +13,7 @@ class CPUKernelRunner {
 	 * Takes in a precompiled CPUKernelObject, along with its settings cache.
 	 * 
 	 * Parmeters:
-	 *    runCache      - {Object}  Represents the common cache object, to store run time results, such as _canvas. 
+	 *    runCache      - {Object}  Represents the common cache object, to store runtime variables, such as _canvas. 
 	 *                              This is commonly the kernel function itself, that was executed.
 	 *    kernelObj     - {Object}  Precompiled JS kernel obj (see below)
 	 *    args          - {Array}   Array of arguments, to pass as input
