@@ -194,6 +194,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			this.build.apply(this, arguments);
 		}
 		const paramNames = this.paramNames;
+		this.setupParams(arguments);
 		const paramTypes = this.paramTypes;
 		const texSize = this.texSize;
 		const threadDim = this.threadDim;
