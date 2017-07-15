@@ -247,6 +247,8 @@ class GPU extends GPUCore {
 	/**
 	 *
 	 * Adds additional functions, that the kernel may call.
+	 * 
+	 * @TODO : Block nameless functions, setup a way to support nameless function?
 	 *
 	 * @name addFunction
 	 * @function

@@ -197,7 +197,7 @@ module.exports = class BaseFunctionNode {
 		}
 
 		if (this.jsFunction) {
-			this.jsFunctionString = this.jsFunction.toString();
+			this.jsFunctionString = this.jsFunction.toString().trim();
 			return this.jsFunctionString;
 		}
 
@@ -220,7 +220,7 @@ module.exports = class BaseFunctionNode {
 
 		this._jsFunctionBodyString = utils.getFunctionBodyFromString( //
 			this.getJsFunctionString() // The full function string
-		);
+		).trim();
 
 		return this._jsFunctionBodyString;
 	}

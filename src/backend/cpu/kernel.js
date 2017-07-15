@@ -107,7 +107,7 @@ module.exports = class CPUKernel extends KernelBase {
 
 			// OK : Probably only the kernel (and round poly-fill)
 			// lets do this !
-			if( Object.getOwnPropertyNames(functionNodeMap).length <= 2 ) {
+			if( Object.getOwnPropertyNames(functionNodeMap).length <= 10 ) {
 				// Build the kernel object
 				this._cpuKernelObj = CPUKernelBuilder.build( this.functionBuilder, this );
 

@@ -56,10 +56,33 @@ class CPUKernelBuilder {
 		// 
 		// Till then assume ALL functions are "required"
 		let kernelTrace = Object.getOwnPropertyNames(functionNodeMap);
-		kernelTrace.splice( kernelTrace.indexOf('kernel'), 1 );
 
 		// Get the dependent functions (headerStr)
-		// @TODO : Dependent functions support
+		let headerStrArr = [];
+		for(let i=0; i<kernelTrace.length; ++i) {
+			let funcName = kernelTrace[i];
+
+			// Skip the main kernel function
+			if( funcName == "kernel" ) {
+				continue;
+			}
+
+			// Process all other nodes
+			let subNode = functionNodeMap[funcName];
+			if( subNode ) {
+				headerStrArr.push( subNode.getJsFunctionString() );
+			}
+		}
+
+		// And build it into kernelObj
+		if( headerStrArr.length > 0 ) {
+			kernelObj.headerStr = headerStrArr.join("\n");
+		}
+
+		// And build it into kernelObj
+		if( headerStrArr.length > 0 ) {
+			kernelObj.headerStr = headerStrArr.join("\n");
+		}
 
 		// Get the kernel function string
 		kernelObj.kernelStr = kernelNode.getJsFunctionBody();
