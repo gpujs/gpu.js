@@ -522,6 +522,9 @@ module.exports = class WebGLKernel extends KernelBase {
 	_addArgument(value, type, name) {
 		const gl = this._webGl;
 		const argumentTexture = this.getArgumentTexture(name);
+		if (value.constructor === Texture) {
+			type = 'Texture';
+		}
 		switch (type) {
 			case 'Array':
 				{
