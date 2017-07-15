@@ -81,6 +81,8 @@ class CPUKernelRunner {
 		let canvasCtx;
 		let imageData;
 		let data;
+
+		// Prepare everything needed for graphical mode : Woohoo!
 		if (graphical) {
 			if (!canvas) {
 				// Initialize a canvas object
@@ -91,14 +93,22 @@ class CPUKernelRunner {
 				runCache._canvas = canvas;
 			}
 			
+			// Match canvas width / height to dim
 			canvas.width = threadDim[0];
 			canvas.height = threadDim[1];
 
+			// Setup the canvas
 			canvasCtx = canvas.getContext("2d");
 			imageData = canvasCtx.createImageData(threadDim[0], threadDim[1]);
 			data = new Uint8ClampedArray(threadDim[0]*threadDim[1]*4);
 			
 			// Color manipulation function, for the runtime kernel
+			// This perform lolcally for the current thread
+			//
+			// @param   {float} r   : Red value
+			// @param   {float} g   : Green value
+			// @param   {float} b   : Blue value
+			// @param   {float} a   : Alpha value
 			ctx.color = function(r, g, b, a) {
 				if (a == undefined) {
 					a = 1.0;
@@ -133,43 +143,8 @@ class CPUKernelRunner {
 
 		// Build the run kernel from scratch sadly
 		if( runKernel == null ) {
-			// Add in constants values into scope string, and eval it D=
-			var GPU_constantKeys = Object.getOwnPropertyNames(ctx.constants);
-			var GPU_constantScoping = [];
-
-			// Checks for header string
-			if( GPU_constantKeys.length > 0 || (headerStr != null && headerStr.length > 0) ) {
-
-				// Constant values scoping
-				for(var i=0; i<GPU_constantKeys.length; ++i) {
-					GPU_constantScoping.push("var "+GPU_constantKeys[i]+" = ctx.constants['"+GPU_constantKeys[i]+"'];");
-				}
-
-				// The header string exists, and is required, eval it!
-				runKernel = (function() {
-					// The GPU_jsRunKernel to return subsequently
-					// this is a reserved key word (as per the GPU_ prefix)
-					var GPU_jsRunKernel = null;
-					
-					// Execute everything in an eval
-					eval(
-						GPU_constantScoping.join("\n")+
-						// Loads the header string, for other possible header functions
-						headerStr+"\n"+
-						// Build the actual kernel
-						"GPU_jsRunKernel = function("+paramNames.join(",")+") {\n"+
-							kernelStr+"\n"+
-						"}"
-					);
-
-					// Return the kernel
-					return GPU_jsRunKernel;
-				})();
-			} else {
-				// Else build it as a "normal" function
-				runKernel = new Function(paramNames, kernelStr);
-			}
-
+			// Build the kernel
+			runKernel = CPUKernelRunner.evalKernel(paramNames, kernelStr, headerStr, ctx.constants);
 			// Cache the prebuilt _cpuKernel
 			runCache._cpuKernel = runKernel;
 		}
@@ -198,6 +173,59 @@ class CPUKernelRunner {
 		
 		// Return the result
 		return ret;
+	}
+
+	/**
+	 * Eval the kernel string, and return it as a function.
+	 * 
+	 * This is done intentionally as an isolted static function, to limit variable scope trapping.
+	 * All variables here are prefixed with GPU_, which will be considered as a reserved keyword.
+	 * 
+	 * This also allow the main run function to be optimized via the V8 engine (to a certain extent)
+	 * 
+	 * @param  {String[]}  GPU_kernelParams  parameter name arrays
+	 * @param  {String}    GPU_kernelStr     function body string
+	 * @param  {String}    GPU_headerStr     additional JS header strings
+	 * @param  {Object}    GPU_constants     the constants to take / use from
+	 */
+	static evalKernel(GPU_kernelParams, GPU_kernelStr, GPU_headerStr, GPU_constants) {
+
+		// Add in constants values into scope string, and eval it D=
+		var GPU_constantKeys = Object.getOwnPropertyNames(GPU_constants);
+		var GPU_constantScoping = [];
+
+		// Checks for header string
+		if( GPU_constantKeys.length > 0 || (GPU_headerStr != null && GPU_headerStr.length > 0) ) {
+
+			// Constant values scoping
+			for(var i=0; i<GPU_constantKeys.length; ++i) {
+				GPU_constantScoping.push("var "+GPU_constantKeys[i]+" = GPU_constants['"+GPU_constantKeys[i]+"'];");
+			}
+
+			// The header string exists, and is required, eval it!
+			return (function() {
+				// The GPU_jsRunKernel to return subsequently
+				// this is a reserved key word (as per the GPU_ prefix)
+				var GPU_jsRunKernel = null;
+				
+				// Execute everything in an eval
+				eval(
+					GPU_constantScoping.join("\n")+
+					// Loads the header string, for other possible header functions
+					(GPU_headerStr || "")+"\n"+
+					// Build the actual kernel
+					"GPU_jsRunKernel = function("+GPU_kernelParams.join(",")+") {\n"+
+						GPU_kernelStr+"\n"+
+					"}"
+				);
+
+				// Return the kernel
+				return GPU_jsRunKernel;
+			})();
+		} else {
+			// Else build it as a "normal" function
+			return new Function(GPU_kernelParams, GPU_kernelStr);
+		}
 	}
 }
 
