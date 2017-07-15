@@ -10,7 +10,6 @@ function typedArrayTest(mode) {
   values[0][0] = 0;
   values[0][1] = 0;
   const result = kernel(values);
-  console.log(result);
   QUnit.assert.equal(result[0][0], 0);
   QUnit.assert.equal(result[0][1], 0);
 }

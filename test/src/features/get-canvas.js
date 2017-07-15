@@ -19,7 +19,6 @@ function getCanvasTest(mode ) {
 	// NOTE: GPU mode somehow return null when render()
 	//
 	QUnit.assert.ok( (r = render()) || true, "rendering" );
-	console.log("getCanvasTest render result", r, "for mode", mode);
 
 	QUnit.assert.ok( render.getCanvas(), "testing for canvas after render" );
 	QUnit.assert.ok( gpu.getCanvas(), "testing for canvas after render" );

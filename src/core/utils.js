@@ -235,16 +235,29 @@ class Utils extends UtilsCore {
 	 * @function
 	 * @static
 	 *
-	 * Checks if is an array or Array-like object
+	 * * Checks if is an array or Array-like object
 	 *
 	 * @param {Object} arg - The argument object to check if is array
 	 *
 	 * @returns {Boolean}  true if is array or Array-like object
 	 *
 	 */
-	static isArray(arr) {
-		const tag = Object.prototype.toString.call(arr);
-		return tag.indexOf('Array]', tag.length - 6) !== -1;
+	static isArray(array) {
+		switch (array.constructor) {
+			case Int8Array:
+			case Uint8Array:
+			case Uint8ClampedArray:
+			case Int16Array:
+			case Uint16Array:
+			case Int32Array:
+			case Uint32Array:
+			case Float32Array:
+			case Float64Array:
+			case Array:
+				return true;
+			default:
+				return false;
+		}
 	}
 
 	/**
@@ -400,37 +413,62 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @memberOf Utils
-	 * @name flatten
+	 * @name flatten2dArrayTo
 	 * @function
 	 * @static
 	 *
-	 * Converts a nested array into a one-dimensional array
-	 *
-	 * @param {Array} _arr - the nested array to flatten
-	 *
-	 * @returns {Array} 1D Array
-	 *
+	 * Puts a nested 2d array into a one-dimensional target array
+	 * @param {Array|*} array
+	 * @param {Float32Array|Float64Array} target
 	 */
-	static flatten(_arr) {
-		for (let i = 0; i < _arr.length; ++i) {
-			if (Array.isArray(_arr[i])) {
-				_arr[i].splice(0, 0, i, 1);
-				Array.prototype.splice.apply(_arr, _arr[i]);
-				--i;
-			}
+	static flatten2dArrayTo(array, target) {
+		let offset = 0;
+		for (let y = 0; y < array.length; y++) {
+			target.set(array[y], offset);
+			offset += array[y].length;
 		}
-
-		return _arr;
 	}
 
-	static copyFlatten(arr) {
-		return Utils.isArray(arr[0]) ?
-			Utils.isArray(arr[0][0]) ?
-			Array.isArray(arr[0][0]) ? [].concat.apply([], [].concat.apply([], arr)) : [].concat.apply([], [].concat.apply([], arr)
-				.map(function(x) {
-					return Array.prototype.slice.call(x)
-				})) : [].concat.apply([], arr) :
-			arr;
+	/**
+	 * @memberOf Utils
+	 * @name flatten3dArrayTo
+	 * @function
+	 * @static
+	 *
+	 * Puts a nested 3d array into a one-dimensional target array
+	 * @param {Array|*} array
+	 * @param {Float32Array|Float64Array} target
+	 */
+	static flatten3dArrayTo(array, target) {
+		let offset = 0;
+		for (let z = 0; z < array.length; z++) {
+			for (let y = 0; y < array[z].length; y++) {
+				target.set(array[z][y], offset);
+				offset += array[z][y].length;
+			}
+		}
+	}
+
+	/**
+	 * @memberOf Utils
+	 * @name flatten3dArrayTo
+	 * @function
+	 * @static
+	 *
+	 * Puts a nested 1d, 2d, or 3d array into a one-dimensional target array
+	 * @param {Array|*} array
+	 * @param {Float32Array|Float64Array} target
+	 */
+	static flattenTo(array, target) {
+		if (Utils.isArray(array[0])) {
+			if (Utils.isArray(array[0][0])) {
+				Utils.flatten3dArrayTo(array, target);
+			} else {
+				Utils.flatten2dArrayTo(array, target);
+			}
+		} else {
+			target.set(array);
+		}
 	}
 
 	/**
@@ -479,7 +517,7 @@ class Utils extends UtilsCore {
 
 		return props;
 	}
-};
+}
 
 // This ensure static methods are "inherited"
 // See: https://stackoverflow.com/questions/5441508/how-to-inherit-static-methods-from-base-class-in-javascript

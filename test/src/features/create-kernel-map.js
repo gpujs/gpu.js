@@ -167,7 +167,6 @@ QUnit.test( "createKernelMap array (cpu)", function() {
   var canvas = document.createElement('canvas');
   var superKernel = createArrayKernels('cpu', [5], canvas);
   var output = superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]);
-  console.log(output);
   var result = QUnit.extend([], output.result);
   var addResult = QUnit.extend([], output[0]);
   var divideResult = QUnit.extend([], output[1]);

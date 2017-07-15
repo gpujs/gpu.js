@@ -11,13 +11,8 @@ QUnit.test( "Issue #114 - run createKernelMap the second time", function() {
   }).setDimensions([5]);
 
   const E = kernels(A, B).result;
-  console.log(E);
-
   const F = kernels(A, B).result;
-  console.log(F);
-  
   const G = kernels(A, B).result;
-  console.log(G);
 
   QUnit.assert.deepEqual(QUnit.extend([], E), [2, 4, 6, 8, 10]);
   QUnit.assert.deepEqual(QUnit.extend([], F), [2, 4, 6, 8, 10]);

@@ -31,5 +31,3 @@ QUnit.test( "combineKernels (CPU)", function() {
 	var result = QUnit.extend([], superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]));
 	QUnit.assert.deepEqual(result, [2, 8, 18, 32, 50]);
 });
-
-console.log(combineKernels('gpu')([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]));
