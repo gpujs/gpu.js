@@ -243,7 +243,7 @@ class Utils extends UtilsCore {
 	 *
 	 */
 	static isArray(array) {
-		if (array.length) {
+		if((array.length || array.length === 0) && (array.constructor !== String)) {
 			return true;
 		}
 		
