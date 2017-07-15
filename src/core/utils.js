@@ -243,21 +243,11 @@ class Utils extends UtilsCore {
 	 *
 	 */
 	static isArray(array) {
-		switch (array.constructor) {
-			case Int8Array:
-			case Uint8Array:
-			case Uint8ClampedArray:
-			case Int16Array:
-			case Uint16Array:
-			case Int32Array:
-			case Uint32Array:
-			case Float32Array:
-			case Float64Array:
-			case Array:
-				return true;
-			default:
-				return false;
+		if(isNaN(array.length)) {
+			return false;
 		}
+		
+		return true;
 	}
 
 	/**
