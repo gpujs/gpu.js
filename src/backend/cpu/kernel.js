@@ -101,7 +101,18 @@ module.exports = class CPUKernel extends KernelBase {
 			// Subkernel handling
 			if( this.subKernels != null ) {
 				for (let i = 0; i < this.subKernels.length; i++) {
+					// Get the sub kernel
 					let subKernel = this.subKernels[i];
+
+					console.log("[SUBKERNEL-1]", subKernel);
+
+					// Unwrapping the kernel run shortcut wrapper (if valid)
+					if(subKernel.isKernelRunShortcut) {
+						subKernel = subKernel.kernel;
+					}
+
+					console.log("[SUBKERNEL-2]", subKernel);
+
 					let subKernelName = this.subKernelNames[i];
 					this.functionBuilder.addSubKernelFunction(subKernelName, subKernel);
 				}

@@ -2,6 +2,10 @@
 
 const utils = require('../core/utils');
 
+///
+/// @TODO : THIS NEEDS TO BE DEPRECATED
+/// Causing quite a number of association bugs
+///
 module.exports = function kernelRunShortcut(kernel) {
 	const shortcut = function() {
 		return kernel.run.apply(kernel, arguments);
@@ -29,6 +33,7 @@ module.exports = function kernelRunShortcut(kernel) {
 	});
 
 	shortcut.kernel = kernel;
+	shortcut.isKernelRunShortcut = true;
 
 	return shortcut;
 };
