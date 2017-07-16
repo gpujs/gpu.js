@@ -191,14 +191,14 @@ class CPUKernelRunner {
 	static evalKernel(GPU_kernelParams, GPU_kernelStr, GPU_headerStr, GPU_constants) {
 
 		// Add in constants values into scope string, and eval it D=
-		var GPU_constantKeys = Object.getOwnPropertyNames(GPU_constants);
-		var GPU_constantScoping = [];
+		let GPU_constantKeys = Object.getOwnPropertyNames(GPU_constants);
+		let GPU_constantScoping = [];
 
 		// Checks for header string
 		if( GPU_constantKeys.length > 0 || (GPU_headerStr != null && GPU_headerStr.length > 0) ) {
 
 			// Constant values scoping
-			for(var i=0; i<GPU_constantKeys.length; ++i) {
+			for(let i=0; i<GPU_constantKeys.length; ++i) {
 				GPU_constantScoping.push("var "+GPU_constantKeys[i]+" = GPU_constants['"+GPU_constantKeys[i]+"'];");
 			}
 

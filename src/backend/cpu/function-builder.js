@@ -12,6 +12,7 @@ const CPUFunctionNode = require('./function-node');
  *
  */
 module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
+
 	addFunction(functionName, jsFunction, paramTypes, returnType) {
 		this.addFunctionNode(
 			new CPUFunctionNode(functionName, jsFunction, paramTypes, returnType)
@@ -59,6 +60,26 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 	 */
 	addSubKernel(jsFunction, paramTypes, returnType) {
 		const node = new CPUFunctionNode(null, jsFunction, paramTypes, returnType)
+			.setAddFunction(this.addFunction.bind(this));
+		node.isSubKernel = true;
+		this.addFunctionNode(node);
+	}
+
+	/**
+	 * @memberOf CPUFunctionBuilder#
+	 * @function
+	 * @name addSubKernel
+	 *
+	 * @desc Add a new sub-kernel to the current kernel instance
+	 *
+	 * @param {String}   functionName - JS Function name
+	 * @param {Function} jsFunction - Sub-kernel function (JavaScript)
+	 * @param {Array}    paramNames - Parameters of the sub-kernel
+	 * @param {Array}    returnType - Return type of the subKernel
+	 *
+	 */
+	addSubKernelFunction(functionName, jsFunction, paramTypes, returnType) {
+		const node = new CPUFunctionNode(functionName, jsFunction, paramTypes, returnType)
 			.setAddFunction(this.addFunction.bind(this));
 		node.isSubKernel = true;
 		this.addFunctionNode(node);

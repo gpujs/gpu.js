@@ -97,9 +97,18 @@ module.exports = class CPUKernel extends KernelBase {
 		// PROTOTYPE : Lets slowly try the new builder/runner pair
 		//             Without subKernel, cause i know thats not working
 		//
-		if( this.subKernels == null || this.subKernels.length == 0 ) {
-			let functionNodeMap = this.functionBuilder.nodeMap;
+		if( true ) {
+			// Subkernel handling
+			if( this.subKernels != null ) {
+				for (let i = 0; i < this.subKernels.length; i++) {
+					let subKernel = this.subKernels[i];
+					let subKernelName = this.subKernelNames[i];
+					this.functionBuilder.addSubKernelFunction(subKernelName, subKernel);
+				}
+			}
 
+			// FunctionNode mapping to handle
+			let functionNodeMap = this.functionBuilder.nodeMap;
 			if( functionNodeMap['kernel'] == null ) {
 				this.functionBuilder.addFunction('kernel', this._rawKernelString);
 				functionNodeMap['kernel'].isRootKernel = true;
