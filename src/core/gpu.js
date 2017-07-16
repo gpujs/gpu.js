@@ -102,6 +102,46 @@ class GPU extends GPUCore {
 		return kernel;
 	}
 
+
+	_normalizeSubKernel(mainKernel, subKernel, propertyName) {
+
+		// Subkernel has a function builder
+		if( subKernel.functionBuilder ) {
+
+			// Process any additional functions
+			for (let p in subKernel.functionBuilder) {
+				// The main kernel is handled seperately
+				if(p == "kernel") {
+					continue;
+				}
+				// Migrate the sub nodes
+				if( mainKernel.functionBuilder[p] == null ) {
+					mainKernel.functionBuilder[p] = subKernel.functionBuilder[p];
+				}
+			}
+
+			// Process the actual sub kernel
+			let subKernelMainNode = subKernel.functionBuilder['kernel'];
+			let subKernelMainJS = subKernelMainNode.getJsFunctionString();
+
+			// Add them with property name?
+			if(propertyName) {
+				mainKernel.addSubKernelProperty(propertyName, subKernelMainJS);
+			} else {
+				mainKernel.addSubKernel(subKernelMainJS);
+			}
+
+			return; //end here
+		}
+
+		// Assume standard function subkernel support
+		if(propertyName) {
+			mainKernel.addSubKernelProperty(propertyName, subKernel);
+		} else {
+			mainKernel.addSubKernel(subKernel);
+		}
+	}
+
 	/**
 	 *
 	 * Create a super kernel which executes sub kernels 
@@ -115,6 +155,7 @@ class GPU extends GPUCore {
 	 * 
 	 * @param {Object|Array} subKernels - Sub kernels for this kernel
 	 * @param {Function} rootKernel - Root kernel
+	 * @param {Object} settings - Settings which is optional
 	 * 
 	 * @returns {Function} callable kernel function
 	 * 
@@ -151,16 +192,15 @@ class GPU extends GPUCore {
 		}
 
 		const kernel = this.createKernel(fn, settings);
-		if (Array.isArray(arguments[0])) {
-			const functions = arguments[0];
-			for (let i = 0; i < functions.length; i++) {
-				kernel.addSubKernel(functions[i]);
+		const kernelMap = arguments[0];
+		if (Array.isArray(kernelMap)) {
+			for (let i = 0; i < kernelMap.length; i++) {
+				_normalizeSubKernel(kernel, kernelMap[i]);
 			}
 		} else {
-			const functions = arguments[0];
-			for (let p in functions) {
-				if (!functions.hasOwnProperty(p)) continue;
-				kernel.addSubKernelProperty(p, functions[p]);
+			for (let p in kernelMap) {
+				if (!kernelMap.hasOwnProperty(p)) continue;
+				_normalizeSubKernel(kernel, kernelMap[p], p);
 			}
 		}
 
@@ -200,7 +240,7 @@ class GPU extends GPUCore {
 
 		// Properly build the super kernel
 		if (this.getMode() === 'cpu') {
-			return this.createKernelMap( args.slice(0, args.length - 1), combinedKernel );
+			return this.createKernelMap( args.slice(0, args.length - 1), lastKernel );
 		}
 
 		const canvas = arguments[0].getCanvas();
