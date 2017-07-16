@@ -70,7 +70,13 @@ class CPUKernelBuilder {
 			// Process all other nodes
 			let subNode = functionNodeMap[funcName];
 			if( subNode ) {
-				headerStrArr.push( subNode.getJsFunctionString() );
+				let jsFuncStr = subNode.getJsFunctionString();
+
+				if(subNode.isSubKernel) {
+					headerStrArr.push( "var "+funcName+" = ("+jsFuncStr+").bind(GPU_context);" );
+				} else {
+					headerStrArr.push( jsFuncStr );
+				}
 			}
 		}
 

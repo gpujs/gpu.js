@@ -144,7 +144,7 @@ class CPUKernelRunner {
 		// Build the run kernel from scratch sadly
 		if( runKernel == null ) {
 			// Build the kernel
-			runKernel = CPUKernelRunner.evalKernel(paramNames, kernelStr, headerStr, ctx.constants);
+			runKernel = CPUKernelRunner.evalKernel(paramNames, kernelStr, headerStr, ctx, ctx.constants);
 			// Cache the prebuilt _cpuKernel
 			runCache._cpuKernel = runKernel;
 		}
@@ -186,9 +186,10 @@ class CPUKernelRunner {
 	 * @param  {String[]}  GPU_kernelParams  parameter name arrays
 	 * @param  {String}    GPU_kernelStr     function body string
 	 * @param  {String}    GPU_headerStr     additional JS header strings
+	 * @param  {Object}    GPU_context       the GPU context object
 	 * @param  {Object}    GPU_constants     the constants to take / use from
 	 */
-	static evalKernel(GPU_kernelParams, GPU_kernelStr, GPU_headerStr, GPU_constants) {
+	static evalKernel(GPU_kernelParams, GPU_kernelStr, GPU_headerStr, GPU_context, GPU_constants) {
 
 		// Add in constants values into scope string, and eval it D=
 		let GPU_constantKeys = Object.getOwnPropertyNames(GPU_constants);
