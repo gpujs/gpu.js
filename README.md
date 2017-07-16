@@ -260,6 +260,7 @@ Documentation of the codebase is [automatically built](https://github.com/gpujs/
 * Eugene Cheah
 * Matthew Saw
 * Robert Plummer
+* Abhishek Soni
 * Juan Cazala
 * Daniel X Moore
 * Mark Theng
