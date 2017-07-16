@@ -99,9 +99,15 @@ class Utils extends UtilsCore {
 	 */
 	static isFunctionString(funcStr) {
 		if (funcStr !== null) {
-			return (funcStr.toString()
-				.slice(0, 'function'.length)
-				.toLowerCase() === 'function');
+			// Trim removal
+			funcStr = funcStr.toString().trim();
+
+			// Lower case function "start with"
+			return (
+				funcStr.startsWith("() => {") || 
+				(funcStr.slice(0, 'function'.length)
+				.toLowerCase() === 'function')
+			);
 		}
 		return false;
 	}
