@@ -7,7 +7,8 @@ const Texture = require('../../core/texture');
 const fragShaderString = require('./shader-frag');
 const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
-
+const canvases = [];
+const canvasTexSizes = {};
 module.exports = class WebGLKernel extends KernelBase {
 
 	/**
@@ -128,14 +129,28 @@ module.exports = class WebGLKernel extends KernelBase {
 		const texSize = this.texSize;
     const gl = this._webGl;
     const canvas = this._canvas;
-    if (canvas.width < texSize[0]) {
-      canvas.width = texSize[0];
+    let canvasIndex = canvases.indexOf(canvas);
+    if (canvasIndex === -1) {
+      canvasIndex = canvases.length;
+      canvases.push(canvas);
+      canvasTexSizes[canvasIndex] = [];
     }
-    if (canvas.height < texSize[1]) {
-      canvas.height = texSize[1];
+
+    const sizes = canvasTexSizes[canvasIndex];
+    sizes.push(texSize);
+    const maxTexSize = [0, 0];
+    for (let i = 0; i < sizes.length; i++) {
+      const size = sizes[i];
+      if (maxTexSize[0] < size[0]) {
+        maxTexSize[0] = size[0];
+      }
+      if (maxTexSize[1] < size[1]) {
+        maxTexSize[1] = size[1];
+      }
     }
+
     gl.enable(gl.SCISSOR_TEST);
-    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.viewport(0, 0, maxTexSize[0], maxTexSize[1]);
 		const threadDim = this.threadDim = utils.clone(this.dimensions);
 		while (threadDim.length < 3) {
 			threadDim.push(1);
