@@ -7,7 +7,8 @@ const Texture = require('../../core/texture');
 const fragShaderString = require('./shader-frag');
 const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
-
+const canvases = [];
+const canvasTexSizes = {};
 module.exports = class WebGLKernel extends KernelBase {
 
 	/**
@@ -126,11 +127,30 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.validateOptions();
 		this.setupParams(arguments);
 		const texSize = this.texSize;
-		const gl = this._webGl;
-		this._canvas.width = texSize[0];
-		this._canvas.height = texSize[1];
-		gl.viewport(0, 0, texSize[0], texSize[1]);
+    const gl = this._webGl;
+    const canvas = this._canvas;
+    let canvasIndex = canvases.indexOf(canvas);
+    if (canvasIndex === -1) {
+      canvasIndex = canvases.length;
+      canvases.push(canvas);
+      canvasTexSizes[canvasIndex] = [];
+    }
 
+    const sizes = canvasTexSizes[canvasIndex];
+    sizes.push(texSize);
+    const maxTexSize = [0, 0];
+    for (let i = 0; i < sizes.length; i++) {
+      const size = sizes[i];
+      if (maxTexSize[0] < size[0]) {
+        maxTexSize[0] = size[0];
+      }
+      if (maxTexSize[1] < size[1]) {
+        maxTexSize[1] = size[1];
+      }
+    }
+
+    gl.enable(gl.SCISSOR_TEST);
+    gl.viewport(0, 0, maxTexSize[0], maxTexSize[1]);
 		const threadDim = this.threadDim = utils.clone(this.dimensions);
 		while (threadDim.length < 3) {
 			threadDim.push(1);
@@ -171,8 +191,8 @@ module.exports = class WebGLKernel extends KernelBase {
 		gl.attachShader(program, fragShader);
 		gl.linkProgram(program);
 		this.framebuffer = gl.createFramebuffer();
-		this.framebuffer.width = this.texSize[0];
-		this.framebuffer.height = this.texSize[1];
+		this.framebuffer.width = texSize[0];
+		this.framebuffer.height = texSize[1];
 		return this;
 	}
 
@@ -209,10 +229,8 @@ module.exports = class WebGLKernel extends KernelBase {
 			1, 1
 		]);
 		const gl = this._webGl;
-		this._canvas.width = texSize[0];
-		this._canvas.height = texSize[1];
-		gl.viewport(0, 0, texSize[0], texSize[1]);
 		gl.useProgram(this.program);
+    gl.scissor(0, 0, texSize[0], texSize[1]);
 
 		const texCoordOffset = vertices.byteLength;
 		let buffer = this.buffer;
