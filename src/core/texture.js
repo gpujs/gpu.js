@@ -17,6 +17,7 @@ module.exports = class Texture {
 		this.size = size;
 		this.dimensions = dimensions;
 		this.webGl = webGl;
+		this.kernel = null;
 	}
 
 	/**
@@ -31,11 +32,13 @@ module.exports = class Texture {
 	 */
 	toArray(gpu) {
 		if (!gpu) throw new Error('You need to pass the GPU object for toArray to work.');
-		const copy = gpu.createKernel(function(x) {
+		if(this.kernel) return this.kernel(this);
+
+		this.kernel = gpu.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];
 		}).setDimensions(this.dimensions);
 
-		return copy(this);
+		return this.kernel(this);
 	}
 
 	/**
