@@ -243,10 +243,10 @@ class Utils extends UtilsCore {
 	 *
 	 */
 	static isArray(array) {
-		if(isNaN(array.length)) {
+		if (isNaN(array.length)) {
 			return false;
 		}
-		
+
 		return true;
 	}
 

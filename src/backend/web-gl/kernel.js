@@ -127,30 +127,30 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.validateOptions();
 		this.setupParams(arguments);
 		const texSize = this.texSize;
-    const gl = this._webGl;
-    const canvas = this._canvas;
-    let canvasIndex = canvases.indexOf(canvas);
-    if (canvasIndex === -1) {
-      canvasIndex = canvases.length;
-      canvases.push(canvas);
-      canvasTexSizes[canvasIndex] = [];
-    }
+		const gl = this._webGl;
+		const canvas = this._canvas;
+		let canvasIndex = canvases.indexOf(canvas);
+		if (canvasIndex === -1) {
+			canvasIndex = canvases.length;
+			canvases.push(canvas);
+			canvasTexSizes[canvasIndex] = [];
+		}
 
-    const sizes = canvasTexSizes[canvasIndex];
-    sizes.push(texSize);
-    const maxTexSize = [0, 0];
-    for (let i = 0; i < sizes.length; i++) {
-      const size = sizes[i];
-      if (maxTexSize[0] < size[0]) {
-        maxTexSize[0] = size[0];
-      }
-      if (maxTexSize[1] < size[1]) {
-        maxTexSize[1] = size[1];
-      }
-    }
+		const sizes = canvasTexSizes[canvasIndex];
+		sizes.push(texSize);
+		const maxTexSize = [0, 0];
+		for (let i = 0; i < sizes.length; i++) {
+			const size = sizes[i];
+			if (maxTexSize[0] < size[0]) {
+				maxTexSize[0] = size[0];
+			}
+			if (maxTexSize[1] < size[1]) {
+				maxTexSize[1] = size[1];
+			}
+		}
 
-    gl.enable(gl.SCISSOR_TEST);
-    gl.viewport(0, 0, maxTexSize[0], maxTexSize[1]);
+		gl.enable(gl.SCISSOR_TEST);
+		gl.viewport(0, 0, maxTexSize[0], maxTexSize[1]);
 		const threadDim = this.threadDim = utils.clone(this.dimensions);
 		while (threadDim.length < 3) {
 			threadDim.push(1);
@@ -230,7 +230,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		]);
 		const gl = this._webGl;
 		gl.useProgram(this.program);
-    gl.scissor(0, 0, texSize[0], texSize[1]);
+		gl.scissor(0, 0, texSize[0], texSize[1]);
 
 		const texCoordOffset = vertices.byteLength;
 		let buffer = this.buffer;

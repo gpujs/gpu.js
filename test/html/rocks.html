@@ -294,7 +294,7 @@ var C = mat_mult(A, B);</code></pre>
     var opt = {
       dimensions: [mat1_size, mat2_size],
       debug: true,
-      outputToTexture: true
+      outputToTexture: false
     };
 
     if (mode === 'gpu') {
@@ -321,7 +321,7 @@ var C = mat_mult(A, B);</code></pre>
 		var opt = {
 			dimensions: [mat2_size, mat3_size],
 			debug: true,
-			outputToTexture: true
+			outputToTexture: false
 		};
 
 		if (mode === 'gpu') {
