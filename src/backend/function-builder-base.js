@@ -80,7 +80,10 @@ module.exports = class FunctionBuilderBase {
 				// Does nothing if already traced
 			} else {
 				retList.push(functionName);
-				fNode.parent = parent;
+				if (parent) {
+					fNode.parent = parent;
+					fNode.constants = parent.constants;
+				}
 				fNode.getFunctionString(); //ensure JS trace is done
 				for (let i = 0; i < fNode.calledFunctions.length; ++i) {
 					this.traceFunctionCalls(fNode.calledFunctions[i], retList, fNode);
