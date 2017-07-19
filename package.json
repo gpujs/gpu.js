@@ -12,6 +12,7 @@
     "babel-preset-env": "^1.5.2",
     "browser-sync": "^2.18.2",
     "browserify": "^14.3.0",
+    "del": "^3.0.0",
     "docdash": "^0.4.0",
     "gulp": "^3.9.1",
     "gulp-babel": "^6.1.2",
@@ -31,7 +32,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "setup": "npm i -g gulp-cli",
-    "build-docs": "./node_modules/.bin/jsdoc -c jsdoc.json src -r -d doc --debug && gulp injectCSS"  
+    "build-docs": "./node_modules/.bin/jsdoc -c jsdoc.json src -r -d doc --debug && gulp injectCSS"
   },
   "repository": {
     "type": "git",
@@ -46,5 +47,8 @@
   "bugs": {
     "url": "https://github.com/gpujs/gpu.js/issues"
   },
-  "homepage": "http://gpu.rocks/"
+  "homepage": "http://gpu.rocks/",
+  "dependencies": {
+    "merge-stream": "^1.0.1"
+  }
 }

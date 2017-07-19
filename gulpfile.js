@@ -15,48 +15,62 @@ const pkg = require('./package.json');
 const jsprettify = require('gulp-jsbeautifier');
 const babel = require('gulp-babel');
 const stripComments = require('gulp-strip-comments');
+const del = require('del');
+const merge = require('merge-stream');
 
 /// Build the scripts
-gulp.task('build', function() {
-	browserify('./src/index.js')
-	.bundle()
-	.pipe(source('gpu.js'))
-	.pipe(buffer())
-	.pipe(stripComments())
-	.pipe(babel())
-		.pipe(header(fs.readFileSync('./src/wrapper/header.js', 'utf8'), { pkg : pkg }))
-		.pipe(gulp.dest('bin'));
+gulp.task('babelify', function () {
+	return gulp.src(['./src/**'])
+		.pipe(babel())
+		.pipe(gulp.dest('dist'));
+});
 
-	browserify('./src/index-core.js')
-	.bundle()
-	.pipe(source('gpu-core.js'))
-	.pipe(buffer())
-	.pipe(stripComments())
-	.pipe(babel())
-		.pipe(header(fs.readFileSync('./src/wrapper/header.js', 'utf8'), { pkg : pkg }))
-		.pipe(gulp.dest('bin'));
+gulp.task('build', ['babelify'], function() {
+
+	const gpu = browserify('./dist/index.js')
+		.bundle()
+		.pipe(source('gpu.js'))
+		.pipe(buffer())
+		.pipe(stripComments())
+			.pipe(header(fs.readFileSync('./dist/wrapper/header.js', 'utf8'), { pkg : pkg }))
+			.pipe(gulp.dest('bin'));
+
+	const gpuCore = browserify('./dist/index-core.js')
+		.bundle()
+		.pipe(source('gpu-core.js'))
+		.pipe(buffer())
+		.pipe(stripComments())
+			.pipe(header(fs.readFileSync('./dist/wrapper/header.js', 'utf8'), { pkg : pkg }))
+			.pipe(gulp.dest('bin'));
+	
+	return merge(gpu, gpuCore);
+});
+
+gulp.task('clean', ['build'], function(){
+	return del('dist/');
 });
 
 /// Minify the build script, after building it
-gulp.task('minify', ['build'], function() {
-	return (
-		gulp.src('bin/gpu.js')
-			.pipe(rename('gpu.min.js'))
-			.pipe(
-				uglify({preserveComments: 'license'})
-				.on('error', gutil.log)
-			)
-			.pipe(gulp.dest('bin'))
-	) && (
-		gulp.src('bin/gpu-core.js')
-			.pipe(rename('gpu-core.min.js'))
-			.pipe(
-				uglify({preserveComments: 'license'})
-				.on('error', gutil.log)
-			)
-			.pipe(gulp.dest('bin'))
-	);
+gulp.task('minify', ['clean'], function() {
+	const gpu = gulp.src('bin/gpu.js')
+		.pipe(rename('gpu.min.js'))
+		.pipe(
+			uglify({preserveComments: 'license'})
+			.on('error', gutil.log)
+		)
+		.pipe(gulp.dest('bin'));
+
+	const gpuCore = gulp.src('bin/gpu-core.js')
+		.pipe(rename('gpu-core.min.js'))
+		.pipe(
+			uglify({preserveComments: 'license'})
+			.on('error', gutil.log)
+		)
+		.pipe(gulp.dest('bin'));
+
+	return merge(gpu, gpuCore);
 });
+
 
 /// The browser sync prototyping
 gulp.task('bsync', function(){
