@@ -24,6 +24,7 @@
     "gulp-uglify": "^1.5.2",
     "gulp-util": "^3.0.7",
     "jsdoc": "^3.5.0",
+    "merge-stream": "^1.0.1",
     "qunit-assert-close": "^2.1.2",
     "qunitjs": "^2.3.2",
     "vinyl-buffer": "^1.0.0",
@@ -47,8 +48,5 @@
   "bugs": {
     "url": "https://github.com/gpujs/gpu.js/issues"
   },
-  "homepage": "http://gpu.rocks/",
-  "dependencies": {
-    "merge-stream": "^1.0.1"
-  }
+  "homepage": "http://gpu.rocks/"
 }
