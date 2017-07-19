@@ -1,5 +1,4 @@
 {
   "presets": ["env"],
   "ignore": ["./src/core/parser.js", "./src/jison/**.jison"]
-
 }
