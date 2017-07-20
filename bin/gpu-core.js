@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Wed Jul 19 2017 23:52:26 GMT+0530 (IST)
+ * @date Thu Jul 20 2017 22:09:33 GMT+0530 (IST)
  *
  * @license MIT
  * The MIT License
