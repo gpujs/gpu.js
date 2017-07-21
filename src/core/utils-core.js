@@ -121,19 +121,7 @@ class UtilsCore {
 	 *
 	 */
 	static isWebGl(webGlObj) {
-		return (
-			webGlObj !== null &&
-			(
-				(
-					webGlObj.__proto__ &&
-					webGlObj.__proto__.hasOwnProperty('getExtension')
-				) ||
-				(
-					webGlObj.prototype &&
-					webGlObj.prototype.hasOwnProperty('getExtension')
-				)
-			)
-		);
+		return typeof webGlObj.getExtension === 'function';
 	}
 
 	/**

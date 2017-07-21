@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Fri Jul 21 2017 18:16:59 GMT-0400 (EDT)
+ * @date Fri Jul 21 2017 18:38:12 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -120,7 +120,7 @@ var UtilsCore = function () {
 	}, {
 		key: 'isWebGl',
 		value: function isWebGl(webGlObj) {
-			return webGlObj !== null && (webGlObj.__proto__ && webGlObj.__proto__.hasOwnProperty('getExtension') || webGlObj.prototype && webGlObj.prototype.hasOwnProperty('getExtension'));
+			return typeof webGlObj.getExtension === 'function';
 		}
 
 

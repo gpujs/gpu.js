@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Fri Jul 21 2017 18:17:00 GMT-0400 (EDT)
+ * @date Fri Jul 21 2017 18:38:12 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -2275,7 +2275,7 @@ module.exports = function (_KernelBase) {
 				} else {
 					var bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
 					gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
-					result = Float32Array.prototype.slice.call(new Float32Array(bytes.buffer));
+					result = new Float32Array(bytes.buffer);
 				}
 
 				result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
@@ -3208,7 +3208,7 @@ var UtilsCore = function () {
 	}, {
 		key: 'isWebGl',
 		value: function isWebGl(webGlObj) {
-			return webGlObj !== null && (webGlObj.__proto__ && webGlObj.__proto__.hasOwnProperty('getExtension') || webGlObj.prototype && webGlObj.prototype.hasOwnProperty('getExtension'));
+			return typeof webGlObj.getExtension === 'function';
 		}
 
 
