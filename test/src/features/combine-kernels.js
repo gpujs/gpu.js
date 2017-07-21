@@ -3,7 +3,7 @@ function combineKernels(mode) {
 
 	var kernel1 = gpu.createKernel(function(a, b) {
 		return a[this.thread.x] + b[this.thread.x];
-	}, { dimensions: [5] }).setDebug(true);
+	}, { dimensions: [5] });
 
 	var kernel2 = gpu.createKernel(function(c, d) {
 		return c[this.thread.x] * d[this.thread.x];

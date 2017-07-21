@@ -219,7 +219,7 @@ class GPU extends GPUCore {
 			} else {
 				const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
 				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
-				result = Float32Array.prototype.slice.call(new Float32Array(bytes.buffer));
+				result = new Float32Array(bytes.buffer);
 			}
 
 			result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
