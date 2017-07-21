@@ -1,7 +1,7 @@
 'use strict';
 
 const utils = require('../core/utils');
-const parser = require('../core/parser').parser;
+const acorn = require('acorn');
 
 module.exports = class BaseFunctionNode {
 
@@ -209,18 +209,18 @@ module.exports = class BaseFunctionNode {
 			return this.jsFunctionAST;
 		}
 
-		inParser = inParser || parser;
+		inParser = inParser || acorn;
 		if (inParser === null) {
 			throw 'Missing JS to AST parser';
 		}
 
-		const prasedObj = parser.parse('var ' + this.functionName + ' = ' + this.jsFunctionString + ';');
-		if (prasedObj === null) {
-			throw 'Failed to parse JS code via JISON';
+		const ast = inParser.parse('var ' + this.functionName + ' = ' + this.jsFunctionString + ';');
+		if (ast === null) {
+			throw 'Failed to parse JS code';
 		}
 
 		// take out the function object, outside the var declarations
-		const funcAST = prasedObj.body[0].declarations[0].init;
+		const funcAST = ast.body[0].declarations[0].init;
 		this.jsFunctionAST = funcAST;
 
 		return funcAST;
