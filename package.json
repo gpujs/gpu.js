@@ -8,6 +8,7 @@
     "test": "test"
   },
   "devDependencies": {
+    "acorn": "^5.1.1",
     "babel-plugin-syntax-async-functions": "^6.5.0",
     "babel-preset-env": "^1.5.2",
     "browser-sync": "^2.18.2",
