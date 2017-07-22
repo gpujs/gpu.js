@@ -31,7 +31,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "setup": "npm i -g gulp-cli",
-    "build-docs": "./node_modules/.bin/jsdoc -c jsdoc.json src -r -d doc --debug && gulp injectCSS"  
+    "build-docs": "./node_modules/.bin/jsdoc -c jsdoc.json src -r -d doc --debug && gulp injectCSS"
   },
   "repository": {
     "type": "git",
@@ -46,5 +46,8 @@
   "bugs": {
     "url": "https://github.com/gpujs/gpu.js/issues"
   },
-  "homepage": "http://gpu.rocks/"
+  "homepage": "http://gpu.rocks/",
+  "dependencies": {
+    "nooocl": "^0.12.5"
+  }
 }

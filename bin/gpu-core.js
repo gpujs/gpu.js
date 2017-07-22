@@ -5,14 +5,13 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Tue Jul 18 2017 17:43:25 GMT+0530 (IST)
+ * @date Wed Jul 19 2017 11:17:23 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
  *
  * Copyright (c) 2017 gpu.js Team
- */
-"use strict";
+ */"use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -112,7 +111,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 			}, {
 				key: "isWebGl",
 				value: function isWebGl(webGlObj) {
-					return webGlObj !== null && (webGlObj.__proto__ && webGlObj.__proto__.hasOwnProperty('getExtension') || webGlObj.prototype && webGlObj.prototype.hasOwnProperty('getExtension'));
+					return webGlObj !== null && typeof webGlObj.getExtension === 'function';
 				}
 			}, {
 				key: "isWebGlSupported",

@@ -14,6 +14,12 @@ const WebGLFunctionNode = require('./backend/web-gl/function-node');
 const WebGLKernel = require('./backend/web-gl/kernel');
 const WebGLRunner = require('./backend/web-gl/runner');
 
+
+// const OpenCLFunctionBuilder = require('./backend/open-cl/function-builder');
+// const OpenCLFunctionNode = require('./backend/open-cl/function-node');
+// const OpenCLKernel = require('./backend/open-cl/kernel');
+// const OpenCLRunner = require('./backend/open-cl/runner');
+
 GPU.alias = alias;
 GPU.utils = utils;
 
@@ -26,6 +32,11 @@ GPU.WebGLFunctionBuilder = WebGLFunctionBuilder;
 GPU.WebGLFunctionNode = WebGLFunctionNode;
 GPU.WebGLKernel = WebGLKernel;
 GPU.WebGLRunner = WebGLRunner;
+
+// GPU.OpenCLFunctionBuilder = OpenCLFunctionBuilder;
+// GPU.OpenCLFunctionNode = OpenCLFunctionNode;
+// GPU.OpenCLKernel = OpenCLKernel;
+// GPU.OpenCLRunner = OpenCLRunner;
 
 if (typeof module !== 'undefined') {
 	module.exports = GPU;

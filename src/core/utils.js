@@ -305,8 +305,11 @@ class Utils extends UtilsCore {
 			dimensions: [2],
 			floatTextures: true,
 			floatOutput: true,
-			floatOutputForce: true
+			floatOutputForce: true,
+      debug: true
 		})();
+
+		console.log(x);
 
 		_isFloatReadPixelsSupported = x[0] === 1;
 

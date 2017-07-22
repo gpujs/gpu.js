@@ -3,6 +3,7 @@
 const utils = require('./utils');
 const WebGLRunner = require('../backend/web-gl/runner');
 const CPURunner = require('../backend/cpu/runner');
+//const OpenCLRunner = require('../backend/open-cl/runner');
 const WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
 const GPUCore = require("./gpu-core");
 
@@ -24,10 +25,13 @@ class GPU extends GPUCore {
 		this._canvas = settings.canvas || null;
 		this._webGl = settings.webGl || null;
 		let mode = settings.mode || 'webgl';
-		if (!utils.isWebGlSupported()) {
-			console.warn('Warning: gpu not supported, falling back to cpu support');
-			mode = 'cpu';
-		}
+
+    if (typeof window !== 'undefined') {
+      if (!utils.isWebGlSupported()) {
+        console.warn('Warning: gpu not supported, falling back to cpu support');
+        mode = 'cpu';
+      }
+    }
 
 		this.kernels = [];
 
@@ -42,6 +46,11 @@ class GPU extends GPUCore {
 					this._runner = new CPURunner(runnerSettings);
 					break;
 				case 'gpu':
+          this._runner = typeof window === 'undefined' ? /*new OpenCLRunner(runnerSettings)*/null : new WebGLRunner(runnerSettings);
+          break;
+        // case 'opencl':
+        //   this._runner = new OpenCLRunner(runnerSettings);
+        //   break;
 				case 'webgl':
 					this._runner = new WebGLRunner(runnerSettings);
 					break;
@@ -219,7 +228,7 @@ class GPU extends GPUCore {
 			} else {
 				const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
 				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
-				result = Float32Array.prototype.slice.call(new Float32Array(bytes.buffer));
+				result = new Float32Array(bytes.buffer);
 			}
 
 			result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
