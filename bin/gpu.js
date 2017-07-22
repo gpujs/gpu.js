@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Fri Jul 21 2017 18:43:39 GMT-0400 (EDT)
+ * @date Fri Jul 21 2017 20:11:17 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -2021,7 +2021,7 @@ module.exports = function (_KernelBase) {
 				throw 'Float textures are not supported on this browser';
 			} else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
 				throw 'Float texture outputs are not supported on this browser';
-			} else if (this.floatTextures === undefined && utils.OES_texture_float) {
+			} else if (this.floatTextures === null && utils.OES_texture_float) {
 				this.floatTextures = true;
 				this.floatOutput = isReadPixel && !this.graphical;
 			}

@@ -72,7 +72,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			throw 'Float textures are not supported on this browser';
 		} else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
 			throw 'Float texture outputs are not supported on this browser';
-		} else if (this.floatTextures === undefined && utils.OES_texture_float) {
+		} else if (this.floatTextures === null && utils.OES_texture_float) {
 			//NOTE: handle
 			this.floatTextures = true;
 			this.floatOutput = isReadPixel && !this.graphical;
