@@ -93,7 +93,7 @@ myFunc();
 // Result: [0, 1, 2, 3, ... 99]
 ```
 
-Note: Instead of creating an object, you can use the chainable shortcut methods as a neater way of specificying options.
+Note: Instead of creating an object, you can use the chainable shortcut methods as a neater way of specifying options.
 
 ```js
 const myFunc = gpu.createKernel(function() {
