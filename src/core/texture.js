@@ -32,7 +32,7 @@ module.exports = class Texture {
 	 */
 	toArray(gpu) {
 		if (!gpu) throw new Error('You need to pass the GPU object for toArray to work.');
-		if(this.kernel) return this.kernel(this);
+		if (this.kernel) return this.kernel(this);
 
 		this.kernel = gpu.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];

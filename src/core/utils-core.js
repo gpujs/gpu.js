@@ -121,10 +121,7 @@ class UtilsCore {
 	 *
 	 */
 	static isWebGl(webGlObj) {
-		return (
-			webGlObj !== null &&
-      typeof webGlObj.getExtension === 'function'
-		);
+		return typeof webGlObj.getExtension === 'function';
 	}
 
 	/**

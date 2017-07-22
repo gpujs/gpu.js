@@ -9,8 +9,7 @@ function createPropertyKernels(mode, dimensions, canvas) {
     }
   }, function (a, b, c) {
     return divide(adder(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
-  }).setDimensions(dimensions)
-    .setDebug(mode === 'cpu');
+  }).setDimensions(dimensions);
 }
 
 function createArrayKernels(mode, dimensions, canvas) {

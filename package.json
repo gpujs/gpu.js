@@ -8,10 +8,12 @@
     "test": "test"
   },
   "devDependencies": {
+    "acorn": "^5.1.1",
     "babel-plugin-syntax-async-functions": "^6.5.0",
     "babel-preset-env": "^1.5.2",
     "browser-sync": "^2.18.2",
     "browserify": "^14.3.0",
+    "del": "^3.0.0",
     "docdash": "^0.4.0",
     "gulp": "^3.9.1",
     "gulp-babel": "^6.1.2",
@@ -23,6 +25,7 @@
     "gulp-uglify": "^1.5.2",
     "gulp-util": "^3.0.7",
     "jsdoc": "^3.5.0",
+    "merge-stream": "^1.0.1",
     "qunit-assert-close": "^2.1.2",
     "qunitjs": "^2.3.2",
     "vinyl-buffer": "^1.0.0",

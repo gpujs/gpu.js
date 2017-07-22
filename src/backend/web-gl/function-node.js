@@ -241,8 +241,8 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		retArr.push(') {\n');
 
 		// Body statement iteration
-		for (let i = 0; i < ast.body.length; ++i) {
-			this.astGeneric(ast.body[i], retArr, funcParam);
+		for (let i = 0; i < ast.body.body.length; ++i) {
+			this.astGeneric(ast.body.body[i], retArr, funcParam);
 			retArr.push('\n');
 		}
 
@@ -481,15 +481,15 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 
 				return retArr;
 			} else {
-				retArr.push('for (float ');
+				retArr.push('for (');
 
-				if (!Array.isArray(forNode.init) || forNode.init.length < 1) {
+				if (!Array.isArray(forNode.init.declarations) || forNode.init.declarations.length < 1) {
 					console.log(this.jsFunctionString);
 					throw new Error('Error: Incompatible for loop declaration');
 				}
 
 				this.astGeneric(forNode.init, retArr, funcParam);
-				retArr.push(';');
+				//retArr.push(';');
 				this.astGeneric(forNode.test, retArr, funcParam);
 				retArr.push(';');
 				this.astGeneric(forNode.update, retArr, funcParam);
