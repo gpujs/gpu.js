@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Mon Jul 24 2017 11:49:41 GMT+0800 (+08)
+ * @date Tue Jul 25 2017 15:10:03 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -1487,14 +1487,35 @@ module.exports = function (_FunctionNodeBase) {
 
 					return retArr;
 				} else {
-					retArr.push('for (');
-
-					if (!Array.isArray(forNode.init.declarations) || forNode.init.declarations.length < 1) {
+					var declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
+					var updateArgument = forNode.update.argument;
+					if (!Array.isArray(declarations) || declarations.length < 1) {
 						console.log(this.jsFunctionString);
 						throw new Error('Error: Incompatible for loop declaration');
 					}
 
-					this.astGeneric(forNode.init, retArr, funcParam);
+					if (declarations.length > 1) {
+						var initArgument = null;
+						for (var _i2 = 0; _i2 < declarations.length; _i2++) {
+							var declaration = declarations[_i2];
+							if (declaration.id.name === updateArgument.name) {
+								initArgument = declaration;
+								declarations.splice(_i2, 1);
+							} else {
+								retArr.push('float ');
+								this.astGeneric(declaration, retArr, funcParam);
+								retArr.push(';');
+							}
+						}
+
+						retArr.push('for (float ');
+						this.astGeneric(initArgument, retArr, funcParam);
+						retArr.push(';');
+					} else {
+						retArr.push('for (');
+						this.astGeneric(forNode.init, retArr, funcParam);
+					}
+
 					this.astGeneric(forNode.test, retArr, funcParam);
 					retArr.push(';');
 					this.astGeneric(forNode.update, retArr, funcParam);
@@ -2021,9 +2042,9 @@ module.exports = function (_KernelBase) {
 				throw 'Float textures are not supported on this browser';
 			} else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
 				throw 'Float texture outputs are not supported on this browser';
-			} else if (this.floatTextures === null && utils.OES_texture_float) {
+			} else if (this.floatTextures === null && !isReadPixel) {
 				this.floatTextures = true;
-				this.floatOutput = isReadPixel && !this.graphical;
+				this.floatOutput = !this.graphical;
 			}
 
 			if (!this.dimensions || this.dimensions.length === 0) {
