@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Wed Jul 26 2017 17:38:18 GMT-0400 (EDT)
+ * @date Wed Jul 26 2017 18:06:31 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -2028,7 +2028,6 @@ module.exports = function (_KernelBase) {
 		_this.ext = null;
 		_this.compiledFragShaderString = null;
 		_this.compiledVertShaderString = null;
-		_this.argumentTypes = [];
 		_this.extDrawBuffersMap = null;
 		if (!_this._webGl) _this._webGl = utils.initWebGl(_this.getCanvas());
 		return _this;
@@ -2474,7 +2473,6 @@ module.exports = function (_KernelBase) {
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-						if (this.argumentTypes[this.argumentsLength] === type) break;
 						var _loc2 = this.getUniformLocation('user_' + name);
 						var _locSize = this.getUniformLocation('user_' + name + 'Size');
 						var _dimLoc = this.getUniformLocation('user_' + name + 'Dim');
@@ -2487,7 +2485,6 @@ module.exports = function (_KernelBase) {
 				default:
 					throw 'Input type not supported (WebGL): ' + value;
 			}
-			this.argumentTypes[this.argumentsLength] = type;
 			this.argumentsLength++;
 		}
 
