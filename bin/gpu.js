@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Wed Jul 26 2017 11:47:51 GMT-0400 (EDT)
+ * @date Wed Jul 26 2017 17:16:08 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -2028,6 +2028,7 @@ module.exports = function (_KernelBase) {
 		_this.ext = null;
 		_this.compiledFragShaderString = null;
 		_this.compiledVertShaderString = null;
+		_this.argumentTypes = [];
 		if (!_this._webGl) _this._webGl = utils.initWebGl(_this.getCanvas());
 		return _this;
 	}
@@ -2085,9 +2086,9 @@ module.exports = function (_KernelBase) {
 
 	}, {
 		key: 'build',
-		value: function build() {
+		value: function build(initialArguments) {
 			this.validateOptions();
-			this.setupParams(arguments);
+			this.setupParams(initialArguments);
 			var texSize = this.texSize;
 			var gl = this._webGl;
 			var canvas = this._canvas;
@@ -2122,12 +2123,12 @@ module.exports = function (_KernelBase) {
 
 			if (this.functionBuilder) this._addKernels();
 
-			var compiledVertShaderString = this._getVertShaderString(arguments);
+			var compiledVertShaderString = this._getVertShaderString(initialArguments);
 			var vertShader = gl.createShader(gl.VERTEX_SHADER);
 			gl.shaderSource(vertShader, compiledVertShaderString);
 			gl.compileShader(vertShader);
 
-			var compiledFragShaderString = this._getFragShaderString(arguments);
+			var compiledFragShaderString = this._getFragShaderString(initialArguments);
 			var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 			gl.shaderSource(fragShader, compiledFragShaderString);
 			gl.compileShader(fragShader);
@@ -2157,28 +2158,12 @@ module.exports = function (_KernelBase) {
 			this.framebuffer = gl.createFramebuffer();
 			this.framebuffer.width = texSize[0];
 			this.framebuffer.height = texSize[1];
-			return this;
-		}
 
-
-	}, {
-		key: 'run',
-		value: function run() {
-			if (this.program === null) {
-				this.build.apply(this, arguments);
-			}
-			var paramNames = this.paramNames;
-			var paramTypes = this.paramTypes;
-			var texSize = this.texSize;
-			var threadDim = this.threadDim;
-			var framebuffer = this.framebuffer;
 			var vertices = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
 			var texCoords = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
-			var gl = this._webGl;
-			gl.useProgram(this.program);
-			gl.scissor(0, 0, texSize[0], texSize[1]);
 
 			var texCoordOffset = vertices.byteLength;
+
 			var buffer = this.buffer;
 			if (!buffer) {
 				buffer = this.buffer = gl.createBuffer();
@@ -2187,6 +2172,7 @@ module.exports = function (_KernelBase) {
 			} else {
 				gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 			}
+
 			gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices);
 			gl.bufferSubData(gl.ARRAY_BUFFER, texCoordOffset, texCoords);
 
@@ -2197,21 +2183,9 @@ module.exports = function (_KernelBase) {
 			gl.enableVertexAttribArray(aTexCoordLoc);
 			gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 
-			if (!this.hardcodeConstants) {
-				var uOutputDimLoc = this.getUniformLocation('uOutputDim');
-				gl.uniform3fv(uOutputDimLoc, threadDim);
-				var uTexSizeLoc = this.getUniformLocation('uTexSize');
-				gl.uniform2fv(uTexSizeLoc, texSize);
-			}
-
-			this.argumentsLength = 0;
-			for (var texIndex = 0; texIndex < paramNames.length; texIndex++) {
-				this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
-			}
-
-			var outputTexture = this.getOutputTexture();
-			gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
-			gl.bindTexture(gl.TEXTURE_2D, outputTexture);
+			this.outputTexture = this.getOutputTexture();
+			gl.activeTexture(gl.TEXTURE0 + initialArguments.length);
+			gl.bindTexture(gl.TEXTURE_2D, this.outputTexture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -2222,6 +2196,37 @@ module.exports = function (_KernelBase) {
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 			}
 
+			return this;
+		}
+
+
+	}, {
+		key: 'run',
+		value: function run() {
+			if (this.program === null) {
+				this.build(arguments);
+			}
+			var paramNames = this.paramNames;
+			var paramTypes = this.paramTypes;
+			var texSize = this.texSize;
+			var gl = this._webGl;
+			var outputTexture = this.outputTexture;
+
+			gl.useProgram(this.program);
+			gl.scissor(0, 0, texSize[0], texSize[1]);
+
+			if (!this.hardcodeConstants) {
+				var uOutputDimLoc = this.getUniformLocation('uOutputDim');
+				gl.uniform3fv(uOutputDimLoc, this.threadDim);
+				var uTexSizeLoc = this.getUniformLocation('uTexSize');
+				gl.uniform2fv(uTexSizeLoc, texSize);
+			}
+
+			this.argumentsLength = 0;
+			for (var texIndex = 0; texIndex < paramNames.length; texIndex++) {
+				this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
+			}
+
 			if (this.graphical) {
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -2229,7 +2234,7 @@ module.exports = function (_KernelBase) {
 				return;
 			}
 
-			gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
 			if (this.subKernelOutputTextures !== null) {
@@ -2401,7 +2406,7 @@ module.exports = function (_KernelBase) {
 		value: function _addArgument(value, type, name) {
 			var gl = this._webGl;
 			var argumentTexture = this.getArgumentTexture(name);
-			if (value.constructor === Texture) {
+			if (value instanceof Texture) {
 				type = 'Texture';
 			}
 			switch (type) {
@@ -2412,7 +2417,6 @@ module.exports = function (_KernelBase) {
 							floatTextures: this.floatTextures,
 							floatOutput: this.floatOutput
 						}, dim);
-
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -2463,6 +2467,7 @@ module.exports = function (_KernelBase) {
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
+						if (this.argumentTypes[this.argumentsLength] === type) break;
 						var _loc2 = this.getUniformLocation('user_' + name);
 						var _locSize = this.getUniformLocation('user_' + name + 'Size');
 						var _dimLoc = this.getUniformLocation('user_' + name + 'Dim');
@@ -2475,6 +2480,7 @@ module.exports = function (_KernelBase) {
 				default:
 					throw 'Input type not supported (WebGL): ' + value;
 			}
+			this.argumentTypes[this.argumentsLength] = type;
 			this.argumentsLength++;
 		}
 

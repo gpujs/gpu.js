@@ -7,7 +7,7 @@ function typedArrayTest(mode) {
       sum += i;
     }
     return sum;
-  }).setDimensions([1, 1]).setDebug(true);
+  }).setDimensions([1, 1]);
 
   var result = kernel();
   QUnit.assert.equal(result.length, 1);
