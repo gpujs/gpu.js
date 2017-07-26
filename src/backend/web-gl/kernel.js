@@ -72,10 +72,10 @@ module.exports = class WebGLKernel extends KernelBase {
 			throw 'Float textures are not supported on this browser';
 		} else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
 			throw 'Float texture outputs are not supported on this browser';
-		} else if (this.floatTextures === null && !isReadPixel) {
+		} else if (this.floatTextures === null && !isReadPixel && !this.graphical) {
 			//NOTE: handle
 			this.floatTextures = true;
-			this.floatOutput = !this.graphical;
+			this.floatOutput = false;
 		}
 
 		if (!this.dimensions || this.dimensions.length === 0) {
@@ -151,6 +151,8 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		gl.enable(gl.SCISSOR_TEST);
 		gl.viewport(0, 0, maxTexSize[0], maxTexSize[1]);
+		canvas.width = maxTexSize[0];
+		canvas.height = maxTexSize[1];
 		const threadDim = this.threadDim = utils.clone(this.dimensions);
 		while (threadDim.length < 3) {
 			threadDim.push(1);

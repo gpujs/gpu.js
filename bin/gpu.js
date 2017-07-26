@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Tue Jul 25 2017 15:10:03 GMT-0400 (EDT)
+ * @date Wed Jul 26 2017 11:47:51 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -2042,9 +2042,9 @@ module.exports = function (_KernelBase) {
 				throw 'Float textures are not supported on this browser';
 			} else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
 				throw 'Float texture outputs are not supported on this browser';
-			} else if (this.floatTextures === null && !isReadPixel) {
+			} else if (this.floatTextures === null && !isReadPixel && !this.graphical) {
 				this.floatTextures = true;
-				this.floatOutput = !this.graphical;
+				this.floatOutput = false;
 			}
 
 			if (!this.dimensions || this.dimensions.length === 0) {
@@ -2113,6 +2113,8 @@ module.exports = function (_KernelBase) {
 
 			gl.enable(gl.SCISSOR_TEST);
 			gl.viewport(0, 0, maxTexSize[0], maxTexSize[1]);
+			canvas.width = maxTexSize[0];
+			canvas.height = maxTexSize[1];
 			var threadDim = this.threadDim = utils.clone(this.dimensions);
 			while (threadDim.length < 3) {
 				threadDim.push(1);
@@ -3600,7 +3602,7 @@ var Utils = function (_UtilsCore) {
 		value: function splitArray(array, part) {
 			var result = [];
 			for (var i = 0; i < array.length; i += part) {
-				result.push(array.slice(i, i + part));
+				result.push(Array.prototype.slice.call(array, i, i + part));
 			}
 			return result;
 		}

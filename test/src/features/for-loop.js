@@ -54,10 +54,9 @@ QUnit.test( "for_loop (CPU)", function() {
 
 	var evil_while_a = [1, 2, 3, 5, 6, 7];
 	var evil_while_b = [4, 5, 6, 1, 2, 3];
-	var evil_while_cpuRef = new GPU();
+	var evil_while_cpuRef = new GPU({ mode: 'cpu' });
 	var evil_while_cpuRef_f =  evil_while_cpuRef.createKernel(evil_while_kernalFunction, {
 		dimensions : [6],
-		mode : "cpu",
 		loopMaxIterations: 10000
 	});
 

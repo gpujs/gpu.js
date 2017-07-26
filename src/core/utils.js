@@ -480,7 +480,7 @@ class Utils extends UtilsCore {
 	static splitArray(array, part) {
 		const result = [];
 		for (let i = 0; i < array.length; i += part) {
-			result.push(array.slice(i, i + part));
+			result.push(Array.prototype.slice.call(array, i, i + part));
 		}
 		return result;
 	}

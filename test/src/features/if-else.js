@@ -15,7 +15,7 @@ function booleanBranch(mode) {
 	});
 
 	QUnit.assert.ok( f !== null, "function generated test");
-	QUnit.assert.close(f(), 4, 0.01, "basic return function test");
+	QUnit.assert.close(f()[0], 4, 0.01, "basic return function test");
 }
 
 QUnit.test( "booleanBranch (auto)", function() {

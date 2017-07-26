@@ -8,7 +8,7 @@ function promiseApi_function_return( assert, mode ) {
 	var paramObj = {
 		dimensions : [1],
 		mode : mode
-	}
+	};
 	
 	// Start of async test
 	var done = assert.async();
@@ -16,12 +16,11 @@ function promiseApi_function_return( assert, mode ) {
 	
 	// Setup kernel
 	var kernel = gpu.createKernel(kernelFn, paramObj);
-	
 	// Get promise objet
 	promiseObj = kernel.execute();
 	assert.ok( promiseObj !== null, "Promise object generated test");
 	promiseObj.then(function(res) {
-		assert.equal( res, 42.0 );
+		assert.equal( res[0], 42.0 );
 		done();
 	}, function(err) {
 		throw err;
