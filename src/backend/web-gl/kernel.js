@@ -54,6 +54,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.compiledFragShaderString = null;
 		this.compiledVertShaderString = null;
 		this.argumentTypes = [];
+    this.extDrawBuffersMap = null;
 		if (!this._webGl) this._webGl = utils.initWebGl(this.getCanvas());
 	}
 
@@ -242,6 +243,25 @@ module.exports = class WebGLKernel extends KernelBase {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     }
 
+    if (this.subKernelOutputTextures !== null) {
+      const extDrawBuffersMap = this.extDrawBuffersMap = [gl.COLOR_ATTACHMENT0];
+      for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
+        const subKernelOutputTexture = this.subKernelOutputTextures[i];
+        extDrawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
+        gl.activeTexture(gl.TEXTURE0 + initialArguments.length + i);
+        gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        if (this.floatOutput) {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+        } else {
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        }
+      }
+    }
+
     return this;
 	}
 
@@ -293,26 +313,13 @@ module.exports = class WebGLKernel extends KernelBase {
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
-		if (this.subKernelOutputTextures !== null) {
-			const extDrawBuffers = [gl.COLOR_ATTACHMENT0];
-			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
-				const subKernelOutputTexture = this.subKernelOutputTextures[i];
-				extDrawBuffers.push(gl.COLOR_ATTACHMENT0 + i + 1);
-				gl.activeTexture(gl.TEXTURE0 + paramNames.length + i);
-				gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-				if (this.floatOutput) {
-					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-				} else {
-					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-				}
-				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, subKernelOutputTexture, 0);
-			}
-			this.ext.drawBuffersWEBGL(extDrawBuffers);
-		}
+    if (this.subKernelOutputTextures !== null) {
+      for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
+        const subKernelOutputTexture = this.subKernelOutputTextures[i];
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, subKernelOutputTexture, 0);
+      }
+      this.ext.drawBuffersWEBGL(this.extDrawBuffersMap);
+    }
 
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
