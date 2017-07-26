@@ -96,9 +96,8 @@ gulp.task('default', ['minify','bsync']);
 
 /// Beautify source code
 /// Use before merge request
-/// Excludes the parser.js that was jison generated
 gulp.task('beautify', function() {
-	gulp.src(['src/**/*.js', '!src/parser.js'])
+	gulp.src(['src/**/*.js'])
 		.pipe(jsprettify({
 			indent_size: 3,
 			indent_char: ' ',
