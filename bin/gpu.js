@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Wed Jul 26 2017 18:06:31 GMT-0400 (EDT)
+ * @date Wed Jul 26 2017 22:22:13 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -2086,9 +2086,9 @@ module.exports = function (_KernelBase) {
 
 	}, {
 		key: 'build',
-		value: function build(initialArguments) {
+		value: function build() {
 			this.validateOptions();
-			this.setupParams(initialArguments);
+			this.setupParams(arguments);
 			var texSize = this.texSize;
 			var gl = this._webGl;
 			var canvas = this._canvas;
@@ -2123,12 +2123,12 @@ module.exports = function (_KernelBase) {
 
 			if (this.functionBuilder) this._addKernels();
 
-			var compiledVertShaderString = this._getVertShaderString(initialArguments);
+			var compiledVertShaderString = this._getVertShaderString(arguments);
 			var vertShader = gl.createShader(gl.VERTEX_SHADER);
 			gl.shaderSource(vertShader, compiledVertShaderString);
 			gl.compileShader(vertShader);
 
-			var compiledFragShaderString = this._getFragShaderString(initialArguments);
+			var compiledFragShaderString = this._getFragShaderString(arguments);
 			var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 			gl.shaderSource(fragShader, compiledFragShaderString);
 			gl.compileShader(fragShader);
@@ -2184,7 +2184,7 @@ module.exports = function (_KernelBase) {
 			gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 
 			this.outputTexture = this.getOutputTexture();
-			gl.activeTexture(gl.TEXTURE0 + initialArguments.length);
+			gl.activeTexture(gl.TEXTURE0 + arguments.length);
 			gl.bindTexture(gl.TEXTURE_2D, this.outputTexture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -2201,7 +2201,7 @@ module.exports = function (_KernelBase) {
 				for (var _i = 0; _i < this.subKernelOutputTextures.length; _i++) {
 					var subKernelOutputTexture = this.subKernelOutputTextures[_i];
 					extDrawBuffersMap.push(gl.COLOR_ATTACHMENT0 + _i + 1);
-					gl.activeTexture(gl.TEXTURE0 + initialArguments.length + _i);
+					gl.activeTexture(gl.TEXTURE0 + arguments.length + _i);
 					gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -2223,7 +2223,7 @@ module.exports = function (_KernelBase) {
 		key: 'run',
 		value: function run() {
 			if (this.program === null) {
-				this.build(arguments);
+				this.build.apply(this, arguments);
 			}
 			var paramNames = this.paramNames;
 			var paramTypes = this.paramTypes;

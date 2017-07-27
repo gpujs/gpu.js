@@ -481,34 +481,34 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 
 				return retArr;
 			} else {
-			  const declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
-			  const updateArgument = forNode.update.argument;
-        if (!Array.isArray(declarations) || declarations.length < 1) {
-          console.log(this.jsFunctionString);
-          throw new Error('Error: Incompatible for loop declaration');
-        }
+				const declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
+				const updateArgument = forNode.update.argument;
+				if (!Array.isArray(declarations) || declarations.length < 1) {
+					console.log(this.jsFunctionString);
+					throw new Error('Error: Incompatible for loop declaration');
+				}
 
-        if (declarations.length > 1) {
-          let initArgument = null;
-          for (let i = 0; i < declarations.length; i++) {
-            const declaration = declarations[i];
-            if (declaration.id.name === updateArgument.name) {
-              initArgument = declaration;
-              declarations.splice(i, 1);
-            } else {
-              retArr.push('float ');
-              this.astGeneric(declaration, retArr, funcParam);
-              retArr.push(';');
-            }
-          }
+				if (declarations.length > 1) {
+					let initArgument = null;
+					for (let i = 0; i < declarations.length; i++) {
+						const declaration = declarations[i];
+						if (declaration.id.name === updateArgument.name) {
+							initArgument = declaration;
+							declarations.splice(i, 1);
+						} else {
+							retArr.push('float ');
+							this.astGeneric(declaration, retArr, funcParam);
+							retArr.push(';');
+						}
+					}
 
-          retArr.push('for (float ');
-          this.astGeneric(initArgument, retArr, funcParam);
-          retArr.push(';');
-        } else {
-          retArr.push('for (');
-          this.astGeneric(forNode.init, retArr, funcParam);
-        }
+					retArr.push('for (float ');
+					this.astGeneric(initArgument, retArr, funcParam);
+					retArr.push(';');
+				} else {
+					retArr.push('for (');
+					this.astGeneric(forNode.init, retArr, funcParam);
+				}
 
 				this.astGeneric(forNode.test, retArr, funcParam);
 				retArr.push(';');

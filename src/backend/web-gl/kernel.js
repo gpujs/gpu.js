@@ -124,9 +124,9 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *
 	 */
 
-	build(initialArguments) {
+	build() {
 		this.validateOptions();
-		this.setupParams(initialArguments);
+		this.setupParams(arguments);
 		const texSize = this.texSize;
 		const gl = this._webGl;
 		const canvas = this._canvas;
@@ -161,12 +161,12 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		if (this.functionBuilder) this._addKernels();
 
-		const compiledVertShaderString = this._getVertShaderString(initialArguments);
+		const compiledVertShaderString = this._getVertShaderString(arguments);
 		const vertShader = gl.createShader(gl.VERTEX_SHADER);
 		gl.shaderSource(vertShader, compiledVertShaderString);
 		gl.compileShader(vertShader);
 
-		const compiledFragShaderString = this._getFragShaderString(initialArguments);
+		const compiledFragShaderString = this._getFragShaderString(arguments);
 		const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 		gl.shaderSource(fragShader, compiledFragShaderString);
 		gl.compileShader(fragShader);
@@ -230,7 +230,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 
 		this.outputTexture = this.getOutputTexture();
-		gl.activeTexture(gl.TEXTURE0 + initialArguments.length);
+		gl.activeTexture(gl.TEXTURE0 + arguments.length);
 		gl.bindTexture(gl.TEXTURE_2D, this.outputTexture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -247,7 +247,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
 				const subKernelOutputTexture = this.subKernelOutputTextures[i];
 				extDrawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
-				gl.activeTexture(gl.TEXTURE0 + initialArguments.length + i);
+				gl.activeTexture(gl.TEXTURE0 + arguments.length + i);
 				gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -279,7 +279,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	 */
 	run() {
 		if (this.program === null) {
-			this.build(arguments);
+			this.build.apply(this, arguments);
 		}
 		const paramNames = this.paramNames;
 		const paramTypes = this.paramTypes;
