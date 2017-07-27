@@ -54,6 +54,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.compiledFragShaderString = null;
 		this.compiledVertShaderString = null;
 		this.extDrawBuffersMap = null;
+		this.outputTexture = null;
 		if (!this._webGl) this._webGl = utils.initWebGl(this.getCanvas());
 	}
 
@@ -229,13 +230,8 @@ module.exports = class WebGLKernel extends KernelBase {
 		gl.enableVertexAttribArray(aTexCoordLoc);
 		gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 
-		this.outputTexture = this.getOutputTexture();
-		gl.activeTexture(gl.TEXTURE0 + arguments.length);
-		gl.bindTexture(gl.TEXTURE_2D, this.outputTexture);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		this.setupOutputTexture();
+
 		if (this.floatOutput) {
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
 		} else {
@@ -260,8 +256,6 @@ module.exports = class WebGLKernel extends KernelBase {
 				}
 			}
 		}
-
-		return this;
 	}
 
 	/**
@@ -285,7 +279,6 @@ module.exports = class WebGLKernel extends KernelBase {
 		const paramTypes = this.paramTypes;
 		const texSize = this.texSize;
 		const gl = this._webGl;
-		const outputTexture = this.outputTexture;
 
 		gl.useProgram(this.program);
 		gl.scissor(0, 0, texSize[0], texSize[1]);
@@ -310,6 +303,8 @@ module.exports = class WebGLKernel extends KernelBase {
 		}
 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+		//the call to this._addArgument may rewrite the outputTexture, keep this here
+		const outputTexture = this.outputTexture;
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
 		if (this.subKernelOutputTextures !== null) {
@@ -415,6 +410,38 @@ module.exports = class WebGLKernel extends KernelBase {
 	/**
 	 * @memberOf WebGLKernel#
 	 * @function
+	 * @name detachOutputTexture
+	 *
+	 * @desc Detaches output texture
+	 *
+	 *
+	 */
+	detachOutputTexture() {
+		this.detachTextureCache('OUTPUT');
+	}
+
+	/**
+	 * @memberOf WebGLKernel#
+	 * @function
+	 * @name setupOutputTexture
+	 *
+	 * @desc Detaches a texture from cache if exists, and sets up output texture
+	 */
+	setupOutputTexture() {
+		const gl = this._webGl;
+		this.detachOutputTexture();
+		this.outputTexture = this.getOutputTexture();
+		gl.activeTexture(gl.TEXTURE0 + this.paramNames.length);
+		gl.bindTexture(gl.TEXTURE_2D, this.outputTexture);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+	}
+
+	/**
+	 * @memberOf WebGLKernel#
+	 * @function
 	 * @name getArgumentTexture
 	 *
 	 * @desc This uses *getTextureCache** to get the Texture Cache of the argument supplied
@@ -465,6 +492,17 @@ module.exports = class WebGLKernel extends KernelBase {
 			return this.textureCache[name];
 		}
 		return this.textureCache[name] = this._webGl.createTexture();
+	}
+
+	/**
+	 * @memberOf WebGLKernel#
+	 * @name detachTextureCache
+	 * @function
+	 * @desc removes a texture from the kernel's cache
+	 * @param {String} name - Name of texture
+	 */
+	detachTextureCache(name) {
+		delete this.textureCache[name];
 	}
 
 	/**
@@ -610,6 +648,10 @@ module.exports = class WebGLKernel extends KernelBase {
 					const inputTexture = value;
 					const dim = utils.getDimensions(inputTexture.dimensions, true);
 					const size = inputTexture.size;
+
+					if (inputTexture.texture === this.outputTexture) {
+						this.setupOutputTexture();
+					}
 
 					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);

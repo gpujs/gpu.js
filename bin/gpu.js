@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Wed Jul 26 2017 22:22:13 GMT-0400 (EDT)
+ * @date Thu Jul 27 2017 10:40:09 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -2029,6 +2029,7 @@ module.exports = function (_KernelBase) {
 		_this.compiledFragShaderString = null;
 		_this.compiledVertShaderString = null;
 		_this.extDrawBuffersMap = null;
+		_this.outputTexture = null;
 		if (!_this._webGl) _this._webGl = utils.initWebGl(_this.getCanvas());
 		return _this;
 	}
@@ -2183,13 +2184,8 @@ module.exports = function (_KernelBase) {
 			gl.enableVertexAttribArray(aTexCoordLoc);
 			gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 
-			this.outputTexture = this.getOutputTexture();
-			gl.activeTexture(gl.TEXTURE0 + arguments.length);
-			gl.bindTexture(gl.TEXTURE_2D, this.outputTexture);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+			this.setupOutputTexture();
+
 			if (this.floatOutput) {
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
 			} else {
@@ -2214,8 +2210,6 @@ module.exports = function (_KernelBase) {
 					}
 				}
 			}
-
-			return this;
 		}
 
 
@@ -2229,7 +2223,6 @@ module.exports = function (_KernelBase) {
 			var paramTypes = this.paramTypes;
 			var texSize = this.texSize;
 			var gl = this._webGl;
-			var outputTexture = this.outputTexture;
 
 			gl.useProgram(this.program);
 			gl.scissor(0, 0, texSize[0], texSize[1]);
@@ -2254,6 +2247,7 @@ module.exports = function (_KernelBase) {
 			}
 
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+			var outputTexture = this.outputTexture;
 			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
 			if (this.subKernelOutputTextures !== null) {
@@ -2336,6 +2330,28 @@ module.exports = function (_KernelBase) {
 
 
 	}, {
+		key: 'detachOutputTexture',
+		value: function detachOutputTexture() {
+			this.detachTextureCache('OUTPUT');
+		}
+
+
+	}, {
+		key: 'setupOutputTexture',
+		value: function setupOutputTexture() {
+			var gl = this._webGl;
+			this.detachOutputTexture();
+			this.outputTexture = this.getOutputTexture();
+			gl.activeTexture(gl.TEXTURE0 + this.paramNames.length);
+			gl.bindTexture(gl.TEXTURE_2D, this.outputTexture);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		}
+
+
+	}, {
 		key: 'getArgumentTexture',
 		value: function getArgumentTexture(name) {
 			return this.getTextureCache('ARGUMENT_' + name);
@@ -2359,6 +2375,13 @@ module.exports = function (_KernelBase) {
 				return this.textureCache[name];
 			}
 			return this.textureCache[name] = this._webGl.createTexture();
+		}
+
+
+	}, {
+		key: 'detachTextureCache',
+		value: function detachTextureCache(name) {
+			delete this.textureCache[name];
 		}
 
 
@@ -2469,6 +2492,10 @@ module.exports = function (_KernelBase) {
 						var inputTexture = value;
 						var _dim = utils.getDimensions(inputTexture.dimensions, true);
 						var _size = inputTexture.size;
+
+						if (inputTexture.texture === this.outputTexture) {
+							this.setupOutputTexture();
+						}
 
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
