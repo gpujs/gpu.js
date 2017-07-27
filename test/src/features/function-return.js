@@ -6,7 +6,7 @@ function function_return( mode ) {
 		dimensions : [1]
 	});
 	QUnit.assert.ok( f !== null, "function generated test");
-	QUnit.assert.close(f(), 42.0, 0.01, "basic return function test");
+	QUnit.assert.close(f()[0], 42.0, 0.01, "basic return function test");
 }
 
 QUnit.test( "function_return (auto)", function() {

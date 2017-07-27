@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Fri Jul 21 2017 20:11:17 GMT-0400 (EDT)
+ * @date Thu Jul 27 2017 10:40:09 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -1487,14 +1487,35 @@ module.exports = function (_FunctionNodeBase) {
 
 					return retArr;
 				} else {
-					retArr.push('for (');
-
-					if (!Array.isArray(forNode.init.declarations) || forNode.init.declarations.length < 1) {
+					var declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
+					var updateArgument = forNode.update.argument;
+					if (!Array.isArray(declarations) || declarations.length < 1) {
 						console.log(this.jsFunctionString);
 						throw new Error('Error: Incompatible for loop declaration');
 					}
 
-					this.astGeneric(forNode.init, retArr, funcParam);
+					if (declarations.length > 1) {
+						var initArgument = null;
+						for (var _i2 = 0; _i2 < declarations.length; _i2++) {
+							var declaration = declarations[_i2];
+							if (declaration.id.name === updateArgument.name) {
+								initArgument = declaration;
+								declarations.splice(_i2, 1);
+							} else {
+								retArr.push('float ');
+								this.astGeneric(declaration, retArr, funcParam);
+								retArr.push(';');
+							}
+						}
+
+						retArr.push('for (float ');
+						this.astGeneric(initArgument, retArr, funcParam);
+						retArr.push(';');
+					} else {
+						retArr.push('for (');
+						this.astGeneric(forNode.init, retArr, funcParam);
+					}
+
 					this.astGeneric(forNode.test, retArr, funcParam);
 					retArr.push(';');
 					this.astGeneric(forNode.update, retArr, funcParam);
@@ -2007,6 +2028,8 @@ module.exports = function (_KernelBase) {
 		_this.ext = null;
 		_this.compiledFragShaderString = null;
 		_this.compiledVertShaderString = null;
+		_this.extDrawBuffersMap = null;
+		_this.outputTexture = null;
 		if (!_this._webGl) _this._webGl = utils.initWebGl(_this.getCanvas());
 		return _this;
 	}
@@ -2021,9 +2044,9 @@ module.exports = function (_KernelBase) {
 				throw 'Float textures are not supported on this browser';
 			} else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
 				throw 'Float texture outputs are not supported on this browser';
-			} else if (this.floatTextures === null && utils.OES_texture_float) {
+			} else if (this.floatTextures === null && !isReadPixel && !this.graphical) {
 				this.floatTextures = true;
-				this.floatOutput = isReadPixel && !this.graphical;
+				this.floatOutput = false;
 			}
 
 			if (!this.dimensions || this.dimensions.length === 0) {
@@ -2092,6 +2115,8 @@ module.exports = function (_KernelBase) {
 
 			gl.enable(gl.SCISSOR_TEST);
 			gl.viewport(0, 0, maxTexSize[0], maxTexSize[1]);
+			canvas.width = maxTexSize[0];
+			canvas.height = maxTexSize[1];
 			var threadDim = this.threadDim = utils.clone(this.dimensions);
 			while (threadDim.length < 3) {
 				threadDim.push(1);
@@ -2134,7 +2159,57 @@ module.exports = function (_KernelBase) {
 			this.framebuffer = gl.createFramebuffer();
 			this.framebuffer.width = texSize[0];
 			this.framebuffer.height = texSize[1];
-			return this;
+
+			var vertices = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
+			var texCoords = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
+
+			var texCoordOffset = vertices.byteLength;
+
+			var buffer = this.buffer;
+			if (!buffer) {
+				buffer = this.buffer = gl.createBuffer();
+				gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+				gl.bufferData(gl.ARRAY_BUFFER, vertices.byteLength + texCoords.byteLength, gl.STATIC_DRAW);
+			} else {
+				gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+			}
+
+			gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices);
+			gl.bufferSubData(gl.ARRAY_BUFFER, texCoordOffset, texCoords);
+
+			var aPosLoc = gl.getAttribLocation(this.program, 'aPos');
+			gl.enableVertexAttribArray(aPosLoc);
+			gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, gl.FALSE, 0, 0);
+			var aTexCoordLoc = gl.getAttribLocation(this.program, 'aTexCoord');
+			gl.enableVertexAttribArray(aTexCoordLoc);
+			gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
+
+			this.setupOutputTexture();
+
+			if (this.floatOutput) {
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+			} else {
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+			}
+
+			if (this.subKernelOutputTextures !== null) {
+				var extDrawBuffersMap = this.extDrawBuffersMap = [gl.COLOR_ATTACHMENT0];
+				for (var _i = 0; _i < this.subKernelOutputTextures.length; _i++) {
+					var subKernelOutputTexture = this.subKernelOutputTextures[_i];
+					extDrawBuffersMap.push(gl.COLOR_ATTACHMENT0 + _i + 1);
+					gl.activeTexture(gl.TEXTURE0 + arguments.length + _i);
+					gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+					if (this.floatOutput) {
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+					} else {
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+					}
+				}
+			}
 		}
 
 
@@ -2147,36 +2222,14 @@ module.exports = function (_KernelBase) {
 			var paramNames = this.paramNames;
 			var paramTypes = this.paramTypes;
 			var texSize = this.texSize;
-			var threadDim = this.threadDim;
-			var framebuffer = this.framebuffer;
-			var vertices = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
-			var texCoords = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
 			var gl = this._webGl;
+
 			gl.useProgram(this.program);
 			gl.scissor(0, 0, texSize[0], texSize[1]);
 
-			var texCoordOffset = vertices.byteLength;
-			var buffer = this.buffer;
-			if (!buffer) {
-				buffer = this.buffer = gl.createBuffer();
-				gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-				gl.bufferData(gl.ARRAY_BUFFER, vertices.byteLength + texCoords.byteLength, gl.STATIC_DRAW);
-			} else {
-				gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-			}
-			gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices);
-			gl.bufferSubData(gl.ARRAY_BUFFER, texCoordOffset, texCoords);
-
-			var aPosLoc = gl.getAttribLocation(this.program, 'aPos');
-			gl.enableVertexAttribArray(aPosLoc);
-			gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, gl.FALSE, 0, 0);
-			var aTexCoordLoc = gl.getAttribLocation(this.program, 'aTexCoord');
-			gl.enableVertexAttribArray(aTexCoordLoc);
-			gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
-
 			if (!this.hardcodeConstants) {
 				var uOutputDimLoc = this.getUniformLocation('uOutputDim');
-				gl.uniform3fv(uOutputDimLoc, threadDim);
+				gl.uniform3fv(uOutputDimLoc, this.threadDim);
 				var uTexSizeLoc = this.getUniformLocation('uTexSize');
 				gl.uniform2fv(uTexSizeLoc, texSize);
 			}
@@ -2186,19 +2239,6 @@ module.exports = function (_KernelBase) {
 				this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
 			}
 
-			var outputTexture = this.getOutputTexture();
-			gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
-			gl.bindTexture(gl.TEXTURE_2D, outputTexture);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-			if (this.floatOutput) {
-				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-			} else {
-				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-			}
-
 			if (this.graphical) {
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -2206,28 +2246,16 @@ module.exports = function (_KernelBase) {
 				return;
 			}
 
-			gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+			var outputTexture = this.outputTexture;
 			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
 			if (this.subKernelOutputTextures !== null) {
-				var extDrawBuffers = [gl.COLOR_ATTACHMENT0];
 				for (var i = 0; i < this.subKernelOutputTextures.length; i++) {
 					var subKernelOutputTexture = this.subKernelOutputTextures[i];
-					extDrawBuffers.push(gl.COLOR_ATTACHMENT0 + i + 1);
-					gl.activeTexture(gl.TEXTURE0 + paramNames.length + i);
-					gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-					if (this.floatOutput) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-					} else {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-					}
 					gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, subKernelOutputTexture, 0);
 				}
-				this.ext.drawBuffersWEBGL(extDrawBuffers);
+				this.ext.drawBuffersWEBGL(this.extDrawBuffersMap);
 			}
 
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -2236,19 +2264,19 @@ module.exports = function (_KernelBase) {
 				if (this.subKernels !== null) {
 					var output = [];
 					output.result = this.renderOutput(outputTexture);
-					for (var _i = 0; _i < this.subKernels.length; _i++) {
-						output.push(new Texture(this.subKernelOutputTextures[_i], texSize, this.dimensions, this._webGl));
+					for (var _i2 = 0; _i2 < this.subKernels.length; _i2++) {
+						output.push(new Texture(this.subKernelOutputTextures[_i2], texSize, this.dimensions, this._webGl));
 					}
 					return output;
 				} else if (this.subKernelProperties !== null) {
 					var _output = {
 						result: this.renderOutput(outputTexture)
 					};
-					var _i2 = 0;
+					var _i3 = 0;
 					for (var p in this.subKernelProperties) {
 						if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-						_output[p] = new Texture(this.subKernelOutputTextures[_i2], texSize, this.dimensions, this._webGl);
-						_i2++;
+						_output[p] = new Texture(this.subKernelOutputTextures[_i3], texSize, this.dimensions, this._webGl);
+						_i3++;
 					}
 					return _output;
 				}
@@ -2302,6 +2330,28 @@ module.exports = function (_KernelBase) {
 
 
 	}, {
+		key: 'detachOutputTexture',
+		value: function detachOutputTexture() {
+			this.detachTextureCache('OUTPUT');
+		}
+
+
+	}, {
+		key: 'setupOutputTexture',
+		value: function setupOutputTexture() {
+			var gl = this._webGl;
+			this.detachOutputTexture();
+			this.outputTexture = this.getOutputTexture();
+			gl.activeTexture(gl.TEXTURE0 + this.paramNames.length);
+			gl.bindTexture(gl.TEXTURE_2D, this.outputTexture);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		}
+
+
+	}, {
 		key: 'getArgumentTexture',
 		value: function getArgumentTexture(name) {
 			return this.getTextureCache('ARGUMENT_' + name);
@@ -2325,6 +2375,13 @@ module.exports = function (_KernelBase) {
 				return this.textureCache[name];
 			}
 			return this.textureCache[name] = this._webGl.createTexture();
+		}
+
+
+	}, {
+		key: 'detachTextureCache',
+		value: function detachTextureCache(name) {
+			delete this.textureCache[name];
 		}
 
 
@@ -2378,7 +2435,7 @@ module.exports = function (_KernelBase) {
 		value: function _addArgument(value, type, name) {
 			var gl = this._webGl;
 			var argumentTexture = this.getArgumentTexture(name);
-			if (value.constructor === Texture) {
+			if (value instanceof Texture) {
 				type = 'Texture';
 			}
 			switch (type) {
@@ -2389,7 +2446,6 @@ module.exports = function (_KernelBase) {
 							floatTextures: this.floatTextures,
 							floatOutput: this.floatOutput
 						}, dim);
-
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -2436,6 +2492,10 @@ module.exports = function (_KernelBase) {
 						var inputTexture = value;
 						var _dim = utils.getDimensions(inputTexture.dimensions, true);
 						var _size = inputTexture.size;
+
+						if (inputTexture.texture === this.outputTexture) {
+							this.setupOutputTexture();
+						}
 
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
@@ -2703,7 +2763,7 @@ module.exports = function (_KernelBase) {
 				if (!_ext) throw new Error('could not instantiate draw buffers extension');
 				this.subKernelOutputTextures = [];
 				this.subKernelOutputVariableNames = [];
-				var _i3 = 0;
+				var _i4 = 0;
 				for (var p in this.subKernelProperties) {
 					if (!this.subKernelProperties.hasOwnProperty(p)) continue;
 					var _subKernel = this.subKernelProperties[p];
@@ -2715,7 +2775,7 @@ module.exports = function (_KernelBase) {
 					});
 					this.subKernelOutputTextures.push(this.getSubKernelTexture(p));
 					this.subKernelOutputVariableNames.push(_subKernel.name + 'Result');
-					_i3++;
+					_i4++;
 				}
 			}
 		}
@@ -3208,7 +3268,7 @@ var UtilsCore = function () {
 	}, {
 		key: 'isWebGl',
 		value: function isWebGl(webGlObj) {
-			return typeof webGlObj.getExtension === 'function';
+			return webGlObj && typeof webGlObj.getExtension === 'function';
 		}
 
 
@@ -3251,9 +3311,11 @@ var UtilsCore = function () {
 
 			var webGl = canvasObj.getContext('experimental-webgl', UtilsCore.initWebGlDefaultOptions()) || canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions());
 
-			webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
-			webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
-			webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
+			if (webGl) {
+				webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
+				webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
+				webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
+			}
 
 			return webGl;
 		}
@@ -3577,7 +3639,7 @@ var Utils = function (_UtilsCore) {
 		value: function splitArray(array, part) {
 			var result = [];
 			for (var i = 0; i < array.length; i += part) {
-				result.push(array.slice(i, i + part));
+				result.push(Array.prototype.slice.call(array, i, i + part));
 			}
 			return result;
 		}

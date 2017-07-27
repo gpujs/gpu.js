@@ -5,11 +5,11 @@
  * @desc Reduced subset of Utils, used exclusively in gpu-core.js
  * Various utility functions / snippets of code that GPU.JS uses internally.\
  * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
- * 
+ *
  * Note that all methods in this class is 'static' by nature `UtilsCore.functionName()`
  *
  * @class UtilsCore
- * 
+ *
  */
 
 class UtilsCore {
@@ -33,7 +33,7 @@ class UtilsCore {
 	 * @static
 	 * @function
 	 * @memberOf UtilsCore
-	 * 
+	 *
 	 *
 	 * @desc Return TRUE, on a valid DOM canvas object
 	 *
@@ -105,7 +105,7 @@ class UtilsCore {
 
 
 	/**
-	 * 
+	 *
 	 * @name isWebGl
 	 * @function
 	 * @static
@@ -121,7 +121,7 @@ class UtilsCore {
 	 *
 	 */
 	static isWebGl(webGlObj) {
-		return typeof webGlObj.getExtension === 'function';
+		return webGlObj && typeof webGlObj.getExtension === 'function';
 	}
 
 	/**
@@ -186,10 +186,12 @@ class UtilsCore {
 			canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions())
 		);
 
-		// Get the extension that is needed
-		webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
-		webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
-		webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
+		if (webGl) {
+			// Get the extension that is needed
+			webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
+			webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
+			webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
+		}
 
 		// Returns the canvas
 		return webGl;

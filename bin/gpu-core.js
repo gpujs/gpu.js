@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Fri Jul 21 2017 20:11:16 GMT-0400 (EDT)
+ * @date Thu Jul 27 2017 10:40:08 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -120,7 +120,7 @@ var UtilsCore = function () {
 	}, {
 		key: 'isWebGl',
 		value: function isWebGl(webGlObj) {
-			return typeof webGlObj.getExtension === 'function';
+			return webGlObj && typeof webGlObj.getExtension === 'function';
 		}
 
 
@@ -163,9 +163,11 @@ var UtilsCore = function () {
 
 			var webGl = canvasObj.getContext('experimental-webgl', UtilsCore.initWebGlDefaultOptions()) || canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions());
 
-			webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
-			webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
-			webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
+			if (webGl) {
+				webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
+				webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
+				webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
+			}
 
 			return webGl;
 		}
