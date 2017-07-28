@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Thu Jul 27 2017 10:40:09 GMT-0400 (EDT)
+ * @date Fri Jul 28 2017 11:56:49 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -2186,12 +2186,6 @@ module.exports = function (_KernelBase) {
 
 			this.setupOutputTexture();
 
-			if (this.floatOutput) {
-				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-			} else {
-				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-			}
-
 			if (this.subKernelOutputTextures !== null) {
 				var extDrawBuffersMap = this.extDrawBuffersMap = [gl.COLOR_ATTACHMENT0];
 				for (var _i = 0; _i < this.subKernelOutputTextures.length; _i++) {
@@ -2340,6 +2334,7 @@ module.exports = function (_KernelBase) {
 		key: 'setupOutputTexture',
 		value: function setupOutputTexture() {
 			var gl = this._webGl;
+			var texSize = this.texSize;
 			this.detachOutputTexture();
 			this.outputTexture = this.getOutputTexture();
 			gl.activeTexture(gl.TEXTURE0 + this.paramNames.length);
@@ -2348,6 +2343,11 @@ module.exports = function (_KernelBase) {
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+			if (this.floatOutput) {
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+			} else {
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+			}
 		}
 
 
