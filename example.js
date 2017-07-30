@@ -1,60 +1,4 @@
-"use strict";
-
-// Dependency:
-var fs = require("fs");
-var path = require("path");
-var cwd = __dirname;
-var nooocl = require('nooocl');
-var CLHost = nooocl.CLHost;
-var CLContext = nooocl.CLContext;
-var CLBuffer = nooocl.CLBuffer;
-var CLCommandQueue = nooocl.CLCommandQueue;
-var NDRange = nooocl.NDRange;
-var CLError = nooocl.CLError;
-var fastcall = require("fastcall");
-var ref = fastcall.ref;
-var double = ref.types.double;
-
-// Initialize OpenCL then we get host, device, context, and a queue
-var host = CLHost.createV11();
-var defs = host.cl.defs;
-
-var platforms = host.getPlatforms();
-var device;
-function searchForDevice(hardware) {
-  platforms.forEach(function (p) {
-    var devices = hardware === "gpu" ? p.gpuDevices() : p.cpuDevices();
-    devices = devices.filter(function (d) {
-      // Is double precision supported?
-      // See: https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetDeviceInfo.html
-      return true;
-      return d.doubleFpConfig &
-        (defs.CL_FP_FMA | defs.CL_FP_ROUND_TO_NEAREST | defs.CL_FP_ROUND_TO_ZERO | defs.CL_FP_ROUND_TO_INF | defs.CL_FP_INF_NAN | defs.CL_FP_DENORM);
-    });
-    if (devices.length) {
-      device = devices[0];
-    }
-    if (device) {
-      return false;
-    }
-  });
-}
-
-searchForDevice("gpu");
-if (!device) {
-  console.warn("No GPU device has been found, searching for a CPU fallback.");
-  searchForDevice("cpu");
-}
-
-if (!device) {
-  throw new Error("No capable OpenCL 1.1 device has been found.");
-}
-else {
-  console.log("Running on device: " + device.name + " - " + device.platform.name);
-}
-
-var context = new CLContext(device);
-var queue = new CLCommandQueue(context, device);
+'use strict';
 
 // Initialize data on the host side:
 var n = 1000;
@@ -101,28 +45,28 @@ __kernel void vecAdd(  __global double *a,
 `;
 var program = context.createProgram(kernelSourceCode);
 
-console.log("Building ...");
+console.log('Building ...');
 // Building is always asynchronous in NOOOCL!
 nooocl.scope(function () {
-  return program.build("-cl-fast-relaxed-math")
+  return program.build('-cl-fast-relaxed-math')
     .then(function () {
       var buildStatus = program.getBuildStatus(device);
       var buildLog = program.getBuildLog(device);
       console.log(buildLog);
       if (buildStatus < 0) {
-        throw new CLError(buildStatus, "Build failed.");
+        throw new CLError(buildStatus, 'Build failed.');
       }
-      console.log("Build completed.");
+      console.log('Build completed.');
 
       // Kernel stuff:
-      var kernel = program.createKernel("vecAdd");
+      var kernel = program.createKernel('vecAdd');
 
       kernel.setArg(0, d_a);
       kernel.setArg(1, d_b);
       kernel.setArg(2, d_c);
       // Notice: in NOOOCL you have specify type of value arguments,
       // because there is no C compatible type system exists in JavaScript.
-      kernel.setArg(3, n, "uint");
+      kernel.setArg(3, n, 'uint');
 
       // Ranges:
       // Number of work items in each local work group
@@ -130,7 +74,7 @@ nooocl.scope(function () {
       // Number of total work items - localSize must be devisor
       var globalSize = new NDRange(Math.ceil(n / 64) * 64);
 
-      console.log("Launching the kernel.");
+      console.log('Launching the kernel.');
 
       // Enqueue the kernel asynchronously
       queue.enqueueNDRangeKernel(kernel, globalSize, localSize);
@@ -139,7 +83,7 @@ nooocl.scope(function () {
       // when the queue ends.
       // We should query a waitable queue which returns an event for each enqueue operations,
       // and the event's promise can be used for continuation of the control flow on the host side.
-      console.log("Waiting for result.");
+      console.log('Waiting for result.');
       return queue.waitable().enqueueReadBuffer(d_c, 0, bytes, h_c).promise
         .then(function() {
           // Data gets back to host, we're done:
@@ -150,9 +94,9 @@ nooocl.scope(function () {
             sum += double.get(h_c, offset);
           }
 
-          console.log("Final result: " + sum / n);
+          console.log('Final result: ' + sum / n);
         });
     });
 });
 
-console.log("(Everything after this point is asynchronous.)");
+console.log('(Everything after this point is asynchronous.)');

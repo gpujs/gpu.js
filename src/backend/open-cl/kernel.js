@@ -9,15 +9,24 @@ const CLCommandQueue = nooocl.CLCommandQueue;
 const NDRange = nooocl.NDRange;
 const CLError = nooocl.CLError;
 
-const device = require('./device');
+
+const fastcall = require('fastcall');
+const ref = fastcall.ref;
+const double = ref.types.double;
+
+// Initialize OpenCL then we get host, device, context, and a queue
+const host = CLHost.createV11();
+const defs = host.cl.defs;
+const platforms = host.getPlatforms();
+
 const KernelBase = require('../kernel-base');
 const utils = require('../../core/utils');
 const Texture = require('../../core/texture');
 const fragShaderString = require('./shader-frag');
 const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
-const canvases = [];
-const canvasTexSizes = {};
+let device = null;
+
 module.exports = class OpenCLKernel extends KernelBase {
 
 	/**
@@ -45,24 +54,19 @@ module.exports = class OpenCLKernel extends KernelBase {
 	 */
 	constructor(fnString, settings) {
 		super(fnString, settings);
-		this.textureCache = {};
-		this.threadDim = {};
-		this.programUniformLocationCache = {};
-		this.framebuffer = null;
-
 		this.buffer = null;
 		this.program = null;
 		this.functionBuilder = settings.functionBuilder;
 		this.outputToTexture = settings.outputToTexture;
-		this.endianness = utils.systemEndianness();
 		this.subKernelOutputTextures = null;
 		this.subKernelOutputVariableNames = null;
 		this.paramTypes = null;
 		this.argumentsLength = 0;
-		this.ext = null;
 		this.compiledFragShaderString = null;
 		this.compiledVertShaderString = null;
-		if (!this._openCl) this._openCl = device();
+		if (!this._openCl) {
+      this._openCl = new CLContext(this.getDevice());
+    }
 	}
 
 	/**
@@ -76,50 +80,7 @@ module.exports = class OpenCLKernel extends KernelBase {
 	 *
 	 */
 	validateOptions() {
-		const isReadPixel = utils.isFloatReadPixelsSupported();
-		if (this.floatTextures === true && !utils.OES_texture_float) {
-			throw 'Float textures are not supported on this browser';
-		} else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
-			throw 'Float texture outputs are not supported on this browser';
-		} else if (this.floatTextures === undefined && utils.OES_texture_float) {
-			//NOTE: handle
-			this.floatTextures = true;
-			this.floatOutput = isReadPixel && !this.graphical;
-		}
 
-		if (!this.dimensions || this.dimensions.length === 0) {
-			if (arguments.length !== 1) {
-				throw 'Auto dimensions only supported for kernels with only one input';
-			}
-
-			const argType = utils.getArgumentType(arguments[0]);
-			if (argType === 'Array') {
-				this.dimensions = utils.getDimensions(argType);
-			} else if (argType === 'Texture') {
-				this.dimensions = arguments[0].dimensions;
-			} else {
-				throw 'Auto dimensions not supported for input type: ' + argType;
-			}
-		}
-
-		this.texSize = utils.dimToTexSize({
-			floatTextures: this.floatTextures,
-			floatOutput: this.floatOutput
-		}, this.dimensions, true);
-
-		if (this.graphical) {
-			if (this.dimensions.length !== 2) {
-				throw 'Output must have 2 dimensions on graphical mode';
-			}
-
-			if (this.floatOutput) {
-				throw 'Cannot use graphical mode and float output at the same time';
-			}
-
-			this.texSize = utils.clone(this.dimensions);
-		} else if (this.floatOutput === undefined && utils.OES_texture_float) {
-			this.floatOutput = true;
-		}
 	}
 
 	/**
@@ -135,72 +96,21 @@ module.exports = class OpenCLKernel extends KernelBase {
 	build() {
 		this.validateOptions();
 		this.setupParams(arguments);
-		const texSize = this.texSize;
-		const gl = this._openCl;
-		const canvas = this._canvas;
-		let canvasIndex = canvases.indexOf(canvas);
-		if (canvasIndex === -1) {
-			canvasIndex = canvases.length;
-			canvases.push(canvas);
-			canvasTexSizes[canvasIndex] = [];
-		}
+		const cl = this._openCl;
+    this.queue = new CLCommandQueue(cl, device);
 
-		const sizes = canvasTexSizes[canvasIndex];
-		sizes.push(texSize);
-		const maxTexSize = [0, 0];
-		for (let i = 0; i < sizes.length; i++) {
-			const size = sizes[i];
-			if (maxTexSize[0] < size[0]) {
-				maxTexSize[0] = size[0];
-			}
-			if (maxTexSize[1] < size[1]) {
-				maxTexSize[1] = size[1];
-			}
-		}
+    const compiledKernelString = `#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+    ${ this._addKernels() }
+    ${ this.functionBuilder.getPrototypeString('kernel') }`;
 
-		gl.viewport(0, 0, maxTexSize[0], maxTexSize[1]);
-		const threadDim = this.threadDim = utils.clone(this.dimensions);
-		while (threadDim.length < 3) {
-			threadDim.push(1);
-		}
-
-		if (this.functionBuilder) this._addKernels();
-
-		const compiledVertShaderString = this._getVertShaderString(arguments);
-		const vertShader = gl.createShader(gl.VERTEX_SHADER);
-		gl.shaderSource(vertShader, compiledVertShaderString);
-		gl.compileShader(vertShader);
-
-		const compiledFragShaderString = this._getFragShaderString(arguments);
-		const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-		gl.shaderSource(fragShader, compiledFragShaderString);
-		gl.compileShader(fragShader);
-
-		if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
-			console.log(compiledVertShaderString);
-			console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(vertShader));
-			throw 'Error compiling vertex shader';
-		}
-		if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
-			console.log(compiledFragShaderString);
-			console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(fragShader));
-			throw 'Error compiling fragment shader';
-		}
-
-		if (this.debug) {
+    if (this.debug) {
 			console.log('Options:');
 			console.dir(this);
-			console.log('GLSL Shader Output:');
-			console.log(compiledFragShaderString);
+			console.log('OpenCL Shader Output:');
+			console.log(compiledKernelString);
 		}
 
-		const program = this.program = gl.createProgram();
-		gl.attachShader(program, vertShader);
-		gl.attachShader(program, fragShader);
-		gl.linkProgram(program);
-		this.framebuffer = gl.createFramebuffer();
-		this.framebuffer.width = texSize[0];
-		this.framebuffer.height = texSize[1];
+		this.program = cl.createProgram(compiledKernelString);
 		return this;
 	}
 
@@ -504,37 +414,6 @@ module.exports = class OpenCLKernel extends KernelBase {
 	/**
 	 * @memberOf OpenCLKernel#
 	 * @function
-	 * @name _getFragShaderArtifactMap
-	 *
-	 * @desc Generate Shader artifacts for the kernel program.
-	 * The final object contains HEADER, KERNEL, MAIN_RESULT, and others.
-	 *
-	 * @param {Array} args - The actual parameters sent to the Kernel
-	 *
-	 * @returns {Object} An object containing the Shader Artifacts(CONSTANTS, HEADER, KERNEL, etc.)
-	 *
-	 */
-	_getFragShaderArtifactMap(args) {
-		return {
-			HEADER: this._getHeaderString(),
-			LOOP_MAX: this._getLoopMaxString(),
-			CONSTANTS: this._getConstantsString(),
-			DECODE32_ENDIANNESS: this._getDecode32EndiannessString(),
-			ENCODE32_ENDIANNESS: this._getEncode32EndiannessString(),
-			GET_WRAPAROUND: this._getGetWraparoundString(),
-			GET_TEXTURE_CHANNEL: this._getGetTextureChannelString(),
-			GET_TEXTURE_INDEX: this._getGetTextureIndexString(),
-			GET_RESULT: this._getGetResultString(),
-			MAIN_PARAMS: this._getMainParamsString(args),
-			MAIN_CONSTANTS: this._getMainConstantsString(),
-			KERNEL: this._getKernelString(),
-			MAIN_RESULT: this._getMainResultString()
-		};
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
 	 * @name _addArgument 
 	 *
 	 * @desc Adds kernel parameters to the Argument Texture, 
@@ -546,487 +425,24 @@ module.exports = class OpenCLKernel extends KernelBase {
 	 *
 	 */
 	_addArgument(value, type, name) {
-		const gl = this._openCl;
+		const cl = this._openCl;
 		const argumentTexture = this.getArgumentTexture(name);
-		if (value.constructor === Texture) {
-			type = 'Texture';
-		}
-		switch (type) {
-			case 'Array':
-				{
-					const dim = utils.getDimensions(value, true);
-					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, dim);
+    // Initialize data on the host side:
+    const n = 1000;
+    const bytes = n * double.size;
+    const pointer = new Buffer(n * double.size);
 
-					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
-					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+// // Initialize vectors on host
+//     for (var i = 0; i < n; i++) {
+//       var offset = i * double.size;
+//       double.set(h_a, offset, 0.1 + 0.2);
+//       double.set(h_b, offset, 0);
+//     }
 
-					let length = size[0] * size[1];
-					if (this.floatTextures) {
-						length *= 4;
-					}
-
-					const valuesFlat = new Float32Array(length);
-					utils.flattenTo(value, valuesFlat);
-
-					let buffer;
-					if (this.floatTextures) {
-						buffer = new Float32Array(valuesFlat);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, buffer);
-					} else {
-						buffer = new Uint8Array((new Float32Array(valuesFlat)).buffer);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
-					}
-
-					const loc = this.getUniformLocation('user_' + name);
-					const locSize = this.getUniformLocation('user_' + name + 'Size');
-					const dimLoc = this.getUniformLocation('user_' + name + 'Dim');
-
-					if (!this.hardcodeConstants) {
-						gl.uniform3fv(dimLoc, dim);
-						gl.uniform2fv(locSize, size);
-					}
-					gl.uniform1i(loc, this.argumentsLength);
-					break;
-				}
-			case 'Number':
-				{
-					const loc = this.getUniformLocation('user_' + name);
-					gl.uniform1f(loc, value);
-					break;
-				}
-			case 'Texture':
-				{
-					const inputTexture = value;
-					const dim = utils.getDimensions(inputTexture.dimensions, true);
-					const size = inputTexture.size;
-
-					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
-					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
-
-					const loc = this.getUniformLocation('user_' + name);
-					const locSize = this.getUniformLocation('user_' + name + 'Size');
-					const dimLoc = this.getUniformLocation('user_' + name + 'Dim');
-
-					gl.uniform3fv(dimLoc, dim);
-					gl.uniform2fv(locSize, size);
-					gl.uniform1i(loc, this.argumentsLength);
-					break;
-				}
-			default:
-				throw 'Input type not supported (WebGL): ' + value;
-		}
+    const buffer = new CLBuffer(cl, defs.CL_MEM_READ_ONLY, bytes);
+    this.queue.enqueueWriteBuffer(buffer, 0, bytes, pointer);
+    this.kernel.setArg(this.argumentsLength, buffer);
 		this.argumentsLength++;
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getHeaderString
-	 *
-	 * @desc Get the header string for the program.
-	 * This returns an empty string if no sub-kernels are defined.
-	 *
-	 * @returns {String} result
-	 *
-	 */
-	_getHeaderString() {
-		return (
-			this.subKernels !== null || this.subKernelProperties !== null ?
-			//webgl2 '#version 300 es\n' :
-			'#extension GL_EXT_draw_buffers : require\n' :
-			''
-		);
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getLoopMaxString
-	 *
-	 * @desc Get the maximum loop size String.
-	 *
-	 * @returns {String} result
-	 *
-	 */
-	_getLoopMaxString() {
-		return (
-			this.loopMaxIterations ?
-			` ${ parseInt(this.loopMaxIterations) }.0;\n` :
-			' 100.0;\n'
-		);
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getConstantsString
-	 *
-	 * @desc Generate transpiled glsl Strings for constant parameters sent to a kernel
-	 *
-	 * They can be defined by *hardcodeConstants*
-	 *
-	 * @returns {String} result
-	 *
-	 */
-	_getConstantsString() {
-		const result = [];
-		const threadDim = this.threadDim;
-		const texSize = this.texSize;
-		if (this.hardcodeConstants) {
-			result.push(
-				`highp vec3 uOutputDim = vec3(${ threadDim[0] },${ threadDim[1] }, ${ threadDim[2] })`,
-				`highp vec2 uTexSize = vec2(${ texSize[0] }, ${ texSize[1] })`
-			);
-		} else {
-			result.push(
-				'uniform highp vec3 uOutputDim',
-				'uniform highp vec2 uTexSize'
-			);
-		}
-
-		return this._linesToString(result);
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getTextureCoordinate
-	 *
-	 * @desc Get texture coordinate string for the program
-	 *
-	 * @returns {String} result
-	 *
-	 */
-	_getTextureCoordinate() {
-		const names = this.subKernelOutputVariableNames;
-		if (names === null || names.length < 1) {
-			return 'varying highp vec2 vTexCoord;\n';
-		} else {
-			return 'out highp vec2 vTexCoord;\n';
-		}
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getDecode32EndiannessString
-	 *
-	 * @desc Get Decode32 endianness string for little-endian and big-endian
-	 *
-	 * @returns {String} result
-	 *
-	 */
-	_getDecode32EndiannessString() {
-		return (
-			this.endianness === 'LE' ?
-			'' :
-			'  rgba.rgba = rgba.abgr;\n'
-		);
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getEncode32EndiannessString
-	 *
-	 * @desc Get Encode32 endianness string for little-endian and big-endian
-	 *
-	 * @returns {String} result
-	 *
-	 */
-	_getEncode32EndiannessString() {
-		return (
-			this.endianness === 'LE' ?
-			'' :
-			'  rgba.rgba = rgba.abgr;\n'
-		);
-	}
-
-	/**
-	 * @function
-	 * @memberOf OpenCLKernel#
-	 * @name _getGetWraparoundString
-	 *
-	 * @returns {String} wraparound string
-	 */
-	_getGetWraparoundString() {
-		return (
-			this.wraparound ?
-			'  xyz = mod(xyz, texDim);\n' :
-			''
-		);
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getGetTextureChannelString
-	 *
-	 */
-	_getGetTextureChannelString() {
-		if (!this.floatTextures) return '';
-
-		return this._linesToString([
-			'  int channel = int(integerMod(index, 4.0))',
-			'  index = float(int(index) / 4)'
-		]);
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getGetTextureIndexString
-	 *
-	 * @desc Get generic texture index string, if floatTextures flag is true.
-	 *
-	 * @example
-	 * '  index = float(int(index)/4);\n'
-	 *
-	 */
-	_getGetTextureIndexString() {
-		return (
-			this.floatTextures ?
-			'  index = float(int(index)/4);\n' :
-			''
-		);
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getGetResultString
-	 *
-	 */
-	_getGetResultString() {
-		if (!this.floatTextures) return '  return decode32(texel);\n';
-		return this._linesToString([
-			'  if (channel == 0) return texel.r',
-			'  if (channel == 1) return texel.g',
-			'  if (channel == 2) return texel.b',
-			'  if (channel == 3) return texel.a'
-		]);
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getMainParamsString
-	 *
-	 * @desc Generate transpiled glsl Strings for user-defined parameters sent to a kernel
-	 *
-	 * @param {Array} args - The actual parameters sent to the Kernel
-	 *
-	 * @returns {String} result
-	 *
-	 */
-	_getMainParamsString(args) {
-		const result = [];
-		const paramTypes = this.paramTypes;
-		const paramNames = this.paramNames;
-		for (let i = 0; i < paramNames.length; i++) {
-			const param = args[i];
-			const paramName = paramNames[i];
-			const paramType = paramTypes[i];
-			if (this.hardcodeConstants) {
-				if (paramType === 'Array' || paramType === 'Texture') {
-					const paramDim = utils.getDimensions(param, true);
-					const paramSize = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, paramDim);
-
-					result.push(
-						`uniform highp sampler2D user_${ paramName }`,
-						`highp vec2 user_${ paramName }Size = vec2(${ paramSize[0] }.0, ${ paramSize[1] }.0)`,
-						`highp vec3 user_${ paramName }Dim = vec3(${ paramDim[0] }.0, ${ paramDim[1]}.0, ${ paramDim[2] }.0)`
-					);
-				} else if (paramType === 'Number' && Number.isInteger(param)) {
-					result.push(`highp float user_${ paramName } = ${ param }.0`);
-				} else if (paramType === 'Number') {
-					result.push(`highp float user_${ paramName } = ${ param }`);
-				}
-			} else {
-				if (paramType === 'Array' || paramType === 'Texture') {
-					result.push(
-						`uniform highp sampler2D user_${ paramName }`,
-						`uniform highp vec2 user_${ paramName }Size`,
-						`uniform highp vec3 user_${ paramName }Dim`
-					);
-				} else if (paramType === 'Number') {
-					result.push(`uniform highp float user_${ paramName }`);
-				}
-			}
-		}
-		return this._linesToString(result);
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getMainConstantsString
-	 *
-	 */
-	_getMainConstantsString() {
-		const result = [];
-		if (this.constants) {
-			for (let name in this.constants) {
-				if (!this.constants.hasOwnProperty(name)) continue;
-				let value = parseFloat(this.constants[name]);
-
-				if (Number.isInteger(value)) {
-					result.push('const float constants_' + name + ' = ' + parseInt(value) + '.0');
-				} else {
-					result.push('const float constants_' + name + ' = ' + parseFloat(value));
-				}
-			}
-		}
-		return this._linesToString(result);
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getKernelString
-	 *
-	 * @desc Get Kernel program string (in *glsl*) for a kernel. 
-	 *
-	 * @returns {String} result
-	 *
-	 */
-	_getKernelString() {
-		const result = [];
-		const names = this.subKernelOutputVariableNames;
-		if (names !== null) {
-			result.push('highp float kernelResult = 0.0');
-			for (let i = 0; i < names.length; i++) {
-				result.push(
-					`highp float ${ names[i] } = 0.0`
-				);
-			}
-
-			/* this is v2 prep
-      result.push('highp float kernelResult = 0.0');
-			result.push('layout(location = 0) out highp float fradData0 = 0.0');
-			for (let i = 0; i < names.length; i++) {
-				result.push(
-          `highp float ${ names[i] } = 0.0`,
-				  `layout(location = ${ i + 1 }) out highp float fragData${ i + 1 } = 0.0`
-        );
-			}*/
-		} else {
-			result.push('highp float kernelResult = 0.0');
-		}
-
-		return this._linesToString(result) + this.functionBuilder.getPrototypeString('kernel');
-	}
-
-	/**
-	 * 
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getMainResultString
-	 *
-	 * @desc Get main result string with checks for floatOutput, graphical, subKernelsOutputs, etc.
-	 *
-	 * @returns {String} result
-	 *
-	 */
-	_getMainResultString() {
-		const names = this.subKernelOutputVariableNames;
-		const result = [];
-		if (this.floatOutput) {
-			result.push('  index *= 4.0');
-		}
-
-		if (this.graphical) {
-			result.push(
-				'  threadId = indexTo3D(index, uOutputDim)',
-				'  kernel()',
-				'  gl_FragColor = actualColor'
-			);
-		} else if (this.floatOutput) {
-			result.push(
-				'  threadId = indexTo3D(index, uOutputDim)',
-				'  kernel()',
-				'  gl_FragColor.r = kernelResult',
-				'  index += 1.0',
-				'  threadId = indexTo3D(index, uOutputDim)',
-				'  kernel()',
-				'  gl_FragColor.g = kernelResult',
-				'  index += 1.0',
-				'  threadId = indexTo3D(index, uOutputDim)',
-				'  kernel()',
-				'  gl_FragColor.b = kernelResult',
-				'  index += 1.0',
-				'  threadId = indexTo3D(index, uOutputDim)',
-				'  kernel()',
-				'  gl_FragColor.a = kernelResult'
-			);
-		} else if (names !== null) {
-			result.push('  threadId = indexTo3D(index, uOutputDim)');
-			result.push('  kernel()');
-			result.push('  gl_FragData[0] = encode32(kernelResult)');
-			for (let i = 0; i < names.length; i++) {
-				result.push(`  gl_FragData[${ i + 1 }] = encode32(${ names[i] })`);
-			}
-			/* this is v2 prep
-       * result.push('  kernel()');
-			result.push('  fragData0 = encode32(kernelResult)');
-			for (let i = 0; i < names.length; i++) {
-				result.push(`  fragData${ i + 1 } = encode32(${ names[i] })`);
-			}*/
-		} else {
-			result.push(
-				'  threadId = indexTo3D(index, uOutputDim)',
-				'  kernel()',
-				'  gl_FragColor = encode32(kernelResult)'
-			);
-		}
-
-		return this._linesToString(result);
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _linesToString
-	 *
-	 * @param {Array} lines - An Array of strings
-	 *
-	 * @returns {String} Single combined String, seperated by *\n*
-	 *
-	 */
-	_linesToString(lines) {
-		if (lines.length > 0) {
-			return lines.join(';\n') + ';\n';
-		} else {
-			return '\n';
-		}
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _replaceArtifacts
-	 *
-	 * @param {String} src - Shader string
-	 * @param {Array} map - Variables/Constants associated with shader
-	 *
-	 */
-	_replaceArtifacts(src, map) {
-		return src.replace(/[ ]*__([A-Z]+[0-9]*([_]?[A-Z])*)__;\n/g, (match, artifact) => {
-			if (map.hasOwnProperty(artifact)) {
-				return map[artifact];
-			}
-			throw `unhandled artifact ${ artifact }`;
-		});
 	}
 
 	/**
@@ -1086,47 +502,35 @@ module.exports = class OpenCLKernel extends KernelBase {
 		}
 	}
 
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getFragShaderString
-	 *
-	 * @desc Get the fragment shader String.
-	 * If the String hasn't been compiled yet, 
-	 * then this method compiles it as well
-	 *
-	 * @param {Array} args - The actual parameters sent to the Kernel
-	 *
-	 * @returns {String} Fragment Shader string
-	 *
-	 */
-	_getFragShaderString(args) {
-		if (this.compiledFragShaderString !== null) {
-			return this.compiledFragShaderString;
-		}
-		return this.compiledFragShaderString = this._replaceArtifacts(fragShaderString, this._getFragShaderArtifactMap(args));
-	}
+  getDevice() {
+	  if (device !== null) return device;
+	  const mode = this.mode;
+    for (let platformIndex = 0; platformIndex < platforms.length; platformIndex++) {
+      const devices = (mode === 'gpu'
+        ? platforms[platformIndex].gpuDevices()
+        : platforms[platformIndex].cpuDevices());
 
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name _getVertShaderString
-	 *
-	 * @desc Get the vertical shader String
-	 *
-	 * @param {Array} args - The actual parameters sent to the Kernel
-	 *
-	 * @returns {String} Vertical Shader string
-	 *
-	 */
-	_getVertShaderString(args) {
-		if (this.compiledVertShaderString !== null) {
-			return this.compiledVertShaderString;
-		}
-		//TODO: webgl2 compile like frag shader
-		return this.compiledVertShaderString = vertShaderString;
-	}
-
+      for (let deviceIndex = 0; deviceIndex < devices.length; deviceIndex++) {
+        // Is double precision supported?
+        // See: https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetDeviceInfo.html
+        if (devices[deviceIndex].doubleFpConfig
+          & (
+            defs.CL_FP_FMA
+            | defs.CL_FP_ROUND_TO_NEAREST
+            | defs.CL_FP_ROUND_TO_ZERO
+            | defs.CL_FP_ROUND_TO_INF
+            | defs.CL_FP_INF_NAN
+            | defs.CL_FP_DENORM
+          )) {
+          return devices[deviceIndex];
+        }
+      }
+      if (mode === 'auto') {
+        console.warn('No GPU device has been found, searching for a CPU fallback.');
+        return this.getDevice('cpu');
+      }
+    }
+  }
 	/**
 	 * @memberOf OpenCLKernel#
 	 * @function
