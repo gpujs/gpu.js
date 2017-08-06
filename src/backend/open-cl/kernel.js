@@ -22,8 +22,6 @@ const platforms = host.getPlatforms();
 const KernelBase = require('../kernel-base');
 const utils = require('../../core/utils');
 const Texture = require('../../core/texture');
-const fragShaderString = require('./shader-frag');
-const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
 let device = null;
 
@@ -64,9 +62,9 @@ module.exports = class OpenCLKernel extends KernelBase {
 		this.argumentsLength = 0;
 		this.compiledFragShaderString = null;
 		this.compiledVertShaderString = null;
-		if (!this._openCl) {
-      this._openCl = new CLContext(this.getDevice());
-    }
+		this.getDevice();
+    const cl = this._openCl = new CLContext(device);
+    this.queue = new CLCommandQueue(cl, device);
 	}
 
 	/**
@@ -96,8 +94,6 @@ module.exports = class OpenCLKernel extends KernelBase {
 	build() {
 		this.validateOptions();
 		this.setupParams(arguments);
-		const cl = this._openCl;
-    this.queue = new CLCommandQueue(cl, device);
 
     const compiledKernelString = `#pragma OPENCL EXTENSION cl_khr_fp64 : enable
     ${ this._addKernels() }
@@ -110,7 +106,7 @@ module.exports = class OpenCLKernel extends KernelBase {
 			console.log(compiledKernelString);
 		}
 
-		this.program = cl.createProgram(compiledKernelString);
+		this.program = this._openCl.createProgram(compiledKernelString);
 		return this;
 	}
 
@@ -522,14 +518,17 @@ module.exports = class OpenCLKernel extends KernelBase {
             | defs.CL_FP_INF_NAN
             | defs.CL_FP_DENORM
           )) {
-          return devices[deviceIndex];
+          return device = devices[deviceIndex];
         }
       }
+
       if (mode === 'auto') {
         console.warn('No GPU device has been found, searching for a CPU fallback.');
         return this.getDevice('cpu');
       }
     }
+
+    throw new Error('no devices found');
   }
 	/**
 	 * @memberOf OpenCLKernel#

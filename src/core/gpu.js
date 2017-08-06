@@ -3,7 +3,7 @@
 const utils = require('./utils');
 const WebGLRunner = require('../backend/web-gl/runner');
 const CPURunner = require('../backend/cpu/runner');
-//const OpenCLRunner = require('../backend/open-cl/runner');
+const OpenCLRunner = require('../backend/open-cl/runner');
 const WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
 const GPUCore = require("./gpu-core");
 
@@ -46,11 +46,13 @@ class GPU extends GPUCore {
 					this._runner = new CPURunner(runnerSettings);
 					break;
 				case 'gpu':
-          this._runner = typeof window === 'undefined' ? /*new OpenCLRunner(runnerSettings)*/null : new WebGLRunner(runnerSettings);
+          this._runner = typeof window === 'undefined'
+            ? new OpenCLRunner(runnerSettings)
+            : new WebGLRunner(runnerSettings);
           break;
-        // case 'opencl':
-        //   this._runner = new OpenCLRunner(runnerSettings);
-        //   break;
+        case 'opencl':
+          this._runner = new OpenCLRunner(runnerSettings);
+          break;
 				case 'webgl':
 					this._runner = new WebGLRunner(runnerSettings);
 					break;
@@ -71,7 +73,7 @@ class GPU extends GPUCore {
 	 * @function
 	 * @memberOf GPU##
 	 * 
-	 * @param {Function} inputFunction - The calling to perform the conversion
+	 * @param {Function} fn - The calling to perform the conversion
 	 * @param {Object} settings - The parameter configuration object
 	 * @property {String} settings.dimensions - Thread dimension array (Defeaults to [1024])                                                    
 	 * @property {String} settings.mode - CPU / GPU configuration mode (Defaults to null)

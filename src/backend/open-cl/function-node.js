@@ -33,9 +33,7 @@ module.exports = class OpenCLFunctionNode extends FunctionNodeBase {
 		} else {
 			this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
 		}
-		this.functionString = webGlRegexOptimize(
-			this.functionStringArray.join('').trim()
-		);
+		this.functionString = this.functionStringArray.join('').trim();
 		return this.functionString;
 	}
 
