@@ -96,7 +96,7 @@ function for_constant_loop_test(mode) {
   var gpu = new GPU({ mode: mode });
   var f = gpu.createKernel(function(a, b) {
     var x = 0;
-    for(var i = 0; i < max; i++) {
+    for(var i = 0; i < this.constants.max; i++) {
       x = x + 1;
     }
 

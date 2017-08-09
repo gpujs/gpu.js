@@ -9,7 +9,7 @@ function typedArrayTest(mode) {
     .setConstants({ pi: Math.PI });
 
   gpu.addFunction(function getPi() {
-    return pi;
+    return this.constants.pi;
   });
 
   console.log(QUnit.assert.equal((kernel()[0]).toFixed(7), Math.PI.toFixed(7)));

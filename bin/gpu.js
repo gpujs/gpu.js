@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Fri Jul 28 2017 11:56:49 GMT-0400 (EDT)
+ * @date Tue Aug 08 2017 09:33:07 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -52,7 +52,7 @@ module.exports = function (_FunctionBuilderBase) {
 				if (node.isSubKernel) {
 					ret += 'var ' + node.functionName + ' = ' + node.jsFunctionString.replace('return', 'return ' + node.functionName + 'Result[this.thread.z][this.thread.y][this.thread.x] =') + '.bind(this);\n';
 				} else {
-					ret += 'var ' + node.functionName + ' = ' + node.jsFunctionString + ';\n';
+					ret += 'var ' + node.functionName + ' = ' + node.jsFunctionString + '.bind(this);\n';
 				}
 			}
 			return ret;
@@ -266,7 +266,6 @@ module.exports = function (_KernelBase) {
 
 			if (this._kernelString !== null) return this._kernelString;
 
-			var paramNames = this.paramNames;
 			var builder = this.functionBuilder;
 
 			var threadDim = this.threadDim || (this.threadDim = utils.clone(this.dimensions));
@@ -294,9 +293,7 @@ module.exports = function (_KernelBase) {
 				}
 			}
 
-			return this._kernelString = '\n  ' + (this.constants ? Object.keys(this.constants).map(function (key) {
-				return 'var ' + key + ' = ' + _this2.constants[key];
-			}).join(';\n') + ';\n' : '') + '\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			return this._kernelString = '\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '  var ' + name + ' = null;\n';
 			}).join('')) + '\n      ' + builder.getPrototypeString() + '\n      var fn = function fn(' + this.paramNames.join(', ') + ') { ' + this._fnBody + ' }.bind(this);\n    return function (' + this.paramNames.join(', ') + ') {\n    var ret = new Array(' + threadDim[2] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '  ' + name + ' = new Array(' + threadDim[2] + ');\n';

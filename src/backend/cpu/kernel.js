@@ -174,7 +174,6 @@ module.exports = class CPUKernel extends KernelBase {
 	getKernelString() {
 		if (this._kernelString !== null) return this._kernelString;
 
-		const paramNames = this.paramNames;
 		const builder = this.functionBuilder;
 
 		// Thread dim fix (to make compilable)
@@ -205,7 +204,6 @@ module.exports = class CPUKernel extends KernelBase {
 		}
 
 		return this._kernelString = `
-  ${ this.constants ? Object.keys(this.constants).map((key) => { return `var ${ key } = ${ this.constants[key] }`; }).join(';\n') + ';\n' : '' }
   ${ this.subKernelOutputVariableNames === null
         ? ''
         : this.subKernelOutputVariableNames.map((name) => `  var ${ name } = null;\n`).join('')
