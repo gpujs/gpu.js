@@ -1086,6 +1086,9 @@ module.exports = class WebGLKernel extends KernelBase {
 	_addKernels() {
 		const builder = this.functionBuilder;
 		const gl = this._webGl;
+
+		builder.addFunctions(this.functions);
+
 		builder.addKernel(this.fnString, {
 			prototypeOnly: false,
 			constants: this.constants,

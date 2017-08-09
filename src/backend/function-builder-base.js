@@ -37,6 +37,20 @@ module.exports = class FunctionBuilderBase {
 		throw new Error('addFunction not supported on base');
 	}
 
+	addFunctions(functions) {
+		if (functions) {
+			if (Array.isArray(functions)) {
+				for (let i = 0; i < functions.length; i++) {
+					this.addFunction(null, functions[i]);
+				}
+			} else {
+				for (let p in functions) {
+					this.addFunction(p, functions[p]);
+				}
+			}
+		}
+	}
+
 	/**
 	 * @memberOf FunctionBuilderBase#
 	 * @function

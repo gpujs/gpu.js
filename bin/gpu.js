@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Wed Aug 09 2017 13:22:17 GMT-0400 (EDT)
+ * @date Wed Aug 09 2017 13:39:59 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -273,6 +273,8 @@ module.exports = function (_KernelBase) {
 				threadDim.push(1);
 			}
 
+			builder.addFunctions(this.functions);
+
 			if (this.subKernels !== null) {
 				this.subKernelOutputTextures = [];
 				this.subKernelOutputVariableNames = [];
@@ -410,6 +412,21 @@ module.exports = function () {
 		key: 'addFunction',
 		value: function addFunction(functionName, jsFunction, paramTypes, returnType) {
 			throw new Error('addFunction not supported on base');
+		}
+	}, {
+		key: 'addFunctions',
+		value: function addFunctions(functions) {
+			if (functions) {
+				if (Array.isArray(functions)) {
+					for (var i = 0; i < functions.length; i++) {
+						this.addFunction(null, functions[i]);
+					}
+				} else {
+					for (var p in functions) {
+						this.addFunction(p, functions[p]);
+					}
+				}
+			}
 		}
 
 
@@ -710,6 +727,7 @@ module.exports = function () {
 		this.floatOutput = null;
 		this.floatOutputForce = null;
 		this.addFunction = null;
+		this.functions = null;
 		this.copyData = true;
 		this.subKernels = null;
 		this.subKernelProperties = null;
@@ -736,6 +754,12 @@ module.exports = function () {
 		key: 'setAddFunction',
 		value: function setAddFunction(cb) {
 			this.addFunction = cb;
+			return this;
+		}
+	}, {
+		key: 'setFunctions',
+		value: function setFunctions(functions) {
+			this.functions = functions;
 			return this;
 		}
 
@@ -2744,6 +2768,9 @@ module.exports = function (_KernelBase) {
 		value: function _addKernels() {
 			var builder = this.functionBuilder;
 			var gl = this._webGl;
+
+			builder.addFunctions(this.functions);
+
 			builder.addKernel(this.fnString, {
 				prototypeOnly: false,
 				constants: this.constants,

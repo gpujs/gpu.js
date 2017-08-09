@@ -182,6 +182,8 @@ module.exports = class CPUKernel extends KernelBase {
 			threadDim.push(1);
 		}
 
+		builder.addFunctions(this.functions);
+
 		if (this.subKernels !== null) {
 			this.subKernelOutputTextures = [];
 			this.subKernelOutputVariableNames = [];

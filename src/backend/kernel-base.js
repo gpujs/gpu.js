@@ -44,6 +44,7 @@ module.exports = class BaseKernel {
 		this.floatOutput = null;
 		this.floatOutputForce = null;
 		this.addFunction = null;
+		this.functions = null;
 		this.copyData = true;
 		this.subKernels = null;
 		this.subKernelProperties = null;
@@ -67,6 +68,11 @@ module.exports = class BaseKernel {
 
 	setAddFunction(cb) {
 		this.addFunction = cb;
+		return this;
+	}
+
+	setFunctions(functions) {
+		this.functions = functions;
 		return this;
 	}
 
