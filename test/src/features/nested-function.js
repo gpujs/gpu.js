@@ -8,7 +8,7 @@ function nested_sum_AB_test(mode) {
 		
 		return custom_adder(a[this.thread.x], b[this.thread.x]);
 	}, {
-		dimensions : [6]
+    output : [6]
 	});
 	
 	QUnit.assert.ok(f !== null, "function generated test");

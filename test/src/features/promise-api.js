@@ -6,8 +6,7 @@ function promiseApi_function_return( assert, mode ) {
 	};
 	
 	var paramObj = {
-		dimensions : [1],
-		mode : mode
+    output : [1]
 	};
 	
 	// Start of async test

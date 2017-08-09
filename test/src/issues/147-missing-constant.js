@@ -5,7 +5,7 @@ function typedArrayTest(mode) {
   const kernel = gpu.createKernel(function() {
     return getPi();
   })
-    .setDimensions([1])
+    .setOutput([1])
     .setConstants({ pi: Math.PI });
 
   gpu.addFunction(function getPi() {

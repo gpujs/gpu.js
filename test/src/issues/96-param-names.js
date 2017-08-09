@@ -25,7 +25,7 @@ QUnit.test( "Issue #96 - param names (GPU only)", function() {
   }, function (a, b) {
     return multiply(b, a, this.thread.y, this.thread.x);
   })
-    .setDimensions([B.length, A.length]);
+    .setOutput([B.length, A.length]);
 
   var result = kernels(A, B).result;
   QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2]);

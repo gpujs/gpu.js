@@ -7,7 +7,7 @@ function mult_AB_test(mode) {
 		sum += a[this.thread.y][2] * b[2][this.thread.x];
 		return sum;
 	}, {
-		dimensions : [3, 3]
+    output : [3, 3]
 	});
 
 	QUnit.assert.ok( f !== null, "function generated test");
@@ -46,7 +46,7 @@ function sqrt_AB_test(mode) {
 	var f = gpu.createKernel(function(a, b) {
 		return Math.sqrt(a[ this.thread.x ] * b[ this.thread.x ]);
 	}, {
-		dimensions : [6]
+    output : [6]
 	});
 
 	QUnit.assert.ok(f !== null, "function generated test");

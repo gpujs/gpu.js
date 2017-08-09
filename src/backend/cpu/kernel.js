@@ -59,16 +59,16 @@ module.exports = class CPUKernel extends KernelBase {
 	 *
 	 */
 	validateOptions() {
-		if (!this.dimensions || this.dimensions.length === 0) {
+		if (!this.output || this.output.length === 0) {
 			if (arguments.length !== 1) {
 				throw 'Auto dimensions only supported for kernels with only one input';
 			}
 
 			const argType = utils.getArgumentType(arguments[0]);
 			if (argType === 'Array') {
-				this.dimensions = utils.getDimensions(argType);
+				this.output = utils.getDimensions(argType);
 			} else if (argType === 'Texture') {
-				this.dimensions = arguments[0].dimensions;
+				this.output = arguments[0].output;
 			} else {
 				throw 'Auto dimensions not supported for input type: ' + argType;
 			}
@@ -105,7 +105,7 @@ module.exports = class CPUKernel extends KernelBase {
 			}
 		}
 
-		const threadDim = this.threadDim || (this.threadDim = utils.clone(this.dimensions));
+		const threadDim = this.threadDim || (this.threadDim = utils.clone(this.output));
 
 		while (threadDim.length < 3) {
 			threadDim.push(1);
@@ -177,7 +177,7 @@ module.exports = class CPUKernel extends KernelBase {
 		const builder = this.functionBuilder;
 
 		// Thread dim fix (to make compilable)
-		const threadDim = this.threadDim || (this.threadDim = utils.clone(this.dimensions));
+		const threadDim = this.threadDim || (this.threadDim = utils.clone(this.output));
 		while (threadDim.length < 3) {
 			threadDim.push(1);
 		}
@@ -240,14 +240,14 @@ module.exports = class CPUKernel extends KernelBase {
       return;
     }
     
-    if (this.dimensions.length === 1) {
+    if (this.output.length === 1) {
       ret = ret[0][0];
       ${ this.subKernelOutputVariableNames === null
         ? ''
         : this.subKernelOutputVariableNames.map((name) => `    ${ name } = ${ name }[0][0];\n`).join('')
         }
       
-    } else if (this.dimensions.length === 2) {
+    } else if (this.output.length === 2) {
       ret = ret[0];
       ${ this.subKernelOutputVariableNames === null
         ? ''
@@ -299,7 +299,7 @@ module.exports = class CPUKernel extends KernelBase {
 	 */
 	precompileKernelObj(argTypes) {
 
-		const threadDim = this.threadDim || (this.threadDim = utils.clone(this.dimensions));
+		const threadDim = this.threadDim || (this.threadDim = utils.clone(this.output));
 
 
 		return {

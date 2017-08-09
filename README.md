@@ -23,7 +23,7 @@ const matMult = gpu.createKernel(function(a, b) {
         sum += a[this.thread.y][i] * b[i][this.thread.x];
     }
     return sum;
-}).setDimensions([512, 512]);
+}).setOutput([512, 512]);
 
 // Perform matrix multiplication on 2 matrices of size 512 x 512
 const c = matMult(a, b);
@@ -64,9 +64,9 @@ const gpu = new GPU();
 Note that this **requires** the Promise API, if you need to polyfill it, you can give our 'untested polyfill' a try [here](https://github.com/picoded/small_promise.js)
 
 ### Creating and Running Functions
-Depending on your output type, specify the intended dimensions of your output. You cannot have an accelerated function that does not specify any dimensions.
+Depending on your output type, specify the intended size of your output. You cannot have an accelerated function that does not specify any output size.
 
-Dimensions of Output	 |	How to specify dimensions    |	How to reference in kernel
+Output size         	 |	How to specify output size   |	How to reference in kernel
 -----------------------|-------------------------------|--------------------------------
 1D			               |	`[length]`                   |	`myVar[this.thread.x]`
 2D		            	   |	`[width, height]`            |	`myVar[this.thread.y][this.thread.x]`
@@ -74,7 +74,15 @@ Dimensions of Output	 |	How to specify dimensions    |	How to reference in kerne
 
 ```js
 const opt = {
-    dimensions: [100]
+    output: [100]
+};
+```
+
+or
+
+```js
+const opt = {
+    output: { x: 100 }
 };
 ```
 
@@ -98,7 +106,7 @@ Note: Instead of creating an object, you can use the chainable shortcut methods 
 ```js
 const myFunc = gpu.createKernel(function() {
     return this.thread.x;
-}).setDimensions([100]);
+}).setOutput([100]);
     
 myFunc();
 // Result: [0, 1, 2, 3, ... 99]
@@ -110,7 +118,7 @@ Kernel functions can accept numbers, or 1D, 2D or 3D array of numbers as input. 
 ```js
 const myFunc = gpu.createKernel(function(x) {
     return x;
-}).setDimensions([100]);
+}).setOutput([100]);
     
 myFunc(42);
 // Result: [42, 42, 42, 42, ... 42]
@@ -121,7 +129,7 @@ Similarly, with array inputs:
 ```js
 const myFunc = gpu.createKernel(function(x) {
     return x[this.thread.x % 3];
-}).setDimensions([100]);
+}).setOutput([100]);
     
 myFunc([1, 2, 3]);
 // Result: [1, 2, 3, 1, ... 1 ]
@@ -137,7 +145,7 @@ For performance reasons, the return value of your function will no longer be any
 const render = gpu.createKernel(function() {
     this.color(0, 0, 0, 1);
 })
-  .setDimensions([20, 20])
+  .setOutput([20, 20])
   .setGraphical(true);
     
 render();
@@ -151,15 +159,15 @@ Note: To animate the rendering, use `requestAnimationFrame` instead of `setTimeo
 ### Combining kernels
 
 Sometimes you want to do multiple math operations on the gpu without the round trip penalty of data transfer from cpu to gpu to cpu to gpu, etc.  To aid this there is the `combineKernels` method.
-_**Note:**_ Kernels can have different dimensions.
+_**Note:**_ Kernels can have different output sizes.
 ```js
 const add = gpu.createKernel(function(a, b) {
 	return a[this.thread.x] + b[this.thread.x];
-}).setDimensions([20]);
+}).setOutput([20]);
 
 const multiply = gpu.createKernel(function(a, b) {
 	return a[this.thread.x] * b[this.thread.x];
-}).setDimensions([20]);
+}).setOutput([20]);
 
 const superKernel = gpu.combineKernels(add, multiply, function(a, b, c) {
 	return multiply(add(a, b), c);
@@ -219,7 +227,7 @@ function anotherFunction(value) {
 gpu.addFunction(anotherFunction);
 const kernel = gpu.createKernel(function(a, b) {
 	return anotherFunction(mySuperFunction(a[this.thread.x], b[this.thread.x]));
-}).setDimensions([20]);
+}).setOutput([20]);
 ```
 ### Loops
 Loops just work
@@ -233,7 +241,7 @@ const matMult = gpu.createKernel(function(a, b) {
     return sum;
 }, {
   constants: { size: 512 },
-  dimensions: [512, 512],
+  output: [512, 512],
 });
 ```
 #### Fixed sized
@@ -244,7 +252,7 @@ const matMult = gpu.createKernel(function(a, b) {
         sum += a[this.thread.y][i] * b[i][this.thread.x];
     }
     return sum;
-}).setDimensions([512, 512]);
+}).setOutput([512, 512]);
 ```
 
 # Full API Reference

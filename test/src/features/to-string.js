@@ -3,7 +3,7 @@ function sum_AB_test(mode) {
   var f = gpu.createKernel(function(a, b) {
     return (a[this.thread.x] + b[this.thread.x]);
   }, {
-    dimensions : [6],
+    output : [6],
     mode : mode
   });
 

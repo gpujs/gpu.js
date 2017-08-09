@@ -6,7 +6,7 @@ function getCanvasTest(mode ) {
 	var render = gpu.createKernel(function() {
 		this.color(0, 0, 0, 1);
 	}, {
-		dimensions : [30,30],
+    output : [30,30],
 		mode : mode
 	}).setGraphical(true);
 
