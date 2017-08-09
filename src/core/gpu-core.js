@@ -20,7 +20,7 @@ module.exports = class GPUCore {
 	 *
 	 * @description Validates the KernelObj to comply with the defined format
 	 * Note that this does only a limited sanity check, and does not  
-	 * gurantee a full working validation.
+	 * guarantee a full working validation.
 	 *
 	 * For the kernel object format see : <kernelObj-format>
 	 *
@@ -32,7 +32,7 @@ module.exports = class GPUCore {
 	static validateKernelObj(kernelObj) {
 
 		// NULL validation
-		if (kernelObj == null) {
+		if (kernelObj === null) {
 			throw "KernelObj being validated is NULL";
 		}
 
@@ -46,13 +46,13 @@ module.exports = class GPUCore {
 			}
 
 			// NULL validation
-			if (kernelObj == null) {
+			if (kernelObj === null) {
 				throw "Invalid (NULL) KernelObj JSON string representation";
 			}
 		}
 
 		// Check for kernel obj flag
-		if (kernelObj.isKernelObj != true) {
+		if (kernelObj.isKernelObj !== true) {
 			throw "Failed missing isKernelObj flag check";
 		}
 
@@ -66,7 +66,7 @@ module.exports = class GPUCore {
 	 * @static
 	 * @memberOf GPUCore
 	 *
-	 * @description Loads the precompilled kernel object. For GPUCore this is the ONLY way to create the kernel.
+	 * @description Loads the precompiled kernel object. For GPUCore this is the ONLY way to create the kernel.
 	 * To generate the kernelObj use <Kernel.exportKernelObj>
 	 *
 	 * Note that this function calls <validateKernelObj> internally, and throws an exception if it fails.
@@ -74,7 +74,7 @@ module.exports = class GPUCore {
 	 * @see GPUCore.validateKernelObj
 	 * @see	Kernel.exportKernelObj
 	 *
-	 * @param {Object} kernelObj - The precompilled kernel object
+	 * @param {Object} kernelObj - The precompiled kernel object
 	 * @param {Object} inOpt - [Optional] the option overrides to use
 	 *
 	 * @returns {Function} The kernel function
@@ -87,4 +87,4 @@ module.exports = class GPUCore {
 
 
 	}
-}
+};
