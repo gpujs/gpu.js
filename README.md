@@ -81,6 +81,7 @@ const opt = {
 or
 
 ```js
+//use x, y, and x
 const opt = {
     output: { x: 100 }
 };
@@ -229,13 +230,27 @@ const kernel = gpu.createKernel(function(a, b) {
 	return anotherFunction(mySuperFunction(a[this.thread.x], b[this.thread.x]));
 }).setOutput([20]);
 ```
+
+### Adding custom functions directly to kernel
+```js
+function mySuperFunction(a, b) {
+	return a - b;
+}
+const kernel = gpu.createKernel(function(a, b) {
+	return mySuperFunction(a[this.thread.x], b[this.thread.x]);
+})
+  .setOutput([20])
+  .setFunctions([mySuperFunction]);
+
+```
+
 ### Loops
 Loops just work
 #### Dynamic sized via constants
 ```js
 const matMult = gpu.createKernel(function(a, b) {
     var sum = 0;
-    for (var i = 0; i < size; i++) {
+    for (var i = 0; i < this.constants.size; i++) {
         sum += a[this.thread.y][i] * b[i][this.thread.x];
     }
     return sum;
