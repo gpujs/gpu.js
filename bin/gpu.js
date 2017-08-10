@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Fri Jul 28 2017 11:56:49 GMT-0400 (EDT)
+ * @date Thu Aug 10 2017 14:12:37 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -2286,9 +2286,10 @@ module.exports = function (_KernelBase) {
 			var texSize = this.texSize;
 			var gl = this._webGl;
 			var threadDim = this.threadDim;
+			var dimensions = this.dimensions;
 
 			if (this.outputToTexture) {
-				return new Texture(outputTexture, texSize, this.dimensions, this._webGl);
+				return new Texture(outputTexture, texSize, dimensions, this._webGl);
 			} else {
 				var result = void 0;
 				if (this.floatOutput) {
@@ -2302,14 +2303,14 @@ module.exports = function (_KernelBase) {
 
 				result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
 
-				if (this.dimensions.length === 1) {
+				if (dimensions.length === 1) {
 					return result;
-				} else if (this.dimensions.length === 2) {
-					return utils.splitArray(result, this.dimensions[0]);
-				} else if (this.dimensions.length === 3) {
-					var cube = utils.splitArray(result, this.dimensions[0] * this.dimensions[1]);
+				} else if (dimensions.length === 2) {
+					return utils.splitArray(result, dimensions[0]);
+				} else if (dimensions.length === 3) {
+					var cube = utils.splitArray(result, dimensions[0] * dimensions[1]);
 					return cube.map(function (x) {
-						return utils.splitArray(x, this.dimensions[0]);
+						return utils.splitArray(x, dimensions[0]);
 					});
 				}
 			}
