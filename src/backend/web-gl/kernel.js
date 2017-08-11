@@ -8,8 +8,7 @@ const fragShaderString = require('./shader-frag');
 const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
 const canvases = [];
-const canvasTexSizes = {};
-const maxTexSize = [1, 1];
+const maxTexSizes = {};
 module.exports = class WebGLKernel extends KernelBase {
 
 	/**
@@ -56,6 +55,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.compiledVertShaderString = null;
 		this.extDrawBuffersMap = null;
 		this.outputTexture = null;
+		this.maxTexSize = null;
 		if (!this._webGl) this._webGl = utils.initWebGl(this.getCanvas());
 	}
 
@@ -116,6 +116,26 @@ module.exports = class WebGLKernel extends KernelBase {
 		}
 	}
 
+	updateMaxTexSize() {
+		const texSize = this.texSize;
+		const canvas = this._canvas;
+		if (this.maxTexSize === null) {
+			let canvasIndex = canvases.indexOf(canvas);
+			if (canvasIndex === -1) {
+				canvasIndex = canvases.length;
+				canvases.push(canvas);
+				maxTexSizes[canvasIndex] = [texSize[0], texSize[1]];
+			}
+			this.maxTexSize = maxTexSizes[canvasIndex];
+		}
+		if (this.maxTexSize[0] < texSize[0]) {
+			this.maxTexSize[0] = texSize[0];
+		}
+		if (this.maxTexSize[1] < texSize[1]) {
+			this.maxTexSize[1] = texSize[1];
+		}
+	}
+
 	/**
 	 * @memberOf WebGLKernel#
 	 * @function
@@ -129,32 +149,14 @@ module.exports = class WebGLKernel extends KernelBase {
 	build() {
 		this.validateOptions();
 		this.setupParams(arguments);
+		this.updateMaxTexSize();
 		const texSize = this.texSize;
 		const gl = this._webGl;
 		const canvas = this._canvas;
-		let canvasIndex = canvases.indexOf(canvas);
-		if (canvasIndex === -1) {
-			canvasIndex = canvases.length;
-			canvases.push(canvas);
-			canvasTexSizes[canvasIndex] = [];
-		}
-
-		const sizes = canvasTexSizes[canvasIndex];
-		sizes.push(texSize);
-		for (let i = 0; i < sizes.length; i++) {
-			const size = sizes[i];
-			if (maxTexSize[0] < size[0]) {
-				maxTexSize[0] = size[0];
-			}
-			if (maxTexSize[1] < size[1]) {
-				maxTexSize[1] = size[1];
-			}
-		}
-
 		gl.enable(gl.SCISSOR_TEST);
-		gl.viewport(0, 0, maxTexSize[0], maxTexSize[1]);
-		canvas.width = maxTexSize[0];
-		canvas.height = maxTexSize[1];
+		gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
+		canvas.width = this.maxTexSize[0];
+		canvas.height = this.maxTexSize[1];
 		const threadDim = this.threadDim = utils.clone(this.dimensions);
 		while (threadDim.length < 3) {
 			threadDim.push(1);
@@ -198,10 +200,8 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.framebuffer.width = texSize[0];
 		this.framebuffer.height = texSize[1];
 
-		const vertices = new Float32Array([
-		  -1, -1,
-			1, -1,
-      -1, 1,
+		const vertices = new Float32Array([-1, -1,
+			1, -1, -1, 1,
 			1, 1
 		]);
 		const texCoords = new Float32Array([
@@ -286,8 +286,8 @@ module.exports = class WebGLKernel extends KernelBase {
 			gl.uniform2fv(uTexSizeLoc, texSize);
 		}
 
-    const ratioLoc = this.getUniformLocation('ratio');
-    gl.uniform2f(ratioLoc, texSize[0] / maxTexSize[0], texSize[1] / maxTexSize[1]);
+		const ratioLoc = this.getUniformLocation('ratio');
+		gl.uniform2f(ratioLoc, texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
 		this.argumentsLength = 0;
 		for (let texIndex = 0; texIndex < paramNames.length; texIndex++) {

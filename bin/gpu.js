@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Fri Aug 11 2017 16:07:15 GMT-0400 (EDT)
+ * @date Fri Aug 11 2017 16:56:01 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -2002,8 +2002,7 @@ var fragShaderString = require('./shader-frag');
 var vertShaderString = require('./shader-vert');
 var kernelString = require('./kernel-string');
 var canvases = [];
-var canvasTexSizes = {};
-var maxTexSize = [1, 1];
+var maxTexSizes = {};
 module.exports = function (_KernelBase) {
 	_inherits(WebGLKernel, _KernelBase);
 
@@ -2031,6 +2030,7 @@ module.exports = function (_KernelBase) {
 		_this.compiledVertShaderString = null;
 		_this.extDrawBuffersMap = null;
 		_this.outputTexture = null;
+		_this.maxTexSize = null;
 		if (!_this._webGl) _this._webGl = utils.initWebGl(_this.getCanvas());
 		return _this;
 	}
@@ -2084,6 +2084,27 @@ module.exports = function (_KernelBase) {
 				this.floatOutput = true;
 			}
 		}
+	}, {
+		key: 'updateMaxTexSize',
+		value: function updateMaxTexSize() {
+			var texSize = this.texSize;
+			var canvas = this._canvas;
+			if (this.maxTexSize === null) {
+				var canvasIndex = canvases.indexOf(canvas);
+				if (canvasIndex === -1) {
+					canvasIndex = canvases.length;
+					canvases.push(canvas);
+					maxTexSizes[canvasIndex] = [texSize[0], texSize[1]];
+				}
+				this.maxTexSize = maxTexSizes[canvasIndex];
+			}
+			if (this.maxTexSize[0] < texSize[0]) {
+				this.maxTexSize[0] = texSize[0];
+			}
+			if (this.maxTexSize[1] < texSize[1]) {
+				this.maxTexSize[1] = texSize[1];
+			}
+		}
 
 
 	}, {
@@ -2091,32 +2112,14 @@ module.exports = function (_KernelBase) {
 		value: function build() {
 			this.validateOptions();
 			this.setupParams(arguments);
+			this.updateMaxTexSize();
 			var texSize = this.texSize;
 			var gl = this._webGl;
 			var canvas = this._canvas;
-			var canvasIndex = canvases.indexOf(canvas);
-			if (canvasIndex === -1) {
-				canvasIndex = canvases.length;
-				canvases.push(canvas);
-				canvasTexSizes[canvasIndex] = [];
-			}
-
-			var sizes = canvasTexSizes[canvasIndex];
-			sizes.push(texSize);
-			for (var i = 0; i < sizes.length; i++) {
-				var size = sizes[i];
-				if (maxTexSize[0] < size[0]) {
-					maxTexSize[0] = size[0];
-				}
-				if (maxTexSize[1] < size[1]) {
-					maxTexSize[1] = size[1];
-				}
-			}
-
 			gl.enable(gl.SCISSOR_TEST);
-			gl.viewport(0, 0, maxTexSize[0], maxTexSize[1]);
-			canvas.width = maxTexSize[0];
-			canvas.height = maxTexSize[1];
+			gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
+			canvas.width = this.maxTexSize[0];
+			canvas.height = this.maxTexSize[1];
 			var threadDim = this.threadDim = utils.clone(this.dimensions);
 			while (threadDim.length < 3) {
 				threadDim.push(1);
@@ -2188,10 +2191,10 @@ module.exports = function (_KernelBase) {
 
 			if (this.subKernelOutputTextures !== null) {
 				var extDrawBuffersMap = this.extDrawBuffersMap = [gl.COLOR_ATTACHMENT0];
-				for (var _i = 0; _i < this.subKernelOutputTextures.length; _i++) {
-					var subKernelOutputTexture = this.subKernelOutputTextures[_i];
-					extDrawBuffersMap.push(gl.COLOR_ATTACHMENT0 + _i + 1);
-					gl.activeTexture(gl.TEXTURE0 + arguments.length + _i);
+				for (var i = 0; i < this.subKernelOutputTextures.length; i++) {
+					var subKernelOutputTexture = this.subKernelOutputTextures[i];
+					extDrawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
+					gl.activeTexture(gl.TEXTURE0 + arguments.length + i);
 					gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -2229,7 +2232,7 @@ module.exports = function (_KernelBase) {
 			}
 
 			var ratioLoc = this.getUniformLocation('ratio');
-			gl.uniform2f(ratioLoc, texSize[0] / maxTexSize[0], texSize[1] / maxTexSize[1]);
+			gl.uniform2f(ratioLoc, texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
 			this.argumentsLength = 0;
 			for (var texIndex = 0; texIndex < paramNames.length; texIndex++) {
@@ -2261,19 +2264,19 @@ module.exports = function (_KernelBase) {
 				if (this.subKernels !== null) {
 					var output = [];
 					output.result = this.renderOutput(outputTexture);
-					for (var _i2 = 0; _i2 < this.subKernels.length; _i2++) {
-						output.push(new Texture(this.subKernelOutputTextures[_i2], texSize, this.dimensions, this._webGl));
+					for (var _i = 0; _i < this.subKernels.length; _i++) {
+						output.push(new Texture(this.subKernelOutputTextures[_i], texSize, this.dimensions, this._webGl));
 					}
 					return output;
 				} else if (this.subKernelProperties !== null) {
 					var _output = {
 						result: this.renderOutput(outputTexture)
 					};
-					var _i3 = 0;
+					var _i2 = 0;
 					for (var p in this.subKernelProperties) {
 						if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-						_output[p] = new Texture(this.subKernelOutputTextures[_i3], texSize, this.dimensions, this._webGl);
-						_i3++;
+						_output[p] = new Texture(this.subKernelOutputTextures[_i2], texSize, this.dimensions, this._webGl);
+						_i2++;
 					}
 					return _output;
 				}
@@ -2766,7 +2769,7 @@ module.exports = function (_KernelBase) {
 				if (!_ext) throw new Error('could not instantiate draw buffers extension');
 				this.subKernelOutputTextures = [];
 				this.subKernelOutputVariableNames = [];
-				var _i4 = 0;
+				var _i3 = 0;
 				for (var p in this.subKernelProperties) {
 					if (!this.subKernelProperties.hasOwnProperty(p)) continue;
 					var _subKernel = this.subKernelProperties[p];
@@ -2778,7 +2781,7 @@ module.exports = function (_KernelBase) {
 					});
 					this.subKernelOutputTextures.push(this.getSubKernelTexture(p));
 					this.subKernelOutputVariableNames.push(_subKernel.name + 'Result');
-					_i4++;
+					_i3++;
 				}
 			}
 		}
@@ -2860,7 +2863,7 @@ module.exports = "__HEADER__;\nprecision highp float;\nprecision highp int;\npre
 },{}],17:[function(require,module,exports){
 "use strict";
 
-module.exports = "precision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nattribute highp vec2 aPos;\nattribute highp vec2 aTexCoord;\n\nvarying highp vec2 vTexCoord;\nuniform vec2 ratio;\n\nvoid main(void) {\n  gl_Position = vec4(aPos, 0, 1);\n  vTexCoord = aTexCoord;\n}";
+module.exports = "precision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nattribute highp vec2 aPos;\nattribute highp vec2 aTexCoord;\n\nvarying highp vec2 vTexCoord;\nuniform vec2 ratio;\n\nvoid main(void) {\n  gl_Position = vec4((aPos + vec2(1)) * ratio + vec2(-1), 0, 1);\n  vTexCoord = aTexCoord;\n}";
 },{}],18:[function(require,module,exports){
 'use strict';
 
