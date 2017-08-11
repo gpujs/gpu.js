@@ -7,6 +7,9 @@ const Texture = require('../../core/texture');
 const fragShaderString = require('./shader-frag');
 const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
+const canvases = [];
+const canvasTexSizes = {};
+const maxTexSize = [1, 1];
 module.exports = class WebGLKernel extends KernelBase {
 
 	/**
@@ -128,6 +131,30 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.setupParams(arguments);
 		const texSize = this.texSize;
 		const gl = this._webGl;
+		const canvas = this._canvas;
+		let canvasIndex = canvases.indexOf(canvas);
+		if (canvasIndex === -1) {
+			canvasIndex = canvases.length;
+			canvases.push(canvas);
+			canvasTexSizes[canvasIndex] = [];
+		}
+
+		const sizes = canvasTexSizes[canvasIndex];
+		sizes.push(texSize);
+		for (let i = 0; i < sizes.length; i++) {
+			const size = sizes[i];
+			if (maxTexSize[0] < size[0]) {
+				maxTexSize[0] = size[0];
+			}
+			if (maxTexSize[1] < size[1]) {
+				maxTexSize[1] = size[1];
+			}
+		}
+
+		gl.enable(gl.SCISSOR_TEST);
+		gl.viewport(0, 0, maxTexSize[0], maxTexSize[1]);
+		canvas.width = maxTexSize[0];
+		canvas.height = maxTexSize[1];
 		const threadDim = this.threadDim = utils.clone(this.dimensions);
 		while (threadDim.length < 3) {
 			threadDim.push(1);
@@ -171,8 +198,10 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.framebuffer.width = texSize[0];
 		this.framebuffer.height = texSize[1];
 
-		const vertices = new Float32Array([-1, -1,
-			1, -1, -1, 1,
+		const vertices = new Float32Array([
+		  -1, -1,
+			1, -1,
+      -1, 1,
 			1, 1
 		]);
 		const texCoords = new Float32Array([
@@ -246,14 +275,9 @@ module.exports = class WebGLKernel extends KernelBase {
 		const paramTypes = this.paramTypes;
 		const texSize = this.texSize;
 		const gl = this._webGl;
-		const canvas = this._canvas;
 
 		gl.useProgram(this.program);
-		if (texSize[0] !== canvas.width || texSize[1] !== canvas.height) {
-			gl.viewport(0, 0, texSize[0], texSize[1]);
-			canvas.width = texSize[0];
-			canvas.height = texSize[1];
-		}
+		gl.scissor(0, 0, texSize[0], texSize[1]);
 
 		if (!this.hardcodeConstants) {
 			const uOutputDimLoc = this.getUniformLocation('uOutputDim');
@@ -261,6 +285,9 @@ module.exports = class WebGLKernel extends KernelBase {
 			const uTexSizeLoc = this.getUniformLocation('uTexSize');
 			gl.uniform2fv(uTexSizeLoc, texSize);
 		}
+
+    const ratioLoc = this.getUniformLocation('ratio');
+    gl.uniform2f(ratioLoc, texSize[0] / maxTexSize[0], texSize[1] / maxTexSize[1]);
 
 		this.argumentsLength = 0;
 		for (let texIndex = 0; texIndex < paramNames.length; texIndex++) {
@@ -337,7 +364,6 @@ module.exports = class WebGLKernel extends KernelBase {
 		const gl = this._webGl;
 		const threadDim = this.threadDim;
 		const dimensions = this.dimensions;
-
 		if (this.outputToTexture) {
 			return new Texture(outputTexture, texSize, dimensions, this._webGl);
 		} else {

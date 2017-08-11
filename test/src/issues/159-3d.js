@@ -1,4 +1,3 @@
-
 function threeD(mode) {
   var gpu = new GPU({ mode: mode });
 
