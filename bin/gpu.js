@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Thu Aug 10 2017 14:18:04 GMT-0400 (EDT)
+ * @date Thu Aug 10 2017 20:29:23 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -2001,8 +2001,6 @@ var Texture = require('../../core/texture');
 var fragShaderString = require('./shader-frag');
 var vertShaderString = require('./shader-vert');
 var kernelString = require('./kernel-string');
-var canvases = [];
-var canvasTexSizes = {};
 module.exports = function (_KernelBase) {
 	_inherits(WebGLKernel, _KernelBase);
 
@@ -2092,31 +2090,6 @@ module.exports = function (_KernelBase) {
 			this.setupParams(arguments);
 			var texSize = this.texSize;
 			var gl = this._webGl;
-			var canvas = this._canvas;
-			var canvasIndex = canvases.indexOf(canvas);
-			if (canvasIndex === -1) {
-				canvasIndex = canvases.length;
-				canvases.push(canvas);
-				canvasTexSizes[canvasIndex] = [];
-			}
-
-			var sizes = canvasTexSizes[canvasIndex];
-			sizes.push(texSize);
-			var maxTexSize = [0, 0];
-			for (var i = 0; i < sizes.length; i++) {
-				var size = sizes[i];
-				if (maxTexSize[0] < size[0]) {
-					maxTexSize[0] = size[0];
-				}
-				if (maxTexSize[1] < size[1]) {
-					maxTexSize[1] = size[1];
-				}
-			}
-
-			gl.enable(gl.SCISSOR_TEST);
-			gl.viewport(0, 0, maxTexSize[0], maxTexSize[1]);
-			canvas.width = maxTexSize[0];
-			canvas.height = maxTexSize[1];
 			var threadDim = this.threadDim = utils.clone(this.dimensions);
 			while (threadDim.length < 3) {
 				threadDim.push(1);
@@ -2188,10 +2161,10 @@ module.exports = function (_KernelBase) {
 
 			if (this.subKernelOutputTextures !== null) {
 				var extDrawBuffersMap = this.extDrawBuffersMap = [gl.COLOR_ATTACHMENT0];
-				for (var _i = 0; _i < this.subKernelOutputTextures.length; _i++) {
-					var subKernelOutputTexture = this.subKernelOutputTextures[_i];
-					extDrawBuffersMap.push(gl.COLOR_ATTACHMENT0 + _i + 1);
-					gl.activeTexture(gl.TEXTURE0 + arguments.length + _i);
+				for (var i = 0; i < this.subKernelOutputTextures.length; i++) {
+					var subKernelOutputTexture = this.subKernelOutputTextures[i];
+					extDrawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
+					gl.activeTexture(gl.TEXTURE0 + arguments.length + i);
 					gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -2217,9 +2190,14 @@ module.exports = function (_KernelBase) {
 			var paramTypes = this.paramTypes;
 			var texSize = this.texSize;
 			var gl = this._webGl;
+			var canvas = this._canvas;
 
 			gl.useProgram(this.program);
-			gl.scissor(0, 0, texSize[0], texSize[1]);
+			if (texSize[0] !== canvas.width || texSize[1] !== canvas.height) {
+				gl.viewport(0, 0, texSize[0], texSize[1]);
+				canvas.width = texSize[0];
+				canvas.height = texSize[1];
+			}
 
 			if (!this.hardcodeConstants) {
 				var uOutputDimLoc = this.getUniformLocation('uOutputDim');
@@ -2258,19 +2236,19 @@ module.exports = function (_KernelBase) {
 				if (this.subKernels !== null) {
 					var output = [];
 					output.result = this.renderOutput(outputTexture);
-					for (var _i2 = 0; _i2 < this.subKernels.length; _i2++) {
-						output.push(new Texture(this.subKernelOutputTextures[_i2], texSize, this.dimensions, this._webGl));
+					for (var _i = 0; _i < this.subKernels.length; _i++) {
+						output.push(new Texture(this.subKernelOutputTextures[_i], texSize, this.dimensions, this._webGl));
 					}
 					return output;
 				} else if (this.subKernelProperties !== null) {
 					var _output = {
 						result: this.renderOutput(outputTexture)
 					};
-					var _i3 = 0;
+					var _i2 = 0;
 					for (var p in this.subKernelProperties) {
 						if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-						_output[p] = new Texture(this.subKernelOutputTextures[_i3], texSize, this.dimensions, this._webGl);
-						_i3++;
+						_output[p] = new Texture(this.subKernelOutputTextures[_i2], texSize, this.dimensions, this._webGl);
+						_i2++;
 					}
 					return _output;
 				}
@@ -2764,7 +2742,7 @@ module.exports = function (_KernelBase) {
 				if (!_ext) throw new Error('could not instantiate draw buffers extension');
 				this.subKernelOutputTextures = [];
 				this.subKernelOutputVariableNames = [];
-				var _i4 = 0;
+				var _i3 = 0;
 				for (var p in this.subKernelProperties) {
 					if (!this.subKernelProperties.hasOwnProperty(p)) continue;
 					var _subKernel = this.subKernelProperties[p];
@@ -2776,7 +2754,7 @@ module.exports = function (_KernelBase) {
 					});
 					this.subKernelOutputTextures.push(this.getSubKernelTexture(p));
 					this.subKernelOutputVariableNames.push(_subKernel.name + 'Result');
-					_i4++;
+					_i3++;
 				}
 			}
 		}
