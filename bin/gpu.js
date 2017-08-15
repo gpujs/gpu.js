@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Fri Aug 11 2017 16:56:01 GMT-0400 (EDT)
+ * @date Tue Aug 15 2017 15:18:02 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -66,6 +66,9 @@ module.exports = function (_FunctionBuilderBase) {
 			node.isSubKernel = true;
 			this.addFunctionNode(node);
 		}
+	}, {
+		key: 'polyfillStandardFunctions',
+		value: function polyfillStandardFunctions() {}
 	}]);
 
 	return CPUFunctionBuilder;
@@ -403,6 +406,7 @@ module.exports = function () {
 		_classCallCheck(this, FunctionBuilderBase);
 
 		this.nodeMap = {};
+		this.rawFunctions = {};
 		this.gpu = gpu;
 		this.rootKernel = null;
 	}
@@ -448,31 +452,24 @@ module.exports = function () {
 				}
 			}
 
+			if (this.rawFunctions[functionName]) {
+				if (retList.indexOf(functionName) >= 0) {
+				} else {
+					retList.push(functionName);
+				}
+			}
+
 			return retList;
 		}
-
-
-
 	}, {
 		key: 'polyfillStandardFunctions',
-
-
 		value: function polyfillStandardFunctions() {
-			this.addFunction('round', _round);
-		}
-	}], [{
-		key: 'round',
-		value: function round(a) {
-			return _round(a);
+			throw new Error('polyfillStandardFunctions not defined on base function builder');
 		}
 	}]);
 
 	return FunctionBuilderBase;
 }();
-
-function _round(a) {
-	return Math.floor(a + 0.5);
-}
 },{}],7:[function(require,module,exports){
 'use strict';
 
@@ -1046,7 +1043,6 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var FunctionBuilderBase = require('../function-builder-base');
 var WebGLFunctionNode = require('./function-node');
-var utils = require('../../core/utils');
 
 module.exports = function (_FunctionBuilderBase) {
 	_inherits(WebGLFunctionBuilder, _FunctionBuilderBase);
@@ -1061,6 +1057,11 @@ module.exports = function (_FunctionBuilderBase) {
 		key: 'addFunction',
 		value: function addFunction(functionName, jsFunction, paramTypes, returnType) {
 			this.addFunctionNode(new WebGLFunctionNode(functionName, jsFunction, paramTypes, returnType).setAddFunction(this.addFunction.bind(this)));
+		}
+	}, {
+		key: 'addGLSLFunction',
+		value: function addGLSLFunction(functionName, glslFunctionString) {
+			this.rawFunctions[functionName] = glslFunctionString;
 		}
 
 
@@ -1083,9 +1084,12 @@ module.exports = function (_FunctionBuilderBase) {
 		value: function getPrototypeStringFromFunctionNames(functionList, opt) {
 			var ret = [];
 			for (var i = 0; i < functionList.length; ++i) {
-				var node = this.nodeMap[functionList[i]];
+				var functionName = functionList[i];
+				var node = this.nodeMap[functionName];
 				if (node) {
 					ret.push(node.getFunctionPrototypeString(opt));
+				} else if (this.rawFunctions[functionName]) {
+					ret.push(this.rawFunctions[functionName]);
 				}
 			}
 			return ret.join('\n');
@@ -1139,11 +1143,30 @@ module.exports = function (_FunctionBuilderBase) {
 			this.addFunctionNode(kernelNode);
 			return kernelNode;
 		}
+
+
+
+	}, {
+		key: 'polyfillStandardFunctions',
+
+
+		value: function polyfillStandardFunctions() {
+			this.addFunction('round', _round);
+		}
+	}], [{
+		key: 'round',
+		value: function round(a) {
+			return _round(a);
+		}
 	}]);
 
 	return WebGLFunctionBuilder;
 }(FunctionBuilderBase);
-},{"../../core/utils":24,"../function-builder-base":6,"./function-node":12}],12:[function(require,module,exports){
+
+function _round(a) {
+	return Math.floor(a + 0.5);
+}
+},{"../function-builder-base":6,"./function-node":12}],12:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2811,6 +2834,11 @@ module.exports = function (_KernelBase) {
 		key: 'toString',
 		value: function toString() {
 			return kernelString(this);
+		}
+	}, {
+		key: 'addGLSLFunction',
+		value: function addGLSLFunction(name, source) {
+			this.functionBuilder.addGLSLFunction(name, source);
 		}
 	}]);
 
