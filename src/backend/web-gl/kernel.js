@@ -8,14 +8,14 @@ const fragShaderString = require('./shader-frag');
 const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
 const canvases = [];
-const canvasTexSizes = {};
+const maxTexSizes = {};
 module.exports = class WebGLKernel extends KernelBase {
 
 	/**
 	 * @constructor WebGLKernel
 	 *
-	 * @desc Kernel Implementation for WebGL. 
-	 * <p>This builds the shaders and runs them on the GPU, 
+	 * @desc Kernel Implementation for WebGL.
+	 * <p>This builds the shaders and runs them on the GPU,
 	 * the outputs the result back as float(enabled by default) and Texture.</p>
 	 *
 	 * @extends KernelBase
@@ -55,6 +55,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.compiledVertShaderString = null;
 		this.extDrawBuffersMap = null;
 		this.outputTexture = null;
+		this.maxTexSize = null;
 		if (!this._webGl) this._webGl = utils.initWebGl(this.getCanvas());
 	}
 
@@ -63,8 +64,8 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * @function
 	 * @name validateOptions
 	 *
-	 * @desc Validate options related to Kernel, such as 
-	 * floatOutputs and Textures, texSize, dimensions, 
+	 * @desc Validate options related to Kernel, such as
+	 * floatOutputs and Textures, texSize, dimensions,
 	 * graphical output.
 	 *
 	 */
@@ -115,6 +116,26 @@ module.exports = class WebGLKernel extends KernelBase {
 		}
 	}
 
+	updateMaxTexSize() {
+		const texSize = this.texSize;
+		const canvas = this._canvas;
+		if (this.maxTexSize === null) {
+			let canvasIndex = canvases.indexOf(canvas);
+			if (canvasIndex === -1) {
+				canvasIndex = canvases.length;
+				canvases.push(canvas);
+				maxTexSizes[canvasIndex] = [texSize[0], texSize[1]];
+			}
+			this.maxTexSize = maxTexSizes[canvasIndex];
+		}
+		if (this.maxTexSize[0] < texSize[0]) {
+			this.maxTexSize[0] = texSize[0];
+		}
+		if (this.maxTexSize[1] < texSize[1]) {
+			this.maxTexSize[1] = texSize[1];
+		}
+	}
+
 	/**
 	 * @memberOf WebGLKernel#
 	 * @function
@@ -128,33 +149,14 @@ module.exports = class WebGLKernel extends KernelBase {
 	build() {
 		this.validateOptions();
 		this.setupParams(arguments);
+		this.updateMaxTexSize();
 		const texSize = this.texSize;
 		const gl = this._webGl;
 		const canvas = this._canvas;
-		let canvasIndex = canvases.indexOf(canvas);
-		if (canvasIndex === -1) {
-			canvasIndex = canvases.length;
-			canvases.push(canvas);
-			canvasTexSizes[canvasIndex] = [];
-		}
-
-		const sizes = canvasTexSizes[canvasIndex];
-		sizes.push(texSize);
-		const maxTexSize = [0, 0];
-		for (let i = 0; i < sizes.length; i++) {
-			const size = sizes[i];
-			if (maxTexSize[0] < size[0]) {
-				maxTexSize[0] = size[0];
-			}
-			if (maxTexSize[1] < size[1]) {
-				maxTexSize[1] = size[1];
-			}
-		}
-
 		gl.enable(gl.SCISSOR_TEST);
-		gl.viewport(0, 0, maxTexSize[0], maxTexSize[1]);
-		canvas.width = maxTexSize[0];
-		canvas.height = maxTexSize[1];
+		gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
+		canvas.width = this.maxTexSize[0];
+		canvas.height = this.maxTexSize[1];
 		const threadDim = this.threadDim = utils.clone(this.dimensions);
 		while (threadDim.length < 3) {
 			threadDim.push(1);
@@ -232,12 +234,6 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		this.setupOutputTexture();
 
-		if (this.floatOutput) {
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-		} else {
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-		}
-
 		if (this.subKernelOutputTextures !== null) {
 			const extDrawBuffersMap = this.extDrawBuffersMap = [gl.COLOR_ATTACHMENT0];
 			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
@@ -266,7 +262,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * @desc Run the kernel program, and send the output to renderOutput
 	 *
 	 * <p> This method calls a helper method *renderOutput* to return the result. </p>
-	 * 
+	 *
 	 * @returns {Object} Result The final output of the program, as float, and as Textures for reuse.
 	 *
 	 *
@@ -289,6 +285,9 @@ module.exports = class WebGLKernel extends KernelBase {
 			const uTexSizeLoc = this.getUniformLocation('uTexSize');
 			gl.uniform2fv(uTexSizeLoc, texSize);
 		}
+
+		const ratioLoc = this.getUniformLocation('ratio');
+		gl.uniform2f(ratioLoc, texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
 		this.argumentsLength = 0;
 		for (let texIndex = 0; texIndex < paramNames.length; texIndex++) {
@@ -347,13 +346,13 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * @function
 	 * @name renderOutput
 	 *
-	 * 
+	 *
 	 * @desc Helper function to return webGl function's output.
-	 * Since the program runs on GPU, we need to get the 
+	 * Since the program runs on GPU, we need to get the
 	 * output of the program back to CPU and then return them.
 	 *
 	 * *Note*: This should not be called directly.
-	 * 
+	 *
 	 * @param {Object} outputTexture - Output Texture returned by webGl program
 	 *
 	 * @returns {Object|Array} result
@@ -364,9 +363,9 @@ module.exports = class WebGLKernel extends KernelBase {
 		const texSize = this.texSize;
 		const gl = this._webGl;
 		const threadDim = this.threadDim;
-
+		const dimensions = this.dimensions;
 		if (this.outputToTexture) {
-			return new Texture(outputTexture, texSize, this.dimensions, this._webGl);
+			return new Texture(outputTexture, texSize, dimensions, this._webGl);
 		} else {
 			let result;
 			if (this.floatOutput) {
@@ -380,14 +379,14 @@ module.exports = class WebGLKernel extends KernelBase {
 
 			result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
 
-			if (this.dimensions.length === 1) {
+			if (dimensions.length === 1) {
 				return result;
-			} else if (this.dimensions.length === 2) {
-				return utils.splitArray(result, this.dimensions[0]);
-			} else if (this.dimensions.length === 3) {
-				const cube = utils.splitArray(result, this.dimensions[0] * this.dimensions[1]);
+			} else if (dimensions.length === 2) {
+				return utils.splitArray(result, dimensions[0]);
+			} else if (dimensions.length === 3) {
+				const cube = utils.splitArray(result, dimensions[0] * dimensions[1]);
 				return cube.map(function(x) {
-					return utils.splitArray(x, this.dimensions[0]);
+					return utils.splitArray(x, dimensions[0]);
 				});
 			}
 		}
@@ -429,6 +428,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	 */
 	setupOutputTexture() {
 		const gl = this._webGl;
+		const texSize = this.texSize;
 		this.detachOutputTexture();
 		this.outputTexture = this.getOutputTexture();
 		gl.activeTexture(gl.TEXTURE0 + this.paramNames.length);
@@ -437,6 +437,11 @@ module.exports = class WebGLKernel extends KernelBase {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		if (this.floatOutput) {
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+		} else {
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		}
 	}
 
 	/**
@@ -445,7 +450,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * @name getArgumentTexture
 	 *
 	 * @desc This uses *getTextureCache** to get the Texture Cache of the argument supplied
-	 *	
+	 *
 	 * @param {String} name - Name of the argument
 	 *
 	 * 	Texture cache for the supplied argument
@@ -510,7 +515,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * @function
 	 * @name setupParams
 	 *
-	 * @desc Setup the parameter types for the parameters 
+	 * @desc Setup the parameter types for the parameters
 	 * supplied to the Kernel function
 	 *
 	 * @param {Array} args - The actual parameters sent to the Kernel
@@ -530,10 +535,10 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * @function
 	 * @name getUniformLocation
 	 *
-	 * @desc Return WebGlUniformLocation for various variables 
+	 * @desc Return WebGlUniformLocation for various variables
 	 * related to webGl program, such as user-defiend variables,
 	 * as well as, dimension sizes, etc.
-	 *	
+	 *
 	 */
 	getUniformLocation(name) {
 		let location = this.programUniformLocationCache[name];
@@ -578,9 +583,9 @@ module.exports = class WebGLKernel extends KernelBase {
 	/**
 	 * @memberOf WebGLKernel#
 	 * @function
-	 * @name _addArgument 
+	 * @name _addArgument
 	 *
-	 * @desc Adds kernel parameters to the Argument Texture, 
+	 * @desc Adds kernel parameters to the Argument Texture,
 	 * binding it to the webGl instance, etc.
 	 *
 	 * @param {Array|Texture|Number} value - The actual argument supplied to the kernel
@@ -941,7 +946,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * @function
 	 * @name _getKernelString
 	 *
-	 * @desc Get Kernel program string (in *glsl*) for a kernel. 
+	 * @desc Get Kernel program string (in *glsl*) for a kernel.
 	 *
 	 * @returns {String} result
 	 *
@@ -974,7 +979,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	/**
-	 * 
+	 *
 	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _getMainResultString
@@ -1138,7 +1143,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * @name _getFragShaderString
 	 *
 	 * @desc Get the fragment shader String.
-	 * If the String hasn't been compiled yet, 
+	 * If the String hasn't been compiled yet,
 	 * then this method compiles it as well
 	 *
 	 * @param {Array} args - The actual parameters sent to the Kernel
