@@ -208,39 +208,41 @@ module.exports = class OpenCLFunctionNode extends FunctionNodeBase {
 			retArr.push(funcParam.returnType);
 		}
 		retArr.push(' ');
-		retArr.push(funcParam.functionName);
+		retArr.push(funcParam.functionName === 'kernel' ? '$kernel' : funcParam.functionName);
 		retArr.push('(');
 
-		if (!funcParam.isRootKernel) {
+		//if (!funcParam.isRootKernel) {
 			// Arguments handling
-			for (let i = 0; i < funcParam.paramNames.length; ++i) {
-				const paramName = funcParam.paramNames[i];
+    retArr.push('__global float *kernelResult,');
+    for (let i = 0; i < funcParam.paramNames.length; ++i) {
+      const paramName = funcParam.paramNames[i];
 
-				if (i > 0) {
-					retArr.push(', ');
-				}
-				const type = funcParam.getParamType(paramName);
-				switch (type) {
-					case 'Texture':
-					case 'Array':
-						retArr.push('sampler2D');
-						break;
-					default:
-						retArr.push('float');
-				}
+      if (i > 0) {
+        retArr.push(', ');
+      }
+      const type = funcParam.getParamType(paramName);
+      switch (type) {
+        case 'Texture':
+        case 'Array':
+          retArr.push('__global sampler2D');
+          break;
+        default:
+          retArr.push('__global float');
+      }
 
-				retArr.push(' ');
-				retArr.push('user_');
-				retArr.push(paramName);
-			}
-		}
+      retArr.push(' ');
+      retArr.push('*user_');
+      retArr.push(paramName);
+    }
+		//}
 
 		// Function opening
 		retArr.push(') {\n');
 
+    retArr.push('int user_id = get_global_id(0);');
 		// Body statement iteration
-		for (let i = 0; i < ast.body.length; ++i) {
-			this.astGeneric(ast.body[i], retArr, funcParam);
+		for (let i = 0; i < ast.body.body.length; ++i) {
+			this.astGeneric(ast.body.body[i], retArr, funcParam);
 			retArr.push('\n');
 		}
 
@@ -479,15 +481,35 @@ module.exports = class OpenCLFunctionNode extends FunctionNodeBase {
 
 				return retArr;
 			} else {
-				retArr.push('for (float ');
-
-				if (!Array.isArray(forNode.init) || forNode.init.length < 1) {
+				const declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
+				const updateArgument = forNode.update.argument;
+				if (!Array.isArray(declarations) || declarations.length < 1) {
 					console.log(this.jsFunctionString);
 					throw new Error('Error: Incompatible for loop declaration');
 				}
 
-				this.astGeneric(forNode.init, retArr, funcParam);
-				retArr.push(';');
+				if (declarations.length > 1) {
+					let initArgument = null;
+					for (let i = 0; i < declarations.length; i++) {
+						const declaration = declarations[i];
+						if (declaration.id.name === updateArgument.name) {
+							initArgument = declaration;
+							declarations.splice(i, 1);
+						} else {
+							retArr.push('float ');
+							this.astGeneric(declaration, retArr, funcParam);
+							retArr.push(';');
+						}
+					}
+
+					retArr.push('for (float ');
+					this.astGeneric(initArgument, retArr, funcParam);
+					retArr.push(';');
+				} else {
+					retArr.push('for (');
+					this.astGeneric(forNode.init, retArr, funcParam);
+				}
+
 				this.astGeneric(forNode.test, retArr, funcParam);
 				retArr.push(';');
 				this.astGeneric(forNode.update, retArr, funcParam);
@@ -868,38 +890,41 @@ module.exports = class OpenCLFunctionNode extends FunctionNodeBase {
 					}
 				}
 
-				if (assumeNotTexture) {
-					// Get from array
-					this.astGeneric(mNode.object, retArr, funcParam);
-					retArr.push('[int(');
-					this.astGeneric(mNode.property, retArr, funcParam);
-					retArr.push(')]');
-				} else {
-					// Get from texture
-					// This normally refers to the global read only input vars
-					retArr.push('get(');
-					this.astGeneric(mNode.object, retArr, funcParam);
-					retArr.push(', vec2(');
-					this.astGeneric(mNode.object, retArr, funcParam);
-					retArr.push('Size[0],');
-					this.astGeneric(mNode.object, retArr, funcParam);
-					retArr.push('Size[1]), vec3(');
-					this.astGeneric(mNode.object, retArr, funcParam);
-					retArr.push('Dim[0],');
-					this.astGeneric(mNode.object, retArr, funcParam);
-					retArr.push('Dim[1],');
-					this.astGeneric(mNode.object, retArr, funcParam);
-					retArr.push('Dim[2]');
-					retArr.push('), ');
-					this.astGeneric(mNode.property, retArr, funcParam);
-					retArr.push(')');
-				}
-			} else {
+			// 	if (assumeNotTexture) {
+			// 		// Get from array
+			// 		this.astGeneric(mNode.object, retArr, funcParam);
+			// 		retArr.push('[int(');
+			// 		this.astGeneric(mNode.property, retArr, funcParam);
+			// 		retArr.push(')]');
+			// 	} else {
+			// 		// Get from texture
+			// 		// This normally refers to the global read only input vars
+			// 		retArr.push('get(');
+			// 		this.astGeneric(mNode.object, retArr, funcParam);
+			// 		retArr.push(', vec2(');
+			// 		this.astGeneric(mNode.object, retArr, funcParam);
+			// 		retArr.push('Size[0],');
+			// 		this.astGeneric(mNode.object, retArr, funcParam);
+			// 		retArr.push('Size[1]), vec3(');
+			// 		this.astGeneric(mNode.object, retArr, funcParam);
+			// 		retArr.push('Dim[0],');
+			// 		this.astGeneric(mNode.object, retArr, funcParam);
+			// 		retArr.push('Dim[1],');
+			// 		this.astGeneric(mNode.object, retArr, funcParam);
+			// 		retArr.push('Dim[2]');
+			// 		retArr.push('), ');
+			// 		this.astGeneric(mNode.property, retArr, funcParam);
+			// 		retArr.push(')');
+			// 	}
+			// } else {
+
 				this.astGeneric(mNode.object, retArr, funcParam);
-				const last = retArr.pop();
-				retArr.push(',');
+				//const last = retArr.pop();
+				//retArr.push(',');
+        retArr.push('[');
 				this.astGeneric(mNode.property, retArr, funcParam);
-				retArr.push(last);
+				//retArr.push(last);
+        retArr.push(']');
 			}
 		} else {
 

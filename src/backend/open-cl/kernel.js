@@ -95,10 +95,11 @@ module.exports = class OpenCLKernel extends KernelBase {
 		this.validateOptions();
 		this.setupParams(arguments);
 
+    this._addKernels();
     const compiledKernelString = `#pragma OPENCL EXTENSION cl_khr_fp64 : enable
-    ${ this._addKernels() }
-    ${ this.functionBuilder.getPrototypeString('kernel') }`;
+    __kernel ${ this.functionBuilder.getPrototypeString('kernel') }`;
 
+    console.log(compiledKernelString);
     if (this.debug) {
 			console.log('Options:');
 			console.dir(this);
@@ -106,7 +107,20 @@ module.exports = class OpenCLKernel extends KernelBase {
 			console.log(compiledKernelString);
 		}
 
-		this.program = this._openCl.createProgram(compiledKernelString);
+		const program = this.program = this._openCl.createProgram(compiledKernelString);
+    program.build('-cl-fast-relaxed-math')
+      .then(function() {
+        const buildStatus = program.getBuildStatus(device);
+        const buildLog = program.getBuildLog(device);
+        console.log(buildLog);
+        if (buildStatus < 0) {
+          throw new CLError(buildStatus, 'Build failed.');
+        }
+        console.log('Build completed.');
+
+        // Kernel stuff:
+        var kernel = program.createKernel('kernel');
+      });
 		return this;
 	}
 
@@ -460,8 +474,6 @@ module.exports = class OpenCLKernel extends KernelBase {
 		}, this.paramNames, this.paramTypes);
 
 		if (this.subKernels !== null) {
-			const ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
-			if (!ext) throw new Error('could not instantiate draw buffers extension');
 			this.subKernelOutputTextures = [];
 			this.subKernelOutputVariableNames = [];
 			for (let i = 0; i < this.subKernels.length; i++) {
@@ -477,8 +489,6 @@ module.exports = class OpenCLKernel extends KernelBase {
 			}
 
 		} else if (this.subKernelProperties !== null) {
-			const ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
-			if (!ext) throw new Error('could not instantiate draw buffers extension');
 			this.subKernelOutputTextures = [];
 			this.subKernelOutputVariableNames = [];
 			let i = 0;
