@@ -15,7 +15,7 @@ QUnit.test( "Issue #116 - multiple kernels run again", function() {
   for (var i = 0;  i < 2; i++) {
     var kernels = gpu.createKernelMap([add],function(a, b){
             return add(a,b, gpu_threadX);
-        }).setDimensions([sizes[i + 1]]); // First: 5. Second: 1.
+        }).setOutput([sizes[i + 1]]); // First: 5. Second: 1.
 
         layerForward.push(kernels);
   }

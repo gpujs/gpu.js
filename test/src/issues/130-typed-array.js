@@ -4,7 +4,7 @@ function typedArrayTest(mode) {
   const kernel = gpu.createKernel(function(changes) {
     return changes[this.thread.y][this.thread.x];
   })
-    .setDimensions([2, 1]);
+    .setOutput([2, 1]);
 
   const values = [new Float32Array(2)];
   values[0][0] = 0;

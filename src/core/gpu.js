@@ -224,14 +224,14 @@ class GPU extends GPUCore {
 
 			result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
 
-			if (lastKernel.dimensions.length === 1) {
+			if (lastKernel.output.length === 1) {
 				return result;
-			} else if (lastKernel.dimensions.length === 2) {
-				return utils.splitArray(result, lastKernel.dimensions[0]);
-			} else if (lastKernel.dimensions.length === 3) {
-				const cube = utils.splitArray(result, lastKernel.dimensions[0] * lastKernel.dimensions[1]);
+			} else if (lastKernel.output.length === 2) {
+				return utils.splitArray(result, lastKernel.output[0]);
+			} else if (lastKernel.output.length === 3) {
+				const cube = utils.splitArray(result, lastKernel.output[0] * lastKernel.output[1]);
 				return cube.map(function(x) {
-					return utils.splitArray(x, lastKernel.dimensions[0]);
+					return utils.splitArray(x, lastKernel.output[0]);
 				});
 			}
 		};

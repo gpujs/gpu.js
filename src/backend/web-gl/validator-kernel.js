@@ -21,6 +21,6 @@ module.exports = class WebGLValidatorKernel extends WebGLKernel {
 		this.texSize = utils.dimToTexSize({
 			floatTextures: this.floatTextures,
 			floatOutput: this.floatOutput
-		}, this.dimensions, true);
+		}, this.output, true);
 	}
 };

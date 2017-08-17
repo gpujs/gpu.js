@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Tue Aug 15 2017 15:18:02 GMT-0400 (EDT)
+ * @date Thu Aug 17 2017 14:41:20 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -32,7 +32,7 @@ module.exports = function () {
 
 		value: function validateKernelObj(kernelObj) {
 
-			if (kernelObj == null) {
+			if (kernelObj === null) {
 				throw "KernelObj being validated is NULL";
 			}
 
@@ -44,12 +44,12 @@ module.exports = function () {
 					throw "Failed to convert KernelObj from JSON string";
 				}
 
-				if (kernelObj == null) {
+				if (kernelObj === null) {
 					throw "Invalid (NULL) KernelObj JSON string representation";
 				}
 			}
 
-			if (kernelObj.isKernelObj != true) {
+			if (kernelObj.isKernelObj !== true) {
 				throw "Failed missing isKernelObj flag check";
 			}
 

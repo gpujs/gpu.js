@@ -4,12 +4,12 @@ function addCustomFunction_sumAB(mode) {
 	function custom_adder(a,b) {
 		return a+b;
 	}
-	gpu.addFunction(custom_adder);
 	
 	var f = gpu.createKernel(function(a, b) {
 		return custom_adder(a[this.thread.x], b[this.thread.x]);
 	}, {
-		dimensions : [6]
+	  functions: [custom_adder],
+    output : [6]
 	});
 	
 	QUnit.assert.ok( f !== null, "function generated test");

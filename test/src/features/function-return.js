@@ -3,7 +3,7 @@ function function_return( mode ) {
 	var f = gpu.createKernel(function() {
 		return 42.0;
 	}, {
-		dimensions : [1]
+    output : [1]
 	});
 	QUnit.assert.ok( f !== null, "function generated test");
 	QUnit.assert.close(f()[0], 42.0, 0.01, "basic return function test");

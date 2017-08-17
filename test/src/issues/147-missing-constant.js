@@ -5,11 +5,11 @@ function typedArrayTest(mode) {
   const kernel = gpu.createKernel(function() {
     return getPi();
   })
-    .setDimensions([1])
+    .setOutput([1])
     .setConstants({ pi: Math.PI });
 
   gpu.addFunction(function getPi() {
-    return pi;
+    return this.constants.pi;
   });
 
   console.log(QUnit.assert.equal((kernel()[0]).toFixed(7), Math.PI.toFixed(7)));

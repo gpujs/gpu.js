@@ -11,7 +11,7 @@ module.exports = function(cpuKernel, name) {
       clone: function ${ utils.clone.toString() },
       /*splitArray: function ${ utils.splitArray.toString() },
       getArgumentType: function ${ utils.getArgumentType.toString() },
-      getDimensions: function ${ utils.getDimensions.toString() },
+      getOutput: function ${ utils.getOutput.toString() },
       dimToTexSize: function ${ utils.dimToTexSize.toString() },
       copyFlatten: function ${ utils.copyFlatten.toString() },
       flatten: function ${ utils.flatten.toString() },
@@ -29,8 +29,9 @@ module.exports = function(cpuKernel, name) {
         this.paramNames = ${ JSON.stringify(cpuKernel.paramNames) };
         this.paramTypes = ${ JSON.stringify(cpuKernel.paramTypes) };
         this.texSize = ${ JSON.stringify(cpuKernel.texSize) };
-        this.dimensions = ${ JSON.stringify(cpuKernel.dimensions) };
+        this.output = ${ JSON.stringify(cpuKernel.output) };
         this._kernelString = \`${ cpuKernel._kernelString }\`;
+        this.output = ${ JSON.stringify(cpuKernel.output) };
 		    this.run = function() {
           this.run = null;
           this.build();
@@ -40,11 +41,6 @@ module.exports = function(cpuKernel, name) {
           x: 0,
           y: 0,
           z: 0
-        };
-        this.runDimensions = {
-          x: null,
-          y: null,
-          z: null
         };
       }
       setCanvas(canvas) { this._canvas = canvas; return this; }

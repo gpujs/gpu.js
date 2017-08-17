@@ -28,7 +28,7 @@ module.exports = class BaseKernel {
 	constructor(fnString, settings) {
 		this.paramNames = utils.getParamNamesFromString(fnString);
 		this.fnString = fnString;
-		this.dimensions = [];
+		this.output = null;
 		this.debug = false;
 		this.graphical = false;
 		this.loopMaxIterations = 0;
@@ -44,6 +44,7 @@ module.exports = class BaseKernel {
 		this.floatOutput = null;
 		this.floatOutputForce = null;
 		this.addFunction = null;
+		this.functions = null;
 		this.copyData = true;
 		this.subKernels = null;
 		this.subKernelProperties = null;
@@ -70,18 +71,35 @@ module.exports = class BaseKernel {
 		return this;
 	}
 
+	setFunctions(functions) {
+		this.functions = functions;
+		return this;
+	}
+
 	/**
 	 * @memberOf BaseKernel#
 	 * @function
-	 * @name setDimensions
+	 * @name setOutput
 	 *
 	 * @desc Set dimensions of the kernel function
 	 *
-	 * @param {Array} dimensions - The dimensions array set the dimensions to
+	 * @param {Array|Object} output - The output array to set the kernel output size to
 	 *
 	 */
-	setDimensions(dimensions) {
-		this.dimensions = dimensions;
+	setOutput(output) {
+		if (output.hasOwnProperty('x')) {
+			if (output.hasOwnProperty('y')) {
+				if (output.hasOwnProperty('x')) {
+					this.output = [output.x, output.y, output.z];
+				} else {
+					this.output = [output.x, output.y];
+				}
+			} else {
+				this.output = [output.x];
+			}
+		} else {
+			this.output = output;
+		}
 		return this;
 	}
 

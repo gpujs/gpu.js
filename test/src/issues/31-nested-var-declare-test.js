@@ -18,7 +18,7 @@ function nestedVarDeclareFunction() {
 function nestedVarDeclareTest( mode ) {
 	var gpu = new GPU({ mode: mode });
 	var f = gpu.createKernel(nestedVarDeclareFunction, {
-		dimensions : [1]
+    output : [1]
 	});
 
 	QUnit.assert.ok( f !== null, "function generated test");

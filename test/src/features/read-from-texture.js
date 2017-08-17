@@ -13,7 +13,7 @@ QUnit.test( "Read from Texture", function() {
     addResult: add
   }, function (a, b) {
     return add(a[this.thread.x], b[this.thread.x]);
-  }).setDimensions([A.length]);
+  }).setOutput([A.length]);
 
   const result = kernels(A, B);
   const textureResult = result.addResult;
