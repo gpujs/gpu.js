@@ -15,6 +15,7 @@ module.exports = class FunctionBuilderBase {
 	 */
 	constructor(gpu) {
 		this.nodeMap = {};
+		this.rawFunctions = {};
 		this.gpu = gpu;
 		this.rootKernel = null;
 	}
@@ -105,36 +106,18 @@ module.exports = class FunctionBuilderBase {
 			}
 		}
 
+		if (this.rawFunctions[functionName]) {
+      if (retList.indexOf(functionName) >= 0) {
+        // Does nothing if already traced
+      } else {
+        retList.push(functionName);
+      }
+    }
+
 		return retList;
 	}
 
-
-
-
-	//---------------------------------------------------------
-	//
-	//  Polyfill stuff
-	//
-	//---------------------------------------------------------
-
-	// Round function used in polyfill
-	static round(a) {
-		return round(a);
-	}
-
-	/**
-	 * @memberOf FunctionBuilderBase#
-	 * @function
-	 * @name polyfillStandardFunctions
-	 *
-	 * @desc Polyfill in the missing Math functions (round)
-	 *
-	 */
-	polyfillStandardFunctions() {
-		this.addFunction('round', round);
-	}
+  polyfillStandardFunctions() {
+	  throw new Error('polyfillStandardFunctions not defined on base function builder');
+  }
 };
-
-function round(a) {
-	return Math.floor(a + 0.5);
-}

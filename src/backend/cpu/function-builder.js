@@ -63,4 +63,6 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 		node.isSubKernel = true;
 		this.addFunctionNode(node);
 	}
+
+  polyfillStandardFunctions() {}
 };
