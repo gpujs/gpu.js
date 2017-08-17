@@ -28,7 +28,7 @@ module.exports = class BaseKernel {
 	constructor(fnString, settings) {
 		this.paramNames = utils.getParamNamesFromString(fnString);
 		this.fnString = fnString;
-		this.output = [];
+		this.output = null;
 		this.debug = false;
 		this.graphical = false;
 		this.loopMaxIterations = 0;

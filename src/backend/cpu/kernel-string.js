@@ -31,6 +31,7 @@ module.exports = function(cpuKernel, name) {
         this.texSize = ${ JSON.stringify(cpuKernel.texSize) };
         this.output = ${ JSON.stringify(cpuKernel.output) };
         this._kernelString = \`${ cpuKernel._kernelString }\`;
+        this.output = ${ JSON.stringify(cpuKernel.output) };
 		    this.run = function() {
           this.run = null;
           this.build();
@@ -40,11 +41,6 @@ module.exports = function(cpuKernel, name) {
           x: 0,
           y: 0,
           z: 0
-        };
-        this.runDimensions = {
-          x: null,
-          y: null,
-          z: null
         };
       }
       setCanvas(canvas) { this._canvas = canvas; return this; }

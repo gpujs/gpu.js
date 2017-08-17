@@ -16,7 +16,7 @@ module.exports = class CPUKernel extends KernelBase {
 	 * @extends KernelBase
 	 *
 	 * @prop {Object} thread - The thread dimensions, x, y and z
-	 * @prop {Object} runDimensions - The canvas dimensions
+	 * @prop {Object} output - The canvas dimensions
 	 * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
 	 * @prop {Function} run - Method to run the kernel
 	 *
@@ -35,11 +35,6 @@ module.exports = class CPUKernel extends KernelBase {
 			x: 0,
 			y: 0,
 			z: 0
-		};
-		this.runDimensions = {
-			x: null,
-			y: null,
-			z: null
 		};
 
 		this.run = function() {
@@ -105,16 +100,16 @@ module.exports = class CPUKernel extends KernelBase {
 			}
 		}
 
-		const threadDim = this.threadDim || (this.threadDim = utils.clone(this.output));
+		const threadDim = this.threadDim = utils.clone(this.output);
 
-		while (threadDim.length < 3) {
-			threadDim.push(1);
-		}
+    while (threadDim.length < 3) {
+      threadDim.push(1);
+    }
 
 		if (this.graphical) {
 			const canvas = this.getCanvas();
-			this.runDimensions.x = canvas.width = threadDim[0];
-			this.runDimensions.y = canvas.height = threadDim[1];
+			canvas.width = threadDim[0];
+			canvas.height = threadDim[1];
 			this._canvasCtx = canvas.getContext('2d');
 			this._imageData = this._canvasCtx.createImageData(threadDim[0], threadDim[1]);
 			this._colorData = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
@@ -143,8 +138,8 @@ module.exports = class CPUKernel extends KernelBase {
 		b = Math.floor(b * 255);
 		a = Math.floor(a * 255);
 
-		const width = this.runDimensions.x;
-		const height = this.runDimensions.y;
+		const width = this.output[0];
+		const height = this.output[1];
 
 		const x = this.thread.x;
 		const y = height - this.thread.y - 1;
