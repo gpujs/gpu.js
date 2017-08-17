@@ -157,7 +157,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
 		canvas.width = this.maxTexSize[0];
 		canvas.height = this.maxTexSize[1];
-		const threadDim = this.threadDim = utils.clone(this.dimensions);
+		const threadDim = this.threadDim = utils.clone(this.output);
 		while (threadDim.length < 3) {
 			threadDim.push(1);
 		}
@@ -363,9 +363,9 @@ module.exports = class WebGLKernel extends KernelBase {
 		const texSize = this.texSize;
 		const gl = this._webGl;
 		const threadDim = this.threadDim;
-		const dimensions = this.dimensions;
+		const output = this.output;
 		if (this.outputToTexture) {
-			return new Texture(outputTexture, texSize, dimensions, this._webGl);
+			return new Texture(outputTexture, texSize, output, this._webGl);
 		} else {
 			let result;
 			if (this.floatOutput) {
@@ -379,14 +379,14 @@ module.exports = class WebGLKernel extends KernelBase {
 
 			result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
 
-			if (dimensions.length === 1) {
+			if (output.length === 1) {
 				return result;
-			} else if (dimensions.length === 2) {
-				return utils.splitArray(result, dimensions[0]);
-			} else if (dimensions.length === 3) {
-				const cube = utils.splitArray(result, dimensions[0] * dimensions[1]);
+			} else if (output.length === 2) {
+				return utils.splitArray(result, output[0]);
+			} else if (output.length === 3) {
+				const cube = utils.splitArray(result, output[0] * output[1]);
 				return cube.map(function(x) {
-					return utils.splitArray(x, dimensions[0]);
+					return utils.splitArray(x, output[0]);
 				});
 			}
 		}
