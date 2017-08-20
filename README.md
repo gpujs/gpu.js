@@ -81,7 +81,7 @@ const opt = {
 or
 
 ```js
-//use x, y, and x
+//use x, y, and z
 const opt = {
     output: { x: 100 }
 };
