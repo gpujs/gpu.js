@@ -81,7 +81,7 @@ const opt = {
 or
 
 ```js
-//use x, y, and z
+// You can also use x, y, and z
 const opt = {
     output: { x: 100 }
 };
@@ -196,7 +196,7 @@ const megaKernel = gpu.createKernelMap({
 });
 
 megaKernel(a, b, c);
-//Result: { addResult: [], multiplyResult: [], result: [] }
+// Result: { addResult: [], multiplyResult: [], result: [] }
 ```
 #### array outputs
 ```js
@@ -212,7 +212,7 @@ const megaKernel = gpu.createKernelMap([
 });
 
 megaKernel(a, b, c);
-//Result: [ [], [] ].result []
+// Result: [ [], [] ].result []
 ```
 This gives you the flexibility of using parts of a single transformation without the performance penalty, resulting in much much _MUCH_ faster operation.
 
