@@ -19,8 +19,8 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 		);
 	}
 
-	addGLSLFunction(functionName, glslFunctionString) {
-	  this.rawFunctions[functionName] = glslFunctionString;
+	addNativeFunction(functionName, glslFunctionString) {
+	  this.nativeFunctions[functionName] = glslFunctionString;
   }
 
 	/**
@@ -66,8 +66,8 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 			const node = this.nodeMap[functionName];
 			if (node) {
 				ret.push(node.getFunctionPrototypeString(opt));
-			} else if (this.rawFunctions[functionName]) {
-			  ret.push(this.rawFunctions[functionName]);
+			} else if (this.nativeFunctions[functionName]) {
+			  ret.push(this.nativeFunctions[functionName]);
       }
 		}
 		return ret.join('\n');

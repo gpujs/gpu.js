@@ -15,7 +15,7 @@ module.exports = class FunctionBuilderBase {
 	 */
 	constructor(gpu) {
 		this.nodeMap = {};
-		this.rawFunctions = {};
+		this.nativeFunctions = {};
 		this.gpu = gpu;
 		this.rootKernel = null;
 	}
@@ -51,6 +51,10 @@ module.exports = class FunctionBuilderBase {
 			}
 		}
 	}
+
+	addNativeFunction(name, nativeFunction) {
+	  throw new Error('addNativeFunction not supported on base');
+  }
 
 	/**
 	 * @memberOf FunctionBuilderBase#
@@ -106,7 +110,7 @@ module.exports = class FunctionBuilderBase {
 			}
 		}
 
-		if (this.rawFunctions[functionName]) {
+		if (this.nativeFunctions[functionName]) {
       if (retList.indexOf(functionName) >= 0) {
         // Does nothing if already traced
       } else {

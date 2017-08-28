@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Thu Aug 17 2017 14:41:21 GMT-0400 (EDT)
+ * @date Mon Aug 28 2017 08:54:11 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -400,7 +400,7 @@ module.exports = function () {
 		_classCallCheck(this, FunctionBuilderBase);
 
 		this.nodeMap = {};
-		this.rawFunctions = {};
+		this.nativeFunctions = {};
 		this.gpu = gpu;
 		this.rootKernel = null;
 	}
@@ -426,6 +426,11 @@ module.exports = function () {
 					}
 				}
 			}
+		}
+	}, {
+		key: 'addNativeFunction',
+		value: function addNativeFunction(name, nativeFunction) {
+			throw new Error('addNativeFunction not supported on base');
 		}
 
 
@@ -461,7 +466,7 @@ module.exports = function () {
 				}
 			}
 
-			if (this.rawFunctions[functionName]) {
+			if (this.nativeFunctions[functionName]) {
 				if (retList.indexOf(functionName) >= 0) {
 				} else {
 					retList.push(functionName);
@@ -954,7 +959,7 @@ module.exports = function kernelRunShortcut(kernel) {
 	utils.allPropertiesOf(kernel).forEach(function (key) {
 		if (key[0] === '_' && key[1] === '_') return;
 		if (typeof kernel[key] === 'function') {
-			if (key.substring(0, 3) === 'set') {
+			if (key.substring(0, 3) === 'add' || key.substring(0, 3) === 'set') {
 				shortcut[key] = function () {
 					kernel[key].apply(kernel, arguments);
 					return shortcut;
@@ -1087,9 +1092,9 @@ module.exports = function (_FunctionBuilderBase) {
 			this.addFunctionNode(new WebGLFunctionNode(functionName, jsFunction, paramTypes, returnType).setAddFunction(this.addFunction.bind(this)));
 		}
 	}, {
-		key: 'addGLSLFunction',
-		value: function addGLSLFunction(functionName, glslFunctionString) {
-			this.rawFunctions[functionName] = glslFunctionString;
+		key: 'addNativeFunction',
+		value: function addNativeFunction(functionName, glslFunctionString) {
+			this.nativeFunctions[functionName] = glslFunctionString;
 		}
 
 
@@ -1116,8 +1121,8 @@ module.exports = function (_FunctionBuilderBase) {
 				var node = this.nodeMap[functionName];
 				if (node) {
 					ret.push(node.getFunctionPrototypeString(opt));
-				} else if (this.rawFunctions[functionName]) {
-					ret.push(this.rawFunctions[functionName]);
+				} else if (this.nativeFunctions[functionName]) {
+					ret.push(this.nativeFunctions[functionName]);
 				}
 			}
 			return ret.join('\n');
@@ -2867,9 +2872,9 @@ module.exports = function (_KernelBase) {
 			return kernelString(this);
 		}
 	}, {
-		key: 'addGLSLFunction',
-		value: function addGLSLFunction(name, source) {
-			this.functionBuilder.addGLSLFunction(name, source);
+		key: 'addNativeFunction',
+		value: function addNativeFunction(name, source) {
+			this.functionBuilder.addNativeFunction(name, source);
 		}
 	}]);
 

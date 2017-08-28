@@ -1193,7 +1193,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		return kernelString(this);
 	}
 
-	addGLSLFunction(name, source) {
-	  this.functionBuilder.addGLSLFunction(name, source);
+	addNativeFunction(name, source) {
+	  this.functionBuilder.addNativeFunction(name, source);
   }
 };
