@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 0.0.0
- * @date Mon Aug 28 2017 08:54:11 GMT-0400 (EDT)
+ * @date Mon Aug 28 2017 09:10:43 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -432,6 +432,14 @@ module.exports = function () {
 		value: function addNativeFunction(name, nativeFunction) {
 			throw new Error('addNativeFunction not supported on base');
 		}
+	}, {
+		key: 'addNativeFunctions',
+		value: function addNativeFunctions(nativeFunctions) {
+			for (var functionName in nativeFunctions) {
+				if (!nativeFunctions.hasOwnProperty(functionName)) continue;
+				this.addNativeFunction(functionName, nativeFunctions[functionName]);
+			}
+		}
 
 
 	}, {
@@ -725,6 +733,7 @@ module.exports = function () {
 		this.floatOutputForce = null;
 		this.addFunction = null;
 		this.functions = null;
+		this.nativeFunctions = null;
 		this.copyData = true;
 		this.subKernels = null;
 		this.subKernelProperties = null;
@@ -2799,6 +2808,7 @@ module.exports = function (_KernelBase) {
 			var gl = this._webGl;
 
 			builder.addFunctions(this.functions);
+			builder.addNativeFunctions(this.nativeFunctions);
 
 			builder.addKernel(this.fnString, {
 				prototypeOnly: false,
@@ -2870,6 +2880,11 @@ module.exports = function (_KernelBase) {
 		key: 'toString',
 		value: function toString() {
 			return kernelString(this);
+		}
+	}, {
+		key: 'addFunction',
+		value: function addFunction(fn) {
+			this.functionBuilder.addFunction(null, fn);
 		}
 	}, {
 		key: 'addNativeFunction',
@@ -3199,6 +3214,14 @@ var GPU = function (_GPUCore) {
 		key: 'addFunction',
 		value: function addFunction(fn, paramTypes, returnType) {
 			this._runner.functionBuilder.addFunction(null, fn, paramTypes, returnType);
+			return this;
+		}
+
+
+	}, {
+		key: 'addNativeFunction',
+		value: function addNativeFunction(name, nativeFunction) {
+			this._runner.functionBuilder.addNativeFunction(name, nativeFunction);
 			return this;
 		}
 

@@ -1,5 +1,8 @@
 function addCustomNativeFunctionDivide(mode) {
-	var gpu = new GPU({ mode: mode });
+	var gpu = new GPU({ mode: mode })
+    .addNativeFunction('divide', `float divide(float a, float b) {
+    return a / b;
+  }`);
 	
 	function divide(a,b) {
 		return a / b;
@@ -10,10 +13,7 @@ function addCustomNativeFunctionDivide(mode) {
 	}, {
 	  functions: [divide],
     output : [6]
-	})
-    .addNativeFunction('divide', `float divide(float a, float b) {
-    return a / b;
-  }`);
+	});
 	
 	QUnit.assert.ok( f !== null, 'function generated test');
 	

@@ -258,6 +258,25 @@ class GPU extends GPUCore {
 		return this;
 	}
 
+  /**
+   *
+   * Adds additional native functions, that the kernel may call.
+   *
+   * @name addNativeFunction
+   * @function
+   * @memberOf GPU#
+   *
+   * @param {String} name - native function name, used for reverse lookup
+   * @param {String} nativeFunction - the native function implementation, as it would be defined in it's entirety
+   *
+   * @returns {GPU} returns itself
+   *
+   */
+	addNativeFunction(name, nativeFunction) {
+	  this._runner.functionBuilder.addNativeFunction(name, nativeFunction);
+	  return this;
+  }
+
 	/**
 	 *
 	 * Return the current mode in which gpu.js is executing.

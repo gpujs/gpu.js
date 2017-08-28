@@ -56,6 +56,13 @@ module.exports = class FunctionBuilderBase {
 	  throw new Error('addNativeFunction not supported on base');
   }
 
+  addNativeFunctions(nativeFunctions) {
+	  for (let functionName in nativeFunctions) {
+	    if (!nativeFunctions.hasOwnProperty(functionName)) continue;
+	    this.addNativeFunction(functionName, nativeFunctions[functionName]);
+    }
+  }
+
 	/**
 	 * @memberOf FunctionBuilderBase#
 	 * @function
