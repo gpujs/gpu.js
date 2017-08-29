@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.1
- * @date Tue Aug 29 2017 16:10:08 GMT-0400 (EDT)
+ * @date Tue Aug 29 2017 16:20:11 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -1522,9 +1522,8 @@ module.exports = function (_FunctionNodeBase) {
 						console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
 					}
 
-					retArr.push('for (float ');
+					retArr.push('for (');
 					this.astGeneric(forNode.init, retArr, funcParam);
-					retArr.push(';');
 					this.astGeneric(forNode.test.left, retArr, funcParam);
 					retArr.push(forNode.test.operator);
 					retArr.push('LOOP_MAX');
