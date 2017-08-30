@@ -11,7 +11,7 @@ function booleanBranch(mode) {
 		}
 		return result;
 	}, {
-		dimensions : [1]
+    output : [1]
 	});
 
 	QUnit.assert.ok( f !== null, "function generated test");
@@ -40,7 +40,7 @@ function if_else( mode ) {
 			return 1;
 		}
 	}, {
-		dimensions : [4]
+    output : [4]
 	});
 
 	QUnit.assert.ok( f !== null, "function generated test");

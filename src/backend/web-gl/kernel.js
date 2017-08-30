@@ -65,7 +65,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * @name validateOptions
 	 *
 	 * @desc Validate options related to Kernel, such as
-	 * floatOutputs and Textures, texSize, dimensions,
+	 * floatOutputs and Textures, texSize, output,
 	 * graphical output.
 	 *
 	 */
@@ -81,28 +81,28 @@ module.exports = class WebGLKernel extends KernelBase {
 			this.floatOutput = false;
 		}
 
-		if (!this.dimensions || this.dimensions.length === 0) {
+		if (!this.output || this.output.length === 0) {
 			if (arguments.length !== 1) {
-				throw 'Auto dimensions only supported for kernels with only one input';
+				throw 'Auto output only supported for kernels with only one input';
 			}
 
 			const argType = utils.getArgumentType(arguments[0]);
 			if (argType === 'Array') {
-				this.dimensions = utils.getDimensions(argType);
+				this.output = utils.getDimensions(argType);
 			} else if (argType === 'Texture') {
-				this.dimensions = arguments[0].dimensions;
+				this.output = arguments[0].output;
 			} else {
-				throw 'Auto dimensions not supported for input type: ' + argType;
+				throw 'Auto output not supported for input type: ' + argType;
 			}
 		}
 
 		this.texSize = utils.dimToTexSize({
 			floatTextures: this.floatTextures,
 			floatOutput: this.floatOutput
-		}, this.dimensions, true);
+		}, this.output, true);
 
 		if (this.graphical) {
-			if (this.dimensions.length !== 2) {
+			if (this.output.length !== 2) {
 				throw 'Output must have 2 dimensions on graphical mode';
 			}
 
@@ -110,7 +110,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				throw 'Cannot use graphical mode and float output at the same time';
 			}
 
-			this.texSize = utils.clone(this.dimensions);
+			this.texSize = utils.clone(this.output);
 		} else if (this.floatOutput === undefined && utils.OES_texture_float) {
 			this.floatOutput = true;
 		}
@@ -157,7 +157,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
 		canvas.width = this.maxTexSize[0];
 		canvas.height = this.maxTexSize[1];
-		const threadDim = this.threadDim = utils.clone(this.dimensions);
+		const threadDim = this.threadDim = utils.clone(this.output);
 		while (threadDim.length < 3) {
 			threadDim.push(1);
 		}
@@ -321,7 +321,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				const output = [];
 				output.result = this.renderOutput(outputTexture);
 				for (let i = 0; i < this.subKernels.length; i++) {
-					output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.dimensions, this._webGl));
+					output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.output, this._webGl));
 				}
 				return output;
 			} else if (this.subKernelProperties !== null) {
@@ -331,7 +331,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				let i = 0;
 				for (let p in this.subKernelProperties) {
 					if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-					output[p] = new Texture(this.subKernelOutputTextures[i], texSize, this.dimensions, this._webGl);
+					output[p] = new Texture(this.subKernelOutputTextures[i], texSize, this.output, this._webGl);
 					i++;
 				}
 				return output;
@@ -363,9 +363,9 @@ module.exports = class WebGLKernel extends KernelBase {
 		const texSize = this.texSize;
 		const gl = this._webGl;
 		const threadDim = this.threadDim;
-		const dimensions = this.dimensions;
+		const output = this.output;
 		if (this.outputToTexture) {
-			return new Texture(outputTexture, texSize, dimensions, this._webGl);
+			return new Texture(outputTexture, texSize, output, this._webGl);
 		} else {
 			let result;
 			if (this.floatOutput) {
@@ -379,14 +379,14 @@ module.exports = class WebGLKernel extends KernelBase {
 
 			result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
 
-			if (dimensions.length === 1) {
+			if (output.length === 1) {
 				return result;
-			} else if (dimensions.length === 2) {
-				return utils.splitArray(result, dimensions[0]);
-			} else if (dimensions.length === 3) {
-				const cube = utils.splitArray(result, dimensions[0] * dimensions[1]);
+			} else if (output.length === 2) {
+				return utils.splitArray(result, output[0]);
+			} else if (output.length === 3) {
+				const cube = utils.splitArray(result, output[0] * output[1]);
 				return cube.map(function(x) {
-					return utils.splitArray(x, dimensions[0]);
+					return utils.splitArray(x, output[0]);
 				});
 			}
 		}
@@ -651,7 +651,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			case 'Texture':
 				{
 					const inputTexture = value;
-					const dim = utils.getDimensions(inputTexture.dimensions, true);
+					const dim = utils.getDimensions(inputTexture.output, true);
 					const size = inputTexture.size;
 
 					if (inputTexture.texture === this.outputTexture) {
@@ -1091,6 +1091,10 @@ module.exports = class WebGLKernel extends KernelBase {
 	_addKernels() {
 		const builder = this.functionBuilder;
 		const gl = this._webGl;
+
+		builder.addFunctions(this.functions);
+		builder.addNativeFunctions(this.nativeFunctions);
+
 		builder.addKernel(this.fnString, {
 			prototypeOnly: false,
 			constants: this.constants,
@@ -1189,4 +1193,12 @@ module.exports = class WebGLKernel extends KernelBase {
 	toString() {
 		return kernelString(this);
 	}
+
+	addFunction(fn) {
+	  this.functionBuilder.addFunction(null, fn);
+  }
+
+	addNativeFunction(name, source) {
+	  this.functionBuilder.addNativeFunction(name, source);
+  }
 };

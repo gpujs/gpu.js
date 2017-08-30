@@ -395,13 +395,13 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			case 'gpu_threadZ':
 				retArr.push('threadId.z');
 				break;
-			case 'gpu_dimensionsX':
+			case 'gpu_outputX':
 				retArr.push('uOutputDim.x');
 				break;
-			case 'gpu_dimensionsY':
+			case 'gpu_outputY':
 				retArr.push('uOutputDim.y');
 				break;
-			case 'gpu_dimensionsZ':
+			case 'gpu_outputZ':
 				retArr.push('uOutputDim.z');
 				break;
 			default:
@@ -446,14 +446,13 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				forNode.test.operator === '<' &&
 				this.isIdentifierConstant(forNode.test.right.name) === false) {
 
-				if (this.opt.loopMaxIterations === undefined) {
+				if (!this.loopMaxIterations) {
 					console.warn('Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.');
 					console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
 				}
 
-				retArr.push('for (float ');
+				retArr.push('for (');
 				this.astGeneric(forNode.init, retArr, funcParam);
-				retArr.push(';');
 				this.astGeneric(forNode.test.left, retArr, funcParam);
 				retArr.push(forNode.test.operator);
 				retArr.push('LOOP_MAX');
@@ -940,11 +939,11 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				retArr.push('threadId.y');
 			} else if (unrolled_lc === 'this.thread.z') {
 				retArr.push('threadId.z');
-			} else if (unrolled_lc === 'this.dimensions.x') {
+			} else if (unrolled_lc === 'this.output.x') {
 				retArr.push('uOutputDim.x');
-			} else if (unrolled_lc === 'this.dimensions.y') {
+			} else if (unrolled_lc === 'this.output.y') {
 				retArr.push('uOutputDim.y');
-			} else if (unrolled_lc === 'this.dimensions.z') {
+			} else if (unrolled_lc === 'this.output.z') {
 				retArr.push('uOutputDim.z');
 			} else {
 				retArr.push(unrolled);

@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 0.0.0
- * @date Fri Aug 11 2017 16:56:01 GMT-0400 (EDT)
+ * @version 1.0.0-rc.1
+ * @date Tue Aug 29 2017 16:20:11 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -52,7 +52,7 @@ module.exports = function (_FunctionBuilderBase) {
 				if (node.isSubKernel) {
 					ret += 'var ' + node.functionName + ' = ' + node.jsFunctionString.replace('return', 'return ' + node.functionName + 'Result[this.thread.z][this.thread.y][this.thread.x] =') + '.bind(this);\n';
 				} else {
-					ret += 'var ' + node.functionName + ' = ' + node.jsFunctionString + ';\n';
+					ret += 'var ' + node.functionName + ' = ' + node.jsFunctionString + '.bind(this);\n';
 				}
 			}
 			return ret;
@@ -66,6 +66,9 @@ module.exports = function (_FunctionBuilderBase) {
 			node.isSubKernel = true;
 			this.addFunctionNode(node);
 		}
+	}, {
+		key: 'polyfillStandardFunctions',
+		value: function polyfillStandardFunctions() {}
 	}]);
 
 	return CPUFunctionBuilder;
@@ -115,7 +118,7 @@ var utils = require('../../core/utils');
 var kernelRunShortcut = require('../kernel-run-shortcut');
 
 module.exports = function (cpuKernel, name) {
-  return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: function ' + utils.allPropertiesOf.toString() + ',\n      clone: function ' + utils.clone.toString() + ',\n      /*splitArray: function ' + utils.splitArray.toString() + ',\n      getArgumentType: function ' + utils.getArgumentType.toString() + ',\n      getDimensions: function ' + utils.getDimensions.toString() + ',\n      dimToTexSize: function ' + utils.dimToTexSize.toString() + ',\n      copyFlatten: function ' + utils.copyFlatten.toString() + ',\n      flatten: function ' + utils.flatten.toString() + ',\n      systemEndianness: \'' + utils.systemEndianness() + '\',\n      initWebGl: function ' + utils.initWebGl.toString() + ',\n      isArray: function ' + utils.isArray.toString() + '*/\n    };\n    class ' + (name || 'Kernel') + ' {\n      constructor() {        \n        this.argumentsLength = 0;\n        this._canvas = null;\n        this._webGl = null;\n        this.built = false;\n        this.program = null;\n        this.paramNames = ' + JSON.stringify(cpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(cpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(cpuKernel.texSize) + ';\n        this.dimensions = ' + JSON.stringify(cpuKernel.dimensions) + ';\n        this._kernelString = `' + cpuKernel._kernelString + '`;\n\t\t    this.run = function() {\n          this.run = null;\n          this.build();\n          return this.run.apply(this, arguments);\n        }.bind(this);\n        this.thread = {\n          x: 0,\n          y: 0,\n          z: 0\n        };\n        this.runDimensions = {\n          x: null,\n          y: null,\n          z: null\n        };\n      }\n      setCanvas(canvas) { this._canvas = canvas; return this; }\n      setWebGl(webGl) { this._webGl = webGl; return this; }\n      ' + cpuKernel.build.toString() + '\n      run () { ' + cpuKernel.kernelString + ' }\n      getKernelString() { return this._kernelString; }\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
+  return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: function ' + utils.allPropertiesOf.toString() + ',\n      clone: function ' + utils.clone.toString() + ',\n      /*splitArray: function ' + utils.splitArray.toString() + ',\n      getArgumentType: function ' + utils.getArgumentType.toString() + ',\n      getOutput: function ' + utils.getOutput.toString() + ',\n      dimToTexSize: function ' + utils.dimToTexSize.toString() + ',\n      copyFlatten: function ' + utils.copyFlatten.toString() + ',\n      flatten: function ' + utils.flatten.toString() + ',\n      systemEndianness: \'' + utils.systemEndianness() + '\',\n      initWebGl: function ' + utils.initWebGl.toString() + ',\n      isArray: function ' + utils.isArray.toString() + '*/\n    };\n    class ' + (name || 'Kernel') + ' {\n      constructor() {        \n        this.argumentsLength = 0;\n        this._canvas = null;\n        this._webGl = null;\n        this.built = false;\n        this.program = null;\n        this.paramNames = ' + JSON.stringify(cpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(cpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(cpuKernel.texSize) + ';\n        this.output = ' + JSON.stringify(cpuKernel.output) + ';\n        this._kernelString = `' + cpuKernel._kernelString + '`;\n        this.output = ' + JSON.stringify(cpuKernel.output) + ';\n\t\t    this.run = function() {\n          this.run = null;\n          this.build();\n          return this.run.apply(this, arguments);\n        }.bind(this);\n        this.thread = {\n          x: 0,\n          y: 0,\n          z: 0\n        };\n      }\n      setCanvas(canvas) { this._canvas = canvas; return this; }\n      setWebGl(webGl) { this._webGl = webGl; return this; }\n      ' + cpuKernel.build.toString() + '\n      run () { ' + cpuKernel.kernelString + ' }\n      getKernelString() { return this._kernelString; }\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
 };
 },{"../../core/utils":24,"../kernel-run-shortcut":9}],4:[function(require,module,exports){
 'use strict';
@@ -153,11 +156,6 @@ module.exports = function (_KernelBase) {
 			y: 0,
 			z: 0
 		};
-		_this.runDimensions = {
-			x: null,
-			y: null,
-			z: null
-		};
 
 		_this.run = function () {
 			this.run = null;
@@ -172,16 +170,16 @@ module.exports = function (_KernelBase) {
 	_createClass(CPUKernel, [{
 		key: 'validateOptions',
 		value: function validateOptions() {
-			if (!this.dimensions || this.dimensions.length === 0) {
+			if (!this.output || this.output.length === 0) {
 				if (arguments.length !== 1) {
 					throw 'Auto dimensions only supported for kernels with only one input';
 				}
 
 				var argType = utils.getArgumentType(arguments[0]);
 				if (argType === 'Array') {
-					this.dimensions = utils.getDimensions(argType);
+					this.output = utils.getDimensions(argType);
 				} else if (argType === 'Texture') {
-					this.dimensions = arguments[0].dimensions;
+					this.output = arguments[0].output;
 				} else {
 					throw 'Auto dimensions not supported for input type: ' + argType;
 				}
@@ -205,7 +203,7 @@ module.exports = function (_KernelBase) {
 				}
 			}
 
-			var threadDim = this.threadDim || (this.threadDim = utils.clone(this.dimensions));
+			var threadDim = this.threadDim = utils.clone(this.output);
 
 			while (threadDim.length < 3) {
 				threadDim.push(1);
@@ -213,8 +211,8 @@ module.exports = function (_KernelBase) {
 
 			if (this.graphical) {
 				var canvas = this.getCanvas();
-				this.runDimensions.x = canvas.width = threadDim[0];
-				this.runDimensions.y = canvas.height = threadDim[1];
+				canvas.width = threadDim[0];
+				canvas.height = threadDim[1];
 				this._canvasCtx = canvas.getContext('2d');
 				this._imageData = this._canvasCtx.createImageData(threadDim[0], threadDim[1]);
 				this._colorData = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
@@ -244,8 +242,8 @@ module.exports = function (_KernelBase) {
 			b = Math.floor(b * 255);
 			a = Math.floor(a * 255);
 
-			var width = this.runDimensions.x;
-			var height = this.runDimensions.y;
+			var width = this.output[0];
+			var height = this.output[1];
 
 			var x = this.thread.x;
 			var y = height - this.thread.y - 1;
@@ -266,13 +264,14 @@ module.exports = function (_KernelBase) {
 
 			if (this._kernelString !== null) return this._kernelString;
 
-			var paramNames = this.paramNames;
 			var builder = this.functionBuilder;
 
-			var threadDim = this.threadDim || (this.threadDim = utils.clone(this.dimensions));
+			var threadDim = this.threadDim || (this.threadDim = utils.clone(this.output));
 			while (threadDim.length < 3) {
 				threadDim.push(1);
 			}
+
+			builder.addFunctions(this.functions);
 
 			if (this.subKernels !== null) {
 				this.subKernelOutputTextures = [];
@@ -294,9 +293,7 @@ module.exports = function (_KernelBase) {
 				}
 			}
 
-			return this._kernelString = '\n  ' + (this.constants ? Object.keys(this.constants).map(function (key) {
-				return 'var ' + key + ' = ' + _this2.constants[key];
-			}).join(';\n') + ';\n' : '') + '\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			return this._kernelString = '\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '  var ' + name + ' = null;\n';
 			}).join('')) + '\n      ' + builder.getPrototypeString() + '\n      var fn = function fn(' + this.paramNames.join(', ') + ') { ' + this._fnBody + ' }.bind(this);\n    return function (' + this.paramNames.join(', ') + ') {\n    var ret = new Array(' + threadDim[2] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '  ' + name + ' = new Array(' + threadDim[2] + ');\n';
@@ -304,9 +301,9 @@ module.exports = function (_KernelBase) {
 				return '    ' + name + '[this.thread.z] = new Array(' + threadDim[1] + ');\n';
 			}).join('')) + '\n      for (this.thread.y = 0; this.thread.y < ' + threadDim[1] + '; this.thread.y++) {\n        ret[this.thread.z][this.thread.y] = new Array(' + threadDim[0] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '      ' + name + '[this.thread.z][this.thread.y] = new Array(' + threadDim[0] + ');\n';
-			}).join('')) + '\n        for (this.thread.x = 0; this.thread.x < ' + threadDim[0] + '; this.thread.x++) {\n          ret[this.thread.z][this.thread.y][this.thread.x] = fn(' + this.paramNames.join(', ') + ');\n        }\n      }\n    }\n    \n    if (this.graphical) {\n      this._imageData.data.set(this._colorData);\n      this._canvasCtx.putImageData(this._imageData, 0, 0);\n      return;\n    }\n    \n    if (this.dimensions.length === 1) {\n      ret = ret[0][0];\n      ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			}).join('')) + '\n        for (this.thread.x = 0; this.thread.x < ' + threadDim[0] + '; this.thread.x++) {\n          ret[this.thread.z][this.thread.y][this.thread.x] = fn(' + this.paramNames.join(', ') + ');\n        }\n      }\n    }\n    \n    if (this.graphical) {\n      this._imageData.data.set(this._colorData);\n      this._canvasCtx.putImageData(this._imageData, 0, 0);\n      return;\n    }\n    \n    if (this.output.length === 1) {\n      ret = ret[0][0];\n      ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '    ' + name + ' = ' + name + '[0][0];\n';
-			}).join('')) + '\n      \n    } else if (this.dimensions.length === 2) {\n      ret = ret[0];\n      ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			}).join('')) + '\n      \n    } else if (this.output.length === 2) {\n      ret = ret[0];\n      ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '    ' + name + ' = ' + name + '[0];\n';
 			}).join('')) + '\n    }\n    \n    ' + (this.subKernelOutputVariableNames === null ? 'return ret;\n' : this.subKernels !== null ? 'var result = [\n        ' + this.subKernelOutputVariableNames.map(function (name) {
 				return '' + name;
@@ -327,7 +324,7 @@ module.exports = function (_KernelBase) {
 		key: 'precompileKernelObj',
 		value: function precompileKernelObj(argTypes) {
 
-			var threadDim = this.threadDim || (this.threadDim = utils.clone(this.dimensions));
+			var threadDim = this.threadDim || (this.threadDim = utils.clone(this.output));
 
 			return {
 				threadDim: threadDim
@@ -403,6 +400,7 @@ module.exports = function () {
 		_classCallCheck(this, FunctionBuilderBase);
 
 		this.nodeMap = {};
+		this.nativeFunctions = {};
 		this.gpu = gpu;
 		this.rootKernel = null;
 	}
@@ -413,6 +411,34 @@ module.exports = function () {
 		key: 'addFunction',
 		value: function addFunction(functionName, jsFunction, paramTypes, returnType) {
 			throw new Error('addFunction not supported on base');
+		}
+	}, {
+		key: 'addFunctions',
+		value: function addFunctions(functions) {
+			if (functions) {
+				if (Array.isArray(functions)) {
+					for (var i = 0; i < functions.length; i++) {
+						this.addFunction(null, functions[i]);
+					}
+				} else {
+					for (var p in functions) {
+						this.addFunction(p, functions[p]);
+					}
+				}
+			}
+		}
+	}, {
+		key: 'addNativeFunction',
+		value: function addNativeFunction(name, nativeFunction) {
+			throw new Error('addNativeFunction not supported on base');
+		}
+	}, {
+		key: 'addNativeFunctions',
+		value: function addNativeFunctions(nativeFunctions) {
+			for (var functionName in nativeFunctions) {
+				if (!nativeFunctions.hasOwnProperty(functionName)) continue;
+				this.addNativeFunction(functionName, nativeFunctions[functionName]);
+			}
 		}
 
 
@@ -448,31 +474,24 @@ module.exports = function () {
 				}
 			}
 
+			if (this.nativeFunctions[functionName]) {
+				if (retList.indexOf(functionName) >= 0) {
+				} else {
+					retList.push(functionName);
+				}
+			}
+
 			return retList;
 		}
-
-
-
 	}, {
 		key: 'polyfillStandardFunctions',
-
-
 		value: function polyfillStandardFunctions() {
-			this.addFunction('round', _round);
-		}
-	}], [{
-		key: 'round',
-		value: function round(a) {
-			return _round(a);
+			throw new Error('polyfillStandardFunctions not defined on base function builder');
 		}
 	}]);
 
 	return FunctionBuilderBase;
 }();
-
-function _round(a) {
-	return Math.floor(a + 0.5);
-}
 },{}],7:[function(require,module,exports){
 'use strict';
 
@@ -697,7 +716,7 @@ module.exports = function () {
 
 		this.paramNames = utils.getParamNamesFromString(fnString);
 		this.fnString = fnString;
-		this.dimensions = [];
+		this.output = null;
 		this.debug = false;
 		this.graphical = false;
 		this.loopMaxIterations = 0;
@@ -713,6 +732,8 @@ module.exports = function () {
 		this.floatOutput = null;
 		this.floatOutputForce = null;
 		this.addFunction = null;
+		this.functions = null;
+		this.nativeFunctions = null;
 		this.copyData = true;
 		this.subKernels = null;
 		this.subKernelProperties = null;
@@ -741,12 +762,30 @@ module.exports = function () {
 			this.addFunction = cb;
 			return this;
 		}
+	}, {
+		key: 'setFunctions',
+		value: function setFunctions(functions) {
+			this.functions = functions;
+			return this;
+		}
 
 
 	}, {
-		key: 'setDimensions',
-		value: function setDimensions(dimensions) {
-			this.dimensions = dimensions;
+		key: 'setOutput',
+		value: function setOutput(output) {
+			if (output.hasOwnProperty('x')) {
+				if (output.hasOwnProperty('y')) {
+					if (output.hasOwnProperty('x')) {
+						this.output = [output.x, output.y, output.z];
+					} else {
+						this.output = [output.x, output.y];
+					}
+				} else {
+					this.output = [output.x];
+				}
+			} else {
+				this.output = output;
+			}
 			return this;
 		}
 
@@ -929,7 +968,7 @@ module.exports = function kernelRunShortcut(kernel) {
 	utils.allPropertiesOf(kernel).forEach(function (key) {
 		if (key[0] === '_' && key[1] === '_') return;
 		if (typeof kernel[key] === 'function') {
-			if (key.substring(0, 3) === 'set') {
+			if (key.substring(0, 3) === 'add' || key.substring(0, 3) === 'set') {
 				shortcut[key] = function () {
 					kernel[key].apply(kernel, arguments);
 					return shortcut;
@@ -1046,7 +1085,6 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var FunctionBuilderBase = require('../function-builder-base');
 var WebGLFunctionNode = require('./function-node');
-var utils = require('../../core/utils');
 
 module.exports = function (_FunctionBuilderBase) {
 	_inherits(WebGLFunctionBuilder, _FunctionBuilderBase);
@@ -1061,6 +1099,11 @@ module.exports = function (_FunctionBuilderBase) {
 		key: 'addFunction',
 		value: function addFunction(functionName, jsFunction, paramTypes, returnType) {
 			this.addFunctionNode(new WebGLFunctionNode(functionName, jsFunction, paramTypes, returnType).setAddFunction(this.addFunction.bind(this)));
+		}
+	}, {
+		key: 'addNativeFunction',
+		value: function addNativeFunction(functionName, glslFunctionString) {
+			this.nativeFunctions[functionName] = glslFunctionString;
 		}
 
 
@@ -1083,9 +1126,12 @@ module.exports = function (_FunctionBuilderBase) {
 		value: function getPrototypeStringFromFunctionNames(functionList, opt) {
 			var ret = [];
 			for (var i = 0; i < functionList.length; ++i) {
-				var node = this.nodeMap[functionList[i]];
+				var functionName = functionList[i];
+				var node = this.nodeMap[functionName];
 				if (node) {
 					ret.push(node.getFunctionPrototypeString(opt));
+				} else if (this.nativeFunctions[functionName]) {
+					ret.push(this.nativeFunctions[functionName]);
 				}
 			}
 			return ret.join('\n');
@@ -1139,11 +1185,30 @@ module.exports = function (_FunctionBuilderBase) {
 			this.addFunctionNode(kernelNode);
 			return kernelNode;
 		}
+
+
+
+	}, {
+		key: 'polyfillStandardFunctions',
+
+
+		value: function polyfillStandardFunctions() {
+			this.addFunction('round', _round);
+		}
+	}], [{
+		key: 'round',
+		value: function round(a) {
+			return _round(a);
+		}
 	}]);
 
 	return WebGLFunctionBuilder;
 }(FunctionBuilderBase);
-},{"../../core/utils":24,"../function-builder-base":6,"./function-node":12}],12:[function(require,module,exports){
+
+function _round(a) {
+	return Math.floor(a + 0.5);
+}
+},{"../function-builder-base":6,"./function-node":12}],12:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -1416,13 +1481,13 @@ module.exports = function (_FunctionNodeBase) {
 				case 'gpu_threadZ':
 					retArr.push('threadId.z');
 					break;
-				case 'gpu_dimensionsX':
+				case 'gpu_outputX':
 					retArr.push('uOutputDim.x');
 					break;
-				case 'gpu_dimensionsY':
+				case 'gpu_outputY':
 					retArr.push('uOutputDim.y');
 					break;
-				case 'gpu_dimensionsZ':
+				case 'gpu_outputZ':
 					retArr.push('uOutputDim.z');
 					break;
 				default:
@@ -1452,14 +1517,13 @@ module.exports = function (_FunctionNodeBase) {
 			if (forNode.test && forNode.test.type === 'BinaryExpression') {
 				if (forNode.test.right.type === 'Identifier' && forNode.test.operator === '<' && this.isIdentifierConstant(forNode.test.right.name) === false) {
 
-					if (this.opt.loopMaxIterations === undefined) {
+					if (!this.loopMaxIterations) {
 						console.warn('Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.');
 						console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
 					}
 
-					retArr.push('for (float ');
+					retArr.push('for (');
 					this.astGeneric(forNode.init, retArr, funcParam);
-					retArr.push(';');
 					this.astGeneric(forNode.test.left, retArr, funcParam);
 					retArr.push(forNode.test.operator);
 					retArr.push('LOOP_MAX');
@@ -1780,11 +1844,11 @@ module.exports = function (_FunctionNodeBase) {
 					retArr.push('threadId.y');
 				} else if (unrolled_lc === 'this.thread.z') {
 					retArr.push('threadId.z');
-				} else if (unrolled_lc === 'this.dimensions.x') {
+				} else if (unrolled_lc === 'this.output.x') {
 					retArr.push('uOutputDim.x');
-				} else if (unrolled_lc === 'this.dimensions.y') {
+				} else if (unrolled_lc === 'this.output.y') {
 					retArr.push('uOutputDim.y');
-				} else if (unrolled_lc === 'this.dimensions.z') {
+				} else if (unrolled_lc === 'this.output.z') {
 					retArr.push('uOutputDim.z');
 				} else {
 					retArr.push(unrolled);
@@ -1981,7 +2045,7 @@ var utils = require('../../core/utils');
 var kernelRunShortcut = require('../kernel-run-shortcut');
 
 module.exports = function (gpuKernel, name) {
-  return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: function ' + utils.allPropertiesOf.toString() + ',\n      clone: function ' + utils.clone.toString() + ',\n      splitArray: function ' + utils.splitArray.toString() + ',\n      getArgumentType: function ' + utils.getArgumentType.toString() + ',\n      getDimensions: function ' + utils.getDimensions.toString() + ',\n      dimToTexSize: function ' + utils.dimToTexSize.toString() + ',\n      copyFlatten: function ' + utils.copyFlatten.toString() + ',\n      flatten: function ' + utils.flatten.toString() + ',\n      systemEndianness: \'' + utils.systemEndianness() + '\',\n      initWebGl: function ' + utils.initWebGl.toString() + ',\n      isArray: function ' + utils.isArray.toString() + '\n    };\n    class ' + (name || 'Kernel') + ' {\n      constructor() {\n        this.argumentsLength = 0;\n        this._canvas = null;\n        this._webGl = null;\n        this.built = false;\n        this.program = null;\n        this.paramNames = ' + JSON.stringify(gpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(gpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(gpuKernel.texSize) + ';\n        this.dimensions = ' + JSON.stringify(gpuKernel.dimensions) + ';\n        this.compiledFragShaderString = `' + gpuKernel.compiledFragShaderString + '`;\n\t\t    this.compiledVertShaderString = `' + gpuKernel.compiledVertShaderString + '`;\n\t\t    this.programUniformLocationCache = {};\n\t\t    this.textureCache = {};\n\t\t    this.subKernelOutputTextures = null;\n      }\n      ' + gpuKernel._getFragShaderString.toString() + '\n      ' + gpuKernel._getVertShaderString.toString() + '\n      validateOptions() {}\n      setupParams() {}\n      setCanvas(canvas) { this._canvas = canvas; return this; }\n      setWebGl(webGl) { this._webGl = webGl; return this; }\n      ' + gpuKernel.getUniformLocation.toString() + '\n      ' + gpuKernel.setupParams.toString() + '\n      ' + gpuKernel.build.toString() + '\n\t\t  ' + gpuKernel.run.toString() + '\n\t\t  ' + gpuKernel._addArgument.toString() + '\n\t\t  ' + gpuKernel.getArgumentTexture.toString() + '\n\t\t  ' + gpuKernel.getTextureCache.toString() + '\n\t\t  ' + gpuKernel.getOutputTexture.toString() + '\n\t\t  ' + gpuKernel.renderOutput.toString() + '\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
+  return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: function ' + utils.allPropertiesOf.toString() + ',\n      clone: function ' + utils.clone.toString() + ',\n      splitArray: function ' + utils.splitArray.toString() + ',\n      getArgumentType: function ' + utils.getArgumentType.toString() + ',\n      getDimensions: function ' + utils.getDimensions.toString() + ',\n      dimToTexSize: function ' + utils.dimToTexSize.toString() + ',\n      copyFlatten: function ' + utils.copyFlatten.toString() + ',\n      flatten: function ' + utils.flatten.toString() + ',\n      systemEndianness: \'' + utils.systemEndianness() + '\',\n      initWebGl: function ' + utils.initWebGl.toString() + ',\n      isArray: function ' + utils.isArray.toString() + '\n    };\n    class ' + (name || 'Kernel') + ' {\n      constructor() {\n        this.argumentsLength = 0;\n        this._canvas = null;\n        this._webGl = null;\n        this.built = false;\n        this.program = null;\n        this.paramNames = ' + JSON.stringify(gpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(gpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(gpuKernel.texSize) + ';\n        this.output = ' + JSON.stringify(gpuKernel.output) + ';\n        this.compiledFragShaderString = `' + gpuKernel.compiledFragShaderString + '`;\n\t\t    this.compiledVertShaderString = `' + gpuKernel.compiledVertShaderString + '`;\n\t\t    this.programUniformLocationCache = {};\n\t\t    this.textureCache = {};\n\t\t    this.subKernelOutputTextures = null;\n      }\n      ' + gpuKernel._getFragShaderString.toString() + '\n      ' + gpuKernel._getVertShaderString.toString() + '\n      validateOptions() {}\n      setupParams() {}\n      setCanvas(canvas) { this._canvas = canvas; return this; }\n      setWebGl(webGl) { this._webGl = webGl; return this; }\n      ' + gpuKernel.getUniformLocation.toString() + '\n      ' + gpuKernel.setupParams.toString() + '\n      ' + gpuKernel.build.toString() + '\n\t\t  ' + gpuKernel.run.toString() + '\n\t\t  ' + gpuKernel._addArgument.toString() + '\n\t\t  ' + gpuKernel.getArgumentTexture.toString() + '\n\t\t  ' + gpuKernel.getTextureCache.toString() + '\n\t\t  ' + gpuKernel.getOutputTexture.toString() + '\n\t\t  ' + gpuKernel.renderOutput.toString() + '\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
 };
 },{"../../core/utils":24,"../kernel-run-shortcut":9}],14:[function(require,module,exports){
 'use strict';
@@ -2050,28 +2114,28 @@ module.exports = function (_KernelBase) {
 				this.floatOutput = false;
 			}
 
-			if (!this.dimensions || this.dimensions.length === 0) {
+			if (!this.output || this.output.length === 0) {
 				if (arguments.length !== 1) {
-					throw 'Auto dimensions only supported for kernels with only one input';
+					throw 'Auto output only supported for kernels with only one input';
 				}
 
 				var argType = utils.getArgumentType(arguments[0]);
 				if (argType === 'Array') {
-					this.dimensions = utils.getDimensions(argType);
+					this.output = utils.getDimensions(argType);
 				} else if (argType === 'Texture') {
-					this.dimensions = arguments[0].dimensions;
+					this.output = arguments[0].output;
 				} else {
-					throw 'Auto dimensions not supported for input type: ' + argType;
+					throw 'Auto output not supported for input type: ' + argType;
 				}
 			}
 
 			this.texSize = utils.dimToTexSize({
 				floatTextures: this.floatTextures,
 				floatOutput: this.floatOutput
-			}, this.dimensions, true);
+			}, this.output, true);
 
 			if (this.graphical) {
-				if (this.dimensions.length !== 2) {
+				if (this.output.length !== 2) {
 					throw 'Output must have 2 dimensions on graphical mode';
 				}
 
@@ -2079,7 +2143,7 @@ module.exports = function (_KernelBase) {
 					throw 'Cannot use graphical mode and float output at the same time';
 				}
 
-				this.texSize = utils.clone(this.dimensions);
+				this.texSize = utils.clone(this.output);
 			} else if (this.floatOutput === undefined && utils.OES_texture_float) {
 				this.floatOutput = true;
 			}
@@ -2120,7 +2184,7 @@ module.exports = function (_KernelBase) {
 			gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
 			canvas.width = this.maxTexSize[0];
 			canvas.height = this.maxTexSize[1];
-			var threadDim = this.threadDim = utils.clone(this.dimensions);
+			var threadDim = this.threadDim = utils.clone(this.output);
 			while (threadDim.length < 3) {
 				threadDim.push(1);
 			}
@@ -2265,7 +2329,7 @@ module.exports = function (_KernelBase) {
 					var output = [];
 					output.result = this.renderOutput(outputTexture);
 					for (var _i = 0; _i < this.subKernels.length; _i++) {
-						output.push(new Texture(this.subKernelOutputTextures[_i], texSize, this.dimensions, this._webGl));
+						output.push(new Texture(this.subKernelOutputTextures[_i], texSize, this.output, this._webGl));
 					}
 					return output;
 				} else if (this.subKernelProperties !== null) {
@@ -2275,7 +2339,7 @@ module.exports = function (_KernelBase) {
 					var _i2 = 0;
 					for (var p in this.subKernelProperties) {
 						if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-						_output[p] = new Texture(this.subKernelOutputTextures[_i2], texSize, this.dimensions, this._webGl);
+						_output[p] = new Texture(this.subKernelOutputTextures[_i2], texSize, this.output, this._webGl);
 						_i2++;
 					}
 					return _output;
@@ -2292,9 +2356,9 @@ module.exports = function (_KernelBase) {
 			var texSize = this.texSize;
 			var gl = this._webGl;
 			var threadDim = this.threadDim;
-			var dimensions = this.dimensions;
+			var output = this.output;
 			if (this.outputToTexture) {
-				return new Texture(outputTexture, texSize, dimensions, this._webGl);
+				return new Texture(outputTexture, texSize, output, this._webGl);
 			} else {
 				var result = void 0;
 				if (this.floatOutput) {
@@ -2308,14 +2372,14 @@ module.exports = function (_KernelBase) {
 
 				result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
 
-				if (dimensions.length === 1) {
+				if (output.length === 1) {
 					return result;
-				} else if (dimensions.length === 2) {
-					return utils.splitArray(result, dimensions[0]);
-				} else if (dimensions.length === 3) {
-					var cube = utils.splitArray(result, dimensions[0] * dimensions[1]);
+				} else if (output.length === 2) {
+					return utils.splitArray(result, output[0]);
+				} else if (output.length === 3) {
+					var cube = utils.splitArray(result, output[0] * output[1]);
 					return cube.map(function (x) {
-						return utils.splitArray(x, dimensions[0]);
+						return utils.splitArray(x, output[0]);
 					});
 				}
 			}
@@ -2496,7 +2560,7 @@ module.exports = function (_KernelBase) {
 				case 'Texture':
 					{
 						var inputTexture = value;
-						var _dim = utils.getDimensions(inputTexture.dimensions, true);
+						var _dim = utils.getDimensions(inputTexture.output, true);
 						var _size = inputTexture.size;
 
 						if (inputTexture.texture === this.outputTexture) {
@@ -2741,6 +2805,10 @@ module.exports = function (_KernelBase) {
 		value: function _addKernels() {
 			var builder = this.functionBuilder;
 			var gl = this._webGl;
+
+			builder.addFunctions(this.functions);
+			builder.addNativeFunctions(this.nativeFunctions);
+
 			builder.addKernel(this.fnString, {
 				prototypeOnly: false,
 				constants: this.constants,
@@ -2811,6 +2879,16 @@ module.exports = function (_KernelBase) {
 		key: 'toString',
 		value: function toString() {
 			return kernelString(this);
+		}
+	}, {
+		key: 'addFunction',
+		value: function addFunction(fn) {
+			this.functionBuilder.addFunction(null, fn);
+		}
+	}, {
+		key: 'addNativeFunction',
+		value: function addNativeFunction(name, source) {
+			this.functionBuilder.addNativeFunction(name, source);
 		}
 	}]);
 
@@ -2895,7 +2973,7 @@ module.exports = function (_WebGLKernel) {
 			this.texSize = utils.dimToTexSize({
 				floatTextures: this.floatTextures,
 				floatOutput: this.floatOutput
-			}, this.dimensions, true);
+			}, this.output, true);
 		}
 	}]);
 
@@ -2929,7 +3007,7 @@ module.exports = function () {
 
 		value: function validateKernelObj(kernelObj) {
 
-			if (kernelObj == null) {
+			if (kernelObj === null) {
 				throw "KernelObj being validated is NULL";
 			}
 
@@ -2941,12 +3019,12 @@ module.exports = function () {
 					throw "Failed to convert KernelObj from JSON string";
 				}
 
-				if (kernelObj == null) {
+				if (kernelObj === null) {
 					throw "Invalid (NULL) KernelObj JSON string representation";
 				}
 			}
 
-			if (kernelObj.isKernelObj != true) {
+			if (kernelObj.isKernelObj !== true) {
 				throw "Failed missing isKernelObj flag check";
 			}
 
@@ -3117,14 +3195,14 @@ var GPU = function (_GPUCore) {
 
 				result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
 
-				if (lastKernel.dimensions.length === 1) {
+				if (lastKernel.output.length === 1) {
 					return result;
-				} else if (lastKernel.dimensions.length === 2) {
-					return utils.splitArray(result, lastKernel.dimensions[0]);
-				} else if (lastKernel.dimensions.length === 3) {
-					var cube = utils.splitArray(result, lastKernel.dimensions[0] * lastKernel.dimensions[1]);
+				} else if (lastKernel.output.length === 2) {
+					return utils.splitArray(result, lastKernel.output[0]);
+				} else if (lastKernel.output.length === 3) {
+					var cube = utils.splitArray(result, lastKernel.output[0] * lastKernel.output[1]);
 					return cube.map(function (x) {
-						return utils.splitArray(x, lastKernel.dimensions[0]);
+						return utils.splitArray(x, lastKernel.output[0]);
 					});
 				}
 			};
@@ -3135,6 +3213,14 @@ var GPU = function (_GPUCore) {
 		key: 'addFunction',
 		value: function addFunction(fn, paramTypes, returnType) {
 			this._runner.functionBuilder.addFunction(null, fn, paramTypes, returnType);
+			return this;
+		}
+
+
+	}, {
+		key: 'addNativeFunction',
+		value: function addNativeFunction(name, nativeFunction) {
+			this._runner.functionBuilder.addNativeFunction(name, nativeFunction);
 			return this;
 		}
 
@@ -3186,12 +3272,12 @@ var gpu = null;
 
 module.exports = function () {
 
-	function Texture(texture, size, dimensions, webGl) {
+	function Texture(texture, size, output, webGl) {
 		_classCallCheck(this, Texture);
 
 		this.texture = texture;
 		this.size = size;
-		this.dimensions = dimensions;
+		this.output = output;
 		this.webGl = webGl;
 		this.kernel = null;
 	}
@@ -3206,7 +3292,7 @@ module.exports = function () {
 
 			this.kernel = gpu.createKernel(function (x) {
 				return x[this.thread.z][this.thread.y][this.thread.x];
-			}).setDimensions(this.dimensions);
+			}).setOutput(this.output);
 
 			return this.kernel(this);
 		}
@@ -3524,7 +3610,7 @@ var Utils = function (_UtilsCore) {
 			}).createKernel(function () {
 				return 1;
 			}, {
-				dimensions: [2],
+				output: [2],
 				floatTextures: true,
 				floatOutput: true,
 				floatOutputForce: true
@@ -3564,7 +3650,7 @@ var Utils = function (_UtilsCore) {
 				}
 				ret = dim.reverse();
 			} else if (x instanceof Texture) {
-				ret = x.dimensions;
+				ret = x.output;
 			} else {
 				throw 'Unknown dimensions of ' + x;
 			}

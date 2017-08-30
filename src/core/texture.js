@@ -9,13 +9,13 @@ module.exports = class Texture {
 	 * @constructor Texture
 	 * @param {Object} texture 
 	 * @param {Array} size 
-	 * @param {Array} dimensions 
+	 * @param {Array} output
 	 * @param {Object} webGl
 	 */
-	constructor(texture, size, dimensions, webGl) {
+	constructor(texture, size, output, webGl) {
 		this.texture = texture;
 		this.size = size;
-		this.dimensions = dimensions;
+		this.output = output;
 		this.webGl = webGl;
 		this.kernel = null;
 	}
@@ -36,7 +36,7 @@ module.exports = class Texture {
 
 		this.kernel = gpu.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];
-		}).setDimensions(this.dimensions);
+		}).setOutput(this.output);
 
 		return this.kernel(this);
 	}

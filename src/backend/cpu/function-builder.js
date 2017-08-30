@@ -39,7 +39,7 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 			if (node.isSubKernel) {
 				ret += `var ${ node.functionName } = ` + node.jsFunctionString.replace('return', `return ${ node.functionName }Result[this.thread.z][this.thread.y][this.thread.x] =`) + '.bind(this);\n';
 			} else {
-				ret += `var ${ node.functionName } = ${ node.jsFunctionString };\n`;
+				ret += `var ${ node.functionName } = ${ node.jsFunctionString }.bind(this);\n`;
 			}
 		}
 		return ret;
@@ -63,4 +63,6 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 		node.isSubKernel = true;
 		this.addFunctionNode(node);
 	}
+
+  polyfillStandardFunctions() {}
 };

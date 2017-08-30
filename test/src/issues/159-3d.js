@@ -4,11 +4,11 @@ function threeD(mode) {
   const kernel = gpu.createKernel(function(grid) {
     return grid[this.thread.y][this.thread.x];
   })
-    .setDimensions([5, 5]);
+    .setOutput([5, 5]);
 
   //This would cause the above to fail
   gpu.createKernel(function() { return 0; })
-    .setDimensions([5, 5, 5])
+    .setOutput([5, 5, 5])
     .build();
 
   var result = kernel([

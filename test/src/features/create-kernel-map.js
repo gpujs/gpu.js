@@ -1,4 +1,4 @@
-function createPropertyKernels(mode, dimensions, canvas) {
+function createPropertyKernels(mode, output, canvas) {
   var gpu = new GPU({mode: mode, canvas: canvas});
   return gpu.createKernelMap({
     addResult: GPU.alias('adder', function add(v1, v2) {
@@ -9,10 +9,10 @@ function createPropertyKernels(mode, dimensions, canvas) {
     }
   }, function (a, b, c) {
     return divide(adder(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
-  }).setDimensions(dimensions);
+  }).setOutput(output);
 }
 
-function createArrayKernels(mode, dimensions, canvas) {
+function createArrayKernels(mode, output, canvas) {
   var gpu = new GPU({mode: mode, canvas: canvas});
   return gpu.createKernelMap([
     function add(v1, v2) {
@@ -23,15 +23,15 @@ function createArrayKernels(mode, dimensions, canvas) {
     }
   ], function (a, b, c) {
     return divide(add(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
-  }).setDimensions(dimensions);
+  }).setOutput(output);
 }
 
 
-function createKernel(mode, dimensions, canvas) {
+function createKernel(mode, output, canvas) {
   var gpu = new GPU({mode: mode, canvas: canvas});
   return gpu.createKernel(function (a) {
     return a[this.thread.x];
-  }).setDimensions(dimensions);
+  }).setOutput(output);
 }
 
 QUnit.test( "createKernelMap object 1 dimension 1 length (auto)", function() {

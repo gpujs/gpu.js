@@ -302,7 +302,7 @@ class Utils extends UtilsCore {
 		}).createKernel(function() {
 			return 1;
 		}, {
-			dimensions: [2],
+			output: [2],
 			floatTextures: true,
 			floatOutput: true,
 			floatOutputForce: true,
@@ -357,7 +357,7 @@ class Utils extends UtilsCore {
 			}
 			ret = dim.reverse();
 		} else if (x instanceof Texture) {
-			ret = x.dimensions;
+			ret = x.output;
 		} else {
 			throw 'Unknown dimensions of ' + x;
 		}

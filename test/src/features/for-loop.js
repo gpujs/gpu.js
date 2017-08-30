@@ -8,7 +8,7 @@ function for_loop_test(mode) {
 
 		return (a[this.thread.x] + b[this.thread.x] + x);
 	}, {
-		dimensions : [6]
+		output : [6]
 	});
 
 	QUnit.assert.ok( f !== null, "function generated test");
@@ -56,7 +56,7 @@ QUnit.test( "for_loop (CPU)", function() {
 	var evil_while_b = [4, 5, 6, 1, 2, 3];
 	var evil_while_cpuRef = new GPU({ mode: 'cpu' });
 	var evil_while_cpuRef_f =  evil_while_cpuRef.createKernel(evil_while_kernalFunction, {
-		dimensions : [6],
+    output : [6],
 		loopMaxIterations: 10000
 	});
 
@@ -66,7 +66,7 @@ QUnit.test( "for_loop (CPU)", function() {
 		var gpu = new GPU({ mode: mode });
 
 		var f = gpu.createKernel(evil_while_kernalFunction, {
-			dimensions : [6]
+      output : [6]
 		});
 
 		QUnit.assert.ok( f !== null, "function generated test");
@@ -96,13 +96,13 @@ function for_constant_loop_test(mode) {
   var gpu = new GPU({ mode: mode });
   var f = gpu.createKernel(function(a, b) {
     var x = 0;
-    for(var i = 0; i < max; i++) {
+    for(var i = 0; i < this.constants.max; i++) {
       x = x + 1;
     }
 
     return (a[this.thread.x] + b[this.thread.x] + x);
   }, {
-    dimensions : [6],
+    output : [6],
     constants: {
       max: 10
     }
