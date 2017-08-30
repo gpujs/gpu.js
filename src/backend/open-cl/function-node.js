@@ -451,9 +451,8 @@ module.exports = class OpenCLFunctionNode extends FunctionNodeBase {
 					console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
 				}
 
-				retArr.push('for (float ');
+				retArr.push('for (');
 				this.astGeneric(forNode.init, retArr, funcParam);
-				retArr.push(';');
 				this.astGeneric(forNode.test.left, retArr, funcParam);
 				retArr.push(forNode.test.operator);
 				retArr.push('LOOP_MAX');
