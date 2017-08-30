@@ -46,6 +46,7 @@ class GPU extends GPUCore {
 					this._runner = new CPURunner(runnerSettings);
 					break;
 				case 'gpu':
+        case 'webgl':
           this._runner = typeof window === 'undefined'
             ? new OpenCLRunner(runnerSettings)
             : new WebGLRunner(runnerSettings);
@@ -53,9 +54,6 @@ class GPU extends GPUCore {
         case 'opencl':
           this._runner = new OpenCLRunner(runnerSettings);
           break;
-				case 'webgl':
-					this._runner = new WebGLRunner(runnerSettings);
-					break;
 				case 'webgl-validator':
 					this._runner = new WebGLRunner(runnerSettings);
 					this._runner.Kernel = WebGLValidatorKernel;

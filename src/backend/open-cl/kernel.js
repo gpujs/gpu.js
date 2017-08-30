@@ -64,6 +64,7 @@ module.exports = class OpenCLKernel extends KernelBase {
 		this.compiledVertShaderString = null;
 		this.getDevice();
     const cl = this._openCl = new CLContext(device);
+    this.clKernel = null;
     this.queue = new CLCommandQueue(cl, device);
 	}
 
@@ -99,7 +100,6 @@ module.exports = class OpenCLKernel extends KernelBase {
     const compiledKernelString = `#pragma OPENCL EXTENSION cl_khr_fp64 : enable
     __kernel ${ this.functionBuilder.getPrototypeString('kernel') }`;
 
-    console.log(compiledKernelString);
     if (this.debug) {
 			console.log('Options:');
 			console.dir(this);
@@ -107,21 +107,28 @@ module.exports = class OpenCLKernel extends KernelBase {
 			console.log(compiledKernelString);
 		}
 
+		console.log(compiledKernelString);
+
 		const program = this.program = this._openCl.createProgram(compiledKernelString);
-    program.build('-cl-fast-relaxed-math')
-      .then(function() {
+    return program.build('-cl-fast-relaxed-math')
+      .then(() => {
         const buildStatus = program.getBuildStatus(device);
-        const buildLog = program.getBuildLog(device);
-        console.log(buildLog);
+
         if (buildStatus < 0) {
+          const buildLog = program.getBuildLog(device);
+          console.log(buildLog);
           throw new CLError(buildStatus, 'Build failed.');
         }
-        console.log('Build completed.');
+
+        if (this.debug) {
+          const buildLog = program.getBuildLog(device);
+          console.log(buildLog);
+          console.log('Build completed.');
+        }
 
         // Kernel stuff:
-        var kernel = program.createKernel('kernel');
+        this.clKernel = program.createKernel('$kernel');
       });
-		return this;
 	}
 
 	/**
@@ -156,63 +163,26 @@ module.exports = class OpenCLKernel extends KernelBase {
 			0, 1,
 			1, 1
 		]);
-		const gl = this._openCl;
-		gl.useProgram(this.program);
-		gl.scissor(0, 0, texSize[0], texSize[1]);
+		const cl = this._openCl;
 
 		const texCoordOffset = vertices.byteLength;
 		let buffer = this.buffer;
+		let clBuffer;
 		if (!buffer) {
-			buffer = this.buffer = gl.createBuffer();
-			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-			gl.bufferData(gl.ARRAY_BUFFER, vertices.byteLength + texCoords.byteLength, gl.STATIC_DRAW);
+			buffer = this.buffer =  new Buffer(vertices.byteLength + texCoords.byteLength);
+      clBuffer = new CLBuffer(cl, defs.CL_MEM_WRITE_ONLY, vertices.byteLength + texCoords.byteLength);
 		} else {
+		  //TODO
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-		}
-		gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices);
-		gl.bufferSubData(gl.ARRAY_BUFFER, texCoordOffset, texCoords);
-
-		const aPosLoc = gl.getAttribLocation(this.program, 'aPos');
-		gl.enableVertexAttribArray(aPosLoc);
-		gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, gl.FALSE, 0, 0);
-		const aTexCoordLoc = gl.getAttribLocation(this.program, 'aTexCoord');
-		gl.enableVertexAttribArray(aTexCoordLoc);
-		gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
-
-		if (!this.hardcodeConstants) {
-			const uOutputDimLoc = this.getUniformLocation('uOutputDim');
-			gl.uniform3fv(uOutputDimLoc, threadDim);
-			const uTexSizeLoc = this.getUniformLocation('uTexSize');
-			gl.uniform2fv(uTexSizeLoc, texSize);
 		}
 
 		this.argumentsLength = 0;
-		for (let texIndex = 0; texIndex < paramNames.length; texIndex++) {
-			this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
+		for (let inputIndex = 0; inputIndex < paramNames.length; inputIndex++) {
+			this._addArgument(arguments[inputIndex], paramTypes[inputIndex], paramNames[inputIndex]);
 		}
 
-		let outputTexture = this.getOutputTexture();
-		gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
-		gl.bindTexture(gl.TEXTURE_2D, outputTexture);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		if (this.floatOutput) {
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-		} else {
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-		}
-
-		if (this.graphical) {
-			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-			return;
-		}
-
-		gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
+    this.clKernel.setArg(this.argumentsLength, buffer);
+    this.clKernel.setArg(this.argumentsLength + 1, 1000, 'uint');
 
 		if (this.subKernelOutputTextures !== null) {
 			const extDrawBuffers = [gl.COLOR_ATTACHMENT0];
@@ -235,7 +205,16 @@ module.exports = class OpenCLKernel extends KernelBase {
 			this.ext.drawBuffersWEBGL(extDrawBuffers);
 		}
 
-		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    // Ranges:
+    // Number of work items in each local work group
+    var localSize = new NDRange(64);
+    // Number of total work items - localSize must be devisor
+    var globalSize = new NDRange(Math.ceil(n / 64) * 64);
+
+    console.log('Launching the kernel.');
+
+    // Enqueue the kernel asynchronously
+    this.queue.enqueueNDRangeKernel(this.clKernel, globalSize, localSize);
 
 		if (this.subKernelOutputTextures !== null) {
 			if (this.subKernels !== null) {
@@ -259,7 +238,17 @@ module.exports = class OpenCLKernel extends KernelBase {
 			}
 		}
 
-		return this.renderOutput(outputTexture);
+    queue.waitable().enqueueReadBuffer(clBuffer, 0, bytes, this.buffer).promise
+      .then(() => {
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+          var offset = i * double.size;
+          sum += double.get(h_c, offset);
+        }
+
+        console.log('Final result: ' + sum / n);
+      });
+		//return this.renderOutput(outputTexture);
 	}
 
 	/**
@@ -316,75 +305,6 @@ module.exports = class OpenCLKernel extends KernelBase {
 	/**
 	 * @memberOf OpenCLKernel#
 	 * @function
-	 * @name getOutputTexture
-	 *
-	 * @desc This uses *getTextureCache* to get the Texture Cache of the Output
-	 *
-	 * @returns {Object} Ouptut Texture Cache
-	 *
-	 */
-	getOutputTexture() {
-		return this.getTextureCache('OUTPUT');
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
-	 * @name getArgumentTexture
-	 *
-	 * @desc This uses *getTextureCache** to get the Texture Cache of the argument supplied
-	 *	
-	 * @param {String} name - Name of the argument
-	 *
-	 * 	Texture cache for the supplied argument
-	 *
-	 */
-	getArgumentTexture(name) {
-		return this.getTextureCache(`ARGUMENT_${ name }`);
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @name getSubKernelTexture
-	 * @function
-	 *
-	 * @desc This uses *getTextureCache* to get the Texture Cache of the sub-kernel
-	 *
-	 * @param {String} name - Name of the subKernel
-	 *
-	 * @returns {Object} Texture cache for the subKernel
-	 *
-	 */
-	getSubKernelTexture(name) {
-		return this.getTextureCache(`SUB_KERNEL_${ name }`);
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @name getTextureCache
-	 * @function
-	 *
-	 * @desc Returns the Texture Cache of the supplied parameter (can be kernel, sub-kernel or argument)
-	 *
-	 * @param {String} name - Name of the subkernel, argument, or kernel.
-	 *
-	 * @returns {Object} Texture cache
-	 *
-	 */
-	getTextureCache(name) {
-		if (this.outputToTexture) {
-			// Don't retain a handle on the output texture, we might need to render on the same texture later
-			return this._openCl.createTexture();
-		}
-		if (this.textureCache.hasOwnProperty(name)) {
-			return this.textureCache[name];
-		}
-		return this.textureCache[name] = this._openCl.createTexture();
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
 	 * @name setupParams
 	 *
 	 * @desc Setup the parameter types for the parameters 
@@ -405,25 +325,6 @@ module.exports = class OpenCLKernel extends KernelBase {
 	/**
 	 * @memberOf OpenCLKernel#
 	 * @function
-	 * @name getUniformLocation
-	 *
-	 * @desc Return WebGlUniformLocation for various variables 
-	 * related to webGl program, such as user-defiend variables,
-	 * as well as, dimension sizes, etc.
-	 *	
-	 */
-	getUniformLocation(name) {
-		let location = this.programUniformLocationCache[name];
-		if (!location) {
-			location = this._openCl.getUniformLocation(this.program, name);
-			this.programUniformLocationCache[name] = location;
-		}
-		return location;
-	}
-
-	/**
-	 * @memberOf OpenCLKernel#
-	 * @function
 	 * @name _addArgument 
 	 *
 	 * @desc Adds kernel parameters to the Argument Texture, 
@@ -436,7 +337,6 @@ module.exports = class OpenCLKernel extends KernelBase {
 	 */
 	_addArgument(value, type, name) {
 		const cl = this._openCl;
-		const argumentTexture = this.getArgumentTexture(name);
     // Initialize data on the host side:
     const n = 1000;
     const bytes = n * double.size;
@@ -451,8 +351,9 @@ module.exports = class OpenCLKernel extends KernelBase {
 
     const buffer = new CLBuffer(cl, defs.CL_MEM_READ_ONLY, bytes);
     this.queue.enqueueWriteBuffer(buffer, 0, bytes, pointer);
-    this.kernel.setArg(this.argumentsLength, buffer);
+    this.clKernel.setArg(this.argumentsLength, buffer);
 		this.argumentsLength++;
+		return buffer;
 	}
 
 	/**

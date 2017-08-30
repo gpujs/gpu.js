@@ -158,4 +158,6 @@ module.exports = class OpenCLFunctionBuilder extends FunctionBuilderBase {
 		this.addFunctionNode(kernelNode);
 		return kernelNode;
 	}
+
+  polyfillStandardFunctions() {}
 };
