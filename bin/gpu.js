@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.1
- * @date Tue Aug 29 2017 16:20:11 GMT-0400 (EDT)
+ * @date Thu Aug 31 2017 16:40:24 GMT+0200 (CEST)
  *
  * @license MIT
  * The MIT License
@@ -1053,7 +1053,14 @@ module.exports = function () {
 		key: 'buildKernel',
 		value: function buildKernel(fn, settings) {
 			settings = Object.assign({}, settings || {});
-			var fnString = fn.toString();
+
+			var fnString = '';
+			if (typeof fn === 'string') {
+				fnString = fn;
+			} else {
+				fnString = fn.toString();
+			}
+
 			if (!settings.functionBuilder) {
 				settings.functionBuilder = this.functionBuilder;
 			}
@@ -3111,7 +3118,7 @@ var GPU = function (_GPUCore) {
 			if (typeof fn === 'undefined') {
 				throw 'Missing fn parameter';
 			}
-			if (!utils.isFunction(fn)) {
+			if (!utils.isFunction(fn) && typeof fn !== 'string') {
 				throw 'fn parameter not a function';
 			}
 

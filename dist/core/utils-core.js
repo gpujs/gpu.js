@@ -1,75 +1,16 @@
+'use strict';
+
 /**
- * gpu.js
- * http://gpu.rocks/
  *
- * GPU Accelerated JavaScript
+ * @desc Reduced subset of Utils, used exclusively in gpu-core.js
+ * Various utility functions / snippets of code that GPU.JS uses internally.\
+ * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
  *
- * @version 1.0.0-rc.1
- * @date Thu Aug 31 2017 16:40:23 GMT+0200 (CEST)
+ * Note that all methods in this class is 'static' by nature `UtilsCore.functionName()`
  *
- * @license MIT
- * The MIT License
+ * @class UtilsCore
  *
- * Copyright (c) 2017 gpu.js Team
  */
-"use strict";(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-'use strict';
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var UtilsCore = require("./utils-core");
-
-module.exports = function () {
-	function GPUCore() {
-		_classCallCheck(this, GPUCore);
-	}
-
-	_createClass(GPUCore, null, [{
-		key: "validateKernelObj",
-
-
-		value: function validateKernelObj(kernelObj) {
-
-			if (kernelObj === null) {
-				throw "KernelObj being validated is NULL";
-			}
-
-			if (typeof kernelObj === "string") {
-				try {
-					kernelObj = JSON.parse(kernelObj);
-				} catch (e) {
-					console.error(e);
-					throw "Failed to convert KernelObj from JSON string";
-				}
-
-				if (kernelObj === null) {
-					throw "Invalid (NULL) KernelObj JSON string representation";
-				}
-			}
-
-			if (kernelObj.isKernelObj !== true) {
-				throw "Failed missing isKernelObj flag check";
-			}
-
-			return kernelObj;
-		}
-
-
-	}, {
-		key: "loadKernelObj",
-		value: function loadKernelObj(kernelObj, inOpt) {
-
-			kernelObj = validateKernelObj(kernelObj);
-		}
-	}]);
-
-	return GPUCore;
-}();
-},{"./utils-core":2}],2:[function(require,module,exports){
-'use strict';
-
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -84,13 +25,51 @@ var UtilsCore = function () {
 		key: 'isCanvas',
 
 
+		/**
+   * @typedef {Object} webGlContext
+   */
 
+		/**
+   * @typedef {Object} CanvasDOMObject
+   */
 
+		//-----------------------------------------------------------------------------
+		//
+		//  Canvas validation and support
+		//
+		//-----------------------------------------------------------------------------
 
+		/**
+   * @name isCanvas
+   * @static
+   * @function
+   * @memberOf UtilsCore
+   *
+   *
+   * @desc Return TRUE, on a valid DOM canvas object
+   *
+   * Note: This does just a VERY simply sanity check. And may give false positives.
+   *
+   * @param {CanvasDOMObject} canvasObj - Object to validate
+   *
+   * @returns {Boolean} TRUE if the object is a DOM canvas
+   *
+   */
 		value: function isCanvas(canvasObj) {
 			return canvasObj !== null && canvasObj.nodeName && canvasObj.getContext && canvasObj.nodeName.toUpperCase() === 'CANVAS';
 		}
 
+		/**
+   * @name isCanvasSupported
+   * @function
+   * @static
+   * @memberOf UtilsCore
+   *
+   * @desc Return TRUE, if browser supports canvas
+   *
+   * @returns {Boolean} TRUE if browser supports canvas
+   *
+   */
 
 	}, {
 		key: 'isCanvasSupported',
@@ -98,24 +77,61 @@ var UtilsCore = function () {
 			return _isCanvasSupported;
 		}
 
+		/**
+   * @name initCanvas
+   * @function
+   * @static
+   * @memberOf UtilsCore
+   *
+   * @desc Initiate and returns a canvas, for usage in init_webgl.
+   * Returns only if canvas is supported by browser.
+   *
+   * @returns {CanvasDOMObject} CanvasDOMObject if supported by browser, else null
+   *
+   */
 
 	}, {
 		key: 'initCanvas',
 		value: function initCanvas() {
+			// Fail fast if browser previously detected no support
 			if (!_isCanvasSupported) {
 				return null;
 			}
 
+			// Create a new canvas DOM
 			var canvas = document.createElement('canvas');
 
+			// Default width and height, to fix webgl issue in safari
 			canvas.width = 2;
 			canvas.height = 2;
 
+			// Returns the canvas
 			return canvas;
 		}
 
+		//-----------------------------------------------------------------------------
+		//
+		//  Webgl validation and support
+		//
+		//-----------------------------------------------------------------------------
 
 
+		/**
+   *
+   * @name isWebGl
+   * @function
+   * @static
+   * @memberOf UtilsCore
+   *
+   * @desc Return TRUE, on a valid webGlContext object
+   *
+   * Note: This does just a VERY simply sanity check. And may give false positives.
+   *
+   * @param {webGlContext} webGlObj - Object to validate
+   *
+   * @returns {Boolean} TRUE if the object is a webGlContext object
+   *
+   */
 
 	}, {
 		key: 'isWebGl',
@@ -123,6 +139,17 @@ var UtilsCore = function () {
 			return webGlObj && typeof webGlObj.getExtension === 'function';
 		}
 
+		/**
+   * @name isWebGlSupported
+   * @function
+   * @static
+   * @memberOf UtilsCore
+   *
+   * @desc Return TRUE, if browser supports webgl
+   *
+   * @returns {Boolean} TRUE if browser supports webgl
+   *
+   */
 
 	}, {
 		key: 'isWebGlSupported',
@@ -135,6 +162,7 @@ var UtilsCore = function () {
 			return _isWebGlDrawBuffersSupported;
 		}
 
+		// Default webgl options to use
 
 	}, {
 		key: 'initWebGlDefaultOptions',
@@ -146,29 +174,48 @@ var UtilsCore = function () {
 			};
 		}
 
+		/**
+   * @name initWebGl
+   * @function
+   * @static
+   * @memberOf UtilsCore
+   *
+   * @desc Initiate and returns a webGl, from a canvas object
+   * Returns only if webGl is supported by browser.
+   *
+   * @param {CanvasDOMObject} canvasObj - Object to validate
+   *
+   * @returns {CanvasDOMObject} CanvasDOMObject if supported by browser, else null
+   *
+   */
 
 	}, {
 		key: 'initWebGl',
 		value: function initWebGl(canvasObj) {
 
+			// First time setup, does the browser support check memorizer
 			if (typeof _isCanvasSupported !== 'undefined' || canvasObj === null) {
 				if (!_isCanvasSupported) {
 					return null;
 				}
 			}
 
+			// Fail fast for invalid canvas object
 			if (!UtilsCore.isCanvas(canvasObj)) {
 				throw new Error('Invalid canvas object - ' + canvasObj);
 			}
 
+			// Create a new canvas DOM
 			var webGl = canvasObj.getContext('experimental-webgl', UtilsCore.initWebGlDefaultOptions()) || canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions());
 
 			if (webGl) {
+				// Get the extension that is needed
 				webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
 				webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
 				webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
 			}
 
+			// Returns the canvas
 			return webGl;
 		}
 	}]);
@@ -176,6 +223,11 @@ var UtilsCore = function () {
 	return UtilsCore;
 }();
 
+//-----------------------------------------------------------------------------
+//
+//  Canvas & Webgl validation and support constants
+//
+//-----------------------------------------------------------------------------
 
 var _isCanvasSupported = typeof document !== 'undefined' ? UtilsCore.isCanvas(document.createElement('canvas')) : false;
 var _testingWebGl = UtilsCore.initWebGl(UtilsCore.initCanvas());
@@ -193,17 +245,3 @@ if (_isWebGlSupported) {
 }
 
 module.exports = UtilsCore;
-},{}],3:[function(require,module,exports){
-'use strict';
-
-var GPUCore = require("./core/gpu-core");
-if (typeof module !== 'undefined') {
-	module.exports = GPUCore;
-}
-if (typeof window !== 'undefined') {
-	window.GPUCore = GPUCore;
-	if (window.GPU === null) {
-		window.GPU = GPUCore;
-	}
-}
-},{"./core/gpu-core":1}]},{},[3]);

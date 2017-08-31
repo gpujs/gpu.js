@@ -105,10 +105,9 @@ module.exports = class BaseRunner {
 		settings = Object.assign({}, settings || {});
 
 		var fnString = '';
-		if(typeof fn === 'string')
-		{
+		if (typeof fn === 'string') {
 			fnString = fn;
-		}else{
+		} else {
 			fnString = fn.toString();
 		}
 
