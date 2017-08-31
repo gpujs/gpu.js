@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.1
- * @date Thu Aug 31 2017 16:55:16 GMT+0200 (CEST)
+ * @date Thu Aug 31 2017 16:59:20 GMT+0200 (CEST)
  *
  * @license MIT
  * The MIT License
@@ -1053,14 +1053,7 @@ module.exports = function () {
 		key: 'buildKernel',
 		value: function buildKernel(fn, settings) {
 			settings = Object.assign({}, settings || {});
-
-			var fnString = '';
-			if (typeof fn === 'string') {
-				fnString = fn;
-			} else {
-				fnString = fn.toString();
-			}
-
+			var fnString = fn.toString();
 			if (!settings.functionBuilder) {
 				settings.functionBuilder = this.functionBuilder;
 			}
