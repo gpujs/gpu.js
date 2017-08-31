@@ -103,14 +103,7 @@ module.exports = class BaseRunner {
 	 */
 	buildKernel(fn, settings) {
 		settings = Object.assign({}, settings || {});
-
-		var fnString = '';
-		if (typeof fn === 'string') {
-			fnString = fn;
-		} else {
-			fnString = fn.toString();
-		}
-
+		const fnString = fn.toString();
 		if (!settings.functionBuilder) {
 			settings.functionBuilder = this.functionBuilder;
 		}
