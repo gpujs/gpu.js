@@ -48,12 +48,15 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 * [Contributing](#contributing)
 
 ## Installation
+
 ### NPM
+
 ```
 npm i -s gpu.js
 ```
 
 ### Browser
+
 Download the latest version of gpu.js and include the files in your HTML page using the following tags:
 
 ```html
@@ -68,7 +71,7 @@ const gpu = new GPU();
 
 Note that this **requires** the Promise API, if you need to polyfill it, you can give our 'untested polyfill' a try [here](https://github.com/picoded/small_promise.js)
 
-### Creating and Running Functions
+## Creating and Running Functions
 Depending on your output type, specify the intended size of your output. You cannot have an accelerated function that does not specify any output size.
 
 Output size         	 |	How to specify output size   |	How to reference in kernel
@@ -117,7 +120,7 @@ const myFunc = gpu.createKernel(function() {
 myFunc();
 // Result: [0, 1, 2, 3, ... 99]
 ```
-### Accepting Input
+## Accepting Input
 
 Kernel functions can accept numbers, or 1D, 2D or 3D array of numbers as input. To define an argument, simply add it to the kernel function like regular JavaScript.
 
@@ -141,7 +144,7 @@ myFunc([1, 2, 3]);
 // Result: [1, 2, 3, 1, ... 1 ]
 ```
 
-### Graphical Output
+## Graphical Output
 
 Sometimes, you want to produce a `canvas` image instead of doing numeric computations. To achieve this, set the `graphical` flag to `true` and the output dimensions to `[width, height]`. The thread identifiers will now refer to the `x` and `y` coordinate of the pixel you are producing. Inside your kernel function, use `this.color(r,g,b)` or `this.color(r,g,b,a)` to specify the color of the pixel.
 
@@ -162,7 +165,7 @@ document.getElementsByTagName('body')[0].appendChild(canvas);
 
 Note: To animate the rendering, use `requestAnimationFrame` instead of `setTimeout` for optimal performance. For more information, see [this](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame).
 
-### Combining kernels
+## Combining kernels
 
 Sometimes you want to do multiple math operations on the gpu without the round trip penalty of data transfer from cpu to gpu to cpu to gpu, etc.  To aid this there is the `combineKernels` method.
 _**Note:**_ Kernels can have different output sizes.
@@ -183,11 +186,11 @@ superKernel(a, b, c);
 ```
 This gives you the flexibility of using multiple transformations but without the performance penalty, resulting in a much much MUCH faster operation.
 
-### Create Kernel Map
+## Create Kernel Map
 
 Sometimes you want to do multiple math operations in one kernel, and save the output of each of those operations. An example is **Machine Learning** where the previous output is required for back propagation. To aid this there is the `createKernelMap` method.
 
-#### object outputs
+### object outputs
 ```js
 const megaKernel = gpu.createKernelMap({
   addResult: function add(a, b) {
@@ -203,7 +206,7 @@ const megaKernel = gpu.createKernelMap({
 megaKernel(a, b, c);
 // Result: { addResult: [], multiplyResult: [], result: [] }
 ```
-#### array outputs
+### array outputs
 ```js
 const megaKernel = gpu.createKernelMap([
   function add(a, b) {
@@ -221,7 +224,7 @@ megaKernel(a, b, c);
 ```
 This gives you the flexibility of using parts of a single transformation without the performance penalty, resulting in much much _MUCH_ faster operation.
 
-### Adding custom functions
+## Adding custom functions
 Do you have a custom function you'd like to use on the gpu? Although limited, you can:
 ```js
 gpu.addFunction(function mySuperFunction(a, b) {
@@ -236,7 +239,7 @@ const kernel = gpu.createKernel(function(a, b) {
 }).setOutput([20]);
 ```
 
-### Adding custom functions directly to kernel
+## Adding custom functions directly to kernel
 ```js
 function mySuperFunction(a, b) {
 	return a - b;
@@ -249,9 +252,10 @@ const kernel = gpu.createKernel(function(a, b) {
 
 ```
 
-### Loops
+## Loops
 Loops just work
-#### Dynamic sized via constants
+
+### Dynamic sized via constants
 ```js
 const matMult = gpu.createKernel(function(a, b) {
     var sum = 0;
@@ -264,7 +268,8 @@ const matMult = gpu.createKernel(function(a, b) {
   output: [512, 512],
 });
 ```
-#### Fixed sized
+
+### Fixed sized
 ```js
 const matMult = gpu.createKernel(function(a, b) {
     var sum = 0;
@@ -275,15 +280,15 @@ const matMult = gpu.createKernel(function(a, b) {
 }).setOutput([512, 512]);
 ```
 
-# Full API Reference
+## Full API Reference
 
 You can find a [complete API reference here](http://gpu.rocks/api/).
 
-# Automatically-built Documentation
+## Automatically-built Documentation
 
 Documentation of the codebase is [automatically built](https://github.com/gpujs/gpu.js/wiki/Automatic-Documentation).
 
-# Contributors
+## Contributors
  
 * Fazli Sapuan
 * Eugene Cheah
@@ -295,7 +300,7 @@ Documentation of the codebase is [automatically built](https://github.com/gpujs/
 * Mark Theng
 * Varun Patro
  
-# Contributing
+## Contributing
  
 Contributors are welcome! Create a merge request to the `develop` branch and we
 will gladly review it. If you wish to get write access to the repository,
@@ -304,7 +309,7 @@ the `develop` branch.
  
 We promise never to pass off your code as ours.
 
-# License 
+## License 
 
 The MIT License
 
