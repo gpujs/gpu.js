@@ -48,11 +48,16 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 * [Contributing](#contributing)
 
 ## Installation
+### NPM
+```
+npm i -s gpu.js
+```
+
+### Browser
 Download the latest version of gpu.js and include the files in your HTML page using the following tags:
 
 ```html
 <script src="/path/to/js/gpu.min.js"></script>
-<script src="/path/to/js/gpu-core.min.js"></script>
 ```
 
 In JavaScript, initialize the library:
