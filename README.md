@@ -49,7 +49,7 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 
 ## Installation
 
-### NPM
+### NPM (https://www.npmjs.com/package/gpu.js)[npm package]
 
 ```
 npm i -s gpu.js
