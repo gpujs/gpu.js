@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.1
- * @date Sun Sep 03 2017 10:52:03 GMT-0400 (EDT)
+ * @date Sun Sep 03 2017 12:29:50 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -746,6 +746,9 @@ module.exports = function () {
 		}
 		if (settings.hasOwnProperty('canvas')) {
 			this._canvas = settings.canvas;
+		}
+		if (settings.hasOwnProperty('output')) {
+			this.setOutput(settings.output); 
 		}
 
 		if (!this._canvas) this._canvas = utils.initCanvas();
