@@ -53,15 +53,15 @@ module.exports = class FunctionBuilderBase {
 	}
 
 	addNativeFunction(name, nativeFunction) {
-	  throw new Error('addNativeFunction not supported on base');
-  }
+		throw new Error('addNativeFunction not supported on base');
+	}
 
-  addNativeFunctions(nativeFunctions) {
-	  for (let functionName in nativeFunctions) {
-	    if (!nativeFunctions.hasOwnProperty(functionName)) continue;
-	    this.addNativeFunction(functionName, nativeFunctions[functionName]);
-    }
-  }
+	addNativeFunctions(nativeFunctions) {
+		for (let functionName in nativeFunctions) {
+			if (!nativeFunctions.hasOwnProperty(functionName)) continue;
+			this.addNativeFunction(functionName, nativeFunctions[functionName]);
+		}
+	}
 
 	/**
 	 * @memberOf FunctionBuilderBase#
@@ -118,17 +118,17 @@ module.exports = class FunctionBuilderBase {
 		}
 
 		if (this.nativeFunctions[functionName]) {
-      if (retList.indexOf(functionName) >= 0) {
-        // Does nothing if already traced
-      } else {
-        retList.push(functionName);
-      }
-    }
+			if (retList.indexOf(functionName) >= 0) {
+				// Does nothing if already traced
+			} else {
+				retList.push(functionName);
+			}
+		}
 
 		return retList;
 	}
 
-  polyfillStandardFunctions() {
-	  throw new Error('polyfillStandardFunctions not defined on base function builder');
-  }
+	polyfillStandardFunctions() {
+		throw new Error('polyfillStandardFunctions not defined on base function builder');
+	}
 };

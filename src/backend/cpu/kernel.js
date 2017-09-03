@@ -102,9 +102,9 @@ module.exports = class CPUKernel extends KernelBase {
 
 		const threadDim = this.threadDim = utils.clone(this.output);
 
-    while (threadDim.length < 3) {
-      threadDim.push(1);
-    }
+		while (threadDim.length < 3) {
+			threadDim.push(1);
+		}
 
 		if (this.graphical) {
 			const canvas = this.getCanvas();

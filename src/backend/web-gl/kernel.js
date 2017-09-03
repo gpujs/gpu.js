@@ -1195,10 +1195,10 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	addFunction(fn) {
-	  this.functionBuilder.addFunction(null, fn);
-  }
+		this.functionBuilder.addFunction(null, fn);
+	}
 
 	addNativeFunction(name, source) {
-	  this.functionBuilder.addNativeFunction(name, source);
-  }
+		this.functionBuilder.addNativeFunction(name, source);
+	}
 };

@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.1
- * @date Tue Aug 29 2017 16:20:11 GMT-0400 (EDT)
+ * @date Thu Aug 31 2017 16:59:20 GMT+0200 (CEST)
  *
  * @license MIT
  * The MIT License
@@ -3111,7 +3111,7 @@ var GPU = function (_GPUCore) {
 			if (typeof fn === 'undefined') {
 				throw 'Missing fn parameter';
 			}
-			if (!utils.isFunction(fn)) {
+			if (!utils.isFunction(fn) && typeof fn !== 'string') {
 				throw 'fn parameter not a function';
 			}
 

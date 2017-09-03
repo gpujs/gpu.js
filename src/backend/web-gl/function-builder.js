@@ -20,8 +20,8 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	}
 
 	addNativeFunction(functionName, glslFunctionString) {
-	  this.nativeFunctions[functionName] = glslFunctionString;
-  }
+		this.nativeFunctions[functionName] = glslFunctionString;
+	}
 
 	/**
 	 * @memberOf WebGLFunctionBuilder#
@@ -62,13 +62,13 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	getPrototypeStringFromFunctionNames(functionList, opt) {
 		const ret = [];
 		for (let i = 0; i < functionList.length; ++i) {
-		  const functionName = functionList[i];
+			const functionName = functionList[i];
 			const node = this.nodeMap[functionName];
 			if (node) {
 				ret.push(node.getFunctionPrototypeString(opt));
 			} else if (this.nativeFunctions[functionName]) {
-			  ret.push(this.nativeFunctions[functionName]);
-      }
+				ret.push(this.nativeFunctions[functionName]);
+			}
 		}
 		return ret.join('\n');
 	}
@@ -165,30 +165,30 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 		return kernelNode;
 	}
 
-  //---------------------------------------------------------
-  //
-  //  Polyfill stuff
-  //
-  //---------------------------------------------------------
+	//---------------------------------------------------------
+	//
+	//  Polyfill stuff
+	//
+	//---------------------------------------------------------
 
-  // Round function used in polyfill
-  static round(a) {
-    return round(a);
-  }
+	// Round function used in polyfill
+	static round(a) {
+		return round(a);
+	}
 
-  /**
-   * @memberOf FunctionBuilderBase#
-   * @function
-   * @name polyfillStandardFunctions
-   *
-   * @desc Polyfill in the missing Math functions (round)
-   *
-   */
-  polyfillStandardFunctions() {
-    this.addFunction('round', round);
-  }
+	/**
+	 * @memberOf FunctionBuilderBase#
+	 * @function
+	 * @name polyfillStandardFunctions
+	 *
+	 * @desc Polyfill in the missing Math functions (round)
+	 *
+	 */
+	polyfillStandardFunctions() {
+		this.addFunction('round', round);
+	}
 };
 
 function round(a) {
-  return Math.floor(a + 0.5);
+	return Math.floor(a + 0.5);
 }
