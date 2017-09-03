@@ -59,7 +59,7 @@ module.exports = class BaseKernel {
 		if (settings.hasOwnProperty('canvas')) {
 			this._canvas = settings.canvas;
 		}
-        if (settings.hasOwnProperty('output')) {
+		if (settings.hasOwnProperty('output')) {
 			this.setOutput(settings.output); // Flatten output object
 		}
 
