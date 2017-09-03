@@ -45,6 +45,7 @@ module.exports = class BaseKernel {
 		this.floatOutputForce = null;
 		this.addFunction = null;
 		this.functions = null;
+		this.nativeFunctions = null;
 		this.copyData = true;
 		this.subKernels = null;
 		this.subKernelProperties = null;

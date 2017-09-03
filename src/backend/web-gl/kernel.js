@@ -1093,6 +1093,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		const gl = this._webGl;
 
 		builder.addFunctions(this.functions);
+		builder.addNativeFunctions(this.nativeFunctions);
 
 		builder.addKernel(this.fnString, {
 			prototypeOnly: false,
@@ -1193,7 +1194,11 @@ module.exports = class WebGLKernel extends KernelBase {
 		return kernelString(this);
 	}
 
-	addGLSLFunction(name, source) {
-	  this.functionBuilder.addGLSLFunction(name, source);
-  }
+	addFunction(fn) {
+		this.functionBuilder.addFunction(null, fn);
+	}
+
+	addNativeFunction(name, source) {
+		this.functionBuilder.addNativeFunction(name, source);
+	}
 };

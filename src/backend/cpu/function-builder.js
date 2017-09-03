@@ -64,5 +64,5 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 		this.addFunctionNode(node);
 	}
 
-  polyfillStandardFunctions() {}
+	polyfillStandardFunctions() {}
 };

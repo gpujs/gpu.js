@@ -15,7 +15,7 @@ module.exports = class FunctionBuilderBase {
 	 */
 	constructor(gpu) {
 		this.nodeMap = {};
-		this.rawFunctions = {};
+		this.nativeFunctions = {};
 		this.gpu = gpu;
 		this.rootKernel = null;
 	}
@@ -49,6 +49,17 @@ module.exports = class FunctionBuilderBase {
 					this.addFunction(p, functions[p]);
 				}
 			}
+		}
+	}
+
+	addNativeFunction(name, nativeFunction) {
+		throw new Error('addNativeFunction not supported on base');
+	}
+
+	addNativeFunctions(nativeFunctions) {
+		for (let functionName in nativeFunctions) {
+			if (!nativeFunctions.hasOwnProperty(functionName)) continue;
+			this.addNativeFunction(functionName, nativeFunctions[functionName]);
 		}
 	}
 
@@ -106,18 +117,18 @@ module.exports = class FunctionBuilderBase {
 			}
 		}
 
-		if (this.rawFunctions[functionName]) {
-      if (retList.indexOf(functionName) >= 0) {
-        // Does nothing if already traced
-      } else {
-        retList.push(functionName);
-      }
-    }
+		if (this.nativeFunctions[functionName]) {
+			if (retList.indexOf(functionName) >= 0) {
+				// Does nothing if already traced
+			} else {
+				retList.push(functionName);
+			}
+		}
 
 		return retList;
 	}
 
-  polyfillStandardFunctions() {
-	  throw new Error('polyfillStandardFunctions not defined on base function builder');
-  }
+	polyfillStandardFunctions() {
+		throw new Error('polyfillStandardFunctions not defined on base function builder');
+	}
 };
