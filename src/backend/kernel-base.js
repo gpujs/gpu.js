@@ -93,7 +93,7 @@ module.exports = class BaseKernel {
 	setOutput(output) {
 		if (output.hasOwnProperty('x')) {
 			if (output.hasOwnProperty('y')) {
-				if (output.hasOwnProperty('x')) {
+				if (output.hasOwnProperty('z')) {
 					this.output = [output.x, output.y, output.z];
 				} else {
 					this.output = [output.x, output.y];
