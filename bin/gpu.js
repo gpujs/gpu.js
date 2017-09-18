@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.1
- * @date Sun Sep 03 2017 12:29:50 GMT-0400 (EDT)
+ * @date Mon Sep 18 2017 13:09:21 GMT-0700 (PDT)
  *
  * @license MIT
  * The MIT License
@@ -778,7 +778,7 @@ module.exports = function () {
 		value: function setOutput(output) {
 			if (output.hasOwnProperty('x')) {
 				if (output.hasOwnProperty('y')) {
-					if (output.hasOwnProperty('x')) {
+					if (output.hasOwnProperty('z')) {
 						this.output = [output.x, output.y, output.z];
 					} else {
 						this.output = [output.x, output.y];
@@ -3946,15 +3946,15 @@ var types = {
   eq: new TokenType("=", {beforeExpr: true, isAssign: true}),
   assign: new TokenType("_=", {beforeExpr: true, isAssign: true}),
   incDec: new TokenType("++/--", {prefix: true, postfix: true, startsExpr: true}),
-  prefix: new TokenType("prefix", {beforeExpr: true, prefix: true, startsExpr: true}),
+  prefix: new TokenType("!/~", {beforeExpr: true, prefix: true, startsExpr: true}),
   logicalOR: binop("||", 1),
   logicalAND: binop("&&", 2),
   bitwiseOR: binop("|", 3),
   bitwiseXOR: binop("^", 4),
   bitwiseAND: binop("&", 5),
-  equality: binop("==/!=", 6),
-  relational: binop("</>", 7),
-  bitShift: binop("<</>>", 8),
+  equality: binop("==/!=/===/!==", 6),
+  relational: binop("</>/<=/>=", 7),
+  bitShift: binop("<</>>/>>>", 8),
   plusMin: new TokenType("+/-", {beforeExpr: true, binop: 9, prefix: true, startsExpr: true}),
   modulo: binop("%", 10),
   star: binop("*", 10),
@@ -4202,7 +4202,7 @@ Parser.prototype.parse = function parse () {
 var pp = Parser.prototype;
 
 
-var literal = /^(?:'((?:[^']|\.)*)'|"((?:[^"]|\.)*)"|;)/;
+var literal = /^(?:'((?:\\.|[^'])*?)'|"((?:\\.|[^"])*?)"|;)/;
 pp.strictDirective = function(start) {
   var this$1 = this;
 
@@ -5774,7 +5774,7 @@ pp$3.parseTemplate = function(ref) {
 
 pp$3.isAsyncProp = function(prop) {
   return !prop.computed && prop.key.type === "Identifier" && prop.key.name === "async" &&
-    (this.type === types.name || this.type === types.num || this.type === types.string || this.type === types.bracketL) &&
+    (this.type === types.name || this.type === types.num || this.type === types.string || this.type === types.bracketL || this.type.keyword) &&
     !lineBreak.test(this.input.slice(this.lastTokEnd, this.start))
 };
 
@@ -6568,7 +6568,7 @@ pp$8.readToken_caret = function() {
 pp$8.readToken_plus_min = function(code) { 
   var next = this.input.charCodeAt(this.pos + 1);
   if (next === code) {
-    if (next == 45 && this.input.charCodeAt(this.pos + 2) == 62 &&
+    if (next == 45 && !this.inModule && this.input.charCodeAt(this.pos + 2) == 62 &&
         (this.lastTokEnd === 0 || lineBreak.test(this.input.slice(this.lastTokEnd, this.pos)))) {
       this.skipLineComment(3);
       this.skipSpace();
@@ -6588,9 +6588,8 @@ pp$8.readToken_lt_gt = function(code) {
     if (this.input.charCodeAt(this.pos + size) === 61) { return this.finishOp(types.assign, size + 1) }
     return this.finishOp(types.bitShift, size)
   }
-  if (next == 33 && code == 60 && this.input.charCodeAt(this.pos + 2) == 45 &&
+  if (next == 33 && code == 60 && !this.inModule && this.input.charCodeAt(this.pos + 2) == 45 &&
       this.input.charCodeAt(this.pos + 3) == 45) {
-    if (this.inModule) { this.unexpected(); }
     this.skipLineComment(4);
     this.skipSpace();
     return this.nextToken()
@@ -7020,7 +7019,7 @@ pp$8.readWord = function() {
 };
 
 
-var version = "5.1.1";
+var version = "5.1.2";
 
 
 function parse(input, options) {
