@@ -3,6 +3,7 @@
   "version": "1.0.0-rc.1",
   "description": "GPU Accelerated JavaScript",
   "main": "./src/index.js",
+  "jsdelivr": "bin/gpu.min.js",
   "directories": {
     "doc": "doc",
     "test": "test"
