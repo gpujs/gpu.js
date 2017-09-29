@@ -279,7 +279,6 @@ ${ this.subKernelOutputVariableNames === null
         }
     ${ prototypes.length > 0 ? prototypes.join('\n') : '' }
     }.bind(this);`;
-		console.log(kernelString);
 		return kernelString;
 	}
 

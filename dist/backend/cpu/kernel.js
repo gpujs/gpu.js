@@ -254,7 +254,6 @@ module.exports = function (_KernelBase) {
 			}).join(',\n') + '\n      ];\n      result.result = ret;\n      return result;\n' : 'return {\n        result: ret,\n        ' + Object.keys(this.subKernelProperties).map(function (name, i) {
 				return name + ': ' + _this2.subKernelOutputVariableNames[i];
 			}).join(',\n') + '\n      };') + '\n    ' + (prototypes.length > 0 ? prototypes.join('\n') : '') + '\n    }.bind(this);';
-			console.log(kernelString);
 			return kernelString;
 		}
 

@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.1
- * @date Fri Sep 29 2017 13:55:45 GMT-0400 (EDT)
+ * @date Fri Sep 29 2017 14:04:36 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -936,7 +936,6 @@ module.exports = function (_KernelBase) {
 			}).join(',\n') + '\n      ];\n      result.result = ret;\n      return result;\n' : 'return {\n        result: ret,\n        ' + Object.keys(this.subKernelProperties).map(function (name, i) {
 				return name + ': ' + _this2.subKernelOutputVariableNames[i];
 			}).join(',\n') + '\n      };') + '\n    ' + (prototypes.length > 0 ? prototypes.join('\n') : '') + '\n    }.bind(this);';
-			console.log(kernelString);
 			return kernelString;
 		}
 
