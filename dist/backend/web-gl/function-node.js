@@ -54,12 +54,6 @@ module.exports = function (_FunctionNodeBase) {
 			this.functionString = webGlRegexOptimize(this.functionStringArray.join('').trim());
 			return this.functionString;
 		}
-	}, {
-		key: 'isIdentifierConstant',
-		value: function isIdentifierConstant(paramName) {
-			if (!this.constants) return false;
-			return this.constants.hasOwnProperty(paramName);
-		}
 
 		/**
    * @memberOf WebGLFunctionNode#
@@ -79,7 +73,7 @@ module.exports = function (_FunctionNodeBase) {
 		key: 'astGeneric',
 		value: function astGeneric(ast, retArr, funcParam) {
 			if (ast === null) {
-				throw astErrorOutput('NULL ast', ast, funcParam);
+				throw this.astErrorOutput('NULL ast', ast, funcParam);
 			} else {
 				if (Array.isArray(ast)) {
 					for (var i = 0; i < ast.length; i++) {
@@ -141,7 +135,7 @@ module.exports = function (_FunctionNodeBase) {
 						return this.astArrayExpression(ast, retArr, funcParam);
 				}
 
-				throw astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);
+				throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);
 			}
 		}
 
@@ -284,7 +278,7 @@ module.exports = function (_FunctionNodeBase) {
 				retArr.push(';');
 			}
 
-			//throw astErrorOutput(
+			//throw this.astErrorOutput(
 			//	'Non main function return, is not supported : '+funcParam.currentFunctionNamespace,
 			//	ast, funcParam
 			//);
@@ -312,7 +306,7 @@ module.exports = function (_FunctionNodeBase) {
 
 			// Reject non numeric literals
 			if (isNaN(ast.value)) {
-				throw astErrorOutput('Non-numeric literal not supported : ' + ast.value, ast, funcParam);
+				throw this.astErrorOutput('Non-numeric literal not supported : ' + ast.value, ast, funcParam);
 			}
 
 			// Push the literal value as a float/int
@@ -388,7 +382,7 @@ module.exports = function (_FunctionNodeBase) {
 		key: 'astIdentifierExpression',
 		value: function astIdentifierExpression(idtNode, retArr, funcParam) {
 			if (idtNode.type !== 'Identifier') {
-				throw astErrorOutput('IdentifierExpression - not an Identifier', ast, funcParam);
+				throw this.astErrorOutput('IdentifierExpression - not an Identifier', ast, funcParam);
 			}
 
 			switch (idtNode.name) {
@@ -444,7 +438,7 @@ module.exports = function (_FunctionNodeBase) {
 		key: 'astForStatement',
 		value: function astForStatement(forNode, retArr, funcParam) {
 			if (forNode.type !== 'ForStatement') {
-				throw astErrorOutput('Invalid for statment', ast, funcParam);
+				throw this.astErrorOutput('Invalid for statment', ast, funcParam);
 			}
 
 			if (forNode.test && forNode.test.type === 'BinaryExpression') {
@@ -522,7 +516,7 @@ module.exports = function (_FunctionNodeBase) {
 				}
 			}
 
-			throw astErrorOutput('Invalid for statement', ast, funcParam);
+			throw this.astErrorOutput('Invalid for statement', ast, funcParam);
 		}
 
 		/**
@@ -544,7 +538,7 @@ module.exports = function (_FunctionNodeBase) {
 		key: 'astWhileStatement',
 		value: function astWhileStatement(whileNode, retArr, funcParam) {
 			if (whileNode.type !== 'WhileStatement') {
-				throw astErrorOutput('Invalid while statment', ast, funcParam);
+				throw this.astErrorOutput('Invalid while statment', ast, funcParam);
 			}
 
 			retArr.push('for (float i = 0.0; i < LOOP_MAX; i++) {');
@@ -1035,7 +1029,7 @@ module.exports = function (_FunctionNodeBase) {
 			}
 
 			// Failure, unknown expression
-			throw astErrorOutput('Unknown CallExpression_unroll', ast, funcParam);
+			throw this.astErrorOutput('Unknown CallExpression_unroll', ast, funcParam);
 		}
 
 		/**
@@ -1115,7 +1109,7 @@ module.exports = function (_FunctionNodeBase) {
 			}
 
 			// Failure, unknown expression
-			throw astErrorOutput('Unknown CallExpression', ast, funcParam);
+			throw this.astErrorOutput('Unknown CallExpression', ast, funcParam);
 
 			return retArr;
 		}
@@ -1152,7 +1146,7 @@ module.exports = function (_FunctionNodeBase) {
 			return retArr;
 
 			// // Failure, unknown expression
-			// throw astErrorOutput(
+			// throw this.astErrorOutput(
 			// 	'Unknown  ArrayExpression',
 			// 	arrNode, funcParam
 			//);
@@ -1249,21 +1243,4 @@ function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
  */
 function webGlRegexOptimize(inStr) {
 	return inStr.replace(DECODE32_ENCODE32, '((').replace(ENCODE32_DECODE32, '((');
-}
-
-/**
- * @function
- * @name astErrorOutput
- * @ignore
- * @desc To throw the AST error, with its location.
- *
- * @todo add location support fpr the AST error
- *
- * @param {Object} error - the error message output
- * @param {Object} ast - the AST object where the error is
- * @param {Object} funcParam - FunctionNode, that tracks compilation state
- */
-function astErrorOutput(error, ast, funcParam) {
-	console.error(error, ast, funcParam);
-	return error;
 }

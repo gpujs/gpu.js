@@ -1,6 +1,7 @@
 function addCustomNativeFunctionDivide(mode) {
-	var gpu = new GPU({ mode: mode })
-    .addNativeFunction('divide', `float divide(float a, float b) {
+	var gpu = new GPU({ mode: mode });
+
+	gpu.addNativeFunction('divide', `float divide(float a, float b) {
     return a / b;
   }`);
 	

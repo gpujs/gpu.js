@@ -20,73 +20,21 @@ var CPUFunctionNode = require('./function-node');
  *
  */
 module.exports = function (_FunctionBuilderBase) {
-	_inherits(CPUFunctionBuilder, _FunctionBuilderBase);
+  _inherits(CPUFunctionBuilder, _FunctionBuilderBase);
 
-	function CPUFunctionBuilder() {
-		_classCallCheck(this, CPUFunctionBuilder);
+  function CPUFunctionBuilder() {
+    _classCallCheck(this, CPUFunctionBuilder);
 
-		return _possibleConstructorReturn(this, (CPUFunctionBuilder.__proto__ || Object.getPrototypeOf(CPUFunctionBuilder)).apply(this, arguments));
-	}
+    var _this = _possibleConstructorReturn(this, (CPUFunctionBuilder.__proto__ || Object.getPrototypeOf(CPUFunctionBuilder)).call(this));
 
-	_createClass(CPUFunctionBuilder, [{
-		key: 'addFunction',
-		value: function addFunction(functionName, jsFunction, paramTypes, returnType) {
-			this.addFunctionNode(new CPUFunctionNode(functionName, jsFunction, paramTypes, returnType).setAddFunction(this.addFunction.bind(this)));
-		}
+    _this.Node = CPUFunctionNode;
+    return _this;
+  }
 
-		/**
-   * @memberOf CPUFunctionBuilder#
-   * @function
-   * @name getPrototypeString
-   *
-   * @desc Return the JS Function String optimized for cpu.
-   *
-   * @param {String} functionName - Function name to trace from. If null, it returns the WHOLE builder stack
-   *
-   * @returns {String} Function String
-   *
-   */
+  _createClass(CPUFunctionBuilder, [{
+    key: 'polyfillStandardFunctions',
+    value: function polyfillStandardFunctions() {}
+  }]);
 
-	}, {
-		key: 'getPrototypeString',
-		value: function getPrototypeString() {
-			var ret = '';
-			for (var p in this.nodeMap) {
-				if (!this.nodeMap.hasOwnProperty(p)) continue;
-				var node = this.nodeMap[p];
-				if (node.isSubKernel) {
-					ret += 'var ' + node.functionName + ' = ' + node.jsFunctionString.replace('return', 'return ' + node.functionName + 'Result[this.thread.z][this.thread.y][this.thread.x] =') + '.bind(this);\n';
-				} else {
-					ret += 'var ' + node.functionName + ' = ' + node.jsFunctionString + '.bind(this);\n';
-				}
-			}
-			return ret;
-		}
-
-		/**
-   * @memberOf CPUFunctionBuilder#
-   * @function
-   * @name addSubKernel
-   *
-   * @desc Add a new sub-kernel to the current kernel instance
-   *
-   * @param {Function} jsFunction - Sub-kernel function (JavaScript)
-   * @param {Array} paramNames - Parameters of the sub-kernel
-   * @param {Array} returnType - Return type of the subKernel
-   *
-   */
-
-	}, {
-		key: 'addSubKernel',
-		value: function addSubKernel(jsFunction, paramTypes, returnType) {
-			var node = new CPUFunctionNode(null, jsFunction, paramTypes, returnType).setAddFunction(this.addFunction.bind(this));
-			node.isSubKernel = true;
-			this.addFunctionNode(node);
-		}
-	}, {
-		key: 'polyfillStandardFunctions',
-		value: function polyfillStandardFunctions() {}
-	}]);
-
-	return CPUFunctionBuilder;
+  return CPUFunctionBuilder;
 }(FunctionBuilderBase);
