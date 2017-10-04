@@ -24,7 +24,6 @@ module.exports = class CPUKernel extends KernelBase {
 	constructor(fnString, settings) {
 		super(fnString, settings);
 		this._fnBody = utils.getFunctionBodyFromString(fnString);
-		this.functionBuilder = settings.functionBuilder;
 		this._fn = null;
 		this.run = null;
 		this._canvasCtx = null;
@@ -177,6 +176,13 @@ module.exports = class CPUKernel extends KernelBase {
 			threadDim.push(1);
 		}
 
+		builder.addKernel(this.fnString, {
+			prototypeOnly: false,
+			constants: this.constants,
+			debug: this.debug,
+			loopMaxIterations: this.loopMaxIterations
+		}, this.paramNames, this.paramTypes);
+
 		builder.addFunctions(this.functions);
 
 		if (this.subKernels !== null) {
@@ -200,55 +206,61 @@ module.exports = class CPUKernel extends KernelBase {
 			}
 		}
 
-		return this._kernelString = `
+		const prototypes = builder.getPrototypes();
+		const kernel = prototypes.shift();
+		const kernelString = this._kernelString = `
+		var LOOP_MAX = ${ this._getLoopMaxString() };
   ${ this.subKernelOutputVariableNames === null
         ? ''
         : this.subKernelOutputVariableNames.map((name) => `  var ${ name } = null;\n`).join('')
         }
-      ${ builder.getPrototypeString() }
-      var fn = function fn(${ this.paramNames.join(', ') }) { ${ this._fnBody } }.bind(this);
-    return function (${ this.paramNames.join(', ') }) {
+    return function (${ this.paramNames.map(paramName => 'user_' + paramName).join(', ') }) {
     var ret = new Array(${ threadDim[2] });
   ${ this.subKernelOutputVariableNames === null
         ? ''
-        : this.subKernelOutputVariableNames.map((name) => `  ${ name } = new Array(${ threadDim[2] });\n`).join('')
+        : this.subKernelOutputVariableNames.map((name) => `  ${ name }Z = new Array(${ threadDim[2] });\n`).join('')
         }
     for (this.thread.z = 0; this.thread.z < ${ threadDim[2] }; this.thread.z++) {
       ret[this.thread.z] = new Array(${ threadDim[1] });
   ${ this.subKernelOutputVariableNames === null
         ? ''
-        : this.subKernelOutputVariableNames.map((name) => `    ${ name }[this.thread.z] = new Array(${ threadDim[1] });\n`).join('')
+        : this.subKernelOutputVariableNames.map((name) => `    ${ name }Z[this.thread.z] = new Array(${ threadDim[1] });\n`).join('')
         }
       for (this.thread.y = 0; this.thread.y < ${ threadDim[1] }; this.thread.y++) {
         ret[this.thread.z][this.thread.y] = new Array(${ threadDim[0] });
   ${ this.subKernelOutputVariableNames === null
         ? ''
-        : this.subKernelOutputVariableNames.map((name) => `      ${ name }[this.thread.z][this.thread.y] = new Array(${ threadDim[0] });\n`).join('')
+        : this.subKernelOutputVariableNames.map((name) => `      ${ name }Z[this.thread.z][this.thread.y] = new Array(${ threadDim[0] });\n`).join('')
         }
         for (this.thread.x = 0; this.thread.x < ${ threadDim[0] }; this.thread.x++) {
-          ret[this.thread.z][this.thread.y][this.thread.x] = fn(${ this.paramNames.join(', ') });
+          var kernelResult;
+          ${ kernel }
+          ret[this.thread.z][this.thread.y][this.thread.x] = kernelResult;
+${ this.subKernelOutputVariableNames === null
+      ? ''
+      : this.subKernelOutputVariableNames.map((name) => `        ${ name }Z[this.thread.z][this.thread.y][this.thread.x] = ${ name };\n`).join('') }
+          }
         }
       }
-    }
-    
-    if (this.graphical) {
-      this._imageData.data.set(this._colorData);
-      this._canvasCtx.putImageData(this._imageData, 0, 0);
-      return;
-    }
-    
-    if (this.output.length === 1) {
-      ret = ret[0][0];
-      ${ this.subKernelOutputVariableNames === null
+      
+      if (this.graphical) {
+        this._imageData.data.set(this._colorData);
+        this._canvasCtx.putImageData(this._imageData, 0, 0);
+        return;
+      }
+      
+      if (this.output.length === 1) {
+        ret = ret[0][0];
+${ this.subKernelOutputVariableNames === null
         ? ''
-        : this.subKernelOutputVariableNames.map((name) => `    ${ name } = ${ name }[0][0];\n`).join('')
+        : this.subKernelOutputVariableNames.map((name) => `    ${ name } = ${ name }Z[0][0];\n`).join('')
         }
       
     } else if (this.output.length === 2) {
       ret = ret[0];
       ${ this.subKernelOutputVariableNames === null
         ? ''
-        : this.subKernelOutputVariableNames.map((name) => `    ${ name } = ${ name }[0];\n`).join('')
+        : this.subKernelOutputVariableNames.map((name) => `    ${ name } = ${ name }Z[0];\n`).join('')
         }
     }
     
@@ -265,7 +277,9 @@ module.exports = class CPUKernel extends KernelBase {
         ${ Object.keys(this.subKernelProperties).map((name, i) => `${ name }: ${ this.subKernelOutputVariableNames[i] }`).join(',\n') }
       };`
         }
+    ${ prototypes.length > 0 ? prototypes.join('\n') : '' }
     }.bind(this);`;
+		return kernelString;
 	}
 
 	/**
@@ -325,8 +339,23 @@ module.exports = class CPUKernel extends KernelBase {
 		while (threadDim.length < 3) {
 			threadDim.push(1);
 		}
-
 	}
 
-
+	/**
+	 * @memberOf WebGLKernel#
+	 * @function
+	 * @name _getLoopMaxString
+	 *
+	 * @desc Get the maximum loop size String.
+	 *
+	 * @returns {String} result
+	 *
+	 */
+	_getLoopMaxString() {
+		return (
+			this.loopMaxIterations ?
+			` ${ parseInt(this.loopMaxIterations) };\n` :
+			' 100;\n'
+		);
+	}
 };

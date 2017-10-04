@@ -55,7 +55,6 @@ module.exports = function (_KernelBase) {
 
 		_this.buffer = null;
 		_this.program = null;
-		_this.functionBuilder = settings.functionBuilder;
 		_this.outputToTexture = settings.outputToTexture;
 		_this.endianness = utils.systemEndianness();
 		_this.subKernelOutputTextures = null;
@@ -1236,11 +1235,6 @@ module.exports = function (_KernelBase) {
 		key: 'addFunction',
 		value: function addFunction(fn) {
 			this.functionBuilder.addFunction(null, fn);
-		}
-	}, {
-		key: 'addNativeFunction',
-		value: function addNativeFunction(name, source) {
-			this.functionBuilder.addNativeFunction(name, source);
 		}
 	}]);
 

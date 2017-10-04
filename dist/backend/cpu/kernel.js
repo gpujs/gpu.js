@@ -36,7 +36,6 @@ module.exports = function (_KernelBase) {
 		var _this = _possibleConstructorReturn(this, (CPUKernel.__proto__ || Object.getPrototypeOf(CPUKernel)).call(this, fnString, settings));
 
 		_this._fnBody = utils.getFunctionBodyFromString(fnString);
-		_this.functionBuilder = settings.functionBuilder;
 		_this._fn = null;
 		_this.run = null;
 		_this._canvasCtx = null;
@@ -203,6 +202,13 @@ module.exports = function (_KernelBase) {
 				threadDim.push(1);
 			}
 
+			builder.addKernel(this.fnString, {
+				prototypeOnly: false,
+				constants: this.constants,
+				debug: this.debug,
+				loopMaxIterations: this.loopMaxIterations
+			}, this.paramNames, this.paramTypes);
+
 			builder.addFunctions(this.functions);
 
 			if (this.subKernels !== null) {
@@ -225,23 +231,30 @@ module.exports = function (_KernelBase) {
 				}
 			}
 
-			return this._kernelString = '\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			var prototypes = builder.getPrototypes();
+			var kernel = prototypes.shift();
+			var kernelString = this._kernelString = '\n\t\tvar LOOP_MAX = ' + this._getLoopMaxString() + ';\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '  var ' + name + ' = null;\n';
-			}).join('')) + '\n      ' + builder.getPrototypeString() + '\n      var fn = function fn(' + this.paramNames.join(', ') + ') { ' + this._fnBody + ' }.bind(this);\n    return function (' + this.paramNames.join(', ') + ') {\n    var ret = new Array(' + threadDim[2] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '  ' + name + ' = new Array(' + threadDim[2] + ');\n';
+			}).join('')) + '\n    return function (' + this.paramNames.map(function (paramName) {
+				return 'user_' + paramName;
+			}).join(', ') + ') {\n    var ret = new Array(' + threadDim[2] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+				return '  ' + name + 'Z = new Array(' + threadDim[2] + ');\n';
 			}).join('')) + '\n    for (this.thread.z = 0; this.thread.z < ' + threadDim[2] + '; this.thread.z++) {\n      ret[this.thread.z] = new Array(' + threadDim[1] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '    ' + name + '[this.thread.z] = new Array(' + threadDim[1] + ');\n';
+				return '    ' + name + 'Z[this.thread.z] = new Array(' + threadDim[1] + ');\n';
 			}).join('')) + '\n      for (this.thread.y = 0; this.thread.y < ' + threadDim[1] + '; this.thread.y++) {\n        ret[this.thread.z][this.thread.y] = new Array(' + threadDim[0] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '      ' + name + '[this.thread.z][this.thread.y] = new Array(' + threadDim[0] + ');\n';
-			}).join('')) + '\n        for (this.thread.x = 0; this.thread.x < ' + threadDim[0] + '; this.thread.x++) {\n          ret[this.thread.z][this.thread.y][this.thread.x] = fn(' + this.paramNames.join(', ') + ');\n        }\n      }\n    }\n    \n    if (this.graphical) {\n      this._imageData.data.set(this._colorData);\n      this._canvasCtx.putImageData(this._imageData, 0, 0);\n      return;\n    }\n    \n    if (this.output.length === 1) {\n      ret = ret[0][0];\n      ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '    ' + name + ' = ' + name + '[0][0];\n';
+				return '      ' + name + 'Z[this.thread.z][this.thread.y] = new Array(' + threadDim[0] + ');\n';
+			}).join('')) + '\n        for (this.thread.x = 0; this.thread.x < ' + threadDim[0] + '; this.thread.x++) {\n          var kernelResult;\n          ' + kernel + '\n          ret[this.thread.z][this.thread.y][this.thread.x] = kernelResult;\n' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+				return '        ' + name + 'Z[this.thread.z][this.thread.y][this.thread.x] = ' + name + ';\n';
+			}).join('')) + '\n          }\n        }\n      }\n      \n      if (this.graphical) {\n        this._imageData.data.set(this._colorData);\n        this._canvasCtx.putImageData(this._imageData, 0, 0);\n        return;\n      }\n      \n      if (this.output.length === 1) {\n        ret = ret[0][0];\n' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+				return '    ' + name + ' = ' + name + 'Z[0][0];\n';
 			}).join('')) + '\n      \n    } else if (this.output.length === 2) {\n      ret = ret[0];\n      ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '    ' + name + ' = ' + name + '[0];\n';
+				return '    ' + name + ' = ' + name + 'Z[0];\n';
 			}).join('')) + '\n    }\n    \n    ' + (this.subKernelOutputVariableNames === null ? 'return ret;\n' : this.subKernels !== null ? 'var result = [\n        ' + this.subKernelOutputVariableNames.map(function (name) {
 				return '' + name;
 			}).join(',\n') + '\n      ];\n      result.result = ret;\n      return result;\n' : 'return {\n        result: ret,\n        ' + Object.keys(this.subKernelProperties).map(function (name, i) {
 				return name + ': ' + _this2.subKernelOutputVariableNames[i];
-			}).join(',\n') + '\n      };') + '\n    }.bind(this);';
+			}).join(',\n') + '\n      };') + '\n    ' + (prototypes.length > 0 ? prototypes.join('\n') : '') + '\n    }.bind(this);';
+			return kernelString;
 		}
 
 		/**
@@ -298,6 +311,23 @@ module.exports = function (_KernelBase) {
    *
    */
 
+	}, {
+		key: '_getLoopMaxString',
+
+
+		/**
+   * @memberOf WebGLKernel#
+   * @function
+   * @name _getLoopMaxString
+   *
+   * @desc Get the maximum loop size String.
+   *
+   * @returns {String} result
+   *
+   */
+		value: function _getLoopMaxString() {
+			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + ';\n' : ' 100;\n';
+		}
 	}], [{
 		key: 'compileKernel',
 		value: function compileKernel(precompileObj) {

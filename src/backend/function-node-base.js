@@ -148,6 +148,11 @@ module.exports = class BaseFunctionNode {
 		}
 	}
 
+	isIdentifierConstant(paramName) {
+		if (!this.constants) return false;
+		return this.constants.hasOwnProperty(paramName);
+	}
+
 	setAddFunction(fn) {
 		this.addFunction = fn;
 		return this;
@@ -214,7 +219,9 @@ module.exports = class BaseFunctionNode {
 			throw 'Missing JS to AST parser';
 		}
 
-		const ast = inParser.parse('var ' + this.functionName + ' = ' + this.jsFunctionString + ';');
+		const ast = inParser.parse('var ' + this.functionName + ' = ' + this.jsFunctionString + ';', {
+			locations: true
+		});
 		if (ast === null) {
 			throw 'Failed to parse JS code';
 		}
@@ -312,5 +319,23 @@ module.exports = class BaseFunctionNode {
 
 	generate(options) {
 		throw new Error('generate not defined on BaseFunctionNode');
+	}
+
+	/**
+	 * @function
+	 * @name astErrorOutput
+	 * @ignore
+	 * @desc To throw the AST error, with its location.
+	 *
+	 * @todo add location support fpr the AST error
+	 *
+	 * @param {Object} error - the error message output
+	 * @param {Object} ast - the AST object where the error is
+	 * @param {Object} funcParam - FunctionNode, that tracks compilation state
+	 */
+	astErrorOutput(error, ast, funcParam) {
+		console.error(utils.getAstString(this.jsFunctionString, ast));
+		console.error(error, ast, funcParam);
+		return error;
 	}
 };

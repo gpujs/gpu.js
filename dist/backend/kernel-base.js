@@ -57,6 +57,7 @@ module.exports = function () {
 		this.subKernelProperties = null;
 		this.subKernelNames = null;
 		this.subKernelOutputVariableNames = null;
+		this.functionBuilder = null;
 
 		for (var p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -405,6 +406,11 @@ module.exports = function () {
 			this.subKernelProperties[property] = fnString;
 			this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
 			return this;
+		}
+	}, {
+		key: 'addNativeFunction',
+		value: function addNativeFunction(name, source) {
+			this.functionBuilder.addNativeFunction(name, source);
 		}
 	}]);
 

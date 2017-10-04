@@ -51,6 +51,7 @@ module.exports = class BaseKernel {
 		this.subKernelProperties = null;
 		this.subKernelNames = null;
 		this.subKernelOutputVariableNames = null;
+		this.functionBuilder = null;
 
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -346,5 +347,9 @@ module.exports = class BaseKernel {
 		this.subKernelProperties[property] = fnString;
 		this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
 		return this;
+	}
+
+	addNativeFunction(name, source) {
+		this.functionBuilder.addNativeFunction(name, source);
 	}
 };

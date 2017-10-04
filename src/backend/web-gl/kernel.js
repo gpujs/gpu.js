@@ -43,7 +43,6 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		this.buffer = null;
 		this.program = null;
-		this.functionBuilder = settings.functionBuilder;
 		this.outputToTexture = settings.outputToTexture;
 		this.endianness = utils.systemEndianness();
 		this.subKernelOutputTextures = null;
@@ -1196,9 +1195,5 @@ module.exports = class WebGLKernel extends KernelBase {
 
 	addFunction(fn) {
 		this.functionBuilder.addFunction(null, fn);
-	}
-
-	addNativeFunction(name, source) {
-		this.functionBuilder.addNativeFunction(name, source);
 	}
 };
