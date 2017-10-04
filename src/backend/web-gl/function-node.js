@@ -442,7 +442,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				this.isIdentifierConstant(forNode.test.right.name) === false) {
 
 				if (!this.loopMaxIterations) {
-					console.warn('Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.');
+					console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
 					console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
 				}
 

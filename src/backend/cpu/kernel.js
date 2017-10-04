@@ -355,7 +355,7 @@ ${ this.subKernelOutputVariableNames === null
 		return (
 			this.loopMaxIterations ?
 			` ${ parseInt(this.loopMaxIterations) };\n` :
-			' 100;\n'
+			' 1000;\n'
 		);
 	}
 };

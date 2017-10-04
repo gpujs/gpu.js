@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.1
- * @date Fri Sep 29 2017 14:04:36 GMT-0400 (EDT)
+ * @date Wed Oct 04 2017 15:27:29 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -314,7 +314,7 @@ module.exports = function (_BaseFunctionNode) {
 				if ((forNode.test.right.type === 'Identifier' || forNode.test.right.type === 'Literal') && forNode.test.operator === '<' && this.isIdentifierConstant(forNode.test.right.name) === false) {
 
 					if (!this.loopMaxIterations) {
-						console.warn('Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.');
+						console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
 						console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
 					}
 
@@ -577,6 +577,9 @@ module.exports = function (_BaseFunctionNode) {
 		value: function astMemberExpression(mNode, retArr, funcParam) {
 			var unrolled = this.astMemberExpressionUnroll(mNode.property);
 			this.astGeneric(mNode.object, retArr, funcParam);
+			if (mNode.property.type === 'Identifier' && mNode.computed) {
+				unrolled = 'user_' + unrolled;
+			}
 			if (mNode.computed) {
 				retArr.push('[');
 				retArr.push(unrolled);
@@ -964,7 +967,7 @@ module.exports = function (_KernelBase) {
 
 
 		value: function _getLoopMaxString() {
-			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + ';\n' : ' 100;\n';
+			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + ';\n' : ' 1000;\n';
 		}
 	}], [{
 		key: 'compileKernel',
@@ -2180,7 +2183,7 @@ module.exports = function (_FunctionNodeBase) {
 				if (forNode.test.right.type === 'Identifier' && forNode.test.operator === '<' && this.isIdentifierConstant(forNode.test.right.name) === false) {
 
 					if (!this.loopMaxIterations) {
-						console.warn('Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.');
+						console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
 						console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
 					}
 
@@ -3253,7 +3256,7 @@ module.exports = function (_KernelBase) {
 	}, {
 		key: '_getLoopMaxString',
 		value: function _getLoopMaxString() {
-			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + '.0;\n' : ' 100.0;\n';
+			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + '.0;\n' : ' 1000.0;\n';
 		}
 
 

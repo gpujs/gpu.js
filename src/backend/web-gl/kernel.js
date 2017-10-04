@@ -709,7 +709,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		return (
 			this.loopMaxIterations ?
 			` ${ parseInt(this.loopMaxIterations) }.0;\n` :
-			' 100.0;\n'
+			' 1000.0;\n'
 		);
 	}
 
