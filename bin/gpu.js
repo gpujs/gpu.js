@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.1
- * @date Wed Oct 04 2017 15:34:20 GMT-0400 (EDT)
+ * @date Wed Oct 04 2017 15:51:12 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -313,11 +313,6 @@ module.exports = function (_BaseFunctionNode) {
 			if (forNode.test && forNode.test.type === 'BinaryExpression') {
 				if ((forNode.test.right.type === 'Identifier' || forNode.test.right.type === 'Literal') && forNode.test.operator === '<' && this.isIdentifierConstant(forNode.test.right.name) === false) {
 
-					if (!this.loopMaxIterations) {
-						console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
-						console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
-					}
-
 					retArr.push('for (');
 					this.astGeneric(forNode.init, retArr, funcParam);
 					if (retArr[retArr.length - 1] !== ';') {
@@ -325,7 +320,7 @@ module.exports = function (_BaseFunctionNode) {
 					}
 					this.astGeneric(forNode.test.left, retArr, funcParam);
 					retArr.push(forNode.test.operator);
-					retArr.push('LOOP_MAX');
+					this.astGeneric(forNode.test.right, retArr, funcParam);
 					retArr.push(';');
 					this.astGeneric(forNode.update, retArr, funcParam);
 					retArr.push(')');

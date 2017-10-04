@@ -418,11 +418,6 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 				forNode.test.operator === '<' &&
 				this.isIdentifierConstant(forNode.test.right.name) === false) {
 
-				if (!this.loopMaxIterations) {
-					console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
-					console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
-				}
-
 				retArr.push('for (');
 				this.astGeneric(forNode.init, retArr, funcParam);
 				if (retArr[retArr.length - 1] !== ';') {
@@ -430,7 +425,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 				}
 				this.astGeneric(forNode.test.left, retArr, funcParam);
 				retArr.push(forNode.test.operator);
-				retArr.push('LOOP_MAX');
+        this.astGeneric(forNode.test.right, retArr, funcParam);
 				retArr.push(';');
 				this.astGeneric(forNode.update, retArr, funcParam);
 				retArr.push(')');
