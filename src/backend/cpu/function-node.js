@@ -419,7 +419,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 				this.isIdentifierConstant(forNode.test.right.name) === false) {
 
 				if (!this.loopMaxIterations) {
-					console.warn('Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.');
+					console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
 					console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
 				}
 
@@ -841,6 +841,9 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	astMemberExpression(mNode, retArr, funcParam) {
 		let unrolled = this.astMemberExpressionUnroll(mNode.property);
 		this.astGeneric(mNode.object, retArr, funcParam);
+		if (mNode.property.type === 'Identifier' && mNode.computed) {
+			unrolled = 'user_' + unrolled;
+		}
 		if (mNode.computed) {
 			retArr.push('[');
 			retArr.push(unrolled);
