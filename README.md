@@ -33,7 +33,7 @@ const c = matMult(a, b);
 
 You can run a benchmark of this [here](http://gpu.rocks). Typically, it will run 1-15x faster depending on your hardware.
 
-Or alternatively you can experiment around with the [kernel playground here](http://gpu.rocks/playground/playground.html)
+Or alternatively you can experiment around with the [kernel playground here](http://gpu.rocks/playground)
 
 # Table of Contents
 
