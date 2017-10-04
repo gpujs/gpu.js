@@ -663,23 +663,9 @@ module.exports = function (_KernelBase) {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-						var length = size[0] * size[1];
-						if (this.floatTextures) {
-							length *= 4;
-						}
-
-						var valuesFlat = new Float32Array(length);
-						utils.flattenTo(value, valuesFlat);
-
-						var buffer = void 0;
-						if (this.floatTextures) {
-							buffer = new Float32Array(valuesFlat);
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, buffer);
-						} else {
-							buffer = new Uint8Array(new Float32Array(valuesFlat).buffer);
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
-						}
+						var glType = this.floatTextures ? gl.Float : gl.UNSIGNED_BYTE;
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, glType, null);
+						this._readInArray(value, size, glType);
 
 						var loc = this.getUniformLocation('user_' + name);
 						var locSize = this.getUniformLocation('user_' + name + 'Size');
@@ -1215,6 +1201,127 @@ module.exports = function (_KernelBase) {
 			}
 			//TODO: webgl2 compile like frag shader
 			return this.compiledVertShaderString = vertShaderString;
+		}
+	}, {
+		key: '_readInArray2d',
+		value: function _readInArray2d(array, size, buffer, reader, glType) {
+			var gl = this._webGl;
+			var max = size[0] * size[1];
+			var maxY = array.length;
+			var maxX = array[0].length;
+			var textureMaxX = size[0];
+			var y = 0;
+			var x = 0;
+			var textureY = 0;
+			var textureX = 0;
+			for (var i = 0; i < max; i++) {
+				reader[0] = array[y][x];
+				gl.texSubImage2D(gl.TEXTURE_2D, 0, // mip-map level
+				textureX, // x-offset
+				textureY, // y-offset
+				1, // width
+				1, // height
+				gl.RGBA, // format
+				glType, // type
+				buffer // data
+				);
+				x++;
+				textureX++;
+				if (x === maxX) {
+					x = 0;
+					y++;
+					if (y === maxY) break;
+				}
+				if (textureX === textureMaxX) {
+					textureX = 0;
+					textureY++;
+				}
+			}
+		}
+	}, {
+		key: '_readInArray3d',
+		value: function _readInArray3d(array, size, buffer, reader, glType) {
+			var gl = this._webGl;
+			var max = size[0] * size[1];
+			var maxZ = array.length;
+			var maxY = array[0].length;
+			var maxX = array[0][0].length;
+			var textureMaxX = size[0];
+			var z = 0;
+			var y = 0;
+			var x = 0;
+			var textureY = 0;
+			var textureX = 0;
+			for (var i = 0; i < max; i++) {
+				reader[0] = array[z][y][x];
+				gl.texSubImage2D(gl.TEXTURE_2D, 0, // mip-map level
+				textureY, // x-offset
+				textureX, // y-offset
+				1, // width
+				1, // height
+				gl.RGBA, // format
+				glType, // type
+				buffer // data
+				);
+				x++;
+				textureX++;
+				if (x === maxX) {
+					x = 0;
+					y++;
+					if (y === maxY) {
+						y = 0;
+						z++;
+						if (z === maxZ) break;
+					}
+				}
+				if (textureX === textureMaxX) {
+					textureX = 0;
+					textureY++;
+				}
+			}
+		}
+	}, {
+		key: '_readInArray',
+		value: function _readInArray(array, size, glType) {
+			var gl = this._webGl;
+			var reader = new Float32Array(1);
+			var buffer = this.floatTextures ? reader : new Uint8Array(reader.buffer);
+
+			if (Array.isArray(array[0])) {
+				if (Array.isArray(array[0][0])) {
+					return this._readInArray3d(array, size, buffer, reader, glType);
+				} else {
+					return this._readInArray2d(array, size, buffer, reader, glType);
+				}
+			}
+
+			var max = size[0] * size[1];
+			var maxX = array.length;
+			var textureMaxX = size[0];
+			var x = 0;
+			var textureY = 0;
+			var textureX = 0;
+			for (var i = 0; i < max; i++) {
+				reader[0] = array[x];
+				gl.texSubImage2D(gl.TEXTURE_2D, 0, // mip-map level
+				textureX, // x-offset
+				textureY, // y-offset
+				1, // width
+				1, // height
+				gl.RGBA, // format
+				glType, // type
+				buffer // data
+				);
+				x++;
+				textureX++;
+				if (x === maxX) {
+					break;
+				}
+				if (textureX === textureMaxX) {
+					textureX = 0;
+					textureY++;
+				}
+			}
 		}
 
 		/**

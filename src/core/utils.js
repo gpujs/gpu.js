@@ -403,66 +403,6 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @memberOf Utils
-	 * @name flatten2dArrayTo
-	 * @function
-	 * @static
-	 *
-	 * Puts a nested 2d array into a one-dimensional target array
-	 * @param {Array|*} array
-	 * @param {Float32Array|Float64Array} target
-	 */
-	static flatten2dArrayTo(array, target) {
-		let offset = 0;
-		for (let y = 0; y < array.length; y++) {
-			target.set(array[y], offset);
-			offset += array[y].length;
-		}
-	}
-
-	/**
-	 * @memberOf Utils
-	 * @name flatten3dArrayTo
-	 * @function
-	 * @static
-	 *
-	 * Puts a nested 3d array into a one-dimensional target array
-	 * @param {Array|*} array
-	 * @param {Float32Array|Float64Array} target
-	 */
-	static flatten3dArrayTo(array, target) {
-		let offset = 0;
-		for (let z = 0; z < array.length; z++) {
-			for (let y = 0; y < array[z].length; y++) {
-				target.set(array[z][y], offset);
-				offset += array[z][y].length;
-			}
-		}
-	}
-
-	/**
-	 * @memberOf Utils
-	 * @name flatten3dArrayTo
-	 * @function
-	 * @static
-	 *
-	 * Puts a nested 1d, 2d, or 3d array into a one-dimensional target array
-	 * @param {Array|*} array
-	 * @param {Float32Array|Float64Array} target
-	 */
-	static flattenTo(array, target) {
-		if (Utils.isArray(array[0])) {
-			if (Utils.isArray(array[0][0])) {
-				Utils.flatten3dArrayTo(array, target);
-			} else {
-				Utils.flatten2dArrayTo(array, target);
-			}
-		} else {
-			target.set(array);
-		}
-	}
-
-	/**
-	 * @memberOf Utils
 	 * @name splitArray
 	 * @function
 	 * @static

@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.1
- * @date Fri Sep 29 2017 14:04:36 GMT-0400 (EDT)
+ * @date Wed Oct 04 2017 13:58:12 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -3178,23 +3178,9 @@ module.exports = function (_KernelBase) {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-						var length = size[0] * size[1];
-						if (this.floatTextures) {
-							length *= 4;
-						}
-
-						var valuesFlat = new Float32Array(length);
-						utils.flattenTo(value, valuesFlat);
-
-						var buffer = void 0;
-						if (this.floatTextures) {
-							buffer = new Float32Array(valuesFlat);
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, buffer);
-						} else {
-							buffer = new Uint8Array(new Float32Array(valuesFlat).buffer);
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
-						}
+						var glType = this.floatTextures ? gl.Float : gl.UNSIGNED_BYTE;
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, glType, null);
+						this._readInArray(value, size, glType);
 
 						var loc = this.getUniformLocation('user_' + name);
 						var locSize = this.getUniformLocation('user_' + name + 'Size');
@@ -3528,6 +3514,127 @@ module.exports = function (_KernelBase) {
 				return this.compiledVertShaderString;
 			}
 			return this.compiledVertShaderString = vertShaderString;
+		}
+	}, {
+		key: '_readInArray2d',
+		value: function _readInArray2d(array, size, buffer, reader, glType) {
+			var gl = this._webGl;
+			var max = size[0] * size[1];
+			var maxY = array.length;
+			var maxX = array[0].length;
+			var textureMaxX = size[0];
+			var y = 0;
+			var x = 0;
+			var textureY = 0;
+			var textureX = 0;
+			for (var i = 0; i < max; i++) {
+				reader[0] = array[y][x];
+				gl.texSubImage2D(gl.TEXTURE_2D, 0, 
+				textureX, 
+				textureY, 
+				1, 
+				1, 
+				gl.RGBA, 
+				glType, 
+				buffer 
+				);
+				x++;
+				textureX++;
+				if (x === maxX) {
+					x = 0;
+					y++;
+					if (y === maxY) break;
+				}
+				if (textureX === textureMaxX) {
+					textureX = 0;
+					textureY++;
+				}
+			}
+		}
+	}, {
+		key: '_readInArray3d',
+		value: function _readInArray3d(array, size, buffer, reader, glType) {
+			var gl = this._webGl;
+			var max = size[0] * size[1];
+			var maxZ = array.length;
+			var maxY = array[0].length;
+			var maxX = array[0][0].length;
+			var textureMaxX = size[0];
+			var z = 0;
+			var y = 0;
+			var x = 0;
+			var textureY = 0;
+			var textureX = 0;
+			for (var i = 0; i < max; i++) {
+				reader[0] = array[z][y][x];
+				gl.texSubImage2D(gl.TEXTURE_2D, 0, 
+				textureY, 
+				textureX, 
+				1, 
+				1, 
+				gl.RGBA, 
+				glType, 
+				buffer 
+				);
+				x++;
+				textureX++;
+				if (x === maxX) {
+					x = 0;
+					y++;
+					if (y === maxY) {
+						y = 0;
+						z++;
+						if (z === maxZ) break;
+					}
+				}
+				if (textureX === textureMaxX) {
+					textureX = 0;
+					textureY++;
+				}
+			}
+		}
+	}, {
+		key: '_readInArray',
+		value: function _readInArray(array, size, glType) {
+			var gl = this._webGl;
+			var reader = new Float32Array(1);
+			var buffer = this.floatTextures ? reader : new Uint8Array(reader.buffer);
+
+			if (Array.isArray(array[0])) {
+				if (Array.isArray(array[0][0])) {
+					return this._readInArray3d(array, size, buffer, reader, glType);
+				} else {
+					return this._readInArray2d(array, size, buffer, reader, glType);
+				}
+			}
+
+			var max = size[0] * size[1];
+			var maxX = array.length;
+			var textureMaxX = size[0];
+			var x = 0;
+			var textureY = 0;
+			var textureX = 0;
+			for (var i = 0; i < max; i++) {
+				reader[0] = array[x];
+				gl.texSubImage2D(gl.TEXTURE_2D, 0, 
+				textureX, 
+				textureY, 
+				1, 
+				1, 
+				gl.RGBA, 
+				glType, 
+				buffer 
+				);
+				x++;
+				textureX++;
+				if (x === maxX) {
+					break;
+				}
+				if (textureX === textureMaxX) {
+					textureX = 0;
+					textureY++;
+				}
+			}
 		}
 
 
@@ -4335,45 +4442,6 @@ var Utils = function (_UtilsCore) {
 			}
 
 			return ret;
-		}
-
-
-	}, {
-		key: 'flatten2dArrayTo',
-		value: function flatten2dArrayTo(array, target) {
-			var offset = 0;
-			for (var y = 0; y < array.length; y++) {
-				target.set(array[y], offset);
-				offset += array[y].length;
-			}
-		}
-
-
-	}, {
-		key: 'flatten3dArrayTo',
-		value: function flatten3dArrayTo(array, target) {
-			var offset = 0;
-			for (var z = 0; z < array.length; z++) {
-				for (var y = 0; y < array[z].length; y++) {
-					target.set(array[z][y], offset);
-					offset += array[z][y].length;
-				}
-			}
-		}
-
-
-	}, {
-		key: 'flattenTo',
-		value: function flattenTo(array, target) {
-			if (Utils.isArray(array[0])) {
-				if (Utils.isArray(array[0][0])) {
-					Utils.flatten3dArrayTo(array, target);
-				} else {
-					Utils.flatten2dArrayTo(array, target);
-				}
-			} else {
-				target.set(array);
-			}
 		}
 
 
