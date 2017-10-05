@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.1
- * @date Wed Oct 04 2017 15:51:12 GMT-0400 (EDT)
+ * @date Thu Oct 05 2017 14:09:33 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -654,8 +654,7 @@ module.exports = function (_BaseFunctionNode) {
 							functionArguments.push(null);
 						} else {
 							functionArguments.push({
-								name: argument.name,
-								type: funcParam.paramTypes[paramIndex]
+								name: argument.name
 							});
 						}
 					} else {
@@ -3566,8 +3565,8 @@ module.exports = function (_KernelBase) {
 			for (var i = 0; i < max; i++) {
 				reader[0] = array[z][y][x];
 				gl.texSubImage2D(gl.TEXTURE_2D, 0, 
-				textureY, 
 				textureX, 
+				textureY, 
 				1, 
 				1, 
 				gl.RGBA, 
@@ -3595,44 +3594,23 @@ module.exports = function (_KernelBase) {
 		key: '_readInArray',
 		value: function _readInArray(array, size, glType) {
 			var gl = this._webGl;
-			var reader = new Float32Array(1);
-			var buffer = this.floatTextures ? reader : new Uint8Array(reader.buffer);
 
 			if (Array.isArray(array[0])) {
 				if (Array.isArray(array[0][0])) {
-					return this._readInArray3d(array, size, buffer, reader, glType);
+					var _reader = new Float32Array(1);
+					var _buffer = this.floatTextures ? _reader : new Uint8Array(_reader.buffer);
+					return this._readInArray3d(array, size, _buffer, _reader, glType);
 				} else {
-					return this._readInArray2d(array, size, buffer, reader, glType);
+					var _reader2 = new Float32Array(1);
+					var _buffer2 = this.floatTextures ? _reader2 : new Uint8Array(_reader2.buffer);
+					return this._readInArray2d(array, size, _buffer2, _reader2, glType);
 				}
 			}
 
-			var max = size[0] * size[1];
-			var maxX = array.length;
-			var textureMaxX = size[0];
-			var x = 0;
-			var textureY = 0;
-			var textureX = 0;
-			for (var i = 0; i < max; i++) {
-				reader[0] = array[x];
-				gl.texSubImage2D(gl.TEXTURE_2D, 0, 
-				textureX, 
-				textureY, 
-				1, 
-				1, 
-				gl.RGBA, 
-				glType, 
-				buffer 
-				);
-				x++;
-				textureX++;
-				if (x === maxX) {
-					break;
-				}
-				if (textureX === textureMaxX) {
-					textureX = 0;
-					textureY++;
-				}
-			}
+			var reader = new Float32Array(size[0] * size[1]);
+			reader.set(array);
+			var buffer = this.floatTextures ? reader : new Uint8Array(reader.buffer);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, glType, buffer);
 		}
 
 
@@ -4389,7 +4367,7 @@ var Utils = function (_UtilsCore) {
 			}
 
 			var w = Math.ceil(Math.sqrt(numTexels));
-			return [w, w];
+			return [dimensions[0] * (dimensions[2] || 1), (dimensions[1] || dimensions[0]) * (dimensions[2] || 1)];
 		}
 
 

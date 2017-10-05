@@ -325,7 +325,8 @@ class Utils extends UtilsCore {
 		}
 
 		const w = Math.ceil(Math.sqrt(numTexels));
-		return [w, w];
+		return [dimensions[0] * (dimensions[2] || 1), (dimensions[1] || dimensions[0]) * (dimensions[2] || 1)];
+    //return [w,w];
 	}
 
 	/**

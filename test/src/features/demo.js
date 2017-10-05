@@ -26,7 +26,6 @@ function demo(mode) {
     }
     return sum;
   })
-    .setDebug(true)
     .setOutput([512, 512]);
 
 	QUnit.assert.ok( multiplyMatrix !== null, "function generated test");

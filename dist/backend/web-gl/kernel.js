@@ -1255,8 +1255,8 @@ module.exports = function (_KernelBase) {
 			for (var i = 0; i < max; i++) {
 				reader[0] = array[z][y][x];
 				gl.texSubImage2D(gl.TEXTURE_2D, 0, // mip-map level
-				textureY, // x-offset
-				textureX, // y-offset
+				textureX, // x-offset
+				textureY, // y-offset
 				1, // width
 				1, // height
 				gl.RGBA, // format
@@ -1284,44 +1284,23 @@ module.exports = function (_KernelBase) {
 		key: '_readInArray',
 		value: function _readInArray(array, size, glType) {
 			var gl = this._webGl;
-			var reader = new Float32Array(1);
-			var buffer = this.floatTextures ? reader : new Uint8Array(reader.buffer);
 
 			if (Array.isArray(array[0])) {
 				if (Array.isArray(array[0][0])) {
-					return this._readInArray3d(array, size, buffer, reader, glType);
+					var _reader = new Float32Array(1);
+					var _buffer = this.floatTextures ? _reader : new Uint8Array(_reader.buffer);
+					return this._readInArray3d(array, size, _buffer, _reader, glType);
 				} else {
-					return this._readInArray2d(array, size, buffer, reader, glType);
+					var _reader2 = new Float32Array(1);
+					var _buffer2 = this.floatTextures ? _reader2 : new Uint8Array(_reader2.buffer);
+					return this._readInArray2d(array, size, _buffer2, _reader2, glType);
 				}
 			}
 
-			var max = size[0] * size[1];
-			var maxX = array.length;
-			var textureMaxX = size[0];
-			var x = 0;
-			var textureY = 0;
-			var textureX = 0;
-			for (var i = 0; i < max; i++) {
-				reader[0] = array[x];
-				gl.texSubImage2D(gl.TEXTURE_2D, 0, // mip-map level
-				textureX, // x-offset
-				textureY, // y-offset
-				1, // width
-				1, // height
-				gl.RGBA, // format
-				glType, // type
-				buffer // data
-				);
-				x++;
-				textureX++;
-				if (x === maxX) {
-					break;
-				}
-				if (textureX === textureMaxX) {
-					textureX = 0;
-					textureY++;
-				}
-			}
+			var reader = new Float32Array(size[0] * size[1]);
+			reader.set(array);
+			var buffer = this.floatTextures ? reader : new Uint8Array(reader.buffer);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, glType, buffer);
 		}
 
 		/**

@@ -950,8 +950,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 						functionArguments.push(null);
 					} else {
 						functionArguments.push({
-							name: argument.name,
-							type: funcParam.paramTypes[paramIndex]
+							name: argument.name
 						});
 					}
 				} else {

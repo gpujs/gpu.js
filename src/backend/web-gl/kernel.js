@@ -1221,8 +1221,8 @@ module.exports = class WebGLKernel extends KernelBase {
 			gl.texSubImage2D(
 				gl.TEXTURE_2D,
 				0, // mip-map level
-				textureY, // x-offset
-				textureX, // y-offset
+				textureX, // x-offset
+				textureY, // y-offset
 				1, // width
 				1, // height
 				gl.RGBA, // format
@@ -1249,46 +1249,23 @@ module.exports = class WebGLKernel extends KernelBase {
 
 	_readInArray(array, size, glType) {
 		const gl = this._webGl;
-		const reader = new Float32Array(1);
-		const buffer = (this.floatTextures ? reader : new Uint8Array(reader.buffer));
 
 		if (Array.isArray(array[0])) {
 			if (Array.isArray(array[0][0])) {
+        const reader = new Float32Array(1);
+        const buffer = (this.floatTextures ? reader : new Uint8Array(reader.buffer));
 				return this._readInArray3d(array, size, buffer, reader, glType);
 			} else {
+        const reader = new Float32Array(1);
+        const buffer = (this.floatTextures ? reader : new Uint8Array(reader.buffer));
 				return this._readInArray2d(array, size, buffer, reader, glType);
 			}
 		}
 
-		const max = size[0] * size[1];
-		const maxX = array.length;
-		const textureMaxX = size[0];
-		let x = 0;
-		let textureY = 0;
-		let textureX = 0;
-		for (let i = 0; i < max; i++) {
-			reader[0] = array[x];
-			gl.texSubImage2D(
-				gl.TEXTURE_2D,
-				0, // mip-map level
-				textureX, // x-offset
-				textureY, // y-offset
-				1, // width
-				1, // height
-				gl.RGBA, // format
-				glType, // type
-				buffer // data
-			);
-			x++;
-			textureX++;
-			if (x === maxX) {
-				break;
-			}
-			if (textureX === textureMaxX) {
-				textureX = 0;
-				textureY++;
-			}
-		}
+    const reader = new Float32Array(size[0] * size[1]);
+		reader.set(array);
+    const buffer = (this.floatTextures ? reader : new Uint8Array(reader.buffer));
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, glType, buffer);
 	}
 
 	/**

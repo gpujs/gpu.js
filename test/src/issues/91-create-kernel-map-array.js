@@ -1,4 +1,4 @@
-QUnit.test( "Issue #91 - type detection (GPU only)", function() {
+function typeDetection(mode) {
   var A = [
     [1, 1],
     [1, 1],
@@ -10,12 +10,12 @@ QUnit.test( "Issue #91 - type detection (GPU only)", function() {
     [1, 1, 1]
   ];
 
-  var gpu = new GPU();
+  var gpu = new GPU({ mode: mode });
 
   function multiply(b, a, y, x) {
     var sum = 0;
     for (var i = 0; i < 2; i++) {
-      sum += b[y][i] * a[i][x];
+      sum += b[x][i] * a[y][x];
     }
     return sum;
   }
@@ -30,5 +30,15 @@ QUnit.test( "Issue #91 - type detection (GPU only)", function() {
   var result = kernels(A, B).result;
   QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2]);
   QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2]);
-  QUnit.assert.deepEqual(QUnit.extend([], result[2]), [0,0]);
+  QUnit.assert.deepEqual(QUnit.extend([], result[2]), [2,2]);
+}
+
+QUnit.test( "Issue #91 - type detection (auto)", function() {
+  typeDetection();
+});
+QUnit.test( "Issue #91 - type detection (gpu)", function() {
+  typeDetection('gpu');
+});
+QUnit.test( "Issue #91 - type detection (cpu)", function() {
+  typeDetection('cpu');
 });
