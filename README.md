@@ -38,12 +38,16 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 # Table of Contents
 
 * [Installation](#installation)
+* [Options](#options)
 * [Creating and Running Functions](#creating-and-running-functions)
 * [Accepting Input](#accepting-input)
 * [Graphical Output](#graphical-output)
 * [Combining Kernels](#combining-kernels)
 * [Create Kernel Map](#create-kernel-map)
 * [Adding Custom Functions](#adding-custom-functions)
+* [Adding Custom Functions Directly to Kernel](#adding-custom-functions-directly-to-kernel)
+* [Loops](#loops)
+* [Pipelining](#pipelining)
 * [Full API reference](#full-api-reference)
 * [Automatically-built Documentation](#automatically-built-documentation)
 * [Contributors](#contributors)
@@ -80,6 +84,8 @@ const gpu = new GPU();
 ```
 
 Note that this **requires** the Promise API, if you need to polyfill it, you can give our 'untested polyfill' a try [here](https://github.com/picoded/small_promise.js)
+
+## Options
 
 ## Creating and Running Functions
 Depending on your output type, specify the intended size of your output. You cannot have an accelerated function that does not specify any output size.
@@ -289,6 +295,27 @@ const matMult = gpu.createKernel(function(a, b) {
     return sum;
 }).setOutput([512, 512]);
 ```
+
+## Pipelining
+[Pipeline](https://en.wikipedia.org/wiki/Pipeline_(computing)) are where we send values directly from kernel to kernel.
+This results in extremely fast computing.  This is achieved by setting a kernel's `outputToTexture: boolean` option. 
+
+
+## Flattened typed array support
+To use the useful `x`, `y`, `z` `thread` lookup api inside of gpu.js, and yet use flattened arrays, there is the `Input` type.
+This is generally much faster for when sending values to the gpu, especially with larger data sets.  Usage example:
+```js
+import GPU, { input } from 'gpu.js';
+const gpu = new GPU();
+const kernel = gpu.createKernel(function(a, b) {
+  return a[this.thread.y][this.thread.x] + b[this.thread.y][this.thread.x];
+}).setOutput([3,3]);
+
+
+kernel(input(new Float32Array([1,2,3,4,5,6,7,8,9]), [3, 3]), input(new Float32Array([1,2,3,4,5,6,7,8,9]), [3, 3]));
+```
+
+Note: `GPU.input(value, size)` is a simple pointer for `new GPU.Input(value, size)`
 
 ## Full API Reference
 

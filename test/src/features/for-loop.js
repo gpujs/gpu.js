@@ -105,8 +105,7 @@ function for_constant_loop_test(mode) {
     output : [6],
     constants: {
       max: 10
-    },
-    debug: true
+    }
   });
 
   QUnit.assert.ok( f !== null, "function generated test");
