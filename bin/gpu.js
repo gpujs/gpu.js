@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.1
- * @date Thu Oct 05 2017 17:21:16 GMT-0400 (EDT)
+ * @date Fri Oct 06 2017 09:49:07 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -3193,10 +3193,9 @@ module.exports = function (_KernelBase) {
 
 						var buffer = void 0;
 						if (this.floatTextures) {
-							buffer = new Float32Array(valuesFlat);
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, buffer);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 						} else {
-							buffer = new Uint8Array(new Float32Array(valuesFlat).buffer);
+							buffer = new Uint8Array(valuesFlat.buffer);
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 						}
 
