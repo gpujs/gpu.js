@@ -650,7 +650,8 @@ module.exports = class WebGLKernel extends KernelBase {
 			case 'Texture':
 				{
 					const inputTexture = value;
-					const dim = utils.getDimensions(inputTexture.output, true);
+					const dim = utils.getDimensions(inputTexture, true);
+
 					const size = inputTexture.size;
 
 					if (inputTexture.texture === this.outputTexture) {
