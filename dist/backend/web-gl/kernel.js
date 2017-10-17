@@ -743,7 +743,8 @@ module.exports = function (_KernelBase) {
 				case 'Texture':
 					{
 						var inputTexture = value;
-						var _dim2 = utils.getDimensions(inputTexture.output, true);
+						var _dim2 = utils.getDimensions(inputTexture, true);
+
 						var _size2 = inputTexture.size;
 
 						if (inputTexture.texture === this.outputTexture) {

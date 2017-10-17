@@ -21,7 +21,7 @@ GPU.utils = utils;
 GPU.Texture = Texture;
 GPU.Input = Input;
 GPU.input = (value, size) => {
-  return new Input(value, size);
+	return new Input(value, size);
 };
 
 GPU.CPUFunctionBuilder = CPUFunctionBuilder;

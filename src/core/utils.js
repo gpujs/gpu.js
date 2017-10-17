@@ -270,10 +270,10 @@ class Utils extends UtilsCore {
 		} else if (typeof arg === 'number') {
 			return 'Number';
 		} else if (arg instanceof Texture) {
-      return 'Texture';
-    } else if (arg instanceof Input) {
-		  return 'Input';
-    } else {
+			return 'Texture';
+		} else if (arg instanceof Input) {
+			return 'Input';
+		} else {
 			return 'Unknown';
 		}
 	}
@@ -357,9 +357,9 @@ class Utils extends UtilsCore {
 			}
 			ret = dim.reverse();
 		} else if (x instanceof Texture) {
-      ret = x.output;
-    } else if (x instanceof Input) {
-		  ret = x.size;
+			ret = x.output;
+		} else if (x instanceof Input) {
+			ret = x.size;
 		} else {
 			throw 'Unknown dimensions of ' + x;
 		}
