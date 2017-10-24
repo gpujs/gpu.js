@@ -979,11 +979,24 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 
 		if (ast.type === 'MemberExpression') {
 			if (ast.object && ast.property) {
+				//babel sniffing
+				if (ast.object.hasOwnProperty('name') && ast.object.name[0] === '_') {
+					return this.astMemberExpressionUnroll(ast.property, funcParam);
+				}
+
 				return (
 					this.astMemberExpressionUnroll(ast.object, funcParam) +
 					'.' +
 					this.astMemberExpressionUnroll(ast.property, funcParam)
 				);
+			}
+		}
+
+		//babel sniffing
+		if (ast.hasOwnProperty('expressions')) {
+			const firstExpression = ast.expressions[0];
+			if (firstExpression.type === 'Literal' && firstExpression.value === 0 && ast.expressions.length === 2) {
+				return this.astMemberExpressionUnroll(ast.expressions[1]);
 			}
 		}
 

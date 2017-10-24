@@ -46,12 +46,8 @@ gulp.task('build', ['babelify'], function() {
 	return merge(gpu, gpuCore);
 });
 
-gulp.task('clean', ['build'], function(){
-	return del('dist/');
-});
-
 /// Minify the build script, after building it
-gulp.task('minify', ['clean'], function() {
+gulp.task('minify', function() {
 	const gpu = gulp.src('bin/gpu.js')
 		.pipe(rename('gpu.min.js'))
 		.pipe(
