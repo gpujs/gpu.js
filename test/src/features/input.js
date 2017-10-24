@@ -12,7 +12,8 @@ function input(mode) {
   const b = new Float32Array(9);
   b.set([1,2,3,4,5,6,7,8,9]);
 
-  QUnit.assert.deepEqual(QUnit.extend([], kernel(input(a, [3, 3]), input(b, [3, 3]))), [2,4,6,8,10,12,14,16,18]);
+  const result = kernel(input(a, [3, 3]), input(b, [3, 3]));
+  QUnit.assert.deepEqual(QUnit.extend([], result), [2,4,6,8,10,12,14,16,18]);
 }
 
 QUnit.test( "input (auto)", function() {

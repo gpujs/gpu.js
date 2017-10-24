@@ -674,10 +674,9 @@ module.exports = function (_KernelBase) {
 
 						var buffer = void 0;
 						if (this.floatTextures) {
-							buffer = new Float32Array(valuesFlat);
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, buffer);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 						} else {
-							buffer = new Uint8Array(new Float32Array(valuesFlat).buffer);
+							buffer = new Uint8Array(valuesFlat.buffer);
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 						}
 
@@ -698,12 +697,55 @@ module.exports = function (_KernelBase) {
 						gl.uniform1f(_loc, value);
 						break;
 					}
+				case 'Input':
+					{
+						var input = value;
+						var _dim = input.size;
+						var _size = utils.dimToTexSize({
+							floatTextures: this.floatTextures,
+							floatOutput: this.floatOutput
+						}, _dim);
+						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+						var _length = _size[0] * _size[1];
+						var inputArray = void 0;
+						if (this.floatTextures) {
+							_length *= 4;
+							inputArray = new Float32Array(_length);
+							inputArray.set(input.value);
+						} else {
+							inputArray = input.value;
+						}
+
+						if (this.floatTextures) {
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0], _size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+						} else {
+							var _buffer = new Uint8Array(inputArray.buffer);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0], _size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, _buffer);
+						}
+
+						var _loc2 = this.getUniformLocation('user_' + name);
+						var _locSize = this.getUniformLocation('user_' + name + 'Size');
+						var _dimLoc = this.getUniformLocation('user_' + name + 'Dim');
+
+						if (!this.hardcodeConstants) {
+							gl.uniform3fv(_dimLoc, _dim);
+							gl.uniform2fv(_locSize, _size);
+						}
+						gl.uniform1i(_loc2, this.argumentsLength);
+						break;
+					}
 				case 'Texture':
 					{
 						var inputTexture = value;
-						var _dim = utils.getDimensions(inputTexture, true);
+						var _dim2 = utils.getDimensions(inputTexture, true);
 
-						var _size = inputTexture.size;
+						var _size2 = inputTexture.size;
 
 						if (inputTexture.texture === this.outputTexture) {
 							this.setupOutputTexture();
@@ -712,13 +754,13 @@ module.exports = function (_KernelBase) {
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-						var _loc2 = this.getUniformLocation('user_' + name);
-						var _locSize = this.getUniformLocation('user_' + name + 'Size');
-						var _dimLoc = this.getUniformLocation('user_' + name + 'Dim');
+						var _loc3 = this.getUniformLocation('user_' + name);
+						var _locSize2 = this.getUniformLocation('user_' + name + 'Size');
+						var _dimLoc2 = this.getUniformLocation('user_' + name + 'Dim');
 
-						gl.uniform3fv(_dimLoc, _dim);
-						gl.uniform2fv(_locSize, _size);
-						gl.uniform1i(_loc2, this.argumentsLength);
+						gl.uniform3fv(_dimLoc2, _dim2);
+						gl.uniform2fv(_locSize2, _size2);
+						gl.uniform1i(_loc3, this.argumentsLength);
 						break;
 					}
 				default:
@@ -947,7 +989,7 @@ module.exports = function (_KernelBase) {
 						result.push('highp float user_' + paramName + ' = ' + param);
 					}
 				} else {
-					if (paramType === 'Array' || paramType === 'Texture') {
+					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input') {
 						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp vec2 user_' + paramName + 'Size', 'uniform highp vec3 user_' + paramName + 'Dim');
 					} else if (paramType === 'Number') {
 						result.push('uniform highp float user_' + paramName);
