@@ -938,12 +938,25 @@ module.exports = function (_BaseFunctionNode) {
 
 			if (ast.type === 'MemberExpression') {
 				if (ast.object && ast.property) {
+					//babel sniffing
+					if (ast.object.hasOwnProperty('name') && ast.object.name[0] === '_') {
+						return this.astMemberExpressionUnroll(ast.property, funcParam);
+					}
+
 					return this.astMemberExpressionUnroll(ast.object, funcParam) + '.' + this.astMemberExpressionUnroll(ast.property, funcParam);
 				}
 			}
 
 			if (ast.type === 'Literal') {
 				return ast.value;
+			}
+
+			//babel sniffing
+			if (ast.hasOwnProperty('expressions')) {
+				var firstExpression = ast.expressions[0];
+				if (firstExpression.type === 'Literal' && firstExpression.value === 0 && ast.expressions.length === 2) {
+					return this.astMemberExpressionUnroll(ast.expressions[1]);
+				}
 			}
 
 			// Failure, unknown expression

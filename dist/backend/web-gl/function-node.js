@@ -218,7 +218,6 @@ module.exports = function (_FunctionNodeBase) {
 					var type = funcParam.getParamType(paramName);
 					switch (type) {
 						case 'Texture':
-						case 'Input':
 						case 'Array':
 							retArr.push('sampler2D');
 							break;
@@ -1025,7 +1024,20 @@ module.exports = function (_FunctionNodeBase) {
 
 			if (ast.type === 'MemberExpression') {
 				if (ast.object && ast.property) {
+					//babel sniffing
+					if (ast.object.hasOwnProperty('name') && ast.object.name[0] === '_') {
+						return this.astMemberExpressionUnroll(ast.property, funcParam);
+					}
+
 					return this.astMemberExpressionUnroll(ast.object, funcParam) + '.' + this.astMemberExpressionUnroll(ast.property, funcParam);
+				}
+			}
+
+			//babel sniffing
+			if (ast.hasOwnProperty('expressions')) {
+				var firstExpression = ast.expressions[0];
+				if (firstExpression.type === 'Literal' && firstExpression.value === 0 && ast.expressions.length === 2) {
+					return this.astMemberExpressionUnroll(ast.expressions[1]);
 				}
 			}
 
