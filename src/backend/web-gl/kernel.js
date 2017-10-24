@@ -623,10 +623,9 @@ module.exports = class WebGLKernel extends KernelBase {
 
 					let buffer;
 					if (this.floatTextures) {
-						buffer = new Float32Array(valuesFlat);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 					} else {
-						buffer = new Uint8Array((new Float32Array(valuesFlat)).buffer);
+						buffer = new Uint8Array(valuesFlat.buffer);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 					}
 
@@ -645,6 +644,49 @@ module.exports = class WebGLKernel extends KernelBase {
 				{
 					const loc = this.getUniformLocation('user_' + name);
 					gl.uniform1f(loc, value);
+					break;
+				}
+			case 'Input':
+				{
+					const input = value;
+					const dim = input.size;
+					const size = utils.dimToTexSize({
+						floatTextures: this.floatTextures,
+						floatOutput: this.floatOutput
+					}, dim);
+					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+					let length = size[0] * size[1];
+					let inputArray;
+					if (this.floatTextures) {
+						length *= 4;
+						inputArray = new Float32Array(length);
+						inputArray.set(input.value);
+					} else {
+						inputArray = input.value;
+					}
+
+					if (this.floatTextures) {
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+					} else {
+						const buffer = new Uint8Array(inputArray.buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+					}
+
+					const loc = this.getUniformLocation('user_' + name);
+					const locSize = this.getUniformLocation('user_' + name + 'Size');
+					const dimLoc = this.getUniformLocation('user_' + name + 'Dim');
+
+					if (!this.hardcodeConstants) {
+						gl.uniform3fv(dimLoc, dim);
+						gl.uniform2fv(locSize, size);
+					}
+					gl.uniform1i(loc, this.argumentsLength);
 					break;
 				}
 			case 'Texture':
@@ -904,7 +946,7 @@ module.exports = class WebGLKernel extends KernelBase {
 					result.push(`highp float user_${ paramName } = ${ param }`);
 				}
 			} else {
-				if (paramType === 'Array' || paramType === 'Texture') {
+				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input') {
 					result.push(
 						`uniform highp sampler2D user_${ paramName }`,
 						`uniform highp vec2 user_${ paramName }Size`,

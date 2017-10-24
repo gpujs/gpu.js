@@ -1,5 +1,5 @@
 function demo(mode) {
-  var matrixSize = 512;
+  var matrixSize = 6;
   var a = new Array(matrixSize * matrixSize);
   var b = new Array(matrixSize * matrixSize);
   a = splitArray(fillArrayRandom(a), matrixSize);
@@ -21,26 +21,25 @@ function demo(mode) {
   const gpu = new GPU({ mode: mode });
   const multiplyMatrix = gpu.createKernel(function(a, b) {
     var sum = 0;
-    for (var i = 0; i < 512; i++) {
+    for (var i = 0; i < 6; i++) {
       sum += a[this.thread.y][i] * b[i][this.thread.x];
     }
     return sum;
   })
-    .setDebug(true)
-    .setOutput([512, 512]);
+    .setOutput([6, 6]);
 
 	QUnit.assert.ok( multiplyMatrix !== null, "function generated test");
-	QUnit.assert.equal(multiplyMatrix(a, b).length, 512, "basic return function test");
+	QUnit.assert.equal(multiplyMatrix(a, b).length, 6, "basic return function test");
 }
 
-// QUnit.test( "demo (auto)", function() {
-//   demo(null);
-// });
-//
-// QUnit.test( "demo (WebGL)", function() {
-//   demo("webgl");
-// });
+QUnit.test( "demo (auto)", function() {
+  demo();
+});
+
+QUnit.test( "demo (WebGL)", function() {
+  demo('webgl');
+});
 
 QUnit.test( "demo (CPU)", function() {
-  demo("cpu");
+  demo('cpu');
 });

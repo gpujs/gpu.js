@@ -218,6 +218,7 @@ module.exports = function (_FunctionNodeBase) {
 					var type = funcParam.getParamType(paramName);
 					switch (type) {
 						case 'Texture':
+						case 'Input':
 						case 'Array':
 							retArr.push('sampler2D');
 							break;

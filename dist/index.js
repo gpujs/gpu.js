@@ -3,6 +3,8 @@
 var GPU = require('./core/gpu');
 var alias = require('./core/alias');
 var utils = require('./core/utils');
+var Input = require('./core/input');
+var Texture = require('./core/texture');
 
 var CPUFunctionBuilder = require('./backend/cpu/function-builder');
 var CPUFunctionNode = require('./backend/cpu/function-node');
@@ -16,6 +18,11 @@ var WebGLRunner = require('./backend/web-gl/runner');
 
 GPU.alias = alias;
 GPU.utils = utils;
+GPU.Texture = Texture;
+GPU.Input = Input;
+GPU.input = function (value, size) {
+	return new Input(value, size);
+};
 
 GPU.CPUFunctionBuilder = CPUFunctionBuilder;
 GPU.CPUFunctionNode = CPUFunctionNode;
