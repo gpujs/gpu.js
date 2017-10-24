@@ -52,6 +52,8 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 * [Automatically-built Documentation](#automatically-built-documentation)
 * [Contributors](#contributors)
 * [Contributing](#contributing)
+* [Terms Explained](#terms-explained)
+* [License](#license)
 
 ## Installation
 
@@ -83,9 +85,23 @@ In JavaScript, initialize the library:
 const gpu = new GPU();
 ```
 
-Note that this **requires** the Promise API, if you need to polyfill it, you can give our 'untested polyfill' a try [here](https://github.com/picoded/small_promise.js)
-
 ## Options
+Options are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.createKernel(options)`
+* `output`: array or object that describes the output of kernel.
+  * as array: `[width]`, `[width, height]`, or `[width, height, depth]`
+  * as object: `{ x: width, y: height, z: depth }`
+* outputToTexture: boolean
+* graphical: boolean
+* loopMaxIterations: number
+* constants: object
+* wraparound: boolean
+* hardcodeConstants: boolean
+* floatTextures: boolean
+* floatOutput: boolean
+* functions: array or boolean
+* nativeFunctions: object
+* subKernels: array
+
 
 ## Creating and Running Functions
 Depending on your output type, specify the intended size of your output. You cannot have an accelerated function that does not specify any output size.
@@ -297,8 +313,8 @@ const matMult = gpu.createKernel(function(a, b) {
 ```
 
 ## Pipelining
-[Pipeline](https://en.wikipedia.org/wiki/Pipeline_(computing)) are where we send values directly from kernel to kernel.
-This results in extremely fast computing.  This is achieved by setting a kernel's `outputToTexture: boolean` option. 
+[Pipeline](https://en.wikipedia.org/wiki/Pipeline_(computing)) is a feature where values are sent directly from kernel to kernel via a texture.
+This results in extremely fast computing.  This is achieved with the kernel option `outputToTexture: boolean` option or by calling `kernel.setOutputToTexture(true)`
 
 
 ## Flattened typed array support
@@ -345,6 +361,10 @@ please email us and we will review your application and grant you access to
 the `develop` branch.
  
 We promise never to pass off your code as ours.
+
+## Terms Explained
+* Kernel - A function that is tightly coupled to program that runs on the Graphic Processor
+* Texture - A graphical artifact that is packed with data, in the case of GPU.js, bit shifted parts of a 32 bit floating point decimal
 
 ## License 
 
