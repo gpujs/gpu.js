@@ -96,6 +96,7 @@ module.exports = class FunctionBuilderBase {
 	 *
 	 * @param {String} functionName - Function name to trace from, default to 'kernel'
 	 * @param {String[]} retList - Returning list of function names that is traced. Including itself.
+	 * @param {Object} [parent] - Parent node
 	 *
 	 * @returns {String[]}  Returning list of function names that is traced. Including itself.
 	 */
@@ -106,9 +107,8 @@ module.exports = class FunctionBuilderBase {
 		const fNode = this.nodeMap[functionName];
 		if (fNode) {
 			// Check if function already exists
-			if (retList.indexOf(functionName) >= 0) {
-				// Does nothing if already traced
-			} else {
+			const functionIndex = retList.indexOf(functionName);
+			if (functionIndex === -1) {
 				retList.push(functionName);
 				if (parent) {
 					fNode.parent = parent;
@@ -118,6 +118,14 @@ module.exports = class FunctionBuilderBase {
 				for (let i = 0; i < fNode.calledFunctions.length; ++i) {
 					this.traceFunctionCalls(fNode.calledFunctions[i], retList, fNode);
 				}
+			} else {
+				/**
+				 * https://github.com/gpujs/gpu.js/issues/207
+				 * if dependent function is already in the list, because a function depends on it, and because it has
+				 * already been traced, we know that we must move the dependent function to the end of the the retList.
+				 * */
+				const dependantFunctionName = retList.splice(functionIndex, 1)[0];
+				retList.push(dependantFunctionName);
 			}
 		}
 

@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.1
- * @date Tue Oct 24 2017 10:21:18 GMT-0400 (EDT)
+ * @date Wed Oct 25 2017 08:32:28 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -1109,8 +1109,8 @@ module.exports = function () {
 
 			var fNode = this.nodeMap[functionName];
 			if (fNode) {
-				if (retList.indexOf(functionName) >= 0) {
-				} else {
+				var functionIndex = retList.indexOf(functionName);
+				if (functionIndex === -1) {
 					retList.push(functionName);
 					if (parent) {
 						fNode.parent = parent;
@@ -1120,6 +1120,9 @@ module.exports = function () {
 					for (var i = 0; i < fNode.calledFunctions.length; ++i) {
 						this.traceFunctionCalls(fNode.calledFunctions[i], retList, fNode);
 					}
+				} else {
+					var dependantFunctionName = retList.splice(functionIndex, 1)[0];
+					retList.push(dependantFunctionName);
 				}
 			}
 
