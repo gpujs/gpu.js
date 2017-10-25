@@ -1,9 +1,7 @@
 
-+ bin : The compiled JS files, and its minified version?
-+ demo : demo HTML files
-+ lib : External library JS files
-+ src : The source javascript
++ bin : Browser compiled JS files, and its minified version?
++ dist : Node es5 distribution
++ src : Node es6 source javascript
 + test 
-	+ lib : the QUnit library
-	+ html : the QUnit html page
-	+ src : The unit test source code
+	+ html : QUnit html pages
+	+ src : Unit test source code
