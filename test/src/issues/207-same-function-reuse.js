@@ -13,7 +13,6 @@ function reuse(mode) {
     }
     return some_fun_1(1,2) + some_fun_2(a[this.thread.x], b[this.thread.x]);
   })
-    .setDebug(true)
     .setOutput([6]);
 
   var a = [1, 2, 3, 5, 6, 7];
