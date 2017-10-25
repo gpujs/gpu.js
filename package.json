@@ -1,8 +1,8 @@
 {
   "name": "gpu.js",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "GPU Accelerated JavaScript",
-  "main": "./src/index.js",
+  "main": "./bin/index.js",
   "directories": {
     "doc": "doc",
     "test": "test"
