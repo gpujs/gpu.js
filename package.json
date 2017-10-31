@@ -1,14 +1,14 @@
 {
   "name": "gpu.js",
-  "version": "1.0.0-rc.4",
+  "version": "1.0.0-rc.5",
   "description": "GPU Accelerated JavaScript",
   "main": "./dist/index.js",
   "directories": {
     "doc": "doc",
     "test": "test"
   },
+  "dependencies": { "acorn": "^5.1.1" },
   "devDependencies": {
-    "acorn": "^5.1.1",
     "babel-plugin-syntax-async-functions": "^6.5.0",
     "babel-preset-env": "^1.5.2",
     "browser-sync": "^2.18.2",
