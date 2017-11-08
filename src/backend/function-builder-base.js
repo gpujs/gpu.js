@@ -32,29 +32,29 @@ module.exports = class FunctionBuilderBase {
 	 *
 	 * @desc Instantiates a FunctionNode, and add it to the nodeMap
 	 *
-	 * @param {GPU} gpu - The GPU instance
 	 * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
 	 * @param {Function} jsFunction - JS Function to do conversion
-	 * @param {String[]|Object} paramTypes - Parameter type array, assumes all parameters are 'float' if null
-	 * @param {String} returnType - The return type, assumes 'float' if null
+	 * @param {Object} [options]
+	 * @param {String[]|Object} [paramTypes] - Parameter type array, assumes all parameters are 'float' if falsey
+	 * @param {String} [returnType] - The return type, assumes 'float' if falsey
 	 *
 	 */
-	addFunction(functionName, jsFunction, paramTypes, returnType) {
+	addFunction(functionName, jsFunction, options, paramTypes, returnType) {
 		this.addFunctionNode(
-			new this.Node(functionName, jsFunction, paramTypes, returnType)
+			new this.Node(functionName, jsFunction, options, paramTypes, returnType)
 			.setAddFunction(this.addFunction.bind(this))
 		);
 	}
 
-	addFunctions(functions) {
+	addFunctions(functions, options) {
 		if (functions) {
 			if (Array.isArray(functions)) {
 				for (let i = 0; i < functions.length; i++) {
-					this.addFunction(null, functions[i]);
+					this.addFunction(null, functions[i], options);
 				}
 			} else {
 				for (let p in functions) {
-					this.addFunction(p, functions[p]);
+					this.addFunction(p, functions[p], options);
 				}
 			}
 		}
@@ -112,7 +112,6 @@ module.exports = class FunctionBuilderBase {
 				retList.push(functionName);
 				if (parent) {
 					fNode.parent = parent;
-					fNode.constants = parent.constants;
 				}
 				fNode.getFunctionString(); //ensure JS trace is done
 				for (let i = 0; i < fNode.calledFunctions.length; ++i) {
@@ -286,7 +285,7 @@ module.exports = class FunctionBuilderBase {
 	 * @param {String[]} functionList - List of function names to build the string.
 	 * @param {Object} opt - Settings object passed to functionNode. See functionNode for more details.
 	 *
-	 * @returns {Array} Prototype string of all functions converted
+	 * @returns {String} Prototype string of all functions converted
 	 *
 	 */
 	getPrototypeStringFromFunctionNames(functionList, opt) {

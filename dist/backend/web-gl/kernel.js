@@ -1141,12 +1141,16 @@ module.exports = function (_KernelBase) {
 			var builder = this.functionBuilder;
 			var gl = this._webGl;
 
-			builder.addFunctions(this.functions);
+			builder.addFunctions(this.functions, {
+				constants: this.constants,
+				output: this.output
+			});
 			builder.addNativeFunctions(this.nativeFunctions);
 
 			builder.addKernel(this.fnString, {
 				prototypeOnly: false,
 				constants: this.constants,
+				output: this.output,
 				debug: this.debug,
 				loopMaxIterations: this.loopMaxIterations
 			}, this.paramNames, this.paramTypes);
@@ -1161,6 +1165,7 @@ module.exports = function (_KernelBase) {
 					builder.addSubKernel(subKernel, {
 						prototypeOnly: false,
 						constants: this.constants,
+						output: this.output,
 						debug: this.debug,
 						loopMaxIterations: this.loopMaxIterations
 					});
@@ -1179,6 +1184,7 @@ module.exports = function (_KernelBase) {
 					builder.addSubKernel(_subKernel, {
 						prototypeOnly: false,
 						constants: this.constants,
+						output: this.output,
 						debug: this.debug,
 						loopMaxIterations: this.loopMaxIterations
 					});

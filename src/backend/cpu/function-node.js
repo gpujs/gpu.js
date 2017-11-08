@@ -821,7 +821,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	 * @returns {Array} the append retArr
 	 */
 	astThisExpression(tNode, retArr, funcParam) {
-		retArr.push('this');
+		retArr.push('_this');
 		return retArr;
 	}
 
@@ -839,20 +839,44 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	 * @returns {Array} the append retArr
 	 */
 	astMemberExpression(mNode, retArr, funcParam) {
-		let unrolled = this.astMemberExpressionUnroll(mNode.property);
-		this.astGeneric(mNode.object, retArr, funcParam);
-		if (mNode.property.type === 'Identifier' && mNode.computed) {
-			unrolled = 'user_' + unrolled;
-		}
 		if (mNode.computed) {
-			retArr.push('[');
-			retArr.push(unrolled);
-			retArr.push(']');
+			if (mNode.object.type === 'Identifier') {
+				this.astGeneric(mNode.object, retArr, funcParam);
+				retArr.push('[');
+				this.astGeneric(mNode.property, retArr, funcParam);
+				retArr.push(']');
+			} else {
+				this.astGeneric(mNode.object, retArr, funcParam);
+				const last = retArr.pop();
+				retArr.push('][');
+				this.astGeneric(mNode.property, retArr, funcParam);
+				retArr.push(last);
+			}
 		} else {
-			retArr.push('.');
-			retArr.push(unrolled);
-		}
+			let unrolled = this.astMemberExpressionUnroll(mNode);
+			if (mNode.property.type === 'Identifier' && mNode.computed) {
+				unrolled = 'user_' + unrolled;
+			}
 
+			// Its a reference to `this`, add '_' before
+			if (unrolled.indexOf('this') === 0) {
+				unrolled = '_' + unrolled;
+			}
+
+			switch (unrolled) {
+				case '_this.output.x':
+					retArr.push(this.output[0]);
+					break;
+				case '_this.output.y':
+					retArr.push(this.output[1]);
+					break;
+				case '_this.output.z':
+					retArr.push(this.output[2]);
+					break;
+				default:
+					retArr.push(unrolled);
+			}
+		}
 		return retArr;
 	}
 
@@ -864,60 +888,6 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 			this.astGeneric(sNode.expressions, retArr, funcParam);
 		}
 		return retArr;
-	}
-
-	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astMemberExpressionUnroll
-	 * @desc Parses the abstract syntax tree for binary expression.
-	 *
-	 * <p>Utility function for astCallExpression.</p>
-	 *
-	 * @param {Object} ast - the AST object to parse
-	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
-	 *
-	 * @returns {String} the function namespace call, unrolled
-	 */
-	astMemberExpressionUnroll(ast, funcParam) {
-		if (ast.type === 'Identifier') {
-			return ast.name;
-		} else if (ast.type === 'ThisExpression') {
-			return 'this';
-		}
-
-		if (ast.type === 'MemberExpression') {
-			if (ast.object && ast.property) {
-				//babel sniffing
-				if (ast.object.hasOwnProperty('name') && ast.object.name[0] === '_') {
-					return this.astMemberExpressionUnroll(ast.property, funcParam);
-				}
-
-				return (
-					this.astMemberExpressionUnroll(ast.object, funcParam) +
-					'.' +
-					this.astMemberExpressionUnroll(ast.property, funcParam)
-				);
-			}
-		}
-
-		if (ast.type === 'Literal') {
-			return ast.value;
-		}
-
-		//babel sniffing
-		if (ast.hasOwnProperty('expressions')) {
-			const firstExpression = ast.expressions[0];
-			if (firstExpression.type === 'Literal' && firstExpression.value === 0 && ast.expressions.length === 2) {
-				return this.astMemberExpressionUnroll(ast.expressions[1]);
-			}
-		}
-
-		// Failure, unknown expression
-		throw this.astErrorOutput(
-			'Unknown CallExpression_unroll',
-			ast, funcParam
-		);
 	}
 
 	/**

@@ -1113,12 +1113,16 @@ module.exports = class WebGLKernel extends KernelBase {
 		const builder = this.functionBuilder;
 		const gl = this._webGl;
 
-		builder.addFunctions(this.functions);
+		builder.addFunctions(this.functions, {
+			constants: this.constants,
+			output: this.output
+		});
 		builder.addNativeFunctions(this.nativeFunctions);
 
 		builder.addKernel(this.fnString, {
 			prototypeOnly: false,
 			constants: this.constants,
+			output: this.output,
 			debug: this.debug,
 			loopMaxIterations: this.loopMaxIterations
 		}, this.paramNames, this.paramTypes);
@@ -1133,6 +1137,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				builder.addSubKernel(subKernel, {
 					prototypeOnly: false,
 					constants: this.constants,
+					output: this.output,
 					debug: this.debug,
 					loopMaxIterations: this.loopMaxIterations
 				});
@@ -1152,6 +1157,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				builder.addSubKernel(subKernel, {
 					prototypeOnly: false,
 					constants: this.constants,
+					output: this.output,
 					debug: this.debug,
 					loopMaxIterations: this.loopMaxIterations
 				});

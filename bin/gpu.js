@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.6
- * @date Wed Nov 08 2017 09:51:57 GMT-0500 (EST)
+ * @date Wed Nov 08 2017 16:03:39 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -567,7 +567,7 @@ module.exports = function (_BaseFunctionNode) {
 	}, {
 		key: 'astThisExpression',
 		value: function astThisExpression(tNode, retArr, funcParam) {
-			retArr.push('this');
+			retArr.push('_this');
 			return retArr;
 		}
 
@@ -575,20 +575,43 @@ module.exports = function (_BaseFunctionNode) {
 	}, {
 		key: 'astMemberExpression',
 		value: function astMemberExpression(mNode, retArr, funcParam) {
-			var unrolled = this.astMemberExpressionUnroll(mNode.property);
-			this.astGeneric(mNode.object, retArr, funcParam);
-			if (mNode.property.type === 'Identifier' && mNode.computed) {
-				unrolled = 'user_' + unrolled;
-			}
 			if (mNode.computed) {
-				retArr.push('[');
-				retArr.push(unrolled);
-				retArr.push(']');
+				if (mNode.object.type === 'Identifier') {
+					this.astGeneric(mNode.object, retArr, funcParam);
+					retArr.push('[');
+					this.astGeneric(mNode.property, retArr, funcParam);
+					retArr.push(']');
+				} else {
+					this.astGeneric(mNode.object, retArr, funcParam);
+					var last = retArr.pop();
+					retArr.push('][');
+					this.astGeneric(mNode.property, retArr, funcParam);
+					retArr.push(last);
+				}
 			} else {
-				retArr.push('.');
-				retArr.push(unrolled);
-			}
+				var unrolled = this.astMemberExpressionUnroll(mNode);
+				if (mNode.property.type === 'Identifier' && mNode.computed) {
+					unrolled = 'user_' + unrolled;
+				}
 
+				if (unrolled.indexOf('this') === 0) {
+					unrolled = '_' + unrolled;
+				}
+
+				switch (unrolled) {
+					case '_this.output.x':
+						retArr.push(this.output[0]);
+						break;
+					case '_this.output.y':
+						retArr.push(this.output[1]);
+						break;
+					case '_this.output.z':
+						retArr.push(this.output[2]);
+						break;
+					default:
+						retArr.push(unrolled);
+				}
+			}
 			return retArr;
 		}
 	}, {
@@ -601,40 +624,6 @@ module.exports = function (_BaseFunctionNode) {
 				this.astGeneric(sNode.expressions, retArr, funcParam);
 			}
 			return retArr;
-		}
-
-
-	}, {
-		key: 'astMemberExpressionUnroll',
-		value: function astMemberExpressionUnroll(ast, funcParam) {
-			if (ast.type === 'Identifier') {
-				return ast.name;
-			} else if (ast.type === 'ThisExpression') {
-				return 'this';
-			}
-
-			if (ast.type === 'MemberExpression') {
-				if (ast.object && ast.property) {
-					if (ast.object.hasOwnProperty('name') && ast.object.name[0] === '_') {
-						return this.astMemberExpressionUnroll(ast.property, funcParam);
-					}
-
-					return this.astMemberExpressionUnroll(ast.object, funcParam) + '.' + this.astMemberExpressionUnroll(ast.property, funcParam);
-				}
-			}
-
-			if (ast.type === 'Literal') {
-				return ast.value;
-			}
-
-			if (ast.hasOwnProperty('expressions')) {
-				var firstExpression = ast.expressions[0];
-				if (firstExpression.type === 'Literal' && firstExpression.value === 0 && ast.expressions.length === 2) {
-					return this.astMemberExpressionUnroll(ast.expressions[1]);
-				}
-			}
-
-			throw this.astErrorOutput('Unknown CallExpression_unroll', ast, funcParam);
 		}
 
 
@@ -889,18 +878,28 @@ module.exports = function (_KernelBase) {
 			builder.addKernel(this.fnString, {
 				prototypeOnly: false,
 				constants: this.constants,
+				output: this.output,
 				debug: this.debug,
 				loopMaxIterations: this.loopMaxIterations
 			}, this.paramNames, this.paramTypes);
 
-			builder.addFunctions(this.functions);
+			builder.addFunctions(this.functions, {
+				constants: this.constants,
+				output: this.output
+			});
 
 			if (this.subKernels !== null) {
 				this.subKernelOutputTextures = [];
 				this.subKernelOutputVariableNames = [];
 				for (var i = 0; i < this.subKernels.length; i++) {
 					var subKernel = this.subKernels[i];
-					builder.addSubKernel(subKernel);
+					builder.addSubKernel(subKernel, {
+						prototypeOnly: false,
+						constants: this.constants,
+						output: this.output,
+						debug: this.debug,
+						loopMaxIterations: this.loopMaxIterations
+					});
 					this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
 				}
 			} else if (this.subKernelProperties !== null) {
@@ -917,7 +916,7 @@ module.exports = function (_KernelBase) {
 
 			var prototypes = builder.getPrototypes();
 			var kernel = prototypes.shift();
-			var kernelString = this._kernelString = '\n\t\tvar LOOP_MAX = ' + this._getLoopMaxString() + ';\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			var kernelString = this._kernelString = '\n\t\tvar LOOP_MAX = ' + this._getLoopMaxString() + ';\n\t\tvar _this = this;\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '  var ' + name + ' = null;\n';
 			}).join('')) + '\n    return function (' + this.paramNames.map(function (paramName) {
 				return 'user_' + paramName;
@@ -1051,20 +1050,20 @@ module.exports = function () {
 
 	}, {
 		key: 'addFunction',
-		value: function addFunction(functionName, jsFunction, paramTypes, returnType) {
-			this.addFunctionNode(new this.Node(functionName, jsFunction, paramTypes, returnType).setAddFunction(this.addFunction.bind(this)));
+		value: function addFunction(functionName, jsFunction, options, paramTypes, returnType) {
+			this.addFunctionNode(new this.Node(functionName, jsFunction, options, paramTypes, returnType).setAddFunction(this.addFunction.bind(this)));
 		}
 	}, {
 		key: 'addFunctions',
-		value: function addFunctions(functions) {
+		value: function addFunctions(functions, options) {
 			if (functions) {
 				if (Array.isArray(functions)) {
 					for (var i = 0; i < functions.length; i++) {
-						this.addFunction(null, functions[i]);
+						this.addFunction(null, functions[i], options);
 					}
 				} else {
 					for (var p in functions) {
-						this.addFunction(p, functions[p]);
+						this.addFunction(p, functions[p], options);
 					}
 				}
 			}
@@ -1102,7 +1101,6 @@ module.exports = function () {
 					retList.push(functionName);
 					if (parent) {
 						fNode.parent = parent;
-						fNode.constants = parent.constants;
 					}
 					fNode.getFunctionString(); 
 					for (var i = 0; i < fNode.calledFunctions.length; ++i) {
@@ -1255,6 +1253,7 @@ module.exports = function () {
 		this.debug = null;
 		this.prototypeOnly = null;
 		this.constants = null;
+		this.output = null;
 
 		if (options) {
 			if (options.hasOwnProperty('debug')) {
@@ -1265,6 +1264,9 @@ module.exports = function () {
 			}
 			if (options.hasOwnProperty('constants')) {
 				this.constants = options.constants;
+			}
+			if (options.hasOwnProperty('output')) {
+				this.output = options.output;
 			}
 			if (options.hasOwnProperty('loopMaxIterations')) {
 				this.loopMaxIterations = options.loopMaxIterations;
@@ -1357,6 +1359,34 @@ module.exports = function () {
 		}
 
 
+	}, {
+		key: 'astMemberExpressionUnroll',
+		value: function astMemberExpressionUnroll(ast, funcParam) {
+			if (ast.type === 'Identifier') {
+				return ast.name;
+			} else if (ast.type === 'ThisExpression') {
+				return 'this';
+			}
+
+			if (ast.type === 'MemberExpression') {
+				if (ast.object && ast.property) {
+					if (ast.object.hasOwnProperty('name') && ast.object.name[0] === '_') {
+						return this.astMemberExpressionUnroll(ast.property, funcParam);
+					}
+
+					return this.astMemberExpressionUnroll(ast.object, funcParam) + '.' + this.astMemberExpressionUnroll(ast.property, funcParam);
+				}
+			}
+
+			if (ast.hasOwnProperty('expressions')) {
+				var firstExpression = ast.expressions[0];
+				if (firstExpression.type === 'Literal' && firstExpression.value === 0 && ast.expressions.length === 2) {
+					return this.astMemberExpressionUnroll(ast.expressions[1]);
+				}
+			}
+
+			throw this.astErrorOutput('Unknown CallExpression_unroll', ast, funcParam);
+		}
 
 
 	}, {
@@ -2519,20 +2549,27 @@ module.exports = function (_FunctionNodeBase) {
 					unrolled = 'constants_' + unrolled.slice(constantsPrefix.length);
 				}
 
-				if (unrolled_lc === 'this.thread.x') {
-					retArr.push('threadId.x');
-				} else if (unrolled_lc === 'this.thread.y') {
-					retArr.push('threadId.y');
-				} else if (unrolled_lc === 'this.thread.z') {
-					retArr.push('threadId.z');
-				} else if (unrolled_lc === 'this.output.x') {
-					retArr.push('uOutputDim.x');
-				} else if (unrolled_lc === 'this.output.y') {
-					retArr.push('uOutputDim.y');
-				} else if (unrolled_lc === 'this.output.z') {
-					retArr.push('uOutputDim.z');
-				} else {
-					retArr.push(unrolled);
+				switch (unrolled_lc) {
+					case 'this.thread.x':
+						retArr.push('threadId.x');
+						break;
+					case 'this.thread.y':
+						retArr.push('threadId.y');
+						break;
+					case 'this.thread.z':
+						retArr.push('threadId.z');
+						break;
+					case 'this.output.x':
+						retArr.push(this.output[0] + '.0');
+						break;
+					case 'this.output.y':
+						retArr.push(this.output[1] + '.0');
+						break;
+					case 'this.output.z':
+						retArr.push(this.output[2] + '.0');
+						break;
+					default:
+						retArr.push(unrolled);
 				}
 			}
 			return retArr;
@@ -2547,36 +2584,6 @@ module.exports = function (_FunctionNodeBase) {
 				this.astGeneric(sNode.expressions, retArr, funcParam);
 			}
 			return retArr;
-		}
-
-
-	}, {
-		key: 'astMemberExpressionUnroll',
-		value: function astMemberExpressionUnroll(ast, funcParam) {
-			if (ast.type === 'Identifier') {
-				return ast.name;
-			} else if (ast.type === 'ThisExpression') {
-				return 'this';
-			}
-
-			if (ast.type === 'MemberExpression') {
-				if (ast.object && ast.property) {
-					if (ast.object.hasOwnProperty('name') && ast.object.name[0] === '_') {
-						return this.astMemberExpressionUnroll(ast.property, funcParam);
-					}
-
-					return this.astMemberExpressionUnroll(ast.object, funcParam) + '.' + this.astMemberExpressionUnroll(ast.property, funcParam);
-				}
-			}
-
-			if (ast.hasOwnProperty('expressions')) {
-				var firstExpression = ast.expressions[0];
-				if (firstExpression.type === 'Literal' && firstExpression.value === 0 && ast.expressions.length === 2) {
-					return this.astMemberExpressionUnroll(ast.expressions[1]);
-				}
-			}
-
-			throw this.astErrorOutput('Unknown CallExpression_unroll', ast, funcParam);
 		}
 
 
@@ -3522,12 +3529,16 @@ module.exports = function (_KernelBase) {
 			var builder = this.functionBuilder;
 			var gl = this._webGl;
 
-			builder.addFunctions(this.functions);
+			builder.addFunctions(this.functions, {
+				constants: this.constants,
+				output: this.output
+			});
 			builder.addNativeFunctions(this.nativeFunctions);
 
 			builder.addKernel(this.fnString, {
 				prototypeOnly: false,
 				constants: this.constants,
+				output: this.output,
 				debug: this.debug,
 				loopMaxIterations: this.loopMaxIterations
 			}, this.paramNames, this.paramTypes);
@@ -3542,6 +3553,7 @@ module.exports = function (_KernelBase) {
 					builder.addSubKernel(subKernel, {
 						prototypeOnly: false,
 						constants: this.constants,
+						output: this.output,
 						debug: this.debug,
 						loopMaxIterations: this.loopMaxIterations
 					});
@@ -3560,6 +3572,7 @@ module.exports = function (_KernelBase) {
 					builder.addSubKernel(_subKernel, {
 						prototypeOnly: false,
 						constants: this.constants,
+						output: this.output,
 						debug: this.debug,
 						loopMaxIterations: this.loopMaxIterations
 					});

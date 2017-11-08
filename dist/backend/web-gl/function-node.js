@@ -970,20 +970,27 @@ module.exports = function (_FunctionNodeBase) {
 					unrolled = 'constants_' + unrolled.slice(constantsPrefix.length);
 				}
 
-				if (unrolled_lc === 'this.thread.x') {
-					retArr.push('threadId.x');
-				} else if (unrolled_lc === 'this.thread.y') {
-					retArr.push('threadId.y');
-				} else if (unrolled_lc === 'this.thread.z') {
-					retArr.push('threadId.z');
-				} else if (unrolled_lc === 'this.output.x') {
-					retArr.push('uOutputDim.x');
-				} else if (unrolled_lc === 'this.output.y') {
-					retArr.push('uOutputDim.y');
-				} else if (unrolled_lc === 'this.output.z') {
-					retArr.push('uOutputDim.z');
-				} else {
-					retArr.push(unrolled);
+				switch (unrolled_lc) {
+					case 'this.thread.x':
+						retArr.push('threadId.x');
+						break;
+					case 'this.thread.y':
+						retArr.push('threadId.y');
+						break;
+					case 'this.thread.z':
+						retArr.push('threadId.z');
+						break;
+					case 'this.output.x':
+						retArr.push(this.output[0] + '.0');
+						break;
+					case 'this.output.y':
+						retArr.push(this.output[1] + '.0');
+						break;
+					case 'this.output.z':
+						retArr.push(this.output[2] + '.0');
+						break;
+					default:
+						retArr.push(unrolled);
 				}
 			}
 			return retArr;
@@ -998,52 +1005,6 @@ module.exports = function (_FunctionNodeBase) {
 				this.astGeneric(sNode.expressions, retArr, funcParam);
 			}
 			return retArr;
-		}
-
-		/** 
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astMemberExpressionUnroll
-   * @desc Parses the abstract syntax tree for binary expression.
-   *
-   * <p>Utility function for astCallExpression.</p>
-   * 
-   * @param {Object} ast - the AST object to parse
-   * @param {Function} funcParam - FunctionNode, that tracks compilation state
-   *
-   * @returns {String} the function namespace call, unrolled
-   */
-
-	}, {
-		key: 'astMemberExpressionUnroll',
-		value: function astMemberExpressionUnroll(ast, funcParam) {
-			if (ast.type === 'Identifier') {
-				return ast.name;
-			} else if (ast.type === 'ThisExpression') {
-				return 'this';
-			}
-
-			if (ast.type === 'MemberExpression') {
-				if (ast.object && ast.property) {
-					//babel sniffing
-					if (ast.object.hasOwnProperty('name') && ast.object.name[0] === '_') {
-						return this.astMemberExpressionUnroll(ast.property, funcParam);
-					}
-
-					return this.astMemberExpressionUnroll(ast.object, funcParam) + '.' + this.astMemberExpressionUnroll(ast.property, funcParam);
-				}
-			}
-
-			//babel sniffing
-			if (ast.hasOwnProperty('expressions')) {
-				var firstExpression = ast.expressions[0];
-				if (firstExpression.type === 'Literal' && firstExpression.value === 0 && ast.expressions.length === 2) {
-					return this.astMemberExpressionUnroll(ast.expressions[1]);
-				}
-			}
-
-			// Failure, unknown expression
-			throw this.astErrorOutput('Unknown CallExpression_unroll', ast, funcParam);
 		}
 
 		/**

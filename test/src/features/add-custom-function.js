@@ -36,3 +36,92 @@ QUnit.test( "addCustomFunction_sumAB (WebGL)", function() {
 QUnit.test( "addCustomFunction_sumAB (CPU)", function() {
 	addCustomFunction_sumAB("cpu");
 });
+
+
+function addCustomFunction_constantsWidth(mode) {
+  var gpu = new GPU({ mode: mode });
+
+  function custom_adder(a, b) {
+    let sum = 0;
+    for (let i = 0; i < this.constants.width; i++) {
+      sum += (a[this.thread.x] + b[this.thread.x]);
+    }
+    return sum;
+  }
+
+  var f = gpu.createKernel(function(a, b) {
+    return custom_adder(a, b);
+  }, {
+    functions: [custom_adder],
+    output : [6],
+    constants: { width: 6 }
+  });
+
+  QUnit.assert.ok( f !== null, "function generated test");
+
+  var a = [1, 2, 3, 5, 6, 7];
+  var b = [1, 1, 1, 1, 1, 1];
+
+  var res = f(a,b);
+  var exp = [12, 18, 24, 36, 42, 48];
+
+  for(var i = 0; i < exp.length; ++i) {
+    QUnit.assert.close(res[i], exp[i], 0.1, "Result arr idx: "+i);
+  }
+}
+
+QUnit.test('addCustomFunction_constantsWidth (auto)', function() {
+  addCustomFunction_constantsWidth(null);
+});
+
+QUnit.test('addCustomFunction_constantsWidth (webgl)', function() {
+  addCustomFunction_constantsWidth('webgl');
+});
+
+QUnit.test('addCustomFunction_constantsWidth (cpu)', function() {
+  addCustomFunction_constantsWidth('cpu');
+});
+
+function addCustomFunction_thisOutputX(mode) {
+  var gpu = new GPU({ mode: mode });
+
+  function custom_adder(a, b) {
+    let sum = 0;
+    for (let i = 0; i < this.output.x; i++) {
+      sum += (a[this.thread.x] + b[this.thread.x]);
+    }
+    return sum;
+  }
+
+  var f = gpu.createKernel(function(a, b) {
+    return custom_adder(a, b);
+  }, {
+    functions: [custom_adder],
+    output : [6],
+    debug: mode === 'cpu'
+  });
+
+  QUnit.assert.ok( f !== null, "function generated test");
+
+  var a = [1, 2, 3, 5, 6, 7];
+  var b = [1, 1, 1, 1, 1, 1];
+
+  var res = f(a,b);
+  var exp = [12, 18, 24, 36, 42, 48];
+
+  for(var i = 0; i < exp.length; ++i) {
+    QUnit.assert.close(res[i], exp[i], 0.1, "Result arr idx: "+i);
+  }
+}
+
+QUnit.test('addCustomFunction_thisOutputX (auto)', function() {
+  addCustomFunction_thisOutputX(null);
+});
+
+QUnit.test('addCustomFunction_thisOutputX (webgl)', function() {
+  addCustomFunction_thisOutputX('webgl');
+});
+
+QUnit.test('addCustomFunction_thisOutputX (cpu)', function() {
+  addCustomFunction_thisOutputX('cpu');
+});

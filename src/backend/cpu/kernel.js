@@ -163,18 +163,28 @@ module.exports = class CPUKernel extends KernelBase {
 		builder.addKernel(this.fnString, {
 			prototypeOnly: false,
 			constants: this.constants,
+			output: this.output,
 			debug: this.debug,
 			loopMaxIterations: this.loopMaxIterations
 		}, this.paramNames, this.paramTypes);
 
-		builder.addFunctions(this.functions);
+		builder.addFunctions(this.functions, {
+			constants: this.constants,
+			output: this.output
+		});
 
 		if (this.subKernels !== null) {
 			this.subKernelOutputTextures = [];
 			this.subKernelOutputVariableNames = [];
 			for (let i = 0; i < this.subKernels.length; i++) {
 				const subKernel = this.subKernels[i];
-				builder.addSubKernel(subKernel);
+				builder.addSubKernel(subKernel, {
+					prototypeOnly: false,
+					constants: this.constants,
+					output: this.output,
+					debug: this.debug,
+					loopMaxIterations: this.loopMaxIterations
+				});
 				this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
 			}
 
@@ -194,6 +204,7 @@ module.exports = class CPUKernel extends KernelBase {
 		const kernel = prototypes.shift();
 		const kernelString = this._kernelString = `
 		var LOOP_MAX = ${ this._getLoopMaxString() };
+		var _this = this;
   ${ this.subKernelOutputVariableNames === null
         ? ''
         : this.subKernelOutputVariableNames.map((name) => `  var ${ name } = null;\n`).join('')

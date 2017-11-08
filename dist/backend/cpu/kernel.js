@@ -189,18 +189,28 @@ module.exports = function (_KernelBase) {
 			builder.addKernel(this.fnString, {
 				prototypeOnly: false,
 				constants: this.constants,
+				output: this.output,
 				debug: this.debug,
 				loopMaxIterations: this.loopMaxIterations
 			}, this.paramNames, this.paramTypes);
 
-			builder.addFunctions(this.functions);
+			builder.addFunctions(this.functions, {
+				constants: this.constants,
+				output: this.output
+			});
 
 			if (this.subKernels !== null) {
 				this.subKernelOutputTextures = [];
 				this.subKernelOutputVariableNames = [];
 				for (var i = 0; i < this.subKernels.length; i++) {
 					var subKernel = this.subKernels[i];
-					builder.addSubKernel(subKernel);
+					builder.addSubKernel(subKernel, {
+						prototypeOnly: false,
+						constants: this.constants,
+						output: this.output,
+						debug: this.debug,
+						loopMaxIterations: this.loopMaxIterations
+					});
 					this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
 				}
 			} else if (this.subKernelProperties !== null) {
@@ -217,7 +227,7 @@ module.exports = function (_KernelBase) {
 
 			var prototypes = builder.getPrototypes();
 			var kernel = prototypes.shift();
-			var kernelString = this._kernelString = '\n\t\tvar LOOP_MAX = ' + this._getLoopMaxString() + ';\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			var kernelString = this._kernelString = '\n\t\tvar LOOP_MAX = ' + this._getLoopMaxString() + ';\n\t\tvar _this = this;\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '  var ' + name + ' = null;\n';
 			}).join('')) + '\n    return function (' + this.paramNames.map(function (paramName) {
 				return 'user_' + paramName;
