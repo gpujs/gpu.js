@@ -29,7 +29,7 @@ QUnit.test( "traceFunctionCalls: 3 layer test", function( assert ) {
 	assert.notEqual( GPU.WebGLFunctionBuilder, null, "script include check" );
 	var builder = threeLayerTemplate();
 	assert.notEqual( builder, null, "class creation check" );
-	
+
 	assert.deepEqual( builder.traceFunctionCalls("layerOne"),   ["layerOne"] );
 	assert.deepEqual( builder.traceFunctionCalls("layerTwo"),   ["layerTwo","layerOne"] );
 	assert.deepEqual( builder.traceFunctionCalls("layerThree"), ["layerThree","layerTwo","layerOne"] );
@@ -40,7 +40,7 @@ QUnit.test( "webglString: 3 layer test", function( assert ) {
 	assert.notEqual( GPU.WebGLFunctionBuilder, null, "script include check" );
 	var builder = threeLayerTemplate();
 	assert.notEqual( builder, null, "class creation check" );
-	
+
 	assert.equal(
 		builder.getStringFromFunctionNames(["layerOne"]),
 		"float layerOne() {\nreturn 42.0;\n}"
@@ -49,7 +49,7 @@ QUnit.test( "webglString: 3 layer test", function( assert ) {
 		builder.getString("layerOne"),
 		builder.getStringFromFunctionNames(["layerOne"])
 	);
-	
+
 	assert.equal(
 		builder.getStringFromFunctionNames(["layerOne","layerTwo"]),
 		"float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}"
@@ -58,8 +58,8 @@ QUnit.test( "webglString: 3 layer test", function( assert ) {
 		builder.getString("layerTwo"),
 		builder.getStringFromFunctionNames(["layerOne","layerTwo"])
 	);
-	
-	
+
+
 	assert.equal(
 		builder.getStringFromFunctionNames(["layerOne","layerTwo","layerThree"]),
 		"float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}\nfloat layerThree() {\nreturn (layerTwo()*2.0);\n}"

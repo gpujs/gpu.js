@@ -72,7 +72,7 @@ module.exports = class FunctionBuilderBase {
 	 * @function
 	 * @name addFunctionNode
 	 *
-	 * @desc Add the funciton node directly
+	 * @desc Add the function node directly
 	 *
 	 * @param {functionNode} inNode - functionNode to add
 	 *

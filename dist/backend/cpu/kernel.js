@@ -50,7 +50,7 @@ module.exports = function (_KernelBase) {
 
 		_this.run = function () {
 			this.run = null;
-			this.build();
+			this.build.apply(this, arguments);
 			return this.run.apply(this, arguments);
 		}.bind(_this);
 		return _this;
@@ -102,23 +102,7 @@ module.exports = function (_KernelBase) {
 	}, {
 		key: 'build',
 		value: function build() {
-
-			//
-			// NOTE: these are optional safety checks
-			//       does not actually do anything
-			//
-			var kernelArgs = [];
-			for (var i = 0; i < arguments.length; i++) {
-				var argType = utils.getArgumentType(arguments[i]);
-				if (argType === 'Array' || argType === 'Number') {
-					kernelArgs[i] = arguments[i];
-				} else if (argType === 'Texture') {
-					kernelArgs[i] = arguments[i].toArray();
-				} else {
-					throw 'Input type not supported (CPU): ' + arguments[i];
-				}
-			}
-
+			this.setupParams(arguments);
 			var threadDim = this.threadDim = utils.clone(this.output);
 
 			while (threadDim.length < 3) {

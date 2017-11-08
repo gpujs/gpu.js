@@ -59,7 +59,6 @@ module.exports = function (_KernelBase) {
 		_this.endianness = utils.systemEndianness();
 		_this.subKernelOutputTextures = null;
 		_this.subKernelOutputVariableNames = null;
-		_this.paramTypes = null;
 		_this.argumentsLength = 0;
 		_this.ext = null;
 		_this.compiledFragShaderString = null;
@@ -546,29 +545,6 @@ module.exports = function (_KernelBase) {
 		key: 'detachTextureCache',
 		value: function detachTextureCache(name) {
 			delete this.textureCache[name];
-		}
-
-		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name setupParams
-   *
-   * @desc Setup the parameter types for the parameters
-   * supplied to the Kernel function
-   *
-   * @param {Array} args - The actual parameters sent to the Kernel
-   *
-   */
-
-	}, {
-		key: 'setupParams',
-		value: function setupParams(args) {
-			var paramTypes = this.paramTypes = [];
-			for (var i = 0; i < args.length; i++) {
-				var param = args[i];
-				var paramType = utils.getArgumentType(param);
-				paramTypes.push(paramType);
-			}
 		}
 
 		/**

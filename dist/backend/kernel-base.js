@@ -58,6 +58,7 @@ module.exports = function () {
 		this.subKernelNames = null;
 		this.subKernelOutputVariableNames = null;
 		this.functionBuilder = null;
+		this.paramTypes = null;
 
 		for (var p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -77,6 +78,29 @@ module.exports = function () {
 		key: 'build',
 		value: function build() {
 			throw new Error('"build" not defined on Base');
+		}
+
+		/**
+   * @memberOf KernelBase#
+   * @function
+   * @name setupParams
+   *
+   * @desc Setup the parameter types for the parameters
+   * supplied to the Kernel function
+   *
+   * @param {Array} args - The actual parameters sent to the Kernel
+   *
+   */
+
+	}, {
+		key: 'setupParams',
+		value: function setupParams(args) {
+			var paramTypes = this.paramTypes = [];
+			for (var i = 0; i < args.length; i++) {
+				var param = args[i];
+				var paramType = utils.getArgumentType(param);
+				paramTypes.push(paramType);
+			}
 		}
 	}, {
 		key: 'setAddFunction',

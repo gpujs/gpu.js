@@ -38,7 +38,7 @@ module.exports = class CPUKernel extends KernelBase {
 
 		this.run = function() {
 			this.run = null;
-			this.build();
+			this.build.apply(this, arguments);
 			return this.run.apply(this, arguments);
 		}.bind(this);
 	}
@@ -82,23 +82,7 @@ module.exports = class CPUKernel extends KernelBase {
 	 *
 	 */
 	build() {
-
-		//
-		// NOTE: these are optional safety checks
-		//       does not actually do anything
-		//
-		const kernelArgs = [];
-		for (let i = 0; i < arguments.length; i++) {
-			const argType = utils.getArgumentType(arguments[i]);
-			if (argType === 'Array' || argType === 'Number') {
-				kernelArgs[i] = arguments[i];
-			} else if (argType === 'Texture') {
-				kernelArgs[i] = arguments[i].toArray();
-			} else {
-				throw 'Input type not supported (CPU): ' + arguments[i];
-			}
-		}
-
+		this.setupParams(arguments);
 		const threadDim = this.threadDim = utils.clone(this.output);
 
 		while (threadDim.length < 3) {

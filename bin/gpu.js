@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.0.0-rc.1
- * @date Wed Oct 25 2017 08:32:28 GMT-0400 (EDT)
+ * @version 1.0.0-rc.6
+ * @date Wed Nov 08 2017 09:51:57 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -786,7 +786,7 @@ module.exports = function (_KernelBase) {
 
 		_this.run = function () {
 			this.run = null;
-			this.build();
+			this.build.apply(this, arguments);
 			return this.run.apply(this, arguments);
 		}.bind(_this);
 		return _this;
@@ -817,19 +817,7 @@ module.exports = function (_KernelBase) {
 	}, {
 		key: 'build',
 		value: function build() {
-
-			var kernelArgs = [];
-			for (var i = 0; i < arguments.length; i++) {
-				var argType = utils.getArgumentType(arguments[i]);
-				if (argType === 'Array' || argType === 'Number') {
-					kernelArgs[i] = arguments[i];
-				} else if (argType === 'Texture') {
-					kernelArgs[i] = arguments[i].toArray();
-				} else {
-					throw 'Input type not supported (CPU): ' + arguments[i];
-				}
-			}
-
+			this.setupParams(arguments);
 			var threadDim = this.threadDim = utils.clone(this.output);
 
 			while (threadDim.length < 3) {
@@ -1503,6 +1491,7 @@ module.exports = function () {
 		this.subKernelNames = null;
 		this.subKernelOutputVariableNames = null;
 		this.functionBuilder = null;
+		this.paramTypes = null;
 
 		for (var p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -1522,6 +1511,18 @@ module.exports = function () {
 		key: 'build',
 		value: function build() {
 			throw new Error('"build" not defined on Base');
+		}
+
+
+	}, {
+		key: 'setupParams',
+		value: function setupParams(args) {
+			var paramTypes = this.paramTypes = [];
+			for (var i = 0; i < args.length; i++) {
+				var param = args[i];
+				var paramType = utils.getArgumentType(param);
+				paramTypes.push(paramType);
+			}
 		}
 	}, {
 		key: 'setAddFunction',
@@ -2772,7 +2773,6 @@ module.exports = function (_KernelBase) {
 		_this.endianness = utils.systemEndianness();
 		_this.subKernelOutputTextures = null;
 		_this.subKernelOutputVariableNames = null;
-		_this.paramTypes = null;
 		_this.argumentsLength = 0;
 		_this.ext = null;
 		_this.compiledFragShaderString = null;
@@ -3137,18 +3137,6 @@ module.exports = function (_KernelBase) {
 		key: 'detachTextureCache',
 		value: function detachTextureCache(name) {
 			delete this.textureCache[name];
-		}
-
-
-	}, {
-		key: 'setupParams',
-		value: function setupParams(args) {
-			var paramTypes = this.paramTypes = [];
-			for (var i = 0; i < args.length; i++) {
-				var param = args[i];
-				var paramType = utils.getArgumentType(param);
-				paramTypes.push(paramType);
-			}
 		}
 
 
