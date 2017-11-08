@@ -48,6 +48,7 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 * [Adding Custom Functions Directly to Kernel](#adding-custom-functions-directly-to-kernel)
 * [Loops](#loops)
 * [Pipelining](#pipelining)
+* [Supported Math functions](#supported-math-functions)
 * [Full API reference](#full-api-reference)
 * [Automatically-built Documentation](#automatically-built-documentation)
 * [Contributors](#contributors)
@@ -332,6 +333,34 @@ kernel(input(new Float32Array([1,2,3,4,5,6,7,8,9]), [3, 3]), input(new Float32Ar
 ```
 
 Note: `GPU.input(value, size)` is a simple pointer for `new GPU.Input(value, size)`
+
+## Supported Math functions
+
+Since the code running in the kernel is actually compiled to GLSL code, not all functions from the JavaScript Math module are supported.
+
+This is a list of the supported ones:
+
+```
+abs
+acos
+asin
+atan
+atan2
+ceil
+cos
+exp
+floor
+log
+log2
+max
+min
+round
+sign 
+sin
+sqrt
+tan
+```
+
 
 ## Full API Reference
 
