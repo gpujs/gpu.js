@@ -152,6 +152,8 @@ module.exports = function (_BaseFunctionNode) {
 						return this.astCallExpression(ast, retArr, funcParam);
 					case 'ArrayExpression':
 						return this.astArrayExpression(ast, retArr, funcParam);
+					case 'DebuggerStatement':
+						return this.astDebuggerStatement(ast, retArr, funcParam);
 				}
 
 				throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);
@@ -1045,6 +1047,12 @@ module.exports = function (_BaseFunctionNode) {
 			// 	'Unknown  ArrayExpression',
 			// 	arrNode, funcParam
 			//);
+		}
+	}, {
+		key: 'astDebuggerStatement',
+		value: function astDebuggerStatement(arrNode, retArr, funcParam) {
+			retArr.push('debugger;');
+			return retArr;
 		}
 	}], [{
 		key: 'astFunctionPrototype',

@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.0.0-rc.6
- * @date Wed Nov 08 2017 16:03:39 GMT-0500 (EST)
+ * @version 1.0.0-rc.7
+ * @date Sat Nov 11 2017 08:38:09 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -154,6 +154,8 @@ module.exports = function (_BaseFunctionNode) {
 						return this.astCallExpression(ast, retArr, funcParam);
 					case 'ArrayExpression':
 						return this.astArrayExpression(ast, retArr, funcParam);
+					case 'DebuggerStatement':
+						return this.astDebuggerStatement(ast, retArr, funcParam);
 				}
 
 				throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);
@@ -696,6 +698,12 @@ module.exports = function (_BaseFunctionNode) {
 
 			return retArr;
 
+		}
+	}, {
+		key: 'astDebuggerStatement',
+		value: function astDebuggerStatement(arrNode, retArr, funcParam) {
+			retArr.push('debugger;');
+			return retArr;
 		}
 	}], [{
 		key: 'astFunctionPrototype',
@@ -1477,6 +1485,11 @@ module.exports = function () {
 			console.error(error, ast, funcParam);
 			return error;
 		}
+	}, {
+		key: 'astDebuggerStatement',
+		value: function astDebuggerStatement(arrNode, retArr, funcParam) {
+			return retArr;
+		}
 	}]);
 
 	return BaseFunctionNode;
@@ -2033,6 +2046,8 @@ module.exports = function (_FunctionNodeBase) {
 						return this.astCallExpression(ast, retArr, funcParam);
 					case 'ArrayExpression':
 						return this.astArrayExpression(ast, retArr, funcParam);
+					case 'DebuggerStatement':
+						return this.astDebuggerStatement(ast, retArr, funcParam);
 				}
 
 				throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);

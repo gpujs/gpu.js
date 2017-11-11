@@ -42,7 +42,7 @@ module.exports = function () {
    *
    * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
    * @param {Function} jsFunction - JS Function to do conversion
-    * @param {Object} [options]
+   * @param {Object} [options]
    * @param {String[]|Object} [paramTypes] - Parameter type array, assumes all parameters are 'float' if falsey
    * @param {String} [returnType] - The return type, assumes 'float' if falsey
    *

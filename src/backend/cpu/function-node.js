@@ -128,6 +128,8 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 					return this.astCallExpression(ast, retArr, funcParam);
 				case 'ArrayExpression':
 					return this.astArrayExpression(ast, retArr, funcParam);
+				case 'DebuggerStatement':
+					return this.astDebuggerStatement(ast, retArr, funcParam);
 			}
 
 			throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);
@@ -995,5 +997,10 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 		// 	'Unknown  ArrayExpression',
 		// 	arrNode, funcParam
 		//);
+	}
+
+	astDebuggerStatement(arrNode, retArr, funcParam) {
+		retArr.push('debugger;');
+		return retArr;
 	}
 };

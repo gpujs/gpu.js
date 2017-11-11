@@ -34,7 +34,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "setup": "npm i -g gulp-cli",
-    "build-docs": "./node_modules/.bin/jsdoc -c jsdoc.json src -r -d doc --debug && gulp injectCSS"
+    "build-docs": "./node_modules/.bin/jsdoc -c jsdoc.json src -r -d doc --debug && gulp injectCSS",
+    "make": "gulp build && gulp beautify && gulp minify"
   },
   "repository": {
     "type": "git",

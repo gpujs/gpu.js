@@ -114,6 +114,8 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					return this.astCallExpression(ast, retArr, funcParam);
 				case 'ArrayExpression':
 					return this.astArrayExpression(ast, retArr, funcParam);
+				case 'DebuggerStatement':
+					return this.astDebuggerStatement(ast, retArr, funcParam);
 			}
 
 			throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);

@@ -404,6 +404,11 @@ module.exports = function () {
 			console.error(error, ast, funcParam);
 			return error;
 		}
+	}, {
+		key: 'astDebuggerStatement',
+		value: function astDebuggerStatement(arrNode, retArr, funcParam) {
+			return retArr;
+		}
 	}]);
 
 	return BaseFunctionNode;

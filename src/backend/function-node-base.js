@@ -384,4 +384,8 @@ module.exports = class BaseFunctionNode {
 		console.error(error, ast, funcParam);
 		return error;
 	}
+
+	astDebuggerStatement(arrNode, retArr, funcParam) {
+		return retArr;
+	}
 };
