@@ -3,6 +3,7 @@
 const utils = require('./utils');
 const WebGLRunner = require('../backend/web-gl/runner');
 const CPURunner = require('../backend/cpu/runner');
+const OpenCLRunner = require('../backend/open-cl/runner');
 const WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
 const GPUCore = require("./gpu-core");
 
@@ -45,6 +46,9 @@ class GPU extends GPUCore {
 				case 'webgl':
 					this._runner = new WebGLRunner(runnerSettings);
 					break;
+        case 'opencl':
+          this._runner = new OpenCLRunner(runnerSettings);
+          break;
 				case 'webgl-validator':
 					this._runner = new WebGLRunner(runnerSettings);
 					this._runner.Kernel = WebGLValidatorKernel;
