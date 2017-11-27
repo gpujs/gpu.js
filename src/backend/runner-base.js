@@ -13,7 +13,7 @@ module.exports = class BaseRunner {
 	 * <p>I know @private makes more sense, but since the documentation engine state is undetirmined.
 	 * (See https://github.com/gpujs/gpu.js/issues/19 regarding documentation engine issue)
 	 * File isolation is currently the best way to go. </p>
-	 * 
+	 *
 	 * *base.js* internal functions namespace <br>
 	 * *gpu.js* PUBLIC function namespace <br>
 	 *
@@ -45,8 +45,8 @@ module.exports = class BaseRunner {
 	 * @function
 	 * @name textureToArray
 	 *
-	 * @desc Converts the provided Texture instance to a JavaScript Array 
-	 *	
+	 * @desc Converts the provided Texture instance to a JavaScript Array
+	 *
 	 * @param {Object} texture - Texture Object
 	 *
 	 */
@@ -61,10 +61,10 @@ module.exports = class BaseRunner {
 	/**
 	 * @memberOf BaseRunner#
 	 * @function
-	 * 
+	 *
 	 * @name deleteTexture
 	 *
-	 * @desc Deletes the provided Texture instance 
+	 * @desc Deletes the provided Texture instance
 	 *
 	 * @param {Object} texture - Texture Object
 	 */
@@ -76,7 +76,7 @@ module.exports = class BaseRunner {
 	 * @memberOf BaseRunner#
 	 * @function
 	 * @name buildPromiseKernel
-	 * 
+	 *
 	 * @desc Get and returns the ASYNCHRONOUS executor, of a class and kernel
 	 * This returns a Promise object from an argument set.
 	 *
@@ -94,12 +94,12 @@ module.exports = class BaseRunner {
 	/**
 	 * @memberOf BaseRunner#
 	 * @function
-	 * 
+	 *
 	 * @name buildKernel
-	 * 
+	 *
 	 * @desc Get and returns the Synchronous executor, of a class and kernel
 	 * Which returns the result directly after passing the arguments.
-	 * 
+	 *
 	 */
 	buildKernel(fn, settings) {
 		settings = Object.assign({}, settings || {});

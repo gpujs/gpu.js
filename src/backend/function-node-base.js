@@ -48,6 +48,7 @@ module.exports = class BaseFunctionNode {
 		this.debug = null;
 		this.prototypeOnly = null;
 		this.constants = null;
+		this.output = null;
 
 		if (options) {
 			if (options.hasOwnProperty('debug')) {
@@ -58,6 +59,9 @@ module.exports = class BaseFunctionNode {
 			}
 			if (options.hasOwnProperty('constants')) {
 				this.constants = options.constants;
+			}
+			if (options.hasOwnProperty('output')) {
+				this.output = options.output;
 			}
 			if (options.hasOwnProperty('loopMaxIterations')) {
 				this.loopMaxIterations = options.loopMaxIterations;
@@ -148,6 +152,11 @@ module.exports = class BaseFunctionNode {
 		}
 	}
 
+	isIdentifierConstant(paramName) {
+		if (!this.constants) return false;
+		return this.constants.hasOwnProperty(paramName);
+	}
+
 	setAddFunction(fn) {
 		this.addFunction = fn;
 		return this;
@@ -183,12 +192,54 @@ module.exports = class BaseFunctionNode {
 	}
 
 	/**
-	 * @typedef {Object} ASTObject
+	 * @memberOf FunctionNodeBase#
+	 * @function
+	 * @name astMemberExpressionUnroll
+	 * @desc Parses the abstract syntax tree for binary expression.
+	 *
+	 * <p>Utility function for astCallExpression.</p>
+	 *
+	 * @param {Object} ast - the AST object to parse
+	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
+	 *
+	 * @returns {String} the function namespace call, unrolled
 	 */
+	astMemberExpressionUnroll(ast, funcParam) {
+		if (ast.type === 'Identifier') {
+			return ast.name;
+		} else if (ast.type === 'ThisExpression') {
+			return 'this';
+		}
 
-	/**
-	 * @typedef {Object} JISONParser
-	 */
+		if (ast.type === 'MemberExpression') {
+			if (ast.object && ast.property) {
+				//babel sniffing
+				if (ast.object.hasOwnProperty('name') && ast.object.name[0] === '_') {
+					return this.astMemberExpressionUnroll(ast.property, funcParam);
+				}
+
+				return (
+					this.astMemberExpressionUnroll(ast.object, funcParam) +
+					'.' +
+					this.astMemberExpressionUnroll(ast.property, funcParam)
+				);
+			}
+		}
+
+		//babel sniffing
+		if (ast.hasOwnProperty('expressions')) {
+			const firstExpression = ast.expressions[0];
+			if (firstExpression.type === 'Literal' && firstExpression.value === 0 && ast.expressions.length === 2) {
+				return this.astMemberExpressionUnroll(ast.expressions[1]);
+			}
+		}
+
+		// Failure, unknown expression
+		throw this.astErrorOutput(
+			'Unknown CallExpression_unroll',
+			ast, funcParam
+		);
+	}
 
 	/**
 	 * @memberOf FunctionNodeBase#
@@ -214,7 +265,9 @@ module.exports = class BaseFunctionNode {
 			throw 'Missing JS to AST parser';
 		}
 
-		const ast = inParser.parse('var ' + this.functionName + ' = ' + this.jsFunctionString + ';');
+		const ast = inParser.parse('var ' + this.functionName + ' = ' + this.jsFunctionString + ';', {
+			locations: true
+		});
 		if (ast === null) {
 			throw 'Failed to parse JS code';
 		}
@@ -312,5 +365,27 @@ module.exports = class BaseFunctionNode {
 
 	generate(options) {
 		throw new Error('generate not defined on BaseFunctionNode');
+	}
+
+	/**
+	 * @function
+	 * @name astErrorOutput
+	 * @ignore
+	 * @desc To throw the AST error, with its location.
+	 *
+	 * @todo add location support fpr the AST error
+	 *
+	 * @param {Object} error - the error message output
+	 * @param {Object} ast - the AST object where the error is
+	 * @param {Object} funcParam - FunctionNode, that tracks compilation state
+	 */
+	astErrorOutput(error, ast, funcParam) {
+		console.error(utils.getAstString(this.jsFunctionString, ast));
+		console.error(error, ast, funcParam);
+		return error;
+	}
+
+	astDebuggerStatement(arrNode, retArr, funcParam) {
+		return retArr;
 	}
 };

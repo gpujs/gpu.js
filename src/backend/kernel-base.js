@@ -51,6 +51,8 @@ module.exports = class BaseKernel {
 		this.subKernelProperties = null;
 		this.subKernelNames = null;
 		this.subKernelOutputVariableNames = null;
+		this.functionBuilder = null;
+		this.paramTypes = null;
 
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -59,12 +61,35 @@ module.exports = class BaseKernel {
 		if (settings.hasOwnProperty('canvas')) {
 			this._canvas = settings.canvas;
 		}
+		if (settings.hasOwnProperty('output')) {
+			this.setOutput(settings.output); // Flatten output object
+		}
 
 		if (!this._canvas) this._canvas = utils.initCanvas();
 	}
 
 	build() {
 		throw new Error('"build" not defined on Base');
+	}
+
+	/**
+	 * @memberOf KernelBase#
+	 * @function
+	 * @name setupParams
+	 *
+	 * @desc Setup the parameter types for the parameters
+	 * supplied to the Kernel function
+	 *
+	 * @param {Array} args - The actual parameters sent to the Kernel
+	 *
+	 */
+	setupParams(args) {
+		const paramTypes = this.paramTypes = [];
+		for (let i = 0; i < args.length; i++) {
+			const param = args[i];
+			const paramType = utils.getArgumentType(param);
+			paramTypes.push(paramType);
+		}
 	}
 
 	setAddFunction(cb) {
@@ -90,7 +115,7 @@ module.exports = class BaseKernel {
 	setOutput(output) {
 		if (output.hasOwnProperty('x')) {
 			if (output.hasOwnProperty('y')) {
-				if (output.hasOwnProperty('x')) {
+				if (output.hasOwnProperty('z')) {
 					this.output = [output.x, output.y, output.z];
 				} else {
 					this.output = [output.x, output.y];
@@ -343,5 +368,9 @@ module.exports = class BaseKernel {
 		this.subKernelProperties[property] = fnString;
 		this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
 		return this;
+	}
+
+	addNativeFunction(name, source) {
+		this.functionBuilder.addNativeFunction(name, source);
 	}
 };

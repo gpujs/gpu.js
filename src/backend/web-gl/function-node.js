@@ -39,11 +39,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		return this.functionString;
 	}
 
-	isIdentifierConstant(paramName) {
-		if (!this.constants) return false;
-		return this.constants.hasOwnProperty(paramName);
-	}
-
 	/**
 	 * @memberOf WebGLFunctionNode#
 	 * @function
@@ -59,7 +54,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 */
 	astGeneric(ast, retArr, funcParam) {
 		if (ast === null) {
-			throw astErrorOutput('NULL ast', ast, funcParam);
+			throw this.astErrorOutput('NULL ast', ast, funcParam);
 		} else {
 			if (Array.isArray(ast)) {
 				for (let i = 0; i < ast.length; i++) {
@@ -119,9 +114,11 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					return this.astCallExpression(ast, retArr, funcParam);
 				case 'ArrayExpression':
 					return this.astArrayExpression(ast, retArr, funcParam);
+				case 'DebuggerStatement':
+					return this.astDebuggerStatement(ast, retArr, funcParam);
 			}
 
-			throw astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);
+			throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);
 		}
 	}
 
@@ -224,6 +221,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				const type = funcParam.getParamType(paramName);
 				switch (type) {
 					case 'Texture':
+					case 'Input':
 					case 'Array':
 						retArr.push('sampler2D');
 						break;
@@ -281,7 +279,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			retArr.push(';');
 		}
 
-		//throw astErrorOutput(
+		//throw this.astErrorOutput(
 		//	'Non main function return, is not supported : '+funcParam.currentFunctionNamespace,
 		//	ast, funcParam
 		//);
@@ -306,7 +304,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 
 		// Reject non numeric literals
 		if (isNaN(ast.value)) {
-			throw astErrorOutput(
+			throw this.astErrorOutput(
 				'Non-numeric literal not supported : ' + ast.value,
 				ast, funcParam
 			);
@@ -379,7 +377,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 */
 	astIdentifierExpression(idtNode, retArr, funcParam) {
 		if (idtNode.type !== 'Identifier') {
-			throw astErrorOutput(
+			throw this.astErrorOutput(
 				'IdentifierExpression - not an Identifier',
 				ast, funcParam
 			);
@@ -435,7 +433,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 */
 	astForStatement(forNode, retArr, funcParam) {
 		if (forNode.type !== 'ForStatement') {
-			throw astErrorOutput(
+			throw this.astErrorOutput(
 				'Invalid for statment',
 				ast, funcParam
 			);
@@ -447,7 +445,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				this.isIdentifierConstant(forNode.test.right.name) === false) {
 
 				if (!this.loopMaxIterations) {
-					console.warn('Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.');
+					console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
 					console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
 				}
 
@@ -518,7 +516,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			}
 		}
 
-		throw astErrorOutput(
+		throw this.astErrorOutput(
 			'Invalid for statement',
 			ast, funcParam
 		);
@@ -540,7 +538,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 */
 	astWhileStatement(whileNode, retArr, funcParam) {
 		if (whileNode.type !== 'WhileStatement') {
-			throw astErrorOutput(
+			throw this.astErrorOutput(
 				'Invalid while statment',
 				ast, funcParam
 			);
@@ -933,20 +931,27 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				unrolled = 'constants_' + unrolled.slice(constantsPrefix.length);
 			}
 
-			if (unrolled_lc === 'this.thread.x') {
-				retArr.push('threadId.x');
-			} else if (unrolled_lc === 'this.thread.y') {
-				retArr.push('threadId.y');
-			} else if (unrolled_lc === 'this.thread.z') {
-				retArr.push('threadId.z');
-			} else if (unrolled_lc === 'this.output.x') {
-				retArr.push('uOutputDim.x');
-			} else if (unrolled_lc === 'this.output.y') {
-				retArr.push('uOutputDim.y');
-			} else if (unrolled_lc === 'this.output.z') {
-				retArr.push('uOutputDim.z');
-			} else {
-				retArr.push(unrolled);
+			switch (unrolled_lc) {
+				case 'this.thread.x':
+					retArr.push('threadId.x');
+					break;
+				case 'this.thread.y':
+					retArr.push('threadId.y');
+					break;
+				case 'this.thread.z':
+					retArr.push('threadId.z');
+					break;
+				case 'this.output.x':
+					retArr.push(this.output[0] + '.0');
+					break;
+				case 'this.output.y':
+					retArr.push(this.output[1] + '.0');
+					break;
+				case 'this.output.z':
+					retArr.push(this.output[2] + '.0');
+					break;
+				default:
+					retArr.push(unrolled);
 			}
 		}
 		return retArr;
@@ -960,43 +965,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			this.astGeneric(sNode.expressions, retArr, funcParam);
 		}
 		return retArr;
-	}
-
-	/** 
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astMemberExpressionUnroll
-	 * @desc Parses the abstract syntax tree for binary expression.
-	 *
-	 * <p>Utility function for astCallExpression.</p>
-	 * 
-	 * @param {Object} ast - the AST object to parse
-	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
-	 *
-	 * @returns {String} the function namespace call, unrolled
-	 */
-	astMemberExpressionUnroll(ast, funcParam) {
-		if (ast.type === 'Identifier') {
-			return ast.name;
-		} else if (ast.type === 'ThisExpression') {
-			return 'this';
-		}
-
-		if (ast.type === 'MemberExpression') {
-			if (ast.object && ast.property) {
-				return (
-					this.astMemberExpressionUnroll(ast.object, funcParam) +
-					'.' +
-					this.astMemberExpressionUnroll(ast.property, funcParam)
-				);
-			}
-		}
-
-		// Failure, unknown expression
-		throw astErrorOutput(
-			'Unknown CallExpression_unroll',
-			ast, funcParam
-		);
 	}
 
 	/**
@@ -1073,7 +1041,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		}
 
 		// Failure, unknown expression
-		throw astErrorOutput(
+		throw this.astErrorOutput(
 			'Unknown CallExpression',
 			ast, funcParam
 		);
@@ -1110,7 +1078,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		return retArr;
 
 		// // Failure, unknown expression
-		// throw astErrorOutput(
+		// throw this.astErrorOutput(
 		// 	'Unknown  ArrayExpression',
 		// 	arrNode, funcParam
 		//);
@@ -1173,21 +1141,4 @@ function webGlRegexOptimize(inStr) {
 	return inStr
 		.replace(DECODE32_ENCODE32, '((')
 		.replace(ENCODE32_DECODE32, '((');
-}
-
-/**
- * @function
- * @name astErrorOutput
- * @ignore
- * @desc To throw the AST error, with its location.
- *
- * @todo add location support fpr the AST error
- *
- * @param {Object} error - the error message output
- * @param {Object} ast - the AST object where the error is
- * @param {Object} funcParam - FunctionNode, that tracks compilation state
- */
-function astErrorOutput(error, ast, funcParam) {
-	console.error(error, ast, funcParam);
-	return error;
 }

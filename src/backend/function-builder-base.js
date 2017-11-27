@@ -18,6 +18,11 @@ module.exports = class FunctionBuilderBase {
 		this.nativeFunctions = {};
 		this.gpu = gpu;
 		this.rootKernel = null;
+		this.Node = null;
+	}
+
+	addNativeFunction(functionName, glslFunctionString) {
+		this.nativeFunctions[functionName] = glslFunctionString;
 	}
 
 	/**
@@ -27,48 +32,47 @@ module.exports = class FunctionBuilderBase {
 	 *
 	 * @desc Instantiates a FunctionNode, and add it to the nodeMap
 	 *
-	 * @param {GPU} gpu - The GPU instance
 	 * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
 	 * @param {Function} jsFunction - JS Function to do conversion
-	 * @param {String[]|Object} paramTypes - Parameter type array, assumes all parameters are 'float' if null
-	 * @param {String} returnType - The return type, assumes 'float' if null
+	 * @param {Object} [options]
+	 * @param {String[]|Object} [paramTypes] - Parameter type array, assumes all parameters are 'float' if falsey
+	 * @param {String} [returnType] - The return type, assumes 'float' if falsey
 	 *
 	 */
-	addFunction(functionName, jsFunction, paramTypes, returnType) {
-		throw new Error('addFunction not supported on base');
+	addFunction(functionName, jsFunction, options, paramTypes, returnType) {
+		this.addFunctionNode(
+			new this.Node(functionName, jsFunction, options, paramTypes, returnType)
+			.setAddFunction(this.addFunction.bind(this))
+		);
 	}
 
-	addFunctions(functions) {
+	addFunctions(functions, options) {
 		if (functions) {
 			if (Array.isArray(functions)) {
 				for (let i = 0; i < functions.length; i++) {
-					this.addFunction(null, functions[i]);
+					this.addFunction(null, functions[i], options);
 				}
 			} else {
 				for (let p in functions) {
-					this.addFunction(p, functions[p]);
+					this.addFunction(p, functions[p], options);
 				}
 			}
 		}
 	}
 
-	addNativeFunction(name, nativeFunction) {
-	  throw new Error('addNativeFunction not supported on base');
-  }
-
-  addNativeFunctions(nativeFunctions) {
-	  for (let functionName in nativeFunctions) {
-	    if (!nativeFunctions.hasOwnProperty(functionName)) continue;
-	    this.addNativeFunction(functionName, nativeFunctions[functionName]);
-    }
-  }
+	addNativeFunctions(nativeFunctions) {
+		for (let functionName in nativeFunctions) {
+			if (!nativeFunctions.hasOwnProperty(functionName)) continue;
+			this.addNativeFunction(functionName, nativeFunctions[functionName]);
+		}
+	}
 
 	/**
 	 * @memberOf FunctionBuilderBase#
 	 * @function
 	 * @name addFunctionNode
 	 *
-	 * @desc Add the funciton node directly
+	 * @desc Add the function node directly
 	 *
 	 * @param {functionNode} inNode - functionNode to add
 	 *
@@ -92,6 +96,7 @@ module.exports = class FunctionBuilderBase {
 	 *
 	 * @param {String} functionName - Function name to trace from, default to 'kernel'
 	 * @param {String[]} retList - Returning list of function names that is traced. Including itself.
+	 * @param {Object} [parent] - Parent node
 	 *
 	 * @returns {String[]}  Returning list of function names that is traced. Including itself.
 	 */
@@ -102,33 +107,215 @@ module.exports = class FunctionBuilderBase {
 		const fNode = this.nodeMap[functionName];
 		if (fNode) {
 			// Check if function already exists
-			if (retList.indexOf(functionName) >= 0) {
-				// Does nothing if already traced
-			} else {
+			const functionIndex = retList.indexOf(functionName);
+			if (functionIndex === -1) {
 				retList.push(functionName);
 				if (parent) {
 					fNode.parent = parent;
-					fNode.constants = parent.constants;
 				}
 				fNode.getFunctionString(); //ensure JS trace is done
 				for (let i = 0; i < fNode.calledFunctions.length; ++i) {
 					this.traceFunctionCalls(fNode.calledFunctions[i], retList, fNode);
 				}
+			} else {
+				/**
+				 * https://github.com/gpujs/gpu.js/issues/207
+				 * if dependent function is already in the list, because a function depends on it, and because it has
+				 * already been traced, we know that we must move the dependent function to the end of the the retList.
+				 * */
+				const dependantFunctionName = retList.splice(functionIndex, 1)[0];
+				retList.push(dependantFunctionName);
 			}
 		}
 
 		if (this.nativeFunctions[functionName]) {
-      if (retList.indexOf(functionName) >= 0) {
-        // Does nothing if already traced
-      } else {
-        retList.push(functionName);
-      }
-    }
+			if (retList.indexOf(functionName) >= 0) {
+				// Does nothing if already traced
+			} else {
+				retList.push(functionName);
+			}
+		}
 
 		return retList;
 	}
 
-  polyfillStandardFunctions() {
-	  throw new Error('polyfillStandardFunctions not defined on base function builder');
-  }
+	/**
+	 * @memberOf FunctionBuilderBase#
+	 * @function
+	 * @name addKernel
+	 *
+	 * @desc Add a new kernel to this instance
+	 *
+	 * @param {String} fnString - Kernel function as a String
+	 * @param {Object} options - Settings object to set constants, debug mode, etc.
+	 * @param {Array} paramNames - Parameters of the kernel
+	 * @param {Array} paramTypes - Types of the parameters
+	 *
+	 *
+	 * @returns {Object} The inserted kernel as a Kernel Node
+	 *
+	 */
+	addKernel(fnString, options, paramNames, paramTypes) {
+		const kernelNode = new this.Node('kernel', fnString, options, paramTypes);
+		kernelNode.setAddFunction(this.addFunction.bind(this));
+		kernelNode.paramNames = paramNames;
+		kernelNode.paramTypes = paramTypes;
+		kernelNode.isRootKernel = true;
+		this.addFunctionNode(kernelNode);
+		return kernelNode;
+	}
+
+	/**
+	 * @memberOf FunctionBuilderBase#
+	 * @function
+	 * @name addSubKernel
+	 *
+	 * @desc Add a new sub-kernel to the current kernel instance
+	 *
+	 * @param {Function} jsFunction - Sub-kernel function (JavaScript)
+	 * @param {Object} options - Settings object to set constants, debug mode, etc.
+	 * @param {Array} paramNames - Parameters of the sub-kernel
+	 * @param {Array} returnType - Return type of the subKernel
+	 *
+	 * @returns {Object} The inserted sub-kernel as a Kernel Node
+	 *
+	 */
+	addSubKernel(jsFunction, options, paramTypes, returnType) {
+		const kernelNode = new this.Node(null, jsFunction, options, paramTypes, returnType);
+		kernelNode.setAddFunction(this.addFunction.bind(this));
+		kernelNode.isSubKernel = true;
+		this.addFunctionNode(kernelNode);
+		return kernelNode;
+	}
+
+	/**
+	 * @memberOf CPUFunctionBuilder#
+	 * @name getPrototypeString
+	 * @function
+	 *
+	 * @desc Return the string for a function
+	 *
+	 * @param {String} functionName - Function name to trace from. If null, it returns the WHOLE builder stack
+	 *
+	 * @returns {String} The full string, of all the various functions. Trace optimized if functionName given
+	 *
+	 */
+	getPrototypeString(functionName) {
+		return this.getPrototypes(functionName).join('\n');
+	}
+
+	/**
+	 * @memberOf CPUFunctionBuilder#
+	 * @name getPrototypeString
+	 * @function
+	 *
+	 * @desc Return the string for a function
+	 *
+	 * @param {String} [functionName] - Function name to trace from. If null, it returns the WHOLE builder stack
+	 *
+	 * @returns {Array} The full string, of all the various functions. Trace optimized if functionName given
+	 *
+	 */
+	getPrototypes(functionName) {
+		this.rootKernel.generate();
+		if (functionName) {
+			return this.getPrototypesFromFunctionNames(this.traceFunctionCalls(functionName, []).reverse());
+		}
+		return this.getPrototypesFromFunctionNames(Object.keys(this.nodeMap));
+	}
+
+
+	/**
+	 * @memberOf FunctionBuilderBase#
+	 * @function
+	 * @name getStringFromFunctionNames
+	 *
+	 * @desc Get string from function names
+	 *
+	 * @param {String[]} functionList - List of function to build string
+	 *
+	 * @returns {String} The string, of all the various functions. Trace optimized if functionName given
+	 *
+	 */
+	getStringFromFunctionNames(functionList) {
+		const ret = [];
+		for (let i = 0; i < functionList.length; ++i) {
+			const node = this.nodeMap[functionList[i]];
+			if (node) {
+				ret.push(this.nodeMap[functionList[i]].getFunctionString());
+			}
+		}
+		return ret.join('\n');
+	}
+
+	/**
+	 * @memberOf FunctionBuilderBase#
+	 * @function
+	 * @name getPrototypeStringFromFunctionNames
+	 *
+	 * @desc Return string of all functions converted
+	 *
+	 * @param {String[]} functionList - List of function names to build the string.
+	 * @param {Object} [opt - Settings object passed to functionNode. See functionNode for more details.
+	 *
+	 * @returns {Array} Prototypes of all functions converted
+	 *
+	 */
+	getPrototypesFromFunctionNames(functionList, opt) {
+		const ret = [];
+		for (let i = 0; i < functionList.length; ++i) {
+			const functionName = functionList[i];
+			const node = this.nodeMap[functionName];
+			if (node) {
+				ret.push(node.getFunctionPrototypeString(opt));
+			} else if (this.nativeFunctions[functionName]) {
+				ret.push(this.nativeFunctions[functionName]);
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * @memberOf FunctionBuilderBase#
+	 * @function
+	 * @name getPrototypeStringFromFunctionNames
+	 *
+	 * @desc Return string of all functions converted
+	 *
+	 * @param {String[]} functionList - List of function names to build the string.
+	 * @param {Object} opt - Settings object passed to functionNode. See functionNode for more details.
+	 *
+	 * @returns {String} Prototype string of all functions converted
+	 *
+	 */
+	getPrototypeStringFromFunctionNames(functionList, opt) {
+		return this.getPrototypesFromFunctionNames(functionList, opt).toString();
+	}
+
+	/**
+	 * @memberOf FunctionBuilderBase#
+	 * @function
+	 * @name getString
+	 *
+	 * Get string for a particular function name
+	 *
+	 * @param {String} functionName - Function name to trace from. If null, it returns the WHOLE builder stack
+	 *
+	 * @returns {String} The string, of all the various functions. Trace optimized if functionName given
+	 *
+	 */
+	getString(functionName, opt) {
+		if (opt === undefined) {
+			opt = {};
+		}
+
+		if (functionName) {
+			return this.getStringFromFunctionNames(this.traceFunctionCalls(functionName, [], opt).reverse(), opt);
+		}
+		return this.getStringFromFunctionNames(Object.keys(this.nodeMap), opt);
+	}
+
+	polyfillStandardFunctions() {
+		throw new Error('polyfillStandardFunctions not defined on base function builder');
+	}
 };

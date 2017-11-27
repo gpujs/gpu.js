@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.0.0-rc.1
- * @date Tue Aug 29 2017 16:20:11 GMT-0400 (EDT)
+ * @version 1.0.0-rc.7
+ * @date Sat Nov 11 2017 08:38:09 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -27,51 +27,23 @@ var FunctionBuilderBase = require('../function-builder-base');
 var CPUFunctionNode = require('./function-node');
 
 module.exports = function (_FunctionBuilderBase) {
-	_inherits(CPUFunctionBuilder, _FunctionBuilderBase);
+  _inherits(CPUFunctionBuilder, _FunctionBuilderBase);
 
-	function CPUFunctionBuilder() {
-		_classCallCheck(this, CPUFunctionBuilder);
+  function CPUFunctionBuilder() {
+    _classCallCheck(this, CPUFunctionBuilder);
 
-		return _possibleConstructorReturn(this, (CPUFunctionBuilder.__proto__ || Object.getPrototypeOf(CPUFunctionBuilder)).apply(this, arguments));
-	}
+    var _this = _possibleConstructorReturn(this, (CPUFunctionBuilder.__proto__ || Object.getPrototypeOf(CPUFunctionBuilder)).call(this));
 
-	_createClass(CPUFunctionBuilder, [{
-		key: 'addFunction',
-		value: function addFunction(functionName, jsFunction, paramTypes, returnType) {
-			this.addFunctionNode(new CPUFunctionNode(functionName, jsFunction, paramTypes, returnType).setAddFunction(this.addFunction.bind(this)));
-		}
+    _this.Node = CPUFunctionNode;
+    return _this;
+  }
 
+  _createClass(CPUFunctionBuilder, [{
+    key: 'polyfillStandardFunctions',
+    value: function polyfillStandardFunctions() {}
+  }]);
 
-	}, {
-		key: 'getPrototypeString',
-		value: function getPrototypeString() {
-			var ret = '';
-			for (var p in this.nodeMap) {
-				if (!this.nodeMap.hasOwnProperty(p)) continue;
-				var node = this.nodeMap[p];
-				if (node.isSubKernel) {
-					ret += 'var ' + node.functionName + ' = ' + node.jsFunctionString.replace('return', 'return ' + node.functionName + 'Result[this.thread.z][this.thread.y][this.thread.x] =') + '.bind(this);\n';
-				} else {
-					ret += 'var ' + node.functionName + ' = ' + node.jsFunctionString + '.bind(this);\n';
-				}
-			}
-			return ret;
-		}
-
-
-	}, {
-		key: 'addSubKernel',
-		value: function addSubKernel(jsFunction, paramTypes, returnType) {
-			var node = new CPUFunctionNode(null, jsFunction, paramTypes, returnType).setAddFunction(this.addFunction.bind(this));
-			node.isSubKernel = true;
-			this.addFunctionNode(node);
-		}
-	}, {
-		key: 'polyfillStandardFunctions',
-		value: function polyfillStandardFunctions() {}
-	}]);
-
-	return CPUFunctionBuilder;
+  return CPUFunctionBuilder;
 }(FunctionBuilderBase);
 },{"../function-builder-base":6,"./function-node":2}],2:[function(require,module,exports){
 'use strict';
@@ -85,33 +57,686 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var BaseFunctionNode = require('../function-node-base');
+var utils = require('../../core/utils');
 
 module.exports = function (_BaseFunctionNode) {
-  _inherits(CPUFunctionNode, _BaseFunctionNode);
+	_inherits(CPUFunctionNode, _BaseFunctionNode);
 
-  function CPUFunctionNode() {
-    _classCallCheck(this, CPUFunctionNode);
+	function CPUFunctionNode() {
+		_classCallCheck(this, CPUFunctionNode);
 
-    return _possibleConstructorReturn(this, (CPUFunctionNode.__proto__ || Object.getPrototypeOf(CPUFunctionNode)).apply(this, arguments));
-  }
+		return _possibleConstructorReturn(this, (CPUFunctionNode.__proto__ || Object.getPrototypeOf(CPUFunctionNode)).apply(this, arguments));
+	}
 
-  _createClass(CPUFunctionNode, [{
-    key: 'generate',
-    value: function generate(options) {
-      this.functionString = this.jsFunctionString;
-    }
+	_createClass(CPUFunctionNode, [{
+		key: 'generate',
+		value: function generate() {
+			if (this.debug) {
+				console.log(this);
+			}
+			this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
+			this.functionString = this.functionStringArray.join('').trim();
+			return this.functionString;
+		}
 
 
-  }, {
-    key: 'getFunctionPrototypeString',
-    value: function getFunctionPrototypeString(options) {
-      return this.functionString;
-    }
-  }]);
+	}, {
+		key: 'getFunctionPrototypeString',
+		value: function getFunctionPrototypeString() {
+			if (this.webGlFunctionPrototypeString) {
+				return this.webGlFunctionPrototypeString;
+			}
+			return this.webGlFunctionPrototypeString = this.generate();
+		}
 
-  return CPUFunctionNode;
+
+	}, {
+		key: 'astGeneric',
+		value: function astGeneric(ast, retArr, funcParam) {
+			if (ast === null) {
+				throw this.astErrorOutput('NULL ast', ast, funcParam);
+			} else {
+				if (Array.isArray(ast)) {
+					for (var i = 0; i < ast.length; i++) {
+						this.astGeneric(ast[i], retArr, funcParam);
+					}
+					return retArr;
+				}
+
+				switch (ast.type) {
+					case 'FunctionDeclaration':
+						return this.astFunctionDeclaration(ast, retArr, funcParam);
+					case 'FunctionExpression':
+						return this.astFunctionExpression(ast, retArr, funcParam);
+					case 'ReturnStatement':
+						return this.astReturnStatement(ast, retArr, funcParam);
+					case 'Literal':
+						return this.astLiteral(ast, retArr, funcParam);
+					case 'BinaryExpression':
+						return this.astBinaryExpression(ast, retArr, funcParam);
+					case 'Identifier':
+						return this.astIdentifierExpression(ast, retArr, funcParam);
+					case 'AssignmentExpression':
+						return this.astAssignmentExpression(ast, retArr, funcParam);
+					case 'ExpressionStatement':
+						return this.astExpressionStatement(ast, retArr, funcParam);
+					case 'EmptyStatement':
+						return this.astEmptyStatement(ast, retArr, funcParam);
+					case 'BlockStatement':
+						return this.astBlockStatement(ast, retArr, funcParam);
+					case 'IfStatement':
+						return this.astIfStatement(ast, retArr, funcParam);
+					case 'BreakStatement':
+						return this.astBreakStatement(ast, retArr, funcParam);
+					case 'ContinueStatement':
+						return this.astContinueStatement(ast, retArr, funcParam);
+					case 'ForStatement':
+						return this.astForStatement(ast, retArr, funcParam);
+					case 'WhileStatement':
+						return this.astWhileStatement(ast, retArr, funcParam);
+					case 'VariableDeclaration':
+						return this.astVariableDeclaration(ast, retArr, funcParam);
+					case 'VariableDeclarator':
+						return this.astVariableDeclarator(ast, retArr, funcParam);
+					case 'ThisExpression':
+						return this.astThisExpression(ast, retArr, funcParam);
+					case 'SequenceExpression':
+						return this.astSequenceExpression(ast, retArr, funcParam);
+					case 'UnaryExpression':
+						return this.astUnaryExpression(ast, retArr, funcParam);
+					case 'UpdateExpression':
+						return this.astUpdateExpression(ast, retArr, funcParam);
+					case 'LogicalExpression':
+						return this.astLogicalExpression(ast, retArr, funcParam);
+					case 'MemberExpression':
+						return this.astMemberExpression(ast, retArr, funcParam);
+					case 'CallExpression':
+						return this.astCallExpression(ast, retArr, funcParam);
+					case 'ArrayExpression':
+						return this.astArrayExpression(ast, retArr, funcParam);
+					case 'DebuggerStatement':
+						return this.astDebuggerStatement(ast, retArr, funcParam);
+				}
+
+				throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);
+			}
+		}
+
+
+	}, {
+		key: 'astFunctionDeclaration',
+		value: function astFunctionDeclaration(ast, retArr, funcParam) {
+			if (this.addFunction) {
+				this.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
+			}
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astFunctionExpression',
+
+
+		value: function astFunctionExpression(ast, retArr, funcParam) {
+
+			if (!funcParam.isRootKernel) {
+				retArr.push('function');
+				funcParam.kernalAst = ast;
+				retArr.push(' ');
+				retArr.push(funcParam.functionName);
+				retArr.push('(');
+
+				for (var i = 0; i < funcParam.paramNames.length; ++i) {
+					var paramName = funcParam.paramNames[i];
+
+					if (i > 0) {
+						retArr.push(', ');
+					}
+
+					retArr.push(' ');
+					retArr.push('user_');
+					retArr.push(paramName);
+				}
+
+				retArr.push(') {\n');
+			}
+
+			for (var _i = 0; _i < ast.body.body.length; ++_i) {
+				this.astGeneric(ast.body.body[_i], retArr, funcParam);
+				retArr.push('\n');
+			}
+
+			if (!funcParam.isRootKernel) {
+				retArr.push('}\n');
+			}
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astReturnStatement',
+		value: function astReturnStatement(ast, retArr, funcParam) {
+			if (funcParam.isRootKernel) {
+				retArr.push('kernelResult = ');
+				this.astGeneric(ast.argument, retArr, funcParam);
+				retArr.push(';');
+			} else if (funcParam.isSubKernel) {
+				retArr.push(funcParam.functionName + 'Result = ');
+				this.astGeneric(ast.argument, retArr, funcParam);
+				retArr.push(';');
+				retArr.push('return ' + funcParam.functionName + 'Result;');
+			} else {
+				retArr.push('return ');
+				this.astGeneric(ast.argument, retArr, funcParam);
+				retArr.push(';');
+			}
+
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astLiteral',
+		value: function astLiteral(ast, retArr, funcParam) {
+
+			if (isNaN(ast.value)) {
+				throw this.astErrorOutput('Non-numeric literal not supported : ' + ast.value, ast, funcParam);
+			}
+
+			retArr.push(ast.value);
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astBinaryExpression',
+		value: function astBinaryExpression(ast, retArr, funcParam) {
+			retArr.push('(');
+			this.astGeneric(ast.left, retArr, funcParam);
+			retArr.push(ast.operator);
+			this.astGeneric(ast.right, retArr, funcParam);
+			retArr.push(')');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astIdentifierExpression',
+		value: function astIdentifierExpression(idtNode, retArr, funcParam) {
+			if (idtNode.type !== 'Identifier') {
+				throw this.astErrorOutput('IdentifierExpression - not an Identifier', ast, funcParam);
+			}
+
+			switch (idtNode.name) {
+				case 'gpu_threadX':
+					retArr.push('threadId.x');
+					break;
+				case 'gpu_threadY':
+					retArr.push('threadId.y');
+					break;
+				case 'gpu_threadZ':
+					retArr.push('threadId.z');
+					break;
+				case 'gpu_outputX':
+					retArr.push('uOutputDim.x');
+					break;
+				case 'gpu_outputY':
+					retArr.push('uOutputDim.y');
+					break;
+				case 'gpu_outputZ':
+					retArr.push('uOutputDim.z');
+					break;
+				default:
+					if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
+						retArr.push('constants_' + idtNode.name);
+					} else {
+						var userParamName = funcParam.getUserParamName(idtNode.name);
+						if (userParamName !== null) {
+							retArr.push('user_' + userParamName);
+						} else {
+							retArr.push('user_' + idtNode.name);
+						}
+					}
+			}
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astForStatement',
+		value: function astForStatement(forNode, retArr, funcParam) {
+			if (forNode.type !== 'ForStatement') {
+				throw this.astErrorOutput('Invalid for statment', ast, funcParam);
+			}
+
+			if (forNode.test && forNode.test.type === 'BinaryExpression') {
+				if ((forNode.test.right.type === 'Identifier' || forNode.test.right.type === 'Literal') && forNode.test.operator === '<' && this.isIdentifierConstant(forNode.test.right.name) === false) {
+
+					if (!this.loopMaxIterations) {
+						console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
+						console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
+					}
+
+					retArr.push('for (');
+					this.astGeneric(forNode.init, retArr, funcParam);
+					if (retArr[retArr.length - 1] !== ';') {
+						retArr.push(';');
+					}
+					this.astGeneric(forNode.test.left, retArr, funcParam);
+					retArr.push(forNode.test.operator);
+					retArr.push('LOOP_MAX');
+					retArr.push(';');
+					this.astGeneric(forNode.update, retArr, funcParam);
+					retArr.push(')');
+
+					retArr.push('{\n');
+					retArr.push('if (');
+					this.astGeneric(forNode.test.left, retArr, funcParam);
+					retArr.push(forNode.test.operator);
+					this.astGeneric(forNode.test.right, retArr, funcParam);
+					retArr.push(') {\n');
+					if (forNode.body.type === 'BlockStatement') {
+						for (var i = 0; i < forNode.body.body.length; i++) {
+							this.astGeneric(forNode.body.body[i], retArr, funcParam);
+						}
+					} else {
+						this.astGeneric(forNode.body, retArr, funcParam);
+					}
+					retArr.push('} else {\n');
+					retArr.push('break;\n');
+					retArr.push('}\n');
+					retArr.push('}\n');
+
+					return retArr;
+				} else if (forNode.init.declarations) {
+					var declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
+					var updateArgument = forNode.update.argument;
+					if (!Array.isArray(declarations) || declarations.length < 1) {
+						console.log(this.jsFunctionString);
+						throw new Error('Error: Incompatible for loop declaration');
+					}
+
+					if (declarations.length > 1) {
+						var initArgument = null;
+						for (var _i2 = 0; _i2 < declarations.length; _i2++) {
+							var declaration = declarations[_i2];
+							if (declaration.id.name === updateArgument.name) {
+								initArgument = declaration;
+								declarations.splice(_i2, 1);
+							} else {
+								retArr.push('var ');
+								this.astGeneric(declaration, retArr, funcParam);
+								retArr.push(';');
+							}
+						}
+
+						retArr.push('for (let ');
+						this.astGeneric(initArgument, retArr, funcParam);
+						retArr.push(';');
+					} else {
+						retArr.push('for (');
+						this.astGeneric(forNode.init, retArr, funcParam);
+					}
+
+					this.astGeneric(forNode.test, retArr, funcParam);
+					retArr.push(';');
+					this.astGeneric(forNode.update, retArr, funcParam);
+					retArr.push(')');
+					this.astGeneric(forNode.body, retArr, funcParam);
+					return retArr;
+				}
+			}
+
+			throw this.astErrorOutput('Invalid for statement', forNode, funcParam);
+		}
+
+
+	}, {
+		key: 'astWhileStatement',
+		value: function astWhileStatement(whileNode, retArr, funcParam) {
+			if (whileNode.type !== 'WhileStatement') {
+				throw this.astErrorOutput('Invalid while statment', ast, funcParam);
+			}
+
+			retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
+			retArr.push('if (');
+			this.astGeneric(whileNode.test, retArr, funcParam);
+			retArr.push(') {\n');
+			this.astGeneric(whileNode.body, retArr, funcParam);
+			retArr.push('} else {\n');
+			retArr.push('break;\n');
+			retArr.push('}\n');
+			retArr.push('}\n');
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astAssignmentExpression',
+		value: function astAssignmentExpression(assNode, retArr, funcParam) {
+			this.astGeneric(assNode.left, retArr, funcParam);
+			retArr.push(assNode.operator);
+			this.astGeneric(assNode.right, retArr, funcParam);
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astEmptyStatement',
+		value: function astEmptyStatement(eNode, retArr, funcParam) {
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astBlockStatement',
+		value: function astBlockStatement(bNode, retArr, funcParam) {
+			retArr.push('{\n');
+			for (var i = 0; i < bNode.body.length; i++) {
+				this.astGeneric(bNode.body[i], retArr, funcParam);
+			}
+			retArr.push('}\n');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astExpressionStatement',
+		value: function astExpressionStatement(esNode, retArr, funcParam) {
+			this.astGeneric(esNode.expression, retArr, funcParam);
+			retArr.push(';\n');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astVariableDeclaration',
+		value: function astVariableDeclaration(vardecNode, retArr, funcParam) {
+			retArr.push('var ');
+			for (var i = 0; i < vardecNode.declarations.length; i++) {
+				if (i > 0) {
+					retArr.push(',');
+				}
+				this.astGeneric(vardecNode.declarations[i], retArr, funcParam);
+			}
+			retArr.push(';');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astVariableDeclarator',
+		value: function astVariableDeclarator(ivardecNode, retArr, funcParam) {
+			this.astGeneric(ivardecNode.id, retArr, funcParam);
+			if (ivardecNode.init !== null) {
+				retArr.push('=');
+				this.astGeneric(ivardecNode.init, retArr, funcParam);
+			}
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astIfStatement',
+		value: function astIfStatement(ifNode, retArr, funcParam) {
+			retArr.push('if (');
+			this.astGeneric(ifNode.test, retArr, funcParam);
+			retArr.push(')');
+			if (ifNode.consequent.type === 'BlockStatement') {
+				this.astGeneric(ifNode.consequent, retArr, funcParam);
+			} else {
+				retArr.push(' {\n');
+				this.astGeneric(ifNode.consequent, retArr, funcParam);
+				retArr.push('\n}\n');
+			}
+
+			if (ifNode.alternate) {
+				retArr.push('else ');
+				if (ifNode.alternate.type === 'BlockStatement') {
+					this.astGeneric(ifNode.alternate, retArr, funcParam);
+				} else {
+					retArr.push(' {\n');
+					this.astGeneric(ifNode.alternate, retArr, funcParam);
+					retArr.push('\n}\n');
+				}
+			}
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astBreakStatement',
+		value: function astBreakStatement(brNode, retArr, funcParam) {
+			retArr.push('break;\n');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astContinueStatement',
+		value: function astContinueStatement(crNode, retArr, funcParam) {
+			retArr.push('continue;\n');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astLogicalExpression',
+		value: function astLogicalExpression(logNode, retArr, funcParam) {
+			retArr.push('(');
+			this.astGeneric(logNode.left, retArr, funcParam);
+			retArr.push(logNode.operator);
+			this.astGeneric(logNode.right, retArr, funcParam);
+			retArr.push(')');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astUpdateExpression',
+		value: function astUpdateExpression(uNode, retArr, funcParam) {
+			if (uNode.prefix) {
+				retArr.push(uNode.operator);
+				this.astGeneric(uNode.argument, retArr, funcParam);
+			} else {
+				this.astGeneric(uNode.argument, retArr, funcParam);
+				retArr.push(uNode.operator);
+			}
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astUnaryExpression',
+		value: function astUnaryExpression(uNode, retArr, funcParam) {
+			if (uNode.prefix) {
+				retArr.push(uNode.operator);
+				this.astGeneric(uNode.argument, retArr, funcParam);
+			} else {
+				this.astGeneric(uNode.argument, retArr, funcParam);
+				retArr.push(uNode.operator);
+			}
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astThisExpression',
+		value: function astThisExpression(tNode, retArr, funcParam) {
+			retArr.push('_this');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astMemberExpression',
+		value: function astMemberExpression(mNode, retArr, funcParam) {
+			if (mNode.computed) {
+				if (mNode.object.type === 'Identifier') {
+					this.astGeneric(mNode.object, retArr, funcParam);
+					retArr.push('[');
+					this.astGeneric(mNode.property, retArr, funcParam);
+					retArr.push(']');
+				} else {
+					this.astGeneric(mNode.object, retArr, funcParam);
+					var last = retArr.pop();
+					retArr.push('][');
+					this.astGeneric(mNode.property, retArr, funcParam);
+					retArr.push(last);
+				}
+			} else {
+				var unrolled = this.astMemberExpressionUnroll(mNode);
+				if (mNode.property.type === 'Identifier' && mNode.computed) {
+					unrolled = 'user_' + unrolled;
+				}
+
+				if (unrolled.indexOf('this') === 0) {
+					unrolled = '_' + unrolled;
+				}
+
+				switch (unrolled) {
+					case '_this.output.x':
+						retArr.push(this.output[0]);
+						break;
+					case '_this.output.y':
+						retArr.push(this.output[1]);
+						break;
+					case '_this.output.z':
+						retArr.push(this.output[2]);
+						break;
+					default:
+						retArr.push(unrolled);
+				}
+			}
+			return retArr;
+		}
+	}, {
+		key: 'astSequenceExpression',
+		value: function astSequenceExpression(sNode, retArr, funcParam) {
+			for (var i = 0; i < sNode.expressions.length; i++) {
+				if (i > 0) {
+					retArr.push(',');
+				}
+				this.astGeneric(sNode.expressions, retArr, funcParam);
+			}
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astCallExpression',
+		value: function astCallExpression(ast, retArr, funcParam) {
+			if (ast.callee) {
+				var funcName = this.astMemberExpressionUnroll(ast.callee);
+
+				if (funcParam.calledFunctions.indexOf(funcName) < 0) {
+					funcParam.calledFunctions.push(funcName);
+				}
+				if (!funcParam.hasOwnProperty('funcName')) {
+					funcParam.calledFunctionsArguments[funcName] = [];
+				}
+
+				var functionArguments = [];
+				funcParam.calledFunctionsArguments[funcName].push(functionArguments);
+
+				retArr.push(funcName);
+
+				retArr.push('(');
+
+				for (var i = 0; i < ast.arguments.length; ++i) {
+					var argument = ast.arguments[i];
+					if (i > 0) {
+						retArr.push(', ');
+					}
+					this.astGeneric(argument, retArr, funcParam);
+					if (argument.type === 'Identifier') {
+						var paramIndex = funcParam.paramNames.indexOf(argument.name);
+						if (paramIndex === -1) {
+							functionArguments.push(null);
+						} else {
+							functionArguments.push({
+								name: argument.name,
+								type: funcParam.paramTypes[paramIndex]
+							});
+						}
+					} else {
+						functionArguments.push(null);
+					}
+				}
+
+				retArr.push(')');
+
+				return retArr;
+			}
+
+			throw this.astErrorOutput('Unknown CallExpression', ast, funcParam);
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astArrayExpression',
+		value: function astArrayExpression(arrNode, retArr, funcParam) {
+			var arrLen = arrNode.elements.length;
+
+			retArr.push('new Float32Array(');
+			for (var i = 0; i < arrLen; ++i) {
+				if (i > 0) {
+					retArr.push(', ');
+				}
+				var subNode = arrNode.elements[i];
+				this.astGeneric(subNode, retArr, funcParam);
+			}
+			retArr.push(')');
+
+			return retArr;
+
+		}
+	}, {
+		key: 'astDebuggerStatement',
+		value: function astDebuggerStatement(arrNode, retArr, funcParam) {
+			retArr.push('debugger;');
+			return retArr;
+		}
+	}], [{
+		key: 'astFunctionPrototype',
+		value: function astFunctionPrototype(ast, retArr, funcParam) {
+			if (funcParam.isRootKernel || funcParam.isSubKernel) {
+				return retArr;
+			}
+
+			retArr.push(funcParam.returnType);
+			retArr.push(' ');
+			retArr.push(funcParam.functionName);
+			retArr.push('(');
+
+			for (var i = 0; i < funcParam.paramNames.length; ++i) {
+				if (i > 0) {
+					retArr.push(', ');
+				}
+
+				retArr.push(funcParam.paramTypes[i]);
+				retArr.push(' ');
+				retArr.push('user_');
+				retArr.push(funcParam.paramNames[i]);
+			}
+
+			retArr.push(');\n');
+
+			return retArr;
+		}
+	}]);
+
+	return CPUFunctionNode;
 }(BaseFunctionNode);
-},{"../function-node-base":7}],3:[function(require,module,exports){
+},{"../../core/utils":25,"../function-node-base":7}],3:[function(require,module,exports){
 'use strict';
 
 var utils = require('../../core/utils');
@@ -120,7 +745,7 @@ var kernelRunShortcut = require('../kernel-run-shortcut');
 module.exports = function (cpuKernel, name) {
   return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: function ' + utils.allPropertiesOf.toString() + ',\n      clone: function ' + utils.clone.toString() + ',\n      /*splitArray: function ' + utils.splitArray.toString() + ',\n      getArgumentType: function ' + utils.getArgumentType.toString() + ',\n      getOutput: function ' + utils.getOutput.toString() + ',\n      dimToTexSize: function ' + utils.dimToTexSize.toString() + ',\n      copyFlatten: function ' + utils.copyFlatten.toString() + ',\n      flatten: function ' + utils.flatten.toString() + ',\n      systemEndianness: \'' + utils.systemEndianness() + '\',\n      initWebGl: function ' + utils.initWebGl.toString() + ',\n      isArray: function ' + utils.isArray.toString() + '*/\n    };\n    class ' + (name || 'Kernel') + ' {\n      constructor() {        \n        this.argumentsLength = 0;\n        this._canvas = null;\n        this._webGl = null;\n        this.built = false;\n        this.program = null;\n        this.paramNames = ' + JSON.stringify(cpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(cpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(cpuKernel.texSize) + ';\n        this.output = ' + JSON.stringify(cpuKernel.output) + ';\n        this._kernelString = `' + cpuKernel._kernelString + '`;\n        this.output = ' + JSON.stringify(cpuKernel.output) + ';\n\t\t    this.run = function() {\n          this.run = null;\n          this.build();\n          return this.run.apply(this, arguments);\n        }.bind(this);\n        this.thread = {\n          x: 0,\n          y: 0,\n          z: 0\n        };\n      }\n      setCanvas(canvas) { this._canvas = canvas; return this; }\n      setWebGl(webGl) { this._webGl = webGl; return this; }\n      ' + cpuKernel.build.toString() + '\n      run () { ' + cpuKernel.kernelString + ' }\n      getKernelString() { return this._kernelString; }\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
 };
-},{"../../core/utils":24,"../kernel-run-shortcut":9}],4:[function(require,module,exports){
+},{"../../core/utils":25,"../kernel-run-shortcut":9}],4:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -144,7 +769,6 @@ module.exports = function (_KernelBase) {
 		var _this = _possibleConstructorReturn(this, (CPUKernel.__proto__ || Object.getPrototypeOf(CPUKernel)).call(this, fnString, settings));
 
 		_this._fnBody = utils.getFunctionBodyFromString(fnString);
-		_this.functionBuilder = settings.functionBuilder;
 		_this._fn = null;
 		_this.run = null;
 		_this._canvasCtx = null;
@@ -159,7 +783,7 @@ module.exports = function (_KernelBase) {
 
 		_this.run = function () {
 			this.run = null;
-			this.build();
+			this.build.apply(this, arguments);
 			return this.run.apply(this, arguments);
 		}.bind(_this);
 		return _this;
@@ -190,19 +814,7 @@ module.exports = function (_KernelBase) {
 	}, {
 		key: 'build',
 		value: function build() {
-
-			var kernelArgs = [];
-			for (var i = 0; i < arguments.length; i++) {
-				var argType = utils.getArgumentType(arguments[i]);
-				if (argType === 'Array' || argType === 'Number') {
-					kernelArgs[i] = arguments[i];
-				} else if (argType === 'Texture') {
-					kernelArgs[i] = arguments[i].toArray();
-				} else {
-					throw 'Input type not supported (CPU): ' + arguments[i];
-				}
-			}
-
+			this.setupParams(arguments);
 			var threadDim = this.threadDim = utils.clone(this.output);
 
 			while (threadDim.length < 3) {
@@ -271,14 +883,31 @@ module.exports = function (_KernelBase) {
 				threadDim.push(1);
 			}
 
-			builder.addFunctions(this.functions);
+			builder.addKernel(this.fnString, {
+				prototypeOnly: false,
+				constants: this.constants,
+				output: this.output,
+				debug: this.debug,
+				loopMaxIterations: this.loopMaxIterations
+			}, this.paramNames, this.paramTypes);
+
+			builder.addFunctions(this.functions, {
+				constants: this.constants,
+				output: this.output
+			});
 
 			if (this.subKernels !== null) {
 				this.subKernelOutputTextures = [];
 				this.subKernelOutputVariableNames = [];
 				for (var i = 0; i < this.subKernels.length; i++) {
 					var subKernel = this.subKernels[i];
-					builder.addSubKernel(subKernel);
+					builder.addSubKernel(subKernel, {
+						prototypeOnly: false,
+						constants: this.constants,
+						output: this.output,
+						debug: this.debug,
+						loopMaxIterations: this.loopMaxIterations
+					});
 					this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
 				}
 			} else if (this.subKernelProperties !== null) {
@@ -293,23 +922,30 @@ module.exports = function (_KernelBase) {
 				}
 			}
 
-			return this._kernelString = '\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			var prototypes = builder.getPrototypes();
+			var kernel = prototypes.shift();
+			var kernelString = this._kernelString = '\n\t\tvar LOOP_MAX = ' + this._getLoopMaxString() + ';\n\t\tvar _this = this;\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '  var ' + name + ' = null;\n';
-			}).join('')) + '\n      ' + builder.getPrototypeString() + '\n      var fn = function fn(' + this.paramNames.join(', ') + ') { ' + this._fnBody + ' }.bind(this);\n    return function (' + this.paramNames.join(', ') + ') {\n    var ret = new Array(' + threadDim[2] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '  ' + name + ' = new Array(' + threadDim[2] + ');\n';
+			}).join('')) + '\n    return function (' + this.paramNames.map(function (paramName) {
+				return 'user_' + paramName;
+			}).join(', ') + ') {\n    var ret = new Array(' + threadDim[2] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+				return '  ' + name + 'Z = new Array(' + threadDim[2] + ');\n';
 			}).join('')) + '\n    for (this.thread.z = 0; this.thread.z < ' + threadDim[2] + '; this.thread.z++) {\n      ret[this.thread.z] = new Array(' + threadDim[1] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '    ' + name + '[this.thread.z] = new Array(' + threadDim[1] + ');\n';
+				return '    ' + name + 'Z[this.thread.z] = new Array(' + threadDim[1] + ');\n';
 			}).join('')) + '\n      for (this.thread.y = 0; this.thread.y < ' + threadDim[1] + '; this.thread.y++) {\n        ret[this.thread.z][this.thread.y] = new Array(' + threadDim[0] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '      ' + name + '[this.thread.z][this.thread.y] = new Array(' + threadDim[0] + ');\n';
-			}).join('')) + '\n        for (this.thread.x = 0; this.thread.x < ' + threadDim[0] + '; this.thread.x++) {\n          ret[this.thread.z][this.thread.y][this.thread.x] = fn(' + this.paramNames.join(', ') + ');\n        }\n      }\n    }\n    \n    if (this.graphical) {\n      this._imageData.data.set(this._colorData);\n      this._canvasCtx.putImageData(this._imageData, 0, 0);\n      return;\n    }\n    \n    if (this.output.length === 1) {\n      ret = ret[0][0];\n      ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '    ' + name + ' = ' + name + '[0][0];\n';
+				return '      ' + name + 'Z[this.thread.z][this.thread.y] = new Array(' + threadDim[0] + ');\n';
+			}).join('')) + '\n        for (this.thread.x = 0; this.thread.x < ' + threadDim[0] + '; this.thread.x++) {\n          var kernelResult;\n          ' + kernel + '\n          ret[this.thread.z][this.thread.y][this.thread.x] = kernelResult;\n' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+				return '        ' + name + 'Z[this.thread.z][this.thread.y][this.thread.x] = ' + name + ';\n';
+			}).join('')) + '\n          }\n        }\n      }\n      \n      if (this.graphical) {\n        this._imageData.data.set(this._colorData);\n        this._canvasCtx.putImageData(this._imageData, 0, 0);\n        return;\n      }\n      \n      if (this.output.length === 1) {\n        ret = ret[0][0];\n' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+				return '    ' + name + ' = ' + name + 'Z[0][0];\n';
 			}).join('')) + '\n      \n    } else if (this.output.length === 2) {\n      ret = ret[0];\n      ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '    ' + name + ' = ' + name + '[0];\n';
+				return '    ' + name + ' = ' + name + 'Z[0];\n';
 			}).join('')) + '\n    }\n    \n    ' + (this.subKernelOutputVariableNames === null ? 'return ret;\n' : this.subKernels !== null ? 'var result = [\n        ' + this.subKernelOutputVariableNames.map(function (name) {
 				return '' + name;
 			}).join(',\n') + '\n      ];\n      result.result = ret;\n      return result;\n' : 'return {\n        result: ret,\n        ' + Object.keys(this.subKernelProperties).map(function (name, i) {
 				return name + ': ' + _this2.subKernelOutputVariableNames[i];
-			}).join(',\n') + '\n      };') + '\n    }.bind(this);';
+			}).join(',\n') + '\n      };') + '\n    ' + (prototypes.length > 0 ? prototypes.join('\n') : '') + '\n    }.bind(this);';
+			return kernelString;
 		}
 
 
@@ -332,6 +968,13 @@ module.exports = function (_KernelBase) {
 		}
 
 
+	}, {
+		key: '_getLoopMaxString',
+
+
+		value: function _getLoopMaxString() {
+			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + ';\n' : ' 1000;\n';
+		}
 	}], [{
 		key: 'compileKernel',
 		value: function compileKernel(precompileObj) {
@@ -346,7 +989,7 @@ module.exports = function (_KernelBase) {
 
 	return CPUKernel;
 }(KernelBase);
-},{"../../core/utils":24,"../kernel-base":8,"./kernel-string":3}],5:[function(require,module,exports){
+},{"../../core/utils":25,"../kernel-base":8,"./kernel-string":3}],5:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -387,7 +1030,7 @@ module.exports = function (_RunnerBase) {
 
 	return CPURunner;
 }(RunnerBase);
-},{"../../core/utils":24,"../runner-base":10,"./function-builder":1,"./kernel":4}],6:[function(require,module,exports){
+},{"../../core/utils":25,"../runner-base":10,"./function-builder":1,"./kernel":4}],6:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -403,34 +1046,35 @@ module.exports = function () {
 		this.nativeFunctions = {};
 		this.gpu = gpu;
 		this.rootKernel = null;
+		this.Node = null;
 	}
 
-
-
 	_createClass(FunctionBuilderBase, [{
+		key: 'addNativeFunction',
+		value: function addNativeFunction(functionName, glslFunctionString) {
+			this.nativeFunctions[functionName] = glslFunctionString;
+		}
+
+
+	}, {
 		key: 'addFunction',
-		value: function addFunction(functionName, jsFunction, paramTypes, returnType) {
-			throw new Error('addFunction not supported on base');
+		value: function addFunction(functionName, jsFunction, options, paramTypes, returnType) {
+			this.addFunctionNode(new this.Node(functionName, jsFunction, options, paramTypes, returnType).setAddFunction(this.addFunction.bind(this)));
 		}
 	}, {
 		key: 'addFunctions',
-		value: function addFunctions(functions) {
+		value: function addFunctions(functions, options) {
 			if (functions) {
 				if (Array.isArray(functions)) {
 					for (var i = 0; i < functions.length; i++) {
-						this.addFunction(null, functions[i]);
+						this.addFunction(null, functions[i], options);
 					}
 				} else {
 					for (var p in functions) {
-						this.addFunction(p, functions[p]);
+						this.addFunction(p, functions[p], options);
 					}
 				}
 			}
-		}
-	}, {
-		key: 'addNativeFunction',
-		value: function addNativeFunction(name, nativeFunction) {
-			throw new Error('addNativeFunction not supported on base');
 		}
 	}, {
 		key: 'addNativeFunctions',
@@ -460,17 +1104,19 @@ module.exports = function () {
 
 			var fNode = this.nodeMap[functionName];
 			if (fNode) {
-				if (retList.indexOf(functionName) >= 0) {
-				} else {
+				var functionIndex = retList.indexOf(functionName);
+				if (functionIndex === -1) {
 					retList.push(functionName);
 					if (parent) {
 						fNode.parent = parent;
-						fNode.constants = parent.constants;
 					}
 					fNode.getFunctionString(); 
 					for (var i = 0; i < fNode.calledFunctions.length; ++i) {
 						this.traceFunctionCalls(fNode.calledFunctions[i], retList, fNode);
 					}
+				} else {
+					var dependantFunctionName = retList.splice(functionIndex, 1)[0];
+					retList.push(dependantFunctionName);
 				}
 			}
 
@@ -482,6 +1128,100 @@ module.exports = function () {
 			}
 
 			return retList;
+		}
+
+
+	}, {
+		key: 'addKernel',
+		value: function addKernel(fnString, options, paramNames, paramTypes) {
+			var kernelNode = new this.Node('kernel', fnString, options, paramTypes);
+			kernelNode.setAddFunction(this.addFunction.bind(this));
+			kernelNode.paramNames = paramNames;
+			kernelNode.paramTypes = paramTypes;
+			kernelNode.isRootKernel = true;
+			this.addFunctionNode(kernelNode);
+			return kernelNode;
+		}
+
+
+	}, {
+		key: 'addSubKernel',
+		value: function addSubKernel(jsFunction, options, paramTypes, returnType) {
+			var kernelNode = new this.Node(null, jsFunction, options, paramTypes, returnType);
+			kernelNode.setAddFunction(this.addFunction.bind(this));
+			kernelNode.isSubKernel = true;
+			this.addFunctionNode(kernelNode);
+			return kernelNode;
+		}
+
+
+	}, {
+		key: 'getPrototypeString',
+		value: function getPrototypeString(functionName) {
+			return this.getPrototypes(functionName).join('\n');
+		}
+
+
+	}, {
+		key: 'getPrototypes',
+		value: function getPrototypes(functionName) {
+			this.rootKernel.generate();
+			if (functionName) {
+				return this.getPrototypesFromFunctionNames(this.traceFunctionCalls(functionName, []).reverse());
+			}
+			return this.getPrototypesFromFunctionNames(Object.keys(this.nodeMap));
+		}
+
+
+	}, {
+		key: 'getStringFromFunctionNames',
+		value: function getStringFromFunctionNames(functionList) {
+			var ret = [];
+			for (var i = 0; i < functionList.length; ++i) {
+				var node = this.nodeMap[functionList[i]];
+				if (node) {
+					ret.push(this.nodeMap[functionList[i]].getFunctionString());
+				}
+			}
+			return ret.join('\n');
+		}
+
+
+	}, {
+		key: 'getPrototypesFromFunctionNames',
+		value: function getPrototypesFromFunctionNames(functionList, opt) {
+			var ret = [];
+			for (var i = 0; i < functionList.length; ++i) {
+				var functionName = functionList[i];
+				var node = this.nodeMap[functionName];
+				if (node) {
+					ret.push(node.getFunctionPrototypeString(opt));
+				} else if (this.nativeFunctions[functionName]) {
+					ret.push(this.nativeFunctions[functionName]);
+				}
+			}
+			return ret;
+		}
+
+
+	}, {
+		key: 'getPrototypeStringFromFunctionNames',
+		value: function getPrototypeStringFromFunctionNames(functionList, opt) {
+			return this.getPrototypesFromFunctionNames(functionList, opt).toString();
+		}
+
+
+	}, {
+		key: 'getString',
+		value: function getString(functionName, opt) {
+			if (opt === undefined) {
+				opt = {};
+			}
+
+			if (functionName) {
+				return this.getStringFromFunctionNames(this.traceFunctionCalls(functionName, [], opt).reverse(), opt);
+			}
+			return this.getStringFromFunctionNames(Object.keys(this.nodeMap), opt);
 		}
 	}, {
 		key: 'polyfillStandardFunctions',
@@ -521,6 +1261,7 @@ module.exports = function () {
 		this.debug = null;
 		this.prototypeOnly = null;
 		this.constants = null;
+		this.output = null;
 
 		if (options) {
 			if (options.hasOwnProperty('debug')) {
@@ -531,6 +1272,9 @@ module.exports = function () {
 			}
 			if (options.hasOwnProperty('constants')) {
 				this.constants = options.constants;
+			}
+			if (options.hasOwnProperty('output')) {
+				this.output = options.output;
 			}
 			if (options.hasOwnProperty('loopMaxIterations')) {
 				this.loopMaxIterations = options.loopMaxIterations;
@@ -594,6 +1338,12 @@ module.exports = function () {
 	}
 
 	_createClass(BaseFunctionNode, [{
+		key: 'isIdentifierConstant',
+		value: function isIdentifierConstant(paramName) {
+			if (!this.constants) return false;
+			return this.constants.hasOwnProperty(paramName);
+		}
+	}, {
 		key: 'setAddFunction',
 		value: function setAddFunction(fn) {
 			this.addFunction = fn;
@@ -617,6 +1367,34 @@ module.exports = function () {
 		}
 
 
+	}, {
+		key: 'astMemberExpressionUnroll',
+		value: function astMemberExpressionUnroll(ast, funcParam) {
+			if (ast.type === 'Identifier') {
+				return ast.name;
+			} else if (ast.type === 'ThisExpression') {
+				return 'this';
+			}
+
+			if (ast.type === 'MemberExpression') {
+				if (ast.object && ast.property) {
+					if (ast.object.hasOwnProperty('name') && ast.object.name[0] === '_') {
+						return this.astMemberExpressionUnroll(ast.property, funcParam);
+					}
+
+					return this.astMemberExpressionUnroll(ast.object, funcParam) + '.' + this.astMemberExpressionUnroll(ast.property, funcParam);
+				}
+			}
+
+			if (ast.hasOwnProperty('expressions')) {
+				var firstExpression = ast.expressions[0];
+				if (firstExpression.type === 'Literal' && firstExpression.value === 0 && ast.expressions.length === 2) {
+					return this.astMemberExpressionUnroll(ast.expressions[1]);
+				}
+			}
+
+			throw this.astErrorOutput('Unknown CallExpression_unroll', ast, funcParam);
+		}
 
 
 	}, {
@@ -631,7 +1409,9 @@ module.exports = function () {
 				throw 'Missing JS to AST parser';
 			}
 
-			var ast = inParser.parse('var ' + this.functionName + ' = ' + this.jsFunctionString + ';');
+			var ast = inParser.parse('var ' + this.functionName + ' = ' + this.jsFunctionString + ';', {
+				locations: true
+			});
 			if (ast === null) {
 				throw 'Failed to parse JS code';
 			}
@@ -696,11 +1476,25 @@ module.exports = function () {
 		value: function generate(options) {
 			throw new Error('generate not defined on BaseFunctionNode');
 		}
+
+
+	}, {
+		key: 'astErrorOutput',
+		value: function astErrorOutput(error, ast, funcParam) {
+			console.error(utils.getAstString(this.jsFunctionString, ast));
+			console.error(error, ast, funcParam);
+			return error;
+		}
+	}, {
+		key: 'astDebuggerStatement',
+		value: function astDebuggerStatement(arrNode, retArr, funcParam) {
+			return retArr;
+		}
 	}]);
 
 	return BaseFunctionNode;
 }();
-},{"../core/utils":24,"acorn":26}],8:[function(require,module,exports){
+},{"../core/utils":25,"acorn":27}],8:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -739,6 +1533,8 @@ module.exports = function () {
 		this.subKernelProperties = null;
 		this.subKernelNames = null;
 		this.subKernelOutputVariableNames = null;
+		this.functionBuilder = null;
+		this.paramTypes = null;
 
 		for (var p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -746,6 +1542,9 @@ module.exports = function () {
 		}
 		if (settings.hasOwnProperty('canvas')) {
 			this._canvas = settings.canvas;
+		}
+		if (settings.hasOwnProperty('output')) {
+			this.setOutput(settings.output); 
 		}
 
 		if (!this._canvas) this._canvas = utils.initCanvas();
@@ -755,6 +1554,18 @@ module.exports = function () {
 		key: 'build',
 		value: function build() {
 			throw new Error('"build" not defined on Base');
+		}
+
+
+	}, {
+		key: 'setupParams',
+		value: function setupParams(args) {
+			var paramTypes = this.paramTypes = [];
+			for (var i = 0; i < args.length; i++) {
+				var param = args[i];
+				var paramType = utils.getArgumentType(param);
+				paramTypes.push(paramType);
+			}
 		}
 	}, {
 		key: 'setAddFunction',
@@ -775,7 +1586,7 @@ module.exports = function () {
 		value: function setOutput(output) {
 			if (output.hasOwnProperty('x')) {
 				if (output.hasOwnProperty('y')) {
-					if (output.hasOwnProperty('x')) {
+					if (output.hasOwnProperty('z')) {
 						this.output = [output.x, output.y, output.z];
 					} else {
 						this.output = [output.x, output.y];
@@ -951,11 +1762,16 @@ module.exports = function () {
 			this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
 			return this;
 		}
+	}, {
+		key: 'addNativeFunction',
+		value: function addNativeFunction(name, source) {
+			this.functionBuilder.addNativeFunction(name, source);
+		}
 	}]);
 
 	return BaseKernel;
 }();
-},{"../core/utils":24}],9:[function(require,module,exports){
+},{"../core/utils":25}],9:[function(require,module,exports){
 'use strict';
 
 var utils = require('../core/utils');
@@ -990,7 +1806,7 @@ module.exports = function kernelRunShortcut(kernel) {
 
 	return shortcut;
 };
-},{"../core/utils":24}],10:[function(require,module,exports){
+},{"../core/utils":25}],10:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -1072,7 +1888,7 @@ module.exports = function () {
 
 	return BaseRunner;
 }();
-},{"../core/utils":24,"./kernel-run-shortcut":9}],11:[function(require,module,exports){
+},{"../core/utils":25,"./kernel-run-shortcut":9}],11:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -1092,103 +1908,16 @@ module.exports = function (_FunctionBuilderBase) {
 	function WebGLFunctionBuilder() {
 		_classCallCheck(this, WebGLFunctionBuilder);
 
-		return _possibleConstructorReturn(this, (WebGLFunctionBuilder.__proto__ || Object.getPrototypeOf(WebGLFunctionBuilder)).apply(this, arguments));
+		var _this = _possibleConstructorReturn(this, (WebGLFunctionBuilder.__proto__ || Object.getPrototypeOf(WebGLFunctionBuilder)).call(this));
+
+		_this.Node = WebGLFunctionNode;
+		return _this;
 	}
 
+
+
+
 	_createClass(WebGLFunctionBuilder, [{
-		key: 'addFunction',
-		value: function addFunction(functionName, jsFunction, paramTypes, returnType) {
-			this.addFunctionNode(new WebGLFunctionNode(functionName, jsFunction, paramTypes, returnType).setAddFunction(this.addFunction.bind(this)));
-		}
-	}, {
-		key: 'addNativeFunction',
-		value: function addNativeFunction(functionName, glslFunctionString) {
-			this.nativeFunctions[functionName] = glslFunctionString;
-		}
-
-
-	}, {
-		key: 'getStringFromFunctionNames',
-		value: function getStringFromFunctionNames(functionList) {
-			var ret = [];
-			for (var i = 0; i < functionList.length; ++i) {
-				var node = this.nodeMap[functionList[i]];
-				if (node) {
-					ret.push(this.nodeMap[functionList[i]].getFunctionString());
-				}
-			}
-			return ret.join('\n');
-		}
-
-
-	}, {
-		key: 'getPrototypeStringFromFunctionNames',
-		value: function getPrototypeStringFromFunctionNames(functionList, opt) {
-			var ret = [];
-			for (var i = 0; i < functionList.length; ++i) {
-				var functionName = functionList[i];
-				var node = this.nodeMap[functionName];
-				if (node) {
-					ret.push(node.getFunctionPrototypeString(opt));
-				} else if (this.nativeFunctions[functionName]) {
-					ret.push(this.nativeFunctions[functionName]);
-				}
-			}
-			return ret.join('\n');
-		}
-
-
-	}, {
-		key: 'getString',
-		value: function getString(functionName, opt) {
-			if (opt === undefined) {
-				opt = {};
-			}
-
-			if (functionName) {
-				return this.getStringFromFunctionNames(this.traceFunctionCalls(functionName, [], opt).reverse(), opt);
-			}
-			return this.getStringFromFunctionNames(Object.keys(this.nodeMap), opt);
-		}
-
-
-	}, {
-		key: 'getPrototypeString',
-		value: function getPrototypeString(functionName) {
-			this.rootKernel.generate();
-			if (functionName) {
-				return this.getPrototypeStringFromFunctionNames(this.traceFunctionCalls(functionName, []).reverse());
-			}
-			return this.getPrototypeStringFromFunctionNames(Object.keys(this.nodeMap));
-		}
-
-
-	}, {
-		key: 'addKernel',
-		value: function addKernel(fnString, options, paramNames, paramTypes) {
-			var kernelNode = new WebGLFunctionNode('kernel', fnString, options, paramTypes);
-			kernelNode.setAddFunction(this.addFunction.bind(this));
-			kernelNode.paramNames = paramNames;
-			kernelNode.paramTypes = paramTypes;
-			kernelNode.isRootKernel = true;
-			this.addFunctionNode(kernelNode);
-			return kernelNode;
-		}
-
-
-	}, {
-		key: 'addSubKernel',
-		value: function addSubKernel(jsFunction, options, paramTypes, returnType) {
-			var kernelNode = new WebGLFunctionNode(null, jsFunction, options, paramTypes, returnType);
-			kernelNode.setAddFunction(this.addFunction.bind(this));
-			kernelNode.isSubKernel = true;
-			this.addFunctionNode(kernelNode);
-			return kernelNode;
-		}
-
-
-
-	}, {
 		key: 'polyfillStandardFunctions',
 
 
@@ -1251,19 +1980,13 @@ module.exports = function (_FunctionNodeBase) {
 			this.functionString = webGlRegexOptimize(this.functionStringArray.join('').trim());
 			return this.functionString;
 		}
-	}, {
-		key: 'isIdentifierConstant',
-		value: function isIdentifierConstant(paramName) {
-			if (!this.constants) return false;
-			return this.constants.hasOwnProperty(paramName);
-		}
 
 
 	}, {
 		key: 'astGeneric',
 		value: function astGeneric(ast, retArr, funcParam) {
 			if (ast === null) {
-				throw astErrorOutput('NULL ast', ast, funcParam);
+				throw this.astErrorOutput('NULL ast', ast, funcParam);
 			} else {
 				if (Array.isArray(ast)) {
 					for (var i = 0; i < ast.length; i++) {
@@ -1323,9 +2046,11 @@ module.exports = function (_FunctionNodeBase) {
 						return this.astCallExpression(ast, retArr, funcParam);
 					case 'ArrayExpression':
 						return this.astArrayExpression(ast, retArr, funcParam);
+					case 'DebuggerStatement':
+						return this.astDebuggerStatement(ast, retArr, funcParam);
 				}
 
-				throw astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);
+				throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);
 			}
 		}
 
@@ -1366,6 +2091,7 @@ module.exports = function (_FunctionNodeBase) {
 					var type = funcParam.getParamType(paramName);
 					switch (type) {
 						case 'Texture':
+						case 'Input':
 						case 'Array':
 							retArr.push('sampler2D');
 							break;
@@ -1420,7 +2146,7 @@ module.exports = function (_FunctionNodeBase) {
 		value: function astLiteral(ast, retArr, funcParam) {
 
 			if (isNaN(ast.value)) {
-				throw astErrorOutput('Non-numeric literal not supported : ' + ast.value, ast, funcParam);
+				throw this.astErrorOutput('Non-numeric literal not supported : ' + ast.value, ast, funcParam);
 			}
 
 			retArr.push(ast.value);
@@ -1468,7 +2194,7 @@ module.exports = function (_FunctionNodeBase) {
 		key: 'astIdentifierExpression',
 		value: function astIdentifierExpression(idtNode, retArr, funcParam) {
 			if (idtNode.type !== 'Identifier') {
-				throw astErrorOutput('IdentifierExpression - not an Identifier', ast, funcParam);
+				throw this.astErrorOutput('IdentifierExpression - not an Identifier', ast, funcParam);
 			}
 
 			switch (idtNode.name) {
@@ -1511,14 +2237,14 @@ module.exports = function (_FunctionNodeBase) {
 		key: 'astForStatement',
 		value: function astForStatement(forNode, retArr, funcParam) {
 			if (forNode.type !== 'ForStatement') {
-				throw astErrorOutput('Invalid for statment', ast, funcParam);
+				throw this.astErrorOutput('Invalid for statment', ast, funcParam);
 			}
 
 			if (forNode.test && forNode.test.type === 'BinaryExpression') {
 				if (forNode.test.right.type === 'Identifier' && forNode.test.operator === '<' && this.isIdentifierConstant(forNode.test.right.name) === false) {
 
 					if (!this.loopMaxIterations) {
-						console.warn('Warning: loopMaxIterations is not set! Using default of 100 which may result in unintended behavior.');
+						console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
 						console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
 					}
 
@@ -1589,7 +2315,7 @@ module.exports = function (_FunctionNodeBase) {
 				}
 			}
 
-			throw astErrorOutput('Invalid for statement', ast, funcParam);
+			throw this.astErrorOutput('Invalid for statement', ast, funcParam);
 		}
 
 
@@ -1597,7 +2323,7 @@ module.exports = function (_FunctionNodeBase) {
 		key: 'astWhileStatement',
 		value: function astWhileStatement(whileNode, retArr, funcParam) {
 			if (whileNode.type !== 'WhileStatement') {
-				throw astErrorOutput('Invalid while statment', ast, funcParam);
+				throw this.astErrorOutput('Invalid while statment', ast, funcParam);
 			}
 
 			retArr.push('for (float i = 0.0; i < LOOP_MAX; i++) {');
@@ -1838,20 +2564,27 @@ module.exports = function (_FunctionNodeBase) {
 					unrolled = 'constants_' + unrolled.slice(constantsPrefix.length);
 				}
 
-				if (unrolled_lc === 'this.thread.x') {
-					retArr.push('threadId.x');
-				} else if (unrolled_lc === 'this.thread.y') {
-					retArr.push('threadId.y');
-				} else if (unrolled_lc === 'this.thread.z') {
-					retArr.push('threadId.z');
-				} else if (unrolled_lc === 'this.output.x') {
-					retArr.push('uOutputDim.x');
-				} else if (unrolled_lc === 'this.output.y') {
-					retArr.push('uOutputDim.y');
-				} else if (unrolled_lc === 'this.output.z') {
-					retArr.push('uOutputDim.z');
-				} else {
-					retArr.push(unrolled);
+				switch (unrolled_lc) {
+					case 'this.thread.x':
+						retArr.push('threadId.x');
+						break;
+					case 'this.thread.y':
+						retArr.push('threadId.y');
+						break;
+					case 'this.thread.z':
+						retArr.push('threadId.z');
+						break;
+					case 'this.output.x':
+						retArr.push(this.output[0] + '.0');
+						break;
+					case 'this.output.y':
+						retArr.push(this.output[1] + '.0');
+						break;
+					case 'this.output.z':
+						retArr.push(this.output[2] + '.0');
+						break;
+					default:
+						retArr.push(unrolled);
 				}
 			}
 			return retArr;
@@ -1866,25 +2599,6 @@ module.exports = function (_FunctionNodeBase) {
 				this.astGeneric(sNode.expressions, retArr, funcParam);
 			}
 			return retArr;
-		}
-
-
-	}, {
-		key: 'astMemberExpressionUnroll',
-		value: function astMemberExpressionUnroll(ast, funcParam) {
-			if (ast.type === 'Identifier') {
-				return ast.name;
-			} else if (ast.type === 'ThisExpression') {
-				return 'this';
-			}
-
-			if (ast.type === 'MemberExpression') {
-				if (ast.object && ast.property) {
-					return this.astMemberExpressionUnroll(ast.object, funcParam) + '.' + this.astMemberExpressionUnroll(ast.property, funcParam);
-				}
-			}
-
-			throw astErrorOutput('Unknown CallExpression_unroll', ast, funcParam);
 		}
 
 
@@ -1942,7 +2656,7 @@ module.exports = function (_FunctionNodeBase) {
 				return retArr;
 			}
 
-			throw astErrorOutput('Unknown CallExpression', ast, funcParam);
+			throw this.astErrorOutput('Unknown CallExpression', ast, funcParam);
 
 			return retArr;
 		}
@@ -2033,12 +2747,7 @@ function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
 function webGlRegexOptimize(inStr) {
 	return inStr.replace(DECODE32_ENCODE32, '((').replace(ENCODE32_DECODE32, '((');
 }
-
-function astErrorOutput(error, ast, funcParam) {
-	console.error(error, ast, funcParam);
-	return error;
-}
-},{"../../core/utils":24,"../function-node-base":7}],13:[function(require,module,exports){
+},{"../../core/utils":25,"../function-node-base":7}],13:[function(require,module,exports){
 'use strict';
 
 var utils = require('../../core/utils');
@@ -2047,7 +2756,7 @@ var kernelRunShortcut = require('../kernel-run-shortcut');
 module.exports = function (gpuKernel, name) {
   return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: function ' + utils.allPropertiesOf.toString() + ',\n      clone: function ' + utils.clone.toString() + ',\n      splitArray: function ' + utils.splitArray.toString() + ',\n      getArgumentType: function ' + utils.getArgumentType.toString() + ',\n      getDimensions: function ' + utils.getDimensions.toString() + ',\n      dimToTexSize: function ' + utils.dimToTexSize.toString() + ',\n      copyFlatten: function ' + utils.copyFlatten.toString() + ',\n      flatten: function ' + utils.flatten.toString() + ',\n      systemEndianness: \'' + utils.systemEndianness() + '\',\n      initWebGl: function ' + utils.initWebGl.toString() + ',\n      isArray: function ' + utils.isArray.toString() + '\n    };\n    class ' + (name || 'Kernel') + ' {\n      constructor() {\n        this.argumentsLength = 0;\n        this._canvas = null;\n        this._webGl = null;\n        this.built = false;\n        this.program = null;\n        this.paramNames = ' + JSON.stringify(gpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(gpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(gpuKernel.texSize) + ';\n        this.output = ' + JSON.stringify(gpuKernel.output) + ';\n        this.compiledFragShaderString = `' + gpuKernel.compiledFragShaderString + '`;\n\t\t    this.compiledVertShaderString = `' + gpuKernel.compiledVertShaderString + '`;\n\t\t    this.programUniformLocationCache = {};\n\t\t    this.textureCache = {};\n\t\t    this.subKernelOutputTextures = null;\n      }\n      ' + gpuKernel._getFragShaderString.toString() + '\n      ' + gpuKernel._getVertShaderString.toString() + '\n      validateOptions() {}\n      setupParams() {}\n      setCanvas(canvas) { this._canvas = canvas; return this; }\n      setWebGl(webGl) { this._webGl = webGl; return this; }\n      ' + gpuKernel.getUniformLocation.toString() + '\n      ' + gpuKernel.setupParams.toString() + '\n      ' + gpuKernel.build.toString() + '\n\t\t  ' + gpuKernel.run.toString() + '\n\t\t  ' + gpuKernel._addArgument.toString() + '\n\t\t  ' + gpuKernel.getArgumentTexture.toString() + '\n\t\t  ' + gpuKernel.getTextureCache.toString() + '\n\t\t  ' + gpuKernel.getOutputTexture.toString() + '\n\t\t  ' + gpuKernel.renderOutput.toString() + '\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
 };
-},{"../../core/utils":24,"../kernel-run-shortcut":9}],14:[function(require,module,exports){
+},{"../../core/utils":25,"../kernel-run-shortcut":9}],14:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2082,12 +2791,10 @@ module.exports = function (_KernelBase) {
 
 		_this.buffer = null;
 		_this.program = null;
-		_this.functionBuilder = settings.functionBuilder;
 		_this.outputToTexture = settings.outputToTexture;
 		_this.endianness = utils.systemEndianness();
 		_this.subKernelOutputTextures = null;
 		_this.subKernelOutputVariableNames = null;
-		_this.paramTypes = null;
 		_this.argumentsLength = 0;
 		_this.ext = null;
 		_this.compiledFragShaderString = null;
@@ -2456,18 +3163,6 @@ module.exports = function (_KernelBase) {
 
 
 	}, {
-		key: 'setupParams',
-		value: function setupParams(args) {
-			var paramTypes = this.paramTypes = [];
-			for (var i = 0; i < args.length; i++) {
-				var param = args[i];
-				var paramType = utils.getArgumentType(param);
-				paramTypes.push(paramType);
-			}
-		}
-
-
-	}, {
 		key: 'getUniformLocation',
 		value: function getUniformLocation(name) {
 			var location = this.programUniformLocationCache[name];
@@ -2533,10 +3228,9 @@ module.exports = function (_KernelBase) {
 
 						var buffer = void 0;
 						if (this.floatTextures) {
-							buffer = new Float32Array(valuesFlat);
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, buffer);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 						} else {
-							buffer = new Uint8Array(new Float32Array(valuesFlat).buffer);
+							buffer = new Uint8Array(valuesFlat.buffer);
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 						}
 
@@ -2557,11 +3251,55 @@ module.exports = function (_KernelBase) {
 						gl.uniform1f(_loc, value);
 						break;
 					}
+				case 'Input':
+					{
+						var input = value;
+						var _dim = input.size;
+						var _size = utils.dimToTexSize({
+							floatTextures: this.floatTextures,
+							floatOutput: this.floatOutput
+						}, _dim);
+						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+						var _length = _size[0] * _size[1];
+						var inputArray = void 0;
+						if (this.floatTextures) {
+							_length *= 4;
+							inputArray = new Float32Array(_length);
+							inputArray.set(input.value);
+						} else {
+							inputArray = input.value;
+						}
+
+						if (this.floatTextures) {
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0], _size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+						} else {
+							var _buffer = new Uint8Array(inputArray.buffer);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0], _size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, _buffer);
+						}
+
+						var _loc2 = this.getUniformLocation('user_' + name);
+						var _locSize = this.getUniformLocation('user_' + name + 'Size');
+						var _dimLoc = this.getUniformLocation('user_' + name + 'Dim');
+
+						if (!this.hardcodeConstants) {
+							gl.uniform3fv(_dimLoc, _dim);
+							gl.uniform2fv(_locSize, _size);
+						}
+						gl.uniform1i(_loc2, this.argumentsLength);
+						break;
+					}
 				case 'Texture':
 					{
 						var inputTexture = value;
-						var _dim = utils.getDimensions(inputTexture.output, true);
-						var _size = inputTexture.size;
+						var _dim2 = utils.getDimensions(inputTexture, true);
+
+						var _size2 = inputTexture.size;
 
 						if (inputTexture.texture === this.outputTexture) {
 							this.setupOutputTexture();
@@ -2570,13 +3308,13 @@ module.exports = function (_KernelBase) {
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-						var _loc2 = this.getUniformLocation('user_' + name);
-						var _locSize = this.getUniformLocation('user_' + name + 'Size');
-						var _dimLoc = this.getUniformLocation('user_' + name + 'Dim');
+						var _loc3 = this.getUniformLocation('user_' + name);
+						var _locSize2 = this.getUniformLocation('user_' + name + 'Size');
+						var _dimLoc2 = this.getUniformLocation('user_' + name + 'Dim');
 
-						gl.uniform3fv(_dimLoc, _dim);
-						gl.uniform2fv(_locSize, _size);
-						gl.uniform1i(_loc2, this.argumentsLength);
+						gl.uniform3fv(_dimLoc2, _dim2);
+						gl.uniform2fv(_locSize2, _size2);
+						gl.uniform1i(_loc3, this.argumentsLength);
 						break;
 					}
 				default:
@@ -2597,7 +3335,7 @@ module.exports = function (_KernelBase) {
 	}, {
 		key: '_getLoopMaxString',
 		value: function _getLoopMaxString() {
-			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + '.0;\n' : ' 100.0;\n';
+			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + '.0;\n' : ' 1000.0;\n';
 		}
 
 
@@ -2699,7 +3437,7 @@ module.exports = function (_KernelBase) {
 						result.push('highp float user_' + paramName + ' = ' + param);
 					}
 				} else {
-					if (paramType === 'Array' || paramType === 'Texture') {
+					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input') {
 						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp vec2 user_' + paramName + 'Size', 'uniform highp vec3 user_' + paramName + 'Dim');
 					} else if (paramType === 'Number') {
 						result.push('uniform highp float user_' + paramName);
@@ -2806,12 +3544,16 @@ module.exports = function (_KernelBase) {
 			var builder = this.functionBuilder;
 			var gl = this._webGl;
 
-			builder.addFunctions(this.functions);
+			builder.addFunctions(this.functions, {
+				constants: this.constants,
+				output: this.output
+			});
 			builder.addNativeFunctions(this.nativeFunctions);
 
 			builder.addKernel(this.fnString, {
 				prototypeOnly: false,
 				constants: this.constants,
+				output: this.output,
 				debug: this.debug,
 				loopMaxIterations: this.loopMaxIterations
 			}, this.paramNames, this.paramTypes);
@@ -2826,6 +3568,7 @@ module.exports = function (_KernelBase) {
 					builder.addSubKernel(subKernel, {
 						prototypeOnly: false,
 						constants: this.constants,
+						output: this.output,
 						debug: this.debug,
 						loopMaxIterations: this.loopMaxIterations
 					});
@@ -2844,6 +3587,7 @@ module.exports = function (_KernelBase) {
 					builder.addSubKernel(_subKernel, {
 						prototypeOnly: false,
 						constants: this.constants,
+						output: this.output,
 						debug: this.debug,
 						loopMaxIterations: this.loopMaxIterations
 					});
@@ -2885,16 +3629,11 @@ module.exports = function (_KernelBase) {
 		value: function addFunction(fn) {
 			this.functionBuilder.addFunction(null, fn);
 		}
-	}, {
-		key: 'addNativeFunction',
-		value: function addNativeFunction(name, source) {
-			this.functionBuilder.addNativeFunction(name, source);
-		}
 	}]);
 
 	return WebGLKernel;
 }(KernelBase);
-},{"../../core/texture":22,"../../core/utils":24,"../kernel-base":8,"./kernel-string":13,"./shader-frag":16,"./shader-vert":17,"fs":27}],15:[function(require,module,exports){
+},{"../../core/texture":23,"../../core/utils":25,"../kernel-base":8,"./kernel-string":13,"./shader-frag":16,"./shader-vert":17,"fs":28}],15:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2934,7 +3673,7 @@ module.exports = function (_RunnerBase) {
 
 	return WebGLRunner;
 }(RunnerBase);
-},{"../../core/utils":24,"../runner-base":10,"./function-builder":11,"./kernel":14}],16:[function(require,module,exports){
+},{"../../core/utils":25,"../runner-base":10,"./function-builder":11,"./kernel":14}],16:[function(require,module,exports){
 "use strict";
 
 module.exports = "__HEADER__;\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nconst float LOOP_MAX = __LOOP_MAX__;\n#define EPSILON 0.0000001;\n\n__CONSTANTS__;\n\nvarying highp vec2 vTexCoord;\n\nvec4 round(vec4 x) {\n  return floor(x + 0.5);\n}\n\nhighp float round(highp float x) {\n  return floor(x + 0.5);\n}\n\nvec2 integerMod(vec2 x, float y) {\n  vec2 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec3 integerMod(vec3 x, float y) {\n  vec3 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec4 integerMod(vec4 x, vec4 y) {\n  vec4 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nhighp float integerMod(highp float x, highp float y) {\n  highp float res = floor(mod(x, y));\n  return res * (res > floor(y) - 1.0 ? 0.0 : 1.0);\n}\n\nhighp int integerMod(highp int x, highp int y) {\n  return int(integerMod(float(x), float(y)));\n}\n\n// Here be dragons!\n// DO NOT OPTIMIZE THIS CODE\n// YOU WILL BREAK SOMETHING ON SOMEBODY'S MACHINE\n// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME\nconst vec2 MAGIC_VEC = vec2(1.0, -256.0);\nconst vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);\nconst vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536\nhighp float decode32(highp vec4 rgba) {\n  __DECODE32_ENDIANNESS__;\n  rgba *= 255.0;\n  vec2 gte128;\n  gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;\n  gte128.y = rgba.a >= 128.0 ? 1.0 : 0.0;\n  float exponent = 2.0 * rgba.a - 127.0 + dot(gte128, MAGIC_VEC);\n  float res = exp2(round(exponent));\n  rgba.b = rgba.b - 128.0 * gte128.x;\n  res = dot(rgba, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;\n  res *= gte128.y * -2.0 + 1.0;\n  return res;\n}\n\nhighp vec4 encode32(highp float f) {\n  highp float F = abs(f);\n  highp float sign = f < 0.0 ? 1.0 : 0.0;\n  highp float exponent = floor(log2(F));\n  highp float mantissa = (exp2(-exponent) * F);\n  // exponent += floor(log2(mantissa));\n  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;\n  rgba.rg = integerMod(rgba.rg, 256.0);\n  rgba.b = integerMod(rgba.b, 128.0);\n  rgba.a = exponent*0.5 + 63.5;\n  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;\n  rgba = floor(rgba);\n  rgba *= 0.003921569; // 1/255\n  __ENCODE32_ENDIANNESS__;\n  return rgba;\n}\n// Dragons end here\n\nhighp float index;\nhighp vec3 threadId;\n\nhighp vec3 indexTo3D(highp float idx, highp vec3 texDim) {\n  highp float z = floor(idx / (texDim.x * texDim.y));\n  idx -= z * texDim.x * texDim.y;\n  highp float y = floor(idx / texDim.x);\n  highp float x = integerMod(idx, texDim.x);\n  return vec3(x, y, z);\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {\n  highp vec3 xyz = vec3(x, y, z);\n  xyz = floor(xyz + 0.5);\n  __GET_WRAPAROUND__;\n  highp float index = round(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z));\n  __GET_TEXTURE_CHANNEL__;\n  highp float w = round(texSize.x);\n  vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  highp vec4 texel = texture2D(tex, st / texSize);\n  __GET_RESULT__;\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {\n  return get(tex, texSize, texDim, 0.0, y, x);\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {\n  return get(tex, texSize, texDim, 0.0, 0.0, x);\n}\n\nhighp vec4 actualColor;\nvoid color(float r, float g, float b, float a) {\n  actualColor = vec4(r,g,b,a);\n}\n\nvoid color(float r, float g, float b) {\n  color(r,g,b,1.0);\n}\n\n__MAIN_PARAMS__;\n__MAIN_CONSTANTS__;\n__KERNEL__;\n\nvoid main(void) {\n  index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;\n  __MAIN_RESULT__;\n}";
@@ -2979,7 +3718,7 @@ module.exports = function (_WebGLKernel) {
 
 	return WebGLValidatorKernel;
 }(WebGLKernel);
-},{"../../core/utils":24,"./kernel":14}],19:[function(require,module,exports){
+},{"../../core/utils":25,"./kernel":14}],19:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -2987,7 +3726,7 @@ module.exports = function alias(name, fn) {
 	var fnString = fn.toString();
 	return new Function('return function ' + name + ' (' + utils.getParamNamesFromString(fnString).join(', ') + ') {' + utils.getFunctionBodyFromString(fnString) + '}')();
 };
-},{"./utils":24}],20:[function(require,module,exports){
+},{"./utils":25}],20:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -3042,7 +3781,7 @@ module.exports = function () {
 
 	return GPUCore;
 }();
-},{"./utils-core":23}],21:[function(require,module,exports){
+},{"./utils-core":24}],21:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -3111,7 +3850,7 @@ var GPU = function (_GPUCore) {
 			if (typeof fn === 'undefined') {
 				throw 'Missing fn parameter';
 			}
-			if (!utils.isFunction(fn)) {
+			if (!utils.isFunction(fn) && typeof fn !== 'string') {
 				throw 'fn parameter not a function';
 			}
 
@@ -3261,7 +4000,34 @@ var GPU = function (_GPUCore) {
 Object.assign(GPU, GPUCore);
 
 module.exports = GPU;
-},{"../backend/cpu/runner":5,"../backend/web-gl/runner":15,"../backend/web-gl/validator-kernel":18,"./gpu-core":20,"./utils":24}],22:[function(require,module,exports){
+},{"../backend/cpu/runner":5,"../backend/web-gl/runner":15,"../backend/web-gl/validator-kernel":18,"./gpu-core":20,"./utils":25}],22:[function(require,module,exports){
+"use strict";
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+module.exports = function Input(value, size) {
+	_classCallCheck(this, Input);
+
+	this.value = value;
+	if (Array.isArray(size)) {
+		this.size = [];
+		for (var i = 0; i < size.length; i++) {
+			this.size[i] = size[i];
+		}
+		while (this.size.length < 3) {
+			this.size.push(1);
+		}
+	} else {
+		if (size.z) {
+			this.size = [size.x, size.y, size.z];
+		} else if (size.y) {
+			this.size = [size.x, size.y, 1];
+		} else {
+			this.size = [size.x, 1, 1];
+		}
+	}
+};
+},{}],23:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -3307,7 +4073,7 @@ module.exports = function () {
 
 	return Texture;
 }();
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 'use strict';
 
 
@@ -3433,7 +4199,7 @@ if (_isWebGlSupported) {
 }
 
 module.exports = UtilsCore;
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 'use strict';
 
 
@@ -3448,6 +4214,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var UtilsCore = require("./utils-core");
+var Input = require('./input');
 var Texture = require('./texture');
 var FUNCTION_NAME = /function ([^(]*)/;
 
@@ -3591,6 +4358,8 @@ var Utils = function (_UtilsCore) {
 				return 'Number';
 			} else if (arg instanceof Texture) {
 				return 'Texture';
+			} else if (arg instanceof Input) {
+				return 'Input';
 			} else {
 				return 'Unknown';
 			}
@@ -3651,6 +4420,8 @@ var Utils = function (_UtilsCore) {
 				ret = dim.reverse();
 			} else if (x instanceof Texture) {
 				ret = x.output;
+			} else if (x instanceof Input) {
+				ret = x.size;
 			} else {
 				throw 'Unknown dimensions of ' + x;
 			}
@@ -3770,12 +4541,14 @@ var Utils = function (_UtilsCore) {
 Object.assign(Utils, UtilsCore);
 
 module.exports = Utils;
-},{"../index":25,"./texture":22,"./utils-core":23}],25:[function(require,module,exports){
+},{"../index":26,"./input":22,"./texture":23,"./utils-core":24}],26:[function(require,module,exports){
 'use strict';
 
 var GPU = require('./core/gpu');
 var alias = require('./core/alias');
 var utils = require('./core/utils');
+var Input = require('./core/input');
+var Texture = require('./core/texture');
 
 var CPUFunctionBuilder = require('./backend/cpu/function-builder');
 var CPUFunctionNode = require('./backend/cpu/function-node');
@@ -3789,6 +4562,11 @@ var WebGLRunner = require('./backend/web-gl/runner');
 
 GPU.alias = alias;
 GPU.utils = utils;
+GPU.Texture = Texture;
+GPU.Input = Input;
+GPU.input = function (value, size) {
+	return new Input(value, size);
+};
 
 GPU.CPUFunctionBuilder = CPUFunctionBuilder;
 GPU.CPUFunctionNode = CPUFunctionNode;
@@ -3806,7 +4584,7 @@ if (typeof module !== 'undefined') {
 if (typeof window !== 'undefined') {
 	window.GPU = GPU;
 }
-},{"./backend/cpu/function-builder":1,"./backend/cpu/function-node":2,"./backend/cpu/kernel":4,"./backend/cpu/runner":5,"./backend/web-gl/function-builder":11,"./backend/web-gl/function-node":12,"./backend/web-gl/kernel":14,"./backend/web-gl/runner":15,"./core/alias":19,"./core/gpu":21,"./core/utils":24}],26:[function(require,module,exports){
+},{"./backend/cpu/function-builder":1,"./backend/cpu/function-node":2,"./backend/cpu/kernel":4,"./backend/cpu/runner":5,"./backend/web-gl/function-builder":11,"./backend/web-gl/function-node":12,"./backend/web-gl/kernel":14,"./backend/web-gl/runner":15,"./core/alias":19,"./core/gpu":21,"./core/input":22,"./core/texture":23,"./core/utils":25}],27:[function(require,module,exports){
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -7071,6 +7849,6 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 
-},{}]},{},[25]);
+},{}]},{},[26]);

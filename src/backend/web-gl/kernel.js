@@ -43,12 +43,10 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		this.buffer = null;
 		this.program = null;
-		this.functionBuilder = settings.functionBuilder;
 		this.outputToTexture = settings.outputToTexture;
 		this.endianness = utils.systemEndianness();
 		this.subKernelOutputTextures = null;
 		this.subKernelOutputVariableNames = null;
-		this.paramTypes = null;
 		this.argumentsLength = 0;
 		this.ext = null;
 		this.compiledFragShaderString = null;
@@ -513,26 +511,6 @@ module.exports = class WebGLKernel extends KernelBase {
 	/**
 	 * @memberOf WebGLKernel#
 	 * @function
-	 * @name setupParams
-	 *
-	 * @desc Setup the parameter types for the parameters
-	 * supplied to the Kernel function
-	 *
-	 * @param {Array} args - The actual parameters sent to the Kernel
-	 *
-	 */
-	setupParams(args) {
-		const paramTypes = this.paramTypes = [];
-		for (let i = 0; i < args.length; i++) {
-			const param = args[i];
-			const paramType = utils.getArgumentType(param);
-			paramTypes.push(paramType);
-		}
-	}
-
-	/**
-	 * @memberOf WebGLKernel#
-	 * @function
 	 * @name getUniformLocation
 	 *
 	 * @desc Return WebGlUniformLocation for various variables
@@ -624,10 +602,9 @@ module.exports = class WebGLKernel extends KernelBase {
 
 					let buffer;
 					if (this.floatTextures) {
-						buffer = new Float32Array(valuesFlat);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 					} else {
-						buffer = new Uint8Array((new Float32Array(valuesFlat)).buffer);
+						buffer = new Uint8Array(valuesFlat.buffer);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 					}
 
@@ -648,10 +625,54 @@ module.exports = class WebGLKernel extends KernelBase {
 					gl.uniform1f(loc, value);
 					break;
 				}
+			case 'Input':
+				{
+					const input = value;
+					const dim = input.size;
+					const size = utils.dimToTexSize({
+						floatTextures: this.floatTextures,
+						floatOutput: this.floatOutput
+					}, dim);
+					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+					let length = size[0] * size[1];
+					let inputArray;
+					if (this.floatTextures) {
+						length *= 4;
+						inputArray = new Float32Array(length);
+						inputArray.set(input.value);
+					} else {
+						inputArray = input.value;
+					}
+
+					if (this.floatTextures) {
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+					} else {
+						const buffer = new Uint8Array(inputArray.buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+					}
+
+					const loc = this.getUniformLocation('user_' + name);
+					const locSize = this.getUniformLocation('user_' + name + 'Size');
+					const dimLoc = this.getUniformLocation('user_' + name + 'Dim');
+
+					if (!this.hardcodeConstants) {
+						gl.uniform3fv(dimLoc, dim);
+						gl.uniform2fv(locSize, size);
+					}
+					gl.uniform1i(loc, this.argumentsLength);
+					break;
+				}
 			case 'Texture':
 				{
 					const inputTexture = value;
-					const dim = utils.getDimensions(inputTexture.output, true);
+					const dim = utils.getDimensions(inputTexture, true);
+
 					const size = inputTexture.size;
 
 					if (inputTexture.texture === this.outputTexture) {
@@ -710,7 +731,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		return (
 			this.loopMaxIterations ?
 			` ${ parseInt(this.loopMaxIterations) }.0;\n` :
-			' 100.0;\n'
+			' 1000.0;\n'
 		);
 	}
 
@@ -904,7 +925,7 @@ module.exports = class WebGLKernel extends KernelBase {
 					result.push(`highp float user_${ paramName } = ${ param }`);
 				}
 			} else {
-				if (paramType === 'Array' || paramType === 'Texture') {
+				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input') {
 					result.push(
 						`uniform highp sampler2D user_${ paramName }`,
 						`uniform highp vec2 user_${ paramName }Size`,
@@ -1092,12 +1113,16 @@ module.exports = class WebGLKernel extends KernelBase {
 		const builder = this.functionBuilder;
 		const gl = this._webGl;
 
-		builder.addFunctions(this.functions);
+		builder.addFunctions(this.functions, {
+			constants: this.constants,
+			output: this.output
+		});
 		builder.addNativeFunctions(this.nativeFunctions);
 
 		builder.addKernel(this.fnString, {
 			prototypeOnly: false,
 			constants: this.constants,
+			output: this.output,
 			debug: this.debug,
 			loopMaxIterations: this.loopMaxIterations
 		}, this.paramNames, this.paramTypes);
@@ -1112,6 +1137,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				builder.addSubKernel(subKernel, {
 					prototypeOnly: false,
 					constants: this.constants,
+					output: this.output,
 					debug: this.debug,
 					loopMaxIterations: this.loopMaxIterations
 				});
@@ -1131,6 +1157,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				builder.addSubKernel(subKernel, {
 					prototypeOnly: false,
 					constants: this.constants,
+					output: this.output,
 					debug: this.debug,
 					loopMaxIterations: this.loopMaxIterations
 				});
@@ -1195,10 +1222,6 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	addFunction(fn) {
-	  this.functionBuilder.addFunction(null, fn);
-  }
-
-	addNativeFunction(name, source) {
-	  this.functionBuilder.addNativeFunction(name, source);
-  }
+		this.functionBuilder.addFunction(null, fn);
+	}
 };
