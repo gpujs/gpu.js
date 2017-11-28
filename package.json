@@ -7,7 +7,10 @@
     "doc": "doc",
     "test": "test"
   },
-  "dependencies": { "acorn": "^5.1.1" },
+  "dependencies": {
+    "acorn": "^5.2.1",
+    "node-opencl": "^0.4.5"
+  },
   "devDependencies": {
     "babel-plugin-syntax-async-functions": "^6.5.0",
     "babel-preset-env": "^1.5.2",
@@ -50,8 +53,5 @@
   "bugs": {
     "url": "https://github.com/gpujs/gpu.js/issues"
   },
-  "homepage": "http://gpu.rocks/",
-  "dependencies": {
-    "nooocl": "^0.12.5"
-  }
+  "homepage": "http://gpu.rocks/"
 }

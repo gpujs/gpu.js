@@ -139,6 +139,10 @@ class UtilsCore {
 		return _isWebGlSupported;
 	}
 
+	static isOpenClSupported() {
+	  return _isOpenClSupported;
+  }
+
 	static isWebGlDrawBuffersSupported() {
 		return _isWebGlDrawBuffersSupported;
 	}
@@ -209,6 +213,7 @@ const _isCanvasSupported = typeof document !== 'undefined' ? UtilsCore.isCanvas(
 const _testingWebGl = UtilsCore.initWebGl(UtilsCore.initCanvas());
 const _isWebGlSupported = UtilsCore.isWebGl(_testingWebGl);
 const _isWebGlDrawBuffersSupported = _isWebGlSupported && Boolean(_testingWebGl.getExtension('WEBGL_draw_buffers'));
+const _isOpenClSupported = (() => { try { require('node-opencl'); return true; } catch (e) { return false; } })();
 
 if (_isWebGlSupported) {
 	UtilsCore.OES_texture_float = _testingWebGl.OES_texture_float;

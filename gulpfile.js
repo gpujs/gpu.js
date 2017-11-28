@@ -28,6 +28,13 @@ gulp.task('babelify', function () {
 gulp.task('build', ['babelify'], function() {
 
 	const gpu = browserify('./dist/index.js')
+    .exclude('node-opencl')
+    .exclude('./dist/backend/open-cl/function-builder.js')
+    .exclude('./dist/backend/open-cl/function-node.js')
+    .exclude('./dist/backend/open-cl/kernel.js')
+    .exclude('./dist/backend/open-cl/kernel-string.js')
+    .exclude('./dist/backend/open-cl/runner.js')
+    .exclude('./dist/backend/open-cl/validator-kernel.js')
 		.bundle()
 		.pipe(source('gpu.js'))
 		.pipe(buffer())
@@ -36,6 +43,12 @@ gulp.task('build', ['babelify'], function() {
 			.pipe(gulp.dest('bin'));
 
 	const gpuCore = browserify('./dist/index-core.js')
+    .exclude('./dist/backend/open-cl/function-builder.js')
+    .exclude('./dist/backend/open-cl/function-node.js')
+    .exclude('./dist/backend/open-cl/kernel.js')
+    .exclude('./dist/backend/open-cl/kernel-string.js')
+    .exclude('./dist/backend/open-cl/runner.js')
+    .exclude('./dist/backend/open-cl/validator-kernel.js')
 		.bundle()
 		.pipe(source('gpu-core.js'))
 		.pipe(buffer())

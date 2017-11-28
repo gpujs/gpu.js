@@ -1,23 +1,7 @@
 'use strict';
 
 const fs = require('fs');
-const nooocl = require('nooocl');
-const CLHost = nooocl.CLHost;
-const CLContext = nooocl.CLContext;
-const CLBuffer = nooocl.CLBuffer;
-const CLCommandQueue = nooocl.CLCommandQueue;
-const NDRange = nooocl.NDRange;
-const CLError = nooocl.CLError;
-
-
-const fastcall = require('fastcall');
-const ref = fastcall.ref;
-const double = ref.types.double;
-
-// Initialize OpenCL then we get host, device, context, and a queue
-const host = CLHost.createV11();
-const defs = host.cl.defs;
-const platforms = host.getPlatforms();
+const cl = require('node-opencl');
 
 const KernelBase = require('../kernel-base');
 const utils = require('../../core/utils');
@@ -62,10 +46,25 @@ module.exports = class OpenCLKernel extends KernelBase {
 		this.argumentsLength = 0;
 		this.compiledFragShaderString = null;
 		this.compiledVertShaderString = null;
-		this.getDevice();
-    const cl = this._openCl = new CLContext(device);
+		const openCl = this._openCl = cl.createContextFromType(
+      [cl.CONTEXT_PLATFORM, cl.getPlatformIDs()[0]],
+      cl.DEVICE_TYPE_GPU,
+      null,
+      null
+    );
+		const device = this.device = cl.getContextInfo(openCl, cl.CONTEXT_DEVICES)[0];
+    // Create command queue
+    if (cl.createCommandQueueWithProperties !== undefined) {
+      this.queue = cl.createCommandQueueWithProperties(
+        openCl,
+        device, [
+          cl.QUEUE_PROPERTIES, cl.QUEUE_PROFILING_ENABLE
+        ]
+      ); // OpenCL 2
+    } else {
+      this.queue = cl.createCommandQueue(openCl, device, cl.QUEUE_PROFILING_ENABLE); // OpenCL 1.x
+    }
     this.clKernel = null;
-    this.queue = new CLCommandQueue(cl, device);
 	}
 
 	/**
@@ -109,26 +108,9 @@ module.exports = class OpenCLKernel extends KernelBase {
 
 		console.log(compiledKernelString);
 
-		const program = this.program = this._openCl.createProgram(compiledKernelString);
-    return program.build('-cl-fast-relaxed-math')
-      .then(() => {
-        const buildStatus = program.getBuildStatus(device);
-
-        if (buildStatus < 0) {
-          const buildLog = program.getBuildLog(device);
-          console.log(buildLog);
-          throw new CLError(buildStatus, 'Build failed.');
-        }
-
-        if (this.debug) {
-          const buildLog = program.getBuildLog(device);
-          console.log(buildLog);
-          console.log('Build completed.');
-        }
-
-        // Kernel stuff:
-        this.clKernel = program.createKernel('$kernel');
-      });
+		const program = this.program = cl.createProgramWithSource(this._openCl, compiledKernelString);
+    //Build program
+    cl.buildProgram(program);
 	}
 
 	/**
@@ -409,38 +391,6 @@ module.exports = class OpenCLKernel extends KernelBase {
 		}
 	}
 
-  getDevice() {
-	  if (device !== null) return device;
-	  const mode = this.mode;
-    for (let platformIndex = 0; platformIndex < platforms.length; platformIndex++) {
-      const devices = (mode === 'gpu'
-        ? platforms[platformIndex].gpuDevices()
-        : platforms[platformIndex].cpuDevices());
-
-      for (let deviceIndex = 0; deviceIndex < devices.length; deviceIndex++) {
-        // Is double precision supported?
-        // See: https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetDeviceInfo.html
-        if (devices[deviceIndex].doubleFpConfig
-          & (
-            defs.CL_FP_FMA
-            | defs.CL_FP_ROUND_TO_NEAREST
-            | defs.CL_FP_ROUND_TO_ZERO
-            | defs.CL_FP_ROUND_TO_INF
-            | defs.CL_FP_INF_NAN
-            | defs.CL_FP_DENORM
-          )) {
-          return device = devices[deviceIndex];
-        }
-      }
-
-      if (mode === 'auto') {
-        console.warn('No GPU device has been found, searching for a CPU fallback.');
-        return this.getDevice('cpu');
-      }
-    }
-
-    throw new Error('no devices found');
-  }
 	/**
 	 * @memberOf OpenCLKernel#
 	 * @function

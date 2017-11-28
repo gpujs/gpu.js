@@ -3,7 +3,7 @@
 const utils = require('./utils');
 const WebGLRunner = require('../backend/web-gl/runner');
 const CPURunner = require('../backend/cpu/runner');
-const OpenCLRunner = require('../backend/open-cl/runner');
+const OpenCLRunner = utils.isOpenClSupported() ? require('../backend/open-cl/runner') : null;
 const WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
 const GPUCore = require("./gpu-core");
 
@@ -25,7 +25,9 @@ class GPU extends GPUCore {
 		this._canvas = settings.canvas || null;
 		this._webGl = settings.webGl || null;
 		let mode = settings.mode || 'webgl';
-		if (!utils.isWebGlSupported()) {
+    if (utils.isOpenClSupported() && mode !== 'cpu') {
+      mode = 'opencl';
+    } else if (!utils.isWebGlSupported()) {
 			console.warn('Warning: gpu not supported, falling back to cpu support');
 			mode = 'cpu';
 		}
