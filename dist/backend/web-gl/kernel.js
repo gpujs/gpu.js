@@ -8,13 +8,13 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var fs = require('fs');
 var KernelBase = require('../kernel-base');
 var utils = require('../../core/utils');
 var Texture = require('../../core/texture');
 var fragShaderString = require('./shader-frag');
 var vertShaderString = require('./shader-vert');
 var kernelString = require('./kernel-string');
+var webGlRandom = require('./plugin/random');
 var canvases = [];
 var maxTexSizes = {};
 module.exports = function (_KernelBase) {
@@ -214,6 +214,7 @@ module.exports = function (_KernelBase) {
 			gl.attachShader(program, vertShader);
 			gl.attachShader(program, fragShader);
 			gl.linkProgram(program);
+			this.trigger('build');
 			this.framebuffer = gl.createFramebuffer();
 			this.framebuffer.width = texSize[0];
 			this.framebuffer.height = texSize[1];
@@ -292,6 +293,7 @@ module.exports = function (_KernelBase) {
 			gl.useProgram(this.program);
 			gl.scissor(0, 0, texSize[0], texSize[1]);
 
+			this.trigger('run');
 			if (!this.hardcodeConstants) {
 				var uOutputDimLoc = this.getUniformLocation('uOutputDim');
 				gl.uniform3fv(uOutputDimLoc, this.threadDim);
@@ -1035,8 +1037,14 @@ module.exports = function (_KernelBase) {
 			} else {
 				result.push('highp float kernelResult = 0.0');
 			}
-
-			return this._linesToString(result) + this.functionBuilder.getPrototypeString('kernel');
+			var kernelString = this.functionBuilder.getPrototypeString('kernel');
+			var pluginsString = '';
+			if (this.functionBuilder.rootKernel.calledFunctions.some(function (fnName) {
+				return fnName === 'random';
+			})) {
+				pluginsString += webGlRandom(this);
+			}
+			return this._linesToString(result) + pluginsString + kernelString;
 		}
 
 		/**

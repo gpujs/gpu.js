@@ -16,6 +16,7 @@ module.exports = class FunctionBuilderBase {
 	constructor(gpu) {
 		this.nodeMap = {};
 		this.nativeFunctions = {};
+		this.nativeVariables = {};
 		this.gpu = gpu;
 		this.rootKernel = null;
 		this.Node = null;
@@ -25,6 +26,9 @@ module.exports = class FunctionBuilderBase {
 		this.nativeFunctions[functionName] = glslFunctionString;
 	}
 
+	addNativeVariable(variableName, variable) {
+	  this.nativeVariables[variableName] = variable;
+  }
 	/**
 	 * @memberOf FunctionBuilderBase#
 	 * @function
@@ -103,7 +107,6 @@ module.exports = class FunctionBuilderBase {
 	traceFunctionCalls(functionName, retList, parent) {
 		functionName = functionName || 'kernel';
 		retList = retList || [];
-
 		const fNode = this.nodeMap[functionName];
 		if (fNode) {
 			// Check if function already exists
@@ -224,6 +227,14 @@ module.exports = class FunctionBuilderBase {
 		return this.getPrototypesFromFunctionNames(Object.keys(this.nodeMap));
 	}
 
+	getStringFromNativeVariables() {
+	  const variabels = this.nativeVariables;
+	  let result = [];
+	  for (const p in variabels) {
+	    result.push(variabels[p].getDeclarationString());
+    }
+    return result.join('\n');
+  }
 
 	/**
 	 * @memberOf FunctionBuilderBase#
@@ -310,9 +321,11 @@ module.exports = class FunctionBuilderBase {
 		}
 
 		if (functionName) {
-			return this.getStringFromFunctionNames(this.traceFunctionCalls(functionName, [], opt).reverse(), opt);
+			return this.getStringFromNativeVariables()
+        + this.getStringFromFunctionNames(this.traceFunctionCalls(functionName, [], opt).reverse(), opt);
 		}
-		return this.getStringFromFunctionNames(Object.keys(this.nodeMap), opt);
+		return this.getStringFromNativeVariables()
+      + this.getStringFromFunctionNames(Object.keys(this.nodeMap), opt);
 	}
 
 	polyfillStandardFunctions() {

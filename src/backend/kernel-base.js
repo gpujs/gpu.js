@@ -53,7 +53,7 @@ module.exports = class BaseKernel {
 		this.subKernelOutputVariableNames = null;
 		this.functionBuilder = null;
 		this.paramTypes = null;
-
+    this.events = {};
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
 			this[p] = settings[p];
@@ -373,4 +373,36 @@ module.exports = class BaseKernel {
 	addNativeFunction(name, source) {
 		this.functionBuilder.addNativeFunction(name, source);
 	}
+
+  addNativeVariable(name, variable) {
+	  this.functionBuilder.addNativeVariable(name, variable);
+  }
+
+	on(eventName, fn) {
+    if (!this.events.hasOwnProperty(eventName)) {
+      this.events[eventName] = [];
+    }
+	  this.events[eventName].push(fn);
+  }
+
+  off(eventName, fn) {
+    if (!this.events.hasOwnProperty(eventName)) return;
+	  if (!fn) {
+	    delete this.events[eventName];
+    } else {
+      const events = this.events[eventName];
+	    const index = events.indexOf(fn);
+	    if (index > -1) {
+	      events.splice(index, 1);
+      }
+    }
+  }
+
+	trigger(eventName) {
+	  if (!this.events.hasOwnProperty(eventName)) return;
+    const events = this.events[eventName];
+    for (let i = 0; i < events.length; i++) {
+      events[i]();
+    }
+  }
 };

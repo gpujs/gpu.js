@@ -59,7 +59,7 @@ module.exports = function () {
 		this.subKernelOutputVariableNames = null;
 		this.functionBuilder = null;
 		this.paramTypes = null;
-
+		this.events = {};
 		for (var p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
 			this[p] = settings[p];
@@ -435,6 +435,42 @@ module.exports = function () {
 		key: 'addNativeFunction',
 		value: function addNativeFunction(name, source) {
 			this.functionBuilder.addNativeFunction(name, source);
+		}
+	}, {
+		key: 'addNativeVariable',
+		value: function addNativeVariable(name, variable) {
+			this.functionBuilder.addNativeVariable(name, variable);
+		}
+	}, {
+		key: 'on',
+		value: function on(eventName, fn) {
+			if (!this.events.hasOwnProperty(eventName)) {
+				this.events[eventName] = [];
+			}
+			this.events[eventName].push(fn);
+		}
+	}, {
+		key: 'off',
+		value: function off(eventName, fn) {
+			if (!this.events.hasOwnProperty(eventName)) return;
+			if (!fn) {
+				delete this.events[eventName];
+			} else {
+				var events = this.events[eventName];
+				var index = events.indexOf(fn);
+				if (index > -1) {
+					events.splice(index, 1);
+				}
+			}
+		}
+	}, {
+		key: 'trigger',
+		value: function trigger(eventName) {
+			if (!this.events.hasOwnProperty(eventName)) return;
+			var events = this.events[eventName];
+			for (var i = 0; i < events.length; i++) {
+				events[i]();
+			}
 		}
 	}]);
 

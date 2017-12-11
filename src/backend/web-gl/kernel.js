@@ -1,12 +1,11 @@
 'use strict';
-
-const fs = require('fs');
 const KernelBase = require('../kernel-base');
 const utils = require('../../core/utils');
 const Texture = require('../../core/texture');
 const fragShaderString = require('./shader-frag');
 const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
+const webGlRandom = require('./plugin/random');
 const canvases = [];
 const maxTexSizes = {};
 module.exports = class WebGLKernel extends KernelBase {
@@ -194,6 +193,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		gl.attachShader(program, vertShader);
 		gl.attachShader(program, fragShader);
 		gl.linkProgram(program);
+    this.trigger('build');
 		this.framebuffer = gl.createFramebuffer();
 		this.framebuffer.width = texSize[0];
 		this.framebuffer.height = texSize[1];
@@ -277,6 +277,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		gl.useProgram(this.program);
 		gl.scissor(0, 0, texSize[0], texSize[1]);
 
+		this.trigger('run');
 		if (!this.hardcodeConstants) {
 			const uOutputDimLoc = this.getUniformLocation('uOutputDim');
 			gl.uniform3fv(uOutputDimLoc, this.threadDim);
@@ -383,7 +384,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				return utils.splitArray(result, output[0]);
 			} else if (output.length === 3) {
 				const cube = utils.splitArray(result, output[0] * output[1]);
-				return cube.map(function(x) {
+				return cube.map((x) => {
 					return utils.splitArray(x, output[0]);
 				});
 			}
@@ -995,8 +996,12 @@ module.exports = class WebGLKernel extends KernelBase {
 		} else {
 			result.push('highp float kernelResult = 0.0');
 		}
-
-		return this._linesToString(result) + this.functionBuilder.getPrototypeString('kernel');
+		const kernelString = this.functionBuilder.getPrototypeString('kernel');
+		let pluginsString = '';
+		if (this.functionBuilder.rootKernel.calledFunctions.some((fnName) => fnName === 'random')) {
+		  pluginsString += webGlRandom(this);
+    }
+		return this._linesToString(result) + pluginsString + kernelString;
 	}
 
 	/**

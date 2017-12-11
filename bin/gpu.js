@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.0.0-rc.7
- * @date Sat Nov 11 2017 08:38:09 GMT-0500 (EST)
+ * @version 1.0.0-rc.8
+ * @date Mon Dec 11 2017 12:25:46 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -736,7 +736,7 @@ module.exports = function (_BaseFunctionNode) {
 
 	return CPUFunctionNode;
 }(BaseFunctionNode);
-},{"../../core/utils":25,"../function-node-base":7}],3:[function(require,module,exports){
+},{"../../core/utils":28,"../function-node-base":7}],3:[function(require,module,exports){
 'use strict';
 
 var utils = require('../../core/utils');
@@ -745,7 +745,7 @@ var kernelRunShortcut = require('../kernel-run-shortcut');
 module.exports = function (cpuKernel, name) {
   return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: function ' + utils.allPropertiesOf.toString() + ',\n      clone: function ' + utils.clone.toString() + ',\n      /*splitArray: function ' + utils.splitArray.toString() + ',\n      getArgumentType: function ' + utils.getArgumentType.toString() + ',\n      getOutput: function ' + utils.getOutput.toString() + ',\n      dimToTexSize: function ' + utils.dimToTexSize.toString() + ',\n      copyFlatten: function ' + utils.copyFlatten.toString() + ',\n      flatten: function ' + utils.flatten.toString() + ',\n      systemEndianness: \'' + utils.systemEndianness() + '\',\n      initWebGl: function ' + utils.initWebGl.toString() + ',\n      isArray: function ' + utils.isArray.toString() + '*/\n    };\n    class ' + (name || 'Kernel') + ' {\n      constructor() {        \n        this.argumentsLength = 0;\n        this._canvas = null;\n        this._webGl = null;\n        this.built = false;\n        this.program = null;\n        this.paramNames = ' + JSON.stringify(cpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(cpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(cpuKernel.texSize) + ';\n        this.output = ' + JSON.stringify(cpuKernel.output) + ';\n        this._kernelString = `' + cpuKernel._kernelString + '`;\n        this.output = ' + JSON.stringify(cpuKernel.output) + ';\n\t\t    this.run = function() {\n          this.run = null;\n          this.build();\n          return this.run.apply(this, arguments);\n        }.bind(this);\n        this.thread = {\n          x: 0,\n          y: 0,\n          z: 0\n        };\n      }\n      setCanvas(canvas) { this._canvas = canvas; return this; }\n      setWebGl(webGl) { this._webGl = webGl; return this; }\n      ' + cpuKernel.build.toString() + '\n      run () { ' + cpuKernel.kernelString + ' }\n      getKernelString() { return this._kernelString; }\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
 };
-},{"../../core/utils":25,"../kernel-run-shortcut":9}],4:[function(require,module,exports){
+},{"../../core/utils":28,"../kernel-run-shortcut":9}],4:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -989,7 +989,7 @@ module.exports = function (_KernelBase) {
 
 	return CPUKernel;
 }(KernelBase);
-},{"../../core/utils":25,"../kernel-base":8,"./kernel-string":3}],5:[function(require,module,exports){
+},{"../../core/utils":28,"../kernel-base":8,"./kernel-string":3}],5:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -1030,7 +1030,7 @@ module.exports = function (_RunnerBase) {
 
 	return CPURunner;
 }(RunnerBase);
-},{"../../core/utils":25,"../runner-base":10,"./function-builder":1,"./kernel":4}],6:[function(require,module,exports){
+},{"../../core/utils":28,"../runner-base":10,"./function-builder":1,"./kernel":4}],6:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -1044,6 +1044,7 @@ module.exports = function () {
 
 		this.nodeMap = {};
 		this.nativeFunctions = {};
+		this.nativeVariables = {};
 		this.gpu = gpu;
 		this.rootKernel = null;
 		this.Node = null;
@@ -1054,7 +1055,11 @@ module.exports = function () {
 		value: function addNativeFunction(functionName, glslFunctionString) {
 			this.nativeFunctions[functionName] = glslFunctionString;
 		}
-
+	}, {
+		key: 'addNativeVariable',
+		value: function addNativeVariable(variableName, variable) {
+			this.nativeVariables[variableName] = variable;
+		}
 
 	}, {
 		key: 'addFunction',
@@ -1101,7 +1106,6 @@ module.exports = function () {
 		value: function traceFunctionCalls(functionName, retList, parent) {
 			functionName = functionName || 'kernel';
 			retList = retList || [];
-
 			var fNode = this.nodeMap[functionName];
 			if (fNode) {
 				var functionIndex = retList.indexOf(functionName);
@@ -1171,6 +1175,16 @@ module.exports = function () {
 			}
 			return this.getPrototypesFromFunctionNames(Object.keys(this.nodeMap));
 		}
+	}, {
+		key: 'getStringFromNativeVariables',
+		value: function getStringFromNativeVariables() {
+			var variabels = this.nativeVariables;
+			var result = [];
+			for (var p in variabels) {
+				result.push(variabels[p].getDeclarationString());
+			}
+			return result.join('\n');
+		}
 
 
 	}, {
@@ -1219,9 +1233,9 @@ module.exports = function () {
 			}
 
 			if (functionName) {
-				return this.getStringFromFunctionNames(this.traceFunctionCalls(functionName, [], opt).reverse(), opt);
+				return this.getStringFromNativeVariables() + this.getStringFromFunctionNames(this.traceFunctionCalls(functionName, [], opt).reverse(), opt);
 			}
-			return this.getStringFromFunctionNames(Object.keys(this.nodeMap), opt);
+			return this.getStringFromNativeVariables() + this.getStringFromFunctionNames(Object.keys(this.nodeMap), opt);
 		}
 	}, {
 		key: 'polyfillStandardFunctions',
@@ -1262,6 +1276,7 @@ module.exports = function () {
 		this.prototypeOnly = null;
 		this.constants = null;
 		this.output = null;
+		this.plugins = new Set([]);
 
 		if (options) {
 			if (options.hasOwnProperty('debug')) {
@@ -1494,7 +1509,7 @@ module.exports = function () {
 
 	return BaseFunctionNode;
 }();
-},{"../core/utils":25,"acorn":27}],8:[function(require,module,exports){
+},{"../core/utils":28,"acorn":30}],8:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -1535,7 +1550,7 @@ module.exports = function () {
 		this.subKernelOutputVariableNames = null;
 		this.functionBuilder = null;
 		this.paramTypes = null;
-
+		this.events = {};
 		for (var p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
 			this[p] = settings[p];
@@ -1767,11 +1782,47 @@ module.exports = function () {
 		value: function addNativeFunction(name, source) {
 			this.functionBuilder.addNativeFunction(name, source);
 		}
+	}, {
+		key: 'addNativeVariable',
+		value: function addNativeVariable(name, variable) {
+			this.functionBuilder.addNativeVariable(name, variable);
+		}
+	}, {
+		key: 'on',
+		value: function on(eventName, fn) {
+			if (!this.events.hasOwnProperty(eventName)) {
+				this.events[eventName] = [];
+			}
+			this.events[eventName].push(fn);
+		}
+	}, {
+		key: 'off',
+		value: function off(eventName, fn) {
+			if (!this.events.hasOwnProperty(eventName)) return;
+			if (!fn) {
+				delete this.events[eventName];
+			} else {
+				var events = this.events[eventName];
+				var index = events.indexOf(fn);
+				if (index > -1) {
+					events.splice(index, 1);
+				}
+			}
+		}
+	}, {
+		key: 'trigger',
+		value: function trigger(eventName) {
+			if (!this.events.hasOwnProperty(eventName)) return;
+			var events = this.events[eventName];
+			for (var i = 0; i < events.length; i++) {
+				events[i]();
+			}
+		}
 	}]);
 
 	return BaseKernel;
 }();
-},{"../core/utils":25}],9:[function(require,module,exports){
+},{"../core/utils":28}],9:[function(require,module,exports){
 'use strict';
 
 var utils = require('../core/utils');
@@ -1806,7 +1857,7 @@ module.exports = function kernelRunShortcut(kernel) {
 
 	return shortcut;
 };
-},{"../core/utils":25}],10:[function(require,module,exports){
+},{"../core/utils":28}],10:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -1888,7 +1939,7 @@ module.exports = function () {
 
 	return BaseRunner;
 }();
-},{"../core/utils":25,"./kernel-run-shortcut":9}],11:[function(require,module,exports){
+},{"../core/utils":28,"./kernel-run-shortcut":9}],11:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2747,7 +2798,7 @@ function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
 function webGlRegexOptimize(inStr) {
 	return inStr.replace(DECODE32_ENCODE32, '((').replace(ENCODE32_DECODE32, '((');
 }
-},{"../../core/utils":25,"../function-node-base":7}],13:[function(require,module,exports){
+},{"../../core/utils":28,"../function-node-base":7}],13:[function(require,module,exports){
 'use strict';
 
 var utils = require('../../core/utils');
@@ -2756,7 +2807,7 @@ var kernelRunShortcut = require('../kernel-run-shortcut');
 module.exports = function (gpuKernel, name) {
   return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: function ' + utils.allPropertiesOf.toString() + ',\n      clone: function ' + utils.clone.toString() + ',\n      splitArray: function ' + utils.splitArray.toString() + ',\n      getArgumentType: function ' + utils.getArgumentType.toString() + ',\n      getDimensions: function ' + utils.getDimensions.toString() + ',\n      dimToTexSize: function ' + utils.dimToTexSize.toString() + ',\n      copyFlatten: function ' + utils.copyFlatten.toString() + ',\n      flatten: function ' + utils.flatten.toString() + ',\n      systemEndianness: \'' + utils.systemEndianness() + '\',\n      initWebGl: function ' + utils.initWebGl.toString() + ',\n      isArray: function ' + utils.isArray.toString() + '\n    };\n    class ' + (name || 'Kernel') + ' {\n      constructor() {\n        this.argumentsLength = 0;\n        this._canvas = null;\n        this._webGl = null;\n        this.built = false;\n        this.program = null;\n        this.paramNames = ' + JSON.stringify(gpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(gpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(gpuKernel.texSize) + ';\n        this.output = ' + JSON.stringify(gpuKernel.output) + ';\n        this.compiledFragShaderString = `' + gpuKernel.compiledFragShaderString + '`;\n\t\t    this.compiledVertShaderString = `' + gpuKernel.compiledVertShaderString + '`;\n\t\t    this.programUniformLocationCache = {};\n\t\t    this.textureCache = {};\n\t\t    this.subKernelOutputTextures = null;\n      }\n      ' + gpuKernel._getFragShaderString.toString() + '\n      ' + gpuKernel._getVertShaderString.toString() + '\n      validateOptions() {}\n      setupParams() {}\n      setCanvas(canvas) { this._canvas = canvas; return this; }\n      setWebGl(webGl) { this._webGl = webGl; return this; }\n      ' + gpuKernel.getUniformLocation.toString() + '\n      ' + gpuKernel.setupParams.toString() + '\n      ' + gpuKernel.build.toString() + '\n\t\t  ' + gpuKernel.run.toString() + '\n\t\t  ' + gpuKernel._addArgument.toString() + '\n\t\t  ' + gpuKernel.getArgumentTexture.toString() + '\n\t\t  ' + gpuKernel.getTextureCache.toString() + '\n\t\t  ' + gpuKernel.getOutputTexture.toString() + '\n\t\t  ' + gpuKernel.renderOutput.toString() + '\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
 };
-},{"../../core/utils":25,"../kernel-run-shortcut":9}],14:[function(require,module,exports){
+},{"../../core/utils":28,"../kernel-run-shortcut":9}],14:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -2767,13 +2818,13 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var fs = require('fs');
 var KernelBase = require('../kernel-base');
 var utils = require('../../core/utils');
 var Texture = require('../../core/texture');
 var fragShaderString = require('./shader-frag');
 var vertShaderString = require('./shader-vert');
 var kernelString = require('./kernel-string');
+var webGlRandom = require('./plugin/random');
 var canvases = [];
 var maxTexSizes = {};
 module.exports = function (_KernelBase) {
@@ -2930,6 +2981,7 @@ module.exports = function (_KernelBase) {
 			gl.attachShader(program, vertShader);
 			gl.attachShader(program, fragShader);
 			gl.linkProgram(program);
+			this.trigger('build');
 			this.framebuffer = gl.createFramebuffer();
 			this.framebuffer.width = texSize[0];
 			this.framebuffer.height = texSize[1];
@@ -2995,6 +3047,7 @@ module.exports = function (_KernelBase) {
 			gl.useProgram(this.program);
 			gl.scissor(0, 0, texSize[0], texSize[1]);
 
+			this.trigger('run');
 			if (!this.hardcodeConstants) {
 				var uOutputDimLoc = this.getUniformLocation('uOutputDim');
 				gl.uniform3fv(uOutputDimLoc, this.threadDim);
@@ -3482,8 +3535,14 @@ module.exports = function (_KernelBase) {
 			} else {
 				result.push('highp float kernelResult = 0.0');
 			}
-
-			return this._linesToString(result) + this.functionBuilder.getPrototypeString('kernel');
+			var kernelString = this.functionBuilder.getPrototypeString('kernel');
+			var pluginsString = '';
+			if (this.functionBuilder.rootKernel.calledFunctions.some(function (fnName) {
+				return fnName === 'random';
+			})) {
+				pluginsString += webGlRandom(this);
+			}
+			return this._linesToString(result) + pluginsString + kernelString;
 		}
 
 
@@ -3633,7 +3692,37 @@ module.exports = function (_KernelBase) {
 
 	return WebGLKernel;
 }(KernelBase);
-},{"../../core/texture":23,"../../core/utils":25,"../kernel-base":8,"./kernel-string":13,"./shader-frag":16,"./shader-vert":17,"fs":28}],15:[function(require,module,exports){
+},{"../../core/texture":26,"../../core/utils":28,"../kernel-base":8,"./kernel-string":13,"./plugin/random":15,"./shader-frag":17,"./shader-vert":18}],15:[function(require,module,exports){
+'use strict';
+
+var _webGlInteger = require('../variable/web-gl-integer');
+
+var _webGlInteger2 = _interopRequireDefault(_webGlInteger);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+module.exports = function webGlRandom(kernel) {
+  var hashFunction = '\n\nint hash(int x) {\n  x += (x << 10);\n  x ^= (x >>  6);\n  x += (x <<  3);\n  x ^= (x >> 11);\n  x += (x << 15);\n  return x;\n}\n  \nint hash(uvec4 v) { return hash( v.x ^ hash(v.y) ^ hash(v.z) ^ hash(v.w)); }';
+
+  var floatConstructFunction = '\nfloat floatConstruct(float f) {\n  const int ieeeMantissa = 0x007FFFFFu;\n  const int ieeeOne = 0x3F800000u;\n  m &= ieeeMantissa;\n  m |= ieeeOne;\n  return f - 1.0;\n}';
+
+  var seededRandomFunction = '\nfloat seededRandom(vec4 v) { return floatConstruct(hash(floatBitsToUint(v))); }';
+
+  var randomFunction = '\nfloat random() {\n  vec4 inputs = vec4(threadId, time); \n  float rand = seededRandom(inputs);\n  return rand;\n}';
+  var time = new _webGlInteger2.default(kernel, 'time');
+  kernel.addNativeVariable(time);
+
+  kernel.on('build', function () {
+    time.setLocation();
+  });
+
+  kernel.on('run', function () {
+    time.value = Date.now();
+  });
+
+  return [hashFunction, floatConstructFunction, seededRandomFunction, time.getDeclarationString(), randomFunction].join('\n\n');
+};
+},{"../variable/web-gl-integer":21}],16:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -3673,15 +3762,15 @@ module.exports = function (_RunnerBase) {
 
 	return WebGLRunner;
 }(RunnerBase);
-},{"../../core/utils":25,"../runner-base":10,"./function-builder":11,"./kernel":14}],16:[function(require,module,exports){
+},{"../../core/utils":28,"../runner-base":10,"./function-builder":11,"./kernel":14}],17:[function(require,module,exports){
 "use strict";
 
 module.exports = "__HEADER__;\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nconst float LOOP_MAX = __LOOP_MAX__;\n#define EPSILON 0.0000001;\n\n__CONSTANTS__;\n\nvarying highp vec2 vTexCoord;\n\nvec4 round(vec4 x) {\n  return floor(x + 0.5);\n}\n\nhighp float round(highp float x) {\n  return floor(x + 0.5);\n}\n\nvec2 integerMod(vec2 x, float y) {\n  vec2 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec3 integerMod(vec3 x, float y) {\n  vec3 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec4 integerMod(vec4 x, vec4 y) {\n  vec4 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nhighp float integerMod(highp float x, highp float y) {\n  highp float res = floor(mod(x, y));\n  return res * (res > floor(y) - 1.0 ? 0.0 : 1.0);\n}\n\nhighp int integerMod(highp int x, highp int y) {\n  return int(integerMod(float(x), float(y)));\n}\n\n// Here be dragons!\n// DO NOT OPTIMIZE THIS CODE\n// YOU WILL BREAK SOMETHING ON SOMEBODY'S MACHINE\n// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME\nconst vec2 MAGIC_VEC = vec2(1.0, -256.0);\nconst vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);\nconst vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536\nhighp float decode32(highp vec4 rgba) {\n  __DECODE32_ENDIANNESS__;\n  rgba *= 255.0;\n  vec2 gte128;\n  gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;\n  gte128.y = rgba.a >= 128.0 ? 1.0 : 0.0;\n  float exponent = 2.0 * rgba.a - 127.0 + dot(gte128, MAGIC_VEC);\n  float res = exp2(round(exponent));\n  rgba.b = rgba.b - 128.0 * gte128.x;\n  res = dot(rgba, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;\n  res *= gte128.y * -2.0 + 1.0;\n  return res;\n}\n\nhighp vec4 encode32(highp float f) {\n  highp float F = abs(f);\n  highp float sign = f < 0.0 ? 1.0 : 0.0;\n  highp float exponent = floor(log2(F));\n  highp float mantissa = (exp2(-exponent) * F);\n  // exponent += floor(log2(mantissa));\n  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;\n  rgba.rg = integerMod(rgba.rg, 256.0);\n  rgba.b = integerMod(rgba.b, 128.0);\n  rgba.a = exponent*0.5 + 63.5;\n  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;\n  rgba = floor(rgba);\n  rgba *= 0.003921569; // 1/255\n  __ENCODE32_ENDIANNESS__;\n  return rgba;\n}\n// Dragons end here\n\nhighp float index;\nhighp vec3 threadId;\n\nhighp vec3 indexTo3D(highp float idx, highp vec3 texDim) {\n  highp float z = floor(idx / (texDim.x * texDim.y));\n  idx -= z * texDim.x * texDim.y;\n  highp float y = floor(idx / texDim.x);\n  highp float x = integerMod(idx, texDim.x);\n  return vec3(x, y, z);\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {\n  highp vec3 xyz = vec3(x, y, z);\n  xyz = floor(xyz + 0.5);\n  __GET_WRAPAROUND__;\n  highp float index = round(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z));\n  __GET_TEXTURE_CHANNEL__;\n  highp float w = round(texSize.x);\n  vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  highp vec4 texel = texture2D(tex, st / texSize);\n  __GET_RESULT__;\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {\n  return get(tex, texSize, texDim, 0.0, y, x);\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {\n  return get(tex, texSize, texDim, 0.0, 0.0, x);\n}\n\nhighp vec4 actualColor;\nvoid color(float r, float g, float b, float a) {\n  actualColor = vec4(r,g,b,a);\n}\n\nvoid color(float r, float g, float b) {\n  color(r,g,b,1.0);\n}\n\n__MAIN_PARAMS__;\n__MAIN_CONSTANTS__;\n__KERNEL__;\n\nvoid main(void) {\n  index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;\n  __MAIN_RESULT__;\n}";
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 "use strict";
 
 module.exports = "precision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nattribute highp vec2 aPos;\nattribute highp vec2 aTexCoord;\n\nvarying highp vec2 vTexCoord;\nuniform vec2 ratio;\n\nvoid main(void) {\n  gl_Position = vec4((aPos + vec2(1)) * ratio + vec2(-1), 0, 1);\n  vTexCoord = aTexCoord;\n}";
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -3718,7 +3807,110 @@ module.exports = function (_WebGLKernel) {
 
 	return WebGLValidatorKernel;
 }(WebGLKernel);
-},{"../../core/utils":25,"./kernel":14}],19:[function(require,module,exports){
+},{"../../core/utils":28,"./kernel":14}],20:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Base = function () {
+  function Base(kernel, name) {
+    _classCallCheck(this, Base);
+
+    this.kernel = kernel;
+    this.location = null;
+    this.name = name;
+    this._value = null;
+  }
+
+  _createClass(Base, [{
+    key: 'getDeclarationString',
+    value: function getDeclarationString() {
+      throw new Error('getDeclarationString not defined on base variable');
+    }
+  }, {
+    key: 'getLocation',
+    value: function getLocation() {
+      throw new Error('getLocation not defined on base variable');
+    }
+  }, {
+    key: 'setNativeValue',
+    value: function setNativeValue(value) {
+      throw new Error('setNativeValue not defined on base variable');
+    }
+  }, {
+    key: 'value',
+    get: function get() {
+      return this._value;
+    },
+    set: function set(value) {
+      this._value = value;
+      this.setNativeValue(value);
+    }
+  }]);
+
+  return Base;
+}();
+
+exports.default = Base;
+},{}],21:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _base = require('./base');
+
+var _base2 = _interopRequireDefault(_base);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var WebGlNumber = function (_Base) {
+  _inherits(WebGlNumber, _Base);
+
+  function WebGlNumber() {
+    _classCallCheck(this, WebGlNumber);
+
+    return _possibleConstructorReturn(this, (WebGlNumber.__proto__ || Object.getPrototypeOf(WebGlNumber)).apply(this, arguments));
+  }
+
+  _createClass(WebGlNumber, [{
+    key: 'getDeclarationString',
+    value: function getDeclarationString() {
+      return 'uint ' + this.name + ' = 0;';
+    }
+  }, {
+    key: 'setLocation',
+    value: function setLocation() {
+      debugger;
+      this.location = this.kernel.getUniformLocation(this.name);
+    }
+  }, {
+    key: 'setNativeValue',
+    value: function setNativeValue(value) {
+      return this.kernel.uniform1i(this.name, this._value);
+    }
+  }]);
+
+  return WebGlNumber;
+}(_base2.default);
+
+exports.default = WebGlNumber;
+},{"./base":20}],22:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -3726,7 +3918,7 @@ module.exports = function alias(name, fn) {
 	var fnString = fn.toString();
 	return new Function('return function ' + name + ' (' + utils.getParamNamesFromString(fnString).join(', ') + ') {' + utils.getFunctionBodyFromString(fnString) + '}')();
 };
-},{"./utils":25}],20:[function(require,module,exports){
+},{"./utils":28}],23:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -3781,7 +3973,7 @@ module.exports = function () {
 
 	return GPUCore;
 }();
-},{"./utils-core":24}],21:[function(require,module,exports){
+},{"./utils-core":27}],24:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -4000,7 +4192,7 @@ var GPU = function (_GPUCore) {
 Object.assign(GPU, GPUCore);
 
 module.exports = GPU;
-},{"../backend/cpu/runner":5,"../backend/web-gl/runner":15,"../backend/web-gl/validator-kernel":18,"./gpu-core":20,"./utils":25}],22:[function(require,module,exports){
+},{"../backend/cpu/runner":5,"../backend/web-gl/runner":16,"../backend/web-gl/validator-kernel":19,"./gpu-core":23,"./utils":28}],25:[function(require,module,exports){
 "use strict";
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -4027,7 +4219,7 @@ module.exports = function Input(value, size) {
 		}
 	}
 };
-},{}],23:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -4073,7 +4265,7 @@ module.exports = function () {
 
 	return Texture;
 }();
-},{}],24:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 'use strict';
 
 
@@ -4199,7 +4391,7 @@ if (_isWebGlSupported) {
 }
 
 module.exports = UtilsCore;
-},{}],25:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 'use strict';
 
 
@@ -4541,7 +4733,7 @@ var Utils = function (_UtilsCore) {
 Object.assign(Utils, UtilsCore);
 
 module.exports = Utils;
-},{"../index":26,"./input":22,"./texture":23,"./utils-core":24}],26:[function(require,module,exports){
+},{"../index":29,"./input":25,"./texture":26,"./utils-core":27}],29:[function(require,module,exports){
 'use strict';
 
 var GPU = require('./core/gpu');
@@ -4584,7 +4776,7 @@ if (typeof module !== 'undefined') {
 if (typeof window !== 'undefined') {
 	window.GPU = GPU;
 }
-},{"./backend/cpu/function-builder":1,"./backend/cpu/function-node":2,"./backend/cpu/kernel":4,"./backend/cpu/runner":5,"./backend/web-gl/function-builder":11,"./backend/web-gl/function-node":12,"./backend/web-gl/kernel":14,"./backend/web-gl/runner":15,"./core/alias":19,"./core/gpu":21,"./core/input":22,"./core/texture":23,"./core/utils":25}],27:[function(require,module,exports){
+},{"./backend/cpu/function-builder":1,"./backend/cpu/function-node":2,"./backend/cpu/kernel":4,"./backend/cpu/runner":5,"./backend/web-gl/function-builder":11,"./backend/web-gl/function-node":12,"./backend/web-gl/kernel":14,"./backend/web-gl/runner":16,"./core/alias":22,"./core/gpu":24,"./core/input":25,"./core/texture":26,"./core/utils":28}],30:[function(require,module,exports){
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -4721,15 +4913,15 @@ var types = {
   eq: new TokenType("=", {beforeExpr: true, isAssign: true}),
   assign: new TokenType("_=", {beforeExpr: true, isAssign: true}),
   incDec: new TokenType("++/--", {prefix: true, postfix: true, startsExpr: true}),
-  prefix: new TokenType("prefix", {beforeExpr: true, prefix: true, startsExpr: true}),
+  prefix: new TokenType("!/~", {beforeExpr: true, prefix: true, startsExpr: true}),
   logicalOR: binop("||", 1),
   logicalAND: binop("&&", 2),
   bitwiseOR: binop("|", 3),
   bitwiseXOR: binop("^", 4),
   bitwiseAND: binop("&", 5),
-  equality: binop("==/!=", 6),
-  relational: binop("</>", 7),
-  bitShift: binop("<</>>", 8),
+  equality: binop("==/!=/===/!==", 6),
+  relational: binop("</>/<=/>=", 7),
+  bitShift: binop("<</>>/>>>", 8),
   plusMin: new TokenType("+/-", {beforeExpr: true, binop: 9, prefix: true, startsExpr: true}),
   modulo: binop("%", 10),
   star: binop("*", 10),
@@ -4977,7 +5169,7 @@ Parser.prototype.parse = function parse () {
 var pp = Parser.prototype;
 
 
-var literal = /^(?:'((?:[^']|\.)*)'|"((?:[^"]|\.)*)"|;)/;
+var literal = /^(?:'((?:\\.|[^'])*?)'|"((?:\\.|[^"])*?)"|;)/;
 pp.strictDirective = function(start) {
   var this$1 = this;
 
@@ -5104,6 +5296,7 @@ pp$1.parseTopLevel = function(node) {
     var stmt = this$1.parseStatement(true, true, exports);
     node.body.push(stmt);
   }
+  this.adaptDirectivePrologue(node.body);
   this.next();
   if (this.options.ecmaVersion >= 6) {
     node.sourceType = this.options.sourceType;
@@ -5827,6 +6020,20 @@ pp$1.parseImportSpecifiers = function() {
   return nodes
 };
 
+pp$1.adaptDirectivePrologue = function(statements) {
+  for (var i = 0; i < statements.length && this.isDirectiveCandidate(statements[i]); ++i) {
+    statements[i].directive = statements[i].expression.raw.slice(1, -1);
+  }
+};
+pp$1.isDirectiveCandidate = function(statement) {
+  return (
+    statement.type === "ExpressionStatement" &&
+    statement.expression.type === "Literal" &&
+    typeof statement.expression.value === "string" &&
+    (this.input[statement.start] === "\"" || this.input[statement.start] === "'")
+  )
+};
+
 var pp$2 = Parser.prototype;
 
 
@@ -5934,23 +6141,19 @@ pp$2.parseRestBinding = function() {
 
 
 pp$2.parseBindingAtom = function() {
-  if (this.options.ecmaVersion < 6) { return this.parseIdent() }
-  switch (this.type) {
-  case types.name:
-    return this.parseIdent()
+  if (this.options.ecmaVersion >= 6) {
+    switch (this.type) {
+    case types.bracketL:
+      var node = this.startNode();
+      this.next();
+      node.elements = this.parseBindingList(types.bracketR, true, true);
+      return this.finishNode(node, "ArrayPattern")
 
-  case types.bracketL:
-    var node = this.startNode();
-    this.next();
-    node.elements = this.parseBindingList(types.bracketR, true, true);
-    return this.finishNode(node, "ArrayPattern")
-
-  case types.braceL:
-    return this.parseObj(true)
-
-  default:
-    this.unexpected();
+    case types.braceL:
+      return this.parseObj(true)
+    }
   }
+  return this.parseIdent()
 };
 
 pp$2.parseBindingList = function(close, allowEmpty, allowTrailingComma) {
@@ -6213,7 +6416,7 @@ pp$3.parseMaybeUnary = function(refDestructuringErrors, sawUnary) {
 
   var startPos = this.start, startLoc = this.startLoc, expr;
   if (this.inAsync && this.isContextual("await")) {
-    expr = this.parseAwait(refDestructuringErrors);
+    expr = this.parseAwait();
     sawUnary = true;
   } else if (this.type.prefix) {
     var node = this.startNode(), update = this.type === types.incDec;
@@ -6312,12 +6515,16 @@ pp$3.parseExprAtom = function(refDestructuringErrors) {
   case types._super:
     if (!this.inFunction)
       { this.raise(this.start, "'super' outside of function or class"); }
-
-  case types._this:
-    var type = this.type === types._this ? "ThisExpression" : "Super";
     node = this.startNode();
     this.next();
-    return this.finishNode(node, type)
+    if (this.type !== types.dot && this.type !== types.bracketL && this.type !== types.parenL)
+      { this.unexpected(); }
+    return this.finishNode(node, "Super")
+
+  case types._this:
+    node = this.startNode();
+    this.next();
+    return this.finishNode(node, "ThisExpression")
 
   case types.name:
     var startPos = this.start, startLoc = this.startLoc;
@@ -6546,12 +6753,12 @@ pp$3.parseTemplate = function(ref) {
   return this.finishNode(node, "TemplateLiteral")
 };
 
-
 pp$3.isAsyncProp = function(prop) {
   return !prop.computed && prop.key.type === "Identifier" && prop.key.name === "async" &&
-    (this.type === types.name || this.type === types.num || this.type === types.string || this.type === types.bracketL) &&
+    (this.type === types.name || this.type === types.num || this.type === types.string || this.type === types.bracketL || this.type.keyword) &&
     !lineBreak.test(this.input.slice(this.lastTokEnd, this.start))
 };
+
 
 pp$3.parseObj = function(isPattern, refDestructuringErrors) {
   var this$1 = this;
@@ -6565,29 +6772,34 @@ pp$3.parseObj = function(isPattern, refDestructuringErrors) {
       if (this$1.afterTrailingComma(types.braceR)) { break }
     } else { first = false; }
 
-    var prop = this$1.startNode(), isGenerator = (void 0), isAsync = (void 0), startPos = (void 0), startLoc = (void 0);
-    if (this$1.options.ecmaVersion >= 6) {
-      prop.method = false;
-      prop.shorthand = false;
-      if (isPattern || refDestructuringErrors) {
-        startPos = this$1.start;
-        startLoc = this$1.startLoc;
-      }
-      if (!isPattern)
-        { isGenerator = this$1.eat(types.star); }
-    }
-    this$1.parsePropertyName(prop);
-    if (!isPattern && this$1.options.ecmaVersion >= 8 && !isGenerator && this$1.isAsyncProp(prop)) {
-      isAsync = true;
-      this$1.parsePropertyName(prop, refDestructuringErrors);
-    } else {
-      isAsync = false;
-    }
-    this$1.parsePropertyValue(prop, isPattern, isGenerator, isAsync, startPos, startLoc, refDestructuringErrors);
+    var prop = this$1.parseProperty(isPattern, refDestructuringErrors);
     this$1.checkPropClash(prop, propHash);
-    node.properties.push(this$1.finishNode(prop, "Property"));
+    node.properties.push(prop);
   }
   return this.finishNode(node, isPattern ? "ObjectPattern" : "ObjectExpression")
+};
+
+pp$3.parseProperty = function(isPattern, refDestructuringErrors) {
+  var prop = this.startNode(), isGenerator, isAsync, startPos, startLoc;
+  if (this.options.ecmaVersion >= 6) {
+    prop.method = false;
+    prop.shorthand = false;
+    if (isPattern || refDestructuringErrors) {
+      startPos = this.start;
+      startLoc = this.startLoc;
+    }
+    if (!isPattern)
+      { isGenerator = this.eat(types.star); }
+  }
+  this.parsePropertyName(prop);
+  if (!isPattern && this.options.ecmaVersion >= 8 && !isGenerator && this.isAsyncProp(prop)) {
+    isAsync = true;
+    this.parsePropertyName(prop, refDestructuringErrors);
+  } else {
+    isAsync = false;
+  }
+  this.parsePropertyValue(prop, isPattern, isGenerator, isAsync, startPos, startLoc, refDestructuringErrors);
+  return this.finishNode(prop, "Property")
 };
 
 pp$3.parsePropertyValue = function(prop, isPattern, isGenerator, isAsync, startPos, startLoc, refDestructuringErrors) {
@@ -6602,10 +6814,11 @@ pp$3.parsePropertyValue = function(prop, isPattern, isGenerator, isAsync, startP
     prop.kind = "init";
     prop.method = true;
     prop.value = this.parseMethod(isGenerator, isAsync);
-  } else if (this.options.ecmaVersion >= 5 && !prop.computed && prop.key.type === "Identifier" &&
+  } else if (!isPattern &&
+             this.options.ecmaVersion >= 5 && !prop.computed && prop.key.type === "Identifier" &&
              (prop.key.name === "get" || prop.key.name === "set") &&
              (this.type != types.comma && this.type != types.braceR)) {
-    if (isGenerator || isAsync || isPattern) { this.unexpected(); }
+    if (isGenerator || isAsync) { this.unexpected(); }
     prop.kind = prop.key.name;
     this.parsePropertyName(prop);
     prop.value = this.parseMethod(false);
@@ -6742,6 +6955,7 @@ pp$3.parseFunctionBody = function(node, isArrowFunction) {
     this.checkParams(node, !oldStrict && !useStrict && !isArrowFunction && this.isSimpleParamList(node.params));
     node.body = this.parseBlock(false);
     node.expression = false;
+    this.adaptDirectivePrologue(node.body.body);
     this.labels = oldLabels;
   }
   this.exitFunctionScope();
@@ -6801,7 +7015,6 @@ pp$3.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestruct
   return elts
 };
 
-
 pp$3.checkUnreserved = function(ref) {
   var start = ref.start;
   var end = ref.end;
@@ -6820,6 +7033,7 @@ pp$3.checkUnreserved = function(ref) {
     { this.raiseRecoverable(start, ("The keyword '" + name + "' is reserved")); }
 };
 
+
 pp$3.parseIdent = function(liberal, isBinding) {
   var node = this.startNode();
   if (liberal && this.options.allowReserved == "never") { liberal = false; }
@@ -6827,6 +7041,11 @@ pp$3.parseIdent = function(liberal, isBinding) {
     node.name = this.value;
   } else if (this.type.keyword) {
     node.name = this.type.keyword;
+
+    if ((node.name === "class" || node.name === "function") &&
+        (this.lastTokEnd !== this.lastTokStart + 1 || this.input.charCodeAt(this.lastTokStart) !== 46)) {
+      this.context.pop();
+    }
   } else {
     this.unexpected();
   }
@@ -7317,7 +7536,7 @@ pp$8.readToken_mult_modulo_exp = function(code) {
   var size = 1;
   var tokentype = code === 42 ? types.star : types.modulo;
 
-  if (this.options.ecmaVersion >= 7 && next === 42) {
+  if (this.options.ecmaVersion >= 7 && code == 42 && next === 42) {
     ++size;
     tokentype = types.starstar;
     next = this.input.charCodeAt(this.pos + 2);
@@ -7343,7 +7562,7 @@ pp$8.readToken_caret = function() {
 pp$8.readToken_plus_min = function(code) { 
   var next = this.input.charCodeAt(this.pos + 1);
   if (next === code) {
-    if (next == 45 && this.input.charCodeAt(this.pos + 2) == 62 &&
+    if (next == 45 && !this.inModule && this.input.charCodeAt(this.pos + 2) == 62 &&
         (this.lastTokEnd === 0 || lineBreak.test(this.input.slice(this.lastTokEnd, this.pos)))) {
       this.skipLineComment(3);
       this.skipSpace();
@@ -7363,9 +7582,8 @@ pp$8.readToken_lt_gt = function(code) {
     if (this.input.charCodeAt(this.pos + size) === 61) { return this.finishOp(types.assign, size + 1) }
     return this.finishOp(types.bitShift, size)
   }
-  if (next == 33 && code == 60 && this.input.charCodeAt(this.pos + 2) == 45 &&
+  if (next == 33 && code == 60 && !this.inModule && this.input.charCodeAt(this.pos + 2) == 45 &&
       this.input.charCodeAt(this.pos + 3) == 45) {
-    if (this.inModule) { this.unexpected(); }
     this.skipLineComment(4);
     this.skipSpace();
     return this.nextToken()
@@ -7795,7 +8013,7 @@ pp$8.readWord = function() {
 };
 
 
-var version = "5.1.1";
+var version = "5.2.1";
 
 
 function parse(input, options) {
@@ -7849,6 +8067,4 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
 
-},{}],28:[function(require,module,exports){
-
-},{}]},{},[26]);
+},{}]},{},[29]);

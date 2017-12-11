@@ -57,6 +57,7 @@ module.exports = function () {
 		this.prototypeOnly = null;
 		this.constants = null;
 		this.output = null;
+		this.plugins = new Set([]);
 
 		if (options) {
 			if (options.hasOwnProperty('debug')) {
