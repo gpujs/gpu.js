@@ -1,6 +1,5 @@
 'use strict';
 
-const fs = require('fs');
 const KernelBase = require('../kernel-base');
 const utils = require('../../core/utils');
 const Texture = require('../../core/texture');
