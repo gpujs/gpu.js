@@ -50,7 +50,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param {Array} retArr - return array string
 	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
 	 *
-	 * @returns {String} the prased openclgl string array
+	 * @returns {Array} the parsed webgl string array
 	 */
 	astGeneric(ast, retArr, funcParam) {
 		if (ast === null) {
@@ -379,7 +379,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		if (idtNode.type !== 'Identifier') {
 			throw this.astErrorOutput(
 				'IdentifierExpression - not an Identifier',
-				ast, funcParam
+        idtNode, funcParam
 			);
 		}
 
@@ -429,13 +429,13 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param {Array} retArr - return array string
 	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
 	 *
-	 * @returns {String} the prased openclgl string
+	 * @returns {Array} the parsed webgl string
 	 */
 	astForStatement(forNode, retArr, funcParam) {
 		if (forNode.type !== 'ForStatement') {
 			throw this.astErrorOutput(
 				'Invalid for statment',
-				ast, funcParam
+        forNode, funcParam
 			);
 		}
 
@@ -518,7 +518,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 
 		throw this.astErrorOutput(
 			'Invalid for statement',
-			ast, funcParam
+      forNode, funcParam
 		);
 	}
 
@@ -534,13 +534,13 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @param {Array} retArr - return array string
 	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
 	 *
-	 * @returns {String} the parsed openclgl string
+	 * @returns {Array} the parsed webgl string
 	 */
 	astWhileStatement(whileNode, retArr, funcParam) {
 		if (whileNode.type !== 'WhileStatement') {
 			throw this.astErrorOutput(
 				'Invalid while statment',
-				ast, funcParam
+        whileNode, funcParam
 			);
 		}
 

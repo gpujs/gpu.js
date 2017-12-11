@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.0.0-rc.8
- * @date Mon Dec 11 2017 12:54:19 GMT-0500 (EST)
+ * @version 1.0.0-rc.9
+ * @date Mon Dec 11 2017 13:07:20 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -266,7 +266,7 @@ module.exports = function (_BaseFunctionNode) {
 		key: 'astIdentifierExpression',
 		value: function astIdentifierExpression(idtNode, retArr, funcParam) {
 			if (idtNode.type !== 'Identifier') {
-				throw this.astErrorOutput('IdentifierExpression - not an Identifier', ast, funcParam);
+				throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode, funcParam);
 			}
 
 			switch (idtNode.name) {
@@ -309,7 +309,7 @@ module.exports = function (_BaseFunctionNode) {
 		key: 'astForStatement',
 		value: function astForStatement(forNode, retArr, funcParam) {
 			if (forNode.type !== 'ForStatement') {
-				throw this.astErrorOutput('Invalid for statment', ast, funcParam);
+				throw this.astErrorOutput('Invalid for statment', forNode, funcParam);
 			}
 
 			if (forNode.test && forNode.test.type === 'BinaryExpression') {
@@ -398,7 +398,7 @@ module.exports = function (_BaseFunctionNode) {
 		key: 'astWhileStatement',
 		value: function astWhileStatement(whileNode, retArr, funcParam) {
 			if (whileNode.type !== 'WhileStatement') {
-				throw this.astErrorOutput('Invalid while statment', ast, funcParam);
+				throw this.astErrorOutput('Invalid while statment', whileNode, funcParam);
 			}
 
 			retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
@@ -2237,7 +2237,7 @@ module.exports = function (_FunctionNodeBase) {
 		key: 'astForStatement',
 		value: function astForStatement(forNode, retArr, funcParam) {
 			if (forNode.type !== 'ForStatement') {
-				throw this.astErrorOutput('Invalid for statment', ast, funcParam);
+				throw this.astErrorOutput('Invalid for statment', forNode, funcParam);
 			}
 
 			if (forNode.test && forNode.test.type === 'BinaryExpression') {
@@ -2323,7 +2323,7 @@ module.exports = function (_FunctionNodeBase) {
 		key: 'astWhileStatement',
 		value: function astWhileStatement(whileNode, retArr, funcParam) {
 			if (whileNode.type !== 'WhileStatement') {
-				throw this.astErrorOutput('Invalid while statment', ast, funcParam);
+				throw this.astErrorOutput('Invalid while statment', whileNode, funcParam);
 			}
 
 			retArr.push('for (float i = 0.0; i < LOOP_MAX; i++) {');

@@ -8,7 +8,7 @@ const utils = require('../../core/utils');
  * 
  * @extends BaseFunctionNode
  *
- * @desc [INTERNAL] Represents a single function, inside JS, webGL, or openGL.
+ * @desc [INTERNAL] Represents a single function, inside JS
  *
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
  *
@@ -64,7 +64,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	 * @param {Array} retArr - return array string
 	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
 	 *
-	 * @returns {String} the prased openclgl string array
+	 * @returns {Array} the parsed cpu string array
 	 */
 	astGeneric(ast, retArr, funcParam) {
 		if (ast === null) {
@@ -355,7 +355,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 		if (idtNode.type !== 'Identifier') {
 			throw this.astErrorOutput(
 				'IdentifierExpression - not an Identifier',
-				ast, funcParam
+				idtNode, funcParam
 			);
 		}
 
@@ -405,13 +405,13 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	 * @param {Array} retArr - return array string
 	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
 	 *
-	 * @returns {String} the prased openclgl string
+	 * @returns {Array} the parsed cpu string
 	 */
 	astForStatement(forNode, retArr, funcParam) {
 		if (forNode.type !== 'ForStatement') {
 			throw this.astErrorOutput(
 				'Invalid for statment',
-				ast, funcParam
+        forNode, funcParam
 			);
 		}
 
@@ -513,13 +513,13 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	 * @param {Array} retArr - return array string
 	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
 	 *
-	 * @returns {String} the parsed openclgl string
+	 * @returns {Array} the parsed openclgl string
 	 */
 	astWhileStatement(whileNode, retArr, funcParam) {
 		if (whileNode.type !== 'WhileStatement') {
 			throw this.astErrorOutput(
 				'Invalid while statment',
-				ast, funcParam
+        whileNode, funcParam
 			);
 		}
 
@@ -581,7 +581,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	 *
 	 * @desc Parses the abstract syntax tree for *Block* statement
 	 *
-	 * @param {Object} bnode - the AST object to parse
+	 * @param {Object} bNode - the AST object to parse
 	 * @param {Array} retArr - return array string
 	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
 	 *
@@ -971,7 +971,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	 *
 	 * @desc Parses the abstract syntax tree for *Array* Expression
 	 *
-	 * @param {Object} ast - the AST object to parse
+	 * @param {Object} arrNode - the AST object to parse
 	 * @param {Array} retArr - return array string
 	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
 	 *

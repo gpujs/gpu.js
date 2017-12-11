@@ -66,7 +66,7 @@ module.exports = function (_FunctionNodeBase) {
    * @param {Array} retArr - return array string
    * @param {Function} funcParam - FunctionNode, that tracks compilation state
    *
-   * @returns {String} the prased openclgl string array
+   * @returns {Array} the parsed webgl string array
    */
 
 	}, {
@@ -434,14 +434,14 @@ module.exports = function (_FunctionNodeBase) {
    * @param {Array} retArr - return array string
    * @param {Function} funcParam - FunctionNode, that tracks compilation state
    *
-   * @returns {String} the prased openclgl string
+   * @returns {Array} the parsed webgl string
    */
 
 	}, {
 		key: 'astForStatement',
 		value: function astForStatement(forNode, retArr, funcParam) {
 			if (forNode.type !== 'ForStatement') {
-				throw this.astErrorOutput('Invalid for statment', ast, funcParam);
+				throw this.astErrorOutput('Invalid for statment', forNode, funcParam);
 			}
 
 			if (forNode.test && forNode.test.type === 'BinaryExpression') {
@@ -534,14 +534,14 @@ module.exports = function (_FunctionNodeBase) {
    * @param {Array} retArr - return array string
    * @param {Function} funcParam - FunctionNode, that tracks compilation state
    *
-   * @returns {String} the parsed openclgl string
+   * @returns {Array} the parsed webgl string
    */
 
 	}, {
 		key: 'astWhileStatement',
 		value: function astWhileStatement(whileNode, retArr, funcParam) {
 			if (whileNode.type !== 'WhileStatement') {
-				throw this.astErrorOutput('Invalid while statment', ast, funcParam);
+				throw this.astErrorOutput('Invalid while statment', whileNode, funcParam);
 			}
 
 			retArr.push('for (float i = 0.0; i < LOOP_MAX; i++) {');
