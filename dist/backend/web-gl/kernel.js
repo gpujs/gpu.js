@@ -16,6 +16,7 @@ var vertShaderString = require('./shader-vert');
 var kernelString = require('./kernel-string');
 var canvases = [];
 var maxTexSizes = {};
+
 module.exports = function (_KernelBase) {
 	_inherits(WebGLKernel, _KernelBase);
 
@@ -1055,6 +1056,7 @@ module.exports = function (_KernelBase) {
 		value: function _getMainResultString() {
 			var names = this.subKernelOutputVariableNames;
 			var result = [];
+
 			if (this.floatOutput) {
 				result.push('  index *= 4.0');
 			}
@@ -1062,20 +1064,33 @@ module.exports = function (_KernelBase) {
 			if (this.graphical) {
 				result.push('  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  gl_FragColor = actualColor');
 			} else if (this.floatOutput) {
-				result.push('  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  gl_FragColor.r = kernelResult', '  index += 1.0', '  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  gl_FragColor.g = kernelResult', '  index += 1.0', '  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  gl_FragColor.b = kernelResult', '  index += 1.0', '  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  gl_FragColor.a = kernelResult');
+				var channels = ['r', 'g', 'b', 'a'];
+
+				for (var i = 0; i < channels.length; ++i) {
+					result.push('  threadId = indexTo3D(index, uOutputDim)');
+					result.push('  kernel()');
+
+					if (names) {
+						result.push('  gl_FragData[0].' + channels[i] + ' = kernelResult');
+
+						for (var j = 0; j < names.length; ++j) {
+							result.push('  gl_FragData[' + (j + 1) + '].' + channels[i] + ' = ' + names[j]);
+						}
+					} else {
+						result.push('  gl_FragColor.' + channels[i] + ' = kernelResult');
+					}
+
+					if (i < channels.length - 1) {
+						result.push('  index += 1.0');
+					}
+				}
 			} else if (names !== null) {
 				result.push('  threadId = indexTo3D(index, uOutputDim)');
 				result.push('  kernel()');
 				result.push('  gl_FragData[0] = encode32(kernelResult)');
-				for (var i = 0; i < names.length; i++) {
-					result.push('  gl_FragData[' + (i + 1) + '] = encode32(' + names[i] + ')');
+				for (var _i3 = 0; _i3 < names.length; _i3++) {
+					result.push('  gl_FragData[' + (_i3 + 1) + '] = encode32(' + names[_i3] + ')');
 				}
-				/* this is v2 prep
-        * result.push('  kernel()');
-    result.push('  fragData0 = encode32(kernelResult)');
-    for (let i = 0; i < names.length; i++) {
-    	result.push(`  fragData${ i + 1 } = encode32(${ names[i] })`);
-    }*/
 			} else {
 				result.push('  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  gl_FragColor = encode32(kernelResult)');
 			}
@@ -1176,7 +1191,7 @@ module.exports = function (_KernelBase) {
 				if (!_ext) throw new Error('could not instantiate draw buffers extension');
 				this.subKernelOutputTextures = [];
 				this.subKernelOutputVariableNames = [];
-				var _i3 = 0;
+				var _i4 = 0;
 				for (var p in this.subKernelProperties) {
 					if (!this.subKernelProperties.hasOwnProperty(p)) continue;
 					var _subKernel = this.subKernelProperties[p];
@@ -1189,7 +1204,7 @@ module.exports = function (_KernelBase) {
 					});
 					this.subKernelOutputTextures.push(this.getSubKernelTexture(p));
 					this.subKernelOutputVariableNames.push(_subKernel.name + 'Result');
-					_i3++;
+					_i4++;
 				}
 			}
 		}

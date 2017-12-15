@@ -8,8 +8,8 @@ const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
 const canvases = [];
 const maxTexSizes = {};
-module.exports = class WebGLKernel extends KernelBase {
 
+module.exports = class WebGLKernel extends KernelBase {
 	/**
 	 * @constructor WebGLKernel
 	 *
@@ -1012,6 +1012,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	_getMainResultString() {
 		const names = this.subKernelOutputVariableNames;
 		const result = [];
+
 		if (this.floatOutput) {
 			result.push('  index *= 4.0');
 		}
@@ -1023,23 +1024,26 @@ module.exports = class WebGLKernel extends KernelBase {
 				'  gl_FragColor = actualColor'
 			);
 		} else if (this.floatOutput) {
-			result.push(
-				'  threadId = indexTo3D(index, uOutputDim)',
-				'  kernel()',
-				'  gl_FragColor.r = kernelResult',
-				'  index += 1.0',
-				'  threadId = indexTo3D(index, uOutputDim)',
-				'  kernel()',
-				'  gl_FragColor.g = kernelResult',
-				'  index += 1.0',
-				'  threadId = indexTo3D(index, uOutputDim)',
-				'  kernel()',
-				'  gl_FragColor.b = kernelResult',
-				'  index += 1.0',
-				'  threadId = indexTo3D(index, uOutputDim)',
-				'  kernel()',
-				'  gl_FragColor.a = kernelResult'
-			);
+			const channels = ['r', 'g', 'b', 'a'];
+
+			for (let i = 0; i < channels.length; ++i) {
+				result.push('  threadId = indexTo3D(index, uOutputDim)');
+				result.push('  kernel()');
+
+				if (names) {
+					result.push(`  gl_FragData[0].${channels[i]} = kernelResult`);
+
+					for (let j = 0; j < names.length; ++j) {
+						result.push(`  gl_FragData[${ j + 1 }].${channels[i]} = ${ names[j] }`);
+					}
+				} else {
+					result.push(`  gl_FragColor.${channels[i]} = kernelResult`);
+				}
+
+				if (i < channels.length - 1) {
+					result.push('  index += 1.0');
+				}
+			}
 		} else if (names !== null) {
 			result.push('  threadId = indexTo3D(index, uOutputDim)');
 			result.push('  kernel()');
@@ -1047,12 +1051,6 @@ module.exports = class WebGLKernel extends KernelBase {
 			for (let i = 0; i < names.length; i++) {
 				result.push(`  gl_FragData[${ i + 1 }] = encode32(${ names[i] })`);
 			}
-			/* this is v2 prep
-       * result.push('  kernel()');
-			result.push('  fragData0 = encode32(kernelResult)');
-			for (let i = 0; i < names.length; i++) {
-				result.push(`  fragData${ i + 1 } = encode32(${ names[i] })`);
-			}*/
 		} else {
 			result.push(
 				'  threadId = indexTo3D(index, uOutputDim)',
