@@ -379,7 +379,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		if (idtNode.type !== 'Identifier') {
 			throw this.astErrorOutput(
 				'IdentifierExpression - not an Identifier',
-        idtNode, funcParam
+				idtNode, funcParam
 			);
 		}
 
@@ -435,7 +435,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		if (forNode.type !== 'ForStatement') {
 			throw this.astErrorOutput(
 				'Invalid for statment',
-        forNode, funcParam
+				forNode, funcParam
 			);
 		}
 
@@ -518,7 +518,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 
 		throw this.astErrorOutput(
 			'Invalid for statement',
-      forNode, funcParam
+			forNode, funcParam
 		);
 	}
 
@@ -540,7 +540,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		if (whileNode.type !== 'WhileStatement') {
 			throw this.astErrorOutput(
 				'Invalid while statment',
-        whileNode, funcParam
+				whileNode, funcParam
 			);
 		}
 

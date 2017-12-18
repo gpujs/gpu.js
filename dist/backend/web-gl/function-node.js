@@ -385,7 +385,7 @@ module.exports = function (_FunctionNodeBase) {
 		key: 'astIdentifierExpression',
 		value: function astIdentifierExpression(idtNode, retArr, funcParam) {
 			if (idtNode.type !== 'Identifier') {
-				throw this.astErrorOutput('IdentifierExpression - not an Identifier', ast, funcParam);
+				throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode, funcParam);
 			}
 
 			switch (idtNode.name) {
@@ -519,7 +519,7 @@ module.exports = function (_FunctionNodeBase) {
 				}
 			}
 
-			throw this.astErrorOutput('Invalid for statement', ast, funcParam);
+			throw this.astErrorOutput('Invalid for statement', forNode, funcParam);
 		}
 
 		/**

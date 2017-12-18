@@ -411,7 +411,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 		if (forNode.type !== 'ForStatement') {
 			throw this.astErrorOutput(
 				'Invalid for statment',
-        forNode, funcParam
+				forNode, funcParam
 			);
 		}
 
@@ -519,7 +519,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 		if (whileNode.type !== 'WhileStatement') {
 			throw this.astErrorOutput(
 				'Invalid while statment',
-        whileNode, funcParam
+				whileNode, funcParam
 			);
 		}
 
