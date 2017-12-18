@@ -36,6 +36,15 @@ const _systemEndianness = (() => {
 
 let _isFloatReadPixelsSupported = null;
 
+let _isMixedIdentifiersSupported = (() => {
+  try {
+    (new Function('let i = 1; const j = 1;'))();
+    return true;
+  } catch (e) {
+    return false;
+  }
+})();
+
 class Utils extends UtilsCore {
 
 	//-----------------------------------------------------------------------------
@@ -316,6 +325,9 @@ class Utils extends UtilsCore {
 		return _isFloatReadPixelsSupported;
 	}
 
+	static isMixedIdentifiersSupported() {
+	  return _isMixedIdentifiersSupported;
+  }
 
 	static dimToTexSize(opt, dimensions, output) {
 		let numTexels = dimensions[0];
