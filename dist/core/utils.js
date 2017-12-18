@@ -46,6 +46,15 @@ var _systemEndianness = function () {
 
 var _isFloatReadPixelsSupported = null;
 
+var _isMixedIdentifiersSupported = function () {
+	try {
+		new Function('let i = 1; const j = 1;')();
+		return true;
+	} catch (e) {
+		return false;
+	}
+}();
+
 var Utils = function (_UtilsCore) {
 	_inherits(Utils, _UtilsCore);
 
@@ -363,6 +372,11 @@ var Utils = function (_UtilsCore) {
 			_isFloatReadPixelsSupported = x[0] === 1;
 
 			return _isFloatReadPixelsSupported;
+		}
+	}, {
+		key: 'isMixedIdentifiersSupported',
+		value: function isMixedIdentifiersSupported() {
+			return _isMixedIdentifiersSupported;
 		}
 	}, {
 		key: 'dimToTexSize',

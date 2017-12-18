@@ -1,4 +1,4 @@
-QUnit.test( "Issue #233 - kernel map with float output (GPU only)", function() {
+QUnit.test('Issue #233 - kernel map with float output (GPU only)', function() {
     var lst = [1, 2, 3, 4, 5, 6, 7];
 
     var gpu = new GPU({ mode: 'gpu' });
@@ -11,7 +11,7 @@ QUnit.test( "Issue #233 - kernel map with float output (GPU only)", function() {
             return x + 1;
         }
     }, function (lst) {
-        const val = lst[this.thread.x];
+        var val = lst[this.thread.x];
 
         stepA(val);
         stepB(val);

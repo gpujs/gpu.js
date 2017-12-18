@@ -1114,11 +1114,11 @@ function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
 	const start = ast.loc.start;
 
 	if (!isIdentifierKernelParam(paramName, funcParam) && expectedType !== 'float') {
-		throw 'Error unexpected identifier ' + paramName + ' on line ' + start.line;
+		throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
 	} else {
 		const actualType = funcParam.paramTypes[funcParam.paramNames.indexOf(paramName)];
 		if (actualType !== expectedType) {
-			throw 'Error unexpected identifier ' + paramName + ' on line ' + start.line;
+			throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
 		}
 	}
 }

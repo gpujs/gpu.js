@@ -1,8 +1,8 @@
 QUnit.test('GPU Loop Max', function(assert) {
   var gpu = new GPU({mode: 'gpu'});
   var add = gpu.createKernel(function(a, b) {
-    let sum = 0;
-    for (let i = 0; i < a; i++) {
+    var sum = 0;
+    for (var i = 0; i < a; i++) {
       sum += b[this.thread.x][i];
     }
   }).setOutput([1]);

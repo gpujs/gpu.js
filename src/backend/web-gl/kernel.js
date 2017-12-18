@@ -69,9 +69,10 @@ module.exports = class WebGLKernel extends KernelBase {
 	validateOptions() {
 		const isReadPixel = utils.isFloatReadPixelsSupported();
 		if (this.floatTextures === true && !utils.OES_texture_float) {
-			throw 'Float textures are not supported on this browser';
+			throw new Error('Float textures are not supported on this browser');
 		} else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
-			throw 'Float texture outputs are not supported on this browser';
+			console.warn('Float texture outputs are not supported on this browser');
+      this.floatOutput = false;
 		} else if (this.floatTextures === null && !isReadPixel && !this.graphical) {
 			//NOTE: handle
 			this.floatTextures = true;
@@ -80,7 +81,7 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		if (!this.output || this.output.length === 0) {
 			if (arguments.length !== 1) {
-				throw 'Auto output only supported for kernels with only one input';
+				throw new Error('Auto output only supported for kernels with only one input');
 			}
 
 			const argType = utils.getArgumentType(arguments[0]);
@@ -89,7 +90,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			} else if (argType === 'Texture') {
 				this.output = arguments[0].output;
 			} else {
-				throw 'Auto output not supported for input type: ' + argType;
+				throw new Error('Auto output not supported for input type: ' + argType);
 			}
 		}
 
@@ -100,11 +101,12 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		if (this.graphical) {
 			if (this.output.length !== 2) {
-				throw 'Output must have 2 dimensions on graphical mode';
+				throw new Error('Output must have 2 dimensions on graphical mode');
 			}
 
 			if (this.floatOutput) {
-				throw 'Cannot use graphical mode and float output at the same time';
+			  this.floatOutput = false;
+				console.warn('Cannot use graphical mode and float output at the same time');
 			}
 
 			this.texSize = utils.clone(this.output);
@@ -174,12 +176,12 @@ module.exports = class WebGLKernel extends KernelBase {
 		if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
 			console.log(compiledVertShaderString);
 			console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(vertShader));
-			throw 'Error compiling vertex shader';
+			throw new Error('Error compiling vertex shader');
 		}
 		if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
 			console.log(compiledFragShaderString);
 			console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(fragShader));
-			throw 'Error compiling fragment shader';
+			throw new Error('Error compiling fragment shader');
 		}
 
 		if (this.debug) {
@@ -691,7 +693,7 @@ module.exports = class WebGLKernel extends KernelBase {
 					break;
 				}
 			default:
-				throw 'Input type not supported (WebGL): ' + value;
+				throw new Error('Input type not supported (WebGL): ' + value);
 		}
 		this.argumentsLength++;
 	}
