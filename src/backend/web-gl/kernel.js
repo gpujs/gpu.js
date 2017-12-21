@@ -67,19 +67,17 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *
 	 */
 	validateOptions() {
-		const isReadPixel = utils.isFloatReadPixelsSupported();
-		if (this.floatTextures === true && !utils.OES_texture_float) {
-			throw new Error('Float textures are not supported on this browser');
-		} else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
-			console.warn('Float texture outputs are not supported on this browser');
-      this.floatOutput = false;
-		} else if (this.floatTextures === null && !isReadPixel && !this.graphical) {
-			//NOTE: handle
-			this.floatTextures = true;
-			this.floatOutput = false;
-		}
+		const isFloatReadPixel = utils.isFloatReadPixelsSupported();
+    if (this.floatTextures === true && !utils.OES_texture_float) {
+      throw new Error('Float textures are not supported on this browser');
+    } else if (this.floatOutput === true && this.floatOutputForce !== true && !isFloatReadPixel) {
+      throw new Error('Float texture outputs are not supported on this browser');
+    } else if (this.floatTextures === undefined && utils.OES_texture_float) {
+      this.floatTextures = true;
+      this.floatOutput = isFloatReadPixel;
+    }
 
-		if (!this.output || this.output.length === 0) {
+    if (!this.output || this.output.length === 0) {
 			if (arguments.length !== 1) {
 				throw new Error('Auto output only supported for kernels with only one input');
 			}
