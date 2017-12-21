@@ -23,11 +23,18 @@ class GPU extends GPUCore {
 		settings = settings || {};
 		this._canvas = settings.canvas || null;
 		this._webGl = settings.webGl || null;
-		let mode = settings.mode || 'webgl';
+		let mode = settings.mode;
+		let detectedMode;
 		if (!utils.isWebGlSupported()) {
-			console.warn('Warning: gpu not supported, falling back to cpu support');
-			mode = 'cpu';
-		}
+		  if (mode && mode !== 'cpu') {
+        throw new Error(`A requested mode of "${ mode }" and is not supported`);
+      } else {
+        console.warn('Warning: gpu not supported, falling back to cpu support');
+        detectedMode = 'cpu';
+      }
+    } else {
+		  detectedMode = mode || 'gpu';
+    }
 
 		this.kernels = [];
 
@@ -36,23 +43,20 @@ class GPU extends GPUCore {
 			webGl: this._webGl
 		};
 
-		if (mode) {
-			switch (mode.toLowerCase()) {
-				case 'cpu':
-					this._runner = new CPURunner(runnerSettings);
-					break;
-				case 'gpu':
-				case 'webgl':
-					this._runner = new WebGLRunner(runnerSettings);
-					break;
-				case 'webgl-validator':
-					this._runner = new WebGLRunner(runnerSettings);
-					this._runner.Kernel = WebGLValidatorKernel;
-					break;
-				default:
-					throw new Error(`"${mode}" mode is not defined`);
-			}
-		}
+    switch (detectedMode) {
+      case 'cpu':
+        this._runner = new CPURunner(runnerSettings);
+        break;
+      case 'gpu':
+        this._runner = new WebGLRunner(runnerSettings);
+        break;
+      case 'webgl-validator':
+        this._runner = new WebGLRunner(runnerSettings);
+        this._runner.Kernel = WebGLValidatorKernel;
+        break;
+      default:
+        throw new Error(`"${ mode }" mode is not defined`);
+    }
 	}
 	/**
 	 *
@@ -62,7 +66,7 @@ class GPU extends GPUCore {
 	 * @function
 	 * @memberOf GPU##
 	 *
-	 * @param {Function} inputFunction - The calling to perform the conversion
+	 * @param {Function} fn - The calling to perform the conversion
 	 * @param {Object} settings - The parameter configuration object
 	 * @property {String} settings.dimensions - Thread dimension array (Defeaults to [1024])
 	 * @property {String} settings.mode - CPU / GPU configuration mode (Defaults to null)
