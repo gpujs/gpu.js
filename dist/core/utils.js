@@ -46,6 +46,15 @@ var _systemEndianness = function () {
 
 var _isFloatReadPixelsSupported = null;
 
+var _isMixedIdentifiersSupported = function () {
+	try {
+		new Function('let i = 1; const j = 1;')();
+		return true;
+	} catch (e) {
+		return false;
+	}
+}();
+
 var Utils = function (_UtilsCore) {
 	_inherits(Utils, _UtilsCore);
 
@@ -365,6 +374,11 @@ var Utils = function (_UtilsCore) {
 			return _isFloatReadPixelsSupported;
 		}
 	}, {
+		key: 'isMixedIdentifiersSupported',
+		value: function isMixedIdentifiersSupported() {
+			return _isMixedIdentifiersSupported;
+		}
+	}, {
 		key: 'dimToTexSize',
 		value: function dimToTexSize(opt, dimensions, output) {
 			var numTexels = dimensions[0];
@@ -388,8 +402,8 @@ var Utils = function (_UtilsCore) {
    *
    * Return the dimension of an array.
    * 
-   * @param {Array} x - The array
-   * @param {number} pad - To include padding in the dimension calculation [Optional]
+   * @param {Array|String} x - The array
+   * @param {number} [pad] - To include padding in the dimension calculation [Optional]
    *
    *
    *

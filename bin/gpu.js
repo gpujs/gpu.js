@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.10
- * @date Fri Dec 15 2017 20:55:34 GMT+0300 (MSK)
+ * @date Fri Dec 22 2017 10:47:21 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -3830,10 +3830,17 @@ var GPU = function (_GPUCore) {
 		settings = settings || {};
 		_this._canvas = settings.canvas || null;
 		_this._webGl = settings.webGl || null;
-		var mode = settings.mode || 'webgl';
+		var mode = settings.mode;
+		var detectedMode = void 0;
 		if (!utils.isWebGlSupported()) {
-			console.warn('Warning: gpu not supported, falling back to cpu support');
-			mode = 'cpu';
+			if (mode && mode !== 'cpu') {
+				throw new Error('A requested mode of "' + mode + '" and is not supported');
+			} else {
+				console.warn('Warning: gpu not supported, falling back to cpu support');
+				detectedMode = 'cpu';
+			}
+		} else {
+			detectedMode = mode || 'gpu';
 		}
 
 		_this.kernels = [];
@@ -3843,22 +3850,20 @@ var GPU = function (_GPUCore) {
 			webGl: _this._webGl
 		};
 
-		if (mode) {
-			switch (mode.toLowerCase()) {
-				case 'cpu':
-					_this._runner = new CPURunner(runnerSettings);
-					break;
-				case 'gpu':
-				case 'webgl':
-					_this._runner = new WebGLRunner(runnerSettings);
-					break;
-				case 'webgl-validator':
-					_this._runner = new WebGLRunner(runnerSettings);
-					_this._runner.Kernel = WebGLValidatorKernel;
-					break;
-				default:
-					throw new Error('"' + mode + '" mode is not defined');
-			}
+		switch (detectedMode) {
+			case 'cpu':
+				_this._runner = new CPURunner(runnerSettings);
+				break;
+			case 'webgl': 
+			case 'gpu':
+				_this._runner = new WebGLRunner(runnerSettings);
+				break;
+			case 'webgl-validator':
+				_this._runner = new WebGLRunner(runnerSettings);
+				_this._runner.Kernel = WebGLValidatorKernel;
+				break;
+			default:
+				throw new Error('"' + mode + '" mode is not defined');
 		}
 		return _this;
 	}
@@ -4254,6 +4259,15 @@ var _systemEndianness = function () {
 
 var _isFloatReadPixelsSupported = null;
 
+var _isMixedIdentifiersSupported = function () {
+	try {
+		new Function('let i = 1; const j = 1;')();
+		return true;
+	} catch (e) {
+		return false;
+	}
+}();
+
 var Utils = function (_UtilsCore) {
 	_inherits(Utils, _UtilsCore);
 
@@ -4408,6 +4422,11 @@ var Utils = function (_UtilsCore) {
 			_isFloatReadPixelsSupported = x[0] === 1;
 
 			return _isFloatReadPixelsSupported;
+		}
+	}, {
+		key: 'isMixedIdentifiersSupported',
+		value: function isMixedIdentifiersSupported() {
+			return _isMixedIdentifiersSupported;
 		}
 	}, {
 		key: 'dimToTexSize',

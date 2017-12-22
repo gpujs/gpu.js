@@ -47,10 +47,11 @@ class GPU extends GPUCore {
       case 'cpu':
         this._runner = new CPURunner(runnerSettings);
         break;
+      case 'webgl': // for testing
       case 'gpu':
         this._runner = new WebGLRunner(runnerSettings);
         break;
-      case 'webgl-validator':
+      case 'webgl-validator': // for internal
         this._runner = new WebGLRunner(runnerSettings);
         this._runner.Kernel = WebGLValidatorKernel;
         break;
@@ -72,7 +73,7 @@ class GPU extends GPUCore {
 	 * @property {String} settings.mode - CPU / GPU configuration mode (Defaults to null)
 	 *
 	 * The following modes are supported
-	 * *null* / *'auto'* : Attempts to build GPU mode, else fallbacks
+	 * *'falsey'* : Attempts to build GPU mode, else fallbacks
 	 * *'gpu'* : Attempts to build GPU mode, else fallbacks
 	 * *'cpu'* : Forces JS fallback mode only
 	 *

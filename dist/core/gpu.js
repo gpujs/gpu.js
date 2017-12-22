@@ -36,10 +36,17 @@ var GPU = function (_GPUCore) {
 		settings = settings || {};
 		_this._canvas = settings.canvas || null;
 		_this._webGl = settings.webGl || null;
-		var mode = settings.mode || 'webgl';
+		var mode = settings.mode;
+		var detectedMode = void 0;
 		if (!utils.isWebGlSupported()) {
-			console.warn('Warning: gpu not supported, falling back to cpu support');
-			mode = 'cpu';
+			if (mode && mode !== 'cpu') {
+				throw new Error('A requested mode of "' + mode + '" and is not supported');
+			} else {
+				console.warn('Warning: gpu not supported, falling back to cpu support');
+				detectedMode = 'cpu';
+			}
+		} else {
+			detectedMode = mode || 'gpu';
 		}
 
 		_this.kernels = [];
@@ -49,22 +56,20 @@ var GPU = function (_GPUCore) {
 			webGl: _this._webGl
 		};
 
-		if (mode) {
-			switch (mode.toLowerCase()) {
-				case 'cpu':
-					_this._runner = new CPURunner(runnerSettings);
-					break;
-				case 'gpu':
-				case 'webgl':
-					_this._runner = new WebGLRunner(runnerSettings);
-					break;
-				case 'webgl-validator':
-					_this._runner = new WebGLRunner(runnerSettings);
-					_this._runner.Kernel = WebGLValidatorKernel;
-					break;
-				default:
-					throw new Error('"' + mode + '" mode is not defined');
-			}
+		switch (detectedMode) {
+			case 'cpu':
+				_this._runner = new CPURunner(runnerSettings);
+				break;
+			case 'webgl': // for testing
+			case 'gpu':
+				_this._runner = new WebGLRunner(runnerSettings);
+				break;
+			case 'webgl-validator':
+				_this._runner = new WebGLRunner(runnerSettings);
+				_this._runner.Kernel = WebGLValidatorKernel;
+				break;
+			default:
+				throw new Error('"' + mode + '" mode is not defined');
 		}
 		return _this;
 	}
@@ -76,13 +81,13 @@ var GPU = function (_GPUCore) {
   * @function
   * @memberOf GPU##
   *
-  * @param {Function} inputFunction - The calling to perform the conversion
+  * @param {Function} fn - The calling to perform the conversion
   * @param {Object} settings - The parameter configuration object
   * @property {String} settings.dimensions - Thread dimension array (Defeaults to [1024])
   * @property {String} settings.mode - CPU / GPU configuration mode (Defaults to null)
   *
   * The following modes are supported
-  * *null* / *'auto'* : Attempts to build GPU mode, else fallbacks
+  * *'falsey'* : Attempts to build GPU mode, else fallbacks
   * *'gpu'* : Attempts to build GPU mode, else fallbacks
   * *'cpu'* : Forces JS fallback mode only
   *
