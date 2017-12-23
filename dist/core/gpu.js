@@ -65,6 +65,7 @@ var GPU = function (_GPUCore) {
 				_this._runner = new WebGLRunner(runnerSettings);
 				break;
 			case 'webgl-validator':
+				// for internal
 				_this._runner = new WebGLRunner(runnerSettings);
 				_this._runner.Kernel = WebGLValidatorKernel;
 				break;
