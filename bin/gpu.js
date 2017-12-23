@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.10
- * @date Fri Dec 22 2017 10:47:21 GMT-0500 (EST)
+ * @date Mon Dec 18 2017 11:09:59 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -1522,8 +1522,8 @@ module.exports = function () {
 		this._canvas = null;
 		this._webGl = null;
 		this.threadDim = null;
-		this.floatTextures = null;
-		this.floatOutput = null;
+		this.floatTextures = true;
+		this.floatOutput = true;
 		this.floatOutputForce = null;
 		this.addFunction = null;
 		this.functions = null;
@@ -2735,11 +2735,11 @@ function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
 	var start = ast.loc.start;
 
 	if (!isIdentifierKernelParam(paramName, funcParam) && expectedType !== 'float') {
-		throw 'Error unexpected identifier ' + paramName + ' on line ' + start.line;
+		throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
 	} else {
 		var actualType = funcParam.paramTypes[funcParam.paramNames.indexOf(paramName)];
 		if (actualType !== expectedType) {
-			throw 'Error unexpected identifier ' + paramName + ' on line ' + start.line;
+			throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
 		}
 	}
 }
@@ -2813,9 +2813,10 @@ module.exports = function (_KernelBase) {
 		value: function validateOptions() {
 			var isReadPixel = utils.isFloatReadPixelsSupported();
 			if (this.floatTextures === true && !utils.OES_texture_float) {
-				throw 'Float textures are not supported on this browser';
+				throw new Error('Float textures are not supported on this browser');
 			} else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
-				throw 'Float texture outputs are not supported on this browser';
+				console.warn('Float texture outputs are not supported on this browser');
+				this.floatOutput = false;
 			} else if (this.floatTextures === null && !isReadPixel && !this.graphical) {
 				this.floatTextures = true;
 				this.floatOutput = false;
@@ -2823,7 +2824,7 @@ module.exports = function (_KernelBase) {
 
 			if (!this.output || this.output.length === 0) {
 				if (arguments.length !== 1) {
-					throw 'Auto output only supported for kernels with only one input';
+					throw new Error('Auto output only supported for kernels with only one input');
 				}
 
 				var argType = utils.getArgumentType(arguments[0]);
@@ -2832,7 +2833,7 @@ module.exports = function (_KernelBase) {
 				} else if (argType === 'Texture') {
 					this.output = arguments[0].output;
 				} else {
-					throw 'Auto output not supported for input type: ' + argType;
+					throw new Error('Auto output not supported for input type: ' + argType);
 				}
 			}
 
@@ -2843,11 +2844,12 @@ module.exports = function (_KernelBase) {
 
 			if (this.graphical) {
 				if (this.output.length !== 2) {
-					throw 'Output must have 2 dimensions on graphical mode';
+					throw new Error('Output must have 2 dimensions on graphical mode');
 				}
 
 				if (this.floatOutput) {
-					throw 'Cannot use graphical mode and float output at the same time';
+					this.floatOutput = false;
+					console.warn('Cannot use graphical mode and float output at the same time');
 				}
 
 				this.texSize = utils.clone(this.output);
@@ -2911,12 +2913,12 @@ module.exports = function (_KernelBase) {
 			if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
 				console.log(compiledVertShaderString);
 				console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(vertShader));
-				throw 'Error compiling vertex shader';
+				throw new Error('Error compiling vertex shader');
 			}
 			if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
 				console.log(compiledFragShaderString);
 				console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(fragShader));
-				throw 'Error compiling fragment shader';
+				throw new Error('Error compiling fragment shader');
 			}
 
 			if (this.debug) {
@@ -3318,7 +3320,7 @@ module.exports = function (_KernelBase) {
 						break;
 					}
 				default:
-					throw 'Input type not supported (WebGL): ' + value;
+					throw new Error('Input type not supported (WebGL): ' + value);
 			}
 			this.argumentsLength++;
 		}
@@ -3830,17 +3832,10 @@ var GPU = function (_GPUCore) {
 		settings = settings || {};
 		_this._canvas = settings.canvas || null;
 		_this._webGl = settings.webGl || null;
-		var mode = settings.mode;
-		var detectedMode = void 0;
+		var mode = settings.mode || 'webgl';
 		if (!utils.isWebGlSupported()) {
-			if (mode && mode !== 'cpu') {
-				throw new Error('A requested mode of "' + mode + '" and is not supported');
-			} else {
-				console.warn('Warning: gpu not supported, falling back to cpu support');
-				detectedMode = 'cpu';
-			}
-		} else {
-			detectedMode = mode || 'gpu';
+			console.warn('Warning: gpu not supported, falling back to cpu support');
+			mode = 'cpu';
 		}
 
 		_this.kernels = [];
@@ -3850,20 +3845,22 @@ var GPU = function (_GPUCore) {
 			webGl: _this._webGl
 		};
 
-		switch (detectedMode) {
-			case 'cpu':
-				_this._runner = new CPURunner(runnerSettings);
-				break;
-			case 'webgl': 
-			case 'gpu':
-				_this._runner = new WebGLRunner(runnerSettings);
-				break;
-			case 'webgl-validator':
-				_this._runner = new WebGLRunner(runnerSettings);
-				_this._runner.Kernel = WebGLValidatorKernel;
-				break;
-			default:
-				throw new Error('"' + mode + '" mode is not defined');
+		if (mode) {
+			switch (mode.toLowerCase()) {
+				case 'cpu':
+					_this._runner = new CPURunner(runnerSettings);
+					break;
+				case 'gpu':
+				case 'webgl':
+					_this._runner = new WebGLRunner(runnerSettings);
+					break;
+				case 'webgl-validator':
+					_this._runner = new WebGLRunner(runnerSettings);
+					_this._runner.Kernel = WebGLValidatorKernel;
+					break;
+				default:
+					throw new Error('"' + mode + '" mode is not defined');
+			}
 		}
 		return _this;
 	}
