@@ -42,8 +42,8 @@ function addCustomFunction_constantsWidth(mode) {
   var gpu = new GPU({ mode: mode });
 
   function custom_adder(a, b) {
-    let sum = 0;
-    for (let i = 0; i < this.constants.width; i++) {
+    var sum = 0;
+    for (var i = 0; i < this.constants.width; i++) {
       sum += (a[this.thread.x] + b[this.thread.x]);
     }
     return sum;
@@ -86,8 +86,8 @@ function addCustomFunction_thisOutputX(mode) {
   var gpu = new GPU({ mode: mode });
 
   function custom_adder(a, b) {
-    let sum = 0;
-    for (let i = 0; i < this.output.x; i++) {
+    var sum = 0;
+    for (var i = 0; i < this.output.x; i++) {
       sum += (a[this.thread.x] + b[this.thread.x]);
     }
     return sum;
