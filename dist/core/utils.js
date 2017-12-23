@@ -402,8 +402,8 @@ var Utils = function (_UtilsCore) {
    *
    * Return the dimension of an array.
    * 
-   * @param {Array} x - The array
-   * @param {number} pad - To include padding in the dimension calculation [Optional]
+   * @param {Array|String} x - The array
+   * @param {number} [pad] - To include padding in the dimension calculation [Optional]
    *
    *
    *

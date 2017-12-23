@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0-rc.10
- * @date Mon Dec 18 2017 11:09:59 GMT-0500 (EST)
+ * @date Sat Dec 23 2017 10:30:09 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -1522,8 +1522,8 @@ module.exports = function () {
 		this._canvas = null;
 		this._webGl = null;
 		this.threadDim = null;
-		this.floatTextures = true;
-		this.floatOutput = true;
+		this.floatTextures = null;
+		this.floatOutput = null;
 		this.floatOutputForce = null;
 		this.addFunction = null;
 		this.functions = null;
@@ -2811,15 +2811,14 @@ module.exports = function (_KernelBase) {
 	_createClass(WebGLKernel, [{
 		key: 'validateOptions',
 		value: function validateOptions() {
-			var isReadPixel = utils.isFloatReadPixelsSupported();
+			var isFloatReadPixel = utils.isFloatReadPixelsSupported();
 			if (this.floatTextures === true && !utils.OES_texture_float) {
 				throw new Error('Float textures are not supported on this browser');
-			} else if (this.floatOutput === true && this.floatOutputForce !== true && !isReadPixel) {
-				console.warn('Float texture outputs are not supported on this browser');
-				this.floatOutput = false;
-			} else if (this.floatTextures === null && !isReadPixel && !this.graphical) {
+			} else if (this.floatOutput === true && this.floatOutputForce !== true && !isFloatReadPixel) {
+				throw new Error('Float texture outputs are not supported on this browser');
+			} else if (this.floatTextures === undefined && utils.OES_texture_float) {
 				this.floatTextures = true;
-				this.floatOutput = false;
+				this.floatOutput = isFloatReadPixel;
 			}
 
 			if (!this.output || this.output.length === 0) {
@@ -3832,10 +3831,17 @@ var GPU = function (_GPUCore) {
 		settings = settings || {};
 		_this._canvas = settings.canvas || null;
 		_this._webGl = settings.webGl || null;
-		var mode = settings.mode || 'webgl';
+		var mode = settings.mode;
+		var detectedMode = void 0;
 		if (!utils.isWebGlSupported()) {
-			console.warn('Warning: gpu not supported, falling back to cpu support');
-			mode = 'cpu';
+			if (mode && mode !== 'cpu') {
+				throw new Error('A requested mode of "' + mode + '" and is not supported');
+			} else {
+				console.warn('Warning: gpu not supported, falling back to cpu support');
+				detectedMode = 'cpu';
+			}
+		} else {
+			detectedMode = mode || 'gpu';
 		}
 
 		_this.kernels = [];
@@ -3845,22 +3851,20 @@ var GPU = function (_GPUCore) {
 			webGl: _this._webGl
 		};
 
-		if (mode) {
-			switch (mode.toLowerCase()) {
-				case 'cpu':
-					_this._runner = new CPURunner(runnerSettings);
-					break;
-				case 'gpu':
-				case 'webgl':
-					_this._runner = new WebGLRunner(runnerSettings);
-					break;
-				case 'webgl-validator':
-					_this._runner = new WebGLRunner(runnerSettings);
-					_this._runner.Kernel = WebGLValidatorKernel;
-					break;
-				default:
-					throw new Error('"' + mode + '" mode is not defined');
-			}
+		switch (detectedMode) {
+			case 'cpu':
+				_this._runner = new CPURunner(runnerSettings);
+				break;
+			case 'webgl': 
+			case 'gpu':
+				_this._runner = new WebGLRunner(runnerSettings);
+				break;
+			case 'webgl-validator':
+				_this._runner = new WebGLRunner(runnerSettings);
+				_this._runner.Kernel = WebGLValidatorKernel;
+				break;
+			default:
+				throw new Error('"' + mode + '" mode is not defined');
 		}
 		return _this;
 	}
