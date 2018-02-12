@@ -68,16 +68,16 @@ module.exports = class WebGLKernel extends KernelBase {
 	 */
 	validateOptions() {
 		const isFloatReadPixel = utils.isFloatReadPixelsSupported();
-    if (this.floatTextures === true && !utils.OES_texture_float) {
-      throw new Error('Float textures are not supported on this browser');
-    } else if (this.floatOutput === true && this.floatOutputForce !== true && !isFloatReadPixel) {
-      throw new Error('Float texture outputs are not supported on this browser');
-    } else if (this.floatTextures === undefined && utils.OES_texture_float) {
-      this.floatTextures = true;
-      this.floatOutput = isFloatReadPixel;
-    }
+		if (this.floatTextures === true && !utils.OES_texture_float) {
+			throw new Error('Float textures are not supported on this browser');
+		} else if (this.floatOutput === true && this.floatOutputForce !== true && !isFloatReadPixel) {
+			throw new Error('Float texture outputs are not supported on this browser');
+		} else if (this.floatTextures === undefined && utils.OES_texture_float) {
+			this.floatTextures = true;
+			this.floatOutput = isFloatReadPixel;
+		}
 
-    if (!this.output || this.output.length === 0) {
+		if (!this.output || this.output.length === 0) {
 			if (arguments.length !== 1) {
 				throw new Error('Auto output only supported for kernels with only one input');
 			}
@@ -103,7 +103,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			}
 
 			if (this.floatOutput) {
-			  this.floatOutput = false;
+				this.floatOutput = false;
 				console.warn('Cannot use graphical mode and float output at the same time');
 			}
 
@@ -300,6 +300,9 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 		//the call to this._addArgument may rewrite the outputTexture, keep this here
+		if (this.outputImmutable) {
+			this.setupOutputTexture();
+		}
 		const outputTexture = this.outputTexture;
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
@@ -674,7 +677,7 @@ module.exports = class WebGLKernel extends KernelBase {
 
 					const size = inputTexture.size;
 
-					if (inputTexture.texture === this.outputTexture) {
+					if (!this.outputImmutable && inputTexture.texture === this.outputTexture) {
 						this.setupOutputTexture();
 					}
 

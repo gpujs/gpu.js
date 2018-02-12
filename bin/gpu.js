@@ -4,13 +4,13 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.0.0-rc.10
- * @date Sat Dec 23 2017 10:30:09 GMT-0500 (EST)
+ * @version 1.0.0
+ * @date Mon Feb 12 2018 12:08:17 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
  *
- * Copyright (c) 2017 gpu.js Team
+ * Copyright (c) 2018 gpu.js Team
  */
 "use strict";(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
@@ -1518,6 +1518,7 @@ module.exports = function () {
 		this.wraparound = null;
 		this.hardcodeConstants = null;
 		this.outputToTexture = null;
+		this.outputImmutable = null;
 		this.texSize = null;
 		this._canvas = null;
 		this._webGl = null;
@@ -1648,6 +1649,12 @@ module.exports = function () {
 		key: 'setOutputToTexture',
 		value: function setOutputToTexture(flag) {
 			this.outputToTexture = flag;
+			return this;
+		}
+	}, {
+		key: 'setOutputImmutable',
+		value: function setOutputImmutable(flag) {
+			this.outputImmutable = flag;
 			return this;
 		}
 
@@ -3019,6 +3026,9 @@ module.exports = function (_KernelBase) {
 			}
 
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+			if (this.outputImmutable) {
+				this.setupOutputTexture();
+			}
 			var outputTexture = this.outputTexture;
 			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
@@ -3302,7 +3312,7 @@ module.exports = function (_KernelBase) {
 
 						var _size2 = inputTexture.size;
 
-						if (inputTexture.texture === this.outputTexture) {
+						if (!this.outputImmutable && inputTexture.texture === this.outputTexture) {
 							this.setupOutputTexture();
 						}
 
