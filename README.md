@@ -198,6 +198,25 @@ document.getElementsByTagName('body')[0].appendChild(canvas);
 
 Note: To animate the rendering, use `requestAnimationFrame` instead of `setTimeout` for optimal performance. For more information, see [this](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame).
 
+
+### Alpha
+
+Currently, if you need alpha do something like enabling `premultipliedAlpha` with your own gl context:
+```js
+const canvas = DOM.canvas(500, 500);
+const gl = canvas.getContext('webgl', { premultipliedAlpha: false });
+
+const gpu = new GPU({
+  canvas,
+  webGl: gl
+});
+const krender = gpu.createKernel(function(x) {
+  this.color(this.thread.x / 500, this.thread.y / 500, x[0], x[1]);
+})
+  .setOutput([500, 500])
+  .setGraphical(true);
+ ```
+
 ## Combining kernels
 
 Sometimes you want to do multiple math operations on the gpu without the round trip penalty of data transfer from cpu to gpu to cpu to gpu, etc.  To aid this there is the `combineKernels` method.
