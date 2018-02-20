@@ -26,15 +26,15 @@ class GPU extends GPUCore {
 		let mode = settings.mode;
 		let detectedMode;
 		if (!utils.isWebGlSupported()) {
-		  if (mode && mode !== 'cpu') {
-        throw new Error(`A requested mode of "${ mode }" and is not supported`);
-      } else {
-        console.warn('Warning: gpu not supported, falling back to cpu support');
-        detectedMode = 'cpu';
-      }
-    } else {
-		  detectedMode = mode || 'gpu';
-    }
+			if (mode && mode !== 'cpu') {
+				throw new Error(`A requested mode of "${ mode }" and is not supported`);
+			} else {
+				console.warn('Warning: gpu not supported, falling back to cpu support');
+				detectedMode = 'cpu';
+			}
+		} else {
+			detectedMode = mode || 'gpu';
+		}
 
 		this.kernels = [];
 
@@ -43,21 +43,21 @@ class GPU extends GPUCore {
 			webGl: this._webGl
 		};
 
-    switch (detectedMode) {
-      case 'cpu':
-        this._runner = new CPURunner(runnerSettings);
-        break;
-      case 'webgl': // for testing
-      case 'gpu':
-        this._runner = new WebGLRunner(runnerSettings);
-        break;
-      case 'webgl-validator': // for internal
-        this._runner = new WebGLRunner(runnerSettings);
-        this._runner.Kernel = WebGLValidatorKernel;
-        break;
-      default:
-        throw new Error(`"${ mode }" mode is not defined`);
-    }
+		switch (detectedMode) {
+			case 'cpu':
+				this._runner = new CPURunner(runnerSettings);
+				break;
+			case 'webgl': // for testing
+			case 'gpu':
+				this._runner = new WebGLRunner(runnerSettings);
+				break;
+			case 'webgl-validator': // for internal
+				this._runner = new WebGLRunner(runnerSettings);
+				this._runner.Kernel = WebGLValidatorKernel;
+				break;
+			default:
+				throw new Error(`"${ mode }" mode is not defined`);
+		}
 	}
 	/**
 	 *

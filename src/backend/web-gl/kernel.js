@@ -8,7 +8,7 @@ const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
 const canvases = [];
 const maxTexSizes = {};
-
+const webGlVersion = 2;
 module.exports = class WebGLKernel extends KernelBase {
 	/**
 	 * @constructor WebGLKernel
@@ -68,16 +68,16 @@ module.exports = class WebGLKernel extends KernelBase {
 	 */
 	validateOptions() {
 		const isFloatReadPixel = utils.isFloatReadPixelsSupported();
-    if (this.floatTextures === true && !utils.OES_texture_float) {
-      throw new Error('Float textures are not supported on this browser');
-    } else if (this.floatOutput === true && this.floatOutputForce !== true && !isFloatReadPixel) {
-      throw new Error('Float texture outputs are not supported on this browser');
-    } else if (this.floatTextures === undefined && utils.OES_texture_float) {
-      this.floatTextures = true;
-      this.floatOutput = isFloatReadPixel;
-    }
+		if (this.floatTextures === true && !utils.OES_texture_float) {
+			throw new Error('Float textures are not supported on this browser');
+		} else if (this.floatOutput === true && this.floatOutputForce !== true && !isFloatReadPixel) {
+			throw new Error('Float texture outputs are not supported on this browser');
+		} else if (this.floatTextures === undefined && utils.OES_texture_float) {
+			this.floatTextures = true;
+			this.floatOutput = isFloatReadPixel;
+		}
 
-    if (!this.output || this.output.length === 0) {
+		if (!this.output || this.output.length === 0) {
 			if (arguments.length !== 1) {
 				throw new Error('Auto output only supported for kernels with only one input');
 			}
@@ -103,7 +103,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			}
 
 			if (this.floatOutput) {
-			  this.floatOutput = false;
+				this.floatOutput = false;
 				console.warn('Cannot use graphical mode and float output at the same time');
 			}
 
@@ -710,7 +710,8 @@ module.exports = class WebGLKernel extends KernelBase {
 	_getHeaderString() {
 		return (
 			this.subKernels !== null || this.subKernelProperties !== null ?
-			//webgl2 '#version 300 es\n' :
+			webGlVersion === 2 ?
+			'#version 300 es\n' :
 			'#extension GL_EXT_draw_buffers : require\n' :
 			''
 		);
@@ -975,22 +976,23 @@ module.exports = class WebGLKernel extends KernelBase {
 		const result = [];
 		const names = this.subKernelOutputVariableNames;
 		if (names !== null) {
-			result.push('highp float kernelResult = 0.0');
-			for (let i = 0; i < names.length; i++) {
-				result.push(
-					`highp float ${ names[i] } = 0.0`
-				);
+			if (webGlVersion === 2) {
+				result.push('highp float kernelResult = 0.0');
+				result.push('layout(location = 0) out highp float fradData0 = 0.0');
+				for (let i = 0; i < names.length; i++) {
+					result.push(
+						`highp float ${ names[i] } = 0.0`,
+						`layout(location = ${ i + 1 }) out highp float fragData${ i + 1 } = 0.0`
+					);
+				}
+			} else {
+				result.push('highp float kernelResult = 0.0');
+				for (let i = 0; i < names.length; i++) {
+					result.push(
+						`highp float ${ names[i] } = 0.0`
+					);
+				}
 			}
-
-			/* this is v2 prep
-      result.push('highp float kernelResult = 0.0');
-			result.push('layout(location = 0) out highp float fradData0 = 0.0');
-			for (let i = 0; i < names.length; i++) {
-				result.push(
-          `highp float ${ names[i] } = 0.0`,
-				  `layout(location = ${ i + 1 }) out highp float fragData${ i + 1 } = 0.0`
-        );
-			}*/
 		} else {
 			result.push('highp float kernelResult = 0.0');
 		}
@@ -1045,11 +1047,19 @@ module.exports = class WebGLKernel extends KernelBase {
 				}
 			}
 		} else if (names !== null) {
-			result.push('  threadId = indexTo3D(index, uOutputDim)');
-			result.push('  kernel()');
-			result.push('  gl_FragData[0] = encode32(kernelResult)');
-			for (let i = 0; i < names.length; i++) {
-				result.push(`  gl_FragData[${ i + 1 }] = encode32(${ names[i] })`);
+			if (webGlVersion === 2) {
+				result.push('  kernel()');
+				result.push('  fragData0 = encode32(kernelResult)');
+				for (let i = 0; i < names.length; i++) {
+					result.push(`  fragData${ i + 1 } = encode32(${ names[i] })`);
+				}
+			} else {
+				result.push('  threadId = indexTo3D(index, uOutputDim)');
+				result.push('  kernel()');
+				result.push('  gl_FragData[0] = encode32(kernelResult)');
+				for (let i = 0; i < names.length; i++) {
+					result.push(`  gl_FragData[${ i + 1 }] = encode32(${ names[i] })`);
+				}
 			}
 		} else {
 			result.push(

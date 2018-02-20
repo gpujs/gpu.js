@@ -181,10 +181,7 @@ class UtilsCore {
 		}
 
 		// Create a new canvas DOM
-		const webGl = (
-			canvasObj.getContext('experimental-webgl', UtilsCore.initWebGlDefaultOptions()) ||
-			canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions())
-		);
+		const webGl = canvasObj.getContext('webgl2', UtilsCore.initWebGlDefaultOptions());
 
 		if (webGl) {
 			// Get the extension that is needed
