@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "acorn": "^5.2.1",
-    "node-opencl": "^0.4.5"
+    "node-opencl": "git://github.com/mikeseven/node-opencl.git#7d2de1fbddbd914e1baa41e3ed80287c717c583c"
   },
   "devDependencies": {
     "babel-plugin-syntax-async-functions": "^6.5.0",
