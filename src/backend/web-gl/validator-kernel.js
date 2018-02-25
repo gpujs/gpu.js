@@ -18,6 +18,7 @@ module.exports = class WebGLValidatorKernel extends WebGLKernel {
 	 *
 	 */
 	validateOptions() {
+		this._webGl.getExtension('EXT_color_buffer_float');
 		this.texSize = utils.dimToTexSize({
 			floatTextures: this.floatTextures,
 			floatOutput: this.floatOutput

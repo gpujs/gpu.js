@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.0
- * @date Sat Feb 24 2018 22:03:16 GMT-0500 (EST)
+ * @date Sun Feb 25 2018 16:45:50 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -2774,9 +2774,7 @@ module.exports = function (_KernelBase) {
 		key: 'validateOptions',
 		value: function validateOptions() {
 			var isFloatReadPixel = utils.isFloatReadPixelsSupported();
-			if (this.floatTextures === true) {
-				throw new Error('Float textures are not supported on this browser');
-			} else if (this.floatOutput === true && this.floatOutputForce !== true && !isFloatReadPixel) {
+			if (this.floatOutput === true && this.floatOutputForce !== true && !isFloatReadPixel) {
 				throw new Error('Float texture outputs are not supported on this browser');
 			} else if (this.floatTextures === undefined) {
 				this.floatTextures = true;
@@ -2816,6 +2814,10 @@ module.exports = function (_KernelBase) {
 				this.texSize = utils.clone(this.output);
 			} else if (this.floatOutput === undefined) {
 				this.floatOutput = true;
+			}
+
+			if (this.floatOutput || this.floatOutputForce) {
+				this._webGl.getExtension('EXT_color_buffer_float');
 			}
 		}
 	}, {
@@ -2935,7 +2937,7 @@ module.exports = function (_KernelBase) {
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 					if (this.floatOutput) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
 					} else {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 					}
@@ -3084,7 +3086,7 @@ module.exports = function (_KernelBase) {
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 			if (this.floatOutput) {
-				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
 			} else {
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 			}
@@ -3191,7 +3193,7 @@ module.exports = function (_KernelBase) {
 
 						var buffer = void 0;
 						if (this.floatTextures) {
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 						} else {
 							buffer = new Uint8Array(valuesFlat.buffer);
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
@@ -3240,7 +3242,7 @@ module.exports = function (_KernelBase) {
 						}
 
 						if (this.floatTextures) {
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0], _size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, _size[0], _size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
 						} else {
 							var _buffer = new Uint8Array(inputArray.buffer);
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0], _size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, _buffer);
@@ -3688,6 +3690,7 @@ module.exports = function (_WebGLKernel) {
 
 
 		value: function validateOptions() {
+			this._webGl.getExtension('EXT_color_buffer_float');
 			this.texSize = utils.dimToTexSize({
 				floatTextures: this.floatTextures,
 				floatOutput: this.floatOutput
