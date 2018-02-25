@@ -1031,6 +1031,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				}
 			}
 		} else if (names !== null) {
+			result.push('  threadId = indexTo3D(index, uOutputDim)');
 			result.push('  kernel()');
 			result.push('  data0 = encode32(kernelResult)');
 			for (let i = 0; i < names.length; i++) {

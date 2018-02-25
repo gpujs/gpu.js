@@ -97,8 +97,7 @@ function addCustomFunction_thisOutputX(mode) {
     return custom_adder(a, b);
   }, {
     functions: [custom_adder],
-    output : [6],
-    debug: mode === 'cpu'
+    output : [6]
   });
 
   QUnit.assert.ok( f !== null, "function generated test");

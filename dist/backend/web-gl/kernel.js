@@ -1073,6 +1073,7 @@ module.exports = function (_KernelBase) {
 					}
 				}
 			} else if (names !== null) {
+				result.push('  threadId = indexTo3D(index, uOutputDim)');
 				result.push('  kernel()');
 				result.push('  data0 = encode32(kernelResult)');
 				for (var _i3 = 0; _i3 < names.length; _i3++) {
