@@ -1,4 +1,5 @@
-module.exports = `__HEADER__;
+module.exports = `#version 300 es
+__HEADER__;
 precision highp float;
 precision highp int;
 precision highp sampler2D;
@@ -8,15 +9,7 @@ const float LOOP_MAX = __LOOP_MAX__;
 
 __CONSTANTS__;
 
-varying highp vec2 vTexCoord;
-
-vec4 round(vec4 x) {
-  return floor(x + 0.5);
-}
-
-highp float round(highp float x) {
-  return floor(x + 0.5);
-}
+in highp vec2 vTexCoord;
 
 vec2 integerMod(vec2 x, float y) {
   vec2 res = floor(mod(x, y));
@@ -101,7 +94,7 @@ highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, high
   highp float w = round(texSize.x);
   vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;
   __GET_TEXTURE_INDEX__;
-  highp vec4 texel = texture2D(tex, st / texSize);
+  highp vec4 texel = texture(tex, st / texSize);
   __GET_RESULT__;
 }
 

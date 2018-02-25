@@ -4,13 +4,13 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.0.0-rc.10
- * @date Sat Dec 23 2017 10:30:08 GMT-0500 (EST)
+ * @version 1.0.0
+ * @date Sat Feb 24 2018 19:31:19 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
  *
- * Copyright (c) 2017 gpu.js Team
+ * Copyright (c) 2018 gpu.js Team
  */
 "use strict";(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
@@ -161,15 +161,7 @@ var UtilsCore = function () {
 				throw new Error('Invalid canvas object - ' + canvasObj);
 			}
 
-			var webGl = canvasObj.getContext('experimental-webgl', UtilsCore.initWebGlDefaultOptions()) || canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions());
-
-			if (webGl) {
-				webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
-				webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
-				webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
-			}
-
-			return webGl;
+			return canvasObj.getContext('webgl2', UtilsCore.initWebGlDefaultOptions());
 		}
 	}]);
 
@@ -180,17 +172,7 @@ var UtilsCore = function () {
 var _isCanvasSupported = typeof document !== 'undefined' ? UtilsCore.isCanvas(document.createElement('canvas')) : false;
 var _testingWebGl = UtilsCore.initWebGl(UtilsCore.initCanvas());
 var _isWebGlSupported = UtilsCore.isWebGl(_testingWebGl);
-var _isWebGlDrawBuffersSupported = _isWebGlSupported && Boolean(_testingWebGl.getExtension('WEBGL_draw_buffers'));
-
-if (_isWebGlSupported) {
-	UtilsCore.OES_texture_float = _testingWebGl.OES_texture_float;
-	UtilsCore.OES_texture_float_linear = _testingWebGl.OES_texture_float_linear;
-	UtilsCore.OES_element_index_uint = _testingWebGl.OES_element_index_uint;
-} else {
-	UtilsCore.OES_texture_float = false;
-	UtilsCore.OES_texture_float_linear = false;
-	UtilsCore.OES_element_index_uint = false;
-}
+var _isWebGlDrawBuffersSupported = _isWebGlSupported;
 
 module.exports = UtilsCore;
 },{}],3:[function(require,module,exports){

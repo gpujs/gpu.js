@@ -1,11 +1,12 @@
-module.exports = `precision highp float;
+module.exports = `#version 300 es
+precision highp float;
 precision highp int;
 precision highp sampler2D;
 
-attribute highp vec2 aPos;
-attribute highp vec2 aTexCoord;
+in highp vec2 aPos;
+in highp vec2 aTexCoord;
 
-varying highp vec2 vTexCoord;
+out highp vec2 vTexCoord;
 uniform vec2 ratio;
 
 void main(void) {
