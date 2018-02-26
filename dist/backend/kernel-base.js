@@ -42,6 +42,7 @@ module.exports = function () {
 		this.wraparound = null;
 		this.hardcodeConstants = null;
 		this.outputToTexture = null;
+		this.outputImmutable = null;
 		this.texSize = null;
 		this._canvas = null;
 		this._webGl = null;
@@ -229,6 +230,12 @@ module.exports = function () {
 		key: 'setOutputToTexture',
 		value: function setOutputToTexture(flag) {
 			this.outputToTexture = flag;
+			return this;
+		}
+	}, {
+		key: 'setOutputImmutable',
+		value: function setOutputImmutable(flag) {
+			this.outputImmutable = flag;
 			return this;
 		}
 
