@@ -206,7 +206,7 @@ Note: To animate the rendering, use `requestAnimationFrame` instead of `setTimeo
 Currently, if you need alpha do something like enabling `premultipliedAlpha` with your own gl context:
 ```js
 const canvas = DOM.canvas(500, 500);
-const gl = canvas.getContext('webgl', { premultipliedAlpha: false });
+const gl = canvas.getContext('webgl2', { premultipliedAlpha: false });
 
 const gpu = new GPU({
   canvas,
