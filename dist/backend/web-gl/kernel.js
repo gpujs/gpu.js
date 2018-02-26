@@ -316,6 +316,9 @@ module.exports = function (_KernelBase) {
 
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 			//the call to this._addArgument may rewrite the outputTexture, keep this here
+			if (this.outputImmutable) {
+				this.setupOutputTexture();
+			}
 			var outputTexture = this.outputTexture;
 			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
@@ -723,7 +726,7 @@ module.exports = function (_KernelBase) {
 
 						var _size2 = inputTexture.size;
 
-						if (inputTexture.texture === this.outputTexture) {
+						if (!this.outputImmutable && inputTexture.texture === this.outputTexture) {
 							this.setupOutputTexture();
 						}
 

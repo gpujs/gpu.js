@@ -3,22 +3,25 @@
 const utils = require('../../core/utils');
 const kernelRunShortcut = require('../kernel-run-shortcut');
 
+function removeFnNoise(fn) {
+	if (/^function /.test(fn)) {
+		fn = fn.substring(9);
+	}
+	return fn.replace(/[_]typeof/g, 'typeof');
+}
+
+function removeNoise(str) {
+	return str.replace(/[_]typeof/g, 'typeof');
+}
+
 module.exports = function(cpuKernel, name) {
 	return `() => {
     ${ kernelRunShortcut.toString() };
     const utils = {
-      allPropertiesOf: function ${ utils.allPropertiesOf.toString() },
-      clone: function ${ utils.clone.toString() },
-      /*splitArray: function ${ utils.splitArray.toString() },
-      getArgumentType: function ${ utils.getArgumentType.toString() },
-      getOutput: function ${ utils.getOutput.toString() },
-      dimToTexSize: function ${ utils.dimToTexSize.toString() },
-      copyFlatten: function ${ utils.copyFlatten.toString() },
-      flatten: function ${ utils.flatten.toString() },
-      systemEndianness: '${ utils.systemEndianness() }',
-      initWebGl: function ${ utils.initWebGl.toString() },
-      isArray: function ${ utils.isArray.toString() }*/
+      allPropertiesOf: ${ removeNoise(utils.allPropertiesOf.toString()) },
+      clone: ${ removeNoise(utils.clone.toString()) }
     };
+    const Utils = utils;
     class ${ name || 'Kernel' } {
       constructor() {        
         this.argumentsLength = 0;
@@ -45,7 +48,8 @@ module.exports = function(cpuKernel, name) {
       }
       setCanvas(canvas) { this._canvas = canvas; return this; }
       setWebGl(webGl) { this._webGl = webGl; return this; }
-      ${ cpuKernel.build.toString() }
+      ${ removeFnNoise(cpuKernel.build.toString()) }
+      ${ removeFnNoise(cpuKernel.setupParams.toString()) }
       run () { ${ cpuKernel.kernelString } }
       getKernelString() { return this._kernelString; }
     };

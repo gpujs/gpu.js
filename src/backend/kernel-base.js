@@ -36,6 +36,7 @@ module.exports = class BaseKernel {
 		this.wraparound = null;
 		this.hardcodeConstants = null;
 		this.outputToTexture = null;
+		this.outputImmutable = null;
 		this.texSize = null;
 		this._canvas = null;
 		this._webGl = null;
@@ -198,6 +199,11 @@ module.exports = class BaseKernel {
 
 	setOutputToTexture(flag) {
 		this.outputToTexture = flag;
+		return this;
+	}
+
+	setOutputImmutable(flag) {
+		this.outputImmutable = flag;
 		return this;
 	}
 
