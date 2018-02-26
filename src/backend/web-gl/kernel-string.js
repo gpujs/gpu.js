@@ -3,24 +3,40 @@
 const utils = require('../../core/utils');
 const kernelRunShortcut = require('../kernel-run-shortcut');
 
+function removeFnNoise(fn) {
+	if (/^function /.test(fn)) {
+		fn = fn.substring(9);
+	}
+	return fn.replace(/[_]typeof/g, 'typeof');
+}
+
+function removeNoise(str) {
+	return str.replace(/[_]typeof/g, 'typeof');
+}
+
 module.exports = function(gpuKernel, name) {
 	return `() => {
     ${ kernelRunShortcut.toString() };
     const utils = {
-      allPropertiesOf: function ${ utils.allPropertiesOf.toString() },
-      clone: function ${ utils.clone.toString() },
-      splitArray: function ${ utils.splitArray.toString() },
-      getArgumentType: function ${ utils.getArgumentType.toString() },
-      getDimensions: function ${ utils.getDimensions.toString() },
-      dimToTexSize: function ${ utils.dimToTexSize.toString() },
-      copyFlatten: function ${ utils.copyFlatten.toString() },
-      flatten: function ${ utils.flatten.toString() },
-      systemEndianness: '${ utils.systemEndianness() }',
-      initWebGl: function ${ utils.initWebGl.toString() },
-      isArray: function ${ utils.isArray.toString() }
+      allPropertiesOf: ${ removeNoise(utils.allPropertiesOf.toString()) },
+      clone: ${ removeNoise(utils.clone.toString()) },
+      splitArray: ${ removeNoise(utils.splitArray.toString()) },
+      getArgumentType: ${ removeNoise(utils.getArgumentType.toString()) },
+      getDimensions: ${ removeNoise(utils.getDimensions.toString()) },
+      dimToTexSize: ${ removeNoise(utils.dimToTexSize.toString()) },
+      flattenTo: ${ removeNoise(utils.flattenTo.toString()) },
+      flatten2dArrayTo: ${ removeNoise(utils.flatten2dArrayTo.toString()) },
+      flatten3dArrayTo: ${ removeNoise(utils.flatten3dArrayTo.toString()) },
+      systemEndianness: '${ removeNoise(utils.systemEndianness()) }',
+      initWebGl: ${ removeNoise(utils.initWebGl.toString()) },
+      isArray: ${ removeNoise(utils.isArray.toString()) }
     };
+    const Utils = utils;
+    const canvases = [];
+    const maxTexSizes = {};
     class ${ name || 'Kernel' } {
       constructor() {
+        this.maxTexSize = null;
         this.argumentsLength = 0;
         this._canvas = null;
         this._webGl = null;
@@ -36,21 +52,25 @@ module.exports = function(gpuKernel, name) {
 		    this.textureCache = {};
 		    this.subKernelOutputTextures = null;
       }
-      ${ gpuKernel._getFragShaderString.toString() }
-      ${ gpuKernel._getVertShaderString.toString() }
+      ${ removeFnNoise(gpuKernel._getFragShaderString.toString()) }
+      ${ removeFnNoise(gpuKernel._getVertShaderString.toString()) }
       validateOptions() {}
       setupParams() {}
       setCanvas(canvas) { this._canvas = canvas; return this; }
       setWebGl(webGl) { this._webGl = webGl; return this; }
-      ${ gpuKernel.getUniformLocation.toString() }
-      ${ gpuKernel.setupParams.toString() }
-      ${ gpuKernel.build.toString() }
-		  ${ gpuKernel.run.toString() }
-		  ${ gpuKernel._addArgument.toString() }
-		  ${ gpuKernel.getArgumentTexture.toString() }
-		  ${ gpuKernel.getTextureCache.toString() }
-		  ${ gpuKernel.getOutputTexture.toString() }
-		  ${ gpuKernel.renderOutput.toString() }
+      ${ removeFnNoise(gpuKernel.getUniformLocation.toString()) }
+      ${ removeFnNoise(gpuKernel.setupParams.toString()) }
+      ${ removeFnNoise(gpuKernel.build.toString()) }
+		  ${ removeFnNoise(gpuKernel.run.toString()) }
+		  ${ removeFnNoise(gpuKernel._addArgument.toString()) }
+		  ${ removeFnNoise(gpuKernel.getArgumentTexture.toString()) }
+		  ${ removeFnNoise(gpuKernel.getTextureCache.toString()) }
+		  ${ removeFnNoise(gpuKernel.getOutputTexture.toString()) }
+		  ${ removeFnNoise(gpuKernel.renderOutput.toString()) }
+		  ${ removeFnNoise(gpuKernel.updateMaxTexSize.toString()) }
+		  ${ removeFnNoise(gpuKernel.setupOutputTexture.toString()) }
+		  ${ removeFnNoise(gpuKernel.detachOutputTexture.toString()) }
+		  ${ removeFnNoise(gpuKernel.detachTextureCache.toString()) }
     };
     return kernelRunShortcut(new Kernel());
   };`;
