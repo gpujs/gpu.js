@@ -102,6 +102,8 @@ Options are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.c
 * functions: array or boolean
 * nativeFunctions: object
 * subKernels: array
+* outputImmutable: boolean
+  * default to false`
 
 
 ## Creating and Running Functions
