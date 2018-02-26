@@ -300,6 +300,9 @@ module.exports = class WebGLKernel extends KernelBase {
 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 		//the call to this._addArgument may rewrite the outputTexture, keep this here
+		if (this.outputImmutable) {
+			this.setupOutputTexture();
+		}
 		const outputTexture = this.outputTexture;
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
@@ -674,7 +677,7 @@ module.exports = class WebGLKernel extends KernelBase {
 
 					const size = inputTexture.size;
 
-					if (inputTexture.texture === this.outputTexture) {
+					if (!this.outputImmutable && inputTexture.texture === this.outputTexture) {
 						this.setupOutputTexture();
 					}
 
