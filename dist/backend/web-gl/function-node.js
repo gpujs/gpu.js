@@ -1040,6 +1040,11 @@ module.exports = function (_FunctionNodeBase) {
 					funcName = funcName.slice(localPrefix.length);
 				}
 
+				// if this if grows to more than one, lets use a switch
+				if (funcName === 'atan2') {
+					funcName = 'atan';
+				}
+
 				// Register the function into the called registry
 				if (funcParam.calledFunctions.indexOf(funcName) < 0) {
 					funcParam.calledFunctions.push(funcName);

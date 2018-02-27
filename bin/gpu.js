@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.1
- * @date Sun Feb 25 2018 19:14:47 GMT-0500 (EST)
+ * @date Tue Feb 27 2018 13:04:40 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -2632,6 +2632,10 @@ module.exports = function (_FunctionNodeBase) {
 
 				if (funcName.indexOf(localPrefix) === 0) {
 					funcName = funcName.slice(localPrefix.length);
+				}
+
+				if (funcName === 'atan2') {
+					funcName = 'atan';
 				}
 
 				if (funcParam.calledFunctions.indexOf(funcName) < 0) {
