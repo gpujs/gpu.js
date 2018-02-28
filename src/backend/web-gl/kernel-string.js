@@ -69,8 +69,7 @@ module.exports = function(gpuKernel, name) {
 		  ${ removeFnNoise(gpuKernel.getOutputTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.renderOutput.toString()) }
 		  ${ removeFnNoise(gpuKernel.updateMaxTexSize.toString()) }
-		  ${ removeFnNoise(gpuKernel.setupOutputTexture.toString()) }
-		  ${ removeFnNoise(gpuKernel.detachOutputTexture.toString()) }
+		  ${ removeFnNoise(gpuKernel._setupOutputTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.detachTextureCache.toString()) }
     };
     return kernelRunShortcut(new Kernel());

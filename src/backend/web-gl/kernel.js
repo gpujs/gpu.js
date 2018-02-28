@@ -278,10 +278,10 @@ module.exports = class WebGLKernel extends KernelBase {
 		const ratioLoc = this.getUniformLocation('ratio');
 		gl.uniform2f(ratioLoc, texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
-    this.argumentsLength = 0;
-    for (let texIndex = 0; texIndex < paramNames.length; texIndex++) {
-      this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
-    }
+		this.argumentsLength = 0;
+		for (let texIndex = 0; texIndex < paramNames.length; texIndex++) {
+			this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
+		}
 
 		if (this.graphical) {
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
@@ -405,7 +405,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * @memberOf WebGLKernel#
 	 * @function
 	 * @name _setupOutputTexture
-   * @private
+	 * @private
 	 *
 	 * @desc Setup and replace output texture
 	 */
@@ -426,22 +426,22 @@ module.exports = class WebGLKernel extends KernelBase {
 		}
 	}
 
-  /**
-   * @memberOf WebGLKernel#
-   * @param length
-   * @private
-   *
-   * @desc Setup and replace sub-output textures
-   */
+	/**
+	 * @memberOf WebGLKernel#
+	 * @param length
+	 * @private
+	 *
+	 * @desc Setup and replace sub-output textures
+	 */
 	_setupSubOutputTextures(length) {
 		const gl = this._webGl;
 		const texSize = this.texSize;
-		const extDrawBuffersMap = this.extDrawBuffersMap = [gl.COLOR_ATTACHMENT0];
+		const drawBuffersMap = this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
 		const textures = this.subKernelOutputTextures = [];
 		for (let i = 0; i < length; i++) {
 			const texture = this._webGl.createTexture();
 			textures.push(texture);
-			extDrawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
+			drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
 			gl.activeTexture(gl.TEXTURE0 + arguments.length + i);
 			gl.bindTexture(gl.TEXTURE_2D, texture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
