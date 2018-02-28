@@ -51,6 +51,7 @@ module.exports = function(gpuKernel, name) {
 		    this.programUniformLocationCache = {};
 		    this.textureCache = {};
 		    this.subKernelOutputTextures = null;
+		    this.subKernelOutputVariableNames = null;
       }
       ${ removeFnNoise(gpuKernel._getFragShaderString.toString()) }
       ${ removeFnNoise(gpuKernel._getVertShaderString.toString()) }
