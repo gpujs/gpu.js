@@ -7,9 +7,6 @@ function buildToStringKernelResult(mode) {
   });
   kernel.build();
   const string = kernel.toString();
-  if (mode === 'cpu') {
-    console.log(string);
-  }
   const kernel2 = eval(string)();
   return kernel2
     .setWebGl(kernel._webGl)
