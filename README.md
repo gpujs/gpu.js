@@ -225,15 +225,15 @@ Sometimes you want to do multiple math operations on the gpu without the round t
 _**Note:**_ Kernels can have different output sizes.
 ```js
 const add = gpu.createKernel(function(a, b) {
-	return a[this.thread.x] + b[this.thread.x];
+	return a + b;
 }).setOutput([20]);
 
 const multiply = gpu.createKernel(function(a, b) {
-	return a[this.thread.x] * b[this.thread.x];
+	return a * b;
 }).setOutput([20]);
 
 const superKernel = gpu.combineKernels(add, multiply, function(a, b, c) {
-	return multiply(add(a, b), c);
+	return multiply(add(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
 });
 
 superKernel(a, b, c);
@@ -248,13 +248,13 @@ Sometimes you want to do multiple math operations in one kernel, and save the ou
 ```js
 const megaKernel = gpu.createKernelMap({
   addResult: function add(a, b) {
-    return a[this.thread.x] + b[this.thread.x];
+    return a + b;
   },
   multiplyResult: function multiply(a, b) {
-    return a[this.thread.x] * b[this.thread.x];
+    return a * b;
   },
 }, function(a, b, c) {
-	return multiply(add(a, b), c);
+	return multiply(add(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
 });
 
 megaKernel(a, b, c);
@@ -264,13 +264,13 @@ megaKernel(a, b, c);
 ```js
 const megaKernel = gpu.createKernelMap([
   function add(a, b) {
-    return a[this.thread.x] + b[this.thread.x];
+    return a + b;
   },
   function multiply(a, b) {
-    return a[this.thread.x] * b[this.thread.x];
+    return a * b;
   }
 ], function(a, b, c) {
-	return multiply(add(a, b), c);
+	return multiply(add(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
 });
 
 megaKernel(a, b, c);

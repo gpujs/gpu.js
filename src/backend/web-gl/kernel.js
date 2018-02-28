@@ -8,6 +8,7 @@ const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
 const canvases = [];
 const maxTexSizes = {};
+
 module.exports = class WebGLKernel extends KernelBase {
 	/**
 	 * @constructor WebGLKernel
@@ -229,25 +230,16 @@ module.exports = class WebGLKernel extends KernelBase {
 		gl.enableVertexAttribArray(aTexCoordLoc);
 		gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 
-		this.setupOutputTexture();
+		if (!this.outputImmutable) {
+			this._setupOutputTexture();
+		}
 
-		if (this.subKernelOutputTextures !== null) {
-			const drawBuffersMap = this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
-			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
-				const subKernelOutputTexture = this.subKernelOutputTextures[i];
-				drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
-				gl.activeTexture(gl.TEXTURE0 + arguments.length + i);
-				gl.bindTexture(gl.TEXTURE_2D, subKernelOutputTexture);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-				if (this.floatOutput) {
-					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-				} else {
-					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-				}
-			}
+		if (
+			this.subKernelOutputVariableNames !== null &&
+			this.subKernelOutputVariableNames.length > 0 &&
+			!this.outputImmutable
+		) {
+			this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
 		}
 	}
 
@@ -260,7 +252,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *
 	 * <p> This method calls a helper method *renderOutput* to return the result. </p>
 	 *
-	 * @returns {Object} Result The final output of the program, as float, and as Textures for reuse.
+	 * @returns {Object|Undefined} Result The final output of the program, as float, and as Textures for reuse.
 	 *
 	 *
 	 */
@@ -286,10 +278,10 @@ module.exports = class WebGLKernel extends KernelBase {
 		const ratioLoc = this.getUniformLocation('ratio');
 		gl.uniform2f(ratioLoc, texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
-		this.argumentsLength = 0;
-		for (let texIndex = 0; texIndex < paramNames.length; texIndex++) {
-			this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
-		}
+    this.argumentsLength = 0;
+    for (let texIndex = 0; texIndex < paramNames.length; texIndex++) {
+      this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
+    }
 
 		if (this.graphical) {
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
@@ -299,14 +291,17 @@ module.exports = class WebGLKernel extends KernelBase {
 		}
 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-		//the call to this._addArgument may rewrite the outputTexture, keep this here
 		if (this.outputImmutable) {
-			this.setupOutputTexture();
+			this._setupOutputTexture();
 		}
 		const outputTexture = this.outputTexture;
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
-		if (this.subKernelOutputTextures !== null) {
+		if (this.subKernelOutputVariableNames !== null) {
+			if (this.outputImmutable) {
+				this.subKernelOutputTextures = [];
+				this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
+			}
 			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
 				const subKernelOutputTexture = this.subKernelOutputTextures[i];
 				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, subKernelOutputTexture, 0);
@@ -397,40 +392,27 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * @function
 	 * @name getOutputTexture
 	 *
-	 * @desc This uses *getTextureCache* to get the Texture Cache of the Output
+	 * @desc This return defined outputTexture, which is setup in .build(), or if immutable, is defined in .run()
 	 *
-	 * @returns {Object} Ouptut Texture Cache
+	 * @returns {Object} Output Texture Cache
 	 *
 	 */
 	getOutputTexture() {
-		return this.getTextureCache('OUTPUT');
+		return this.outputTexture;
 	}
 
 	/**
 	 * @memberOf WebGLKernel#
 	 * @function
-	 * @name detachOutputTexture
+	 * @name _setupOutputTexture
+   * @private
 	 *
-	 * @desc Detaches output texture
-	 *
-	 *
+	 * @desc Setup and replace output texture
 	 */
-	detachOutputTexture() {
-		this.detachTextureCache('OUTPUT');
-	}
-
-	/**
-	 * @memberOf WebGLKernel#
-	 * @function
-	 * @name setupOutputTexture
-	 *
-	 * @desc Detaches a texture from cache if exists, and sets up output texture
-	 */
-	setupOutputTexture() {
+	_setupOutputTexture() {
 		const gl = this._webGl;
 		const texSize = this.texSize;
-		this.detachOutputTexture();
-		this.outputTexture = this.getOutputTexture();
+		this.outputTexture = this._webGl.createTexture();
 		gl.activeTexture(gl.TEXTURE0 + this.paramNames.length);
 		gl.bindTexture(gl.TEXTURE_2D, this.outputTexture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -441,6 +423,36 @@ module.exports = class WebGLKernel extends KernelBase {
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
 		} else {
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		}
+	}
+
+  /**
+   * @memberOf WebGLKernel#
+   * @param length
+   * @private
+   *
+   * @desc Setup and replace sub-output textures
+   */
+	_setupSubOutputTextures(length) {
+		const gl = this._webGl;
+		const texSize = this.texSize;
+		const extDrawBuffersMap = this.extDrawBuffersMap = [gl.COLOR_ATTACHMENT0];
+		const textures = this.subKernelOutputTextures = [];
+		for (let i = 0; i < length; i++) {
+			const texture = this._webGl.createTexture();
+			textures.push(texture);
+			extDrawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
+			gl.activeTexture(gl.TEXTURE0 + arguments.length + i);
+			gl.bindTexture(gl.TEXTURE_2D, texture);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+			if (this.floatOutput) {
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+			} else {
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+			}
 		}
 	}
 
@@ -676,10 +688,6 @@ module.exports = class WebGLKernel extends KernelBase {
 					const dim = utils.getDimensions(inputTexture, true);
 
 					const size = inputTexture.size;
-
-					if (!this.outputImmutable && inputTexture.texture === this.outputTexture) {
-						this.setupOutputTexture();
-					}
 
 					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
@@ -1118,38 +1126,23 @@ module.exports = class WebGLKernel extends KernelBase {
 		if (this.subKernels !== null) {
 			this.subKernelOutputTextures = [];
 			this.subKernelOutputVariableNames = [];
-			for (let i = 0; i < this.subKernels.length; i++) {
-				const subKernel = this.subKernels[i];
-				builder.addSubKernel(subKernel, {
-					prototypeOnly: false,
-					constants: this.constants,
-					output: this.output,
-					debug: this.debug,
-					loopMaxIterations: this.loopMaxIterations
-				});
-				this.subKernelOutputTextures.push(this.getSubKernelTexture(i));
-				this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
-			}
-
+			this.subKernels.forEach(subKernel => this._addSubKernel(subKernel));
 		} else if (this.subKernelProperties !== null) {
 			this.subKernelOutputTextures = [];
 			this.subKernelOutputVariableNames = [];
-			let i = 0;
-			for (let p in this.subKernelProperties) {
-				if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-				const subKernel = this.subKernelProperties[p];
-				builder.addSubKernel(subKernel, {
-					prototypeOnly: false,
-					constants: this.constants,
-					output: this.output,
-					debug: this.debug,
-					loopMaxIterations: this.loopMaxIterations
-				});
-				this.subKernelOutputTextures.push(this.getSubKernelTexture(p));
-				this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
-				i++;
-			}
+			Object.keys(this.subKernelProperties).forEach(property => this._addSubKernel(this.subKernelProperties[property]));
 		}
+	}
+
+	_addSubKernel(subKernel) {
+		this.functionBuilder.addSubKernel(subKernel, {
+			prototypeOnly: false,
+			constants: this.constants,
+			output: this.output,
+			debug: this.debug,
+			loopMaxIterations: this.loopMaxIterations
+		});
+		this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
 	}
 
 	/**

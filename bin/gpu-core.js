@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.2.0
- * @date Sun Feb 25 2018 19:34:03 GMT-0500 (EST)
+ * @version 1.0.1
+ * @date Wed Feb 28 2018 15:01:50 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -161,7 +161,15 @@ var UtilsCore = function () {
 				throw new Error('Invalid canvas object - ' + canvasObj);
 			}
 
-			return canvasObj.getContext('webgl2', UtilsCore.initWebGlDefaultOptions());
+			var webGl = canvasObj.getContext('experimental-webgl', UtilsCore.initWebGlDefaultOptions()) || canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions());
+
+			if (webGl) {
+				webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
+				webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
+				webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
+			}
+
+			return webGl;
 		}
 	}]);
 
@@ -172,7 +180,17 @@ var UtilsCore = function () {
 var _isCanvasSupported = typeof document !== 'undefined' ? UtilsCore.isCanvas(document.createElement('canvas')) : false;
 var _testingWebGl = UtilsCore.initWebGl(UtilsCore.initCanvas());
 var _isWebGlSupported = UtilsCore.isWebGl(_testingWebGl);
-var _isWebGlDrawBuffersSupported = _isWebGlSupported;
+var _isWebGlDrawBuffersSupported = _isWebGlSupported && Boolean(_testingWebGl.getExtension('WEBGL_draw_buffers'));
+
+if (_isWebGlSupported) {
+	UtilsCore.OES_texture_float = _testingWebGl.OES_texture_float;
+	UtilsCore.OES_texture_float_linear = _testingWebGl.OES_texture_float_linear;
+	UtilsCore.OES_element_index_uint = _testingWebGl.OES_element_index_uint;
+} else {
+	UtilsCore.OES_texture_float = false;
+	UtilsCore.OES_texture_float_linear = false;
+	UtilsCore.OES_element_index_uint = false;
+}
 
 module.exports = UtilsCore;
 },{}],3:[function(require,module,exports){
