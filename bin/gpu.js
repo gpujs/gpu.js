@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.2.0
- * @date Wed Feb 28 2018 15:36:39 GMT-0500 (EST)
+ * @date Wed Feb 28 2018 21:59:32 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -3124,7 +3124,7 @@ module.exports = function (_KernelBase) {
 				var texture = this._webGl.createTexture();
 				textures.push(texture);
 				drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
-				gl.activeTexture(gl.TEXTURE0 + arguments.length + i);
+				gl.activeTexture(gl.TEXTURE0 + this.paramNames.length + i);
 				gl.bindTexture(gl.TEXTURE_2D, texture);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
