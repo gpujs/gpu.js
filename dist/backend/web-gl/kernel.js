@@ -533,10 +533,6 @@ module.exports = function (_KernelBase) {
 	}, {
 		key: 'getTextureCache',
 		value: function getTextureCache(name) {
-			if (this.outputToTexture) {
-				// Don't retain a handle on the output texture, we might need to render on the same texture later
-				return this._webGl.createTexture();
-			}
 			if (this.textureCache.hasOwnProperty(name)) {
 				return this.textureCache[name];
 			}
