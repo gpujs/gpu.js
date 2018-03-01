@@ -243,11 +243,11 @@ module.exports = function (_KernelBase) {
 			gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 
 			if (!this.outputImmutable) {
-				this.setupOutputTexture();
+				this._setupOutputTexture();
 			}
 
 			if (this.subKernelOutputVariableNames !== null && this.subKernelOutputVariableNames.length > 0 && !this.outputImmutable) {
-				this.setupSubOutputTextures(this.subKernelOutputVariableNames.length);
+				this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
 			}
 		}
 
@@ -289,11 +289,12 @@ module.exports = function (_KernelBase) {
 			var ratioLoc = this.getUniformLocation('ratio');
 			gl.uniform2f(ratioLoc, texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
+			this.argumentsLength = 0;
+			for (var texIndex = 0; texIndex < paramNames.length; texIndex++) {
+				this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
+			}
+
 			if (this.graphical) {
-				this.argumentsLength = 0;
-				for (var texIndex = 0; texIndex < paramNames.length; texIndex++) {
-					this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
-				}
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -301,9 +302,8 @@ module.exports = function (_KernelBase) {
 			}
 
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-			//the call to this._addArgument may rewrite the outputTexture, keep this here
 			if (this.outputImmutable) {
-				this.setupOutputTexture();
+				this._setupOutputTexture();
 			}
 			var outputTexture = this.outputTexture;
 			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
@@ -311,18 +311,13 @@ module.exports = function (_KernelBase) {
 			if (this.subKernelOutputVariableNames !== null) {
 				if (this.outputImmutable) {
 					this.subKernelOutputTextures = [];
-					this.setupSubOutputTextures(this.subKernelOutputVariableNames.length);
+					this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
 				}
 				for (var i = 0; i < this.subKernelOutputTextures.length; i++) {
 					var subKernelOutputTexture = this.subKernelOutputTextures[i];
 					gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, subKernelOutputTexture, 0);
 				}
 				this.ext.drawBuffersWEBGL(this.extDrawBuffersMap);
-			}
-
-			this.argumentsLength = 0;
-			for (var _texIndex = 0; _texIndex < paramNames.length; _texIndex++) {
-				this._addArgument(arguments[_texIndex], paramTypes[_texIndex], paramNames[_texIndex]);
 			}
 
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -426,33 +421,17 @@ module.exports = function (_KernelBase) {
 		/**
    * @memberOf WebGLKernel#
    * @function
-   * @name detachOutputTexture
+   * @name _setupOutputTexture
+   * @private
    *
-   * @desc Detaches output texture
-   *
-   *
+   * @desc Setup and replace output texture
    */
 
 	}, {
-		key: 'detachOutputTexture',
-		value: function detachOutputTexture() {
-			delete this.outputTexture;
-		}
-
-		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name setupOutputTexture
-   *
-   * @desc Detaches a texture from cache if exists, and sets up output texture
-   */
-
-	}, {
-		key: 'setupOutputTexture',
-		value: function setupOutputTexture() {
+		key: '_setupOutputTexture',
+		value: function _setupOutputTexture() {
 			var gl = this._webGl;
 			var texSize = this.texSize;
-			this.detachOutputTexture();
 			this.outputTexture = this._webGl.createTexture();
 			gl.activeTexture(gl.TEXTURE0 + this.paramNames.length);
 			gl.bindTexture(gl.TEXTURE_2D, this.outputTexture);
@@ -466,9 +445,18 @@ module.exports = function (_KernelBase) {
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 			}
 		}
+
+		/**
+   * @memberOf WebGLKernel#
+   * @param length
+   * @private
+   *
+   * @desc Setup and replace sub-output textures
+   */
+
 	}, {
-		key: 'setupSubOutputTextures',
-		value: function setupSubOutputTextures(length) {
+		key: '_setupSubOutputTextures',
+		value: function _setupSubOutputTextures(length) {
 			var gl = this._webGl;
 			var texSize = this.texSize;
 			var extDrawBuffersMap = this.extDrawBuffersMap = [gl.COLOR_ATTACHMENT0];
@@ -477,7 +465,7 @@ module.exports = function (_KernelBase) {
 				var texture = this._webGl.createTexture();
 				textures.push(texture);
 				extDrawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
-				gl.activeTexture(gl.TEXTURE0 + arguments.length + i);
+				gl.activeTexture(gl.TEXTURE0 + this.paramNames.length + i);
 				gl.bindTexture(gl.TEXTURE_2D, texture);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
