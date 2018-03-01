@@ -571,12 +571,10 @@ module.exports = function (_KernelBase) {
 	}, {
 		key: 'getUniformLocation',
 		value: function getUniformLocation(name) {
-			var location = this.programUniformLocationCache[name];
-			if (!location) {
-				location = this._webGl.getUniformLocation(this.program, name);
-				this.programUniformLocationCache[name] = location;
+			if (this.programUniformLocationCache.hasOwnProperty(name)) {
+				return this.programUniformLocationCache[name];
 			}
-			return location;
+			return this.programUniformLocationCache[name] = this._webGl.getUniformLocation(this.program, name);
 		}
 
 		/**
