@@ -532,12 +532,10 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *
 	 */
 	getUniformLocation(name) {
-		let location = this.programUniformLocationCache[name];
-		if (!location) {
-			location = this._webGl.getUniformLocation(this.program, name);
-			this.programUniformLocationCache[name] = location;
+		if (this.programUniformLocationCache.hasOwnProperty(name)) {
+			return this.programUniformLocationCache[name];
 		}
-		return location;
+		return this.programUniformLocationCache[name] = this._webGl.getUniformLocation(this.program, name);
 	}
 
 	/**
