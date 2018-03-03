@@ -53,7 +53,6 @@ module.exports = function () {
 		this.addFunction = null;
 		this.functions = null;
 		this.nativeFunctions = null;
-		this.copyData = true;
 		this.subKernels = null;
 		this.subKernelProperties = null;
 		this.subKernelNames = null;
@@ -314,12 +313,6 @@ module.exports = function () {
 		key: 'setWebGl',
 		value: function setWebGl(webGl) {
 			this._webGl = webGl;
-			return this;
-		}
-	}, {
-		key: 'setCopyData',
-		value: function setCopyData(copyData) {
-			this.copyData = copyData;
 			return this;
 		}
 

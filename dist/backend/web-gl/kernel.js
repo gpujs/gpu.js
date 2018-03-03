@@ -327,7 +327,7 @@ module.exports = function (_KernelBase) {
 					var output = [];
 					output.result = this.renderOutput(outputTexture);
 					for (var _i = 0; _i < this.subKernels.length; _i++) {
-						output.push(new Texture(this.subKernelOutputTextures[_i], texSize, this.output, this._webGl));
+						output.push(new Texture(this.subKernelOutputTextures[_i], texSize, this.threadDim, this.output, this._webGl));
 					}
 					return output;
 				} else if (this.subKernelProperties !== null) {
@@ -337,7 +337,7 @@ module.exports = function (_KernelBase) {
 					var _i2 = 0;
 					for (var p in this.subKernelProperties) {
 						if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-						_output[p] = new Texture(this.subKernelOutputTextures[_i2], texSize, this.output, this._webGl);
+						_output[p] = new Texture(this.subKernelOutputTextures[_i2], texSize, this.threadDim, this.output, this._webGl);
 						_i2++;
 					}
 					return _output;
@@ -374,7 +374,7 @@ module.exports = function (_KernelBase) {
 			var threadDim = this.threadDim;
 			var output = this.output;
 			if (this.outputToTexture) {
-				return new Texture(outputTexture, texSize, output, this._webGl);
+				return new Texture(outputTexture, texSize, this.threadDim, output, this._webGl);
 			} else {
 				var result = void 0;
 				if (this.floatOutput) {
@@ -496,25 +496,6 @@ module.exports = function (_KernelBase) {
 		key: 'getArgumentTexture',
 		value: function getArgumentTexture(name) {
 			return this.getTextureCache('ARGUMENT_' + name);
-		}
-
-		/**
-   * @memberOf WebGLKernel#
-   * @name getSubKernelTexture
-   * @function
-   *
-   * @desc This uses *getTextureCache* to get the Texture Cache of the sub-kernel
-   *
-   * @param {String} name - Name of the subKernel
-   *
-   * @returns {Object} Texture cache for the subKernel
-   *
-   */
-
-	}, {
-		key: 'getSubKernelTexture',
-		value: function getSubKernelTexture(name) {
-			return this.getTextureCache('SUB_KERNEL_' + name);
 		}
 
 		/**
@@ -723,8 +704,7 @@ module.exports = function (_KernelBase) {
 				case 'Texture':
 					{
 						var inputTexture = value;
-						var _dim2 = utils.getDimensions(inputTexture, true);
-
+						var _dim2 = inputTexture.dimensions;
 						var _size2 = inputTexture.size;
 
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);

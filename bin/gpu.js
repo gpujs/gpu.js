@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.0.5
- * @date Thu Mar 01 2018 17:45:11 GMT-0500 (EST)
+ * @version 1.0.6
+ * @date Sat Mar 03 2018 14:24:37 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -1540,7 +1540,6 @@ module.exports = function () {
 		this.addFunction = null;
 		this.functions = null;
 		this.nativeFunctions = null;
-		this.copyData = true;
 		this.subKernels = null;
 		this.subKernelProperties = null;
 		this.subKernelNames = null;
@@ -1704,12 +1703,6 @@ module.exports = function () {
 		key: 'setWebGl',
 		value: function setWebGl(webGl) {
 			this._webGl = webGl;
-			return this;
-		}
-	}, {
-		key: 'setCopyData',
-		value: function setCopyData(copyData) {
-			this.copyData = copyData;
 			return this;
 		}
 
@@ -3064,7 +3057,7 @@ module.exports = function (_KernelBase) {
 					var output = [];
 					output.result = this.renderOutput(outputTexture);
 					for (var _i = 0; _i < this.subKernels.length; _i++) {
-						output.push(new Texture(this.subKernelOutputTextures[_i], texSize, this.output, this._webGl));
+						output.push(new Texture(this.subKernelOutputTextures[_i], texSize, this.threadDim, this.output, this._webGl));
 					}
 					return output;
 				} else if (this.subKernelProperties !== null) {
@@ -3074,7 +3067,7 @@ module.exports = function (_KernelBase) {
 					var _i2 = 0;
 					for (var p in this.subKernelProperties) {
 						if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-						_output[p] = new Texture(this.subKernelOutputTextures[_i2], texSize, this.output, this._webGl);
+						_output[p] = new Texture(this.subKernelOutputTextures[_i2], texSize, this.threadDim, this.output, this._webGl);
 						_i2++;
 					}
 					return _output;
@@ -3093,7 +3086,7 @@ module.exports = function (_KernelBase) {
 			var threadDim = this.threadDim;
 			var output = this.output;
 			if (this.outputToTexture) {
-				return new Texture(outputTexture, texSize, output, this._webGl);
+				return new Texture(outputTexture, texSize, this.threadDim, output, this._webGl);
 			} else {
 				var result = void 0;
 				if (this.floatOutput) {
@@ -3178,13 +3171,6 @@ module.exports = function (_KernelBase) {
 		key: 'getArgumentTexture',
 		value: function getArgumentTexture(name) {
 			return this.getTextureCache('ARGUMENT_' + name);
-		}
-
-
-	}, {
-		key: 'getSubKernelTexture',
-		value: function getSubKernelTexture(name) {
-			return this.getTextureCache('SUB_KERNEL_' + name);
 		}
 
 
@@ -3338,8 +3324,7 @@ module.exports = function (_KernelBase) {
 				case 'Texture':
 					{
 						var inputTexture = value;
-						var _dim2 = utils.getDimensions(inputTexture, true);
-
+						var _dim2 = inputTexture.dimensions;
 						var _size2 = inputTexture.size;
 
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
@@ -4091,11 +4076,12 @@ var gpu = null;
 
 module.exports = function () {
 
-	function Texture(texture, size, output, webGl) {
+	function Texture(texture, size, dimensions, output, webGl) {
 		_classCallCheck(this, Texture);
 
 		this.texture = texture;
 		this.size = size;
+		this.dimensions = dimensions;
 		this.output = output;
 		this.webGl = webGl;
 		this.kernel = null;
