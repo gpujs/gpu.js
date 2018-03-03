@@ -315,7 +315,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				const output = [];
 				output.result = this.renderOutput(outputTexture);
 				for (let i = 0; i < this.subKernels.length; i++) {
-					output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.output, this._webGl));
+					output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this._webGl));
 				}
 				return output;
 			} else if (this.subKernelProperties !== null) {
@@ -325,7 +325,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				let i = 0;
 				for (let p in this.subKernelProperties) {
 					if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-					output[p] = new Texture(this.subKernelOutputTextures[i], texSize, this.output, this._webGl);
+					output[p] = new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this._webGl);
 					i++;
 				}
 				return output;
@@ -359,7 +359,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		const threadDim = this.threadDim;
 		const output = this.output;
 		if (this.outputToTexture) {
-			return new Texture(outputTexture, texSize, output, this._webGl);
+			return new Texture(outputTexture, texSize, this.threadDim, output, this._webGl);
 		} else {
 			let result;
 			if (this.floatOutput) {
@@ -469,22 +469,6 @@ module.exports = class WebGLKernel extends KernelBase {
 	 */
 	getArgumentTexture(name) {
 		return this.getTextureCache(`ARGUMENT_${ name }`);
-	}
-
-	/**
-	 * @memberOf WebGLKernel#
-	 * @name getSubKernelTexture
-	 * @function
-	 *
-	 * @desc This uses *getTextureCache* to get the Texture Cache of the sub-kernel
-	 *
-	 * @param {String} name - Name of the subKernel
-	 *
-	 * @returns {Object} Texture cache for the subKernel
-	 *
-	 */
-	getSubKernelTexture(name) {
-		return this.getTextureCache(`SUB_KERNEL_${ name }`);
 	}
 
 	/**
@@ -678,8 +662,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			case 'Texture':
 				{
 					const inputTexture = value;
-					const dim = utils.getDimensions(inputTexture, true);
-
+					const dim = inputTexture.dimensions;
 					const size = inputTexture.size;
 
 					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);

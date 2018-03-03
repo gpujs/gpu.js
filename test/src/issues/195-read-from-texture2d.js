@@ -2,7 +2,7 @@ QUnit.test( "Issue #195 Read from Texture 2D", function() {
 
   var matrixSize =  4;
   var A = Array.apply(null, Array(matrixSize*matrixSize)).map(function (_, i) {return i;});
-  A = splitArray(A, matrixSize)
+  A = splitArray(A, matrixSize);
 
   const gpu = new GPU({ mode: 'gpu' });
 

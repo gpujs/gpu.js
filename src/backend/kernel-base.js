@@ -47,7 +47,6 @@ module.exports = class BaseKernel {
 		this.addFunction = null;
 		this.functions = null;
 		this.nativeFunctions = null;
-		this.copyData = true;
 		this.subKernels = null;
 		this.subKernelProperties = null;
 		this.subKernelNames = null;
@@ -269,11 +268,6 @@ module.exports = class BaseKernel {
 	 */
 	setWebGl(webGl) {
 		this._webGl = webGl;
-		return this;
-	}
-
-	setCopyData(copyData) {
-		this.copyData = copyData;
 		return this;
 	}
 
