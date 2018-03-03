@@ -11,16 +11,18 @@ module.exports = function () {
 	/**
   * @desc WebGl Texture implementation in JS
   * @constructor Texture
-  * @param {Object} texture 
-  * @param {Array} size 
+  * @param {Object} texture
+  * @param {Array} size
+  * @param dimensions
   * @param {Array} output
   * @param {Object} webGl
   */
-	function Texture(texture, size, output, webGl) {
+	function Texture(texture, size, dimensions, output, webGl) {
 		_classCallCheck(this, Texture);
 
 		this.texture = texture;
 		this.size = size;
+		this.dimensions = dimensions;
 		this.output = output;
 		this.webGl = webGl;
 		this.kernel = null;
