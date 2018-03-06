@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.6
- * @date Sat Mar 03 2018 14:24:37 GMT-0500 (EST)
+ * @date Tue Mar 06 2018 09:55:57 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -2780,7 +2780,7 @@ function removeNoise(str) {
 }
 
 module.exports = function (gpuKernel, name) {
-  return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: ' + removeNoise(utils.allPropertiesOf.toString()) + ',\n      clone: ' + removeNoise(utils.clone.toString()) + ',\n      splitArray: ' + removeNoise(utils.splitArray.toString()) + ',\n      getArgumentType: ' + removeNoise(utils.getArgumentType.toString()) + ',\n      getDimensions: ' + removeNoise(utils.getDimensions.toString()) + ',\n      dimToTexSize: ' + removeNoise(utils.dimToTexSize.toString()) + ',\n      flattenTo: ' + removeNoise(utils.flattenTo.toString()) + ',\n      flatten2dArrayTo: ' + removeNoise(utils.flatten2dArrayTo.toString()) + ',\n      flatten3dArrayTo: ' + removeNoise(utils.flatten3dArrayTo.toString()) + ',\n      systemEndianness: \'' + removeNoise(utils.systemEndianness()) + '\',\n      initWebGl: ' + removeNoise(utils.initWebGl.toString()) + ',\n      isArray: ' + removeNoise(utils.isArray.toString()) + '\n    };\n    const Utils = utils;\n    const canvases = [];\n    const maxTexSizes = {};\n    class ' + (name || 'Kernel') + ' {\n      constructor() {\n        this.maxTexSize = null;\n        this.argumentsLength = 0;\n        this._canvas = null;\n        this._webGl = null;\n        this.built = false;\n        this.program = null;\n        this.paramNames = ' + JSON.stringify(gpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(gpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(gpuKernel.texSize) + ';\n        this.output = ' + JSON.stringify(gpuKernel.output) + ';\n        this.compiledFragShaderString = `' + gpuKernel.compiledFragShaderString + '`;\n\t\t    this.compiledVertShaderString = `' + gpuKernel.compiledVertShaderString + '`;\n\t\t    this.programUniformLocationCache = {};\n\t\t    this.textureCache = {};\n\t\t    this.subKernelOutputTextures = null;\n\t\t    this.subKernelOutputVariableNames = null;\n      }\n      ' + removeFnNoise(gpuKernel._getFragShaderString.toString()) + '\n      ' + removeFnNoise(gpuKernel._getVertShaderString.toString()) + '\n      validateOptions() {}\n      setupParams() {}\n      setCanvas(canvas) { this._canvas = canvas; return this; }\n      setWebGl(webGl) { this._webGl = webGl; return this; }\n      ' + removeFnNoise(gpuKernel.getUniformLocation.toString()) + '\n      ' + removeFnNoise(gpuKernel.setupParams.toString()) + '\n      ' + removeFnNoise(gpuKernel.build.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.run.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel._addArgument.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.getArgumentTexture.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.getTextureCache.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.getOutputTexture.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.renderOutput.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.updateMaxTexSize.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel._setupOutputTexture.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.detachTextureCache.toString()) + '\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
+  return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: ' + removeNoise(utils.allPropertiesOf.toString()) + ',\n      clone: ' + removeNoise(utils.clone.toString()) + ',\n      splitArray: ' + removeNoise(utils.splitArray.toString()) + ',\n      getArgumentType: ' + removeNoise(utils.getArgumentType.toString()) + ',\n      getDimensions: ' + removeNoise(utils.getDimensions.toString()) + ',\n      dimToTexSize: ' + removeNoise(utils.dimToTexSize.toString()) + ',\n      flattenTo: ' + removeNoise(utils.flattenTo.toString()) + ',\n      flatten2dArrayTo: ' + removeNoise(utils.flatten2dArrayTo.toString()) + ',\n      flatten3dArrayTo: ' + removeNoise(utils.flatten3dArrayTo.toString()) + ',\n      systemEndianness: \'' + removeNoise(utils.systemEndianness()) + '\',\n      initWebGl: ' + removeNoise(utils.initWebGl.toString()) + ',\n      isArray: ' + removeNoise(utils.isArray.toString()) + '\n    };\n    const Utils = utils;\n    const canvases = [];\n    const maxTexSizes = {};\n    class ' + (name || 'Kernel') + ' {\n      constructor() {\n        this.maxTexSize = null;\n        this.argumentsLength = 0;\n        this._canvas = null;\n        this._webGl = null;\n        this.built = false;\n        this.program = null;\n        this.paramNames = ' + JSON.stringify(gpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(gpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(gpuKernel.texSize) + ';\n        this.output = ' + JSON.stringify(gpuKernel.output) + ';\n        this.compiledFragShaderString = `' + gpuKernel.compiledFragShaderString + '`;\n\t\t    this.compiledVertShaderString = `' + gpuKernel.compiledVertShaderString + '`;\n\t\t    this.programUniformLocationCache = {};\n\t\t    this.textureCache = {};\n\t\t    this.subKernelOutputTextures = null;\n\t\t    this.subKernelOutputVariableNames = null;\n\t\t    this.uniform1fCache = {};\n\t\t    this.uniform1iCache = {};\n\t\t    this.uniform2fCache = {};\n\t\t    this.uniform2fvCache = {};\n\t\t    this.uniform3fvCache = {};\n      }\n      ' + removeFnNoise(gpuKernel._getFragShaderString.toString()) + '\n      ' + removeFnNoise(gpuKernel._getVertShaderString.toString()) + '\n      validateOptions() {}\n      setupParams() {}\n      setCanvas(canvas) { this._canvas = canvas; return this; }\n      setWebGl(webGl) { this._webGl = webGl; return this; }\n      ' + removeFnNoise(gpuKernel.getUniformLocation.toString()) + '\n      ' + removeFnNoise(gpuKernel.setupParams.toString()) + '\n      ' + removeFnNoise(gpuKernel.build.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.run.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel._addArgument.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.getArgumentTexture.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.getTextureCache.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.getOutputTexture.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.renderOutput.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.updateMaxTexSize.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel._setupOutputTexture.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.detachTextureCache.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform1f.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform1i.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform2f.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform2fv.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform3fv.toString()) + ' \n    };\n    return kernelRunShortcut(new Kernel());\n  };';
 };
 },{"../../core/utils":25,"../kernel-run-shortcut":9}],14:[function(require,module,exports){
 'use strict';
@@ -2828,6 +2828,11 @@ module.exports = function (_KernelBase) {
 		_this.extDrawBuffersMap = null;
 		_this.outputTexture = null;
 		_this.maxTexSize = null;
+		_this.uniform1fCache = {};
+		_this.uniform1iCache = {};
+		_this.uniform2fCache = {};
+		_this.uniform2fvCache = {};
+		_this.uniform3fvCache = {};
 		if (!_this._webGl) _this._webGl = utils.initWebGl(_this.getCanvas());
 		return _this;
 	}
@@ -3010,14 +3015,11 @@ module.exports = function (_KernelBase) {
 			gl.scissor(0, 0, texSize[0], texSize[1]);
 
 			if (!this.hardcodeConstants) {
-				var uOutputDimLoc = this.getUniformLocation('uOutputDim');
-				gl.uniform3fv(uOutputDimLoc, this.threadDim);
-				var uTexSizeLoc = this.getUniformLocation('uTexSize');
-				gl.uniform2fv(uTexSizeLoc, texSize);
+				this.setUniform3fv('uOutputDim', this.threadDim);
+				this.setUniform2fv('uTexSize', texSize);
 			}
 
-			var ratioLoc = this.getUniformLocation('ratio');
-			gl.uniform2f(ratioLoc, texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
+			this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
 			this.argumentsLength = 0;
 			for (var texIndex = 0; texIndex < paramNames.length; texIndex++) {
@@ -3189,6 +3191,71 @@ module.exports = function (_KernelBase) {
 		value: function detachTextureCache(name) {
 			delete this.textureCache[name];
 		}
+	}, {
+		key: 'setUniform1f',
+		value: function setUniform1f(name, value) {
+			if (this.uniform1fCache.hasOwnProperty(name)) {
+				var cache = this.uniform1fCache[name];
+				if (value === cache) {
+					return;
+				}
+			}
+			this.uniform1fCache[name] = value;
+			var loc = this.getUniformLocation(name);
+			this._webGl.uniform1f(loc, value);
+		}
+	}, {
+		key: 'setUniform1i',
+		value: function setUniform1i(name, value) {
+			if (this.uniform1iCache.hasOwnProperty(name)) {
+				var cache = this.uniform1iCache[name];
+				if (value === cache) {
+					return;
+				}
+			}
+			this.uniform1iCache[name] = value;
+			var loc = this.getUniformLocation(name);
+			this._webGl.uniform1i(loc, value);
+		}
+	}, {
+		key: 'setUniform2f',
+		value: function setUniform2f(name, value1, value2) {
+			if (this.uniform2fCache.hasOwnProperty(name)) {
+				var cache = this.uniform2fCache[name];
+				if (value1 === cache[0] && value2 === cache[1]) {
+					return;
+				}
+			}
+			this.uniform2fCache[name] = [value1, value2];
+			var loc = this.getUniformLocation(name);
+			this._webGl.uniform2f(loc, value1, value2);
+		}
+	}, {
+		key: 'setUniform2fv',
+		value: function setUniform2fv(name, value) {
+			if (this.uniform2fvCache.hasOwnProperty(name)) {
+				var cache = this.uniform2fvCache[name];
+				if (value[0] === cache[0] && value[1] === cache[1]) {
+					return;
+				}
+			}
+			this.uniform2fvCache[name] = value;
+			var loc = this.getUniformLocation(name);
+			this._webGl.uniform2fv(loc, value);
+		}
+	}, {
+		key: 'setUniform3fv',
+		value: function setUniform3fv(name, value) {
+			if (this.uniform3fvCache.hasOwnProperty(name)) {
+				var cache = this.uniform3fvCache[name];
+				if (value[0] === cache[0] && value[1] === cache[1] && value[2] === cache[2]) {
+					return;
+				}
+			}
+			this.uniform3fvCache[name] = value;
+			var loc = this.getUniformLocation(name);
+			this._webGl.uniform3fv(loc, value);
+		}
 
 
 	}, {
@@ -3261,21 +3328,16 @@ module.exports = function (_KernelBase) {
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 						}
 
-						var loc = this.getUniformLocation('user_' + name);
-						var locSize = this.getUniformLocation('user_' + name + 'Size');
-						var dimLoc = this.getUniformLocation('user_' + name + 'Dim');
-
 						if (!this.hardcodeConstants) {
-							gl.uniform3fv(dimLoc, dim);
-							gl.uniform2fv(locSize, size);
+							this.setUniform3fv('user_' + name + 'Dim', dim);
+							this.setUniform2fv('user_' + name + 'Size', size);
 						}
-						gl.uniform1i(loc, this.argumentsLength);
+						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
 				case 'Number':
 					{
-						var _loc = this.getUniformLocation('user_' + name);
-						gl.uniform1f(_loc, value);
+						this.setUniform1f('user_' + name, value);
 						break;
 					}
 				case 'Input':
@@ -3310,15 +3372,11 @@ module.exports = function (_KernelBase) {
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0], _size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, _buffer);
 						}
 
-						var _loc2 = this.getUniformLocation('user_' + name);
-						var _locSize = this.getUniformLocation('user_' + name + 'Size');
-						var _dimLoc = this.getUniformLocation('user_' + name + 'Dim');
-
 						if (!this.hardcodeConstants) {
-							gl.uniform3fv(_dimLoc, _dim);
-							gl.uniform2fv(_locSize, _size);
+							this.setUniform3fv('user_' + name + 'Dim', _dim);
+							this.setUniform2fv('user_' + name + 'Size', _size);
 						}
-						gl.uniform1i(_loc2, this.argumentsLength);
+						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
 				case 'Texture':
@@ -3330,13 +3388,9 @@ module.exports = function (_KernelBase) {
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-						var _loc3 = this.getUniformLocation('user_' + name);
-						var _locSize2 = this.getUniformLocation('user_' + name + 'Size');
-						var _dimLoc2 = this.getUniformLocation('user_' + name + 'Dim');
-
-						gl.uniform3fv(_dimLoc2, _dim2);
-						gl.uniform2fv(_locSize2, _size2);
-						gl.uniform1i(_loc3, this.argumentsLength);
+						this.setUniform3fv('user_' + name + 'Dim', _dim2);
+						this.setUniform2fv('user_' + name + 'Size', _size2);
+						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
 				default:

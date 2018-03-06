@@ -52,6 +52,11 @@ module.exports = function(gpuKernel, name) {
 		    this.textureCache = {};
 		    this.subKernelOutputTextures = null;
 		    this.subKernelOutputVariableNames = null;
+		    this.uniform1fCache = {};
+		    this.uniform1iCache = {};
+		    this.uniform2fCache = {};
+		    this.uniform2fvCache = {};
+		    this.uniform3fvCache = {};
       }
       ${ removeFnNoise(gpuKernel._getFragShaderString.toString()) }
       ${ removeFnNoise(gpuKernel._getVertShaderString.toString()) }
@@ -71,6 +76,11 @@ module.exports = function(gpuKernel, name) {
 		  ${ removeFnNoise(gpuKernel.updateMaxTexSize.toString()) }
 		  ${ removeFnNoise(gpuKernel._setupOutputTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.detachTextureCache.toString()) }
+		  ${ removeFnNoise(gpuKernel.setUniform1f.toString()) }
+		  ${ removeFnNoise(gpuKernel.setUniform1i.toString()) }
+		  ${ removeFnNoise(gpuKernel.setUniform2f.toString()) }
+		  ${ removeFnNoise(gpuKernel.setUniform2fv.toString()) }
+		  ${ removeFnNoise(gpuKernel.setUniform3fv.toString()) } 
     };
     return kernelRunShortcut(new Kernel());
   };`;

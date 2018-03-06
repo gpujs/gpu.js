@@ -66,6 +66,11 @@ module.exports = function (_KernelBase) {
 		_this.extDrawBuffersMap = null;
 		_this.outputTexture = null;
 		_this.maxTexSize = null;
+		_this.uniform1fCache = {};
+		_this.uniform1iCache = {};
+		_this.uniform2fCache = {};
+		_this.uniform2fvCache = {};
+		_this.uniform3fvCache = {};
 		if (!_this._webGl) _this._webGl = utils.initWebGl(_this.getCanvas());
 		return _this;
 	}
@@ -280,14 +285,11 @@ module.exports = function (_KernelBase) {
 			gl.scissor(0, 0, texSize[0], texSize[1]);
 
 			if (!this.hardcodeConstants) {
-				var uOutputDimLoc = this.getUniformLocation('uOutputDim');
-				gl.uniform3fv(uOutputDimLoc, this.threadDim);
-				var uTexSizeLoc = this.getUniformLocation('uTexSize');
-				gl.uniform2fv(uTexSizeLoc, texSize);
+				this.setUniform3fv('uOutputDim', this.threadDim);
+				this.setUniform2fv('uTexSize', texSize);
 			}
 
-			var ratioLoc = this.getUniformLocation('ratio');
-			gl.uniform2f(ratioLoc, texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
+			this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
 			this.argumentsLength = 0;
 			for (var texIndex = 0; texIndex < paramNames.length; texIndex++) {
@@ -533,6 +535,71 @@ module.exports = function (_KernelBase) {
 		value: function detachTextureCache(name) {
 			delete this.textureCache[name];
 		}
+	}, {
+		key: 'setUniform1f',
+		value: function setUniform1f(name, value) {
+			if (this.uniform1fCache.hasOwnProperty(name)) {
+				var cache = this.uniform1fCache[name];
+				if (value === cache) {
+					return;
+				}
+			}
+			this.uniform1fCache[name] = value;
+			var loc = this.getUniformLocation(name);
+			this._webGl.uniform1f(loc, value);
+		}
+	}, {
+		key: 'setUniform1i',
+		value: function setUniform1i(name, value) {
+			if (this.uniform1iCache.hasOwnProperty(name)) {
+				var cache = this.uniform1iCache[name];
+				if (value === cache) {
+					return;
+				}
+			}
+			this.uniform1iCache[name] = value;
+			var loc = this.getUniformLocation(name);
+			this._webGl.uniform1i(loc, value);
+		}
+	}, {
+		key: 'setUniform2f',
+		value: function setUniform2f(name, value1, value2) {
+			if (this.uniform2fCache.hasOwnProperty(name)) {
+				var cache = this.uniform2fCache[name];
+				if (value1 === cache[0] && value2 === cache[1]) {
+					return;
+				}
+			}
+			this.uniform2fCache[name] = [value1, value2];
+			var loc = this.getUniformLocation(name);
+			this._webGl.uniform2f(loc, value1, value2);
+		}
+	}, {
+		key: 'setUniform2fv',
+		value: function setUniform2fv(name, value) {
+			if (this.uniform2fvCache.hasOwnProperty(name)) {
+				var cache = this.uniform2fvCache[name];
+				if (value[0] === cache[0] && value[1] === cache[1]) {
+					return;
+				}
+			}
+			this.uniform2fvCache[name] = value;
+			var loc = this.getUniformLocation(name);
+			this._webGl.uniform2fv(loc, value);
+		}
+	}, {
+		key: 'setUniform3fv',
+		value: function setUniform3fv(name, value) {
+			if (this.uniform3fvCache.hasOwnProperty(name)) {
+				var cache = this.uniform3fvCache[name];
+				if (value[0] === cache[0] && value[1] === cache[1] && value[2] === cache[2]) {
+					return;
+				}
+			}
+			this.uniform3fvCache[name] = value;
+			var loc = this.getUniformLocation(name);
+			this._webGl.uniform3fv(loc, value);
+		}
 
 		/**
    * @memberOf WebGLKernel#
@@ -641,21 +708,16 @@ module.exports = function (_KernelBase) {
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 						}
 
-						var loc = this.getUniformLocation('user_' + name);
-						var locSize = this.getUniformLocation('user_' + name + 'Size');
-						var dimLoc = this.getUniformLocation('user_' + name + 'Dim');
-
 						if (!this.hardcodeConstants) {
-							gl.uniform3fv(dimLoc, dim);
-							gl.uniform2fv(locSize, size);
+							this.setUniform3fv('user_' + name + 'Dim', dim);
+							this.setUniform2fv('user_' + name + 'Size', size);
 						}
-						gl.uniform1i(loc, this.argumentsLength);
+						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
 				case 'Number':
 					{
-						var _loc = this.getUniformLocation('user_' + name);
-						gl.uniform1f(_loc, value);
+						this.setUniform1f('user_' + name, value);
 						break;
 					}
 				case 'Input':
@@ -690,15 +752,11 @@ module.exports = function (_KernelBase) {
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0], _size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, _buffer);
 						}
 
-						var _loc2 = this.getUniformLocation('user_' + name);
-						var _locSize = this.getUniformLocation('user_' + name + 'Size');
-						var _dimLoc = this.getUniformLocation('user_' + name + 'Dim');
-
 						if (!this.hardcodeConstants) {
-							gl.uniform3fv(_dimLoc, _dim);
-							gl.uniform2fv(_locSize, _size);
+							this.setUniform3fv('user_' + name + 'Dim', _dim);
+							this.setUniform2fv('user_' + name + 'Size', _size);
 						}
-						gl.uniform1i(_loc2, this.argumentsLength);
+						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
 				case 'Texture':
@@ -710,13 +768,9 @@ module.exports = function (_KernelBase) {
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-						var _loc3 = this.getUniformLocation('user_' + name);
-						var _locSize2 = this.getUniformLocation('user_' + name + 'Size');
-						var _dimLoc2 = this.getUniformLocation('user_' + name + 'Dim');
-
-						gl.uniform3fv(_dimLoc2, _dim2);
-						gl.uniform2fv(_locSize2, _size2);
-						gl.uniform1i(_loc3, this.argumentsLength);
+						this.setUniform3fv('user_' + name + 'Dim', _dim2);
+						this.setUniform2fv('user_' + name + 'Size', _size2);
+						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
 				default:
