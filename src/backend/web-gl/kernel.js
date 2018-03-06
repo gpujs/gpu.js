@@ -53,6 +53,11 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.extDrawBuffersMap = null;
 		this.outputTexture = null;
 		this.maxTexSize = null;
+		this.uniform1fCache = {};
+		this.uniform1iCache = {};
+		this.uniform2fCache = {};
+		this.uniform2fvCache = {};
+		this.uniform3fvCache = {};
 		if (!this._webGl) this._webGl = utils.initWebGl(this.getCanvas());
 	}
 
@@ -268,14 +273,11 @@ module.exports = class WebGLKernel extends KernelBase {
 		gl.scissor(0, 0, texSize[0], texSize[1]);
 
 		if (!this.hardcodeConstants) {
-			const uOutputDimLoc = this.getUniformLocation('uOutputDim');
-			gl.uniform3fv(uOutputDimLoc, this.threadDim);
-			const uTexSizeLoc = this.getUniformLocation('uTexSize');
-			gl.uniform2fv(uTexSizeLoc, texSize);
+			this.setUniform3fv('uOutputDim', this.threadDim);
+			this.setUniform2fv('uTexSize', texSize);
 		}
 
-		const ratioLoc = this.getUniformLocation('ratio');
-		gl.uniform2f(ratioLoc, texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
+		this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
 		this.argumentsLength = 0;
 		for (let texIndex = 0; texIndex < paramNames.length; texIndex++) {
@@ -501,6 +503,76 @@ module.exports = class WebGLKernel extends KernelBase {
 		delete this.textureCache[name];
 	}
 
+	setUniform1f(name, value) {
+		if (this.uniform1fCache.hasOwnProperty(name)) {
+			const cache = this.uniform1fCache[name];
+			if (value === cache) {
+				return;
+			}
+		}
+		this.uniform1fCache[name] = value;
+		const loc = this.getUniformLocation(name);
+		this._webGl.uniform1f(loc, value);
+	}
+
+	setUniform1i(name, value) {
+		if (this.uniform1iCache.hasOwnProperty(name)) {
+			const cache = this.uniform1iCache[name];
+			if (value === cache) {
+				return;
+			}
+		}
+		this.uniform1iCache[name] = value;
+		const loc = this.getUniformLocation(name);
+		this._webGl.uniform1i(loc, value);
+	}
+
+	setUniform2f(name, value1, value2) {
+		if (this.uniform2fCache.hasOwnProperty(name)) {
+			const cache = this.uniform2fCache[name];
+			if (
+				value1 === cache[0] &&
+				value2 === cache[1]
+			) {
+				return;
+			}
+		}
+		this.uniform2fCache[name] = [value1, value2];
+		const loc = this.getUniformLocation(name);
+		this._webGl.uniform2f(loc, value1, value2);
+	}
+
+	setUniform2fv(name, value) {
+		if (this.uniform2fvCache.hasOwnProperty(name)) {
+			const cache = this.uniform2fvCache[name];
+			if (
+				value[0] === cache[0] &&
+				value[1] === cache[1]
+			) {
+				return;
+			}
+		}
+		this.uniform2fvCache[name] = value;
+		const loc = this.getUniformLocation(name);
+		this._webGl.uniform2fv(loc, value);
+	}
+
+	setUniform3fv(name, value) {
+		if (this.uniform3fvCache.hasOwnProperty(name)) {
+			const cache = this.uniform3fvCache[name];
+			if (
+				value[0] === cache[0] &&
+				value[1] === cache[1] &&
+				value[2] === cache[2]
+			) {
+				return;
+			}
+		}
+		this.uniform3fvCache[name] = value;
+		const loc = this.getUniformLocation(name);
+		this._webGl.uniform3fv(loc, value);
+	}
+
 	/**
 	 * @memberOf WebGLKernel#
 	 * @function
@@ -599,21 +671,16 @@ module.exports = class WebGLKernel extends KernelBase {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 					}
 
-					const loc = this.getUniformLocation('user_' + name);
-					const locSize = this.getUniformLocation('user_' + name + 'Size');
-					const dimLoc = this.getUniformLocation('user_' + name + 'Dim');
-
 					if (!this.hardcodeConstants) {
-						gl.uniform3fv(dimLoc, dim);
-						gl.uniform2fv(locSize, size);
+						this.setUniform3fv(`user_${name}Dim`, dim);
+						this.setUniform2fv(`user_${name}Size`, size);
 					}
-					gl.uniform1i(loc, this.argumentsLength);
+					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
 			case 'Number':
 				{
-					const loc = this.getUniformLocation('user_' + name);
-					gl.uniform1f(loc, value);
+					this.setUniform1f(`user_${name}`, value);
 					break;
 				}
 			case 'Input':
@@ -648,15 +715,11 @@ module.exports = class WebGLKernel extends KernelBase {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 					}
 
-					const loc = this.getUniformLocation('user_' + name);
-					const locSize = this.getUniformLocation('user_' + name + 'Size');
-					const dimLoc = this.getUniformLocation('user_' + name + 'Dim');
-
 					if (!this.hardcodeConstants) {
-						gl.uniform3fv(dimLoc, dim);
-						gl.uniform2fv(locSize, size);
+						this.setUniform3fv(`user_${name}Dim`, dim);
+						this.setUniform2fv(`user_${name}Size`, size);
 					}
-					gl.uniform1i(loc, this.argumentsLength);
+					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
 			case 'Texture':
@@ -668,13 +731,9 @@ module.exports = class WebGLKernel extends KernelBase {
 					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-					const loc = this.getUniformLocation('user_' + name);
-					const locSize = this.getUniformLocation('user_' + name + 'Size');
-					const dimLoc = this.getUniformLocation('user_' + name + 'Dim');
-
-					gl.uniform3fv(dimLoc, dim);
-					gl.uniform2fv(locSize, size);
-					gl.uniform1i(loc, this.argumentsLength);
+					this.setUniform3fv(`user_${name}Dim`, dim);
+					this.setUniform2fv(`user_${name}Size`, size);
+					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
 			default:
