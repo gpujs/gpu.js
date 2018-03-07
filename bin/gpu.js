@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.0.6
- * @date Tue Mar 06 2018 09:55:57 GMT-0500 (EST)
+ * @date Tue Mar 06 2018 19:26:37 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -2989,13 +2989,13 @@ module.exports = function (_KernelBase) {
 			var aTexCoordLoc = gl.getAttribLocation(this.program, 'aTexCoord');
 			gl.enableVertexAttribArray(aTexCoordLoc);
 			gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 
 			if (!this.outputImmutable) {
 				this._setupOutputTexture();
-			}
-
-			if (this.subKernelOutputVariableNames !== null && this.subKernelOutputVariableNames.length > 0 && !this.outputImmutable) {
-				this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
+				if (this.subKernelOutputVariableNames !== null && this.subKernelOutputVariableNames.length > 0) {
+					this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
+				}
 			}
 		}
 
@@ -3038,16 +3038,11 @@ module.exports = function (_KernelBase) {
 				this._setupOutputTexture();
 			}
 			var outputTexture = this.outputTexture;
-			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
 			if (this.subKernelOutputVariableNames !== null) {
 				if (this.outputImmutable) {
 					this.subKernelOutputTextures = [];
 					this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
-				}
-				for (var i = 0; i < this.subKernelOutputTextures.length; i++) {
-					var subKernelOutputTexture = this.subKernelOutputTextures[i];
-					gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, subKernelOutputTexture, 0);
 				}
 				this.ext.drawBuffersWEBGL(this.extDrawBuffersMap);
 			}
@@ -3058,19 +3053,19 @@ module.exports = function (_KernelBase) {
 				if (this.subKernels !== null) {
 					var output = [];
 					output.result = this.renderOutput(outputTexture);
-					for (var _i = 0; _i < this.subKernels.length; _i++) {
-						output.push(new Texture(this.subKernelOutputTextures[_i], texSize, this.threadDim, this.output, this._webGl));
+					for (var i = 0; i < this.subKernels.length; i++) {
+						output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this._webGl));
 					}
 					return output;
 				} else if (this.subKernelProperties !== null) {
 					var _output = {
 						result: this.renderOutput(outputTexture)
 					};
-					var _i2 = 0;
+					var _i = 0;
 					for (var p in this.subKernelProperties) {
 						if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-						_output[p] = new Texture(this.subKernelOutputTextures[_i2], texSize, this.threadDim, this.output, this._webGl);
-						_i2++;
+						_output[p] = new Texture(this.subKernelOutputTextures[_i], texSize, this.threadDim, this.output, this._webGl);
+						_i++;
 					}
 					return _output;
 				}
@@ -3128,9 +3123,9 @@ module.exports = function (_KernelBase) {
 		value: function _setupOutputTexture() {
 			var gl = this._webGl;
 			var texSize = this.texSize;
-			this.outputTexture = this._webGl.createTexture();
+			var texture = this.outputTexture = this._webGl.createTexture();
 			gl.activeTexture(gl.TEXTURE0 + this.paramNames.length);
-			gl.bindTexture(gl.TEXTURE_2D, this.outputTexture);
+			gl.bindTexture(gl.TEXTURE_2D, texture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -3140,6 +3135,7 @@ module.exports = function (_KernelBase) {
 			} else {
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 			}
+			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
 		}
 
 
@@ -3165,6 +3161,7 @@ module.exports = function (_KernelBase) {
 				} else {
 					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 				}
+				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, texture, 0);
 			}
 		}
 
@@ -3600,8 +3597,8 @@ module.exports = function (_KernelBase) {
 				result.push('  threadId = indexTo3D(index, uOutputDim)');
 				result.push('  kernel()');
 				result.push('  gl_FragData[0] = encode32(kernelResult)');
-				for (var _i3 = 0; _i3 < names.length; _i3++) {
-					result.push('  gl_FragData[' + (_i3 + 1) + '] = encode32(' + names[_i3] + ')');
+				for (var _i2 = 0; _i2 < names.length; _i2++) {
+					result.push('  gl_FragData[' + (_i2 + 1) + '] = encode32(' + names[_i2] + ')');
 				}
 			} else {
 				result.push('  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  gl_FragColor = encode32(kernelResult)');
