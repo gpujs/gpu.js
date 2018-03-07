@@ -233,17 +233,16 @@ module.exports = class WebGLKernel extends KernelBase {
 		const aTexCoordLoc = gl.getAttribLocation(this.program, 'aTexCoord');
 		gl.enableVertexAttribArray(aTexCoordLoc);
 		gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 
 		if (!this.outputImmutable) {
 			this._setupOutputTexture();
-		}
-
-		if (
-			this.subKernelOutputVariableNames !== null &&
-			this.subKernelOutputVariableNames.length > 0 &&
-			!this.outputImmutable
-		) {
-			this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
+			if (
+				this.subKernelOutputVariableNames !== null &&
+				this.subKernelOutputVariableNames.length > 0
+			) {
+				this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
+			}
 		}
 	}
 
@@ -296,16 +295,11 @@ module.exports = class WebGLKernel extends KernelBase {
 			this._setupOutputTexture();
 		}
 		const outputTexture = this.outputTexture;
-		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
 		if (this.subKernelOutputVariableNames !== null) {
 			if (this.outputImmutable) {
 				this.subKernelOutputTextures = [];
 				this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
-			}
-			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
-				const subKernelOutputTexture = this.subKernelOutputTextures[i];
-				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, subKernelOutputTexture, 0);
 			}
 			this.ext.drawBuffersWEBGL(this.extDrawBuffersMap);
 		}
@@ -413,9 +407,9 @@ module.exports = class WebGLKernel extends KernelBase {
 	_setupOutputTexture() {
 		const gl = this._webGl;
 		const texSize = this.texSize;
-		this.outputTexture = this._webGl.createTexture();
+		const texture = this.outputTexture = this._webGl.createTexture();
 		gl.activeTexture(gl.TEXTURE0 + this.paramNames.length);
-		gl.bindTexture(gl.TEXTURE_2D, this.outputTexture);
+		gl.bindTexture(gl.TEXTURE_2D, texture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -425,6 +419,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		} else {
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 		}
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
 	}
 
 	/**
@@ -454,6 +449,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			} else {
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 			}
+			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, texture, 0);
 		}
 	}
 
