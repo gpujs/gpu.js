@@ -60,9 +60,10 @@ module.exports = function (_KernelBase) {
 		_this.subKernelOutputTextures = null;
 		_this.subKernelOutputVariableNames = null;
 		_this.argumentsLength = 0;
+		_this.ext = null;
 		_this.compiledFragShaderString = null;
 		_this.compiledVertShaderString = null;
-		_this.drawBuffersMap = null;
+		_this.extDrawBuffersMap = null;
 		_this.outputTexture = null;
 		_this.maxTexSize = null;
 		_this.uniform1fCache = {};
@@ -90,9 +91,11 @@ module.exports = function (_KernelBase) {
 		key: 'validateOptions',
 		value: function validateOptions() {
 			var isFloatReadPixel = utils.isFloatReadPixelsSupported();
-			if (this.floatOutput === true && this.floatOutputForce !== true && !isFloatReadPixel) {
+			if (this.floatTextures === true && !utils.OES_texture_float) {
+				throw new Error('Float textures are not supported on this browser');
+			} else if (this.floatOutput === true && this.floatOutputForce !== true && !isFloatReadPixel) {
 				throw new Error('Float texture outputs are not supported on this browser');
-			} else if (this.floatTextures === undefined) {
+			} else if (this.floatTextures === undefined && utils.OES_texture_float) {
 				this.floatTextures = true;
 				this.floatOutput = isFloatReadPixel;
 			}
@@ -128,12 +131,8 @@ module.exports = function (_KernelBase) {
 				}
 
 				this.texSize = utils.clone(this.output);
-			} else if (this.floatOutput === undefined) {
+			} else if (this.floatOutput === undefined && utils.OES_texture_float) {
 				this.floatOutput = true;
-			}
-
-			if (this.floatOutput || this.floatOutputForce) {
-				this._webGl.getExtension('EXT_color_buffer_float');
 			}
 		}
 	}, {
@@ -247,13 +246,13 @@ module.exports = function (_KernelBase) {
 			var aTexCoordLoc = gl.getAttribLocation(this.program, 'aTexCoord');
 			gl.enableVertexAttribArray(aTexCoordLoc);
 			gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 
 			if (!this.outputImmutable) {
 				this._setupOutputTexture();
-			}
-
-			if (this.subKernelOutputVariableNames !== null && this.subKernelOutputVariableNames.length > 0 && !this.outputImmutable) {
-				this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
+				if (this.subKernelOutputVariableNames !== null && this.subKernelOutputVariableNames.length > 0) {
+					this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
+				}
 			}
 		}
 
@@ -309,18 +308,13 @@ module.exports = function (_KernelBase) {
 				this._setupOutputTexture();
 			}
 			var outputTexture = this.outputTexture;
-			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTexture, 0);
 
 			if (this.subKernelOutputVariableNames !== null) {
 				if (this.outputImmutable) {
 					this.subKernelOutputTextures = [];
 					this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
 				}
-				for (var i = 0; i < this.subKernelOutputTextures.length; i++) {
-					var subKernelOutputTexture = this.subKernelOutputTextures[i];
-					gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, subKernelOutputTexture, 0);
-				}
-				gl.drawBuffers(this.drawBuffersMap);
+				this.ext.drawBuffersWEBGL(this.extDrawBuffersMap);
 			}
 
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -329,19 +323,19 @@ module.exports = function (_KernelBase) {
 				if (this.subKernels !== null) {
 					var output = [];
 					output.result = this.renderOutput(outputTexture);
-					for (var _i = 0; _i < this.subKernels.length; _i++) {
-						output.push(new Texture(this.subKernelOutputTextures[_i], texSize, this.threadDim, this.output, this._webGl));
+					for (var i = 0; i < this.subKernels.length; i++) {
+						output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this._webGl));
 					}
 					return output;
 				} else if (this.subKernelProperties !== null) {
 					var _output = {
 						result: this.renderOutput(outputTexture)
 					};
-					var _i2 = 0;
+					var _i = 0;
 					for (var p in this.subKernelProperties) {
 						if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-						_output[p] = new Texture(this.subKernelOutputTextures[_i2], texSize, this.threadDim, this.output, this._webGl);
-						_i2++;
+						_output[p] = new Texture(this.subKernelOutputTextures[_i], texSize, this.threadDim, this.output, this._webGl);
+						_i++;
 					}
 					return _output;
 				}
@@ -435,18 +429,19 @@ module.exports = function (_KernelBase) {
 		value: function _setupOutputTexture() {
 			var gl = this._webGl;
 			var texSize = this.texSize;
-			this.outputTexture = this._webGl.createTexture();
+			var texture = this.outputTexture = this._webGl.createTexture();
 			gl.activeTexture(gl.TEXTURE0 + this.paramNames.length);
-			gl.bindTexture(gl.TEXTURE_2D, this.outputTexture);
+			gl.bindTexture(gl.TEXTURE_2D, texture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 			if (this.floatOutput) {
-				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
 			} else {
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 			}
+			gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
 		}
 
 		/**
@@ -462,12 +457,12 @@ module.exports = function (_KernelBase) {
 		value: function _setupSubOutputTextures(length) {
 			var gl = this._webGl;
 			var texSize = this.texSize;
-			var drawBuffersMap = this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
+			var extDrawBuffersMap = this.extDrawBuffersMap = [gl.COLOR_ATTACHMENT0];
 			var textures = this.subKernelOutputTextures = [];
 			for (var i = 0; i < length; i++) {
 				var texture = this._webGl.createTexture();
 				textures.push(texture);
-				drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
+				extDrawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
 				gl.activeTexture(gl.TEXTURE0 + this.paramNames.length + i);
 				gl.bindTexture(gl.TEXTURE_2D, texture);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -475,10 +470,11 @@ module.exports = function (_KernelBase) {
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 				if (this.floatOutput) {
-					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
 				} else {
 					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 				}
+				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, texture, 0);
 			}
 		}
 
@@ -703,7 +699,7 @@ module.exports = function (_KernelBase) {
 
 						var buffer = void 0;
 						if (this.floatTextures) {
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 						} else {
 							buffer = new Uint8Array(valuesFlat.buffer);
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
@@ -747,7 +743,7 @@ module.exports = function (_KernelBase) {
 						}
 
 						if (this.floatTextures) {
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, _size[0], _size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0], _size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
 						} else {
 							var _buffer = new Uint8Array(inputArray.buffer);
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0], _size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, _buffer);
@@ -795,7 +791,9 @@ module.exports = function (_KernelBase) {
 	}, {
 		key: '_getHeaderString',
 		value: function _getHeaderString() {
-			return '';
+			return this.subKernels !== null || this.subKernelProperties !== null ?
+			//webgl2 '#version 300 es\n' :
+			'#extension GL_EXT_draw_buffers : require\n' : '';
 		}
 
 		/**
@@ -859,7 +857,7 @@ module.exports = function (_KernelBase) {
 		value: function _getTextureCoordinate() {
 			var names = this.subKernelOutputVariableNames;
 			if (names === null || names.length < 1) {
-				return 'in highp vec2 vTexCoord;\n';
+				return 'varying highp vec2 vTexCoord;\n';
 			} else {
 				return 'out highp vec2 vTexCoord;\n';
 			}
@@ -1052,12 +1050,20 @@ module.exports = function (_KernelBase) {
 			var names = this.subKernelOutputVariableNames;
 			if (names !== null) {
 				result.push('highp float kernelResult = 0.0');
-				result.push('layout(location = 0) out highp vec4 data0');
 				for (var i = 0; i < names.length; i++) {
-					result.push('highp float ' + names[i] + ' = 0.0', 'layout(location = ' + (i + 1) + ') out highp vec4 data' + (i + 1));
+					result.push('highp float ' + names[i] + ' = 0.0');
 				}
+
+				/* this is v2 prep
+       result.push('highp float kernelResult = 0.0');
+    result.push('layout(location = 0) out highp float fradData0 = 0.0');
+    for (let i = 0; i < names.length; i++) {
+    	result.push(
+           `highp float ${ names[i] } = 0.0`,
+    	  `layout(location = ${ i + 1 }) out highp float fragData${ i + 1 } = 0.0`
+         );
+    }*/
 			} else {
-				result.push('out highp vec4 data0');
 				result.push('highp float kernelResult = 0.0');
 			}
 
@@ -1087,7 +1093,7 @@ module.exports = function (_KernelBase) {
 			}
 
 			if (this.graphical) {
-				result.push('  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  data0 = actualColor');
+				result.push('  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  gl_FragColor = actualColor');
 			} else if (this.floatOutput) {
 				var channels = ['r', 'g', 'b', 'a'];
 
@@ -1096,13 +1102,13 @@ module.exports = function (_KernelBase) {
 					result.push('  kernel()');
 
 					if (names) {
-						result.push('  data0.' + channels[i] + ' = kernelResult');
+						result.push('  gl_FragData[0].' + channels[i] + ' = kernelResult');
 
 						for (var j = 0; j < names.length; ++j) {
-							result.push('  data' + (j + 1) + '.' + channels[i] + ' = ' + names[j]);
+							result.push('  gl_FragData[' + (j + 1) + '].' + channels[i] + ' = ' + names[j]);
 						}
 					} else {
-						result.push('  data0.' + channels[i] + ' = kernelResult');
+						result.push('  gl_FragColor.' + channels[i] + ' = kernelResult');
 					}
 
 					if (i < channels.length - 1) {
@@ -1112,12 +1118,12 @@ module.exports = function (_KernelBase) {
 			} else if (names !== null) {
 				result.push('  threadId = indexTo3D(index, uOutputDim)');
 				result.push('  kernel()');
-				result.push('  data0 = encode32(kernelResult)');
-				for (var _i3 = 0; _i3 < names.length; _i3++) {
-					result.push('  data' + (_i3 + 1) + ' = encode32(' + names[_i3] + ')');
+				result.push('  gl_FragData[0] = encode32(kernelResult)');
+				for (var _i2 = 0; _i2 < names.length; _i2++) {
+					result.push('  gl_FragData[' + (_i2 + 1) + '] = encode32(' + names[_i2] + ')');
 				}
 			} else {
-				result.push('  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  data0 = encode32(kernelResult)');
+				result.push('  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  gl_FragColor = encode32(kernelResult)');
 			}
 
 			return this._linesToString(result);
@@ -1197,13 +1203,15 @@ module.exports = function (_KernelBase) {
 			}, this.paramNames, this.paramTypes);
 
 			if (this.subKernels !== null) {
-				this.subKernelOutputTextures = [];
+				var ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
+				if (!ext) throw new Error('could not instantiate draw buffers extension');
 				this.subKernelOutputVariableNames = [];
 				this.subKernels.forEach(function (subKernel) {
 					return _this2._addSubKernel(subKernel);
 				});
 			} else if (this.subKernelProperties !== null) {
-				this.subKernelOutputTextures = [];
+				var _ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
+				if (!_ext) throw new Error('could not instantiate draw buffers extension');
 				this.subKernelOutputVariableNames = [];
 				Object.keys(this.subKernelProperties).forEach(function (property) {
 					return _this2._addSubKernel(_this2.subKernelProperties[property]);
