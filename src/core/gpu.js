@@ -46,28 +46,28 @@ class GPU extends GPUCore {
 		};
 
 		switch (detectedMode) {
-		  // public options
+			// public options
 			case 'cpu':
 				this._runner = new CPURunner(runnerSettings);
 				break;
-      case 'gpu':
-        const Runner = this.getGPURunner();
-        this._runner = new Runner(runnerSettings);
-        break;
+			case 'gpu':
+				const Runner = this.getGPURunner();
+				this._runner = new Runner(runnerSettings);
+				break;
 
-      // private explicit options for testing
-      case 'webgl2':
-        this._runner = new WebGL2Runner(runnerSettings);
-        break;
+				// private explicit options for testing
+			case 'webgl2':
+				this._runner = new WebGL2Runner(runnerSettings);
+				break;
 			case 'webgl':
-        this._runner = new WebGLRunner(runnerSettings);
-        break;
+				this._runner = new WebGLRunner(runnerSettings);
+				break;
 
-      // private explicit options for internal
+				// private explicit options for internal
 			case 'webgl2-validator':
-        this._runner = new WebGL2Runner(runnerSettings);
-        this._runner.Kernel = WebGL2ValidatorKernel;
-        break;
+				this._runner = new WebGL2Runner(runnerSettings);
+				this._runner.Kernel = WebGL2ValidatorKernel;
+				break;
 			case 'webgl-validator':
 				this._runner = new WebGLRunner(runnerSettings);
 				this._runner.Kernel = WebGLValidatorKernel;
@@ -261,9 +261,9 @@ class GPU extends GPUCore {
 
 
 	getGPURunner() {
-	  if (typeof WebGL2RenderingContext !== 'undefined') return WebGL2Runner;
-	  if (typeof WebGLRenderingContext !== 'undefined') return WebGLRunner;
-  }
+		if (typeof WebGL2RenderingContext !== 'undefined') return WebGL2Runner;
+		if (typeof WebGLRenderingContext !== 'undefined') return WebGLRunner;
+	}
 
 	/**
 	 *

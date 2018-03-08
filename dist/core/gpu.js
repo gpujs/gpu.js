@@ -10,8 +10,10 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var utils = require('./utils');
 var WebGLRunner = require('../backend/web-gl/runner');
+var WebGL2Runner = require('../backend/web-gl2/runner');
 var CPURunner = require('../backend/cpu/runner');
 var WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
+var WebGL2ValidatorKernel = require('../backend/web-gl2/validator-kernel');
 var GPUCore = require("./gpu-core");
 
 /**
@@ -57,15 +59,29 @@ var GPU = function (_GPUCore) {
 		};
 
 		switch (detectedMode) {
+			// public options
 			case 'cpu':
 				_this._runner = new CPURunner(runnerSettings);
 				break;
-			case 'webgl': // for testing
 			case 'gpu':
+				var Runner = _this.getGPURunner();
+				_this._runner = new Runner(runnerSettings);
+				break;
+
+			// private explicit options for testing
+			case 'webgl2':
+				_this._runner = new WebGL2Runner(runnerSettings);
+				break;
+			case 'webgl':
 				_this._runner = new WebGLRunner(runnerSettings);
 				break;
+
+			// private explicit options for internal
+			case 'webgl2-validator':
+				_this._runner = new WebGL2Runner(runnerSettings);
+				_this._runner.Kernel = WebGL2ValidatorKernel;
+				break;
 			case 'webgl-validator':
-				// for internal
 				_this._runner = new WebGLRunner(runnerSettings);
 				_this._runner.Kernel = WebGLValidatorKernel;
 				break;
@@ -262,6 +278,12 @@ var GPU = function (_GPUCore) {
 					});
 				}
 			};
+		}
+	}, {
+		key: 'getGPURunner',
+		value: function getGPURunner() {
+			if (typeof WebGL2RenderingContext !== 'undefined') return WebGL2Runner;
+			if (typeof WebGLRenderingContext !== 'undefined') return WebGLRunner;
 		}
 
 		/**

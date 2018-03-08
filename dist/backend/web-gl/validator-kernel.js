@@ -37,7 +37,6 @@ module.exports = function (_WebGLKernel) {
    *
    */
 		value: function validateOptions() {
-			this._webGl.getExtension('EXT_color_buffer_float');
 			this.texSize = utils.dimToTexSize({
 				floatTextures: this.floatTextures,
 				floatOutput: this.floatOutput

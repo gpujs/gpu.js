@@ -61,8 +61,8 @@ module.exports = class WebGLKernel extends KernelBase {
 	}
 
 	initWebGl() {
-	  return utils.initWebGl(this.getCanvas());
-  }
+		return utils.initWebGl(this.getCanvas());
+	}
 
 	/**
 	 * @memberOf WebGLKernel#

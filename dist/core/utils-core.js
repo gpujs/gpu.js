@@ -206,6 +206,51 @@ var UtilsCore = function () {
 			}
 
 			// Create a new canvas DOM
+			var webGl = canvasObj.getContext('experimental-webgl', UtilsCore.initWebGlDefaultOptions()) || canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions());
+
+			if (webGl) {
+				// Get the extension that is needed
+				webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
+				webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
+				webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
+			}
+
+			// Returns the canvas
+			return webGl;
+		}
+
+		/**
+   * @name initWebGl2
+   * @function
+   * @static
+   * @memberOf UtilsCore
+   *
+   * @desc Initiate and returns a webGl, from a canvas object
+   * Returns only if webGl is supported by browser.
+   *
+   * @param {CanvasDOMObject} canvasObj - Object to validate
+   *
+   * @returns {CanvasDOMObject} CanvasDOMObject if supported by browser, else null
+   *
+   */
+
+	}, {
+		key: 'initWebGl2',
+		value: function initWebGl2(canvasObj) {
+
+			// First time setup, does the browser support check memorizer
+			if (typeof _isCanvasSupported !== 'undefined' || canvasObj === null) {
+				if (!_isCanvasSupported) {
+					return null;
+				}
+			}
+
+			// Fail fast for invalid canvas object
+			if (!UtilsCore.isCanvas(canvasObj)) {
+				throw new Error('Invalid canvas object - ' + canvasObj);
+			}
+
+			// Create a new canvas DOM
 			return canvasObj.getContext('webgl2', UtilsCore.initWebGlDefaultOptions());
 		}
 	}]);
@@ -222,6 +267,16 @@ var UtilsCore = function () {
 var _isCanvasSupported = typeof document !== 'undefined' ? UtilsCore.isCanvas(document.createElement('canvas')) : false;
 var _testingWebGl = UtilsCore.initWebGl(UtilsCore.initCanvas());
 var _isWebGlSupported = UtilsCore.isWebGl(_testingWebGl);
-var _isWebGlDrawBuffersSupported = _isWebGlSupported;
+var _isWebGlDrawBuffersSupported = _isWebGlSupported && Boolean(_testingWebGl.getExtension('WEBGL_draw_buffers'));
+
+if (_isWebGlSupported) {
+	UtilsCore.OES_texture_float = _testingWebGl.OES_texture_float;
+	UtilsCore.OES_texture_float_linear = _testingWebGl.OES_texture_float_linear;
+	UtilsCore.OES_element_index_uint = _testingWebGl.OES_element_index_uint;
+} else {
+	UtilsCore.OES_texture_float = false;
+	UtilsCore.OES_texture_float_linear = false;
+	UtilsCore.OES_element_index_uint = false;
+}
 
 module.exports = UtilsCore;

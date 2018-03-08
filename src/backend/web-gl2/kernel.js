@@ -7,9 +7,9 @@ const fragShaderString = require('./shader-frag');
 const vertShaderString = require('./shader-vert');
 
 module.exports = class WebGL2Kernel extends WebGLKernel {
-  initWebGl() {
-    return utils.initWebGl2(this.getCanvas());
-  }
+	initWebGl() {
+		return utils.initWebGl2(this.getCanvas());
+	}
 	/**
 	 * @memberOf WebGL2Kernel#
 	 * @function
@@ -514,43 +514,43 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 		}
 	}
 
-  /**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name _getFragShaderString
-   *
-   * @desc Get the fragment shader String.
-   * If the String hasn't been compiled yet,
-   * then this method compiles it as well
-   *
-   * @param {Array} args - The actual parameters sent to the Kernel
-   *
-   * @returns {String} Fragment Shader string
-   *
-   */
-  _getFragShaderString(args) {
-    if (this.compiledFragShaderString !== null) {
-      return this.compiledFragShaderString;
-    }
-    return this.compiledFragShaderString = this._replaceArtifacts(fragShaderString, this._getFragShaderArtifactMap(args));
-  }
+	/**
+	 * @memberOf WebGL2Kernel#
+	 * @function
+	 * @name _getFragShaderString
+	 *
+	 * @desc Get the fragment shader String.
+	 * If the String hasn't been compiled yet,
+	 * then this method compiles it as well
+	 *
+	 * @param {Array} args - The actual parameters sent to the Kernel
+	 *
+	 * @returns {String} Fragment Shader string
+	 *
+	 */
+	_getFragShaderString(args) {
+		if (this.compiledFragShaderString !== null) {
+			return this.compiledFragShaderString;
+		}
+		return this.compiledFragShaderString = this._replaceArtifacts(fragShaderString, this._getFragShaderArtifactMap(args));
+	}
 
-  /**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name _getVertShaderString
-   *
-   * @desc Get the vertical shader String
-   *
-   * @param {Array} args - The actual parameters sent to the Kernel
-   *
-   * @returns {String} Vertical Shader string
-   *
-   */
-  _getVertShaderString(args) {
-    if (this.compiledVertShaderString !== null) {
-      return this.compiledVertShaderString;
-    }
-    return this.compiledVertShaderString = vertShaderString;
-  }
+	/**
+	 * @memberOf WebGL2Kernel#
+	 * @function
+	 * @name _getVertShaderString
+	 *
+	 * @desc Get the vertical shader String
+	 *
+	 * @param {Array} args - The actual parameters sent to the Kernel
+	 *
+	 * @returns {String} Vertical Shader string
+	 *
+	 */
+	_getVertShaderString(args) {
+		if (this.compiledVertShaderString !== null) {
+			return this.compiledVertShaderString;
+		}
+		return this.compiledVertShaderString = vertShaderString;
+	}
 };

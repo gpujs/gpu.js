@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.2.0
- * @date Tue Mar 06 2018 19:53:44 GMT-0500 (EST)
+ * @date Thu Mar 08 2018 14:35:39 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -161,6 +161,32 @@ var UtilsCore = function () {
 				throw new Error('Invalid canvas object - ' + canvasObj);
 			}
 
+			var webGl = canvasObj.getContext('experimental-webgl', UtilsCore.initWebGlDefaultOptions()) || canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions());
+
+			if (webGl) {
+				webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
+				webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
+				webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
+			}
+
+			return webGl;
+		}
+
+
+	}, {
+		key: 'initWebGl2',
+		value: function initWebGl2(canvasObj) {
+
+			if (typeof _isCanvasSupported !== 'undefined' || canvasObj === null) {
+				if (!_isCanvasSupported) {
+					return null;
+				}
+			}
+
+			if (!UtilsCore.isCanvas(canvasObj)) {
+				throw new Error('Invalid canvas object - ' + canvasObj);
+			}
+
 			return canvasObj.getContext('webgl2', UtilsCore.initWebGlDefaultOptions());
 		}
 	}]);
@@ -172,7 +198,17 @@ var UtilsCore = function () {
 var _isCanvasSupported = typeof document !== 'undefined' ? UtilsCore.isCanvas(document.createElement('canvas')) : false;
 var _testingWebGl = UtilsCore.initWebGl(UtilsCore.initCanvas());
 var _isWebGlSupported = UtilsCore.isWebGl(_testingWebGl);
-var _isWebGlDrawBuffersSupported = _isWebGlSupported;
+var _isWebGlDrawBuffersSupported = _isWebGlSupported && Boolean(_testingWebGl.getExtension('WEBGL_draw_buffers'));
+
+if (_isWebGlSupported) {
+	UtilsCore.OES_texture_float = _testingWebGl.OES_texture_float;
+	UtilsCore.OES_texture_float_linear = _testingWebGl.OES_texture_float_linear;
+	UtilsCore.OES_element_index_uint = _testingWebGl.OES_element_index_uint;
+} else {
+	UtilsCore.OES_texture_float = false;
+	UtilsCore.OES_texture_float_linear = false;
+	UtilsCore.OES_element_index_uint = false;
+}
 
 module.exports = UtilsCore;
 },{}],3:[function(require,module,exports){
