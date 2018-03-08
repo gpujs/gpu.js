@@ -57,8 +57,12 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.uniform2fCache = {};
 		this.uniform2fvCache = {};
 		this.uniform3fvCache = {};
-		if (!this._webGl) this._webGl = utils.initWebGl(this.getCanvas());
+		if (!this._webGl) this._webGl = this.initWebGl();
 	}
+
+	initWebGl() {
+	  return utils.initWebGl(this.getCanvas());
+  }
 
 	/**
 	 * @memberOf WebGLKernel#

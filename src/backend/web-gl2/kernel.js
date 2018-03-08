@@ -7,7 +7,9 @@ const fragShaderString = require('./shader-frag');
 const vertShaderString = require('./shader-vert');
 
 module.exports = class WebGL2Kernel extends WebGLKernel {
-
+  initWebGl() {
+    return utils.initWebGl2(this.getCanvas());
+  }
 	/**
 	 * @memberOf WebGL2Kernel#
 	 * @function
@@ -19,7 +21,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 	 *
 	 */
 	validateOptions() {
-		const isFloatReadPixel = utils.isFloatReadPixelsSupported();
+		const isFloatReadPixel = utils.isFloatReadPixelsSupportedWebGL2();
 		if (this.floatOutput === true && this.floatOutputForce !== true && !isFloatReadPixel) {
 			throw new Error('Float texture outputs are not supported on this browser');
 		} else if (this.floatTextures === undefined) {
