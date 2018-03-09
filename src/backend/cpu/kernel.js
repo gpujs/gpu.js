@@ -200,8 +200,17 @@ module.exports = class CPUKernel extends KernelBase {
 			}
 		}
 
-		const prototypes = builder.getPrototypes();
-		const kernel = prototypes.shift();
+		let prototypes = builder.getPrototypes();
+		let kernel = null;
+		if (prototypes.length > 1) {
+			prototypes = prototypes.filter(fn => {
+				if (/^function/.test(fn)) return fn;
+				kernel = fn;
+				return false;
+			})
+		} else {
+			kernel = prototypes.shift();
+		}
 		const kernelString = this._kernelString = `
 		var LOOP_MAX = ${ this._getLoopMaxString() };
 		var _this = this;

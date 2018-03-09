@@ -33,6 +33,16 @@ QUnit.test( 'addCustomNativeFunctionDivide (auto)', function() {
   addCustomNativeFunctionDivide(null);
 });
 
-QUnit.test( 'addCustomNativeFunctionDivide (WebGL)', function() {
+QUnit.test( 'addCustomNativeFunctionDivide (gpu)', function() {
+  addCustomNativeFunctionDivide('gpu');
+});
+
+QUnit.test( 'addCustomNativeFunctionDivide (webgl)', function() {
   addCustomNativeFunctionDivide('webgl');
 });
+
+QUnit.test( 'addCustomNativeFunctionDivide (webgl2)', function() {
+  addCustomNativeFunctionDivide('webgl2');
+});
+
+//TODO: CPU?

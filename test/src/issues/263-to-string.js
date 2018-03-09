@@ -13,14 +13,22 @@ function buildToStringKernelResult(mode) {
     .setCanvas(kernel._canvas)();
 }
 
-QUnit.test('Issue #263 toString single function - auto', () => {
+QUnit.test('Issue #263 toString single function - (auto)', () => {
   QUnit.assert.equal(buildToStringKernelResult()[0], 1);
 });
 
-QUnit.test('Issue #263 toString single function - gpu', () => {
+QUnit.test('Issue #263 toString single function - (gpu)', () => {
   QUnit.assert.equal(buildToStringKernelResult('gpu')[0], 1);
 });
 
-QUnit.test('Issue #263 toString single function - cpu', () => {
+QUnit.test('Issue #263 toString single function - (webgl)', () => {
+  QUnit.assert.equal(buildToStringKernelResult('webgl')[0], 1);
+});
+
+QUnit.test('Issue #263 toString single function - (webgl2)', () => {
+  QUnit.assert.equal(buildToStringKernelResult('webgl2')[0], 1);
+});
+
+QUnit.test('Issue #263 toString single function - (cpu)', () => {
   QUnit.assert.equal(buildToStringKernelResult('cpu')[0], 1);
 });

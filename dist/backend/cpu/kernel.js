@@ -226,7 +226,16 @@ module.exports = function (_KernelBase) {
 			}
 
 			var prototypes = builder.getPrototypes();
-			var kernel = prototypes.shift();
+			var kernel = null;
+			if (prototypes.length > 1) {
+				prototypes = prototypes.filter(function (fn) {
+					if (/^function/.test(fn)) return fn;
+					kernel = fn;
+					return false;
+				});
+			} else {
+				kernel = prototypes.shift();
+			}
 			var kernelString = this._kernelString = '\n\t\tvar LOOP_MAX = ' + this._getLoopMaxString() + ';\n\t\tvar _this = this;\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '  var ' + name + ' = null;\n';
 			}).join('')) + '\n    return function (' + this.paramNames.map(function (paramName) {

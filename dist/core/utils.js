@@ -394,7 +394,7 @@ var Utils = function (_UtilsCore) {
 
 			var GPU = require('../index');
 			var x = new GPU({
-				mode: 'webgl-validator'
+				mode: 'webgl2-validator'
 			}).createKernel(function () {
 				return 1;
 			}, {

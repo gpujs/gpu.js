@@ -342,7 +342,7 @@ class Utils extends UtilsCore {
 
 		const GPU = require('../index');
 		const x = new GPU({
-			mode: 'webgl-validator'
+			mode: 'webgl2-validator'
 		}).createKernel(function() {
 			return 1;
 		}, {
