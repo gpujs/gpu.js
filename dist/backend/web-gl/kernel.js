@@ -60,10 +60,9 @@ module.exports = function (_KernelBase) {
 		_this.subKernelOutputTextures = null;
 		_this.subKernelOutputVariableNames = null;
 		_this.argumentsLength = 0;
-		_this.ext = null;
 		_this.compiledFragShaderString = null;
 		_this.compiledVertShaderString = null;
-		_this.extDrawBuffersMap = null;
+		_this.drawBuffersMap = null;
 		_this.outputTexture = null;
 		_this.maxTexSize = null;
 		_this.uniform1fCache = {};
@@ -71,23 +70,28 @@ module.exports = function (_KernelBase) {
 		_this.uniform2fCache = {};
 		_this.uniform2fvCache = {};
 		_this.uniform3fvCache = {};
-		if (!_this._webGl) _this._webGl = utils.initWebGl(_this.getCanvas());
+		if (!_this._webGl) _this._webGl = _this.initWebGl();
 		return _this;
 	}
 
-	/**
-  * @memberOf WebGLKernel#
-  * @function
-  * @name validateOptions
-  *
-  * @desc Validate options related to Kernel, such as
-  * floatOutputs and Textures, texSize, output,
-  * graphical output.
-  *
-  */
-
-
 	_createClass(WebGLKernel, [{
+		key: 'initWebGl',
+		value: function initWebGl() {
+			return utils.initWebGl(this.getCanvas());
+		}
+
+		/**
+   * @memberOf WebGLKernel#
+   * @function
+   * @name validateOptions
+   *
+   * @desc Validate options related to Kernel, such as
+   * floatOutputs and Textures, texSize, output,
+   * graphical output.
+   *
+   */
+
+	}, {
 		key: 'validateOptions',
 		value: function validateOptions() {
 			var isFloatReadPixel = utils.isFloatReadPixelsSupported();
@@ -314,7 +318,7 @@ module.exports = function (_KernelBase) {
 					this.subKernelOutputTextures = [];
 					this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
 				}
-				this.ext.drawBuffersWEBGL(this.extDrawBuffersMap);
+				this.drawBuffers.drawBuffersWEBGL(this.drawBuffersMap);
 			}
 
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -457,12 +461,12 @@ module.exports = function (_KernelBase) {
 		value: function _setupSubOutputTextures(length) {
 			var gl = this._webGl;
 			var texSize = this.texSize;
-			var extDrawBuffersMap = this.extDrawBuffersMap = [gl.COLOR_ATTACHMENT0];
+			var drawBuffersMap = this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
 			var textures = this.subKernelOutputTextures = [];
 			for (var i = 0; i < length; i++) {
 				var texture = this._webGl.createTexture();
 				textures.push(texture);
-				extDrawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
+				drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
 				gl.activeTexture(gl.TEXTURE0 + this.paramNames.length + i);
 				gl.bindTexture(gl.TEXTURE_2D, texture);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -1203,15 +1207,15 @@ module.exports = function (_KernelBase) {
 			}, this.paramNames, this.paramTypes);
 
 			if (this.subKernels !== null) {
-				var ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
-				if (!ext) throw new Error('could not instantiate draw buffers extension');
+				var drawBuffers = this.drawBuffers = gl.getExtension('WEBGL_draw_buffers');
+				if (!drawBuffers) throw new Error('could not instantiate draw buffers extension');
 				this.subKernelOutputVariableNames = [];
 				this.subKernels.forEach(function (subKernel) {
 					return _this2._addSubKernel(subKernel);
 				});
 			} else if (this.subKernelProperties !== null) {
-				var _ext = this.ext = gl.getExtension('WEBGL_draw_buffers');
-				if (!_ext) throw new Error('could not instantiate draw buffers extension');
+				var _drawBuffers = this.drawBuffers = gl.getExtension('WEBGL_draw_buffers');
+				if (!_drawBuffers) throw new Error('could not instantiate draw buffers extension');
 				this.subKernelOutputVariableNames = [];
 				Object.keys(this.subKernelProperties).forEach(function (property) {
 					return _this2._addSubKernel(_this2.subKernelProperties[property]);

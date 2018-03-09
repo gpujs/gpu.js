@@ -1,22 +1,32 @@
-function function_return( mode ) {
-	var gpu = new GPU({ mode: mode });
-	var f = gpu.createKernel(function() {
-		return 42.0;
-	}, {
-    output : [1]
-	});
-	QUnit.assert.ok( f !== null, "function generated test");
-	QUnit.assert.close(f()[0], 42.0, 0.01, "basic return function test");
-}
+(function() {
+  function functionReturn( mode ) {
+    var gpu = new GPU({ mode: mode });
+    var f = gpu.createKernel(function() {
+      return 42.0;
+    }, {
+      output : [1]
+    });
+    QUnit.assert.ok( f !== null, "function generated test");
+    QUnit.assert.close(f()[0], 42.0, 0.01, "basic return function test");
+  }
+  
+  QUnit.test( "functionReturn (auto)", function() {
+    functionReturn(null);
+  });
 
-QUnit.test( "function_return (auto)", function() {
-	function_return(null);
-});
+  QUnit.test( "functionReturn (gpu)", function() {
+    functionReturn("gpu");
+  });
 
-QUnit.test( "function_return (WebGL)", function() {
-	function_return("webgl");
-});
-
-QUnit.test( "function_return (CPU)", function() {
-	function_return("cpu");
-});
+  QUnit.test( "functionReturn (webgl)", function() {
+    functionReturn("webgl");
+  });
+  
+  QUnit.test( "functionReturn (webgl2)", function() {
+    functionReturn("webgl2");
+  });
+  
+  QUnit.test( "functionReturn (CPU)", function() {
+    functionReturn("cpu");
+  });
+})();

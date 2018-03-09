@@ -45,6 +45,7 @@ var _systemEndianness = function () {
 }();
 
 var _isFloatReadPixelsSupported = null;
+var _isFloatReadPixelsSupportedWebGL2 = null;
 
 var _isMixedIdentifiersSupported = function () {
 	try {
@@ -344,8 +345,6 @@ var Utils = function (_UtilsCore) {
    *
    * Checks if the browser supports readPixels with float type
    *
-   * @param {gpuJSObject} gpu - the gpu object
-   *
    * @returns {Boolean} true if browser supports
    *
    */
@@ -372,6 +371,42 @@ var Utils = function (_UtilsCore) {
 			_isFloatReadPixelsSupported = x[0] === 1;
 
 			return _isFloatReadPixelsSupported;
+		}
+
+		/**
+   * @memberOf Utils
+   * @name isFloatReadPixelsSupportedWebGL2
+   * @function
+   * @static
+   *
+   * Checks if the browser supports readPixels with float type
+   *
+   * @returns {Boolean} true if browser supports
+   *
+   */
+
+	}, {
+		key: 'isFloatReadPixelsSupportedWebGL2',
+		value: function isFloatReadPixelsSupportedWebGL2() {
+			if (_isFloatReadPixelsSupportedWebGL2 !== null) {
+				return _isFloatReadPixelsSupportedWebGL2;
+			}
+
+			var GPU = require('../index');
+			var x = new GPU({
+				mode: 'webgl2-validator'
+			}).createKernel(function () {
+				return 1;
+			}, {
+				output: [2],
+				floatTextures: true,
+				floatOutput: true,
+				floatOutputForce: true
+			})();
+
+			_isFloatReadPixelsSupportedWebGL2 = x[0] === 1;
+
+			return _isFloatReadPixelsSupportedWebGL2;
 		}
 	}, {
 		key: 'isMixedIdentifiersSupported',
