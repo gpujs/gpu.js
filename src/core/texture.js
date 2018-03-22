@@ -7,14 +7,16 @@ module.exports = class Texture {
 	/**
 	 * @desc WebGl Texture implementation in JS
 	 * @constructor Texture
-	 * @param {Object} texture 
-	 * @param {Array} size 
+	 * @param {Object} texture
+	 * @param {Array} size
+	 * @param dimensions
 	 * @param {Array} output
 	 * @param {Object} webGl
 	 */
-	constructor(texture, size, output, webGl) {
+	constructor(texture, size, dimensions, output, webGl) {
 		this.texture = texture;
 		this.size = size;
+		this.dimensions = dimensions;
 		this.output = output;
 		this.webGl = webGl;
 		this.kernel = null;

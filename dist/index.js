@@ -16,6 +16,11 @@ var WebGLFunctionNode = require('./backend/web-gl/function-node');
 var WebGLKernel = require('./backend/web-gl/kernel');
 var WebGLRunner = require('./backend/web-gl/runner');
 
+var WebGL2FunctionBuilder = require('./backend/web-gl2/function-builder');
+var WebGL2FunctionNode = require('./backend/web-gl2/function-node');
+var WebGL2Kernel = require('./backend/web-gl2/kernel');
+var WebGL2Runner = require('./backend/web-gl2/runner');
+
 GPU.alias = alias;
 GPU.utils = utils;
 GPU.Texture = Texture;
@@ -33,6 +38,11 @@ GPU.WebGLFunctionBuilder = WebGLFunctionBuilder;
 GPU.WebGLFunctionNode = WebGLFunctionNode;
 GPU.WebGLKernel = WebGLKernel;
 GPU.WebGLRunner = WebGLRunner;
+
+GPU.WebGL2FunctionBuilder = WebGL2FunctionBuilder;
+GPU.WebGL2FunctionNode = WebGL2FunctionNode;
+GPU.WebGL2Kernel = WebGL2Kernel;
+GPU.WebGL2Runner = WebGL2Runner;
 
 if (typeof module !== 'undefined') {
 	module.exports = GPU;

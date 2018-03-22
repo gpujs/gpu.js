@@ -197,6 +197,37 @@ class UtilsCore {
 		return webGl;
 	}
 
+	/**
+	 * @name initWebGl2
+	 * @function
+	 * @static
+	 * @memberOf UtilsCore
+	 *
+	 * @desc Initiate and returns a webGl, from a canvas object
+	 * Returns only if webGl is supported by browser.
+	 *
+	 * @param {CanvasDOMObject} canvasObj - Object to validate
+	 *
+	 * @returns {CanvasDOMObject} CanvasDOMObject if supported by browser, else null
+	 *
+	 */
+	static initWebGl2(canvasObj) {
+
+		// First time setup, does the browser support check memorizer
+		if (typeof _isCanvasSupported !== 'undefined' || canvasObj === null) {
+			if (!_isCanvasSupported) {
+				return null;
+			}
+		}
+
+		// Fail fast for invalid canvas object
+		if (!UtilsCore.isCanvas(canvasObj)) {
+			throw new Error('Invalid canvas object - ' + canvasObj);
+		}
+
+		// Create a new canvas DOM
+		return canvasObj.getContext('webgl2', UtilsCore.initWebGlDefaultOptions());
+	}
 }
 
 //-----------------------------------------------------------------------------

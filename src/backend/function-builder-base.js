@@ -327,8 +327,4 @@ module.exports = class FunctionBuilderBase {
 		return this.getStringFromNativeVariables()
       + this.getStringFromFunctionNames(Object.keys(this.nodeMap), opt);
 	}
-
-	polyfillStandardFunctions() {
-		throw new Error('polyfillStandardFunctions not defined on base function builder');
-	}
 };

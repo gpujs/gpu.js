@@ -367,11 +367,6 @@ module.exports = function () {
 			}
 			return this.getStringFromNativeVariables() + this.getStringFromFunctionNames(Object.keys(this.nodeMap), opt);
 		}
-	}, {
-		key: 'polyfillStandardFunctions',
-		value: function polyfillStandardFunctions() {
-			throw new Error('polyfillStandardFunctions not defined on base function builder');
-		}
 	}]);
 
 	return FunctionBuilderBase;

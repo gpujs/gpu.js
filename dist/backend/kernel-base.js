@@ -42,6 +42,7 @@ module.exports = function () {
 		this.wraparound = null;
 		this.hardcodeConstants = null;
 		this.outputToTexture = null;
+		this.outputImmutable = null;
 		this.texSize = null;
 		this._canvas = null;
 		this._webGl = null;
@@ -52,7 +53,6 @@ module.exports = function () {
 		this.addFunction = null;
 		this.functions = null;
 		this.nativeFunctions = null;
-		this.copyData = true;
 		this.subKernels = null;
 		this.subKernelProperties = null;
 		this.subKernelNames = null;
@@ -231,6 +231,12 @@ module.exports = function () {
 			this.outputToTexture = flag;
 			return this;
 		}
+	}, {
+		key: 'setOutputImmutable',
+		value: function setOutputImmutable(flag) {
+			this.outputImmutable = flag;
+			return this;
+		}
 
 		/**
    * @memberOf BaseKernel#
@@ -307,12 +313,6 @@ module.exports = function () {
 		key: 'setWebGl',
 		value: function setWebGl(webGl) {
 			this._webGl = webGl;
-			return this;
-		}
-	}, {
-		key: 'setCopyData',
-		value: function setCopyData(copyData) {
-			this.copyData = copyData;
 			return this;
 		}
 

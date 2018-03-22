@@ -35,6 +35,16 @@ const _systemEndianness = (() => {
 })();
 
 let _isFloatReadPixelsSupported = null;
+let _isFloatReadPixelsSupportedWebGL2 = null;
+
+let _isMixedIdentifiersSupported = (() => {
+	try {
+		(new Function('let i = 1; const j = 1;'))();
+		return true;
+	} catch (e) {
+		return false;
+	}
+})();
 
 class Utils extends UtilsCore {
 
@@ -289,8 +299,6 @@ class Utils extends UtilsCore {
 	 *
 	 * Checks if the browser supports readPixels with float type
 	 *
-	 * @param {gpuJSObject} gpu - the gpu object
-	 *
 	 * @returns {Boolean} true if browser supports
 	 *
 	 */
@@ -316,6 +324,42 @@ class Utils extends UtilsCore {
 		return _isFloatReadPixelsSupported;
 	}
 
+	/**
+	 * @memberOf Utils
+	 * @name isFloatReadPixelsSupportedWebGL2
+	 * @function
+	 * @static
+	 *
+	 * Checks if the browser supports readPixels with float type
+	 *
+	 * @returns {Boolean} true if browser supports
+	 *
+	 */
+	static isFloatReadPixelsSupportedWebGL2() {
+		if (_isFloatReadPixelsSupportedWebGL2 !== null) {
+			return _isFloatReadPixelsSupportedWebGL2
+		}
+
+		const GPU = require('../index');
+		const x = new GPU({
+			mode: 'webgl2-validator'
+		}).createKernel(function() {
+			return 1;
+		}, {
+			output: [2],
+			floatTextures: true,
+			floatOutput: true,
+			floatOutputForce: true
+		})();
+
+		_isFloatReadPixelsSupportedWebGL2 = x[0] === 1;
+
+		return _isFloatReadPixelsSupportedWebGL2;
+	}
+
+	static isMixedIdentifiersSupported() {
+		return _isMixedIdentifiersSupported;
+	}
 
 	static dimToTexSize(opt, dimensions, output) {
 		let numTexels = dimensions[0];
@@ -339,8 +383,8 @@ class Utils extends UtilsCore {
 	 *
 	 * Return the dimension of an array.
 	 * 
-	 * @param {Array} x - The array
-	 * @param {number} pad - To include padding in the dimension calculation [Optional]
+	 * @param {Array|String} x - The array
+	 * @param {number} [pad] - To include padding in the dimension calculation [Optional]
 	 *
 	 *
 	 *

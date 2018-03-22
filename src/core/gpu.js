@@ -2,8 +2,10 @@
 
 const utils = require('./utils');
 const WebGLRunner = require('../backend/web-gl/runner');
+const WebGL2Runner = require('../backend/web-gl2/runner');
 const CPURunner = require('../backend/cpu/runner');
 const WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
+const WebGL2ValidatorKernel = require('../backend/web-gl2/validator-kernel');
 const GPUCore = require("./gpu-core");
 
 /**
@@ -23,10 +25,17 @@ class GPU extends GPUCore {
 		settings = settings || {};
 		this._canvas = settings.canvas || null;
 		this._webGl = settings.webGl || null;
-		let mode = settings.mode || 'webgl';
+		let mode = settings.mode;
+		let detectedMode;
 		if (!utils.isWebGlSupported()) {
-			console.warn('Warning: gpu not supported, falling back to cpu support');
-			mode = 'cpu';
+			if (mode && mode !== 'cpu') {
+				throw new Error(`A requested mode of "${ mode }" and is not supported`);
+			} else {
+				console.warn('Warning: gpu not supported, falling back to cpu support');
+				detectedMode = 'cpu';
+			}
+		} else {
+			detectedMode = mode || 'gpu';
 		}
 
 		this.kernels = [];
@@ -36,22 +45,35 @@ class GPU extends GPUCore {
 			webGl: this._webGl
 		};
 
-		if (mode) {
-			switch (mode.toLowerCase()) {
-				case 'cpu':
-					this._runner = new CPURunner(runnerSettings);
-					break;
-				case 'gpu':
-				case 'webgl':
-					this._runner = new WebGLRunner(runnerSettings);
-					break;
-				case 'webgl-validator':
-					this._runner = new WebGLRunner(runnerSettings);
-					this._runner.Kernel = WebGLValidatorKernel;
-					break;
-				default:
-					throw new Error(`"${mode}" mode is not defined`);
-			}
+		switch (detectedMode) {
+			// public options
+			case 'cpu':
+				this._runner = new CPURunner(runnerSettings);
+				break;
+			case 'gpu':
+				const Runner = this.getGPURunner();
+				this._runner = new Runner(runnerSettings);
+				break;
+
+				// private explicit options for testing
+			case 'webgl2':
+				this._runner = new WebGL2Runner(runnerSettings);
+				break;
+			case 'webgl':
+				this._runner = new WebGLRunner(runnerSettings);
+				break;
+
+				// private explicit options for internal
+			case 'webgl2-validator':
+				this._runner = new WebGL2Runner(runnerSettings);
+				this._runner.Kernel = WebGL2ValidatorKernel;
+				break;
+			case 'webgl-validator':
+				this._runner = new WebGLRunner(runnerSettings);
+				this._runner.Kernel = WebGLValidatorKernel;
+				break;
+			default:
+				throw new Error(`"${ mode }" mode is not defined`);
 		}
 	}
 	/**
@@ -62,13 +84,13 @@ class GPU extends GPUCore {
 	 * @function
 	 * @memberOf GPU##
 	 *
-	 * @param {Function} inputFunction - The calling to perform the conversion
+	 * @param {Function} fn - The calling to perform the conversion
 	 * @param {Object} settings - The parameter configuration object
 	 * @property {String} settings.dimensions - Thread dimension array (Defeaults to [1024])
 	 * @property {String} settings.mode - CPU / GPU configuration mode (Defaults to null)
 	 *
 	 * The following modes are supported
-	 * *null* / *'auto'* : Attempts to build GPU mode, else fallbacks
+	 * *'falsey'* : Attempts to build GPU mode, else fallbacks
 	 * *'gpu'* : Attempts to build GPU mode, else fallbacks
 	 * *'cpu'* : Forces JS fallback mode only
 	 *
@@ -237,6 +259,11 @@ class GPU extends GPUCore {
 		};
 	}
 
+
+	getGPURunner() {
+		if (typeof WebGL2RenderingContext !== 'undefined') return WebGL2Runner;
+		if (typeof WebGLRenderingContext !== 'undefined') return WebGLRunner;
+	}
 
 	/**
 	 *

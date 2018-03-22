@@ -16,7 +16,7 @@ var utils = require('../../core/utils');
  * 
  * @extends BaseFunctionNode
  *
- * @desc [INTERNAL] Represents a single function, inside JS, webGL, or openGL.
+ * @desc [INTERNAL] Represents a single function, inside JS
  *
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
  *
@@ -85,7 +85,7 @@ module.exports = function (_BaseFunctionNode) {
    * @param {Array} retArr - return array string
    * @param {Function} funcParam - FunctionNode, that tracks compilation state
    *
-   * @returns {String} the prased openclgl string array
+   * @returns {Array} the parsed cpu string array
    */
 
 	}, {
@@ -366,7 +366,7 @@ module.exports = function (_BaseFunctionNode) {
 		key: 'astIdentifierExpression',
 		value: function astIdentifierExpression(idtNode, retArr, funcParam) {
 			if (idtNode.type !== 'Identifier') {
-				throw this.astErrorOutput('IdentifierExpression - not an Identifier', ast, funcParam);
+				throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode, funcParam);
 			}
 
 			switch (idtNode.name) {
@@ -415,14 +415,14 @@ module.exports = function (_BaseFunctionNode) {
    * @param {Array} retArr - return array string
    * @param {Function} funcParam - FunctionNode, that tracks compilation state
    *
-   * @returns {String} the prased openclgl string
+   * @returns {Array} the parsed cpu string
    */
 
 	}, {
 		key: 'astForStatement',
 		value: function astForStatement(forNode, retArr, funcParam) {
 			if (forNode.type !== 'ForStatement') {
-				throw this.astErrorOutput('Invalid for statment', ast, funcParam);
+				throw this.astErrorOutput('Invalid for statment', forNode, funcParam);
 			}
 
 			if (forNode.test && forNode.test.type === 'BinaryExpression') {
@@ -518,14 +518,14 @@ module.exports = function (_BaseFunctionNode) {
    * @param {Array} retArr - return array string
    * @param {Function} funcParam - FunctionNode, that tracks compilation state
    *
-   * @returns {String} the parsed openclgl string
+   * @returns {Array} the parsed openclgl string
    */
 
 	}, {
 		key: 'astWhileStatement',
 		value: function astWhileStatement(whileNode, retArr, funcParam) {
 			if (whileNode.type !== 'WhileStatement') {
-				throw this.astErrorOutput('Invalid while statment', ast, funcParam);
+				throw this.astErrorOutput('Invalid while statment', whileNode, funcParam);
 			}
 
 			retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
@@ -592,7 +592,7 @@ module.exports = function (_BaseFunctionNode) {
    *
    * @desc Parses the abstract syntax tree for *Block* statement
    *
-   * @param {Object} bnode - the AST object to parse
+   * @param {Object} bNode - the AST object to parse
    * @param {Array} retArr - return array string
    * @param {Function} funcParam - FunctionNode, that tracks compilation state
    *
@@ -1018,7 +1018,7 @@ module.exports = function (_BaseFunctionNode) {
    *
    * @desc Parses the abstract syntax tree for *Array* Expression
    *
-   * @param {Object} ast - the AST object to parse
+   * @param {Object} arrNode - the AST object to parse
    * @param {Array} retArr - return array string
    * @param {Function} funcParam - FunctionNode, that tracks compilation state
    *

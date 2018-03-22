@@ -36,6 +36,7 @@ module.exports = class BaseKernel {
 		this.wraparound = null;
 		this.hardcodeConstants = null;
 		this.outputToTexture = null;
+		this.outputImmutable = null;
 		this.texSize = null;
 		this._canvas = null;
 		this._webGl = null;
@@ -46,7 +47,6 @@ module.exports = class BaseKernel {
 		this.addFunction = null;
 		this.functions = null;
 		this.nativeFunctions = null;
-		this.copyData = true;
 		this.subKernels = null;
 		this.subKernelProperties = null;
 		this.subKernelNames = null;
@@ -201,6 +201,11 @@ module.exports = class BaseKernel {
 		return this;
 	}
 
+	setOutputImmutable(flag) {
+		this.outputImmutable = flag;
+		return this;
+	}
+
 	/**
 	 * @memberOf BaseKernel#
 	 * @function
@@ -263,11 +268,6 @@ module.exports = class BaseKernel {
 	 */
 	setWebGl(webGl) {
 		this._webGl = webGl;
-		return this;
-	}
-
-	setCopyData(copyData) {
-		this.copyData = copyData;
 		return this;
 	}
 

@@ -16,6 +16,4 @@ module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
 		super();
 		this.Node = CPUFunctionNode;
 	}
-
-	polyfillStandardFunctions() {}
 };

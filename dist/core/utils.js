@@ -45,6 +45,16 @@ var _systemEndianness = function () {
 }();
 
 var _isFloatReadPixelsSupported = null;
+var _isFloatReadPixelsSupportedWebGL2 = null;
+
+var _isMixedIdentifiersSupported = function () {
+	try {
+		new Function('let i = 1; const j = 1;')();
+		return true;
+	} catch (e) {
+		return false;
+	}
+}();
 
 var Utils = function (_UtilsCore) {
 	_inherits(Utils, _UtilsCore);
@@ -335,8 +345,6 @@ var Utils = function (_UtilsCore) {
    *
    * Checks if the browser supports readPixels with float type
    *
-   * @param {gpuJSObject} gpu - the gpu object
-   *
    * @returns {Boolean} true if browser supports
    *
    */
@@ -364,6 +372,47 @@ var Utils = function (_UtilsCore) {
 
 			return _isFloatReadPixelsSupported;
 		}
+
+		/**
+   * @memberOf Utils
+   * @name isFloatReadPixelsSupportedWebGL2
+   * @function
+   * @static
+   *
+   * Checks if the browser supports readPixels with float type
+   *
+   * @returns {Boolean} true if browser supports
+   *
+   */
+
+	}, {
+		key: 'isFloatReadPixelsSupportedWebGL2',
+		value: function isFloatReadPixelsSupportedWebGL2() {
+			if (_isFloatReadPixelsSupportedWebGL2 !== null) {
+				return _isFloatReadPixelsSupportedWebGL2;
+			}
+
+			var GPU = require('../index');
+			var x = new GPU({
+				mode: 'webgl2-validator'
+			}).createKernel(function () {
+				return 1;
+			}, {
+				output: [2],
+				floatTextures: true,
+				floatOutput: true,
+				floatOutputForce: true
+			})();
+
+			_isFloatReadPixelsSupportedWebGL2 = x[0] === 1;
+
+			return _isFloatReadPixelsSupportedWebGL2;
+		}
+	}, {
+		key: 'isMixedIdentifiersSupported',
+		value: function isMixedIdentifiersSupported() {
+			return _isMixedIdentifiersSupported;
+		}
 	}, {
 		key: 'dimToTexSize',
 		value: function dimToTexSize(opt, dimensions, output) {
@@ -388,8 +437,8 @@ var Utils = function (_UtilsCore) {
    *
    * Return the dimension of an array.
    * 
-   * @param {Array} x - The array
-   * @param {number} pad - To include padding in the dimension calculation [Optional]
+   * @param {Array|String} x - The array
+   * @param {number} [pad] - To include padding in the dimension calculation [Optional]
    *
    *
    *
