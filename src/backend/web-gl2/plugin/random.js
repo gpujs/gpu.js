@@ -1,5 +1,3 @@
-import WebGlInteger from '../variable/web-gl-integer';
-
 module.exports = function webGlRandom(kernel) {
   // A single iteration of Bob Jenkins' One-At-A-Time hashing algorithm And compound versions of the hashing algorithm
   const hashFunction = `
@@ -36,22 +34,18 @@ float random() {
   float rand = seededRandom(inputs);
   return rand;
 }`;
-  const time = new WebGlInteger(kernel, 'time');
-  kernel.addNativeVariable(time);
 
-  kernel.on('build', () => {
-    time.setLocation();
-  });
+  const declaration = `uint time = 0;`;
+  kernel.addNativeVariable('time', declaration);
 
   kernel.on('run', () => {
-    time.value = Date.now();
+    kernel.setUniform1i('time', Date.now());
   });
 
   return [
     hashFunction,
     floatConstructFunction,
     seededRandomFunction,
-    time.getDeclarationString(),
     randomFunction
   ].join('\n\n');
 };

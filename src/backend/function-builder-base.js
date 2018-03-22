@@ -228,10 +228,10 @@ module.exports = class FunctionBuilderBase {
 	}
 
 	getStringFromNativeVariables() {
-	  const variabels = this.nativeVariables;
+	  const variables = this.nativeVariables;
 	  let result = [];
-	  for (const p in variabels) {
-	    result.push(variabels[p].getDeclarationString());
+	  for (const p in variables) {
+	    result.push(variables[p]);
     }
     return result.join('\n');
   }
