@@ -385,7 +385,7 @@ tan
 
 ## Full API Reference
 
-You can find a [complete API reference here](http://gpu.rocks/api/).
+You can find a [complete API reference here](https://doxdox.org/gpujs/gpu.js/1.2.0).
 
 ## Automatically-built Documentation
 
