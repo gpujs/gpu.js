@@ -45,6 +45,54 @@
     forLoopTest('cpu');
   });
 
+  function doWhileLoopTest(mode) {
+    var gpu = new GPU({ mode: mode });
+    var f = gpu.createKernel(function(a, b) {
+      var x = 0;
+      var i = 0;
+      do{
+        x = x + 1;
+        i++;
+      } while (i < 10);
+      return (a[this.thread.x] + b[this.thread.x] + x);
+    }, {
+      output : [6]
+    });
+
+    QUnit.assert.ok( f !== null, 'function generated test');
+
+    var a = [1, 2, 3, 5, 6, 7];
+    var b = [4, 5, 6, 1, 2, 3];
+
+    var res = f(a,b);
+    var exp = [15, 17, 19, 16, 18, 20];
+
+    for(var i = 0; i < exp.length; ++i) {
+      QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
+    }
+  }
+
+  QUnit.test( 'dowhile_loop (auto)', function() {
+    doWhileLoopTest(null);
+  });
+
+  QUnit.test( 'dowhile_loop (gpu)', function() {
+    doWhileLoopTest('gpu');
+  });
+
+  QUnit.test( 'dowhile_loop (webgl)', function() {
+    doWhileLoopTest('webgl');
+  });
+
+  QUnit.test( 'dowhile_loop (webgl2)', function() {
+    doWhileLoopTest('webgl2');
+  });
+
+  QUnit.test( 'dowhile_loop (cpu)', function() {
+    doWhileLoopTest('cpu');
+  });
+
+
   function evilWhileKernalFunction(a, b) {
     var x = 0.0;
     var i = 0;
