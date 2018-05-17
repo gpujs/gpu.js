@@ -6,6 +6,7 @@ gpu.js is a JavaScript Acceleration library for GPGPU (General purpose computing
 
 
 [![Join the chat at https://gitter.im/gpujs/gpu.js](https://badges.gitter.im/gpujs/gpu.js.svg)](https://gitter.im/gpujs/gpu.js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Slack](https://slack.bri.im/badge.svg)](https://slack.bri.im)
 
 # What is this sorcery?
 
