@@ -5,14 +5,14 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.2.0
- * @date Thu Mar 08 2018 17:26:16 GMT-0500 (EST)
+ * @date Fri Apr 27 2018 19:37:57 GMT+0200 (CEST)
  *
  * @license MIT
  * The MIT License
  *
  * Copyright (c) 2018 gpu.js Team
  */
-"use strict";(function(){function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s}return e})()({1:[function(require,module,exports){
+"use strict";(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -127,6 +127,8 @@ module.exports = function (_BaseFunctionNode) {
 						return this.astForStatement(ast, retArr, funcParam);
 					case 'WhileStatement':
 						return this.astWhileStatement(ast, retArr, funcParam);
+					case 'DoWhileStatement':
+						return this.astDoWhileStatement(ast, retArr, funcParam);
 					case 'VariableDeclaration':
 						return this.astVariableDeclaration(ast, retArr, funcParam);
 					case 'VariableDeclarator':
@@ -400,6 +402,26 @@ module.exports = function (_BaseFunctionNode) {
 			retArr.push(') {\n');
 			this.astGeneric(whileNode.body, retArr, funcParam);
 			retArr.push('} else {\n');
+			retArr.push('break;\n');
+			retArr.push('}\n');
+			retArr.push('}\n');
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astDoWhileStatement',
+		value: function astDoWhileStatement(doWhileNode, retArr, funcParam) {
+			if (doWhileNode.type !== 'DoWhileStatement') {
+				throw this.astErrorOutput('Invalid while statment', doWhileNode, funcParam);
+			}
+
+			retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
+			this.astGeneric(doWhileNode.body, retArr, funcParam);
+			retArr.push('if (!');
+			this.astGeneric(doWhileNode.test, retArr, funcParam);
+			retArr.push(') {\n');
 			retArr.push('break;\n');
 			retArr.push('}\n');
 			retArr.push('}\n');
@@ -2033,6 +2055,8 @@ module.exports = function (_FunctionNodeBase) {
 						return this.astForStatement(ast, retArr, funcParam);
 					case 'WhileStatement':
 						return this.astWhileStatement(ast, retArr, funcParam);
+					case 'DoWhileStatement':
+						return this.astDoWhileStatement(ast, retArr, funcParam);
 					case 'VariableDeclaration':
 						return this.astVariableDeclaration(ast, retArr, funcParam);
 					case 'VariableDeclarator':
@@ -2339,6 +2363,26 @@ module.exports = function (_FunctionNodeBase) {
 			retArr.push(') {\n');
 			this.astGeneric(whileNode.body, retArr, funcParam);
 			retArr.push('} else {\n');
+			retArr.push('break;\n');
+			retArr.push('}\n');
+			retArr.push('}\n');
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astDoWhileStatement',
+		value: function astDoWhileStatement(doWhileNode, retArr, funcParam) {
+			if (doWhileNode.type !== 'DoWhileStatement') {
+				throw this.astErrorOutput('Invalid while statment', doWhileNode, funcParam);
+			}
+
+			retArr.push('for (float i = 0.0; i < LOOP_MAX; i++) {');
+			this.astGeneric(doWhileNode.body, retArr, funcParam);
+			retArr.push('if (!');
+			this.astGeneric(doWhileNode.test, retArr, funcParam);
+			retArr.push(') {\n');
 			retArr.push('break;\n');
 			retArr.push('}\n');
 			retArr.push('}\n');
@@ -9975,7 +10019,12 @@ pp$8.readEscapedChar = function(inTemplate) {
       this.pos += octalStr.length - 1;
       ch = this.input.charCodeAt(this.pos);
       if ((octalStr !== "0" || ch == 56 || ch == 57) && (this.strict || inTemplate)) {
-        this.invalidStringToken(this.pos - 1 - octalStr.length, "Octal literal in strict mode");
+        this.invalidStringToken(
+          this.pos - 1 - octalStr.length,
+          inTemplate
+            ? "Octal literal in template string"
+            : "Octal literal in strict mode"
+        );
       }
       return String.fromCharCode(octal)
     }
@@ -10034,7 +10083,7 @@ pp$8.readWord = function() {
 };
 
 
-var version = "5.5.0";
+var version = "5.5.3";
 
 
 function parse(input, options) {
