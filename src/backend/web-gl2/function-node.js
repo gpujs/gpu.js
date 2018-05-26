@@ -225,6 +225,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					case 'Texture':
 					case 'Input':
 					case 'Array':
+					case 'HTMLImage':
 						retArr.push('sampler2D');
 						break;
 					default:

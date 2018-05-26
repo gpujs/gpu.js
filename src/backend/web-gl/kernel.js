@@ -721,6 +721,38 @@ module.exports = class WebGLKernel extends KernelBase {
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
+			case 'HTMLImage':
+				{
+					const inputImage = value;
+					const dim = [inputImage.width, inputImage.height, 1];
+					const size = utils.dimToTexSize({
+						floatTextures: this.floatTextures,
+						floatOutput: this.floatOutput
+					}, dim);
+
+					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+					// Upload the image into the texture.
+					const mipLevel = 0; // the largest mip
+					const internalFormat = gl.RGBA; // format we want in the texture
+					const srcFormat = gl.RGBA; // format of data we are supplying
+					const srcType = gl.UNSIGNED_BYTE; // type of data we are supplying
+					gl.texImage2D(gl.TEXTURE_2D,
+						mipLevel,
+						internalFormat,
+						srcFormat,
+						srcType,
+						inputImage);
+					this.setUniform3fv(`user_${name}Dim`, dim);
+					this.setUniform2fv(`user_${name}Size`, size);
+					this.setUniform1i(`user_${name}`, this.argumentsLength);
+					break;
+				}
 			case 'Texture':
 				{
 					const inputTexture = value;
@@ -969,7 +1001,7 @@ module.exports = class WebGLKernel extends KernelBase {
 					result.push(`highp float user_${ paramName } = ${ param }`);
 				}
 			} else {
-				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input') {
+				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
 					result.push(
 						`uniform highp sampler2D user_${ paramName }`,
 						`uniform highp vec2 user_${ paramName }Size`,
