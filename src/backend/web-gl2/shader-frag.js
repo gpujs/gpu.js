@@ -115,6 +115,10 @@ void color(float r, float g, float b) {
   color(r,g,b,1.0);
 }
 
+void color(sampler2D image) {
+  actualColor = texture(image, vTexCoord);
+}
+
 __MAIN_PARAMS__;
 __MAIN_CONSTANTS__;
 __KERNEL__;
