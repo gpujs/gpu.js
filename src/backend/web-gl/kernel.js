@@ -736,7 +736,7 @@ module.exports = class WebGLKernel extends KernelBase {
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
+					gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 					// Upload the image into the texture.
 					const mipLevel = 0; // the largest mip
 					const internalFormat = gl.RGBA; // format we want in the texture
