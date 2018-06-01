@@ -39,7 +39,8 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 # Table of Contents
 
 * [Installation](#installation)
-* [Options](#options)
+* [`GPU` Options](#gpu-options)
+* [`gpu.createKernel` Options](#gpu-createkernel-options)
 * [Creating and Running Functions](#creating-and-running-functions)
 * [Accepting Input](#accepting-input)
 * [Graphical Output](#graphical-output)
@@ -87,7 +88,12 @@ In JavaScript, initialize the library:
 const gpu = new GPU();
 ```
 
-## Options
+## `GPU` Options
+Options are an object used to create an instance of `GPU`.  Example: `new GPU(options)`
+* `canvas`: `HTMLCanvasElement`.  Optional.  For sharing canvas.  Example: use THREE.js and GPU.js on same canvas.
+* `webGl`: `WebGL2RenderingContext` or `WebGLRenderingContext`.  For sharing rendering context.  Example: use THREE.js and GPU.js on same rendering context.
+
+## `gpu.createKernel` Options
 Options are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.createKernel(options)`
 * `output`: array or object that describes the output of kernel.
   * as array: `[width]`, `[width, height]`, or `[width, height, depth]`
@@ -104,7 +110,8 @@ Options are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.c
 * nativeFunctions: object
 * subKernels: array
 * outputImmutable: boolean
-  * default to false`
+  * default to `false`
+  
 
 
 ## Creating and Running Functions
