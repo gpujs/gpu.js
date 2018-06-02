@@ -21,11 +21,6 @@ module.exports = class BaseFunctionNode {
 	 * @prop {String} webglFunctionString - webgl converted function string
 	 * @prop {String} openglFunctionString - opengl converted function string
 	 * @prop {String[]} calledFunctions - List of all the functions called
-	 * @prop {String[]} initVariables - List of variables initialized in the function
-	 * @prop {String[]} readVariables - List of variables read operations occur
-	 * @prop {String[]} writeVariables - List of variables write operations occur
-	 * 
-	 * @param {GPU} gpu - The GPU instance
 	 * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
 	 * @param {Function|String} jsFunction - JS Function to do conversion
 	 * @param {String[]|Object} paramTypes - Parameter type array, assumes all parameters are 'float' if null
@@ -38,9 +33,6 @@ module.exports = class BaseFunctionNode {
 		//
 		this.calledFunctions = [];
 		this.calledFunctionsArguments = {};
-		this.initVariables = [];
-		this.readVariables = [];
-		this.writeVariables = [];
 		this.addFunction = null;
 		this.isRootKernel = false;
 		this.isSubKernel = false;
@@ -49,6 +41,7 @@ module.exports = class BaseFunctionNode {
 		this.prototypeOnly = null;
 		this.constants = null;
 		this.output = null;
+		this.declarations = {};
 
 		if (options) {
 			if (options.hasOwnProperty('debug')) {
@@ -323,14 +316,20 @@ module.exports = class BaseFunctionNode {
 	 */
 	getParamType(paramName) {
 		const paramIndex = this.paramNames.indexOf(paramName);
-		if (paramIndex === -1) return null;
-		if (!this.parent) return null;
-		if (this.paramTypes[paramIndex]) return this.paramTypes[paramIndex];
-		const calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
-		for (let i = 0; i < calledFunctionArguments.length; i++) {
-			const calledFunctionArgument = calledFunctionArguments[i];
-			if (calledFunctionArgument[paramIndex] !== null) {
-				return this.paramTypes[paramIndex] = calledFunctionArgument[paramIndex].type;
+		if (paramIndex === -1) {
+			return this.declarations[paramName];
+		} else {
+			if (!this.parent) {
+				if (this.paramTypes[paramIndex]) return this.paramTypes[paramIndex];
+			} else {
+				if (this.paramTypes[paramIndex]) return this.paramTypes[paramIndex];
+				const calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
+				for (let i = 0; i < calledFunctionArguments.length; i++) {
+					const calledFunctionArgument = calledFunctionArguments[i];
+					if (calledFunctionArgument[paramIndex] !== null) {
+						return this.paramTypes[paramIndex] = calledFunctionArgument[paramIndex].type;
+					}
+				}
 			}
 		}
 		return null;

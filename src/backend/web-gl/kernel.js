@@ -10,6 +10,12 @@ const canvases = [];
 const maxTexSizes = {};
 
 module.exports = class WebGLKernel extends KernelBase {
+	static get fragShaderString() {
+		return fragShaderString;
+	}
+	static get vertShaderString() {
+		return vertShaderString;
+	}
 	/**
 	 * @constructor WebGLKernel
 	 *
@@ -1236,14 +1242,14 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *
 	 * @param {Array} args - The actual parameters sent to the Kernel
 	 *
-	 * @returns {String} Fragment Shader string
+	 * @returns {string} Fragment Shader string
 	 *
 	 */
 	_getFragShaderString(args) {
 		if (this.compiledFragShaderString !== null) {
 			return this.compiledFragShaderString;
 		}
-		return this.compiledFragShaderString = this._replaceArtifacts(fragShaderString, this._getFragShaderArtifactMap(args));
+		return this.compiledFragShaderString = this._replaceArtifacts(this.constructor.fragShaderString, this._getFragShaderArtifactMap(args));
 	}
 
 	/**
@@ -1255,15 +1261,14 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *
 	 * @param {Array} args - The actual parameters sent to the Kernel
 	 *
-	 * @returns {String} Vertical Shader string
+	 * @returns {string} Vertical Shader string
 	 *
 	 */
 	_getVertShaderString(args) {
 		if (this.compiledVertShaderString !== null) {
 			return this.compiledVertShaderString;
 		}
-		//TODO: webgl2 compile like frag shader
-		return this.compiledVertShaderString = vertShaderString;
+		return this.compiledVertShaderString = this.constructor.vertShaderString;
 	}
 
 	/**

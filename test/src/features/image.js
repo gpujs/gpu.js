@@ -4,8 +4,10 @@
       mode: mode
     });
     var imageKernel = gpu.createKernel(function(image) {
-      this.color(image);
+      const pixel = image[this.thread.y][this.thread.x];
+      this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
     }, {
+      debug: true,
       output : [276, 183],
       graphical: true
     });
