@@ -386,7 +386,7 @@ ${ this.subKernelOutputVariableNames === null
 		for (let y = 0; y < image.height; y++) {
 			result[y] = new Array(image.width);
 			for (let x = 0; x < image.width; x++) {
-				result[y][x] = [pixelsData[index + 0], pixelsData[index + 1], pixelsData[index + 2], pixelsData[index + 3]];
+				result[y][x] = [pixelsData[index++], pixelsData[index++], pixelsData[index++], pixelsData[index++]];
 			}
 		}
 		return result;
