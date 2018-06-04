@@ -731,10 +731,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				{
 					const inputImage = value;
 					const dim = [inputImage.width, inputImage.height, 1];
-					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, dim);
+					const size = [inputImage.width, inputImage.height];
 
 					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);

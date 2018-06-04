@@ -698,12 +698,25 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @returns {Array} the append retArr
 	 */
 	astVariableDeclaration(vardecNode, retArr, funcParam) {
-		retArr.push('float ');
 		for (let i = 0; i < vardecNode.declarations.length; i++) {
+			const declaration = vardecNode.declarations[i];
 			if (i > 0) {
 				retArr.push(',');
 			}
-			this.astGeneric(vardecNode.declarations[i], retArr, funcParam);
+			const retDeclaration = [];
+			this.astGeneric(declaration, retDeclaration, funcParam);
+			if (i === 0) {
+				if (
+					retDeclaration[0] === 'get(' &&
+					funcParam.getParamType(retDeclaration[1]) === 'HTMLImage' &&
+					retDeclaration.length === 18
+				) {
+					retArr.push('sampler2D ');
+				} else {
+					retArr.push('float ');
+				}
+			}
+			retArr.push.apply(retArr, retDeclaration);
 		}
 		retArr.push(';');
 		return retArr;

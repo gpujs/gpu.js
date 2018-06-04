@@ -219,6 +219,7 @@ module.exports = class CPUKernel extends KernelBase {
         : this.subKernelOutputVariableNames.map((name) => `  var ${ name } = null;\n`).join('')
         }
     return function (${ this.paramNames.map(paramName => 'user_' + paramName).join(', ') }) {
+  ${ this._processInputs() }
     var ret = new Array(${ threadDim[2] });
   ${ this.subKernelOutputVariableNames === null
         ? ''
@@ -361,5 +362,33 @@ ${ this.subKernelOutputVariableNames === null
 			` ${ parseInt(this.loopMaxIterations) };\n` :
 			' 1000;\n'
 		);
+	}
+
+	_processInputs() {
+		const result = [];
+		for (let i = 0; i < this.paramTypes.length; i++) {
+			if (this.paramTypes[i] === 'HTMLImage') {
+				result.push(`  user_${this.paramNames[i]} = this._imageTo2DArray(user_${this.paramNames[i]})`);
+			}
+		}
+		return result.join(';\n');
+	}
+
+	_imageTo2DArray(image) {
+		debugger;
+		this._canvasCtx.drawImage(image, 0, 0, image.width, image.height);
+		const pixels = this._canvasCtx.getImageData(0, 0, image.width, image.height);
+		this._canvasCtx.clearRect(0, 0, image.width, image.height);
+		this._canvasCtx.putImageData(pixels, 0, 0);
+		const pixelsData = pixels.data;
+		const result = new Array(image.height);
+		let index = 0;
+		for (let y = 0; y < image.height; y++) {
+			result[y] = new Array(image.width);
+			for (let x = 0; x < image.width; x++) {
+				result[y][x] = [pixelsData[index + 0], pixelsData[index + 1], pixelsData[index + 2], pixelsData[index + 3]];
+			}
+		}
+		return result;
 	}
 };
