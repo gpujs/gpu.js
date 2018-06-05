@@ -157,9 +157,15 @@ myFunc();
 // Result: [0, 1, 2, 3, ... 99]
 ```
 ## Accepting Input
+### Supported Input Types
+* Numbers
+* 1d Array
+* 2d Array
+* 3d Array
+* HTML Image
+To define an argument, simply add it to the kernel function like regular JavaScript.
 
-Kernel functions can accept numbers, or 1D, 2D or 3D array of numbers as input. To define an argument, simply add it to the kernel function like regular JavaScript.
-
+### Input Examples
 ```js
 const myFunc = gpu.createKernel(function(x) {
     return x;
