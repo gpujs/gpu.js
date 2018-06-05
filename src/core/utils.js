@@ -276,6 +276,9 @@ class Utils extends UtilsCore {
 	 */
 	static getArgumentType(arg) {
 		if (Utils.isArray(arg)) {
+			if (arg[0].nodeName === 'IMG') {
+				return 'HTMLImageArray';
+			}
 			return 'Array';
 		} else if (typeof arg === 'number') {
 			return 'Number';

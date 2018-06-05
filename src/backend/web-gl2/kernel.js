@@ -364,6 +364,84 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
+			case 'HTMLImageArray':
+				{
+					const inputImages = value;
+					const dim = [inputImages[0].width, inputImages[0].height, inputImages.length];
+					const size = [inputImages[0].width, inputImages[0].height];
+
+					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+					gl.bindTexture(gl.TEXTURE_2D_ARRAY, argumentTexture);
+					gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+					gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+					gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+					// Upload the images into the texture.
+					const mipLevel = 0; // the largest mip
+					const internalFormat = gl.RGBA; // format we want in the texture
+					const width = inputImages[0].width;
+					const height = inputImages[0].height;
+					const textureDepth = inputImages.length;
+					const border = 0;
+					const srcFormat = gl.RGBA; // format of data we are supplying
+					const srcType = gl.UNSIGNED_BYTE; // type of data we are supplying
+					gl.texImage3D(
+						gl.TEXTURE_2D_ARRAY,
+						mipLevel,
+						internalFormat,
+						width,
+						height,
+						textureDepth,
+						border,
+						srcFormat,
+						srcType,
+						null
+					);
+					console.log([gl.TEXTURE_2D_ARRAY,
+						mipLevel,
+						internalFormat,
+						width,
+						height,
+						textureDepth,
+						border,
+						srcFormat,
+						srcType,
+						null
+					]);
+					for (let i = 0; i < inputImages.length; i++) {
+						const xOffset = 0;
+						const yOffset = 0;
+						const imageDepth = 1;
+						gl.texSubImage3D(
+							gl.TEXTURE_2D_ARRAY,
+							mipLevel,
+							xOffset,
+							yOffset,
+							i,
+							inputImages[i].width,
+							inputImages[i].height,
+							imageDepth,
+							srcFormat,
+							srcType,
+							inputImages[i]
+						);
+						console.log([gl.TEXTURE_2D_ARRAY,
+							mipLevel,
+							xOffset,
+							yOffset,
+							i,
+							inputImages[i].width,
+							inputImages[i].height,
+							imageDepth,
+							srcFormat,
+							srcType,
+							inputImages[i]
+						]);
+					}
+					this.setUniform3fv(`user_${name}Dim`, dim);
+					this.setUniform2fv(`user_${name}Size`, size);
+					this.setUniform1i(`user_${name}`, this.argumentsLength);
+					break;
+				}
 			case 'Texture':
 				{
 					const inputTexture = value;

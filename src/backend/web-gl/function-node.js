@@ -956,6 +956,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							retArr.push(mNode.property.raw);
 							retArr.push(']');
 							break;
+						case 'HTMLImageArray':
 						case 'HTMLImage':
 							// Get from image
 							retArr.push('getImage(');

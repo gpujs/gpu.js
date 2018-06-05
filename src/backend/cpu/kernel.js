@@ -367,8 +367,13 @@ ${ this.subKernelOutputVariableNames === null
 	_processInputs() {
 		const result = [];
 		for (let i = 0; i < this.paramTypes.length; i++) {
-			if (this.paramTypes[i] === 'HTMLImage') {
-				result.push(`  user_${this.paramNames[i]} = this._imageTo2DArray(user_${this.paramNames[i]})`);
+			switch (this.paramTypes[i]) {
+				case 'HTMLImage':
+					result.push(`  user_${this.paramNames[i]} = this._imageTo2DArray(user_${this.paramNames[i]})`);
+					break;
+				case 'HTMLImageArray':
+					result.push(`  user_${this.paramNames[i]} = this._imageTo3DArray(user_${this.paramNames[i]})`);
+					break;
 			}
 		}
 		return result.join(';\n');
@@ -386,5 +391,9 @@ ${ this.subKernelOutputVariableNames === null
 			}
 		}
 		return result;
+	}
+
+	_imageTo3DArray(images) {
+		throw new Error('not yet working!');
 	}
 };

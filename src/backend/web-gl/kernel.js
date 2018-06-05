@@ -1004,7 +1004,7 @@ module.exports = class WebGLKernel extends KernelBase {
 					result.push(`highp float user_${ paramName } = ${ param }`);
 				}
 			} else {
-				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
+				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage' || paramType === 'HTMLImageArray') {
 					result.push(
 						`uniform highp sampler2D user_${ paramName }`,
 						`uniform highp vec2 user_${ paramName }Size`,
