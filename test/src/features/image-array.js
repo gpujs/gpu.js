@@ -27,26 +27,12 @@
       mode: mode
     });
     var imageKernel = gpu.createKernel(function(images) {
-      let x = this.thread.x;
-      let y = this.thread.y;
-      let z = this.thread.z;
-
-      if (x > 138) {
-        x = x - 138;
-        z++;
-      }
-
-      if (y > 91.5) {
-        y = y - 91.5;
-        z++;
-      }
-
-      const pixel = images[z][y][x];
+      const pixel = images[this.thread.z][this.thread.y][this.thread.x];
       this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
     }, {
       graphical: true,
       debug: true,
-      output : [276, 183]
+      output : [138, 91]
     });
     getImages(function(images) {
       imageKernel(images);

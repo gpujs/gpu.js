@@ -396,17 +396,6 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 						srcType,
 						null
 					);
-					console.log([gl.TEXTURE_2D_ARRAY,
-						mipLevel,
-						internalFormat,
-						width,
-						height,
-						textureDepth,
-						border,
-						srcFormat,
-						srcType,
-						null
-					]);
 					for (let i = 0; i < inputImages.length; i++) {
 						const xOffset = 0;
 						const yOffset = 0;
@@ -424,18 +413,6 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 							srcType,
 							inputImages[i]
 						);
-						console.log([gl.TEXTURE_2D_ARRAY,
-							mipLevel,
-							xOffset,
-							yOffset,
-							i,
-							inputImages[i].width,
-							inputImages[i].height,
-							imageDepth,
-							srcFormat,
-							srcType,
-							inputImages[i]
-						]);
 					}
 					this.setUniform3fv(`user_${name}Dim`, dim);
 					this.setUniform2fv(`user_${name}Size`, size);
