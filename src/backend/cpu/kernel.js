@@ -375,18 +375,14 @@ ${ this.subKernelOutputVariableNames === null
 	}
 
 	_imageTo2DArray(image) {
-		debugger;
 		this._canvasCtx.drawImage(image, 0, 0, image.width, image.height);
-		const pixels = this._canvasCtx.getImageData(0, 0, image.width, image.height);
-		this._canvasCtx.clearRect(0, 0, image.width, image.height);
-		this._canvasCtx.putImageData(pixels, 0, 0);
-		const pixelsData = pixels.data;
+		const pixelsData = this._canvasCtx.getImageData(0, 0, image.width, image.height).data;
 		const result = new Array(image.height);
 		let index = 0;
 		for (let y = 0; y < image.height; y++) {
 			result[y] = new Array(image.width);
 			for (let x = 0; x < image.width; x++) {
-				result[y][x] = [pixelsData[index++], pixelsData[index++], pixelsData[index++], pixelsData[index++]];
+				result[y][x] = [pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255];
 			}
 		}
 		return result;
