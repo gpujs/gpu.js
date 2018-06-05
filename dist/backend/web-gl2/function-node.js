@@ -113,6 +113,8 @@ module.exports = function (_FunctionNodeBase) {
 						return this.astForStatement(ast, retArr, funcParam);
 					case 'WhileStatement':
 						return this.astWhileStatement(ast, retArr, funcParam);
+					case 'DoWhileStatement':
+						return this.astDoWhileStatement(ast, retArr, funcParam);
 					case 'VariableDeclaration':
 						return this.astVariableDeclaration(ast, retArr, funcParam);
 					case 'VariableDeclarator':
@@ -222,6 +224,7 @@ module.exports = function (_FunctionNodeBase) {
 						case 'Texture':
 						case 'Input':
 						case 'Array':
+						case 'HTMLImage':
 							retArr.push('sampler2D');
 							break;
 						default:
@@ -560,6 +563,40 @@ module.exports = function (_FunctionNodeBase) {
 		/**
    * @memberOf WebGLFunctionNode#
    * @function
+   * @name astWhileStatement
+   *
+   * @desc Parses the abstract syntax tree for *do while* loop
+   *
+   *
+   * @param {Object} whileNode - An ast Node
+   * @param {Array} retArr - return array string
+   * @param {Function} funcParam - FunctionNode, that tracks compilation state
+   *
+   * @returns {Array} the parsed webgl string
+   */
+
+	}, {
+		key: 'astDoWhileStatement',
+		value: function astDoWhileStatement(doWhileNode, retArr, funcParam) {
+			if (doWhileNode.type !== 'DoWhileStatement') {
+				throw this.astErrorOutput('Invalid while statment', doWhileNode, funcParam);
+			}
+
+			retArr.push('for (float i = 0.0; i < LOOP_MAX; i++) {');
+			this.astGeneric(doWhileNode.body, retArr, funcParam);
+			retArr.push('if (!');
+			this.astGeneric(doWhileNode.test, retArr, funcParam);
+			retArr.push(') {\n');
+			retArr.push('break;\n');
+			retArr.push('}\n');
+			retArr.push('}\n');
+
+			return retArr;
+		}
+
+		/**
+   * @memberOf WebGLFunctionNode#
+   * @function
    * @name astAssignmentExpression
    *
    * @desc Parses the abstract syntax tree for *Assignment* Expression
@@ -675,12 +712,21 @@ module.exports = function (_FunctionNodeBase) {
 	}, {
 		key: 'astVariableDeclaration',
 		value: function astVariableDeclaration(vardecNode, retArr, funcParam) {
-			retArr.push('float ');
 			for (var i = 0; i < vardecNode.declarations.length; i++) {
+				var declaration = vardecNode.declarations[i];
 				if (i > 0) {
 					retArr.push(',');
 				}
-				this.astGeneric(vardecNode.declarations[i], retArr, funcParam);
+				var retDeclaration = [];
+				this.astGeneric(declaration, retDeclaration, funcParam);
+				if (i === 0) {
+					if (retDeclaration[0] === 'get(' && funcParam.getParamType(retDeclaration[1]) === 'HTMLImage' && retDeclaration.length === 18) {
+						retArr.push('sampler2D ');
+					} else {
+						retArr.push('float ');
+					}
+				}
+				retArr.push.apply(retArr, retDeclaration);
 			}
 			retArr.push(';');
 			return retArr;

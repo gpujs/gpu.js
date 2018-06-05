@@ -329,6 +329,8 @@ var Utils = function (_UtilsCore) {
 				return 'Texture';
 			} else if (arg instanceof Input) {
 				return 'Input';
+			} else if (arg.nodeName === 'IMG') {
+				return 'HTMLImage';
 			} else {
 				return 'Unknown';
 			}

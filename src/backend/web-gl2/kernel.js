@@ -7,6 +7,12 @@ const fragShaderString = require('./shader-frag');
 const vertShaderString = require('./shader-vert');
 
 module.exports = class WebGL2Kernel extends WebGLKernel {
+	static get fragShaderString() {
+		return fragShaderString;
+	}
+	static get vertShaderString() {
+		return vertShaderString;
+	}
 	initWebGl() {
 		return utils.initWebGl2(this.getCanvas());
 	}
@@ -333,10 +339,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 				{
 					const inputImage = value;
 					const dim = [inputImage.width, inputImage.height, 1];
-					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, dim);
+					const size = [inputImage.width, inputImage.height];
 
 					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
@@ -557,14 +560,14 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 	 *
 	 * @param {Array} args - The actual parameters sent to the Kernel
 	 *
-	 * @returns {String} Fragment Shader string
+	 * @returns {string} Fragment Shader string
 	 *
 	 */
 	_getFragShaderString(args) {
 		if (this.compiledFragShaderString !== null) {
 			return this.compiledFragShaderString;
 		}
-		return this.compiledFragShaderString = this._replaceArtifacts(fragShaderString, this._getFragShaderArtifactMap(args));
+		return this.compiledFragShaderString = this._replaceArtifacts(this.constructor.fragShaderString, this._getFragShaderArtifactMap(args));
 	}
 
 	/**
@@ -576,13 +579,13 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 	 *
 	 * @param {Array} args - The actual parameters sent to the Kernel
 	 *
-	 * @returns {String} Vertical Shader string
+	 * @returns {string} Vertical Shader string
 	 *
 	 */
 	_getVertShaderString(args) {
 		if (this.compiledVertShaderString !== null) {
 			return this.compiledVertShaderString;
 		}
-		return this.compiledVertShaderString = vertShaderString;
+		return this.compiledVertShaderString = this.constructor.vertShaderString;
 	}
 };

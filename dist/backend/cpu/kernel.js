@@ -240,7 +240,7 @@ module.exports = function (_KernelBase) {
 				return '  var ' + name + ' = null;\n';
 			}).join('')) + '\n    return function (' + this.paramNames.map(function (paramName) {
 				return 'user_' + paramName;
-			}).join(', ') + ') {\n    var ret = new Array(' + threadDim[2] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			}).join(', ') + ') {\n  ' + this._processInputs() + '\n    var ret = new Array(' + threadDim[2] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '  ' + name + 'Z = new Array(' + threadDim[2] + ');\n';
 			}).join('')) + '\n    for (this.thread.z = 0; this.thread.z < ' + threadDim[2] + '; this.thread.z++) {\n      ret[this.thread.z] = new Array(' + threadDim[1] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '    ' + name + 'Z[this.thread.z] = new Array(' + threadDim[1] + ');\n';
@@ -330,6 +330,32 @@ module.exports = function (_KernelBase) {
    */
 		value: function _getLoopMaxString() {
 			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + ';\n' : ' 1000;\n';
+		}
+	}, {
+		key: '_processInputs',
+		value: function _processInputs() {
+			var result = [];
+			for (var i = 0; i < this.paramTypes.length; i++) {
+				if (this.paramTypes[i] === 'HTMLImage') {
+					result.push('  user_' + this.paramNames[i] + ' = this._imageTo2DArray(user_' + this.paramNames[i] + ')');
+				}
+			}
+			return result.join(';\n');
+		}
+	}, {
+		key: '_imageTo2DArray',
+		value: function _imageTo2DArray(image) {
+			this._canvasCtx.drawImage(image, 0, 0, image.width, image.height);
+			var pixelsData = this._canvasCtx.getImageData(0, 0, image.width, image.height).data;
+			var result = new Array(image.height);
+			var index = 0;
+			for (var y = 0; y < image.height; y++) {
+				result[y] = new Array(image.width);
+				for (var x = 0; x < image.width; x++) {
+					result[y][x] = [pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255];
+				}
+			}
+			return result;
 		}
 	}], [{
 		key: 'compileKernel',

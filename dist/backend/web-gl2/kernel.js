@@ -362,17 +362,41 @@ module.exports = function (_WebGLKernel) {
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
+				case 'HTMLImage':
+					{
+						var inputImage = value;
+						var _dim2 = [inputImage.width, inputImage.height, 1];
+						var _size2 = [inputImage.width, inputImage.height];
+
+						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+						// Upload the image into the texture.
+						var mipLevel = 0; // the largest mip
+						var internalFormat = gl.RGBA; // format we want in the texture
+						var srcFormat = gl.RGBA; // format of data we are supplying
+						var srcType = gl.UNSIGNED_BYTE; // type of data we are supplying
+						gl.texImage2D(gl.TEXTURE_2D, mipLevel, internalFormat, srcFormat, srcType, inputImage);
+						this.setUniform3fv('user_' + name + 'Dim', _dim2);
+						this.setUniform2fv('user_' + name + 'Size', _size2);
+						this.setUniform1i('user_' + name, this.argumentsLength);
+						break;
+					}
 				case 'Texture':
 					{
 						var inputTexture = value;
-						var _dim2 = inputTexture.dimensions;
-						var _size2 = inputTexture.size;
+						var _dim3 = inputTexture.dimensions;
+						var _size3 = inputTexture.size;
 
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-						this.setUniform3fv('user_' + name + 'Dim', _dim2);
-						this.setUniform2fv('user_' + name + 'Size', _size2);
+						this.setUniform3fv('user_' + name + 'Dim', _dim3);
+						this.setUniform2fv('user_' + name + 'Size', _size3);
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
@@ -568,7 +592,7 @@ module.exports = function (_WebGLKernel) {
    *
    * @param {Array} args - The actual parameters sent to the Kernel
    *
-   * @returns {String} Fragment Shader string
+   * @returns {string} Fragment Shader string
    *
    */
 
@@ -578,7 +602,7 @@ module.exports = function (_WebGLKernel) {
 			if (this.compiledFragShaderString !== null) {
 				return this.compiledFragShaderString;
 			}
-			return this.compiledFragShaderString = this._replaceArtifacts(fragShaderString, this._getFragShaderArtifactMap(args));
+			return this.compiledFragShaderString = this._replaceArtifacts(this.constructor.fragShaderString, this._getFragShaderArtifactMap(args));
 		}
 
 		/**
@@ -590,7 +614,7 @@ module.exports = function (_WebGLKernel) {
    *
    * @param {Array} args - The actual parameters sent to the Kernel
    *
-   * @returns {String} Vertical Shader string
+   * @returns {string} Vertical Shader string
    *
    */
 
@@ -600,7 +624,17 @@ module.exports = function (_WebGLKernel) {
 			if (this.compiledVertShaderString !== null) {
 				return this.compiledVertShaderString;
 			}
-			return this.compiledVertShaderString = vertShaderString;
+			return this.compiledVertShaderString = this.constructor.vertShaderString;
+		}
+	}], [{
+		key: 'fragShaderString',
+		get: function get() {
+			return fragShaderString;
+		}
+	}, {
+		key: 'vertShaderString',
+		get: function get() {
+			return vertShaderString;
 		}
 	}]);
 

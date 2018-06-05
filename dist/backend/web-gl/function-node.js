@@ -113,6 +113,8 @@ module.exports = function (_FunctionNodeBase) {
 						return this.astForStatement(ast, retArr, funcParam);
 					case 'WhileStatement':
 						return this.astWhileStatement(ast, retArr, funcParam);
+					case 'DoWhileStatement':
+						return this.astDoWhileStatement(ast, retArr, funcParam);
 					case 'VariableDeclaration':
 						return this.astVariableDeclaration(ast, retArr, funcParam);
 					case 'VariableDeclarator':
@@ -560,6 +562,40 @@ module.exports = function (_FunctionNodeBase) {
 		/**
    * @memberOf WebGLFunctionNode#
    * @function
+   * @name astWhileStatement
+   *
+   * @desc Parses the abstract syntax tree for *do while* loop
+   *
+   *
+   * @param {Object} whileNode - An ast Node
+   * @param {Array} retArr - return array string
+   * @param {Function} funcParam - FunctionNode, that tracks compilation state
+   *
+   * @returns {Array} the parsed webgl string
+   */
+
+	}, {
+		key: 'astDoWhileStatement',
+		value: function astDoWhileStatement(doWhileNode, retArr, funcParam) {
+			if (doWhileNode.type !== 'DoWhileStatement') {
+				throw this.astErrorOutput('Invalid while statment', doWhileNode, funcParam);
+			}
+
+			retArr.push('for (float i = 0.0; i < LOOP_MAX; i++) {');
+			this.astGeneric(doWhileNode.body, retArr, funcParam);
+			retArr.push('if (!');
+			this.astGeneric(doWhileNode.test, retArr, funcParam);
+			retArr.push(') {\n');
+			retArr.push('break;\n');
+			retArr.push('}\n');
+			retArr.push('}\n');
+
+			return retArr;
+		}
+
+		/**
+   * @memberOf WebGLFunctionNode#
+   * @function
    * @name astAssignmentExpression
    *
    * @desc Parses the abstract syntax tree for *Assignment* Expression
@@ -675,12 +711,25 @@ module.exports = function (_FunctionNodeBase) {
 	}, {
 		key: 'astVariableDeclaration',
 		value: function astVariableDeclaration(vardecNode, retArr, funcParam) {
-			retArr.push('float ');
 			for (var i = 0; i < vardecNode.declarations.length; i++) {
+				var declaration = vardecNode.declarations[i];
 				if (i > 0) {
 					retArr.push(',');
 				}
-				this.astGeneric(vardecNode.declarations[i], retArr, funcParam);
+				var retDeclaration = [];
+				this.astGeneric(declaration, retDeclaration, funcParam);
+				if (retDeclaration[2] === 'getImage(') {
+					if (i === 0) {
+						retArr.push('vec4 ');
+					}
+					this.declarations[declaration.id.name] = 'vec4';
+				} else {
+					if (i === 0) {
+						retArr.push('float ');
+					}
+					this.declarations[declaration.id.name] = 'float';
+				}
+				retArr.push.apply(retArr, retDeclaration);
 			}
 			retArr.push(';');
 			return retArr;
@@ -935,24 +984,54 @@ module.exports = function (_FunctionNodeBase) {
 						this.astGeneric(mNode.property, retArr, funcParam);
 						retArr.push(')]');
 					} else {
-						// Get from texture
 						// This normally refers to the global read only input vars
-						retArr.push('get(');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push(', vec2(');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Size[0],');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Size[1]), vec3(');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Dim[0],');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Dim[1],');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Dim[2]');
-						retArr.push('), ');
-						this.astGeneric(mNode.property, retArr, funcParam);
-						retArr.push(')');
+						switch (funcParam.getParamType(mNode.object.name)) {
+							case 'vec4':
+								// Get from local vec4
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('[');
+								retArr.push(mNode.property.raw);
+								retArr.push(']');
+								break;
+							case 'HTMLImage':
+								// Get from image
+								retArr.push('getImage(');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push(', vec2(');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Size[0],');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Size[1]), vec3(');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Dim[0],');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Dim[1],');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Dim[2]');
+								retArr.push('), ');
+								this.astGeneric(mNode.property, retArr, funcParam);
+								retArr.push(')');
+								break;
+							default:
+								// Get from texture
+								retArr.push('get(');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push(', vec2(');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Size[0],');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Size[1]), vec3(');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Dim[0],');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Dim[1],');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Dim[2]');
+								retArr.push('), ');
+								this.astGeneric(mNode.property, retArr, funcParam);
+								retArr.push(')');
+								break;
+						}
 					}
 				} else {
 					this.astGeneric(mNode.object, retArr, funcParam);
