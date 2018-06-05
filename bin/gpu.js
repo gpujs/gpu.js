@@ -4,15 +4,15 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.2.0
- * @date Fri Apr 27 2018 19:37:57 GMT+0200 (CEST)
+ * @version 1.3.0
+ * @date Mon Jun 04 2018 20:06:27 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
  *
  * Copyright (c) 2018 gpu.js Team
  */
-"use strict";(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+"use strict";(function(){function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s}return e})()({1:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -963,7 +963,7 @@ module.exports = function (_KernelBase) {
 				return '  var ' + name + ' = null;\n';
 			}).join('')) + '\n    return function (' + this.paramNames.map(function (paramName) {
 				return 'user_' + paramName;
-			}).join(', ') + ') {\n    var ret = new Array(' + threadDim[2] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			}).join(', ') + ') {\n  ' + this._processInputs() + '\n    var ret = new Array(' + threadDim[2] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '  ' + name + 'Z = new Array(' + threadDim[2] + ');\n';
 			}).join('')) + '\n    for (this.thread.z = 0; this.thread.z < ' + threadDim[2] + '; this.thread.z++) {\n      ret[this.thread.z] = new Array(' + threadDim[1] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '    ' + name + 'Z[this.thread.z] = new Array(' + threadDim[1] + ');\n';
@@ -1009,6 +1009,32 @@ module.exports = function (_KernelBase) {
 
 		value: function _getLoopMaxString() {
 			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + ';\n' : ' 1000;\n';
+		}
+	}, {
+		key: '_processInputs',
+		value: function _processInputs() {
+			var result = [];
+			for (var i = 0; i < this.paramTypes.length; i++) {
+				if (this.paramTypes[i] === 'HTMLImage') {
+					result.push('  user_' + this.paramNames[i] + ' = this._imageTo2DArray(user_' + this.paramNames[i] + ')');
+				}
+			}
+			return result.join(';\n');
+		}
+	}, {
+		key: '_imageTo2DArray',
+		value: function _imageTo2DArray(image) {
+			this._canvasCtx.drawImage(image, 0, 0, image.width, image.height);
+			var pixelsData = this._canvasCtx.getImageData(0, 0, image.width, image.height).data;
+			var result = new Array(image.height);
+			var index = 0;
+			for (var y = 0; y < image.height; y++) {
+				result[y] = new Array(image.width);
+				for (var x = 0; x < image.width; x++) {
+					result[y][x] = [pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255];
+				}
+			}
+			return result;
 		}
 	}], [{
 		key: 'compileKernel',
@@ -1281,9 +1307,6 @@ module.exports = function () {
 
 		this.calledFunctions = [];
 		this.calledFunctionsArguments = {};
-		this.initVariables = [];
-		this.readVariables = [];
-		this.writeVariables = [];
 		this.addFunction = null;
 		this.isRootKernel = false;
 		this.isSubKernel = false;
@@ -1292,6 +1315,7 @@ module.exports = function () {
 		this.prototypeOnly = null;
 		this.constants = null;
 		this.output = null;
+		this.declarations = {};
 
 		if (options) {
 			if (options.hasOwnProperty('debug')) {
@@ -1472,14 +1496,20 @@ module.exports = function () {
 		key: 'getParamType',
 		value: function getParamType(paramName) {
 			var paramIndex = this.paramNames.indexOf(paramName);
-			if (paramIndex === -1) return null;
-			if (!this.parent) return null;
-			if (this.paramTypes[paramIndex]) return this.paramTypes[paramIndex];
-			var calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
-			for (var i = 0; i < calledFunctionArguments.length; i++) {
-				var calledFunctionArgument = calledFunctionArguments[i];
-				if (calledFunctionArgument[paramIndex] !== null) {
-					return this.paramTypes[paramIndex] = calledFunctionArgument[paramIndex].type;
+			if (paramIndex === -1) {
+				return this.declarations[paramName];
+			} else {
+				if (!this.parent) {
+					if (this.paramTypes[paramIndex]) return this.paramTypes[paramIndex];
+				} else {
+					if (this.paramTypes[paramIndex]) return this.paramTypes[paramIndex];
+					var calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
+					for (var i = 0; i < calledFunctionArguments.length; i++) {
+						var calledFunctionArgument = calledFunctionArguments[i];
+						if (calledFunctionArgument[paramIndex] !== null) {
+							return this.paramTypes[paramIndex] = calledFunctionArgument[paramIndex].type;
+						}
+					}
 				}
 			}
 			return null;
@@ -2442,12 +2472,25 @@ module.exports = function (_FunctionNodeBase) {
 	}, {
 		key: 'astVariableDeclaration',
 		value: function astVariableDeclaration(vardecNode, retArr, funcParam) {
-			retArr.push('float ');
 			for (var i = 0; i < vardecNode.declarations.length; i++) {
+				var declaration = vardecNode.declarations[i];
 				if (i > 0) {
 					retArr.push(',');
 				}
-				this.astGeneric(vardecNode.declarations[i], retArr, funcParam);
+				var retDeclaration = [];
+				this.astGeneric(declaration, retDeclaration, funcParam);
+				if (retDeclaration[2] === 'getImage(') {
+					if (i === 0) {
+						retArr.push('vec4 ');
+					}
+					this.declarations[declaration.id.name] = 'vec4';
+				} else {
+					if (i === 0) {
+						retArr.push('float ');
+					}
+					this.declarations[declaration.id.name] = 'float';
+				}
+				retArr.push.apply(retArr, retDeclaration);
 			}
 			retArr.push(';');
 			return retArr;
@@ -2582,22 +2625,50 @@ module.exports = function (_FunctionNodeBase) {
 						this.astGeneric(mNode.property, retArr, funcParam);
 						retArr.push(')]');
 					} else {
-						retArr.push('get(');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push(', vec2(');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Size[0],');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Size[1]), vec3(');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Dim[0],');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Dim[1],');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Dim[2]');
-						retArr.push('), ');
-						this.astGeneric(mNode.property, retArr, funcParam);
-						retArr.push(')');
+						switch (funcParam.getParamType(mNode.object.name)) {
+							case 'vec4':
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('[');
+								retArr.push(mNode.property.raw);
+								retArr.push(']');
+								break;
+							case 'HTMLImage':
+								retArr.push('getImage(');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push(', vec2(');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Size[0],');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Size[1]), vec3(');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Dim[0],');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Dim[1],');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Dim[2]');
+								retArr.push('), ');
+								this.astGeneric(mNode.property, retArr, funcParam);
+								retArr.push(')');
+								break;
+							default:
+								retArr.push('get(');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push(', vec2(');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Size[0],');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Size[1]), vec3(');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Dim[0],');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Dim[1],');
+								this.astGeneric(mNode.object, retArr, funcParam);
+								retArr.push('Dim[2]');
+								retArr.push('), ');
+								this.astGeneric(mNode.property, retArr, funcParam);
+								retArr.push(')');
+								break;
+						}
 					}
 				} else {
 					this.astGeneric(mNode.object, retArr, funcParam);
@@ -2844,6 +2915,19 @@ var maxTexSizes = {};
 
 module.exports = function (_KernelBase) {
 	_inherits(WebGLKernel, _KernelBase);
+
+	_createClass(WebGLKernel, null, [{
+		key: 'fragShaderString',
+		get: function get() {
+			return fragShaderString;
+		}
+	}, {
+		key: 'vertShaderString',
+		get: function get() {
+			return vertShaderString;
+		}
+
+	}]);
 
 	function WebGLKernel(fnString, settings) {
 		_classCallCheck(this, WebGLKernel);
@@ -3420,17 +3504,40 @@ module.exports = function (_KernelBase) {
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
+				case 'HTMLImage':
+					{
+						var inputImage = value;
+						var _dim2 = [inputImage.width, inputImage.height, 1];
+						var _size2 = [inputImage.width, inputImage.height];
+
+						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+						var mipLevel = 0; 
+						var internalFormat = gl.RGBA; 
+						var srcFormat = gl.RGBA; 
+						var srcType = gl.UNSIGNED_BYTE; 
+						gl.texImage2D(gl.TEXTURE_2D, mipLevel, internalFormat, srcFormat, srcType, inputImage);
+						this.setUniform3fv('user_' + name + 'Dim', _dim2);
+						this.setUniform2fv('user_' + name + 'Size', _size2);
+						this.setUniform1i('user_' + name, this.argumentsLength);
+						break;
+					}
 				case 'Texture':
 					{
 						var inputTexture = value;
-						var _dim2 = inputTexture.dimensions;
-						var _size2 = inputTexture.size;
+						var _dim3 = inputTexture.dimensions;
+						var _size3 = inputTexture.size;
 
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-						this.setUniform3fv('user_' + name + 'Dim', _dim2);
-						this.setUniform2fv('user_' + name + 'Size', _size2);
+						this.setUniform3fv('user_' + name + 'Dim', _dim3);
+						this.setUniform2fv('user_' + name + 'Size', _size3);
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
@@ -3554,7 +3661,7 @@ module.exports = function (_KernelBase) {
 						result.push('highp float user_' + paramName + ' = ' + param);
 					}
 				} else {
-					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input') {
+					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
 						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp vec2 user_' + paramName + 'Size', 'uniform highp vec3 user_' + paramName + 'Dim');
 					} else if (paramType === 'Number') {
 						result.push('uniform highp float user_' + paramName);
@@ -3733,7 +3840,7 @@ module.exports = function (_KernelBase) {
 			if (this.compiledFragShaderString !== null) {
 				return this.compiledFragShaderString;
 			}
-			return this.compiledFragShaderString = this._replaceArtifacts(fragShaderString, this._getFragShaderArtifactMap(args));
+			return this.compiledFragShaderString = this._replaceArtifacts(this.constructor.fragShaderString, this._getFragShaderArtifactMap(args));
 		}
 
 
@@ -3743,7 +3850,7 @@ module.exports = function (_KernelBase) {
 			if (this.compiledVertShaderString !== null) {
 				return this.compiledVertShaderString;
 			}
-			return this.compiledVertShaderString = vertShaderString;
+			return this.compiledVertShaderString = this.constructor.vertShaderString;
 		}
 
 
@@ -3804,7 +3911,7 @@ module.exports = function (_RunnerBase) {
 },{"../../core/utils":32,"../runner-base":10,"./function-builder":11,"./kernel":14}],16:[function(require,module,exports){
 "use strict";
 
-module.exports = "__HEADER__;\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nconst float LOOP_MAX = __LOOP_MAX__;\n#define EPSILON 0.0000001;\n\n__CONSTANTS__;\n\nvarying highp vec2 vTexCoord;\n\nvec4 round(vec4 x) {\n  return floor(x + 0.5);\n}\n\nhighp float round(highp float x) {\n  return floor(x + 0.5);\n}\n\nvec2 integerMod(vec2 x, float y) {\n  vec2 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec3 integerMod(vec3 x, float y) {\n  vec3 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec4 integerMod(vec4 x, vec4 y) {\n  vec4 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nhighp float integerMod(highp float x, highp float y) {\n  highp float res = floor(mod(x, y));\n  return res * (res > floor(y) - 1.0 ? 0.0 : 1.0);\n}\n\nhighp int integerMod(highp int x, highp int y) {\n  return int(integerMod(float(x), float(y)));\n}\n\n// Here be dragons!\n// DO NOT OPTIMIZE THIS CODE\n// YOU WILL BREAK SOMETHING ON SOMEBODY'S MACHINE\n// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME\nconst vec2 MAGIC_VEC = vec2(1.0, -256.0);\nconst vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);\nconst vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536\nhighp float decode32(highp vec4 rgba) {\n  __DECODE32_ENDIANNESS__;\n  rgba *= 255.0;\n  vec2 gte128;\n  gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;\n  gte128.y = rgba.a >= 128.0 ? 1.0 : 0.0;\n  float exponent = 2.0 * rgba.a - 127.0 + dot(gte128, MAGIC_VEC);\n  float res = exp2(round(exponent));\n  rgba.b = rgba.b - 128.0 * gte128.x;\n  res = dot(rgba, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;\n  res *= gte128.y * -2.0 + 1.0;\n  return res;\n}\n\nhighp vec4 encode32(highp float f) {\n  highp float F = abs(f);\n  highp float sign = f < 0.0 ? 1.0 : 0.0;\n  highp float exponent = floor(log2(F));\n  highp float mantissa = (exp2(-exponent) * F);\n  // exponent += floor(log2(mantissa));\n  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;\n  rgba.rg = integerMod(rgba.rg, 256.0);\n  rgba.b = integerMod(rgba.b, 128.0);\n  rgba.a = exponent*0.5 + 63.5;\n  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;\n  rgba = floor(rgba);\n  rgba *= 0.003921569; // 1/255\n  __ENCODE32_ENDIANNESS__;\n  return rgba;\n}\n// Dragons end here\n\nhighp float index;\nhighp vec3 threadId;\n\nhighp vec3 indexTo3D(highp float idx, highp vec3 texDim) {\n  highp float z = floor(idx / (texDim.x * texDim.y));\n  idx -= z * texDim.x * texDim.y;\n  highp float y = floor(idx / texDim.x);\n  highp float x = integerMod(idx, texDim.x);\n  return vec3(x, y, z);\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {\n  highp vec3 xyz = vec3(x, y, z);\n  xyz = floor(xyz + 0.5);\n  __GET_WRAPAROUND__;\n  highp float index = round(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z));\n  __GET_TEXTURE_CHANNEL__;\n  highp float w = round(texSize.x);\n  vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  highp vec4 texel = texture2D(tex, st / texSize);\n  __GET_RESULT__;\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {\n  return get(tex, texSize, texDim, 0.0, y, x);\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {\n  return get(tex, texSize, texDim, 0.0, 0.0, x);\n}\n\nhighp vec4 actualColor;\nvoid color(float r, float g, float b, float a) {\n  actualColor = vec4(r,g,b,a);\n}\n\nvoid color(float r, float g, float b) {\n  color(r,g,b,1.0);\n}\n\n__MAIN_PARAMS__;\n__MAIN_CONSTANTS__;\n__KERNEL__;\n\nvoid main(void) {\n  index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;\n  __MAIN_RESULT__;\n}";
+module.exports = "__HEADER__;\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nconst float LOOP_MAX = __LOOP_MAX__;\n#define EPSILON 0.0000001;\n\n__CONSTANTS__;\n\nvarying highp vec2 vTexCoord;\n\nvec4 round(vec4 x) {\n  return floor(x + 0.5);\n}\n\nhighp float round(highp float x) {\n  return floor(x + 0.5);\n}\n\nvec2 integerMod(vec2 x, float y) {\n  vec2 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec3 integerMod(vec3 x, float y) {\n  vec3 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec4 integerMod(vec4 x, vec4 y) {\n  vec4 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nhighp float integerMod(highp float x, highp float y) {\n  highp float res = floor(mod(x, y));\n  return res * (res > floor(y) - 1.0 ? 0.0 : 1.0);\n}\n\nhighp int integerMod(highp int x, highp int y) {\n  return int(integerMod(float(x), float(y)));\n}\n\n// Here be dragons!\n// DO NOT OPTIMIZE THIS CODE\n// YOU WILL BREAK SOMETHING ON SOMEBODY'S MACHINE\n// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME\nconst vec2 MAGIC_VEC = vec2(1.0, -256.0);\nconst vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);\nconst vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536\nhighp float decode32(highp vec4 rgba) {\n  __DECODE32_ENDIANNESS__;\n  rgba *= 255.0;\n  vec2 gte128;\n  gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;\n  gte128.y = rgba.a >= 128.0 ? 1.0 : 0.0;\n  float exponent = 2.0 * rgba.a - 127.0 + dot(gte128, MAGIC_VEC);\n  float res = exp2(round(exponent));\n  rgba.b = rgba.b - 128.0 * gte128.x;\n  res = dot(rgba, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;\n  res *= gte128.y * -2.0 + 1.0;\n  return res;\n}\n\nhighp vec4 encode32(highp float f) {\n  highp float F = abs(f);\n  highp float sign = f < 0.0 ? 1.0 : 0.0;\n  highp float exponent = floor(log2(F));\n  highp float mantissa = (exp2(-exponent) * F);\n  // exponent += floor(log2(mantissa));\n  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;\n  rgba.rg = integerMod(rgba.rg, 256.0);\n  rgba.b = integerMod(rgba.b, 128.0);\n  rgba.a = exponent*0.5 + 63.5;\n  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;\n  rgba = floor(rgba);\n  rgba *= 0.003921569; // 1/255\n  __ENCODE32_ENDIANNESS__;\n  return rgba;\n}\n// Dragons end here\n\nhighp float index;\nhighp vec3 threadId;\n\nhighp vec3 indexTo3D(highp float idx, highp vec3 texDim) {\n  highp float z = floor(idx / (texDim.x * texDim.y));\n  idx -= z * texDim.x * texDim.y;\n  highp float y = floor(idx / texDim.x);\n  highp float x = integerMod(idx, texDim.x);\n  return vec3(x, y, z);\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {\n  highp vec3 xyz = vec3(x, y, z);\n  xyz = floor(xyz + 0.5);\n  __GET_WRAPAROUND__;\n  highp float index = round(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z));\n  __GET_TEXTURE_CHANNEL__;\n  highp float w = round(texSize.x);\n  vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  highp vec4 texel = texture2D(tex, st / texSize);\n  __GET_RESULT__;\n}\n\nhighp vec4 getImage(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {\n  highp vec3 xyz = vec3(x, y, z);\n  xyz = floor(xyz + 0.5);\n  __GET_WRAPAROUND__;\n  highp float index = round(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z));\n  __GET_TEXTURE_CHANNEL__;\n  highp float w = round(texSize.x);\n  vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  return texture2D(tex, st / texSize);\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {\n  return get(tex, texSize, texDim, 0.0, y, x);\n}\n\nhighp vec4 getImage(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {\n  return getImage(tex, texSize, texDim, 0.0, y, x);\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {\n  return get(tex, texSize, texDim, 0.0, 0.0, x);\n}\n\nhighp vec4 getImage(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {\n  return getImage(tex, texSize, texDim, 0.0, 0.0, x);\n}\n\nhighp vec4 actualColor;\nvoid color(float r, float g, float b, float a) {\n  actualColor = vec4(r,g,b,a);\n}\n\nvoid color(float r, float g, float b) {\n  color(r,g,b,1.0);\n}\n\nvoid color(sampler2D image) {\n  actualColor = texture2D(image, vTexCoord);\n}\n\n__MAIN_PARAMS__;\n__MAIN_CONSTANTS__;\n__KERNEL__;\n\nvoid main(void) {\n  index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;\n  __MAIN_RESULT__;\n}";
 },{}],17:[function(require,module,exports){
 "use strict";
 
@@ -3873,8 +3980,852 @@ module.exports = function (_FunctionBuilderBase) {
   return WebGL2FunctionBuilder;
 }(FunctionBuilderBase);
 },{"../function-builder-base":6,"./function-node":20}],20:[function(require,module,exports){
-arguments[4][12][0].apply(exports,arguments)
-},{"../../core/utils":32,"../function-node-base":7,"dup":12}],21:[function(require,module,exports){
+'use strict';
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var FunctionNodeBase = require('../function-node-base');
+var utils = require('../../core/utils');
+var jsMathPrefix = 'Math.';
+var localPrefix = 'this.';
+var constantsPrefix = 'this.constants.';
+
+var DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
+var ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
+
+module.exports = function (_FunctionNodeBase) {
+	_inherits(WebGLFunctionNode, _FunctionNodeBase);
+
+	function WebGLFunctionNode() {
+		_classCallCheck(this, WebGLFunctionNode);
+
+		return _possibleConstructorReturn(this, (WebGLFunctionNode.__proto__ || Object.getPrototypeOf(WebGLFunctionNode)).apply(this, arguments));
+	}
+
+	_createClass(WebGLFunctionNode, [{
+		key: 'generate',
+		value: function generate() {
+			if (this.debug) {
+				console.log(this);
+			}
+			if (this.prototypeOnly) {
+				return WebGLFunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
+			} else {
+				this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
+			}
+			this.functionString = webGlRegexOptimize(this.functionStringArray.join('').trim());
+			return this.functionString;
+		}
+
+
+	}, {
+		key: 'astGeneric',
+		value: function astGeneric(ast, retArr, funcParam) {
+			if (ast === null) {
+				throw this.astErrorOutput('NULL ast', ast, funcParam);
+			} else {
+				if (Array.isArray(ast)) {
+					for (var i = 0; i < ast.length; i++) {
+						this.astGeneric(ast[i], retArr, funcParam);
+					}
+					return retArr;
+				}
+
+				switch (ast.type) {
+					case 'FunctionDeclaration':
+						return this.astFunctionDeclaration(ast, retArr, funcParam);
+					case 'FunctionExpression':
+						return this.astFunctionExpression(ast, retArr, funcParam);
+					case 'ReturnStatement':
+						return this.astReturnStatement(ast, retArr, funcParam);
+					case 'Literal':
+						return this.astLiteral(ast, retArr, funcParam);
+					case 'BinaryExpression':
+						return this.astBinaryExpression(ast, retArr, funcParam);
+					case 'Identifier':
+						return this.astIdentifierExpression(ast, retArr, funcParam);
+					case 'AssignmentExpression':
+						return this.astAssignmentExpression(ast, retArr, funcParam);
+					case 'ExpressionStatement':
+						return this.astExpressionStatement(ast, retArr, funcParam);
+					case 'EmptyStatement':
+						return this.astEmptyStatement(ast, retArr, funcParam);
+					case 'BlockStatement':
+						return this.astBlockStatement(ast, retArr, funcParam);
+					case 'IfStatement':
+						return this.astIfStatement(ast, retArr, funcParam);
+					case 'BreakStatement':
+						return this.astBreakStatement(ast, retArr, funcParam);
+					case 'ContinueStatement':
+						return this.astContinueStatement(ast, retArr, funcParam);
+					case 'ForStatement':
+						return this.astForStatement(ast, retArr, funcParam);
+					case 'WhileStatement':
+						return this.astWhileStatement(ast, retArr, funcParam);
+					case 'DoWhileStatement':
+						return this.astDoWhileStatement(ast, retArr, funcParam);
+					case 'VariableDeclaration':
+						return this.astVariableDeclaration(ast, retArr, funcParam);
+					case 'VariableDeclarator':
+						return this.astVariableDeclarator(ast, retArr, funcParam);
+					case 'ThisExpression':
+						return this.astThisExpression(ast, retArr, funcParam);
+					case 'SequenceExpression':
+						return this.astSequenceExpression(ast, retArr, funcParam);
+					case 'UnaryExpression':
+						return this.astUnaryExpression(ast, retArr, funcParam);
+					case 'UpdateExpression':
+						return this.astUpdateExpression(ast, retArr, funcParam);
+					case 'LogicalExpression':
+						return this.astLogicalExpression(ast, retArr, funcParam);
+					case 'MemberExpression':
+						return this.astMemberExpression(ast, retArr, funcParam);
+					case 'CallExpression':
+						return this.astCallExpression(ast, retArr, funcParam);
+					case 'ArrayExpression':
+						return this.astArrayExpression(ast, retArr, funcParam);
+					case 'DebuggerStatement':
+						return this.astDebuggerStatement(ast, retArr, funcParam);
+				}
+
+				throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);
+			}
+		}
+
+
+	}, {
+		key: 'astFunctionDeclaration',
+		value: function astFunctionDeclaration(ast, retArr, funcParam) {
+			if (this.addFunction) {
+				this.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
+			}
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astFunctionExpression',
+
+
+		value: function astFunctionExpression(ast, retArr, funcParam) {
+
+			if (funcParam.isRootKernel) {
+				retArr.push('void');
+				funcParam.kernalAst = ast;
+			} else {
+				retArr.push(funcParam.returnType);
+			}
+			retArr.push(' ');
+			retArr.push(funcParam.functionName);
+			retArr.push('(');
+
+			if (!funcParam.isRootKernel) {
+				for (var i = 0; i < funcParam.paramNames.length; ++i) {
+					var paramName = funcParam.paramNames[i];
+
+					if (i > 0) {
+						retArr.push(', ');
+					}
+					var type = funcParam.getParamType(paramName);
+					switch (type) {
+						case 'Texture':
+						case 'Input':
+						case 'Array':
+						case 'HTMLImage':
+							retArr.push('sampler2D');
+							break;
+						default:
+							retArr.push('float');
+					}
+
+					retArr.push(' ');
+					retArr.push('user_');
+					retArr.push(paramName);
+				}
+			}
+
+			retArr.push(') {\n');
+
+			for (var _i = 0; _i < ast.body.body.length; ++_i) {
+				this.astGeneric(ast.body.body[_i], retArr, funcParam);
+				retArr.push('\n');
+			}
+
+			retArr.push('}\n');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astReturnStatement',
+		value: function astReturnStatement(ast, retArr, funcParam) {
+			if (funcParam.isRootKernel) {
+				retArr.push('kernelResult = ');
+				this.astGeneric(ast.argument, retArr, funcParam);
+				retArr.push(';');
+				retArr.push('return;');
+			} else if (funcParam.isSubKernel) {
+				retArr.push(funcParam.functionName + 'Result = ');
+				this.astGeneric(ast.argument, retArr, funcParam);
+				retArr.push(';');
+				retArr.push('return ' + funcParam.functionName + 'Result;');
+			} else {
+				retArr.push('return ');
+				this.astGeneric(ast.argument, retArr, funcParam);
+				retArr.push(';');
+			}
+
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astLiteral',
+		value: function astLiteral(ast, retArr, funcParam) {
+
+			if (isNaN(ast.value)) {
+				throw this.astErrorOutput('Non-numeric literal not supported : ' + ast.value, ast, funcParam);
+			}
+
+			retArr.push(ast.value);
+
+			if (Number.isInteger(ast.value)) {
+				retArr.push('.0');
+			}
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astBinaryExpression',
+		value: function astBinaryExpression(ast, retArr, funcParam) {
+			retArr.push('(');
+
+			if (ast.operator === '%') {
+				retArr.push('mod(');
+				this.astGeneric(ast.left, retArr, funcParam);
+				retArr.push(',');
+				this.astGeneric(ast.right, retArr, funcParam);
+				retArr.push(')');
+			} else if (ast.operator === '===') {
+				this.astGeneric(ast.left, retArr, funcParam);
+				retArr.push('==');
+				this.astGeneric(ast.right, retArr, funcParam);
+			} else if (ast.operator === '!==') {
+				this.astGeneric(ast.left, retArr, funcParam);
+				retArr.push('!=');
+				this.astGeneric(ast.right, retArr, funcParam);
+			} else {
+				this.astGeneric(ast.left, retArr, funcParam);
+				retArr.push(ast.operator);
+				this.astGeneric(ast.right, retArr, funcParam);
+			}
+
+			retArr.push(')');
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astIdentifierExpression',
+		value: function astIdentifierExpression(idtNode, retArr, funcParam) {
+			if (idtNode.type !== 'Identifier') {
+				throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode, funcParam);
+			}
+
+			switch (idtNode.name) {
+				case 'gpu_threadX':
+					retArr.push('threadId.x');
+					break;
+				case 'gpu_threadY':
+					retArr.push('threadId.y');
+					break;
+				case 'gpu_threadZ':
+					retArr.push('threadId.z');
+					break;
+				case 'gpu_outputX':
+					retArr.push('uOutputDim.x');
+					break;
+				case 'gpu_outputY':
+					retArr.push('uOutputDim.y');
+					break;
+				case 'gpu_outputZ':
+					retArr.push('uOutputDim.z');
+					break;
+				default:
+					if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
+						retArr.push('constants_' + idtNode.name);
+					} else {
+						var userParamName = funcParam.getUserParamName(idtNode.name);
+						if (userParamName !== null) {
+							retArr.push('user_' + userParamName);
+						} else {
+							retArr.push('user_' + idtNode.name);
+						}
+					}
+			}
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astForStatement',
+		value: function astForStatement(forNode, retArr, funcParam) {
+			if (forNode.type !== 'ForStatement') {
+				throw this.astErrorOutput('Invalid for statment', forNode, funcParam);
+			}
+
+			if (forNode.test && forNode.test.type === 'BinaryExpression') {
+				if (forNode.test.right.type === 'Identifier' && forNode.test.operator === '<' && this.isIdentifierConstant(forNode.test.right.name) === false) {
+
+					if (!this.loopMaxIterations) {
+						console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
+						console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
+					}
+
+					retArr.push('for (');
+					this.astGeneric(forNode.init, retArr, funcParam);
+					this.astGeneric(forNode.test.left, retArr, funcParam);
+					retArr.push(forNode.test.operator);
+					retArr.push('LOOP_MAX');
+					retArr.push(';');
+					this.astGeneric(forNode.update, retArr, funcParam);
+					retArr.push(')');
+
+					retArr.push('{\n');
+					retArr.push('if (');
+					this.astGeneric(forNode.test.left, retArr, funcParam);
+					retArr.push(forNode.test.operator);
+					this.astGeneric(forNode.test.right, retArr, funcParam);
+					retArr.push(') {\n');
+					if (forNode.body.type === 'BlockStatement') {
+						for (var i = 0; i < forNode.body.body.length; i++) {
+							this.astGeneric(forNode.body.body[i], retArr, funcParam);
+						}
+					} else {
+						this.astGeneric(forNode.body, retArr, funcParam);
+					}
+					retArr.push('} else {\n');
+					retArr.push('break;\n');
+					retArr.push('}\n');
+					retArr.push('}\n');
+
+					return retArr;
+				} else {
+					var declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
+					var updateArgument = forNode.update.argument;
+					if (!Array.isArray(declarations) || declarations.length < 1) {
+						console.log(this.jsFunctionString);
+						throw new Error('Error: Incompatible for loop declaration');
+					}
+
+					if (declarations.length > 1) {
+						var initArgument = null;
+						for (var _i2 = 0; _i2 < declarations.length; _i2++) {
+							var declaration = declarations[_i2];
+							if (declaration.id.name === updateArgument.name) {
+								initArgument = declaration;
+								declarations.splice(_i2, 1);
+							} else {
+								retArr.push('float ');
+								this.astGeneric(declaration, retArr, funcParam);
+								retArr.push(';');
+							}
+						}
+
+						retArr.push('for (float ');
+						this.astGeneric(initArgument, retArr, funcParam);
+						retArr.push(';');
+					} else {
+						retArr.push('for (');
+						this.astGeneric(forNode.init, retArr, funcParam);
+					}
+
+					this.astGeneric(forNode.test, retArr, funcParam);
+					retArr.push(';');
+					this.astGeneric(forNode.update, retArr, funcParam);
+					retArr.push(')');
+					this.astGeneric(forNode.body, retArr, funcParam);
+					return retArr;
+				}
+			}
+
+			throw this.astErrorOutput('Invalid for statement', forNode, funcParam);
+		}
+
+
+	}, {
+		key: 'astWhileStatement',
+		value: function astWhileStatement(whileNode, retArr, funcParam) {
+			if (whileNode.type !== 'WhileStatement') {
+				throw this.astErrorOutput('Invalid while statment', whileNode, funcParam);
+			}
+
+			retArr.push('for (float i = 0.0; i < LOOP_MAX; i++) {');
+			retArr.push('if (');
+			this.astGeneric(whileNode.test, retArr, funcParam);
+			retArr.push(') {\n');
+			this.astGeneric(whileNode.body, retArr, funcParam);
+			retArr.push('} else {\n');
+			retArr.push('break;\n');
+			retArr.push('}\n');
+			retArr.push('}\n');
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astDoWhileStatement',
+		value: function astDoWhileStatement(doWhileNode, retArr, funcParam) {
+			if (doWhileNode.type !== 'DoWhileStatement') {
+				throw this.astErrorOutput('Invalid while statment', doWhileNode, funcParam);
+			}
+
+			retArr.push('for (float i = 0.0; i < LOOP_MAX; i++) {');
+			this.astGeneric(doWhileNode.body, retArr, funcParam);
+			retArr.push('if (!');
+			this.astGeneric(doWhileNode.test, retArr, funcParam);
+			retArr.push(') {\n');
+			retArr.push('break;\n');
+			retArr.push('}\n');
+			retArr.push('}\n');
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astAssignmentExpression',
+		value: function astAssignmentExpression(assNode, retArr, funcParam) {
+			if (assNode.operator === '%=') {
+				this.astGeneric(assNode.left, retArr, funcParam);
+				retArr.push('=');
+				retArr.push('mod(');
+				this.astGeneric(assNode.left, retArr, funcParam);
+				retArr.push(',');
+				this.astGeneric(assNode.right, retArr, funcParam);
+				retArr.push(')');
+			} else {
+				this.astGeneric(assNode.left, retArr, funcParam);
+				retArr.push(assNode.operator);
+				this.astGeneric(assNode.right, retArr, funcParam);
+				return retArr;
+			}
+		}
+
+
+	}, {
+		key: 'astEmptyStatement',
+		value: function astEmptyStatement(eNode, retArr, funcParam) {
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astBlockStatement',
+		value: function astBlockStatement(bNode, retArr, funcParam) {
+			retArr.push('{\n');
+			for (var i = 0; i < bNode.body.length; i++) {
+				this.astGeneric(bNode.body[i], retArr, funcParam);
+			}
+			retArr.push('}\n');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astExpressionStatement',
+		value: function astExpressionStatement(esNode, retArr, funcParam) {
+			this.astGeneric(esNode.expression, retArr, funcParam);
+			retArr.push(';\n');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astVariableDeclaration',
+		value: function astVariableDeclaration(vardecNode, retArr, funcParam) {
+			for (var i = 0; i < vardecNode.declarations.length; i++) {
+				var declaration = vardecNode.declarations[i];
+				if (i > 0) {
+					retArr.push(',');
+				}
+				var retDeclaration = [];
+				this.astGeneric(declaration, retDeclaration, funcParam);
+				if (i === 0) {
+					if (retDeclaration[0] === 'get(' && funcParam.getParamType(retDeclaration[1]) === 'HTMLImage' && retDeclaration.length === 18) {
+						retArr.push('sampler2D ');
+					} else {
+						retArr.push('float ');
+					}
+				}
+				retArr.push.apply(retArr, retDeclaration);
+			}
+			retArr.push(';');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astVariableDeclarator',
+		value: function astVariableDeclarator(ivardecNode, retArr, funcParam) {
+			this.astGeneric(ivardecNode.id, retArr, funcParam);
+			if (ivardecNode.init !== null) {
+				retArr.push('=');
+				this.astGeneric(ivardecNode.init, retArr, funcParam);
+			}
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astIfStatement',
+		value: function astIfStatement(ifNode, retArr, funcParam) {
+			retArr.push('if (');
+			this.astGeneric(ifNode.test, retArr, funcParam);
+			retArr.push(')');
+			if (ifNode.consequent.type === 'BlockStatement') {
+				this.astGeneric(ifNode.consequent, retArr, funcParam);
+			} else {
+				retArr.push(' {\n');
+				this.astGeneric(ifNode.consequent, retArr, funcParam);
+				retArr.push('\n}\n');
+			}
+
+			if (ifNode.alternate) {
+				retArr.push('else ');
+				if (ifNode.alternate.type === 'BlockStatement') {
+					this.astGeneric(ifNode.alternate, retArr, funcParam);
+				} else {
+					retArr.push(' {\n');
+					this.astGeneric(ifNode.alternate, retArr, funcParam);
+					retArr.push('\n}\n');
+				}
+			}
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astBreakStatement',
+		value: function astBreakStatement(brNode, retArr, funcParam) {
+			retArr.push('break;\n');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astContinueStatement',
+		value: function astContinueStatement(crNode, retArr, funcParam) {
+			retArr.push('continue;\n');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astLogicalExpression',
+		value: function astLogicalExpression(logNode, retArr, funcParam) {
+			retArr.push('(');
+			this.astGeneric(logNode.left, retArr, funcParam);
+			retArr.push(logNode.operator);
+			this.astGeneric(logNode.right, retArr, funcParam);
+			retArr.push(')');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astUpdateExpression',
+		value: function astUpdateExpression(uNode, retArr, funcParam) {
+			if (uNode.prefix) {
+				retArr.push(uNode.operator);
+				this.astGeneric(uNode.argument, retArr, funcParam);
+			} else {
+				this.astGeneric(uNode.argument, retArr, funcParam);
+				retArr.push(uNode.operator);
+			}
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astUnaryExpression',
+		value: function astUnaryExpression(uNode, retArr, funcParam) {
+			if (uNode.prefix) {
+				retArr.push(uNode.operator);
+				this.astGeneric(uNode.argument, retArr, funcParam);
+			} else {
+				this.astGeneric(uNode.argument, retArr, funcParam);
+				retArr.push(uNode.operator);
+			}
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astThisExpression',
+		value: function astThisExpression(tNode, retArr, funcParam) {
+			retArr.push('this');
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astMemberExpression',
+		value: function astMemberExpression(mNode, retArr, funcParam) {
+			if (mNode.computed) {
+				if (mNode.object.type === 'Identifier') {
+					var reqName = mNode.object.name;
+					var funcName = funcParam.functionName || 'kernel';
+					var assumeNotTexture = false;
+
+					if (funcParam.paramNames) {
+						var idx = funcParam.paramNames.indexOf(reqName);
+						if (idx >= 0 && funcParam.paramTypes[idx] === 'float') {
+							assumeNotTexture = true;
+						}
+					}
+
+					if (assumeNotTexture) {
+						this.astGeneric(mNode.object, retArr, funcParam);
+						retArr.push('[int(');
+						this.astGeneric(mNode.property, retArr, funcParam);
+						retArr.push(')]');
+					} else {
+						retArr.push('get(');
+						this.astGeneric(mNode.object, retArr, funcParam);
+						retArr.push(', vec2(');
+						this.astGeneric(mNode.object, retArr, funcParam);
+						retArr.push('Size[0],');
+						this.astGeneric(mNode.object, retArr, funcParam);
+						retArr.push('Size[1]), vec3(');
+						this.astGeneric(mNode.object, retArr, funcParam);
+						retArr.push('Dim[0],');
+						this.astGeneric(mNode.object, retArr, funcParam);
+						retArr.push('Dim[1],');
+						this.astGeneric(mNode.object, retArr, funcParam);
+						retArr.push('Dim[2]');
+						retArr.push('), ');
+						this.astGeneric(mNode.property, retArr, funcParam);
+						retArr.push(')');
+					}
+				} else {
+					this.astGeneric(mNode.object, retArr, funcParam);
+					var last = retArr.pop();
+					retArr.push(',');
+					this.astGeneric(mNode.property, retArr, funcParam);
+					retArr.push(last);
+				}
+			} else {
+
+				var unrolled = this.astMemberExpressionUnroll(mNode);
+				var unrolled_lc = unrolled.toLowerCase();
+
+				if (unrolled.indexOf(constantsPrefix) === 0) {
+					unrolled = 'constants_' + unrolled.slice(constantsPrefix.length);
+				}
+
+				switch (unrolled_lc) {
+					case 'this.thread.x':
+						retArr.push('threadId.x');
+						break;
+					case 'this.thread.y':
+						retArr.push('threadId.y');
+						break;
+					case 'this.thread.z':
+						retArr.push('threadId.z');
+						break;
+					case 'this.output.x':
+						retArr.push(this.output[0] + '.0');
+						break;
+					case 'this.output.y':
+						retArr.push(this.output[1] + '.0');
+						break;
+					case 'this.output.z':
+						retArr.push(this.output[2] + '.0');
+						break;
+					default:
+						retArr.push(unrolled);
+				}
+			}
+			return retArr;
+		}
+	}, {
+		key: 'astSequenceExpression',
+		value: function astSequenceExpression(sNode, retArr, funcParam) {
+			for (var i = 0; i < sNode.expressions.length; i++) {
+				if (i > 0) {
+					retArr.push(',');
+				}
+				this.astGeneric(sNode.expressions, retArr, funcParam);
+			}
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astCallExpression',
+		value: function astCallExpression(ast, retArr, funcParam) {
+			if (ast.callee) {
+				var funcName = this.astMemberExpressionUnroll(ast.callee);
+
+				if (funcName.indexOf(jsMathPrefix) === 0) {
+					funcName = funcName.slice(jsMathPrefix.length);
+				}
+
+				if (funcName.indexOf(localPrefix) === 0) {
+					funcName = funcName.slice(localPrefix.length);
+				}
+
+				if (funcName === 'atan2') {
+					funcName = 'atan';
+				}
+
+				if (funcParam.calledFunctions.indexOf(funcName) < 0) {
+					funcParam.calledFunctions.push(funcName);
+				}
+				if (!funcParam.hasOwnProperty('funcName')) {
+					funcParam.calledFunctionsArguments[funcName] = [];
+				}
+
+				var functionArguments = [];
+				funcParam.calledFunctionsArguments[funcName].push(functionArguments);
+
+				retArr.push(funcName);
+
+				retArr.push('(');
+
+				for (var i = 0; i < ast.arguments.length; ++i) {
+					var argument = ast.arguments[i];
+					if (i > 0) {
+						retArr.push(', ');
+					}
+					this.astGeneric(argument, retArr, funcParam);
+					if (argument.type === 'Identifier') {
+						var paramIndex = funcParam.paramNames.indexOf(argument.name);
+						if (paramIndex === -1) {
+							functionArguments.push(null);
+						} else {
+							functionArguments.push({
+								name: argument.name,
+								type: funcParam.paramTypes[paramIndex]
+							});
+						}
+					} else {
+						functionArguments.push(null);
+					}
+				}
+
+				retArr.push(')');
+
+				return retArr;
+			}
+
+			throw this.astErrorOutput('Unknown CallExpression', ast, funcParam);
+
+			return retArr;
+		}
+
+
+	}, {
+		key: 'astArrayExpression',
+		value: function astArrayExpression(arrNode, retArr, funcParam) {
+			var arrLen = arrNode.elements.length;
+
+			retArr.push('float[' + arrLen + '](');
+			for (var i = 0; i < arrLen; ++i) {
+				if (i > 0) {
+					retArr.push(', ');
+				}
+				var subNode = arrNode.elements[i];
+				this.astGeneric(subNode, retArr, funcParam);
+			}
+			retArr.push(')');
+
+			return retArr;
+
+		}
+
+
+	}, {
+		key: 'getFunctionPrototypeString',
+		value: function getFunctionPrototypeString() {
+			if (this.webGlFunctionPrototypeString) {
+				return this.webGlFunctionPrototypeString;
+			}
+			return this.webGlFunctionPrototypeString = this.generate();
+		}
+	}, {
+		key: 'build',
+		value: function build() {
+			return this.getFunctionPrototypeString().length > 0;
+		}
+	}], [{
+		key: 'astFunctionPrototype',
+		value: function astFunctionPrototype(ast, retArr, funcParam) {
+			if (funcParam.isRootKernel || funcParam.isSubKernel) {
+				return retArr;
+			}
+
+			retArr.push(funcParam.returnType);
+			retArr.push(' ');
+			retArr.push(funcParam.functionName);
+			retArr.push('(');
+
+			for (var i = 0; i < funcParam.paramNames.length; ++i) {
+				if (i > 0) {
+					retArr.push(', ');
+				}
+
+				retArr.push(funcParam.paramTypes[i]);
+				retArr.push(' ');
+				retArr.push('user_');
+				retArr.push(funcParam.paramNames[i]);
+			}
+
+			retArr.push(');\n');
+
+			return retArr;
+		}
+	}]);
+
+	return WebGLFunctionNode;
+}(FunctionNodeBase);
+
+function isIdentifierKernelParam(paramName, ast, funcParam) {
+	return funcParam.paramNames.indexOf(paramName) !== -1;
+}
+
+function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
+	var start = ast.loc.start;
+
+	if (!isIdentifierKernelParam(paramName, funcParam) && expectedType !== 'float') {
+		throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
+	} else {
+		var actualType = funcParam.paramTypes[funcParam.paramNames.indexOf(paramName)];
+		if (actualType !== expectedType) {
+			throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
+		}
+	}
+}
+
+function webGlRegexOptimize(inStr) {
+	return inStr.replace(DECODE32_ENCODE32, '((').replace(ENCODE32_DECODE32, '((');
+}
+},{"../../core/utils":32,"../function-node-base":7}],21:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -4178,17 +5129,40 @@ module.exports = function (_WebGLKernel) {
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
+				case 'HTMLImage':
+					{
+						var inputImage = value;
+						var _dim2 = [inputImage.width, inputImage.height, 1];
+						var _size2 = [inputImage.width, inputImage.height];
+
+						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+						var mipLevel = 0; 
+						var internalFormat = gl.RGBA; 
+						var srcFormat = gl.RGBA; 
+						var srcType = gl.UNSIGNED_BYTE; 
+						gl.texImage2D(gl.TEXTURE_2D, mipLevel, internalFormat, srcFormat, srcType, inputImage);
+						this.setUniform3fv('user_' + name + 'Dim', _dim2);
+						this.setUniform2fv('user_' + name + 'Size', _size2);
+						this.setUniform1i('user_' + name, this.argumentsLength);
+						break;
+					}
 				case 'Texture':
 					{
 						var inputTexture = value;
-						var _dim2 = inputTexture.dimensions;
-						var _size2 = inputTexture.size;
+						var _dim3 = inputTexture.dimensions;
+						var _size3 = inputTexture.size;
 
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-						this.setUniform3fv('user_' + name + 'Dim', _dim2);
-						this.setUniform2fv('user_' + name + 'Size', _size2);
+						this.setUniform3fv('user_' + name + 'Dim', _dim3);
+						this.setUniform2fv('user_' + name + 'Size', _size3);
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
@@ -4330,7 +5304,7 @@ module.exports = function (_WebGLKernel) {
 			if (this.compiledFragShaderString !== null) {
 				return this.compiledFragShaderString;
 			}
-			return this.compiledFragShaderString = this._replaceArtifacts(fragShaderString, this._getFragShaderArtifactMap(args));
+			return this.compiledFragShaderString = this._replaceArtifacts(this.constructor.fragShaderString, this._getFragShaderArtifactMap(args));
 		}
 
 
@@ -4340,7 +5314,17 @@ module.exports = function (_WebGLKernel) {
 			if (this.compiledVertShaderString !== null) {
 				return this.compiledVertShaderString;
 			}
-			return this.compiledVertShaderString = vertShaderString;
+			return this.compiledVertShaderString = this.constructor.vertShaderString;
+		}
+	}], [{
+		key: 'fragShaderString',
+		get: function get() {
+			return fragShaderString;
+		}
+	}, {
+		key: 'vertShaderString',
+		get: function get() {
+			return vertShaderString;
 		}
 	}]);
 
@@ -4377,7 +5361,7 @@ module.exports = function (_WebGLRunner) {
 },{"../web-gl/runner":15,"./function-builder":19,"./kernel":21}],23:[function(require,module,exports){
 "use strict";
 
-module.exports = "#version 300 es\n__HEADER__;\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nconst float LOOP_MAX = __LOOP_MAX__;\n#define EPSILON 0.0000001;\n\n__CONSTANTS__;\n\nin highp vec2 vTexCoord;\n\nvec2 integerMod(vec2 x, float y) {\n  vec2 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec3 integerMod(vec3 x, float y) {\n  vec3 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec4 integerMod(vec4 x, vec4 y) {\n  vec4 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nhighp float integerMod(highp float x, highp float y) {\n  highp float res = floor(mod(x, y));\n  return res * (res > floor(y) - 1.0 ? 0.0 : 1.0);\n}\n\nhighp int integerMod(highp int x, highp int y) {\n  return int(integerMod(float(x), float(y)));\n}\n\n// Here be dragons!\n// DO NOT OPTIMIZE THIS CODE\n// YOU WILL BREAK SOMETHING ON SOMEBODY'S MACHINE\n// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME\nconst vec2 MAGIC_VEC = vec2(1.0, -256.0);\nconst vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);\nconst vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536\nhighp float decode32(highp vec4 rgba) {\n  __DECODE32_ENDIANNESS__;\n  rgba *= 255.0;\n  vec2 gte128;\n  gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;\n  gte128.y = rgba.a >= 128.0 ? 1.0 : 0.0;\n  float exponent = 2.0 * rgba.a - 127.0 + dot(gte128, MAGIC_VEC);\n  float res = exp2(round(exponent));\n  rgba.b = rgba.b - 128.0 * gte128.x;\n  res = dot(rgba, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;\n  res *= gte128.y * -2.0 + 1.0;\n  return res;\n}\n\nhighp vec4 encode32(highp float f) {\n  highp float F = abs(f);\n  highp float sign = f < 0.0 ? 1.0 : 0.0;\n  highp float exponent = floor(log2(F));\n  highp float mantissa = (exp2(-exponent) * F);\n  // exponent += floor(log2(mantissa));\n  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;\n  rgba.rg = integerMod(rgba.rg, 256.0);\n  rgba.b = integerMod(rgba.b, 128.0);\n  rgba.a = exponent*0.5 + 63.5;\n  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;\n  rgba = floor(rgba);\n  rgba *= 0.003921569; // 1/255\n  __ENCODE32_ENDIANNESS__;\n  return rgba;\n}\n// Dragons end here\n\nhighp float index;\nhighp vec3 threadId;\n\nhighp vec3 indexTo3D(highp float idx, highp vec3 texDim) {\n  highp float z = floor(idx / (texDim.x * texDim.y));\n  idx -= z * texDim.x * texDim.y;\n  highp float y = floor(idx / texDim.x);\n  highp float x = integerMod(idx, texDim.x);\n  return vec3(x, y, z);\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {\n  highp vec3 xyz = vec3(x, y, z);\n  xyz = floor(xyz + 0.5);\n  __GET_WRAPAROUND__;\n  highp float index = round(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z));\n  __GET_TEXTURE_CHANNEL__;\n  highp float w = round(texSize.x);\n  vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  highp vec4 texel = texture(tex, st / texSize);\n  __GET_RESULT__;\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {\n  return get(tex, texSize, texDim, 0.0, y, x);\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {\n  return get(tex, texSize, texDim, 0.0, 0.0, x);\n}\n\nhighp vec4 actualColor;\nvoid color(float r, float g, float b, float a) {\n  actualColor = vec4(r,g,b,a);\n}\n\nvoid color(float r, float g, float b) {\n  color(r,g,b,1.0);\n}\n\n__MAIN_PARAMS__;\n__MAIN_CONSTANTS__;\n__KERNEL__;\n\nvoid main(void) {\n  index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;\n  __MAIN_RESULT__;\n}";
+module.exports = "#version 300 es\n__HEADER__;\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nconst float LOOP_MAX = __LOOP_MAX__;\n#define EPSILON 0.0000001;\n\n__CONSTANTS__;\n\nin highp vec2 vTexCoord;\n\nvec2 integerMod(vec2 x, float y) {\n  vec2 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec3 integerMod(vec3 x, float y) {\n  vec3 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec4 integerMod(vec4 x, vec4 y) {\n  vec4 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nhighp float integerMod(highp float x, highp float y) {\n  highp float res = floor(mod(x, y));\n  return res * (res > floor(y) - 1.0 ? 0.0 : 1.0);\n}\n\nhighp int integerMod(highp int x, highp int y) {\n  return int(integerMod(float(x), float(y)));\n}\n\n// Here be dragons!\n// DO NOT OPTIMIZE THIS CODE\n// YOU WILL BREAK SOMETHING ON SOMEBODY'S MACHINE\n// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME\nconst vec2 MAGIC_VEC = vec2(1.0, -256.0);\nconst vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);\nconst vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536\nhighp float decode32(highp vec4 rgba) {\n  __DECODE32_ENDIANNESS__;\n  rgba *= 255.0;\n  vec2 gte128;\n  gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;\n  gte128.y = rgba.a >= 128.0 ? 1.0 : 0.0;\n  float exponent = 2.0 * rgba.a - 127.0 + dot(gte128, MAGIC_VEC);\n  float res = exp2(round(exponent));\n  rgba.b = rgba.b - 128.0 * gte128.x;\n  res = dot(rgba, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;\n  res *= gte128.y * -2.0 + 1.0;\n  return res;\n}\n\nhighp vec4 encode32(highp float f) {\n  highp float F = abs(f);\n  highp float sign = f < 0.0 ? 1.0 : 0.0;\n  highp float exponent = floor(log2(F));\n  highp float mantissa = (exp2(-exponent) * F);\n  // exponent += floor(log2(mantissa));\n  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;\n  rgba.rg = integerMod(rgba.rg, 256.0);\n  rgba.b = integerMod(rgba.b, 128.0);\n  rgba.a = exponent*0.5 + 63.5;\n  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;\n  rgba = floor(rgba);\n  rgba *= 0.003921569; // 1/255\n  __ENCODE32_ENDIANNESS__;\n  return rgba;\n}\n// Dragons end here\n\nhighp float index;\nhighp vec3 threadId;\n\nhighp vec3 indexTo3D(highp float idx, highp vec3 texDim) {\n  highp float z = floor(idx / (texDim.x * texDim.y));\n  idx -= z * texDim.x * texDim.y;\n  highp float y = floor(idx / texDim.x);\n  highp float x = integerMod(idx, texDim.x);\n  return vec3(x, y, z);\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {\n  highp vec3 xyz = vec3(x, y, z);\n  xyz = floor(xyz + 0.5);\n  __GET_WRAPAROUND__;\n  highp float index = round(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z));\n  __GET_TEXTURE_CHANNEL__;\n  highp float w = round(texSize.x);\n  vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  highp vec4 texel = texture(tex, st / texSize);\n  __GET_RESULT__;\n}\n\nhighp vec4 getImage(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {\n  highp vec3 xyz = vec3(x, y, z);\n  xyz = floor(xyz + 0.5);\n  __GET_WRAPAROUND__;\n  highp float index = round(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z));\n  __GET_TEXTURE_CHANNEL__;\n  highp float w = round(texSize.x);\n  vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  return texture(tex, st / texSize);\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {\n  return get(tex, texSize, texDim, 0.0, y, x);\n}\n\nhighp vec4 getImage(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {\n  return getImage(tex, texSize, texDim, 0.0, y, x);\n}\n\nhighp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {\n  return get(tex, texSize, texDim, 0.0, 0.0, x);\n}\n\nhighp vec4 getImage(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {\n  return getImage(tex, texSize, texDim, 0.0, 0.0, x);\n}\n\nhighp vec4 actualColor;\nvoid color(float r, float g, float b, float a) {\n  actualColor = vec4(r,g,b,a);\n}\n\nvoid color(float r, float g, float b) {\n  color(r,g,b,1.0);\n}\n\nvoid color(sampler2D image) {\n  actualColor = texture(image, vTexCoord);\n}\n\n__MAIN_PARAMS__;\n__MAIN_CONSTANTS__;\n__KERNEL__;\n\nvoid main(void) {\n  index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;\n  __MAIN_RESULT__;\n}";
 },{}],24:[function(require,module,exports){
 "use strict";
 
@@ -5116,6 +6100,8 @@ var Utils = function (_UtilsCore) {
 				return 'Texture';
 			} else if (arg instanceof Input) {
 				return 'Input';
+			} else if (arg.nodeName === 'IMG') {
+				return 'HTMLImage';
 			} else {
 				return 'Unknown';
 			}
@@ -10019,12 +11005,7 @@ pp$8.readEscapedChar = function(inTemplate) {
       this.pos += octalStr.length - 1;
       ch = this.input.charCodeAt(this.pos);
       if ((octalStr !== "0" || ch == 56 || ch == 57) && (this.strict || inTemplate)) {
-        this.invalidStringToken(
-          this.pos - 1 - octalStr.length,
-          inTemplate
-            ? "Octal literal in template string"
-            : "Octal literal in strict mode"
-        );
+        this.invalidStringToken(this.pos - 1 - octalStr.length, "Octal literal in strict mode");
       }
       return String.fromCharCode(octal)
     }
@@ -10083,7 +11064,7 @@ pp$8.readWord = function() {
 };
 
 
-var version = "5.5.3";
+var version = "5.5.0";
 
 
 function parse(input, options) {

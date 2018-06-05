@@ -132,6 +132,8 @@ module.exports = function (_BaseFunctionNode) {
 						return this.astForStatement(ast, retArr, funcParam);
 					case 'WhileStatement':
 						return this.astWhileStatement(ast, retArr, funcParam);
+					case 'DoWhileStatement':
+						return this.astDoWhileStatement(ast, retArr, funcParam);
 					case 'VariableDeclaration':
 						return this.astVariableDeclaration(ast, retArr, funcParam);
 					case 'VariableDeclarator':
@@ -534,6 +536,40 @@ module.exports = function (_BaseFunctionNode) {
 			retArr.push(') {\n');
 			this.astGeneric(whileNode.body, retArr, funcParam);
 			retArr.push('} else {\n');
+			retArr.push('break;\n');
+			retArr.push('}\n');
+			retArr.push('}\n');
+
+			return retArr;
+		}
+
+		/**
+   * @memberOf WebGLFunctionNode#
+   * @function
+   * @name astWhileStatement
+   *
+   * @desc Parses the abstract syntax tree for *do while* loop
+   *
+   *
+   * @param {Object} whileNode - An ast Node
+   * @param {Array} retArr - return array string
+   * @param {Function} funcParam - FunctionNode, that tracks compilation state
+   *
+   * @returns {Array} the parsed webgl string
+   */
+
+	}, {
+		key: 'astDoWhileStatement',
+		value: function astDoWhileStatement(doWhileNode, retArr, funcParam) {
+			if (doWhileNode.type !== 'DoWhileStatement') {
+				throw this.astErrorOutput('Invalid while statment', doWhileNode, funcParam);
+			}
+
+			retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
+			this.astGeneric(doWhileNode.body, retArr, funcParam);
+			retArr.push('if (!');
+			this.astGeneric(doWhileNode.test, retArr, funcParam);
+			retArr.push(') {\n');
 			retArr.push('break;\n');
 			retArr.push('}\n');
 			retArr.push('}\n');

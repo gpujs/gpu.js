@@ -20,29 +20,42 @@ var maxTexSizes = {};
 module.exports = function (_KernelBase) {
 	_inherits(WebGLKernel, _KernelBase);
 
-	/**
-  * @constructor WebGLKernel
-  *
-  * @desc Kernel Implementation for WebGL.
-  * <p>This builds the shaders and runs them on the GPU,
-  * the outputs the result back as float(enabled by default) and Texture.</p>
-  *
-  * @extends KernelBase
-  *
-  * @prop {Object} textureCache - webGl Texture cache
-  * @prop {Object} threadDim - The thread dimensions, x, y and z
-  * @prop {Object} programUniformLocationCache - Location of program variables in memory
-  * @prop {Object} framebuffer - Webgl frameBuffer
-  * @prop {Object} buffer - WebGL buffer
-  * @prop {Object} program - The webGl Program
-  * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
-  * @prop {Boolean} outputToTexture - Set output type to Texture, instead of float
-  * @prop {String} endianness - Endian information like Little-endian, Big-endian.
-  * @prop {Array} paramTypes - Types of parameters sent to the Kernel
-  * @prop {number} argumentsLength - Number of parameters sent to the Kernel
-  * @prop {String} compiledFragShaderString - Compiled fragment shader string
-  * @prop {String} compiledVertShaderString - Compiled Vertical shader string
-  */
+	_createClass(WebGLKernel, null, [{
+		key: 'fragShaderString',
+		get: function get() {
+			return fragShaderString;
+		}
+	}, {
+		key: 'vertShaderString',
+		get: function get() {
+			return vertShaderString;
+		}
+		/**
+   * @constructor WebGLKernel
+   *
+   * @desc Kernel Implementation for WebGL.
+   * <p>This builds the shaders and runs them on the GPU,
+   * the outputs the result back as float(enabled by default) and Texture.</p>
+   *
+   * @extends KernelBase
+   *
+   * @prop {Object} textureCache - webGl Texture cache
+   * @prop {Object} threadDim - The thread dimensions, x, y and z
+   * @prop {Object} programUniformLocationCache - Location of program variables in memory
+   * @prop {Object} framebuffer - Webgl frameBuffer
+   * @prop {Object} buffer - WebGL buffer
+   * @prop {Object} program - The webGl Program
+   * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
+   * @prop {Boolean} outputToTexture - Set output type to Texture, instead of float
+   * @prop {String} endianness - Endian information like Little-endian, Big-endian.
+   * @prop {Array} paramTypes - Types of parameters sent to the Kernel
+   * @prop {number} argumentsLength - Number of parameters sent to the Kernel
+   * @prop {String} compiledFragShaderString - Compiled fragment shader string
+   * @prop {String} compiledVertShaderString - Compiled Vertical shader string
+   */
+
+	}]);
+
 	function WebGLKernel(fnString, settings) {
 		_classCallCheck(this, WebGLKernel);
 
@@ -760,17 +773,41 @@ module.exports = function (_KernelBase) {
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
+				case 'HTMLImage':
+					{
+						var inputImage = value;
+						var _dim2 = [inputImage.width, inputImage.height, 1];
+						var _size2 = [inputImage.width, inputImage.height];
+
+						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+						// Upload the image into the texture.
+						var mipLevel = 0; // the largest mip
+						var internalFormat = gl.RGBA; // format we want in the texture
+						var srcFormat = gl.RGBA; // format of data we are supplying
+						var srcType = gl.UNSIGNED_BYTE; // type of data we are supplying
+						gl.texImage2D(gl.TEXTURE_2D, mipLevel, internalFormat, srcFormat, srcType, inputImage);
+						this.setUniform3fv('user_' + name + 'Dim', _dim2);
+						this.setUniform2fv('user_' + name + 'Size', _size2);
+						this.setUniform1i('user_' + name, this.argumentsLength);
+						break;
+					}
 				case 'Texture':
 					{
 						var inputTexture = value;
-						var _dim2 = inputTexture.dimensions;
-						var _size2 = inputTexture.size;
+						var _dim3 = inputTexture.dimensions;
+						var _size3 = inputTexture.size;
 
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-						this.setUniform3fv('user_' + name + 'Dim', _dim2);
-						this.setUniform2fv('user_' + name + 'Size', _size2);
+						this.setUniform3fv('user_' + name + 'Dim', _dim3);
+						this.setUniform2fv('user_' + name + 'Size', _size3);
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
@@ -1000,7 +1037,7 @@ module.exports = function (_KernelBase) {
 						result.push('highp float user_' + paramName + ' = ' + param);
 					}
 				} else {
-					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input') {
+					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
 						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp vec2 user_' + paramName + 'Size', 'uniform highp vec3 user_' + paramName + 'Dim');
 					} else if (paramType === 'Number') {
 						result.push('uniform highp float user_' + paramName);
@@ -1246,7 +1283,7 @@ module.exports = function (_KernelBase) {
    *
    * @param {Array} args - The actual parameters sent to the Kernel
    *
-   * @returns {String} Fragment Shader string
+   * @returns {string} Fragment Shader string
    *
    */
 
@@ -1256,7 +1293,7 @@ module.exports = function (_KernelBase) {
 			if (this.compiledFragShaderString !== null) {
 				return this.compiledFragShaderString;
 			}
-			return this.compiledFragShaderString = this._replaceArtifacts(fragShaderString, this._getFragShaderArtifactMap(args));
+			return this.compiledFragShaderString = this._replaceArtifacts(this.constructor.fragShaderString, this._getFragShaderArtifactMap(args));
 		}
 
 		/**
@@ -1268,7 +1305,7 @@ module.exports = function (_KernelBase) {
    *
    * @param {Array} args - The actual parameters sent to the Kernel
    *
-   * @returns {String} Vertical Shader string
+   * @returns {string} Vertical Shader string
    *
    */
 
@@ -1278,8 +1315,7 @@ module.exports = function (_KernelBase) {
 			if (this.compiledVertShaderString !== null) {
 				return this.compiledVertShaderString;
 			}
-			//TODO: webgl2 compile like frag shader
-			return this.compiledVertShaderString = vertShaderString;
+			return this.compiledVertShaderString = this.constructor.vertShaderString;
 		}
 
 		/**

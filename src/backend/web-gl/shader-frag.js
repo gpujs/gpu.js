@@ -105,12 +105,32 @@ highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, high
   __GET_RESULT__;
 }
 
+highp vec4 getImage(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {
+  highp vec3 xyz = vec3(x, y, z);
+  xyz = floor(xyz + 0.5);
+  __GET_WRAPAROUND__;
+  highp float index = round(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z));
+  __GET_TEXTURE_CHANNEL__;
+  highp float w = round(texSize.x);
+  vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;
+  __GET_TEXTURE_INDEX__;
+  return texture2D(tex, st / texSize);
+}
+
 highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {
   return get(tex, texSize, texDim, 0.0, y, x);
 }
 
+highp vec4 getImage(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {
+  return getImage(tex, texSize, texDim, 0.0, y, x);
+}
+
 highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {
   return get(tex, texSize, texDim, 0.0, 0.0, x);
+}
+
+highp vec4 getImage(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {
+  return getImage(tex, texSize, texDim, 0.0, 0.0, x);
 }
 
 highp vec4 actualColor;
@@ -120,6 +140,10 @@ void color(float r, float g, float b, float a) {
 
 void color(float r, float g, float b) {
   color(r,g,b,1.0);
+}
+
+void color(sampler2D image) {
+  actualColor = texture2D(image, vTexCoord);
 }
 
 __MAIN_PARAMS__;

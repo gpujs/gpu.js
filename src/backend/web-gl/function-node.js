@@ -698,12 +698,27 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @returns {Array} the append retArr
 	 */
 	astVariableDeclaration(vardecNode, retArr, funcParam) {
-		retArr.push('float ');
 		for (let i = 0; i < vardecNode.declarations.length; i++) {
+			const declaration = vardecNode.declarations[i];
 			if (i > 0) {
 				retArr.push(',');
 			}
-			this.astGeneric(vardecNode.declarations[i], retArr, funcParam);
+			const retDeclaration = [];
+			this.astGeneric(declaration, retDeclaration, funcParam);
+			if (
+				retDeclaration[2] === 'getImage('
+			) {
+				if (i === 0) {
+					retArr.push('vec4 ');
+				}
+				this.declarations[declaration.id.name] = 'vec4';
+			} else {
+				if (i === 0) {
+					retArr.push('float ');
+				}
+				this.declarations[declaration.id.name] = 'float';
+			}
+			retArr.push.apply(retArr, retDeclaration);
 		}
 		retArr.push(';');
 		return retArr;
@@ -932,24 +947,54 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					this.astGeneric(mNode.property, retArr, funcParam);
 					retArr.push(')]');
 				} else {
-					// Get from texture
 					// This normally refers to the global read only input vars
-					retArr.push('get(');
-					this.astGeneric(mNode.object, retArr, funcParam);
-					retArr.push(', vec2(');
-					this.astGeneric(mNode.object, retArr, funcParam);
-					retArr.push('Size[0],');
-					this.astGeneric(mNode.object, retArr, funcParam);
-					retArr.push('Size[1]), vec3(');
-					this.astGeneric(mNode.object, retArr, funcParam);
-					retArr.push('Dim[0],');
-					this.astGeneric(mNode.object, retArr, funcParam);
-					retArr.push('Dim[1],');
-					this.astGeneric(mNode.object, retArr, funcParam);
-					retArr.push('Dim[2]');
-					retArr.push('), ');
-					this.astGeneric(mNode.property, retArr, funcParam);
-					retArr.push(')');
+					switch (funcParam.getParamType(mNode.object.name)) {
+						case 'vec4':
+							// Get from local vec4
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('[');
+							retArr.push(mNode.property.raw);
+							retArr.push(']');
+							break;
+						case 'HTMLImage':
+							// Get from image
+							retArr.push('getImage(');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push(', vec2(');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Size[0],');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Size[1]), vec3(');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Dim[0],');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Dim[1],');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Dim[2]');
+							retArr.push('), ');
+							this.astGeneric(mNode.property, retArr, funcParam);
+							retArr.push(')');
+							break;
+						default:
+							// Get from texture
+							retArr.push('get(');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push(', vec2(');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Size[0],');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Size[1]), vec3(');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Dim[0],');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Dim[1],');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Dim[2]');
+							retArr.push('), ');
+							this.astGeneric(mNode.property, retArr, funcParam);
+							retArr.push(')');
+							break;
+					}
 				}
 			} else {
 				this.astGeneric(mNode.object, retArr, funcParam);
