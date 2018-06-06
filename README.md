@@ -194,6 +194,34 @@ myFunc([1, 2, 3]);
 // Result: [1, 2, 3, 1, ... 1 ]
 ```
 
+An HTML Image:
+
+```js
+const myFunc = gpu.createKernel(function(image) {
+    const pixel = image[this.thread.y][this.thread.x];
+    this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
+})
+  .setGraphical(true)
+  .setOutput([100]);
+    
+myFunc([1, 2, 3]);
+// Result: colorful image
+```
+
+An Array of HTML Images:
+
+```js
+const myFunc = gpu.createKernel(function(image) {
+    const pixel = image[this.thread.z][this.thread.y][this.thread.x];
+    this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
+})
+  .setGraphical(true)
+  .setOutput([100]);
+    
+myFunc([1, 2, 3]);
+// Result: colorful image
+```
+
 ## Graphical Output
 
 Sometimes, you want to produce a `canvas` image instead of doing numeric computations. To achieve this, set the `graphical` flag to `true` and the output dimensions to `[width, height]`. The thread identifiers will now refer to the `x` and `y` coordinate of the pixel you are producing. Inside your kernel function, use `this.color(r,g,b)` or `this.color(r,g,b,a)` to specify the color of the pixel.
