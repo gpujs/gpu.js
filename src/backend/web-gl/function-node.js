@@ -705,9 +705,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			}
 			const retDeclaration = [];
 			this.astGeneric(declaration, retDeclaration, funcParam);
-			if (
-				retDeclaration[2] === 'getImage('
-			) {
+			if (retDeclaration[2] === 'getImage2D(' || retDeclaration[2] === 'getImage3D(') {
 				if (i === 0) {
 					retArr.push('vec4 ');
 				}
@@ -956,9 +954,28 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							retArr.push(mNode.property.raw);
 							retArr.push(']');
 							break;
+						case 'HTMLImageArray':
+							// Get from image
+							retArr.push('getImage3D(');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push(', vec2(');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Size[0],');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Size[1]), vec3(');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Dim[0],');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Dim[1],');
+							this.astGeneric(mNode.object, retArr, funcParam);
+							retArr.push('Dim[2]');
+							retArr.push('), ');
+							this.astGeneric(mNode.property, retArr, funcParam);
+							retArr.push(')');
+							break;
 						case 'HTMLImage':
 							// Get from image
-							retArr.push('getImage(');
+							retArr.push('getImage2D(');
 							this.astGeneric(mNode.object, retArr, funcParam);
 							retArr.push(', vec2(');
 							this.astGeneric(mNode.object, retArr, funcParam);

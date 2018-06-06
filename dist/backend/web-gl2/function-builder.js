@@ -7,7 +7,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var FunctionBuilderBase = require('../function-builder-base');
-var WebGLFunctionNode = require('./function-node');
+var WebGL2FunctionNode = require('./function-node');
 
 /**
  * @class WebGLFunctionBuilder
@@ -25,7 +25,7 @@ module.exports = function (_FunctionBuilderBase) {
 
     var _this = _possibleConstructorReturn(this, (WebGL2FunctionBuilder.__proto__ || Object.getPrototypeOf(WebGL2FunctionBuilder)).call(this));
 
-    _this.Node = WebGLFunctionNode;
+    _this.Node = WebGL2FunctionNode;
     return _this;
   }
 

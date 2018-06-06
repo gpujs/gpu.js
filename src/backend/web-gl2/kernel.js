@@ -364,6 +364,61 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
+			case 'HTMLImageArray':
+				{
+					const inputImages = value;
+					const dim = [inputImages[0].width, inputImages[0].height, inputImages.length];
+					const size = [inputImages[0].width, inputImages[0].height];
+
+					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+					gl.bindTexture(gl.TEXTURE_2D_ARRAY, argumentTexture);
+					gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+					gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+					gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+					// Upload the images into the texture.
+					const mipLevel = 0; // the largest mip
+					const internalFormat = gl.RGBA; // format we want in the texture
+					const width = inputImages[0].width;
+					const height = inputImages[0].height;
+					const textureDepth = inputImages.length;
+					const border = 0;
+					const srcFormat = gl.RGBA; // format of data we are supplying
+					const srcType = gl.UNSIGNED_BYTE; // type of data we are supplying
+					gl.texImage3D(
+						gl.TEXTURE_2D_ARRAY,
+						mipLevel,
+						internalFormat,
+						width,
+						height,
+						textureDepth,
+						border,
+						srcFormat,
+						srcType,
+						null
+					);
+					for (let i = 0; i < inputImages.length; i++) {
+						const xOffset = 0;
+						const yOffset = 0;
+						const imageDepth = 1;
+						gl.texSubImage3D(
+							gl.TEXTURE_2D_ARRAY,
+							mipLevel,
+							xOffset,
+							yOffset,
+							i,
+							inputImages[i].width,
+							inputImages[i].height,
+							imageDepth,
+							srcFormat,
+							srcType,
+							inputImages[i]
+						);
+					}
+					this.setUniform3fv(`user_${name}Dim`, dim);
+					this.setUniform2fv(`user_${name}Size`, size);
+					this.setUniform1i(`user_${name}`, this.argumentsLength);
+					break;
+				}
 			case 'Texture':
 				{
 					const inputTexture = value;
@@ -416,6 +471,65 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 		} else {
 			return 'out highp vec2 vTexCoord;\n';
 		}
+	}
+
+	/**
+	 * @memberOf WebGL2Kernel#
+	 * @function
+	 * @name _getMainParamsString
+	 *
+	 * @desc Generate transpiled glsl Strings for user-defined parameters sent to a kernel
+	 *
+	 * @param {Array} args - The actual parameters sent to the Kernel
+	 *
+	 * @returns {String} result
+	 *
+	 */
+	_getMainParamsString(args) {
+		const result = [];
+		const paramTypes = this.paramTypes;
+		const paramNames = this.paramNames;
+		for (let i = 0; i < paramNames.length; i++) {
+			const param = args[i];
+			const paramName = paramNames[i];
+			const paramType = paramTypes[i];
+			if (this.hardcodeConstants) {
+				if (paramType === 'Array' || paramType === 'Texture') {
+					const paramDim = utils.getDimensions(param, true);
+					const paramSize = utils.dimToTexSize({
+						floatTextures: this.floatTextures,
+						floatOutput: this.floatOutput
+					}, paramDim);
+
+					result.push(
+						`uniform highp sampler2D user_${ paramName }`,
+						`highp vec2 user_${ paramName }Size = vec2(${ paramSize[0] }.0, ${ paramSize[1] }.0)`,
+						`highp vec3 user_${ paramName }Dim = vec3(${ paramDim[0] }.0, ${ paramDim[1]}.0, ${ paramDim[2] }.0)`
+					);
+				} else if (paramType === 'Number' && Number.isInteger(param)) {
+					result.push(`highp float user_${ paramName } = ${ param }.0`);
+				} else if (paramType === 'Number') {
+					result.push(`highp float user_${ paramName } = ${ param }`);
+				}
+			} else {
+				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
+					result.push(
+						`uniform highp sampler2D user_${ paramName }`,
+						`uniform highp vec2 user_${ paramName }Size`,
+						`uniform highp vec3 user_${ paramName }Dim`
+					);
+				} else if (paramType === 'HTMLImageArray') {
+					result.push(
+						`uniform highp sampler2DArray user_${ paramName }`,
+						`uniform highp vec2 user_${ paramName }Size`,
+						`uniform highp vec3 user_${ paramName }Dim`
+					);
+				} else if (paramType === 'Number') {
+					result.push(`uniform highp float user_${ paramName }`);
+				}
+			}
+		}
+		return this._linesToString(result);
 	}
 
 	/**

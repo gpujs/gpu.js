@@ -386,17 +386,49 @@ module.exports = function (_WebGLKernel) {
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
+				case 'HTMLImageArray':
+					{
+						var inputImages = value;
+						var _dim3 = [inputImages[0].width, inputImages[0].height, inputImages.length];
+						var _size3 = [inputImages[0].width, inputImages[0].height];
+
+						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D_ARRAY, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+						gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+						gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+						// Upload the images into the texture.
+						var _mipLevel = 0; // the largest mip
+						var _internalFormat = gl.RGBA; // format we want in the texture
+						var width = inputImages[0].width;
+						var height = inputImages[0].height;
+						var textureDepth = inputImages.length;
+						var border = 0;
+						var _srcFormat = gl.RGBA; // format of data we are supplying
+						var _srcType = gl.UNSIGNED_BYTE; // type of data we are supplying
+						gl.texImage3D(gl.TEXTURE_2D_ARRAY, _mipLevel, _internalFormat, width, height, textureDepth, border, _srcFormat, _srcType, null);
+						for (var i = 0; i < inputImages.length; i++) {
+							var xOffset = 0;
+							var yOffset = 0;
+							var imageDepth = 1;
+							gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, _mipLevel, xOffset, yOffset, i, inputImages[i].width, inputImages[i].height, imageDepth, _srcFormat, _srcType, inputImages[i]);
+						}
+						this.setUniform3fv('user_' + name + 'Dim', _dim3);
+						this.setUniform2fv('user_' + name + 'Size', _size3);
+						this.setUniform1i('user_' + name, this.argumentsLength);
+						break;
+					}
 				case 'Texture':
 					{
 						var inputTexture = value;
-						var _dim3 = inputTexture.dimensions;
-						var _size3 = inputTexture.size;
+						var _dim4 = inputTexture.dimensions;
+						var _size4 = inputTexture.size;
 
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-						this.setUniform3fv('user_' + name + 'Dim', _dim3);
-						this.setUniform2fv('user_' + name + 'Size', _size3);
+						this.setUniform3fv('user_' + name + 'Dim', _dim4);
+						this.setUniform2fv('user_' + name + 'Size', _size4);
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
@@ -444,6 +476,56 @@ module.exports = function (_WebGLKernel) {
 			} else {
 				return 'out highp vec2 vTexCoord;\n';
 			}
+		}
+
+		/**
+   * @memberOf WebGL2Kernel#
+   * @function
+   * @name _getMainParamsString
+   *
+   * @desc Generate transpiled glsl Strings for user-defined parameters sent to a kernel
+   *
+   * @param {Array} args - The actual parameters sent to the Kernel
+   *
+   * @returns {String} result
+   *
+   */
+
+	}, {
+		key: '_getMainParamsString',
+		value: function _getMainParamsString(args) {
+			var result = [];
+			var paramTypes = this.paramTypes;
+			var paramNames = this.paramNames;
+			for (var i = 0; i < paramNames.length; i++) {
+				var param = args[i];
+				var paramName = paramNames[i];
+				var paramType = paramTypes[i];
+				if (this.hardcodeConstants) {
+					if (paramType === 'Array' || paramType === 'Texture') {
+						var paramDim = utils.getDimensions(param, true);
+						var paramSize = utils.dimToTexSize({
+							floatTextures: this.floatTextures,
+							floatOutput: this.floatOutput
+						}, paramDim);
+
+						result.push('uniform highp sampler2D user_' + paramName, 'highp vec2 user_' + paramName + 'Size = vec2(' + paramSize[0] + '.0, ' + paramSize[1] + '.0)', 'highp vec3 user_' + paramName + 'Dim = vec3(' + paramDim[0] + '.0, ' + paramDim[1] + '.0, ' + paramDim[2] + '.0)');
+					} else if (paramType === 'Number' && Number.isInteger(param)) {
+						result.push('highp float user_' + paramName + ' = ' + param + '.0');
+					} else if (paramType === 'Number') {
+						result.push('highp float user_' + paramName + ' = ' + param);
+					}
+				} else {
+					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
+						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp vec2 user_' + paramName + 'Size', 'uniform highp vec3 user_' + paramName + 'Dim');
+					} else if (paramType === 'HTMLImageArray') {
+						result.push('uniform highp sampler2DArray user_' + paramName, 'uniform highp vec2 user_' + paramName + 'Size', 'uniform highp vec3 user_' + paramName + 'Dim');
+					} else if (paramType === 'Number') {
+						result.push('uniform highp float user_' + paramName);
+					}
+				}
+			}
+			return this._linesToString(result);
 		}
 
 		/**

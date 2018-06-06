@@ -336,8 +336,13 @@ module.exports = function (_KernelBase) {
 		value: function _processInputs() {
 			var result = [];
 			for (var i = 0; i < this.paramTypes.length; i++) {
-				if (this.paramTypes[i] === 'HTMLImage') {
-					result.push('  user_' + this.paramNames[i] + ' = this._imageTo2DArray(user_' + this.paramNames[i] + ')');
+				switch (this.paramTypes[i]) {
+					case 'HTMLImage':
+						result.push('  user_' + this.paramNames[i] + ' = this._imageTo2DArray(user_' + this.paramNames[i] + ')');
+						break;
+					case 'HTMLImageArray':
+						result.push('  user_' + this.paramNames[i] + ' = this._imageTo3DArray(user_' + this.paramNames[i] + ')');
+						break;
 				}
 			}
 			return result.join(';\n');
@@ -347,15 +352,24 @@ module.exports = function (_KernelBase) {
 		value: function _imageTo2DArray(image) {
 			this._canvasCtx.drawImage(image, 0, 0, image.width, image.height);
 			var pixelsData = this._canvasCtx.getImageData(0, 0, image.width, image.height).data;
-			var result = new Array(image.height);
+			var imageArray = new Array(image.height);
 			var index = 0;
 			for (var y = 0; y < image.height; y++) {
-				result[y] = new Array(image.width);
+				imageArray[y] = new Array(image.width);
 				for (var x = 0; x < image.width; x++) {
-					result[y][x] = [pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255];
+					imageArray[y][x] = [pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255];
 				}
 			}
-			return result;
+			return imageArray;
+		}
+	}, {
+		key: '_imageTo3DArray',
+		value: function _imageTo3DArray(images) {
+			var imagesArray = new Array(images.length);
+			for (var i = 0; i < images.length; i++) {
+				imagesArray[i] = this._imageTo2DArray(images[i]);
+			}
+			return imagesArray;
 		}
 	}], [{
 		key: 'compileKernel',

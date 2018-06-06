@@ -1012,6 +1012,8 @@ module.exports = class WebGLKernel extends KernelBase {
 					);
 				} else if (paramType === 'Number') {
 					result.push(`uniform highp float user_${ paramName }`);
+				} else {
+					throw new Error(`Param type ${paramType} not supported in WebGL, only WebGL2`);
 				}
 			}
 		}

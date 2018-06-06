@@ -20,7 +20,7 @@ var DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
 var ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
 /** 
- * @class WebGLFunctionNode
+ * @class WebGL2FunctionNode
  *
  * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
  *
@@ -32,22 +32,22 @@ var ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
  *
  */
 module.exports = function (_FunctionNodeBase) {
-	_inherits(WebGLFunctionNode, _FunctionNodeBase);
+	_inherits(WebGL2FunctionNode, _FunctionNodeBase);
 
-	function WebGLFunctionNode() {
-		_classCallCheck(this, WebGLFunctionNode);
+	function WebGL2FunctionNode() {
+		_classCallCheck(this, WebGL2FunctionNode);
 
-		return _possibleConstructorReturn(this, (WebGLFunctionNode.__proto__ || Object.getPrototypeOf(WebGLFunctionNode)).apply(this, arguments));
+		return _possibleConstructorReturn(this, (WebGL2FunctionNode.__proto__ || Object.getPrototypeOf(WebGL2FunctionNode)).apply(this, arguments));
 	}
 
-	_createClass(WebGLFunctionNode, [{
+	_createClass(WebGL2FunctionNode, [{
 		key: 'generate',
 		value: function generate() {
 			if (this.debug) {
 				console.log(this);
 			}
 			if (this.prototypeOnly) {
-				return WebGLFunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
+				return WebGL2FunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
 			} else {
 				this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
 			}
@@ -56,7 +56,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astGeneric
    *
@@ -144,7 +144,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astFunctionDeclaration
    *
@@ -167,7 +167,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astFunctionPrototype
    * @static
@@ -186,7 +186,7 @@ module.exports = function (_FunctionNodeBase) {
 
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astFunctionExpression
    *
@@ -252,7 +252,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astReturnStatement
    *
@@ -293,7 +293,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astLiteral
    *
@@ -327,7 +327,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astBinaryExpression
    *
@@ -371,7 +371,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astIdentifierExpression
    *
@@ -427,7 +427,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astForStatement
    *
@@ -526,7 +526,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astWhileStatement
    *
@@ -561,7 +561,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astWhileStatement
    *
@@ -595,7 +595,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astAssignmentExpression
    *
@@ -628,7 +628,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astEmptyStatement
    *
@@ -649,7 +649,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astBlockStatement
    *
@@ -674,7 +674,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astExpressionStatement
    *
@@ -696,7 +696,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astVariableDeclaration
    *
@@ -733,7 +733,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astVariableDeclarator
    *
@@ -758,7 +758,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astIfStatement
    *
@@ -799,7 +799,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astBreakStatement
    *
@@ -820,7 +820,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astContinueStatement
    *
@@ -841,7 +841,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astLogicalExpression
    *
@@ -866,7 +866,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astUpdateExpression
    *
@@ -894,7 +894,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astUnaryExpression
    *
@@ -922,7 +922,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astThisExpression
    *
@@ -943,7 +943,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astMemberExpression
    *
@@ -1056,7 +1056,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astCallExpression
    *
@@ -1143,7 +1143,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name astArrayExpression
    *
@@ -1181,7 +1181,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf WebGL2FunctionNode#
    * @function
    * @name getFunctionPrototypeString
    *
@@ -1235,7 +1235,7 @@ module.exports = function (_FunctionNodeBase) {
 		}
 	}]);
 
-	return WebGLFunctionNode;
+	return WebGL2FunctionNode;
 }(FunctionNodeBase);
 
 function isIdentifierKernelParam(paramName, ast, funcParam) {

@@ -367,8 +367,13 @@ ${ this.subKernelOutputVariableNames === null
 	_processInputs() {
 		const result = [];
 		for (let i = 0; i < this.paramTypes.length; i++) {
-			if (this.paramTypes[i] === 'HTMLImage') {
-				result.push(`  user_${this.paramNames[i]} = this._imageTo2DArray(user_${this.paramNames[i]})`);
+			switch (this.paramTypes[i]) {
+				case 'HTMLImage':
+					result.push(`  user_${this.paramNames[i]} = this._imageTo2DArray(user_${this.paramNames[i]})`);
+					break;
+				case 'HTMLImageArray':
+					result.push(`  user_${this.paramNames[i]} = this._imageTo3DArray(user_${this.paramNames[i]})`);
+					break;
 			}
 		}
 		return result.join(';\n');
@@ -377,14 +382,22 @@ ${ this.subKernelOutputVariableNames === null
 	_imageTo2DArray(image) {
 		this._canvasCtx.drawImage(image, 0, 0, image.width, image.height);
 		const pixelsData = this._canvasCtx.getImageData(0, 0, image.width, image.height).data;
-		const result = new Array(image.height);
+		const imageArray = new Array(image.height);
 		let index = 0;
 		for (let y = 0; y < image.height; y++) {
-			result[y] = new Array(image.width);
+			imageArray[y] = new Array(image.width);
 			for (let x = 0; x < image.width; x++) {
-				result[y][x] = [pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255];
+				imageArray[y][x] = [pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255];
 			}
 		}
-		return result;
+		return imageArray;
+	}
+
+	_imageTo3DArray(images) {
+		const imagesArray = new Array(images.length);
+		for (let i = 0; i < images.length; i++) {
+			imagesArray[i] = this._imageTo2DArray(images[i]);
+		}
+		return imagesArray;
 	}
 };

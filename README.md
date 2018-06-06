@@ -170,6 +170,7 @@ myFunc();
 * 2d Array
 * 3d Array
 * HTML Image
+* Array of HTML Images
 To define an argument, simply add it to the kernel function like regular JavaScript.
 
 ### Input Examples
@@ -191,6 +192,34 @@ const myFunc = gpu.createKernel(function(x) {
     
 myFunc([1, 2, 3]);
 // Result: [1, 2, 3, 1, ... 1 ]
+```
+
+An HTML Image:
+
+```js
+const myFunc = gpu.createKernel(function(image) {
+    const pixel = image[this.thread.y][this.thread.x];
+    this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
+})
+  .setGraphical(true)
+  .setOutput([100]);
+    
+myFunc([1, 2, 3]);
+// Result: colorful image
+```
+
+An Array of HTML Images:
+
+```js
+const myFunc = gpu.createKernel(function(image) {
+    const pixel = image[this.thread.z][this.thread.y][this.thread.x];
+    this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
+})
+  .setGraphical(true)
+  .setOutput([100]);
+    
+myFunc([1, 2, 3]);
+// Result: colorful image
 ```
 
 ## Graphical Output
