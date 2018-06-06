@@ -170,6 +170,7 @@ myFunc();
 * 2d Array
 * 3d Array
 * HTML Image
+* Array of HTML Images
 To define an argument, simply add it to the kernel function like regular JavaScript.
 
 ### Input Examples
