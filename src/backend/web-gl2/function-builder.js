@@ -1,7 +1,7 @@
 'use strict';
 
 const FunctionBuilderBase = require('../function-builder-base');
-const WebGLFunctionNode = require('./function-node');
+const WebGL2FunctionNode = require('./function-node');
 
 /**
  * @class WebGLFunctionBuilder
@@ -14,6 +14,6 @@ const WebGLFunctionNode = require('./function-node');
 module.exports = class WebGL2FunctionBuilder extends FunctionBuilderBase {
 	constructor() {
 		super();
-		this.Node = WebGLFunctionNode;
+		this.Node = WebGL2FunctionNode;
 	}
 };

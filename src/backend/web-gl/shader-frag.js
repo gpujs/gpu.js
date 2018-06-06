@@ -105,7 +105,7 @@ highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, high
   __GET_RESULT__;
 }
 
-highp vec4 getImage(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {
+highp vec4 getImage2D(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {
   highp vec3 xyz = vec3(x, y, z);
   xyz = floor(xyz + 0.5);
   __GET_WRAPAROUND__;
@@ -121,16 +121,16 @@ highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, high
   return get(tex, texSize, texDim, 0.0, y, x);
 }
 
-highp vec4 getImage(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {
-  return getImage(tex, texSize, texDim, 0.0, y, x);
+highp vec4 getImage2D(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {
+  return getImage2D(tex, texSize, texDim, 0.0, y, x);
 }
 
 highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {
   return get(tex, texSize, texDim, 0.0, 0.0, x);
 }
 
-highp vec4 getImage(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {
-  return getImage(tex, texSize, texDim, 0.0, 0.0, x);
+highp vec4 getImage2D(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {
+  return getImage2D(tex, texSize, texDim, 0.0, 0.0, x);
 }
 
 highp vec4 actualColor;

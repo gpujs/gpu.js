@@ -9,7 +9,6 @@
       this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
     }, {
       graphical: true,
-      debug: true,
       output : [276, 183]
     });
     var image = document.createElement('img');

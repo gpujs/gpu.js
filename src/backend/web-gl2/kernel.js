@@ -476,6 +476,65 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 	/**
 	 * @memberOf WebGL2Kernel#
 	 * @function
+	 * @name _getMainParamsString
+	 *
+	 * @desc Generate transpiled glsl Strings for user-defined parameters sent to a kernel
+	 *
+	 * @param {Array} args - The actual parameters sent to the Kernel
+	 *
+	 * @returns {String} result
+	 *
+	 */
+	_getMainParamsString(args) {
+		const result = [];
+		const paramTypes = this.paramTypes;
+		const paramNames = this.paramNames;
+		for (let i = 0; i < paramNames.length; i++) {
+			const param = args[i];
+			const paramName = paramNames[i];
+			const paramType = paramTypes[i];
+			if (this.hardcodeConstants) {
+				if (paramType === 'Array' || paramType === 'Texture') {
+					const paramDim = utils.getDimensions(param, true);
+					const paramSize = utils.dimToTexSize({
+						floatTextures: this.floatTextures,
+						floatOutput: this.floatOutput
+					}, paramDim);
+
+					result.push(
+						`uniform highp sampler2D user_${ paramName }`,
+						`highp vec2 user_${ paramName }Size = vec2(${ paramSize[0] }.0, ${ paramSize[1] }.0)`,
+						`highp vec3 user_${ paramName }Dim = vec3(${ paramDim[0] }.0, ${ paramDim[1]}.0, ${ paramDim[2] }.0)`
+					);
+				} else if (paramType === 'Number' && Number.isInteger(param)) {
+					result.push(`highp float user_${ paramName } = ${ param }.0`);
+				} else if (paramType === 'Number') {
+					result.push(`highp float user_${ paramName } = ${ param }`);
+				}
+			} else {
+				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
+					result.push(
+						`uniform highp sampler2D user_${ paramName }`,
+						`uniform highp vec2 user_${ paramName }Size`,
+						`uniform highp vec3 user_${ paramName }Dim`
+					);
+				} else if (paramType === 'HTMLImageArray') {
+					result.push(
+						`uniform highp sampler2DArray user_${ paramName }`,
+						`uniform highp vec2 user_${ paramName }Size`,
+						`uniform highp vec3 user_${ paramName }Dim`
+					);
+				} else if (paramType === 'Number') {
+					result.push(`uniform highp float user_${ paramName }`);
+				}
+			}
+		}
+		return this._linesToString(result);
+	}
+
+	/**
+	 * @memberOf WebGL2Kernel#
+	 * @function
 	 * @name _getKernelString
 	 *
 	 * @desc Get Kernel program string (in *glsl*) for a kernel.

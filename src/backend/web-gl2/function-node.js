@@ -12,7 +12,7 @@ const DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
 const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
 /** 
- * @class WebGLFunctionNode
+ * @class WebGL2FunctionNode
  *
  * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
  *
@@ -23,13 +23,13 @@ const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
  * @returns the converted webGL function string
  *
  */
-module.exports = class WebGLFunctionNode extends FunctionNodeBase {
+module.exports = class WebGL2FunctionNode extends FunctionNodeBase {
 	generate() {
 		if (this.debug) {
 			console.log(this);
 		}
 		if (this.prototypeOnly) {
-			return WebGLFunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
+			return WebGL2FunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
 		} else {
 			this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
 		}
@@ -40,7 +40,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astGeneric
 	 *
@@ -125,7 +125,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astFunctionDeclaration
 	 *
@@ -145,7 +145,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astFunctionPrototype
 	 * @static
@@ -187,7 +187,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astFunctionExpression
 	 *
@@ -253,7 +253,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astReturnStatement
 	 *
@@ -291,7 +291,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astLiteral
 	 *
@@ -325,7 +325,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astBinaryExpression
 	 *
@@ -366,7 +366,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astIdentifierExpression
 	 *
@@ -422,7 +422,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astForStatement
 	 *
@@ -526,7 +526,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astWhileStatement
 	 *
@@ -561,7 +561,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astWhileStatement
 	 *
@@ -596,7 +596,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astAssignmentExpression
 	 *
@@ -626,7 +626,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astEmptyStatement
 	 *
@@ -644,7 +644,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astBlockStatement
 	 *
@@ -666,7 +666,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astExpressionStatement
 	 *
@@ -685,7 +685,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astVariableDeclaration
 	 *
@@ -723,7 +723,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astVariableDeclarator
 	 *
@@ -745,7 +745,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astIfStatement
 	 *
@@ -784,7 +784,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astBreakStatement
 	 *
@@ -802,7 +802,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astContinueStatement
 	 *
@@ -820,7 +820,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astLogicalExpression
 	 *
@@ -842,7 +842,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astUpdateExpression
 	 *
@@ -867,7 +867,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astUnaryExpression
 	 *
@@ -892,7 +892,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astThisExpression
 	 *
@@ -910,7 +910,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astMemberExpression
 	 *
@@ -1019,7 +1019,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astCallExpression
 	 *
@@ -1106,7 +1106,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name astArrayExpression
 	 *
@@ -1141,7 +1141,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf WebGL2FunctionNode#
 	 * @function
 	 * @name getFunctionPrototypeString
 	 *
