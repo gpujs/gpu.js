@@ -1041,6 +1041,8 @@ module.exports = function (_KernelBase) {
 						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp vec2 user_' + paramName + 'Size', 'uniform highp vec3 user_' + paramName + 'Dim');
 					} else if (paramType === 'Number') {
 						result.push('uniform highp float user_' + paramName);
+					} else {
+						throw new Error('Param type ' + paramType + ' not supported in WebGL, only WebGL2');
 					}
 				}
 			}

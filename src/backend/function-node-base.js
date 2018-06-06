@@ -28,7 +28,6 @@ module.exports = class BaseFunctionNode {
 	 *
 	 */
 	constructor(functionName, jsFunction, options, paramTypes, returnType) {
-		debugger;
 		//
 		// Internal vars setup
 		//

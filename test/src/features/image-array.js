@@ -31,13 +31,18 @@
       this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
     }, {
       graphical: true,
-      debug: true,
       output : [138, 91]
     });
     getImages(function(images) {
-      imageKernel(images);
-      document.body.appendChild(imageKernel.getCanvas());
-      assert.equal(true, true, 'does not throw');
+      if (gpu._runner.constructor.name === 'WebGLRunner') {
+        assert.throws(function() {
+          // TODO: fallback to cpu?  Probably not worth it.
+          imageKernel(images);
+        })
+      } else {
+        imageKernel(images);
+        assert.equal(true, true, 'does not throw');
+      }
       done();
     });
   }

@@ -382,18 +382,22 @@ ${ this.subKernelOutputVariableNames === null
 	_imageTo2DArray(image) {
 		this._canvasCtx.drawImage(image, 0, 0, image.width, image.height);
 		const pixelsData = this._canvasCtx.getImageData(0, 0, image.width, image.height).data;
-		const result = new Array(image.height);
+		const imageArray = new Array(image.height);
 		let index = 0;
 		for (let y = 0; y < image.height; y++) {
-			result[y] = new Array(image.width);
+			imageArray[y] = new Array(image.width);
 			for (let x = 0; x < image.width; x++) {
-				result[y][x] = [pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255];
+				imageArray[y][x] = [pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255];
 			}
 		}
-		return result;
+		return imageArray;
 	}
 
 	_imageTo3DArray(images) {
-		throw new Error('not yet working!');
+		const imagesArray = new Array(images.length);
+		for (let i = 0; i < images.length; i++) {
+			imagesArray[i] = this._imageTo2DArray(images[i]);
+		}
+		return imagesArray;
 	}
 };
