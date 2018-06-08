@@ -224,13 +224,16 @@ const myFunc = gpu.createKernel(function(image) {
 
 const image1 = new document.createElement('img');
 image1.src = 'my/image/source1.png';
+image1.onload = onload;
 const image2 = new document.createElement('img');
 image2.src = 'my/image/source2.png';
+image2.onload = onload;
 const image3 = new document.createElement('img');
 image3.src = 'my/image/source3.png';
+image3.onload = onload;
 const totalImages = 3;
 let loadedImages = 0;
-const onload = () => {
+function onload() {
   loadedImages++;
   if (loadedImages === totalImages) {
     myFunc([image1, image2, image3]);
