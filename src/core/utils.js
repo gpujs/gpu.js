@@ -271,7 +271,7 @@ class Utils extends UtilsCore {
 	 *
 	 * @param {Object} arg - The argument object to evaluate type
 	 *
-	 * @returns {String}  Argument type Array/Number/Texture/Unknown
+	 * @returns {String}  Argument type Array/Number/Float/Texture/Unknown
 	 *
 	 */
 	static getArgumentType(arg) {
@@ -281,7 +281,10 @@ class Utils extends UtilsCore {
 			}
 			return 'Array';
 		} else if (typeof arg === 'number') {
-			return 'Number';
+			if (Number.isInteger(arg)) {
+				return 'Integer';
+			}
+			return 'Float';
 		} else if (arg instanceof Texture) {
 			return 'Texture';
 		} else if (arg instanceof Input) {

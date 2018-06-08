@@ -291,7 +291,8 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
-			case 'Number':
+			case 'Integer':
+			case 'Float':
 				{
 					this.setUniform1f(`user_${name}`, value);
 					break;
@@ -506,9 +507,9 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 						`highp vec2 user_${ paramName }Size = vec2(${ paramSize[0] }.0, ${ paramSize[1] }.0)`,
 						`highp vec3 user_${ paramName }Dim = vec3(${ paramDim[0] }.0, ${ paramDim[1]}.0, ${ paramDim[2] }.0)`
 					);
-				} else if (paramType === 'Number' && Number.isInteger(param)) {
+				} else if (paramType === 'Integer') {
 					result.push(`highp float user_${ paramName } = ${ param }.0`);
-				} else if (paramType === 'Number') {
+				} else if (paramType === 'Float') {
 					result.push(`highp float user_${ paramName } = ${ param }`);
 				}
 			} else {
@@ -524,7 +525,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 						`uniform highp vec2 user_${ paramName }Size`,
 						`uniform highp vec3 user_${ paramName }Dim`
 					);
-				} else if (paramType === 'Number') {
+				} else if (paramType === 'Integer' || paramType === 'Float') {
 					result.push(`uniform highp float user_${ paramName }`);
 				}
 			}
