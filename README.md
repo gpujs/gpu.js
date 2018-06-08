@@ -203,9 +203,13 @@ const myFunc = gpu.createKernel(function(image) {
 })
   .setGraphical(true)
   .setOutput([100]);
-    
-myFunc([1, 2, 3]);
-// Result: colorful image
+
+const image = new document.createElement('img');
+image.src = 'my/image/source.png';
+image.onload = () => {
+  myFunc(image);
+  // Result: colorful image
+};
 ```
 
 An Array of HTML Images:
@@ -217,9 +221,22 @@ const myFunc = gpu.createKernel(function(image) {
 })
   .setGraphical(true)
   .setOutput([100]);
-    
-myFunc([1, 2, 3]);
-// Result: colorful image
+
+const image1 = new document.createElement('img');
+image1.src = 'my/image/source1.png';
+const image2 = new document.createElement('img');
+image2.src = 'my/image/source2.png';
+const image3 = new document.createElement('img');
+image3.src = 'my/image/source3.png';
+const totalImages = 3;
+let loadedImages = 0;
+const onload = () => {
+  loadedImages++;
+  if (loadedImages === totalImages) {
+    myFunc([image1, image2, image3]);
+    // Result: colorful image composed of many images
+  }
+};
 ```
 
 ## Graphical Output
