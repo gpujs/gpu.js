@@ -354,7 +354,7 @@ module.exports = function (_KernelBase) {
 			var pixelsData = this._canvasCtx.getImageData(0, 0, image.width, image.height).data;
 			var imageArray = new Array(image.height);
 			var index = 0;
-			for (var y = image.height; y >= 0; y--) {
+			for (var y = image.height - 1; y >= 0; y--) {
 				imageArray[y] = new Array(image.width);
 				for (var x = 0; x < image.width; x++) {
 					imageArray[y][x] = [pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255];
