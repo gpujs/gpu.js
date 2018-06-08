@@ -384,7 +384,7 @@ ${ this.subKernelOutputVariableNames === null
 		const pixelsData = this._canvasCtx.getImageData(0, 0, image.width, image.height).data;
 		const imageArray = new Array(image.height);
 		let index = 0;
-		for (let y = 0; y < image.height; y++) {
+		for (let y = image.height; y >= 0; y--) {
 			imageArray[y] = new Array(image.width);
 			for (let x = 0; x < image.width; x++) {
 				imageArray[y][x] = [pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255];

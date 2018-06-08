@@ -314,7 +314,7 @@ var Utils = function (_UtilsCore) {
    *
    * @param {Object} arg - The argument object to evaluate type
    *
-   * @returns {String}  Argument type Array/Number/Texture/Unknown
+   * @returns {String}  Argument type Array/Number/Float/Texture/Unknown
    *
    */
 
@@ -327,7 +327,10 @@ var Utils = function (_UtilsCore) {
 				}
 				return 'Array';
 			} else if (typeof arg === 'number') {
-				return 'Number';
+				if (Number.isInteger(arg)) {
+					return 'Integer';
+				}
+				return 'Float';
 			} else if (arg instanceof Texture) {
 				return 'Texture';
 			} else if (arg instanceof Input) {

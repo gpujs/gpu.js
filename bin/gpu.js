@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.4.0
- * @date Tue Jun 05 2018 20:28:35 GMT-0400 (EDT)
+ * @version 1.4.1
+ * @date Fri Jun 08 2018 16:41:35 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -1033,7 +1033,7 @@ module.exports = function (_KernelBase) {
 			var pixelsData = this._canvasCtx.getImageData(0, 0, image.width, image.height).data;
 			var imageArray = new Array(image.height);
 			var index = 0;
-			for (var y = 0; y < image.height; y++) {
+			for (var y = image.height; y >= 0; y--) {
 				imageArray[y] = new Array(image.width);
 				for (var x = 0; x < image.width; x++) {
 					imageArray[y][x] = [pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255];
@@ -3492,7 +3492,8 @@ module.exports = function (_KernelBase) {
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
-				case 'Number':
+				case 'Integer':
+				case 'Float':
 					{
 						this.setUniform1f('user_' + name, value);
 						break;
@@ -3687,15 +3688,15 @@ module.exports = function (_KernelBase) {
 						}, paramDim);
 
 						result.push('uniform highp sampler2D user_' + paramName, 'highp vec2 user_' + paramName + 'Size = vec2(' + paramSize[0] + '.0, ' + paramSize[1] + '.0)', 'highp vec3 user_' + paramName + 'Dim = vec3(' + paramDim[0] + '.0, ' + paramDim[1] + '.0, ' + paramDim[2] + '.0)');
-					} else if (paramType === 'Number' && Number.isInteger(param)) {
+					} else if (paramType === 'Integer') {
 						result.push('highp float user_' + paramName + ' = ' + param + '.0');
-					} else if (paramType === 'Number') {
+					} else if (paramType === 'Float') {
 						result.push('highp float user_' + paramName + ' = ' + param);
 					}
 				} else {
 					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
 						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp vec2 user_' + paramName + 'Size', 'uniform highp vec3 user_' + paramName + 'Dim');
-					} else if (paramType === 'Number') {
+					} else if (paramType === 'Integer' || paramType === 'Float') {
 						result.push('uniform highp float user_' + paramName);
 					} else {
 						throw new Error('Param type ' + paramType + ' not supported in WebGL, only WebGL2');
@@ -3713,12 +3714,17 @@ module.exports = function (_KernelBase) {
 			if (this.constants) {
 				for (var name in this.constants) {
 					if (!this.constants.hasOwnProperty(name)) continue;
-					var value = parseFloat(this.constants[name]);
-
-					if (Number.isInteger(value)) {
-						result.push('const float constants_' + name + ' = ' + parseInt(value) + '.0');
-					} else {
-						result.push('const float constants_' + name + ' = ' + parseFloat(value));
+					var value = this.constants[name];
+					var type = utils.getArgumentType(value);
+					switch (type) {
+						case 'Integer':
+							result.push('const float constants_' + name + ' = ' + parseInt(value) + '.0');
+							break;
+						case 'Float':
+							result.push('const float constants_' + name + ' = ' + parseFloat(value));
+							break;
+						default:
+							throw new Error('Unsupported constant ' + name + ' type ' + type);
 					}
 				}
 			}
@@ -3736,7 +3742,6 @@ module.exports = function (_KernelBase) {
 				for (var i = 0; i < names.length; i++) {
 					result.push('highp float ' + names[i] + ' = 0.0');
 				}
-
 			} else {
 				result.push('highp float kernelResult = 0.0');
 			}
@@ -5119,7 +5124,8 @@ module.exports = function (_WebGLKernel) {
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
-				case 'Number':
+				case 'Integer':
+				case 'Float':
 					{
 						this.setUniform1f('user_' + name, value);
 						break;
@@ -5276,9 +5282,9 @@ module.exports = function (_WebGLKernel) {
 						}, paramDim);
 
 						result.push('uniform highp sampler2D user_' + paramName, 'highp vec2 user_' + paramName + 'Size = vec2(' + paramSize[0] + '.0, ' + paramSize[1] + '.0)', 'highp vec3 user_' + paramName + 'Dim = vec3(' + paramDim[0] + '.0, ' + paramDim[1] + '.0, ' + paramDim[2] + '.0)');
-					} else if (paramType === 'Number' && Number.isInteger(param)) {
+					} else if (paramType === 'Integer') {
 						result.push('highp float user_' + paramName + ' = ' + param + '.0');
-					} else if (paramType === 'Number') {
+					} else if (paramType === 'Float') {
 						result.push('highp float user_' + paramName + ' = ' + param);
 					}
 				} else {
@@ -5286,7 +5292,7 @@ module.exports = function (_WebGLKernel) {
 						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp vec2 user_' + paramName + 'Size', 'uniform highp vec3 user_' + paramName + 'Dim');
 					} else if (paramType === 'HTMLImageArray') {
 						result.push('uniform highp sampler2DArray user_' + paramName, 'uniform highp vec2 user_' + paramName + 'Size', 'uniform highp vec3 user_' + paramName + 'Dim');
-					} else if (paramType === 'Number') {
+					} else if (paramType === 'Integer' || paramType === 'Float') {
 						result.push('uniform highp float user_' + paramName);
 					}
 				}
@@ -6201,7 +6207,10 @@ var Utils = function (_UtilsCore) {
 				}
 				return 'Array';
 			} else if (typeof arg === 'number') {
-				return 'Number';
+				if (Number.isInteger(arg)) {
+					return 'Integer';
+				}
+				return 'Float';
 			} else if (arg instanceof Texture) {
 				return 'Texture';
 			} else if (arg instanceof Input) {
