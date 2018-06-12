@@ -395,8 +395,8 @@ module.exports = function (_WebGLKernel) {
 
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D_ARRAY, argumentTexture);
-						gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-						gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+						gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 						// Upload the images into the texture.
 						var _mipLevel = 0; // the largest mip
