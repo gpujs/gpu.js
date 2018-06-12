@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.4.1
- * @date Fri Jun 08 2018 16:46:31 GMT-0400 (EDT)
+ * @version 1.4.2
+ * @date Tue Jun 12 2018 14:07:16 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -1511,7 +1511,11 @@ module.exports = function () {
 		value: function getParamType(paramName) {
 			var paramIndex = this.paramNames.indexOf(paramName);
 			if (paramIndex === -1) {
-				return this.declarations[paramName];
+				if (this.declarations.hasOwnProperty(paramName)) {
+					return this.declarations[paramName];
+				} else {
+					return null;
+				}
 			} else {
 				if (!this.parent) {
 					if (this.paramTypes[paramIndex]) return this.paramTypes[paramIndex];
@@ -1539,8 +1543,9 @@ module.exports = function () {
 			var calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
 			for (var i = 0; i < calledFunctionArguments.length; i++) {
 				var calledFunctionArgument = calledFunctionArguments[i];
-				if (calledFunctionArgument[paramIndex] !== null) {
-					return calledFunctionArgument[paramIndex].name;
+				var param = calledFunctionArgument[paramIndex];
+				if (param !== null && param.type !== 'Integer') {
+					return param.name;
 				}
 			}
 			return null;
@@ -4029,17 +4034,15 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var FunctionNodeBase = require('../function-node-base');
-var utils = require('../../core/utils');
-var jsMathPrefix = 'Math.';
-var localPrefix = 'this.';
+var WebGLFunctionNode = require('../web-gl/function-node');
+
 var constantsPrefix = 'this.constants.';
 
 var DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
 var ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
-module.exports = function (_FunctionNodeBase) {
-	_inherits(WebGL2FunctionNode, _FunctionNodeBase);
+module.exports = function (_WebGLFunctionNode) {
+	_inherits(WebGL2FunctionNode, _WebGLFunctionNode);
 
 	function WebGL2FunctionNode() {
 		_classCallCheck(this, WebGL2FunctionNode);
@@ -4064,94 +4067,7 @@ module.exports = function (_FunctionNodeBase) {
 
 
 	}, {
-		key: 'astGeneric',
-		value: function astGeneric(ast, retArr, funcParam) {
-			if (ast === null) {
-				throw this.astErrorOutput('NULL ast', ast, funcParam);
-			} else {
-				if (Array.isArray(ast)) {
-					for (var i = 0; i < ast.length; i++) {
-						this.astGeneric(ast[i], retArr, funcParam);
-					}
-					return retArr;
-				}
-
-				switch (ast.type) {
-					case 'FunctionDeclaration':
-						return this.astFunctionDeclaration(ast, retArr, funcParam);
-					case 'FunctionExpression':
-						return this.astFunctionExpression(ast, retArr, funcParam);
-					case 'ReturnStatement':
-						return this.astReturnStatement(ast, retArr, funcParam);
-					case 'Literal':
-						return this.astLiteral(ast, retArr, funcParam);
-					case 'BinaryExpression':
-						return this.astBinaryExpression(ast, retArr, funcParam);
-					case 'Identifier':
-						return this.astIdentifierExpression(ast, retArr, funcParam);
-					case 'AssignmentExpression':
-						return this.astAssignmentExpression(ast, retArr, funcParam);
-					case 'ExpressionStatement':
-						return this.astExpressionStatement(ast, retArr, funcParam);
-					case 'EmptyStatement':
-						return this.astEmptyStatement(ast, retArr, funcParam);
-					case 'BlockStatement':
-						return this.astBlockStatement(ast, retArr, funcParam);
-					case 'IfStatement':
-						return this.astIfStatement(ast, retArr, funcParam);
-					case 'BreakStatement':
-						return this.astBreakStatement(ast, retArr, funcParam);
-					case 'ContinueStatement':
-						return this.astContinueStatement(ast, retArr, funcParam);
-					case 'ForStatement':
-						return this.astForStatement(ast, retArr, funcParam);
-					case 'WhileStatement':
-						return this.astWhileStatement(ast, retArr, funcParam);
-					case 'DoWhileStatement':
-						return this.astDoWhileStatement(ast, retArr, funcParam);
-					case 'VariableDeclaration':
-						return this.astVariableDeclaration(ast, retArr, funcParam);
-					case 'VariableDeclarator':
-						return this.astVariableDeclarator(ast, retArr, funcParam);
-					case 'ThisExpression':
-						return this.astThisExpression(ast, retArr, funcParam);
-					case 'SequenceExpression':
-						return this.astSequenceExpression(ast, retArr, funcParam);
-					case 'UnaryExpression':
-						return this.astUnaryExpression(ast, retArr, funcParam);
-					case 'UpdateExpression':
-						return this.astUpdateExpression(ast, retArr, funcParam);
-					case 'LogicalExpression':
-						return this.astLogicalExpression(ast, retArr, funcParam);
-					case 'MemberExpression':
-						return this.astMemberExpression(ast, retArr, funcParam);
-					case 'CallExpression':
-						return this.astCallExpression(ast, retArr, funcParam);
-					case 'ArrayExpression':
-						return this.astArrayExpression(ast, retArr, funcParam);
-					case 'DebuggerStatement':
-						return this.astDebuggerStatement(ast, retArr, funcParam);
-				}
-
-				throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);
-			}
-		}
-
-
-	}, {
-		key: 'astFunctionDeclaration',
-		value: function astFunctionDeclaration(ast, retArr, funcParam) {
-			if (this.addFunction) {
-				this.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
-			}
-			return retArr;
-		}
-
-
-	}, {
 		key: 'astFunctionExpression',
-
-
 		value: function astFunctionExpression(ast, retArr, funcParam) {
 
 			if (funcParam.isRootKernel) {
@@ -4202,297 +4118,6 @@ module.exports = function (_FunctionNodeBase) {
 
 
 	}, {
-		key: 'astReturnStatement',
-		value: function astReturnStatement(ast, retArr, funcParam) {
-			if (funcParam.isRootKernel) {
-				retArr.push('kernelResult = ');
-				this.astGeneric(ast.argument, retArr, funcParam);
-				retArr.push(';');
-				retArr.push('return;');
-			} else if (funcParam.isSubKernel) {
-				retArr.push(funcParam.functionName + 'Result = ');
-				this.astGeneric(ast.argument, retArr, funcParam);
-				retArr.push(';');
-				retArr.push('return ' + funcParam.functionName + 'Result;');
-			} else {
-				retArr.push('return ');
-				this.astGeneric(ast.argument, retArr, funcParam);
-				retArr.push(';');
-			}
-
-
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astLiteral',
-		value: function astLiteral(ast, retArr, funcParam) {
-
-			if (isNaN(ast.value)) {
-				throw this.astErrorOutput('Non-numeric literal not supported : ' + ast.value, ast, funcParam);
-			}
-
-			retArr.push(ast.value);
-
-			if (Number.isInteger(ast.value)) {
-				retArr.push('.0');
-			}
-
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astBinaryExpression',
-		value: function astBinaryExpression(ast, retArr, funcParam) {
-			retArr.push('(');
-
-			if (ast.operator === '%') {
-				retArr.push('mod(');
-				this.astGeneric(ast.left, retArr, funcParam);
-				retArr.push(',');
-				this.astGeneric(ast.right, retArr, funcParam);
-				retArr.push(')');
-			} else if (ast.operator === '===') {
-				this.astGeneric(ast.left, retArr, funcParam);
-				retArr.push('==');
-				this.astGeneric(ast.right, retArr, funcParam);
-			} else if (ast.operator === '!==') {
-				this.astGeneric(ast.left, retArr, funcParam);
-				retArr.push('!=');
-				this.astGeneric(ast.right, retArr, funcParam);
-			} else {
-				this.astGeneric(ast.left, retArr, funcParam);
-				retArr.push(ast.operator);
-				this.astGeneric(ast.right, retArr, funcParam);
-			}
-
-			retArr.push(')');
-
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astIdentifierExpression',
-		value: function astIdentifierExpression(idtNode, retArr, funcParam) {
-			if (idtNode.type !== 'Identifier') {
-				throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode, funcParam);
-			}
-
-			switch (idtNode.name) {
-				case 'gpu_threadX':
-					retArr.push('threadId.x');
-					break;
-				case 'gpu_threadY':
-					retArr.push('threadId.y');
-					break;
-				case 'gpu_threadZ':
-					retArr.push('threadId.z');
-					break;
-				case 'gpu_outputX':
-					retArr.push('uOutputDim.x');
-					break;
-				case 'gpu_outputY':
-					retArr.push('uOutputDim.y');
-					break;
-				case 'gpu_outputZ':
-					retArr.push('uOutputDim.z');
-					break;
-				default:
-					if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
-						retArr.push('constants_' + idtNode.name);
-					} else {
-						var userParamName = funcParam.getUserParamName(idtNode.name);
-						if (userParamName !== null) {
-							retArr.push('user_' + userParamName);
-						} else {
-							retArr.push('user_' + idtNode.name);
-						}
-					}
-			}
-
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astForStatement',
-		value: function astForStatement(forNode, retArr, funcParam) {
-			if (forNode.type !== 'ForStatement') {
-				throw this.astErrorOutput('Invalid for statment', forNode, funcParam);
-			}
-
-			if (forNode.test && forNode.test.type === 'BinaryExpression') {
-				if (forNode.test.right.type === 'Identifier' && forNode.test.operator === '<' && this.isIdentifierConstant(forNode.test.right.name) === false) {
-
-					if (!this.loopMaxIterations) {
-						console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
-						console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
-					}
-
-					retArr.push('for (');
-					this.astGeneric(forNode.init, retArr, funcParam);
-					this.astGeneric(forNode.test.left, retArr, funcParam);
-					retArr.push(forNode.test.operator);
-					retArr.push('LOOP_MAX');
-					retArr.push(';');
-					this.astGeneric(forNode.update, retArr, funcParam);
-					retArr.push(')');
-
-					retArr.push('{\n');
-					retArr.push('if (');
-					this.astGeneric(forNode.test.left, retArr, funcParam);
-					retArr.push(forNode.test.operator);
-					this.astGeneric(forNode.test.right, retArr, funcParam);
-					retArr.push(') {\n');
-					if (forNode.body.type === 'BlockStatement') {
-						for (var i = 0; i < forNode.body.body.length; i++) {
-							this.astGeneric(forNode.body.body[i], retArr, funcParam);
-						}
-					} else {
-						this.astGeneric(forNode.body, retArr, funcParam);
-					}
-					retArr.push('} else {\n');
-					retArr.push('break;\n');
-					retArr.push('}\n');
-					retArr.push('}\n');
-
-					return retArr;
-				} else {
-					var declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
-					var updateArgument = forNode.update.argument;
-					if (!Array.isArray(declarations) || declarations.length < 1) {
-						console.log(this.jsFunctionString);
-						throw new Error('Error: Incompatible for loop declaration');
-					}
-
-					if (declarations.length > 1) {
-						var initArgument = null;
-						for (var _i2 = 0; _i2 < declarations.length; _i2++) {
-							var declaration = declarations[_i2];
-							if (declaration.id.name === updateArgument.name) {
-								initArgument = declaration;
-								declarations.splice(_i2, 1);
-							} else {
-								retArr.push('float ');
-								this.astGeneric(declaration, retArr, funcParam);
-								retArr.push(';');
-							}
-						}
-
-						retArr.push('for (float ');
-						this.astGeneric(initArgument, retArr, funcParam);
-						retArr.push(';');
-					} else {
-						retArr.push('for (');
-						this.astGeneric(forNode.init, retArr, funcParam);
-					}
-
-					this.astGeneric(forNode.test, retArr, funcParam);
-					retArr.push(';');
-					this.astGeneric(forNode.update, retArr, funcParam);
-					retArr.push(')');
-					this.astGeneric(forNode.body, retArr, funcParam);
-					return retArr;
-				}
-			}
-
-			throw this.astErrorOutput('Invalid for statement', forNode, funcParam);
-		}
-
-
-	}, {
-		key: 'astWhileStatement',
-		value: function astWhileStatement(whileNode, retArr, funcParam) {
-			if (whileNode.type !== 'WhileStatement') {
-				throw this.astErrorOutput('Invalid while statment', whileNode, funcParam);
-			}
-
-			retArr.push('for (float i = 0.0; i < LOOP_MAX; i++) {');
-			retArr.push('if (');
-			this.astGeneric(whileNode.test, retArr, funcParam);
-			retArr.push(') {\n');
-			this.astGeneric(whileNode.body, retArr, funcParam);
-			retArr.push('} else {\n');
-			retArr.push('break;\n');
-			retArr.push('}\n');
-			retArr.push('}\n');
-
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astDoWhileStatement',
-		value: function astDoWhileStatement(doWhileNode, retArr, funcParam) {
-			if (doWhileNode.type !== 'DoWhileStatement') {
-				throw this.astErrorOutput('Invalid while statment', doWhileNode, funcParam);
-			}
-
-			retArr.push('for (float i = 0.0; i < LOOP_MAX; i++) {');
-			this.astGeneric(doWhileNode.body, retArr, funcParam);
-			retArr.push('if (!');
-			this.astGeneric(doWhileNode.test, retArr, funcParam);
-			retArr.push(') {\n');
-			retArr.push('break;\n');
-			retArr.push('}\n');
-			retArr.push('}\n');
-
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astAssignmentExpression',
-		value: function astAssignmentExpression(assNode, retArr, funcParam) {
-			if (assNode.operator === '%=') {
-				this.astGeneric(assNode.left, retArr, funcParam);
-				retArr.push('=');
-				retArr.push('mod(');
-				this.astGeneric(assNode.left, retArr, funcParam);
-				retArr.push(',');
-				this.astGeneric(assNode.right, retArr, funcParam);
-				retArr.push(')');
-			} else {
-				this.astGeneric(assNode.left, retArr, funcParam);
-				retArr.push(assNode.operator);
-				this.astGeneric(assNode.right, retArr, funcParam);
-				return retArr;
-			}
-		}
-
-
-	}, {
-		key: 'astEmptyStatement',
-		value: function astEmptyStatement(eNode, retArr, funcParam) {
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astBlockStatement',
-		value: function astBlockStatement(bNode, retArr, funcParam) {
-			retArr.push('{\n');
-			for (var i = 0; i < bNode.body.length; i++) {
-				this.astGeneric(bNode.body[i], retArr, funcParam);
-			}
-			retArr.push('}\n');
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astExpressionStatement',
-		value: function astExpressionStatement(esNode, retArr, funcParam) {
-			this.astGeneric(esNode.expression, retArr, funcParam);
-			retArr.push(';\n');
-			return retArr;
-		}
-
-
-	}, {
 		key: 'astVariableDeclaration',
 		value: function astVariableDeclaration(vardecNode, retArr, funcParam) {
 			for (var i = 0; i < vardecNode.declarations.length; i++) {
@@ -4512,112 +4137,6 @@ module.exports = function (_FunctionNodeBase) {
 				retArr.push.apply(retArr, retDeclaration);
 			}
 			retArr.push(';');
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astVariableDeclarator',
-		value: function astVariableDeclarator(ivardecNode, retArr, funcParam) {
-			this.astGeneric(ivardecNode.id, retArr, funcParam);
-			if (ivardecNode.init !== null) {
-				retArr.push('=');
-				this.astGeneric(ivardecNode.init, retArr, funcParam);
-			}
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astIfStatement',
-		value: function astIfStatement(ifNode, retArr, funcParam) {
-			retArr.push('if (');
-			this.astGeneric(ifNode.test, retArr, funcParam);
-			retArr.push(')');
-			if (ifNode.consequent.type === 'BlockStatement') {
-				this.astGeneric(ifNode.consequent, retArr, funcParam);
-			} else {
-				retArr.push(' {\n');
-				this.astGeneric(ifNode.consequent, retArr, funcParam);
-				retArr.push('\n}\n');
-			}
-
-			if (ifNode.alternate) {
-				retArr.push('else ');
-				if (ifNode.alternate.type === 'BlockStatement') {
-					this.astGeneric(ifNode.alternate, retArr, funcParam);
-				} else {
-					retArr.push(' {\n');
-					this.astGeneric(ifNode.alternate, retArr, funcParam);
-					retArr.push('\n}\n');
-				}
-			}
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astBreakStatement',
-		value: function astBreakStatement(brNode, retArr, funcParam) {
-			retArr.push('break;\n');
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astContinueStatement',
-		value: function astContinueStatement(crNode, retArr, funcParam) {
-			retArr.push('continue;\n');
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astLogicalExpression',
-		value: function astLogicalExpression(logNode, retArr, funcParam) {
-			retArr.push('(');
-			this.astGeneric(logNode.left, retArr, funcParam);
-			retArr.push(logNode.operator);
-			this.astGeneric(logNode.right, retArr, funcParam);
-			retArr.push(')');
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astUpdateExpression',
-		value: function astUpdateExpression(uNode, retArr, funcParam) {
-			if (uNode.prefix) {
-				retArr.push(uNode.operator);
-				this.astGeneric(uNode.argument, retArr, funcParam);
-			} else {
-				this.astGeneric(uNode.argument, retArr, funcParam);
-				retArr.push(uNode.operator);
-			}
-
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astUnaryExpression',
-		value: function astUnaryExpression(uNode, retArr, funcParam) {
-			if (uNode.prefix) {
-				retArr.push(uNode.operator);
-				this.astGeneric(uNode.argument, retArr, funcParam);
-			} else {
-				this.astGeneric(uNode.argument, retArr, funcParam);
-				retArr.push(uNode.operator);
-			}
-
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astThisExpression',
-		value: function astThisExpression(tNode, retArr, funcParam) {
-			retArr.push('this');
 			return retArr;
 		}
 
@@ -4702,169 +4221,15 @@ module.exports = function (_FunctionNodeBase) {
 			}
 			return retArr;
 		}
-	}, {
-		key: 'astSequenceExpression',
-		value: function astSequenceExpression(sNode, retArr, funcParam) {
-			for (var i = 0; i < sNode.expressions.length; i++) {
-				if (i > 0) {
-					retArr.push(',');
-				}
-				this.astGeneric(sNode.expressions, retArr, funcParam);
-			}
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astCallExpression',
-		value: function astCallExpression(ast, retArr, funcParam) {
-			if (ast.callee) {
-				var funcName = this.astMemberExpressionUnroll(ast.callee);
-
-				if (funcName.indexOf(jsMathPrefix) === 0) {
-					funcName = funcName.slice(jsMathPrefix.length);
-				}
-
-				if (funcName.indexOf(localPrefix) === 0) {
-					funcName = funcName.slice(localPrefix.length);
-				}
-
-				if (funcName === 'atan2') {
-					funcName = 'atan';
-				}
-
-				if (funcParam.calledFunctions.indexOf(funcName) < 0) {
-					funcParam.calledFunctions.push(funcName);
-				}
-				if (!funcParam.hasOwnProperty('funcName')) {
-					funcParam.calledFunctionsArguments[funcName] = [];
-				}
-
-				var functionArguments = [];
-				funcParam.calledFunctionsArguments[funcName].push(functionArguments);
-
-				retArr.push(funcName);
-
-				retArr.push('(');
-
-				for (var i = 0; i < ast.arguments.length; ++i) {
-					var argument = ast.arguments[i];
-					if (i > 0) {
-						retArr.push(', ');
-					}
-					this.astGeneric(argument, retArr, funcParam);
-					if (argument.type === 'Identifier') {
-						var paramIndex = funcParam.paramNames.indexOf(argument.name);
-						if (paramIndex === -1) {
-							functionArguments.push(null);
-						} else {
-							functionArguments.push({
-								name: argument.name,
-								type: funcParam.paramTypes[paramIndex]
-							});
-						}
-					} else {
-						functionArguments.push(null);
-					}
-				}
-
-				retArr.push(')');
-
-				return retArr;
-			}
-
-			throw this.astErrorOutput('Unknown CallExpression', ast, funcParam);
-
-			return retArr;
-		}
-
-
-	}, {
-		key: 'astArrayExpression',
-		value: function astArrayExpression(arrNode, retArr, funcParam) {
-			var arrLen = arrNode.elements.length;
-
-			retArr.push('float[' + arrLen + '](');
-			for (var i = 0; i < arrLen; ++i) {
-				if (i > 0) {
-					retArr.push(', ');
-				}
-				var subNode = arrNode.elements[i];
-				this.astGeneric(subNode, retArr, funcParam);
-			}
-			retArr.push(')');
-
-			return retArr;
-
-		}
-
-
-	}, {
-		key: 'getFunctionPrototypeString',
-		value: function getFunctionPrototypeString() {
-			if (this.webGlFunctionPrototypeString) {
-				return this.webGlFunctionPrototypeString;
-			}
-			return this.webGlFunctionPrototypeString = this.generate();
-		}
-	}, {
-		key: 'build',
-		value: function build() {
-			return this.getFunctionPrototypeString().length > 0;
-		}
-	}], [{
-		key: 'astFunctionPrototype',
-		value: function astFunctionPrototype(ast, retArr, funcParam) {
-			if (funcParam.isRootKernel || funcParam.isSubKernel) {
-				return retArr;
-			}
-
-			retArr.push(funcParam.returnType);
-			retArr.push(' ');
-			retArr.push(funcParam.functionName);
-			retArr.push('(');
-
-			for (var i = 0; i < funcParam.paramNames.length; ++i) {
-				if (i > 0) {
-					retArr.push(', ');
-				}
-
-				retArr.push(funcParam.paramTypes[i]);
-				retArr.push(' ');
-				retArr.push('user_');
-				retArr.push(funcParam.paramNames[i]);
-			}
-
-			retArr.push(');\n');
-
-			return retArr;
-		}
 	}]);
 
 	return WebGL2FunctionNode;
-}(FunctionNodeBase);
-
-function isIdentifierKernelParam(paramName, ast, funcParam) {
-	return funcParam.paramNames.indexOf(paramName) !== -1;
-}
-
-function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
-	var start = ast.loc.start;
-
-	if (!isIdentifierKernelParam(paramName, funcParam) && expectedType !== 'float') {
-		throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
-	} else {
-		var actualType = funcParam.paramTypes[funcParam.paramNames.indexOf(paramName)];
-		if (actualType !== expectedType) {
-			throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
-		}
-	}
-}
+}(WebGLFunctionNode);
 
 function webGlRegexOptimize(inStr) {
 	return inStr.replace(DECODE32_ENCODE32, '((').replace(ENCODE32_DECODE32, '((');
 }
-},{"../../core/utils":32,"../function-node-base":7}],21:[function(require,module,exports){
+},{"../web-gl/function-node":12}],21:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -5200,8 +4565,8 @@ module.exports = function (_WebGLKernel) {
 
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D_ARRAY, argumentTexture);
-						gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-						gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+						gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 						var _mipLevel = 0; 
 						var _internalFormat = gl.RGBA; 

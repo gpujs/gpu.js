@@ -330,7 +330,11 @@ module.exports = function () {
 		value: function getParamType(paramName) {
 			var paramIndex = this.paramNames.indexOf(paramName);
 			if (paramIndex === -1) {
-				return this.declarations[paramName];
+				if (this.declarations.hasOwnProperty(paramName)) {
+					return this.declarations[paramName];
+				} else {
+					return null;
+				}
 			} else {
 				if (!this.parent) {
 					if (this.paramTypes[paramIndex]) return this.paramTypes[paramIndex];
@@ -371,8 +375,9 @@ module.exports = function () {
 			var calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
 			for (var i = 0; i < calledFunctionArguments.length; i++) {
 				var calledFunctionArgument = calledFunctionArguments[i];
-				if (calledFunctionArgument[paramIndex] !== null) {
-					return calledFunctionArgument[paramIndex].name;
+				var param = calledFunctionArgument[paramIndex];
+				if (param !== null && param.type !== 'Integer') {
+					return param.name;
 				}
 			}
 			return null;
