@@ -317,7 +317,11 @@ module.exports = class BaseFunctionNode {
 	getParamType(paramName) {
 		const paramIndex = this.paramNames.indexOf(paramName);
 		if (paramIndex === -1) {
-			return this.declarations[paramName];
+			if (this.declarations.hasOwnProperty(paramName)) {
+				return this.declarations[paramName];
+			} else {
+				return null;
+			}
 		} else {
 			if (!this.parent) {
 				if (this.paramTypes[paramIndex]) return this.paramTypes[paramIndex];
@@ -355,8 +359,9 @@ module.exports = class BaseFunctionNode {
 		const calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
 		for (let i = 0; i < calledFunctionArguments.length; i++) {
 			const calledFunctionArgument = calledFunctionArguments[i];
-			if (calledFunctionArgument[paramIndex] !== null) {
-				return calledFunctionArgument[paramIndex].name;
+			const param = calledFunctionArgument[paramIndex];
+			if (param !== null && param.type !== 'Integer') {
+				return param.name;
 			}
 		}
 		return null;
