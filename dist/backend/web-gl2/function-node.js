@@ -123,11 +123,11 @@ module.exports = function (_WebGLFunctionNode) {
 		/**
    * @memberOf WebGL2FunctionNode#
    * @function
-   * @name astVariableDeclaration
+   * @name astIdentifierExpression
    *
-   * @desc Parses the abstract syntax tree for *Variable Declaration*
+   * @desc Parses the abstract syntax tree for *identifier* expression
    *
-   * @param {Object} vardecNode - An ast Node
+   * @param {Object} idtNode - An ast Node
    * @param {Array} retArr - return array string
    * @param {Function} funcParam - FunctionNode, that tracks compilation state
    *
@@ -135,127 +135,47 @@ module.exports = function (_WebGLFunctionNode) {
    */
 
 	}, {
-		key: 'astVariableDeclaration',
-		value: function astVariableDeclaration(vardecNode, retArr, funcParam) {
-			for (var i = 0; i < vardecNode.declarations.length; i++) {
-				var declaration = vardecNode.declarations[i];
-				if (i > 0) {
-					retArr.push(',');
-				}
-				var retDeclaration = [];
-				this.astGeneric(declaration, retDeclaration, funcParam);
-				if (i === 0) {
-					if (retDeclaration[0] === 'get(' && funcParam.getParamType(retDeclaration[1]) === 'HTMLImage' && retDeclaration.length === 18) {
-						retArr.push('sampler2D ');
-					} else {
-						retArr.push('float ');
-					}
-				}
-				retArr.push.apply(retArr, retDeclaration);
+		key: 'astIdentifierExpression',
+		value: function astIdentifierExpression(idtNode, retArr, funcParam) {
+			if (idtNode.type !== 'Identifier') {
+				throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode, funcParam);
 			}
-			retArr.push(';');
-			return retArr;
-		}
 
-		/**
-   * @memberOf WebGL2FunctionNode#
-   * @function
-   * @name astMemberExpression
-   *
-   * @desc Parses the abstract syntax tree for *Member* Expression
-   *
-   * @param {Object} mNode - An ast Node
-   * @param {Array} retArr - return array string
-   * @param {Function} funcParam - FunctionNode, that tracks compilation state
-   *
-   * @returns {Array} the append retArr
-   */
-
-	}, {
-		key: 'astMemberExpression',
-		value: function astMemberExpression(mNode, retArr, funcParam) {
-			if (mNode.computed) {
-				if (mNode.object.type === 'Identifier') {
-					// Working logger
-					var reqName = mNode.object.name;
-					var funcName = funcParam.functionName || 'kernel';
-					var assumeNotTexture = false;
-
-					// Possibly an array request - handle it as such
-					if (funcParam.paramNames) {
-						var idx = funcParam.paramNames.indexOf(reqName);
-						if (idx >= 0 && funcParam.paramTypes[idx] === 'float') {
-							assumeNotTexture = true;
+			switch (idtNode.name) {
+				case 'gpu_threadX':
+					retArr.push('threadId.x');
+					break;
+				case 'gpu_threadY':
+					retArr.push('threadId.y');
+					break;
+				case 'gpu_threadZ':
+					retArr.push('threadId.z');
+					break;
+				case 'gpu_outputX':
+					retArr.push('uOutputDim.x');
+					break;
+				case 'gpu_outputY':
+					retArr.push('uOutputDim.y');
+					break;
+				case 'gpu_outputZ':
+					retArr.push('uOutputDim.z');
+					break;
+				case 'Infinity':
+					retArr.push('intBitsToFloat(2139095039)');
+					break;
+				default:
+					if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
+						retArr.push('constants_' + idtNode.name);
+					} else {
+						var userParamName = funcParam.getUserParamName(idtNode.name);
+						if (userParamName !== null) {
+							retArr.push('user_' + userParamName);
+						} else {
+							retArr.push('user_' + idtNode.name);
 						}
 					}
-
-					if (assumeNotTexture) {
-						// Get from array
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('[int(');
-						this.astGeneric(mNode.property, retArr, funcParam);
-						retArr.push(')]');
-					} else {
-						// Get from texture
-						// This normally refers to the global read only input vars
-						retArr.push('get(');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push(', vec2(');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Size[0],');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Size[1]), vec3(');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Dim[0],');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Dim[1],');
-						this.astGeneric(mNode.object, retArr, funcParam);
-						retArr.push('Dim[2]');
-						retArr.push('), ');
-						this.astGeneric(mNode.property, retArr, funcParam);
-						retArr.push(')');
-					}
-				} else {
-					this.astGeneric(mNode.object, retArr, funcParam);
-					var last = retArr.pop();
-					retArr.push(',');
-					this.astGeneric(mNode.property, retArr, funcParam);
-					retArr.push(last);
-				}
-			} else {
-
-				// Unroll the member expression
-				var unrolled = this.astMemberExpressionUnroll(mNode);
-				var unrolled_lc = unrolled.toLowerCase();
-
-				// Its a constant, remove this.constants.
-				if (unrolled.indexOf(constantsPrefix) === 0) {
-					unrolled = 'constants_' + unrolled.slice(constantsPrefix.length);
-				}
-
-				switch (unrolled_lc) {
-					case 'this.thread.x':
-						retArr.push('threadId.x');
-						break;
-					case 'this.thread.y':
-						retArr.push('threadId.y');
-						break;
-					case 'this.thread.z':
-						retArr.push('threadId.z');
-						break;
-					case 'this.output.x':
-						retArr.push(this.output[0] + '.0');
-						break;
-					case 'this.output.y':
-						retArr.push(this.output[1] + '.0');
-						break;
-					case 'this.output.z':
-						retArr.push(this.output[2] + '.0');
-						break;
-					default:
-						retArr.push(unrolled);
-				}
 			}
+
 			return retArr;
 		}
 	}]);

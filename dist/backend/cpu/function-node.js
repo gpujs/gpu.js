@@ -390,6 +390,9 @@ module.exports = function (_BaseFunctionNode) {
 				case 'gpu_outputZ':
 					retArr.push('uOutputDim.z');
 					break;
+				case 'Infinity':
+					retArr.push('Infinity');
+					break;
 				default:
 					if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
 						retArr.push('constants_' + idtNode.name);
@@ -1108,7 +1111,6 @@ module.exports = function (_BaseFunctionNode) {
 				if (i > 0) {
 					retArr.push(', ');
 				}
-
 				retArr.push(funcParam.paramTypes[i]);
 				retArr.push(' ');
 				retArr.push('user_');

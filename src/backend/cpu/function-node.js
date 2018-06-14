@@ -188,7 +188,6 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 			if (i > 0) {
 				retArr.push(', ');
 			}
-
 			retArr.push(funcParam.paramTypes[i]);
 			retArr.push(' ');
 			retArr.push('user_');
@@ -379,6 +378,9 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 				break;
 			case 'gpu_outputZ':
 				retArr.push('uOutputDim.z');
+				break;
+			case 'Infinity':
+				retArr.push('Infinity');
 				break;
 			default:
 				if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {

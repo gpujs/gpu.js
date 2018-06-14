@@ -409,6 +409,10 @@ module.exports = function (_FunctionNodeBase) {
 				case 'gpu_outputZ':
 					retArr.push('uOutputDim.z');
 					break;
+				case 'Infinity':
+					// https://stackoverflow.com/a/47543127/1324039
+					retArr.push('3.402823466e+38');
+					break;
 				default:
 					if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
 						retArr.push('constants_' + idtNode.name);
