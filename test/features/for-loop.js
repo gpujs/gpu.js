@@ -108,15 +108,15 @@
 
   var evil_while_a = [1, 2, 3, 5, 6, 7];
   var evil_while_b = [4, 5, 6, 1, 2, 3];
-  var evil_while_cpuRef = new GPU({ mode: 'cpu' });
-  var evil_while_cpuRef_f =  evil_while_cpuRef.createKernel(evilWhileKernalFunction, {
-    output : [6],
-    loopMaxIterations: 10000
-  });
-
-  var evil_while_exp = evil_while_cpuRef_f(evil_while_a,evil_while_b);
 
   function evilWhileLoopTest(mode ) {
+    var evil_while_cpuRef = new GPU({ mode: 'cpu' });
+    var evil_while_cpuRef_f =  evil_while_cpuRef.createKernel(evilWhileKernalFunction, {
+      output : [6],
+      loopMaxIterations: 10000
+    });
+
+    var evil_while_exp = evil_while_cpuRef_f(evil_while_a,evil_while_b);
     var gpu = new GPU({ mode: mode });
 
     var f = gpu.createKernel(evilWhileKernalFunction, {
