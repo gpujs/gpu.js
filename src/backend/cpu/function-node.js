@@ -54,92 +54,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astGeneric
-	 *
-	 * @desc Parses the abstract syntax tree for generically to its respective function
-	 *
-	 * @param {Object} ast - the AST object to parse
-	 * @param {Array} retArr - return array string
-	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
-	 *
-	 * @returns {Array} the parsed cpu string array
-	 */
-	astGeneric(ast, retArr, funcParam) {
-		if (ast === null) {
-			throw this.astErrorOutput('NULL ast', ast, funcParam);
-		} else {
-			if (Array.isArray(ast)) {
-				for (let i = 0; i < ast.length; i++) {
-					this.astGeneric(ast[i], retArr, funcParam);
-				}
-				return retArr;
-			}
-
-			switch (ast.type) {
-				case 'FunctionDeclaration':
-					return this.astFunctionDeclaration(ast, retArr, funcParam);
-				case 'FunctionExpression':
-					return this.astFunctionExpression(ast, retArr, funcParam);
-				case 'ReturnStatement':
-					return this.astReturnStatement(ast, retArr, funcParam);
-				case 'Literal':
-					return this.astLiteral(ast, retArr, funcParam);
-				case 'BinaryExpression':
-					return this.astBinaryExpression(ast, retArr, funcParam);
-				case 'Identifier':
-					return this.astIdentifierExpression(ast, retArr, funcParam);
-				case 'AssignmentExpression':
-					return this.astAssignmentExpression(ast, retArr, funcParam);
-				case 'ExpressionStatement':
-					return this.astExpressionStatement(ast, retArr, funcParam);
-				case 'EmptyStatement':
-					return this.astEmptyStatement(ast, retArr, funcParam);
-				case 'BlockStatement':
-					return this.astBlockStatement(ast, retArr, funcParam);
-				case 'IfStatement':
-					return this.astIfStatement(ast, retArr, funcParam);
-				case 'BreakStatement':
-					return this.astBreakStatement(ast, retArr, funcParam);
-				case 'ContinueStatement':
-					return this.astContinueStatement(ast, retArr, funcParam);
-				case 'ForStatement':
-					return this.astForStatement(ast, retArr, funcParam);
-				case 'WhileStatement':
-					return this.astWhileStatement(ast, retArr, funcParam);
-				case 'DoWhileStatement':
-					return this.astDoWhileStatement(ast, retArr, funcParam);
-				case 'VariableDeclaration':
-					return this.astVariableDeclaration(ast, retArr, funcParam);
-				case 'VariableDeclarator':
-					return this.astVariableDeclarator(ast, retArr, funcParam);
-				case 'ThisExpression':
-					return this.astThisExpression(ast, retArr, funcParam);
-				case 'SequenceExpression':
-					return this.astSequenceExpression(ast, retArr, funcParam);
-				case 'UnaryExpression':
-					return this.astUnaryExpression(ast, retArr, funcParam);
-				case 'UpdateExpression':
-					return this.astUpdateExpression(ast, retArr, funcParam);
-				case 'LogicalExpression':
-					return this.astLogicalExpression(ast, retArr, funcParam);
-				case 'MemberExpression':
-					return this.astMemberExpression(ast, retArr, funcParam);
-				case 'CallExpression':
-					return this.astCallExpression(ast, retArr, funcParam);
-				case 'ArrayExpression':
-					return this.astArrayExpression(ast, retArr, funcParam);
-				case 'DebuggerStatement':
-					return this.astDebuggerStatement(ast, retArr, funcParam);
-			}
-
-			throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);
-		}
-	}
-
-	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astFunctionDeclaration
 	 *
@@ -159,7 +74,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astFunctionPrototype
 	 * @static
@@ -200,7 +115,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astFunctionExpression
 	 *
@@ -290,7 +205,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astLiteral
 	 *
@@ -318,7 +233,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astBinaryExpression
 	 *
@@ -340,7 +255,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astIdentifierExpression
 	 *
@@ -399,7 +314,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astForStatement
 	 *
@@ -506,7 +421,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astWhileStatement
 	 *
@@ -541,7 +456,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astWhileStatement
 	 *
@@ -578,7 +493,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astAssignmentExpression
 	 *
@@ -598,7 +513,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astEmptyStatement
 	 *
@@ -616,7 +531,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astBlockStatement
 	 *
@@ -638,7 +553,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astExpressionStatement
 	 *
@@ -657,7 +572,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astVariableDeclaration
 	 *
@@ -682,7 +597,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astVariableDeclarator
 	 *
@@ -704,7 +619,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astIfStatement
 	 *
@@ -743,7 +658,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astBreakStatement
 	 *
@@ -761,7 +676,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astContinueStatement
 	 *
@@ -779,7 +694,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astLogicalExpression
 	 *
@@ -801,7 +716,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astUpdateExpression
 	 *
@@ -826,7 +741,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astUnaryExpression
 	 *
@@ -851,7 +766,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astThisExpression
 	 *
@@ -869,7 +784,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astMemberExpression
 	 *
@@ -906,6 +821,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 				unrolled = '_' + unrolled;
 			}
 
+			console.log(unrolled);
 			switch (unrolled) {
 				case '_this.output.x':
 					retArr.push(this.output[0]);
@@ -934,7 +850,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astCallExpression
 	 *
@@ -1006,7 +922,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf FunctionNode#
 	 * @function
 	 * @name astArrayExpression
 	 *
