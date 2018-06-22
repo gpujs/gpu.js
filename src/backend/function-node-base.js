@@ -150,6 +150,10 @@ module.exports = class BaseFunctionNode {
 		return this.constants.hasOwnProperty(paramName);
 	}
 
+	isInput(paramName) {
+		return this.paramTypes[this.paramNames.indexOf(paramName)] === 'Input';
+	}
+
 	setAddFunction(fn) {
 		this.addFunction = fn;
 		return this;

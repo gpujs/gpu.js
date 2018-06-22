@@ -776,10 +776,10 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 			if (mNode.object.type === 'Identifier') {
 				this.astGeneric(mNode.object, retArr);
 				retArr.push('[');
-				if (this.paramTypes[this.paramNames.indexOf(mNode.object.name)] === 'Input') {
-					const indexArray = ['(this.thread.z * this.threadDim[0] * this.threadDim[2]) + ('];
+				if (this.isInput(mNode.object.name)) {
+					const indexArray = ['(_this.thread.z * _this.threadDim[0] * _this.threadDim[2]) + ('];
 					this.astGeneric(mNode.property, indexArray);
-					indexArray.push('* this.threadDim[0])');
+					indexArray.push('* _this.threadDim[0])');
 					retArr.push.apply(retArr, indexArray);
 				} else {
 					this.astGeneric(mNode.property, retArr);
@@ -788,7 +788,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 			} else {
 				this.astGeneric(mNode.object, retArr);
 				const last = retArr.pop();
-				if (this.paramTypes[this.paramNames.indexOf(mNode.object.object.name)] === 'Input') {
+				if (this.isInput(mNode.object.object.name)) {
 					const indexArray = [' + '];
 					this.astGeneric(mNode.property, indexArray);
 					retArr.push.apply(retArr, indexArray);
@@ -809,7 +809,6 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 				unrolled = '_' + unrolled;
 			}
 
-			console.log(unrolled);
 			switch (unrolled) {
 				case '_this.output.x':
 					retArr.push(this.output[0]);
