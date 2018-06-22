@@ -173,6 +173,8 @@ module.exports = class CPUKernel extends KernelBase {
 			output: this.output
 		});
 
+		builder.addNativeFunctions(this.nativeFunctions);
+
 		if (this.subKernels !== null) {
 			this.subKernelOutputTextures = [];
 			this.subKernelOutputVariableNames = [];
@@ -200,7 +202,7 @@ module.exports = class CPUKernel extends KernelBase {
 			}
 		}
 
-		let prototypes = builder.getPrototypes();
+		let prototypes = builder.getPrototypes('kernel');
 		let kernel = null;
 		if (prototypes.length > 1) {
 			prototypes = prototypes.filter(fn => {

@@ -99,7 +99,7 @@ var GPU = function (_GPUCore) {
   * @memberOf GPU##
   *
   * @param {Function} fn - The calling to perform the conversion
-  * @param {Object} settings - The parameter configuration object
+  * @param {Object} [settings] - The parameter configuration object
   * @property {String} settings.dimensions - Thread dimension array (Defeaults to [1024])
   * @property {String} settings.mode - CPU / GPU configuration mode (Defaults to null)
   *

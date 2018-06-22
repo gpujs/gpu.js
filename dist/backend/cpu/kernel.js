@@ -199,6 +199,8 @@ module.exports = function (_KernelBase) {
 				output: this.output
 			});
 
+			builder.addNativeFunctions(this.nativeFunctions);
+
 			if (this.subKernels !== null) {
 				this.subKernelOutputTextures = [];
 				this.subKernelOutputVariableNames = [];
@@ -225,7 +227,7 @@ module.exports = function (_KernelBase) {
 				}
 			}
 
-			var prototypes = builder.getPrototypes();
+			var prototypes = builder.getPrototypes('kernel');
 			var kernel = null;
 			if (prototypes.length > 1) {
 				prototypes = prototypes.filter(function (fn) {
@@ -342,6 +344,9 @@ module.exports = function (_KernelBase) {
 						break;
 					case 'HTMLImageArray':
 						result.push('  user_' + this.paramNames[i] + ' = this._imageTo3DArray(user_' + this.paramNames[i] + ')');
+						break;
+					case 'Input':
+						result.push('  user_' + this.paramNames[i] + ' = user_' + this.paramNames[i] + '.value');
 						break;
 				}
 			}

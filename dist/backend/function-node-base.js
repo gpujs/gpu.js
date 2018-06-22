@@ -199,14 +199,13 @@ module.exports = function () {
    * <p>Utility function for astCallExpression.</p>
    *
    * @param {Object} ast - the AST object to parse
-   * @param {Function} funcParam - FunctionNode, that tracks compilation state
    *
    * @returns {String} the function namespace call, unrolled
    */
 
 	}, {
 		key: 'astMemberExpressionUnroll',
-		value: function astMemberExpressionUnroll(ast, funcParam) {
+		value: function astMemberExpressionUnroll(ast) {
 			if (ast.type === 'Identifier') {
 				return ast.name;
 			} else if (ast.type === 'ThisExpression') {
@@ -217,10 +216,10 @@ module.exports = function () {
 				if (ast.object && ast.property) {
 					//babel sniffing
 					if (ast.object.hasOwnProperty('name') && ast.object.name[0] === '_') {
-						return this.astMemberExpressionUnroll(ast.property, funcParam);
+						return this.astMemberExpressionUnroll(ast.property);
 					}
 
-					return this.astMemberExpressionUnroll(ast.object, funcParam) + '.' + this.astMemberExpressionUnroll(ast.property, funcParam);
+					return this.astMemberExpressionUnroll(ast.object) + '.' + this.astMemberExpressionUnroll(ast.property);
 				}
 			}
 
@@ -233,7 +232,7 @@ module.exports = function () {
 			}
 
 			// Failure, unknown expression
-			throw this.astErrorOutput('Unknown CallExpression_unroll', ast, funcParam);
+			throw this.astErrorOutput('Unknown CallExpression_unroll', ast);
 		}
 
 		/**
@@ -245,9 +244,9 @@ module.exports = function () {
    *
    * This is used internally to convert to shader code
    *
-   * @param {JISONParser} inParser - Parser to use, assumes in scope 'parser' if null
+   * @param {Object} [inParser] - Parser to use, assumes in scope 'parser' if null or undefined
    *
-   * @returns {ASTObject} The function AST Object, note that result is cached under this.jsFunctionAST;
+   * @returns {Object} The function AST Object, note that result is cached under this.jsFunctionAST;
    *
    */
 
@@ -389,6 +388,92 @@ module.exports = function () {
 		}
 
 		/**
+   * @memberOf FunctionNodeBase#
+   * @function
+   * @name astGeneric
+   *
+   * @desc Parses the abstract syntax tree for generically to its respective function
+   *
+   * @param {Object} ast - the AST object to parse
+   * @param {Array} retArr - return array string
+   *
+   * @returns {Array} the parsed string array
+   */
+
+	}, {
+		key: 'astGeneric',
+		value: function astGeneric(ast, retArr) {
+			if (ast === null) {
+				throw this.astErrorOutput('NULL ast', ast);
+			} else {
+				if (Array.isArray(ast)) {
+					for (var i = 0; i < ast.length; i++) {
+						this.astGeneric(ast[i], retArr);
+					}
+					return retArr;
+				}
+
+				switch (ast.type) {
+					case 'FunctionDeclaration':
+						return this.astFunctionDeclaration(ast, retArr);
+					case 'FunctionExpression':
+						return this.astFunctionExpression(ast, retArr);
+					case 'ReturnStatement':
+						return this.astReturnStatement(ast, retArr);
+					case 'Literal':
+						return this.astLiteral(ast, retArr);
+					case 'BinaryExpression':
+						return this.astBinaryExpression(ast, retArr);
+					case 'Identifier':
+						return this.astIdentifierExpression(ast, retArr);
+					case 'AssignmentExpression':
+						return this.astAssignmentExpression(ast, retArr);
+					case 'ExpressionStatement':
+						return this.astExpressionStatement(ast, retArr);
+					case 'EmptyStatement':
+						return this.astEmptyStatement(ast, retArr);
+					case 'BlockStatement':
+						return this.astBlockStatement(ast, retArr);
+					case 'IfStatement':
+						return this.astIfStatement(ast, retArr);
+					case 'BreakStatement':
+						return this.astBreakStatement(ast, retArr);
+					case 'ContinueStatement':
+						return this.astContinueStatement(ast, retArr);
+					case 'ForStatement':
+						return this.astForStatement(ast, retArr);
+					case 'WhileStatement':
+						return this.astWhileStatement(ast, retArr);
+					case 'DoWhileStatement':
+						return this.astDoWhileStatement(ast, retArr);
+					case 'VariableDeclaration':
+						return this.astVariableDeclaration(ast, retArr);
+					case 'VariableDeclarator':
+						return this.astVariableDeclarator(ast, retArr);
+					case 'ThisExpression':
+						return this.astThisExpression(ast, retArr);
+					case 'SequenceExpression':
+						return this.astSequenceExpression(ast, retArr);
+					case 'UnaryExpression':
+						return this.astUnaryExpression(ast, retArr);
+					case 'UpdateExpression':
+						return this.astUpdateExpression(ast, retArr);
+					case 'LogicalExpression':
+						return this.astLogicalExpression(ast, retArr);
+					case 'MemberExpression':
+						return this.astMemberExpression(ast, retArr);
+					case 'CallExpression':
+						return this.astCallExpression(ast, retArr);
+					case 'ArrayExpression':
+						return this.astArrayExpression(ast, retArr);
+					case 'DebuggerStatement':
+						return this.astDebuggerStatement(ast, retArr);
+				}
+
+				throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast);
+			}
+		}
+		/**
    * @function
    * @name astErrorOutput
    * @ignore
@@ -398,19 +483,148 @@ module.exports = function () {
    *
    * @param {Object} error - the error message output
    * @param {Object} ast - the AST object where the error is
-   * @param {Object} funcParam - FunctionNode, that tracks compilation state
    */
 
 	}, {
 		key: 'astErrorOutput',
-		value: function astErrorOutput(error, ast, funcParam) {
+		value: function astErrorOutput(error, ast) {
 			console.error(utils.getAstString(this.jsFunctionString, ast));
-			console.error(error, ast, funcParam);
+			console.error(error, ast, this);
 			return error;
 		}
 	}, {
 		key: 'astDebuggerStatement',
-		value: function astDebuggerStatement(arrNode, retArr, funcParam) {
+		value: function astDebuggerStatement(arrNode, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astFunctionDeclaration',
+		value: function astFunctionDeclaration(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astFunctionExpression',
+		value: function astFunctionExpression(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astReturnStatement',
+		value: function astReturnStatement(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astLiteral',
+		value: function astLiteral(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astBinaryExpression',
+		value: function astBinaryExpression(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astIdentifierExpression',
+		value: function astIdentifierExpression(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astAssignmentExpression',
+		value: function astAssignmentExpression(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astExpressionStatement',
+		value: function astExpressionStatement(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astEmptyStatement',
+		value: function astEmptyStatement(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astBlockStatement',
+		value: function astBlockStatement(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astIfStatement',
+		value: function astIfStatement(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astBreakStatement',
+		value: function astBreakStatement(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astContinueStatement',
+		value: function astContinueStatement(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astForStatement',
+		value: function astForStatement(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astWhileStatement',
+		value: function astWhileStatement(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astDoWhileStatement',
+		value: function astDoWhileStatement(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astVariableDeclaration',
+		value: function astVariableDeclaration(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astVariableDeclarator',
+		value: function astVariableDeclarator(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astThisExpression',
+		value: function astThisExpression(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astSequenceExpression',
+		value: function astSequenceExpression(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astUnaryExpression',
+		value: function astUnaryExpression(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astUpdateExpression',
+		value: function astUpdateExpression(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astLogicalExpression',
+		value: function astLogicalExpression(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astMemberExpression',
+		value: function astMemberExpression(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astCallExpression',
+		value: function astCallExpression(ast, retArr) {
+			return retArr;
+		}
+	}, {
+		key: 'astArrayExpression',
+		value: function astArrayExpression(ast, retArr) {
 			return retArr;
 		}
 	}]);

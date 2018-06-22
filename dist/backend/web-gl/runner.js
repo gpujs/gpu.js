@@ -10,7 +10,6 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var RunnerBase = require('../runner-base');
 var WebGLKernel = require('./kernel');
-var utils = require('../../core/utils');
 var WebGLFunctionBuilder = require('./function-builder');
 
 module.exports = function (_RunnerBase) {

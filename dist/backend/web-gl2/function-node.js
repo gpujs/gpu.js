@@ -60,35 +60,34 @@ module.exports = function (_WebGLFunctionNode) {
    *
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
-   * @param {Function} funcParam - FunctionNode, that tracks compilation state
    *
    * @returns {Array} the append retArr
    */
 
 	}, {
 		key: 'astFunctionExpression',
-		value: function astFunctionExpression(ast, retArr, funcParam) {
+		value: function astFunctionExpression(ast, retArr) {
 
 			// Setup function return type and name
-			if (funcParam.isRootKernel) {
+			if (this.isRootKernel) {
 				retArr.push('void');
-				funcParam.kernalAst = ast;
+				this.kernalAst = ast;
 			} else {
-				retArr.push(funcParam.returnType);
+				retArr.push(this.returnType);
 			}
 			retArr.push(' ');
-			retArr.push(funcParam.functionName);
+			retArr.push(this.functionName);
 			retArr.push('(');
 
-			if (!funcParam.isRootKernel) {
+			if (!this.isRootKernel) {
 				// Arguments handling
-				for (var i = 0; i < funcParam.paramNames.length; ++i) {
-					var paramName = funcParam.paramNames[i];
+				for (var i = 0; i < this.paramNames.length; ++i) {
+					var paramName = this.paramNames[i];
 
 					if (i > 0) {
 						retArr.push(', ');
 					}
-					var type = funcParam.getParamType(paramName);
+					var type = this.getParamType(paramName);
 					switch (type) {
 						case 'Texture':
 						case 'Input':
@@ -111,7 +110,7 @@ module.exports = function (_WebGLFunctionNode) {
 
 			// Body statement iteration
 			for (var _i = 0; _i < ast.body.body.length; ++_i) {
-				this.astGeneric(ast.body.body[_i], retArr, funcParam);
+				this.astGeneric(ast.body.body[_i], retArr);
 				retArr.push('\n');
 			}
 
@@ -129,16 +128,15 @@ module.exports = function (_WebGLFunctionNode) {
    *
    * @param {Object} idtNode - An ast Node
    * @param {Array} retArr - return array string
-   * @param {Function} funcParam - FunctionNode, that tracks compilation state
    *
    * @returns {Array} the append retArr
    */
 
 	}, {
 		key: 'astIdentifierExpression',
-		value: function astIdentifierExpression(idtNode, retArr, funcParam) {
+		value: function astIdentifierExpression(idtNode, retArr) {
 			if (idtNode.type !== 'Identifier') {
-				throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode, funcParam);
+				throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode);
 			}
 
 			switch (idtNode.name) {
@@ -167,7 +165,7 @@ module.exports = function (_WebGLFunctionNode) {
 					if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
 						retArr.push('constants_' + idtNode.name);
 					} else {
-						var userParamName = funcParam.getUserParamName(idtNode.name);
+						var userParamName = this.getUserParamName(idtNode.name);
 						if (userParamName !== null) {
 							retArr.push('user_' + userParamName);
 						} else {

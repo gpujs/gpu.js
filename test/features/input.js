@@ -2,9 +2,15 @@
   function input(mode) {
     const gpu = new GPU({ mode: mode });
     const input = GPU.input;
+    gpu.addNativeFunction('log', `function log(value) {
+      console.log(value);
+    }`);
     const kernel = gpu.createKernel(function(a, b) {
+      log(this.thread.y);
+      log(this.thread.x);
       return a[this.thread.y][this.thread.x] + b[this.thread.y][this.thread.x];
     })
+      .setDebug(true)
       .setOutput([9]);
 
     const a = new Float32Array(9);
@@ -17,19 +23,23 @@
     QUnit.assert.deepEqual(QUnit.extend([], result), [2,4,6,8,10,12,14,16,18]);
   }
 
-  QUnit.test( "input (WebGL Only) (auto)", function() {
+  QUnit.test( "input (auto)", function() {
     input();
   });
 
-  QUnit.test( "input (WebGL Only) (gpu)", function() {
+  QUnit.test( "input (gpu)", function() {
     input('gpu');
   });
 
-  QUnit.test( "input (WebGL Only) (webgl)", function() {
+  QUnit.test( "input (webgl)", function() {
     input('webgl');
   });
 
-  QUnit.test( "input (WebGL Only) (webgl2)", function() {
+  QUnit.test( "input (webgl2)", function() {
     input('webgl2');
+  });
+
+  QUnit.test( "input (cpu)", function() {
+    input('cpu');
   });
 })();
