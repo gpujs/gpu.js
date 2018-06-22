@@ -2,12 +2,7 @@
   function input(mode) {
     const gpu = new GPU({ mode: mode });
     const input = GPU.input;
-    gpu.addNativeFunction('log', `function log(value) {
-      console.log(value);
-    }`);
     const kernel = gpu.createKernel(function(a, b) {
-      log(this.thread.y);
-      log(this.thread.x);
       return a[this.thread.y][this.thread.x] + b[this.thread.y][this.thread.x];
     })
       .setDebug(true)

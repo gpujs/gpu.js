@@ -776,13 +776,26 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 			if (mNode.object.type === 'Identifier') {
 				this.astGeneric(mNode.object, retArr);
 				retArr.push('[');
-				this.astGeneric(mNode.property, retArr);
+				if (this.paramTypes[this.paramNames.indexOf(mNode.object.name)] === 'Input') {
+					const indexArray = ['(this.thread.z * this.threadDim[0] * this.threadDim[2]) + ('];
+					this.astGeneric(mNode.property, indexArray);
+					indexArray.push('* this.threadDim[0])');
+					retArr.push.apply(retArr, indexArray);
+				} else {
+					this.astGeneric(mNode.property, retArr);
+				}
 				retArr.push(']');
 			} else {
 				this.astGeneric(mNode.object, retArr);
 				const last = retArr.pop();
-				retArr.push('][');
-				this.astGeneric(mNode.property, retArr);
+				if (this.paramTypes[this.paramNames.indexOf(mNode.object.object.name)] === 'Input') {
+					const indexArray = [' + '];
+					this.astGeneric(mNode.property, indexArray);
+					retArr.push.apply(retArr, indexArray);
+				} else {
+					retArr.push('][');
+					this.astGeneric(mNode.property, retArr);
+				}
 				retArr.push(last);
 			}
 		} else {
