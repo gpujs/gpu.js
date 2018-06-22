@@ -196,7 +196,7 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * @returns {String} the function namespace call, unrolled
 	 */
-	astMemberExpressionUnroll(ast, funcParam) {
+	astMemberExpressionUnroll(ast) {
 		if (ast.type === 'Identifier') {
 			return ast.name;
 		} else if (ast.type === 'ThisExpression') {
@@ -379,79 +379,78 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
 	 *
 	 * @returns {Array} the parsed string array
 	 */
-	astGeneric(ast, retArr, funcParam) {
+	astGeneric(ast, retArr) {
 		if (ast === null) {
-			throw this.astErrorOutput('NULL ast', ast, funcParam);
+			throw this.astErrorOutput('NULL ast', ast);
 		} else {
 			if (Array.isArray(ast)) {
 				for (let i = 0; i < ast.length; i++) {
-					this.astGeneric(ast[i], retArr, funcParam);
+					this.astGeneric(ast[i], retArr);
 				}
 				return retArr;
 			}
 
 			switch (ast.type) {
 				case 'FunctionDeclaration':
-					return this.astFunctionDeclaration(ast, retArr, funcParam);
+					return this.astFunctionDeclaration(ast, retArr);
 				case 'FunctionExpression':
-					return this.astFunctionExpression(ast, retArr, funcParam);
+					return this.astFunctionExpression(ast, retArr);
 				case 'ReturnStatement':
-					return this.astReturnStatement(ast, retArr, funcParam);
+					return this.astReturnStatement(ast, retArr);
 				case 'Literal':
-					return this.astLiteral(ast, retArr, funcParam);
+					return this.astLiteral(ast, retArr);
 				case 'BinaryExpression':
-					return this.astBinaryExpression(ast, retArr, funcParam);
+					return this.astBinaryExpression(ast, retArr);
 				case 'Identifier':
-					return this.astIdentifierExpression(ast, retArr, funcParam);
+					return this.astIdentifierExpression(ast, retArr);
 				case 'AssignmentExpression':
-					return this.astAssignmentExpression(ast, retArr, funcParam);
+					return this.astAssignmentExpression(ast, retArr);
 				case 'ExpressionStatement':
-					return this.astExpressionStatement(ast, retArr, funcParam);
+					return this.astExpressionStatement(ast, retArr);
 				case 'EmptyStatement':
-					return this.astEmptyStatement(ast, retArr, funcParam);
+					return this.astEmptyStatement(ast, retArr);
 				case 'BlockStatement':
-					return this.astBlockStatement(ast, retArr, funcParam);
+					return this.astBlockStatement(ast, retArr);
 				case 'IfStatement':
-					return this.astIfStatement(ast, retArr, funcParam);
+					return this.astIfStatement(ast, retArr);
 				case 'BreakStatement':
-					return this.astBreakStatement(ast, retArr, funcParam);
+					return this.astBreakStatement(ast, retArr);
 				case 'ContinueStatement':
-					return this.astContinueStatement(ast, retArr, funcParam);
+					return this.astContinueStatement(ast, retArr);
 				case 'ForStatement':
-					return this.astForStatement(ast, retArr, funcParam);
+					return this.astForStatement(ast, retArr);
 				case 'WhileStatement':
-					return this.astWhileStatement(ast, retArr, funcParam);
+					return this.astWhileStatement(ast, retArr);
 				case 'DoWhileStatement':
-					return this.astDoWhileStatement(ast, retArr, funcParam);
+					return this.astDoWhileStatement(ast, retArr);
 				case 'VariableDeclaration':
-					return this.astVariableDeclaration(ast, retArr, funcParam);
+					return this.astVariableDeclaration(ast, retArr);
 				case 'VariableDeclarator':
-					return this.astVariableDeclarator(ast, retArr, funcParam);
+					return this.astVariableDeclarator(ast, retArr);
 				case 'ThisExpression':
-					return this.astThisExpression(ast, retArr, funcParam);
+					return this.astThisExpression(ast, retArr);
 				case 'SequenceExpression':
-					return this.astSequenceExpression(ast, retArr, funcParam);
+					return this.astSequenceExpression(ast, retArr);
 				case 'UnaryExpression':
-					return this.astUnaryExpression(ast, retArr, funcParam);
+					return this.astUnaryExpression(ast, retArr);
 				case 'UpdateExpression':
-					return this.astUpdateExpression(ast, retArr, funcParam);
+					return this.astUpdateExpression(ast, retArr);
 				case 'LogicalExpression':
-					return this.astLogicalExpression(ast, retArr, funcParam);
+					return this.astLogicalExpression(ast, retArr);
 				case 'MemberExpression':
-					return this.astMemberExpression(ast, retArr, funcParam);
+					return this.astMemberExpression(ast, retArr);
 				case 'CallExpression':
-					return this.astCallExpression(ast, retArr, funcParam);
+					return this.astCallExpression(ast, retArr);
 				case 'ArrayExpression':
-					return this.astArrayExpression(ast, retArr, funcParam);
+					return this.astArrayExpression(ast, retArr);
 				case 'DebuggerStatement':
-					return this.astDebuggerStatement(ast, retArr, funcParam);
+					return this.astDebuggerStatement(ast, retArr);
 			}
 
-			throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast, funcParam);
+			throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast);
 		}
 	}
 	/**
@@ -464,93 +463,92 @@ module.exports = class BaseFunctionNode {
 	 *
 	 * @param {Object} error - the error message output
 	 * @param {Object} ast - the AST object where the error is
-	 * @param {Object} [funcParam] - FunctionNode, that tracks compilation state
 	 */
-	astErrorOutput(error, ast, funcParam) {
+	astErrorOutput(error, ast) {
 		console.error(utils.getAstString(this.jsFunctionString, ast));
-		console.error(error, ast, funcParam);
+		console.error(error, ast, this);
 		return error;
 	}
 
-	astDebuggerStatement(arrNode, retArr, funcParam) {
+	astDebuggerStatement(arrNode, retArr) {
 		return retArr;
 	}
-	astFunctionDeclaration(ast, retArr, funcParam) {
+	astFunctionDeclaration(ast, retArr) {
 		return retArr;
 	}
-	astFunctionExpression(ast, retArr, funcParam) {
+	astFunctionExpression(ast, retArr) {
 		return retArr;
 	}
-	astReturnStatement(ast, retArr, funcParam) {
+	astReturnStatement(ast, retArr) {
 		return retArr;
 	}
-	astLiteral(ast, retArr, funcParam) {
+	astLiteral(ast, retArr) {
 		return retArr;
 	}
-	astBinaryExpression(ast, retArr, funcParam) {
+	astBinaryExpression(ast, retArr) {
 		return retArr;
 	}
-	astIdentifierExpression(ast, retArr, funcParam) {
+	astIdentifierExpression(ast, retArr) {
 		return retArr;
 	}
-	astAssignmentExpression(ast, retArr, funcParam) {
+	astAssignmentExpression(ast, retArr) {
 		return retArr;
 	}
-	astExpressionStatement(ast, retArr, funcParam) {
+	astExpressionStatement(ast, retArr) {
 		return retArr;
 	}
-	astEmptyStatement(ast, retArr, funcParam) {
+	astEmptyStatement(ast, retArr) {
 		return retArr;
 	}
-	astBlockStatement(ast, retArr, funcParam) {
+	astBlockStatement(ast, retArr) {
 		return retArr;
 	}
-	astIfStatement(ast, retArr, funcParam) {
+	astIfStatement(ast, retArr) {
 		return retArr;
 	}
-	astBreakStatement(ast, retArr, funcParam) {
+	astBreakStatement(ast, retArr) {
 		return retArr;
 	}
-	astContinueStatement(ast, retArr, funcParam) {
+	astContinueStatement(ast, retArr) {
 		return retArr;
 	}
-	astForStatement(ast, retArr, funcParam) {
+	astForStatement(ast, retArr) {
 		return retArr;
 	}
-	astWhileStatement(ast, retArr, funcParam) {
+	astWhileStatement(ast, retArr) {
 		return retArr;
 	}
-	astDoWhileStatement(ast, retArr, funcParam) {
+	astDoWhileStatement(ast, retArr) {
 		return retArr;
 	}
-	astVariableDeclaration(ast, retArr, funcParam) {
+	astVariableDeclaration(ast, retArr) {
 		return retArr;
 	}
-	astVariableDeclarator(ast, retArr, funcParam) {
+	astVariableDeclarator(ast, retArr) {
 		return retArr;
 	}
-	astThisExpression(ast, retArr, funcParam) {
+	astThisExpression(ast, retArr) {
 		return retArr;
 	}
-	astSequenceExpression(ast, retArr, funcParam) {
+	astSequenceExpression(ast, retArr) {
 		return retArr;
 	}
-	astUnaryExpression(ast, retArr, funcParam) {
+	astUnaryExpression(ast, retArr) {
 		return retArr;
 	}
-	astUpdateExpression(ast, retArr, funcParam) {
+	astUpdateExpression(ast, retArr) {
 		return retArr;
 	}
-	astLogicalExpression(ast, retArr, funcParam) {
+	astLogicalExpression(ast, retArr) {
 		return retArr;
 	}
-	astMemberExpression(ast, retArr, funcParam) {
+	astMemberExpression(ast, retArr) {
 		return retArr;
 	}
-	astCallExpression(ast, retArr, funcParam) {
+	astCallExpression(ast, retArr) {
 		return retArr;
 	}
-	astArrayExpression(ast, retArr, funcParam) {
+	astArrayExpression(ast, retArr) {
 		return retArr;
 	}
 };

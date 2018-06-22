@@ -45,32 +45,31 @@ module.exports = class WebGL2FunctionNode extends WebGLFunctionNode {
 	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
 	 *
 	 * @returns {Array} the append retArr
 	 */
-	astFunctionExpression(ast, retArr, funcParam) {
+	astFunctionExpression(ast, retArr) {
 
 		// Setup function return type and name
-		if (funcParam.isRootKernel) {
+		if (this.isRootKernel) {
 			retArr.push('void');
-			funcParam.kernalAst = ast;
+			this.kernalAst = ast;
 		} else {
-			retArr.push(funcParam.returnType);
+			retArr.push(this.returnType);
 		}
 		retArr.push(' ');
-		retArr.push(funcParam.functionName);
+		retArr.push(this.functionName);
 		retArr.push('(');
 
-		if (!funcParam.isRootKernel) {
+		if (!this.isRootKernel) {
 			// Arguments handling
-			for (let i = 0; i < funcParam.paramNames.length; ++i) {
-				const paramName = funcParam.paramNames[i];
+			for (let i = 0; i < this.paramNames.length; ++i) {
+				const paramName = this.paramNames[i];
 
 				if (i > 0) {
 					retArr.push(', ');
 				}
-				const type = funcParam.getParamType(paramName);
+				const type = this.getParamType(paramName);
 				switch (type) {
 					case 'Texture':
 					case 'Input':
@@ -93,7 +92,7 @@ module.exports = class WebGL2FunctionNode extends WebGLFunctionNode {
 
 		// Body statement iteration
 		for (let i = 0; i < ast.body.body.length; ++i) {
-			this.astGeneric(ast.body.body[i], retArr, funcParam);
+			this.astGeneric(ast.body.body[i], retArr);
 			retArr.push('\n');
 		}
 
@@ -111,15 +110,14 @@ module.exports = class WebGL2FunctionNode extends WebGLFunctionNode {
 	 *
 	 * @param {Object} idtNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 * @param {Function} funcParam - FunctionNode, that tracks compilation state
 	 *
 	 * @returns {Array} the append retArr
 	 */
-	astIdentifierExpression(idtNode, retArr, funcParam) {
+	astIdentifierExpression(idtNode, retArr) {
 		if (idtNode.type !== 'Identifier') {
 			throw this.astErrorOutput(
 				'IdentifierExpression - not an Identifier',
-				idtNode, funcParam
+				idtNode
 			);
 		}
 
@@ -149,7 +147,7 @@ module.exports = class WebGL2FunctionNode extends WebGLFunctionNode {
 				if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
 					retArr.push('constants_' + idtNode.name);
 				} else {
-					const userParamName = funcParam.getUserParamName(idtNode.name);
+					const userParamName = this.getUserParamName(idtNode.name);
 					if (userParamName !== null) {
 						retArr.push('user_' + userParamName);
 					} else {
