@@ -4,7 +4,8 @@ QUnit.test('KernelBase paramTypes CPU', function(assert) {
     functionBuilder: {
       addKernel: function() {},
       addFunctions: function() {},
-      getPrototypes: function() { return []; }
+      getPrototypes: function() { return []; },
+      addNativeFunctions: function() {}
     },
   });
   kernel.build([1]);
