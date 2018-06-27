@@ -166,10 +166,10 @@
       .setDebug(true)
       .setOutput([2, 8]);
 
-    const a = new Float32Array(24);
+    const a = new Float32Array(16);
     a.set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
 
-    const b = new Float32Array(24);
+    const b = new Float32Array(16);
     b.set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
 
     const result = kernel(input(a, [2, 8]), input(b, [2, 8]));
@@ -198,13 +198,8 @@
 
   function inputZYX(mode) {
     const gpu = new GPU({ mode: mode });
-    gpu.addNativeFunction('log', function log() {
-      // console.log(_this.thread.z, _this.thread.y, _this.thread.x);
-      console.log((_this.thread.z * _this.threadDim[0] * _this.threadDim[2]) + (_this.thread.z* _this.threadDim[0]) + _this.thread.y);
-    });
     const input = GPU.input;
     const kernel = gpu.createKernel(function(a, b) {
-      log();
       return a[this.thread.z][this.thread.y][this.thread.x] + b[this.thread.z][this.thread.y][this.thread.x];
     })
       .setDebug(true)

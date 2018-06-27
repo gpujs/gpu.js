@@ -783,7 +783,13 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 				}
 				retArr.push(']');
 			} else {
-				if (this.isInput(mNode.object.object.name)) {
+				if (
+					mNode.object.object &&
+					this.isInput(mNode.object.object.name) ||
+					(
+						mNode.object.object.object &&
+						this.isInput(mNode.object.object.object.name))
+				) {
 					this.pushState('input-index-base');
 					this.astGeneric(mNode.object, retArr);
 					const last = retArr.pop();
@@ -791,7 +797,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 					this.popState('input-index-base');
 					this.pushState('input-index');
 					this.astGeneric(mNode.property, retArr);
-					this.pushState('input-index');
+					this.popState('input-index');
 					retArr.push(last);
 				} else {
 					this.astGeneric(mNode.object, retArr);
