@@ -777,26 +777,29 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 				this.astGeneric(mNode.object, retArr);
 				retArr.push('[');
 				if (this.isInput(mNode.object.name)) {
-					const indexArray = ['(_this.thread.z * _this.threadDim[0] * _this.threadDim[2]) + ('];
-					this.astGeneric(mNode.property, indexArray);
-					indexArray.push('* _this.threadDim[0])');
-					retArr.push.apply(retArr, indexArray);
+					this.astGeneric(mNode.property, retArr);
 				} else {
 					this.astGeneric(mNode.property, retArr);
 				}
 				retArr.push(']');
 			} else {
-				this.astGeneric(mNode.object, retArr);
-				const last = retArr.pop();
 				if (this.isInput(mNode.object.object.name)) {
-					const indexArray = [' + '];
-					this.astGeneric(mNode.property, indexArray);
-					retArr.push.apply(retArr, indexArray);
+					this.pushState('input-index-base');
+					this.astGeneric(mNode.object, retArr);
+					const last = retArr.pop();
+					retArr.push(' + ');
+					this.popState('input-index-base');
+					this.pushState('input-index');
+					this.astGeneric(mNode.property, retArr);
+					this.pushState('input-index');
+					retArr.push(last);
 				} else {
+					this.astGeneric(mNode.object, retArr);
+					const last = retArr.pop();
 					retArr.push('][');
 					this.astGeneric(mNode.property, retArr);
+					retArr.push(last);
 				}
-				retArr.push(last);
 			}
 		} else {
 			let unrolled = this.astMemberExpressionUnroll(mNode);
@@ -818,6 +821,27 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 					break;
 				case '_this.output.z':
 					retArr.push(this.output[2]);
+					break;
+				case '_this.thread.x':
+					if (this.isState('input-index-base')) {
+						retArr.push('(_this.thread.x * _this.threadDim[0])');
+					} else {
+						retArr.push(unrolled);
+					}
+					break;
+				case '_this.thread.y':
+					if (this.isState('input-index-base')) {
+						retArr.push('(_this.thread.y * _this.threadDim[0])');
+					} else {
+						retArr.push(unrolled);
+					}
+					break;
+				case '_this.thread.z':
+					if (this.isState('input-index-base')) {
+						retArr.push('(_this.thread.z * _this.threadDim[0] * _this.threadDim[2])');
+					} else {
+						retArr.push(unrolled);
+					}
 					break;
 				default:
 					retArr.push(unrolled);

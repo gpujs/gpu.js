@@ -42,6 +42,7 @@ module.exports = class BaseFunctionNode {
 		this.constants = null;
 		this.output = null;
 		this.declarations = {};
+		this.states = [];
 
 		if (options) {
 			if (options.hasOwnProperty('debug')) {
@@ -157,6 +158,25 @@ module.exports = class BaseFunctionNode {
 	setAddFunction(fn) {
 		this.addFunction = fn;
 		return this;
+	}
+
+	pushState(state) {
+		this.states.push(state);
+	}
+
+	popState(state) {
+		if (this.state !== state) {
+			throw new Error(`Cannot popState ${ state } when in ${ this.state }`);
+		}
+		this.states.pop();
+	}
+
+	isState(state) {
+		return this.state === state;
+	}
+
+	get state() {
+		return this.states[this.states.length - 1];
 	}
 	/**
 	 * 

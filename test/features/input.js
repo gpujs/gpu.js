@@ -1,8 +1,48 @@
 (function() {
-  function input(mode) {
+  function inputX(mode) {
     const gpu = new GPU({ mode: mode });
     const input = GPU.input;
     const kernel = gpu.createKernel(function(a, b) {
+      return a[this.thread.x] + b[this.thread.x];
+    })
+      .setDebug(true)
+      .setOutput([9]);
+
+    const a = new Float32Array(9);
+    a.set([1,2,3,4,5,6,7,8,9]);
+
+    const b = new Float32Array(9);
+    b.set([1,2,3,4,5,6,7,8,9]);
+
+    const result = kernel(input(a, [3, 3]), input(b, [3, 3]));
+    QUnit.assert.deepEqual(QUnit.extend([], result), [2,4,6,8,10,12,14,16,18]);
+  }
+
+  QUnit.test( "inputX (auto)", function() {
+    inputX();
+  });
+
+  QUnit.test( "inputX (gpu)", function() {
+    inputX('gpu');
+  });
+
+  QUnit.test( "inputX (webgl)", function() {
+    inputX('webgl');
+  });
+
+  QUnit.test( "inputX (webgl2)", function() {
+    inputX('webgl2');
+  });
+
+  QUnit.test( "inputX (cpu)", function() {
+    inputX('cpu');
+  });
+
+  function inputXY(mode) {
+    const gpu = new GPU({ mode: mode });
+    const input = GPU.input;
+    const kernel = gpu.createKernel(function(a, b) {
+      debugger;
       return a[this.thread.y][this.thread.x] + b[this.thread.y][this.thread.x];
     })
       .setDebug(true)
@@ -18,24 +58,24 @@
     QUnit.assert.deepEqual(QUnit.extend([], result), [2,4,6,8,10,12,14,16,18]);
   }
 
-  QUnit.test( "input (auto)", function() {
-    input();
+  QUnit.test( "inputXY (auto)", function() {
+    inputXY();
   });
 
-  QUnit.test( "input (gpu)", function() {
-    input('gpu');
+  QUnit.test( "inputXY (gpu)", function() {
+    inputXY('gpu');
   });
 
-  QUnit.test( "input (webgl)", function() {
-    input('webgl');
+  QUnit.test( "inputXY (webgl)", function() {
+    inputXY('webgl');
   });
 
-  QUnit.test( "input (webgl2)", function() {
-    input('webgl2');
+  QUnit.test( "inputXY (webgl2)", function() {
+    inputXY('webgl2');
   });
 
-  QUnit.test( "input (cpu)", function() {
-    input('cpu');
+  QUnit.test( "inputXY (cpu)", function() {
+    inputXY('cpu');
   });
 
   function inputYX(mode) {
@@ -77,49 +117,11 @@
     inputYX('cpu');
   });
 
-  function inputXY(mode) {
-    const gpu = new GPU({ mode: mode });
-    const input = GPU.input;
-    const kernel = gpu.createKernel(function(a, b) {
-      return a[this.thread.x][this.thread.y] + b[this.thread.x][this.thread.y];
-    })
-      .setDebug(true)
-      .setOutput([3, 3]);
-
-    const a = new Float32Array(9);
-    a.set([1,2,3,4,5,6,7,8,9]);
-
-    const b = new Float32Array(9);
-    b.set([1,2,3,4,5,6,7,8,9]);
-
-    const result = kernel(input(a, [3, 3]), input(b, [3, 3]));
-    QUnit.assert.deepEqual(QUnit.extend([], result), [[2,8,14], [4,10,16], [6,12,18]]);
-  }
-
-  QUnit.test( "inputXY (auto)", function() {
-    inputXY();
-  });
-
-  QUnit.test( "inputXY (gpu)", function() {
-    inputXY('gpu');
-  });
-
-  QUnit.test( "inputXY (webgl)", function() {
-    inputXY('webgl');
-  });
-
-  QUnit.test( "inputXY (webgl2)", function() {
-    inputXY('webgl2');
-  });
-
-  QUnit.test( "inputXY (cpu)", function() {
-    inputXY('cpu');
-  });
-
   function inputYXOffset(mode) {
     const gpu = new GPU({ mode: mode });
     const input = GPU.input;
     const kernel = gpu.createKernel(function(a, b) {
+      debugger;
       return a[this.thread.x][this.thread.y] + b[this.thread.x][this.thread.y];
     })
       .setDebug(true)
