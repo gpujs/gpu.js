@@ -6,7 +6,7 @@ const utils = require('../../core/utils');
 /**
  * @class CPUFunctionNode
  * 
- * @extends BaseFunctionNode
+ * @extends BaseFunctionNode#
  *
  * @desc [INTERNAL] Represents a single function, inside JS
  *
@@ -27,11 +27,33 @@ const utils = require('../../core/utils');
  *
  */
 module.exports = class CPUFunctionNode extends BaseFunctionNode {
+	constructor(functionName, jsFunction, options) {
+		super(functionName, jsFunction, options);
+		this.paramSizes = options ? options.paramSizes : [];
+		this.memberStates = [];
+	}
+
+	get memberState() {
+		return this.memberStates[this.memberStates.length - 1];
+	}
+
+	pushMemberState(name) {
+		this.memberStates.push(name);
+	}
+
+	popMemberState(name) {
+		if (this.memberState === name) {
+			this.memberStates.pop();
+		} else {
+			throw new Error(`Cannot popMemberState ${ name } when in ${ this.memberState }`)
+		}
+	}
+
 	generate() {
 		if (this.debug) {
 			console.log(this);
 		}
-		this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
+		this.functionStringArray = this.astGeneric(this.getJsAST(), []);
 		this.functionString = this.functionStringArray.join('').trim();
 		return this.functionString;
 	}
@@ -54,7 +76,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astFunctionDeclaration
 	 *
@@ -73,7 +95,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astFunctionPrototype
 	 *
@@ -112,7 +134,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astFunctionExpression
 	 *
@@ -164,7 +186,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astReturnStatement
 	 *
@@ -200,7 +222,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astLiteral
 	 *
@@ -227,7 +249,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astBinaryExpression
 	 *
@@ -248,7 +270,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astIdentifierExpression
 	 *
@@ -306,7 +328,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astForStatement
 	 *
@@ -320,7 +342,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	astForStatement(forNode, retArr) {
 		if (forNode.type !== 'ForStatement') {
 			throw this.astErrorOutput(
-				'Invalid for statment',
+				'Invalid for statement',
 				forNode
 			);
 		}
@@ -412,7 +434,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astWhileStatement
 	 *
@@ -427,7 +449,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	astWhileStatement(whileNode, retArr) {
 		if (whileNode.type !== 'WhileStatement') {
 			throw this.astErrorOutput(
-				'Invalid while statment',
+				'Invalid while statement',
 				whileNode
 			);
 		}
@@ -446,7 +468,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astWhileStatement
 	 *
@@ -461,7 +483,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	astDoWhileStatement(doWhileNode, retArr) {
 		if (doWhileNode.type !== 'DoWhileStatement') {
 			throw this.astErrorOutput(
-				'Invalid while statment',
+				'Invalid while statement',
 				doWhileNode
 			);
 		}
@@ -482,7 +504,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astAssignmentExpression
 	 *
@@ -501,7 +523,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astEmptyStatement
 	 *
@@ -518,7 +540,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astBlockStatement
 	 *
@@ -539,7 +561,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astExpressionStatement
 	 *
@@ -557,7 +579,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astVariableDeclaration
 	 *
@@ -581,7 +603,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astVariableDeclarator
 	 *
@@ -602,7 +624,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astIfStatement
 	 *
@@ -640,7 +662,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astBreakStatement
 	 *
@@ -657,7 +679,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astContinueStatement
 	 *
@@ -674,7 +696,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astLogicalExpression
 	 *
@@ -695,7 +717,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astUpdateExpression
 	 *
@@ -719,7 +741,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astUnaryExpression
 	 *
@@ -743,7 +765,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astThisExpression
 	 *
@@ -760,7 +782,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astMemberExpression
 	 *
@@ -785,6 +807,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 			} else {
 				if (mNode.object.object) {
 					if (mNode.object.object.object && this.isInput(mNode.object.object.object.name)) {
+						this.pushMemberState(mNode.object.object.object.name);
 						this.pushState('input-index-z');
 						this.astGeneric(mNode.object, retArr);
 						const last = retArr.pop();
@@ -794,7 +817,9 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 						this.astGeneric(mNode.property, retArr);
 						this.popState('input-index');
 						retArr.push(last);
+						this.popMemberState(mNode.object.object.object.name);
 					} else if (this.isInput(mNode.object.object.name)) {
+						this.pushMemberState(mNode.object.object.name);
 						if (!this.isState('input-index-z')) {
 							this.pushState('input-index-y');
 						}
@@ -818,6 +843,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 							this.popState('input-index');
 						}
 						retArr.push(last);
+						this.popMemberState(mNode.object.object.name);
 					} else {
 						this.astGeneric(mNode.object, retArr);
 						const last = retArr.pop();
@@ -844,6 +870,12 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 				unrolled = '_' + unrolled;
 			}
 
+			switch (this.state) {
+				case 'input-index-y':
+				case 'input-index-z':
+					retArr.push('(');
+			}
+
 			switch (unrolled) {
 				case '_this.output.x':
 					retArr.push(this.output[0]);
@@ -854,33 +886,23 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 				case '_this.output.z':
 					retArr.push(this.output[2]);
 					break;
-				case '_this.thread.x':
-					if (this.isState('input-index-y')) {
-						retArr.push('(_this.thread.x * _this.threadDim[1])');
-					} else if (this.isState('input-index-z')) {
-						retArr.push('(_this.thread.x * _this.threadDim[0] * _this.threadDim[1])');
-					} else {
-						retArr.push(unrolled);
-					}
-					break;
-				case '_this.thread.y':
-					if (this.isState('input-index-y')) {
-						retArr.push('(_this.thread.y * _this.threadDim[0])');
-					} else if (this.isState('input-index-z')) {
-						retArr.push('(_this.thread.y * _this.threadDim[0] * _this.threadDim[1])');
-					} else {
-						retArr.push(unrolled);
-					}
-					break;
-				case '_this.thread.z':
-					if (this.isState('input-index-z')) {
-						retArr.push('(_this.thread.z * _this.threadDim[0] * _this.threadDim[1])');
-					} else {
-						retArr.push(unrolled);
-					}
-					break;
 				default:
 					retArr.push(unrolled);
+			}
+
+			switch (this.state) {
+				case 'input-index-y':
+					{
+						const size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+						retArr.push(` * ${ size[0] })`);
+						break;
+					}
+				case 'input-index-z':
+					{
+						const size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+						retArr.push(` * ${ size[0] * size[1] })`);
+						break;
+					}
 			}
 		}
 		return retArr;
@@ -897,7 +919,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astCallExpression
 	 *
@@ -968,7 +990,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf FunctionNode#
+	 * @memberOf CPUFunctionNode#
 	 * @function
 	 * @name astArrayExpression
 	 *

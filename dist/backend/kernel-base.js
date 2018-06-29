@@ -5,11 +5,12 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var utils = require('../core/utils');
+var Input = require('../core/input');
 
 module.exports = function () {
 
 	/**
-  * @constructor BaseKernel
+  * @constructor KernelBase
   * 
   * @desc Implements the base class for Kernels, and is used as a 
   * parent class for all Kernel implementations.
@@ -29,8 +30,8 @@ module.exports = function () {
   * @prop {Array} subKernelOutputVariableNames - Names of the variables outputted by the subkerls
   *
   */
-	function BaseKernel(fnString, settings) {
-		_classCallCheck(this, BaseKernel);
+	function KernelBase(fnString, settings) {
+		_classCallCheck(this, KernelBase);
 
 		this.paramNames = utils.getParamNamesFromString(fnString);
 		this.fnString = fnString;
@@ -59,6 +60,7 @@ module.exports = function () {
 		this.subKernelOutputVariableNames = null;
 		this.functionBuilder = null;
 		this.paramTypes = null;
+		this.paramSizes = null;
 
 		for (var p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -74,7 +76,7 @@ module.exports = function () {
 		if (!this._canvas) this._canvas = utils.initCanvas();
 	}
 
-	_createClass(BaseKernel, [{
+	_createClass(KernelBase, [{
 		key: 'build',
 		value: function build() {
 			throw new Error('"build" not defined on Base');
@@ -95,11 +97,12 @@ module.exports = function () {
 	}, {
 		key: 'setupParams',
 		value: function setupParams(args) {
-			var paramTypes = this.paramTypes = [];
+			this.paramTypes = [];
+			this.paramSizes = [];
 			for (var i = 0; i < args.length; i++) {
-				var param = args[i];
-				var paramType = utils.getArgumentType(param);
-				paramTypes.push(paramType);
+				var arg = args[i];
+				this.paramTypes.push(utils.getArgumentType(arg));
+				this.paramSizes.push(arg.constructor === Input ? arg.size : null);
 			}
 		}
 	}, {
@@ -116,7 +119,7 @@ module.exports = function () {
 		}
 
 		/**
-   * @memberOf BaseKernel#
+   * @memberOf KernelBase#
    * @function
    * @name setOutput
    *
@@ -146,7 +149,7 @@ module.exports = function () {
 		}
 
 		/**
-   * @memberOf BaseKernel# 
+   * @memberOf KernelBase#
    * @function
    * @name setDebug
    *
@@ -164,7 +167,7 @@ module.exports = function () {
 		}
 
 		/**
-   * @memberOf BaseKernel#
+   * @memberOf KernelBase#
    * @function
    * @name setGraphical
    *
@@ -182,7 +185,7 @@ module.exports = function () {
 		}
 
 		/**
-   * @memberOf BaseKernel#
+   * @memberOf KernelBase#
    * @function
    * @name setLoopMaxIterations
    *
@@ -200,7 +203,7 @@ module.exports = function () {
 		}
 
 		/**
-   * @memberOf BaseKernel#
+   * @memberOf KernelBase#
    * @function
    * @name setConstants
    * @desc Set Constants
@@ -239,7 +242,7 @@ module.exports = function () {
 		}
 
 		/**
-   * @memberOf BaseKernel#
+   * @memberOf KernelBase#
    * @function
    * @name setFloatTextures
    *
@@ -257,7 +260,7 @@ module.exports = function () {
 		}
 
 		/**
-   * @memberOf BaseKernel#
+   * @memberOf KernelBase#
    * @function
    * @name setFloatOutput
    *
@@ -281,7 +284,7 @@ module.exports = function () {
 		}
 
 		/**
-   * @memberOf BaseKernel#
+   * @memberOf KernelBase#
    * @function
    * @name setCanvas
    *
@@ -299,7 +302,7 @@ module.exports = function () {
 		}
 
 		/**
-   * @memberOf BaseKernel#
+   * @memberOf KernelBase#
    * @function
    * @name setCanvas
    *
@@ -317,7 +320,7 @@ module.exports = function () {
 		}
 
 		/**
-   * @memberOf BaseKernel#
+   * @memberOf KernelBase#
    * @function
    * @name getCanvas()
    *
@@ -332,7 +335,7 @@ module.exports = function () {
 		}
 
 		/**
-   * @memberOf BaseKernel#
+   * @memberOf KernelBase#
    * @function
    * @name getWebGl()
    *
@@ -381,7 +384,7 @@ module.exports = function () {
 		}
 
 		/** 
-   * @memberOf BaseKernel#
+   * @memberOf KernelBase#
    * @function
    * @name addSubKernel
    *
@@ -405,7 +408,7 @@ module.exports = function () {
 		}
 
 		/** 
-   * @memberOf BaseKernel#
+   * @memberOf KernelBase#
    * @function
    * @name addSubKernelProperty
    *
@@ -438,5 +441,5 @@ module.exports = function () {
 		}
 	}]);
 
-	return BaseKernel;
+	return KernelBase;
 }();

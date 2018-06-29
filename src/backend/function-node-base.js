@@ -23,14 +23,10 @@ module.exports = class BaseFunctionNode {
 	 * @prop {String[]} calledFunctions - List of all the functions called
 	 * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
 	 * @param {Function|String} jsFunction - JS Function to do conversion
-	 * @param {String[]|Object} paramTypes - Parameter type array, assumes all parameters are 'float' if null
-	 * @param {String} returnType - The return type, assumes 'float' if null
+	 * @param {Object} options
 	 *
 	 */
-	constructor(functionName, jsFunction, options, paramTypes, returnType) {
-		//
-		// Internal vars setup
-		//
+	constructor(functionName, jsFunction, options) {
 		this.calledFunctions = [];
 		this.calledFunctionsArguments = {};
 		this.addFunction = null;
@@ -44,6 +40,8 @@ module.exports = class BaseFunctionNode {
 		this.declarations = {};
 		this.states = [];
 
+		let paramTypes;
+		let returnType;
 		if (options) {
 			if (options.hasOwnProperty('debug')) {
 				this.debug = options.debug;
@@ -59,6 +57,12 @@ module.exports = class BaseFunctionNode {
 			}
 			if (options.hasOwnProperty('loopMaxIterations')) {
 				this.loopMaxIterations = options.loopMaxIterations;
+			}
+			if (options.hasOwnProperty('paramTypes')) {
+				this.paramTypes = paramTypes = options.paramTypes;
+			}
+			if (options.hasOwnProperty('returnType')) {
+				returnType = options.returnType;
 			}
 		}
 
@@ -132,10 +136,6 @@ module.exports = class BaseFunctionNode {
 			}
 		} else {
 			this.paramTypes = [];
-			//TODO: Remove when we have proper type detection
-			// for (let a = 0; a < this.paramNames.length; ++a) {
-			// 	this.paramTypes.push();
-			// }
 		}
 
 		//

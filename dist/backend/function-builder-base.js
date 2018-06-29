@@ -43,15 +43,13 @@ module.exports = function () {
    * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
    * @param {Function} jsFunction - JS Function to do conversion
    * @param {Object} [options]
-   * @param {String[]|Object} [paramTypes] - Parameter type array, assumes all parameters are 'float' if falsey
-   * @param {String} [returnType] - The return type, assumes 'float' if falsey
    *
    */
 
 	}, {
 		key: 'addFunction',
-		value: function addFunction(functionName, jsFunction, options, paramTypes, returnType) {
-			this.addFunctionNode(new this.Node(functionName, jsFunction, options, paramTypes, returnType).setAddFunction(this.addFunction.bind(this)));
+		value: function addFunction(functionName, jsFunction, options) {
+			this.addFunctionNode(new this.Node(functionName, jsFunction, options).setAddFunction(this.addFunction.bind(this)));
 		}
 	}, {
 		key: 'addFunctions',
@@ -164,8 +162,6 @@ module.exports = function () {
    *
    * @param {String} fnString - Kernel function as a String
    * @param {Object} options - Settings object to set constants, debug mode, etc.
-   * @param {Array} paramNames - Parameters of the kernel
-   * @param {Array} paramTypes - Types of the parameters
    *
    *
    * @returns {Object} The inserted kernel as a Kernel Node
@@ -174,11 +170,9 @@ module.exports = function () {
 
 	}, {
 		key: 'addKernel',
-		value: function addKernel(fnString, options, paramNames, paramTypes) {
-			var kernelNode = new this.Node('kernel', fnString, options, paramTypes);
+		value: function addKernel(fnString, options) {
+			var kernelNode = new this.Node('kernel', fnString, options);
 			kernelNode.setAddFunction(this.addFunction.bind(this));
-			kernelNode.paramNames = paramNames;
-			kernelNode.paramTypes = paramTypes;
 			kernelNode.isRootKernel = true;
 			this.addFunctionNode(kernelNode);
 			return kernelNode;
@@ -193,8 +187,6 @@ module.exports = function () {
    *
    * @param {Function} jsFunction - Sub-kernel function (JavaScript)
    * @param {Object} options - Settings object to set constants, debug mode, etc.
-   * @param {Array} paramNames - Parameters of the sub-kernel
-   * @param {Array} returnType - Return type of the subKernel
    *
    * @returns {Object} The inserted sub-kernel as a Kernel Node
    *
@@ -202,8 +194,8 @@ module.exports = function () {
 
 	}, {
 		key: 'addSubKernel',
-		value: function addSubKernel(jsFunction, options, paramTypes, returnType) {
-			var kernelNode = new this.Node(null, jsFunction, options, paramTypes, returnType);
+		value: function addSubKernel(jsFunction, options) {
+			var kernelNode = new this.Node(null, jsFunction, options);
 			kernelNode.setAddFunction(this.addFunction.bind(this));
 			kernelNode.isSubKernel = true;
 			this.addFunctionNode(kernelNode);

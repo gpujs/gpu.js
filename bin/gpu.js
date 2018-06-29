@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.4.4
- * @date Thu Jun 28 2018 22:26:24 GMT-0400 (EDT)
+ * @version 1.4.5
+ * @date Fri Jun 29 2018 18:41:38 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -55,19 +55,37 @@ var utils = require('../../core/utils');
 module.exports = function (_BaseFunctionNode) {
 	_inherits(CPUFunctionNode, _BaseFunctionNode);
 
-	function CPUFunctionNode() {
+	function CPUFunctionNode(functionName, jsFunction, options) {
 		_classCallCheck(this, CPUFunctionNode);
 
-		return _possibleConstructorReturn(this, (CPUFunctionNode.__proto__ || Object.getPrototypeOf(CPUFunctionNode)).apply(this, arguments));
+		var _this = _possibleConstructorReturn(this, (CPUFunctionNode.__proto__ || Object.getPrototypeOf(CPUFunctionNode)).call(this, functionName, jsFunction, options));
+
+		_this.paramSizes = options ? options.paramSizes : [];
+		_this.memberStates = [];
+		return _this;
 	}
 
 	_createClass(CPUFunctionNode, [{
+		key: 'pushMemberState',
+		value: function pushMemberState(name) {
+			this.memberStates.push(name);
+		}
+	}, {
+		key: 'popMemberState',
+		value: function popMemberState(name) {
+			if (this.memberState === name) {
+				this.memberStates.pop();
+			} else {
+				throw new Error('Cannot popMemberState ' + name + ' when in ' + this.memberState);
+			}
+		}
+	}, {
 		key: 'generate',
 		value: function generate() {
 			if (this.debug) {
 				console.log(this);
 			}
-			this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
+			this.functionStringArray = this.astGeneric(this.getJsAST(), []);
 			this.functionString = this.functionStringArray.join('').trim();
 			return this.functionString;
 		}
@@ -258,7 +276,7 @@ module.exports = function (_BaseFunctionNode) {
 		key: 'astForStatement',
 		value: function astForStatement(forNode, retArr) {
 			if (forNode.type !== 'ForStatement') {
-				throw this.astErrorOutput('Invalid for statment', forNode);
+				throw this.astErrorOutput('Invalid for statement', forNode);
 			}
 
 			if (forNode.test && forNode.test.type === 'BinaryExpression') {
@@ -347,7 +365,7 @@ module.exports = function (_BaseFunctionNode) {
 		key: 'astWhileStatement',
 		value: function astWhileStatement(whileNode, retArr) {
 			if (whileNode.type !== 'WhileStatement') {
-				throw this.astErrorOutput('Invalid while statment', whileNode);
+				throw this.astErrorOutput('Invalid while statement', whileNode);
 			}
 
 			retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
@@ -368,7 +386,7 @@ module.exports = function (_BaseFunctionNode) {
 		key: 'astDoWhileStatement',
 		value: function astDoWhileStatement(doWhileNode, retArr) {
 			if (doWhileNode.type !== 'DoWhileStatement') {
-				throw this.astErrorOutput('Invalid while statment', doWhileNode);
+				throw this.astErrorOutput('Invalid while statement', doWhileNode);
 			}
 
 			retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
@@ -559,6 +577,7 @@ module.exports = function (_BaseFunctionNode) {
 				} else {
 					if (mNode.object.object) {
 						if (mNode.object.object.object && this.isInput(mNode.object.object.object.name)) {
+							this.pushMemberState(mNode.object.object.object.name);
 							this.pushState('input-index-z');
 							this.astGeneric(mNode.object, retArr);
 							var last = retArr.pop();
@@ -568,7 +587,9 @@ module.exports = function (_BaseFunctionNode) {
 							this.astGeneric(mNode.property, retArr);
 							this.popState('input-index');
 							retArr.push(last);
+							this.popMemberState(mNode.object.object.object.name);
 						} else if (this.isInput(mNode.object.object.name)) {
+							this.pushMemberState(mNode.object.object.name);
 							if (!this.isState('input-index-z')) {
 								this.pushState('input-index-y');
 							}
@@ -592,6 +613,7 @@ module.exports = function (_BaseFunctionNode) {
 								this.popState('input-index');
 							}
 							retArr.push(_last);
+							this.popMemberState(mNode.object.object.name);
 						} else {
 							this.astGeneric(mNode.object, retArr);
 							var _last2 = retArr.pop();
@@ -617,6 +639,12 @@ module.exports = function (_BaseFunctionNode) {
 					unrolled = '_' + unrolled;
 				}
 
+				switch (this.state) {
+					case 'input-index-y':
+					case 'input-index-z':
+						retArr.push('(');
+				}
+
 				switch (unrolled) {
 					case '_this.output.x':
 						retArr.push(this.output[0]);
@@ -627,33 +655,23 @@ module.exports = function (_BaseFunctionNode) {
 					case '_this.output.z':
 						retArr.push(this.output[2]);
 						break;
-					case '_this.thread.x':
-						if (this.isState('input-index-y')) {
-							retArr.push('(_this.thread.x * _this.threadDim[1])');
-						} else if (this.isState('input-index-z')) {
-							retArr.push('(_this.thread.x * _this.threadDim[0] * _this.threadDim[1])');
-						} else {
-							retArr.push(unrolled);
-						}
-						break;
-					case '_this.thread.y':
-						if (this.isState('input-index-y')) {
-							retArr.push('(_this.thread.y * _this.threadDim[0])');
-						} else if (this.isState('input-index-z')) {
-							retArr.push('(_this.thread.y * _this.threadDim[0] * _this.threadDim[1])');
-						} else {
-							retArr.push(unrolled);
-						}
-						break;
-					case '_this.thread.z':
-						if (this.isState('input-index-z')) {
-							retArr.push('(_this.thread.z * _this.threadDim[0] * _this.threadDim[1])');
-						} else {
-							retArr.push(unrolled);
-						}
-						break;
 					default:
 						retArr.push(unrolled);
+				}
+
+				switch (this.state) {
+					case 'input-index-y':
+						{
+							var size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+							retArr.push(' * ' + size[0] + ')');
+							break;
+						}
+					case 'input-index-z':
+						{
+							var _size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+							retArr.push(' * ' + _size[0] * _size[1] + ')');
+							break;
+						}
 				}
 			}
 			return retArr;
@@ -746,6 +764,11 @@ module.exports = function (_BaseFunctionNode) {
 		value: function astDebuggerStatement(arrNode, retArr) {
 			retArr.push('debugger;');
 			return retArr;
+		}
+	}, {
+		key: 'memberState',
+		get: function get() {
+			return this.memberStates[this.memberStates.length - 1];
 		}
 	}]);
 
@@ -913,14 +936,17 @@ module.exports = function (_KernelBase) {
 			builder.addKernel(this.fnString, {
 				prototypeOnly: false,
 				constants: this.constants,
-				output: this.output,
+				output: threadDim,
 				debug: this.debug,
-				loopMaxIterations: this.loopMaxIterations
-			}, this.paramNames, this.paramTypes);
+				loopMaxIterations: this.loopMaxIterations,
+				paramNames: this.paramNames,
+				paramTypes: this.paramTypes,
+				paramSizes: this.paramSizes
+			});
 
 			builder.addFunctions(this.functions, {
 				constants: this.constants,
-				output: this.output
+				output: threadDim
 			});
 
 			builder.addNativeFunctions(this.nativeFunctions);
@@ -1139,8 +1165,8 @@ module.exports = function () {
 
 	}, {
 		key: 'addFunction',
-		value: function addFunction(functionName, jsFunction, options, paramTypes, returnType) {
-			this.addFunctionNode(new this.Node(functionName, jsFunction, options, paramTypes, returnType).setAddFunction(this.addFunction.bind(this)));
+		value: function addFunction(functionName, jsFunction, options) {
+			this.addFunctionNode(new this.Node(functionName, jsFunction, options).setAddFunction(this.addFunction.bind(this)));
 		}
 	}, {
 		key: 'addFunctions',
@@ -1214,11 +1240,9 @@ module.exports = function () {
 
 	}, {
 		key: 'addKernel',
-		value: function addKernel(fnString, options, paramNames, paramTypes) {
-			var kernelNode = new this.Node('kernel', fnString, options, paramTypes);
+		value: function addKernel(fnString, options) {
+			var kernelNode = new this.Node('kernel', fnString, options);
 			kernelNode.setAddFunction(this.addFunction.bind(this));
-			kernelNode.paramNames = paramNames;
-			kernelNode.paramTypes = paramTypes;
 			kernelNode.isRootKernel = true;
 			this.addFunctionNode(kernelNode);
 			return kernelNode;
@@ -1227,8 +1251,8 @@ module.exports = function () {
 
 	}, {
 		key: 'addSubKernel',
-		value: function addSubKernel(jsFunction, options, paramTypes, returnType) {
-			var kernelNode = new this.Node(null, jsFunction, options, paramTypes, returnType);
+		value: function addSubKernel(jsFunction, options) {
+			var kernelNode = new this.Node(null, jsFunction, options);
 			kernelNode.setAddFunction(this.addFunction.bind(this));
 			kernelNode.isSubKernel = true;
 			this.addFunctionNode(kernelNode);
@@ -1322,7 +1346,7 @@ var acorn = require('acorn');
 
 module.exports = function () {
 
-	function BaseFunctionNode(functionName, jsFunction, options, paramTypes, returnType) {
+	function BaseFunctionNode(functionName, jsFunction, options) {
 		_classCallCheck(this, BaseFunctionNode);
 
 		this.calledFunctions = [];
@@ -1338,6 +1362,8 @@ module.exports = function () {
 		this.declarations = {};
 		this.states = [];
 
+		var paramTypes = void 0;
+		var returnType = void 0;
 		if (options) {
 			if (options.hasOwnProperty('debug')) {
 				this.debug = options.debug;
@@ -1353,6 +1379,12 @@ module.exports = function () {
 			}
 			if (options.hasOwnProperty('loopMaxIterations')) {
 				this.loopMaxIterations = options.loopMaxIterations;
+			}
+			if (options.hasOwnProperty('paramTypes')) {
+				this.paramTypes = paramTypes = options.paramTypes;
+			}
+			if (options.hasOwnProperty('returnType')) {
+				returnType = options.returnType;
 			}
 		}
 
@@ -1820,11 +1852,12 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var utils = require('../core/utils');
+var Input = require('../core/input');
 
 module.exports = function () {
 
-	function BaseKernel(fnString, settings) {
-		_classCallCheck(this, BaseKernel);
+	function KernelBase(fnString, settings) {
+		_classCallCheck(this, KernelBase);
 
 		this.paramNames = utils.getParamNamesFromString(fnString);
 		this.fnString = fnString;
@@ -1853,6 +1886,7 @@ module.exports = function () {
 		this.subKernelOutputVariableNames = null;
 		this.functionBuilder = null;
 		this.paramTypes = null;
+		this.paramSizes = null;
 
 		for (var p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -1868,7 +1902,7 @@ module.exports = function () {
 		if (!this._canvas) this._canvas = utils.initCanvas();
 	}
 
-	_createClass(BaseKernel, [{
+	_createClass(KernelBase, [{
 		key: 'build',
 		value: function build() {
 			throw new Error('"build" not defined on Base');
@@ -1878,11 +1912,12 @@ module.exports = function () {
 	}, {
 		key: 'setupParams',
 		value: function setupParams(args) {
-			var paramTypes = this.paramTypes = [];
+			this.paramTypes = [];
+			this.paramSizes = [];
 			for (var i = 0; i < args.length; i++) {
-				var param = args[i];
-				var paramType = utils.getArgumentType(param);
-				paramTypes.push(paramType);
+				var arg = args[i];
+				this.paramTypes.push(utils.getArgumentType(arg));
+				this.paramSizes.push(arg.constructor === Input ? arg.size : null);
 			}
 		}
 	}, {
@@ -2087,9 +2122,9 @@ module.exports = function () {
 		}
 	}]);
 
-	return BaseKernel;
+	return KernelBase;
 }();
-},{"../core/utils":32}],9:[function(require,module,exports){
+},{"../core/input":29,"../core/utils":32}],9:[function(require,module,exports){
 'use strict';
 
 var utils = require('../core/utils');
@@ -4012,8 +4047,10 @@ module.exports = function (_KernelBase) {
 				constants: this.constants,
 				output: this.output,
 				debug: this.debug,
-				loopMaxIterations: this.loopMaxIterations
-			}, this.paramNames, this.paramTypes);
+				loopMaxIterations: this.loopMaxIterations,
+				paramNames: this.paramNames,
+				paramTypes: this.paramTypes
+			});
 
 			if (this.subKernels !== null) {
 				var drawBuffers = this.drawBuffers = gl.getExtension('WEBGL_draw_buffers');
@@ -4859,8 +4896,10 @@ module.exports = function (_WebGLKernel) {
 				constants: this.constants,
 				output: this.output,
 				debug: this.debug,
-				loopMaxIterations: this.loopMaxIterations
-			}, this.paramNames, this.paramTypes);
+				loopMaxIterations: this.loopMaxIterations,
+				paramNames: this.paramNames,
+				paramTypes: this.paramTypes
+			});
 
 			if (this.subKernels !== null) {
 				this.subKernelOutputTextures = [];

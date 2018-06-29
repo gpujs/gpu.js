@@ -1199,8 +1199,10 @@ module.exports = class WebGLKernel extends KernelBase {
 			constants: this.constants,
 			output: this.output,
 			debug: this.debug,
-			loopMaxIterations: this.loopMaxIterations
-		}, this.paramNames, this.paramTypes);
+			loopMaxIterations: this.loopMaxIterations,
+			paramNames: this.paramNames,
+			paramTypes: this.paramTypes
+		});
 
 		if (this.subKernels !== null) {
 			const drawBuffers = this.drawBuffers = gl.getExtension('WEBGL_draw_buffers');

@@ -1,11 +1,12 @@
 'use strict';
 
 const utils = require('../core/utils');
+const Input = require('../core/input');
 
-module.exports = class BaseKernel {
+module.exports = class KernelBase {
 
 	/**
-	 * @constructor BaseKernel
+	 * @constructor KernelBase
 	 * 
 	 * @desc Implements the base class for Kernels, and is used as a 
 	 * parent class for all Kernel implementations.
@@ -53,6 +54,7 @@ module.exports = class BaseKernel {
 		this.subKernelOutputVariableNames = null;
 		this.functionBuilder = null;
 		this.paramTypes = null;
+		this.paramSizes = null;
 
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -84,11 +86,12 @@ module.exports = class BaseKernel {
 	 *
 	 */
 	setupParams(args) {
-		const paramTypes = this.paramTypes = [];
+		this.paramTypes = [];
+		this.paramSizes = [];
 		for (let i = 0; i < args.length; i++) {
-			const param = args[i];
-			const paramType = utils.getArgumentType(param);
-			paramTypes.push(paramType);
+			const arg = args[i];
+			this.paramTypes.push(utils.getArgumentType(arg));
+			this.paramSizes.push(arg.constructor === Input ? arg.size : null);
 		}
 	}
 
@@ -103,7 +106,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel#
+	 * @memberOf KernelBase#
 	 * @function
 	 * @name setOutput
 	 *
@@ -130,7 +133,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel# 
+	 * @memberOf KernelBase#
 	 * @function
 	 * @name setDebug
 	 *
@@ -145,7 +148,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel#
+	 * @memberOf KernelBase#
 	 * @function
 	 * @name setGraphical
 	 *
@@ -160,7 +163,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel#
+	 * @memberOf KernelBase#
 	 * @function
 	 * @name setLoopMaxIterations
 	 *
@@ -175,7 +178,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel#
+	 * @memberOf KernelBase#
 	 * @function
 	 * @name setConstants
 	 * @desc Set Constants
@@ -207,7 +210,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel#
+	 * @memberOf KernelBase#
 	 * @function
 	 * @name setFloatTextures
 	 *
@@ -222,7 +225,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel#
+	 * @memberOf KernelBase#
 	 * @function
 	 * @name setFloatOutput
 	 *
@@ -242,7 +245,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel#
+	 * @memberOf KernelBase#
 	 * @function
 	 * @name setCanvas
 	 *
@@ -257,7 +260,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel#
+	 * @memberOf KernelBase#
 	 * @function
 	 * @name setCanvas
 	 *
@@ -272,7 +275,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel#
+	 * @memberOf KernelBase#
 	 * @function
 	 * @name getCanvas()
 	 *
@@ -284,7 +287,7 @@ module.exports = class BaseKernel {
 	}
 
 	/**
-	 * @memberOf BaseKernel#
+	 * @memberOf KernelBase#
 	 * @function
 	 * @name getWebGl()
 	 *
@@ -325,7 +328,7 @@ module.exports = class BaseKernel {
 	}
 
 	/** 
-	 * @memberOf BaseKernel#
+	 * @memberOf KernelBase#
 	 * @function
 	 * @name addSubKernel
 	 *
@@ -346,7 +349,7 @@ module.exports = class BaseKernel {
 	}
 
 	/** 
-	 * @memberOf BaseKernel#
+	 * @memberOf KernelBase#
 	 * @function
 	 * @name addSubKernelProperty
 	 *

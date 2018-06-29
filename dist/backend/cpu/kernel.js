@@ -190,14 +190,17 @@ module.exports = function (_KernelBase) {
 			builder.addKernel(this.fnString, {
 				prototypeOnly: false,
 				constants: this.constants,
-				output: this.output,
+				output: threadDim,
 				debug: this.debug,
-				loopMaxIterations: this.loopMaxIterations
-			}, this.paramNames, this.paramTypes);
+				loopMaxIterations: this.loopMaxIterations,
+				paramNames: this.paramNames,
+				paramTypes: this.paramTypes,
+				paramSizes: this.paramSizes
+			});
 
 			builder.addFunctions(this.functions, {
 				constants: this.constants,
-				output: this.output
+				output: threadDim
 			});
 
 			builder.addNativeFunctions(this.nativeFunctions);

@@ -1238,8 +1238,10 @@ module.exports = function (_KernelBase) {
 				constants: this.constants,
 				output: this.output,
 				debug: this.debug,
-				loopMaxIterations: this.loopMaxIterations
-			}, this.paramNames, this.paramTypes);
+				loopMaxIterations: this.loopMaxIterations,
+				paramNames: this.paramNames,
+				paramTypes: this.paramTypes
+			});
 
 			if (this.subKernels !== null) {
 				var drawBuffers = this.drawBuffers = gl.getExtension('WEBGL_draw_buffers');

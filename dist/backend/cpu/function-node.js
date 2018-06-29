@@ -14,7 +14,7 @@ var utils = require('../../core/utils');
 /**
  * @class CPUFunctionNode
  * 
- * @extends BaseFunctionNode
+ * @extends BaseFunctionNode#
  *
  * @desc [INTERNAL] Represents a single function, inside JS
  *
@@ -37,19 +37,37 @@ var utils = require('../../core/utils');
 module.exports = function (_BaseFunctionNode) {
 	_inherits(CPUFunctionNode, _BaseFunctionNode);
 
-	function CPUFunctionNode() {
+	function CPUFunctionNode(functionName, jsFunction, options) {
 		_classCallCheck(this, CPUFunctionNode);
 
-		return _possibleConstructorReturn(this, (CPUFunctionNode.__proto__ || Object.getPrototypeOf(CPUFunctionNode)).apply(this, arguments));
+		var _this = _possibleConstructorReturn(this, (CPUFunctionNode.__proto__ || Object.getPrototypeOf(CPUFunctionNode)).call(this, functionName, jsFunction, options));
+
+		_this.paramSizes = options ? options.paramSizes : [];
+		_this.memberStates = [];
+		return _this;
 	}
 
 	_createClass(CPUFunctionNode, [{
+		key: 'pushMemberState',
+		value: function pushMemberState(name) {
+			this.memberStates.push(name);
+		}
+	}, {
+		key: 'popMemberState',
+		value: function popMemberState(name) {
+			if (this.memberState === name) {
+				this.memberStates.pop();
+			} else {
+				throw new Error('Cannot popMemberState ' + name + ' when in ' + this.memberState);
+			}
+		}
+	}, {
 		key: 'generate',
 		value: function generate() {
 			if (this.debug) {
 				console.log(this);
 			}
-			this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
+			this.functionStringArray = this.astGeneric(this.getJsAST(), []);
 			this.functionString = this.functionStringArray.join('').trim();
 			return this.functionString;
 		}
@@ -75,7 +93,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astFunctionDeclaration
    *
@@ -97,7 +115,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astFunctionPrototype
    *
@@ -139,7 +157,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astFunctionExpression
    *
@@ -194,7 +212,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astReturnStatement
    *
@@ -233,7 +251,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astLiteral
    *
@@ -260,7 +278,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astBinaryExpression
    *
@@ -284,7 +302,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astIdentifierExpression
    *
@@ -342,7 +360,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astForStatement
    *
@@ -358,7 +376,7 @@ module.exports = function (_BaseFunctionNode) {
 		key: 'astForStatement',
 		value: function astForStatement(forNode, retArr) {
 			if (forNode.type !== 'ForStatement') {
-				throw this.astErrorOutput('Invalid for statment', forNode);
+				throw this.astErrorOutput('Invalid for statement', forNode);
 			}
 
 			if (forNode.test && forNode.test.type === 'BinaryExpression') {
@@ -443,7 +461,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astWhileStatement
    *
@@ -460,7 +478,7 @@ module.exports = function (_BaseFunctionNode) {
 		key: 'astWhileStatement',
 		value: function astWhileStatement(whileNode, retArr) {
 			if (whileNode.type !== 'WhileStatement') {
-				throw this.astErrorOutput('Invalid while statment', whileNode);
+				throw this.astErrorOutput('Invalid while statement', whileNode);
 			}
 
 			retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
@@ -477,7 +495,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astWhileStatement
    *
@@ -494,7 +512,7 @@ module.exports = function (_BaseFunctionNode) {
 		key: 'astDoWhileStatement',
 		value: function astDoWhileStatement(doWhileNode, retArr) {
 			if (doWhileNode.type !== 'DoWhileStatement') {
-				throw this.astErrorOutput('Invalid while statment', doWhileNode);
+				throw this.astErrorOutput('Invalid while statement', doWhileNode);
 			}
 
 			retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
@@ -510,7 +528,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astAssignmentExpression
    *
@@ -532,7 +550,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astEmptyStatement
    *
@@ -552,7 +570,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astBlockStatement
    *
@@ -576,7 +594,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astExpressionStatement
    *
@@ -597,7 +615,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astVariableDeclaration
    *
@@ -624,7 +642,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astVariableDeclarator
    *
@@ -648,7 +666,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astIfStatement
    *
@@ -688,7 +706,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astBreakStatement
    *
@@ -708,7 +726,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astContinueStatement
    *
@@ -728,7 +746,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astLogicalExpression
    *
@@ -752,7 +770,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astUpdateExpression
    *
@@ -779,7 +797,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astUnaryExpression
    *
@@ -806,7 +824,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astThisExpression
    *
@@ -826,7 +844,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astMemberExpression
    *
@@ -854,6 +872,7 @@ module.exports = function (_BaseFunctionNode) {
 				} else {
 					if (mNode.object.object) {
 						if (mNode.object.object.object && this.isInput(mNode.object.object.object.name)) {
+							this.pushMemberState(mNode.object.object.object.name);
 							this.pushState('input-index-z');
 							this.astGeneric(mNode.object, retArr);
 							var last = retArr.pop();
@@ -863,7 +882,9 @@ module.exports = function (_BaseFunctionNode) {
 							this.astGeneric(mNode.property, retArr);
 							this.popState('input-index');
 							retArr.push(last);
+							this.popMemberState(mNode.object.object.object.name);
 						} else if (this.isInput(mNode.object.object.name)) {
+							this.pushMemberState(mNode.object.object.name);
 							if (!this.isState('input-index-z')) {
 								this.pushState('input-index-y');
 							}
@@ -887,6 +908,7 @@ module.exports = function (_BaseFunctionNode) {
 								this.popState('input-index');
 							}
 							retArr.push(_last);
+							this.popMemberState(mNode.object.object.name);
 						} else {
 							this.astGeneric(mNode.object, retArr);
 							var _last2 = retArr.pop();
@@ -913,6 +935,12 @@ module.exports = function (_BaseFunctionNode) {
 					unrolled = '_' + unrolled;
 				}
 
+				switch (this.state) {
+					case 'input-index-y':
+					case 'input-index-z':
+						retArr.push('(');
+				}
+
 				switch (unrolled) {
 					case '_this.output.x':
 						retArr.push(this.output[0]);
@@ -923,33 +951,23 @@ module.exports = function (_BaseFunctionNode) {
 					case '_this.output.z':
 						retArr.push(this.output[2]);
 						break;
-					case '_this.thread.x':
-						if (this.isState('input-index-y')) {
-							retArr.push('(_this.thread.x * _this.threadDim[1])');
-						} else if (this.isState('input-index-z')) {
-							retArr.push('(_this.thread.x * _this.threadDim[0] * _this.threadDim[1])');
-						} else {
-							retArr.push(unrolled);
-						}
-						break;
-					case '_this.thread.y':
-						if (this.isState('input-index-y')) {
-							retArr.push('(_this.thread.y * _this.threadDim[0])');
-						} else if (this.isState('input-index-z')) {
-							retArr.push('(_this.thread.y * _this.threadDim[0] * _this.threadDim[1])');
-						} else {
-							retArr.push(unrolled);
-						}
-						break;
-					case '_this.thread.z':
-						if (this.isState('input-index-z')) {
-							retArr.push('(_this.thread.z * _this.threadDim[0] * _this.threadDim[1])');
-						} else {
-							retArr.push(unrolled);
-						}
-						break;
 					default:
 						retArr.push(unrolled);
+				}
+
+				switch (this.state) {
+					case 'input-index-y':
+						{
+							var size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+							retArr.push(' * ' + size[0] + ')');
+							break;
+						}
+					case 'input-index-z':
+						{
+							var _size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+							retArr.push(' * ' + _size[0] * _size[1] + ')');
+							break;
+						}
 				}
 			}
 			return retArr;
@@ -967,7 +985,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astCallExpression
    *
@@ -1038,7 +1056,7 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf FunctionNode#
+   * @memberOf CPUFunctionNode#
    * @function
    * @name astArrayExpression
    *
@@ -1078,6 +1096,11 @@ module.exports = function (_BaseFunctionNode) {
 		value: function astDebuggerStatement(arrNode, retArr) {
 			retArr.push('debugger;');
 			return retArr;
+		}
+	}, {
+		key: 'memberState',
+		get: function get() {
+			return this.memberStates[this.memberStates.length - 1];
 		}
 	}]);
 
