@@ -783,22 +783,48 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 				}
 				retArr.push(']');
 			} else {
-				if (
-					mNode.object.object &&
-					this.isInput(mNode.object.object.name) ||
-					(
-						mNode.object.object.object &&
-						this.isInput(mNode.object.object.object.name))
-				) {
-					this.pushState('input-index-base');
-					this.astGeneric(mNode.object, retArr);
-					const last = retArr.pop();
-					retArr.push(' + ');
-					this.popState('input-index-base');
-					this.pushState('input-index');
-					this.astGeneric(mNode.property, retArr);
-					this.popState('input-index');
-					retArr.push(last);
+				if (mNode.object.object) {
+					if (mNode.object.object.object && this.isInput(mNode.object.object.object.name)) {
+						this.pushState('input-index-z');
+						this.astGeneric(mNode.object, retArr);
+						const last = retArr.pop();
+						retArr.push(' + ');
+						this.popState('input-index-z');
+						this.pushState('input-index');
+						this.astGeneric(mNode.property, retArr);
+						this.popState('input-index');
+						retArr.push(last);
+					} else if (this.isInput(mNode.object.object.name)) {
+						if (!this.isState('input-index-z')) {
+							this.pushState('input-index-y');
+						}
+						this.astGeneric(mNode.object, retArr);
+						const last = retArr.pop();
+						retArr.push(' + ');
+						if (!this.isState('input-index-z')) {
+							this.popState('input-index-y');
+						}
+
+						const isInputIndexZ = this.isState('input-index-z');
+						if (isInputIndexZ) {
+							this.pushState('input-index-y');
+						} else {
+							this.pushState('input-index');
+						}
+						this.astGeneric(mNode.property, retArr);
+						if (isInputIndexZ) {
+							this.popState('input-index-y')
+						} else {
+							this.popState('input-index');
+						}
+						retArr.push(last);
+					} else {
+						this.astGeneric(mNode.object, retArr);
+						const last = retArr.pop();
+						retArr.push('][');
+						this.astGeneric(mNode.property, retArr);
+						retArr.push(last);
+					}
 				} else {
 					this.astGeneric(mNode.object, retArr);
 					const last = retArr.pop();
@@ -829,22 +855,26 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 					retArr.push(this.output[2]);
 					break;
 				case '_this.thread.x':
-					if (this.isState('input-index-base')) {
-						retArr.push('(_this.thread.x * _this.threadDim[0])');
+					if (this.isState('input-index-y')) {
+						retArr.push('(_this.thread.x * _this.threadDim[1])');
+					} else if (this.isState('input-index-z')) {
+						retArr.push('(_this.thread.x * _this.threadDim[0] * _this.threadDim[1])');
 					} else {
 						retArr.push(unrolled);
 					}
 					break;
 				case '_this.thread.y':
-					if (this.isState('input-index-base')) {
+					if (this.isState('input-index-y')) {
 						retArr.push('(_this.thread.y * _this.threadDim[0])');
+					} else if (this.isState('input-index-z')) {
+						retArr.push('(_this.thread.y * _this.threadDim[0] * _this.threadDim[1])');
 					} else {
 						retArr.push(unrolled);
 					}
 					break;
 				case '_this.thread.z':
-					if (this.isState('input-index-base')) {
-						retArr.push('(_this.thread.z * _this.threadDim[0] * _this.threadDim[2])');
+					if (this.isState('input-index-z')) {
+						retArr.push('(_this.thread.z * _this.threadDim[0] * _this.threadDim[1])');
 					} else {
 						retArr.push(unrolled);
 					}

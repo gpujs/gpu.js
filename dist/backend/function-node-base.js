@@ -50,6 +50,7 @@ module.exports = function () {
 		this.constants = null;
 		this.output = null;
 		this.declarations = {};
+		this.states = [];
 
 		if (options) {
 			if (options.hasOwnProperty('debug')) {
@@ -152,11 +153,37 @@ module.exports = function () {
 			return this.constants.hasOwnProperty(paramName);
 		}
 	}, {
+		key: 'isInput',
+		value: function isInput(paramName) {
+			return this.paramTypes[this.paramNames.indexOf(paramName)] === 'Input';
+		}
+	}, {
 		key: 'setAddFunction',
 		value: function setAddFunction(fn) {
 			this.addFunction = fn;
 			return this;
 		}
+	}, {
+		key: 'pushState',
+		value: function pushState(state) {
+			this.states.push(state);
+		}
+	}, {
+		key: 'popState',
+		value: function popState(state) {
+			if (this.state !== state) {
+				throw new Error('Cannot popState ' + state + ' when in ' + this.state);
+			}
+			this.states.pop();
+		}
+	}, {
+		key: 'isState',
+		value: function isState(state) {
+			return this.state === state;
+		}
+	}, {
+		key: 'getJsFunction',
+
 		/**
    * 
    * Core Functions
@@ -174,9 +201,6 @@ module.exports = function () {
    * @returns {Function} The function object
    *
    */
-
-	}, {
-		key: 'getJsFunction',
 		value: function getJsFunction() {
 			if (this.jsFunction) {
 				return this.jsFunction;
@@ -626,6 +650,11 @@ module.exports = function () {
 		key: 'astArrayExpression',
 		value: function astArrayExpression(ast, retArr) {
 			return retArr;
+		}
+	}, {
+		key: 'state',
+		get: function get() {
+			return this.states[this.states.length - 1];
 		}
 	}]);
 
