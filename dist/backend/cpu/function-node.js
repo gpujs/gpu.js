@@ -845,30 +845,62 @@ module.exports = function (_BaseFunctionNode) {
 				if (mNode.object.type === 'Identifier') {
 					this.astGeneric(mNode.object, retArr);
 					retArr.push('[');
-					if (this.paramTypes[this.paramNames.indexOf(mNode.object.name)] === 'Input') {
-						var indexArray = ['(this.output.z) * ('];
-						this.astGeneric(mNode.property, indexArray);
-						indexArray.push('+ this.output.x)');
-						debugger;
-						retArr.push.apply(retArr, indexArray);
+					if (this.isInput(mNode.object.name)) {
+						this.astGeneric(mNode.property, retArr);
 					} else {
 						this.astGeneric(mNode.property, retArr);
 					}
 					retArr.push(']');
 				} else {
-					this.astGeneric(mNode.object, retArr);
-					var last = retArr.pop();
-					if (this.paramTypes[this.paramNames.indexOf(mNode.object.object.name)] === 'Input') {
-						var _indexArray = [' * ('];
-						this.astGeneric(mNode.property, _indexArray);
-						_indexArray.push(' + this.output.y)');
-						retArr.push.apply(retArr, _indexArray);
-						debugger;
+					if (mNode.object.object) {
+						if (mNode.object.object.object && this.isInput(mNode.object.object.object.name)) {
+							this.pushState('input-index-z');
+							this.astGeneric(mNode.object, retArr);
+							var last = retArr.pop();
+							retArr.push(' + ');
+							this.popState('input-index-z');
+							this.pushState('input-index');
+							this.astGeneric(mNode.property, retArr);
+							this.popState('input-index');
+							retArr.push(last);
+						} else if (this.isInput(mNode.object.object.name)) {
+							if (!this.isState('input-index-z')) {
+								this.pushState('input-index-y');
+							}
+							this.astGeneric(mNode.object, retArr);
+							var _last = retArr.pop();
+							retArr.push(' + ');
+							if (!this.isState('input-index-z')) {
+								this.popState('input-index-y');
+							}
+
+							var isInputIndexZ = this.isState('input-index-z');
+							if (isInputIndexZ) {
+								this.pushState('input-index-y');
+							} else {
+								this.pushState('input-index');
+							}
+							this.astGeneric(mNode.property, retArr);
+							if (isInputIndexZ) {
+								this.popState('input-index-y');
+							} else {
+								this.popState('input-index');
+							}
+							retArr.push(_last);
+						} else {
+							this.astGeneric(mNode.object, retArr);
+							var _last2 = retArr.pop();
+							retArr.push('][');
+							this.astGeneric(mNode.property, retArr);
+							retArr.push(_last2);
+						}
 					} else {
+						this.astGeneric(mNode.object, retArr);
+						var _last3 = retArr.pop();
 						retArr.push('][');
 						this.astGeneric(mNode.property, retArr);
+						retArr.push(_last3);
 					}
-					retArr.push(last);
 				}
 			} else {
 				var unrolled = this.astMemberExpressionUnroll(mNode);
@@ -881,7 +913,6 @@ module.exports = function (_BaseFunctionNode) {
 					unrolled = '_' + unrolled;
 				}
 
-				console.log(unrolled);
 				switch (unrolled) {
 					case '_this.output.x':
 						retArr.push(this.output[0]);
@@ -891,6 +922,31 @@ module.exports = function (_BaseFunctionNode) {
 						break;
 					case '_this.output.z':
 						retArr.push(this.output[2]);
+						break;
+					case '_this.thread.x':
+						if (this.isState('input-index-y')) {
+							retArr.push('(_this.thread.x * _this.threadDim[1])');
+						} else if (this.isState('input-index-z')) {
+							retArr.push('(_this.thread.x * _this.threadDim[0] * _this.threadDim[1])');
+						} else {
+							retArr.push(unrolled);
+						}
+						break;
+					case '_this.thread.y':
+						if (this.isState('input-index-y')) {
+							retArr.push('(_this.thread.y * _this.threadDim[0])');
+						} else if (this.isState('input-index-z')) {
+							retArr.push('(_this.thread.y * _this.threadDim[0] * _this.threadDim[1])');
+						} else {
+							retArr.push(unrolled);
+						}
+						break;
+					case '_this.thread.z':
+						if (this.isState('input-index-z')) {
+							retArr.push('(_this.thread.z * _this.threadDim[0] * _this.threadDim[1])');
+						} else {
+							retArr.push(unrolled);
+						}
 						break;
 					default:
 						retArr.push(unrolled);

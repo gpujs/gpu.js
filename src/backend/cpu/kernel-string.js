@@ -52,6 +52,7 @@ module.exports = function(cpuKernel, name) {
       ${ removeFnNoise(cpuKernel.setupParams.toString()) }
       run () { ${ cpuKernel.kernelString } }
       getKernelString() { return this._kernelString; }
+      ${ removeFnNoise(cpuKernel.validateOptions.toString()) }
     };
     return kernelRunShortcut(new Kernel());
   };`;

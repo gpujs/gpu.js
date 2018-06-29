@@ -83,6 +83,7 @@ module.exports = class CPUKernel extends KernelBase {
 	 */
 	build() {
 		this.setupParams(arguments);
+		this.validateOptions();
 		const threadDim = this.threadDim = utils.clone(this.output);
 
 		while (threadDim.length < 3) {
@@ -375,6 +376,9 @@ ${ this.subKernelOutputVariableNames === null
 					break;
 				case 'HTMLImageArray':
 					result.push(`  user_${this.paramNames[i]} = this._imageTo3DArray(user_${this.paramNames[i]})`);
+					break;
+				case 'Input':
+					result.push(`  user_${this.paramNames[i]} = user_${this.paramNames[i]}.value`);
 					break;
 			}
 		}

@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.4.3
- * @date Fri Jun 22 2018 10:06:04 GMT-0400 (EDT)
+ * @version 1.4.4
+ * @date Thu Jun 28 2018 22:26:24 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -550,30 +550,62 @@ module.exports = function (_BaseFunctionNode) {
 				if (mNode.object.type === 'Identifier') {
 					this.astGeneric(mNode.object, retArr);
 					retArr.push('[');
-					if (this.paramTypes[this.paramNames.indexOf(mNode.object.name)] === 'Input') {
-						var indexArray = ['(this.output.z) * ('];
-						this.astGeneric(mNode.property, indexArray);
-						indexArray.push('+ this.output.x)');
-						debugger;
-						retArr.push.apply(retArr, indexArray);
+					if (this.isInput(mNode.object.name)) {
+						this.astGeneric(mNode.property, retArr);
 					} else {
 						this.astGeneric(mNode.property, retArr);
 					}
 					retArr.push(']');
 				} else {
-					this.astGeneric(mNode.object, retArr);
-					var last = retArr.pop();
-					if (this.paramTypes[this.paramNames.indexOf(mNode.object.object.name)] === 'Input') {
-						var _indexArray = [' * ('];
-						this.astGeneric(mNode.property, _indexArray);
-						_indexArray.push(' + this.output.y)');
-						retArr.push.apply(retArr, _indexArray);
-						debugger;
+					if (mNode.object.object) {
+						if (mNode.object.object.object && this.isInput(mNode.object.object.object.name)) {
+							this.pushState('input-index-z');
+							this.astGeneric(mNode.object, retArr);
+							var last = retArr.pop();
+							retArr.push(' + ');
+							this.popState('input-index-z');
+							this.pushState('input-index');
+							this.astGeneric(mNode.property, retArr);
+							this.popState('input-index');
+							retArr.push(last);
+						} else if (this.isInput(mNode.object.object.name)) {
+							if (!this.isState('input-index-z')) {
+								this.pushState('input-index-y');
+							}
+							this.astGeneric(mNode.object, retArr);
+							var _last = retArr.pop();
+							retArr.push(' + ');
+							if (!this.isState('input-index-z')) {
+								this.popState('input-index-y');
+							}
+
+							var isInputIndexZ = this.isState('input-index-z');
+							if (isInputIndexZ) {
+								this.pushState('input-index-y');
+							} else {
+								this.pushState('input-index');
+							}
+							this.astGeneric(mNode.property, retArr);
+							if (isInputIndexZ) {
+								this.popState('input-index-y');
+							} else {
+								this.popState('input-index');
+							}
+							retArr.push(_last);
+						} else {
+							this.astGeneric(mNode.object, retArr);
+							var _last2 = retArr.pop();
+							retArr.push('][');
+							this.astGeneric(mNode.property, retArr);
+							retArr.push(_last2);
+						}
 					} else {
+						this.astGeneric(mNode.object, retArr);
+						var _last3 = retArr.pop();
 						retArr.push('][');
 						this.astGeneric(mNode.property, retArr);
+						retArr.push(_last3);
 					}
-					retArr.push(last);
 				}
 			} else {
 				var unrolled = this.astMemberExpressionUnroll(mNode);
@@ -585,7 +617,6 @@ module.exports = function (_BaseFunctionNode) {
 					unrolled = '_' + unrolled;
 				}
 
-				console.log(unrolled);
 				switch (unrolled) {
 					case '_this.output.x':
 						retArr.push(this.output[0]);
@@ -595,6 +626,31 @@ module.exports = function (_BaseFunctionNode) {
 						break;
 					case '_this.output.z':
 						retArr.push(this.output[2]);
+						break;
+					case '_this.thread.x':
+						if (this.isState('input-index-y')) {
+							retArr.push('(_this.thread.x * _this.threadDim[1])');
+						} else if (this.isState('input-index-z')) {
+							retArr.push('(_this.thread.x * _this.threadDim[0] * _this.threadDim[1])');
+						} else {
+							retArr.push(unrolled);
+						}
+						break;
+					case '_this.thread.y':
+						if (this.isState('input-index-y')) {
+							retArr.push('(_this.thread.y * _this.threadDim[0])');
+						} else if (this.isState('input-index-z')) {
+							retArr.push('(_this.thread.y * _this.threadDim[0] * _this.threadDim[1])');
+						} else {
+							retArr.push(unrolled);
+						}
+						break;
+					case '_this.thread.z':
+						if (this.isState('input-index-z')) {
+							retArr.push('(_this.thread.z * _this.threadDim[0] * _this.threadDim[1])');
+						} else {
+							retArr.push(unrolled);
+						}
 						break;
 					default:
 						retArr.push(unrolled);
@@ -713,7 +769,7 @@ function removeNoise(str) {
 }
 
 module.exports = function (cpuKernel, name) {
-  return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: ' + removeNoise(utils.allPropertiesOf.toString()) + ',\n      clone: ' + removeNoise(utils.clone.toString()) + '\n    };\n    const Utils = utils;\n    class ' + (name || 'Kernel') + ' {\n      constructor() {        \n        this.argumentsLength = 0;\n        this._canvas = null;\n        this._webGl = null;\n        this.built = false;\n        this.program = null;\n        this.paramNames = ' + JSON.stringify(cpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(cpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(cpuKernel.texSize) + ';\n        this.output = ' + JSON.stringify(cpuKernel.output) + ';\n        this._kernelString = `' + cpuKernel._kernelString + '`;\n        this.output = ' + JSON.stringify(cpuKernel.output) + ';\n\t\t    this.run = function() {\n          this.run = null;\n          this.build();\n          return this.run.apply(this, arguments);\n        }.bind(this);\n        this.thread = {\n          x: 0,\n          y: 0,\n          z: 0\n        };\n      }\n      setCanvas(canvas) { this._canvas = canvas; return this; }\n      setWebGl(webGl) { this._webGl = webGl; return this; }\n      ' + removeFnNoise(cpuKernel.build.toString()) + '\n      ' + removeFnNoise(cpuKernel.setupParams.toString()) + '\n      run () { ' + cpuKernel.kernelString + ' }\n      getKernelString() { return this._kernelString; }\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
+  return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: ' + removeNoise(utils.allPropertiesOf.toString()) + ',\n      clone: ' + removeNoise(utils.clone.toString()) + '\n    };\n    const Utils = utils;\n    class ' + (name || 'Kernel') + ' {\n      constructor() {        \n        this.argumentsLength = 0;\n        this._canvas = null;\n        this._webGl = null;\n        this.built = false;\n        this.program = null;\n        this.paramNames = ' + JSON.stringify(cpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(cpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(cpuKernel.texSize) + ';\n        this.output = ' + JSON.stringify(cpuKernel.output) + ';\n        this._kernelString = `' + cpuKernel._kernelString + '`;\n        this.output = ' + JSON.stringify(cpuKernel.output) + ';\n\t\t    this.run = function() {\n          this.run = null;\n          this.build();\n          return this.run.apply(this, arguments);\n        }.bind(this);\n        this.thread = {\n          x: 0,\n          y: 0,\n          z: 0\n        };\n      }\n      setCanvas(canvas) { this._canvas = canvas; return this; }\n      setWebGl(webGl) { this._webGl = webGl; return this; }\n      ' + removeFnNoise(cpuKernel.build.toString()) + '\n      ' + removeFnNoise(cpuKernel.setupParams.toString()) + '\n      run () { ' + cpuKernel.kernelString + ' }\n      getKernelString() { return this._kernelString; }\n      ' + removeFnNoise(cpuKernel.validateOptions.toString()) + '\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
 };
 },{"../../core/utils":32,"../kernel-run-shortcut":9}],4:[function(require,module,exports){
 'use strict';
@@ -785,6 +841,7 @@ module.exports = function (_KernelBase) {
 		key: 'build',
 		value: function build() {
 			this.setupParams(arguments);
+			this.validateOptions();
 			var threadDim = this.threadDim = utils.clone(this.output);
 
 			while (threadDim.length < 3) {
@@ -1123,7 +1180,6 @@ module.exports = function () {
 	}, {
 		key: 'traceFunctionCalls',
 		value: function traceFunctionCalls(functionName, retList, parent) {
-			debugger;
 			functionName = functionName || 'kernel';
 			retList = retList || [];
 
@@ -1215,7 +1271,6 @@ module.exports = function () {
 	}, {
 		key: 'getPrototypesFromFunctionNames',
 		value: function getPrototypesFromFunctionNames(functionList, opt) {
-			debugger;
 			var ret = [];
 			for (var i = 0; i < functionList.length; ++i) {
 				var functionName = functionList[i];
@@ -1281,6 +1336,7 @@ module.exports = function () {
 		this.constants = null;
 		this.output = null;
 		this.declarations = {};
+		this.states = [];
 
 		if (options) {
 			if (options.hasOwnProperty('debug')) {
@@ -1363,15 +1419,38 @@ module.exports = function () {
 			return this.constants.hasOwnProperty(paramName);
 		}
 	}, {
+		key: 'isInput',
+		value: function isInput(paramName) {
+			return this.paramTypes[this.paramNames.indexOf(paramName)] === 'Input';
+		}
+	}, {
 		key: 'setAddFunction',
 		value: function setAddFunction(fn) {
 			this.addFunction = fn;
 			return this;
 		}
-
-
+	}, {
+		key: 'pushState',
+		value: function pushState(state) {
+			this.states.push(state);
+		}
+	}, {
+		key: 'popState',
+		value: function popState(state) {
+			if (this.state !== state) {
+				throw new Error('Cannot popState ' + state + ' when in ' + this.state);
+			}
+			this.states.pop();
+		}
+	}, {
+		key: 'isState',
+		value: function isState(state) {
+			return this.state === state;
+		}
 	}, {
 		key: 'getJsFunction',
+
+
 		value: function getJsFunction() {
 			if (this.jsFunction) {
 				return this.jsFunction;
@@ -1723,6 +1802,11 @@ module.exports = function () {
 		key: 'astArrayExpression',
 		value: function astArrayExpression(ast, retArr) {
 			return retArr;
+		}
+	}, {
+		key: 'state',
+		get: function get() {
+			return this.states[this.states.length - 1];
 		}
 	}]);
 

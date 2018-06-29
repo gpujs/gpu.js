@@ -103,6 +103,7 @@ module.exports = function (_KernelBase) {
 		key: 'build',
 		value: function build() {
 			this.setupParams(arguments);
+			this.validateOptions();
 			var threadDim = this.threadDim = utils.clone(this.output);
 
 			while (threadDim.length < 3) {

@@ -117,7 +117,6 @@ module.exports = function () {
 	}, {
 		key: 'traceFunctionCalls',
 		value: function traceFunctionCalls(functionName, retList, parent) {
-			debugger;
 			functionName = functionName || 'kernel';
 			retList = retList || [];
 
@@ -296,7 +295,6 @@ module.exports = function () {
 	}, {
 		key: 'getPrototypesFromFunctionNames',
 		value: function getPrototypesFromFunctionNames(functionList, opt) {
-			debugger;
 			var ret = [];
 			for (var i = 0; i < functionList.length; ++i) {
 				var functionName = functionList[i];
