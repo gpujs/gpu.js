@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.4.6
- * @date Fri Jun 29 2018 20:30:42 GMT-0400 (EDT)
+ * @version 1.4.7
+ * @date Fri Jun 29 2018 21:15:22 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -587,7 +587,9 @@ module.exports = function (_BaseFunctionNode) {
 		value: function astMemberExpression(mNode, retArr) {
 			if (mNode.computed) {
 				if (mNode.object.type === 'Identifier') {
+					this.pushState('identifier');
 					this.astGeneric(mNode.object, retArr);
+					this.popState('identifier');
 					retArr.push('[');
 					if (this.isInput(mNode.object.name)) {
 						this.astGeneric(mNode.property, retArr);

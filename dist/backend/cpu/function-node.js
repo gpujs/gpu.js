@@ -882,7 +882,9 @@ module.exports = function (_BaseFunctionNode) {
 		value: function astMemberExpression(mNode, retArr) {
 			if (mNode.computed) {
 				if (mNode.object.type === 'Identifier') {
+					this.pushState('identifier');
 					this.astGeneric(mNode.object, retArr);
+					this.popState('identifier');
 					retArr.push('[');
 					if (this.isInput(mNode.object.name)) {
 						this.astGeneric(mNode.property, retArr);
