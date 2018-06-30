@@ -321,6 +321,12 @@ module.exports = function (_BaseFunctionNode) {
 				throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode);
 			}
 
+			switch (this.state) {
+				case 'input-index-y':
+				case 'input-index-z':
+					retArr.push('(');
+			}
+
 			switch (idtNode.name) {
 				case 'gpu_threadX':
 					retArr.push('threadId.x');
@@ -353,6 +359,21 @@ module.exports = function (_BaseFunctionNode) {
 						} else {
 							retArr.push('user_' + idtNode.name);
 						}
+					}
+			}
+
+			switch (this.state) {
+				case 'input-index-y':
+					{
+						var size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+						retArr.push(' * ' + size[0] + ')');
+						break;
+					}
+				case 'input-index-z':
+					{
+						var _size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+						retArr.push(' * ' + _size[0] * _size[1] + ')');
+						break;
 					}
 			}
 
@@ -964,8 +985,8 @@ module.exports = function (_BaseFunctionNode) {
 						}
 					case 'input-index-z':
 						{
-							var _size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
-							retArr.push(' * ' + _size[0] * _size[1] + ')');
+							var _size2 = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+							retArr.push(' * ' + _size2[0] * _size2[1] + ')');
 							break;
 						}
 				}

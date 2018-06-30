@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "description": "GPU Accelerated JavaScript",
   "main": "./dist/index.js",
   "directories": {

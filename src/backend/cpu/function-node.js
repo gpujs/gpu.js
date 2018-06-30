@@ -289,6 +289,12 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 			);
 		}
 
+		switch (this.state) {
+			case 'input-index-y':
+			case 'input-index-z':
+				retArr.push('(');
+		}
+
 		switch (idtNode.name) {
 			case 'gpu_threadX':
 				retArr.push('threadId.x');
@@ -321,6 +327,21 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 					} else {
 						retArr.push('user_' + idtNode.name);
 					}
+				}
+		}
+
+		switch (this.state) {
+			case 'input-index-y':
+				{
+					const size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+					retArr.push(' * ' + size[0] + ')');
+					break;
+				}
+			case 'input-index-z':
+				{
+					const size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+					retArr.push(' * ' + size[0] * size[1] + ')');
+					break;
 				}
 		}
 
