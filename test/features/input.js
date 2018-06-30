@@ -211,4 +211,44 @@
   QUnit.test( "inputZYX (cpu)", function() {
     inputZYX('cpu');
   });
+
+
+  function inputZYXVariables(mode) {
+    const gpu = new GPU({ mode: mode });
+    const input = GPU.input;
+    const kernel = gpu.createKernel(function(a, x, y, z) {
+      return a[z][y][x];
+    })
+      .setDebug(true)
+      .setOutput([1]);
+
+    const a = new Float32Array(64);
+    a.set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]);
+    const aInput = input(a, [2, 4, 4]);
+    QUnit.assert.deepEqual(QUnit.extend([], kernel(aInput, 1, 2, 3)), [30]);
+    QUnit.assert.deepEqual(QUnit.extend([], kernel(aInput, 0, 2, 3)), [29]);
+    QUnit.assert.deepEqual(QUnit.extend([], kernel(aInput, 0, 2, 1)), [13]);
+    QUnit.assert.deepEqual(QUnit.extend([], kernel(aInput, 1, 2, 2)), [22]);
+    QUnit.assert.deepEqual(QUnit.extend([], kernel(aInput, 0, 2, 2)), [21]);
+  }
+
+  QUnit.test( "inputZYXVariables (auto)", function() {
+    inputZYXVariables();
+  });
+
+  QUnit.test( "inputZYXVariables (gpu)", function() {
+    inputZYXVariables('gpu');
+  });
+
+  QUnit.test( "inputZYXVariables (webgl)", function() {
+    inputZYXVariables('webgl');
+  });
+
+  QUnit.test( "inputZYXVariables (webgl2)", function() {
+    inputZYXVariables('webgl2');
+  });
+
+  QUnit.test( "inputZYXVariables (cpu)", function() {
+    inputZYXVariables('cpu');
+  });
 })();
