@@ -78,9 +78,9 @@ highp float index;
 highp vec3 threadId;
 
 highp vec3 indexTo3D(highp float idx, highp vec3 texDim) {
-  highp float z = floor(idx / (texDim.x * texDim.y));
+  highp float z = floor((idx + 0.5) / (texDim.x * texDim.y));
   idx -= z * texDim.x * texDim.y;
-  highp float y = floor(idx / texDim.x);
+  highp float y = floor((idx + 0.5) / texDim.x);
   highp float x = integerMod(idx, texDim.x);
   return vec3(x, y, z);
 }
