@@ -94,9 +94,9 @@ highp vec3 indexTo3D(highp float idx, highp vec3 texDim) {
 
 highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {
   highp vec3 xyz = vec3(x, y, z);
-  xyz = floor(xyz + 0.5);
+  xyz = floor(xyz + 0.1);
   __GET_WRAPAROUND__;
-  highp float index = round(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z));
+  highp float index = floor(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z) + 0.1);
   __GET_TEXTURE_CHANNEL__;
   highp float w = round(texSize.x);
   vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;
@@ -107,9 +107,9 @@ highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, high
 
 highp vec4 getImage2D(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {
   highp vec3 xyz = vec3(x, y, z);
-  xyz = floor(xyz + 0.5);
+  xyz = floor(xyz + 0.1);
   __GET_WRAPAROUND__;
-  highp float index = round(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z));
+  highp float index = floor(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z) + 0.1);
   __GET_TEXTURE_CHANNEL__;
   highp float w = round(texSize.x);
   vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;
