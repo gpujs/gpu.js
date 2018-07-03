@@ -4,15 +4,15 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.4.7
- * @date Tue Jul 03 2018 12:04:33 GMT+0100 (BST)
+ * @version 1.4.8
+ * @date Mon Jul 02 2018 16:40:31 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
  *
  * Copyright (c) 2018 gpu.js Team
  */
-"use strict";(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+"use strict";(function(){function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s}return e})()({1:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -6220,8 +6220,8 @@ var types = {
 var lineBreak = /\r\n?|\n|\u2028|\u2029/;
 var lineBreakG = new RegExp(lineBreak.source, "g");
 
-function isNewLine(code, ecma2019String) {
-  return code === 10 || code === 13 || (!ecma2019String && (code === 0x2028 || code === 0x2029))
+function isNewLine(code) {
+  return code === 10 || code === 13 || code === 0x2028 || code === 0x2029
 }
 
 var nonASCIIwhitespace = /[\u1680\u180e\u2000-\u200a\u202f\u205f\u3000\ufeff]/;
@@ -6280,7 +6280,6 @@ var defaultOptions = {
   allowReserved: null,
   allowReturnOutsideFunction: false,
   allowImportExportEverywhere: false,
-  allowAwaitOutsideFunction: false,
   allowHashBang: false,
   locations: false,
   onToken: null,
@@ -6827,16 +6826,11 @@ pp$1.parseTryStatement = function(node) {
   if (this.type === types._catch) {
     var clause = this.startNode();
     this.next();
-    if (this.eat(types.parenL)) {
-      clause.param = this.parseBindingAtom();
-      this.enterLexicalScope();
-      this.checkLVal(clause.param, "let");
-      this.expect(types.parenR);
-    } else {
-      if (this.options.ecmaVersion < 10) { this.unexpected(); }
-      clause.param = null;
-      this.enterLexicalScope();
-    }
+    this.expect(types.parenL);
+    clause.param = this.parseBindingAtom();
+    this.enterLexicalScope();
+    this.checkLVal(clause.param, "let");
+    this.expect(types.parenR);
     clause.body = this.parseBlock(false);
     this.exitLexicalScope();
     node.handler = this.finishNode(clause, "CatchClause");
@@ -7731,7 +7725,7 @@ pp$3.parseMaybeUnary = function(refDestructuringErrors, sawUnary) {
   var this$1 = this;
 
   var startPos = this.start, startLoc = this.startLoc, expr;
-  if (this.isContextual("await") && (this.inAsync || (!this.inFunction && this.options.allowAwaitOutsideFunction))) {
+  if (this.inAsync && this.isContextual("await")) {
     expr = this.parseAwait();
     sawUnary = true;
   } else if (this.type.prefix) {
@@ -10538,7 +10532,7 @@ pp$8.readString = function(quote) {
       out += this$1.readEscapedChar(false);
       chunkStart = this$1.pos;
     } else {
-      if (isNewLine(ch, this$1.options.ecmaVersion >= 10)) { this$1.raise(this$1.start, "Unterminated string constant"); }
+      if (isNewLine(ch)) { this$1.raise(this$1.start, "Unterminated string constant"); }
       ++this$1.pos;
     }
   }
@@ -10670,12 +10664,7 @@ pp$8.readEscapedChar = function(inTemplate) {
       this.pos += octalStr.length - 1;
       ch = this.input.charCodeAt(this.pos);
       if ((octalStr !== "0" || ch == 56 || ch == 57) && (this.strict || inTemplate)) {
-        this.invalidStringToken(
-          this.pos - 1 - octalStr.length,
-          inTemplate
-            ? "Octal literal in template string"
-            : "Octal literal in strict mode"
-        );
+        this.invalidStringToken(this.pos - 1 - octalStr.length, "Octal literal in strict mode");
       }
       return String.fromCharCode(octal)
     }
@@ -10734,7 +10723,7 @@ pp$8.readWord = function() {
 };
 
 
-var version = "5.6.2";
+var version = "5.5.0";
 
 
 function parse(input, options) {
