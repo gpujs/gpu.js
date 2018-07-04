@@ -67,6 +67,8 @@ module.exports = class CPUKernel extends KernelBase {
 				throw 'Auto dimensions not supported for input type: ' + argType;
 			}
 		}
+
+		utils.checkOutput(this.output);
 	}
 
 	/**

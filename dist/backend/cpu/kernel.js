@@ -84,6 +84,8 @@ module.exports = function (_KernelBase) {
 					throw 'Auto dimensions not supported for input type: ' + argType;
 				}
 			}
+
+			utils.checkOutput(this.output);
 		}
 
 		/**

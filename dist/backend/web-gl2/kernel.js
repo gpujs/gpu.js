@@ -50,6 +50,8 @@ module.exports = function (_WebGLKernel) {
 				this.floatOutput = isFloatReadPixel;
 			}
 
+			utils.checkOutput(this.output);
+
 			if (!this.output || this.output.length === 0) {
 				if (arguments.length !== 1) {
 					throw new Error('Auto output only supported for kernels with only one input');

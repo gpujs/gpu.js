@@ -19,7 +19,8 @@ module.exports = function(cpuKernel, name) {
     ${ kernelRunShortcut.toString() };
     const utils = {
       allPropertiesOf: ${ removeNoise(utils.allPropertiesOf.toString()) },
-      clone: ${ removeNoise(utils.clone.toString()) }
+      clone: ${ removeNoise(utils.clone.toString()) },
+      checkOutput: ${ removeNoise(utils.checkOutput.toString()) }
     };
     const Utils = utils;
     class ${ name || 'Kernel' } {
