@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.4.10
- * @date Tue Jul 03 2018 16:23:43 GMT-0400 (EDT)
+ * @version 1.4.11
+ * @date Wed Jul 04 2018 15:50:38 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -188,6 +188,17 @@ var UtilsCore = function () {
 			}
 
 			return canvasObj.getContext('webgl2', UtilsCore.initWebGlDefaultOptions());
+		}
+
+
+	}, {
+		key: 'checkOutput',
+		value: function checkOutput(output) {
+			for (var i = 0; i < output.length; i++) {
+				if (isNaN(output[i]) || output[i] < 1) {
+					throw new Error('kernel.output[' + i + '] incorrectly defined as `' + output[i] + '`, needs to be numeric, and greater than 0');
+				}
+			}
 		}
 	}]);
 

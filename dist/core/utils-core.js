@@ -253,6 +253,24 @@ var UtilsCore = function () {
 			// Create a new canvas DOM
 			return canvasObj.getContext('webgl2', UtilsCore.initWebGlDefaultOptions());
 		}
+
+		/**
+   * @function
+   * @static
+   * @memberOf UtilsCore
+   * @param {number[]} output
+   * @throws if not correctly defined
+   */
+
+	}, {
+		key: 'checkOutput',
+		value: function checkOutput(output) {
+			for (var i = 0; i < output.length; i++) {
+				if (isNaN(output[i]) || output[i] < 1) {
+					throw new Error('kernel.output[' + i + '] incorrectly defined as `' + output[i] + '`, needs to be numeric, and greater than 0');
+				}
+			}
+		}
 	}]);
 
 	return UtilsCore;

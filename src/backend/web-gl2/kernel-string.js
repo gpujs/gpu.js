@@ -29,7 +29,8 @@ module.exports = function(gpuKernel, name) {
       flatten3dArrayTo: ${ removeNoise(utils.flatten3dArrayTo.toString()) },
       systemEndianness: '${ removeNoise(utils.systemEndianness()) }',
       initWebGl: ${ removeNoise(utils.initWebGl.toString()) },
-      isArray: ${ removeNoise(utils.isArray.toString()) }
+      isArray: ${ removeNoise(utils.isArray.toString()) },
+      checkOutput: ${ removeNoise(utils.checkOutput.toString()) }
     };
     const Utils = utils;
     const canvases = [];
