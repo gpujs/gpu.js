@@ -14,7 +14,7 @@ QUnit.test('WebGL Loop Max', function(assert) {
     'float user_sum=0.0;\n' +
     'for (float user_i=0.0;user_i<LOOP_MAX;user_i++){\n' +
     'if (user_i<user_a) {\n' +
-    'user_sum+=get(user_b, vec2(user_bSize[0],user_bSize[1]), vec3(user_bDim[0],user_bDim[1],user_bDim[2]), threadId.x,user_i);\n' +
+    'user_sum+=get(user_b, ivec2(user_bSize[0],user_bSize[1]), ivec3(user_bDim[0],user_bDim[1],user_bDim[2]), threadId.x,int(user_i));\n' +
     '} else {\n' +
     'break;\n' +
     '}\n' +
@@ -39,7 +39,7 @@ QUnit.test('WebGL2 Loop Max', function(assert) {
     'float user_sum=0.0;\n' +
     'for (float user_i=0.0;user_i<LOOP_MAX;user_i++){\n' +
     'if (user_i<user_a) {\n' +
-    'user_sum+=get(user_b, vec2(user_bSize[0],user_bSize[1]), vec3(user_bDim[0],user_bDim[1],user_bDim[2]), threadId.x,user_i);\n' +
+    'user_sum+=get(user_b, ivec2(user_bSize[0],user_bSize[1]), ivec3(user_bDim[0],user_bDim[1],user_bDim[2]), threadId.x,int(user_i));\n' +
     '} else {\n' +
     'break;\n' +
     '}\n' +

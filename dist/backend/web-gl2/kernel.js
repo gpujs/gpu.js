@@ -119,8 +119,8 @@ module.exports = function (_WebGLKernel) {
 			gl.scissor(0, 0, texSize[0], texSize[1]);
 
 			if (!this.hardcodeConstants) {
-				this.setUniform3fv('uOutputDim', this.threadDim);
-				this.setUniform2fv('uTexSize', texSize);
+				this.setUniform3iv('uOutputDim', new Int32Array(this.threadDim));
+				this.setUniform2iv('uTexSize', texSize);
 			}
 
 			this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
@@ -312,8 +312,8 @@ module.exports = function (_WebGLKernel) {
 						}
 
 						if (!this.hardcodeConstants) {
-							this.setUniform3fv('user_' + name + 'Dim', dim);
-							this.setUniform2fv('user_' + name + 'Size', size);
+							this.setUniform3iv('user_' + name + 'Dim', dim);
+							this.setUniform2iv('user_' + name + 'Size', size);
 						}
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
@@ -357,8 +357,8 @@ module.exports = function (_WebGLKernel) {
 						}
 
 						if (!this.hardcodeConstants) {
-							this.setUniform3fv('user_' + name + 'Dim', _dim);
-							this.setUniform2fv('user_' + name + 'Size', _size);
+							this.setUniform3iv('user_' + name + 'Dim', _dim);
+							this.setUniform2iv('user_' + name + 'Size', _size);
 						}
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
@@ -382,8 +382,8 @@ module.exports = function (_WebGLKernel) {
 						var srcFormat = gl.RGBA; // format of data we are supplying
 						var srcType = gl.UNSIGNED_BYTE; // type of data we are supplying
 						gl.texImage2D(gl.TEXTURE_2D, mipLevel, internalFormat, srcFormat, srcType, inputImage);
-						this.setUniform3fv('user_' + name + 'Dim', _dim2);
-						this.setUniform2fv('user_' + name + 'Size', _size2);
+						this.setUniform3iv('user_' + name + 'Dim', _dim2);
+						this.setUniform2iv('user_' + name + 'Size', _size2);
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
@@ -414,8 +414,8 @@ module.exports = function (_WebGLKernel) {
 							var imageDepth = 1;
 							gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, _mipLevel, xOffset, yOffset, i, inputImages[i].width, inputImages[i].height, imageDepth, _srcFormat, _srcType, inputImages[i]);
 						}
-						this.setUniform3fv('user_' + name + 'Dim', _dim3);
-						this.setUniform2fv('user_' + name + 'Size', _size3);
+						this.setUniform3iv('user_' + name + 'Dim', _dim3);
+						this.setUniform2iv('user_' + name + 'Size', _size3);
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
@@ -428,8 +428,8 @@ module.exports = function (_WebGLKernel) {
 						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-						this.setUniform3fv('user_' + name + 'Dim', _dim4);
-						this.setUniform2fv('user_' + name + 'Size', _size4);
+						this.setUniform3iv('user_' + name + 'Dim', _dim4);
+						this.setUniform2iv('user_' + name + 'Size', _size4);
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
@@ -510,7 +510,7 @@ module.exports = function (_WebGLKernel) {
 							floatOutput: this.floatOutput
 						}, paramDim);
 
-						result.push('uniform highp sampler2D user_' + paramName, 'highp vec2 user_' + paramName + 'Size = vec2(' + paramSize[0] + '.0, ' + paramSize[1] + '.0)', 'highp vec3 user_' + paramName + 'Dim = vec3(' + paramDim[0] + '.0, ' + paramDim[1] + '.0, ' + paramDim[2] + '.0)');
+						result.push('uniform highp sampler2D user_' + paramName, 'highp ivec2 user_' + paramName + 'Size = ivec2(' + paramSize[0] + ', ' + paramSize[1] + ')', 'highp ivec3 user_' + paramName + 'Dim = ivec3(' + paramDim[0] + ', ' + paramDim[1] + ', ' + paramDim[2] + ')');
 					} else if (paramType === 'Integer') {
 						result.push('highp float user_' + paramName + ' = ' + param + '.0');
 					} else if (paramType === 'Float') {
@@ -518,9 +518,9 @@ module.exports = function (_WebGLKernel) {
 					}
 				} else {
 					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
-						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp vec2 user_' + paramName + 'Size', 'uniform highp vec3 user_' + paramName + 'Dim');
+						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp ivec2 user_' + paramName + 'Size', 'uniform highp ivec3 user_' + paramName + 'Dim');
 					} else if (paramType === 'HTMLImageArray') {
-						result.push('uniform highp sampler2DArray user_' + paramName, 'uniform highp vec2 user_' + paramName + 'Size', 'uniform highp vec3 user_' + paramName + 'Dim');
+						result.push('uniform highp sampler2DArray user_' + paramName, 'uniform highp ivec2 user_' + paramName + 'Size', 'uniform highp ivec3 user_' + paramName + 'Dim');
 					} else if (paramType === 'Integer' || paramType === 'Float') {
 						result.push('uniform highp float user_' + paramName);
 					}
@@ -578,7 +578,7 @@ module.exports = function (_WebGLKernel) {
 			var result = [];
 
 			if (this.floatOutput) {
-				result.push('  index *= 4.0');
+				result.push('  index *= 4');
 			}
 
 			if (this.graphical) {
@@ -601,7 +601,7 @@ module.exports = function (_WebGLKernel) {
 					}
 
 					if (i < channels.length - 1) {
-						result.push('  index += 1.0');
+						result.push('  index += int(1)');
 					}
 				}
 			} else if (names !== null) {

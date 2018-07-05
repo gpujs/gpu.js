@@ -11,6 +11,10 @@ const constantsPrefix = 'this.constants.';
 const DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
 const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
+// these debugs were hugely usefull...
+// TODO: optimise out - webpack/babel options? maybe some generic logging support in core/utils?
+// const debug_log = console.log
+const debug_log = () => {};
 /** 
  * @class WebGLFunctionNode
  *
@@ -26,7 +30,7 @@ const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	generate() {
 		if (this.debug) {
-			console.log(this);
+			debug_log(this);
 		}
 		if (this.prototypeOnly) {
 			return WebGLFunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
@@ -177,14 +181,14 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 */
 	astReturnStatement(ast, retArr) {
 		if (this.isRootKernel) {
-			retArr.push('kernelResult = ');
+			retArr.push('kernelResult = float(');
 			this.astGeneric(ast.argument, retArr);
-			retArr.push(';');
+			retArr.push(');');
 			retArr.push('return;');
 		} else if (this.isSubKernel) {
-			retArr.push(`${ this.functionName }Result = `);
+			retArr.push(`${ this.functionName }Result = float(`);
 			this.astGeneric(ast.argument, retArr);
-			retArr.push(';');
+			retArr.push(');');
 			retArr.push(`return ${ this.functionName }Result;`);
 		} else {
 			retArr.push('return ');
@@ -225,9 +229,18 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		// Push the literal value as a float/int
 		retArr.push(ast.value);
 
-		// If it was an int, node made a float
+		const inGetParams = this.isState('in-get-call-parameters');
+		// If it was an int, node made a float if necessary
 		if (Number.isInteger(ast.value)) {
-			retArr.push('.0');
+			if (!inGetParams) {
+				retArr.push('.0');
+			}
+		} else if (this.isState('in-get-call-parameters')) {
+			// or cast to an int as we are addressing an input array
+			retArr.pop();
+			retArr.push('int(');
+			retArr.push(ast.value);
+			retArr.push(')');
 		}
 
 		return retArr;
@@ -292,16 +305,24 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				idtNode
 			);
 		}
+		// do we need to cast addressing vales to float?
+		const castFloat = !this.isState('in-get-call-parameters');
 
 		switch (idtNode.name) {
 			case 'gpu_threadX':
+				castFloat && retArr.push('float(');
 				retArr.push('threadId.x');
+				castFloat && retArr.push(')');
 				break;
 			case 'gpu_threadY':
+				castFloat && retArr.push('float(');
 				retArr.push('threadId.y');
+				castFloat && retArr.push(')');
 				break;
 			case 'gpu_threadZ':
+				castFloat && retArr.push('float(');
 				retArr.push('threadId.z');
+				castFloat && retArr.push(')');
 				break;
 			case 'gpu_outputX':
 				retArr.push('uOutputDim.x');
@@ -318,13 +339,13 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				break;
 			default:
 				if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
-					retArr.push('constants_' + idtNode.name);
+					this.pushParameter(retArr, 'constants_' + idtNode.name);
 				} else {
 					const userParamName = this.getUserParamName(idtNode.name);
 					if (userParamName !== null) {
-						retArr.push('user_' + userParamName);
+						this.pushParameter(retArr, 'user_' + userParamName);
 					} else {
-						retArr.push('user_' + idtNode.name);
+						this.pushParameter(retArr, 'user_' + idtNode.name);
 					}
 				}
 		}
@@ -394,7 +415,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				const declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
 				const updateArgument = forNode.update.argument;
 				if (!Array.isArray(declarations) || declarations.length < 1) {
-					console.log(this.jsFunctionString);
+					debug_log(this.jsFunctionString);
 					throw new Error('Error: Incompatible for loop declaration');
 				}
 
@@ -818,6 +839,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @returns {Array} the append retArr
 	 */
 	astMemberExpression(mNode, retArr) {
+		debug_log("[in] astMemberExpression " + mNode.object.type);
 		if (mNode.computed) {
 			if (mNode.object.type === 'Identifier') {
 				// Working logger
@@ -832,7 +854,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 						assumeNotTexture = true;
 					}
 				}
-
+				debug_log("- astMemberExpression " + reqName + " " + funcName);
 				if (assumeNotTexture) {
 					// Get from array
 					this.astGeneric(mNode.object, retArr);
@@ -840,6 +862,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					this.astGeneric(mNode.property, retArr);
 					retArr.push(')]');
 				} else {
+					const multiMemberExpression = this.isState('multi-member-expression');
+					if (multiMemberExpression) {
+						this.popState('multi-member-expression');
+						this.pushState('not-in-get-call-parameters');
+					}
+
 					// This normally refers to the global read only input vars
 					switch (this.getParamType(mNode.object.name)) {
 						case 'vec4':
@@ -848,16 +876,17 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							retArr.push('[');
 							retArr.push(mNode.property.raw);
 							retArr.push(']');
+							multiMemberExpression && this.popState('not-in-get-call-parameters');
 							break;
 						case 'HTMLImageArray':
 							// Get from image
 							retArr.push('getImage3D(');
 							this.astGeneric(mNode.object, retArr);
-							retArr.push(', vec2(');
+							retArr.push(', ivec2(');
 							this.astGeneric(mNode.object, retArr);
 							retArr.push('Size[0],');
 							this.astGeneric(mNode.object, retArr);
-							retArr.push('Size[1]), vec3(');
+							retArr.push('Size[1]), ivec3(');
 							this.astGeneric(mNode.object, retArr);
 							retArr.push('Dim[0],');
 							this.astGeneric(mNode.object, retArr);
@@ -865,18 +894,23 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							this.astGeneric(mNode.object, retArr);
 							retArr.push('Dim[2]');
 							retArr.push('), ');
+							if (multiMemberExpression) {
+								this.popState('not-in-get-call-parameters');
+							}
+							this.pushState('in-get-call-parameters');
 							this.astGeneric(mNode.property, retArr);
+							!multiMemberExpression && this.popState('in-get-call-parameters');
 							retArr.push(')');
 							break;
 						case 'HTMLImage':
 							// Get from image
 							retArr.push('getImage2D(');
 							this.astGeneric(mNode.object, retArr);
-							retArr.push(', vec2(');
+							retArr.push(', ivec2(');
 							this.astGeneric(mNode.object, retArr);
 							retArr.push('Size[0],');
 							this.astGeneric(mNode.object, retArr);
-							retArr.push('Size[1]), vec3(');
+							retArr.push('Size[1]), ivec3(');
 							this.astGeneric(mNode.object, retArr);
 							retArr.push('Dim[0],');
 							this.astGeneric(mNode.object, retArr);
@@ -884,18 +918,23 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							this.astGeneric(mNode.object, retArr);
 							retArr.push('Dim[2]');
 							retArr.push('), ');
+							if (multiMemberExpression) {
+								this.popState('not-in-get-call-parameters');
+							}
+							this.pushState('in-get-call-parameters');
 							this.astGeneric(mNode.property, retArr);
+							!multiMemberExpression && this.popState('in-get-call-parameters');
 							retArr.push(')');
 							break;
 						default:
 							// Get from texture
 							retArr.push('get(');
 							this.astGeneric(mNode.object, retArr);
-							retArr.push(', vec2(');
+							retArr.push(', ivec2(');
 							this.astGeneric(mNode.object, retArr);
 							retArr.push('Size[0],');
 							this.astGeneric(mNode.object, retArr);
-							retArr.push('Size[1]), vec3(');
+							retArr.push('Size[1]), ivec3(');
 							this.astGeneric(mNode.object, retArr);
 							retArr.push('Dim[0],');
 							this.astGeneric(mNode.object, retArr);
@@ -903,38 +942,77 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							this.astGeneric(mNode.object, retArr);
 							retArr.push('Dim[2]');
 							retArr.push('), ');
+							if (multiMemberExpression) {
+								this.popState('not-in-get-call-parameters');
+							}
+							this.pushState('in-get-call-parameters');
 							this.astGeneric(mNode.property, retArr);
+							!multiMemberExpression && this.popState('in-get-call-parameters');
 							retArr.push(')');
 							break;
 					}
 				}
 			} else {
+
+				debug_log("- astMemberExpression obj:", mNode.object);
+				const stateStackDepth = this.states.length;
+				const startedInGetParamsState = this.isState('in-get-call-parameters');
+				if (!startedInGetParamsState) {
+					this.pushState('multi-member-expression');
+				}
 				this.astGeneric(mNode.object, retArr);
+				if (this.isState('multi-member-expression')) {
+					this.popState('multi-member-expression');
+				}
+				const changedGetParamsState = !startedInGetParamsState && this.isState('in-get-call-parameters');
 				const last = retArr.pop();
 				retArr.push(',');
+				debug_log("- astMemberExpression prop:", mNode.property);
+				const shouldPopParamState = this.isState('should-pop-in-get-call-parameters');
+				if (shouldPopParamState) {
+					// go back to in-get-call-parameters state
+					this.popState('should-pop-in-get-call-parameters');
+				}
 				this.astGeneric(mNode.property, retArr);
 				retArr.push(last);
+
+				if (changedGetParamsState) {
+					// calling memberExpression should pop...
+					this.pushState('should-pop-in-get-call-parameters');
+				} else if (shouldPopParamState) {
+					// do the popping!
+					this.popState('in-get-call-parameters')
+				}
 			}
 		} else {
 
 			// Unroll the member expression
 			let unrolled = this.astMemberExpressionUnroll(mNode);
 			let unrolled_lc = unrolled.toLowerCase();
-
+			debug_log("- astMemberExpression unrolled:", unrolled);
 			// Its a constant, remove this.constants.
 			if (unrolled.indexOf(constantsPrefix) === 0) {
 				unrolled = 'constants_' + unrolled.slice(constantsPrefix.length);
 			}
 
+			// do we need to cast addressing vales to float?
+			const castFloat = !this.isState('in-get-call-parameters');
+
 			switch (unrolled_lc) {
 				case 'this.thread.x':
+					castFloat && retArr.push('float(');
 					retArr.push('threadId.x');
+					castFloat && retArr.push(')');
 					break;
 				case 'this.thread.y':
+					castFloat && retArr.push('float(');
 					retArr.push('threadId.y');
+					castFloat && retArr.push(')');
 					break;
 				case 'this.thread.z':
+					castFloat && retArr.push('float(');
 					retArr.push('threadId.z');
+					castFloat && retArr.push(')');
 					break;
 				case 'this.output.x':
 					retArr.push(this.output[0] + '.0');
@@ -949,6 +1027,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					retArr.push(unrolled);
 			}
 		}
+		debug_log("[out] astMemberExpression " + mNode.object.type);
 		return retArr;
 	}
 

@@ -86,7 +86,7 @@ class GPU extends GPUCore {
 	 *
 	 * @param {Function} fn - The calling to perform the conversion
 	 * @param {Object} [settings] - The parameter configuration object
-	 * @property {String} settings.dimensions - Thread dimension array (Defeaults to [1024])
+	 * @property {String} settings.dimensions - Thread dimension array (Defaults to [1024])
 	 * @property {String} settings.mode - CPU / GPU configuration mode (Defaults to null)
 	 *
 	 * The following modes are supported
