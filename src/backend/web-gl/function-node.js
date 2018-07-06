@@ -862,11 +862,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					this.astGeneric(mNode.property, retArr);
 					retArr.push(')]');
 				} else {
+					const isInGetParams = this.isState('in-get-call-parameters');
 					const multiMemberExpression = this.isState('multi-member-expression');
 					if (multiMemberExpression) {
 						this.popState('multi-member-expression');
-						this.pushState('not-in-get-call-parameters');
 					}
+					this.pushState('not-in-get-call-parameters');
 
 					// This normally refers to the global read only input vars
 					switch (this.getParamType(mNode.object.name)) {
@@ -876,7 +877,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							retArr.push('[');
 							retArr.push(mNode.property.raw);
 							retArr.push(']');
-							multiMemberExpression && this.popState('not-in-get-call-parameters');
+							this.popState('not-in-get-call-parameters');
 							break;
 						case 'HTMLImageArray':
 							// Get from image
@@ -894,9 +895,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							this.astGeneric(mNode.object, retArr);
 							retArr.push('Dim[2]');
 							retArr.push('), ');
-							if (multiMemberExpression) {
-								this.popState('not-in-get-call-parameters');
-							}
+							this.popState('not-in-get-call-parameters');
 							this.pushState('in-get-call-parameters');
 							this.astGeneric(mNode.property, retArr);
 							!multiMemberExpression && this.popState('in-get-call-parameters');
@@ -918,9 +917,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							this.astGeneric(mNode.object, retArr);
 							retArr.push('Dim[2]');
 							retArr.push('), ');
-							if (multiMemberExpression) {
-								this.popState('not-in-get-call-parameters');
-							}
+							this.popState('not-in-get-call-parameters');
 							this.pushState('in-get-call-parameters');
 							this.astGeneric(mNode.property, retArr);
 							!multiMemberExpression && this.popState('in-get-call-parameters');
@@ -928,6 +925,9 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							break;
 						default:
 							// Get from texture
+							if (isInGetParams) {
+								retArr.push('int(');
+							}
 							retArr.push('get(');
 							this.astGeneric(mNode.object, retArr);
 							retArr.push(', ivec2(');
@@ -942,13 +942,14 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							this.astGeneric(mNode.object, retArr);
 							retArr.push('Dim[2]');
 							retArr.push('), ');
-							if (multiMemberExpression) {
-								this.popState('not-in-get-call-parameters');
-							}
+							this.popState('not-in-get-call-parameters');
 							this.pushState('in-get-call-parameters');
 							this.astGeneric(mNode.property, retArr);
 							!multiMemberExpression && this.popState('in-get-call-parameters');
 							retArr.push(')');
+							if (isInGetParams) {
+								retArr.push(')');
+							}
 							break;
 					}
 				}
