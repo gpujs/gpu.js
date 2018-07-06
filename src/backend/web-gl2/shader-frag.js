@@ -128,18 +128,6 @@ highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, hi
   return get(tex, texSize, texDim, int(0), int(0), x);
 }
 
-highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp float z, highp float y, highp float x) {
-  return get(tex, texSize, texDim, int(z), int(y), int(x));
-}
-
-highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp float y, highp float x) {
-  return get(tex, texSize, texDim, int(0), int(y), int(x));
-}
-
-highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp float x) {
-  return get(tex, texSize, texDim, int(0), int(0), int(x));
-}
-
 highp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int y, highp int x) {
   return getImage2D(tex, texSize, texDim, int(0), y, x);
 }
