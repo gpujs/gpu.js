@@ -651,6 +651,29 @@ module.exports = function () {
 		value: function astArrayExpression(ast, retArr) {
 			return retArr;
 		}
+
+		/**
+   * @ignore
+   * @function
+   * @name push_parameter
+   *
+   * @desc [INTERNAL] pushes a fn parameter onto retArr and 'casts' to int if necessary
+   *  i.e. deal with force-int-parameter state
+   * 			
+   * @param {Array} retArr - return array string
+   * @param {String} parameter - the parameter name  
+   *
+   */
+
+	}, {
+		key: 'pushParameter',
+		value: function pushParameter(retArr, parameter) {
+			if (this.isState('in-get-call-parameters')) {
+				retArr.push('int(' + parameter + ')');
+			} else {
+				retArr.push(parameter);
+			}
+		}
 	}, {
 		key: 'state',
 		get: function get() {

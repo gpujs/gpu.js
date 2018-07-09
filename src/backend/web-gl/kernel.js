@@ -62,7 +62,9 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.uniform1iCache = {};
 		this.uniform2fCache = {};
 		this.uniform2fvCache = {};
+		this.uniform2ivCache = {};
 		this.uniform3fvCache = {};
+		this.uniform3ivCache = {};
 		if (!this._webGl) this._webGl = this.initWebGl();
 	}
 
@@ -281,8 +283,8 @@ module.exports = class WebGLKernel extends KernelBase {
 		gl.scissor(0, 0, texSize[0], texSize[1]);
 
 		if (!this.hardcodeConstants) {
-			this.setUniform3fv('uOutputDim', this.threadDim);
-			this.setUniform2fv('uTexSize', texSize);
+			this.setUniform3iv('uOutputDim', this.threadDim);
+			this.setUniform2iv('uTexSize', texSize);
 		}
 
 		this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
@@ -562,6 +564,21 @@ module.exports = class WebGLKernel extends KernelBase {
 		this._webGl.uniform2fv(loc, value);
 	}
 
+	setUniform2iv(name, value) {
+		if (this.uniform2ivCache.hasOwnProperty(name)) {
+			const cache = this.uniform2ivCache[name];
+			if (
+				value[0] === cache[0] &&
+				value[1] === cache[1]
+			) {
+				return;
+			}
+		}
+		this.uniform2ivCache[name] = value;
+		const loc = this.getUniformLocation(name);
+		this._webGl.uniform2iv(loc, value);
+	}
+
 	setUniform3fv(name, value) {
 		if (this.uniform3fvCache.hasOwnProperty(name)) {
 			const cache = this.uniform3fvCache[name];
@@ -576,6 +593,22 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.uniform3fvCache[name] = value;
 		const loc = this.getUniformLocation(name);
 		this._webGl.uniform3fv(loc, value);
+	}
+
+	setUniform3iv(name, value) {
+		if (this.uniform3ivCache.hasOwnProperty(name)) {
+			const cache = this.uniform3ivCache[name];
+			if (
+				value[0] === cache[0] &&
+				value[1] === cache[1] &&
+				value[2] === cache[2]
+			) {
+				return;
+			}
+		}
+		this.uniform3ivCache[name] = value;
+		const loc = this.getUniformLocation(name);
+		this._webGl.uniform3iv(loc, value);
 	}
 
 	/**
@@ -677,8 +710,8 @@ module.exports = class WebGLKernel extends KernelBase {
 					}
 
 					if (!this.hardcodeConstants) {
-						this.setUniform3fv(`user_${name}Dim`, dim);
-						this.setUniform2fv(`user_${name}Size`, size);
+						this.setUniform3iv(`user_${name}Dim`, dim);
+						this.setUniform2iv(`user_${name}Size`, size);
 					}
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
@@ -722,8 +755,8 @@ module.exports = class WebGLKernel extends KernelBase {
 					}
 
 					if (!this.hardcodeConstants) {
-						this.setUniform3fv(`user_${name}Dim`, dim);
-						this.setUniform2fv(`user_${name}Size`, size);
+						this.setUniform3iv(`user_${name}Dim`, dim);
+						this.setUniform2iv(`user_${name}Size`, size);
 					}
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
@@ -752,8 +785,8 @@ module.exports = class WebGLKernel extends KernelBase {
 						srcFormat,
 						srcType,
 						inputImage);
-					this.setUniform3fv(`user_${name}Dim`, dim);
-					this.setUniform2fv(`user_${name}Size`, size);
+					this.setUniform3iv(`user_${name}Dim`, dim);
+					this.setUniform2iv(`user_${name}Size`, size);
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
@@ -766,8 +799,8 @@ module.exports = class WebGLKernel extends KernelBase {
 					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-					this.setUniform3fv(`user_${name}Dim`, dim);
-					this.setUniform2fv(`user_${name}Size`, size);
+					this.setUniform3iv(`user_${name}Dim`, dim);
+					this.setUniform2iv(`user_${name}Size`, size);
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
@@ -833,13 +866,13 @@ module.exports = class WebGLKernel extends KernelBase {
 		const texSize = this.texSize;
 		if (this.hardcodeConstants) {
 			result.push(
-				`highp vec3 uOutputDim = vec3(${ threadDim[0] },${ threadDim[1] }, ${ threadDim[2] })`,
-				`highp vec2 uTexSize = vec2(${ texSize[0] }, ${ texSize[1] })`
+				`highp ivec3 uOutputDim = ivec3(${ threadDim[0] },${ threadDim[1] }, ${ threadDim[2] })`,
+				`highp ivec2 uTexSize = ivec2(${ texSize[0] }, ${ texSize[1] })`
 			);
 		} else {
 			result.push(
-				'uniform highp vec3 uOutputDim',
-				'uniform highp vec2 uTexSize'
+				'uniform highp ivec3 uOutputDim',
+				'uniform highp ivec2 uTexSize'
 			);
 		}
 
@@ -926,8 +959,8 @@ module.exports = class WebGLKernel extends KernelBase {
 		if (!this.floatTextures) return '';
 
 		return this._linesToString([
-			'  int channel = int(integerMod(index, 4.0))',
-			'  index = float(int(index) / 4)'
+			'  int channel = int(integerMod(index, 4))',
+			'  index = index / 4'
 		]);
 	}
 
@@ -945,7 +978,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	_getGetTextureIndexString() {
 		return (
 			this.floatTextures ?
-			'  index = float(int(index)/4);\n' :
+			'  index = index / 4;\n' :
 			''
 		);
 	}
@@ -996,8 +1029,8 @@ module.exports = class WebGLKernel extends KernelBase {
 
 					result.push(
 						`uniform highp sampler2D user_${ paramName }`,
-						`highp vec2 user_${ paramName }Size = vec2(${ paramSize[0] }.0, ${ paramSize[1] }.0)`,
-						`highp vec3 user_${ paramName }Dim = vec3(${ paramDim[0] }.0, ${ paramDim[1]}.0, ${ paramDim[2] }.0)`
+						`highp ivec2 user_${ paramName }Size = vec2(${ paramSize[0] }, ${ paramSize[1] })`,
+						`highp ivec3 user_${ paramName }Dim = vec3(${ paramDim[0] }, ${ paramDim[1]}, ${ paramDim[2] })`
 					);
 				} else if (paramType === 'Integer') {
 					result.push(`highp float user_${ paramName } = ${ param }.0`);
@@ -1008,8 +1041,8 @@ module.exports = class WebGLKernel extends KernelBase {
 				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
 					result.push(
 						`uniform highp sampler2D user_${ paramName }`,
-						`uniform highp vec2 user_${ paramName }Size`,
-						`uniform highp vec3 user_${ paramName }Dim`
+						`uniform highp ivec2 user_${ paramName }Size`,
+						`uniform highp ivec3 user_${ paramName }Dim`
 					);
 				} else if (paramType === 'Integer' || paramType === 'Float') {
 					result.push(`uniform highp float user_${ paramName }`);
@@ -1092,7 +1125,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		const result = [];
 
 		if (this.floatOutput) {
-			result.push('  index *= 4.0');
+			result.push('  index *= 4');
 		}
 
 		if (this.graphical) {
@@ -1119,7 +1152,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				}
 
 				if (i < channels.length - 1) {
-					result.push('  index += 1.0');
+					result.push('  index += 1');
 				}
 			}
 		} else if (names !== null) {
