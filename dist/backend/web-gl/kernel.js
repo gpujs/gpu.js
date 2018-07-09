@@ -119,6 +119,8 @@ module.exports = function (_KernelBase) {
 				this.floatOutput = isFloatReadPixel;
 			}
 
+			utils.checkOutput(this.output);
+
 			if (!this.output || this.output.length === 0) {
 				if (arguments.length !== 1) {
 					throw new Error('Auto output only supported for kernels with only one input');

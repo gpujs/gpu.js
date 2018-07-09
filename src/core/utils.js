@@ -46,6 +46,10 @@ let _isMixedIdentifiersSupported = (() => {
 	}
 })();
 
+/**
+ * @class
+ * @extends UtilsCore
+ */
 class Utils extends UtilsCore {
 
 	//-----------------------------------------------------------------------------
