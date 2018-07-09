@@ -370,7 +370,8 @@ const kernel = gpu.createKernel(function(a, b) {
 ```
 
 ## Loops
-Loops just work
+* Any loops defined inside the kernel must have a maximum iteration count defined by the loopMaxIterations option.
+* Other than defining the iterations by a constant or fixed value as shown [Dynamic sized via constants](dynamic-sized-via-constants), you can also simply pass the number of iterations as a variable to the kernel
 
 ### Dynamic sized via constants
 ```js
