@@ -56,6 +56,11 @@ var _isMixedIdentifiersSupported = function () {
 	}
 }();
 
+/**
+ * @class
+ * @extends UtilsCore
+ */
+
 var Utils = function (_UtilsCore) {
 	_inherits(Utils, _UtilsCore);
 

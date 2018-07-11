@@ -23,7 +23,6 @@ module.exports = class CPUKernel extends KernelBase {
 	 */
 	constructor(fnString, settings) {
 		super(fnString, settings);
-		this._fnBody = utils.getFunctionBodyFromString(fnString);
 		this._fn = null;
 		this.run = null;
 		this._canvasCtx = null;
@@ -305,53 +304,6 @@ ${ this.subKernelOutputVariableNames === null
 	 */
 	toString() {
 		return kernelString(this);
-	}
-
-	/**
-	 * @memberOf CPUKernel#
-	 * @function
-	 * @name precompileKernelObj
-	 *
-	 * @desc Precompile the kernel into a single object, 
-	 * that can be used for building the execution kernel subsequently.
-	 *
-	 * @param {Array} argTypes - Array of argument types
-	 *     
-	 * Return:
-	 *     Compiled kernel {Object}
-	 *
-	 */
-	precompileKernelObj(argTypes) {
-
-		const threadDim = this.threadDim || (this.threadDim = utils.clone(this.output));
-
-
-		return {
-			threadDim: threadDim
-		};
-	}
-
-	/**
-	 * @memberOf CPUKernel
-	 * @function
-	 * @name compileKernel
-	 * @static
-	 *
-	 * @desc Takes a previously precompiled kernel object,
-	 * and complete compilation into a full kernel
-	 * 
-	 * @returns {Function} Compiled kernel
-	 *
-	 */
-	static compileKernel(precompileObj) {
-
-		// Extract values from precompiled obj
-		const threadDim = precompileObj.threadDim;
-
-		// Normalize certain values : For actual build
-		while (threadDim.length < 3) {
-			threadDim.push(1);
-		}
 	}
 
 	/**

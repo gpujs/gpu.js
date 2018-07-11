@@ -82,7 +82,7 @@ module.exports = class KernelBase {
 	 * @desc Setup the parameter types for the parameters
 	 * supplied to the Kernel function
 	 *
-	 * @param {Array} args - The actual parameters sent to the Kernel
+	 * @param {IArguments} args - The actual parameters sent to the Kernel
 	 *
 	 */
 	setupParams(args) {

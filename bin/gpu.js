@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.4.11
- * @date Wed Jul 04 2018 15:50:38 GMT-0400 (EDT)
+ * @version 1.4.12
+ * @date Wed Jul 11 2018 15:20:52 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -840,7 +840,6 @@ module.exports = function (_KernelBase) {
 
 		var _this = _possibleConstructorReturn(this, (CPUKernel.__proto__ || Object.getPrototypeOf(CPUKernel)).call(this, fnString, settings));
 
-		_this._fnBody = utils.getFunctionBodyFromString(fnString);
 		_this._fn = null;
 		_this.run = null;
 		_this._canvasCtx = null;
@@ -1046,21 +1045,7 @@ module.exports = function (_KernelBase) {
 
 
 	}, {
-		key: 'precompileKernelObj',
-		value: function precompileKernelObj(argTypes) {
-
-			var threadDim = this.threadDim || (this.threadDim = utils.clone(this.output));
-
-			return {
-				threadDim: threadDim
-			};
-		}
-
-
-	}, {
 		key: '_getLoopMaxString',
-
-
 		value: function _getLoopMaxString() {
 			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + ';\n' : ' 1000;\n';
 		}
@@ -1106,16 +1091,6 @@ module.exports = function (_KernelBase) {
 				imagesArray[i] = this._imageTo2DArray(images[i]);
 			}
 			return imagesArray;
-		}
-	}], [{
-		key: 'compileKernel',
-		value: function compileKernel(precompileObj) {
-
-			var threadDim = precompileObj.threadDim;
-
-			while (threadDim.length < 3) {
-				threadDim.push(1);
-			}
 		}
 	}]);
 
@@ -5643,6 +5618,7 @@ var _isMixedIdentifiersSupported = function () {
 		return false;
 	}
 }();
+
 
 var Utils = function (_UtilsCore) {
 	_inherits(Utils, _UtilsCore);
