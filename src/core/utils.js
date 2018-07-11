@@ -379,8 +379,17 @@ class Utils extends UtilsCore {
 			numTexels = Math.ceil(numTexels / 4);
 		}
 
-		const w = Math.ceil(Math.sqrt(numTexels));
-		return [w, w];
+		// find width, height sizes
+		const sqrt = Math.sqrt(numTexels);
+		let high = Math.ceil(sqrt);
+		let low = Math.floor(sqrt);
+		while (high * low > numTexels) {
+			high--;
+			low = Math.ceil(numTexels / high);
+		}
+		const w = low;
+		const h = Math.ceil(numTexels / w);
+		return [w, h];
 	}
 
 	/**

@@ -433,8 +433,20 @@ var Utils = function (_UtilsCore) {
 				numTexels = Math.ceil(numTexels / 4);
 			}
 
-			var w = Math.ceil(Math.sqrt(numTexels));
-			return [w, w];
+			// const w = Math.ceil(Math.sqrt(numTexels));
+			// return [w, w];
+
+			// find width, height sizes
+			var sqrt = Math.sqrt(numTexels);
+			var high = Math.ceil(sqrt);
+			var low = Math.floor(sqrt);
+			while (high * low > numTexels) {
+				high--;
+				low = Math.ceil(numTexels / high);
+			}
+			var w = low;
+			var h = Math.ceil(numTexels / w);
+			return [w, h];
 		}
 
 		/**

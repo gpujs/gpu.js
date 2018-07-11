@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.4.8
- * @date Fri Jul 06 2018 19:40:50 GMT+0100 (BST)
+ * @date Wed Jul 11 2018 09:28:18 GMT+0100 (BST)
  *
  * @license MIT
  * The MIT License
@@ -3814,8 +3814,17 @@ module.exports = function (_KernelBase) {
 							length *= 4;
 						}
 
-						var valuesFlat = new Float32Array(length);
-						utils.flattenTo(value, valuesFlat);
+						var valuesFlat = void 0;
+
+						if (utils.isArray(value[0])) {
+							valuesFlat = new Float32Array(length);
+							utils.flattenTo(value, valuesFlat);
+						} else if (value.constructor != Float32Array) {
+							valuesFlat = new Float32Array(length);
+							valuesFlat.set(value);
+						} else {
+							valuesFlat = value;
+						}
 
 						var buffer = void 0;
 						if (this.floatTextures) {
@@ -4755,8 +4764,17 @@ module.exports = function (_WebGLKernel) {
 							length *= 4;
 						}
 
-						var valuesFlat = new Float32Array(length);
-						utils.flattenTo(value, valuesFlat);
+						var valuesFlat = void 0;
+
+						if (utils.isArray(value[0])) {
+							valuesFlat = new Float32Array(length);
+							utils.flattenTo(value, valuesFlat);
+						} else if (value.constructor != Float32Array) {
+							valuesFlat = new Float32Array(length);
+							valuesFlat.set(value);
+						} else {
+							valuesFlat = value;
+						}
 
 						var buffer = void 0;
 						if (this.floatTextures) {
@@ -5950,8 +5968,17 @@ var Utils = function (_UtilsCore) {
 				numTexels = Math.ceil(numTexels / 4);
 			}
 
-			var w = Math.ceil(Math.sqrt(numTexels));
-			return [w, w];
+
+			var sqrt = Math.sqrt(numTexels);
+			var high = Math.ceil(sqrt);
+			var low = Math.floor(sqrt);
+			while (high * low > numTexels) {
+				high--;
+				low = Math.ceil(numTexels / high);
+			}
+			var w = low;
+			var h = Math.ceil(numTexels / w);
+			return [w, h];
 		}
 
 
