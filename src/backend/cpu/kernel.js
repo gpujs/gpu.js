@@ -263,20 +263,22 @@ ${ this.subKernelOutputVariableNames === null
       
       if (this.output.length === 1) {
         ret = ret[0][0];
-${ this.subKernelOutputVariableNames === null
-        ? ''
-        : this.subKernelOutputVariableNames.map((name) => `    ${ name } = ${ name }Z[0][0];\n`).join('')
-        }
+        ${ this.subKernelOutputVariableNames === null
+          ? ''
+          : this.subKernelOutputVariableNames.map((name) => `    ${ name } = ${ name }Z[0][0];\n`).join('') }
       
-    } else if (this.output.length === 2) {
-      ret = ret[0];
-      ${ this.subKernelOutputVariableNames === null
-        ? ''
-        : this.subKernelOutputVariableNames.map((name) => `    ${ name } = ${ name }Z[0];\n`).join('')
-        }
-    }
+      } else if (this.output.length === 2) {
+        ret = ret[0];
+        ${ this.subKernelOutputVariableNames === null 
+          ? ''
+          : this.subKernelOutputVariableNames.map((name) => `    ${ name } = ${ name }Z[0];\n`).join('') }
+      } else {
+        ${ this.subKernelOutputVariableNames === null
+          ? ''
+          : this.subKernelOutputVariableNames.map((name) => `    ${ name } = ${ name }Z;\n`).join('') }
+      }
     
-    ${ this.subKernelOutputVariableNames === null
+      ${ this.subKernelOutputVariableNames === null
         ? 'return ret;\n'
         : this.subKernels !== null
           ? `var result = [
