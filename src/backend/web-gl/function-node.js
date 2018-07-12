@@ -181,14 +181,14 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 */
 	astReturnStatement(ast, retArr) {
 		if (this.isRootKernel) {
-			retArr.push('kernelResult = float(');
+			retArr.push('kernelResult = ');
 			this.astGeneric(ast.argument, retArr);
-			retArr.push(');');
+			retArr.push(';');
 			retArr.push('return;');
 		} else if (this.isSubKernel) {
-			retArr.push(`${ this.functionName }Result = float(`);
+			retArr.push(`${ this.functionName }Result = `);
 			this.astGeneric(ast.argument, retArr);
-			retArr.push(');');
+			retArr.push(';');
 			retArr.push(`return ${ this.functionName }Result;`);
 		} else {
 			retArr.push('return ');
@@ -876,7 +876,9 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							retArr.push('[');
 							retArr.push(mNode.property.raw);
 							retArr.push(']');
-							multiMemberExpression && this.popState('not-in-get-call-parameters');
+							if (multiMemberExpression) {
+								this.popState('not-in-get-call-parameters');
+							}
 							break;
 						case 'HTMLImageArray':
 							// Get from image
@@ -899,7 +901,9 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							}
 							this.pushState('in-get-call-parameters');
 							this.astGeneric(mNode.property, retArr);
-							!multiMemberExpression && this.popState('in-get-call-parameters');
+							if (!multiMemberExpression) {
+								this.popState('in-get-call-parameters');
+							}
 							retArr.push(')');
 							break;
 						case 'HTMLImage':
@@ -923,7 +927,9 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							}
 							this.pushState('in-get-call-parameters');
 							this.astGeneric(mNode.property, retArr);
-							!multiMemberExpression && this.popState('in-get-call-parameters');
+							if (!multiMemberExpression) {
+								this.popState('in-get-call-parameters');
+							}
 							retArr.push(')');
 							break;
 						default:
@@ -947,7 +953,9 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							}
 							this.pushState('in-get-call-parameters');
 							this.astGeneric(mNode.property, retArr);
-							!multiMemberExpression && this.popState('in-get-call-parameters');
+							if (!multiMemberExpression) {
+								this.popState('in-get-call-parameters');
+							}
 							retArr.push(')');
 							break;
 					}
