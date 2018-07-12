@@ -31,8 +31,8 @@ highp float integerMod(highp float x, highp float y) {
   return res * (res > floor(y) - 1.0 ? 0.0 : 1.0);
 }
 
-highp int integerMod(highp int a, highp int n) {
-  return a - (n * int(a/n));
+highp int integerMod(highp int x, highp int y) {
+  return x - (y * int(x/y));
 }
 
 // Here be dragons!

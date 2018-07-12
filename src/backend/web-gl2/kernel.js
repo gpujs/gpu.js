@@ -608,7 +608,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 				}
 
 				if (i < channels.length - 1) {
-					result.push('  index += int(1)');
+					result.push('  index += 1');
 				}
 			}
 		} else if (names !== null) {
