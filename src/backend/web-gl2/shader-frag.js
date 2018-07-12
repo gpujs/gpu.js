@@ -32,7 +32,7 @@ highp float integerMod(highp float x, highp float y) {
 }
 
 highp int integerMod(highp int x, highp int y) {
-  return int(integerMod(float(x), float(y)));
+  return x - (y * int(x/y));
 }
 
 // Here be dragons!
@@ -74,69 +74,86 @@ highp vec4 encode32(highp float f) {
 }
 // Dragons end here
 
-highp float index;
-highp vec3 threadId;
+highp int index;
+highp ivec3 threadId;
 
-highp vec3 indexTo3D(highp float idx, highp vec3 texDim) {
-  highp float z = floor((idx + 0.5) / (texDim.x * texDim.y));
-  idx -= z * texDim.x * texDim.y;
-  highp float y = floor((idx + 0.5) / texDim.x);
-  highp float x = integerMod(idx, texDim.x);
-  return vec3(x, y, z);
+highp ivec3 indexTo3D(highp int idx, highp ivec3 texDim) {
+  highp int z = int(idx / (texDim.x * texDim.y));
+  idx -= z * int(texDim.x * texDim.y);
+  highp int y = int(idx / texDim.x);
+  highp int x = int(integerMod(idx, texDim.x));
+  return ivec3(x, y, z);
 }
 
-highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {
-  highp vec3 xyz = vec3(x, y, z);
-  xyz = floor(xyz + 0.1);
+highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int z, highp int y, highp int x) {
+  highp ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
-  highp float index = floor(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z) + 0.1);
+  highp int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
   __GET_TEXTURE_CHANNEL__;
-  highp float w = round(texSize.x);
-  vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;
+  highp int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   __GET_TEXTURE_INDEX__;
-  highp vec4 texel = texture(tex, st / texSize);
+  highp vec4 texel = texture(tex, st / vec2(texSize));
   __GET_RESULT__;
   
 }
 
-highp vec4 getImage2D(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {
-  highp vec3 xyz = vec3(x, y, z);
-  xyz = floor(xyz + 0.1);
+highp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int z, highp int y, highp int x) {
+  highp ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
-  highp float index = floor(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z) + 0.1);
+  highp int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
   __GET_TEXTURE_CHANNEL__;
-  highp float w = round(texSize.x);
-  vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;
+  highp int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   __GET_TEXTURE_INDEX__;
-  return texture(tex, st / texSize);
+  return texture(tex, st / vec2(texSize));
 }
 
-highp vec4 getImage3D(highp sampler2DArray tex, highp vec2 texSize, highp vec3 texDim, highp float z, highp float y, highp float x) {
-  highp vec3 xyz = vec3(x, y, z);
-  xyz = floor(xyz + 0.1);
+highp vec4 getImage3D(highp sampler2DArray tex, highp ivec2 texSize, highp ivec3 texDim, highp int z, highp int y, highp int x) {
+  highp ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
-  highp float index = floor(xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z) + 0.1);
+  highp int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
   __GET_TEXTURE_CHANNEL__;
-  highp float w = round(texSize.x);
-  vec2 st = vec2(integerMod(index, w), float(int(index) / int(w))) + 0.5;
+  highp int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   __GET_TEXTURE_INDEX__;
-  return texture(tex, vec3(st / texSize, z));
+  return texture(tex, vec3(st / vec2(texSize), z));
 }
 
-highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {
-  return get(tex, texSize, texDim, 0.0, y, x);
+highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int y, highp int x) {
+  return get(tex, texSize, texDim, int(0), y, x);
 }
 
-highp vec4 getImage2D(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float y, highp float x) {
-  return getImage2D(tex, texSize, texDim, 0.0, y, x);
+highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int x) {
+  return get(tex, texSize, texDim, int(0), int(0), x);
 }
 
-highp float get(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {
-  return get(tex, texSize, texDim, 0.0, 0.0, x);
+highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp float z, highp float y, highp float x) {
+  return get(tex, texSize, texDim, int(z), int(y), int(x));
 }
 
-highp vec4 getImage2D(highp sampler2D tex, highp vec2 texSize, highp vec3 texDim, highp float x) {
-  return getImage2D(tex, texSize, texDim, 0.0, 0.0, x);
+highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp float y, highp float x) {
+  return get(tex, texSize, texDim, int(0), int(y), int(x));
+}
+
+highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp float x) {
+  return get(tex, texSize, texDim, int(0), int(0), int(x));
+}
+
+highp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int y, highp int x) {
+  return getImage2D(tex, texSize, texDim, int(0), y, x);
+}
+
+highp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int x) {
+  return getImage2D(tex, texSize, texDim, int(0), int(0), x);
+}
+
+highp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp float y, highp float x) {
+  return getImage2D(tex, texSize, texDim, int(0), int(y), int(x));
+}
+
+highp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp float x) {
+  return getImage2D(tex, texSize, texDim, int(0), int(0), int(x));
 }
 
 highp vec4 actualColor;
@@ -153,6 +170,6 @@ __MAIN_CONSTANTS__;
 __KERNEL__;
 
 void main(void) {
-  index = floor(vTexCoord.s * float(uTexSize.x)) + floor(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;
+  index = int(vTexCoord.s * float(uTexSize.x)) + int(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;
   __MAIN_RESULT__;
 }`;

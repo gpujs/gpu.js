@@ -426,8 +426,8 @@ class Utils extends UtilsCore {
 				ret.push(1);
 			}
 		}
-
-		return ret;
+		// return ret;
+		return new Int32Array(ret);
 	}
 
 	/**

@@ -103,8 +103,8 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 		gl.scissor(0, 0, texSize[0], texSize[1]);
 
 		if (!this.hardcodeConstants) {
-			this.setUniform3fv('uOutputDim', this.threadDim);
-			this.setUniform2fv('uTexSize', texSize);
+			this.setUniform3iv('uOutputDim', new Int32Array(this.threadDim));
+			this.setUniform2iv('uTexSize', texSize);
 		}
 
 		this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
@@ -287,8 +287,8 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					}
 
 					if (!this.hardcodeConstants) {
-						this.setUniform3fv(`user_${name}Dim`, dim);
-						this.setUniform2fv(`user_${name}Size`, size);
+						this.setUniform3iv(`user_${name}Dim`, dim);
+						this.setUniform2iv(`user_${name}Size`, size);
 					}
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
@@ -332,8 +332,8 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					}
 
 					if (!this.hardcodeConstants) {
-						this.setUniform3fv(`user_${name}Dim`, dim);
-						this.setUniform2fv(`user_${name}Size`, size);
+						this.setUniform3iv(`user_${name}Dim`, dim);
+						this.setUniform2iv(`user_${name}Size`, size);
 					}
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
@@ -362,8 +362,8 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 						srcFormat,
 						srcType,
 						inputImage);
-					this.setUniform3fv(`user_${name}Dim`, dim);
-					this.setUniform2fv(`user_${name}Size`, size);
+					this.setUniform3iv(`user_${name}Dim`, dim);
+					this.setUniform2iv(`user_${name}Size`, size);
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
@@ -417,8 +417,8 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 							inputImages[i]
 						);
 					}
-					this.setUniform3fv(`user_${name}Dim`, dim);
-					this.setUniform2fv(`user_${name}Size`, size);
+					this.setUniform3iv(`user_${name}Dim`, dim);
+					this.setUniform2iv(`user_${name}Size`, size);
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
@@ -431,8 +431,8 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
 					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-					this.setUniform3fv(`user_${name}Dim`, dim);
-					this.setUniform2fv(`user_${name}Size`, size);
+					this.setUniform3iv(`user_${name}Dim`, dim);
+					this.setUniform2iv(`user_${name}Size`, size);
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
@@ -506,8 +506,8 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 
 					result.push(
 						`uniform highp sampler2D user_${ paramName }`,
-						`highp vec2 user_${ paramName }Size = vec2(${ paramSize[0] }.0, ${ paramSize[1] }.0)`,
-						`highp vec3 user_${ paramName }Dim = vec3(${ paramDim[0] }.0, ${ paramDim[1]}.0, ${ paramDim[2] }.0)`
+						`highp ivec2 user_${ paramName }Size = ivec2(${ paramSize[0] }, ${ paramSize[1] })`,
+						`highp ivec3 user_${ paramName }Dim = ivec3(${ paramDim[0] }, ${ paramDim[1]}, ${ paramDim[2] })`
 					);
 				} else if (paramType === 'Integer') {
 					result.push(`highp float user_${ paramName } = ${ param }.0`);
@@ -518,14 +518,14 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
 					result.push(
 						`uniform highp sampler2D user_${ paramName }`,
-						`uniform highp vec2 user_${ paramName }Size`,
-						`uniform highp vec3 user_${ paramName }Dim`
+						`uniform highp ivec2 user_${ paramName }Size`,
+						`uniform highp ivec3 user_${ paramName }Dim`
 					);
 				} else if (paramType === 'HTMLImageArray') {
 					result.push(
 						`uniform highp sampler2DArray user_${ paramName }`,
-						`uniform highp vec2 user_${ paramName }Size`,
-						`uniform highp vec3 user_${ paramName }Dim`
+						`uniform highp ivec2 user_${ paramName }Size`,
+						`uniform highp ivec3 user_${ paramName }Dim`
 					);
 				} else if (paramType === 'Integer' || paramType === 'Float') {
 					result.push(`uniform highp float user_${ paramName }`);
@@ -581,7 +581,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 		const result = [];
 
 		if (this.floatOutput) {
-			result.push('  index *= 4.0');
+			result.push('  index *= 4');
 		}
 
 		if (this.graphical) {
@@ -608,7 +608,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 				}
 
 				if (i < channels.length - 1) {
-					result.push('  index += 1.0');
+					result.push('  index += 1');
 				}
 			}
 		} else if (names !== null) {

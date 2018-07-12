@@ -7,7 +7,9 @@
     "doc": "doc",
     "test": "test"
   },
-  "dependencies": { "acorn": "^5.1.1" },
+  "dependencies": {
+    "acorn": "^5.1.1"
+  },
   "devDependencies": {
     "babel-plugin-syntax-async-functions": "^6.5.0",
     "babel-preset-env": "^1.5.2",
