@@ -655,7 +655,7 @@ module.exports = function () {
 		/**
    * @ignore
    * @function
-   * @name push_parameter
+   * @name pushParameter
    *
    * @desc [INTERNAL] pushes a fn parameter onto retArr and 'casts' to int if necessary
    *  i.e. deal with force-int-parameter state

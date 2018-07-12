@@ -21,8 +21,8 @@ var ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
 // these debugs were hugely usefull...
 // TODO: optimise out - webpack/babel options? maybe some generic logging support in core/utils?
-// const debug_log = console.log
-var debug_log = function debug_log() {};
+// const debugLog = console.log
+var debugLog = function debugLog() {};
 /** 
  * @class WebGLFunctionNode
  *
@@ -48,7 +48,7 @@ module.exports = function (_FunctionNodeBase) {
 		key: 'generate',
 		value: function generate() {
 			if (this.debug) {
-				debug_log(this);
+				debugLog(this);
 			}
 			if (this.prototypeOnly) {
 				return WebGLFunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
@@ -415,7 +415,7 @@ module.exports = function (_FunctionNodeBase) {
 					var declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
 					var updateArgument = forNode.update.argument;
 					if (!Array.isArray(declarations) || declarations.length < 1) {
-						debug_log(this.jsFunctionString);
+						debugLog(this.jsFunctionString);
 						throw new Error('Error: Incompatible for loop declaration');
 					}
 
@@ -875,7 +875,7 @@ module.exports = function (_FunctionNodeBase) {
 	}, {
 		key: 'astMemberExpression',
 		value: function astMemberExpression(mNode, retArr) {
-			debug_log("[in] astMemberExpression " + mNode.object.type);
+			debugLog("[in] astMemberExpression " + mNode.object.type);
 			if (mNode.computed) {
 				if (mNode.object.type === 'Identifier') {
 					// Working logger
@@ -890,7 +890,7 @@ module.exports = function (_FunctionNodeBase) {
 							assumeNotTexture = true;
 						}
 					}
-					debug_log("- astMemberExpression " + reqName + " " + funcName);
+					debugLog("- astMemberExpression " + reqName + " " + funcName);
 					if (assumeNotTexture) {
 						// Get from array
 						this.astGeneric(mNode.object, retArr);
@@ -998,7 +998,7 @@ module.exports = function (_FunctionNodeBase) {
 					}
 				} else {
 
-					debug_log("- astMemberExpression obj:", mNode.object);
+					debugLog("- astMemberExpression obj:", mNode.object);
 					var stateStackDepth = this.states.length;
 					var startedInGetParamsState = this.isState('in-get-call-parameters');
 					if (!startedInGetParamsState) {
@@ -1011,7 +1011,7 @@ module.exports = function (_FunctionNodeBase) {
 					var changedGetParamsState = !startedInGetParamsState && this.isState('in-get-call-parameters');
 					var last = retArr.pop();
 					retArr.push(',');
-					debug_log("- astMemberExpression prop:", mNode.property);
+					debugLog("- astMemberExpression prop:", mNode.property);
 					var shouldPopParamState = this.isState('should-pop-in-get-call-parameters');
 					if (shouldPopParamState) {
 						// go back to in-get-call-parameters state
@@ -1033,7 +1033,7 @@ module.exports = function (_FunctionNodeBase) {
 				// Unroll the member expression
 				var unrolled = this.astMemberExpressionUnroll(mNode);
 				var unrolled_lc = unrolled.toLowerCase();
-				debug_log("- astMemberExpression unrolled:", unrolled);
+				debugLog("- astMemberExpression unrolled:", unrolled);
 				// Its a constant, remove this.constants.
 				if (unrolled.indexOf(constantsPrefix) === 0) {
 					unrolled = 'constants_' + unrolled.slice(constantsPrefix.length);
@@ -1071,7 +1071,7 @@ module.exports = function (_FunctionNodeBase) {
 						retArr.push(unrolled);
 				}
 			}
-			debug_log("[out] astMemberExpression " + mNode.object.type);
+			debugLog("[out] astMemberExpression " + mNode.object.type);
 			return retArr;
 		}
 	}, {

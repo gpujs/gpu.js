@@ -13,8 +13,8 @@ const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
 // these debugs were hugely usefull...
 // TODO: optimise out - webpack/babel options? maybe some generic logging support in core/utils?
-// const debug_log = console.log
-const debug_log = () => {};
+// const debugLog = console.log
+const debugLog = () => {};
 /** 
  * @class WebGLFunctionNode
  *
@@ -30,7 +30,7 @@ const debug_log = () => {};
 module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	generate() {
 		if (this.debug) {
-			debug_log(this);
+			debugLog(this);
 		}
 		if (this.prototypeOnly) {
 			return WebGLFunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
@@ -415,7 +415,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				const declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
 				const updateArgument = forNode.update.argument;
 				if (!Array.isArray(declarations) || declarations.length < 1) {
-					debug_log(this.jsFunctionString);
+					debugLog(this.jsFunctionString);
 					throw new Error('Error: Incompatible for loop declaration');
 				}
 
@@ -839,7 +839,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @returns {Array} the append retArr
 	 */
 	astMemberExpression(mNode, retArr) {
-		debug_log("[in] astMemberExpression " + mNode.object.type);
+		debugLog("[in] astMemberExpression " + mNode.object.type);
 		if (mNode.computed) {
 			if (mNode.object.type === 'Identifier') {
 				// Working logger
@@ -854,7 +854,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 						assumeNotTexture = true;
 					}
 				}
-				debug_log("- astMemberExpression " + reqName + " " + funcName);
+				debugLog("- astMemberExpression " + reqName + " " + funcName);
 				if (assumeNotTexture) {
 					// Get from array
 					this.astGeneric(mNode.object, retArr);
@@ -962,7 +962,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				}
 			} else {
 
-				debug_log("- astMemberExpression obj:", mNode.object);
+				debugLog("- astMemberExpression obj:", mNode.object);
 				const stateStackDepth = this.states.length;
 				const startedInGetParamsState = this.isState('in-get-call-parameters');
 				if (!startedInGetParamsState) {
@@ -975,7 +975,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				const changedGetParamsState = !startedInGetParamsState && this.isState('in-get-call-parameters');
 				const last = retArr.pop();
 				retArr.push(',');
-				debug_log("- astMemberExpression prop:", mNode.property);
+				debugLog("- astMemberExpression prop:", mNode.property);
 				const shouldPopParamState = this.isState('should-pop-in-get-call-parameters');
 				if (shouldPopParamState) {
 					// go back to in-get-call-parameters state
@@ -997,7 +997,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			// Unroll the member expression
 			let unrolled = this.astMemberExpressionUnroll(mNode);
 			let unrolled_lc = unrolled.toLowerCase();
-			debug_log("- astMemberExpression unrolled:", unrolled);
+			debugLog("- astMemberExpression unrolled:", unrolled);
 			// Its a constant, remove this.constants.
 			if (unrolled.indexOf(constantsPrefix) === 0) {
 				unrolled = 'constants_' + unrolled.slice(constantsPrefix.length);
@@ -1035,7 +1035,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					retArr.push(unrolled);
 			}
 		}
-		debug_log("[out] astMemberExpression " + mNode.object.type);
+		debugLog("[out] astMemberExpression " + mNode.object.type);
 		return retArr;
 	}
 

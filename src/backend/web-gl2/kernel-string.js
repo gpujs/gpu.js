@@ -57,9 +57,9 @@ module.exports = function(gpuKernel, name) {
 		    this.uniform1iCache = {};
 		    this.uniform2fCache = {};
 		    this.uniform2fvCache = {};
-        this.uniform2ivCache = {};
-        this.uniform3fvCache = {};
-        this.uniform3ivCache = {};
+		    this.uniform2ivCache = {};
+		    this.uniform3fvCache = {};
+		    this.uniform3ivCache = {};
       }
       ${ removeFnNoise(gpuKernel._getFragShaderString.toString()) }
       ${ removeFnNoise(gpuKernel._getVertShaderString.toString()) }
@@ -82,10 +82,10 @@ module.exports = function(gpuKernel, name) {
 		  ${ removeFnNoise(gpuKernel.setUniform1f.toString()) }
 		  ${ removeFnNoise(gpuKernel.setUniform1i.toString()) }
 		  ${ removeFnNoise(gpuKernel.setUniform2f.toString()) }
-      ${ removeFnNoise(gpuKernel.setUniform2fv.toString()) }
-      ${ removeFnNoise(gpuKernel.setUniform2iv.toString()) }
-      ${ removeFnNoise(gpuKernel.setUniform3fv.toString()) } 
-      ${ removeFnNoise(gpuKernel.setUniform3iv.toString()) } 
+		  ${ removeFnNoise(gpuKernel.setUniform2fv.toString()) }
+		  ${ removeFnNoise(gpuKernel.setUniform2iv.toString()) }
+		  ${ removeFnNoise(gpuKernel.setUniform3fv.toString()) } 
+		  ${ removeFnNoise(gpuKernel.setUniform3iv.toString()) } 
     };
     return kernelRunShortcut(new Kernel());
   };`;
