@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.4.11
- * @date Thu Jul 12 2018 19:57:36 GMT+0100 (BST)
+ * @version 1.4.13
+ * @date Thu Jul 12 2018 20:02:38 GMT+0100 (BST)
  *
  * @license MIT
  * The MIT License
@@ -840,7 +840,6 @@ module.exports = function (_KernelBase) {
 
 		var _this = _possibleConstructorReturn(this, (CPUKernel.__proto__ || Object.getPrototypeOf(CPUKernel)).call(this, fnString, settings));
 
-		_this._fnBody = utils.getFunctionBodyFromString(fnString);
 		_this._fn = null;
 		_this.run = null;
 		_this._canvasCtx = null;
@@ -1025,11 +1024,13 @@ module.exports = function (_KernelBase) {
 				return '      ' + name + 'Z[this.thread.z][this.thread.y] = new Array(' + threadDim[0] + ');\n';
 			}).join('')) + '\n        for (this.thread.x = 0; this.thread.x < ' + threadDim[0] + '; this.thread.x++) {\n          var kernelResult;\n          ' + kernel + '\n          ret[this.thread.z][this.thread.y][this.thread.x] = kernelResult;\n' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '        ' + name + 'Z[this.thread.z][this.thread.y][this.thread.x] = ' + name + ';\n';
-			}).join('')) + '\n          }\n        }\n      }\n      \n      if (this.graphical) {\n        this._imageData.data.set(this._colorData);\n        this._canvasCtx.putImageData(this._imageData, 0, 0);\n        return;\n      }\n      \n      if (this.output.length === 1) {\n        ret = ret[0][0];\n' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			}).join('')) + '\n          }\n        }\n      }\n      \n      if (this.graphical) {\n        this._imageData.data.set(this._colorData);\n        this._canvasCtx.putImageData(this._imageData, 0, 0);\n        return;\n      }\n      \n      if (this.output.length === 1) {\n        ret = ret[0][0];\n        ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '    ' + name + ' = ' + name + 'Z[0][0];\n';
-			}).join('')) + '\n      \n    } else if (this.output.length === 2) {\n      ret = ret[0];\n      ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			}).join('')) + '\n      \n      } else if (this.output.length === 2) {\n        ret = ret[0];\n        ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '    ' + name + ' = ' + name + 'Z[0];\n';
-			}).join('')) + '\n    }\n    \n    ' + (this.subKernelOutputVariableNames === null ? 'return ret;\n' : this.subKernels !== null ? 'var result = [\n        ' + this.subKernelOutputVariableNames.map(function (name) {
+			}).join('')) + '\n      } else {\n        ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+				return '    ' + name + ' = ' + name + 'Z;\n';
+			}).join('')) + '\n      }\n    \n      ' + (this.subKernelOutputVariableNames === null ? 'return ret;\n' : this.subKernels !== null ? 'var result = [\n        ' + this.subKernelOutputVariableNames.map(function (name) {
 				return '' + name;
 			}).join(',\n') + '\n      ];\n      result.result = ret;\n      return result;\n' : 'return {\n        result: ret,\n        ' + Object.keys(this.subKernelProperties).map(function (name, i) {
 				return name + ': ' + _this2.subKernelOutputVariableNames[i];
@@ -1046,21 +1047,7 @@ module.exports = function (_KernelBase) {
 
 
 	}, {
-		key: 'precompileKernelObj',
-		value: function precompileKernelObj(argTypes) {
-
-			var threadDim = this.threadDim || (this.threadDim = utils.clone(this.output));
-
-			return {
-				threadDim: threadDim
-			};
-		}
-
-
-	}, {
 		key: '_getLoopMaxString',
-
-
 		value: function _getLoopMaxString() {
 			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + ';\n' : ' 1000;\n';
 		}
@@ -1106,16 +1093,6 @@ module.exports = function (_KernelBase) {
 				imagesArray[i] = this._imageTo2DArray(images[i]);
 			}
 			return imagesArray;
-		}
-	}], [{
-		key: 'compileKernel',
-		value: function compileKernel(precompileObj) {
-
-			var threadDim = precompileObj.threadDim;
-
-			while (threadDim.length < 3) {
-				threadDim.push(1);
-			}
 		}
 	}]);
 

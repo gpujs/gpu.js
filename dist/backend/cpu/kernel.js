@@ -35,7 +35,6 @@ module.exports = function (_KernelBase) {
 
 		var _this = _possibleConstructorReturn(this, (CPUKernel.__proto__ || Object.getPrototypeOf(CPUKernel)).call(this, fnString, settings));
 
-		_this._fnBody = utils.getFunctionBodyFromString(fnString);
 		_this._fn = null;
 		_this.run = null;
 		_this._canvasCtx = null;
@@ -256,11 +255,13 @@ module.exports = function (_KernelBase) {
 				return '      ' + name + 'Z[this.thread.z][this.thread.y] = new Array(' + threadDim[0] + ');\n';
 			}).join('')) + '\n        for (this.thread.x = 0; this.thread.x < ' + threadDim[0] + '; this.thread.x++) {\n          var kernelResult;\n          ' + kernel + '\n          ret[this.thread.z][this.thread.y][this.thread.x] = kernelResult;\n' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '        ' + name + 'Z[this.thread.z][this.thread.y][this.thread.x] = ' + name + ';\n';
-			}).join('')) + '\n          }\n        }\n      }\n      \n      if (this.graphical) {\n        this._imageData.data.set(this._colorData);\n        this._canvasCtx.putImageData(this._imageData, 0, 0);\n        return;\n      }\n      \n      if (this.output.length === 1) {\n        ret = ret[0][0];\n' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			}).join('')) + '\n          }\n        }\n      }\n      \n      if (this.graphical) {\n        this._imageData.data.set(this._colorData);\n        this._canvasCtx.putImageData(this._imageData, 0, 0);\n        return;\n      }\n      \n      if (this.output.length === 1) {\n        ret = ret[0][0];\n        ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '    ' + name + ' = ' + name + 'Z[0][0];\n';
-			}).join('')) + '\n      \n    } else if (this.output.length === 2) {\n      ret = ret[0];\n      ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			}).join('')) + '\n      \n      } else if (this.output.length === 2) {\n        ret = ret[0];\n        ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '    ' + name + ' = ' + name + 'Z[0];\n';
-			}).join('')) + '\n    }\n    \n    ' + (this.subKernelOutputVariableNames === null ? 'return ret;\n' : this.subKernels !== null ? 'var result = [\n        ' + this.subKernelOutputVariableNames.map(function (name) {
+			}).join('')) + '\n      } else {\n        ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+				return '    ' + name + ' = ' + name + 'Z;\n';
+			}).join('')) + '\n      }\n    \n      ' + (this.subKernelOutputVariableNames === null ? 'return ret;\n' : this.subKernels !== null ? 'var result = [\n        ' + this.subKernelOutputVariableNames.map(function (name) {
 				return '' + name;
 			}).join(',\n') + '\n      ];\n      result.result = ret;\n      return result;\n' : 'return {\n        result: ret,\n        ' + Object.keys(this.subKernelProperties).map(function (name, i) {
 				return name + ': ' + _this2.subKernelOutputVariableNames[i];
@@ -284,49 +285,6 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf CPUKernel#
-   * @function
-   * @name precompileKernelObj
-   *
-   * @desc Precompile the kernel into a single object, 
-   * that can be used for building the execution kernel subsequently.
-   *
-   * @param {Array} argTypes - Array of argument types
-   *     
-   * Return:
-   *     Compiled kernel {Object}
-   *
-   */
-
-	}, {
-		key: 'precompileKernelObj',
-		value: function precompileKernelObj(argTypes) {
-
-			var threadDim = this.threadDim || (this.threadDim = utils.clone(this.output));
-
-			return {
-				threadDim: threadDim
-			};
-		}
-
-		/**
-   * @memberOf CPUKernel
-   * @function
-   * @name compileKernel
-   * @static
-   *
-   * @desc Takes a previously precompiled kernel object,
-   * and complete compilation into a full kernel
-   * 
-   * @returns {Function} Compiled kernel
-   *
-   */
-
-	}, {
-		key: '_getLoopMaxString',
-
-
-		/**
    * @memberOf WebGLKernel#
    * @function
    * @name _getLoopMaxString
@@ -336,6 +294,9 @@ module.exports = function (_KernelBase) {
    * @returns {String} result
    *
    */
+
+	}, {
+		key: '_getLoopMaxString',
 		value: function _getLoopMaxString() {
 			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + ';\n' : ' 1000;\n';
 		}
@@ -381,18 +342,6 @@ module.exports = function (_KernelBase) {
 				imagesArray[i] = this._imageTo2DArray(images[i]);
 			}
 			return imagesArray;
-		}
-	}], [{
-		key: 'compileKernel',
-		value: function compileKernel(precompileObj) {
-
-			// Extract values from precompiled obj
-			var threadDim = precompileObj.threadDim;
-
-			// Normalize certain values : For actual build
-			while (threadDim.length < 3) {
-				threadDim.push(1);
-			}
 		}
 	}]);
 

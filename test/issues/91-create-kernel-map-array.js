@@ -1,14 +1,14 @@
 (function () {
   function getResult(mode) {
     var A = [
-      [1, 1],
-      [1, 1],
-      [1, 1]
+      [1, 2],
+      [3, 4],
+      [5, 6]
     ];
 
     var B = [
-      [1, 1, 1],
-      [1, 1, 1]
+      [6, 5, 4],
+      [3, 2, 1]
     ];
 
     var gpu = new GPU({ mode: mode });
@@ -26,32 +26,34 @@
     }, function (a, b) {
       return multiply(b, a, this.thread.y, this.thread.x);
     })
-      .setOutput([B.length, A.length]);
+      .setOutput([2, 2]);
 
     return kernels(A, B).result;
   }
-  QUnit.test( "Issue #91 - type detection (GPU only) (auto)", function() {
+  QUnit.test( "Issue #91 - type detection (auto)", function() {
     var result = getResult();
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[2]), [0,0]);
+    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [21,32]);
+    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [9,14]);
   });
-  QUnit.test( "Issue #91 - type detection (GPU only) (gpu)", function() {
+  QUnit.test( "Issue #91 - type detection (gpu)", function() {
     var result = getResult('gpu');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[2]), [0,0]);
+    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [21,32]);
+    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [9,14]);
   });
-  QUnit.test( "Issue #91 - type detection (GPU only) (webgl)", function() {
+  QUnit.test( "Issue #91 - type detection (webgl)", function() {
     var result = getResult('webgl');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[2]), [0,0]);
+    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [21,32]);
+    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [9,14]);
   });
-  QUnit.test( "Issue #91 - type detection (GPU only) (webgl2)", function() {
+  QUnit.test( "Issue #91 - type detection (webgl2)", function() {
     var result = getResult('webgl2');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[2]), [0,0]);
+    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [21,32]);
+    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [9,14]);
+  });
+  QUnit.test( "Issue #91 - type detection (cpu)", function() {
+    var result = getResult('cpu');
+    console.log(result);
+    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [21,32]);
+    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [9,14]);
   });
 })();

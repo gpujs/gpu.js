@@ -88,14 +88,15 @@
     QUnit.assert.deepEqual(divideResult, [8]);
   });
 
-  QUnit.test('createKernelMap (cpu)', function() {
+  QUnit.test('createKernelMap object 1 dimension 1 length (cpu)', function() {
     var canvas = document.createElement('canvas');
     var gpu = new GPU({mode: 'cpu', canvas: canvas});
     var superKernel = createPropertyKernels(gpu, [1]);
+    var kernel = createKernel(gpu, [1]);
     var output = superKernel([2], [2], [0.5]);
     var result = QUnit.extend([], output.result);
-    var addResult = QUnit.extend([], output.addResult);
-    var divideResult = QUnit.extend([], output.divideResult);
+    var addResult = QUnit.extend([], kernel(output.addResult));
+    var divideResult = QUnit.extend([], kernel(output.divideResult));
     QUnit.assert.deepEqual(result, [8]);
     QUnit.assert.deepEqual(addResult, [4]);
     QUnit.assert.deepEqual(divideResult, [8]);
@@ -226,6 +227,20 @@
     QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
   });
 
+  QUnit.test('createKernelMap object 1 dimension 5 length (cpu)', function() {
+    var canvas = document.createElement('canvas');
+    var gpu = new GPU({mode: 'cpu', canvas: canvas});
+    var superKernel = createPropertyKernels(gpu, [5]);
+    var kernel = createKernel(gpu, [5]);
+    var output = superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]);
+    var result = QUnit.extend([], output.result);
+    var addResult = QUnit.extend([], kernel(output.addResult));
+    var divideResult = QUnit.extend([], kernel(output.divideResult));
+    QUnit.assert.deepEqual(result, [2, 2, 2, 2, 2]);
+    QUnit.assert.deepEqual(addResult, [2, 4, 6, 8, 10]);
+    QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
+  });
+
   QUnit.test('createKernelMap array (auto)', function() {
     var canvas = document.createElement('canvas');
     var gpu = new GPU({mode: null, canvas: canvas});
@@ -293,5 +308,95 @@
     QUnit.assert.deepEqual(result, [2, 2, 2, 2, 2]);
     QUnit.assert.deepEqual(addResult, [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
+  });
+
+  QUnit.test('createKernelMap 3d (auto)', function() {
+    var kernel = new GPU().createKernelMap({
+      target: function saveTarget(value) {
+        return value;
+      }
+    }, function(value) {
+      return saveTarget(value);
+    }).setOutput([3,3,3]);
+    var result = kernel(1);
+    QUnit.assert.equal(result.result.length, 3);
+    QUnit.assert.equal(result.result[0].length, 3);
+    QUnit.assert.equal(result.result[0][0].length, 3);
+
+    QUnit.assert.equal(result.target.length, 3);
+    QUnit.assert.equal(result.target[0].length, 3);
+    QUnit.assert.equal(result.target[0][0].length, 3);
+  });
+
+  QUnit.test('createKernelMap 3d (gpu)', function() {
+    var kernel = new GPU({ mode: 'gpu' }).createKernelMap({
+      target: function saveTarget(value) {
+        return value;
+      }
+    }, function(value) {
+      return saveTarget(value);
+    }).setOutput([3,3,3]);
+    var result = kernel(1);
+    QUnit.assert.equal(result.result.length, 3);
+    QUnit.assert.equal(result.result[0].length, 3);
+    QUnit.assert.equal(result.result[0][0].length, 3);
+
+    QUnit.assert.equal(result.target.length, 3);
+    QUnit.assert.equal(result.target[0].length, 3);
+    QUnit.assert.equal(result.target[0][0].length, 3);
+  });
+
+  QUnit.test('createKernelMap 3d (webgl)', function() {
+    var kernel = new GPU({ mode: 'webgl' }).createKernelMap({
+      target: function saveTarget(value) {
+        return value;
+      }
+    }, function(value) {
+      return saveTarget(value);
+    }).setOutput([3,3,3]);
+    var result = kernel(1);
+    QUnit.assert.equal(result.result.length, 3);
+    QUnit.assert.equal(result.result[0].length, 3);
+    QUnit.assert.equal(result.result[0][0].length, 3);
+
+    QUnit.assert.equal(result.target.length, 3);
+    QUnit.assert.equal(result.target[0].length, 3);
+    QUnit.assert.equal(result.target[0][0].length, 3);
+  });
+
+  QUnit.test('createKernelMap 3d (webgl2)', function() {
+    var kernel = new GPU({ mode: 'webgl2' }).createKernelMap({
+      target: function saveTarget(value) {
+        return value;
+      }
+    }, function(value) {
+      return saveTarget(value);
+    }).setOutput([3,3,3]);
+    var result = kernel(1);
+    QUnit.assert.equal(result.result.length, 3);
+    QUnit.assert.equal(result.result[0].length, 3);
+    QUnit.assert.equal(result.result[0][0].length, 3);
+
+    QUnit.assert.equal(result.target.length, 3);
+    QUnit.assert.equal(result.target[0].length, 3);
+    QUnit.assert.equal(result.target[0][0].length, 3);
+  });
+
+  QUnit.test('createKernelMap 3d (cpu)', function() {
+    var kernel = new GPU({ mode: 'cpu' }).createKernelMap({
+      target: function saveTarget(value) {
+        return value;
+      }
+    }, function(value) {
+      return saveTarget(value);
+    }).setOutput([3,3,3]);
+    var result = kernel(1);
+    QUnit.assert.equal(result.result.length, 3);
+    QUnit.assert.equal(result.result[0].length, 3);
+    QUnit.assert.equal(result.result[0][0].length, 3);
+
+    QUnit.assert.equal(result.target.length, 3);
+    QUnit.assert.equal(result.target[0].length, 3);
+    QUnit.assert.equal(result.target[0][0].length, 3);
   });
 })();
