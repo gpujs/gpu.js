@@ -375,16 +375,31 @@ class Utils extends UtilsCore {
 
 	static dimToTexSize(opt, dimensions, output) {
 		let numTexels = dimensions[0];
+		let w = dimensions[0];
+		let h = dimensions[1];
 		for (let i = 1; i < dimensions.length; i++) {
 			numTexels *= dimensions[i];
 		}
 
 		if (opt.floatTextures && (!output || opt.floatOutput)) {
 			numTexels = Math.ceil(numTexels / 4);
+			w = Math.ceil(numTexels / 4);
 		}
-
-		const w = Math.ceil(Math.sqrt(numTexels));
-		return [w, w];
+		// if given dimensions == a 2d image
+		if (h > 1 && w * h === numTexels) {
+			return [w, h];
+		}
+		// find as close to square width, height sizes as possible
+		const sqrt = Math.sqrt(numTexels);
+		let high = Math.ceil(sqrt);
+		let low = Math.floor(sqrt);
+		while (high * low > numTexels) {
+			high--;
+			low = Math.ceil(numTexels / high);
+		}
+		w = low;
+		h = Math.ceil(numTexels / w);
+		return [w, h];
 	}
 
 	/**

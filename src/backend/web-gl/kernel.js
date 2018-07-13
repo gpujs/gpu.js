@@ -700,8 +700,21 @@ module.exports = class WebGLKernel extends KernelBase {
 						length *= 4;
 					}
 
-					const valuesFlat = new Float32Array(length);
-					utils.flattenTo(value, valuesFlat);
+					let valuesFlat
+
+					if (utils.isArray(value[0])) {
+						// not already flat
+						valuesFlat = new Float32Array(length);
+						utils.flattenTo(value, valuesFlat);
+					} else if (value.constructor != Float32Array) {
+						// TODO: would be great if we could not have to create Float32Array buffers
+						// if input is 8/16 bit values...
+						// valuesFlat = new Float32Array(value);
+						valuesFlat = new Float32Array(length);
+						valuesFlat.set(value);
+					} else {
+						valuesFlat = value;
+					}
 
 					let buffer;
 					if (this.floatTextures) {

@@ -741,8 +741,21 @@ module.exports = function (_KernelBase) {
 							length *= 4;
 						}
 
-						var valuesFlat = new Float32Array(length);
-						utils.flattenTo(value, valuesFlat);
+						var valuesFlat = void 0;
+
+						if (utils.isArray(value[0])) {
+							// not already flat
+							valuesFlat = new Float32Array(length);
+							utils.flattenTo(value, valuesFlat);
+						} else if (value.constructor != Float32Array) {
+							// TODO: would be great if we could not have to create Float32Array buffers
+							// if input is 8/16 bit values...
+							// valuesFlat = new Float32Array(value);
+							valuesFlat = new Float32Array(length);
+							valuesFlat.set(value);
+						} else {
+							valuesFlat = value;
+						}
 
 						var buffer = void 0;
 						if (this.floatTextures) {
