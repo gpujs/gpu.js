@@ -430,16 +430,31 @@ var Utils = function (_UtilsCore) {
 		key: 'dimToTexSize',
 		value: function dimToTexSize(opt, dimensions, output) {
 			var numTexels = dimensions[0];
+			var w = dimensions[0];
+			var h = dimensions[1];
 			for (var i = 1; i < dimensions.length; i++) {
 				numTexels *= dimensions[i];
 			}
 
 			if (opt.floatTextures && (!output || opt.floatOutput)) {
 				numTexels = Math.ceil(numTexels / 4);
+				w = Math.ceil(numTexels / 4);
 			}
-
-			var w = Math.ceil(Math.sqrt(numTexels));
-			return [w, w];
+			// if given dimensions == a 2d image
+			if (h > 1 && w * h === numTexels) {
+				return [w, h];
+			}
+			// find as close to square width, height sizes as possible
+			var sqrt = Math.sqrt(numTexels);
+			var high = Math.ceil(sqrt);
+			var low = Math.floor(sqrt);
+			while (high * low > numTexels) {
+				high--;
+				low = Math.ceil(numTexels / high);
+			}
+			w = low;
+			h = Math.ceil(numTexels / w);
+			return [w, h];
 		}
 
 		/**
