@@ -1,14 +1,15 @@
 (function() {
   function getResult(mode) {
+
     var A = [
-      [1, 1],
-      [1, 1],
-      [1, 1]
+      [1, 1, 1],
+      [1, 1, 1]
     ];
 
     var B = [
-      [1, 1, 1],
-      [1, 1, 1]
+      [1, 1],
+      [1, 1],
+      [1, 1]
     ];
 
     var gpu = new GPU({ mode: mode });
@@ -26,9 +27,9 @@
     }, function (a, b) {
       return multiply(b, a, this.thread.y, this.thread.x);
     })
-      .setOutput([A.length, B.length]);
+      .setOutput([B.length, A.length]);
 
-    return kernels(B, A).result;
+    return kernels(A, B).result;
   }
   QUnit.test( "Issue #96 - param names (auto)", function() {
     var result = getResult();
