@@ -984,6 +984,9 @@ module.exports = function (_FunctionNodeBase) {
 								this.astGeneric(mNode.object, retArr);
 								retArr.push('Dim[2]');
 								retArr.push('), ');
+								this.astGeneric(mNode.object, retArr);
+								retArr.push('BitRatio');
+								retArr.push(', ');
 								this.popState('not-in-get-call-parameters');
 								this.pushState('in-get-call-parameters');
 								this.astGeneric(mNode.property, retArr);

@@ -381,9 +381,9 @@ class Utils extends UtilsCore {
 			numTexels *= dimensions[i];
 		}
 
+		// TODO: reinstate this!
 		if (opt.floatTextures && (!output || opt.floatOutput)) {
-			numTexels = Math.ceil(numTexels / 4);
-			w = Math.ceil(numTexels / 4);
+			w = numTexels = Math.ceil(numTexels / 4);
 		}
 		// if given dimensions == a 2d image
 		if (h > 1 && w * h === numTexels) {

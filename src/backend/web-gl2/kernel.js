@@ -271,38 +271,25 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
 					let length = size[0] * size[1];
-					if (this.floatTextures) {
-						length *= 4;
-					}
 
-					let valuesFlat
-
-					if (utils.isArray(value[0])) {
-						// not already flat
-						valuesFlat = new Float32Array(length);
-						utils.flattenTo(value, valuesFlat);
-					} else if (value.constructor != Float32Array) {
-						// TODO: would be great if we could not have to create Float32Array buffers
-						// if input is 8/16 bit values...
-						// valuesFlat = new Float32Array(value);
-						valuesFlat = new Float32Array(length);
-						valuesFlat.set(value);
-					} else {
-						valuesFlat = value;
-					}
+					const {
+						valuesFlat,
+						bitRatio
+					} = this._formatArrayTransfer(value, length);
 
 					let buffer;
 					if (this.floatTextures) {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 					} else {
 						buffer = new Uint8Array(valuesFlat.buffer);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 					}
 
 					if (!this.hardcodeConstants) {
 						this.setUniform3iv(`user_${name}Dim`, dim);
 						this.setUniform2iv(`user_${name}Size`, size);
 					}
+					this.setUniform1i(`user_${name}BitRatio`, bitRatio);
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
@@ -328,26 +315,23 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
 					let length = size[0] * size[1];
-					let inputArray;
-					if (this.floatTextures) {
-						length *= 4;
-						inputArray = new Float32Array(length);
-						inputArray.set(input.value);
-					} else {
-						inputArray = input.value;
-					}
+					const {
+						valuesFlat,
+						bitRatio
+					} = this._formatArrayTransfer(value.value, length);
 
 					if (this.floatTextures) {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
 					} else {
-						const buffer = new Uint8Array(inputArray.buffer);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+						const buffer = new Uint8Array(valuesFlat.buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 					}
 
 					if (!this.hardcodeConstants) {
 						this.setUniform3iv(`user_${name}Dim`, dim);
 						this.setUniform2iv(`user_${name}Size`, size);
 					}
+					this.setUniform1i(`user_${name}BitRatio`, bitRatio);
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
@@ -446,6 +430,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 
 					this.setUniform3iv(`user_${name}Dim`, dim);
 					this.setUniform2iv(`user_${name}Size`, size);
+					this.setUniform1i(`user_${name}BitRatio`, 1); // always float32
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
@@ -453,6 +438,19 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 				throw new Error('Input type not supported (WebGL): ' + value);
 		}
 		this.argumentsLength++;
+	}
+
+	/**
+	 * @memberOf WebGL2Kernel#
+	 * @function
+	 * @name _getGetResultString
+	 *
+	 */
+	_getGetResultString() {
+		if (!this.floatTextures) {
+			return '  return decode(texel, x, bitRatio);';
+		}
+		return '  return texel[channel];';
 	}
 
 	/**
@@ -520,8 +518,13 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					result.push(
 						`uniform highp sampler2D user_${ paramName }`,
 						`highp ivec2 user_${ paramName }Size = ivec2(${ paramSize[0] }, ${ paramSize[1] })`,
-						`highp ivec3 user_${ paramName }Dim = ivec3(${ paramDim[0] }, ${ paramDim[1]}, ${ paramDim[2] })`
+						`highp ivec3 user_${ paramName }Dim = ivec3(${ paramDim[0] }, ${ paramDim[1]}, ${ paramDim[2] })`,
+						`uniform highp int user_${ paramName }BitRatio`
 					);
+
+					if (paramType === 'Array') {
+						result.push(`uniform highp int user_${ paramName }BitRatio`)
+					}
 				} else if (paramType === 'Integer') {
 					result.push(`highp float user_${ paramName } = ${ param }.0`);
 				} else if (paramType === 'Float') {
@@ -534,6 +537,9 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 						`uniform highp ivec2 user_${ paramName }Size`,
 						`uniform highp ivec3 user_${ paramName }Dim`
 					);
+					if (paramType !== 'HTMLImage') {
+						result.push(`uniform highp int user_${ paramName }BitRatio`)
+					}
 				} else if (paramType === 'HTMLImageArray') {
 					result.push(
 						`uniform highp sampler2DArray user_${ paramName }`,
