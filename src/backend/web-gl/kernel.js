@@ -696,38 +696,25 @@ module.exports = class WebGLKernel extends KernelBase {
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
 					let length = size[0] * size[1];
-					if (this.floatTextures) {
-						length *= 4;
-					}
 
-					let valuesFlat
-
-					if (utils.isArray(value[0])) {
-						// not already flat
-						valuesFlat = new Float32Array(length);
-						utils.flattenTo(value, valuesFlat);
-					} else if (value.constructor != Float32Array) {
-						// TODO: would be great if we could not have to create Float32Array buffers
-						// if input is 8/16 bit values...
-						// valuesFlat = new Float32Array(value);
-						valuesFlat = new Float32Array(length);
-						valuesFlat.set(value);
-					} else {
-						valuesFlat = value;
-					}
+					const {
+						valuesFlat,
+						bitRatio
+					} = this._formatArrayTransfer(value, length);
 
 					let buffer;
 					if (this.floatTextures) {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 					} else {
 						buffer = new Uint8Array(valuesFlat.buffer);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 					}
 
 					if (!this.hardcodeConstants) {
 						this.setUniform3iv(`user_${name}Dim`, dim);
 						this.setUniform2iv(`user_${name}Size`, size);
 					}
+					this.setUniform1i(`user_${name}BitRatio`, bitRatio);
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
@@ -753,26 +740,23 @@ module.exports = class WebGLKernel extends KernelBase {
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
 					let length = size[0] * size[1];
-					let inputArray;
-					if (this.floatTextures) {
-						length *= 4;
-						inputArray = new Float32Array(length);
-						inputArray.set(input.value);
-					} else {
-						inputArray = input.value;
-					}
+					const {
+						valuesFlat,
+						bitRatio
+					} = this._formatArrayTransfer(value.value, length);
 
 					if (this.floatTextures) {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
 					} else {
-						const buffer = new Uint8Array(inputArray.buffer);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+						const buffer = new Uint8Array(valuesFlat.buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 					}
 
 					if (!this.hardcodeConstants) {
 						this.setUniform3iv(`user_${name}Dim`, dim);
 						this.setUniform2iv(`user_${name}Size`, size);
 					}
+					this.setUniform1i(`user_${name}BitRatio`, bitRatio);
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
@@ -816,6 +800,7 @@ module.exports = class WebGLKernel extends KernelBase {
 
 					this.setUniform3iv(`user_${name}Dim`, dim);
 					this.setUniform2iv(`user_${name}Size`, size);
+					this.setUniform1i(`user_${name}BitRatio`, 1); // aways float32
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
@@ -823,6 +808,52 @@ module.exports = class WebGLKernel extends KernelBase {
 				throw new Error('Input type not supported (WebGL): ' + value);
 		}
 		this.argumentsLength++;
+	}
+
+	/**
+	 * @memberOf WebGLKernel#
+	 * @function
+	 * @name _formatArrayTransfer
+	 *
+	 * @desc Adds kernel parameters to the Argument Texture,
+	 * binding it to the webGl instance, etc.
+	 *
+	 * @param {Array} value - The actual argument supplied to the kernel
+	 * @param {String} length - the expected total length of the output array
+	 *
+	 * @returns {Object} bitRatio - bit storage ratio of source to target 'buffer', i.e. if 8bit array -> 32bit tex = 4
+	 * 				     valuesFlat - flattened array to transfer
+	 */
+	_formatArrayTransfer(value, length) {
+		let bitRatio = 1; // bit storage ratio of source to target 'buffer', i.e. if 8bit array -> 32bit tex = 4
+		let valuesFlat = value;
+		if (utils.isArray(value[0]) || this.floatTextures) {
+			// not already flat
+			valuesFlat = new Float32Array(length);
+			utils.flattenTo(value, valuesFlat);
+		} else {
+
+			switch (value.constructor) {
+				case Uint8Array:
+				case Int8Array:
+					bitRatio = 4;
+					break;
+				case Uint16Array:
+				case Int16Array:
+					bitRatio = 2;
+				case Float32Array:
+				case Int32Array:
+					break;
+
+				default:
+					valuesFlat = new Float32Array(length);
+					utils.flattenTo(value, valuesFlat);
+			}
+		}
+		return {
+			bitRatio,
+			valuesFlat
+		};
 	}
 
 	/**
@@ -974,7 +1005,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		if (!this.floatTextures) return '';
 
 		return this._linesToString([
-			'  int channel = int(integerMod(index, 4))',
+			'  int channel = integerMod(index, 4)',
 			'  index = index / 4'
 		]);
 	}
@@ -1005,7 +1036,9 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *
 	 */
 	_getGetResultString() {
-		if (!this.floatTextures) return '  return decode32(texel);\n';
+		if (!this.floatTextures) {
+			return '  return decode(texel, x, bitRatio);';
+		}
 		return this._linesToString([
 			'  if (channel == 0) return texel.r',
 			'  if (channel == 1) return texel.g',
@@ -1045,7 +1078,8 @@ module.exports = class WebGLKernel extends KernelBase {
 					result.push(
 						`uniform highp sampler2D user_${ paramName }`,
 						`highp ivec2 user_${ paramName }Size = vec2(${ paramSize[0] }, ${ paramSize[1] })`,
-						`highp ivec3 user_${ paramName }Dim = vec3(${ paramDim[0] }, ${ paramDim[1]}, ${ paramDim[2] })`
+						`highp ivec3 user_${ paramName }Dim = vec3(${ paramDim[0] }, ${ paramDim[1]}, ${ paramDim[2] })`,
+						`uniform highp int user_${ paramName }BitRatio`
 					);
 				} else if (paramType === 'Integer') {
 					result.push(`highp float user_${ paramName } = ${ param }.0`);
@@ -1059,6 +1093,9 @@ module.exports = class WebGLKernel extends KernelBase {
 						`uniform highp ivec2 user_${ paramName }Size`,
 						`uniform highp ivec3 user_${ paramName }Dim`
 					);
+					if (paramType !== 'HTMLImage') {
+						result.push(`uniform highp int user_${ paramName }BitRatio`)
+					}
 				} else if (paramType === 'Integer' || paramType === 'Float') {
 					result.push(`uniform highp float user_${ paramName }`);
 				} else {

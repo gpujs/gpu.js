@@ -81,6 +81,24 @@ highp vec4 encode32(highp float f) {
 }
 // Dragons end here
 
+highp float decode(highp vec4 rgba, highp int x, int bitRatio) {
+  if (bitRatio == 1) {
+    return decode32(rgba);
+  }
+  __DECODE32_ENDIANNESS__;
+  int channel = integerMod(x, bitRatio);
+  if (bitRatio == 4) {
+    if (channel == 0) return rgba.r * 255.0;
+    if (channel == 1) return rgba.g * 255.0;
+    if (channel == 2) return rgba.b * 255.0;
+    if (channel == 3) return rgba.a * 255.0;
+  }
+  else {
+    if (channel == 0) return rgba.r * 255.0 + rgba.g * 65280.0;
+    if (channel == 1) return rgba.b * 255.0 + rgba.a * 65280.0;
+  }
+}
+
 highp int index;
 highp ivec3 threadId;
 
@@ -92,7 +110,7 @@ highp ivec3 indexTo3D(highp int idx, highp ivec3 texDim) {
   return ivec3(x, y, z);
 }
 
-highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int z, highp int y, highp int x) {
+highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, int bitRatio,  highp int z, highp int y, highp int x) {
   highp ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
   highp int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
@@ -116,16 +134,16 @@ highp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texD
   return texture2D(tex, st / vec2(texSize));
 }
 
-highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int y, highp int x) {
-  return get(tex, texSize, texDim, int(0), y, x);
+highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, int bitRatio, highp int y, highp int x) {
+  return get(tex, texSize, texDim, bitRatio, int(0), y, x);
 }
 
 highp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int y, highp int x) {
   return getImage2D(tex, texSize, texDim, int(0), y, x);
 }
 
-highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int x) {
-  return get(tex, texSize, texDim, int(0), int(0), x);
+highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, int bitRatio, highp int x) {
+  return get(tex, texSize, texDim, bitRatio, int(0), int(0), x);
 }
 
 highp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int x) {

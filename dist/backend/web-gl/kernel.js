@@ -737,38 +737,24 @@ module.exports = function (_KernelBase) {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
 						var length = size[0] * size[1];
-						if (this.floatTextures) {
-							length *= 4;
-						}
 
-						var valuesFlat = void 0;
-
-						if (utils.isArray(value[0])) {
-							// not already flat
-							valuesFlat = new Float32Array(length);
-							utils.flattenTo(value, valuesFlat);
-						} else if (value.constructor != Float32Array) {
-							// TODO: Issue #346 would be great if we could not have to create Float32Array buffers
-							// if input is 8/16 bit values...
-							// valuesFlat = new Float32Array(value);
-							valuesFlat = new Float32Array(length);
-							valuesFlat.set(value);
-						} else {
-							valuesFlat = value;
-						}
+						var _formatArrayTransfer2 = this._formatArrayTransfer(value, length),
+						    valuesFlat = _formatArrayTransfer2.valuesFlat,
+						    bitRatio = _formatArrayTransfer2.bitRatio;
 
 						var buffer = void 0;
 						if (this.floatTextures) {
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 						} else {
 							buffer = new Uint8Array(valuesFlat.buffer);
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 						}
 
 						if (!this.hardcodeConstants) {
 							this.setUniform3iv('user_' + name + 'Dim', dim);
 							this.setUniform2iv('user_' + name + 'Size', size);
 						}
+						this.setUniform1i('user_' + name + 'BitRatio', bitRatio);
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
@@ -794,26 +780,23 @@ module.exports = function (_KernelBase) {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
 						var _length = _size[0] * _size[1];
-						var inputArray = void 0;
-						if (this.floatTextures) {
-							_length *= 4;
-							inputArray = new Float32Array(_length);
-							inputArray.set(input.value);
-						} else {
-							inputArray = input.value;
-						}
+
+						var _formatArrayTransfer3 = this._formatArrayTransfer(value.value, _length),
+						    _valuesFlat = _formatArrayTransfer3.valuesFlat,
+						    _bitRatio = _formatArrayTransfer3.bitRatio;
 
 						if (this.floatTextures) {
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0], _size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
 						} else {
-							var _buffer = new Uint8Array(inputArray.buffer);
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0], _size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, _buffer);
+							var _buffer = new Uint8Array(_valuesFlat.buffer);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0] / _bitRatio, _size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, _buffer);
 						}
 
 						if (!this.hardcodeConstants) {
 							this.setUniform3iv('user_' + name + 'Dim', _dim);
 							this.setUniform2iv('user_' + name + 'Size', _size);
 						}
+						this.setUniform1i('user_' + name + 'BitRatio', _bitRatio);
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
@@ -852,6 +835,7 @@ module.exports = function (_KernelBase) {
 
 						this.setUniform3iv('user_' + name + 'Dim', _dim3);
 						this.setUniform2iv('user_' + name + 'Size', _size3);
+						this.setUniform1i('user_' + name + 'BitRatio', 1); // aways float32
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
@@ -859,6 +843,55 @@ module.exports = function (_KernelBase) {
 					throw new Error('Input type not supported (WebGL): ' + value);
 			}
 			this.argumentsLength++;
+		}
+
+		/**
+   * @memberOf WebGLKernel#
+   * @function
+   * @name _formatArrayTransfer
+   *
+   * @desc Adds kernel parameters to the Argument Texture,
+   * binding it to the webGl instance, etc.
+   *
+   * @param {Array} value - The actual argument supplied to the kernel
+   * @param {String} length - the expected total length of the output array
+   *
+   * @returns {Object} bitRatio - bit storage ratio of source to target 'buffer', i.e. if 8bit array -> 32bit tex = 4
+   * 				     valuesFlat - flattened array to transfer
+   */
+
+	}, {
+		key: '_formatArrayTransfer',
+		value: function _formatArrayTransfer(value, length) {
+			var bitRatio = 1; // bit storage ratio of source to target 'buffer', i.e. if 8bit array -> 32bit tex = 4
+			var valuesFlat = value;
+			if (utils.isArray(value[0]) || this.floatTextures) {
+				// not already flat
+				valuesFlat = new Float32Array(length);
+				utils.flattenTo(value, valuesFlat);
+			} else {
+
+				switch (value.constructor) {
+					case Uint8Array:
+					case Int8Array:
+						bitRatio = 4;
+						break;
+					case Uint16Array:
+					case Int16Array:
+						bitRatio = 2;
+					case Float32Array:
+					case Int32Array:
+						break;
+
+					default:
+						valuesFlat = new Float32Array(length);
+						utils.flattenTo(value, valuesFlat);
+				}
+			}
+			return {
+				bitRatio: bitRatio,
+				valuesFlat: valuesFlat
+			};
 		}
 
 		/**
@@ -1008,7 +1041,7 @@ module.exports = function (_KernelBase) {
 		value: function _getGetTextureChannelString() {
 			if (!this.floatTextures) return '';
 
-			return this._linesToString(['  int channel = int(integerMod(index, 4))', '  index = index / 4']);
+			return this._linesToString(['  int channel = integerMod(index, 4)', '  index = index / 4']);
 		}
 
 		/**
@@ -1039,7 +1072,9 @@ module.exports = function (_KernelBase) {
 	}, {
 		key: '_getGetResultString',
 		value: function _getGetResultString() {
-			if (!this.floatTextures) return '  return decode32(texel);\n';
+			if (!this.floatTextures) {
+				return '  return decode(texel, x, bitRatio);';
+			}
 			return this._linesToString(['  if (channel == 0) return texel.r', '  if (channel == 1) return texel.g', '  if (channel == 2) return texel.b', '  if (channel == 3) return texel.a']);
 		}
 
@@ -1074,7 +1109,7 @@ module.exports = function (_KernelBase) {
 							floatOutput: this.floatOutput
 						}, paramDim);
 
-						result.push('uniform highp sampler2D user_' + paramName, 'highp ivec2 user_' + paramName + 'Size = vec2(' + paramSize[0] + ', ' + paramSize[1] + ')', 'highp ivec3 user_' + paramName + 'Dim = vec3(' + paramDim[0] + ', ' + paramDim[1] + ', ' + paramDim[2] + ')');
+						result.push('uniform highp sampler2D user_' + paramName, 'highp ivec2 user_' + paramName + 'Size = vec2(' + paramSize[0] + ', ' + paramSize[1] + ')', 'highp ivec3 user_' + paramName + 'Dim = vec3(' + paramDim[0] + ', ' + paramDim[1] + ', ' + paramDim[2] + ')', 'uniform highp int user_' + paramName + 'BitRatio');
 					} else if (paramType === 'Integer') {
 						result.push('highp float user_' + paramName + ' = ' + param + '.0');
 					} else if (paramType === 'Float') {
@@ -1083,6 +1118,9 @@ module.exports = function (_KernelBase) {
 				} else {
 					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
 						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp ivec2 user_' + paramName + 'Size', 'uniform highp ivec3 user_' + paramName + 'Dim');
+						if (paramType !== 'HTMLImage') {
+							result.push('uniform highp int user_' + paramName + 'BitRatio');
+						}
 					} else if (paramType === 'Integer' || paramType === 'Float') {
 						result.push('uniform highp float user_' + paramName);
 					} else {

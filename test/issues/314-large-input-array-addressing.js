@@ -5,11 +5,11 @@
 	// wanted to use uints but caused more problems than it solved
 	var DATA_MAX = 8388800*8;
 	var divisor = 100;
-	var data = new Uint8Array(DATA_MAX);
+	var data = new Uint16Array(DATA_MAX);
 	
 	for (var i = 0; i < DATA_MAX/divisor; i++) {
 		for (var j = 0; j < divisor; j++) {
-			data[i*divisor + j] = j;
+			data[i*divisor + j] = j*2;
 		}
 	}
 
@@ -38,7 +38,7 @@
 		var result = buildLargeArrayAddressKernel('webgl2')
 		var same = true;
 		for (var i = 0; i < DATA_MAX; i++) {
-			if (!result[i] == data[i]) {
+			if (result[i] !== data[i]) {
 				same = false;
 				break;
 			}

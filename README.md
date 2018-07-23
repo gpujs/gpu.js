@@ -104,8 +104,8 @@ Options are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.c
 * constants: object
 * wraparound: boolean
 * hardcodeConstants: boolean
-* floatTextures: boolean
-* floatOutput: boolean
+* floatTextures: boolean - input/working textures use float32 for each colour channel
+* floatOutput: boolean - output texture uses float32 for each  colour channel
 * functions: array or boolean
 * nativeFunctions: object
 * subKernels: array
