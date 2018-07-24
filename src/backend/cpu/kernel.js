@@ -239,10 +239,18 @@ module.exports = class CPUKernel extends KernelBase {
         : this.subKernelOutputVariableNames.map((name) => `    ${ name }Z[this.thread.z] = new Array(${ threadDim[1] });\n`).join('')
         }
       for (this.thread.y = 0; this.thread.y < ${ threadDim[1] }; this.thread.y++) {
-        ret[this.thread.z][this.thread.y] = new Array(${ threadDim[0] });
+        ret[this.thread.z][this.thread.y] = ${ 
+		      this.floatOutput
+            ? `new Float32Array(${ threadDim[0] })`
+            : `new Array(${ threadDim[0] })`
+		    };
   ${ this.subKernelOutputVariableNames === null
         ? ''
-        : this.subKernelOutputVariableNames.map((name) => `      ${ name }Z[this.thread.z][this.thread.y] = new Array(${ threadDim[0] });\n`).join('')
+        : this.subKernelOutputVariableNames.map((name) => `      ${ name }Z[this.thread.z][this.thread.y] = ${
+            this.floatOutput
+              ? `new Float32Array(${ threadDim[0] })`
+              : `new Array(${ threadDim[0] })`
+        };\n`).join('')
         }
         for (this.thread.x = 0; this.thread.x < ${ threadDim[0] }; this.thread.x++) {
           var kernelResult;
