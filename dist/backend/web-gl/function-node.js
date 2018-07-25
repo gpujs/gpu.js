@@ -277,6 +277,12 @@ module.exports = function (_FunctionNodeBase) {
 				this.astGeneric(ast.left, retArr);
 				retArr.push('!=');
 				this.astGeneric(ast.right, retArr);
+			} else if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
+				retArr.push('div_with_int_check(');
+				this.astGeneric(ast.left, retArr);
+				retArr.push(', ');
+				this.astGeneric(ast.right, retArr);
+				retArr.push(')');
 			} else {
 				this.astGeneric(ast.left, retArr);
 				retArr.push(ast.operator);

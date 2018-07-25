@@ -39,6 +39,7 @@ module.exports = class BaseFunctionNode {
 		this.output = null;
 		this.declarations = {};
 		this.states = [];
+		this.fixIntegerDivisionAccuracy = false;
 
 		let paramTypes;
 		let returnType;
@@ -63,6 +64,9 @@ module.exports = class BaseFunctionNode {
 			}
 			if (options.hasOwnProperty('returnType')) {
 				returnType = options.returnType;
+			}
+			if (options.hasOwnProperty('fixIntegerDivisionAccuracy')) {
+				this.fixIntegerDivisionAccuracy = options.fixIntegerDivisionAccuracy;
 			}
 		}
 

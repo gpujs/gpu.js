@@ -9,7 +9,8 @@
       }
     }, function (a, b, c) {
       return divide(adder(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
-    }).setOutput(output);
+    }).setOutput(output)
+      .setFixIntegerDivisionAccuracy(true); // #349
   }
 
   function createArrayKernels(gpu, output) {
@@ -22,7 +23,8 @@
       }
     ], function (a, b, c) {
       return divide(add(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
-    }).setOutput(output);
+    }).setOutput(output)
+      .setFixIntegerDivisionAccuracy(true); // #349
   }
 
 
