@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.5.4
- * @date Thu Jul 26 2018 08:57:20 GMT+0100 (BST)
+ * @date Thu Jul 26 2018 17:35:35 GMT+0100 (BST)
  *
  * @license MIT
  * The MIT License
@@ -6054,13 +6054,13 @@ var Utils = function (_UtilsCore) {
 			var GPU = require('../index');
 			var x = new GPU({
 				mode: 'webgl-validator'
-			}).createKernel(function (x, y) {
-				return x / y;
+			}).createKernel(function (v1, v2) {
+				return v1[this.thread.x] / v2[this.thread.x];
 			}, {
 				output: [1]
-			})(6, 3);
+			})([6, 6030401], [3, 3991]);
 
-			_hasIntegerDivisionAccuracyBug = x[0] !== 2;
+			_hasIntegerDivisionAccuracyBug = x[0] !== 2 || x[1] !== 1511;
 
 			return _hasIntegerDivisionAccuracyBug;
 		}

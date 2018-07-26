@@ -390,13 +390,15 @@ class Utils extends UtilsCore {
 		const GPU = require('../index');
 		const x = new GPU({
 			mode: 'webgl-validator'
-		}).createKernel(function(x, y) {
-			return x / y;
+		}).createKernel(function(v1, v2) {
+			return v1[this.thread.x] / v2[this.thread.x];
 		}, {
 			output: [1]
-		})(6, 3);
+		})([6, 6030401], [3, 3991]);
 
-		_hasIntegerDivisionAccuracyBug = x[0] !== 2;
+		// have we not got whole numbers for 6/3 or 6030401/3991
+		// add more here if others see this problem
+		_hasIntegerDivisionAccuracyBug = (x[0] !== 2 || x[1] !== 1511);
 
 		return _hasIntegerDivisionAccuracyBug;
 	}
