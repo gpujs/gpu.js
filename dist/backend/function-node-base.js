@@ -47,7 +47,7 @@ module.exports = function () {
 		this.output = null;
 		this.declarations = {};
 		this.states = [];
-		this.fixIntegerDivisionAccuracy = false;
+		this.fixIntegerDivisionAccuracy = null;
 
 		var paramTypes = void 0;
 		var returnType = void 0;

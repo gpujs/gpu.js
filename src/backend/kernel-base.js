@@ -56,7 +56,7 @@ module.exports = class KernelBase {
 		this.functionBuilder = null;
 		this.paramTypes = null;
 		this.paramSizes = null;
-		this.fixIntegerDivisionAccuracy = false;
+		this.fixIntegerDivisionAccuracy = null;
 
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;

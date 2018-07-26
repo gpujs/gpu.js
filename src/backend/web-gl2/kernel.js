@@ -35,6 +35,13 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 			this.floatOutput = isFloatReadPixel;
 		}
 
+		const hasIntegerDivisionBug = utils.hasIntegerDivisionAccuracyBug();
+		if (this.fixIntegerDivisionAccuracy == null) {
+			this.fixIntegerDivisionAccuracy = hasIntegerDivisionBug;
+		} else if (this.fixIntegerDivisionAccuracy && !hasIntegerDivisionBug) {
+			this.fixIntegerDivisionAccuracy = false;
+		}
+
 		utils.checkOutput(this.output);
 
 		if (!this.output || this.output.length === 0) {

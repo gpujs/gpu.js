@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.5.4
- * @date Wed Jul 25 2018 18:12:08 GMT+0100 (BST)
+ * @date Thu Jul 26 2018 08:57:20 GMT+0100 (BST)
  *
  * @license MIT
  * The MIT License
@@ -1363,7 +1363,7 @@ module.exports = function () {
 		this.output = null;
 		this.declarations = {};
 		this.states = [];
-		this.fixIntegerDivisionAccuracy = false;
+		this.fixIntegerDivisionAccuracy = null;
 
 		var paramTypes = void 0;
 		var returnType = void 0;
@@ -1904,7 +1904,7 @@ module.exports = function () {
 		this.functionBuilder = null;
 		this.paramTypes = null;
 		this.paramSizes = null;
-		this.fixIntegerDivisionAccuracy = false;
+		this.fixIntegerDivisionAccuracy = null;
 
 		for (var p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -3335,6 +3335,13 @@ module.exports = function (_KernelBase) {
 				this.floatOutput = isFloatReadPixel;
 			}
 
+			var hasIntegerDivisionBug = utils.hasIntegerDivisionAccuracyBug();
+			if (this.fixIntegerDivisionAccuracy == null) {
+				this.fixIntegerDivisionAccuracy = hasIntegerDivisionBug;
+			} else if (this.fixIntegerDivisionAccuracy && !hasIntegerDivisionBug) {
+				this.fixIntegerDivisionAccuracy = false;
+			}
+
 			utils.checkOutput(this.output);
 
 			if (!this.output || this.output.length === 0) {
@@ -4613,6 +4620,13 @@ module.exports = function (_WebGLKernel) {
 				this.floatOutput = isFloatReadPixel;
 			}
 
+			var hasIntegerDivisionBug = utils.hasIntegerDivisionAccuracyBug();
+			if (this.fixIntegerDivisionAccuracy == null) {
+				this.fixIntegerDivisionAccuracy = hasIntegerDivisionBug;
+			} else if (this.fixIntegerDivisionAccuracy && !hasIntegerDivisionBug) {
+				this.fixIntegerDivisionAccuracy = false;
+			}
+
 			utils.checkOutput(this.output);
 
 			if (!this.output || this.output.length === 0) {
@@ -5535,6 +5549,13 @@ var GPU = function (_GPUCore) {
 
 
 	}, {
+		key: 'hasIntegerDivisionAccuracyBug',
+		value: function hasIntegerDivisionAccuracyBug() {
+			return utils.hasIntegerDivisionAccuracyBug();
+		}
+
+
+	}, {
 		key: 'getCanvas',
 		value: function getCanvas() {
 			return this._canvas;
@@ -5830,6 +5851,8 @@ var _isMixedIdentifiersSupported = function () {
 	}
 }();
 
+var _hasIntegerDivisionAccuracyBug = null;
+
 
 var Utils = function (_UtilsCore) {
 	_inherits(Utils, _UtilsCore);
@@ -6018,6 +6041,28 @@ var Utils = function (_UtilsCore) {
 			_isFloatReadPixelsSupportedWebGL2 = x[0] === 1;
 
 			return _isFloatReadPixelsSupportedWebGL2;
+		}
+
+
+	}, {
+		key: 'hasIntegerDivisionAccuracyBug',
+		value: function hasIntegerDivisionAccuracyBug() {
+			if (_hasIntegerDivisionAccuracyBug !== null) {
+				return _hasIntegerDivisionAccuracyBug;
+			}
+
+			var GPU = require('../index');
+			var x = new GPU({
+				mode: 'webgl-validator'
+			}).createKernel(function (x, y) {
+				return x / y;
+			}, {
+				output: [1]
+			})(6, 3);
+
+			_hasIntegerDivisionAccuracyBug = x[0] !== 2;
+
+			return _hasIntegerDivisionAccuracyBug;
 		}
 	}, {
 		key: 'isMixedIdentifiersSupported',

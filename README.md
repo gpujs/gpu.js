@@ -106,7 +106,7 @@ Options are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.c
 * hardcodeConstants: boolean
 * floatTextures: boolean - input/working textures use float32 for each colour channel
 * floatOutput: boolean - output texture uses float32 for each  colour channel
-* fixIntegerDivisionAccuracy: boolean - some cards have accuracy issues dividing by factors of three and some other primes (most apple kit?), only enable if you need exact whole numbers as performance hit on division operations
+* fixIntegerDivisionAccuracy: boolean - some cards have accuracy issues dividing by factors of three and some other primes (most apple kit?). Default on for affected cards, disable if accuracy not required.
 * functions: array or boolean
 * nativeFunctions: object
 * subKernels: array

@@ -39,7 +39,7 @@ module.exports = class BaseFunctionNode {
 		this.output = null;
 		this.declarations = {};
 		this.states = [];
-		this.fixIntegerDivisionAccuracy = false;
+		this.fixIntegerDivisionAccuracy = null;
 
 		let paramTypes;
 		let returnType;
