@@ -2,10 +2,10 @@ module.exports = `precision highp float;
 precision highp int;
 precision highp sampler2D;
 
-attribute highp vec2 aPos;
-attribute highp vec2 aTexCoord;
+attribute vec2 aPos;
+attribute vec2 aTexCoord;
 
-varying highp vec2 vTexCoord;
+varying vec2 vTexCoord;
 uniform vec2 ratio;
 
 void main(void) {

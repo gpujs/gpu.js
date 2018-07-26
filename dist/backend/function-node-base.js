@@ -47,6 +47,7 @@ module.exports = function () {
 		this.output = null;
 		this.declarations = {};
 		this.states = [];
+		this.fixIntegerDivisionAccuracy = null;
 
 		var paramTypes = void 0;
 		var returnType = void 0;
@@ -71,6 +72,9 @@ module.exports = function () {
 			}
 			if (options.hasOwnProperty('returnType')) {
 				returnType = options.returnType;
+			}
+			if (options.hasOwnProperty('fixIntegerDivisionAccuracy')) {
+				this.fixIntegerDivisionAccuracy = options.fixIntegerDivisionAccuracy;
 			}
 		}
 

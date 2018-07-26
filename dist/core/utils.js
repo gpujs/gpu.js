@@ -56,6 +56,8 @@ var _isMixedIdentifiersSupported = function () {
 	}
 }();
 
+var _hasIntegerDivisionAccuracyBug = null;
+
 /**
  * @class
  * @extends UtilsCore
@@ -421,6 +423,39 @@ var Utils = function (_UtilsCore) {
 
 			return _isFloatReadPixelsSupportedWebGL2;
 		}
+
+		/**
+   * @memberOf Utils
+   * @name hasIntegerDivisionAccuracyBug
+   * @function
+   * @static
+   *
+   * Checks if the system has inaccuracies when dividing integers
+   *
+   * @returns {Boolean} true if bug is exhibited on this system
+   *
+   */
+
+	}, {
+		key: 'hasIntegerDivisionAccuracyBug',
+		value: function hasIntegerDivisionAccuracyBug() {
+			if (_hasIntegerDivisionAccuracyBug !== null) {
+				return _hasIntegerDivisionAccuracyBug;
+			}
+
+			var GPU = require('../index');
+			var x = new GPU({
+				mode: 'webgl-validator'
+			}).createKernel(function (x, y) {
+				return x / y;
+			}, {
+				output: [1]
+			})(6, 3);
+
+			_hasIntegerDivisionAccuracyBug = x[0] !== 2;
+
+			return _hasIntegerDivisionAccuracyBug;
+		}
 	}, {
 		key: 'isMixedIdentifiersSupported',
 		value: function isMixedIdentifiersSupported() {
@@ -436,7 +471,6 @@ var Utils = function (_UtilsCore) {
 				numTexels *= dimensions[i];
 			}
 
-			// TODO: reinstate this!
 			if (opt.floatTextures && (!output || opt.floatOutput)) {
 				w = numTexels = Math.ceil(numTexels / 4);
 			}

@@ -93,6 +93,13 @@ module.exports = class WebGLKernel extends KernelBase {
 			this.floatOutput = isFloatReadPixel;
 		}
 
+		const hasIntegerDivisionBug = utils.hasIntegerDivisionAccuracyBug();
+		if (this.fixIntegerDivisionAccuracy == null) {
+			this.fixIntegerDivisionAccuracy = hasIntegerDivisionBug;
+		} else if (this.fixIntegerDivisionAccuracy && !hasIntegerDivisionBug) {
+			this.fixIntegerDivisionAccuracy = false;
+		}
+
 		utils.checkOutput(this.output);
 
 		if (!this.output || this.output.length === 0) {
@@ -650,6 +657,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			CONSTANTS: this._getConstantsString(),
 			DECODE32_ENDIANNESS: this._getDecode32EndiannessString(),
 			ENCODE32_ENDIANNESS: this._getEncode32EndiannessString(),
+			DIVIDE_WITH_INTEGER_CHECK: this._getDivideWithIntegerCheckString(),
 			GET_WRAPAROUND: this._getGetWraparoundString(),
 			GET_TEXTURE_CHANNEL: this._getGetTextureChannelString(),
 			GET_TEXTURE_INDEX: this._getGetTextureIndexString(),
@@ -912,13 +920,13 @@ module.exports = class WebGLKernel extends KernelBase {
 		const texSize = this.texSize;
 		if (this.hardcodeConstants) {
 			result.push(
-				`highp ivec3 uOutputDim = ivec3(${ threadDim[0] },${ threadDim[1] }, ${ threadDim[2] })`,
-				`highp ivec2 uTexSize = ivec2(${ texSize[0] }, ${ texSize[1] })`
+				`ivec3 uOutputDim = ivec3(${ threadDim[0] },${ threadDim[1] }, ${ threadDim[2] })`,
+				`ivec2 uTexSize = ivec2(${ texSize[0] }, ${ texSize[1] })`
 			);
 		} else {
 			result.push(
-				'uniform highp ivec3 uOutputDim',
-				'uniform highp ivec2 uTexSize'
+				'uniform ivec3 uOutputDim',
+				'uniform ivec2 uTexSize'
 			);
 		}
 
@@ -938,9 +946,9 @@ module.exports = class WebGLKernel extends KernelBase {
 	_getTextureCoordinate() {
 		const names = this.subKernelOutputVariableNames;
 		if (names === null || names.length < 1) {
-			return 'varying highp vec2 vTexCoord;\n';
+			return 'varying vec2 vTexCoord;\n';
 		} else {
-			return 'out highp vec2 vTexCoord;\n';
+			return 'out vec2 vTexCoord;\n';
 		}
 	}
 
@@ -978,6 +986,29 @@ module.exports = class WebGLKernel extends KernelBase {
 			'' :
 			'  rgba.rgba = rgba.abgr;\n'
 		);
+	}
+
+	/**
+	 * @memberOf WebGLKernel#
+	 * @function
+	 * @name _getDivideWithIntegerCheckString
+	 *
+	 * @desc if fixIntegerDivisionAccuracy provide method to replace /
+	 *
+	 * @returns {String} result
+	 *
+	 */
+	_getDivideWithIntegerCheckString() {
+		return this.fixIntegerDivisionAccuracy ?
+			`
+			  float div_with_int_check(float x, float y) {
+			  if (floor(x) == x && floor(y) == y && integerMod(x, y) == 0.0) {
+			    return float(int(x)/int(y));
+			  }
+			  return x / y;
+			}
+			` :
+			'';
 	}
 
 	/**
@@ -1076,28 +1107,28 @@ module.exports = class WebGLKernel extends KernelBase {
 					}, paramDim);
 
 					result.push(
-						`uniform highp sampler2D user_${ paramName }`,
-						`highp ivec2 user_${ paramName }Size = vec2(${ paramSize[0] }, ${ paramSize[1] })`,
-						`highp ivec3 user_${ paramName }Dim = vec3(${ paramDim[0] }, ${ paramDim[1]}, ${ paramDim[2] })`,
-						`uniform highp int user_${ paramName }BitRatio`
+						`uniform sampler2D user_${ paramName }`,
+						`ivec2 user_${ paramName }Size = vec2(${ paramSize[0] }, ${ paramSize[1] })`,
+						`ivec3 user_${ paramName }Dim = vec3(${ paramDim[0] }, ${ paramDim[1]}, ${ paramDim[2] })`,
+						`uniform int user_${ paramName }BitRatio`
 					);
 				} else if (paramType === 'Integer') {
-					result.push(`highp float user_${ paramName } = ${ param }.0`);
+					result.push(`float user_${ paramName } = ${ param }.0`);
 				} else if (paramType === 'Float') {
-					result.push(`highp float user_${ paramName } = ${ param }`);
+					result.push(`float user_${ paramName } = ${ param }`);
 				}
 			} else {
 				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
 					result.push(
-						`uniform highp sampler2D user_${ paramName }`,
-						`uniform highp ivec2 user_${ paramName }Size`,
-						`uniform highp ivec3 user_${ paramName }Dim`
+						`uniform sampler2D user_${ paramName }`,
+						`uniform ivec2 user_${ paramName }Size`,
+						`uniform ivec3 user_${ paramName }Dim`
 					);
 					if (paramType !== 'HTMLImage') {
-						result.push(`uniform highp int user_${ paramName }BitRatio`)
+						result.push(`uniform int user_${ paramName }BitRatio`)
 					}
 				} else if (paramType === 'Integer' || paramType === 'Float') {
-					result.push(`uniform highp float user_${ paramName }`);
+					result.push(`uniform float user_${ paramName }`);
 				} else {
 					throw new Error(`Param type ${paramType} not supported in WebGL, only WebGL2`);
 				}
@@ -1148,14 +1179,14 @@ module.exports = class WebGLKernel extends KernelBase {
 		const result = [];
 		const names = this.subKernelOutputVariableNames;
 		if (names !== null) {
-			result.push('highp float kernelResult = 0.0');
+			result.push('float kernelResult = 0.0');
 			for (let i = 0; i < names.length; i++) {
 				result.push(
-					`highp float ${ names[i] } = 0.0`
+					`float ${ names[i] } = 0.0`
 				);
 			}
 		} else {
-			result.push('highp float kernelResult = 0.0');
+			result.push('float kernelResult = 0.0');
 		}
 
 		return this._linesToString(result) + this.functionBuilder.getPrototypeString('kernel');
@@ -1286,7 +1317,8 @@ module.exports = class WebGLKernel extends KernelBase {
 			debug: this.debug,
 			loopMaxIterations: this.loopMaxIterations,
 			paramNames: this.paramNames,
-			paramTypes: this.paramTypes
+			paramTypes: this.paramTypes,
+			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
 		});
 
 		if (this.subKernels !== null) {
@@ -1308,7 +1340,8 @@ module.exports = class WebGLKernel extends KernelBase {
 			constants: this.constants,
 			output: this.output,
 			debug: this.debug,
-			loopMaxIterations: this.loopMaxIterations
+			loopMaxIterations: this.loopMaxIterations,
+			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
 		});
 		this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
 	}

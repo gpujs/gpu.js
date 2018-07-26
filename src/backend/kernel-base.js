@@ -24,6 +24,7 @@ module.exports = class KernelBase {
 	 * @prop {Array} subKernels - Sub kernels bound to this kernel instance
 	 * @prop {Object} subKernelProperties - Sub kernels bound to this kernel instance as key/value pairs
 	 * @prop {Array} subKernelOutputVariableNames - Names of the variables outputted by the subkerls
+	 * @prop {Boolean} fixIntegerDivisionAccuracy - fix issues with some graphics cards not returning whole numbers when dividing by factors of 3
 	 *
 	 */
 	constructor(fnString, settings) {
@@ -55,6 +56,7 @@ module.exports = class KernelBase {
 		this.functionBuilder = null;
 		this.paramTypes = null;
 		this.paramSizes = null;
+		this.fixIntegerDivisionAccuracy = null;
 
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -174,6 +176,21 @@ module.exports = class KernelBase {
 	 */
 	setLoopMaxIterations(max) {
 		this.loopMaxIterations = max;
+		return this;
+	}
+
+	/**
+	 * @memberOf KernelBase#
+	 * @function
+	 * @name setFixIntegerDivisionAccuracy
+	 *
+	 * @desc Fix division by factor of 3 FP accuracy bug
+	 *
+	 * @param {Boolean} fix - should fix 
+	 *
+	 */
+	setFixIntegerDivisionAccuracy(fix) {
+		this.fixIntegerDivisionAccuracy = fix;
 		return this;
 	}
 

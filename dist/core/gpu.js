@@ -370,6 +370,27 @@ var GPU = function (_GPUCore) {
 
 		/**
    *
+   * Return TRUE, if system has integer division accuracy issue
+   *
+   * @name get hasIntegerDivisionAccuracyBug
+   * @function
+   * @memberOf GPU#
+   *
+   * Note: This function can also be called directly `GPU.hasIntegerDivisionAccuracyBug()`
+   *
+   * @returns {Boolean} TRUE if system has integer division accuracy issue
+   *
+   *
+   */
+
+	}, {
+		key: 'hasIntegerDivisionAccuracyBug',
+		value: function hasIntegerDivisionAccuracyBug() {
+			return utils.hasIntegerDivisionAccuracyBug();
+		}
+
+		/**
+   *
    * Return the canvas object bound to this gpu instance.
    *
    * @name getCanvas

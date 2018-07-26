@@ -5,11 +5,10 @@ precision highp int;
 precision highp sampler2D;
 
 const float LOOP_MAX = __LOOP_MAX__;
-#define EPSILON 0.0000001;
 
 __CONSTANTS__;
 
-in highp vec2 vTexCoord;
+in vec2 vTexCoord;
 
 vec2 integerMod(vec2 x, float y) {
   vec2 res = floor(mod(x, y));
@@ -26,14 +25,16 @@ vec4 integerMod(vec4 x, vec4 y) {
   return res * step(1.0 - floor(y), -res);
 }
 
-highp float integerMod(highp float x, highp float y) {
-  highp float res = floor(mod(x, y));
+float integerMod(float x, float y) {
+  float res = floor(mod(x, y));
   return res * (res > floor(y) - 1.0 ? 0.0 : 1.0);
 }
 
-highp int integerMod(highp int x, highp int y) {
+int integerMod(int x, int y) {
   return x - (y * int(x/y));
 }
+
+__DIVIDE_WITH_INTEGER_CHECK__;
 
 // Here be dragons!
 // DO NOT OPTIMIZE THIS CODE
@@ -42,7 +43,7 @@ highp int integerMod(highp int x, highp int y) {
 const vec2 MAGIC_VEC = vec2(1.0, -256.0);
 const vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);
 const vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536
-highp float decode32(highp vec4 rgba) {
+float decode32(vec4 rgba) {
   __DECODE32_ENDIANNESS__;
   rgba *= 255.0;
   vec2 gte128;
@@ -56,11 +57,11 @@ highp float decode32(highp vec4 rgba) {
   return res;
 }
 
-highp vec4 encode32(highp float f) {
-  highp float F = abs(f);
-  highp float sign = f < 0.0 ? 1.0 : 0.0;
-  highp float exponent = floor(log2(F));
-  highp float mantissa = (exp2(-exponent) * F);
+vec4 encode32(float f) {
+  float F = abs(f);
+  float sign = f < 0.0 ? 1.0 : 0.0;
+  float exponent = floor(log2(F));
+  float mantissa = (exp2(-exponent) * F);
   // exponent += floor(log2(mantissa));
   vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;
   rgba.rg = integerMod(rgba.rg, 256.0);
@@ -74,7 +75,7 @@ highp vec4 encode32(highp float f) {
 }
 // Dragons end here
 
-highp float decode(highp vec4 rgba, highp int x, int bitRatio) {
+float decode(vec4 rgba, int x, int bitRatio) {
   if (bitRatio == 1) {
     return decode32(rgba);
   }
@@ -88,69 +89,69 @@ highp float decode(highp vec4 rgba, highp int x, int bitRatio) {
   }
 }
 
-highp int index;
-highp ivec3 threadId;
+int index;
+ivec3 threadId;
 
-highp ivec3 indexTo3D(highp int idx, highp ivec3 texDim) {
-  highp int z = int(idx / (texDim.x * texDim.y));
+ivec3 indexTo3D(int idx, ivec3 texDim) {
+  int z = int(idx / (texDim.x * texDim.y));
   idx -= z * int(texDim.x * texDim.y);
-  highp int y = int(idx / texDim.x);
-  highp int x = int(integerMod(idx, texDim.x));
+  int y = int(idx / texDim.x);
+  int x = int(integerMod(idx, texDim.x));
   return ivec3(x, y, z);
 }
 
-highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int bitRatio,  highp int z, highp int y, highp int x) {
-  highp ivec3 xyz = ivec3(x, y, z);
+float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio,  int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
-  highp int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
   __GET_TEXTURE_CHANNEL__;
-  highp int w = texSize.x;
+  int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   __GET_TEXTURE_INDEX__;
-  highp vec4 texel = texture(tex, st / vec2(texSize));
+  vec4 texel = texture(tex, st / vec2(texSize));
   __GET_RESULT__;
   
 }
 
-highp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int z, highp int y, highp int x) {
-  highp ivec3 xyz = ivec3(x, y, z);
+vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
-  highp int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
   __GET_TEXTURE_CHANNEL__;
-  highp int w = texSize.x;
+  int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   __GET_TEXTURE_INDEX__;
   return texture(tex, st / vec2(texSize));
 }
 
-highp vec4 getImage3D(highp sampler2DArray tex, highp ivec2 texSize, highp ivec3 texDim, highp int z, highp int y, highp int x) {
-  highp ivec3 xyz = ivec3(x, y, z);
+vec4 getImage3D(sampler2DArray tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
-  highp int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
   __GET_TEXTURE_CHANNEL__;
-  highp int w = texSize.x;
+  int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   __GET_TEXTURE_INDEX__;
   return texture(tex, vec3(st / vec2(texSize), z));
 }
 
-highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int bitRatio, highp int y, highp int x) {
+float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int y, int x) {
   return get(tex, texSize, texDim, bitRatio, 0, y, x);
 }
 
-highp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int bitRatio, highp int x) {
+float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int x) {
   return get(tex, texSize, texDim, bitRatio, 0, 0, x);
 }
 
-highp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int y, highp int x) {
+vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int y, int x) {
   return getImage2D(tex, texSize, texDim, 0, y, x);
 }
 
-highp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int x) {
+vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int x) {
   return getImage2D(tex, texSize, texDim, 0, 0, x);
 }
 
-highp vec4 actualColor;
+vec4 actualColor;
 void color(float r, float g, float b, float a) {
   actualColor = vec4(r,g,b,a);
 }

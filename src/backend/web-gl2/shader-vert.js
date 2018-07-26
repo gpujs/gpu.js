@@ -3,10 +3,10 @@ precision highp float;
 precision highp int;
 precision highp sampler2D;
 
-in highp vec2 aPos;
-in highp vec2 aTexCoord;
+in vec2 aPos;
+in vec2 aTexCoord;
 
-out highp vec2 vTexCoord;
+out vec2 vTexCoord;
 uniform vec2 ratio;
 
 void main(void) {

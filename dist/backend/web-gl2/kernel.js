@@ -50,6 +50,13 @@ module.exports = function (_WebGLKernel) {
 				this.floatOutput = isFloatReadPixel;
 			}
 
+			var hasIntegerDivisionBug = utils.hasIntegerDivisionAccuracyBug();
+			if (this.fixIntegerDivisionAccuracy == null) {
+				this.fixIntegerDivisionAccuracy = hasIntegerDivisionBug;
+			} else if (this.fixIntegerDivisionAccuracy && !hasIntegerDivisionBug) {
+				this.fixIntegerDivisionAccuracy = false;
+			}
+
 			utils.checkOutput(this.output);
 
 			if (!this.output || this.output.length === 0) {
@@ -544,7 +551,7 @@ module.exports = function (_WebGLKernel) {
 					} else if (paramType === 'HTMLImageArray') {
 						result.push('uniform highp sampler2DArray user_' + paramName, 'uniform highp ivec2 user_' + paramName + 'Size', 'uniform highp ivec3 user_' + paramName + 'Dim');
 					} else if (paramType === 'Integer' || paramType === 'Float') {
-						result.push('uniform highp float user_' + paramName);
+						result.push('uniform float user_' + paramName);
 					}
 				}
 			}
@@ -568,14 +575,14 @@ module.exports = function (_WebGLKernel) {
 			var result = [];
 			var names = this.subKernelOutputVariableNames;
 			if (names !== null) {
-				result.push('highp float kernelResult = 0.0');
-				result.push('layout(location = 0) out highp vec4 data0');
+				result.push('float kernelResult = 0.0');
+				result.push('layout(location = 0) out vec4 data0');
 				for (var i = 0; i < names.length; i++) {
-					result.push('highp float ' + names[i] + ' = 0.0', 'layout(location = ' + (i + 1) + ') out highp vec4 data' + (i + 1));
+					result.push('float ' + names[i] + ' = 0.0', 'layout(location = ' + (i + 1) + ') out vec4 data' + (i + 1));
 				}
 			} else {
-				result.push('out highp vec4 data0');
-				result.push('highp float kernelResult = 0.0');
+				result.push('out vec4 data0');
+				result.push('float kernelResult = 0.0');
 			}
 
 			return this._linesToString(result) + this.functionBuilder.getPrototypeString('kernel');
@@ -670,7 +677,8 @@ module.exports = function (_WebGLKernel) {
 				debug: this.debug,
 				loopMaxIterations: this.loopMaxIterations,
 				paramNames: this.paramNames,
-				paramTypes: this.paramTypes
+				paramTypes: this.paramTypes,
+				fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
 			});
 
 			if (this.subKernels !== null) {

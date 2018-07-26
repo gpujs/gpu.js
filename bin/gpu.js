@@ -5,14 +5,14 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.5.4
- * @date Tue Jul 24 2018 15:15:52 GMT-0400 (EDT)
+ * @date Thu Jul 26 2018 08:57:20 GMT+0100 (BST)
  *
  * @license MIT
  * The MIT License
  *
  * Copyright (c) 2018 gpu.js Team
  */
-"use strict";(function(){function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s}return e})()({1:[function(require,module,exports){
+"use strict";(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -1363,6 +1363,7 @@ module.exports = function () {
 		this.output = null;
 		this.declarations = {};
 		this.states = [];
+		this.fixIntegerDivisionAccuracy = null;
 
 		var paramTypes = void 0;
 		var returnType = void 0;
@@ -1387,6 +1388,9 @@ module.exports = function () {
 			}
 			if (options.hasOwnProperty('returnType')) {
 				returnType = options.returnType;
+			}
+			if (options.hasOwnProperty('fixIntegerDivisionAccuracy')) {
+				this.fixIntegerDivisionAccuracy = options.fixIntegerDivisionAccuracy;
 			}
 		}
 
@@ -1900,6 +1904,7 @@ module.exports = function () {
 		this.functionBuilder = null;
 		this.paramTypes = null;
 		this.paramSizes = null;
+		this.fixIntegerDivisionAccuracy = null;
 
 		for (var p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -1987,6 +1992,14 @@ module.exports = function () {
 		key: 'setLoopMaxIterations',
 		value: function setLoopMaxIterations(max) {
 			this.loopMaxIterations = max;
+			return this;
+		}
+
+
+	}, {
+		key: 'setFixIntegerDivisionAccuracy',
+		value: function setFixIntegerDivisionAccuracy(fix) {
+			this.fixIntegerDivisionAccuracy = fix;
 			return this;
 		}
 
@@ -2479,6 +2492,12 @@ module.exports = function (_FunctionNodeBase) {
 				this.astGeneric(ast.left, retArr);
 				retArr.push('!=');
 				this.astGeneric(ast.right, retArr);
+			} else if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
+				retArr.push('div_with_int_check(');
+				this.astGeneric(ast.left, retArr);
+				retArr.push(', ');
+				this.astGeneric(ast.right, retArr);
+				retArr.push(')');
 			} else {
 				this.astGeneric(ast.left, retArr);
 				retArr.push(ast.operator);
@@ -3316,6 +3335,13 @@ module.exports = function (_KernelBase) {
 				this.floatOutput = isFloatReadPixel;
 			}
 
+			var hasIntegerDivisionBug = utils.hasIntegerDivisionAccuracyBug();
+			if (this.fixIntegerDivisionAccuracy == null) {
+				this.fixIntegerDivisionAccuracy = hasIntegerDivisionBug;
+			} else if (this.fixIntegerDivisionAccuracy && !hasIntegerDivisionBug) {
+				this.fixIntegerDivisionAccuracy = false;
+			}
+
 			utils.checkOutput(this.output);
 
 			if (!this.output || this.output.length === 0) {
@@ -3766,6 +3792,7 @@ module.exports = function (_KernelBase) {
 				CONSTANTS: this._getConstantsString(),
 				DECODE32_ENDIANNESS: this._getDecode32EndiannessString(),
 				ENCODE32_ENDIANNESS: this._getEncode32EndiannessString(),
+				DIVIDE_WITH_INTEGER_CHECK: this._getDivideWithIntegerCheckString(),
 				GET_WRAPAROUND: this._getGetWraparoundString(),
 				GET_TEXTURE_CHANNEL: this._getGetTextureChannelString(),
 				GET_TEXTURE_INDEX: this._getGetTextureIndexString(),
@@ -3966,9 +3993,9 @@ module.exports = function (_KernelBase) {
 			var threadDim = this.threadDim;
 			var texSize = this.texSize;
 			if (this.hardcodeConstants) {
-				result.push('highp ivec3 uOutputDim = ivec3(' + threadDim[0] + ',' + threadDim[1] + ', ' + threadDim[2] + ')', 'highp ivec2 uTexSize = ivec2(' + texSize[0] + ', ' + texSize[1] + ')');
+				result.push('ivec3 uOutputDim = ivec3(' + threadDim[0] + ',' + threadDim[1] + ', ' + threadDim[2] + ')', 'ivec2 uTexSize = ivec2(' + texSize[0] + ', ' + texSize[1] + ')');
 			} else {
-				result.push('uniform highp ivec3 uOutputDim', 'uniform highp ivec2 uTexSize');
+				result.push('uniform ivec3 uOutputDim', 'uniform ivec2 uTexSize');
 			}
 
 			return this._linesToString(result);
@@ -3980,9 +4007,9 @@ module.exports = function (_KernelBase) {
 		value: function _getTextureCoordinate() {
 			var names = this.subKernelOutputVariableNames;
 			if (names === null || names.length < 1) {
-				return 'varying highp vec2 vTexCoord;\n';
+				return 'varying vec2 vTexCoord;\n';
 			} else {
-				return 'out highp vec2 vTexCoord;\n';
+				return 'out vec2 vTexCoord;\n';
 			}
 		}
 
@@ -3998,6 +4025,13 @@ module.exports = function (_KernelBase) {
 		key: '_getEncode32EndiannessString',
 		value: function _getEncode32EndiannessString() {
 			return this.endianness === 'LE' ? '' : '  rgba.rgba = rgba.abgr;\n';
+		}
+
+
+	}, {
+		key: '_getDivideWithIntegerCheckString',
+		value: function _getDivideWithIntegerCheckString() {
+			return this.fixIntegerDivisionAccuracy ? '\n\t\t\t  float div_with_int_check(float x, float y) {\n\t\t\t  if (floor(x) == x && floor(y) == y && integerMod(x, y) == 0.0) {\n\t\t\t    return float(int(x)/int(y));\n\t\t\t  }\n\t\t\t  return x / y;\n\t\t\t}\n\t\t\t' : '';
 		}
 
 
@@ -4052,20 +4086,20 @@ module.exports = function (_KernelBase) {
 							floatOutput: this.floatOutput
 						}, paramDim);
 
-						result.push('uniform highp sampler2D user_' + paramName, 'highp ivec2 user_' + paramName + 'Size = vec2(' + paramSize[0] + ', ' + paramSize[1] + ')', 'highp ivec3 user_' + paramName + 'Dim = vec3(' + paramDim[0] + ', ' + paramDim[1] + ', ' + paramDim[2] + ')', 'uniform highp int user_' + paramName + 'BitRatio');
+						result.push('uniform sampler2D user_' + paramName, 'ivec2 user_' + paramName + 'Size = vec2(' + paramSize[0] + ', ' + paramSize[1] + ')', 'ivec3 user_' + paramName + 'Dim = vec3(' + paramDim[0] + ', ' + paramDim[1] + ', ' + paramDim[2] + ')', 'uniform int user_' + paramName + 'BitRatio');
 					} else if (paramType === 'Integer') {
-						result.push('highp float user_' + paramName + ' = ' + param + '.0');
+						result.push('float user_' + paramName + ' = ' + param + '.0');
 					} else if (paramType === 'Float') {
-						result.push('highp float user_' + paramName + ' = ' + param);
+						result.push('float user_' + paramName + ' = ' + param);
 					}
 				} else {
 					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
-						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp ivec2 user_' + paramName + 'Size', 'uniform highp ivec3 user_' + paramName + 'Dim');
+						result.push('uniform sampler2D user_' + paramName, 'uniform ivec2 user_' + paramName + 'Size', 'uniform ivec3 user_' + paramName + 'Dim');
 						if (paramType !== 'HTMLImage') {
-							result.push('uniform highp int user_' + paramName + 'BitRatio');
+							result.push('uniform int user_' + paramName + 'BitRatio');
 						}
 					} else if (paramType === 'Integer' || paramType === 'Float') {
-						result.push('uniform highp float user_' + paramName);
+						result.push('uniform float user_' + paramName);
 					} else {
 						throw new Error('Param type ' + paramType + ' not supported in WebGL, only WebGL2');
 					}
@@ -4106,12 +4140,12 @@ module.exports = function (_KernelBase) {
 			var result = [];
 			var names = this.subKernelOutputVariableNames;
 			if (names !== null) {
-				result.push('highp float kernelResult = 0.0');
+				result.push('float kernelResult = 0.0');
 				for (var i = 0; i < names.length; i++) {
-					result.push('highp float ' + names[i] + ' = 0.0');
+					result.push('float ' + names[i] + ' = 0.0');
 				}
 			} else {
-				result.push('highp float kernelResult = 0.0');
+				result.push('float kernelResult = 0.0');
 			}
 
 			return this._linesToString(result) + this.functionBuilder.getPrototypeString('kernel');
@@ -4210,7 +4244,8 @@ module.exports = function (_KernelBase) {
 				debug: this.debug,
 				loopMaxIterations: this.loopMaxIterations,
 				paramNames: this.paramNames,
-				paramTypes: this.paramTypes
+				paramTypes: this.paramTypes,
+				fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
 			});
 
 			if (this.subKernels !== null) {
@@ -4237,7 +4272,8 @@ module.exports = function (_KernelBase) {
 				constants: this.constants,
 				output: this.output,
 				debug: this.debug,
-				loopMaxIterations: this.loopMaxIterations
+				loopMaxIterations: this.loopMaxIterations,
+				fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
 			});
 			this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
 		}
@@ -4319,11 +4355,11 @@ module.exports = function (_RunnerBase) {
 },{"../runner-base":10,"./function-builder":11,"./kernel":14}],16:[function(require,module,exports){
 "use strict";
 
-module.exports = "__HEADER__;\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nconst float LOOP_MAX = __LOOP_MAX__;\n#define EPSILON 0.0000001;\n\n__CONSTANTS__;\n\nvarying highp vec2 vTexCoord;\n\nvec4 round(vec4 x) {\n  return floor(x + 0.5);\n}\n\nhighp float round(highp float x) {\n  return floor(x + 0.5);\n}\n\nvec2 integerMod(vec2 x, float y) {\n  vec2 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec3 integerMod(vec3 x, float y) {\n  vec3 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec4 integerMod(vec4 x, vec4 y) {\n  vec4 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nhighp float integerMod(highp float x, highp float y) {\n  highp float res = floor(mod(x, y));\n  return res * (res > floor(y) - 1.0 ? 0.0 : 1.0);\n}\n\nhighp int integerMod(highp int x, highp int y) {\n  return x - (y * int(x/y));\n}\n\n// Here be dragons!\n// DO NOT OPTIMIZE THIS CODE\n// YOU WILL BREAK SOMETHING ON SOMEBODY'S MACHINE\n// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME\nconst vec2 MAGIC_VEC = vec2(1.0, -256.0);\nconst vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);\nconst vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536\nhighp float decode32(highp vec4 rgba) {\n  __DECODE32_ENDIANNESS__;\n  rgba *= 255.0;\n  vec2 gte128;\n  gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;\n  gte128.y = rgba.a >= 128.0 ? 1.0 : 0.0;\n  float exponent = 2.0 * rgba.a - 127.0 + dot(gte128, MAGIC_VEC);\n  float res = exp2(round(exponent));\n  rgba.b = rgba.b - 128.0 * gte128.x;\n  res = dot(rgba, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;\n  res *= gte128.y * -2.0 + 1.0;\n  return res;\n}\n\nhighp vec4 encode32(highp float f) {\n  highp float F = abs(f);\n  highp float sign = f < 0.0 ? 1.0 : 0.0;\n  highp float exponent = floor(log2(F));\n  highp float mantissa = (exp2(-exponent) * F);\n  // exponent += floor(log2(mantissa));\n  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;\n  rgba.rg = integerMod(rgba.rg, 256.0);\n  rgba.b = integerMod(rgba.b, 128.0);\n  rgba.a = exponent*0.5 + 63.5;\n  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;\n  rgba = floor(rgba);\n  rgba *= 0.003921569; // 1/255\n  __ENCODE32_ENDIANNESS__;\n  return rgba;\n}\n// Dragons end here\n\nhighp float decode(highp vec4 rgba, highp int x, int bitRatio) {\n  if (bitRatio == 1) {\n    return decode32(rgba);\n  }\n  __DECODE32_ENDIANNESS__;\n  int channel = integerMod(x, bitRatio);\n  if (bitRatio == 4) {\n    if (channel == 0) return rgba.r * 255.0;\n    if (channel == 1) return rgba.g * 255.0;\n    if (channel == 2) return rgba.b * 255.0;\n    if (channel == 3) return rgba.a * 255.0;\n  }\n  else {\n    if (channel == 0) return rgba.r * 255.0 + rgba.g * 65280.0;\n    if (channel == 1) return rgba.b * 255.0 + rgba.a * 65280.0;\n  }\n}\n\nhighp int index;\nhighp ivec3 threadId;\n\nhighp ivec3 indexTo3D(highp int idx, highp ivec3 texDim) {\n  highp int z = int(idx / (texDim.x * texDim.y));\n  idx -= z * int(texDim.x * texDim.y);\n  highp int y = int(idx / texDim.x);\n  highp int x = int(integerMod(idx, texDim.x));\n  return ivec3(x, y, z);\n}\n\nhighp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, int bitRatio,  highp int z, highp int y, highp int x) {\n  highp ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  highp int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  highp int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  highp vec4 texel = texture2D(tex, st / vec2(texSize));\n  __GET_RESULT__;\n  \n}\n\nhighp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int z, highp int y, highp int x) {\n  highp ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  highp int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  highp int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  return texture2D(tex, st / vec2(texSize));\n}\n\nhighp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, int bitRatio, highp int y, highp int x) {\n  return get(tex, texSize, texDim, bitRatio, int(0), y, x);\n}\n\nhighp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int y, highp int x) {\n  return getImage2D(tex, texSize, texDim, int(0), y, x);\n}\n\nhighp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, int bitRatio, highp int x) {\n  return get(tex, texSize, texDim, bitRatio, int(0), int(0), x);\n}\n\nhighp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int x) {\n  return getImage2D(tex, texSize, texDim, int(0), int(0), x);\n}\n\n\nhighp vec4 actualColor;\nvoid color(float r, float g, float b, float a) {\n  actualColor = vec4(r,g,b,a);\n}\n\nvoid color(float r, float g, float b) {\n  color(r,g,b,1.0);\n}\n\nvoid color(sampler2D image) {\n  actualColor = texture2D(image, vTexCoord);\n}\n\n__MAIN_PARAMS__;\n__MAIN_CONSTANTS__;\n__KERNEL__;\n\nvoid main(void) {\n  index = int(vTexCoord.s * float(uTexSize.x)) + int(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;\n  __MAIN_RESULT__;\n}";
+module.exports = "__HEADER__;\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nconst float LOOP_MAX = __LOOP_MAX__;\n\n__CONSTANTS__;\n\nvarying vec2 vTexCoord;\n\nvec4 round(vec4 x) {\n  return floor(x + 0.5);\n}\n\nfloat round(float x) {\n  return floor(x + 0.5);\n}\n\nvec2 integerMod(vec2 x, float y) {\n  vec2 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec3 integerMod(vec3 x, float y) {\n  vec3 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec4 integerMod(vec4 x, vec4 y) {\n  vec4 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nfloat integerMod(float x, float y) {\n  float res = floor(mod(x, y));\n  return res * (res > floor(y) - 1.0 ? 0.0 : 1.0);\n}\n\nint integerMod(int x, int y) {\n  return x - (y * int(x / y));\n}\n\n__DIVIDE_WITH_INTEGER_CHECK__;\n\n// Here be dragons!\n// DO NOT OPTIMIZE THIS CODE\n// YOU WILL BREAK SOMETHING ON SOMEBODY'S MACHINE\n// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME\nconst vec2 MAGIC_VEC = vec2(1.0, -256.0);\nconst vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);\nconst vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536\nfloat decode32(vec4 rgba) {\n  __DECODE32_ENDIANNESS__;\n  rgba *= 255.0;\n  vec2 gte128;\n  gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;\n  gte128.y = rgba.a >= 128.0 ? 1.0 : 0.0;\n  float exponent = 2.0 * rgba.a - 127.0 + dot(gte128, MAGIC_VEC);\n  float res = exp2(round(exponent));\n  rgba.b = rgba.b - 128.0 * gte128.x;\n  res = dot(rgba, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;\n  res *= gte128.y * -2.0 + 1.0;\n  return res;\n}\n\nvec4 encode32(float f) {\n  float F = abs(f);\n  float sign = f < 0.0 ? 1.0 : 0.0;\n  float exponent = floor(log2(F));\n  float mantissa = (exp2(-exponent) * F);\n  // exponent += floor(log2(mantissa));\n  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;\n  rgba.rg = integerMod(rgba.rg, 256.0);\n  rgba.b = integerMod(rgba.b, 128.0);\n  rgba.a = exponent*0.5 + 63.5;\n  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;\n  rgba = floor(rgba);\n  rgba *= 0.003921569; // 1/255\n  __ENCODE32_ENDIANNESS__;\n  return rgba;\n}\n// Dragons end here\n\nfloat decode(vec4 rgba, int x, int bitRatio) {\n  if (bitRatio == 1) {\n    return decode32(rgba);\n  }\n  __DECODE32_ENDIANNESS__;\n  int channel = integerMod(x, bitRatio);\n  if (bitRatio == 4) {\n    if (channel == 0) return rgba.r * 255.0;\n    if (channel == 1) return rgba.g * 255.0;\n    if (channel == 2) return rgba.b * 255.0;\n    if (channel == 3) return rgba.a * 255.0;\n  }\n  else {\n    if (channel == 0) return rgba.r * 255.0 + rgba.g * 65280.0;\n    if (channel == 1) return rgba.b * 255.0 + rgba.a * 65280.0;\n  }\n}\n\nint index;\nivec3 threadId;\n\nivec3 indexTo3D(int idx, ivec3 texDim) {\n  int z = int(idx / (texDim.x * texDim.y));\n  idx -= z * int(texDim.x * texDim.y);\n  int y = int(idx / texDim.x);\n  int x = int(integerMod(idx, texDim.x));\n  return ivec3(x, y, z);\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio,  int z, int y, int x) {\n  ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  vec4 texel = texture2D(tex, st / vec2(texSize));\n  __GET_RESULT__;\n  \n}\n\nvec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {\n  ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  return texture2D(tex, st / vec2(texSize));\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int y, int x) {\n  return get(tex, texSize, texDim, bitRatio, int(0), y, x);\n}\n\nvec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int y, int x) {\n  return getImage2D(tex, texSize, texDim, int(0), y, x);\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int x) {\n  return get(tex, texSize, texDim, bitRatio, int(0), int(0), x);\n}\n\nvec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int x) {\n  return getImage2D(tex, texSize, texDim, int(0), int(0), x);\n}\n\n\nvec4 actualColor;\nvoid color(float r, float g, float b, float a) {\n  actualColor = vec4(r,g,b,a);\n}\n\nvoid color(float r, float g, float b) {\n  color(r,g,b,1.0);\n}\n\nvoid color(sampler2D image) {\n  actualColor = texture2D(image, vTexCoord);\n}\n\n__MAIN_PARAMS__;\n__MAIN_CONSTANTS__;\n__KERNEL__;\n\nvoid main(void) {\n  index = int(vTexCoord.s * float(uTexSize.x)) + int(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;\n  __MAIN_RESULT__;\n}";
 },{}],17:[function(require,module,exports){
 "use strict";
 
-module.exports = "precision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nattribute highp vec2 aPos;\nattribute highp vec2 aTexCoord;\n\nvarying highp vec2 vTexCoord;\nuniform vec2 ratio;\n\nvoid main(void) {\n  gl_Position = vec4((aPos + vec2(1)) * ratio + vec2(-1), 0, 1);\n  vTexCoord = aTexCoord;\n}";
+module.exports = "precision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nattribute vec2 aPos;\nattribute vec2 aTexCoord;\n\nvarying vec2 vTexCoord;\nuniform vec2 ratio;\n\nvoid main(void) {\n  gl_Position = vec4((aPos + vec2(1)) * ratio + vec2(-1), 0, 1);\n  vTexCoord = aTexCoord;\n}";
 },{}],18:[function(require,module,exports){
 'use strict';
 
@@ -4582,6 +4618,13 @@ module.exports = function (_WebGLKernel) {
 			} else if (this.floatTextures === undefined) {
 				this.floatTextures = true;
 				this.floatOutput = isFloatReadPixel;
+			}
+
+			var hasIntegerDivisionBug = utils.hasIntegerDivisionAccuracyBug();
+			if (this.fixIntegerDivisionAccuracy == null) {
+				this.fixIntegerDivisionAccuracy = hasIntegerDivisionBug;
+			} else if (this.fixIntegerDivisionAccuracy && !hasIntegerDivisionBug) {
+				this.fixIntegerDivisionAccuracy = false;
 			}
 
 			utils.checkOutput(this.output);
@@ -4986,7 +5029,7 @@ module.exports = function (_WebGLKernel) {
 					} else if (paramType === 'HTMLImageArray') {
 						result.push('uniform highp sampler2DArray user_' + paramName, 'uniform highp ivec2 user_' + paramName + 'Size', 'uniform highp ivec3 user_' + paramName + 'Dim');
 					} else if (paramType === 'Integer' || paramType === 'Float') {
-						result.push('uniform highp float user_' + paramName);
+						result.push('uniform float user_' + paramName);
 					}
 				}
 			}
@@ -5000,14 +5043,14 @@ module.exports = function (_WebGLKernel) {
 			var result = [];
 			var names = this.subKernelOutputVariableNames;
 			if (names !== null) {
-				result.push('highp float kernelResult = 0.0');
-				result.push('layout(location = 0) out highp vec4 data0');
+				result.push('float kernelResult = 0.0');
+				result.push('layout(location = 0) out vec4 data0');
 				for (var i = 0; i < names.length; i++) {
-					result.push('highp float ' + names[i] + ' = 0.0', 'layout(location = ' + (i + 1) + ') out highp vec4 data' + (i + 1));
+					result.push('float ' + names[i] + ' = 0.0', 'layout(location = ' + (i + 1) + ') out vec4 data' + (i + 1));
 				}
 			} else {
-				result.push('out highp vec4 data0');
-				result.push('highp float kernelResult = 0.0');
+				result.push('out vec4 data0');
+				result.push('float kernelResult = 0.0');
 			}
 
 			return this._linesToString(result) + this.functionBuilder.getPrototypeString('kernel');
@@ -5083,7 +5126,8 @@ module.exports = function (_WebGLKernel) {
 				debug: this.debug,
 				loopMaxIterations: this.loopMaxIterations,
 				paramNames: this.paramNames,
-				paramTypes: this.paramTypes
+				paramTypes: this.paramTypes,
+				fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
 			});
 
 			if (this.subKernels !== null) {
@@ -5176,11 +5220,11 @@ module.exports = function (_RunnerBase) {
 },{"../runner-base":10,"./function-builder":19,"./kernel":21}],23:[function(require,module,exports){
 "use strict";
 
-module.exports = "#version 300 es\n__HEADER__;\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nconst float LOOP_MAX = __LOOP_MAX__;\n#define EPSILON 0.0000001;\n\n__CONSTANTS__;\n\nin highp vec2 vTexCoord;\n\nvec2 integerMod(vec2 x, float y) {\n  vec2 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec3 integerMod(vec3 x, float y) {\n  vec3 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec4 integerMod(vec4 x, vec4 y) {\n  vec4 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nhighp float integerMod(highp float x, highp float y) {\n  highp float res = floor(mod(x, y));\n  return res * (res > floor(y) - 1.0 ? 0.0 : 1.0);\n}\n\nhighp int integerMod(highp int x, highp int y) {\n  return x - (y * int(x/y));\n}\n\n// Here be dragons!\n// DO NOT OPTIMIZE THIS CODE\n// YOU WILL BREAK SOMETHING ON SOMEBODY'S MACHINE\n// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME\nconst vec2 MAGIC_VEC = vec2(1.0, -256.0);\nconst vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);\nconst vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536\nhighp float decode32(highp vec4 rgba) {\n  __DECODE32_ENDIANNESS__;\n  rgba *= 255.0;\n  vec2 gte128;\n  gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;\n  gte128.y = rgba.a >= 128.0 ? 1.0 : 0.0;\n  float exponent = 2.0 * rgba.a - 127.0 + dot(gte128, MAGIC_VEC);\n  float res = exp2(round(exponent));\n  rgba.b = rgba.b - 128.0 * gte128.x;\n  res = dot(rgba, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;\n  res *= gte128.y * -2.0 + 1.0;\n  return res;\n}\n\nhighp vec4 encode32(highp float f) {\n  highp float F = abs(f);\n  highp float sign = f < 0.0 ? 1.0 : 0.0;\n  highp float exponent = floor(log2(F));\n  highp float mantissa = (exp2(-exponent) * F);\n  // exponent += floor(log2(mantissa));\n  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;\n  rgba.rg = integerMod(rgba.rg, 256.0);\n  rgba.b = integerMod(rgba.b, 128.0);\n  rgba.a = exponent*0.5 + 63.5;\n  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;\n  rgba = floor(rgba);\n  rgba *= 0.003921569; // 1/255\n  __ENCODE32_ENDIANNESS__;\n  return rgba;\n}\n// Dragons end here\n\nhighp float decode(highp vec4 rgba, highp int x, int bitRatio) {\n  if (bitRatio == 1) {\n    return decode32(rgba);\n  }\n  __DECODE32_ENDIANNESS__;\n  int channel = integerMod(x, bitRatio);\n  if (bitRatio == 4) {\n    return rgba[channel] * 255.0;\n  }\n  else {\n    return rgba[channel*2] * 255.0 + rgba[channel*2 + 1] * 65280.0;\n  }\n}\n\nhighp int index;\nhighp ivec3 threadId;\n\nhighp ivec3 indexTo3D(highp int idx, highp ivec3 texDim) {\n  highp int z = int(idx / (texDim.x * texDim.y));\n  idx -= z * int(texDim.x * texDim.y);\n  highp int y = int(idx / texDim.x);\n  highp int x = int(integerMod(idx, texDim.x));\n  return ivec3(x, y, z);\n}\n\nhighp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int bitRatio,  highp int z, highp int y, highp int x) {\n  highp ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  highp int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  highp int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  highp vec4 texel = texture(tex, st / vec2(texSize));\n  __GET_RESULT__;\n  \n}\n\nhighp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int z, highp int y, highp int x) {\n  highp ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  highp int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  highp int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  return texture(tex, st / vec2(texSize));\n}\n\nhighp vec4 getImage3D(highp sampler2DArray tex, highp ivec2 texSize, highp ivec3 texDim, highp int z, highp int y, highp int x) {\n  highp ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  highp int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  highp int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  return texture(tex, vec3(st / vec2(texSize), z));\n}\n\nhighp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int bitRatio, highp int y, highp int x) {\n  return get(tex, texSize, texDim, bitRatio, 0, y, x);\n}\n\nhighp float get(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int bitRatio, highp int x) {\n  return get(tex, texSize, texDim, bitRatio, 0, 0, x);\n}\n\nhighp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int y, highp int x) {\n  return getImage2D(tex, texSize, texDim, 0, y, x);\n}\n\nhighp vec4 getImage2D(highp sampler2D tex, highp ivec2 texSize, highp ivec3 texDim, highp int x) {\n  return getImage2D(tex, texSize, texDim, 0, 0, x);\n}\n\nhighp vec4 actualColor;\nvoid color(float r, float g, float b, float a) {\n  actualColor = vec4(r,g,b,a);\n}\n\nvoid color(float r, float g, float b) {\n  color(r,g,b,1.0);\n}\n\n__MAIN_PARAMS__;\n__MAIN_CONSTANTS__;\n__KERNEL__;\n\nvoid main(void) {\n  index = int(vTexCoord.s * float(uTexSize.x)) + int(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;\n  __MAIN_RESULT__;\n}";
+module.exports = "#version 300 es\n__HEADER__;\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nconst float LOOP_MAX = __LOOP_MAX__;\n\n__CONSTANTS__;\n\nin vec2 vTexCoord;\n\nvec2 integerMod(vec2 x, float y) {\n  vec2 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec3 integerMod(vec3 x, float y) {\n  vec3 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec4 integerMod(vec4 x, vec4 y) {\n  vec4 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nfloat integerMod(float x, float y) {\n  float res = floor(mod(x, y));\n  return res * (res > floor(y) - 1.0 ? 0.0 : 1.0);\n}\n\nint integerMod(int x, int y) {\n  return x - (y * int(x/y));\n}\n\n__DIVIDE_WITH_INTEGER_CHECK__;\n\n// Here be dragons!\n// DO NOT OPTIMIZE THIS CODE\n// YOU WILL BREAK SOMETHING ON SOMEBODY'S MACHINE\n// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME\nconst vec2 MAGIC_VEC = vec2(1.0, -256.0);\nconst vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);\nconst vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536\nfloat decode32(vec4 rgba) {\n  __DECODE32_ENDIANNESS__;\n  rgba *= 255.0;\n  vec2 gte128;\n  gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;\n  gte128.y = rgba.a >= 128.0 ? 1.0 : 0.0;\n  float exponent = 2.0 * rgba.a - 127.0 + dot(gte128, MAGIC_VEC);\n  float res = exp2(round(exponent));\n  rgba.b = rgba.b - 128.0 * gte128.x;\n  res = dot(rgba, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;\n  res *= gte128.y * -2.0 + 1.0;\n  return res;\n}\n\nvec4 encode32(float f) {\n  float F = abs(f);\n  float sign = f < 0.0 ? 1.0 : 0.0;\n  float exponent = floor(log2(F));\n  float mantissa = (exp2(-exponent) * F);\n  // exponent += floor(log2(mantissa));\n  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;\n  rgba.rg = integerMod(rgba.rg, 256.0);\n  rgba.b = integerMod(rgba.b, 128.0);\n  rgba.a = exponent*0.5 + 63.5;\n  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;\n  rgba = floor(rgba);\n  rgba *= 0.003921569; // 1/255\n  __ENCODE32_ENDIANNESS__;\n  return rgba;\n}\n// Dragons end here\n\nfloat decode(vec4 rgba, int x, int bitRatio) {\n  if (bitRatio == 1) {\n    return decode32(rgba);\n  }\n  __DECODE32_ENDIANNESS__;\n  int channel = integerMod(x, bitRatio);\n  if (bitRatio == 4) {\n    return rgba[channel] * 255.0;\n  }\n  else {\n    return rgba[channel*2] * 255.0 + rgba[channel*2 + 1] * 65280.0;\n  }\n}\n\nint index;\nivec3 threadId;\n\nivec3 indexTo3D(int idx, ivec3 texDim) {\n  int z = int(idx / (texDim.x * texDim.y));\n  idx -= z * int(texDim.x * texDim.y);\n  int y = int(idx / texDim.x);\n  int x = int(integerMod(idx, texDim.x));\n  return ivec3(x, y, z);\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio,  int z, int y, int x) {\n  ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  vec4 texel = texture(tex, st / vec2(texSize));\n  __GET_RESULT__;\n  \n}\n\nvec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {\n  ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  return texture(tex, st / vec2(texSize));\n}\n\nvec4 getImage3D(sampler2DArray tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {\n  ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  return texture(tex, vec3(st / vec2(texSize), z));\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int y, int x) {\n  return get(tex, texSize, texDim, bitRatio, 0, y, x);\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int x) {\n  return get(tex, texSize, texDim, bitRatio, 0, 0, x);\n}\n\nvec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int y, int x) {\n  return getImage2D(tex, texSize, texDim, 0, y, x);\n}\n\nvec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int x) {\n  return getImage2D(tex, texSize, texDim, 0, 0, x);\n}\n\nvec4 actualColor;\nvoid color(float r, float g, float b, float a) {\n  actualColor = vec4(r,g,b,a);\n}\n\nvoid color(float r, float g, float b) {\n  color(r,g,b,1.0);\n}\n\n__MAIN_PARAMS__;\n__MAIN_CONSTANTS__;\n__KERNEL__;\n\nvoid main(void) {\n  index = int(vTexCoord.s * float(uTexSize.x)) + int(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;\n  __MAIN_RESULT__;\n}";
 },{}],24:[function(require,module,exports){
 "use strict";
 
-module.exports = "#version 300 es\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nin highp vec2 aPos;\nin highp vec2 aTexCoord;\n\nout highp vec2 vTexCoord;\nuniform vec2 ratio;\n\nvoid main(void) {\n  gl_Position = vec4((aPos + vec2(1)) * ratio + vec2(-1), 0, 1);\n  vTexCoord = aTexCoord;\n}";
+module.exports = "#version 300 es\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nin vec2 aPos;\nin vec2 aTexCoord;\n\nout vec2 vTexCoord;\nuniform vec2 ratio;\n\nvoid main(void) {\n  gl_Position = vec4((aPos + vec2(1)) * ratio + vec2(-1), 0, 1);\n  vTexCoord = aTexCoord;\n}";
 },{}],25:[function(require,module,exports){
 'use strict';
 
@@ -5505,6 +5549,13 @@ var GPU = function (_GPUCore) {
 
 
 	}, {
+		key: 'hasIntegerDivisionAccuracyBug',
+		value: function hasIntegerDivisionAccuracyBug() {
+			return utils.hasIntegerDivisionAccuracyBug();
+		}
+
+
+	}, {
 		key: 'getCanvas',
 		value: function getCanvas() {
 			return this._canvas;
@@ -5800,6 +5851,8 @@ var _isMixedIdentifiersSupported = function () {
 	}
 }();
 
+var _hasIntegerDivisionAccuracyBug = null;
+
 
 var Utils = function (_UtilsCore) {
 	_inherits(Utils, _UtilsCore);
@@ -5988,6 +6041,28 @@ var Utils = function (_UtilsCore) {
 			_isFloatReadPixelsSupportedWebGL2 = x[0] === 1;
 
 			return _isFloatReadPixelsSupportedWebGL2;
+		}
+
+
+	}, {
+		key: 'hasIntegerDivisionAccuracyBug',
+		value: function hasIntegerDivisionAccuracyBug() {
+			if (_hasIntegerDivisionAccuracyBug !== null) {
+				return _hasIntegerDivisionAccuracyBug;
+			}
+
+			var GPU = require('../index');
+			var x = new GPU({
+				mode: 'webgl-validator'
+			}).createKernel(function (x, y) {
+				return x / y;
+			}, {
+				output: [1]
+			})(6, 3);
+
+			_hasIntegerDivisionAccuracyBug = x[0] !== 2;
+
+			return _hasIntegerDivisionAccuracyBug;
 		}
 	}, {
 		key: 'isMixedIdentifiersSupported',
@@ -6238,8 +6313,8 @@ var keywordRelationalOperator = /^in(stanceof)?$/;
 
 
 
-var nonASCIIidentifierStartChars = "\xaa\xb5\xba\xc0-\xd6\xd8-\xf6\xf8-\u02c1\u02c6-\u02d1\u02e0-\u02e4\u02ec\u02ee\u0370-\u0374\u0376\u0377\u037a-\u037d\u037f\u0386\u0388-\u038a\u038c\u038e-\u03a1\u03a3-\u03f5\u03f7-\u0481\u048a-\u052f\u0531-\u0556\u0559\u0561-\u0587\u05d0-\u05ea\u05f0-\u05f2\u0620-\u064a\u066e\u066f\u0671-\u06d3\u06d5\u06e5\u06e6\u06ee\u06ef\u06fa-\u06fc\u06ff\u0710\u0712-\u072f\u074d-\u07a5\u07b1\u07ca-\u07ea\u07f4\u07f5\u07fa\u0800-\u0815\u081a\u0824\u0828\u0840-\u0858\u0860-\u086a\u08a0-\u08b4\u08b6-\u08bd\u0904-\u0939\u093d\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098c\u098f\u0990\u0993-\u09a8\u09aa-\u09b0\u09b2\u09b6-\u09b9\u09bd\u09ce\u09dc\u09dd\u09df-\u09e1\u09f0\u09f1\u09fc\u0a05-\u0a0a\u0a0f\u0a10\u0a13-\u0a28\u0a2a-\u0a30\u0a32\u0a33\u0a35\u0a36\u0a38\u0a39\u0a59-\u0a5c\u0a5e\u0a72-\u0a74\u0a85-\u0a8d\u0a8f-\u0a91\u0a93-\u0aa8\u0aaa-\u0ab0\u0ab2\u0ab3\u0ab5-\u0ab9\u0abd\u0ad0\u0ae0\u0ae1\u0af9\u0b05-\u0b0c\u0b0f\u0b10\u0b13-\u0b28\u0b2a-\u0b30\u0b32\u0b33\u0b35-\u0b39\u0b3d\u0b5c\u0b5d\u0b5f-\u0b61\u0b71\u0b83\u0b85-\u0b8a\u0b8e-\u0b90\u0b92-\u0b95\u0b99\u0b9a\u0b9c\u0b9e\u0b9f\u0ba3\u0ba4\u0ba8-\u0baa\u0bae-\u0bb9\u0bd0\u0c05-\u0c0c\u0c0e-\u0c10\u0c12-\u0c28\u0c2a-\u0c39\u0c3d\u0c58-\u0c5a\u0c60\u0c61\u0c80\u0c85-\u0c8c\u0c8e-\u0c90\u0c92-\u0ca8\u0caa-\u0cb3\u0cb5-\u0cb9\u0cbd\u0cde\u0ce0\u0ce1\u0cf1\u0cf2\u0d05-\u0d0c\u0d0e-\u0d10\u0d12-\u0d3a\u0d3d\u0d4e\u0d54-\u0d56\u0d5f-\u0d61\u0d7a-\u0d7f\u0d85-\u0d96\u0d9a-\u0db1\u0db3-\u0dbb\u0dbd\u0dc0-\u0dc6\u0e01-\u0e30\u0e32\u0e33\u0e40-\u0e46\u0e81\u0e82\u0e84\u0e87\u0e88\u0e8a\u0e8d\u0e94-\u0e97\u0e99-\u0e9f\u0ea1-\u0ea3\u0ea5\u0ea7\u0eaa\u0eab\u0ead-\u0eb0\u0eb2\u0eb3\u0ebd\u0ec0-\u0ec4\u0ec6\u0edc-\u0edf\u0f00\u0f40-\u0f47\u0f49-\u0f6c\u0f88-\u0f8c\u1000-\u102a\u103f\u1050-\u1055\u105a-\u105d\u1061\u1065\u1066\u106e-\u1070\u1075-\u1081\u108e\u10a0-\u10c5\u10c7\u10cd\u10d0-\u10fa\u10fc-\u1248\u124a-\u124d\u1250-\u1256\u1258\u125a-\u125d\u1260-\u1288\u128a-\u128d\u1290-\u12b0\u12b2-\u12b5\u12b8-\u12be\u12c0\u12c2-\u12c5\u12c8-\u12d6\u12d8-\u1310\u1312-\u1315\u1318-\u135a\u1380-\u138f\u13a0-\u13f5\u13f8-\u13fd\u1401-\u166c\u166f-\u167f\u1681-\u169a\u16a0-\u16ea\u16ee-\u16f8\u1700-\u170c\u170e-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176c\u176e-\u1770\u1780-\u17b3\u17d7\u17dc\u1820-\u1877\u1880-\u18a8\u18aa\u18b0-\u18f5\u1900-\u191e\u1950-\u196d\u1970-\u1974\u1980-\u19ab\u19b0-\u19c9\u1a00-\u1a16\u1a20-\u1a54\u1aa7\u1b05-\u1b33\u1b45-\u1b4b\u1b83-\u1ba0\u1bae\u1baf\u1bba-\u1be5\u1c00-\u1c23\u1c4d-\u1c4f\u1c5a-\u1c7d\u1c80-\u1c88\u1ce9-\u1cec\u1cee-\u1cf1\u1cf5\u1cf6\u1d00-\u1dbf\u1e00-\u1f15\u1f18-\u1f1d\u1f20-\u1f45\u1f48-\u1f4d\u1f50-\u1f57\u1f59\u1f5b\u1f5d\u1f5f-\u1f7d\u1f80-\u1fb4\u1fb6-\u1fbc\u1fbe\u1fc2-\u1fc4\u1fc6-\u1fcc\u1fd0-\u1fd3\u1fd6-\u1fdb\u1fe0-\u1fec\u1ff2-\u1ff4\u1ff6-\u1ffc\u2071\u207f\u2090-\u209c\u2102\u2107\u210a-\u2113\u2115\u2118-\u211d\u2124\u2126\u2128\u212a-\u2139\u213c-\u213f\u2145-\u2149\u214e\u2160-\u2188\u2c00-\u2c2e\u2c30-\u2c5e\u2c60-\u2ce4\u2ceb-\u2cee\u2cf2\u2cf3\u2d00-\u2d25\u2d27\u2d2d\u2d30-\u2d67\u2d6f\u2d80-\u2d96\u2da0-\u2da6\u2da8-\u2dae\u2db0-\u2db6\u2db8-\u2dbe\u2dc0-\u2dc6\u2dc8-\u2dce\u2dd0-\u2dd6\u2dd8-\u2dde\u3005-\u3007\u3021-\u3029\u3031-\u3035\u3038-\u303c\u3041-\u3096\u309b-\u309f\u30a1-\u30fa\u30fc-\u30ff\u3105-\u312e\u3131-\u318e\u31a0-\u31ba\u31f0-\u31ff\u3400-\u4db5\u4e00-\u9fea\ua000-\ua48c\ua4d0-\ua4fd\ua500-\ua60c\ua610-\ua61f\ua62a\ua62b\ua640-\ua66e\ua67f-\ua69d\ua6a0-\ua6ef\ua717-\ua71f\ua722-\ua788\ua78b-\ua7ae\ua7b0-\ua7b7\ua7f7-\ua801\ua803-\ua805\ua807-\ua80a\ua80c-\ua822\ua840-\ua873\ua882-\ua8b3\ua8f2-\ua8f7\ua8fb\ua8fd\ua90a-\ua925\ua930-\ua946\ua960-\ua97c\ua984-\ua9b2\ua9cf\ua9e0-\ua9e4\ua9e6-\ua9ef\ua9fa-\ua9fe\uaa00-\uaa28\uaa40-\uaa42\uaa44-\uaa4b\uaa60-\uaa76\uaa7a\uaa7e-\uaaaf\uaab1\uaab5\uaab6\uaab9-\uaabd\uaac0\uaac2\uaadb-\uaadd\uaae0-\uaaea\uaaf2-\uaaf4\uab01-\uab06\uab09-\uab0e\uab11-\uab16\uab20-\uab26\uab28-\uab2e\uab30-\uab5a\uab5c-\uab65\uab70-\uabe2\uac00-\ud7a3\ud7b0-\ud7c6\ud7cb-\ud7fb\uf900-\ufa6d\ufa70-\ufad9\ufb00-\ufb06\ufb13-\ufb17\ufb1d\ufb1f-\ufb28\ufb2a-\ufb36\ufb38-\ufb3c\ufb3e\ufb40\ufb41\ufb43\ufb44\ufb46-\ufbb1\ufbd3-\ufd3d\ufd50-\ufd8f\ufd92-\ufdc7\ufdf0-\ufdfb\ufe70-\ufe74\ufe76-\ufefc\uff21-\uff3a\uff41-\uff5a\uff66-\uffbe\uffc2-\uffc7\uffca-\uffcf\uffd2-\uffd7\uffda-\uffdc";
-var nonASCIIidentifierChars = "\u200c\u200d\xb7\u0300-\u036f\u0387\u0483-\u0487\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7\u0610-\u061a\u064b-\u0669\u0670\u06d6-\u06dc\u06df-\u06e4\u06e7\u06e8\u06ea-\u06ed\u06f0-\u06f9\u0711\u0730-\u074a\u07a6-\u07b0\u07c0-\u07c9\u07eb-\u07f3\u0816-\u0819\u081b-\u0823\u0825-\u0827\u0829-\u082d\u0859-\u085b\u08d4-\u08e1\u08e3-\u0903\u093a-\u093c\u093e-\u094f\u0951-\u0957\u0962\u0963\u0966-\u096f\u0981-\u0983\u09bc\u09be-\u09c4\u09c7\u09c8\u09cb-\u09cd\u09d7\u09e2\u09e3\u09e6-\u09ef\u0a01-\u0a03\u0a3c\u0a3e-\u0a42\u0a47\u0a48\u0a4b-\u0a4d\u0a51\u0a66-\u0a71\u0a75\u0a81-\u0a83\u0abc\u0abe-\u0ac5\u0ac7-\u0ac9\u0acb-\u0acd\u0ae2\u0ae3\u0ae6-\u0aef\u0afa-\u0aff\u0b01-\u0b03\u0b3c\u0b3e-\u0b44\u0b47\u0b48\u0b4b-\u0b4d\u0b56\u0b57\u0b62\u0b63\u0b66-\u0b6f\u0b82\u0bbe-\u0bc2\u0bc6-\u0bc8\u0bca-\u0bcd\u0bd7\u0be6-\u0bef\u0c00-\u0c03\u0c3e-\u0c44\u0c46-\u0c48\u0c4a-\u0c4d\u0c55\u0c56\u0c62\u0c63\u0c66-\u0c6f\u0c81-\u0c83\u0cbc\u0cbe-\u0cc4\u0cc6-\u0cc8\u0cca-\u0ccd\u0cd5\u0cd6\u0ce2\u0ce3\u0ce6-\u0cef\u0d00-\u0d03\u0d3b\u0d3c\u0d3e-\u0d44\u0d46-\u0d48\u0d4a-\u0d4d\u0d57\u0d62\u0d63\u0d66-\u0d6f\u0d82\u0d83\u0dca\u0dcf-\u0dd4\u0dd6\u0dd8-\u0ddf\u0de6-\u0def\u0df2\u0df3\u0e31\u0e34-\u0e3a\u0e47-\u0e4e\u0e50-\u0e59\u0eb1\u0eb4-\u0eb9\u0ebb\u0ebc\u0ec8-\u0ecd\u0ed0-\u0ed9\u0f18\u0f19\u0f20-\u0f29\u0f35\u0f37\u0f39\u0f3e\u0f3f\u0f71-\u0f84\u0f86\u0f87\u0f8d-\u0f97\u0f99-\u0fbc\u0fc6\u102b-\u103e\u1040-\u1049\u1056-\u1059\u105e-\u1060\u1062-\u1064\u1067-\u106d\u1071-\u1074\u1082-\u108d\u108f-\u109d\u135d-\u135f\u1369-\u1371\u1712-\u1714\u1732-\u1734\u1752\u1753\u1772\u1773\u17b4-\u17d3\u17dd\u17e0-\u17e9\u180b-\u180d\u1810-\u1819\u18a9\u1920-\u192b\u1930-\u193b\u1946-\u194f\u19d0-\u19da\u1a17-\u1a1b\u1a55-\u1a5e\u1a60-\u1a7c\u1a7f-\u1a89\u1a90-\u1a99\u1ab0-\u1abd\u1b00-\u1b04\u1b34-\u1b44\u1b50-\u1b59\u1b6b-\u1b73\u1b80-\u1b82\u1ba1-\u1bad\u1bb0-\u1bb9\u1be6-\u1bf3\u1c24-\u1c37\u1c40-\u1c49\u1c50-\u1c59\u1cd0-\u1cd2\u1cd4-\u1ce8\u1ced\u1cf2-\u1cf4\u1cf7-\u1cf9\u1dc0-\u1df9\u1dfb-\u1dff\u203f\u2040\u2054\u20d0-\u20dc\u20e1\u20e5-\u20f0\u2cef-\u2cf1\u2d7f\u2de0-\u2dff\u302a-\u302f\u3099\u309a\ua620-\ua629\ua66f\ua674-\ua67d\ua69e\ua69f\ua6f0\ua6f1\ua802\ua806\ua80b\ua823-\ua827\ua880\ua881\ua8b4-\ua8c5\ua8d0-\ua8d9\ua8e0-\ua8f1\ua900-\ua909\ua926-\ua92d\ua947-\ua953\ua980-\ua983\ua9b3-\ua9c0\ua9d0-\ua9d9\ua9e5\ua9f0-\ua9f9\uaa29-\uaa36\uaa43\uaa4c\uaa4d\uaa50-\uaa59\uaa7b-\uaa7d\uaab0\uaab2-\uaab4\uaab7\uaab8\uaabe\uaabf\uaac1\uaaeb-\uaaef\uaaf5\uaaf6\uabe3-\uabea\uabec\uabed\uabf0-\uabf9\ufb1e\ufe00-\ufe0f\ufe20-\ufe2f\ufe33\ufe34\ufe4d-\ufe4f\uff10-\uff19\uff3f";
+var nonASCIIidentifierStartChars = "\xaa\xb5\xba\xc0-\xd6\xd8-\xf6\xf8-\u02c1\u02c6-\u02d1\u02e0-\u02e4\u02ec\u02ee\u0370-\u0374\u0376\u0377\u037a-\u037d\u037f\u0386\u0388-\u038a\u038c\u038e-\u03a1\u03a3-\u03f5\u03f7-\u0481\u048a-\u052f\u0531-\u0556\u0559\u0560-\u0588\u05d0-\u05ea\u05ef-\u05f2\u0620-\u064a\u066e\u066f\u0671-\u06d3\u06d5\u06e5\u06e6\u06ee\u06ef\u06fa-\u06fc\u06ff\u0710\u0712-\u072f\u074d-\u07a5\u07b1\u07ca-\u07ea\u07f4\u07f5\u07fa\u0800-\u0815\u081a\u0824\u0828\u0840-\u0858\u0860-\u086a\u08a0-\u08b4\u08b6-\u08bd\u0904-\u0939\u093d\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098c\u098f\u0990\u0993-\u09a8\u09aa-\u09b0\u09b2\u09b6-\u09b9\u09bd\u09ce\u09dc\u09dd\u09df-\u09e1\u09f0\u09f1\u09fc\u0a05-\u0a0a\u0a0f\u0a10\u0a13-\u0a28\u0a2a-\u0a30\u0a32\u0a33\u0a35\u0a36\u0a38\u0a39\u0a59-\u0a5c\u0a5e\u0a72-\u0a74\u0a85-\u0a8d\u0a8f-\u0a91\u0a93-\u0aa8\u0aaa-\u0ab0\u0ab2\u0ab3\u0ab5-\u0ab9\u0abd\u0ad0\u0ae0\u0ae1\u0af9\u0b05-\u0b0c\u0b0f\u0b10\u0b13-\u0b28\u0b2a-\u0b30\u0b32\u0b33\u0b35-\u0b39\u0b3d\u0b5c\u0b5d\u0b5f-\u0b61\u0b71\u0b83\u0b85-\u0b8a\u0b8e-\u0b90\u0b92-\u0b95\u0b99\u0b9a\u0b9c\u0b9e\u0b9f\u0ba3\u0ba4\u0ba8-\u0baa\u0bae-\u0bb9\u0bd0\u0c05-\u0c0c\u0c0e-\u0c10\u0c12-\u0c28\u0c2a-\u0c39\u0c3d\u0c58-\u0c5a\u0c60\u0c61\u0c80\u0c85-\u0c8c\u0c8e-\u0c90\u0c92-\u0ca8\u0caa-\u0cb3\u0cb5-\u0cb9\u0cbd\u0cde\u0ce0\u0ce1\u0cf1\u0cf2\u0d05-\u0d0c\u0d0e-\u0d10\u0d12-\u0d3a\u0d3d\u0d4e\u0d54-\u0d56\u0d5f-\u0d61\u0d7a-\u0d7f\u0d85-\u0d96\u0d9a-\u0db1\u0db3-\u0dbb\u0dbd\u0dc0-\u0dc6\u0e01-\u0e30\u0e32\u0e33\u0e40-\u0e46\u0e81\u0e82\u0e84\u0e87\u0e88\u0e8a\u0e8d\u0e94-\u0e97\u0e99-\u0e9f\u0ea1-\u0ea3\u0ea5\u0ea7\u0eaa\u0eab\u0ead-\u0eb0\u0eb2\u0eb3\u0ebd\u0ec0-\u0ec4\u0ec6\u0edc-\u0edf\u0f00\u0f40-\u0f47\u0f49-\u0f6c\u0f88-\u0f8c\u1000-\u102a\u103f\u1050-\u1055\u105a-\u105d\u1061\u1065\u1066\u106e-\u1070\u1075-\u1081\u108e\u10a0-\u10c5\u10c7\u10cd\u10d0-\u10fa\u10fc-\u1248\u124a-\u124d\u1250-\u1256\u1258\u125a-\u125d\u1260-\u1288\u128a-\u128d\u1290-\u12b0\u12b2-\u12b5\u12b8-\u12be\u12c0\u12c2-\u12c5\u12c8-\u12d6\u12d8-\u1310\u1312-\u1315\u1318-\u135a\u1380-\u138f\u13a0-\u13f5\u13f8-\u13fd\u1401-\u166c\u166f-\u167f\u1681-\u169a\u16a0-\u16ea\u16ee-\u16f8\u1700-\u170c\u170e-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176c\u176e-\u1770\u1780-\u17b3\u17d7\u17dc\u1820-\u1878\u1880-\u18a8\u18aa\u18b0-\u18f5\u1900-\u191e\u1950-\u196d\u1970-\u1974\u1980-\u19ab\u19b0-\u19c9\u1a00-\u1a16\u1a20-\u1a54\u1aa7\u1b05-\u1b33\u1b45-\u1b4b\u1b83-\u1ba0\u1bae\u1baf\u1bba-\u1be5\u1c00-\u1c23\u1c4d-\u1c4f\u1c5a-\u1c7d\u1c80-\u1c88\u1c90-\u1cba\u1cbd-\u1cbf\u1ce9-\u1cec\u1cee-\u1cf1\u1cf5\u1cf6\u1d00-\u1dbf\u1e00-\u1f15\u1f18-\u1f1d\u1f20-\u1f45\u1f48-\u1f4d\u1f50-\u1f57\u1f59\u1f5b\u1f5d\u1f5f-\u1f7d\u1f80-\u1fb4\u1fb6-\u1fbc\u1fbe\u1fc2-\u1fc4\u1fc6-\u1fcc\u1fd0-\u1fd3\u1fd6-\u1fdb\u1fe0-\u1fec\u1ff2-\u1ff4\u1ff6-\u1ffc\u2071\u207f\u2090-\u209c\u2102\u2107\u210a-\u2113\u2115\u2118-\u211d\u2124\u2126\u2128\u212a-\u2139\u213c-\u213f\u2145-\u2149\u214e\u2160-\u2188\u2c00-\u2c2e\u2c30-\u2c5e\u2c60-\u2ce4\u2ceb-\u2cee\u2cf2\u2cf3\u2d00-\u2d25\u2d27\u2d2d\u2d30-\u2d67\u2d6f\u2d80-\u2d96\u2da0-\u2da6\u2da8-\u2dae\u2db0-\u2db6\u2db8-\u2dbe\u2dc0-\u2dc6\u2dc8-\u2dce\u2dd0-\u2dd6\u2dd8-\u2dde\u3005-\u3007\u3021-\u3029\u3031-\u3035\u3038-\u303c\u3041-\u3096\u309b-\u309f\u30a1-\u30fa\u30fc-\u30ff\u3105-\u312f\u3131-\u318e\u31a0-\u31ba\u31f0-\u31ff\u3400-\u4db5\u4e00-\u9fef\ua000-\ua48c\ua4d0-\ua4fd\ua500-\ua60c\ua610-\ua61f\ua62a\ua62b\ua640-\ua66e\ua67f-\ua69d\ua6a0-\ua6ef\ua717-\ua71f\ua722-\ua788\ua78b-\ua7b9\ua7f7-\ua801\ua803-\ua805\ua807-\ua80a\ua80c-\ua822\ua840-\ua873\ua882-\ua8b3\ua8f2-\ua8f7\ua8fb\ua8fd\ua8fe\ua90a-\ua925\ua930-\ua946\ua960-\ua97c\ua984-\ua9b2\ua9cf\ua9e0-\ua9e4\ua9e6-\ua9ef\ua9fa-\ua9fe\uaa00-\uaa28\uaa40-\uaa42\uaa44-\uaa4b\uaa60-\uaa76\uaa7a\uaa7e-\uaaaf\uaab1\uaab5\uaab6\uaab9-\uaabd\uaac0\uaac2\uaadb-\uaadd\uaae0-\uaaea\uaaf2-\uaaf4\uab01-\uab06\uab09-\uab0e\uab11-\uab16\uab20-\uab26\uab28-\uab2e\uab30-\uab5a\uab5c-\uab65\uab70-\uabe2\uac00-\ud7a3\ud7b0-\ud7c6\ud7cb-\ud7fb\uf900-\ufa6d\ufa70-\ufad9\ufb00-\ufb06\ufb13-\ufb17\ufb1d\ufb1f-\ufb28\ufb2a-\ufb36\ufb38-\ufb3c\ufb3e\ufb40\ufb41\ufb43\ufb44\ufb46-\ufbb1\ufbd3-\ufd3d\ufd50-\ufd8f\ufd92-\ufdc7\ufdf0-\ufdfb\ufe70-\ufe74\ufe76-\ufefc\uff21-\uff3a\uff41-\uff5a\uff66-\uffbe\uffc2-\uffc7\uffca-\uffcf\uffd2-\uffd7\uffda-\uffdc";
+var nonASCIIidentifierChars = "\u200c\u200d\xb7\u0300-\u036f\u0387\u0483-\u0487\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7\u0610-\u061a\u064b-\u0669\u0670\u06d6-\u06dc\u06df-\u06e4\u06e7\u06e8\u06ea-\u06ed\u06f0-\u06f9\u0711\u0730-\u074a\u07a6-\u07b0\u07c0-\u07c9\u07eb-\u07f3\u07fd\u0816-\u0819\u081b-\u0823\u0825-\u0827\u0829-\u082d\u0859-\u085b\u08d3-\u08e1\u08e3-\u0903\u093a-\u093c\u093e-\u094f\u0951-\u0957\u0962\u0963\u0966-\u096f\u0981-\u0983\u09bc\u09be-\u09c4\u09c7\u09c8\u09cb-\u09cd\u09d7\u09e2\u09e3\u09e6-\u09ef\u09fe\u0a01-\u0a03\u0a3c\u0a3e-\u0a42\u0a47\u0a48\u0a4b-\u0a4d\u0a51\u0a66-\u0a71\u0a75\u0a81-\u0a83\u0abc\u0abe-\u0ac5\u0ac7-\u0ac9\u0acb-\u0acd\u0ae2\u0ae3\u0ae6-\u0aef\u0afa-\u0aff\u0b01-\u0b03\u0b3c\u0b3e-\u0b44\u0b47\u0b48\u0b4b-\u0b4d\u0b56\u0b57\u0b62\u0b63\u0b66-\u0b6f\u0b82\u0bbe-\u0bc2\u0bc6-\u0bc8\u0bca-\u0bcd\u0bd7\u0be6-\u0bef\u0c00-\u0c04\u0c3e-\u0c44\u0c46-\u0c48\u0c4a-\u0c4d\u0c55\u0c56\u0c62\u0c63\u0c66-\u0c6f\u0c81-\u0c83\u0cbc\u0cbe-\u0cc4\u0cc6-\u0cc8\u0cca-\u0ccd\u0cd5\u0cd6\u0ce2\u0ce3\u0ce6-\u0cef\u0d00-\u0d03\u0d3b\u0d3c\u0d3e-\u0d44\u0d46-\u0d48\u0d4a-\u0d4d\u0d57\u0d62\u0d63\u0d66-\u0d6f\u0d82\u0d83\u0dca\u0dcf-\u0dd4\u0dd6\u0dd8-\u0ddf\u0de6-\u0def\u0df2\u0df3\u0e31\u0e34-\u0e3a\u0e47-\u0e4e\u0e50-\u0e59\u0eb1\u0eb4-\u0eb9\u0ebb\u0ebc\u0ec8-\u0ecd\u0ed0-\u0ed9\u0f18\u0f19\u0f20-\u0f29\u0f35\u0f37\u0f39\u0f3e\u0f3f\u0f71-\u0f84\u0f86\u0f87\u0f8d-\u0f97\u0f99-\u0fbc\u0fc6\u102b-\u103e\u1040-\u1049\u1056-\u1059\u105e-\u1060\u1062-\u1064\u1067-\u106d\u1071-\u1074\u1082-\u108d\u108f-\u109d\u135d-\u135f\u1369-\u1371\u1712-\u1714\u1732-\u1734\u1752\u1753\u1772\u1773\u17b4-\u17d3\u17dd\u17e0-\u17e9\u180b-\u180d\u1810-\u1819\u18a9\u1920-\u192b\u1930-\u193b\u1946-\u194f\u19d0-\u19da\u1a17-\u1a1b\u1a55-\u1a5e\u1a60-\u1a7c\u1a7f-\u1a89\u1a90-\u1a99\u1ab0-\u1abd\u1b00-\u1b04\u1b34-\u1b44\u1b50-\u1b59\u1b6b-\u1b73\u1b80-\u1b82\u1ba1-\u1bad\u1bb0-\u1bb9\u1be6-\u1bf3\u1c24-\u1c37\u1c40-\u1c49\u1c50-\u1c59\u1cd0-\u1cd2\u1cd4-\u1ce8\u1ced\u1cf2-\u1cf4\u1cf7-\u1cf9\u1dc0-\u1df9\u1dfb-\u1dff\u203f\u2040\u2054\u20d0-\u20dc\u20e1\u20e5-\u20f0\u2cef-\u2cf1\u2d7f\u2de0-\u2dff\u302a-\u302f\u3099\u309a\ua620-\ua629\ua66f\ua674-\ua67d\ua69e\ua69f\ua6f0\ua6f1\ua802\ua806\ua80b\ua823-\ua827\ua880\ua881\ua8b4-\ua8c5\ua8d0-\ua8d9\ua8e0-\ua8f1\ua8ff-\ua909\ua926-\ua92d\ua947-\ua953\ua980-\ua983\ua9b3-\ua9c0\ua9d0-\ua9d9\ua9e5\ua9f0-\ua9f9\uaa29-\uaa36\uaa43\uaa4c\uaa4d\uaa50-\uaa59\uaa7b-\uaa7d\uaab0\uaab2-\uaab4\uaab7\uaab8\uaabe\uaabf\uaac1\uaaeb-\uaaef\uaaf5\uaaf6\uabe3-\uabea\uabec\uabed\uabf0-\uabf9\ufb1e\ufe00-\ufe0f\ufe20-\ufe2f\ufe33\ufe34\ufe4d-\ufe4f\uff10-\uff19\uff3f";
 
 var nonASCIIidentifierStart = new RegExp("[" + nonASCIIidentifierStartChars + "]");
 var nonASCIIidentifier = new RegExp("[" + nonASCIIidentifierStartChars + nonASCIIidentifierChars + "]");
@@ -6247,9 +6322,9 @@ var nonASCIIidentifier = new RegExp("[" + nonASCIIidentifierStartChars + nonASCI
 nonASCIIidentifierStartChars = nonASCIIidentifierChars = null;
 
 
-var astralIdentifierStartCodes = [0,11,2,25,2,18,2,1,2,14,3,13,35,122,70,52,268,28,4,48,48,31,14,29,6,37,11,29,3,35,5,7,2,4,43,157,19,35,5,35,5,39,9,51,157,310,10,21,11,7,153,5,3,0,2,43,2,1,4,0,3,22,11,22,10,30,66,18,2,1,11,21,11,25,71,55,7,1,65,0,16,3,2,2,2,26,45,28,4,28,36,7,2,27,28,53,11,21,11,18,14,17,111,72,56,50,14,50,785,52,76,44,33,24,27,35,42,34,4,0,13,47,15,3,22,0,2,0,36,17,2,24,85,6,2,0,2,3,2,14,2,9,8,46,39,7,3,1,3,21,2,6,2,1,2,4,4,0,19,0,13,4,159,52,19,3,54,47,21,1,2,0,185,46,42,3,37,47,21,0,60,42,86,25,391,63,32,0,257,0,11,39,8,0,22,0,12,39,3,3,55,56,264,8,2,36,18,0,50,29,113,6,2,1,2,37,22,0,698,921,103,110,18,195,2749,1070,4050,582,8634,568,8,30,114,29,19,47,17,3,32,20,6,18,881,68,12,0,67,12,65,1,31,6124,20,754,9486,286,82,395,2309,106,6,12,4,8,8,9,5991,84,2,70,2,1,3,0,3,1,3,3,2,11,2,0,2,6,2,64,2,3,3,7,2,6,2,27,2,3,2,4,2,0,4,6,2,339,3,24,2,24,2,30,2,24,2,30,2,24,2,30,2,24,2,30,2,24,2,7,4149,196,60,67,1213,3,2,26,2,1,2,0,3,0,2,9,2,3,2,0,2,0,7,0,5,0,2,0,2,0,2,2,2,1,2,0,3,0,2,0,2,0,2,0,2,0,2,1,2,0,3,3,2,6,2,3,2,3,2,0,2,9,2,16,6,2,2,4,2,16,4421,42710,42,4148,12,221,3,5761,15,7472,3104,541];
+var astralIdentifierStartCodes = [0,11,2,25,2,18,2,1,2,14,3,13,35,122,70,52,268,28,4,48,48,31,14,29,6,37,11,29,3,35,5,7,2,4,43,157,19,35,5,35,5,39,9,51,157,310,10,21,11,7,153,5,3,0,2,43,2,1,4,0,3,22,11,22,10,30,66,18,2,1,11,21,11,25,71,55,7,1,65,0,16,3,2,2,2,28,43,28,4,28,36,7,2,27,28,53,11,21,11,18,14,17,111,72,56,50,14,50,14,35,477,28,11,0,9,21,190,52,76,44,33,24,27,35,30,0,12,34,4,0,13,47,15,3,22,0,2,0,36,17,2,24,85,6,2,0,2,3,2,14,2,9,8,46,39,7,3,1,3,21,2,6,2,1,2,4,4,0,19,0,13,4,159,52,19,3,54,47,21,1,2,0,185,46,42,3,37,47,21,0,60,42,86,26,230,43,117,63,32,0,257,0,11,39,8,0,22,0,12,39,3,3,20,0,35,56,264,8,2,36,18,0,50,29,113,6,2,1,2,37,22,0,26,5,2,1,2,31,15,0,328,18,270,921,103,110,18,195,2749,1070,4050,582,8634,568,8,30,114,29,19,47,17,3,32,20,6,18,689,63,129,68,12,0,67,12,65,1,31,6129,15,754,9486,286,82,395,2309,106,6,12,4,8,8,9,5991,84,2,70,2,1,3,0,3,1,3,3,2,11,2,0,2,6,2,64,2,3,3,7,2,6,2,27,2,3,2,4,2,0,4,6,2,339,3,24,2,24,2,30,2,24,2,30,2,24,2,30,2,24,2,30,2,24,2,7,4149,196,60,67,1213,3,2,26,2,1,2,0,3,0,2,9,2,3,2,0,2,0,7,0,5,0,2,0,2,0,2,2,2,1,2,0,3,0,2,0,2,0,2,0,2,0,2,1,2,0,3,3,2,6,2,3,2,3,2,0,2,9,2,16,6,2,2,4,2,16,4421,42710,42,4148,12,221,3,5761,15,7472,3104,541];
 
-var astralIdentifierCodes = [509,0,227,0,150,4,294,9,1368,2,2,1,6,3,41,2,5,0,166,1,1306,2,54,14,32,9,16,3,46,10,54,9,7,2,37,13,2,9,52,0,13,2,49,13,10,2,4,9,83,11,7,0,161,11,6,9,7,3,57,0,2,6,3,1,3,2,10,0,11,1,3,6,4,4,193,17,10,9,87,19,13,9,214,6,3,8,28,1,83,16,16,9,82,12,9,9,84,14,5,9,423,9,280,9,41,6,2,3,9,0,10,10,47,15,406,7,2,7,17,9,57,21,2,13,123,5,4,0,2,1,2,6,2,0,9,9,19719,9,135,4,60,6,26,9,1016,45,17,3,19723,1,5319,4,4,5,9,7,3,6,31,3,149,2,1418,49,513,54,5,49,9,0,15,0,23,4,2,14,1361,6,2,16,3,6,2,1,2,4,2214,6,110,6,6,9,792487,239];
+var astralIdentifierCodes = [509,0,227,0,150,4,294,9,1368,2,2,1,6,3,41,2,5,0,166,1,574,3,9,9,525,10,176,2,54,14,32,9,16,3,46,10,54,9,7,2,37,13,2,9,6,1,45,0,13,2,49,13,9,3,4,9,83,11,7,0,161,11,6,9,7,3,56,1,2,6,3,1,3,2,10,0,11,1,3,6,4,4,193,17,10,9,5,0,82,19,13,9,214,6,3,8,28,1,83,16,16,9,82,12,9,9,84,14,5,9,243,14,166,9,280,9,41,6,2,3,9,0,10,10,47,15,406,7,2,7,17,9,57,21,2,13,123,5,4,0,2,1,2,6,2,0,9,9,49,4,2,1,2,4,9,9,330,3,19306,9,135,4,60,6,26,9,1016,45,17,3,19723,1,5319,4,4,5,9,7,3,6,31,3,149,2,1418,49,513,54,5,49,9,0,15,0,23,4,2,14,1361,6,2,16,3,6,2,1,2,4,2214,6,110,6,6,9,792487,239];
 
 function isInAstralSet(code, set) {
   var pos = 0x10000;
@@ -6405,8 +6480,8 @@ var types = {
 var lineBreak = /\r\n?|\n|\u2028|\u2029/;
 var lineBreakG = new RegExp(lineBreak.source, "g");
 
-function isNewLine(code) {
-  return code === 10 || code === 13 || code === 0x2028 || code === 0x2029
+function isNewLine(code, ecma2019String) {
+  return code === 10 || code === 13 || (!ecma2019String && (code === 0x2028 || code === 0x2029))
 }
 
 var nonASCIIwhitespace = /[\u1680\u180e\u2000-\u200a\u202f\u205f\u3000\ufeff]/;
@@ -6465,6 +6540,7 @@ var defaultOptions = {
   allowReserved: null,
   allowReturnOutsideFunction: false,
   allowImportExportEverywhere: false,
+  allowAwaitOutsideFunction: false,
   allowHashBang: false,
   locations: false,
   onToken: null,
@@ -6530,7 +6606,7 @@ var Parser = function Parser(options, input, startPos) {
   if (!options.allowReserved) {
     for (var v = options.ecmaVersion;; v--)
       { if (reserved = reservedWords[v]) { break } }
-    if (options.sourceType == "module") { reserved += " await"; }
+    if (options.sourceType === "module") { reserved += " await"; }
   }
   this.reservedWords = keywordRegexp(reserved);
   var reservedStrict = (reserved ? reserved + " " : "") + reservedWords.strict;
@@ -6616,7 +6692,7 @@ pp.strictDirective = function(start) {
     start += skipWhiteSpace.exec(this$1.input)[0].length;
     var match = literal.exec(this$1.input.slice(start));
     if (!match) { return false }
-    if ((match[1] || match[2]) == "use strict") { return true }
+    if ((match[1] || match[2]) === "use strict") { return true }
     start += match[0].length;
   }
 };
@@ -6669,7 +6745,7 @@ pp.semicolon = function() {
 };
 
 pp.afterTrailingComma = function(tokType, notNext) {
-  if (this.type == tokType) {
+  if (this.type === tokType) {
     if (this.options.onTrailingComma)
       { this.options.onTrailingComma(this.lastTokStart, this.lastTokStartLoc); }
     if (!notNext)
@@ -6758,7 +6834,7 @@ pp$1.isLet = function() {
   skipWhiteSpace.lastIndex = this.pos;
   var skip = skipWhiteSpace.exec(this.input);
   var next = this.pos + skip[0].length, nextCh = this.input.charCodeAt(next);
-  if (nextCh === 91 || nextCh == 123) { return true } 
+  if (nextCh === 91 || nextCh === 123) { return true } 
   if (isIdentifierStart(nextCh, true)) {
     var pos = next + 1;
     while (isIdentifierChar(this.input.charCodeAt(pos), true)) { ++pos; }
@@ -6777,7 +6853,7 @@ pp$1.isAsyncFunction = function() {
   var next = this.pos + skip[0].length;
   return !lineBreak.test(this.input.slice(this.pos, next)) &&
     this.input.slice(next, next + 8) === "function" &&
-    (next + 8 == this.input.length || !isIdentifierChar(this.input.charAt(next + 8)))
+    (next + 8 === this.input.length || !isIdentifierChar(this.input.charAt(next + 8)))
 };
 
 
@@ -6808,7 +6884,7 @@ pp$1.parseStatement = function(declaration, topLevel, exports) {
   case types._try: return this.parseTryStatement(node)
   case types._const: case types._var:
     kind = kind || this.value;
-    if (!declaration && kind != "var") { this.unexpected(); }
+    if (!declaration && kind !== "var") { this.unexpected(); }
     return this.parseVarStatement(node, kind)
   case types._while: return this.parseWhileStatement(node)
   case types._with: return this.parseWithStatement(node)
@@ -6841,7 +6917,7 @@ pp$1.parseStatement = function(declaration, topLevel, exports) {
 pp$1.parseBreakContinueStatement = function(node, keyword) {
   var this$1 = this;
 
-  var isBreak = keyword == "break";
+  var isBreak = keyword === "break";
   this.next();
   if (this.eat(types.semi) || this.insertSemicolon()) { node.label = null; }
   else if (this.type !== types.name) { this.unexpected(); }
@@ -6937,8 +7013,8 @@ pp$1.parseFunctionStatement = function(node, isAsync) {
 pp$1.parseIfStatement = function(node) {
   this.next();
   node.test = this.parseParenExpression();
-  node.consequent = this.parseStatement(!this.strict && this.type == types._function);
-  node.alternate = this.eat(types._else) ? this.parseStatement(!this.strict && this.type == types._function) : null;
+  node.consequent = this.parseStatement(!this.strict && this.type === types._function);
+  node.alternate = this.eat(types._else) ? this.parseStatement(!this.strict && this.type === types._function) : null;
   return this.finishNode(node, "IfStatement")
 };
 
@@ -6965,7 +7041,7 @@ pp$1.parseSwitchStatement = function(node) {
 
 
   var cur;
-  for (var sawDefault = false; this.type != types.braceR;) {
+  for (var sawDefault = false; this.type !== types.braceR;) {
     if (this$1.type === types._case || this$1.type === types._default) {
       var isCase = this$1.type === types._case;
       if (cur) { this$1.finishNode(cur, "SwitchCase"); }
@@ -7011,11 +7087,16 @@ pp$1.parseTryStatement = function(node) {
   if (this.type === types._catch) {
     var clause = this.startNode();
     this.next();
-    this.expect(types.parenL);
-    clause.param = this.parseBindingAtom();
-    this.enterLexicalScope();
-    this.checkLVal(clause.param, "let");
-    this.expect(types.parenR);
+    if (this.eat(types.parenL)) {
+      clause.param = this.parseBindingAtom();
+      this.enterLexicalScope();
+      this.checkLVal(clause.param, "let");
+      this.expect(types.parenR);
+    } else {
+      if (this.options.ecmaVersion < 10) { this.unexpected(); }
+      clause.param = null;
+      this.enterLexicalScope();
+    }
     clause.body = this.parseBlock(false);
     this.exitLexicalScope();
     node.handler = this.finishNode(clause, "CatchClause");
@@ -7068,16 +7149,16 @@ pp$1.parseLabeledStatement = function(node, maybeName, expr) {
   var kind = this.type.isLoop ? "loop" : this.type === types._switch ? "switch" : null;
   for (var i = this.labels.length - 1; i >= 0; i--) {
     var label$1 = this$1.labels[i];
-    if (label$1.statementStart == node.start) {
+    if (label$1.statementStart === node.start) {
       label$1.statementStart = this$1.start;
       label$1.kind = kind;
     } else { break }
   }
   this.labels.push({name: maybeName, kind: kind, statementStart: this.start});
   node.body = this.parseStatement(true);
-  if (node.body.type == "ClassDeclaration" ||
-      node.body.type == "VariableDeclaration" && node.body.kind != "var" ||
-      node.body.type == "FunctionDeclaration" && (this.strict || node.body.generator))
+  if (node.body.type === "ClassDeclaration" ||
+      node.body.type === "VariableDeclaration" && node.body.kind !== "var" ||
+      node.body.type === "FunctionDeclaration" && (this.strict || node.body.generator))
     { this.raiseRecoverable(node.body.start, "Invalid labeled declaration"); }
   this.labels.pop();
   node.label = expr;
@@ -7129,14 +7210,14 @@ pp$1.parseFor = function(node, init) {
 pp$1.parseForIn = function(node, init) {
   var type = this.type === types._in ? "ForInStatement" : "ForOfStatement";
   this.next();
-  if (type == "ForInStatement") {
+  if (type === "ForInStatement") {
     if (init.type === "AssignmentPattern" ||
       (init.type === "VariableDeclaration" && init.declarations[0].init != null &&
        (this.strict || init.declarations[0].id.type !== "Identifier")))
       { this.raise(init.start, "Invalid assignment in for-in loop head"); }
   }
   node.left = init;
-  node.right = type == "ForInStatement" ? this.parseExpression() : this.parseMaybeAssign();
+  node.right = type === "ForInStatement" ? this.parseExpression() : this.parseMaybeAssign();
   this.expect(types.parenR);
   this.exitLexicalScope();
   node.body = this.parseStatement(false);
@@ -7157,7 +7238,7 @@ pp$1.parseVar = function(node, isFor, kind) {
       decl.init = this$1.parseMaybeAssign(isFor);
     } else if (kind === "const" && !(this$1.type === types._in || (this$1.options.ecmaVersion >= 6 && this$1.isContextual("of")))) {
       this$1.unexpected();
-    } else if (decl.id.type != "Identifier" && !(isFor && (this$1.type === types._in || this$1.isContextual("of")))) {
+    } else if (decl.id.type !== "Identifier" && !(isFor && (this$1.type === types._in || this$1.isContextual("of")))) {
       this$1.raise(this$1.lastTokEnd, "Complex binding patterns require an initialization value");
     } else {
       decl.init = null;
@@ -7182,7 +7263,7 @@ pp$1.parseFunction = function(node, isStatement, allowExpressionBody, isAsync) {
     { node.async = !!isAsync; }
 
   if (isStatement) {
-    node.id = isStatement === "nullableID" && this.type != types.name ? null : this.parseIdent();
+    node.id = isStatement === "nullableID" && this.type !== types.name ? null : this.parseIdent();
     if (node.id) {
       this.checkLVal(node.id, "var");
     }
@@ -7198,7 +7279,7 @@ pp$1.parseFunction = function(node, isStatement, allowExpressionBody, isAsync) {
   this.enterFunctionScope();
 
   if (!isStatement)
-    { node.id = this.type == types.name ? this.parseIdent() : null; }
+    { node.id = this.type === types.name ? this.parseIdent() : null; }
 
   this.parseFunctionParams(node);
   this.parseFunctionBody(node, allowExpressionBody);
@@ -7376,28 +7457,28 @@ pp$1.checkPatternExport = function(exports, pat) {
   var this$1 = this;
 
   var type = pat.type;
-  if (type == "Identifier")
+  if (type === "Identifier")
     { this.checkExport(exports, pat.name, pat.start); }
-  else if (type == "ObjectPattern")
+  else if (type === "ObjectPattern")
     { for (var i = 0, list = pat.properties; i < list.length; i += 1)
       {
         var prop = list[i];
 
         this$1.checkPatternExport(exports, prop);
       } }
-  else if (type == "ArrayPattern")
+  else if (type === "ArrayPattern")
     { for (var i$1 = 0, list$1 = pat.elements; i$1 < list$1.length; i$1 += 1) {
       var elt = list$1[i$1];
 
         if (elt) { this$1.checkPatternExport(exports, elt); }
     } }
-  else if (type == "Property")
+  else if (type === "Property")
     { this.checkPatternExport(exports, pat.value); }
-  else if (type == "AssignmentPattern")
+  else if (type === "AssignmentPattern")
     { this.checkPatternExport(exports, pat.left); }
-  else if (type == "RestElement")
+  else if (type === "RestElement")
     { this.checkPatternExport(exports, pat.argument); }
-  else if (type == "ParenthesizedExpression")
+  else if (type === "ParenthesizedExpression")
     { this.checkPatternExport(exports, pat.expression); }
 };
 
@@ -7834,7 +7915,7 @@ pp$3.parseMaybeAssign = function(noIn, refDestructuringErrors, afterLeftParse) {
   }
 
   var startPos = this.start, startLoc = this.startLoc;
-  if (this.type == types.parenL || this.type == types.name)
+  if (this.type === types.parenL || this.type === types.name)
     { this.potentialArrowAt = this.start; }
   var left = this.parseMaybeConditional(noIn, refDestructuringErrors);
   if (afterLeftParse) { left = afterLeftParse.call(this, left, startPos, startLoc); }
@@ -7877,7 +7958,7 @@ pp$3.parseExprOps = function(noIn, refDestructuringErrors) {
   var startPos = this.start, startLoc = this.startLoc;
   var expr = this.parseMaybeUnary(refDestructuringErrors, false);
   if (this.checkExpressionErrors(refDestructuringErrors)) { return expr }
-  return expr.start == startPos && expr.type === "ArrowFunctionExpression" ? expr : this.parseExprOp(expr, startPos, startLoc, -1, noIn)
+  return expr.start === startPos && expr.type === "ArrowFunctionExpression" ? expr : this.parseExprOp(expr, startPos, startLoc, -1, noIn)
 };
 
 
@@ -7910,7 +7991,7 @@ pp$3.parseMaybeUnary = function(refDestructuringErrors, sawUnary) {
   var this$1 = this;
 
   var startPos = this.start, startLoc = this.startLoc, expr;
-  if (this.inAsync && this.isContextual("await")) {
+  if (this.isContextual("await") && (this.inAsync || (!this.inFunction && this.options.allowAwaitOutsideFunction))) {
     expr = this.parseAwait();
     sawUnary = true;
   } else if (this.type.prefix) {
@@ -7964,7 +8045,7 @@ pp$3.parseSubscripts = function(base, startPos, startLoc, noCalls) {
   var this$1 = this;
 
   var maybeAsyncArrow = this.options.ecmaVersion >= 8 && base.type === "Identifier" && base.name === "async" &&
-      this.lastTokEnd == base.end && !this.canInsertSemicolon() && this.input.slice(base.start, base.end) === "async";
+      this.lastTokEnd === base.end && !this.canInsertSemicolon() && this.input.slice(base.start, base.end) === "async";
   for (var computed = (void 0);;) {
     if ((computed = this$1.eat(types.bracketL)) || this$1.eat(types.dot)) {
       var node = this$1.startNodeAt(startPos, startLoc);
@@ -8005,7 +8086,7 @@ pp$3.parseSubscripts = function(base, startPos, startLoc, noCalls) {
 
 
 pp$3.parseExprAtom = function(refDestructuringErrors) {
-  var node, canBeArrow = this.potentialArrowAt == this.start;
+  var node, canBeArrow = this.potentialArrowAt === this.start;
   switch (this.type) {
   case types._super:
     if (!this.inFunction)
@@ -8333,7 +8414,7 @@ pp$3.parsePropertyValue = function(prop, isPattern, isGenerator, isAsync, startP
   } else if (!isPattern && !containsEsc &&
              this.options.ecmaVersion >= 5 && !prop.computed && prop.key.type === "Identifier" &&
              (prop.key.name === "get" || prop.key.name === "set") &&
-             (this.type != types.comma && this.type != types.braceR)) {
+             (this.type !== types.comma && this.type !== types.braceR)) {
     if (isGenerator || isAsync) { this.unexpected(); }
     prop.kind = prop.key.name;
     this.parsePropertyName(prop);
@@ -8543,7 +8624,7 @@ pp$3.checkUnreserved = function(ref) {
   if (this.isKeyword(name))
     { this.raise(start, ("Unexpected keyword '" + name + "'")); }
   if (this.options.ecmaVersion < 6 &&
-    this.input.slice(start, end).indexOf("\\") != -1) { return }
+    this.input.slice(start, end).indexOf("\\") !== -1) { return }
   var re = this.strict ? this.reservedWordsStrict : this.reservedWords;
   if (re.test(name)) {
     if (!this.inAsync && name === "await")
@@ -8555,7 +8636,7 @@ pp$3.checkUnreserved = function(ref) {
 
 pp$3.parseIdent = function(liberal, isBinding) {
   var node = this.startNode();
-  if (liberal && this.options.allowReserved == "never") { liberal = false; }
+  if (liberal && this.options.allowReserved === "never") { liberal = false; }
   if (this.type === types.name) {
     node.name = this.value;
   } else if (this.type.keyword) {
@@ -8580,7 +8661,7 @@ pp$3.parseYield = function() {
 
   var node = this.startNode();
   this.next();
-  if (this.type == types.semi || this.canInsertSemicolon() || (this.type != types.star && !this.type.startsExpr)) {
+  if (this.type === types.semi || this.canInsertSemicolon() || (this.type !== types.star && !this.type.startsExpr)) {
     node.delegate = false;
     node.argument = null;
   } else {
@@ -8758,13 +8839,13 @@ pp$7.braceIsBlock = function(prevType) {
   if (prevType === types.colon && (parent === types$1.b_stat || parent === types$1.b_expr))
     { return !parent.isExpr }
 
-  if (prevType === types._return || prevType == types.name && this.exprAllowed)
+  if (prevType === types._return || prevType === types.name && this.exprAllowed)
     { return lineBreak.test(this.input.slice(this.lastTokEnd, this.start)) }
-  if (prevType === types._else || prevType === types.semi || prevType === types.eof || prevType === types.parenR || prevType == types.arrow)
+  if (prevType === types._else || prevType === types.semi || prevType === types.eof || prevType === types.parenR || prevType === types.arrow)
     { return true }
-  if (prevType == types.braceL)
+  if (prevType === types.braceL)
     { return parent === types$1.b_stat }
-  if (prevType == types._var || prevType == types.name)
+  if (prevType === types._var || prevType === types.name)
     { return false }
   return !this.exprAllowed
 };
@@ -8782,7 +8863,7 @@ pp$7.inGeneratorContext = function() {
 
 pp$7.updateContext = function(prevType) {
   var update, type = this.type;
-  if (type.keyword && prevType == types.dot)
+  if (type.keyword && prevType === types.dot)
     { this.exprAllowed = false; }
   else if (update = type.updateContext)
     { update.call(this, prevType); }
@@ -8792,7 +8873,7 @@ pp$7.updateContext = function(prevType) {
 
 
 types.parenR.updateContext = types.braceR.updateContext = function() {
-  if (this.context.length == 1) {
+  if (this.context.length === 1) {
     this.exprAllowed = true;
     return
   }
@@ -8840,7 +8921,7 @@ types.backQuote.updateContext = function() {
 };
 
 types.star.updateContext = function(prevType) {
-  if (prevType == types._function) {
+  if (prevType === types._function) {
     var index = this.context.length - 1;
     if (this.context[index] === types$1.f_expr)
       { this.context[index] = types$1.f_expr_gen; }
@@ -8853,8 +8934,8 @@ types.star.updateContext = function(prevType) {
 types.name.updateContext = function(prevType) {
   var allowed = false;
   if (this.options.ecmaVersion >= 6) {
-    if (this.value == "of" && !this.exprAllowed ||
-        this.value == "yield" && this.inGeneratorContext())
+    if (this.value === "of" && !this.exprAllowed ||
+        this.value === "yield" && this.inGeneratorContext())
       { allowed = true; }
   }
   this.exprAllowed = allowed;
@@ -9415,7 +9496,7 @@ pp$9.validateRegExpFlags = function(state) {
 
   for (var i = 0; i < flags.length; i++) {
     var flag = flags.charAt(i);
-    if (validFlags.indexOf(flag) == -1) {
+    if (validFlags.indexOf(flag) === -1) {
       this$1.raise(state.start, "Invalid regular expression flag");
     }
     if (flags.indexOf(flag, i + 1) > -1) {
@@ -10457,7 +10538,7 @@ pp$8.readToken_mult_modulo_exp = function(code) {
   var size = 1;
   var tokentype = code === 42 ? types.star : types.modulo;
 
-  if (this.options.ecmaVersion >= 7 && code == 42 && next === 42) {
+  if (this.options.ecmaVersion >= 7 && code === 42 && next === 42) {
     ++size;
     tokentype = types.starstar;
     next = this.input.charCodeAt(this.pos + 2);
@@ -10483,7 +10564,7 @@ pp$8.readToken_caret = function() {
 pp$8.readToken_plus_min = function(code) { 
   var next = this.input.charCodeAt(this.pos + 1);
   if (next === code) {
-    if (next == 45 && !this.inModule && this.input.charCodeAt(this.pos + 2) == 62 &&
+    if (next === 45 && !this.inModule && this.input.charCodeAt(this.pos + 2) === 62 &&
         (this.lastTokEnd === 0 || lineBreak.test(this.input.slice(this.lastTokEnd, this.pos)))) {
       this.skipLineComment(3);
       this.skipSpace();
@@ -10503,8 +10584,8 @@ pp$8.readToken_lt_gt = function(code) {
     if (this.input.charCodeAt(this.pos + size) === 61) { return this.finishOp(types.assign, size + 1) }
     return this.finishOp(types.bitShift, size)
   }
-  if (next == 33 && code == 60 && !this.inModule && this.input.charCodeAt(this.pos + 2) == 45 &&
-      this.input.charCodeAt(this.pos + 3) == 45) {
+  if (next === 33 && code === 60 && !this.inModule && this.input.charCodeAt(this.pos + 2) === 45 &&
+      this.input.charCodeAt(this.pos + 3) === 45) {
     this.skipLineComment(4);
     this.skipSpace();
     return this.nextToken()
@@ -10717,7 +10798,7 @@ pp$8.readString = function(quote) {
       out += this$1.readEscapedChar(false);
       chunkStart = this$1.pos;
     } else {
-      if (isNewLine(ch)) { this$1.raise(this$1.start, "Unterminated string constant"); }
+      if (isNewLine(ch, this$1.options.ecmaVersion >= 10)) { this$1.raise(this$1.start, "Unterminated string constant"); }
       ++this$1.pos;
     }
   }
@@ -10848,8 +10929,13 @@ pp$8.readEscapedChar = function(inTemplate) {
       }
       this.pos += octalStr.length - 1;
       ch = this.input.charCodeAt(this.pos);
-      if ((octalStr !== "0" || ch == 56 || ch == 57) && (this.strict || inTemplate)) {
-        this.invalidStringToken(this.pos - 1 - octalStr.length, "Octal literal in strict mode");
+      if ((octalStr !== "0" || ch === 56 || ch === 57) && (this.strict || inTemplate)) {
+        this.invalidStringToken(
+          this.pos - 1 - octalStr.length,
+          inTemplate
+            ? "Octal literal in template string"
+            : "Octal literal in strict mode"
+        );
       }
       return String.fromCharCode(octal)
     }
@@ -10880,7 +10966,7 @@ pp$8.readWord1 = function() {
       this$1.containsEsc = true;
       word += this$1.input.slice(chunkStart, this$1.pos);
       var escStart = this$1.pos;
-      if (this$1.input.charCodeAt(++this$1.pos) != 117) 
+      if (this$1.input.charCodeAt(++this$1.pos) !== 117) 
         { this$1.invalidStringToken(this$1.pos, "Expecting Unicode escape sequence \\uXXXX"); }
       ++this$1.pos;
       var esc = this$1.readCodePoint();
@@ -10908,7 +10994,7 @@ pp$8.readWord = function() {
 };
 
 
-var version = "5.5.0";
+var version = "5.7.1";
 
 
 function parse(input, options) {
