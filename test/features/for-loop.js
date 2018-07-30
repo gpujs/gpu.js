@@ -23,6 +23,7 @@
     for(var i = 0; i < exp.length; ++i) {
       QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
     }
+    f.destroy();
   }
 
   QUnit.test( 'for_loop (auto)', function() {
@@ -70,6 +71,7 @@
     for(var i = 0; i < exp.length; ++i) {
       QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
     }
+    gpu.destroy();
   }
 
   QUnit.test( 'dowhile_loop (auto)', function() {
@@ -130,6 +132,8 @@
     for(var i = 0; i < evil_while_exp.length; ++i) {
       QUnit.assert.close(evil_while_exp[i], res[i], 0.1, 'Result arr idx: '+i);
     }
+    evil_while_cpuRef.destroy();
+    gpu.destroy();
   }
 
   QUnit.test( 'evilWhileLoopTest (auto)', function() {
@@ -180,6 +184,7 @@
     for(var i = 0; i < exp.length; ++i) {
       QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
     }
+    gpu.destroy();
   }
 
   QUnit.test( 'forConstantLoopTest (auto)', function() {

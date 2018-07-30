@@ -21,6 +21,7 @@
 
     var result = f(a,b);
     QUnit.assert.deepEqual(QUnit.extend([], result), [8,10,12,9,11,13]);
+    gpu.destroy();
   }
 
   QUnit.test('Issue #207 - same function reuse (cpu)', function() {

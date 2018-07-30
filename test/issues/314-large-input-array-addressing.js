@@ -12,9 +12,9 @@
 			data[i*divisor + j] = j*2;
 		}
 	}
-
+	var gpu;
 	function buildLargeArrayAddressKernel(mode) {
-		var gpu = new GPU({ mode });
+		gpu = new GPU({ mode });
 		var largeArrayAddressKernel = gpu.createKernel(function(data) {
 			return data[this.thread.x];
 		})
@@ -24,14 +24,17 @@
 	
 	QUnit.test('Issue #314 Large array addressing - auto', () => {
 		QUnit.assert.equal(buildLargeArrayAddressKernel()[DATA_MAX-1], data[DATA_MAX-1]);
+		gpu.destroy();
 	});
 
 	QUnit.test('Issue #314 Large array addressing - gpu', () => {
 		QUnit.assert.equal(buildLargeArrayAddressKernel('gpu')[DATA_MAX-1], data[DATA_MAX-1]);
+		gpu.destroy();
 	});
 
 	QUnit.test('Issue #314 Large array addressing - webgl', () => {
 		QUnit.assert.equal(buildLargeArrayAddressKernel('webgl')[DATA_MAX-1], data[DATA_MAX-1]);
+		gpu.destroy();
 	});
 
 	QUnit.test('Issue #314 Large array addressing - webgl2', () => {
@@ -44,6 +47,7 @@
 			}
 		}
 		QUnit.assert.ok(same, "not all elements are the same, failed on index:" + i);
+		gpu.destroy();
 	});
 	
   })();

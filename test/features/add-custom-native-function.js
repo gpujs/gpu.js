@@ -28,6 +28,7 @@
     for(var i = 0; i < exp.length; ++i) {
       QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
     }
+    gpu.destroy();
   }
 
   QUnit.test( 'addCustomNativeFunctionDivide (auto)', function() {
@@ -79,6 +80,7 @@
     for(var i = 0; i < exp.length; ++i) {
       QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
     }
+    gpu.destroy();
   }
 
   QUnit.test( 'addCustomNativeFunctionDivideFallback (GPU only) (auto)', function() {

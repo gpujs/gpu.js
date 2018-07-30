@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.5.4
- * @date Mon Jul 30 2018 19:23:18 GMT+0100 (BST)
+ * @date Mon Jul 30 2018 21:05:15 GMT+0100 (BST)
  *
  * @license MIT
  * The MIT License
@@ -2150,14 +2150,7 @@ module.exports = function () {
 
 	}, {
 		key: 'destroy',
-		value: function destroy() {
-			if (this.subKernels) {
-				for (var i = 0; i < this.subKernels.length; i++) {
-					this.subKernels[i].destroy();
-				}
-			}
-			console.log('destroy kernel');
-		}
+		value: function destroy() {}
 	}]);
 
 	return KernelBase;
@@ -3277,7 +3270,6 @@ var Texture = require('../../core/texture');
 var fragShaderString = require('./shader-frag');
 var vertShaderString = require('./shader-vert');
 var kernelString = require('./kernel-string');
-
 var canvases = [];
 var maxTexSizes = {};
 

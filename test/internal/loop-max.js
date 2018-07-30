@@ -21,6 +21,7 @@ QUnit.test('WebGL Loop Max', function(assert) {
     '}\n' +
     '\n' +
     '}');
+  gpu.destroy();
 });
 
 QUnit.test('WebGL2 Loop Max', function(assert) {
@@ -46,4 +47,5 @@ QUnit.test('WebGL2 Loop Max', function(assert) {
     '}\n' +
     '\n' +
     '}');
+  gpu.destroy();
 });

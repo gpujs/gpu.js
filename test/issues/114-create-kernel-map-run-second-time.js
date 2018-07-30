@@ -16,6 +16,7 @@ QUnit.test( "Issue #114 - run createKernelMap the second time (auto)", function(
   QUnit.assert.deepEqual(QUnit.extend([], E), [2, 4, 6, 8, 10]);
   QUnit.assert.deepEqual(QUnit.extend([], F), [2, 4, 6, 8, 10]);
   QUnit.assert.deepEqual(QUnit.extend([], G), [2, 4, 6, 8, 10]);
+  gpu.destroy();
 });
 QUnit.test( "Issue #114 - run createKernelMap the second time (gpu)", function() {
   const gpu = new GPU({ mode: 'gpu' });
@@ -35,6 +36,7 @@ QUnit.test( "Issue #114 - run createKernelMap the second time (gpu)", function()
   QUnit.assert.deepEqual(QUnit.extend([], E), [2, 4, 6, 8, 10]);
   QUnit.assert.deepEqual(QUnit.extend([], F), [2, 4, 6, 8, 10]);
   QUnit.assert.deepEqual(QUnit.extend([], G), [2, 4, 6, 8, 10]);
+  gpu.destroy();
 });
 QUnit.test( "Issue #114 - run createKernelMap the second time (webgl)", function() {
   const gpu = new GPU({ mode: 'webgl' });
@@ -54,6 +56,7 @@ QUnit.test( "Issue #114 - run createKernelMap the second time (webgl)", function
   QUnit.assert.deepEqual(QUnit.extend([], E), [2, 4, 6, 8, 10]);
   QUnit.assert.deepEqual(QUnit.extend([], F), [2, 4, 6, 8, 10]);
   QUnit.assert.deepEqual(QUnit.extend([], G), [2, 4, 6, 8, 10]);
+  gpu.destroy();
 });
 QUnit.test( "Issue #114 - run createKernelMap the second time (webgl2)", function() {
   const gpu = new GPU({ mode: 'webgl2' });
@@ -73,4 +76,5 @@ QUnit.test( "Issue #114 - run createKernelMap the second time (webgl2)", functio
   QUnit.assert.deepEqual(QUnit.extend([], E), [2, 4, 6, 8, 10]);
   QUnit.assert.deepEqual(QUnit.extend([], F), [2, 4, 6, 8, 10]);
   QUnit.assert.deepEqual(QUnit.extend([], G), [2, 4, 6, 8, 10]);
+  gpu.destroy();
 });

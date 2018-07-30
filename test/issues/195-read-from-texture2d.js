@@ -29,6 +29,7 @@
     QUnit.assert.deepEqual(result, A);
     QUnit.assert.deepEqual(textureResult, A);
     QUnit.assert.deepEqual(textureResult, result);
+    gpu.destroy();
   });
 
   QUnit.test( "Issue #195 Read from Texture 2D (GPU only) (gpu)", function() {
@@ -42,6 +43,7 @@
     QUnit.assert.deepEqual(result, A);
     QUnit.assert.deepEqual(textureResult, A);
     QUnit.assert.deepEqual(textureResult, result);
+    gpu.destroy();
   });
 
   QUnit.test( "Issue #195 Read from Texture 2D (GPU only) (webgl)", function() {
@@ -55,6 +57,7 @@
     QUnit.assert.deepEqual(result, A);
     QUnit.assert.deepEqual(textureResult, A);
     QUnit.assert.deepEqual(textureResult, result);
+    gpu.destroy();
   });
 
   QUnit.test( "Issue #195 Read from Texture 2D (GPU Only) (webgl2)", function() {
@@ -68,5 +71,6 @@
     QUnit.assert.deepEqual(result, A);
     QUnit.assert.deepEqual(textureResult, A);
     QUnit.assert.deepEqual(textureResult, result);
+    gpu.destroy();
   });
 })();

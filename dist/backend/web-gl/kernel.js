@@ -16,8 +16,6 @@ var Texture = require('../../core/texture');
 var fragShaderString = require('./shader-frag');
 var vertShaderString = require('./shader-vert');
 var kernelString = require('./kernel-string');
-
-// TODO: not fully worked out what these are for.  they can leak...
 var canvases = [];
 var maxTexSizes = {};
 

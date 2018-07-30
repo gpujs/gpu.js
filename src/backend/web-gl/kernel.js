@@ -171,17 +171,6 @@ module.exports = class WebGLKernel extends KernelBase {
 	 */
 
 	build() {
-		if (this.vertShader) {
-			this._webGl.deleteShader(this.vertShader);
-		}
-
-		if (this.fragShader) {
-			this._webGl.deleteShader(this.fragShader);
-		}
-
-		if (this.program) {
-			this._webGl.deleteProgram(this.program);
-		}
 		this.validateOptions();
 		this.setupParams(arguments);
 		this.updateMaxTexSize();

@@ -21,6 +21,7 @@
 
     QUnit.assert.deepEqual(QUnit.extend([], result.result), [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(QUnit.extend([], textureResult.toArray(gpu)), [2, 4, 6, 8, 10]);
+    gpu.destroy();
   });
 
   QUnit.test('Read from Texture (gpu)', function() {
@@ -33,6 +34,7 @@
 
     QUnit.assert.deepEqual(QUnit.extend([], result.result), [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(QUnit.extend([], textureResult.toArray(gpu)), [2, 4, 6, 8, 10]);
+    gpu.destroy();
   });
 
   QUnit.test('Read from Texture (webgl)', function() {
@@ -45,6 +47,7 @@
 
     QUnit.assert.deepEqual(QUnit.extend([], result.result), [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(QUnit.extend([], textureResult.toArray(gpu)), [2, 4, 6, 8, 10]);
+    gpu.destroy();
   });
 
   QUnit.test('Read from Texture (webgl2)', function() {
@@ -57,5 +60,6 @@
 
     QUnit.assert.deepEqual(QUnit.extend([], result.result), [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(QUnit.extend([], textureResult.toArray(gpu)), [2, 4, 6, 8, 10]);
+    gpu.destroy();
   });
 })();

@@ -12,6 +12,7 @@
     var result = kernel();
     QUnit.assert.equal(result.length, 1);
     QUnit.assert.equal(result[0], 1);
+    gpu.destroy();
   }
 
   QUnit.test('Issue #152 - for vars (cpu)', function() {

@@ -72,6 +72,7 @@
     QUnit.assert.equal(result1, 2);
     QUnit.assert.equal(result2, 3);
     QUnit.assert.equal(result3, 4);
+    gpu.destroy();
   });
 
   QUnit.test('Issue #267 immutable kernel output - (gpu)', () => {
@@ -93,6 +94,7 @@
     QUnit.assert.equal(result1, 2);
     QUnit.assert.equal(result2, 3);
     QUnit.assert.equal(result3, 4);
+    gpu.destroy();
   });
 
   QUnit.test('Issue #267 immutable kernel output - (webgl)', () => {
@@ -114,6 +116,7 @@
     QUnit.assert.equal(result1, 2);
     QUnit.assert.equal(result2, 3);
     QUnit.assert.equal(result3, 4);
+    gpu.destroy();
   });
 
   QUnit.test('Issue #267 immutable kernel output - (webgl2)', () => {
@@ -135,6 +138,7 @@
     QUnit.assert.equal(result1, 2);
     QUnit.assert.equal(result2, 3);
     QUnit.assert.equal(result3, 4);
+    gpu.destroy();
   });
 
   QUnit.test('Issue #267 immutable sub-kernel output - (auto)', () => {
@@ -156,6 +160,7 @@
     QUnit.assert.equal(result1, 2);
     QUnit.assert.equal(result2, 3);
     QUnit.assert.equal(result3, 4);
+    gpu.destroy();
   });
 
   QUnit.test('Issue #267 immutable sub-kernel output - (gpu)', () => {
@@ -177,6 +182,7 @@
     QUnit.assert.equal(result1, 2);
     QUnit.assert.equal(result2, 3);
     QUnit.assert.equal(result3, 4);
+    gpu.destroy();
   });
 
   QUnit.test('Issue #267 immutable sub-kernel output - (webgl)', () => {
@@ -198,6 +204,7 @@
     QUnit.assert.equal(result1, 2);
     QUnit.assert.equal(result2, 3);
     QUnit.assert.equal(result3, 4);
+    gpu.destroy();
   });
 
   QUnit.test('Issue #267 immutable sub-kernel output - (webgl2)', () => {
@@ -219,6 +226,7 @@
     QUnit.assert.equal(result1, 2);
     QUnit.assert.equal(result2, 3);
     QUnit.assert.equal(result3, 4);
+    gpu.destroy();
   });
 
   QUnit.test('Issue #267 immutable kernel & sub-kernel output - (auto)', () => {
@@ -240,6 +248,7 @@
     QUnit.assert.equal(result1, 4);
     QUnit.assert.equal(result2, 5);
     QUnit.assert.equal(result3, 6);
+    gpu.destroy();
   });
 
   QUnit.test('Issue #267 immutable kernel & sub-kernel output - (gpu)', () => {
@@ -261,6 +270,7 @@
     QUnit.assert.equal(result1, 4);
     QUnit.assert.equal(result2, 5);
     QUnit.assert.equal(result3, 6);
+    gpu.destroy();
   });
 
   QUnit.test('Issue #267 immutable kernel & sub-kernel output - (webgl)', () => {
@@ -282,6 +292,7 @@
     QUnit.assert.equal(result1, 4);
     QUnit.assert.equal(result2, 5);
     QUnit.assert.equal(result3, 6);
+    gpu.destroy();
   });
 
   QUnit.test('Issue #267 immutable kernel & sub-kernel output - (webgl2)', () => {
@@ -303,5 +314,6 @@
     QUnit.assert.equal(result1, 4);
     QUnit.assert.equal(result2, 5);
     QUnit.assert.equal(result3, 6);
+    gpu.destroy();
   });
 })();

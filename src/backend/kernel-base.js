@@ -406,10 +406,6 @@ module.exports = class KernelBase {
 	 *
 	 */
 	destroy() {
-		if (this.subKernels) {
-			for (let i = 0; i < this.subKernels.length; i++) {
-				this.subKernels[i].destroy();
-			}
-		}
+
 	}
 };

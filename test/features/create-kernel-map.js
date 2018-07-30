@@ -44,6 +44,7 @@
     QUnit.assert.deepEqual(result, [8]);
     QUnit.assert.deepEqual(addResult, [4]);
     QUnit.assert.deepEqual(divideResult, [8]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap object 1 dimension 1 length (gpu)', function() {
@@ -58,6 +59,7 @@
     QUnit.assert.deepEqual(result, [8]);
     QUnit.assert.deepEqual(addResult, [4]);
     QUnit.assert.deepEqual(divideResult, [8]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap object 1 dimension 1 length (webgl)', function() {
@@ -72,6 +74,7 @@
     QUnit.assert.deepEqual(result, [8]);
     QUnit.assert.deepEqual(addResult, [4]);
     QUnit.assert.deepEqual(divideResult, [8]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap object 1 dimension 1 length (webgl2)', function() {
@@ -86,6 +89,7 @@
     QUnit.assert.deepEqual(result, [8]);
     QUnit.assert.deepEqual(addResult, [4]);
     QUnit.assert.deepEqual(divideResult, [8]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap object 1 dimension 1 length (cpu)', function() {
@@ -100,6 +104,7 @@
     QUnit.assert.deepEqual(result, [8]);
     QUnit.assert.deepEqual(addResult, [4]);
     QUnit.assert.deepEqual(divideResult, [8]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap array 1 dimension 1 length (auto)', function() {
@@ -114,6 +119,7 @@
     QUnit.assert.deepEqual(result, [8]);
     QUnit.assert.deepEqual(addResult, [4]);
     QUnit.assert.deepEqual(divideResult, [8]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap array 1 dimension 1 length (gpu)', function() {
@@ -128,6 +134,7 @@
     QUnit.assert.deepEqual(result, [8]);
     QUnit.assert.deepEqual(addResult, [4]);
     QUnit.assert.deepEqual(divideResult, [8]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap array 1 dimension 1 length (webgl)', function() {
@@ -142,6 +149,7 @@
     QUnit.assert.deepEqual(result, [8]);
     QUnit.assert.deepEqual(addResult, [4]);
     QUnit.assert.deepEqual(divideResult, [8]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap array 1 dimension 1 length (webgl2)', function() {
@@ -156,6 +164,7 @@
     QUnit.assert.deepEqual(result, [8]);
     QUnit.assert.deepEqual(addResult, [4]);
     QUnit.assert.deepEqual(divideResult, [8]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap array 1 dimension 1 length (cpu)', function() {
@@ -169,6 +178,7 @@
     QUnit.assert.deepEqual(result, [8]);
     QUnit.assert.deepEqual(addResult, [4]);
     QUnit.assert.deepEqual(divideResult, [8]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap object 1 dimension 5 length (auto)', function() {
@@ -183,6 +193,7 @@
     QUnit.assert.deepEqual(result, [2, 2, 2, 2, 2]);
     QUnit.assert.deepEqual(addResult, [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap object 1 dimension 5 length (gpu)', function() {
@@ -197,6 +208,7 @@
     QUnit.assert.deepEqual(result, [2, 2, 2, 2, 2]);
     QUnit.assert.deepEqual(addResult, [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap object 1 dimension 5 length (webgl)', function() {
@@ -211,6 +223,7 @@
     QUnit.assert.deepEqual(result, [2, 2, 2, 2, 2]);
     QUnit.assert.deepEqual(addResult, [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap object 1 dimension 5 length (webgl2)', function() {
@@ -225,6 +238,7 @@
     QUnit.assert.deepEqual(result, [2, 2, 2, 2, 2]);
     QUnit.assert.deepEqual(addResult, [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap object 1 dimension 5 length (cpu)', function() {
@@ -239,6 +253,7 @@
     QUnit.assert.deepEqual(result, [2, 2, 2, 2, 2]);
     QUnit.assert.deepEqual(addResult, [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap array (auto)', function() {
@@ -253,6 +268,7 @@
     QUnit.assert.deepEqual(result, [2, 2, 2, 2, 2]);
     QUnit.assert.deepEqual(addResult, [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap array (gpu)', function() {
@@ -267,6 +283,7 @@
     QUnit.assert.deepEqual(result, [2, 2, 2, 2, 2]);
     QUnit.assert.deepEqual(addResult, [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap array (webgl)', function() {
@@ -281,6 +298,7 @@
     QUnit.assert.deepEqual(result, [2, 2, 2, 2, 2]);
     QUnit.assert.deepEqual(addResult, [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap array (webgl2)', function() {
@@ -295,6 +313,7 @@
     QUnit.assert.deepEqual(result, [2, 2, 2, 2, 2]);
     QUnit.assert.deepEqual(addResult, [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap array (cpu)', function() {
@@ -308,6 +327,7 @@
     QUnit.assert.deepEqual(result, [2, 2, 2, 2, 2]);
     QUnit.assert.deepEqual(addResult, [2, 4, 6, 8, 10]);
     QUnit.assert.deepEqual(divideResult, [2, 2, 2, 2, 2]);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap 3d (auto)', function() {
@@ -328,6 +348,7 @@
     QUnit.assert.equal(target.length, 3);
     QUnit.assert.equal(target[0].length, 3);
     QUnit.assert.equal(target[0][0].length, 3);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap 3d (gpu)', function() {
@@ -348,6 +369,7 @@
     QUnit.assert.equal(target.length, 3);
     QUnit.assert.equal(target[0].length, 3);
     QUnit.assert.equal(target[0][0].length, 3);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap 3d (webgl)', function() {
@@ -368,6 +390,7 @@
     QUnit.assert.equal(target.length, 3);
     QUnit.assert.equal(target[0].length, 3);
     QUnit.assert.equal(target[0][0].length, 3);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap 3d (webgl2)', function() {
@@ -388,10 +411,12 @@
     QUnit.assert.equal(target.length, 3);
     QUnit.assert.equal(target[0].length, 3);
     QUnit.assert.equal(target[0][0].length, 3);
+    gpu.destroy();
   });
 
   QUnit.test('createKernelMap 3d (cpu)', function() {
-    var kernel = new GPU({ mode: 'cpu' }).createKernelMap({
+    var gpu = new GPU({ mode: 'cpu' });
+    var kernel = gpu.createKernelMap({
       target: function saveTarget(value) {
         return value;
       }
@@ -406,5 +431,6 @@
     QUnit.assert.equal(result.target.length, 3);
     QUnit.assert.equal(result.target[0].length, 3);
     QUnit.assert.equal(result.target[0][0].length, 3);
+    gpu.destroy();
   });
 })();

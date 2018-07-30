@@ -27,6 +27,7 @@
       [3,4,5,6,7],
       [4,5,6,7,8]
     ]);
+    gpu.destroy();
   }
 
   QUnit.test('Issue #159 - for vars (cpu)', function() {

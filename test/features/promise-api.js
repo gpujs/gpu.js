@@ -21,6 +21,7 @@
     assert.ok( promiseObj !== null, 'Promise object generated test');
     promiseObj.then(function(res) {
       assert.equal( res[0], 42.0 );
+      gpu.destroy();
       done();
     }, function(err) {
       throw err;

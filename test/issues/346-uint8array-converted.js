@@ -7,9 +7,9 @@
 		uint8data[i] = Math.random() * 255;
 		uint16data[i] = Math.random() * 255 * 255;
 	}
-
+	var gpu;
 	function buildUintArrayInputKernel(mode, data) {
-		var gpu = new GPU({ mode });
+		gpu = new GPU({ mode });
 		var largeArrayAddressKernel = gpu.createKernel(function(data) {
 			return data[this.thread.x];
 		})
@@ -27,6 +27,7 @@
 			}
 		}
 		QUnit.assert.ok(same, "not all elements are the same, failed on index:" + i);
+		gpu.destroy();
 	});
 
 	QUnit.test('Issue #346 uint8 input array - webgl2', () => {
@@ -39,6 +40,7 @@
 			}
 		}
 		QUnit.assert.ok(same, "not all elements are the same, failed on index:" + i);
+		gpu.destroy();
 	});
 
 	QUnit.test('Issue #346 uint16 input array - webgl', () => {
@@ -51,6 +53,7 @@
 			}
 		}
 		QUnit.assert.ok(same, "not all elements are the same, failed on index:" + i);
+		gpu.destroy();
 	});
 
 	QUnit.test('Issue #346 uint16 input array - webgl2', () => {
@@ -63,6 +66,7 @@
 			}
 		}
 		QUnit.assert.ok(same, "not all elements are the same, failed on index:" + i);
+		gpu.destroy();
 	});
 	
   })();

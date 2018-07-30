@@ -8,6 +8,7 @@
       .setOutput([1, 1, undefined]);
 
     kernel([[[1]]]);
+    gpu.destroy();
   }
 
   QUnit.test('Issue #335 Missing z index issue (auto)', () => {

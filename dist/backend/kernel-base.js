@@ -474,14 +474,7 @@ module.exports = function () {
 
 	}, {
 		key: 'destroy',
-		value: function destroy() {
-			if (this.subKernels) {
-				for (var i = 0; i < this.subKernels.length; i++) {
-					this.subKernels[i].destroy();
-				}
-			}
-			console.log('destroy kernel');
-		}
+		value: function destroy() {}
 	}]);
 
 	return KernelBase;

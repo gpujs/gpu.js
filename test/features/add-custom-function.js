@@ -24,6 +24,7 @@
     for(var i = 0; i < exp.length; ++i) {
       QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
     }
+    gpu.destroy();
   }
 
   QUnit.test( 'addCustomFunction_sumAB (auto)', function() {
@@ -76,7 +77,9 @@
 
     for(var i = 0; i < exp.length; ++i) {
       QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
+    
     }
+    gpu.destroy();
   }
 
   QUnit.test('addCustomFunction_constantsWidth (auto)', function() {
@@ -128,6 +131,7 @@
     for(var i = 0; i < exp.length; ++i) {
       QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
     }
+    gpu.destroy();
   }
 
   QUnit.test('addCustomFunction_thisOutputX (auto)', function() {

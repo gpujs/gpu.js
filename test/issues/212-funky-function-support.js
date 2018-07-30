@@ -23,6 +23,7 @@
       [0,2],
       [2,4]
     ]);
+    gpu.destroy();
   }
 
   QUnit.test('Issue #212 - funky function support cpu', function() {

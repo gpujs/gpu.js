@@ -1,28 +1,28 @@
 (function() {
 
 	// unfortunately there is a bit of a manual process to check this properly!
-	// so check there are no warnings in the log when running ALL tests
-	// 2 check heap snapshots
+	// 1 - check there are no warnings in the log when running ALL tests
+	// 2 - check heap snapshots
 
 	// run the following code in the console
-	// function run() {
-	// 	var gpu = new GPU({ mode: 'webgl' });
-	// 	var kernel1 = gpu.createKernel(function() {
-	// 		return this.thread.y * this.thread.x;
-	// 	}, {
-	// 		output: [1024, 1024]
-	// 	})
-	// 	kernel1();
-	// 	gpu.destroy();
-	// 	gpu = new GPU({ mode: 'webgl2' });
-	// 	var kernel2 = gpu.createKernel(function() {
-	// 		return this.thread.y * this.thread.x;
-	// 	}, {
-	// 		output: [1024, 1024]
-	// 	})
-	// 	kernel2();
-	// 	gpu.destroy();
-	// }
+	function run() {
+		var gpu = new GPU({ mode: 'webgl' });
+		var kernel1 = gpu.createKernel(function() {
+			return this.thread.y * this.thread.x;
+		}, {
+			output: [1024, 1024]
+		})
+		kernel1();
+		gpu.destroy();
+		gpu = new GPU({ mode: 'webgl2' });
+		var kernel2 = gpu.createKernel(function() {
+			return this.thread.y * this.thread.x;
+		}, {
+			output: [1024, 1024]
+		})
+		kernel2();
+		gpu.destroy();
+	}
 	// then do a heap snapshot
 	// then run() in the console
 	// do another heap snapshot and compare the differences...
