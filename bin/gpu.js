@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.5.4
- * @date Thu Jul 26 2018 17:35:35 GMT+0100 (BST)
+ * @date Mon Jul 30 2018 19:23:18 GMT+0100 (BST)
  *
  * @license MIT
  * The MIT License
@@ -2146,6 +2146,18 @@ module.exports = function () {
 		value: function addNativeFunction(name, source) {
 			this.functionBuilder.addNativeFunction(name, source);
 		}
+
+
+	}, {
+		key: 'destroy',
+		value: function destroy() {
+			if (this.subKernels) {
+				for (var i = 0; i < this.subKernels.length; i++) {
+					this.subKernels[i].destroy();
+				}
+			}
+			console.log('destroy kernel');
+		}
 	}]);
 
 	return KernelBase;
@@ -3249,6 +3261,8 @@ module.exports = function (gpuKernel, name) {
 },{"../../core/utils":32,"../kernel-run-shortcut":9}],14:[function(require,module,exports){
 'use strict';
 
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -3263,6 +3277,7 @@ var Texture = require('../../core/texture');
 var fragShaderString = require('./shader-frag');
 var vertShaderString = require('./shader-vert');
 var kernelString = require('./kernel-string');
+
 var canvases = [];
 var maxTexSizes = {};
 
@@ -3301,6 +3316,8 @@ module.exports = function (_KernelBase) {
 		_this.argumentsLength = 0;
 		_this.compiledFragShaderString = null;
 		_this.compiledVertShaderString = null;
+		_this.fragShader = null;
+		_this.vertShader = null;
 		_this.drawBuffersMap = null;
 		_this.outputTexture = null;
 		_this.maxTexSize = null;
@@ -3405,6 +3422,17 @@ module.exports = function (_KernelBase) {
 	}, {
 		key: 'build',
 		value: function build() {
+			if (this.vertShader) {
+				this._webGl.deleteShader(this.vertShader);
+			}
+
+			if (this.fragShader) {
+				this._webGl.deleteShader(this.fragShader);
+			}
+
+			if (this.program) {
+				this._webGl.deleteProgram(this.program);
+			}
 			this.validateOptions();
 			this.setupParams(arguments);
 			this.updateMaxTexSize();
@@ -3426,11 +3454,14 @@ module.exports = function (_KernelBase) {
 			var vertShader = gl.createShader(gl.VERTEX_SHADER);
 			gl.shaderSource(vertShader, compiledVertShaderString);
 			gl.compileShader(vertShader);
+			if (this.vertShader) {}
+			this.vertShader = vertShader;
 
 			var compiledFragShaderString = this._getFragShaderString(arguments);
 			var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 			gl.shaderSource(fragShader, compiledFragShaderString);
 			gl.compileShader(fragShader);
+			this.fragShader = fragShader;
 
 			if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
 				console.log(compiledVertShaderString);
@@ -4308,6 +4339,53 @@ module.exports = function (_KernelBase) {
 		key: 'addFunction',
 		value: function addFunction(fn) {
 			this.functionBuilder.addFunction(null, fn);
+		}
+	}, {
+		key: 'destroy',
+		value: function destroy(removeCanvasReferences) {
+			_get(WebGLKernel.prototype.__proto__ || Object.getPrototypeOf(WebGLKernel.prototype), 'destroy', this).call(this);
+			if (this.outputTexture) {
+				this._webGl.deleteTexture(this.outputTexture);
+			}
+			if (this.buffer) {
+				this._webGl.deleteBuffer(this.buffer);
+			}
+			if (this.framebuffer) {
+				this._webGl.deleteFramebuffer(this.framebuffer);
+			}
+
+			if (this.vertShader) {
+				this._webGl.deleteShader(this.vertShader);
+			}
+
+			if (this.fragShader) {
+				this._webGl.deleteShader(this.fragShader);
+			}
+
+			if (this.program) {
+				this._webGl.deleteProgram(this.program);
+			}
+
+			var keys = Object.keys(this.textureCache);
+
+			for (var i = 0; i < keys.length; i++) {
+				var name = keys[i];
+				this._webGl.deleteTexture(this.textureCache[name]);
+			}
+
+			if (this.subKernelOutputTextures) {
+				for (var _i3 = 0; _i3 < this.subKernelOutputTextures.length; _i3++) {
+					this._webGl.deleteTexture(this.subKernelOutputTextures[_i3]);
+				}
+			}
+			if (removeCanvasReferences) {
+				var idx = canvases.indexOf(this._canvas);
+				if (idx >= 0) {
+					canvases[idx] = null;
+					maxTexSizes[idx] = null;
+				}
+			}
+			delete this._webGl;
 		}
 	}]);
 
@@ -5369,7 +5447,6 @@ var GPU = function (_GPUCore) {
 		} else {
 			detectedMode = mode || 'gpu';
 		}
-
 		_this.kernels = [];
 
 		var runnerSettings = {
@@ -5567,6 +5644,25 @@ var GPU = function (_GPUCore) {
 		value: function getWebGl() {
 			return this._webGl;
 		}
+
+
+	}, {
+		key: 'destroy',
+		value: function destroy() {
+			var kernels = this.kernels;
+
+			var destroyWebGl = !this._webGl && kernels.length && kernels[0]._webGl;
+			for (var i = 0; i < this.kernels.length; i++) {
+				this.kernels[i].destroy(true); 
+			}
+
+			if (destroyWebGl) {
+				destroyWebGl.OES_texture_float = null;
+				destroyWebGl.OES_texture_float_linear = null;
+				destroyWebGl.OES_element_index_uint = null;
+				destroyWebGl.getExtension('WEBGL_lose_context').loseContext();
+			}
+		}
 	}]);
 
 	return GPU;
@@ -5610,8 +5706,6 @@ module.exports = function Input(value, size) {
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var gpu = null;
 
 module.exports = function () {
 
@@ -6002,9 +6096,10 @@ var Utils = function (_UtilsCore) {
 			}
 
 			var GPU = require('../index');
-			var x = new GPU({
+			var gpu = new GPU({
 				mode: 'webgl-validator'
-			}).createKernel(function () {
+			});
+			var x = gpu.createKernel(function () {
 				return 1;
 			}, {
 				output: [2],
@@ -6014,7 +6109,7 @@ var Utils = function (_UtilsCore) {
 			})();
 
 			_isFloatReadPixelsSupported = x[0] === 1;
-
+			gpu.destroy();
 			return _isFloatReadPixelsSupported;
 		}
 
@@ -6027,9 +6122,10 @@ var Utils = function (_UtilsCore) {
 			}
 
 			var GPU = require('../index');
-			var x = new GPU({
+			var gpu = new GPU({
 				mode: 'webgl2-validator'
-			}).createKernel(function () {
+			});
+			var x = gpu.createKernel(function () {
 				return 1;
 			}, {
 				output: [2],
@@ -6039,7 +6135,7 @@ var Utils = function (_UtilsCore) {
 			})();
 
 			_isFloatReadPixelsSupportedWebGL2 = x[0] === 1;
-
+			gpu.destroy();
 			return _isFloatReadPixelsSupportedWebGL2;
 		}
 
@@ -6052,16 +6148,17 @@ var Utils = function (_UtilsCore) {
 			}
 
 			var GPU = require('../index');
-			var x = new GPU({
+			var gpu = new GPU({
 				mode: 'webgl-validator'
-			}).createKernel(function (v1, v2) {
+			});
+			var x = gpu.createKernel(function (v1, v2) {
 				return v1[this.thread.x] / v2[this.thread.x];
 			}, {
 				output: [1]
 			})([6, 6030401], [3, 3991]);
 
 			_hasIntegerDivisionAccuracyBug = x[0] !== 2 || x[1] !== 1511;
-
+			gpu.destroy();
 			return _hasIntegerDivisionAccuracyBug;
 		}
 	}, {

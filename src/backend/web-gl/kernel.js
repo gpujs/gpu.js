@@ -55,6 +55,8 @@ module.exports = class WebGLKernel extends KernelBase {
 		this.argumentsLength = 0;
 		this.compiledFragShaderString = null;
 		this.compiledVertShaderString = null;
+		this.fragShader = null;
+		this.vertShader = null;
 		this.drawBuffersMap = null;
 		this.outputTexture = null;
 		this.maxTexSize = null;
@@ -169,6 +171,17 @@ module.exports = class WebGLKernel extends KernelBase {
 	 */
 
 	build() {
+		if (this.vertShader) {
+			this._webGl.deleteShader(this.vertShader);
+		}
+
+		if (this.fragShader) {
+			this._webGl.deleteShader(this.fragShader);
+		}
+
+		if (this.program) {
+			this._webGl.deleteProgram(this.program);
+		}
 		this.validateOptions();
 		this.setupParams(arguments);
 		this.updateMaxTexSize();
@@ -190,11 +203,16 @@ module.exports = class WebGLKernel extends KernelBase {
 		const vertShader = gl.createShader(gl.VERTEX_SHADER);
 		gl.shaderSource(vertShader, compiledVertShaderString);
 		gl.compileShader(vertShader);
+		if (this.vertShader) {
+
+		}
+		this.vertShader = vertShader;
 
 		const compiledFragShaderString = this._getFragShaderString(arguments);
 		const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 		gl.shaderSource(fragShader, compiledFragShaderString);
 		gl.compileShader(fragShader);
+		this.fragShader = fragShader;
 
 		if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
 			console.log(compiledVertShaderString);
@@ -1400,5 +1418,51 @@ module.exports = class WebGLKernel extends KernelBase {
 
 	addFunction(fn) {
 		this.functionBuilder.addFunction(null, fn);
+	}
+
+	destroy(removeCanvasReferences) {
+		super.destroy();
+		if (this.outputTexture) {
+			this._webGl.deleteTexture(this.outputTexture);
+		}
+		if (this.buffer) {
+			this._webGl.deleteBuffer(this.buffer);
+		}
+		if (this.framebuffer) {
+			this._webGl.deleteFramebuffer(this.framebuffer);
+		}
+
+		if (this.vertShader) {
+			this._webGl.deleteShader(this.vertShader);
+		}
+
+		if (this.fragShader) {
+			this._webGl.deleteShader(this.fragShader);
+		}
+
+		if (this.program) {
+			this._webGl.deleteProgram(this.program);
+		}
+
+		var keys = Object.keys(this.textureCache);
+
+		for (var i = 0; i < keys.length; i++) {
+			const name = keys[i];
+			this._webGl.deleteTexture(this.textureCache[name]);
+		}
+
+		if (this.subKernelOutputTextures) {
+			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
+				this._webGl.deleteTexture(this.subKernelOutputTextures[i]);
+			}
+		}
+		if (removeCanvasReferences) {
+			let idx = canvases.indexOf(this._canvas);
+			if (idx >= 0) {
+				canvases[idx] = null;
+				maxTexSizes[idx] = null;
+			}
+		}
+		delete this._webGl;
 	}
 };

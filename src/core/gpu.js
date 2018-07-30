@@ -37,7 +37,6 @@ class GPU extends GPUCore {
 		} else {
 			detectedMode = mode || 'gpu';
 		}
-
 		this.kernels = [];
 
 		const runnerSettings = {
@@ -381,6 +380,33 @@ class GPU extends GPUCore {
 	 */
 	getWebGl() {
 		return this._webGl;
+	}
+
+	/**
+	 *
+	 * Destroys all memory associated with gpu.js & the webGl if we created it
+	 *
+	 * @name destroy
+	 * @function
+	 * @memberOf GPU#
+	 *
+	 *
+	 */
+	destroy() {
+		const {
+			kernels
+		} = this;
+		const destroyWebGl = !this._webGl && kernels.length && kernels[0]._webGl;
+		for (let i = 0; i < this.kernels.length; i++) {
+			this.kernels[i].destroy(true); // remove canvas if exists
+		}
+
+		if (destroyWebGl) {
+			destroyWebGl.OES_texture_float = null;
+			destroyWebGl.OES_texture_float_linear = null;
+			destroyWebGl.OES_element_index_uint = null;
+			destroyWebGl.getExtension('WEBGL_lose_context').loseContext();
+		}
 	}
 };
 

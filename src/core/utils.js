@@ -322,9 +322,10 @@ class Utils extends UtilsCore {
 		}
 
 		const GPU = require('../index');
-		const x = new GPU({
+		const gpu = new GPU({
 			mode: 'webgl-validator'
-		}).createKernel(function() {
+		});
+		const x = gpu.createKernel(function() {
 			return 1;
 		}, {
 			output: [2],
@@ -334,7 +335,7 @@ class Utils extends UtilsCore {
 		})();
 
 		_isFloatReadPixelsSupported = x[0] === 1;
-
+		gpu.destroy();
 		return _isFloatReadPixelsSupported;
 	}
 
@@ -355,9 +356,10 @@ class Utils extends UtilsCore {
 		}
 
 		const GPU = require('../index');
-		const x = new GPU({
+		const gpu = new GPU({
 			mode: 'webgl2-validator'
-		}).createKernel(function() {
+		});
+		const x = gpu.createKernel(function() {
 			return 1;
 		}, {
 			output: [2],
@@ -367,7 +369,7 @@ class Utils extends UtilsCore {
 		})();
 
 		_isFloatReadPixelsSupportedWebGL2 = x[0] === 1;
-
+		gpu.destroy();
 		return _isFloatReadPixelsSupportedWebGL2;
 	}
 
@@ -388,9 +390,10 @@ class Utils extends UtilsCore {
 		}
 
 		const GPU = require('../index');
-		const x = new GPU({
+		const gpu = new GPU({
 			mode: 'webgl-validator'
-		}).createKernel(function(v1, v2) {
+		});
+		const x = gpu.createKernel(function(v1, v2) {
 			return v1[this.thread.x] / v2[this.thread.x];
 		}, {
 			output: [1]
@@ -399,7 +402,7 @@ class Utils extends UtilsCore {
 		// have we not got whole numbers for 6/3 or 6030401/3991
 		// add more here if others see this problem
 		_hasIntegerDivisionAccuracyBug = (x[0] !== 2 || x[1] !== 1511);
-
+		gpu.destroy();
 		return _hasIntegerDivisionAccuracyBug;
 	}
 

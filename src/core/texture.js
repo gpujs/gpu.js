@@ -1,7 +1,5 @@
 'use strict';
 
-let gpu = null;
-
 module.exports = class Texture {
 
 	/**
@@ -53,5 +51,6 @@ module.exports = class Texture {
 	 */
 	delete() {
 		return this.webGl.deleteTexture(this.texture);
+
 	}
 };

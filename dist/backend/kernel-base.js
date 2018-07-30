@@ -459,6 +459,29 @@ module.exports = function () {
 		value: function addNativeFunction(name, source) {
 			this.functionBuilder.addNativeFunction(name, source);
 		}
+
+		/**
+   *
+   * Destroys all memory associated with this kernel
+   *
+   * @name destroy
+   * @function
+   * @memberOf KernelBase#
+   *
+   * * @param {Boolean} removeCanvasReferences remve any associated canvas references?
+   *
+   */
+
+	}, {
+		key: 'destroy',
+		value: function destroy() {
+			if (this.subKernels) {
+				for (var i = 0; i < this.subKernels.length; i++) {
+					this.subKernels[i].destroy();
+				}
+			}
+			console.log('destroy kernel');
+		}
 	}]);
 
 	return KernelBase;

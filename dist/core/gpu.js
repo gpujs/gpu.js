@@ -50,7 +50,6 @@ var GPU = function (_GPUCore) {
 		} else {
 			detectedMode = mode || 'gpu';
 		}
-
 		_this.kernels = [];
 
 		var runnerSettings = {
@@ -423,6 +422,35 @@ var GPU = function (_GPUCore) {
 		key: 'getWebGl',
 		value: function getWebGl() {
 			return this._webGl;
+		}
+
+		/**
+   *
+   * Destroys all memory associated with gpu.js & the webGl if we created it
+   *
+   * @name destroy
+   * @function
+   * @memberOf GPU#
+   *
+   *
+   */
+
+	}, {
+		key: 'destroy',
+		value: function destroy() {
+			var kernels = this.kernels;
+
+			var destroyWebGl = !this._webGl && kernels.length && kernels[0]._webGl;
+			for (var i = 0; i < this.kernels.length; i++) {
+				this.kernels[i].destroy(true); // remove canvas if exists
+			}
+
+			if (destroyWebGl) {
+				destroyWebGl.OES_texture_float = null;
+				destroyWebGl.OES_texture_float_linear = null;
+				destroyWebGl.OES_element_index_uint = null;
+				destroyWebGl.getExtension('WEBGL_lose_context').loseContext();
+			}
 		}
 	}]);
 
