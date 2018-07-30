@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.5.4
- * @date Mon Jul 30 2018 21:05:15 GMT+0100 (BST)
+ * @version 1.5.5
+ * @date Mon Jul 30 2018 21:13:21 GMT+0100 (BST)
  *
  * @license MIT
  * The MIT License
@@ -3414,17 +3414,6 @@ module.exports = function (_KernelBase) {
 	}, {
 		key: 'build',
 		value: function build() {
-			if (this.vertShader) {
-				this._webGl.deleteShader(this.vertShader);
-			}
-
-			if (this.fragShader) {
-				this._webGl.deleteShader(this.fragShader);
-			}
-
-			if (this.program) {
-				this._webGl.deleteProgram(this.program);
-			}
 			this.validateOptions();
 			this.setupParams(arguments);
 			this.updateMaxTexSize();
