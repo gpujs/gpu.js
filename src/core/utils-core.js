@@ -35,21 +35,23 @@ class UtilsCore {
 	 * @memberOf UtilsCore
 	 *
 	 *
-	 * @desc Return TRUE, on a valid DOM canvas object
+	 * @desc Return TRUE, on a valid DOM canvas or OffscreenCanvas object
 	 *
 	 * Note: This does just a VERY simply sanity check. And may give false positives.
 	 *
 	 * @param {CanvasDOMObject} canvasObj - Object to validate
 	 *
-	 * @returns {Boolean} TRUE if the object is a DOM canvas
+	 * @returns {Boolean} TRUE if the object is a DOM canvas or OffscreenCanvas
 	 *
 	 */
 	static isCanvas(canvasObj) {
 		return (
 			canvasObj !== null &&
-			canvasObj.nodeName &&
-			canvasObj.getContext &&
-			canvasObj.nodeName.toUpperCase() === 'CANVAS'
+			((canvasObj.nodeName &&
+					canvasObj.getContext &&
+					canvasObj.nodeName.toUpperCase() === 'CANVAS') ||
+				(typeof OffscreenCanvas !== 'undefined' &&
+					canvasObj instanceof OffscreenCanvas))
 		);
 	}
 
@@ -87,7 +89,7 @@ class UtilsCore {
 		}
 
 		// Create a new canvas DOM
-		const canvas = document.createElement('canvas');
+		const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : new OffscreenCanvas(0, 0);
 
 		// Default width and height, to fix webgl issue in safari
 		canvas.width = 2;
@@ -217,10 +219,21 @@ class UtilsCore {
 		}
 
 		// Create a new canvas DOM
-		const webGl = (
-			canvasObj.getContext('experimental-webgl', UtilsCore.initWebGlDefaultOptions()) ||
-			canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions())
-		);
+		let webGl = null;
+
+		try {
+			webGl = canvasObj.getContext('experimental-webgl', UtilsCore.initWebGlDefaultOptions());
+		} catch (e) {
+			// 'experimental-webgl' is not a supported context type
+			// fallback to 'webgl2' or 'webgl' below
+		}
+
+		if (webGl === null) {
+			webGl = (
+				canvasObj.getContext('webgl2', UtilsCore.initWebGlDefaultOptions()) ||
+				canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions())
+			);
+		}
 
 		if (webGl) {
 			// Get the extension that is needed
@@ -287,7 +300,7 @@ class UtilsCore {
 //
 //-----------------------------------------------------------------------------
 
-const _isCanvasSupported = typeof document !== 'undefined' ? UtilsCore.isCanvas(document.createElement('canvas')) : false;
+const _isCanvasSupported = typeof document !== 'undefined' ? UtilsCore.isCanvas(document.createElement('canvas')) : typeof OffscreenCanvas !== 'undefined';
 const _testingWebGl = UtilsCore.initWebGl(UtilsCore.initCanvas());
 const _testingWebGl2 = UtilsCore.initWebGl2(UtilsCore.initCanvas());
 const _isWebGlSupported = UtilsCore.isWebGl(_testingWebGl);
