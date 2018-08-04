@@ -261,7 +261,7 @@ class GPU extends GPUCore {
 
 
 	getGPURunner() {
-		if (typeof WebGL2RenderingContext !== 'undefined') return WebGL2Runner;
+		if (typeof WebGL2RenderingContext !== 'undefined' && utils.isWebGl2Supported()) return WebGL2Runner;
 		if (typeof WebGLRenderingContext !== 'undefined') return WebGLRunner;
 	}
 
