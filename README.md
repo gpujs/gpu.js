@@ -50,6 +50,8 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 * [Adding Custom Functions Directly to Kernel](#adding-custom-functions-directly-to-kernel)
 * [Loops](#loops)
 * [Pipelining](#pipelining)
+* [Cleanup](#cleanup)
+* (Flattened typed array support)(#flattened-typed-array-support)
 * [Supported Math functions](#supported-math-functions)
 * [Full API reference](#full-api-reference)
 * [Automatically-built Documentation](#automatically-built-documentation)
@@ -403,6 +405,9 @@ const matMult = gpu.createKernel(function(a, b) {
 [Pipeline](https://en.wikipedia.org/wiki/Pipeline_(computing)) is a feature where values are sent directly from kernel to kernel via a texture.
 This results in extremely fast computing.  This is achieved with the kernel option `outputToTexture: boolean` option or by calling `kernel.setOutputToTexture(true)`
 
+## Cleanup
+* for instances of `GPU` use the `destroy` method.  Example: `gpu.destroy()`
+* for instances of `Kernel` use the `destroy` method.  Example: `kernel.destroy()`
 
 ## Flattened typed array support
 To use the useful `x`, `y`, `z` `thread` lookup api inside of gpu.js, and yet use flattened arrays, there is the `Input` type.
