@@ -372,9 +372,10 @@ var Utils = function (_UtilsCore) {
 			}
 
 			var GPU = require('../index');
-			var x = new GPU({
+			var gpu = new GPU({
 				mode: 'webgl-validator'
-			}).createKernel(function () {
+			});
+			var x = gpu.createKernel(function () {
 				return 1;
 			}, {
 				output: [2],
@@ -384,7 +385,7 @@ var Utils = function (_UtilsCore) {
 			})();
 
 			_isFloatReadPixelsSupported = x[0] === 1;
-
+			gpu.destroy();
 			return _isFloatReadPixelsSupported;
 		}
 
@@ -408,9 +409,10 @@ var Utils = function (_UtilsCore) {
 			}
 
 			var GPU = require('../index');
-			var x = new GPU({
+			var gpu = new GPU({
 				mode: 'webgl2-validator'
-			}).createKernel(function () {
+			});
+			var x = gpu.createKernel(function () {
 				return 1;
 			}, {
 				output: [2],
@@ -420,7 +422,7 @@ var Utils = function (_UtilsCore) {
 			})();
 
 			_isFloatReadPixelsSupportedWebGL2 = x[0] === 1;
-
+			gpu.destroy();
 			return _isFloatReadPixelsSupportedWebGL2;
 		}
 
@@ -444,9 +446,10 @@ var Utils = function (_UtilsCore) {
 			}
 
 			var GPU = require('../index');
-			var x = new GPU({
+			var gpu = new GPU({
 				mode: 'webgl-validator'
-			}).createKernel(function (v1, v2) {
+			});
+			var x = gpu.createKernel(function (v1, v2) {
 				return v1[this.thread.x] / v2[this.thread.x];
 			}, {
 				output: [1]
@@ -455,7 +458,7 @@ var Utils = function (_UtilsCore) {
 			// have we not got whole numbers for 6/3 or 6030401/3991
 			// add more here if others see this problem
 			_hasIntegerDivisionAccuracyBug = x[0] !== 2 || x[1] !== 1511;
-
+			gpu.destroy();
 			return _hasIntegerDivisionAccuracyBug;
 		}
 	}, {

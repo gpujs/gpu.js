@@ -28,8 +28,10 @@
       return multiply(b, a, this.thread.y, this.thread.x);
     })
       .setOutput([B.length, A.length]);
-
-    return kernels(A, B).result;
+    
+    var result = kernels(A, B).result;
+    gpu.destroy();
+    return result;
   }
   QUnit.test( "Issue #96 - param names (auto)", function() {
     var result = getResult();

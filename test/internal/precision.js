@@ -16,6 +16,7 @@ QUnit.test('WebGL Decimal Precision', function(assert) {
     assert.equal(newAddResult, addResult);
     addResult = newAddResult;
   }
+  gpu.destroy();
 });
 
 QUnit.test('WebGL2 Decimal Precision', function(assert) {
@@ -36,4 +37,5 @@ QUnit.test('WebGL2 Decimal Precision', function(assert) {
     assert.equal(newAddResult, addResult);
     addResult = newAddResult;
   }
+  gpu.destroy();
 });

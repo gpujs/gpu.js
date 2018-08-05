@@ -20,6 +20,7 @@
 
     QUnit.assert.equal(render1(1)[0], 8, 'render1 equals 8');
     QUnit.assert.equal(render2(1)[0], 8, 'render2 equals 8');
+    gpu.destroy();
   }
   QUnit.test('Issue #313 Mismatch argument lookup - auto', () => {
     test();

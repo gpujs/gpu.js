@@ -27,8 +27,9 @@
       return multiply(b, a, this.thread.y, this.thread.x);
     })
       .setOutput([2, 2]);
-
-    return kernels(A, B).result;
+    var result = kernels(A, B).result;
+    gpu.destroy();
+    return result;
   }
   QUnit.test( "Issue #91 - type detection (auto)", function() {
     var result = getResult();

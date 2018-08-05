@@ -21,9 +21,10 @@
       images.push(image);
     }
   }
+  var gpu;
   function imageTest(mode, assert) {
     var done = assert.async();
-    var gpu = new GPU({
+    gpu = new GPU({
       mode: mode
     });
     var imageKernel = gpu.createKernel(function(images) {
@@ -43,6 +44,7 @@
         imageKernel(images);
         assert.equal(true, true, 'does not throw');
       }
+      gpu.destroy();
       done();
     });
   }

@@ -24,6 +24,7 @@
 
     QUnit.assert.ok( f !== null, 'function generated test');
     QUnit.assert.close(f(), (mode === null || mode === 'webgl' ? 200 : 20), 0.00, 'basic return function test');
+    gpu.destroy();
   }
 
   QUnit.test( 'Issue #31 - nestedVarDeclare (auto)', function() {

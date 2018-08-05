@@ -1,5 +1,7 @@
 'use strict';
 
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -75,6 +77,8 @@ module.exports = function (_KernelBase) {
 		_this.argumentsLength = 0;
 		_this.compiledFragShaderString = null;
 		_this.compiledVertShaderString = null;
+		_this.fragShader = null;
+		_this.vertShader = null;
 		_this.drawBuffersMap = null;
 		_this.outputTexture = null;
 		_this.maxTexSize = null;
@@ -219,11 +223,14 @@ module.exports = function (_KernelBase) {
 			var vertShader = gl.createShader(gl.VERTEX_SHADER);
 			gl.shaderSource(vertShader, compiledVertShaderString);
 			gl.compileShader(vertShader);
+			if (this.vertShader) {}
+			this.vertShader = vertShader;
 
 			var compiledFragShaderString = this._getFragShaderString(arguments);
 			var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
 			gl.shaderSource(fragShader, compiledFragShaderString);
 			gl.compileShader(fragShader);
+			this.fragShader = fragShader;
 
 			if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
 				console.log(compiledVertShaderString);
@@ -1444,6 +1451,53 @@ module.exports = function (_KernelBase) {
 		key: 'addFunction',
 		value: function addFunction(fn) {
 			this.functionBuilder.addFunction(null, fn);
+		}
+	}, {
+		key: 'destroy',
+		value: function destroy(removeCanvasReferences) {
+			_get(WebGLKernel.prototype.__proto__ || Object.getPrototypeOf(WebGLKernel.prototype), 'destroy', this).call(this);
+			if (this.outputTexture) {
+				this._webGl.deleteTexture(this.outputTexture);
+			}
+			if (this.buffer) {
+				this._webGl.deleteBuffer(this.buffer);
+			}
+			if (this.framebuffer) {
+				this._webGl.deleteFramebuffer(this.framebuffer);
+			}
+
+			if (this.vertShader) {
+				this._webGl.deleteShader(this.vertShader);
+			}
+
+			if (this.fragShader) {
+				this._webGl.deleteShader(this.fragShader);
+			}
+
+			if (this.program) {
+				this._webGl.deleteProgram(this.program);
+			}
+
+			var keys = Object.keys(this.textureCache);
+
+			for (var i = 0; i < keys.length; i++) {
+				var name = keys[i];
+				this._webGl.deleteTexture(this.textureCache[name]);
+			}
+
+			if (this.subKernelOutputTextures) {
+				for (var _i3 = 0; _i3 < this.subKernelOutputTextures.length; _i3++) {
+					this._webGl.deleteTexture(this.subKernelOutputTextures[_i3]);
+				}
+			}
+			if (removeCanvasReferences) {
+				var idx = canvases.indexOf(this._canvas);
+				if (idx >= 0) {
+					canvases[idx] = null;
+					maxTexSizes[idx] = null;
+				}
+			}
+			delete this._webGl;
 		}
 	}]);
 

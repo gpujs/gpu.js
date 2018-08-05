@@ -6,6 +6,7 @@
 			return v1 / v2;
 		}).setOutput([1]).setFloatOutput(true)
 		QUnit.assert.equal(k(6,3)[0], 2);
+		gpu.destroy();
 	});
 
 	QUnit.test('Issue #349 - some random whole number divisions', function() {
@@ -33,6 +34,7 @@
 			}
 		}
 		QUnit.assert.ok(same, same ? "" : "not all elements are the same, failed on index:" + i + " " + dividendData[i] + "/" + divisorData[i]);
+		gpu.destroy();
 	});
 
 	QUnit.test('Issue #349 - test disable fix integer division bug', function() {
@@ -47,6 +49,7 @@
 
 		var hasBug = gpu.hasIntegerDivisionAccuracyBug();
 		QUnit.assert.ok(idfix(6,3)[0] == 2 && (!hasBug || idfixoff(6,3)[0] != 2), "should show bug!");
+		gpu.destroy();
 	});
 })();
 

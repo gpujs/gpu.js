@@ -23,6 +23,7 @@
     for(var i = 0; i < exp.length; ++i) {
       QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
     }
+    gpu.destroy();
   }
 
   QUnit.test('nested_sum (auto)', function() {

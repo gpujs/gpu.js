@@ -16,6 +16,7 @@
     image.onload = function() {
       imageKernel(image);
       assert.equal(true, true, 'does not throw');
+      gpu.destroy();
       done();
     };
   }

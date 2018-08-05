@@ -26,6 +26,7 @@ QUnit.test( "Issue #116 - multiple kernels run again (auto)", function() {
   QUnit.assert.deepEqual(QUnit.extend([], E), [2, 4, 6, 8, 10]);
   QUnit.assert.deepEqual(QUnit.extend([], F), [2]);
   QUnit.assert.deepEqual(QUnit.extend([], G), [2, 4, 6, 8, 10]);
+  gpu.destroy();
 });
 
 QUnit.test( "Issue #116 - multiple kernels run again (gpu)", function() {
@@ -56,6 +57,7 @@ QUnit.test( "Issue #116 - multiple kernels run again (gpu)", function() {
   QUnit.assert.deepEqual(QUnit.extend([], E), [2, 4, 6, 8, 10]);
   QUnit.assert.deepEqual(QUnit.extend([], F), [2]);
   QUnit.assert.deepEqual(QUnit.extend([], G), [2, 4, 6, 8, 10]);
+  gpu.destroy();
 });
 
 QUnit.test( "Issue #116 - multiple kernels run again (webgl)", function() {
@@ -86,6 +88,7 @@ QUnit.test( "Issue #116 - multiple kernels run again (webgl)", function() {
   QUnit.assert.deepEqual(QUnit.extend([], E), [2, 4, 6, 8, 10]);
   QUnit.assert.deepEqual(QUnit.extend([], F), [2]);
   QUnit.assert.deepEqual(QUnit.extend([], G), [2, 4, 6, 8, 10]);
+  gpu.destroy();
 });
 
 QUnit.test( "Issue #116 - multiple kernels run again (webgl2)", function() {
@@ -116,4 +119,5 @@ QUnit.test( "Issue #116 - multiple kernels run again (webgl2)", function() {
   QUnit.assert.deepEqual(QUnit.extend([], E), [2, 4, 6, 8, 10]);
   QUnit.assert.deepEqual(QUnit.extend([], F), [2]);
   QUnit.assert.deepEqual(QUnit.extend([], G), [2, 4, 6, 8, 10]);
+  gpu.destroy();
 });

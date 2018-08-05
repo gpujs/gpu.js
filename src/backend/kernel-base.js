@@ -393,4 +393,19 @@ module.exports = class KernelBase {
 	addNativeFunction(name, source) {
 		this.functionBuilder.addNativeFunction(name, source);
 	}
+
+	/**
+	 *
+	 * Destroys all memory associated with this kernel
+	 *
+	 * @name destroy
+	 * @function
+	 * @memberOf KernelBase#
+	 *
+	 * * @param {Boolean} removeCanvasReferences remve any associated canvas references?
+	 *
+	 */
+	destroy() {
+
+	}
 };

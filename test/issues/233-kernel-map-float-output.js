@@ -35,6 +35,7 @@ QUnit.test('Issue #233 - kernel map with float output (GPU only) (auto)', functi
     QUnit.assert.deepEqual(QUnit.extend([], stepAResult), lst.map(function (x) { return x * x }));
     QUnit.assert.deepEqual(QUnit.extend([], stepBResult), lst.map(function (x) { return x + 1 }));
     QUnit.assert.deepEqual(QUnit.extend([], result.result), lst);
+    gpu.destroy();
 });
 
 QUnit.test('Issue #233 - kernel map with float output (GPU only) (gpu)', function() {
@@ -74,6 +75,7 @@ QUnit.test('Issue #233 - kernel map with float output (GPU only) (gpu)', functio
   QUnit.assert.deepEqual(QUnit.extend([], stepAResult), lst.map(function (x) { return x * x }));
   QUnit.assert.deepEqual(QUnit.extend([], stepBResult), lst.map(function (x) { return x + 1 }));
   QUnit.assert.deepEqual(QUnit.extend([], result.result), lst);
+  gpu.destroy();
 });
 
 QUnit.test('Issue #233 - kernel map with float output (GPU only) (webgl)', function() {
@@ -113,6 +115,7 @@ QUnit.test('Issue #233 - kernel map with float output (GPU only) (webgl)', funct
   QUnit.assert.deepEqual(QUnit.extend([], stepAResult), lst.map(function (x) { return x * x }));
   QUnit.assert.deepEqual(QUnit.extend([], stepBResult), lst.map(function (x) { return x + 1 }));
   QUnit.assert.deepEqual(QUnit.extend([], result.result), lst);
+  gpu.destroy();
 });
 
 QUnit.test('Issue #233 - kernel map with float output (GPU only) (webgl2)', function() {
@@ -152,4 +155,5 @@ QUnit.test('Issue #233 - kernel map with float output (GPU only) (webgl2)', func
   QUnit.assert.deepEqual(QUnit.extend([], stepAResult), lst.map(function (x) { return x * x }));
   QUnit.assert.deepEqual(QUnit.extend([], stepBResult), lst.map(function (x) { return x + 1 }));
   QUnit.assert.deepEqual(QUnit.extend([], result.result), lst);
+  gpu.destroy();
 });

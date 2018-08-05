@@ -31,6 +31,7 @@
 
     QUnit.assert.ok( multiplyMatrix !== null, "function generated test");
     QUnit.assert.equal(multiplyMatrix(a, b).length, 6, "basic return function test");
+    gpu.destroy();
   }
 
   QUnit.test( "demo (auto)", function() {
