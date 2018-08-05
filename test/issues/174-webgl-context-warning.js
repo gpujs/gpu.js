@@ -2,8 +2,9 @@
 
 	var input = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
 
-	function manyKernels(mode, nKernels, assert) {
-		var done = assert.async();
+	// recursive!
+	function manyKernels(mode, nKernels, assert, done) {
+		done = done || assert.async();
 		nKernels--;
 
 		var gpu = new GPU({ mode });
@@ -30,7 +31,7 @@
 				done()
 			}
 			else {
-				manyKernels(mode, nKernels, assert);
+				manyKernels(mode, nKernels, assert, done);
 			}
 
 			}, true);
