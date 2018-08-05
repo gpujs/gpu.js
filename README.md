@@ -51,7 +51,7 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 * [Loops](#loops)
 * [Pipelining](#pipelining)
 * [Cleanup](#cleanup)
-* (Flattened typed array support)(#flattened-typed-array-support)
+* [Flattened typed array support](#flattened-typed-array-support)
 * [Supported Math functions](#supported-math-functions)
 * [Full API reference](#full-api-reference)
 * [Automatically-built Documentation](#automatically-built-documentation)
