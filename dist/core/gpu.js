@@ -438,19 +438,28 @@ var GPU = function (_GPUCore) {
 	}, {
 		key: 'destroy',
 		value: function destroy() {
-			var kernels = this.kernels;
+			var _this2 = this;
 
-			var destroyWebGl = !this._webGl && kernels.length && kernels[0]._webGl;
-			for (var i = 0; i < this.kernels.length; i++) {
-				this.kernels[i].destroy(true); // remove canvas if exists
-			}
+			// perform on next runloop - for some reason we dont get lose context events 
+			// if webGl is created and destroyed in the same run loop.
+			setTimeout(function () {
+				var kernels = _this2.kernels;
 
-			if (destroyWebGl) {
-				destroyWebGl.OES_texture_float = null;
-				destroyWebGl.OES_texture_float_linear = null;
-				destroyWebGl.OES_element_index_uint = null;
-				destroyWebGl.getExtension('WEBGL_lose_context').loseContext();
-			}
+				var destroyWebGl = !_this2._webGl && kernels.length && kernels[0]._webGl;
+				for (var i = 0; i < _this2.kernels.length; i++) {
+					_this2.kernels[i].destroy(true); // remove canvas if exists
+				}
+
+				if (destroyWebGl) {
+					destroyWebGl.OES_texture_float = null;
+					destroyWebGl.OES_texture_float_linear = null;
+					destroyWebGl.OES_element_index_uint = null;
+					var loseContextExt = destroyWebGl.getExtension('WEBGL_lose_context');
+					if (loseContextExt) {
+						loseContextExt.loseContext();
+					}
+				}
+			}, 0);
 		}
 	}]);
 

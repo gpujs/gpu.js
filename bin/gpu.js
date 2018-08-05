@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.5.5
- * @date Mon Jul 30 2018 21:13:21 GMT+0100 (BST)
+ * @date Sun Aug 05 2018 10:03:00 GMT+0100 (BST)
  *
  * @license MIT
  * The MIT License
@@ -5630,19 +5630,26 @@ var GPU = function (_GPUCore) {
 	}, {
 		key: 'destroy',
 		value: function destroy() {
-			var kernels = this.kernels;
+			var _this2 = this;
 
-			var destroyWebGl = !this._webGl && kernels.length && kernels[0]._webGl;
-			for (var i = 0; i < this.kernels.length; i++) {
-				this.kernels[i].destroy(true); 
-			}
+			setTimeout(function () {
+				var kernels = _this2.kernels;
 
-			if (destroyWebGl) {
-				destroyWebGl.OES_texture_float = null;
-				destroyWebGl.OES_texture_float_linear = null;
-				destroyWebGl.OES_element_index_uint = null;
-				destroyWebGl.getExtension('WEBGL_lose_context').loseContext();
-			}
+				var destroyWebGl = !_this2._webGl && kernels.length && kernels[0]._webGl;
+				for (var i = 0; i < _this2.kernels.length; i++) {
+					_this2.kernels[i].destroy(true); 
+				}
+
+				if (destroyWebGl) {
+					destroyWebGl.OES_texture_float = null;
+					destroyWebGl.OES_texture_float_linear = null;
+					destroyWebGl.OES_element_index_uint = null;
+					var loseContextExt = destroyWebGl.getExtension('WEBGL_lose_context');
+					if (loseContextExt) {
+						loseContextExt.loseContext();
+					}
+				}
+			}, 0);
 		}
 	}]);
 
