@@ -1330,7 +1330,7 @@ module.exports = class WebGLKernel extends KernelBase {
 							`uniform sampler2D constants_${ name }`,
 							`uniform ivec2 constants_${ name }Size`,
 							`uniform ivec3 constants_${ name }Dim`,
-							`uniform ivec3 constants_${ name }BitRatio`
+							`uniform highp int constants_${ name }BitRatio`
 						);
 						break;
 					default:

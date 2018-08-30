@@ -1345,7 +1345,7 @@ module.exports = function (_KernelBase) {
 							result.push('const float constants_' + name + ' = ' + parseFloat(_value));
 							break;
 						case 'Texture':
-							result.push('uniform sampler2D constants_' + name, 'uniform ivec2 constants_' + name + 'Size', 'uniform ivec3 constants_' + name + 'Dim', 'uniform ivec3 constants_' + name + 'BitRatio');
+							result.push('uniform sampler2D constants_' + name, 'uniform ivec2 constants_' + name + 'Size', 'uniform ivec3 constants_' + name + 'Dim', 'uniform highp int constants_' + name + 'BitRatio');
 							break;
 						default:
 							throw new Error('Unsupported constant ' + name + ' type ' + type);

@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.6.0
- * @date Thu Aug 30 2018 13:50:05 GMT-0500 (Central Daylight Time)
+ * @date Thu Aug 30 2018 13:55:05 GMT-0500 (Central Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -5147,7 +5147,7 @@ module.exports = function (_KernelBase) {
 							result.push('const float constants_' + name + ' = ' + parseFloat(_value));
 							break;
 						case 'Texture':
-							result.push('uniform sampler2D constants_' + name, 'uniform ivec2 constants_' + name + 'Size', 'uniform ivec3 constants_' + name + 'Dim', 'uniform ivec3 constants_' + name + 'BitRatio');
+							result.push('uniform sampler2D constants_' + name, 'uniform ivec2 constants_' + name + 'Size', 'uniform ivec3 constants_' + name + 'Dim', 'uniform highp int constants_' + name + 'BitRatio');
 							break;
 						default:
 							throw new Error('Unsupported constant ' + name + ' type ' + type);
