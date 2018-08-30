@@ -10,7 +10,7 @@ console.log(texture);
 const useTexture = gpu
   .createKernel(
     function() {
-      return constants.texture[this.thread.x];
+      return this.constants.texture[this.thread.x];
     },
     {
       constants: { texture }

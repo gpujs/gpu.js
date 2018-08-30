@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.6.0
- * @date Thu Aug 30 2018 13:13:46 GMT-0500 (Central Daylight Time)
+ * @date Thu Aug 30 2018 13:50:05 GMT-0500 (Central Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -4863,17 +4863,17 @@ module.exports = function (_KernelBase) {
 						}
 
 						if (!this.hardcodeConstants) {
-							this.setUniform3iv('user_' + name + 'Dim', dim);
-							this.setUniform2iv('user_' + name + 'Size', size);
+							this.setUniform3iv('constants_' + name + 'Dim', dim);
+							this.setUniform2iv('constants_' + name + 'Size', size);
 						}
-						this.setUniform1i('user_' + name + 'BitRatio', bitRatio);
-						this.setUniform1i('user_' + name, this.constantsLength);
+						this.setUniform1i('constants_' + name + 'BitRatio', bitRatio);
+						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
 				case 'Integer':
 				case 'Float':
 					{
-						this.setUniform1f('user_' + name, value);
+						this.setUniform1f('constants_' + name, value);
 						break;
 					}
 				case 'Input':
@@ -4905,11 +4905,11 @@ module.exports = function (_KernelBase) {
 						}
 
 						if (!this.hardcodeConstants) {
-							this.setUniform3iv('user_' + name + 'Dim', _dim4);
-							this.setUniform2iv('user_' + name + 'Size', _size4);
+							this.setUniform3iv('constants_' + name + 'Dim', _dim4);
+							this.setUniform2iv('constants_' + name + 'Size', _size4);
 						}
-						this.setUniform1i('user_' + name + 'BitRatio', _bitRatio2);
-						this.setUniform1i('user_' + name, this.constantsLength);
+						this.setUniform1i('constants_' + name + 'BitRatio', _bitRatio2);
+						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
 				case 'HTMLImage':
@@ -4930,9 +4930,9 @@ module.exports = function (_KernelBase) {
 						var srcFormat = gl.RGBA; 
 						var srcType = gl.UNSIGNED_BYTE; 
 						gl.texImage2D(gl.TEXTURE_2D, mipLevel, internalFormat, srcFormat, srcType, inputImage);
-						this.setUniform3iv('user_' + name + 'Dim', _dim5);
-						this.setUniform2iv('user_' + name + 'Size', _size5);
-						this.setUniform1i('user_' + name, this.constantsLength);
+						this.setUniform3iv('constants_' + name + 'Dim', _dim5);
+						this.setUniform2iv('constants_' + name + 'Size', _size5);
+						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
 				case 'Texture':
@@ -4944,10 +4944,10 @@ module.exports = function (_KernelBase) {
 						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-						this.setUniform3iv('user_' + name + 'Dim', _dim6);
-						this.setUniform2iv('user_' + name + 'Size', _size6);
-						this.setUniform1i('user_' + name + 'BitRatio', 1); 
-						this.setUniform1i('user_' + name, this.constantsLength);
+						this.setUniform3iv('constants_' + name + 'Dim', _dim6);
+						this.setUniform2iv('constants_' + name + 'Size', _size6);
+						this.setUniform1i('constants_' + name + 'BitRatio', 1); 
+						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
 				default:
@@ -5147,7 +5147,7 @@ module.exports = function (_KernelBase) {
 							result.push('const float constants_' + name + ' = ' + parseFloat(_value));
 							break;
 						case 'Texture':
-							result.push('uniform sampler2D constants_' + name, 'uniform ivec2 constants_' + name + 'Size', 'uniform ivec3 constants_' + name + 'Dim');
+							result.push('uniform sampler2D constants_' + name, 'uniform ivec2 constants_' + name + 'Size', 'uniform ivec3 constants_' + name + 'Dim', 'uniform ivec3 constants_' + name + 'BitRatio');
 							break;
 						default:
 							throw new Error('Unsupported constant ' + name + ' type ' + type);

@@ -886,17 +886,17 @@ module.exports = class WebGLKernel extends KernelBase {
 					}
 
 					if (!this.hardcodeConstants) {
-						this.setUniform3iv(`user_${name}Dim`, dim);
-						this.setUniform2iv(`user_${name}Size`, size);
+						this.setUniform3iv(`constants_${name}Dim`, dim);
+						this.setUniform2iv(`constants_${name}Size`, size);
 					}
-					this.setUniform1i(`user_${name}BitRatio`, bitRatio);
-					this.setUniform1i(`user_${name}`, this.constantsLength);
+					this.setUniform1i(`constants_${name}BitRatio`, bitRatio);
+					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
 			case 'Integer':
 			case 'Float':
 				{
-					this.setUniform1f(`user_${name}`, value);
+					this.setUniform1f(`constants_${name}`, value);
 					break;
 				}
 			case 'Input':
@@ -928,11 +928,11 @@ module.exports = class WebGLKernel extends KernelBase {
 					}
 
 					if (!this.hardcodeConstants) {
-						this.setUniform3iv(`user_${name}Dim`, dim);
-						this.setUniform2iv(`user_${name}Size`, size);
+						this.setUniform3iv(`constants_${name}Dim`, dim);
+						this.setUniform2iv(`constants_${name}Size`, size);
 					}
-					this.setUniform1i(`user_${name}BitRatio`, bitRatio);
-					this.setUniform1i(`user_${name}`, this.constantsLength);
+					this.setUniform1i(`constants_${name}BitRatio`, bitRatio);
+					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
 			case 'HTMLImage':
@@ -959,9 +959,9 @@ module.exports = class WebGLKernel extends KernelBase {
 						srcFormat,
 						srcType,
 						inputImage);
-					this.setUniform3iv(`user_${name}Dim`, dim);
-					this.setUniform2iv(`user_${name}Size`, size);
-					this.setUniform1i(`user_${name}`, this.constantsLength);
+					this.setUniform3iv(`constants_${name}Dim`, dim);
+					this.setUniform2iv(`constants_${name}Size`, size);
+					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
 			case 'Texture':
@@ -973,10 +973,10 @@ module.exports = class WebGLKernel extends KernelBase {
 					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
 					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-					this.setUniform3iv(`user_${name}Dim`, dim);
-					this.setUniform2iv(`user_${name}Size`, size);
-					this.setUniform1i(`user_${name}BitRatio`, 1); // aways float32
-					this.setUniform1i(`user_${name}`, this.constantsLength);
+					this.setUniform3iv(`constants_${name}Dim`, dim);
+					this.setUniform2iv(`constants_${name}Size`, size);
+					this.setUniform1i(`constants_${name}BitRatio`, 1); // aways float32
+					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
 			default:
@@ -1329,7 +1329,8 @@ module.exports = class WebGLKernel extends KernelBase {
 						result.push(
 							`uniform sampler2D constants_${ name }`,
 							`uniform ivec2 constants_${ name }Size`,
-							`uniform ivec3 constants_${ name }Dim`
+							`uniform ivec3 constants_${ name }Dim`,
+							`uniform ivec3 constants_${ name }BitRatio`
 						);
 						break;
 					default:
