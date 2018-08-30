@@ -284,12 +284,13 @@ module.exports = function (_KernelBase) {
 			gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 
-			//_addConstant(value, type, name)
 			for (var p in this.constants) {
+				var value = this.constants[p];
 				var type = utils.getArgumentType(value);
 				if (type === 'Decimal' || type === 'Integer') {
 					continue;
 				}
+				gl.useProgram(this.program);
 				this._addConstant(this.constants[p], type, p);
 				this.constantsLength++;
 			}
@@ -1014,7 +1015,6 @@ module.exports = function (_KernelBase) {
 				default:
 					throw new Error('Input type not supported (WebGL): ' + value);
 			}
-			this.constantsLength++;
 		}
 
 		/**
@@ -1334,15 +1334,14 @@ module.exports = function (_KernelBase) {
 			if (this.constants) {
 				for (var name in this.constants) {
 					if (!this.constants.hasOwnProperty(name)) continue;
-					var _value = this.constants[name];
-					var type = utils.getArgumentType(_value);
-					console.log("Constant detected of type:", type);
+					var value = this.constants[name];
+					var type = utils.getArgumentType(value);
 					switch (type) {
 						case 'Integer':
-							result.push('const float constants_' + name + ' = ' + parseInt(_value) + '.0');
+							result.push('const float constants_' + name + ' = ' + parseInt(value) + '.0');
 							break;
 						case 'Float':
-							result.push('const float constants_' + name + ' = ' + parseFloat(_value));
+							result.push('const float constants_' + name + ' = ' + parseFloat(value));
 							break;
 						case 'Texture':
 							result.push('uniform sampler2D constants_' + name, 'uniform ivec2 constants_' + name + 'Size', 'uniform ivec3 constants_' + name + 'Dim', 'uniform highp int constants_' + name + 'BitRatio');

@@ -263,12 +263,13 @@ module.exports = class WebGLKernel extends KernelBase {
 		gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 
-		//_addConstant(value, type, name)
 		for (let p in this.constants) {
+			const value = this.constants[p]
 			const type = utils.getArgumentType(value);
 			if (type === 'Decimal' || type === 'Integer') {
 				continue;
 			}
+			gl.useProgram(this.program);
 			this._addConstant(this.constants[p], type, p);
 			this.constantsLength++;
 		}
@@ -766,6 +767,7 @@ module.exports = class WebGLKernel extends KernelBase {
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
 					let length = size[0] * size[1];
+
 					const {
 						valuesFlat,
 						bitRatio
@@ -982,7 +984,6 @@ module.exports = class WebGLKernel extends KernelBase {
 			default:
 				throw new Error('Input type not supported (WebGL): ' + value);
 		}
-		this.constantsLength++;
 	}
 
 	/**
@@ -1317,7 +1318,6 @@ module.exports = class WebGLKernel extends KernelBase {
 				if (!this.constants.hasOwnProperty(name)) continue;
 				let value = this.constants[name];
 				let type = utils.getArgumentType(value);
-				console.log("Constant detected of type:", type);
 				switch (type) {
 					case 'Integer':
 						result.push('const float constants_' + name + ' = ' + parseInt(value) + '.0');

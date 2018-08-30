@@ -1,7 +1,7 @@
 const gpu = new GPU();
 const createTexture = gpu
   .createKernel(function() {
-    return 255;
+    return 200;
   })
   .setOutput([512])
   .setOutputToTexture(true);

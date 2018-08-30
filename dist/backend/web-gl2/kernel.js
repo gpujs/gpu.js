@@ -219,7 +219,7 @@ module.exports = function (_WebGLKernel) {
 			var gl = this._webGl;
 			var texSize = this.texSize;
 			var texture = this.outputTexture = this._webGl.createTexture();
-			gl.activeTexture(gl.TEXTURE0 + this.paramNames.length);
+			gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length);
 			gl.bindTexture(gl.TEXTURE_2D, texture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -252,7 +252,7 @@ module.exports = function (_WebGLKernel) {
 				var texture = this._webGl.createTexture();
 				textures.push(texture);
 				drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
-				gl.activeTexture(gl.TEXTURE0 + this.paramNames.length + i);
+				gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length + i);
 				gl.bindTexture(gl.TEXTURE_2D, texture);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -297,7 +297,7 @@ module.exports = function (_WebGLKernel) {
 							floatTextures: this.floatTextures,
 							floatOutput: this.floatOutput
 						}, dim);
-						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -340,7 +340,7 @@ module.exports = function (_WebGLKernel) {
 							floatTextures: this.floatTextures,
 							floatOutput: this.floatOutput
 						}, _dim);
-						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -374,7 +374,7 @@ module.exports = function (_WebGLKernel) {
 						var _dim2 = [inputImage.width, inputImage.height, 1];
 						var _size2 = [inputImage.width, inputImage.height];
 
-						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -398,7 +398,7 @@ module.exports = function (_WebGLKernel) {
 						var _dim3 = [inputImages[0].width, inputImages[0].height, inputImages.length];
 						var _size3 = [inputImages[0].width, inputImages[0].height];
 
-						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D_ARRAY, argumentTexture);
 						gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 						gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -430,7 +430,7 @@ module.exports = function (_WebGLKernel) {
 						var _dim4 = inputTexture.dimensions;
 						var _size4 = inputTexture.size;
 
-						gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
 						this.setUniform3iv('user_' + name + 'Dim', _dim4);
@@ -443,6 +443,151 @@ module.exports = function (_WebGLKernel) {
 					throw new Error('Input type not supported (WebGL): ' + value);
 			}
 			this.argumentsLength++;
+		}
+
+		/**
+   * @memberOf WebGLKernel#
+   * @function
+   * @name _addConstant
+   *
+   * @desc Adds kernel parameters to the Argument Texture,
+   * binding it to the webGl instance, etc.
+   *
+   * @param {Array|Texture|Number} value - The actual argument supplied to the kernel
+   * @param {String} type - Type of the argument
+   * @param {String} name - Name of the argument
+   *
+   */
+
+	}, {
+		key: '_addConstant',
+		value: function _addConstant(value, type, name) {
+			var gl = this._webGl;
+			var argumentTexture = this.getArgumentTexture(name);
+			if (value instanceof Texture) {
+				type = 'Texture';
+			}
+			switch (type) {
+				case 'Array':
+					{
+						var dim = utils.getDimensions(value, true);
+						var size = utils.dimToTexSize({
+							floatTextures: this.floatTextures,
+							floatOutput: this.floatOutput
+						}, dim);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+						var length = size[0] * size[1];
+
+						var _formatArrayTransfer3 = this._formatArrayTransfer(value, length),
+						    valuesFlat = _formatArrayTransfer3.valuesFlat,
+						    bitRatio = _formatArrayTransfer3.bitRatio;
+
+						var buffer = void 0;
+						if (this.floatTextures) {
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
+						} else {
+							buffer = new Uint8Array(valuesFlat.buffer);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+						}
+
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv('constants_' + name + 'Dim', dim);
+							this.setUniform2iv('constants_' + name + 'Size', size);
+						}
+						this.setUniform1i('constants_' + name + 'BitRatio', bitRatio);
+						this.setUniform1i('constants_' + name, this.constantsLength);
+						break;
+					}
+				case 'Integer':
+				case 'Float':
+					{
+						this.setUniform1f('constants_' + name, value);
+						break;
+					}
+				case 'Input':
+					{
+						var input = value;
+						var _dim5 = input.size;
+						var _size5 = utils.dimToTexSize({
+							floatTextures: this.floatTextures,
+							floatOutput: this.floatOutput
+						}, _dim5);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+						var _length2 = _size5[0] * _size5[1];
+
+						var _formatArrayTransfer4 = this._formatArrayTransfer(value.value, _length2),
+						    _valuesFlat2 = _formatArrayTransfer4.valuesFlat,
+						    _bitRatio2 = _formatArrayTransfer4.bitRatio;
+
+						if (this.floatTextures) {
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, _size5[0], _size5[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+						} else {
+							var _buffer2 = new Uint8Array(_valuesFlat2.buffer);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size5[0] / _bitRatio2, _size5[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, _buffer2);
+						}
+
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv('constants_' + name + 'Dim', _dim5);
+							this.setUniform2iv('constants_' + name + 'Size', _size5);
+						}
+						this.setUniform1i('constants_' + name + 'BitRatio', _bitRatio2);
+						this.setUniform1i('constants_' + name, this.constantsLength);
+						break;
+					}
+				case 'HTMLImage':
+					{
+						var inputImage = value;
+						var _dim6 = [inputImage.width, inputImage.height, 1];
+						var _size6 = [inputImage.width, inputImage.height];
+
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+						// Upload the image into the texture.
+						var mipLevel = 0; // the largest mip
+						var internalFormat = gl.RGBA; // format we want in the texture
+						var srcFormat = gl.RGBA; // format of data we are supplying
+						var srcType = gl.UNSIGNED_BYTE; // type of data we are supplying
+						gl.texImage2D(gl.TEXTURE_2D, mipLevel, internalFormat, srcFormat, srcType, inputImage);
+						this.setUniform3iv('constants_' + name + 'Dim', _dim6);
+						this.setUniform2iv('constants_' + name + 'Size', _size6);
+						this.setUniform1i('constants_' + name, this.constantsLength);
+						break;
+					}
+				case 'Texture':
+					{
+						var inputTexture = value;
+						var _dim7 = inputTexture.dimensions;
+						var _size7 = inputTexture.size;
+
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
+
+						this.setUniform3iv('constants_' + name + 'Dim', _dim7);
+						this.setUniform2iv('constants_' + name + 'Size', _size7);
+						this.setUniform1i('constants_' + name + 'BitRatio', 1); // aways float32
+						this.setUniform1i('constants_' + name, this.constantsLength);
+						break;
+					}
+				default:
+					throw new Error('Input type not supported (WebGL): ' + value);
+			}
 		}
 
 		/**
