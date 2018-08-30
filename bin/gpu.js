@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.6.0
- * @date Thu Aug 30 2018 11:39:19 GMT-0500 (Central Daylight Time)
+ * @date Thu Aug 30 2018 13:13:46 GMT-0500 (Central Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -3748,7 +3748,7 @@ module.exports = function (_FunctionNodeBase) {
 		value: function astMemberExpression(mNode, retArr) {
 			debugLog("[in] astMemberExpression " + mNode.object.type);
 			if (mNode.computed) {
-				if (mNode.object.type === 'Identifier') {
+				if (mNode.object.type === 'Identifier' || mNode.object.type === 'MemberExpression' && mNode.object.object.object && mNode.object.object.object.type === 'ThisExpression' && mNode.object.object.property.name === 'constants') {
 					var reqName = mNode.object.name;
 					var funcName = this.functionName || 'kernel';
 					var assumeNotTexture = false;

@@ -15,7 +15,7 @@ const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 // TODO: optimise out - webpack/babel options? maybe some generic logging support in core/utils?
 // const debugLog = console.log
 const debugLog = () => {};
-/** 
+/**
  * @class WebGLFunctionNode
  *
  * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
@@ -847,7 +847,14 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	astMemberExpression(mNode, retArr) {
 		debugLog("[in] astMemberExpression " + mNode.object.type);
 		if (mNode.computed) {
-			if (mNode.object.type === 'Identifier') {
+			if (mNode.object.type === 'Identifier' ||
+				(
+					mNode.object.type === 'MemberExpression' &&
+					mNode.object.object.object &&
+					mNode.object.object.object.type === 'ThisExpression' &&
+					mNode.object.object.property.name === 'constants'
+				)
+			) {
 				// Working logger
 				const reqName = mNode.object.name;
 				const funcName = this.functionName || 'kernel';
@@ -1224,7 +1231,7 @@ function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
  * @name webgl_regex_optimize
  *
  * @desc [INTERNAL] Takes the near final webgl function string, and do regex search and replacments.
- * For voodoo optimize out the following: 
+ * For voodoo optimize out the following:
  *
  * - decode32(encode32( <br>
  * - encode32(decode32( <br>
