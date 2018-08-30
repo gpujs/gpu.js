@@ -19,7 +19,8 @@ module.exports = function (_RunnerBase) {
   * @constructor WebGLRunner
   *
  	 * @extends RunnerBase
-  	 * @desc Instantiates a Runner instance for the kernel.
+ 
+ 	 * @desc Instantiates a Runner instance for the kernel.
   * 
   * @param {Object} settings - Settings to instantiate properties in RunnerBase, with given values
   *
