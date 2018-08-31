@@ -13,7 +13,7 @@ var utils = require('../../core/utils');
 
 /**
  * @class CPUFunctionNode
- * 
+ *
  * @extends BaseFunctionNode#
  *
  * @desc [INTERNAL] Represents a single function, inside JS
@@ -881,7 +881,7 @@ module.exports = function (_BaseFunctionNode) {
 		key: 'astMemberExpression',
 		value: function astMemberExpression(mNode, retArr) {
 			if (mNode.computed) {
-				if (mNode.object.type === 'Identifier') {
+				if (mNode.object.type === 'Identifier' || mNode.object.type === 'MemberExpression' && mNode.object.object.object && mNode.object.object.object.type === 'ThisExpression' && mNode.object.object.property.name === 'constants') {
 					this.pushState('identifier');
 					this.astGeneric(mNode.object, retArr);
 					this.popState('identifier');
