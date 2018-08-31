@@ -51,7 +51,7 @@ module.exports = function (_WebGLKernel) {
 			}
 
 			var hasIntegerDivisionBug = utils.hasIntegerDivisionAccuracyBug();
-			if (this.fixIntegerDivisionAccuracy == null) {
+			if (this.fixIntegerDivisionAccuracy === null) {
 				this.fixIntegerDivisionAccuracy = hasIntegerDivisionBug;
 			} else if (this.fixIntegerDivisionAccuracy && !hasIntegerDivisionBug) {
 				this.fixIntegerDivisionAccuracy = false;

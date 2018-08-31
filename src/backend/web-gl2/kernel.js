@@ -36,7 +36,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 		}
 
 		const hasIntegerDivisionBug = utils.hasIntegerDivisionAccuracyBug();
-		if (this.fixIntegerDivisionAccuracy == null) {
+		if (this.fixIntegerDivisionAccuracy === null) {
 			this.fixIntegerDivisionAccuracy = hasIntegerDivisionBug;
 		} else if (this.fixIntegerDivisionAccuracy && !hasIntegerDivisionBug) {
 			this.fixIntegerDivisionAccuracy = false;

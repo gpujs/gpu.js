@@ -41,14 +41,30 @@
 		var gpu = new GPU({mode: null});
 		var idfix = gpu.createKernel(function(v1, v2) {
 			return v1 / v2;
-		}).setOutput([1]).setFloatOutput(true)
+		})
+      .setOutput([1])
+      .setFloatOutput(true);
 
 		var idfixoff = gpu.createKernel(function(v1, v2) {
 			return v1 / v2;
-		}).setOutput([1]).setFloatOutput(true).setFixIntegerDivisionAccuracy(false)
+		})
+      .setOutput([1])
+      .setFloatOutput(true)
+      .setFixIntegerDivisionAccuracy(false);
 
 		var hasBug = gpu.hasIntegerDivisionAccuracyBug();
-		QUnit.assert.ok(idfix(6,3)[0] == 2 && (!hasBug || idfixoff(6,3)[0] != 2), "should show bug!");
+		if (hasBug) {
+      QUnit.assert.ok(
+        (
+          idfix(6, 3)[0] === 2
+          && idfix(6030401, 3991)[0] === 1511
+        ) && (
+          idfixoff(6, 3)[0] !== 2
+          || idfixoff(6030401, 3991)[0] !== 1511
+        ), "when bug is present should show bug!");
+    } else {
+      QUnit.assert.ok(idfix(6, 3)[0] === 2 && idfixoff(6, 3)[0] === 2, "when bug isn't present should not show bug!");
+    }
 		gpu.destroy();
 	});
 })();

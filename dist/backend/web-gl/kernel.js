@@ -125,7 +125,7 @@ module.exports = function (_KernelBase) {
 			}
 
 			var hasIntegerDivisionBug = utils.hasIntegerDivisionAccuracyBug();
-			if (this.fixIntegerDivisionAccuracy == null) {
+			if (this.fixIntegerDivisionAccuracy === null) {
 				this.fixIntegerDivisionAccuracy = hasIntegerDivisionBug;
 			} else if (this.fixIntegerDivisionAccuracy && !hasIntegerDivisionBug) {
 				this.fixIntegerDivisionAccuracy = false;
@@ -1360,11 +1360,9 @@ module.exports = function (_KernelBase) {
   		const inputTexture = value;
   		const dim = inputTexture.dimensions;
   		const size = inputTexture.size;
-  
-  		gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+  			gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
   		gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
-  
-  		this.setUniform3iv(`user_${name}Dim`, dim);
+  			this.setUniform3iv(`user_${name}Dim`, dim);
   		this.setUniform2iv(`user_${name}Size`, size);
   		this.setUniform1i(`user_${name}BitRatio`, 1); // aways float32
   		this.setUniform1i(`user_${name}`, this.argumentsLength);
