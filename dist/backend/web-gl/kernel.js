@@ -1343,6 +1343,13 @@ module.exports = function (_KernelBase) {
 						case 'Float':
 							result.push('const float constants_' + name + ' = ' + parseFloat(value));
 							break;
+						case 'Array':
+						case 'Input':
+							result.push('uniform sampler2D constants_' + name, 'uniform ivec2 constants_' + name + 'Size', 'uniform ivec3 constants_' + name + 'Dim', 'uniform int constants_' + name + 'BitRatio');
+							break;
+						case 'HTMLImage':
+							result.push('uniform sampler2D constants_' + name, 'uniform ivec2 constants_' + name + 'Size', 'uniform ivec3 constants_' + name + 'Dim', 'uniform highp int constants_' + name + 'BitRatio');
+							break;
 						case 'Texture':
 							result.push('uniform sampler2D constants_' + name, 'uniform ivec2 constants_' + name + 'Size', 'uniform ivec3 constants_' + name + 'Dim', 'uniform highp int constants_' + name + 'BitRatio');
 							break;
@@ -1360,9 +1367,11 @@ module.exports = function (_KernelBase) {
   		const inputTexture = value;
   		const dim = inputTexture.dimensions;
   		const size = inputTexture.size;
-  			gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+  
+  		gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
   		gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
-  			this.setUniform3iv(`user_${name}Dim`, dim);
+  
+  		this.setUniform3iv(`user_${name}Dim`, dim);
   		this.setUniform2iv(`user_${name}Size`, size);
   		this.setUniform1i(`user_${name}BitRatio`, 1); // aways float32
   		this.setUniform1i(`user_${name}`, this.argumentsLength);

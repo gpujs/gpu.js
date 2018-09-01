@@ -1305,6 +1305,8 @@ module.exports = class WebGLKernel extends KernelBase {
 		return this._linesToString(result);
 	}
 
+
+
 	/**
 	 * @memberOf WebGLKernel#
 	 * @function
@@ -1324,6 +1326,23 @@ module.exports = class WebGLKernel extends KernelBase {
 						break;
 					case 'Float':
 						result.push('const float constants_' + name + ' = ' + parseFloat(value));
+						break;
+					case 'Array':
+					case 'Input':
+						result.push(
+							`uniform sampler2D constants_${ name }`,
+							`uniform ivec2 constants_${ name }Size`,
+							`uniform ivec3 constants_${ name }Dim`,
+							`uniform int constants_${ name }BitRatio`
+						);
+						break;
+					case 'HTMLImage':
+						result.push(
+							`uniform sampler2D constants_${ name }`,
+							`uniform ivec2 constants_${ name }Size`,
+							`uniform ivec3 constants_${ name }Dim`,
+							`uniform highp int constants_${ name }BitRatio`
+						);
 						break;
 					case 'Texture':
 						result.push(
