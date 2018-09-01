@@ -204,6 +204,7 @@ module.exports = function (_KernelBase) {
 		key: 'build',
 		value: function build() {
 			this.validateOptions();
+			this.setupConstants();
 			this.setupParams(arguments);
 			this.updateMaxTexSize();
 			var texSize = this.texSize;
@@ -1367,11 +1368,9 @@ module.exports = function (_KernelBase) {
   		const inputTexture = value;
   		const dim = inputTexture.dimensions;
   		const size = inputTexture.size;
-  
-  		gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
+  			gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
   		gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
-  
-  		this.setUniform3iv(`user_${name}Dim`, dim);
+  			this.setUniform3iv(`user_${name}Dim`, dim);
   		this.setUniform2iv(`user_${name}Size`, size);
   		this.setUniform1i(`user_${name}BitRatio`, 1); // aways float32
   		this.setUniform1i(`user_${name}`, this.argumentsLength);
@@ -1539,6 +1538,7 @@ module.exports = function (_KernelBase) {
 				loopMaxIterations: this.loopMaxIterations,
 				paramNames: this.paramNames,
 				paramTypes: this.paramTypes,
+				constantTypes: this.constantTypes,
 				fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
 			});
 

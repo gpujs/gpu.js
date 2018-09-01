@@ -103,8 +103,11 @@ module.exports = function (_KernelBase) {
 	}, {
 		key: 'build',
 		value: function build() {
+			this.setupConstants();
 			this.setupParams(arguments);
 			this.validateOptions();
+			var canvas = this._canvas;
+			this._canvasCtx = canvas.getContext('2d');
 			var threadDim = this.threadDim = utils.clone(this.output);
 
 			while (threadDim.length < 3) {
@@ -112,10 +115,8 @@ module.exports = function (_KernelBase) {
 			}
 
 			if (this.graphical) {
-				var canvas = this.getCanvas();
 				canvas.width = threadDim[0];
 				canvas.height = threadDim[1];
-				this._canvasCtx = canvas.getContext('2d');
 				this._imageData = this._canvasCtx.createImageData(threadDim[0], threadDim[1]);
 				this._colorData = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
 			}
@@ -196,7 +197,8 @@ module.exports = function (_KernelBase) {
 				loopMaxIterations: this.loopMaxIterations,
 				paramNames: this.paramNames,
 				paramTypes: this.paramTypes,
-				paramSizes: this.paramSizes
+				paramSizes: this.paramSizes,
+				constantTypes: this.constantTypes
 			});
 
 			builder.addFunctions(this.functions, {
@@ -243,11 +245,11 @@ module.exports = function (_KernelBase) {
 			} else {
 				kernel = prototypes.shift();
 			}
-			var kernelString = this._kernelString = '\n\t\tvar LOOP_MAX = ' + this._getLoopMaxString() + ';\n\t\tvar _this = this;\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			var kernelString = this._kernelString = '\n\t\tvar LOOP_MAX = ' + this._getLoopMaxString() + '\n\t\tvar constants = this.constants;\n\t\tvar _this = this;\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '  var ' + name + ' = null;\n';
 			}).join('')) + '\n    return function (' + this.paramNames.map(function (paramName) {
 				return 'user_' + paramName;
-			}).join(', ') + ') {\n  ' + this._processInputs() + '\n    var ret = new Array(' + threadDim[2] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
+			}).join(', ') + ') {\n  ' + this._processConstants() + '\n  ' + this._processParams() + '\n    var ret = new Array(' + threadDim[2] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '  ' + name + 'Z = new Array(' + threadDim[2] + ');\n';
 			}).join('')) + '\n    for (this.thread.z = 0; this.thread.z < ' + threadDim[2] + '; this.thread.z++) {\n      ret[this.thread.z] = new Array(' + threadDim[1] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
 				return '    ' + name + 'Z[this.thread.z] = new Array(' + threadDim[1] + ');\n';
@@ -301,8 +303,32 @@ module.exports = function (_KernelBase) {
 			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + ';\n' : ' 1000;\n';
 		}
 	}, {
-		key: '_processInputs',
-		value: function _processInputs() {
+		key: '_processConstants',
+		value: function _processConstants() {
+			if (!this.constants) return '';
+
+			var result = [];
+			for (var p in this.constants) {
+				var type = this.constantTypes[p];
+				switch (type) {
+					case 'HTMLImage':
+						result.push('  var constants_' + p + ' = this._imageTo2DArray(this.constants.' + p + ')');
+						break;
+					case 'HTMLImageArray':
+						result.push('  var constants_' + p + ' = this._imageTo3DArray(this.constants.' + p + ')');
+						break;
+					case 'Input':
+						result.push('  var constants_' + p + ' = this.constants.' + p + '.value');
+						break;
+					default:
+						result.push('  var constants_' + p + ' = this.constants.' + p);
+				}
+			}
+			return result.join('\n');
+		}
+	}, {
+		key: '_processParams',
+		value: function _processParams() {
 			var result = [];
 			for (var i = 0; i < this.paramTypes.length; i++) {
 				switch (this.paramTypes[i]) {
@@ -322,14 +348,31 @@ module.exports = function (_KernelBase) {
 	}, {
 		key: '_imageTo2DArray',
 		value: function _imageTo2DArray(image) {
-			this._canvasCtx.drawImage(image, 0, 0, image.width, image.height);
-			var pixelsData = this._canvasCtx.getImageData(0, 0, image.width, image.height).data;
+			var canvas = this._canvas;
+			if (canvas.width < image.width) {
+				canvas.width = image.width;
+			}
+			if (canvas.height < image.height) {
+				canvas.height = image.height;
+			}
+			var ctx = this._canvasCtx;
+			ctx.drawImage(image, 0, 0, image.width, image.height);
+			var pixelsData = ctx.getImageData(0, 0, image.width, image.height).data;
 			var imageArray = new Array(image.height);
 			var index = 0;
 			for (var y = image.height - 1; y >= 0; y--) {
 				imageArray[y] = new Array(image.width);
 				for (var x = 0; x < image.width; x++) {
-					imageArray[y][x] = [pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255];
+					var r = pixelsData[index++] / 255;
+					var g = pixelsData[index++] / 255;
+					var b = pixelsData[index++] / 255;
+					var a = pixelsData[index++] / 255;
+					var result = [r, g, b, a];
+					result.r = r;
+					result.g = g;
+					result.b = b;
+					result.a = a;
+					imageArray[y][x] = result;
 				}
 			}
 			return imageArray;

@@ -62,6 +62,7 @@ module.exports = function () {
 		this.functionBuilder = null;
 		this.paramTypes = null;
 		this.paramSizes = null;
+		this.constantTypes = null;
 		this.fixIntegerDivisionAccuracy = null;
 
 		for (var p in settings) {
@@ -105,6 +106,16 @@ module.exports = function () {
 				var arg = args[i];
 				this.paramTypes.push(utils.getArgumentType(arg));
 				this.paramSizes.push(arg.constructor === Input ? arg.size : null);
+			}
+		}
+	}, {
+		key: 'setupConstants',
+		value: function setupConstants() {
+			this.constantTypes = {};
+			if (this.constants) {
+				for (var p in this.constants) {
+					this.constantTypes[p] = utils.getArgumentType(this.constants[p]);
+				}
 			}
 		}
 	}, {

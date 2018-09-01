@@ -614,6 +614,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	astVariableDeclaration(vardecNode, retArr) {
 		retArr.push('var ');
 		for (let i = 0; i < vardecNode.declarations.length; i++) {
+			this.declarations[vardecNode.declarations[i].id.name] = 'var';
 			if (i > 0) {
 				retArr.push(',');
 			}
@@ -894,8 +895,11 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 				unrolled = 'user_' + unrolled;
 			}
 
-			// Its a reference to `this`, add '_' before
-			if (unrolled.indexOf('this') === 0) {
+			if (unrolled.indexOf('this.constants') === 0) {
+				// remove 'this.constants' from beginning
+				unrolled = 'constants_' + unrolled.substring(15);
+			} else if (unrolled.indexOf('this') === 0) {
+				// Its a reference to `this`, add '_' before
 				unrolled = '_' + unrolled;
 			}
 
@@ -916,6 +920,12 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 					retArr.push(this.output[2]);
 					break;
 				default:
+					if (
+						mNode.object &&
+						mNode.object.name &&
+						this.declarations[mNode.object.name]) {
+						retArr.push('user_');
+					}
 					retArr.push(unrolled);
 			}
 

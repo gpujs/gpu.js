@@ -829,6 +829,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 			loopMaxIterations: this.loopMaxIterations,
 			paramNames: this.paramNames,
 			paramTypes: this.paramTypes,
+			constantTypes: this.constantTypes,
 			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
 		});
 

@@ -51,6 +51,7 @@ module.exports = function(cpuKernel, name) {
       setWebGl(webGl) { this._webGl = webGl; return this; }
       ${ removeFnNoise(cpuKernel.build.toString()) }
       ${ removeFnNoise(cpuKernel.setupParams.toString()) }
+      ${ removeFnNoise(cpuKernel.setupConstants.toString()) }
       run () { ${ cpuKernel.kernelString } }
       getKernelString() { return this._kernelString; }
       ${ removeFnNoise(cpuKernel.validateOptions.toString()) }

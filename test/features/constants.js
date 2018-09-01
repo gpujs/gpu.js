@@ -84,12 +84,15 @@
     ).setOutput([2]);
     var result = tryConst();
     var match = new Float32Array([200.01, 200.01]);
-    var test = (result[0] === match[0] && result[1] === match[1]);
+    var test = (
+      result[0].toFixed(1) === match[0].toFixed(1)
+      && result[1].toFixed(1) === match[1].toFixed(1)
+    );
     console.log('Testing int constant:');
     console.log('Result: ', result);
     console.log('Match: ', match);
     console.log('Test: ', test);
-    QUnit.assert.ok(test, 'int constant passed test');
+    QUnit.assert.ok(test, 'float constant passed test');
     tryConst.destroy();
   }
 
@@ -104,18 +107,16 @@
       var height = image.height;
       var tryConst = gpu.createKernel(
         function() {
-          var pixel = this.constants.image[this.thread.x][this.thread.y];
-          this.color(pixel.r, pixel.g, pixel.b, pixel.a);
+          var pixel = this.constants.image[this.thread.y][this.thread.x];
+          return pixel.r;
         },
         {
           constants: { image }
         }
       ).setOutput([width, height]);
       var result = tryConst();
-      var match = new Float32Array([200.01, 200.01]);
-      var test = (result[0] === match[0] && result[1] === match[1]);
+      var test = result[0][0] > 0;
       console.log('Result: ', result);
-      console.log('Match: ', match);
       console.log('Test: ', test);
       QUnit.assert.ok(test, 'image constant passed test');
       tryConst.destroy();
@@ -138,7 +139,7 @@
     arrayConstantTest(mode);
     integerConstantTest(mode);
     floatConstantTest(mode);
-    //imageConstantTest(mode, assert);
+    imageConstantTest(mode, assert);
   });
 
   QUnit.test( 'textureConstantTest (webgl)', function(assert) {
@@ -147,7 +148,7 @@
     arrayConstantTest(mode);
     integerConstantTest(mode);
     floatConstantTest(mode);
-    //imageConstantTest(mode, assert);
+    imageConstantTest(mode, assert);
   });
 
   QUnit.test( 'textureConstantTest (webgl2)', function(assert) {
@@ -156,7 +157,7 @@
     arrayConstantTest(mode);
     integerConstantTest(mode);
     floatConstantTest(mode);
-    //imageConstantTest(mode, assert);
+    imageConstantTest(mode, assert);
   });
 
   QUnit.test( 'textureConstantTest (cpu)', function(assert) {
@@ -165,6 +166,6 @@
     arrayConstantTest(mode);
     integerConstantTest(mode);
     floatConstantTest(mode);
-    //imageConstantTest(mode, assert);
+    imageConstantTest(mode, assert);
   });
 })();

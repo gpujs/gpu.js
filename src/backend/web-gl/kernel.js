@@ -173,6 +173,7 @@ module.exports = class WebGLKernel extends KernelBase {
 
 	build() {
 		this.validateOptions();
+		this.setupConstants();
 		this.setupParams(arguments);
 		this.updateMaxTexSize();
 		const texSize = this.texSize;
@@ -1531,6 +1532,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			loopMaxIterations: this.loopMaxIterations,
 			paramNames: this.paramNames,
 			paramTypes: this.paramTypes,
+			constantTypes: this.constantTypes,
 			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
 		});
 

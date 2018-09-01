@@ -883,7 +883,18 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					this.pushState('not-in-get-call-parameters');
 
 					// This normally refers to the global read only input vars
-					switch (this.getParamType(mNode.object.name)) {
+					let variableType = null;
+					if (mNode.object.name) {
+						variableType = this.getParamType(mNode.object.name);
+					} else if (
+						mNode.object &&
+						mNode.object.object &&
+						mNode.object.object.object &&
+						mNode.object.object.object.type === 'ThisExpression'
+					) {
+						variableType = this.getConstantType(mNode.object.property.name);
+					}
+					switch (variableType) {
 						case 'vec4':
 							// Get from local vec4
 							this.astGeneric(mNode.object, retArr);
@@ -1049,6 +1060,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					retArr.push(this.output[2] + '.0');
 					break;
 				default:
+					if (
+						mNode.object &&
+						mNode.object.name &&
+						this.declarations[mNode.object.name]) {
+						retArr.push('user_');
+					}
 					retArr.push(unrolled);
 			}
 		}

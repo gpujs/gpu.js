@@ -823,6 +823,7 @@ module.exports = function (_WebGLKernel) {
 				loopMaxIterations: this.loopMaxIterations,
 				paramNames: this.paramNames,
 				paramTypes: this.paramTypes,
+				constantTypes: this.constantTypes,
 				fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
 			});
 

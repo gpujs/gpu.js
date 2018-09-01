@@ -83,8 +83,11 @@ module.exports = class CPUKernel extends KernelBase {
 	 *
 	 */
 	build() {
+		this.setupConstants();
 		this.setupParams(arguments);
 		this.validateOptions();
+		const canvas = this._canvas;
+		this._canvasCtx = canvas.getContext('2d');
 		const threadDim = this.threadDim = utils.clone(this.output);
 
 		while (threadDim.length < 3) {
@@ -92,10 +95,8 @@ module.exports = class CPUKernel extends KernelBase {
 		}
 
 		if (this.graphical) {
-			const canvas = this.getCanvas();
 			canvas.width = threadDim[0];
 			canvas.height = threadDim[1];
-			this._canvasCtx = canvas.getContext('2d');
 			this._imageData = this._canvasCtx.createImageData(threadDim[0], threadDim[1]);
 			this._colorData = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
 		}
@@ -170,7 +171,8 @@ module.exports = class CPUKernel extends KernelBase {
 			loopMaxIterations: this.loopMaxIterations,
 			paramNames: this.paramNames,
 			paramTypes: this.paramTypes,
-			paramSizes: this.paramSizes
+			paramSizes: this.paramSizes,
+			constantTypes: this.constantTypes
 		});
 
 		builder.addFunctions(this.functions, {
@@ -219,14 +221,16 @@ module.exports = class CPUKernel extends KernelBase {
 			kernel = prototypes.shift();
 		}
 		const kernelString = this._kernelString = `
-		var LOOP_MAX = ${ this._getLoopMaxString() };
+		var LOOP_MAX = ${ this._getLoopMaxString() }
+		var constants = this.constants;
 		var _this = this;
   ${ this.subKernelOutputVariableNames === null
         ? ''
         : this.subKernelOutputVariableNames.map((name) => `  var ${ name } = null;\n`).join('')
         }
     return function (${ this.paramNames.map(paramName => 'user_' + paramName).join(', ') }) {
-  ${ this._processInputs() }
+  ${ this._processConstants() }
+  ${ this._processParams() }
     var ret = new Array(${ threadDim[2] });
   ${ this.subKernelOutputVariableNames === null
         ? ''
@@ -334,7 +338,30 @@ ${ this.subKernelOutputVariableNames === null
 		);
 	}
 
-	_processInputs() {
+	_processConstants() {
+		if (!this.constants) return '';
+
+		const result = [];
+		for (let p in this.constants) {
+			const type = this.constantTypes[p];
+			switch (type) {
+				case 'HTMLImage':
+					result.push(`  var constants_${p} = this._imageTo2DArray(this.constants.${p})`);
+					break;
+				case 'HTMLImageArray':
+					result.push(`  var constants_${p} = this._imageTo3DArray(this.constants.${p})`);
+					break;
+				case 'Input':
+					result.push(`  var constants_${p} = this.constants.${p}.value`);
+					break;
+				default:
+					result.push(`  var constants_${p} = this.constants.${p}`);
+			}
+		}
+		return result.join('\n');
+	}
+
+	_processParams() {
 		const result = [];
 		for (let i = 0; i < this.paramTypes.length; i++) {
 			switch (this.paramTypes[i]) {
@@ -353,14 +380,31 @@ ${ this.subKernelOutputVariableNames === null
 	}
 
 	_imageTo2DArray(image) {
-		this._canvasCtx.drawImage(image, 0, 0, image.width, image.height);
-		const pixelsData = this._canvasCtx.getImageData(0, 0, image.width, image.height).data;
+		const canvas = this._canvas;
+		if (canvas.width < image.width) {
+			canvas.width = image.width;
+		}
+		if (canvas.height < image.height) {
+			canvas.height = image.height;
+		}
+		const ctx = this._canvasCtx;
+		ctx.drawImage(image, 0, 0, image.width, image.height);
+		const pixelsData = ctx.getImageData(0, 0, image.width, image.height).data;
 		const imageArray = new Array(image.height);
 		let index = 0;
 		for (let y = image.height - 1; y >= 0; y--) {
 			imageArray[y] = new Array(image.width);
 			for (let x = 0; x < image.width; x++) {
-				imageArray[y][x] = [pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255, pixelsData[index++] / 255];
+				const r = pixelsData[index++] / 255;
+				const g = pixelsData[index++] / 255;
+				const b = pixelsData[index++] / 255;
+				const a = pixelsData[index++] / 255;
+				const result = [r, g, b, a];
+				result.r = r;
+				result.g = g;
+				result.b = b;
+				result.a = a;
+				imageArray[y][x] = result;
 			}
 		}
 		return imageArray;
