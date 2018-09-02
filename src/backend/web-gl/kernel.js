@@ -386,8 +386,10 @@ module.exports = class WebGLKernel extends KernelBase {
 		} else {
 			let result;
 			if (this.floatOutput) {
-				result = new Float32Array(texSize[0] * texSize[1] * 4);
-				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.FLOAT, result);
+				const w = texSize[0];
+				const h = Math.ceil(texSize[1] / 4);
+				result = new Float32Array(w * h * 4);
+				gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
 			} else {
 				const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
 				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);

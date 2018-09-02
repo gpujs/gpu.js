@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.6.0
- * @date Sun Aug 05 2018 15:35:03 GMT-0400 (EDT)
+ * @version 1.6.1
+ * @date Sun Sep 02 2018 12:23:57 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -3591,8 +3591,10 @@ module.exports = function (_KernelBase) {
 			} else {
 				var result = void 0;
 				if (this.floatOutput) {
-					result = new Float32Array(texSize[0] * texSize[1] * 4);
-					gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.FLOAT, result);
+					var w = texSize[0];
+					var h = Math.ceil(texSize[1] / 4);
+					result = new Float32Array(w * h * 4);
+					gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
 				} else {
 					var bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
 					gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
@@ -5546,8 +5548,10 @@ var GPU = function (_GPUCore) {
 				var threadDim = lastKernel.threadDim;
 				var result = void 0;
 				if (lastKernel.floatOutput) {
-					result = new Float32Array(texSize[0] * texSize[1] * 4);
-					gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.FLOAT, result);
+					var w = texSize[0];
+					var h = Math.ceil(texSize[1] / 4);
+					result = new Float32Array(w * h * 4);
+					gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
 				} else {
 					var bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
 					gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
