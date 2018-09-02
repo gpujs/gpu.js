@@ -235,7 +235,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			if (!inGetParams) {
 				retArr.push('.0');
 			}
-		} else if (this.isState('in-get-call-parameters')) {
+		} else if (inGetParams) {
 			// or cast to an int as we are addressing an input array
 			retArr.pop();
 			retArr.push('int(');
@@ -259,6 +259,11 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @returns {Array} the append retArr
 	 */
 	astBinaryExpression(ast, retArr) {
+		const inGetParams = this.isState('in-get-call-parameters');
+		if (inGetParams) {
+			this.pushState('not-in-get-call-parameters');
+			retArr.push('int');
+		}
 		retArr.push('(');
 
 		if (ast.operator === '%') {
@@ -288,6 +293,10 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		}
 
 		retArr.push(')');
+
+		if (inGetParams) {
+			this.popState('not-in-get-call-parameters');
+		}
 
 		return retArr;
 	}
