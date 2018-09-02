@@ -448,6 +448,48 @@ module.exports = function (_WebGLKernel) {
 		/**
    * @memberOf WebGLKernel#
    * @function
+   * @name _getMainConstantsString
+   *
+   */
+
+	}, {
+		key: '_getMainConstantsString',
+		value: function _getMainConstantsString() {
+			var result = [];
+			if (this.constants) {
+				for (var name in this.constants) {
+					if (!this.constants.hasOwnProperty(name)) continue;
+					var value = this.constants[name];
+					var type = utils.getArgumentType(value);
+					switch (type) {
+						case 'Integer':
+							result.push('const float constants_' + name + ' = ' + parseInt(value) + '.0');
+							break;
+						case 'Float':
+							result.push('const float constants_' + name + ' = ' + parseFloat(value));
+							break;
+						case 'Array':
+						case 'Input':
+							result.push('uniform sampler2D constants_' + name, 'uniform ivec2 constants_' + name + 'Size', 'uniform ivec3 constants_' + name + 'Dim', 'uniform int constants_' + name + 'BitRatio');
+							break;
+						case 'HTMLImage':
+						case 'HTMLImageArray':
+							result.push('uniform sampler2D constants_' + name, 'uniform ivec2 constants_' + name + 'Size', 'uniform ivec3 constants_' + name + 'Dim', 'uniform highp int constants_' + name + 'BitRatio');
+							break;
+						case 'Texture':
+							result.push('uniform sampler2D constants_' + name, 'uniform ivec2 constants_' + name + 'Size', 'uniform ivec3 constants_' + name + 'Dim', 'uniform highp int constants_' + name + 'BitRatio');
+							break;
+						default:
+							throw new Error('Unsupported constant ' + name + ' type ' + type);
+					}
+				}
+			}
+			return this._linesToString(result);
+		}
+
+		/**
+   * @memberOf WebGLKernel#
+   * @function
    * @name _addConstant
    *
    * @desc Adds kernel parameters to the Argument Texture,
@@ -570,17 +612,49 @@ module.exports = function (_WebGLKernel) {
 						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
+				case 'HTMLImageArray':
+					{
+						var inputImages = value;
+						var _dim7 = [inputImages[0].width, inputImages[0].height, inputImages.length];
+						var _size7 = [inputImages[0].width, inputImages[0].height];
+
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+						gl.bindTexture(gl.TEXTURE_2D_ARRAY, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+						// Upload the images into the texture.
+						var _mipLevel2 = 0; // the largest mip
+						var _internalFormat2 = gl.RGBA; // format we want in the texture
+						var width = inputImages[0].width;
+						var height = inputImages[0].height;
+						var textureDepth = inputImages.length;
+						var border = 0;
+						var _srcFormat2 = gl.RGBA; // format of data we are supplying
+						var _srcType2 = gl.UNSIGNED_BYTE; // type of data we are supplying
+						gl.texImage3D(gl.TEXTURE_2D_ARRAY, _mipLevel2, _internalFormat2, width, height, textureDepth, border, _srcFormat2, _srcType2, null);
+						for (var i = 0; i < inputImages.length; i++) {
+							var xOffset = 0;
+							var yOffset = 0;
+							var imageDepth = 1;
+							gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, _mipLevel2, xOffset, yOffset, i, inputImages[i].width, inputImages[i].height, imageDepth, _srcFormat2, _srcType2, inputImages[i]);
+						}
+						this.setUniform3iv('constants_' + name + 'Dim', _dim7);
+						this.setUniform2iv('constants_' + name + 'Size', _size7);
+						this.setUniform1i('constants_' + name, this.constantsLength);
+						break;
+					}
 				case 'Texture':
 					{
 						var inputTexture = value;
-						var _dim7 = inputTexture.dimensions;
-						var _size7 = inputTexture.size;
+						var _dim8 = inputTexture.dimensions;
+						var _size8 = inputTexture.size;
 
 						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 
-						this.setUniform3iv('constants_' + name + 'Dim', _dim7);
-						this.setUniform2iv('constants_' + name + 'Size', _size7);
+						this.setUniform3iv('constants_' + name + 'Dim', _dim8);
+						this.setUniform2iv('constants_' + name + 'Size', _size8);
 						this.setUniform1i('constants_' + name + 'BitRatio', 1); // aways float32
 						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;

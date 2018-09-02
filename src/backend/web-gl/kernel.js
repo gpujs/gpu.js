@@ -1361,24 +1361,6 @@ module.exports = class WebGLKernel extends KernelBase {
 		return this._linesToString(result);
 	}
 
-	/*
-	case 'Texture':
-		{
-			const inputTexture = value;
-			const dim = inputTexture.dimensions;
-			const size = inputTexture.size;
-
-			gl.activeTexture(gl.TEXTURE0 + this.argumentsLength);
-			gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
-
-			this.setUniform3iv(`user_${name}Dim`, dim);
-			this.setUniform2iv(`user_${name}Size`, size);
-			this.setUniform1i(`user_${name}BitRatio`, 1); // aways float32
-			this.setUniform1i(`user_${name}`, this.argumentsLength);
-			break;
-		}
-		*/
-
 	/**
 	 * @memberOf WebGLKernel#
 	 * @function

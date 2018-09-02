@@ -450,6 +450,60 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 	/**
 	 * @memberOf WebGLKernel#
 	 * @function
+	 * @name _getMainConstantsString
+	 *
+	 */
+	_getMainConstantsString() {
+		const result = [];
+		if (this.constants) {
+			for (let name in this.constants) {
+				if (!this.constants.hasOwnProperty(name)) continue;
+				let value = this.constants[name];
+				let type = utils.getArgumentType(value);
+				switch (type) {
+					case 'Integer':
+						result.push('const float constants_' + name + ' = ' + parseInt(value) + '.0');
+						break;
+					case 'Float':
+						result.push('const float constants_' + name + ' = ' + parseFloat(value));
+						break;
+					case 'Array':
+					case 'Input':
+						result.push(
+							`uniform sampler2D constants_${ name }`,
+							`uniform ivec2 constants_${ name }Size`,
+							`uniform ivec3 constants_${ name }Dim`,
+							`uniform int constants_${ name }BitRatio`
+						);
+						break;
+					case 'HTMLImage':
+					case 'HTMLImageArray':
+						result.push(
+							`uniform sampler2D constants_${ name }`,
+							`uniform ivec2 constants_${ name }Size`,
+							`uniform ivec3 constants_${ name }Dim`,
+							`uniform highp int constants_${ name }BitRatio`
+						);
+						break;
+					case 'Texture':
+						result.push(
+							`uniform sampler2D constants_${ name }`,
+							`uniform ivec2 constants_${ name }Size`,
+							`uniform ivec3 constants_${ name }Dim`,
+							`uniform highp int constants_${ name }BitRatio`
+						);
+						break;
+					default:
+						throw new Error(`Unsupported constant ${ name } type ${ type }`);
+				}
+			}
+		}
+		return this._linesToString(result);
+	}
+
+	/**
+	 * @memberOf WebGLKernel#
+	 * @function
 	 * @name _addConstant
 	 *
 	 * @desc Adds kernel parameters to the Argument Texture,
@@ -570,6 +624,61 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 						srcFormat,
 						srcType,
 						inputImage);
+					this.setUniform3iv(`constants_${name}Dim`, dim);
+					this.setUniform2iv(`constants_${name}Size`, size);
+					this.setUniform1i(`constants_${name}`, this.constantsLength);
+					break;
+				}
+			case 'HTMLImageArray':
+				{
+					const inputImages = value;
+					const dim = [inputImages[0].width, inputImages[0].height, inputImages.length];
+					const size = [inputImages[0].width, inputImages[0].height];
+
+					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+					gl.bindTexture(gl.TEXTURE_2D_ARRAY, argumentTexture);
+					gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+					gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+					gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+					// Upload the images into the texture.
+					const mipLevel = 0; // the largest mip
+					const internalFormat = gl.RGBA; // format we want in the texture
+					const width = inputImages[0].width;
+					const height = inputImages[0].height;
+					const textureDepth = inputImages.length;
+					const border = 0;
+					const srcFormat = gl.RGBA; // format of data we are supplying
+					const srcType = gl.UNSIGNED_BYTE; // type of data we are supplying
+					gl.texImage3D(
+						gl.TEXTURE_2D_ARRAY,
+						mipLevel,
+						internalFormat,
+						width,
+						height,
+						textureDepth,
+						border,
+						srcFormat,
+						srcType,
+						null
+					);
+					for (let i = 0; i < inputImages.length; i++) {
+						const xOffset = 0;
+						const yOffset = 0;
+						const imageDepth = 1;
+						gl.texSubImage3D(
+							gl.TEXTURE_2D_ARRAY,
+							mipLevel,
+							xOffset,
+							yOffset,
+							i,
+							inputImages[i].width,
+							inputImages[i].height,
+							imageDepth,
+							srcFormat,
+							srcType,
+							inputImages[i]
+						);
+					}
 					this.setUniform3iv(`constants_${name}Dim`, dim);
 					this.setUniform2iv(`constants_${name}Size`, size);
 					this.setUniform1i(`constants_${name}`, this.constantsLength);
