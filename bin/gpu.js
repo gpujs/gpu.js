@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.6.1
- * @date Sun Sep 02 2018 12:23:57 GMT-0400 (EDT)
+ * @version 1.6.2
+ * @date Sun Sep 02 2018 13:35:52 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -2467,7 +2467,7 @@ module.exports = function (_FunctionNodeBase) {
 				if (!inGetParams) {
 					retArr.push('.0');
 				}
-			} else if (this.isState('in-get-call-parameters')) {
+			} else if (inGetParams) {
 				retArr.pop();
 				retArr.push('int(');
 				retArr.push(ast.value);
@@ -2481,6 +2481,11 @@ module.exports = function (_FunctionNodeBase) {
 	}, {
 		key: 'astBinaryExpression',
 		value: function astBinaryExpression(ast, retArr) {
+			var inGetParams = this.isState('in-get-call-parameters');
+			if (inGetParams) {
+				this.pushState('not-in-get-call-parameters');
+				retArr.push('int');
+			}
 			retArr.push('(');
 
 			if (ast.operator === '%') {
@@ -2510,6 +2515,10 @@ module.exports = function (_FunctionNodeBase) {
 			}
 
 			retArr.push(')');
+
+			if (inGetParams) {
+				this.popState('not-in-get-call-parameters');
+			}
 
 			return retArr;
 		}
