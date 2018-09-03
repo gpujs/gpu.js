@@ -1330,27 +1330,13 @@ module.exports = class WebGLKernel extends KernelBase {
 						break;
 					case 'Array':
 					case 'Input':
-						result.push(
-							`uniform sampler2D constants_${ name }`,
-							`uniform ivec2 constants_${ name }Size`,
-							`uniform ivec3 constants_${ name }Dim`,
-							`uniform int constants_${ name }BitRatio`
-						);
-						break;
 					case 'HTMLImage':
-						result.push(
-							`uniform sampler2D constants_${ name }`,
-							`uniform ivec2 constants_${ name }Size`,
-							`uniform ivec3 constants_${ name }Dim`,
-							`uniform highp int constants_${ name }BitRatio`
-						);
-						break;
 					case 'Texture':
 						result.push(
 							`uniform sampler2D constants_${ name }`,
 							`uniform ivec2 constants_${ name }Size`,
 							`uniform ivec3 constants_${ name }Dim`,
-							`uniform highp int constants_${ name }BitRatio`
+							`uniform int constants_${ name }BitRatio`
 						);
 						break;
 					default:
