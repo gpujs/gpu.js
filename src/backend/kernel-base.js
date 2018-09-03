@@ -56,6 +56,7 @@ module.exports = class KernelBase {
 		this.functionBuilder = null;
 		this.paramTypes = null;
 		this.paramSizes = null;
+		this.constantTypes = null;
 		this.fixIntegerDivisionAccuracy = null;
 
 		for (let p in settings) {
@@ -94,6 +95,15 @@ module.exports = class KernelBase {
 			const arg = args[i];
 			this.paramTypes.push(utils.getArgumentType(arg));
 			this.paramSizes.push(arg.constructor === Input ? arg.size : null);
+		}
+	}
+
+	setupConstants() {
+		this.constantTypes = {};
+		if (this.constants) {
+			for (let p in this.constants) {
+				this.constantTypes[p] = utils.getArgumentType(this.constants[p])
+			}
 		}
 	}
 

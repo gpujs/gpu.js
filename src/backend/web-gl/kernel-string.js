@@ -65,10 +65,12 @@ module.exports = function(gpuKernel, name) {
       ${ removeFnNoise(gpuKernel._getVertShaderString.toString()) }
       validateOptions() {}
       setupParams() {}
+      setupConstants() {}
       setCanvas(canvas) { this._canvas = canvas; return this; }
       setWebGl(webGl) { this._webGl = webGl; return this; }
       ${ removeFnNoise(gpuKernel.getUniformLocation.toString()) }
       ${ removeFnNoise(gpuKernel.setupParams.toString()) }
+      ${ removeFnNoise(gpuKernel.setupConstants.toString()) }
       ${ removeFnNoise(gpuKernel.build.toString()) }
 		  ${ removeFnNoise(gpuKernel.run.toString()) }
 		  ${ removeFnNoise(gpuKernel._addArgument.toString()) }

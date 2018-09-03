@@ -23,7 +23,7 @@ var ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 // TODO: optimise out - webpack/babel options? maybe some generic logging support in core/utils?
 // const debugLog = console.log
 var debugLog = function debugLog() {};
-/** 
+/**
  * @class WebGLFunctionNode
  *
  * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
@@ -892,7 +892,7 @@ module.exports = function (_FunctionNodeBase) {
 		value: function astMemberExpression(mNode, retArr) {
 			debugLog("[in] astMemberExpression " + mNode.object.type);
 			if (mNode.computed) {
-				if (mNode.object.type === 'Identifier') {
+				if (mNode.object.type === 'Identifier' || mNode.object.type === 'MemberExpression' && mNode.object.object.object && mNode.object.object.object.type === 'ThisExpression' && mNode.object.object.property.name === 'constants') {
 					// Working logger
 					var reqName = mNode.object.name;
 					var funcName = this.functionName || 'kernel';
@@ -921,7 +921,13 @@ module.exports = function (_FunctionNodeBase) {
 						this.pushState('not-in-get-call-parameters');
 
 						// This normally refers to the global read only input vars
-						switch (this.getParamType(mNode.object.name)) {
+						var variableType = null;
+						if (mNode.object.name) {
+							variableType = this.getParamType(mNode.object.name);
+						} else if (mNode.object && mNode.object.object && mNode.object.object.object && mNode.object.object.object.type === 'ThisExpression') {
+							variableType = this.getConstantType(mNode.object.property.name);
+						}
+						switch (variableType) {
 							case 'vec4':
 								// Get from local vec4
 								this.astGeneric(mNode.object, retArr);
@@ -1087,6 +1093,9 @@ module.exports = function (_FunctionNodeBase) {
 						retArr.push(this.output[2] + '.0');
 						break;
 					default:
+						if (mNode.object && mNode.object.name && this.declarations[mNode.object.name]) {
+							retArr.push('user_');
+						}
 						retArr.push(unrolled);
 				}
 			}
@@ -1309,7 +1318,7 @@ function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
  * @name webgl_regex_optimize
  *
  * @desc [INTERNAL] Takes the near final webgl function string, and do regex search and replacments.
- * For voodoo optimize out the following: 
+ * For voodoo optimize out the following:
  *
  * - decode32(encode32( <br>
  * - encode32(decode32( <br>
