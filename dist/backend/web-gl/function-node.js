@@ -234,7 +234,7 @@ module.exports = function (_FunctionNodeBase) {
 				if (!inGetParams) {
 					retArr.push('.0');
 				}
-			} else if (this.isState('in-get-call-parameters')) {
+			} else if (inGetParams) {
 				// or cast to an int as we are addressing an input array
 				retArr.pop();
 				retArr.push('int(');
@@ -261,6 +261,11 @@ module.exports = function (_FunctionNodeBase) {
 	}, {
 		key: 'astBinaryExpression',
 		value: function astBinaryExpression(ast, retArr) {
+			var inGetParams = this.isState('in-get-call-parameters');
+			if (inGetParams) {
+				this.pushState('not-in-get-call-parameters');
+				retArr.push('int');
+			}
 			retArr.push('(');
 
 			if (ast.operator === '%') {
@@ -290,6 +295,10 @@ module.exports = function (_FunctionNodeBase) {
 			}
 
 			retArr.push(')');
+
+			if (inGetParams) {
+				this.popState('not-in-get-call-parameters');
+			}
 
 			return retArr;
 		}
