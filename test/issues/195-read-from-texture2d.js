@@ -26,9 +26,9 @@
     const result = noTexture(A);
     const textureResult = texture(A).toArray(gpu);
 
-    QUnit.assert.deepEqual(result, A);
-    QUnit.assert.deepEqual(textureResult, A);
-    QUnit.assert.deepEqual(textureResult, result);
+    QUnit.assert.deepValueEqual(result, A);
+    QUnit.assert.deepValueEqual(textureResult, A);
+    QUnit.assert.deepValueEqual(textureResult, result);
     gpu.destroy();
   });
 
@@ -40,9 +40,9 @@
     const result = noTexture(A);
     const textureResult = texture(A).toArray(gpu);
 
-    QUnit.assert.deepEqual(result, A);
-    QUnit.assert.deepEqual(textureResult, A);
-    QUnit.assert.deepEqual(textureResult, result);
+    QUnit.assert.deepValueEqual(result, A);
+    QUnit.assert.deepValueEqual(textureResult, A);
+    QUnit.assert.deepValueEqual(textureResult, result);
     gpu.destroy();
   });
 
@@ -54,9 +54,9 @@
     const result = noTexture(A);
     const textureResult = texture(A).toArray(gpu);
 
-    QUnit.assert.deepEqual(result, A);
-    QUnit.assert.deepEqual(textureResult, A);
-    QUnit.assert.deepEqual(textureResult, result);
+    QUnit.assert.deepValueEqual(result, A);
+    QUnit.assert.deepValueEqual(textureResult, A);
+    QUnit.assert.deepValueEqual(textureResult, result);
     gpu.destroy();
   });
 
@@ -68,9 +68,9 @@
     const result = noTexture(A);
     const textureResult = texture(A).toArray(gpu);
 
-    QUnit.assert.deepEqual(result, A);
-    QUnit.assert.deepEqual(textureResult, A);
-    QUnit.assert.deepEqual(textureResult, result);
+    QUnit.assert.deepValueEqual(result, A);
+    QUnit.assert.deepValueEqual(textureResult, A);
+    QUnit.assert.deepValueEqual(textureResult, result);
     gpu.destroy();
   });
 })();
