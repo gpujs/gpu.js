@@ -70,6 +70,11 @@ module.exports = function () {
 			if (options.hasOwnProperty('paramTypes')) {
 				this.paramTypes = paramTypes = options.paramTypes;
 			}
+			if (options.hasOwnProperty('constantTypes')) {
+				this.constantTypes = options.constantTypes;
+			} else {
+				this.constantTypes = {};
+			}
 			if (options.hasOwnProperty('returnType')) {
 				returnType = options.returnType;
 			}
@@ -375,6 +380,14 @@ module.exports = function () {
 						}
 					}
 				}
+			}
+			return null;
+		}
+	}, {
+		key: 'getConstantType',
+		value: function getConstantType(constantName) {
+			if (this.constantTypes[constantName]) {
+				return this.constantTypes[constantName];
 			}
 			return null;
 		}

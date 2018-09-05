@@ -13,7 +13,7 @@ var utils = require('../../core/utils');
 
 /**
  * @class CPUFunctionNode
- * 
+ *
  * @extends BaseFunctionNode#
  *
  * @desc [INTERNAL] Represents a single function, inside JS
@@ -653,6 +653,7 @@ module.exports = function (_BaseFunctionNode) {
 		value: function astVariableDeclaration(vardecNode, retArr) {
 			retArr.push('var ');
 			for (var i = 0; i < vardecNode.declarations.length; i++) {
+				this.declarations[vardecNode.declarations[i].id.name] = 'var';
 				if (i > 0) {
 					retArr.push(',');
 				}
@@ -881,7 +882,7 @@ module.exports = function (_BaseFunctionNode) {
 		key: 'astMemberExpression',
 		value: function astMemberExpression(mNode, retArr) {
 			if (mNode.computed) {
-				if (mNode.object.type === 'Identifier') {
+				if (mNode.object.type === 'Identifier' || mNode.object.type === 'MemberExpression' && mNode.object.object.object && mNode.object.object.object.type === 'ThisExpression' && mNode.object.object.property.name === 'constants') {
 					this.pushState('identifier');
 					this.astGeneric(mNode.object, retArr);
 					this.popState('identifier');
@@ -953,8 +954,11 @@ module.exports = function (_BaseFunctionNode) {
 					unrolled = 'user_' + unrolled;
 				}
 
-				// Its a reference to `this`, add '_' before
-				if (unrolled.indexOf('this') === 0) {
+				if (unrolled.indexOf('this.constants') === 0) {
+					// remove 'this.constants' from beginning
+					unrolled = 'constants_' + unrolled.substring(15);
+				} else if (unrolled.indexOf('this') === 0) {
+					// Its a reference to `this`, add '_' before
 					unrolled = '_' + unrolled;
 				}
 
@@ -975,6 +979,9 @@ module.exports = function (_BaseFunctionNode) {
 						retArr.push(this.output[2]);
 						break;
 					default:
+						if (mNode.object && mNode.object.name && this.declarations[mNode.object.name]) {
+							retArr.push('user_');
+						}
 						retArr.push(unrolled);
 				}
 

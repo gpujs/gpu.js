@@ -1,5 +1,6 @@
 'use strict';
 
+console.log("Testing")
 const GPU = require('./core/gpu');
 const alias = require('./core/alias');
 const utils = require('./core/utils');

@@ -62,6 +62,11 @@ module.exports = class BaseFunctionNode {
 			if (options.hasOwnProperty('paramTypes')) {
 				this.paramTypes = paramTypes = options.paramTypes;
 			}
+			if (options.hasOwnProperty('constantTypes')) {
+				this.constantTypes = options.constantTypes;
+			} else {
+				this.constantTypes = {};
+			}
 			if (options.hasOwnProperty('returnType')) {
 				returnType = options.returnType;
 			}
@@ -362,6 +367,13 @@ module.exports = class BaseFunctionNode {
 					}
 				}
 			}
+		}
+		return null;
+	}
+
+	getConstantType(constantName) {
+		if (this.constantTypes[constantName]) {
+			return this.constantTypes[constantName];
 		}
 		return null;
 	}
