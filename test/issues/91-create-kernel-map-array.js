@@ -53,7 +53,6 @@
   });
   QUnit.test( "Issue #91 - type detection (cpu)", function() {
     var result = getResult('cpu');
-    console.log(result);
     QUnit.assert.deepEqual(QUnit.extend([], result[0]), [21,32]);
     QUnit.assert.deepEqual(QUnit.extend([], result[1]), [9,14]);
   });

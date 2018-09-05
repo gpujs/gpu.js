@@ -1,6 +1,5 @@
 (function() {
   function imageArrayConstantFixture(mode, assert, cb) {
-    console.log('Testing image array constant:');
     var done = assert.async();
     var gpu = new GPU({ mode: mode });
     var image = new Image();
@@ -45,8 +44,6 @@
     imageArrayConstantFixture(mode, assert, function(tryConst) {
       var result = tryConst();
       var test = result[0][0][0] > 0;
-      console.log('Result: ', result);
-      console.log('Test: ', test);
       assert.ok(test, 'image array constant passed test');
     });
   });
@@ -56,8 +53,6 @@
     imageArrayConstantFixture(mode, assert, function(tryConst) {
       var result = tryConst();
       var test = result[0][0][0] > 0;
-      console.log('Result: ', result);
-      console.log('Test: ', test);
       assert.ok(test, 'image array constant passed test');
     });
   });
@@ -76,8 +71,6 @@
     imageArrayConstantFixture(mode, assert, function(tryConst) {
       var result = tryConst();
       var test = result[0][0][0] > 0;
-      console.log('Result: ', result);
-      console.log('Test: ', test);
       assert.ok(test, 'image array constant passed test');
     });
   });
@@ -87,8 +80,6 @@
     imageArrayConstantFixture(mode, assert, function(tryConst) {
       var result = tryConst();
       var test = result[0][0][0] > 0;
-      console.log('Result: ', result);
-      console.log('Test: ', test);
       assert.ok(test, 'image array constant passed test');
     });
   });
