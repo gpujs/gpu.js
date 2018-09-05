@@ -19,7 +19,7 @@
       [0,1],
       [1,2]
     ]);
-    QUnit.assert.deepEqual(result, [
+    QUnit.assert.deepValueEqual(result, [
       [0,2],
       [2,4]
     ]);
