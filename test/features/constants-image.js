@@ -1,6 +1,5 @@
 (function() {
   function imageConstantTest(mode, assert) {
-    console.log('Testing image constant:');
     var done = assert.async();
     var gpu = new GPU({ mode: mode });
     var image = new Image();
@@ -29,8 +28,6 @@
       ).setOutput([width, height, 3]);
       var result = tryConst();
       var test = result[0][0][0] > 0;
-      console.log('Result: ', result);
-      console.log('Test: ', test);
       QUnit.assert.ok(test, 'image constant passed test');
       tryConst.destroy();
       done();

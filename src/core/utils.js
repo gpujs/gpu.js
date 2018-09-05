@@ -592,7 +592,7 @@ class Utils extends UtilsCore {
 	static splitArray(array, part) {
 		const result = [];
 		for (let i = 0; i < array.length; i += part) {
-			result.push(Array.prototype.slice.call(array, i, i + part));
+			result.push(new array.constructor(array.buffer, i * 4 + array.byteOffset, part));
 		}
 		return result;
 	}

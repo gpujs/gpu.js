@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.7.0
- * @date Mon Sep 03 2018 16:21:02 GMT-0400 (EDT)
+ * @version 1.7.1
+ * @date Wed Sep 05 2018 16:53:19 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -6722,7 +6722,7 @@ var Utils = function (_UtilsCore) {
 		value: function splitArray(array, part) {
 			var result = [];
 			for (var i = 0; i < array.length; i += part) {
-				result.push(Array.prototype.slice.call(array, i, i + part));
+				result.push(new array.constructor(array.buffer, i * 4 + array.byteOffset, part));
 			}
 			return result;
 		}
@@ -6764,7 +6764,6 @@ module.exports = Utils;
 },{"../index":33,"./input":29,"./texture":30,"./utils-core":31}],33:[function(require,module,exports){
 'use strict';
 
-console.log("Testing");
 var GPU = require('./core/gpu');
 var alias = require('./core/alias');
 var utils = require('./core/utils');
