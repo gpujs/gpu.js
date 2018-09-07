@@ -306,23 +306,23 @@ module.exports = function (_WebGLKernel) {
 
 						var length = size[0] * size[1];
 
-						var _formatArrayTransfer = this._formatArrayTransfer(value, length),
-						    valuesFlat = _formatArrayTransfer.valuesFlat,
-						    bitRatio = _formatArrayTransfer.bitRatio;
-
 						var buffer = void 0;
 						if (this.floatTextures) {
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 						} else {
-							buffer = new Uint8Array(valuesFlat.buffer);
+							var _formatArrayTransfer = this._formatArrayTransfer(value, length),
+							    _valuesFlat = _formatArrayTransfer.valuesFlat,
+							    bitRatio = _formatArrayTransfer.bitRatio;
+
+							buffer = new Uint8Array(_valuesFlat.buffer, _valuesFlat.byteOffset, _valuesFlat.length * 4 / bitRatio);
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+							this.setUniform1i('user_' + name + 'BitRatio', bitRatio);
 						}
 
 						if (!this.hardcodeConstants) {
 							this.setUniform3iv('user_' + name + 'Dim', dim);
 							this.setUniform2iv('user_' + name + 'Size', size);
 						}
-						this.setUniform1i('user_' + name + 'BitRatio', bitRatio);
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
@@ -349,22 +349,22 @@ module.exports = function (_WebGLKernel) {
 
 						var _length = _size[0] * _size[1];
 
-						var _formatArrayTransfer2 = this._formatArrayTransfer(value.value, _length),
-						    _valuesFlat = _formatArrayTransfer2.valuesFlat,
-						    _bitRatio = _formatArrayTransfer2.bitRatio;
-
 						if (this.floatTextures) {
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, _size[0], _size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
 						} else {
-							var _buffer = new Uint8Array(_valuesFlat.buffer);
+							var _formatArrayTransfer2 = this._formatArrayTransfer(value.value, _length),
+							    _valuesFlat2 = _formatArrayTransfer2.valuesFlat,
+							    _bitRatio = _formatArrayTransfer2.bitRatio;
+
+							var _buffer = new Uint8Array(_valuesFlat2.buffer, _valuesFlat2.byteOffset, _valuesFlat2.length * 4 / _bitRatio);
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0] / _bitRatio, _size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, _buffer);
+							this.setUniform1i('user_' + name + 'BitRatio', _bitRatio);
 						}
 
 						if (!this.hardcodeConstants) {
 							this.setUniform3iv('user_' + name + 'Dim', _dim);
 							this.setUniform2iv('user_' + name + 'Size', _size);
 						}
-						this.setUniform1i('user_' + name + 'BitRatio', _bitRatio);
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
@@ -526,14 +526,14 @@ module.exports = function (_WebGLKernel) {
 						var length = size[0] * size[1];
 
 						var _formatArrayTransfer3 = this._formatArrayTransfer(value, length),
-						    valuesFlat = _formatArrayTransfer3.valuesFlat,
+						    _valuesFlat3 = _formatArrayTransfer3.valuesFlat,
 						    bitRatio = _formatArrayTransfer3.bitRatio;
 
 						var buffer = void 0;
 						if (this.floatTextures) {
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, _valuesFlat3);
 						} else {
-							buffer = new Uint8Array(valuesFlat.buffer);
+							buffer = new Uint8Array(_valuesFlat3.buffer);
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 						}
 
@@ -569,13 +569,13 @@ module.exports = function (_WebGLKernel) {
 						var _length2 = _size5[0] * _size5[1];
 
 						var _formatArrayTransfer4 = this._formatArrayTransfer(value.value, _length2),
-						    _valuesFlat2 = _formatArrayTransfer4.valuesFlat,
+						    _valuesFlat4 = _formatArrayTransfer4.valuesFlat,
 						    _bitRatio2 = _formatArrayTransfer4.bitRatio;
 
 						if (this.floatTextures) {
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, _size5[0], _size5[1], 0, gl.RGBA, gl.FLOAT, inputArray);
 						} else {
-							var _buffer2 = new Uint8Array(_valuesFlat2.buffer);
+							var _buffer2 = new Uint8Array(_valuesFlat4.buffer);
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size5[0] / _bitRatio2, _size5[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, _buffer2);
 						}
 

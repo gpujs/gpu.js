@@ -279,24 +279,23 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 
 					let length = size[0] * size[1];
 
-					const {
-						valuesFlat,
-						bitRatio
-					} = this._formatArrayTransfer(value, length);
-
 					let buffer;
 					if (this.floatTextures) {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 					} else {
-						buffer = new Uint8Array(valuesFlat.buffer);
+						const {
+							valuesFlat,
+							bitRatio
+						} = this._formatArrayTransfer(value, length);
+						buffer = new Uint8Array(valuesFlat.buffer, valuesFlat.byteOffset, valuesFlat.length * 4 / bitRatio);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+						this.setUniform1i(`user_${name}BitRatio`, bitRatio);
 					}
 
 					if (!this.hardcodeConstants) {
 						this.setUniform3iv(`user_${name}Dim`, dim);
 						this.setUniform2iv(`user_${name}Size`, size);
 					}
-					this.setUniform1i(`user_${name}BitRatio`, bitRatio);
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
@@ -322,23 +321,23 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
 					let length = size[0] * size[1];
-					const {
-						valuesFlat,
-						bitRatio
-					} = this._formatArrayTransfer(value.value, length);
 
 					if (this.floatTextures) {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
 					} else {
-						const buffer = new Uint8Array(valuesFlat.buffer);
+						const {
+							valuesFlat,
+							bitRatio
+						} = this._formatArrayTransfer(value.value, length);
+						const buffer = new Uint8Array(valuesFlat.buffer, valuesFlat.byteOffset, valuesFlat.length * 4 / bitRatio);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+						this.setUniform1i(`user_${name}BitRatio`, bitRatio);
 					}
 
 					if (!this.hardcodeConstants) {
 						this.setUniform3iv(`user_${name}Dim`, dim);
 						this.setUniform2iv(`user_${name}Size`, size);
 					}
-					this.setUniform1i(`user_${name}BitRatio`, bitRatio);
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
