@@ -1,16 +1,16 @@
 (function() {
   function inputX(mode) {
-    const gpu = new GPU({ mode: mode });
-    const input = GPU.input;
-    const kernel = gpu.createKernel(function(a) {
+    var gpu = new GPU({ mode: mode });
+    var input = GPU.input;
+    var kernel = gpu.createKernel(function(a) {
       return a[this.thread.x];
     })
       .setOutput([9]);
 
-    const a = new Float32Array(9);
+    var a = new Float32Array(9);
     a.set([1,2,3,4,5,6,7,8,9]);
 
-    const result = kernel(input(a, [3, 3]));
+    var result = kernel(input(a, [3, 3]));
     QUnit.assert.deepValueEqual(QUnit.extend([], result), [1,2,3,4,5,6,7,8,9]);
     gpu.destroy();
   }
@@ -35,21 +35,57 @@
     inputX('cpu');
   });
 
+  function inputXByteOffset(mode) {
+    var gpu = new GPU({ mode: mode });
+    var input = GPU.input;
+    var kernel = gpu.createKernel(function(a) {
+      return a[this.thread.x];
+    })
+      .setOutput([4]);
+
+    // lose first 5
+    var a = new Float32Array(new Float32Array([1,2,3,4,5,6,7,8,9]).buffer, 5*4, 4);
+
+    var result = kernel(input(a, [2, 2]));
+    QUnit.assert.deepValueEqual(QUnit.extend([], result), [6,7,8,9]);
+    gpu.destroy();
+  }
+
+  QUnit.test( "inputXByteOffset (auto)", function() {
+    inputXByteOffset();
+  });
+
+  QUnit.test( "inputXByteOffset (gpu)", function() {
+    inputXByteOffset('gpu');
+  });
+
+  QUnit.test( "inputXByteOffset (webgl)", function() {
+    inputXByteOffset('webgl');
+  });
+
+  QUnit.test( "inputXByteOffset (webgl2)", function() {
+    inputXByteOffset('webgl2');
+  });
+
+  QUnit.test( "inputXByteOffset (cpu)", function() {
+    inputXByteOffset('cpu');
+  });
+
   function inputXY(mode) {
-    const gpu = new GPU({ mode: mode });
-    const input = GPU.input;
-    const kernel = gpu.createKernel(function(a) {
+    var gpu = new GPU({ mode: mode });
+    var input = GPU.input;
+    var kernel = gpu.createKernel(function(a) {
       return a[this.thread.y][this.thread.x];
     })
       .setOutput([9]);
 
-    const a = new Float32Array(9);
+    var a = new Float32Array(9);
     a.set([1,2,3,4,5,6,7,8,9]);
 
-    const b = new Float32Array(9);
+    var b = new Float32Array(9);
     b.set([1,2,3,4,5,6,7,8,9]);
 
-    const result = kernel(input(a, [3, 3]));
+    var result = kernel(input(a, [3, 3]));
     QUnit.assert.deepValueEqual(QUnit.extend([], result), [1,2,3,4,5,6,7,8,9]);
     gpu.destroy();
   }
@@ -75,17 +111,17 @@
   });
 
   function inputYX(mode) {
-    const gpu = new GPU({ mode: mode });
-    const input = GPU.input;
-    const kernel = gpu.createKernel(function(a) {
+    var gpu = new GPU({ mode: mode });
+    var input = GPU.input;
+    var kernel = gpu.createKernel(function(a) {
       return a[this.thread.y][this.thread.x];
     })
       .setOutput([3, 3]);
 
-    const a = new Float32Array(9);
+    var a = new Float32Array(9);
     a.set([1,2,3,4,5,6,7,8,9]);
 
-    const result = kernel(input(a, [3, 3]));
+    var result = kernel(input(a, [3, 3]));
     QUnit.assert.deepValueEqual(QUnit.extend([], result), [[1,2,3],[4,5,6],[7,8,9]])
     gpu.destroy();
   }
@@ -111,17 +147,17 @@
   });
 
   function inputYXOffset(mode) {
-    const gpu = new GPU({ mode: mode });
-    const input = GPU.input;
-    const kernel = gpu.createKernel(function(a) {
+    var gpu = new GPU({ mode: mode });
+    var input = GPU.input;
+    var kernel = gpu.createKernel(function(a) {
       return a[this.thread.x][this.thread.y];
     })
       .setOutput([8, 2]);
 
-    const a = new Float32Array(16);
+    var a = new Float32Array(16);
     a.set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
 
-    const result = kernel(input(a, [2, 8]));
+    var result = kernel(input(a, [2, 8]));
     QUnit.assert.deepValueEqual(QUnit.extend([], result), [[1,3,5,7,9,11,13,15],[2,4,6,8,10,12,14,16]]);
     gpu.destroy();
   }
@@ -147,17 +183,17 @@
   });
 
   function inputYXOffsetPlus1(mode) {
-    const gpu = new GPU({ mode: mode });
-    const input = GPU.input;
-    const kernel = gpu.createKernel(function(a) {
+    var gpu = new GPU({ mode: mode });
+    var input = GPU.input;
+    var kernel = gpu.createKernel(function(a) {
       return a[this.thread.x][this.thread.y];
     })
       .setOutput([2, 8]);
 
-    const a = new Float32Array(16);
+    var a = new Float32Array(16);
     a.set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
 
-    const result = kernel(input(a, [8, 2]));
+    var result = kernel(input(a, [8, 2]));
     QUnit.assert.deepValueEqual(QUnit.extend([], result), [[1,9],[2,10],[3,11],[4,12],[5,13],[6,14],[7,15],[8,16]]);
     gpu.destroy();
   }
@@ -183,17 +219,17 @@
   });
 
   function inputZYX(mode) {
-    const gpu = new GPU({ mode: mode });
-    const input = GPU.input;
-    const kernel = gpu.createKernel(function(a) {
+    var gpu = new GPU({ mode: mode });
+    var input = GPU.input;
+    var kernel = gpu.createKernel(function(a) {
       return a[this.thread.z][this.thread.y][this.thread.x];
     })
       .setOutput([2, 4, 4]);
 
-    const a = new Float32Array(64);
+    var a = new Float32Array(64);
     a.set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]);
 
-    const result = kernel(input(a, [2, 4, 4]));
+    var result = kernel(input(a, [2, 4, 4]));
     QUnit.assert.deepValueEqual(QUnit.extend([], result), [[[1,2],[3,4],[5,6],[7,8]],[[9,10],[11,12],[13,14],[15,16]],[[17,18],[19,20],[21,22],[23,24]],[[25,26],[27,28],[29,30],[31,32]]]);
     gpu.destroy();
   }
@@ -220,17 +256,17 @@
 
 
   function inputZYXVariables(mode) {
-    const gpu = new GPU({ mode: mode });
-    const input = GPU.input;
-    const kernel = gpu.createKernel(function(a, x, y, z) {
+    var gpu = new GPU({ mode: mode });
+    var input = GPU.input;
+    var kernel = gpu.createKernel(function(a, x, y, z) {
       return a[z][y][x];
     })
       .setDebug(true)
       .setOutput([1]);
 
-    const a = new Float32Array(64);
+    var a = new Float32Array(64);
     a.set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]);
-    const aInput = input(a, [2, 4, 4]);
+    var aInput = input(a, [2, 4, 4]);
     QUnit.assert.deepValueEqual(QUnit.extend([], kernel(aInput, 1, 2, 3)), [30]);
     QUnit.assert.deepValueEqual(QUnit.extend([], kernel(aInput, 0, 2, 3)), [29]);
     QUnit.assert.deepValueEqual(QUnit.extend([], kernel(aInput, 0, 2, 1)), [13]);
