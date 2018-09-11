@@ -20,7 +20,7 @@
       [4,5,6,7,8]
     ]);
     QUnit.assert.equal(result.length, 5);
-    QUnit.assert.deepEqual(result, [
+    QUnit.assert.deepValueEqual(result, [
       [0,1,2,3,4],
       [1,2,3,4,5],
       [2,3,4,5,6],
