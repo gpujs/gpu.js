@@ -134,6 +134,7 @@ module.exports = function (_FunctionNodeBase) {
 					}
 					var type = this.getParamType(paramName);
 					switch (type) {
+						case 'TextureVec4':
 						case 'Texture':
 						case 'Input':
 						case 'Array':
@@ -962,6 +963,7 @@ module.exports = function (_FunctionNodeBase) {
 								}
 								retArr.push(')');
 								break;
+							case 'TextureVec4':
 							case 'HTMLImage':
 								// Get from image
 								retArr.push('getImage2D(');

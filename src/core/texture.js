@@ -10,14 +10,16 @@ module.exports = class Texture {
 	 * @param dimensions
 	 * @param {Array} output
 	 * @param {Object} webGl
+	 * @param {String} [type]
 	 */
-	constructor(texture, size, dimensions, output, webGl) {
+	constructor(texture, size, dimensions, output, webGl, type = 'float') {
 		this.texture = texture;
 		this.size = size;
 		this.dimensions = dimensions;
 		this.output = output;
 		this.webGl = webGl;
 		this.kernel = null;
+		this.type = type;
 	}
 
 	/**
@@ -51,6 +53,5 @@ module.exports = class Texture {
 	 */
 	delete() {
 		return this.webGl.deleteTexture(this.texture);
-
 	}
 };

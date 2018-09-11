@@ -225,7 +225,6 @@
     const kernel = gpu.createKernel(function(a, x, y, z) {
       return a[z][y][x];
     })
-      .setDebug(true)
       .setOutput([1]);
 
     const a = new Float32Array(64);
