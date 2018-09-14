@@ -66,6 +66,9 @@ module.exports = class KernelBase {
 		if (settings.hasOwnProperty('canvas')) {
 			this._canvas = settings.canvas;
 		}
+		if (settings.hasOwnProperty('webGl')) {
+			this._webGl = settings.webGl;
+		}
 		if (settings.hasOwnProperty('output')) {
 			this.setOutput(settings.output); // Flatten output object
 		}
