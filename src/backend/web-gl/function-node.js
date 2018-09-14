@@ -138,6 +138,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				}
 				const type = this.getParamType(paramName);
 				switch (type) {
+					case 'TextureVec4':
 					case 'Texture':
 					case 'Input':
 					case 'Array':
@@ -938,6 +939,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							}
 							retArr.push(')');
 							break;
+						case 'TextureVec4':
 						case 'HTMLImage':
 							// Get from image
 							retArr.push('getImage2D(');

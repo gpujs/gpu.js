@@ -71,6 +71,7 @@ module.exports = class WebGL2FunctionNode extends WebGLFunctionNode {
 				}
 				const type = this.getParamType(paramName);
 				switch (type) {
+					case 'TextureVec4':
 					case 'Texture':
 					case 'Input':
 					case 'Array':

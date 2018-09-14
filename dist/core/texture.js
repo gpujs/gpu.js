@@ -14,8 +14,11 @@ module.exports = function () {
   * @param dimensions
   * @param {Array} output
   * @param {Object} webGl
+  * @param {String} [type]
   */
 	function Texture(texture, size, dimensions, output, webGl) {
+		var type = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 'float';
+
 		_classCallCheck(this, Texture);
 
 		this.texture = texture;
@@ -24,6 +27,7 @@ module.exports = function () {
 		this.output = output;
 		this.webGl = webGl;
 		this.kernel = null;
+		this.type = type;
 	}
 
 	/**

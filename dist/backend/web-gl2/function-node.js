@@ -89,6 +89,7 @@ module.exports = function (_WebGLFunctionNode) {
 					}
 					var type = this.getParamType(paramName);
 					switch (type) {
+						case 'TextureVec4':
 						case 'Texture':
 						case 'Input':
 						case 'Array':
