@@ -125,6 +125,27 @@ class UtilsCore {
 	}
 
 	/**
+	 *
+	 * @name isWebGl2
+	 * @function
+	 * @static
+	 * @memberOf UtilsCore
+	 *
+	 * @desc Return TRUE, on a valid webGl2Context object
+	 *
+	 * Note: This does just a VERY simply sanity check. And may give false positives.
+	 *
+	 * @param {webGlContext} webGl2Obj - Object to validate
+	 *
+	 * @returns {Boolean} TRUE if the object is a webGl2Context object
+	 *
+	 */
+	static isWebGl2(webGl2Obj) {
+		return webGl2Obj && typeof WebGL2RenderingContext !== 'undefined' &&
+			webGl2Obj instanceof WebGL2RenderingContext;
+	}
+
+	/**
 	 * @name isWebGlSupported
 	 * @function
 	 * @static
@@ -137,6 +158,21 @@ class UtilsCore {
 	 */
 	static isWebGlSupported() {
 		return _isWebGlSupported;
+	}
+
+	/**
+	 * @name isWebGlSupported2
+	 * @function
+	 * @static
+	 * @memberOf UtilsCore
+	 *
+	 * @desc Return TRUE, if browser supports webgl2
+	 *
+	 * @returns {Boolean} TRUE if browser supports webgl2
+	 *
+	 */
+	static isWebGl2Supported() {
+		return _isWebGl2Supported;
 	}
 
 	static isWebGlDrawBuffersSupported() {
@@ -253,7 +289,9 @@ class UtilsCore {
 
 const _isCanvasSupported = typeof document !== 'undefined' ? UtilsCore.isCanvas(document.createElement('canvas')) : false;
 const _testingWebGl = UtilsCore.initWebGl(UtilsCore.initCanvas());
+const _testingWebGl2 = UtilsCore.initWebGl2(UtilsCore.initCanvas());
 const _isWebGlSupported = UtilsCore.isWebGl(_testingWebGl);
+const _isWebGl2Supported = UtilsCore.isWebGl2(_testingWebGl2);
 const _isWebGlDrawBuffersSupported = _isWebGlSupported && Boolean(_testingWebGl.getExtension('WEBGL_draw_buffers'));
 
 if (_isWebGlSupported) {
