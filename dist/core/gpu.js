@@ -48,7 +48,17 @@ var GPU = function (_GPUCore) {
 				detectedMode = 'cpu';
 			}
 		} else {
-			detectedMode = mode || 'gpu';
+			if (_this._webGl) {
+				if (typeof WebGL2RenderingContext !== 'undefined' && _this._webGl.constructor === WebGL2RenderingContext) {
+					detectedMode = 'webgl2';
+				} else if (typeof WebGLRenderingContext !== 'undefined' && _this._webGl.constructor === WebGLRenderingContext) {
+					detectedMode = 'webgl';
+				} else {
+					throw new Error('unknown WebGL Context');
+				}
+			} else {
+				detectedMode = mode || 'gpu';
+			}
 		}
 		_this.kernels = [];
 
@@ -126,7 +136,12 @@ var GPU = function (_GPUCore) {
 				throw 'fn parameter not a function';
 			}
 
-			var kernel = this._runner.buildKernel(fn, settings || {});
+			var mergedSettings = Object.assign({
+				webGl: this._webGl,
+				canvas: this._canvas
+			}, settings || {});
+
+			var kernel = this._runner.buildKernel(fn, mergedSettings);
 
 			//if canvas didn't come from this, propagate from kernel
 			if (!this._canvas) {

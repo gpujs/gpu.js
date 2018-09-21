@@ -141,7 +141,7 @@ module.exports = function (_KernelBase) {
 				var argType = utils.getArgumentType(arguments[0]);
 				if (argType === 'Array') {
 					this.output = utils.getDimensions(argType);
-				} else if (argType === 'Texture') {
+				} else if (argType === 'Texture' || argType === 'TextureVec4') {
 					this.output = arguments[0].output;
 				} else {
 					throw new Error('Auto output not supported for input type: ' + argType);
@@ -345,6 +345,15 @@ module.exports = function (_KernelBase) {
 			}
 
 			if (this.graphical) {
+				if (this.outputToTexture) {
+					gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+					gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+					if (!this.outputTexture || this.outputImmutable) {
+						this._setupOutputTexture();
+					}
+					gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+					return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'vec4');
+				}
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -1294,7 +1303,7 @@ module.exports = function (_KernelBase) {
 				var paramName = paramNames[i];
 				var paramType = paramTypes[i];
 				if (this.hardcodeConstants) {
-					if (paramType === 'Array' || paramType === 'Texture') {
+					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'TextureVec4') {
 						var paramDim = utils.getDimensions(param, true);
 						var paramSize = utils.dimToTexSize({
 							floatTextures: this.floatTextures,
@@ -1308,7 +1317,7 @@ module.exports = function (_KernelBase) {
 						result.push('float user_' + paramName + ' = ' + param);
 					}
 				} else {
-					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
+					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'TextureVec4' || paramType === 'Input' || paramType === 'HTMLImage') {
 						result.push('uniform sampler2D user_' + paramName, 'uniform ivec2 user_' + paramName + 'Size', 'uniform ivec3 user_' + paramName + 'Dim');
 						if (paramType !== 'HTMLImage') {
 							result.push('uniform int user_' + paramName + 'BitRatio');

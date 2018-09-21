@@ -113,7 +113,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			const argType = utils.getArgumentType(arguments[0]);
 			if (argType === 'Array') {
 				this.output = utils.getDimensions(argType);
-			} else if (argType === 'Texture') {
+			} else if (argType === 'Texture' || argType === 'TextureVec4') {
 				this.output = arguments[0].output;
 			} else {
 				throw new Error('Auto output not supported for input type: ' + argType);
@@ -324,6 +324,15 @@ module.exports = class WebGLKernel extends KernelBase {
 		}
 
 		if (this.graphical) {
+			if (this.outputToTexture) {
+				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+				gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+				if (!this.outputTexture || this.outputImmutable) {
+					this._setupOutputTexture();
+				}
+				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+				return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'vec4');
+			}
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -1270,7 +1279,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			const paramName = paramNames[i];
 			const paramType = paramTypes[i];
 			if (this.hardcodeConstants) {
-				if (paramType === 'Array' || paramType === 'Texture') {
+				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'TextureVec4') {
 					const paramDim = utils.getDimensions(param, true);
 					const paramSize = utils.dimToTexSize({
 						floatTextures: this.floatTextures,
@@ -1289,7 +1298,7 @@ module.exports = class WebGLKernel extends KernelBase {
 					result.push(`float user_${ paramName } = ${ param }`);
 				}
 			} else {
-				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'Input' || paramType === 'HTMLImage') {
+				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'TextureVec4' || paramType === 'Input' || paramType === 'HTMLImage') {
 					result.push(
 						`uniform sampler2D user_${ paramName }`,
 						`uniform ivec2 user_${ paramName }Size`,

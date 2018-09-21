@@ -292,7 +292,11 @@ class Utils extends UtilsCore {
 			}
 			return 'Float';
 		} else if (arg instanceof Texture) {
-			return 'Texture';
+			if (arg.type === 'vec4') {
+				return 'TextureVec4';
+			} else {
+				return 'Texture';
+			}
 		} else if (arg instanceof Input) {
 			return 'Input';
 		} else if (arg.nodeName === 'IMG') {
