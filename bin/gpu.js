@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.8.0
- * @date Fri Sep 14 2018 11:50:26 GMT-0400 (EDT)
+ * @version 1.8.1
+ * @date Fri Sep 21 2018 06:53:45 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -1669,7 +1669,7 @@ module.exports = function () {
 		value: function getUserParamName(paramName) {
 			var paramIndex = this.paramNames.indexOf(paramName);
 			if (paramIndex === -1) return null;
-			if (!this.parent) return null;
+			if (!this.parent || !this.isSubKernel) return null;
 			var calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
 			for (var i = 0; i < calledFunctionArguments.length; i++) {
 				var calledFunctionArgument = calledFunctionArguments[i];

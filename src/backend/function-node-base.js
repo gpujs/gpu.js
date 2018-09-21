@@ -394,7 +394,7 @@ module.exports = class BaseFunctionNode {
 	getUserParamName(paramName) {
 		const paramIndex = this.paramNames.indexOf(paramName);
 		if (paramIndex === -1) return null;
-		if (!this.parent) return null;
+		if (!this.parent || !this.isSubKernel) return null;
 		const calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
 		for (let i = 0; i < calledFunctionArguments.length; i++) {
 			const calledFunctionArgument = calledFunctionArguments[i];

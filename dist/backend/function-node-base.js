@@ -411,7 +411,7 @@ module.exports = function () {
 		value: function getUserParamName(paramName) {
 			var paramIndex = this.paramNames.indexOf(paramName);
 			if (paramIndex === -1) return null;
-			if (!this.parent) return null;
+			if (!this.parent || !this.isSubKernel) return null;
 			var calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
 			for (var i = 0; i < calledFunctionArguments.length; i++) {
 				var calledFunctionArgument = calledFunctionArguments[i];
