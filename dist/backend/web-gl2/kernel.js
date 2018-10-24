@@ -555,12 +555,6 @@ module.exports = function (_WebGLKernel) {
 						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
-				case 'Integer':
-				case 'Float':
-					{
-						this.setUniform1f('constants_' + name, value);
-						break;
-					}
 				case 'Input':
 					{
 						var input = value;
@@ -668,6 +662,8 @@ module.exports = function (_WebGLKernel) {
 						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
+				case 'Integer':
+				case 'Float':
 				default:
 					throw new Error('Input type not supported (WebGL): ' + value);
 			}
