@@ -15,7 +15,6 @@
 			expected[i] = input[i % 3];
 		}
 		QUnit.assert.deepEqual(myFunc3([1, 2, 3]), expected);
-		// QUnit.assert.ok()
 		gpu.destroy();
 	}
 

@@ -17,30 +17,30 @@
       && result[1].toFixed(1) === match[1].toFixed(1)
     );
     QUnit.assert.ok(test, 'float constant passed test');
-    tryConst.destroy();
+    gpu.destroy();
   }
 
-  QUnit.test( 'floatConstantTest (auto)', function(assert) {
+  QUnit.test( 'floatConstantTest (auto)', function() {
     var mode = null;
     floatConstantTest(mode);
   });
 
-  QUnit.test( 'floatConstantTest (gpu)', function(assert) {
+  QUnit.test( 'floatConstantTest (gpu)', function() {
     var mode = 'gpu';
     floatConstantTest(mode);
   });
 
-  QUnit.test( 'floatConstantTest (webgl)', function(assert) {
+  QUnit.test( 'floatConstantTest (webgl)', function() {
     var mode = 'webgl';
     floatConstantTest(mode);
   });
 
-  QUnit.test( 'floatConstantTest (webgl2)', function(assert) {
+  QUnit.test( 'floatConstantTest (webgl2)', function() {
     var mode = 'webgl2';
     floatConstantTest(mode);
   });
 
-  QUnit.test( 'floatConstantTest (cpu)', function(assert) {
+  QUnit.test( 'floatConstantTest (cpu)', function() {
     var mode = 'cpu';
     floatConstantTest(mode);
   });

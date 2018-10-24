@@ -220,9 +220,9 @@ class UtilsCore {
 
 		// Create a new canvas DOM
 		let webGl = null;
-
+		const defaultOptions = UtilsCore.initWebGlDefaultOptions();
 		try {
-			webGl = canvasObj.getContext('experimental-webgl', UtilsCore.initWebGlDefaultOptions());
+			webGl = canvasObj.getContext('experimental-webgl', defaultOptions);
 		} catch (e) {
 			// 'experimental-webgl' is not a supported context type
 			// fallback to 'webgl2' or 'webgl' below
@@ -230,8 +230,8 @@ class UtilsCore {
 
 		if (webGl === null) {
 			webGl = (
-				canvasObj.getContext('webgl2', UtilsCore.initWebGlDefaultOptions()) ||
-				canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions())
+				canvasObj.getContext('webgl2', defaultOptions) ||
+				canvasObj.getContext('webgl', defaultOptions)
 			);
 		}
 
@@ -286,6 +286,7 @@ class UtilsCore {
 	 * @throws if not correctly defined
 	 */
 	static checkOutput(output) {
+		if (!output || !Array.isArray(output)) throw new Error('kernel.output not an array');
 		for (let i = 0; i < output.length; i++) {
 			if (isNaN(output[i]) || output[i] < 1) {
 				throw new Error(`kernel.output[${ i }] incorrectly defined as \`${ output[i] }\`, needs to be numeric, and greater than 0`);

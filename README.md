@@ -1,8 +1,8 @@
 [![Logo](http://gpu.rocks/img/ogimage.png)](http://gpu.rocks/)
 
 
-# gpu.js
-gpu.js is a JavaScript Acceleration library for GPGPU (General purpose computing on GPUs) in JavaScript. gpu.js will automatically compile simple JavaScript functions into shader language and run them on the GPU. In case a GPU is not available, the functions will still run in regular JavaScript.
+# GPU.js
+GPU.js is a JavaScript Acceleration library for GPGPU (General purpose computing on GPUs) in JavaScript. GPU.js will automatically compile simple JavaScript functions into shader language and run them on the GPU. In case a GPU is not available, the functions will still run in regular JavaScript.
 
 
 [![Join the chat at https://gitter.im/gpujs/gpu.js](https://badges.gitter.im/gpujs/gpu.js.svg)](https://gitter.im/gpujs/gpu.js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -10,7 +10,7 @@ gpu.js is a JavaScript Acceleration library for GPGPU (General purpose computing
 
 # What is this sorcery?
 
-Matrix multiplication written in gpu.js:
+Matrix multiplication written in GPU.js:
 
 ```js
 const gpu = new GPU();
@@ -50,6 +50,7 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 * [Adding Custom Functions Directly to Kernel](#adding-custom-functions-directly-to-kernel)
 * [Loops](#loops)
 * [Pipelining](#pipelining)
+* [Offscreen Canvas](#offscreen-canvas)
 * [Cleanup](#cleanup)
 * [Flattened typed array support](#flattened-typed-array-support)
 * [Supported Math functions](#supported-math-functions)
@@ -78,7 +79,7 @@ yarn add gpu.js
 
 ### Browser
 
-Download the latest version of gpu.js and include the files in your HTML page using the following tags:
+Download the latest version of GPU.js and include the files in your HTML page using the following tags:
 
 ```html
 <script src="/path/to/js/gpu.min.js"></script>
@@ -405,12 +406,46 @@ const matMult = gpu.createKernel(function(a, b) {
 [Pipeline](https://en.wikipedia.org/wiki/Pipeline_(computing)) is a feature where values are sent directly from kernel to kernel via a texture.
 This results in extremely fast computing.  This is achieved with the kernel option `outputToTexture: boolean` option or by calling `kernel.setOutputToTexture(true)`
 
+## Offscreen Canvas
+GPU.js supports offscreen canvas where available.  Here is an example of how to use it with two files, `gpu-worker.js`, and `index.js`:
+
+file: `gpu-worker.js`
+```js
+importScripts('path/to/gpu.js');
+onmessage = function() {
+  // define gpu instance
+  const gpu = new GPU();
+  
+  // input values
+  const a = [1,2,3];
+  const b = [3,2,1];
+  
+  // setup kernel
+  const kernel = gpu.createKernel(function(a, b) {
+    return a[this.thread.x] - b[this.thread.x];
+  })
+    .setOutput([3]);
+  
+  // output some results!
+  postMessage(kernel(a, b));
+};
+```
+
+file: `index.js`
+```js
+var worker = new Worker('gpu-worker.js');
+worker.onmessage = function(e) {
+  var result = e.data;
+  console.log(result);
+};
+```
+
 ## Cleanup
 * for instances of `GPU` use the `destroy` method.  Example: `gpu.destroy()`
 * for instances of `Kernel` use the `destroy` method.  Example: `kernel.destroy()`
 
 ## Flattened typed array support
-To use the useful `x`, `y`, `z` `thread` lookup api inside of gpu.js, and yet use flattened arrays, there is the `Input` type.
+To use the useful `x`, `y`, `z` `thread` lookup api inside of GPU.js, and yet use flattened arrays, there is the `Input` type.
 This is generally much faster for when sending values to the gpu, especially with larger data sets.  Usage example:
 ```js
 import GPU, { input } from 'gpu.js';
@@ -490,7 +525,7 @@ We promise never to pass off your code as ours.
 
 The MIT License
 
-Copyright (c) 2017 gpu.js Team
+Copyright (c) 2018 GPU.js Team
  
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

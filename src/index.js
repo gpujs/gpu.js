@@ -50,3 +50,6 @@ if (typeof module !== 'undefined') {
 if (typeof window !== 'undefined') {
 	window.GPU = GPU;
 }
+if (typeof self !== 'undefined') {
+	self.GPU = GPU;
+}

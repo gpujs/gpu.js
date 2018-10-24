@@ -14,30 +14,30 @@
     var match = new Float32Array([200, 200]);
     var test = (result[0] === match[0] && result[1] === match[1]);
     QUnit.assert.ok(test, 'int constant passed test');
-    tryConst.destroy();
+    gpu.destroy();
   }
 
-  QUnit.test( 'integerConstantTest (auto)', function(assert) {
+  QUnit.test( 'integerConstantTest (auto)', function() {
     var mode = null;
     integerConstantTest(mode);
   });
 
-  QUnit.test( 'integerConstantTest (gpu)', function(assert) {
+  QUnit.test( 'integerConstantTest (gpu)', function() {
     var mode = 'gpu';
     integerConstantTest(mode);
   });
 
-  QUnit.test( 'integerConstantTest (webgl)', function(assert) {
+  QUnit.test( 'integerConstantTest (webgl)', function() {
     var mode = 'webgl';
     integerConstantTest(mode);
   });
 
-  QUnit.test( 'integerConstantTest (webgl2)', function(assert) {
+  QUnit.test( 'integerConstantTest (webgl2)', function() {
     var mode = 'webgl2';
     integerConstantTest(mode);
   });
 
-  QUnit.test( 'integerConstantTest (cpu)', function(assert) {
+  QUnit.test( 'integerConstantTest (cpu)', function() {
     var mode = 'cpu';
     integerConstantTest(mode);
   });

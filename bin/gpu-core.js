@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.8.1
- * @date Fri Sep 21 2018 06:53:44 GMT-0400 (EDT)
+ * @version 1.9.0
+ * @date Wed Oct 24 2018 14:09:46 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -88,7 +88,7 @@ var UtilsCore = function () {
 
 
 		value: function isCanvas(canvasObj) {
-			return canvasObj !== null && canvasObj.nodeName && canvasObj.getContext && canvasObj.nodeName.toUpperCase() === 'CANVAS';
+			return canvasObj !== null && (canvasObj.nodeName && canvasObj.getContext && canvasObj.nodeName.toUpperCase() === 'CANVAS' || typeof OffscreenCanvas !== 'undefined' && canvasObj instanceof OffscreenCanvas);
 		}
 
 
@@ -106,7 +106,7 @@ var UtilsCore = function () {
 				return null;
 			}
 
-			var canvas = document.createElement('canvas');
+			var canvas = typeof document !== 'undefined' ? document.createElement('canvas') : new OffscreenCanvas(0, 0);
 
 			canvas.width = 2;
 			canvas.height = 2;
@@ -125,9 +125,23 @@ var UtilsCore = function () {
 
 
 	}, {
+		key: 'isWebGl2',
+		value: function isWebGl2(webGl2Obj) {
+			return webGl2Obj && typeof WebGL2RenderingContext !== 'undefined' && webGl2Obj instanceof WebGL2RenderingContext;
+		}
+
+
+	}, {
 		key: 'isWebGlSupported',
 		value: function isWebGlSupported() {
 			return _isWebGlSupported;
+		}
+
+
+	}, {
+		key: 'isWebGl2Supported',
+		value: function isWebGl2Supported() {
+			return _isWebGl2Supported;
 		}
 	}, {
 		key: 'isWebGlDrawBuffersSupported',
@@ -161,7 +175,16 @@ var UtilsCore = function () {
 				throw new Error('Invalid canvas object - ' + canvasObj);
 			}
 
-			var webGl = canvasObj.getContext('experimental-webgl', UtilsCore.initWebGlDefaultOptions()) || canvasObj.getContext('webgl', UtilsCore.initWebGlDefaultOptions());
+			var webGl = null;
+			var defaultOptions = UtilsCore.initWebGlDefaultOptions();
+			try {
+				webGl = canvasObj.getContext('experimental-webgl', defaultOptions);
+			} catch (e) {
+			}
+
+			if (webGl === null) {
+				webGl = canvasObj.getContext('webgl2', defaultOptions) || canvasObj.getContext('webgl', defaultOptions);
+			}
 
 			if (webGl) {
 				webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
@@ -194,6 +217,7 @@ var UtilsCore = function () {
 	}, {
 		key: 'checkOutput',
 		value: function checkOutput(output) {
+			if (!output || !Array.isArray(output)) throw new Error('kernel.output not an array');
 			for (var i = 0; i < output.length; i++) {
 				if (isNaN(output[i]) || output[i] < 1) {
 					throw new Error('kernel.output[' + i + '] incorrectly defined as `' + output[i] + '`, needs to be numeric, and greater than 0');
@@ -206,9 +230,11 @@ var UtilsCore = function () {
 }();
 
 
-var _isCanvasSupported = typeof document !== 'undefined' ? UtilsCore.isCanvas(document.createElement('canvas')) : false;
+var _isCanvasSupported = typeof document !== 'undefined' ? UtilsCore.isCanvas(document.createElement('canvas')) : typeof OffscreenCanvas !== 'undefined';
 var _testingWebGl = UtilsCore.initWebGl(UtilsCore.initCanvas());
+var _testingWebGl2 = UtilsCore.initWebGl2(UtilsCore.initCanvas());
 var _isWebGlSupported = UtilsCore.isWebGl(_testingWebGl);
+var _isWebGl2Supported = UtilsCore.isWebGl2(_testingWebGl2);
 var _isWebGlDrawBuffersSupported = _isWebGlSupported && Boolean(_testingWebGl.getExtension('WEBGL_draw_buffers'));
 
 if (_isWebGlSupported) {

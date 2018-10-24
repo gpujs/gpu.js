@@ -34,7 +34,7 @@
         }
       ).setOutput([width, height, 4]);
       cb(tryConst);
-      tryConst.destroy();
+      gpu.destroy();
       done();
     }
   }

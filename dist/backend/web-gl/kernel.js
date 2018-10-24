@@ -225,7 +225,6 @@ module.exports = function (_KernelBase) {
 			var vertShader = gl.createShader(gl.VERTEX_SHADER);
 			gl.shaderSource(vertShader, compiledVertShaderString);
 			gl.compileShader(vertShader);
-			if (this.vertShader) {}
 			this.vertShader = vertShader;
 
 			var compiledFragShaderString = this._getFragShaderString(arguments);

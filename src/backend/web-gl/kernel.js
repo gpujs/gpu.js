@@ -194,9 +194,6 @@ module.exports = class WebGLKernel extends KernelBase {
 		const vertShader = gl.createShader(gl.VERTEX_SHADER);
 		gl.shaderSource(vertShader, compiledVertShaderString);
 		gl.compileShader(vertShader);
-		if (this.vertShader) {
-
-		}
 		this.vertShader = vertShader;
 
 		const compiledFragShaderString = this._getFragShaderString(arguments);

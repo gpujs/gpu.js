@@ -2,6 +2,8 @@
 
 const utils = require('../../core/utils');
 const kernelRunShortcut = require('../kernel-run-shortcut');
+const Input = require('../../core/input');
+const Texture = require('../../core/texture');
 
 function removeFnNoise(fn) {
 	if (/^function /.test(fn)) {
@@ -35,14 +37,17 @@ module.exports = function(gpuKernel, name) {
     const Utils = utils;
     const canvases = [];
     const maxTexSizes = {};
+    let Texture = function() {};
+    let Input = function() {}; 
     class ${ name || 'Kernel' } {
       constructor() {
         this.maxTexSize = null;
         this.argumentsLength = 0;
+        this.constantsLength = 0;
         this._canvas = null;
         this._webGl = null;
-        this.built = false;
         this.program = null;
+        this.outputToTexture = ${ gpuKernel.outputToTexture ? 'true' : 'false' };
         this.paramNames = ${ JSON.stringify(gpuKernel.paramNames) };
         this.paramTypes = ${ JSON.stringify(gpuKernel.paramTypes) };
         this.texSize = ${ JSON.stringify(gpuKernel.texSize) };
@@ -61,19 +66,20 @@ module.exports = function(gpuKernel, name) {
 		    this.uniform3fvCache = {};
 		    this.uniform3ivCache = {};
       }
-      ${ removeFnNoise(gpuKernel._getFragShaderString.toString()) }
-      ${ removeFnNoise(gpuKernel._getVertShaderString.toString()) }
+      _getFragShaderString() { return this.compiledFragShaderString; }
+      _getVertShaderString() { return this.compiledVertShaderString; }
       validateOptions() {}
       setupParams() {}
       setupConstants() {}
       setCanvas(canvas) { this._canvas = canvas; return this; }
       setWebGl(webGl) { this._webGl = webGl; return this; }
+      setTexture(Type) { Texture = Type; }
+      setInput(Type) { Input = Type; }
       ${ removeFnNoise(gpuKernel.getUniformLocation.toString()) }
-      ${ removeFnNoise(gpuKernel.setupParams.toString()) }
-      ${ removeFnNoise(gpuKernel.setupConstants.toString()) }
       ${ removeFnNoise(gpuKernel.build.toString()) }
 		  ${ removeFnNoise(gpuKernel.run.toString()) }
 		  ${ removeFnNoise(gpuKernel._addArgument.toString()) }
+		  ${ removeFnNoise(gpuKernel._formatArrayTransfer.toString()) }
 		  ${ removeFnNoise(gpuKernel.getArgumentTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.getTextureCache.toString()) }
 		  ${ removeFnNoise(gpuKernel.getOutputTexture.toString()) }
@@ -86,8 +92,8 @@ module.exports = function(gpuKernel, name) {
 		  ${ removeFnNoise(gpuKernel.setUniform2f.toString()) }
 		  ${ removeFnNoise(gpuKernel.setUniform2fv.toString()) }
 		  ${ removeFnNoise(gpuKernel.setUniform2iv.toString()) }
-		  ${ removeFnNoise(gpuKernel.setUniform3fv.toString()) } 
-		  ${ removeFnNoise(gpuKernel.setUniform3iv.toString()) } 
+		  ${ removeFnNoise(gpuKernel.setUniform3fv.toString()) }
+		  ${ removeFnNoise(gpuKernel.setUniform3iv.toString()) }
     };
     return kernelRunShortcut(new Kernel());
   };`;

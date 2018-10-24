@@ -23,7 +23,7 @@
 
     QUnit.assert.ok( render.getCanvas(), 'testing for canvas after render' );
     QUnit.assert.ok( gpu.getCanvas(), 'testing for canvas after render' );
-
+    gpu.destroy();
   }
 
   QUnit.test( 'getCanvas (auto)', function() {

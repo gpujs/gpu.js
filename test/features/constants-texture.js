@@ -20,30 +20,30 @@
     var match = new Float32Array([200, 200]);
     var test = (result[0] === match[0] && result[1] === match[1]);
     QUnit.assert.ok(test, 'texture constant passed test');
-    tryConst.destroy();
+    gpu.destroy();
   }
 
-  QUnit.test( 'textureConstantTest (auto)', function(assert) {
+  QUnit.test( 'textureConstantTest (auto)', function() {
     var mode = null;
     textureConstantTest(mode);
   });
 
-  QUnit.test( 'textureConstantTest (gpu)', function(assert) {
+  QUnit.test( 'textureConstantTest (gpu)', function() {
     var mode = 'gpu';
     textureConstantTest(mode);
   });
 
-  QUnit.test( 'textureConstantTest (webgl)', function(assert) {
+  QUnit.test( 'textureConstantTest (webgl)', function() {
     var mode = 'webgl';
     textureConstantTest(mode);
   });
 
-  QUnit.test( 'textureConstantTest (webgl2)', function(assert) {
+  QUnit.test( 'textureConstantTest (webgl2)', function() {
     var mode = 'webgl2';
     textureConstantTest(mode);
   });
 
-  QUnit.test( 'textureConstantTest (cpu)', function(assert) {
+  QUnit.test( 'textureConstantTest (cpu)', function() {
     var mode = 'cpu';
     textureConstantTest(mode);
   });

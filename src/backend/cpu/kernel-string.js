@@ -23,6 +23,7 @@ module.exports = function(cpuKernel, name) {
       checkOutput: ${ removeNoise(utils.checkOutput.toString()) }
     };
     const Utils = utils;
+    let Input = function() {};
     class ${ name || 'Kernel' } {
       constructor() {        
         this.argumentsLength = 0;
@@ -49,6 +50,7 @@ module.exports = function(cpuKernel, name) {
       }
       setCanvas(canvas) { this._canvas = canvas; return this; }
       setWebGl(webGl) { this._webGl = webGl; return this; }
+      setInput(Type) { Input = Type; }
       ${ removeFnNoise(cpuKernel.build.toString()) }
       ${ removeFnNoise(cpuKernel.setupParams.toString()) }
       ${ removeFnNoise(cpuKernel.setupConstants.toString()) }

@@ -29,7 +29,7 @@
       var result = tryConst();
       var test = result[0][0][0] > 0;
       QUnit.assert.ok(test, 'image constant passed test');
-      tryConst.destroy();
+      gpu.destroy();
       done();
     }
   }

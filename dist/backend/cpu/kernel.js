@@ -177,8 +177,6 @@ module.exports = function (_KernelBase) {
 	}, {
 		key: 'getKernelString',
 		value: function getKernelString() {
-			var _this2 = this;
-
 			if (this._kernelString !== null) return this._kernelString;
 
 			var builder = this.functionBuilder;
@@ -245,29 +243,9 @@ module.exports = function (_KernelBase) {
 			} else {
 				kernel = prototypes.shift();
 			}
-			var kernelString = this._kernelString = '\n\t\tvar LOOP_MAX = ' + this._getLoopMaxString() + '\n\t\tvar constants = this.constants;\n\t\tvar _this = this;\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '  var ' + name + ' = null;\n';
-			}).join('')) + '\n    return function (' + this.paramNames.map(function (paramName) {
+			var kernelString = this._kernelString = '\n\t\tvar LOOP_MAX = ' + this._getLoopMaxString() + '\n\t\tvar constants = this.constants;\n\t\tvar _this = this;\n    return function (' + this.paramNames.map(function (paramName) {
 				return 'user_' + paramName;
-			}).join(', ') + ') {\n  ' + this._processConstants() + '\n  ' + this._processParams() + '\n    var ret = new Array(' + threadDim[2] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '  ' + name + 'Z = new Array(' + threadDim[2] + ');\n';
-			}).join('')) + '\n    for (this.thread.z = 0; this.thread.z < ' + threadDim[2] + '; this.thread.z++) {\n      ret[this.thread.z] = new Array(' + threadDim[1] + ');\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '    ' + name + 'Z[this.thread.z] = new Array(' + threadDim[1] + ');\n';
-			}).join('')) + '\n      for (this.thread.y = 0; this.thread.y < ' + threadDim[1] + '; this.thread.y++) {\n        ret[this.thread.z][this.thread.y] = ' + (this.floatOutput ? 'new Float32Array(' + threadDim[0] + ')' : 'new Array(' + threadDim[0] + ')') + ';\n  ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '      ' + name + 'Z[this.thread.z][this.thread.y] = ' + (_this2.floatOutput ? 'new Float32Array(' + threadDim[0] + ')' : 'new Array(' + threadDim[0] + ')') + ';\n';
-			}).join('')) + '\n        for (this.thread.x = 0; this.thread.x < ' + threadDim[0] + '; this.thread.x++) {\n          var kernelResult;\n          ' + kernel + '\n          ret[this.thread.z][this.thread.y][this.thread.x] = kernelResult;\n' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '        ' + name + 'Z[this.thread.z][this.thread.y][this.thread.x] = ' + name + ';\n';
-			}).join('')) + '\n          }\n        }\n      }\n      \n      if (this.graphical) {\n        this._imageData.data.set(this._colorData);\n        this._canvasCtx.putImageData(this._imageData, 0, 0);\n        return;\n      }\n      \n      if (this.output.length === 1) {\n        ret = ret[0][0];\n        ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '    ' + name + ' = ' + name + 'Z[0][0];\n';
-			}).join('')) + '\n      \n      } else if (this.output.length === 2) {\n        ret = ret[0];\n        ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '    ' + name + ' = ' + name + 'Z[0];\n';
-			}).join('')) + '\n      } else {\n        ' + (this.subKernelOutputVariableNames === null ? '' : this.subKernelOutputVariableNames.map(function (name) {
-				return '    ' + name + ' = ' + name + 'Z;\n';
-			}).join('')) + '\n      }\n    \n      ' + (this.subKernelOutputVariableNames === null ? 'return ret;\n' : this.subKernels !== null ? 'var result = [\n        ' + this.subKernelOutputVariableNames.map(function (name) {
-				return '' + name;
-			}).join(',\n') + '\n      ];\n      result.result = ret;\n      return result;\n' : 'return {\n        result: ret,\n        ' + Object.keys(this.subKernelProperties).map(function (name, i) {
-				return name + ': ' + _this2.subKernelOutputVariableNames[i];
-			}).join(',\n') + '\n      };') + '\n    ' + (prototypes.length > 0 ? prototypes.join('\n') : '') + '\n    }.bind(this);';
+			}).join(', ') + ') {\n      ' + this._processConstants() + '\n      ' + this._processParams() + '\n      ' + this._kernelLoop(kernel) + '\n      if (this.graphical) {\n        this._imageData.data.set(this._colorData);\n        this._canvasCtx.putImageData(this._imageData, 0, 0);\n        return;\n      }\n      ' + this._kernelOutput() + '\n      ' + (prototypes.length > 0 ? prototypes.join('\n') : '') + '\n    }.bind(this);';
 			return kernelString;
 		}
 
@@ -385,6 +363,73 @@ module.exports = function (_KernelBase) {
 				imagesArray[i] = this._imageTo2DArray(images[i]);
 			}
 			return imagesArray;
+		}
+	}, {
+		key: '_kernelLoop',
+		value: function _kernelLoop(kernelString) {
+			switch (this.output.length) {
+				case 1:
+					return this._kernel1DLoop(kernelString);
+				case 2:
+					return this._kernel2DLoop(kernelString);
+				case 3:
+					return this._kernel3DLoop(kernelString);
+				default:
+					throw new Error('unsupported size kernel');
+			}
+		}
+	}, {
+		key: '_kernel1DLoop',
+		value: function _kernel1DLoop(kernelString) {
+			var threadDim = this.threadDim;
+			return '\n    var result = new Float32Array(' + threadDim[0] + ');\n    ' + this._mapSubKernels(function (name) {
+				return 'var result_' + name + ' = new Float32Array(' + threadDim[0] + ');\n';
+			}).join('') + '\n    for (var x = 0; x < ' + threadDim[0] + '; x++) {\n      this.thread.x = x;\n      this.thread.y = 0;\n      this.thread.z = 0;\n      var kernelResult;\n      ' + kernelString + '\n      result[x] = kernelResult;\n      ' + this._mapSubKernels(function (name) {
+				return 'result_' + name + '[x] = ' + name + ';\n';
+			}).join('') + '\n    }';
+		}
+	}, {
+		key: '_kernel2DLoop',
+		value: function _kernel2DLoop(kernelString) {
+			var threadDim = this.threadDim;
+			return '\n    var result = new Array(' + threadDim[1] + ');\n    ' + this._mapSubKernels(function (name) {
+				return 'var result_' + name + ' = new Array(' + threadDim[1] + ');\n';
+			}).join('') + '\n    for (var y = 0; y < ' + threadDim[1] + '; y++) {\n      this.thread.z = 0;\n      this.thread.y = y;\n      var resultX = result[y] = new Float32Array(' + threadDim[0] + ');\n      ' + this._mapSubKernels(function (name) {
+				return 'var result_' + name + 'X = result_' + name + '[y] = new Float32Array(' + threadDim[0] + ');\n';
+			}).join('') + '\n      for (var x = 0; x < ' + threadDim[0] + '; x++) {\n      \tthis.thread.x = x;\n        var kernelResult;\n        ' + kernelString + '\n        resultX[x] = kernelResult;\n        ' + this._mapSubKernels(function (name) {
+				return 'result_' + name + 'X[x] = ' + name + ';\n';
+			}).join('') + '\n      }\n    }';
+		}
+	}, {
+		key: '_kernel3DLoop',
+		value: function _kernel3DLoop(kernelString) {
+			var threadDim = this.threadDim;
+			return '\n    var result = new Array(' + threadDim[2] + ');\n    ' + this._mapSubKernels(function (name) {
+				return 'var result_' + name + ' = new Array(' + threadDim[2] + ');\n';
+			}).join('') + '\n    for (var z = 0; z < ' + threadDim[2] + '; z++) {\n      this.thread.z = z;\n      var resultY = result[z] = new Array(' + threadDim[1] + ');\n      ' + this._mapSubKernels(function (name) {
+				return 'var result_' + name + 'Y = result_' + name + '[z] = new Array(' + threadDim[1] + ');\n';
+			}).join('') + '\n      for (var y = 0; y < ' + threadDim[1] + '; y++) {\n        this.thread.y = y;\n        var resultX = resultY[y] = new Float32Array(' + threadDim[0] + ');\n        ' + this._mapSubKernels(function (name) {
+				return 'var result_' + name + 'X = result_' + name + 'Y[y] = new Float32Array(' + threadDim[0] + ');\n';
+			}).join('') + '\n        for (var x = 0; x < ' + threadDim[0] + '; x++) {\n        \tthis.thread.x = x;\n          var kernelResult;\n          ' + kernelString + '\n          resultX[x] = kernelResult;\n          ' + this._mapSubKernels(function (name) {
+				return 'result_' + name + 'X[x] = ' + name + ';\n';
+			}).join('') + '\n        }\n      }\n    }';
+		}
+	}, {
+		key: '_kernelOutput',
+		value: function _kernelOutput() {
+			var _this2 = this;
+
+			if (!this.subKernelOutputVariableNames) {
+				return 'return result;';
+			}
+			return 'return {\n      result: result,\n      ' + Object.keys(this.subKernelProperties || this.subKernelOutputVariableNames).map(function (name, i) {
+				return name + ': result_' + _this2.subKernelOutputVariableNames[i];
+			}).join(',\n') + '\n    };';
+		}
+	}, {
+		key: '_mapSubKernels',
+		value: function _mapSubKernels(fn) {
+			return this.subKernelOutputVariableNames === null ? [''] : this.subKernelOutputVariableNames.map(fn);
 		}
 	}]);
 
