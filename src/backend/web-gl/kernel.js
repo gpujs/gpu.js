@@ -264,7 +264,7 @@ module.exports = class WebGLKernel extends KernelBase {
 		for (let p in this.constants) {
 			const value = this.constants[p]
 			const type = utils.getArgumentType(value);
-			if (type === 'Decimal' || type === 'Integer') {
+			if (type === 'Float' || type === 'Integer') {
 				continue;
 			}
 			gl.useProgram(this.program);
@@ -904,12 +904,6 @@ module.exports = class WebGLKernel extends KernelBase {
 					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
-			case 'Integer':
-			case 'Float':
-				{
-					this.setUniform1f(`constants_${name}`, value);
-					break;
-				}
 			case 'Input':
 				{
 					const input = value;
@@ -990,6 +984,8 @@ module.exports = class WebGLKernel extends KernelBase {
 					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
+			case 'Integer':
+			case 'Float':
 			default:
 				throw new Error('Input type not supported (WebGL): ' + value);
 		}

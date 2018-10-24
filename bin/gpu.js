@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.9.0
- * @date Wed Oct 24 2018 14:09:46 GMT-0400 (EDT)
+ * @date Wed Oct 24 2018 14:56:51 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -2683,15 +2683,11 @@ module.exports = function (_FunctionNodeBase) {
 					retArr.push('3.402823466e+38');
 					break;
 				default:
-					if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
-						this.pushParameter(retArr, 'constants_' + idtNode.name);
+					var userParamName = this.getUserParamName(idtNode.name);
+					if (userParamName !== null) {
+						this.pushParameter(retArr, 'user_' + userParamName);
 					} else {
-						var userParamName = this.getUserParamName(idtNode.name);
-						if (userParamName !== null) {
-							this.pushParameter(retArr, 'user_' + userParamName);
-						} else {
-							this.pushParameter(retArr, 'user_' + idtNode.name);
-						}
+						this.pushParameter(retArr, 'user_' + idtNode.name);
 					}
 			}
 
@@ -3642,7 +3638,7 @@ module.exports = function (_KernelBase) {
 			for (var p in this.constants) {
 				var value = this.constants[p];
 				var type = utils.getArgumentType(value);
-				if (type === 'Decimal' || type === 'Integer') {
+				if (type === 'Float' || type === 'Integer') {
 					continue;
 				}
 				gl.useProgram(this.program);
@@ -4160,12 +4156,6 @@ module.exports = function (_KernelBase) {
 						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
-				case 'Integer':
-				case 'Float':
-					{
-						this.setUniform1f('constants_' + name, value);
-						break;
-					}
 				case 'Input':
 					{
 						var input = value;
@@ -4240,6 +4230,8 @@ module.exports = function (_KernelBase) {
 						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
+				case 'Integer':
+				case 'Float':
 				default:
 					throw new Error('Input type not supported (WebGL): ' + value);
 			}
@@ -4919,15 +4911,11 @@ module.exports = function (_WebGLFunctionNode) {
 					retArr.push('intBitsToFloat(2139095039)');
 					break;
 				default:
-					if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
-						this.pushParameter(retArr, 'constants_' + idtNode.name);
+					var userParamName = this.getUserParamName(idtNode.name);
+					if (userParamName !== null) {
+						this.pushParameter(retArr, 'user_' + userParamName);
 					} else {
-						var userParamName = this.getUserParamName(idtNode.name);
-						if (userParamName !== null) {
-							this.pushParameter(retArr, 'user_' + userParamName);
-						} else {
-							this.pushParameter(retArr, 'user_' + idtNode.name);
-						}
+						this.pushParameter(retArr, 'user_' + idtNode.name);
 					}
 			}
 
@@ -5417,12 +5405,6 @@ module.exports = function (_WebGLKernel) {
 						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
-				case 'Integer':
-				case 'Float':
-					{
-						this.setUniform1f('constants_' + name, value);
-						break;
-					}
 				case 'Input':
 					{
 						var input = value;
@@ -5528,6 +5510,8 @@ module.exports = function (_WebGLKernel) {
 						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
+				case 'Integer':
+				case 'Float':
 				default:
 					throw new Error('Input type not supported (WebGL): ' + value);
 			}

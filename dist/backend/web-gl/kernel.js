@@ -287,7 +287,7 @@ module.exports = function (_KernelBase) {
 			for (var p in this.constants) {
 				var value = this.constants[p];
 				var type = utils.getArgumentType(value);
-				if (type === 'Decimal' || type === 'Integer') {
+				if (type === 'Float' || type === 'Integer') {
 					continue;
 				}
 				gl.useProgram(this.program);
@@ -942,12 +942,6 @@ module.exports = function (_KernelBase) {
 						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
-				case 'Integer':
-				case 'Float':
-					{
-						this.setUniform1f('constants_' + name, value);
-						break;
-					}
 				case 'Input':
 					{
 						var input = value;
@@ -1023,6 +1017,8 @@ module.exports = function (_KernelBase) {
 						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
+				case 'Integer':
+				case 'Float':
 				default:
 					throw new Error('Input type not supported (WebGL): ' + value);
 			}

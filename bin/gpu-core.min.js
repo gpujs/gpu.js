@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.9.0
- * @date Wed Oct 24 2018 14:09:46 GMT-0400 (EDT)
+ * @date Wed Oct 24 2018 14:56:50 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License

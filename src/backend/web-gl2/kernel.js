@@ -562,12 +562,6 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
-			case 'Integer':
-			case 'Float':
-				{
-					this.setUniform1f(`constants_${name}`, value);
-					break;
-				}
 			case 'Input':
 				{
 					const input = value;
@@ -703,6 +697,8 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
+			case 'Integer':
+			case 'Float':
 			default:
 				throw new Error('Input type not supported (WebGL): ' + value);
 		}

@@ -354,15 +354,11 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				retArr.push('3.402823466e+38');
 				break;
 			default:
-				if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
-					this.pushParameter(retArr, 'constants_' + idtNode.name);
+				const userParamName = this.getUserParamName(idtNode.name);
+				if (userParamName !== null) {
+					this.pushParameter(retArr, 'user_' + userParamName);
 				} else {
-					const userParamName = this.getUserParamName(idtNode.name);
-					if (userParamName !== null) {
-						this.pushParameter(retArr, 'user_' + userParamName);
-					} else {
-						this.pushParameter(retArr, 'user_' + idtNode.name);
-					}
+					this.pushParameter(retArr, 'user_' + idtNode.name);
 				}
 		}
 
