@@ -29,7 +29,7 @@ module.exports = class BaseFunctionNode {
 	constructor(functionName, jsFunction, options) {
 		this.calledFunctions = [];
 		this.calledFunctionsArguments = {};
-		this.addFunction = null;
+		this.builder = null;
 		this.isRootKernel = false;
 		this.isSubKernel = false;
 		this.parent = null;
@@ -164,8 +164,8 @@ module.exports = class BaseFunctionNode {
 		return this.paramTypes[this.paramNames.indexOf(paramName)] === 'Input';
 	}
 
-	setAddFunction(fn) {
-		this.addFunction = fn;
+	setBuilder(builder) {
+		this.builder = builder;
 		return this;
 	}
 

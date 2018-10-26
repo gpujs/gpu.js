@@ -110,11 +110,6 @@ module.exports = class KernelBase {
 		}
 	}
 
-	setAddFunction(cb) {
-		this.addFunction = cb;
-		return this;
-	}
-
 	setFunctions(functions) {
 		this.functions = functions;
 		return this;

@@ -56,9 +56,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @returns {Array} the append retArr
 	 */
 	astFunctionDeclaration(ast, retArr) {
-		if (this.addFunction) {
-			this.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
-		}
+		this.builder.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
 		return retArr;
 	}
 
@@ -143,6 +141,15 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					case 'Input':
 					case 'Array':
 						retArr.push('sampler2D');
+						break;
+					case 'vec2':
+						retArr.push('vec2');
+						break;
+					case 'vec3':
+						retArr.push('vec3');
+						break;
+					case 'vec4':
+						retArr.push('vec4');
 						break;
 					default:
 						retArr.push('float');
@@ -417,7 +424,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				} else {
 					this.astGeneric(forNode.body, retArr);
 				}
-				retArr.push('} else {\n');
+				retArr.push('\n} else {\n');
 				retArr.push('break;\n');
 				retArr.push('}\n');
 				retArr.push('}\n');
@@ -618,7 +625,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 */
 	astExpressionStatement(esNode, retArr) {
 		this.astGeneric(esNode.expression, retArr);
-		retArr.push(';\n');
+		retArr.push(';');
 		return retArr;
 	}
 
@@ -642,17 +649,30 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			}
 			const retDeclaration = [];
 			this.astGeneric(declaration, retDeclaration);
-			if (retDeclaration[2] === 'getImage2D(' || retDeclaration[2] === 'getImage3D(') {
-				if (i === 0) {
-					retArr.push('vec4 ');
-				}
-				this.declarations[declaration.id.name] = 'vec4';
-			} else {
-				if (i === 0) {
-					retArr.push('float ');
-				}
-				this.declarations[declaration.id.name] = 'float';
+			let type = 'float';
+			switch (retDeclaration[2]) {
+				case 'getImage2D(':
+				case 'getImage3D(':
+					if (i === 0) {
+						retArr.push('vec4 ');
+					}
+					type = 'vec4';
+					break;
+				default:
+					if (i === 0) {
+						if (declaration.init && declaration.init.name && this.declarations[declaration.init.name]) {
+							type = this.declarations[declaration.init.name];
+							retArr.push(type + ' ');
+						} else if (declaration.init && declaration.init.type && declaration.init.type === 'ArrayExpression') {
+							type = 'vec' + declaration.init.elements.length;
+							retArr.push(type + ' ');
+						} else {
+							retArr.push('float ');
+						}
+					}
+					break;
 			}
+			this.declarations[declaration.id.name] = type;
 			retArr.push.apply(retArr, retDeclaration);
 		}
 		retArr.push(';');
@@ -891,7 +911,11 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					// This normally refers to the global read only input vars
 					let variableType = null;
 					if (mNode.object.name) {
-						variableType = this.getParamType(mNode.object.name);
+						if (this.declarations[mNode.object.name]) {
+							variableType = this.declarations[mNode.object.name];
+						} else {
+							variableType = this.getParamType(mNode.object.name);
+						}
 					} else if (
 						mNode.object &&
 						mNode.object.object &&
@@ -901,6 +925,8 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 						variableType = this.getConstantType(mNode.object.property.name);
 					}
 					switch (variableType) {
+						case 'vec2':
+						case 'vec3':
 						case 'vec4':
 							// Get from local vec4
 							this.astGeneric(mNode.object, retArr);
@@ -1191,7 +1217,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	astArrayExpression(arrNode, retArr) {
 		const arrLen = arrNode.elements.length;
 
-		retArr.push('float[' + arrLen + '](');
+		retArr.push('vec' + arrLen + '(');
 		for (let i = 0; i < arrLen; ++i) {
 			if (i > 0) {
 				retArr.push(', ');
