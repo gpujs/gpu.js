@@ -660,14 +660,29 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					break;
 				default:
 					if (i === 0) {
-						if (declaration.init && declaration.init.name && this.declarations[declaration.init.name]) {
-							type = this.declarations[declaration.init.name];
-							retArr.push(type + ' ');
-						} else if (declaration.init && declaration.init.type && declaration.init.type === 'ArrayExpression') {
-							type = 'vec' + declaration.init.elements.length;
-							retArr.push(type + ' ');
-						} else {
-							retArr.push('float ');
+						if (declaration.init) {
+							if (declaration.init.name && this.declarations[declaration.init.name]) {
+								type = this.declarations[declaration.init.name];
+								retArr.push(type + ' ');
+							} else if (declaration.init.type) {
+								switch (declaration.init.type) {
+									case 'ArrayExpression':
+										type = 'vec' + declaration.init.elements.length;
+										retArr.push(type + ' ');
+										break;
+									case 'CallExpression':
+										const node = this.builder.nodeMap[declaration.init.callee.name];
+										if (node && node.returnType) {
+											type = node.returnType;
+											retArr.push(type + ' ');
+										}
+										break;
+									default:
+										retArr.push('float ');
+								}
+							} else {
+								retArr.push('float ');
+							}
 						}
 					}
 					break;
