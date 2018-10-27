@@ -2,24 +2,24 @@
   function reuse(mode) {
     var gpu = new GPU({ mode: mode });
 
-    var f = gpu.createKernel(function(a, b) {
-      function custom_adder(a, b) {
-        return a + b;
+    var kernel = gpu.createKernel(function(kernelArg1, kernelArg2) {
+      function someFun1(someFun1Arg1, someFun1Arg2) {
+        return customAdder(someFun1Arg1, someFun1Arg2);
       }
-      function some_fun_1(a, b) {
-        return custom_adder(a, b);
+      function someFun2(someFun2Arg1, someFun2Arg2) {
+        return customAdder(someFun2Arg1, someFun2Arg2);
       }
-      function some_fun_2(a, b) {
-        return custom_adder(a, b);
+      function customAdder(customAdderArg1, customAdderArg2) {
+        return customAdderArg1 + customAdderArg2;
       }
-      return some_fun_1(1,2) + some_fun_2(a[this.thread.x], b[this.thread.x]);
+      return someFun1(1,2) + someFun2(kernelArg1[this.thread.x], kernelArg2[this.thread.x]);
     })
       .setOutput([6]);
 
     var a = [1, 2, 3, 5, 6, 7];
     var b = [4, 5, 6, 1, 2, 3];
 
-    var result = f(a,b);
+    var result = kernel(a,b);
     QUnit.assert.deepEqual(QUnit.extend([], result), [8,10,12,9,11,13]);
     gpu.destroy();
   }

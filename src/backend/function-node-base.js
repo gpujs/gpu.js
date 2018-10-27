@@ -138,7 +138,7 @@ module.exports = class BaseFunctionNode {
 						if (paramTypes.hasOwnProperty(key)) {
 							return paramTypes[key];
 						} else {
-							return 'float';
+							return 'Number';
 						}
 					});
 				}
@@ -151,7 +151,7 @@ module.exports = class BaseFunctionNode {
 		// Return type handling
 		//
 		if (!this.returnType) {
-			this.returnType = returnType || 'float';
+			this.returnType = returnType || 'Number';
 		}
 	}
 
@@ -352,7 +352,7 @@ module.exports = class BaseFunctionNode {
 			if (this.declarations.hasOwnProperty(paramName)) {
 				return this.declarations[paramName];
 			} else {
-				return null;
+				return 'Number';
 			}
 		} else {
 			if (!this.parent) {
@@ -368,7 +368,7 @@ module.exports = class BaseFunctionNode {
 				}
 			}
 		}
-		return null;
+		return 'Number';
 	}
 
 	getConstantType(constantName) {

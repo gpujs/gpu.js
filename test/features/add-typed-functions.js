@@ -5,7 +5,7 @@
       return [1, 2];
     }
     gpu.addFunction(typedFunction, {
-      returnType: 'vec2'
+      returnType: 'Array(2)'
     });
     var kernel = gpu.createKernel(function() {
       var result = typedFunction();
@@ -17,13 +17,13 @@
     gpu.destroy();
   }
 
-  QUnit.test( 'add typed functions - vec2 - (auto)', function() {
+  QUnit.test( 'add typed functions - Array(2) - (auto)', function() {
     vec2Test(null);
   });
-  QUnit.test( 'add typed functions - vec2 - (webgl2)', function() {
+  QUnit.test( 'add typed functions - Array(2) - (webgl2)', function() {
     vec2Test('webgl2');
   });
-  QUnit.test( 'add typed functions - vec2 - (webgl)', function() {
+  QUnit.test( 'add typed functions - Array(2) - (webgl)', function() {
     vec2Test('webgl');
   });
 })();
@@ -35,7 +35,7 @@
       return [1, 2, 3];
     }
     gpu.addFunction(typedFunction, {
-      returnType: 'vec3'
+      returnType: 'Array(3)'
     });
     var kernel = gpu.createKernel(function() {
       var result = typedFunction();
@@ -47,13 +47,13 @@
     gpu.destroy();
   }
 
-  QUnit.test( 'add typed functions - vec3 - (auto)', function() {
+  QUnit.test( 'add typed functions - Array(3) - (auto)', function() {
     vec3Test(null);
   });
-  QUnit.test( 'add typed functions - vec3 - (webgl2)', function() {
+  QUnit.test( 'add typed functions - Array(3) - (webgl2)', function() {
     vec3Test('webgl2');
   });
-  QUnit.test( 'add typed functions - vec3 - (webgl)', function() {
+  QUnit.test( 'add typed functions - Array(3) - (webgl)', function() {
     vec3Test('webgl');
   });
 })();
@@ -65,7 +65,7 @@
       return [1, 2, 3, 4];
     }
     gpu.addFunction(typedFunction, {
-      returnType: 'vec4'
+      returnType: 'Array(4)'
     });
     var kernel = gpu.createKernel(function() {
       var result = typedFunction();
@@ -77,13 +77,13 @@
     gpu.destroy();
   }
 
-  QUnit.test( 'add typed functions - vec4 - (auto)', function() {
+  QUnit.test( 'add typed functions - Array(4) - (auto)', function() {
     vec4Test(null);
   });
-  QUnit.test( 'add typed functions - vec4 - (webgl2)', function() {
+  QUnit.test( 'add typed functions - Array(4) - (webgl2)', function() {
     vec4Test('webgl2');
   });
-  QUnit.test( 'add typed functions - vec4 - (webgl)', function() {
+  QUnit.test( 'add typed functions - Array(4) - (webgl)', function() {
     vec4Test('webgl');
   });
 })();

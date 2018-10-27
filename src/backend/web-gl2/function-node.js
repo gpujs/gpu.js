@@ -25,7 +25,7 @@ module.exports = class WebGL2FunctionNode extends WebGLFunctionNode {
 			console.log(this);
 		}
 		if (this.prototypeOnly) {
-			return WebGL2FunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
+			return this.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
 		} else {
 			this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
 		}
@@ -55,7 +55,11 @@ module.exports = class WebGL2FunctionNode extends WebGLFunctionNode {
 			retArr.push('void');
 			this.kernalAst = ast;
 		} else {
-			retArr.push(this.returnType);
+			const type = typeMap[this.returnType];
+			if (!type) {
+				throw new Error(`Unknown type ${ this.returnType }`);
+			}
+			retArr.push(type);
 		}
 		retArr.push(' ');
 		retArr.push(this.functionName);
@@ -164,6 +168,18 @@ module.exports = class WebGL2FunctionNode extends WebGLFunctionNode {
 
 		return retArr;
 	}
+};
+
+const typeMap = {
+	'TextureVec4': 'sampler2D',
+	'Texture': 'sampler2D',
+	'Input': 'sampler2D',
+	'Array': 'sampler2D',
+	'Array(2)': 'vec2',
+	'Array(3)': 'vec3',
+	'Array(4)': 'vec4',
+	'Number': 'float',
+	'Integer': 'float'
 };
 
 /**

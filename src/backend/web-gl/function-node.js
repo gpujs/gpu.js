@@ -79,7 +79,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			return retArr;
 		}
 
-		retArr.push(this.returnType);
+		const returnType = this.returnType;
+		const type = typeMap[returnType];
+		if (!type) {
+			throw new Error(`unknown type ${ returnType }`);
+		}
+		retArr.push(type);
 		retArr.push(' ');
 		retArr.push(this.functionName);
 		retArr.push('(');
@@ -120,7 +125,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			retArr.push('void');
 			this.kernalAst = ast;
 		} else {
-			retArr.push(this.returnType);
+			const returnType = this.returnType;
+			const type = typeMap[returnType];
+			if (!type) {
+				throw new Error(`unknown type ${ returnType }`);
+			}
+			retArr.push(type);
 		}
 		retArr.push(' ');
 		retArr.push(this.functionName);
@@ -134,27 +144,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				if (i > 0) {
 					retArr.push(', ');
 				}
-				const type = this.getParamType(paramName);
-				switch (type) {
-					case 'TextureVec4':
-					case 'Texture':
-					case 'Input':
-					case 'Array':
-						retArr.push('sampler2D');
-						break;
-					case 'vec2':
-						retArr.push('vec2');
-						break;
-					case 'vec3':
-						retArr.push('vec3');
-						break;
-					case 'vec4':
-						retArr.push('vec4');
-						break;
-					default:
-						retArr.push('float');
+				const paramType = this.getParamType(paramName);
+				const type = typeMap[paramType];
+				if (!type) {
+					throw new Error(`unknown type ${ paramType }`);
 				}
-
+				retArr.push(type);
 				retArr.push(' ');
 				retArr.push('user_');
 				retArr.push(paramName);
@@ -649,45 +644,35 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			}
 			const retDeclaration = [];
 			this.astGeneric(declaration, retDeclaration);
-			let type = 'float';
+			let returnType = 'Number';
 			switch (retDeclaration[2]) {
 				case 'getImage2D(':
 				case 'getImage3D(':
-					if (i === 0) {
-						retArr.push('vec4 ');
-					}
-					type = 'vec4';
+					returnType = 'Array(4)';
 					break;
 				default:
 					if (i === 0) {
 						if (declaration.init) {
 							if (declaration.init.name && this.declarations[declaration.init.name]) {
-								type = this.declarations[declaration.init.name];
-								retArr.push(type + ' ');
-							} else if (declaration.init.type) {
-								switch (declaration.init.type) {
-									case 'ArrayExpression':
-										type = 'vec' + declaration.init.elements.length;
-										retArr.push(type + ' ');
-										break;
-									case 'CallExpression':
-										const node = this.builder.nodeMap[declaration.init.callee.name];
-										if (node && node.returnType) {
-											type = node.returnType;
-											retArr.push(type + ' ');
-										}
-										break;
-									default:
-										retArr.push('float ');
+								returnType = this.declarations[declaration.init.name];
+							} else if (declaration.init.type === 'ArrayExpression') {
+								returnType = `Array(${ declaration.init.elements.length })`;
+							} else if (declaration.init.type === 'CallExpression') {
+								const node = this.builder.nodeMap[declaration.init.callee.name];
+								if (node && node.returnType) {
+									returnType = node.returnType;
 								}
-							} else {
-								retArr.push('float ');
 							}
 						}
 					}
 					break;
 			}
-			this.declarations[declaration.id.name] = type;
+			const type = typeMap[returnType];
+			if (!type) {
+				throw new Error(`type ${ returnType } not handled`);
+			}
+			retArr.push(type + ' ');
+			this.declarations[declaration.id.name] = returnType;
 			retArr.push.apply(retArr, retDeclaration);
 		}
 		retArr.push(';');
@@ -940,9 +925,9 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 						variableType = this.getConstantType(mNode.object.property.name);
 					}
 					switch (variableType) {
-						case 'vec2':
-						case 'vec3':
-						case 'vec4':
+						case 'Array(2)':
+						case 'Array(3)':
+						case 'Array(4)':
 							// Get from local vec4
 							this.astGeneric(mNode.object, retArr);
 							retArr.push('[');
@@ -1194,7 +1179,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					} else {
 						functionArguments.push({
 							name: argument.name,
-							type: this.paramTypes[paramIndex]
+							type: this.paramTypes[paramIndex] || 'Number'
 						});
 					}
 				} else {
@@ -1271,6 +1256,18 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	build() {
 		return this.getFunctionPrototypeString().length > 0;
 	}
+};
+
+const typeMap = {
+	'TextureVec4': 'sampler2D',
+	'Texture': 'sampler2D',
+	'Input': 'sampler2D',
+	'Array': 'sampler2D',
+	'Array(2)': 'vec2',
+	'Array(3)': 'vec3',
+	'Array(4)': 'vec4',
+	'Number': 'float',
+	'Integer': 'float'
 };
 
 function isIdentifierKernelParam(paramName, ast, funcParam) {
