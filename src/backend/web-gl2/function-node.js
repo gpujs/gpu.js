@@ -25,85 +25,14 @@ module.exports = class WebGL2FunctionNode extends WebGLFunctionNode {
 			console.log(this);
 		}
 		if (this.prototypeOnly) {
-			return this.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
+			return this.astFunctionPrototype(this.getJsAST(), []).join('').trim();
 		} else {
-			this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
+			this.functionStringArray = this.astGeneric(this.getJsAST(), []);
 		}
 		this.functionString = webGlRegexOptimize(
 			this.functionStringArray.join('').trim()
 		);
 		return this.functionString;
-	}
-
-
-	/**
-	 * @memberOf WebGL2FunctionNode#
-	 * @function
-	 * @name astFunctionExpression
-	 *
-	 * @desc Parses the abstract syntax tree for to its *named function*
-	 *
-	 * @param {Object} ast - the AST object to parse
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astFunctionExpression(ast, retArr) {
-
-		// Setup function return type and name
-		if (this.isRootKernel) {
-			retArr.push('void');
-			this.kernalAst = ast;
-		} else {
-			const type = typeMap[this.returnType];
-			if (!type) {
-				throw new Error(`Unknown type ${ this.returnType }`);
-			}
-			retArr.push(type);
-		}
-		retArr.push(' ');
-		retArr.push(this.functionName);
-		retArr.push('(');
-
-		if (!this.isRootKernel) {
-			// Arguments handling
-			for (let i = 0; i < this.paramNames.length; ++i) {
-				const paramName = this.paramNames[i];
-
-				if (i > 0) {
-					retArr.push(', ');
-				}
-				const type = this.getParamType(paramName);
-				switch (type) {
-					case 'TextureVec4':
-					case 'Texture':
-					case 'Input':
-					case 'Array':
-					case 'HTMLImage':
-						retArr.push('sampler2D');
-						break;
-					default:
-						retArr.push('float');
-				}
-
-				retArr.push(' ');
-				retArr.push('user_');
-				retArr.push(paramName);
-			}
-		}
-
-		// Function opening
-		retArr.push(') {\n');
-
-		// Body statement iteration
-		for (let i = 0; i < ast.body.body.length; ++i) {
-			this.astGeneric(ast.body.body[i], retArr);
-			retArr.push('\n');
-		}
-
-		// Function closing
-		retArr.push('}\n');
-		return retArr;
 	}
 
 	/**
@@ -179,7 +108,9 @@ const typeMap = {
 	'Array(3)': 'vec3',
 	'Array(4)': 'vec4',
 	'Number': 'float',
-	'Integer': 'float'
+	'Integer': 'float',
+	'HTMLImage': 'vec4',
+	'HTMLImageArray': 'vec4'
 };
 
 /**

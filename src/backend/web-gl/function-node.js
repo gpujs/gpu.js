@@ -33,9 +33,9 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			debugLog(this);
 		}
 		if (this.prototypeOnly) {
-			return WebGLFunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
+			return this.astFunctionPrototype(this.getJsAST(), []).join('').trim();
 		} else {
-			this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
+			this.functionStringArray = this.astGeneric(this.getJsAST(), []);
 		}
 		this.functionString = webGlRegexOptimize(
 			this.functionStringArray.join('').trim()
@@ -73,7 +73,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * @returns {Array} the append retArr
 	 */
-	static astFunctionPrototype(ast, retArr) {
+	astFunctionPrototype(ast, retArr) {
 		// Setup function return type and name
 		if (this.isRootKernel || this.isSubKernel) {
 			return retArr;
@@ -644,35 +644,78 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			}
 			const retDeclaration = [];
 			this.astGeneric(declaration, retDeclaration);
-			let returnType = 'Number';
-			switch (retDeclaration[2]) {
-				case 'getImage2D(':
-				case 'getImage3D(':
-					returnType = 'Array(4)';
-					break;
-				default:
-					if (i === 0) {
-						if (declaration.init) {
-							if (declaration.init.name && this.declarations[declaration.init.name]) {
-								returnType = this.declarations[declaration.init.name];
-							} else if (declaration.init.type === 'ArrayExpression') {
-								returnType = `Array(${ declaration.init.elements.length })`;
-							} else if (declaration.init.type === 'CallExpression') {
-								const node = this.builder.nodeMap[declaration.init.callee.name];
-								if (node && node.returnType) {
-									returnType = node.returnType;
+			let declarationType = 'Number';
+			if (i === 0) {
+				const init = declaration.init;
+				if (init) {
+					if (init.object) {
+						if (
+							init.object.type === 'MemberExpression' &&
+							init.object.object
+						) {
+							if (init.object.object.type === 'Identifier') {
+								const type = this.getParamType(init.object.object.name);
+								declarationType = typeLookupMap[type];
+								if (!declarationType) {
+									throw new Error(`unknown lookup type ${ typeLookupMap }`);
+								}
+								debugger;
+							} else if (
+								init.object.object.object &&
+								init.object.object.object.type === 'Identifier'
+							) {
+								const type = this.getParamType(init.object.object.object.name);
+								declarationType = typeLookupMap[type];
+								if (!declarationType) {
+									throw new Error(`unknown lookup type ${ typeLookupMap }`);
+								}
+								debugger;
+							} else if (
+								init.object.object.object.object
+							) {
+								if (
+									init.object.object.object.object.type === 'ThisExpression' &&
+									init.object.object.object.property.name === 'constants'
+								) {
+									const type = this.getConstantType(init.object.object.property.name);
+									declarationType = typeLookupMap[type];
+									if (!declarationType) {
+										throw new Error(`unknown lookup type ${ typeLookupMap }`);
+									}
+									debugger;
+								} else if (
+									init.object.object.object.object.object.type === 'ThisExpression' &&
+									init.object.object.object.object.property.name === 'constants'
+								) {
+									const type = this.getConstantType(init.object.object.object.property.name);
+									declarationType = typeLookupMap[type];
+									if (!declarationType) {
+										throw new Error(`unknown lookup type ${ typeLookupMap }`);
+									}
+									debugger;
 								}
 							}
 						}
+					} else {
+						if (init.name && this.declarations[init.name]) {
+							declarationType = this.declarations[init.name];
+						} else if (init.type === 'ArrayExpression') {
+							declarationType = `Array(${ init.elements.length })`;
+						} else if (init.type === 'CallExpression') {
+							const node = this.builder.nodeMap[init.callee.name];
+							if (node && node.returnType) {
+								declarationType = node.returnType;
+							}
+						}
 					}
-					break;
+				}
+				const type = typeMap[declarationType];
+				if (!type) {
+					throw new Error(`type ${ declarationType } not handled`);
+				}
+				retArr.push(type + ' ');
 			}
-			const type = typeMap[returnType];
-			if (!type) {
-				throw new Error(`type ${ returnType } not handled`);
-			}
-			retArr.push(type + ' ');
-			this.declarations[declaration.id.name] = returnType;
+			this.declarations[declaration.id.name] = declarationType;
 			retArr.push.apply(retArr, retDeclaration);
 		}
 		retArr.push(';');
@@ -876,6 +919,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			if (mNode.object.type === 'Identifier' ||
 				(
 					mNode.object.type === 'MemberExpression' &&
+					// mNode.object.object &&
 					mNode.object.object.object &&
 					mNode.object.object.object.type === 'ThisExpression' &&
 					mNode.object.object.property.name === 'constants'
@@ -1268,6 +1312,13 @@ const typeMap = {
 	'Array(4)': 'vec4',
 	'Number': 'float',
 	'Integer': 'float'
+};
+
+const typeLookupMap = {
+	'HTMLImage': 'Array(4)',
+	'HTMLImageArray': 'Array(4)',
+	'TextureVec4': 'Array(4)',
+	'Array': 'Number'
 };
 
 function isIdentifierKernelParam(paramName, ast, funcParam) {

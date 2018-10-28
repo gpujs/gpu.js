@@ -311,8 +311,7 @@ var GPU = function (_GPUCore) {
    * @memberOf GPU#
    *
    * @param {Function|String} fn - JS Function to do conversion
-   * @param {String[]|Object} paramTypes - Parameter type array, assumes all parameters are 'float' if null
-   * @param {String} returnType - The return type, assumes 'float' if null
+   * @param {Object} options
    *
    * @returns {GPU} returns itself
    *
@@ -320,8 +319,8 @@ var GPU = function (_GPUCore) {
 
 	}, {
 		key: 'addFunction',
-		value: function addFunction(fn, paramTypes, returnType) {
-			this._runner.functionBuilder.addFunction(null, fn, paramTypes, returnType);
+		value: function addFunction(fn, options) {
+			this._runner.functionBuilder.addFunction(null, fn, options);
 			return this;
 		}
 

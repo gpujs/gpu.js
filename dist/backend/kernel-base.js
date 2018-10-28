@@ -122,12 +122,6 @@ module.exports = function () {
 			}
 		}
 	}, {
-		key: 'setAddFunction',
-		value: function setAddFunction(cb) {
-			this.addFunction = cb;
-			return this;
-		}
-	}, {
 		key: 'setFunctions',
 		value: function setFunctions(functions) {
 			this.functions = functions;

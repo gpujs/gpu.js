@@ -51,9 +51,9 @@ module.exports = function (_FunctionNodeBase) {
 				debugLog(this);
 			}
 			if (this.prototypeOnly) {
-				return WebGLFunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
+				return this.astFunctionPrototype(this.getJsAST(), []).join('').trim();
 			} else {
-				this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
+				this.functionStringArray = this.astGeneric(this.getJsAST(), []);
 			}
 			this.functionString = webGlRegexOptimize(this.functionStringArray.join('').trim());
 			return this.functionString;
@@ -75,9 +75,7 @@ module.exports = function (_FunctionNodeBase) {
 	}, {
 		key: 'astFunctionDeclaration',
 		value: function astFunctionDeclaration(ast, retArr) {
-			if (this.addFunction) {
-				this.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
-			}
+			this.builder.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
 			return retArr;
 		}
 
@@ -96,8 +94,39 @@ module.exports = function (_FunctionNodeBase) {
    */
 
 	}, {
-		key: 'astFunctionExpression',
+		key: 'astFunctionPrototype',
+		value: function astFunctionPrototype(ast, retArr) {
+			// Setup function return type and name
+			if (this.isRootKernel || this.isSubKernel) {
+				return retArr;
+			}
 
+			var returnType = this.returnType;
+			var type = typeMap[returnType];
+			if (!type) {
+				throw new Error('unknown type ' + returnType);
+			}
+			retArr.push(type);
+			retArr.push(' ');
+			retArr.push(this.functionName);
+			retArr.push('(');
+
+			// Arguments handling
+			for (var i = 0; i < this.paramNames.length; ++i) {
+				if (i > 0) {
+					retArr.push(', ');
+				}
+
+				retArr.push(this.paramTypes[i]);
+				retArr.push(' ');
+				retArr.push('user_');
+				retArr.push(this.paramNames[i]);
+			}
+
+			retArr.push(');\n');
+
+			return retArr;
+		}
 
 		/**
    * @memberOf WebGLFunctionNode#
@@ -111,6 +140,9 @@ module.exports = function (_FunctionNodeBase) {
    *
    * @returns {Array} the append retArr
    */
+
+	}, {
+		key: 'astFunctionExpression',
 		value: function astFunctionExpression(ast, retArr) {
 
 			// Setup function return type and name
@@ -118,7 +150,12 @@ module.exports = function (_FunctionNodeBase) {
 				retArr.push('void');
 				this.kernalAst = ast;
 			} else {
-				retArr.push(this.returnType);
+				var returnType = this.returnType;
+				var type = typeMap[returnType];
+				if (!type) {
+					throw new Error('unknown type ' + returnType);
+				}
+				retArr.push(type);
 			}
 			retArr.push(' ');
 			retArr.push(this.functionName);
@@ -132,18 +169,12 @@ module.exports = function (_FunctionNodeBase) {
 					if (i > 0) {
 						retArr.push(', ');
 					}
-					var type = this.getParamType(paramName);
-					switch (type) {
-						case 'TextureVec4':
-						case 'Texture':
-						case 'Input':
-						case 'Array':
-							retArr.push('sampler2D');
-							break;
-						default:
-							retArr.push('float');
+					var paramType = this.getParamType(paramName);
+					var _type = typeMap[paramType];
+					if (!_type) {
+						throw new Error('unknown type ' + paramType);
 					}
-
+					retArr.push(_type);
 					retArr.push(' ');
 					retArr.push('user_');
 					retArr.push(paramName);
@@ -417,7 +448,7 @@ module.exports = function (_FunctionNodeBase) {
 					} else {
 						this.astGeneric(forNode.body, retArr);
 					}
-					retArr.push('} else {\n');
+					retArr.push('\n} else {\n');
 					retArr.push('break;\n');
 					retArr.push('}\n');
 					retArr.push('}\n');
@@ -625,7 +656,7 @@ module.exports = function (_FunctionNodeBase) {
 		key: 'astExpressionStatement',
 		value: function astExpressionStatement(esNode, retArr) {
 			this.astGeneric(esNode.expression, retArr);
-			retArr.push(';\n');
+			retArr.push(';');
 			return retArr;
 		}
 
@@ -652,17 +683,64 @@ module.exports = function (_FunctionNodeBase) {
 				}
 				var retDeclaration = [];
 				this.astGeneric(declaration, retDeclaration);
-				if (retDeclaration[2] === 'getImage2D(' || retDeclaration[2] === 'getImage3D(') {
-					if (i === 0) {
-						retArr.push('vec4 ');
+				var declarationType = 'Number';
+				if (i === 0) {
+					var init = declaration.init;
+					if (init) {
+						if (init.object) {
+							if (init.object.type === 'MemberExpression' && init.object.object) {
+								if (init.object.object.type === 'Identifier') {
+									var _type2 = this.getParamType(init.object.object.name);
+									declarationType = typeLookupMap[_type2];
+									if (!declarationType) {
+										throw new Error('unknown lookup type ' + typeLookupMap);
+									}
+									debugger;
+								} else if (init.object.object.object && init.object.object.object.type === 'Identifier') {
+									var _type3 = this.getParamType(init.object.object.object.name);
+									declarationType = typeLookupMap[_type3];
+									if (!declarationType) {
+										throw new Error('unknown lookup type ' + typeLookupMap);
+									}
+									debugger;
+								} else if (init.object.object.object.object) {
+									if (init.object.object.object.object.type === 'ThisExpression' && init.object.object.object.property.name === 'constants') {
+										var _type4 = this.getConstantType(init.object.object.property.name);
+										declarationType = typeLookupMap[_type4];
+										if (!declarationType) {
+											throw new Error('unknown lookup type ' + typeLookupMap);
+										}
+										debugger;
+									} else if (init.object.object.object.object.object.type === 'ThisExpression' && init.object.object.object.object.property.name === 'constants') {
+										var _type5 = this.getConstantType(init.object.object.object.property.name);
+										declarationType = typeLookupMap[_type5];
+										if (!declarationType) {
+											throw new Error('unknown lookup type ' + typeLookupMap);
+										}
+										debugger;
+									}
+								}
+							}
+						} else {
+							if (init.name && this.declarations[init.name]) {
+								declarationType = this.declarations[init.name];
+							} else if (init.type === 'ArrayExpression') {
+								declarationType = 'Array(' + init.elements.length + ')';
+							} else if (init.type === 'CallExpression') {
+								var node = this.builder.nodeMap[init.callee.name];
+								if (node && node.returnType) {
+									declarationType = node.returnType;
+								}
+							}
+						}
 					}
-					this.declarations[declaration.id.name] = 'vec4';
-				} else {
-					if (i === 0) {
-						retArr.push('float ');
+					var type = typeMap[declarationType];
+					if (!type) {
+						throw new Error('type ' + declarationType + ' not handled');
 					}
-					this.declarations[declaration.id.name] = 'float';
+					retArr.push(type + ' ');
 				}
+				this.declarations[declaration.id.name] = declarationType;
 				retArr.push.apply(retArr, retDeclaration);
 			}
 			retArr.push(';');
@@ -889,7 +967,9 @@ module.exports = function (_FunctionNodeBase) {
 		value: function astMemberExpression(mNode, retArr) {
 			debugLog("[in] astMemberExpression " + mNode.object.type);
 			if (mNode.computed) {
-				if (mNode.object.type === 'Identifier' || mNode.object.type === 'MemberExpression' && mNode.object.object.object && mNode.object.object.object.type === 'ThisExpression' && mNode.object.object.property.name === 'constants') {
+				if (mNode.object.type === 'Identifier' || mNode.object.type === 'MemberExpression' &&
+				// mNode.object.object &&
+				mNode.object.object.object && mNode.object.object.object.type === 'ThisExpression' && mNode.object.object.property.name === 'constants') {
 					// Working logger
 					var reqName = mNode.object.name;
 					var funcName = this.functionName || 'kernel';
@@ -920,12 +1000,18 @@ module.exports = function (_FunctionNodeBase) {
 						// This normally refers to the global read only input vars
 						var variableType = null;
 						if (mNode.object.name) {
-							variableType = this.getParamType(mNode.object.name);
+							if (this.declarations[mNode.object.name]) {
+								variableType = this.declarations[mNode.object.name];
+							} else {
+								variableType = this.getParamType(mNode.object.name);
+							}
 						} else if (mNode.object && mNode.object.object && mNode.object.object.object && mNode.object.object.object.type === 'ThisExpression') {
 							variableType = this.getConstantType(mNode.object.property.name);
 						}
 						switch (variableType) {
-							case 'vec4':
+							case 'Array(2)':
+							case 'Array(3)':
+							case 'Array(4)':
 								// Get from local vec4
 								this.astGeneric(mNode.object, retArr);
 								retArr.push('[');
@@ -1178,7 +1264,7 @@ module.exports = function (_FunctionNodeBase) {
 						} else {
 							functionArguments.push({
 								name: argument.name,
-								type: this.paramTypes[paramIndex]
+								type: this.paramTypes[paramIndex] || 'Number'
 							});
 						}
 					} else {
@@ -1216,7 +1302,7 @@ module.exports = function (_FunctionNodeBase) {
 		value: function astArrayExpression(arrNode, retArr) {
 			var arrLen = arrNode.elements.length;
 
-			retArr.push('float[' + arrLen + '](');
+			retArr.push('vec' + arrLen + '(');
 			for (var i = 0; i < arrLen; ++i) {
 				if (i > 0) {
 					retArr.push(', ');
@@ -1259,39 +1345,29 @@ module.exports = function (_FunctionNodeBase) {
 		value: function build() {
 			return this.getFunctionPrototypeString().length > 0;
 		}
-	}], [{
-		key: 'astFunctionPrototype',
-		value: function astFunctionPrototype(ast, retArr) {
-			// Setup function return type and name
-			if (this.isRootKernel || this.isSubKernel) {
-				return retArr;
-			}
-
-			retArr.push(this.returnType);
-			retArr.push(' ');
-			retArr.push(this.functionName);
-			retArr.push('(');
-
-			// Arguments handling
-			for (var i = 0; i < this.paramNames.length; ++i) {
-				if (i > 0) {
-					retArr.push(', ');
-				}
-
-				retArr.push(this.paramTypes[i]);
-				retArr.push(' ');
-				retArr.push('user_');
-				retArr.push(this.paramNames[i]);
-			}
-
-			retArr.push(');\n');
-
-			return retArr;
-		}
 	}]);
 
 	return WebGLFunctionNode;
 }(FunctionNodeBase);
+
+var typeMap = {
+	'TextureVec4': 'sampler2D',
+	'Texture': 'sampler2D',
+	'Input': 'sampler2D',
+	'Array': 'sampler2D',
+	'Array(2)': 'vec2',
+	'Array(3)': 'vec3',
+	'Array(4)': 'vec4',
+	'Number': 'float',
+	'Integer': 'float'
+};
+
+var typeLookupMap = {
+	'HTMLImage': 'Array(4)',
+	'HTMLImageArray': 'Array(4)',
+	'TextureVec4': 'Array(4)',
+	'Array': 'Number'
+};
 
 function isIdentifierKernelParam(paramName, ast, funcParam) {
 	return funcParam.paramNames.indexOf(paramName) !== -1;

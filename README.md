@@ -346,7 +346,9 @@ megaKernel(a, b, c);
 This gives you the flexibility of using parts of a single transformation without the performance penalty, resulting in much much _MUCH_ faster operation.
 
 ## Adding custom functions
-Do you have a custom function you'd like to use on the gpu? Although limited, you can:
+use `gpu.addFunction(function() {}, options)` for adding custom functions.  Example:
+
+
 ```js
 gpu.addFunction(function mySuperFunction(a, b) {
 	return a - b;
@@ -359,6 +361,30 @@ const kernel = gpu.createKernel(function(a, b) {
 	return anotherFunction(mySuperFunction(a[this.thread.x], b[this.thread.x]));
 }).setOutput([20]);
 ```
+
+### Adding strongly typed functions
+
+To strongly type a function you may use options.  Options take an optional hash values:
+`returnType`: optional, defaults to float, the value you'd like to return from the function
+`paramTypes`: optional, defaults to float for each param, a hash of param names with values of the return types
+
+Types: that may be used for `returnType` or for each property of `paramTypes`: 
+'Array'
+'Array(2)'
+'Array(3)'
+'Array(4)'
+'Integer'
+'HTMLImage'
+'HTMLImageArray'
+'Number'
+
+Example:
+```js
+gpu.addFunction(function mySuperFunction(a, b) {
+	return [a - b[1], b[0] - a];
+}, { paramTypes: { a: 'Integer', b: 'Array(2)'}, returnType: 'Array(2)' });
+```
+
 
 ## Adding custom functions directly to kernel
 ```js

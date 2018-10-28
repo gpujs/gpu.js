@@ -37,7 +37,7 @@ module.exports = function () {
 
 		this.calledFunctions = [];
 		this.calledFunctionsArguments = {};
-		this.addFunction = null;
+		this.builder = null;
 		this.isRootKernel = false;
 		this.isSubKernel = false;
 		this.parent = null;
@@ -138,7 +138,7 @@ module.exports = function () {
 						if (paramTypes.hasOwnProperty(key)) {
 							return paramTypes[key];
 						} else {
-							return 'float';
+							return 'Number';
 						}
 					});
 				}
@@ -151,7 +151,7 @@ module.exports = function () {
 		// Return type handling
 		//
 		if (!this.returnType) {
-			this.returnType = returnType || 'float';
+			this.returnType = returnType || 'Number';
 		}
 	}
 
@@ -167,9 +167,9 @@ module.exports = function () {
 			return this.paramTypes[this.paramNames.indexOf(paramName)] === 'Input';
 		}
 	}, {
-		key: 'setAddFunction',
-		value: function setAddFunction(fn) {
-			this.addFunction = fn;
+		key: 'setBuilder',
+		value: function setBuilder(builder) {
+			this.builder = builder;
 			return this;
 		}
 	}, {
@@ -365,7 +365,7 @@ module.exports = function () {
 				if (this.declarations.hasOwnProperty(paramName)) {
 					return this.declarations[paramName];
 				} else {
-					return null;
+					return 'Number';
 				}
 			} else {
 				if (!this.parent) {
@@ -381,7 +381,7 @@ module.exports = function () {
 					}
 				}
 			}
-			return null;
+			return 'Number';
 		}
 	}, {
 		key: 'getConstantType',

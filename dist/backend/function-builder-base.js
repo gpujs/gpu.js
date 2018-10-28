@@ -49,7 +49,7 @@ module.exports = function () {
 	}, {
 		key: 'addFunction',
 		value: function addFunction(functionName, jsFunction, options) {
-			this.addFunctionNode(new this.Node(functionName, jsFunction, options).setAddFunction(this.addFunction.bind(this)));
+			this.addFunctionNode(new this.Node(functionName, jsFunction, options).setBuilder(this));
 		}
 	}, {
 		key: 'addFunctions',
@@ -172,7 +172,7 @@ module.exports = function () {
 		key: 'addKernel',
 		value: function addKernel(fnString, options) {
 			var kernelNode = new this.Node('kernel', fnString, options);
-			kernelNode.setAddFunction(this.addFunction.bind(this));
+			kernelNode.setBuilder(this);
 			kernelNode.isRootKernel = true;
 			this.addFunctionNode(kernelNode);
 			return kernelNode;
@@ -196,7 +196,7 @@ module.exports = function () {
 		key: 'addSubKernel',
 		value: function addSubKernel(jsFunction, options) {
 			var kernelNode = new this.Node(null, jsFunction, options);
-			kernelNode.setAddFunction(this.addFunction.bind(this));
+			kernelNode.setBuilder(this);
 			kernelNode.isSubKernel = true;
 			this.addFunctionNode(kernelNode);
 			return kernelNode;
