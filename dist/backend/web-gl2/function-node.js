@@ -9,11 +9,6 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var WebGLFunctionNode = require('../web-gl/function-node');
-
-// Closure capture for the ast function, prevent collision with existing AST functions
-// The prefixes to use
-var constantsPrefix = 'this.constants.';
-
 var DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
 var ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
@@ -117,20 +112,6 @@ module.exports = function (_WebGLFunctionNode) {
 
 	return WebGL2FunctionNode;
 }(WebGLFunctionNode);
-
-var typeMap = {
-	'TextureVec4': 'sampler2D',
-	'Texture': 'sampler2D',
-	'Input': 'sampler2D',
-	'Array': 'sampler2D',
-	'Array(2)': 'vec2',
-	'Array(3)': 'vec3',
-	'Array(4)': 'vec4',
-	'Number': 'float',
-	'Integer': 'float',
-	'HTMLImage': 'vec4',
-	'HTMLImageArray': 'vec4'
-};
 
 /**
  * @ignore

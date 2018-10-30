@@ -17,7 +17,7 @@ module.exports = function () {
   * @param {String} [type]
   */
 	function Texture(texture, size, dimensions, output, webGl) {
-		var type = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 'float';
+		var type = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 'NumberTexture';
 
 		_classCallCheck(this, Texture);
 

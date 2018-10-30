@@ -689,37 +689,29 @@ module.exports = function (_FunctionNodeBase) {
 					if (init) {
 						if (init.object) {
 							if (init.object.type === 'MemberExpression' && init.object.object) {
+								// param[]
 								if (init.object.object.type === 'Identifier') {
 									var _type2 = this.getParamType(init.object.object.name);
 									declarationType = typeLookupMap[_type2];
-									if (!declarationType) {
-										throw new Error('unknown lookup type ' + typeLookupMap);
-									}
-									debugger;
-								} else if (init.object.object.object && init.object.object.object.type === 'Identifier') {
-									var _type3 = this.getParamType(init.object.object.object.name);
-									declarationType = typeLookupMap[_type3];
-									if (!declarationType) {
-										throw new Error('unknown lookup type ' + typeLookupMap);
-									}
-									debugger;
-								} else if (init.object.object.object.object) {
-									if (init.object.object.object.object.type === 'ThisExpression' && init.object.object.object.property.name === 'constants') {
-										var _type4 = this.getConstantType(init.object.object.property.name);
-										declarationType = typeLookupMap[_type4];
-										if (!declarationType) {
-											throw new Error('unknown lookup type ' + typeLookupMap);
-										}
-										debugger;
-									} else if (init.object.object.object.object.object.type === 'ThisExpression' && init.object.object.object.object.property.name === 'constants') {
-										var _type5 = this.getConstantType(init.object.object.object.property.name);
-										declarationType = typeLookupMap[_type5];
-										if (!declarationType) {
-											throw new Error('unknown lookup type ' + typeLookupMap);
-										}
-										debugger;
-									}
 								}
+								// param[][]
+								else if (init.object.object.object && init.object.object.object.type === 'Identifier') {
+										var _type3 = this.getParamType(init.object.object.object.name);
+										declarationType = typeLookupMap[_type3];
+									}
+									// this.constants.param[]
+									else if (init.object.object.object.object && init.object.object.object.object.type === 'ThisExpression' && init.object.object.object.property.name === 'constants') {
+											var _type4 = this.getConstantType(init.object.object.property.name);
+											declarationType = typeLookupMap[_type4];
+										}
+										// this.constants.param[][]
+										else if (init.object.object.object.object.object && init.object.object.object.object.object.type === 'ThisExpression' && init.object.object.object.object.property.name === 'constants') {
+												var _type5 = this.getConstantType(init.object.object.object.property.name);
+												declarationType = typeLookupMap[_type5];
+											}
+							}
+							if (!declarationType) {
+								throw new Error('unknown lookup type ' + typeLookupMap);
 							}
 						} else {
 							if (init.name && this.declarations[init.name]) {
@@ -978,7 +970,7 @@ module.exports = function (_FunctionNodeBase) {
 					// Possibly an array request - handle it as such
 					if (this.paramNames) {
 						var idx = this.paramNames.indexOf(reqName);
-						if (idx >= 0 && this.paramTypes[idx] === 'float') {
+						if (idx >= 0 && this.paramTypes[idx] === 'Number') {
 							assumeNotTexture = true;
 						}
 					}
@@ -1045,7 +1037,7 @@ module.exports = function (_FunctionNodeBase) {
 								}
 								retArr.push(')');
 								break;
-							case 'TextureVec4':
+							case 'ArrayTexture(4)':
 							case 'HTMLImage':
 								// Get from image
 								retArr.push('getImage2D(');
@@ -1351,40 +1343,29 @@ module.exports = function (_FunctionNodeBase) {
 }(FunctionNodeBase);
 
 var typeMap = {
-	'TextureVec4': 'sampler2D',
-	'Texture': 'sampler2D',
-	'Input': 'sampler2D',
 	'Array': 'sampler2D',
 	'Array(2)': 'vec2',
 	'Array(3)': 'vec3',
 	'Array(4)': 'vec4',
+	'Array2D': 'sampler2D',
+	'Array3D': 'sampler2D',
+	'Float': 'float',
+	'Input': 'sampler2D',
+	'Integer': 'float',
 	'Number': 'float',
-	'Integer': 'float'
+	'NumberTexture': 'sampler2D',
+	'ArrayTexture(4)': 'sampler2D'
 };
 
 var typeLookupMap = {
+	'Array': 'Number',
+	'Array2D': 'Number',
+	'Array3D': 'Number',
 	'HTMLImage': 'Array(4)',
 	'HTMLImageArray': 'Array(4)',
-	'TextureVec4': 'Array(4)',
-	'Array': 'Number'
+	'NumberTexture': 'Number',
+	'ArrayTexture(4)': 'Array(4)'
 };
-
-function isIdentifierKernelParam(paramName, ast, funcParam) {
-	return funcParam.paramNames.indexOf(paramName) !== -1;
-}
-
-function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
-	var start = ast.loc.start;
-
-	if (!isIdentifierKernelParam(paramName) && expectedType !== 'float') {
-		throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
-	} else {
-		var actualType = funcParam.paramTypes[funcParam.paramNames.indexOf(paramName)];
-		if (actualType !== expectedType) {
-			throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
-		}
-	}
-}
 
 /**
  * @ignore

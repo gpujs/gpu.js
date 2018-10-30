@@ -653,48 +653,40 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							init.object.type === 'MemberExpression' &&
 							init.object.object
 						) {
+							// param[]
 							if (init.object.object.type === 'Identifier') {
 								const type = this.getParamType(init.object.object.name);
 								declarationType = typeLookupMap[type];
-								if (!declarationType) {
-									throw new Error(`unknown lookup type ${ typeLookupMap }`);
-								}
-								debugger;
-							} else if (
+							}
+							// param[][]
+							else if (
 								init.object.object.object &&
 								init.object.object.object.type === 'Identifier'
 							) {
 								const type = this.getParamType(init.object.object.object.name);
 								declarationType = typeLookupMap[type];
-								if (!declarationType) {
-									throw new Error(`unknown lookup type ${ typeLookupMap }`);
-								}
-								debugger;
-							} else if (
-								init.object.object.object.object
-							) {
-								if (
-									init.object.object.object.object.type === 'ThisExpression' &&
-									init.object.object.object.property.name === 'constants'
-								) {
-									const type = this.getConstantType(init.object.object.property.name);
-									declarationType = typeLookupMap[type];
-									if (!declarationType) {
-										throw new Error(`unknown lookup type ${ typeLookupMap }`);
-									}
-									debugger;
-								} else if (
-									init.object.object.object.object.object.type === 'ThisExpression' &&
-									init.object.object.object.object.property.name === 'constants'
-								) {
-									const type = this.getConstantType(init.object.object.object.property.name);
-									declarationType = typeLookupMap[type];
-									if (!declarationType) {
-										throw new Error(`unknown lookup type ${ typeLookupMap }`);
-									}
-									debugger;
-								}
 							}
+							// this.constants.param[]
+							else if (
+								init.object.object.object.object &&
+								init.object.object.object.object.type === 'ThisExpression' &&
+								init.object.object.object.property.name === 'constants'
+							) {
+								const type = this.getConstantType(init.object.object.property.name);
+								declarationType = typeLookupMap[type];
+							}
+							// this.constants.param[][]
+							else if (
+								init.object.object.object.object.object &&
+								init.object.object.object.object.object.type === 'ThisExpression' &&
+								init.object.object.object.object.property.name === 'constants'
+							) {
+								const type = this.getConstantType(init.object.object.object.property.name);
+								declarationType = typeLookupMap[type];
+							}
+						}
+						if (!declarationType) {
+							throw new Error(`unknown lookup type ${ typeLookupMap }`);
 						}
 					} else {
 						if (init.name && this.declarations[init.name]) {
@@ -933,7 +925,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				// Possibly an array request - handle it as such
 				if (this.paramNames) {
 					const idx = this.paramNames.indexOf(reqName);
-					if (idx >= 0 && this.paramTypes[idx] === 'float') {
+					if (idx >= 0 && this.paramTypes[idx] === 'Number') {
 						assumeNotTexture = true;
 					}
 				}
@@ -1005,7 +997,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							}
 							retArr.push(')');
 							break;
-						case 'TextureVec4':
+						case 'ArrayTexture(4)':
 						case 'HTMLImage':
 							// Get from image
 							retArr.push('getImage2D(');
@@ -1303,40 +1295,29 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 };
 
 const typeMap = {
-	'TextureVec4': 'sampler2D',
-	'Texture': 'sampler2D',
-	'Input': 'sampler2D',
 	'Array': 'sampler2D',
 	'Array(2)': 'vec2',
 	'Array(3)': 'vec3',
 	'Array(4)': 'vec4',
+	'Array2D': 'sampler2D',
+	'Array3D': 'sampler2D',
+	'Float': 'float',
+	'Input': 'sampler2D',
+	'Integer': 'float',
 	'Number': 'float',
-	'Integer': 'float'
+	'NumberTexture': 'sampler2D',
+	'ArrayTexture(4)': 'sampler2D'
 };
 
 const typeLookupMap = {
+	'Array': 'Number',
+	'Array2D': 'Number',
+	'Array3D': 'Number',
 	'HTMLImage': 'Array(4)',
 	'HTMLImageArray': 'Array(4)',
-	'TextureVec4': 'Array(4)',
-	'Array': 'Number'
+	'NumberTexture': 'Number',
+	'ArrayTexture(4)': 'Array(4)',
 };
-
-function isIdentifierKernelParam(paramName, ast, funcParam) {
-	return funcParam.paramNames.indexOf(paramName) !== -1;
-}
-
-function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
-	const start = ast.loc.start;
-
-	if (!isIdentifierKernelParam(paramName) && expectedType !== 'float') {
-		throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
-	} else {
-		const actualType = funcParam.paramTypes[funcParam.paramNames.indexOf(paramName)];
-		if (actualType !== expectedType) {
-			throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
-		}
-	}
-}
 
 /**
  * @ignore

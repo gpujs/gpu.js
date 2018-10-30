@@ -52,7 +52,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 			const argType = utils.getArgumentType(arguments[0]);
 			if (argType === 'Array') {
 				this.output = utils.getDimensions(argType);
-			} else if (argType === 'Texture' || argType === 'TextureVec4') {
+			} else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
 				this.output = arguments[0].output;
 			} else {
 				throw new Error('Auto output not supported for input type: ' + argType);
@@ -129,7 +129,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					this._setupOutputTexture();
 				}
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-				return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'vec4');
+				return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'ArrayTexture(4)');
 			}
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -269,7 +269,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 		const gl = this._webGl;
 		const argumentTexture = this.getArgumentTexture(name);
 		if (value instanceof Texture) {
-			type = 'Texture';
+			type = value.type;
 		}
 		switch (type) {
 			case 'Array':
@@ -311,6 +311,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 				}
 			case 'Integer':
 			case 'Float':
+			case 'Number':
 				{
 					this.setUniform1f(`user_${name}`, value);
 					break;
@@ -435,7 +436,8 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
-			case 'Texture':
+			case 'ArrayTexture(4)':
+			case 'NumberTexture':
 				{
 					const inputTexture = value;
 					const dim = inputTexture.dimensions;
@@ -479,8 +481,8 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					case 'Array':
 					case 'Input':
 					case 'HTMLImage':
-					case 'TextureVec4':
-					case 'Texture':
+					case 'ArrayTexture(4)':
+					case 'NumberTexture':
 						result.push(
 							`uniform highp sampler2D constants_${ name }`,
 							`uniform highp ivec2 constants_${ name }Size`,
@@ -522,7 +524,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 		const gl = this._webGl;
 		const argumentTexture = this.getArgumentTexture(name);
 		if (value instanceof Texture) {
-			type = 'Texture';
+			type = value.type;
 		}
 		switch (type) {
 			case 'Array':
@@ -682,7 +684,8 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
-			case 'Texture':
+			case 'ArrayTexture(4)':
+			case 'NumberTexture':
 				{
 					const inputTexture = value;
 					const dim = inputTexture.dimensions;
@@ -772,7 +775,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 			const paramName = paramNames[i];
 			const paramType = paramTypes[i];
 			if (this.hardcodeConstants) {
-				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'TextureVec4') {
+				if (paramType === 'Array' || paramType === 'NumberTexture' || paramType === 'ArrayTexture(4)') {
 					const paramDim = utils.getDimensions(param, true);
 					const paramSize = utils.dimToTexSize({
 						floatTextures: this.floatTextures,
@@ -795,7 +798,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 					result.push(`highp float user_${ paramName } = ${ param }`);
 				}
 			} else {
-				if (paramType === 'Array' || paramType === 'Texture' || paramType === 'TextureVec4' || paramType === 'Input' || paramType === 'HTMLImage') {
+				if (paramType === 'Array' || paramType === 'NumberTexture' || paramType === 'ArrayTexture(4)' || paramType === 'Input' || paramType === 'HTMLImage') {
 					result.push(
 						`uniform highp sampler2D user_${ paramName }`,
 						`uniform highp ivec2 user_${ paramName }Size`,

@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 1.10.0
- * @date Sun Oct 28 2018 13:54:33 GMT-0400 (EDT)
+ * @date Tue Oct 30 2018 07:33:45 GMT-0600 (MDT)
  *
  * @license MIT
  * The MIT License
@@ -877,7 +877,7 @@ module.exports = function (_KernelBase) {
 				var argType = utils.getArgumentType(arguments[0]);
 				if (argType === 'Array') {
 					this.output = utils.getDimensions(argType);
-				} else if (argType === 'Texture' || argType === 'TextureVec4') {
+				} else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
 					this.output = arguments[0].output;
 				} else {
 					throw 'Auto dimensions not supported for input type: ' + argType;
@@ -2043,6 +2043,7 @@ module.exports = function () {
 			this.paramSizes = [];
 			for (var i = 0; i < args.length; i++) {
 				var arg = args[i];
+
 				this.paramTypes.push(utils.getArgumentType(arg));
 				this.paramSizes.push(arg.constructor === Input ? arg.size : null);
 			}
@@ -2910,34 +2911,22 @@ module.exports = function (_FunctionNodeBase) {
 								if (init.object.object.type === 'Identifier') {
 									var _type2 = this.getParamType(init.object.object.name);
 									declarationType = typeLookupMap[_type2];
-									if (!declarationType) {
-										throw new Error('unknown lookup type ' + typeLookupMap);
-									}
-									debugger;
-								} else if (init.object.object.object && init.object.object.object.type === 'Identifier') {
-									var _type3 = this.getParamType(init.object.object.object.name);
-									declarationType = typeLookupMap[_type3];
-									if (!declarationType) {
-										throw new Error('unknown lookup type ' + typeLookupMap);
-									}
-									debugger;
-								} else if (init.object.object.object.object) {
-									if (init.object.object.object.object.type === 'ThisExpression' && init.object.object.object.property.name === 'constants') {
-										var _type4 = this.getConstantType(init.object.object.property.name);
-										declarationType = typeLookupMap[_type4];
-										if (!declarationType) {
-											throw new Error('unknown lookup type ' + typeLookupMap);
-										}
-										debugger;
-									} else if (init.object.object.object.object.object.type === 'ThisExpression' && init.object.object.object.object.property.name === 'constants') {
-										var _type5 = this.getConstantType(init.object.object.object.property.name);
-										declarationType = typeLookupMap[_type5];
-										if (!declarationType) {
-											throw new Error('unknown lookup type ' + typeLookupMap);
-										}
-										debugger;
-									}
 								}
+								else if (init.object.object.object && init.object.object.object.type === 'Identifier') {
+										var _type3 = this.getParamType(init.object.object.object.name);
+										declarationType = typeLookupMap[_type3];
+									}
+									else if (init.object.object.object.object && init.object.object.object.object.type === 'ThisExpression' && init.object.object.object.property.name === 'constants') {
+											var _type4 = this.getConstantType(init.object.object.property.name);
+											declarationType = typeLookupMap[_type4];
+										}
+										else if (init.object.object.object.object.object && init.object.object.object.object.object.type === 'ThisExpression' && init.object.object.object.object.property.name === 'constants') {
+												var _type5 = this.getConstantType(init.object.object.object.property.name);
+												declarationType = typeLookupMap[_type5];
+											}
+							}
+							if (!declarationType) {
+								throw new Error('unknown lookup type ' + typeLookupMap);
 							}
 						} else {
 							if (init.name && this.declarations[init.name]) {
@@ -3085,7 +3074,7 @@ module.exports = function (_FunctionNodeBase) {
 
 					if (this.paramNames) {
 						var idx = this.paramNames.indexOf(reqName);
-						if (idx >= 0 && this.paramTypes[idx] === 'float') {
+						if (idx >= 0 && this.paramTypes[idx] === 'Number') {
 							assumeNotTexture = true;
 						}
 					}
@@ -3148,7 +3137,7 @@ module.exports = function (_FunctionNodeBase) {
 								}
 								retArr.push(')');
 								break;
-							case 'TextureVec4':
+							case 'ArrayTexture(4)':
 							case 'HTMLImage':
 								retArr.push('getImage2D(');
 								this.astGeneric(mNode.object, retArr);
@@ -3397,40 +3386,29 @@ module.exports = function (_FunctionNodeBase) {
 }(FunctionNodeBase);
 
 var typeMap = {
-	'TextureVec4': 'sampler2D',
-	'Texture': 'sampler2D',
-	'Input': 'sampler2D',
 	'Array': 'sampler2D',
 	'Array(2)': 'vec2',
 	'Array(3)': 'vec3',
 	'Array(4)': 'vec4',
+	'Array2D': 'sampler2D',
+	'Array3D': 'sampler2D',
+	'Float': 'float',
+	'Input': 'sampler2D',
+	'Integer': 'float',
 	'Number': 'float',
-	'Integer': 'float'
+	'NumberTexture': 'sampler2D',
+	'ArrayTexture(4)': 'sampler2D'
 };
 
 var typeLookupMap = {
+	'Array': 'Number',
+	'Array2D': 'Number',
+	'Array3D': 'Number',
 	'HTMLImage': 'Array(4)',
 	'HTMLImageArray': 'Array(4)',
-	'TextureVec4': 'Array(4)',
-	'Array': 'Number'
+	'NumberTexture': 'Number',
+	'ArrayTexture(4)': 'Array(4)'
 };
-
-function isIdentifierKernelParam(paramName, ast, funcParam) {
-	return funcParam.paramNames.indexOf(paramName) !== -1;
-}
-
-function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
-	var start = ast.loc.start;
-
-	if (!isIdentifierKernelParam(paramName) && expectedType !== 'float') {
-		throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
-	} else {
-		var actualType = funcParam.paramTypes[funcParam.paramNames.indexOf(paramName)];
-		if (actualType !== expectedType) {
-			throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
-		}
-	}
-}
 
 function webGlRegexOptimize(inStr) {
 	return inStr.replace(DECODE32_ENCODE32, '((').replace(ENCODE32_DECODE32, '((');
@@ -3568,7 +3546,7 @@ module.exports = function (_KernelBase) {
 				var argType = utils.getArgumentType(arguments[0]);
 				if (argType === 'Array') {
 					this.output = utils.getDimensions(argType);
-				} else if (argType === 'Texture' || argType === 'TextureVec4') {
+				} else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
 					this.output = arguments[0].output;
 				} else {
 					throw new Error('Auto output not supported for input type: ' + argType);
@@ -3756,7 +3734,7 @@ module.exports = function (_KernelBase) {
 						this._setupOutputTexture();
 					}
 					gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-					return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'vec4');
+					return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'ArrayTexture(4)');
 				}
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -4052,10 +4030,15 @@ module.exports = function (_KernelBase) {
 			var gl = this._webGl;
 			var argumentTexture = this.getArgumentTexture(name);
 			if (value instanceof Texture) {
-				type = 'Texture';
+				type = value.type;
 			}
 			switch (type) {
 				case 'Array':
+				case 'Array(2)':
+				case 'Array(3)':
+				case 'Array(4)':
+				case 'Array2D':
+				case 'Array3D':
 					{
 						var dim = utils.getDimensions(value, true);
 						var size = utils.dimToTexSize({
@@ -4093,6 +4076,7 @@ module.exports = function (_KernelBase) {
 					}
 				case 'Integer':
 				case 'Float':
+				case 'Number':
 					{
 						this.setUniform1f('user_' + name, value);
 						break;
@@ -4156,7 +4140,8 @@ module.exports = function (_KernelBase) {
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
-				case 'Texture':
+				case 'ArrayTexture(4)':
+				case 'NumberTexture':
 					{
 						var inputTexture = value;
 						var _dim3 = inputTexture.dimensions;
@@ -4184,7 +4169,7 @@ module.exports = function (_KernelBase) {
 			var gl = this._webGl;
 			var argumentTexture = this.getArgumentTexture(name);
 			if (value instanceof Texture) {
-				type = 'Texture';
+				type = value.type;
 			}
 			switch (type) {
 				case 'Array':
@@ -4282,7 +4267,8 @@ module.exports = function (_KernelBase) {
 						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
-				case 'Texture':
+				case 'ArrayTexture(4)':
+				case 'NumberTexture':
 					{
 						var inputTexture = value;
 						var _dim6 = inputTexture.dimensions;
@@ -4447,7 +4433,7 @@ module.exports = function (_KernelBase) {
 				var paramName = paramNames[i];
 				var paramType = paramTypes[i];
 				if (this.hardcodeConstants) {
-					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'TextureVec4') {
+					if (paramType === 'Array' || paramType === 'NumberTexture' || paramType === 'ArrayTexture(4)') {
 						var paramDim = utils.getDimensions(param, true);
 						var paramSize = utils.dimToTexSize({
 							floatTextures: this.floatTextures,
@@ -4461,7 +4447,7 @@ module.exports = function (_KernelBase) {
 						result.push('float user_' + paramName + ' = ' + param);
 					}
 				} else {
-					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'TextureVec4' || paramType === 'Input' || paramType === 'HTMLImage') {
+					if (paramType === 'Array' || paramType === 'NumberTexture' || paramType === 'ArrayTexture(4)' || paramType === 'Input' || paramType === 'HTMLImage') {
 						result.push('uniform sampler2D user_' + paramName, 'uniform ivec2 user_' + paramName + 'Size', 'uniform ivec3 user_' + paramName + 'Dim');
 						if (paramType !== 'HTMLImage') {
 							result.push('uniform int user_' + paramName + 'BitRatio');
@@ -4496,7 +4482,8 @@ module.exports = function (_KernelBase) {
 						case 'Array':
 						case 'Input':
 						case 'HTMLImage':
-						case 'Texture':
+						case 'NumberTexture':
+						case 'ArrayTexture(4)':
 							result.push('uniform sampler2D constants_' + name, 'uniform ivec2 constants_' + name + 'Size', 'uniform ivec3 constants_' + name + 'Dim', 'uniform int constants_' + name + 'BitRatio');
 							break;
 						default:
@@ -4857,9 +4844,6 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var WebGLFunctionNode = require('../web-gl/function-node');
-
-var constantsPrefix = 'this.constants.';
-
 var DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
 var ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
@@ -4941,20 +4925,6 @@ module.exports = function (_WebGLFunctionNode) {
 	return WebGL2FunctionNode;
 }(WebGLFunctionNode);
 
-var typeMap = {
-	'TextureVec4': 'sampler2D',
-	'Texture': 'sampler2D',
-	'Input': 'sampler2D',
-	'Array': 'sampler2D',
-	'Array(2)': 'vec2',
-	'Array(3)': 'vec3',
-	'Array(4)': 'vec4',
-	'Number': 'float',
-	'Integer': 'float',
-	'HTMLImage': 'vec4',
-	'HTMLImageArray': 'vec4'
-};
-
 function webGlRegexOptimize(inStr) {
 	return inStr.replace(DECODE32_ENCODE32, '((').replace(ENCODE32_DECODE32, '((');
 }
@@ -5018,7 +4988,7 @@ module.exports = function (_WebGLKernel) {
 				var argType = utils.getArgumentType(arguments[0]);
 				if (argType === 'Array') {
 					this.output = utils.getDimensions(argType);
-				} else if (argType === 'Texture' || argType === 'TextureVec4') {
+				} else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
 					this.output = arguments[0].output;
 				} else {
 					throw new Error('Auto output not supported for input type: ' + argType);
@@ -5085,7 +5055,7 @@ module.exports = function (_WebGLKernel) {
 						this._setupOutputTexture();
 					}
 					gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-					return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'vec4');
+					return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'ArrayTexture(4)');
 				}
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -5196,7 +5166,7 @@ module.exports = function (_WebGLKernel) {
 			var gl = this._webGl;
 			var argumentTexture = this.getArgumentTexture(name);
 			if (value instanceof Texture) {
-				type = 'Texture';
+				type = value.type;
 			}
 			switch (type) {
 				case 'Array':
@@ -5237,6 +5207,7 @@ module.exports = function (_WebGLKernel) {
 					}
 				case 'Integer':
 				case 'Float':
+				case 'Number':
 					{
 						this.setUniform1f('user_' + name, value);
 						break;
@@ -5331,7 +5302,8 @@ module.exports = function (_WebGLKernel) {
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
-				case 'Texture':
+				case 'ArrayTexture(4)':
+				case 'NumberTexture':
 					{
 						var inputTexture = value;
 						var _dim4 = inputTexture.dimensions;
@@ -5372,8 +5344,8 @@ module.exports = function (_WebGLKernel) {
 						case 'Array':
 						case 'Input':
 						case 'HTMLImage':
-						case 'TextureVec4':
-						case 'Texture':
+						case 'ArrayTexture(4)':
+						case 'NumberTexture':
 							result.push('uniform highp sampler2D constants_' + name, 'uniform highp ivec2 constants_' + name + 'Size', 'uniform highp ivec3 constants_' + name + 'Dim', 'uniform highp int constants_' + name + 'BitRatio');
 							break;
 						case 'HTMLImageArray':
@@ -5395,7 +5367,7 @@ module.exports = function (_WebGLKernel) {
 			var gl = this._webGl;
 			var argumentTexture = this.getArgumentTexture(name);
 			if (value instanceof Texture) {
-				type = 'Texture';
+				type = value.type;
 			}
 			switch (type) {
 				case 'Array':
@@ -5524,7 +5496,8 @@ module.exports = function (_WebGLKernel) {
 						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
-				case 'Texture':
+				case 'ArrayTexture(4)':
+				case 'NumberTexture':
 					{
 						var inputTexture = value;
 						var _dim8 = inputTexture.dimensions;
@@ -5587,7 +5560,7 @@ module.exports = function (_WebGLKernel) {
 				var paramName = paramNames[i];
 				var paramType = paramTypes[i];
 				if (this.hardcodeConstants) {
-					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'TextureVec4') {
+					if (paramType === 'Array' || paramType === 'NumberTexture' || paramType === 'ArrayTexture(4)') {
 						var paramDim = utils.getDimensions(param, true);
 						var paramSize = utils.dimToTexSize({
 							floatTextures: this.floatTextures,
@@ -5605,7 +5578,7 @@ module.exports = function (_WebGLKernel) {
 						result.push('highp float user_' + paramName + ' = ' + param);
 					}
 				} else {
-					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'TextureVec4' || paramType === 'Input' || paramType === 'HTMLImage') {
+					if (paramType === 'Array' || paramType === 'NumberTexture' || paramType === 'ArrayTexture(4)' || paramType === 'Input' || paramType === 'HTMLImage') {
 						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp ivec2 user_' + paramName + 'Size', 'uniform highp ivec3 user_' + paramName + 'Dim');
 						if (paramType !== 'HTMLImage') {
 							result.push('uniform highp int user_' + paramName + 'BitRatio');
@@ -6241,7 +6214,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 module.exports = function () {
 
 	function Texture(texture, size, dimensions, output, webGl) {
-		var type = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 'float';
+		var type = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 'NumberTexture';
 
 		_classCallCheck(this, Texture);
 
@@ -6637,11 +6610,7 @@ var Utils = function (_UtilsCore) {
 				}
 				return 'Float';
 			} else if (arg instanceof Texture) {
-				if (arg.type === 'vec4') {
-					return 'TextureVec4';
-				} else {
-					return 'Texture';
-				}
+				return arg.type;
 			} else if (arg instanceof Input) {
 				return 'Input';
 			} else if (arg.nodeName === 'IMG') {

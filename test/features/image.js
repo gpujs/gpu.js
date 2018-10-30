@@ -12,8 +12,7 @@
         this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
       }, {
         graphical: true,
-        output : [image.width, image.height],
-        debug: true
+        output : [image.width, image.height]
       });
       imageKernel(image);
       assert.equal(true, true, 'does not throw');

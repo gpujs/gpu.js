@@ -107,6 +107,7 @@ module.exports = function () {
 			this.paramSizes = [];
 			for (var i = 0; i < args.length; i++) {
 				var arg = args[i];
+
 				this.paramTypes.push(utils.getArgumentType(arg));
 				this.paramSizes.push(arg.constructor === Input ? arg.size : null);
 			}

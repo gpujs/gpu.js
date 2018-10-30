@@ -1,11 +1,6 @@
 'use strict';
 
 const WebGLFunctionNode = require('../web-gl/function-node');
-
-// Closure capture for the ast function, prevent collision with existing AST functions
-// The prefixes to use
-const constantsPrefix = 'this.constants.';
-
 const DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
 const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
@@ -97,20 +92,6 @@ module.exports = class WebGL2FunctionNode extends WebGLFunctionNode {
 
 		return retArr;
 	}
-};
-
-const typeMap = {
-	'TextureVec4': 'sampler2D',
-	'Texture': 'sampler2D',
-	'Input': 'sampler2D',
-	'Array': 'sampler2D',
-	'Array(2)': 'vec2',
-	'Array(3)': 'vec3',
-	'Array(4)': 'vec4',
-	'Number': 'float',
-	'Integer': 'float',
-	'HTMLImage': 'vec4',
-	'HTMLImageArray': 'vec4'
 };
 
 /**

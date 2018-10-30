@@ -339,11 +339,7 @@ var Utils = function (_UtilsCore) {
 				}
 				return 'Float';
 			} else if (arg instanceof Texture) {
-				if (arg.type === 'vec4') {
-					return 'TextureVec4';
-				} else {
-					return 'Texture';
-				}
+				return arg.type;
 			} else if (arg instanceof Input) {
 				return 'Input';
 			} else if (arg.nodeName === 'IMG') {

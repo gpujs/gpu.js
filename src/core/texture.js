@@ -12,7 +12,7 @@ module.exports = class Texture {
 	 * @param {Object} webGl
 	 * @param {String} [type]
 	 */
-	constructor(texture, size, dimensions, output, webGl, type = 'float') {
+	constructor(texture, size, dimensions, output, webGl, type = 'NumberTexture') {
 		this.texture = texture;
 		this.size = size;
 		this.dimensions = dimensions;
