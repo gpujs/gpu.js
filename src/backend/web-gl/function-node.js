@@ -33,9 +33,9 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			debugLog(this);
 		}
 		if (this.prototypeOnly) {
-			return WebGLFunctionNode.astFunctionPrototype(this.getJsAST(), [], this).join('').trim();
+			return this.astFunctionPrototype(this.getJsAST(), []).join('').trim();
 		} else {
-			this.functionStringArray = this.astGeneric(this.getJsAST(), [], this);
+			this.functionStringArray = this.astGeneric(this.getJsAST(), []);
 		}
 		this.functionString = webGlRegexOptimize(
 			this.functionStringArray.join('').trim()
@@ -56,9 +56,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 * @returns {Array} the append retArr
 	 */
 	astFunctionDeclaration(ast, retArr) {
-		if (this.addFunction) {
-			this.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
-		}
+		this.builder.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
 		return retArr;
 	}
 
@@ -75,13 +73,18 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 *
 	 * @returns {Array} the append retArr
 	 */
-	static astFunctionPrototype(ast, retArr) {
+	astFunctionPrototype(ast, retArr) {
 		// Setup function return type and name
 		if (this.isRootKernel || this.isSubKernel) {
 			return retArr;
 		}
 
-		retArr.push(this.returnType);
+		const returnType = this.returnType;
+		const type = typeMap[returnType];
+		if (!type) {
+			throw new Error(`unknown type ${ returnType }`);
+		}
+		retArr.push(type);
 		retArr.push(' ');
 		retArr.push(this.functionName);
 		retArr.push('(');
@@ -122,7 +125,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			retArr.push('void');
 			this.kernalAst = ast;
 		} else {
-			retArr.push(this.returnType);
+			const returnType = this.returnType;
+			const type = typeMap[returnType];
+			if (!type) {
+				throw new Error(`unknown type ${ returnType }`);
+			}
+			retArr.push(type);
 		}
 		retArr.push(' ');
 		retArr.push(this.functionName);
@@ -136,18 +144,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				if (i > 0) {
 					retArr.push(', ');
 				}
-				const type = this.getParamType(paramName);
-				switch (type) {
-					case 'TextureVec4':
-					case 'Texture':
-					case 'Input':
-					case 'Array':
-						retArr.push('sampler2D');
-						break;
-					default:
-						retArr.push('float');
+				const paramType = this.getParamType(paramName);
+				const type = typeMap[paramType];
+				if (!type) {
+					throw new Error(`unknown type ${ paramType }`);
 				}
-
+				retArr.push(type);
 				retArr.push(' ');
 				retArr.push('user_');
 				retArr.push(paramName);
@@ -417,7 +419,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				} else {
 					this.astGeneric(forNode.body, retArr);
 				}
-				retArr.push('} else {\n');
+				retArr.push('\n} else {\n');
 				retArr.push('break;\n');
 				retArr.push('}\n');
 				retArr.push('}\n');
@@ -618,7 +620,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	 */
 	astExpressionStatement(esNode, retArr) {
 		this.astGeneric(esNode.expression, retArr);
-		retArr.push(';\n');
+		retArr.push(';');
 		return retArr;
 	}
 
@@ -642,17 +644,70 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			}
 			const retDeclaration = [];
 			this.astGeneric(declaration, retDeclaration);
-			if (retDeclaration[2] === 'getImage2D(' || retDeclaration[2] === 'getImage3D(') {
-				if (i === 0) {
-					retArr.push('vec4 ');
+			let declarationType = 'Number';
+			if (i === 0) {
+				const init = declaration.init;
+				if (init) {
+					if (init.object) {
+						if (
+							init.object.type === 'MemberExpression' &&
+							init.object.object
+						) {
+							// param[]
+							if (init.object.object.type === 'Identifier') {
+								const type = this.getParamType(init.object.object.name);
+								declarationType = typeLookupMap[type];
+							}
+							// param[][]
+							else if (
+								init.object.object.object &&
+								init.object.object.object.type === 'Identifier'
+							) {
+								const type = this.getParamType(init.object.object.object.name);
+								declarationType = typeLookupMap[type];
+							}
+							// this.constants.param[]
+							else if (
+								init.object.object.object.object &&
+								init.object.object.object.object.type === 'ThisExpression' &&
+								init.object.object.object.property.name === 'constants'
+							) {
+								const type = this.getConstantType(init.object.object.property.name);
+								declarationType = typeLookupMap[type];
+							}
+							// this.constants.param[][]
+							else if (
+								init.object.object.object.object.object &&
+								init.object.object.object.object.object.type === 'ThisExpression' &&
+								init.object.object.object.object.property.name === 'constants'
+							) {
+								const type = this.getConstantType(init.object.object.object.property.name);
+								declarationType = typeLookupMap[type];
+							}
+						}
+						if (!declarationType) {
+							throw new Error(`unknown lookup type ${ typeLookupMap }`);
+						}
+					} else {
+						if (init.name && this.declarations[init.name]) {
+							declarationType = this.declarations[init.name];
+						} else if (init.type === 'ArrayExpression') {
+							declarationType = `Array(${ init.elements.length })`;
+						} else if (init.type === 'CallExpression') {
+							const node = this.builder.nodeMap[init.callee.name];
+							if (node && node.returnType) {
+								declarationType = node.returnType;
+							}
+						}
+					}
 				}
-				this.declarations[declaration.id.name] = 'vec4';
-			} else {
-				if (i === 0) {
-					retArr.push('float ');
+				const type = typeMap[declarationType];
+				if (!type) {
+					throw new Error(`type ${ declarationType } not handled`);
 				}
-				this.declarations[declaration.id.name] = 'float';
+				retArr.push(type + ' ');
 			}
+			this.declarations[declaration.id.name] = declarationType;
 			retArr.push.apply(retArr, retDeclaration);
 		}
 		retArr.push(';');
@@ -856,6 +911,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			if (mNode.object.type === 'Identifier' ||
 				(
 					mNode.object.type === 'MemberExpression' &&
+					// mNode.object.object &&
 					mNode.object.object.object &&
 					mNode.object.object.object.type === 'ThisExpression' &&
 					mNode.object.object.property.name === 'constants'
@@ -869,7 +925,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				// Possibly an array request - handle it as such
 				if (this.paramNames) {
 					const idx = this.paramNames.indexOf(reqName);
-					if (idx >= 0 && this.paramTypes[idx] === 'float') {
+					if (idx >= 0 && this.paramTypes[idx] === 'Number') {
 						assumeNotTexture = true;
 					}
 				}
@@ -891,7 +947,11 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					// This normally refers to the global read only input vars
 					let variableType = null;
 					if (mNode.object.name) {
-						variableType = this.getParamType(mNode.object.name);
+						if (this.declarations[mNode.object.name]) {
+							variableType = this.declarations[mNode.object.name];
+						} else {
+							variableType = this.getParamType(mNode.object.name);
+						}
 					} else if (
 						mNode.object &&
 						mNode.object.object &&
@@ -901,7 +961,9 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 						variableType = this.getConstantType(mNode.object.property.name);
 					}
 					switch (variableType) {
-						case 'vec4':
+						case 'Array(2)':
+						case 'Array(3)':
+						case 'Array(4)':
 							// Get from local vec4
 							this.astGeneric(mNode.object, retArr);
 							retArr.push('[');
@@ -935,7 +997,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							}
 							retArr.push(')');
 							break;
-						case 'TextureVec4':
+						case 'ArrayTexture(4)':
 						case 'HTMLImage':
 							// Get from image
 							retArr.push('getImage2D(');
@@ -1153,7 +1215,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					} else {
 						functionArguments.push({
 							name: argument.name,
-							type: this.paramTypes[paramIndex]
+							type: this.paramTypes[paramIndex] || 'Number'
 						});
 					}
 				} else {
@@ -1191,7 +1253,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	astArrayExpression(arrNode, retArr) {
 		const arrLen = arrNode.elements.length;
 
-		retArr.push('float[' + arrLen + '](');
+		retArr.push('vec' + arrLen + '(');
 		for (let i = 0; i < arrLen; ++i) {
 			if (i > 0) {
 				retArr.push(', ');
@@ -1232,22 +1294,30 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 };
 
-function isIdentifierKernelParam(paramName, ast, funcParam) {
-	return funcParam.paramNames.indexOf(paramName) !== -1;
-}
+const typeMap = {
+	'Array': 'sampler2D',
+	'Array(2)': 'vec2',
+	'Array(3)': 'vec3',
+	'Array(4)': 'vec4',
+	'Array2D': 'sampler2D',
+	'Array3D': 'sampler2D',
+	'Float': 'float',
+	'Input': 'sampler2D',
+	'Integer': 'float',
+	'Number': 'float',
+	'NumberTexture': 'sampler2D',
+	'ArrayTexture(4)': 'sampler2D'
+};
 
-function ensureIndentifierType(paramName, expectedType, ast, funcParam) {
-	const start = ast.loc.start;
-
-	if (!isIdentifierKernelParam(paramName) && expectedType !== 'float') {
-		throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
-	} else {
-		const actualType = funcParam.paramTypes[funcParam.paramNames.indexOf(paramName)];
-		if (actualType !== expectedType) {
-			throw new Error('Error unexpected identifier ' + paramName + ' on line ' + start.line);
-		}
-	}
-}
+const typeLookupMap = {
+	'Array': 'Number',
+	'Array2D': 'Number',
+	'Array3D': 'Number',
+	'HTMLImage': 'Array(4)',
+	'HTMLImageArray': 'Array(4)',
+	'NumberTexture': 'Number',
+	'ArrayTexture(4)': 'Array(4)',
+};
 
 /**
  * @ignore

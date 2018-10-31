@@ -96,6 +96,7 @@ module.exports = class KernelBase {
 		this.paramSizes = [];
 		for (let i = 0; i < args.length; i++) {
 			const arg = args[i];
+
 			this.paramTypes.push(utils.getArgumentType(arg));
 			this.paramSizes.push(arg.constructor === Input ? arg.size : null);
 		}
@@ -108,11 +109,6 @@ module.exports = class KernelBase {
 				this.constantTypes[p] = utils.getArgumentType(this.constants[p])
 			}
 		}
-	}
-
-	setAddFunction(cb) {
-		this.addFunction = cb;
-		return this;
 	}
 
 	setFunctions(functions) {

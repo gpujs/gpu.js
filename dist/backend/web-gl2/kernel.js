@@ -67,7 +67,7 @@ module.exports = function (_WebGLKernel) {
 				var argType = utils.getArgumentType(arguments[0]);
 				if (argType === 'Array') {
 					this.output = utils.getDimensions(argType);
-				} else if (argType === 'Texture' || argType === 'TextureVec4') {
+				} else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
 					this.output = arguments[0].output;
 				} else {
 					throw new Error('Auto output not supported for input type: ' + argType);
@@ -147,7 +147,7 @@ module.exports = function (_WebGLKernel) {
 						this._setupOutputTexture();
 					}
 					gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-					return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'vec4');
+					return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'ArrayTexture(4)');
 				}
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -296,7 +296,7 @@ module.exports = function (_WebGLKernel) {
 			var gl = this._webGl;
 			var argumentTexture = this.getArgumentTexture(name);
 			if (value instanceof Texture) {
-				type = 'Texture';
+				type = value.type;
 			}
 			switch (type) {
 				case 'Array':
@@ -337,6 +337,7 @@ module.exports = function (_WebGLKernel) {
 					}
 				case 'Integer':
 				case 'Float':
+				case 'Number':
 					{
 						this.setUniform1f('user_' + name, value);
 						break;
@@ -433,7 +434,8 @@ module.exports = function (_WebGLKernel) {
 						this.setUniform1i('user_' + name, this.argumentsLength);
 						break;
 					}
-				case 'Texture':
+				case 'ArrayTexture(4)':
+				case 'NumberTexture':
 					{
 						var inputTexture = value;
 						var _dim4 = inputTexture.dimensions;
@@ -480,8 +482,8 @@ module.exports = function (_WebGLKernel) {
 						case 'Array':
 						case 'Input':
 						case 'HTMLImage':
-						case 'TextureVec4':
-						case 'Texture':
+						case 'ArrayTexture(4)':
+						case 'NumberTexture':
 							result.push('uniform highp sampler2D constants_' + name, 'uniform highp ivec2 constants_' + name + 'Size', 'uniform highp ivec3 constants_' + name + 'Dim', 'uniform highp int constants_' + name + 'BitRatio');
 							break;
 						case 'HTMLImageArray':
@@ -516,7 +518,7 @@ module.exports = function (_WebGLKernel) {
 			var gl = this._webGl;
 			var argumentTexture = this.getArgumentTexture(name);
 			if (value instanceof Texture) {
-				type = 'Texture';
+				type = value.type;
 			}
 			switch (type) {
 				case 'Array':
@@ -647,7 +649,8 @@ module.exports = function (_WebGLKernel) {
 						this.setUniform1i('constants_' + name, this.constantsLength);
 						break;
 					}
-				case 'Texture':
+				case 'ArrayTexture(4)':
+				case 'NumberTexture':
 					{
 						var inputTexture = value;
 						var _dim8 = inputTexture.dimensions;
@@ -749,7 +752,7 @@ module.exports = function (_WebGLKernel) {
 				var paramName = paramNames[i];
 				var paramType = paramTypes[i];
 				if (this.hardcodeConstants) {
-					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'TextureVec4') {
+					if (paramType === 'Array' || paramType === 'NumberTexture' || paramType === 'ArrayTexture(4)') {
 						var paramDim = utils.getDimensions(param, true);
 						var paramSize = utils.dimToTexSize({
 							floatTextures: this.floatTextures,
@@ -767,7 +770,7 @@ module.exports = function (_WebGLKernel) {
 						result.push('highp float user_' + paramName + ' = ' + param);
 					}
 				} else {
-					if (paramType === 'Array' || paramType === 'Texture' || paramType === 'TextureVec4' || paramType === 'Input' || paramType === 'HTMLImage') {
+					if (paramType === 'Array' || paramType === 'NumberTexture' || paramType === 'ArrayTexture(4)' || paramType === 'Input' || paramType === 'HTMLImage') {
 						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp ivec2 user_' + paramName + 'Size', 'uniform highp ivec3 user_' + paramName + 'Dim');
 						if (paramType !== 'HTMLImage') {
 							result.push('uniform highp int user_' + paramName + 'BitRatio');

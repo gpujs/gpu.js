@@ -77,7 +77,7 @@ module.exports = function (_KernelBase) {
 				var argType = utils.getArgumentType(arguments[0]);
 				if (argType === 'Array') {
 					this.output = utils.getDimensions(argType);
-				} else if (argType === 'Texture' || argType === 'TextureVec4') {
+				} else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
 					this.output = arguments[0].output;
 				} else {
 					throw 'Auto dimensions not supported for input type: ' + argType;

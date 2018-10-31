@@ -40,7 +40,7 @@ module.exports = class FunctionBuilderBase {
 	addFunction(functionName, jsFunction, options) {
 		this.addFunctionNode(
 			new this.Node(functionName, jsFunction, options)
-			.setAddFunction(this.addFunction.bind(this))
+			.setBuilder(this)
 		);
 	}
 
@@ -153,7 +153,7 @@ module.exports = class FunctionBuilderBase {
 	 */
 	addKernel(fnString, options) {
 		const kernelNode = new this.Node('kernel', fnString, options);
-		kernelNode.setAddFunction(this.addFunction.bind(this));
+		kernelNode.setBuilder(this);
 		kernelNode.isRootKernel = true;
 		this.addFunctionNode(kernelNode);
 		return kernelNode;
@@ -174,7 +174,7 @@ module.exports = class FunctionBuilderBase {
 	 */
 	addSubKernel(jsFunction, options) {
 		const kernelNode = new this.Node(null, jsFunction, options);
-		kernelNode.setAddFunction(this.addFunction.bind(this));
+		kernelNode.setBuilder(this);
 		kernelNode.isSubKernel = true;
 		this.addFunctionNode(kernelNode);
 		return kernelNode;

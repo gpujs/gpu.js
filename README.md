@@ -167,6 +167,72 @@ const myFunc = gpu.createKernel(function() {
 myFunc();
 // Result: [0, 1, 2, 3, ... 99]
 ```
+
+### Declaring variables
+
+GPU.js makes variable declaration inside kernel functions easy.  Variable types supported are:
+Numbers
+Array(2)
+Array(3)
+Array(4)
+
+Numbers example:
+```js
+ const myFunc = gpu.createKernel(function() {
+     const i = 1;
+     const j = 0.89;
+     return i + j;
+ }).setOutput([100]);
+```
+
+Array(2) examples:
+Using declaration 
+```js
+ const myFunc = gpu.createKernel(function() {
+     const array2 = [0.08, 2];
+     return array2;
+ }).setOutput([100]);
+```
+
+Directly returned
+```js
+ const myFunc = gpu.createKernel(function() {
+     return [0.08, 2];
+ }).setOutput([100]);
+```
+
+Array(3) example:
+Using declaration 
+```js
+ const myFunc = gpu.createKernel(function() {
+     const array2 = [0.08, 2, 0.1];
+     return array2;
+ }).setOutput([100]);
+```
+
+Directly returned
+```js
+ const myFunc = gpu.createKernel(function() {
+     return [0.08, 2, 0.1];
+ }).setOutput([100]);
+```
+
+Array(4) example:
+Using declaration 
+```js
+ const myFunc = gpu.createKernel(function() {
+     const array2 = [0.08, 2, 0.1, 3];
+     return array2;
+ }).setOutput([100]);
+```
+
+Directly returned
+```js
+ const myFunc = gpu.createKernel(function() {
+     return [0.08, 2, 0.1, 3];
+ }).setOutput([100]);
+```
+
 ## Accepting Input
 ### Supported Input Types
 * Numbers
@@ -346,7 +412,9 @@ megaKernel(a, b, c);
 This gives you the flexibility of using parts of a single transformation without the performance penalty, resulting in much much _MUCH_ faster operation.
 
 ## Adding custom functions
-Do you have a custom function you'd like to use on the gpu? Although limited, you can:
+use `gpu.addFunction(function() {}, options)` for adding custom functions.  Example:
+
+
 ```js
 gpu.addFunction(function mySuperFunction(a, b) {
 	return a - b;
@@ -359,6 +427,31 @@ const kernel = gpu.createKernel(function(a, b) {
 	return anotherFunction(mySuperFunction(a[this.thread.x], b[this.thread.x]));
 }).setOutput([20]);
 ```
+
+### Adding strongly typed functions
+
+To strongly type a function you may use options.  Options take an optional hash values:
+`returnType`: optional, defaults to float, the value you'd like to return from the function
+`paramTypes`: optional, defaults to float for each param, a hash of param names with values of the return types
+
+Types: that may be used for `returnType` or for each property of `paramTypes`:
+'Array'
+'Array(2)'
+'Array(3)'
+'Array(4)'
+'HTMLImage'
+'HTMLImageArray'
+'Number'
+'NumberTexture'
+'ArrayTexture(4)'
+
+Example:
+```js
+gpu.addFunction(function mySuperFunction(a, b) {
+	return [a - b[1], b[0] - a];
+}, { paramTypes: { a: 'Integer', b: 'Array(2)'}, returnType: 'Array(2)' });
+```
+
 
 ## Adding custom functions directly to kernel
 ```js

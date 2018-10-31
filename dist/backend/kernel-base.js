@@ -107,6 +107,7 @@ module.exports = function () {
 			this.paramSizes = [];
 			for (var i = 0; i < args.length; i++) {
 				var arg = args[i];
+
 				this.paramTypes.push(utils.getArgumentType(arg));
 				this.paramSizes.push(arg.constructor === Input ? arg.size : null);
 			}
@@ -120,12 +121,6 @@ module.exports = function () {
 					this.constantTypes[p] = utils.getArgumentType(this.constants[p]);
 				}
 			}
-		}
-	}, {
-		key: 'setAddFunction',
-		value: function setAddFunction(cb) {
-			this.addFunction = cb;
-			return this;
 		}
 	}, {
 		key: 'setFunctions',

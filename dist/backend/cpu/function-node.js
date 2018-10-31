@@ -108,9 +108,7 @@ module.exports = function (_BaseFunctionNode) {
 	}, {
 		key: 'astFunctionDeclaration',
 		value: function astFunctionDeclaration(ast, retArr) {
-			if (this.addFunction) {
-				this.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
-			}
+			this.builder.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
 			return retArr;
 		}
 
@@ -631,7 +629,7 @@ module.exports = function (_BaseFunctionNode) {
 		key: 'astExpressionStatement',
 		value: function astExpressionStatement(esNode, retArr) {
 			this.astGeneric(esNode.expression, retArr);
-			retArr.push(';\n');
+			retArr.push(';');
 			return retArr;
 		}
 

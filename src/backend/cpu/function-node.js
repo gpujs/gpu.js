@@ -88,9 +88,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	 * @returns {Array} the append retArr
 	 */
 	astFunctionDeclaration(ast, retArr) {
-		if (this.addFunction) {
-			this.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
-		}
+		this.builder.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
 		return retArr;
 	}
 
@@ -595,7 +593,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	 */
 	astExpressionStatement(esNode, retArr) {
 		this.astGeneric(esNode.expression, retArr);
-		retArr.push(';\n');
+		retArr.push(';');
 		return retArr;
 	}
 
