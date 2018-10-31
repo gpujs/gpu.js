@@ -435,21 +435,21 @@ To strongly type a function you may use options.  Options take an optional hash 
 `paramTypes`: optional, defaults to float for each param, a hash of param names with values of the return types
 
 Types: that may be used for `returnType` or for each property of `paramTypes`:
-'Array'
-'Array(2)'
-'Array(3)'
-'Array(4)'
-'HTMLImage'
-'HTMLImageArray'
-'Number'
-'NumberTexture'
-'ArrayTexture(4)'
+* 'Array'
+* 'Array(2)'
+* 'Array(3)'
+* 'Array(4)'
+* 'HTMLImage'
+* 'HTMLImageArray'
+* 'Number'
+* 'NumberTexture'
+* 'ArrayTexture(4)'
 
 Example:
 ```js
 gpu.addFunction(function mySuperFunction(a, b) {
 	return [a - b[1], b[0] - a];
-}, { paramTypes: { a: 'Integer', b: 'Array(2)'}, returnType: 'Array(2)' });
+}, { paramTypes: { a: 'Number', b: 'Array(2)'}, returnType: 'Array(2)' });
 ```
 
 
