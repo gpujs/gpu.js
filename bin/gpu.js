@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.10.0
- * @date Tue Oct 30 2018 07:33:45 GMT-0600 (MDT)
+ * @version 1.10.1
+ * @date Thu Nov 01 2018 10:01:30 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -2908,22 +2908,25 @@ module.exports = function (_FunctionNodeBase) {
 					if (init) {
 						if (init.object) {
 							if (init.object.type === 'MemberExpression' && init.object.object) {
-								if (init.object.object.type === 'Identifier') {
-									var _type2 = this.getParamType(init.object.object.name);
-									declarationType = typeLookupMap[_type2];
+								if (init.object.object.type === 'ThisExpression' && init.object.property && (init.object.property.name === 'thread' || init.object.property.name === 'output')) {
+									declarationType = 'Integer';
 								}
-								else if (init.object.object.object && init.object.object.object.type === 'Identifier') {
-										var _type3 = this.getParamType(init.object.object.object.name);
-										declarationType = typeLookupMap[_type3];
+								else if (init.object.object.type === 'Identifier') {
+										var _type2 = this.getParamType(init.object.object.name);
+										declarationType = typeLookupMap[_type2];
 									}
-									else if (init.object.object.object.object && init.object.object.object.object.type === 'ThisExpression' && init.object.object.object.property.name === 'constants') {
-											var _type4 = this.getConstantType(init.object.object.property.name);
-											declarationType = typeLookupMap[_type4];
+									else if (init.object.object.object && init.object.object.object.type === 'Identifier') {
+											var _type3 = this.getParamType(init.object.object.object.name);
+											declarationType = typeLookupMap[_type3];
 										}
-										else if (init.object.object.object.object.object && init.object.object.object.object.object.type === 'ThisExpression' && init.object.object.object.object.property.name === 'constants') {
-												var _type5 = this.getConstantType(init.object.object.object.property.name);
-												declarationType = typeLookupMap[_type5];
+										else if (init.object.object.object && init.object.object.object.object && init.object.object.object.object.type === 'ThisExpression' && init.object.object.object.property.name === 'constants') {
+												var _type4 = this.getConstantType(init.object.object.property.name);
+												declarationType = typeLookupMap[_type4];
 											}
+											else if (init.object.object.object && init.object.object.object.object && init.object.object.object.object.object && init.object.object.object.object.object.type === 'ThisExpression' && init.object.object.object.object.property.name === 'constants') {
+													var _type5 = this.getConstantType(init.object.object.object.property.name);
+													declarationType = typeLookupMap[_type5];
+												}
 							}
 							if (!declarationType) {
 								throw new Error('unknown lookup type ' + typeLookupMap);
