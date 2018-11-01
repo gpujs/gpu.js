@@ -143,8 +143,6 @@ module.exports = function (_BaseFunctionNode) {
 				if (i > 0) {
 					retArr.push(', ');
 				}
-				retArr.push(this.paramTypes[i]);
-				retArr.push(' ');
 				retArr.push('user_');
 				retArr.push(this.paramNames[i]);
 			}
@@ -174,7 +172,6 @@ module.exports = function (_BaseFunctionNode) {
 			// Setup function return type and name
 			if (!this.isRootKernel) {
 				retArr.push('function');
-				this.kernalAst = ast;
 				retArr.push(' ');
 				retArr.push(this.functionName);
 				retArr.push('(');
@@ -186,8 +183,6 @@ module.exports = function (_BaseFunctionNode) {
 					if (i > 0) {
 						retArr.push(', ');
 					}
-
-					retArr.push(' ');
 					retArr.push('user_');
 					retArr.push(paramName);
 				}
@@ -1101,7 +1096,7 @@ module.exports = function (_BaseFunctionNode) {
 		value: function astArrayExpression(arrNode, retArr) {
 			var arrLen = arrNode.elements.length;
 
-			retArr.push('new Float32Array(');
+			retArr.push('[');
 			for (var i = 0; i < arrLen; ++i) {
 				if (i > 0) {
 					retArr.push(', ');
@@ -1109,7 +1104,7 @@ module.exports = function (_BaseFunctionNode) {
 				var subNode = arrNode.elements[i];
 				this.astGeneric(subNode, retArr);
 			}
-			retArr.push(')');
+			retArr.push(']');
 
 			return retArr;
 

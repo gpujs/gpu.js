@@ -148,7 +148,6 @@ module.exports = function (_FunctionNodeBase) {
 			// Setup function return type and name
 			if (this.isRootKernel) {
 				retArr.push('void');
-				this.kernalAst = ast;
 			} else {
 				var returnType = this.returnType;
 				var type = typeMap[returnType];
