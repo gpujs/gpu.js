@@ -123,7 +123,6 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		// Setup function return type and name
 		if (this.isRootKernel) {
 			retArr.push('void');
-			this.kernalAst = ast;
 		} else {
 			const returnType = this.returnType;
 			const type = typeMap[returnType];

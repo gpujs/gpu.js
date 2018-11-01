@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.10.1
- * @date Thu Nov 01 2018 10:01:30 GMT-0400 (EDT)
+ * @version 1.10.2
+ * @date Thu Nov 01 2018 14:15:00 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -125,8 +125,6 @@ module.exports = function (_BaseFunctionNode) {
 				if (i > 0) {
 					retArr.push(', ');
 				}
-				retArr.push(this.paramTypes[i]);
-				retArr.push(' ');
 				retArr.push('user_');
 				retArr.push(this.paramNames[i]);
 			}
@@ -143,7 +141,6 @@ module.exports = function (_BaseFunctionNode) {
 
 			if (!this.isRootKernel) {
 				retArr.push('function');
-				this.kernalAst = ast;
 				retArr.push(' ');
 				retArr.push(this.functionName);
 				retArr.push('(');
@@ -154,8 +151,6 @@ module.exports = function (_BaseFunctionNode) {
 					if (i > 0) {
 						retArr.push(', ');
 					}
-
-					retArr.push(' ');
 					retArr.push('user_');
 					retArr.push(paramName);
 				}
@@ -773,7 +768,7 @@ module.exports = function (_BaseFunctionNode) {
 		value: function astArrayExpression(arrNode, retArr) {
 			var arrLen = arrNode.elements.length;
 
-			retArr.push('new Float32Array(');
+			retArr.push('[');
 			for (var i = 0; i < arrLen; ++i) {
 				if (i > 0) {
 					retArr.push(', ');
@@ -781,7 +776,7 @@ module.exports = function (_BaseFunctionNode) {
 				var subNode = arrNode.elements[i];
 				this.astGeneric(subNode, retArr);
 			}
-			retArr.push(')');
+			retArr.push(']');
 
 			return retArr;
 
@@ -2528,7 +2523,6 @@ module.exports = function (_FunctionNodeBase) {
 
 			if (this.isRootKernel) {
 				retArr.push('void');
-				this.kernalAst = ast;
 			} else {
 				var returnType = this.returnType;
 				var type = typeMap[returnType];
