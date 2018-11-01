@@ -653,8 +653,19 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							init.object.type === 'MemberExpression' &&
 							init.object.object
 						) {
+							// this.thread.x, this.thread.y, this.thread.z
+							if (
+								init.object.object.type === 'ThisExpression' &&
+								init.object.property &&
+								(
+									init.object.property.name === 'thread' ||
+									init.object.property.name === 'output'
+								)
+							) {
+								declarationType = 'Integer';
+							}
 							// param[]
-							if (init.object.object.type === 'Identifier') {
+							else if (init.object.object.type === 'Identifier') {
 								const type = this.getParamType(init.object.object.name);
 								declarationType = typeLookupMap[type];
 							}
@@ -668,6 +679,7 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							}
 							// this.constants.param[]
 							else if (
+								init.object.object.object &&
 								init.object.object.object.object &&
 								init.object.object.object.object.type === 'ThisExpression' &&
 								init.object.object.object.property.name === 'constants'
@@ -677,6 +689,8 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 							}
 							// this.constants.param[][]
 							else if (
+								init.object.object.object &&
+								init.object.object.object.object &&
 								init.object.object.object.object.object &&
 								init.object.object.object.object.object.type === 'ThisExpression' &&
 								init.object.object.object.object.property.name === 'constants'

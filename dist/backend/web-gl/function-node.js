@@ -689,26 +689,30 @@ module.exports = function (_FunctionNodeBase) {
 					if (init) {
 						if (init.object) {
 							if (init.object.type === 'MemberExpression' && init.object.object) {
-								// param[]
-								if (init.object.object.type === 'Identifier') {
-									var _type2 = this.getParamType(init.object.object.name);
-									declarationType = typeLookupMap[_type2];
+								// this.thread.x, this.thread.y, this.thread.z
+								if (init.object.object.type === 'ThisExpression' && init.object.property && (init.object.property.name === 'thread' || init.object.property.name === 'output')) {
+									declarationType = 'Integer';
 								}
-								// param[][]
-								else if (init.object.object.object && init.object.object.object.type === 'Identifier') {
-										var _type3 = this.getParamType(init.object.object.object.name);
-										declarationType = typeLookupMap[_type3];
+								// param[]
+								else if (init.object.object.type === 'Identifier') {
+										var _type2 = this.getParamType(init.object.object.name);
+										declarationType = typeLookupMap[_type2];
 									}
-									// this.constants.param[]
-									else if (init.object.object.object.object && init.object.object.object.object.type === 'ThisExpression' && init.object.object.object.property.name === 'constants') {
-											var _type4 = this.getConstantType(init.object.object.property.name);
-											declarationType = typeLookupMap[_type4];
+									// param[][]
+									else if (init.object.object.object && init.object.object.object.type === 'Identifier') {
+											var _type3 = this.getParamType(init.object.object.object.name);
+											declarationType = typeLookupMap[_type3];
 										}
-										// this.constants.param[][]
-										else if (init.object.object.object.object.object && init.object.object.object.object.object.type === 'ThisExpression' && init.object.object.object.object.property.name === 'constants') {
-												var _type5 = this.getConstantType(init.object.object.object.property.name);
-												declarationType = typeLookupMap[_type5];
+										// this.constants.param[]
+										else if (init.object.object.object && init.object.object.object.object && init.object.object.object.object.type === 'ThisExpression' && init.object.object.object.property.name === 'constants') {
+												var _type4 = this.getConstantType(init.object.object.property.name);
+												declarationType = typeLookupMap[_type4];
 											}
+											// this.constants.param[][]
+											else if (init.object.object.object && init.object.object.object.object && init.object.object.object.object.object && init.object.object.object.object.object.type === 'ThisExpression' && init.object.object.object.object.property.name === 'constants') {
+													var _type5 = this.getConstantType(init.object.object.object.property.name);
+													declarationType = typeLookupMap[_type5];
+												}
 							}
 							if (!declarationType) {
 								throw new Error('unknown lookup type ' + typeLookupMap);
