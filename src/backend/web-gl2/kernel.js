@@ -788,10 +788,6 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 						`highp ivec3 user_${ paramName }Dim = ivec3(${ paramDim[0] }, ${ paramDim[1]}, ${ paramDim[2] })`,
 						`uniform highp int user_${ paramName }BitRatio`
 					);
-
-					if (paramType === 'Array') {
-						result.push(`uniform highp int user_${ paramName }BitRatio`)
-					}
 				} else if (paramType === 'Integer') {
 					result.push(`highp float user_${ paramName } = ${ param }.0`);
 				} else if (paramType === 'Float') {

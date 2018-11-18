@@ -1289,8 +1289,8 @@ module.exports = class WebGLKernel extends KernelBase {
 
 					result.push(
 						`uniform sampler2D user_${ paramName }`,
-						`ivec2 user_${ paramName }Size = vec2(${ paramSize[0] }, ${ paramSize[1] })`,
-						`ivec3 user_${ paramName }Dim = vec3(${ paramDim[0] }, ${ paramDim[1]}, ${ paramDim[2] })`,
+						`ivec2 user_${ paramName }Size = ivec2(${ paramSize[0] }, ${ paramSize[1] })`,
+						`ivec3 user_${ paramName }Dim = ivec3(${ paramDim[0] }, ${ paramDim[1]}, ${ paramDim[2] })`,
 						`uniform int user_${ paramName }BitRatio`
 					);
 				} else if (paramType === 'Integer') {

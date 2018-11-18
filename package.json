@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "1.10.2",
+  "version": "1.10.3",
   "description": "GPU Accelerated JavaScript",
   "main": "./dist/index.js",
   "files": ["dist", "bin"],

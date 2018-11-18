@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.10.2
- * @date Thu Nov 01 2018 14:15:00 GMT-0400 (EDT)
+ * @version 1.10.3
+ * @date Sun Nov 18 2018 14:07:45 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -4437,7 +4437,7 @@ module.exports = function (_KernelBase) {
 							floatOutput: this.floatOutput
 						}, paramDim);
 
-						result.push('uniform sampler2D user_' + paramName, 'ivec2 user_' + paramName + 'Size = vec2(' + paramSize[0] + ', ' + paramSize[1] + ')', 'ivec3 user_' + paramName + 'Dim = vec3(' + paramDim[0] + ', ' + paramDim[1] + ', ' + paramDim[2] + ')', 'uniform int user_' + paramName + 'BitRatio');
+						result.push('uniform sampler2D user_' + paramName, 'ivec2 user_' + paramName + 'Size = ivec2(' + paramSize[0] + ', ' + paramSize[1] + ')', 'ivec3 user_' + paramName + 'Dim = ivec3(' + paramDim[0] + ', ' + paramDim[1] + ', ' + paramDim[2] + ')', 'uniform int user_' + paramName + 'BitRatio');
 					} else if (paramType === 'Integer') {
 						result.push('float user_' + paramName + ' = ' + param + '.0');
 					} else if (paramType === 'Float') {
@@ -5565,10 +5565,6 @@ module.exports = function (_WebGLKernel) {
 						}, paramDim);
 
 						result.push('uniform highp sampler2D user_' + paramName, 'highp ivec2 user_' + paramName + 'Size = ivec2(' + paramSize[0] + ', ' + paramSize[1] + ')', 'highp ivec3 user_' + paramName + 'Dim = ivec3(' + paramDim[0] + ', ' + paramDim[1] + ', ' + paramDim[2] + ')', 'uniform highp int user_' + paramName + 'BitRatio');
-
-						if (paramType === 'Array') {
-							result.push('uniform highp int user_' + paramName + 'BitRatio');
-						}
 					} else if (paramType === 'Integer') {
 						result.push('highp float user_' + paramName + ' = ' + param + '.0');
 					} else if (paramType === 'Float') {
