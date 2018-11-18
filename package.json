@@ -3,7 +3,10 @@
   "version": "1.10.3",
   "description": "GPU Accelerated JavaScript",
   "main": "./dist/index.js",
-  "files": ["dist", "bin"],
+  "files": [
+    "dist",
+    "bin"
+  ],
   "directories": {
     "doc": "doc",
     "test": "test"
@@ -14,11 +17,11 @@
   "devDependencies": {
     "babel-plugin-syntax-async-functions": "^6.5.0",
     "babel-preset-env": "^1.5.2",
-    "browser-sync": "^2.18.2",
-    "browserify": "^14.3.0",
+    "browser-sync": "^2.26.3",
+    "browserify": "^16.2.3",
     "del": "^3.0.0",
     "docdash": "^0.4.0",
-    "gulp": "^3.9.1",
+    "gulp": "^4.0.0",
     "gulp-babel": "^6.1.2",
     "gulp-concat": "^2.6.0",
     "gulp-header": "^1.7.1",
@@ -32,7 +35,7 @@
     "qunit-assert-close": "^2.1.2",
     "qunitjs": "^2.3.2",
     "vinyl-buffer": "^1.0.0",
-    "vinyl-source-stream": "^1.1.0"
+    "vinyl-source-stream": "^2.0.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
