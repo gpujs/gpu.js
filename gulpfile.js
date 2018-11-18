@@ -2,7 +2,6 @@
 
 const fs = require('fs');
 const gulp = require('gulp');
-const concat = require('gulp-concat');
 const rename = require('gulp-rename');
 const uglify = require('gulp-uglify');
 const gutil = require('gulp-util');
@@ -15,7 +14,6 @@ const pkg = require('./package.json');
 const jsprettify = require('gulp-jsbeautifier');
 const babel = require('gulp-babel');
 const stripComments = require('gulp-strip-comments');
-const del = require('del');
 const merge = require('merge-stream');
 
 /// Build the scripts
@@ -25,13 +23,14 @@ gulp.task('babelify', function () {
 		.pipe(gulp.dest('dist'));
 });
 
-gulp.task('build', ['babelify'], function() {
+gulp.task('build', gulp.series('babelify', function() {
 
 	const gpu = browserify('./dist/index.js')
 		.bundle()
 		.pipe(source('gpu.js'))
 		.pipe(buffer())
 		.pipe(stripComments())
+    .on('error', console.error)
 			.pipe(header(fs.readFileSync('./dist/wrapper/header.js', 'utf8'), { pkg : pkg }))
 			.pipe(gulp.dest('bin'));
 
@@ -40,11 +39,12 @@ gulp.task('build', ['babelify'], function() {
 		.pipe(source('gpu-core.js'))
 		.pipe(buffer())
 		.pipe(stripComments())
+    .on('error', console.error)
 			.pipe(header(fs.readFileSync('./dist/wrapper/header.js', 'utf8'), { pkg : pkg }))
 			.pipe(gulp.dest('bin'));
-	
+
 	return merge(gpu, gpuCore);
-});
+}));
 
 /// Minify the build script, after building it
 gulp.task('minify', function() {
@@ -87,13 +87,13 @@ gulp.task('bsync', function(){
 });
 
 /// Auto rebuild and host
-gulp.task('default', ['minify','bsync']);
+gulp.task('default', gulp.series('minify','bsync'));
 
 
 /// Beautify source code
 /// Use before merge request
 gulp.task('beautify', function() {
-	gulp.src(['src/**/*.js'])
+	return gulp.src(['src/**/*.js'])
 		.pipe(jsprettify({
 			indent_size: 3,
 			indent_char: ' ',
@@ -102,7 +102,7 @@ gulp.task('beautify', function() {
 		.pipe(gulp.dest('src'));
 });
 
-gulp.task('injectCSS', function(){
+gulp.task('injectCSS', function() {
 	let signatureColor = '#ff75cf';
 	let linkColor = '#4c7fbd';
 	let themeColor = '#186384';
@@ -129,7 +129,7 @@ gulp.task('injectCSS', function(){
 		if(err){
 			throw new Error(err);
 		}
-		
+
 		console.log('CSS Injected');
 	});
 });
