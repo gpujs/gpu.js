@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 1.10.3
- * @date Sun Nov 18 2018 14:38:47 GMT-0500 (EST)
+ * @version 1.10.4
+ * @date Sun Nov 18 2018 15:47:22 GMT-0500 (EST)
  *
  * @license MIT
  * The MIT License
@@ -890,7 +890,9 @@ module.exports = function (_KernelBase) {
 			this.setupParams(arguments);
 			this.validateOptions();
 			var canvas = this._canvas;
-			this._canvasCtx = canvas.getContext('2d');
+			if (canvas) {
+				this._canvasCtx = canvas.getContext('2d');
+			}
 			var threadDim = this.threadDim = utils.clone(this.output);
 
 			while (threadDim.length < 3) {
@@ -898,8 +900,12 @@ module.exports = function (_KernelBase) {
 			}
 
 			if (this.graphical) {
-				canvas.width = threadDim[0];
-				canvas.height = threadDim[1];
+				var _canvas = this._canvas;
+				if (!_canvas) {
+					throw new Error('no canvas available for using graphical output');
+				}
+				_canvas.width = threadDim[0];
+				_canvas.height = threadDim[1];
 				this._imageData = this._canvasCtx.createImageData(threadDim[0], threadDim[1]);
 				this._colorData = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
 			}

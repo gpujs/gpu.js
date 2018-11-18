@@ -10,7 +10,7 @@ module.exports = class CPUKernel extends KernelBase {
 	 * @constructor CPUKernel
 	 *
 	 * @desc Kernel Implementation for CPU.
-	 * 
+	 *
 	 * <p>Instantiates properties to the CPU Kernel.</p>
 	 *
 	 * @extends KernelBase
@@ -47,7 +47,7 @@ module.exports = class CPUKernel extends KernelBase {
 	 * @function
 	 * @name validateOptions
 	 *
-	 * @desc Validate options related to CPU Kernel, such as 
+	 * @desc Validate options related to CPU Kernel, such as
 	 * dimensions size, and auto dimension support.
 	 *
 	 */
@@ -75,8 +75,8 @@ module.exports = class CPUKernel extends KernelBase {
 	 * @function
 	 * @name build
 	 *
-	 * @desc Builds the Kernel, by generating the kernel 
-	 * string using thread dimensions, and arguments 
+	 * @desc Builds the Kernel, by generating the kernel
+	 * string using thread dimensions, and arguments
 	 * supplied to the kernel.
 	 *
 	 * <p>If the graphical flag is enabled, canvas is used.</p>
@@ -87,7 +87,10 @@ module.exports = class CPUKernel extends KernelBase {
 		this.setupParams(arguments);
 		this.validateOptions();
 		const canvas = this._canvas;
-		this._canvasCtx = canvas.getContext('2d');
+		if (canvas) {
+			// if node or canvas is not found, don't die
+			this._canvasCtx = canvas.getContext('2d');
+		}
 		const threadDim = this.threadDim = utils.clone(this.output);
 
 		while (threadDim.length < 3) {
@@ -95,6 +98,10 @@ module.exports = class CPUKernel extends KernelBase {
 		}
 
 		if (this.graphical) {
+			const canvas = this._canvas;
+			if (!canvas) {
+				throw new Error('no canvas available for using graphical output');
+			}
 			canvas.width = threadDim[0];
 			canvas.height = threadDim[1];
 			this._imageData = this._canvasCtx.createImageData(threadDim[0], threadDim[1]);
@@ -144,7 +151,7 @@ module.exports = class CPUKernel extends KernelBase {
 	 * @name getKernelString
 	 *
 	 * @desc Generates kernel string for this kernel program.
-	 * 
+	 *
 	 * <p>If sub-kernels are supplied, they are also factored in.
 	 * This string can be saved by calling the `toString` method
 	 * and then can be reused later.</p>
