@@ -36,6 +36,8 @@ const myGPUFunc = gpuRunner
 const iTextureGPU = iTextureGPUKernel();
 const jTextureGPU = jTextureGPUKernel();
 
+// console.log(myGPUFunc(iTextureGPU, jTextureGPU).toArray(gpuRunner));
+
 
 
 // CPU
@@ -48,8 +50,6 @@ const myCPUFunc = cpuRunner
   })
   .setOutput([size, size]);
 
-
-// console.log(myGPUFunc(iTextureGPU, jTextureGPU).toArray(gpuRunner));
 
 
 suite

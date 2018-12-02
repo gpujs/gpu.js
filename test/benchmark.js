@@ -7,7 +7,7 @@ const suite = new Benchmark.Suite;
 const gpuRunner = new GPU({ mode: 'webgl' });
 const cpuRunner = new GPU({ mode: 'cpu' });
 
-const size = 512;
+const size = 2048;
 
 
 // SIMPLE
@@ -20,6 +20,7 @@ const myGPUFunc = gpuRunner
   })
   .setOutputToTexture(true)
   .setOutput([size, size]);
+
 
 const myCPUFunc = cpuRunner
   .createKernel(function compute() {
