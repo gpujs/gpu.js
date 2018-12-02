@@ -19,6 +19,7 @@
   "devDependencies": {
     "babel-plugin-syntax-async-functions": "^6.5.0",
     "babel-preset-env": "^1.5.2",
+    "benchmark": "^2.1.4",
     "browser-sync": "^2.26.3",
     "browserify": "^16.2.3",
     "chai": "^4.2.0",
@@ -42,7 +43,7 @@
     "vinyl-source-stream": "^2.0.0"
   },
   "scripts": {
-    "test": "mocha ./test",
+    "test": "mocha ./test/index",
     "setup": "npm i -g gulp-cli",
     "build-docs": "./node_modules/.bin/jsdoc -c jsdoc.json src -r -d doc --debug && gulp injectCSS",
     "make": "gulp build && gulp beautify && gulp minify"

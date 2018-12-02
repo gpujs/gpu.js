@@ -31,7 +31,9 @@ class GPU extends GPUCore {
 		this._canvas = settings.canvas || null;
 		this._webGl = settings.webGl || null;
 
-		if (!mode || mode === 'webgl-validator') {
+		if (mode === 'cpu') {
+			detectedMode = 'cpu';
+		} else if (mode === 'webgl' || mode === 'webgl-validator') {
 			const context = createNodeContext(512, 512);
 			const canvas = createCanvas(512, 512);
 			detectedMode = mode || 'webgl';
