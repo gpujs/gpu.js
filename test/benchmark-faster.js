@@ -36,29 +36,20 @@ const myGPUFunc = gpuRunner
 const iTextureGPU = iTextureGPUKernel();
 const jTextureGPU = jTextureGPUKernel();
 
+
+
 // CPU
 
-const iTextureCPUKernel = cpuRunner
-  .createKernel(function compute() {
-    return this.thread.x;
-  })
-  .setOutput([size, size]);
-
-const jTextureCPUKernel = cpuRunner
-  .createKernel(function compute() {
-    return 0.89;
-  })
-  .setOutput([size, size]);
-
 const myCPUFunc = cpuRunner
-  .createKernel(function compute(i, j) {
-    return i[this.thread.x] + j[this.thread.x];
+  .createKernel(function compute() {
+    const i = this.thread.x;
+    const j = 0.89;
+    return i + j;
   })
   .setOutput([size, size]);
 
-const iTextureCPU = iTextureCPUKernel();
-const jTextureCPU = jTextureCPUKernel();
 
+// console.log(myGPUFunc(iTextureGPU, jTextureGPU).toArray(gpuRunner));
 
 
 suite
@@ -66,7 +57,7 @@ suite
     myGPUFunc(iTextureGPU, jTextureGPU);
   })
   .add('cpu', function() {
-    myCPUFunc(iTextureCPU, jTextureCPU);
+    myCPUFunc();
   })
   .on('cycle', function(event) {
     console.log(String(event.target));

@@ -11,9 +11,11 @@ describe('Test Node GPU', () => {
       const i = this.thread.x;
       const j = 0.89;
       return i + j;
-    }).setOutput([1000, 1000]);
+    }).setOutput([512, 512]);
 
-    console.log(myFunc());
+    const iff = myFunc()
+
+    console.log(iff);
 
     expect(typeof GPU).to.equal('function');
     expect(typeof gpu).to.equal('object');
