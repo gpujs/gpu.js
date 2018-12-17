@@ -7,6 +7,8 @@ const CPURunner = require('../backend/cpu/runner');
 const WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
 const WebGL2ValidatorKernel = require('../backend/web-gl2/validator-kernel');
 const GPUCore = require("./gpu-core");
+const createNodeContext = require('gl');
+const { createCanvas } = require('canvas');
 
 /**
  * Initialises the GPU.js library class which manages the webGlContext for the created functions.
@@ -23,30 +25,47 @@ class GPU extends GPUCore {
 		super(settings);
 
 		settings = settings || {};
-		this._canvas = settings.canvas || null;
-		this._webGl = settings.webGl || null;
 		let mode = settings.mode;
 		let detectedMode;
-		if (!utils.isWebGlSupported()) {
-			if (mode && mode !== 'cpu') {
-				throw new Error(`A requested mode of "${ mode }" and is not supported`);
-			} else {
-				console.warn('Warning: gpu not supported, falling back to cpu support');
-				detectedMode = 'cpu';
-			}
+
+		this._canvas = settings.canvas || null;
+		this._webGl = settings.webGl || null;
+
+		if (mode === 'cpu') {
+			detectedMode = 'cpu';
+		} else if (mode === 'webgl' || mode === 'webgl-validator') {
+			detectedMode = mode || 'webgl';
+
+			const context = createNodeContext(2048, 2048);
+			const canvas = createCanvas(2048, 2048);
+
+			this._webGl = context;
+			this._canvas = canvas;
 		} else {
-			if (this._webGl) {
-				if (typeof WebGL2RenderingContext !== 'undefined' && this._webGl.constructor === WebGL2RenderingContext) {
-					detectedMode = 'webgl2';
-				} else if (typeof WebGLRenderingContext !== 'undefined' && this._webGl.constructor === WebGLRenderingContext) {
-					detectedMode = 'webgl';
-				} else {
-					throw new Error('unknown WebGL Context');
-				}
-			} else {
-				detectedMode = mode || 'gpu';
-			}
+			detectedMode = mode;
 		}
+
+		// if (!utils.isWebGlSupported(context)) {
+		// 	if (mode && mode !== 'cpu') {
+		// 		throw new Error(`A requested mode of "${ mode }" and is not supported`);
+		// 	} else {
+		// 		console.warn('Warning: gpu not supported, falling back to cpu support');
+		// 		detectedMode = 'cpu';
+		// 	}
+		// } else {
+		// 	if (this._webGl) {
+		// 		if (typeof WebGL2RenderingContext !== 'undefined' && this._webGl.constructor === WebGL2RenderingContext) {
+		// 			detectedMode = 'webgl2';
+		// 		} else if (typeof WebGLRenderingContext !== 'undefined' && this._webGl.constructor === WebGLRenderingContext) {
+		// 			detectedMode = 'webgl';
+		// 		} else {
+		// 			throw new Error('unknown WebGL Context');
+		// 		}
+		// 	} else {
+		// 		detectedMode = mode || 'gpu';
+		// 	}
+		// }
+
 		this.kernels = [];
 
 		const runnerSettings = {
@@ -409,7 +428,7 @@ class GPU extends GPUCore {
 	 *
 	 */
 	destroy() {
-		// perform on next runloop - for some reason we dont get lose context events 
+		// perform on next runloop - for some reason we dont get lose context events
 		// if webGl is created and destroyed in the same run loop.
 		setTimeout(() => {
 			const {
