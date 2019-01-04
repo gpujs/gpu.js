@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
 	function testModKernel(mode) {
 		var gpu = new GPU({mode});
@@ -6,10 +8,10 @@
 		var myFunc3 = gpu.createKernel(function(x) {
 			return x[this.thread.x % 3];
 		}).setOutput([nValues]);
-		
+
 		var input = [1, 2, 3];
-		myFunc3(input); 
-	
+		myFunc3(input);
+
 		var expected = new Float32Array(nValues);
 		for (var i = 0; i < nValues; i++) {
 			expected[i] = input[i % 3];

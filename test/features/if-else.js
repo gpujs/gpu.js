@@ -1,3 +1,6 @@
+var GPU = require('../../src/index');
+require('qunit-assert-close');
+
 (function() {
   function booleanBranch(mode) {
     var gpu = new GPU({
@@ -27,7 +30,7 @@
   QUnit.test( 'booleanBranch (gpu)', function() {
     booleanBranch('gpu');
   });
-  
+
   QUnit.test( 'booleanBranch (webgl)', function() {
     booleanBranch('webgl');
   });
@@ -35,7 +38,7 @@
   QUnit.test( 'booleanBranch (webgl2)', function() {
     booleanBranch('webgl2');
   });
-  
+
   QUnit.test( 'booleanBranch (CPU)', function() {
     booleanBranch('cpu');
   });

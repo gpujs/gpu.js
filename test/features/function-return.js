@@ -1,3 +1,6 @@
+var GPU = require('../../src/index');
+require('qunit-assert-close');
+
 (function() {
   function functionReturn( mode ) {
     var gpu = new GPU({ mode: mode });
@@ -10,7 +13,7 @@
     QUnit.assert.close(f()[0], 42.0, 0.01, "basic return function test");
     gpu.destroy();
   }
-  
+
   QUnit.test( "functionReturn (auto)", function() {
     functionReturn(null);
   });
@@ -22,11 +25,11 @@
   QUnit.test( "functionReturn (webgl)", function() {
     functionReturn("webgl");
   });
-  
+
   QUnit.test( "functionReturn (webgl2)", function() {
     functionReturn("webgl2");
   });
-  
+
   QUnit.test( "functionReturn (CPU)", function() {
     functionReturn("cpu");
   });

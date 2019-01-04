@@ -26,6 +26,8 @@ gulp.task('babelify', function () {
 gulp.task('build', gulp.series('babelify', function() {
 
 	const gpu = browserify('./dist/index.js')
+		.ignore('gl')
+		.ignore('canvas')
 		.bundle()
 		.pipe(source('gpu.js'))
 		.pipe(buffer())
@@ -35,6 +37,8 @@ gulp.task('build', gulp.series('babelify', function() {
 			.pipe(gulp.dest('bin'));
 
 	const gpuCore = browserify('./dist/index-core.js')
+    .ignore('gl')
+    .ignore('canvas')
 		.bundle()
 		.pipe(source('gpu-core.js'))
 		.pipe(buffer())

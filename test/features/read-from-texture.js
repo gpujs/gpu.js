@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
   function readFromTextureKernels(output, gpu) {
     function add(m, n) {

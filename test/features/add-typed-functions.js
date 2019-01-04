@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
   function vec2Test(mode) {
     var gpu = new GPU({ mode: mode });

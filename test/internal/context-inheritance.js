@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
     QUnit.test('WebGL context inheritance (webgl)', function(assert) {
     var canvas = document.createElement('canvas');

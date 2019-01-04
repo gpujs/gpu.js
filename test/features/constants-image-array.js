@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
   function imageArrayConstantFixture(mode, assert, cb) {
     var done = assert.async();

@@ -2,22 +2,71 @@ const { expect } = require('chai');
 
 const GPU = require('../src/index.js');
 
-
 describe('Test Node GPU', () => {
-  it('should find gpu', () => {
-    const gpu = new GPU({ mode: 'webgl' });
+  describe('gpu mode', () => {
+    it('should find and use gpu runner', () => {
+      const gpu = new GPU({ mode: 'gpu' });
 
-    const myFunc = gpu.createKernel(function compute() {
-      const i = this.thread.x;
-      const j = 0.89;
-      return i + j;
-    }).setOutput([512, 512]);
+      const kernel = gpu.createKernel(function() {
+        return 1;
+      }).setOutput([1]);
 
-    const iff = myFunc()
+      const result = kernel();
 
-    console.log(iff);
+      expect(gpu._runner.constructor).to.equal(GPU.WebGLRunner);
+      expect(result[0]).to.equal(1);
+    });
 
-    expect(typeof GPU).to.equal('function');
-    expect(typeof gpu).to.equal('object');
+    it('supports 2x2 size', () => {
+      const gpu = new GPU({ mode: 'gpu' });
+
+      const kernel = gpu.createKernel(function() {
+        return this.thread.x * this.thread.y;
+      }).setOutput([2, 2]);
+
+      const result = kernel();
+
+      expect(gpu._runner.constructor).to.equal(GPU.WebGLRunner);
+      expect(result).to.deep.equal(
+        [
+          Float32Array.from([0,0]),
+          Float32Array.from([0,1])
+        ]
+      );
+    });
+  });
+
+  describe('cpu mode', () => {
+    it('should find and use gpu runner', () => {
+      const gpu = new GPU({ mode: 'cpu' });
+
+      const kernel = gpu.createKernel(function() {
+        return 1;
+      }).setOutput([1]);
+
+      const result = kernel();
+
+      expect(gpu._runner.constructor).to.equal(GPU.CPURunner);
+      expect(result[0]).to.equal(1);
+    });
+
+    it('supports 2x2 size', () => {
+      const gpu = new GPU({ mode: 'cpu' });
+
+      const kernel = gpu.createKernel(function() {
+        return this.thread.x * this.thread.y;
+      }).setOutput([2, 2]);
+
+      const result = kernel();
+
+      expect(gpu._runner.constructor).to.equal(GPU.CPURunner);
+      expect(result).to.deep.equal(
+        [
+          Float32Array.from([0,0]),
+          Float32Array.from([0,1])
+        ]
+      );
+    });
   });
 });
+

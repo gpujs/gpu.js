@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
 	function testAddFunctionKernel(mode) {
 		var gpu = new GPU({mode});

@@ -1,3 +1,4 @@
+var GPU = require('../../src/index');
 
 (function() {
 	QUnit.test('Issue #349 - divide by three!!', function() {

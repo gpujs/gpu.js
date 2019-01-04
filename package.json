@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "1.10.4",
+  "version": "2.0.0",
   "description": "GPU Accelerated JavaScript",
   "main": "./dist/index.js",
   "files": [
@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "acorn": "^5.1.1",
+    "bindings": "^1.3.1",
     "canvas": "^2.1.0",
     "gl": "^4.1.1"
   },
@@ -37,6 +38,7 @@
     "jsdoc": "^3.5.0",
     "merge-stream": "^1.0.1",
     "mocha": "^5.2.0",
+    "node-qunit": "^1.0.0",
     "qunit-assert-close": "^2.1.2",
     "qunitjs": "^2.3.2",
     "vinyl-buffer": "^1.0.0",

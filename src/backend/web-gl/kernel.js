@@ -789,7 +789,7 @@ module.exports = class WebGLKernel extends KernelBase {
 					} = this._formatArrayTransfer(value.value, length);
 
 					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, input);
 					} else {
 						const buffer = new Uint8Array(valuesFlat.buffer);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);

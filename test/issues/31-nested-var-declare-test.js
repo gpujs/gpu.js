@@ -1,3 +1,6 @@
+var GPU = require('../../src/index');
+require('qunit-assert-close');
+
 (function() {
   //
   // See: https://github.com/gpujs/gpu.js/issues/31

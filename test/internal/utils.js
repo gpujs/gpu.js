@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 ///
 /// Test the GPUUtils functions
 ///

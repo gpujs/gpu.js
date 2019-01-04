@@ -47,11 +47,7 @@ class UtilsCore {
 	static isCanvas(canvasObj) {
 		return (
 			canvasObj !== null &&
-			((canvasObj.nodeName &&
-					canvasObj.getContext &&
-					canvasObj.nodeName.toUpperCase() === 'CANVAS') ||
-				(typeof OffscreenCanvas !== 'undefined' &&
-					canvasObj instanceof OffscreenCanvas))
+			canvasObj.getContext
 		);
 	}
 
@@ -83,9 +79,13 @@ class UtilsCore {
 	 *
 	 */
 	static initCanvas() {
-		// Fail fast if browser previously detected no support
+		// Fail fast if previously detected no support
 		if (!_isCanvasSupported) {
 			return null;
+		}
+
+		if (_isNativeCanvasSupport) {
+			return require('canvas').createCanvas(2, 2);
 		}
 
 		// Create a new canvas DOM
@@ -228,6 +228,13 @@ class UtilsCore {
 			// fallback to 'webgl2' or 'webgl' below
 		}
 
+
+		// native webgl
+		try {
+			webGl = require('gl')(2, 2);
+      webGl.getExtension('STACKGL_resize_drawingbuffer');
+		} catch (e) {}
+
 		if (webGl === null) {
 			webGl = (
 				canvasObj.getContext('webgl2', defaultOptions) ||
@@ -301,12 +308,19 @@ class UtilsCore {
 //
 //-----------------------------------------------------------------------------
 
-const _isCanvasSupported = typeof document !== 'undefined' ? UtilsCore.isCanvas(document.createElement('canvas')) : typeof OffscreenCanvas !== 'undefined';
+
+let _isNativeCanvasSupport = false;
+try {
+	const nativeCanvas = require('canvas');
+	_isNativeCanvasSupport = nativeCanvas.hasOwnProperty('createCanvas');
+} catch (e) {}
+
+const _isCanvasSupported = _isNativeCanvasSupport || (typeof document !== 'undefined' ? UtilsCore.isCanvas(document.createElement('canvas')) : typeof OffscreenCanvas !== 'undefined');
 const _testingWebGl = UtilsCore.initWebGl(UtilsCore.initCanvas());
 const _testingWebGl2 = UtilsCore.initWebGl2(UtilsCore.initCanvas());
 const _isWebGlSupported = UtilsCore.isWebGl(_testingWebGl);
 const _isWebGl2Supported = UtilsCore.isWebGl2(_testingWebGl2);
-const _isWebGlDrawBuffersSupported = _isWebGlSupported && Boolean(_testingWebGl.getExtension('WEBGL_draw_buffers'));
+const _isWebGlDrawBuffersSupported = _isWebGlSupported && _testingWebGl && Boolean(_testingWebGl.getExtension('WEBGL_draw_buffers'));
 
 if (_isWebGlSupported) {
 	UtilsCore.OES_texture_float = _testingWebGl.OES_texture_float;

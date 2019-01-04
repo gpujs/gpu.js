@@ -1,18 +1,18 @@
 'use strict';
 
 /**
- * 
+ *
  * @classdesc Various utility functions / snippets of code that GPU.JS uses internally.\
  * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
  *
  * Note that all methods in this class are *static* by nature `Utils.functionName()`
- * 
+ *
  * @class Utils
  * @extends UtilsCore
  *
  */
 
-const UtilsCore = require("./utils-core");
+const UtilsCore = require('./utils-core');
 const Input = require('./input');
 const Texture = require('./texture');
 // FUNCTION_NAME regex
@@ -445,7 +445,7 @@ class Utils extends UtilsCore {
 	 * @static
 	 *
 	 * Return the dimension of an array.
-	 * 
+	 *
 	 * @param {Array|String} x - The array
 	 * @param {number} [pad] - To include padding in the dimension calculation [Optional]
 	 *

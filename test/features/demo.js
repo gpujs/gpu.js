@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
   function demo(mode) {
     var matrixSize = 6;

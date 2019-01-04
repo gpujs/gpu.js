@@ -6,9 +6,7 @@ const WebGL2Runner = require('../backend/web-gl2/runner');
 const CPURunner = require('../backend/cpu/runner');
 const WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
 const WebGL2ValidatorKernel = require('../backend/web-gl2/validator-kernel');
-const GPUCore = require("./gpu-core");
-const createNodeContext = require('gl');
-const { createCanvas } = require('canvas');
+const GPUCore = require('./gpu-core');
 
 /**
  * Initialises the GPU.js library class which manages the webGlContext for the created functions.
@@ -18,53 +16,55 @@ const { createCanvas } = require('canvas');
 class GPU extends GPUCore {
 	/**
 	 * Creates an instance of GPU.
-	 * @param {any} settings - Settings to set mode, andother properties. See #GPUCore
+	 * @param {any} settings - Settings to set mode, and other properties. See #GPUCore
 	 * @memberOf GPU#
 	 */
 	constructor(settings) {
 		super(settings);
 
 		settings = settings || {};
-		let mode = settings.mode;
-		let detectedMode;
-
 		this._canvas = settings.canvas || null;
 		this._webGl = settings.webGl || null;
-
-		if (mode === 'cpu') {
-			detectedMode = 'cpu';
-		} else if (mode === 'webgl' || mode === 'webgl-validator') {
-			detectedMode = mode || 'webgl';
-
-			const context = createNodeContext(2048, 2048);
-			const canvas = createCanvas(2048, 2048);
-
-			this._webGl = context;
-			this._canvas = canvas;
-		} else {
-			detectedMode = mode;
-		}
-
-		// if (!utils.isWebGlSupported(context)) {
-		// 	if (mode && mode !== 'cpu') {
-		// 		throw new Error(`A requested mode of "${ mode }" and is not supported`);
-		// 	} else {
-		// 		console.warn('Warning: gpu not supported, falling back to cpu support');
-		// 		detectedMode = 'cpu';
-		// 	}
+		let mode = settings.mode;
+		let detectedMode;
+		// new changes
+		//
+		// if (mode === 'cpu') {
+		// 	detectedMode = 'cpu';
+		// } else if (mode === 'webgl' || mode === 'webgl-validator') {
+		// 	detectedMode = mode || 'webgl';
+		//
+		// 	const context = createNodeContext(2048, 2048);
+		// 	const canvas = createCanvas(2048, 2048);
+		//
+		// 	this._webGl = context;
+		// 	this._canvas = canvas;
 		// } else {
-		// 	if (this._webGl) {
-		// 		if (typeof WebGL2RenderingContext !== 'undefined' && this._webGl.constructor === WebGL2RenderingContext) {
-		// 			detectedMode = 'webgl2';
-		// 		} else if (typeof WebGLRenderingContext !== 'undefined' && this._webGl.constructor === WebGLRenderingContext) {
-		// 			detectedMode = 'webgl';
-		// 		} else {
-		// 			throw new Error('unknown WebGL Context');
-		// 		}
-		// 	} else {
-		// 		detectedMode = mode || 'gpu';
-		// 	}
+		// 	detectedMode = mode;
 		// }
+
+		// new changes end
+
+		if (!utils.isWebGlSupported()) {
+			if (mode && mode !== 'cpu') {
+				throw new Error(`A requested mode of "${ mode }" and is not supported`);
+			} else {
+				console.warn('Warning: gpu not supported, falling back to cpu support');
+				detectedMode = 'cpu';
+			}
+		} else {
+			if (this._webGl) {
+				if (typeof WebGL2RenderingContext !== 'undefined' && this._webGl.constructor === WebGL2RenderingContext) {
+					detectedMode = 'webgl2';
+				} else if (typeof WebGLRenderingContext !== 'undefined' && this._webGl.constructor === WebGLRenderingContext) {
+					detectedMode = 'webgl';
+				} else {
+					throw new Error('unknown WebGL Context');
+				}
+			} else {
+				detectedMode = mode || 'gpu';
+			}
+		}
 
 		this.kernels = [];
 
@@ -296,8 +296,9 @@ class GPU extends GPUCore {
 
 
 	getGPURunner() {
-		if (typeof WebGL2RenderingContext !== 'undefined' && utils.isWebGl2Supported()) return WebGL2Runner;
-		if (typeof WebGLRenderingContext !== 'undefined') return WebGLRunner;
+		if (utils.isWebGl2Supported()) return WebGL2Runner;
+		if (utils.isWebGlSupported()) return WebGLRunner;
+		throw new Error('No available GPU Runner');
 	}
 
 	/**

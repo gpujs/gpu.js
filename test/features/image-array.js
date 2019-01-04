@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
   function getImages(callback) {
     var imageSources = [

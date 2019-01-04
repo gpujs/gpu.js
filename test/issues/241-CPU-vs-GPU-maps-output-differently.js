@@ -1,3 +1,4 @@
+var GPU = require('../../src/index');
 
 (function() {
 	// this is actually equiv to
@@ -11,31 +12,31 @@
 		}, {
 			output: [3, 3]
 		});
-		return kernel(input);
+		return kernel(input).map(function(v) { return Array.from(v); });
 	}
-	
+
 	QUnit.test('Issue #241 small 2d array input output test (auto)', function() {
-		QUnit.assert.deepValueEqual(buildIndexTestKernel(), input);
+		QUnit.assert.deepEqual(buildIndexTestKernel(), input);
 		gpu.destroy();
 	});
-	
+
 	QUnit.test('Issue #241 small 2d array input output test (gpu)', function() {
-		QUnit.assert.deepValueEqual(buildIndexTestKernel('gpu'), input);
+		QUnit.assert.deepEqual(buildIndexTestKernel('gpu'), input);
 		gpu.destroy();
 	});
-	
+
 	QUnit.test('Issue #241 small 2d array input output test (webgl)', function() {
-		QUnit.assert.deepValueEqual(buildIndexTestKernel('webgl'), input);
+		QUnit.assert.deepEqual(buildIndexTestKernel('webgl'), input);
 		gpu.destroy();
 	});
-	
+
 	QUnit.test('Issue #241 small 2d array input output test (webgl2)', function() {
-		QUnit.assert.deepValueEqual(buildIndexTestKernel('webgl2'), input);
+		QUnit.assert.deepEqual(buildIndexTestKernel('webgl2'), input);
 		gpu.destroy();
 	});
-	
-	QUnit.test('Issue #241 small 2d array input output test (cpu)', function() {		
-		QUnit.assert.deepValueEqual(buildIndexTestKernel('cpu'), input);
+
+	QUnit.test('Issue #241 small 2d array input output test (cpu)', function() {
+		QUnit.assert.deepEqual(buildIndexTestKernel('cpu'), input);
 		gpu.destroy();
 	});
 })()

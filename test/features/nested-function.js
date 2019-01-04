@@ -1,3 +1,6 @@
+var GPU = require('../../src/index');
+require('qunit-assert-close');
+
 (function() {
   function nestedSumABTest(mode) {
     var gpu = new GPU({ mode: mode });

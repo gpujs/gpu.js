@@ -1,3 +1,6 @@
+var GPU = require('../../src/index');
+require('qunit-assert-close');
+
 (function() {
   function sumABTest(gpu, reSetup) {
     var originalKernel = gpu.createKernel(function(a, b) {
@@ -28,7 +31,7 @@
 
     gpu.destroy();
   }
-  
+
   QUnit.test('toString sumAB (auto)', function(assert) {
     sumABTest(new GPU(), function(newKernel, originalKernel) {
       var canvas = originalKernel.getCanvas();
@@ -52,7 +55,7 @@
         .setCanvas(canvas);
     });
   });
-  
+
   QUnit.test('toString sumAB (webgl)', function(assert) {
     sumABTest(new GPU({ mode: 'webgl' }), function(newKernel, originalKernel) {
       var canvas = originalKernel.getCanvas();
@@ -76,7 +79,7 @@
         .setCanvas(canvas);
     });
   });
-  
+
   QUnit.test('toString sumAB (CPU)', function(assert) {
     sumABTest(new GPU({ mode: 'cpu' }), function(newKernel, originalKernel) {
       var canvas = originalKernel.getCanvas();

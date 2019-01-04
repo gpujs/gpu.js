@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 QUnit.test('Issue #270 WebGlKernel getUniformLocation caches falsey - gpu', () => {
   const kernel = new GPU.WebGLKernel('', {});
   kernel.programUniformLocationCache.test = false;

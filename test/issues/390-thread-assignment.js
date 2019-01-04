@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
   QUnit.test('Issue #390 - thread assignment (webgl)', function(assert) {
     var node = new GPU.WebGLFunctionNode(null, function assignThreadToVar() {

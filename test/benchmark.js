@@ -1,7 +1,7 @@
 const GPU = require('../src/index.js');
 const Benchmark = require('benchmark');
 
-const suite = new Benchmark.Suite;
+const suite = new Benchmark.Suite();
 
 
 const gpuRunner = new GPU({ mode: 'webgl' });

@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
 	var WIDTH = 600;
 	var HEIGHT = 400;
@@ -5,7 +7,7 @@
 	function buildKernel(mode) {
 		gpu = new GPU({ mode });
 
-		var initMatrix = gpu.createKernel(function(value) {  
+		var initMatrix = gpu.createKernel(function(value) {
 			return value;
 		})
 			.setOutput([WIDTH, HEIGHT]);
@@ -21,7 +23,7 @@
 		render(matrix);
 		return render;
 	}
-	
+
 	QUnit.test('Issue #279 wrong canvas size - auto', () => {
 		var canvas = buildKernel().getCanvas();
 		QUnit.assert.equal(canvas.width, WIDTH);
@@ -56,5 +58,5 @@
 		QUnit.assert.equal(canvas.height, HEIGHT);
 		gpu.destroy();
 	});
-	
+
   })();
