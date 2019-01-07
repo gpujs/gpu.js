@@ -9,11 +9,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var utils = require('./utils');
-var WebGLRunner = require('../backend/web-gl/runner');
-var WebGL2Runner = require('../backend/web-gl2/runner');
 var CPURunner = require('../backend/cpu/runner');
-var WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
-var WebGL2ValidatorKernel = require('../backend/web-gl2/validator-kernel');
 var GPUCore = require("./gpu-core");
 
 /**
@@ -22,82 +18,18 @@ var GPUCore = require("./gpu-core");
  * @extends GPUCore
  */
 
-var GPU = function (_GPUCore) {
-	_inherits(GPU, _GPUCore);
+var GPUCoreBase = function (_GPUCore) {
+	_inherits(GPUCoreBase, _GPUCore);
 
 	/**
   * Creates an instance of GPU.
   * @param {any} settings - Settings to set mode, andother properties. See #GPUCore
   * @memberOf GPU#
   */
-	function GPU(settings) {
-		_classCallCheck(this, GPU);
+	function GPUCoreBase(settings) {
+		_classCallCheck(this, GPUCoreBase);
 
-		var _this = _possibleConstructorReturn(this, (GPU.__proto__ || Object.getPrototypeOf(GPU)).call(this, settings));
-
-		settings = settings || {};
-		_this._canvas = settings.canvas || null;
-		_this._webGl = settings.webGl || null;
-		var mode = settings.mode;
-		var detectedMode = void 0;
-		if (!utils.isWebGlSupported()) {
-			if (mode && mode !== 'cpu') {
-				throw new Error('A requested mode of "' + mode + '" and is not supported');
-			} else {
-				console.warn('Warning: gpu not supported, falling back to cpu support');
-				detectedMode = 'cpu';
-			}
-		} else {
-			if (_this._webGl) {
-				if (typeof WebGL2RenderingContext !== 'undefined' && _this._webGl.constructor === WebGL2RenderingContext) {
-					detectedMode = 'webgl2';
-				} else if (typeof WebGLRenderingContext !== 'undefined' && _this._webGl.constructor === WebGLRenderingContext) {
-					detectedMode = 'webgl';
-				} else {
-					throw new Error('unknown WebGL Context');
-				}
-			} else {
-				detectedMode = mode || 'gpu';
-			}
-		}
-		_this.kernels = [];
-
-		var runnerSettings = {
-			canvas: _this._canvas,
-			webGl: _this._webGl
-		};
-
-		switch (detectedMode) {
-			// public options
-			case 'cpu':
-				_this._runner = new CPURunner(runnerSettings);
-				break;
-			case 'gpu':
-				var Runner = _this.getGPURunner();
-				_this._runner = new Runner(runnerSettings);
-				break;
-
-			// private explicit options for testing
-			case 'webgl2':
-				_this._runner = new WebGL2Runner(runnerSettings);
-				break;
-			case 'webgl':
-				_this._runner = new WebGLRunner(runnerSettings);
-				break;
-
-			// private explicit options for internal
-			case 'webgl2-validator':
-				_this._runner = new WebGL2Runner(runnerSettings);
-				_this._runner.Kernel = WebGL2ValidatorKernel;
-				break;
-			case 'webgl-validator':
-				_this._runner = new WebGLRunner(runnerSettings);
-				_this._runner.Kernel = WebGLValidatorKernel;
-				break;
-			default:
-				throw new Error('"' + mode + '" mode is not defined');
-		}
-		return _this;
+		return _possibleConstructorReturn(this, (GPUCoreBase.__proto__ || Object.getPrototypeOf(GPUCoreBase)).call(this, settings));
 	}
 	/**
   *
@@ -123,7 +55,7 @@ var GPU = function (_GPUCore) {
   */
 
 
-	_createClass(GPU, [{
+	_createClass(GPUCoreBase, [{
 		key: 'createKernel',
 		value: function createKernel(fn, settings) {
 			//
@@ -242,9 +174,9 @@ var GPU = function (_GPUCore) {
    * @param {Function} rootKernel - Root kernel to combine kernels into
    *
    * @example
-   * 	combineKernels(add, multiply, function(a,b,c){
-   *	 	return add(multiply(a,b), c)
-   *	})
+   *  combineKernels(add, multiply, function(a,b,c){
+   *    return add(multiply(a,b), c)
+   *  })
    *
    * @returns {Function} Callable kernel function
    *
@@ -294,12 +226,6 @@ var GPU = function (_GPUCore) {
 					});
 				}
 			};
-		}
-	}, {
-		key: 'getGPURunner',
-		value: function getGPURunner() {
-			if (typeof WebGL2RenderingContext !== 'undefined' && utils.isWebGl2Supported()) return WebGL2Runner;
-			if (typeof WebGLRenderingContext !== 'undefined') return WebGLRunner;
 		}
 
 		/**
@@ -456,7 +382,7 @@ var GPU = function (_GPUCore) {
 		value: function destroy() {
 			var _this2 = this;
 
-			// perform on next runloop - for some reason we dont get lose context events 
+			// perform on next runloop - for some reason we dont get lose context events
 			// if webGl is created and destroyed in the same run loop.
 			setTimeout(function () {
 				var kernels = _this2.kernels;
@@ -479,13 +405,13 @@ var GPU = function (_GPUCore) {
 		}
 	}]);
 
-	return GPU;
+	return GPUCoreBase;
 }(GPUCore);
 
 ;
 
 // This ensure static methods are "inherited"
 // See: https://stackoverflow.com/questions/5441508/how-to-inherit-static-methods-from-base-class-in-javascript
-Object.assign(GPU, GPUCore);
+Object.assign(GPUCoreBase, GPUCore);
 
-module.exports = GPU;
+module.exports = GPUCoreBase;

@@ -27,6 +27,7 @@
     "docdash": "^0.4.0",
     "gulp": "^4.0.0",
     "gulp-babel": "^6.1.2",
+    "gulp-cli": "^2.0.1",
     "gulp-concat": "^2.6.0",
     "gulp-header": "^1.7.1",
     "gulp-jsbeautifier": "^2.1.0",

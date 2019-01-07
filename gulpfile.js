@@ -25,7 +25,7 @@ gulp.task('babelify', function () {
 
 gulp.task('build', gulp.series('babelify', function() {
 
-	const gpu = browserify('./dist/index.js')
+	const gpu = browserify('./dist/index-browser.js')
 		.bundle()
 		.pipe(source('gpu.js'))
 		.pipe(buffer())
