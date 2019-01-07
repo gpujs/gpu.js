@@ -21,15 +21,12 @@
   "devDependencies": {
     "babel-plugin-syntax-async-functions": "^6.5.0",
     "babel-preset-env": "^1.5.2",
-    "benchmark": "^2.1.4",
     "browser-sync": "^2.26.3",
     "browserify": "^16.2.3",
-    "chai": "^4.2.0",
     "del": "^3.0.0",
     "docdash": "^0.4.0",
     "gulp": "^4.0.0",
     "gulp-babel": "^6.1.2",
-    "gulp-cli": "^2.0.1",
     "gulp-concat": "^2.6.0",
     "gulp-header": "^1.7.1",
     "gulp-jsbeautifier": "^2.1.0",
@@ -39,7 +36,6 @@
     "gulp-util": "^3.0.7",
     "jsdoc": "^3.5.0",
     "merge-stream": "^1.0.1",
-    "mocha": "^5.2.0",
     "node-qunit": "^1.0.0",
     "qunit-assert-close": "^2.1.2",
     "qunitjs": "^2.3.2",
@@ -47,7 +43,7 @@
     "vinyl-source-stream": "^2.0.0"
   },
   "scripts": {
-    "test": "mocha ./test/index",
+    "test": "qunit",
     "setup": "npm i -g gulp-cli",
     "build-docs": "./node_modules/.bin/jsdoc -c jsdoc.json src -r -d doc --debug && gulp injectCSS",
     "make": "gulp build && gulp beautify && gulp minify"
