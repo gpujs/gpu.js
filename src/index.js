@@ -1,6 +1,6 @@
 'use strict';
 
-const GPU = require('./core/gpu');
+const GPU = require('./core/gpu-headless');
 const alias = require('./core/alias');
 const utils = require('./core/utils');
 const Input = require('./core/input');
