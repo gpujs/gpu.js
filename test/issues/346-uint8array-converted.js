@@ -1,8 +1,10 @@
+var GPU = require('../../src/index');
+
 (function() {
 	var DATA_MAX = 1024;
 	var uint8data = new Uint8Array(DATA_MAX);
 	var uint16data = new Uint16Array(DATA_MAX);
-	
+
 	for (var i = 0; i < DATA_MAX; i++) {
 		uint8data[i] = Math.random() * 255;
 		uint16data[i] = Math.random() * 255 * 255;
@@ -16,7 +18,7 @@
 			.setOutput([DATA_MAX]);
 		return largeArrayAddressKernel(data);
 	}
-	
+
 	QUnit.test('Issue #346 uint8 input array - webgl', () => {
 		var result = buildUintArrayInputKernel('webgl', uint8data)
 		var same = true;
@@ -68,5 +70,5 @@
 		QUnit.assert.ok(same, "not all elements are the same, failed on index:" + i);
 		gpu.destroy();
 	});
-	
+
   })();

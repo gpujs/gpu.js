@@ -8,11 +8,11 @@ var GPU = require('../../src/index');
     return gpu.createKernel(function(lst) {
       return lst[this.thread.x];
     })
-      .setFloatOutput(true)
+      .setFloatTextures(true)
       .setOutput(output);
   }
 
-  QUnit.test( "floatOutput (auto)", function() {
+  QUnit.test( "floatTextures (auto)", function() {
     var result = floatOutputKernel([lst.length], null)(lst);
     QUnit.assert.deepEqual(result, lst);
     gpu.destroy();

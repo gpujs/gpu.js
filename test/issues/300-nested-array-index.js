@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
 	var gpu1, gpu2;
 	// these 2 should be erquivilent
@@ -18,7 +20,7 @@
 		}).setOutput([1]);
 		return working;
 	}
-	
+
 	QUnit.test('Issue #300 nested array index - auto', () => {
 		QUnit.assert.equal(createNestedKernel()([2], [7, 13, 19, 23])[0], 19);
 		QUnit.assert.equal(createTempVarKernel()([2], [7, 13, 19, 23])[0], 19);
@@ -46,5 +48,5 @@
 		gpu1.destroy();
 		gpu2.destroy();
 	});
-	
+
   })();

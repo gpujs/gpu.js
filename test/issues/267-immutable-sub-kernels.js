@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
   function immutableKernel(gpu) {
     return gpu.createKernel(function(v) {

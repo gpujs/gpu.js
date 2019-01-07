@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
   var gpu;
   function input(mode) {

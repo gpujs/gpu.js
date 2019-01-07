@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
   QUnit.test('type management - arrays directly - Array(2) webgl', function(assert) {
     var node = new GPU.WebGLFunctionNode(null, function direct() {

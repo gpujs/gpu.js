@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
   function funky(mode) {
     var gpu = new GPU({ mode: mode });
@@ -19,7 +21,7 @@
       [0,1],
       [1,2]
     ]);
-    QUnit.assert.deepValueEqual(result, [
+    QUnit.assert.deepEqual(result.map(function(v) { return Array.from(v); }), [
       [0,2],
       [2,4]
     ]);

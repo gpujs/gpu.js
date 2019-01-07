@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
 
 	var input = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
@@ -38,11 +40,11 @@
 
 		gpu.destroy();
 	}
-	
+
 	QUnit.test('Issue #174 - webgl context leak (webgl)', function(assert) {
 		manyKernels('webgl', 10, assert);
 	});
-	
+
 	QUnit.test('Issue #174 - webgl context leak (webgl2)', function(assert) {
 		manyKernels('webgl2', 10, assert);
 	});

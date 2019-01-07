@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
 	QUnit.test('Issue #401 - cpu no canvas graphical', function(assert) {
 		assert.throws(function() {

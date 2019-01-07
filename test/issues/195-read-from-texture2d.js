@@ -1,3 +1,5 @@
+var GPU = require('../../src/index');
+
 (function() {
   function makeKernel(gpu) {
     return gpu.createKernel(function(a){
@@ -26,9 +28,9 @@
     const result = noTexture(A);
     const textureResult = texture(A).toArray(gpu);
 
-    QUnit.assert.deepValueEqual(result, A);
-    QUnit.assert.deepValueEqual(textureResult, A);
-    QUnit.assert.deepValueEqual(textureResult, result);
+    QUnit.assert.deepEqual(result.map(function(v) { return Array.from(v); }), A);
+    QUnit.assert.deepEqual(textureResult.map(function(v) { return Array.from(v); }), A);
+    QUnit.assert.deepEqual(textureResult, result);
     gpu.destroy();
   });
 
@@ -40,9 +42,9 @@
     const result = noTexture(A);
     const textureResult = texture(A).toArray(gpu);
 
-    QUnit.assert.deepValueEqual(result, A);
-    QUnit.assert.deepValueEqual(textureResult, A);
-    QUnit.assert.deepValueEqual(textureResult, result);
+    QUnit.assert.deepEqual(result.map(function(v) { return Array.from(v); }), A);
+    QUnit.assert.deepEqual(textureResult.map(function(v) { return Array.from(v); }), A);
+    QUnit.assert.deepEqual(textureResult, result);
     gpu.destroy();
   });
 
@@ -54,9 +56,9 @@
     const result = noTexture(A);
     const textureResult = texture(A).toArray(gpu);
 
-    QUnit.assert.deepValueEqual(result, A);
-    QUnit.assert.deepValueEqual(textureResult, A);
-    QUnit.assert.deepValueEqual(textureResult, result);
+    QUnit.assert.deepEqual(result.map(function(v) { return Array.from(v); }), A);
+    QUnit.assert.deepEqual(textureResult.map(function(v) { return Array.from(v); }), A);
+    QUnit.assert.deepEqual(textureResult, result);
     gpu.destroy();
   });
 
@@ -68,9 +70,9 @@
     const result = noTexture(A);
     const textureResult = texture(A).toArray(gpu);
 
-    QUnit.assert.deepValueEqual(result, A);
-    QUnit.assert.deepValueEqual(textureResult, A);
-    QUnit.assert.deepValueEqual(textureResult, result);
+    QUnit.assert.deepEqual(result.map(function(v) { return Array.from(v); }), A);
+    QUnit.assert.deepEqual(textureResult.map(function(v) { return Array.from(v); }), A);
+    QUnit.assert.deepEqual(textureResult, result);
     gpu.destroy();
   });
 })();

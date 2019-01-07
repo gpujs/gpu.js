@@ -1,3 +1,6 @@
+var GPU = require('../../src/index');
+require('qunit-assert-close');
+
 (function() {
   var glslDivide = `float divide(float a, float b) {
     return a / b;
