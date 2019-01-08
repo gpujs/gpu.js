@@ -11,12 +11,12 @@ const GPUCoreBase = require("./gpu-core-base");
 /**
  * Initialises the GPU.js library class which manages the webGlContext for the created functions.
  * @class
- * @extends GPUCore
+ * @extends GPUCoreBase
  */
-class GPU extends GPUCore {
+class GPUBrowser extends GPUCoreBase {
 	/**
-	 * Creates an instance of GPU.
-	 * @param {any} settings - Settings to set mode, andother properties. See #GPUCore
+	 * Creates an instance of GPUBrowser.
+	 * @param {any} settings - Settings to set mode, and other properties. See #GPUCoreBase
 	 * @memberOf GPU#
 	 */
 	constructor(settings) {
@@ -94,6 +94,6 @@ class GPU extends GPUCore {
 
 // This ensure static methods are "inherited"
 // See: https://stackoverflow.com/questions/5441508/how-to-inherit-static-methods-from-base-class-in-javascript
-Object.assign(GPU, GPUCoreBase);
+Object.assign(GPUBrowser, GPUCoreBase);
 
-module.exports = GPU;
+module.exports = GPUBrowser;

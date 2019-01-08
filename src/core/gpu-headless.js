@@ -19,7 +19,7 @@ const {
 class GPUHeadless extends GPUCoreBase {
 	/**
 	 * Creates an instance of GPUHeadless.
-	 * @param {any} settings - Settings to set mode, andother properties. See #GPUCoreBase
+	 * @param {any} settings - Settings to set mode, and other properties. See #GPUCoreBase
 	 * @memberOf GPU#
 	 */
 	constructor(settings) {
