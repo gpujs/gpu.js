@@ -60,6 +60,7 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 * [Contributing](#contributing)
 * [Terms Explained](#terms-explained)
 * [License](#license)
+* [Example applications](#example-applications)
 
 ## Installation
 
@@ -637,3 +638,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+## Example applications
+
+* [Mandelbulb](https://kamil-kielczewski.github.io/fractals/mandelbulb.html) - 3D realtime fractal: javascript, ray-marching (variety of ray-tracing), distance functions
