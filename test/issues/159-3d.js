@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 (function() {
   function threeD(mode) {
     var gpu = new GPU({ mode: mode });
@@ -22,7 +20,7 @@ var GPU = require('../../src/index');
       [4,5,6,7,8]
     ]);
     QUnit.assert.equal(result.length, 5);
-    QUnit.assert.deepEqual(result.map(function(v) { return Array.from(v); }), [
+    QUnit.assert.deepValueEqual(result, [
       [0,1,2,3,4],
       [1,2,3,4,5],
       [2,3,4,5,6],

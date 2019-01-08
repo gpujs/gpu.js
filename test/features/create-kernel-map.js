@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 (function() {
   function createPropertyKernels(gpu, output) {
     return gpu.createKernelMap({

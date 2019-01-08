@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 QUnit.test('Issue #233 - kernel map with float output (GPU only) (auto)', function() {
     var lst = [1, 2, 3, 4, 5, 6, 7];
 
@@ -25,8 +23,6 @@ QUnit.test('Issue #233 - kernel map with float output (GPU only) (auto)', functi
 
     var result = kernels(lst);
 
-    console.log(result);
-
     var unwrap = gpu.createKernel(function(x) {
         return x[this.thread.x];
     })
@@ -35,8 +31,6 @@ QUnit.test('Issue #233 - kernel map with float output (GPU only) (auto)', functi
 
     var stepAResult = unwrap(result.stepA);
     var stepBResult = unwrap(result.stepB);
-
-    console.log(stepAResult, stepAResult);
 
     QUnit.assert.deepEqual(QUnit.extend([], stepAResult), lst.map(function (x) { return x * x }));
     QUnit.assert.deepEqual(QUnit.extend([], stepBResult), lst.map(function (x) { return x + 1 }));
@@ -75,7 +69,6 @@ QUnit.test('Issue #233 - kernel map with float output (GPU only) (gpu)', functio
     .setFloatTextures(true)
     .setOutput([lst.length]);
 
-  console.log(result);
   var stepAResult = unwrap(result.stepA);
   var stepBResult = unwrap(result.stepB);
 

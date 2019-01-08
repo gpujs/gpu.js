@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 (function() {
   function imageTest(mode, assert) {
     var done = assert.async();

@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 (function() {
   function getResult(mode) {
 
@@ -30,7 +28,7 @@ var GPU = require('../../src/index');
       return multiply(b, a, this.thread.y, this.thread.x);
     })
       .setOutput([B.length, A.length]);
-
+    
     var result = kernels(A, B).result;
     gpu.destroy();
     return result;

@@ -1,6 +1,3 @@
-var GPU = require('../../src/index');
-require('qunit-assert-close');
-
 (function() {
   function sumAB(mode) {
     var gpu = new GPU({mode: mode});
@@ -77,7 +74,7 @@ require('qunit-assert-close');
     var a = [1, 2, 3, 5, 6, 7];
     var b = [1, 1, 1, 1, 1, 1];
 
-    var result = kernel(a , b);
+    var result = kernel(a, b);
     var expected = [12, 18, 24, 36, 42, 48];
 
     QUnit.assert.equal(result.length, expected.length);

@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 QUnit.test('WebGL Loop Max', function(assert) {
   var gpu = new GPU({mode: 'webgl'});
   var add = gpu.createKernel(function(a, b) {

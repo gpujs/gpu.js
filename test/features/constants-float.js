@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 (function() {
   function floatConstantTest(mode) {
     var gpu = new GPU({ mode: mode });

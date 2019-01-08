@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 (function () {
   function getResult(mode) {
     var A = [

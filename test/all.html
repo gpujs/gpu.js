@@ -11,17 +11,9 @@
 <body>
 <div id="qunit"></div>
 <div id="qunit-fixture"></div>
-  <script>
-    const require = (module) => {
-      switch (module) {
-        case '../../src/index': return GPU;
-        case 'qunit-assert-close': return QUnit;
-        default: throw new Error('cannot find ' + module);
-      }
-    };
-  </script>
   <script src="../node_modules/qunitjs/qunit/qunit.js"></script>
   <script src="../node_modules/qunit-assert-close/qunit-assert-close.js"></script>
+  <script src="./qunit-assert-deep-value-equal.js"></script>
 
   <!-- features -->
   <script src="features/add-custom-function.js"></script>

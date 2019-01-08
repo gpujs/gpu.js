@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 (function() {
   function textureConstantTest(mode) {
     var gpu = new GPU({ mode: mode });

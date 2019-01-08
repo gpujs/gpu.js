@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 QUnit.test( "Issue #116 - multiple kernels run again (auto)", function() {
   var gpu = new GPU();
   var A = [1, 2, 3, 4, 5];

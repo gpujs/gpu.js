@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 (function() {
   function typedArrayTest(mode) {
     const gpu = new GPU({ mode });

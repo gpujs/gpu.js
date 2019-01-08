@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 QUnit.test('KernelBase paramTypes CPU', function(assert) {
   const kernel = new GPU.CPUKernel(`function(value) { return value[this.thread.x]; }`, {
     output: [1],

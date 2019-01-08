@@ -1,6 +1,3 @@
-var GPU = require('../../src/index');
-require('qunit-assert-close');
-
 (function() {
   function forLoopTest(mode) {
     var gpu = new GPU({ mode: mode });
@@ -142,7 +139,7 @@ require('qunit-assert-close');
   QUnit.test( 'evilWhileLoopTest (auto)', function() {
     evilWhileLoopTest(null);
   });
-
+  
   QUnit.test( 'evilWhileLoopTest (gpu)', function() {
     evilWhileLoopTest('gpu');
   });
@@ -150,7 +147,7 @@ require('qunit-assert-close');
   QUnit.test( 'evilWhileLoopTest (webgl)', function() {
     evilWhileLoopTest('webgl');
   });
-
+  
   QUnit.test( 'evilWhileLoopTest (webgl2)', function() {
     evilWhileLoopTest('webgl2');
   });

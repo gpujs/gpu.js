@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 QUnit.test( "Issue #114 - run createKernelMap the second time (auto)", function() {
   const gpu = new GPU();
   const A = [1, 2, 3, 4, 5];

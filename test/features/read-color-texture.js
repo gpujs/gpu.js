@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 (function() {
   function colorSyntaxTest(mode) {
     var gpu = new GPU({ mode: mode });

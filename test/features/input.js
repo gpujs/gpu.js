@@ -1,5 +1,3 @@
-var GPU = require('../../src/index');
-
 (function() {
   function inputX(mode) {
     const gpu = new GPU({ mode: mode });
@@ -13,7 +11,7 @@ var GPU = require('../../src/index');
     a.set([1,2,3,4,5,6,7,8,9]);
 
     const result = kernel(input(a, [3, 3]));
-    QUnit.assert.deepEqual(QUnit.extend([], result), [1,2,3,4,5,6,7,8,9]);
+    QUnit.assert.deepValueEqual(QUnit.extend([], result), [1,2,3,4,5,6,7,8,9]);
     gpu.destroy();
   }
 
@@ -52,7 +50,7 @@ var GPU = require('../../src/index');
     b.set([1,2,3,4,5,6,7,8,9]);
 
     const result = kernel(input(a, [3, 3]));
-    QUnit.assert.deepEqual(QUnit.extend([], result), [1,2,3,4,5,6,7,8,9]);
+    QUnit.assert.deepValueEqual(QUnit.extend([], result), [1,2,3,4,5,6,7,8,9]);
     gpu.destroy();
   }
 
@@ -88,7 +86,7 @@ var GPU = require('../../src/index');
     a.set([1,2,3,4,5,6,7,8,9]);
 
     const result = kernel(input(a, [3, 3]));
-    QUnit.assert.deepEqual(result.map(function(v) { return Array.from(v); }), [[1,2,3],[4,5,6],[7,8,9]]);
+    QUnit.assert.deepValueEqual(QUnit.extend([], result), [[1,2,3],[4,5,6],[7,8,9]])
     gpu.destroy();
   }
 
@@ -124,7 +122,7 @@ var GPU = require('../../src/index');
     a.set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
 
     const result = kernel(input(a, [2, 8]));
-    QUnit.assert.deepEqual(result.map(function(v) { return Array.from(v); }), [[1,3,5,7,9,11,13,15],[2,4,6,8,10,12,14,16]]);
+    QUnit.assert.deepValueEqual(QUnit.extend([], result), [[1,3,5,7,9,11,13,15],[2,4,6,8,10,12,14,16]]);
     gpu.destroy();
   }
 
@@ -160,7 +158,7 @@ var GPU = require('../../src/index');
     a.set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
 
     const result = kernel(input(a, [8, 2]));
-    QUnit.assert.deepEqual(result.map(function(v) { return Array.from(v); }), [[1,9],[2,10],[3,11],[4,12],[5,13],[6,14],[7,15],[8,16]]);
+    QUnit.assert.deepValueEqual(QUnit.extend([], result), [[1,9],[2,10],[3,11],[4,12],[5,13],[6,14],[7,15],[8,16]]);
     gpu.destroy();
   }
 
@@ -196,7 +194,7 @@ var GPU = require('../../src/index');
     a.set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]);
 
     const result = kernel(input(a, [2, 4, 4]));
-    QUnit.assert.deepEqual(result.map(function(v) { return v.map(function(v) { return Array.from(v); }); }), [[[1,2],[3,4],[5,6],[7,8]],[[9,10],[11,12],[13,14],[15,16]],[[17,18],[19,20],[21,22],[23,24]],[[25,26],[27,28],[29,30],[31,32]]]);
+    QUnit.assert.deepValueEqual(QUnit.extend([], result), [[[1,2],[3,4],[5,6],[7,8]],[[9,10],[11,12],[13,14],[15,16]],[[17,18],[19,20],[21,22],[23,24]],[[25,26],[27,28],[29,30],[31,32]]]);
     gpu.destroy();
   }
 
@@ -232,11 +230,11 @@ var GPU = require('../../src/index');
     const a = new Float32Array(64);
     a.set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]);
     const aInput = input(a, [2, 4, 4]);
-    QUnit.assert.deepEqual(QUnit.extend([], kernel(aInput, 1, 2, 3)), [30]);
-    QUnit.assert.deepEqual(QUnit.extend([], kernel(aInput, 0, 2, 3)), [29]);
-    QUnit.assert.deepEqual(QUnit.extend([], kernel(aInput, 0, 2, 1)), [13]);
-    QUnit.assert.deepEqual(QUnit.extend([], kernel(aInput, 1, 2, 2)), [22]);
-    QUnit.assert.deepEqual(QUnit.extend([], kernel(aInput, 0, 2, 2)), [21]);
+    QUnit.assert.deepValueEqual(QUnit.extend([], kernel(aInput, 1, 2, 3)), [30]);
+    QUnit.assert.deepValueEqual(QUnit.extend([], kernel(aInput, 0, 2, 3)), [29]);
+    QUnit.assert.deepValueEqual(QUnit.extend([], kernel(aInput, 0, 2, 1)), [13]);
+    QUnit.assert.deepValueEqual(QUnit.extend([], kernel(aInput, 1, 2, 2)), [22]);
+    QUnit.assert.deepValueEqual(QUnit.extend([], kernel(aInput, 0, 2, 2)), [21]);
     gpu.destroy();
   }
 
