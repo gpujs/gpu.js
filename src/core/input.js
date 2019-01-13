@@ -1,4 +1,4 @@
-module.exports = class Input {
+class Input {
 	constructor(value, size) {
 		this.value = value;
 		if (Array.isArray(size)) {
@@ -19,4 +19,6 @@ module.exports = class Input {
 			}
 		}
 	}
-};
+}
+
+module.exports = Input;

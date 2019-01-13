@@ -6,7 +6,7 @@ const Texture = require('../../core/texture');
 const fragShaderString = require('./shader-frag');
 const vertShaderString = require('./shader-vert');
 
-module.exports = class WebGL2Kernel extends WebGLKernel {
+class WebGL2Kernel extends WebGLKernel {
 	static get fragShaderString() {
 		return fragShaderString;
 	}
@@ -49,7 +49,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 				throw new Error('Auto output only supported for kernels with only one input');
 			}
 
-			const argType = utils.getArgumentType(arguments[0]);
+			const argType = utils.getVariableType(arguments[0]);
 			if (argType === 'Array') {
 				this.output = utils.getDimensions(argType);
 			} else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
@@ -470,10 +470,10 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 			for (let name in this.constants) {
 				if (!this.constants.hasOwnProperty(name)) continue;
 				let value = this.constants[name];
-				let type = utils.getArgumentType(value);
+				let type = utils.getVariableType(value, true);
 				switch (type) {
 					case 'Integer':
-						result.push('const float constants_' + name + ' = ' + parseInt(value) + '.0');
+						result.push('const int constants_' + name + ' = ' + parseInt(value));
 						break;
 					case 'Float':
 						result.push('const float constants_' + name + ' = ' + parseFloat(value));
@@ -991,4 +991,6 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 		}
 		return this.compiledVertShaderString = this.constructor.vertShaderString;
 	}
-};
+}
+
+module.exports = WebGL2Kernel;

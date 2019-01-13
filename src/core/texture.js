@@ -1,6 +1,6 @@
 'use strict';
 
-module.exports = class Texture {
+class Texture {
 
 	/**
 	 * @desc WebGl Texture implementation in JS
@@ -28,8 +28,8 @@ module.exports = class Texture {
 	 * @memberOf Texture#
 	 *
 	 * @desc Converts the Texture into a JavaScript Array.
-	 * 
-	 * @param {Object} The `gpu` Object
+	 *
+	 * @param {GPU} gpu Object
 	 *
 	 */
 	toArray(gpu) {
@@ -54,4 +54,6 @@ module.exports = class Texture {
 	delete() {
 		return this.webGl.deleteTexture(this.texture);
 	}
-};
+}
+
+module.exports = Texture;

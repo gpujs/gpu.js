@@ -11,7 +11,7 @@ const WebGLFunctionNode = require('./function-node');
  * @desc Builds webGl functions (shaders) from JavaScript function Strings
  *
  */
-module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
+class WebGLFunctionBuilder extends FunctionBuilderBase {
 	constructor() {
 		super();
 		this.Node = WebGLFunctionNode;
@@ -39,8 +39,10 @@ module.exports = class WebGLFunctionBuilder extends FunctionBuilderBase {
 	polyfillStandardFunctions() {
 		this.addFunction('round', round);
 	}
-};
+}
 
 function round(a) {
 	return Math.floor(a + 0.5);
 }
+
+module.exports = WebGLFunctionBuilder;

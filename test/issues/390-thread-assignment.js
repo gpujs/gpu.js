@@ -3,9 +3,9 @@ var GPU = require('../../src/index');
 (function() {
   QUnit.test('Issue #390 - thread assignment (webgl)', function(assert) {
     var node = new GPU.WebGLFunctionNode(null, function assignThreadToVar() {
-      let x = this.thread.x;
-      let y = this.thread.y;
-      let sum = x + y;
+      const x = this.thread.x;
+      const y = this.thread.y;
+      const sum = x + y;
       return sum;
     });
     assert.equal(node.generate(), 'float assignThreadToVar() {\n\
@@ -14,16 +14,16 @@ float user_y=float(threadId.y);\n\
 float user_sum=(user_x+user_y);\n\
 return user_sum;\n\
 }');
-    assert.equal(node.declarations.x, 'Integer');
-    assert.equal(node.declarations.y, 'Integer');
+    assert.equal(node.declarations.x, 'Float');
+    assert.equal(node.declarations.y, 'Float');
     assert.equal(node.declarations.sum, 'Number');
   });
 
   QUnit.test('Issue #390 - thread assignment (webgl2)', function(assert) {
     var node = new GPU.WebGL2FunctionNode(null, function assignThreadToVar() {
-      let x = this.thread.x;
-      let y = this.thread.y;
-      let sum = x + y;
+      const x = this.thread.x;
+      const y = this.thread.y;
+      const sum = x + y;
       return sum;
     });
     assert.equal(node.generate(), 'float assignThreadToVar() {\n\
@@ -32,16 +32,16 @@ float user_y=float(threadId.y);\n\
 float user_sum=(user_x+user_y);\n\
 return user_sum;\n\
 }');
-    assert.equal(node.declarations.x, 'Integer');
-    assert.equal(node.declarations.y, 'Integer');
+    assert.equal(node.declarations.x, 'Float');
+    assert.equal(node.declarations.y, 'Float');
     assert.equal(node.declarations.sum, 'Number');
   });
 
   QUnit.test('Issue #390 - thread assignment (cpu)', function(assert) {
     var node = new GPU.CPUFunctionNode(null, function assignThreadToVar() {
-      let x = this.thread.x;
-      let y = this.thread.y;
-      let sum = x + y;
+      const x = this.thread.x;
+      const y = this.thread.y;
+      const sum = x + y;
       return sum;
     });
     assert.equal(node.generate(), 'function assignThreadToVar() {\n\
@@ -59,10 +59,10 @@ return user_sum;\n\
 (function() {
   QUnit.test('Issue #390 (related) - output assignment (webgl)', function(assert) {
     var node = new GPU.WebGLFunctionNode(null, function assignThreadToVar() {
-      let x = this.output.x;
-      let y = this.output.y;
-      let z = this.output.z;
-      let sum = x + y + z;
+      const x = this.output.x;
+      const y = this.output.y;
+      const z = this.output.z;
+      const sum = x + y + z;
       return sum;
     });
     node.output = [1,2,3];
@@ -73,18 +73,18 @@ float user_z=3.0;\n\
 float user_sum=((user_x+user_y)+user_z);\n\
 return user_sum;\n\
 }');
-    assert.equal(node.declarations.x, 'Integer');
-    assert.equal(node.declarations.y, 'Integer');
-    assert.equal(node.declarations.z, 'Integer');
+    assert.equal(node.declarations.x, 'Float');
+    assert.equal(node.declarations.y, 'Float');
+    assert.equal(node.declarations.z, 'Float');
     assert.equal(node.declarations.sum, 'Number');
   });
 
   QUnit.test('Issue #390 (related) - output assignment (webgl2)', function(assert) {
     var node = new GPU.WebGL2FunctionNode(null, function assignThreadToVar() {
-      let x = this.output.x;
-      let y = this.output.y;
-      let z = this.output.z;
-      let sum = x + y + z;
+      const x = this.output.x;
+      const y = this.output.y;
+      const z = this.output.z;
+      const sum = x + y + z;
       return sum;
     });
     node.output = [1,2,3];
@@ -95,18 +95,18 @@ float user_z=3.0;\n\
 float user_sum=((user_x+user_y)+user_z);\n\
 return user_sum;\n\
 }');
-    assert.equal(node.declarations.x, 'Integer');
-    assert.equal(node.declarations.y, 'Integer');
-    assert.equal(node.declarations.z, 'Integer');
+    assert.equal(node.declarations.x, 'Float');
+    assert.equal(node.declarations.y, 'Float');
+    assert.equal(node.declarations.z, 'Float');
     assert.equal(node.declarations.sum, 'Number');
   });
 
   QUnit.test('Issue #390 (related) - output assignment (cpu)', function(assert) {
     var node = new GPU.CPUFunctionNode(null, function assignThreadToVar() {
-      let x = this.output.x;
-      let y = this.output.y;
-      let z = this.output.z;
-      let sum = x + y + z;
+      const x = this.output.x;
+      const y = this.output.y;
+      const z = this.output.z;
+      const sum = x + y + z;
       return sum;
     });
     node.output = [1,2,3];

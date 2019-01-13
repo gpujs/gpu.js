@@ -23,7 +23,7 @@ module.exports = function(gpuKernel, name) {
       allPropertiesOf: ${ removeNoise(utils.allPropertiesOf.toString()) },
       clone: ${ removeNoise(utils.clone.toString()) },
       splitArray: ${ removeNoise(utils.splitArray.toString()) },
-      getArgumentType: ${ removeNoise(utils.getArgumentType.toString()) },
+      getVariableType: ${ removeNoise(utils.getVariableType.toString()) },
       getDimensions: ${ removeNoise(utils.getDimensions.toString()) },
       dimToTexSize: ${ removeNoise(utils.dimToTexSize.toString()) },
       flattenTo: ${ removeNoise(utils.flattenTo.toString()) },

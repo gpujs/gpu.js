@@ -3,7 +3,7 @@
 const utils = require('../core/utils');
 const kernelRunShortcut = require('./kernel-run-shortcut');
 
-module.exports = class BaseRunner {
+class BaseRunner {
 
 	/**
 	 * @constructor BaseRunner
@@ -117,4 +117,6 @@ module.exports = class BaseRunner {
 
 		return kernelRunShortcut(new this.Kernel(fnString, settings));
 	}
-};
+}
+
+module.exports = BaseRunner;

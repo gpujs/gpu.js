@@ -11,9 +11,11 @@ const CPUFunctionNode = require('./function-node');
  * @desc Builds functions to execute on CPU from JavaScript function Strings
  *
  */
-module.exports = class CPUFunctionBuilder extends FunctionBuilderBase {
+class CPUFunctionBuilder extends FunctionBuilderBase {
 	constructor() {
 		super();
 		this.Node = CPUFunctionNode;
 	}
-};
+}
+
+module.exports = CPUFunctionBuilder;

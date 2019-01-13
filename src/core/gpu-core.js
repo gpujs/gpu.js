@@ -3,14 +3,14 @@
 const UtilsCore = require("./utils-core");
 
 /**
- * This is a minimalistic version of GPU.js used 
+ * This is a minimalistic version of GPU.js used
  * to run precompiled GPU.JS code.
  *
- * This intentionally excludes the JS AST compiller : which is 400kb alone/
+ * This intentionally excludes the JS AST compiler : which is 400kb alone/
  *
  * @class GPUCore
  */
-module.exports = class GPUCore {
+class GPUCore {
 
 	/**
 	 * @name validateKernelObj
@@ -19,7 +19,7 @@ module.exports = class GPUCore {
 	 * @memberOf GPUCore
 	 *
 	 * @description Validates the KernelObj to comply with the defined format
-	 * Note that this does only a limited sanity check, and does not  
+	 * Note that this does only a limited sanity check, and does not
 	 * guarantee a full working validation.
 	 *
 	 * For the kernel object format see : <kernelObj-format>
@@ -78,7 +78,7 @@ module.exports = class GPUCore {
 	 * @param {Object} inOpt - [Optional] the option overrides to use
 	 *
 	 * @returns {Function} The kernel function
-	 * 
+	 *
 	 */
 	static loadKernelObj(kernelObj, inOpt) {
 
@@ -87,4 +87,6 @@ module.exports = class GPUCore {
 
 
 	}
-};
+}
+
+module.exports = GPUCore;

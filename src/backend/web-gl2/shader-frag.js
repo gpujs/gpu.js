@@ -4,7 +4,7 @@ precision highp float;
 precision highp int;
 precision highp sampler2D;
 
-const float LOOP_MAX = __LOOP_MAX__;
+const int LOOP_MAX = __LOOP_MAX__;
 
 __CONSTANTS__;
 
@@ -100,7 +100,7 @@ ivec3 indexTo3D(int idx, ivec3 texDim) {
   return ivec3(x, y, z);
 }
 
-float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio,  int z, int y, int x) {
+float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
@@ -110,7 +110,10 @@ float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio,  int z, int 
   __GET_TEXTURE_INDEX__;
   vec4 texel = texture(tex, st / vec2(texSize));
   __GET_RESULT__;
-  
+}
+
+float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, float z, float y, float x) {
+  return get(tex, texSize, texDim, bitRatio, int(z), int(y), int(x));
 }
 
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
@@ -139,8 +142,16 @@ float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int y, int x
   return get(tex, texSize, texDim, bitRatio, 0, y, x);
 }
 
+float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, float y, float x) {
+  return get(tex, texSize, texDim, bitRatio, 0, int(y), int(x));
+}
+
 float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int x) {
   return get(tex, texSize, texDim, bitRatio, 0, 0, x);
+}
+
+float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, float x) {
+  return get(tex, texSize, texDim, bitRatio, int(x));
 }
 
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int y, int x) {

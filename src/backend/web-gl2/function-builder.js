@@ -11,9 +11,11 @@ const WebGL2FunctionNode = require('./function-node');
  * @desc Builds webGl functions (shaders) from JavaScript function Strings
  *
  */
-module.exports = class WebGL2FunctionBuilder extends FunctionBuilderBase {
+class WebGL2FunctionBuilder extends FunctionBuilderBase {
 	constructor() {
 		super();
 		this.Node = WebGL2FunctionNode;
 	}
-};
+}
+
+module.exports = WebGL2FunctionBuilder;

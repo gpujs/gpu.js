@@ -1,17 +1,17 @@
 'use strict';
 
-module.exports = class FunctionBuilderBase {
+class FunctionBuilderBase {
 
 	/**
 	 * @constructor FunctionBuilderBase
 	 *
 	 * @desc This handles all the raw state, converted state, etc. of a single function.
 	 * [INTERNAL] A collection of functionNodes.
-	 * 
+	 *
 	 * @prop {Object} nodeMap - Object map, where nodeMap[function] = new FunctionNode;
 	 * @prop {Object} gpu - The current gpu instance bound to this builder
 	 * @prop {Object} rootKernel - The root kernel object, contains the paramNames, dimensions etc.
-	 * 
+	 *
 	 */
 	constructor(gpu) {
 		this.nodeMap = {};
@@ -306,4 +306,6 @@ module.exports = class FunctionBuilderBase {
 		}
 		return this.getStringFromFunctionNames(Object.keys(this.nodeMap), opt);
 	}
-};
+}
+
+module.exports = FunctionBuilderBase;

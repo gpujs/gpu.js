@@ -9,13 +9,15 @@ const kernelString = require('./kernel-string');
 const canvases = [];
 const maxTexSizes = {};
 
-module.exports = class WebGLKernel extends KernelBase {
+class WebGLKernel extends KernelBase {
 	static get fragShaderString() {
 		return fragShaderString;
 	}
+
 	static get vertShaderString() {
 		return vertShaderString;
 	}
+
 	/**
 	 * @constructor WebGLKernel
 	 *
@@ -110,7 +112,7 @@ module.exports = class WebGLKernel extends KernelBase {
 				throw new Error('Auto output only supported for kernels with only one input');
 			}
 
-			const argType = utils.getArgumentType(arguments[0]);
+			const argType = utils.getVariableType(arguments[0]);
 			if (argType === 'Array') {
 				this.output = utils.getDimensions(argType);
 			} else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
@@ -262,8 +264,8 @@ module.exports = class WebGLKernel extends KernelBase {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 
 		for (let p in this.constants) {
-			const value = this.constants[p]
-			const type = utils.getArgumentType(value);
+			const value = this.constants[p];
+			const type = utils.getVariableType(value, true);
 			if (type === 'Float' || type === 'Integer') {
 				continue;
 			}
@@ -510,11 +512,11 @@ module.exports = class WebGLKernel extends KernelBase {
 	 *
 	 * @param {String} name - Name of the argument
 	 *
-	 * 	Texture cache for the supplied argument
+	 *  Texture cache for the supplied argument
 	 *
 	 */
 	getArgumentTexture(name) {
-		return this.getTextureCache(`ARGUMENT_${ name }`);
+		return this.getTextureCache(`ARGUMENT_${name}`);
 	}
 
 	/**
@@ -1011,7 +1013,7 @@ module.exports = class WebGLKernel extends KernelBase {
 	 * @param {String} length - the expected total length of the output array
 	 *
 	 * @returns {Object} bitRatio - bit storage ratio of source to target 'buffer', i.e. if 8bit array -> 32bit tex = 4
-	 * 				     valuesFlat - flattened array to transfer
+	 *             valuesFlat - flattened array to transfer
 	 */
 	_formatArrayTransfer(value, length) {
 		let bitRatio = 1; // bit storage ratio of source to target 'buffer', i.e. if 8bit array -> 32bit tex = 4
@@ -1078,8 +1080,8 @@ module.exports = class WebGLKernel extends KernelBase {
 	_getLoopMaxString() {
 		return (
 			this.loopMaxIterations ?
-			` ${ parseInt(this.loopMaxIterations) }.0;\n` :
-			' 1000.0;\n'
+			` ${parseInt(this.loopMaxIterations)};\n` :
+			' 1000;\n'
 		);
 	}
 
@@ -1101,8 +1103,8 @@ module.exports = class WebGLKernel extends KernelBase {
 		const texSize = this.texSize;
 		if (this.hardcodeConstants) {
 			result.push(
-				`ivec3 uOutputDim = ivec3(${ threadDim[0] },${ threadDim[1] }, ${ threadDim[2] })`,
-				`ivec2 uTexSize = ivec2(${ texSize[0] }, ${ texSize[1] })`
+				`ivec3 uOutputDim = ivec3(${threadDim[0]},${threadDim[1]}, ${threadDim[2]})`,
+				`ivec2 uTexSize = ivec2(${texSize[0]}, ${texSize[1]})`
 			);
 		} else {
 			result.push(
@@ -1288,28 +1290,28 @@ module.exports = class WebGLKernel extends KernelBase {
 					}, paramDim);
 
 					result.push(
-						`uniform sampler2D user_${ paramName }`,
-						`ivec2 user_${ paramName }Size = ivec2(${ paramSize[0] }, ${ paramSize[1] })`,
-						`ivec3 user_${ paramName }Dim = ivec3(${ paramDim[0] }, ${ paramDim[1]}, ${ paramDim[2] })`,
-						`uniform int user_${ paramName }BitRatio`
+						`uniform sampler2D user_${paramName}`,
+						`ivec2 user_${paramName}Size = ivec2(${paramSize[0]}, ${paramSize[1]})`,
+						`ivec3 user_${paramName}Dim = ivec3(${paramDim[0]}, ${paramDim[1]}, ${paramDim[2]})`,
+						`uniform int user_${paramName}BitRatio`
 					);
 				} else if (paramType === 'Integer') {
-					result.push(`float user_${ paramName } = ${ param }.0`);
+					result.push(`float user_${paramName} = ${param}.0`);
 				} else if (paramType === 'Float') {
-					result.push(`float user_${ paramName } = ${ param }`);
+					result.push(`float user_${paramName} = ${param}`);
 				}
 			} else {
 				if (paramType === 'Array' || paramType === 'NumberTexture' || paramType === 'ArrayTexture(4)' || paramType === 'Input' || paramType === 'HTMLImage') {
 					result.push(
-						`uniform sampler2D user_${ paramName }`,
-						`uniform ivec2 user_${ paramName }Size`,
-						`uniform ivec3 user_${ paramName }Dim`
+						`uniform sampler2D user_${paramName}`,
+						`uniform ivec2 user_${paramName}Size`,
+						`uniform ivec3 user_${paramName}Dim`
 					);
 					if (paramType !== 'HTMLImage') {
-						result.push(`uniform int user_${ paramName }BitRatio`)
+						result.push(`uniform int user_${paramName}BitRatio`)
 					}
 				} else if (paramType === 'Integer' || paramType === 'Float') {
-					result.push(`uniform float user_${ paramName }`);
+					result.push(`uniform float user_${paramName}`);
 				} else {
 					throw new Error(`Param type ${paramType} not supported in WebGL, only WebGL2`);
 				}
@@ -1317,7 +1319,6 @@ module.exports = class WebGLKernel extends KernelBase {
 		}
 		return this._linesToString(result);
 	}
-
 
 
 	/**
@@ -1332,10 +1333,10 @@ module.exports = class WebGLKernel extends KernelBase {
 			for (let name in this.constants) {
 				if (!this.constants.hasOwnProperty(name)) continue;
 				let value = this.constants[name];
-				let type = utils.getArgumentType(value);
+				let type = utils.getVariableType(value, true);
 				switch (type) {
 					case 'Integer':
-						result.push('const float constants_' + name + ' = ' + parseInt(value) + '.0');
+						result.push('const int constants_' + name + ' = ' + parseInt(value));
 						break;
 					case 'Float':
 						result.push('const float constants_' + name + ' = ' + parseFloat(value));
@@ -1346,14 +1347,14 @@ module.exports = class WebGLKernel extends KernelBase {
 					case 'NumberTexture':
 					case 'ArrayTexture(4)':
 						result.push(
-							`uniform sampler2D constants_${ name }`,
-							`uniform ivec2 constants_${ name }Size`,
-							`uniform ivec3 constants_${ name }Dim`,
-							`uniform int constants_${ name }BitRatio`
+							`uniform sampler2D constants_${name}`,
+							`uniform ivec2 constants_${name}Size`,
+							`uniform ivec3 constants_${name}Dim`,
+							`uniform int constants_${name}BitRatio`
 						);
 						break;
 					default:
-						throw new Error(`Unsupported constant ${ name } type ${ type }`);
+						throw new Error(`Unsupported constant ${name} type ${type}`);
 				}
 			}
 		}
@@ -1377,7 +1378,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			result.push('float kernelResult = 0.0');
 			for (let i = 0; i < names.length; i++) {
 				result.push(
-					`float ${ names[i] } = 0.0`
+					`float ${names[i]} = 0.0`
 				);
 			}
 		} else {
@@ -1423,7 +1424,7 @@ module.exports = class WebGLKernel extends KernelBase {
 					result.push(`  gl_FragData[0].${channels[i]} = kernelResult`);
 
 					for (let j = 0; j < names.length; ++j) {
-						result.push(`  gl_FragData[${ j + 1 }].${channels[i]} = ${ names[j] }`);
+						result.push(`  gl_FragData[${j + 1}].${channels[i]} = ${names[j]}`);
 					}
 				} else {
 					result.push(`  gl_FragColor.${channels[i]} = kernelResult`);
@@ -1438,7 +1439,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			result.push('  kernel()');
 			result.push('  gl_FragData[0] = encode32(kernelResult)');
 			for (let i = 0; i < names.length; i++) {
-				result.push(`  gl_FragData[${ i + 1 }] = encode32(${ names[i] })`);
+				result.push(`  gl_FragData[${i + 1}] = encode32(${names[i]})`);
 			}
 		} else {
 			result.push(
@@ -1483,7 +1484,7 @@ module.exports = class WebGLKernel extends KernelBase {
 			if (map.hasOwnProperty(artifact)) {
 				return map[artifact];
 			}
-			throw `unhandled artifact ${ artifact }`;
+			throw `unhandled artifact ${artifact}`;
 		});
 	}
 
@@ -1643,4 +1644,6 @@ module.exports = class WebGLKernel extends KernelBase {
 		}
 		delete this._webGl;
 	}
-};
+}
+
+module.exports = WebGLKernel;

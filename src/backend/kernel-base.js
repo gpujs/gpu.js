@@ -3,17 +3,17 @@
 const utils = require('../core/utils');
 const Input = require('../core/input');
 
-module.exports = class KernelBase {
+class KernelBase {
 
 	/**
 	 * @constructor KernelBase
-	 * 
-	 * @desc Implements the base class for Kernels, and is used as a 
+	 *
+	 * @desc Implements the base class for Kernels, and is used as a
 	 * parent class for all Kernel implementations.
 	 *
-	 * This contains the basic methods needed by all Kernel implementations, 
+	 * This contains the basic methods needed by all Kernel implementations,
 	 * like setDimensions, addSubKernel, etc.
-	 * 
+	 *
 	 * @prop {Array} paramNames - Name of the parameters of the kernel function
 	 * @prop {String} fnString - Kernel function as a String
 	 * @prop {Array} dimensions - Dimensions of the kernel function, this.thread.x, etc.
@@ -97,7 +97,7 @@ module.exports = class KernelBase {
 		for (let i = 0; i < args.length; i++) {
 			const arg = args[i];
 
-			this.paramTypes.push(utils.getArgumentType(arg));
+			this.paramTypes.push(utils.getVariableType(arg));
 			this.paramSizes.push(arg.constructor === Input ? arg.size : null);
 		}
 	}
@@ -106,7 +106,7 @@ module.exports = class KernelBase {
 		this.constantTypes = {};
 		if (this.constants) {
 			for (let p in this.constants) {
-				this.constantTypes[p] = utils.getArgumentType(this.constants[p])
+				this.constantTypes[p] = utils.getVariableType(this.constants[p], true);
 			}
 		}
 	}
@@ -195,7 +195,7 @@ module.exports = class KernelBase {
 	 *
 	 * @desc Fix division by factor of 3 FP accuracy bug
 	 *
-	 * @param {Boolean} fix - should fix 
+	 * @param {Boolean} fix - should fix
 	 *
 	 */
 	setFixIntegerDivisionAccuracy(fix) {
@@ -276,7 +276,7 @@ module.exports = class KernelBase {
 	 * @name setCanvas
 	 *
 	 * @desc Bind the canvas to kernel
-	 * 
+	 *
 	 * @param {Canvas} canvas - Canvas to bind
 	 *
 	 */
@@ -291,7 +291,7 @@ module.exports = class KernelBase {
 	 * @name setCanvas
 	 *
 	 * @desc Bind the webGL instance to kernel
-	 * 
+	 *
 	 * @param {Canvas} webGL - webGL instance to bind
 	 *
 	 */
@@ -353,7 +353,7 @@ module.exports = class KernelBase {
 		});
 	}
 
-	/** 
+	/**
 	 * @memberOf KernelBase#
 	 * @function
 	 * @name addSubKernel
@@ -374,7 +374,7 @@ module.exports = class KernelBase {
 		return this;
 	}
 
-	/** 
+	/**
 	 * @memberOf KernelBase#
 	 * @function
 	 * @name addSubKernelProperty
@@ -417,4 +417,6 @@ module.exports = class KernelBase {
 	destroy() {
 
 	}
-};
+}
+
+module.exports = KernelBase;

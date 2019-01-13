@@ -2,7 +2,7 @@ const RunnerBase = require('../runner-base');
 const WebGL2FunctionBuilder = require('./function-builder');
 const WebGL2Kernel = require('./kernel');
 
-module.exports = class WebGL2Runner extends RunnerBase {
+class WebGL2Runner extends RunnerBase {
 	/**
 	 * @constructor WebGL2Runner
 	 *
@@ -32,4 +32,6 @@ module.exports = class WebGL2Runner extends RunnerBase {
 	getMode() {
 		return 'gpu';
 	}
-};
+}
+
+module.exports = WebGL2Runner;

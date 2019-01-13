@@ -3,15 +3,15 @@
 const utils = require('../core/utils');
 const acorn = require('acorn');
 
-module.exports = class BaseFunctionNode {
+class FunctionNodeBase {
 
 	/**
 	 * @constructor FunctionNodeBase
-	 * 
+	 *
 	 * @desc Represents a single function, inside JS, webGL, or openGL.
-	 * 
+	 *
 	 * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
-	 * 
+	 *
 	 * @prop {String} functionName - Name of the function
 	 * @prop {Function} jsFunction - The JS Function the node represents
 	 * @prop {String} jsFunctionString - jsFunction.toString()
@@ -64,6 +64,9 @@ module.exports = class BaseFunctionNode {
 			}
 			if (options.hasOwnProperty('constantTypes')) {
 				this.constantTypes = options.constantTypes;
+				if (!this.constantTypes) {
+					debugger;
+				}
 			} else {
 				this.constantTypes = {};
 			}
@@ -72,6 +75,9 @@ module.exports = class BaseFunctionNode {
 			}
 			if (options.hasOwnProperty('fixIntegerDivisionAccuracy')) {
 				this.fixIntegerDivisionAccuracy = options.fixIntegerDivisionAccuracy;
+			}
+			if (options.hasOwnProperty('isRootKernel')) {
+				this.isRootKernel = options.isRootKernel;
 			}
 		}
 
@@ -188,9 +194,9 @@ module.exports = class BaseFunctionNode {
 		return this.states[this.states.length - 1];
 	}
 	/**
-	 * 
+	 *
 	 * Core Functions
-	 * 
+	 *
 	 */
 
 	/**
@@ -383,7 +389,7 @@ module.exports = class BaseFunctionNode {
 	 * @function
 	 * @name getUserParamName
 	 *
-	 * @desc Return the name of the *user parameter*(subKernel parameter) corresponding 
+	 * @desc Return the name of the *user parameter*(subKernel parameter) corresponding
 	 * to the parameter supplied to the kernel
 	 *
 	 * @param {String} paramName - Name of the parameter
@@ -593,23 +599,27 @@ module.exports = class BaseFunctionNode {
 	}
 
 	/**
-	 * @ignore
 	 * @function
 	 * @name pushParameter
 	 *
 	 * @desc [INTERNAL] pushes a fn parameter onto retArr and 'casts' to int if necessary
 	 *  i.e. deal with force-int-parameter state
-	 * 			
+	 *
 	 * @param {Array} retArr - return array string
-	 * @param {String} parameter - the parameter name  
+	 * @param {String} name - the parameter name
 	 *
 	 */
-
-	pushParameter(retArr, parameter) {
-		if (this.isState('in-get-call-parameters')) {
-			retArr.push(`int(${parameter})`);
-		} else {
-			retArr.push(parameter);
+	pushParameter(retArr, name) {
+		const type = this.getParamType(name);
+		if (this.isState('in-get-call-parameters') || this.isState('integer-comparison')) {
+			if (type !== 'Integer' && type !== 'Array') {
+				retArr.push(`int(user_${name})`);
+				return;
+			}
 		}
+
+		retArr.push(`user_${name}`);
 	}
-};
+}
+
+module.exports = FunctionNodeBase;

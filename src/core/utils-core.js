@@ -232,7 +232,7 @@ class UtilsCore {
 		// native webgl
 		try {
 			webGl = require('gl')(2, 2);
-      webGl.getExtension('STACKGL_resize_drawingbuffer');
+			webGl.getExtension('STACKGL_resize_drawingbuffer');
 		} catch (e) {}
 
 		if (webGl === null) {

@@ -37,15 +37,6 @@ const _systemEndianness = (() => {
 let _isFloatReadPixelsSupported = null;
 let _isFloatReadPixelsSupportedWebGL2 = null;
 
-let _isMixedIdentifiersSupported = (() => {
-	try {
-		(new Function('let i = 1; const j = 1;'))();
-		return true;
-	} catch (e) {
-		return false;
-	}
-})();
-
 let _hasIntegerDivisionAccuracyBug = null;
 
 /**
@@ -223,79 +214,51 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @memberOf Utils
-	 * @name functionBinder
-	 * @function
-	 * @static
-	 *
-	 * Limited implementation of Function.bind, with fallback
-	 *
-	 * @param {Function} inFunc - to setup bind on
-	 * @param {Object} thisObj - The this parameter to assume inside the binded function
-	 *
-	 * @returns {Function}  The binded function
-	 *
-	 */
-	static functionBinder(inFunc, thisObj) {
-		if (inFunc.bind) {
-			return inFunc.bind(thisObj);
-		}
-
-		return function() {
-			const args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
-			return inFunc.apply(thisObj, args);
-		}
-	}
-
-	/**
-	 * @memberOf Utils
 	 * @name isArray
 	 * @function
 	 * @static
 	 *
 	 * * Checks if is an array or Array-like object
 	 *
-	 * @param {Object} arg - The argument object to check if is array
+	 * @param {Object} array - The argument object to check if is array
 	 *
 	 * @returns {Boolean}  true if is array or Array-like object
 	 *
 	 */
 	static isArray(array) {
-		if (isNaN(array.length)) {
-			return false;
-		}
-
-		return true;
+		return !isNaN(array.length);
 	}
 
 	/**
 	 * @memberOf Utils
-	 * @name getArgumentType
+	 * @name getVariableType
 	 * @function
 	 * @static
 	 *
 	 * Evaluate the argument type, to apply respective logic for it
 	 *
-	 * @param {Object} arg - The argument object to evaluate type
+	 * @param {Object} value - The argument object to evaluate type
+	 * @param {Boolean} [isConstant]
 	 *
 	 * @returns {String}  Argument type Array/Number/Float/Texture/Unknown
 	 *
 	 */
-	static getArgumentType(arg) {
-		if (Utils.isArray(arg)) {
-			if (arg[0].nodeName === 'IMG') {
+	static getVariableType(value, isConstant) {
+		if (Utils.isArray(value)) {
+			if (value[0].nodeName === 'IMG') {
 				return 'HTMLImageArray';
 			}
 			return 'Array';
-		} else if (typeof arg === 'number') {
-			if (Number.isInteger(arg)) {
+		} else if (typeof value === 'number') {
+			if (isConstant && Number.isInteger(value)) {
 				return 'Integer';
 			}
 			return 'Float';
-		} else if (arg instanceof Texture) {
-			return arg.type;
-		} else if (arg instanceof Input) {
+		} else if (value instanceof Texture) {
+			return value.type;
+		} else if (value instanceof Input) {
 			return 'Input';
-		} else if (arg.nodeName === 'IMG') {
+		} else if (value.nodeName === 'IMG') {
 			return 'HTMLImage';
 		} else {
 			return 'Unknown';
@@ -406,10 +369,6 @@ class Utils extends UtilsCore {
 		return _hasIntegerDivisionAccuracyBug;
 	}
 
-	static isMixedIdentifiersSupported() {
-		return _isMixedIdentifiersSupported;
-	}
-
 	static dimToTexSize(opt, dimensions, output) {
 		let numTexels = dimensions[0];
 		let w = dimensions[0];
@@ -479,38 +438,6 @@ class Utils extends UtilsCore {
 		}
 		// return ret;
 		return new Int32Array(ret);
-	}
-
-	/**
-	 * @memberOf Utils
-	 * @name pad
-	 * @function
-	 * @static
-	 *
-	 * Pad an array AND its elements with leading and ending zeros
-	 *
-	 * @param {Array} arr - the array to pad zeros to
-	 * @param {number} padding - amount of padding
-	 *
-	 * @returns {Array} Array with leading and ending zeros, and all the elements padded by zeros.
-	 *
-	 */
-	static pad(arr, padding) {
-		function zeros(n) {
-			return Array.apply(null, new Array(n)).map(Number.prototype.valueOf, 0);
-		}
-
-		const len = arr.length + padding * 2;
-
-		let ret = arr.map(function(x) {
-			return [].concat(zeros(padding), x, zeros(padding));
-		});
-
-		for (let i = 0; i < padding; i++) {
-			ret = [].concat([zeros(len)], ret, [zeros(len)]);
-		}
-
-		return ret;
 	}
 
 	/**

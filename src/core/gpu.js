@@ -16,11 +16,11 @@ const GPUCore = require('./gpu-core');
 class GPU extends GPUCore {
 	/**
 	 * Creates an instance of GPU.
-	 * @param {any} settings - Settings to set mode, and other properties. See #GPUCore
+	 * @param {Object} [settings] - Settings to set mode, and other properties. See #GPUCore
 	 * @memberOf GPU#
 	 */
 	constructor(settings) {
-		super(settings);
+		super();
 
 		settings = settings || {};
 		this._canvas = settings.canvas || null;

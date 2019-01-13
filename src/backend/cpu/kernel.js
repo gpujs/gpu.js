@@ -4,7 +4,7 @@ const KernelBase = require('../kernel-base');
 const utils = require('../../core/utils');
 const kernelString = require('./kernel-string');
 
-module.exports = class CPUKernel extends KernelBase {
+class CPUKernel extends KernelBase {
 
 	/**
 	 * @constructor CPUKernel
@@ -57,7 +57,7 @@ module.exports = class CPUKernel extends KernelBase {
 				throw 'Auto dimensions only supported for kernels with only one input';
 			}
 
-			const argType = utils.getArgumentType(arguments[0]);
+			const argType = utils.getVariableType(arguments[0]);
 			if (argType === 'Array') {
 				this.output = utils.getDimensions(argType);
 			} else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
@@ -443,4 +443,6 @@ module.exports = class CPUKernel extends KernelBase {
 		return this.subKernelOutputVariableNames === null ? [''] :
 			this.subKernelOutputVariableNames.map(fn);
 	}
-};
+}
+
+module.exports = CPUKernel;

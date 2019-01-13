@@ -26,7 +26,7 @@ const utils = require('../../core/utils');
  * @prop writeVariables       - {String[]}  List of variables write operations occur
  *
  */
-module.exports = class CPUFunctionNode extends BaseFunctionNode {
+class CPUFunctionNode extends BaseFunctionNode {
 	constructor(functionName, jsFunction, options) {
 		super(functionName, jsFunction, options);
 		this.paramSizes = options ? options.paramSizes : [];
@@ -1059,4 +1059,6 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 		retArr.push('debugger;');
 		return retArr;
 	}
-};
+}
+
+module.exports = CPUFunctionNode;

@@ -9,9 +9,9 @@ const utils = require('../../core/utils');
  * @desc Helper class for WebGLKernel to validate texture size and dimensions.
  *
  */
-module.exports = class WebGLValidatorKernel extends WebGLKernel {
+class WebGLValidatorKernel extends WebGLKernel {
 
-	/** 
+	/**
 	 * @memberOf WebGLValidatorKernel#
 	 * @function
 	 * @name validateOptions
@@ -23,4 +23,6 @@ module.exports = class WebGLValidatorKernel extends WebGLKernel {
 			floatOutput: this.floatOutput
 		}, this.output, true);
 	}
-};
+}
+
+module.exports = WebGLValidatorKernel;
