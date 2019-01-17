@@ -8,22 +8,42 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var RunnerBase = require('../runner-base');
+var utils = require('../../core/utils');
+var GLRunner = require('../gl-runner');
 var WebGLKernel = require('./kernel');
 var WebGLFunctionBuilder = require('./function-builder');
+var isCompatible = null;
 
-module.exports = function (_RunnerBase) {
-	_inherits(WebGLRunner, _RunnerBase);
+var WebGLRunner = function (_GLRunner) {
+	_inherits(WebGLRunner, _GLRunner);
 
-	/**
-  * @constructor WebGLRunner
-  *
- 	 * @extends RunnerBase
-  	 * @desc Instantiates a Runner instance for the kernel.
-  * 
-  * @param {Object} settings - Settings to instantiate properties in RunnerBase, with given values
-  *
-  */
+	_createClass(WebGLRunner, null, [{
+		key: 'isRelatedContext',
+		value: function isRelatedContext(context) {
+			// from global
+			if (typeof WebGLRenderingContext !== 'undefined') {
+				return context instanceof WebGLRenderingContext;
+			}
+			return false;
+		}
+
+		/**
+   * @desc Instantiates a Runner instance for the kernel.
+   * @param {Object} settings - Settings to instantiate properties in Runner, with given values
+   *
+   */
+
+	}, {
+		key: 'isCompatible',
+		get: function get() {
+			if (isCompatible !== null) {
+				return isCompatible;
+			}
+			isCompatible = utils.isWebGlSupported();
+			return isCompatible;
+		}
+	}]);
+
 	function WebGLRunner(settings) {
 		_classCallCheck(this, WebGLRunner);
 
@@ -35,14 +55,8 @@ module.exports = function (_RunnerBase) {
 	}
 
 	/**
-  * @memberOf WebGLRunner#
-  * @function
-  * @name getMode
-  *
   * @desc Return the current mode in which gpu.js is executing.
-  * 
-  * @returns {String} The current mode; "cpu".
-  *
+  * @returns {String} The current mode; "gpu".
   */
 
 
@@ -54,4 +68,6 @@ module.exports = function (_RunnerBase) {
 	}]);
 
 	return WebGLRunner;
-}(RunnerBase);
+}(GLRunner);
+
+module.exports = WebGLRunner;

@@ -6,28 +6,26 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var FunctionBuilderBase = require('../function-builder-base');
+var FunctionBuilder = require('../function-builder');
 var CPUFunctionNode = require('./function-node');
 
 /**
- * @class CPUFunctionBuilder
- *
- * @extends FunctionBuilderBase
- *
  * @desc Builds functions to execute on CPU from JavaScript function Strings
- *
  */
-module.exports = function (_FunctionBuilderBase) {
-  _inherits(CPUFunctionBuilder, _FunctionBuilderBase);
 
-  function CPUFunctionBuilder() {
-    _classCallCheck(this, CPUFunctionBuilder);
+var CPUFunctionBuilder = function (_FunctionBuilder) {
+	_inherits(CPUFunctionBuilder, _FunctionBuilder);
 
-    var _this = _possibleConstructorReturn(this, (CPUFunctionBuilder.__proto__ || Object.getPrototypeOf(CPUFunctionBuilder)).call(this));
+	function CPUFunctionBuilder() {
+		_classCallCheck(this, CPUFunctionBuilder);
 
-    _this.Node = CPUFunctionNode;
-    return _this;
-  }
+		var _this = _possibleConstructorReturn(this, (CPUFunctionBuilder.__proto__ || Object.getPrototypeOf(CPUFunctionBuilder)).call(this));
 
-  return CPUFunctionBuilder;
-}(FunctionBuilderBase);
+		_this.Node = CPUFunctionNode;
+		return _this;
+	}
+
+	return CPUFunctionBuilder;
+}(FunctionBuilder);
+
+module.exports = CPUFunctionBuilder;

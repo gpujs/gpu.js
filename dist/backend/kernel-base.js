@@ -7,22 +7,22 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var utils = require('../core/utils');
 var Input = require('../core/input');
 
-module.exports = function () {
+var KernelBase = function () {
 
 	/**
   * @constructor KernelBase
-  * 
-  * @desc Implements the base class for Kernels, and is used as a 
+  *
+  * @desc Implements the base class for Kernels, and is used as a
   * parent class for all Kernel implementations.
   *
-  * This contains the basic methods needed by all Kernel implementations, 
+  * This contains the basic methods needed by all Kernel implementations,
   * like setDimensions, addSubKernel, etc.
-  * 
+  *
   * @prop {Array} paramNames - Name of the parameters of the kernel function
   * @prop {String} fnString - Kernel function as a String
   * @prop {Array} dimensions - Dimensions of the kernel function, this.thread.x, etc.
   * @prop {Boolean} debug - Toggle debug mode
-  * @prop {String} graphical - Toggle graphical mode
+  * @prop {Boolean} graphical - Toggle graphical mode
   * @prop {number} loopMaxIterations - Maximum number of loop iterations
   * @prop {Object} constants - Global constants
   * @prop {Array} subKernels - Sub kernels bound to this kernel instance
@@ -108,7 +108,7 @@ module.exports = function () {
 			for (var i = 0; i < args.length; i++) {
 				var arg = args[i];
 
-				this.paramTypes.push(utils.getArgumentType(arg));
+				this.paramTypes.push(utils.getVariableType(arg));
 				this.paramSizes.push(arg.constructor === Input ? arg.size : null);
 			}
 		}
@@ -118,7 +118,7 @@ module.exports = function () {
 			this.constantTypes = {};
 			if (this.constants) {
 				for (var p in this.constants) {
-					this.constantTypes[p] = utils.getArgumentType(this.constants[p]);
+					this.constantTypes[p] = utils.getVariableType(this.constants[p], true);
 				}
 			}
 		}
@@ -220,7 +220,7 @@ module.exports = function () {
    *
    * @desc Fix division by factor of 3 FP accuracy bug
    *
-   * @param {Boolean} fix - should fix 
+   * @param {Boolean} fix - should fix
    *
    */
 
@@ -318,7 +318,7 @@ module.exports = function () {
    * @name setCanvas
    *
    * @desc Bind the canvas to kernel
-   * 
+   *
    * @param {Canvas} canvas - Canvas to bind
    *
    */
@@ -333,11 +333,11 @@ module.exports = function () {
 		/**
    * @memberOf KernelBase#
    * @function
-   * @name setCanvas
+   * @name setWebGl
    *
    * @desc Bind the webGL instance to kernel
-   * 
-   * @param {Canvas} webGL - webGL instance to bind
+   *
+   * @param {WebGLRenderingContext} webGl - webGl instance to bind
    *
    */
 
@@ -412,7 +412,7 @@ module.exports = function () {
 			});
 		}
 
-		/** 
+		/**
    * @memberOf KernelBase#
    * @function
    * @name addSubKernel
@@ -436,7 +436,7 @@ module.exports = function () {
 			return this;
 		}
 
-		/** 
+		/**
    * @memberOf KernelBase#
    * @function
    * @name addSubKernelProperty
@@ -463,6 +463,15 @@ module.exports = function () {
 			this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
 			return this;
 		}
+
+		/**
+   * @desc Add a native function the the GPU instance that will inject on the fly into any kernel needing it.
+   * @function
+   * @name addNativeFunction
+   * @param {string} name
+   * @param {string} source
+   */
+
 	}, {
 		key: 'addNativeFunction',
 		value: function addNativeFunction(name, source) {
@@ -477,14 +486,16 @@ module.exports = function () {
    * @function
    * @memberOf KernelBase#
    *
-   * * @param {Boolean} removeCanvasReferences remve any associated canvas references?
+   * * @param {Boolean} removeCanvasReferences remove any associated canvas references?
    *
    */
 
 	}, {
 		key: 'destroy',
-		value: function destroy() {}
+		value: function destroy(removeCanvasReferences) {}
 	}]);
 
 	return KernelBase;
 }();
+
+module.exports = KernelBase;

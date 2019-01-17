@@ -11,6 +11,11 @@ const CPUFunctionNode = require('./backend/cpu/function-node');
 const CPUKernel = require('./backend/cpu/kernel');
 const CPURunner = require('./backend/cpu/runner');
 
+const HeadlessGLFunctionBuilder = require('./backend/headless-gl/function-builder');
+const HeadlessGLFunctionNode = require('./backend/headless-gl/function-node');
+const HeadlessGLKernel = require('./backend/headless-gl/kernel');
+const HeadlessGLRunner = require('./backend/headless-gl/runner');
+
 const WebGLFunctionBuilder = require('./backend/web-gl/function-builder');
 const WebGLFunctionNode = require('./backend/web-gl/function-node');
 const WebGLKernel = require('./backend/web-gl/kernel');
@@ -33,6 +38,11 @@ GPU.CPUFunctionBuilder = CPUFunctionBuilder;
 GPU.CPUFunctionNode = CPUFunctionNode;
 GPU.CPUKernel = CPUKernel;
 GPU.CPURunner = CPURunner;
+
+GPU.HeadlessGLFunctionBuilder = HeadlessGLFunctionBuilder;
+GPU.HeadlessGLFunctionNode = HeadlessGLFunctionNode;
+GPU.HeadlessGLKernel = HeadlessGLKernel;
+GPU.HeadlessGLRunner = HeadlessGLRunner;
 
 GPU.WebGLFunctionBuilder = WebGLFunctionBuilder;
 GPU.WebGLFunctionNode = WebGLFunctionNode;

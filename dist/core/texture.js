@@ -1,21 +1,20 @@
 'use strict';
 
+/**
+ * @desc WebGl Texture implementation in JS
+ * @param {Object} texture
+ * @param {Array} size
+ * @param {Object|Array} dimensions
+ * @param {Array} output
+ * @param {Object} webGl
+ * @param {String} [type]
+ */
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-module.exports = function () {
-
-	/**
-  * @desc WebGl Texture implementation in JS
-  * @constructor Texture
-  * @param {Object} texture
-  * @param {Array} size
-  * @param dimensions
-  * @param {Array} output
-  * @param {Object} webGl
-  * @param {String} [type]
-  */
+var Texture = function () {
 	function Texture(texture, size, dimensions, output, webGl) {
 		var type = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 'NumberTexture';
 
@@ -31,14 +30,8 @@ module.exports = function () {
 	}
 
 	/**
-  * @name toArray
-  * @function
-  * @memberOf Texture#
-  *
   * @desc Converts the Texture into a JavaScript Array.
-  * 
-  * @param {Object} The `gpu` Object
-  *
+  * @param {GPU} gpu Object
   */
 
 
@@ -56,12 +49,7 @@ module.exports = function () {
 		}
 
 		/**
-   * @name delete
-   * @desc Deletes the Texture.
-   * @function
-   * @memberOf Texture#
-   *
-   *
+   * @desc Deletes the Texture
    */
 
 	}, {
@@ -73,3 +61,5 @@ module.exports = function () {
 
 	return Texture;
 }();
+
+module.exports = Texture;

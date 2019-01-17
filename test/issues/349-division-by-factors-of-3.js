@@ -5,7 +5,7 @@ var GPU = require('../../src/index');
 		var gpu = new GPU({mode: null});
 		var k = gpu.createKernel(function(v1, v2) {
 			return v1 / v2;
-		}).setOutput([1]).setFloatOutput(true)
+		}).setOutput([1]).setFloatOutput(true);
 		QUnit.assert.equal(k(6,3)[0], 2);
 		gpu.destroy();
 	});
@@ -53,8 +53,7 @@ var GPU = require('../../src/index');
       .setFloatOutput(true)
       .setFixIntegerDivisionAccuracy(false);
 
-		var hasBug = gpu.hasIntegerDivisionAccuracyBug();
-		if (hasBug) {
+		if (!idfix.features.isIntegerDivisionAccurate) {
       QUnit.assert.ok(
         (
           idfix(6, 3)[0] === 2

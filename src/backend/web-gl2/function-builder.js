@@ -1,17 +1,12 @@
 'use strict';
 
-const FunctionBuilderBase = require('../function-builder-base');
+const FunctionBuilder = require('../function-builder');
 const WebGL2FunctionNode = require('./function-node');
 
 /**
- * @class WebGLFunctionBuilder
- *
- * @extends FunctionBuilderBase
- *
  * @desc Builds webGl functions (shaders) from JavaScript function Strings
- *
  */
-class WebGL2FunctionBuilder extends FunctionBuilderBase {
+class WebGL2FunctionBuilder extends FunctionBuilder {
 	constructor() {
 		super();
 		this.Node = WebGL2FunctionNode;

@@ -1,6 +1,6 @@
 var GPU = require('../../src/index');
 
-QUnit.test('KernelBase paramTypes CPU', function(assert) {
+QUnit.test('Kernel paramTypes CPU', function(assert) {
   const kernel = new GPU.CPUKernel(`function(value) { return value[this.thread.x]; }`, {
     output: [1],
     functionBuilder: {
@@ -16,7 +16,7 @@ QUnit.test('KernelBase paramTypes CPU', function(assert) {
   kernel.destroy();
 });
 
-QUnit.test('KernelBase paramTypes WebGL', function(assert) {
+QUnit.test('Kernel paramTypes WebGL', function(assert) {
   const kernel = new GPU.WebGLKernel(`function(value) { return value[this.thread.x]; }`, {
     output: [1],
     functionBuilder: {
@@ -33,7 +33,7 @@ QUnit.test('KernelBase paramTypes WebGL', function(assert) {
   kernel.destroy();
 });
 
-QUnit.test('KernelBase paramTypes WebGL2', function(assert) {
+QUnit.test('Kernel paramTypes WebGL2', function(assert) {
   const kernel = new GPU.WebGL2Kernel(`function(value) { return value[this.thread.x]; }`, {
     output: [1],
     functionBuilder: {
@@ -50,7 +50,7 @@ QUnit.test('KernelBase paramTypes WebGL2', function(assert) {
   kernel.destroy();
 });
 
-QUnit.test('KernelBase WebGLKernel.setUniform1f only calls webgl when values change', () => {
+QUnit.test('Kernel WebGLKernel.setUniform1f only calls webgl when values change', () => {
   const kernel = new GPU.WebGLKernel('', { output: [1] });
   let throws = false;
   kernel._webGl = {
@@ -73,7 +73,7 @@ QUnit.test('KernelBase WebGLKernel.setUniform1f only calls webgl when values cha
   QUnit.assert.equal(kernel.uniform1fCache['test'], 2);
   kernel.destroy();
 });
-QUnit.test('KernelBase WebGL2Kernel.setUniform1f only calls webgl when values change', () => {
+QUnit.test('Kernel WebGL2Kernel.setUniform1f only calls webgl when values change', () => {
   const kernel = new GPU.WebGL2Kernel('', { output: [1] });
   let throws = false;
   kernel._webGl = {
@@ -96,7 +96,7 @@ QUnit.test('KernelBase WebGL2Kernel.setUniform1f only calls webgl when values ch
   QUnit.assert.equal(kernel.uniform1fCache['test'], 2);
   kernel.destroy();
 });
-QUnit.test('KernelBase WebGLKernel.setUniform1i only calls webgl when values change', () => {
+QUnit.test('Kernel WebGLKernel.setUniform1i only calls webgl when values change', () => {
   const kernel = new GPU.WebGLKernel('', { output: [1] });
   let throws = false;
   kernel._webGl = {
@@ -119,7 +119,7 @@ QUnit.test('KernelBase WebGLKernel.setUniform1i only calls webgl when values cha
   QUnit.assert.equal(kernel.uniform1iCache['test'], 2);
   kernel.destroy();
 });
-QUnit.test('KernelBase WebGL2Kernel.setUniform1i only calls webgl when values change', () => {
+QUnit.test('Kernel WebGL2Kernel.setUniform1i only calls webgl when values change', () => {
   const kernel = new GPU.WebGL2Kernel('', { output: [1] });
   let throws = false;
   kernel._webGl = {
@@ -142,7 +142,7 @@ QUnit.test('KernelBase WebGL2Kernel.setUniform1i only calls webgl when values ch
   QUnit.assert.equal(kernel.uniform1iCache['test'], 2);
   kernel.destroy();
 });
-QUnit.test('KernelBase WebGLKernel.setUniform2f only calls webgl when values change', () => {
+QUnit.test('Kernel WebGLKernel.setUniform2f only calls webgl when values change', () => {
   const kernel = new GPU.WebGLKernel('', { output: [1] });
   let throws = false;
   kernel._webGl = {
@@ -165,7 +165,7 @@ QUnit.test('KernelBase WebGLKernel.setUniform2f only calls webgl when values cha
   QUnit.assert.deepEqual(kernel.uniform2fCache['test'], [3, 4]);
   kernel.destroy();
 });
-QUnit.test('KernelBase WebGL2Kernel.setUniform2f only calls webgl when values change', () => {
+QUnit.test('Kernel WebGL2Kernel.setUniform2f only calls webgl when values change', () => {
   const kernel = new GPU.WebGL2Kernel('', { output: [1] });
   let throws = false;
   kernel._webGl = {
@@ -188,7 +188,7 @@ QUnit.test('KernelBase WebGL2Kernel.setUniform2f only calls webgl when values ch
   QUnit.assert.deepEqual(kernel.uniform2fCache['test'], [3, 4]);
   kernel.destroy();
 });
-QUnit.test('KernelBase WebGLKernel.setUniform2fv only calls webgl when values change', () => {
+QUnit.test('Kernel WebGLKernel.setUniform2fv only calls webgl when values change', () => {
   const kernel = new GPU.WebGLKernel('', { output: [1] });
   let throws = false;
   kernel._webGl = {
@@ -211,7 +211,7 @@ QUnit.test('KernelBase WebGLKernel.setUniform2fv only calls webgl when values ch
   QUnit.assert.deepEqual(kernel.uniform2fvCache['test'], [2, 3]);
   kernel.destroy();
 });
-QUnit.test('KernelBase WebGL2Kernel.setUniform2fv only calls webgl when values change', () => {
+QUnit.test('Kernel WebGL2Kernel.setUniform2fv only calls webgl when values change', () => {
   const kernel = new GPU.WebGL2Kernel('', { output: [1] });
   let throws = false;
   kernel._webGl = {
@@ -234,7 +234,7 @@ QUnit.test('KernelBase WebGL2Kernel.setUniform2fv only calls webgl when values c
   QUnit.assert.deepEqual(kernel.uniform2fvCache['test'], [2, 3]);
   kernel.destroy();
 });
-QUnit.test('KernelBase WebGLKernel.setUniform3fv only calls webgl when values change', () => {
+QUnit.test('Kernel WebGLKernel.setUniform3fv only calls webgl when values change', () => {
   const kernel = new GPU.WebGLKernel('', { output: [1] });
   let throws = false;
   kernel._webGl = {
@@ -257,7 +257,7 @@ QUnit.test('KernelBase WebGLKernel.setUniform3fv only calls webgl when values ch
   QUnit.assert.deepEqual(kernel.uniform3fvCache['test'], [2, 3, 4]);
   kernel.destroy();
 });
-QUnit.test('KernelBase WebGL2Kernel.setUniform3fv only calls webgl when values change', () => {
+QUnit.test('Kernel WebGL2Kernel.setUniform3fv only calls webgl when values change', () => {
   const kernel = new GPU.WebGL2Kernel('', { output: [1] });
   let throws = false;
   kernel._webGl = {

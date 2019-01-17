@@ -1,13 +1,9 @@
 'use strict';
 
-const BaseFunctionNode = require('../function-node-base');
+const FunctionNode = require('../function-node');
 const utils = require('../../core/utils');
 
 /**
- * @class CPUFunctionNode
- *
- * @extends BaseFunctionNode#
- *
  * @desc [INTERNAL] Represents a single function, inside JS
  *
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
@@ -26,7 +22,7 @@ const utils = require('../../core/utils');
  * @prop writeVariables       - {String[]}  List of variables write operations occur
  *
  */
-class CPUFunctionNode extends BaseFunctionNode {
+class CPUFunctionNode extends FunctionNode {
 	constructor(functionName, jsFunction, options) {
 		super(functionName, jsFunction, options);
 		this.paramSizes = options ? options.paramSizes : [];
@@ -59,14 +55,8 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name getFunctionPrototypeString
-	 *
 	 * @desc Returns the converted JS function
-	 *
 	 * @returns {String} function string, result is cached under this.getFunctionPrototypeString
-	 *
 	 */
 	getFunctionPrototypeString() {
 		if (this.webGlFunctionPrototypeString) {
@@ -76,15 +66,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astFunctionDeclaration
-	 *
 	 * @desc Parses the abstract syntax tree for to its *named function declaration*
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astFunctionDeclaration(ast, retArr) {
@@ -93,15 +77,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astFunctionPrototype
-	 *
 	 * @desc Parses the abstract syntax tree for to its *named function prototype*
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astFunctionPrototype(ast, retArr) {
@@ -130,15 +108,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astFunctionExpression
-	 *
 	 * @desc Parses the abstract syntax tree for to its *named function*
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astFunctionExpression(ast, retArr) {
@@ -179,15 +151,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astReturnStatement
-	 *
 	 * @desc Parses the abstract syntax tree for to *return* statement
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astReturnStatement(ast, retArr) {
@@ -205,25 +171,13 @@ class CPUFunctionNode extends BaseFunctionNode {
 			this.astGeneric(ast.argument, retArr);
 			retArr.push(';');
 		}
-
-		//throw this.astErrorOutput(
-		//	'Non main function return, is not supported : '+this.currentFunctionNamespace,
-		//	ast
-		//);
-
 		return retArr;
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astLiteral
-	 *
 	 * @desc Parses the abstract syntax tree for *literal value*
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astLiteral(ast, retArr) {
@@ -242,15 +196,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astBinaryExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *binary* expression
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astBinaryExpression(ast, retArr) {
@@ -263,15 +211,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astIdentifierExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *identifier* expression
-	 *
 	 * @param {Object} idtNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astIdentifierExpression(idtNode, retArr) {
@@ -342,15 +284,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astForStatement
-	 *
 	 * @desc Parses the abstract syntax tree forfor *for-loop* expression
-	 *
 	 * @param {Object} forNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the parsed cpu string
 	 */
 	astForStatement(forNode, retArr) {
@@ -448,16 +384,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astWhileStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *while* loop
-	 *
-	 *
 	 * @param {Object} whileNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the parsed openclgl string
 	 */
 	astWhileStatement(whileNode, retArr) {
@@ -482,16 +411,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astWhileStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *do while* loop
-	 *
-	 *
 	 * @param {Object} doWhileNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the parsed webgl string
 	 */
 	astDoWhileStatement(doWhileNode, retArr) {
@@ -515,18 +437,10 @@ class CPUFunctionNode extends BaseFunctionNode {
 
 	}
 
-
-
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astAssignmentExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *Assignment* Expression
-	 *
 	 * @param {Object} assNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astAssignmentExpression(assNode, retArr) {
@@ -537,15 +451,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astEmptyStatement
-	 *
 	 * @desc Parses the abstract syntax tree for an *Empty* Statement
-	 *
 	 * @param {Object} eNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astEmptyStatement(eNode, retArr) {
@@ -554,15 +462,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astBlockStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *Block* statement
-	 *
 	 * @param {Object} bNode - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astBlockStatement(bNode, retArr) {
@@ -575,15 +477,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astExpressionStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *generic expression* statement
-	 *
 	 * @param {Object} esNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astExpressionStatement(esNode, retArr) {
@@ -593,15 +489,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astVariableDeclaration
-	 *
 	 * @desc Parses the abstract syntax tree for *Variable Declaration*
-	 *
 	 * @param {Object} vardecNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astVariableDeclaration(vardecNode, retArr) {
@@ -618,15 +508,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astVariableDeclarator
-	 *
 	 * @desc Parses the abstract syntax tree for *Variable Declarator*
-	 *
 	 * @param {Object} ivardecNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astVariableDeclarator(ivardecNode, retArr) {
@@ -639,15 +523,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astIfStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *If* Statement
-	 *
 	 * @param {Object} ifNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astIfStatement(ifNode, retArr) {
@@ -677,15 +555,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astBreakStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *Break* Statement
-	 *
 	 * @param {Object} brNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astBreakStatement(brNode, retArr) {
@@ -694,15 +566,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astContinueStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *Continue* Statement
-	 *
 	 * @param {Object} crNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astContinueStatement(crNode, retArr) {
@@ -711,15 +577,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astLogicalExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *Logical* Expression
-	 *
 	 * @param {Object} logNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astLogicalExpression(logNode, retArr) {
@@ -732,15 +592,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astUpdateExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *Update* Expression
-	 *
 	 * @param {Object} uNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astUpdateExpression(uNode, retArr) {
@@ -756,15 +610,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astUnaryExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *Unary* Expression
-	 *
 	 * @param {Object} uNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astUnaryExpression(uNode, retArr) {
@@ -780,15 +628,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astThisExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *This* expression
-	 *
 	 * @param {Object} tNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astThisExpression(tNode, retArr) {
@@ -797,15 +639,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astMemberExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *Member* Expression
-	 *
 	 * @param {Object} mNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astMemberExpression(mNode, retArr) {
@@ -951,15 +787,9 @@ class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astCallExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *call* expression
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns  {Array} the append retArr
 	 */
 	astCallExpression(ast, retArr) {
@@ -1017,20 +847,12 @@ class CPUFunctionNode extends BaseFunctionNode {
 			'Unknown CallExpression',
 			ast
 		);
-
-		return retArr;
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astArrayExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *Array* Expression
-	 *
 	 * @param {Object} arrNode - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astArrayExpression(arrNode, retArr) {
@@ -1047,12 +869,6 @@ class CPUFunctionNode extends BaseFunctionNode {
 		retArr.push(']');
 
 		return retArr;
-
-		// // Failure, unknown expression
-		// throw this.astErrorOutput(
-		// 	'Unknown  ArrayExpression',
-		// 	arrNode
-		//);
 	}
 
 	astDebuggerStatement(arrNode, retArr) {

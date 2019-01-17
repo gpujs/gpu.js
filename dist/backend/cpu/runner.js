@@ -8,24 +8,31 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var utils = require('../../core/utils');
-var RunnerBase = require('../runner-base');
+var Runner = require('../runner');
 var CPUKernel = require('./kernel');
 var CPUFunctionBuilder = require('./function-builder');
 
-module.exports = function (_RunnerBase) {
-	_inherits(CPURunner, _RunnerBase);
+var CPURunner = function (_Runner) {
+	_inherits(CPURunner, _Runner);
 
-	/**
-  * @constructor CPURunner
-  *
-  * @desc Instantiates a Runner instance for the kernel.
-  * 
-  * @extends RunnerBase
-  *
-  * @param {Object} settings - Settings to instantiate properties in RunnerBase, with given values
-  *
-  */
+	_createClass(CPURunner, null, [{
+		key: 'isRelatedContext',
+		value: function isRelatedContext(context) {
+			return false;
+		}
+
+		/**
+   * @desc Instantiates a Runner instance for the kernel.
+   * @param {Object} settings - Settings to instantiate properties in Runner, with given values
+   *
+   */
+
+	}, {
+		key: 'isCompatible',
+		get: function get() {
+			return true;
+		}
+	}]);
 
 	function CPURunner(settings) {
 		_classCallCheck(this, CPURunner);
@@ -38,14 +45,9 @@ module.exports = function (_RunnerBase) {
 	}
 
 	/**
-  * @memberOf CPURunner#
-  * @function
   * @name getMode()
-  *
-  * Return the current mode in which gpu.js is executing.
-  * 
+  * @desc Return the current mode in which gpu.js is executing.
   * @returns {String} The current mode; "cpu".
-  *
   */
 
 
@@ -57,4 +59,6 @@ module.exports = function (_RunnerBase) {
 	}]);
 
 	return CPURunner;
-}(RunnerBase);
+}(Runner);
+
+module.exports = CPURunner;

@@ -22,21 +22,17 @@ var GPU = require('../../src/index');
 		}).setOutputToTexture(true);
 		kernel(input);
 		kernel2();
-		if (kernel._webGl !== kernel2._webGl) {
-			assert.ok(false, "webgls should be the same object")
-		}
+		assert.strictEqual(kernel._webGl, kernel2._webGl, "webgls should be the same object");
 		var canvas = kernel.getCanvas();
 		var eventListener = canvas.addEventListener('webglcontextlost', function(e) {
-			canvas.removeEventListener('webglcontextlost', eventListener)
-			if (nKernels == 0) {
-				assert.ok(true)
+			canvas.removeEventListener('webglcontextlost', eventListener);
+			if (nKernels === 0) {
+				assert.ok(true);
 				done()
-			}
-			else {
+			} else {
 				manyKernels(mode, nKernels, assert, done);
 			}
-
-			}, true);
+		}, true);
 
 		gpu.destroy();
 	}
@@ -48,4 +44,4 @@ var GPU = require('../../src/index');
 	QUnit.test('Issue #174 - webgl context leak (webgl2)', function(assert) {
 		manyKernels('webgl2', 10, assert);
 	});
-})()
+})();

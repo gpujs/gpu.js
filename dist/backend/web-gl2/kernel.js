@@ -14,7 +14,7 @@ var Texture = require('../../core/texture');
 var fragShaderString = require('./shader-frag');
 var vertShaderString = require('./shader-vert');
 
-module.exports = function (_WebGLKernel) {
+var WebGL2Kernel = function (_WebGLKernel) {
 	_inherits(WebGL2Kernel, _WebGLKernel);
 
 	function WebGL2Kernel() {
@@ -28,32 +28,36 @@ module.exports = function (_WebGLKernel) {
 		value: function initWebGl() {
 			return utils.initWebGl2(this.getCanvas());
 		}
+
 		/**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name validateOptions
-   *
    * @desc Validate options related to Kernel, such as
    * floatOutputs and Textures, texSize, output,
    * graphical output.
-   *
    */
 
 	}, {
 		key: 'validateOptions',
 		value: function validateOptions() {
-			var isFloatReadPixel = utils.isFloatReadPixelsSupportedWebGL2();
-			if (this.floatOutput === true && this.floatOutputForce !== true && !isFloatReadPixel) {
+			this.texSize = utils.dimToTexSize({
+				floatTextures: this.floatTextures,
+				floatOutput: this.floatOutput
+			}, this.output, true);
+			if (this.skipValidateOptions) {
+				return;
+			}
+
+			var features = this.features;
+			if (this.floatOutput === true && this.floatOutputForce !== true && !features.isFloatRead) {
+				debugger;
 				throw new Error('Float texture outputs are not supported on this browser');
 			} else if (this.floatTextures === undefined) {
 				this.floatTextures = true;
-				this.floatOutput = isFloatReadPixel;
+				this.floatOutput = features.isFloatRead;
 			}
 
-			var hasIntegerDivisionBug = utils.hasIntegerDivisionAccuracyBug();
 			if (this.fixIntegerDivisionAccuracy === null) {
-				this.fixIntegerDivisionAccuracy = hasIntegerDivisionBug;
-			} else if (this.fixIntegerDivisionAccuracy && !hasIntegerDivisionBug) {
+				this.fixIntegerDivisionAccuracy = !features.isIntegerDivisionAccurate;
+			} else if (this.fixIntegerDivisionAccuracy && features.isIntegerDivisionAccurate) {
 				this.fixIntegerDivisionAccuracy = false;
 			}
 
@@ -64,7 +68,7 @@ module.exports = function (_WebGLKernel) {
 					throw new Error('Auto output only supported for kernels with only one input');
 				}
 
-				var argType = utils.getArgumentType(arguments[0]);
+				var argType = utils.getVariableType(arguments[0]);
 				if (argType === 'Array') {
 					this.output = utils.getDimensions(argType);
 				} else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
@@ -100,17 +104,10 @@ module.exports = function (_WebGLKernel) {
 		}
 
 		/**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name run
-   *
    * @desc Run the kernel program, and send the output to renderOutput
-   *
    * <p> This method calls a helper method *renderOutput* to return the result. </p>
    *
    * @returns {Object|Undefined} Result The final output of the program, as float, and as Textures for reuse.
-   *
-   *
    */
 
 	}, {
@@ -197,14 +194,8 @@ module.exports = function (_WebGLKernel) {
 		}
 
 		/**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name getOutputTexture
-   *
    * @desc This return defined outputTexture, which is setup in .build(), or if immutable, is defined in .run()
-   *
    * @returns {Object} Output Texture Cache
-   *
    */
 
 	}, {
@@ -214,11 +205,6 @@ module.exports = function (_WebGLKernel) {
 		}
 
 		/**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name _setupOutputTexture
-   * @private
-   *
    * @desc Setup and replace output texture
    */
 
@@ -243,10 +229,6 @@ module.exports = function (_WebGLKernel) {
 		}
 
 		/**
-   * @memberOf WebGL2Kernel#
-   * @param length
-   * @private
-   *
    * @desc Setup and replace sub-output textures
    */
 
@@ -277,17 +259,12 @@ module.exports = function (_WebGLKernel) {
 		}
 
 		/**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name _addArgument
-   *
    * @desc Adds kernel parameters to the Argument Texture,
    * binding it to the webGl instance, etc.
    *
    * @param {Array|Texture|Number} value - The actual argument supplied to the kernel
    * @param {String} type - Type of the argument
    * @param {String} name - Name of the argument
-   *
    */
 
 	}, {
@@ -455,14 +432,6 @@ module.exports = function (_WebGLKernel) {
 			}
 			this.argumentsLength++;
 		}
-
-		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getMainConstantsString
-   *
-   */
-
 	}, {
 		key: '_getMainConstantsString',
 		value: function _getMainConstantsString() {
@@ -471,10 +440,10 @@ module.exports = function (_WebGLKernel) {
 				for (var name in this.constants) {
 					if (!this.constants.hasOwnProperty(name)) continue;
 					var value = this.constants[name];
-					var type = utils.getArgumentType(value);
+					var type = utils.getVariableType(value, true);
 					switch (type) {
 						case 'Integer':
-							result.push('const float constants_' + name + ' = ' + parseInt(value) + '.0');
+							result.push('const int constants_' + name + ' = ' + parseInt(value));
 							break;
 						case 'Float':
 							result.push('const float constants_' + name + ' = ' + parseFloat(value));
@@ -499,17 +468,12 @@ module.exports = function (_WebGLKernel) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _addConstant
-   *
    * @desc Adds kernel parameters to the Argument Texture,
    * binding it to the webGl instance, etc.
    *
    * @param {Array|Texture|Number} value - The actual argument supplied to the kernel
    * @param {String} type - Type of the argument
    * @param {String} name - Name of the argument
-   *
    */
 
 	}, {
@@ -670,15 +634,8 @@ module.exports = function (_WebGLKernel) {
 				default:
 					throw new Error('Input type not supported (WebGL): ' + value);
 			}
+			this.constantsLength++;
 		}
-
-		/**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name _getGetResultString
-   *
-   */
-
 	}, {
 		key: '_getGetResultString',
 		value: function _getGetResultString() {
@@ -689,15 +646,11 @@ module.exports = function (_WebGLKernel) {
 		}
 
 		/**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name _getHeaderString
    *
    * @desc Get the header string for the program.
    * This returns an empty string if no sub-kernels are defined.
    *
    * @returns {String} result
-   *
    */
 
 	}, {
@@ -707,14 +660,8 @@ module.exports = function (_WebGLKernel) {
 		}
 
 		/**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name _getTextureCoordinate
-   *
    * @desc Get texture coordinate string for the program
-   *
    * @returns {String} result
-   *
    */
 
 	}, {
@@ -729,16 +676,9 @@ module.exports = function (_WebGLKernel) {
 		}
 
 		/**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name _getMainParamsString
-   *
    * @desc Generate transpiled glsl Strings for user-defined parameters sent to a kernel
-   *
    * @param {Array} args - The actual parameters sent to the Kernel
-   *
    * @returns {String} result
-   *
    */
 
 	}, {
@@ -782,14 +722,8 @@ module.exports = function (_WebGLKernel) {
 		}
 
 		/**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name _getKernelString
-   *
    * @desc Get Kernel program string (in *glsl*) for a kernel.
-   *
    * @returns {String} result
-   *
    */
 
 	}, {
@@ -812,15 +746,8 @@ module.exports = function (_WebGLKernel) {
 		}
 
 		/**
-   *
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name _getMainResultString
-   *
    * @desc Get main result string with checks for floatOutput, graphical, subKernelsOutputs, etc.
-   *
    * @returns {String} result
-   *
    */
 
 	}, {
@@ -871,12 +798,7 @@ module.exports = function (_WebGLKernel) {
 		}
 
 		/**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name _addKernels
-   *
    * @desc Adds all the sub-kernels supplied with this Kernel instance.
-   *
    */
 
 	}, {
@@ -921,18 +843,12 @@ module.exports = function (_WebGLKernel) {
 		}
 
 		/**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name _getFragShaderString
-   *
    * @desc Get the fragment shader String.
    * If the String hasn't been compiled yet,
    * then this method compiles it as well
    *
    * @param {Array} args - The actual parameters sent to the Kernel
-   *
    * @returns {string} Fragment Shader string
-   *
    */
 
 	}, {
@@ -945,14 +861,8 @@ module.exports = function (_WebGLKernel) {
 		}
 
 		/**
-   * @memberOf WebGL2Kernel#
-   * @function
-   * @name _getVertShaderString
-   *
    * @desc Get the vertical shader String
-   *
    * @param {Array} args - The actual parameters sent to the Kernel
-   *
    * @returns {string} Vertical Shader string
    *
    */
@@ -979,3 +889,5 @@ module.exports = function (_WebGLKernel) {
 
 	return WebGL2Kernel;
 }(WebGLKernel);
+
+module.exports = WebGL2Kernel;

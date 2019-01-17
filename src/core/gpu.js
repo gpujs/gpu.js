@@ -1,12 +1,19 @@
 'use strict';
 
 const utils = require('./utils');
-const WebGLRunner = require('../backend/web-gl/runner');
-const WebGL2Runner = require('../backend/web-gl2/runner');
-const CPURunner = require('../backend/cpu/runner');
-const WebGLValidatorKernel = require('../backend/web-gl/validator-kernel');
-const WebGL2ValidatorKernel = require('../backend/web-gl2/validator-kernel');
 const GPUCore = require('./gpu-core');
+const CPURunner = require('../backend/cpu/runner');
+const HeadlessGLRunner = require('../backend/headless-gl/runner');
+const WebGL2Runner = require('../backend/web-gl2/runner');
+const WebGLRunner = require('../backend/web-gl/runner');
+
+const runners = [HeadlessGLRunner, WebGL2Runner, WebGLRunner];
+
+const internalRunners = {
+	'headlessgl': HeadlessGLRunner,
+	'webgl2': WebGL2Runner,
+	'webgl': WebGLRunner,
+};
 
 /**
  * Initialises the GPU.js library class which manages the webGlContext for the created functions.
@@ -14,6 +21,9 @@ const GPUCore = require('./gpu-core');
  * @extends GPUCore
  */
 class GPU extends GPUCore {
+	static get runners() {
+		return runners;
+	}
 	/**
 	 * Creates an instance of GPU.
 	 * @param {Object} [settings] - Settings to set mode, and other properties. See #GPUCore
@@ -21,48 +31,48 @@ class GPU extends GPUCore {
 	 */
 	constructor(settings) {
 		super();
-
 		settings = settings || {};
 		this._canvas = settings.canvas || null;
 		this._webGl = settings.webGl || null;
-		let mode = settings.mode;
-		let detectedMode;
-		// new changes
-		//
-		// if (mode === 'cpu') {
-		// 	detectedMode = 'cpu';
-		// } else if (mode === 'webgl' || mode === 'webgl-validator') {
-		// 	detectedMode = mode || 'webgl';
-		//
-		// 	const context = createNodeContext(2048, 2048);
-		// 	const canvas = createCanvas(2048, 2048);
-		//
-		// 	this._webGl = context;
-		// 	this._canvas = canvas;
-		// } else {
-		// 	detectedMode = mode;
-		// }
+		const mode = settings.mode;
+		let Runner = null;
 
-		// new changes end
-
-		if (!utils.isWebGlSupported()) {
-			if (mode && mode !== 'cpu') {
-				throw new Error(`A requested mode of "${ mode }" and is not supported`);
-			} else {
-				console.warn('Warning: gpu not supported, falling back to cpu support');
-				detectedMode = 'cpu';
+		if (this._webGl) {
+			for (let i = 0; i < runners.length; i++) {
+				const ExternalRunner = runners[i];
+				if (ExternalRunner.isRelatedContext(this._webGl)) {
+					Runner = ExternalRunner;
+					break;
+				}
+			}
+			if (Runner === null) {
+				throw new Error('unknown Context');
+			}
+		} else if (mode) {
+			if (mode in internalRunners) {
+				Runner = internalRunners[mode];
+			} else if (mode === 'gpu') {
+				for (let i = 0; i < runners.length; i++) {
+					if (runners[i].isCompatible) {
+						Runner = runners[i];
+						break;
+					}
+				}
+			} else if (mode === 'cpu') {
+				Runner = CPURunner;
+			}
+			if (!Runner) {
+				throw new Error(`A requested mode of "${mode}" and is not supported`);
 			}
 		} else {
-			if (this._webGl) {
-				if (typeof WebGL2RenderingContext !== 'undefined' && this._webGl.constructor === WebGL2RenderingContext) {
-					detectedMode = 'webgl2';
-				} else if (typeof WebGLRenderingContext !== 'undefined' && this._webGl.constructor === WebGLRenderingContext) {
-					detectedMode = 'webgl';
-				} else {
-					throw new Error('unknown WebGL Context');
+			for (let i = 0; i < runners.length; i++) {
+				if (runners[i].isCompatible) {
+					Runner = runners[i];
+					break;
 				}
-			} else {
-				detectedMode = mode || 'gpu';
+			}
+			if (!Runner) {
+				Runner = CPURunner;
 			}
 		}
 
@@ -73,44 +83,11 @@ class GPU extends GPUCore {
 			webGl: this._webGl
 		};
 
-		switch (detectedMode) {
-			// public options
-			case 'cpu':
-				this._runner = new CPURunner(runnerSettings);
-				break;
-			case 'gpu':
-				const Runner = this.getGPURunner();
-				this._runner = new Runner(runnerSettings);
-				break;
-
-				// private explicit options for testing
-			case 'webgl2':
-				this._runner = new WebGL2Runner(runnerSettings);
-				break;
-			case 'webgl':
-				this._runner = new WebGLRunner(runnerSettings);
-				break;
-
-				// private explicit options for internal
-			case 'webgl2-validator':
-				this._runner = new WebGL2Runner(runnerSettings);
-				this._runner.Kernel = WebGL2ValidatorKernel;
-				break;
-			case 'webgl-validator':
-				this._runner = new WebGLRunner(runnerSettings);
-				this._runner.Kernel = WebGLValidatorKernel;
-				break;
-			default:
-				throw new Error(`"${ mode }" mode is not defined`);
-		}
+		this._runner = new Runner(runnerSettings);
 	}
 	/**
 	 *
-	 * This creates a callable function object to call the kernel function with the argument parameter set
-	 *
-	 * @name createKernel
-	 * @function
-	 * @memberOf GPU##
+	 * @desc This creates a callable function object to call the kernel function with the argument parameter set
 	 *
 	 * @param {Function} fn - The calling to perform the conversion
 	 * @param {Object} [settings] - The parameter configuration object
@@ -122,9 +99,7 @@ class GPU extends GPUCore {
 	 * *'gpu'* : Attempts to build GPU mode, else fallbacks
 	 * *'cpu'* : Forces JS fallback mode only
 	 *
-	 *
 	 * @returns {Function} callable function to run
-	 *
 	 */
 	createKernel(fn, settings) {
 		//
@@ -151,6 +126,12 @@ class GPU extends GPUCore {
 		if (!this._runner.canvas) {
 			this._runner.canvas = kernel.getCanvas();
 		}
+		if (!this._webGl) {
+			this._webGl = kernel.getWebGl();
+		}
+		if (!this._runner.webGl) {
+			this._runner.webGl = kernel.getWebGl();
+		}
 
 		this.kernels.push(kernel);
 
@@ -163,10 +144,6 @@ class GPU extends GPUCore {
 	 * and saves their output to be used with the next sub kernel.
 	 * This can be useful if we want to save the output on one kernel,
 	 * and then use it as an input to another kernel. *Machine Learning*
-	 *
-	 * @name createKernelMap
-	 * @function
-	 * @memberOf GPU#
 	 *
 	 * @param {Object|Array} subKernels - Sub kernels for this kernel
 	 * @param {Function} rootKernel - Root kernel
@@ -232,10 +209,6 @@ class GPU extends GPUCore {
 	 * The number of kernel functions sent to this method can be variable.
 	 * You can send in one, two, etc.
 	 *
-	 * @name combineKernels
-	 * @function
-	 * @memberOf GPU#
-	 *
 	 * @param {Function} subKernels - Kernel function(s) to combine.
 	 * @param {Function} rootKernel - Root kernel to combine kernels into
 	 *
@@ -294,26 +267,11 @@ class GPU extends GPUCore {
 		};
 	}
 
-
-	getGPURunner() {
-		if (utils.isWebGl2Supported()) return WebGL2Runner;
-		if (utils.isWebGlSupported()) return WebGLRunner;
-		throw new Error('No available GPU Runner');
-	}
-
 	/**
-	 *
-	 * Adds additional functions, that the kernel may call.
-	 *
-	 * @name addFunction
-	 * @function
-	 * @memberOf GPU#
-	 *
+	 * @desc Adds additional functions, that the kernel may call.
 	 * @param {Function|String} fn - JS Function to do conversion
 	 * @param {Object} options
-	 *
 	 * @returns {GPU} returns itself
-	 *
 	 */
 	addFunction(fn, options) {
 		this._runner.functionBuilder.addFunction(null, fn, options);
@@ -321,18 +279,10 @@ class GPU extends GPUCore {
 	}
 
 	/**
-	 *
-	 * Adds additional native functions, that the kernel may call.
-	 *
-	 * @name addNativeFunction
-	 * @function
-	 * @memberOf GPU#
-	 *
+	 * @desc Adds additional native functions, that the kernel may call.
 	 * @param {String} name - native function name, used for reverse lookup
 	 * @param {String} nativeFunction - the native function implementation, as it would be defined in it's entirety
-	 *
 	 * @returns {GPU} returns itself
-	 *
 	 */
 	addNativeFunction(name, nativeFunction) {
 		this._runner.functionBuilder.addNativeFunction(name, nativeFunction);
@@ -340,93 +290,48 @@ class GPU extends GPUCore {
 	}
 
 	/**
-	 *
-	 * Return the current mode in which gpu.js is executing.
-	 * @name getMode
-	 * @function
-	 * @memberOf GPU#
-	 *
+	 * @desc Return the current mode in which gpu.js is executing.
 	 * @returns {String} The current mode, "cpu", "webgl", etc.
-	 *
 	 */
 	getMode() {
 		return this._runner.getMode();
 	}
 
 	/**
-	 *
-	 * Return TRUE, if browser supports WebGl AND Canvas
-	 *
-	 * @name get isWebGlSupported
-	 * @function
-	 * @memberOf GPU#
-	 *
+	 * @desc Return TRUE, if browser supports WebGl AND Canvas
 	 * Note: This function can also be called directly `GPU.isWebGlSupported()`
 	 *
 	 * @returns {Boolean} TRUE if browser supports webGl
-	 *
 	 */
 	isWebGlSupported() {
 		return utils.isWebGlSupported();
 	}
 
 	/**
-	 *
-	 * Return TRUE, if system has integer division accuracy issue
-	 *
-	 * @name get hasIntegerDivisionAccuracyBug
-	 * @function
-	 * @memberOf GPU#
-	 *
-	 * Note: This function can also be called directly `GPU.hasIntegerDivisionAccuracyBug()`
-	 *
-	 * @returns {Boolean} TRUE if system has integer division accuracy issue
-	 *
-	 *
-	 */
-	hasIntegerDivisionAccuracyBug() {
-		return utils.hasIntegerDivisionAccuracyBug();
-	}
-
-	/**
-	 *
-	 * Return the canvas object bound to this gpu instance.
-	 *
-	 * @name getCanvas
-	 * @function
-	 * @memberOf GPU#
-	 *
+	 * @desc Return the canvas object bound to this gpu instance.
 	 * @returns {Object} Canvas object if present
-	 *
 	 */
 	getCanvas() {
 		return this._canvas;
 	}
 
 	/**
-	 *
-	 * Return the webGl object bound to this gpu instance.
-	 *
-	 * @name getWebGl
-	 * @function
-	 * @memberOf GPU#
-	 *
+	 * @desc Return the webGl object bound to this gpu instance.
 	 * @returns {Object} WebGl object if present
-	 *
 	 */
 	getWebGl() {
 		return this._webGl;
 	}
 
 	/**
-	 *
-	 * Destroys all memory associated with gpu.js & the webGl if we created it
-	 *
-	 * @name destroy
-	 * @function
-	 * @memberOf GPU#
-	 *
-	 *
+	 * Return the runner
+	 */
+	getRunner() {
+		return this._runner;
+	}
+
+	/**
+	 * @desc Destroys all memory associated with gpu.js & the webGl if we created it
 	 */
 	destroy() {
 		// perform on next runloop - for some reason we dont get lose context events
@@ -440,6 +345,10 @@ class GPU extends GPUCore {
 				this.kernels[i].destroy(true); // remove canvas if exists
 			}
 
+			if (this._webGl && this._webGl.destroy) {
+				this._webGl.destroy();
+			}
+
 			if (destroyWebGl) {
 				destroyWebGl.OES_texture_float = null;
 				destroyWebGl.OES_texture_float_linear = null;
@@ -451,7 +360,7 @@ class GPU extends GPUCore {
 			}
 		}, 0);
 	}
-};
+}
 
 // This ensure static methods are "inherited"
 // See: https://stackoverflow.com/questions/5441508/how-to-inherit-static-methods-from-base-class-in-javascript

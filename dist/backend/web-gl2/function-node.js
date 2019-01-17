@@ -12,17 +12,15 @@ var WebGLFunctionNode = require('../web-gl/function-node');
 var DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
 var ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
-/** 
+/**
  * @class WebGL2FunctionNode
- *
  * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
- *
  * @extends WebGLFunctionNode
- *
  * @returns the converted webGL function string
  *
  */
-module.exports = function (_WebGLFunctionNode) {
+
+var WebGL2FunctionNode = function (_WebGLFunctionNode) {
 	_inherits(WebGL2FunctionNode, _WebGLFunctionNode);
 
 	function WebGL2FunctionNode() {
@@ -47,15 +45,9 @@ module.exports = function (_WebGLFunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGL2FunctionNode#
-   * @function
-   * @name astIdentifierExpression
-   *
    * @desc Parses the abstract syntax tree for *identifier* expression
-   *
    * @param {Object} idtNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -71,19 +63,25 @@ module.exports = function (_WebGLFunctionNode) {
 
 			switch (idtNode.name) {
 				case 'gpu_threadX':
-					castFloat && retArr.push('float(');
-					retArr.push('threadId.x');
-					castFloat && retArr.push(')');
+					if (castFloat) {
+						retArr.push('float(threadId.x)');
+					} else {
+						retArr.push('threadId.x');
+					}
 					break;
 				case 'gpu_threadY':
-					castFloat && retArr.push('float(');
-					retArr.push('threadId.y');
-					castFloat && retArr.push(')');
+					if (castFloat) {
+						retArr.push('float(threadId.y)');
+					} else {
+						retArr.push('threadId.y');
+					}
 					break;
 				case 'gpu_threadZ':
-					castFloat && retArr.push('float(');
-					retArr.push('threadId.z');
-					castFloat && retArr.push(')');
+					if (castFloat) {
+						retArr.push('float(threadId.z)');
+					} else {
+						retArr.push('threadId.z');
+					}
 					break;
 				case 'gpu_outputX':
 					retArr.push('uOutputDim.x');
@@ -100,9 +98,9 @@ module.exports = function (_WebGLFunctionNode) {
 				default:
 					var userParamName = this.getUserParamName(idtNode.name);
 					if (userParamName !== null) {
-						this.pushParameter(retArr, 'user_' + userParamName);
+						this.pushParameter(retArr, userParamName);
 					} else {
-						this.pushParameter(retArr, 'user_' + idtNode.name);
+						this.pushParameter(retArr, idtNode.name);
 					}
 			}
 
@@ -114,12 +112,8 @@ module.exports = function (_WebGLFunctionNode) {
 }(WebGLFunctionNode);
 
 /**
- * @ignore
- * @function
- * @name webgl_regex_optimize
- *
- * @desc [INTERNAL] Takes the near final webgl function string, and do regex search and replacments.
- * For voodoo optimize out the following: 
+ * @desc [INTERNAL] Takes the near final webgl function string, and do regex search and replacements.
+ * For voodoo optimize out the following:
  *
  * - decode32(encode32( <br>
  * - encode32(decode32( <br>
@@ -127,6 +121,10 @@ module.exports = function (_WebGLFunctionNode) {
  * @param {String} inStr - The webGl function String
  *
  */
+
+
 function webGlRegexOptimize(inStr) {
 	return inStr.replace(DECODE32_ENCODE32, '((').replace(ENCODE32_DECODE32, '((');
 }
+
+module.exports = WebGL2FunctionNode;

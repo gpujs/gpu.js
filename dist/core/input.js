@@ -2,7 +2,7 @@
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-module.exports = function Input(value, size) {
+var Input = function Input(value, size) {
 	_classCallCheck(this, Input);
 
 	this.value = value;
@@ -24,3 +24,5 @@ module.exports = function Input(value, size) {
 		}
 	}
 };
+
+module.exports = Input;

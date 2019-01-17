@@ -16,29 +16,33 @@ class WebGL2Kernel extends WebGLKernel {
 	initWebGl() {
 		return utils.initWebGl2(this.getCanvas());
 	}
+
 	/**
-	 * @memberOf WebGL2Kernel#
-	 * @function
-	 * @name validateOptions
-	 *
 	 * @desc Validate options related to Kernel, such as
 	 * floatOutputs and Textures, texSize, output,
 	 * graphical output.
-	 *
 	 */
 	validateOptions() {
-		const isFloatReadPixel = utils.isFloatReadPixelsSupportedWebGL2();
-		if (this.floatOutput === true && this.floatOutputForce !== true && !isFloatReadPixel) {
+		this.texSize = utils.dimToTexSize({
+			floatTextures: this.floatTextures,
+			floatOutput: this.floatOutput
+		}, this.output, true);
+		if (this.skipValidateOptions) {
+			return;
+		}
+
+		const features = this.features;
+		if (this.floatOutput === true && this.floatOutputForce !== true && !features.isFloatRead) {
+			debugger;
 			throw new Error('Float texture outputs are not supported on this browser');
 		} else if (this.floatTextures === undefined) {
 			this.floatTextures = true;
-			this.floatOutput = isFloatReadPixel;
+			this.floatOutput = features.isFloatRead;
 		}
 
-		const hasIntegerDivisionBug = utils.hasIntegerDivisionAccuracyBug();
 		if (this.fixIntegerDivisionAccuracy === null) {
-			this.fixIntegerDivisionAccuracy = hasIntegerDivisionBug;
-		} else if (this.fixIntegerDivisionAccuracy && !hasIntegerDivisionBug) {
+			this.fixIntegerDivisionAccuracy = !features.isIntegerDivisionAccurate;
+		} else if (this.fixIntegerDivisionAccuracy && features.isIntegerDivisionAccurate) {
 			this.fixIntegerDivisionAccuracy = false;
 		}
 
@@ -85,17 +89,10 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	/**
-	 * @memberOf WebGL2Kernel#
-	 * @function
-	 * @name run
-	 *
 	 * @desc Run the kernel program, and send the output to renderOutput
-	 *
 	 * <p> This method calls a helper method *renderOutput* to return the result. </p>
 	 *
 	 * @returns {Object|Undefined} Result The final output of the program, as float, and as Textures for reuse.
-	 *
-	 *
 	 */
 	run() {
 		if (this.program === null) {
@@ -181,25 +178,14 @@ class WebGL2Kernel extends WebGLKernel {
 
 
 	/**
-	 * @memberOf WebGL2Kernel#
-	 * @function
-	 * @name getOutputTexture
-	 *
 	 * @desc This return defined outputTexture, which is setup in .build(), or if immutable, is defined in .run()
-	 *
 	 * @returns {Object} Output Texture Cache
-	 *
 	 */
 	getOutputTexture() {
 		return this.outputTexture;
 	}
 
 	/**
-	 * @memberOf WebGL2Kernel#
-	 * @function
-	 * @name _setupOutputTexture
-	 * @private
-	 *
 	 * @desc Setup and replace output texture
 	 */
 	_setupOutputTexture() {
@@ -221,10 +207,6 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	/**
-	 * @memberOf WebGL2Kernel#
-	 * @param length
-	 * @private
-	 *
 	 * @desc Setup and replace sub-output textures
 	 */
 	_setupSubOutputTextures(length) {
@@ -253,17 +235,12 @@ class WebGL2Kernel extends WebGLKernel {
 
 
 	/**
-	 * @memberOf WebGL2Kernel#
-	 * @function
-	 * @name _addArgument
-	 *
 	 * @desc Adds kernel parameters to the Argument Texture,
 	 * binding it to the webGl instance, etc.
 	 *
 	 * @param {Array|Texture|Number} value - The actual argument supplied to the kernel
 	 * @param {String} type - Type of the argument
 	 * @param {String} name - Name of the argument
-	 *
 	 */
 	_addArgument(value, type, name) {
 		const gl = this._webGl;
@@ -458,12 +435,6 @@ class WebGL2Kernel extends WebGLKernel {
 		this.argumentsLength++;
 	}
 
-	/**
-	 * @memberOf WebGLKernel#
-	 * @function
-	 * @name _getMainConstantsString
-	 *
-	 */
 	_getMainConstantsString() {
 		const result = [];
 		if (this.constants) {
@@ -508,17 +479,12 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	/**
-	 * @memberOf WebGLKernel#
-	 * @function
-	 * @name _addConstant
-	 *
 	 * @desc Adds kernel parameters to the Argument Texture,
 	 * binding it to the webGl instance, etc.
 	 *
 	 * @param {Array|Texture|Number} value - The actual argument supplied to the kernel
 	 * @param {String} type - Type of the argument
 	 * @param {String} name - Name of the argument
-	 *
 	 */
 	_addConstant(value, type, name) {
 		const gl = this._webGl;
@@ -705,14 +671,8 @@ class WebGL2Kernel extends WebGLKernel {
 			default:
 				throw new Error('Input type not supported (WebGL): ' + value);
 		}
+		this.constantsLength++;
 	}
-
-	/**
-	 * @memberOf WebGL2Kernel#
-	 * @function
-	 * @name _getGetResultString
-	 *
-	 */
 	_getGetResultString() {
 		if (!this.floatTextures) {
 			return '  return decode(texel, x, bitRatio);';
@@ -721,29 +681,19 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	/**
-	 * @memberOf WebGL2Kernel#
-	 * @function
-	 * @name _getHeaderString
 	 *
 	 * @desc Get the header string for the program.
 	 * This returns an empty string if no sub-kernels are defined.
 	 *
 	 * @returns {String} result
-	 *
 	 */
 	_getHeaderString() {
 		return '';
 	}
 
 	/**
-	 * @memberOf WebGL2Kernel#
-	 * @function
-	 * @name _getTextureCoordinate
-	 *
 	 * @desc Get texture coordinate string for the program
-	 *
 	 * @returns {String} result
-	 *
 	 */
 	_getTextureCoordinate() {
 		const names = this.subKernelOutputVariableNames;
@@ -755,16 +705,9 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	/**
-	 * @memberOf WebGL2Kernel#
-	 * @function
-	 * @name _getMainParamsString
-	 *
 	 * @desc Generate transpiled glsl Strings for user-defined parameters sent to a kernel
-	 *
 	 * @param {Array} args - The actual parameters sent to the Kernel
-	 *
 	 * @returns {String} result
-	 *
 	 */
 	_getMainParamsString(args) {
 		const result = [];
@@ -818,14 +761,8 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	/**
-	 * @memberOf WebGL2Kernel#
-	 * @function
-	 * @name _getKernelString
-	 *
 	 * @desc Get Kernel program string (in *glsl*) for a kernel.
-	 *
 	 * @returns {String} result
-	 *
 	 */
 	_getKernelString() {
 		const result = [];
@@ -848,15 +785,8 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	/**
-	 *
-	 * @memberOf WebGL2Kernel#
-	 * @function
-	 * @name _getMainResultString
-	 *
 	 * @desc Get main result string with checks for floatOutput, graphical, subKernelsOutputs, etc.
-	 *
 	 * @returns {String} result
-	 *
 	 */
 	_getMainResultString() {
 		const names = this.subKernelOutputVariableNames;
@@ -912,12 +842,7 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	/**
-	 * @memberOf WebGL2Kernel#
-	 * @function
-	 * @name _addKernels
-	 *
 	 * @desc Adds all the sub-kernels supplied with this Kernel instance.
-	 *
 	 */
 	_addKernels() {
 		const builder = this.functionBuilder;
@@ -953,18 +878,12 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	/**
-	 * @memberOf WebGL2Kernel#
-	 * @function
-	 * @name _getFragShaderString
-	 *
 	 * @desc Get the fragment shader String.
 	 * If the String hasn't been compiled yet,
 	 * then this method compiles it as well
 	 *
 	 * @param {Array} args - The actual parameters sent to the Kernel
-	 *
 	 * @returns {string} Fragment Shader string
-	 *
 	 */
 	_getFragShaderString(args) {
 		if (this.compiledFragShaderString !== null) {
@@ -974,14 +893,8 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	/**
-	 * @memberOf WebGL2Kernel#
-	 * @function
-	 * @name _getVertShaderString
-	 *
 	 * @desc Get the vertical shader String
-	 *
 	 * @param {Array} args - The actual parameters sent to the Kernel
-	 *
 	 * @returns {string} Vertical Shader string
 	 *
 	 */

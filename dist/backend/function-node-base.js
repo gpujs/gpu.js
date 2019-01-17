@@ -9,15 +9,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var utils = require('../core/utils');
 var acorn = require('acorn');
 
-module.exports = function () {
+var FunctionNodeBase = function () {
 
 	/**
   * @constructor FunctionNodeBase
-  * 
+  *
   * @desc Represents a single function, inside JS, webGL, or openGL.
-  * 
+  *
   * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
-  * 
+  *
   * @prop {String} functionName - Name of the function
   * @prop {Function} jsFunction - The JS Function the node represents
   * @prop {String} jsFunctionString - jsFunction.toString()
@@ -32,8 +32,8 @@ module.exports = function () {
   * @param {Object} options
   *
   */
-	function BaseFunctionNode(functionName, jsFunction, options) {
-		_classCallCheck(this, BaseFunctionNode);
+	function FunctionNodeBase(functionName, jsFunction, options) {
+		_classCallCheck(this, FunctionNodeBase);
 
 		this.calledFunctions = [];
 		this.calledFunctionsArguments = {};
@@ -80,6 +80,9 @@ module.exports = function () {
 			}
 			if (options.hasOwnProperty('fixIntegerDivisionAccuracy')) {
 				this.fixIntegerDivisionAccuracy = options.fixIntegerDivisionAccuracy;
+			}
+			if (options.hasOwnProperty('isRootKernel')) {
+				this.isRootKernel = options.isRootKernel;
 			}
 		}
 
@@ -155,7 +158,7 @@ module.exports = function () {
 		}
 	}
 
-	_createClass(BaseFunctionNode, [{
+	_createClass(FunctionNodeBase, [{
 		key: 'isIdentifierConstant',
 		value: function isIdentifierConstant(paramName) {
 			if (!this.constants) return false;
@@ -194,9 +197,9 @@ module.exports = function () {
 		key: 'getJsFunction',
 
 		/**
-   * 
+   *
    * Core Functions
-   * 
+   *
    */
 
 		/**
@@ -397,7 +400,7 @@ module.exports = function () {
    * @function
    * @name getUserParamName
    *
-   * @desc Return the name of the *user parameter*(subKernel parameter) corresponding 
+   * @desc Return the name of the *user parameter*(subKernel parameter) corresponding
    * to the parameter supplied to the kernel
    *
    * @param {String} paramName - Name of the parameter
@@ -670,26 +673,29 @@ module.exports = function () {
 		}
 
 		/**
-   * @ignore
    * @function
    * @name pushParameter
    *
    * @desc [INTERNAL] pushes a fn parameter onto retArr and 'casts' to int if necessary
    *  i.e. deal with force-int-parameter state
-   * 			
+   *
    * @param {Array} retArr - return array string
-   * @param {String} parameter - the parameter name  
+   * @param {String} name - the parameter name
    *
    */
 
 	}, {
 		key: 'pushParameter',
-		value: function pushParameter(retArr, parameter) {
-			if (this.isState('in-get-call-parameters')) {
-				retArr.push('int(' + parameter + ')');
-			} else {
-				retArr.push(parameter);
+		value: function pushParameter(retArr, name) {
+			var type = this.getParamType(name);
+			if (this.isState('in-get-call-parameters') || this.isState('integer-comparison')) {
+				if (type !== 'Integer' && type !== 'Array') {
+					retArr.push('int(user_' + name + ')');
+					return;
+				}
 			}
+
+			retArr.push('user_' + name);
 		}
 	}, {
 		key: 'state',
@@ -698,5 +704,7 @@ module.exports = function () {
 		}
 	}]);
 
-	return BaseFunctionNode;
+	return FunctionNodeBase;
 }();
+
+module.exports = FunctionNodeBase;

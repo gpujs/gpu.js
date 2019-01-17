@@ -1,17 +1,12 @@
 'use strict';
 
-const FunctionBuilderBase = require('../function-builder-base');
+const FunctionBuilder = require('../function-builder');
 const CPUFunctionNode = require('./function-node');
 
 /**
- * @class CPUFunctionBuilder
- *
- * @extends FunctionBuilderBase
- *
  * @desc Builds functions to execute on CPU from JavaScript function Strings
- *
  */
-class CPUFunctionBuilder extends FunctionBuilderBase {
+class CPUFunctionBuilder extends FunctionBuilder {
 	constructor() {
 		super();
 		this.Node = CPUFunctionNode;

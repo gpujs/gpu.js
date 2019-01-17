@@ -1,18 +1,15 @@
 'use strict';
 
-class FunctionBuilderBase {
-
-	/**
-	 * @constructor FunctionBuilderBase
-	 *
-	 * @desc This handles all the raw state, converted state, etc. of a single function.
-	 * [INTERNAL] A collection of functionNodes.
-	 *
-	 * @prop {Object} nodeMap - Object map, where nodeMap[function] = new FunctionNode;
-	 * @prop {Object} gpu - The current gpu instance bound to this builder
-	 * @prop {Object} rootKernel - The root kernel object, contains the paramNames, dimensions etc.
-	 *
-	 */
+/**
+ * @desc This handles all the raw state, converted state, etc. of a single function.
+ * [INTERNAL] A collection of functionNodes.
+ *
+ * @prop {Object} nodeMap - Object map, where nodeMap[function] = new FunctionNode;
+ * @prop {Object} gpu - The current gpu instance bound to this builder
+ * @prop {Object} rootKernel - The root kernel object, contains the paramNames, dimensions etc.
+ *
+ */
+class FunctionBuilder {
 	constructor(gpu) {
 		this.nodeMap = {};
 		this.nativeFunctions = {};
@@ -26,7 +23,7 @@ class FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf FunctionBuilderBase#
+	 * @memberOf FunctionBuilder#
 	 * @function
 	 * @name addFunction
 	 *
@@ -66,7 +63,7 @@ class FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf FunctionBuilderBase#
+	 * @memberOf FunctionBuilder#
 	 * @function
 	 * @name addFunctionNode
 	 *
@@ -83,7 +80,7 @@ class FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf FunctionBuilderBase#
+	 * @memberOf FunctionBuilder#
 	 * @function
 	 * @name traceFunctionCalls
 	 *
@@ -138,7 +135,7 @@ class FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf FunctionBuilderBase#
+	 * @memberOf FunctionBuilder#
 	 * @function
 	 * @name addKernel
 	 *
@@ -160,7 +157,7 @@ class FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf FunctionBuilderBase#
+	 * @memberOf FunctionBuilder#
 	 * @function
 	 * @name addSubKernel
 	 *
@@ -218,7 +215,7 @@ class FunctionBuilderBase {
 
 
 	/**
-	 * @memberOf FunctionBuilderBase#
+	 * @memberOf FunctionBuilder#
 	 * @function
 	 * @name getStringFromFunctionNames
 	 *
@@ -241,7 +238,7 @@ class FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf FunctionBuilderBase#
+	 * @memberOf FunctionBuilder#
 	 * @function
 	 * @name getPrototypeStringFromFunctionNames
 	 *
@@ -268,7 +265,7 @@ class FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf FunctionBuilderBase#
+	 * @memberOf FunctionBuilder#
 	 * @function
 	 * @name getPrototypeStringFromFunctionNames
 	 *
@@ -285,7 +282,7 @@ class FunctionBuilderBase {
 	}
 
 	/**
-	 * @memberOf FunctionBuilderBase#
+	 * @memberOf FunctionBuilder#
 	 * @function
 	 * @name getString
 	 *
@@ -308,4 +305,4 @@ class FunctionBuilderBase {
 	}
 }
 
-module.exports = FunctionBuilderBase;
+module.exports = FunctionBuilder;

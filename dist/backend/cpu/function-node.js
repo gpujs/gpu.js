@@ -8,14 +8,10 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var BaseFunctionNode = require('../function-node-base');
+var FunctionNode = require('../function-node');
 var utils = require('../../core/utils');
 
 /**
- * @class CPUFunctionNode
- *
- * @extends BaseFunctionNode#
- *
  * @desc [INTERNAL] Represents a single function, inside JS
  *
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
@@ -34,8 +30,9 @@ var utils = require('../../core/utils');
  * @prop writeVariables       - {String[]}  List of variables write operations occur
  *
  */
-module.exports = function (_BaseFunctionNode) {
-	_inherits(CPUFunctionNode, _BaseFunctionNode);
+
+var CPUFunctionNode = function (_FunctionNode) {
+	_inherits(CPUFunctionNode, _FunctionNode);
 
 	function CPUFunctionNode(functionName, jsFunction, options) {
 		_classCallCheck(this, CPUFunctionNode);
@@ -73,14 +70,8 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name getFunctionPrototypeString
-   *
    * @desc Returns the converted JS function
-   *
    * @returns {String} function string, result is cached under this.getFunctionPrototypeString
-   *
    */
 
 	}, {
@@ -93,15 +84,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astFunctionDeclaration
-   *
    * @desc Parses the abstract syntax tree for to its *named function declaration*
-   *
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -113,15 +98,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astFunctionPrototype
-   *
    * @desc Parses the abstract syntax tree for to its *named function prototype*
-   *
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -153,15 +132,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astFunctionExpression
-   *
    * @desc Parses the abstract syntax tree for to its *named function*
-   *
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -205,15 +178,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astReturnStatement
-   *
    * @desc Parses the abstract syntax tree for to *return* statement
-   *
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -234,25 +201,13 @@ module.exports = function (_BaseFunctionNode) {
 				this.astGeneric(ast.argument, retArr);
 				retArr.push(';');
 			}
-
-			//throw this.astErrorOutput(
-			//	'Non main function return, is not supported : '+this.currentFunctionNamespace,
-			//	ast
-			//);
-
 			return retArr;
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astLiteral
-   *
    * @desc Parses the abstract syntax tree for *literal value*
-   *
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -271,15 +226,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astBinaryExpression
-   *
    * @desc Parses the abstract syntax tree for *binary* expression
-   *
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -295,15 +244,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astIdentifierExpression
-   *
    * @desc Parses the abstract syntax tree for *identifier* expression
-   *
    * @param {Object} idtNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -374,15 +317,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astForStatement
-   *
    * @desc Parses the abstract syntax tree forfor *for-loop* expression
-   *
    * @param {Object} forNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the parsed cpu string
    */
 
@@ -475,16 +412,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astWhileStatement
-   *
    * @desc Parses the abstract syntax tree for *while* loop
-   *
-   *
    * @param {Object} whileNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the parsed openclgl string
    */
 
@@ -509,16 +439,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astWhileStatement
-   *
    * @desc Parses the abstract syntax tree for *do while* loop
-   *
-   *
    * @param {Object} doWhileNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the parsed webgl string
    */
 
@@ -542,15 +465,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astAssignmentExpression
-   *
    * @desc Parses the abstract syntax tree for *Assignment* Expression
-   *
    * @param {Object} assNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -564,15 +481,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astEmptyStatement
-   *
    * @desc Parses the abstract syntax tree for an *Empty* Statement
-   *
    * @param {Object} eNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -584,15 +495,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astBlockStatement
-   *
    * @desc Parses the abstract syntax tree for *Block* statement
-   *
    * @param {Object} bNode - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -608,15 +513,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astExpressionStatement
-   *
    * @desc Parses the abstract syntax tree for *generic expression* statement
-   *
    * @param {Object} esNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -629,15 +528,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astVariableDeclaration
-   *
    * @desc Parses the abstract syntax tree for *Variable Declaration*
-   *
    * @param {Object} vardecNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -657,15 +550,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astVariableDeclarator
-   *
    * @desc Parses the abstract syntax tree for *Variable Declarator*
-   *
    * @param {Object} ivardecNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -681,15 +568,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astIfStatement
-   *
    * @desc Parses the abstract syntax tree for *If* Statement
-   *
    * @param {Object} ifNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -721,15 +602,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astBreakStatement
-   *
    * @desc Parses the abstract syntax tree for *Break* Statement
-   *
    * @param {Object} brNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -741,15 +616,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astContinueStatement
-   *
    * @desc Parses the abstract syntax tree for *Continue* Statement
-   *
    * @param {Object} crNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -761,15 +630,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astLogicalExpression
-   *
    * @desc Parses the abstract syntax tree for *Logical* Expression
-   *
    * @param {Object} logNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -785,15 +648,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astUpdateExpression
-   *
    * @desc Parses the abstract syntax tree for *Update* Expression
-   *
    * @param {Object} uNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -812,15 +669,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astUnaryExpression
-   *
    * @desc Parses the abstract syntax tree for *Unary* Expression
-   *
    * @param {Object} uNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -839,15 +690,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astThisExpression
-   *
    * @desc Parses the abstract syntax tree for *This* expression
-   *
    * @param {Object} tNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -859,15 +704,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astMemberExpression
-   *
    * @desc Parses the abstract syntax tree for *Member* Expression
-   *
    * @param {Object} mNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -1008,15 +847,9 @@ module.exports = function (_BaseFunctionNode) {
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astCallExpression
-   *
    * @desc Parses the abstract syntax tree for *call* expression
-   *
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns  {Array} the append retArr
    */
 
@@ -1074,20 +907,12 @@ module.exports = function (_BaseFunctionNode) {
 
 			// Failure, unknown expression
 			throw this.astErrorOutput('Unknown CallExpression', ast);
-
-			return retArr;
 		}
 
 		/**
-   * @memberOf CPUFunctionNode#
-   * @function
-   * @name astArrayExpression
-   *
    * @desc Parses the abstract syntax tree for *Array* Expression
-   *
    * @param {Object} arrNode - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -1107,12 +932,6 @@ module.exports = function (_BaseFunctionNode) {
 			retArr.push(']');
 
 			return retArr;
-
-			// // Failure, unknown expression
-			// throw this.astErrorOutput(
-			// 	'Unknown  ArrayExpression',
-			// 	arrNode
-			//);
 		}
 	}, {
 		key: 'astDebuggerStatement',
@@ -1128,4 +947,6 @@ module.exports = function (_BaseFunctionNode) {
 	}]);
 
 	return CPUFunctionNode;
-}(BaseFunctionNode);
+}(FunctionNode);
+
+module.exports = CPUFunctionNode;

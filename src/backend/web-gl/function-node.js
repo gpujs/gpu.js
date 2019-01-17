@@ -1,6 +1,6 @@
 'use strict';
 
-const FunctionNodeBase = require('../function-node-base');
+const FunctionNode = require('../function-node');
 const utils = require('../../core/utils');
 // Closure capture for the ast function, prevent collision with existing AST functions
 // The prefixes to use
@@ -12,18 +12,10 @@ const DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
 const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
 /**
- * @class WebGLFunctionNode
- *
- * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
- *
- * @extends FunctionNodeBase
- *
- * @param {functionNode} inNode - The function node object
- *
+ * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code
  * @returns the converted webGL function string
- *
  */
-class WebGLFunctionNode extends FunctionNodeBase {
+class WebGLFunctionNode extends FunctionNode {
 	generate() {
 		if (this.prototypeOnly) {
 			return this.astFunctionPrototype(this.getJsAST(), []).join('').trim();
@@ -425,7 +417,6 @@ class WebGLFunctionNode extends FunctionNodeBase {
 					this.pushState('integer-comparison');
 					this.astGeneric(forNode.test.right, retArr);
 					this.popState('integer-comparison');
-					debugger;
 				} else {
 					this.astGeneric(forNode.test.right, retArr);
 				}

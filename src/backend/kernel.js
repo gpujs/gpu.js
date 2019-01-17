@@ -3,30 +3,27 @@
 const utils = require('../core/utils');
 const Input = require('../core/input');
 
-class KernelBase {
-
-	/**
-	 * @constructor KernelBase
-	 *
-	 * @desc Implements the base class for Kernels, and is used as a
-	 * parent class for all Kernel implementations.
-	 *
-	 * This contains the basic methods needed by all Kernel implementations,
-	 * like setDimensions, addSubKernel, etc.
-	 *
-	 * @prop {Array} paramNames - Name of the parameters of the kernel function
-	 * @prop {String} fnString - Kernel function as a String
-	 * @prop {Array} dimensions - Dimensions of the kernel function, this.thread.x, etc.
-	 * @prop {Boolean} debug - Toggle debug mode
-	 * @prop {String} graphical - Toggle graphical mode
-	 * @prop {number} loopMaxIterations - Maximum number of loop iterations
-	 * @prop {Object} constants - Global constants
-	 * @prop {Array} subKernels - Sub kernels bound to this kernel instance
-	 * @prop {Object} subKernelProperties - Sub kernels bound to this kernel instance as key/value pairs
-	 * @prop {Array} subKernelOutputVariableNames - Names of the variables outputted by the subkerls
-	 * @prop {Boolean} fixIntegerDivisionAccuracy - fix issues with some graphics cards not returning whole numbers when dividing by factors of 3
-	 *
-	 */
+/**
+ * @desc Implements the base class for Kernels, and is used as a
+ * parent class for all Kernel implementations.
+ *
+ * This contains the basic methods needed by all Kernel implementations,
+ * like setDimensions, addSubKernel, etc.
+ *
+ * @prop {Array} paramNames - Name of the parameters of the kernel function
+ * @prop {String} fnString - Kernel function as a String
+ * @prop {Array} dimensions - Dimensions of the kernel function, this.thread.x, etc.
+ * @prop {Boolean} debug - Toggle debug mode
+ * @prop {Boolean} graphical - Toggle graphical mode
+ * @prop {number} loopMaxIterations - Maximum number of loop iterations
+ * @prop {Object} constants - Global constants
+ * @prop {Array} subKernels - Sub kernels bound to this kernel instance
+ * @prop {Object} subKernelProperties - Sub kernels bound to this kernel instance as key/value pairs
+ * @prop {Array} subKernelOutputVariableNames - Names of the variables outputted by the subkerls
+ * @prop {Boolean} fixIntegerDivisionAccuracy - fix issues with some graphics cards not returning whole numbers when dividing by factors of 3
+ *
+ */
+class Kernel {
 	constructor(fnString, settings) {
 		this.paramNames = utils.getParamNamesFromString(fnString);
 		this.fnString = fnString;
@@ -49,6 +46,7 @@ class KernelBase {
 		this.addFunction = null;
 		this.functions = null;
 		this.nativeFunctions = null;
+		this.skipValidateOptions = false;
 		this.subKernels = null;
 		this.subKernelProperties = null;
 		this.subKernelNames = null;
@@ -58,6 +56,7 @@ class KernelBase {
 		this.paramSizes = null;
 		this.constantTypes = null;
 		this.fixIntegerDivisionAccuracy = null;
+		this.features = null;
 
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -74,22 +73,18 @@ class KernelBase {
 		}
 
 		if (!this._canvas) this._canvas = utils.initCanvas();
+		if (!this.features) this.features = Object.freeze({});
 	}
 
 	build() {
-		throw new Error('"build" not defined on Base');
+		throw new Error('"build" not defined on Kernel');
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name setupParams
-	 *
 	 * @desc Setup the parameter types for the parameters
 	 * supplied to the Kernel function
 	 *
 	 * @param {IArguments} args - The actual parameters sent to the Kernel
-	 *
 	 */
 	setupParams(args) {
 		this.paramTypes = [];
@@ -117,14 +112,8 @@ class KernelBase {
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name setOutput
-	 *
 	 * @desc Set dimensions of the kernel function
-	 *
 	 * @param {Array|Object} output - The output array to set the kernel output size to
-	 *
 	 */
 	setOutput(output) {
 		if (output.hasOwnProperty('x')) {
@@ -144,14 +133,8 @@ class KernelBase {
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name setDebug
-	 *
 	 * @desc Toggle debug mode
-	 *
 	 * @param {Boolean} flag - true to enable debug
-	 *
 	 */
 	setDebug(flag) {
 		this.debug = flag;
@@ -159,14 +142,8 @@ class KernelBase {
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name setGraphical
-	 *
 	 * @desc Toggle graphical output mode
-	 *
 	 * @param {Boolean} flag - true to enable graphical output
-	 *
 	 */
 	setGraphical(flag) {
 		this.graphical = flag;
@@ -174,14 +151,8 @@ class KernelBase {
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name setLoopMaxIterations
-	 *
 	 * @desc Set the maximum number of loop iterations
-	 *
 	 * @param {number} max - iterations count
-	 *
 	 */
 	setLoopMaxIterations(max) {
 		this.loopMaxIterations = max;
@@ -189,14 +160,8 @@ class KernelBase {
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name setFixIntegerDivisionAccuracy
-	 *
 	 * @desc Fix division by factor of 3 FP accuracy bug
-	 *
 	 * @param {Boolean} fix - should fix
-	 *
 	 */
 	setFixIntegerDivisionAccuracy(fix) {
 		this.fixIntegerDivisionAccuracy = fix;
@@ -204,9 +169,6 @@ class KernelBase {
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name setConstants
 	 * @desc Set Constants
 	 */
 	setConstants(constants) {
@@ -236,14 +198,8 @@ class KernelBase {
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name setFloatTextures
-	 *
 	 * @desc Toggle texture output mode
-	 *
 	 * @param {Boolean} flag - true to enable floatTextures
-	 *
 	 */
 	setFloatTextures(flag) {
 		this.floatTextures = flag;
@@ -251,14 +207,8 @@ class KernelBase {
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name setFloatOutput
-	 *
 	 * @desc Toggle output mode
-	 *
 	 * @param {Boolean} flag - true to enable float
-	 *
 	 */
 	setFloatOutput(flag) {
 		this.floatOutput = flag;
@@ -271,14 +221,8 @@ class KernelBase {
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name setCanvas
-	 *
 	 * @desc Bind the canvas to kernel
-	 *
 	 * @param {Canvas} canvas - Canvas to bind
-	 *
 	 */
 	setCanvas(canvas) {
 		this._canvas = canvas;
@@ -286,14 +230,8 @@ class KernelBase {
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name setCanvas
-	 *
 	 * @desc Bind the webGL instance to kernel
-	 *
-	 * @param {Canvas} webGL - webGL instance to bind
-	 *
+	 * @param {WebGLRenderingContext} webGl - webGl instance to bind
 	 */
 	setWebGl(webGl) {
 		this._webGl = webGl;
@@ -301,24 +239,14 @@ class KernelBase {
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name getCanvas()
-	 *
 	 * @desc Returns the current canvas instance bound to the kernel
-	 *
 	 */
 	getCanvas() {
 		return this._canvas;
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name getWebGl()
-	 *
 	 * @desc Returns the current webGl instance bound to the kernel
-	 *
 	 */
 	getWebGl() {
 		return this._webGl;
@@ -354,15 +282,10 @@ class KernelBase {
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name addSubKernel
-	 *
 	 * @desc Add a sub kernel to the root kernel instance.
 	 * This is what `createKernelMap` uses.
 	 *
 	 * @param {String} fnString - function (as a String) of the subKernel to add
-	 *
 	 */
 	addSubKernel(fnString) {
 		if (this.subKernels === null) {
@@ -375,16 +298,11 @@ class KernelBase {
 	}
 
 	/**
-	 * @memberOf KernelBase#
-	 * @function
-	 * @name addSubKernelProperty
-	 *
 	 * @desc Add a sub kernel to the root kernel instance, indexed by a property name
 	 * This is what `createKernelMap` uses.
 	 *
 	 * @param {String} property - property key for the subKernel
 	 * @param {String} fnString - function (as a String) of the subKernel to add
-	 *
 	 */
 	addSubKernelProperty(property, fnString) {
 		if (this.subKernelProperties === null) {
@@ -399,24 +317,23 @@ class KernelBase {
 		return this;
 	}
 
+	/**
+	 * @desc Add a native function the the GPU instance that will inject on the fly into any kernel needing it.
+	 *
+	 * @param {string} name
+	 * @param {string} source
+	 */
 	addNativeFunction(name, source) {
 		this.functionBuilder.addNativeFunction(name, source);
 	}
 
 	/**
-	 *
-	 * Destroys all memory associated with this kernel
-	 *
-	 * @name destroy
-	 * @function
-	 * @memberOf KernelBase#
-	 *
-	 * * @param {Boolean} removeCanvasReferences remve any associated canvas references?
-	 *
+	 * @desc Destroys all memory associated with this kernel
+	 * @param {Boolean} removeCanvasReferences remove any associated canvas references?
 	 */
-	destroy() {
-
+	destroy(removeCanvasReferences) {
+		throw new Error('"destroy" called on Kernel');
 	}
 }
 
-module.exports = KernelBase;
+module.exports = Kernel;

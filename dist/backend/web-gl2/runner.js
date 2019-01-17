@@ -8,22 +8,41 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var RunnerBase = require('../runner-base');
+var utils = require('../../core/utils');
+var GLRunner = require('../gl-runner');
 var WebGL2FunctionBuilder = require('./function-builder');
 var WebGL2Kernel = require('./kernel');
+var isCompatible = null;
 
-module.exports = function (_RunnerBase) {
-	_inherits(WebGL2Runner, _RunnerBase);
+var WebGL2Runner = function (_GLRunner) {
+	_inherits(WebGL2Runner, _GLRunner);
 
-	/**
-  * @constructor WebGL2Runner
-  *
-  * @extends RunnerBase
- 	 * @desc Instantiates a Runner instance for the kernel.
-  *
-  * @param {Object} settings - Settings to instantiate properties in RunnerBase, with given values
-  *
-  */
+	_createClass(WebGL2Runner, null, [{
+		key: 'isRelatedContext',
+		value: function isRelatedContext(context) {
+			// from global
+			if (typeof WebGL2RenderingContext !== 'undefined') {
+				return context instanceof WebGL2RenderingContext;
+			}
+			return false;
+		}
+
+		/**
+   * @desc Instantiates a Runner instance for the kernel.
+   * @param {Object} settings - Settings to instantiate properties in Runner, with given values
+   */
+
+	}, {
+		key: 'isCompatible',
+		get: function get() {
+			if (isCompatible !== null) {
+				return isCompatible;
+			}
+			isCompatible = utils.isWebGl2Supported();
+			return isCompatible;
+		}
+	}]);
+
 	function WebGL2Runner(settings) {
 		_classCallCheck(this, WebGL2Runner);
 
@@ -35,14 +54,8 @@ module.exports = function (_RunnerBase) {
 	}
 
 	/**
-  * @memberOf WebGL2Runner#
-  * @function
-  * @name getMode
-  *
   * @desc Return the current mode in which gpu.js is executing.
-  *
   * @returns {String} The current mode; "gpu".
-  *
   */
 
 
@@ -54,4 +67,6 @@ module.exports = function (_RunnerBase) {
 	}]);
 
 	return WebGL2Runner;
-}(RunnerBase);
+}(GLRunner);
+
+module.exports = WebGL2Runner;

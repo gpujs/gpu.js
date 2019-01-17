@@ -1,26 +1,21 @@
 'use strict';
 
-const KernelBase = require('../kernel-base');
+const Kernel = require('../kernel');
 const utils = require('../../core/utils');
 const kernelString = require('./kernel-string');
 
-class CPUKernel extends KernelBase {
-
-	/**
-	 * @constructor CPUKernel
-	 *
-	 * @desc Kernel Implementation for CPU.
-	 *
-	 * <p>Instantiates properties to the CPU Kernel.</p>
-	 *
-	 * @extends KernelBase
-	 *
-	 * @prop {Object} thread - The thread dimensions, x, y and z
-	 * @prop {Object} output - The canvas dimensions
-	 * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
-	 * @prop {Function} run - Method to run the kernel
-	 *
-	 */
+/**
+ * @desc Kernel Implementation for CPU.
+ *
+ * <p>Instantiates properties to the CPU Kernel.</p>
+ *
+ * @prop {Object} thread - The thread dimensions, x, y and z
+ * @prop {Object} output - The canvas dimensions
+ * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
+ * @prop {Function} run - Method to run the kernel
+ *
+ */
+class CPUKernel extends Kernel {
 	constructor(fnString, settings) {
 		super(fnString, settings);
 		this._fn = null;
@@ -43,13 +38,9 @@ class CPUKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf CPUKernel#
-	 * @function
 	 * @name validateOptions
-	 *
 	 * @desc Validate options related to CPU Kernel, such as
 	 * dimensions size, and auto dimension support.
-	 *
 	 */
 	validateOptions() {
 		if (!this.output || this.output.length === 0) {
@@ -71,16 +62,11 @@ class CPUKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf CPUKernel#
-	 * @function
-	 * @name build
-	 *
 	 * @desc Builds the Kernel, by generating the kernel
 	 * string using thread dimensions, and arguments
 	 * supplied to the kernel.
 	 *
 	 * <p>If the graphical flag is enabled, canvas is used.</p>
-	 *
 	 */
 	build() {
 		this.setupConstants();
@@ -146,10 +132,6 @@ class CPUKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf CPUKernel#
-	 * @function
-	 * @name getKernelString
-	 *
 	 * @desc Generates kernel string for this kernel program.
 	 *
 	 * <p>If sub-kernels are supplied, they are also factored in.
@@ -247,26 +229,15 @@ class CPUKernel extends KernelBase {
 	}
 
 	/**
-	 * @memberOf CPUKernel#
-	 * @function
-	 * @name toString
-	 *
 	 * @desc Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
-	 *
 	 */
 	toString() {
 		return kernelString(this);
 	}
 
 	/**
-	 * @memberOf WebGLKernel#
-	 * @function
-	 * @name _getLoopMaxString
-	 *
 	 * @desc Get the maximum loop size String.
-	 *
 	 * @returns {String} result
-	 *
 	 */
 	_getLoopMaxString() {
 		return (
@@ -443,6 +414,8 @@ class CPUKernel extends KernelBase {
 		return this.subKernelOutputVariableNames === null ? [''] :
 			this.subKernelOutputVariableNames.map(fn);
 	}
+
+	destroy() {}
 }
 
 module.exports = CPUKernel;

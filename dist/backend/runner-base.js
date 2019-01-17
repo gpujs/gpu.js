@@ -7,30 +7,41 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var utils = require('../core/utils');
 var kernelRunShortcut = require('./kernel-run-shortcut');
 
-module.exports = function () {
+var BaseRunner = function () {
+	_createClass(BaseRunner, null, [{
+		key: 'isRelatedContext',
+		value: function isRelatedContext(context) {
+			throw new Error('"isRelatedContext" not implemented on BaseRunner');
+		}
+		/**
+   * @constructor BaseRunner
+   *
+   * @desc Represents the 'private/protected' namespace of the GPU class
+   *
+   * <p>I know @private makes more sense, but since the documentation engine state is undetirmined.
+   * (See https://github.com/gpujs/gpu.js/issues/19 regarding documentation engine issue)
+   * File isolation is currently the best way to go. </p>
+   *
+   * *base.js* internal functions namespace <br>
+   * *gpu.js* PUBLIC function namespace <br>
+   *
+   * @prop {Object} settings - Settings object used to set Dimensions, etc.
+   * @prop {String} kernel - Current kernel instance
+   * @prop {Object} canvas - Canvas instance attached to the kernel
+   * @prop {Object} webGl - WebGl instance attached to the kernel
+   * @prop {Function} fn - Kernel function to run
+   * @prop {Object} functionBuilder - FunctionBuilder instance
+   * @prop {String} fnString - Kernel function (as a String)
+   * @prop {String} endianness - endian information like Little-endian, Big-endian.
+   *
+   */
 
-	/**
-  * @constructor BaseRunner
-  *
-  * @desc Represents the 'private/protected' namespace of the GPU class
-  *
-  * <p>I know @private makes more sense, but since the documentation engine state is undetirmined.
-  * (See https://github.com/gpujs/gpu.js/issues/19 regarding documentation engine issue)
-  * File isolation is currently the best way to go. </p>
-  *
-  * *base.js* internal functions namespace <br>
-  * *gpu.js* PUBLIC function namespace <br>
-  *
-  * @prop {Object} settings - Settings object used to set Dimensions, etc.
-  * @prop {String} kernel - Current kernel instance
-  * @prop {Object} canvas - Canvas instance attached to the kernel
-  * @prop {Object} webGl - WebGl instance attached to the kernel
-  * @prop {Function} fn - Kernel function to run
-  * @prop {Object} functionBuilder - FunctionBuilder instance
-  * @prop {String} fnString - Kernel function (as a String)
-  * @prop {String} endianness - endian information like Little-endian, Big-endian.
-  *
-  */
+	}, {
+		key: 'isCompatible',
+		get: function get() {
+			return false;
+		}
+	}]);
 
 	function BaseRunner(functionBuilder, settings) {
 		_classCallCheck(this, BaseRunner);
@@ -127,12 +138,12 @@ module.exports = function () {
 				settings.functionBuilder = this.functionBuilder;
 			}
 
-			if (!settings.canvas) {
+			if (!settings.canvas && this.canvas) {
 				settings.canvas = this.canvas;
 			}
 
-			if (!settings.webGl) {
-				settings.webGl = this.webgl;
+			if (!settings.webGl && this.webGl) {
+				settings.webGl = this.webGl;
 			}
 
 			return kernelRunShortcut(new this.Kernel(fnString, settings));
@@ -141,3 +152,5 @@ module.exports = function () {
 
 	return BaseRunner;
 }();
+
+module.exports = BaseRunner;

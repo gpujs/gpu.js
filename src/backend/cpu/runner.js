@@ -1,23 +1,22 @@
 'use strict';
 
-const utils = require('../../core/utils');
-const RunnerBase = require('../runner-base');
+const Runner = require('../runner');
 const CPUKernel = require('./kernel');
 const CPUFunctionBuilder = require('./function-builder');
 
-class CPURunner extends RunnerBase {
+class CPURunner extends Runner {
+	static get isCompatible() {
+		return true;
+	}
+	static isRelatedContext(context) {
+		return false;
+	}
 
 	/**
-	 * @constructor CPURunner
-	 *
 	 * @desc Instantiates a Runner instance for the kernel.
-	 *
-	 * @extends RunnerBase
-	 *
-	 * @param {Object} settings - Settings to instantiate properties in RunnerBase, with given values
+	 * @param {Object} settings - Settings to instantiate properties in Runner, with given values
 	 *
 	 */
-
 	constructor(settings) {
 		super(new CPUFunctionBuilder(), settings);
 		this.Kernel = CPUKernel;
@@ -25,14 +24,9 @@ class CPURunner extends RunnerBase {
 	}
 
 	/**
-	 * @memberOf CPURunner#
-	 * @function
 	 * @name getMode()
-	 *
-	 * Return the current mode in which gpu.js is executing.
-	 *
+	 * @desc Return the current mode in which gpu.js is executing.
 	 * @returns {String} The current mode; "cpu".
-	 *
 	 */
 	getMode() {
 		return 'cpu';

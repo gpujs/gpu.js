@@ -8,28 +8,25 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var KernelBase = require('../kernel-base');
+var Kernel = require('../kernel');
 var utils = require('../../core/utils');
 var kernelString = require('./kernel-string');
 
-module.exports = function (_KernelBase) {
-	_inherits(CPUKernel, _KernelBase);
+/**
+ * @desc Kernel Implementation for CPU.
+ *
+ * <p>Instantiates properties to the CPU Kernel.</p>
+ *
+ * @prop {Object} thread - The thread dimensions, x, y and z
+ * @prop {Object} output - The canvas dimensions
+ * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
+ * @prop {Function} run - Method to run the kernel
+ *
+ */
 
-	/**
-  * @constructor CPUKernel
-  *
-  * @desc Kernel Implementation for CPU.
-  *
-  * <p>Instantiates properties to the CPU Kernel.</p>
-  *
-  * @extends KernelBase
-  *
-  * @prop {Object} thread - The thread dimensions, x, y and z
-  * @prop {Object} output - The canvas dimensions
-  * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
-  * @prop {Function} run - Method to run the kernel
-  *
-  */
+var CPUKernel = function (_Kernel) {
+	_inherits(CPUKernel, _Kernel);
+
 	function CPUKernel(fnString, settings) {
 		_classCallCheck(this, CPUKernel);
 
@@ -56,13 +53,9 @@ module.exports = function (_KernelBase) {
 	}
 
 	/**
-  * @memberOf CPUKernel#
-  * @function
   * @name validateOptions
-  *
   * @desc Validate options related to CPU Kernel, such as
   * dimensions size, and auto dimension support.
-  *
   */
 
 
@@ -74,7 +67,7 @@ module.exports = function (_KernelBase) {
 					throw 'Auto dimensions only supported for kernels with only one input';
 				}
 
-				var argType = utils.getArgumentType(arguments[0]);
+				var argType = utils.getVariableType(arguments[0]);
 				if (argType === 'Array') {
 					this.output = utils.getDimensions(argType);
 				} else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
@@ -88,16 +81,11 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf CPUKernel#
-   * @function
-   * @name build
-   *
    * @desc Builds the Kernel, by generating the kernel
    * string using thread dimensions, and arguments
    * supplied to the kernel.
    *
    * <p>If the graphical flag is enabled, canvas is used.</p>
-   *
    */
 
 	}, {
@@ -167,10 +155,6 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf CPUKernel#
-   * @function
-   * @name getKernelString
-   *
    * @desc Generates kernel string for this kernel program.
    *
    * <p>If sub-kernels are supplied, they are also factored in.
@@ -257,12 +241,7 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf CPUKernel#
-   * @function
-   * @name toString
-   *
    * @desc Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
-   *
    */
 
 	}, {
@@ -272,14 +251,8 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getLoopMaxString
-   *
    * @desc Get the maximum loop size String.
-   *
    * @returns {String} result
-   *
    */
 
 	}, {
@@ -438,7 +411,12 @@ module.exports = function (_KernelBase) {
 		value: function _mapSubKernels(fn) {
 			return this.subKernelOutputVariableNames === null ? [''] : this.subKernelOutputVariableNames.map(fn);
 		}
+	}, {
+		key: 'destroy',
+		value: function destroy() {}
 	}]);
 
 	return CPUKernel;
-}(KernelBase);
+}(Kernel);
+
+module.exports = CPUKernel;

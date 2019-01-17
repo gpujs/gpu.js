@@ -34,23 +34,23 @@ require('qunit-assert-close');
     gpu.destroy();
   }
 
-  QUnit.test( 'addCustomNativeFunctionDivide (auto)', function() {
+  QUnit.test('addCustomNativeFunctionDivide (auto)', function() {
     addCustomNativeFunctionDivide(null, glslDivide);
   });
 
-  QUnit.test( 'addCustomNativeFunctionDivide (gpu)', function() {
+  QUnit.test('addCustomNativeFunctionDivide (gpu)', function() {
     addCustomNativeFunctionDivide('gpu', glslDivide);
   });
 
-  QUnit.test( 'addCustomNativeFunctionDivide (webgl)', function() {
+  QUnit.test('addCustomNativeFunctionDivide (webgl)', function() {
     addCustomNativeFunctionDivide('webgl', glslDivide);
   });
 
-  QUnit.test( 'addCustomNativeFunctionDivide (webgl2)', function() {
+  QUnit.test('addCustomNativeFunctionDivide (webgl2)', function() {
     addCustomNativeFunctionDivide('webgl2', glslDivide);
   });
 
-  QUnit.test( 'addCustomNativeFunctionDivide (cpu)', function() {
+  QUnit.test('addCustomNativeFunctionDivide (cpu)', function() {
     addCustomNativeFunctionDivide('cpu', jsDivide);
   });
 
@@ -86,19 +86,19 @@ require('qunit-assert-close');
     gpu.destroy();
   }
 
-  QUnit.test( 'addCustomNativeFunctionDivideFallback (GPU only) (auto)', function() {
+  QUnit.test('addCustomNativeFunctionDivideFallback (GPU only) (auto)', function() {
     addCustomNativeFunctionDivideFallback(null);
   });
 
-  QUnit.test( 'addCustomNativeFunctionDivideFallback (GPU only) (gpu)', function() {
+  QUnit.test('addCustomNativeFunctionDivideFallback (GPU only) (gpu)', function() {
     addCustomNativeFunctionDivideFallback('gpu');
   });
 
-  QUnit.test( 'addCustomNativeFunctionDivideFallback (GPU only) (webgl)', function() {
+  QUnit.test('addCustomNativeFunctionDivideFallback (GPU only) (webgl)', function() {
     addCustomNativeFunctionDivideFallback('webgl');
   });
 
-  QUnit.test( 'addCustomNativeFunctionDivideFallback (GPU only) (webgl2)', function() {
+  QUnit.test('addCustomNativeFunctionDivideFallback (GPU only) (webgl2)', function() {
     addCustomNativeFunctionDivideFallback('webgl2');
   });
 })();

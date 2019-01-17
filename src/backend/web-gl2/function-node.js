@@ -6,11 +6,8 @@ const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
 /**
  * @class WebGL2FunctionNode
- *
  * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
- *
  * @extends WebGLFunctionNode
- *
  * @returns the converted webGL function string
  *
  */
@@ -31,15 +28,9 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 	}
 
 	/**
-	 * @memberOf WebGL2FunctionNode#
-	 * @function
-	 * @name astIdentifierExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *identifier* expression
-	 *
 	 * @param {Object} idtNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astIdentifierExpression(idtNode, retArr) {
@@ -101,11 +92,7 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 }
 
 /**
- * @ignore
- * @function
- * @name webgl_regex_optimize
- *
- * @desc [INTERNAL] Takes the near final webgl function string, and do regex search and replacments.
+ * @desc [INTERNAL] Takes the near final webgl function string, and do regex search and replacements.
  * For voodoo optimize out the following:
  *
  * - decode32(encode32( <br>

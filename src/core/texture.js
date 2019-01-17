@@ -1,17 +1,15 @@
 'use strict';
 
+/**
+ * @desc WebGl Texture implementation in JS
+ * @param {Object} texture
+ * @param {Array} size
+ * @param {Object|Array} dimensions
+ * @param {Array} output
+ * @param {Object} webGl
+ * @param {String} [type]
+ */
 class Texture {
-
-	/**
-	 * @desc WebGl Texture implementation in JS
-	 * @constructor Texture
-	 * @param {Object} texture
-	 * @param {Array} size
-	 * @param dimensions
-	 * @param {Array} output
-	 * @param {Object} webGl
-	 * @param {String} [type]
-	 */
 	constructor(texture, size, dimensions, output, webGl, type = 'NumberTexture') {
 		this.texture = texture;
 		this.size = size;
@@ -23,14 +21,8 @@ class Texture {
 	}
 
 	/**
-	 * @name toArray
-	 * @function
-	 * @memberOf Texture#
-	 *
 	 * @desc Converts the Texture into a JavaScript Array.
-	 *
 	 * @param {GPU} gpu Object
-	 *
 	 */
 	toArray(gpu) {
 		if (!gpu) throw new Error('You need to pass the GPU object for toArray to work.');
@@ -44,12 +36,7 @@ class Texture {
 	}
 
 	/**
-	 * @name delete
-	 * @desc Deletes the Texture.
-	 * @function
-	 * @memberOf Texture#
-	 *
-	 *
+	 * @desc Deletes the Texture
 	 */
 	delete() {
 		return this.webGl.deleteTexture(this.texture);

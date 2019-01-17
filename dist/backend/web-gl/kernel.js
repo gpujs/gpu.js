@@ -1,7 +1,5 @@
 'use strict';
 
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -10,7 +8,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var KernelBase = require('../kernel-base');
+var Kernel = require('../kernel');
 var utils = require('../../core/utils');
 var Texture = require('../../core/texture');
 var fragShaderString = require('./shader-frag');
@@ -19,8 +17,28 @@ var kernelString = require('./kernel-string');
 var canvases = [];
 var maxTexSizes = {};
 
-module.exports = function (_KernelBase) {
-	_inherits(WebGLKernel, _KernelBase);
+/**
+ * @desc Kernel Implementation for WebGL.
+ * <p>This builds the shaders and runs them on the GPU,
+ * the outputs the result back as float(enabled by default) and Texture.</p>
+ *
+ * @prop {Object} textureCache - webGl Texture cache
+ * @prop {Object} threadDim - The thread dimensions, x, y and z
+ * @prop {Object} programUniformLocationCache - Location of program variables in memory
+ * @prop {Object} framebuffer - Webgl frameBuffer
+ * @prop {Object} buffer - WebGL buffer
+ * @prop {Object} program - The webGl Program
+ * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
+ * @prop {Boolean} outputToTexture - Set output type to Texture, instead of float
+ * @prop {String} endianness - Endian information like Little-endian, Big-endian.
+ * @prop {Array} paramTypes - Types of parameters sent to the Kernel
+ * @prop {number} argumentsLength - Number of parameters sent to the Kernel
+ * @prop {String} compiledFragShaderString - Compiled fragment shader string
+ * @prop {String} compiledVertShaderString - Compiled Vertical shader string
+ */
+
+var WebGLKernel = function (_Kernel) {
+	_inherits(WebGLKernel, _Kernel);
 
 	_createClass(WebGLKernel, null, [{
 		key: 'fragShaderString',
@@ -32,30 +50,6 @@ module.exports = function (_KernelBase) {
 		get: function get() {
 			return vertShaderString;
 		}
-		/**
-   * @constructor WebGLKernel
-   *
-   * @desc Kernel Implementation for WebGL.
-   * <p>This builds the shaders and runs them on the GPU,
-   * the outputs the result back as float(enabled by default) and Texture.</p>
-   *
-   * @extends KernelBase
-   *
-   * @prop {Object} textureCache - webGl Texture cache
-   * @prop {Object} threadDim - The thread dimensions, x, y and z
-   * @prop {Object} programUniformLocationCache - Location of program variables in memory
-   * @prop {Object} framebuffer - Webgl frameBuffer
-   * @prop {Object} buffer - WebGL buffer
-   * @prop {Object} program - The webGl Program
-   * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
-   * @prop {Boolean} outputToTexture - Set output type to Texture, instead of float
-   * @prop {String} endianness - Endian information like Little-endian, Big-endian.
-   * @prop {Array} paramTypes - Types of parameters sent to the Kernel
-   * @prop {number} argumentsLength - Number of parameters sent to the Kernel
-   * @prop {String} compiledFragShaderString - Compiled fragment shader string
-   * @prop {String} compiledVertShaderString - Compiled Vertical shader string
-   */
-
 	}]);
 
 	function WebGLKernel(fnString, settings) {
@@ -90,7 +84,11 @@ module.exports = function (_KernelBase) {
 		_this.uniform2ivCache = {};
 		_this.uniform3fvCache = {};
 		_this.uniform3ivCache = {};
-		if (!_this._webGl) _this._webGl = _this.initWebGl();
+		if (settings.webGl) {
+			_this._webGl = settings.webGl;
+		} else {
+			_this._webGl = _this.initWebGl();
+		}
 		return _this;
 	}
 
@@ -101,33 +99,31 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name validateOptions
-   *
    * @desc Validate options related to Kernel, such as
    * floatOutputs and Textures, texSize, output,
    * graphical output.
-   *
    */
 
 	}, {
 		key: 'validateOptions',
 		value: function validateOptions() {
-			var isFloatReadPixel = utils.isFloatReadPixelsSupported();
-			if (this.floatTextures === true && !utils.OES_texture_float) {
-				throw new Error('Float textures are not supported on this browser');
-			} else if (this.floatOutput === true && this.floatOutputForce !== true && !isFloatReadPixel) {
-				throw new Error('Float texture outputs are not supported on this browser');
-			} else if (this.floatTextures === undefined && utils.OES_texture_float) {
-				this.floatTextures = true;
-				this.floatOutput = isFloatReadPixel;
+			if (this.skipValidateOptions) {
+				return;
 			}
 
-			var hasIntegerDivisionBug = utils.hasIntegerDivisionAccuracyBug();
+			var features = this.features;
+			if (this.floatTextures === true && !features.isTextureFloat) {
+				throw new Error('Float textures are not supported on this browser');
+			} else if (this.floatOutput === true && this.floatOutputForce !== true && !features.isFloatRead) {
+				throw new Error('Float texture outputs are not supported on this browser');
+			} else if (this.floatTextures === undefined && features.isTextureFloat) {
+				this.floatTextures = true;
+				this.floatOutput = features.isFloatRead;
+			}
+
 			if (this.fixIntegerDivisionAccuracy === null) {
-				this.fixIntegerDivisionAccuracy = hasIntegerDivisionBug;
-			} else if (this.fixIntegerDivisionAccuracy && !hasIntegerDivisionBug) {
+				this.fixIntegerDivisionAccuracy = !features.isIntegerDivisionAccurate;
+			} else if (this.fixIntegerDivisionAccuracy && features.isIntegerDivisionAccurate) {
 				this.fixIntegerDivisionAccuracy = false;
 			}
 
@@ -138,7 +134,7 @@ module.exports = function (_KernelBase) {
 					throw new Error('Auto output only supported for kernels with only one input');
 				}
 
-				var argType = utils.getArgumentType(arguments[0]);
+				var argType = utils.getVariableType(arguments[0]);
 				if (argType === 'Array') {
 					this.output = utils.getDimensions(argType);
 				} else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
@@ -164,7 +160,7 @@ module.exports = function (_KernelBase) {
 				}
 
 				this.texSize = utils.clone(this.output);
-			} else if (this.floatOutput === undefined && utils.OES_texture_float) {
+			} else if (this.floatOutput === undefined && features.isTextureFloat) {
 				this.floatOutput = true;
 			}
 		}
@@ -191,13 +187,8 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name build
-   *
    * @desc Builds the Kernel, by compiling Fragment and Vertical Shaders,
    * and instantiates the program.
-   *
    */
 
 	}, {
@@ -278,21 +269,20 @@ module.exports = function (_KernelBase) {
 
 			var aPosLoc = gl.getAttribLocation(this.program, 'aPos');
 			gl.enableVertexAttribArray(aPosLoc);
-			gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, gl.FALSE, 0, 0);
+			gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, false, 0, 0);
 			var aTexCoordLoc = gl.getAttribLocation(this.program, 'aTexCoord');
 			gl.enableVertexAttribArray(aTexCoordLoc);
-			gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, gl.FALSE, 0, texCoordOffset);
+			gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, false, 0, texCoordOffset);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 
 			for (var p in this.constants) {
 				var value = this.constants[p];
-				var type = utils.getArgumentType(value);
+				var type = utils.getVariableType(value, true);
 				if (type === 'Float' || type === 'Integer') {
 					continue;
 				}
 				gl.useProgram(this.program);
 				this._addConstant(this.constants[p], type, p);
-				this.constantsLength++;
 			}
 
 			if (!this.outputImmutable) {
@@ -304,17 +294,10 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name run
-   *
    * @desc Run the kernel program, and send the output to renderOutput
-   *
    * <p> This method calls a helper method *renderOutput* to return the result. </p>
    *
    * @returns {Object|Undefined} Result The final output of the program, as float, and as Textures for reuse.
-   *
-   *
    */
 
 	}, {
@@ -401,22 +384,13 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name renderOutput
-   *
-   *
    * @desc Helper function to return webGl function's output.
    * Since the program runs on GPU, we need to get the
    * output of the program back to CPU and then return them.
-   *
    * *Note*: This should not be called directly.
    *
    * @param {Object} outputTexture - Output Texture returned by webGl program
-   *
    * @returns {Object|Array} result
-   *
-   *
    */
 
 	}, {
@@ -440,7 +414,6 @@ module.exports = function (_KernelBase) {
 					gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
 					result = new Float32Array(bytes.buffer);
 				}
-
 				result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
 
 				if (output.length === 1) {
@@ -457,14 +430,8 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name getOutputTexture
-   *
    * @desc This return defined outputTexture, which is setup in .build(), or if immutable, is defined in .run()
-   *
    * @returns {Object} Output Texture Cache
-   *
    */
 
 	}, {
@@ -474,11 +441,6 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _setupOutputTexture
-   * @private
-   *
    * @desc Setup and replace output texture
    */
 
@@ -537,16 +499,8 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name getArgumentTexture
-   *
    * @desc This uses *getTextureCache** to get the Texture Cache of the argument supplied
-   *
    * @param {String} name - Name of the argument
-   *
-   * 	Texture cache for the supplied argument
-   *
    */
 
 	}, {
@@ -556,16 +510,9 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @name getTextureCache
-   * @function
-   *
    * @desc Returns the Texture Cache of the supplied parameter (can be kernel, sub-kernel or argument)
-   *
    * @param {String} name - Name of the subkernel, argument, or kernel.
-   *
    * @returns {Object} Texture cache
-   *
    */
 
 	}, {
@@ -578,9 +525,6 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @name detachTextureCache
-   * @function
    * @desc removes a texture from the kernel's cache
    * @param {String} name - Name of texture
    */
@@ -683,14 +627,9 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name getUniformLocation
-   *
    * @desc Return WebGlUniformLocation for various variables
    * related to webGl program, such as user-defiend variables,
    * as well as, dimension sizes, etc.
-   *
    */
 
 	}, {
@@ -703,17 +642,11 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getFragShaderArtifactMap
-   *
    * @desc Generate Shader artifacts for the kernel program.
    * The final object contains HEADER, KERNEL, MAIN_RESULT, and others.
    *
    * @param {Array} args - The actual parameters sent to the Kernel
-   *
    * @returns {Object} An object containing the Shader Artifacts(CONSTANTS, HEADER, KERNEL, etc.)
-   *
    */
 
 	}, {
@@ -738,17 +671,12 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _addArgument
-   *
    * @desc Adds kernel parameters to the Argument Texture,
    * binding it to the webGl instance, etc.
    *
    * @param {Array|Texture|Number} value - The actual argument supplied to the kernel
    * @param {String} type - Type of the argument
    * @param {String} name - Name of the argument
-   *
    */
 
 	}, {
@@ -830,7 +758,7 @@ module.exports = function (_KernelBase) {
 						    _bitRatio = _formatArrayTransfer3.bitRatio;
 
 						if (this.floatTextures) {
-							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0], _size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0], _size[1], 0, gl.RGBA, gl.FLOAT, input);
 						} else {
 							var _buffer = new Uint8Array(_valuesFlat.buffer);
 							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, _size[0] / _bitRatio, _size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, _buffer);
@@ -872,6 +800,9 @@ module.exports = function (_KernelBase) {
 				case 'NumberTexture':
 					{
 						var inputTexture = value;
+						if (inputTexture.webGl !== this._webGl) {
+							throw new Error('argument ' + name + ' (' + type + ') must be from same context (webGl)');
+						}
 						var _dim3 = inputTexture.dimensions;
 						var _size3 = inputTexture.size;
 
@@ -891,17 +822,12 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _addConstant
-   *
    * @desc Adds kernel parameters to the Argument Texture,
    * binding it to the webGl instance, etc.
    *
    * @param {Array|Texture|Number} value - The actual argument supplied to the kernel
    * @param {String} type - Type of the argument
    * @param {String} name - Name of the argument
-   *
    */
 
 	}, {
@@ -1018,7 +944,6 @@ module.exports = function (_KernelBase) {
 
 						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
 						gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
-
 						this.setUniform3iv('constants_' + name + 'Dim', _dim6);
 						this.setUniform2iv('constants_' + name + 'Size', _size6);
 						this.setUniform1i('constants_' + name + 'BitRatio', 1); // aways float32
@@ -1030,21 +955,17 @@ module.exports = function (_KernelBase) {
 				default:
 					throw new Error('Input type not supported (WebGL): ' + value);
 			}
+			this.constantsLength++;
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _formatArrayTransfer
-   *
    * @desc Adds kernel parameters to the Argument Texture,
    * binding it to the webGl instance, etc.
    *
    * @param {Array} value - The actual argument supplied to the kernel
    * @param {String} length - the expected total length of the output array
-   *
    * @returns {Object} bitRatio - bit storage ratio of source to target 'buffer', i.e. if 8bit array -> 32bit tex = 4
-   * 				     valuesFlat - flattened array to transfer
+   *             valuesFlat - flattened array to transfer
    */
 
 	}, {
@@ -1082,53 +1003,34 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getHeaderString
-   *
    * @desc Get the header string for the program.
    * This returns an empty string if no sub-kernels are defined.
    *
    * @returns {String} result
-   *
    */
 
 	}, {
 		key: '_getHeaderString',
 		value: function _getHeaderString() {
-			return this.subKernels !== null || this.subKernelProperties !== null ?
-			//webgl2 '#version 300 es\n' :
-			'#extension GL_EXT_draw_buffers : require\n' : '';
+			return this.subKernels !== null || this.subKernelProperties !== null ? '#extension GL_EXT_draw_buffers : require\n' : '';
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getLoopMaxString
-   *
    * @desc Get the maximum loop size String.
-   *
    * @returns {String} result
-   *
    */
 
 	}, {
 		key: '_getLoopMaxString',
 		value: function _getLoopMaxString() {
-			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + '.0;\n' : ' 1000.0;\n';
+			return this.loopMaxIterations ? ' ' + parseInt(this.loopMaxIterations) + ';\n' : ' 1000;\n';
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getConstantsString
-   *
    * @desc Generate transpiled glsl Strings for constant parameters sent to a kernel
-   *
    * They can be defined by *hardcodeConstants*
    *
    * @returns {String} result
-   *
    */
 
 	}, {
@@ -1138,7 +1040,7 @@ module.exports = function (_KernelBase) {
 			var threadDim = this.threadDim;
 			var texSize = this.texSize;
 			if (this.hardcodeConstants) {
-				result.push('ivec3 uOutputDim = ivec3(' + threadDim[0] + ',' + threadDim[1] + ', ' + threadDim[2] + ')', 'ivec2 uTexSize = ivec2(' + texSize[0] + ', ' + texSize[1] + ')');
+				result.push('ivec3 uOutputDim = ivec3(' + threadDim[0] + ', ' + threadDim[1] + ', ' + threadDim[2] + ')', 'ivec2 uTexSize = ivec2(' + texSize[0] + ', ' + texSize[1] + ')');
 			} else {
 				result.push('uniform ivec3 uOutputDim', 'uniform ivec2 uTexSize');
 			}
@@ -1147,14 +1049,8 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getTextureCoordinate
-   *
    * @desc Get texture coordinate string for the program
-   *
    * @returns {String} result
-   *
    */
 
 	}, {
@@ -1169,14 +1065,8 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getDecode32EndiannessString
-   *
    * @desc Get Decode32 endianness string for little-endian and big-endian
-   *
    * @returns {String} result
-   *
    */
 
 	}, {
@@ -1186,14 +1076,8 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getEncode32EndiannessString
-   *
    * @desc Get Encode32 endianness string for little-endian and big-endian
-   *
    * @returns {String} result
-   *
    */
 
 	}, {
@@ -1203,27 +1087,17 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getDivideWithIntegerCheckString
-   *
    * @desc if fixIntegerDivisionAccuracy provide method to replace /
-   *
    * @returns {String} result
-   *
    */
 
 	}, {
 		key: '_getDivideWithIntegerCheckString',
 		value: function _getDivideWithIntegerCheckString() {
-			return this.fixIntegerDivisionAccuracy ? '\n\t\t\t  float div_with_int_check(float x, float y) {\n\t\t\t  if (floor(x) == x && floor(y) == y && integerMod(x, y) == 0.0) {\n\t\t\t    return float(int(x)/int(y));\n\t\t\t  }\n\t\t\t  return x / y;\n\t\t\t}\n\t\t\t' : '';
+			return this.fixIntegerDivisionAccuracy ? 'float div_with_int_check(float x, float y) {\n  if (floor(x) == x && floor(y) == y && integerMod(x, y) == 0.0) {\n    return float(int(x)/int(y));\n  }\n  return x / y;\n}' : '';
 		}
 
 		/**
-   * @function
-   * @memberOf WebGLKernel#
-   * @name _getGetWraparoundString
-   *
    * @returns {String} wraparound string
    */
 
@@ -1232,14 +1106,6 @@ module.exports = function (_KernelBase) {
 		value: function _getGetWraparoundString() {
 			return this.wraparound ? '  xyz = mod(xyz, texDim);\n' : '';
 		}
-
-		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getGetTextureChannelString
-   *
-   */
-
 	}, {
 		key: '_getGetTextureChannelString',
 		value: function _getGetTextureChannelString() {
@@ -1249,12 +1115,7 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getGetTextureIndexString
-   *
    * @desc Get generic texture index string, if floatTextures flag is true.
-   *
    * @example
    * '  index = float(int(index)/4);\n'
    *
@@ -1265,14 +1126,6 @@ module.exports = function (_KernelBase) {
 		value: function _getGetTextureIndexString() {
 			return this.floatTextures ? '  index = index / 4;\n' : '';
 		}
-
-		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getGetResultString
-   *
-   */
-
 	}, {
 		key: '_getGetResultString',
 		value: function _getGetResultString() {
@@ -1283,16 +1136,9 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getMainParamsString
-   *
    * @desc Generate transpiled glsl Strings for user-defined parameters sent to a kernel
-   *
    * @param {Array} args - The actual parameters sent to the Kernel
-   *
    * @returns {String} result
-   *
    */
 
 	}, {
@@ -1334,14 +1180,6 @@ module.exports = function (_KernelBase) {
 			}
 			return this._linesToString(result);
 		}
-
-		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getMainConstantsString
-   *
-   */
-
 	}, {
 		key: '_getMainConstantsString',
 		value: function _getMainConstantsString() {
@@ -1350,10 +1188,10 @@ module.exports = function (_KernelBase) {
 				for (var name in this.constants) {
 					if (!this.constants.hasOwnProperty(name)) continue;
 					var value = this.constants[name];
-					var type = utils.getArgumentType(value);
+					var type = utils.getVariableType(value, true);
 					switch (type) {
 						case 'Integer':
-							result.push('const float constants_' + name + ' = ' + parseInt(value) + '.0');
+							result.push('const int constants_' + name + ' = ' + parseInt(value));
 							break;
 						case 'Float':
 							result.push('const float constants_' + name + ' = ' + parseFloat(value));
@@ -1374,14 +1212,8 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getKernelString
-   *
    * @desc Get Kernel program string (in *glsl*) for a kernel.
-   *
    * @returns {String} result
-   *
    */
 
 	}, {
@@ -1402,15 +1234,8 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   *
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getMainResultString
-   *
    * @desc Get main result string with checks for floatOutput, graphical, subKernelsOutputs, etc.
-   *
    * @returns {String} result
-   *
    */
 
 	}, {
@@ -1461,14 +1286,8 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _linesToString
-   *
    * @param {Array} lines - An Array of strings
-   *
    * @returns {String} Single combined String, seperated by *\n*
-   *
    */
 
 	}, {
@@ -1482,13 +1301,8 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _replaceArtifacts
-   *
    * @param {String} src - Shader string
    * @param {Array} map - Variables/Constants associated with shader
-   *
    */
 
 	}, {
@@ -1503,12 +1317,7 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _addKernels
-   *
    * @desc Adds all the sub-kernels supplied with this Kernel instance.
-   *
    */
 
 	}, {
@@ -1568,18 +1377,12 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getFragShaderString
-   *
    * @desc Get the fragment shader String.
    * If the String hasn't been compiled yet,
    * then this method compiles it as well
    *
    * @param {Array} args - The actual parameters sent to the Kernel
-   *
    * @returns {string} Fragment Shader string
-   *
    */
 
 	}, {
@@ -1592,16 +1395,9 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name _getVertShaderString
-   *
    * @desc Get the vertical shader String
-   *
    * @param {Array} args - The actual parameters sent to the Kernel
-   *
    * @returns {string} Vertical Shader string
-   *
    */
 
 	}, {
@@ -1614,12 +1410,7 @@ module.exports = function (_KernelBase) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @function
-   * @name toString
-   *
    * @desc Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
-   *
    */
 
 	}, {
@@ -1632,10 +1423,15 @@ module.exports = function (_KernelBase) {
 		value: function addFunction(fn) {
 			this.functionBuilder.addFunction(null, fn);
 		}
+
+		/**
+   *
+   * @param {Boolean} removeCanvasReferences
+   */
+
 	}, {
 		key: 'destroy',
 		value: function destroy(removeCanvasReferences) {
-			_get(WebGLKernel.prototype.__proto__ || Object.getPrototypeOf(WebGLKernel.prototype), 'destroy', this).call(this);
 			if (this.outputTexture) {
 				this._webGl.deleteTexture(this.outputTexture);
 			}
@@ -1677,9 +1473,12 @@ module.exports = function (_KernelBase) {
 					maxTexSizes[idx] = null;
 				}
 			}
+
 			delete this._webGl;
 		}
 	}]);
 
 	return WebGLKernel;
-}(KernelBase);
+}(Kernel);
+
+module.exports = WebGLKernel;

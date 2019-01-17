@@ -19,64 +19,32 @@ class UtilsCore {
 	 */
 
 	/**
-	 * @typedef {Object} CanvasDOMObject
-	 */
-
-	//-----------------------------------------------------------------------------
-	//
-	//  Canvas validation and support
-	//
-	//-----------------------------------------------------------------------------
-
-	/**
-	 * @name isCanvas
-	 * @static
-	 * @function
-	 * @memberOf UtilsCore
-	 *
-	 *
 	 * @desc Return TRUE, on a valid DOM canvas or OffscreenCanvas object
-	 *
 	 * Note: This does just a VERY simply sanity check. And may give false positives.
 	 *
-	 * @param {CanvasDOMObject} canvasObj - Object to validate
-	 *
+	 * @param {HTMLCanvasElement} canvas - Object to validate
 	 * @returns {Boolean} TRUE if the object is a DOM canvas or OffscreenCanvas
-	 *
 	 */
-	static isCanvas(canvasObj) {
+	static isCanvas(canvas) {
 		return (
-			canvasObj !== null &&
-			canvasObj.getContext
+			canvas !== null &&
+			canvas.getContext
 		);
 	}
 
 	/**
-	 * @name isCanvasSupported
-	 * @function
-	 * @static
-	 * @memberOf UtilsCore
-	 *
 	 * @desc Return TRUE, if browser supports canvas
-	 *
 	 * @returns {Boolean} TRUE if browser supports canvas
-	 *
 	 */
 	static isCanvasSupported() {
 		return _isCanvasSupported;
 	}
 
 	/**
-	 * @name initCanvas
-	 * @function
-	 * @static
-	 * @memberOf UtilsCore
-	 *
 	 * @desc Initiate and returns a canvas, for usage in init_webgl.
 	 * Returns only if canvas is supported by browser.
 	 *
-	 * @returns {CanvasDOMObject} CanvasDOMObject if supported by browser, else null
-	 *
+	 * @returns {HTMLCanvasElement} if supported by browser, else null
 	 */
 	static initCanvas() {
 		// Fail fast if previously detected no support
@@ -85,7 +53,11 @@ class UtilsCore {
 		}
 
 		if (_isNativeCanvasSupport) {
-			return require('canvas').createCanvas(2, 2);
+			return {
+				getContext: () => {
+					return null;
+				}
+			};
 		}
 
 		// Create a new canvas DOM
@@ -99,28 +71,13 @@ class UtilsCore {
 		return canvas;
 	}
 
-	//-----------------------------------------------------------------------------
-	//
-	//  Webgl validation and support
-	//
-	//-----------------------------------------------------------------------------
-
-
 	/**
 	 *
-	 * @name isWebGl
-	 * @function
-	 * @static
-	 * @memberOf UtilsCore
-	 *
 	 * @desc Return TRUE, on a valid webGlContext object
-	 *
 	 * Note: This does just a VERY simply sanity check. And may give false positives.
 	 *
 	 * @param {webGlContext} webGlObj - Object to validate
-	 *
 	 * @returns {Boolean} TRUE if the object is a webGlContext object
-	 *
 	 */
 	static isWebGl(webGlObj) {
 		return webGlObj && typeof webGlObj.getExtension === 'function';
@@ -128,19 +85,11 @@ class UtilsCore {
 
 	/**
 	 *
-	 * @name isWebGl2
-	 * @function
-	 * @static
-	 * @memberOf UtilsCore
-	 *
 	 * @desc Return TRUE, on a valid webGl2Context object
-	 *
 	 * Note: This does just a VERY simply sanity check. And may give false positives.
 	 *
 	 * @param {webGlContext} webGl2Obj - Object to validate
-	 *
 	 * @returns {Boolean} TRUE if the object is a webGl2Context object
-	 *
 	 */
 	static isWebGl2(webGl2Obj) {
 		return webGl2Obj && typeof WebGL2RenderingContext !== 'undefined' &&
@@ -148,30 +97,16 @@ class UtilsCore {
 	}
 
 	/**
-	 * @name isWebGlSupported
-	 * @function
-	 * @static
-	 * @memberOf UtilsCore
-	 *
 	 * @desc Return TRUE, if browser supports webgl
-	 *
 	 * @returns {Boolean} TRUE if browser supports webgl
-	 *
 	 */
 	static isWebGlSupported() {
 		return _isWebGlSupported;
 	}
 
 	/**
-	 * @name isWebGlSupported2
-	 * @function
-	 * @static
-	 * @memberOf UtilsCore
-	 *
 	 * @desc Return TRUE, if browser supports webgl2
-	 *
 	 * @returns {Boolean} TRUE if browser supports webgl2
-	 *
 	 */
 	static isWebGl2Supported() {
 		return _isWebGl2Supported;
@@ -191,54 +126,40 @@ class UtilsCore {
 	}
 
 	/**
-	 * @name initWebGl
-	 * @function
-	 * @static
-	 * @memberOf UtilsCore
-	 *
 	 * @desc Initiate and returns a webGl, from a canvas object
 	 * Returns only if webGl is supported by browser.
 	 *
-	 * @param {CanvasDOMObject} canvasObj - Object to validate
-	 *
-	 * @returns {CanvasDOMObject} CanvasDOMObject if supported by browser, else null
-	 *
+	 * @param {HTMLCanvasElement} canvas - Object to validate
+	 * @returns {WebGLRenderingContext} if supported by browser, else null
 	 */
-	static initWebGl(canvasObj) {
+	static initWebGl(canvas) {
+		let webGl = null;
 
 		// First time setup, does the browser support check memorizer
-		if (typeof _isCanvasSupported !== 'undefined' || canvasObj === null) {
+		if (typeof _isCanvasSupported !== 'undefined' || canvas === null) {
 			if (!_isCanvasSupported) {
 				return null;
 			}
 		}
 
 		// Fail fast for invalid canvas object
-		if (!UtilsCore.isCanvas(canvasObj)) {
-			throw new Error('Invalid canvas object - ' + canvasObj);
+		if (!UtilsCore.isCanvas(canvas)) {
+			throw new Error('Invalid canvas object - ' + canvas);
 		}
 
 		// Create a new canvas DOM
-		let webGl = null;
 		const defaultOptions = UtilsCore.initWebGlDefaultOptions();
 		try {
-			webGl = canvasObj.getContext('experimental-webgl', defaultOptions);
+			webGl = canvas.getContext('experimental-webgl', defaultOptions);
 		} catch (e) {
 			// 'experimental-webgl' is not a supported context type
 			// fallback to 'webgl2' or 'webgl' below
 		}
 
-
-		// native webgl
-		try {
-			webGl = require('gl')(2, 2);
-			webGl.getExtension('STACKGL_resize_drawingbuffer');
-		} catch (e) {}
-
 		if (webGl === null) {
 			webGl = (
-				canvasObj.getContext('webgl2', defaultOptions) ||
-				canvasObj.getContext('webgl', defaultOptions)
+				canvas.getContext('webgl2', defaultOptions) ||
+				canvas.getContext('webgl', defaultOptions)
 			);
 		}
 
@@ -249,46 +170,35 @@ class UtilsCore {
 			webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
 		}
 
-		// Returns the canvas
 		return webGl;
 	}
 
 	/**
-	 * @name initWebGl2
-	 * @function
-	 * @static
-	 * @memberOf UtilsCore
-	 *
 	 * @desc Initiate and returns a webGl, from a canvas object
 	 * Returns only if webGl is supported by browser.
 	 *
-	 * @param {CanvasDOMObject} canvasObj - Object to validate
-	 *
-	 * @returns {CanvasDOMObject} CanvasDOMObject if supported by browser, else null
-	 *
+	 * @param {HTMLCanvasElement} canvas - Object to validate
+	 * @returns {WebGL2RenderingContext} HTMLCanvasElement if supported by browser, else null
 	 */
-	static initWebGl2(canvasObj) {
+	static initWebGl2(canvas) {
 
 		// First time setup, does the browser support check memorizer
-		if (typeof _isCanvasSupported !== 'undefined' || canvasObj === null) {
+		if (typeof _isCanvasSupported !== 'undefined' || canvas === null) {
 			if (!_isCanvasSupported) {
 				return null;
 			}
 		}
 
 		// Fail fast for invalid canvas object
-		if (!UtilsCore.isCanvas(canvasObj)) {
-			throw new Error('Invalid canvas object - ' + canvasObj);
+		if (!UtilsCore.isCanvas(canvas)) {
+			throw new Error('Invalid canvas object - ' + canvas);
 		}
 
 		// Create a new canvas DOM
-		return canvasObj.getContext('webgl2', UtilsCore.initWebGlDefaultOptions());
+		return canvas.getContext('webgl2', UtilsCore.initWebGlDefaultOptions());
 	}
 
 	/**
-	 * @function
-	 * @static
-	 * @memberOf UtilsCore
 	 * @param {number[]} output
 	 * @throws if not correctly defined
 	 */
@@ -301,13 +211,6 @@ class UtilsCore {
 		}
 	}
 }
-
-//-----------------------------------------------------------------------------
-//
-//  Canvas & Webgl validation and support constants
-//
-//-----------------------------------------------------------------------------
-
 
 let _isNativeCanvasSupport = false;
 try {

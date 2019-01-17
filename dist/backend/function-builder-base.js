@@ -4,18 +4,18 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-module.exports = function () {
+var FunctionBuilderBase = function () {
 
 	/**
   * @constructor FunctionBuilderBase
   *
   * @desc This handles all the raw state, converted state, etc. of a single function.
   * [INTERNAL] A collection of functionNodes.
-  * 
+  *
   * @prop {Object} nodeMap - Object map, where nodeMap[function] = new FunctionNode;
   * @prop {Object} gpu - The current gpu instance bound to this builder
   * @prop {Object} rootKernel - The root kernel object, contains the paramNames, dimensions etc.
-  * 
+  *
   */
 	function FunctionBuilderBase(gpu) {
 		_classCallCheck(this, FunctionBuilderBase);
@@ -349,3 +349,5 @@ module.exports = function () {
 
 	return FunctionBuilderBase;
 }();
+
+module.exports = FunctionBuilderBase;

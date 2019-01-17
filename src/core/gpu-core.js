@@ -1,9 +1,7 @@
 'use strict';
 
-const UtilsCore = require("./utils-core");
-
 /**
- * This is a minimalistic version of GPU.js used
+ * @desc This is a minimalistic version of GPU.js used
  * to run precompiled GPU.JS code.
  *
  * This intentionally excludes the JS AST compiler : which is 400kb alone/
@@ -13,12 +11,7 @@ const UtilsCore = require("./utils-core");
 class GPUCore {
 
 	/**
-	 * @name validateKernelObj
-	 * @function
-	 * @static
-	 * @memberOf GPUCore
-	 *
-	 * @description Validates the KernelObj to comply with the defined format
+	 * @des Validates the KernelObj to comply with the defined format
 	 * Note that this does only a limited sanity check, and does not
 	 * guarantee a full working validation.
 	 *
@@ -61,12 +54,7 @@ class GPUCore {
 	}
 
 	/**
-	 * @name loadKernelObj
-	 * @function
-	 * @static
-	 * @memberOf GPUCore
-	 *
-	 * @description Loads the precompiled kernel object. For GPUCore this is the ONLY way to create the kernel.
+	 * @desc Loads the precompiled kernel object. For GPUCore this is the ONLY way to create the kernel.
 	 * To generate the kernelObj use <Kernel.exportKernelObj>
 	 *
 	 * Note that this function calls <validateKernelObj> internally, and throws an exception if it fails.
@@ -78,14 +66,11 @@ class GPUCore {
 	 * @param {Object} inOpt - [Optional] the option overrides to use
 	 *
 	 * @returns {Function} The kernel function
-	 *
 	 */
 	static loadKernelObj(kernelObj, inOpt) {
 
 		// Validates the kernelObj, throws an exception if it fails
 		kernelObj = validateKernelObj(kernelObj);
-
-
 	}
 }
 

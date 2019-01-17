@@ -27,6 +27,7 @@ gulp.task('build', gulp.series('babelify', function() {
 
 	const gpu = browserify('./dist/index.js')
 		.ignore('gl')
+		.ignore('gl/webgl')
 		.ignore('canvas')
 		.bundle()
 		.pipe(source('gpu.js'))
@@ -107,12 +108,12 @@ gulp.task('beautify', function() {
 });
 
 gulp.task('injectCSS', function() {
-	let signatureColor = '#ff75cf';
-	let linkColor = '#4c7fbd';
-	let themeColor = '#186384';
+	const signatureColor = '#ff75cf';
+	const linkColor = '#4c7fbd';
+	const themeColor = '#186384';
 
 	// !important is used because the original rule is using it.
-	let cssRules = `
+	const cssRules = `
 	.signature, a {
 		color: ${signatureColor};
 	}
@@ -130,7 +131,7 @@ gulp.task('injectCSS', function() {
 	}
 	`;
 	fs.appendFile('./doc/styles/jsdoc.css', cssRules, (err)=>{
-		if(err){
+		if (err) {
 			throw new Error(err);
 		}
 

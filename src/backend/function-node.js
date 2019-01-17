@@ -3,10 +3,9 @@
 const utils = require('../core/utils');
 const acorn = require('acorn');
 
-class FunctionNodeBase {
+class FunctionNode {
 
 	/**
-	 * @constructor FunctionNodeBase
 	 *
 	 * @desc Represents a single function, inside JS, webGL, or openGL.
 	 *
@@ -21,6 +20,7 @@ class FunctionNodeBase {
 	 * @prop {String} webglFunctionString - webgl converted function string
 	 * @prop {String} openglFunctionString - opengl converted function string
 	 * @prop {String[]} calledFunctions - List of all the functions called
+	 *
 	 * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
 	 * @param {Function|String} jsFunction - JS Function to do conversion
 	 * @param {Object} options
@@ -64,9 +64,6 @@ class FunctionNodeBase {
 			}
 			if (options.hasOwnProperty('constantTypes')) {
 				this.constantTypes = options.constantTypes;
-				if (!this.constantTypes) {
-					debugger;
-				}
 			} else {
 				this.constantTypes = {};
 			}
@@ -193,38 +190,8 @@ class FunctionNodeBase {
 	get state() {
 		return this.states[this.states.length - 1];
 	}
-	/**
-	 *
-	 * Core Functions
-	 *
-	 */
 
 	/**
-	 * @memberOf FunctionNodeBase#
-	 * @function
-	 * @name getJSFunction
-	 *
-	 * @desc Gets and return the stored JS Function.
-	 * Note: that this internally eval the function, if only the string was provided on construction
-	 *
-	 * @returns {Function} The function object
-	 *
-	 */
-	getJsFunction() {
-		if (this.jsFunction) {
-			return this.jsFunction;
-		}
-
-		if (this.jsFunctionString) {
-			this.jsFunction = eval(this.jsFunctionString);
-			return this.jsFunction;
-		}
-
-		throw 'Missing jsFunction, and jsFunctionString parameter';
-	}
-
-	/**
-	 * @memberOf FunctionNodeBase#
 	 * @function
 	 * @name astMemberExpressionUnroll
 	 * @desc Parses the abstract syntax tree for binary expression.
@@ -273,18 +240,12 @@ class FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf FunctionNodeBase#
-	 * @function
-	 * @name getJsAST
-	 *
 	 * @desc Parses the class function JS, and returns its Abstract Syntax Tree object.
-	 *
 	 * This is used internally to convert to shader code
 	 *
 	 * @param {Object} [inParser] - Parser to use, assumes in scope 'parser' if null or undefined
 	 *
 	 * @returns {Object} The function AST Object, note that result is cached under this.jsFunctionAST;
-	 *
 	 */
 	getJsAST(inParser) {
 		if (this.jsFunctionAST) {
@@ -312,14 +273,9 @@ class FunctionNodeBase {
 
 
 	/**
-	 * @memberOf FunctionNodeBase#
-	 * @function
-	 * @name getFunctionString
-	 *
 	 * @desc Returns the converted webgl shader function equivalent of the JS function
 	 *
 	 * @returns {String} webgl function string, result is cached under this.webGlFunctionString
-	 *
 	 */
 	getFunctionString() {
 		this.generate();
@@ -327,30 +283,19 @@ class FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf FunctionNodeBase#
-	 * @function
-	 * @name setFunctionString
-	 *
 	 * @desc Set the functionString value, overwriting it
-	 *
 	 * @param {String} functionString - Shader code string, representing the function
-	 *
 	 */
 	setFunctionString(functionString) {
 		this.functionString = functionString;
 	}
 
 	/**
-	 * @memberOf FunctionNodeBase#
-	 * @function
-	 * @name getParamType
-	 *
 	 * @desc Return the type of parameter sent to subKernel/Kernel.
 	 *
 	 * @param {String} paramName - Name of the parameter
 	 *
 	 * @returns {String} Type of the parameter
-	 *
 	 */
 	getParamType(paramName) {
 		const paramIndex = this.paramNames.indexOf(paramName);
@@ -385,10 +330,6 @@ class FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf FunctionNodeBase#
-	 * @function
-	 * @name getUserParamName
-	 *
 	 * @desc Return the name of the *user parameter*(subKernel parameter) corresponding
 	 * to the parameter supplied to the kernel
 	 *
@@ -413,14 +354,10 @@ class FunctionNodeBase {
 	}
 
 	generate(options) {
-		throw new Error('generate not defined on BaseFunctionNode');
+		throw new Error('"generate" not defined on FunctionNode');
 	}
 
 	/**
-	 * @memberOf FunctionNodeBase#
-	 * @function
-	 * @name astGeneric
-	 *
 	 * @desc Parses the abstract syntax tree for generically to its respective function
 	 *
 	 * @param {Object} ast - the AST object to parse
@@ -622,4 +559,4 @@ class FunctionNodeBase {
 	}
 }
 
-module.exports = FunctionNodeBase;
+module.exports = FunctionNode;
