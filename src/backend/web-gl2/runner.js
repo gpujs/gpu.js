@@ -31,6 +31,12 @@ class WebGL2Runner extends GLRunner {
 		this.kernel = null;
 	}
 
+	getIsIntegerDivisionAccurate() {
+		if (!this._webGl) throw new Error('webGl not initialized');
+		this._webGl.getExtension('EXT_color_buffer_float');
+		return super.getIsIntegerDivisionAccurate();
+	}
+
 	/**
 	 * @desc Return the current mode in which gpu.js is executing.
 	 * @returns {String} The current mode; "gpu".

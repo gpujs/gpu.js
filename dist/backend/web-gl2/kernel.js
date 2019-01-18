@@ -38,11 +38,12 @@ var WebGL2Kernel = function (_WebGLKernel) {
 	}, {
 		key: 'validateOptions',
 		value: function validateOptions() {
-			this.texSize = utils.dimToTexSize({
-				floatTextures: this.floatTextures,
-				floatOutput: this.floatOutput
-			}, this.output, true);
 			if (this.skipValidateOptions) {
+				this._webGl.getExtension('EXT_color_buffer_float');
+				this.texSize = utils.dimToTexSize({
+					floatTextures: this.floatTextures,
+					floatOutput: this.floatOutput
+				}, this.output, true);
 				return;
 			}
 

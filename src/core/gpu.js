@@ -118,6 +118,7 @@ class GPU extends GPUCore {
 		}, settings || {});
 
 		const kernel = this._runner.buildKernel(fn, mergedSettings);
+		require('fs').writeFileSync('out.js', kernel.toString());
 
 		//if canvas didn't come from this, propagate from kernel
 		if (!this._canvas) {
@@ -299,14 +300,34 @@ class GPU extends GPUCore {
 
 	/**
 	 * @desc Return TRUE, if browser supports WebGl AND Canvas
-	 * Note: This function can also be called directly `GPU.isWebGlSupported()`
 	 *
 	 * @returns {Boolean} TRUE if browser supports webGl
 	 */
-	isWebGlSupported() {
-		return utils.isWebGlSupported();
+	static isWebGlSupported() {
+		return require('../backend/web-gl/runner').isCompatible;
 	}
 
+	/**
+	 * @desc Return TRUE, if browser supports WebGl2 AND Canvas
+	 *
+	 * @returns {Boolean} TRUE if browser supports webGl
+	 */
+	static isWebGl2Supported() {
+		return require('../backend/web-gl2/runner').isCompatible;
+	}
+
+	/**
+	 * @desc Return TRUE, if browser supports WebGl2 AND Canvas
+	 *
+	 * @returns {Boolean} TRUE if browser supports webGl
+	 */
+	static isHeadlessGlSupported() {
+		return require('../backend/headless-gl/runner').isCompatible;
+	}
+
+	static isCanvasSupported() {
+		return utils.isCanvasSupported();
+	}
 	/**
 	 * @desc Return the canvas object bound to this gpu instance.
 	 * @returns {Object} Canvas object if present

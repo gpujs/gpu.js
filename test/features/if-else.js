@@ -7,11 +7,11 @@ require('qunit-assert-close');
       mode: mode
     });
     var f = gpu.createKernel(function() {
-      var result = 0.0;
+      var result = 0;
       if(true) {
-        result = 4.0;
+        result = 4;
       } else {
-        result = 2.0;
+        result = 2;
       }
       return result;
     }, {
@@ -31,13 +31,23 @@ require('qunit-assert-close');
     booleanBranch('gpu');
   });
 
-  QUnit.test( 'booleanBranch (webgl)', function() {
-    booleanBranch('webgl');
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('booleanBranch (webgl)', function () {
+      booleanBranch('webgl');
+    });
+  }
 
-  QUnit.test( 'booleanBranch (webgl2)', function() {
-    booleanBranch('webgl2');
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('booleanBranch (webgl2)', function () {
+      booleanBranch('webgl2');
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('booleanBranch (headlessgl)', function () {
+      booleanBranch('headlessgl');
+    });
+  }
 
   QUnit.test( 'booleanBranch (CPU)', function() {
     booleanBranch('cpu');
@@ -69,13 +79,23 @@ require('qunit-assert-close');
     ifElse('gpu');
   });
 
-  QUnit.test( 'ifElse (webgl)', function() {
-    ifElse('webgl');
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('ifElse (webgl)', function () {
+      ifElse('webgl');
+    });
+  }
 
-  QUnit.test( 'ifElse (webgl2)', function() {
-    ifElse('webgl2');
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('ifElse (webgl2)', function () {
+      ifElse('webgl2');
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('ifElse (headlessgl)', function () {
+      ifElse('headlessgl');
+    });
+  }
 
   QUnit.test( 'ifElse (cpu)', function() {
     ifElse('cpu');

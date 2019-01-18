@@ -22,13 +22,23 @@ require('qunit-assert-close');
     functionReturn("gpu");
   });
 
-  QUnit.test( "functionReturn (webgl)", function() {
-    functionReturn("webgl");
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test("functionReturn (webgl)", function () {
+      functionReturn("webgl");
+    });
+  }
 
-  QUnit.test( "functionReturn (webgl2)", function() {
-    functionReturn("webgl2");
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test("functionReturn (webgl2)", function () {
+      functionReturn("webgl2");
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test("functionReturn (headlessgl)", function () {
+      functionReturn("headlessgl");
+    });
+  }
 
   QUnit.test( "functionReturn (CPU)", function() {
     functionReturn("cpu");

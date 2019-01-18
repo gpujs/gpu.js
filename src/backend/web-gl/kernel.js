@@ -83,6 +83,10 @@ class WebGLKernel extends Kernel {
 	 */
 	validateOptions() {
 		if (this.skipValidateOptions) {
+			this.texSize = utils.dimToTexSize({
+				floatTextures: this.floatTextures,
+				floatOutput: this.floatOutput
+			}, this.output, true);
 			return;
 		}
 

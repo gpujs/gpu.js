@@ -25,28 +25,33 @@ var GPU = require('../../src/index');
   }
 
   QUnit.test( 'textureConstantTest (auto)', function() {
-    var mode = null;
-    textureConstantTest(mode);
+    textureConstantTest(null);
   });
 
   QUnit.test( 'textureConstantTest (gpu)', function() {
-    var mode = 'gpu';
-    textureConstantTest(mode);
+    textureConstantTest('gpu');
   });
 
-  QUnit.test( 'textureConstantTest (webgl)', function() {
-    var mode = 'webgl';
-    textureConstantTest(mode);
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('textureConstantTest (webgl)', function () {
+      textureConstantTest('webgl');
+    });
+  }
 
-  QUnit.test( 'textureConstantTest (webgl2)', function() {
-    var mode = 'webgl2';
-    textureConstantTest(mode);
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('textureConstantTest (webgl2)', function () {
+      textureConstantTest('webgl2');
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('textureConstantTest (headlessgl)', function () {
+      textureConstantTest('headlessgl');
+    });
+  }
 
   QUnit.test( 'textureConstantTest (cpu)', function() {
-    var mode = 'cpu';
-    textureConstantTest(mode);
+    textureConstantTest('cpu');
   });
 })();
 
@@ -75,28 +80,34 @@ var GPU = require('../../src/index');
   }
 
   QUnit.test( 'texture2DConstantTest (auto)', function() {
-    var mode = null;
-    texture2DConstantTest(mode);
+    texture2DConstantTest(null);
   });
 
   QUnit.test( 'texture2DConstantTest (gpu)', function() {
-    var mode = 'gpu';
-    texture2DConstantTest(mode);
+    texture2DConstantTest('gpu');
   });
 
-  QUnit.test( 'texture2DConstantTest (webgl)', function() {
-    var mode = 'webgl';
-    texture2DConstantTest(mode);
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('texture2DConstantTest (webgl)', function () {
+      var mode = 'webgl';
+      texture2DConstantTest(mode);
+    });
+  }
 
-  QUnit.test( 'texture2DConstantTest (webgl2)', function() {
-    var mode = 'webgl2';
-    texture2DConstantTest(mode);
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('texture2DConstantTest (webgl2)', function () {
+      texture2DConstantTest('webgl2');
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('texture2DConstantTest (headlessgl)', function () {
+      texture2DConstantTest('headlessgl');
+    });
+  }
 
   QUnit.test( 'texture2DConstantTest (cpu)', function() {
-    var mode = 'cpu';
-    texture2DConstantTest(mode);
+    texture2DConstantTest('cpu');
   });
 })();
 
@@ -125,27 +136,32 @@ var GPU = require('../../src/index');
   }
 
   QUnit.test( 'texture3DConstantTest (auto)', function() {
-    var mode = null;
-    texture3DConstantTest(mode);
+    texture3DConstantTest(null);
   });
 
   QUnit.test( 'texture3DConstantTest (gpu)', function() {
-    var mode = 'gpu';
-    texture3DConstantTest(mode);
+    texture3DConstantTest('cpu');
   });
 
-  QUnit.test( 'texture3DConstantTest (webgl)', function() {
-    var mode = 'webgl';
-    texture3DConstantTest(mode);
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('texture3DConstantTest (webgl)', function () {
+      texture3DConstantTest('webgl');
+    });
+  }
 
-    QUnit.test( 'texture3DConstantTest (webgl2)', function() {
-    var mode = 'webgl2';
-    texture3DConstantTest(mode);
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('texture3DConstantTest (webgl2)', function () {
+      texture3DConstantTest('webgl2');
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('texture3DConstantTest (headlessgl)', function () {
+      texture3DConstantTest('headlessgl');
+    });
+  }
 
   QUnit.test( 'texture3DConstantTest (cpu)', function() {
-    var mode = 'cpu';
-    texture3DConstantTest(mode);
+    texture3DConstantTest('cpu');
   });
 })();

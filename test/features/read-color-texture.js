@@ -152,29 +152,34 @@ var GPU = require('../../src/index');
   }
 
   QUnit.test( 'colorSyntaxTest (auto)', function(assert) {
-    var mode = null;
-    colorSyntaxTest(mode);
+    colorSyntaxTest(null);
   });
 
   QUnit.test( 'colorSyntaxTest (gpu)', function(assert) {
-    var mode = 'gpu';
-    colorSyntaxTest(mode);
+    colorSyntaxTest('gpu');
   });
 
-  QUnit.test( 'colorSyntaxTest (webgl)', function(assert) {
-    var mode = 'webgl';
-    colorSyntaxTest(mode);
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('colorSyntaxTest (webgl)', function (assert) {
+      colorSyntaxTest('webgl');
+    });
+  }
 
-  QUnit.test( 'colorSyntaxTest (webgl2)', function(assert) {
-    var mode = 'webgl2';
-    colorSyntaxTest(mode);
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('colorSyntaxTest (webgl2)', function (assert) {
+      colorSyntaxTest('webgl2');
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('colorSyntaxTest (headlessgl)', function (assert) {
+      colorSyntaxTest('headlessgl');
+    });
+  }
 
   QUnit.test( 'colorSyntaxTest (cpu) throws', function(assert) {
-    var mode = 'cpu';
     assert.throws(function() {
-      colorSyntaxTest(mode);
+      colorSyntaxTest('cpu');
     });
   });
 })();

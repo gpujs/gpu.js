@@ -11,7 +11,9 @@ function removeFnNoise(fn) {
 }
 
 function removeNoise(str) {
-	return str.replace(/[_]typeof/g, 'typeof');
+	return str
+		.replace(/^[A-Za-z]+/, 'function')
+		.replace(/[_]typeof/g, 'typeof');
 }
 
 module.exports = function(cpuKernel, name) {

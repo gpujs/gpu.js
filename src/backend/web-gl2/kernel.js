@@ -23,11 +23,12 @@ class WebGL2Kernel extends WebGLKernel {
 	 * graphical output.
 	 */
 	validateOptions() {
-		this.texSize = utils.dimToTexSize({
-			floatTextures: this.floatTextures,
-			floatOutput: this.floatOutput
-		}, this.output, true);
 		if (this.skipValidateOptions) {
+			this._webGl.getExtension('EXT_color_buffer_float');
+			this.texSize = utils.dimToTexSize({
+				floatTextures: this.floatTextures,
+				floatOutput: this.floatOutput
+			}, this.output, true);
 			return;
 		}
 

@@ -36,13 +36,23 @@ var GPU = require('../../src/index');
     getCanvasTest('gpu');
   });
 
-  QUnit.test( 'getCanvas (webgl)', function() {
-    getCanvasTest('webgl');
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('getCanvas (webgl)', function () {
+      getCanvasTest('webgl');
+    });
+  }
 
-  QUnit.test( 'getCanvas (webgl2)', function() {
-    getCanvasTest('webgl2');
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('getCanvas (webgl2)', function () {
+      getCanvasTest('webgl2');
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('getCanvas (headlessgl)', function () {
+      getCanvasTest('headlessgl');
+    });
+  }
 
   QUnit.test( 'getCanvas (CPU)', function() {
     getCanvasTest('cpu');

@@ -30,17 +30,29 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  QUnit.test( "floatOutput (webgl)", function() {
-    var result = floatOutputKernel([lst.length], 'webgl')(lst);
-    QUnit.assert.deepEqual(result, lst);
-    gpu.destroy();
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test("floatOutput (webgl)", function () {
+      var result = floatOutputKernel([lst.length], 'webgl')(lst);
+      QUnit.assert.deepEqual(result, lst);
+      gpu.destroy();
+    });
+  }
 
-  QUnit.test( "floatOutput (webgl2)", function() {
-    var result = floatOutputKernel([lst.length], 'webgl2')(lst);
-    QUnit.assert.deepEqual(result, lst);
-    gpu.destroy();
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test("floatOutput (webgl2)", function () {
+      var result = floatOutputKernel([lst.length], 'webgl2')(lst);
+      QUnit.assert.deepEqual(result, lst);
+      gpu.destroy();
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test("floatOutput (headlessgl)", function () {
+      var result = floatOutputKernel([lst.length], 'headlessgl')(lst);
+      QUnit.assert.deepEqual(result, lst);
+      gpu.destroy();
+    });
+  }
 })();
 
 (function() {
@@ -73,15 +85,27 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  QUnit.test( "floatOutput (webgl)", function() {
-    var result = floatOutputKernel([lst.length], 'webgl')(lst);
-    QUnit.assert.deepEqual(result, lst);
-    gpu.destroy();
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test("floatOutput (webgl)", function () {
+      var result = floatOutputKernel([lst.length], 'webgl')(lst);
+      QUnit.assert.deepEqual(result, lst);
+      gpu.destroy();
+    });
+  }
 
-  QUnit.test( "floatOutput (webgl2)", function() {
-    var result = floatOutputKernel([lst.length], 'webgl2')(lst);
-    QUnit.assert.deepEqual(result, lst);
-    gpu.destroy();
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test("floatOutput (webgl2)", function () {
+      var result = floatOutputKernel([lst.length], 'webgl2')(lst);
+      QUnit.assert.deepEqual(result, lst);
+      gpu.destroy();
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test("floatOutput (webgl2)", function () {
+      var result = floatOutputKernel([lst.length], 'headlessgl')(lst);
+      QUnit.assert.deepEqual(result, lst);
+      gpu.destroy();
+    });
+  }
 })();

@@ -26,25 +26,38 @@ var GPU = require('../../src/index');
   });
 
   QUnit.test( "combineKernels (gpu)", function() {
-    var superKernel = combineKernels('webgl');
+    var superKernel = combineKernels('gpu');
     var result = QUnit.extend([], superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]));
     QUnit.assert.deepEqual(result, [2, 8, 18, 32, 50]);
     gpu.destroy();
   });
 
-  QUnit.test( "combineKernels (webgl)", function() {
-    var superKernel = combineKernels('webgl');
-    var result = QUnit.extend([], superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]));
-    QUnit.assert.deepEqual(result, [2, 8, 18, 32, 50]);
-    gpu.destroy();
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test("combineKernels (webgl)", function () {
+      var superKernel = combineKernels('webgl');
+      var result = QUnit.extend([], superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]));
+      QUnit.assert.deepEqual(result, [2, 8, 18, 32, 50]);
+      gpu.destroy();
+    });
+  }
 
-  QUnit.test( "combineKernels (webgl2)", function() {
-    var superKernel = combineKernels('webgl2');
-    var result = QUnit.extend([], superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]));
-    QUnit.assert.deepEqual(result, [2, 8, 18, 32, 50]);
-    gpu.destroy();
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test("combineKernels (webgl2)", function () {
+      var superKernel = combineKernels('webgl2');
+      var result = QUnit.extend([], superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]));
+      QUnit.assert.deepEqual(result, [2, 8, 18, 32, 50]);
+      gpu.destroy();
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test("combineKernels (headlessgl)", function () {
+      var superKernel = combineKernels('headlessgl');
+      var result = QUnit.extend([], superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]));
+      QUnit.assert.deepEqual(result, [2, 8, 18, 32, 50]);
+      gpu.destroy();
+    });
+  }
 
   QUnit.test( "combineKernels (cpu)", function() {
     var superKernel = combineKernels('cpu');

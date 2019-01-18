@@ -38,14 +38,13 @@
     "jsdoc": "^3.5.0",
     "merge-stream": "^1.0.1",
     "mocha": "^5.2.0",
-    "node-qunit": "^1.0.0",
     "qunit-assert-close": "^2.1.2",
     "qunitjs": "^2.3.2",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^2.0.0"
   },
   "scripts": {
-    "test": "mocha ./test/index",
+    "test": "qunit",
     "setup": "npm i -g gulp-cli",
     "build-docs": "./node_modules/.bin/jsdoc -c jsdoc.json src -r -d doc --debug && gulp injectCSS",
     "make": "gulp build && gulp beautify && gulp minify"

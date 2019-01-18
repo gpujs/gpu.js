@@ -4,8 +4,7 @@ class GLRunner extends Runner {
 	getFeatures() {
 		return Object.freeze({
 			isFloatRead: this.getIsFloatRead(),
-			isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
-			isTextureFloat: this.getIsTextureFloat()
+			isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate()
 		});
 	}
 
@@ -17,15 +16,16 @@ class GLRunner extends Runner {
 			webGl: this._webGl,
 			canvas: this._canvas,
 			skipValidateOptions: true,
-			output: [1],
+			functionBuilder: this.functionBuilder,
+			output: [2],
 			floatTextures: true,
 			floatOutput: true,
-			floatOutputForce: true,
-			functionBuilder: this.functionBuilder
+			floatOutputForce: true
 		});
 		const result = kernel.run();
 		this._checkInherits(kernel);
 		kernel.destroy(true);
+		debugger;
 		return result[0] === 1;
 	}
 
@@ -46,11 +46,6 @@ class GLRunner extends Runner {
 		// have we not got whole numbers for 6/3 or 6030401/3991
 		// add more here if others see this problem
 		return result[0] === 2 && result[1] === 1511;
-	}
-
-	getIsTextureFloat() {
-		if (!this._webGl) throw new Error('webGl not initialized');
-		return this._webGl.getExtension('OES_texture_float');
 	}
 
 	_checkInherits(kernel) {

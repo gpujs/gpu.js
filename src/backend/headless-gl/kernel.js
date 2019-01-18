@@ -1,11 +1,13 @@
 'use strict';
 
 const WebGLKernel = require('../web-gl/kernel');
+const canvas = {};
 
 class HeadlessGLKernel extends WebGLKernel {
 	constructor(fnString, settings) {
-		super(fnString, settings);
-		this._canvas = {};
+		super(fnString, Object.assign({
+			canvas
+		}, settings));
 	}
 	initWebGl() {
 		const webGl = require('gl')(2, 2, {

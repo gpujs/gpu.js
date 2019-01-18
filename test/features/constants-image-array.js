@@ -41,9 +41,10 @@ var GPU = require('../../src/index');
     }
   }
 
+  if (typeof Image === 'undefined') return;
+
   QUnit.test( 'imageArrayConstantTest (auto)', function(assert) {
-    var mode = null;
-    imageArrayConstantFixture(mode, assert, function(tryConst) {
+    imageArrayConstantFixture(null, assert, function(tryConst) {
       var result = tryConst();
       var test = result[0][0][0] > 0;
       assert.ok(test, 'image array constant passed test');
@@ -51,35 +52,35 @@ var GPU = require('../../src/index');
   });
 
   QUnit.test( 'imageArrayConstantTest (gpu)', function(assert) {
-    var mode = 'gpu';
-    imageArrayConstantFixture(mode, assert, function(tryConst) {
+    imageArrayConstantFixture('gpu', assert, function(tryConst) {
       var result = tryConst();
       var test = result[0][0][0] > 0;
       assert.ok(test, 'image array constant passed test');
     });
   });
 
-  QUnit.test( 'imageArrayConstantTest (webgl)', function(assert) {
-    var mode = 'webgl';
-    imageArrayConstantFixture(mode, assert, function(tryConst) {
-      assert.throws(function() {
-        tryConst();
-      }, 'imageArray are not compatible with webgl');
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('imageArrayConstantTest (webgl)', function (assert) {
+      imageArrayConstantFixture('webgl', assert, function (tryConst) {
+        assert.throws(function () {
+          tryConst();
+        }, 'imageArray are not compatible with webgl');
+      });
     });
-  });
+  }
 
-  QUnit.test( 'imageArrayConstantTest (webgl2)', function(assert) {
-    var mode = 'webgl2';
-    imageArrayConstantFixture(mode, assert, function(tryConst) {
-      var result = tryConst();
-      var test = result[0][0][0] > 0;
-      assert.ok(test, 'image array constant passed test');
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('imageArrayConstantTest (webgl2)', function (assert) {
+      imageArrayConstantFixture('webgl2', assert, function (tryConst) {
+        var result = tryConst();
+        var test = result[0][0][0] > 0;
+        assert.ok(test, 'image array constant passed test');
+      });
     });
-  });
+  }
 
   QUnit.test( 'imageArrayConstantTest (cpu)', function(assert) {
-    var mode = 'cpu';
-    imageArrayConstantFixture(mode, assert, function(tryConst) {
+    imageArrayConstantFixture('cpu', assert, function(tryConst) {
       var result = tryConst();
       var test = result[0][0][0] > 0;
       assert.ok(test, 'image array constant passed test');

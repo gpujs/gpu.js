@@ -13,7 +13,7 @@ describe('Test Node GPU', () => {
 
       const result = kernel();
 
-      expect(gpu._runner.constructor).to.equal(GPU.WebGLRunner);
+      expect(gpu._runner.constructor).to.equal(GPU.HeadlessGLRunner);
       expect(result[0]).to.equal(1);
     });
 
@@ -26,7 +26,7 @@ describe('Test Node GPU', () => {
 
       const result = kernel();
 
-      expect(gpu._runner.constructor).to.equal(GPU.WebGLRunner);
+      expect(gpu._runner.constructor).to.equal(GPU.HeadlessGLRunner);
       expect(result).to.deep.equal(
         [
           Float32Array.from([0,0]),

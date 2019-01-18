@@ -42,13 +42,23 @@ require('qunit-assert-close');
     addCustomNativeFunctionDivide('gpu', glslDivide);
   });
 
-  QUnit.test('addCustomNativeFunctionDivide (webgl)', function() {
-    addCustomNativeFunctionDivide('webgl', glslDivide);
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('addCustomNativeFunctionDivide (webgl)', function () {
+      addCustomNativeFunctionDivide('webgl', glslDivide);
+    });
+  }
 
-  QUnit.test('addCustomNativeFunctionDivide (webgl2)', function() {
-    addCustomNativeFunctionDivide('webgl2', glslDivide);
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('addCustomNativeFunctionDivide (webgl2)', function () {
+      addCustomNativeFunctionDivide('webgl2', glslDivide);
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('addCustomNativeFunctionDivide (headlessgl)', function () {
+      addCustomNativeFunctionDivide('headlessgl', glslDivide);
+    });
+  }
 
   QUnit.test('addCustomNativeFunctionDivide (cpu)', function() {
     addCustomNativeFunctionDivide('cpu', jsDivide);
@@ -94,11 +104,21 @@ require('qunit-assert-close');
     addCustomNativeFunctionDivideFallback('gpu');
   });
 
-  QUnit.test('addCustomNativeFunctionDivideFallback (GPU only) (webgl)', function() {
-    addCustomNativeFunctionDivideFallback('webgl');
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('addCustomNativeFunctionDivideFallback (GPU only) (webgl)', function () {
+      addCustomNativeFunctionDivideFallback('webgl');
+    });
+  }
 
-  QUnit.test('addCustomNativeFunctionDivideFallback (GPU only) (webgl2)', function() {
-    addCustomNativeFunctionDivideFallback('webgl2');
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('addCustomNativeFunctionDivideFallback (GPU only) (webgl2)', function () {
+      addCustomNativeFunctionDivideFallback('webgl2');
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('addCustomNativeFunctionDivideFallback (GPU only) (headlessgl)', function () {
+      addCustomNativeFunctionDivideFallback('headlessgl');
+    });
+  }
 })();

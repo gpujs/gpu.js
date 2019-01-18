@@ -56,29 +56,47 @@ require('qunit-assert-close');
     });
   });
 
-  QUnit.test('toString sumAB (webgl)', function(assert) {
-    sumABTest(new GPU({ mode: 'webgl' }), function(newKernel, originalKernel) {
-      var canvas = originalKernel.getCanvas();
-      var webGl = originalKernel.getWebGl();
-      assert.ok(canvas);
-      assert.ok(webGl);
-      newKernel
-        .setWebGl(webGl)
-        .setCanvas(canvas);
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('toString sumAB (webgl)', function (assert) {
+      sumABTest(new GPU({mode: 'webgl'}), function (newKernel, originalKernel) {
+        var canvas = originalKernel.getCanvas();
+        var webGl = originalKernel.getWebGl();
+        assert.ok(canvas);
+        assert.ok(webGl);
+        newKernel
+          .setWebGl(webGl)
+          .setCanvas(canvas);
+      });
     });
-  });
+  }
 
-  QUnit.test('toString sumAB (webgl2)', function(assert) {
-    sumABTest(new GPU({ mode: 'webgl2' }), function(newKernel, originalKernel) {
-      var canvas = originalKernel.getCanvas();
-      var webGl = originalKernel.getWebGl();
-      assert.ok(canvas);
-      assert.ok(webGl);
-      newKernel
-        .setWebGl(webGl)
-        .setCanvas(canvas);
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('toString sumAB (webgl2)', function (assert) {
+      sumABTest(new GPU({mode: 'webgl2'}), function (newKernel, originalKernel) {
+        var canvas = originalKernel.getCanvas();
+        var webGl = originalKernel.getWebGl();
+        assert.ok(canvas);
+        assert.ok(webGl);
+        newKernel
+          .setWebGl(webGl)
+          .setCanvas(canvas);
+      });
     });
-  });
+  }
+
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('toString sumAB (headlessgl)', function (assert) {
+      sumABTest(new GPU({mode: 'headlessgl'}), function (newKernel, originalKernel) {
+        var canvas = originalKernel.getCanvas();
+        var webGl = originalKernel.getWebGl();
+        assert.ok(canvas);
+        assert.ok(webGl);
+        newKernel
+          .setWebGl(webGl)
+          .setCanvas(canvas);
+      });
+    });
+  }
 
   QUnit.test('toString sumAB (CPU)', function(assert) {
     sumABTest(new GPU({ mode: 'cpu' }), function(newKernel, originalKernel) {
@@ -114,8 +132,8 @@ require('qunit-assert-close');
     for(var i = 0; i < expected.length; ++i) {
       QUnit.assert.close(originalResult[i], expected[i], 0.1, 'Result index: ' + i);
     }
-    QUnit.assert.equal(textureKernel.getCanvas(), numberKernel.getCanvas());
-    QUnit.assert.equal(textureKernel.getWebGl(), numberKernel.getWebGl());
+    QUnit.assert.strictEqual(textureKernel.getCanvas(), numberKernel.getCanvas());
+    QUnit.assert.strictEqual(textureKernel.getWebGl(), numberKernel.getWebGl());
 
     var textureKernelString = textureKernel.toString();
     var numberKernelString = numberKernel.toString();
@@ -131,7 +149,6 @@ require('qunit-assert-close');
       .setTexture(GPU.Texture)
       .setWebGl(webGl)
       .setCanvas(canvas);
-
 
     var newKernelResult = newTextureKernel(a);
     QUnit.assert.equal(textureResult.constructor, GPU.Texture);
@@ -153,13 +170,23 @@ require('qunit-assert-close');
     toStringTextureTest('gpu');
   });
 
-  QUnit.test('toString Texture (webgl)', function() {
-    toStringTextureTest('webgl');
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('toString Texture (webgl)', function () {
+      toStringTextureTest('webgl');
+    });
+  }
 
-  QUnit.test('toString Texture (webgl2)', function() {
-    toStringTextureTest('webgl2');
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('toString Texture (webgl2)', function () {
+      toStringTextureTest('webgl2');
+    });
+  }
+
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('toString Texture (headlessgl)', function () {
+      toStringTextureTest('headlessgl');
+    });
+  }
 })();
 
 (function() {
@@ -216,13 +243,23 @@ require('qunit-assert-close');
     toStringInputTest('gpu');
   });
 
-  QUnit.test('toString Input (webgl)', function() {
-    toStringInputTest('webgl');
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('toString Input (webgl)', function () {
+      toStringInputTest('webgl');
+    });
+  }
 
-  QUnit.test('toString Input (webgl2)', function() {
-    toStringInputTest('webgl2');
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('toString Input (webgl2)', function () {
+      toStringInputTest('webgl2');
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('toString Input (headlessgl)', function () {
+      toStringInputTest('headlessgl');
+    });
+  }
 
   QUnit.test('toString Input (CPU)', function() {
     toStringInputTest('cpu');

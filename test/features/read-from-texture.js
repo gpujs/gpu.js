@@ -39,29 +39,48 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  QUnit.test('Read from Texture (webgl)', function() {
-    const gpu = new GPU({ mode: 'webgl'});
-    const A = [1, 2, 3, 4, 5];
-    const B = [1, 2, 3, 4, 5];
-    const kernels = readFromTextureKernels([A.length], gpu);
-    const result = kernels(A, B);
-    const textureResult = result.addResult;
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('Read from Texture (webgl)', function () {
+      const gpu = new GPU({mode: 'webgl'});
+      const A = [1, 2, 3, 4, 5];
+      const B = [1, 2, 3, 4, 5];
+      const kernels = readFromTextureKernels([A.length], gpu);
+      const result = kernels(A, B);
+      const textureResult = result.addResult;
 
-    QUnit.assert.deepEqual(QUnit.extend([], result.result), [2, 4, 6, 8, 10]);
-    QUnit.assert.deepEqual(QUnit.extend([], textureResult.toArray(gpu)), [2, 4, 6, 8, 10]);
-    gpu.destroy();
-  });
+      QUnit.assert.deepEqual(QUnit.extend([], result.result), [2, 4, 6, 8, 10]);
+      QUnit.assert.deepEqual(QUnit.extend([], textureResult.toArray(gpu)), [2, 4, 6, 8, 10]);
+      gpu.destroy();
+    });
+  }
 
-  QUnit.test('Read from Texture (webgl2)', function() {
-    const gpu = new GPU({ mode: 'webgl2'});
-    const A = [1, 2, 3, 4, 5];
-    const B = [1, 2, 3, 4, 5];
-    const kernels = readFromTextureKernels([A.length], gpu);
-    const result = kernels(A, B);
-    const textureResult = result.addResult;
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('Read from Texture (webgl2)', function () {
+      const gpu = new GPU({mode: 'webgl2'});
+      const A = [1, 2, 3, 4, 5];
+      const B = [1, 2, 3, 4, 5];
+      const kernels = readFromTextureKernels([A.length], gpu);
+      const result = kernels(A, B);
+      const textureResult = result.addResult;
 
-    QUnit.assert.deepEqual(QUnit.extend([], result.result), [2, 4, 6, 8, 10]);
-    QUnit.assert.deepEqual(QUnit.extend([], textureResult.toArray(gpu)), [2, 4, 6, 8, 10]);
-    gpu.destroy();
-  });
+      QUnit.assert.deepEqual(QUnit.extend([], result.result), [2, 4, 6, 8, 10]);
+      QUnit.assert.deepEqual(QUnit.extend([], textureResult.toArray(gpu)), [2, 4, 6, 8, 10]);
+      gpu.destroy();
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('Read from Texture (headlessgl)', function () {
+      const gpu = new GPU({mode: 'headlessgl'});
+      const A = [1, 2, 3, 4, 5];
+      const B = [1, 2, 3, 4, 5];
+      const kernels = readFromTextureKernels([A.length], gpu);
+      const result = kernels(A, B);
+      const textureResult = result.addResult;
+
+      QUnit.assert.deepEqual(QUnit.extend([], result.result), [2, 4, 6, 8, 10]);
+      QUnit.assert.deepEqual(QUnit.extend([], textureResult.toArray(gpu)), [2, 4, 6, 8, 10]);
+      gpu.destroy();
+    });
+  }
 })();

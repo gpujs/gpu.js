@@ -65,6 +65,21 @@ var WebGLRunner = function (_GLRunner) {
 		value: function getMode() {
 			return 'gpu';
 		}
+	}, {
+		key: 'getFeatures',
+		value: function getFeatures() {
+			return Object.freeze({
+				isFloatRead: this.getIsFloatRead(),
+				isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+				isTextureFloat: this.getIsTextureFloat()
+			});
+		}
+	}, {
+		key: 'getIsTextureFloat',
+		value: function getIsTextureFloat() {
+			if (!this._webGl) throw new Error('webGl not initialized');
+			return this._webGl.getExtension('OES_texture_float');
+		}
 	}]);
 
 	return WebGLRunner;

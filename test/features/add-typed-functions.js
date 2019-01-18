@@ -19,15 +19,27 @@ var GPU = require('../../src/index');
     gpu.destroy();
   }
 
-  QUnit.test( 'add typed functions - Array(2) - (auto)', function() {
+  QUnit.test('add typed functions - Array(2) - (auto)', function() {
     vec2Test(null);
   });
-  QUnit.test( 'add typed functions - Array(2) - (webgl2)', function() {
-    vec2Test('webgl2');
+  QUnit.test('add typed functions - Array(2) - (gpu)', function() {
+    vec2Test('gpu');
   });
-  QUnit.test( 'add typed functions - Array(2) - (webgl)', function() {
-    vec2Test('webgl');
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('add typed functions - Array(2) - (webgl)', function () {
+      vec2Test('webgl');
+    });
+  }
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('add typed functions - Array(2) - (webgl2)', function () {
+      vec2Test('webgl2');
+    });
+  }
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('add typed functions - Array(2) - (headlessgl)', function () {
+      vec2Test('headlessgl');
+    });
+  }
 })();
 
 (function() {
@@ -49,15 +61,27 @@ var GPU = require('../../src/index');
     gpu.destroy();
   }
 
-  QUnit.test( 'add typed functions - Array(3) - (auto)', function() {
+  QUnit.test('add typed functions - Array(3) - (auto)', function() {
     vec3Test(null);
   });
-  QUnit.test( 'add typed functions - Array(3) - (webgl2)', function() {
-    vec3Test('webgl2');
+  QUnit.test('add typed functions - Array(3) - (gpu)', function () {
+    vec3Test('gpu');
   });
-  QUnit.test( 'add typed functions - Array(3) - (webgl)', function() {
-    vec3Test('webgl');
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('add typed functions - Array(3) - (webgl)', function () {
+      vec3Test('webgl');
+    });
+  }
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('add typed functions - Array(3) - (webgl2)', function () {
+      vec3Test('webgl2');
+    });
+  }
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('add typed functions - Array(3) - (headlessgl)', function () {
+      vec3Test('headlessgl');
+    });
+  }
 })();
 
 (function() {
@@ -79,13 +103,25 @@ var GPU = require('../../src/index');
     gpu.destroy();
   }
 
-  QUnit.test( 'add typed functions - Array(4) - (auto)', function() {
+  QUnit.test('add typed functions - Array(4) - (auto)', function() {
     vec4Test(null);
   });
-  QUnit.test( 'add typed functions - Array(4) - (webgl2)', function() {
-    vec4Test('webgl2');
+  QUnit.test('add typed functions - Array(4) - (gpu)', function() {
+    vec4Test('gpu');
   });
-  QUnit.test( 'add typed functions - Array(4) - (webgl)', function() {
-    vec4Test('webgl');
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('add typed functions - Array(4) - (webgl)', function () {
+      vec4Test('webgl');
+    });
+  }
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('add typed functions - Array(4) - (webgl2)', function () {
+      vec4Test('webgl2');
+    });
+  }
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('add typed functions - Array(4) - (headlessgl)', function () {
+      vec4Test('headlessgl');
+    });
+  }
 })();

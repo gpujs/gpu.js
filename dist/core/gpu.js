@@ -142,6 +142,7 @@ var GPU = function (_GPUCore) {
 			}, settings || {});
 
 			var kernel = this._runner.buildKernel(fn, mergedSettings);
+			require('fs').writeFileSync('out.js', kernel.toString());
 
 			//if canvas didn't come from this, propagate from kernel
 			if (!this._canvas) {
@@ -335,24 +336,17 @@ var GPU = function (_GPUCore) {
 
 		/**
    * @desc Return TRUE, if browser supports WebGl AND Canvas
-   * Note: This function can also be called directly `GPU.isWebGlSupported()`
    *
    * @returns {Boolean} TRUE if browser supports webGl
    */
 
 	}, {
-		key: 'isWebGlSupported',
-		value: function isWebGlSupported() {
-			return utils.isWebGlSupported();
-		}
+		key: 'getCanvas',
 
 		/**
    * @desc Return the canvas object bound to this gpu instance.
    * @returns {Object} Canvas object if present
    */
-
-	}, {
-		key: 'getCanvas',
 		value: function getCanvas() {
 			return this._canvas;
 		}
@@ -411,6 +405,40 @@ var GPU = function (_GPUCore) {
 					}
 				}
 			}, 0);
+		}
+	}], [{
+		key: 'isWebGlSupported',
+		value: function isWebGlSupported() {
+			return require('../backend/web-gl/runner').isCompatible;
+		}
+
+		/**
+   * @desc Return TRUE, if browser supports WebGl2 AND Canvas
+   *
+   * @returns {Boolean} TRUE if browser supports webGl
+   */
+
+	}, {
+		key: 'isWebGl2Supported',
+		value: function isWebGl2Supported() {
+			return require('../backend/web-gl2/runner').isCompatible;
+		}
+
+		/**
+   * @desc Return TRUE, if browser supports WebGl2 AND Canvas
+   *
+   * @returns {Boolean} TRUE if browser supports webGl
+   */
+
+	}, {
+		key: 'isHeadlessGlSupported',
+		value: function isHeadlessGlSupported() {
+			return require('../backend/headless-gl/runner').isCompatible;
+		}
+	}, {
+		key: 'isCanvasSupported',
+		value: function isCanvasSupported() {
+			return utils.isCanvasSupported();
 		}
 	}]);
 

@@ -11,7 +11,9 @@ function removeFnNoise(fn) {
 }
 
 function removeNoise(str) {
-	return str.replace(/[_]typeof/g, 'typeof');
+	return str
+		.replace(/^[A-Za-z23]+/, 'function')
+		.replace(/[_]typeof/g, 'typeof');
 }
 
 function boolToString(value) {
@@ -27,19 +29,19 @@ module.exports = function(gpuKernel, name) {
 	return `() => {
     ${ kernelRunShortcut.toString() };
     const utils = {
-      allPropertiesOf: ${ removeNoise(utils.allPropertiesOf.toString()).replace(/^allPropertiesOf/, 'function') },
-      clone: ${ removeNoise(utils.clone.toString()).replace(/^clone/, 'function') },
-      splitArray: ${ removeNoise(utils.splitArray.toString()).replace(/^splitArray/, 'function') },
-      getVariableType: ${ removeNoise(utils.getVariableType.toString()).replace(/^getVariableType/, 'function') },
-      getDimensions: ${ removeNoise(utils.getDimensions.toString()).replace(/^getDimensions/, 'function') },
-      dimToTexSize: ${ removeNoise(utils.dimToTexSize.toString()).replace(/^dimToTexSize/, 'function') },
-      flattenTo: ${ removeNoise(utils.flattenTo.toString()).replace(/^flattenTo/, 'function') },
-      flatten2dArrayTo: ${ removeNoise(utils.flatten2dArrayTo.toString()).replace(/^flatten2dArrayTo/, 'function') },
-      flatten3dArrayTo: ${ removeNoise(utils.flatten3dArrayTo.toString()).replace(/^flatten3dArrayTo/, 'function') },
-      systemEndianness: ${ removeNoise(utils.getSystemEndianness.toString()).replace(/^getSystemEndianness/, 'function') },
-      initWebGl: ${ removeNoise(utils.initWebGl.toString()).replace(/^initWebGl/, 'function') },
-      isArray: ${ removeNoise(utils.isArray.toString()).replace(/^isArray/, 'function') },
-      checkOutput: ${ removeNoise(utils.checkOutput.toString()).replace(/^checkOutput/, 'function') }
+      allPropertiesOf: ${ removeNoise(utils.allPropertiesOf.toString()) },
+      clone: ${ removeNoise(utils.clone.toString()) },
+      splitArray: ${ removeNoise(utils.splitArray.toString()) },
+      getVariableType: ${ removeNoise(utils.getVariableType.toString()) },
+      getDimensions: ${ removeNoise(utils.getDimensions.toString()) },
+      dimToTexSize: ${ removeNoise(utils.dimToTexSize.toString()) },
+      flattenTo: ${ removeNoise(utils.flattenTo.toString()) },
+      flatten2dArrayTo: ${ removeNoise(utils.flatten2dArrayTo.toString()) },
+      flatten3dArrayTo: ${ removeNoise(utils.flatten3dArrayTo.toString()) },
+      systemEndianness: ${ removeNoise(utils.getSystemEndianness.toString()) },
+      initWebGl: ${ removeNoise(utils.initWebGl.toString()) },
+      isArray: ${ removeNoise(utils.isArray.toString()) },
+      checkOutput: ${ removeNoise(utils.checkOutput.toString()) }
     };
     const Utils = utils;
     const canvases = [];

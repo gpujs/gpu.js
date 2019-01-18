@@ -33,13 +33,23 @@ require('qunit-assert-close');
     sumABTest('gpu');
   });
 
-  QUnit.test('sumAB (webgl)', function() {
-    sumABTest('webgl');
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('sumAB (webgl)', function () {
+      sumABTest('webgl');
+    });
+  }
 
-  QUnit.test('sumAB (webgl2)', function() {
-    sumABTest('webgl2');
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('sumAB (webgl2)', function () {
+      sumABTest('webgl2');
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('sumAB (headlessgl)', function () {
+      sumABTest('headlessgl');
+    });
+  }
 
   QUnit.test('sumAB (cpu)', function() {
     sumABTest('cpu');

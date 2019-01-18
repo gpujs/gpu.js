@@ -51,6 +51,8 @@ var GPU = require('../../src/index');
     });
   }
 
+  if (typeof Image === 'undefined') return;
+
   QUnit.test('graphical imagesArrayTest (auto)', function(assert) {
     imageTest(null, assert);
   });
@@ -59,13 +61,17 @@ var GPU = require('../../src/index');
     imageTest('gpu', assert);
   });
 
-  QUnit.test('graphical imagesArrayTest (webgl)', function(assert) {
-    imageTest('webgl', assert);
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('graphical imagesArrayTest (webgl)', function (assert) {
+      imageTest('webgl', assert);
+    });
+  }
 
-  QUnit.test('graphical imagesArrayTest (webgl2)', function(assert) {
-    imageTest('webgl2', assert);
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('graphical imagesArrayTest (webgl2)', function (assert) {
+      imageTest('webgl2', assert);
+    });
+  }
 
   QUnit.test('graphical imagesArrayTest (CPU)', function(assert) {
     imageTest('cpu', assert);

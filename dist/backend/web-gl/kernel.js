@@ -108,6 +108,10 @@ var WebGLKernel = function (_Kernel) {
 		key: 'validateOptions',
 		value: function validateOptions() {
 			if (this.skipValidateOptions) {
+				this.texSize = utils.dimToTexSize({
+					floatTextures: this.floatTextures,
+					floatOutput: this.floatOutput
+				}, this.output, true);
 				return;
 			}
 

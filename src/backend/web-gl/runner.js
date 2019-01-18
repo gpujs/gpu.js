@@ -41,6 +41,19 @@ class WebGLRunner extends GLRunner {
 	getMode() {
 		return 'gpu';
 	}
+
+	getFeatures() {
+		return Object.freeze({
+			isFloatRead: this.getIsFloatRead(),
+			isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+			isTextureFloat: this.getIsTextureFloat()
+		});
+	}
+
+	getIsTextureFloat() {
+		if (!this._webGl) throw new Error('webGl not initialized');
+		return this._webGl.getExtension('OES_texture_float');
+	}
 }
 
 module.exports = WebGLRunner;

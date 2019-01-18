@@ -39,13 +39,23 @@ require('qunit-assert-close');
     sumAB('gpu');
   });
 
-  QUnit.test('add custom function sumAB (webgl)', function () {
-    sumAB('webgl');
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('add custom function sumAB (webgl)', function () {
+      sumAB('webgl');
+    });
+  }
 
-  QUnit.test('add custom function sumAB (webgl2)', function () {
-    sumAB('webgl2');
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('add custom function sumAB (webgl2)', function () {
+      sumAB('webgl2');
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('add custom function sumAB (headlessgl)', function () {
+      sumAB('headlessgl');
+    });
+  }
 
   QUnit.test('add custom function sumAB (cpu)', function () {
     sumAB('cpu');
@@ -96,13 +106,23 @@ require('qunit-assert-close');
     constantsWidth('gpu');
   });
 
-  QUnit.test('add custom function constantsWidth (webgl)', function () {
-    constantsWidth('webgl');
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('add custom function constantsWidth (webgl)', function () {
+      constantsWidth('webgl');
+    });
+  }
 
-  QUnit.test('add custom function constantsWidth (webgl2)', function () {
-    constantsWidth('webgl2');
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('add custom function constantsWidth (webgl2)', function () {
+      constantsWidth('webgl2');
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('add custom function constantsWidth (headlessgl)', function () {
+      constantsWidth('headlessgl');
+    });
+  }
 
   QUnit.test('add custom function constantsWidth (cpu)', function () {
     constantsWidth('cpu');
@@ -151,13 +171,23 @@ require('qunit-assert-close');
     thisOutputX('gpu');
   });
 
-  QUnit.test('add custom function thisOutputX (webgl)', function() {
-    thisOutputX('webgl');
-  });
+  if (GPU.isWebGlSupported()) {
+    QUnit.test('add custom function thisOutputX (webgl)', function () {
+      thisOutputX('webgl');
+    });
+  }
 
-  QUnit.test('add custom function thisOutputX (webgl2)', function() {
-    thisOutputX('webgl2');
-  });
+  if (GPU.isWebGl2Supported()) {
+    QUnit.test('add custom function thisOutputX (webgl2)', function () {
+      thisOutputX('webgl2');
+    });
+  }
+
+  if (GPU.isHeadlessGlSupported()) {
+    QUnit.test('add custom function thisOutputX (headlessgl)', function () {
+      thisOutputX('headlessgl');
+    });
+  }
 
   QUnit.test('add custom function thisOutputX (cpu)', function() {
     thisOutputX('cpu');
