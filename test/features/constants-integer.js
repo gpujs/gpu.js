@@ -27,23 +27,17 @@ var GPU = require('../../src/index');
     integerConstantTest('gpu');
   });
 
-  if (GPU.isWebGlSupported()) {
-    QUnit.test('integerConstantTest (webgl)', function () {
-      integerConstantTest('webgl');
-    });
-  }
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('integerConstantTest (webgl)', function () {
+    integerConstantTest('webgl');
+  });
 
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test('integerConstantTest (webgl2)', function () {
-      integerConstantTest('webgl2');
-    });
-  }
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('integerConstantTest (webgl2)', function () {
+    integerConstantTest('webgl2');
+  });
 
-  if (GPU.isHeadlessGlSupported()) {
-    QUnit.test('integerConstantTest (headlessgl)', function () {
-      integerConstantTest('headlessgl');
-    });
-  }
+  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('integerConstantTest (headlessgl)', function () {
+    integerConstantTest('headlessgl');
+  });
 
   QUnit.test( 'integerConstantTest (cpu)', function() {
     integerConstantTest('cpu');

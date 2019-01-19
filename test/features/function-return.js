@@ -22,23 +22,17 @@ require('qunit-assert-close');
     functionReturn("gpu");
   });
 
-  if (GPU.isWebGlSupported()) {
-    QUnit.test("functionReturn (webgl)", function () {
-      functionReturn("webgl");
-    });
-  }
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("functionReturn (webgl)", function () {
+    functionReturn("webgl");
+  });
 
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test("functionReturn (webgl2)", function () {
-      functionReturn("webgl2");
-    });
-  }
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("functionReturn (webgl2)", function () {
+    functionReturn("webgl2");
+  });
 
-  if (GPU.isHeadlessGlSupported()) {
-    QUnit.test("functionReturn (headlessgl)", function () {
-      functionReturn("headlessgl");
-    });
-  }
+  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)("functionReturn (headlessgl)", function () {
+    functionReturn("headlessgl");
+  });
 
   QUnit.test( "functionReturn (CPU)", function() {
     functionReturn("cpu");

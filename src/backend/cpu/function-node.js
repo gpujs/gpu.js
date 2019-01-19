@@ -298,7 +298,7 @@ class CPUFunctionNode extends FunctionNode {
 		}
 
 		if (forNode.test && forNode.test.type === 'BinaryExpression') {
-			if ((forNode.test.right.type === 'Identifier' || forNode.test.right.type === 'Literal') &&
+			if ((forNode.test.right.type === 'Identifier') &&
 				forNode.test.operator === '<' &&
 				this.isIdentifierConstant(forNode.test.right.name) === false) {
 
@@ -342,7 +342,6 @@ class CPUFunctionNode extends FunctionNode {
 				const declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
 				const updateArgument = forNode.update.argument;
 				if (!Array.isArray(declarations) || declarations.length < 1) {
-					console.log(this.jsFunctionString);
 					throw new Error('Error: Incompatible for loop declaration');
 				}
 
@@ -495,7 +494,7 @@ class CPUFunctionNode extends FunctionNode {
 	 * @returns {Array} the append retArr
 	 */
 	astVariableDeclaration(vardecNode, retArr) {
-		retArr.push('var ');
+		retArr.push('let ');
 		for (let i = 0; i < vardecNode.declarations.length; i++) {
 			this.declarations[vardecNode.declarations[i].id.name] = 'var';
 			if (i > 0) {

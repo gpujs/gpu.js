@@ -90,7 +90,7 @@ class FunctionBuilder {
 	 * Note that the 0-index, is the starting function trace.
 	 *
 	 * @param {String} functionName - Function name to trace from, default to 'kernel'
-	 * @param {String[]} retList - Returning list of function names that is traced. Including itself.
+	 * @param {String[]} [retList] - Returning list of function names that is traced. Including itself.
 	 * @param {Object} [parent] - Parent node
 	 *
 	 * @returns {String[]}  Returning list of function names that is traced. Including itself.

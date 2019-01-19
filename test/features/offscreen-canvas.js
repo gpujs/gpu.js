@@ -1,5 +1,5 @@
 (function() {
-  if (typeof(document) === 'undefined') {
+  if (typeof document === 'undefined') {
     // inside Worker
     importScripts('../../bin/gpu.js');
     onmessage = function(e) {
@@ -17,10 +17,11 @@
   }
 
   // skip test if browser doesn't support Workers or OffscreenCanvas
-  var test = (typeof(Worker) === 'undefined') || (typeof(OffscreenCanvas) === 'undefined') ?
-              QUnit.skip : QUnit.test;
-
-  test('OffscreenCanvas used in Worker', function(assert) {
+  (
+    typeof Worker === 'undefined'
+    || typeof OffscreenCanvas === 'undefined'
+      ? QUnit.skip
+      : QUnit.test)('OffscreenCanvas used in Worker', function(assert) {
     var worker = new Worker('features/offscreen-canvas.js');
     var done = assert.async();
 
@@ -34,5 +35,4 @@
 
     worker.postMessage('test');
   });
-
 })();

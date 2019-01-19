@@ -25,24 +25,18 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  if (GPU.isWebGlSupported()) {
-    QUnit.test("Infinity (webgl)", function () {
-      QUnit.assert.deepEqual(input('webgl')[0], NaN);
-      gpu.destroy();
-    });
-  }
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("Infinity (webgl)", function () {
+    QUnit.assert.deepEqual(input('webgl')[0], NaN);
+    gpu.destroy();
+  });
 
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test("Infinity (webgl2)", function () {
-      QUnit.assert.deepEqual(input('webgl2')[0], NaN);
-      gpu.destroy();
-    });
-  }
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("Infinity (webgl2)", function () {
+    QUnit.assert.deepEqual(input('webgl2')[0], NaN);
+    gpu.destroy();
+  });
 
-  if (GPU.isHeadlessGlSupported()) {
-    QUnit.test("Infinity (headlessgl)", function () {
-      QUnit.assert.deepEqual(input('headlessgl')[0], NaN);
-      gpu.destroy();
-    });
-  }
+  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)("Infinity (headlessgl)", function () {
+    QUnit.assert.deepEqual(input('headlessgl')[0], NaN);
+    gpu.destroy();
+  });
 })();

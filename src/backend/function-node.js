@@ -23,7 +23,7 @@ class FunctionNode {
 	 *
 	 * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
 	 * @param {Function|String} jsFunction - JS Function to do conversion
-	 * @param {Object} options
+	 * @param {Object} [options]
 	 *
 	 */
 	constructor(functionName, jsFunction, options) {
@@ -437,19 +437,18 @@ class FunctionNode {
 		}
 	}
 	/**
-	 * @function
-	 * @name astErrorOutput
-	 * @ignore
 	 * @desc To throw the AST error, with its location.
 	 *
-	 * @todo add location support fpr the AST error
+	 * @todo add location support for the AST error
 	 *
 	 * @param {Object} error - the error message output
 	 * @param {Object} ast - the AST object where the error is
 	 */
 	astErrorOutput(error, ast) {
 		console.error(utils.getAstString(this.jsFunctionString, ast));
-		console.error(error, ast, this);
+		if (this.debug) {
+			console.error(error, ast, this);
+		}
 		return error;
 	}
 

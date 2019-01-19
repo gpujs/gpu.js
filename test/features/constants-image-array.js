@@ -59,25 +59,21 @@ var GPU = require('../../src/index');
     });
   });
 
-  if (GPU.isWebGlSupported()) {
-    QUnit.test('imageArrayConstantTest (webgl)', function (assert) {
-      imageArrayConstantFixture('webgl', assert, function (tryConst) {
-        assert.throws(function () {
-          tryConst();
-        }, 'imageArray are not compatible with webgl');
-      });
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('imageArrayConstantTest (webgl)', function (assert) {
+    imageArrayConstantFixture('webgl', assert, function (tryConst) {
+      assert.throws(function () {
+        tryConst();
+      }, 'imageArray are not compatible with webgl');
     });
-  }
+  });
 
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test('imageArrayConstantTest (webgl2)', function (assert) {
-      imageArrayConstantFixture('webgl2', assert, function (tryConst) {
-        var result = tryConst();
-        var test = result[0][0][0] > 0;
-        assert.ok(test, 'image array constant passed test');
-      });
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('imageArrayConstantTest (webgl2)', function (assert) {
+    imageArrayConstantFixture('webgl2', assert, function (tryConst) {
+      var result = tryConst();
+      var test = result[0][0][0] > 0;
+      assert.ok(test, 'image array constant passed test');
     });
-  }
+  });
 
   QUnit.test( 'imageArrayConstantTest (cpu)', function(assert) {
     imageArrayConstantFixture('cpu', assert, function(tryConst) {

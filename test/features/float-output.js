@@ -30,29 +30,23 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  if (GPU.isWebGlSupported()) {
-    QUnit.test("floatOutput (webgl)", function () {
-      var result = floatOutputKernel([lst.length], 'webgl')(lst);
-      QUnit.assert.deepEqual(result, lst);
-      gpu.destroy();
-    });
-  }
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("floatOutput (webgl)", function () {
+    var result = floatOutputKernel([lst.length], 'webgl')(lst);
+    QUnit.assert.deepEqual(result, lst);
+    gpu.destroy();
+  });
 
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test("floatOutput (webgl2)", function () {
-      var result = floatOutputKernel([lst.length], 'webgl2')(lst);
-      QUnit.assert.deepEqual(result, lst);
-      gpu.destroy();
-    });
-  }
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("floatOutput (webgl2)", function () {
+    var result = floatOutputKernel([lst.length], 'webgl2')(lst);
+    QUnit.assert.deepEqual(result, lst);
+    gpu.destroy();
+  });
 
-  if (GPU.isHeadlessGlSupported()) {
-    QUnit.test("floatOutput (headlessgl)", function () {
-      var result = floatOutputKernel([lst.length], 'headlessgl')(lst);
-      QUnit.assert.deepEqual(result, lst);
-      gpu.destroy();
-    });
-  }
+  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)("floatOutput (headlessgl)", function () {
+    var result = floatOutputKernel([lst.length], 'headlessgl')(lst);
+    QUnit.assert.deepEqual(result, lst);
+    gpu.destroy();
+  });
 })();
 
 (function() {
@@ -85,27 +79,21 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  if (GPU.isWebGlSupported()) {
-    QUnit.test("floatOutput (webgl)", function () {
-      var result = floatOutputKernel([lst.length], 'webgl')(lst);
-      QUnit.assert.deepEqual(result, lst);
-      gpu.destroy();
-    });
-  }
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("floatOutput (webgl)", function () {
+    var result = floatOutputKernel([lst.length], 'webgl')(lst);
+    QUnit.assert.deepEqual(result, lst);
+    gpu.destroy();
+  });
 
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test("floatOutput (webgl2)", function () {
-      var result = floatOutputKernel([lst.length], 'webgl2')(lst);
-      QUnit.assert.deepEqual(result, lst);
-      gpu.destroy();
-    });
-  }
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("floatOutput (webgl2)", function () {
+    var result = floatOutputKernel([lst.length], 'webgl2')(lst);
+    QUnit.assert.deepEqual(result, lst);
+    gpu.destroy();
+  });
 
-  if (GPU.isHeadlessGlSupported()) {
-    QUnit.test("floatOutput (webgl2)", function () {
-      var result = floatOutputKernel([lst.length], 'headlessgl')(lst);
-      QUnit.assert.deepEqual(result, lst);
-      gpu.destroy();
-    });
-  }
+  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)("floatOutput (webgl2)", function () {
+    var result = floatOutputKernel([lst.length], 'headlessgl')(lst);
+    QUnit.assert.deepEqual(result, lst);
+    gpu.destroy();
+  });
 })();

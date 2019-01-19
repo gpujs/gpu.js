@@ -4,7 +4,7 @@ var GPU = require('../../src/index');
   function getCanvasTest(mode ) {
     var gpu = new GPU();
 
-    QUnit.assert.ok( gpu.getCanvas() === null, 'canvas is initially null');
+    QUnit.assert.ok(gpu.getCanvas() === null, 'canvas is initially null');
 
     var render = gpu.createKernel(function() {
       this.color(0, 0, 0, 1);
@@ -13,18 +13,19 @@ var GPU = require('../../src/index');
       mode : mode
     }).setGraphical(true);
 
-    QUnit.assert.ok( render !== null, 'function generated test');
+    QUnit.assert.ok(render !== null, 'function generated test');
 
-    QUnit.assert.ok( render.getCanvas(), 'testing for canvas after createKernel' );
-    QUnit.assert.ok( gpu.getCanvas(), 'testing for canvas after createKernel' );
+    QUnit.assert.ok(render.getCanvas(), 'testing for canvas after createKernel' );
+    QUnit.assert.ok(gpu.getCanvas(), 'testing for canvas after createKernel' );
 
     //
     // NOTE: GPU mode somehow return null when render()
     //
-    QUnit.assert.ok( (r = render()) || true, 'rendering' );
+    var r = render();
+    QUnit.assert.ok(r || true, 'rendering' );
 
-    QUnit.assert.ok( render.getCanvas(), 'testing for canvas after render' );
-    QUnit.assert.ok( gpu.getCanvas(), 'testing for canvas after render' );
+    QUnit.assert.ok(render.getCanvas(), 'testing for canvas after render' );
+    QUnit.assert.ok(gpu.getCanvas(), 'testing for canvas after render' );
     gpu.destroy();
   }
 
@@ -36,23 +37,17 @@ var GPU = require('../../src/index');
     getCanvasTest('gpu');
   });
 
-  if (GPU.isWebGlSupported()) {
-    QUnit.test('getCanvas (webgl)', function () {
-      getCanvasTest('webgl');
-    });
-  }
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('getCanvas (webgl)', function () {
+    getCanvasTest('webgl');
+  });
 
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test('getCanvas (webgl2)', function () {
-      getCanvasTest('webgl2');
-    });
-  }
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('getCanvas (webgl2)', function () {
+    getCanvasTest('webgl2');
+  });
 
-  if (GPU.isHeadlessGlSupported()) {
-    QUnit.test('getCanvas (headlessgl)', function () {
-      getCanvasTest('headlessgl');
-    });
-  }
+  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('getCanvas (headlessgl)', function () {
+    getCanvasTest('headlessgl');
+  });
 
   QUnit.test( 'getCanvas (CPU)', function() {
     getCanvasTest('cpu');

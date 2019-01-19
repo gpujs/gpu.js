@@ -434,7 +434,7 @@ class WebGLFunctionNode extends FunctionNode {
 				retArr.push('}\n');
 
 				return retArr;
-			} else {
+			} else if (forNode.init.declarations) {
 				const declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
 				const updateArgument = forNode.update.argument;
 				if (!Array.isArray(declarations) || declarations.length < 1) {
@@ -449,13 +449,13 @@ class WebGLFunctionNode extends FunctionNode {
 							initArgument = declaration;
 							declarations.splice(i, 1);
 						} else {
-							retArr.push('float ');
+							retArr.push('int ');
 							this.astGeneric(declaration, retArr);
 							retArr.push(';');
 						}
 					}
 
-					retArr.push('for (float ');
+					retArr.push('for (int ');
 					this.astGeneric(initArgument, retArr);
 					retArr.push(';');
 				} else {

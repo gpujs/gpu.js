@@ -31,23 +31,17 @@ require('qunit-assert-close');
     booleanBranch('gpu');
   });
 
-  if (GPU.isWebGlSupported()) {
-    QUnit.test('booleanBranch (webgl)', function () {
-      booleanBranch('webgl');
-    });
-  }
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('booleanBranch (webgl)', function () {
+    booleanBranch('webgl');
+  });
 
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test('booleanBranch (webgl2)', function () {
-      booleanBranch('webgl2');
-    });
-  }
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('booleanBranch (webgl2)', function () {
+    booleanBranch('webgl2');
+  });
 
-  if (GPU.isHeadlessGlSupported()) {
-    QUnit.test('booleanBranch (headlessgl)', function () {
-      booleanBranch('headlessgl');
-    });
-  }
+  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('booleanBranch (headlessgl)', function () {
+    booleanBranch('headlessgl');
+  });
 
   QUnit.test( 'booleanBranch (CPU)', function() {
     booleanBranch('cpu');
@@ -79,23 +73,17 @@ require('qunit-assert-close');
     ifElse('gpu');
   });
 
-  if (GPU.isWebGlSupported()) {
-    QUnit.test('ifElse (webgl)', function () {
-      ifElse('webgl');
-    });
-  }
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('ifElse (webgl)', function () {
+    ifElse('webgl');
+  });
 
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test('ifElse (webgl2)', function () {
-      ifElse('webgl2');
-    });
-  }
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('ifElse (webgl2)', function () {
+    ifElse('webgl2');
+  });
 
-  if (GPU.isHeadlessGlSupported()) {
-    QUnit.test('ifElse (headlessgl)', function () {
-      ifElse('headlessgl');
-    });
-  }
+  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('ifElse (headlessgl)', function () {
+    ifElse('headlessgl');
+  });
 
   QUnit.test( 'ifElse (cpu)', function() {
     ifElse('cpu');

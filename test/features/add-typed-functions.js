@@ -25,21 +25,15 @@ var GPU = require('../../src/index');
   QUnit.test('add typed functions - Array(2) - (gpu)', function() {
     vec2Test('gpu');
   });
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test('add typed functions - Array(2) - (webgl)', function () {
-      vec2Test('webgl');
-    });
-  }
-  if (GPU.isWebGlSupported()) {
-    QUnit.test('add typed functions - Array(2) - (webgl2)', function () {
-      vec2Test('webgl2');
-    });
-  }
-  if (GPU.isHeadlessGlSupported()) {
-    QUnit.test('add typed functions - Array(2) - (headlessgl)', function () {
-      vec2Test('headlessgl');
-    });
-  }
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('add typed functions - Array(2) - (webgl)', function () {
+    vec2Test('webgl');
+  });
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('add typed functions - Array(2) - (webgl2)', function () {
+    vec2Test('webgl2');
+  });
+  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('add typed functions - Array(2) - (headlessgl)', function () {
+    vec2Test('headlessgl');
+  });
 })();
 
 (function() {
@@ -67,21 +61,15 @@ var GPU = require('../../src/index');
   QUnit.test('add typed functions - Array(3) - (gpu)', function () {
     vec3Test('gpu');
   });
-  if (GPU.isWebGlSupported()) {
-    QUnit.test('add typed functions - Array(3) - (webgl)', function () {
-      vec3Test('webgl');
-    });
-  }
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test('add typed functions - Array(3) - (webgl2)', function () {
-      vec3Test('webgl2');
-    });
-  }
-  if (GPU.isHeadlessGlSupported()) {
-    QUnit.test('add typed functions - Array(3) - (headlessgl)', function () {
-      vec3Test('headlessgl');
-    });
-  }
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('add typed functions - Array(3) - (webgl)', function () {
+    vec3Test('webgl');
+  });
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('add typed functions - Array(3) - (webgl2)', function () {
+    vec3Test('webgl2');
+  });
+  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('add typed functions - Array(3) - (headlessgl)', function () {
+    vec3Test('headlessgl');
+  });
 })();
 
 (function() {
@@ -109,19 +97,13 @@ var GPU = require('../../src/index');
   QUnit.test('add typed functions - Array(4) - (gpu)', function() {
     vec4Test('gpu');
   });
-  if (GPU.isWebGlSupported()) {
-    QUnit.test('add typed functions - Array(4) - (webgl)', function () {
-      vec4Test('webgl');
-    });
-  }
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test('add typed functions - Array(4) - (webgl2)', function () {
-      vec4Test('webgl2');
-    });
-  }
-  if (GPU.isHeadlessGlSupported()) {
-    QUnit.test('add typed functions - Array(4) - (headlessgl)', function () {
-      vec4Test('headlessgl');
-    });
-  }
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('add typed functions - Array(4) - (webgl)', function () {
+    vec4Test('webgl');
+  });
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('add typed functions - Array(4) - (webgl2)', function () {
+    vec4Test('webgl2');
+  });
+  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('add typed functions - Array(4) - (headlessgl)', function () {
+    vec4Test('headlessgl');
+  });
 })();

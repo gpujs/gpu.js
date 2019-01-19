@@ -143,7 +143,7 @@ return user_array;\n\
       return array;
     }, { returnType: 'Array(2)' });
     assert.equal(node.generate(), 'function refDirect() {\n\
-var user_array=[0, 0];\n\
+let user_array=[0, 0];\n\
 return user_array;\n\
 }');
   });
@@ -186,7 +186,7 @@ return user_array;\n\
       return array;
     }, { returnType: 'Array(3)' });
     assert.equal(node.generate(), 'function refDirect() {\n\
-var user_array=[0, 0, 0];\n\
+let user_array=[0, 0, 0];\n\
 return user_array;\n\
 }');
   });
@@ -229,7 +229,7 @@ return user_array;\n\
       return array;
     }, { returnType: 'Array(4)' });
     assert.equal(node.generate(), 'function refDirect() {\n\
-var user_array=[0, 0, 0, 0];\n\
+let user_array=[0, 0, 0, 0];\n\
 return user_array;\n\
 }');
   });
@@ -279,8 +279,8 @@ return user_array2;\n\
       return array2;
     }, { returnType: 'Array(2)' });
     assert.equal(node.generate(), 'function indirect() {\n\
-var user_array=[0, 0];\n\
-var user_array2=user_array;\n\
+let user_array=[0, 0];\n\
+let user_array2=user_array;\n\
 return user_array2;\n\
 }');
   });
@@ -330,8 +330,8 @@ return user_array2;\n\
       return array2;
     }, { returnType: 'Array(3)' });
     assert.equal(node.generate(), 'function indirect() {\n\
-var user_array=[0, 0, 0];\n\
-var user_array2=user_array;\n\
+let user_array=[0, 0, 0];\n\
+let user_array2=user_array;\n\
 return user_array2;\n\
 }');
   });
@@ -381,8 +381,8 @@ return user_array2;\n\
       return array2;
     }, { returnType: 'Array(4)' });
     assert.equal(node.generate(), 'function indirect() {\n\
-var user_array=[0, 0, 0, 0];\n\
-var user_array2=user_array;\n\
+let user_array=[0, 0, 0, 0];\n\
+let user_array2=user_array;\n\
 return user_array2;\n\
 }');
   });
@@ -439,7 +439,7 @@ return user_array3;\n\
       return array3;
     }, { paramTypes: { array: 'Array(2)', array2: 'Array(2)' } });
     assert.equal(node.generate(), 'function arrayArguments(user_array, user_array2) {\n\
-var user_array3=[0, 0];\n\
+let user_array3=[0, 0];\n\
 user_array3[0]=user_array[0];\n\
 user_array3[1]=(user_array[1]*user_array2[1]);\n\
 return user_array3;\n\
@@ -498,7 +498,7 @@ return user_array3;\n\
       return array3;
     }, { paramTypes: { array: 'Array(3)', array2: 'Array(3)' } });
     assert.equal(node.generate(), 'function arrayArguments(user_array, user_array2) {\n\
-var user_array3=[0, 0];\n\
+let user_array3=[0, 0];\n\
 user_array3[0]=user_array[0];\n\
 user_array3[1]=(user_array[1]*user_array2[1]);\n\
 return user_array3;\n\
@@ -558,7 +558,7 @@ return user_array3;\n\
       return array3;
     }, { paramTypes: { array: 'Array(4)', array2: 'Array(4)' } });
     assert.equal(node.generate(), 'function arrayArguments(user_array, user_array2) {\n\
-var user_array3=[0, 0];\n\
+let user_array3=[0, 0];\n\
 user_array3[0]=user_array[0];\n\
 user_array3[1]=(user_array[1]*user_array2[1]);\n\
 return user_array3;\n\
@@ -617,7 +617,7 @@ return user_array3;\n\
       return array3;
     }, { paramTypes: { array: 'Array(2)', array2: 'Array(2)' }, returnType: 'Array(2)' });
     assert.equal(node.generate(), 'function inherited(user_array, user_array2) {\n\
-var user_array3=[0, 0];\n\
+let user_array3=[0, 0];\n\
 user_array3[0]=user_array[0];\n\
 user_array3[1]=(user_array[1]*user_array2[1]);\n\
 return user_array3;\n\
@@ -676,7 +676,7 @@ return user_array3;\n\
       return array3;
     }, { paramTypes: { array: 'Array(3)', array2: 'Array(3)' }, returnType: 'Array(3)' });
     assert.equal(node.generate(), 'function inherited(user_array, user_array2) {\n\
-var user_array3=[0, 0, 0];\n\
+let user_array3=[0, 0, 0];\n\
 user_array3[0]=user_array[0];\n\
 user_array3[1]=(user_array[1]*user_array2[1]);\n\
 return user_array3;\n\
@@ -735,7 +735,7 @@ return user_array3;\n\
       return array3;
     }, { paramTypes: { array: 'Array(4)', array2: 'Array(4)' }, returnType: 'Array(4)' });
     assert.equal(node.generate(), 'function inherited(user_array, user_array2) {\n\
-var user_array3=[0, 0, 0, 0];\n\
+let user_array3=[0, 0, 0, 0];\n\
 user_array3[0]=user_array[0];\n\
 user_array3[1]=(user_array[1]*user_array2[1]);\n\
 return user_array3;\n\

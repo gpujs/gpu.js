@@ -46,17 +46,13 @@ var GPU = require('../../src/index');
     imageConstantTest('gpu', assert);
   });
 
-  if (GPU.isWebGlSupported()) {
-    QUnit.test('imageConstantTest (webgl)', function (assert) {
-      imageConstantTest('webgl', assert);
-    });
-  }
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('imageConstantTest (webgl)', function (assert) {
+    imageConstantTest('webgl', assert);
+  });
 
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test('imageConstantTest (webgl2)', function (assert) {
-      imageConstantTest('webgl2', assert);
-    });
-  }
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('imageConstantTest (webgl2)', function (assert) {
+    imageConstantTest('webgl2', assert);
+  });
 
   QUnit.test('imageConstantTest (cpu)', function(assert) {
     imageConstantTest('cpu', assert);

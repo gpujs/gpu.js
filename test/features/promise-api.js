@@ -38,23 +38,17 @@ var GPU = require('../../src/index');
     promiseApiFunctionReturn(assert, 'gpu');
   });
 
-  if (GPU.isWebGlSupported()) {
-    QUnit.test('Promise API : functionReturn (webgl)', function (assert) {
-      promiseApiFunctionReturn(assert, 'webgl');
-    });
-  }
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('Promise API : functionReturn (webgl)', function (assert) {
+    promiseApiFunctionReturn(assert, 'webgl');
+  });
 
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test('Promise API : functionReturn (webgl2)', function (assert) {
-      promiseApiFunctionReturn(assert, 'webgl2');
-    });
-  }
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('Promise API : functionReturn (webgl2)', function (assert) {
+    promiseApiFunctionReturn(assert, 'webgl2');
+  });
 
-  if (GPU.isHeadlessGlSupported()) {
-    QUnit.test('Promise API : functionReturn (headlessgl)', function (assert) {
-      promiseApiFunctionReturn(assert, 'headlessgl');
-    });
-  }
+  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('Promise API : functionReturn (headlessgl)', function (assert) {
+    promiseApiFunctionReturn(assert, 'headlessgl');
+  });
 
   QUnit.test( 'Promise API : functionReturn (cpu)', function(assert) {
     promiseApiFunctionReturn(assert, 'cpu');

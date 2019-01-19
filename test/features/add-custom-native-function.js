@@ -42,23 +42,17 @@ require('qunit-assert-close');
     addCustomNativeFunctionDivide('gpu', glslDivide);
   });
 
-  if (GPU.isWebGlSupported()) {
-    QUnit.test('addCustomNativeFunctionDivide (webgl)', function () {
-      addCustomNativeFunctionDivide('webgl', glslDivide);
-    });
-  }
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('addCustomNativeFunctionDivide (webgl)', function () {
+    addCustomNativeFunctionDivide('webgl', glslDivide);
+  });
 
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test('addCustomNativeFunctionDivide (webgl2)', function () {
-      addCustomNativeFunctionDivide('webgl2', glslDivide);
-    });
-  }
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('addCustomNativeFunctionDivide (webgl2)', function () {
+    addCustomNativeFunctionDivide('webgl2', glslDivide);
+  });
 
-  if (GPU.isHeadlessGlSupported()) {
-    QUnit.test('addCustomNativeFunctionDivide (headlessgl)', function () {
-      addCustomNativeFunctionDivide('headlessgl', glslDivide);
-    });
-  }
+  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('addCustomNativeFunctionDivide (headlessgl)', function () {
+    addCustomNativeFunctionDivide('headlessgl', glslDivide);
+  });
 
   QUnit.test('addCustomNativeFunctionDivide (cpu)', function() {
     addCustomNativeFunctionDivide('cpu', jsDivide);
@@ -104,21 +98,15 @@ require('qunit-assert-close');
     addCustomNativeFunctionDivideFallback('gpu');
   });
 
-  if (GPU.isWebGlSupported()) {
-    QUnit.test('addCustomNativeFunctionDivideFallback (GPU only) (webgl)', function () {
-      addCustomNativeFunctionDivideFallback('webgl');
-    });
-  }
+  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('addCustomNativeFunctionDivideFallback (GPU only) (webgl)', function () {
+    addCustomNativeFunctionDivideFallback('webgl');
+  });
 
-  if (GPU.isWebGl2Supported()) {
-    QUnit.test('addCustomNativeFunctionDivideFallback (GPU only) (webgl2)', function () {
-      addCustomNativeFunctionDivideFallback('webgl2');
-    });
-  }
+  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('addCustomNativeFunctionDivideFallback (GPU only) (webgl2)', function () {
+    addCustomNativeFunctionDivideFallback('webgl2');
+  });
 
-  if (GPU.isHeadlessGlSupported()) {
-    QUnit.test('addCustomNativeFunctionDivideFallback (GPU only) (headlessgl)', function () {
-      addCustomNativeFunctionDivideFallback('headlessgl');
-    });
-  }
+  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('addCustomNativeFunctionDivideFallback (GPU only) (headlessgl)', function () {
+    addCustomNativeFunctionDivideFallback('headlessgl');
+  });
 })();
