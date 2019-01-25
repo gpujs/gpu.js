@@ -1,6 +1,5 @@
-var GPU = require('../../src/index');
-
 (function() {
+  const GPU = require('../../src/index');
   function threeD(mode) {
     var gpu = new GPU({ mode: mode });
 
@@ -14,7 +13,7 @@ var GPU = require('../../src/index');
       .setOutput([5, 5, 5])
       .build();
 
-    var result = kernel([
+    const result = kernel([
       [0,1,2,3,4],
       [1,2,3,4,5],
       [2,3,4,5,6],
@@ -32,23 +31,27 @@ var GPU = require('../../src/index');
     gpu.destroy();
   }
 
-  QUnit.test('Issue #159 - for vars (cpu)', function() {
-    threeD('cpu');
-  });
-
-  QUnit.test('Issue #159 - for vars (auto)', function() {
+  QUnit.test('Issue #159 - for vars (auto)', () => {
     threeD(null);
   });
 
-  QUnit.test('Issue #159 - for vars (gpu)', function() {
+  QUnit.test('Issue #159 - for vars (gpu)', () => {
     threeD('gpu');
   });
 
-  QUnit.test('Issue #159 - for vars (webgl)', function() {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #159 - for vars (webgl)', () => {
     threeD('webgl');
   });
 
-  QUnit.test('Issue #159 - for vars (webgl2)', function() {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #159 - for vars (webgl2)', () => {
     threeD('webgl2');
+  });
+
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #159 - for vars (headlessgl)', () => {
+    threeD('headlessgl');
+  });
+
+  QUnit.test('Issue #159 - for vars (cpu)', () => {
+    threeD('cpu');
   });
 })();

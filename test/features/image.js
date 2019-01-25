@@ -33,11 +33,11 @@ var GPU = require('../../src/index');
     imageTest('gpu', assert);
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('graphical imageTest (webgl)', function (assert) {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('graphical imageTest (webgl)', function (assert) {
     imageTest('webgl', assert);
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('graphical imageTest (webgl2)', function (assert) {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('graphical imageTest (webgl2)', function (assert) {
     imageTest('webgl2', assert);
   });
 

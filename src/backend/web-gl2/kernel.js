@@ -13,18 +13,26 @@ class WebGL2Kernel extends WebGLKernel {
 	static get vertShaderString() {
 		return vertShaderString;
 	}
-	initWebGl() {
-		return utils.initWebGl2(this.getCanvas());
+
+	initContext() {
+		const context = this.canvas.getContext('webgl2');
+		return context;
+	}
+
+	initExtensions() {
+		this.extensions = {
+			EXT_color_buffer_float: this.context.getExtension('EXT_color_buffer_float'),
+			OES_texture_float_linear: this.context.getExtension('OES_texture_float_linear'),
+		};
 	}
 
 	/**
-	 * @desc Validate options related to Kernel, such as
+	 * @desc Validate settings related to Kernel, such as
 	 * floatOutputs and Textures, texSize, output,
 	 * graphical output.
 	 */
-	validateOptions() {
-		if (this.skipValidateOptions) {
-			this._webGl.getExtension('EXT_color_buffer_float');
+	validateSettings() {
+		if (this.skipValidateSettings) {
 			this.texSize = utils.dimToTexSize({
 				floatTextures: this.floatTextures,
 				floatOutput: this.floatOutput
@@ -34,7 +42,6 @@ class WebGL2Kernel extends WebGLKernel {
 
 		const features = this.features;
 		if (this.floatOutput === true && this.floatOutputForce !== true && !features.isFloatRead) {
-			debugger;
 			throw new Error('Float texture outputs are not supported on this browser');
 		} else if (this.floatTextures === undefined) {
 			this.floatTextures = true;
@@ -85,7 +92,7 @@ class WebGL2Kernel extends WebGLKernel {
 		}
 
 		if (this.floatOutput || this.floatOutputForce) {
-			this._webGl.getExtension('EXT_color_buffer_float');
+			this.context.getExtension('EXT_color_buffer_float');
 		}
 	}
 
@@ -102,7 +109,7 @@ class WebGL2Kernel extends WebGLKernel {
 		const paramNames = this.paramNames;
 		const paramTypes = this.paramTypes;
 		const texSize = this.texSize;
-		const gl = this._webGl;
+		const gl = this.context;
 
 		gl.useProgram(this.program);
 		gl.scissor(0, 0, texSize[0], texSize[1]);
@@ -127,7 +134,7 @@ class WebGL2Kernel extends WebGLKernel {
 					this._setupOutputTexture();
 				}
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-				return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'ArrayTexture(4)');
+				return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this.context, 'ArrayTexture(4)');
 			}
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -156,7 +163,7 @@ class WebGL2Kernel extends WebGLKernel {
 				const output = [];
 				output.result = this.renderOutput(outputTexture);
 				for (let i = 0; i < this.subKernels.length; i++) {
-					output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this._webGl));
+					output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context));
 				}
 				return output;
 			} else if (this.subKernelProperties !== null) {
@@ -166,7 +173,7 @@ class WebGL2Kernel extends WebGLKernel {
 				let i = 0;
 				for (let p in this.subKernelProperties) {
 					if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-					output[p] = new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this._webGl);
+					output[p] = new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context);
 					i++;
 				}
 				return output;
@@ -176,7 +183,9 @@ class WebGL2Kernel extends WebGLKernel {
 		return this.renderOutput(outputTexture);
 	}
 
-
+	drawBuffers() {
+		this.context.drawBuffers(this.drawBuffersMap);
+	}
 
 	/**
 	 * @desc This return defined outputTexture, which is setup in .build(), or if immutable, is defined in .run()
@@ -190,9 +199,9 @@ class WebGL2Kernel extends WebGLKernel {
 	 * @desc Setup and replace output texture
 	 */
 	_setupOutputTexture() {
-		const gl = this._webGl;
+		const gl = this.context;
 		const texSize = this.texSize;
-		const texture = this.outputTexture = this._webGl.createTexture();
+		const texture = this.outputTexture = this.context.createTexture();
 		gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length);
 		gl.bindTexture(gl.TEXTURE_2D, texture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -211,12 +220,12 @@ class WebGL2Kernel extends WebGLKernel {
 	 * @desc Setup and replace sub-output textures
 	 */
 	_setupSubOutputTextures(length) {
-		const gl = this._webGl;
+		const gl = this.context;
 		const texSize = this.texSize;
 		const drawBuffersMap = this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
 		const textures = this.subKernelOutputTextures = [];
 		for (let i = 0; i < length; i++) {
-			const texture = this._webGl.createTexture();
+			const texture = this.context.createTexture();
 			textures.push(texture);
 			drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
 			gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length + i);
@@ -237,14 +246,14 @@ class WebGL2Kernel extends WebGLKernel {
 
 	/**
 	 * @desc Adds kernel parameters to the Argument Texture,
-	 * binding it to the webGl instance, etc.
+	 * binding it to the context, etc.
 	 *
 	 * @param {Array|Texture|Number} value - The actual argument supplied to the kernel
 	 * @param {String} type - Type of the argument
 	 * @param {String} name - Name of the argument
 	 */
 	_addArgument(value, type, name) {
-		const gl = this._webGl;
+		const gl = this.context;
 		const argumentTexture = this.getArgumentTexture(name);
 		if (value instanceof Texture) {
 			type = value.type;
@@ -418,6 +427,9 @@ class WebGL2Kernel extends WebGLKernel {
 			case 'NumberTexture':
 				{
 					const inputTexture = value;
+					if (inputTexture.context !== this.context) {
+						throw new Error(`argument ${ name} (${ type }) must be from same context`);
+					}
 					const dim = inputTexture.dimensions;
 					const size = inputTexture.size;
 
@@ -431,7 +443,7 @@ class WebGL2Kernel extends WebGLKernel {
 					break;
 				}
 			default:
-				throw new Error('Input type not supported (WebGL): ' + value);
+				throw new Error('Input type not supported: ' + value);
 		}
 		this.argumentsLength++;
 	}
@@ -481,14 +493,14 @@ class WebGL2Kernel extends WebGLKernel {
 
 	/**
 	 * @desc Adds kernel parameters to the Argument Texture,
-	 * binding it to the webGl instance, etc.
+	 * binding it to the context, etc.
 	 *
 	 * @param {Array|Texture|Number} value - The actual argument supplied to the kernel
 	 * @param {String} type - Type of the argument
 	 * @param {String} name - Name of the argument
 	 */
 	_addConstant(value, type, name) {
-		const gl = this._webGl;
+		const gl = this.context;
 		const argumentTexture = this.getArgumentTexture(name);
 		if (value instanceof Texture) {
 			type = value.type;
@@ -655,6 +667,9 @@ class WebGL2Kernel extends WebGLKernel {
 			case 'NumberTexture':
 				{
 					const inputTexture = value;
+					if (inputTexture.context !== this.context) {
+						throw new Error(`argument ${ name} (${ type }) must be from same context`);
+					}
 					const dim = inputTexture.dimensions;
 					const size = inputTexture.size;
 
@@ -670,7 +685,7 @@ class WebGL2Kernel extends WebGLKernel {
 			case 'Integer':
 			case 'Float':
 			default:
-				throw new Error('Input type not supported (WebGL): ' + value);
+				throw new Error('Input type not supported: ' + value);
 		}
 		this.constantsLength++;
 	}
@@ -847,7 +862,7 @@ class WebGL2Kernel extends WebGLKernel {
 	 */
 	_addKernels() {
 		const builder = this.functionBuilder;
-		const gl = this._webGl;
+		const gl = this.context;
 
 		builder.addFunctions(this.functions, {
 			constants: this.constants,
@@ -904,6 +919,11 @@ class WebGL2Kernel extends WebGLKernel {
 			return this.compiledVertShaderString;
 		}
 		return this.compiledVertShaderString = this.constructor.vertShaderString;
+	}
+
+	destroyExtensions() {
+		this.extensions.EXT_color_buffer_float = null;
+		this.extensions.OES_texture_float_linear = null;
 	}
 }
 

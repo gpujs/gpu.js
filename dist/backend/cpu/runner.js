@@ -15,46 +15,50 @@ var CPUFunctionBuilder = require('./function-builder');
 var CPURunner = function (_Runner) {
 	_inherits(CPURunner, _Runner);
 
-	_createClass(CPURunner, null, [{
-		key: 'isRelatedContext',
-		value: function isRelatedContext(context) {
-			return false;
-		}
-
-		/**
-   * @desc Instantiates a Runner instance for the kernel.
-   * @param {Object} settings - Settings to instantiate properties in Runner, with given values
-   *
-   */
-
-	}, {
-		key: 'isCompatible',
-		get: function get() {
-			return true;
-		}
-	}]);
-
-	function CPURunner(settings) {
+	function CPURunner() {
 		_classCallCheck(this, CPURunner);
 
-		var _this = _possibleConstructorReturn(this, (CPURunner.__proto__ || Object.getPrototypeOf(CPURunner)).call(this, new CPUFunctionBuilder(), settings));
-
-		_this.Kernel = CPUKernel;
-		_this.kernel = null;
-		return _this;
+		return _possibleConstructorReturn(this, (CPURunner.__proto__ || Object.getPrototypeOf(CPURunner)).apply(this, arguments));
 	}
-
-	/**
-  * @name getMode()
-  * @desc Return the current mode in which gpu.js is executing.
-  * @returns {String} The current mode; "cpu".
-  */
-
 
 	_createClass(CPURunner, [{
 		key: 'getMode',
+
+		/**
+   * @name getMode()
+   * @desc Return the current mode in which gpu.js is executing.
+   * @returns {String} The current mode; "cpu".
+   */
 		value: function getMode() {
 			return 'cpu';
+		}
+	}], [{
+		key: 'getFeatures',
+		value: function getFeatures() {
+			return Object.freeze({
+				kernelMap: true,
+				isIntegerDivisionAccurate: true
+			});
+		}
+	}, {
+		key: 'isContextMatch',
+		value: function isContextMatch(context) {
+			return false;
+		}
+	}, {
+		key: 'FunctionBuilder',
+		get: function get() {
+			return CPUFunctionBuilder;
+		}
+	}, {
+		key: 'Kernel',
+		get: function get() {
+			return CPUKernel;
+		}
+	}, {
+		key: 'isSupported',
+		get: function get() {
+			return true;
 		}
 	}]);
 

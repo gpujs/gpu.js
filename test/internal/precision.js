@@ -1,6 +1,6 @@
 var GPU = require('../../src/index');
 
-(GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('WebGL Decimal Precision', function(assert) {
+(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('WebGL Decimal Precision', function(assert) {
   var gpu = new GPU({mode: 'webgl'});
   var add = gpu.createKernel(function(a, b) {
     return a + b;
@@ -21,7 +21,7 @@ var GPU = require('../../src/index');
   gpu.destroy();
 });
 
-(GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('WebGL2 Decimal Precision', function(assert) {
+(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('WebGL2 Decimal Precision', function(assert) {
   var gpu = new GPU({mode: 'webgl2'});
   var add = gpu.createKernel(function(a, b) {
     return a + b;
@@ -42,7 +42,7 @@ var GPU = require('../../src/index');
   gpu.destroy();
 });
 
-(GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('HeadlessGL Decimal Precision', function(assert) {
+(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('HeadlessGL Decimal Precision', function(assert) {
   var gpu = new GPU({mode: 'headlessgl'});
   var add = gpu.createKernel(function(a, b) {
     return a + b;

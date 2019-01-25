@@ -32,39 +32,28 @@ var GPU = require('../../src/index');
       .setOutput([B.length, A.length]);
 
     var result = kernels(A, B).result;
+    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2,2]);
+    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2,2]);
+    QUnit.assert.deepEqual(QUnit.extend([], result[2]), []);
     gpu.destroy();
     return result;
   }
-  QUnit.test( "Issue #96 - param names (auto)", function() {
-    var result = getResult();
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[2]), []);
+  QUnit.test("Issue #96 - param names (auto)", function() {
+    getResult();
   });
-
-  QUnit.test( "Issue #96 - param names (cpu)", function() {
-    var result = getResult('cpu');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[2]), []);
+  QUnit.test("Issue #96 - param names (gpu)", function() {
+    getResult('gpu');
   });
-
-  QUnit.test( "Issue #96 - param names (gpu)", function() {
-    var result = getResult('gpu');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[2]), []);
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("Issue #96 - param names (webgl)", function() {
+    getResult('webgl');
   });
-  QUnit.test( "Issue #96 - param names (webgl)", function() {
-    var result = getResult('webgl');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[2]), []);
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("Issue #96 - param names (webgl2)", function() {
+    getResult('webgl2');
   });
-  QUnit.test( "Issue #96 - param names (GPU only) (webgl2)", function() {
-    var result = getResult('webgl2');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[2]), []);
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("Issue #96 - param names (headlessgl)", function() {
+    getResult('headlessgl');
+  });
+  QUnit.test("Issue #96 - param names (cpu)", function() {
+    getResult('cpu');
   });
 })();

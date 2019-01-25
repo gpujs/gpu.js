@@ -17,23 +17,23 @@ var GPU = require('../../src/index');
     gpu.destroy();
   }
 
-  QUnit.test( "inputX (auto)", function() {
+  QUnit.test("inputX (auto)", function() {
     inputX();
   });
 
-  QUnit.test( "inputX (gpu)", function() {
+  QUnit.test("inputX (gpu)", function() {
     inputX('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("inputX (webgl)", function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("inputX (webgl)", function () {
     inputX('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("inputX (webgl2)", function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("inputX (webgl2)", function () {
     inputX('webgl2');
   });
 
-  QUnit.test( "inputX (cpu)", function() {
+  QUnit.test("inputX (cpu)", function() {
     inputX('cpu');
   });
 
@@ -56,27 +56,27 @@ var GPU = require('../../src/index');
     gpu.destroy();
   }
 
-  QUnit.test( "inputXY (auto)", function() {
+  QUnit.test("inputXY (auto)", function() {
     inputXY();
   });
 
-  QUnit.test( "inputXY (gpu)", function() {
+  QUnit.test("inputXY (gpu)", function() {
     inputXY('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("inputXY (webgl)", function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("inputXY (webgl)", function () {
     inputXY('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("inputXY (webgl2)", function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("inputXY (webgl2)", function () {
     inputXY('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)("inputXY (headlessgl)", function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("inputXY (headlessgl)", function () {
     inputXY('headlessgl');
   });
 
-  QUnit.test( "inputXY (cpu)", function() {
+  QUnit.test("inputXY (cpu)", function() {
     inputXY('cpu');
   });
 
@@ -96,27 +96,27 @@ var GPU = require('../../src/index');
     gpu.destroy();
   }
 
-  QUnit.test( "inputYX (auto)", function() {
+  QUnit.test("inputYX (auto)", function() {
     inputYX();
   });
 
-  QUnit.test( "inputYX (gpu)", function() {
+  QUnit.test("inputYX (gpu)", function() {
     inputYX('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("inputYX (webgl)", function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("inputYX (webgl)", function () {
     inputYX('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("inputYX (webgl2)", function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("inputYX (webgl2)", function () {
     inputYX('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)("inputYX (headlessgl)", function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("inputYX (headlessgl)", function () {
     inputYX('headlessgl');
   });
 
-  QUnit.test( "inputYX (cpu)", function() {
+  QUnit.test("inputYX (cpu)", function() {
     inputYX('cpu');
   });
 
@@ -136,27 +136,27 @@ var GPU = require('../../src/index');
     gpu.destroy();
   }
 
-  QUnit.test( "inputYXOffset (auto)", function() {
+  QUnit.test("inputYXOffset (auto)", function() {
     inputYXOffset();
   });
 
-  QUnit.test( "inputYXOffset (gpu)", function() {
+  QUnit.test("inputYXOffset (gpu)", function() {
     inputYXOffset('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("inputYXOffset (webgl)", function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("inputYXOffset (webgl)", function () {
     inputYXOffset('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("inputYXOffset (webgl2)", function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("inputYXOffset (webgl2)", function () {
     inputYXOffset('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)("inputYXOffset (headlessgl)", function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("inputYXOffset (headlessgl)", function () {
     inputYXOffset('headlessgl');
   });
 
-  QUnit.test( "inputYXOffset (cpu)", function() {
+  QUnit.test("inputYXOffset (cpu)", function() {
     inputYXOffset('cpu');
   });
 
@@ -176,27 +176,27 @@ var GPU = require('../../src/index');
     gpu.destroy();
   }
 
-  QUnit.test( "inputYXOffsetPlus1 (auto)", function() {
+  QUnit.test("inputYXOffsetPlus1 (auto)", function() {
     inputYXOffsetPlus1();
   });
 
-  QUnit.test( "inputYXOffsetPlus1 (gpu)", function() {
+  QUnit.test("inputYXOffsetPlus1 (gpu)", function() {
     inputYXOffsetPlus1('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("inputYXOffsetPlus1 (webgl)", function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("inputYXOffsetPlus1 (webgl)", function () {
     inputYXOffsetPlus1('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("inputYXOffsetPlus1 (webgl2)", function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("inputYXOffsetPlus1 (webgl2)", function () {
     inputYXOffsetPlus1('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)("inputYXOffsetPlus1 (headlessgl)", function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("inputYXOffsetPlus1 (headlessgl)", function () {
     inputYXOffsetPlus1('headlessgl');
   });
 
-  QUnit.test( "inputYXOffsetPlus1 (cpu)", function() {
+  QUnit.test("inputYXOffsetPlus1 (cpu)", function() {
     inputYXOffsetPlus1('cpu');
   });
 
@@ -216,27 +216,27 @@ var GPU = require('../../src/index');
     gpu.destroy();
   }
 
-  QUnit.test( "inputZYX (auto)", function() {
+  QUnit.test("inputZYX (auto)", function() {
     inputZYX();
   });
 
-  QUnit.test( "inputZYX (gpu)", function() {
+  QUnit.test("inputZYX (gpu)", function() {
     inputZYX('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("inputZYX (webgl)", function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("inputZYX (webgl)", function () {
     inputZYX('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("inputZYX (webgl2)", function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("inputZYX (webgl2)", function () {
     inputZYX('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)("inputZYX (headlessgl)", function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("inputZYX (headlessgl)", function () {
     inputZYX('headlessgl');
   });
 
-  QUnit.test( "inputZYX (cpu)", function() {
+  QUnit.test("inputZYX (cpu)", function() {
     inputZYX('cpu');
   });
 
@@ -260,27 +260,27 @@ var GPU = require('../../src/index');
     gpu.destroy();
   }
 
-  QUnit.test( "inputZYXVariables (auto)", function() {
+  QUnit.test("inputZYXVariables (auto)", function() {
     inputZYXVariables();
   });
 
-  QUnit.test( "inputZYXVariables (gpu)", function() {
+  QUnit.test("inputZYXVariables (gpu)", function() {
     inputZYXVariables('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("inputZYXVariables (webgl)", function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("inputZYXVariables (webgl)", function () {
     inputZYXVariables('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("inputZYXVariables (webgl2)", function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("inputZYXVariables (webgl2)", function () {
     inputZYXVariables('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)("inputZYXVariables (headlessgl)", function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("inputZYXVariables (headlessgl)", function () {
     inputZYXVariables('headlessgl');
   });
 
-  QUnit.test( "inputZYXVariables (cpu)", function() {
+  QUnit.test("inputZYXVariables (cpu)", function() {
     inputZYXVariables('cpu');
   });
 })();

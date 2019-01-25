@@ -39,7 +39,6 @@ module.exports = function(gpuKernel, name) {
       flatten2dArrayTo: ${ removeNoise(utils.flatten2dArrayTo.toString()) },
       flatten3dArrayTo: ${ removeNoise(utils.flatten3dArrayTo.toString()) },
       systemEndianness: ${ removeNoise(utils.getSystemEndianness.toString()) },
-      initWebGl: ${ removeNoise(utils.initWebGl.toString()) },
       isArray: ${ removeNoise(utils.isArray.toString()) },
       checkOutput: ${ removeNoise(utils.checkOutput.toString()) }
     };
@@ -53,8 +52,8 @@ module.exports = function(gpuKernel, name) {
         this.maxTexSize = null;
         this.argumentsLength = 0;
         this.constantsLength = 0;
-        this._canvas = null;
-        this._webGl = null;
+        this.canvas = null;
+        this.context = null;
         this.program = null;
         this.subKernels = null;
         this.subKernelNames = null;
@@ -78,6 +77,7 @@ module.exports = function(gpuKernel, name) {
 		    this.textureCache = {};
 		    this.subKernelOutputTextures = null;
 		    this.subKernelOutputVariableNames = null;
+		    this.extensions = {};
 		    this.uniform1fCache = {};
 		    this.uniform1iCache = {};
 		    this.uniform2fCache = {};
@@ -88,11 +88,11 @@ module.exports = function(gpuKernel, name) {
       }
       _getFragShaderString() { return this.compiledFragShaderString; }
       _getVertShaderString() { return this.compiledVertShaderString; }
-      validateOptions() {}
+      validateSettings() {}
       setupParams() {}
       setupConstants() {}
-      setCanvas(canvas) { this._canvas = canvas; return this; }
-      setWebGl(webGl) { this._webGl = webGl; return this; }
+      setCanvas(canvas) { this.canvas = canvas; return this; }
+      setContext(context) { this.context = context; return this; }
       setTexture(Type) { Texture = Type; }
       setInput(Type) { Input = Type; }
       ${ removeFnNoise(gpuKernel.getUniformLocation.toString()) }
@@ -100,6 +100,7 @@ module.exports = function(gpuKernel, name) {
 		  ${ removeFnNoise(gpuKernel.run.toString()) }
 		  ${ removeFnNoise(gpuKernel._addArgument.toString()) }
 		  ${ removeFnNoise(gpuKernel._formatArrayTransfer.toString()) }
+		  ${ removeFnNoise(gpuKernel.initExtensions.toString()) }
 		  ${ removeFnNoise(gpuKernel.getArgumentTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.getTextureCache.toString()) }
 		  ${ removeFnNoise(gpuKernel.getOutputTexture.toString()) }

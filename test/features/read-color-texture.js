@@ -151,27 +151,27 @@ var GPU = require('../../src/index');
     gpu.destroy();
   }
 
-  QUnit.test( 'colorSyntaxTest (auto)', function(assert) {
+  QUnit.test('colorSyntaxTest (auto)', function(assert) {
     colorSyntaxTest(null);
   });
 
-  QUnit.test( 'colorSyntaxTest (gpu)', function(assert) {
+  QUnit.test('colorSyntaxTest (gpu)', function(assert) {
     colorSyntaxTest('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('colorSyntaxTest (webgl)', function (assert) {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('colorSyntaxTest (webgl)', function (assert) {
     colorSyntaxTest('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('colorSyntaxTest (webgl2)', function (assert) {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('colorSyntaxTest (webgl2)', function (assert) {
     colorSyntaxTest('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('colorSyntaxTest (headlessgl)', function (assert) {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('colorSyntaxTest (headlessgl)', function (assert) {
     colorSyntaxTest('headlessgl');
   });
 
-  QUnit.test( 'colorSyntaxTest (cpu) throws', function(assert) {
+  QUnit.test('colorSyntaxTest (cpu) throws', function(assert) {
     assert.throws(function() {
       colorSyntaxTest('cpu');
     });

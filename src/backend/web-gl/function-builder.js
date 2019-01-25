@@ -7,9 +7,8 @@ const WebGLFunctionNode = require('./function-node');
  * @desc Builds webGl functions (shaders) from JavaScript function Strings
  */
 class WebGLFunctionBuilder extends FunctionBuilder {
-	constructor() {
-		super();
-		this.Node = WebGLFunctionNode;
+	static get FunctionNode() {
+		return WebGLFunctionNode;
 	}
 }
 

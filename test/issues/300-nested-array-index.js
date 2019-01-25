@@ -1,52 +1,49 @@
-var GPU = require('../../src/index');
+(() => {
+	const GPU = require('../../src/index');
+	function test(mode) {
+		const gpu1 = new GPU({ mode });
+		const gpu2 = new GPU({ mode });
 
-(function() {
-	var gpu1, gpu2;
-	// these 2 should be erquivilent
-	createNestedKernel = function(mode) {
-		gpu1 = new GPU({ mode });
-
-		var broken = gpu1.createKernel(function(input, lookup) {
+		// these 2 should be equivalent
+		const broken = gpu1.createKernel(function(input, lookup) {
 			return lookup[input[this.thread.x]];
-		}).setOutput([1]);
-		return broken;
-	}
+		})
+			.setOutput([1]);
 
-	createTempVarKernel = function(mode) {
-		gpu2 = new GPU({ mode });
-		var working = gpu2.createKernel(function(input, lookup) {
-			var idx = input[this.thread.x];
+		const working = gpu2.createKernel(function(input, lookup) {
+			const idx = input[this.thread.x];
 			return lookup[idx];
-		}).setOutput([1]);
-		return working;
+		})
+			.setOutput([1]);
+
+		QUnit.assert.equal(broken([2], [7, 13, 19, 23])[0], 19);
+		QUnit.assert.equal(working([2], [7, 13, 19, 23])[0], 19);
+
+		gpu1.destroy();
+		gpu2.destroy();
 	}
 
 	QUnit.test('Issue #300 nested array index - auto', () => {
-		QUnit.assert.equal(createNestedKernel()([2], [7, 13, 19, 23])[0], 19);
-		QUnit.assert.equal(createTempVarKernel()([2], [7, 13, 19, 23])[0], 19);
-		gpu1.destroy();
-		gpu2.destroy();
+		test();
 	});
 
 	QUnit.test('Issue #300 nested array index - gpu', () => {
-		QUnit.assert.equal(createNestedKernel('gpu')([2], [7, 13, 19, 23])[0], 19);
-		QUnit.assert.equal(createTempVarKernel('gpu')([2], [7, 13, 19, 23])[0], 19);
-		gpu1.destroy();
-		gpu2.destroy();
+		test('gpu');
 	});
 
-	QUnit.test('Issue #300 nested array index - webgl', () => {
-		QUnit.assert.equal(createNestedKernel('webgl')([2], [7, 13, 19, 23])[0], 19);
-		QUnit.assert.equal(createTempVarKernel('webgl')([2], [7, 13, 19, 23])[0], 19);
-		gpu1.destroy();
-		gpu2.destroy();
+	(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #300 nested array index - webgl', () => {
+		test('webgl');
 	});
 
-	QUnit.test('Issue #300 nested array index - webgl2', () => {
-		QUnit.assert.equal(createNestedKernel('webgl2')([2], [7, 13, 19, 23])[0], 19);
-		QUnit.assert.equal(createTempVarKernel('webgl2')([2], [7, 13, 19, 23])[0], 19);
-		gpu1.destroy();
-		gpu2.destroy();
+	(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #300 nested array index - webgl2', () => {
+		test('webgl2');
 	});
 
-  })();
+	(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #300 nested array index - headlessgl', () => {
+		test('headlessgl');
+	});
+
+	QUnit.test('Issue #300 nested array index - cpu', () => {
+		test('cpu');
+	});
+})();

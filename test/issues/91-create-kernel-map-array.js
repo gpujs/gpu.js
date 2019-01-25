@@ -30,32 +30,32 @@ var GPU = require('../../src/index');
     })
       .setOutput([2, 2]);
     var result = kernels(A, B).result;
+    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [21,32]);
+    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [9,14]);
     gpu.destroy();
-    return result;
+    return kernels;
   }
-  QUnit.test( "Issue #91 - type detection (auto)", function() {
-    var result = getResult();
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [21,32]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [9,14]);
+  (GPU.isWebGL2Supported || (GPU.isHeadlessGLSupported && GPU.HeadlessGLRunner.features.kernelMap) ? QUnit.test : QUnit.skip)("Issue #91 - type detection (auto)", function() {
+    getResult();
   });
-  QUnit.test( "Issue #91 - type detection (gpu)", function() {
-    var result = getResult('gpu');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [21,32]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [9,14]);
+  (GPU.isWebGL2Supported || (GPU.isHeadlessGLSupported && GPU.HeadlessGLRunner.features.kernelMap) ? QUnit.test : QUnit.skip)("Issue #91 - type detection (gpu)", function() {
+    getResult('gpu');
   });
-  QUnit.test( "Issue #91 - type detection (webgl)", function() {
-    var result = getResult('webgl');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [21,32]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [9,14]);
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("Issue #91 - type detection (webgl)", function() {
+    var kernel = getResult('webgl');
+    QUnit.assert.equal(kernel.kernel.constructor, GPU.WebGLKernel, 'kernel type is wrong');
   });
-  QUnit.test( "Issue #91 - type detection (webgl2)", function() {
-    var result = getResult('webgl2');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [21,32]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [9,14]);
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("Issue #91 - type detection (webgl2)", function() {
+    var kernel = getResult('webgl2');
+    QUnit.assert.equal(kernel.kernel.constructor, GPU.WebGL2Kernel, 'kernel type is wrong');
   });
-  QUnit.test( "Issue #91 - type detection (cpu)", function() {
-    var result = getResult('cpu');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [21,32]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [9,14]);
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("Issue #91 - type detection (headlessgl)", function() {
+    QUnit.assert.throws(() => {
+      getResult('headlessgl');
+    });
+  });
+  QUnit.test("Issue #91 - type detection (cpu)", function() {
+    var kernel = getResult('cpu');
+    QUnit.assert.equal(kernel.kernel.constructor, GPU.CPUKernel, 'kernel type is wrong');
   });
 })();

@@ -10,32 +10,32 @@ var GPU = require('../../src/index');
       .setOutput([1])();
   }
 
-  QUnit.test( "Infinity (auto)", function() {
+  QUnit.test("Infinity (auto)", function() {
     QUnit.assert.deepEqual(input()[0], NaN);
     gpu.destroy();
   });
 
-  QUnit.test( "Infinity (cpu)", function() {
+  QUnit.test("Infinity (cpu)", function() {
     QUnit.assert.deepEqual(input('cpu')[0], Infinity);
     gpu.destroy();
   });
 
-  QUnit.test( "Infinity (gpu)", function() {
+  QUnit.test("Infinity (gpu)", function() {
     QUnit.assert.deepEqual(input('gpu')[0], NaN);
     gpu.destroy();
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("Infinity (webgl)", function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("Infinity (webgl)", function () {
     QUnit.assert.deepEqual(input('webgl')[0], NaN);
     gpu.destroy();
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("Infinity (webgl2)", function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("Infinity (webgl2)", function () {
     QUnit.assert.deepEqual(input('webgl2')[0], NaN);
     gpu.destroy();
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)("Infinity (headlessgl)", function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("Infinity (headlessgl)", function () {
     QUnit.assert.deepEqual(input('headlessgl')[0], NaN);
     gpu.destroy();
   });

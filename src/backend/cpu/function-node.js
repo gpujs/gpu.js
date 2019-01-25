@@ -8,14 +8,13 @@ const utils = require('../../core/utils');
  *
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
  *
- * @prop functionName         - {String}        Name of the function
- * @prop jsFunction           - {Function}   The JS Function the node represents
- * @prop jsFunctionString     - {String}        jsFunction.toString()
+ * @prop functionName         - {String}    Name of the function
+ * @prop jsFunction           - {Function}  The JS Function the node represents
+ * @prop jsFunctionString     - {String}    jsFunction.toString()
  * @prop paramNames           - {String[]}  Parameter names of the function
  * @prop paramTypes           - {String[]}  Shader land parameters type assumption
- * @prop isRootKernel         - {Boolean}       Special indicator, for kernel function
- * @prop webglFunctionString  - {String}        webgl converted function string
- * @prop openglFunctionString - {String}        opengl converted function string
+ * @prop isRootKernel         - {Boolean}   Special indicator, for kernel function
+ * @prop functionString       - {String}    Converted function string
  * @prop calledFunctions      - {String[]}  List of all the functions called
  * @prop initVariables        - {String[]}  List of variables initialized in the function
  * @prop readVariables        - {String[]}  List of variables read operations occur
@@ -23,9 +22,9 @@ const utils = require('../../core/utils');
  *
  */
 class CPUFunctionNode extends FunctionNode {
-	constructor(functionName, jsFunction, options) {
-		super(functionName, jsFunction, options);
-		this.paramSizes = options ? options.paramSizes : [];
+	constructor(functionName, jsFunction, settings) {
+		super(functionName, jsFunction, settings);
+		this.paramSizes = settings ? settings.paramSizes : [];
 		this.memberStates = [];
 	}
 
@@ -232,22 +231,22 @@ class CPUFunctionNode extends FunctionNode {
 
 		switch (idtNode.name) {
 			case 'gpu_threadX':
-				retArr.push('threadId.x');
+				retArr.push('_this.thread.x');
 				break;
 			case 'gpu_threadY':
-				retArr.push('threadId.y');
+				retArr.push('_this.thread.y');
 				break;
 			case 'gpu_threadZ':
-				retArr.push('threadId.z');
+				retArr.push('_this.thread.z');
 				break;
 			case 'gpu_outputX':
-				retArr.push('uOutputDim.x');
+				retArr.push('_this.output.x');
 				break;
 			case 'gpu_outputY':
-				retArr.push('uOutputDim.y');
+				retArr.push('_this.output.y');
 				break;
 			case 'gpu_outputZ':
-				retArr.push('uOutputDim.z');
+				retArr.push('_this.output.z');
 				break;
 			case 'Infinity':
 				retArr.push('Infinity');
@@ -284,7 +283,7 @@ class CPUFunctionNode extends FunctionNode {
 	}
 
 	/**
-	 * @desc Parses the abstract syntax tree forfor *for-loop* expression
+	 * @desc Parses the abstract syntax tree for *for-loop* expression
 	 * @param {Object} forNode - An ast Node
 	 * @param {Array} retArr - return array string
 	 * @returns {Array} the parsed cpu string
@@ -339,28 +338,20 @@ class CPUFunctionNode extends FunctionNode {
 
 				return retArr;
 			} else if (forNode.init.declarations) {
-				const declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
-				const updateArgument = forNode.update.argument;
+				const declarations = forNode.init.declarations;
 				if (!Array.isArray(declarations) || declarations.length < 1) {
 					throw new Error('Error: Incompatible for loop declaration');
 				}
 
 				if (declarations.length > 1) {
-					let initArgument = null;
+					retArr.push('for (');
+					retArr.push(`${forNode.init.kind} `);
 					for (let i = 0; i < declarations.length; i++) {
-						const declaration = declarations[i];
-						if (declaration.id.name === updateArgument.name) {
-							initArgument = declaration;
-							declarations.splice(i, 1);
-						} else {
-							retArr.push('var ');
-							this.astGeneric(declaration, retArr);
-							retArr.push(';');
+						if (i > 0) {
+							retArr.push(',');
 						}
+						this.astGeneric(declarations[i], retArr);
 					}
-
-					retArr.push('for (let ');
-					this.astGeneric(initArgument, retArr);
 					retArr.push(';');
 				} else {
 					retArr.push('for (');
@@ -386,7 +377,7 @@ class CPUFunctionNode extends FunctionNode {
 	 * @desc Parses the abstract syntax tree for *while* loop
 	 * @param {Object} whileNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 * @returns {Array} the parsed openclgl string
+	 * @returns {Array} the parsed javascript string
 	 */
 	astWhileStatement(whileNode, retArr) {
 		if (whileNode.type !== 'WhileStatement') {
@@ -489,18 +480,21 @@ class CPUFunctionNode extends FunctionNode {
 
 	/**
 	 * @desc Parses the abstract syntax tree for *Variable Declaration*
-	 * @param {Object} vardecNode - An ast Node
+	 * @param {Object} varDecNode - An ast Node
 	 * @param {Array} retArr - return array string
 	 * @returns {Array} the append retArr
 	 */
-	astVariableDeclaration(vardecNode, retArr) {
-		retArr.push('let ');
-		for (let i = 0; i < vardecNode.declarations.length; i++) {
-			this.declarations[vardecNode.declarations[i].id.name] = 'var';
+	astVariableDeclaration(varDecNode, retArr) {
+		if (varDecNode.kind === 'var') {
+			this.varWarn();
+		}
+		retArr.push(`${varDecNode.kind} `);
+		for (let i = 0; i < varDecNode.declarations.length; i++) {
+			this.declarations[varDecNode.declarations[i].id.name] = varDecNode.kind;
 			if (i > 0) {
 				retArr.push(',');
 			}
-			this.astGeneric(vardecNode.declarations[i], retArr);
+			this.astGeneric(varDecNode.declarations[i], retArr);
 		}
 		retArr.push(';');
 		return retArr;
@@ -508,15 +502,15 @@ class CPUFunctionNode extends FunctionNode {
 
 	/**
 	 * @desc Parses the abstract syntax tree for *Variable Declarator*
-	 * @param {Object} ivardecNode - An ast Node
+	 * @param {Object} iVarDecNode - An ast Node
 	 * @param {Array} retArr - return array string
 	 * @returns {Array} the append retArr
 	 */
-	astVariableDeclarator(ivardecNode, retArr) {
-		this.astGeneric(ivardecNode.id, retArr);
-		if (ivardecNode.init !== null) {
+	astVariableDeclarator(iVarDecNode, retArr) {
+		this.astGeneric(iVarDecNode.id, retArr);
+		if (iVarDecNode.init !== null) {
 			retArr.push('=');
-			this.astGeneric(ivardecNode.init, retArr);
+			this.astGeneric(iVarDecNode.init, retArr);
 		}
 		return retArr;
 	}
@@ -873,6 +867,10 @@ class CPUFunctionNode extends FunctionNode {
 	astDebuggerStatement(arrNode, retArr) {
 		retArr.push('debugger;');
 		return retArr;
+	}
+
+	varWarn() {
+		console.warn('var declarations are not supported, weird things happen.  Use const or let');
 	}
 }
 

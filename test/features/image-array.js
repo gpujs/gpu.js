@@ -37,7 +37,7 @@ var GPU = require('../../src/index');
       output : [138, 91]
     });
     getImages(function(images) {
-      if (gpu._runner.constructor.name === 'WebGLRunner') {
+      if (gpu.runner.constructor.name === 'WebGLRunner') {
         assert.throws(function() {
           // TODO: fallback to cpu?  Probably not worth it.
           imageKernel(images);
@@ -61,11 +61,11 @@ var GPU = require('../../src/index');
     imageTest('gpu', assert);
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('graphical imagesArrayTest (webgl)', function (assert) {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('graphical imagesArrayTest (webgl)', function (assert) {
     imageTest('webgl', assert);
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('graphical imagesArrayTest (webgl2)', function (assert) {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('graphical imagesArrayTest (webgl2)', function (assert) {
     imageTest('webgl2', assert);
   });
 

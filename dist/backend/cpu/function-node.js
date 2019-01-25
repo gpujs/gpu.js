@@ -16,14 +16,13 @@ var utils = require('../../core/utils');
  *
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
  *
- * @prop functionName         - {String}        Name of the function
- * @prop jsFunction           - {Function}   The JS Function the node represents
- * @prop jsFunctionString     - {String}        jsFunction.toString()
+ * @prop functionName         - {String}    Name of the function
+ * @prop jsFunction           - {Function}  The JS Function the node represents
+ * @prop jsFunctionString     - {String}    jsFunction.toString()
  * @prop paramNames           - {String[]}  Parameter names of the function
  * @prop paramTypes           - {String[]}  Shader land parameters type assumption
- * @prop isRootKernel         - {Boolean}       Special indicator, for kernel function
- * @prop webglFunctionString  - {String}        webgl converted function string
- * @prop openglFunctionString - {String}        opengl converted function string
+ * @prop isRootKernel         - {Boolean}   Special indicator, for kernel function
+ * @prop functionString       - {String}    Converted function string
  * @prop calledFunctions      - {String[]}  List of all the functions called
  * @prop initVariables        - {String[]}  List of variables initialized in the function
  * @prop readVariables        - {String[]}  List of variables read operations occur
@@ -34,12 +33,12 @@ var utils = require('../../core/utils');
 var CPUFunctionNode = function (_FunctionNode) {
 	_inherits(CPUFunctionNode, _FunctionNode);
 
-	function CPUFunctionNode(functionName, jsFunction, options) {
+	function CPUFunctionNode(functionName, jsFunction, settings) {
 		_classCallCheck(this, CPUFunctionNode);
 
-		var _this = _possibleConstructorReturn(this, (CPUFunctionNode.__proto__ || Object.getPrototypeOf(CPUFunctionNode)).call(this, functionName, jsFunction, options));
+		var _this = _possibleConstructorReturn(this, (CPUFunctionNode.__proto__ || Object.getPrototypeOf(CPUFunctionNode)).call(this, functionName, jsFunction, settings));
 
-		_this.paramSizes = options ? options.paramSizes : [];
+		_this.paramSizes = settings ? settings.paramSizes : [];
 		_this.memberStates = [];
 		return _this;
 	}
@@ -265,22 +264,22 @@ var CPUFunctionNode = function (_FunctionNode) {
 
 			switch (idtNode.name) {
 				case 'gpu_threadX':
-					retArr.push('threadId.x');
+					retArr.push('_this.thread.x');
 					break;
 				case 'gpu_threadY':
-					retArr.push('threadId.y');
+					retArr.push('_this.thread.y');
 					break;
 				case 'gpu_threadZ':
-					retArr.push('threadId.z');
+					retArr.push('_this.thread.z');
 					break;
 				case 'gpu_outputX':
-					retArr.push('uOutputDim.x');
+					retArr.push('_this.output.x');
 					break;
 				case 'gpu_outputY':
-					retArr.push('uOutputDim.y');
+					retArr.push('_this.output.y');
 					break;
 				case 'gpu_outputZ':
-					retArr.push('uOutputDim.z');
+					retArr.push('_this.output.z');
 					break;
 				case 'Infinity':
 					retArr.push('Infinity');
@@ -317,7 +316,7 @@ var CPUFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @desc Parses the abstract syntax tree forfor *for-loop* expression
+   * @desc Parses the abstract syntax tree for *for-loop* expression
    * @param {Object} forNode - An ast Node
    * @param {Array} retArr - return array string
    * @returns {Array} the parsed cpu string
@@ -331,7 +330,7 @@ var CPUFunctionNode = function (_FunctionNode) {
 			}
 
 			if (forNode.test && forNode.test.type === 'BinaryExpression') {
-				if ((forNode.test.right.type === 'Identifier' || forNode.test.right.type === 'Literal') && forNode.test.operator === '<' && this.isIdentifierConstant(forNode.test.right.name) === false) {
+				if (forNode.test.right.type === 'Identifier' && forNode.test.operator === '<' && this.isIdentifierConstant(forNode.test.right.name) === false) {
 
 					if (!this.loopMaxIterations) {
 						console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
@@ -370,29 +369,20 @@ var CPUFunctionNode = function (_FunctionNode) {
 
 					return retArr;
 				} else if (forNode.init.declarations) {
-					var declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
-					var updateArgument = forNode.update.argument;
+					var declarations = forNode.init.declarations;
 					if (!Array.isArray(declarations) || declarations.length < 1) {
-						console.log(this.jsFunctionString);
 						throw new Error('Error: Incompatible for loop declaration');
 					}
 
 					if (declarations.length > 1) {
-						var initArgument = null;
+						retArr.push('for (');
+						retArr.push(forNode.init.kind + ' ');
 						for (var _i2 = 0; _i2 < declarations.length; _i2++) {
-							var declaration = declarations[_i2];
-							if (declaration.id.name === updateArgument.name) {
-								initArgument = declaration;
-								declarations.splice(_i2, 1);
-							} else {
-								retArr.push('var ');
-								this.astGeneric(declaration, retArr);
-								retArr.push(';');
+							if (_i2 > 0) {
+								retArr.push(',');
 							}
+							this.astGeneric(declarations[_i2], retArr);
 						}
-
-						retArr.push('for (let ');
-						this.astGeneric(initArgument, retArr);
 						retArr.push(';');
 					} else {
 						retArr.push('for (');
@@ -415,7 +405,7 @@ var CPUFunctionNode = function (_FunctionNode) {
    * @desc Parses the abstract syntax tree for *while* loop
    * @param {Object} whileNode - An ast Node
    * @param {Array} retArr - return array string
-   * @returns {Array} the parsed openclgl string
+   * @returns {Array} the parsed javascript string
    */
 
 	}, {
@@ -529,21 +519,24 @@ var CPUFunctionNode = function (_FunctionNode) {
 
 		/**
    * @desc Parses the abstract syntax tree for *Variable Declaration*
-   * @param {Object} vardecNode - An ast Node
+   * @param {Object} varDecNode - An ast Node
    * @param {Array} retArr - return array string
    * @returns {Array} the append retArr
    */
 
 	}, {
 		key: 'astVariableDeclaration',
-		value: function astVariableDeclaration(vardecNode, retArr) {
-			retArr.push('var ');
-			for (var i = 0; i < vardecNode.declarations.length; i++) {
-				this.declarations[vardecNode.declarations[i].id.name] = 'var';
+		value: function astVariableDeclaration(varDecNode, retArr) {
+			if (varDecNode.kind === 'var') {
+				this.varWarn();
+			}
+			retArr.push(varDecNode.kind + ' ');
+			for (var i = 0; i < varDecNode.declarations.length; i++) {
+				this.declarations[varDecNode.declarations[i].id.name] = varDecNode.kind;
 				if (i > 0) {
 					retArr.push(',');
 				}
-				this.astGeneric(vardecNode.declarations[i], retArr);
+				this.astGeneric(varDecNode.declarations[i], retArr);
 			}
 			retArr.push(';');
 			return retArr;
@@ -551,18 +544,18 @@ var CPUFunctionNode = function (_FunctionNode) {
 
 		/**
    * @desc Parses the abstract syntax tree for *Variable Declarator*
-   * @param {Object} ivardecNode - An ast Node
+   * @param {Object} iVarDecNode - An ast Node
    * @param {Array} retArr - return array string
    * @returns {Array} the append retArr
    */
 
 	}, {
 		key: 'astVariableDeclarator',
-		value: function astVariableDeclarator(ivardecNode, retArr) {
-			this.astGeneric(ivardecNode.id, retArr);
-			if (ivardecNode.init !== null) {
+		value: function astVariableDeclarator(iVarDecNode, retArr) {
+			this.astGeneric(iVarDecNode.id, retArr);
+			if (iVarDecNode.init !== null) {
 				retArr.push('=');
-				this.astGeneric(ivardecNode.init, retArr);
+				this.astGeneric(iVarDecNode.init, retArr);
 			}
 			return retArr;
 		}
@@ -938,6 +931,11 @@ var CPUFunctionNode = function (_FunctionNode) {
 		value: function astDebuggerStatement(arrNode, retArr) {
 			retArr.push('debugger;');
 			return retArr;
+		}
+	}, {
+		key: 'varWarn',
+		value: function varWarn() {
+			console.warn('var declarations are not supported, weird things happen.  Use const or let');
 		}
 	}, {
 		key: 'memberState',

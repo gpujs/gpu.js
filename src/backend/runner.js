@@ -1,71 +1,55 @@
-'use strict';
-
-const utils = require('../core/utils');
 const kernelRunShortcut = require('./kernel-run-shortcut');
 const features = {};
 
-/**
- * @desc Represents the 'private/protected' namespace of the GPU class
- * @prop {Object} settings - Settings object used to set Dimensions, etc.
- * @prop {String} kernel - Current kernel instance
- * @prop {Object} canvas - Canvas instance attached to the kernel
- * @prop {Object} webGl - WebGl instance attached to the kernel
- * @prop {Function} fn - Kernel function to run
- * @prop {Object} functionBuilder - FunctionBuilder instance
- * @prop {String} fnString - Kernel function (as a String)
- * @prop {String} endianness - endian information like Little-endian, Big-endian.
- *
- */
 class Runner {
-	static get isCompatible() {
-		return false;
+	/**
+	 *
+	 * @returns FunctionBuilder
+	 */
+	static get FunctionBuilder() {
+		throw new Error('"FunctionBuilder" not implemented on Runner');
 	}
-	static isRelatedContext(context) {
-		throw new Error('"isRelatedContext" not implemented on Runner');
+
+	/**
+	 *
+	 * @returns Kernel
+	 */
+	static get Kernel() {
+		throw new Error(`"Kernel" not implemented on ${ this.name }`);
 	}
-	constructor(functionBuilder, settings) {
+
+	static get isSupported() {
+		throw new Error(`"isSupported" not implemented on ${ this.name }`);
+	}
+
+	static isContextMatch(context) {
+		throw new Error(`"isContextMatch" not implemented on ${ this.name }`);
+	}
+
+	static get features() {
+		if (!features[this.name]) {
+			features[this.name] = this.getFeatures();
+		}
+		return features[this.name];
+	}
+
+	static getFeatures() {
+		throw new Error(`"getFeatures" not implemented on ${ this.name }`);
+	}
+
+	static get testFunctionBuilder() {
+		throw new Error(`"testFunctionBuilder" not implemented on ${ this.name }`);
+	}
+
+	constructor(settings) {
 		settings = settings || {};
-		this.kernel = settings.kernel;
 		this.canvas = settings.canvas;
-		this.webGl = settings.webGl;
-		this.fn = null;
-		this.functionBuilder = functionBuilder;
-		this.fnString = null;
-		this.endianness = utils.systemEndianness();
-	}
-
-	/**
-	 * @desc Converts the provided Texture instance to a JavaScript Array
-	 * @param {Object} texture - Texture Object
-	 */
-	textureToArray(texture) {
-		const copy = this.createKernel(function(x) {
-			return x[this.thread.z][this.thread.y][this.thread.x];
-		});
-
-		return copy(texture);
-	}
-
-	/**
-	 * @name deleteTexture
-	 * @desc Deletes the provided Texture instance
-	 * @param {Object} texture - Texture Object
-	 */
-	deleteTexture(texture) {
-		this.webGl.deleteTexture(texture.texture);
-	}
-
-	/**
-	 * @desc Get and returns the ASYNCHRONOUS executor, of a class and kernel
-	 * This returns a Promise object from an argument set.
-	 * Note that there is no current implementation.
-	 */
-	buildPromiseKernel() {
-		throw new Error('not yet implemented');
+		this.context = settings.context;
+		this.functionBuilder = new this.constructor.FunctionBuilder();
 	}
 
 	getMode() {
-		throw new Error('"mode" not implemented on Runner');
+		throw new Error(`"getMode" not implemented on ${ this.constructor.name }`);
 	}
 
 	/**
@@ -80,29 +64,18 @@ class Runner {
 		}
 
 		if (!settings.features) {
-			settings.features = this.features;
+			settings.features = this.constructor.features;
 		}
 
 		if (!settings.canvas && this.canvas) {
 			settings.canvas = this.canvas;
 		}
 
-		if (!settings.webGl && this.webGl) {
-			settings.webGl = this.webGl;
+		if (!settings.context && this.context) {
+			settings.context = this.context;
 		}
 
-		return kernelRunShortcut(new this.Kernel(fnString, settings));
-	}
-
-	get features() {
-		if (!features[this.constructor.name]) {
-			features[this.constructor.name] = this.getFeatures();
-		}
-		return features[this.constructor.name];
-	}
-
-	getFeatures() {
-		return Object.freeze({});
+		return kernelRunShortcut(new this.constructor.Kernel(fnString, settings));
 	}
 }
 

@@ -1,6 +1,5 @@
-var GPU = require('../../src/index');
-
-(function() {
+(() => {
+  const GPU = require('../../src/index');
 	function test(mode) {
 		var gpu = new GPU({ mode: mode });
     const toTexture = gpu.createKernel(function(value) {
@@ -16,11 +15,15 @@ var GPU = require('../../src/index');
     gpu.destroy();
 	}
 
-	QUnit.test('Issue #399 - double definition (webgl)', function() {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #399 - double definition (webgl)', () => {
 		test('webgl')
 	});
 
-	QUnit.test('Issue #399 - double definition (webgl2)', function() {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #399 - double definition (webgl2)', () => {
 		test('webgl2')
 	});
+
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #399 - double definition (headlessgl)', () => {
+    test('headlessgl')
+  });
 })();

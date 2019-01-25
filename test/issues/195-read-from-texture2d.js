@@ -1,6 +1,5 @@
-var GPU = require('../../src/index');
-
 (function() {
+  const GPU = require('../../src/index');
   function makeKernel(gpu) {
     return gpu.createKernel(function(a){
       return a[this.thread.y][this.thread.x];
@@ -9,19 +8,18 @@ var GPU = require('../../src/index');
   }
 
   function splitArray(array, part) {
-    var result = [];
-    for(var i = 0; i < array.length; i += part) {
+    const result = [];
+    for(let i = 0; i < array.length; i += part) {
       result.push(array.slice(i, i + part));
     }
     return result;
   }
 
-  var matrixSize =  4;
-  var A = Array.apply(null, Array(matrixSize*matrixSize)).map(function (_, i) {return i;});
-  A = splitArray(A, matrixSize);
+  const matrixSize =  4;
+  const A = splitArray(Array.apply(null, Array(matrixSize * matrixSize)).map((_, i) => i), matrixSize);
 
-  QUnit.test( "Issue #195 Read from Texture 2D (GPU only) (auto)", function() {
-    const gpu = new GPU({ mode: null });
+  function test(mode) {
+    const gpu = new GPU({ mode });
     const noTexture = makeKernel(gpu);
     const texture = makeKernel(gpu).setOutputToTexture(true);
 
@@ -32,47 +30,25 @@ var GPU = require('../../src/index');
     QUnit.assert.deepEqual(textureResult.map(function(v) { return Array.from(v); }), A);
     QUnit.assert.deepEqual(textureResult, result);
     gpu.destroy();
+  }
+
+  QUnit.test("Issue #195 Read from Texture 2D (GPU only) (auto)", () => {
+    test();
   });
 
-  QUnit.test( "Issue #195 Read from Texture 2D (GPU only) (gpu)", function() {
-    const gpu = new GPU({ mode: 'gpu' });
-    const noTexture = makeKernel(gpu);
-    const texture = makeKernel(gpu).setOutputToTexture(true);
-
-    const result = noTexture(A);
-    const textureResult = texture(A).toArray(gpu);
-
-    QUnit.assert.deepEqual(result.map(function(v) { return Array.from(v); }), A);
-    QUnit.assert.deepEqual(textureResult.map(function(v) { return Array.from(v); }), A);
-    QUnit.assert.deepEqual(textureResult, result);
-    gpu.destroy();
+  QUnit.test("Issue #195 Read from Texture 2D (GPU only) (gpu)", () => {
+    test('gpu');
   });
 
-  QUnit.test( "Issue #195 Read from Texture 2D (GPU only) (webgl)", function() {
-    const gpu = new GPU({ mode: 'webgl' });
-    const noTexture = makeKernel(gpu);
-    const texture = makeKernel(gpu).setOutputToTexture(true);
-
-    const result = noTexture(A);
-    const textureResult = texture(A).toArray(gpu);
-
-    QUnit.assert.deepEqual(result.map(function(v) { return Array.from(v); }), A);
-    QUnit.assert.deepEqual(textureResult.map(function(v) { return Array.from(v); }), A);
-    QUnit.assert.deepEqual(textureResult, result);
-    gpu.destroy();
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("Issue #195 Read from Texture 2D (GPU only) (webgl)", () => {
+    test('webgl');
   });
 
-  QUnit.test( "Issue #195 Read from Texture 2D (GPU Only) (webgl2)", function() {
-    const gpu = new GPU({ mode: 'webgl2' });
-    const noTexture = makeKernel(gpu);
-    const texture = makeKernel(gpu).setOutputToTexture(true);
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("Issue #195 Read from Texture 2D (GPU Only) (webgl2)", () => {
+    test('webgl2');
+  });
 
-    const result = noTexture(A);
-    const textureResult = texture(A).toArray(gpu);
-
-    QUnit.assert.deepEqual(result.map(function(v) { return Array.from(v); }), A);
-    QUnit.assert.deepEqual(textureResult.map(function(v) { return Array.from(v); }), A);
-    QUnit.assert.deepEqual(textureResult, result);
-    gpu.destroy();
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("Issue #195 Read from Texture 2D (GPU Only) (headlessgl)", () => {
+    test('headlessgl');
   });
 })();

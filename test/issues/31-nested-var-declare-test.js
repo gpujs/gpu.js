@@ -1,17 +1,15 @@
-var GPU = require('../../src/index');
-require('qunit-assert-close');
-
 (function() {
+  const GPU = require('../../src/index');
   //
   // See: https://github.com/gpujs/gpu.js/issues/31
   //
 
   // nested redeclare
   function nestedVarRedeclareFunction() {
-    var result = 0.0;
+    let result = 0;
 
     // outer loop limit is effectively skipped in CPU
-    for(var i=0; i<10; ++i) {
+    for(let i=0; i<10; ++i) {
       // inner loop limit should be higher, to avoid infinite loops
       for(i=0; i<20; ++i) {
         result += 1;
@@ -22,82 +20,80 @@ require('qunit-assert-close');
   }
 
   function nestedVarRedeclareTest(mode ) {
-    var gpu = new GPU({ mode: mode });
-    var f = gpu.createKernel(nestedVarRedeclareFunction, {
+    const gpu = new GPU({ mode: mode });
+    const f = gpu.createKernel(nestedVarRedeclareFunction, {
       output : [1]
     });
-    QUnit.assert.throws(function() {
+    QUnit.assert.throws(() => {
       f();
     });
     gpu.destroy();
   }
 
-  QUnit.test('Issue #31 - nestedVarRedeclare (auto)', function() {
+  QUnit.test('Issue #31 - nestedVarRedeclare (auto)', () => {
     nestedVarRedeclareTest(null);
   });
 
-  QUnit.test('Issue #31 - nestedVarRedeclare (gpu)', function() {
+  QUnit.test('Issue #31 - nestedVarRedeclare (gpu)', () => {
     nestedVarRedeclareTest('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('Issue #31 - nestedVarRedeclare (webgl)', function() {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #31 - nestedVarRedeclare (webgl)', () => {
     nestedVarRedeclareTest('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('Issue #31 - nestedVarRedeclare (webgl2)', function() {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #31 - nestedVarRedeclare (webgl2)', () => {
     nestedVarRedeclareTest('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('Issue #31 - nestedVarRedeclare (headlessgl)', function() {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #31 - nestedVarRedeclare (headlessgl)', () => {
     nestedVarRedeclareTest('headlessgl');
   });
 
-  QUnit.test('Issue #31 - nestedVarRedeclare (cpu)', function() {
+  QUnit.test('Issue #31 - nestedVarRedeclare (cpu)', () => {
     nestedVarRedeclareTest('cpu');
   });
 
-  QUnit.test('Issue #31 - nestedVarRedeclare : AST handling (webgl)', function() {
-    var builder = new GPU.WebGLFunctionBuilder();
-    QUnit.assert.throws(function() {
+  QUnit.test('Issue #31 - nestedVarRedeclare : AST handling (webgl)', () => {
+    const builder = new GPU.WebGLFunctionBuilder();
+    QUnit.assert.throws(() => {
       builder.addFunction(null, nestedVarRedeclareFunction);
       builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
     });
   });
 
-  QUnit.test('Issue #31 - nestedVarRedeclare : AST handling (webgl2)', function() {
-    var builder = new GPU.WebGL2FunctionBuilder();
-    QUnit.assert.throws(function() {
+  QUnit.test('Issue #31 - nestedVarRedeclare : AST handling (webgl2)', () => {
+    const builder = new GPU.WebGL2FunctionBuilder();
+    QUnit.assert.throws(() => {
       builder.addFunction(null, nestedVarRedeclareFunction);
       builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
     });
   });
 
-  QUnit.test('Issue #31 - nestedVarRedeclare : AST handling (headlessgl)', function() {
-    var builder = new GPU.HeadlessGLFunctionBuilder();
-    QUnit.assert.throws(function() {
+  QUnit.test('Issue #31 - nestedVarRedeclare : AST handling (headlessgl)', () => {
+    const builder = new GPU.HeadlessGLFunctionBuilder();
+    QUnit.assert.throws(() => {
       builder.addFunction(null, nestedVarRedeclareFunction);
       builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
     });
   });
 
-  QUnit.test('Issue #31 - nestedVarRedeclare : AST handling (cpu)', function() {
-    var builder = new GPU.CPUFunctionBuilder();
-    QUnit.assert.throws(function() {
+  QUnit.test('Issue #31 - nestedVarRedeclare : AST handling (cpu)', () => {
+    const builder = new GPU.CPUFunctionBuilder();
+    QUnit.assert.throws(() => {
       builder.addFunction(null, nestedVarRedeclareFunction);
       builder.getStringFromFunctionNames(['nestedVarRedeclareFunction'])
     });
   });
 
-
-
   // nested declare
   function nestedVarDeclareFunction() {
-    var result = 0.0;
+    let result = 0.0;
 
     // outer loop limit is effectively skipped in CPU
-    for(var i=0; i<10; ++i) {
+    for(let i=0; i<10; ++i) {
       // inner loop limit should be higher, to avoid infinite loops
-      for(var i=0; i<20; ++i) {
+      for(let i=0; i<20; ++i) {
         result += 1;
       }
     }
@@ -106,7 +102,7 @@ require('qunit-assert-close');
   }
 
   function nestedVarDeclareTest(mode ) {
-    var gpu = new GPU({ mode: mode });
+    const gpu = new GPU({ mode: mode });
     var f = gpu.createKernel(nestedVarDeclareFunction, {
       output : [1]
     });
@@ -115,31 +111,31 @@ require('qunit-assert-close');
     gpu.destroy();
   }
 
-  QUnit.test('Issue #31 - nestedVarDeclare (auto)', function() {
+  QUnit.test('Issue #31 - nestedVarDeclare (auto)', () => {
     nestedVarDeclareTest(null);
   });
 
-  QUnit.test('Issue #31 - nestedVarDeclare (gpu)', function() {
+  QUnit.test('Issue #31 - nestedVarDeclare (gpu)', () => {
     nestedVarDeclareTest('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('Issue #31 - nestedVarDeclare (webgl)', function() {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #31 - nestedVarDeclare (webgl)', () => {
     nestedVarDeclareTest('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('Issue #31 - nestedVarDeclare (webgl2)', function() {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #31 - nestedVarDeclare (webgl2)', () => {
     nestedVarDeclareTest('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('Issue #31 - nestedVarDeclare (headlessgl)', function() {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #31 - nestedVarDeclare (headlessgl)', () => {
     nestedVarDeclareTest('headlessgl');
   });
 
-  QUnit.test('Issue #31 - nestedVarDeclare (cpu)', function() {
+  QUnit.test('Issue #31 - nestedVarDeclare (cpu)', () => {
     nestedVarDeclareTest('cpu');
   });
 
-  QUnit.test('Issue #31 - nestedVarDeclare : AST handling (webgl)', function() {
+  QUnit.test('Issue #31 - nestedVarDeclare : AST handling (webgl)', () => {
     var builder = new GPU.WebGLFunctionBuilder();
     builder.addFunction(null, nestedVarDeclareFunction);
 
@@ -157,7 +153,7 @@ require('qunit-assert-close');
     );
   });
 
-  QUnit.test('Issue #31 - nestedVarDeclare : AST handling (webgl2)', function() {
+  QUnit.test('Issue #31 - nestedVarDeclare : AST handling (webgl2)', () => {
     var builder = new GPU.WebGL2FunctionBuilder();
     builder.addFunction(null, nestedVarDeclareFunction);
 
@@ -175,7 +171,7 @@ require('qunit-assert-close');
     );
   });
 
-  QUnit.test('Issue #31 - nestedVarDeclare : AST handling (headlessgl)', function() {
+  QUnit.test('Issue #31 - nestedVarDeclare : AST handling (headlessgl)', () => {
     var builder = new GPU.HeadlessGLFunctionBuilder();
     builder.addFunction(null, nestedVarDeclareFunction);
 
@@ -193,7 +189,7 @@ require('qunit-assert-close');
     );
   });
 
-  QUnit.test('Issue #31 - nestedVarDeclare : AST handling (cpu)', function() {
+  QUnit.test('Issue #31 - nestedVarDeclare : AST handling (cpu)', () => {
     var builder = new GPU.CPUFunctionBuilder();
     builder.addFunction(null, nestedVarDeclareFunction);
 

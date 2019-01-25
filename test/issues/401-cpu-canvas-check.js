@@ -6,11 +6,11 @@ var GPU = require('../../src/index');
 			GPU.CPUKernel.prototype.build.apply({
         setupConstants: function() {},
         setupParams: function() {},
-        validateOptions: function() {},
+        validateSettings: function() {},
         getKernelString: function() {},
         graphical: true,
 				output: [1],
-				_canvas: null
+				canvas: null
 			}, []);
 		},
 			new Error('no canvas available for using graphical output'),
@@ -21,11 +21,11 @@ var GPU = require('../../src/index');
 		GPU.CPUKernel.prototype.build.apply({
 			setupConstants: function() {},
 			setupParams: function() {},
-			validateOptions: function() {},
+			validateSettings: function() {},
       getKernelString: function() {},
 			graphical: false,
 			output: [1],
-			_canvas: null
+			canvas: null
 		}, []);
 		assert.equal(true, true, 'ok when canvas is not available and not using graphical output');
 	});

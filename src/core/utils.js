@@ -287,7 +287,7 @@ class Utils extends UtilsCore {
 	}
 
 	static getAstString(source, ast) {
-		let lines = Array.isArray(source) ? source : source.split(/\r?\n/g);
+		const lines = Array.isArray(source) ? source : source.split(/\r?\n/g);
 		const start = ast.loc.start;
 		const end = ast.loc.end;
 		const result = [];

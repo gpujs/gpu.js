@@ -1,6 +1,5 @@
-var GPU = require('../../src/index');
-
-(function() {
+(() => {
+	const GPU = require('../../src/index');
 	function testModKernel(mode) {
 		var gpu = new GPU({ mode: mode });
     var conflictingName = 0.4;
@@ -18,11 +17,15 @@ var GPU = require('../../src/index');
 		gpu.destroy();
 	}
 
-	QUnit.test('Issue #382 - bad constant (webgl)', function() {
-		testModKernel('webgl')
+	(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #382 - bad constant (webgl)', () => {
+		testModKernel('webgl');
 	});
 
-	QUnit.test('Issue #382 - bad constant (webgl2)', function() {
-		testModKernel('webgl2')
+	(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #382 - bad constant (webgl2)', () => {
+		testModKernel('webgl2');
+	});
+
+	(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #382 - bad constant (headlessgl)', () => {
+		testModKernel('headlessgl');
 	});
 })();

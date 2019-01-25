@@ -29,8 +29,8 @@ module.exports = function(cpuKernel, name) {
     class ${ name || 'Kernel' } {
       constructor() {        
         this.argumentsLength = 0;
-        this._canvas = null;
-        this._webGl = null;
+        this.canvas = null;
+        this.context = null;
         this.built = false;
         this.program = null;
         this.paramNames = ${ JSON.stringify(cpuKernel.paramNames) };
@@ -50,15 +50,15 @@ module.exports = function(cpuKernel, name) {
           z: 0
         };
       }
-      setCanvas(canvas) { this._canvas = canvas; return this; }
-      setWebGl(webGl) { this._webGl = webGl; return this; }
+      setCanvas(canvas) { this.canvas = canvas; return this; }
+      setContext(context) { this.context = context; return this; }
       setInput(Type) { Input = Type; }
       ${ removeFnNoise(cpuKernel.build.toString()) }
       ${ removeFnNoise(cpuKernel.setupParams.toString()) }
       ${ removeFnNoise(cpuKernel.setupConstants.toString()) }
       run () { ${ cpuKernel.kernelString } }
       getKernelString() { return this._kernelString; }
-      ${ removeFnNoise(cpuKernel.validateOptions.toString()) }
+      ${ removeFnNoise(cpuKernel.validateSettings.toString()) }
     };
     return kernelRunShortcut(new Kernel());
   };`;

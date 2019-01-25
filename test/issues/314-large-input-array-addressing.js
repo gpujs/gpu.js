@@ -1,48 +1,29 @@
-var GPU = require('../../src/index');
-
 (function() {
+	const GPU = require('../../src/index');
 	// max size of ok addressing was 8388608, 8388609 is shifted by 1 so index seems to be 8388610
 	// after this fix max addressing is 2^31 which is the max a int32 can handle
 	// run out of heap before being able to create a butter that big!
 	// wanted to use uints but caused more problems than it solved
-	var DATA_MAX = 8388800*8;
-	var divisor = 100;
-	var data = new Uint16Array(DATA_MAX);
+	const DATA_MAX = 8388800*8;
+	const divisor = 100;
+	const data = new Uint16Array(DATA_MAX);
 
-	for (var i = 0; i < DATA_MAX/divisor; i++) {
-		for (var j = 0; j < divisor; j++) {
+	for (let i = 0; i < DATA_MAX/divisor; i++) {
+		for (let j = 0; j < divisor; j++) {
 			data[i*divisor + j] = j*2;
 		}
 	}
-	var gpu;
 	function buildLargeArrayAddressKernel(mode) {
-		gpu = new GPU({ mode });
-		var largeArrayAddressKernel = gpu.createKernel(function(data) {
+		const gpu = new GPU({ mode });
+		const largeArrayAddressKernel = gpu.createKernel(function(data) {
 			return data[this.thread.x];
 		})
 			.setOutput([DATA_MAX]);
-		return largeArrayAddressKernel(data);
-	}
+		const result = largeArrayAddressKernel(data);
 
-	QUnit.test('Issue #314 Large array addressing - auto', () => {
-		QUnit.assert.equal(buildLargeArrayAddressKernel()[DATA_MAX-1], data[DATA_MAX-1]);
-		gpu.destroy();
-	});
-
-	QUnit.test('Issue #314 Large array addressing - gpu', () => {
-		QUnit.assert.equal(buildLargeArrayAddressKernel('gpu')[DATA_MAX-1], data[DATA_MAX-1]);
-		gpu.destroy();
-	});
-
-	QUnit.test('Issue #314 Large array addressing - webgl', () => {
-		QUnit.assert.equal(buildLargeArrayAddressKernel('webgl')[DATA_MAX-1], data[DATA_MAX-1]);
-		gpu.destroy();
-	});
-
-	QUnit.test('Issue #314 Large array addressing - webgl2', () => {
-		var result = buildLargeArrayAddressKernel('webgl2')
-		var same = true;
-		for (var i = 0; i < DATA_MAX; i++) {
+		let same = true;
+		let i = 0;
+		for (; i < DATA_MAX; i++) {
 			if (result[i] !== data[i]) {
 				same = false;
 				break;
@@ -50,6 +31,24 @@ var GPU = require('../../src/index');
 		}
 		QUnit.assert.ok(same, "not all elements are the same, failed on index:" + i);
 		gpu.destroy();
+	}
+
+	QUnit.test('Issue #314 Large array addressing - auto', () => {
+		buildLargeArrayAddressKernel(null);
 	});
 
-  })();
+	QUnit.test('Issue #314 Large array addressing - gpu', () => {
+		buildLargeArrayAddressKernel('gpu');
+	});
+
+	(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #314 Large array addressing - webgl', () => {
+		buildLargeArrayAddressKernel('webgl');
+	});
+
+	(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #314 Large array addressing - webgl2', () => {
+		buildLargeArrayAddressKernel('webgl2');
+	});
+	(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #314 Large array addressing - headlessgl', () => {
+		buildLargeArrayAddressKernel('headlessgl');
+	});
+})();

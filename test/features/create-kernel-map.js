@@ -64,7 +64,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('createKernelMap object 1 dimension 1 length (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('createKernelMap object 1 dimension 1 length (webgl)', function () {
     var gpu = new GPU({mode: 'webgl'});
     var superKernel = createPropertyKernels(gpu, [1]);
     var kernel = createKernel(gpu, [1]);
@@ -78,7 +78,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('createKernelMap object 1 dimension 1 length (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('createKernelMap object 1 dimension 1 length (webgl2)', function () {
     var gpu = new GPU({mode: 'webgl2'});
     var superKernel = createPropertyKernels(gpu, [1]);
     var kernel = createKernel(gpu, [1]);
@@ -92,7 +92,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('createKernelMap object 1 dimension 1 length (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('createKernelMap object 1 dimension 1 length (headlessgl)', function () {
     var gpu = new GPU({mode: 'headlessgl'});
     var superKernel = createPropertyKernels(gpu, [1]);
     var kernel = createKernel(gpu, [1]);
@@ -148,7 +148,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('createKernelMap array 1 dimension 1 length (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('createKernelMap array 1 dimension 1 length (webgl)', function () {
     var gpu = new GPU({mode: 'webgl'});
     var superKernel = createArrayKernels(gpu, [1]);
     var kernel = createKernel(gpu, [1]);
@@ -162,7 +162,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('createKernelMap array 1 dimension 1 length (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('createKernelMap array 1 dimension 1 length (webgl2)', function () {
     var gpu = new GPU({mode: 'webgl2'});
     var superKernel = createArrayKernels(gpu, [1]);
     var kernel = createKernel(gpu, [1]);
@@ -176,7 +176,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('createKernelMap array 1 dimension 1 length (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('createKernelMap array 1 dimension 1 length (headlessgl)', function () {
     var gpu = new GPU({mode: 'headlessgl'});
     var superKernel = createArrayKernels(gpu, [1]);
     var kernel = createKernel(gpu, [1]);
@@ -231,7 +231,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('createKernelMap object 1 dimension 5 length (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('createKernelMap object 1 dimension 5 length (webgl)', function () {
     var gpu = new GPU({mode: 'webgl'});
     var superKernel = createPropertyKernels(gpu, [5]);
     var kernel = createKernel(gpu, [5]);
@@ -245,7 +245,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('createKernelMap object 1 dimension 5 length (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('createKernelMap object 1 dimension 5 length (webgl2)', function () {
     var gpu = new GPU({mode: 'webgl2'});
     var superKernel = createPropertyKernels(gpu, [5]);
     var kernel = createKernel(gpu, [5]);
@@ -259,7 +259,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('createKernelMap object 1 dimension 5 length (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('createKernelMap object 1 dimension 5 length (headlessgl)', function () {
     var gpu = new GPU({mode: 'headlessgl'});
     var superKernel = createPropertyKernels(gpu, [5]);
     var kernel = createKernel(gpu, [5]);
@@ -315,7 +315,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('createKernelMap array (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('createKernelMap array (webgl)', function () {
     var gpu = new GPU({mode: 'webgl'});
     var superKernel = createArrayKernels(gpu, [5]);
     var kernel = createKernel(gpu, [5]);
@@ -329,7 +329,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('createKernelMap array (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('createKernelMap array (webgl2)', function () {
     var gpu = new GPU({mode: 'webgl2'});
     var superKernel = createArrayKernels(gpu, [5]);
     var kernel = createKernel(gpu, [5]);
@@ -343,7 +343,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('createKernelMap array (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('createKernelMap array (headlessgl)', function () {
     var gpu = new GPU({mode: 'headlessgl'});
     var superKernel = createArrayKernels(gpu, [5]);
     var kernel = createKernel(gpu, [5]);
@@ -412,7 +412,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('createKernelMap 3d (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('createKernelMap 3d (webgl)', function () {
     var gpu = new GPU({mode: 'webgl'});
     var kernel = gpu.createKernelMap({
       target: function saveTarget(value) {
@@ -433,7 +433,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('createKernelMap 3d (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('createKernelMap 3d (webgl2)', function () {
     var gpu = new GPU({mode: 'webgl2'});
     var kernel = gpu.createKernelMap({
       target: function saveTarget(value) {
@@ -454,7 +454,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('createKernelMap 3d (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported && GPU.HeadlessGLRunner.features.kernelMap ? QUnit.test : QUnit.skip)('createKernelMap 3d (headlessgl)', function () {
     var gpu = new GPU({mode: 'headlessgl'});
     var kernel = gpu.createKernelMap({
       target: function saveTarget(value) {

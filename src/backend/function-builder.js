@@ -10,46 +10,47 @@
  *
  */
 class FunctionBuilder {
-	constructor(gpu) {
-		this.nodeMap = {};
-		this.nativeFunctions = {};
-		this.gpu = gpu;
-		this.rootKernel = null;
-		this.Node = null;
+	/**
+	 *
+	 * @returns FunctionNode
+	 */
+	static get FunctionNode() {
+		throw new Error('"FunctionNode" not implemented on FunctionBuilder');
 	}
 
-	addNativeFunction(functionName, glslFunctionString) {
-		this.nativeFunctions[functionName] = glslFunctionString;
+	constructor() {
+		this.nodeMap = {};
+		this.nativeFunctions = {};
+		this.rootKernel = null;
+	}
+
+	addNativeFunction(functionName, fnString) {
+		this.nativeFunctions[functionName] = fnString;
 	}
 
 	/**
-	 * @memberOf FunctionBuilder#
-	 * @function
-	 * @name addFunction
-	 *
 	 * @desc Instantiates a FunctionNode, and add it to the nodeMap
 	 *
 	 * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
-	 * @param {Function} jsFunction - JS Function to do conversion
-	 * @param {Object} [options]
-	 *
+	 * @param {Function} fn - JS Function to do conversion
+	 * @param {Object} [settings]
 	 */
-	addFunction(functionName, jsFunction, options) {
+	addFunction(functionName, fn, settings) {
 		this.addFunctionNode(
-			new this.Node(functionName, jsFunction, options)
+			new this.constructor.FunctionNode(functionName, fn, settings)
 			.setBuilder(this)
 		);
 	}
 
-	addFunctions(functions, options) {
+	addFunctions(functions, settings) {
 		if (functions) {
 			if (Array.isArray(functions)) {
 				for (let i = 0; i < functions.length; i++) {
-					this.addFunction(null, functions[i], options);
+					this.addFunction(null, functions[i], settings);
 				}
 			} else {
 				for (let p in functions) {
-					this.addFunction(p, functions[p], options);
+					this.addFunction(p, functions[p], settings);
 				}
 			}
 		}
@@ -63,27 +64,19 @@ class FunctionBuilder {
 	}
 
 	/**
-	 * @memberOf FunctionBuilder#
-	 * @function
-	 * @name addFunctionNode
-	 *
 	 * @desc Add the function node directly
 	 *
-	 * @param {functionNode} inNode - functionNode to add
+	 * @param {FunctionNode} functionNode - functionNode to add
 	 *
 	 */
-	addFunctionNode(inNode) {
-		this.nodeMap[inNode.functionName] = inNode;
-		if (inNode.isRootKernel) {
-			this.rootKernel = inNode;
+	addFunctionNode(functionNode) {
+		this.nodeMap[functionNode.functionName] = functionNode;
+		if (functionNode.isRootKernel) {
+			this.rootKernel = functionNode;
 		}
 	}
 
 	/**
-	 * @memberOf FunctionBuilder#
-	 * @function
-	 * @name traceFunctionCalls
-	 *
 	 * @desc Trace all the depending functions being called, from a single function
 	 *
 	 * This allow for 'unneeded' functions to be automatically optimized out.
@@ -99,18 +92,18 @@ class FunctionBuilder {
 		functionName = functionName || 'kernel';
 		retList = retList || [];
 
-		const fNode = this.nodeMap[functionName];
-		if (fNode) {
+		const functionNode = this.nodeMap[functionName];
+		if (functionNode) {
 			// Check if function already exists
 			const functionIndex = retList.indexOf(functionName);
 			if (functionIndex === -1) {
 				retList.push(functionName);
 				if (parent) {
-					fNode.parent = parent;
+					functionNode.parent = parent;
 				}
-				fNode.getFunctionString(); //ensure JS trace is done
-				for (let i = 0; i < fNode.calledFunctions.length; ++i) {
-					this.traceFunctionCalls(fNode.calledFunctions[i], retList, fNode);
+				functionNode.getFunctionString(); //ensure JS trace is done
+				for (let i = 0; i < functionNode.calledFunctions.length; ++i) {
+					this.traceFunctionCalls(functionNode.calledFunctions[i], retList, functionNode);
 				}
 			} else {
 				/**
@@ -135,21 +128,17 @@ class FunctionBuilder {
 	}
 
 	/**
-	 * @memberOf FunctionBuilder#
-	 * @function
-	 * @name addKernel
-	 *
 	 * @desc Add a new kernel to this instance
 	 *
 	 * @param {String} fnString - Kernel function as a String
-	 * @param {Object} options - Settings object to set constants, debug mode, etc.
+	 * @param {Object} settings - Settings object to set constants, debug mode, etc.
 	 *
 	 *
 	 * @returns {Object} The inserted kernel as a Kernel Node
 	 *
 	 */
-	addKernel(fnString, options) {
-		const kernelNode = new this.Node('kernel', fnString, options);
+	addKernel(fnString, settings) {
+		const kernelNode = new this.constructor.FunctionNode('kernel', fnString, settings);
 		kernelNode.setBuilder(this);
 		kernelNode.isRootKernel = true;
 		this.addFunctionNode(kernelNode);
@@ -157,20 +146,16 @@ class FunctionBuilder {
 	}
 
 	/**
-	 * @memberOf FunctionBuilder#
-	 * @function
-	 * @name addSubKernel
-	 *
 	 * @desc Add a new sub-kernel to the current kernel instance
 	 *
-	 * @param {Function} jsFunction - Sub-kernel function (JavaScript)
-	 * @param {Object} options - Settings object to set constants, debug mode, etc.
+	 * @param {Function} fn - Sub-kernel function (JavaScript)
+	 * @param {Object} settings - Settings object to set constants, debug mode, etc.
 	 *
 	 * @returns {Object} The inserted sub-kernel as a Kernel Node
 	 *
 	 */
-	addSubKernel(jsFunction, options) {
-		const kernelNode = new this.Node(null, jsFunction, options);
+	addSubKernel(fn, settings) {
+		const kernelNode = new this.constructor.FunctionNode(null, fn, settings);
 		kernelNode.setBuilder(this);
 		kernelNode.isSubKernel = true;
 		this.addFunctionNode(kernelNode);
@@ -178,32 +163,18 @@ class FunctionBuilder {
 	}
 
 	/**
-	 * @memberOf CPUFunctionBuilder#
-	 * @name getPrototypeString
-	 * @function
-	 *
 	 * @desc Return the string for a function
-	 *
 	 * @param {String} functionName - Function name to trace from. If null, it returns the WHOLE builder stack
-	 *
 	 * @returns {String} The full string, of all the various functions. Trace optimized if functionName given
-	 *
 	 */
 	getPrototypeString(functionName) {
 		return this.getPrototypes(functionName).join('\n');
 	}
 
 	/**
-	 * @memberOf CPUFunctionBuilder#
-	 * @name getPrototypeString
-	 * @function
-	 *
 	 * @desc Return the string for a function
-	 *
 	 * @param {String} [functionName] - Function name to trace from. If null, it returns the WHOLE builder stack
-	 *
 	 * @returns {Array} The full string, of all the various functions. Trace optimized if functionName given
-	 *
 	 */
 	getPrototypes(functionName) {
 		this.rootKernel.generate();
@@ -215,16 +186,9 @@ class FunctionBuilder {
 
 
 	/**
-	 * @memberOf FunctionBuilder#
-	 * @function
-	 * @name getStringFromFunctionNames
-	 *
 	 * @desc Get string from function names
-	 *
 	 * @param {String[]} functionList - List of function to build string
-	 *
 	 * @returns {String} The string, of all the various functions. Trace optimized if functionName given
-	 *
 	 */
 	getStringFromFunctionNames(functionList) {
 		const ret = [];
@@ -238,17 +202,10 @@ class FunctionBuilder {
 	}
 
 	/**
-	 * @memberOf FunctionBuilder#
-	 * @function
-	 * @name getPrototypeStringFromFunctionNames
-	 *
 	 * @desc Return string of all functions converted
-	 *
 	 * @param {String[]} functionList - List of function names to build the string.
 	 * @param {Object} [opt - Settings object passed to functionNode. See functionNode for more details.
-	 *
 	 * @returns {Array} Prototypes of all functions converted
-	 *
 	 */
 	getPrototypesFromFunctionNames(functionList, opt) {
 		const ret = [];
@@ -265,43 +222,25 @@ class FunctionBuilder {
 	}
 
 	/**
-	 * @memberOf FunctionBuilder#
-	 * @function
-	 * @name getPrototypeStringFromFunctionNames
-	 *
 	 * @desc Return string of all functions converted
-	 *
 	 * @param {String[]} functionList - List of function names to build the string.
 	 * @param {Object} opt - Settings object passed to functionNode. See functionNode for more details.
-	 *
 	 * @returns {String} Prototype string of all functions converted
-	 *
 	 */
 	getPrototypeStringFromFunctionNames(functionList, opt) {
 		return this.getPrototypesFromFunctionNames(functionList, opt).toString();
 	}
 
 	/**
-	 * @memberOf FunctionBuilder#
-	 * @function
-	 * @name getString
-	 *
-	 * Get string for a particular function name
-	 *
+	 * @desc Get string for a particular function name
 	 * @param {String} functionName - Function name to trace from. If null, it returns the WHOLE builder stack
-	 *
-	 * @returns {String} The string, of all the various functions. Trace optimized if functionName given
-	 *
+	 * @returns {String} settings - The string, of all the various functions. Trace optimized if functionName given
 	 */
-	getString(functionName, opt) {
-		if (opt === undefined) {
-			opt = {};
-		}
-
+	getString(functionName) {
 		if (functionName) {
-			return this.getStringFromFunctionNames(this.traceFunctionCalls(functionName, [], opt).reverse(), opt);
+			return this.getStringFromFunctionNames(this.traceFunctionCalls(functionName).reverse());
 		}
-		return this.getStringFromFunctionNames(Object.keys(this.nodeMap), opt);
+		return this.getStringFromFunctionNames(Object.keys(this.nodeMap));
 	}
 }
 

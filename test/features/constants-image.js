@@ -46,11 +46,11 @@ var GPU = require('../../src/index');
     imageConstantTest('gpu', assert);
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('imageConstantTest (webgl)', function (assert) {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('imageConstantTest (webgl)', function (assert) {
     imageConstantTest('webgl', assert);
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('imageConstantTest (webgl2)', function (assert) {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('imageConstantTest (webgl2)', function (assert) {
     imageConstantTest('webgl2', assert);
   });
 

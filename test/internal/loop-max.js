@@ -75,7 +75,7 @@ QUnit.test('loop max output (headlessgl)', function(assert) {
     '\n}');
 });
 
-(GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('loop max (webgl)', function(assert) {
+(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('loop max (webgl)', function(assert) {
   var gpu = new GPU({mode: 'webgl'});
   var add = gpu.createKernel(function(a, b) {
     var sum = 0;
@@ -93,7 +93,7 @@ QUnit.test('loop max output (headlessgl)', function(assert) {
   gpu.destroy();
 });
 
-(GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('loop max (webgl2)', function(assert) {
+(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('loop max (webgl2)', function(assert) {
   var gpu = new GPU({mode: 'webgl2'});
   var add = gpu.createKernel(function(a, b) {
     var sum = 0;
@@ -111,7 +111,7 @@ QUnit.test('loop max output (headlessgl)', function(assert) {
   gpu.destroy();
 });
 
-(GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('loop max (headlessgl)', function(assert) {
+(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('loop max (headlessgl)', function(assert) {
   var gpu = new GPU({mode: 'headlessgl'});
   var add = gpu.createKernel(function(a, b) {
     var sum = 0;

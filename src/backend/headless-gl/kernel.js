@@ -1,24 +1,43 @@
 'use strict';
 
+const getContext = require('gl');
 const WebGLKernel = require('../web-gl/kernel');
-const canvas = {};
 
 class HeadlessGLKernel extends WebGLKernel {
-	constructor(fnString, settings) {
-		super(fnString, Object.assign({
-			canvas
-		}, settings));
+	initCanvas() {
+		return {};
 	}
-	initWebGl() {
-		const webGl = require('gl')(2, 2, {
+
+	initContext() {
+		const context = getContext(2, 2, {
 			preserveDrawingBuffer: true
 		});
-		webGl.getExtension('STACKGL_resize_drawingbuffer');
-		webGl.getExtension('STACKGL_destroy_context');
-		webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
-		webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
-		webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
-		return webGl;
+		return context;
+	}
+
+	initExtensions() {
+		this.extensions = {
+			STACKGL_resize_drawingbuffer: this.context.getExtension('STACKGL_resize_drawingbuffer'),
+			STACKGL_destroy_context: this.context.getExtension('STACKGL_destroy_context'),
+			OES_texture_float: this.context.getExtension('OES_texture_float'),
+			OES_texture_float_linear: this.context.getExtension('OES_texture_float_linear'),
+			OES_element_index_uint: this.context.getExtension('OES_element_index_uint'),
+		};
+	}
+
+	destroyExtensions() {
+		this.extensions.STACKGL_resize_drawingbuffer = null;
+		this.extensions.STACKGL_destroy_context = null;
+		this.extensions.OES_texture_float = null;
+		this.extensions.OES_texture_float_linear = null;
+		this.extensions.OES_element_index_uint = null;
+	}
+
+	static destroyContext(context) {
+		const extension = context.getExtension('STACKGL_destroy_context');
+		if (extension && extension.destroy) {
+			extension.destroy();
+		}
 	}
 }
 

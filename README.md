@@ -39,8 +39,8 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 # Table of Contents
 
 * [Installation](#installation)
-* [`GPU` Options](#gpu-options)
-* [`gpu.createKernel` Options](#gpu-createkernel-options)
+* [`GPU` Settings](#gpu-settings)
+* [`gpu.createKernel` Settings](#gpu-createkernel-settings)
 * [Creating and Running Functions](#creating-and-running-functions)
 * [Accepting Input](#accepting-input)
 * [Graphical Output](#graphical-output)
@@ -91,13 +91,13 @@ In JavaScript, initialize the library:
 const gpu = new GPU();
 ```
 
-## `GPU` Options
-Options are an object used to create an instance of `GPU`.  Example: `new GPU(options)`
+## `GPU` Settings
+Settings are an object used to create an instance of `GPU`.  Example: `new GPU(settings)`
 * `canvas`: `HTMLCanvasElement`.  Optional.  For sharing canvas.  Example: use THREE.js and GPU.js on same canvas.
 * `webGl`: `WebGL2RenderingContext` or `WebGLRenderingContext`.  For sharing rendering context.  Example: use THREE.js and GPU.js on same rendering context.
 
-## `gpu.createKernel` Options
-Options are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.createKernel(options)`
+## `gpu.createKernel` Settings
+Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.createKernel(settings)`
 * `output`: array or object that describes the output of kernel.
   * as array: `[width]`, `[width, height]`, or `[width, height, depth]`
   * as object: `{ x: width, y: height, z: depth }`
@@ -115,7 +115,7 @@ Options are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.c
 * subKernels: array
 * outputImmutable: boolean
   * default to `false`
-  
+
 
 
 ## Creating and Running Functions
@@ -157,13 +157,13 @@ myFunc();
 // Result: [0, 1, 2, 3, ... 99]
 ```
 
-Note: Instead of creating an object, you can use the chainable shortcut methods as a neater way of specifying options.
+Note: Instead of creating an object, you can use the chainable shortcut methods as a neater way of specifying settings.
 
 ```js
 const myFunc = gpu.createKernel(function() {
     return this.thread.x;
 }).setOutput([100]);
-    
+
 myFunc();
 // Result: [0, 1, 2, 3, ... 99]
 ```
@@ -186,7 +186,7 @@ Numbers example:
 ```
 
 Array(2) examples:
-Using declaration 
+Using declaration
 ```js
  const myFunc = gpu.createKernel(function() {
      const array2 = [0.08, 2];
@@ -202,7 +202,7 @@ Directly returned
 ```
 
 Array(3) example:
-Using declaration 
+Using declaration
 ```js
  const myFunc = gpu.createKernel(function() {
      const array2 = [0.08, 2, 0.1];
@@ -218,7 +218,7 @@ Directly returned
 ```
 
 Array(4) example:
-Using declaration 
+Using declaration
 ```js
  const myFunc = gpu.createKernel(function() {
      const array2 = [0.08, 2, 0.1, 3];
@@ -248,7 +248,7 @@ To define an argument, simply add it to the kernel function like regular JavaScr
 const myFunc = gpu.createKernel(function(x) {
     return x;
 }).setOutput([100]);
-    
+
 myFunc(42);
 // Result: [42, 42, 42, 42, ... 42]
 ```
@@ -259,7 +259,7 @@ Similarly, with array inputs:
 const myFunc = gpu.createKernel(function(x) {
     return x[this.thread.x % 3];
 }).setOutput([100]);
-    
+
 myFunc([1, 2, 3]);
 // Result: [1, 2, 3, 1, ... 1 ]
 ```
@@ -324,7 +324,7 @@ const render = gpu.createKernel(function() {
 })
   .setOutput([20, 20])
   .setGraphical(true);
-    
+
 render();
 
 const canvas = render.getCanvas();
@@ -343,7 +343,7 @@ const gl = canvas.getContext('webgl2', { premultipliedAlpha: false });
 
 const gpu = new GPU({
   canvas,
-  webGl: gl
+  context: gl
 });
 const krender = gpu.createKernel(function(x) {
   this.color(this.thread.x / 500, this.thread.y / 500, x[0], x[1]);
@@ -412,7 +412,7 @@ megaKernel(a, b, c);
 This gives you the flexibility of using parts of a single transformation without the performance penalty, resulting in much much _MUCH_ faster operation.
 
 ## Adding custom functions
-use `gpu.addFunction(function() {}, options)` for adding custom functions.  Example:
+use `gpu.addFunction(function() {}, settings)` for adding custom functions.  Example:
 
 
 ```js
@@ -430,7 +430,7 @@ const kernel = gpu.createKernel(function(a, b) {
 
 ### Adding strongly typed functions
 
-To strongly type a function you may use options.  Options take an optional hash values:
+To strongly type a function you may use settings.  Settings take an optional hash values:
 `returnType`: optional, defaults to float, the value you'd like to return from the function
 `paramTypes`: optional, defaults to float for each param, a hash of param names with values of the return types
 
@@ -508,17 +508,17 @@ importScripts('path/to/gpu.js');
 onmessage = function() {
   // define gpu instance
   const gpu = new GPU();
-  
+
   // input values
   const a = [1,2,3];
   const b = [3,2,1];
-  
+
   // setup kernel
   const kernel = gpu.createKernel(function(a, b) {
     return a[this.thread.x] - b[this.thread.x];
   })
     .setOutput([3]);
-  
+
   // output some results!
   postMessage(kernel(a, b));
 };
@@ -574,7 +574,7 @@ log2
 max
 min
 round
-sign 
+sign
 sin
 sqrt
 tan
@@ -590,7 +590,7 @@ You can find a [complete API reference here](https://doxdox.org/gpujs/gpu.js/1.2
 Documentation of the codebase is [automatically built](https://github.com/gpujs/gpu.js/wiki/Automatic-Documentation).
 
 ## Contributors
- 
+
 * Fazli Sapuan
 * Eugene Cheah
 * Matthew Saw
@@ -600,26 +600,26 @@ Documentation of the codebase is [automatically built](https://github.com/gpujs/
 * Daniel X Moore
 * Mark Theng
 * Varun Patro
- 
+
 ## Contributing
- 
+
 Contributors are welcome! Create a merge request to the `develop` branch and we
 will gladly review it. If you wish to get write access to the repository,
 please email us and we will review your application and grant you access to
 the `develop` branch.
- 
+
 We promise never to pass off your code as ours.
 
 ## Terms Explained
 * Kernel - A function that is tightly coupled to program that runs on the Graphic Processor
 * Texture - A graphical artifact that is packed with data, in the case of GPU.js, bit shifted parts of a 32 bit floating point decimal
 
-## License 
+## License
 
 The MIT License
 
 Copyright (c) 2018 GPU.js Team
- 
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights

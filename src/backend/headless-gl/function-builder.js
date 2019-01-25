@@ -7,9 +7,8 @@ const HeadlessGLFunctionNode = require('./function-node');
  * @desc Builds webGl functions (shaders) from JavaScript function Strings
  */
 class HeadlessGLFunctionBuilder extends FunctionBuilder {
-	constructor() {
-		super();
-		this.Node = HeadlessGLFunctionNode;
+	static get FunctionNode() {
+		return HeadlessGLFunctionNode;
 	}
 }
 

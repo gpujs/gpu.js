@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0
- * @date Fri Jan 18 2019 08:30:32 GMT-0500 (Eastern Standard Time)
+ * @date Thu Jan 24 2019 20:41:49 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -14,6 +14,8 @@
  */
 "use strict";(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 'use strict';
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -31,11 +33,15 @@ var CPUFunctionBuilder = function (_FunctionBuilder) {
 	function CPUFunctionBuilder() {
 		_classCallCheck(this, CPUFunctionBuilder);
 
-		var _this = _possibleConstructorReturn(this, (CPUFunctionBuilder.__proto__ || Object.getPrototypeOf(CPUFunctionBuilder)).call(this));
-
-		_this.Node = CPUFunctionNode;
-		return _this;
+		return _possibleConstructorReturn(this, (CPUFunctionBuilder.__proto__ || Object.getPrototypeOf(CPUFunctionBuilder)).apply(this, arguments));
 	}
+
+	_createClass(CPUFunctionBuilder, null, [{
+		key: 'FunctionNode',
+		get: function get() {
+			return CPUFunctionNode;
+		}
+	}]);
 
 	return CPUFunctionBuilder;
 }(FunctionBuilder);
@@ -59,12 +65,12 @@ var utils = require('../../core/utils');
 var CPUFunctionNode = function (_FunctionNode) {
 	_inherits(CPUFunctionNode, _FunctionNode);
 
-	function CPUFunctionNode(functionName, jsFunction, options) {
+	function CPUFunctionNode(functionName, jsFunction, settings) {
 		_classCallCheck(this, CPUFunctionNode);
 
-		var _this = _possibleConstructorReturn(this, (CPUFunctionNode.__proto__ || Object.getPrototypeOf(CPUFunctionNode)).call(this, functionName, jsFunction, options));
+		var _this = _possibleConstructorReturn(this, (CPUFunctionNode.__proto__ || Object.getPrototypeOf(CPUFunctionNode)).call(this, functionName, jsFunction, settings));
 
-		_this.paramSizes = options ? options.paramSizes : [];
+		_this.paramSizes = settings ? settings.paramSizes : [];
 		_this.memberStates = [];
 		return _this;
 	}
@@ -236,22 +242,22 @@ var CPUFunctionNode = function (_FunctionNode) {
 
 			switch (idtNode.name) {
 				case 'gpu_threadX':
-					retArr.push('threadId.x');
+					retArr.push('_this.thread.x');
 					break;
 				case 'gpu_threadY':
-					retArr.push('threadId.y');
+					retArr.push('_this.thread.y');
 					break;
 				case 'gpu_threadZ':
-					retArr.push('threadId.z');
+					retArr.push('_this.thread.z');
 					break;
 				case 'gpu_outputX':
-					retArr.push('uOutputDim.x');
+					retArr.push('_this.output.x');
 					break;
 				case 'gpu_outputY':
-					retArr.push('uOutputDim.y');
+					retArr.push('_this.output.y');
 					break;
 				case 'gpu_outputZ':
-					retArr.push('uOutputDim.z');
+					retArr.push('_this.output.z');
 					break;
 				case 'Infinity':
 					retArr.push('Infinity');
@@ -296,7 +302,7 @@ var CPUFunctionNode = function (_FunctionNode) {
 			}
 
 			if (forNode.test && forNode.test.type === 'BinaryExpression') {
-				if ((forNode.test.right.type === 'Identifier' || forNode.test.right.type === 'Literal') && forNode.test.operator === '<' && this.isIdentifierConstant(forNode.test.right.name) === false) {
+				if (forNode.test.right.type === 'Identifier' && forNode.test.operator === '<' && this.isIdentifierConstant(forNode.test.right.name) === false) {
 
 					if (!this.loopMaxIterations) {
 						console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
@@ -335,29 +341,20 @@ var CPUFunctionNode = function (_FunctionNode) {
 
 					return retArr;
 				} else if (forNode.init.declarations) {
-					var declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
-					var updateArgument = forNode.update.argument;
+					var declarations = forNode.init.declarations;
 					if (!Array.isArray(declarations) || declarations.length < 1) {
-						console.log(this.jsFunctionString);
 						throw new Error('Error: Incompatible for loop declaration');
 					}
 
 					if (declarations.length > 1) {
-						var initArgument = null;
+						retArr.push('for (');
+						retArr.push(forNode.init.kind + ' ');
 						for (var _i2 = 0; _i2 < declarations.length; _i2++) {
-							var declaration = declarations[_i2];
-							if (declaration.id.name === updateArgument.name) {
-								initArgument = declaration;
-								declarations.splice(_i2, 1);
-							} else {
-								retArr.push('var ');
-								this.astGeneric(declaration, retArr);
-								retArr.push(';');
+							if (_i2 > 0) {
+								retArr.push(',');
 							}
+							this.astGeneric(declarations[_i2], retArr);
 						}
-
-						retArr.push('for (let ');
-						this.astGeneric(initArgument, retArr);
 						retArr.push(';');
 					} else {
 						retArr.push('for (');
@@ -458,14 +455,17 @@ var CPUFunctionNode = function (_FunctionNode) {
 
 	}, {
 		key: 'astVariableDeclaration',
-		value: function astVariableDeclaration(vardecNode, retArr) {
-			retArr.push('var ');
-			for (var i = 0; i < vardecNode.declarations.length; i++) {
-				this.declarations[vardecNode.declarations[i].id.name] = 'var';
+		value: function astVariableDeclaration(varDecNode, retArr) {
+			if (varDecNode.kind === 'var') {
+				this.varWarn();
+			}
+			retArr.push(varDecNode.kind + ' ');
+			for (var i = 0; i < varDecNode.declarations.length; i++) {
+				this.declarations[varDecNode.declarations[i].id.name] = varDecNode.kind;
 				if (i > 0) {
 					retArr.push(',');
 				}
-				this.astGeneric(vardecNode.declarations[i], retArr);
+				this.astGeneric(varDecNode.declarations[i], retArr);
 			}
 			retArr.push(';');
 			return retArr;
@@ -474,11 +474,11 @@ var CPUFunctionNode = function (_FunctionNode) {
 
 	}, {
 		key: 'astVariableDeclarator',
-		value: function astVariableDeclarator(ivardecNode, retArr) {
-			this.astGeneric(ivardecNode.id, retArr);
-			if (ivardecNode.init !== null) {
+		value: function astVariableDeclarator(iVarDecNode, retArr) {
+			this.astGeneric(iVarDecNode.id, retArr);
+			if (iVarDecNode.init !== null) {
 				retArr.push('=');
-				this.astGeneric(ivardecNode.init, retArr);
+				this.astGeneric(iVarDecNode.init, retArr);
 			}
 			return retArr;
 		}
@@ -787,6 +787,11 @@ var CPUFunctionNode = function (_FunctionNode) {
 			return retArr;
 		}
 	}, {
+		key: 'varWarn',
+		value: function varWarn() {
+			console.warn('var declarations are not supported, weird things happen.  Use const or let');
+		}
+	}, {
 		key: 'memberState',
 		get: function get() {
 			return this.memberStates[this.memberStates.length - 1];
@@ -815,7 +820,7 @@ function removeNoise(str) {
 }
 
 module.exports = function (cpuKernel, name) {
-  return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: ' + removeNoise(utils.allPropertiesOf.toString()) + ',\n      clone: ' + removeNoise(utils.clone.toString()) + ',\n      checkOutput: ' + removeNoise(utils.checkOutput.toString()) + '\n    };\n    const Utils = utils;\n    let Input = function() {};\n    class ' + (name || 'Kernel') + ' {\n      constructor() {        \n        this.argumentsLength = 0;\n        this._canvas = null;\n        this._webGl = null;\n        this.built = false;\n        this.program = null;\n        this.paramNames = ' + JSON.stringify(cpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(cpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(cpuKernel.texSize) + ';\n        this.output = ' + JSON.stringify(cpuKernel.output) + ';\n        this._kernelString = `' + cpuKernel._kernelString + '`;\n        this.output = ' + JSON.stringify(cpuKernel.output) + ';\n\t\t    this.run = function() {\n          this.run = null;\n          this.build();\n          return this.run.apply(this, arguments);\n        }.bind(this);\n        this.thread = {\n          x: 0,\n          y: 0,\n          z: 0\n        };\n      }\n      setCanvas(canvas) { this._canvas = canvas; return this; }\n      setWebGl(webGl) { this._webGl = webGl; return this; }\n      setInput(Type) { Input = Type; }\n      ' + removeFnNoise(cpuKernel.build.toString()) + '\n      ' + removeFnNoise(cpuKernel.setupParams.toString()) + '\n      ' + removeFnNoise(cpuKernel.setupConstants.toString()) + '\n      run () { ' + cpuKernel.kernelString + ' }\n      getKernelString() { return this._kernelString; }\n      ' + removeFnNoise(cpuKernel.validateOptions.toString()) + '\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
+  return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: ' + removeNoise(utils.allPropertiesOf.toString()) + ',\n      clone: ' + removeNoise(utils.clone.toString()) + ',\n      checkOutput: ' + removeNoise(utils.checkOutput.toString()) + '\n    };\n    const Utils = utils;\n    let Input = function() {};\n    class ' + (name || 'Kernel') + ' {\n      constructor() {        \n        this.argumentsLength = 0;\n        this.canvas = null;\n        this.context = null;\n        this.built = false;\n        this.program = null;\n        this.paramNames = ' + JSON.stringify(cpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(cpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(cpuKernel.texSize) + ';\n        this.output = ' + JSON.stringify(cpuKernel.output) + ';\n        this._kernelString = `' + cpuKernel._kernelString + '`;\n        this.output = ' + JSON.stringify(cpuKernel.output) + ';\n\t\t    this.run = function() {\n          this.run = null;\n          this.build();\n          return this.run.apply(this, arguments);\n        }.bind(this);\n        this.thread = {\n          x: 0,\n          y: 0,\n          z: 0\n        };\n      }\n      setCanvas(canvas) { this.canvas = canvas; return this; }\n      setContext(context) { this.context = context; return this; }\n      setInput(Type) { Input = Type; }\n      ' + removeFnNoise(cpuKernel.build.toString()) + '\n      ' + removeFnNoise(cpuKernel.setupParams.toString()) + '\n      ' + removeFnNoise(cpuKernel.setupConstants.toString()) + '\n      run () { ' + cpuKernel.kernelString + ' }\n      getKernelString() { return this._kernelString; }\n      ' + removeFnNoise(cpuKernel.validateSettings.toString()) + '\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
 };
 },{"../../core/utils":35,"../kernel-run-shortcut":13}],4:[function(require,module,exports){
 'use strict';
@@ -841,9 +846,6 @@ var CPUKernel = function (_Kernel) {
 
 		var _this = _possibleConstructorReturn(this, (CPUKernel.__proto__ || Object.getPrototypeOf(CPUKernel)).call(this, fnString, settings));
 
-		_this._fn = null;
-		_this.run = null;
-		_this._canvasCtx = null;
 		_this._imageData = null;
 		_this._colorData = null;
 		_this._kernelString = null;
@@ -861,11 +863,26 @@ var CPUKernel = function (_Kernel) {
 		return _this;
 	}
 
-
-
 	_createClass(CPUKernel, [{
-		key: 'validateOptions',
-		value: function validateOptions() {
+		key: 'initCanvas',
+		value: function initCanvas() {
+			if (typeof document !== 'undefined') {
+				return document.createElement('canvas');
+			} else if (typeof OffscreenCanvas !== 'undefined') {
+				return new OffscreenCanvas(0, 0);
+			}
+		}
+	}, {
+		key: 'initContext',
+		value: function initContext() {
+			if (!this.canvas) return null;
+			return this.canvas.getContext('2d');
+		}
+
+
+	}, {
+		key: 'validateSettings',
+		value: function validateSettings() {
 			if (!this.output || this.output.length === 0) {
 				if (arguments.length !== 1) {
 					throw 'Auto dimensions only supported for kernels with only one input';
@@ -890,11 +907,7 @@ var CPUKernel = function (_Kernel) {
 		value: function build() {
 			this.setupConstants();
 			this.setupParams(arguments);
-			this.validateOptions();
-			var canvas = this._canvas;
-			if (canvas) {
-				this._canvasCtx = canvas.getContext('2d');
-			}
+			this.validateSettings();
 			var threadDim = this.threadDim = utils.clone(this.output);
 
 			while (threadDim.length < 3) {
@@ -902,27 +915,31 @@ var CPUKernel = function (_Kernel) {
 			}
 
 			if (this.graphical) {
-				var _canvas = this._canvas;
-				if (!_canvas) {
+				var canvas = this.canvas;
+				if (!canvas) {
 					throw new Error('no canvas available for using graphical output');
 				}
-				_canvas.width = threadDim[0];
-				_canvas.height = threadDim[1];
-				this._imageData = this._canvasCtx.createImageData(threadDim[0], threadDim[1]);
+				canvas.width = threadDim[0];
+				canvas.height = threadDim[1];
+				this._imageData = this.context.createImageData(threadDim[0], threadDim[1]);
 				this._colorData = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
 			}
 
 			var kernelString = this.getKernelString();
+			this.kernelString = kernelString;
+
+			try {
+				this.run = new Function([], kernelString).bind(this)();
+			} catch (e) {
+				console.error('An error occurred compiling the javascript: ', e);
+			}
 
 			if (this.debug) {
-				console.log('Options:');
+				console.log('Settings:');
 				console.dir(this);
 				console.log('Function output:');
 				console.log(kernelString);
 			}
-
-			this.kernelString = kernelString;
-			this.run = new Function([], kernelString).bind(this)();
 		}
 	}, {
 		key: 'color',
@@ -1021,7 +1038,7 @@ var CPUKernel = function (_Kernel) {
 			}
 			var kernelString = this._kernelString = '\n\t\tvar LOOP_MAX = ' + this._getLoopMaxString() + '\n\t\tvar constants = this.constants;\n\t\tvar _this = this;\n    return function (' + this.paramNames.map(function (paramName) {
 				return 'user_' + paramName;
-			}).join(', ') + ') {\n      ' + this._processConstants() + '\n      ' + this._processParams() + '\n      ' + this._kernelLoop(kernel) + '\n      if (this.graphical) {\n        this._imageData.data.set(this._colorData);\n        this._canvasCtx.putImageData(this._imageData, 0, 0);\n        return;\n      }\n      ' + this._kernelOutput() + '\n      ' + (prototypes.length > 0 ? prototypes.join('\n') : '') + '\n    }.bind(this);';
+			}).join(', ') + ') {\n      ' + this._processConstants() + '\n      ' + this._processParams() + '\n      ' + this._kernelLoop(kernel) + '\n      if (this.graphical) {\n        this._imageData.data.set(this._colorData);\n        this.context.putImageData(this._imageData, 0, 0);\n        return;\n      }\n      ' + this._kernelOutput() + '\n      ' + (prototypes.length > 0 ? prototypes.join('\n') : '') + '\n    }.bind(this);';
 			return kernelString;
 		}
 
@@ -1048,16 +1065,16 @@ var CPUKernel = function (_Kernel) {
 				var type = this.constantTypes[p];
 				switch (type) {
 					case 'HTMLImage':
-						result.push('  var constants_' + p + ' = this._imageTo2DArray(this.constants.' + p + ')');
+						result.push('  const constants_' + p + ' = this._imageTo2DArray(this.constants.' + p + ')');
 						break;
 					case 'HTMLImageArray':
-						result.push('  var constants_' + p + ' = this._imageTo3DArray(this.constants.' + p + ')');
+						result.push('  const constants_' + p + ' = this._imageTo3DArray(this.constants.' + p + ')');
 						break;
 					case 'Input':
-						result.push('  var constants_' + p + ' = this.constants.' + p + '.value');
+						result.push('  const constants_' + p + ' = this.constants.' + p + '.value');
 						break;
 					default:
-						result.push('  var constants_' + p + ' = this.constants.' + p);
+						result.push('  const constants_' + p + ' = this.constants.' + p);
 				}
 			}
 			return result.join('\n');
@@ -1084,14 +1101,14 @@ var CPUKernel = function (_Kernel) {
 	}, {
 		key: '_imageTo2DArray',
 		value: function _imageTo2DArray(image) {
-			var canvas = this._canvas;
+			var canvas = this.canvas;
 			if (canvas.width < image.width) {
 				canvas.width = image.width;
 			}
 			if (canvas.height < image.height) {
 				canvas.height = image.height;
 			}
-			var ctx = this._canvasCtx;
+			var ctx = this.context;
 			ctx.drawImage(image, 0, 0, image.width, image.height);
 			var pixelsData = ctx.getImageData(0, 0, image.width, image.height).data;
 			var imageArray = new Array(image.height);
@@ -1140,7 +1157,7 @@ var CPUKernel = function (_Kernel) {
 		key: '_kernel1DLoop',
 		value: function _kernel1DLoop(kernelString) {
 			var threadDim = this.threadDim;
-			return '\n    var result = new Float32Array(' + threadDim[0] + ');\n    ' + this._mapSubKernels(function (name) {
+			return '\n    const result = new Float32Array(' + threadDim[0] + ');\n    ' + this._mapSubKernels(function (name) {
 				return 'var result_' + name + ' = new Float32Array(' + threadDim[0] + ');\n';
 			}).join('') + '\n    for (var x = 0; x < ' + threadDim[0] + '; x++) {\n      this.thread.x = x;\n      this.thread.y = 0;\n      this.thread.z = 0;\n      var kernelResult;\n      ' + kernelString + '\n      result[x] = kernelResult;\n      ' + this._mapSubKernels(function (name) {
 				return 'result_' + name + '[x] = ' + name + ';\n';
@@ -1150,11 +1167,11 @@ var CPUKernel = function (_Kernel) {
 		key: '_kernel2DLoop',
 		value: function _kernel2DLoop(kernelString) {
 			var threadDim = this.threadDim;
-			return '\n    var result = new Array(' + threadDim[1] + ');\n    ' + this._mapSubKernels(function (name) {
-				return 'var result_' + name + ' = new Array(' + threadDim[1] + ');\n';
-			}).join('') + '\n    for (var y = 0; y < ' + threadDim[1] + '; y++) {\n      this.thread.z = 0;\n      this.thread.y = y;\n      var resultX = result[y] = new Float32Array(' + threadDim[0] + ');\n      ' + this._mapSubKernels(function (name) {
-				return 'var result_' + name + 'X = result_' + name + '[y] = new Float32Array(' + threadDim[0] + ');\n';
-			}).join('') + '\n      for (var x = 0; x < ' + threadDim[0] + '; x++) {\n      \tthis.thread.x = x;\n        var kernelResult;\n        ' + kernelString + '\n        resultX[x] = kernelResult;\n        ' + this._mapSubKernels(function (name) {
+			return '\n    const result = new Array(' + threadDim[1] + ');\n    ' + this._mapSubKernels(function (name) {
+				return 'const result_' + name + ' = new Array(' + threadDim[1] + ');\n';
+			}).join('') + '\n    for (let y = 0; y < ' + threadDim[1] + '; y++) {\n      this.thread.z = 0;\n      this.thread.y = y;\n      const resultX = result[y] = new Float32Array(' + threadDim[0] + ');\n      ' + this._mapSubKernels(function (name) {
+				return 'const result_' + name + 'X = result_' + name + '[y] = new Float32Array(' + threadDim[0] + ');\n';
+			}).join('') + '\n      for (let x = 0; x < ' + threadDim[0] + '; x++) {\n      \tthis.thread.x = x;\n        let kernelResult;\n        ' + kernelString + '\n        resultX[x] = kernelResult;\n        ' + this._mapSubKernels(function (name) {
 				return 'result_' + name + 'X[x] = ' + name + ';\n';
 			}).join('') + '\n      }\n    }';
 		}
@@ -1162,13 +1179,13 @@ var CPUKernel = function (_Kernel) {
 		key: '_kernel3DLoop',
 		value: function _kernel3DLoop(kernelString) {
 			var threadDim = this.threadDim;
-			return '\n    var result = new Array(' + threadDim[2] + ');\n    ' + this._mapSubKernels(function (name) {
-				return 'var result_' + name + ' = new Array(' + threadDim[2] + ');\n';
-			}).join('') + '\n    for (var z = 0; z < ' + threadDim[2] + '; z++) {\n      this.thread.z = z;\n      var resultY = result[z] = new Array(' + threadDim[1] + ');\n      ' + this._mapSubKernels(function (name) {
-				return 'var result_' + name + 'Y = result_' + name + '[z] = new Array(' + threadDim[1] + ');\n';
-			}).join('') + '\n      for (var y = 0; y < ' + threadDim[1] + '; y++) {\n        this.thread.y = y;\n        var resultX = resultY[y] = new Float32Array(' + threadDim[0] + ');\n        ' + this._mapSubKernels(function (name) {
-				return 'var result_' + name + 'X = result_' + name + 'Y[y] = new Float32Array(' + threadDim[0] + ');\n';
-			}).join('') + '\n        for (var x = 0; x < ' + threadDim[0] + '; x++) {\n        \tthis.thread.x = x;\n          var kernelResult;\n          ' + kernelString + '\n          resultX[x] = kernelResult;\n          ' + this._mapSubKernels(function (name) {
+			return '\n    const result = new Array(' + threadDim[2] + ');\n    ' + this._mapSubKernels(function (name) {
+				return 'const result_' + name + ' = new Array(' + threadDim[2] + ');\n';
+			}).join('') + '\n    for (let z = 0; z < ' + threadDim[2] + '; z++) {\n      this.thread.z = z;\n      const resultY = result[z] = new Array(' + threadDim[1] + ');\n      ' + this._mapSubKernels(function (name) {
+				return 'const result_' + name + 'Y = result_' + name + '[z] = new Array(' + threadDim[1] + ');\n';
+			}).join('') + '\n      for (let y = 0; y < ' + threadDim[1] + '; y++) {\n        this.thread.y = y;\n        const resultX = resultY[y] = new Float32Array(' + threadDim[0] + ');\n        ' + this._mapSubKernels(function (name) {
+				return 'const result_' + name + 'X = result_' + name + 'Y[y] = new Float32Array(' + threadDim[0] + ');\n';
+			}).join('') + '\n        for (let x = 0; x < ' + threadDim[0] + '; x++) {\n        \tthis.thread.x = x;\n          let kernelResult;\n          ' + kernelString + '\n          resultX[x] = kernelResult;\n          ' + this._mapSubKernels(function (name) {
 				return 'result_' + name + 'X[x] = ' + name + ';\n';
 			}).join('') + '\n        }\n      }\n    }';
 		}
@@ -1191,7 +1208,14 @@ var CPUKernel = function (_Kernel) {
 		}
 	}, {
 		key: 'destroy',
-		value: function destroy() {}
+		value: function destroy(removeCanvasReference) {
+			if (removeCanvasReference) {
+				delete this.canvas;
+			}
+		}
+	}], [{
+		key: 'destroyContext',
+		value: function destroyContext(context) {}
 	}]);
 
 	return CPUKernel;
@@ -1216,36 +1240,45 @@ var CPUFunctionBuilder = require('./function-builder');
 var CPURunner = function (_Runner) {
 	_inherits(CPURunner, _Runner);
 
-	_createClass(CPURunner, null, [{
-		key: 'isRelatedContext',
-		value: function isRelatedContext(context) {
-			return false;
-		}
-
-
-	}, {
-		key: 'isCompatible',
-		get: function get() {
-			return true;
-		}
-	}]);
-
-	function CPURunner(settings) {
+	function CPURunner() {
 		_classCallCheck(this, CPURunner);
 
-		var _this = _possibleConstructorReturn(this, (CPURunner.__proto__ || Object.getPrototypeOf(CPURunner)).call(this, new CPUFunctionBuilder(), settings));
-
-		_this.Kernel = CPUKernel;
-		_this.kernel = null;
-		return _this;
+		return _possibleConstructorReturn(this, (CPURunner.__proto__ || Object.getPrototypeOf(CPURunner)).apply(this, arguments));
 	}
-
-
 
 	_createClass(CPURunner, [{
 		key: 'getMode',
+
 		value: function getMode() {
 			return 'cpu';
+		}
+	}], [{
+		key: 'getFeatures',
+		value: function getFeatures() {
+			return Object.freeze({
+				kernelMap: true,
+				isIntegerDivisionAccurate: true
+			});
+		}
+	}, {
+		key: 'isContextMatch',
+		value: function isContextMatch(context) {
+			return false;
+		}
+	}, {
+		key: 'FunctionBuilder',
+		get: function get() {
+			return CPUFunctionBuilder;
+		}
+	}, {
+		key: 'Kernel',
+		get: function get() {
+			return CPUKernel;
+		}
+	}, {
+		key: 'isSupported',
+		get: function get() {
+			return true;
 		}
 	}]);
 
@@ -1262,39 +1295,45 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var FunctionBuilder = function () {
-	function FunctionBuilder(gpu) {
+	_createClass(FunctionBuilder, null, [{
+		key: 'FunctionNode',
+
+		get: function get() {
+			throw new Error('"FunctionNode" not implemented on FunctionBuilder');
+		}
+	}]);
+
+	function FunctionBuilder() {
 		_classCallCheck(this, FunctionBuilder);
 
 		this.nodeMap = {};
 		this.nativeFunctions = {};
-		this.gpu = gpu;
 		this.rootKernel = null;
-		this.Node = null;
 	}
 
 	_createClass(FunctionBuilder, [{
 		key: 'addNativeFunction',
-		value: function addNativeFunction(functionName, glslFunctionString) {
-			this.nativeFunctions[functionName] = glslFunctionString;
+		value: function addNativeFunction(functionName, fnString) {
+			this.nativeFunctions[functionName] = fnString;
 		}
 
 
 	}, {
 		key: 'addFunction',
-		value: function addFunction(functionName, jsFunction, options) {
-			this.addFunctionNode(new this.Node(functionName, jsFunction, options).setBuilder(this));
+		value: function addFunction(functionName, fn, settings) {
+			this.addFunctionNode(new this.constructor.FunctionNode(functionName, fn, settings).setBuilder(this));
 		}
 	}, {
 		key: 'addFunctions',
-		value: function addFunctions(functions, options) {
+		value: function addFunctions(functions, settings) {
 			if (functions) {
 				if (Array.isArray(functions)) {
 					for (var i = 0; i < functions.length; i++) {
-						this.addFunction(null, functions[i], options);
+						this.addFunction(null, functions[i], settings);
 					}
 				} else {
 					for (var p in functions) {
-						this.addFunction(p, functions[p], options);
+						this.addFunction(p, functions[p], settings);
 					}
 				}
 			}
@@ -1311,10 +1350,10 @@ var FunctionBuilder = function () {
 
 	}, {
 		key: 'addFunctionNode',
-		value: function addFunctionNode(inNode) {
-			this.nodeMap[inNode.functionName] = inNode;
-			if (inNode.isRootKernel) {
-				this.rootKernel = inNode;
+		value: function addFunctionNode(functionNode) {
+			this.nodeMap[functionNode.functionName] = functionNode;
+			if (functionNode.isRootKernel) {
+				this.rootKernel = functionNode;
 			}
 		}
 
@@ -1325,17 +1364,17 @@ var FunctionBuilder = function () {
 			functionName = functionName || 'kernel';
 			retList = retList || [];
 
-			var fNode = this.nodeMap[functionName];
-			if (fNode) {
+			var functionNode = this.nodeMap[functionName];
+			if (functionNode) {
 				var functionIndex = retList.indexOf(functionName);
 				if (functionIndex === -1) {
 					retList.push(functionName);
 					if (parent) {
-						fNode.parent = parent;
+						functionNode.parent = parent;
 					}
-					fNode.getFunctionString(); 
-					for (var i = 0; i < fNode.calledFunctions.length; ++i) {
-						this.traceFunctionCalls(fNode.calledFunctions[i], retList, fNode);
+					functionNode.getFunctionString(); 
+					for (var i = 0; i < functionNode.calledFunctions.length; ++i) {
+						this.traceFunctionCalls(functionNode.calledFunctions[i], retList, functionNode);
 					}
 				} else {
 					var dependantFunctionName = retList.splice(functionIndex, 1)[0];
@@ -1356,8 +1395,8 @@ var FunctionBuilder = function () {
 
 	}, {
 		key: 'addKernel',
-		value: function addKernel(fnString, options) {
-			var kernelNode = new this.Node('kernel', fnString, options);
+		value: function addKernel(fnString, settings) {
+			var kernelNode = new this.constructor.FunctionNode('kernel', fnString, settings);
 			kernelNode.setBuilder(this);
 			kernelNode.isRootKernel = true;
 			this.addFunctionNode(kernelNode);
@@ -1367,8 +1406,8 @@ var FunctionBuilder = function () {
 
 	}, {
 		key: 'addSubKernel',
-		value: function addSubKernel(jsFunction, options) {
-			var kernelNode = new this.Node(null, jsFunction, options);
+		value: function addSubKernel(fn, settings) {
+			var kernelNode = new this.constructor.FunctionNode(null, fn, settings);
 			kernelNode.setBuilder(this);
 			kernelNode.isSubKernel = true;
 			this.addFunctionNode(kernelNode);
@@ -1434,15 +1473,11 @@ var FunctionBuilder = function () {
 
 	}, {
 		key: 'getString',
-		value: function getString(functionName, opt) {
-			if (opt === undefined) {
-				opt = {};
-			}
-
+		value: function getString(functionName) {
 			if (functionName) {
-				return this.getStringFromFunctionNames(this.traceFunctionCalls(functionName, [], opt).reverse(), opt);
+				return this.getStringFromFunctionNames(this.traceFunctionCalls(functionName).reverse());
 			}
-			return this.getStringFromFunctionNames(Object.keys(this.nodeMap), opt);
+			return this.getStringFromFunctionNames(Object.keys(this.nodeMap));
 		}
 	}]);
 
@@ -1464,7 +1499,7 @@ var acorn = require('acorn');
 
 var FunctionNode = function () {
 
-	function FunctionNode(functionName, jsFunction, options) {
+	function FunctionNode(functionName, jsFunction, settings) {
 		_classCallCheck(this, FunctionNode);
 
 		this.calledFunctions = [];
@@ -1483,38 +1518,38 @@ var FunctionNode = function () {
 
 		var paramTypes = void 0;
 		var returnType = void 0;
-		if (options) {
-			if (options.hasOwnProperty('debug')) {
-				this.debug = options.debug;
+		if (settings) {
+			if (settings.hasOwnProperty('debug')) {
+				this.debug = settings.debug;
 			}
-			if (options.hasOwnProperty('prototypeOnly')) {
-				this.prototypeOnly = options.prototypeOnly;
+			if (settings.hasOwnProperty('prototypeOnly')) {
+				this.prototypeOnly = settings.prototypeOnly;
 			}
-			if (options.hasOwnProperty('constants')) {
-				this.constants = options.constants;
+			if (settings.hasOwnProperty('constants')) {
+				this.constants = settings.constants;
 			}
-			if (options.hasOwnProperty('output')) {
-				this.output = options.output;
+			if (settings.hasOwnProperty('output')) {
+				this.output = settings.output;
 			}
-			if (options.hasOwnProperty('loopMaxIterations')) {
-				this.loopMaxIterations = options.loopMaxIterations;
+			if (settings.hasOwnProperty('loopMaxIterations')) {
+				this.loopMaxIterations = settings.loopMaxIterations;
 			}
-			if (options.hasOwnProperty('paramTypes')) {
-				this.paramTypes = paramTypes = options.paramTypes;
+			if (settings.hasOwnProperty('paramTypes')) {
+				this.paramTypes = paramTypes = settings.paramTypes;
 			}
-			if (options.hasOwnProperty('constantTypes')) {
-				this.constantTypes = options.constantTypes;
+			if (settings.hasOwnProperty('constantTypes')) {
+				this.constantTypes = settings.constantTypes;
 			} else {
 				this.constantTypes = {};
 			}
-			if (options.hasOwnProperty('returnType')) {
-				returnType = options.returnType;
+			if (settings.hasOwnProperty('returnType')) {
+				returnType = settings.returnType;
 			}
-			if (options.hasOwnProperty('fixIntegerDivisionAccuracy')) {
-				this.fixIntegerDivisionAccuracy = options.fixIntegerDivisionAccuracy;
+			if (settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
+				this.fixIntegerDivisionAccuracy = settings.fixIntegerDivisionAccuracy;
 			}
-			if (options.hasOwnProperty('isRootKernel')) {
-				this.isRootKernel = options.isRootKernel;
+			if (settings.hasOwnProperty('isRootKernel')) {
+				this.isRootKernel = settings.isRootKernel;
 			}
 		}
 
@@ -1637,7 +1672,7 @@ var FunctionNode = function () {
 				}
 			}
 
-			throw this.astErrorOutput('Unknown CallExpression_unroll', ast);
+			throw this.astErrorOutput('Unknown astMemberExpressionUnroll', ast);
 		}
 
 
@@ -1653,9 +1688,9 @@ var FunctionNode = function () {
 				throw 'Missing JS to AST parser';
 			}
 
-			var ast = inParser.parse('var ' + this.functionName + ' = ' + this.jsFunctionString + ';', {
+			var ast = Object.freeze(inParser.parse('var ' + this.functionName + ' = ' + this.jsFunctionString + ';', {
 				locations: true
-			});
+			}));
 			if (ast === null) {
 				throw 'Failed to parse JS code';
 			}
@@ -1736,8 +1771,8 @@ var FunctionNode = function () {
 		}
 	}, {
 		key: 'generate',
-		value: function generate(options) {
-			throw new Error('"generate" not defined on FunctionNode');
+		value: function generate(settings) {
+			throw new Error('"generate" not defined on ' + this.constructor.name);
 		}
 
 
@@ -1818,9 +1853,7 @@ var FunctionNode = function () {
 	}, {
 		key: 'astErrorOutput',
 		value: function astErrorOutput(error, ast) {
-			console.error(utils.getAstString(this.jsFunctionString, ast));
-			console.error(error, ast, this);
-			return error;
+			return new Error(error + ':\n' + utils.getAstString(this.jsFunctionString, ast));
 		}
 	}, {
 		key: 'astDebuggerStatement',
@@ -2005,12 +2038,13 @@ var GLRunner = function (_Runner) {
 		return _possibleConstructorReturn(this, (GLRunner.__proto__ || Object.getPrototypeOf(GLRunner)).apply(this, arguments));
 	}
 
-	_createClass(GLRunner, [{
+	_createClass(GLRunner, null, [{
 		key: 'getFeatures',
 		value: function getFeatures() {
 			return Object.freeze({
 				isFloatRead: this.getIsFloatRead(),
-				isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate()
+				isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+				kernelMap: false
 			});
 		}
 	}, {
@@ -2020,19 +2054,17 @@ var GLRunner = function (_Runner) {
 				return 1;
 			}
 			var kernel = new this.Kernel(kernelFunction, {
-				webGl: this._webGl,
-				canvas: this._canvas,
-				skipValidateOptions: true,
-				functionBuilder: this.functionBuilder,
+				context: this.testContext,
+				canvas: this.testCanvas,
+				functionBuilder: this.testFunctionBuilder,
+				skipValidateSettings: true,
 				output: [2],
 				floatTextures: true,
 				floatOutput: true,
 				floatOutputForce: true
 			});
 			var result = kernel.run();
-			this._checkInherits(kernel);
 			kernel.destroy(true);
-			debugger;
 			return result[0] === 1;
 		}
 	}, {
@@ -2042,26 +2074,30 @@ var GLRunner = function (_Runner) {
 				return v1[this.thread.x] / v2[this.thread.x];
 			}
 			var kernel = new this.Kernel(kernelFunction, {
-				webGl: this._webGl,
-				canvas: this._canvas,
-				skipValidateOptions: true,
+				context: this.testContext,
+				canvas: this.testCanvas,
+				skipValidateSettings: true,
 				output: [2],
-				functionBuilder: this.functionBuilder
+				functionBuilder: this.testFunctionBuilder
 			});
 			var result = kernel.run([6, 6030401], [3, 3991]);
-			this._checkInherits(kernel);
 			kernel.destroy(true);
 			return result[0] === 2 && result[1] === 1511;
 		}
 	}, {
-		key: '_checkInherits',
-		value: function _checkInherits(kernel) {
-			if (!this._webGl) {
-				this._webGl = kernel.getWebGl();
-			}
-			if (!this._canvas) {
-				this._canvas = kernel.getCanvas();
-			}
+		key: 'setupFeatureChecks',
+		value: function setupFeatureChecks() {
+			throw new Error('"setupFeatureChecks" not defined on ' + this.name);
+		}
+	}, {
+		key: 'testCanvas',
+		get: function get() {
+			throw new Error('"testCanvas" not defined on ' + this.name);
+		}
+	}, {
+		key: 'testContext',
+		get: function get() {
+			throw new Error('"testContext" not defined on ' + this.name);
 		}
 	}]);
 
@@ -2071,6 +2107,8 @@ var GLRunner = function (_Runner) {
 module.exports = GLRunner;
 },{"./runner":15}],9:[function(require,module,exports){
 'use strict';
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -2088,11 +2126,15 @@ var HeadlessGLFunctionBuilder = function (_FunctionBuilder) {
 	function HeadlessGLFunctionBuilder() {
 		_classCallCheck(this, HeadlessGLFunctionBuilder);
 
-		var _this = _possibleConstructorReturn(this, (HeadlessGLFunctionBuilder.__proto__ || Object.getPrototypeOf(HeadlessGLFunctionBuilder)).call(this));
-
-		_this.Node = HeadlessGLFunctionNode;
-		return _this;
+		return _possibleConstructorReturn(this, (HeadlessGLFunctionBuilder.__proto__ || Object.getPrototypeOf(HeadlessGLFunctionBuilder)).apply(this, arguments));
 	}
+
+	_createClass(HeadlessGLFunctionBuilder, null, [{
+		key: 'FunctionNode',
+		get: function get() {
+			return HeadlessGLFunctionNode;
+		}
+	}]);
 
 	return HeadlessGLFunctionBuilder;
 }(FunctionBuilder);
@@ -2134,30 +2176,58 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+var getContext = require('gl');
 var WebGLKernel = require('../web-gl/kernel');
-var canvas = {};
 
 var HeadlessGLKernel = function (_WebGLKernel) {
 	_inherits(HeadlessGLKernel, _WebGLKernel);
 
-	function HeadlessGLKernel(fnString, settings) {
+	function HeadlessGLKernel() {
 		_classCallCheck(this, HeadlessGLKernel);
 
-		return _possibleConstructorReturn(this, (HeadlessGLKernel.__proto__ || Object.getPrototypeOf(HeadlessGLKernel)).call(this, fnString, Object.assign({ canvas: canvas }, settings)));
+		return _possibleConstructorReturn(this, (HeadlessGLKernel.__proto__ || Object.getPrototypeOf(HeadlessGLKernel)).apply(this, arguments));
 	}
 
 	_createClass(HeadlessGLKernel, [{
-		key: 'initWebGl',
-		value: function initWebGl() {
-			var webGl = require('gl')(2, 2, {
+		key: 'initCanvas',
+		value: function initCanvas() {
+			return {};
+		}
+	}, {
+		key: 'initContext',
+		value: function initContext() {
+			var context = getContext(2, 2, {
 				preserveDrawingBuffer: true
 			});
-			webGl.getExtension('STACKGL_resize_drawingbuffer');
-			webGl.getExtension('STACKGL_destroy_context');
-			webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
-			webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
-			webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
-			return webGl;
+			return context;
+		}
+	}, {
+		key: 'initExtensions',
+		value: function initExtensions() {
+			this.extensions = {
+				STACKGL_resize_drawingbuffer: this.context.getExtension('STACKGL_resize_drawingbuffer'),
+				STACKGL_destroy_context: this.context.getExtension('STACKGL_destroy_context'),
+				OES_texture_float: this.context.getExtension('OES_texture_float'),
+				OES_texture_float_linear: this.context.getExtension('OES_texture_float_linear'),
+				OES_element_index_uint: this.context.getExtension('OES_element_index_uint')
+			};
+		}
+	}, {
+		key: 'destroyExtensions',
+		value: function destroyExtensions() {
+			this.extensions.STACKGL_resize_drawingbuffer = null;
+			this.extensions.STACKGL_destroy_context = null;
+			this.extensions.OES_texture_float = null;
+			this.extensions.OES_texture_float_linear = null;
+			this.extensions.OES_element_index_uint = null;
+		}
+	}], [{
+		key: 'destroyContext',
+		value: function destroyContext(context) {
+			var extension = context.getExtension('STACKGL_destroy_context');
+			if (extension && extension.destroy) {
+				extension.destroy();
+			}
 		}
 	}]);
 
@@ -2176,54 +2246,100 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+var getContext = require('gl');
 var GLRunner = require('../gl-runner');
-var HeadlessGLKernel = require('./kernel');
 var HeadlessGLFunctionBuilder = require('./function-builder');
-var isCompatible = null;
-
-try {
-	isCompatible = require('gl/webgl').hasOwnProperty('WebGLRenderingContext');
-} catch (e) {
-	isCompatible = false;
-}
+var HeadlessGLKernel = require('./kernel');
+var isSupported = null;
+var testCanvas = null;
+var testContext = null;
+var testFunctionBuilder = null;
+var testExtensions = null;
 
 var HeadlessGLRunner = function (_GLRunner) {
 	_inherits(HeadlessGLRunner, _GLRunner);
 
-	_createClass(HeadlessGLRunner, null, [{
-		key: 'isRelatedContext',
-		value: function isRelatedContext(context) {
+	function HeadlessGLRunner() {
+		_classCallCheck(this, HeadlessGLRunner);
+
+		return _possibleConstructorReturn(this, (HeadlessGLRunner.__proto__ || Object.getPrototypeOf(HeadlessGLRunner)).apply(this, arguments));
+	}
+
+	_createClass(HeadlessGLRunner, [{
+		key: 'getMode',
+
+
+		value: function getMode() {
+			return 'gpu';
+		}
+	}], [{
+		key: 'setupFeatureChecks',
+		value: function setupFeatureChecks() {
+			testCanvas = null;
+			testExtensions = null;
+			if (typeof getContext !== 'function') return;
+			testContext = getContext(2, 2, {
+				preserveDrawingBuffer: true
+			});
+			testExtensions = {
+				STACKGL_resize_drawingbuffer: testContext.getExtension('STACKGL_resize_drawingbuffer'),
+				STACKGL_destroy_context: testContext.getExtension('STACKGL_destroy_context'),
+				OES_texture_float: testContext.getExtension('OES_texture_float'),
+				OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
+				OES_element_index_uint: testContext.getExtension('OES_element_index_uint')
+			};
+			testFunctionBuilder = new this.FunctionBuilder();
+		}
+	}, {
+		key: 'isContextMatch',
+		value: function isContextMatch(context) {
 			try {
-				return context instanceof require('gl/webgl').WebGLRenderingContext;
+				return context.getParameter(context.RENDERER) === 'ANGLE';
 			} catch (e) {
 				return false;
 			}
 		}
-
-
 	}, {
-		key: 'isCompatible',
-		get: function get() {
-			return isCompatible;
+		key: 'getFeatures',
+		value: function getFeatures() {
+			return Object.freeze({
+				isFloatRead: this.getIsFloatRead(),
+				isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+				kernelMap: true
+			});
 		}
-	}]);
-
-	function HeadlessGLRunner(settings) {
-		_classCallCheck(this, HeadlessGLRunner);
-
-		var _this = _possibleConstructorReturn(this, (HeadlessGLRunner.__proto__ || Object.getPrototypeOf(HeadlessGLRunner)).call(this, new HeadlessGLFunctionBuilder(), settings));
-
-		_this.Kernel = HeadlessGLKernel;
-		_this.kernel = null;
-		return _this;
-	}
-
-
-
-	_createClass(HeadlessGLRunner, [{
-		key: 'getMode',
-		value: function getMode() {
-			return 'gpu';
+	}, {
+		key: 'FunctionBuilder',
+		get: function get() {
+			return HeadlessGLFunctionBuilder;
+		}
+	}, {
+		key: 'Kernel',
+		get: function get() {
+			return HeadlessGLKernel;
+		}
+	}, {
+		key: 'isSupported',
+		get: function get() {
+			if (isSupported !== null) return isSupported;
+			HeadlessGLRunner.setupFeatureChecks();
+			isSupported = testContext !== null;
+			return isSupported;
+		}
+	}, {
+		key: 'testCanvas',
+		get: function get() {
+			return testCanvas;
+		}
+	}, {
+		key: 'testContext',
+		get: function get() {
+			return testContext;
+		}
+	}, {
+		key: 'testFunctionBuilder',
+		get: function get() {
+			return testFunctionBuilder;
 		}
 	}]);
 
@@ -2231,7 +2347,7 @@ var HeadlessGLRunner = function (_GLRunner) {
 }(GLRunner);
 
 module.exports = HeadlessGLRunner;
-},{"../gl-runner":8,"./function-builder":9,"./kernel":11,"gl/webgl":38}],13:[function(require,module,exports){
+},{"../gl-runner":8,"./function-builder":9,"./kernel":11,"gl":38}],13:[function(require,module,exports){
 'use strict';
 
 var utils = require('../core/utils');
@@ -2293,8 +2409,8 @@ var Kernel = function () {
 		this.outputToTexture = null;
 		this.outputImmutable = null;
 		this.texSize = null;
-		this._canvas = null;
-		this._webGl = null;
+		this.canvas = null;
+		this.context = null;
 		this.threadDim = null;
 		this.floatTextures = null;
 		this.floatOutput = null;
@@ -2302,7 +2418,7 @@ var Kernel = function () {
 		this.addFunction = null;
 		this.functions = null;
 		this.nativeFunctions = null;
-		this.skipValidateOptions = false;
+		this.skipValidateSettings = false;
 		this.subKernels = null;
 		this.subKernelProperties = null;
 		this.subKernelNames = null;
@@ -2319,23 +2435,34 @@ var Kernel = function () {
 			this[p] = settings[p];
 		}
 		if (settings.hasOwnProperty('canvas')) {
-			this._canvas = settings.canvas;
+			this.canvas = settings.canvas;
 		}
-		if (settings.hasOwnProperty('webGl')) {
-			this._webGl = settings.webGl;
+		if (settings.hasOwnProperty('context')) {
+			this.context = settings.context;
 		}
 		if (settings.hasOwnProperty('output')) {
 			this.setOutput(settings.output); 
 		}
 
-		if (!this._canvas) this._canvas = utils.initCanvas();
+		if (!this.canvas) this.canvas = this.initCanvas();
+		if (!this.context) this.context = this.initContext();
 		if (!this.features) this.features = Object.freeze({});
 	}
 
 	_createClass(Kernel, [{
 		key: 'build',
 		value: function build() {
-			throw new Error('"build" not defined on Kernel');
+			throw new Error('"build" not defined on ' + this.constructor.name);
+		}
+	}, {
+		key: 'initCanvas',
+		value: function initCanvas() {
+			throw new Error('"initCanvas" not defined on ' + this.constructor.name);
+		}
+	}, {
+		key: 'initContext',
+		value: function initContext() {
+			throw new Error('"initContext" not defined on ' + this.constructor.name);
 		}
 
 
@@ -2479,15 +2606,15 @@ var Kernel = function () {
 	}, {
 		key: 'setCanvas',
 		value: function setCanvas(canvas) {
-			this._canvas = canvas;
+			this.canvas = canvas;
 			return this;
 		}
 
 
 	}, {
-		key: 'setWebGl',
-		value: function setWebGl(webGl) {
-			this._webGl = webGl;
+		key: 'setContext',
+		value: function setContext(context) {
+			this.context = context;
 			return this;
 		}
 
@@ -2495,19 +2622,19 @@ var Kernel = function () {
 	}, {
 		key: 'getCanvas',
 		value: function getCanvas() {
-			return this._canvas;
+			return this.canvas;
 		}
 
 
 	}, {
-		key: 'getWebGl',
-		value: function getWebGl() {
-			return this._webGl;
+		key: 'getContext',
+		value: function getContext() {
+			return this.context;
 		}
 	}, {
-		key: 'validateOptions',
-		value: function validateOptions() {
-			throw new Error('validateOptions not defined');
+		key: 'validateSettings',
+		value: function validateSettings() {
+			throw new Error('"validateSettings" not defined on ' + this.constructor.name);
 		}
 	}, {
 		key: 'exec',
@@ -2570,7 +2697,12 @@ var Kernel = function () {
 	}, {
 		key: 'destroy',
 		value: function destroy(removeCanvasReferences) {
-			throw new Error('"destroy" called on Kernel');
+			throw new Error('"destroy" called on ' + this.constructor.name);
+		}
+	}], [{
+		key: 'destroyContext',
+		value: function destroyContext(context) {
+			throw new Error('"destroyContext" called on ' + this.name);
 		}
 	}]);
 
@@ -2585,66 +2717,66 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var utils = require('../core/utils');
 var kernelRunShortcut = require('./kernel-run-shortcut');
 var features = {};
 
-
 var Runner = function () {
 	_createClass(Runner, null, [{
-		key: 'isRelatedContext',
-		value: function isRelatedContext(context) {
-			throw new Error('"isRelatedContext" not implemented on Runner');
+		key: 'isContextMatch',
+		value: function isContextMatch(context) {
+			throw new Error('"isContextMatch" not implemented on ' + this.name);
 		}
 	}, {
-		key: 'isCompatible',
+		key: 'getFeatures',
+		value: function getFeatures() {
+			throw new Error('"getFeatures" not implemented on ' + this.name);
+		}
+	}, {
+		key: 'FunctionBuilder',
+
 		get: function get() {
-			return false;
+			throw new Error('"FunctionBuilder" not implemented on Runner');
+		}
+
+
+	}, {
+		key: 'Kernel',
+		get: function get() {
+			throw new Error('"Kernel" not implemented on ' + this.name);
+		}
+	}, {
+		key: 'isSupported',
+		get: function get() {
+			throw new Error('"isSupported" not implemented on ' + this.name);
+		}
+	}, {
+		key: 'features',
+		get: function get() {
+			if (!features[this.name]) {
+				features[this.name] = this.getFeatures();
+			}
+			return features[this.name];
+		}
+	}, {
+		key: 'testFunctionBuilder',
+		get: function get() {
+			throw new Error('"testFunctionBuilder" not implemented on ' + this.name);
 		}
 	}]);
 
-	function Runner(functionBuilder, settings) {
+	function Runner(settings) {
 		_classCallCheck(this, Runner);
 
 		settings = settings || {};
-		this.kernel = settings.kernel;
 		this.canvas = settings.canvas;
-		this.webGl = settings.webGl;
-		this.fn = null;
-		this.functionBuilder = functionBuilder;
-		this.fnString = null;
-		this.endianness = utils.systemEndianness();
+		this.context = settings.context;
+		this.functionBuilder = new this.constructor.FunctionBuilder();
 	}
 
-
-
 	_createClass(Runner, [{
-		key: 'textureToArray',
-		value: function textureToArray(texture) {
-			var copy = this.createKernel(function (x) {
-				return x[this.thread.z][this.thread.y][this.thread.x];
-			});
-
-			return copy(texture);
-		}
-
-
-	}, {
-		key: 'deleteTexture',
-		value: function deleteTexture(texture) {
-			this.webGl.deleteTexture(texture.texture);
-		}
-
-
-	}, {
-		key: 'buildPromiseKernel',
-		value: function buildPromiseKernel() {
-			throw new Error('not yet implemented');
-		}
-	}, {
 		key: 'getMode',
 		value: function getMode() {
-			throw new Error('"mode" not implemented on Runner');
+			throw new Error('"getMode" not implemented on ' + this.constructor.name);
 		}
 
 
@@ -2658,31 +2790,18 @@ var Runner = function () {
 			}
 
 			if (!settings.features) {
-				settings.features = this.features;
+				settings.features = this.constructor.features;
 			}
 
 			if (!settings.canvas && this.canvas) {
 				settings.canvas = this.canvas;
 			}
 
-			if (!settings.webGl && this.webGl) {
-				settings.webGl = this.webGl;
+			if (!settings.context && this.context) {
+				settings.context = this.context;
 			}
 
-			return kernelRunShortcut(new this.Kernel(fnString, settings));
-		}
-	}, {
-		key: 'getFeatures',
-		value: function getFeatures() {
-			return Object.freeze({});
-		}
-	}, {
-		key: 'features',
-		get: function get() {
-			if (!features[this.constructor.name]) {
-				features[this.constructor.name] = this.getFeatures();
-			}
-			return features[this.constructor.name];
+			return kernelRunShortcut(new this.constructor.Kernel(fnString, settings));
 		}
 	}]);
 
@@ -2690,8 +2809,10 @@ var Runner = function () {
 }();
 
 module.exports = Runner;
-},{"../core/utils":35,"./kernel-run-shortcut":13}],16:[function(require,module,exports){
+},{"./kernel-run-shortcut":13}],16:[function(require,module,exports){
 'use strict';
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -2709,11 +2830,15 @@ var WebGLFunctionBuilder = function (_FunctionBuilder) {
 	function WebGLFunctionBuilder() {
 		_classCallCheck(this, WebGLFunctionBuilder);
 
-		var _this = _possibleConstructorReturn(this, (WebGLFunctionBuilder.__proto__ || Object.getPrototypeOf(WebGLFunctionBuilder)).call(this));
-
-		_this.Node = WebGLFunctionNode;
-		return _this;
+		return _possibleConstructorReturn(this, (WebGLFunctionBuilder.__proto__ || Object.getPrototypeOf(WebGLFunctionBuilder)).apply(this, arguments));
 	}
+
+	_createClass(WebGLFunctionBuilder, null, [{
+		key: 'FunctionNode',
+		get: function get() {
+			return WebGLFunctionNode;
+		}
+	}]);
 
 	return WebGLFunctionBuilder;
 }(FunctionBuilder);
@@ -2871,8 +2996,6 @@ var WebGLFunctionNode = function (_FunctionNode) {
 				this.astGeneric(ast.argument, retArr);
 				retArr.push(';');
 			}
-
-
 			return retArr;
 		}
 
@@ -3066,30 +3189,26 @@ var WebGLFunctionNode = function (_FunctionNode) {
 					retArr.push('}\n');
 
 					return retArr;
-				} else {
-					var declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
-					var updateArgument = forNode.update.argument;
+				} else if (forNode.init.declarations) {
+					var declarations = forNode.init.declarations;
 					if (!Array.isArray(declarations) || declarations.length < 1) {
 						throw new Error('Error: Incompatible for loop declaration');
 					}
 
 					if (declarations.length > 1) {
-						var initArgument = null;
+						retArr.push('for (');
+						this.pushState('in-for-loop-init');
+						retArr.push('int ');
 						for (var _i2 = 0; _i2 < declarations.length; _i2++) {
 							var declaration = declarations[_i2];
-							if (declaration.id.name === updateArgument.name) {
-								initArgument = declaration;
-								declarations.splice(_i2, 1);
-							} else {
-								retArr.push('float ');
-								this.astGeneric(declaration, retArr);
-								retArr.push(';');
+							if (_i2 > 0) {
+								retArr.push(',');
 							}
+							this.declarations[declaration.id.name] = 'Integer';
+							this.astGeneric(declaration, retArr);
 						}
-
-						retArr.push('for (float ');
-						this.astGeneric(initArgument, retArr);
 						retArr.push(';');
+						this.popState('in-for-loop-init');
 					} else {
 						retArr.push('for (');
 						this.pushState('in-for-loop-init');
@@ -3163,9 +3282,17 @@ var WebGLFunctionNode = function (_FunctionNode) {
 				this.astGeneric(assNode.right, retArr);
 				retArr.push(')');
 			} else {
+				var isLeftInteger = this.declarations[this.astGetFirstAvailableName(assNode.left)] === 'Integer';
+				var isRightInteger = this.declarations[this.astGetFirstAvailableName(assNode.right)] === 'Integer';
 				this.astGeneric(assNode.left, retArr);
 				retArr.push(assNode.operator);
-				this.astGeneric(assNode.right, retArr);
+				if (!isLeftInteger && isRightInteger) {
+					retArr.push('float(');
+					this.astGeneric(assNode.right, retArr);
+					retArr.push(')');
+				} else {
+					this.astGeneric(assNode.right, retArr);
+				}
 				return retArr;
 			}
 		}
@@ -3201,9 +3328,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 
 	}, {
 		key: 'astVariableDeclaration',
-		value: function astVariableDeclaration(vardecNode, retArr) {
-			for (var i = 0; i < vardecNode.declarations.length; i++) {
-				var declaration = vardecNode.declarations[i];
+		value: function astVariableDeclaration(varDecNode, retArr) {
+			for (var i = 0; i < varDecNode.declarations.length; i++) {
+				var declaration = varDecNode.declarations[i];
 				if (i > 0) {
 					retArr.push(',');
 				}
@@ -3267,11 +3394,11 @@ var WebGLFunctionNode = function (_FunctionNode) {
 
 	}, {
 		key: 'astVariableDeclarator',
-		value: function astVariableDeclarator(ivardecNode, retArr) {
-			this.astGeneric(ivardecNode.id, retArr);
-			if (ivardecNode.init !== null) {
+		value: function astVariableDeclarator(iVarDecNode, retArr) {
+			this.astGeneric(iVarDecNode.id, retArr);
+			if (iVarDecNode.init !== null) {
 				retArr.push('=');
-				this.astGeneric(ivardecNode.init, retArr);
+				this.astGeneric(iVarDecNode.init, retArr);
 			}
 			return retArr;
 		}
@@ -3665,7 +3792,6 @@ var WebGLFunctionNode = function (_FunctionNode) {
 			retArr.push(')');
 
 			return retArr;
-
 		}
 
 
@@ -3754,7 +3880,7 @@ function boolToString(value) {
 }
 
 module.exports = function (gpuKernel, name) {
-  return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: ' + removeNoise(utils.allPropertiesOf.toString()) + ',\n      clone: ' + removeNoise(utils.clone.toString()) + ',\n      splitArray: ' + removeNoise(utils.splitArray.toString()) + ',\n      getVariableType: ' + removeNoise(utils.getVariableType.toString()) + ',\n      getDimensions: ' + removeNoise(utils.getDimensions.toString()) + ',\n      dimToTexSize: ' + removeNoise(utils.dimToTexSize.toString()) + ',\n      flattenTo: ' + removeNoise(utils.flattenTo.toString()) + ',\n      flatten2dArrayTo: ' + removeNoise(utils.flatten2dArrayTo.toString()) + ',\n      flatten3dArrayTo: ' + removeNoise(utils.flatten3dArrayTo.toString()) + ',\n      systemEndianness: ' + removeNoise(utils.getSystemEndianness.toString()) + ',\n      initWebGl: ' + removeNoise(utils.initWebGl.toString()) + ',\n      isArray: ' + removeNoise(utils.isArray.toString()) + ',\n      checkOutput: ' + removeNoise(utils.checkOutput.toString()) + '\n    };\n    const Utils = utils;\n    const canvases = [];\n    const maxTexSizes = {};\n    let Texture = function() {};\n    let Input = function() {}; \n    class ' + (name || 'Kernel') + ' {\n      constructor() {\n        this.maxTexSize = null;\n        this.argumentsLength = 0;\n        this.constantsLength = 0;\n        this._canvas = null;\n        this._webGl = null;\n        this.program = null;\n        this.subKernels = null;\n        this.subKernelNames = null;\n        this.wraparound = null;\n        this.drawBuffersMap = ' + (gpuKernel.drawBuffersMap ? JSON.stringify(gpuKernel.drawBuffersMap) : 'null') + ';\n        this.endianness = \'' + gpuKernel.endianness + '\';\n        this.graphical = ' + boolToString(gpuKernel.graphical) + ';\n        this.floatTextures = ' + boolToString(gpuKernel.floatTextures) + ';\n        this.floatOutput = ' + boolToString(gpuKernel.floatOutput) + ';\n        this.floatOutputForce = ' + boolToString(gpuKernel.floatOutputForce) + ';\n        this.hardcodeConstants = ' + boolToString(gpuKernel.hardcodeConstants) + ';\n        this.subKernelProperties = null;\n        this.outputToTexture = ' + boolToString(gpuKernel.outputToTexture) + ';\n        this.paramNames = ' + JSON.stringify(gpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(gpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(gpuKernel.texSize) + ';\n        this.output = ' + JSON.stringify(gpuKernel.output) + ';\n        this.compiledFragShaderString = `' + gpuKernel.compiledFragShaderString + '`;\n\t\t    this.compiledVertShaderString = `' + gpuKernel.compiledVertShaderString + '`;\n\t\t    this.programUniformLocationCache = {};\n\t\t    this.textureCache = {};\n\t\t    this.subKernelOutputTextures = null;\n\t\t    this.subKernelOutputVariableNames = null;\n\t\t    this.uniform1fCache = {};\n\t\t    this.uniform1iCache = {};\n\t\t    this.uniform2fCache = {};\n\t\t    this.uniform2fvCache = {};\n\t\t    this.uniform2ivCache = {};\n\t\t    this.uniform3fvCache = {};\n\t\t    this.uniform3ivCache = {};\n      }\n      _getFragShaderString() { return this.compiledFragShaderString; }\n      _getVertShaderString() { return this.compiledVertShaderString; }\n      validateOptions() {}\n      setupParams() {}\n      setupConstants() {}\n      setCanvas(canvas) { this._canvas = canvas; return this; }\n      setWebGl(webGl) { this._webGl = webGl; return this; }\n      setTexture(Type) { Texture = Type; }\n      setInput(Type) { Input = Type; }\n      ' + removeFnNoise(gpuKernel.getUniformLocation.toString()) + '\n      ' + removeFnNoise(gpuKernel.build.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.run.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel._addArgument.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel._formatArrayTransfer.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.getArgumentTexture.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.getTextureCache.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.getOutputTexture.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.renderOutput.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.updateMaxTexSize.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel._setupOutputTexture.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.detachTextureCache.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform1f.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform1i.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform2f.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform2fv.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform2iv.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform3fv.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform3iv.toString()) + '\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
+  return '() => {\n    ' + kernelRunShortcut.toString() + ';\n    const utils = {\n      allPropertiesOf: ' + removeNoise(utils.allPropertiesOf.toString()) + ',\n      clone: ' + removeNoise(utils.clone.toString()) + ',\n      splitArray: ' + removeNoise(utils.splitArray.toString()) + ',\n      getVariableType: ' + removeNoise(utils.getVariableType.toString()) + ',\n      getDimensions: ' + removeNoise(utils.getDimensions.toString()) + ',\n      dimToTexSize: ' + removeNoise(utils.dimToTexSize.toString()) + ',\n      flattenTo: ' + removeNoise(utils.flattenTo.toString()) + ',\n      flatten2dArrayTo: ' + removeNoise(utils.flatten2dArrayTo.toString()) + ',\n      flatten3dArrayTo: ' + removeNoise(utils.flatten3dArrayTo.toString()) + ',\n      systemEndianness: ' + removeNoise(utils.getSystemEndianness.toString()) + ',\n      isArray: ' + removeNoise(utils.isArray.toString()) + ',\n      checkOutput: ' + removeNoise(utils.checkOutput.toString()) + '\n    };\n    const Utils = utils;\n    const canvases = [];\n    const maxTexSizes = {};\n    let Texture = function() {};\n    let Input = function() {}; \n    class ' + (name || 'Kernel') + ' {\n      constructor() {\n        this.maxTexSize = null;\n        this.argumentsLength = 0;\n        this.constantsLength = 0;\n        this.canvas = null;\n        this.context = null;\n        this.program = null;\n        this.subKernels = null;\n        this.subKernelNames = null;\n        this.wraparound = null;\n        this.drawBuffersMap = ' + (gpuKernel.drawBuffersMap ? JSON.stringify(gpuKernel.drawBuffersMap) : 'null') + ';\n        this.endianness = \'' + gpuKernel.endianness + '\';\n        this.graphical = ' + boolToString(gpuKernel.graphical) + ';\n        this.floatTextures = ' + boolToString(gpuKernel.floatTextures) + ';\n        this.floatOutput = ' + boolToString(gpuKernel.floatOutput) + ';\n        this.floatOutputForce = ' + boolToString(gpuKernel.floatOutputForce) + ';\n        this.hardcodeConstants = ' + boolToString(gpuKernel.hardcodeConstants) + ';\n        this.subKernelProperties = null;\n        this.outputToTexture = ' + boolToString(gpuKernel.outputToTexture) + ';\n        this.paramNames = ' + JSON.stringify(gpuKernel.paramNames) + ';\n        this.paramTypes = ' + JSON.stringify(gpuKernel.paramTypes) + ';\n        this.texSize = ' + JSON.stringify(gpuKernel.texSize) + ';\n        this.output = ' + JSON.stringify(gpuKernel.output) + ';\n        this.compiledFragShaderString = `' + gpuKernel.compiledFragShaderString + '`;\n\t\t    this.compiledVertShaderString = `' + gpuKernel.compiledVertShaderString + '`;\n\t\t    this.programUniformLocationCache = {};\n\t\t    this.textureCache = {};\n\t\t    this.subKernelOutputTextures = null;\n\t\t    this.subKernelOutputVariableNames = null;\n\t\t    this.extensions = {};\n\t\t    this.uniform1fCache = {};\n\t\t    this.uniform1iCache = {};\n\t\t    this.uniform2fCache = {};\n\t\t    this.uniform2fvCache = {};\n\t\t    this.uniform2ivCache = {};\n\t\t    this.uniform3fvCache = {};\n\t\t    this.uniform3ivCache = {};\n      }\n      _getFragShaderString() { return this.compiledFragShaderString; }\n      _getVertShaderString() { return this.compiledVertShaderString; }\n      validateSettings() {}\n      setupParams() {}\n      setupConstants() {}\n      setCanvas(canvas) { this.canvas = canvas; return this; }\n      setContext(context) { this.context = context; return this; }\n      setTexture(Type) { Texture = Type; }\n      setInput(Type) { Input = Type; }\n      ' + removeFnNoise(gpuKernel.getUniformLocation.toString()) + '\n      ' + removeFnNoise(gpuKernel.build.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.run.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel._addArgument.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel._formatArrayTransfer.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.initExtensions.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.getArgumentTexture.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.getTextureCache.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.getOutputTexture.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.renderOutput.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.updateMaxTexSize.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel._setupOutputTexture.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.detachTextureCache.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform1f.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform1i.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform2f.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform2fv.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform2iv.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform3fv.toString()) + '\n\t\t  ' + removeFnNoise(gpuKernel.setUniform3iv.toString()) + '\n    };\n    return kernelRunShortcut(new Kernel());\n  };';
 };
 },{"../../core/utils":35,"../kernel-run-shortcut":13}],19:[function(require,module,exports){
 'use strict';
@@ -3806,6 +3932,7 @@ var WebGLKernel = function (_Kernel) {
 		_this.program = null;
 		_this.outputToTexture = settings.outputToTexture;
 		_this.endianness = utils.systemEndianness();
+		_this.extensions = {};
 		_this.subKernelOutputTextures = null;
 		_this.subKernelOutputVariableNames = null;
 		_this.argumentsLength = 0;
@@ -3824,25 +3951,48 @@ var WebGLKernel = function (_Kernel) {
 		_this.uniform2ivCache = {};
 		_this.uniform3fvCache = {};
 		_this.uniform3ivCache = {};
-		if (settings.webGl) {
-			_this._webGl = settings.webGl;
+		if (settings.context) {
+			_this.context = settings.context;
 		} else {
-			_this._webGl = _this.initWebGl();
+			_this.context = _this.initContext();
 		}
 		return _this;
 	}
 
 	_createClass(WebGLKernel, [{
-		key: 'initWebGl',
-		value: function initWebGl() {
-			return utils.initWebGl(this.getCanvas());
+		key: 'initCanvas',
+		value: function initCanvas() {
+			if (typeof document !== 'undefined') {
+				var canvas = document.createElement('canvas');
+				canvas.width = 2;
+				canvas.height = 2;
+				return canvas;
+			} else if (typeof OffscreenCanvas !== 'undefined') {
+				return new OffscreenCanvas(0, 0);
+			}
+		}
+	}, {
+		key: 'initContext',
+		value: function initContext() {
+			var context = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
+			return context;
+		}
+	}, {
+		key: 'initExtensions',
+		value: function initExtensions() {
+			this.extensions = {
+				OES_texture_float: this.context.getExtension('OES_texture_float'),
+				OES_texture_float_linear: this.context.getExtension('OES_texture_float_linear'),
+				OES_element_index_uint: this.context.getExtension('OES_element_index_uint'),
+				WEBGL_draw_buffers: this.context.getExtension('WEBGL_draw_buffers')
+			};
 		}
 
 
 	}, {
-		key: 'validateOptions',
-		value: function validateOptions() {
-			if (this.skipValidateOptions) {
+		key: 'validateSettings',
+		value: function validateSettings() {
+			if (this.skipValidateSettings) {
 				this.texSize = utils.dimToTexSize({
 					floatTextures: this.floatTextures,
 					floatOutput: this.floatOutput
@@ -3907,7 +4057,7 @@ var WebGLKernel = function (_Kernel) {
 		key: 'updateMaxTexSize',
 		value: function updateMaxTexSize() {
 			var texSize = this.texSize;
-			var canvas = this._canvas;
+			var canvas = this.canvas;
 			if (this.maxTexSize === null) {
 				var canvasIndex = canvases.indexOf(canvas);
 				if (canvasIndex === -1) {
@@ -3929,13 +4079,14 @@ var WebGLKernel = function (_Kernel) {
 	}, {
 		key: 'build',
 		value: function build() {
-			this.validateOptions();
+			this.initExtensions();
+			this.validateSettings();
 			this.setupConstants();
 			this.setupParams(arguments);
 			this.updateMaxTexSize();
 			var texSize = this.texSize;
-			var gl = this._webGl;
-			var canvas = this._canvas;
+			var gl = this.context;
+			var canvas = this.canvas;
 			gl.enable(gl.SCISSOR_TEST);
 			gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
 			canvas.width = this.maxTexSize[0];
@@ -3959,22 +4110,18 @@ var WebGLKernel = function (_Kernel) {
 			gl.compileShader(fragShader);
 			this.fragShader = fragShader;
 
+			if (this.debug) {
+				console.log('GLSL Shader Output:');
+				console.log(compiledFragShaderString);
+			}
+
 			if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
-				console.log(compiledVertShaderString);
 				console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(vertShader));
 				throw new Error('Error compiling vertex shader');
 			}
 			if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
-				console.log(compiledFragShaderString);
 				console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(fragShader));
 				throw new Error('Error compiling fragment shader');
-			}
-
-			if (this.debug) {
-				console.log('Options:');
-				console.dir(this);
-				console.log('GLSL Shader Output:');
-				console.log(compiledFragShaderString);
 			}
 
 			var program = this.program = gl.createProgram();
@@ -4038,7 +4185,7 @@ var WebGLKernel = function (_Kernel) {
 			var paramNames = this.paramNames;
 			var paramTypes = this.paramTypes;
 			var texSize = this.texSize;
-			var gl = this._webGl;
+			var gl = this.context;
 
 			gl.useProgram(this.program);
 			gl.scissor(0, 0, texSize[0], texSize[1]);
@@ -4063,7 +4210,7 @@ var WebGLKernel = function (_Kernel) {
 						this._setupOutputTexture();
 					}
 					gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-					return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'ArrayTexture(4)');
+					return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this.context, 'ArrayTexture(4)');
 				}
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -4082,7 +4229,7 @@ var WebGLKernel = function (_Kernel) {
 					this.subKernelOutputTextures = [];
 					this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
 				}
-				this.drawBuffers.drawBuffersWEBGL(this.drawBuffersMap);
+				this.extensions.WEBGL_draw_buffers.drawBuffersWEBGL(this.drawBuffersMap);
 			}
 
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -4092,7 +4239,7 @@ var WebGLKernel = function (_Kernel) {
 					var output = [];
 					output.result = this.renderOutput(outputTexture);
 					for (var i = 0; i < this.subKernels.length; i++) {
-						output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this._webGl));
+						output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context));
 					}
 					return output;
 				} else if (this.subKernelProperties !== null) {
@@ -4102,7 +4249,7 @@ var WebGLKernel = function (_Kernel) {
 					var _i = 0;
 					for (var p in this.subKernelProperties) {
 						if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-						_output[p] = new Texture(this.subKernelOutputTextures[_i], texSize, this.threadDim, this.output, this._webGl);
+						_output[p] = new Texture(this.subKernelOutputTextures[_i], texSize, this.threadDim, this.output, this.context);
 						_i++;
 					}
 					return _output;
@@ -4117,11 +4264,11 @@ var WebGLKernel = function (_Kernel) {
 		key: 'renderOutput',
 		value: function renderOutput(outputTexture) {
 			var texSize = this.texSize;
-			var gl = this._webGl;
+			var gl = this.context;
 			var threadDim = this.threadDim;
 			var output = this.output;
 			if (this.outputToTexture) {
-				return new Texture(outputTexture, texSize, this.threadDim, output, this._webGl);
+				return new Texture(outputTexture, texSize, this.threadDim, output, this.context);
 			} else {
 				var result = void 0;
 				if (this.floatOutput) {
@@ -4160,9 +4307,9 @@ var WebGLKernel = function (_Kernel) {
 	}, {
 		key: '_setupOutputTexture',
 		value: function _setupOutputTexture() {
-			var gl = this._webGl;
+			var gl = this.context;
 			var texSize = this.texSize;
-			var texture = this.outputTexture = this._webGl.createTexture();
+			var texture = this.outputTexture = this.context.createTexture();
 			gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length);
 			gl.bindTexture(gl.TEXTURE_2D, texture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -4181,12 +4328,12 @@ var WebGLKernel = function (_Kernel) {
 	}, {
 		key: '_setupSubOutputTextures',
 		value: function _setupSubOutputTextures(length) {
-			var gl = this._webGl;
+			var gl = this.context;
 			var texSize = this.texSize;
 			var drawBuffersMap = this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
 			var textures = this.subKernelOutputTextures = [];
 			for (var i = 0; i < length; i++) {
-				var texture = this._webGl.createTexture();
+				var texture = this.context.createTexture();
 				textures.push(texture);
 				drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
 				gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length + i);
@@ -4218,7 +4365,7 @@ var WebGLKernel = function (_Kernel) {
 			if (this.textureCache.hasOwnProperty(name)) {
 				return this.textureCache[name];
 			}
-			return this.textureCache[name] = this._webGl.createTexture();
+			return this.textureCache[name] = this.context.createTexture();
 		}
 
 
@@ -4238,7 +4385,7 @@ var WebGLKernel = function (_Kernel) {
 			}
 			this.uniform1fCache[name] = value;
 			var loc = this.getUniformLocation(name);
-			this._webGl.uniform1f(loc, value);
+			this.context.uniform1f(loc, value);
 		}
 	}, {
 		key: 'setUniform1i',
@@ -4251,7 +4398,7 @@ var WebGLKernel = function (_Kernel) {
 			}
 			this.uniform1iCache[name] = value;
 			var loc = this.getUniformLocation(name);
-			this._webGl.uniform1i(loc, value);
+			this.context.uniform1i(loc, value);
 		}
 	}, {
 		key: 'setUniform2f',
@@ -4264,7 +4411,7 @@ var WebGLKernel = function (_Kernel) {
 			}
 			this.uniform2fCache[name] = [value1, value2];
 			var loc = this.getUniformLocation(name);
-			this._webGl.uniform2f(loc, value1, value2);
+			this.context.uniform2f(loc, value1, value2);
 		}
 	}, {
 		key: 'setUniform2fv',
@@ -4277,7 +4424,7 @@ var WebGLKernel = function (_Kernel) {
 			}
 			this.uniform2fvCache[name] = value;
 			var loc = this.getUniformLocation(name);
-			this._webGl.uniform2fv(loc, value);
+			this.context.uniform2fv(loc, value);
 		}
 	}, {
 		key: 'setUniform2iv',
@@ -4290,7 +4437,7 @@ var WebGLKernel = function (_Kernel) {
 			}
 			this.uniform2ivCache[name] = value;
 			var loc = this.getUniformLocation(name);
-			this._webGl.uniform2iv(loc, value);
+			this.context.uniform2iv(loc, value);
 		}
 	}, {
 		key: 'setUniform3fv',
@@ -4303,7 +4450,7 @@ var WebGLKernel = function (_Kernel) {
 			}
 			this.uniform3fvCache[name] = value;
 			var loc = this.getUniformLocation(name);
-			this._webGl.uniform3fv(loc, value);
+			this.context.uniform3fv(loc, value);
 		}
 	}, {
 		key: 'setUniform3iv',
@@ -4316,7 +4463,7 @@ var WebGLKernel = function (_Kernel) {
 			}
 			this.uniform3ivCache[name] = value;
 			var loc = this.getUniformLocation(name);
-			this._webGl.uniform3iv(loc, value);
+			this.context.uniform3iv(loc, value);
 		}
 
 
@@ -4326,7 +4473,7 @@ var WebGLKernel = function (_Kernel) {
 			if (this.programUniformLocationCache.hasOwnProperty(name)) {
 				return this.programUniformLocationCache[name];
 			}
-			return this.programUniformLocationCache[name] = this._webGl.getUniformLocation(this.program, name);
+			return this.programUniformLocationCache[name] = this.context.getUniformLocation(this.program, name);
 		}
 
 
@@ -4355,7 +4502,7 @@ var WebGLKernel = function (_Kernel) {
 	}, {
 		key: '_addArgument',
 		value: function _addArgument(value, type, name) {
-			var gl = this._webGl;
+			var gl = this.context;
 			var argumentTexture = this.getArgumentTexture(name);
 			if (value instanceof Texture) {
 				type = value.type;
@@ -4472,8 +4619,8 @@ var WebGLKernel = function (_Kernel) {
 				case 'NumberTexture':
 					{
 						var inputTexture = value;
-						if (inputTexture.webGl !== this._webGl) {
-							throw new Error('argument ' + name + ' (' + type + ') must be from same context (webGl)');
+						if (inputTexture.context !== this.context) {
+							throw new Error('argument ' + name + ' (' + type + ') must be from same context');
 						}
 						var _dim3 = inputTexture.dimensions;
 						var _size3 = inputTexture.size;
@@ -4488,7 +4635,7 @@ var WebGLKernel = function (_Kernel) {
 						break;
 					}
 				default:
-					throw new Error('Input type not supported (WebGL): ' + value);
+					throw new Error('Input type not supported: ' + value);
 			}
 			this.argumentsLength++;
 		}
@@ -4497,7 +4644,7 @@ var WebGLKernel = function (_Kernel) {
 	}, {
 		key: '_addConstant',
 		value: function _addConstant(value, type, name) {
-			var gl = this._webGl;
+			var gl = this.context;
 			var argumentTexture = this.getArgumentTexture(name);
 			if (value instanceof Texture) {
 				type = value.type;
@@ -4602,6 +4749,9 @@ var WebGLKernel = function (_Kernel) {
 				case 'NumberTexture':
 					{
 						var inputTexture = value;
+						if (inputTexture.context !== this.context) {
+							throw new Error('argument ' + name + ' (' + type + ') must be from same context');
+						}
 						var _dim6 = inputTexture.dimensions;
 						var _size6 = inputTexture.size;
 
@@ -4616,7 +4766,7 @@ var WebGLKernel = function (_Kernel) {
 				case 'Integer':
 				case 'Float':
 				default:
-					throw new Error('Input type not supported (WebGL): ' + value);
+					throw new Error('Input type not supported: ' + value);
 			}
 			this.constantsLength++;
 		}
@@ -4913,16 +5063,16 @@ var WebGLKernel = function (_Kernel) {
 		value: function _addKernels() {
 			var _this2 = this;
 
-			var builder = this.functionBuilder;
-			var gl = this._webGl;
+			var functionBuilder = this.functionBuilder;
+			var gl = this.context;
 
-			builder.addFunctions(this.functions, {
+			functionBuilder.addFunctions(this.functions, {
 				constants: this.constants,
 				output: this.output
 			});
-			builder.addNativeFunctions(this.nativeFunctions);
+			functionBuilder.addNativeFunctions(this.nativeFunctions);
 
-			builder.addKernel(this.fnString, {
+			functionBuilder.addKernel(this.fnString, {
 				prototypeOnly: false,
 				constants: this.constants,
 				output: this.output,
@@ -4935,14 +5085,14 @@ var WebGLKernel = function (_Kernel) {
 			});
 
 			if (this.subKernels !== null) {
-				var drawBuffers = this.drawBuffers = gl.getExtension('WEBGL_draw_buffers');
+				var drawBuffers = this.extensions.WEBGL_draw_buffers;
 				if (!drawBuffers) throw new Error('could not instantiate draw buffers extension');
 				this.subKernelOutputVariableNames = [];
 				this.subKernels.forEach(function (subKernel) {
 					return _this2._addSubKernel(subKernel);
 				});
 			} else if (this.subKernelProperties !== null) {
-				var _drawBuffers = this.drawBuffers = gl.getExtension('WEBGL_draw_buffers');
+				var _drawBuffers = this.extensions.WEBGL_draw_buffers;
 				if (!_drawBuffers) throw new Error('could not instantiate draw buffers extension');
 				this.subKernelOutputVariableNames = [];
 				Object.keys(this.subKernelProperties).forEach(function (property) {
@@ -5001,48 +5151,61 @@ var WebGLKernel = function (_Kernel) {
 		key: 'destroy',
 		value: function destroy(removeCanvasReferences) {
 			if (this.outputTexture) {
-				this._webGl.deleteTexture(this.outputTexture);
+				this.context.deleteTexture(this.outputTexture);
 			}
 			if (this.buffer) {
-				this._webGl.deleteBuffer(this.buffer);
+				this.context.deleteBuffer(this.buffer);
 			}
 			if (this.framebuffer) {
-				this._webGl.deleteFramebuffer(this.framebuffer);
+				this.context.deleteFramebuffer(this.framebuffer);
 			}
-
 			if (this.vertShader) {
-				this._webGl.deleteShader(this.vertShader);
+				this.context.deleteShader(this.vertShader);
 			}
-
 			if (this.fragShader) {
-				this._webGl.deleteShader(this.fragShader);
+				this.context.deleteShader(this.fragShader);
 			}
-
 			if (this.program) {
-				this._webGl.deleteProgram(this.program);
+				this.context.deleteProgram(this.program);
 			}
 
 			var keys = Object.keys(this.textureCache);
 
 			for (var i = 0; i < keys.length; i++) {
 				var name = keys[i];
-				this._webGl.deleteTexture(this.textureCache[name]);
+				this.context.deleteTexture(this.textureCache[name]);
 			}
 
 			if (this.subKernelOutputTextures) {
 				for (var _i3 = 0; _i3 < this.subKernelOutputTextures.length; _i3++) {
-					this._webGl.deleteTexture(this.subKernelOutputTextures[_i3]);
+					this.context.deleteTexture(this.subKernelOutputTextures[_i3]);
 				}
 			}
 			if (removeCanvasReferences) {
-				var idx = canvases.indexOf(this._canvas);
+				var idx = canvases.indexOf(this.canvas);
 				if (idx >= 0) {
 					canvases[idx] = null;
 					maxTexSizes[idx] = null;
 				}
 			}
-
-			delete this._webGl;
+			this.destroyExtensions();
+			delete this.context;
+			delete this.canvas;
+		}
+	}, {
+		key: 'destroyExtensions',
+		value: function destroyExtensions() {
+			this.extensions.OES_texture_float = null;
+			this.extensions.OES_texture_float_linear = null;
+			this.extensions.OES_element_index_uint = null;
+		}
+	}], [{
+		key: 'destroyContext',
+		value: function destroyContext(context) {
+			var extension = context.getExtension('WEBGL_lose_context');
+			if (extension) {
+				extension.loseContext();
+			}
 		}
 	}]);
 
@@ -5061,67 +5224,117 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var utils = require('../../core/utils');
 var GLRunner = require('../gl-runner');
 var WebGLKernel = require('./kernel');
 var WebGLFunctionBuilder = require('./function-builder');
-var isCompatible = null;
+var isSupported = null;
+var testCanvas = null;
+var testContext = null;
+var testExtensions = null;
+var testFunctionBuilder = null;
 
 var WebGLRunner = function (_GLRunner) {
 	_inherits(WebGLRunner, _GLRunner);
 
-	_createClass(WebGLRunner, null, [{
-		key: 'isRelatedContext',
-		value: function isRelatedContext(context) {
+	function WebGLRunner() {
+		_classCallCheck(this, WebGLRunner);
+
+		return _possibleConstructorReturn(this, (WebGLRunner.__proto__ || Object.getPrototypeOf(WebGLRunner)).apply(this, arguments));
+	}
+
+	_createClass(WebGLRunner, [{
+		key: 'getMode',
+
+
+		value: function getMode() {
+			return 'gpu';
+		}
+	}], [{
+		key: 'setupFeatureChecks',
+		value: function setupFeatureChecks() {
+			if (typeof document !== 'undefined') {
+				testCanvas = document.createElement('canvas');
+			} else if (typeof OffscreenCanvas !== 'undefined') {
+				testCanvas = new OffscreenCanvas(0, 0);
+			}
+
+			if (testCanvas) {
+				testContext = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+				testExtensions = {
+					OES_texture_float: testContext.getExtension('OES_texture_float'),
+					OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
+					OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
+					WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers')
+				};
+				testFunctionBuilder = new this.FunctionBuilder();
+			}
+		}
+	}, {
+		key: 'isContextMatch',
+		value: function isContextMatch(context) {
 			if (typeof WebGLRenderingContext !== 'undefined') {
 				return context instanceof WebGLRenderingContext;
 			}
 			return false;
 		}
-
-
-	}, {
-		key: 'isCompatible',
-		get: function get() {
-			if (isCompatible !== null) {
-				return isCompatible;
-			}
-			isCompatible = utils.isWebGlSupported();
-			return isCompatible;
-		}
-	}]);
-
-	function WebGLRunner(settings) {
-		_classCallCheck(this, WebGLRunner);
-
-		var _this = _possibleConstructorReturn(this, (WebGLRunner.__proto__ || Object.getPrototypeOf(WebGLRunner)).call(this, new WebGLFunctionBuilder(), settings));
-
-		_this.Kernel = WebGLKernel;
-		_this.kernel = null;
-		return _this;
-	}
-
-
-
-	_createClass(WebGLRunner, [{
-		key: 'getMode',
-		value: function getMode() {
-			return 'gpu';
-		}
 	}, {
 		key: 'getFeatures',
 		value: function getFeatures() {
+			this.setupFeatureChecks();
+			var isDrawBuffers = this.getIsDrawBuffers();
+
 			return Object.freeze({
 				isFloatRead: this.getIsFloatRead(),
 				isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
-				isTextureFloat: this.getIsTextureFloat()
+				isTextureFloat: this.getIsTextureFloat(),
+				isDrawBuffers: isDrawBuffers,
+				kernelMap: true || isDrawBuffers
 			});
 		}
 	}, {
 		key: 'getIsTextureFloat',
 		value: function getIsTextureFloat() {
-			if (!this._webGl) throw new Error('webGl not initialized');
-			return this._webGl.getExtension('OES_texture_float');
+			return Boolean(testExtensions.OES_texture_float);
+		}
+	}, {
+		key: 'getIsDrawBuffers',
+		value: function getIsDrawBuffers() {
+			return Boolean(testExtensions.WEBGL_draw_buffers);
+		}
+	}, {
+		key: 'FunctionBuilder',
+		get: function get() {
+			return WebGLFunctionBuilder;
+		}
+	}, {
+		key: 'Kernel',
+		get: function get() {
+			return WebGLKernel;
+		}
+	}, {
+		key: 'isSupported',
+		get: function get() {
+			if (isSupported !== null) {
+				return isSupported;
+			}
+			this.setupFeatureChecks();
+			isSupported = this.isContextMatch(testContext);
+			return isSupported;
+		}
+	}, {
+		key: 'testCanvas',
+		get: function get() {
+			return testCanvas;
+		}
+	}, {
+		key: 'testContext',
+		get: function get() {
+			return testContext;
+		}
+	}, {
+		key: 'testFunctionBuilder',
+		get: function get() {
+			return testFunctionBuilder;
 		}
 	}]);
 
@@ -5129,7 +5342,7 @@ var WebGLRunner = function (_GLRunner) {
 }(GLRunner);
 
 module.exports = WebGLRunner;
-},{"../../core/utils":35,"../gl-runner":8,"./function-builder":16,"./kernel":19}],21:[function(require,module,exports){
+},{"../gl-runner":8,"./function-builder":16,"./kernel":19}],21:[function(require,module,exports){
 "use strict";
 
 module.exports = "__HEADER__;\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nconst int LOOP_MAX = __LOOP_MAX__;\n\n__CONSTANTS__;\n\nvarying vec2 vTexCoord;\n\nvec4 round(vec4 x) {\n  return floor(x + 0.5);\n}\n\nfloat round(float x) {\n  return floor(x + 0.5);\n}\n\nvec2 integerMod(vec2 x, float y) {\n  vec2 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec3 integerMod(vec3 x, float y) {\n  vec3 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec4 integerMod(vec4 x, vec4 y) {\n  vec4 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nfloat integerMod(float x, float y) {\n  float res = floor(mod(x, y));\n  return res * (res > floor(y) - 1.0 ? 0.0 : 1.0);\n}\n\nint integerMod(int x, int y) {\n  return x - (y * int(x / y));\n}\n\n__DIVIDE_WITH_INTEGER_CHECK__;\n\n// Here be dragons!\n// DO NOT OPTIMIZE THIS CODE\n// YOU WILL BREAK SOMETHING ON SOMEBODY'S MACHINE\n// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME\nconst vec2 MAGIC_VEC = vec2(1.0, -256.0);\nconst vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);\nconst vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536\nfloat decode32(vec4 rgba) {\n  __DECODE32_ENDIANNESS__;\n  rgba *= 255.0;\n  vec2 gte128;\n  gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;\n  gte128.y = rgba.a >= 128.0 ? 1.0 : 0.0;\n  float exponent = 2.0 * rgba.a - 127.0 + dot(gte128, MAGIC_VEC);\n  float res = exp2(round(exponent));\n  rgba.b = rgba.b - 128.0 * gte128.x;\n  res = dot(rgba, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;\n  res *= gte128.y * -2.0 + 1.0;\n  return res;\n}\n\nvec4 encode32(float f) {\n  float F = abs(f);\n  float sign = f < 0.0 ? 1.0 : 0.0;\n  float exponent = floor(log2(F));\n  float mantissa = (exp2(-exponent) * F);\n  // exponent += floor(log2(mantissa));\n  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;\n  rgba.rg = integerMod(rgba.rg, 256.0);\n  rgba.b = integerMod(rgba.b, 128.0);\n  rgba.a = exponent*0.5 + 63.5;\n  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;\n  rgba = floor(rgba);\n  rgba *= 0.003921569; // 1/255\n  __ENCODE32_ENDIANNESS__;\n  return rgba;\n}\n// Dragons end here\n\nfloat decode(vec4 rgba, int x, int bitRatio) {\n  if (bitRatio == 1) {\n    return decode32(rgba);\n  }\n  __DECODE32_ENDIANNESS__;\n  int channel = integerMod(x, bitRatio);\n  if (bitRatio == 4) {\n    if (channel == 0) return rgba.r * 255.0;\n    if (channel == 1) return rgba.g * 255.0;\n    if (channel == 2) return rgba.b * 255.0;\n    if (channel == 3) return rgba.a * 255.0;\n  }\n  else {\n    if (channel == 0) return rgba.r * 255.0 + rgba.g * 65280.0;\n    if (channel == 1) return rgba.b * 255.0 + rgba.a * 65280.0;\n  }\n}\n\nint index;\nivec3 threadId;\n\nivec3 indexTo3D(int idx, ivec3 texDim) {\n  int z = int(idx / (texDim.x * texDim.y));\n  idx -= z * int(texDim.x * texDim.y);\n  int y = int(idx / texDim.x);\n  int x = int(integerMod(idx, texDim.x));\n  return ivec3(x, y, z);\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int z, int y, int x) {\n  ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  vec4 texel = texture2D(tex, st / vec2(texSize));\n  __GET_RESULT__;\n  \n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, float z, float y, float x) {\n  return get(tex, texSize, texDim, bitRatio, int(z), int(y), int(x));\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int y, int x) {\n  return get(tex, texSize, texDim, bitRatio, 0, y, x);\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, float y, float x) {\n  return get(tex, texSize, texDim, bitRatio, 0, int(y), int(x));\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int x) {\n  return get(tex, texSize, texDim, bitRatio, 0, 0, x);\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, float x) {\n  return get(tex, texSize, texDim, bitRatio, 0, 0, int(x));\n}\n\nvec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {\n  ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  return texture2D(tex, st / vec2(texSize));\n}\n\nvec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int y, int x) {\n  return getImage2D(tex, texSize, texDim, 0, y, x);\n}\n\nvec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int x) {\n  return getImage2D(tex, texSize, texDim, 0, 0, x);\n}\n\nvec4 actualColor;\nvoid color(float r, float g, float b, float a) {\n  actualColor = vec4(r,g,b,a);\n}\n\nvoid color(float r, float g, float b) {\n  color(r,g,b,1.0);\n}\n\nvoid color(sampler2D image) {\n  actualColor = texture2D(image, vTexCoord);\n}\n\n__MAIN_PARAMS__;\n__MAIN_CONSTANTS__;\n__KERNEL__;\n\nvoid main(void) {\n  index = int(vTexCoord.s * float(uTexSize.x)) + int(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;\n  __MAIN_RESULT__;\n}";
@@ -5139,6 +5352,8 @@ module.exports = "__HEADER__;\nprecision highp float;\nprecision highp int;\npre
 module.exports = "precision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nattribute vec2 aPos;\nattribute vec2 aTexCoord;\n\nvarying vec2 vTexCoord;\nuniform vec2 ratio;\n\nvoid main(void) {\n  gl_Position = vec4((aPos + vec2(1)) * ratio + vec2(-1), 0, 1);\n  vTexCoord = aTexCoord;\n}";
 },{}],23:[function(require,module,exports){
 'use strict';
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -5156,11 +5371,15 @@ var WebGL2FunctionBuilder = function (_FunctionBuilder) {
 	function WebGL2FunctionBuilder() {
 		_classCallCheck(this, WebGL2FunctionBuilder);
 
-		var _this = _possibleConstructorReturn(this, (WebGL2FunctionBuilder.__proto__ || Object.getPrototypeOf(WebGL2FunctionBuilder)).call(this));
-
-		_this.Node = WebGL2FunctionNode;
-		return _this;
+		return _possibleConstructorReturn(this, (WebGL2FunctionBuilder.__proto__ || Object.getPrototypeOf(WebGL2FunctionBuilder)).apply(this, arguments));
 	}
+
+	_createClass(WebGL2FunctionBuilder, null, [{
+		key: 'FunctionNode',
+		get: function get() {
+			return WebGL2FunctionNode;
+		}
+	}]);
 
 	return WebGL2FunctionBuilder;
 }(FunctionBuilder);
@@ -5300,17 +5519,25 @@ var WebGL2Kernel = function (_WebGLKernel) {
 	}
 
 	_createClass(WebGL2Kernel, [{
-		key: 'initWebGl',
-		value: function initWebGl() {
-			return utils.initWebGl2(this.getCanvas());
+		key: 'initContext',
+		value: function initContext() {
+			var context = this.canvas.getContext('webgl2');
+			return context;
+		}
+	}, {
+		key: 'initExtensions',
+		value: function initExtensions() {
+			this.extensions = {
+				EXT_color_buffer_float: this.context.getExtension('EXT_color_buffer_float'),
+				OES_texture_float_linear: this.context.getExtension('OES_texture_float_linear')
+			};
 		}
 
 
 	}, {
-		key: 'validateOptions',
-		value: function validateOptions() {
-			if (this.skipValidateOptions) {
-				this._webGl.getExtension('EXT_color_buffer_float');
+		key: 'validateSettings',
+		value: function validateSettings() {
+			if (this.skipValidateSettings) {
 				this.texSize = utils.dimToTexSize({
 					floatTextures: this.floatTextures,
 					floatOutput: this.floatOutput
@@ -5320,7 +5547,6 @@ var WebGL2Kernel = function (_WebGLKernel) {
 
 			var features = this.features;
 			if (this.floatOutput === true && this.floatOutputForce !== true && !features.isFloatRead) {
-				debugger;
 				throw new Error('Float texture outputs are not supported on this browser');
 			} else if (this.floatTextures === undefined) {
 				this.floatTextures = true;
@@ -5371,7 +5597,7 @@ var WebGL2Kernel = function (_WebGLKernel) {
 			}
 
 			if (this.floatOutput || this.floatOutputForce) {
-				this._webGl.getExtension('EXT_color_buffer_float');
+				this.context.getExtension('EXT_color_buffer_float');
 			}
 		}
 
@@ -5385,7 +5611,7 @@ var WebGL2Kernel = function (_WebGLKernel) {
 			var paramNames = this.paramNames;
 			var paramTypes = this.paramTypes;
 			var texSize = this.texSize;
-			var gl = this._webGl;
+			var gl = this.context;
 
 			gl.useProgram(this.program);
 			gl.scissor(0, 0, texSize[0], texSize[1]);
@@ -5410,7 +5636,7 @@ var WebGL2Kernel = function (_WebGLKernel) {
 						this._setupOutputTexture();
 					}
 					gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-					return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'ArrayTexture(4)');
+					return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this.context, 'ArrayTexture(4)');
 				}
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -5439,7 +5665,7 @@ var WebGL2Kernel = function (_WebGLKernel) {
 					var output = [];
 					output.result = this.renderOutput(outputTexture);
 					for (var i = 0; i < this.subKernels.length; i++) {
-						output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this._webGl));
+						output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context));
 					}
 					return output;
 				} else if (this.subKernelProperties !== null) {
@@ -5449,7 +5675,7 @@ var WebGL2Kernel = function (_WebGLKernel) {
 					var _i = 0;
 					for (var p in this.subKernelProperties) {
 						if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-						_output[p] = new Texture(this.subKernelOutputTextures[_i], texSize, this.threadDim, this.output, this._webGl);
+						_output[p] = new Texture(this.subKernelOutputTextures[_i], texSize, this.threadDim, this.output, this.context);
 						_i++;
 					}
 					return _output;
@@ -5457,6 +5683,11 @@ var WebGL2Kernel = function (_WebGLKernel) {
 			}
 
 			return this.renderOutput(outputTexture);
+		}
+	}, {
+		key: 'drawBuffers',
+		value: function drawBuffers() {
+			this.context.drawBuffers(this.drawBuffersMap);
 		}
 
 
@@ -5470,9 +5701,9 @@ var WebGL2Kernel = function (_WebGLKernel) {
 	}, {
 		key: '_setupOutputTexture',
 		value: function _setupOutputTexture() {
-			var gl = this._webGl;
+			var gl = this.context;
 			var texSize = this.texSize;
-			var texture = this.outputTexture = this._webGl.createTexture();
+			var texture = this.outputTexture = this.context.createTexture();
 			gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length);
 			gl.bindTexture(gl.TEXTURE_2D, texture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -5491,12 +5722,12 @@ var WebGL2Kernel = function (_WebGLKernel) {
 	}, {
 		key: '_setupSubOutputTextures',
 		value: function _setupSubOutputTextures(length) {
-			var gl = this._webGl;
+			var gl = this.context;
 			var texSize = this.texSize;
 			var drawBuffersMap = this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
 			var textures = this.subKernelOutputTextures = [];
 			for (var i = 0; i < length; i++) {
-				var texture = this._webGl.createTexture();
+				var texture = this.context.createTexture();
 				textures.push(texture);
 				drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
 				gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length + i);
@@ -5518,7 +5749,7 @@ var WebGL2Kernel = function (_WebGLKernel) {
 	}, {
 		key: '_addArgument',
 		value: function _addArgument(value, type, name) {
-			var gl = this._webGl;
+			var gl = this.context;
 			var argumentTexture = this.getArgumentTexture(name);
 			if (value instanceof Texture) {
 				type = value.type;
@@ -5661,6 +5892,9 @@ var WebGL2Kernel = function (_WebGLKernel) {
 				case 'NumberTexture':
 					{
 						var inputTexture = value;
+						if (inputTexture.context !== this.context) {
+							throw new Error('argument ' + name + ' (' + type + ') must be from same context');
+						}
 						var _dim4 = inputTexture.dimensions;
 						var _size4 = inputTexture.size;
 
@@ -5674,7 +5908,7 @@ var WebGL2Kernel = function (_WebGLKernel) {
 						break;
 					}
 				default:
-					throw new Error('Input type not supported (WebGL): ' + value);
+					throw new Error('Input type not supported: ' + value);
 			}
 			this.argumentsLength++;
 		}
@@ -5717,7 +5951,7 @@ var WebGL2Kernel = function (_WebGLKernel) {
 	}, {
 		key: '_addConstant',
 		value: function _addConstant(value, type, name) {
-			var gl = this._webGl;
+			var gl = this.context;
 			var argumentTexture = this.getArgumentTexture(name);
 			if (value instanceof Texture) {
 				type = value.type;
@@ -5853,6 +6087,9 @@ var WebGL2Kernel = function (_WebGLKernel) {
 				case 'NumberTexture':
 					{
 						var inputTexture = value;
+						if (inputTexture.context !== this.context) {
+							throw new Error('argument ' + name + ' (' + type + ') must be from same context');
+						}
 						var _dim8 = inputTexture.dimensions;
 						var _size8 = inputTexture.size;
 
@@ -5868,7 +6105,7 @@ var WebGL2Kernel = function (_WebGLKernel) {
 				case 'Integer':
 				case 'Float':
 				default:
-					throw new Error('Input type not supported (WebGL): ' + value);
+					throw new Error('Input type not supported: ' + value);
 			}
 			this.constantsLength++;
 		}
@@ -6016,7 +6253,7 @@ var WebGL2Kernel = function (_WebGLKernel) {
 			var _this2 = this;
 
 			var builder = this.functionBuilder;
-			var gl = this._webGl;
+			var gl = this.context;
 
 			builder.addFunctions(this.functions, {
 				constants: this.constants,
@@ -6070,6 +6307,12 @@ var WebGL2Kernel = function (_WebGLKernel) {
 			}
 			return this.compiledVertShaderString = this.constructor.vertShaderString;
 		}
+	}, {
+		key: 'destroyExtensions',
+		value: function destroyExtensions() {
+			this.extensions.EXT_color_buffer_float = null;
+			this.extensions.OES_texture_float_linear = null;
+		}
 	}], [{
 		key: 'fragShaderString',
 		get: function get() {
@@ -6089,9 +6332,9 @@ module.exports = WebGL2Kernel;
 },{"../../core/texture":33,"../../core/utils":35,"../web-gl/kernel":19,"./shader-frag":27,"./shader-vert":28}],26:[function(require,module,exports){
 'use strict';
 
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -6099,59 +6342,105 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var utils = require('../../core/utils');
 var GLRunner = require('../gl-runner');
 var WebGL2FunctionBuilder = require('./function-builder');
 var WebGL2Kernel = require('./kernel');
-var isCompatible = null;
+var isSupported = null;
+var testCanvas = null;
+var testContext = null;
+var testFunctionBuilder = null;
+var testExtensions = null;
 
 var WebGL2Runner = function (_GLRunner) {
 	_inherits(WebGL2Runner, _GLRunner);
 
-	_createClass(WebGL2Runner, null, [{
-		key: 'isRelatedContext',
-		value: function isRelatedContext(context) {
+	function WebGL2Runner() {
+		_classCallCheck(this, WebGL2Runner);
+
+		return _possibleConstructorReturn(this, (WebGL2Runner.__proto__ || Object.getPrototypeOf(WebGL2Runner)).apply(this, arguments));
+	}
+
+	_createClass(WebGL2Runner, [{
+		key: 'getMode',
+
+
+		value: function getMode() {
+			return 'gpu';
+		}
+	}], [{
+		key: 'setupFeatureChecks',
+		value: function setupFeatureChecks() {
+			if (typeof document !== 'undefined') {
+				testCanvas = document.createElement('canvas');
+			} else if (typeof OffscreenCanvas !== 'undefined') {
+				testCanvas = new OffscreenCanvas(0, 0);
+			}
+
+			if (testCanvas) {
+				testContext = testCanvas.getContext('webgl2');
+				testExtensions = {
+					EXT_color_buffer_float: testContext.getExtension('EXT_color_buffer_float'),
+					OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear')
+				};
+				testFunctionBuilder = new this.FunctionBuilder();
+			}
+		}
+	}, {
+		key: 'isContextMatch',
+		value: function isContextMatch(context) {
 			if (typeof WebGL2RenderingContext !== 'undefined') {
 				return context instanceof WebGL2RenderingContext;
 			}
 			return false;
 		}
-
-
 	}, {
-		key: 'isCompatible',
-		get: function get() {
-			if (isCompatible !== null) {
-				return isCompatible;
-			}
-			isCompatible = utils.isWebGl2Supported();
-			return isCompatible;
+		key: 'getFeatures',
+		value: function getFeatures() {
+			return Object.freeze({
+				isFloatRead: this.getIsFloatRead(),
+				isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+				kernelMap: true
+			});
 		}
-	}]);
-
-	function WebGL2Runner(settings) {
-		_classCallCheck(this, WebGL2Runner);
-
-		var _this = _possibleConstructorReturn(this, (WebGL2Runner.__proto__ || Object.getPrototypeOf(WebGL2Runner)).call(this, new WebGL2FunctionBuilder(), settings));
-
-		_this.Kernel = WebGL2Kernel;
-		_this.kernel = null;
-		return _this;
-	}
-
-	_createClass(WebGL2Runner, [{
+	}, {
 		key: 'getIsIntegerDivisionAccurate',
 		value: function getIsIntegerDivisionAccurate() {
-			if (!this._webGl) throw new Error('webGl not initialized');
-			this._webGl.getExtension('EXT_color_buffer_float');
-			return _get(WebGL2Runner.prototype.__proto__ || Object.getPrototypeOf(WebGL2Runner.prototype), 'getIsIntegerDivisionAccurate', this).call(this);
+			return _get(WebGL2Runner.__proto__ || Object.getPrototypeOf(WebGL2Runner), 'getIsIntegerDivisionAccurate', this).call(this);
 		}
-
-
 	}, {
-		key: 'getMode',
-		value: function getMode() {
-			return 'gpu';
+		key: 'FunctionBuilder',
+		get: function get() {
+			return WebGL2FunctionBuilder;
+		}
+	}, {
+		key: 'Kernel',
+		get: function get() {
+			return WebGL2Kernel;
+		}
+	}, {
+		key: 'isSupported',
+		get: function get() {
+			if (isSupported !== null) {
+				return isSupported;
+			}
+			this.setupFeatureChecks();
+			isSupported = this.isContextMatch(testContext);
+			return isSupported;
+		}
+	}, {
+		key: 'testCanvas',
+		get: function get() {
+			return testCanvas;
+		}
+	}, {
+		key: 'testContext',
+		get: function get() {
+			return testContext;
+		}
+	}, {
+		key: 'testFunctionBuilder',
+		get: function get() {
+			return testFunctionBuilder;
 		}
 	}]);
 
@@ -6159,7 +6448,7 @@ var WebGL2Runner = function (_GLRunner) {
 }(GLRunner);
 
 module.exports = WebGL2Runner;
-},{"../../core/utils":35,"../gl-runner":8,"./function-builder":23,"./kernel":25}],27:[function(require,module,exports){
+},{"../gl-runner":8,"./function-builder":23,"./kernel":25}],27:[function(require,module,exports){
 "use strict";
 
 module.exports = "#version 300 es\n__HEADER__;\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n\nconst int LOOP_MAX = __LOOP_MAX__;\n\n__CONSTANTS__;\n\nin vec2 vTexCoord;\n\nvec2 integerMod(vec2 x, float y) {\n  vec2 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec3 integerMod(vec3 x, float y) {\n  vec3 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nvec4 integerMod(vec4 x, vec4 y) {\n  vec4 res = floor(mod(x, y));\n  return res * step(1.0 - floor(y), -res);\n}\n\nfloat integerMod(float x, float y) {\n  float res = floor(mod(x, y));\n  return res * (res > floor(y) - 1.0 ? 0.0 : 1.0);\n}\n\nint integerMod(int x, int y) {\n  return x - (y * int(x/y));\n}\n\n__DIVIDE_WITH_INTEGER_CHECK__;\n\n// Here be dragons!\n// DO NOT OPTIMIZE THIS CODE\n// YOU WILL BREAK SOMETHING ON SOMEBODY'S MACHINE\n// LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME\nconst vec2 MAGIC_VEC = vec2(1.0, -256.0);\nconst vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);\nconst vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536\nfloat decode32(vec4 rgba) {\n  __DECODE32_ENDIANNESS__;\n  rgba *= 255.0;\n  vec2 gte128;\n  gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;\n  gte128.y = rgba.a >= 128.0 ? 1.0 : 0.0;\n  float exponent = 2.0 * rgba.a - 127.0 + dot(gte128, MAGIC_VEC);\n  float res = exp2(round(exponent));\n  rgba.b = rgba.b - 128.0 * gte128.x;\n  res = dot(rgba, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;\n  res *= gte128.y * -2.0 + 1.0;\n  return res;\n}\n\nvec4 encode32(float f) {\n  float F = abs(f);\n  float sign = f < 0.0 ? 1.0 : 0.0;\n  float exponent = floor(log2(F));\n  float mantissa = (exp2(-exponent) * F);\n  // exponent += floor(log2(mantissa));\n  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;\n  rgba.rg = integerMod(rgba.rg, 256.0);\n  rgba.b = integerMod(rgba.b, 128.0);\n  rgba.a = exponent*0.5 + 63.5;\n  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;\n  rgba = floor(rgba);\n  rgba *= 0.003921569; // 1/255\n  __ENCODE32_ENDIANNESS__;\n  return rgba;\n}\n// Dragons end here\n\nfloat decode(vec4 rgba, int x, int bitRatio) {\n  if (bitRatio == 1) {\n    return decode32(rgba);\n  }\n  __DECODE32_ENDIANNESS__;\n  int channel = integerMod(x, bitRatio);\n  if (bitRatio == 4) {\n    return rgba[channel] * 255.0;\n  }\n  else {\n    return rgba[channel*2] * 255.0 + rgba[channel*2 + 1] * 65280.0;\n  }\n}\n\nint index;\nivec3 threadId;\n\nivec3 indexTo3D(int idx, ivec3 texDim) {\n  int z = int(idx / (texDim.x * texDim.y));\n  idx -= z * int(texDim.x * texDim.y);\n  int y = int(idx / texDim.x);\n  int x = int(integerMod(idx, texDim.x));\n  return ivec3(x, y, z);\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int z, int y, int x) {\n  ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  vec4 texel = texture(tex, st / vec2(texSize));\n  __GET_RESULT__;\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, float z, float y, float x) {\n  return get(tex, texSize, texDim, bitRatio, int(z), int(y), int(x));\n}\n\nvec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {\n  ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  return texture(tex, st / vec2(texSize));\n}\n\nvec4 getImage3D(sampler2DArray tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {\n  ivec3 xyz = ivec3(x, y, z);\n  __GET_WRAPAROUND__;\n  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);\n  __GET_TEXTURE_CHANNEL__;\n  int w = texSize.x;\n  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;\n  __GET_TEXTURE_INDEX__;\n  return texture(tex, vec3(st / vec2(texSize), z));\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int y, int x) {\n  return get(tex, texSize, texDim, bitRatio, 0, y, x);\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, float y, float x) {\n  return get(tex, texSize, texDim, bitRatio, 0, int(y), int(x));\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int x) {\n  return get(tex, texSize, texDim, bitRatio, 0, 0, x);\n}\n\nfloat get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, float x) {\n  return get(tex, texSize, texDim, bitRatio, int(x));\n}\n\nvec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int y, int x) {\n  return getImage2D(tex, texSize, texDim, 0, y, x);\n}\n\nvec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int x) {\n  return getImage2D(tex, texSize, texDim, 0, 0, x);\n}\n\nvec4 actualColor;\nvoid color(float r, float g, float b, float a) {\n  actualColor = vec4(r,g,b,a);\n}\n\nvoid color(float r, float g, float b) {\n  color(r,g,b,1.0);\n}\n\n__MAIN_PARAMS__;\n__MAIN_CONSTANTS__;\n__KERNEL__;\n\nvoid main(void) {\n  index = int(vTexCoord.s * float(uTexSize.x)) + int(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;\n  __MAIN_RESULT__;\n}";
@@ -6254,6 +6543,8 @@ var WebGLRunner = require('../backend/web-gl/runner');
 
 var runners = [HeadlessGLRunner, WebGL2Runner, WebGLRunner];
 
+var runnerTypes = ['gpu', 'cpu'];
+
 var internalRunners = {
 	'headlessgl': HeadlessGLRunner,
 	'webgl2': WebGL2Runner,
@@ -6269,6 +6560,11 @@ var GPU = function (_GPUCore) {
 		get: function get() {
 			return runners;
 		}
+	}, {
+		key: 'runnerTypes',
+		get: function get() {
+			return runnerTypes;
+		}
 
 	}]);
 
@@ -6278,15 +6574,15 @@ var GPU = function (_GPUCore) {
 		var _this = _possibleConstructorReturn(this, (GPU.__proto__ || Object.getPrototypeOf(GPU)).call(this));
 
 		settings = settings || {};
-		_this._canvas = settings.canvas || null;
-		_this._webGl = settings.webGl || null;
-		var mode = settings.mode;
+		_this.canvas = settings.canvas || null;
+		_this.context = settings.context || null;
+		var mode = _this.mode = settings.mode;
 		var Runner = null;
 
-		if (_this._webGl) {
+		if (_this.context) {
 			for (var i = 0; i < runners.length; i++) {
 				var ExternalRunner = runners[i];
-				if (ExternalRunner.isRelatedContext(_this._webGl)) {
+				if (ExternalRunner.isContextMatch(_this.context)) {
 					Runner = ExternalRunner;
 					break;
 				}
@@ -6299,7 +6595,7 @@ var GPU = function (_GPUCore) {
 				Runner = internalRunners[mode];
 			} else if (mode === 'gpu') {
 				for (var _i = 0; _i < runners.length; _i++) {
-					if (runners[_i].isCompatible) {
+					if (runners[_i].isSupported) {
 						Runner = runners[_i];
 						break;
 					}
@@ -6312,7 +6608,7 @@ var GPU = function (_GPUCore) {
 			}
 		} else {
 			for (var _i2 = 0; _i2 < runners.length; _i2++) {
-				if (runners[_i2].isCompatible) {
+				if (runners[_i2].isSupported) {
 					Runner = runners[_i2];
 					break;
 				}
@@ -6323,13 +6619,7 @@ var GPU = function (_GPUCore) {
 		}
 
 		_this.kernels = [];
-
-		var runnerSettings = {
-			canvas: _this._canvas,
-			webGl: _this._webGl
-		};
-
-		_this._runner = new Runner(runnerSettings);
+		_this.runner = new Runner(settings);
 		return _this;
 	}
 
@@ -6345,26 +6635,18 @@ var GPU = function (_GPUCore) {
 			}
 
 			var mergedSettings = Object.assign({
-				webGl: this._webGl,
-				canvas: this._canvas
+				context: this.context,
+				canvas: this.canvas
 			}, settings || {});
 
-			var kernel = this._runner.buildKernel(fn, mergedSettings);
-			require('fs').writeFileSync('out.js', kernel.toString());
+			var kernel = this.runner.buildKernel(fn, mergedSettings);
 
-			if (!this._canvas) {
-				this._canvas = kernel.getCanvas();
+			if (!this.canvas) {
+				this.canvas = kernel.getCanvas();
 			}
-			if (!this._runner.canvas) {
-				this._runner.canvas = kernel.getCanvas();
+			if (!this.context) {
+				this.context = kernel.getContext();
 			}
-			if (!this._webGl) {
-				this._webGl = kernel.getWebGl();
-			}
-			if (!this._runner.webGl) {
-				this._runner.webGl = kernel.getWebGl();
-			}
-
 			this.kernels.push(kernel);
 
 			return kernel;
@@ -6383,8 +6665,10 @@ var GPU = function (_GPUCore) {
 				fn = arguments[arguments.length - 1];
 			}
 
-			if (!utils.isWebGlDrawBuffersSupported()) {
-				this._runner = new CPURunner(settings);
+			if (!this.runner.constructor.isSupported || !this.runner.constructor.features.kernelMap) {
+				if (this.mode && runnerTypes.indexOf(this.mode) < 0) {
+					throw new Error('kernelMap not supported on ' + this.runner.constructor.name);
+				}
 			}
 
 			var kernel = this.createKernel(fn, settings);
@@ -6413,16 +6697,16 @@ var GPU = function (_GPUCore) {
 			if (this.getMode() === 'cpu') return combinedKernel;
 
 			var canvas = arguments[0].getCanvas();
-			var webGl = arguments[0].getWebGl();
+			var context = arguments[0].getContext();
 
 			for (var i = 0; i < arguments.length - 1; i++) {
-				arguments[i].setCanvas(canvas).setWebGl(webGl).setOutputToTexture(true);
+				arguments[i].setCanvas(canvas).setContext(context).setOutputToTexture(true);
 			}
 
 			return function () {
 				combinedKernel.apply(null, arguments);
 				var texSize = lastKernel.texSize;
-				var gl = lastKernel.getWebGl();
+				var gl = lastKernel.getContext();
 				var threadDim = lastKernel.threadDim;
 				var result = void 0;
 				if (lastKernel.floatOutput) {
@@ -6454,8 +6738,8 @@ var GPU = function (_GPUCore) {
 
 	}, {
 		key: 'addFunction',
-		value: function addFunction(fn, options) {
-			this._runner.functionBuilder.addFunction(null, fn, options);
+		value: function addFunction(fn, settings) {
+			this.runner.functionBuilder.addFunction(null, fn, settings);
 			return this;
 		}
 
@@ -6463,7 +6747,7 @@ var GPU = function (_GPUCore) {
 	}, {
 		key: 'addNativeFunction',
 		value: function addNativeFunction(name, nativeFunction) {
-			this._runner.functionBuilder.addNativeFunction(name, nativeFunction);
+			this.runner.functionBuilder.addNativeFunction(name, nativeFunction);
 			return this;
 		}
 
@@ -6471,7 +6755,7 @@ var GPU = function (_GPUCore) {
 	}, {
 		key: 'getMode',
 		value: function getMode() {
-			return this._runner.getMode();
+			return this.runner.getMode();
 		}
 
 
@@ -6479,21 +6763,21 @@ var GPU = function (_GPUCore) {
 		key: 'getCanvas',
 
 		value: function getCanvas() {
-			return this._canvas;
+			return this.canvas;
 		}
 
 
 	}, {
-		key: 'getWebGl',
-		value: function getWebGl() {
-			return this._webGl;
+		key: 'getContext',
+		value: function getContext() {
+			return this.context;
 		}
 
 
 	}, {
 		key: 'getRunner',
 		value: function getRunner() {
-			return this._runner;
+			return this.runner;
 		}
 
 
@@ -6503,50 +6787,35 @@ var GPU = function (_GPUCore) {
 			var _this2 = this;
 
 			setTimeout(function () {
-				var kernels = _this2.kernels;
-
-				var destroyWebGl = !_this2._webGl && kernels.length && kernels[0]._webGl;
 				for (var i = 0; i < _this2.kernels.length; i++) {
 					_this2.kernels[i].destroy(true); 
 				}
-
-				if (_this2._webGl && _this2._webGl.destroy) {
-					_this2._webGl.destroy();
-				}
-
-				if (destroyWebGl) {
-					destroyWebGl.OES_texture_float = null;
-					destroyWebGl.OES_texture_float_linear = null;
-					destroyWebGl.OES_element_index_uint = null;
-					var loseContextExt = destroyWebGl.getExtension('WEBGL_lose_context');
-					if (loseContextExt) {
-						loseContextExt.loseContext();
-					}
-				}
+				_this2.kernels[0].kernel.constructor.destroyContext(_this2.context);
 			}, 0);
 		}
 	}], [{
-		key: 'isWebGlSupported',
-		value: function isWebGlSupported() {
-			return require('../backend/web-gl/runner').isCompatible;
+		key: 'isWebGLSupported',
+		get: function get() {
+			return WebGLRunner.isSupported;
 		}
 
 
 	}, {
-		key: 'isWebGl2Supported',
-		value: function isWebGl2Supported() {
-			return require('../backend/web-gl2/runner').isCompatible;
+		key: 'isWebGL2Supported',
+		get: function get() {
+			return WebGL2Runner.isSupported;
 		}
 
 
 	}, {
-		key: 'isHeadlessGlSupported',
-		value: function isHeadlessGlSupported() {
-			return require('../backend/headless-gl/runner').isCompatible;
+		key: 'isHeadlessGLSupported',
+		get: function get() {
+			return HeadlessGLRunner.isSupported;
 		}
 	}, {
 		key: 'isCanvasSupported',
-		value: function isCanvasSupported() {
+		get: function get() {
+			throw new Error('how to check canvas');
 			return utils.isCanvasSupported();
 		}
 	}]);
@@ -6554,12 +6823,8 @@ var GPU = function (_GPUCore) {
 	return GPU;
 }(GPUCore);
 
-
-
-Object.assign(GPU, GPUCore);
-
 module.exports = GPU;
-},{"../backend/cpu/runner":5,"../backend/headless-gl/runner":12,"../backend/web-gl/runner":20,"../backend/web-gl2/runner":26,"./gpu-core":30,"./utils":35,"fs":38}],32:[function(require,module,exports){
+},{"../backend/cpu/runner":5,"../backend/headless-gl/runner":12,"../backend/web-gl/runner":20,"../backend/web-gl2/runner":26,"./gpu-core":30,"./utils":35}],32:[function(require,module,exports){
 "use strict";
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -6597,7 +6862,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Texture = function () {
-	function Texture(texture, size, dimensions, output, webGl) {
+	function Texture(texture, size, dimensions, output, context) {
 		var type = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 'NumberTexture';
 
 		_classCallCheck(this, Texture);
@@ -6606,7 +6871,7 @@ var Texture = function () {
 		this.size = size;
 		this.dimensions = dimensions;
 		this.output = output;
-		this.webGl = webGl;
+		this.context = context;
 		this.kernel = null;
 		this.type = type;
 	}
@@ -6630,7 +6895,7 @@ var Texture = function () {
 	}, {
 		key: 'delete',
 		value: function _delete() {
-			return this.webGl.deleteTexture(this.texture);
+			return this.context.deleteTexture(this.texture);
 		}
 	}]);
 
@@ -6652,140 +6917,14 @@ var UtilsCore = function () {
 	}
 
 	_createClass(UtilsCore, null, [{
-		key: 'isCanvas',
+		key: 'initWebGlDefaultSettings',
 
-
-
-		value: function isCanvas(canvas) {
-			return canvas !== null && canvas.getContext;
-		}
-
-
-	}, {
-		key: 'isCanvasSupported',
-		value: function isCanvasSupported() {
-			return _isCanvasSupported;
-		}
-
-
-	}, {
-		key: 'initCanvas',
-		value: function initCanvas() {
-			if (!_isCanvasSupported) {
-				return null;
-			}
-
-			if (_isNativeCanvasSupport) {
-				return {
-					getContext: function getContext() {
-						return null;
-					}
-				};
-			}
-
-			var canvas = typeof document !== 'undefined' ? document.createElement('canvas') : new OffscreenCanvas(0, 0);
-
-			canvas.width = 2;
-			canvas.height = 2;
-
-			return canvas;
-		}
-
-
-	}, {
-		key: 'isWebGl',
-		value: function isWebGl(webGlObj) {
-			return webGlObj && typeof webGlObj.getExtension === 'function';
-		}
-
-
-	}, {
-		key: 'isWebGl2',
-		value: function isWebGl2(webGl2Obj) {
-			return webGl2Obj && typeof WebGL2RenderingContext !== 'undefined' && webGl2Obj instanceof WebGL2RenderingContext;
-		}
-
-
-	}, {
-		key: 'isWebGlSupported',
-		value: function isWebGlSupported() {
-			return _isWebGlSupported;
-		}
-
-
-	}, {
-		key: 'isWebGl2Supported',
-		value: function isWebGl2Supported() {
-			return _isWebGl2Supported;
-		}
-	}, {
-		key: 'isWebGlDrawBuffersSupported',
-		value: function isWebGlDrawBuffersSupported() {
-			return _isWebGlDrawBuffersSupported;
-		}
-
-
-	}, {
-		key: 'initWebGlDefaultOptions',
-		value: function initWebGlDefaultOptions() {
+		value: function initWebGlDefaultSettings() {
 			return {
 				alpha: false,
 				depth: false,
 				antialias: false
 			};
-		}
-
-
-	}, {
-		key: 'initWebGl',
-		value: function initWebGl(canvas) {
-			var webGl = null;
-
-			if (typeof _isCanvasSupported !== 'undefined' || canvas === null) {
-				if (!_isCanvasSupported) {
-					return null;
-				}
-			}
-
-			if (!UtilsCore.isCanvas(canvas)) {
-				throw new Error('Invalid canvas object - ' + canvas);
-			}
-
-			var defaultOptions = UtilsCore.initWebGlDefaultOptions();
-			try {
-				webGl = canvas.getContext('experimental-webgl', defaultOptions);
-			} catch (e) {
-			}
-
-			if (webGl === null) {
-				webGl = canvas.getContext('webgl2', defaultOptions) || canvas.getContext('webgl', defaultOptions);
-			}
-
-			if (webGl) {
-				webGl.OES_texture_float = webGl.getExtension('OES_texture_float');
-				webGl.OES_texture_float_linear = webGl.getExtension('OES_texture_float_linear');
-				webGl.OES_element_index_uint = webGl.getExtension('OES_element_index_uint');
-			}
-
-			return webGl;
-		}
-
-
-	}, {
-		key: 'initWebGl2',
-		value: function initWebGl2(canvas) {
-
-			if (typeof _isCanvasSupported !== 'undefined' || canvas === null) {
-				if (!_isCanvasSupported) {
-					return null;
-				}
-			}
-
-			if (!UtilsCore.isCanvas(canvas)) {
-				throw new Error('Invalid canvas object - ' + canvas);
-			}
-
-			return canvas.getContext('webgl2', UtilsCore.initWebGlDefaultOptions());
 		}
 
 
@@ -6804,31 +6943,8 @@ var UtilsCore = function () {
 	return UtilsCore;
 }();
 
-var _isNativeCanvasSupport = false;
-try {
-	var nativeCanvas = require('canvas');
-	_isNativeCanvasSupport = nativeCanvas.hasOwnProperty('createCanvas');
-} catch (e) {}
-
-var _isCanvasSupported = _isNativeCanvasSupport || (typeof document !== 'undefined' ? UtilsCore.isCanvas(document.createElement('canvas')) : typeof OffscreenCanvas !== 'undefined');
-var _testingWebGl = UtilsCore.initWebGl(UtilsCore.initCanvas());
-var _testingWebGl2 = UtilsCore.initWebGl2(UtilsCore.initCanvas());
-var _isWebGlSupported = UtilsCore.isWebGl(_testingWebGl);
-var _isWebGl2Supported = UtilsCore.isWebGl2(_testingWebGl2);
-var _isWebGlDrawBuffersSupported = _isWebGlSupported && _testingWebGl && Boolean(_testingWebGl.getExtension('WEBGL_draw_buffers'));
-
-if (_isWebGlSupported) {
-	UtilsCore.OES_texture_float = _testingWebGl.OES_texture_float;
-	UtilsCore.OES_texture_float_linear = _testingWebGl.OES_texture_float_linear;
-	UtilsCore.OES_element_index_uint = _testingWebGl.OES_element_index_uint;
-} else {
-	UtilsCore.OES_texture_float = false;
-	UtilsCore.OES_texture_float_linear = false;
-	UtilsCore.OES_element_index_uint = false;
-}
-
 module.exports = UtilsCore;
-},{"canvas":38}],35:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };

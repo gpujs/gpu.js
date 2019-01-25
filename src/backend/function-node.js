@@ -17,16 +17,14 @@ class FunctionNode {
 	 * @prop {String[]} paramNames - Parameter names of the function
 	 * @prop {String[]} paramTypes - Shader land parameters type assumption
 	 * @prop {Boolean} isRootKernel - Special indicator, for kernel function
-	 * @prop {String} webglFunctionString - webgl converted function string
-	 * @prop {String} openglFunctionString - opengl converted function string
 	 * @prop {String[]} calledFunctions - List of all the functions called
 	 *
 	 * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
 	 * @param {Function|String} jsFunction - JS Function to do conversion
-	 * @param {Object} [options]
+	 * @param {Object} [settings]
 	 *
 	 */
-	constructor(functionName, jsFunction, options) {
+	constructor(functionName, jsFunction, settings) {
 		this.calledFunctions = [];
 		this.calledFunctionsArguments = {};
 		this.builder = null;
@@ -43,38 +41,38 @@ class FunctionNode {
 
 		let paramTypes;
 		let returnType;
-		if (options) {
-			if (options.hasOwnProperty('debug')) {
-				this.debug = options.debug;
+		if (settings) {
+			if (settings.hasOwnProperty('debug')) {
+				this.debug = settings.debug;
 			}
-			if (options.hasOwnProperty('prototypeOnly')) {
-				this.prototypeOnly = options.prototypeOnly;
+			if (settings.hasOwnProperty('prototypeOnly')) {
+				this.prototypeOnly = settings.prototypeOnly;
 			}
-			if (options.hasOwnProperty('constants')) {
-				this.constants = options.constants;
+			if (settings.hasOwnProperty('constants')) {
+				this.constants = settings.constants;
 			}
-			if (options.hasOwnProperty('output')) {
-				this.output = options.output;
+			if (settings.hasOwnProperty('output')) {
+				this.output = settings.output;
 			}
-			if (options.hasOwnProperty('loopMaxIterations')) {
-				this.loopMaxIterations = options.loopMaxIterations;
+			if (settings.hasOwnProperty('loopMaxIterations')) {
+				this.loopMaxIterations = settings.loopMaxIterations;
 			}
-			if (options.hasOwnProperty('paramTypes')) {
-				this.paramTypes = paramTypes = options.paramTypes;
+			if (settings.hasOwnProperty('paramTypes')) {
+				this.paramTypes = paramTypes = settings.paramTypes;
 			}
-			if (options.hasOwnProperty('constantTypes')) {
-				this.constantTypes = options.constantTypes;
+			if (settings.hasOwnProperty('constantTypes')) {
+				this.constantTypes = settings.constantTypes;
 			} else {
 				this.constantTypes = {};
 			}
-			if (options.hasOwnProperty('returnType')) {
-				returnType = options.returnType;
+			if (settings.hasOwnProperty('returnType')) {
+				returnType = settings.returnType;
 			}
-			if (options.hasOwnProperty('fixIntegerDivisionAccuracy')) {
-				this.fixIntegerDivisionAccuracy = options.fixIntegerDivisionAccuracy;
+			if (settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
+				this.fixIntegerDivisionAccuracy = settings.fixIntegerDivisionAccuracy;
 			}
-			if (options.hasOwnProperty('isRootKernel')) {
-				this.isRootKernel = options.isRootKernel;
+			if (settings.hasOwnProperty('isRootKernel')) {
+				this.isRootKernel = settings.isRootKernel;
 			}
 		}
 
@@ -233,10 +231,7 @@ class FunctionNode {
 		}
 
 		// Failure, unknown expression
-		throw this.astErrorOutput(
-			'Unknown CallExpression_unroll',
-			ast
-		);
+		throw this.astErrorOutput('Unknown astMemberExpressionUnroll', ast);
 	}
 
 	/**
@@ -257,9 +252,9 @@ class FunctionNode {
 			throw 'Missing JS to AST parser';
 		}
 
-		const ast = inParser.parse('var ' + this.functionName + ' = ' + this.jsFunctionString + ';', {
+		const ast = Object.freeze(inParser.parse('var ' + this.functionName + ' = ' + this.jsFunctionString + ';', {
 			locations: true
-		});
+		}));
 		if (ast === null) {
 			throw 'Failed to parse JS code';
 		}
@@ -353,8 +348,8 @@ class FunctionNode {
 		return null;
 	}
 
-	generate(options) {
-		throw new Error('"generate" not defined on FunctionNode');
+	generate(settings) {
+		throw new Error(`"generate" not defined on ${ this.constructor.name }`);
 	}
 
 	/**
@@ -441,15 +436,11 @@ class FunctionNode {
 	 *
 	 * @todo add location support for the AST error
 	 *
-	 * @param {Object} error - the error message output
+	 * @param {string} error - the error message output
 	 * @param {Object} ast - the AST object where the error is
 	 */
 	astErrorOutput(error, ast) {
-		console.error(utils.getAstString(this.jsFunctionString, ast));
-		if (this.debug) {
-			console.error(error, ast, this);
-		}
-		return error;
+		return new Error(error + ':\n' + utils.getAstString(this.jsFunctionString, ast));
 	}
 
 	astDebuggerStatement(arrNode, retArr) {

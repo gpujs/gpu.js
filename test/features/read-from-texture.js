@@ -39,7 +39,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('Read from Texture (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Read from Texture (webgl)', function () {
     const gpu = new GPU({mode: 'webgl'});
     const A = [1, 2, 3, 4, 5];
     const B = [1, 2, 3, 4, 5];
@@ -52,7 +52,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('Read from Texture (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Read from Texture (webgl2)', function () {
     const gpu = new GPU({mode: 'webgl2'});
     const A = [1, 2, 3, 4, 5];
     const B = [1, 2, 3, 4, 5];
@@ -65,7 +65,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('Read from Texture (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported && GPU.HeadlessGLRunner.features.kernelMap ? QUnit.test : QUnit.skip)('Read from Texture (headlessgl)', function () {
     const gpu = new GPU({mode: 'headlessgl'});
     const A = [1, 2, 3, 4, 5];
     const B = [1, 2, 3, 4, 5];

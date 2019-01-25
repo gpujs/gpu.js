@@ -1,7 +1,5 @@
-var GPU = require('../../src/index');
-require('qunit-assert-close');
-
 (function() {
+  const GPU = require('../../src/index');
   function forLoopTest(mode) {
     var gpu = new GPU({ mode: mode });
     var f = gpu.createKernel(function(a, b) {
@@ -24,32 +22,32 @@ require('qunit-assert-close');
     var exp = [15, 17, 19, 16, 18, 20];
 
     for(var i = 0; i < exp.length; ++i) {
-      QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
+      QUnit.assert.equal(res[i], exp[i], 'Result arr idx: '+i);
     }
     gpu.destroy();
   }
 
-  QUnit.test( 'for_loop (auto)', function() {
+  QUnit.test('for_loop (auto)', () => {
     forLoopTest(null);
   });
 
-  QUnit.test( 'for_loop (gpu)', function() {
+  QUnit.test('for_loop (gpu)', () => {
     forLoopTest('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('for_loop (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('for_loop (webgl)', () => {
     forLoopTest('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('for_loop (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('for_loop (webgl2)', () => {
     forLoopTest('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('for_loop (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('for_loop (headlessgl)', () => {
     forLoopTest('headlessgl');
   });
 
-  QUnit.test( 'for_loop (cpu)', function() {
+  QUnit.test('for_loop (cpu)', () => {
     forLoopTest('cpu');
   });
 
@@ -76,32 +74,32 @@ require('qunit-assert-close');
     var exp = [15, 17, 19, 16, 18, 20];
 
     for(var i = 0; i < exp.length; ++i) {
-      QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
+      QUnit.assert.equal(res[i], exp[i], 0.1, 'Result arr idx: '+i);
     }
     gpu.destroy();
   }
 
-  QUnit.test( 'dowhile_loop (auto)', function() {
+  QUnit.test('dowhile_loop (auto)', () => {
     doWhileLoopTest(null);
   });
 
-  QUnit.test( 'dowhile_loop (gpu)', function() {
+  QUnit.test('dowhile_loop (gpu)', () => {
     doWhileLoopTest('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('dowhile_loop (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('dowhile_loop (webgl)', () => {
     doWhileLoopTest('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('dowhile_loop (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('dowhile_loop (webgl2)', () => {
     doWhileLoopTest('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('dowhile_loop (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('dowhile_loop (headlessgl)', () => {
     doWhileLoopTest('headlessgl');
   });
 
-  QUnit.test( 'dowhile_loop (cpu)', function() {
+  QUnit.test('dowhile_loop (cpu)', () => {
     doWhileLoopTest('cpu');
   });
 
@@ -141,33 +139,33 @@ require('qunit-assert-close');
     var res = f(evil_while_a,evil_while_b);
 
     for(var i = 0; i < evil_while_exp.length; ++i) {
-      QUnit.assert.close(evil_while_exp[i], res[i], 0.1, 'Result arr idx: '+i);
+      QUnit.assert.equal(evil_while_exp[i], res[i], 'Result arr idx: '+i);
     }
     evil_while_cpuRef.destroy();
     gpu.destroy();
   }
 
-  QUnit.test( 'evilWhileLoopTest (auto)', function() {
+  QUnit.test('evilWhileLoopTest (auto)', () => {
     evilWhileLoopTest(null);
   });
 
-  QUnit.test( 'evilWhileLoopTest (gpu)', function() {
+  QUnit.test('evilWhileLoopTest (gpu)', () => {
     evilWhileLoopTest('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('evilWhileLoopTest (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('evilWhileLoopTest (webgl)', () => {
     evilWhileLoopTest('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('evilWhileLoopTest (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('evilWhileLoopTest (webgl2)', () => {
     evilWhileLoopTest('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('evilWhileLoopTest (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('evilWhileLoopTest (headlessgl)', () => {
     evilWhileLoopTest('headlessgl');
   });
 
-  QUnit.test( 'evilWhileLoopTest (CPU)', function() {
+  QUnit.test('evilWhileLoopTest (CPU)', () => {
     evilWhileLoopTest('cpu');
   });
 
@@ -197,32 +195,32 @@ require('qunit-assert-close');
     var exp = [15, 17, 19, 16, 18, 20];
 
     for(var i = 0; i < exp.length; ++i) {
-      QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
+      QUnit.assert.equal(res[i], exp[i], 0.1, 'Result arr idx: '+i);
     }
     gpu.destroy();
   }
 
-  QUnit.test( 'forConstantLoopTest (auto)', function() {
+  QUnit.test('forConstantLoopTest (auto)', () => {
     forConstantLoopTest(null);
   });
 
-  QUnit.test( 'forConstantLoopTest (gpu)', function() {
+  QUnit.test('forConstantLoopTest (gpu)', () => {
     forConstantLoopTest('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('forConstantLoopTest (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('forConstantLoopTest (webgl)', () => {
     forConstantLoopTest('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('forConstantLoopTest (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('forConstantLoopTest (webgl2)', () => {
     forConstantLoopTest('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('forConstantLoopTest (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('forConstantLoopTest (headlessgl)', () => {
     forConstantLoopTest('headlessgl');
   });
 
-  QUnit.test( 'forConstantLoopTest (CPU)', function() {
+  QUnit.test('forConstantLoopTest (CPU)', () => {
     forConstantLoopTest('cpu');
   });
 })();

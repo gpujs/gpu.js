@@ -14,31 +14,31 @@ var GPU = require('../../src/index');
   }
 
   QUnit.test('Issue #335 Missing z index issue (auto)', () => {
-    QUnit.assert.throws(function() {
+    QUnit.assert.throws(() => {
       missingZIndexIssue('auto');
     });
   });
 
   QUnit.test('Issue #335 Missing z index issue (gpu)', () => {
-    QUnit.assert.throws(function() {
+    QUnit.assert.throws(() => {
       missingZIndexIssue('gpu');
     });
   });
 
   QUnit.test('Issue #335 Missing z index issue (webgl)', () => {
-    QUnit.assert.throws(function() {
+    QUnit.assert.throws(() => {
       missingZIndexIssue('webgl');
     });
   });
 
   QUnit.test('Issue #335 Missing z index issue (webgl2)', () => {
-    QUnit.assert.throws(function() {
+    QUnit.assert.throws(() => {
       missingZIndexIssue('webgl2');
     });
   });
 
   QUnit.test('Issue #335 Missing z index issue (cpu)', () => {
-    QUnit.assert.throws(function() {
+    QUnit.assert.throws(() => {
       missingZIndexIssue('cpu');
     });
   });

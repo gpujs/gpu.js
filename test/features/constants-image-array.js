@@ -43,7 +43,7 @@ var GPU = require('../../src/index');
 
   if (typeof Image === 'undefined') return;
 
-  QUnit.test( 'imageArrayConstantTest (auto)', function(assert) {
+  QUnit.test('imageArrayConstantTest (auto)', function(assert) {
     imageArrayConstantFixture(null, assert, function(tryConst) {
       var result = tryConst();
       var test = result[0][0][0] > 0;
@@ -51,7 +51,7 @@ var GPU = require('../../src/index');
     });
   });
 
-  QUnit.test( 'imageArrayConstantTest (gpu)', function(assert) {
+  QUnit.test('imageArrayConstantTest (gpu)', function(assert) {
     imageArrayConstantFixture('gpu', assert, function(tryConst) {
       var result = tryConst();
       var test = result[0][0][0] > 0;
@@ -59,7 +59,7 @@ var GPU = require('../../src/index');
     });
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('imageArrayConstantTest (webgl)', function (assert) {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('imageArrayConstantTest (webgl)', function (assert) {
     imageArrayConstantFixture('webgl', assert, function (tryConst) {
       assert.throws(function () {
         tryConst();
@@ -67,7 +67,7 @@ var GPU = require('../../src/index');
     });
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('imageArrayConstantTest (webgl2)', function (assert) {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('imageArrayConstantTest (webgl2)', function (assert) {
     imageArrayConstantFixture('webgl2', assert, function (tryConst) {
       var result = tryConst();
       var test = result[0][0][0] > 0;
@@ -75,7 +75,7 @@ var GPU = require('../../src/index');
     });
   });
 
-  QUnit.test( 'imageArrayConstantTest (cpu)', function(assert) {
+  QUnit.test('imageArrayConstantTest (cpu)', function(assert) {
     imageArrayConstantFixture('cpu', assert, function(tryConst) {
       var result = tryConst();
       var test = result[0][0][0] > 0;

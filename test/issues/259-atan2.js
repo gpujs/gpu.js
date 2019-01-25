@@ -1,39 +1,38 @@
-var GPU = require('../../src/index');
-
 (function() {
-  var gpu;
+  const GPU = require('../../src/index');
+
   function buildAtan2KernelResult(mode) {
-    gpu = new GPU({ mode });
-    var kernel = gpu.createKernel(function() {
+    const gpu = new GPU({ mode });
+    const kernel = gpu.createKernel(function() {
       return Math.atan2(1, 2);
     }, {
       output: [1]
     });
-    return kernel();
+    QUnit.assert.equal(kernel()[0].toFixed(7), 0.4636476);
+    gpu.destroy();
   }
 
   QUnit.test('Issue #259 atan2 - (auto)', () => {
-    QUnit.assert.equal(buildAtan2KernelResult()[0].toFixed(7), 0.4636476);
-    gpu.destroy();
+    buildAtan2KernelResult();
   });
 
   QUnit.test('Issue #259 atan2 - (gpu)', () => {
-    QUnit.assert.equal(buildAtan2KernelResult('gpu')[0].toFixed(7), 0.4636476);
-    gpu.destroy();
+    buildAtan2KernelResult('gpu');
   });
 
-  QUnit.test('Issue #259 atan2 - (webgl)', () => {
-    QUnit.assert.equal(buildAtan2KernelResult('webgl')[0].toFixed(7), 0.4636476);
-    gpu.destroy();
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #259 atan2 - (webgl)', () => {
+    buildAtan2KernelResult('webgl');
   });
 
-  QUnit.test('Issue #259 atan2 - (webgl2)', () => {
-    QUnit.assert.equal(buildAtan2KernelResult('webgl2')[0].toFixed(7), 0.4636476);
-    gpu.destroy();
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #259 atan2 - (webgl2)', () => {
+    buildAtan2KernelResult('webgl2');
+  });
+
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #259 atan2 - (headlessgl)', () => {
+    buildAtan2KernelResult('headlessgl');
   });
 
   QUnit.test('Issue #259 atan2 - (cpu)', () => {
-    QUnit.assert.equal(buildAtan2KernelResult('cpu')[0].toFixed(7), 0.4636476);
-    gpu.destroy();
+    buildAtan2KernelResult('cpu');
   });
 })();

@@ -15,7 +15,8 @@
     "acorn": "^5.1.1",
     "bindings": "^1.3.1",
     "canvas": "^2.1.0",
-    "gl": "^4.1.1"
+    "gl": "^4.1.1",
+    "qunit": "^2.9.1"
   },
   "devDependencies": {
     "babel-plugin-syntax-async-functions": "^6.5.0",

@@ -46,15 +46,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astFunctionDeclaration
-   *
    * @desc Parses the abstract syntax tree for to its *named function declaration*
-   *
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -66,16 +60,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astFunctionPrototype
-   * @static
-   *
    * @desc Parses the abstract syntax tree for to its *named function prototype*
-   *
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -115,15 +102,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astFunctionExpression
-   *
    * @desc Parses the abstract syntax tree for to its *named function*
-   *
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -181,15 +162,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astReturnStatement
-   *
    * @desc Parses the abstract syntax tree for to *return* statement
-   *
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -211,20 +186,10 @@ var WebGLFunctionNode = function (_FunctionNode) {
 				this.astGeneric(ast.argument, retArr);
 				retArr.push(';');
 			}
-
-			//throw this.astErrorOutput(
-			//	'Non main function return, is not supported : '+this.currentFunctionNamespace,
-			//	ast
-			//);
-
 			return retArr;
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astLiteral
-   *
    * @desc Parses the abstract syntax tree for *literal value*
    *
    * @param {Object} ast - the AST object to parse
@@ -265,15 +230,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astBinaryExpression
-   *
    * @desc Parses the abstract syntax tree for *binary* expression
-   *
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -331,15 +290,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astIdentifierExpression
-   *
    * @desc Parses the abstract syntax tree for *identifier* expression
-   *
    * @param {Object} idtNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -400,15 +353,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astForStatement
-   *
    * @desc Parses the abstract syntax tree forfor *for-loop* expression
-   *
    * @param {Object} forNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the parsed webgl string
    */
 
@@ -464,30 +411,26 @@ var WebGLFunctionNode = function (_FunctionNode) {
 					retArr.push('}\n');
 
 					return retArr;
-				} else {
-					var declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
-					var updateArgument = forNode.update.argument;
+				} else if (forNode.init.declarations) {
+					var declarations = forNode.init.declarations;
 					if (!Array.isArray(declarations) || declarations.length < 1) {
 						throw new Error('Error: Incompatible for loop declaration');
 					}
 
 					if (declarations.length > 1) {
-						var initArgument = null;
+						retArr.push('for (');
+						this.pushState('in-for-loop-init');
+						retArr.push('int ');
 						for (var _i2 = 0; _i2 < declarations.length; _i2++) {
 							var declaration = declarations[_i2];
-							if (declaration.id.name === updateArgument.name) {
-								initArgument = declaration;
-								declarations.splice(_i2, 1);
-							} else {
-								retArr.push('float ');
-								this.astGeneric(declaration, retArr);
-								retArr.push(';');
+							if (_i2 > 0) {
+								retArr.push(',');
 							}
+							this.declarations[declaration.id.name] = 'Integer';
+							this.astGeneric(declaration, retArr);
 						}
-
-						retArr.push('for (float ');
-						this.astGeneric(initArgument, retArr);
 						retArr.push(';');
+						this.popState('in-for-loop-init');
 					} else {
 						retArr.push('for (');
 						this.pushState('in-for-loop-init');
@@ -508,16 +451,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astWhileStatement
-   *
    * @desc Parses the abstract syntax tree for *while* loop
-   *
-   *
    * @param {Object} whileNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the parsed webgl string
    */
 
@@ -542,16 +478,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astWhileStatement
-   *
    * @desc Parses the abstract syntax tree for *do while* loop
-   *
-   *
    * @param {Object} doWhileNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the parsed webgl string
    */
 
@@ -575,15 +504,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astAssignmentExpression
-   *
    * @desc Parses the abstract syntax tree for *Assignment* Expression
-   *
    * @param {Object} assNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -599,23 +522,25 @@ var WebGLFunctionNode = function (_FunctionNode) {
 				this.astGeneric(assNode.right, retArr);
 				retArr.push(')');
 			} else {
+				var isLeftInteger = this.declarations[this.astGetFirstAvailableName(assNode.left)] === 'Integer';
+				var isRightInteger = this.declarations[this.astGetFirstAvailableName(assNode.right)] === 'Integer';
 				this.astGeneric(assNode.left, retArr);
 				retArr.push(assNode.operator);
-				this.astGeneric(assNode.right, retArr);
+				if (!isLeftInteger && isRightInteger) {
+					retArr.push('float(');
+					this.astGeneric(assNode.right, retArr);
+					retArr.push(')');
+				} else {
+					this.astGeneric(assNode.right, retArr);
+				}
 				return retArr;
 			}
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astEmptyStatement
-   *
    * @desc Parses the abstract syntax tree for an *Empty* Statement
-   *
    * @param {Object} eNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -627,15 +552,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astBlockStatement
-   *
    * @desc Parses the abstract syntax tree for *Block* statement
-   *
    * @param {Object} bNode - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -651,15 +570,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astExpressionStatement
-   *
    * @desc Parses the abstract syntax tree for *generic expression* statement
-   *
    * @param {Object} esNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -672,23 +585,17 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astVariableDeclaration
-   *
    * @desc Parses the abstract syntax tree for *Variable Declaration*
-   *
-   * @param {Object} vardecNode - An ast Node
+   * @param {Object} varDecNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
 	}, {
 		key: 'astVariableDeclaration',
-		value: function astVariableDeclaration(vardecNode, retArr) {
-			for (var i = 0; i < vardecNode.declarations.length; i++) {
-				var declaration = vardecNode.declarations[i];
+		value: function astVariableDeclaration(varDecNode, retArr) {
+			for (var i = 0; i < varDecNode.declarations.length; i++) {
+				var declaration = varDecNode.declarations[i];
 				if (i > 0) {
 					retArr.push(',');
 				}
@@ -755,39 +662,27 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astVariableDeclarator
-   *
    * @desc Parses the abstract syntax tree for *Variable Declarator*
-   *
-   * @param {Object} ivardecNode - An ast Node
+   * @param {Object} iVarDecNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
 	}, {
 		key: 'astVariableDeclarator',
-		value: function astVariableDeclarator(ivardecNode, retArr) {
-			this.astGeneric(ivardecNode.id, retArr);
-			if (ivardecNode.init !== null) {
+		value: function astVariableDeclarator(iVarDecNode, retArr) {
+			this.astGeneric(iVarDecNode.id, retArr);
+			if (iVarDecNode.init !== null) {
 				retArr.push('=');
-				this.astGeneric(ivardecNode.init, retArr);
+				this.astGeneric(iVarDecNode.init, retArr);
 			}
 			return retArr;
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astIfStatement
-   *
    * @desc Parses the abstract syntax tree for *If* Statement
-   *
    * @param {Object} ifNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -819,15 +714,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astBreakStatement
-   *
    * @desc Parses the abstract syntax tree for *Break* Statement
-   *
    * @param {Object} brNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -839,15 +728,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astContinueStatement
-   *
    * @desc Parses the abstract syntax tree for *Continue* Statement
-   *
    * @param {Object} crNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -859,15 +742,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astLogicalExpression
-   *
    * @desc Parses the abstract syntax tree for *Logical* Expression
-   *
    * @param {Object} logNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -883,15 +760,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astUpdateExpression
-   *
    * @desc Parses the abstract syntax tree for *Update* Expression
-   *
    * @param {Object} uNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -910,15 +781,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astUnaryExpression
-   *
    * @desc Parses the abstract syntax tree for *Unary* Expression
-   *
    * @param {Object} uNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -937,15 +802,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astThisExpression
-   *
    * @desc Parses the abstract syntax tree for *This* expression
-   *
    * @param {Object} tNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -957,15 +816,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astMemberExpression
-   *
    * @desc Parses the abstract syntax tree for *Member* Expression
-   *
    * @param {Object} mNode - An ast Node
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -1200,15 +1053,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astCallExpression
-   *
    * @desc Parses the abstract syntax tree for *call* expression
-   *
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns  {Array} the append retArr
    */
 
@@ -1284,15 +1131,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name astArrayExpression
-   *
    * @desc Parses the abstract syntax tree for *Array* Expression
-   *
    * @param {Object} arrNode - the AST object to parse
    * @param {Array} retArr - return array string
-   *
    * @returns {Array} the append retArr
    */
 
@@ -1312,12 +1153,6 @@ var WebGLFunctionNode = function (_FunctionNode) {
 			retArr.push(')');
 
 			return retArr;
-
-			// // Failure, unknown expression
-			// throw this.astErrorOutput(
-			// 	'Unknown  ArrayExpression',
-			// 	arrNode
-			//);
 		}
 
 		/**
@@ -1336,14 +1171,8 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
-   * @memberOf WebGLFunctionNode#
-   * @function
-   * @name getFunctionPrototypeString
-   *
    * @desc Returns the converted webgl shader function equivalent of the JS function
-   *
    * @returns {String} webgl function string, result is cached under this.getFunctionPrototypeString
-   *
    */
 
 	}, {

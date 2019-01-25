@@ -1,9 +1,11 @@
 var GPU = require('../../src/index');
 
 (function() {
-  var gpu;
-  function getValue(mode) {
-    gpu = new GPU({ mode: mode });
+  function test(mode) {
+    const gpu = new GPU({ mode: mode });
+    function getPi() {
+      return this.constants.pi;
+    }
 
     const kernel = gpu.createKernel(function() {
       return getPi();
@@ -11,40 +13,34 @@ var GPU = require('../../src/index');
       .setOutput([1])
       .setConstants({ pi: Math.PI });
 
-    gpu.addFunction(function getPi() {
-      return this.constants.pi;
-    });
+    gpu.addFunction(getPi);
 
-    return kernel();
+    const result = kernel();
+    QUnit.assert.equal(result[0].toFixed(7), Math.PI.toFixed(7));
+    gpu.destroy();
   }
 
-  QUnit.test( "Issue #130 - missing constant (cpu)", function() {
-    var value = getValue('cpu');
-    QUnit.assert.equal((value[0]).toFixed(7), Math.PI.toFixed(7));
-    gpu.destroy();
+  QUnit.test("Issue #147 - missing constant (auto)", () => {
+    test(null);
   });
 
-  QUnit.test( "Issue #130 - missing constant (auto)", function() {
-    var value = getValue(null);
-    QUnit.assert.equal((value[0]).toFixed(7), Math.PI.toFixed(7));
-    gpu.destroy();
+  QUnit.test("Issue #147 - missing constant (gpu)", () => {
+    test('gpu');
   });
 
-  QUnit.test( "Issue #130 - missing constant (gpu)", function() {
-    var value = getValue('gpu');
-    QUnit.assert.equal((value[0]).toFixed(7), Math.PI.toFixed(7));
-    gpu.destroy();
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("Issue #147 - missing constant (webgl)", () => {
+    test('webgl');
   });
 
-  QUnit.test( "Issue #130 - missing constant (webgl)", function() {
-    var value = getValue('webgl');
-    QUnit.assert.equal((value[0]).toFixed(7), Math.PI.toFixed(7));
-    gpu.destroy();
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("Issue #147 - missing constant (webgl2)", () => {
+    test('webgl2');
   });
 
-  QUnit.test( "Issue #130 - missing constant (webgl2)", function() {
-    var value = getValue('webgl2');
-    QUnit.assert.equal((value[0]).toFixed(7), Math.PI.toFixed(7));
-    gpu.destroy();
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("Issue #147 - missing constant (headlessgl)", () => {
+    test('headlessgl');
+  });
+
+  QUnit.test("Issue #147 - missing constant (cpu)", () => {
+    test('cpu');
   });
 })();

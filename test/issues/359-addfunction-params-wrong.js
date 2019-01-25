@@ -23,11 +23,15 @@ var GPU = require('../../src/index');
 		gpu.destroy();
 	}
 
-	QUnit.test('Issue #359 - addFunction calls addFunction issue (webgl)', function() {
+	(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #359 - addFunction calls addFunction issue (webgl)', function() {
 		testAddFunctionKernel('webgl')
 	});
 
-	QUnit.test('Issue #359 - addFunction calls addFunction issue (webgl2)', function() {
+	(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #359 - addFunction calls addFunction issue (webgl2)', function() {
 		testAddFunctionKernel('webgl2')
-	})
+	});
+
+	(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #359 - addFunction calls addFunction issue (headlessgl)', function() {
+		testAddFunctionKernel('headlessgl')
+	});
 })();

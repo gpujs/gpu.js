@@ -1,7 +1,5 @@
-var GPU = require('../../src/index');
-require('qunit-assert-close');
-
 (function() {
+  const GPU = require('../../src/index');
   function nestedSumABTest(mode) {
     var gpu = new GPU({ mode: mode });
 
@@ -24,32 +22,32 @@ require('qunit-assert-close');
     var exp = [5, 7, 9, 6, 8, 10];
 
     for(var i = 0; i < exp.length; ++i) {
-      QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
+      QUnit.assert.equal(res[i], exp[i], 'Result arr idx: '+i);
     }
     gpu.destroy();
   }
 
-  QUnit.test('nested_sum (auto)', function() {
+  QUnit.test('nested_sum (auto)', () => {
   	nestedSumABTest(null);
   });
 
-  QUnit.test('nested_sum (gpu)', function() {
+  QUnit.test('nested_sum (gpu)', () => {
   	nestedSumABTest('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('nested_sum (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('nested_sum (webgl)', () => {
     nestedSumABTest('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('nested_sum (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('nested_sum (webgl2)', () => {
     nestedSumABTest('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('nested_sum (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('nested_sum (headlessgl)', () => {
     nestedSumABTest('headlessgl');
   });
 
-  QUnit.test('nested_sum (CPU)', function() {
+  QUnit.test('nested_sum (CPU)', () => {
     nestedSumABTest('cpu');
   });
 })();

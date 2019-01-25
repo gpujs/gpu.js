@@ -6,16 +6,16 @@
  * @param {Array} size
  * @param {Object|Array} dimensions
  * @param {Array} output
- * @param {Object} webGl
+ * @param {Object} context
  * @param {String} [type]
  */
 class Texture {
-	constructor(texture, size, dimensions, output, webGl, type = 'NumberTexture') {
+	constructor(texture, size, dimensions, output, context, type = 'NumberTexture') {
 		this.texture = texture;
 		this.size = size;
 		this.dimensions = dimensions;
 		this.output = output;
-		this.webGl = webGl;
+		this.context = context;
 		this.kernel = null;
 		this.type = type;
 	}
@@ -39,7 +39,7 @@ class Texture {
 	 * @desc Deletes the Texture
 	 */
 	delete() {
-		return this.webGl.deleteTexture(this.texture);
+		return this.context.deleteTexture(this.texture);
 	}
 }
 

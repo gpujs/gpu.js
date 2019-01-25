@@ -6,7 +6,7 @@
  * @param {Array} size
  * @param {Object|Array} dimensions
  * @param {Array} output
- * @param {Object} webGl
+ * @param {Object} context
  * @param {String} [type]
  */
 
@@ -15,7 +15,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Texture = function () {
-	function Texture(texture, size, dimensions, output, webGl) {
+	function Texture(texture, size, dimensions, output, context) {
 		var type = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 'NumberTexture';
 
 		_classCallCheck(this, Texture);
@@ -24,7 +24,7 @@ var Texture = function () {
 		this.size = size;
 		this.dimensions = dimensions;
 		this.output = output;
-		this.webGl = webGl;
+		this.context = context;
 		this.kernel = null;
 		this.type = type;
 	}
@@ -55,7 +55,7 @@ var Texture = function () {
 	}, {
 		key: 'delete',
 		value: function _delete() {
-			return this.webGl.deleteTexture(this.texture);
+			return this.context.deleteTexture(this.texture);
 		}
 	}]);
 

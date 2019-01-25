@@ -1,7 +1,5 @@
-var GPU = require('../../src/index');
-require('qunit-assert-close');
-
 (function() {
+  const GPU = require('../../src/index');
   function sumAB(mode) {
     var gpu = new GPU({mode: mode});
 
@@ -26,7 +24,7 @@ require('qunit-assert-close');
 
     QUnit.assert.equal(result.length, expected.length);
     for (var i = 0; i < expected.length; ++i) {
-      QUnit.assert.close(result[i], expected[i], 0.1, 'Result array index: ' + i);
+      QUnit.assert.equal(result[i], expected[i], 0.1, 'Result array index: ' + i);
     }
     gpu.destroy();
   }
@@ -39,15 +37,15 @@ require('qunit-assert-close');
     sumAB('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('add custom function sumAB (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('add custom function sumAB (webgl)', function () {
     sumAB('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('add custom function sumAB (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('add custom function sumAB (webgl2)', function () {
     sumAB('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('add custom function sumAB (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('add custom function sumAB (headlessgl)', function () {
     sumAB('headlessgl');
   });
 
@@ -57,6 +55,7 @@ require('qunit-assert-close');
 
 })();
 (function() {
+  const GPU = require('../../src/index');
   function constantsWidth(mode) {
     var gpu = new GPU({mode: mode});
 
@@ -86,7 +85,7 @@ require('qunit-assert-close');
 
     QUnit.assert.equal(result.length, expected.length);
     for (var i = 0; i < expected.length; ++i) {
-      QUnit.assert.close(result[i], expected[i], 0.1, 'Result array index: ' + i);
+      QUnit.assert.equal(result[i], expected[i], 0.1, 'Result array index: ' + i);
 
     }
     gpu.destroy();
@@ -100,15 +99,15 @@ require('qunit-assert-close');
     constantsWidth('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('add custom function constantsWidth (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('add custom function constantsWidth (webgl)', function () {
     constantsWidth('webgl');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('add custom function constantsWidth (webgl2)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('add custom function constantsWidth (webgl2)', function () {
     constantsWidth('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('add custom function constantsWidth (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('add custom function constantsWidth (headlessgl)', function () {
     constantsWidth('headlessgl');
   });
 
@@ -118,6 +117,7 @@ require('qunit-assert-close');
 
 })();
 (function() {
+  const GPU = require('../../src/index');
   function thisOutputX(mode) {
     var gpu = new GPU({ mode: mode });
 
@@ -146,7 +146,7 @@ require('qunit-assert-close');
 
     QUnit.assert.equal(result.length, expected.length);
     for(var i = 0; i < expected.length; ++i) {
-      QUnit.assert.close(result[i], expected[i], 0.1, 'Result array index: '+i);
+      QUnit.assert.equal(result[i], expected[i], 0.1, 'Result array index: '+i);
     }
     gpu.destroy();
   }
@@ -159,15 +159,15 @@ require('qunit-assert-close');
     thisOutputX('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('add custom function thisOutputX (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('add custom function thisOutputX (webgl)', function () {
     thisOutputX('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('add custom function thisOutputX (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('add custom function thisOutputX (webgl2)', function () {
     thisOutputX('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('add custom function thisOutputX (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('add custom function thisOutputX (headlessgl)', function () {
     thisOutputX('headlessgl');
   });
 

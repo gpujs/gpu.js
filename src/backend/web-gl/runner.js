@@ -1,37 +1,88 @@
 'use strict';
 
-const utils = require('../../core/utils');
 const GLRunner = require('../gl-runner');
 const WebGLKernel = require('./kernel');
 const WebGLFunctionBuilder = require('./function-builder');
-let isCompatible = null;
+let isSupported = null;
+let testCanvas = null;
+let testContext = null;
+let testExtensions = null;
+let testFunctionBuilder = null;
 
 class WebGLRunner extends GLRunner {
-	static get isCompatible() {
-		if (isCompatible !== null) {
-			return isCompatible;
-		}
-		isCompatible = utils.isWebGlSupported();
-		return isCompatible;
+	static get FunctionBuilder() {
+		return WebGLFunctionBuilder;
+	}
+	static get Kernel() {
+		return WebGLKernel;
 	}
 
-	static isRelatedContext(context) {
-		// from global
+	static get isSupported() {
+		if (isSupported !== null) {
+			return isSupported;
+		}
+		this.setupFeatureChecks();
+		isSupported = this.isContextMatch(testContext);
+		return isSupported;
+	}
+
+	static setupFeatureChecks() {
+		if (typeof document !== 'undefined') {
+			testCanvas = document.createElement('canvas');
+		} else if (typeof OffscreenCanvas !== 'undefined') {
+			testCanvas = new OffscreenCanvas(0, 0);
+		}
+
+		if (testCanvas) {
+			testContext = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+			testExtensions = {
+				OES_texture_float: testContext.getExtension('OES_texture_float'),
+				OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
+				OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
+				WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
+			};
+			testFunctionBuilder = new this.FunctionBuilder();
+		}
+	}
+
+	static isContextMatch(context) {
 		if (typeof WebGLRenderingContext !== 'undefined') {
 			return context instanceof WebGLRenderingContext;
 		}
 		return false;
 	}
 
-	/**
-	 * @desc Instantiates a Runner instance for the kernel.
-	 * @param {Object} settings - Settings to instantiate properties in Runner, with given values
-	 *
-	 */
-	constructor(settings) {
-		super(new WebGLFunctionBuilder(), settings);
-		this.Kernel = WebGLKernel;
-		this.kernel = null;
+	static getFeatures() {
+		this.setupFeatureChecks();
+		const isDrawBuffers = this.getIsDrawBuffers();
+
+		return Object.freeze({
+			isFloatRead: this.getIsFloatRead(),
+			isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+			isTextureFloat: this.getIsTextureFloat(),
+			isDrawBuffers: isDrawBuffers,
+			kernelMap: true || isDrawBuffers
+		});
+	}
+
+	static getIsTextureFloat() {
+		return Boolean(testExtensions.OES_texture_float);
+	}
+
+	static getIsDrawBuffers() {
+		return Boolean(testExtensions.WEBGL_draw_buffers);
+	}
+
+	static get testCanvas() {
+		return testCanvas;
+	}
+
+	static get testContext() {
+		return testContext;
+	}
+
+	static get testFunctionBuilder() {
+		return testFunctionBuilder;
 	}
 
 	/**
@@ -40,19 +91,6 @@ class WebGLRunner extends GLRunner {
 	 */
 	getMode() {
 		return 'gpu';
-	}
-
-	getFeatures() {
-		return Object.freeze({
-			isFloatRead: this.getIsFloatRead(),
-			isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
-			isTextureFloat: this.getIsTextureFloat()
-		});
-	}
-
-	getIsTextureFloat() {
-		if (!this._webGl) throw new Error('webGl not initialized');
-		return this._webGl.getExtension('OES_texture_float');
 	}
 }
 

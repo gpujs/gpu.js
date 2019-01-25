@@ -12,37 +12,37 @@ var GPU = require('../../src/index');
       .setOutput(output);
   }
 
-  QUnit.test( "floatOutput (auto)", function() {
+  QUnit.test("floatOutput (auto)", function() {
     var result = floatOutputKernel([lst.length], null)(lst);
     QUnit.assert.deepEqual(result, lst);
     gpu.destroy();
   });
 
-  QUnit.test( "floatOutput (cpu)", function() {
+  QUnit.test("floatOutput (cpu)", function() {
     var result = floatOutputKernel([lst.length], 'cpu')(lst);
     QUnit.assert.deepEqual(result, lst);
     gpu.destroy();
   });
 
-  QUnit.test( "floatOutput (gpu)", function() {
+  QUnit.test("floatOutput (gpu)", function() {
     var result = floatOutputKernel([lst.length], 'gpu')(lst);
     QUnit.assert.deepEqual(result, lst);
     gpu.destroy();
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("floatOutput (webgl)", function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("floatOutput (webgl)", function () {
     var result = floatOutputKernel([lst.length], 'webgl')(lst);
     QUnit.assert.deepEqual(result, lst);
     gpu.destroy();
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("floatOutput (webgl2)", function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("floatOutput (webgl2)", function () {
     var result = floatOutputKernel([lst.length], 'webgl2')(lst);
     QUnit.assert.deepEqual(result, lst);
     gpu.destroy();
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)("floatOutput (headlessgl)", function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("floatOutput (headlessgl)", function () {
     var result = floatOutputKernel([lst.length], 'headlessgl')(lst);
     QUnit.assert.deepEqual(result, lst);
     gpu.destroy();
@@ -61,37 +61,37 @@ var GPU = require('../../src/index');
       .setOutput(output);
   }
 
-  QUnit.test( "floatOutput (auto)", function() {
+  QUnit.test("floatOutput (auto)", function() {
     var result = floatOutputKernel([lst.length], null)(lst);
     QUnit.assert.deepEqual(result, lst);
     gpu.destroy();
   });
 
-  QUnit.test( "floatOutput (cpu)", function() {
+  QUnit.test("floatOutput (cpu)", function() {
     var result = floatOutputKernel([lst.length], 'cpu')(lst);
     QUnit.assert.deepEqual(result, lst);
     gpu.destroy();
   });
 
-  QUnit.test( "floatOutput (gpu)", function() {
+  QUnit.test("floatOutput (gpu)", function() {
     var result = floatOutputKernel([lst.length], 'gpu')(lst);
     QUnit.assert.deepEqual(result, lst);
     gpu.destroy();
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("floatOutput (webgl)", function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("floatOutput (webgl)", function () {
     var result = floatOutputKernel([lst.length], 'webgl')(lst);
     QUnit.assert.deepEqual(result, lst);
     gpu.destroy();
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("floatOutput (webgl2)", function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("floatOutput (webgl2)", function () {
     var result = floatOutputKernel([lst.length], 'webgl2')(lst);
     QUnit.assert.deepEqual(result, lst);
     gpu.destroy();
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)("floatOutput (webgl2)", function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("floatOutput (webgl2)", function () {
     var result = floatOutputKernel([lst.length], 'headlessgl')(lst);
     QUnit.assert.deepEqual(result, lst);
     gpu.destroy();

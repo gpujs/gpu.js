@@ -37,8 +37,8 @@ class Kernel {
 		this.outputToTexture = null;
 		this.outputImmutable = null;
 		this.texSize = null;
-		this._canvas = null;
-		this._webGl = null;
+		this.canvas = null;
+		this.context = null;
 		this.threadDim = null;
 		this.floatTextures = null;
 		this.floatOutput = null;
@@ -46,7 +46,7 @@ class Kernel {
 		this.addFunction = null;
 		this.functions = null;
 		this.nativeFunctions = null;
-		this.skipValidateOptions = false;
+		this.skipValidateSettings = false;
 		this.subKernels = null;
 		this.subKernelProperties = null;
 		this.subKernelNames = null;
@@ -63,21 +63,30 @@ class Kernel {
 			this[p] = settings[p];
 		}
 		if (settings.hasOwnProperty('canvas')) {
-			this._canvas = settings.canvas;
+			this.canvas = settings.canvas;
 		}
-		if (settings.hasOwnProperty('webGl')) {
-			this._webGl = settings.webGl;
+		if (settings.hasOwnProperty('context')) {
+			this.context = settings.context;
 		}
 		if (settings.hasOwnProperty('output')) {
 			this.setOutput(settings.output); // Flatten output object
 		}
 
-		if (!this._canvas) this._canvas = utils.initCanvas();
+		if (!this.canvas) this.canvas = this.initCanvas();
+		if (!this.context) this.context = this.initContext();
 		if (!this.features) this.features = Object.freeze({});
 	}
 
 	build() {
-		throw new Error('"build" not defined on Kernel');
+		throw new Error(`"build" not defined on ${ this.constructor.name }`);
+	}
+
+	initCanvas() {
+		throw new Error(`"initCanvas" not defined on ${ this.constructor.name }`);
+	}
+
+	initContext() {
+		throw new Error(`"initContext" not defined on ${ this.constructor.name }`);
 	}
 
 	/**
@@ -225,16 +234,16 @@ class Kernel {
 	 * @param {Canvas} canvas - Canvas to bind
 	 */
 	setCanvas(canvas) {
-		this._canvas = canvas;
+		this.canvas = canvas;
 		return this;
 	}
 
 	/**
 	 * @desc Bind the webGL instance to kernel
-	 * @param {WebGLRenderingContext} webGl - webGl instance to bind
+	 * @param {WebGLRenderingContext} context - webGl instance to bind
 	 */
-	setWebGl(webGl) {
-		this._webGl = webGl;
+	setContext(context) {
+		this.context = context;
 		return this;
 	}
 
@@ -242,18 +251,18 @@ class Kernel {
 	 * @desc Returns the current canvas instance bound to the kernel
 	 */
 	getCanvas() {
-		return this._canvas;
+		return this.canvas;
 	}
 
 	/**
 	 * @desc Returns the current webGl instance bound to the kernel
 	 */
-	getWebGl() {
-		return this._webGl;
+	getContext() {
+		return this.context;
 	}
 
-	validateOptions() {
-		throw new Error('validateOptions not defined');
+	validateSettings() {
+		throw new Error(`"validateSettings" not defined on ${ this.constructor.name }`);
 	}
 
 	exec() {
@@ -332,7 +341,11 @@ class Kernel {
 	 * @param {Boolean} removeCanvasReferences remove any associated canvas references?
 	 */
 	destroy(removeCanvasReferences) {
-		throw new Error('"destroy" called on Kernel');
+		throw new Error(`"destroy" called on ${ this.constructor.name }`);
+	}
+
+	static destroyContext(context) {
+		throw new Error(`"destroyContext" called on ${ this.name }`);
 	}
 }
 

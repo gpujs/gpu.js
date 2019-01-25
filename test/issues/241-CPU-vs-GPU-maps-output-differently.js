@@ -1,42 +1,41 @@
-var GPU = require('../../src/index');
-
-(function() {
+(() => {
+	const GPU = require('../../src/index');
 	// this is actually equiv to
 	// return this.thread.y * 3 + this.thread.x;
-	var input = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
-	var gpu;
+	const input = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
 	function buildIndexTestKernel(mode) {
-		gpu = new GPU({ mode });
-		var kernel = gpu.createKernel(function(inp) {
+		const gpu = new GPU({ mode });
+		const kernel = gpu.createKernel(function(inp) {
 			return inp[this.thread.y][this.thread.x];
 		}, {
 			output: [3, 3]
 		});
-		return kernel(input).map(function(v) { return Array.from(v); });
+		const result = kernel(input).map((v) => Array.from(v));
+		QUnit.assert.deepEqual(result, input);
+		gpu.destroy();
 	}
 
-	QUnit.test('Issue #241 small 2d array input output test (auto)', function() {
-		QUnit.assert.deepEqual(buildIndexTestKernel(), input);
-		gpu.destroy();
+	QUnit.test('Issue #241 small 2d array input output test (auto)', () => {
+		buildIndexTestKernel();
 	});
 
-	QUnit.test('Issue #241 small 2d array input output test (gpu)', function() {
-		QUnit.assert.deepEqual(buildIndexTestKernel('gpu'), input);
-		gpu.destroy();
+	QUnit.test('Issue #241 small 2d array input output test (gpu)', () => {
+		buildIndexTestKernel('gpu');
 	});
 
-	QUnit.test('Issue #241 small 2d array input output test (webgl)', function() {
-		QUnit.assert.deepEqual(buildIndexTestKernel('webgl'), input);
-		gpu.destroy();
+	(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #241 small 2d array input output test (webgl)', () => {
+		buildIndexTestKernel('webgl');
 	});
 
-	QUnit.test('Issue #241 small 2d array input output test (webgl2)', function() {
-		QUnit.assert.deepEqual(buildIndexTestKernel('webgl2'), input);
-		gpu.destroy();
+	(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #241 small 2d array input output test (webgl2)', () => {
+		buildIndexTestKernel('webgl2');
 	});
 
-	QUnit.test('Issue #241 small 2d array input output test (cpu)', function() {
-		QUnit.assert.deepEqual(buildIndexTestKernel('cpu'), input);
-		gpu.destroy();
+	(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #241 small 2d array input output test (headlessgl)', () => {
+		buildIndexTestKernel('headlessgl');
 	});
-})()
+
+	QUnit.test('Issue #241 small 2d array input output test (cpu)', () => {
+		buildIndexTestKernel('cpu');
+	});
+})();

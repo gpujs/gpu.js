@@ -5,24 +5,24 @@ const CPUKernel = require('./kernel');
 const CPUFunctionBuilder = require('./function-builder');
 
 class CPURunner extends Runner {
-	static get isCompatible() {
+	static get FunctionBuilder() {
+		return CPUFunctionBuilder;
+	}
+	static get Kernel() {
+		return CPUKernel;
+	}
+	static getFeatures() {
+		return Object.freeze({
+			kernelMap: true,
+			isIntegerDivisionAccurate: true
+		});
+	}
+	static get isSupported() {
 		return true;
 	}
-	static isRelatedContext(context) {
+	static isContextMatch(context) {
 		return false;
 	}
-
-	/**
-	 * @desc Instantiates a Runner instance for the kernel.
-	 * @param {Object} settings - Settings to instantiate properties in Runner, with given values
-	 *
-	 */
-	constructor(settings) {
-		super(new CPUFunctionBuilder(), settings);
-		this.Kernel = CPUKernel;
-		this.kernel = null;
-	}
-
 	/**
 	 * @name getMode()
 	 * @desc Return the current mode in which gpu.js is executing.

@@ -1,7 +1,6 @@
-var GPU = require('../../src/index');
-
 (function() {
-  function reuse(mode) {
+  const GPU = require('../../src/index');
+  function test(mode) {
     var gpu = new GPU({ mode: mode });
 
     var kernel = gpu.createKernel(function(kernelArg1, kernelArg2) {
@@ -18,31 +17,34 @@ var GPU = require('../../src/index');
     })
       .setOutput([6]);
 
-    var a = [1, 2, 3, 5, 6, 7];
-    var b = [4, 5, 6, 1, 2, 3];
-
-    var result = kernel(a,b);
-    QUnit.assert.deepEqual(QUnit.extend([], result), [8,10,12,9,11,13]);
+    const a = [1, 2, 3, 5, 6, 7];
+    const b = [4, 5, 6, 1, 2, 3];
+    const result = kernel(a,b);
+    QUnit.assert.deepEqual(Array.from(result), [8,10,12,9,11,13]);
     gpu.destroy();
   }
 
-  QUnit.test('Issue #207 - same function reuse (cpu)', function() {
-    reuse('cpu');
+  QUnit.test('Issue #207 - same function reuse (auto)', () => {
+    test(null);
   });
 
-  QUnit.test('Issue #207 - same function reuse (auto)', function() {
-    reuse(null);
+  QUnit.test('Issue #207 - same function reuse (gpu)', () => {
+    test('gpu');
   });
 
-  QUnit.test('Issue #207 - same function reuse (gpu)', function() {
-    reuse('gpu');
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #207 - same function reuse (webgl)', () => {
+    test('webgl');
   });
 
-  QUnit.test('Issue #207 - same function reuse (webgl)', function() {
-    reuse('webgl');
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #207 - same function reuse (webgl2)', () => {
+    test('webgl2');
   });
 
-  QUnit.test('Issue #207 - same function reuse (webgl2)', function() {
-    reuse('webgl2');
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #207 - same function reuse (headlessgl)', () => {
+    test('headlessgl');
+  });
+
+  QUnit.test('Issue #207 - same function reuse (cpu)', () => {
+    test('cpu');
   });
 })();

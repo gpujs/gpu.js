@@ -36,27 +36,27 @@ var GPU = require('../../src/index');
     gpu.destroy();
   }
 
-  QUnit.test( "demo (auto)", function() {
+  QUnit.test("demo (auto)", function() {
     demo();
   });
 
-  QUnit.test( "demo (gpu)", function() {
+  QUnit.test("demo (gpu)", function() {
     demo('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)("demo (webgl)", function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("demo (webgl)", function () {
     demo('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)("demo (webgl2)", function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("demo (webgl2)", function () {
     demo('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)("demo (headlessgl)", function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("demo (headlessgl)", function () {
     demo('headlessgl');
   });
 
-  QUnit.test( "demo (cpu)", function() {
+  QUnit.test("demo (cpu)", function() {
     demo('cpu');
   });
 })();

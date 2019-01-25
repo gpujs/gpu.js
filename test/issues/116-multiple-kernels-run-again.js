@@ -1,125 +1,59 @@
-var GPU = require('../../src/index');
+(() => {
+  const GPU = require('../../src/index');
 
-QUnit.test( "Issue #116 - multiple kernels run again (auto)", function() {
-  var gpu = new GPU();
-  var A = [1, 2, 3, 4, 5];
-  var B = [1, 2, 3, 4, 5];
+  function test(mode) {
+    const gpu = new GPU({ mode });
+    const A = [1, 2, 3, 4, 5];
+    const B = [1, 2, 3, 4, 5];
 
-  var sizes = [2, 5, 1];
+    const sizes = [2, 5, 1];
 
-  function add(a, b, x){
+    function add(a, b, x){
       return a[x] + b[x];
+    }
+
+    const layerForward = [];
+
+    for (let i = 0;  i < 2; i++) {
+      const kernels = gpu.createKernelMap([add],function(a, b){
+        return add(a,b, gpu_threadX);
+      })
+        .setOutput([sizes[i + 1]]); // First: 5. Second: 1.
+
+      layerForward.push(kernels);
+    }
+
+    const E = layerForward[0](A, B).result;
+    const F = layerForward[1](A, B).result;
+    const G = layerForward[0](A, B).result;
+
+    QUnit.assert.deepEqual(Array.from(E), [2, 4, 6, 8, 10]);
+    QUnit.assert.deepEqual(Array.from(F), [2]);
+    QUnit.assert.deepEqual(Array.from(G), [2, 4, 6, 8, 10]);
+    gpu.destroy();
   }
 
-  var layerForward = [];
+  QUnit.test("Issue #116 - multiple kernels run again (auto)", function() {
+    test();
+  });
 
-  for (var i = 0;  i < 2; i++) {
-    var kernels = gpu.createKernelMap([add],function(a, b){
-            return add(a,b, gpu_threadX);
-        }).setOutput([sizes[i + 1]]); // First: 5. Second: 1.
+  QUnit.test("Issue #116 - multiple kernels run again (gpu)", function() {
+    test('gpu');
+  });
 
-        layerForward.push(kernels);
-  }
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("Issue #116 - multiple kernels run again (webgl)", function() {
+    test('webgl');
+  });
 
-  var E = layerForward[0](A, B).result;
-  var F = layerForward[1](A, B).result;
-  var G = layerForward[0](A, B).result;
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("Issue #116 - multiple kernels run again (webgl2)", function() {
+    test('webgl2');
+  });
 
-  QUnit.assert.deepEqual(QUnit.extend([], E), [2, 4, 6, 8, 10]);
-  QUnit.assert.deepEqual(QUnit.extend([], F), [2]);
-  QUnit.assert.deepEqual(QUnit.extend([], G), [2, 4, 6, 8, 10]);
-  gpu.destroy();
-});
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("Issue #116 - multiple kernels run again (headlessgl)", function() {
+    test('headlessgl');
+  });
 
-QUnit.test( "Issue #116 - multiple kernels run again (gpu)", function() {
-  var gpu = new GPU({mode: 'gpu'});
-  var A = [1, 2, 3, 4, 5];
-  var B = [1, 2, 3, 4, 5];
-
-  var sizes = [2, 5, 1];
-
-  function add(a, b, x){
-    return a[x] + b[x];
-  }
-
-  var layerForward = [];
-
-  for (var i = 0;  i < 2; i++) {
-    var kernels = gpu.createKernelMap([add],function(a, b){
-      return add(a,b, gpu_threadX);
-    }).setOutput([sizes[i + 1]]); // First: 5. Second: 1.
-
-    layerForward.push(kernels);
-  }
-
-  var E = layerForward[0](A, B).result;
-  var F = layerForward[1](A, B).result;
-  var G = layerForward[0](A, B).result;
-
-  QUnit.assert.deepEqual(QUnit.extend([], E), [2, 4, 6, 8, 10]);
-  QUnit.assert.deepEqual(QUnit.extend([], F), [2]);
-  QUnit.assert.deepEqual(QUnit.extend([], G), [2, 4, 6, 8, 10]);
-  gpu.destroy();
-});
-
-QUnit.test( "Issue #116 - multiple kernels run again (webgl)", function() {
-  var gpu = new GPU({mode: 'webgl'});
-  var A = [1, 2, 3, 4, 5];
-  var B = [1, 2, 3, 4, 5];
-
-  var sizes = [2, 5, 1];
-
-  function add(a, b, x){
-    return a[x] + b[x];
-  }
-
-  var layerForward = [];
-
-  for (var i = 0;  i < 2; i++) {
-    var kernels = gpu.createKernelMap([add],function(a, b){
-      return add(a,b, gpu_threadX);
-    }).setOutput([sizes[i + 1]]); // First: 5. Second: 1.
-
-    layerForward.push(kernels);
-  }
-
-  var E = layerForward[0](A, B).result;
-  var F = layerForward[1](A, B).result;
-  var G = layerForward[0](A, B).result;
-
-  QUnit.assert.deepEqual(QUnit.extend([], E), [2, 4, 6, 8, 10]);
-  QUnit.assert.deepEqual(QUnit.extend([], F), [2]);
-  QUnit.assert.deepEqual(QUnit.extend([], G), [2, 4, 6, 8, 10]);
-  gpu.destroy();
-});
-
-QUnit.test( "Issue #116 - multiple kernels run again (webgl2)", function() {
-  var gpu = new GPU({mode: 'webgl2'});
-  var A = [1, 2, 3, 4, 5];
-  var B = [1, 2, 3, 4, 5];
-
-  var sizes = [2, 5, 1];
-
-  function add(a, b, x){
-    return a[x] + b[x];
-  }
-
-  var layerForward = [];
-
-  for (var i = 0;  i < 2; i++) {
-    var kernels = gpu.createKernelMap([add],function(a, b){
-      return add(a,b, gpu_threadX);
-    }).setOutput([sizes[i + 1]]); // First: 5. Second: 1.
-
-    layerForward.push(kernels);
-  }
-
-  var E = layerForward[0](A, B).result;
-  var F = layerForward[1](A, B).result;
-  var G = layerForward[0](A, B).result;
-
-  QUnit.assert.deepEqual(QUnit.extend([], E), [2, 4, 6, 8, 10]);
-  QUnit.assert.deepEqual(QUnit.extend([], F), [2]);
-  QUnit.assert.deepEqual(QUnit.extend([], G), [2, 4, 6, 8, 10]);
-  gpu.destroy();
-});
+  QUnit.test("Issue #116 - multiple kernels run again (cpu)", function() {
+    test('cpu');
+  });
+})();

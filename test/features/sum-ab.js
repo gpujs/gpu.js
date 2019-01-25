@@ -1,7 +1,5 @@
-var GPU = require('../../src/index');
-require('qunit-assert-close');
-
 (function() {
+  const GPU = require('../../src/index');
   function sumABTest(mode) {
     var gpu = new GPU({ mode });
     var f = gpu.createKernel(function(a, b) {
@@ -20,7 +18,7 @@ require('qunit-assert-close');
     var exp = [5, 7, 9, 6, 8, 10];
 
     for(var i = 0; i < exp.length; ++i) {
-      QUnit.assert.close(res[i], exp[i], 0.1, 'Result arr idx: '+i);
+      QUnit.assert.equal(res[i], exp[i], 'Result arr idx: '+i);
     }
     gpu.destroy();
   }
@@ -33,15 +31,15 @@ require('qunit-assert-close');
     sumABTest('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('sumAB (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('sumAB (webgl)', function () {
     sumABTest('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('sumAB (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('sumAB (webgl2)', function () {
     sumABTest('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('sumAB (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('sumAB (headlessgl)', function () {
     sumABTest('headlessgl');
   });
 

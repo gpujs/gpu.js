@@ -60,7 +60,7 @@ QUnit.test('loop int constant output (headlessgl)', function(assert) {
     '\n}');
 });
 
-(GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('loop int constant (webgl)', function(assert) {
+(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('loop int constant (webgl)', function(assert) {
   function kernel(a) {
     var sum = 0;
     for (var i = 0; i < this.constants.max; i++) {
@@ -81,7 +81,7 @@ QUnit.test('loop int constant output (headlessgl)', function(assert) {
   gpu.destroy();
 });
 
-(GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('loop int constant (webgl2)', function(assert) {
+(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('loop int constant (webgl2)', function(assert) {
   function kernel(a) {
     var sum = 0;
     for (var i = 0; i < this.constants.max; i++) {
@@ -102,7 +102,7 @@ QUnit.test('loop int constant output (headlessgl)', function(assert) {
   gpu.destroy();
 });
 
-(GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('loop int constant (headlessgl)', function(assert) {
+(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('loop int constant (headlessgl)', function(assert) {
   function kernel(a) {
     var sum = 0;
     for (var i = 0; i < this.constants.max; i++) {
@@ -183,7 +183,7 @@ QUnit.test('loop int literal output (headlessgl)', function(assert) {
     '\n}');
 });
 
-(GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('loop int literal (webgl)', function(assert) {
+(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('loop int literal (webgl)', function(assert) {
   function kernel(a) {
     var sum = 0;
     for (var i = 0; i < 3; i++) {
@@ -200,7 +200,7 @@ QUnit.test('loop int literal output (headlessgl)', function(assert) {
   gpu.destroy();
 });
 
-(GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('loop int literal (webgl2)', function(assert) {
+(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('loop int literal (webgl2)', function(assert) {
   function kernel(a) {
     var sum = 0;
     for (var i = 0; i < 3; i++) {
@@ -217,7 +217,7 @@ QUnit.test('loop int literal output (headlessgl)', function(assert) {
   gpu.destroy();
 });
 
-(GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('loop int literal (headlessgl)', function(assert) {
+(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('loop int literal (headlessgl)', function(assert) {
   function kernel(a) {
     var sum = 0;
     for (var i = 0; i < 3; i++) {
@@ -309,7 +309,7 @@ QUnit.test('loop int parameter output (headlessgl)', function(assert) {
     '\n}');
 });
 
-(GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('loop int parameter (webgl)', function(assert) {
+(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('loop int parameter (webgl)', function(assert) {
   function kernel(a, b) {
     var sum = 0;
     for (var i = 0; i < a; i++) {
@@ -326,7 +326,7 @@ QUnit.test('loop int parameter output (headlessgl)', function(assert) {
   gpu.destroy();
 });
 
-(GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('loop int parameter (webgl2)', function(assert) {
+(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('loop int parameter (webgl2)', function(assert) {
   function kernel(a, b) {
     var sum = 0;
     for (var i = 0; i < a; i++) {
@@ -343,7 +343,7 @@ QUnit.test('loop int parameter output (headlessgl)', function(assert) {
   gpu.destroy();
 });
 
-(GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('loop int parameter (headlessgl)', function(assert) {
+(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('loop int parameter (headlessgl)', function(assert) {
   function kernel(a, b) {
     var sum = 0;
     for (var i = 0; i < a; i++) {

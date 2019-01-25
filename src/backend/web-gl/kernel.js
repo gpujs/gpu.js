@@ -47,6 +47,7 @@ class WebGLKernel extends Kernel {
 		this.program = null;
 		this.outputToTexture = settings.outputToTexture;
 		this.endianness = utils.systemEndianness();
+		this.extensions = {};
 		this.subKernelOutputTextures = null;
 		this.subKernelOutputVariableNames = null;
 		this.argumentsLength = 0;
@@ -65,24 +66,46 @@ class WebGLKernel extends Kernel {
 		this.uniform2ivCache = {};
 		this.uniform3fvCache = {};
 		this.uniform3ivCache = {};
-		if (settings.webGl) {
-			this._webGl = settings.webGl;
+		if (settings.context) {
+			this.context = settings.context;
 		} else {
-			this._webGl = this.initWebGl();
+			this.context = this.initContext();
 		}
 	}
 
-	initWebGl() {
-		return utils.initWebGl(this.getCanvas());
+	initCanvas() {
+		if (typeof document !== 'undefined') {
+			const canvas = document.createElement('canvas');
+			// Default width and height, to fix webgl issue in safari
+			canvas.width = 2;
+			canvas.height = 2;
+			return canvas;
+		} else if (typeof OffscreenCanvas !== 'undefined') {
+			return new OffscreenCanvas(0, 0);
+		}
+	}
+
+	initContext() {
+		const context = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
+		return context;
+	}
+
+	initExtensions() {
+		this.extensions = {
+			OES_texture_float: this.context.getExtension('OES_texture_float'),
+			OES_texture_float_linear: this.context.getExtension('OES_texture_float_linear'),
+			OES_element_index_uint: this.context.getExtension('OES_element_index_uint'),
+			WEBGL_draw_buffers: this.context.getExtension('WEBGL_draw_buffers'),
+		};
 	}
 
 	/**
-	 * @desc Validate options related to Kernel, such as
+	 * @desc Validate settings related to Kernel, such as
 	 * floatOutputs and Textures, texSize, output,
 	 * graphical output.
 	 */
-	validateOptions() {
-		if (this.skipValidateOptions) {
+	validateSettings() {
+		if (this.skipValidateSettings) {
 			this.texSize = utils.dimToTexSize({
 				floatTextures: this.floatTextures,
 				floatOutput: this.floatOutput
@@ -146,7 +169,7 @@ class WebGLKernel extends Kernel {
 
 	updateMaxTexSize() {
 		const texSize = this.texSize;
-		const canvas = this._canvas;
+		const canvas = this.canvas;
 		if (this.maxTexSize === null) {
 			let canvasIndex = canvases.indexOf(canvas);
 			if (canvasIndex === -1) {
@@ -169,13 +192,14 @@ class WebGLKernel extends Kernel {
 	 * and instantiates the program.
 	 */
 	build() {
-		this.validateOptions();
+		this.initExtensions();
+		this.validateSettings();
 		this.setupConstants();
 		this.setupParams(arguments);
 		this.updateMaxTexSize();
 		const texSize = this.texSize;
-		const gl = this._webGl;
-		const canvas = this._canvas;
+		const gl = this.context;
+		const canvas = this.canvas;
 		gl.enable(gl.SCISSOR_TEST);
 		gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
 		canvas.width = this.maxTexSize[0];
@@ -199,22 +223,18 @@ class WebGLKernel extends Kernel {
 		gl.compileShader(fragShader);
 		this.fragShader = fragShader;
 
+		if (this.debug) {
+			console.log('GLSL Shader Output:');
+			console.log(compiledFragShaderString);
+		}
+
 		if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
-			console.log(compiledVertShaderString);
 			console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(vertShader));
 			throw new Error('Error compiling vertex shader');
 		}
 		if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
-			console.log(compiledFragShaderString);
 			console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(fragShader));
 			throw new Error('Error compiling fragment shader');
-		}
-
-		if (this.debug) {
-			console.log('Options:');
-			console.dir(this);
-			console.log('GLSL Shader Output:');
-			console.log(compiledFragShaderString);
 		}
 
 		const program = this.program = gl.createProgram();
@@ -292,7 +312,7 @@ class WebGLKernel extends Kernel {
 		const paramNames = this.paramNames;
 		const paramTypes = this.paramTypes;
 		const texSize = this.texSize;
-		const gl = this._webGl;
+		const gl = this.context;
 
 		gl.useProgram(this.program);
 		gl.scissor(0, 0, texSize[0], texSize[1]);
@@ -317,7 +337,7 @@ class WebGLKernel extends Kernel {
 					this._setupOutputTexture();
 				}
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-				return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'ArrayTexture(4)');
+				return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this.context, 'ArrayTexture(4)');
 			}
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -336,7 +356,7 @@ class WebGLKernel extends Kernel {
 				this.subKernelOutputTextures = [];
 				this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
 			}
-			this.drawBuffers.drawBuffersWEBGL(this.drawBuffersMap);
+			this.extensions.WEBGL_draw_buffers.drawBuffersWEBGL(this.drawBuffersMap);
 		}
 
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -346,7 +366,7 @@ class WebGLKernel extends Kernel {
 				const output = [];
 				output.result = this.renderOutput(outputTexture);
 				for (let i = 0; i < this.subKernels.length; i++) {
-					output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this._webGl));
+					output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context));
 				}
 				return output;
 			} else if (this.subKernelProperties !== null) {
@@ -356,7 +376,7 @@ class WebGLKernel extends Kernel {
 				let i = 0;
 				for (let p in this.subKernelProperties) {
 					if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-					output[p] = new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this._webGl);
+					output[p] = new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context);
 					i++;
 				}
 				return output;
@@ -377,11 +397,11 @@ class WebGLKernel extends Kernel {
 	 */
 	renderOutput(outputTexture) {
 		const texSize = this.texSize;
-		const gl = this._webGl;
+		const gl = this.context;
 		const threadDim = this.threadDim;
 		const output = this.output;
 		if (this.outputToTexture) {
-			return new Texture(outputTexture, texSize, this.threadDim, output, this._webGl);
+			return new Texture(outputTexture, texSize, this.threadDim, output, this.context);
 		} else {
 			let result;
 			if (this.floatOutput) {
@@ -421,9 +441,9 @@ class WebGLKernel extends Kernel {
 	 * @desc Setup and replace output texture
 	 */
 	_setupOutputTexture() {
-		const gl = this._webGl;
+		const gl = this.context;
 		const texSize = this.texSize;
-		const texture = this.outputTexture = this._webGl.createTexture();
+		const texture = this.outputTexture = this.context.createTexture();
 		gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length);
 		gl.bindTexture(gl.TEXTURE_2D, texture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -439,19 +459,15 @@ class WebGLKernel extends Kernel {
 	}
 
 	/**
-	 * @memberOf WebGLKernel#
-	 * @param length
-	 * @private
-	 *
 	 * @desc Setup and replace sub-output textures
 	 */
 	_setupSubOutputTextures(length) {
-		const gl = this._webGl;
+		const gl = this.context;
 		const texSize = this.texSize;
 		const drawBuffersMap = this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
 		const textures = this.subKernelOutputTextures = [];
 		for (let i = 0; i < length; i++) {
-			const texture = this._webGl.createTexture();
+			const texture = this.context.createTexture();
 			textures.push(texture);
 			drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
 			gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length + i);
@@ -486,7 +502,7 @@ class WebGLKernel extends Kernel {
 		if (this.textureCache.hasOwnProperty(name)) {
 			return this.textureCache[name];
 		}
-		return this.textureCache[name] = this._webGl.createTexture();
+		return this.textureCache[name] = this.context.createTexture();
 	}
 
 	/**
@@ -506,7 +522,7 @@ class WebGLKernel extends Kernel {
 		}
 		this.uniform1fCache[name] = value;
 		const loc = this.getUniformLocation(name);
-		this._webGl.uniform1f(loc, value);
+		this.context.uniform1f(loc, value);
 	}
 
 	setUniform1i(name, value) {
@@ -518,7 +534,7 @@ class WebGLKernel extends Kernel {
 		}
 		this.uniform1iCache[name] = value;
 		const loc = this.getUniformLocation(name);
-		this._webGl.uniform1i(loc, value);
+		this.context.uniform1i(loc, value);
 	}
 
 	setUniform2f(name, value1, value2) {
@@ -533,7 +549,7 @@ class WebGLKernel extends Kernel {
 		}
 		this.uniform2fCache[name] = [value1, value2];
 		const loc = this.getUniformLocation(name);
-		this._webGl.uniform2f(loc, value1, value2);
+		this.context.uniform2f(loc, value1, value2);
 	}
 
 	setUniform2fv(name, value) {
@@ -548,7 +564,7 @@ class WebGLKernel extends Kernel {
 		}
 		this.uniform2fvCache[name] = value;
 		const loc = this.getUniformLocation(name);
-		this._webGl.uniform2fv(loc, value);
+		this.context.uniform2fv(loc, value);
 	}
 
 	setUniform2iv(name, value) {
@@ -563,7 +579,7 @@ class WebGLKernel extends Kernel {
 		}
 		this.uniform2ivCache[name] = value;
 		const loc = this.getUniformLocation(name);
-		this._webGl.uniform2iv(loc, value);
+		this.context.uniform2iv(loc, value);
 	}
 
 	setUniform3fv(name, value) {
@@ -579,7 +595,7 @@ class WebGLKernel extends Kernel {
 		}
 		this.uniform3fvCache[name] = value;
 		const loc = this.getUniformLocation(name);
-		this._webGl.uniform3fv(loc, value);
+		this.context.uniform3fv(loc, value);
 	}
 
 	setUniform3iv(name, value) {
@@ -595,19 +611,19 @@ class WebGLKernel extends Kernel {
 		}
 		this.uniform3ivCache[name] = value;
 		const loc = this.getUniformLocation(name);
-		this._webGl.uniform3iv(loc, value);
+		this.context.uniform3iv(loc, value);
 	}
 
 	/**
 	 * @desc Return WebGlUniformLocation for various variables
-	 * related to webGl program, such as user-defiend variables,
+	 * related to webGl program, such as user-defined variables,
 	 * as well as, dimension sizes, etc.
 	 */
 	getUniformLocation(name) {
 		if (this.programUniformLocationCache.hasOwnProperty(name)) {
 			return this.programUniformLocationCache[name];
 		}
-		return this.programUniformLocationCache[name] = this._webGl.getUniformLocation(this.program, name);
+		return this.programUniformLocationCache[name] = this.context.getUniformLocation(this.program, name);
 	}
 
 	/**
@@ -645,7 +661,7 @@ class WebGLKernel extends Kernel {
 	 * @param {String} name - Name of the argument
 	 */
 	_addArgument(value, type, name) {
-		const gl = this._webGl;
+		const gl = this.context;
 		const argumentTexture = this.getArgumentTexture(name);
 		if (value instanceof Texture) {
 			type = value.type;
@@ -770,8 +786,8 @@ class WebGLKernel extends Kernel {
 			case 'NumberTexture':
 				{
 					const inputTexture = value;
-					if (inputTexture.webGl !== this._webGl) {
-						throw new Error(`argument ${ name} (${ type }) must be from same context (webGl)`);
+					if (inputTexture.context !== this.context) {
+						throw new Error(`argument ${ name} (${ type }) must be from same context`);
 					}
 					const dim = inputTexture.dimensions;
 					const size = inputTexture.size;
@@ -786,21 +802,21 @@ class WebGLKernel extends Kernel {
 					break;
 				}
 			default:
-				throw new Error('Input type not supported (WebGL): ' + value);
+				throw new Error('Input type not supported: ' + value);
 		}
 		this.argumentsLength++;
 	}
 
 	/**
 	 * @desc Adds kernel parameters to the Argument Texture,
-	 * binding it to the webGl instance, etc.
+	 * binding it to the context, etc.
 	 *
 	 * @param {Array|Texture|Number} value - The actual argument supplied to the kernel
 	 * @param {String} type - Type of the argument
 	 * @param {String} name - Name of the argument
 	 */
 	_addConstant(value, type, name) {
-		const gl = this._webGl;
+		const gl = this.context;
 		const argumentTexture = this.getArgumentTexture(name);
 		if (value instanceof Texture) {
 			type = value.type;
@@ -912,6 +928,9 @@ class WebGLKernel extends Kernel {
 			case 'NumberTexture':
 				{
 					const inputTexture = value;
+					if (inputTexture.context !== this.context) {
+						throw new Error(`argument ${ name} (${ type }) must be from same context`);
+					}
 					const dim = inputTexture.dimensions;
 					const size = inputTexture.size;
 
@@ -926,14 +945,14 @@ class WebGLKernel extends Kernel {
 			case 'Integer':
 			case 'Float':
 			default:
-				throw new Error('Input type not supported (WebGL): ' + value);
+				throw new Error('Input type not supported: ' + value);
 		}
 		this.constantsLength++;
 	}
 
 	/**
 	 * @desc Adds kernel parameters to the Argument Texture,
-	 * binding it to the webGl instance, etc.
+	 * binding it to the context, etc.
 	 *
 	 * @param {Array} value - The actual argument supplied to the kernel
 	 * @param {String} length - the expected total length of the output array
@@ -1299,7 +1318,7 @@ class WebGLKernel extends Kernel {
 
 	/**
 	 * @param {String} src - Shader string
-	 * @param {Array} map - Variables/Constants associated with shader
+	 * @param {Object} map - Variables/Constants associated with shader
 	 */
 	_replaceArtifacts(src, map) {
 		return src.replace(/[ ]*__([A-Z]+[0-9]*([_]?[A-Z])*)__;\n/g, (match, artifact) => {
@@ -1314,16 +1333,16 @@ class WebGLKernel extends Kernel {
 	 * @desc Adds all the sub-kernels supplied with this Kernel instance.
 	 */
 	_addKernels() {
-		const builder = this.functionBuilder;
-		const gl = this._webGl;
+		const functionBuilder = this.functionBuilder;
+		const gl = this.context;
 
-		builder.addFunctions(this.functions, {
+		functionBuilder.addFunctions(this.functions, {
 			constants: this.constants,
 			output: this.output
 		});
-		builder.addNativeFunctions(this.nativeFunctions);
+		functionBuilder.addNativeFunctions(this.nativeFunctions);
 
-		builder.addKernel(this.fnString, {
+		functionBuilder.addKernel(this.fnString, {
 			prototypeOnly: false,
 			constants: this.constants,
 			output: this.output,
@@ -1336,12 +1355,12 @@ class WebGLKernel extends Kernel {
 		});
 
 		if (this.subKernels !== null) {
-			const drawBuffers = this.drawBuffers = gl.getExtension('WEBGL_draw_buffers');
+			const drawBuffers = this.extensions.WEBGL_draw_buffers;
 			if (!drawBuffers) throw new Error('could not instantiate draw buffers extension');
 			this.subKernelOutputVariableNames = [];
 			this.subKernels.forEach(subKernel => this._addSubKernel(subKernel));
 		} else if (this.subKernelProperties !== null) {
-			const drawBuffers = this.drawBuffers = gl.getExtension('WEBGL_draw_buffers');
+			const drawBuffers = this.extensions.WEBGL_draw_buffers;
 			if (!drawBuffers) throw new Error('could not instantiate draw buffers extension');
 			this.subKernelOutputVariableNames = [];
 			Object.keys(this.subKernelProperties).forEach(property => this._addSubKernel(this.subKernelProperties[property]));
@@ -1404,48 +1423,59 @@ class WebGLKernel extends Kernel {
 	 */
 	destroy(removeCanvasReferences) {
 		if (this.outputTexture) {
-			this._webGl.deleteTexture(this.outputTexture);
+			this.context.deleteTexture(this.outputTexture);
 		}
 		if (this.buffer) {
-			this._webGl.deleteBuffer(this.buffer);
+			this.context.deleteBuffer(this.buffer);
 		}
 		if (this.framebuffer) {
-			this._webGl.deleteFramebuffer(this.framebuffer);
+			this.context.deleteFramebuffer(this.framebuffer);
 		}
-
 		if (this.vertShader) {
-			this._webGl.deleteShader(this.vertShader);
+			this.context.deleteShader(this.vertShader);
 		}
-
 		if (this.fragShader) {
-			this._webGl.deleteShader(this.fragShader);
+			this.context.deleteShader(this.fragShader);
 		}
-
 		if (this.program) {
-			this._webGl.deleteProgram(this.program);
+			this.context.deleteProgram(this.program);
 		}
 
-		var keys = Object.keys(this.textureCache);
+		const keys = Object.keys(this.textureCache);
 
-		for (var i = 0; i < keys.length; i++) {
+		for (let i = 0; i < keys.length; i++) {
 			const name = keys[i];
-			this._webGl.deleteTexture(this.textureCache[name]);
+			this.context.deleteTexture(this.textureCache[name]);
 		}
 
 		if (this.subKernelOutputTextures) {
 			for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
-				this._webGl.deleteTexture(this.subKernelOutputTextures[i]);
+				this.context.deleteTexture(this.subKernelOutputTextures[i]);
 			}
 		}
 		if (removeCanvasReferences) {
-			let idx = canvases.indexOf(this._canvas);
+			const idx = canvases.indexOf(this.canvas);
 			if (idx >= 0) {
 				canvases[idx] = null;
 				maxTexSizes[idx] = null;
 			}
 		}
+		this.destroyExtensions();
+		delete this.context;
+		delete this.canvas;
+	}
 
-		delete this._webGl;
+	destroyExtensions() {
+		this.extensions.OES_texture_float = null;
+		this.extensions.OES_texture_float_linear = null;
+		this.extensions.OES_element_index_uint = null;
+	}
+
+	static destroyContext(context) {
+		const extension = context.getExtension('WEBGL_lose_context');
+		if (extension) {
+			extension.loseContext();
+		}
 	}
 }
 

@@ -17,6 +17,8 @@ var WebGLRunner = require('../backend/web-gl/runner');
 
 var runners = [HeadlessGLRunner, WebGL2Runner, WebGLRunner];
 
+var runnerTypes = ['gpu', 'cpu'];
+
 var internalRunners = {
 	'headlessgl': HeadlessGLRunner,
 	'webgl2': WebGL2Runner,
@@ -25,8 +27,6 @@ var internalRunners = {
 
 /**
  * Initialises the GPU.js library class which manages the webGlContext for the created functions.
- * @class
- * @extends GPUCore
  */
 
 var GPU = function (_GPUCore) {
@@ -37,10 +37,14 @@ var GPU = function (_GPUCore) {
 		get: function get() {
 			return runners;
 		}
+	}, {
+		key: 'runnerTypes',
+		get: function get() {
+			return runnerTypes;
+		}
 		/**
    * Creates an instance of GPU.
    * @param {Object} [settings] - Settings to set mode, and other properties. See #GPUCore
-   * @memberOf GPU#
    */
 
 	}]);
@@ -51,15 +55,15 @@ var GPU = function (_GPUCore) {
 		var _this = _possibleConstructorReturn(this, (GPU.__proto__ || Object.getPrototypeOf(GPU)).call(this));
 
 		settings = settings || {};
-		_this._canvas = settings.canvas || null;
-		_this._webGl = settings.webGl || null;
-		var mode = settings.mode;
+		_this.canvas = settings.canvas || null;
+		_this.context = settings.context || null;
+		var mode = _this.mode = settings.mode;
 		var Runner = null;
 
-		if (_this._webGl) {
+		if (_this.context) {
 			for (var i = 0; i < runners.length; i++) {
 				var ExternalRunner = runners[i];
-				if (ExternalRunner.isRelatedContext(_this._webGl)) {
+				if (ExternalRunner.isContextMatch(_this.context)) {
 					Runner = ExternalRunner;
 					break;
 				}
@@ -72,7 +76,7 @@ var GPU = function (_GPUCore) {
 				Runner = internalRunners[mode];
 			} else if (mode === 'gpu') {
 				for (var _i = 0; _i < runners.length; _i++) {
-					if (runners[_i].isCompatible) {
+					if (runners[_i].isSupported) {
 						Runner = runners[_i];
 						break;
 					}
@@ -85,7 +89,7 @@ var GPU = function (_GPUCore) {
 			}
 		} else {
 			for (var _i2 = 0; _i2 < runners.length; _i2++) {
-				if (runners[_i2].isCompatible) {
+				if (runners[_i2].isSupported) {
 					Runner = runners[_i2];
 					break;
 				}
@@ -96,13 +100,7 @@ var GPU = function (_GPUCore) {
 		}
 
 		_this.kernels = [];
-
-		var runnerSettings = {
-			canvas: _this._canvas,
-			webGl: _this._webGl
-		};
-
-		_this._runner = new Runner(runnerSettings);
+		_this.runner = new Runner(settings);
 		return _this;
 	}
 	/**
@@ -137,27 +135,19 @@ var GPU = function (_GPUCore) {
 			}
 
 			var mergedSettings = Object.assign({
-				webGl: this._webGl,
-				canvas: this._canvas
+				context: this.context,
+				canvas: this.canvas
 			}, settings || {});
 
-			var kernel = this._runner.buildKernel(fn, mergedSettings);
-			require('fs').writeFileSync('out.js', kernel.toString());
+			var kernel = this.runner.buildKernel(fn, mergedSettings);
 
 			//if canvas didn't come from this, propagate from kernel
-			if (!this._canvas) {
-				this._canvas = kernel.getCanvas();
+			if (!this.canvas) {
+				this.canvas = kernel.getCanvas();
 			}
-			if (!this._runner.canvas) {
-				this._runner.canvas = kernel.getCanvas();
+			if (!this.context) {
+				this.context = kernel.getContext();
 			}
-			if (!this._webGl) {
-				this._webGl = kernel.getWebGl();
-			}
-			if (!this._runner.webGl) {
-				this._runner.webGl = kernel.getWebGl();
-			}
-
 			this.kernels.push(kernel);
 
 			return kernel;
@@ -206,8 +196,10 @@ var GPU = function (_GPUCore) {
 				fn = arguments[arguments.length - 1];
 			}
 
-			if (!utils.isWebGlDrawBuffersSupported()) {
-				this._runner = new CPURunner(settings);
+			if (!this.runner.constructor.isSupported || !this.runner.constructor.features.kernelMap) {
+				if (this.mode && runnerTypes.indexOf(this.mode) < 0) {
+					throw new Error('kernelMap not supported on ' + this.runner.constructor.name);
+				}
 			}
 
 			var kernel = this.createKernel(fn, settings);
@@ -257,16 +249,16 @@ var GPU = function (_GPUCore) {
 			if (this.getMode() === 'cpu') return combinedKernel;
 
 			var canvas = arguments[0].getCanvas();
-			var webGl = arguments[0].getWebGl();
+			var context = arguments[0].getContext();
 
 			for (var i = 0; i < arguments.length - 1; i++) {
-				arguments[i].setCanvas(canvas).setWebGl(webGl).setOutputToTexture(true);
+				arguments[i].setCanvas(canvas).setContext(context).setOutputToTexture(true);
 			}
 
 			return function () {
 				combinedKernel.apply(null, arguments);
 				var texSize = lastKernel.texSize;
-				var gl = lastKernel.getWebGl();
+				var gl = lastKernel.getContext();
 				var threadDim = lastKernel.threadDim;
 				var result = void 0;
 				if (lastKernel.floatOutput) {
@@ -298,14 +290,14 @@ var GPU = function (_GPUCore) {
 		/**
    * @desc Adds additional functions, that the kernel may call.
    * @param {Function|String} fn - JS Function to do conversion
-   * @param {Object} options
+   * @param {Object} [settings]
    * @returns {GPU} returns itself
    */
 
 	}, {
 		key: 'addFunction',
-		value: function addFunction(fn, options) {
-			this._runner.functionBuilder.addFunction(null, fn, options);
+		value: function addFunction(fn, settings) {
+			this.runner.functionBuilder.addFunction(null, fn, settings);
 			return this;
 		}
 
@@ -319,7 +311,7 @@ var GPU = function (_GPUCore) {
 	}, {
 		key: 'addNativeFunction',
 		value: function addNativeFunction(name, nativeFunction) {
-			this._runner.functionBuilder.addNativeFunction(name, nativeFunction);
+			this.runner.functionBuilder.addNativeFunction(name, nativeFunction);
 			return this;
 		}
 
@@ -331,11 +323,11 @@ var GPU = function (_GPUCore) {
 	}, {
 		key: 'getMode',
 		value: function getMode() {
-			return this._runner.getMode();
+			return this.runner.getMode();
 		}
 
 		/**
-   * @desc Return TRUE, if browser supports WebGl AND Canvas
+   * @desc Return TRUE, if browser supports WebGL AND Canvas
    *
    * @returns {Boolean} TRUE if browser supports webGl
    */
@@ -348,7 +340,7 @@ var GPU = function (_GPUCore) {
    * @returns {Object} Canvas object if present
    */
 		value: function getCanvas() {
-			return this._canvas;
+			return this.canvas;
 		}
 
 		/**
@@ -357,9 +349,9 @@ var GPU = function (_GPUCore) {
    */
 
 	}, {
-		key: 'getWebGl',
-		value: function getWebGl() {
-			return this._webGl;
+		key: 'getContext',
+		value: function getContext() {
+			return this.context;
 		}
 
 		/**
@@ -369,7 +361,7 @@ var GPU = function (_GPUCore) {
 	}, {
 		key: 'getRunner',
 		value: function getRunner() {
-			return this._runner;
+			return this.runner;
 		}
 
 		/**
@@ -381,74 +373,53 @@ var GPU = function (_GPUCore) {
 		value: function destroy() {
 			var _this2 = this;
 
-			// perform on next runloop - for some reason we dont get lose context events
+			// perform on next run loop - for some reason we dont get lose context events
 			// if webGl is created and destroyed in the same run loop.
 			setTimeout(function () {
-				var kernels = _this2.kernels;
-
-				var destroyWebGl = !_this2._webGl && kernels.length && kernels[0]._webGl;
 				for (var i = 0; i < _this2.kernels.length; i++) {
 					_this2.kernels[i].destroy(true); // remove canvas if exists
 				}
-
-				if (_this2._webGl && _this2._webGl.destroy) {
-					_this2._webGl.destroy();
-				}
-
-				if (destroyWebGl) {
-					destroyWebGl.OES_texture_float = null;
-					destroyWebGl.OES_texture_float_linear = null;
-					destroyWebGl.OES_element_index_uint = null;
-					var loseContextExt = destroyWebGl.getExtension('WEBGL_lose_context');
-					if (loseContextExt) {
-						loseContextExt.loseContext();
-					}
-				}
+				_this2.kernels[0].kernel.constructor.destroyContext(_this2.context);
 			}, 0);
 		}
 	}], [{
-		key: 'isWebGlSupported',
-		value: function isWebGlSupported() {
-			return require('../backend/web-gl/runner').isCompatible;
+		key: 'isWebGLSupported',
+		get: function get() {
+			return WebGLRunner.isSupported;
 		}
 
 		/**
-   * @desc Return TRUE, if browser supports WebGl2 AND Canvas
+   * @desc Return TRUE, if browser supports WebGL2 AND Canvas
    *
    * @returns {Boolean} TRUE if browser supports webGl
    */
 
 	}, {
-		key: 'isWebGl2Supported',
-		value: function isWebGl2Supported() {
-			return require('../backend/web-gl2/runner').isCompatible;
+		key: 'isWebGL2Supported',
+		get: function get() {
+			return WebGL2Runner.isSupported;
 		}
 
 		/**
-   * @desc Return TRUE, if browser supports WebGl2 AND Canvas
+   * @desc Return TRUE, if node supports WebGL
    *
    * @returns {Boolean} TRUE if browser supports webGl
    */
 
 	}, {
-		key: 'isHeadlessGlSupported',
-		value: function isHeadlessGlSupported() {
-			return require('../backend/headless-gl/runner').isCompatible;
+		key: 'isHeadlessGLSupported',
+		get: function get() {
+			return HeadlessGLRunner.isSupported;
 		}
 	}, {
 		key: 'isCanvasSupported',
-		value: function isCanvasSupported() {
+		get: function get() {
+			throw new Error('how to check canvas');
 			return utils.isCanvasSupported();
 		}
 	}]);
 
 	return GPU;
 }(GPUCore);
-
-// This ensure static methods are "inherited"
-// See: https://stackoverflow.com/questions/5441508/how-to-inherit-static-methods-from-base-class-in-javascript
-
-
-Object.assign(GPU, GPUCore);
 
 module.exports = GPU;

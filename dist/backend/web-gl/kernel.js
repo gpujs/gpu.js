@@ -66,6 +66,7 @@ var WebGLKernel = function (_Kernel) {
 		_this.program = null;
 		_this.outputToTexture = settings.outputToTexture;
 		_this.endianness = utils.systemEndianness();
+		_this.extensions = {};
 		_this.subKernelOutputTextures = null;
 		_this.subKernelOutputVariableNames = null;
 		_this.argumentsLength = 0;
@@ -84,30 +85,54 @@ var WebGLKernel = function (_Kernel) {
 		_this.uniform2ivCache = {};
 		_this.uniform3fvCache = {};
 		_this.uniform3ivCache = {};
-		if (settings.webGl) {
-			_this._webGl = settings.webGl;
+		if (settings.context) {
+			_this.context = settings.context;
 		} else {
-			_this._webGl = _this.initWebGl();
+			_this.context = _this.initContext();
 		}
 		return _this;
 	}
 
 	_createClass(WebGLKernel, [{
-		key: 'initWebGl',
-		value: function initWebGl() {
-			return utils.initWebGl(this.getCanvas());
+		key: 'initCanvas',
+		value: function initCanvas() {
+			if (typeof document !== 'undefined') {
+				var canvas = document.createElement('canvas');
+				// Default width and height, to fix webgl issue in safari
+				canvas.width = 2;
+				canvas.height = 2;
+				return canvas;
+			} else if (typeof OffscreenCanvas !== 'undefined') {
+				return new OffscreenCanvas(0, 0);
+			}
+		}
+	}, {
+		key: 'initContext',
+		value: function initContext() {
+			var context = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
+			return context;
+		}
+	}, {
+		key: 'initExtensions',
+		value: function initExtensions() {
+			this.extensions = {
+				OES_texture_float: this.context.getExtension('OES_texture_float'),
+				OES_texture_float_linear: this.context.getExtension('OES_texture_float_linear'),
+				OES_element_index_uint: this.context.getExtension('OES_element_index_uint'),
+				WEBGL_draw_buffers: this.context.getExtension('WEBGL_draw_buffers')
+			};
 		}
 
 		/**
-   * @desc Validate options related to Kernel, such as
+   * @desc Validate settings related to Kernel, such as
    * floatOutputs and Textures, texSize, output,
    * graphical output.
    */
 
 	}, {
-		key: 'validateOptions',
-		value: function validateOptions() {
-			if (this.skipValidateOptions) {
+		key: 'validateSettings',
+		value: function validateSettings() {
+			if (this.skipValidateSettings) {
 				this.texSize = utils.dimToTexSize({
 					floatTextures: this.floatTextures,
 					floatOutput: this.floatOutput
@@ -172,7 +197,7 @@ var WebGLKernel = function (_Kernel) {
 		key: 'updateMaxTexSize',
 		value: function updateMaxTexSize() {
 			var texSize = this.texSize;
-			var canvas = this._canvas;
+			var canvas = this.canvas;
 			if (this.maxTexSize === null) {
 				var canvasIndex = canvases.indexOf(canvas);
 				if (canvasIndex === -1) {
@@ -198,13 +223,14 @@ var WebGLKernel = function (_Kernel) {
 	}, {
 		key: 'build',
 		value: function build() {
-			this.validateOptions();
+			this.initExtensions();
+			this.validateSettings();
 			this.setupConstants();
 			this.setupParams(arguments);
 			this.updateMaxTexSize();
 			var texSize = this.texSize;
-			var gl = this._webGl;
-			var canvas = this._canvas;
+			var gl = this.context;
+			var canvas = this.canvas;
 			gl.enable(gl.SCISSOR_TEST);
 			gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
 			canvas.width = this.maxTexSize[0];
@@ -228,22 +254,18 @@ var WebGLKernel = function (_Kernel) {
 			gl.compileShader(fragShader);
 			this.fragShader = fragShader;
 
+			if (this.debug) {
+				console.log('GLSL Shader Output:');
+				console.log(compiledFragShaderString);
+			}
+
 			if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
-				console.log(compiledVertShaderString);
 				console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(vertShader));
 				throw new Error('Error compiling vertex shader');
 			}
 			if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
-				console.log(compiledFragShaderString);
 				console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(fragShader));
 				throw new Error('Error compiling fragment shader');
-			}
-
-			if (this.debug) {
-				console.log('Options:');
-				console.dir(this);
-				console.log('GLSL Shader Output:');
-				console.log(compiledFragShaderString);
 			}
 
 			var program = this.program = gl.createProgram();
@@ -313,7 +335,7 @@ var WebGLKernel = function (_Kernel) {
 			var paramNames = this.paramNames;
 			var paramTypes = this.paramTypes;
 			var texSize = this.texSize;
-			var gl = this._webGl;
+			var gl = this.context;
 
 			gl.useProgram(this.program);
 			gl.scissor(0, 0, texSize[0], texSize[1]);
@@ -338,7 +360,7 @@ var WebGLKernel = function (_Kernel) {
 						this._setupOutputTexture();
 					}
 					gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-					return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this._webGl, 'ArrayTexture(4)');
+					return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this.context, 'ArrayTexture(4)');
 				}
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 				gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -357,7 +379,7 @@ var WebGLKernel = function (_Kernel) {
 					this.subKernelOutputTextures = [];
 					this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
 				}
-				this.drawBuffers.drawBuffersWEBGL(this.drawBuffersMap);
+				this.extensions.WEBGL_draw_buffers.drawBuffersWEBGL(this.drawBuffersMap);
 			}
 
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -367,7 +389,7 @@ var WebGLKernel = function (_Kernel) {
 					var output = [];
 					output.result = this.renderOutput(outputTexture);
 					for (var i = 0; i < this.subKernels.length; i++) {
-						output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this._webGl));
+						output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context));
 					}
 					return output;
 				} else if (this.subKernelProperties !== null) {
@@ -377,7 +399,7 @@ var WebGLKernel = function (_Kernel) {
 					var _i = 0;
 					for (var p in this.subKernelProperties) {
 						if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-						_output[p] = new Texture(this.subKernelOutputTextures[_i], texSize, this.threadDim, this.output, this._webGl);
+						_output[p] = new Texture(this.subKernelOutputTextures[_i], texSize, this.threadDim, this.output, this.context);
 						_i++;
 					}
 					return _output;
@@ -401,11 +423,11 @@ var WebGLKernel = function (_Kernel) {
 		key: 'renderOutput',
 		value: function renderOutput(outputTexture) {
 			var texSize = this.texSize;
-			var gl = this._webGl;
+			var gl = this.context;
 			var threadDim = this.threadDim;
 			var output = this.output;
 			if (this.outputToTexture) {
-				return new Texture(outputTexture, texSize, this.threadDim, output, this._webGl);
+				return new Texture(outputTexture, texSize, this.threadDim, output, this.context);
 			} else {
 				var result = void 0;
 				if (this.floatOutput) {
@@ -451,9 +473,9 @@ var WebGLKernel = function (_Kernel) {
 	}, {
 		key: '_setupOutputTexture',
 		value: function _setupOutputTexture() {
-			var gl = this._webGl;
+			var gl = this.context;
 			var texSize = this.texSize;
-			var texture = this.outputTexture = this._webGl.createTexture();
+			var texture = this.outputTexture = this.context.createTexture();
 			gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length);
 			gl.bindTexture(gl.TEXTURE_2D, texture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -469,22 +491,18 @@ var WebGLKernel = function (_Kernel) {
 		}
 
 		/**
-   * @memberOf WebGLKernel#
-   * @param length
-   * @private
-   *
    * @desc Setup and replace sub-output textures
    */
 
 	}, {
 		key: '_setupSubOutputTextures',
 		value: function _setupSubOutputTextures(length) {
-			var gl = this._webGl;
+			var gl = this.context;
 			var texSize = this.texSize;
 			var drawBuffersMap = this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
 			var textures = this.subKernelOutputTextures = [];
 			for (var i = 0; i < length; i++) {
-				var texture = this._webGl.createTexture();
+				var texture = this.context.createTexture();
 				textures.push(texture);
 				drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
 				gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length + i);
@@ -525,7 +543,7 @@ var WebGLKernel = function (_Kernel) {
 			if (this.textureCache.hasOwnProperty(name)) {
 				return this.textureCache[name];
 			}
-			return this.textureCache[name] = this._webGl.createTexture();
+			return this.textureCache[name] = this.context.createTexture();
 		}
 
 		/**
@@ -549,7 +567,7 @@ var WebGLKernel = function (_Kernel) {
 			}
 			this.uniform1fCache[name] = value;
 			var loc = this.getUniformLocation(name);
-			this._webGl.uniform1f(loc, value);
+			this.context.uniform1f(loc, value);
 		}
 	}, {
 		key: 'setUniform1i',
@@ -562,7 +580,7 @@ var WebGLKernel = function (_Kernel) {
 			}
 			this.uniform1iCache[name] = value;
 			var loc = this.getUniformLocation(name);
-			this._webGl.uniform1i(loc, value);
+			this.context.uniform1i(loc, value);
 		}
 	}, {
 		key: 'setUniform2f',
@@ -575,7 +593,7 @@ var WebGLKernel = function (_Kernel) {
 			}
 			this.uniform2fCache[name] = [value1, value2];
 			var loc = this.getUniformLocation(name);
-			this._webGl.uniform2f(loc, value1, value2);
+			this.context.uniform2f(loc, value1, value2);
 		}
 	}, {
 		key: 'setUniform2fv',
@@ -588,7 +606,7 @@ var WebGLKernel = function (_Kernel) {
 			}
 			this.uniform2fvCache[name] = value;
 			var loc = this.getUniformLocation(name);
-			this._webGl.uniform2fv(loc, value);
+			this.context.uniform2fv(loc, value);
 		}
 	}, {
 		key: 'setUniform2iv',
@@ -601,7 +619,7 @@ var WebGLKernel = function (_Kernel) {
 			}
 			this.uniform2ivCache[name] = value;
 			var loc = this.getUniformLocation(name);
-			this._webGl.uniform2iv(loc, value);
+			this.context.uniform2iv(loc, value);
 		}
 	}, {
 		key: 'setUniform3fv',
@@ -614,7 +632,7 @@ var WebGLKernel = function (_Kernel) {
 			}
 			this.uniform3fvCache[name] = value;
 			var loc = this.getUniformLocation(name);
-			this._webGl.uniform3fv(loc, value);
+			this.context.uniform3fv(loc, value);
 		}
 	}, {
 		key: 'setUniform3iv',
@@ -627,12 +645,12 @@ var WebGLKernel = function (_Kernel) {
 			}
 			this.uniform3ivCache[name] = value;
 			var loc = this.getUniformLocation(name);
-			this._webGl.uniform3iv(loc, value);
+			this.context.uniform3iv(loc, value);
 		}
 
 		/**
    * @desc Return WebGlUniformLocation for various variables
-   * related to webGl program, such as user-defiend variables,
+   * related to webGl program, such as user-defined variables,
    * as well as, dimension sizes, etc.
    */
 
@@ -642,7 +660,7 @@ var WebGLKernel = function (_Kernel) {
 			if (this.programUniformLocationCache.hasOwnProperty(name)) {
 				return this.programUniformLocationCache[name];
 			}
-			return this.programUniformLocationCache[name] = this._webGl.getUniformLocation(this.program, name);
+			return this.programUniformLocationCache[name] = this.context.getUniformLocation(this.program, name);
 		}
 
 		/**
@@ -686,7 +704,7 @@ var WebGLKernel = function (_Kernel) {
 	}, {
 		key: '_addArgument',
 		value: function _addArgument(value, type, name) {
-			var gl = this._webGl;
+			var gl = this.context;
 			var argumentTexture = this.getArgumentTexture(name);
 			if (value instanceof Texture) {
 				type = value.type;
@@ -804,8 +822,8 @@ var WebGLKernel = function (_Kernel) {
 				case 'NumberTexture':
 					{
 						var inputTexture = value;
-						if (inputTexture.webGl !== this._webGl) {
-							throw new Error('argument ' + name + ' (' + type + ') must be from same context (webGl)');
+						if (inputTexture.context !== this.context) {
+							throw new Error('argument ' + name + ' (' + type + ') must be from same context');
 						}
 						var _dim3 = inputTexture.dimensions;
 						var _size3 = inputTexture.size;
@@ -820,14 +838,14 @@ var WebGLKernel = function (_Kernel) {
 						break;
 					}
 				default:
-					throw new Error('Input type not supported (WebGL): ' + value);
+					throw new Error('Input type not supported: ' + value);
 			}
 			this.argumentsLength++;
 		}
 
 		/**
    * @desc Adds kernel parameters to the Argument Texture,
-   * binding it to the webGl instance, etc.
+   * binding it to the context, etc.
    *
    * @param {Array|Texture|Number} value - The actual argument supplied to the kernel
    * @param {String} type - Type of the argument
@@ -837,7 +855,7 @@ var WebGLKernel = function (_Kernel) {
 	}, {
 		key: '_addConstant',
 		value: function _addConstant(value, type, name) {
-			var gl = this._webGl;
+			var gl = this.context;
 			var argumentTexture = this.getArgumentTexture(name);
 			if (value instanceof Texture) {
 				type = value.type;
@@ -943,6 +961,9 @@ var WebGLKernel = function (_Kernel) {
 				case 'NumberTexture':
 					{
 						var inputTexture = value;
+						if (inputTexture.context !== this.context) {
+							throw new Error('argument ' + name + ' (' + type + ') must be from same context');
+						}
 						var _dim6 = inputTexture.dimensions;
 						var _size6 = inputTexture.size;
 
@@ -957,14 +978,14 @@ var WebGLKernel = function (_Kernel) {
 				case 'Integer':
 				case 'Float':
 				default:
-					throw new Error('Input type not supported (WebGL): ' + value);
+					throw new Error('Input type not supported: ' + value);
 			}
 			this.constantsLength++;
 		}
 
 		/**
    * @desc Adds kernel parameters to the Argument Texture,
-   * binding it to the webGl instance, etc.
+   * binding it to the context, etc.
    *
    * @param {Array} value - The actual argument supplied to the kernel
    * @param {String} length - the expected total length of the output array
@@ -1306,7 +1327,7 @@ var WebGLKernel = function (_Kernel) {
 
 		/**
    * @param {String} src - Shader string
-   * @param {Array} map - Variables/Constants associated with shader
+   * @param {Object} map - Variables/Constants associated with shader
    */
 
 	}, {
@@ -1329,16 +1350,16 @@ var WebGLKernel = function (_Kernel) {
 		value: function _addKernels() {
 			var _this2 = this;
 
-			var builder = this.functionBuilder;
-			var gl = this._webGl;
+			var functionBuilder = this.functionBuilder;
+			var gl = this.context;
 
-			builder.addFunctions(this.functions, {
+			functionBuilder.addFunctions(this.functions, {
 				constants: this.constants,
 				output: this.output
 			});
-			builder.addNativeFunctions(this.nativeFunctions);
+			functionBuilder.addNativeFunctions(this.nativeFunctions);
 
-			builder.addKernel(this.fnString, {
+			functionBuilder.addKernel(this.fnString, {
 				prototypeOnly: false,
 				constants: this.constants,
 				output: this.output,
@@ -1351,14 +1372,14 @@ var WebGLKernel = function (_Kernel) {
 			});
 
 			if (this.subKernels !== null) {
-				var drawBuffers = this.drawBuffers = gl.getExtension('WEBGL_draw_buffers');
+				var drawBuffers = this.extensions.WEBGL_draw_buffers;
 				if (!drawBuffers) throw new Error('could not instantiate draw buffers extension');
 				this.subKernelOutputVariableNames = [];
 				this.subKernels.forEach(function (subKernel) {
 					return _this2._addSubKernel(subKernel);
 				});
 			} else if (this.subKernelProperties !== null) {
-				var _drawBuffers = this.drawBuffers = gl.getExtension('WEBGL_draw_buffers');
+				var _drawBuffers = this.extensions.WEBGL_draw_buffers;
 				if (!_drawBuffers) throw new Error('could not instantiate draw buffers extension');
 				this.subKernelOutputVariableNames = [];
 				Object.keys(this.subKernelProperties).forEach(function (property) {
@@ -1437,48 +1458,61 @@ var WebGLKernel = function (_Kernel) {
 		key: 'destroy',
 		value: function destroy(removeCanvasReferences) {
 			if (this.outputTexture) {
-				this._webGl.deleteTexture(this.outputTexture);
+				this.context.deleteTexture(this.outputTexture);
 			}
 			if (this.buffer) {
-				this._webGl.deleteBuffer(this.buffer);
+				this.context.deleteBuffer(this.buffer);
 			}
 			if (this.framebuffer) {
-				this._webGl.deleteFramebuffer(this.framebuffer);
+				this.context.deleteFramebuffer(this.framebuffer);
 			}
-
 			if (this.vertShader) {
-				this._webGl.deleteShader(this.vertShader);
+				this.context.deleteShader(this.vertShader);
 			}
-
 			if (this.fragShader) {
-				this._webGl.deleteShader(this.fragShader);
+				this.context.deleteShader(this.fragShader);
 			}
-
 			if (this.program) {
-				this._webGl.deleteProgram(this.program);
+				this.context.deleteProgram(this.program);
 			}
 
 			var keys = Object.keys(this.textureCache);
 
 			for (var i = 0; i < keys.length; i++) {
 				var name = keys[i];
-				this._webGl.deleteTexture(this.textureCache[name]);
+				this.context.deleteTexture(this.textureCache[name]);
 			}
 
 			if (this.subKernelOutputTextures) {
 				for (var _i3 = 0; _i3 < this.subKernelOutputTextures.length; _i3++) {
-					this._webGl.deleteTexture(this.subKernelOutputTextures[_i3]);
+					this.context.deleteTexture(this.subKernelOutputTextures[_i3]);
 				}
 			}
 			if (removeCanvasReferences) {
-				var idx = canvases.indexOf(this._canvas);
+				var idx = canvases.indexOf(this.canvas);
 				if (idx >= 0) {
 					canvases[idx] = null;
 					maxTexSizes[idx] = null;
 				}
 			}
-
-			delete this._webGl;
+			this.destroyExtensions();
+			delete this.context;
+			delete this.canvas;
+		}
+	}, {
+		key: 'destroyExtensions',
+		value: function destroyExtensions() {
+			this.extensions.OES_texture_float = null;
+			this.extensions.OES_texture_float_linear = null;
+			this.extensions.OES_element_index_uint = null;
+		}
+	}], [{
+		key: 'destroyContext',
+		value: function destroyContext(context) {
+			var extension = context.getExtension('WEBGL_lose_context');
+			if (extension) {
+				extension.loseContext();
+			}
 		}
 	}]);
 

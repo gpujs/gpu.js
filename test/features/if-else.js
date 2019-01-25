@@ -1,14 +1,12 @@
-var GPU = require('../../src/index');
-require('qunit-assert-close');
-
 (function() {
+  const GPU = require('../../src/index');
   function booleanBranch(mode) {
-    var gpu = new GPU({
+    const gpu = new GPU({
       mode: mode
     });
-    var f = gpu.createKernel(function() {
-      var result = 0;
-      if(true) {
+    const f = gpu.createKernel(function() {
+      let result = 0;
+      if (true) {
         result = 4;
       } else {
         result = 2;
@@ -19,31 +17,31 @@ require('qunit-assert-close');
     });
 
     QUnit.assert.ok( f !== null, 'function generated test');
-    QUnit.assert.close(f()[0], 4, 0.01, 'basic return function test');
+    QUnit.assert.equal(f()[0], 4, 'basic return function test');
     gpu.destroy();
   }
 
-  QUnit.test( 'booleanBranch (auto)', function() {
+  QUnit.test('booleanBranch (auto)', () => {
     booleanBranch(null);
   });
 
-  QUnit.test( 'booleanBranch (gpu)', function() {
+  QUnit.test('booleanBranch (gpu)', () => {
     booleanBranch('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('booleanBranch (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('booleanBranch (webgl)', () => {
     booleanBranch('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('booleanBranch (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('booleanBranch (webgl2)', () => {
     booleanBranch('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('booleanBranch (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('booleanBranch (headlessgl)', () => {
     booleanBranch('headlessgl');
   });
 
-  QUnit.test( 'booleanBranch (CPU)', function() {
+  QUnit.test('booleanBranch (CPU)', () => {
     booleanBranch('cpu');
   });
 
@@ -65,27 +63,27 @@ require('qunit-assert-close');
     gpu.destroy();
   }
 
-  QUnit.test( 'ifElse (auto)', function() {
+  QUnit.test('ifElse (auto)', () => {
     ifElse(null);
   });
 
-  QUnit.test( 'ifElse (gpu)', function() {
+  QUnit.test('ifElse (gpu)', () => {
     ifElse('gpu');
   });
 
-  (GPU.isWebGlSupported() ? QUnit.test : QUnit.skip)('ifElse (webgl)', function () {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('ifElse (webgl)', () => {
     ifElse('webgl');
   });
 
-  (GPU.isWebGl2Supported() ? QUnit.test : QUnit.skip)('ifElse (webgl2)', function () {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('ifElse (webgl2)', () => {
     ifElse('webgl2');
   });
 
-  (GPU.isHeadlessGlSupported() ? QUnit.test : QUnit.skip)('ifElse (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('ifElse (headlessgl)', () => {
     ifElse('headlessgl');
   });
 
-  QUnit.test( 'ifElse (cpu)', function() {
+  QUnit.test('ifElse (cpu)', () => {
     ifElse('cpu');
   });
 })();
