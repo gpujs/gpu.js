@@ -1,10 +1,11 @@
 (() => {
   const GPU = require('../../src/index');
 	function test(mode) {
-		var gpu = new GPU({ mode: mode });
+		const gpu = new GPU({ mode: mode });
     const toTexture = gpu.createKernel(function(value) {
       return value[this.thread.x];
     }, {
+      debug: true,
       output: [2],
       outputToTexture: true,
       hardcodeConstants: true,

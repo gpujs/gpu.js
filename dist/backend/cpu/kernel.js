@@ -9,7 +9,9 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var Kernel = require('../kernel');
-var utils = require('../../core/utils');
+var FunctionBuilder = require('../function-builder');
+var CPUFunctionNode = require('./function-node');
+var utils = require('../../utils');
 var kernelString = require('./kernel-string');
 
 /**
@@ -19,13 +21,48 @@ var kernelString = require('./kernel-string');
  *
  * @prop {Object} thread - The thread dimensions, x, y and z
  * @prop {Object} output - The canvas dimensions
- * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
  * @prop {Function} run - Method to run the kernel
  *
  */
 
 var CPUKernel = function (_Kernel) {
 	_inherits(CPUKernel, _Kernel);
+
+	_createClass(CPUKernel, null, [{
+		key: 'getFeatures',
+		value: function getFeatures() {
+			return this.features;
+		}
+	}, {
+		key: 'isContextMatch',
+		value: function isContextMatch(context) {
+			return false;
+		}
+		/**
+   * @name getMode()
+   * @desc Return the current mode in which gpu.js is executing.
+   * @returns {String} The current mode; "cpu".
+   */
+
+	}, {
+		key: 'getMode',
+		value: function getMode() {
+			return 'cpu';
+		}
+	}, {
+		key: 'features',
+		get: function get() {
+			return Object.freeze({
+				kernelMap: true,
+				isIntegerDivisionAccurate: true
+			});
+		}
+	}, {
+		key: 'isSupported',
+		get: function get() {
+			return true;
+		}
+	}]);
 
 	function CPUKernel(fnString, settings) {
 		_classCallCheck(this, CPUKernel);
@@ -89,7 +126,7 @@ var CPUKernel = function (_Kernel) {
 				}
 			}
 
-			utils.checkOutput(this.output);
+			this.checkOutput();
 		}
 
 		/**
@@ -104,7 +141,7 @@ var CPUKernel = function (_Kernel) {
 		key: 'build',
 		value: function build() {
 			this.setupConstants();
-			this.setupParams(arguments);
+			this.setupArguments(arguments);
 			this.validateSettings();
 			var threadDim = this.threadDim = utils.clone(this.output);
 
@@ -133,8 +170,6 @@ var CPUKernel = function (_Kernel) {
 			}
 
 			if (this.debug) {
-				console.log('Settings:');
-				console.dir(this);
 				console.log('Function output:');
 				console.log(kernelString);
 			}
@@ -181,60 +216,15 @@ var CPUKernel = function (_Kernel) {
 		value: function getKernelString() {
 			if (this._kernelString !== null) return this._kernelString;
 
-			var builder = this.functionBuilder;
-
 			// Thread dim fix (to make compilable)
 			var threadDim = this.threadDim || (this.threadDim = utils.clone(this.output));
 			while (threadDim.length < 3) {
 				threadDim.push(1);
 			}
 
-			builder.addKernel(this.fnString, {
-				prototypeOnly: false,
-				constants: this.constants,
-				output: threadDim,
-				debug: this.debug,
-				loopMaxIterations: this.loopMaxIterations,
-				paramNames: this.paramNames,
-				paramTypes: this.paramTypes,
-				paramSizes: this.paramSizes,
-				constantTypes: this.constantTypes
-			});
+			var functionBuilder = FunctionBuilder.fromKernel(this, CPUFunctionNode);
 
-			builder.addFunctions(this.functions, {
-				constants: this.constants,
-				output: threadDim
-			});
-
-			builder.addNativeFunctions(this.nativeFunctions);
-
-			if (this.subKernels !== null) {
-				this.subKernelOutputTextures = [];
-				this.subKernelOutputVariableNames = [];
-				for (var i = 0; i < this.subKernels.length; i++) {
-					var subKernel = this.subKernels[i];
-					builder.addSubKernel(subKernel, {
-						prototypeOnly: false,
-						constants: this.constants,
-						output: this.output,
-						debug: this.debug,
-						loopMaxIterations: this.loopMaxIterations
-					});
-					this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
-				}
-			} else if (this.subKernelProperties !== null) {
-				this.subKernelOutputVariableNames = [];
-				var _i = 0;
-				for (var p in this.subKernelProperties) {
-					if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-					var _subKernel = this.subKernelProperties[p];
-					builder.addSubKernel(_subKernel);
-					this.subKernelOutputVariableNames.push(_subKernel.name + 'Result');
-					_i++;
-				}
-			}
-
-			var prototypes = builder.getPrototypes('kernel');
+			var prototypes = functionBuilder.getPrototypes('kernel');
 			var kernel = null;
 			if (prototypes.length > 1) {
 				prototypes = prototypes.filter(function (fn) {
@@ -245,9 +235,9 @@ var CPUKernel = function (_Kernel) {
 			} else {
 				kernel = prototypes.shift();
 			}
-			var kernelString = this._kernelString = '\n\t\tvar LOOP_MAX = ' + this._getLoopMaxString() + '\n\t\tvar constants = this.constants;\n\t\tvar _this = this;\n    return function (' + this.paramNames.map(function (paramName) {
-				return 'user_' + paramName;
-			}).join(', ') + ') {\n      ' + this._processConstants() + '\n      ' + this._processParams() + '\n      ' + this._kernelLoop(kernel) + '\n      if (this.graphical) {\n        this._imageData.data.set(this._colorData);\n        this.context.putImageData(this._imageData, 0, 0);\n        return;\n      }\n      ' + this._kernelOutput() + '\n      ' + (prototypes.length > 0 ? prototypes.join('\n') : '') + '\n    }.bind(this);';
+			var kernelString = this._kernelString = '\n\t\tconst LOOP_MAX = ' + this._getLoopMaxString() + '\n\t\tconst constants = this.constants;\n\t\tconst _this = this;\n    return function (' + this.argumentNames.map(function (argumentName) {
+				return 'user_' + argumentName;
+			}).join(', ') + ') {\n      ' + this._processConstants() + '\n      ' + this._processArguments() + '\n      ' + this._kernelLoop(kernel) + '\n      if (this.graphical) {\n        this._imageData.data.set(this._colorData);\n        this.context.putImageData(this._imageData, 0, 0);\n        return;\n      }\n      ' + this._kernelOutput() + '\n      ' + (prototypes.length > 0 ? prototypes.join('\n') : '') + '\n    }.bind(this);';
 			return kernelString;
 		}
 
@@ -296,19 +286,19 @@ var CPUKernel = function (_Kernel) {
 			return result.join('\n');
 		}
 	}, {
-		key: '_processParams',
-		value: function _processParams() {
+		key: '_processArguments',
+		value: function _processArguments() {
 			var result = [];
-			for (var i = 0; i < this.paramTypes.length; i++) {
-				switch (this.paramTypes[i]) {
+			for (var i = 0; i < this.argumentTypes.length; i++) {
+				switch (this.argumentTypes[i]) {
 					case 'HTMLImage':
-						result.push('  user_' + this.paramNames[i] + ' = this._imageTo2DArray(user_' + this.paramNames[i] + ')');
+						result.push('  user_' + this.argumentNames[i] + ' = this._imageTo2DArray(user_' + this.argumentNames[i] + ')');
 						break;
 					case 'HTMLImageArray':
-						result.push('  user_' + this.paramNames[i] + ' = this._imageTo3DArray(user_' + this.paramNames[i] + ')');
+						result.push('  user_' + this.argumentNames[i] + ' = this._imageTo3DArray(user_' + this.argumentNames[i] + ')');
 						break;
 					case 'Input':
-						result.push('  user_' + this.paramNames[i] + ' = user_' + this.paramNames[i] + '.value');
+						result.push('  user_' + this.argumentNames[i] + ' = user_' + this.argumentNames[i] + '.value');
 						break;
 				}
 			}
@@ -373,54 +363,58 @@ var CPUKernel = function (_Kernel) {
 		key: '_kernel1DLoop',
 		value: function _kernel1DLoop(kernelString) {
 			var threadDim = this.threadDim;
-			return '\n    const result = new Float32Array(' + threadDim[0] + ');\n    ' + this._mapSubKernels(function (name) {
-				return 'var result_' + name + ' = new Float32Array(' + threadDim[0] + ');\n';
-			}).join('') + '\n    for (var x = 0; x < ' + threadDim[0] + '; x++) {\n      this.thread.x = x;\n      this.thread.y = 0;\n      this.thread.z = 0;\n      var kernelResult;\n      ' + kernelString + '\n      result[x] = kernelResult;\n      ' + this._mapSubKernels(function (name) {
-				return 'result_' + name + '[x] = ' + name + ';\n';
+			return 'const result = new Float32Array(' + threadDim[0] + ');\n    ' + this._mapSubKernels(function (subKernel) {
+				return 'let subKernelResult_' + subKernel.name + ';';
+			}).join('\n') + '\n\t\t' + this._mapSubKernels(function (subKernel) {
+				return 'const result_' + subKernel.name + ' = new Float32Array(' + threadDim[0] + ');\n';
+			}).join('') + '\n    for (let x = 0; x < ' + threadDim[0] + '; x++) {\n      this.thread.x = x;\n      this.thread.y = 0;\n      this.thread.z = 0;\n      let kernelResult;\n      ' + kernelString + '\n      result[x] = kernelResult;\n      ' + this._mapSubKernels(function (subKernel) {
+				return 'result_' + subKernel.name + '[x] = subKernelResult_' + subKernel.name + ';\n';
 			}).join('') + '\n    }';
 		}
 	}, {
 		key: '_kernel2DLoop',
 		value: function _kernel2DLoop(kernelString) {
 			var threadDim = this.threadDim;
-			return '\n    const result = new Array(' + threadDim[1] + ');\n    ' + this._mapSubKernels(function (name) {
-				return 'const result_' + name + ' = new Array(' + threadDim[1] + ');\n';
-			}).join('') + '\n    for (let y = 0; y < ' + threadDim[1] + '; y++) {\n      this.thread.z = 0;\n      this.thread.y = y;\n      const resultX = result[y] = new Float32Array(' + threadDim[0] + ');\n      ' + this._mapSubKernels(function (name) {
-				return 'const result_' + name + 'X = result_' + name + '[y] = new Float32Array(' + threadDim[0] + ');\n';
-			}).join('') + '\n      for (let x = 0; x < ' + threadDim[0] + '; x++) {\n      \tthis.thread.x = x;\n        let kernelResult;\n        ' + kernelString + '\n        resultX[x] = kernelResult;\n        ' + this._mapSubKernels(function (name) {
-				return 'result_' + name + 'X[x] = ' + name + ';\n';
+			return 'const result = new Array(' + threadDim[1] + ');\n    ' + this._mapSubKernels(function (subKernel) {
+				return 'let subKernelResult_' + subKernel.name + ';';
+			}).join('\n') + '\n    ' + this._mapSubKernels(function (subKernel) {
+				return 'const result_' + subKernel.name + ' = new Array(' + threadDim[1] + ');\n';
+			}).join('') + '\n    for (let y = 0; y < ' + threadDim[1] + '; y++) {\n      this.thread.z = 0;\n      this.thread.y = y;\n      const resultX = result[y] = new Float32Array(' + threadDim[0] + ');\n      ' + this._mapSubKernels(function (subKernel) {
+				return 'const result_' + subKernel.name + 'X = result_' + subKernel.name + '[y] = new Float32Array(' + threadDim[0] + ');\n';
+			}).join('') + '\n      for (let x = 0; x < ' + threadDim[0] + '; x++) {\n      \tthis.thread.x = x;\n        let kernelResult;\n        ' + kernelString + '\n        resultX[x] = kernelResult;\n        ' + this._mapSubKernels(function (subKernel) {
+				return 'result_' + subKernel.name + 'X[x] = subKernelResult_' + subKernel.name + ';\n';
 			}).join('') + '\n      }\n    }';
 		}
 	}, {
 		key: '_kernel3DLoop',
 		value: function _kernel3DLoop(kernelString) {
 			var threadDim = this.threadDim;
-			return '\n    const result = new Array(' + threadDim[2] + ');\n    ' + this._mapSubKernels(function (name) {
-				return 'const result_' + name + ' = new Array(' + threadDim[2] + ');\n';
-			}).join('') + '\n    for (let z = 0; z < ' + threadDim[2] + '; z++) {\n      this.thread.z = z;\n      const resultY = result[z] = new Array(' + threadDim[1] + ');\n      ' + this._mapSubKernels(function (name) {
-				return 'const result_' + name + 'Y = result_' + name + '[z] = new Array(' + threadDim[1] + ');\n';
-			}).join('') + '\n      for (let y = 0; y < ' + threadDim[1] + '; y++) {\n        this.thread.y = y;\n        const resultX = resultY[y] = new Float32Array(' + threadDim[0] + ');\n        ' + this._mapSubKernels(function (name) {
-				return 'const result_' + name + 'X = result_' + name + 'Y[y] = new Float32Array(' + threadDim[0] + ');\n';
-			}).join('') + '\n        for (let x = 0; x < ' + threadDim[0] + '; x++) {\n        \tthis.thread.x = x;\n          let kernelResult;\n          ' + kernelString + '\n          resultX[x] = kernelResult;\n          ' + this._mapSubKernels(function (name) {
-				return 'result_' + name + 'X[x] = ' + name + ';\n';
+			return 'const result = new Array(' + threadDim[2] + ');\n    ' + this._mapSubKernels(function (subKernel) {
+				return 'let subKernelResult_' + subKernel.name + ';';
+			}).join('\n') + '\n    ' + this._mapSubKernels(function (subKernel) {
+				return 'const result_' + subKernel.name + ' = new Array(' + threadDim[2] + ');\n';
+			}).join('') + '\n    for (let z = 0; z < ' + threadDim[2] + '; z++) {\n      this.thread.z = z;\n      const resultY = result[z] = new Array(' + threadDim[1] + ');\n      ' + this._mapSubKernels(function (subKernel) {
+				return 'const result_' + subKernel.name + 'Y = result_' + subKernel.name + '[z] = new Array(' + threadDim[1] + ');\n';
+			}).join('') + '\n      for (let y = 0; y < ' + threadDim[1] + '; y++) {\n        this.thread.y = y;\n        const resultX = resultY[y] = new Float32Array(' + threadDim[0] + ');\n        ' + this._mapSubKernels(function (subKernel) {
+				return 'const result_' + subKernel.name + 'X = result_' + subKernel.name + 'Y[y] = new Float32Array(' + threadDim[0] + ');\n';
+			}).join('') + '\n        for (let x = 0; x < ' + threadDim[0] + '; x++) {\n        \tthis.thread.x = x;\n          let kernelResult;\n          ' + kernelString + '\n          resultX[x] = kernelResult;\n          ' + this._mapSubKernels(function (subKernel) {
+				return 'result_' + subKernel.name + 'X[x] = subKernelResult_' + subKernel.name + ';\n';
 			}).join('') + '\n        }\n      }\n    }';
 		}
 	}, {
 		key: '_kernelOutput',
 		value: function _kernelOutput() {
-			var _this2 = this;
-
-			if (!this.subKernelOutputVariableNames) {
+			if (!this.subKernels) {
 				return 'return result;';
 			}
-			return 'return {\n      result: result,\n      ' + Object.keys(this.subKernelProperties || this.subKernelOutputVariableNames).map(function (name, i) {
-				return name + ': result_' + _this2.subKernelOutputVariableNames[i];
+			return 'return {\n      result: result,\n      ' + this.subKernels.map(function (subKernel) {
+				return subKernel.property + ': result_' + subKernel.name;
 			}).join(',\n') + '\n    };';
 		}
 	}, {
 		key: '_mapSubKernels',
 		value: function _mapSubKernels(fn) {
-			return this.subKernelOutputVariableNames === null ? [''] : this.subKernelOutputVariableNames.map(fn);
+			return this.subKernels === null ? [''] : this.subKernels.map(fn);
 		}
 	}, {
 		key: 'destroy',

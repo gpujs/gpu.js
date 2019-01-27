@@ -1,11 +1,18 @@
-'use strict';
-
-const Kernel = require('../kernel');
-const utils = require('../../core/utils');
-const Texture = require('../../core/texture');
+const GLKernel = require('../gl-kernel');
+const FunctionBuilder = require('../function-builder');
+const WebGLFunctionNode = require('./function-node');
+const utils = require('../../utils');
+const Texture = require('../../texture');
 const fragShaderString = require('./shader-frag');
 const vertShaderString = require('./shader-vert');
 const kernelString = require('./kernel-string');
+
+let isSupported = null;
+let testCanvas = null;
+let testContext = null;
+let testExtensions = null;
+let features = null;
+
 const canvases = [];
 const maxTexSizes = {};
 
@@ -23,12 +30,85 @@ const maxTexSizes = {};
  * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
  * @prop {Boolean} outputToTexture - Set output type to Texture, instead of float
  * @prop {String} endianness - Endian information like Little-endian, Big-endian.
- * @prop {Array} paramTypes - Types of parameters sent to the Kernel
+ * @prop {Array} argumentTypes - Types of parameters sent to the Kernel
  * @prop {number} argumentsLength - Number of parameters sent to the Kernel
  * @prop {String} compiledFragShaderString - Compiled fragment shader string
  * @prop {String} compiledVertShaderString - Compiled Vertical shader string
  */
-class WebGLKernel extends Kernel {
+class WebGLKernel extends GLKernel {
+	static get isSupported() {
+		if (isSupported !== null) {
+			return isSupported;
+		}
+		this.setupFeatureChecks();
+		isSupported = this.isContextMatch(testContext);
+		return isSupported;
+	}
+
+	static setupFeatureChecks() {
+		if (typeof document !== 'undefined') {
+			testCanvas = document.createElement('canvas');
+		} else if (typeof OffscreenCanvas !== 'undefined') {
+			testCanvas = new OffscreenCanvas(0, 0);
+		}
+
+		if (testCanvas) {
+			testContext = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+			testExtensions = {
+				OES_texture_float: testContext.getExtension('OES_texture_float'),
+				OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
+				OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
+				WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
+			};
+			features = this.getFeatures();
+		}
+	}
+
+	static isContextMatch(context) {
+		if (typeof WebGLRenderingContext !== 'undefined') {
+			return context instanceof WebGLRenderingContext;
+		}
+		return false;
+	}
+
+	static getFeatures() {
+		const isDrawBuffers = this.getIsDrawBuffers();
+		return Object.freeze({
+			isFloatRead: this.getIsFloatRead(),
+			isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+			isTextureFloat: this.getIsTextureFloat(),
+			isDrawBuffers,
+			kernelMap: isDrawBuffers
+		});
+	}
+
+	static getIsTextureFloat() {
+		return Boolean(testExtensions.OES_texture_float);
+	}
+
+	static getIsDrawBuffers() {
+		return Boolean(testExtensions.WEBGL_draw_buffers);
+	}
+
+	static get testCanvas() {
+		return testCanvas;
+	}
+
+	static get testContext() {
+		return testContext;
+	}
+
+	static get features() {
+		return features;
+	}
+
+	/**
+	 * @desc Return the current mode in which gpu.js is executing.
+	 * @returns {String} The current mode; "gpu".
+	 */
+	static getMode() {
+		return 'gpu';
+	}
 	static get fragShaderString() {
 		return fragShaderString;
 	}
@@ -36,6 +116,7 @@ class WebGLKernel extends Kernel {
 	static get vertShaderString() {
 		return vertShaderString;
 	}
+
 	constructor(fnString, settings) {
 		super(fnString, settings);
 		this.textureCache = {};
@@ -49,7 +130,6 @@ class WebGLKernel extends Kernel {
 		this.endianness = utils.systemEndianness();
 		this.extensions = {};
 		this.subKernelOutputTextures = null;
-		this.subKernelOutputVariableNames = null;
 		this.argumentsLength = 0;
 		this.constantsLength = 0;
 		this.compiledFragShaderString = null;
@@ -86,7 +166,12 @@ class WebGLKernel extends Kernel {
 	}
 
 	initContext() {
-		const context = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
+		const settings = {
+			alpha: false,
+			depth: false,
+			antialias: false
+		};
+		const context = this.canvas.getContext('webgl', settings) || this.canvas.getContext('experimental-webgl', settings);
 		return context;
 	}
 
@@ -113,14 +198,18 @@ class WebGLKernel extends Kernel {
 			return;
 		}
 
-		const features = this.features;
+		const features = this.constructor.features;
 		if (this.floatTextures === true && !features.isTextureFloat) {
-			throw new Error('Float textures are not supported on this browser');
+			throw new Error('Float textures are not supported');
 		} else if (this.floatOutput === true && this.floatOutputForce !== true && !features.isFloatRead) {
-			throw new Error('Float texture outputs are not supported on this browser');
+			throw new Error('Float texture outputs are not supported');
 		} else if (this.floatTextures === undefined && features.isTextureFloat) {
 			this.floatTextures = true;
 			this.floatOutput = features.isFloatRead;
+		}
+
+		if (this.subKernels && this.subKernels.length > 0 && !this.extensions.WEBGL_draw_buffers) {
+			throw new Error('could not instantiate draw buffers extension');
 		}
 
 		if (this.fixIntegerDivisionAccuracy === null) {
@@ -129,7 +218,7 @@ class WebGLKernel extends Kernel {
 			this.fixIntegerDivisionAccuracy = false;
 		}
 
-		utils.checkOutput(this.output);
+		this.checkOutput();
 
 		if (!this.output || this.output.length === 0) {
 			if (arguments.length !== 1) {
@@ -195,7 +284,7 @@ class WebGLKernel extends Kernel {
 		this.initExtensions();
 		this.validateSettings();
 		this.setupConstants();
-		this.setupParams(arguments);
+		this.setupArguments(arguments);
 		this.updateMaxTexSize();
 		const texSize = this.texSize;
 		const gl = this.context;
@@ -208,8 +297,6 @@ class WebGLKernel extends Kernel {
 		while (threadDim.length < 3) {
 			threadDim.push(1);
 		}
-
-		if (this.functionBuilder) this._addKernels();
 
 		const compiledVertShaderString = this._getVertShaderString(arguments);
 		const vertShader = gl.createShader(gl.VERTEX_SHADER);
@@ -229,12 +316,10 @@ class WebGLKernel extends Kernel {
 		}
 
 		if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
-			console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(vertShader));
-			throw new Error('Error compiling vertex shader');
+			throw new Error('Error compiling vertex shader: ' + gl.getShaderInfoLog(vertShader));
 		}
 		if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
-			console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(fragShader));
-			throw new Error('Error compiling fragment shader');
+			throw new Error('Error compiling fragment shader: ' + gl.getShaderInfoLog(fragShader));
 		}
 
 		const program = this.program = gl.createProgram();
@@ -291,10 +376,10 @@ class WebGLKernel extends Kernel {
 		if (!this.outputImmutable) {
 			this._setupOutputTexture();
 			if (
-				this.subKernelOutputVariableNames !== null &&
-				this.subKernelOutputVariableNames.length > 0
+				this.subKernels !== null &&
+				this.subKernels.length > 0
 			) {
-				this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
+				this._setupSubOutputTextures(this.subKernels.length);
 			}
 		}
 	}
@@ -309,8 +394,8 @@ class WebGLKernel extends Kernel {
 		if (this.program === null) {
 			this.build.apply(this, arguments);
 		}
-		const paramNames = this.paramNames;
-		const paramTypes = this.paramTypes;
+		const argumentNames = this.argumentNames;
+		const argumentTypes = this.argumentTypes;
 		const texSize = this.texSize;
 		const gl = this.context;
 
@@ -325,8 +410,8 @@ class WebGLKernel extends Kernel {
 		this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
 		this.argumentsLength = 0;
-		for (let texIndex = 0; texIndex < paramNames.length; texIndex++) {
-			this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
+		for (let texIndex = 0; texIndex < argumentNames.length; texIndex++) {
+			this._addArgument(arguments[texIndex], argumentTypes[texIndex], argumentNames[texIndex]);
 		}
 
 		if (this.graphical) {
@@ -351,10 +436,10 @@ class WebGLKernel extends Kernel {
 		}
 		const outputTexture = this.outputTexture;
 
-		if (this.subKernelOutputVariableNames !== null) {
+		if (this.subKernels !== null) {
 			if (this.outputImmutable) {
 				this.subKernelOutputTextures = [];
-				this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
+				this._setupSubOutputTextures(this.subKernels.length);
 			}
 			this.extensions.WEBGL_draw_buffers.drawBuffersWEBGL(this.drawBuffersMap);
 		}
@@ -363,21 +448,11 @@ class WebGLKernel extends Kernel {
 
 		if (this.subKernelOutputTextures !== null) {
 			if (this.subKernels !== null) {
-				const output = [];
-				output.result = this.renderOutput(outputTexture);
-				for (let i = 0; i < this.subKernels.length; i++) {
-					output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context));
-				}
-				return output;
-			} else if (this.subKernelProperties !== null) {
 				const output = {
-					result: this.renderOutput(outputTexture)
+					result: this.renderOutput(outputTexture),
 				};
-				let i = 0;
-				for (let p in this.subKernelProperties) {
-					if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-					output[p] = new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context);
-					i++;
+				for (let i = 0; i < this.subKernels.length; i++) {
+					output[this.subKernels[i].property] = new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context);
 				}
 				return output;
 			}
@@ -444,7 +519,7 @@ class WebGLKernel extends Kernel {
 		const gl = this.context;
 		const texSize = this.texSize;
 		const texture = this.outputTexture = this.context.createTexture();
-		gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length);
+		gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentNames.length);
 		gl.bindTexture(gl.TEXTURE_2D, texture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -470,7 +545,7 @@ class WebGLKernel extends Kernel {
 			const texture = this.context.createTexture();
 			textures.push(texture);
 			drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
-			gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length + i);
+			gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentNames.length + i);
 			gl.bindTexture(gl.TEXTURE_2D, texture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -645,7 +720,7 @@ class WebGLKernel extends Kernel {
 			GET_TEXTURE_CHANNEL: this._getGetTextureChannelString(),
 			GET_TEXTURE_INDEX: this._getGetTextureIndexString(),
 			GET_RESULT: this._getGetResultString(),
-			MAIN_PARAMS: this._getMainParamsString(args),
+			MAIN_ARGUMENTS: this._getMainArgumentsString(args),
 			MAIN_CONSTANTS: this._getMainConstantsString(),
 			KERNEL: this._getKernelString(),
 			MAIN_RESULT: this._getMainResultString()
@@ -999,7 +1074,7 @@ class WebGLKernel extends Kernel {
 	 */
 	_getHeaderString() {
 		return (
-			this.subKernels !== null || this.subKernelProperties !== null ?
+			this.subKernels !== null ?
 			'#extension GL_EXT_draw_buffers : require\n' :
 			''
 		);
@@ -1047,8 +1122,8 @@ class WebGLKernel extends Kernel {
 	 * @returns {String} result
 	 */
 	_getTextureCoordinate() {
-		const names = this.subKernelOutputVariableNames;
-		if (names === null || names.length < 1) {
+		const subKernels = this.subKernels;
+		if (subKernels === null || subKernels.length < 1) {
 			return 'varying vec2 vTexCoord;\n';
 		} else {
 			return 'out vec2 vTexCoord;\n';
@@ -1145,47 +1220,47 @@ class WebGLKernel extends Kernel {
 	 * @param {Array} args - The actual parameters sent to the Kernel
 	 * @returns {String} result
 	 */
-	_getMainParamsString(args) {
+	_getMainArgumentsString(args) {
 		const result = [];
-		const paramTypes = this.paramTypes;
-		const paramNames = this.paramNames;
-		for (let i = 0; i < paramNames.length; i++) {
-			const param = args[i];
-			const paramName = paramNames[i];
-			const paramType = paramTypes[i];
+		const argumentTypes = this.argumentTypes;
+		const argumentNames = this.argumentNames;
+		for (let i = 0; i < argumentNames.length; i++) {
+			const value = args[i];
+			const name = argumentNames[i];
+			const type = argumentTypes[i];
 			if (this.hardcodeConstants) {
-				if (paramType === 'Array' || paramType === 'NumberTexture' || paramType === 'ArrayTexture(4)') {
-					const paramDim = utils.getDimensions(param, true);
-					const paramSize = utils.dimToTexSize({
+				if (type === 'Array' || type === 'NumberTexture' || type === 'ArrayTexture(4)') {
+					const dim = utils.getDimensions(value, true);
+					const size = utils.dimToTexSize({
 						floatTextures: this.floatTextures,
 						floatOutput: this.floatOutput
-					}, paramDim);
+					}, dim);
 
 					result.push(
-						`uniform sampler2D user_${paramName}`,
-						`ivec2 user_${paramName}Size = ivec2(${paramSize[0]}, ${paramSize[1]})`,
-						`ivec3 user_${paramName}Dim = ivec3(${paramDim[0]}, ${paramDim[1]}, ${paramDim[2]})`,
-						`uniform int user_${paramName}BitRatio`
+						`uniform sampler2D user_${name}`,
+						`ivec2 user_${name}Size = ivec2(${size[0]}, ${size[1]})`,
+						`ivec3 user_${name}Dim = ivec3(${dim[0]}, ${dim[1]}, ${dim[2]})`,
+						`uniform int user_${name}BitRatio`
 					);
-				} else if (paramType === 'Integer') {
-					result.push(`float user_${paramName} = ${param}.0`);
-				} else if (paramType === 'Float') {
-					result.push(`float user_${paramName} = ${param}`);
+				} else if (type === 'Integer') {
+					result.push(`float user_${name} = ${value}.0`);
+				} else if (type === 'Float') {
+					result.push(`float user_${name} = ${value}`);
 				}
 			} else {
-				if (paramType === 'Array' || paramType === 'NumberTexture' || paramType === 'ArrayTexture(4)' || paramType === 'Input' || paramType === 'HTMLImage') {
+				if (type === 'Array' || type === 'NumberTexture' || type === 'ArrayTexture(4)' || type === 'Input' || type === 'HTMLImage') {
 					result.push(
-						`uniform sampler2D user_${paramName}`,
-						`uniform ivec2 user_${paramName}Size`,
-						`uniform ivec3 user_${paramName}Dim`
+						`uniform sampler2D user_${name}`,
+						`uniform ivec2 user_${name}Size`,
+						`uniform ivec3 user_${name}Dim`
 					);
-					if (paramType !== 'HTMLImage') {
-						result.push(`uniform int user_${paramName}BitRatio`)
+					if (type !== 'HTMLImage') {
+						result.push(`uniform int user_${name}BitRatio`)
 					}
-				} else if (paramType === 'Integer' || paramType === 'Float') {
-					result.push(`uniform float user_${paramName}`);
+				} else if (type === 'Integer' || type === 'Float') {
+					result.push(`uniform float user_${name}`);
 				} else {
-					throw new Error(`Param type ${paramType} not supported in WebGL, only WebGL2`);
+					throw new Error(`Param type ${name} not supported in WebGL, only WebGL2`);
 				}
 			}
 		}
@@ -1232,27 +1307,31 @@ class WebGLKernel extends Kernel {
 	 */
 	_getKernelString() {
 		const result = [];
-		const names = this.subKernelOutputVariableNames;
-		if (names !== null) {
+		const subKernels = this.subKernels;
+		if (subKernels !== null) {
 			result.push('float kernelResult = 0.0');
-			for (let i = 0; i < names.length; i++) {
+			for (let i = 0; i < subKernels.length; i++) {
 				result.push(
-					`float ${names[i]} = 0.0`
+					`float subKernelResult_${subKernels[i].name} = 0.0`
 				);
 			}
 		} else {
 			result.push('float kernelResult = 0.0');
 		}
 
-		return this._linesToString(result) + this.functionBuilder.getPrototypeString('kernel');
+		const functionBuilder = FunctionBuilder.fromKernel(this, WebGLFunctionNode, {
+			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
+		});
+
+		return this._linesToString(result) + functionBuilder.getPrototypeString('kernel');
 	}
 
 	/**
-	 * @desc Get main result string with checks for floatOutput, graphical, subKernelsOutputs, etc.
+	 * @desc Get main result string with checks for floatOutput, graphical, subKernelsResults, etc.
 	 * @returns {String} result
 	 */
 	_getMainResultString() {
-		const names = this.subKernelOutputVariableNames;
+		const subKernels = this.subKernels;
 		const result = [];
 
 		if (this.floatOutput) {
@@ -1272,11 +1351,11 @@ class WebGLKernel extends Kernel {
 				result.push('  threadId = indexTo3D(index, uOutputDim)');
 				result.push('  kernel()');
 
-				if (names) {
+				if (subKernels) {
 					result.push(`  gl_FragData[0].${channels[i]} = kernelResult`);
 
-					for (let j = 0; j < names.length; ++j) {
-						result.push(`  gl_FragData[${j + 1}].${channels[i]} = ${names[j]}`);
+					for (let j = 0; j < subKernels.length; ++j) {
+						result.push(`  gl_FragData[${j + 1}].${channels[i]} = subKernelResult_${subKernels[j].name}`);
 					}
 				} else {
 					result.push(`  gl_FragColor.${channels[i]} = kernelResult`);
@@ -1286,12 +1365,12 @@ class WebGLKernel extends Kernel {
 					result.push('  index += 1');
 				}
 			}
-		} else if (names !== null) {
+		} else if (subKernels !== null) {
 			result.push('  threadId = indexTo3D(index, uOutputDim)');
 			result.push('  kernel()');
 			result.push('  gl_FragData[0] = encode32(kernelResult)');
-			for (let i = 0; i < names.length; i++) {
-				result.push(`  gl_FragData[${i + 1}] = encode32(${names[i]})`);
+			for (let i = 0; i < subKernels.length; i++) {
+				result.push(`  gl_FragData[${i + 1}] = encode32(subKernelResult_${subKernels[i].name})`);
 			}
 		} else {
 			result.push(
@@ -1330,56 +1409,6 @@ class WebGLKernel extends Kernel {
 	}
 
 	/**
-	 * @desc Adds all the sub-kernels supplied with this Kernel instance.
-	 */
-	_addKernels() {
-		const functionBuilder = this.functionBuilder;
-		const gl = this.context;
-
-		functionBuilder.addFunctions(this.functions, {
-			constants: this.constants,
-			output: this.output
-		});
-		functionBuilder.addNativeFunctions(this.nativeFunctions);
-
-		functionBuilder.addKernel(this.fnString, {
-			prototypeOnly: false,
-			constants: this.constants,
-			output: this.output,
-			debug: this.debug,
-			loopMaxIterations: this.loopMaxIterations,
-			paramNames: this.paramNames,
-			paramTypes: this.paramTypes,
-			constantTypes: this.constantTypes,
-			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
-		});
-
-		if (this.subKernels !== null) {
-			const drawBuffers = this.extensions.WEBGL_draw_buffers;
-			if (!drawBuffers) throw new Error('could not instantiate draw buffers extension');
-			this.subKernelOutputVariableNames = [];
-			this.subKernels.forEach(subKernel => this._addSubKernel(subKernel));
-		} else if (this.subKernelProperties !== null) {
-			const drawBuffers = this.extensions.WEBGL_draw_buffers;
-			if (!drawBuffers) throw new Error('could not instantiate draw buffers extension');
-			this.subKernelOutputVariableNames = [];
-			Object.keys(this.subKernelProperties).forEach(property => this._addSubKernel(this.subKernelProperties[property]));
-		}
-	}
-
-	_addSubKernel(subKernel) {
-		this.functionBuilder.addSubKernel(subKernel, {
-			prototypeOnly: false,
-			constants: this.constants,
-			output: this.output,
-			debug: this.debug,
-			loopMaxIterations: this.loopMaxIterations,
-			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
-		});
-		this.subKernelOutputVariableNames.push(subKernel.name + 'Result');
-	}
-
-	/**
 	 * @desc Get the fragment shader String.
 	 * If the String hasn't been compiled yet,
 	 * then this method compiles it as well
@@ -1411,10 +1440,6 @@ class WebGLKernel extends Kernel {
 	 */
 	toString() {
 		return kernelString(this);
-	}
-
-	addFunction(fn) {
-		this.functionBuilder.addFunction(null, fn);
 	}
 
 	/**

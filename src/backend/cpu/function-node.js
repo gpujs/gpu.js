@@ -1,20 +1,16 @@
-'use strict';
-
 const FunctionNode = require('../function-node');
-const utils = require('../../core/utils');
+const utils = require('../../utils');
 
 /**
  * @desc [INTERNAL] Represents a single function, inside JS
  *
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
  *
- * @prop functionName         - {String}    Name of the function
  * @prop jsFunction           - {Function}  The JS Function the node represents
- * @prop jsFunctionString     - {String}    jsFunction.toString()
- * @prop paramNames           - {String[]}  Parameter names of the function
- * @prop paramTypes           - {String[]}  Shader land parameters type assumption
+ * @prop fn     - {String}    jsFunction.toString()
+ * @prop argumentNames           - {String[]}  Parameter names of the function
+ * @prop argumentTypes           - {String[]}  Shader land parameters type assumption
  * @prop isRootKernel         - {Boolean}   Special indicator, for kernel function
- * @prop functionString       - {String}    Converted function string
  * @prop calledFunctions      - {String[]}  List of all the functions called
  * @prop initVariables        - {String[]}  List of variables initialized in the function
  * @prop readVariables        - {String[]}  List of variables read operations occur
@@ -22,10 +18,17 @@ const utils = require('../../core/utils');
  *
  */
 class CPUFunctionNode extends FunctionNode {
-	constructor(functionName, jsFunction, settings) {
-		super(functionName, jsFunction, settings);
-		this.paramSizes = settings ? settings.paramSizes : [];
+
+	/**
+	 *
+	 * @param {string} fn
+	 * @param {object} [settings]
+	 */
+	constructor(fn, settings) {
+		settings = settings || {};
+		super(fn, settings);
 		this.memberStates = [];
+		this._string = null;
 	}
 
 	get memberState() {
@@ -44,35 +47,9 @@ class CPUFunctionNode extends FunctionNode {
 		}
 	}
 
-	generate() {
-		if (this.debug) {
-			console.log(this);
-		}
-		this.functionStringArray = this.astGeneric(this.getJsAST(), []);
-		this.functionString = this.functionStringArray.join('').trim();
-		return this.functionString;
-	}
-
-	/**
-	 * @desc Returns the converted JS function
-	 * @returns {String} function string, result is cached under this.getFunctionPrototypeString
-	 */
-	getFunctionPrototypeString() {
-		if (this.webGlFunctionPrototypeString) {
-			return this.webGlFunctionPrototypeString;
-		}
-		return this.webGlFunctionPrototypeString = this.generate();
-	}
-
-	/**
-	 * @desc Parses the abstract syntax tree for to its *named function declaration*
-	 * @param {Object} ast - the AST object to parse
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astFunctionDeclaration(ast, retArr) {
-		this.builder.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
-		return retArr;
+	toString() {
+		if (this._string) return this._string;
+		return this._string = this.astGeneric(this.getJsAST(), []).join('').trim();
 	}
 
 	/**
@@ -89,16 +66,16 @@ class CPUFunctionNode extends FunctionNode {
 
 		retArr.push(this.returnType);
 		retArr.push(' ');
-		retArr.push(this.functionName);
+		retArr.push(this.name);
 		retArr.push('(');
 
 		// Arguments handling
-		for (let i = 0; i < this.paramNames.length; ++i) {
+		for (let i = 0; i < this.argumentNames.length; ++i) {
 			if (i > 0) {
 				retArr.push(', ');
 			}
 			retArr.push('user_');
-			retArr.push(this.paramNames[i]);
+			retArr.push(this.argumentNames[i]);
 		}
 
 		retArr.push(');\n');
@@ -118,18 +95,18 @@ class CPUFunctionNode extends FunctionNode {
 		if (!this.isRootKernel) {
 			retArr.push('function');
 			retArr.push(' ');
-			retArr.push(this.functionName);
+			retArr.push(this.name);
 			retArr.push('(');
 
 			// Arguments handling
-			for (let i = 0; i < this.paramNames.length; ++i) {
-				const paramName = this.paramNames[i];
+			for (let i = 0; i < this.argumentNames.length; ++i) {
+				const argumentName = this.argumentNames[i];
 
 				if (i > 0) {
 					retArr.push(', ');
 				}
 				retArr.push('user_');
-				retArr.push(paramName);
+				retArr.push(argumentName);
 			}
 
 			// Function opening
@@ -161,10 +138,10 @@ class CPUFunctionNode extends FunctionNode {
 			this.astGeneric(ast.argument, retArr);
 			retArr.push(';');
 		} else if (this.isSubKernel) {
-			retArr.push(`${ this.functionName }Result = `);
+			retArr.push(`subKernelResult_${ this.name } = `);
 			this.astGeneric(ast.argument, retArr);
 			retArr.push(';');
-			retArr.push(`return ${ this.functionName }Result;`);
+			retArr.push(`return subKernelResult_${ this.name };`);
 		} else {
 			retArr.push('return ');
 			this.astGeneric(ast.argument, retArr);
@@ -255,9 +232,9 @@ class CPUFunctionNode extends FunctionNode {
 				if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
 					retArr.push('constants_' + idtNode.name);
 				} else {
-					const userParamName = this.getUserParamName(idtNode.name);
-					if (userParamName !== null) {
-						retArr.push('user_' + userParamName);
+					const userArgumentName = this.getUserArgumentName(idtNode.name);
+					if (userArgumentName !== null) {
+						retArr.push('user_' + userArgumentName);
 					} else {
 						retArr.push('user_' + idtNode.name);
 					}
@@ -267,13 +244,13 @@ class CPUFunctionNode extends FunctionNode {
 		switch (this.state) {
 			case 'input-index-y':
 				{
-					const size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+					const size = this.argumentSizes[this.argumentNames.indexOf(this.memberState)];
 					retArr.push(' * ' + size[0] + ')');
 					break;
 				}
 			case 'input-index-z':
 				{
-					const size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+					const size = this.argumentSizes[this.argumentNames.indexOf(this.memberState)];
 					retArr.push(' * ' + size[0] * size[1] + ')');
 					break;
 				}
@@ -754,13 +731,13 @@ class CPUFunctionNode extends FunctionNode {
 			switch (this.state) {
 				case 'input-index-y':
 					{
-						const size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+						const size = this.argumentSizes[this.argumentNames.indexOf(this.memberState)];
 						retArr.push(` * ${ size[0] })`);
 						break;
 					}
 				case 'input-index-z':
 					{
-						const size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+						const size = this.argumentSizes[this.argumentNames.indexOf(this.memberState)];
 						retArr.push(` * ${ size[0] * size[1] })`);
 						break;
 					}
@@ -815,13 +792,13 @@ class CPUFunctionNode extends FunctionNode {
 				}
 				this.astGeneric(argument, retArr);
 				if (argument.type === 'Identifier') {
-					const paramIndex = this.paramNames.indexOf(argument.name);
-					if (paramIndex === -1) {
+					const argumentIndex = this.argumentNames.indexOf(argument.name);
+					if (argumentIndex === -1) {
 						functionArguments.push(null);
 					} else {
 						functionArguments.push({
 							name: argument.name,
-							type: this.paramTypes[paramIndex]
+							type: this.argumentTypes[argumentIndex]
 						});
 					}
 				} else {

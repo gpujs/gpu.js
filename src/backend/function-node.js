@@ -1,6 +1,4 @@
-'use strict';
-
-const utils = require('../core/utils');
+const utils = require('../utils');
 const acorn = require('acorn');
 
 class FunctionNode {
@@ -10,24 +8,19 @@ class FunctionNode {
 	 * @desc Represents a single function, inside JS, webGL, or openGL.
 	 *
 	 * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
-	 *
-	 * @prop {String} functionName - Name of the function
-	 * @prop {Function} jsFunction - The JS Function the node represents
-	 * @prop {String} jsFunctionString - jsFunction.toString()
-	 * @prop {String[]} paramNames - Parameter names of the function
-	 * @prop {String[]} paramTypes - Shader land parameters type assumption
-	 * @prop {Boolean} isRootKernel - Special indicator, for kernel function
-	 * @prop {String[]} calledFunctions - List of all the functions called
-	 *
-	 * @param {String} functionName - Function name to assume, if its null, it attempts to extract from the function
-	 * @param {Function|String} jsFunction - JS Function to do conversion
-	 * @param {Object} [settings]
-	 *
 	 */
-	constructor(functionName, jsFunction, settings) {
+	constructor(fn, settings) {
+		if (!fn) {
+			throw new Error('fn parameter is missing');
+		}
+		settings = settings || {};
+
+		this.fn = fn;
+		this.name = settings.isRootKernel ?
+			'kernel' :
+			(settings.name || utils.getFunctionNameFromString(fn));
 		this.calledFunctions = [];
 		this.calledFunctionsArguments = {};
-		this.builder = null;
 		this.isRootKernel = false;
 		this.isSubKernel = false;
 		this.parent = null;
@@ -37,9 +30,8 @@ class FunctionNode {
 		this.output = null;
 		this.declarations = {};
 		this.states = [];
-		this.fixIntegerDivisionAccuracy = null;
 
-		let paramTypes;
+		let argumentTypes;
 		let returnType;
 		if (settings) {
 			if (settings.hasOwnProperty('debug')) {
@@ -57,8 +49,14 @@ class FunctionNode {
 			if (settings.hasOwnProperty('loopMaxIterations')) {
 				this.loopMaxIterations = settings.loopMaxIterations;
 			}
-			if (settings.hasOwnProperty('paramTypes')) {
-				this.paramTypes = paramTypes = settings.paramTypes;
+			if (settings.hasOwnProperty('argumentNames')) {
+				this.argumentNames = settings.argumentNames || [];
+			}
+			if (settings.hasOwnProperty('argumentTypes')) {
+				this.argumentTypes = argumentTypes = settings.argumentTypes;
+			}
+			if (settings.hasOwnProperty('argumentSizes')) {
+				this.argumentSizes = settings.argumentSizes || [];
 			}
 			if (settings.hasOwnProperty('constantTypes')) {
 				this.constantTypes = settings.constantTypes;
@@ -68,76 +66,72 @@ class FunctionNode {
 			if (settings.hasOwnProperty('returnType')) {
 				returnType = settings.returnType;
 			}
-			if (settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
-				this.fixIntegerDivisionAccuracy = settings.fixIntegerDivisionAccuracy;
-			}
 			if (settings.hasOwnProperty('isRootKernel')) {
 				this.isRootKernel = settings.isRootKernel;
 			}
+			if (settings.hasOwnProperty('isSubKernel')) {
+				this.isSubKernel = settings.isSubKernel;
+			}
+			if (settings.onNestedFunction) {
+				this.onNestedFunction = settings.onNestedFunction;
+			}
+			if (settings.lookupReturnType) {
+				this.lookupReturnType = settings.lookupReturnType;
+			}
 		}
 
-		//
-		// Missing jsFunction object exception
-		//
-		if (!jsFunction) {
-			throw 'jsFunction, parameter is missing';
+		this.validateFn();
+
+		if (!(this.name)) {
+			throw new Error('name could not be set');
 		}
 
-		//
-		// Setup jsFunction and its string property + validate them
-		//
-		this.jsFunctionString = jsFunction.toString();
-		if (!utils.isFunctionString(this.jsFunctionString)) {
-			console.error('jsFunction, to string conversion check failed: not a function?', this.jsFunctionString);
-			throw 'jsFunction, to string conversion check failed: not a function?';
+		this.setupArgumentTypes(argumentTypes);
+
+		if (!this.returnType) {
+			this.returnType = returnType || 'Number';
 		}
+	}
 
-		if (!utils.isFunction(jsFunction)) {
-			//throw 'jsFunction, is not a valid JS Function';
-			this.jsFunction = null;
-		} else {
-			this.jsFunction = jsFunction;
+	validateFn() {
+		if (typeof this.fn !== 'string') {
+			throw new Error('fn not a string');
 		}
-
-		//
-		// Setup the function name property
-		//
-		this.functionName = functionName ||
-			(jsFunction && jsFunction.name) ||
-			utils.getFunctionNameFromString(this.jsFunctionString);
-
-		if (!(this.functionName)) {
-			throw 'jsFunction, missing name argument or value';
+		if (!utils.isFunctionString(this.fn)) {
+			throw new Error('fn not a function string');
 		}
+	}
 
-		//
-		// Extract parameter name, and its argument types
-		//
-		this.paramNames = utils.getParamNamesFromString(this.jsFunctionString);
-		if (paramTypes) {
-			if (Array.isArray(paramTypes)) {
-				if (paramTypes.length !== this.paramNames.length) {
-					throw 'Invalid argument type array length, against function length -> (' +
-						paramTypes.length + ',' +
-						this.paramNames.length +
-						')';
+	setupArgumentTypes(argumentTypes) {
+		this.argumentNames = utils.getArgumentNamesFromString(this.fn);
+		if (argumentTypes) {
+			if (Array.isArray(argumentTypes)) {
+				if (argumentTypes.length !== this.argumentNames.length) {
+					throw new Error(
+						'Invalid argument type array length, against function length -> (' +
+						argumentTypes.length + ',' +
+						this.argumentNames.length +
+						')'
+					);
 				}
-				this.paramTypes = paramTypes;
-			} else if (typeof paramTypes === 'object') {
-				const paramVariableNames = Object.keys(paramTypes);
-				if (paramTypes.hasOwnProperty('returns')) {
-					this.returnType = paramTypes.returns;
-					paramVariableNames.splice(paramVariableNames.indexOf('returns'), 1);
+				this.argumentTypes = argumentTypes;
+			} else if (typeof argumentTypes === 'object') {
+				const argumentNamesFromTypes = Object.keys(argumentTypes);
+				if (argumentTypes.hasOwnProperty('returns')) {
+					this.returnType = argumentTypes.returns;
+					argumentNamesFromTypes.splice(argumentNamesFromTypes.indexOf('returns'), 1);
 				}
-				if (paramVariableNames.length > 0 && paramVariableNames.length !== this.paramNames.length) {
-					throw 'Invalid argument type array length, against function length -> (' +
-						paramVariableNames.length + ',' +
-						this.paramNames.length +
-						')';
+				if (argumentNamesFromTypes.length > 0 && argumentNamesFromTypes.length !== this.argumentNames.length) {
+					throw new Error(
+						'Invalid argument type array length, against function length -> (' +
+						argumentNamesFromTypes.length + ',' +
+						this.argumentNames.length +
+						')'
+					);
 				} else {
-					this.paramTypes = this.paramNames.map((key) => {
-						if (paramTypes.hasOwnProperty(key)) {
-							return paramTypes[key];
+					this.argumentTypes = this.argumentNames.map((key) => {
+						if (argumentTypes.hasOwnProperty(key)) {
+							return argumentTypes[key];
 						} else {
 							return 'Number';
 						}
@@ -145,29 +139,21 @@ class FunctionNode {
 				}
 			}
 		} else {
-			this.paramTypes = [];
-		}
-
-		//
-		// Return type handling
-		//
-		if (!this.returnType) {
-			this.returnType = returnType || 'Number';
+			this.argumentTypes = [];
 		}
 	}
 
-	isIdentifierConstant(paramName) {
+	/**
+	 * @param {String} name
+	 * @returns {boolean}
+	 */
+	isIdentifierConstant(name) {
 		if (!this.constants) return false;
-		return this.constants.hasOwnProperty(paramName);
+		return this.constants.hasOwnProperty(name);
 	}
 
-	isInput(paramName) {
-		return this.paramTypes[this.paramNames.indexOf(paramName)] === 'Input';
-	}
-
-	setBuilder(builder) {
-		this.builder = builder;
-		return this;
+	isInput(argumentName) {
+		return this.argumentTypes[this.argumentNames.indexOf(argumentName)] === 'Input';
 	}
 
 	pushState(state) {
@@ -240,11 +226,11 @@ class FunctionNode {
 	 *
 	 * @param {Object} [inParser] - Parser to use, assumes in scope 'parser' if null or undefined
 	 *
-	 * @returns {Object} The function AST Object, note that result is cached under this.jsFunctionAST;
+	 * @returns {Object} The function AST Object, note that result is cached under this.ast;
 	 */
 	getJsAST(inParser) {
-		if (this.jsFunctionAST) {
-			return this.jsFunctionAST;
+		if (this.ast) {
+			return this.ast;
 		}
 
 		inParser = inParser || acorn;
@@ -252,64 +238,43 @@ class FunctionNode {
 			throw 'Missing JS to AST parser';
 		}
 
-		const ast = Object.freeze(inParser.parse('var ' + this.functionName + ' = ' + this.jsFunctionString + ';', {
+		const ast = Object.freeze(inParser.parse('var ' + this.name + ' = ' + this.fn + ';', {
 			locations: true
 		}));
 		if (ast === null) {
-			throw 'Failed to parse JS code';
+			throw new Error('Failed to parse JS code');
 		}
 
 		// take out the function object, outside the var declarations
 		const funcAST = ast.body[0].declarations[0].init;
-		this.jsFunctionAST = funcAST;
+		this.ast = funcAST;
 
 		return funcAST;
 	}
 
-
-	/**
-	 * @desc Returns the converted webgl shader function equivalent of the JS function
-	 *
-	 * @returns {String} webgl function string, result is cached under this.webGlFunctionString
-	 */
-	getFunctionString() {
-		this.generate();
-		return this.functionString;
-	}
-
-	/**
-	 * @desc Set the functionString value, overwriting it
-	 * @param {String} functionString - Shader code string, representing the function
-	 */
-	setFunctionString(functionString) {
-		this.functionString = functionString;
-	}
-
 	/**
 	 * @desc Return the type of parameter sent to subKernel/Kernel.
-	 *
-	 * @param {String} paramName - Name of the parameter
-	 *
+	 * @param {String} argumentName - Name of the parameter
 	 * @returns {String} Type of the parameter
 	 */
-	getParamType(paramName) {
-		const paramIndex = this.paramNames.indexOf(paramName);
-		if (paramIndex === -1) {
-			if (this.declarations.hasOwnProperty(paramName)) {
-				return this.declarations[paramName];
+	getArgumentType(argumentName) {
+		const argumentIndex = this.argumentNames.indexOf(argumentName);
+		if (argumentIndex === -1) {
+			if (this.declarations.hasOwnProperty(argumentName)) {
+				return this.declarations[argumentName];
 			} else {
 				return 'Number';
 			}
 		} else {
 			if (!this.parent) {
-				if (this.paramTypes[paramIndex]) return this.paramTypes[paramIndex];
+				if (this.argumentTypes[argumentIndex]) return this.argumentTypes[argumentIndex];
 			} else {
-				if (this.paramTypes[paramIndex]) return this.paramTypes[paramIndex];
-				const calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
+				if (this.argumentTypes[argumentIndex]) return this.argumentTypes[argumentIndex];
+				const calledFunctionArguments = this.parent.calledFunctionsArguments[this.name];
 				for (let i = 0; i < calledFunctionArguments.length; i++) {
 					const calledFunctionArgument = calledFunctionArguments[i];
-					if (calledFunctionArgument[paramIndex] !== null) {
-						return this.paramTypes[paramIndex] = calledFunctionArgument[paramIndex].type;
+					if (calledFunctionArgument[argumentIndex] !== null) {
+						return this.argumentTypes[argumentIndex] = calledFunctionArgument[argumentIndex].type;
 					}
 				}
 			}
@@ -325,39 +290,35 @@ class FunctionNode {
 	}
 
 	/**
-	 * @desc Return the name of the *user parameter*(subKernel parameter) corresponding
-	 * to the parameter supplied to the kernel
+	 * @desc Return the name of the *user argument*(subKernel argument) corresponding
+	 * to the argument supplied to the kernel
 	 *
-	 * @param {String} paramName - Name of the parameter
-	 *
+	 * @param {String} name - Name of the argument
 	 * @returns {String} Name of the parameter
-	 *
 	 */
-	getUserParamName(paramName) {
-		const paramIndex = this.paramNames.indexOf(paramName);
-		if (paramIndex === -1) return null;
+	getUserArgumentName(name) {
+		const argumentIndex = this.argumentNames.indexOf(name);
+		if (argumentIndex === -1) return null;
 		if (!this.parent || !this.isSubKernel) return null;
-		const calledFunctionArguments = this.parent.calledFunctionsArguments[this.functionName];
+		const calledFunctionArguments = this.parent.calledFunctionsArguments[this.name];
 		for (let i = 0; i < calledFunctionArguments.length; i++) {
 			const calledFunctionArgument = calledFunctionArguments[i];
-			const param = calledFunctionArgument[paramIndex];
-			if (param !== null && param.type !== 'Integer') {
-				return param.name;
+			const argument = calledFunctionArgument[argumentIndex];
+			if (argument !== null && argument.type !== 'Integer') {
+				return argument.name;
 			}
 		}
 		return null;
 	}
 
-	generate(settings) {
-		throw new Error(`"generate" not defined on ${ this.constructor.name }`);
+	toString(settings) {
+		throw new Error(`"toString" not defined on ${ this.constructor.name }`);
 	}
 
 	/**
 	 * @desc Parses the abstract syntax tree for generically to its respective function
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the parsed string array
 	 */
 	astGeneric(ast, retArr) {
@@ -440,13 +401,22 @@ class FunctionNode {
 	 * @param {Object} ast - the AST object where the error is
 	 */
 	astErrorOutput(error, ast) {
-		return new Error(error + ':\n' + utils.getAstString(this.jsFunctionString, ast));
+		return new Error(error + ':\n' + utils.getAstString(this.fn, ast));
 	}
 
 	astDebuggerStatement(arrNode, retArr) {
 		return retArr;
 	}
+	/**
+	 * @desc Parses the abstract syntax tree for to its *named function declaration*
+	 * @param {Object} ast - the AST object to parse
+	 * @param {Array} retArr - return array string
+	 * @returns {Array} the append retArr
+	 */
 	astFunctionDeclaration(ast, retArr) {
+		if (this.onNestedFunction) {
+			this.onNestedFunction(utils.getAstString(this.fn, ast));
+		}
 		return retArr;
 	}
 	astFunctionExpression(ast, retArr) {
@@ -537,14 +507,6 @@ class FunctionNode {
 	 *
 	 */
 	pushParameter(retArr, name) {
-		const type = this.getParamType(name);
-		if (this.isState('in-get-call-parameters') || this.isState('integer-comparison')) {
-			if (type !== 'Integer' && type !== 'Array') {
-				retArr.push(`int(user_${name})`);
-				return;
-			}
-		}
-
 		retArr.push(`user_${name}`);
 	}
 }

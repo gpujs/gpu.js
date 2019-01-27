@@ -8,11 +8,11 @@
   }`;
 
   function addCustomNativeFunctionDivide(mode, fn) {
-    var gpu = new GPU({ mode: mode });
+    const gpu = new GPU({ mode: mode });
 
     gpu.addNativeFunction('divide', fn);
 
-    var f = gpu.createKernel(function(a, b) {
+    const f = gpu.createKernel(function(a, b) {
       return divide(a[this.thread.x], b[this.thread.x]);
     }, {
       output : [6]
@@ -20,13 +20,13 @@
 
     QUnit.assert.ok(f !== null, 'function generated test');
 
-    var a = [1, 4, 3, 5, 6, 3];
-    var b = [4, 2, 6, 1, 2, 3];
+    const a = [1, 4, 3, 5, 6, 3];
+    const b = [4, 2, 6, 1, 2, 3];
 
-    var res = f(a,b);
-    var exp = [0.25, 2, 0.5, 5, 3, 1];
+    const res = f(a,b);
+    const exp = [0.25, 2, 0.5, 5, 3, 1];
 
-    for(var i = 0; i < exp.length; ++i) {
+    for(let i = 0; i < exp.length; ++i) {
       QUnit.assert.equal(res[i], exp[i], 'Result arr idx: '+i);
     }
     gpu.destroy();
@@ -57,7 +57,7 @@
   });
 
   function addCustomNativeFunctionDivideFallback(mode) {
-    var gpu = new GPU({ mode: mode });
+    const gpu = new GPU({ mode: mode });
 
     gpu.addNativeFunction('divide', `float divide(float a, float b) {
     return a / b;
@@ -67,7 +67,7 @@
       return a / b;
     }
 
-    var f = gpu.createKernel(function(a, b) {
+    const f = gpu.createKernel(function(a, b) {
       return divide(a[this.thread.x], b[this.thread.x]);
     }, {
       functions: [divide],
@@ -76,13 +76,13 @@
 
     QUnit.assert.ok( f !== null, 'function generated test');
 
-    var a = [1, 4, 3, 5, 6, 3];
-    var b = [4, 2, 6, 1, 2, 3];
+    const a = [1, 4, 3, 5, 6, 3];
+    const b = [4, 2, 6, 1, 2, 3];
 
-    var res = f(a,b);
-    var exp = [0.25, 2, 0.5, 5, 3, 1];
+    const res = f(a,b);
+    const exp = [0.25, 2, 0.5, 5, 3, 1];
 
-    for(var i = 0; i < exp.length; ++i) {
+    for(let i = 0; i < exp.length; ++i) {
       QUnit.assert.equal(res[i], exp[i], 'Result arr idx: '+i);
     }
     gpu.destroy();

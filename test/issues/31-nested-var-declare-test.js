@@ -55,33 +55,28 @@
   });
 
   QUnit.test('Issue #31 - nestedVarRedeclare : AST handling (webgl)', () => {
-    const builder = new GPU.WebGLFunctionBuilder();
+    const builder = new GPU.FunctionBuilder({
+      functionNodes: [new GPU.WebGLFunctionNode(nestedVarRedeclareFunction.toString())]
+    });
     QUnit.assert.throws(() => {
-      builder.addFunction(null, nestedVarRedeclareFunction);
       builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
     });
   });
 
   QUnit.test('Issue #31 - nestedVarRedeclare : AST handling (webgl2)', () => {
-    const builder = new GPU.WebGL2FunctionBuilder();
-    QUnit.assert.throws(() => {
-      builder.addFunction(null, nestedVarRedeclareFunction);
-      builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
+    const builder = new GPU.FunctionBuilder({
+      functionNodes: [new GPU.WebGL2FunctionNode(nestedVarRedeclareFunction.toString())]
     });
-  });
-
-  QUnit.test('Issue #31 - nestedVarRedeclare : AST handling (headlessgl)', () => {
-    const builder = new GPU.HeadlessGLFunctionBuilder();
     QUnit.assert.throws(() => {
-      builder.addFunction(null, nestedVarRedeclareFunction);
       builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
     });
   });
 
   QUnit.test('Issue #31 - nestedVarRedeclare : AST handling (cpu)', () => {
-    const builder = new GPU.CPUFunctionBuilder();
+    const builder = new GPU.FunctionBuilder({
+      functionNodes: [new GPU.CPUFunctionNode(nestedVarRedeclareFunction.toString())]
+    });
     QUnit.assert.throws(() => {
-      builder.addFunction(null, nestedVarRedeclareFunction);
       builder.getStringFromFunctionNames(['nestedVarRedeclareFunction'])
     });
   });
@@ -136,8 +131,9 @@
   });
 
   QUnit.test('Issue #31 - nestedVarDeclare : AST handling (webgl)', () => {
-    var builder = new GPU.WebGLFunctionBuilder();
-    builder.addFunction(null, nestedVarDeclareFunction);
+    const builder = new GPU.FunctionBuilder({
+      functionNodes: [new GPU.WebGLFunctionNode(nestedVarDeclareFunction.toString())]
+    });
 
     QUnit.assert.equal(
       builder.getStringFromFunctionNames(['nestedVarDeclareFunction']),
@@ -154,26 +150,9 @@
   });
 
   QUnit.test('Issue #31 - nestedVarDeclare : AST handling (webgl2)', () => {
-    var builder = new GPU.WebGL2FunctionBuilder();
-    builder.addFunction(null, nestedVarDeclareFunction);
-
-    QUnit.assert.equal(
-      builder.getStringFromFunctionNames(['nestedVarDeclareFunction']),
-      'float nestedVarDeclareFunction() {'
-      + '\nfloat user_result=0.0;'
-      + '\nfor (int user_i=0;(user_i<10);++user_i){'
-      + '\nfor (int user_i=0;(user_i<20);++user_i){' //<-- Note: don't do this in real life!
-      + '\nuser_result+=1.0;}'
-      + '\n}'
-      + '\n'
-      + '\nreturn user_result;'
-      + '\n}'
-    );
-  });
-
-  QUnit.test('Issue #31 - nestedVarDeclare : AST handling (headlessgl)', () => {
-    var builder = new GPU.HeadlessGLFunctionBuilder();
-    builder.addFunction(null, nestedVarDeclareFunction);
+    const builder = new GPU.FunctionBuilder({
+      functionNodes: [new GPU.WebGL2FunctionNode(nestedVarDeclareFunction.toString())]
+    });
 
     QUnit.assert.equal(
       builder.getStringFromFunctionNames(['nestedVarDeclareFunction']),
@@ -190,8 +169,9 @@
   });
 
   QUnit.test('Issue #31 - nestedVarDeclare : AST handling (cpu)', () => {
-    var builder = new GPU.CPUFunctionBuilder();
-    builder.addFunction(null, nestedVarDeclareFunction);
+    const builder = new GPU.FunctionBuilder({
+      functionNodes: [new GPU.CPUFunctionNode(nestedVarDeclareFunction.toString())]
+    });
 
     QUnit.assert.equal(
       builder.getStringFromFunctionNames(['nestedVarDeclareFunction']),

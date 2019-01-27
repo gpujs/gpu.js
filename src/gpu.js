@@ -1,92 +1,109 @@
-'use strict';
-
 const utils = require('./utils');
-const GPUCore = require('./gpu-core');
-const CPURunner = require('../backend/cpu/runner');
-const HeadlessGLRunner = require('../backend/headless-gl/runner');
-const WebGL2Runner = require('../backend/web-gl2/runner');
-const WebGLRunner = require('../backend/web-gl/runner');
+const CPUKernel = require('./backend/cpu/kernel');
+const HeadlessGLKernel = require('./backend/headless-gl/kernel');
+const WebGL2Kernel = require('./backend/web-gl2/kernel');
+const WebGLKernel = require('./backend/web-gl/kernel');
+const kernelRunShortcut = require('./kernel-run-shortcut');
 
-const runners = [HeadlessGLRunner, WebGL2Runner, WebGLRunner];
+const kernelOrder = [HeadlessGLKernel, WebGL2Kernel, WebGLKernel];
 
-const runnerTypes = ['gpu', 'cpu'];
+const kernelTypes = ['gpu', 'cpu'];
 
-const internalRunners = {
-	'headlessgl': HeadlessGLRunner,
-	'webgl2': WebGL2Runner,
-	'webgl': WebGLRunner,
+const internalKernels = {
+	'headlessgl': HeadlessGLKernel,
+	'webgl2': WebGL2Kernel,
+	'webgl': WebGLKernel,
 };
 
 /**
  * Initialises the GPU.js library class which manages the webGlContext for the created functions.
  */
-class GPU extends GPUCore {
-	static get runners() {
-		return runners;
+class GPU {
+	static get kernelOrder() {
+		return kernelOrder;
 	}
 
-	static get runnerTypes() {
-		return runnerTypes;
+	static get kernelTypes() {
+		return kernelTypes;
 	}
+
 	/**
 	 * Creates an instance of GPU.
 	 * @param {Object} [settings] - Settings to set mode, and other properties. See #GPUCore
 	 */
 	constructor(settings) {
-		super();
 		settings = settings || {};
 		this.canvas = settings.canvas || null;
 		this.context = settings.context || null;
-		const mode = this.mode = settings.mode;
-		let Runner = null;
+		this.mode = settings.mode;
+		this.Kernel = null;
+		this.kernels = [];
+		this.functions = [];
+		this.nativeFunctions = {};
 
-		if (this.context) {
-			for (let i = 0; i < runners.length; i++) {
-				const ExternalRunner = runners[i];
-				if (ExternalRunner.isContextMatch(this.context)) {
-					Runner = ExternalRunner;
-					break;
-				}
-			}
-			if (Runner === null) {
-				throw new Error('unknown Context');
-			}
-		} else if (mode) {
-			if (mode in internalRunners) {
-				Runner = internalRunners[mode];
-			} else if (mode === 'gpu') {
-				for (let i = 0; i < runners.length; i++) {
-					if (runners[i].isSupported) {
-						Runner = runners[i];
-						break;
-					}
-				}
-			} else if (mode === 'cpu') {
-				Runner = CPURunner;
-			}
-			if (!Runner) {
-				throw new Error(`A requested mode of "${mode}" and is not supported`);
-			}
-		} else {
-			for (let i = 0; i < runners.length; i++) {
-				if (runners[i].isSupported) {
-					Runner = runners[i];
-					break;
-				}
-			}
-			if (!Runner) {
-				Runner = CPURunner;
+		// add functions from settings
+		if (settings.functions) {
+			for (let i = 0; i < settings.functions.length; i++) {
+				this.addFunction(settings.functions[i]);
 			}
 		}
 
-		this.kernels = [];
-		this.runner = new Runner(settings);
+		this.chooseKernel();
 	}
+
+	chooseKernel() {
+		if (this.Kernel) return this.Kernel;
+
+		let Kernel = null;
+
+		if (this.context) {
+			for (let i = 0; i < kernelOrder.length; i++) {
+				const ExternalKernel = kernelOrder[i];
+				if (ExternalKernel.isContextMatch(this.context)) {
+					Kernel = ExternalKernel;
+					break;
+				}
+			}
+			if (Kernel === null) {
+				throw new Error('unknown Context');
+			}
+		} else if (this.mode) {
+			if (this.mode in internalKernels) {
+				Kernel = internalKernels[this.mode];
+			} else if (this.mode === 'gpu') {
+				for (let i = 0; i < kernelOrder.length; i++) {
+					if (kernelOrder[i].isSupported) {
+						Kernel = kernelOrder[i];
+						break;
+					}
+				}
+			} else if (this.mode === 'cpu') {
+				Kernel = CPUKernel;
+			}
+			if (!Kernel) {
+				throw new Error(`A requested mode of "${this.mode}" and is not supported`);
+			}
+		} else {
+			for (let i = 0; i < kernelOrder.length; i++) {
+				if (kernelOrder[i].isSupported) {
+					Kernel = kernelOrder[i];
+					break;
+				}
+			}
+			if (!Kernel) {
+				Kernel = CPUKernel;
+			}
+		}
+
+		this.Kernel = Kernel;
+		return Kernel;
+	}
+
 	/**
 	 *
 	 * @desc This creates a callable function object to call the kernel function with the argument parameter set
 	 *
-	 * @param {Function} fn - The calling to perform the conversion
+	 * @param {Function|String} source - The calling to perform the conversion
 	 * @param {Object} [settings] - The parameter configuration object
 	 * @property {String} settings.dimensions - Thread dimension array (Defaults to [1024])
 	 * @property {String} settings.mode - CPU / GPU configuration mode (Defaults to null)
@@ -96,25 +113,39 @@ class GPU extends GPUCore {
 	 * *'gpu'* : Attempts to build GPU mode, else fallbacks
 	 * *'cpu'* : Forces JS fallback mode only
 	 *
-	 * @returns {Function} callable function to run
+	 * @returns {Kernel} callable function to run
 	 */
-	createKernel(fn, settings) {
+	createKernel(source, settings) {
 		//
 		// basic parameters safety checks
 		//
-		if (typeof fn === 'undefined') {
-			throw 'Missing fn parameter';
+		if (typeof source === 'undefined') {
+			throw 'Missing source parameter';
 		}
-		if (!utils.isFunction(fn) && typeof fn !== 'string') {
-			throw 'fn parameter not a function';
+		if (!utils.isFunction(source) && typeof source !== 'string') {
+			throw 'source parameter not a function';
 		}
 
 		const mergedSettings = Object.assign({
 			context: this.context,
-			canvas: this.canvas
+			canvas: this.canvas,
+			functions: this.functions,
+			nativeFunctions: this.nativeFunctions
 		}, settings || {});
 
-		const kernel = this.runner.buildKernel(fn, mergedSettings);
+		// if we have any functions
+		mergedSettings.functions = mergedSettings.functions.map(fn => {
+			if (typeof fn === 'object') return fn;
+			const fnString = fn.toString();
+			return {
+				source: fnString,
+				settings: {
+					name: utils.getFunctionNameFromString(fnString)
+				}
+			};
+		});
+
+		const kernel = kernelRunShortcut(new this.Kernel(source.toString(), mergedSettings));
 
 		//if canvas didn't come from this, propagate from kernel
 		if (!this.canvas) {
@@ -168,9 +199,9 @@ class GPU extends GPUCore {
 			fn = arguments[arguments.length - 1];
 		}
 
-		if (!this.runner.constructor.isSupported || !this.runner.constructor.features.kernelMap) {
-			if (this.mode && runnerTypes.indexOf(this.mode) < 0) {
-				throw new Error(`kernelMap not supported on ${this.runner.constructor.name}`);
+		if (!this.Kernel.isSupported || !this.Kernel.features.kernelMap) {
+			if (this.mode && kernelTypes.indexOf(this.mode) < 0) {
+				throw new Error(`kernelMap not supported on ${this.Kernel.name}`);
 			}
 		}
 
@@ -178,13 +209,26 @@ class GPU extends GPUCore {
 		if (Array.isArray(arguments[0])) {
 			const functions = arguments[0];
 			for (let i = 0; i < functions.length; i++) {
-				kernel.addSubKernel(functions[i]);
+				const source = functions[i].toString();
+				const name = utils.getFunctionNameFromString(source);
+				kernel.addSubKernel({
+					name,
+					source,
+					property: i,
+
+				});
 			}
 		} else {
 			const functions = arguments[0];
 			for (let p in functions) {
 				if (!functions.hasOwnProperty(p)) continue;
-				kernel.addSubKernelProperty(p, functions[p]);
+				const source = functions[p].toString();
+				const name = utils.getFunctionNameFromString(source);
+				kernel.addSubKernel({
+					name: name || p,
+					source,
+					property: p,
+				});
 			}
 		}
 
@@ -227,6 +271,7 @@ class GPU extends GPUCore {
 				.setOutputToTexture(true);
 		}
 
+		//TODO: needs moved to kernel
 		return function() {
 			combinedKernel.apply(null, arguments);
 			const texSize = lastKernel.texSize;
@@ -266,59 +311,64 @@ class GPU extends GPUCore {
 	 * @returns {GPU} returns itself
 	 */
 	addFunction(fn, settings) {
-		this.runner.functionBuilder.addFunction(null, fn, settings);
+		if (this.kernels.length > 0) {
+			throw new Error('Cannot call "addFunction" after "createKernels" has been called.');
+		}
+		this.functions.push({
+			source: typeof fn === 'string' ? fn : fn.toString(),
+			settings
+		});
 		return this;
 	}
 
 	/**
 	 * @desc Adds additional native functions, that the kernel may call.
 	 * @param {String} name - native function name, used for reverse lookup
-	 * @param {String} nativeFunction - the native function implementation, as it would be defined in it's entirety
+	 * @param {String} source - the native function implementation, as it would be defined in it's entirety
 	 * @returns {GPU} returns itself
 	 */
-	addNativeFunction(name, nativeFunction) {
-		this.runner.functionBuilder.addNativeFunction(name, nativeFunction);
+	addNativeFunction(name, source) {
+		this.nativeFunctions[name] = source;
 		return this;
 	}
 
 	/**
 	 * @desc Return the current mode in which gpu.js is executing.
-	 * @returns {String} The current mode, "cpu", "webgl", etc.
+	 * @returns {String} The current mode, "cpu", "gpu", etc.
 	 */
 	getMode() {
-		return this.runner.getMode();
+		return this.mode || this.Kernel.getMode();
 	}
 
 	/**
-	 * @desc Return TRUE, if browser supports WebGL AND Canvas
+	 * @desc Return TRUE, if platform supports WebGL AND Canvas
 	 *
-	 * @returns {Boolean} TRUE if browser supports webGl
+	 * @returns {Boolean} TRUE if platform supports webGl
 	 */
 	static get isWebGLSupported() {
-		return WebGLRunner.isSupported;
+		return WebGLKernel.isSupported;
 	}
 
 	/**
-	 * @desc Return TRUE, if browser supports WebGL2 AND Canvas
+	 * @desc Return TRUE, if platform supports WebGL2 AND Canvas
 	 *
-	 * @returns {Boolean} TRUE if browser supports webGl
+	 * @returns {Boolean} TRUE if platform supports webGl
 	 */
 	static get isWebGL2Supported() {
-		return WebGL2Runner.isSupported;
+		return WebGL2Kernel.isSupported;
 	}
 
 	/**
 	 * @desc Return TRUE, if node supports WebGL
 	 *
-	 * @returns {Boolean} TRUE if browser supports webGl
+	 * @returns {Boolean} TRUE if platform supports webGl
 	 */
 	static get isHeadlessGLSupported() {
-		return HeadlessGLRunner.isSupported;
+		return HeadlessGLKernel.isSupported;
 	}
 
 	static get isCanvasSupported() {
-		throw new Error('how to check canvas');
-		return utils.isCanvasSupported();
+		return typeof HTMLCanvasElement !== 'undefined';
 	}
 	/**
 	 * @desc Return the canvas object bound to this gpu instance.
@@ -334,13 +384,6 @@ class GPU extends GPUCore {
 	 */
 	getContext() {
 		return this.context;
-	}
-
-	/**
-	 * Return the runner
-	 */
-	getRunner() {
-		return this.runner;
 	}
 
 	/**

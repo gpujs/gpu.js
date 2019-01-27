@@ -1,19 +1,16 @@
-var GPU = require('../../src/index');
-
 (function() {
+  const GPU = require('../../src/index');
   function test(mode) {
     const gpu = new GPU({ mode: mode });
     function getPi() {
       return this.constants.pi;
     }
-
+    gpu.addFunction(getPi);
     const kernel = gpu.createKernel(function() {
       return getPi();
     })
       .setOutput([1])
       .setConstants({ pi: Math.PI });
-
-    gpu.addFunction(getPi);
 
     const result = kernel();
     QUnit.assert.equal(result[0].toFixed(7), Math.PI.toFixed(7));

@@ -1,7 +1,5 @@
-'use strict';
-
-const utils = require('../../core/utils');
-const kernelRunShortcut = require('../kernel-run-shortcut');
+const utils = require('../../utils');
+const kernelRunShortcut = require('../../kernel-run-shortcut');
 
 function removeFnNoise(fn) {
 	if (/^function /.test(fn)) {
@@ -39,8 +37,7 @@ module.exports = function(gpuKernel, name) {
       flatten2dArrayTo: ${ removeNoise(utils.flatten2dArrayTo.toString()) },
       flatten3dArrayTo: ${ removeNoise(utils.flatten3dArrayTo.toString()) },
       systemEndianness: ${ removeNoise(utils.getSystemEndianness.toString()) },
-      isArray: ${ removeNoise(utils.isArray.toString()) },
-      checkOutput: ${ removeNoise(utils.checkOutput.toString()) }
+      isArray: ${ removeNoise(utils.isArray.toString()) }
     };
     const Utils = utils;
     const canvases = [];
@@ -65,10 +62,9 @@ module.exports = function(gpuKernel, name) {
         this.floatOutput = ${ boolToString(gpuKernel.floatOutput) };
         this.floatOutputForce = ${ boolToString(gpuKernel.floatOutputForce) };
         this.hardcodeConstants = ${ boolToString(gpuKernel.hardcodeConstants) };
-        this.subKernelProperties = null;
         this.outputToTexture = ${ boolToString(gpuKernel.outputToTexture) };
-        this.paramNames = ${ JSON.stringify(gpuKernel.paramNames) };
-        this.paramTypes = ${ JSON.stringify(gpuKernel.paramTypes) };
+        this.argumentNames = ${ JSON.stringify(gpuKernel.argumentNames) };
+        this.argumentTypes = ${ JSON.stringify(gpuKernel.argumentTypes) };
         this.texSize = ${ JSON.stringify(gpuKernel.texSize) };
         this.output = ${ JSON.stringify(gpuKernel.output) };
         this.compiledFragShaderString = \`${ gpuKernel.compiledFragShaderString }\`;
@@ -76,7 +72,6 @@ module.exports = function(gpuKernel, name) {
 		    this.programUniformLocationCache = {};
 		    this.textureCache = {};
 		    this.subKernelOutputTextures = null;
-		    this.subKernelOutputVariableNames = null;
 		    this.extensions = {};
 		    this.uniform1fCache = {};
 		    this.uniform1iCache = {};
@@ -89,7 +84,8 @@ module.exports = function(gpuKernel, name) {
       _getFragShaderString() { return this.compiledFragShaderString; }
       _getVertShaderString() { return this.compiledVertShaderString; }
       validateSettings() {}
-      setupParams() {}
+      initExtensions() {}
+      setupArguments() {}
       setupConstants() {}
       setCanvas(canvas) { this.canvas = canvas; return this; }
       setContext(context) { this.context = context; return this; }
@@ -100,7 +96,7 @@ module.exports = function(gpuKernel, name) {
 		  ${ removeFnNoise(gpuKernel.run.toString()) }
 		  ${ removeFnNoise(gpuKernel._addArgument.toString()) }
 		  ${ removeFnNoise(gpuKernel._formatArrayTransfer.toString()) }
-		  ${ removeFnNoise(gpuKernel.initExtensions.toString()) }
+		  ${ removeFnNoise(gpuKernel.checkOutput.toString()) }
 		  ${ removeFnNoise(gpuKernel.getArgumentTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.getTextureCache.toString()) }
 		  ${ removeFnNoise(gpuKernel.getOutputTexture.toString()) }
@@ -116,6 +112,6 @@ module.exports = function(gpuKernel, name) {
 		  ${ removeFnNoise(gpuKernel.setUniform3fv.toString()) }
 		  ${ removeFnNoise(gpuKernel.setUniform3iv.toString()) }
     };
-    return kernelRunShortcut(new Kernel());
+    return kernelRunShortcut(new ${ name || 'Kernel' }());
   };`;
 };

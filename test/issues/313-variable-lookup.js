@@ -1,23 +1,24 @@
 (() => {
   const GPU = require('../../src/index');
   function test(mode) {
-    const gpu = new GPU({ mode: mode });
-
     function mult2(scale) {
       return 2*scale;
     }
 
+    const gpu = new GPU({
+      mode: mode,
+      functions: [mult2]
+    });
+
     const render1 = gpu.createKernel(function(input) {
       return (mult2(input) + mult2(input*2) + mult2(input*1))	// RIGHT
     })
-      .setOutput([1])
-      .setFunctions([mult2]);
+      .setOutput([1]);
 
     const render2 = gpu.createKernel(function(input) {
       return (mult2(input) + mult2(input*2) + mult2(input)); // WRONG
     })
-      .setOutput([1])
-      .setFunctions([mult2]);
+      .setOutput([1]);
 
     QUnit.assert.equal(render1(1)[0], 8, 'render1 equals 8');
     QUnit.assert.equal(render2(1)[0], 8, 'render2 equals 8');

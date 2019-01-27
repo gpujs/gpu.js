@@ -9,7 +9,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var FunctionNode = require('../function-node');
-var utils = require('../../core/utils');
+var utils = require('../../utils');
 // Closure capture for the ast function, prevent collision with existing AST functions
 // The prefixes to use
 var jsMathPrefix = 'Math.';
@@ -20,43 +20,39 @@ var DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
 var ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
 /**
- * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code
+ * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective webGL code
  * @returns the converted webGL function string
  */
 
 var WebGLFunctionNode = function (_FunctionNode) {
 	_inherits(WebGLFunctionNode, _FunctionNode);
 
-	function WebGLFunctionNode() {
+	/**
+  *
+  * @param {string} fn
+  * @param {object} [settings]
+  */
+	function WebGLFunctionNode(fn, settings) {
 		_classCallCheck(this, WebGLFunctionNode);
 
-		return _possibleConstructorReturn(this, (WebGLFunctionNode.__proto__ || Object.getPrototypeOf(WebGLFunctionNode)).apply(this, arguments));
+		var _this = _possibleConstructorReturn(this, (WebGLFunctionNode.__proto__ || Object.getPrototypeOf(WebGLFunctionNode)).call(this, fn, settings));
+
+		_this.fixIntegerDivisionAccuracy = null;
+		if (settings && settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
+			_this.fixIntegerDivisionAccuracy = settings.fixIntegerDivisionAccuracy;
+		}
+		_this._string = null;
+		return _this;
 	}
 
 	_createClass(WebGLFunctionNode, [{
-		key: 'generate',
-		value: function generate() {
+		key: 'toString',
+		value: function toString() {
 			if (this.prototypeOnly) {
 				return this.astFunctionPrototype(this.getJsAST(), []).join('').trim();
-			} else {
-				this.functionStringArray = this.astGeneric(this.getJsAST(), []);
 			}
-			this.functionString = webGlRegexOptimize(this.functionStringArray.join('').trim());
-			return this.functionString;
-		}
-
-		/**
-   * @desc Parses the abstract syntax tree for to its *named function declaration*
-   * @param {Object} ast - the AST object to parse
-   * @param {Array} retArr - return array string
-   * @returns {Array} the append retArr
-   */
-
-	}, {
-		key: 'astFunctionDeclaration',
-		value: function astFunctionDeclaration(ast, retArr) {
-			this.builder.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
-			return retArr;
+			if (this._string) return this._string;
+			return this._string = webGlRegexOptimize(this.astGeneric(this.getJsAST(), []).join('').trim());
 		}
 
 		/**
@@ -81,19 +77,19 @@ var WebGLFunctionNode = function (_FunctionNode) {
 			}
 			retArr.push(type);
 			retArr.push(' ');
-			retArr.push(this.functionName);
+			retArr.push(this.name);
 			retArr.push('(');
 
 			// Arguments handling
-			for (var i = 0; i < this.paramNames.length; ++i) {
+			for (var i = 0; i < this.argumentNames.length; ++i) {
 				if (i > 0) {
 					retArr.push(', ');
 				}
 
-				retArr.push(this.paramTypes[i]);
+				retArr.push(this.argumentTypes[i]);
 				retArr.push(' ');
 				retArr.push('user_');
-				retArr.push(this.paramNames[i]);
+				retArr.push(this.argumentNames[i]);
 			}
 
 			retArr.push(');\n');
@@ -124,26 +120,26 @@ var WebGLFunctionNode = function (_FunctionNode) {
 				retArr.push(type);
 			}
 			retArr.push(' ');
-			retArr.push(this.functionName);
+			retArr.push(this.name);
 			retArr.push('(');
 
 			if (!this.isRootKernel) {
 				// Arguments handling
-				for (var i = 0; i < this.paramNames.length; ++i) {
-					var paramName = this.paramNames[i];
+				for (var i = 0; i < this.argumentNames.length; ++i) {
+					var argumentName = this.argumentNames[i];
 
 					if (i > 0) {
 						retArr.push(', ');
 					}
-					var paramType = this.getParamType(paramName);
-					var _type = typeMap[paramType];
+					var argumentType = this.getArgumentType(argumentName);
+					var _type = typeMap[argumentType];
 					if (!_type) {
-						throw new Error('unknown type ' + paramType);
+						throw new Error('unknown type ' + argumentType);
 					}
 					retArr.push(_type);
 					retArr.push(' ');
 					retArr.push('user_');
-					retArr.push(paramName);
+					retArr.push(argumentName);
 				}
 			}
 
@@ -177,10 +173,10 @@ var WebGLFunctionNode = function (_FunctionNode) {
 				retArr.push(';');
 				retArr.push('return;');
 			} else if (this.isSubKernel) {
-				retArr.push(this.functionName + 'Result = ');
+				retArr.push('subKernelResult_' + this.name + ' = ');
 				this.astGeneric(ast.argument, retArr);
 				retArr.push(';');
-				retArr.push('return ' + this.functionName + 'Result;');
+				retArr.push('return subKernelResult_' + this.name + ';');
 			} else {
 				retArr.push('return ');
 				this.astGeneric(ast.argument, retArr);
@@ -341,9 +337,9 @@ var WebGLFunctionNode = function (_FunctionNode) {
 					retArr.push('3.402823466e+38');
 					break;
 				default:
-					var userParamName = this.getUserParamName(idtNode.name);
-					if (userParamName !== null) {
-						this.pushParameter(retArr, userParamName);
+					var userArgumentName = this.getUserArgumentName(idtNode.name);
+					if (userArgumentName !== null) {
+						this.pushParameter(retArr, userArgumentName);
 					} else {
 						this.pushParameter(retArr, idtNode.name);
 					}
@@ -613,12 +609,12 @@ var WebGLFunctionNode = function (_FunctionNode) {
 								}
 								// param[]
 								else if (init.object.object.type === 'Identifier') {
-										var _type2 = this.getParamType(init.object.object.name);
+										var _type2 = this.getArgumentType(init.object.object.name);
 										declarationType = typeLookupMap[_type2];
 									}
 									// param[][]
 									else if (init.object.object.object && init.object.object.object.type === 'Identifier') {
-											var _type3 = this.getParamType(init.object.object.object.name);
+											var _type3 = this.getArgumentType(init.object.object.object.name);
 											declarationType = typeLookupMap[_type3];
 										}
 										// this.constants.param[]
@@ -640,10 +636,10 @@ var WebGLFunctionNode = function (_FunctionNode) {
 								declarationType = this.declarations[init.name];
 							} else if (init.type === 'ArrayExpression') {
 								declarationType = 'Array(' + init.elements.length + ')';
-							} else if (init.type === 'CallExpression') {
-								var node = this.builder.nodeMap[init.callee.name];
-								if (node && node.returnType) {
-									declarationType = node.returnType;
+							} else if (init.type === 'CallExpression' && this.lookupReturnType) {
+								var returnType = this.lookupReturnType(init.callee.name);
+								if (returnType) {
+									declarationType = returnType;
 								}
 							}
 						}
@@ -831,13 +827,12 @@ var WebGLFunctionNode = function (_FunctionNode) {
 				mNode.object.object.object && mNode.object.object.object.type === 'ThisExpression' && mNode.object.object.property.name === 'constants') {
 					// Working logger
 					var reqName = mNode.object.name;
-					var funcName = this.functionName || 'kernel';
 					var assumeNotTexture = false;
 
 					// Possibly an array request - handle it as such
-					if (this.paramNames) {
-						var idx = this.paramNames.indexOf(reqName);
-						if (idx >= 0 && this.paramTypes[idx] === 'Number') {
+					if (this.argumentNames) {
+						var idx = this.argumentNames.indexOf(reqName);
+						if (idx >= 0 && this.argumentTypes[idx] === 'Number') {
 							assumeNotTexture = true;
 						}
 					}
@@ -861,7 +856,7 @@ var WebGLFunctionNode = function (_FunctionNode) {
 							if (this.declarations[mNode.object.name]) {
 								variableType = this.declarations[mNode.object.name];
 							} else {
-								variableType = this.getParamType(mNode.object.name);
+								variableType = this.getArgumentType(mNode.object.name);
 							}
 						} else if (mNode.object && mNode.object.object && mNode.object.object.object && mNode.object.object.object.type === 'ThisExpression') {
 							variableType = this.getConstantType(mNode.object.property.name);
@@ -1106,13 +1101,13 @@ var WebGLFunctionNode = function (_FunctionNode) {
 					}
 					this.astGeneric(argument, retArr);
 					if (argument.type === 'Identifier') {
-						var paramIndex = this.paramNames.indexOf(argument.name);
-						if (paramIndex === -1) {
+						var argumentIndex = this.argumentNames.indexOf(argument.name);
+						if (argumentIndex === -1) {
 							functionArguments.push(null);
 						} else {
 							functionArguments.push({
 								name: argument.name,
-								type: this.paramTypes[paramIndex] || 'Number'
+								type: this.argumentTypes[argumentIndex] || 'Number'
 							});
 						}
 					} else {
@@ -1156,6 +1151,32 @@ var WebGLFunctionNode = function (_FunctionNode) {
 		}
 
 		/**
+   * @function
+   * @name pushParameter
+   *
+   * @desc [INTERNAL] pushes a fn parameter onto retArr and 'casts' to int if necessary
+   *  i.e. deal with force-int-parameter state
+   *
+   * @param {Array} retArr - return array string
+   * @param {String} name - the parameter name
+   *
+   */
+
+	}, {
+		key: 'pushParameter',
+		value: function pushParameter(retArr, name) {
+			var type = this.getArgumentType(name);
+			if (this.isState('in-get-call-parameters') || this.isState('integer-comparison')) {
+				if (type !== 'Integer' && type !== 'Array') {
+					retArr.push('int(user_' + name + ')');
+					return;
+				}
+			}
+
+			retArr.push('user_' + name);
+		}
+
+		/**
    *
    * @param ast
    * @returns {string|null}
@@ -1169,24 +1190,10 @@ var WebGLFunctionNode = function (_FunctionNode) {
 			}
 			return null;
 		}
-
-		/**
-   * @desc Returns the converted webgl shader function equivalent of the JS function
-   * @returns {String} webgl function string, result is cached under this.getFunctionPrototypeString
-   */
-
-	}, {
-		key: 'getFunctionPrototypeString',
-		value: function getFunctionPrototypeString() {
-			if (this.webGlFunctionPrototypeString) {
-				return this.webGlFunctionPrototypeString;
-			}
-			return this.webGlFunctionPrototypeString = this.generate();
-		}
 	}, {
 		key: 'build',
 		value: function build() {
-			return this.getFunctionPrototypeString().length > 0;
+			return this.toString().length > 0;
 		}
 	}]);
 

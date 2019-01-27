@@ -1,32 +1,44 @@
-'use strict';
-
-const utils = require('../core/utils');
-const Input = require('../core/input');
+const utils = require('../utils');
+const Input = require('../input');
 
 /**
- * @desc Implements the base class for Kernels, and is used as a
- * parent class for all Kernel implementations.
- *
- * This contains the basic methods needed by all Kernel implementations,
- * like setDimensions, addSubKernel, etc.
- *
- * @prop {Array} paramNames - Name of the parameters of the kernel function
- * @prop {String} fnString - Kernel function as a String
+ * @desc Implements the base class for Kernels, and is used as a parent class for all Kernel implementations.
+ * @prop {Array} argumentNames - Name of the parameters of the kernel function
+ * @prop {String} fn - Kernel function as a String
  * @prop {Array} dimensions - Dimensions of the kernel function, this.thread.x, etc.
  * @prop {Boolean} debug - Toggle debug mode
  * @prop {Boolean} graphical - Toggle graphical mode
  * @prop {number} loopMaxIterations - Maximum number of loop iterations
  * @prop {Object} constants - Global constants
  * @prop {Array} subKernels - Sub kernels bound to this kernel instance
- * @prop {Object} subKernelProperties - Sub kernels bound to this kernel instance as key/value pairs
- * @prop {Array} subKernelOutputVariableNames - Names of the variables outputted by the subkerls
  * @prop {Boolean} fixIntegerDivisionAccuracy - fix issues with some graphics cards not returning whole numbers when dividing by factors of 3
  *
  */
 class Kernel {
-	constructor(fnString, settings) {
-		this.paramNames = utils.getParamNamesFromString(fnString);
-		this.fnString = fnString;
+	static get isSupported() {
+		throw new Error(`"isSupported" not implemented on ${ this.name }`);
+	}
+
+	static isContextMatch(context) {
+		throw new Error(`"isContextMatch" not implemented on ${ this.name }`);
+	}
+
+	static getFeatures() {
+		throw new Error(`"getFeatures" not implemented on ${ this.name }`);
+	}
+
+	getMode() {
+		throw new Error(`"getMode" not implemented on ${ this.constructor.name }`);
+	}
+
+	/**
+	 *
+	 * @param {string} fn
+	 * @param settings
+	 */
+	constructor(fn, settings) {
+		this.argumentNames = utils.getArgumentNamesFromString(fn);
+		this.fn = fn;
 		this.output = null;
 		this.debug = false;
 		this.graphical = false;
@@ -39,24 +51,20 @@ class Kernel {
 		this.texSize = null;
 		this.canvas = null;
 		this.context = null;
+
+		//TODO move to gl-kernel
 		this.threadDim = null;
 		this.floatTextures = null;
 		this.floatOutput = null;
 		this.floatOutputForce = null;
-		this.addFunction = null;
-		this.functions = null;
-		this.nativeFunctions = null;
+
 		this.skipValidateSettings = false;
 		this.subKernels = null;
-		this.subKernelProperties = null;
-		this.subKernelNames = null;
-		this.subKernelOutputVariableNames = null;
-		this.functionBuilder = null;
-		this.paramTypes = null;
-		this.paramSizes = null;
+		this.argumentTypes = null;
+		this.argumentSizes = null;
 		this.constantTypes = null;
-		this.fixIntegerDivisionAccuracy = null;
-		this.features = null;
+		this.functions = null;
+		this.nativeFunctions = null;
 
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -71,14 +79,22 @@ class Kernel {
 		if (settings.hasOwnProperty('output')) {
 			this.setOutput(settings.output); // Flatten output object
 		}
-
+		if (settings.hasOwnProperty('functions')) {
+			this.functions = settings.functions;
+		}
+		if (settings.hasOwnProperty('nativeFunctions')) {
+			this.nativeFunctions = settings.nativeFunctions;
+		}
 		if (!this.canvas) this.canvas = this.initCanvas();
 		if (!this.context) this.context = this.initContext();
-		if (!this.features) this.features = Object.freeze({});
 	}
 
 	build() {
 		throw new Error(`"build" not defined on ${ this.constructor.name }`);
+	}
+
+	run() {
+		throw new Error(`"run" not defined on ${ this.constructor.name }`)
 	}
 
 	initCanvas() {
@@ -95,14 +111,14 @@ class Kernel {
 	 *
 	 * @param {IArguments} args - The actual parameters sent to the Kernel
 	 */
-	setupParams(args) {
-		this.paramTypes = [];
-		this.paramSizes = [];
+	setupArguments(args) {
+		this.argumentTypes = [];
+		this.argumentSizes = [];
 		for (let i = 0; i < args.length; i++) {
 			const arg = args[i];
 
-			this.paramTypes.push(utils.getVariableType(arg));
-			this.paramSizes.push(arg.constructor === Input ? arg.size : null);
+			this.argumentTypes.push(utils.getVariableType(arg));
+			this.argumentSizes.push(arg.constructor === Input ? arg.size : null);
 		}
 	}
 
@@ -113,11 +129,6 @@ class Kernel {
 				this.constantTypes[p] = utils.getVariableType(this.constants[p], true);
 			}
 		}
-	}
-
-	setFunctions(functions) {
-		this.functions = functions;
-		return this;
 	}
 
 	/**
@@ -270,21 +281,11 @@ class Kernel {
 	}
 
 	execute() {
-		//
-		// Prepare the required objects
-		//
 		const args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
-
-		//
-		// Setup and return the promise, and execute the function, in synchronous mode
-		//
-		return utils.newPromise((accept, reject) => {
+		return new Promise((accept, reject) => {
 			try {
 				accept(this.run.apply(this, args));
 			} catch (e) {
-				//
-				// Error : throw rejection
-				//
 				reject(e);
 			}
 		});
@@ -294,46 +295,17 @@ class Kernel {
 	 * @desc Add a sub kernel to the root kernel instance.
 	 * This is what `createKernelMap` uses.
 	 *
-	 * @param {String} fnString - function (as a String) of the subKernel to add
+	 * @param {{ source: String, property: Number|String, name: String }} subKernel - function (as a String) of the subKernel to add
 	 */
-	addSubKernel(fnString) {
+	addSubKernel(subKernel) {
 		if (this.subKernels === null) {
 			this.subKernels = [];
-			this.subKernelNames = [];
 		}
-		this.subKernels.push(fnString);
-		this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
+		if (!subKernel.source) throw new Error('subKernel missing "source" property');
+		if (!subKernel.property && isNaN(subKernel.property)) throw new Error('subKernel missing "property" property');
+		if (!subKernel.name) throw new Error('subKernel missing "name" property');
+		this.subKernels.push(subKernel);
 		return this;
-	}
-
-	/**
-	 * @desc Add a sub kernel to the root kernel instance, indexed by a property name
-	 * This is what `createKernelMap` uses.
-	 *
-	 * @param {String} property - property key for the subKernel
-	 * @param {String} fnString - function (as a String) of the subKernel to add
-	 */
-	addSubKernelProperty(property, fnString) {
-		if (this.subKernelProperties === null) {
-			this.subKernelProperties = {};
-			this.subKernelNames = [];
-		}
-		if (this.subKernelProperties.hasOwnProperty(property)) {
-			throw new Error(`cannot add sub kernel ${ property }, already defined`);
-		}
-		this.subKernelProperties[property] = fnString;
-		this.subKernelNames.push(utils.getFunctionNameFromString(fnString));
-		return this;
-	}
-
-	/**
-	 * @desc Add a native function the the GPU instance that will inject on the fly into any kernel needing it.
-	 *
-	 * @param {string} name
-	 * @param {string} source
-	 */
-	addNativeFunction(name, source) {
-		this.functionBuilder.addNativeFunction(name, source);
 	}
 
 	/**
@@ -346,6 +318,15 @@ class Kernel {
 
 	static destroyContext(context) {
 		throw new Error(`"destroyContext" called on ${ this.name }`);
+	}
+
+	checkOutput() {
+		if (!this.output || !Array.isArray(this.output)) throw new Error('kernel.output not an array');
+		for (let i = 0; i < this.output.length; i++) {
+			if (isNaN(this.output[i]) || this.output[i] < 1) {
+				throw new Error(`${ this.constructor.name }.output[${ i }] incorrectly defined as \`${ this.output[i] }\`, needs to be numeric, and greater than 0`);
+			}
+		}
 	}
 }
 

@@ -171,8 +171,8 @@ void color(float r, float g, float b) {
   color(r,g,b,1.0);
 }
 
-__MAIN_PARAMS__;
 __MAIN_CONSTANTS__;
+__MAIN_ARGUMENTS__;
 __KERNEL__;
 
 void main(void) {

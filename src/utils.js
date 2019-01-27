@@ -1,24 +1,16 @@
-'use strict';
-
-const UtilsCore = require('./utils-core');
 const Input = require('./input');
 const Texture = require('./texture');
-// FUNCTION_NAME regex
+
 const FUNCTION_NAME = /function ([^(]*)/;
-
-// STRIP COMMENTS regex
 const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-
-// ARGUMENT NAMES regex
 const ARGUMENT_NAMES = /([^\s,]+)/g;
 
 /**
  *
  * @desc Various utility functions / snippets of code that GPU.JS uses internally.
  * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
- * Note that all methods in this class are *static* by nature `Utils.functionName()`
  */
-class Utils extends UtilsCore {
+class Utils {
 	/**
 	 *
 	 * @desc Gets the system endianness, and cache it
@@ -52,12 +44,12 @@ class Utils extends UtilsCore {
 	 * @desc Return TRUE, on a valid JS function string
 	 * Note: This does just a VERY simply sanity check. And may give false positives.
 	 *
-	 * @param {String} funcStr - String of JS function to validate
+	 * @param {String} fn - String of JS function to validate
 	 * @returns {Boolean} TRUE if the string passes basic validation
 	 */
-	static isFunctionString(funcStr) {
-		if (funcStr !== null) {
-			return (funcStr.toString()
+	static isFunctionString(fn) {
+		if (typeof fn === 'string') {
+			return (fn
 				.slice(0, 'function'.length)
 				.toLowerCase() === 'function');
 		}
@@ -70,7 +62,7 @@ class Utils extends UtilsCore {
 	 * @returns {String} Function name string (if found)
 	 */
 	static getFunctionNameFromString(funcStr) {
-		return FUNCTION_NAME.exec(funcStr)[1];
+		return FUNCTION_NAME.exec(funcStr)[1].trim();
 	}
 
 	static getFunctionBodyFromString(funcStr) {
@@ -78,15 +70,16 @@ class Utils extends UtilsCore {
 	}
 
 	/**
-	 * @desc Return list of parameter names extracted from the JS function string
-	 * @param {String} func - String of JS function to validate
+	 * @desc Return list of argument names extracted from a javascript function
+	 * @param {String} fn - String of JS function to validate
 	 * @returns {String[]}  Array representing all the parameter names
 	 */
-	static getParamNamesFromString(func) {
-		const fnStr = func.toString().replace(STRIP_COMMENTS, '');
+	static getArgumentNamesFromString(fn) {
+		const fnStr = fn.replace(STRIP_COMMENTS, '');
 		let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
-		if (result === null)
+		if (result === null) {
 			result = [];
+		}
 		return result;
 	}
 
@@ -109,19 +102,6 @@ class Utils extends UtilsCore {
 		}
 
 		return temp;
-	}
-
-	/**
-	 * @desc Returns a `new Promise` object based on the underlying implementation
-	 * @param {Function} executor - Promise builder function
-	 * @returns {Promise}  Promise object
-	 */
-	static newPromise(executor) {
-		const simple = Promise || small_promise;
-		if (simple === null) {
-			throw TypeError('Browser is missing Promise implementation. Consider adding small_promise.js polyfill');
-		}
-		return (new simple(executor));
 	}
 
 	/**
@@ -192,8 +172,8 @@ class Utils extends UtilsCore {
 
 	/**
 	 * @desc Return the dimension of an array.
-	 * @param {Array|String} x - The array
-	 * @param {number} [pad] - To include padding in the dimension calculation [Optional]
+	 * @param {Array|String|Texture|Input} x - The array
+	 * @param {Boolean} [pad] - To include padding in the dimension calculation
 	 */
 	static getDimensions(x, pad) {
 		let ret;
@@ -210,7 +190,7 @@ class Utils extends UtilsCore {
 		} else if (x instanceof Input) {
 			ret = x.size;
 		} else {
-			throw 'Unknown dimensions of ' + x;
+			throw new Error('Unknown dimensions of ' + x);
 		}
 
 		if (pad) {
@@ -311,9 +291,5 @@ class Utils extends UtilsCore {
 }
 
 const _systemEndianness = Utils.getSystemEndianness();
-
-// This ensure static methods are "inherited"
-// See: https://stackoverflow.com/questions/5441508/how-to-inherit-static-methods-from-base-class-in-javascript
-Object.assign(Utils, UtilsCore);
 
 module.exports = Utils;

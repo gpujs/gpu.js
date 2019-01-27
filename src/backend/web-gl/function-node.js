@@ -1,7 +1,5 @@
-'use strict';
-
 const FunctionNode = require('../function-node');
-const utils = require('../../core/utils');
+const utils = require('../../utils');
 // Closure capture for the ast function, prevent collision with existing AST functions
 // The prefixes to use
 const jsMathPrefix = 'Math.';
@@ -12,31 +10,30 @@ const DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
 const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
 /**
- * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code
+ * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective webGL code
  * @returns the converted webGL function string
  */
 class WebGLFunctionNode extends FunctionNode {
-	generate() {
-		if (this.prototypeOnly) {
-			return this.astFunctionPrototype(this.getJsAST(), []).join('').trim();
-		} else {
-			this.functionStringArray = this.astGeneric(this.getJsAST(), []);
+	/**
+	 *
+	 * @param {string} fn
+	 * @param {object} [settings]
+	 */
+	constructor(fn, settings) {
+		super(fn, settings);
+		this.fixIntegerDivisionAccuracy = null;
+		if (settings && settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
+			this.fixIntegerDivisionAccuracy = settings.fixIntegerDivisionAccuracy;
 		}
-		this.functionString = webGlRegexOptimize(
-			this.functionStringArray.join('').trim()
-		);
-		return this.functionString;
+		this._string = null;
 	}
 
-	/**
-	 * @desc Parses the abstract syntax tree for to its *named function declaration*
-	 * @param {Object} ast - the AST object to parse
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astFunctionDeclaration(ast, retArr) {
-		this.builder.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
-		return retArr;
+	toString() {
+		if (this.prototypeOnly) {
+			return this.astFunctionPrototype(this.getJsAST(), []).join('').trim();
+		}
+		if (this._string) return this._string;
+		return this._string = webGlRegexOptimize(this.astGeneric(this.getJsAST(), []).join('').trim());
 	}
 
 	/**
@@ -58,19 +55,19 @@ class WebGLFunctionNode extends FunctionNode {
 		}
 		retArr.push(type);
 		retArr.push(' ');
-		retArr.push(this.functionName);
+		retArr.push(this.name);
 		retArr.push('(');
 
 		// Arguments handling
-		for (let i = 0; i < this.paramNames.length; ++i) {
+		for (let i = 0; i < this.argumentNames.length; ++i) {
 			if (i > 0) {
 				retArr.push(', ');
 			}
 
-			retArr.push(this.paramTypes[i]);
+			retArr.push(this.argumentTypes[i]);
 			retArr.push(' ');
 			retArr.push('user_');
-			retArr.push(this.paramNames[i]);
+			retArr.push(this.argumentNames[i]);
 		}
 
 		retArr.push(');\n');
@@ -98,26 +95,26 @@ class WebGLFunctionNode extends FunctionNode {
 			retArr.push(type);
 		}
 		retArr.push(' ');
-		retArr.push(this.functionName);
+		retArr.push(this.name);
 		retArr.push('(');
 
 		if (!this.isRootKernel) {
 			// Arguments handling
-			for (let i = 0; i < this.paramNames.length; ++i) {
-				const paramName = this.paramNames[i];
+			for (let i = 0; i < this.argumentNames.length; ++i) {
+				const argumentName = this.argumentNames[i];
 
 				if (i > 0) {
 					retArr.push(', ');
 				}
-				const paramType = this.getParamType(paramName);
-				const type = typeMap[paramType];
+				const argumentType = this.getArgumentType(argumentName);
+				const type = typeMap[argumentType];
 				if (!type) {
-					throw new Error(`unknown type ${ paramType }`);
+					throw new Error(`unknown type ${ argumentType }`);
 				}
 				retArr.push(type);
 				retArr.push(' ');
 				retArr.push('user_');
-				retArr.push(paramName);
+				retArr.push(argumentName);
 			}
 		}
 
@@ -148,10 +145,10 @@ class WebGLFunctionNode extends FunctionNode {
 			retArr.push(';');
 			retArr.push('return;');
 		} else if (this.isSubKernel) {
-			retArr.push(`${ this.functionName }Result = `);
+			retArr.push(`subKernelResult_${ this.name } = `);
 			this.astGeneric(ast.argument, retArr);
 			retArr.push(';');
-			retArr.push(`return ${ this.functionName }Result;`);
+			retArr.push(`return subKernelResult_${ this.name };`);
 		} else {
 			retArr.push('return ');
 			this.astGeneric(ast.argument, retArr);
@@ -309,9 +306,9 @@ class WebGLFunctionNode extends FunctionNode {
 				retArr.push('3.402823466e+38');
 				break;
 			default:
-				const userParamName = this.getUserParamName(idtNode.name);
-				if (userParamName !== null) {
-					this.pushParameter(retArr, userParamName);
+				const userArgumentName = this.getUserArgumentName(idtNode.name);
+				if (userArgumentName !== null) {
+					this.pushParameter(retArr, userArgumentName);
 				} else {
 					this.pushParameter(retArr, idtNode.name);
 				}
@@ -583,7 +580,7 @@ class WebGLFunctionNode extends FunctionNode {
 							}
 							// param[]
 							else if (init.object.object.type === 'Identifier') {
-								const type = this.getParamType(init.object.object.name);
+								const type = this.getArgumentType(init.object.object.name);
 								declarationType = typeLookupMap[type];
 							}
 							// param[][]
@@ -591,7 +588,7 @@ class WebGLFunctionNode extends FunctionNode {
 								init.object.object.object &&
 								init.object.object.object.type === 'Identifier'
 							) {
-								const type = this.getParamType(init.object.object.object.name);
+								const type = this.getArgumentType(init.object.object.object.name);
 								declarationType = typeLookupMap[type];
 							}
 							// this.constants.param[]
@@ -624,10 +621,10 @@ class WebGLFunctionNode extends FunctionNode {
 							declarationType = this.declarations[init.name];
 						} else if (init.type === 'ArrayExpression') {
 							declarationType = `Array(${ init.elements.length })`;
-						} else if (init.type === 'CallExpression') {
-							const node = this.builder.nodeMap[init.callee.name];
-							if (node && node.returnType) {
-								declarationType = node.returnType;
+						} else if (init.type === 'CallExpression' && this.lookupReturnType) {
+							const returnType = this.lookupReturnType(init.callee.name);
+							if (returnType) {
+								declarationType = returnType;
 							}
 						}
 					}
@@ -795,13 +792,12 @@ class WebGLFunctionNode extends FunctionNode {
 			) {
 				// Working logger
 				const reqName = mNode.object.name;
-				const funcName = this.functionName || 'kernel';
 				let assumeNotTexture = false;
 
 				// Possibly an array request - handle it as such
-				if (this.paramNames) {
-					const idx = this.paramNames.indexOf(reqName);
-					if (idx >= 0 && this.paramTypes[idx] === 'Number') {
+				if (this.argumentNames) {
+					const idx = this.argumentNames.indexOf(reqName);
+					if (idx >= 0 && this.argumentTypes[idx] === 'Number') {
 						assumeNotTexture = true;
 					}
 				}
@@ -825,7 +821,7 @@ class WebGLFunctionNode extends FunctionNode {
 						if (this.declarations[mNode.object.name]) {
 							variableType = this.declarations[mNode.object.name];
 						} else {
-							variableType = this.getParamType(mNode.object.name);
+							variableType = this.getArgumentType(mNode.object.name);
 						}
 					} else if (
 						mNode.object &&
@@ -1074,13 +1070,13 @@ class WebGLFunctionNode extends FunctionNode {
 				}
 				this.astGeneric(argument, retArr);
 				if (argument.type === 'Identifier') {
-					const paramIndex = this.paramNames.indexOf(argument.name);
-					if (paramIndex === -1) {
+					const argumentIndex = this.argumentNames.indexOf(argument.name);
+					if (argumentIndex === -1) {
 						functionArguments.push(null);
 					} else {
 						functionArguments.push({
 							name: argument.name,
-							type: this.paramTypes[paramIndex] || 'Number'
+							type: this.argumentTypes[argumentIndex] || 'Number'
 						});
 					}
 				} else {
@@ -1123,6 +1119,29 @@ class WebGLFunctionNode extends FunctionNode {
 		return retArr;
 	}
 
+	/**
+	 * @function
+	 * @name pushParameter
+	 *
+	 * @desc [INTERNAL] pushes a fn parameter onto retArr and 'casts' to int if necessary
+	 *  i.e. deal with force-int-parameter state
+	 *
+	 * @param {Array} retArr - return array string
+	 * @param {String} name - the parameter name
+	 *
+	 */
+	pushParameter(retArr, name) {
+		const type = this.getArgumentType(name);
+		if (this.isState('in-get-call-parameters') || this.isState('integer-comparison')) {
+			if (type !== 'Integer' && type !== 'Array') {
+				retArr.push(`int(user_${name})`);
+				return;
+			}
+		}
+
+		retArr.push(`user_${name}`);
+	}
+
 
 	/**
 	 *
@@ -1136,19 +1155,8 @@ class WebGLFunctionNode extends FunctionNode {
 		return null;
 	}
 
-	/**
-	 * @desc Returns the converted webgl shader function equivalent of the JS function
-	 * @returns {String} webgl function string, result is cached under this.getFunctionPrototypeString
-	 */
-	getFunctionPrototypeString() {
-		if (this.webGlFunctionPrototypeString) {
-			return this.webGlFunctionPrototypeString;
-		}
-		return this.webGlFunctionPrototypeString = this.generate();
-	}
-
 	build() {
-		return this.getFunctionPrototypeString().length > 0;
+		return this.toString().length > 0;
 	}
 }
 

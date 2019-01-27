@@ -1,6 +1,6 @@
-const Runner = require('./runner');
+const Kernel = require('./kernel');
 
-class GLRunner extends Runner {
+class GLKernel extends Kernel {
 	static getFeatures() {
 		return Object.freeze({
 			isFloatRead: this.getIsFloatRead(),
@@ -13,10 +13,9 @@ class GLRunner extends Runner {
 		function kernelFunction() {
 			return 1;
 		}
-		const kernel = new this.Kernel(kernelFunction, {
+		const kernel = new this(kernelFunction.toString(), {
 			context: this.testContext,
 			canvas: this.testCanvas,
-			functionBuilder: this.testFunctionBuilder,
 			skipValidateSettings: true,
 			output: [2],
 			floatTextures: true,
@@ -32,12 +31,11 @@ class GLRunner extends Runner {
 		function kernelFunction(v1, v2) {
 			return v1[this.thread.x] / v2[this.thread.x];
 		}
-		const kernel = new this.Kernel(kernelFunction, {
+		const kernel = new this(kernelFunction.toString(), {
 			context: this.testContext,
 			canvas: this.testCanvas,
 			skipValidateSettings: true,
-			output: [2],
-			functionBuilder: this.testFunctionBuilder
+			output: [2]
 		});
 		const result = kernel.run([6, 6030401], [3, 3991]);
 		kernel.destroy(true);
@@ -54,9 +52,18 @@ class GLRunner extends Runner {
 		throw new Error(`"testContext" not defined on ${ this.name }`);
 	}
 
+	static get features() {
+		throw new Error(`"features" not defined on ${ this.name }`);
+	}
+
 	static setupFeatureChecks() {
 		throw new Error(`"setupFeatureChecks" not defined on ${ this.name }`);
 	}
+
+	constructor(fnString, settings) {
+		super(fnString, settings);
+		this.fixIntegerDivisionAccuracy = null;
+	}
 }
 
-module.exports = GLRunner;
+module.exports = GLKernel;

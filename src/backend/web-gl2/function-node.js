@@ -1,30 +1,32 @@
-'use strict';
-
 const WebGLFunctionNode = require('../web-gl/function-node');
 const DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
 const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
 /**
  * @class WebGL2FunctionNode
- * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
+ * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective webGL code.
  * @extends WebGLFunctionNode
  * @returns the converted webGL function string
  *
  */
 class WebGL2FunctionNode extends WebGLFunctionNode {
-	generate() {
-		if (this.debug) {
-			console.log(this);
-		}
+
+	/**
+	 *
+	 * @param {string} fn
+	 * @param {object} [settings]
+	 */
+	constructor(fn, settings) {
+		super(fn, settings);
+		this._string = null;
+	}
+
+	toString() {
 		if (this.prototypeOnly) {
 			return this.astFunctionPrototype(this.getJsAST(), []).join('').trim();
-		} else {
-			this.functionStringArray = this.astGeneric(this.getJsAST(), []);
 		}
-		this.functionString = webGlRegexOptimize(
-			this.functionStringArray.join('').trim()
-		);
-		return this.functionString;
+		if (this._string) return this._string;
+		return this._string = webGlRegexOptimize(this.astGeneric(this.getJsAST(), []).join('').trim());
 	}
 
 	/**
@@ -79,9 +81,9 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 				retArr.push('intBitsToFloat(2139095039)');
 				break;
 			default:
-				const userParamName = this.getUserParamName(idtNode.name);
-				if (userParamName !== null) {
-					this.pushParameter(retArr, userParamName);
+				const userArgumentName = this.getUserArgumentName(idtNode.name);
+				if (userArgumentName !== null) {
+					this.pushParameter(retArr, userArgumentName);
 				} else {
 					this.pushParameter(retArr, idtNode.name);
 				}

@@ -1,7 +1,5 @@
-'use strict';
-
-const utils = require('../../core/utils');
-const kernelRunShortcut = require('../kernel-run-shortcut');
+const utils = require('../../utils');
+const kernelRunShortcut = require('../../kernel-run-shortcut');
 
 function removeFnNoise(fn) {
 	if (/^function /.test(fn)) {
@@ -22,7 +20,6 @@ module.exports = function(cpuKernel, name) {
     const utils = {
       allPropertiesOf: ${ removeNoise(utils.allPropertiesOf.toString()) },
       clone: ${ removeNoise(utils.clone.toString()) },
-      checkOutput: ${ removeNoise(utils.checkOutput.toString()) }
     };
     const Utils = utils;
     let Input = function() {};
@@ -33,8 +30,8 @@ module.exports = function(cpuKernel, name) {
         this.context = null;
         this.built = false;
         this.program = null;
-        this.paramNames = ${ JSON.stringify(cpuKernel.paramNames) };
-        this.paramTypes = ${ JSON.stringify(cpuKernel.paramTypes) };
+        this.argumentNames = ${ JSON.stringify(cpuKernel.argumentNames) };
+        this.argumentTypes = ${ JSON.stringify(cpuKernel.argumentTypes) };
         this.texSize = ${ JSON.stringify(cpuKernel.texSize) };
         this.output = ${ JSON.stringify(cpuKernel.output) };
         this._kernelString = \`${ cpuKernel._kernelString }\`;
@@ -54,11 +51,12 @@ module.exports = function(cpuKernel, name) {
       setContext(context) { this.context = context; return this; }
       setInput(Type) { Input = Type; }
       ${ removeFnNoise(cpuKernel.build.toString()) }
-      ${ removeFnNoise(cpuKernel.setupParams.toString()) }
+      ${ removeFnNoise(cpuKernel.setupArguments.toString()) }
       ${ removeFnNoise(cpuKernel.setupConstants.toString()) }
       run () { ${ cpuKernel.kernelString } }
       getKernelString() { return this._kernelString; }
       ${ removeFnNoise(cpuKernel.validateSettings.toString()) }
+      ${ removeFnNoise(cpuKernel.checkOutput.toString()) }
     };
     return kernelRunShortcut(new Kernel());
   };`;

@@ -22,12 +22,12 @@
     || typeof OffscreenCanvas === 'undefined'
       ? QUnit.skip
       : QUnit.test)('OffscreenCanvas used in Worker', function(assert) {
-    var worker = new Worker('features/offscreen-canvas.js');
-    var done = assert.async();
+    const worker = new Worker('features/offscreen-canvas.js');
+    const done = assert.async();
 
     worker.onmessage = function(e) {
-      var mode = e.data.mode;
-      var result = e.data.result;
+      const mode = e.data.mode;
+      const result = e.data.result;
       assert.equal(mode, 'gpu', 'GPU mode used in Worker');
       assert.deepEqual(result, Float32Array.from([-2, 0, 2]));
       done();

@@ -1,16 +1,16 @@
 var GPU = require('../../src/index');
 
 QUnit.test('loop max output (webgl)', function(assert) {
-  var functionNode = new GPU.WebGLFunctionNode('kernel', function(a, b) {
+  var functionNode = new GPU.WebGLFunctionNode((function(a, b) {
     var sum = 0;
     for (var i = 0; i < a; i++) {
       sum += b[this.thread.x][i];
     }
     return sum;
-  }, { isRootKernel: true });
+  }).toString(), { isRootKernel: true, name: 'kernel' });
 
   assert.equal(
-    functionNode.getFunctionString(),
+    functionNode.toString(),
     'void kernel() {' +
     '\nfloat user_sum=0.0;' +
     '\nfor (int user_i=0;user_i<LOOP_MAX;user_i++){' +
@@ -26,41 +26,16 @@ QUnit.test('loop max output (webgl)', function(assert) {
 });
 
 QUnit.test('loop max output (webgl2)', function(assert) {
-  var functionNode = new GPU.WebGL2FunctionNode('kernel', function(a, b) {
-    var sum = 0;
-    for (var i = 0; i < a; i++) {
+  const functionNode = new GPU.WebGL2FunctionNode((function(a, b) {
+    let sum = 0;
+    for (let i = 0; i < a; i++) {
       sum += b[this.thread.x][i];
     }
     return sum;
-  }, { isRootKernel: true });
+  }).toString(), { isRootKernel: true, name: 'kernel' });
 
   assert.equal(
-    functionNode.getFunctionString(),
-    'void kernel() {' +
-    '\nfloat user_sum=0.0;' +
-    '\nfor (int user_i=0;user_i<LOOP_MAX;user_i++){' +
-    '\nif (user_i<int(user_a)) {' +
-    '\nuser_sum+=get(user_b, user_bSize, user_bDim, user_bBitRatio, threadId.x, user_i);' +
-    '\n} else {' +
-    '\nbreak;' +
-    '\n}' +
-    '\n}' +
-    '\n' +
-    '\nkernelResult = user_sum;return;' +
-    '\n}');
-});
-
-QUnit.test('loop max output (headlessgl)', function(assert) {
-  var functionNode = new GPU.HeadlessGLFunctionNode('kernel', function(a, b) {
-    var sum = 0;
-    for (var i = 0; i < a; i++) {
-      sum += b[this.thread.x][i];
-    }
-    return sum;
-  }, { isRootKernel: true });
-
-  assert.equal(
-    functionNode.getFunctionString(),
+    functionNode.toString(),
     'void kernel() {' +
     '\nfloat user_sum=0.0;' +
     '\nfor (int user_i=0;user_i<LOOP_MAX;user_i++){' +

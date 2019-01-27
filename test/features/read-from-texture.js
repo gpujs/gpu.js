@@ -65,7 +65,7 @@ var GPU = require('../../src/index');
     gpu.destroy();
   });
 
-  (GPU.isHeadlessGLSupported && GPU.HeadlessGLRunner.features.kernelMap ? QUnit.test : QUnit.skip)('Read from Texture (headlessgl)', function () {
+  (GPU.isHeadlessGLSupported && GPU.HeadlessGLKernel.features.kernelMap ? QUnit.test : QUnit.skip)('Read from Texture (headlessgl)', function () {
     const gpu = new GPU({mode: 'headlessgl'});
     const A = [1, 2, 3, 4, 5];
     const B = [1, 2, 3, 4, 5];

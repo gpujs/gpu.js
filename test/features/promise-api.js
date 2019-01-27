@@ -2,32 +2,34 @@ var GPU = require('../../src/index');
 
 (function() {
   function promiseApiFunctionReturn( assert, mode ) {
-    var gpu = new GPU({ mode: mode });
+    const gpu = new GPU({ mode: mode });
 
-    var kernelFn = function() {
+    const kernelFn = function() {
       return 42.0;
     };
 
-    var paramObj = {
+    const paramObj = {
       output : [1]
     };
 
     // Start of async test
-    var done = assert.async();
-    var promiseObj;
+    const done = assert.async();
+    let promiseObj;
 
     // Setup kernel
-    var kernel = gpu.createKernel(kernelFn, paramObj);
-    // Get promise objet
+    const kernel = gpu.createKernel(kernelFn, paramObj);
+    // Get promise object
     promiseObj = kernel.execute();
     assert.ok( promiseObj !== null, 'Promise object generated test');
-    promiseObj.then(function(res) {
-      assert.equal( res[0], 42.0 );
-      gpu.destroy();
-      done();
-    }, function(err) {
-      throw err;
-    });
+    promiseObj
+      .then((res) => {
+        assert.equal( res[0], 42.0 );
+        gpu.destroy();
+        done();
+      })
+      .catch((err) => {
+        throw err;
+      });
   }
 
   QUnit.test('Promise API : functionReturn (auto)', function(assert) {

@@ -38,27 +38,27 @@
     gpu.destroy();
   }
 
-  QUnit.test('Issue #233 - kernel map with float output (auto)', function() {
+  QUnit.test('Issue #233 - kernel map with float output (auto)', () => {
     test();
   });
 
-  QUnit.test('Issue #233 - kernel map with float output (gpu)', function() {
+  QUnit.test('Issue #233 - kernel map with float output (gpu)', () => {
     test('gpu');
   });
 
-  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #233 - kernel map with float output (webgl)', function() {
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #233 - kernel map with float output (webgl)', () => {
     test('webgl');
   });
 
-  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #233 - kernel map with float output (webgl2)', function() {
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #233 - kernel map with float output (webgl2)', () => {
     test('webgl2');
   });
 
-  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #233 - kernel map with float output (headlessgl)', function() {
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #233 - kernel map with float output (headlessgl)', () => {
     test('headlessgl');
   });
 
-  QUnit.test('Issue #233 - kernel map with float output (cpu)', function() {
+  QUnit.test('Issue #233 - kernel map with float output (cpu)', () => {
     test('cpu');
   });
 })();

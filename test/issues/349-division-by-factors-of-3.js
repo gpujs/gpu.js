@@ -107,7 +107,7 @@
 			.setFloatOutput(true)
 			.setFixIntegerDivisionAccuracy(false);
 
-		if (!idFix.features.isIntegerDivisionAccurate) {
+		if (!gpu.Kernel.features.isIntegerDivisionAccurate) {
 			QUnit.assert.ok(
 				(
 					idFix(6, 3)[0] === 2

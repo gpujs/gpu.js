@@ -14,7 +14,7 @@ var ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
 /**
  * @class WebGL2FunctionNode
- * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
+ * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective webGL code.
  * @extends WebGLFunctionNode
  * @returns the converted webGL function string
  *
@@ -23,25 +23,28 @@ var ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 var WebGL2FunctionNode = function (_WebGLFunctionNode) {
 	_inherits(WebGL2FunctionNode, _WebGLFunctionNode);
 
-	function WebGL2FunctionNode() {
+	/**
+  *
+  * @param {string} fn
+  * @param {object} [settings]
+  */
+	function WebGL2FunctionNode(fn, settings) {
 		_classCallCheck(this, WebGL2FunctionNode);
 
-		return _possibleConstructorReturn(this, (WebGL2FunctionNode.__proto__ || Object.getPrototypeOf(WebGL2FunctionNode)).apply(this, arguments));
+		var _this = _possibleConstructorReturn(this, (WebGL2FunctionNode.__proto__ || Object.getPrototypeOf(WebGL2FunctionNode)).call(this, fn, settings));
+
+		_this._string = null;
+		return _this;
 	}
 
 	_createClass(WebGL2FunctionNode, [{
-		key: 'generate',
-		value: function generate() {
-			if (this.debug) {
-				console.log(this);
-			}
+		key: 'toString',
+		value: function toString() {
 			if (this.prototypeOnly) {
 				return this.astFunctionPrototype(this.getJsAST(), []).join('').trim();
-			} else {
-				this.functionStringArray = this.astGeneric(this.getJsAST(), []);
 			}
-			this.functionString = webGlRegexOptimize(this.functionStringArray.join('').trim());
-			return this.functionString;
+			if (this._string) return this._string;
+			return this._string = webGlRegexOptimize(this.astGeneric(this.getJsAST(), []).join('').trim());
 		}
 
 		/**
@@ -96,9 +99,9 @@ var WebGL2FunctionNode = function (_WebGLFunctionNode) {
 					retArr.push('intBitsToFloat(2139095039)');
 					break;
 				default:
-					var userParamName = this.getUserParamName(idtNode.name);
-					if (userParamName !== null) {
-						this.pushParameter(retArr, userParamName);
+					var userArgumentName = this.getUserArgumentName(idtNode.name);
+					if (userArgumentName !== null) {
+						this.pushParameter(retArr, userArgumentName);
 					} else {
 						this.pushParameter(retArr, idtNode.name);
 					}

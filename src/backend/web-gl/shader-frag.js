@@ -176,8 +176,8 @@ void color(sampler2D image) {
   actualColor = texture2D(image, vTexCoord);
 }
 
-__MAIN_PARAMS__;
 __MAIN_CONSTANTS__;
+__MAIN_ARGUMENTS__;
 __KERNEL__;
 
 void main(void) {

@@ -1,6 +1,4 @@
-'use strict';
-
-const utils = require('../core/utils');
+const utils = require('./utils');
 
 module.exports = function kernelRunShortcut(kernel) {
 	const shortcut = function() {

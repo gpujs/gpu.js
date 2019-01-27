@@ -37,7 +37,7 @@ var GPU = require('../../src/index');
       output : [138, 91]
     });
     getImages(function(images) {
-      if (gpu.runner.constructor.name === 'WebGLRunner') {
+      if (gpu.Kernel === GPU.WebGLKernel) {
         assert.throws(function() {
           // TODO: fallback to cpu?  Probably not worth it.
           imageKernel(images);

@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * @desc WebGl Texture implementation in JS
  * @param {Object} texture

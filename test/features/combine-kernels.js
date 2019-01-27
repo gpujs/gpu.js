@@ -1,15 +1,14 @@
-var GPU = require('../../src/index');
-
-(function() {
-  var gpu = null;
+(() => {
+  const GPU = require('../../src/index');
+  let gpu = null;
   function combineKernels(mode) {
      gpu = new GPU({ mode: mode });
 
-    var kernel1 = gpu.createKernel(function(a, b) {
+    const kernel1 = gpu.createKernel(function(a, b) {
       return a[this.thread.x] + b[this.thread.x];
     }, { output: [5] });
 
-    var kernel2 = gpu.createKernel(function(c, d) {
+    const kernel2 = gpu.createKernel(function(c, d) {
       return c[this.thread.x] * d[this.thread.x];
     }, { output: [5] });
 
@@ -18,44 +17,44 @@ var GPU = require('../../src/index');
     });
   }
 
-  QUnit.test("combineKernels (auto)", function() {
-    var superKernel = combineKernels(null);
-    var result = QUnit.extend([], superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]));
+  QUnit.test("combineKernels (auto)", () => {
+    const superKernel = combineKernels(null);
+    const result = QUnit.extend([], superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]));
     QUnit.assert.deepEqual(result, [2, 8, 18, 32, 50]);
     gpu.destroy();
   });
 
-  QUnit.test("combineKernels (gpu)", function() {
-    var superKernel = combineKernels('gpu');
-    var result = QUnit.extend([], superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]));
+  QUnit.test("combineKernels (gpu)", () => {
+    const superKernel = combineKernels('gpu');
+    const result = QUnit.extend([], superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]));
     QUnit.assert.deepEqual(result, [2, 8, 18, 32, 50]);
     gpu.destroy();
   });
 
-  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("combineKernels (webgl)", function () {
-    var superKernel = combineKernels('webgl');
-    var result = QUnit.extend([], superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]));
+  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("combineKernels (webgl)", () => {
+    const superKernel = combineKernels('webgl');
+    const result = QUnit.extend([], superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]));
     QUnit.assert.deepEqual(result, [2, 8, 18, 32, 50]);
     gpu.destroy();
   });
 
-  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("combineKernels (webgl2)", function () {
-    var superKernel = combineKernels('webgl2');
-    var result = QUnit.extend([], superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]));
+  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("combineKernels (webgl2)", () => {
+    const superKernel = combineKernels('webgl2');
+    const result = QUnit.extend([], superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]));
     QUnit.assert.deepEqual(result, [2, 8, 18, 32, 50]);
     gpu.destroy();
   });
 
-  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("combineKernels (headlessgl)", function () {
-    var superKernel = combineKernels('headlessgl');
-    var result = QUnit.extend([], superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]));
+  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("combineKernels (headlessgl)", () => {
+    const superKernel = combineKernels('headlessgl');
+    const result = QUnit.extend([], superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]));
     QUnit.assert.deepEqual(result, [2, 8, 18, 32, 50]);
     gpu.destroy();
   });
 
-  QUnit.test("combineKernels (cpu)", function() {
-    var superKernel = combineKernels('cpu');
-    var result = QUnit.extend([], superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]));
+  QUnit.test("combineKernels (cpu)", () => {
+    const superKernel = combineKernels('cpu');
+    const result = QUnit.extend([], superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]));
     QUnit.assert.deepEqual(result, [2, 8, 18, 32, 50]);
     gpu.destroy();
   });

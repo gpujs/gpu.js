@@ -1,19 +1,16 @@
 (function() {
   const GPU = require('../../src/index');
   function funky(mode) {
-    var gpu = new GPU({ mode: mode });
-
+    const gpu = new GPU({ mode: mode });
+    gpu.addFunction(function add(value1, value2) {
+      return value1 + value2;
+    });
     const kernel = gpu.createKernel(`function(v1, v2) {
       return (0, _add.add)(v1[this.thread.y][this.thread.x], v2[this.thread.y][this.thread.x]);
     }`)
-      .setFunctions([
-        function add(value1, value2) {
-          return value1 + value2;
-        }
-      ])
       .setOutput([2, 2]);
 
-    var result = kernel([
+    const result = kernel([
       [0,1],
       [1,2]
     ], [

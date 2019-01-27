@@ -31,10 +31,11 @@ var GPU = require('../../src/index');
     texImage2D: () => {},
     framebufferTexture2D: () => {},
     deleteBuffer: () => {},
-    deleteFramebuffer: () => {}
+    deleteFramebuffer: () => {},
+    getExtension: () => true
   };
 
-  QUnit.test('CPUKernel paramTypes', function(assert) {
+  QUnit.test('CPUKernel argumentTypes', function(assert) {
     const kernel = new GPU.CPUKernel(`function(value) { return value[this.thread.x]; }`, {
       output: [1],
       functionBuilder: {
@@ -45,13 +46,14 @@ var GPU = require('../../src/index');
       },
     });
     kernel.build([1]);
-    assert.equal(kernel.paramTypes.length, 1);
-    assert.equal(kernel.paramTypes[0], 'Array');
+    assert.equal(kernel.argumentTypes.length, 1);
+    assert.equal(kernel.argumentTypes[0], 'Array');
     kernel.destroy();
   });
 
-  QUnit.test('WebGLKernel paramTypes', function(assert) {
+  QUnit.test('WebGLKernel argumentTypes', function(assert) {
     const kernel = new GPU.WebGLKernel(`function(value) { return value[this.thread.x]; }`, {
+      skipValidateSettings: true,
       output: [1],
       canvas: {},
       context: mockGl,
@@ -64,13 +66,14 @@ var GPU = require('../../src/index');
       },
     });
     kernel.build([1]);
-    assert.equal(kernel.paramTypes.length, 1);
-    assert.equal(kernel.paramTypes[0], 'Array');
+    assert.equal(kernel.argumentTypes.length, 1);
+    assert.equal(kernel.argumentTypes[0], 'Array');
     kernel.destroy();
   });
 
-  QUnit.test('WebGL2Kernel paramTypes', function(assert) {
+  QUnit.test('WebGL2Kernel argumentTypes', function(assert) {
     const kernel = new GPU.WebGL2Kernel(`function(value) { return value[this.thread.x]; }`, {
+      skipValidateSettings: true,
       output: [1],
       canvas: {},
       context: mockGl,
@@ -83,12 +86,12 @@ var GPU = require('../../src/index');
       },
     });
     kernel.build([1]);
-    assert.equal(kernel.paramTypes.length, 1);
-    assert.equal(kernel.paramTypes[0], 'Array');
+    assert.equal(kernel.argumentTypes.length, 1);
+    assert.equal(kernel.argumentTypes[0], 'Array');
     kernel.destroy();
   });
 
-  QUnit.test('HeadlessGLKernel paramTypes', function(assert) {
+  QUnit.test('HeadlessGLKernel argumentTypes', function(assert) {
     const kernel = new GPU.HeadlessGLKernel(`function(value) { return value[this.thread.x]; }`, {
       output: [1],
       context: mockGl,
@@ -101,8 +104,8 @@ var GPU = require('../../src/index');
       },
     });
     kernel.build([1]);
-    assert.equal(kernel.paramTypes.length, 1);
-    assert.equal(kernel.paramTypes[0], 'Array');
+    assert.equal(kernel.argumentTypes.length, 1);
+    assert.equal(kernel.argumentTypes[0], 'Array');
     kernel.destroy();
   });
 })();

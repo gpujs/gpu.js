@@ -5,7 +5,7 @@ var GPU = require('../../src/index');
 		assert.throws(function() {
 			GPU.CPUKernel.prototype.build.apply({
         setupConstants: function() {},
-        setupParams: function() {},
+				setupArguments: function() {},
         validateSettings: function() {},
         getKernelString: function() {},
         graphical: true,
@@ -20,7 +20,7 @@ var GPU = require('../../src/index');
   QUnit.test('Issue #401 - cpu no canvas', function(assert) {
 		GPU.CPUKernel.prototype.build.apply({
 			setupConstants: function() {},
-			setupParams: function() {},
+			setupArguments: function() {},
 			validateSettings: function() {},
       getKernelString: function() {},
 			graphical: false,

@@ -9,20 +9,18 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var FunctionNode = require('../function-node');
-var utils = require('../../core/utils');
+var utils = require('../../utils');
 
 /**
  * @desc [INTERNAL] Represents a single function, inside JS
  *
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
  *
- * @prop functionName         - {String}    Name of the function
  * @prop jsFunction           - {Function}  The JS Function the node represents
- * @prop jsFunctionString     - {String}    jsFunction.toString()
- * @prop paramNames           - {String[]}  Parameter names of the function
- * @prop paramTypes           - {String[]}  Shader land parameters type assumption
+ * @prop fn     - {String}    jsFunction.toString()
+ * @prop argumentNames           - {String[]}  Parameter names of the function
+ * @prop argumentTypes           - {String[]}  Shader land parameters type assumption
  * @prop isRootKernel         - {Boolean}   Special indicator, for kernel function
- * @prop functionString       - {String}    Converted function string
  * @prop calledFunctions      - {String[]}  List of all the functions called
  * @prop initVariables        - {String[]}  List of variables initialized in the function
  * @prop readVariables        - {String[]}  List of variables read operations occur
@@ -33,13 +31,20 @@ var utils = require('../../core/utils');
 var CPUFunctionNode = function (_FunctionNode) {
 	_inherits(CPUFunctionNode, _FunctionNode);
 
-	function CPUFunctionNode(functionName, jsFunction, settings) {
+	/**
+  *
+  * @param {string} fn
+  * @param {object} [settings]
+  */
+	function CPUFunctionNode(fn, settings) {
 		_classCallCheck(this, CPUFunctionNode);
 
-		var _this = _possibleConstructorReturn(this, (CPUFunctionNode.__proto__ || Object.getPrototypeOf(CPUFunctionNode)).call(this, functionName, jsFunction, settings));
+		settings = settings || {};
 
-		_this.paramSizes = settings ? settings.paramSizes : [];
+		var _this = _possibleConstructorReturn(this, (CPUFunctionNode.__proto__ || Object.getPrototypeOf(CPUFunctionNode)).call(this, fn, settings));
+
 		_this.memberStates = [];
+		_this._string = null;
 		return _this;
 	}
 
@@ -58,42 +63,10 @@ var CPUFunctionNode = function (_FunctionNode) {
 			}
 		}
 	}, {
-		key: 'generate',
-		value: function generate() {
-			if (this.debug) {
-				console.log(this);
-			}
-			this.functionStringArray = this.astGeneric(this.getJsAST(), []);
-			this.functionString = this.functionStringArray.join('').trim();
-			return this.functionString;
-		}
-
-		/**
-   * @desc Returns the converted JS function
-   * @returns {String} function string, result is cached under this.getFunctionPrototypeString
-   */
-
-	}, {
-		key: 'getFunctionPrototypeString',
-		value: function getFunctionPrototypeString() {
-			if (this.webGlFunctionPrototypeString) {
-				return this.webGlFunctionPrototypeString;
-			}
-			return this.webGlFunctionPrototypeString = this.generate();
-		}
-
-		/**
-   * @desc Parses the abstract syntax tree for to its *named function declaration*
-   * @param {Object} ast - the AST object to parse
-   * @param {Array} retArr - return array string
-   * @returns {Array} the append retArr
-   */
-
-	}, {
-		key: 'astFunctionDeclaration',
-		value: function astFunctionDeclaration(ast, retArr) {
-			this.builder.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
-			return retArr;
+		key: 'toString',
+		value: function toString() {
+			if (this._string) return this._string;
+			return this._string = this.astGeneric(this.getJsAST(), []).join('').trim();
 		}
 
 		/**
@@ -113,16 +86,16 @@ var CPUFunctionNode = function (_FunctionNode) {
 
 			retArr.push(this.returnType);
 			retArr.push(' ');
-			retArr.push(this.functionName);
+			retArr.push(this.name);
 			retArr.push('(');
 
 			// Arguments handling
-			for (var i = 0; i < this.paramNames.length; ++i) {
+			for (var i = 0; i < this.argumentNames.length; ++i) {
 				if (i > 0) {
 					retArr.push(', ');
 				}
 				retArr.push('user_');
-				retArr.push(this.paramNames[i]);
+				retArr.push(this.argumentNames[i]);
 			}
 
 			retArr.push(');\n');
@@ -145,18 +118,18 @@ var CPUFunctionNode = function (_FunctionNode) {
 			if (!this.isRootKernel) {
 				retArr.push('function');
 				retArr.push(' ');
-				retArr.push(this.functionName);
+				retArr.push(this.name);
 				retArr.push('(');
 
 				// Arguments handling
-				for (var i = 0; i < this.paramNames.length; ++i) {
-					var paramName = this.paramNames[i];
+				for (var i = 0; i < this.argumentNames.length; ++i) {
+					var argumentName = this.argumentNames[i];
 
 					if (i > 0) {
 						retArr.push(', ');
 					}
 					retArr.push('user_');
-					retArr.push(paramName);
+					retArr.push(argumentName);
 				}
 
 				// Function opening
@@ -191,10 +164,10 @@ var CPUFunctionNode = function (_FunctionNode) {
 				this.astGeneric(ast.argument, retArr);
 				retArr.push(';');
 			} else if (this.isSubKernel) {
-				retArr.push(this.functionName + 'Result = ');
+				retArr.push('subKernelResult_' + this.name + ' = ');
 				this.astGeneric(ast.argument, retArr);
 				retArr.push(';');
-				retArr.push('return ' + this.functionName + 'Result;');
+				retArr.push('return subKernelResult_' + this.name + ';');
 			} else {
 				retArr.push('return ');
 				this.astGeneric(ast.argument, retArr);
@@ -288,9 +261,9 @@ var CPUFunctionNode = function (_FunctionNode) {
 					if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
 						retArr.push('constants_' + idtNode.name);
 					} else {
-						var userParamName = this.getUserParamName(idtNode.name);
-						if (userParamName !== null) {
-							retArr.push('user_' + userParamName);
+						var userArgumentName = this.getUserArgumentName(idtNode.name);
+						if (userArgumentName !== null) {
+							retArr.push('user_' + userArgumentName);
 						} else {
 							retArr.push('user_' + idtNode.name);
 						}
@@ -300,13 +273,13 @@ var CPUFunctionNode = function (_FunctionNode) {
 			switch (this.state) {
 				case 'input-index-y':
 					{
-						var size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+						var size = this.argumentSizes[this.argumentNames.indexOf(this.memberState)];
 						retArr.push(' * ' + size[0] + ')');
 						break;
 					}
 				case 'input-index-z':
 					{
-						var _size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+						var _size = this.argumentSizes[this.argumentNames.indexOf(this.memberState)];
 						retArr.push(' * ' + _size[0] * _size[1] + ')');
 						break;
 					}
@@ -813,13 +786,13 @@ var CPUFunctionNode = function (_FunctionNode) {
 				switch (this.state) {
 					case 'input-index-y':
 						{
-							var size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+							var size = this.argumentSizes[this.argumentNames.indexOf(this.memberState)];
 							retArr.push(' * ' + size[0] + ')');
 							break;
 						}
 					case 'input-index-z':
 						{
-							var _size2 = this.paramSizes[this.paramNames.indexOf(this.memberState)];
+							var _size2 = this.argumentSizes[this.argumentNames.indexOf(this.memberState)];
 							retArr.push(' * ' + _size2[0] * _size2[1] + ')');
 							break;
 						}
@@ -878,13 +851,13 @@ var CPUFunctionNode = function (_FunctionNode) {
 					}
 					this.astGeneric(argument, retArr);
 					if (argument.type === 'Identifier') {
-						var paramIndex = this.paramNames.indexOf(argument.name);
-						if (paramIndex === -1) {
+						var argumentIndex = this.argumentNames.indexOf(argument.name);
+						if (argumentIndex === -1) {
 							functionArguments.push(null);
 						} else {
 							functionArguments.push({
 								name: argument.name,
-								type: this.paramTypes[paramIndex]
+								type: this.argumentTypes[argumentIndex]
 							});
 						}
 					} else {

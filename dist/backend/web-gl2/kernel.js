@@ -2,6 +2,8 @@
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -9,10 +11,18 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var WebGLKernel = require('../web-gl/kernel');
-var utils = require('../../core/utils');
-var Texture = require('../../core/texture');
+var WebGL2FunctionNode = require('./function-node');
+var FunctionBuilder = require('../function-builder');
+var utils = require('../../utils');
+var Texture = require('../../texture');
 var fragShaderString = require('./shader-frag');
 var vertShaderString = require('./shader-vert');
+
+var isSupported = null;
+var testCanvas = null;
+var testContext = null;
+var testExtensions = null;
+var features = null;
 
 var WebGL2Kernel = function (_WebGLKernel) {
 	_inherits(WebGL2Kernel, _WebGLKernel);
@@ -26,7 +36,12 @@ var WebGL2Kernel = function (_WebGLKernel) {
 	_createClass(WebGL2Kernel, [{
 		key: 'initContext',
 		value: function initContext() {
-			var context = this.canvas.getContext('webgl2');
+			var settings = {
+				alpha: false,
+				depth: false,
+				antialias: false
+			};
+			var context = this.canvas.getContext('webgl2', settings);
 			return context;
 		}
 	}, {
@@ -55,9 +70,9 @@ var WebGL2Kernel = function (_WebGLKernel) {
 				return;
 			}
 
-			var features = this.features;
+			var features = this.constructor.features;
 			if (this.floatOutput === true && this.floatOutputForce !== true && !features.isFloatRead) {
-				throw new Error('Float texture outputs are not supported on this browser');
+				throw new Error('Float texture outputs are not supported');
 			} else if (this.floatTextures === undefined) {
 				this.floatTextures = true;
 				this.floatOutput = features.isFloatRead;
@@ -69,7 +84,7 @@ var WebGL2Kernel = function (_WebGLKernel) {
 				this.fixIntegerDivisionAccuracy = false;
 			}
 
-			utils.checkOutput(this.output);
+			this.checkOutput();
 
 			if (!this.output || this.output.length === 0) {
 				if (arguments.length !== 1) {
@@ -124,8 +139,8 @@ var WebGL2Kernel = function (_WebGLKernel) {
 			if (this.program === null) {
 				this.build.apply(this, arguments);
 			}
-			var paramNames = this.paramNames;
-			var paramTypes = this.paramTypes;
+			var argumentNames = this.argumentNames;
+			var argumentTypes = this.argumentTypes;
 			var texSize = this.texSize;
 			var gl = this.context;
 
@@ -140,8 +155,8 @@ var WebGL2Kernel = function (_WebGLKernel) {
 			this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
 			this.argumentsLength = 0;
-			for (var texIndex = 0; texIndex < paramNames.length; texIndex++) {
-				this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
+			for (var texIndex = 0; texIndex < argumentNames.length; texIndex++) {
+				this._addArgument(arguments[texIndex], argumentTypes[texIndex], argumentNames[texIndex]);
 			}
 
 			if (this.graphical) {
@@ -166,10 +181,10 @@ var WebGL2Kernel = function (_WebGLKernel) {
 			}
 			var outputTexture = this.outputTexture;
 
-			if (this.subKernelOutputVariableNames !== null) {
+			if (this.subKernels !== null) {
 				if (this.outputImmutable) {
 					this.subKernelOutputTextures = [];
-					this._setupSubOutputTextures(this.subKernelOutputVariableNames.length);
+					this._setupSubOutputTextures(this.subKernels.length);
 				}
 				gl.drawBuffers(this.drawBuffersMap);
 			}
@@ -178,23 +193,13 @@ var WebGL2Kernel = function (_WebGLKernel) {
 
 			if (this.subKernelOutputTextures !== null) {
 				if (this.subKernels !== null) {
-					var output = [];
-					output.result = this.renderOutput(outputTexture);
-					for (var i = 0; i < this.subKernels.length; i++) {
-						output.push(new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context));
-					}
-					return output;
-				} else if (this.subKernelProperties !== null) {
-					var _output = {
+					var output = {
 						result: this.renderOutput(outputTexture)
 					};
-					var _i = 0;
-					for (var p in this.subKernelProperties) {
-						if (!this.subKernelProperties.hasOwnProperty(p)) continue;
-						_output[p] = new Texture(this.subKernelOutputTextures[_i], texSize, this.threadDim, this.output, this.context);
-						_i++;
+					for (var i = 0; i < this.subKernels.length; i++) {
+						output[this.subKernels[i].property] = new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context);
 					}
-					return _output;
+					return output;
 				}
 			}
 
@@ -227,7 +232,7 @@ var WebGL2Kernel = function (_WebGLKernel) {
 			var gl = this.context;
 			var texSize = this.texSize;
 			var texture = this.outputTexture = this.context.createTexture();
-			gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length);
+			gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentNames.length);
 			gl.bindTexture(gl.TEXTURE_2D, texture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -256,7 +261,7 @@ var WebGL2Kernel = function (_WebGLKernel) {
 				var texture = this.context.createTexture();
 				textures.push(texture);
 				drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
-				gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.paramNames.length + i);
+				gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentNames.length + i);
 				gl.bindTexture(gl.TEXTURE_2D, texture);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -686,8 +691,8 @@ var WebGL2Kernel = function (_WebGLKernel) {
 	}, {
 		key: '_getTextureCoordinate',
 		value: function _getTextureCoordinate() {
-			var names = this.subKernelOutputVariableNames;
-			if (names === null || names.length < 1) {
+			var subKernels = this.subKernels;
+			if (subKernels === null || subKernels.length < 1) {
 				return 'in highp vec2 vTexCoord;\n';
 			} else {
 				return 'out highp vec2 vTexCoord;\n';
@@ -701,39 +706,39 @@ var WebGL2Kernel = function (_WebGLKernel) {
    */
 
 	}, {
-		key: '_getMainParamsString',
-		value: function _getMainParamsString(args) {
+		key: '_getMainArgumentsString',
+		value: function _getMainArgumentsString(args) {
 			var result = [];
-			var paramTypes = this.paramTypes;
-			var paramNames = this.paramNames;
-			for (var i = 0; i < paramNames.length; i++) {
-				var param = args[i];
-				var paramName = paramNames[i];
-				var paramType = paramTypes[i];
+			var argumentTypes = this.argumentTypes;
+			var argumentNames = this.argumentNames;
+			for (var i = 0; i < argumentNames.length; i++) {
+				var value = args[i];
+				var name = argumentNames[i];
+				var type = argumentTypes[i];
 				if (this.hardcodeConstants) {
-					if (paramType === 'Array' || paramType === 'NumberTexture' || paramType === 'ArrayTexture(4)') {
-						var paramDim = utils.getDimensions(param, true);
-						var paramSize = utils.dimToTexSize({
+					if (type === 'Array' || type === 'NumberTexture' || type === 'ArrayTexture(4)') {
+						var dim = utils.getDimensions(value, true);
+						var size = utils.dimToTexSize({
 							floatTextures: this.floatTextures,
 							floatOutput: this.floatOutput
-						}, paramDim);
+						}, dim);
 
-						result.push('uniform highp sampler2D user_' + paramName, 'highp ivec2 user_' + paramName + 'Size = ivec2(' + paramSize[0] + ', ' + paramSize[1] + ')', 'highp ivec3 user_' + paramName + 'Dim = ivec3(' + paramDim[0] + ', ' + paramDim[1] + ', ' + paramDim[2] + ')', 'uniform highp int user_' + paramName + 'BitRatio');
-					} else if (paramType === 'Integer') {
-						result.push('highp float user_' + paramName + ' = ' + param + '.0');
-					} else if (paramType === 'Float') {
-						result.push('highp float user_' + paramName + ' = ' + param);
+						result.push('uniform highp sampler2D user_' + name, 'highp ivec2 user_' + name + 'Size = ivec2(' + size[0] + ', ' + size[1] + ')', 'highp ivec3 user_' + name + 'Dim = ivec3(' + dim[0] + ', ' + dim[1] + ', ' + dim[2] + ')', 'uniform highp int user_' + name + 'BitRatio');
+					} else if (type === 'Integer') {
+						result.push('highp float user_' + name + ' = ' + value + '.0');
+					} else if (type === 'Float') {
+						result.push('highp float user_' + name + ' = ' + value);
 					}
 				} else {
-					if (paramType === 'Array' || paramType === 'NumberTexture' || paramType === 'ArrayTexture(4)' || paramType === 'Input' || paramType === 'HTMLImage') {
-						result.push('uniform highp sampler2D user_' + paramName, 'uniform highp ivec2 user_' + paramName + 'Size', 'uniform highp ivec3 user_' + paramName + 'Dim');
-						if (paramType !== 'HTMLImage') {
-							result.push('uniform highp int user_' + paramName + 'BitRatio');
+					if (type === 'Array' || type === 'NumberTexture' || type === 'ArrayTexture(4)' || type === 'Input' || type === 'HTMLImage') {
+						result.push('uniform highp sampler2D user_' + name, 'uniform highp ivec2 user_' + name + 'Size', 'uniform highp ivec3 user_' + name + 'Dim');
+						if (type !== 'HTMLImage') {
+							result.push('uniform highp int user_' + name + 'BitRatio');
 						}
-					} else if (paramType === 'HTMLImageArray') {
-						result.push('uniform highp sampler2DArray user_' + paramName, 'uniform highp ivec2 user_' + paramName + 'Size', 'uniform highp ivec3 user_' + paramName + 'Dim');
-					} else if (paramType === 'Integer' || paramType === 'Float') {
-						result.push('uniform float user_' + paramName);
+					} else if (type === 'HTMLImageArray') {
+						result.push('uniform highp sampler2DArray user_' + name, 'uniform highp ivec2 user_' + name + 'Size', 'uniform highp ivec3 user_' + name + 'Dim');
+					} else if (type === 'Integer' || type === 'Float') {
+						result.push('uniform float user_' + name);
 					}
 				}
 			}
@@ -749,19 +754,23 @@ var WebGL2Kernel = function (_WebGLKernel) {
 		key: '_getKernelString',
 		value: function _getKernelString() {
 			var result = [];
-			var names = this.subKernelOutputVariableNames;
-			if (names !== null) {
+			var subKernels = this.subKernels;
+			if (subKernels !== null) {
 				result.push('float kernelResult = 0.0');
 				result.push('layout(location = 0) out vec4 data0');
-				for (var i = 0; i < names.length; i++) {
-					result.push('float ' + names[i] + ' = 0.0', 'layout(location = ' + (i + 1) + ') out vec4 data' + (i + 1));
+				for (var i = 0; i < subKernels.length; i++) {
+					result.push('float subKernelResult_' + subKernels[i].name + ' = 0.0', 'layout(location = ' + (i + 1) + ') out vec4 data' + (i + 1));
 				}
 			} else {
 				result.push('out vec4 data0');
 				result.push('float kernelResult = 0.0');
 			}
 
-			return this._linesToString(result) + this.functionBuilder.getPrototypeString('kernel');
+			var functionBuilder = FunctionBuilder.fromKernel(this, WebGL2FunctionNode, {
+				fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
+			});
+
+			return this._linesToString(result) + functionBuilder.getPrototypeString('kernel');
 		}
 
 		/**
@@ -772,7 +781,7 @@ var WebGL2Kernel = function (_WebGLKernel) {
 	}, {
 		key: '_getMainResultString',
 		value: function _getMainResultString() {
-			var names = this.subKernelOutputVariableNames;
+			var subKernels = this.subKernels;
 			var result = [];
 
 			if (this.floatOutput) {
@@ -788,11 +797,11 @@ var WebGL2Kernel = function (_WebGLKernel) {
 					result.push('  threadId = indexTo3D(index, uOutputDim)');
 					result.push('  kernel()');
 
-					if (names) {
+					if (subKernels) {
 						result.push('  data0.' + channels[i] + ' = kernelResult');
 
-						for (var j = 0; j < names.length; ++j) {
-							result.push('  data' + (j + 1) + '.' + channels[i] + ' = ' + names[j]);
+						for (var j = 0; j < subKernels.length; ++j) {
+							result.push('  data' + (j + 1) + '.' + channels[i] + ' = subKernelResult_' + subKernels[j].name);
 						}
 					} else {
 						result.push('  data0.' + channels[i] + ' = kernelResult');
@@ -802,63 +811,18 @@ var WebGL2Kernel = function (_WebGLKernel) {
 						result.push('  index += 1');
 					}
 				}
-			} else if (names !== null) {
+			} else if (subKernels !== null) {
 				result.push('  threadId = indexTo3D(index, uOutputDim)');
 				result.push('  kernel()');
 				result.push('  data0 = encode32(kernelResult)');
-				for (var _i2 = 0; _i2 < names.length; _i2++) {
-					result.push('  data' + (_i2 + 1) + ' = encode32(' + names[_i2] + ')');
+				for (var _i = 0; _i < subKernels.length; _i++) {
+					result.push('  data' + (_i + 1) + ' = encode32(subKernelResult_' + subKernels[_i].name + ')');
 				}
 			} else {
 				result.push('  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  data0 = encode32(kernelResult)');
 			}
 
 			return this._linesToString(result);
-		}
-
-		/**
-   * @desc Adds all the sub-kernels supplied with this Kernel instance.
-   */
-
-	}, {
-		key: '_addKernels',
-		value: function _addKernels() {
-			var _this2 = this;
-
-			var builder = this.functionBuilder;
-			var gl = this.context;
-
-			builder.addFunctions(this.functions, {
-				constants: this.constants,
-				output: this.output
-			});
-			builder.addNativeFunctions(this.nativeFunctions);
-
-			builder.addKernel(this.fnString, {
-				prototypeOnly: false,
-				constants: this.constants,
-				output: this.output,
-				debug: this.debug,
-				loopMaxIterations: this.loopMaxIterations,
-				paramNames: this.paramNames,
-				paramTypes: this.paramTypes,
-				constantTypes: this.constantTypes,
-				fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
-			});
-
-			if (this.subKernels !== null) {
-				this.subKernelOutputTextures = [];
-				this.subKernelOutputVariableNames = [];
-				this.subKernels.forEach(function (subKernel) {
-					return _this2._addSubKernel(subKernel);
-				});
-			} else if (this.subKernelProperties !== null) {
-				this.subKernelOutputTextures = [];
-				this.subKernelOutputVariableNames = [];
-				Object.keys(this.subKernelProperties).forEach(function (property) {
-					return _this2._addSubKernel(_this2.subKernelProperties[property]);
-				});
-			}
 		}
 
 		/**
@@ -901,6 +865,83 @@ var WebGL2Kernel = function (_WebGLKernel) {
 			this.extensions.OES_texture_float_linear = null;
 		}
 	}], [{
+		key: 'setupFeatureChecks',
+		value: function setupFeatureChecks() {
+			if (typeof document !== 'undefined') {
+				testCanvas = document.createElement('canvas');
+			} else if (typeof OffscreenCanvas !== 'undefined') {
+				testCanvas = new OffscreenCanvas(0, 0);
+			}
+
+			if (testCanvas) {
+				testContext = testCanvas.getContext('webgl2');
+				testExtensions = {
+					EXT_color_buffer_float: testContext.getExtension('EXT_color_buffer_float'),
+					OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear')
+				};
+				features = this.getFeatures();
+			}
+		}
+	}, {
+		key: 'isContextMatch',
+		value: function isContextMatch(context) {
+			// from global
+			if (typeof WebGL2RenderingContext !== 'undefined') {
+				return context instanceof WebGL2RenderingContext;
+			}
+			return false;
+		}
+	}, {
+		key: 'getFeatures',
+		value: function getFeatures() {
+			return Object.freeze({
+				isFloatRead: this.getIsFloatRead(),
+				isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+				kernelMap: true
+			});
+		}
+	}, {
+		key: 'getIsIntegerDivisionAccurate',
+		value: function getIsIntegerDivisionAccurate() {
+			return _get(WebGL2Kernel.__proto__ || Object.getPrototypeOf(WebGL2Kernel), 'getIsIntegerDivisionAccurate', this).call(this);
+		}
+	}, {
+		key: 'getMode',
+
+
+		/**
+   * @desc Return the current mode in which gpu.js is executing.
+   * @returns {String} The current mode; "gpu".
+   */
+		value: function getMode() {
+			return 'gpu';
+		}
+	}, {
+		key: 'isSupported',
+		get: function get() {
+			if (isSupported !== null) {
+				return isSupported;
+			}
+			this.setupFeatureChecks();
+			isSupported = this.isContextMatch(testContext);
+			return isSupported;
+		}
+	}, {
+		key: 'testCanvas',
+		get: function get() {
+			return testCanvas;
+		}
+	}, {
+		key: 'testContext',
+		get: function get() {
+			return testContext;
+		}
+	}, {
+		key: 'features',
+		get: function get() {
+			return features;
+		}
+	}, {
 		key: 'fragShaderString',
 		get: function get() {
 			return fragShaderString;
