@@ -74,16 +74,11 @@ class Kernel {
 		this.loopMaxIterations = 0;
 
 		/**
-		 * @type {IVariableDefinition[]}
-		 */
-		this.constantDefinitions = null;
-
-		/**
 		 * Constants used in kernel via `this.constants`
 		 * @type {Object}
 		 */
-		this.constants = null; // TODO: remove
-		this.constantTypes = null; // TODO: remove
+		this.constants = null;
+		this.constantTypes = null;
 		this.hardcodeConstants = null;
 
 		/**

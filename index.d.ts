@@ -59,9 +59,8 @@ export class Kernel {
   debug: boolean;
   graphical: boolean;
   loopMaxIterations: number;
-  constantDefinitions: IVariableDefinition[];
-  constants: IConstants; //TODO: remove
-  constantTypes: string[]; //TODO: remove
+  constants: IConstants;
+  constantTypes: string[];
   hardcodeConstants: boolean;
   canvas: any;
   context: any;
@@ -173,9 +172,8 @@ export interface IFunctionSettings {
   argumentTypes: string[];
   argumentSizes: number[];
 
-  constantDefinitions: IVariableDefinition[];
-  constants?: IConstants; //TODO remove
-  constantTypes?: string[]; //TODO remove
+  constants?: IConstants;
+  constantTypes?: string[];
 
   output?: number[];
   loopMaxIterations?: number;
@@ -184,12 +182,6 @@ export interface IFunctionSettings {
   isSubKernel?: boolean;
   onNestedFunction?: Function;
   lookupReturnType?: Function;
-}
-
-export interface IVariableDefinition {
-  name: string;
-  type?: ValueType;
-  size?: number;
 }
 
 export interface ISubKernel {
