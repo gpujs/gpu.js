@@ -1,115 +1,117 @@
-var GPU = require('../../src/index');
+const { assert, test, module: describe } = require('qunit');
+const { CPUKernel, WebGLKernel, WebGL2Kernel, HeadlessGLKernel } = require('../../src');
 
-(function() {
-  var mockGl = {
-    COMPILE_STATUS: 'COMPILE_STATUS',
-    enable: () => {},
-    viewport: () => {},
-    createShader: () => {},
-    shaderSource: () => {},
-    compileShader: () => {},
-    getShaderParameter: (shader, prop) => {
-      if (prop === 'COMPILE_STATUS') return true;
+describe('internal: kernel');
+
+const mockGl = {
+  COMPILE_STATUS: 'COMPILE_STATUS',
+  enable: () => {},
+  viewport: () => {},
+  createShader: () => {},
+  shaderSource: () => {},
+  compileShader: () => {},
+  getShaderParameter: (shader, prop) => {
+    if (prop === 'COMPILE_STATUS') return true;
+  },
+  getShaderInfoLog: () => {},
+  createProgram: () => {},
+  attachShader: () => {},
+  linkProgram: () => {},
+  createFramebuffer: () => { return {}; },
+  createBuffer: () => { return {}; },
+  bindFramebuffer: () => {},
+  bindBuffer: () => {},
+  bufferData: () => {},
+  bufferSubData: () => {},
+  getAttribLocation: () => Math.random(),
+  enableVertexAttribArray: () => {},
+  vertexAttribPointer: () => {},
+  createTexture: () => {},
+  activeTexture: () => {},
+  bindTexture: () => {},
+  texParameteri: () => {},
+  texImage2D: () => {},
+  framebufferTexture2D: () => {},
+  deleteBuffer: () => {},
+  deleteFramebuffer: () => {},
+  getExtension: () => true
+};
+
+test('CPUKernel argumentTypes', () => {
+  const kernel = new CPUKernel(`function(value) { return value[this.thread.x]; }`, {
+    output: [1],
+    functionBuilder: {
+      addKernel: function() {},
+      addFunctions: function() {},
+      getPrototypes: function() { return []; },
+      addNativeFunctions: function() {}
     },
-    getShaderInfoLog: () => {},
-    createProgram: () => {},
-    attachShader: () => {},
-    linkProgram: () => {},
-    createFramebuffer: () => { return {}; },
-    createBuffer: () => { return {}; },
-    bindFramebuffer: () => {},
-    bindBuffer: () => {},
-    bufferData: () => {},
-    bufferSubData: () => {},
-    getAttribLocation: () => Math.random(),
-    enableVertexAttribArray: () => {},
-    vertexAttribPointer: () => {},
-    createTexture: () => {},
-    activeTexture: () => {},
-    bindTexture: () => {},
-    texParameteri: () => {},
-    texImage2D: () => {},
-    framebufferTexture2D: () => {},
-    deleteBuffer: () => {},
-    deleteFramebuffer: () => {},
-    getExtension: () => true
-  };
-
-  QUnit.test('CPUKernel argumentTypes', function(assert) {
-    const kernel = new GPU.CPUKernel(`function(value) { return value[this.thread.x]; }`, {
-      output: [1],
-      functionBuilder: {
-        addKernel: function() {},
-        addFunctions: function() {},
-        getPrototypes: function() { return []; },
-        addNativeFunctions: function() {}
-      },
-    });
-    kernel.build([1]);
-    assert.equal(kernel.argumentTypes.length, 1);
-    assert.equal(kernel.argumentTypes[0], 'Array');
-    kernel.destroy();
   });
+  kernel.build([1]);
+  assert.equal(kernel.argumentTypes.length, 1);
+  assert.equal(kernel.argumentTypes[0], 'Array');
+  kernel.destroy();
+});
 
-  QUnit.test('WebGLKernel argumentTypes', function(assert) {
-    const kernel = new GPU.WebGLKernel(`function(value) { return value[this.thread.x]; }`, {
-      skipValidateSettings: true,
-      output: [1],
-      canvas: {},
-      context: mockGl,
-      functionBuilder: {
-        addKernel: function() {},
-        addFunctions: function() {},
-        getPrototypes: function() { return []; },
-        addNativeFunctions: function() {},
-        getPrototypeString: function() { return 'void kernel() {}'; }
-      },
-    });
-    kernel.build([1]);
-    assert.equal(kernel.argumentTypes.length, 1);
-    assert.equal(kernel.argumentTypes[0], 'Array');
-    kernel.destroy();
+test('WebGLKernel argumentTypes', () => {
+  const kernel = new WebGLKernel(`function(value) { return value[this.thread.x]; }`, {
+    skipValidateSettings: true,
+    output: [1],
+    canvas: {},
+    context: mockGl,
+    functionBuilder: {
+      addKernel: function() {},
+      addFunctions: function() {},
+      getPrototypes: function() { return []; },
+      addNativeFunctions: function() {},
+      getPrototypeString: function() { return 'void kernel() {}'; }
+    },
   });
+  kernel.build([1]);
+  assert.equal(kernel.argumentTypes.length, 1);
+  assert.equal(kernel.argumentTypes[0], 'Array');
+  kernel.destroy();
+});
 
-  QUnit.test('WebGL2Kernel argumentTypes', function(assert) {
-    const kernel = new GPU.WebGL2Kernel(`function(value) { return value[this.thread.x]; }`, {
-      skipValidateSettings: true,
-      output: [1],
-      canvas: {},
-      context: mockGl,
-      functionBuilder: {
-        addKernel: function() {},
-        addFunctions: function() {},
-        getPrototypes: function() { return []; },
-        addNativeFunctions: function() {},
-        getPrototypeString: function() { return 'void kernel() {}'; }
-      },
-    });
-    kernel.build([1]);
-    assert.equal(kernel.argumentTypes.length, 1);
-    assert.equal(kernel.argumentTypes[0], 'Array');
-    kernel.destroy();
+test('WebGL2Kernel argumentTypes', () => {
+  const kernel = new WebGL2Kernel(`function(value) { return value[this.thread.x]; }`, {
+    skipValidateSettings: true,
+    output: [1],
+    canvas: {},
+    context: mockGl,
+    functionBuilder: {
+      addKernel: function() {},
+      addFunctions: function() {},
+      getPrototypes: function() { return []; },
+      addNativeFunctions: function() {},
+      getPrototypeString: function() { return 'void kernel() {}'; }
+    },
   });
+  kernel.build([1]);
+  assert.equal(kernel.argumentTypes.length, 1);
+  assert.equal(kernel.argumentTypes[0], 'Array');
+  kernel.destroy();
+});
 
-  QUnit.test('HeadlessGLKernel argumentTypes', function(assert) {
-    const kernel = new GPU.HeadlessGLKernel(`function(value) { return value[this.thread.x]; }`, {
-      output: [1],
-      context: mockGl,
-      functionBuilder: {
-        addKernel: function() {},
-        addFunctions: function() {},
-        getPrototypes: function() { return []; },
-        addNativeFunctions: function() {},
-        getPrototypeString: function() { return 'void kernel() {}'; }
-      },
-    });
-    kernel.build([1]);
-    assert.equal(kernel.argumentTypes.length, 1);
-    assert.equal(kernel.argumentTypes[0], 'Array');
-    kernel.destroy();
+test('HeadlessGLKernel argumentTypes', () => {
+  const kernel = new HeadlessGLKernel(`function(value) { return value[this.thread.x]; }`, {
+    output: [1],
+    context: mockGl,
+    functionBuilder: {
+      addKernel: function() {},
+      addFunctions: function() {},
+      getPrototypes: function() { return []; },
+      addNativeFunctions: function() {},
+      getPrototypeString: function() { return 'void kernel() {}'; }
+    },
   });
-})();
-QUnit.test('WebGLKernel.setUniform1f only calls webgl when values change', () => {
+  kernel.build([1]);
+  assert.equal(kernel.argumentTypes.length, 1);
+  assert.equal(kernel.argumentTypes[0], 'Array');
+  kernel.destroy();
+});
+
+test('WebGLKernel.setUniform1f only calls webgl when values change', () => {
   const canvas = {};
   const context = {
     uniform1f: () => {
@@ -119,21 +121,21 @@ QUnit.test('WebGLKernel.setUniform1f only calls webgl when values change', () =>
       return name;
     }
   };
-  const kernel = new GPU.WebGLKernel('', { canvas, context, output: [1] });
+  const kernel = new WebGLKernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
   kernel.setUniform1f('test', 1);
-  QUnit.assert.equal(kernel.uniform1fCache['test'], 1);
+  assert.equal(kernel.uniform1fCache['test'], 1);
 
   throws = true;
   kernel.setUniform1f('test', 1);
-  QUnit.assert.equal(kernel.uniform1fCache['test'], 1);
+  assert.equal(kernel.uniform1fCache['test'], 1);
 
   throws = false;
   kernel.setUniform1f('test', 2);
-  QUnit.assert.equal(kernel.uniform1fCache['test'], 2);
+  assert.equal(kernel.uniform1fCache['test'], 2);
   kernel.destroy();
 });
-QUnit.test('WebGL2Kernel.setUniform1f only calls webgl when values change', () => {
+test('WebGL2Kernel.setUniform1f only calls webgl when values change', () => {
   const canvas = {};
   const context = {
     uniform1f: () => {
@@ -143,22 +145,22 @@ QUnit.test('WebGL2Kernel.setUniform1f only calls webgl when values change', () =
       return name;
     }
   };
-  const kernel = new GPU.WebGL2Kernel('', { context, canvas, output: [1] });
+  const kernel = new WebGL2Kernel('function() {}', { context, canvas, output: [1] });
   let throws = false;
   kernel.setUniform1f('test', 1);
-  QUnit.assert.equal(kernel.uniform1fCache['test'], 1);
+  assert.equal(kernel.uniform1fCache['test'], 1);
 
   throws = true;
   kernel.setUniform1f('test', 1);
-  QUnit.assert.equal(kernel.uniform1fCache['test'], 1);
+  assert.equal(kernel.uniform1fCache['test'], 1);
 
   throws = false;
   kernel.setUniform1f('test', 2);
-  QUnit.assert.equal(kernel.uniform1fCache['test'], 2);
+  assert.equal(kernel.uniform1fCache['test'], 2);
   kernel.destroy();
 });
-QUnit.test('HeadlessGLKernel.setUniform1f only calls webgl when values change', () => {
-  const kernel = new GPU.HeadlessGLKernel('', { output: [1] });
+test('HeadlessGLKernel.setUniform1f only calls webgl when values change', () => {
+  const kernel = new HeadlessGLKernel('function() {}', { output: [1] });
   let throws = false;
   kernel.context = {
     uniform1f: () => {
@@ -169,18 +171,18 @@ QUnit.test('HeadlessGLKernel.setUniform1f only calls webgl when values change', 
     }
   };
   kernel.setUniform1f('test', 1);
-  QUnit.assert.equal(kernel.uniform1fCache['test'], 1);
+  assert.equal(kernel.uniform1fCache['test'], 1);
 
   throws = true;
   kernel.setUniform1f('test', 1);
-  QUnit.assert.equal(kernel.uniform1fCache['test'], 1);
+  assert.equal(kernel.uniform1fCache['test'], 1);
 
   throws = false;
   kernel.setUniform1f('test', 2);
-  QUnit.assert.equal(kernel.uniform1fCache['test'], 2);
+  assert.equal(kernel.uniform1fCache['test'], 2);
   kernel.destroy();
 });
-QUnit.test('WebGLKernel.setUniform1i only calls webgl when values change', () => {
+test('WebGLKernel.setUniform1i only calls webgl when values change', () => {
   const canvas = {};
   const context = {
     uniform1i: () => {
@@ -190,21 +192,21 @@ QUnit.test('WebGLKernel.setUniform1i only calls webgl when values change', () =>
       return name;
     }
   };
-  const kernel = new GPU.WebGLKernel('', { canvas, context, output: [1] });
+  const kernel = new WebGLKernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
   kernel.setUniform1i('test', 1);
-  QUnit.assert.equal(kernel.uniform1iCache['test'], 1);
+  assert.equal(kernel.uniform1iCache['test'], 1);
 
   throws = true;
   kernel.setUniform1i('test', 1);
-  QUnit.assert.equal(kernel.uniform1iCache['test'], 1);
+  assert.equal(kernel.uniform1iCache['test'], 1);
 
   throws = false;
   kernel.setUniform1i('test', 2);
-  QUnit.assert.equal(kernel.uniform1iCache['test'], 2);
+  assert.equal(kernel.uniform1iCache['test'], 2);
   kernel.destroy();
 });
-QUnit.test('WebGL2Kernel.setUniform1i only calls webgl when values change', () => {
+test('WebGL2Kernel.setUniform1i only calls webgl when values change', () => {
   const canvas = {};
   const context = {
     uniform1i: () => {
@@ -214,22 +216,22 @@ QUnit.test('WebGL2Kernel.setUniform1i only calls webgl when values change', () =
       return name;
     }
   };
-  const kernel = new GPU.WebGL2Kernel('', { canvas, context, output: [1] });
+  const kernel = new WebGL2Kernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
   kernel.setUniform1i('test', 1);
-  QUnit.assert.equal(kernel.uniform1iCache['test'], 1);
+  assert.equal(kernel.uniform1iCache['test'], 1);
 
   throws = true;
   kernel.setUniform1i('test', 1);
-  QUnit.assert.equal(kernel.uniform1iCache['test'], 1);
+  assert.equal(kernel.uniform1iCache['test'], 1);
 
   throws = false;
   kernel.setUniform1i('test', 2);
-  QUnit.assert.equal(kernel.uniform1iCache['test'], 2);
+  assert.equal(kernel.uniform1iCache['test'], 2);
   kernel.destroy();
 });
-QUnit.test('HeadlessGLKernel.setUniform1i only calls webgl when values change', () => {
-  const kernel = new GPU.HeadlessGLKernel('', { output: [1] });
+test('HeadlessGLKernel.setUniform1i only calls webgl when values change', () => {
+  const kernel = new HeadlessGLKernel('function() {}', { output: [1] });
   let throws = false;
   kernel.context = {
     uniform1i: () => {
@@ -240,18 +242,18 @@ QUnit.test('HeadlessGLKernel.setUniform1i only calls webgl when values change', 
     }
   };
   kernel.setUniform1i('test', 1);
-  QUnit.assert.equal(kernel.uniform1iCache['test'], 1);
+  assert.equal(kernel.uniform1iCache['test'], 1);
 
   throws = true;
   kernel.setUniform1i('test', 1);
-  QUnit.assert.equal(kernel.uniform1iCache['test'], 1);
+  assert.equal(kernel.uniform1iCache['test'], 1);
 
   throws = false;
   kernel.setUniform1i('test', 2);
-  QUnit.assert.equal(kernel.uniform1iCache['test'], 2);
+  assert.equal(kernel.uniform1iCache['test'], 2);
   kernel.destroy();
 });
-QUnit.test('WebGLKernel.setUniform2f only calls webgl when values change', () => {
+test('WebGLKernel.setUniform2f only calls webgl when values change', () => {
   const canvas = {};
   const context = {
     uniform2f: () => {
@@ -261,21 +263,21 @@ QUnit.test('WebGLKernel.setUniform2f only calls webgl when values change', () =>
       return name;
     }
   };
-  const kernel = new GPU.WebGLKernel('', { canvas, context, output: [1] });
+  const kernel = new WebGLKernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
   kernel.setUniform2f('test', 1, 2);
-  QUnit.assert.deepEqual(kernel.uniform2fCache['test'], [1, 2]);
+  assert.deepEqual(kernel.uniform2fCache['test'], [1, 2]);
 
   throws = true;
   kernel.setUniform2f('test', 1, 2);
-  QUnit.assert.deepEqual(kernel.uniform2fCache['test'], [1, 2]);
+  assert.deepEqual(kernel.uniform2fCache['test'], [1, 2]);
 
   throws = false;
   kernel.setUniform2f('test', 3, 4);
-  QUnit.assert.deepEqual(kernel.uniform2fCache['test'], [3, 4]);
+  assert.deepEqual(kernel.uniform2fCache['test'], [3, 4]);
   kernel.destroy();
 });
-QUnit.test('WebGL2Kernel.setUniform2f only calls webgl when values change', () => {
+test('WebGL2Kernel.setUniform2f only calls webgl when values change', () => {
   const canvas = {};
   const context = {
     uniform2f: () => {
@@ -285,22 +287,22 @@ QUnit.test('WebGL2Kernel.setUniform2f only calls webgl when values change', () =
       return name;
     }
   };
-  const kernel = new GPU.WebGL2Kernel('', { canvas, context, output: [1] });
+  const kernel = new WebGL2Kernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
   kernel.setUniform2f('test', 1, 2);
-  QUnit.assert.deepEqual(kernel.uniform2fCache['test'], [1, 2]);
+  assert.deepEqual(kernel.uniform2fCache['test'], [1, 2]);
 
   throws = true;
   kernel.setUniform2f('test', 1, 2);
-  QUnit.assert.deepEqual(kernel.uniform2fCache['test'], [1, 2]);
+  assert.deepEqual(kernel.uniform2fCache['test'], [1, 2]);
 
   throws = false;
   kernel.setUniform2f('test', 3, 4);
-  QUnit.assert.deepEqual(kernel.uniform2fCache['test'], [3, 4]);
+  assert.deepEqual(kernel.uniform2fCache['test'], [3, 4]);
   kernel.destroy();
 });
-QUnit.test('HeadlessGLKernel.setUniform2f only calls webgl when values change', () => {
-  const kernel = new GPU.HeadlessGLKernel('', { output: [1] });
+test('HeadlessGLKernel.setUniform2f only calls webgl when values change', () => {
+  const kernel = new HeadlessGLKernel('function() {}', { output: [1] });
   let throws = false;
   kernel.context = {
     uniform2f: () => {
@@ -311,18 +313,18 @@ QUnit.test('HeadlessGLKernel.setUniform2f only calls webgl when values change', 
     }
   };
   kernel.setUniform2f('test', 1, 2);
-  QUnit.assert.deepEqual(kernel.uniform2fCache['test'], [1, 2]);
+  assert.deepEqual(kernel.uniform2fCache['test'], [1, 2]);
 
   throws = true;
   kernel.setUniform2f('test', 1, 2);
-  QUnit.assert.deepEqual(kernel.uniform2fCache['test'], [1, 2]);
+  assert.deepEqual(kernel.uniform2fCache['test'], [1, 2]);
 
   throws = false;
   kernel.setUniform2f('test', 3, 4);
-  QUnit.assert.deepEqual(kernel.uniform2fCache['test'], [3, 4]);
+  assert.deepEqual(kernel.uniform2fCache['test'], [3, 4]);
   kernel.destroy();
 });
-QUnit.test('WebGLKernel.setUniform2fv only calls webgl when values change', () => {
+test('WebGLKernel.setUniform2fv only calls webgl when values change', () => {
   const canvas = {};
   const context = {
     uniform2fv: () => {
@@ -332,21 +334,21 @@ QUnit.test('WebGLKernel.setUniform2fv only calls webgl when values change', () =
       return name;
     }
   };
-  const kernel = new GPU.WebGLKernel('', { canvas, context, output: [1] });
+  const kernel = new WebGLKernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
   kernel.setUniform2fv('test', [1, 2]);
-  QUnit.assert.deepEqual(kernel.uniform2fvCache['test'], [1, 2]);
+  assert.deepEqual(kernel.uniform2fvCache['test'], [1, 2]);
 
   throws = true;
   kernel.setUniform2fv('test', [1, 2]);
-  QUnit.assert.deepEqual(kernel.uniform2fvCache['test'], [1, 2]);
+  assert.deepEqual(kernel.uniform2fvCache['test'], [1, 2]);
 
   throws = false;
   kernel.setUniform2fv('test', [2, 3]);
-  QUnit.assert.deepEqual(kernel.uniform2fvCache['test'], [2, 3]);
+  assert.deepEqual(kernel.uniform2fvCache['test'], [2, 3]);
   kernel.destroy();
 });
-QUnit.test('WebGL2Kernel.setUniform2fv only calls webgl when values change', () => {
+test('WebGL2Kernel.setUniform2fv only calls webgl when values change', () => {
   const canvas = {};
   const context = {
     uniform2fv: () => {
@@ -356,21 +358,21 @@ QUnit.test('WebGL2Kernel.setUniform2fv only calls webgl when values change', () 
       return name;
     }
   };
-  const kernel = new GPU.WebGL2Kernel('', { canvas, context, output: [1] });
+  const kernel = new WebGL2Kernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
   kernel.setUniform2fv('test', [1, 2]);
-  QUnit.assert.deepEqual(kernel.uniform2fvCache['test'], [1, 2]);
+  assert.deepEqual(kernel.uniform2fvCache['test'], [1, 2]);
 
   throws = true;
   kernel.setUniform2fv('test', [1, 2]);
-  QUnit.assert.deepEqual(kernel.uniform2fvCache['test'], [1, 2]);
+  assert.deepEqual(kernel.uniform2fvCache['test'], [1, 2]);
 
   throws = false;
   kernel.setUniform2fv('test', [2, 3]);
-  QUnit.assert.deepEqual(kernel.uniform2fvCache['test'], [2, 3]);
+  assert.deepEqual(kernel.uniform2fvCache['test'], [2, 3]);
   kernel.destroy();
 });
-QUnit.test('HeadlessGLKernel.setUniform2fv only calls webgl when values change', () => {
+test('HeadlessGLKernel.setUniform2fv only calls webgl when values change', () => {
   const context = {
     uniform2fv: () => {
       if (throws) new Error('This should not get called');
@@ -379,21 +381,21 @@ QUnit.test('HeadlessGLKernel.setUniform2fv only calls webgl when values change',
       return name;
     }
   };
-  const kernel = new GPU.HeadlessGLKernel('', { context, output: [1] });
+  const kernel = new HeadlessGLKernel('function() {}', { context, output: [1] });
   let throws = false;
   kernel.setUniform2fv('test', [1, 2]);
-  QUnit.assert.deepEqual(kernel.uniform2fvCache['test'], [1, 2]);
+  assert.deepEqual(kernel.uniform2fvCache['test'], [1, 2]);
 
   throws = true;
   kernel.setUniform2fv('test', [1, 2]);
-  QUnit.assert.deepEqual(kernel.uniform2fvCache['test'], [1, 2]);
+  assert.deepEqual(kernel.uniform2fvCache['test'], [1, 2]);
 
   throws = false;
   kernel.setUniform2fv('test', [2, 3]);
-  QUnit.assert.deepEqual(kernel.uniform2fvCache['test'], [2, 3]);
+  assert.deepEqual(kernel.uniform2fvCache['test'], [2, 3]);
   kernel.destroy();
 });
-QUnit.test('WebGLKernel.setUniform3fv only calls webgl when values change', () => {
+test('WebGLKernel.setUniform3fv only calls webgl when values change', () => {
   const canvas = {};
   const context = {
     uniform3fv: () => {
@@ -403,21 +405,21 @@ QUnit.test('WebGLKernel.setUniform3fv only calls webgl when values change', () =
       return name;
     }
   };
-  const kernel = new GPU.WebGLKernel('', { canvas, context, output: [1] });
+  const kernel = new WebGLKernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
   kernel.setUniform3fv('test', [1, 2, 3]);
-  QUnit.assert.deepEqual(kernel.uniform3fvCache['test'], [1, 2, 3]);
+  assert.deepEqual(kernel.uniform3fvCache['test'], [1, 2, 3]);
 
   throws = true;
   kernel.setUniform3fv('test', [1, 2, 3]);
-  QUnit.assert.deepEqual(kernel.uniform3fvCache['test'], [1, 2, 3]);
+  assert.deepEqual(kernel.uniform3fvCache['test'], [1, 2, 3]);
 
   throws = false;
   kernel.setUniform3fv('test', [2, 3, 4]);
-  QUnit.assert.deepEqual(kernel.uniform3fvCache['test'], [2, 3, 4]);
+  assert.deepEqual(kernel.uniform3fvCache['test'], [2, 3, 4]);
   kernel.destroy();
 });
-QUnit.test('WebGL2Kernel.setUniform3fv only calls webgl when values change', () => {
+test('WebGL2Kernel.setUniform3fv only calls webgl when values change', () => {
   const canvas = {};
   const context = {
     uniform3fv: () => {
@@ -427,21 +429,21 @@ QUnit.test('WebGL2Kernel.setUniform3fv only calls webgl when values change', () 
       return name;
     }
   };
-  const kernel = new GPU.WebGL2Kernel('', { canvas, context, output: [1] });
+  const kernel = new WebGL2Kernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
   kernel.setUniform3fv('test', [1, 2, 3]);
-  QUnit.assert.deepEqual(kernel.uniform3fvCache['test'], [1, 2, 3]);
+  assert.deepEqual(kernel.uniform3fvCache['test'], [1, 2, 3]);
 
   throws = true;
   kernel.setUniform3fv('test', [1, 2, 3]);
-  QUnit.assert.deepEqual(kernel.uniform3fvCache['test'], [1, 2, 3]);
+  assert.deepEqual(kernel.uniform3fvCache['test'], [1, 2, 3]);
 
   throws = false;
   kernel.setUniform3fv('test', [2, 3, 4]);
-  QUnit.assert.deepEqual(kernel.uniform3fvCache['test'], [2, 3, 4]);
+  assert.deepEqual(kernel.uniform3fvCache['test'], [2, 3, 4]);
   kernel.destroy();
 });
-QUnit.test('HeadlessGLKernel.setUniform3fv only calls webgl when values change', () => {
+test('HeadlessGLKernel.setUniform3fv only calls webgl when values change', () => {
   const context = {
     uniform3fv: () => {
       if (throws) new Error('This should not get called');
@@ -450,17 +452,17 @@ QUnit.test('HeadlessGLKernel.setUniform3fv only calls webgl when values change',
       return name;
     }
   };
-  const kernel = new GPU.HeadlessGLKernel('', { context, output: [1] });
+  const kernel = new HeadlessGLKernel('function() {}', { context, output: [1] });
   let throws = false;
   kernel.setUniform3fv('test', [1, 2, 3]);
-  QUnit.assert.deepEqual(kernel.uniform3fvCache['test'], [1, 2, 3]);
+  assert.deepEqual(kernel.uniform3fvCache['test'], [1, 2, 3]);
 
   throws = true;
   kernel.setUniform3fv('test', [1, 2, 3]);
-  QUnit.assert.deepEqual(kernel.uniform3fvCache['test'], [1, 2, 3]);
+  assert.deepEqual(kernel.uniform3fvCache['test'], [1, 2, 3]);
 
   throws = false;
   kernel.setUniform3fv('test', [2, 3, 4]);
-  QUnit.assert.deepEqual(kernel.uniform3fvCache['test'], [2, 3, 4]);
+  assert.deepEqual(kernel.uniform3fvCache['test'], [2, 3, 4]);
   kernel.destroy();
 });

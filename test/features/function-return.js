@@ -1,38 +1,40 @@
-(function() {
-  const GPU = require('../../src/index');
-  function functionReturn( mode ) {
-    var gpu = new GPU({ mode: mode });
-    var f = gpu.createKernel(function() {
-      return 42.0;
-    }, {
-      output : [1]
-    });
-    QUnit.assert.ok( f !== null, "function generated test");
-    QUnit.assert.equal(f()[0], 42.0, "basic return function test");
-    gpu.destroy();
-  }
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-  QUnit.test("functionReturn (auto)", () => {
-    functionReturn(null);
-  });
+describe('function return');
 
-  QUnit.test("functionReturn (gpu)", () => {
-    functionReturn("gpu");
+function functionReturn( mode ) {
+  const gpu = new GPU({ mode });
+  const f = gpu.createKernel(function() {
+    return 42.0;
+  }, {
+    output : [1]
   });
+  assert.ok( f !== null, "function generated test");
+  assert.equal(f()[0], 42.0, "basic return function test");
+  gpu.destroy();
+}
 
-  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("functionReturn (webgl)", () => {
-    functionReturn("webgl");
-  });
+test("auto", () => {
+  functionReturn(null);
+});
 
-  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("functionReturn (webgl2)", () => {
-    functionReturn("webgl2");
-  });
+test("gpu", () => {
+  functionReturn("gpu");
+});
 
-  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("functionReturn (headlessgl)", () => {
-    functionReturn("headlessgl");
-  });
+(GPU.isWebGLSupported ? test : skip)("webgl", () => {
+  functionReturn("webgl");
+});
 
-  QUnit.test("functionReturn (CPU)", () => {
-    functionReturn("cpu");
-  });
-})();
+(GPU.isWebGL2Supported ? test : skip)("webgl2", () => {
+  functionReturn("webgl2");
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)("headlessgl", () => {
+  functionReturn("headlessgl");
+});
+
+test("cpu", () => {
+  functionReturn("cpu");
+});

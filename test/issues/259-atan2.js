@@ -1,38 +1,39 @@
-(function() {
-  const GPU = require('../../src/index');
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-  function buildAtan2KernelResult(mode) {
-    const gpu = new GPU({ mode });
-    const kernel = gpu.createKernel(function() {
-      return Math.atan2(1, 2);
-    }, {
-      output: [1]
-    });
-    QUnit.assert.equal(kernel()[0].toFixed(7), 0.4636476);
-    gpu.destroy();
-  }
+describe('issue #259');
 
-  QUnit.test('Issue #259 atan2 - (auto)', () => {
-    buildAtan2KernelResult();
+function buildAtan2KernelResult(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function() {
+    return Math.atan2(1, 2);
+  }, {
+    output: [1]
   });
+  assert.equal(kernel()[0].toFixed(7), 0.4636476);
+  gpu.destroy();
+}
 
-  QUnit.test('Issue #259 atan2 - (gpu)', () => {
-    buildAtan2KernelResult('gpu');
-  });
+test('Issue #259 atan2 - auto', () => {
+  buildAtan2KernelResult();
+});
 
-  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #259 atan2 - (webgl)', () => {
-    buildAtan2KernelResult('webgl');
-  });
+test('Issue #259 atan2 - gpu', () => {
+  buildAtan2KernelResult('gpu');
+});
 
-  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #259 atan2 - (webgl2)', () => {
-    buildAtan2KernelResult('webgl2');
-  });
+(GPU.isWebGLSupported ? test : skip)('Issue #259 atan2 - webgl', () => {
+  buildAtan2KernelResult('webgl');
+});
 
-  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #259 atan2 - (headlessgl)', () => {
-    buildAtan2KernelResult('headlessgl');
-  });
+(GPU.isWebGL2Supported ? test : skip)('Issue #259 atan2 - webgl2', () => {
+  buildAtan2KernelResult('webgl2');
+});
 
-  QUnit.test('Issue #259 atan2 - (cpu)', () => {
-    buildAtan2KernelResult('cpu');
-  });
-})();
+(GPU.isHeadlessGLSupported ? test : skip)('Issue #259 atan2 - headlessgl', () => {
+  buildAtan2KernelResult('headlessgl');
+});
+
+test('Issue #259 atan2 - cpu', () => {
+  buildAtan2KernelResult('cpu');
+});

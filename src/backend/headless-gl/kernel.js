@@ -1,5 +1,8 @@
 const getContext = require('gl');
-const WebGLKernel = require('../web-gl/kernel');
+const {
+	WebGLKernel
+} = require('../web-gl/kernel');
+
 let isSupported = null;
 let testCanvas = null;
 let testContext = null;
@@ -66,14 +69,6 @@ class HeadlessGLKernel extends WebGLKernel {
 		return features;
 	}
 
-	/**
-	 * @desc Return the current mode in which gpu.js is executing.
-	 * @returns {String} The current mode; "gpu".
-	 */
-	static getMode() {
-		return 'gpu';
-	}
-
 	initCanvas() {
 		return {};
 	}
@@ -111,4 +106,6 @@ class HeadlessGLKernel extends WebGLKernel {
 	}
 }
 
-module.exports = HeadlessGLKernel;
+module.exports = {
+	HeadlessGLKernel
+};

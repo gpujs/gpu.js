@@ -1,10 +1,24 @@
-const WebGLKernel = require('../web-gl/kernel');
-const WebGL2FunctionNode = require('./function-node');
-const FunctionBuilder = require('../function-builder');
-const utils = require('../../utils');
-const Texture = require('../../texture');
-const fragShaderString = require('./shader-frag');
-const vertShaderString = require('./shader-vert');
+const {
+	WebGLKernel
+} = require('../web-gl/kernel');
+const {
+	WebGL2FunctionNode
+} = require('./function-node');
+const {
+	FunctionBuilder
+} = require('../function-builder');
+const {
+	utils
+} = require('../../utils');
+const {
+	Texture
+} = require('../../texture');
+const {
+	fragmentShader
+} = require('./fragment-shader');
+const {
+	vertexShader
+} = require('./vertex-shader');
 
 let isSupported = null;
 let testCanvas = null;
@@ -71,18 +85,11 @@ class WebGL2Kernel extends WebGLKernel {
 		return features;
 	}
 
-	/**
-	 * @desc Return the current mode in which gpu.js is executing.
-	 * @returns {String} The current mode; "gpu".
-	 */
-	static getMode() {
-		return 'gpu';
+	static get fragmentShader() {
+		return fragmentShader;
 	}
-	static get fragShaderString() {
-		return fragShaderString;
-	}
-	static get vertShaderString() {
-		return vertShaderString;
+	static get vertexShader() {
+		return vertexShader;
 	}
 
 	initContext() {
@@ -102,11 +109,6 @@ class WebGL2Kernel extends WebGLKernel {
 		};
 	}
 
-	/**
-	 * @desc Validate settings related to Kernel, such as
-	 * floatOutputs and Textures, texSize, output,
-	 * graphical output.
-	 */
 	validateSettings() {
 		if (this.skipValidateSettings) {
 			this.texSize = utils.dimToTexSize({
@@ -172,12 +174,6 @@ class WebGL2Kernel extends WebGLKernel {
 		}
 	}
 
-	/**
-	 * @desc Run the kernel program, and send the output to renderOutput
-	 * <p> This method calls a helper method *renderOutput* to return the result. </p>
-	 *
-	 * @returns {Object|Undefined} Result The final output of the program, as float, and as Textures for reuse.
-	 */
 	run() {
 		if (this.program === null) {
 			this.build.apply(this, arguments);
@@ -253,17 +249,10 @@ class WebGL2Kernel extends WebGLKernel {
 		this.context.drawBuffers(this.drawBuffersMap);
 	}
 
-	/**
-	 * @desc This return defined outputTexture, which is setup in .build(), or if immutable, is defined in .run()
-	 * @returns {Object} Output Texture Cache
-	 */
 	getOutputTexture() {
 		return this.outputTexture;
 	}
 
-	/**
-	 * @desc Setup and replace output texture
-	 */
 	_setupOutputTexture() {
 		const gl = this.context;
 		const texSize = this.texSize;
@@ -282,9 +271,6 @@ class WebGL2Kernel extends WebGLKernel {
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
 	}
 
-	/**
-	 * @desc Setup and replace sub-output textures
-	 */
 	_setupSubOutputTextures(length) {
 		const gl = this.context;
 		const texSize = this.texSize;
@@ -935,11 +921,11 @@ class WebGL2Kernel extends WebGLKernel {
 	 * @param {Array} args - The actual parameters sent to the Kernel
 	 * @returns {string} Fragment Shader string
 	 */
-	_getFragShaderString(args) {
-		if (this.compiledFragShaderString !== null) {
-			return this.compiledFragShaderString;
+	getFragmentShader(args) {
+		if (this.compiledFragmentShader !== null) {
+			return this.compiledFragmentShader;
 		}
-		return this.compiledFragShaderString = this._replaceArtifacts(this.constructor.fragShaderString, this._getFragShaderArtifactMap(args));
+		return this.compiledFragmentShader = this.replaceArtifacts(this.constructor.fragmentShader, this._getFragShaderArtifactMap(args));
 	}
 
 	/**
@@ -948,11 +934,11 @@ class WebGL2Kernel extends WebGLKernel {
 	 * @returns {string} Vertical Shader string
 	 *
 	 */
-	_getVertShaderString(args) {
-		if (this.compiledVertShaderString !== null) {
-			return this.compiledVertShaderString;
+	getVertexShader(args) {
+		if (this.compiledVertexShader !== null) {
+			return this.compiledVertexShader;
 		}
-		return this.compiledVertShaderString = this.constructor.vertShaderString;
+		return this.compiledVertexShader = this.constructor.vertexShader;
 	}
 
 	destroyExtensions() {
@@ -961,4 +947,6 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 }
 
-module.exports = WebGL2Kernel;
+module.exports = {
+	WebGL2Kernel
+};

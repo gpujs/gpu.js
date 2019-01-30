@@ -1,43 +1,45 @@
-(function() {
-  const GPU = require('../../src/index');
-  function test(mode) {
-    const gpu = new GPU({ mode: mode });
-    function getPi() {
-      return this.constants.pi;
-    }
-    gpu.addFunction(getPi);
-    const kernel = gpu.createKernel(function() {
-      return getPi();
-    })
-      .setOutput([1])
-      .setConstants({ pi: Math.PI });
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-    const result = kernel();
-    QUnit.assert.equal(result[0].toFixed(7), Math.PI.toFixed(7));
-    gpu.destroy();
+describe('issue # 147');
+
+function missingConstant(mode) {
+  const gpu = new GPU({ mode });
+  function getPi() {
+    return this.constants.pi;
   }
+  gpu.addFunction(getPi);
+  const kernel = gpu.createKernel(function() {
+    return getPi();
+  })
+    .setOutput([1])
+    .setConstants({ pi: Math.PI });
 
-  QUnit.test("Issue #147 - missing constant (auto)", () => {
-    test(null);
-  });
+  const result = kernel();
+  assert.equal(result[0].toFixed(7), Math.PI.toFixed(7));
+  gpu.destroy();
+}
 
-  QUnit.test("Issue #147 - missing constant (gpu)", () => {
-    test('gpu');
-  });
+test("Issue #147 - missing constant auto", () => {
+  missingConstant(null);
+});
 
-  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)("Issue #147 - missing constant (webgl)", () => {
-    test('webgl');
-  });
+test("Issue #147 - missing constant gpu", () => {
+  missingConstant('gpu');
+});
 
-  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)("Issue #147 - missing constant (webgl2)", () => {
-    test('webgl2');
-  });
+(GPU.isWebGLSupported ? test : skip)("Issue #147 - missing constant webgl", () => {
+  missingConstant('webgl');
+});
 
-  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)("Issue #147 - missing constant (headlessgl)", () => {
-    test('headlessgl');
-  });
+(GPU.isWebGL2Supported ? test : skip)("Issue #147 - missing constant webgl2", () => {
+  missingConstant('webgl2');
+});
 
-  QUnit.test("Issue #147 - missing constant (cpu)", () => {
-    test('cpu');
-  });
-})();
+(GPU.isHeadlessGLSupported ? test : skip)("Issue #147 - missing constant headlessgl", () => {
+  missingConstant('headlessgl');
+});
+
+test("Issue #147 - missing constant cpu", () => {
+  missingConstant('cpu');
+});

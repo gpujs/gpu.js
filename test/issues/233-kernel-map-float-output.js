@@ -1,64 +1,65 @@
-(() => {
-  const GPU = require('../../src/index');
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-  function test(mode) {
-    const lst = [1, 2, 3, 4, 5, 6, 7];
-    const gpu = new GPU({ mode });
-    const kernels = gpu.createKernelMap({
-      stepA: function (x) {
-        return x * x;
-      },
-      stepB: function (x) {
-        return x + 1;
-      }
-    }, function (lst) {
-      const val = lst[this.thread.x];
+describe('issue # 233');
 
-      stepA(val);
-      stepB(val);
+function kernelMapFloatOutput(mode) {
+  const lst = [1, 2, 3, 4, 5, 6, 7];
+  const gpu = new GPU({ mode });
+  const kernels = gpu.createKernelMap({
+    stepA: function (x) {
+      return x * x;
+    },
+    stepB: function (x) {
+      return x + 1;
+    }
+  }, function (lst) {
+    const val = lst[this.thread.x];
 
-      return val;
-    })
-      .setFloatOutput(true)
-      .setOutput([lst.length]);
+    stepA(val);
+    stepB(val);
 
-    const result = kernels(lst);
-    const unwrap = gpu.createKernel(function(x) {
-      return x[this.thread.x];
-    })
-      .setFloatTextures(true)
-      .setOutput([lst.length]);
+    return val;
+  })
+    .setFloatOutput(true)
+    .setOutput([lst.length]);
 
-    const stepAResult = unwrap(result.stepA);
-    const stepBResult = unwrap(result.stepB);
+  const result = kernels(lst);
+  const unwrap = gpu.createKernel(function(x) {
+    return x[this.thread.x];
+  })
+    .setFloatTextures(true)
+    .setOutput([lst.length]);
 
-    QUnit.assert.deepEqual(QUnit.extend([], stepAResult), lst.map(function (x) { return x * x }));
-    QUnit.assert.deepEqual(QUnit.extend([], stepBResult), lst.map(function (x) { return x + 1 }));
-    QUnit.assert.deepEqual(QUnit.extend([], result.result), lst);
-    gpu.destroy();
-  }
+  const stepAResult = unwrap(result.stepA);
+  const stepBResult = unwrap(result.stepB);
 
-  QUnit.test('Issue #233 - kernel map with float output (auto)', () => {
-    test();
-  });
+  assert.deepEqual(Array.from(stepAResult), lst.map(function (x) { return x * x }));
+  assert.deepEqual(Array.from(stepBResult), lst.map(function (x) { return x + 1 }));
+  assert.deepEqual(Array.from(result.result), lst);
+  gpu.destroy();
+}
 
-  QUnit.test('Issue #233 - kernel map with float output (gpu)', () => {
-    test('gpu');
-  });
+(GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output auto', () => {
+  kernelMapFloatOutput();
+});
 
-  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #233 - kernel map with float output (webgl)', () => {
-    test('webgl');
-  });
+(GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output gpu', () => {
+  kernelMapFloatOutput('gpu');
+});
 
-  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #233 - kernel map with float output (webgl2)', () => {
-    test('webgl2');
-  });
+(GPU.isWebGLSupported ? test : skip)('Issue #233 - kernel map with float output webgl', () => {
+  kernelMapFloatOutput('webgl');
+});
 
-  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #233 - kernel map with float output (headlessgl)', () => {
-    test('headlessgl');
-  });
+(GPU.isWebGL2Supported ? test : skip)('Issue #233 - kernel map with float output webgl2', () => {
+  kernelMapFloatOutput('webgl2');
+});
 
-  QUnit.test('Issue #233 - kernel map with float output (cpu)', () => {
-    test('cpu');
-  });
-})();
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output headlessgl', () => {
+  kernelMapFloatOutput('headlessgl');
+});
+
+test('Issue #233 - kernel map with float output cpu', () => {
+  kernelMapFloatOutput('cpu');
+});

@@ -1,5 +1,6 @@
-const FunctionNode = require('../function-node');
-const utils = require('../../utils');
+const {
+	FunctionNode
+} = require('../function-node');
 
 /**
  * @desc [INTERNAL] Represents a single function, inside JS
@@ -7,7 +8,7 @@ const utils = require('../../utils');
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
  *
  * @prop jsFunction           - {Function}  The JS Function the node represents
- * @prop fn     - {String}    jsFunction.toString()
+ * @prop source     - {String}    jsFunction.toString()
  * @prop argumentNames           - {String[]}  Parameter names of the function
  * @prop argumentTypes           - {String[]}  Shader land parameters type assumption
  * @prop isRootKernel         - {Boolean}   Special indicator, for kernel function
@@ -22,7 +23,7 @@ class CPUFunctionNode extends FunctionNode {
 	/**
 	 *
 	 * @param {string} fn
-	 * @param {object} [settings]
+	 * @param {object} settings
 	 */
 	constructor(fn, settings) {
 		settings = settings || {};
@@ -851,4 +852,6 @@ class CPUFunctionNode extends FunctionNode {
 	}
 }
 
-module.exports = CPUFunctionNode;
+module.exports = {
+	CPUFunctionNode
+};

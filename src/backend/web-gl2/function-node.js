@@ -1,4 +1,6 @@
-const WebGLFunctionNode = require('../web-gl/function-node');
+const {
+	WebGLFunctionNode
+} = require('../web-gl/function-node');
 const DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
 const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
@@ -109,4 +111,6 @@ function webGlRegexOptimize(inStr) {
 		.replace(ENCODE32_DECODE32, '((');
 }
 
-module.exports = WebGL2FunctionNode;
+module.exports = {
+	WebGL2FunctionNode
+};

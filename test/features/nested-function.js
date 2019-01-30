@@ -1,53 +1,52 @@
-(function() {
-  const GPU = require('../../src/index');
-  function nestedSumABTest(mode) {
-    var gpu = new GPU({ mode: mode });
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-    var f = gpu.createKernel(function(a, b) {
-      function custom_adder(a,b) {
-        return a+b;
-      }
+describe('nested function');
 
-      return custom_adder(a[this.thread.x], b[this.thread.x]);
-    }, {
-      output : [6]
-    });
-
-    QUnit.assert.ok(f !== null, 'function generated test');
-
-    var a = [1, 2, 3, 5, 6, 7];
-    var b = [4, 5, 6, 1, 2, 3];
-
-    var res = f(a,b);
-    var exp = [5, 7, 9, 6, 8, 10];
-
-    for(var i = 0; i < exp.length; ++i) {
-      QUnit.assert.equal(res[i], exp[i], 'Result arr idx: '+i);
+function nestedSumABTest(mode) {
+  const gpu = new GPU({ mode });
+  const f = gpu.createKernel(function(a, b) {
+    function custom_adder(a,b) {
+      return a+b;
     }
-    gpu.destroy();
-  }
 
-  QUnit.test('nested_sum (auto)', () => {
-  	nestedSumABTest(null);
+    return custom_adder(a[this.thread.x], b[this.thread.x]);
+  }, {
+    output : [6]
   });
 
-  QUnit.test('nested_sum (gpu)', () => {
-  	nestedSumABTest('gpu');
-  });
+  assert.ok(f !== null, 'function generated test');
 
-  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('nested_sum (webgl)', () => {
-    nestedSumABTest('webgl');
-  });
+  const a = [1, 2, 3, 5, 6, 7];
+  const b = [4, 5, 6, 1, 2, 3];
 
-  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('nested_sum (webgl2)', () => {
-    nestedSumABTest('webgl2');
-  });
+  const res = f(a,b);
+  const exp = [5, 7, 9, 6, 8, 10];
 
-  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('nested_sum (headlessgl)', () => {
-    nestedSumABTest('headlessgl');
-  });
+  assert.deepEqual(Array.from(res), exp);
+  gpu.destroy();
+}
 
-  QUnit.test('nested_sum (CPU)', () => {
-    nestedSumABTest('cpu');
-  });
-})();
+test('nested_sum auto', () => {
+  nestedSumABTest(null);
+});
+
+test('nested_sum gpu', () => {
+  nestedSumABTest('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('nested_sum webgl', () => {
+  nestedSumABTest('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('nested_sum webgl2', () => {
+  nestedSumABTest('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('nested_sum headlessgl', () => {
+  nestedSumABTest('headlessgl');
+});
+
+test('nested_sum cpu', () => {
+  nestedSumABTest('cpu');
+});

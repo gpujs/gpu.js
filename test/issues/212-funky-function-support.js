@@ -1,50 +1,52 @@
-(function() {
-  const GPU = require('../../src/index');
-  function funky(mode) {
-    const gpu = new GPU({ mode: mode });
-    gpu.addFunction(function add(value1, value2) {
-      return value1 + value2;
-    });
-    const kernel = gpu.createKernel(`function(v1, v2) {
-      return (0, _add.add)(v1[this.thread.y][this.thread.x], v2[this.thread.y][this.thread.x]);
-    }`)
-      .setOutput([2, 2]);
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-    const result = kernel([
-      [0,1],
-      [1,2]
-    ], [
-      [0,1],
-      [1,2]
-    ]);
-    QUnit.assert.deepEqual(result.map((v) => Array.from(v)), [
-      [0,2],
-      [2,4]
-    ]);
-    gpu.destroy();
-  }
+describe('issue #212');
 
-  QUnit.test('Issue #212 - funky function support (auto)', () => {
-    funky('gpu');
+function funky(mode) {
+  const gpu = new GPU({ mode });
+  gpu.addFunction(function add(value1, value2) {
+    return value1 + value2;
   });
+  const kernel = gpu.createKernel(`function(v1, v2) {
+    return (0, _add.add)(v1[this.thread.y][this.thread.x], v2[this.thread.y][this.thread.x]);
+  }`)
+    .setOutput([2, 2]);
 
-  QUnit.test('Issue #212 - funky function support (gpu)', () => {
-    funky('gpu');
-  });
+  const result = kernel([
+    [0,1],
+    [1,2]
+  ], [
+    [0,1],
+    [1,2]
+  ]);
+  assert.deepEqual(result.map((v) => Array.from(v)), [
+    [0,2],
+    [2,4]
+  ]);
+  gpu.destroy();
+}
 
-  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #212 - funky function support (webgl)', () => {
-    funky('webgl');
-  });
+test('Issue #212 - funky function support auto', () => {
+  funky('gpu');
+});
 
-  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #212 - funky function support (webgl2)', () => {
-    funky('webgl2');
-  });
+test('Issue #212 - funky function support gpu', () => {
+  funky('gpu');
+});
 
-  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #212 - funky function support (headlessgl)', () => {
-    funky('headlessgl');
-  });
+(GPU.isWebGLSupported ? test : skip)('Issue #212 - funky function support webgl', () => {
+  funky('webgl');
+});
 
-  QUnit.test('Issue #212 - funky function support cpu', () => {
-    funky('cpu');
-  });
-})();
+(GPU.isWebGL2Supported ? test : skip)('Issue #212 - funky function support webgl2', () => {
+  funky('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('Issue #212 - funky function support headlessgl', () => {
+  funky('headlessgl');
+});
+
+test('Issue #212 - funky function support cpu', () => {
+  funky('cpu');
+});

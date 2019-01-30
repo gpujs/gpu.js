@@ -1,14 +1,16 @@
-var GPU = require('../../src/index');
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU, WebGLFunctionNode, WebGL2FunctionNode } = require('../../src');
 
-QUnit.test('loop int constant output (webgl)', function(assert) {
+describe('internal: loop int');
+test('loop int constant output webgl', () => {
   function kernel(a) {
-    var sum = 0;
-    for (var i = 0; i < this.constants.max; i++) {
+    let sum = 0;
+    for (let i = 0; i < this.constants.max; i++) {
       sum += a[this.thread.x][i];
     }
     return sum;
   }
-  var functionNode = new GPU.WebGLFunctionNode(kernel.toString(), { isRootKernel: true });
+  const functionNode = new WebGLFunctionNode(kernel.toString(), { isRootKernel: true, output: [1] });
   assert.equal(
     functionNode.toString(),
     'void kernel() {' +
@@ -20,15 +22,15 @@ QUnit.test('loop int constant output (webgl)', function(assert) {
     '\n}');
 });
 
-QUnit.test('loop int constant output (webgl2)', function(assert) {
+test('loop int constant output webgl2', () => {
   function kernel(a) {
-    var sum = 0;
-    for (var i = 0; i < this.constants.max; i++) {
+    let sum = 0;
+    for (let i = 0; i < this.constants.max; i++) {
       sum += a[this.thread.x][i];
     }
     return sum;
   }
-  var functionNode = new GPU.WebGL2FunctionNode(kernel.toString(), { isRootKernel: true });
+  const functionNode = new WebGL2FunctionNode(kernel.toString(), { isRootKernel: true, output: [1] });
   assert.equal(
     functionNode.toString(),
     'void kernel() {' +
@@ -40,16 +42,16 @@ QUnit.test('loop int constant output (webgl2)', function(assert) {
     '\n}');
 });
 
-(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('loop int constant (webgl)', function(assert) {
+(GPU.isWebGLSupported ? test : skip)('loop int constant webgl', () => {
   function kernel(a) {
-    var sum = 0;
-    for (var i = 0; i < this.constants.max; i++) {
+    let sum = 0;
+    for (let i = 0; i < this.constants.max; i++) {
       sum += a[this.thread.x][i];
     }
     return sum;
   }
-  var gpu = new GPU({ mode: 'webgl' });
-  var output = gpu.createKernel(kernel, {
+  const gpu = new GPU({ mode: 'webgl' });
+  const output = gpu.createKernel(kernel, {
     constants: { max: 3 },
     output: [1]
   })([[1,2,3]]);
@@ -61,16 +63,16 @@ QUnit.test('loop int constant output (webgl2)', function(assert) {
   gpu.destroy();
 });
 
-(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('loop int constant (webgl2)', function(assert) {
+(GPU.isWebGL2Supported ? test : skip)('loop int constant webgl2', () => {
   function kernel(a) {
-    var sum = 0;
-    for (var i = 0; i < this.constants.max; i++) {
+    let sum = 0;
+    for (let i = 0; i < this.constants.max; i++) {
       sum += a[this.thread.x][i];
     }
     return sum;
   }
-  var gpu = new GPU({ mode: 'webgl2' });
-  var output = gpu.createKernel(kernel, {
+  const gpu = new GPU({ mode: 'webgl2' });
+  const output = gpu.createKernel(kernel, {
     constants: { max: 3 },
     output: [1]
   })([[1,2,3]]);
@@ -82,16 +84,16 @@ QUnit.test('loop int constant output (webgl2)', function(assert) {
   gpu.destroy();
 });
 
-(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('loop int constant (headlessgl)', function(assert) {
+(GPU.isHeadlessGLSupported ? test : skip)('loop int constant headlessgl', () => {
   function kernel(a) {
-    var sum = 0;
-    for (var i = 0; i < this.constants.max; i++) {
+    let sum = 0;
+    for (let i = 0; i < this.constants.max; i++) {
       sum += a[this.thread.x][i];
     }
     return sum;
   }
-  var gpu = new GPU({ mode: 'headlessgl' });
-  var output = gpu.createKernel(kernel, {
+  const gpu = new GPU({ mode: 'headlessgl' });
+  const output = gpu.createKernel(kernel, {
     constants: { max: 3 },
     output: [1]
   })([[1,2,3]]);
@@ -103,15 +105,15 @@ QUnit.test('loop int constant output (webgl2)', function(assert) {
   gpu.destroy();
 });
 
-QUnit.test('loop int literal output (webgl)', function(assert) {
+test('loop int literal output webgl', () => {
   function kernel(a) {
-    var sum = 0;
-    for (var i = 0; i < 10; i++) {
+    let sum = 0;
+    for (let i = 0; i < 10; i++) {
       sum += a[this.thread.x][i];
     }
     return sum;
   }
-  var functionNode = new GPU.WebGLFunctionNode(kernel.toString(), { isRootKernel: true });
+  const functionNode = new WebGLFunctionNode(kernel.toString(), { isRootKernel: true, output: [1] });
   assert.equal(
     functionNode.toString(),
     'void kernel() {' +
@@ -123,15 +125,15 @@ QUnit.test('loop int literal output (webgl)', function(assert) {
     '\n}');
 });
 
-QUnit.test('loop int literal output (webgl2)', function(assert) {
+test('loop int literal output webgl2', () => {
   function kernel(a) {
-    var sum = 0;
-    for (var i = 0; i < 10; i++) {
+    let sum = 0;
+    for (let i = 0; i < 10; i++) {
       sum += a[this.thread.x][i];
     }
     return sum;
   }
-  var functionNode = new GPU.WebGL2FunctionNode(kernel.toString(), { isRootKernel: true });
+  const functionNode = new WebGL2FunctionNode(kernel.toString(), { isRootKernel: true, output: [1] });
   assert.equal(
     functionNode.toString(),
     'void kernel() {' +
@@ -143,16 +145,16 @@ QUnit.test('loop int literal output (webgl2)', function(assert) {
     '\n}');
 });
 
-(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('loop int literal (webgl)', function(assert) {
+(GPU.isWebGLSupported ? test : skip)('loop int literal webgl', () => {
   function kernel(a) {
-    var sum = 0;
-    for (var i = 0; i < 3; i++) {
+    let sum = 0;
+    for (let i = 0; i < 3; i++) {
       sum += a[this.thread.x][i];
     }
     return sum;
   }
-  var gpu = new GPU({ mode: 'webgl' });
-  var output = gpu.createKernel(kernel, { output: [1] })([[1,2,3]]);
+  const gpu = new GPU({ mode: 'webgl' });
+  const output = gpu.createKernel(kernel, { output: [1] })([[1,2,3]]);
   assert.equal(
     output,
     6
@@ -160,16 +162,16 @@ QUnit.test('loop int literal output (webgl2)', function(assert) {
   gpu.destroy();
 });
 
-(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('loop int literal (webgl2)', function(assert) {
+(GPU.isWebGL2Supported ? test : skip)('loop int literal webgl2', () => {
   function kernel(a) {
-    var sum = 0;
-    for (var i = 0; i < 3; i++) {
+    let sum = 0;
+    for (let i = 0; i < 3; i++) {
       sum += a[this.thread.x][i];
     }
     return sum;
   }
-  var gpu = new GPU({ mode: 'webgl2' });
-  var output = gpu.createKernel(kernel, { output: [1] })([[1,2,3]]);
+  const gpu = new GPU({ mode: 'webgl2' });
+  const output = gpu.createKernel(kernel, { output: [1] })([[1,2,3]]);
   assert.equal(
     output,
     6
@@ -177,16 +179,16 @@ QUnit.test('loop int literal output (webgl2)', function(assert) {
   gpu.destroy();
 });
 
-(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('loop int literal (headlessgl)', function(assert) {
+(GPU.isHeadlessGLSupported ? test : skip)('loop int literal headlessgl', () => {
   function kernel(a) {
-    var sum = 0;
-    for (var i = 0; i < 3; i++) {
+    let sum = 0;
+    for (let i = 0; i < 3; i++) {
       sum += a[this.thread.x][i];
     }
     return sum;
   }
-  var gpu = new GPU({ mode: 'headlessgl' });
-  var output = gpu.createKernel(kernel, { output: [1] })([[1,2,3]]);
+  const gpu = new GPU({ mode: 'headlessgl' });
+  const output = gpu.createKernel(kernel, { output: [1] })([[1,2,3]]);
   assert.equal(
     output,
     6
@@ -194,15 +196,15 @@ QUnit.test('loop int literal output (webgl2)', function(assert) {
   gpu.destroy();
 });
 
-QUnit.test('loop int parameter output (webgl)', function(assert) {
+test('loop int parameter output webgl', () => {
   function kernel(a, b) {
-    var sum = 0;
-    for (var i = 0; i < a; i++) {
+    let sum = 0;
+    for (let i = 0; i < a; i++) {
       sum += b[this.thread.x][i];
     }
     return sum;
   }
-  var functionNode = new GPU.WebGLFunctionNode(kernel.toString(), { isRootKernel: true });
+  const functionNode = new WebGLFunctionNode(kernel.toString(), { isRootKernel: true, output: [1] });
   assert.equal(
     functionNode.toString(),
     'void kernel() {' +
@@ -219,15 +221,15 @@ QUnit.test('loop int parameter output (webgl)', function(assert) {
     '\n}');
 });
 
-QUnit.test('loop int parameter output (webgl2)', function(assert) {
+test('loop int parameter output webgl2', () => {
   function kernel(a, b) {
-    var sum = 0;
-    for (var i = 0; i < a; i++) {
+    let sum = 0;
+    for (let i = 0; i < a; i++) {
       sum += b[this.thread.x][i];
     }
     return sum;
   }
-  var functionNode = new GPU.WebGL2FunctionNode(kernel.toString(), { isRootKernel: true });
+  const functionNode = new WebGL2FunctionNode(kernel.toString(), { isRootKernel: true, output: [1] });
   assert.equal(
     functionNode.toString(),
     'void kernel() {' +
@@ -244,16 +246,16 @@ QUnit.test('loop int parameter output (webgl2)', function(assert) {
     '\n}');
 });
 
-(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('loop int parameter (webgl)', function(assert) {
+(GPU.isWebGLSupported ? test : skip)('loop int parameter webgl', () => {
   function kernel(a, b) {
-    var sum = 0;
-    for (var i = 0; i < a; i++) {
+    let sum = 0;
+    for (let i = 0; i < a; i++) {
       sum += b[this.thread.x][i];
     }
     return sum;
   }
-  var gpu = new GPU({ mode: 'webgl' });
-  var output = gpu.createKernel(kernel, { output: [1] })(3, [[1,2,3]]);
+  const gpu = new GPU({ mode: 'webgl' });
+  const output = gpu.createKernel(kernel, { output: [1] })(3, [[1,2,3]]);
   assert.equal(
     output,
     6
@@ -261,16 +263,16 @@ QUnit.test('loop int parameter output (webgl2)', function(assert) {
   gpu.destroy();
 });
 
-(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('loop int parameter (webgl2)', function(assert) {
+(GPU.isWebGL2Supported ? test : skip)('loop int parameter webgl2', () => {
   function kernel(a, b) {
-    var sum = 0;
-    for (var i = 0; i < a; i++) {
+    let sum = 0;
+    for (let i = 0; i < a; i++) {
       sum += b[this.thread.x][i];
     }
     return sum;
   }
-  var gpu = new GPU({ mode: 'webgl2' });
-  var output = gpu.createKernel(kernel, { output: [1] })(3, [[1,2,3]]);
+  const gpu = new GPU({ mode: 'webgl2' });
+  const output = gpu.createKernel(kernel, { output: [1] })(3, [[1,2,3]]);
   assert.equal(
     output,
     6
@@ -278,16 +280,16 @@ QUnit.test('loop int parameter output (webgl2)', function(assert) {
   gpu.destroy();
 });
 
-(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('loop int parameter (headlessgl)', function(assert) {
+(GPU.isHeadlessGLSupported ? test : skip)('loop int parameter headlessgl', () => {
   function kernel(a, b) {
-    var sum = 0;
-    for (var i = 0; i < a; i++) {
+    let sum = 0;
+    for (let i = 0; i < a; i++) {
       sum += b[this.thread.x][i];
     }
     return sum;
   }
-  var gpu = new GPU({ mode: 'headlessgl' });
-  var output = gpu.createKernel(kernel, { output: [1] })(3, [[1,2,3]]);
+  const gpu = new GPU({ mode: 'headlessgl' });
+  const output = gpu.createKernel(kernel, { output: [1] })(3, [[1,2,3]]);
   assert.equal(
     output,
     6

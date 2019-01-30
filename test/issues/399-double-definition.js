@@ -1,30 +1,31 @@
-(() => {
-  const GPU = require('../../src/index');
-	function test(mode) {
-		const gpu = new GPU({ mode: mode });
-    const toTexture = gpu.createKernel(function(value) {
-      return value[this.thread.x];
-    }, {
-      debug: true,
-      output: [2],
-      outputToTexture: true,
-      hardcodeConstants: true,
-      outputImmutable: true
-    });
-    // basically it doesn't die, but builds all the way through to webGL
-    QUnit.assert.equal(toTexture([0, 1]).constructor, GPU.Texture);
-    gpu.destroy();
-	}
+const { assert, skip, test, module: describe } = require('qunit');
 
-  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #399 - double definition (webgl)', () => {
-		test('webgl')
-	});
+describe('issue #399');
 
-  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #399 - double definition (webgl2)', () => {
-		test('webgl2')
-	});
-
-  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #399 - double definition (headlessgl)', () => {
-    test('headlessgl')
+const { GPU, Texture } = require('../../src');
+function doubleDefinition(mode) {
+  const gpu = new GPU({ mode });
+  const toTexture = gpu.createKernel(function(value) {
+    return value[this.thread.x];
+  }, {
+    output: [2],
+    outputToTexture: true,
+    hardcodeConstants: true,
+    outputImmutable: true
   });
-})();
+  // basically it doesn't die, but builds all the way through to webGL
+  assert.equal(toTexture([0, 1]).constructor, Texture);
+  gpu.destroy();
+}
+
+(GPU.isWebGLSupported ? test : skip)('Issue #399 - double definition webgl', () => {
+  doubleDefinition('webgl')
+});
+
+(GPU.isWebGL2Supported ? test : skip)('Issue #399 - double definition webgl2', () => {
+  doubleDefinition('webgl2')
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('Issue #399 - double definition headlessgl', () => {
+  doubleDefinition('headlessgl')
+});

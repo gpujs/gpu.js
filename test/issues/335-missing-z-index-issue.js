@@ -1,45 +1,46 @@
-var GPU = require('../../src/index');
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-(function() {
-  function missingZIndexIssue(mode) {
-    var gpu = new GPU({ mode: mode });
+describe('issue #335');
 
-    var kernel = gpu.createKernel(function(value) {
-      return value[this.thread.z][this.thread.y][this.thread.x];
-    })
-      .setOutput([1, 1, undefined]);
+function missingZIndexIssue(mode) {
+  const gpu = new GPU({ mode });
 
-    kernel([[[1]]]);
-    gpu.destroy();
-  }
+  const kernel = gpu.createKernel(function(value) {
+    return value[this.thread.z][this.thread.y][this.thread.x];
+  })
+    .setOutput([1, 1, undefined]);
 
-  QUnit.test('Issue #335 Missing z index issue (auto)', () => {
-    QUnit.assert.throws(() => {
-      missingZIndexIssue('auto');
-    });
+  kernel([[[1]]]);
+  gpu.destroy();
+}
+
+test('Issue #335 Missing z index issue auto', () => {
+  assert.throws(() => {
+    missingZIndexIssue('auto');
   });
+});
 
-  QUnit.test('Issue #335 Missing z index issue (gpu)', () => {
-    QUnit.assert.throws(() => {
-      missingZIndexIssue('gpu');
-    });
+test('Issue #335 Missing z index issue gpu', () => {
+  assert.throws(() => {
+    missingZIndexIssue('gpu');
   });
+});
 
-  QUnit.test('Issue #335 Missing z index issue (webgl)', () => {
-    QUnit.assert.throws(() => {
-      missingZIndexIssue('webgl');
-    });
+test('Issue #335 Missing z index issue webgl', () => {
+  assert.throws(() => {
+    missingZIndexIssue('webgl');
   });
+});
 
-  QUnit.test('Issue #335 Missing z index issue (webgl2)', () => {
-    QUnit.assert.throws(() => {
-      missingZIndexIssue('webgl2');
-    });
+test('Issue #335 Missing z index issue webgl2', () => {
+  assert.throws(() => {
+    missingZIndexIssue('webgl2');
   });
+});
 
-  QUnit.test('Issue #335 Missing z index issue (cpu)', () => {
-    QUnit.assert.throws(() => {
-      missingZIndexIssue('cpu');
-    });
+test('Issue #335 Missing z index issue cpu', () => {
+  assert.throws(() => {
+    missingZIndexIssue('cpu');
   });
-})();
+});

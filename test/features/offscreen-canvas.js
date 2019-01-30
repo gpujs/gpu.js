@@ -1,38 +1,58 @@
-(function() {
-  if (typeof document === 'undefined') {
-    // inside Worker
-    importScripts('../../bin/gpu.js');
-    onmessage = function(e) {
-      const gpu = new GPU();
-      const a = [1,2,3];
-      const b = [3,2,1];
-      const kernel = gpu.createKernel(function(a, b) {
-        return a[this.thread.x] - b[this.thread.x];
-      })
-        .setOutput([3]);
-      postMessage({ mode: gpu.getMode(), result: kernel(a, b) });
-      gpu.destroy();
-    };
-    return;
+if (typeof document === 'undefined') {
+  // inside Worker
+  let GPU;
+  function offscreenTest() {
+    const gpu = new GPU();
+    const a = [1,2,3];
+    const b = [3,2,1];
+    const kernel = gpu.createKernel(function(a, b) {
+      return a[this.thread.x] - b[this.thread.x];
+    })
+      .setOutput([3]);
+    postMessage({ mode: gpu.mode, result: kernel(a, b) });
+    gpu.destroy();
   }
+  if (typeof require !== 'undefined') {
+    GPU = require('../../bin/gpu-browser.js');
+  } else {
+    importScripts('../../bin/gpu-browser.js');
+    onmessage = function (e) {
+      offscreenTest();
+    };
+  }
+} else {
+  const { assert, skip, test, module: describe } = require('qunit');
+  describe('offscreen canvas');
 
-  // skip test if browser doesn't support Workers or OffscreenCanvas
-  (
-    typeof Worker === 'undefined'
-    || typeof OffscreenCanvas === 'undefined'
-      ? QUnit.skip
-      : QUnit.test)('OffscreenCanvas used in Worker', function(assert) {
+  function testOffscreenCanvas(mode, done) {
     const worker = new Worker('features/offscreen-canvas.js');
-    const done = assert.async();
-
-    worker.onmessage = function(e) {
+    worker.onmessage = function (e) {
       const mode = e.data.mode;
       const result = e.data.result;
       assert.equal(mode, 'gpu', 'GPU mode used in Worker');
       assert.deepEqual(result, Float32Array.from([-2, 0, 2]));
       done();
     };
-
     worker.postMessage('test');
+  }
+
+  (GPU.isOffscreenCanvasSupported ? test : skip)('offscreen canvas auto', t => {
+    testOffscreenCanvas(null, t.async());
   });
-})();
+
+  (GPU.isOffscreenCanvasSupported ? test : skip)('offscreen canvas gpu', t => {
+    testOffscreenCanvas('gpu', t.async());
+  });
+
+  (GPU.isOffscreenCanvasSupported ? test : skip)('offscreen canvas webgl', t => {
+    testOffscreenCanvas('webgl', t.async());
+  });
+
+  (GPU.isOffscreenCanvasSupported ? test : skip)('offscreen canvas webgl2', t => {
+    testOffscreenCanvas('webgl2', t.async());
+  });
+
+  (GPU.isOffscreenCanvasSupported ? test : skip)('offscreen canvas cpu', t => {
+    testOffscreenCanvas('cpu', t.async());
+  });
+}

@@ -1,59 +1,62 @@
-var GPU = require('../../src/index');
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU, WebGLKernel, WebGL2Kernel, HeadlessGLKernel, CPUKernel } = require('../../src');
 
-QUnit.test('modes no settings (auto)', function() {
+describe('internal: modes');
+
+test('modes no settings auto', () => {
   const gpu = new GPU();
   if (GPU.isHeadlessGLSupported) {
-    QUnit.assert.equal(gpu.Kernel, GPU.HeadlessGLKernel);
+    assert.equal(gpu.Kernel, HeadlessGLKernel);
   } else if (GPU.isWebGL2Supported) {
-    QUnit.assert.equal(gpu.Kernel, GPU.WebGL2Kernel);
+    assert.equal(gpu.Kernel, WebGL2Kernel);
   } else if (GPU.isWebGLSupported) {
-    QUnit.assert.equal(gpu.Kernel, GPU.WebGLKernel);
+    assert.equal(gpu.Kernel, WebGLKernel);
   }
 });
-QUnit.test('modes null settings (auto)', function() {
+test('modes null settings auto', () => {
   const gpu = new GPU(null);
   if (GPU.isHeadlessGLSupported) {
-    QUnit.assert.equal(gpu.Kernel, GPU.HeadlessGLKernel);
+    assert.equal(gpu.Kernel, HeadlessGLKernel);
   } else if (GPU.isWebGL2Supported) {
-    QUnit.assert.equal(gpu.Kernel, GPU.WebGL2Kernel);
+    assert.equal(gpu.Kernel, WebGL2Kernel);
   } else if (GPU.isWebGLSupported) {
-    QUnit.assert.equal(gpu.Kernel, GPU.WebGLKernel);
+    assert.equal(gpu.Kernel, WebGLKernel);
   }
 });
-QUnit.test('modes empty object (auto)', function() {
+test('modes empty object auto', () => {
   const gpu = new GPU({});
   if (GPU.isHeadlessGLSupported) {
-    QUnit.assert.equal(gpu.Kernel, GPU.HeadlessGLKernel);
+    assert.equal(gpu.Kernel, HeadlessGLKernel);
   } else if (GPU.isWebGL2Supported) {
-    QUnit.assert.equal(gpu.Kernel, GPU.WebGL2Kernel);
+    assert.equal(gpu.Kernel, WebGL2Kernel);
   } else if (GPU.isWebGLSupported) {
-    QUnit.assert.equal(gpu.Kernel, GPU.WebGLKernel);
+    assert.equal(gpu.Kernel, WebGLKernel);
   }
 });
-QUnit.test('modes (gpu)', function() {
+test('modes gpu', () => {
   const gpu = new GPU({ mode: 'gpu' });
   if (GPU.isHeadlessGLSupported) {
-    QUnit.assert.equal(gpu.Kernel, GPU.HeadlessGLKernel);
+    assert.equal(gpu.Kernel, HeadlessGLKernel);
   } else if (GPU.isWebGL2Supported) {
-    QUnit.assert.equal(gpu.Kernel, GPU.WebGL2Kernel);
+    assert.equal(gpu.Kernel, WebGL2Kernel);
   } else if (GPU.isWebGLSupported) {
-    QUnit.assert.equal(gpu.Kernel, GPU.WebGLKernel);
+    assert.equal(gpu.Kernel, WebGLKernel);
   }
 });
-QUnit.test('modes (cpu)', function() {
+test('modes cpu', () => {
   const gpu = new GPU({ mode: 'cpu' });
-  QUnit.assert.equal(gpu.Kernel, GPU.CPUKernel);
+  assert.equal(gpu.Kernel, CPUKernel);
 });
-QUnit.test('modes (webgl)', function() {
+test('modes webgl', () => {
   const gpu = new GPU({ mode: 'webgl' });
-  QUnit.assert.equal(gpu.Kernel, GPU.WebGLKernel);
+  assert.equal(gpu.Kernel, WebGLKernel);
 });
-QUnit.test('modes (webgl2)', function() {
+test('modes webgl2', () => {
   const gpu = new GPU({ mode: 'webgl2' });
-  QUnit.assert.equal(gpu.Kernel, GPU.WebGL2Kernel);
+  assert.equal(gpu.Kernel, WebGL2Kernel);
 });
-QUnit.test('modes (headlessgl)', function() {
+test('modes headlessgl', () => {
   const gpu = new GPU({ mode: 'headlessgl' });
-  QUnit.assert.equal(gpu.Kernel, GPU.HeadlessGLKernel
+  assert.equal(gpu.Kernel, HeadlessGLKernel
   );
 });

@@ -1,4 +1,4 @@
-module.exports = `#version 300 es
+const fragmentShader = `#version 300 es
 __HEADER__;
 precision highp float;
 precision highp int;
@@ -179,3 +179,7 @@ void main(void) {
   index = int(vTexCoord.s * float(uTexSize.x)) + int(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;
   __MAIN_RESULT__;
 }`;
+
+module.exports = {
+	fragmentShader
+};

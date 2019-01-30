@@ -1,41 +1,43 @@
-(() => {
-	const GPU = require('../../src/index');
-	// this is actually equiv to
-	// return this.thread.y * 3 + this.thread.x;
-	const input = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
-	function buildIndexTestKernel(mode) {
-		const gpu = new GPU({ mode });
-		const kernel = gpu.createKernel(function(inp) {
-			return inp[this.thread.y][this.thread.x];
-		}, {
-			output: [3, 3]
-		});
-		const result = kernel(input).map((v) => Array.from(v));
-		QUnit.assert.deepEqual(result, input);
-		gpu.destroy();
-	}
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-	QUnit.test('Issue #241 small 2d array input output test (auto)', () => {
-		buildIndexTestKernel();
-	});
+describe('issue #241');
 
-	QUnit.test('Issue #241 small 2d array input output test (gpu)', () => {
-		buildIndexTestKernel('gpu');
+// this is actually equiv to
+// return this.thread.y * 3 + this.thread.x;
+const input = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
+function buildIndexTestKernel(mode) {
+	const gpu = new GPU({ mode });
+	const kernel = gpu.createKernel(function(inp) {
+		return inp[this.thread.y][this.thread.x];
+	}, {
+		output: [3, 3]
 	});
+	const result = kernel(input).map((v) => Array.from(v));
+	assert.deepEqual(result, input);
+	gpu.destroy();
+}
 
-	(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #241 small 2d array input output test (webgl)', () => {
-		buildIndexTestKernel('webgl');
-	});
+test('Issue #241 small 2d array input output test auto', () => {
+	buildIndexTestKernel();
+});
 
-	(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #241 small 2d array input output test (webgl2)', () => {
-		buildIndexTestKernel('webgl2');
-	});
+test('Issue #241 small 2d array input output test gpu', () => {
+	buildIndexTestKernel('gpu');
+});
 
-	(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #241 small 2d array input output test (headlessgl)', () => {
-		buildIndexTestKernel('headlessgl');
-	});
+(GPU.isWebGLSupported ? test : skip)('Issue #241 small 2d array input output test webgl', () => {
+	buildIndexTestKernel('webgl');
+});
 
-	QUnit.test('Issue #241 small 2d array input output test (cpu)', () => {
-		buildIndexTestKernel('cpu');
-	});
-})();
+(GPU.isWebGL2Supported ? test : skip)('Issue #241 small 2d array input output test webgl2', () => {
+	buildIndexTestKernel('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('Issue #241 small 2d array input output test headlessgl', () => {
+	buildIndexTestKernel('headlessgl');
+});
+
+test('Issue #241 small 2d array input output test cpu', () => {
+	buildIndexTestKernel('cpu');
+});

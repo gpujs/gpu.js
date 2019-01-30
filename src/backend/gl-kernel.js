@@ -1,12 +1,10 @@
-const Kernel = require('./kernel');
+const {
+	Kernel
+} = require('./kernel');
 
 class GLKernel extends Kernel {
-	static getFeatures() {
-		return Object.freeze({
-			isFloatRead: this.getIsFloatRead(),
-			isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
-			kernelMap: false
-		});
+	static get mode() {
+		return 'gpu';
 	}
 
 	static getIsFloatRead() {
@@ -62,8 +60,13 @@ class GLKernel extends Kernel {
 
 	constructor(fnString, settings) {
 		super(fnString, settings);
+		this.floatTextures = null;
+		this.floatOutput = null;
+		this.floatOutputForce = null;
 		this.fixIntegerDivisionAccuracy = null;
 	}
 }
 
-module.exports = GLKernel;
+module.exports = {
+	GLKernel
+};

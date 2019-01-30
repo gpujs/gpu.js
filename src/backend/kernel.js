@@ -1,19 +1,10 @@
-const utils = require('../utils');
-const Input = require('../input');
+const {
+	utils
+} = require('../utils');
+const {
+	Input
+} = require('../input');
 
-/**
- * @desc Implements the base class for Kernels, and is used as a parent class for all Kernel implementations.
- * @prop {Array} argumentNames - Name of the parameters of the kernel function
- * @prop {String} fn - Kernel function as a String
- * @prop {Array} dimensions - Dimensions of the kernel function, this.thread.x, etc.
- * @prop {Boolean} debug - Toggle debug mode
- * @prop {Boolean} graphical - Toggle graphical mode
- * @prop {number} loopMaxIterations - Maximum number of loop iterations
- * @prop {Object} constants - Global constants
- * @prop {Array} subKernels - Sub kernels bound to this kernel instance
- * @prop {Boolean} fixIntegerDivisionAccuracy - fix issues with some graphics cards not returning whole numbers when dividing by factors of 3
- *
- */
 class Kernel {
 	static get isSupported() {
 		throw new Error(`"isSupported" not implemented on ${ this.name }`);
@@ -27,80 +18,167 @@ class Kernel {
 		throw new Error(`"getFeatures" not implemented on ${ this.name }`);
 	}
 
-	getMode() {
-		throw new Error(`"getMode" not implemented on ${ this.constructor.name }`);
+	static destroyContext(context) {
+		throw new Error(`"destroyContext" called on ${ this.name }`);
 	}
 
 	/**
 	 *
-	 * @param {string} fn
-	 * @param settings
+	 * @param {string} source
+	 * @param [settings]
 	 */
-	constructor(fn, settings) {
-		this.argumentNames = utils.getArgumentNamesFromString(fn);
-		this.fn = fn;
-		this.output = null;
-		this.debug = false;
-		this.graphical = false;
-		this.loopMaxIterations = 0;
-		this.constants = null;
-		this.wraparound = null;
-		this.hardcodeConstants = null;
-		this.outputToTexture = null;
-		this.outputImmutable = null;
-		this.texSize = null;
-		this.canvas = null;
-		this.context = null;
+	constructor(source, settings) {
+		if (typeof source !== 'string') {
+			throw new Error('source not a string');
+		}
+		if (!utils.isFunctionString(source)) {
+			throw new Error('source not a function string');
+		}
 
-		//TODO move to gl-kernel
-		this.threadDim = null;
-		this.floatTextures = null;
-		this.floatOutput = null;
-		this.floatOutputForce = null;
-
-		this.skipValidateSettings = false;
-		this.subKernels = null;
+		/**
+		 * Name of the arguments found from parsing source argument
+		 * @type {String[]}
+		 */
+		this.argumentNames = utils.getArgumentNamesFromString(source);
 		this.argumentTypes = null;
 		this.argumentSizes = null;
-		this.constantTypes = null;
+
+		/**
+		 * The function source
+		 * @type {String}
+		 */
+		this.source = source;
+
+		/**
+		 * The size of the kernel's output
+		 * @type {Number[]}
+		 */
+		this.output = null;
+
+		/**
+		 * Debug mode
+		 * @type {Boolean}
+		 */
+		this.debug = false;
+
+		/**
+		 * Graphical mode
+		 * @type {Boolean}
+		 */
+		this.graphical = false;
+
+		/**
+		 * Maximum loops when using argument values to prevent infinity
+		 * @type {Number}
+		 */
+		this.loopMaxIterations = 0;
+
+		/**
+		 * @type {IVariableDefinition[]}
+		 */
+		this.constantDefinitions = null;
+
+		/**
+		 * Constants used in kernel via `this.constants`
+		 * @type {Object}
+		 */
+		this.constants = null; // TODO: remove
+		this.constantTypes = null; // TODO: remove
+		this.hardcodeConstants = null;
+
+		/**
+		 *
+		 * @type {Object}
+		 */
+		this.canvas = null;
+
+		/**
+		 *
+		 * @type {Object}
+		 */
+		this.context = null;
+
+		/**
+		 *
+		 * @type {IFunction[]}
+		 */
 		this.functions = null;
+
+		/**
+		 *
+		 * @type {INativeFunction[]}
+		 */
 		this.nativeFunctions = null;
+
+		/**
+		 *
+		 * @type {ISubKernel[]}
+		 */
+		this.subKernels = null;
+
+		/**
+		 *
+		 * @type {Boolean}
+		 */
+		this.skipValidateSettings = false;
+		this.wraparound = null;
+
+		/**
+		 * Enforces kernel to write to a new array or texture on run
+		 * @type {Boolean}
+		 */
+		this.outputImmutable = false;
+
+		/**
+		 * Enforces kernel to write to a texture on run
+		 * @type {Boolean}
+		 */
+		this.outputToTexture = false;
+		this.texSize = null;
+
 
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
 			this[p] = settings[p];
 		}
-		if (settings.hasOwnProperty('canvas')) {
-			this.canvas = settings.canvas;
-		}
-		if (settings.hasOwnProperty('context')) {
-			this.context = settings.context;
-		}
-		if (settings.hasOwnProperty('output')) {
+		if (settings.hasOwnProperty('output') && !Array.isArray(settings.output)) {
 			this.setOutput(settings.output); // Flatten output object
-		}
-		if (settings.hasOwnProperty('functions')) {
-			this.functions = settings.functions;
-		}
-		if (settings.hasOwnProperty('nativeFunctions')) {
-			this.nativeFunctions = settings.nativeFunctions;
 		}
 		if (!this.canvas) this.canvas = this.initCanvas();
 		if (!this.context) this.context = this.initContext();
 	}
 
+	/**
+	 * @desc Builds the Kernel, by compiling Fragment and Vertical Shaders,
+	 * and instantiates the program.
+	 * @abstract
+	 */
 	build() {
 		throw new Error(`"build" not defined on ${ this.constructor.name }`);
 	}
 
+	/**
+	 * @desc Run the kernel program, and send the output to renderOutput
+	 * <p> This method calls a helper method *renderOutput* to return the result. </p>
+	 * @returns {Float32Array|Float32Array[]|Float32Array[][]|void} Result The final output of the program, as float, and as Textures for reuse.
+	 * @abstract
+	 */
 	run() {
 		throw new Error(`"run" not defined on ${ this.constructor.name }`)
 	}
 
+	/**
+	 * @abstract
+	 * @return {Object}
+	 */
 	initCanvas() {
 		throw new Error(`"initCanvas" not defined on ${ this.constructor.name }`);
 	}
 
+	/**
+	 * @abstract
+	 * @return {Object}
+	 */
 	initContext() {
 		throw new Error(`"initContext" not defined on ${ this.constructor.name }`);
 	}
@@ -122,6 +200,9 @@ class Kernel {
 		}
 	}
 
+	/**
+	 * Setup constants
+	 */
 	setupConstants() {
 		this.constantTypes = {};
 		if (this.constants) {
@@ -132,7 +213,7 @@ class Kernel {
 	}
 
 	/**
-	 * @desc Set dimensions of the kernel function
+	 * @desc Set output dimensions of the kernel function
 	 * @param {Array|Object} output - The output array to set the kernel output size to
 	 */
 	setOutput(output) {
@@ -207,11 +288,21 @@ class Kernel {
 		return this;
 	}
 
+	/**
+	 * Set writing to texture on/off
+	 * @param flag
+	 * @returns {Kernel}
+	 */
 	setOutputToTexture(flag) {
 		this.outputToTexture = flag;
 		return this;
 	}
 
+	/**
+	 * Set to immutable
+	 * @param flag
+	 * @returns {Kernel}
+	 */
 	setOutputImmutable(flag) {
 		this.outputImmutable = flag;
 		return this;
@@ -242,7 +333,7 @@ class Kernel {
 
 	/**
 	 * @desc Bind the canvas to kernel
-	 * @param {Canvas} canvas - Canvas to bind
+	 * @param {Object} canvas
 	 */
 	setCanvas(canvas) {
 		this.canvas = canvas;
@@ -259,28 +350,20 @@ class Kernel {
 	}
 
 	/**
-	 * @desc Returns the current canvas instance bound to the kernel
+	 * @desc Validate settings related to Kernel, such as
+	 * floatOutputs and Textures, texSize, output,
+	 * graphical output.
+	 * @abstract
 	 */
-	getCanvas() {
-		return this.canvas;
-	}
-
-	/**
-	 * @desc Returns the current webGl instance bound to the kernel
-	 */
-	getContext() {
-		return this.context;
-	}
-
 	validateSettings() {
 		throw new Error(`"validateSettings" not defined on ${ this.constructor.name }`);
 	}
 
+	/**
+	 * Run kernel in async mode
+	 * @returns {Promise<KernelOutput>}
+	 */
 	exec() {
-		return this.execute.apply(this, arguments);
-	}
-
-	execute() {
 		const args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
 		return new Promise((accept, reject) => {
 			try {
@@ -295,7 +378,7 @@ class Kernel {
 	 * @desc Add a sub kernel to the root kernel instance.
 	 * This is what `createKernelMap` uses.
 	 *
-	 * @param {{ source: String, property: Number|String, name: String }} subKernel - function (as a String) of the subKernel to add
+	 * @param {ISubKernel} subKernel - function (as a String) of the subKernel to add
 	 */
 	addSubKernel(subKernel) {
 		if (this.subKernels === null) {
@@ -316,12 +399,9 @@ class Kernel {
 		throw new Error(`"destroy" called on ${ this.constructor.name }`);
 	}
 
-	static destroyContext(context) {
-		throw new Error(`"destroyContext" called on ${ this.name }`);
-	}
-
 	checkOutput() {
 		if (!this.output || !Array.isArray(this.output)) throw new Error('kernel.output not an array');
+		if (this.output.length < 1) throw new Error('kernel.output is empty, needs at least 1 value');
 		for (let i = 0; i < this.output.length; i++) {
 			if (isNaN(this.output[i]) || this.output[i] < 1) {
 				throw new Error(`${ this.constructor.name }.output[${ i }] incorrectly defined as \`${ this.output[i] }\`, needs to be numeric, and greater than 0`);
@@ -330,4 +410,6 @@ class Kernel {
 	}
 }
 
-module.exports = Kernel;
+module.exports = {
+	Kernel
+};

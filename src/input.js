@@ -21,4 +21,11 @@ class Input {
 	}
 }
 
-module.exports = Input;
+function input(value, size) {
+	return new Input(value, size);
+}
+
+module.exports = {
+	Input,
+	input
+};

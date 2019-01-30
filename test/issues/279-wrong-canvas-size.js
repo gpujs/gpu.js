@@ -1,47 +1,49 @@
-(function() {
-	const GPU = require('../../src/index');
-	const WIDTH = 600;
-	const HEIGHT = 400;
-	function test(mode) {
-		const gpu = new GPU({ mode });
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-		const initMatrix = gpu.createKernel(function(value) {
-			return value;
-		})
-			.setOutput([WIDTH, HEIGHT]);
+describe('issue #279');
 
-		const render = gpu.createKernel(function(matrix) {
-			const i = matrix[this.thread.y][this.thread.x];
-			this.color(i, i, i, 1);
-		})
-			.setOutput([WIDTH, HEIGHT])
-			.setGraphical(true);
+const WIDTH = 600;
+const HEIGHT = 400;
+function wrongCanvasSize(mode) {
+	const gpu = new GPU({ mode });
 
-		const matrix = initMatrix(0.5);
-		render(matrix);
-		const canvas = render.getCanvas();
-		QUnit.assert.equal(canvas.width, WIDTH);
-		QUnit.assert.equal(canvas.height, HEIGHT);
-		gpu.destroy();
-	}
+	const initMatrix = gpu.createKernel(function(value) {
+		return value;
+	})
+		.setOutput([WIDTH, HEIGHT]);
 
-	QUnit.test('Issue #279 wrong canvas size - cpu', () => {
-		test('cpu');
-	});
+	const render = gpu.createKernel(function(matrix) {
+		const i = matrix[this.thread.y][this.thread.x];
+		this.color(i, i, i, 1);
+	})
+		.setOutput([WIDTH, HEIGHT])
+		.setGraphical(true);
 
-	QUnit.test('Issue #279 wrong canvas size - gpu', () => {
-		test('gpu');
-	});
+	const matrix = initMatrix(0.5);
+	render(matrix);
+	const canvas = render.canvas;
+	assert.equal(canvas.width, WIDTH);
+	assert.equal(canvas.height, HEIGHT);
+	gpu.destroy();
+}
 
-	(GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('Issue #279 wrong canvas size - webgl', () => {
-		test('webgl');
-	});
+(GPU.isCanvasSupported ? test : skip)('Issue #279 wrong canvas size - cpu', () => {
+	wrongCanvasSize('cpu');
+});
 
-	(GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('Issue #279 wrong canvas size - webgl2', () => {
-		test('webgl2');
-	});
+test('Issue #279 wrong canvas size - gpu', () => {
+	wrongCanvasSize('gpu');
+});
 
-	(GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('Issue #279 wrong canvas size - headlessgl', () => {
-		test('headlessgl');
-	});
-})();
+(GPU.isWebGLSupported ? test : skip)('Issue #279 wrong canvas size - webgl', () => {
+	wrongCanvasSize('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('Issue #279 wrong canvas size - webgl2', () => {
+	wrongCanvasSize('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('Issue #279 wrong canvas size - headlessgl', () => {
+	wrongCanvasSize('headlessgl');
+});

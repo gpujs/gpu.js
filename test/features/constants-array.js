@@ -1,45 +1,44 @@
-var GPU = require('../../src/index');
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-(function() {
-  function arrayConstantTest(mode) {
-    var gpu = new GPU({ mode: mode });
-    var array = [200, 200];
-    var tryConst = gpu.createKernel(
-      function() {
-        return this.constants.array[this.thread.x];
-      },
-      {
-        constants: { array }
-      }
-    ).setOutput([2]);
-    var result = tryConst();
-    var match = new Float32Array([200, 200]);
-    var test = (result[0] === match[0] && result[1] === match[1]);
-    QUnit.assert.ok(test, 'array constant passed test');
-    gpu.destroy();
-  }
+describe('features: constants array');
 
-  QUnit.test('arrayConstantTest (auto)', function() {
-    arrayConstantTest(null);
+function feature(mode) {
+  const gpu = new GPU({ mode });
+  const array = [200, 200];
+  const tryConst = gpu.createKernel(function() {
+    return this.constants.array[this.thread.x];
+  }, {
+    constants: { array },
+    output: [2]
   });
+  const result = tryConst();
+  const match = new Float32Array([200, 200]);
+  const test = (result[0] === match[0] && result[1] === match[1]);
+  assert.ok(test, 'array constant passed test');
+  gpu.destroy();
+}
 
-  QUnit.test('arrayConstantTest (gpu)', function() {
-    arrayConstantTest('gpu');
-  });
+test('auto', () => {
+  feature(null);
+});
 
-  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('arrayConstantTest (webgl)', function () {
-    arrayConstantTest('webgl');
-  });
+test('gpu', () => {
+  feature('gpu');
+});
 
-  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('arrayConstantTest (webgl2)', function () {
-    arrayConstantTest('webgl2');
-  });
+(GPU.isWebGLSupported ? test : skip)('webgl', () => {
+  feature('webgl');
+});
 
-  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('arrayConstantTest (headless)', function () {
-    arrayConstantTest('headlessgl');
-  });
+(GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
+  feature('webgl2');
+});
 
-  QUnit.test('arrayConstantTest (cpu)', function() {
-    arrayConstantTest('cpu');
-  });
-})();
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
+  feature('headlessgl');
+});
+
+test('arrayConstantTest cpu', () => {
+  feature('cpu');
+});

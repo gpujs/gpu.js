@@ -1,5 +1,9 @@
-const utils = require('../../utils');
-const kernelRunShortcut = require('../../kernel-run-shortcut');
+const {
+	utils
+} = require('../../utils');
+const {
+	kernelRunShortcut
+} = require('../../kernel-run-shortcut');
 
 function removeFnNoise(fn) {
 	if (/^function /.test(fn)) {
@@ -23,7 +27,7 @@ function boolToString(value) {
 	return 'null';
 }
 
-module.exports = function(gpuKernel, name) {
+function webGLKernelString(gpuKernel, name) {
 	return `() => {
     ${ kernelRunShortcut.toString() };
     const utils = {
@@ -39,7 +43,6 @@ module.exports = function(gpuKernel, name) {
       systemEndianness: ${ removeNoise(utils.getSystemEndianness.toString()) },
       isArray: ${ removeNoise(utils.isArray.toString()) }
     };
-    const Utils = utils;
     const canvases = [];
     const maxTexSizes = {};
     let Texture = function() {};
@@ -67,8 +70,8 @@ module.exports = function(gpuKernel, name) {
         this.argumentTypes = ${ JSON.stringify(gpuKernel.argumentTypes) };
         this.texSize = ${ JSON.stringify(gpuKernel.texSize) };
         this.output = ${ JSON.stringify(gpuKernel.output) };
-        this.compiledFragShaderString = \`${ gpuKernel.compiledFragShaderString }\`;
-		    this.compiledVertShaderString = \`${ gpuKernel.compiledVertShaderString }\`;
+        this.compiledFragmentShader = \`${ gpuKernel.compiledFragmentShader }\`;
+		    this.compiledVertexShader = \`${ gpuKernel.compiledVertexShader }\`;
 		    this.programUniformLocationCache = {};
 		    this.textureCache = {};
 		    this.subKernelOutputTextures = null;
@@ -81,8 +84,8 @@ module.exports = function(gpuKernel, name) {
 		    this.uniform3fvCache = {};
 		    this.uniform3ivCache = {};
       }
-      _getFragShaderString() { return this.compiledFragShaderString; }
-      _getVertShaderString() { return this.compiledVertShaderString; }
+      getFragmentShader() { return this.compiledFragmentShader; }
+      getVertexShader() { return this.compiledVertexShader; }
       validateSettings() {}
       initExtensions() {}
       setupArguments() {}
@@ -114,4 +117,8 @@ module.exports = function(gpuKernel, name) {
     };
     return kernelRunShortcut(new ${ name || 'Kernel' }());
   };`;
+}
+
+module.exports = {
+	webGLKernelString
 };

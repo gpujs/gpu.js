@@ -1,5 +1,6 @@
-const FunctionNode = require('../function-node');
-const utils = require('../../utils');
+const {
+	FunctionNode
+} = require('../function-node');
 // Closure capture for the ast function, prevent collision with existing AST functions
 // The prefixes to use
 const jsMathPrefix = 'Math.';
@@ -14,13 +15,8 @@ const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
  * @returns the converted webGL function string
  */
 class WebGLFunctionNode extends FunctionNode {
-	/**
-	 *
-	 * @param {string} fn
-	 * @param {object} [settings]
-	 */
-	constructor(fn, settings) {
-		super(fn, settings);
+	constructor(source, settings) {
+		super(source, settings);
 		this.fixIntegerDivisionAccuracy = null;
 		if (settings && settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
 			this.fixIntegerDivisionAccuracy = settings.fixIntegerDivisionAccuracy;
@@ -106,7 +102,7 @@ class WebGLFunctionNode extends FunctionNode {
 				if (i > 0) {
 					retArr.push(', ');
 				}
-				const argumentType = this.getArgumentType(argumentName);
+				const argumentType = this.getVariableType(argumentName);
 				const type = typeMap[argumentType];
 				if (!type) {
 					throw new Error(`unknown type ${ argumentType }`);
@@ -326,7 +322,7 @@ class WebGLFunctionNode extends FunctionNode {
 	astForStatement(forNode, retArr) {
 		if (forNode.type !== 'ForStatement') {
 			throw this.astErrorOutput(
-				'Invalid for statment',
+				'Invalid for statement',
 				forNode
 			);
 		}
@@ -580,7 +576,7 @@ class WebGLFunctionNode extends FunctionNode {
 							}
 							// param[]
 							else if (init.object.object.type === 'Identifier') {
-								const type = this.getArgumentType(init.object.object.name);
+								const type = this.getVariableType(init.object.object.name);
 								declarationType = typeLookupMap[type];
 							}
 							// param[][]
@@ -588,7 +584,7 @@ class WebGLFunctionNode extends FunctionNode {
 								init.object.object.object &&
 								init.object.object.object.type === 'Identifier'
 							) {
-								const type = this.getArgumentType(init.object.object.object.name);
+								const type = this.getVariableType(init.object.object.object.name);
 								declarationType = typeLookupMap[type];
 							}
 							// this.constants.param[]
@@ -821,7 +817,7 @@ class WebGLFunctionNode extends FunctionNode {
 						if (this.declarations[mNode.object.name]) {
 							variableType = this.declarations[mNode.object.name];
 						} else {
-							variableType = this.getArgumentType(mNode.object.name);
+							variableType = this.getVariableType(mNode.object.name);
 						}
 					} else if (
 						mNode.object &&
@@ -1123,7 +1119,7 @@ class WebGLFunctionNode extends FunctionNode {
 	 * @function
 	 * @name pushParameter
 	 *
-	 * @desc [INTERNAL] pushes a fn parameter onto retArr and 'casts' to int if necessary
+	 * @desc [INTERNAL] pushes a source parameter onto retArr and 'casts' to int if necessary
 	 *  i.e. deal with force-int-parameter state
 	 *
 	 * @param {Array} retArr - return array string
@@ -1131,7 +1127,7 @@ class WebGLFunctionNode extends FunctionNode {
 	 *
 	 */
 	pushParameter(retArr, name) {
-		const type = this.getArgumentType(name);
+		const type = this.getVariableType(name);
 		if (this.isState('in-get-call-parameters') || this.isState('integer-comparison')) {
 			if (type !== 'Integer' && type !== 'Array') {
 				retArr.push(`int(user_${name})`);
@@ -1205,4 +1201,6 @@ function webGlRegexOptimize(inStr) {
 		.replace(ENCODE32_DECODE32, '((');
 }
 
-module.exports = WebGLFunctionNode;
+module.exports = {
+	WebGLFunctionNode
+};

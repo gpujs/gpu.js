@@ -33,17 +33,17 @@ const myCPUFunc = cpuRunner
 
 // add tests
 suite
-  .add('gpu', function() {
+  .add('gpu', () => {
     myGPUFunc();
   })
-  .add('cpu', function() {
+  .add('cpu', () => {
     myCPUFunc();
   })
   // add listeners
   .on('cycle', function(event) {
     console.log(String(event.target));
   })
-  .on('complete', function() {
+  .on('complete', () => {
     console.log('Fastest is ' + this.filter('fastest').map('name'));
   })
   .run({ 'async': true });

@@ -1,5 +1,9 @@
-const utils = require('../../utils');
-const kernelRunShortcut = require('../../kernel-run-shortcut');
+const {
+	utils
+} = require('../../utils');
+const {
+	kernelRunShortcut
+} = require('../../kernel-run-shortcut');
 
 function removeFnNoise(fn) {
 	if (/^function /.test(fn)) {
@@ -14,14 +18,13 @@ function removeNoise(str) {
 		.replace(/[_]typeof/g, 'typeof');
 }
 
-module.exports = function(cpuKernel, name) {
+function cpuKernelString(cpuKernel, name) {
 	return `() => {
     ${ kernelRunShortcut.toString() };
     const utils = {
       allPropertiesOf: ${ removeNoise(utils.allPropertiesOf.toString()) },
       clone: ${ removeNoise(utils.clone.toString()) },
     };
-    const Utils = utils;
     let Input = function() {};
     class ${ name || 'Kernel' } {
       constructor() {        
@@ -60,4 +63,8 @@ module.exports = function(cpuKernel, name) {
     };
     return kernelRunShortcut(new Kernel());
   };`;
+}
+
+module.exports = {
+	cpuKernelString
 };

@@ -1,45 +1,46 @@
-var GPU = require('../../src/index');
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-(function() {
-  function integerConstantTest(mode) {
-    var gpu = new GPU({ mode: mode });
-    var int = 200;
-    var tryConst = gpu.createKernel(
-      function() {
-        return this.constants.int;
-      },
-      {
-        constants: { int }
-      }
-    ).setOutput([2]);
-    var result = tryConst();
-    var match = new Float32Array([200, 200]);
-    var test = (result[0] === match[0] && result[1] === match[1]);
-    QUnit.assert.ok(test, 'int constant passed test');
-    gpu.destroy();
-  }
+describe('features: constants integer');
 
-  QUnit.test('integerConstantTest (auto)', function() {
-    integerConstantTest(null);
-  });
+function integerConstantTest(mode) {
+  const gpu = new GPU({ mode });
+  const int = 200;
+  const tryConst = gpu.createKernel(
+    function() {
+      return this.constants.int;
+    },
+    {
+      constants: { int }
+    }
+  ).setOutput([2]);
+  const result = tryConst();
+  const match = new Float32Array([200, 200]);
+  const test = (result[0] === match[0] && result[1] === match[1]);
+  assert.ok(test, 'int constant passed test');
+  gpu.destroy();
+}
 
-  QUnit.test('integerConstantTest (gpu)', function() {
-    integerConstantTest('gpu');
-  });
+test('auto', () => {
+  integerConstantTest(null);
+});
 
-  (GPU.isWebGLSupported ? QUnit.test : QUnit.skip)('integerConstantTest (webgl)', function () {
-    integerConstantTest('webgl');
-  });
+test('gpu', () => {
+  integerConstantTest('gpu');
+});
 
-  (GPU.isWebGL2Supported ? QUnit.test : QUnit.skip)('integerConstantTest (webgl2)', function () {
-    integerConstantTest('webgl2');
-  });
+(GPU.isWebGLSupported ? test : skip)('webgl', () => {
+  integerConstantTest('webgl');
+});
 
-  (GPU.isHeadlessGLSupported ? QUnit.test : QUnit.skip)('integerConstantTest (headlessgl)', function () {
-    integerConstantTest('headlessgl');
-  });
+(GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
+  integerConstantTest('webgl2');
+});
 
-  QUnit.test('integerConstantTest (cpu)', function() {
-    integerConstantTest('cpu');
-  });
-})();
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
+  integerConstantTest('headlessgl');
+});
+
+test('cpu', () => {
+  integerConstantTest('cpu');
+});

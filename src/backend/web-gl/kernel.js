@@ -1,11 +1,27 @@
-const GLKernel = require('../gl-kernel');
-const FunctionBuilder = require('../function-builder');
-const WebGLFunctionNode = require('./function-node');
-const utils = require('../../utils');
-const Texture = require('../../texture');
-const fragShaderString = require('./shader-frag');
-const vertShaderString = require('./shader-vert');
-const kernelString = require('./kernel-string');
+const {
+	GLKernel
+} = require('../gl-kernel');
+const {
+	FunctionBuilder
+} = require('../function-builder');
+const {
+	WebGLFunctionNode
+} = require('./function-node');
+const {
+	utils
+} = require('../../utils');
+const {
+	Texture
+} = require('../../texture');
+const {
+	fragmentShader
+} = require('./fragment-shader');
+const {
+	vertexShader
+} = require('./vertex-shader');
+const {
+	webGLKernelString
+} = require('./kernel-string');
 
 let isSupported = null;
 let testCanvas = null;
@@ -32,8 +48,8 @@ const maxTexSizes = {};
  * @prop {String} endianness - Endian information like Little-endian, Big-endian.
  * @prop {Array} argumentTypes - Types of parameters sent to the Kernel
  * @prop {number} argumentsLength - Number of parameters sent to the Kernel
- * @prop {String} compiledFragShaderString - Compiled fragment shader string
- * @prop {String} compiledVertShaderString - Compiled Vertical shader string
+ * @prop {String} compiledFragmentShader - Compiled fragment shader string
+ * @prop {String} compiledVertexShader - Compiled Vertical shader string
  */
 class WebGLKernel extends GLKernel {
 	static get isSupported() {
@@ -102,19 +118,12 @@ class WebGLKernel extends GLKernel {
 		return features;
 	}
 
-	/**
-	 * @desc Return the current mode in which gpu.js is executing.
-	 * @returns {String} The current mode; "gpu".
-	 */
-	static getMode() {
-		return 'gpu';
-	}
-	static get fragShaderString() {
-		return fragShaderString;
+	static get fragmentShader() {
+		return fragmentShader;
 	}
 
-	static get vertShaderString() {
-		return vertShaderString;
+	static get vertexShader() {
+		return vertexShader;
 	}
 
 	constructor(fnString, settings) {
@@ -132,8 +141,8 @@ class WebGLKernel extends GLKernel {
 		this.subKernelOutputTextures = null;
 		this.argumentsLength = 0;
 		this.constantsLength = 0;
-		this.compiledFragShaderString = null;
-		this.compiledVertShaderString = null;
+		this.compiledFragmentShader = null;
+		this.compiledVertexShader = null;
 		this.fragShader = null;
 		this.vertShader = null;
 		this.drawBuffersMap = null;
@@ -184,11 +193,6 @@ class WebGLKernel extends GLKernel {
 		};
 	}
 
-	/**
-	 * @desc Validate settings related to Kernel, such as
-	 * floatOutputs and Textures, texSize, output,
-	 * graphical output.
-	 */
 	validateSettings() {
 		if (this.skipValidateSettings) {
 			this.texSize = utils.dimToTexSize({
@@ -276,10 +280,6 @@ class WebGLKernel extends GLKernel {
 		}
 	}
 
-	/**
-	 * @desc Builds the Kernel, by compiling Fragment and Vertical Shaders,
-	 * and instantiates the program.
-	 */
 	build() {
 		this.initExtensions();
 		this.validateSettings();
@@ -298,21 +298,21 @@ class WebGLKernel extends GLKernel {
 			threadDim.push(1);
 		}
 
-		const compiledVertShaderString = this._getVertShaderString(arguments);
+		const compiledVertexShader = this.getVertexShader(arguments);
 		const vertShader = gl.createShader(gl.VERTEX_SHADER);
-		gl.shaderSource(vertShader, compiledVertShaderString);
+		gl.shaderSource(vertShader, compiledVertexShader);
 		gl.compileShader(vertShader);
 		this.vertShader = vertShader;
 
-		const compiledFragShaderString = this._getFragShaderString(arguments);
+		const compiledFragmentShader = this.getFragmentShader(arguments);
 		const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-		gl.shaderSource(fragShader, compiledFragShaderString);
+		gl.shaderSource(fragShader, compiledFragmentShader);
 		gl.compileShader(fragShader);
 		this.fragShader = fragShader;
 
 		if (this.debug) {
 			console.log('GLSL Shader Output:');
-			console.log(compiledFragShaderString);
+			console.log(compiledFragmentShader);
 		}
 
 		if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
@@ -384,12 +384,6 @@ class WebGLKernel extends GLKernel {
 		}
 	}
 
-	/**
-	 * @desc Run the kernel program, and send the output to renderOutput
-	 * <p> This method calls a helper method *renderOutput* to return the result. </p>
-	 *
-	 * @returns {Object|Undefined} Result The final output of the program, as float, and as Textures for reuse.
-	 */
 	run() {
 		if (this.program === null) {
 			this.build.apply(this, arguments);
@@ -467,8 +461,9 @@ class WebGLKernel extends GLKernel {
 	 * output of the program back to CPU and then return them.
 	 * *Note*: This should not be called directly.
 	 *
-	 * @param {Object} outputTexture - Output Texture returned by webGl program
+	 * @param {Texture} outputTexture - Target to write to
 	 * @returns {Object|Array} result
+	 * @abstract
 	 */
 	renderOutput(outputTexture) {
 		const texSize = this.texSize;
@@ -1399,7 +1394,7 @@ class WebGLKernel extends GLKernel {
 	 * @param {String} src - Shader string
 	 * @param {Object} map - Variables/Constants associated with shader
 	 */
-	_replaceArtifacts(src, map) {
+	replaceArtifacts(src, map) {
 		return src.replace(/[ ]*__([A-Z]+[0-9]*([_]?[A-Z])*)__;\n/g, (match, artifact) => {
 			if (map.hasOwnProperty(artifact)) {
 				return map[artifact];
@@ -1416,11 +1411,11 @@ class WebGLKernel extends GLKernel {
 	 * @param {Array} args - The actual parameters sent to the Kernel
 	 * @returns {string} Fragment Shader string
 	 */
-	_getFragShaderString(args) {
-		if (this.compiledFragShaderString !== null) {
-			return this.compiledFragShaderString;
+	getFragmentShader(args) {
+		if (this.compiledFragmentShader !== null) {
+			return this.compiledFragmentShader;
 		}
-		return this.compiledFragShaderString = this._replaceArtifacts(this.constructor.fragShaderString, this._getFragShaderArtifactMap(args));
+		return this.compiledFragmentShader = this.replaceArtifacts(this.constructor.fragmentShader, this._getFragShaderArtifactMap(args));
 	}
 
 	/**
@@ -1428,24 +1423,20 @@ class WebGLKernel extends GLKernel {
 	 * @param {Array} args - The actual parameters sent to the Kernel
 	 * @returns {string} Vertical Shader string
 	 */
-	_getVertShaderString(args) {
-		if (this.compiledVertShaderString !== null) {
-			return this.compiledVertShaderString;
+	getVertexShader(args) {
+		if (this.compiledVertexShader !== null) {
+			return this.compiledVertexShader;
 		}
-		return this.compiledVertShaderString = this.constructor.vertShaderString;
+		return this.compiledVertexShader = this.constructor.vertexShader;
 	}
 
 	/**
 	 * @desc Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
 	 */
 	toString() {
-		return kernelString(this);
+		return webGLKernelString(this);
 	}
 
-	/**
-	 *
-	 * @param {Boolean} removeCanvasReferences
-	 */
 	destroy(removeCanvasReferences) {
 		if (this.outputTexture) {
 			this.context.deleteTexture(this.outputTexture);
@@ -1504,4 +1495,6 @@ class WebGLKernel extends GLKernel {
 	}
 }
 
-module.exports = WebGLKernel;
+module.exports = {
+	WebGLKernel
+};

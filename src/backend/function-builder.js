@@ -42,7 +42,7 @@ class FunctionBuilder {
 			output,
 		}, extraNodeOptions || {});
 
-		const rootNode = new FunctionNode(kernel.fn, Object.assign({}, nodeOptions, {
+		const rootNode = new FunctionNode(kernel.source, Object.assign({}, nodeOptions, {
 			isRootKernel: true,
 			name: 'kernel',
 			argumentNames,
@@ -52,7 +52,11 @@ class FunctionBuilder {
 
 		let functionNodes = null;
 		if (kernel.functions) {
-			functionNodes = kernel.functions.map(fn => new FunctionNode(fn.source, Object.assign({}, nodeOptions, fn.settings)));
+			functionNodes = kernel.functions.map(fn => new FunctionNode(fn.source, {
+				returnType: fn.returnType,
+				argumentTypes: fn.argumentTypes,
+				output: kernel.output
+			}));
 		}
 
 		let subKernelNodes = null;
@@ -82,15 +86,16 @@ class FunctionBuilder {
 
 	/**
 	 *
-	 * @param {object} [settings]
+	 * @param {IFunctionBuilderSettings} [settings]
 	 */
 	constructor(settings) {
 		settings = settings || {};
 		this.rootNode = settings.rootNode;
 		this.functionNodes = settings.functionNodes || [];
 		this.subKernelNodes = settings.subKernelNodes || [];
-		this.nativeFunctions = settings.nativeFunctions || {};
+		this.nativeFunctions = settings.nativeFunctions || [];
 		this.functionMap = {};
+		this.nativeFunctionNames = [];
 
 		if (this.rootNode) {
 			this.functionMap['kernel'] = this.rootNode;
@@ -105,6 +110,12 @@ class FunctionBuilder {
 		if (this.subKernelNodes) {
 			for (let i = 0; i < this.subKernelNodes.length; i++) {
 				this.functionMap[this.subKernelNodes[i].name] = this.subKernelNodes[i];
+			}
+		}
+
+		if (this.nativeFunctions) {
+			for (let i = 0; i < this.nativeFunctions.length; i++) {
+				this.nativeFunctionNames.push(this.nativeFunctions[i].name);
 			}
 		}
 	}
@@ -138,6 +149,15 @@ class FunctionBuilder {
 		functionName = functionName || 'kernel';
 		retList = retList || [];
 
+		if (this.nativeFunctionNames.indexOf(functionName) > -1) {
+			if (retList.indexOf(functionName) >= 0) {
+				// Does nothing if already traced
+			} else {
+				retList.push(functionName);
+			}
+			return retList;
+		}
+
 		const functionNode = this.functionMap[functionName];
 		if (functionNode) {
 			// Check if function already exists
@@ -159,14 +179,6 @@ class FunctionBuilder {
 				 * */
 				const dependantFunctionName = retList.splice(functionIndex, 1)[0];
 				retList.push(dependantFunctionName);
-			}
-		}
-
-		if (this.nativeFunctions[functionName]) {
-			if (retList.indexOf(functionName) >= 0) {
-				// Does nothing if already traced
-			} else {
-				retList.push(functionName);
 			}
 		}
 
@@ -220,11 +232,14 @@ class FunctionBuilder {
 		const ret = [];
 		for (let i = 0; i < functionList.length; ++i) {
 			const functionName = functionList[i];
+			const functionIndex = this.nativeFunctionNames.indexOf(functionName);
+			if (functionIndex > -1) {
+				ret.push(this.nativeFunctions[functionIndex].source);
+				continue;
+			}
 			const node = this.functionMap[functionName];
 			if (node) {
 				ret.push(node.toString());
-			} else if (this.nativeFunctions[functionName]) {
-				ret.push(this.nativeFunctions[functionName]);
 			}
 		}
 		return ret;
@@ -249,10 +264,8 @@ class FunctionBuilder {
 		}
 		return null;
 	}
-
-	lookupArgumentType() {
-
-	}
 }
 
-module.exports = FunctionBuilder;
+module.exports = {
+	FunctionBuilder
+};

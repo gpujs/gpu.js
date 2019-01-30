@@ -1,18 +1,22 @@
-const Kernel = require('../kernel');
-const FunctionBuilder = require('../function-builder');
-const CPUFunctionNode = require('./function-node');
-const utils = require('../../utils');
-const kernelString = require('./kernel-string');
+const {
+	Kernel
+} = require('../kernel');
+const {
+	FunctionBuilder
+} = require('../function-builder');
+const {
+	CPUFunctionNode
+} = require('./function-node');
+const {
+	utils
+} = require('../../utils');
+const {
+	cpuKernelString
+} = require('./kernel-string');
 
 /**
  * @desc Kernel Implementation for CPU.
- *
  * <p>Instantiates properties to the CPU Kernel.</p>
- *
- * @prop {Object} thread - The thread dimensions, x, y and z
- * @prop {Object} output - The canvas dimensions
- * @prop {Function} run - Method to run the kernel
- *
  */
 class CPUKernel extends Kernel {
 	static getFeatures() {
@@ -31,11 +35,9 @@ class CPUKernel extends Kernel {
 		return false;
 	}
 	/**
-	 * @name getMode()
-	 * @desc Return the current mode in which gpu.js is executing.
-	 * @returns {String} The current mode; "cpu".
+	 * @desc The current mode in which gpu.js is executing.
 	 */
-	static getMode() {
+	static get mode() {
 		return 'cpu';
 	}
 
@@ -104,21 +106,21 @@ class CPUKernel extends Kernel {
 		this.setupConstants();
 		this.setupArguments(arguments);
 		this.validateSettings();
-		const threadDim = this.threadDim = utils.clone(this.output);
-
-		while (threadDim.length < 3) {
-			threadDim.push(1);
-		}
 
 		if (this.graphical) {
-			const canvas = this.canvas;
+			const {
+				canvas,
+				output
+			} = this;
 			if (!canvas) {
 				throw new Error('no canvas available for using graphical output');
 			}
-			canvas.width = threadDim[0];
-			canvas.height = threadDim[1];
-			this._imageData = this.context.createImageData(threadDim[0], threadDim[1]);
-			this._colorData = new Uint8ClampedArray(threadDim[0] * threadDim[1] * 4);
+			const width = output[0];
+			const height = output[1] || 1;
+			canvas.width = width;
+			canvas.height = height;
+			this._imageData = this.context.createImageData(width, height);
+			this._colorData = new Uint8ClampedArray(width * height * 4);
 		}
 
 		const kernelString = this.getKernelString();
@@ -173,12 +175,6 @@ class CPUKernel extends Kernel {
 	getKernelString() {
 		if (this._kernelString !== null) return this._kernelString;
 
-		// Thread dim fix (to make compilable)
-		const threadDim = this.threadDim || (this.threadDim = utils.clone(this.output));
-		while (threadDim.length < 3) {
-			threadDim.push(1);
-		}
-
 		const functionBuilder = FunctionBuilder.fromKernel(this, CPUFunctionNode);
 
 		let prototypes = functionBuilder.getPrototypes('kernel');
@@ -215,7 +211,7 @@ class CPUKernel extends Kernel {
 	 * @desc Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
 	 */
 	toString() {
-		return kernelString(this);
+		return cpuKernelString(this);
 	}
 
 	/**
@@ -324,11 +320,13 @@ class CPUKernel extends Kernel {
 	}
 
 	_kernel1DLoop(kernelString) {
-		const threadDim = this.threadDim;
-		return `const result = new Float32Array(${ threadDim[0] });
+		const {
+			output
+		} = this;
+		return `const result = new Float32Array(${ output[0] });
     ${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
-		${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Float32Array(${ threadDim[0] });\n`).join('') }
-    for (let x = 0; x < ${ threadDim[0] }; x++) {
+		${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Float32Array(${ output[0] });\n`).join('') }
+    for (let x = 0; x < ${ output[0] }; x++) {
       this.thread.x = x;
       this.thread.y = 0;
       this.thread.z = 0;
@@ -340,16 +338,18 @@ class CPUKernel extends Kernel {
 	}
 
 	_kernel2DLoop(kernelString) {
-		const threadDim = this.threadDim;
-		return `const result = new Array(${ threadDim[1] });
+		const {
+			output
+		} = this;
+		return `const result = new Array(${ output[1] });
     ${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
-    ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ threadDim[1] });\n`).join('') }
-    for (let y = 0; y < ${ threadDim[1] }; y++) {
+    ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[1] });\n`).join('') }
+    for (let y = 0; y < ${ output[1] }; y++) {
       this.thread.z = 0;
       this.thread.y = y;
-      const resultX = result[y] = new Float32Array(${ threadDim[0] });
-      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}[y] = new Float32Array(${ threadDim[0] });\n`).join('') }
-      for (let x = 0; x < ${ threadDim[0] }; x++) {
+      const resultX = result[y] = new Float32Array(${ output[0] });
+      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}[y] = new Float32Array(${ output[0] });\n`).join('') }
+      for (let x = 0; x < ${ output[0] }; x++) {
       	this.thread.x = x;
         let kernelResult;
         ${ kernelString }
@@ -360,19 +360,21 @@ class CPUKernel extends Kernel {
 	}
 
 	_kernel3DLoop(kernelString) {
-		const threadDim = this.threadDim;
-		return `const result = new Array(${ threadDim[2] });
+		const {
+			output
+		} = this;
+		return `const result = new Array(${ output[2] });
     ${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
-    ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ threadDim[2] });\n`).join('') }
-    for (let z = 0; z < ${ threadDim[2] }; z++) {
+    ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[2] });\n`).join('') }
+    for (let z = 0; z < ${ output[2] }; z++) {
       this.thread.z = z;
-      const resultY = result[z] = new Array(${ threadDim[1] });
-      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }Y = result_${subKernel.name}[z] = new Array(${ threadDim[1] });\n`).join('') }
-      for (let y = 0; y < ${ threadDim[1] }; y++) {
+      const resultY = result[z] = new Array(${ output[1] });
+      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }Y = result_${subKernel.name}[z] = new Array(${ output[1] });\n`).join('') }
+      for (let y = 0; y < ${ output[1] }; y++) {
         this.thread.y = y;
-        const resultX = resultY[y] = new Float32Array(${ threadDim[0] });
-        ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}Y[y] = new Float32Array(${ threadDim[0] });\n`).join('') }
-        for (let x = 0; x < ${ threadDim[0] }; x++) {
+        const resultX = resultY[y] = new Float32Array(${ output[0] });
+        ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}Y[y] = new Float32Array(${ output[0] });\n`).join('') }
+        for (let x = 0; x < ${ output[0] }; x++) {
         	this.thread.x = x;
           let kernelResult;
           ${ kernelString }
@@ -407,4 +409,6 @@ class CPUKernel extends Kernel {
 	static destroyContext(context) {}
 }
 
-module.exports = CPUKernel;
+module.exports = {
+	CPUKernel
+};

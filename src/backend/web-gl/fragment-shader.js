@@ -1,4 +1,4 @@
-module.exports = `__HEADER__;
+const fragmentShader = `__HEADER__;
 precision highp float;
 precision highp int;
 precision highp sampler2D;
@@ -184,3 +184,7 @@ void main(void) {
   index = int(vTexCoord.s * float(uTexSize.x)) + int(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;
   __MAIN_RESULT__;
 }`;
+
+module.exports = {
+	fragmentShader
+};

@@ -1,5 +1,9 @@
-const Input = require('./input');
-const Texture = require('./texture');
+const {
+	Input
+} = require('./input');
+const {
+	Texture
+} = require('./texture');
 
 const FUNCTION_NAME = /function ([^(]*)/;
 const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
@@ -10,18 +14,17 @@ const ARGUMENT_NAMES = /([^\s,]+)/g;
  * @desc Various utility functions / snippets of code that GPU.JS uses internally.
  * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
  */
-class Utils {
+const utils = {
 	/**
 	 *
 	 * @desc Gets the system endianness, and cache it
 	 * @returns {String} 'LE' or 'BE' depending on system architecture
 	 * Credit: https://gist.github.com/TooTallNate/4750953
 	 */
-	static systemEndianness() {
+	systemEndianness() {
 		return _systemEndianness;
-	}
-
-	static getSystemEndianness() {
+	},
+	getSystemEndianness() {
 		const b = new ArrayBuffer(4);
 		const a = new Uint32Array(b);
 		const c = new Uint8Array(b);
@@ -29,16 +32,16 @@ class Utils {
 		if (c[0] === 0xef) return 'LE';
 		if (c[0] === 0xde) return 'BE';
 		throw new Error('unknown endianness');
-	}
+	},
 
 	/**
 	 * @descReturn TRUE, on a JS function
 	 * @param {Function} funcObj - Object to validate if its a function
 	 * @returns	{Boolean} TRUE if the object is a JS function
 	 */
-	static isFunction(funcObj) {
+	isFunction(funcObj) {
 		return typeof(funcObj) === 'function';
-	}
+	},
 
 	/**
 	 * @desc Return TRUE, on a valid JS function string
@@ -47,48 +50,48 @@ class Utils {
 	 * @param {String} fn - String of JS function to validate
 	 * @returns {Boolean} TRUE if the string passes basic validation
 	 */
-	static isFunctionString(fn) {
+	isFunctionString(fn) {
 		if (typeof fn === 'string') {
 			return (fn
 				.slice(0, 'function'.length)
 				.toLowerCase() === 'function');
 		}
 		return false;
-	}
+	},
 
 	/**
 	 * @desc Return the function name from a JS function string
 	 * @param {String} funcStr - String of JS function to validate
 	 * @returns {String} Function name string (if found)
 	 */
-	static getFunctionNameFromString(funcStr) {
+	getFunctionNameFromString(funcStr) {
 		return FUNCTION_NAME.exec(funcStr)[1].trim();
-	}
+	},
 
-	static getFunctionBodyFromString(funcStr) {
+	getFunctionBodyFromString(funcStr) {
 		return funcStr.substring(funcStr.indexOf('{') + 1, funcStr.lastIndexOf('}'));
-	}
+	},
 
 	/**
 	 * @desc Return list of argument names extracted from a javascript function
 	 * @param {String} fn - String of JS function to validate
 	 * @returns {String[]}  Array representing all the parameter names
 	 */
-	static getArgumentNamesFromString(fn) {
+	getArgumentNamesFromString(fn) {
 		const fnStr = fn.replace(STRIP_COMMENTS, '');
 		let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
 		if (result === null) {
 			result = [];
 		}
 		return result;
-	}
+	},
 
 	/**
 	 * @desc Returns a clone
 	 * @param {Object} obj - Object to clone
-	 * @returns {Object}  Cloned object
+	 * @returns {Object|Array} Cloned object
 	 */
-	static clone(obj) {
+	clone(obj) {
 		if (obj === null || typeof obj !== 'object' || obj.hasOwnProperty('isActiveClone')) return obj;
 
 		const temp = obj.constructor(); // changed
@@ -96,22 +99,22 @@ class Utils {
 		for (let key in obj) {
 			if (Object.prototype.hasOwnProperty.call(obj, key)) {
 				obj.isActiveClone = null;
-				temp[key] = Utils.clone(obj[key]);
+				temp[key] = utils.clone(obj[key]);
 				delete obj.isActiveClone;
 			}
 		}
 
 		return temp;
-	}
+	},
 
 	/**
 	 * @desc Checks if is an array or Array-like object
 	 * @param {Object} array - The argument object to check if is array
 	 * @returns {Boolean}  true if is array or Array-like object
 	 */
-	static isArray(array) {
+	isArray(array) {
 		return !isNaN(array.length);
-	}
+	},
 
 	/**
 	 * @desc Evaluate the argument type, to apply respective logic for it
@@ -119,8 +122,8 @@ class Utils {
 	 * @param {Boolean} [isConstant]
 	 * @returns {String}  Argument type Array/Number/Float/Texture/Unknown
 	 */
-	static getVariableType(value, isConstant) {
-		if (Utils.isArray(value)) {
+	getVariableType(value, isConstant) {
+		if (utils.isArray(value)) {
 			if (value[0].nodeName === 'IMG') {
 				return 'HTMLImageArray';
 			}
@@ -139,10 +142,10 @@ class Utils {
 		} else {
 			return 'Unknown';
 		}
-	}
+	},
 
 
-	static dimToTexSize(opt, dimensions, output) {
+	dimToTexSize(opt, dimensions, output) {
 		let numTexels = dimensions[0];
 		let w = dimensions[0];
 		let h = dimensions[1];
@@ -168,19 +171,19 @@ class Utils {
 		w = low;
 		h = Math.ceil(numTexels / w);
 		return [w, h];
-	}
+	},
 
 	/**
 	 * @desc Return the dimension of an array.
 	 * @param {Array|String|Texture|Input} x - The array
 	 * @param {Boolean} [pad] - To include padding in the dimension calculation
 	 */
-	static getDimensions(x, pad) {
+	getDimensions(x, pad) {
 		let ret;
-		if (Utils.isArray(x)) {
+		if (utils.isArray(x)) {
 			const dim = [];
 			let temp = x;
-			while (Utils.isArray(temp)) {
+			while (utils.isArray(temp)) {
 				dim.push(temp.length);
 				temp = temp[0];
 			}
@@ -194,34 +197,34 @@ class Utils {
 		}
 
 		if (pad) {
-			ret = Utils.clone(ret);
+			ret = utils.clone(ret);
 			while (ret.length < 3) {
 				ret.push(1);
 			}
 		}
 
 		return new Int32Array(ret);
-	}
+	},
 
 	/**
 	 * Puts a nested 2d array into a one-dimensional target array
 	 * @param {Array|*} array
 	 * @param {Float32Array|Float64Array} target
 	 */
-	static flatten2dArrayTo(array, target) {
+	flatten2dArrayTo(array, target) {
 		let offset = 0;
 		for (let y = 0; y < array.length; y++) {
 			target.set(array[y], offset);
 			offset += array[y].length;
 		}
-	}
+	},
 
 	/**
 	 * Puts a nested 3d array into a one-dimensional target array
 	 * @param {Array|*} array
 	 * @param {Float32Array|Float64Array} target
 	 */
-	static flatten3dArrayTo(array, target) {
+	flatten3dArrayTo(array, target) {
 		let offset = 0;
 		for (let z = 0; z < array.length; z++) {
 			for (let y = 0; y < array[z].length; y++) {
@@ -229,44 +232,44 @@ class Utils {
 				offset += array[z][y].length;
 			}
 		}
-	}
+	},
 
 	/**
 	 * Puts a nested 1d, 2d, or 3d array into a one-dimensional target array
 	 * @param {Array|*} array
 	 * @param {Float32Array|Float64Array} target
 	 */
-	static flattenTo(array, target) {
-		if (Utils.isArray(array[0])) {
-			if (Utils.isArray(array[0][0])) {
-				Utils.flatten3dArrayTo(array, target);
+	flattenTo(array, target) {
+		if (utils.isArray(array[0])) {
+			if (utils.isArray(array[0][0])) {
+				utils.flatten3dArrayTo(array, target);
 			} else {
-				Utils.flatten2dArrayTo(array, target);
+				utils.flatten2dArrayTo(array, target);
 			}
 		} else {
 			target.set(array);
 		}
-	}
+	},
 
 	/**
 	 *
 	 * @desc Splits an array into smaller arrays.
 	 * Number of elements in one small chunk is given by `part`
 	 *
-	 * @param {Array} array - The array to split into chunks
-	 * @param {Array} part - elements in one chunk
+	 * @param {Number[]} array - The array to split into chunks
+	 * @param {Number} part - elements in one chunk
 	 *
-	 * @returns {Array} An array of smaller chunks
+	 * @returns {Number[]} An array of smaller chunks
 	 */
-	static splitArray(array, part) {
+	splitArray(array, part) {
 		const result = [];
 		for (let i = 0; i < array.length; i += part) {
 			result.push(new array.constructor(array.buffer, i * 4 + array.byteOffset, part));
 		}
 		return result;
-	}
+	},
 
-	static getAstString(source, ast) {
+	getAstString(source, ast) {
 		const lines = Array.isArray(source) ? source : source.split(/\r?\n/g);
 		const start = ast.loc.start;
 		const end = ast.loc.end;
@@ -277,9 +280,9 @@ class Utils {
 		}
 		result.push(lines[end.line - 1].slice(0, end.column));
 		return result.join('\n');
-	}
+	},
 
-	static allPropertiesOf(obj) {
+	allPropertiesOf(obj) {
 		const props = [];
 
 		do {
@@ -288,8 +291,10 @@ class Utils {
 
 		return props;
 	}
-}
+};
 
-const _systemEndianness = Utils.getSystemEndianness();
+const _systemEndianness = utils.getSystemEndianness();
 
-module.exports = Utils;
+module.exports = {
+	utils
+};

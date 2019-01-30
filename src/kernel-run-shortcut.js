@@ -1,6 +1,8 @@
-const utils = require('./utils');
+const {
+	utils
+} = require('./utils');
 
-module.exports = function kernelRunShortcut(kernel) {
+function kernelRunShortcut(kernel) {
 	const shortcut = function() {
 		return kernel.run.apply(kernel, arguments);
 	};
@@ -29,4 +31,8 @@ module.exports = function kernelRunShortcut(kernel) {
 	shortcut.kernel = kernel;
 
 	return shortcut;
+}
+
+module.exports = {
+	kernelRunShortcut
 };

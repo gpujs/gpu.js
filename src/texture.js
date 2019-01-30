@@ -41,4 +41,6 @@ class Texture {
 	}
 }
 
-module.exports = Texture;
+module.exports = {
+	Texture
+};

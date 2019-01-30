@@ -1,26 +1,33 @@
-const utils = require('../utils');
+const {
+	utils
+} = require('../utils');
 const acorn = require('acorn');
 
+/**
+ *
+ * @desc Represents a single function, inside JS, webGL, or openGL.
+ * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
+ */
 class FunctionNode {
-
 	/**
 	 *
-	 * @desc Represents a single function, inside JS, webGL, or openGL.
-	 *
-	 * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
+	 * @param {string} source
+	 * @param {IFunctionSettings} settings
 	 */
-	constructor(fn, settings) {
-		if (!fn) {
-			throw new Error('fn parameter is missing');
+	constructor(source, settings) {
+		if (!source) {
+			throw new Error('source parameter is missing');
 		}
 		settings = settings || {};
 
-		this.fn = fn;
+		this.source = source;
 		this.name = settings.isRootKernel ?
 			'kernel' :
-			(settings.name || utils.getFunctionNameFromString(fn));
+			(settings.name || utils.getFunctionNameFromString(source));
 		this.calledFunctions = [];
 		this.calledFunctionsArguments = {};
+		this.constants = {};
+		this.constantTypes = {};
 		this.isRootKernel = false;
 		this.isSubKernel = false;
 		this.parent = null;
@@ -30,116 +37,55 @@ class FunctionNode {
 		this.output = null;
 		this.declarations = {};
 		this.states = [];
+		this.lookupReturnType = null;
+		this.onNestedFunction = null;
+		this.loopMaxIterations = null;
+		this.argumentNames = utils.getArgumentNamesFromString(this.source);
+		this.argumentTypes = {};
+		this.argumentSizes = [];
+		this.returnType = null;
+		this.output = [];
 
-		let argumentTypes;
-		let returnType;
 		if (settings) {
-			if (settings.hasOwnProperty('debug')) {
-				this.debug = settings.debug;
-			}
-			if (settings.hasOwnProperty('prototypeOnly')) {
-				this.prototypeOnly = settings.prototypeOnly;
-			}
-			if (settings.hasOwnProperty('constants')) {
-				this.constants = settings.constants;
-			}
-			if (settings.hasOwnProperty('output')) {
-				this.output = settings.output;
-			}
-			if (settings.hasOwnProperty('loopMaxIterations')) {
-				this.loopMaxIterations = settings.loopMaxIterations;
-			}
-			if (settings.hasOwnProperty('argumentNames')) {
-				this.argumentNames = settings.argumentNames || [];
-			}
-			if (settings.hasOwnProperty('argumentTypes')) {
-				this.argumentTypes = argumentTypes = settings.argumentTypes;
-			}
-			if (settings.hasOwnProperty('argumentSizes')) {
-				this.argumentSizes = settings.argumentSizes || [];
-			}
-			if (settings.hasOwnProperty('constantTypes')) {
-				this.constantTypes = settings.constantTypes;
-			} else {
-				this.constantTypes = {};
-			}
-			if (settings.hasOwnProperty('returnType')) {
-				returnType = settings.returnType;
-			}
-			if (settings.hasOwnProperty('isRootKernel')) {
-				this.isRootKernel = settings.isRootKernel;
-			}
-			if (settings.hasOwnProperty('isSubKernel')) {
-				this.isSubKernel = settings.isSubKernel;
-			}
-			if (settings.onNestedFunction) {
-				this.onNestedFunction = settings.onNestedFunction;
-			}
-			if (settings.lookupReturnType) {
-				this.lookupReturnType = settings.lookupReturnType;
+			for (const p in this) {
+				if (!this.hasOwnProperty(p)) continue;
+				if (settings[p]) {
+					this[p] = settings[p];
+				}
 			}
 		}
-
-		this.validateFn();
-
-		if (!(this.name)) {
-			throw new Error('name could not be set');
-		}
-
-		this.setupArgumentTypes(argumentTypes);
 
 		if (!this.returnType) {
-			this.returnType = returnType || 'Number';
+			this.returnType = 'Number';
 		}
+
+		this.validate();
 	}
 
-	validateFn() {
-		if (typeof this.fn !== 'string') {
-			throw new Error('fn not a string');
+	validate() {
+		if (typeof this.source !== 'string') {
+			throw new Error('this.source not a string');
 		}
-		if (!utils.isFunctionString(this.fn)) {
-			throw new Error('fn not a function string');
-		}
-	}
 
-	setupArgumentTypes(argumentTypes) {
-		this.argumentNames = utils.getArgumentNamesFromString(this.fn);
-		if (argumentTypes) {
-			if (Array.isArray(argumentTypes)) {
-				if (argumentTypes.length !== this.argumentNames.length) {
-					throw new Error(
-						'Invalid argument type array length, against function length -> (' +
-						argumentTypes.length + ',' +
-						this.argumentNames.length +
-						')'
-					);
-				}
-				this.argumentTypes = argumentTypes;
-			} else if (typeof argumentTypes === 'object') {
-				const argumentNamesFromTypes = Object.keys(argumentTypes);
-				if (argumentTypes.hasOwnProperty('returns')) {
-					this.returnType = argumentTypes.returns;
-					argumentNamesFromTypes.splice(argumentNamesFromTypes.indexOf('returns'), 1);
-				}
-				if (argumentNamesFromTypes.length > 0 && argumentNamesFromTypes.length !== this.argumentNames.length) {
-					throw new Error(
-						'Invalid argument type array length, against function length -> (' +
-						argumentNamesFromTypes.length + ',' +
-						this.argumentNames.length +
-						')'
-					);
-				} else {
-					this.argumentTypes = this.argumentNames.map((key) => {
-						if (argumentTypes.hasOwnProperty(key)) {
-							return argumentTypes[key];
-						} else {
-							return 'Number';
-						}
-					});
-				}
-			}
-		} else {
-			this.argumentTypes = [];
+		if (!utils.isFunctionString(this.source)) {
+			throw new Error('this.source not a function string');
+		}
+
+		if (!this.name) {
+			throw new Error('this.name could not be set');
+		}
+
+		if (this.argumentTypes.length > 0 && this.argumentTypes.length !== this.argumentNames.length) {
+			throw new Error(
+				'Invalid argument type array length, against function length -> (' +
+				this.argumentTypes.length + ',' +
+				this.argumentNames.length +
+				')'
+			);
+		}
+
+		if (this.output.length < 1) {
+			throw new Error('this.output is not big enough');
 		}
 	}
 
@@ -238,7 +184,7 @@ class FunctionNode {
 			throw 'Missing JS to AST parser';
 		}
 
-		const ast = Object.freeze(inParser.parse('var ' + this.name + ' = ' + this.fn + ';', {
+		const ast = Object.freeze(inParser.parse('var ' + this.name + ' = ' + this.source + ';', {
 			locations: true
 		}));
 		if (ast === null) {
@@ -257,7 +203,7 @@ class FunctionNode {
 	 * @param {String} argumentName - Name of the parameter
 	 * @returns {String} Type of the parameter
 	 */
-	getArgumentType(argumentName) {
+	getVariableType(argumentName) {
 		const argumentIndex = this.argumentNames.indexOf(argumentName);
 		if (argumentIndex === -1) {
 			if (this.declarations.hasOwnProperty(argumentName)) {
@@ -401,7 +347,7 @@ class FunctionNode {
 	 * @param {Object} ast - the AST object where the error is
 	 */
 	astErrorOutput(error, ast) {
-		return new Error(error + ':\n' + utils.getAstString(this.fn, ast));
+		return new Error(error + ':\n' + utils.getAstString(this.source, ast));
 	}
 
 	astDebuggerStatement(arrNode, retArr) {
@@ -415,7 +361,7 @@ class FunctionNode {
 	 */
 	astFunctionDeclaration(ast, retArr) {
 		if (this.onNestedFunction) {
-			this.onNestedFunction(utils.getAstString(this.fn, ast));
+			this.onNestedFunction(utils.getAstString(this.source, ast));
 		}
 		return retArr;
 	}
@@ -499,7 +445,7 @@ class FunctionNode {
 	 * @function
 	 * @name pushParameter
 	 *
-	 * @desc [INTERNAL] pushes a fn parameter onto retArr and 'casts' to int if necessary
+	 * @desc [INTERNAL] pushes a source parameter onto retArr and 'casts' to int if necessary
 	 *  i.e. deal with force-int-parameter state
 	 *
 	 * @param {Array} retArr - return array string
@@ -511,4 +457,6 @@ class FunctionNode {
 	}
 }
 
-module.exports = FunctionNode;
+module.exports = {
+	FunctionNode
+};

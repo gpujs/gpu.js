@@ -1,12 +1,32 @@
-const utils = require('./utils');
-const CPUKernel = require('./backend/cpu/kernel');
-const HeadlessGLKernel = require('./backend/headless-gl/kernel');
-const WebGL2Kernel = require('./backend/web-gl2/kernel');
-const WebGLKernel = require('./backend/web-gl/kernel');
-const kernelRunShortcut = require('./kernel-run-shortcut');
+const {
+	utils
+} = require('./utils');
+const {
+	CPUKernel
+} = require('./backend/cpu/kernel');
+const {
+	HeadlessGLKernel
+} = require('./backend/headless-gl/kernel');
+const {
+	WebGL2Kernel
+} = require('./backend/web-gl2/kernel');
+const {
+	WebGLKernel
+} = require('./backend/web-gl/kernel');
+const {
+	kernelRunShortcut
+} = require('./kernel-run-shortcut');
 
+
+/**
+ * @type {Kernel[]}
+ */
 const kernelOrder = [HeadlessGLKernel, WebGL2Kernel, WebGLKernel];
 
+/**
+ *
+ * @type {string[]}
+ */
 const kernelTypes = ['gpu', 'cpu'];
 
 const internalKernels = {
@@ -16,20 +36,52 @@ const internalKernels = {
 };
 
 /**
- * Initialises the GPU.js library class which manages the webGlContext for the created functions.
+ * The GPU.js library class which manages the GPU context for the creating kernels
  */
 class GPU {
-	static get kernelOrder() {
-		return kernelOrder;
+	static get isGPUSupported() {
+		return kernelOrder.some(Kernel => Kernel.isSupported);
 	}
 
-	static get kernelTypes() {
-		return kernelTypes;
+	static get isKernelMapSupported() {
+		return kernelOrder.some(Kernel => Kernel.isSupported && Kernel.features.kernelMap);
+	}
+
+	static get isOffscreenCanvasSupported() {
+		return (typeof Worker !== 'undefined' && typeof OffscreenCanvas !== 'undefined') || typeof importScripts !== 'undefined';
+	}
+	/**
+	 * @desc TRUE if platform supports WebGL
+	 */
+	static get isWebGLSupported() {
+		return WebGLKernel.isSupported;
+	}
+
+	/**
+	 * @desc TRUE if platform supports WebGL2
+	 */
+	static get isWebGL2Supported() {
+		return WebGL2Kernel.isSupported;
+	}
+
+	/**
+	 * @desc TRUE if platform supports HeadlessGL
+	 */
+	static get isHeadlessGLSupported() {
+		return HeadlessGLKernel.isSupported;
+	}
+
+	/**
+	 *
+	 * @desc TRUE if platform supports Canvas
+	 */
+	static get isCanvasSupported() {
+		return typeof HTMLCanvasElement !== 'undefined';
 	}
 
 	/**
 	 * Creates an instance of GPU.
-	 * @param {Object} [settings] - Settings to set mode, and other properties. See #GPUCore
+	 * @param {IGPUSettings} [settings] - Settings to set mode, and other properties
 	 */
 	constructor(settings) {
 		settings = settings || {};
@@ -39,7 +91,7 @@ class GPU {
 		this.Kernel = null;
 		this.kernels = [];
 		this.functions = [];
-		this.nativeFunctions = {};
+		this.nativeFunctions = [];
 
 		// add functions from settings
 		if (settings.functions) {
@@ -48,11 +100,21 @@ class GPU {
 			}
 		}
 
+		// add native functions from settings
+		if (settings.nativeFunctions) {
+			for (const p in settings.nativeFunctions) {
+				this.addNativeFunction(p, settings.nativeFunctions[p]);
+			}
+		}
+
 		this.chooseKernel();
 	}
 
+	/**
+	 * Choose kernel type and save on .Kernel property of GPU
+	 */
 	chooseKernel() {
-		if (this.Kernel) return this.Kernel;
+		if (this.Kernel) return;
 
 		let Kernel = null;
 
@@ -95,8 +157,10 @@ class GPU {
 			}
 		}
 
+		if (!this.mode) {
+			this.mode = Kernel.mode;
+		}
 		this.Kernel = Kernel;
-		return Kernel;
 	}
 
 	/**
@@ -116,9 +180,6 @@ class GPU {
 	 * @returns {Kernel} callable function to run
 	 */
 	createKernel(source, settings) {
-		//
-		// basic parameters safety checks
-		//
 		if (typeof source === 'undefined') {
 			throw 'Missing source parameter';
 		}
@@ -126,6 +187,7 @@ class GPU {
 			throw 'source parameter not a function';
 		}
 
+		source = typeof source !== 'string' ? source.toString() : source;
 		const mergedSettings = Object.assign({
 			context: this.context,
 			canvas: this.canvas,
@@ -133,27 +195,18 @@ class GPU {
 			nativeFunctions: this.nativeFunctions
 		}, settings || {});
 
-		// if we have any functions
-		mergedSettings.functions = mergedSettings.functions.map(fn => {
-			if (typeof fn === 'object') return fn;
-			const fnString = fn.toString();
-			return {
-				source: fnString,
-				settings: {
-					name: utils.getFunctionNameFromString(fnString)
-				}
-			};
-		});
-
-		const kernel = kernelRunShortcut(new this.Kernel(source.toString(), mergedSettings));
+		const kernel = kernelRunShortcut(new this.Kernel(source, mergedSettings));
 
 		//if canvas didn't come from this, propagate from kernel
 		if (!this.canvas) {
-			this.canvas = kernel.getCanvas();
+			this.canvas = kernel.canvas;
 		}
+
+		//if context didn't come from this, propagate from kernel
 		if (!this.context) {
-			this.context = kernel.getContext();
+			this.context = kernel.context;
 		}
+
 		this.kernels.push(kernel);
 
 		return kernel;
@@ -215,7 +268,6 @@ class GPU {
 					name,
 					source,
 					property: i,
-
 				});
 			}
 		} else {
@@ -259,10 +311,10 @@ class GPU {
 	combineKernels() {
 		const lastKernel = arguments[arguments.length - 2];
 		const combinedKernel = arguments[arguments.length - 1];
-		if (this.getMode() === 'cpu') return combinedKernel;
+		if (this.mode === 'cpu') return combinedKernel;
 
-		const canvas = arguments[0].getCanvas();
-		let context = arguments[0].getContext();
+		const canvas = arguments[0].canvas;
+		let context = arguments[0].context;
 
 		for (let i = 0; i < arguments.length - 1; i++) {
 			arguments[i]
@@ -275,7 +327,7 @@ class GPU {
 		return function() {
 			combinedKernel.apply(null, arguments);
 			const texSize = lastKernel.texSize;
-			const gl = lastKernel.getContext();
+			const gl = lastKernel.context;
 			const threadDim = lastKernel.threadDim;
 			let result;
 			if (lastKernel.floatOutput) {
@@ -306,17 +358,23 @@ class GPU {
 
 	/**
 	 * @desc Adds additional functions, that the kernel may call.
-	 * @param {Function|String} fn - JS Function to do conversion
-	 * @param {Object} [settings]
+	 * @param {Function|String} source - Javascript function to convert
+	 * @param {IGPUFunctionSettings} [settings]
 	 * @returns {GPU} returns itself
 	 */
-	addFunction(fn, settings) {
+	addFunction(source, settings) {
+		settings = settings || {};
 		if (this.kernels.length > 0) {
-			throw new Error('Cannot call "addFunction" after "createKernels" has been called.');
+			throw new Error('Cannot call "addFunction" after "createKernel" has been called.');
 		}
+		if (typeof source !== 'string' && typeof source !== 'function') throw new Error('source not a string or function');
+		const sourceString = typeof source === 'string' ? source : source.toString();
+
 		this.functions.push({
-			source: typeof fn === 'string' ? fn : fn.toString(),
-			settings
+			source: sourceString,
+			argumentTypes: typeof settings.argumentTypes === 'object' ?
+				utils.getArgumentNamesFromString(sourceString).map(name => settings.argumentTypes[name]) : settings.argumentTypes,
+			returnType: settings.returnType
 		});
 		return this;
 	}
@@ -325,65 +383,19 @@ class GPU {
 	 * @desc Adds additional native functions, that the kernel may call.
 	 * @param {String} name - native function name, used for reverse lookup
 	 * @param {String} source - the native function implementation, as it would be defined in it's entirety
+	 * @param {object} [settings]
 	 * @returns {GPU} returns itself
 	 */
-	addNativeFunction(name, source) {
-		this.nativeFunctions[name] = source;
+	addNativeFunction(name, source, settings) {
+		if (this.kernels.length > 0) {
+			throw new Error('Cannot call "addNativeFunction" after "createKernels" has been called.');
+		}
+		this.nativeFunctions.push({
+			name,
+			source,
+			settings
+		});
 		return this;
-	}
-
-	/**
-	 * @desc Return the current mode in which gpu.js is executing.
-	 * @returns {String} The current mode, "cpu", "gpu", etc.
-	 */
-	getMode() {
-		return this.mode || this.Kernel.getMode();
-	}
-
-	/**
-	 * @desc Return TRUE, if platform supports WebGL AND Canvas
-	 *
-	 * @returns {Boolean} TRUE if platform supports webGl
-	 */
-	static get isWebGLSupported() {
-		return WebGLKernel.isSupported;
-	}
-
-	/**
-	 * @desc Return TRUE, if platform supports WebGL2 AND Canvas
-	 *
-	 * @returns {Boolean} TRUE if platform supports webGl
-	 */
-	static get isWebGL2Supported() {
-		return WebGL2Kernel.isSupported;
-	}
-
-	/**
-	 * @desc Return TRUE, if node supports WebGL
-	 *
-	 * @returns {Boolean} TRUE if platform supports webGl
-	 */
-	static get isHeadlessGLSupported() {
-		return HeadlessGLKernel.isSupported;
-	}
-
-	static get isCanvasSupported() {
-		return typeof HTMLCanvasElement !== 'undefined';
-	}
-	/**
-	 * @desc Return the canvas object bound to this gpu instance.
-	 * @returns {Object} Canvas object if present
-	 */
-	getCanvas() {
-		return this.canvas;
-	}
-
-	/**
-	 * @desc Return the webGl object bound to this gpu instance.
-	 * @returns {Object} WebGl object if present
-	 */
-	getContext() {
-		return this.context;
 	}
 
 	/**
@@ -401,4 +413,8 @@ class GPU {
 	}
 }
 
-module.exports = GPU;
+module.exports = {
+	GPU,
+	kernelOrder,
+	kernelTypes
+};

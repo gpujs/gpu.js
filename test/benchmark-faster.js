@@ -40,16 +40,16 @@ const cpuArg2 = cpu
   .setOutput([size, size])();
 
 suite
-  .add('gpu', function() {
+  .add('gpu', () => {
     gpuKernel(gpuArg1, gpuArg2);
   })
-  .add('cpu', function() {
+  .add('cpu', () => {
     cpuKernel(cpuArg1, cpuArg2);
   })
   .on('cycle', function(event) {
     console.log(String(event.target));
   })
-  .on('complete', function() {
+  .on('complete', () => {
     console.log('Fastest is ' + this.filter('fastest').map('name'));
     gpu.destroy();
     cpu.destroy();

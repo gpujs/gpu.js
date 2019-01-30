@@ -110,7 +110,7 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
 * floatTextures: boolean - input/working textures use float32 for each colour channel
 * floatOutput: boolean - output texture uses float32 for each  colour channel
 * fixIntegerDivisionAccuracy: boolean - some cards have accuracy issues dividing by factors of three and some other primes (most apple kit?). Default on for affected cards, disable if accuracy not required.
-* functions: array or boolean
+* functions: array or object
 * nativeFunctions: object
 * subKernels: array
 * outputImmutable: boolean
@@ -327,7 +327,7 @@ const render = gpu.createKernel(function() {
 
 render();
 
-const canvas = render.getCanvas();
+const canvas = render.canvas;
 document.getElementsByTagName('body')[0].appendChild(canvas);
 ```
 
@@ -432,9 +432,9 @@ const kernel = gpu.createKernel(function(a, b) {
 
 To strongly type a function you may use settings.  Settings take an optional hash values:
 `returnType`: optional, defaults to float, the value you'd like to return from the function
-`paramTypes`: optional, defaults to float for each param, a hash of param names with values of the return types
+`argumentTypes`: optional, defaults to float for each param, a hash of param names with values of the return types
 
-Types: that may be used for `returnType` or for each property of `paramTypes`:
+Types: that may be used for `returnType` or for each property of `argumentTypes`:
 * 'Array'
 * 'Array(2)'
 * 'Array(3)'
@@ -449,7 +449,7 @@ Example:
 ```js
 gpu.addFunction(function mySuperFunction(a, b) {
 	return [a - b[1], b[0] - a];
-}, { paramTypes: { a: 'Number', b: 'Array(2)'}, returnType: 'Array(2)' });
+}, { argumentTypes: { a: 'Number', b: 'Array(2)'}, returnType: 'Array(2)' });
 ```
 
 
