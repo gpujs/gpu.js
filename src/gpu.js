@@ -167,7 +167,7 @@ class GPU {
 	 *
 	 * @desc This creates a callable function object to call the kernel function with the argument parameter set
 	 *
-	 * @param {Function|String} source - The calling to perform the conversion
+	 * @param {Function|String|object} source - The calling to perform the conversion
 	 * @param {Object} [settings] - The parameter configuration object
 	 * @property {String} settings.dimensions - Thread dimension array (Defaults to [1024])
 	 * @property {String} settings.mode - CPU / GPU configuration mode (Defaults to null)
@@ -181,13 +181,13 @@ class GPU {
 	 */
 	createKernel(source, settings) {
 		if (typeof source === 'undefined') {
-			throw 'Missing source parameter';
+			throw new Error('Missing source parameter');
 		}
-		if (!utils.isFunction(source) && typeof source !== 'string') {
-			throw 'source parameter not a function';
+		if (typeof source !== 'object' && !utils.isFunction(source) && typeof source !== 'string') {
+			throw new Error('source parameter not a function');
 		}
 
-		source = typeof source !== 'string' ? source.toString() : source;
+		source = typeof source === 'function' ? source.toString() : source;
 		const mergedSettings = Object.assign({
 			context: this.context,
 			canvas: this.canvas,

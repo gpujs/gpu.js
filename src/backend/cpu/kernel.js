@@ -407,6 +407,12 @@ class CPUKernel extends Kernel {
 	}
 
 	static destroyContext(context) {}
+
+	toJSON() {
+		const json = super.toJSON();
+		json.functionNodes = FunctionBuilder.fromKernel(this, CPUFunctionNode).toJSON();
+		return json;
+	}
 }
 
 module.exports = {

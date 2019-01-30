@@ -945,6 +945,12 @@ class WebGL2Kernel extends WebGLKernel {
 		this.extensions.EXT_color_buffer_float = null;
 		this.extensions.OES_texture_float_linear = null;
 	}
+
+	toJSON() {
+		const json = super.toJSON();
+		json.functionNodes = FunctionBuilder.fromKernel(this, WebGL2FunctionNode).toJSON();
+		return json;
+	}
 }
 
 module.exports = {

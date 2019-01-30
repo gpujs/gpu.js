@@ -21,9 +21,9 @@ class FunctionNode {
 		settings = settings || {};
 
 		this.source = source;
-		this.name = settings.isRootKernel ?
+		this.name = typeof source === 'string' ? settings.isRootKernel ?
 			'kernel' :
-			(settings.name || utils.getFunctionNameFromString(source));
+			(settings.name || utils.getFunctionNameFromString(source)) : null;
 		this.calledFunctions = [];
 		this.calledFunctionsArguments = {};
 		this.constants = {};
@@ -33,14 +33,12 @@ class FunctionNode {
 		this.parent = null;
 		this.debug = null;
 		this.prototypeOnly = null;
-		this.constants = null;
-		this.output = null;
 		this.declarations = {};
 		this.states = [];
 		this.lookupReturnType = null;
 		this.onNestedFunction = null;
 		this.loopMaxIterations = null;
-		this.argumentNames = utils.getArgumentNamesFromString(this.source);
+		this.argumentNames = (typeof this.source === 'string' ? utils.getArgumentNamesFromString(this.source) : null);
 		this.argumentTypes = {};
 		this.argumentSizes = [];
 		this.returnType = null;
@@ -175,8 +173,8 @@ class FunctionNode {
 	 * @returns {Object} The function AST Object, note that result is cached under this.ast;
 	 */
 	getJsAST(inParser) {
-		if (this.ast) {
-			return this.ast;
+		if (typeof this.source === 'object') {
+			return this.ast = this.source;
 		}
 
 		inParser = inParser || acorn;
@@ -259,6 +257,30 @@ class FunctionNode {
 
 	toString(settings) {
 		throw new Error(`"toString" not defined on ${ this.constructor.name }`);
+	}
+
+	toJSON() {
+		const settings = {
+			source: this.source,
+			name: this.name,
+			constants: this.constants,
+			constantTypes: this.constantTypes,
+			isRootKernel: this.isRootKernel,
+			isSubKernel: this.isSubKernel,
+			debug: this.debug,
+			prototypeOnly: this.prototypeOnly,
+			output: this.output,
+			loopMaxIterations: this.loopMaxIterations,
+			argumentNames: this.argumentNames,
+			argumentTypes: this.argumentTypes,
+			argumentSizes: this.argumentSizes,
+			returnType: this.returnType
+		};
+
+		return {
+			ast: this.ast,
+			settings
+		};
 	}
 
 	/**

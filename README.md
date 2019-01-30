@@ -82,7 +82,7 @@ yarn add gpu.js
 Download the latest version of GPU.js and include the files in your HTML page using the following tags:
 
 ```html
-<script src="/path/to/js/gpu.min.js"></script>
+<script src="/path/to/js/gpu-browser.min.js"></script>
 ```
 
 In JavaScript, initialize the library:

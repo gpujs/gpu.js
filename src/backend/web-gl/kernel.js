@@ -1255,7 +1255,7 @@ class WebGLKernel extends GLKernel {
 				} else if (type === 'Integer' || type === 'Float') {
 					result.push(`uniform float user_${name}`);
 				} else {
-					throw new Error(`Param type ${name} not supported in WebGL, only WebGL2`);
+					throw new Error(`Param type ${type} not supported in WebGL`);
 				}
 			}
 		}
@@ -1492,6 +1492,12 @@ class WebGLKernel extends GLKernel {
 		if (extension) {
 			extension.loseContext();
 		}
+	}
+
+	toJSON() {
+		const json = super.toJSON();
+		json.functionNodes = FunctionBuilder.fromKernel(this, WebGLFunctionNode).toJSON();
+		return json;
 	}
 }
 

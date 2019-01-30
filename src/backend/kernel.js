@@ -24,22 +24,26 @@ class Kernel {
 
 	/**
 	 *
-	 * @param {string} source
+	 * @param {string|object} source
 	 * @param [settings]
 	 */
 	constructor(source, settings) {
-		if (typeof source !== 'string') {
-			throw new Error('source not a string');
-		}
-		if (!utils.isFunctionString(source)) {
-			throw new Error('source not a function string');
+		if (typeof source === 'object') {
+			settings = source.settings;
+		} else {
+			if (typeof source !== 'string') {
+				throw new Error('source not a string');
+			}
+			if (!utils.isFunctionString(source)) {
+				throw new Error('source not a function string');
+			}
 		}
 
 		/**
 		 * Name of the arguments found from parsing source argument
 		 * @type {String[]}
 		 */
-		this.argumentNames = utils.getArgumentNamesFromString(source);
+		this.argumentNames = typeof source === 'string' ? utils.getArgumentNamesFromString(source) : null;
 		this.argumentTypes = null;
 		this.argumentSizes = null;
 
@@ -192,6 +196,10 @@ class Kernel {
 
 			this.argumentTypes.push(utils.getVariableType(arg));
 			this.argumentSizes.push(arg.constructor === Input ? arg.size : null);
+		}
+
+		if (this.argumentNames.length !== args.length) {
+			throw new Error(`arguments are miss-aligned`);
 		}
 	}
 
@@ -402,6 +410,23 @@ class Kernel {
 				throw new Error(`${ this.constructor.name }.output[${ i }] incorrectly defined as \`${ this.output[i] }\`, needs to be numeric, and greater than 0`);
 			}
 		}
+	}
+
+	toJSON() {
+		const settings = {
+			output: this.output,
+			threadDim: this.threadDim,
+			outputToTexture: this.outputToTexture,
+			argumentNames: this.argumentNames,
+			argumentsTypes: this.argumentTypes,
+			argumentsLength: this.argumentsLength,
+			constants: this.constants,
+			constantsLength: this.constantsLength,
+			maxTexSize: this.maxTexSize,
+		};
+		return {
+			settings
+		};
 	}
 }
 

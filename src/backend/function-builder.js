@@ -42,13 +42,19 @@ class FunctionBuilder {
 			output,
 		}, extraNodeOptions || {});
 
-		const rootNode = new FunctionNode(kernel.source, Object.assign({}, nodeOptions, {
+		const rootNodeOptions = Object.assign({}, nodeOptions, {
 			isRootKernel: true,
 			name: 'kernel',
 			argumentNames,
 			argumentTypes,
 			argumentSizes,
-		}));
+		});
+
+		if (typeof kernel.source === 'object' && kernel.source.functionNodes) {
+			return new FunctionBuilder().fromJSON(kernel.source.functionNodes, FunctionNode);
+		}
+
+		const rootNode = new FunctionNode(kernel.source, rootNodeOptions);
 
 		let functionNodes = null;
 		if (kernel.functions) {
@@ -200,7 +206,9 @@ class FunctionBuilder {
 	 * @returns {Array} The full string, of all the various functions. Trace optimized if functionName given
 	 */
 	getPrototypes(functionName) {
-		this.rootNode.toString();
+		if (this.rootNode) {
+			this.rootNode.toString();
+		}
 		if (functionName) {
 			return this.getPrototypesFromFunctionNames(this.traceFunctionCalls(functionName, []).reverse());
 		}
@@ -243,6 +251,30 @@ class FunctionBuilder {
 			}
 		}
 		return ret;
+	}
+
+	toJSON() {
+		return this.traceFunctionCalls(this.rootNode.name).reverse().map(name => {
+			if (this.nativeFunctions[name]) {
+				return {
+					name,
+					source: this.nativeFunctions[name]
+				};
+			} else if (this.functionMap[name]) {
+				return this.functionMap[name].toJSON();
+			} else {
+				throw new Error(`function ${ name } not found`);
+			}
+		});
+	}
+
+	fromJSON(jsonFunctionNodes, FunctionNode) {
+		this.functionMap = {};
+		for (let i = 0; i < jsonFunctionNodes.length; i++) {
+			const jsonFunctionNode = jsonFunctionNodes[i];
+			this.functionMap[jsonFunctionNode.settings.name] = new FunctionNode(jsonFunctionNode.ast, jsonFunctionNode.settings);
+		}
+		return this;
 	}
 
 	/**
