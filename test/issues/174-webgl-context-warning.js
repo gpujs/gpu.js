@@ -21,7 +21,7 @@ function manyKernels(mode, kernelCount, t) {
 		return this.thread.y * this.thread.x;
 	}, {
 		output: [1024, 1024],
-		outputToTexture: true
+		pipeline: true
 	});
 	kernel(input);
 	kernel2();

@@ -1,8 +1,6 @@
 const fs = require('fs');
 const gulp = require('gulp');
 const rename = require('gulp-rename');
-const uglify = require('gulp-uglify-es').default;
-const gutil = require('gulp-util');
 const header = require('gulp-header');
 const browserSync = require('browser-sync');
 const browserify = require('browserify');
@@ -12,7 +10,6 @@ const pkg = require('./package.json');
 const jsprettify = require('gulp-jsbeautifier');
 const stripComments = require('gulp-strip-comments');
 const merge = require('merge-stream');
-
 
 gulp.task('build', function() {
 	const gpu = browserify('./src/browser.js')
@@ -65,7 +62,7 @@ gulp.task('bsync', function(){
 			baseDir: './'
 		},
 		open: true,
-		startPath: "/test/html/test-all.html",
+		startPath: "./test/html/test-all.html",
 		// Makes it easier to test on external mobile devices
 		host: "0.0.0.0",
 		tunnel: true
@@ -77,7 +74,6 @@ gulp.task('bsync', function(){
 
 /// Auto rebuild and host
 gulp.task('default', gulp.series('minify','bsync'));
-
 
 /// Beautify source code
 /// Use before merge request
@@ -91,34 +87,3 @@ gulp.task('beautify', function() {
 		.pipe(gulp.dest('src'));
 });
 
-gulp.task('injectCSS', function() {
-	const signatureColor = '#ff75cf';
-	const linkColor = '#4c7fbd';
-	const themeColor = '#186384';
-
-	// !important is used because the original rule is using it.
-	const cssRules = `
-	.signature, a {
-		color: ${signatureColor};
-	}
-
-	h4.name {
-		background: ${themeColor};
-	}
-
-	nav > ul > li > a, nav a:hover, nav > h2 > a {
-		color: ${linkColor} !important;
-	}
-
-	span.param-type, .params td .param-type {
-	color: ${themeColor};
-	}
-	`;
-	fs.appendFile('./doc/styles/jsdoc.css', cssRules, (err)=>{
-		if (err) {
-			throw new Error(err);
-		}
-
-		console.log('CSS Injected');
-	});
-});

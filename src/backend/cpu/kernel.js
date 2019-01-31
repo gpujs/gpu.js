@@ -41,8 +41,11 @@ class CPUKernel extends Kernel {
 		return 'cpu';
 	}
 
-	constructor(fnString, settings) {
-		super(fnString, settings);
+	constructor(source, settings) {
+		super(source, settings);
+
+		this.mergeSettings(source.settings || settings);
+
 		this._imageData = null;
 		this._colorData = null;
 		this._kernelString = null;
@@ -70,6 +73,10 @@ class CPUKernel extends Kernel {
 	initContext() {
 		if (!this.canvas) return null;
 		return this.canvas.getContext('2d');
+	}
+
+	initPlugins(settings) {
+		return [];
 	}
 
 	/**

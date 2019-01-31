@@ -14,13 +14,13 @@ const gpuArg1 = gpu
   .createKernel(function() {
     return 0.89;
   })
-  .setOutputToTexture(true)
+  .setPipeline(true)
   .setOutput([size, size])();
 const gpuArg2 = gpu
   .createKernel(function() {
     return this.thread.x;
   })
-  .setOutputToTexture(true)
+  .setPipeline(true)
   .setOutput([size, size])();
 
 const cpuKernel = cpu

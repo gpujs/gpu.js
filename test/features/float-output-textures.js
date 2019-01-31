@@ -8,9 +8,7 @@ function floatTexturesKernel(output, mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(lst) {
     return lst[this.thread.x];
-  })
-    .setFloatTextures(true)
-    .setOutput([lst.length]);
+  }, { output: [lst.length], floatTextures: true });
 
   const result = kernel(lst);
   assert.deepEqual(result, lst);

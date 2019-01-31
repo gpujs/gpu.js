@@ -32,7 +32,6 @@ class FunctionNode {
 		this.isSubKernel = false;
 		this.parent = null;
 		this.debug = null;
-		this.prototypeOnly = null;
 		this.declarations = {};
 		this.states = [];
 		this.lookupReturnType = null;
@@ -43,6 +42,7 @@ class FunctionNode {
 		this.argumentSizes = [];
 		this.returnType = null;
 		this.output = [];
+		this.plugins = null;
 
 		if (settings) {
 			for (const p in this) {
@@ -268,7 +268,6 @@ class FunctionNode {
 			isRootKernel: this.isRootKernel,
 			isSubKernel: this.isSubKernel,
 			debug: this.debug,
-			prototypeOnly: this.prototypeOnly,
 			output: this.output,
 			loopMaxIterations: this.loopMaxIterations,
 			argumentNames: this.argumentNames,

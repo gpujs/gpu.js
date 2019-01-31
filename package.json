@@ -7,8 +7,7 @@
   },
   "main": "./src/index.js",
   "files": [
-    "dist",
-    "bin"
+    "src"
   ],
   "directories": {
     "doc": "doc",
@@ -17,29 +16,19 @@
   "dependencies": {
     "acorn": "^5.1.1",
     "gl": "^4.1.1",
-    "typescript": "^3.2.4"
+    "typescript": "^3.3.1"
   },
   "devDependencies": {
-    "babel-plugin-syntax-async-functions": "^6.5.0",
-    "babel-preset-env": "^1.5.2",
     "benchmark": "^2.1.4",
     "browser-sync": "^2.26.3",
     "browserify": "^16.2.3",
-    "chai": "^4.2.0",
-    "del": "^3.0.0",
-    "docdash": "^0.4.0",
     "gulp": "^4.0.0",
-    "gulp-babel": "^6.1.2",
     "gulp-concat": "^2.6.0",
     "gulp-header": "^1.7.1",
     "gulp-jsbeautifier": "^2.1.0",
     "gulp-rename": "^1.2.2",
     "gulp-strip-comments": "^2.4.5",
-    "gulp-uglify-es": "^1.0.4",
-    "gulp-util": "^3.0.7",
-    "jsdoc": "^3.5.0",
     "merge-stream": "^1.0.1",
-    "mocha": "^5.2.0",
     "qunit": "^2.9.1",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^2.0.0"
@@ -64,5 +53,5 @@
     "url": "https://github.com/gpujs/gpu.js/issues"
   },
   "homepage": "http://gpu.rocks/",
-  "typings": "./index.d.ts"
+  "typings": "./src/index.d.ts"
 }

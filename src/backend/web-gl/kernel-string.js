@@ -65,7 +65,7 @@ function webGLKernelString(gpuKernel, name) {
         this.floatOutput = ${ boolToString(gpuKernel.floatOutput) };
         this.floatOutputForce = ${ boolToString(gpuKernel.floatOutputForce) };
         this.hardcodeConstants = ${ boolToString(gpuKernel.hardcodeConstants) };
-        this.outputToTexture = ${ boolToString(gpuKernel.outputToTexture) };
+        this.pipeline = ${ boolToString(gpuKernel.pipeline) };
         this.argumentNames = ${ JSON.stringify(gpuKernel.argumentNames) };
         this.argumentTypes = ${ JSON.stringify(gpuKernel.argumentTypes) };
         this.texSize = ${ JSON.stringify(gpuKernel.texSize) };

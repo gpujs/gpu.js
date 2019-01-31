@@ -25,9 +25,6 @@ class WebGLFunctionNode extends FunctionNode {
 	}
 
 	toString() {
-		if (this.prototypeOnly) {
-			return this.astFunctionPrototype(this.getJsAST(), []).join('').trim();
-		}
 		if (this._string) return this._string;
 		return this._string = webGlRegexOptimize(this.astGeneric(this.getJsAST(), []).join('').trim());
 	}
@@ -1051,6 +1048,17 @@ class WebGLFunctionNode extends FunctionNode {
 
 			const functionArguments = [];
 			this.calledFunctionsArguments[funcName].push(functionArguments);
+
+			if (funcName === 'random' && this.plugins) {
+				for (let i = 0; i < this.plugins.length; i++) {
+					const plugin = this.plugins[i];
+					if (plugin.functionMatch === 'Math.random()' && plugin.functionReplace) {
+						functionArguments.push(plugin.functionReturnType);
+						retArr.push(plugin.functionReplace);
+					}
+				}
+				return retArr;
+			}
 
 			// Call the function
 			retArr.push(funcName);

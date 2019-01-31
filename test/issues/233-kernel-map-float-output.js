@@ -20,16 +20,15 @@ function kernelMapFloatOutput(mode) {
     stepB(val);
 
     return val;
-  })
-    .setFloatOutput(true)
-    .setOutput([lst.length]);
+  }, {
+    floatOutput: true,
+    output: [lst.length]
+  });
 
   const result = kernels(lst);
   const unwrap = gpu.createKernel(function(x) {
     return x[this.thread.x];
-  })
-    .setFloatTextures(true)
-    .setOutput([lst.length]);
+  }, { output: [lst.length], floatTextures: true });
 
   const stepAResult = unwrap(result.stepA);
   const stepBResult = unwrap(result.stepB);

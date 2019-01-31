@@ -7,9 +7,7 @@ function floatOutputKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(lst) {
     return lst[this.thread.x];
-  })
-    .setFloatOutput(true)
-    .setOutput([lst.length]);
+  }, { floatOutput: true, output: [lst.length] });
   assert.deepEqual(kernel(lst), lst);
   gpu.destroy();
 }

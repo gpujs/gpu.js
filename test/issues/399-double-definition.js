@@ -9,9 +9,9 @@ function doubleDefinition(mode) {
     return value[this.thread.x];
   }, {
     output: [2],
-    outputToTexture: true,
+    pipeline: true,
     hardcodeConstants: true,
-    outputImmutable: true
+    immutable: true
   });
   // basically it doesn't die, but builds all the way through to webGL
   assert.equal(toTexture([0, 1]).constructor, Texture);

@@ -14,24 +14,6 @@ const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 class WebGL2FunctionNode extends WebGLFunctionNode {
 
 	/**
-	 *
-	 * @param {string} fn
-	 * @param {object} [settings]
-	 */
-	constructor(fn, settings) {
-		super(fn, settings);
-		this._string = null;
-	}
-
-	toString() {
-		if (this.prototypeOnly) {
-			return this.astFunctionPrototype(this.getJsAST(), []).join('').trim();
-		}
-		if (this._string) return this._string;
-		return this._string = webGlRegexOptimize(this.astGeneric(this.getJsAST(), []).join('').trim());
-	}
-
-	/**
 	 * @desc Parses the abstract syntax tree for *identifier* expression
 	 * @param {Object} idtNode - An ast Node
 	 * @param {Array} retArr - return array string
@@ -93,22 +75,6 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 
 		return retArr;
 	}
-}
-
-/**
- * @desc [INTERNAL] Takes the near final webgl function string, and do regex search and replacements.
- * For voodoo optimize out the following:
- *
- * - decode32(encode32( <br>
- * - encode32(decode32( <br>
- *
- * @param {String} inStr - The webGl function String
- *
- */
-function webGlRegexOptimize(inStr) {
-	return inStr
-		.replace(DECODE32_ENCODE32, '((')
-		.replace(ENCODE32_DECODE32, '((');
 }
 
 module.exports = {

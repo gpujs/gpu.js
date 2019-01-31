@@ -28,9 +28,7 @@ class Kernel {
 	 * @param [settings]
 	 */
 	constructor(source, settings) {
-		if (typeof source === 'object') {
-			settings = source.settings;
-		} else {
+		if (typeof source !== 'object') {
 			if (typeof source !== 'string') {
 				throw new Error('source not a string');
 			}
@@ -119,23 +117,25 @@ class Kernel {
 		 *
 		 * @type {Boolean}
 		 */
-		this.skipValidateSettings = false;
+		this.skipValidate = false;
 		this.wraparound = null;
 
 		/**
 		 * Enforces kernel to write to a new array or texture on run
 		 * @type {Boolean}
 		 */
-		this.outputImmutable = false;
+		this.immutable = false;
 
 		/**
 		 * Enforces kernel to write to a texture on run
 		 * @type {Boolean}
 		 */
-		this.outputToTexture = false;
-		this.texSize = null;
+		this.pipeline = false;
 
+		this.plugins = null;
+	}
 
+	mergeSettings(settings) {
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
 			this[p] = settings[p];
@@ -145,8 +145,8 @@ class Kernel {
 		}
 		if (!this.canvas) this.canvas = this.initCanvas();
 		if (!this.context) this.context = this.initContext();
+		if (!this.plugins) this.plugins = this.initPlugins(settings);
 	}
-
 	/**
 	 * @desc Builds the Kernel, by compiling Fragment and Vertical Shaders,
 	 * and instantiates the program.
@@ -180,6 +180,15 @@ class Kernel {
 	 */
 	initContext() {
 		throw new Error(`"initContext" not defined on ${ this.constructor.name }`);
+	}
+
+	/**
+	 * @param {IFunctionSettings} settings
+	 * @return {Object};
+	 * @abstract
+	 */
+	initPlugins(settings) {
+		throw new Error(`"initPlugins" not defined on ${ this.constructor.name }`);
 	}
 
 	/**
@@ -264,30 +273,10 @@ class Kernel {
 	}
 
 	/**
-	 * @desc Fix division by factor of 3 FP accuracy bug
-	 * @param {Boolean} fix - should fix
-	 */
-	setFixIntegerDivisionAccuracy(fix) {
-		this.fixIntegerDivisionAccuracy = fix;
-		return this;
-	}
-
-	/**
 	 * @desc Set Constants
 	 */
 	setConstants(constants) {
 		this.constants = constants;
-		return this;
-	}
-
-	setWraparound(flag) {
-		console.warn('Wraparound mode is not supported and undocumented.');
-		this.wraparound = flag;
-		return this;
-	}
-
-	setHardcodeConstants(flag) {
-		this.hardcodeConstants = flag;
 		return this;
 	}
 
@@ -296,8 +285,8 @@ class Kernel {
 	 * @param flag
 	 * @returns {Kernel}
 	 */
-	setOutputToTexture(flag) {
-		this.outputToTexture = flag;
+	setPipeline(flag) {
+		this.pipeline = flag;
 		return this;
 	}
 
@@ -306,31 +295,8 @@ class Kernel {
 	 * @param flag
 	 * @returns {Kernel}
 	 */
-	setOutputImmutable(flag) {
-		this.outputImmutable = flag;
-		return this;
-	}
-
-	/**
-	 * @desc Toggle texture output mode
-	 * @param {Boolean} flag - true to enable floatTextures
-	 */
-	setFloatTextures(flag) {
-		this.floatTextures = flag;
-		return this;
-	}
-
-	/**
-	 * @desc Toggle output mode
-	 * @param {Boolean} flag - true to enable float
-	 */
-	setFloatOutput(flag) {
-		this.floatOutput = flag;
-		return this;
-	}
-
-	setFloatOutputForce(flag) {
-		this.floatOutputForce = flag;
+	setImmutable(flag) {
+		this.immutable = flag;
 		return this;
 	}
 
@@ -352,10 +318,13 @@ class Kernel {
 		return this;
 	}
 
+	setArgumentTypes(argumentTypes) {
+		this.argumentTypes = argumentTypes;
+		return this;
+	}
+
 	/**
-	 * @desc Validate settings related to Kernel, such as
-	 * floatOutputs and Textures, texSize, output,
-	 * graphical output.
+	 * @desc Validate settings
 	 * @abstract
 	 */
 	validateSettings() {
@@ -416,13 +385,13 @@ class Kernel {
 		const settings = {
 			output: this.output,
 			threadDim: this.threadDim,
-			outputToTexture: this.outputToTexture,
+			pipeline: this.pipeline,
 			argumentNames: this.argumentNames,
 			argumentsTypes: this.argumentTypes,
 			argumentsLength: this.argumentsLength,
 			constants: this.constants,
 			constantsLength: this.constantsLength,
-			maxTexSize: this.maxTexSize,
+			pluginNames: this.plugins ? this.plugins.map(plugin => plugin.name) : null,
 		};
 		return {
 			settings

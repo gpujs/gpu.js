@@ -17,7 +17,7 @@ function colorSyntaxTest(mode) {
   )
     .setOutput([4, 4])
     .setGraphical(true)
-    .setOutputToTexture(true);
+    .setPipeline(true);
 
   const readRTexture = gpu.createKernel(
     function(texture) {

@@ -29,6 +29,7 @@ let testContext = null;
 let testExtensions = null;
 let features = null;
 
+const plugins = [require('../../plugins/random-gold-noise')];
 const canvases = [];
 const maxTexSizes = {};
 
@@ -44,7 +45,7 @@ const maxTexSizes = {};
  * @prop {Object} buffer - WebGL buffer
  * @prop {Object} program - The webGl Program
  * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
- * @prop {Boolean} outputToTexture - Set output type to Texture, instead of float
+ * @prop {Boolean} pipeline - Set output type to FAST mode (GPU to GPU via Textures), instead of float
  * @prop {String} endianness - Endian information like Little-endian, Big-endian.
  * @prop {Array} argumentTypes - Types of parameters sent to the Kernel
  * @prop {number} argumentsLength - Number of parameters sent to the Kernel
@@ -126,8 +127,8 @@ class WebGLKernel extends GLKernel {
 		return vertexShader;
 	}
 
-	constructor(fnString, settings) {
-		super(fnString, settings);
+	constructor(source, settings) {
+		super(source, settings);
 		this.textureCache = {};
 		this.threadDim = {};
 		this.programUniformLocationCache = {};
@@ -135,7 +136,7 @@ class WebGLKernel extends GLKernel {
 
 		this.buffer = null;
 		this.program = null;
-		this.outputToTexture = settings.outputToTexture;
+		this.pipeline = settings.pipeline;
 		this.endianness = utils.systemEndianness();
 		this.extensions = {};
 		this.subKernelOutputTextures = null;
@@ -155,11 +156,8 @@ class WebGLKernel extends GLKernel {
 		this.uniform2ivCache = {};
 		this.uniform3fvCache = {};
 		this.uniform3ivCache = {};
-		if (settings.context) {
-			this.context = settings.context;
-		} else {
-			this.context = this.initContext();
-		}
+
+		this.mergeSettings(source.settings || settings);
 	}
 
 	initCanvas() {
@@ -184,6 +182,32 @@ class WebGLKernel extends GLKernel {
 		return context;
 	}
 
+	initPlugins(settings) {
+		// default plugins
+		const pluginsToUse = [];
+
+		if (typeof this.source === 'string') {
+			for (let i = 0; i < plugins.length; i++) {
+				const plugin = plugins[i];
+				if (this.source.match(plugin.functionMatch)) {
+					pluginsToUse.push(plugin);
+				}
+			}
+		} else if (typeof this.source === 'object') {
+			// this.source is from object, json
+			if (settings.pluginNames) {
+				for (let i = 0; i < plugins.length; i++) {
+					const plugin = plugins[i];
+					const usePlugin = settings.pluginNames.some(pluginName => pluginName === plugin.name);
+					if (usePlugin) {
+						pluginsToUse.push(plugin);
+					}
+				}
+			}
+		}
+		return pluginsToUse;
+	}
+
 	initExtensions() {
 		this.extensions = {
 			OES_texture_float: this.context.getExtension('OES_texture_float'),
@@ -194,7 +218,7 @@ class WebGLKernel extends GLKernel {
 	}
 
 	validateSettings() {
-		if (this.skipValidateSettings) {
+		if (this.skipValidate) {
 			this.texSize = utils.dimToTexSize({
 				floatTextures: this.floatTextures,
 				floatOutput: this.floatOutput
@@ -373,7 +397,7 @@ class WebGLKernel extends GLKernel {
 			this._addConstant(this.constants[p], type, p);
 		}
 
-		if (!this.outputImmutable) {
+		if (!this.immutable) {
 			this._setupOutputTexture();
 			if (
 				this.subKernels !== null &&
@@ -408,11 +432,20 @@ class WebGLKernel extends GLKernel {
 			this._addArgument(arguments[texIndex], argumentTypes[texIndex], argumentNames[texIndex]);
 		}
 
+		if (this.plugins) {
+			for (let i = 0; i < this.plugins.length; i++) {
+				const plugin = this.plugins[i];
+				if (plugin.onBeforeRun) {
+					plugin.onBeforeRun(this);
+				}
+			}
+		}
+
 		if (this.graphical) {
-			if (this.outputToTexture) {
+			if (this.pipeline) {
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 				gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-				if (!this.outputTexture || this.outputImmutable) {
+				if (!this.outputTexture || this.immutable) {
 					this._setupOutputTexture();
 				}
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -425,13 +458,13 @@ class WebGLKernel extends GLKernel {
 		}
 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-		if (this.outputImmutable) {
+		if (this.immutable) {
 			this._setupOutputTexture();
 		}
 		const outputTexture = this.outputTexture;
 
 		if (this.subKernels !== null) {
-			if (this.outputImmutable) {
+			if (this.immutable) {
 				this.subKernelOutputTextures = [];
 				this._setupSubOutputTextures(this.subKernels.length);
 			}
@@ -463,14 +496,13 @@ class WebGLKernel extends GLKernel {
 	 *
 	 * @param {Texture} outputTexture - Target to write to
 	 * @returns {Object|Array} result
-	 * @abstract
 	 */
 	renderOutput(outputTexture) {
 		const texSize = this.texSize;
 		const gl = this.context;
 		const threadDim = this.threadDim;
 		const output = this.output;
-		if (this.outputToTexture) {
+		if (this.pipeline) {
 			return new Texture(outputTexture, texSize, this.threadDim, output, this.context);
 		} else {
 			let result;
@@ -707,6 +739,7 @@ class WebGLKernel extends GLKernel {
 		return {
 			HEADER: this._getHeaderString(),
 			LOOP_MAX: this._getLoopMaxString(),
+			PLUGINS: this._getPluginsString(),
 			CONSTANTS: this._getConstantsString(),
 			DECODE32_ENDIANNESS: this._getDecode32EndiannessString(),
 			ENCODE32_ENDIANNESS: this._getEncode32EndiannessString(),
@@ -715,8 +748,8 @@ class WebGLKernel extends GLKernel {
 			GET_TEXTURE_CHANNEL: this._getGetTextureChannelString(),
 			GET_TEXTURE_INDEX: this._getGetTextureIndexString(),
 			GET_RESULT: this._getGetResultString(),
-			MAIN_ARGUMENTS: this._getMainArgumentsString(args),
 			MAIN_CONSTANTS: this._getMainConstantsString(),
+			MAIN_ARGUMENTS: this._getMainArgumentsString(args),
 			KERNEL: this._getKernelString(),
 			MAIN_RESULT: this._getMainResultString()
 		};
@@ -1085,6 +1118,11 @@ class WebGLKernel extends GLKernel {
 			` ${parseInt(this.loopMaxIterations)};\n` :
 			' 1000;\n'
 		);
+	}
+
+	_getPluginsString() {
+		if (!this.plugins) return '\n';
+		return this.plugins.map(plugin => plugin.source && this.source.match(plugin.functionMatch) ? plugin.source : '').join('\n');
 	}
 
 	/**

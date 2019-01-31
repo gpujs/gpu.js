@@ -23,7 +23,7 @@ const A = splitArray(Array.apply(null, Array(matrixSize * matrixSize)).map((_, i
 function readFromTexture(mode) {
   const gpu = new GPU({ mode });
   const noTexture = makeKernel(gpu);
-  const texture = makeKernel(gpu).setOutputToTexture(true);
+  const texture = makeKernel(gpu).setPipeline(true);
 
   const result = noTexture(A);
   const textureResult = texture(A).toArray(gpu);

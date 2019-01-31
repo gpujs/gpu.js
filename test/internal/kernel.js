@@ -55,7 +55,7 @@ test('CPUKernel argumentTypes', () => {
 
 test('WebGLKernel argumentTypes', () => {
   const kernel = new WebGLKernel(`function(value) { return value[this.thread.x]; }`, {
-    skipValidateSettings: true,
+    skipValidate: true,
     output: [1],
     canvas: {},
     context: mockGl,
@@ -75,7 +75,7 @@ test('WebGLKernel argumentTypes', () => {
 
 test('WebGL2Kernel argumentTypes', () => {
   const kernel = new WebGL2Kernel(`function(value) { return value[this.thread.x]; }`, {
-    skipValidateSettings: true,
+    skipValidate: true,
     output: [1],
     canvas: {},
     context: mockGl,

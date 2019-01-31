@@ -110,7 +110,7 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	validateSettings() {
-		if (this.skipValidateSettings) {
+		if (this.skipValidate) {
 			this.texSize = utils.dimToTexSize({
 				floatTextures: this.floatTextures,
 				floatOutput: this.floatOutput
@@ -199,10 +199,10 @@ class WebGL2Kernel extends WebGLKernel {
 		}
 
 		if (this.graphical) {
-			if (this.outputToTexture) {
+			if (this.pipeline) {
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 				gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-				if (!this.outputTexture || this.outputImmutable) {
+				if (!this.outputTexture || this.immutable) {
 					this._setupOutputTexture();
 				}
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -215,13 +215,13 @@ class WebGL2Kernel extends WebGLKernel {
 		}
 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-		if (this.outputImmutable) {
+		if (this.immutable) {
 			this._setupOutputTexture();
 		}
 		const outputTexture = this.outputTexture;
 
 		if (this.subKernels !== null) {
-			if (this.outputImmutable) {
+			if (this.immutable) {
 				this.subKernelOutputTextures = [];
 				this._setupSubOutputTextures(this.subKernels.length);
 			}

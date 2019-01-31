@@ -35,13 +35,13 @@ function cpuKernelString(cpuKernel, name) {
         this.program = null;
         this.argumentNames = ${ JSON.stringify(cpuKernel.argumentNames) };
         this.argumentTypes = ${ JSON.stringify(cpuKernel.argumentTypes) };
-        this.texSize = ${ JSON.stringify(cpuKernel.texSize) };
+        this.argumentSizes = ${ JSON.stringify(cpuKernel.argumentSizes) };
         this.output = ${ JSON.stringify(cpuKernel.output) };
         this._kernelString = \`${ cpuKernel._kernelString }\`;
         this.output = ${ JSON.stringify(cpuKernel.output) };
 		    this.run = function() {
           this.run = null;
-          this.build();
+          this.build(arguments);
           return this.run.apply(this, arguments);
         }.bind(this);
         this.thread = {
@@ -54,7 +54,7 @@ function cpuKernelString(cpuKernel, name) {
       setContext(context) { this.context = context; return this; }
       setInput(Type) { Input = Type; }
       ${ removeFnNoise(cpuKernel.build.toString()) }
-      ${ removeFnNoise(cpuKernel.setupArguments.toString()) }
+      setupArguments() {}
       ${ removeFnNoise(cpuKernel.setupConstants.toString()) }
       run () { ${ cpuKernel.kernelString } }
       getKernelString() { return this._kernelString; }

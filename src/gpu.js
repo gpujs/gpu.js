@@ -320,7 +320,7 @@ class GPU {
 			arguments[i]
 				.setCanvas(canvas)
 				.setContext(context)
-				.setOutputToTexture(true);
+				.setPipeline(true);
 		}
 
 		//TODO: needs moved to kernel
@@ -364,9 +364,6 @@ class GPU {
 	 */
 	addFunction(source, settings) {
 		settings = settings || {};
-		if (this.kernels.length > 0) {
-			throw new Error('Cannot call "addFunction" after "createKernel" has been called.');
-		}
 		if (typeof source !== 'string' && typeof source !== 'function') throw new Error('source not a string or function');
 		const sourceString = typeof source === 'string' ? source : source.toString();
 

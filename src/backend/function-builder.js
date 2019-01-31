@@ -21,6 +21,7 @@ class FunctionBuilder {
 			loopMaxIterations,
 			nativeFunctions,
 			output,
+			plugins
 		} = kernel;
 
 		const onNestedFunction = (fnString) => {
@@ -40,6 +41,7 @@ class FunctionBuilder {
 			debug,
 			loopMaxIterations,
 			output,
+			plugins,
 		}, extraNodeOptions || {});
 
 		const rootNodeOptions = Object.assign({}, nodeOptions, {
@@ -61,7 +63,8 @@ class FunctionBuilder {
 			functionNodes = kernel.functions.map(fn => new FunctionNode(fn.source, {
 				returnType: fn.returnType,
 				argumentTypes: fn.argumentTypes,
-				output: kernel.output
+				output: kernel.output,
+				plugins
 			}));
 		}
 

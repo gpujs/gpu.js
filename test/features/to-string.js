@@ -3,35 +3,25 @@ const { GPU, Input, input, Texture } = require('../../src');
 
 describe('features: toString sumAB');
 function sumABTest(mode, canvas, context) {
-  const gpu = new GPU({ mode, canvas, context });
+  const gpu = new GPU({ mode: 'cpu' });
   const originalKernel = gpu.createKernel(function(a, b) {
     return a[this.thread.x] + b[this.thread.x];
   }, {
     output : [6]
   });
 
-  assert.ok(typeof originalKernel === 'function', 'function generated test');
-
   const a = [1, 2, 3, 5, 6, 7];
   const b = [4, 5, 6, 1, 2, 3];
   const expected = [5, 7, 9, 6, 8, 10];
   const originalResult = originalKernel(a,b);
-  assert.equal(originalResult.length, expected.length);
-  for(let i = 0; i < expected.length; ++i) {
-    assert.equal(originalResult[i], expected[i], 'Result index: ' + i);
-  }
+  assert.deepEqual(Array.from(originalResult), expected);
   const kernelString = originalKernel.toString();
   const newKernel = new Function('return ' + kernelString)()();
   newKernel
     .setContext(originalKernel.context)
     .setCanvas(originalKernel.canvas);
   const newResult = newKernel(a,b);
-
-  assert.equal(newResult.length, expected.length);
-  for(let i = 0; i < expected.length; ++i) {
-    assert.equal(newResult[i], expected[i], 'Result index: ' + i);
-  }
-
+  assert.deepEqual(Array.from(newResult), expected);
   gpu.destroy();
 }
 
@@ -77,7 +67,7 @@ function toStringTextureTest(mode) {
     return a[this.thread.x] / 2;
   }, {
     output: [6],
-    outputToTexture: true
+    pipeline: true
   });
   const numberKernel = gpu.createKernel(function(a) {
     return a[this.thread.x];
@@ -164,7 +154,7 @@ function toStringInputTest(mode) {
     output: [6]
   });
   const originalResult = originalKernel(input(a, [6, 6]));
-  assert.equal(originalResult.length, expected.length);
+  assert.equal(originalResult.length, expected.length, 'outputs are the same');
   for(let i = 0; i < expected.length; ++i) {
     assert.equal(originalResult[i], expected[i], 0.1, 'Result index: ' + i);
   }

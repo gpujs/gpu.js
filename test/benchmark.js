@@ -18,7 +18,7 @@ const myGPUFunc = gpuRunner
     const j = 0.89;
     return i + j;
   })
-  .setOutputToTexture(true)
+  .setPipeline(true)
   .setOutput([size, size]);
 
 

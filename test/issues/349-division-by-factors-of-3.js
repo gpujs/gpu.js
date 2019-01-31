@@ -7,9 +7,10 @@ function testDivideByThree(mode) {
 	const gpu = new GPU({mode});
 	const k = gpu.createKernel(function (v1, v2) {
 		return v1 / v2;
-	})
-		.setOutput([1])
-		.setFloatOutput(true);
+	}, {
+		output: [1],
+		floatOutput: true
+	});
 	assert.equal(k(6, 3)[0], 2);
 	gpu.destroy();
 }
@@ -54,9 +55,10 @@ function someRandomWholeNumberDivisions(mode) {
 	const gpu = new GPU({mode});
 	const k = gpu.createKernel(function (v1, v2) {
 		return v1[this.thread.x] / v2[this.thread.x];
-	})
-		.setOutput([DATA_MAX])
-		.setFloatOutput(true);
+	}, {
+		output: [DATA_MAX],
+		floatOutput: true
+	});
 	const result = k(dividendData, divisorData);
 	let same = true;
 	let i = 0;
@@ -95,16 +97,15 @@ function testDisableFixIntegerDivisionBug(mode) {
 	const gpu = new GPU({mode});
 	const idFix = gpu.createKernel(function(v1, v2) {
 		return v1 / v2;
-	})
-		.setOutput([1])
-		.setFloatOutput(true);
+	}, { floatOutput: true, output: [1] });
 
 	const idDixOff = gpu.createKernel(function(v1, v2) {
 		return v1 / v2;
-	})
-		.setOutput([1])
-		.setFloatOutput(true)
-		.setFixIntegerDivisionAccuracy(false);
+	}, {
+		output: [1],
+		floatOutput: true,
+		fixIntegerDivisionAccuracy: false
+	});
 
 	if (!gpu.Kernel.features.isIntegerDivisionAccurate) {
 		assert.ok(

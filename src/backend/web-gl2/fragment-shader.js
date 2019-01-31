@@ -6,6 +6,7 @@ precision highp sampler2D;
 
 const int LOOP_MAX = __LOOP_MAX__;
 
+__PLUGINS__;
 __CONSTANTS__;
 
 in vec2 vTexCoord;

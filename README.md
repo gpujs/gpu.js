@@ -101,7 +101,7 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
 * `output`: array or object that describes the output of kernel.
   * as array: `[width]`, `[width, height]`, or `[width, height, depth]`
   * as object: `{ x: width, y: height, z: depth }`
-* outputToTexture: boolean
+* pipeline: boolean
 * graphical: boolean
 * loopMaxIterations: number
 * constants: object
@@ -113,7 +113,7 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
 * functions: array or object
 * nativeFunctions: object
 * subKernels: array
-* outputImmutable: boolean
+* immutable: boolean
   * default to `false`
 
 
@@ -497,7 +497,7 @@ const matMult = gpu.createKernel(function(a, b) {
 
 ## Pipelining
 [Pipeline](https://en.wikipedia.org/wiki/Pipeline_(computing)) is a feature where values are sent directly from kernel to kernel via a texture.
-This results in extremely fast computing.  This is achieved with the kernel option `outputToTexture: boolean` option or by calling `kernel.setOutputToTexture(true)`
+This results in extremely fast computing.  This is achieved with the kernel option `pipeline: boolean` option or by calling `kernel.pipeline(true)`
 
 ## Offscreen Canvas
 GPU.js supports offscreen canvas where available.  Here is an example of how to use it with two files, `gpu-worker.js`, and `index.js`:

@@ -9,7 +9,7 @@ function test1D(mode) {
       return 200;
     })
     .setOutput([2])
-    .setOutputToTexture(true);
+    .setPipeline(true);
   const texture = createTexture();
   const tryConst = gpu.createKernel(
     function() {
@@ -59,7 +59,7 @@ function test2D(mode) {
       return 200;
     })
     .setOutput([2, 2])
-    .setOutputToTexture(true);
+    .setPipeline(true);
   const texture = createTexture();
   const tryConst = gpu.createKernel(
     function() {
@@ -108,7 +108,7 @@ function test3D(mode) {
       return 200;
     })
     .setOutput([2, 2, 2])
-    .setOutputToTexture(true);
+    .setPipeline(true);
   const texture = createTexture();
   const tryConst = gpu.createKernel(
     function() {

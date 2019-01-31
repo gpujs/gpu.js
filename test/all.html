@@ -12,6 +12,7 @@
 <div id="qunit"></div>
 <div id="qunit-fixture"></div>
   <script>
+    const testOffscreeenCanvas = true;
     const browserGPU = { GPU };
     for (const p in GPU) {
       if (p === 'GPU') continue;
@@ -65,9 +66,11 @@
   <script type="module" src="internal/context-inheritance.js"></script>
   <script type="module" src="internal/function-builder.js"></script>
   <script type="module" src="internal/function-node.js"></script>
+  <script type="module" src="internal/kernel.js"></script>
   <script type="module" src="internal/loop-int.js"></script>
   <script type="module" src="internal/loop-max.js"></script>
   <script type="module" src="internal/utils.js"></script>
+  <script type="module" src="internal/math.random.js"></script>
   <script type="module" src="internal/modes.js"></script>
   <script type="module" src="internal/precision.js"></script>
   <script type="module" src="internal/utils.js"></script>

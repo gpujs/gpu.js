@@ -1,7 +1,7 @@
-if (typeof document === 'undefined') {
+if (typeof importScripts !== 'undefined') {
   // inside Worker
-  let GPU;
-  function offscreenTest() {
+  importScripts('../../bin/gpu-browser.js');
+  onmessage = function (e) {
     const gpu = new GPU();
     const a = [1,2,3];
     const b = [3,2,1];
@@ -11,16 +11,8 @@ if (typeof document === 'undefined') {
       .setOutput([3]);
     postMessage({ mode: gpu.mode, result: kernel(a, b) });
     gpu.destroy();
-  }
-  if (typeof require !== 'undefined') {
-    GPU = require('../../bin/gpu-browser.js');
-  } else {
-    importScripts('../../bin/gpu-browser.js');
-    onmessage = function (e) {
-      offscreenTest();
-    };
-  }
-} else {
+  };
+} else if (typeof testOffscreeenCanvas !== 'undefined' && testOffscreeenCanvas) {
   const { assert, skip, test, module: describe } = require('qunit');
   describe('offscreen canvas');
 

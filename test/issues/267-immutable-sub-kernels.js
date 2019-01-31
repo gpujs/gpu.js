@@ -9,8 +9,8 @@ function immutableKernel(mode) {
     return v[this.thread.x] + 1;
   }, {
     output: [1],
-    outputImmutable: true,
-    outputToTexture: true
+    immutable: true,
+    pipeline: true
   });
 
   // start with a value on CPU
@@ -76,8 +76,8 @@ function immutableSubKernels(mode) {
     },
     {
       output: [1],
-      outputImmutable: true,
-      outputToTexture: true
+      immutable: true,
+      pipeline: true
     }
   );
 
@@ -142,8 +142,8 @@ function immutableKernelsMixed(mode) {
     },
     {
       output: [1],
-      outputImmutable: true,
-      outputToTexture: true
+      immutable: true,
+      pipeline: true
     }
   );
 

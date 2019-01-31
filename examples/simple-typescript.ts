@@ -1,5 +1,4 @@
-import {GPU} from "../src";
-import {KernelFunction, IKernel} from "../index";
+import {GPU, KernelFunction, IKernelRunShortcut} from "../src";
 
 const gpu = new GPU({ mode: 'gpu' });
 
@@ -13,6 +12,6 @@ const kernel: IKernel = gpu.createKernel(kernelFunction, {
   output: [1]
 });
 
-const result = kernel(1.25, [.25], [[1.25]]);
+const result = kernel(4, [5], [[6]], [[[7]]]);
 
-console.log(result[0]); // 3
+console.log(result[0]);
