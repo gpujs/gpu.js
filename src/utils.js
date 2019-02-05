@@ -1,5 +1,9 @@
-const { Input } = require('./input');
-const { Texture } = require('./texture');
+const {
+	Input
+} = require('./input');
+const {
+	Texture
+} = require('./texture');
 
 const FUNCTION_NAME = /function ([^(]*)/;
 const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
@@ -234,7 +238,7 @@ const utils = {
 	 * @param {Array|*} array
 	 * @param {Float32Array|Float64Array} target
 	 */
-	 flattenTo(array, target) {
+	flattenTo(array, target) {
 		if (utils.isArray(array[0])) {
 			if (utils.isArray(array[0][0])) {
 				utils.flatten3dArrayTo(array, target);

@@ -819,22 +819,31 @@ class WebGLFunctionNode extends FunctionNode {
 				return retArr;
 			case 'this.output.value':
 				switch (mNode.property.name) {
-					case 'x': retArr.push(this.output[0]); break;
-					case 'y': retArr.push(this.output[1]); break;
-					case 'z': retArr.push(this.output[2]); break;
+					case 'x':
+						retArr.push(this.output[0]);
+						break;
+					case 'y':
+						retArr.push(this.output[1]);
+						break;
+					case 'z':
+						retArr.push(this.output[2]);
+						break;
 				}
 				return retArr;
-			case 'value': {
+			case 'value':
+				{
 					throw this.astErrorOutput('Unexpected expression', mNode);
 				}
-			case 'value[]': {
+			case 'value[]':
+				{
 					if (typeof mNode.object.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
 					name = 'user_' + mNode.object.name;
 					type = this.getVariableType(mNode.object.name);
 					xProperty = mNode.property;
 					break;
 				}
-			case 'value[][]': {
+			case 'value[][]':
+				{
 					if (typeof mNode.object.object.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
 					name = 'user_' + mNode.object.object.name;
 					type = this.getVariableType(mNode.object.object.name);
@@ -842,7 +851,8 @@ class WebGLFunctionNode extends FunctionNode {
 					xProperty = mNode.property;
 					break;
 				}
-			case 'value[][][]': {
+			case 'value[][][]':
+				{
 					if (typeof mNode.object.object.object.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
 					name = 'user_' + mNode.object.object.object.name;
 					type = this.getVariableType(mNode.object.object.object.name);
@@ -851,30 +861,41 @@ class WebGLFunctionNode extends FunctionNode {
 					xProperty = mNode.property;
 					break;
 				}
-			case 'value.value': {
-				if (typeof mNode.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-				if (this.isAstMathVariable(mNode)) {
-					retArr.push(Math[mNode.property.name]);
-					return retArr;
+			case 'value.value':
+				{
+					if (typeof mNode.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
+					if (this.isAstMathVariable(mNode)) {
+						retArr.push(Math[mNode.property.name]);
+						return retArr;
+					}
+					switch (mNode.property.name) {
+						case 'r':
+							retArr.push(`user_${ mNode.object.name }.r`);
+							return retArr;
+						case 'g':
+							retArr.push(`user_${ mNode.object.name }.g`);
+							return retArr;
+						case 'b':
+							retArr.push(`user_${ mNode.object.name }.b`);
+							return retArr;
+						case 'a':
+							retArr.push(`user_${ mNode.object.name }.a`);
+							return retArr;
+					}
+					break;
 				}
-				switch (mNode.property.name) {
-					case 'r': retArr.push(`user_${ mNode.object.name }.r`); return retArr;
-					case 'g': retArr.push(`user_${ mNode.object.name }.g`); return retArr;
-					case 'b': retArr.push(`user_${ mNode.object.name }.b`); return retArr;
-					case 'a': retArr.push(`user_${ mNode.object.name }.a`); return retArr;
+			case 'this.constants.value':
+				{
+					if (typeof mNode.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
+					name = 'constants_' + mNode.property.name;
+					type = this.getConstantType(mNode.property.name);
+					if (!type) {
+						throw this.astErrorOutput('Constant has no type', mNode);
+					}
+					break;
 				}
-				break;
-			}
-			case 'this.constants.value': {
-				if (typeof mNode.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-				name = 'constants_' + mNode.property.name;
-				type = this.getConstantType(mNode.property.name);
-				if (!type) {
-					throw this.astErrorOutput('Constant has no type', mNode);
-				}
-				break;
-			}
-			case 'this.constants.value[]': {
+			case 'this.constants.value[]':
+				{
 					if (typeof mNode.object.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
 					name = 'constants_' + mNode.object.property.name;
 					type = this.getConstantType(mNode.object.property.name);
@@ -884,7 +905,8 @@ class WebGLFunctionNode extends FunctionNode {
 					xProperty = mNode.property;
 					break;
 				}
-			case 'this.constants.value[][]': {
+			case 'this.constants.value[][]':
+				{
 					if (typeof mNode.object.object.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
 					name = 'constants_' + mNode.object.object.property.name;
 					type = this.getConstantType(mNode.object.object.property.name);
@@ -895,7 +917,8 @@ class WebGLFunctionNode extends FunctionNode {
 					xProperty = mNode.property;
 					break;
 				}
-			case 'this.constants.value[][][]': {
+			case 'this.constants.value[][][]':
+				{
 					if (typeof mNode.object.object.object.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
 					name = 'constants_' + mNode.object.object.object.property.name;
 					type = this.getConstantType(mNode.object.object.object.property.name);
@@ -1345,8 +1368,8 @@ class WebGLFunctionNode extends FunctionNode {
 
 	getMemberExpressionPropertyMarkup(property) {
 		if (!property) {
-		  throw new Error('Property not set');
-    }
+			throw new Error('Property not set');
+		}
 		const type = this.firstAvailableTypeFromAst(property);
 		const result = [];
 		if (type === 'Number') {
