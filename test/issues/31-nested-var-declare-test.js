@@ -1,4 +1,4 @@
-const { assert, skip, test, module: describe } = require('qunit');
+const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU, FunctionBuilder, WebGLFunctionNode, WebGL2FunctionNode, CPUFunctionNode } = require('../../src');
 
 describe('issue #31 redeclare');
@@ -106,7 +106,7 @@ function nestedVarDeclareTest(mode ) {
     output : [1]
   });
 
-  assert.equal(f(), 200, 0, 'basic return function test');
+  assert.equal(f(), 200, 'basic return function test');
   gpu.destroy();
 }
 

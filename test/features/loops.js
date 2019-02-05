@@ -1,4 +1,4 @@
-const { assert, skip, test, module: describe } = require('qunit');
+const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('loops - for');
@@ -121,8 +121,6 @@ function whileLoopTest(mode) {
   }, {
     output : [6]
   });
-
-  assert.ok( f !== null, 'function generated test');
 
   const a = [1, 2, 3, 5, 6, 7];
   const b = [4, 5, 6, 1, 2, 3];

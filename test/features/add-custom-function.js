@@ -1,4 +1,4 @@
-const { assert, skip, test, module: describe } = require('qunit');
+const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('features: add custom function');
@@ -23,10 +23,7 @@ function addAB(mode) {
   const result = kernel(a, b);
   const expected = [5, 7, 9, 6, 8, 10];
 
-  assert.equal(result.length, expected.length);
-  for (let i = 0; i < expected.length; ++i) {
-    assert.equal(result[i], expected[i], 0.1, 'Result array index: ' + i);
-  }
+  assert.deepEqual(Array.from(result), expected);
   gpu.destroy();
 }
 
@@ -84,10 +81,7 @@ function sumAB(mode) {
   const result = kernel(a , b);
   const expected = [12, 18, 24, 36, 42, 48];
 
-  assert.equal(result.length, expected.length);
-  for (let i = 0; i < expected.length; ++i) {
-    assert.equal(result[i], expected[i], 0.1, 'Result array index: ' + i);
-  }
+  assert.deepEqual(Array.from(result), expected);
   gpu.destroy();
 }
 
@@ -141,10 +135,7 @@ function sumABThisOutputX(mode) {
   const result = kernel(a,b);
   const expected = [12, 18, 24, 36, 42, 48];
 
-  assert.equal(result.length, expected.length);
-  for(let i = 0; i < expected.length; ++i) {
-    assert.equal(result[i], expected[i], 0.1, 'Result array index: '+i);
-  }
+  assert.deepEqual(Array.from(result), expected);
   gpu.destroy();
 }
 

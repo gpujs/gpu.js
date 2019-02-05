@@ -198,6 +198,15 @@ class WebGL2Kernel extends WebGLKernel {
 			this._addArgument(arguments[texIndex], argumentTypes[texIndex], argumentNames[texIndex]);
 		}
 
+		if (this.plugins) {
+			for (let i = 0; i < this.plugins.length; i++) {
+				const plugin = this.plugins[i];
+				if (plugin.onBeforeRun) {
+					plugin.onBeforeRun(this);
+				}
+			}
+		}
+
 		if (this.graphical) {
 			if (this.pipeline) {
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);
@@ -506,7 +515,7 @@ class WebGL2Kernel extends WebGLKernel {
 			for (let name in this.constants) {
 				if (!this.constants.hasOwnProperty(name)) continue;
 				let value = this.constants[name];
-				let type = utils.getVariableType(value, true);
+				let type = utils.getVariableType(value);
 				switch (type) {
 					case 'Integer':
 						result.push('const int constants_' + name + ' = ' + parseInt(value));
@@ -820,8 +829,10 @@ class WebGL2Kernel extends WebGLKernel {
 						`uniform highp ivec2 user_${ name }Size`,
 						`uniform highp ivec3 user_${ name }Dim`
 					);
-				} else if (type === 'Integer' || type === 'Float') {
+				} else if (type === 'Integer' || type === 'Float' || type === 'Number') {
 					result.push(`uniform float user_${ name }`);
+				} else {
+					throw new Error(`Param type ${type} not supported in WebGL2`);
 				}
 			}
 		}

@@ -11,8 +11,8 @@ const acorn = require('acorn');
 class FunctionNode {
 	/**
 	 *
-	 * @param {string} source
-	 * @param {IFunctionSettings} settings
+	 * @param {string|object} source
+	 * @param {IFunctionSettings} [settings]
 	 */
 	constructor(source, settings) {
 		if (!source) {
@@ -38,18 +38,17 @@ class FunctionNode {
 		this.onNestedFunction = null;
 		this.loopMaxIterations = null;
 		this.argumentNames = (typeof this.source === 'string' ? utils.getArgumentNamesFromString(this.source) : null);
-		this.argumentTypes = {};
+		this.argumentTypes = [];
 		this.argumentSizes = [];
 		this.returnType = null;
 		this.output = [];
 		this.plugins = null;
 
 		if (settings) {
-			for (const p in this) {
+			for (const p in settings) {
+				if (!settings.hasOwnProperty(p)) continue;
 				if (!this.hasOwnProperty(p)) continue;
-				if (settings[p]) {
-					this[p] = settings[p];
-				}
+				this[p] = settings[p];
 			}
 		}
 
@@ -74,12 +73,7 @@ class FunctionNode {
 		}
 
 		if (this.argumentTypes.length > 0 && this.argumentTypes.length !== this.argumentNames.length) {
-			throw new Error(
-				'Invalid argument type array length, against function length -> (' +
-				this.argumentTypes.length + ',' +
-				this.argumentNames.length +
-				')'
-			);
+			throw new Error(`argumentTypes count of ${ this.argumentTypes.length } exceeds ${ this.argumentNames.length }`);
 		}
 
 		if (this.output.length < 1) {
@@ -198,37 +192,43 @@ class FunctionNode {
 
 	/**
 	 * @desc Return the type of parameter sent to subKernel/Kernel.
-	 * @param {String} argumentName - Name of the parameter
+	 * @param {String} name - Name of the parameter
 	 * @returns {String} Type of the parameter
 	 */
-	getVariableType(argumentName) {
-		const argumentIndex = this.argumentNames.indexOf(argumentName);
+	getVariableType(name) {
+		let type = null;
+		const argumentIndex = this.argumentNames.indexOf(name);
 		if (argumentIndex === -1) {
-			if (this.declarations.hasOwnProperty(argumentName)) {
-				return this.declarations[argumentName];
-			} else {
-				return 'Number';
+			if (this.declarations[name]) {
+				return this.declarations[name];
 			}
 		} else {
-			if (!this.parent) {
-				if (this.argumentTypes[argumentIndex]) return this.argumentTypes[argumentIndex];
-			} else {
-				if (this.argumentTypes[argumentIndex]) return this.argumentTypes[argumentIndex];
+			const argumentType = this.argumentTypes[argumentIndex];
+			if (argumentType) {
+				type = argumentType;
+			} else if (this.parent) {
 				const calledFunctionArguments = this.parent.calledFunctionsArguments[this.name];
 				for (let i = 0; i < calledFunctionArguments.length; i++) {
 					const calledFunctionArgument = calledFunctionArguments[i];
 					if (calledFunctionArgument[argumentIndex] !== null) {
-						return this.argumentTypes[argumentIndex] = calledFunctionArgument[argumentIndex].type;
+						type = calledFunctionArgument[argumentIndex].type;
+						this.argumentTypes[argumentIndex] = type;
+						break;
 					}
 				}
 			}
 		}
-		return 'Number';
+		return type === 'Float' ? 'Number' : type;
 	}
 
 	getConstantType(constantName) {
 		if (this.constantTypes[constantName]) {
-			return this.constantTypes[constantName];
+			const type = this.constantTypes[constantName];
+			if (type === 'Float') {
+				return 'Number';
+			} else {
+				return type;
+			}
 		}
 		return null;
 	}

@@ -1,4 +1,4 @@
-const { assert, skip, test, module: describe } = require('qunit');
+const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('Math.random() unique');
@@ -32,23 +32,23 @@ test('unique every time auto', () => {
   mathRandomUnique();
 });
 
-test('unique every time  gpu', () => {
+test('unique every time gpu', () => {
   mathRandomUnique('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('unique every time  webgl', () => {
+(GPU.isWebGLSupported ? test : skip)('unique every time webgl', () => {
   mathRandomUnique('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('unique every time  webgl2', () => {
+(GPU.isWebGL2Supported ? test : skip)('unique every time webgl2', () => {
   mathRandomUnique('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('unique every time  headlessgl', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('unique every time headlessgl', () => {
   mathRandomUnique('headlessgl');
 });
 
-test('unique every time  cpu', () => {
+test('unique every time cpu', () => {
   mathRandomUnique('cpu');
 });
 

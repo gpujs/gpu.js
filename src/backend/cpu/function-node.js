@@ -6,25 +6,8 @@ const {
  * @desc [INTERNAL] Represents a single function, inside JS
  *
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
- *
- * @prop jsFunction           - {Function}  The JS Function the node represents
- * @prop source     - {String}    jsFunction.toString()
- * @prop argumentNames           - {String[]}  Parameter names of the function
- * @prop argumentTypes           - {String[]}  Shader land parameters type assumption
- * @prop isRootKernel         - {Boolean}   Special indicator, for kernel function
- * @prop calledFunctions      - {String[]}  List of all the functions called
- * @prop initVariables        - {String[]}  List of variables initialized in the function
- * @prop readVariables        - {String[]}  List of variables read operations occur
- * @prop writeVariables       - {String[]}  List of variables write operations occur
- *
  */
 class CPUFunctionNode extends FunctionNode {
-
-	/**
-	 *
-	 * @param {string} fn
-	 * @param {object} settings
-	 */
 	constructor(fn, settings) {
 		settings = settings || {};
 		super(fn, settings);

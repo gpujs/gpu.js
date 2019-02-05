@@ -1,15 +1,12 @@
 const {
 	WebGLFunctionNode
 } = require('../web-gl/function-node');
-const DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
-const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
 
 /**
  * @class WebGL2FunctionNode
  * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective webGL code.
  * @extends WebGLFunctionNode
  * @returns the converted webGL function string
- *
  */
 class WebGL2FunctionNode extends WebGLFunctionNode {
 

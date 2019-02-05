@@ -1,9 +1,5 @@
-const {
-	Input
-} = require('./input');
-const {
-	Texture
-} = require('./texture');
+const { Input } = require('./input');
+const { Texture } = require('./texture');
 
 const FUNCTION_NAME = /function ([^(]*)/;
 const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
@@ -119,17 +115,16 @@ const utils = {
 	/**
 	 * @desc Evaluate the argument type, to apply respective logic for it
 	 * @param {Object} value - The argument object to evaluate type
-	 * @param {Boolean} [isConstant]
 	 * @returns {String}  Argument type Array/Number/Float/Texture/Unknown
 	 */
-	getVariableType(value, isConstant) {
+	getVariableType(value) {
 		if (utils.isArray(value)) {
 			if (value[0].nodeName === 'IMG') {
 				return 'HTMLImageArray';
 			}
 			return 'Array';
 		} else if (typeof value === 'number') {
-			if (isConstant && Number.isInteger(value)) {
+			if (Number.isInteger(value)) {
 				return 'Integer';
 			}
 			return 'Float';
@@ -239,7 +234,7 @@ const utils = {
 	 * @param {Array|*} array
 	 * @param {Float32Array|Float64Array} target
 	 */
-	flattenTo(array, target) {
+	 flattenTo(array, target) {
 		if (utils.isArray(array[0])) {
 			if (utils.isArray(array[0][0])) {
 				utils.flatten3dArrayTo(array, target);

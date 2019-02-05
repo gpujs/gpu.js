@@ -84,8 +84,6 @@ function divideOverride(mode) {
     output : [6]
   });
 
-  assert.ok(kernel !== null, 'function generated test');
-
   const a = [1, 4, 3, 5, 6, 3];
   const b = [4, 2, 6, 1, 2, 3];
 
@@ -96,22 +94,22 @@ function divideOverride(mode) {
   gpu.destroy();
 }
 
-test('divideFallback (GPU only) auto', () => {
+test('divideOverride (GPU only) auto', () => {
   divideOverride(null);
 });
 
-test('divideFallback (GPU only) gpu', () => {
+test('divideOverride (GPU only) gpu', () => {
   divideOverride('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('divideFallback (GPU only) webgl', () => {
+(GPU.isWebGLSupported ? test : skip)('divideOverride (GPU only) webgl', () => {
   divideOverride('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('divideFallback (GPU only) webgl2', () => {
+(GPU.isWebGL2Supported ? test : skip)('divideOverride (GPU only) webgl2', () => {
   divideOverride('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('divideFallback (GPU only) headlessgl', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('divideOverride (GPU only) headlessgl', () => {
   divideOverride('headlessgl');
 });

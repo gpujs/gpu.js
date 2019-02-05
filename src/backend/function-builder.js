@@ -60,11 +60,13 @@ class FunctionBuilder {
 
 		let functionNodes = null;
 		if (kernel.functions) {
-			functionNodes = kernel.functions.map(fn => new FunctionNode(fn.source, {
+			functionNodes = kernel.functions.map((fn) => new FunctionNode(fn.source, {
 				returnType: fn.returnType,
 				argumentTypes: fn.argumentTypes,
 				output: kernel.output,
-				plugins
+				plugins,
+				constants,
+				constantTypes,
 			}));
 		}
 

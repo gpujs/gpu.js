@@ -1,7 +1,7 @@
-const { assert, skip, test, module: describe } = require('qunit');
+const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../src');
 
-describe('issue # 147');
+describe('issue #147');
 
 function missingConstant(mode) {
   const gpu = new GPU({ mode });

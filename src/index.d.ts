@@ -1,11 +1,13 @@
 export class GPU {
+  static isGPUSupported: boolean;
   static isCanvasSupported: boolean;
   static isHeadlessGLSupported: boolean;
   static isWebGLSupported: boolean;
   static isWebGL2Supported: boolean;
+  static isKernelMapSupported: boolean;
   constructor(settings?: IGPUSettings);
-  functions: IFunction[];
-  nativeFunctions: INativeFunction[];
+  functions: IGPUFunction[];
+  nativeFunctions: IGPUNativeFunction[];
   addFunction(kernel: KernelFunction, settings?: IGPUFunctionSettings);
   addNativeFunction(name: string, source: string);
   combineKernels(): KernelFunction;
@@ -16,6 +18,16 @@ export class GPU {
   mode: string;
   canvas: any;
   context: any;
+}
+
+export interface IGPUFunction extends IFunctionSettings {
+  source: string;
+}
+
+export interface IGPUNativeFunction {
+  name: string;
+  source: string;
+  settings: object;
 }
 
 export interface INativeFunction {
@@ -48,12 +60,12 @@ export interface IGPUArgumentTypes {
 }
 
 export interface IGPUFunctionSettings {
-  argumentTypes: IGPUArgumentTypes,
+  argumentTypes?: IGPUArgumentTypes,
   returnType: GPUVariableType;
 }
 
 export class Kernel {
-  static isSupported(): boolean;
+  static isSupported: boolean;
   static isContextMatch(context: any): boolean;
   static features: IKernelFeatures;
   source: string | object;
@@ -129,11 +141,15 @@ export class Kernel {
 }
 
 export interface IConstants {
-  [constantName: string]: KernelVariable
+  [constantName: string]: KernelVariable;
+}
+
+export interface IConstantTypes {
+  [constantType: string]: string;
 }
 
 export interface IConstantsThis {
-  [constantName: string]: ThreadKernelVariable
+  [constantName: string]: ThreadKernelVariable;
 }
 
 export interface IKernelXYZ {
@@ -192,7 +208,7 @@ export interface IKernelFunctionThis {
 export type KernelVariable = number | number[] | number[][] | number[][][] | Texture | HTMLImageElement | HTMLImageElement[];
 
 export type ThreadKernelVariable = number | number[] | number[][] | number[][][];
-export type KernelFunction = (
+export type KernelFunction = ((
   this: IKernelFunctionThis,
   arg1?: ThreadKernelVariable,
   arg2?: ThreadKernelVariable,
@@ -214,7 +230,7 @@ export type KernelFunction = (
   arg18?: ThreadKernelVariable,
   arg19?: ThreadKernelVariable,
   arg20?: ThreadKernelVariable,
-) => KernelOutput;
+) => KernelOutput) | object | string;
 
 export type KernelOutput = void | KernelVariable;
 
@@ -226,12 +242,12 @@ export interface IFunction {
 export interface IFunctionSettings {
   name?: string;
   debug?: boolean;
-  argumentNames: string[];
-  argumentTypes: string[];
-  argumentSizes: number[];
+  argumentNames?: string[];
+  argumentTypes?: string[];
+  argumentSizes?: number[];
 
   constants?: IConstants;
-  constantTypes?: string[];
+  constantTypes?: IConstantTypes;
 
   output?: number[];
   loopMaxIterations?: number;
@@ -255,8 +271,8 @@ export class FunctionBuilder {
   constructor(settings: IFunctionSettings);
   addFunctionNode(functionNode: FunctionNode);
   traceFunctionCalls(functionName: string): string[];
-  getStringFromFunctionNames(functionName?: string): string;
-  getPrototypesFromFunctionNames(functionName?: string): string[];
+  getStringFromFunctionNames(functionName?: string[]): string;
+  getPrototypesFromFunctionNames(functionName?: string[]): string[];
 }
 
 
@@ -267,7 +283,7 @@ export interface IFunctionBuilderSettings {
   nativeFunctions?: INativeFunction[];
 }
 
-export class FunctionNode {}
+export class FunctionNode implements IFunctionSettings {}
 
 export class Texture {
 

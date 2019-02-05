@@ -1,4 +1,4 @@
-const { assert, test, module: describe } = require('qunit');
+const { assert, test, module: describe, only } = require('qunit');
 const { FunctionBuilder, CPUFunctionNode, WebGL2FunctionNode, WebGLFunctionNode } = require('../../src');
 
 describe('internal: function builder');
@@ -119,7 +119,7 @@ test('webglString: 3 layer test webgl', () => {
   );
 });
 
-test('webglString: 3 layer test webgl', () => {
+test('webglString: 3 layer test webgl2', () => {
   const builder = threeLayerTemplate(WebGL2FunctionNode);
   assert.notEqual(builder, null, 'class creation check');
 

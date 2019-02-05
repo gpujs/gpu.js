@@ -97,7 +97,7 @@ class Kernel {
 
 		/**
 		 *
-		 * @type {IFunction[]}
+		 * @type {IGPUFunction[]}
 		 */
 		this.functions = null;
 
@@ -202,8 +202,8 @@ class Kernel {
 		this.argumentSizes = [];
 		for (let i = 0; i < args.length; i++) {
 			const arg = args[i];
-
-			this.argumentTypes.push(utils.getVariableType(arg));
+			const argType = utils.getVariableType(arg);
+			this.argumentTypes.push(argType === 'Integer' ? 'Number' : argType);
 			this.argumentSizes.push(arg.constructor === Input ? arg.size : null);
 		}
 
@@ -219,7 +219,7 @@ class Kernel {
 		this.constantTypes = {};
 		if (this.constants) {
 			for (let p in this.constants) {
-				this.constantTypes[p] = utils.getVariableType(this.constants[p], true);
+				this.constantTypes[p] = utils.getVariableType(this.constants[p]);
 			}
 		}
 	}

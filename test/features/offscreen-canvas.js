@@ -12,7 +12,7 @@ if (typeof importScripts !== 'undefined') {
     postMessage({ mode: gpu.mode, result: kernel(a, b) });
     gpu.destroy();
   };
-} else if (typeof testOffscreeenCanvas !== 'undefined' && testOffscreeenCanvas) {
+} else if (typeof isBrowser !== 'undefined' && isBrowser) {
   const { assert, skip, test, module: describe } = require('qunit');
   describe('offscreen canvas');
 

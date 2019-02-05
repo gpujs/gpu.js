@@ -43,13 +43,21 @@ class GPU {
 		return kernelOrder.some(Kernel => Kernel.isSupported);
 	}
 
+	/**
+	 *
+	 * @returns {boolean}
+	 */
 	static get isKernelMapSupported() {
 		return kernelOrder.some(Kernel => Kernel.isSupported && Kernel.features.kernelMap);
 	}
 
+	/**
+	 * @desc TRUE is platform supports OffscreenCanvas
+	 */
 	static get isOffscreenCanvasSupported() {
 		return (typeof Worker !== 'undefined' && typeof OffscreenCanvas !== 'undefined') || typeof importScripts !== 'undefined';
 	}
+
 	/**
 	 * @desc TRUE if platform supports WebGL
 	 */
@@ -359,7 +367,7 @@ class GPU {
 	/**
 	 * @desc Adds additional functions, that the kernel may call.
 	 * @param {Function|String} source - Javascript function to convert
-	 * @param {IGPUFunctionSettings} [settings]
+	 * @param {IFunctionSettings} [settings]
 	 * @returns {GPU} returns itself
 	 */
 	addFunction(source, settings) {
@@ -367,10 +375,18 @@ class GPU {
 		if (typeof source !== 'string' && typeof source !== 'function') throw new Error('source not a string or function');
 		const sourceString = typeof source === 'string' ? source : source.toString();
 
+		let argumentTypes = [];
+
+		if (typeof settings.argumentTypes === 'object') {
+			argumentTypes = utils.getArgumentNamesFromString(sourceString)
+				.map(name => settings.argumentTypes[name]) || [];
+		} else {
+			argumentTypes = settings.argumentTypes || [];
+		}
+
 		this.functions.push({
 			source: sourceString,
-			argumentTypes: typeof settings.argumentTypes === 'object' ?
-				utils.getArgumentNamesFromString(sourceString).map(name => settings.argumentTypes[name]) : settings.argumentTypes,
+			argumentTypes,
 			returnType: settings.returnType
 		});
 		return this;

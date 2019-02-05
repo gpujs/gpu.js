@@ -1,4 +1,4 @@
-const { assert, test, module: describe } = require('qunit');
+const { assert, test, module: describe, only } = require('qunit');
 const { WebGLFunctionNode, WebGL2FunctionNode, CPUFunctionNode } = require('../../src');
 
 describe('features: type management');
@@ -529,12 +529,12 @@ test('arrays inherited - Array(4) webgl2', () => {
     array3[1] = array[1] * array2[1];
     return array3;
   }).toString(), { argumentTypes: ['Array(4)', 'Array(4)'], returnType: 'Array(4)', output: [1] });
-  assert.equal(node.toString(), 'vec4 inherited(vec4 user_array, vec4 user_array2) {\n\
-vec4 user_array3=vec4(0.0, 0.0, 0.0, 0.0);\n\
-user_array3[0]=user_array[0];\n\
-user_array3[1]=(user_array[1]*user_array2[1]);\n\
-return user_array3;\n\
-}');
+  assert.equal(node.toString(), 'vec4 inherited(vec4 user_array, vec4 user_array2) {'
+    + '\nvec4 user_array3=vec4(0.0, 0.0, 0.0, 0.0);'
+    + '\nuser_array3[0]=user_array[0];'
+    + '\nuser_array3[1]=(user_array[1]*user_array2[1]);'
+    + '\nreturn user_array3;'
+    + '\n}');
 });
 test('arrays inherited - Array(4) cpu', () => {
   const node = new CPUFunctionNode((function inherited(array, array2) {
@@ -550,3 +550,18 @@ user_array3[1]=(user_array[1]*user_array2[1]);\n\
 return user_array3;\n\
 }');
 });
+
+// test('auto detect float, array, array2d, array3d - webgl', () => {
+//   const node = new WebGLFunctionNode((function(int, array, array2d, array3d) {
+//     let allValues = this.constants.int;
+//     allValues += this.constants.array[this.thread.x];
+//     allValues += this.constants.array2d[this.thread.x][this.thread.y];
+//     allValues += this.constants.array3d[this.thread.x][this.thread.y][this.thread.z];
+//     allValues += int;
+//     allValues += array[this.thread.x];
+//     allValues += array2d[this.thread.x][this.thread.y];
+//     allValues += array3d[this.thread.x][this.thread.y][this.thread.z];
+//
+//     return allValues * Math.random();
+//   }).toString(), {});
+// });

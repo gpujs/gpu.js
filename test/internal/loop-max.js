@@ -1,4 +1,4 @@
-const { assert, skip, test, module: describe } = require('qunit');
+const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU, WebGLFunctionNode, WebGL2FunctionNode } = require('../../src');
 
 describe('internal: loop max');
@@ -10,7 +10,12 @@ test('loop max output webgl', () => {
       sum += b[this.thread.x][i];
     }
     return sum;
-  }).toString(), { isRootKernel: true, name: 'kernel', output: [1] });
+  }).toString(), {
+    isRootKernel: true,
+    name: 'kernel',
+    output: [1],
+    argumentTypes: ['Number', 'Array']
+  });
 
   assert.equal(
     functionNode.toString(),
@@ -18,7 +23,7 @@ test('loop max output webgl', () => {
     '\nfloat user_sum=0.0;' +
     '\nfor (int user_i=0;user_i<LOOP_MAX;user_i++){' +
     '\nif (user_i<int(user_a)) {' +
-    '\nuser_sum+=get(user_b, user_bSize, user_bDim, user_bBitRatio, threadId.x, user_i);' +
+    '\nuser_sum+=get(user_b, user_bSize, user_bDim, user_bBitRatio, 0, threadId.x, user_i);' +
     '\n} else {' +
     '\nbreak;' +
     '\n}' +
@@ -35,7 +40,12 @@ test('loop max output webgl2', () => {
       sum += b[this.thread.x][i];
     }
     return sum;
-  }).toString(), { isRootKernel: true, name: 'kernel', output: [1] });
+  }).toString(), {
+    isRootKernel: true,
+    name: 'kernel',
+    output: [1],
+    argumentTypes: ['Number', 'Array'],
+  });
 
   assert.equal(
     functionNode.toString(),
@@ -43,7 +53,7 @@ test('loop max output webgl2', () => {
     '\nfloat user_sum=0.0;' +
     '\nfor (int user_i=0;user_i<LOOP_MAX;user_i++){' +
     '\nif (user_i<int(user_a)) {' +
-    '\nuser_sum+=get(user_b, user_bSize, user_bDim, user_bBitRatio, threadId.x, user_i);' +
+    '\nuser_sum+=get(user_b, user_bSize, user_bDim, user_bBitRatio, 0, threadId.x, user_i);' +
     '\n} else {' +
     '\nbreak;' +
     '\n}' +
@@ -97,7 +107,8 @@ test('loop max output webgl2', () => {
       sum += b[this.thread.x][i];
     }
     return sum;
-  }).setOutput([1]);
+  })
+    .setOutput([1]);
 
   const output = add(1, [[1]]);
   assert.equal(

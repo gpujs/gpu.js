@@ -1,4 +1,4 @@
-import {GPU, KernelFunction, IKernelRunShortcut} from "../src";
+import { GPU, KernelFunction, IKernelRunShortcut } from "../src";
 
 const gpu = new GPU({ mode: 'gpu' });
 
@@ -8,10 +8,9 @@ const kernelFunction: KernelFunction = function(anInt: number, anArray: number[]
   return x;
 };
 
-const kernel: IKernel = gpu.createKernel(kernelFunction, {
-  output: [1]
-});
+const kernel: IKernelRunShortcut = gpu.createKernel(kernelFunction)
+  .setOutput([1]);
 
-const result = kernel(4, [5], [[6]], [[[7]]]);
+const result = kernel(1, [.25], [[1.5]]);
 
-console.log(result[0]);
+console.log(result[0]); // 3

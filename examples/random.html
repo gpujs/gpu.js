@@ -1,0 +1,30 @@
+<html>
+<body>
+<h2>CPU Random</h2>
+<canvas id="cpu-random-output"></canvas>
+<h2>GPU Random</h2>
+<canvas id="gpu-random-output"></canvas>
+</body>
+<script src="../bin/gpu-browser.js"></script>
+<script>
+  function drawRandomFunction() {
+    this.color(Math.random(), Math.random(), Math.random(), 1);
+  }
+
+  const cpu = new GPU({ mode: 'cpu', canvas: document.getElementById('cpu-random-output') });
+  const gpu = new GPU({ mode: 'gpu', canvas: document.getElementById('gpu-random-output') });
+
+  const cpuDrawRandom = cpu.createKernel(drawRandomFunction)
+    .setGraphical(true)
+    .setOutput([100, 100]);
+
+  const gpuDrawRandom = gpu.createKernel(drawRandomFunction)
+    .setGraphical(true)
+    .setOutput([100, 100]);
+
+  setInterval(() => {
+    cpuDrawRandom();
+    gpuDrawRandom();
+  }, 10);
+</script>
+</html>

@@ -51,6 +51,42 @@ test('sqrtAB cpu', () => {
 function mathRandom(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
+    const random = Math.random();
+    return (random === Math.random())
+  }, { output: [1] });
+
+  const result = kernel();
+  assert.ok(result[0] > 0 && result[0] < 1, `value was expected to be between o and 1, but was ${result[0]}`);
+}
+
+test('random auto', () => {
+  mathRandom();
+});
+
+test('random gpu', () => {
+  mathRandom('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('random webgl', () => {
+  mathRandom('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('random webgl2', () => {
+  mathRandom('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('random headlessgl', () => {
+  mathRandom('headlessgl');
+});
+
+test('random cpu', () => {
+  mathRandom('cpu');
+});
+
+
+function mathRandom(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function() {
     return Math.random();
   }, { output: [1] });
 
