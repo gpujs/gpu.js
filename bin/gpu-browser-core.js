@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0
- * @date Tue Feb 05 2019 22:00:22 GMT-0500 (Eastern Standard Time)
+ * @date Wed Feb 06 2019 09:16:56 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -3584,7 +3584,6 @@ const operatorMap = {
 module.exports = {
 	WebGLFunctionNode
 };
-
 },{"../function-node":7}],13:[function(require,module,exports){
 const {
 	utils
