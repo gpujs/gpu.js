@@ -176,7 +176,7 @@ class FunctionNode {
 			throw 'Missing JS to AST parser';
 		}
 
-		const ast = Object.freeze(inParser.parse('var ' + this.name + ' = ' + this.source + ';', {
+		const ast = Object.freeze(inParser.parse('const ' + this.name + ' = ' + this.source + ';', {
 			locations: true
 		}));
 		if (ast === null) {
@@ -248,7 +248,7 @@ class FunctionNode {
 		for (let i = 0; i < calledFunctionArguments.length; i++) {
 			const calledFunctionArgument = calledFunctionArguments[i];
 			const argument = calledFunctionArgument[argumentIndex];
-			if (argument !== null && argument.type !== 'Integer') {
+			if (argument && argument.type !== 'Integer' && argument.type !== 'LiteralInteger' && argument.type !== 'Number') {
 				return argument.name;
 			}
 		}
@@ -280,6 +280,215 @@ class FunctionNode {
 			ast: this.ast,
 			settings
 		};
+	}
+
+	firstAvailableTypeFromAst(ast) {
+		switch (ast.type) {
+			case 'ArrayExpression':
+				return `Array(${ ast.elements.length })`;
+			case 'Literal':
+				if (Number.isInteger(ast.value)) {
+					return 'LiteralInteger';
+				} else {
+					return 'Number';
+				}
+			case 'Identifier':
+				if (this.isAstVariable(ast)) {
+					if (this.getVariableSignature(ast) === 'value') {
+						return this.getVariableType(ast.name)
+					}
+				}
+				throw this.astErrorOutput('Unhandled Identifier', ast);
+			case 'MemberExpression':
+				if (this.isAstMathFunction(ast)) {
+					switch (ast.property.name) {
+						case 'ceil':
+							return 'Integer';
+						case 'floor':
+							return 'Integer';
+						case 'round':
+							return 'Integer';
+					}
+					return 'Number';
+				}
+				if (this.isAstVariable(ast)) {
+					const variableSignature = this.getVariableSignature(ast);
+					switch (variableSignature) {
+						case 'value[]':
+							return typeLookupMap[this.getVariableType(ast.object.name)];
+						case 'value[][]':
+							return typeLookupMap[this.getVariableType(ast.object.object.name)];
+						case 'value[][][]':
+							return typeLookupMap[this.getVariableType(ast.object.object.object.name)];
+						case 'value.value':
+							if (this.isAstMathVariable(ast)) {
+								return 'Number';
+							}
+							switch (ast.property.name) {
+								case 'r':
+									return typeLookupMap[this.getVariableType(ast.object.name)];
+								case 'g':
+									return typeLookupMap[this.getVariableType(ast.object.name)];
+								case 'b':
+									return typeLookupMap[this.getVariableType(ast.object.name)];
+								case 'a':
+									return typeLookupMap[this.getVariableType(ast.object.name)];
+								default:
+									throw this.astErrorOutput('Unhandled MemberExpression', ast);
+							}
+						case 'this.thread.value':
+							return 'Integer';
+						case 'this.output.value':
+							return 'Integer';
+						case 'this.constants.value':
+							return this.getConstantType(ast.property.name);
+						case 'this.constants.value[]':
+							return typeLookupMap[this.getConstantType(ast.object.property.name)];
+						case 'this.constants.value[][]':
+							return typeLookupMap[this.getConstantType(ast.object.object.property.name)];
+						case 'this.constants.value[][][]':
+							return typeLookupMap[this.getConstantType(ast.object.object.object.property.name)];
+					}
+					throw this.astErrorOutput('Unhandled MemberExpression', ast);
+				}
+				throw this.astErrorOutput('Unhandled MemberExpression', ast);
+			case 'CallExpression':
+				if (this.isAstMathFunction(ast)) {
+					return 'Number';
+				}
+				return ast.callee && ast.callee.name && this.lookupReturnType ? this.lookupReturnType(ast.callee.name) : null;
+			case 'BinaryExpression':
+				// modulos is Number
+				if (ast.operator === '%') {
+					return 'Number';
+				}
+				return this.firstAvailableTypeFromAst(ast.left);
+			case 'UpdateExpression':
+				return this.firstAvailableTypeFromAst(ast.argument);
+			case 'UnaryExpression':
+				return this.firstAvailableTypeFromAst(ast.argument);
+			default:
+				throw this.astErrorOutput(`Unhandled Type "${ ast.type }"`, ast);
+		}
+	}
+
+	isAstMathVariable(ast) {
+		const mathProperties = [
+			'E',
+			'PI',
+			'SQRT2',
+			'SQRT1_2',
+			'LN2',
+			'LN10',
+			'LOG2E',
+			'LOG10E',
+		];
+		return ast.type === 'MemberExpression' &&
+			ast.object && ast.object.type === 'Identifier' &&
+			ast.object.name === 'Math' &&
+			ast.property &&
+			ast.property.type === 'Identifier' &&
+			mathProperties.indexOf(ast.property.name) > -1;
+	}
+
+	isAstMathFunction(ast) {
+		const mathFunctions = [
+			'abs',
+			'acos',
+			'asin',
+			'atan',
+			'atan2',
+			'ceil',
+			'cos',
+			'exp',
+			'floor',
+			'log',
+			'log2',
+			'max',
+			'min',
+			'pow',
+			'random',
+			'round',
+			'sign',
+			'sin',
+			'sqrt',
+			'tan',
+		];
+		return ast.type === 'CallExpression' &&
+			ast.callee &&
+			ast.callee.type === 'MemberExpression' &&
+			ast.callee.object &&
+			ast.callee.object.type === 'Identifier' &&
+			ast.callee.object.name === 'Math' &&
+			ast.callee.property &&
+			ast.callee.property.type === 'Identifier' &&
+			mathFunctions.indexOf(ast.callee.property.name) > -1;
+	}
+
+	isAstVariable(ast) {
+		return ast.type === 'Identifier' || ast.type === 'MemberExpression';
+	}
+
+	getVariableSignature(ast) {
+		if (!this.isAstVariable(ast)) {
+			throw new Error(`ast of type "${ ast.type }" is not a variable signature`);
+		}
+		if (ast.type === 'Identifier') {
+			return 'value';
+		}
+		const signature = [];
+		while (true) {
+			if (!ast) break;
+			if (ast.computed) {
+				signature.push('[]');
+			} else if (ast.type === 'ThisExpression') {
+				signature.unshift('this');
+			} else if (ast.property && ast.property.name) {
+				if (
+					ast.property.name === 'x' ||
+					ast.property.name === 'y' ||
+					ast.property.name === 'z'
+				) {
+					signature.unshift('.value');
+				} else if (
+					ast.property.name === 'constants' ||
+					ast.property.name === 'thread' ||
+					ast.property.name === 'output'
+				) {
+					signature.unshift('.' + ast.property.name);
+				} else {
+					signature.unshift('.value');
+				}
+			} else if (ast.name) {
+				signature.unshift('value');
+			} else {
+				signature.unshift('unknown');
+			}
+			ast = ast.object;
+		}
+
+		const signatureString = signature.join('');
+		const allowedExpressions = [
+			'value',
+			'value[]',
+			'value[][]',
+			'value[][][]',
+			'value.value',
+			'this.thread.value',
+			'this.output.value',
+			'this.constants.value',
+			'this.constants.value[]',
+			'this.constants.value[][]',
+			'this.constants.value[][][]',
+		];
+		if (allowedExpressions.indexOf(signatureString) > -1) {
+			return signatureString;
+		}
+		return null;
+	}
+
+	build() {
+		return this.toString().length > 0;
 	}
 
 	/**
@@ -461,22 +670,20 @@ class FunctionNode {
 	astArrayExpression(ast, retArr) {
 		return retArr;
 	}
-
-	/**
-	 * @function
-	 * @name pushParameter
-	 *
-	 * @desc [INTERNAL] pushes a source parameter onto retArr and 'casts' to int if necessary
-	 *  i.e. deal with force-int-parameter state
-	 *
-	 * @param {Array} retArr - return array string
-	 * @param {String} name - the parameter name
-	 *
-	 */
-	pushParameter(retArr, name) {
-		retArr.push(`user_${name}`);
-	}
 }
+
+const typeLookupMap = {
+	'Array': 'Number',
+	'Array(2)': 'Number',
+	'Array(3)': 'Number',
+	'Array(4)': 'Number',
+	'Array2D': 'Number',
+	'Array3D': 'Number',
+	'HTMLImage': 'Array(4)',
+	'HTMLImageArray': 'Array(4)',
+	'NumberTexture': 'Number',
+	'ArrayTexture(4)': 'Array(4)',
+};
 
 module.exports = {
 	FunctionNode

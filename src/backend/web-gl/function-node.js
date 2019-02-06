@@ -5,7 +5,6 @@ const {
 // The prefixes to use
 const jsMathPrefix = 'Math.';
 const localPrefix = 'this.';
-const constantsPrefix = 'this.constants.';
 
 /**
  * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective webGL code
@@ -24,45 +23,6 @@ class WebGLFunctionNode extends FunctionNode {
 	toString() {
 		if (this._string) return this._string;
 		return this._string = this.astGeneric(this.getJsAST(), []).join('').trim();
-	}
-
-	/**
-	 * @desc Parses the abstract syntax tree for to its *named function prototype*
-	 * @param {Object} ast - the AST object to parse
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astFunctionPrototype(ast, retArr) {
-		// Setup function return type and name
-		if (this.isRootKernel || this.isSubKernel) {
-			return retArr;
-		}
-
-		const returnType = this.returnType;
-		const type = typeMap[returnType];
-		if (!type) {
-			throw new Error(`unknown type ${ returnType }`);
-		}
-		retArr.push(type);
-		retArr.push(' ');
-		retArr.push(this.name);
-		retArr.push('(');
-
-		// Arguments handling
-		for (let i = 0; i < this.argumentNames.length; ++i) {
-			if (i > 0) {
-				retArr.push(', ');
-			}
-
-			retArr.push(this.argumentTypes[i]);
-			retArr.push(' ');
-			retArr.push('user_');
-			retArr.push(this.argumentNames[i]);
-		}
-
-		retArr.push(');\n');
-
-		return retArr;
 	}
 
 	/**
@@ -97,10 +57,13 @@ class WebGLFunctionNode extends FunctionNode {
 					retArr.push(', ');
 				}
 				let argumentType = this.getVariableType(argumentName);
-				if (!argumentType) {
+				if (!argumentType || argumentType === 'LiteralInteger') {
 					argumentType = 'Number';
 				}
 				const type = typeMap[argumentType];
+				if (!type) {
+					throw this.astErrorOutput('Unexpected expression', ast);
+				}
 				retArr.push(type);
 				retArr.push(' ');
 				retArr.push('user_');
@@ -383,10 +346,10 @@ class WebGLFunctionNode extends FunctionNode {
 			retArr.push('3.402823466e+38');
 		} else {
 			const userArgumentName = this.getUserArgumentName(idtNode.name);
-			if (userArgumentName !== null) {
-				this.pushParameter(retArr, userArgumentName);
+			if (userArgumentName) {
+				retArr.push(`user_${userArgumentName}`);
 			} else {
-				this.pushParameter(retArr, idtNode.name);
+				retArr.push(`user_${idtNode.name}`);
 			}
 		}
 
@@ -410,7 +373,7 @@ class WebGLFunctionNode extends FunctionNode {
 		if (forNode.test && forNode.test.type === 'BinaryExpression') {
 			if (forNode.test.right.type === 'Identifier' &&
 				forNode.test.operator === '<' &&
-				this.isIdentifierConstant(this.astGetFirstAvailableName(forNode.test.right)) === false) {
+				this.isIdentifierConstant(forNode.test.right.name) === false) {
 
 				if (!this.loopMaxIterations) {
 					console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
@@ -516,7 +479,7 @@ class WebGLFunctionNode extends FunctionNode {
 	astWhileStatement(whileNode, retArr) {
 		if (whileNode.type !== 'WhileStatement') {
 			throw this.astErrorOutput(
-				'Invalid while statment',
+				'Invalid while statement',
 				whileNode
 			);
 		}
@@ -558,7 +521,6 @@ class WebGLFunctionNode extends FunctionNode {
 		retArr.push('}\n');
 
 		return retArr;
-
 	}
 
 
@@ -713,7 +675,6 @@ class WebGLFunctionNode extends FunctionNode {
 			}
 		}
 		return retArr;
-
 	}
 
 	/**
@@ -813,6 +774,7 @@ class WebGLFunctionNode extends FunctionNode {
 		let zProperty = null;
 		let name = null;
 		let type = null;
+		let origin = 'user';
 		switch (variableSignature) {
 			case 'this.thread.value':
 				retArr.push(`threadId.${ mNode.property.name }`);
@@ -828,6 +790,8 @@ class WebGLFunctionNode extends FunctionNode {
 					case 'z':
 						retArr.push(this.output[2]);
 						break;
+					default:
+						throw this.astErrorOutput('Unexpected expression', mNode);
 				}
 				return retArr;
 			case 'value':
@@ -837,16 +801,16 @@ class WebGLFunctionNode extends FunctionNode {
 			case 'value[]':
 				{
 					if (typeof mNode.object.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					name = 'user_' + mNode.object.name;
-					type = this.getVariableType(mNode.object.name);
+					name = mNode.object.name;
+					type = this.getVariableType(name);
 					xProperty = mNode.property;
 					break;
 				}
 			case 'value[][]':
 				{
 					if (typeof mNode.object.object.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					name = 'user_' + mNode.object.object.name;
-					type = this.getVariableType(mNode.object.object.name);
+					name = mNode.object.object.name;
+					type = this.getVariableType(name);
 					yProperty = mNode.object.property;
 					xProperty = mNode.property;
 					break;
@@ -854,8 +818,8 @@ class WebGLFunctionNode extends FunctionNode {
 			case 'value[][][]':
 				{
 					if (typeof mNode.object.object.object.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					name = 'user_' + mNode.object.object.object.name;
-					type = this.getVariableType(mNode.object.object.object.name);
+					name = mNode.object.object.object.name;
+					type = this.getVariableType(name);
 					zProperty = mNode.object.object.property;
 					yProperty = mNode.object.property;
 					xProperty = mNode.property;
@@ -887,8 +851,9 @@ class WebGLFunctionNode extends FunctionNode {
 			case 'this.constants.value':
 				{
 					if (typeof mNode.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					name = 'constants_' + mNode.property.name;
-					type = this.getConstantType(mNode.property.name);
+					name = mNode.property.name;
+					origin = 'constants';
+					type = this.getConstantType(name);
 					if (!type) {
 						throw this.astErrorOutput('Constant has no type', mNode);
 					}
@@ -897,8 +862,9 @@ class WebGLFunctionNode extends FunctionNode {
 			case 'this.constants.value[]':
 				{
 					if (typeof mNode.object.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					name = 'constants_' + mNode.object.property.name;
-					type = this.getConstantType(mNode.object.property.name);
+					name = mNode.object.property.name;
+					origin = 'constants';
+					type = this.getConstantType(name);
 					if (!type) {
 						throw this.astErrorOutput('Constant has no type', mNode);
 					}
@@ -908,8 +874,9 @@ class WebGLFunctionNode extends FunctionNode {
 			case 'this.constants.value[][]':
 				{
 					if (typeof mNode.object.object.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					name = 'constants_' + mNode.object.object.property.name;
-					type = this.getConstantType(mNode.object.object.property.name);
+					name = mNode.object.object.property.name;
+					origin = 'constants';
+					type = this.getConstantType(name);
 					if (!type) {
 						throw this.astErrorOutput('Constant has no type', mNode);
 					}
@@ -920,8 +887,9 @@ class WebGLFunctionNode extends FunctionNode {
 			case 'this.constants.value[][][]':
 				{
 					if (typeof mNode.object.object.object.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					name = 'constants_' + mNode.object.object.object.property.name;
-					type = this.getConstantType(mNode.object.object.object.property.name);
+					name = mNode.object.object.object.property.name;
+					origin = 'constants';
+					type = this.getConstantType(name);
 					if (!type) {
 						throw this.astErrorOutput('Constant has no type', mNode);
 					}
@@ -933,13 +901,20 @@ class WebGLFunctionNode extends FunctionNode {
 			default:
 				throw this.astErrorOutput('Unexpected expression', mNode);
 		}
+
+		if (type === 'Number' || type === 'Integer') {
+			retArr.push(`${origin}_${name}`);
+			return retArr;
+		}
+
+		// argument may have come from a parent
+		if (this.parent) {
+			name = this.getUserArgumentName(name) || name;
+		}
+
+		const markupName = `${origin}_${name}`;
+
 		switch (type) {
-			case 'Number':
-				retArr.push(name);
-				break;
-			case 'Integer':
-				retArr.push(name);
-				break;
 			case 'Array(2)':
 			case 'Array(3)':
 			case 'Array(4)':
@@ -950,52 +925,19 @@ class WebGLFunctionNode extends FunctionNode {
 				retArr.push(']');
 				break;
 			case 'HTMLImageArray':
-				// Get from image
-				retArr.push(`getImage3D(${ name }, ${ name }Size, ${ name }Dim, `);
-				if (zProperty) {
-					retArr.push(this.getMemberExpressionPropertyMarkup(zProperty), ', ');
-				} else {
-					retArr.push('0, ');
-				}
-				if (yProperty) {
-					retArr.push(this.getMemberExpressionPropertyMarkup(yProperty), ', ');
-				} else {
-					retArr.push('0, ');
-				}
-				retArr.push(this.getMemberExpressionPropertyMarkup(xProperty));
+				retArr.push(`getImage3D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+				this.memeberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
 				retArr.push(')');
 				break;
 			case 'ArrayTexture(4)':
 			case 'HTMLImage':
-				retArr.push(`getImage2D(${ name }, ${ name }Size, ${ name }Dim, `);
-				this.pushState('casting-to-integer');
-				if (zProperty) {
-					retArr.push(this.getMemberExpressionPropertyMarkup(zProperty), ', ');
-				} else {
-					retArr.push('0, ');
-				}
-				if (yProperty) {
-					retArr.push(this.getMemberExpressionPropertyMarkup(yProperty), ', ');
-				} else {
-					retArr.push('0, ');
-				}
-				retArr.push(this.getMemberExpressionPropertyMarkup(xProperty));
-				this.popState('casting-to-integer');
+				retArr.push(`getImage2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+				this.memeberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
 				retArr.push(')');
 				break;
 			default:
-				retArr.push(`get(${ name }, ${ name }Size, ${ name }Dim, ${ name }BitRatio, `);
-				if (zProperty) {
-					retArr.push(this.getMemberExpressionPropertyMarkup(zProperty), ', ');
-				} else {
-					retArr.push('0, ');
-				}
-				if (yProperty) {
-					retArr.push(this.getMemberExpressionPropertyMarkup(yProperty), ', ');
-				} else {
-					retArr.push('0, ');
-				}
-				retArr.push(this.getMemberExpressionPropertyMarkup(xProperty));
+				retArr.push(`get(${ markupName }, ${ markupName }Size, ${ markupName }Dim, ${ markupName }BitRatio, `);
+				this.memeberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
 				retArr.push(')');
 				break;
 		}
@@ -1073,16 +1015,12 @@ class WebGLFunctionNode extends FunctionNode {
 					retArr.push(', ');
 				}
 				this.astGeneric(argument, retArr);
-				if (argument.type === 'Identifier') {
-					const argumentIndex = this.argumentNames.indexOf(argument.name);
-					if (argumentIndex === -1) {
-						functionArguments.push(null);
-					} else {
-						functionArguments.push({
-							name: argument.name,
-							type: this.argumentTypes[argumentIndex] || 'Number'
-						});
-					}
+				const argumentType = this.firstAvailableTypeFromAst(argument);
+				if (argumentType) {
+					functionArguments.push({
+						name: argument.name || null,
+						type: argumentType
+					});
 				} else {
 					functionArguments.push(null);
 				}
@@ -1123,250 +1061,22 @@ class WebGLFunctionNode extends FunctionNode {
 		return retArr;
 	}
 
-	/**
-	 * @function
-	 * @name pushParameter
-	 *
-	 * @desc [INTERNAL] pushes a source parameter onto retArr and 'casts' to int if necessary
-	 *  i.e. deal with force-int-parameter state
-	 *
-	 * @param {Array} retArr - return array string
-	 * @param {String} name - the parameter name
-	 *
-	 */
-	pushParameter(retArr, name) {
-		retArr.push(`user_${name}`);
-	}
-
-
-	/**
-	 *
-	 * @param ast
-	 * @returns {string|null}
-	 */
-	astGetFirstAvailableName(ast) {
-		if (ast.name) {
-			return ast.name;
+	memeberExpressionXYZ(x, y, z, retArr) {
+		if (z) {
+			retArr.push(this.memberExpressionPropertyMarkup(z), ', ');
+		} else {
+			retArr.push('0, ');
 		}
-		return null;
-	}
-
-	firstAvailableTypeFromAst(ast) {
-		switch (ast.type) {
-			case 'ArrayExpression':
-				return `Array(${ ast.elements.length })`;
-			case 'Literal':
-				if (Number.isInteger(ast.value)) {
-					return 'LiteralInteger';
-				} else {
-					return 'Number';
-				}
-			case 'Identifier':
-				if (this.isAstVariable(ast)) {
-					if (this.getVariableSignature(ast) === 'value') {
-						return this.getVariableType(ast.name)
-					}
-				}
-				// TODO: remove after testing?
-				throw this.astErrorOutput('Unhandled Identifier', ast);
-			case 'MemberExpression':
-				if (this.isAstMathFunction(ast)) {
-					switch (ast.property.name) {
-						case 'ceil':
-							return 'Integer';
-						case 'floor':
-							return 'Integer';
-						case 'round':
-							return 'Integer';
-					}
-					return 'Number';
-				}
-				if (this.isAstVariable(ast)) {
-					const variableSignature = this.getVariableSignature(ast);
-					switch (variableSignature) {
-						case 'value[]':
-							return typeLookupMap[this.getVariableType(ast.object.name)];
-						case 'value[][]':
-							return typeLookupMap[this.getVariableType(ast.object.object.name)];
-						case 'value[][][]':
-							return typeLookupMap[this.getVariableType(ast.object.object.object.name)];
-						case 'value.value':
-							if (this.isAstMathVariable(ast)) {
-								return 'Number';
-							}
-							switch (ast.property.name) {
-								case 'r':
-									return typeLookupMap[this.getVariableType(ast.object.name)];
-								case 'g':
-									return typeLookupMap[this.getVariableType(ast.object.name)];
-								case 'b':
-									return typeLookupMap[this.getVariableType(ast.object.name)];
-								case 'a':
-									return typeLookupMap[this.getVariableType(ast.object.name)];
-								default:
-									throw this.astErrorOutput('Unhandled MemberExpression', ast);
-							}
-							break;
-						case 'this.thread.value':
-							return 'Integer';
-						case 'this.output.value':
-							return 'Integer';
-						case 'this.constants.value':
-							return this.getConstantType(ast.property.name);
-						case 'this.constants.value[]':
-							return typeLookupMap[this.getConstantType(ast.object.property.name)];
-						case 'this.constants.value[][]':
-							return typeLookupMap[this.getConstantType(ast.object.object.property.name)];
-						case 'this.constants.value[][][]':
-							return typeLookupMap[this.getConstantType(ast.object.object.object.property.name)];
-					}
-					// TODO: remove after testing?
-					throw this.astErrorOutput('Unhandled MemberExpression', ast);
-				}
-				// TODO: remove after testing?
-				throw this.astErrorOutput('Unhandled MemberExpression', ast);
-			case 'CallExpression':
-				if (this.isAstMathFunction(ast)) {
-					return 'Number';
-				}
-				return ast.callee && ast.callee.name && this.lookupReturnType ? this.lookupReturnType(ast.callee.name) : null;
-			case 'BinaryExpression':
-				// modulos is float and there isn't a "%" operator in glsl
-				if (ast.operator === '%') {
-					return 'Number';
-				}
-				return this.firstAvailableTypeFromAst(ast.left);
-			case 'UpdateExpression':
-				return this.firstAvailableTypeFromAst(ast.argument);
-			default:
-				throw this.astErrorOutput(`Unhandled Type "${ ast.type }"`, ast);
+		if (y) {
+			retArr.push(this.memberExpressionPropertyMarkup(y), ', ');
+		} else {
+			retArr.push('0, ');
 		}
-
-		return null;
+		retArr.push(this.memberExpressionPropertyMarkup(x));
+		return retArr;
 	}
 
-	build() {
-		return this.toString().length > 0;
-	}
-
-	// TODO: move to super
-	isAstMathVariable(ast) {
-		const mathProperties = [
-			'E',
-			'PI',
-			'SQRT2',
-			'SQRT1_2',
-			'LN2',
-			'LN10',
-			'LOG2E',
-			'LOG10E',
-		];
-		return ast.type === 'MemberExpression' &&
-			ast.object && ast.object.type === 'Identifier' &&
-			ast.object.name === 'Math' &&
-			ast.property &&
-			ast.property.type === 'Identifier' &&
-			mathProperties.indexOf(ast.property.name) > -1;
-	}
-
-	// TODO: move to super
-	isAstMathFunction(ast) {
-		const mathFunctions = [
-			'abs',
-			'acos',
-			'asin',
-			'atan',
-			'atan2',
-			'ceil',
-			'cos',
-			'exp',
-			'floor',
-			'log',
-			'log2',
-			'max',
-			'min',
-			'pow',
-			'random',
-			'round',
-			'sign',
-			'sin',
-			'sqrt',
-			'tan',
-		];
-		return ast.type === 'CallExpression' &&
-			ast.callee &&
-			ast.callee.type === 'MemberExpression' &&
-			ast.callee.object &&
-			ast.callee.object.type === 'Identifier' &&
-			ast.callee.object.name === 'Math' &&
-			ast.callee.property &&
-			ast.callee.property.type === 'Identifier' &&
-			mathFunctions.indexOf(ast.callee.property.name) > -1;
-	}
-
-	isAstVariable(ast) {
-		return ast.type === 'Identifier' || ast.type === 'MemberExpression';
-	}
-
-	getVariableSignature(ast) {
-		if (!this.isAstVariable(ast)) {
-			throw new Error(`ast of type "${ ast.type }" is not a variable signature`);
-		}
-		if (ast.type === 'Identifier') {
-			return 'value';
-		}
-		const signature = [];
-		while (true) {
-			if (!ast) break;
-			if (ast.computed) {
-				signature.push('[]');
-			} else if (ast.type === 'ThisExpression') {
-				signature.unshift('this');
-			} else if (ast.property && ast.property.name) {
-				if (
-					ast.property.name === 'x' ||
-					ast.property.name === 'y' ||
-					ast.property.name === 'z'
-				) {
-					signature.unshift('.value');
-				} else if (
-					ast.property.name === 'constants' ||
-					ast.property.name === 'thread' ||
-					ast.property.name === 'output'
-				) {
-					signature.unshift('.' + ast.property.name);
-				} else {
-					signature.unshift('.value');
-				}
-			} else if (ast.name) {
-				signature.unshift('value');
-			} else {
-				signature.unshift('unknown');
-			}
-			ast = ast.object;
-		}
-
-		const signatureString = signature.join('');
-		const allowedExpressions = [
-			'value',
-			'value[]',
-			'value[][]',
-			'value[][][]',
-			'value.value',
-			'this.thread.value',
-			'this.output.value',
-			'this.constants.value',
-			'this.constants.value[]',
-			'this.constants.value[][]',
-			'this.constants.value[][][]',
-		];
-		if (allowedExpressions.indexOf(signatureString) > -1) {
-			return signatureString;
-		}
-		return null;
-	}
-
-	getMemberExpressionPropertyMarkup(property) {
+	memberExpressionPropertyMarkup(property) {
 		if (!property) {
 			throw new Error('Property not set');
 		}
@@ -1402,19 +1112,6 @@ const typeMap = {
 	'Number': 'float',
 	'NumberTexture': 'sampler2D',
 	'ArrayTexture(4)': 'sampler2D'
-};
-
-const typeLookupMap = {
-	'Array': 'Number',
-	'Array(2)': 'Number',
-	'Array(3)': 'Number',
-	'Array(4)': 'Number',
-	'Array2D': 'Number',
-	'Array3D': 'Number',
-	'HTMLImage': 'Array(4)',
-	'HTMLImageArray': 'Array(4)',
-	'NumberTexture': 'Number',
-	'ArrayTexture(4)': 'Array(4)',
 };
 
 module.exports = {

@@ -113,10 +113,6 @@ float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int z, int y
   __GET_RESULT__;
 }
 
-float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, float z, float y, float x) {
-  return get(tex, texSize, texDim, bitRatio, int(z), int(y), int(x));
-}
-
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
@@ -137,30 +133,6 @@ vec4 getImage3D(sampler2DArray tex, ivec2 texSize, ivec3 texDim, int z, int y, i
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   __GET_TEXTURE_INDEX__;
   return texture(tex, vec3(st / vec2(texSize), z));
-}
-
-float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int y, int x) {
-  return get(tex, texSize, texDim, bitRatio, 0, y, x);
-}
-
-float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, float y, float x) {
-  return get(tex, texSize, texDim, bitRatio, 0, int(y), int(x));
-}
-
-float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int x) {
-  return get(tex, texSize, texDim, bitRatio, 0, 0, x);
-}
-
-float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, float x) {
-  return get(tex, texSize, texDim, bitRatio, int(x));
-}
-
-vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int y, int x) {
-  return getImage2D(tex, texSize, texDim, 0, y, x);
-}
-
-vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int x) {
-  return getImage2D(tex, texSize, texDim, 0, 0, x);
 }
 
 vec4 actualColor;

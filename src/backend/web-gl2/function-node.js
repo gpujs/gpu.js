@@ -24,49 +24,16 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 			);
 		}
 
-		// do we need to cast addressing vales to float?
-		const castFloat = !this.isState('in-get-call-parameters');
-
 		switch (idtNode.name) {
-			case 'gpu_threadX':
-				if (castFloat) {
-					retArr.push('float(threadId.x)');
-				} else {
-					retArr.push('threadId.x');
-				}
-				break;
-			case 'gpu_threadY':
-				if (castFloat) {
-					retArr.push('float(threadId.y)');
-				} else {
-					retArr.push('threadId.y');
-				}
-				break;
-			case 'gpu_threadZ':
-				if (castFloat) {
-					retArr.push('float(threadId.z)');
-				} else {
-					retArr.push('threadId.z');
-				}
-				break;
-			case 'gpu_outputX':
-				retArr.push('uOutputDim.x');
-				break;
-			case 'gpu_outputY':
-				retArr.push('uOutputDim.y');
-				break;
-			case 'gpu_outputZ':
-				retArr.push('uOutputDim.z');
-				break;
 			case 'Infinity':
 				retArr.push('intBitsToFloat(2139095039)');
 				break;
 			default:
 				const userArgumentName = this.getUserArgumentName(idtNode.name);
-				if (userArgumentName !== null) {
-					this.pushParameter(retArr, userArgumentName);
+				if (userArgumentName) {
+					retArr.push(`user_${userArgumentName}`);
 				} else {
-					this.pushParameter(retArr, idtNode.name);
+					retArr.push(`user_${idtNode.name}`);
 				}
 		}
 

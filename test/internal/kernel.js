@@ -1,5 +1,5 @@
-const { assert, test, module: describe } = require('qunit');
-const { CPUKernel, WebGLKernel, WebGL2Kernel, HeadlessGLKernel } = require('../../src');
+const { assert, test, module: describe, skip } = require('qunit');
+const { GPU, CPUKernel, WebGLKernel, WebGL2Kernel, HeadlessGLKernel } = require('../../src');
 
 describe('internal: kernel');
 
@@ -93,7 +93,7 @@ test('WebGL2Kernel argumentTypes', () => {
   kernel.destroy();
 });
 
-test('HeadlessGLKernel argumentTypes', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('HeadlessGLKernel argumentTypes', () => {
   const kernel = new HeadlessGLKernel(`function(value) { return value[this.thread.x]; }`, {
     output: [1],
     context: mockGl,
@@ -159,7 +159,7 @@ test('WebGL2Kernel.setUniform1f only calls webgl when values change', () => {
   assert.equal(kernel.uniform1fCache['test'], 2);
   kernel.destroy();
 });
-test('HeadlessGLKernel.setUniform1f only calls webgl when values change', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('HeadlessGLKernel.setUniform1f only calls webgl when values change', () => {
   const kernel = new HeadlessGLKernel('function() {}', { output: [1] });
   let throws = false;
   kernel.context = {
@@ -230,7 +230,7 @@ test('WebGL2Kernel.setUniform1i only calls webgl when values change', () => {
   assert.equal(kernel.uniform1iCache['test'], 2);
   kernel.destroy();
 });
-test('HeadlessGLKernel.setUniform1i only calls webgl when values change', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('HeadlessGLKernel.setUniform1i only calls webgl when values change', () => {
   const kernel = new HeadlessGLKernel('function() {}', { output: [1] });
   let throws = false;
   kernel.context = {
@@ -301,7 +301,7 @@ test('WebGL2Kernel.setUniform2f only calls webgl when values change', () => {
   assert.deepEqual(kernel.uniform2fCache['test'], [3, 4]);
   kernel.destroy();
 });
-test('HeadlessGLKernel.setUniform2f only calls webgl when values change', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('HeadlessGLKernel.setUniform2f only calls webgl when values change', () => {
   const kernel = new HeadlessGLKernel('function() {}', { output: [1] });
   let throws = false;
   kernel.context = {

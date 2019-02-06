@@ -37,37 +37,6 @@ class CPUFunctionNode extends FunctionNode {
 	}
 
 	/**
-	 * @desc Parses the abstract syntax tree for to its *named function prototype*
-	 * @param {Object} ast - the AST object to parse
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astFunctionPrototype(ast, retArr) {
-		// Setup function return type and name
-		if (this.isRootKernel || this.isSubKernel) {
-			return retArr;
-		}
-
-		retArr.push(this.returnType);
-		retArr.push(' ');
-		retArr.push(this.name);
-		retArr.push('(');
-
-		// Arguments handling
-		for (let i = 0; i < this.argumentNames.length; ++i) {
-			if (i > 0) {
-				retArr.push(', ');
-			}
-			retArr.push('user_');
-			retArr.push(this.argumentNames[i]);
-		}
-
-		retArr.push(');\n');
-
-		return retArr;
-	}
-
-	/**
 	 * @desc Parses the abstract syntax tree for to its *named function*
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
@@ -217,7 +186,7 @@ class CPUFunctionNode extends FunctionNode {
 					retArr.push('constants_' + idtNode.name);
 				} else {
 					const userArgumentName = this.getUserArgumentName(idtNode.name);
-					if (userArgumentName !== null) {
+					if (userArgumentName) {
 						retArr.push('user_' + userArgumentName);
 					} else {
 						retArr.push('user_' + idtNode.name);

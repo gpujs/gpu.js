@@ -258,6 +258,7 @@ export interface IFunctionSettings {
   lookupReturnType?(functionName: string): void;
   plugins?: any[];
   pluginNames?: string[];
+  parent?: FunctionNode
 }
 
 export interface ISubKernel {
@@ -286,5 +287,5 @@ export interface IFunctionBuilderSettings {
 export class FunctionNode implements IFunctionSettings {}
 
 export class Texture {
-
+  toArray(): number[] | number[][] | number[][][]
 }

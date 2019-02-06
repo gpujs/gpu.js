@@ -1,9 +1,9 @@
-const acorn = require('acorn');
 const { assert, test, module: describe } = require('qunit');
 const { WebGLFunctionNode } = require(process.cwd() + '/src');
 
 describe('WebGLFunctionNode.astMemberExpression()');
 
+// TODO: finish
 function run(value, name, type) {
   const expression = acorn.parse(value).body[0].expression;
   const instance = {
@@ -19,7 +19,7 @@ function run(value, name, type) {
     popState: () => {},
     isAstVariable: WebGLFunctionNode.prototype.isAstVariable,
     getVariableSignature: WebGLFunctionNode.prototype.getVariableSignature,
-    getMemberExpressionPropertyMarkup: WebGLFunctionNode.prototype.getMemberExpressionPropertyMarkup,
+    memberExpressionPropertyMarkup: WebGLFunctionNode.prototype.memberExpressionPropertyMarkup,
   };
   return WebGLFunctionNode.prototype.astMemberExpression.call(instance, expression, []).join('');
 }
