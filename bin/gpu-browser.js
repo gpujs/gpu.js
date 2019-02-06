@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0
- * @date Tue Feb 05 2019 21:07:15 GMT-0500 (Eastern Standard Time)
+ * @date Tue Feb 05 2019 22:00:22 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -5437,7 +5437,6 @@ class CPUFunctionNode extends FunctionNode {
 module.exports = {
 	CPUFunctionNode
 };
-
 },{"../function-node":8}],5:[function(require,module,exports){
 const {
 	utils
@@ -7582,19 +7581,30 @@ class WebGLFunctionNode extends FunctionNode {
 		}
 
 		retArr.push('(');
-		if (ast.operator === '===') {
-			this.astGeneric(ast.left, retArr);
-			retArr.push('==');
-			this.astGeneric(ast.right, retArr);
-		} else if (ast.operator === '!==') {
-			this.astGeneric(ast.left, retArr);
-			retArr.push('!=');
-			this.astGeneric(ast.right, retArr);
-		} else if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
+		if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
 			retArr.push('div_with_int_check(');
-			this.astGeneric(ast.left, retArr);
+
+			if (this.firstAvailableTypeFromAst(ast.left) !== 'Number') {
+				retArr.push('int(');
+				this.pushState('casting-to-float');
+				this.astGeneric(ast.left, retArr);
+				this.popState('casting-to-float');
+				retArr.push(')');
+			} else {
+				this.astGeneric(ast.left, retArr);
+			}
+
 			retArr.push(', ');
-			this.astGeneric(ast.right, retArr);
+
+			if (this.firstAvailableTypeFromAst(ast.right) !== 'Number') {
+				retArr.push('float(');
+				this.pushState('casting-to-float');
+				this.astGeneric(ast.right, retArr);
+				this.popState('casting-to-float');
+				retArr.push(')');
+			} else {
+				this.astGeneric(ast.right, retArr);
+			}
 			retArr.push(')');
 		} else {
 			const leftType = this.firstAvailableTypeFromAst(ast.left) || 'Number';
@@ -7606,25 +7616,25 @@ class WebGLFunctionNode extends FunctionNode {
 			switch (key) {
 				case 'Integer & Integer':
 					this.astGeneric(ast.left, retArr);
-					retArr.push(ast.operator);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.astGeneric(ast.right, retArr);
 					break;
 				case 'Number & Number':
 					this.astGeneric(ast.left, retArr);
-					retArr.push(ast.operator);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.astGeneric(ast.right, retArr);
 					break;
 				case 'LiteralInteger & LiteralInteger':
 					this.pushState('casting-to-float');
 					this.astGeneric(ast.left, retArr);
-					retArr.push(ast.operator);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.astGeneric(ast.right, retArr);
 					this.popState('casting-to-float');
 					break;
 
 				case 'Integer & Number':
 					this.astGeneric(ast.left, retArr);
-					retArr.push(ast.operator);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.pushState('casting-to-integer');
 					retArr.push('int(');
 					this.astGeneric(ast.right, retArr);
@@ -7633,7 +7643,7 @@ class WebGLFunctionNode extends FunctionNode {
 					break;
 				case 'Integer & LiteralInteger':
 					this.astGeneric(ast.left, retArr);
-					retArr.push(ast.operator);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.pushState('casting-to-integer');
 					this.astGeneric(ast.right, retArr);
 					this.popState('casting-to-integer');
@@ -7641,7 +7651,7 @@ class WebGLFunctionNode extends FunctionNode {
 
 				case 'Number & Integer':
 					this.astGeneric(ast.left, retArr);
-					retArr.push(ast.operator);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.pushState('casting-to-float');
 					retArr.push('float(');
 					this.astGeneric(ast.right, retArr);
@@ -7650,7 +7660,7 @@ class WebGLFunctionNode extends FunctionNode {
 					break;
 				case 'Number & LiteralInteger':
 					this.astGeneric(ast.left, retArr);
-					retArr.push(ast.operator);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.pushState('casting-to-float');
 					this.astGeneric(ast.right, retArr);
 					this.popState('casting-to-float');
@@ -7660,14 +7670,14 @@ class WebGLFunctionNode extends FunctionNode {
 					this.pushState('casting-to-float');
 					this.astGeneric(ast.left, retArr);
 					this.popState('casting-to-float');
-					retArr.push(ast.operator);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.astGeneric(ast.right, retArr);
 					break;
 				case 'LiteralInteger & Integer':
 					this.pushState('casting-to-integer');
 					this.astGeneric(ast.left, retArr);
 					this.popState('casting-to-integer');
-					retArr.push(ast.operator);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.astGeneric(ast.right, retArr);
 					break;
 				default:
@@ -8328,6 +8338,11 @@ const typeMap = {
 	'Number': 'float',
 	'NumberTexture': 'sampler2D',
 	'ArrayTexture(4)': 'sampler2D'
+};
+
+const operatorMap = {
+	'===': '==',
+	'!==': '!='
 };
 
 module.exports = {

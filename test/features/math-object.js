@@ -52,7 +52,7 @@ function mathRandom(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return Math.random();
-  }, { output: [1], debug: true });
+  }, { output: [1] });
 
   const result = kernel();
   assert.ok(result[0] > 0 && result[0] < 1, `value was expected to be between o and 1, but was ${result[0]}`);
