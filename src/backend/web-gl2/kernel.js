@@ -45,6 +45,7 @@ class WebGL2Kernel extends WebGLKernel {
 
 		if (testCanvas) {
 			testContext = testCanvas.getContext('webgl2');
+			if (!testContext) return;
 			testExtensions = {
 				EXT_color_buffer_float: testContext.getExtension('EXT_color_buffer_float'),
 				OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),

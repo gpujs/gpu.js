@@ -15,15 +15,15 @@ function testDivideByThree(mode) {
 	gpu.destroy();
 }
 
-test('Issue #349 - divide by three auto', () => {
+(GPU.isFloatOutputSupported ? test : skip)('Issue #349 - divide by three auto', () => {
 	testDivideByThree();
 });
 
-test('Issue #349 - divide by three gpu', () => {
+(GPU.isFloatOutputSupported ? test : skip)('Issue #349 - divide by three gpu', () => {
 	testDivideByThree('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #349 - divide by three webgl', () => {
+(GPU.isFloatOutputSupported && GPU.isWebGLSupported ? test : skip)('Issue #349 - divide by three webgl', () => {
 	testDivideByThree('webgl');
 });
 
@@ -72,13 +72,13 @@ function someRandomWholeNumberDivisions(mode) {
 	gpu.destroy();
 }
 
-test('Issue #349 - some random whole number divisions auto', () => {
+(GPU.isFloatOutputSupported ? test : skip)('Issue #349 - some random whole number divisions auto', () => {
 	someRandomWholeNumberDivisions();
 });
-test('Issue #349 - some random whole number divisions gpu', () => {
+(GPU.isFloatOutputSupported ? test : skip)('Issue #349 - some random whole number divisions gpu', () => {
 	someRandomWholeNumberDivisions('gpu');
 });
-(GPU.isWebGLSupported ? test : skip)('Issue #349 - some random whole number divisions webgl', () => {
+(GPU.isFloatOutputSupported && GPU.isWebGLSupported ? test : skip)('Issue #349 - some random whole number divisions webgl', () => {
 	someRandomWholeNumberDivisions('webgl');
 });
 (GPU.isWebGL2Supported ? test : skip)('Issue #349 - some random whole number divisions webgl2', () => {
@@ -121,15 +121,15 @@ function testDisableFixIntegerDivisionBug(mode) {
 	}
 	gpu.destroy();
 }
-test('Issue #349 - test disable fix integer division bug auto', () => {
+(GPU.isFloatOutputSupported ? test : skip)('Issue #349 - test disable fix integer division bug auto', () => {
 	testDisableFixIntegerDivisionBug();
 });
 
-test('Issue #349 - test disable fix integer division bug gpu', () => {
+(GPU.isFloatOutputSupported ? test : skip)('Issue #349 - test disable fix integer division bug gpu', () => {
 	testDisableFixIntegerDivisionBug('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #349 - test disable fix integer division bug webgl', () => {
+(GPU.isFloatOutputSupported  && GPU.isWebGLSupported ? test : skip)('Issue #349 - test disable fix integer division bug webgl', () => {
 	testDisableFixIntegerDivisionBug('webgl');
 });
 

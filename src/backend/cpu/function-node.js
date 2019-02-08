@@ -8,34 +8,6 @@ const {
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
  */
 class CPUFunctionNode extends FunctionNode {
-	constructor(fn, settings) {
-		settings = settings || {};
-		super(fn, settings);
-		this.memberStates = [];
-		this._string = null;
-	}
-
-	get memberState() {
-		return this.memberStates[this.memberStates.length - 1];
-	}
-
-	pushMemberState(name) {
-		this.memberStates.push(name);
-	}
-
-	popMemberState(name) {
-		if (this.memberState === name) {
-			this.memberStates.pop();
-		} else {
-			throw new Error(`Cannot popMemberState ${ name } when in ${ this.memberState }`)
-		}
-	}
-
-	toString() {
-		if (this._string) return this._string;
-		return this._string = this.astGeneric(this.getJsAST(), []).join('').trim();
-	}
-
 	/**
 	 * @desc Parses the abstract syntax tree for to its *named function*
 	 * @param {Object} ast - the AST object to parse
@@ -153,31 +125,7 @@ class CPUFunctionNode extends FunctionNode {
 			);
 		}
 
-		switch (this.state) {
-			case 'input-index-y':
-			case 'input-index-z':
-				retArr.push('(');
-		}
-
 		switch (idtNode.name) {
-			case 'gpu_threadX':
-				retArr.push('_this.thread.x');
-				break;
-			case 'gpu_threadY':
-				retArr.push('_this.thread.y');
-				break;
-			case 'gpu_threadZ':
-				retArr.push('_this.thread.z');
-				break;
-			case 'gpu_outputX':
-				retArr.push('_this.output.x');
-				break;
-			case 'gpu_outputY':
-				retArr.push('_this.output.y');
-				break;
-			case 'gpu_outputZ':
-				retArr.push('_this.output.z');
-				break;
 			case 'Infinity':
 				retArr.push('Infinity');
 				break;
@@ -185,27 +133,13 @@ class CPUFunctionNode extends FunctionNode {
 				if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
 					retArr.push('constants_' + idtNode.name);
 				} else {
-					const userArgumentName = this.getUserArgumentName(idtNode.name);
-					if (userArgumentName) {
-						retArr.push('user_' + userArgumentName);
+					const name = this.getUserArgumentName(idtNode.name);
+					const type = this.getType(idtNode);
+					if (name && type && this.parent && type !== 'Number' && type !== 'Integer' && type !== 'LiteralInteger') {
+						retArr.push('user_' + name);
 					} else {
 						retArr.push('user_' + idtNode.name);
 					}
-				}
-		}
-
-		switch (this.state) {
-			case 'input-index-y':
-				{
-					const size = this.argumentSizes[this.argumentNames.indexOf(this.memberState)];
-					retArr.push(' * ' + size[0] + ')');
-					break;
-				}
-			case 'input-index-z':
-				{
-					const size = this.argumentSizes[this.argumentNames.indexOf(this.memberState)];
-					retArr.push(' * ' + size[0] * size[1] + ')');
-					break;
 				}
 		}
 
@@ -371,17 +305,6 @@ class CPUFunctionNode extends FunctionNode {
 	}
 
 	/**
-	 * @desc Parses the abstract syntax tree for an *Empty* Statement
-	 * @param {Object} eNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astEmptyStatement(eNode, retArr) {
-		//retArr.push(';\n');
-		return retArr;
-	}
-
-	/**
 	 * @desc Parses the abstract syntax tree for *Block* statement
 	 * @param {Object} bNode - the AST object to parse
 	 * @param {Array} retArr - return array string
@@ -397,18 +320,6 @@ class CPUFunctionNode extends FunctionNode {
 	}
 
 	/**
-	 * @desc Parses the abstract syntax tree for *generic expression* statement
-	 * @param {Object} esNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astExpressionStatement(esNode, retArr) {
-		this.astGeneric(esNode.expression, retArr);
-		retArr.push(';');
-		return retArr;
-	}
-
-	/**
 	 * @desc Parses the abstract syntax tree for *Variable Declaration*
 	 * @param {Object} varDecNode - An ast Node
 	 * @param {Array} retArr - return array string
@@ -419,29 +330,16 @@ class CPUFunctionNode extends FunctionNode {
 			this.varWarn();
 		}
 		retArr.push(`${varDecNode.kind} `);
+		const firstDeclaration = varDecNode.declarations[0];
+		const type = this.getType(firstDeclaration.init);
 		for (let i = 0; i < varDecNode.declarations.length; i++) {
-			this.declarations[varDecNode.declarations[i].id.name] = varDecNode.kind;
+			this.declarations[varDecNode.declarations[i].id.name] = type;
 			if (i > 0) {
 				retArr.push(',');
 			}
 			this.astGeneric(varDecNode.declarations[i], retArr);
 		}
 		retArr.push(';');
-		return retArr;
-	}
-
-	/**
-	 * @desc Parses the abstract syntax tree for *Variable Declarator*
-	 * @param {Object} iVarDecNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astVariableDeclarator(iVarDecNode, retArr) {
-		this.astGeneric(iVarDecNode.id, retArr);
-		if (iVarDecNode.init !== null) {
-			retArr.push('=');
-			this.astGeneric(iVarDecNode.init, retArr);
-		}
 		return retArr;
 	}
 
@@ -478,79 +376,6 @@ class CPUFunctionNode extends FunctionNode {
 	}
 
 	/**
-	 * @desc Parses the abstract syntax tree for *Break* Statement
-	 * @param {Object} brNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astBreakStatement(brNode, retArr) {
-		retArr.push('break;\n');
-		return retArr;
-	}
-
-	/**
-	 * @desc Parses the abstract syntax tree for *Continue* Statement
-	 * @param {Object} crNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astContinueStatement(crNode, retArr) {
-		retArr.push('continue;\n');
-		return retArr;
-	}
-
-	/**
-	 * @desc Parses the abstract syntax tree for *Logical* Expression
-	 * @param {Object} logNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astLogicalExpression(logNode, retArr) {
-		retArr.push('(');
-		this.astGeneric(logNode.left, retArr);
-		retArr.push(logNode.operator);
-		this.astGeneric(logNode.right, retArr);
-		retArr.push(')');
-		return retArr;
-	}
-
-	/**
-	 * @desc Parses the abstract syntax tree for *Update* Expression
-	 * @param {Object} uNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astUpdateExpression(uNode, retArr) {
-		if (uNode.prefix) {
-			retArr.push(uNode.operator);
-			this.astGeneric(uNode.argument, retArr);
-		} else {
-			this.astGeneric(uNode.argument, retArr);
-			retArr.push(uNode.operator);
-		}
-
-		return retArr;
-	}
-
-	/**
-	 * @desc Parses the abstract syntax tree for *Unary* Expression
-	 * @param {Object} uNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astUnaryExpression(uNode, retArr) {
-		if (uNode.prefix) {
-			retArr.push(uNode.operator);
-			this.astGeneric(uNode.argument, retArr);
-		} else {
-			this.astGeneric(uNode.argument, retArr);
-			retArr.push(uNode.operator);
-		}
-
-		return retArr;
-	}
-
-	/**
 	 * @desc Parses the abstract syntax tree for *This* expression
 	 * @param {Object} tNode - An ast Node
 	 * @param {Array} retArr - return array string
@@ -568,143 +393,140 @@ class CPUFunctionNode extends FunctionNode {
 	 * @returns {Array} the append retArr
 	 */
 	astMemberExpression(mNode, retArr) {
-		if (mNode.computed) {
-			if (mNode.object.type === 'Identifier' ||
-				(
-					mNode.object.type === 'MemberExpression' &&
-					mNode.object.object.object &&
-					mNode.object.object.object.type === 'ThisExpression' &&
-					mNode.object.object.property.name === 'constants'
-				)) {
-				this.pushState('identifier');
+		const {
+			signature,
+			type,
+			property,
+			xProperty,
+			yProperty,
+			zProperty,
+			name,
+			origin
+		} = this.getMemberExpressionDetails(mNode);
+		switch (signature) {
+			case 'this.thread.value':
+				retArr.push(`_this.thread.${ name }`);
+				return retArr;
+			case 'this.output.value':
+				switch (name) {
+					case 'x':
+						retArr.push(this.output[0]);
+						break;
+					case 'y':
+						retArr.push(this.output[1]);
+						break;
+					case 'z':
+						retArr.push(this.output[2]);
+						break;
+					default:
+						throw this.astErrorOutput('Unexpected expression', mNode);
+				}
+				return retArr;
+			case 'value':
+				throw this.astErrorOutput('Unexpected expression', mNode);
+			case 'value[]':
+			case 'value[][]':
+			case 'value[][][]':
+			case 'value.value':
+				if (origin === 'Math') {
+					retArr.push(Math[name]);
+					return retArr;
+				}
+				switch (property) {
+					case 'r':
+						retArr.push(`user_${ name }[0]`);
+						return retArr;
+					case 'g':
+						retArr.push(`user_${ name }[1]`);
+						return retArr;
+					case 'b':
+						retArr.push(`user_${ name }[2]`);
+						return retArr;
+					case 'a':
+						retArr.push(`user_${ name }[3]`);
+						return retArr;
+				}
+				break;
+			case 'this.constants.value':
+			case 'this.constants.value[]':
+			case 'this.constants.value[][]':
+			case 'this.constants.value[][][]':
+				break;
+			case 'fn()[]':
 				this.astGeneric(mNode.object, retArr);
-				this.popState('identifier');
 				retArr.push('[');
-				if (this.isInput(mNode.object.name)) {
-					this.astGeneric(mNode.property, retArr);
-				} else {
-					this.astGeneric(mNode.property, retArr);
-				}
+				this.astGeneric(mNode.property, retArr);
 				retArr.push(']');
-			} else {
-				if (mNode.object.object) {
-					if (mNode.object.object.object && this.isInput(mNode.object.object.object.name)) {
-						this.pushMemberState(mNode.object.object.object.name);
-						this.pushState('input-index-z');
-						this.astGeneric(mNode.object, retArr);
-						const last = retArr.pop();
-						retArr.push(' + ');
-						this.popState('input-index-z');
-						this.pushState('input-index');
-						this.astGeneric(mNode.property, retArr);
-						this.popState('input-index');
-						retArr.push(last);
-						this.popMemberState(mNode.object.object.object.name);
-					} else if (this.isInput(mNode.object.object.name)) {
-						this.pushMemberState(mNode.object.object.name);
-						if (!this.isState('input-index-z')) {
-							this.pushState('input-index-y');
-						}
-						this.astGeneric(mNode.object, retArr);
-						const last = retArr.pop();
-						retArr.push(' + ');
-						if (!this.isState('input-index-z')) {
-							this.popState('input-index-y');
-						}
+				return retArr;
+			default:
+				throw this.astErrorOutput('Unexpected expression', mNode);
+		}
 
-						const isInputIndexZ = this.isState('input-index-z');
-						if (isInputIndexZ) {
-							this.pushState('input-index-y');
-						} else {
-							this.pushState('input-index');
-						}
-						this.astGeneric(mNode.property, retArr);
-						if (isInputIndexZ) {
-							this.popState('input-index-y')
-						} else {
-							this.popState('input-index');
-						}
-						retArr.push(last);
-						this.popMemberState(mNode.object.object.name);
+		if (type === 'Number' || type === 'Integer') {
+			retArr.push(`${origin}_${name}`);
+			return retArr;
+		}
+
+		// argument may have come from a parent
+		let synonymName;
+		if (this.parent) {
+			synonymName = this.getUserArgumentName(name);
+		}
+
+		const markupName = `${origin}_${synonymName || name}`;
+
+		switch (type) {
+			case 'Array(2)':
+			case 'Array(3)':
+			case 'Array(4)':
+			case 'HTMLImageArray':
+			case 'ArrayTexture(4)':
+			case 'HTMLImage':
+			default:
+				const isInput = this.isInput(synonymName || name);
+				retArr.push(`${ markupName }`);
+				if (zProperty && yProperty) {
+					if (isInput) {
+						const size = this.argumentSizes[this.argumentNames.indexOf(name)];
+						retArr.push('[(');
+						this.astGeneric(zProperty, retArr);
+						retArr.push(`*${ size[1] * size[0]})+(`);
+						this.astGeneric(yProperty, retArr);
+						retArr.push(`*${ size[0] })+`);
+						this.astGeneric(xProperty, retArr);
+						retArr.push(']');
 					} else {
-						this.astGeneric(mNode.object, retArr);
-						const last = retArr.pop();
-						retArr.push('][');
-						this.astGeneric(mNode.property, retArr);
-						retArr.push(last);
+						retArr.push('[');
+						this.astGeneric(zProperty, retArr);
+						retArr.push(']');
+						retArr.push('[');
+						this.astGeneric(yProperty, retArr);
+						retArr.push(']');
+						retArr.push('[');
+						this.astGeneric(xProperty, retArr);
+						retArr.push(']');
+					}
+				} else if (yProperty) {
+					if (isInput) {
+						const size = this.argumentSizes[this.argumentNames.indexOf(name)];
+						retArr.push('[(');
+						this.astGeneric(yProperty, retArr);
+						retArr.push(`*${ size[0] })+`);
+						this.astGeneric(xProperty, retArr);
+						retArr.push(']');
+					} else {
+						retArr.push('[');
+						this.astGeneric(yProperty, retArr);
+						retArr.push(']');
+						retArr.push('[');
+						this.astGeneric(xProperty, retArr);
+						retArr.push(']');
 					}
 				} else {
-					this.astGeneric(mNode.object, retArr);
-					const last = retArr.pop();
-					retArr.push('][');
-					this.astGeneric(mNode.property, retArr);
-					retArr.push(last);
+					retArr.push('[');
+					this.astGeneric(xProperty, retArr);
+					retArr.push(']');
 				}
-			}
-		} else {
-			let unrolled = this.astMemberExpressionUnroll(mNode);
-			if (mNode.property.type === 'Identifier' && mNode.computed) {
-				unrolled = 'user_' + unrolled;
-			}
-
-			if (unrolled.indexOf('this.constants') === 0) {
-				// remove 'this.constants' from beginning
-				unrolled = 'constants_' + unrolled.substring(15);
-			} else if (unrolled.indexOf('this') === 0) {
-				// Its a reference to `this`, add '_' before
-				unrolled = '_' + unrolled;
-			}
-
-			switch (this.state) {
-				case 'input-index-y':
-				case 'input-index-z':
-					retArr.push('(');
-			}
-
-			switch (unrolled) {
-				case '_this.output.x':
-					retArr.push(this.output[0]);
-					break;
-				case '_this.output.y':
-					retArr.push(this.output[1]);
-					break;
-				case '_this.output.z':
-					retArr.push(this.output[2]);
-					break;
-				default:
-					if (
-						mNode.object &&
-						mNode.object.name &&
-						this.declarations[mNode.object.name]) {
-						retArr.push('user_');
-					}
-					retArr.push(unrolled);
-			}
-
-			switch (this.state) {
-				case 'input-index-y':
-					{
-						const size = this.argumentSizes[this.argumentNames.indexOf(this.memberState)];
-						retArr.push(` * ${ size[0] })`);
-						break;
-					}
-				case 'input-index-z':
-					{
-						const size = this.argumentSizes[this.argumentNames.indexOf(this.memberState)];
-						retArr.push(` * ${ size[0] * size[1] })`);
-						break;
-					}
-			}
-		}
-		return retArr;
-	}
-
-	astSequenceExpression(sNode, retArr) {
-		for (let i = 0; i < sNode.expressions.length; i++) {
-			if (i > 0) {
-				retArr.push(',');
-			}
-			this.astGeneric(sNode.expressions, retArr);
 		}
 		return retArr;
 	}
@@ -724,7 +546,7 @@ class CPUFunctionNode extends FunctionNode {
 			if (this.calledFunctions.indexOf(funcName) < 0) {
 				this.calledFunctions.push(funcName);
 			}
-			if (!this.hasOwnProperty('funcName')) {
+			if (!this.calledFunctionsArguments[funcName]) {
 				this.calledFunctionsArguments[funcName] = [];
 			}
 
@@ -744,16 +566,12 @@ class CPUFunctionNode extends FunctionNode {
 					retArr.push(', ');
 				}
 				this.astGeneric(argument, retArr);
-				if (argument.type === 'Identifier') {
-					const argumentIndex = this.argumentNames.indexOf(argument.name);
-					if (argumentIndex === -1) {
-						functionArguments.push(null);
-					} else {
-						functionArguments.push({
-							name: argument.name,
-							type: this.argumentTypes[argumentIndex]
-						});
-					}
+				const argumentType = this.getType(argument);
+				if (argumentType) {
+					functionArguments.push({
+						name: argument.name || null,
+						type: argumentType
+					});
 				} else {
 					functionArguments.push(null);
 				}

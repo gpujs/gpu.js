@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU, WebGLKernel } = require('../../src');
 
 describe('features: constants image array');
 function feature(mode, done) {
@@ -29,7 +29,7 @@ function feature(mode, done) {
     output: [1, 1, 4]
   };
 
-  if (mode === 'webgl') {
+  if (mode === 'webgl' || gpu.Kernel === WebGLKernel) {
     // make fail early in this exact scenario
     gpu.createKernel(fn, settings)();
   }
@@ -39,17 +39,18 @@ function feature(mode, done) {
     settings[0] = image.width;
     settings[1] = image.height;
     const tryConst = gpu.createKernel(fn, settings);
-    assert.ok(tryConst()[0][0][0] > 0, 'image array constant passed test');
+    const result = tryConst();
+    assert.ok(result[0][0][0] > 0, 'image array constant passed test');
     gpu.destroy();
     done();
   };
 }
 
-(typeof Image !== 'undefined' ? test : skip)('auto', t => {
+(GPU.isGPUHTMLImageArraySupported && typeof Image !== 'undefined' ? test : skip)('auto', t => {
   feature(null, t.async());
 });
 
-(typeof Image !== 'undefined' ? test : skip)('gpu', t => {
+(GPU.isGPUHTMLImageArraySupported && typeof Image !== 'undefined' ? test : skip)('gpu', t => {
   feature('gpu', t.async());
 });
 

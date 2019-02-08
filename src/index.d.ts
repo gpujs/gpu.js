@@ -83,6 +83,7 @@ export class Kernel {
   wraparound: boolean;
   immutable: boolean;
   pipeline: boolean;
+  plugins: IPlugin[];
   build(
     arg1?: KernelVariable,
     arg2?: KernelVariable,
@@ -254,7 +255,7 @@ export interface IFunctionSettings {
   returnType?: string;
   isRootKernel?: boolean;
   isSubKernel?: boolean;
-  onNestedFunction?(source: string): void;
+  onNestedFunction?(source: string, returnType: string): void;
   lookupReturnType?(functionName: string): void;
   plugins?: any[];
   pluginNames?: string[];
@@ -269,6 +270,7 @@ export interface ISubKernel {
 
 
 export class FunctionBuilder {
+  fromKernel(kernel: IKernelSettings, FunctionNode: FunctionNode, extraNodeOptions?: any): FunctionBuilder;
   constructor(settings: IFunctionSettings);
   addFunctionNode(functionNode: FunctionNode);
   traceFunctionCalls(functionName: string): string[];
@@ -287,5 +289,16 @@ export interface IFunctionBuilderSettings {
 export class FunctionNode implements IFunctionSettings {}
 
 export class Texture {
-  toArray(): number[] | number[][] | number[][][]
+  toArray(): TextureArrayOutput
+}
+
+export type TextureArrayOutput = number[] | number[][] | number[][][];
+
+export interface IPlugin {
+  source: string;
+  name: string;
+  functionMatch: string;
+  functionReplace: string;
+  functionReturnType: GPUVariableType;
+  onBeforeRun: (kernel: Kernel) => void;
 }

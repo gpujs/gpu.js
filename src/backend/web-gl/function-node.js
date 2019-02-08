@@ -7,8 +7,8 @@ const jsMathPrefix = 'Math.';
 const localPrefix = 'this.';
 
 /**
- * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective webGL code
- * @returns the converted webGL function string
+ * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective WebGL code
+ * @returns the converted WebGL function string
  */
 class WebGLFunctionNode extends FunctionNode {
 	constructor(source, settings) {
@@ -17,12 +17,6 @@ class WebGLFunctionNode extends FunctionNode {
 		if (settings && settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
 			this.fixIntegerDivisionAccuracy = settings.fixIntegerDivisionAccuracy;
 		}
-		this._string = null;
-	}
-
-	toString() {
-		if (this._string) return this._string;
-		return this._string = this.astGeneric(this.getJsAST(), []).join('').trim();
 	}
 
 	/**
@@ -37,7 +31,9 @@ class WebGLFunctionNode extends FunctionNode {
 		if (this.isRootKernel) {
 			retArr.push('void');
 		} else {
-			const returnType = this.returnType;
+			const {
+				returnType
+			} = this;
 			const type = typeMap[returnType];
 			if (!type) {
 				throw new Error(`unknown type ${ returnType }`);
@@ -93,7 +89,7 @@ class WebGLFunctionNode extends FunctionNode {
 	 */
 	astReturnStatement(ast, retArr) {
 		if (!ast.argument) throw this.astErrorOutput('Unexpected return statement', ast);
-		const type = this.firstAvailableTypeFromAst(ast.argument);
+		const type = this.getType(ast.argument);
 
 		const result = [];
 
@@ -198,7 +194,7 @@ class WebGLFunctionNode extends FunctionNode {
 		if (ast.operator === '%') {
 			retArr.push('mod(');
 
-			const leftType = this.firstAvailableTypeFromAst(ast.left);
+			const leftType = this.getType(ast.left);
 			if (leftType === 'Integer') {
 				retArr.push('float(');
 				this.astGeneric(ast.left, retArr);
@@ -212,7 +208,7 @@ class WebGLFunctionNode extends FunctionNode {
 			}
 
 			retArr.push(',');
-			const rightType = this.firstAvailableTypeFromAst(ast.right);
+			const rightType = this.getType(ast.right);
 
 			if (rightType === 'Integer') {
 				retArr.push('float(');
@@ -233,7 +229,7 @@ class WebGLFunctionNode extends FunctionNode {
 		if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
 			retArr.push('div_with_int_check(');
 
-			if (this.firstAvailableTypeFromAst(ast.left) !== 'Number') {
+			if (this.getType(ast.left) !== 'Number') {
 				retArr.push('int(');
 				this.pushState('casting-to-float');
 				this.astGeneric(ast.left, retArr);
@@ -245,7 +241,7 @@ class WebGLFunctionNode extends FunctionNode {
 
 			retArr.push(', ');
 
-			if (this.firstAvailableTypeFromAst(ast.right) !== 'Number') {
+			if (this.getType(ast.right) !== 'Number') {
 				retArr.push('float(');
 				this.pushState('casting-to-float');
 				this.astGeneric(ast.right, retArr);
@@ -256,8 +252,8 @@ class WebGLFunctionNode extends FunctionNode {
 			}
 			retArr.push(')');
 		} else {
-			const leftType = this.firstAvailableTypeFromAst(ast.left) || 'Number';
-			const rightType = this.firstAvailableTypeFromAst(ast.right) || 'Number';
+			const leftType = this.getType(ast.left) || 'Number';
+			const rightType = this.getType(ast.right) || 'Number';
 			if (!leftType || !rightType) {
 				throw this.astErrorOutput(`Unhandled binary expression`, ast);
 			}
@@ -406,8 +402,8 @@ class WebGLFunctionNode extends FunctionNode {
 				retArr.push('if (');
 				this.astGeneric(forNode.test.left, retArr);
 				retArr.push(forNode.test.operator);
-				const leftType = this.firstAvailableTypeFromAst(forNode.test.left);
-				const rightType = this.firstAvailableTypeFromAst(forNode.test.right);
+				const leftType = this.getType(forNode.test.left);
+				const rightType = this.getType(forNode.test.right);
 				if (!leftType) throw this.astErrorOutput('Left type unknown', forNode.test.left);
 				if (!rightType) throw this.astErrorOutput('Right type unknown', forNode.test.right);
 				if (leftType === 'Integer' && rightType === 'Number') {
@@ -517,7 +513,7 @@ class WebGLFunctionNode extends FunctionNode {
 	astDoWhileStatement(doWhileNode, retArr) {
 		if (doWhileNode.type !== 'DoWhileStatement') {
 			throw this.astErrorOutput(
-				'Invalid while statment',
+				'Invalid while statement',
 				doWhileNode
 			);
 		}
@@ -551,8 +547,8 @@ class WebGLFunctionNode extends FunctionNode {
 			this.astGeneric(assNode.right, retArr);
 			retArr.push(')');
 		} else {
-			const leftType = this.firstAvailableTypeFromAst(assNode.left);
-			const rightType = this.firstAvailableTypeFromAst(assNode.right);
+			const leftType = this.getType(assNode.left);
+			const rightType = this.getType(assNode.right);
 			this.astGeneric(assNode.left, retArr);
 			retArr.push(assNode.operator);
 			if (leftType !== 'Integer' && rightType === 'Integer') {
@@ -564,17 +560,6 @@ class WebGLFunctionNode extends FunctionNode {
 			}
 			return retArr;
 		}
-	}
-
-	/**
-	 * @desc Parses the abstract syntax tree for an *Empty* Statement
-	 * @param {Object} eNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astEmptyStatement(eNode, retArr) {
-		//retArr.push(';\n');
-		return retArr;
 	}
 
 	/**
@@ -593,18 +578,6 @@ class WebGLFunctionNode extends FunctionNode {
 	}
 
 	/**
-	 * @desc Parses the abstract syntax tree for *generic expression* statement
-	 * @param {Object} esNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astExpressionStatement(esNode, retArr) {
-		this.astGeneric(esNode.expression, retArr);
-		retArr.push(';');
-		return retArr;
-	}
-
-	/**
 	 * @desc Parses the abstract syntax tree for *Variable Declaration*
 	 * @param {Object} varDecNode - An ast Node
 	 * @param {Array} retArr - return array string
@@ -616,7 +589,7 @@ class WebGLFunctionNode extends FunctionNode {
 		const result = [];
 		const firstDeclaration = declarations[0];
 		const init = firstDeclaration.init;
-		let declarationType = this.isState('in-for-loop-init') ? 'Integer' : this.firstAvailableTypeFromAst(init);
+		let declarationType = this.isState('in-for-loop-init') ? 'Integer' : this.getType(init);
 		if (declarationType === 'LiteralInteger') {
 			// We had the choice to go either float or int, choosing float
 			declarationType = 'Number';
@@ -639,21 +612,6 @@ class WebGLFunctionNode extends FunctionNode {
 
 		retArr.push(retArr, result.join(','));
 		retArr.push(';');
-		return retArr;
-	}
-
-	/**
-	 * @desc Parses the abstract syntax tree for *Variable Declarator*
-	 * @param {Object} iVarDecNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astVariableDeclarator(iVarDecNode, retArr) {
-		this.astGeneric(iVarDecNode.id, retArr);
-		if (iVarDecNode.init !== null) {
-			retArr.push('=');
-			this.astGeneric(iVarDecNode.init, retArr);
-		}
 		return retArr;
 	}
 
@@ -689,79 +647,6 @@ class WebGLFunctionNode extends FunctionNode {
 	}
 
 	/**
-	 * @desc Parses the abstract syntax tree for *Break* Statement
-	 * @param {Object} brNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astBreakStatement(brNode, retArr) {
-		retArr.push('break;\n');
-		return retArr;
-	}
-
-	/**
-	 * @desc Parses the abstract syntax tree for *Continue* Statement
-	 * @param {Object} crNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astContinueStatement(crNode, retArr) {
-		retArr.push('continue;\n');
-		return retArr;
-	}
-
-	/**
-	 * @desc Parses the abstract syntax tree for *Logical* Expression
-	 * @param {Object} logNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astLogicalExpression(logNode, retArr) {
-		retArr.push('(');
-		this.astGeneric(logNode.left, retArr);
-		retArr.push(logNode.operator);
-		this.astGeneric(logNode.right, retArr);
-		retArr.push(')');
-		return retArr;
-	}
-
-	/**
-	 * @desc Parses the abstract syntax tree for *Update* Expression
-	 * @param {Object} uNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astUpdateExpression(uNode, retArr) {
-		if (uNode.prefix) {
-			retArr.push(uNode.operator);
-			this.astGeneric(uNode.argument, retArr);
-		} else {
-			this.astGeneric(uNode.argument, retArr);
-			retArr.push(uNode.operator);
-		}
-
-		return retArr;
-	}
-
-	/**
-	 * @desc Parses the abstract syntax tree for *Unary* Expression
-	 * @param {Object} uNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 * @returns {Array} the append retArr
-	 */
-	astUnaryExpression(uNode, retArr) {
-		if (uNode.prefix) {
-			retArr.push(uNode.operator);
-			this.astGeneric(uNode.argument, retArr);
-		} else {
-			this.astGeneric(uNode.argument, retArr);
-			retArr.push(uNode.operator);
-		}
-
-		return retArr;
-	}
-
-	/**
 	 * @desc Parses the abstract syntax tree for *This* expression
 	 * @param {Object} tNode - An ast Node
 	 * @param {Array} retArr - return array string
@@ -779,19 +664,22 @@ class WebGLFunctionNode extends FunctionNode {
 	 * @returns {Array} the append retArr
 	 */
 	astMemberExpression(mNode, retArr) {
-		const variableSignature = this.getVariableSignature(mNode);
-		let xProperty = null;
-		let yProperty = null;
-		let zProperty = null;
-		let name = null;
-		let type = null;
-		let origin = 'user';
-		switch (variableSignature) {
+		const {
+			property,
+			name,
+			signature,
+			origin,
+			type,
+			xProperty,
+			yProperty,
+			zProperty
+		} = this.getMemberExpressionDetails(mNode);
+		switch (signature) {
 			case 'this.thread.value':
-				retArr.push(`threadId.${ mNode.property.name }`);
+				retArr.push(`threadId.${ name }`);
 				return retArr;
 			case 'this.output.value':
-				switch (mNode.property.name) {
+				switch (name) {
 					case 'x':
 						retArr.push(this.output[0]);
 						break;
@@ -806,124 +694,57 @@ class WebGLFunctionNode extends FunctionNode {
 				}
 				return retArr;
 			case 'value':
-				{
-					throw this.astErrorOutput('Unexpected expression', mNode);
-				}
+				throw this.astErrorOutput('Unexpected expression', mNode);
 			case 'value[]':
-				{
-					if (typeof mNode.object.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					name = mNode.object.name;
-					type = this.getVariableType(name);
-					xProperty = mNode.property;
-					break;
-				}
 			case 'value[][]':
-				{
-					if (typeof mNode.object.object.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					name = mNode.object.object.name;
-					type = this.getVariableType(name);
-					yProperty = mNode.object.property;
-					xProperty = mNode.property;
-					break;
-				}
 			case 'value[][][]':
-				{
-					if (typeof mNode.object.object.object.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					name = mNode.object.object.object.name;
-					type = this.getVariableType(name);
-					zProperty = mNode.object.object.property;
-					yProperty = mNode.object.property;
-					xProperty = mNode.property;
-					break;
-				}
 			case 'value.value':
-				{
-					if (typeof mNode.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					if (this.isAstMathVariable(mNode)) {
-						retArr.push(Math[mNode.property.name]);
+				if (origin === 'Math') {
+					retArr.push(Math[name]);
+					return retArr;
+				}
+				switch (property) {
+					case 'r':
+						retArr.push(`user_${ name }.r`);
 						return retArr;
-					}
-					switch (mNode.property.name) {
-						case 'r':
-							retArr.push(`user_${ mNode.object.name }.r`);
-							return retArr;
-						case 'g':
-							retArr.push(`user_${ mNode.object.name }.g`);
-							return retArr;
-						case 'b':
-							retArr.push(`user_${ mNode.object.name }.b`);
-							return retArr;
-						case 'a':
-							retArr.push(`user_${ mNode.object.name }.a`);
-							return retArr;
-					}
-					break;
+					case 'g':
+						retArr.push(`user_${ name }.g`);
+						return retArr;
+					case 'b':
+						retArr.push(`user_${ name }.b`);
+						return retArr;
+					case 'a':
+						retArr.push(`user_${ name }.a`);
+						return retArr;
 				}
+				break;
 			case 'this.constants.value':
-				{
-					if (typeof mNode.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					name = mNode.property.name;
-					origin = 'constants';
-					type = this.getConstantType(name);
-					if (!type) {
-						throw this.astErrorOutput('Constant has no type', mNode);
-					}
-					break;
-				}
 			case 'this.constants.value[]':
-				{
-					if (typeof mNode.object.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					name = mNode.object.property.name;
-					origin = 'constants';
-					type = this.getConstantType(name);
-					if (!type) {
-						throw this.astErrorOutput('Constant has no type', mNode);
-					}
-					xProperty = mNode.property;
-					break;
-				}
 			case 'this.constants.value[][]':
-				{
-					if (typeof mNode.object.object.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					name = mNode.object.object.property.name;
-					origin = 'constants';
-					type = this.getConstantType(name);
-					if (!type) {
-						throw this.astErrorOutput('Constant has no type', mNode);
-					}
-					yProperty = mNode.object.property;
-					xProperty = mNode.property;
-					break;
-				}
 			case 'this.constants.value[][][]':
-				{
-					if (typeof mNode.object.object.object.property.name !== 'string') throw this.astErrorOutput('Unexpected expression', mNode);
-					name = mNode.object.object.object.property.name;
-					origin = 'constants';
-					type = this.getConstantType(name);
-					if (!type) {
-						throw this.astErrorOutput('Constant has no type', mNode);
-					}
-					zProperty = mNode.object.object.property;
-					yProperty = mNode.object.property;
-					xProperty = mNode.property;
-					break;
-				}
+				break;
+			case 'fn()[]':
+				this.astCallExpression(mNode.object, retArr);
+				retArr.push('[');
+				retArr.push(this.memberExpressionPropertyMarkup(property));
+				retArr.push(']');
+				return retArr;
 			default:
 				throw this.astErrorOutput('Unexpected expression', mNode);
 		}
 
 		if (type === 'Number' || type === 'Integer') {
-			retArr.push(`${origin}_${name}`);
+			retArr.push(`${ origin }_${ name}`);
 			return retArr;
 		}
 
 		// argument may have come from a parent
+		let synonymName;
 		if (this.parent) {
-			name = this.getUserArgumentName(name) || name;
+			synonymName = this.getUserArgumentName(name);
 		}
 
-		const markupName = `${origin}_${name}`;
+		const markupName = `${origin}_${synonymName || name}`;
 
 		switch (type) {
 			case 'Array(2)':
@@ -932,35 +753,25 @@ class WebGLFunctionNode extends FunctionNode {
 				// Get from local vec4
 				this.astGeneric(mNode.object, retArr);
 				retArr.push('[');
-				retArr.push(mNode.property.raw);
+				retArr.push(this.memberExpressionPropertyMarkup(xProperty));
 				retArr.push(']');
 				break;
 			case 'HTMLImageArray':
 				retArr.push(`getImage3D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
-				this.memeberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
 				retArr.push(')');
 				break;
 			case 'ArrayTexture(4)':
 			case 'HTMLImage':
 				retArr.push(`getImage2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
-				this.memeberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
 				retArr.push(')');
 				break;
 			default:
 				retArr.push(`get(${ markupName }, ${ markupName }Size, ${ markupName }Dim, ${ markupName }BitRatio, `);
-				this.memeberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
 				retArr.push(')');
 				break;
-		}
-		return retArr;
-	}
-
-	astSequenceExpression(sNode, retArr) {
-		for (let i = 0; i < sNode.expressions.length; i++) {
-			if (i > 0) {
-				retArr.push(',');
-			}
-			this.astGeneric(sNode.expressions, retArr);
 		}
 		return retArr;
 	}
@@ -995,7 +806,7 @@ class WebGLFunctionNode extends FunctionNode {
 			if (this.calledFunctions.indexOf(funcName) < 0) {
 				this.calledFunctions.push(funcName);
 			}
-			if (!this.hasOwnProperty('funcName')) {
+			if (!this.calledFunctionsArguments[funcName]) {
 				this.calledFunctionsArguments[funcName] = [];
 			}
 
@@ -1026,7 +837,7 @@ class WebGLFunctionNode extends FunctionNode {
 					retArr.push(', ');
 				}
 				this.astGeneric(argument, retArr);
-				const argumentType = this.firstAvailableTypeFromAst(argument);
+				const argumentType = this.getType(argument);
 				if (argumentType) {
 					functionArguments.push({
 						name: argument.name || null,
@@ -1072,7 +883,7 @@ class WebGLFunctionNode extends FunctionNode {
 		return retArr;
 	}
 
-	memeberExpressionXYZ(x, y, z, retArr) {
+	memberExpressionXYZ(x, y, z, retArr) {
 		if (z) {
 			retArr.push(this.memberExpressionPropertyMarkup(z), ', ');
 		} else {
@@ -1091,7 +902,7 @@ class WebGLFunctionNode extends FunctionNode {
 		if (!property) {
 			throw new Error('Property not set');
 		}
-		const type = this.firstAvailableTypeFromAst(property);
+		const type = this.getType(property);
 		const result = [];
 		if (type === 'Number') {
 			this.pushState('casting-to-integer');

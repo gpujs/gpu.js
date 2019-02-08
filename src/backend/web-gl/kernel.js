@@ -13,6 +13,7 @@ const {
 const {
 	Texture
 } = require('../../texture');
+const triangleNoise = require('../../plugins/triangle-noise');
 const {
 	fragmentShader
 } = require('./fragment-shader');
@@ -29,7 +30,7 @@ let testContext = null;
 let testExtensions = null;
 let features = null;
 
-const plugins = [require('../../plugins/random-gold-noise')];
+const plugins = [triangleNoise];
 const canvases = [];
 const maxTexSizes = {};
 

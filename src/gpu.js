@@ -88,6 +88,21 @@ class GPU {
 	}
 
 	/**
+	 * @desc TRUE if platform supports HTMLImageArray}
+	 */
+	static get isGPUHTMLImageArraySupported() {
+		return WebGL2Kernel.isSupported;
+	}
+
+	/**
+	 * @desc TRUE if platform supports FloatOutput}
+	 * @returns {boolean}
+	 */
+	static get isFloatOutputSupported() {
+		return kernelOrder.some(Kernel => Kernel.isSupported && Kernel.features.isFloatRead && Kernel.features.isTextureFloat);
+	}
+
+	/**
 	 * Creates an instance of GPU.
 	 * @param {IGPUSettings} [settings] - Settings to set mode, and other properties
 	 */
@@ -139,7 +154,9 @@ class GPU {
 			}
 		} else if (this.mode) {
 			if (this.mode in internalKernels) {
-				Kernel = internalKernels[this.mode];
+				if (internalKernels[this.mode].isSupported) {
+					Kernel = internalKernels[this.mode];
+				}
 			} else if (this.mode === 'gpu') {
 				for (let i = 0; i < kernelOrder.length; i++) {
 					if (kernelOrder[i].isSupported) {

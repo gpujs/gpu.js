@@ -1,4 +1,4 @@
-const { assert, skip, test, module: describe } = require('qunit');
+const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU, Input, input, Texture } = require('../../src');
 
 describe('features: toString sumAB');
@@ -124,7 +124,7 @@ test('toString Texture gpu', () => {
   toStringTextureTest('webgl');
 });
 
-(GPU.isWebGLSupported ? test : skip)('toString Texture webgl2', function () {
+(GPU.isWebGL2Supported ? test : skip)('toString Texture webgl2', function () {
   toStringTextureTest('webgl2');
 });
 
@@ -154,11 +154,7 @@ function toStringInputTest(mode) {
     output: [6]
   });
   const originalResult = originalKernel(input(a, [6, 6]));
-  assert.equal(originalResult.length, expected.length, 'outputs are the same');
-  for(let i = 0; i < expected.length; ++i) {
-    assert.equal(originalResult[i], expected[i], 0.1, 'Result index: ' + i);
-  }
-
+  assert.deepEqual(Array.from(originalResult), expected);
   const kernelString = originalKernel.toString();
   const newKernel = new Function('return ' + kernelString)()();
   const canvas = originalKernel.canvas;
@@ -169,11 +165,7 @@ function toStringInputTest(mode) {
     .setCanvas(canvas);
 
   const newResult = newKernel(input(a, [6, 6]));
-  assert.equal(newResult.constructor, Float32Array);
-  assert.equal(newResult.length, expected.length);
-  for(let i = 0; i < expected.length; ++i) {
-    assert.equal(newResult[i], expected[i], 0.1, 'Result index: ' + i);
-  }
+  assert.deepEqual(Array.from(newResult), expected);
 
   gpu.destroy();
 }

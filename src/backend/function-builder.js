@@ -21,11 +21,16 @@ class FunctionBuilder {
 			loopMaxIterations,
 			nativeFunctions,
 			output,
-			plugins
+			plugins,
+			source,
+			subKernels,
+			functions,
 		} = kernel;
 
-		const onNestedFunction = (fnString) => {
-			functionBuilder.addFunctionNode(new FunctionNode(fnString, nodeOptions));
+		const onNestedFunction = (fnString, returnType) => {
+			functionBuilder.addFunctionNode(new FunctionNode(fnString, Object.assign({}, nodeOptions, {
+				returnType
+			})));
 		};
 
 		const lookupReturnType = (functionName) => {
@@ -52,18 +57,18 @@ class FunctionBuilder {
 			argumentSizes,
 		});
 
-		if (typeof kernel.source === 'object' && kernel.source.functionNodes) {
-			return new FunctionBuilder().fromJSON(kernel.source.functionNodes, FunctionNode);
+		if (typeof source === 'object' && source.functionNodes) {
+			return new FunctionBuilder().fromJSON(source.functionNodes, FunctionNode);
 		}
 
-		const rootNode = new FunctionNode(kernel.source, rootNodeOptions);
+		const rootNode = new FunctionNode(source, rootNodeOptions);
 
 		let functionNodes = null;
-		if (kernel.functions) {
-			functionNodes = kernel.functions.map((fn) => new FunctionNode(fn.source, {
+		if (functions) {
+			functionNodes = functions.map((fn) => new FunctionNode(fn.source, {
 				returnType: fn.returnType,
 				argumentTypes: fn.argumentTypes,
-				output: kernel.output,
+				output,
 				plugins,
 				constants,
 				constantTypes,
@@ -71,8 +76,8 @@ class FunctionBuilder {
 		}
 
 		let subKernelNodes = null;
-		if (kernel.subKernels) {
-			subKernelNodes = kernel.subKernels.map((subKernel) => {
+		if (subKernels) {
+			subKernelNodes = subKernels.map((subKernel) => {
 				const {
 					name,
 					source

@@ -18,7 +18,7 @@
       if (p === 'GPU') continue;
       browserGPU[p] = GPU[p];
     }
-    const require = (module) => {
+    window.require = (module) => {
       switch (module) {
         case '../../src': return browserGPU;
         case 'qunit': return QUnit;
@@ -60,11 +60,13 @@
   <script type="module" src="features/float-output.js"></script>
   <script type="module" src="features/offscreen-canvas.js"></script>
   <script type="module" src="features/to-string.js"></script>
+  <script type="module" src="features/ternary.js"></script>
   <script type="module" src="features/type-management.js"></script>
 
   <!-- internal -->
   <script type="module" src="internal/context-inheritance.js"></script>
   <script type="module" src="internal/function-builder.js"></script>
+  <script type="module" src="internal/function-composition.js"></script>
   <script type="module" src="internal/function-node.js"></script>
   <script type="module" src="internal/kernel.js"></script>
   <script type="module" src="internal/loop-int.js"></script>

@@ -1,7 +1,7 @@
 const { assert, test, module: describe, only } = require('qunit');
 const { WebGLFunctionNode } = require(process.cwd() + '/src');
 
-describe('WebGLFunctionNode.firstAvailableTypeFromAst()');
+describe('WebGLFunctionNode.getType()');
 
 function run(value, settings) {
   const node = new WebGLFunctionNode(`function fn(value, value2, value3) {
@@ -13,7 +13,7 @@ function run(value, settings) {
   assert.equal(ast.body.type, 'BlockStatement');
   assert.equal(ast.body.body[0].type, 'ExpressionStatement');
 
-  return node.firstAvailableTypeFromAst(ast.body.body[0].expression);
+  return node.getType(ast.body.body[0].expression);
 }
 
 test('literal 0', () => {

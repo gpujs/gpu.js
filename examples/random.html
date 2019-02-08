@@ -1,30 +1,52 @@
 <html>
+<title>GPU.js Random Examples</title>
 <body>
 <h2>CPU Random</h2>
 <canvas id="cpu-random-output"></canvas>
-<h2>GPU Random</h2>
-<canvas id="gpu-random-output"></canvas>
+<h2>WebGL1 Random</h2>
+<canvas id="web-gl-random-output"></canvas>
+<h2>WebGL2 Random</h2>
+<canvas id="web-gl2-random-output"></canvas>
 </body>
 <script src="../bin/gpu-browser.js"></script>
 <script>
-  function drawRandomFunction() {
-    this.color(Math.random(), Math.random(), Math.random(), 1);
-  }
+  const cpu = new GPU({
+    mode: 'cpu',
+    canvas: document.getElementById('cpu-random-output')
+  });
+  const webGL = new GPU({
+    mode: 'webgl',
+    canvas: document.getElementById('web-gl-random-output')
+  });
+  const webGL2 = new GPU({
+    mode: 'webgl2',
+    canvas: document.getElementById('web-gl2-random-output')
+  });
 
-  const cpu = new GPU({ mode: 'cpu', canvas: document.getElementById('cpu-random-output') });
-  const gpu = new GPU({ mode: 'gpu', canvas: document.getElementById('gpu-random-output') });
+  function drawRandomFunction() {
+    this.color(Math.random(), Math.random(), Math.random());
+  }
 
   const cpuDrawRandom = cpu.createKernel(drawRandomFunction)
     .setGraphical(true)
     .setOutput([100, 100]);
 
-  const gpuDrawRandom = gpu.createKernel(drawRandomFunction)
+  const webGLDrawRandom = webGL.createKernel(drawRandomFunction)
     .setGraphical(true)
     .setOutput([100, 100]);
 
-  setInterval(() => {
+  const webGL2DrawRandom = webGL2.createKernel(drawRandomFunction)
+    .setGraphical(true)
+    .setOutput([100, 100]);
+
+  function draw() {
     cpuDrawRandom();
-    gpuDrawRandom();
-  }, 10);
+    webGLDrawRandom();
+    webGL2DrawRandom();
+
+    requestAnimationFrame(draw);
+  }
+
+  requestAnimationFrame(draw);
 </script>
 </html>

@@ -12,7 +12,7 @@ function floatOutputKernel(mode) {
   gpu.destroy();
 }
 
-test("auto", () => {
+(GPU.isFloatOutputSupported ? test : skip)("auto", () => {
   floatOutputKernel(null);
 });
 
@@ -20,11 +20,11 @@ test("cpu", () => {
   floatOutputKernel('cpu');
 });
 
-test("gpu", () => {
+(GPU.isFloatOutputSupported ? test : skip)("gpu", () => {
   floatOutputKernel('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)("webgl", () => {
+(GPU.isFloatOutputSupported && GPU.isWebGLSupported ? test : skip)("webgl", () => {
   floatOutputKernel('webgl');
 });
 

@@ -241,16 +241,16 @@ class CPUKernel extends Kernel {
 			const type = this.constantTypes[p];
 			switch (type) {
 				case 'HTMLImage':
-					result.push(`  const constants_${p} = this._imageTo2DArray(this.constants.${p})`);
+					result.push(`  const constants_${p} = this._imageTo2DArray(this.constants.${p});`);
 					break;
 				case 'HTMLImageArray':
-					result.push(`  const constants_${p} = this._imageTo3DArray(this.constants.${p})`);
+					result.push(`  const constants_${p} = this._imageTo3DArray(this.constants.${p});`);
 					break;
 				case 'Input':
-					result.push(`  const constants_${p} = this.constants.${p}.value`);
+					result.push(`  const constants_${p} = this.constants.${p}.value;`);
 					break;
 				default:
-					result.push(`  const constants_${p} = this.constants.${p}`);
+					result.push(`  const constants_${p} = this.constants.${p};`);
 			}
 		}
 		return result.join('\n');
@@ -261,13 +261,13 @@ class CPUKernel extends Kernel {
 		for (let i = 0; i < this.argumentTypes.length; i++) {
 			switch (this.argumentTypes[i]) {
 				case 'HTMLImage':
-					result.push(`  user_${this.argumentNames[i]} = this._imageTo2DArray(user_${this.argumentNames[i]})`);
+					result.push(`  user_${this.argumentNames[i]} = this._imageTo2DArray(user_${this.argumentNames[i]});`);
 					break;
 				case 'HTMLImageArray':
-					result.push(`  user_${this.argumentNames[i]} = this._imageTo3DArray(user_${this.argumentNames[i]})`);
+					result.push(`  user_${this.argumentNames[i]} = this._imageTo3DArray(user_${this.argumentNames[i]});`);
 					break;
 				case 'Input':
-					result.push(`  user_${this.argumentNames[i]} = user_${this.argumentNames[i]}.value`);
+					result.push(`  user_${this.argumentNames[i]} = user_${this.argumentNames[i]}.value;`);
 					break;
 			}
 		}
@@ -294,12 +294,7 @@ class CPUKernel extends Kernel {
 				const g = pixelsData[index++] / 255;
 				const b = pixelsData[index++] / 255;
 				const a = pixelsData[index++] / 255;
-				const result = [r, g, b, a];
-				result.r = r;
-				result.g = g;
-				result.b = b;
-				result.a = a;
-				imageArray[y][x] = result;
+				imageArray[y][x] = [r, g, b, a];
 			}
 		}
 		return imageArray;

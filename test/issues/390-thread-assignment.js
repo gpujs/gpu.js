@@ -52,9 +52,9 @@ test('Issue #390 - thread assignment cpu', function(assert) {
     + '\nconst user_sum=(user_x+user_y);'
     + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations.x, 'const');
-  assert.equal(node.declarations.y, 'const');
-  assert.equal(node.declarations.sum, 'const');
+  assert.equal(node.declarations.x, 'Integer');
+  assert.equal(node.declarations.y, 'Integer');
+  assert.equal(node.declarations.sum, 'Integer');
 });
 
 
@@ -121,9 +121,9 @@ test('Issue #390 (related) - output assignment cpu', function(assert) {
     + '\nconst user_sum=((user_x+user_y)+user_z);'
     + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations.x, 'const');
-  assert.equal(node.declarations.y, 'const');
-  assert.equal(node.declarations.z, 'const');
-  assert.equal(node.declarations.sum, 'const');
+  assert.equal(node.declarations.x, 'Integer');
+  assert.equal(node.declarations.y, 'Integer');
+  assert.equal(node.declarations.z, 'Integer');
+  assert.equal(node.declarations.sum, 'Integer');
 });
 

@@ -27,10 +27,10 @@ test('Array(2) - auto', () => {
 test('Array(2) - gpu', () => {
   vec2Test('gpu');
 });
-(GPU.isWebGL2Supported ? test : skip)('Array(2) - webgl', () => {
+(GPU.isWebGLSupported ? test : skip)('Array(2) - webgl', () => {
   vec2Test('webgl');
 });
-(GPU.isWebGLSupported ? test : skip)('Array(2) - webgl2', () => {
+(GPU.isWebGL2Supported ? test : skip)('Array(2) - webgl2', () => {
   vec2Test('webgl2');
 });
 (GPU.isHeadlessGLSupported ? test : skip)('Array(2) - headlessgl', () => {

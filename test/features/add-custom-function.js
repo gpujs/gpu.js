@@ -97,7 +97,7 @@ test('sumAB gpu', () => {
   sumAB('webgl');
 });
 
-(GPU.isWebGLSupported ? test : skip)('sumAB webgl2', () => {
+(GPU.isWebGL2Supported ? test : skip)('sumAB webgl2', () => {
   sumAB('webgl2');
 });
 

@@ -1,4 +1,4 @@
-const { assert, skip, test, module: describe } = require('qunit');
+const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('issue # 233');
@@ -39,15 +39,15 @@ function kernelMapFloatOutput(mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output auto', () => {
+(GPU.isFloatOutputSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output auto', () => {
   kernelMapFloatOutput();
 });
 
-(GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output gpu', () => {
+(GPU.isFloatOutputSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output gpu', () => {
   kernelMapFloatOutput('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #233 - kernel map with float output webgl', () => {
+(GPU.isFloatOutputSupported && GPU.isWebGLSupported ? test : skip)('Issue #233 - kernel map with float output webgl', () => {
   kernelMapFloatOutput('webgl');
 });
 

@@ -231,7 +231,7 @@ function evilWhileLoopTest(mode ) {
   const evil_while_cpuRef = new GPU({ mode: 'cpu' });
   const evil_while_cpuRef_f =  evil_while_cpuRef.createKernel(evilWhileKernelFunction, {
     output : [6],
-    loopMaxIterations: 10000
+    loopMaxIterations: 10000,
   });
 
   const evil_while_exp = evil_while_cpuRef_f(evil_while_a,evil_while_b);

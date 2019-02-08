@@ -6,10 +6,16 @@ const {
 } = require('../input');
 
 class Kernel {
+	/**
+	 * @type {Boolean}
+	 */
 	static get isSupported() {
 		throw new Error(`"isSupported" not implemented on ${ this.name }`);
 	}
 
+	/**
+	 * @type {Boolean}
+	 */
 	static isContextMatch(context) {
 		throw new Error(`"isContextMatch" not implemented on ${ this.name }`);
 	}

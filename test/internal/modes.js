@@ -47,15 +47,15 @@ test('modes cpu', () => {
   const gpu = new GPU({ mode: 'cpu' });
   assert.equal(gpu.Kernel, CPUKernel);
 });
-test('modes webgl', () => {
+(GPU.isWebGLSupported ? test : skip)('modes webgl', () => {
   const gpu = new GPU({ mode: 'webgl' });
   assert.equal(gpu.Kernel, WebGLKernel);
 });
-test('modes webgl2', () => {
+(GPU.isWebGL2Supported ? test : skip)('modes webgl2', () => {
   const gpu = new GPU({ mode: 'webgl2' });
   assert.equal(gpu.Kernel, WebGL2Kernel);
 });
-test('modes headlessgl', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('modes headlessgl', () => {
   const gpu = new GPU({ mode: 'headlessgl' });
   assert.equal(gpu.Kernel, HeadlessGLKernel
   );
