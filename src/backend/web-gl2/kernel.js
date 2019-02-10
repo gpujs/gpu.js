@@ -121,6 +121,62 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 			this._addArgument(arguments[texIndex], paramTypes[texIndex], paramNames[texIndex]);
 		}
 
+		if (this.constrainStart || this.constrainEnd) {
+
+			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+			
+			if (this.constrainStart) {
+
+			} else {
+
+			}
+			if (this.constrainEnd) {
+
+			} else {
+
+			}
+			var vertices = [
+				-0.5, 0.5, 0.0,
+        -0.5, -0.5,	0.0,
+        0.5, -0.5, 0.0,
+      	0.5, 0.5, 0.0
+			];
+
+      indices = [3, 2, 1, 3, 1, 0];
+
+      // Create an empty buffer object to store vertex buffer
+    	var vertex_buffer = gl.createBuffer();
+
+      // Bind appropriate array buffer to it
+      gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
+
+      // Pass the vertex data to the buffer
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+      // Unbind the buffer
+      gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+      // Create an empty buffer object to store Index buffer
+      var Index_Buffer = gl.createBuffer();
+
+      // Bind appropriate array buffer to it
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Index_Buffer);
+
+      // Pass the vertex data to the buffer
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+     	// Unbind the buffer
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+			// original
+
+			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+			return;
+		}
+
 		if (this.graphical) {
 			if (this.outputToTexture) {
 				gl.bindRenderbuffer(gl.RENDERBUFFER, null);

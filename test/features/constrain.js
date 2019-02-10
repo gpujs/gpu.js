@@ -4,7 +4,7 @@
     var f = gpu.createKernel(function() {
       return 255;
     }, {
-      output : [6, 6, 6]
+      output : [4, 4, 3]
     });
     let x = 2;
     let y = 2;
@@ -12,9 +12,24 @@
     let width = 2;
     let height = 2;
     let depth = 3;
-    f.constrain({x, y, z}, [width,height,depth]);
     let result = f();
-    QUnit.assert.deepValueEqual(QUnit.extend([], result), [[[255, 255, 255], [255, 255, 255]][[255, 255, 255], [255, 255, 255]]]);
+    QUnit.assert.deepValueEqual(QUnit.extend([], result), [
+      [[255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]],
+      [[255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]],
+      [[255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]],
+      [[255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]]]);
+    f.constrain({x, y, z}, [width, height, depth]);
+    let resultConstrained = f();
+    QUnit.assert.deepValueEqual(QUnit.extend([], resultConstrained), [
+      [[255, 255, 255], [255, 255, 255]],
+      [[255, 255, 255], [255, 255, 255]]]);
+    f.deconstrain();
+    let resultDeconstrained = f();
+    QUnit.assert.deepValueEqual(QUnit.extend([], resultDeconstrained), [
+      [[255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]],
+      [[255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]],
+      [[255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]],
+      [[255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255]]]);
     gpu.destroy();
   }
 

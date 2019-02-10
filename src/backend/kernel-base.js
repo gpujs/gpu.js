@@ -7,13 +7,13 @@ module.exports = class KernelBase {
 
 	/**
 	 * @constructor KernelBase
-	 * 
-	 * @desc Implements the base class for Kernels, and is used as a 
+	 *
+	 * @desc Implements the base class for Kernels, and is used as a
 	 * parent class for all Kernel implementations.
 	 *
-	 * This contains the basic methods needed by all Kernel implementations, 
+	 * This contains the basic methods needed by all Kernel implementations,
 	 * like setDimensions, addSubKernel, etc.
-	 * 
+	 *
 	 * @prop {Array} paramNames - Name of the parameters of the kernel function
 	 * @prop {String} fnString - Kernel function as a String
 	 * @prop {Array} dimensions - Dimensions of the kernel function, this.thread.x, etc.
@@ -58,6 +58,8 @@ module.exports = class KernelBase {
 		this.paramSizes = null;
 		this.constantTypes = null;
 		this.fixIntegerDivisionAccuracy = null;
+		this.constrainStart = null;
+		this.constrainEnd = null;
 
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -176,6 +178,36 @@ module.exports = class KernelBase {
 	/**
 	 * @memberOf KernelBase#
 	 * @function
+	 * @name constrain
+	 *
+	 * @desc constrain kernel to operate on subset quad of matrix
+	 *
+	 * @param {Array} start - [x, y, z]
+	 * @param {Array} end - [x, y, z]
+	 *
+	 */
+	constrain(start, end) {
+		this.constrainStart = start || null;
+		this.constrainEnd = end || null;
+		return this;
+	}
+
+	/**
+	 * @memberOf KernelBase#
+	 * @function
+	 * @name deconstrain
+	 *
+	 * @desc remove constraint on kernelin order to operate on entire matrix
+	 */
+	deconstrain() {
+		this.constrainStart = null;
+		this.constrainEnd = null;
+		return this;
+	}
+
+	/**
+	 * @memberOf KernelBase#
+	 * @function
 	 * @name setLoopMaxIterations
 	 *
 	 * @desc Set the maximum number of loop iterations
@@ -195,7 +227,7 @@ module.exports = class KernelBase {
 	 *
 	 * @desc Fix division by factor of 3 FP accuracy bug
 	 *
-	 * @param {Boolean} fix - should fix 
+	 * @param {Boolean} fix - should fix
 	 *
 	 */
 	setFixIntegerDivisionAccuracy(fix) {
@@ -276,7 +308,7 @@ module.exports = class KernelBase {
 	 * @name setCanvas
 	 *
 	 * @desc Bind the canvas to kernel
-	 * 
+	 *
 	 * @param {Canvas} canvas - Canvas to bind
 	 *
 	 */
@@ -291,7 +323,7 @@ module.exports = class KernelBase {
 	 * @name setCanvas
 	 *
 	 * @desc Bind the webGL instance to kernel
-	 * 
+	 *
 	 * @param {Canvas} webGL - webGL instance to bind
 	 *
 	 */
@@ -353,7 +385,7 @@ module.exports = class KernelBase {
 		});
 	}
 
-	/** 
+	/**
 	 * @memberOf KernelBase#
 	 * @function
 	 * @name addSubKernel
@@ -374,7 +406,7 @@ module.exports = class KernelBase {
 		return this;
 	}
 
-	/** 
+	/**
 	 * @memberOf KernelBase#
 	 * @function
 	 * @name addSubKernelProperty
