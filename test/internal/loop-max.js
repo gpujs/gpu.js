@@ -21,13 +21,11 @@ test('loop max output webgl', () => {
     functionNode.toString(),
     'void kernel() {' +
     '\nfloat user_sum=0.0;' +
-    '\nfor (int user_i=0;user_i<LOOP_MAX;user_i++){' +
-    '\nif (user_i<int(user_a)) {' +
+    '\nint user_i=0;' +
+    '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
+    '\nif (!(user_i<int(user_a))) break;' +
     '\nuser_sum+=get(user_b, user_bSize, user_bDim, user_bBitRatio, 0, threadId.x, user_i);' +
-    '\n} else {' +
-    '\nbreak;' +
-    '\n}' +
-    '\n}' +
+    '\nuser_i++;}' +
     '\n' +
     '\nkernelResult = user_sum;return;' +
     '\n}');
@@ -51,13 +49,11 @@ test('loop max output webgl2', () => {
     functionNode.toString(),
     'void kernel() {' +
     '\nfloat user_sum=0.0;' +
-    '\nfor (int user_i=0;user_i<LOOP_MAX;user_i++){' +
-    '\nif (user_i<int(user_a)) {' +
+    '\nint user_i=0;' +
+    '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
+    '\nif (!(user_i<int(user_a))) break;' +
     '\nuser_sum+=get(user_b, user_bSize, user_bDim, user_bBitRatio, 0, threadId.x, user_i);' +
-    '\n} else {' +
-    '\nbreak;' +
-    '\n}' +
-    '\n}' +
+    '\nuser_i++;}' +
     '\n' +
     '\nkernelResult = user_sum;return;' +
     '\n}');

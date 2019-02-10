@@ -58,7 +58,7 @@ class FunctionNode {
 
 		this.validate();
 		this._string = null;
-		this._whileIndex = 0;
+		this._internalVariableNames = {};
 	}
 
 	validate() {
@@ -178,7 +178,7 @@ class FunctionNode {
 			throw 'Missing JS to AST parser';
 		}
 
-		const ast = Object.freeze(inParser.parse('const parser_' + this.name + ' = ' + this.source + ';', {
+		const ast = Object.freeze(inParser.parse(`const parser_${ this.name } = ${ this.source };`, {
 			locations: true
 		}));
 		// take out the function object, outside the var declarations
@@ -200,7 +200,7 @@ class FunctionNode {
 		const argumentIndex = this.argumentNames.indexOf(name);
 		if (argumentIndex === -1) {
 			if (this.declarations[name]) {
-				return this.declarations[name];
+				return this.declarations[name].type;
 			}
 		} else {
 			const argumentType = this.argumentTypes[argumentIndex];
@@ -218,7 +218,11 @@ class FunctionNode {
 				}
 			}
 		}
-		return type === 'Float' ? 'Number' : type;
+		if (!type) {
+			// TODO: strict type detection mode?
+			// throw new Error(`Declaration of ${name} not found`);
+		}
+		return type;
 	}
 
 	getConstantType(constantName) {
@@ -289,7 +293,12 @@ class FunctionNode {
 	 * @returns {string}
 	 */
 	getType(ast) {
+		if (Array.isArray(ast)) {
+			return this.getType(ast[ast.length - 1]);
+		}
 		switch (ast.type) {
+			case 'BlockStatement':
+				return this.getType(ast.body);
 			case 'ArrayExpression':
 				return `Array(${ ast.elements.length })`;
 			case 'Literal':
@@ -307,6 +316,8 @@ class FunctionNode {
 				// modulos is Number
 				if (ast.operator === '%') {
 					return 'Number';
+				} else if (ast.operator === '>' || ast.operator === '<') {
+					return 'Boolean';
 				}
 				const type = this.getType(ast.left);
 				return typeLookupMap[type] || type;
@@ -320,11 +331,21 @@ class FunctionNode {
 				return this.getType(ast.id);
 			case 'Identifier':
 				if (this.isAstVariable(ast)) {
-					if (this.getVariableSignature(ast) === 'value') {
-						return this.getVariableType(ast.name);
+					const signature = this.getVariableSignature(ast);
+					if (signature === 'value') {
+						if (this.argumentNames.indexOf(ast.name) > -1) {
+							return this.getVariableType(ast.name);
+						} else if (this.declarations[ast.name]) {
+							return this.declarations[ast.name].type;
+						}
 					}
 				}
-				throw this.astErrorOutput('Unhandled Identifier', ast);
+				if (ast.name === 'Infinity') {
+					return 'Integer';
+				}
+				return null;
+			case 'ReturnStatement':
+				return this.getType(ast.argument);
 			case 'MemberExpression':
 				if (this.isAstMathFunction(ast)) {
 					switch (ast.property.name) {
@@ -383,13 +404,7 @@ class FunctionNode {
 				}
 				throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
 			case 'FunctionDeclaration':
-				if (ast.body && ast.body.body) {
-					const possibleReturnStatement = ast.body.body[ast.body.body.length - 1];
-					if (possibleReturnStatement.type === 'ReturnStatement') {
-						return this.getType(possibleReturnStatement.argument);
-					}
-				}
-				throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
+				return this.getType(ast.body);
 			case 'ConditionalExpression':
 				return this.getType(ast.consequent);
 			default:
@@ -454,22 +469,84 @@ class FunctionNode {
 		return ast.type === 'Identifier' || ast.type === 'MemberExpression';
 	}
 
-	getFirstVariable(ast) {
-		if (!ast) return null;
-		switch (ast.type) {
-			case 'Identifier':
-				return ast;
-			case 'FunctionDeclaration':
-				return this.getFirstVariable(ast.body.body[ast.body.body.length - 1]);
-			case 'ReturnStatement':
-				return this.getFirstVariable(ast.argument);
-			case 'BinaryExpression':
-				return this.getFirstVariable(ast.left);
-			case 'UpdateExpression':
-				return this.getFirstVariable(ast.argument);
-			default:
-				throw this.astErrorOutput('Unhandled variable lookup', ast);
+	isSafe(ast) {
+		return this.isSafeDependencies(this.getDependencies(ast));
+	}
+
+	isSafeDependencies(dependencies) {
+		return dependencies && dependencies.every ? dependencies.every(dependency => dependency.isSafe) : true;
+	}
+
+	getDependencies(ast, dependencies, isNotSafe) {
+		if (!dependencies) {
+			dependencies = [];
 		}
+		if (!ast) return null;
+		if (Array.isArray(ast)) {
+			for (let i = 0; i < ast.length; i++) {
+				this.getDependencies(ast[i], dependencies, isNotSafe);
+			}
+			return dependencies;
+		}
+		switch (ast.type) {
+			case 'Literal':
+				dependencies.push({
+					origin: 'literal',
+					value: ast.value,
+					isSafe: isNotSafe === true ? false : ast.value > -Infinity && ast.value < Infinity && !isNaN(ast.value)
+				});
+				break;
+			case 'VariableDeclarator':
+				return this.getDependencies(ast.init, dependencies, isNotSafe);
+			case 'Identifier':
+				if (this.declarations[ast.name]) {
+					dependencies.push({
+						name: ast.name,
+						origin: 'declaration',
+						isSafe: isNotSafe ? false : this.isSafeDependencies(this.declarations[ast.name].dependencies),
+					});
+				} else if (this.argumentNames.indexOf(ast.name) > -1) {
+					dependencies.push({
+						name: ast.name,
+						origin: 'argument',
+						isSafe: false,
+					});
+				}
+				break;
+			case 'FunctionDeclaration':
+				return this.getDependencies(ast.body.body[ast.body.body.length - 1], dependencies, isNotSafe);
+			case 'ReturnStatement':
+				return this.getDependencies(ast.argument, dependencies);
+			case 'BinaryExpression':
+				isNotSafe = (ast.operator === '/' || ast.operator === '*');
+				this.getDependencies(ast.left, dependencies, isNotSafe);
+				this.getDependencies(ast.right, dependencies, isNotSafe);
+				return dependencies;
+			case 'UpdateExpression':
+				return this.getDependencies(ast.argument, dependencies, isNotSafe);
+			case 'VariableDeclaration':
+				return this.getDependencies(ast.declarations, dependencies, isNotSafe);
+			case 'ArrayExpression':
+				dependencies.push({
+					origin: 'declaration',
+					isSafe: true,
+				});
+				return dependencies;
+			case 'CallExpression':
+				dependencies.push({
+					origin: 'function',
+					isSafe: true,
+				});
+				return dependencies;
+			case 'MemberExpression':
+				const details = this.getMemberExpressionDetails(ast);
+				if (details) {
+					return details.type;
+				}
+			default:
+				throw this.astErrorOutput(`Unhandled type ${ ast.type } in getAllVariables`, ast);
+		}
+		return dependencies;
 	}
 
 	getVariableSignature(ast) {
@@ -719,7 +796,7 @@ class FunctionNode {
 	 * @returns {Array} the append retArr
 	 */
 	astBreakStatement(brNode, retArr) {
-		retArr.push('break;\n');
+		retArr.push('break;');
 		return retArr;
 	}
 	/**
@@ -741,7 +818,53 @@ class FunctionNode {
 	astDoWhileStatement(ast, retArr) {
 		return retArr;
 	}
-	astVariableDeclaration(ast, retArr) {
+	/**
+	 * @desc Parses the abstract syntax tree for *Variable Declaration*
+	 * @param {Object} varDecNode - An ast Node
+	 * @param {Array} retArr - return array string
+	 * @returns {Array} the append retArr
+	 */
+	astVariableDeclaration(varDecNode, retArr) {
+		const declarations = varDecNode.declarations;
+		if (!declarations || !declarations[0] || !declarations[0].init) {
+			throw this.astErrorOutput('Unexpected expression', varDecNode);
+		}
+		const result = [];
+		const firstDeclaration = declarations[0];
+		const init = firstDeclaration.init;
+		let type = this.isState('in-for-loop-init') ? 'Integer' : this.getType(init);
+		if (type === 'LiteralInteger') {
+			// We had the choice to go either float or int, choosing float
+			type = 'Number';
+		}
+		const markupType = typeMap[type];
+		if (!markupType) {
+			throw this.astErrorOutput(`Markup type ${ markupType } not handled`, varDecNode);
+		}
+		let dependencies = this.getDependencies(firstDeclaration.init);
+		this.declarations[firstDeclaration.id.name] = Object.freeze({
+			type,
+			dependencies,
+			isSafe: dependencies.every(dependency => dependency.isSafe)
+		});
+		const initResult = [`${type} user_${firstDeclaration.id.name}=`];
+		this.astGeneric(init, initResult);
+		result.push(initResult.join(''));
+
+		// first declaration is done, now any added ones setup
+		for (let i = 1; i < declarations.length; i++) {
+			const declaration = declarations[i];
+			dependencies = this.getDependencies(declaration);
+			this.declarations[declaration.id.name] = Object.freeze({
+				type,
+				dependencies,
+				isSafe: false
+			});
+			this.astGeneric(declaration, result);
+		}
+
+		retArr.push(retArr, result.join(','));
+		retArr.push(';');
 		return retArr;
 	}
 	/**
@@ -991,6 +1114,17 @@ class FunctionNode {
 			default:
 				throw this.astErrorOutput('Unexpected expression', ast);
 		}
+	}
+
+	getInternalVariableName(name) {
+		if (!this._internalVariableNames.hasOwnProperty(name)) {
+			this._internalVariableNames[name] = 0;
+		}
+		this._internalVariableNames[name]++;
+		if (this._internalVariableNames[name] === 1) {
+			return name;
+		}
+		return name + this._internalVariableNames[name];
 	}
 }
 

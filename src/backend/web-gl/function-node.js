@@ -264,6 +264,9 @@ class WebGLFunctionNode extends FunctionNode {
 					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.astGeneric(ast.right, retArr);
 					break;
+				case 'Number & Float':
+				case 'Float & Number':
+				case 'Float & Float':
 				case 'Number & Number':
 					this.astGeneric(ast.left, retArr);
 					retArr.push(operatorMap[ast.operator] || ast.operator);
@@ -303,20 +306,41 @@ class WebGLFunctionNode extends FunctionNode {
 					retArr.push(')');
 					this.popState('casting-to-float');
 					break;
+				case 'Float & LiteralInteger':
 				case 'Number & LiteralInteger':
-					this.astGeneric(ast.left, retArr);
-					retArr.push(operatorMap[ast.operator] || ast.operator);
-					this.pushState('casting-to-float');
-					this.astGeneric(ast.right, retArr);
-					this.popState('casting-to-float');
+					if (this.isState('force-integer')) {
+						retArr.push('int(');
+						this.astGeneric(ast.left, retArr);
+						retArr.push(')');
+						retArr.push(operatorMap[ast.operator] || ast.operator);
+						this.pushState('casting-to-integer');
+						this.astGeneric(ast.right, retArr);
+						this.popState('casting-to-integer');
+					} else {
+						this.astGeneric(ast.left, retArr);
+						retArr.push(operatorMap[ast.operator] || ast.operator);
+						this.pushState('casting-to-float');
+						this.astGeneric(ast.right, retArr);
+						this.popState('casting-to-float');
+					}
 					break;
-
+				case 'LiteralInteger & Float':
 				case 'LiteralInteger & Number':
-					this.pushState('casting-to-float');
-					this.astGeneric(ast.left, retArr);
-					this.popState('casting-to-float');
-					retArr.push(operatorMap[ast.operator] || ast.operator);
-					this.astGeneric(ast.right, retArr);
+					if (this.isState('force-integer') || this.isState('in-for-loop-init')) {
+						this.pushState('casting-to-integer');
+						this.astGeneric(ast.left, retArr);
+						retArr.push(operatorMap[ast.operator] || ast.operator);
+						retArr.push('int(');
+						this.astGeneric(ast.right, retArr);
+						retArr.push(')');
+						this.popState('casting-to-integer');
+					} else {
+						this.astGeneric(ast.left, retArr);
+						retArr.push(operatorMap[ast.operator] || ast.operator);
+						this.pushState('casting-to-float');
+						this.astGeneric(ast.right, retArr);
+						this.popState('casting-to-float');
+					}
 					break;
 				case 'LiteralInteger & Integer':
 					this.pushState('casting-to-integer');
@@ -371,110 +395,71 @@ class WebGLFunctionNode extends FunctionNode {
 	 */
 	astForStatement(forNode, retArr) {
 		if (forNode.type !== 'ForStatement') {
-			throw this.astErrorOutput(
-				'Invalid for statement',
-				forNode
-			);
+			throw this.astErrorOutput('Invalid for statement', forNode);
 		}
 
-		if (forNode.test && forNode.test.type === 'BinaryExpression') {
-			if (forNode.test.right.type === 'Identifier' &&
-				forNode.test.operator === '<' &&
-				this.isIdentifierConstant(forNode.test.right.name) === false) {
+		const initArr = [];
+		const testArr = [];
+		const updateArr = [];
+		const bodyArr = [];
+		let isSafe = null;
 
-				if (!this.loopMaxIterations) {
-					console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
-					console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
+		if (forNode.init) {
+			this.pushState('in-for-loop-init');
+			this.astGeneric(forNode.init, initArr);
+			for (let i = 0; i < initArr.length; i++) {
+				if (initArr[i].includes(',')) {
+					isSafe = false;
 				}
-
-				retArr.push('for (');
-				this.pushState('in-for-loop-init');
-				this.astGeneric(forNode.init, retArr);
-				this.popState('in-for-loop-init');
-				this.astGeneric(forNode.test.left, retArr);
-				retArr.push(forNode.test.operator);
-				retArr.push('LOOP_MAX');
-				retArr.push(';');
-				this.astGeneric(forNode.update, retArr);
-				retArr.push(')');
-
-				retArr.push('{\n');
-				retArr.push('if (');
-				this.astGeneric(forNode.test.left, retArr);
-				retArr.push(forNode.test.operator);
-				const leftType = this.getType(forNode.test.left);
-				const rightType = this.getType(forNode.test.right);
-				if (!leftType) throw this.astErrorOutput('Left type unknown', forNode.test.left);
-				if (!rightType) throw this.astErrorOutput('Right type unknown', forNode.test.right);
-				if (leftType === 'Integer' && rightType === 'Number') {
-					this.pushState('casting-to-integer');
-					retArr.push('int(');
-					this.astGeneric(forNode.test.right, retArr);
-					retArr.push(')');
-					this.popState('casting-to-integer');
-				} else if (leftType === 'Number' && rightType === 'Integer') {
-					this.pushState('casting-to-float');
-					retArr.push('float(');
-					this.astGeneric(forNode.test.right, retArr);
-					retArr.push(')');
-					this.popState('casting-to-float');
-				} else {
-					this.astGeneric(forNode.test.right, retArr);
-				}
-				retArr.push(') {\n');
-				if (forNode.body.type === 'BlockStatement') {
-					for (let i = 0; i < forNode.body.body.length; i++) {
-						this.astGeneric(forNode.body.body[i], retArr);
-					}
-				} else {
-					this.astGeneric(forNode.body, retArr);
-				}
-				retArr.push('\n} else {\n');
-				retArr.push('break;\n');
-				retArr.push('}\n');
-				retArr.push('}\n');
-
-				return retArr;
-			} else if (forNode.init.declarations) {
-				const declarations = forNode.init.declarations;
-				if (!Array.isArray(declarations) || declarations.length < 1) {
-					throw this.astErrorOutput('Error: Incompatible for loop declaration', forNode.init);
-				}
-
-				if (declarations.length > 1) {
-					retArr.push('for (');
-					this.pushState('in-for-loop-init');
-					retArr.push('int ');
-					for (let i = 0; i < declarations.length; i++) {
-						const declaration = declarations[i];
-						if (i > 0) {
-							retArr.push(',');
-						}
-						this.declarations[declaration.id.name] = 'Integer';
-						this.astGeneric(declaration, retArr);
-					}
-					retArr.push(';');
-					this.popState('in-for-loop-init');
-				} else {
-					retArr.push('for (');
-					this.pushState('in-for-loop-init');
-					this.astGeneric(forNode.init, retArr);
-					this.popState('in-for-loop-init');
-				}
-
-				this.astGeneric(forNode.test, retArr);
-				retArr.push(';');
-				this.astGeneric(forNode.update, retArr);
-				retArr.push(')');
-				this.astGeneric(forNode.body, retArr);
-				return retArr;
 			}
+			this.popState('in-for-loop-init');
+		} else {
+			isSafe = false;
 		}
 
-		throw this.astErrorOutput(
-			'Invalid for statement',
-			forNode
-		);
+		if (forNode.test) {
+			this.pushState('force-integer');
+			this.astGeneric(forNode.test, testArr);
+			this.popState('force-integer');
+		} else {
+			isSafe = false;
+		}
+
+		if (forNode.update) {
+			this.astGeneric(forNode.update, updateArr);
+		} else {
+			isSafe = false;
+		}
+
+		if (forNode.body) {
+			this.pushState('loop-body');
+			this.astGeneric(forNode.body, bodyArr);
+			this.popState('loop-body');
+		}
+
+		// have all parts, now make them safe
+		if (isSafe === null) {
+			isSafe = this.isSafe(forNode.init) && this.isSafe(forNode.test);
+		}
+
+		if (isSafe) {
+			retArr.push(`for (${initArr.join('')};${testArr.join('')};${updateArr.join('')}){\n`);
+			retArr.push(bodyArr.join(''));
+			retArr.push('}\n');
+		} else {
+			const iVariableName = this.getInternalVariableName('safeI');
+			if (initArr.length > 0) {
+				retArr.push(initArr.join(''), ';\n');
+			}
+			retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
+			if (testArr.length > 0) {
+				retArr.push(`if (!${testArr.join('')}) break;\n`);
+			}
+			retArr.push(bodyArr.join(''));
+			retArr.push(`\n${updateArr.join('')};`);
+			retArr.push('}\n');
+		}
+		return retArr;
 	}
 
 	/**
@@ -485,20 +470,14 @@ class WebGLFunctionNode extends FunctionNode {
 	 */
 	astWhileStatement(whileNode, retArr) {
 		if (whileNode.type !== 'WhileStatement') {
-			throw this.astErrorOutput(
-				'Invalid while statement',
-				whileNode
-			);
+			throw this.astErrorOutput('Invalid while statement', whileNode);
 		}
 
-		retArr.push('for (int i = 0; i < LOOP_MAX; i++) {');
-		retArr.push('if (');
+		retArr.push('for (int safeI=0;safeI<LOOP_MAX;safeI++){\n');
+		retArr.push('if (!');
 		this.astGeneric(whileNode.test, retArr);
-		retArr.push(') {\n');
+		retArr.push(') break;\n');
 		this.astGeneric(whileNode.body, retArr);
-		retArr.push('} else {\n');
-		retArr.push('break;\n');
-		retArr.push('}\n');
 		retArr.push('}\n');
 
 		return retArr;
@@ -512,19 +491,14 @@ class WebGLFunctionNode extends FunctionNode {
 	 */
 	astDoWhileStatement(doWhileNode, retArr) {
 		if (doWhileNode.type !== 'DoWhileStatement') {
-			throw this.astErrorOutput(
-				'Invalid while statement',
-				doWhileNode
-			);
+			throw this.astErrorOutput('Invalid while statement', doWhileNode);
 		}
 
-		retArr.push('for (int i = 0; i < LOOP_MAX; i++) {');
+		retArr.push('for (int safeI=0;safeI<LOOP_MAX;safeI++){\n');
 		this.astGeneric(doWhileNode.body, retArr);
 		retArr.push('if (!');
 		this.astGeneric(doWhileNode.test, retArr);
-		retArr.push(') {\n');
-		retArr.push('break;\n');
-		retArr.push('}\n');
+		retArr.push(') break;\n');
 		retArr.push('}\n');
 
 		return retArr;
@@ -569,11 +543,15 @@ class WebGLFunctionNode extends FunctionNode {
 	 * @returns {Array} the append retArr
 	 */
 	astBlockStatement(bNode, retArr) {
-		retArr.push('{\n');
+		if (!this.isState('loop-body')) {
+			retArr.push('{\n');
+		}
 		for (let i = 0; i < bNode.body.length; i++) {
 			this.astGeneric(bNode.body[i], retArr);
 		}
-		retArr.push('}\n');
+		if (!this.isState('loop-body')) {
+			retArr.push('}\n');
+		}
 		return retArr;
 	}
 
@@ -585,33 +563,56 @@ class WebGLFunctionNode extends FunctionNode {
 	 */
 	astVariableDeclaration(varDecNode, retArr) {
 		const declarations = varDecNode.declarations;
-		if (!declarations || !declarations[0] || !declarations[0].init) throw this.astErrorOutput('Unexpected expression', varDecNode);
+		if (!declarations || !declarations[0] || !declarations[0].init) {
+			throw this.astErrorOutput('Unexpected expression', varDecNode);
+		}
 		const result = [];
 		const firstDeclaration = declarations[0];
 		const init = firstDeclaration.init;
-		let declarationType = this.isState('in-for-loop-init') ? 'Integer' : this.getType(init);
-		if (declarationType === 'LiteralInteger') {
+		const actualType = this.getType(init);
+		let type = this.isState('in-for-loop-init') ? 'Integer' : actualType;
+		if (type === 'LiteralInteger') {
 			// We had the choice to go either float or int, choosing float
-			declarationType = 'Number';
+			type = 'Number';
 		}
-		const type = typeMap[declarationType];
-		if (!type) {
-			throw this.astErrorOutput(`type ${ declarationType } not handled`, varDecNode);
+		const markupType = typeMap[type];
+		if (!markupType) {
+			throw this.astErrorOutput(`Markup type ${ markupType } not handled`, varDecNode);
 		}
-		this.declarations[firstDeclaration.id.name] = declarationType;
-		const initResult = [`${type} user_${firstDeclaration.id.name}=`];
-		this.astGeneric(init, initResult);
+		let dependencies = this.getDependencies(firstDeclaration.init);
+		this.declarations[firstDeclaration.id.name] = Object.freeze({
+			type,
+			dependencies,
+			isSafe: this.isSafeDependencies(dependencies),
+		});
+		const initResult = [];
+		initResult.push([`${markupType} `]);
+		initResult.push(`user_${firstDeclaration.id.name}=`);
+		if (actualType === 'Number' && type === 'Integer') {
+			initResult.push('int(');
+			this.astGeneric(init, initResult);
+			initResult.push(')');
+		} else {
+			this.astGeneric(init, initResult);
+		}
 		result.push(initResult.join(''));
 
 		// first declaration is done, now any added ones setup
 		for (let i = 1; i < declarations.length; i++) {
 			const declaration = declarations[i];
-			this.declarations[declaration.id.name] = declarationType;
+			dependencies = this.getDependencies(declaration);
+			this.declarations[declaration.id.name] = Object.freeze({
+				type,
+				dependencies: dependencies,
+				isSafe: this.isSafeDependencies(dependencies),
+			});
 			this.astGeneric(declaration, result);
 		}
 
-		retArr.push(retArr, result.join(','));
-		retArr.push(';');
+		retArr.push(result.join(','));
+		if (!this.isState('in-for-loop-init')) {
+			retArr.push(';');
+		}
 		return retArr;
 	}
 

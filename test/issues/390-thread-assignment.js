@@ -16,9 +16,9 @@ test('Issue #390 - thread assignment webgl', function(assert) {
     + '\nint user_sum=(user_x+user_y);'
     + '\nreturn float(user_sum);'
     + '\n}');
-  assert.equal(node.declarations.x, 'Integer');
-  assert.equal(node.declarations.y, 'Integer');
-  assert.equal(node.declarations.sum, 'Integer');
+  assert.equal(node.declarations.x.type, 'Integer');
+  assert.equal(node.declarations.y.type, 'Integer');
+  assert.equal(node.declarations.sum.type, 'Integer');
 });
 
 test('Issue #390 - thread assignment webgl2', function(assert) {
@@ -34,9 +34,9 @@ test('Issue #390 - thread assignment webgl2', function(assert) {
     + '\nint user_sum=(user_x+user_y);'
     + '\nreturn float(user_sum);'
     + '\n}');
-  assert.equal(node.declarations.x, 'Integer');
-  assert.equal(node.declarations.y, 'Integer');
-  assert.equal(node.declarations.sum, 'Integer');
+  assert.equal(node.declarations.x.type, 'Integer');
+  assert.equal(node.declarations.y.type, 'Integer');
+  assert.equal(node.declarations.sum.type, 'Integer');
 });
 
 test('Issue #390 - thread assignment cpu', function(assert) {
@@ -52,9 +52,9 @@ test('Issue #390 - thread assignment cpu', function(assert) {
     + '\nconst user_sum=(user_x+user_y);'
     + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations.x, 'Integer');
-  assert.equal(node.declarations.y, 'Integer');
-  assert.equal(node.declarations.sum, 'Integer');
+  assert.equal(node.declarations.x.type, 'Integer');
+  assert.equal(node.declarations.y.type, 'Integer');
+  assert.equal(node.declarations.sum.type, 'Integer');
 });
 
 
@@ -75,10 +75,10 @@ test('Issue #390 (related) - output assignment webgl', function(assert) {
     + '\nint user_sum=((user_x+user_y)+user_z);'
     + '\nreturn float(user_sum);'
     + '\n}');
-  assert.equal(node.declarations.x, 'Integer');
-  assert.equal(node.declarations.y, 'Integer');
-  assert.equal(node.declarations.z, 'Integer');
-  assert.equal(node.declarations.sum, 'Integer');
+  assert.equal(node.declarations.x.type, 'Integer');
+  assert.equal(node.declarations.y.type, 'Integer');
+  assert.equal(node.declarations.z.type, 'Integer');
+  assert.equal(node.declarations.sum.type, 'Integer');
 });
 
 test('Issue #390 (related) - output assignment webgl2', function(assert) {
@@ -98,10 +98,10 @@ test('Issue #390 (related) - output assignment webgl2', function(assert) {
     + '\nint user_sum=((user_x+user_y)+user_z);'
     + '\nreturn float(user_sum);'
     + '\n}');
-  assert.equal(node.declarations.x, 'Integer');
-  assert.equal(node.declarations.y, 'Integer');
-  assert.equal(node.declarations.z, 'Integer');
-  assert.equal(node.declarations.sum, 'Integer');
+  assert.equal(node.declarations.x.type, 'Integer');
+  assert.equal(node.declarations.y.type, 'Integer');
+  assert.equal(node.declarations.z.type, 'Integer');
+  assert.equal(node.declarations.sum.type, 'Integer');
 });
 
 test('Issue #390 (related) - output assignment cpu', function(assert) {
@@ -121,9 +121,9 @@ test('Issue #390 (related) - output assignment cpu', function(assert) {
     + '\nconst user_sum=((user_x+user_y)+user_z);'
     + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations.x, 'Integer');
-  assert.equal(node.declarations.y, 'Integer');
-  assert.equal(node.declarations.z, 'Integer');
-  assert.equal(node.declarations.sum, 'Integer');
+  assert.equal(node.declarations.x.type, 'Integer');
+  assert.equal(node.declarations.y.type, 'Integer');
+  assert.equal(node.declarations.z.type, 'Integer');
+  assert.equal(node.declarations.sum.type, 'Integer');
 });
 

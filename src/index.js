@@ -17,7 +17,9 @@ const {
 const {
 	FunctionBuilder
 } = require('./backend/function-builder');
-
+const {
+	FunctionNode
+} = require('./backend/function-node');
 const {
 	CPUFunctionNode
 } = require('./backend/cpu/function-node');
@@ -49,6 +51,7 @@ module.exports = {
 	CPUKernel,
 	GPU,
 	FunctionBuilder,
+	FunctionNode,
 	HeadlessGLKernel,
 	Input,
 	input,

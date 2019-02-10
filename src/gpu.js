@@ -1,3 +1,4 @@
+const gpuMock = require('gpu-mock.js');
 const {
 	utils
 } = require('./utils');
@@ -111,6 +112,7 @@ class GPU {
 		this.canvas = settings.canvas || null;
 		this.context = settings.context || null;
 		this.mode = settings.mode;
+		if (this.mode === 'dev') return;
 		this.Kernel = null;
 		this.kernels = [];
 		this.functions = [];
@@ -189,19 +191,9 @@ class GPU {
 	}
 
 	/**
-	 *
 	 * @desc This creates a callable function object to call the kernel function with the argument parameter set
-	 *
 	 * @param {Function|String|object} source - The calling to perform the conversion
 	 * @param {Object} [settings] - The parameter configuration object
-	 * @property {String} settings.dimensions - Thread dimension array (Defaults to [1024])
-	 * @property {String} settings.mode - CPU / GPU configuration mode (Defaults to null)
-	 *
-	 * The following modes are supported
-	 * *'falsey'* : Attempts to build GPU mode, else fallbacks
-	 * *'gpu'* : Attempts to build GPU mode, else fallbacks
-	 * *'cpu'* : Forces JS fallback mode only
-	 *
 	 * @returns {Kernel} callable function to run
 	 */
 	createKernel(source, settings) {
@@ -210,6 +202,10 @@ class GPU {
 		}
 		if (typeof source !== 'object' && !utils.isFunction(source) && typeof source !== 'string') {
 			throw new Error('source parameter not a function');
+		}
+
+		if (this.mode === 'dev') {
+			return gpuMock(source, settings);
 		}
 
 		source = typeof source === 'function' ? source.toString() : source;

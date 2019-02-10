@@ -201,7 +201,7 @@ class CPUFunctionNode extends FunctionNode {
 				retArr.push('}\n');
 
 				return retArr;
-			} else if (forNode.init.declarations) {
+			} else if (forNode.init && forNode.init.declarations) {
 				const declarations = forNode.init.declarations;
 				if (!Array.isArray(declarations) || declarations.length < 1) {
 					throw new Error('Error: Incompatible for loop declaration');
@@ -333,7 +333,14 @@ class CPUFunctionNode extends FunctionNode {
 		const firstDeclaration = varDecNode.declarations[0];
 		const type = this.getType(firstDeclaration.init);
 		for (let i = 0; i < varDecNode.declarations.length; i++) {
-			this.declarations[varDecNode.declarations[i].id.name] = type;
+			this.declarations[varDecNode.declarations[i].id.name] = {
+				type,
+				dependencies: {
+					constants: [],
+					arguments: []
+				},
+				isUnsafe: false
+			};
 			if (i > 0) {
 				retArr.push(',');
 			}

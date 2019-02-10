@@ -109,7 +109,7 @@ class Kernel {
 
 		/**
 		 *
-		 * @type {INativeFunction[]}
+		 * @type {INativeFunctionList[]}
 		 */
 		this.nativeFunctions = null;
 

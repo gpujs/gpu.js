@@ -122,7 +122,6 @@ float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int z, int y
   __GET_TEXTURE_INDEX__;
   vec4 texel = texture2D(tex, st / vec2(texSize));
   __GET_RESULT__;
-  
 }
 
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {

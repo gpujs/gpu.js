@@ -30,18 +30,19 @@ export interface IGPUNativeFunction {
   settings: object;
 }
 
-export interface INativeFunction {
+export interface INativeFunctionList {
   [functionName: string]: string
 }
 
-export type IGPUMode = 'gpu' | 'cpu' | 'webgl' | 'webgl2' | 'headlessgl';
+export type GPUMode = 'gpu' | 'cpu' | 'dev';
+export type GPUInternalMode = 'webgl' | 'webgl2' | 'headlessgl';
 
 export interface IGPUSettings {
-  mode?: IGPUMode;
+  mode?: GPUMode | GPUInternalMode;
   canvas?: object;
   context?: object;
   functions?: KernelFunction[];
-  nativeFunctions?: INativeFunction;
+  nativeFunctions?: INativeFunctionList;
 }
 
 export type GPUVariableType
@@ -77,7 +78,7 @@ export class Kernel {
   canvas: any;
   context: any;
   functions: IFunction[];
-  nativeFunctions: INativeFunction[];
+  nativeFunctions: INativeFunctionList[];
   subKernels: ISubKernel[];
   skipValidate: boolean;
   wraparound: boolean;
@@ -283,7 +284,7 @@ export interface IFunctionBuilderSettings {
   rootNode: FunctionNode;
   functionNodes?: FunctionNode[];
   subKernelNodes?: FunctionNode[];
-  nativeFunctions?: INativeFunction[];
+  nativeFunctions?: INativeFunctionList;
 }
 
 export class FunctionNode implements IFunctionSettings {}
