@@ -125,7 +125,7 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-			
+
 			if (this.constrainStart) {
 
 			} else {
@@ -136,38 +136,36 @@ module.exports = class WebGL2Kernel extends WebGLKernel {
 			} else {
 
 			}
-			var vertices = [
-				-0.5, 0.5, 0.0,
-        -0.5, -0.5,	0.0,
-        0.5, -0.5, 0.0,
-      	0.5, 0.5, 0.0
+			var vertices = [-0.5, 0.5, 0.0, -0.5, -0.5, 0.0,
+				0.5, -0.5, 0.0,
+				0.5, 0.5, 0.0
 			];
 
-      indices = [3, 2, 1, 3, 1, 0];
+			var indices = [3, 2, 1, 3, 1, 0];
 
-      // Create an empty buffer object to store vertex buffer
-    	var vertex_buffer = gl.createBuffer();
+			// Create an empty buffer object to store vertex buffer
+			var vertex_buffer = gl.createBuffer();
 
-      // Bind appropriate array buffer to it
-      gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
+			// Bind appropriate array buffer to it
+			gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
 
-      // Pass the vertex data to the buffer
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+			// Pass the vertex data to the buffer
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 
-      // Unbind the buffer
-      gl.bindBuffer(gl.ARRAY_BUFFER, null);
+			// Unbind the buffer
+			gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-      // Create an empty buffer object to store Index buffer
-      var Index_Buffer = gl.createBuffer();
+			// Create an empty buffer object to store Index buffer
+			var Index_Buffer = gl.createBuffer();
 
-      // Bind appropriate array buffer to it
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Index_Buffer);
+			// Bind appropriate array buffer to it
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Index_Buffer);
 
-      // Pass the vertex data to the buffer
-      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+			// Pass the vertex data to the buffer
+			gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
-     	// Unbind the buffer
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+			// Unbind the buffer
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
 			// original
 

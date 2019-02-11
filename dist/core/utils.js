@@ -657,7 +657,8 @@ var Utils = function (_UtilsCore) {
    * @param {Array} array - The array to split into chunks
    * @param {Array} part - elements in one chunk
    *
-  	 * @returns {Array} An array of smaller chunks
+  
+   * @returns {Array} An array of smaller chunks
    *
    */
 

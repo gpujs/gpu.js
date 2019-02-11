@@ -4,7 +4,7 @@
     var f = gpu.createKernel(function() {
       return 255;
     }, {
-      output : [4, 4, 3]
+      output : [3, 4, 4]
     });
     let x = 2;
     let y = 2;
