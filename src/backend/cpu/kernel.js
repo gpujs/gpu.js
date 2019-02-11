@@ -133,15 +133,15 @@ class CPUKernel extends Kernel {
 		const kernelString = this.getKernelString();
 		this.kernelString = kernelString;
 
+		if (this.debug) {
+			console.log('Function output:');
+			console.log(kernelString);
+		}
+
 		try {
 			this.run = new Function([], kernelString).bind(this)();
 		} catch (e) {
 			console.error('An error occurred compiling the javascript: ', e);
-		}
-
-		if (this.debug) {
-			console.log('Function output:');
-			console.log(kernelString);
 		}
 	}
 

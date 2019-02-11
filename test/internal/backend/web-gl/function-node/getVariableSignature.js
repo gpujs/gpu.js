@@ -1,11 +1,14 @@
-const acorn = require('acorn');
 const { assert, test, module: describe, only } = require('qunit');
 const { WebGLFunctionNode } = require(process.cwd() + '/src');
 
 describe('WebGLFunctionNode.getVariableSignature()');
 
 function run(value) {
-  const expression = acorn.parse(value).body[0].expression;
+  const mockInstance = {
+    source: `function() { ${value}; }`
+  };
+  const ast = WebGLFunctionNode.prototype.getJsAST.call(mockInstance);
+  const expression = ast.body.body[0].expression;
   return WebGLFunctionNode.prototype.getVariableSignature.call({
     isAstVariable: WebGLFunctionNode.prototype.isAstVariable
   }, expression);

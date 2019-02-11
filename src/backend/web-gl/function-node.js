@@ -388,7 +388,7 @@ class WebGLFunctionNode extends FunctionNode {
 	}
 
 	/**
-	 * @desc Parses the abstract syntax tree forfor *for-loop* expression
+	 * @desc Parses the abstract syntax tree for *for-loop* expression
 	 * @param {Object} forNode - An ast Node
 	 * @param {Array} retArr - return array string
 	 * @returns {Array} the parsed webgl string
@@ -408,7 +408,7 @@ class WebGLFunctionNode extends FunctionNode {
 			this.pushState('in-for-loop-init');
 			this.astGeneric(forNode.init, initArr);
 			for (let i = 0; i < initArr.length; i++) {
-				if (initArr[i].includes(',')) {
+				if (initArr[i].includes && initArr[i].includes(',')) {
 					isSafe = false;
 				}
 			}
@@ -473,7 +473,8 @@ class WebGLFunctionNode extends FunctionNode {
 			throw this.astErrorOutput('Invalid while statement', whileNode);
 		}
 
-		retArr.push('for (int safeI=0;safeI<LOOP_MAX;safeI++){\n');
+		const iVariableName = this.getInternalVariableName('safeI');
+		retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
 		retArr.push('if (!');
 		this.astGeneric(whileNode.test, retArr);
 		retArr.push(') break;\n');
@@ -494,7 +495,8 @@ class WebGLFunctionNode extends FunctionNode {
 			throw this.astErrorOutput('Invalid while statement', doWhileNode);
 		}
 
-		retArr.push('for (int safeI=0;safeI<LOOP_MAX;safeI++){\n');
+		const iVariableName = this.getInternalVariableName('safeI');
+		retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
 		this.astGeneric(doWhileNode.body, retArr);
 		retArr.push('if (!');
 		this.astGeneric(doWhileNode.test, retArr);

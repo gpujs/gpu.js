@@ -5,6 +5,9 @@ export class GPU {
   static isWebGLSupported: boolean;
   static isWebGL2Supported: boolean;
   static isKernelMapSupported: boolean;
+  static isOffscreenCanvasSupported: boolean;
+  static isGPUHTMLImageArraySupported: boolean;
+  static isFloatOutputSupported: boolean;
   constructor(settings?: IGPUSettings);
   functions: IGPUFunction[];
   nativeFunctions: IGPUNativeFunction[];
@@ -272,11 +275,12 @@ export interface ISubKernel {
 
 export class FunctionBuilder {
   fromKernel(kernel: IKernelSettings, FunctionNode: FunctionNode, extraNodeOptions?: any): FunctionBuilder;
-  constructor(settings: IFunctionSettings);
+  constructor(settings: IFunctionBuilderSettings);
   addFunctionNode(functionNode: FunctionNode);
   traceFunctionCalls(functionName: string): string[];
   getStringFromFunctionNames(functionName?: string[]): string;
   getPrototypesFromFunctionNames(functionName?: string[]): string[];
+  getString(functionName: string): string;
 }
 
 
@@ -287,7 +291,14 @@ export interface IFunctionBuilderSettings {
   nativeFunctions?: INativeFunctionList;
 }
 
-export class FunctionNode implements IFunctionSettings {}
+// These are mostly internal
+export class FunctionNode implements IFunctionSettings {
+  constructor(source: string, settings?: IFunctionSettings);
+}
+
+export class WebGLFunctionNode extends FunctionNode {}
+export class WebGL2FunctionNode extends WebGLFunctionNode {}
+export class CPUFunctionNode extends FunctionNode {}
 
 export class Texture {
   toArray(): TextureArrayOutput

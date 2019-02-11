@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0
- * @date Sun Feb 10 2019 12:13:28 GMT-0500 (Eastern Standard Time)
+ * @date Sun Feb 10 2019 22:55:24 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -4984,87 +4984,68 @@ class CPUFunctionNode extends FunctionNode {
 
 	astForStatement(forNode, retArr) {
 		if (forNode.type !== 'ForStatement') {
-			throw this.astErrorOutput(
-				'Invalid for statement',
-				forNode
-			);
+			throw this.astErrorOutput('Invalid for statement', forNode);
 		}
 
-		if (forNode.test && forNode.test.type === 'BinaryExpression') {
-			if ((forNode.test.right.type === 'Identifier') &&
-				forNode.test.operator === '<' &&
-				this.isIdentifierConstant(forNode.test.right.name) === false) {
+		const initArr = [];
+		const testArr = [];
+		const updateArr = [];
+		const bodyArr = [];
+		let isSafe = null;
 
-				if (!this.loopMaxIterations) {
-					console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
-					console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
+		if (forNode.init) {
+			this.pushState('in-for-loop-init');
+			this.astGeneric(forNode.init, initArr);
+			for (let i = 0; i < initArr.length; i++) {
+				if (initArr[i].includes && initArr[i].includes(',')) {
+					isSafe = false;
 				}
-
-				retArr.push('for (');
-				this.astGeneric(forNode.init, retArr);
-				if (retArr[retArr.length - 1] !== ';') {
-					retArr.push(';');
-				}
-				this.astGeneric(forNode.test.left, retArr);
-				retArr.push(forNode.test.operator);
-				retArr.push('LOOP_MAX');
-				retArr.push(';');
-				this.astGeneric(forNode.update, retArr);
-				retArr.push(')');
-
-				retArr.push('{\n');
-				retArr.push('if (');
-				this.astGeneric(forNode.test.left, retArr);
-				retArr.push(forNode.test.operator);
-				this.astGeneric(forNode.test.right, retArr);
-				retArr.push(') {\n');
-				if (forNode.body.type === 'BlockStatement') {
-					for (let i = 0; i < forNode.body.body.length; i++) {
-						this.astGeneric(forNode.body.body[i], retArr);
-					}
-				} else {
-					this.astGeneric(forNode.body, retArr);
-				}
-				retArr.push('} else {\n');
-				retArr.push('break;\n');
-				retArr.push('}\n');
-				retArr.push('}\n');
-
-				return retArr;
-			} else if (forNode.init && forNode.init.declarations) {
-				const declarations = forNode.init.declarations;
-				if (!Array.isArray(declarations) || declarations.length < 1) {
-					throw new Error('Error: Incompatible for loop declaration');
-				}
-
-				if (declarations.length > 1) {
-					retArr.push('for (');
-					retArr.push(`${forNode.init.kind} `);
-					for (let i = 0; i < declarations.length; i++) {
-						if (i > 0) {
-							retArr.push(',');
-						}
-						this.astGeneric(declarations[i], retArr);
-					}
-					retArr.push(';');
-				} else {
-					retArr.push('for (');
-					this.astGeneric(forNode.init, retArr);
-				}
-
-				this.astGeneric(forNode.test, retArr);
-				retArr.push(';');
-				this.astGeneric(forNode.update, retArr);
-				retArr.push(')');
-				this.astGeneric(forNode.body, retArr);
-				return retArr;
 			}
+			this.popState('in-for-loop-init');
+		} else {
+			isSafe = false;
 		}
 
-		throw this.astErrorOutput(
-			'Invalid for statement',
-			forNode
-		);
+		if (forNode.test) {
+			this.astGeneric(forNode.test, testArr);
+		} else {
+			isSafe = false;
+		}
+
+		if (forNode.update) {
+			this.astGeneric(forNode.update, updateArr);
+		} else {
+			isSafe = false;
+		}
+
+		if (forNode.body) {
+			this.pushState('loop-body');
+			this.astGeneric(forNode.body, bodyArr);
+			this.popState('loop-body');
+		}
+
+		if (isSafe === null) {
+			isSafe = this.isSafe(forNode.init) && this.isSafe(forNode.test);
+		}
+
+		if (isSafe) {
+			retArr.push(`for (${initArr.join('')};${testArr.join('')};${updateArr.join('')}){\n`);
+			retArr.push(bodyArr.join(''));
+			retArr.push('}\n');
+		} else {
+			const iVariableName = this.getInternalVariableName('safeI');
+			if (initArr.length > 0) {
+				retArr.push(initArr.join(''), ';\n');
+			}
+			retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
+			if (testArr.length > 0) {
+				retArr.push(`if (!${testArr.join('')}) break;\n`);
+			}
+			retArr.push(bodyArr.join(''));
+			retArr.push(`\n${updateArr.join('')};`);
+			retArr.push('}\n');
+		}
+		return retArr;
 	}
 
 	astWhileStatement(whileNode, retArr) {
@@ -5117,11 +5098,15 @@ class CPUFunctionNode extends FunctionNode {
 	}
 
 	astBlockStatement(bNode, retArr) {
-		retArr.push('{\n');
+		if (!this.isState('loop-body')) {
+			retArr.push('{\n');
+		}
 		for (let i = 0; i < bNode.body.length; i++) {
 			this.astGeneric(bNode.body[i], retArr);
 		}
-		retArr.push('}\n');
+		if (!this.isState('loop-body')) {
+			retArr.push('}\n');
+		}
 		return retArr;
 	}
 
@@ -5146,7 +5131,9 @@ class CPUFunctionNode extends FunctionNode {
 			}
 			this.astGeneric(varDecNode.declarations[i], retArr);
 		}
-		retArr.push(';');
+		if (!this.isState('in-for-loop-init')) {
+			retArr.push(';');
+		}
 		return retArr;
 	}
 
@@ -5583,15 +5570,15 @@ class CPUKernel extends Kernel {
 		const kernelString = this.getKernelString();
 		this.kernelString = kernelString;
 
+		if (this.debug) {
+			console.log('Function output:');
+			console.log(kernelString);
+		}
+
 		try {
 			this.run = new Function([], kernelString).bind(this)();
 		} catch (e) {
 			console.error('An error occurred compiling the javascript: ', e);
-		}
-
-		if (this.debug) {
-			console.log('Function output:');
-			console.log(kernelString);
 		}
 	}
 
@@ -6365,8 +6352,8 @@ class FunctionNode {
 				if (ast.operator === '%') {
 					return 'Number';
 				} else if (ast.operator === '>' || ast.operator === '<') {
-				  return 'Boolean';
-        }
+					return 'Boolean';
+				}
 				const type = this.getType(ast.left);
 				return typeLookupMap[type] || type;
 			case 'UpdateExpression':
@@ -7095,10 +7082,10 @@ class FunctionNode {
 		if (!this._internalVariableNames.hasOwnProperty(name)) {
 			this._internalVariableNames[name] = 0;
 		}
-    this._internalVariableNames[name]++;
+		this._internalVariableNames[name]++;
 		if (this._internalVariableNames[name] === 1) {
-		  return name;
-    }
+			return name;
+		}
 		return name + this._internalVariableNames[name];
 	}
 }
@@ -7119,7 +7106,6 @@ const typeLookupMap = {
 module.exports = {
 	FunctionNode
 };
-
 },{"../utils":29,"acorn":1}],10:[function(require,module,exports){
 const {
 	Kernel
@@ -8099,7 +8085,7 @@ class WebGLFunctionNode extends FunctionNode {
 			this.pushState('in-for-loop-init');
 			this.astGeneric(forNode.init, initArr);
 			for (let i = 0; i < initArr.length; i++) {
-				if (initArr[i].includes(',')) {
+				if (initArr[i].includes && initArr[i].includes(',')) {
 					isSafe = false;
 				}
 			}
@@ -8157,7 +8143,8 @@ class WebGLFunctionNode extends FunctionNode {
 			throw this.astErrorOutput('Invalid while statement', whileNode);
 		}
 
-		retArr.push('for (int safeI=0;safeI<LOOP_MAX;safeI++){\n');
+		const iVariableName = this.getInternalVariableName('safeI');
+		retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
 		retArr.push('if (!');
 		this.astGeneric(whileNode.test, retArr);
 		retArr.push(') break;\n');
@@ -8172,7 +8159,8 @@ class WebGLFunctionNode extends FunctionNode {
 			throw this.astErrorOutput('Invalid while statement', doWhileNode);
 		}
 
-		retArr.push('for (int safeI=0;safeI<LOOP_MAX;safeI++){\n');
+		const iVariableName = this.getInternalVariableName('safeI');
+		retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
 		this.astGeneric(doWhileNode.body, retArr);
 		retArr.push('if (!');
 		this.astGeneric(doWhileNode.test, retArr);
@@ -8561,7 +8549,6 @@ const operatorMap = {
 module.exports = {
 	WebGLFunctionNode
 };
-
 },{"../function-node":9}],15:[function(require,module,exports){
 const {
 	utils
