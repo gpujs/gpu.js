@@ -1,48 +1,60 @@
-(function() {
-  function getCanvasTest(mode ) {
-    var gpu = new GPU();
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-    QUnit.assert.ok( gpu.getCanvas() === null, 'canvas is initially null');
+describe('get canvas');
 
-    var render = gpu.createKernel(function() {
-      this.color(0, 0, 0, 1);
-    }, {
-      output : [30,30],
-      mode : mode
-    }).setGraphical(true);
+function getCanvasTest(mode ) {
+  const gpu = new GPU();
 
-    QUnit.assert.ok( render !== null, 'function generated test');
+  assert.ok(gpu.context === null, 'context is initially null');
+  assert.ok(gpu.canvas === null, 'canvas is initially null');
 
-    QUnit.assert.ok( render.getCanvas(), 'testing for canvas after createKernel' );
-    QUnit.assert.ok( gpu.getCanvas(), 'testing for canvas after createKernel' );
+  const render = gpu.createKernel(function() {
+    this.color(0, 0, 0, 1);
+  }, {
+    output : [30,30],
+    mode : mode
+  }).setGraphical(true);
 
-    //
-    // NOTE: GPU mode somehow return null when render()
-    //
-    QUnit.assert.ok( (r = render()) || true, 'rendering' );
+  assert.ok(render !== null, 'function generated test');
+  assert.ok(render.canvas, 'testing for canvas after createKernel' );
+  assert.ok(render.context, 'testing for context after createKernel' );
+  assert.ok(gpu.canvas, 'testing for canvas after createKernel' );
+  assert.ok(gpu.context, 'testing for context after createKernel' );
 
-    QUnit.assert.ok( render.getCanvas(), 'testing for canvas after render' );
-    QUnit.assert.ok( gpu.getCanvas(), 'testing for canvas after render' );
-    gpu.destroy();
-  }
+  render();
 
-  QUnit.test( 'getCanvas (auto)', function() {
-    getCanvasTest(null);
-  });
+  assert.ok(render.canvas, 'testing for canvas after render' );
+  assert.ok(render.context, 'testing for context after render' );
+  assert.ok(gpu.canvas, 'testing for canvas after render' );
+  assert.ok(gpu.context, 'testing for context after render' );
 
-  QUnit.test( 'getCanvas (gpu)', function() {
-    getCanvasTest('gpu');
-  });
+  assert.equal(render.canvas, gpu.canvas);
+  assert.equal(render.context, gpu.context);
 
-  QUnit.test( 'getCanvas (webgl)', function() {
-    getCanvasTest('webgl');
-  });
+  gpu.destroy();
+}
 
-  QUnit.test( 'getCanvas (webgl2)', function() {
-    getCanvasTest('webgl2');
-  });
+test('auto', () => {
+  getCanvasTest(null);
+});
 
-  QUnit.test( 'getCanvas (CPU)', function() {
-    getCanvasTest('cpu');
-  });
-})();
+test('gpu', () => {
+  getCanvasTest('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('webgl', () => {
+  getCanvasTest('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
+  getCanvasTest('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
+  getCanvasTest('headlessgl');
+});
+
+test('cpu', () => {
+  getCanvasTest('cpu');
+});

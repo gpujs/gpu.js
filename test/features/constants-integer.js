@@ -1,44 +1,46 @@
-(function() {
-  function integerConstantTest(mode) {
-    var gpu = new GPU({ mode: mode });
-    var int = 200;
-    var tryConst = gpu.createKernel(
-      function() {
-        return this.constants.int;
-      },
-      {
-        constants: { int }
-      }
-    ).setOutput([2]);
-    var result = tryConst();
-    var match = new Float32Array([200, 200]);
-    var test = (result[0] === match[0] && result[1] === match[1]);
-    QUnit.assert.ok(test, 'int constant passed test');
-    gpu.destroy();
-  }
+const { assert, skip, test, module: describe, only } = require('qunit');
+const { GPU } = require('../../src');
 
-  QUnit.test( 'integerConstantTest (auto)', function() {
-    var mode = null;
-    integerConstantTest(mode);
-  });
+describe('features: constants integer');
 
-  QUnit.test( 'integerConstantTest (gpu)', function() {
-    var mode = 'gpu';
-    integerConstantTest(mode);
-  });
+function integerConstantTest(mode) {
+  const gpu = new GPU({ mode });
+  const int = 200;
+  const tryConst = gpu.createKernel(
+    function() {
+      return this.constants.int;
+    },
+    {
+      constants: { int }
+    }
+  ).setOutput([2]);
+  const result = tryConst();
+  const match = new Float32Array([200, 200]);
+  const test = (result[0] === match[0] && result[1] === match[1]);
+  assert.ok(test, 'int constant passed test');
+  gpu.destroy();
+}
 
-  QUnit.test( 'integerConstantTest (webgl)', function() {
-    var mode = 'webgl';
-    integerConstantTest(mode);
-  });
+test('auto', () => {
+  integerConstantTest(null);
+});
 
-  QUnit.test( 'integerConstantTest (webgl2)', function() {
-    var mode = 'webgl2';
-    integerConstantTest(mode);
-  });
+test('gpu', () => {
+  integerConstantTest('gpu');
+});
 
-  QUnit.test( 'integerConstantTest (cpu)', function() {
-    var mode = 'cpu';
-    integerConstantTest(mode);
-  });
-})();
+(GPU.isWebGLSupported ? test : skip)('webgl', () => {
+  integerConstantTest('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
+  integerConstantTest('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
+  integerConstantTest('headlessgl');
+});
+
+test('cpu', () => {
+  integerConstantTest('cpu');
+});

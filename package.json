@@ -1,44 +1,41 @@
 {
   "name": "gpu.js",
-  "version": "1.10.4",
+  "version": "2.0.0-rc.1",
   "description": "GPU Accelerated JavaScript",
-  "main": "./dist/index.js",
+  "engines": {
+    "node": ">=10.0.0"
+  },
+  "main": "./src/index.js",
   "files": [
-    "dist",
-    "bin"
+    "src"
   ],
   "directories": {
     "doc": "doc",
     "test": "test"
   },
   "dependencies": {
-    "acorn": "^5.1.1"
+    "acorn": "^5.1.1",
+    "gl": "^4.1.1",
+    "gpu-mock.js": "^1.0.1",
+    "typescript": "^3.3.1"
   },
   "devDependencies": {
-    "babel-plugin-syntax-async-functions": "^6.5.0",
-    "babel-preset-env": "^1.5.2",
+    "benchmark": "^2.1.4",
     "browser-sync": "^2.26.3",
     "browserify": "^16.2.3",
-    "del": "^3.0.0",
-    "docdash": "^0.4.0",
     "gulp": "^4.0.0",
-    "gulp-babel": "^6.1.2",
     "gulp-concat": "^2.6.0",
     "gulp-header": "^1.7.1",
     "gulp-jsbeautifier": "^2.1.0",
     "gulp-rename": "^1.2.2",
     "gulp-strip-comments": "^2.4.5",
-    "gulp-uglify": "^1.5.2",
-    "gulp-util": "^3.0.7",
-    "jsdoc": "^3.5.0",
     "merge-stream": "^1.0.1",
-    "qunit-assert-close": "^2.1.2",
-    "qunitjs": "^2.3.2",
+    "qunit": "^2.9.1",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^2.0.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "qunit",
     "setup": "npm i -g gulp-cli",
     "build-docs": "./node_modules/.bin/jsdoc -c jsdoc.json src -r -d doc --debug && gulp injectCSS",
     "make": "gulp build && gulp beautify && gulp minify"
@@ -56,5 +53,6 @@
   "bugs": {
     "url": "https://github.com/gpujs/gpu.js/issues"
   },
-  "homepage": "http://gpu.rocks/"
+  "homepage": "http://gpu.rocks/",
+  "typings": "./src/index.d.ts"
 }

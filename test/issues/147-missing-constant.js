@@ -1,48 +1,45 @@
-(function() {
-  var gpu;
-  function getValue(mode) {
-    gpu = new GPU({ mode: mode });
+const { assert, skip, test, module: describe, only } = require('qunit');
+const { GPU } = require('../../src');
 
-    const kernel = gpu.createKernel(function() {
-      return getPi();
-    })
-      .setOutput([1])
-      .setConstants({ pi: Math.PI });
+describe('issue #147');
 
-    gpu.addFunction(function getPi() {
-      return this.constants.pi;
-    });
-
-    return kernel();
+function missingConstant(mode) {
+  const gpu = new GPU({ mode });
+  function getPi() {
+    return this.constants.pi;
   }
+  gpu.addFunction(getPi);
+  const kernel = gpu.createKernel(function() {
+    return getPi();
+  })
+    .setOutput([1])
+    .setConstants({ pi: Math.PI });
 
-  QUnit.test( "Issue #130 - missing constant (cpu)", function() {
-    var value = getValue('cpu');
-    QUnit.assert.equal((value[0]).toFixed(7), Math.PI.toFixed(7));
-    gpu.destroy();
-  });
+  const result = kernel();
+  assert.equal(result[0].toFixed(7), Math.PI.toFixed(7));
+  gpu.destroy();
+}
 
-  QUnit.test( "Issue #130 - missing constant (auto)", function() {
-    var value = getValue(null);
-    QUnit.assert.equal((value[0]).toFixed(7), Math.PI.toFixed(7));
-    gpu.destroy();
-  });
+test("Issue #147 - missing constant auto", () => {
+  missingConstant(null);
+});
 
-  QUnit.test( "Issue #130 - missing constant (gpu)", function() {
-    var value = getValue('gpu');
-    QUnit.assert.equal((value[0]).toFixed(7), Math.PI.toFixed(7));
-    gpu.destroy();
-  });
+test("Issue #147 - missing constant gpu", () => {
+  missingConstant('gpu');
+});
 
-  QUnit.test( "Issue #130 - missing constant (webgl)", function() {
-    var value = getValue('webgl');
-    QUnit.assert.equal((value[0]).toFixed(7), Math.PI.toFixed(7));
-    gpu.destroy();
-  });
+(GPU.isWebGLSupported ? test : skip)("Issue #147 - missing constant webgl", () => {
+  missingConstant('webgl');
+});
 
-  QUnit.test( "Issue #130 - missing constant (webgl2)", function() {
-    var value = getValue('webgl2');
-    QUnit.assert.equal((value[0]).toFixed(7), Math.PI.toFixed(7));
-    gpu.destroy();
-  });
-})();
+(GPU.isWebGL2Supported ? test : skip)("Issue #147 - missing constant webgl2", () => {
+  missingConstant('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)("Issue #147 - missing constant headlessgl", () => {
+  missingConstant('headlessgl');
+});
+
+test("Issue #147 - missing constant cpu", () => {
+  missingConstant('cpu');
+});

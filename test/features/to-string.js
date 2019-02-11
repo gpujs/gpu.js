@@ -1,227 +1,195 @@
-(function() {
-  function sumABTest(gpu, reSetup) {
-    var originalKernel = gpu.createKernel(function(a, b) {
-      return a[this.thread.x] + b[this.thread.x];
-    }, {
-      output : [6]
-    });
+const { assert, skip, test, module: describe, only } = require('qunit');
+const { GPU, Input, input, Texture } = require('../../src');
 
-    QUnit.assert.ok(typeof originalKernel === 'function', 'function generated test');
+describe('features: toString sumAB');
+function sumABTest(mode, canvas, context) {
+  const gpu = new GPU({ mode: 'cpu' });
+  const originalKernel = gpu.createKernel(function(a, b) {
+    return a[this.thread.x] + b[this.thread.x];
+  }, {
+    output : [6]
+  });
 
-    var a = [1, 2, 3, 5, 6, 7];
-    var b = [4, 5, 6, 1, 2, 3];
-    var expected = [5, 7, 9, 6, 8, 10];
-    var originalResult = originalKernel(a,b);
-    QUnit.assert.equal(originalResult.length, expected.length);
-    for(var i = 0; i < expected.length; ++i) {
-      QUnit.assert.close(originalResult[i], expected[i], 0.1, 'Result index: ' + i);
-    }
-    var kernelString = originalKernel.toString();
-    var newKernel = new Function('return ' + kernelString)()();
-    reSetup(newKernel, originalKernel);
-    var newResult = newKernel(a,b);
+  const a = [1, 2, 3, 5, 6, 7];
+  const b = [4, 5, 6, 1, 2, 3];
+  const expected = [5, 7, 9, 6, 8, 10];
+  const originalResult = originalKernel(a,b);
+  assert.deepEqual(Array.from(originalResult), expected);
+  const kernelString = originalKernel.toString();
+  const newKernel = new Function('return ' + kernelString)()();
+  newKernel
+    .setContext(originalKernel.context)
+    .setCanvas(originalKernel.canvas);
+  const newResult = newKernel(a,b);
+  assert.deepEqual(Array.from(newResult), expected);
+  gpu.destroy();
+}
 
-    QUnit.assert.equal(newResult.length, expected.length);
-    for(var i = 0; i < expected.length; ++i) {
-      QUnit.assert.close(newResult[i], expected[i], 0.1, 'Result index: ' + i);
-    }
-
-    gpu.destroy();
+test('toString sumAB auto', () => {
+  if (GPU.isHeadlessGLSupported) {
+    sumABTest(null, {}, require('gl')(1, 1));
+  } else {
+    sumABTest(null);
   }
-  
-  QUnit.test('toString sumAB (auto)', function(assert) {
-    sumABTest(new GPU(), function(newKernel, originalKernel) {
-      var canvas = originalKernel.getCanvas();
-      var webGl = originalKernel.getWebGl();
-      assert.ok(canvas);
-      assert.ok(webGl);
-      newKernel
-        .setWebGl(webGl)
-        .setCanvas(canvas);
-    });
+});
+
+test('toString sumAB gpu', () => {
+  if (GPU.isHeadlessGLSupported) {
+    sumABTest('gpu', {}, require('gl')(1, 1));
+  } else {
+    sumABTest('gpu');
+  }
+});
+
+(GPU.isWebGLSupported ? test : skip)('toString sumAB webgl', () => {
+  sumABTest('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('toString sumAB webgl2', () => {
+  sumABTest('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('toString sumAB headlessgl', () => {
+  sumABTest('headlessgl', {}, require('gl')(1, 1));
+});
+
+test('toString sumAB cpu', () => {
+  sumABTest('cpu');
+});
+
+
+describe('features: toString Texture');
+function toStringTextureTest(mode) {
+  const gpu = new GPU({ mode });
+  const a = [1, 2, 3, 5, 6, 7];
+  const expected = [0.5, 1, 1.5, 2.5, 3, 3.5];
+  const textureKernel = gpu.createKernel(function(a) {
+    return a[this.thread.x] / 2;
+  }, {
+    output: [6],
+    pipeline: true
   });
-
-  QUnit.test('toString sumAB (gpu)', function(assert) {
-    sumABTest(new GPU({ mode: 'gpu' }), function(newKernel, originalKernel) {
-      var canvas = originalKernel.getCanvas();
-      var webGl = originalKernel.getWebGl();
-      assert.ok(canvas);
-      assert.ok(webGl);
-      newKernel
-        .setWebGl(webGl)
-        .setCanvas(canvas);
-    });
+  const numberKernel = gpu.createKernel(function(a) {
+    return a[this.thread.x];
+  }, {
+    output: [6]
   });
-  
-  QUnit.test('toString sumAB (webgl)', function(assert) {
-    sumABTest(new GPU({ mode: 'webgl' }), function(newKernel, originalKernel) {
-      var canvas = originalKernel.getCanvas();
-      var webGl = originalKernel.getWebGl();
-      assert.ok(canvas);
-      assert.ok(webGl);
-      newKernel
-        .setWebGl(webGl)
-        .setCanvas(canvas);
-    });
-  });
+  const textureResult = textureKernel(a);
+  assert.equal(textureResult.constructor, Texture);
+  const originalResult = numberKernel(textureResult);
+  assert.equal(originalResult.constructor, Float32Array);
+  assert.equal(originalResult.length, expected.length);
+  for(let i = 0; i < expected.length; ++i) {
+    assert.equal(originalResult[i], expected[i], 'Result index: ' + i);
+  }
+  assert.strictEqual(textureKernel.canvas, numberKernel.canvas);
+  assert.strictEqual(textureKernel.context, numberKernel.context);
 
-  QUnit.test('toString sumAB (webgl2)', function(assert) {
-    sumABTest(new GPU({ mode: 'webgl2' }), function(newKernel, originalKernel) {
-      var canvas = originalKernel.getCanvas();
-      var webGl = originalKernel.getWebGl();
-      assert.ok(canvas);
-      assert.ok(webGl);
-      newKernel
-        .setWebGl(webGl)
-        .setCanvas(canvas);
-    });
-  });
-  
-  QUnit.test('toString sumAB (CPU)', function(assert) {
-    sumABTest(new GPU({ mode: 'cpu' }), function(newKernel, originalKernel) {
-      var canvas = originalKernel.getCanvas();
-      assert.ok(canvas);
-      newKernel.setCanvas(canvas);
-    });
-  });
-})();
+  const textureKernelString = textureKernel.toString();
+  const numberKernelString = numberKernel.toString();
+  const newTextureKernel = new Function('return ' + textureKernelString)()();
+  const newNumberKernel = new Function('return ' + numberKernelString)()();
+  const canvas = textureKernel.canvas;
+  const context = textureKernel.context;
+  newTextureKernel
+    .setTexture(Texture)
+    .setContext(context)
+    .setCanvas(canvas);
+  newNumberKernel
+    .setTexture(Texture)
+    .setContext(context)
+    .setCanvas(canvas);
 
-
-(function() {
-  function toStringTextureTest(mode) {
-    var gpu = new GPU({ mode: mode });
-    var a = [1, 2, 3, 5, 6, 7];
-    var expected = [0.5, 1, 1.5, 2.5, 3, 3.5];
-    var textureKernel = gpu.createKernel(function(a) {
-      return a[this.thread.x] / 2;
-    }, {
-      output: [6],
-      outputToTexture: true
-    });
-    var numberKernel = gpu.createKernel(function(a) {
-      return a[this.thread.x];
-    }, {
-      output: [6]
-    });
-    const textureResult = textureKernel(a);
-    QUnit.assert.equal(textureResult.constructor, GPU.Texture);
-    const originalResult = numberKernel(textureResult);
-    QUnit.assert.equal(originalResult.constructor, Float32Array);
-    QUnit.assert.equal(originalResult.length, expected.length);
-    for(var i = 0; i < expected.length; ++i) {
-      QUnit.assert.close(originalResult[i], expected[i], 0.1, 'Result index: ' + i);
-    }
-    QUnit.assert.equal(textureKernel.getCanvas(), numberKernel.getCanvas());
-    QUnit.assert.equal(textureKernel.getWebGl(), numberKernel.getWebGl());
-
-    var textureKernelString = textureKernel.toString();
-    var numberKernelString = numberKernel.toString();
-    var newTextureKernel = new Function('return ' + textureKernelString)()();
-    var newNumberKernel = new Function('return ' + numberKernelString)()();
-    var canvas = textureKernel.getCanvas();
-    var webGl = textureKernel.getWebGl();
-    newTextureKernel
-      .setTexture(GPU.Texture)
-      .setWebGl(webGl)
-      .setCanvas(canvas);
-    newNumberKernel
-      .setTexture(GPU.Texture)
-      .setWebGl(webGl)
-      .setCanvas(canvas);
-
-
-    var newKernelResult = newTextureKernel(a);
-    QUnit.assert.equal(textureResult.constructor, GPU.Texture);
-    var newResult = newNumberKernel(newKernelResult);
-    QUnit.assert.equal(newResult.constructor, Float32Array);
-    QUnit.assert.equal(newResult.length, expected.length);
-    for(var i = 0; i < expected.length; ++i) {
-      QUnit.assert.close(newResult[i], expected[i], 0.1, 'Result index: ' + i);
-    }
-
-    gpu.destroy();
+  const newKernelResult = newTextureKernel(a);
+  assert.equal(textureResult.constructor, Texture);
+  const newResult = newNumberKernel(newKernelResult);
+  assert.equal(newResult.constructor, Float32Array);
+  assert.equal(newResult.length, expected.length);
+  for(let i = 0; i < expected.length; ++i) {
+    assert.equal(newResult[i], expected[i], 'Result index: ' + i);
   }
 
-  QUnit.test('toString Texture (auto)', function() {
-    toStringTextureTest();
-  });
+  gpu.destroy();
+}
 
-  QUnit.test('toString Texture (gpu)', function() {
-    toStringTextureTest('gpu');
-  });
+test('toString Texture auto', () => {
+  toStringTextureTest();
+});
 
-  QUnit.test('toString Texture (webgl)', function() {
-    toStringTextureTest('webgl');
-  });
+test('toString Texture gpu', () => {
+  toStringTextureTest('gpu');
+});
 
-  QUnit.test('toString Texture (webgl2)', function() {
-    toStringTextureTest('webgl2');
-  });
-})();
+(GPU.isWebGLSupported ? test : skip)('toString Texture webgl', function () {
+  toStringTextureTest('webgl');
+});
 
-(function() {
-  function toStringInputTest(mode) {
-    var gpu = new GPU({ mode: mode });
-    var a = [
-      1, 2, 3, 5, 6, 7,
-      8, 9,10,11,12,13,
-      14,15,16,17,18,19,
-      20,21,22,23,24,25,
-      26,27,28,29,30,31,
-      32,33,34,35,36,37
-    ];
-    var expected = [24, 63, 99, 135, 171, 207];
-    var originalKernel = gpu.createKernel(function(a) {
-      var sum = 0;
-      for (var i = 0; i < 6; i++) {
-        sum += a[this.thread.x][i];
-      }
-      return sum;
-    }, {
-      output: [6]
-    });
-    const originalResult = originalKernel(GPU.input(a, [6, 6]));
-    QUnit.assert.equal(originalResult.length, expected.length);
-    for(var i = 0; i < expected.length; ++i) {
-      QUnit.assert.close(originalResult[i], expected[i], 0.1, 'Result index: ' + i);
+(GPU.isWebGL2Supported ? test : skip)('toString Texture webgl2', function () {
+  toStringTextureTest('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('toString Texture headlessgl', function () {
+  toStringTextureTest('headlessgl');
+});
+
+describe('features: toString Input');
+function toStringInputTest(mode) {
+  const gpu = new GPU({ mode });
+  const a = [
+    1, 2, 3, 5, 6, 7,
+    8, 9,10,11,12,13,
+    14,15,16,17,18,19,
+    20,21,22,23,24,25,
+    26,27,28,29,30,31,
+    32,33,34,35,36,37
+  ];
+  const expected = [24, 63, 99, 135, 171, 207];
+  const originalKernel = gpu.createKernel(function(a) {
+    let sum = 0;
+    for (let i = 0; i < 6; i++) {
+      sum += a[this.thread.x][i];
     }
-
-    var kernelString = originalKernel.toString();
-    var newKernel = new Function('return ' + kernelString)()();
-    var canvas = originalKernel.getCanvas();
-    var webGl = originalKernel.getWebGl();
-    newKernel
-      .setInput(GPU.Input)
-      .setWebGl(webGl)
-      .setCanvas(canvas);
-
-    var newResult = newKernel(GPU.input(a, [6, 6]));
-    QUnit.assert.equal(newResult.constructor, Float32Array);
-    QUnit.assert.equal(newResult.length, expected.length);
-    for(var i = 0; i < expected.length; ++i) {
-      QUnit.assert.close(newResult[i], expected[i], 0.1, 'Result index: ' + i);
-    }
-
-    gpu.destroy();
-  }
-
-  QUnit.test('toString Input (auto)', function() {
-    toStringInputTest();
+    return sum;
+  }, {
+    output: [6]
   });
+  const originalResult = originalKernel(input(a, [6, 6]));
+  assert.deepEqual(Array.from(originalResult), expected);
+  const kernelString = originalKernel.toString();
+  const newKernel = new Function('return ' + kernelString)()();
+  const canvas = originalKernel.canvas;
+  const context = originalKernel.context;
+  newKernel
+    .setInput(Input)
+    .setContext(context)
+    .setCanvas(canvas);
 
-  QUnit.test('toString Input (gpu)', function() {
-    toStringInputTest('gpu');
-  });
+  const newResult = newKernel(input(a, [6, 6]));
+  assert.deepEqual(Array.from(newResult), expected);
 
-  QUnit.test('toString Input (webgl)', function() {
-    toStringInputTest('webgl');
-  });
+  gpu.destroy();
+}
 
-  QUnit.test('toString Input (webgl2)', function() {
-    toStringInputTest('webgl2');
-  });
+test('toString Input auto', () => {
+  toStringInputTest();
+});
 
-  QUnit.test('toString Input (CPU)', function() {
-    toStringInputTest('cpu');
-  });
-})();
+test('toString Input gpu', () => {
+  toStringInputTest('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('toString Input webgl', function () {
+  toStringInputTest('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('toString Input webgl2', function () {
+  toStringInputTest('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('toString Input headlessgl', function () {
+  toStringInputTest('headlessgl');
+});
+
+test('toString Input cpu', () => {
+  toStringInputTest('cpu');
+});

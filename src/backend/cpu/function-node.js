@@ -1,144 +1,17 @@
-'use strict';
-
-const BaseFunctionNode = require('../function-node-base');
-const utils = require('../../core/utils');
+const {
+	FunctionNode
+} = require('../function-node');
 
 /**
- * @class CPUFunctionNode
- *
- * @extends BaseFunctionNode#
- *
  * @desc [INTERNAL] Represents a single function, inside JS
  *
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
- *
- * @prop functionName         - {String}        Name of the function
- * @prop jsFunction           - {Function}   The JS Function the node represents
- * @prop jsFunctionString     - {String}        jsFunction.toString()
- * @prop paramNames           - {String[]}  Parameter names of the function
- * @prop paramTypes           - {String[]}  Shader land parameters type assumption
- * @prop isRootKernel         - {Boolean}       Special indicator, for kernel function
- * @prop webglFunctionString  - {String}        webgl converted function string
- * @prop openglFunctionString - {String}        opengl converted function string
- * @prop calledFunctions      - {String[]}  List of all the functions called
- * @prop initVariables        - {String[]}  List of variables initialized in the function
- * @prop readVariables        - {String[]}  List of variables read operations occur
- * @prop writeVariables       - {String[]}  List of variables write operations occur
- *
  */
-module.exports = class CPUFunctionNode extends BaseFunctionNode {
-	constructor(functionName, jsFunction, options) {
-		super(functionName, jsFunction, options);
-		this.paramSizes = options ? options.paramSizes : [];
-		this.memberStates = [];
-	}
-
-	get memberState() {
-		return this.memberStates[this.memberStates.length - 1];
-	}
-
-	pushMemberState(name) {
-		this.memberStates.push(name);
-	}
-
-	popMemberState(name) {
-		if (this.memberState === name) {
-			this.memberStates.pop();
-		} else {
-			throw new Error(`Cannot popMemberState ${ name } when in ${ this.memberState }`)
-		}
-	}
-
-	generate() {
-		if (this.debug) {
-			console.log(this);
-		}
-		this.functionStringArray = this.astGeneric(this.getJsAST(), []);
-		this.functionString = this.functionStringArray.join('').trim();
-		return this.functionString;
-	}
-
+class CPUFunctionNode extends FunctionNode {
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name getFunctionPrototypeString
-	 *
-	 * @desc Returns the converted JS function
-	 *
-	 * @returns {String} function string, result is cached under this.getFunctionPrototypeString
-	 *
-	 */
-	getFunctionPrototypeString() {
-		if (this.webGlFunctionPrototypeString) {
-			return this.webGlFunctionPrototypeString;
-		}
-		return this.webGlFunctionPrototypeString = this.generate();
-	}
-
-	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astFunctionDeclaration
-	 *
-	 * @desc Parses the abstract syntax tree for to its *named function declaration*
-	 *
-	 * @param {Object} ast - the AST object to parse
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astFunctionDeclaration(ast, retArr) {
-		this.builder.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
-		return retArr;
-	}
-
-	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astFunctionPrototype
-	 *
-	 * @desc Parses the abstract syntax tree for to its *named function prototype*
-	 *
-	 * @param {Object} ast - the AST object to parse
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astFunctionPrototype(ast, retArr) {
-		// Setup function return type and name
-		if (this.isRootKernel || this.isSubKernel) {
-			return retArr;
-		}
-
-		retArr.push(this.returnType);
-		retArr.push(' ');
-		retArr.push(this.functionName);
-		retArr.push('(');
-
-		// Arguments handling
-		for (let i = 0; i < this.paramNames.length; ++i) {
-			if (i > 0) {
-				retArr.push(', ');
-			}
-			retArr.push('user_');
-			retArr.push(this.paramNames[i]);
-		}
-
-		retArr.push(');\n');
-
-		return retArr;
-	}
-
-	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astFunctionExpression
-	 *
 	 * @desc Parses the abstract syntax tree for to its *named function*
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astFunctionExpression(ast, retArr) {
@@ -147,18 +20,18 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 		if (!this.isRootKernel) {
 			retArr.push('function');
 			retArr.push(' ');
-			retArr.push(this.functionName);
+			retArr.push(this.name);
 			retArr.push('(');
 
 			// Arguments handling
-			for (let i = 0; i < this.paramNames.length; ++i) {
-				const paramName = this.paramNames[i];
+			for (let i = 0; i < this.argumentNames.length; ++i) {
+				const argumentName = this.argumentNames[i];
 
 				if (i > 0) {
 					retArr.push(', ');
 				}
 				retArr.push('user_');
-				retArr.push(paramName);
+				retArr.push(argumentName);
 			}
 
 			// Function opening
@@ -179,15 +52,9 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astReturnStatement
-	 *
 	 * @desc Parses the abstract syntax tree for to *return* statement
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astReturnStatement(ast, retArr) {
@@ -196,34 +63,22 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 			this.astGeneric(ast.argument, retArr);
 			retArr.push(';');
 		} else if (this.isSubKernel) {
-			retArr.push(`${ this.functionName }Result = `);
+			retArr.push(`subKernelResult_${ this.name } = `);
 			this.astGeneric(ast.argument, retArr);
 			retArr.push(';');
-			retArr.push(`return ${ this.functionName }Result;`);
+			retArr.push(`return subKernelResult_${ this.name };`);
 		} else {
 			retArr.push('return ');
 			this.astGeneric(ast.argument, retArr);
 			retArr.push(';');
 		}
-
-		//throw this.astErrorOutput(
-		//	'Non main function return, is not supported : '+this.currentFunctionNamespace,
-		//	ast
-		//);
-
 		return retArr;
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astLiteral
-	 *
 	 * @desc Parses the abstract syntax tree for *literal value*
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astLiteral(ast, retArr) {
@@ -242,15 +97,9 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astBinaryExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *binary* expression
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astBinaryExpression(ast, retArr) {
@@ -263,15 +112,9 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astIdentifierExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *identifier* expression
-	 *
 	 * @param {Object} idtNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astIdentifierExpression(idtNode, retArr) {
@@ -282,31 +125,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 			);
 		}
 
-		switch (this.state) {
-			case 'input-index-y':
-			case 'input-index-z':
-				retArr.push('(');
-		}
-
 		switch (idtNode.name) {
-			case 'gpu_threadX':
-				retArr.push('threadId.x');
-				break;
-			case 'gpu_threadY':
-				retArr.push('threadId.y');
-				break;
-			case 'gpu_threadZ':
-				retArr.push('threadId.z');
-				break;
-			case 'gpu_outputX':
-				retArr.push('uOutputDim.x');
-				break;
-			case 'gpu_outputY':
-				retArr.push('uOutputDim.y');
-				break;
-			case 'gpu_outputZ':
-				retArr.push('uOutputDim.z');
-				break;
 			case 'Infinity':
 				retArr.push('Infinity');
 				break;
@@ -314,27 +133,13 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 				if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
 					retArr.push('constants_' + idtNode.name);
 				} else {
-					const userParamName = this.getUserParamName(idtNode.name);
-					if (userParamName !== null) {
-						retArr.push('user_' + userParamName);
+					const name = this.getUserArgumentName(idtNode.name);
+					const type = this.getType(idtNode);
+					if (name && type && this.parent && type !== 'Number' && type !== 'Integer' && type !== 'LiteralInteger') {
+						retArr.push('user_' + name);
 					} else {
 						retArr.push('user_' + idtNode.name);
 					}
-				}
-		}
-
-		switch (this.state) {
-			case 'input-index-y':
-				{
-					const size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
-					retArr.push(' * ' + size[0] + ')');
-					break;
-				}
-			case 'input-index-z':
-				{
-					const size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
-					retArr.push(' * ' + size[0] * size[1] + ')');
-					break;
 				}
 		}
 
@@ -342,123 +147,83 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astForStatement
-	 *
-	 * @desc Parses the abstract syntax tree forfor *for-loop* expression
-	 *
+	 * @desc Parses the abstract syntax tree for *for-loop* expression
 	 * @param {Object} forNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the parsed cpu string
+	 * @returns {Array} the parsed webgl string
 	 */
 	astForStatement(forNode, retArr) {
 		if (forNode.type !== 'ForStatement') {
-			throw this.astErrorOutput(
-				'Invalid for statement',
-				forNode
-			);
+			throw this.astErrorOutput('Invalid for statement', forNode);
 		}
 
-		if (forNode.test && forNode.test.type === 'BinaryExpression') {
-			if ((forNode.test.right.type === 'Identifier' || forNode.test.right.type === 'Literal') &&
-				forNode.test.operator === '<' &&
-				this.isIdentifierConstant(forNode.test.right.name) === false) {
+		const initArr = [];
+		const testArr = [];
+		const updateArr = [];
+		const bodyArr = [];
+		let isSafe = null;
 
-				if (!this.loopMaxIterations) {
-					console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
-					console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
+		if (forNode.init) {
+			this.pushState('in-for-loop-init');
+			this.astGeneric(forNode.init, initArr);
+			for (let i = 0; i < initArr.length; i++) {
+				if (initArr[i].includes && initArr[i].includes(',')) {
+					isSafe = false;
 				}
-
-				retArr.push('for (');
-				this.astGeneric(forNode.init, retArr);
-				if (retArr[retArr.length - 1] !== ';') {
-					retArr.push(';');
-				}
-				this.astGeneric(forNode.test.left, retArr);
-				retArr.push(forNode.test.operator);
-				retArr.push('LOOP_MAX');
-				retArr.push(';');
-				this.astGeneric(forNode.update, retArr);
-				retArr.push(')');
-
-				retArr.push('{\n');
-				retArr.push('if (');
-				this.astGeneric(forNode.test.left, retArr);
-				retArr.push(forNode.test.operator);
-				this.astGeneric(forNode.test.right, retArr);
-				retArr.push(') {\n');
-				if (forNode.body.type === 'BlockStatement') {
-					for (let i = 0; i < forNode.body.body.length; i++) {
-						this.astGeneric(forNode.body.body[i], retArr);
-					}
-				} else {
-					this.astGeneric(forNode.body, retArr);
-				}
-				retArr.push('} else {\n');
-				retArr.push('break;\n');
-				retArr.push('}\n');
-				retArr.push('}\n');
-
-				return retArr;
-			} else if (forNode.init.declarations) {
-				const declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
-				const updateArgument = forNode.update.argument;
-				if (!Array.isArray(declarations) || declarations.length < 1) {
-					console.log(this.jsFunctionString);
-					throw new Error('Error: Incompatible for loop declaration');
-				}
-
-				if (declarations.length > 1) {
-					let initArgument = null;
-					for (let i = 0; i < declarations.length; i++) {
-						const declaration = declarations[i];
-						if (declaration.id.name === updateArgument.name) {
-							initArgument = declaration;
-							declarations.splice(i, 1);
-						} else {
-							retArr.push('var ');
-							this.astGeneric(declaration, retArr);
-							retArr.push(';');
-						}
-					}
-
-					retArr.push('for (let ');
-					this.astGeneric(initArgument, retArr);
-					retArr.push(';');
-				} else {
-					retArr.push('for (');
-					this.astGeneric(forNode.init, retArr);
-				}
-
-				this.astGeneric(forNode.test, retArr);
-				retArr.push(';');
-				this.astGeneric(forNode.update, retArr);
-				retArr.push(')');
-				this.astGeneric(forNode.body, retArr);
-				return retArr;
 			}
+			this.popState('in-for-loop-init');
+		} else {
+			isSafe = false;
 		}
 
-		throw this.astErrorOutput(
-			'Invalid for statement',
-			forNode
-		);
+		if (forNode.test) {
+			this.astGeneric(forNode.test, testArr);
+		} else {
+			isSafe = false;
+		}
+
+		if (forNode.update) {
+			this.astGeneric(forNode.update, updateArr);
+		} else {
+			isSafe = false;
+		}
+
+		if (forNode.body) {
+			this.pushState('loop-body');
+			this.astGeneric(forNode.body, bodyArr);
+			this.popState('loop-body');
+		}
+
+		// have all parts, now make them safe
+		if (isSafe === null) {
+			isSafe = this.isSafe(forNode.init) && this.isSafe(forNode.test);
+		}
+
+		if (isSafe) {
+			retArr.push(`for (${initArr.join('')};${testArr.join('')};${updateArr.join('')}){\n`);
+			retArr.push(bodyArr.join(''));
+			retArr.push('}\n');
+		} else {
+			const iVariableName = this.getInternalVariableName('safeI');
+			if (initArr.length > 0) {
+				retArr.push(initArr.join(''), ';\n');
+			}
+			retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
+			if (testArr.length > 0) {
+				retArr.push(`if (!${testArr.join('')}) break;\n`);
+			}
+			retArr.push(bodyArr.join(''));
+			retArr.push(`\n${updateArr.join('')};`);
+			retArr.push('}\n');
+		}
+		return retArr;
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astWhileStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *while* loop
-	 *
-	 *
 	 * @param {Object} whileNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the parsed openclgl string
+	 * @returns {Array} the parsed javascript string
 	 */
 	astWhileStatement(whileNode, retArr) {
 		if (whileNode.type !== 'WhileStatement') {
@@ -482,16 +247,9 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astWhileStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *do while* loop
-	 *
-	 *
 	 * @param {Object} doWhileNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the parsed webgl string
 	 */
 	astDoWhileStatement(doWhileNode, retArr) {
@@ -515,18 +273,10 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 
 	}
 
-
-
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astAssignmentExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *Assignment* Expression
-	 *
 	 * @param {Object} assNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astAssignmentExpression(assNode, retArr) {
@@ -537,117 +287,61 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astEmptyStatement
-	 *
-	 * @desc Parses the abstract syntax tree for an *Empty* Statement
-	 *
-	 * @param {Object} eNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astEmptyStatement(eNode, retArr) {
-		//retArr.push(';\n');
-		return retArr;
-	}
-
-	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astBlockStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *Block* statement
-	 *
 	 * @param {Object} bNode - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astBlockStatement(bNode, retArr) {
-		retArr.push('{\n');
+		if (!this.isState('loop-body')) {
+			retArr.push('{\n');
+		}
 		for (let i = 0; i < bNode.body.length; i++) {
 			this.astGeneric(bNode.body[i], retArr);
 		}
-		retArr.push('}\n');
+		if (!this.isState('loop-body')) {
+			retArr.push('}\n');
+		}
 		return retArr;
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astExpressionStatement
-	 *
-	 * @desc Parses the abstract syntax tree for *generic expression* statement
-	 *
-	 * @param {Object} esNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astExpressionStatement(esNode, retArr) {
-		this.astGeneric(esNode.expression, retArr);
-		retArr.push(';');
-		return retArr;
-	}
-
-	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astVariableDeclaration
-	 *
 	 * @desc Parses the abstract syntax tree for *Variable Declaration*
-	 *
-	 * @param {Object} vardecNode - An ast Node
+	 * @param {Object} varDecNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
-	astVariableDeclaration(vardecNode, retArr) {
-		retArr.push('var ');
-		for (let i = 0; i < vardecNode.declarations.length; i++) {
-			this.declarations[vardecNode.declarations[i].id.name] = 'var';
+	astVariableDeclaration(varDecNode, retArr) {
+		if (varDecNode.kind === 'var') {
+			this.varWarn();
+		}
+		retArr.push(`${varDecNode.kind} `);
+		const firstDeclaration = varDecNode.declarations[0];
+		const type = this.getType(firstDeclaration.init);
+		for (let i = 0; i < varDecNode.declarations.length; i++) {
+			this.declarations[varDecNode.declarations[i].id.name] = {
+				type,
+				dependencies: {
+					constants: [],
+					arguments: []
+				},
+				isUnsafe: false
+			};
 			if (i > 0) {
 				retArr.push(',');
 			}
-			this.astGeneric(vardecNode.declarations[i], retArr);
+			this.astGeneric(varDecNode.declarations[i], retArr);
 		}
-		retArr.push(';');
-		return retArr;
-	}
-
-	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astVariableDeclarator
-	 *
-	 * @desc Parses the abstract syntax tree for *Variable Declarator*
-	 *
-	 * @param {Object} ivardecNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astVariableDeclarator(ivardecNode, retArr) {
-		this.astGeneric(ivardecNode.id, retArr);
-		if (ivardecNode.init !== null) {
-			retArr.push('=');
-			this.astGeneric(ivardecNode.init, retArr);
+		if (!this.isState('in-for-loop-init')) {
+			retArr.push(';');
 		}
 		return retArr;
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astIfStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *If* Statement
-	 *
 	 * @param {Object} ifNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astIfStatement(ifNode, retArr) {
@@ -677,118 +371,9 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astBreakStatement
-	 *
-	 * @desc Parses the abstract syntax tree for *Break* Statement
-	 *
-	 * @param {Object} brNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astBreakStatement(brNode, retArr) {
-		retArr.push('break;\n');
-		return retArr;
-	}
-
-	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astContinueStatement
-	 *
-	 * @desc Parses the abstract syntax tree for *Continue* Statement
-	 *
-	 * @param {Object} crNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astContinueStatement(crNode, retArr) {
-		retArr.push('continue;\n');
-		return retArr;
-	}
-
-	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astLogicalExpression
-	 *
-	 * @desc Parses the abstract syntax tree for *Logical* Expression
-	 *
-	 * @param {Object} logNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astLogicalExpression(logNode, retArr) {
-		retArr.push('(');
-		this.astGeneric(logNode.left, retArr);
-		retArr.push(logNode.operator);
-		this.astGeneric(logNode.right, retArr);
-		retArr.push(')');
-		return retArr;
-	}
-
-	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astUpdateExpression
-	 *
-	 * @desc Parses the abstract syntax tree for *Update* Expression
-	 *
-	 * @param {Object} uNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astUpdateExpression(uNode, retArr) {
-		if (uNode.prefix) {
-			retArr.push(uNode.operator);
-			this.astGeneric(uNode.argument, retArr);
-		} else {
-			this.astGeneric(uNode.argument, retArr);
-			retArr.push(uNode.operator);
-		}
-
-		return retArr;
-	}
-
-	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astUnaryExpression
-	 *
-	 * @desc Parses the abstract syntax tree for *Unary* Expression
-	 *
-	 * @param {Object} uNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astUnaryExpression(uNode, retArr) {
-		if (uNode.prefix) {
-			retArr.push(uNode.operator);
-			this.astGeneric(uNode.argument, retArr);
-		} else {
-			this.astGeneric(uNode.argument, retArr);
-			retArr.push(uNode.operator);
-		}
-
-		return retArr;
-	}
-
-	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astThisExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *This* expression
-	 *
 	 * @param {Object} tNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astThisExpression(tNode, retArr) {
@@ -797,169 +382,154 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astMemberExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *Member* Expression
-	 *
 	 * @param {Object} mNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astMemberExpression(mNode, retArr) {
-		if (mNode.computed) {
-			if (mNode.object.type === 'Identifier' ||
-				(
-					mNode.object.type === 'MemberExpression' &&
-					mNode.object.object.object &&
-					mNode.object.object.object.type === 'ThisExpression' &&
-					mNode.object.object.property.name === 'constants'
-				)) {
-				this.pushState('identifier');
+		const {
+			signature,
+			type,
+			property,
+			xProperty,
+			yProperty,
+			zProperty,
+			name,
+			origin
+		} = this.getMemberExpressionDetails(mNode);
+		switch (signature) {
+			case 'this.thread.value':
+				retArr.push(`_this.thread.${ name }`);
+				return retArr;
+			case 'this.output.value':
+				switch (name) {
+					case 'x':
+						retArr.push(this.output[0]);
+						break;
+					case 'y':
+						retArr.push(this.output[1]);
+						break;
+					case 'z':
+						retArr.push(this.output[2]);
+						break;
+					default:
+						throw this.astErrorOutput('Unexpected expression', mNode);
+				}
+				return retArr;
+			case 'value':
+				throw this.astErrorOutput('Unexpected expression', mNode);
+			case 'value[]':
+			case 'value[][]':
+			case 'value[][][]':
+			case 'value.value':
+				if (origin === 'Math') {
+					retArr.push(Math[name]);
+					return retArr;
+				}
+				switch (property) {
+					case 'r':
+						retArr.push(`user_${ name }[0]`);
+						return retArr;
+					case 'g':
+						retArr.push(`user_${ name }[1]`);
+						return retArr;
+					case 'b':
+						retArr.push(`user_${ name }[2]`);
+						return retArr;
+					case 'a':
+						retArr.push(`user_${ name }[3]`);
+						return retArr;
+				}
+				break;
+			case 'this.constants.value':
+			case 'this.constants.value[]':
+			case 'this.constants.value[][]':
+			case 'this.constants.value[][][]':
+				break;
+			case 'fn()[]':
 				this.astGeneric(mNode.object, retArr);
-				this.popState('identifier');
 				retArr.push('[');
-				if (this.isInput(mNode.object.name)) {
-					this.astGeneric(mNode.property, retArr);
-				} else {
-					this.astGeneric(mNode.property, retArr);
-				}
+				this.astGeneric(mNode.property, retArr);
 				retArr.push(']');
-			} else {
-				if (mNode.object.object) {
-					if (mNode.object.object.object && this.isInput(mNode.object.object.object.name)) {
-						this.pushMemberState(mNode.object.object.object.name);
-						this.pushState('input-index-z');
-						this.astGeneric(mNode.object, retArr);
-						const last = retArr.pop();
-						retArr.push(' + ');
-						this.popState('input-index-z');
-						this.pushState('input-index');
-						this.astGeneric(mNode.property, retArr);
-						this.popState('input-index');
-						retArr.push(last);
-						this.popMemberState(mNode.object.object.object.name);
-					} else if (this.isInput(mNode.object.object.name)) {
-						this.pushMemberState(mNode.object.object.name);
-						if (!this.isState('input-index-z')) {
-							this.pushState('input-index-y');
-						}
-						this.astGeneric(mNode.object, retArr);
-						const last = retArr.pop();
-						retArr.push(' + ');
-						if (!this.isState('input-index-z')) {
-							this.popState('input-index-y');
-						}
+				return retArr;
+			default:
+				throw this.astErrorOutput('Unexpected expression', mNode);
+		}
 
-						const isInputIndexZ = this.isState('input-index-z');
-						if (isInputIndexZ) {
-							this.pushState('input-index-y');
-						} else {
-							this.pushState('input-index');
-						}
-						this.astGeneric(mNode.property, retArr);
-						if (isInputIndexZ) {
-							this.popState('input-index-y')
-						} else {
-							this.popState('input-index');
-						}
-						retArr.push(last);
-						this.popMemberState(mNode.object.object.name);
+		if (type === 'Number' || type === 'Integer') {
+			retArr.push(`${origin}_${name}`);
+			return retArr;
+		}
+
+		// argument may have come from a parent
+		let synonymName;
+		if (this.parent) {
+			synonymName = this.getUserArgumentName(name);
+		}
+
+		const markupName = `${origin}_${synonymName || name}`;
+
+		switch (type) {
+			case 'Array(2)':
+			case 'Array(3)':
+			case 'Array(4)':
+			case 'HTMLImageArray':
+			case 'ArrayTexture(4)':
+			case 'HTMLImage':
+			default:
+				const isInput = this.isInput(synonymName || name);
+				retArr.push(`${ markupName }`);
+				if (zProperty && yProperty) {
+					if (isInput) {
+						const size = this.argumentSizes[this.argumentNames.indexOf(name)];
+						retArr.push('[(');
+						this.astGeneric(zProperty, retArr);
+						retArr.push(`*${ size[1] * size[0]})+(`);
+						this.astGeneric(yProperty, retArr);
+						retArr.push(`*${ size[0] })+`);
+						this.astGeneric(xProperty, retArr);
+						retArr.push(']');
 					} else {
-						this.astGeneric(mNode.object, retArr);
-						const last = retArr.pop();
-						retArr.push('][');
-						this.astGeneric(mNode.property, retArr);
-						retArr.push(last);
+						retArr.push('[');
+						this.astGeneric(zProperty, retArr);
+						retArr.push(']');
+						retArr.push('[');
+						this.astGeneric(yProperty, retArr);
+						retArr.push(']');
+						retArr.push('[');
+						this.astGeneric(xProperty, retArr);
+						retArr.push(']');
+					}
+				} else if (yProperty) {
+					if (isInput) {
+						const size = this.argumentSizes[this.argumentNames.indexOf(name)];
+						retArr.push('[(');
+						this.astGeneric(yProperty, retArr);
+						retArr.push(`*${ size[0] })+`);
+						this.astGeneric(xProperty, retArr);
+						retArr.push(']');
+					} else {
+						retArr.push('[');
+						this.astGeneric(yProperty, retArr);
+						retArr.push(']');
+						retArr.push('[');
+						this.astGeneric(xProperty, retArr);
+						retArr.push(']');
 					}
 				} else {
-					this.astGeneric(mNode.object, retArr);
-					const last = retArr.pop();
-					retArr.push('][');
-					this.astGeneric(mNode.property, retArr);
-					retArr.push(last);
+					retArr.push('[');
+					this.astGeneric(xProperty, retArr);
+					retArr.push(']');
 				}
-			}
-		} else {
-			let unrolled = this.astMemberExpressionUnroll(mNode);
-			if (mNode.property.type === 'Identifier' && mNode.computed) {
-				unrolled = 'user_' + unrolled;
-			}
-
-			if (unrolled.indexOf('this.constants') === 0) {
-				// remove 'this.constants' from beginning
-				unrolled = 'constants_' + unrolled.substring(15);
-			} else if (unrolled.indexOf('this') === 0) {
-				// Its a reference to `this`, add '_' before
-				unrolled = '_' + unrolled;
-			}
-
-			switch (this.state) {
-				case 'input-index-y':
-				case 'input-index-z':
-					retArr.push('(');
-			}
-
-			switch (unrolled) {
-				case '_this.output.x':
-					retArr.push(this.output[0]);
-					break;
-				case '_this.output.y':
-					retArr.push(this.output[1]);
-					break;
-				case '_this.output.z':
-					retArr.push(this.output[2]);
-					break;
-				default:
-					if (
-						mNode.object &&
-						mNode.object.name &&
-						this.declarations[mNode.object.name]) {
-						retArr.push('user_');
-					}
-					retArr.push(unrolled);
-			}
-
-			switch (this.state) {
-				case 'input-index-y':
-					{
-						const size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
-						retArr.push(` * ${ size[0] })`);
-						break;
-					}
-				case 'input-index-z':
-					{
-						const size = this.paramSizes[this.paramNames.indexOf(this.memberState)];
-						retArr.push(` * ${ size[0] * size[1] })`);
-						break;
-					}
-			}
-		}
-		return retArr;
-	}
-
-	astSequenceExpression(sNode, retArr) {
-		for (let i = 0; i < sNode.expressions.length; i++) {
-			if (i > 0) {
-				retArr.push(',');
-			}
-			this.astGeneric(sNode.expressions, retArr);
 		}
 		return retArr;
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astCallExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *call* expression
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns  {Array} the append retArr
 	 */
 	astCallExpression(ast, retArr) {
@@ -971,7 +541,7 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 			if (this.calledFunctions.indexOf(funcName) < 0) {
 				this.calledFunctions.push(funcName);
 			}
-			if (!this.hasOwnProperty('funcName')) {
+			if (!this.calledFunctionsArguments[funcName]) {
 				this.calledFunctionsArguments[funcName] = [];
 			}
 
@@ -991,16 +561,12 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 					retArr.push(', ');
 				}
 				this.astGeneric(argument, retArr);
-				if (argument.type === 'Identifier') {
-					const paramIndex = this.paramNames.indexOf(argument.name);
-					if (paramIndex === -1) {
-						functionArguments.push(null);
-					} else {
-						functionArguments.push({
-							name: argument.name,
-							type: this.paramTypes[paramIndex]
-						});
-					}
+				const argumentType = this.getType(argument);
+				if (argumentType) {
+					functionArguments.push({
+						name: argument.name || null,
+						type: argumentType
+					});
 				} else {
 					functionArguments.push(null);
 				}
@@ -1017,20 +583,12 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 			'Unknown CallExpression',
 			ast
 		);
-
-		return retArr;
 	}
 
 	/**
-	 * @memberOf CPUFunctionNode#
-	 * @function
-	 * @name astArrayExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *Array* Expression
-	 *
 	 * @param {Object} arrNode - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astArrayExpression(arrNode, retArr) {
@@ -1047,16 +605,18 @@ module.exports = class CPUFunctionNode extends BaseFunctionNode {
 		retArr.push(']');
 
 		return retArr;
-
-		// // Failure, unknown expression
-		// throw this.astErrorOutput(
-		// 	'Unknown  ArrayExpression',
-		// 	arrNode
-		//);
 	}
 
 	astDebuggerStatement(arrNode, retArr) {
 		retArr.push('debugger;');
 		return retArr;
 	}
+
+	varWarn() {
+		console.warn('var declarations are not supported, weird things happen.  Use const or let');
+	}
+}
+
+module.exports = {
+	CPUFunctionNode
 };

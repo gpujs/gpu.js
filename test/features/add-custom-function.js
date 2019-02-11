@@ -1,162 +1,164 @@
-(function() {
-  function sumAB(mode) {
-    var gpu = new GPU({mode: mode});
+const { assert, skip, test, module: describe, only } = require('qunit');
+const { GPU } = require('../../src');
 
-    function customAdder(a, b) {
-      return a + b;
+describe('features: add custom function');
+
+function addAB(mode) {
+  const gpu = new GPU({mode, functions: [customAdder] });
+
+  function customAdder(a, b) {
+    return a + b;
+  }
+  const kernel = gpu.createKernel(function (a, b) {
+    return customAdder(a[this.thread.x], b[this.thread.x]);
+  }, {
+    output: [6]
+  });
+
+  assert.ok(kernel !== null, 'function generated test');
+
+  const a = [1, 2, 3, 5, 6, 7];
+  const b = [4, 5, 6, 1, 2, 3];
+
+  const result = kernel(a, b);
+  const expected = [5, 7, 9, 6, 8, 10];
+
+  assert.deepEqual(Array.from(result), expected);
+  gpu.destroy();
+}
+
+test('addAB auto', () => {
+  addAB(null);
+});
+
+test('addAB gpu', () => {
+  addAB('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('addAB webgl', () => {
+  addAB('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('addAB webgl2', () => {
+  addAB('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('addAB headlessgl', () => {
+  addAB('headlessgl');
+});
+
+test('addAB cpu', () => {
+  addAB('cpu');
+});
+
+
+describe('features: add custom function with `this.constants.width` in loop');
+function sumAB(mode) {
+  const gpu = new GPU({mode});
+
+  function customAdder(a, b) {
+    let sum = 0;
+    for (let i = 0; i < this.constants.width; i++) {
+      sum += a[this.thread.x] + b[this.thread.x];
     }
-
-    var kernel = gpu.createKernel(function (a, b) {
-      return customAdder(a[this.thread.x], b[this.thread.x]);
-    }, {
-      functions: [customAdder],
-      output: [6]
-    });
-
-    QUnit.assert.ok(kernel !== null, 'function generated test');
-
-    var a = [1, 2, 3, 5, 6, 7];
-    var b = [4, 5, 6, 1, 2, 3];
-
-    var result = kernel(a, b);
-    var expected = [5, 7, 9, 6, 8, 10];
-
-    QUnit.assert.equal(result.length, expected.length);
-    for (var i = 0; i < expected.length; ++i) {
-      QUnit.assert.close(result[i], expected[i], 0.1, 'Result array index: ' + i);
-    }
-    gpu.destroy();
+    return sum;
   }
 
-  QUnit.test('add custom function sumAB (auto)', function () {
-    sumAB(null);
+  gpu.addFunction(customAdder);
+
+  const kernel = gpu.createKernel(function (a, b) {
+    return customAdder(a, b);
+  }, {
+    output: [6],
+    constants: {width: 6}
   });
 
-  QUnit.test('add custom function sumAB (gpu)', function () {
-    sumAB('gpu');
-  });
+  assert.ok(kernel !== null, 'function generated test');
 
-  QUnit.test('add custom function sumAB (webgl)', function () {
-    sumAB('webgl');
-  });
+  const a = [1, 2, 3, 5, 6, 7];
+  const b = [1, 1, 1, 1, 1, 1];
 
-  QUnit.test('add custom function sumAB (webgl2)', function () {
-    sumAB('webgl2');
-  });
+  const result = kernel(a , b);
+  const expected = [12, 18, 24, 36, 42, 48];
 
-  QUnit.test('add custom function sumAB (cpu)', function () {
-    sumAB('cpu');
-  });
+  assert.deepEqual(Array.from(result), expected);
+  gpu.destroy();
+}
 
-})();
-(function() {
-  function constantsWidth(mode) {
-    var gpu = new GPU({mode: mode});
+test('sumAB auto', () => {
+  sumAB(null);
+});
 
-    function customAdder(a, b) {
-      var sum = 0;
-      for (var i = 0; i < this.constants.width; i++) {
-        sum += (a[this.thread.x] + b[this.thread.x]);
-      }
-      return sum;
+test('sumAB gpu', () => {
+  sumAB('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('sumAB webgl', () => {
+  sumAB('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('sumAB webgl2', () => {
+  sumAB('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('sumAB headlessgl', () => {
+  sumAB('headlessgl');
+});
+
+test('sumAB cpu', () => {
+  sumAB('cpu');
+});
+
+describe('features: add custom function with `this.output.x` in loop');
+function sumABThisOutputX(mode) {
+  const gpu = new GPU({ mode, functions: [customAdder] });
+
+  function customAdder(a, b) {
+    let sum = 0;
+    for (let i = 0; i < this.output.x; i++) {
+      sum += a[this.thread.x] + b[this.thread.x];
     }
-
-    var kernel = gpu.createKernel(function (a, b) {
-      return customAdder(a, b);
-    }, {
-      functions: [customAdder],
-      output: [6],
-      constants: {width: 6}
-    });
-
-    QUnit.assert.ok(kernel !== null, 'function generated test');
-
-    var a = [1, 2, 3, 5, 6, 7];
-    var b = [1, 1, 1, 1, 1, 1];
-
-    var result = kernel(a, b);
-    var expected = [12, 18, 24, 36, 42, 48];
-
-    QUnit.assert.equal(result.length, expected.length);
-    for (var i = 0; i < expected.length; ++i) {
-      QUnit.assert.close(result[i], expected[i], 0.1, 'Result array index: ' + i);
-
-    }
-    gpu.destroy();
+    return sum;
   }
 
-  QUnit.test('add custom function constantsWidth (auto)', function () {
-    constantsWidth(null);
+  const kernel = gpu.createKernel(function(a, b) {
+    return customAdder(a, b);
+  }, {
+    output : [6]
   });
 
-  QUnit.test('add custom function constantsWidth (gpu)', function () {
-    constantsWidth('gpu');
-  });
+  assert.ok(kernel !== null, 'function generated test');
 
-  QUnit.test('add custom function constantsWidth (webgl)', function () {
-    constantsWidth('webgl');
-  });
+  const a = [1, 2, 3, 5, 6, 7];
+  const b = [1, 1, 1, 1, 1, 1];
 
-  QUnit.test('add custom function constantsWidth (webgl2)', function () {
-    constantsWidth('webgl2');
-  });
+  const result = kernel(a,b);
+  const expected = [12, 18, 24, 36, 42, 48];
 
-  QUnit.test('add custom function constantsWidth (cpu)', function () {
-    constantsWidth('cpu');
-  });
+  assert.deepEqual(Array.from(result), expected);
+  gpu.destroy();
+}
 
-})();
-(function() {
-  function thisOutputX(mode) {
-    var gpu = new GPU({ mode: mode });
+test('sumABThisOutputX auto', () => {
+  sumABThisOutputX(null);
+});
 
-    function customAdder(a, b) {
-      var sum = 0;
-      for (var i = 0; i < this.output.x; i++) {
-        sum += (a[this.thread.x] + b[this.thread.x]);
-      }
-      return sum;
-    }
+test('sumABThisOutputX gpu', () => {
+  sumABThisOutputX('gpu');
+});
 
-    var kernel = gpu.createKernel(function(a, b) {
-      return customAdder(a, b);
-    }, {
-      functions: [customAdder],
-      output : [6]
-    });
+(GPU.isWebGLSupported ? test : skip)('sumABThisOutputX webgl', () => {
+  sumABThisOutputX('webgl');
+});
 
-    QUnit.assert.ok(kernel !== null, 'function generated test');
+(GPU.isWebGL2Supported ? test : skip)('sumABThisOutputX webgl2', () => {
+  sumABThisOutputX('webgl2');
+});
 
-    var a = [1, 2, 3, 5, 6, 7];
-    var b = [1, 1, 1, 1, 1, 1];
+(GPU.isHeadlessGLSupported ? test : skip)('sumABThisOutputX headlessgl', () => {
+  sumABThisOutputX('headlessgl');
+});
 
-    var result = kernel(a,b);
-    var expected = [12, 18, 24, 36, 42, 48];
-
-    QUnit.assert.equal(result.length, expected.length);
-    for(var i = 0; i < expected.length; ++i) {
-      QUnit.assert.close(result[i], expected[i], 0.1, 'Result array index: '+i);
-    }
-    gpu.destroy();
-  }
-
-  QUnit.test('add custom function thisOutputX (auto)', function() {
-    thisOutputX(null);
-  });
-
-  QUnit.test('add custom function thisOutputX (gpu)', function() {
-    thisOutputX('gpu');
-  });
-
-  QUnit.test('add custom function thisOutputX (webgl)', function() {
-    thisOutputX('webgl');
-  });
-
-  QUnit.test('add custom function thisOutputX (webgl2)', function() {
-    thisOutputX('webgl2');
-  });
-
-  QUnit.test('add custom function thisOutputX (cpu)', function() {
-    thisOutputX('cpu');
-  });
-})();
+test('sumABThisOutputX cpu', () => {
+  sumABThisOutputX('cpu');
+});

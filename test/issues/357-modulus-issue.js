@@ -1,28 +1,37 @@
-(function() {
-	function testModKernel(mode) {
-		var gpu = new GPU({mode});
-		var nValues = 100;
+const { assert, skip, test, module: describe, only } = require('qunit');
+const { GPU } = require('../../src');
 
-		var myFunc3 = gpu.createKernel(function(x) {
-			return x[this.thread.x % 3];
-		}).setOutput([nValues]);
-		
-		var input = [1, 2, 3];
-		myFunc3(input); 
-	
-		var expected = new Float32Array(nValues);
-		for (var i = 0; i < nValues; i++) {
-			expected[i] = input[i % 3];
-		}
-		QUnit.assert.deepEqual(myFunc3([1, 2, 3]), expected);
-		gpu.destroy();
+describe('issue #357');
+
+//TODO: move to math features
+function testModKernel(mode) {
+	const gpu = new GPU({mode});
+	const nValues = 100;
+
+	const myFunc3 = gpu.createKernel(function(x) {
+		return x[this.thread.x % 3];
+	}).setOutput([nValues]);
+
+	const input = [1, 2, 3];
+	myFunc3(input);
+
+	const expected = new Float32Array(nValues);
+	for (let i = 0; i < nValues; i++) {
+		expected[i] = input[i % 3];
 	}
+	assert.deepEqual(myFunc3([1, 2, 3]), expected);
+	gpu.destroy();
+}
 
-	QUnit.test('Issue #357 - modulus issue (webgl)', function() {
-		testModKernel('webgl')
-	});
+(GPU.isWebGLSupported ? test : skip)('Issue #357 - modulus issue webgl', () => {
+	testModKernel('webgl');
+});
 
-	QUnit.test('Issue #357 - modulus issue (webgl2)', function() {
-		testModKernel('webgl2')
-	})
-})();
+(GPU.isWebGL2Supported ? test : skip)('Issue #357 - modulus issue webgl2', () => {
+	testModKernel('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('Issue #357 - modulus issue headlessgl', () => {
+	testModKernel('headlessgl');
+});
+

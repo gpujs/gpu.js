@@ -1,42 +1,46 @@
-(function() {
-  var gpu;
-  function buildToStringKernelResult(mode) {
-    gpu = new GPU({ mode });
-    var kernel = gpu.createKernel(function() {
-      return 1;
-    }, {
-      output: [1]
-    });
-    kernel.build();
-    var string = kernel.toString();
-    var kernel2 = eval(string)();
-    return kernel2
-      .setWebGl(kernel._webGl)
-      .setCanvas(kernel._canvas)();
-  }
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-  QUnit.test('Issue #263 toString single function - (auto)', () => {
-    QUnit.assert.equal(buildToStringKernelResult()[0], 1);
-    gpu.destroy();
-  });
+describe('issue #263');
 
-  QUnit.test('Issue #263 toString single function - (gpu)', () => {
-    QUnit.assert.equal(buildToStringKernelResult('gpu')[0], 1);
-    gpu.destroy();
+function toString(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function() {
+    return 1;
+  }, {
+    output: [1]
   });
+  kernel.build();
+  const string = kernel.toString();
+  const kernel2 = eval(string)();
+  const result = kernel2
+    .setContext(kernel.context)
+    .setCanvas(kernel.canvas)();
 
-  QUnit.test('Issue #263 toString single function - (webgl)', () => {
-    QUnit.assert.equal(buildToStringKernelResult('webgl')[0], 1);
-    gpu.destroy();
-  });
+  assert.equal(result[0], 1);
+  gpu.destroy();
+}
 
-  QUnit.test('Issue #263 toString single function - (webgl2)', () => {
-    QUnit.assert.equal(buildToStringKernelResult('webgl2')[0], 1);
-    gpu.destroy();
-  });
+test('Issue #263 toString single function - auto', () => {
+  toString();
+});
 
-  QUnit.test('Issue #263 toString single function - (cpu)', () => {
-    QUnit.assert.equal(buildToStringKernelResult('cpu')[0], 1);
-    gpu.destroy();
-  });
-})();
+test('Issue #263 toString single function - gpu', () => {
+  toString('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('Issue #263 toString single function - webgl', () => {
+  toString('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('Issue #263 toString single function - webgl2', () => {
+  toString('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('Issue #263 toString single function - headlessgl', () => {
+  toString('headlessgl');
+});
+
+test('Issue #263 toString single function - cpu', () => {
+  toString('cpu');
+});

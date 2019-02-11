@@ -1,10 +1,6 @@
-'use strict';
-
 const fs = require('fs');
 const gulp = require('gulp');
 const rename = require('gulp-rename');
-const uglify = require('gulp-uglify');
-const gutil = require('gulp-util');
 const header = require('gulp-header');
 const browserSync = require('browser-sync');
 const browserify = require('browserify');
@@ -12,57 +8,47 @@ const source = require('vinyl-source-stream');
 const buffer = require('vinyl-buffer');
 const pkg = require('./package.json');
 const jsprettify = require('gulp-jsbeautifier');
-const babel = require('gulp-babel');
 const stripComments = require('gulp-strip-comments');
 const merge = require('merge-stream');
 
-/// Build the scripts
-gulp.task('babelify', function () {
-	return gulp.src(['./src/**'])
-		.pipe(babel())
-		.pipe(gulp.dest('dist'));
-});
-
-gulp.task('build', gulp.series('babelify', function() {
-
-	const gpu = browserify('./dist/index.js')
+gulp.task('build', function() {
+	const gpu = browserify('./src/browser.js')
+		.ignore('gl')
 		.bundle()
-		.pipe(source('gpu.js'))
+		.pipe(source('gpu-browser.js'))
 		.pipe(buffer())
 		.pipe(stripComments())
-    .on('error', console.error)
-			.pipe(header(fs.readFileSync('./dist/wrapper/header.js', 'utf8'), { pkg : pkg }))
-			.pipe(gulp.dest('bin'));
+		.pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
+		.pipe(gulp.dest('bin'))
+		.on('error', console.error);
 
-	const gpuCore = browserify('./dist/index-core.js')
+	const gpuCore = browserify('./src/browser.js')
+    .ignore('gl')
+		.ignore('acorn')
 		.bundle()
-		.pipe(source('gpu-core.js'))
+		.pipe(source('gpu-browser-core.js'))
 		.pipe(buffer())
 		.pipe(stripComments())
-    .on('error', console.error)
-			.pipe(header(fs.readFileSync('./dist/wrapper/header.js', 'utf8'), { pkg : pkg }))
-			.pipe(gulp.dest('bin'));
+		.pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
+		.pipe(gulp.dest('bin'))
+		.on('error', console.error);
 
 	return merge(gpu, gpuCore);
-}));
+});
 
 /// Minify the build script, after building it
 gulp.task('minify', function() {
-	const gpu = gulp.src('bin/gpu.js')
-		.pipe(rename('gpu.min.js'))
-		.pipe(
-			uglify({preserveComments: 'license'})
-			.on('error', gutil.log)
-		)
-		.pipe(gulp.dest('bin'));
+	const gpu = gulp.src('bin/gpu-browser.js')
+		.pipe(rename('gpu-browser.min.js'))
+		.pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
+		.pipe(gulp.dest('bin'))
+		.on('error', console.error);
 
-	const gpuCore = gulp.src('bin/gpu-core.js')
-		.pipe(rename('gpu-core.min.js'))
-		.pipe(
-			uglify({preserveComments: 'license'})
-			.on('error', gutil.log)
-		)
-		.pipe(gulp.dest('bin'));
+	const gpuCore = gulp.src('bin/gpu-browser-core.js')
+		.pipe(rename('gpu-browser-core.min.js'))
+		.pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
+		.pipe(gulp.dest('bin'))
+		.on('error', console.error);
 
 	return merge(gpu, gpuCore);
 });
@@ -76,7 +62,7 @@ gulp.task('bsync', function(){
 			baseDir: './'
 		},
 		open: true,
-		startPath: "/test/html/test-all.html",
+		startPath: "./test/html/test-all.html",
 		// Makes it easier to test on external mobile devices
 		host: "0.0.0.0",
 		tunnel: true
@@ -88,7 +74,6 @@ gulp.task('bsync', function(){
 
 /// Auto rebuild and host
 gulp.task('default', gulp.series('minify','bsync'));
-
 
 /// Beautify source code
 /// Use before merge request
@@ -102,34 +87,3 @@ gulp.task('beautify', function() {
 		.pipe(gulp.dest('src'));
 });
 
-gulp.task('injectCSS', function() {
-	let signatureColor = '#ff75cf';
-	let linkColor = '#4c7fbd';
-	let themeColor = '#186384';
-
-	// !important is used because the original rule is using it.
-	let cssRules = `
-	.signature, a {
-		color: ${signatureColor};
-	}
-
-	h4.name {
-		background: ${themeColor};
-	}
-
-	nav > ul > li > a, nav a:hover, nav > h2 > a {
-		color: ${linkColor} !important;
-	}
-
-	span.param-type, .params td .param-type {
-	color: ${themeColor};
-	}
-	`;
-	fs.appendFile('./doc/styles/jsdoc.css', cssRules, (err)=>{
-		if(err){
-			throw new Error(err);
-		}
-
-		console.log('CSS Injected');
-	});
-});
