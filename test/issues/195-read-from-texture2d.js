@@ -1,76 +1,56 @@
-(function() {
-  function makeKernel(gpu) {
-    return gpu.createKernel(function(a){
-      return a[this.thread.y][this.thread.x];
-    })
-      .setOutput([matrixSize, matrixSize]);
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
+
+describe('issue #195');
+function makeKernel(gpu) {
+  return gpu.createKernel(function(a){
+    return a[this.thread.y][this.thread.x];
+  })
+    .setOutput([matrixSize, matrixSize]);
+}
+
+function splitArray(array, part) {
+  const result = [];
+  for(let i = 0; i < array.length; i += part) {
+    result.push(array.slice(i, i + part));
   }
+  return result;
+}
 
-  function splitArray(array, part) {
-    var result = [];
-    for(var i = 0; i < array.length; i += part) {
-      result.push(array.slice(i, i + part));
-    }
-    return result;
-  }
+const matrixSize =  4;
+const A = splitArray(Array.apply(null, Array(matrixSize * matrixSize)).map((_, i) => i), matrixSize);
 
-  var matrixSize =  4;
-  var A = Array.apply(null, Array(matrixSize*matrixSize)).map(function (_, i) {return i;});
-  A = splitArray(A, matrixSize);
+function readFromTexture(mode) {
+  const gpu = new GPU({ mode });
+  const noTexture = makeKernel(gpu);
+  const texture = makeKernel(gpu).setPipeline(true);
 
-  QUnit.test( "Issue #195 Read from Texture 2D (GPU only) (auto)", function() {
-    const gpu = new GPU({ mode: null });
-    const noTexture = makeKernel(gpu);
-    const texture = makeKernel(gpu).setOutputToTexture(true);
+  const result = noTexture(A);
+  const textureResult = texture(A).toArray(gpu);
 
-    const result = noTexture(A);
-    const textureResult = texture(A).toArray(gpu);
+  assert.deepEqual(result.map(function(v) { return Array.from(v); }), A);
+  assert.deepEqual(textureResult.map(function(v) { return Array.from(v); }), A);
+  assert.deepEqual(textureResult, result);
+  gpu.destroy();
+}
 
-    QUnit.assert.deepValueEqual(result, A);
-    QUnit.assert.deepValueEqual(textureResult, A);
-    QUnit.assert.deepValueEqual(textureResult, result);
-    gpu.destroy();
-  });
+test("Issue #195 Read from Texture 2D (GPU only) auto", () => {
+  readFromTexture();
+});
 
-  QUnit.test( "Issue #195 Read from Texture 2D (GPU only) (gpu)", function() {
-    const gpu = new GPU({ mode: 'gpu' });
-    const noTexture = makeKernel(gpu);
-    const texture = makeKernel(gpu).setOutputToTexture(true);
+test("Issue #195 Read from Texture 2D (GPU only) gpu", () => {
+  readFromTexture('gpu');
+});
 
-    const result = noTexture(A);
-    const textureResult = texture(A).toArray(gpu);
+(GPU.isWebGLSupported ? test : skip)("Issue #195 Read from Texture 2D (GPU only) webgl", () => {
+  readFromTexture('webgl');
+});
 
-    QUnit.assert.deepValueEqual(result, A);
-    QUnit.assert.deepValueEqual(textureResult, A);
-    QUnit.assert.deepValueEqual(textureResult, result);
-    gpu.destroy();
-  });
+(GPU.isWebGL2Supported ? test : skip)("Issue #195 Read from Texture 2D (GPU Only) webgl2", () => {
+  readFromTexture('webgl2');
+});
 
-  QUnit.test( "Issue #195 Read from Texture 2D (GPU only) (webgl)", function() {
-    const gpu = new GPU({ mode: 'webgl' });
-    const noTexture = makeKernel(gpu);
-    const texture = makeKernel(gpu).setOutputToTexture(true);
+(GPU.isHeadlessGLSupported ? test : skip)("Issue #195 Read from Texture 2D (GPU Only) headlessgl", () => {
+  readFromTexture('headlessgl');
+});
 
-    const result = noTexture(A);
-    const textureResult = texture(A).toArray(gpu);
-
-    QUnit.assert.deepValueEqual(result, A);
-    QUnit.assert.deepValueEqual(textureResult, A);
-    QUnit.assert.deepValueEqual(textureResult, result);
-    gpu.destroy();
-  });
-
-  QUnit.test( "Issue #195 Read from Texture 2D (GPU Only) (webgl2)", function() {
-    const gpu = new GPU({ mode: 'webgl2' });
-    const noTexture = makeKernel(gpu);
-    const texture = makeKernel(gpu).setOutputToTexture(true);
-
-    const result = noTexture(A);
-    const textureResult = texture(A).toArray(gpu);
-
-    QUnit.assert.deepValueEqual(result, A);
-    QUnit.assert.deepValueEqual(textureResult, A);
-    QUnit.assert.deepValueEqual(textureResult, result);
-    gpu.destroy();
-  });
-})();

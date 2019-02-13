@@ -1,123 +1,129 @@
-(function() {
-  QUnit.test('Issue #390 - thread assignment (webgl)', function(assert) {
-    var node = new GPU.WebGLFunctionNode(null, function assignThreadToVar() {
-      let x = this.thread.x;
-      let y = this.thread.y;
-      let sum = x + y;
-      return sum;
-    });
-    assert.equal(node.generate(), 'float assignThreadToVar() {\n\
-float user_x=float(threadId.x);\n\
-float user_y=float(threadId.y);\n\
-float user_sum=(user_x+user_y);\n\
-return user_sum;\n\
-}');
-    assert.equal(node.declarations.x, 'Integer');
-    assert.equal(node.declarations.y, 'Integer');
-    assert.equal(node.declarations.sum, 'Number');
-  });
+const { assert, skip, test, module: describe, only } = require('qunit');
+const { WebGLFunctionNode, WebGL2FunctionNode, CPUFunctionNode } = require('../../src');
 
-  QUnit.test('Issue #390 - thread assignment (webgl2)', function(assert) {
-    var node = new GPU.WebGL2FunctionNode(null, function assignThreadToVar() {
-      let x = this.thread.x;
-      let y = this.thread.y;
-      let sum = x + y;
-      return sum;
-    });
-    assert.equal(node.generate(), 'float assignThreadToVar() {\n\
-float user_x=float(threadId.x);\n\
-float user_y=float(threadId.y);\n\
-float user_sum=(user_x+user_y);\n\
-return user_sum;\n\
-}');
-    assert.equal(node.declarations.x, 'Integer');
-    assert.equal(node.declarations.y, 'Integer');
-    assert.equal(node.declarations.sum, 'Number');
-  });
+describe('issue #390');
 
-  QUnit.test('Issue #390 - thread assignment (cpu)', function(assert) {
-    var node = new GPU.CPUFunctionNode(null, function assignThreadToVar() {
-      let x = this.thread.x;
-      let y = this.thread.y;
-      let sum = x + y;
-      return sum;
-    });
-    assert.equal(node.generate(), 'function assignThreadToVar() {\n\
-var user_x=_this.thread.x;\n\
-var user_y=_this.thread.y;\n\
-var user_sum=(user_x+user_y);\n\
-return user_sum;\n\
-}');
-    assert.equal(node.declarations.x, 'var');
-    assert.equal(node.declarations.y, 'var');
-    assert.equal(node.declarations.sum, 'var');
-  });
-})();
+test('Issue #390 - thread assignment webgl', function(assert) {
+  const node = new WebGLFunctionNode(function assignThreadToVar() {
+    const x = this.thread.x;
+    const y = this.thread.y;
+    const sum = x + y;
+    return sum;
+  }.toString(), { output: [1] });
+  assert.equal(node.toString(), 'float assignThreadToVar() {'
+    + '\nint user_x=threadId.x;'
+    + '\nint user_y=threadId.y;'
+    + '\nint user_sum=(user_x+user_y);'
+    + '\nreturn float(user_sum);'
+    + '\n}');
+  assert.equal(node.declarations.x.type, 'Integer');
+  assert.equal(node.declarations.y.type, 'Integer');
+  assert.equal(node.declarations.sum.type, 'Integer');
+});
 
-(function() {
-  QUnit.test('Issue #390 (related) - output assignment (webgl)', function(assert) {
-    var node = new GPU.WebGLFunctionNode(null, function assignThreadToVar() {
-      let x = this.output.x;
-      let y = this.output.y;
-      let z = this.output.z;
-      let sum = x + y + z;
-      return sum;
-    });
-    node.output = [1,2,3];
-    assert.equal(node.generate(), 'float assignThreadToVar() {\n\
-float user_x=1.0;\n\
-float user_y=2.0;\n\
-float user_z=3.0;\n\
-float user_sum=((user_x+user_y)+user_z);\n\
-return user_sum;\n\
-}');
-    assert.equal(node.declarations.x, 'Integer');
-    assert.equal(node.declarations.y, 'Integer');
-    assert.equal(node.declarations.z, 'Integer');
-    assert.equal(node.declarations.sum, 'Number');
-  });
+test('Issue #390 - thread assignment webgl2', function(assert) {
+  const node = new WebGL2FunctionNode(function assignThreadToVar() {
+    const x = this.thread.x;
+    const y = this.thread.y;
+    const sum = x + y;
+    return sum;
+  }.toString(), { output: [1] });
+  assert.equal(node.toString(), 'float assignThreadToVar() {'
+    + '\nint user_x=threadId.x;'
+    + '\nint user_y=threadId.y;'
+    + '\nint user_sum=(user_x+user_y);'
+    + '\nreturn float(user_sum);'
+    + '\n}');
+  assert.equal(node.declarations.x.type, 'Integer');
+  assert.equal(node.declarations.y.type, 'Integer');
+  assert.equal(node.declarations.sum.type, 'Integer');
+});
 
-  QUnit.test('Issue #390 (related) - output assignment (webgl2)', function(assert) {
-    var node = new GPU.WebGL2FunctionNode(null, function assignThreadToVar() {
-      let x = this.output.x;
-      let y = this.output.y;
-      let z = this.output.z;
-      let sum = x + y + z;
-      return sum;
-    });
-    node.output = [1,2,3];
-    assert.equal(node.generate(), 'float assignThreadToVar() {\n\
-float user_x=1.0;\n\
-float user_y=2.0;\n\
-float user_z=3.0;\n\
-float user_sum=((user_x+user_y)+user_z);\n\
-return user_sum;\n\
-}');
-    assert.equal(node.declarations.x, 'Integer');
-    assert.equal(node.declarations.y, 'Integer');
-    assert.equal(node.declarations.z, 'Integer');
-    assert.equal(node.declarations.sum, 'Number');
-  });
+test('Issue #390 - thread assignment cpu', function(assert) {
+  const node = new CPUFunctionNode(function assignThreadToVar() {
+    const x = this.thread.x;
+    const y = this.thread.y;
+    const sum = x + y;
+    return sum;
+  }.toString(), { output: [1] });
+  assert.equal(node.toString(), 'function assignThreadToVar() {'
+    + '\nconst user_x=_this.thread.x;'
+    + '\nconst user_y=_this.thread.y;'
+    + '\nconst user_sum=(user_x+user_y);'
+    + '\nreturn user_sum;'
+    + '\n}');
+  assert.equal(node.declarations.x.type, 'Integer');
+  assert.equal(node.declarations.y.type, 'Integer');
+  assert.equal(node.declarations.sum.type, 'Integer');
+});
 
-  QUnit.test('Issue #390 (related) - output assignment (cpu)', function(assert) {
-    var node = new GPU.CPUFunctionNode(null, function assignThreadToVar() {
-      let x = this.output.x;
-      let y = this.output.y;
-      let z = this.output.z;
-      let sum = x + y + z;
-      return sum;
-    });
-    node.output = [1,2,3];
-    assert.equal(node.generate(), 'function assignThreadToVar() {\n\
-var user_x=1;\n\
-var user_y=2;\n\
-var user_z=3;\n\
-var user_sum=((user_x+user_y)+user_z);\n\
-return user_sum;\n\
-}');
-    assert.equal(node.declarations.x, 'var');
-    assert.equal(node.declarations.y, 'var');
-    assert.equal(node.declarations.z, 'var');
-    assert.equal(node.declarations.sum, 'var');
+
+test('Issue #390 (related) - output assignment webgl', function(assert) {
+  const node = new WebGLFunctionNode(function assignThreadToVar() {
+    const x = this.output.x;
+    const y = this.output.y;
+    const z = this.output.z;
+    const sum = x + y + z;
+    return sum;
+  }.toString(), {
+    output: [1,2,3]
   });
-})();
+  assert.equal(node.toString(), 'float assignThreadToVar() {'
+    + '\nint user_x=1;'
+    + '\nint user_y=2;'
+    + '\nint user_z=3;'
+    + '\nint user_sum=((user_x+user_y)+user_z);'
+    + '\nreturn float(user_sum);'
+    + '\n}');
+  assert.equal(node.declarations.x.type, 'Integer');
+  assert.equal(node.declarations.y.type, 'Integer');
+  assert.equal(node.declarations.z.type, 'Integer');
+  assert.equal(node.declarations.sum.type, 'Integer');
+});
+
+test('Issue #390 (related) - output assignment webgl2', function(assert) {
+  const node = new WebGL2FunctionNode(function assignThreadToVar() {
+    const x = this.output.x;
+    const y = this.output.y;
+    const z = this.output.z;
+    const sum = x + y + z;
+    return sum;
+  }.toString(), {
+    output: [1,2,3]
+  });
+  assert.equal(node.toString(), 'float assignThreadToVar() {'
+    + '\nint user_x=1;'
+    + '\nint user_y=2;'
+    + '\nint user_z=3;'
+    + '\nint user_sum=((user_x+user_y)+user_z);'
+    + '\nreturn float(user_sum);'
+    + '\n}');
+  assert.equal(node.declarations.x.type, 'Integer');
+  assert.equal(node.declarations.y.type, 'Integer');
+  assert.equal(node.declarations.z.type, 'Integer');
+  assert.equal(node.declarations.sum.type, 'Integer');
+});
+
+test('Issue #390 (related) - output assignment cpu', function(assert) {
+  const node = new CPUFunctionNode(function assignThreadToVar() {
+    const x = this.output.x;
+    const y = this.output.y;
+    const z = this.output.z;
+    const sum = x + y + z;
+    return sum;
+  }.toString(), {
+    output: [1,2,3]
+  });
+  assert.equal(node.toString(), 'function assignThreadToVar() {'
+    + '\nconst user_x=1;'
+    + '\nconst user_y=2;'
+    + '\nconst user_z=3;'
+    + '\nconst user_sum=((user_x+user_y)+user_z);'
+    + '\nreturn user_sum;'
+    + '\n}');
+  assert.equal(node.declarations.x.type, 'Integer');
+  assert.equal(node.declarations.y.type, 'Integer');
+  assert.equal(node.declarations.z.type, 'Integer');
+  assert.equal(node.declarations.sum.type, 'Integer');
+});
+

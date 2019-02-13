@@ -1,9 +1,9 @@
-'use strict';
-
-const utils = require('../../core/utils');
-const kernelRunShortcut = require('../kernel-run-shortcut');
-const Input = require('../../core/input');
-const Texture = require('../../core/texture');
+const {
+	utils
+} = require('../../utils');
+const {
+	kernelRunShortcut
+} = require('../../kernel-run-shortcut');
 
 function removeFnNoise(fn) {
 	if (/^function /.test(fn)) {
@@ -13,28 +13,36 @@ function removeFnNoise(fn) {
 }
 
 function removeNoise(str) {
-	return str.replace(/[_]typeof/g, 'typeof');
+	return str
+		.replace(/^[A-Za-z23]+/, 'function')
+		.replace(/[_]typeof/g, 'typeof');
 }
 
-module.exports = function(gpuKernel, name) {
+function boolToString(value) {
+	if (value) {
+		return 'true';
+	} else if (value === false) {
+		return 'false';
+	}
+	return 'null';
+}
+
+function webGLKernelString(gpuKernel, name) {
 	return `() => {
     ${ kernelRunShortcut.toString() };
     const utils = {
       allPropertiesOf: ${ removeNoise(utils.allPropertiesOf.toString()) },
       clone: ${ removeNoise(utils.clone.toString()) },
       splitArray: ${ removeNoise(utils.splitArray.toString()) },
-      getArgumentType: ${ removeNoise(utils.getArgumentType.toString()) },
+      getVariableType: ${ removeNoise(utils.getVariableType.toString()) },
       getDimensions: ${ removeNoise(utils.getDimensions.toString()) },
       dimToTexSize: ${ removeNoise(utils.dimToTexSize.toString()) },
       flattenTo: ${ removeNoise(utils.flattenTo.toString()) },
       flatten2dArrayTo: ${ removeNoise(utils.flatten2dArrayTo.toString()) },
       flatten3dArrayTo: ${ removeNoise(utils.flatten3dArrayTo.toString()) },
-      systemEndianness: '${ removeNoise(utils.systemEndianness()) }',
-      initWebGl: ${ removeNoise(utils.initWebGl.toString()) },
-      isArray: ${ removeNoise(utils.isArray.toString()) },
-      checkOutput: ${ removeNoise(utils.checkOutput.toString()) }
+      systemEndianness: ${ removeNoise(utils.getSystemEndianness.toString()) },
+      isArray: ${ removeNoise(utils.isArray.toString()) }
     };
-    const Utils = utils;
     const canvases = [];
     const maxTexSizes = {};
     let Texture = function() {};
@@ -44,20 +52,30 @@ module.exports = function(gpuKernel, name) {
         this.maxTexSize = null;
         this.argumentsLength = 0;
         this.constantsLength = 0;
-        this._canvas = null;
-        this._webGl = null;
+        this.canvas = null;
+        this.context = null;
         this.program = null;
-        this.outputToTexture = ${ gpuKernel.outputToTexture ? 'true' : 'false' };
-        this.paramNames = ${ JSON.stringify(gpuKernel.paramNames) };
-        this.paramTypes = ${ JSON.stringify(gpuKernel.paramTypes) };
+        this.subKernels = null;
+        this.subKernelNames = null;
+        this.wraparound = null;
+        this.drawBuffersMap = ${ gpuKernel.drawBuffersMap ? JSON.stringify(gpuKernel.drawBuffersMap) : 'null' };
+        this.endianness = '${ gpuKernel.endianness }';
+        this.graphical = ${ boolToString(gpuKernel.graphical) };
+        this.floatTextures = ${ boolToString(gpuKernel.floatTextures) };
+        this.floatOutput = ${ boolToString(gpuKernel.floatOutput) };
+        this.floatOutputForce = ${ boolToString(gpuKernel.floatOutputForce) };
+        this.hardcodeConstants = ${ boolToString(gpuKernel.hardcodeConstants) };
+        this.pipeline = ${ boolToString(gpuKernel.pipeline) };
+        this.argumentNames = ${ JSON.stringify(gpuKernel.argumentNames) };
+        this.argumentTypes = ${ JSON.stringify(gpuKernel.argumentTypes) };
         this.texSize = ${ JSON.stringify(gpuKernel.texSize) };
         this.output = ${ JSON.stringify(gpuKernel.output) };
-        this.compiledFragShaderString = \`${ gpuKernel.compiledFragShaderString }\`;
-		    this.compiledVertShaderString = \`${ gpuKernel.compiledVertShaderString }\`;
+        this.compiledFragmentShader = \`${ gpuKernel.compiledFragmentShader }\`;
+		    this.compiledVertexShader = \`${ gpuKernel.compiledVertexShader }\`;
 		    this.programUniformLocationCache = {};
 		    this.textureCache = {};
 		    this.subKernelOutputTextures = null;
-		    this.subKernelOutputVariableNames = null;
+		    this.extensions = {};
 		    this.uniform1fCache = {};
 		    this.uniform1iCache = {};
 		    this.uniform2fCache = {};
@@ -66,13 +84,14 @@ module.exports = function(gpuKernel, name) {
 		    this.uniform3fvCache = {};
 		    this.uniform3ivCache = {};
       }
-      _getFragShaderString() { return this.compiledFragShaderString; }
-      _getVertShaderString() { return this.compiledVertShaderString; }
-      validateOptions() {}
-      setupParams() {}
+      getFragmentShader() { return this.compiledFragmentShader; }
+      getVertexShader() { return this.compiledVertexShader; }
+      validateSettings() {}
+      initExtensions() {}
+      setupArguments() {}
       setupConstants() {}
-      setCanvas(canvas) { this._canvas = canvas; return this; }
-      setWebGl(webGl) { this._webGl = webGl; return this; }
+      setCanvas(canvas) { this.canvas = canvas; return this; }
+      setContext(context) { this.context = context; return this; }
       setTexture(Type) { Texture = Type; }
       setInput(Type) { Input = Type; }
       ${ removeFnNoise(gpuKernel.getUniformLocation.toString()) }
@@ -80,6 +99,7 @@ module.exports = function(gpuKernel, name) {
 		  ${ removeFnNoise(gpuKernel.run.toString()) }
 		  ${ removeFnNoise(gpuKernel._addArgument.toString()) }
 		  ${ removeFnNoise(gpuKernel._formatArrayTransfer.toString()) }
+		  ${ removeFnNoise(gpuKernel.checkOutput.toString()) }
 		  ${ removeFnNoise(gpuKernel.getArgumentTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.getTextureCache.toString()) }
 		  ${ removeFnNoise(gpuKernel.getOutputTexture.toString()) }
@@ -95,6 +115,10 @@ module.exports = function(gpuKernel, name) {
 		  ${ removeFnNoise(gpuKernel.setUniform3fv.toString()) }
 		  ${ removeFnNoise(gpuKernel.setUniform3iv.toString()) }
     };
-    return kernelRunShortcut(new Kernel());
+    return kernelRunShortcut(new ${ name || 'Kernel' }());
   };`;
+}
+
+module.exports = {
+	webGLKernelString
 };

@@ -1,50 +1,51 @@
-(function() {
-	var gpu1, gpu2;
-	// these 2 should be erquivilent
-	createNestedKernel = function(mode) {
-		gpu1 = new GPU({ mode });
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-		var broken = gpu1.createKernel(function(input, lookup) {
-			return lookup[input[this.thread.x]];
-		}).setOutput([1]);
-		return broken;
-	}
+describe('issue #300');
 
-	createTempVarKernel = function(mode) {
-		gpu2 = new GPU({ mode });
-		var working = gpu2.createKernel(function(input, lookup) {
-			var idx = input[this.thread.x];
-			return lookup[idx];
-		}).setOutput([1]);
-		return working;
-	}
-	
-	QUnit.test('Issue #300 nested array index - auto', () => {
-		QUnit.assert.equal(createNestedKernel()([2], [7, 13, 19, 23])[0], 19);
-		QUnit.assert.equal(createTempVarKernel()([2], [7, 13, 19, 23])[0], 19);
-		gpu1.destroy();
-		gpu2.destroy();
-	});
+function nestedArrayIndex(mode) {
+	const gpu1 = new GPU({ mode });
+	const gpu2 = new GPU({ mode });
 
-	QUnit.test('Issue #300 nested array index - gpu', () => {
-		QUnit.assert.equal(createNestedKernel('gpu')([2], [7, 13, 19, 23])[0], 19);
-		QUnit.assert.equal(createTempVarKernel('gpu')([2], [7, 13, 19, 23])[0], 19);
-		gpu1.destroy();
-		gpu2.destroy();
-	});
+	// these 2 should be equivalent
+	const broken = gpu1.createKernel(function(input, lookup) {
+		return lookup[input[this.thread.x]];
+	})
+		.setOutput([1]);
 
-	QUnit.test('Issue #300 nested array index - webgl', () => {
-		QUnit.assert.equal(createNestedKernel('webgl')([2], [7, 13, 19, 23])[0], 19);
-		QUnit.assert.equal(createTempVarKernel('webgl')([2], [7, 13, 19, 23])[0], 19);
-		gpu1.destroy();
-		gpu2.destroy();
-	});
+	const working = gpu2.createKernel(function(input, lookup) {
+		const idx = input[this.thread.x];
+		return lookup[idx];
+	})
+		.setOutput([1]);
 
-	QUnit.test('Issue #300 nested array index - webgl2', () => {
-		QUnit.assert.equal(createNestedKernel('webgl2')([2], [7, 13, 19, 23])[0], 19);
-		QUnit.assert.equal(createTempVarKernel('webgl2')([2], [7, 13, 19, 23])[0], 19);
-		gpu1.destroy();
-		gpu2.destroy();
-	});
-	
-  })();
+	assert.equal(broken([2], [7, 13, 19, 23])[0], 19);
+	assert.equal(working([2], [7, 13, 19, 23])[0], 19);
+
+	gpu1.destroy();
+	gpu2.destroy();
+}
+
+test('Issue #300 nested array index - auto', () => {
+	nestedArrayIndex();
+});
+
+test('Issue #300 nested array index - gpu', () => {
+	nestedArrayIndex('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('Issue #300 nested array index - webgl', () => {
+	nestedArrayIndex('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('Issue #300 nested array index - webgl2', () => {
+	nestedArrayIndex('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('Issue #300 nested array index - headlessgl', () => {
+	nestedArrayIndex('headlessgl');
+});
+
+test('Issue #300 nested array index - cpu', () => {
+	nestedArrayIndex('cpu');
+});

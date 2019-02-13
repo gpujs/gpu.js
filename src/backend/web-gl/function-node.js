@@ -1,121 +1,28 @@
-'use strict';
-
-const FunctionNodeBase = require('../function-node-base');
-const utils = require('../../core/utils');
+const {
+	FunctionNode
+} = require('../function-node');
 // Closure capture for the ast function, prevent collision with existing AST functions
 // The prefixes to use
 const jsMathPrefix = 'Math.';
 const localPrefix = 'this.';
-const constantsPrefix = 'this.constants.';
 
-const DECODE32_ENCODE32 = /decode32\(\s+encode32\(/g;
-const ENCODE32_DECODE32 = /encode32\(\s+decode32\(/g;
-
-// these debugs were hugely usefull...
-// TODO: optimise out - webpack/babel options? maybe some generic logging support in core/utils?
-// const debugLog = console.log
-const debugLog = () => {};
 /**
- * @class WebGLFunctionNode
- *
- * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to generate its respective webGL code.
- *
- * @extends FunctionNodeBase
- *
- * @param {functionNode} inNode - The function node object
- *
- * @returns the converted webGL function string
- *
+ * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective WebGL code
+ * @returns the converted WebGL function string
  */
-module.exports = class WebGLFunctionNode extends FunctionNodeBase {
-	generate() {
-		if (this.debug) {
-			debugLog(this);
+class WebGLFunctionNode extends FunctionNode {
+	constructor(source, settings) {
+		super(source, settings);
+		this.fixIntegerDivisionAccuracy = null;
+		if (settings && settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
+			this.fixIntegerDivisionAccuracy = settings.fixIntegerDivisionAccuracy;
 		}
-		if (this.prototypeOnly) {
-			return this.astFunctionPrototype(this.getJsAST(), []).join('').trim();
-		} else {
-			this.functionStringArray = this.astGeneric(this.getJsAST(), []);
-		}
-		this.functionString = webGlRegexOptimize(
-			this.functionStringArray.join('').trim()
-		);
-		return this.functionString;
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astFunctionDeclaration
-	 *
-	 * @desc Parses the abstract syntax tree for to its *named function declaration*
-	 *
-	 * @param {Object} ast - the AST object to parse
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astFunctionDeclaration(ast, retArr) {
-		this.builder.addFunction(null, utils.getAstString(this.jsFunctionString, ast));
-		return retArr;
-	}
-
-	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astFunctionPrototype
-	 * @static
-	 *
-	 * @desc Parses the abstract syntax tree for to its *named function prototype*
-	 *
-	 * @param {Object} ast - the AST object to parse
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astFunctionPrototype(ast, retArr) {
-		// Setup function return type and name
-		if (this.isRootKernel || this.isSubKernel) {
-			return retArr;
-		}
-
-		const returnType = this.returnType;
-		const type = typeMap[returnType];
-		if (!type) {
-			throw new Error(`unknown type ${ returnType }`);
-		}
-		retArr.push(type);
-		retArr.push(' ');
-		retArr.push(this.functionName);
-		retArr.push('(');
-
-		// Arguments handling
-		for (let i = 0; i < this.paramNames.length; ++i) {
-			if (i > 0) {
-				retArr.push(', ');
-			}
-
-			retArr.push(this.paramTypes[i]);
-			retArr.push(' ');
-			retArr.push('user_');
-			retArr.push(this.paramNames[i]);
-		}
-
-		retArr.push(');\n');
-
-		return retArr;
-	}
-
-	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astFunctionExpression
-	 *
 	 * @desc Parses the abstract syntax tree for to its *named function*
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astFunctionExpression(ast, retArr) {
@@ -124,7 +31,9 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		if (this.isRootKernel) {
 			retArr.push('void');
 		} else {
-			const returnType = this.returnType;
+			const {
+				returnType
+			} = this;
 			const type = typeMap[returnType];
 			if (!type) {
 				throw new Error(`unknown type ${ returnType }`);
@@ -132,26 +41,29 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			retArr.push(type);
 		}
 		retArr.push(' ');
-		retArr.push(this.functionName);
+		retArr.push(this.name);
 		retArr.push('(');
 
 		if (!this.isRootKernel) {
 			// Arguments handling
-			for (let i = 0; i < this.paramNames.length; ++i) {
-				const paramName = this.paramNames[i];
+			for (let i = 0; i < this.argumentNames.length; ++i) {
+				const argumentName = this.argumentNames[i];
 
 				if (i > 0) {
 					retArr.push(', ');
 				}
-				const paramType = this.getParamType(paramName);
-				const type = typeMap[paramType];
+				let argumentType = this.getVariableType(argumentName);
+				if (!argumentType || argumentType === 'LiteralInteger') {
+					argumentType = 'Number';
+				}
+				const type = typeMap[argumentType];
 				if (!type) {
-					throw new Error(`unknown type ${ paramType }`);
+					throw this.astErrorOutput('Unexpected expression', ast);
 				}
 				retArr.push(type);
 				retArr.push(' ');
 				retArr.push('user_');
-				retArr.push(paramName);
+				retArr.push(argumentName);
 			}
 		}
 
@@ -170,47 +82,75 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astReturnStatement
-	 *
 	 * @desc Parses the abstract syntax tree for to *return* statement
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astReturnStatement(ast, retArr) {
-		if (this.isRootKernel) {
-			retArr.push('kernelResult = ');
-			this.astGeneric(ast.argument, retArr);
-			retArr.push(';');
-			retArr.push('return;');
-		} else if (this.isSubKernel) {
-			retArr.push(`${ this.functionName }Result = `);
-			this.astGeneric(ast.argument, retArr);
-			retArr.push(';');
-			retArr.push(`return ${ this.functionName }Result;`);
-		} else {
-			retArr.push('return ');
-			this.astGeneric(ast.argument, retArr);
-			retArr.push(';');
+		if (!ast.argument) throw this.astErrorOutput('Unexpected return statement', ast);
+		const type = this.getType(ast.argument);
+
+		const result = [];
+
+		switch (this.returnType) {
+			case 'Number':
+			case 'Float':
+				switch (type) {
+					case 'Integer':
+						result.push('float(');
+						this.astGeneric(ast.argument, result);
+						result.push(')');
+						break;
+					case 'LiteralInteger':
+						this.pushState('casting-to-float');
+						this.astGeneric(ast.argument, result);
+						this.popState('casting-to-float');
+						break;
+					default:
+						this.astGeneric(ast.argument, result);
+				}
+				break;
+			case 'Integer':
+				switch (type) {
+					case 'Number':
+						this.pushState('casting-to-integer');
+						result.push('int(');
+						this.astGeneric(ast.argument, result);
+						result.push(')');
+						this.popState('casting-to-integer');
+						break;
+					case 'LiteralInteger':
+						this.pushState('casting-to-integer');
+						this.astGeneric(ast.argument, result);
+						this.popState('casting-to-integer');
+						break;
+					default:
+						this.astGeneric(ast.argument, result);
+				}
+				break;
+			case 'Array(4)':
+			case 'Array(3)':
+			case 'Array(2)':
+				this.astGeneric(ast.argument, result);
+				break;
+			default:
+				throw this.astErrorOutput('Unknown return handler', ast);
 		}
 
-		//throw this.astErrorOutput(
-		//	'Non main function return, is not supported : '+this.currentFunctionNamespace,
-		//	ast
-		//);
-
+		if (this.isRootKernel) {
+			retArr.push(`kernelResult = ${ result.join('') };`);
+			retArr.push('return;');
+		} else if (this.isSubKernel) {
+			retArr.push(`subKernelResult_${ this.name } = ${ result.join('') };`);
+			retArr.push(`return subKernelResult_${ this.name };`);
+		} else {
+			retArr.push(`return ${ result.join('') };`);
+		}
 		return retArr;
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astLiteral
-	 *
 	 * @desc Parses the abstract syntax tree for *literal value*
 	 *
 	 * @param {Object} ast - the AST object to parse
@@ -228,91 +168,200 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			);
 		}
 
-		// Push the literal value as a float/int
-		retArr.push(ast.value);
-
-		const inGetParams = this.isState('in-get-call-parameters');
-		// If it was an int, node made a float if necessary
 		if (Number.isInteger(ast.value)) {
-			if (!inGetParams) {
-				retArr.push('.0');
+			if (this.isState('in-for-loop-init') || this.isState('casting-to-integer')) {
+				retArr.push(`${ast.value}`);
+			} else if (this.isState('casting-to-float')) {
+				retArr.push(`${ast.value}.0`);
+			} else {
+				retArr.push(`${ast.value}.0`);
 			}
-		} else if (inGetParams) {
-			// or cast to an int as we are addressing an input array
-			retArr.pop();
-			retArr.push('int(');
-			retArr.push(ast.value);
-			retArr.push(')');
+		} else if (this.isState('casting-to-integer')) {
+			retArr.push(parseInt(ast.raw));
+		} else {
+			retArr.push(`${ast.value}`);
 		}
-
 		return retArr;
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astBinaryExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *binary* expression
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astBinaryExpression(ast, retArr) {
-		const inGetParams = this.isState('in-get-call-parameters');
-		if (inGetParams) {
-			this.pushState('not-in-get-call-parameters');
-			retArr.push('int');
-		}
-		retArr.push('(');
-
 		if (ast.operator === '%') {
 			retArr.push('mod(');
-			this.astGeneric(ast.left, retArr);
+
+			const leftType = this.getType(ast.left);
+			if (leftType === 'Integer') {
+				retArr.push('float(');
+				this.astGeneric(ast.left, retArr);
+				retArr.push(')');
+			} else if (leftType === 'LiteralInteger') {
+				this.pushState('casting-to-float');
+				this.astGeneric(ast.left, retArr);
+				this.popState('casting-to-float');
+			} else {
+				this.astGeneric(ast.left, retArr);
+			}
+
 			retArr.push(',');
-			this.astGeneric(ast.right, retArr);
+			const rightType = this.getType(ast.right);
+
+			if (rightType === 'Integer') {
+				retArr.push('float(');
+				this.astGeneric(ast.right, retArr);
+				retArr.push(')');
+			} else if (rightType === 'LiteralInteger') {
+				this.pushState('casting-to-float');
+				this.astGeneric(ast.right, retArr);
+				this.popState('casting-to-float');
+			} else {
+				this.astGeneric(ast.right, retArr);
+			}
 			retArr.push(')');
-		} else if (ast.operator === '===') {
-			this.astGeneric(ast.left, retArr);
-			retArr.push('==');
-			this.astGeneric(ast.right, retArr);
-		} else if (ast.operator === '!==') {
-			this.astGeneric(ast.left, retArr);
-			retArr.push('!=');
-			this.astGeneric(ast.right, retArr);
-		} else if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
+			return retArr;
+		}
+
+		retArr.push('(');
+		if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
 			retArr.push('div_with_int_check(');
-			this.astGeneric(ast.left, retArr);
-			retArr.push(', ')
-			this.astGeneric(ast.right, retArr);
+
+			if (this.getType(ast.left) !== 'Number') {
+				retArr.push('int(');
+				this.pushState('casting-to-float');
+				this.astGeneric(ast.left, retArr);
+				this.popState('casting-to-float');
+				retArr.push(')');
+			} else {
+				this.astGeneric(ast.left, retArr);
+			}
+
+			retArr.push(', ');
+
+			if (this.getType(ast.right) !== 'Number') {
+				retArr.push('float(');
+				this.pushState('casting-to-float');
+				this.astGeneric(ast.right, retArr);
+				this.popState('casting-to-float');
+				retArr.push(')');
+			} else {
+				this.astGeneric(ast.right, retArr);
+			}
 			retArr.push(')');
 		} else {
-			this.astGeneric(ast.left, retArr);
-			retArr.push(ast.operator);
-			this.astGeneric(ast.right, retArr);
+			const leftType = this.getType(ast.left) || 'Number';
+			const rightType = this.getType(ast.right) || 'Number';
+			if (!leftType || !rightType) {
+				throw this.astErrorOutput(`Unhandled binary expression`, ast);
+			}
+			const key = leftType + ' & ' + rightType;
+			switch (key) {
+				case 'Integer & Integer':
+					this.astGeneric(ast.left, retArr);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
+					this.astGeneric(ast.right, retArr);
+					break;
+				case 'Number & Float':
+				case 'Float & Number':
+				case 'Float & Float':
+				case 'Number & Number':
+					this.astGeneric(ast.left, retArr);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
+					this.astGeneric(ast.right, retArr);
+					break;
+				case 'LiteralInteger & LiteralInteger':
+					this.pushState('casting-to-float');
+					this.astGeneric(ast.left, retArr);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
+					this.astGeneric(ast.right, retArr);
+					this.popState('casting-to-float');
+					break;
+
+				case 'Integer & Number':
+					this.astGeneric(ast.left, retArr);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
+					this.pushState('casting-to-integer');
+					retArr.push('int(');
+					this.astGeneric(ast.right, retArr);
+					retArr.push(')');
+					this.popState('casting-to-integer');
+					break;
+				case 'Integer & LiteralInteger':
+					this.astGeneric(ast.left, retArr);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
+					this.pushState('casting-to-integer');
+					this.astGeneric(ast.right, retArr);
+					this.popState('casting-to-integer');
+					break;
+
+				case 'Number & Integer':
+					this.astGeneric(ast.left, retArr);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
+					this.pushState('casting-to-float');
+					retArr.push('float(');
+					this.astGeneric(ast.right, retArr);
+					retArr.push(')');
+					this.popState('casting-to-float');
+					break;
+				case 'Float & LiteralInteger':
+				case 'Number & LiteralInteger':
+					if (this.isState('force-integer')) {
+						retArr.push('int(');
+						this.astGeneric(ast.left, retArr);
+						retArr.push(')');
+						retArr.push(operatorMap[ast.operator] || ast.operator);
+						this.pushState('casting-to-integer');
+						this.astGeneric(ast.right, retArr);
+						this.popState('casting-to-integer');
+					} else {
+						this.astGeneric(ast.left, retArr);
+						retArr.push(operatorMap[ast.operator] || ast.operator);
+						this.pushState('casting-to-float');
+						this.astGeneric(ast.right, retArr);
+						this.popState('casting-to-float');
+					}
+					break;
+				case 'LiteralInteger & Float':
+				case 'LiteralInteger & Number':
+					if (this.isState('force-integer') || this.isState('in-for-loop-init')) {
+						this.pushState('casting-to-integer');
+						this.astGeneric(ast.left, retArr);
+						retArr.push(operatorMap[ast.operator] || ast.operator);
+						retArr.push('int(');
+						this.astGeneric(ast.right, retArr);
+						retArr.push(')');
+						this.popState('casting-to-integer');
+					} else {
+						this.astGeneric(ast.left, retArr);
+						retArr.push(operatorMap[ast.operator] || ast.operator);
+						this.pushState('casting-to-float');
+						this.astGeneric(ast.right, retArr);
+						this.popState('casting-to-float');
+					}
+					break;
+				case 'LiteralInteger & Integer':
+					this.pushState('casting-to-integer');
+					this.astGeneric(ast.left, retArr);
+					this.popState('casting-to-integer');
+					retArr.push(operatorMap[ast.operator] || ast.operator);
+					this.astGeneric(ast.right, retArr);
+					break;
+				default:
+					throw this.astErrorOutput(`Unhandled binary expression between ${key}`, ast);
+			}
 		}
 
 		retArr.push(')');
-
-		if (inGetParams) {
-			this.popState('not-in-get-call-parameters');
-		}
-
 		return retArr;
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astIdentifierExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *identifier* expression
-	 *
 	 * @param {Object} idtNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astIdentifierExpression(idtNode, retArr) {
@@ -322,232 +371,146 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 				idtNode
 			);
 		}
-		// do we need to cast addressing vales to float?
-		const castFloat = !this.isState('in-get-call-parameters');
 
-		switch (idtNode.name) {
-			case 'gpu_threadX':
-				castFloat && retArr.push('float(');
-				retArr.push('threadId.x');
-				castFloat && retArr.push(')');
-				break;
-			case 'gpu_threadY':
-				castFloat && retArr.push('float(');
-				retArr.push('threadId.y');
-				castFloat && retArr.push(')');
-				break;
-			case 'gpu_threadZ':
-				castFloat && retArr.push('float(');
-				retArr.push('threadId.z');
-				castFloat && retArr.push(')');
-				break;
-			case 'gpu_outputX':
-				retArr.push('uOutputDim.x');
-				break;
-			case 'gpu_outputY':
-				retArr.push('uOutputDim.y');
-				break;
-			case 'gpu_outputZ':
-				retArr.push('uOutputDim.z');
-				break;
-			case 'Infinity':
-				// https://stackoverflow.com/a/47543127/1324039
-				retArr.push('3.402823466e+38');
-				break;
-			default:
-				const userParamName = this.getUserParamName(idtNode.name);
-				if (userParamName !== null) {
-					this.pushParameter(retArr, 'user_' + userParamName);
-				} else {
-					this.pushParameter(retArr, 'user_' + idtNode.name);
-				}
+		if (idtNode.name === 'Infinity') {
+			// https://stackoverflow.com/a/47543127/1324039
+			retArr.push('3.402823466e+38');
+		} else {
+			const userArgumentName = this.getUserArgumentName(idtNode.name);
+			if (userArgumentName) {
+				retArr.push(`user_${userArgumentName}`);
+			} else {
+				retArr.push(`user_${idtNode.name}`);
+			}
 		}
 
 		return retArr;
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astForStatement
-	 *
-	 * @desc Parses the abstract syntax tree forfor *for-loop* expression
-	 *
+	 * @desc Parses the abstract syntax tree for *for-loop* expression
 	 * @param {Object} forNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the parsed webgl string
 	 */
 	astForStatement(forNode, retArr) {
 		if (forNode.type !== 'ForStatement') {
-			throw this.astErrorOutput(
-				'Invalid for statment',
-				forNode
-			);
+			throw this.astErrorOutput('Invalid for statement', forNode);
 		}
 
-		if (forNode.test && forNode.test.type === 'BinaryExpression') {
-			if (forNode.test.right.type === 'Identifier' &&
-				forNode.test.operator === '<' &&
-				this.isIdentifierConstant(forNode.test.right.name) === false) {
+		const initArr = [];
+		const testArr = [];
+		const updateArr = [];
+		const bodyArr = [];
+		let isSafe = null;
 
-				if (!this.loopMaxIterations) {
-					console.warn('Warning: loopMaxIterations is not set! Using default of 1000 which may result in unintended behavior.');
-					console.warn('Set loopMaxIterations or use a for loop of fixed length to silence this message.');
+		if (forNode.init) {
+			this.pushState('in-for-loop-init');
+			this.astGeneric(forNode.init, initArr);
+			for (let i = 0; i < initArr.length; i++) {
+				if (initArr[i].includes && initArr[i].includes(',')) {
+					isSafe = false;
 				}
-
-				retArr.push('for (');
-				this.astGeneric(forNode.init, retArr);
-				this.astGeneric(forNode.test.left, retArr);
-				retArr.push(forNode.test.operator);
-				retArr.push('LOOP_MAX');
-				retArr.push(';');
-				this.astGeneric(forNode.update, retArr);
-				retArr.push(')');
-
-				retArr.push('{\n');
-				retArr.push('if (');
-				this.astGeneric(forNode.test.left, retArr);
-				retArr.push(forNode.test.operator);
-				this.astGeneric(forNode.test.right, retArr);
-				retArr.push(') {\n');
-				if (forNode.body.type === 'BlockStatement') {
-					for (let i = 0; i < forNode.body.body.length; i++) {
-						this.astGeneric(forNode.body.body[i], retArr);
-					}
-				} else {
-					this.astGeneric(forNode.body, retArr);
-				}
-				retArr.push('\n} else {\n');
-				retArr.push('break;\n');
-				retArr.push('}\n');
-				retArr.push('}\n');
-
-				return retArr;
-			} else {
-				const declarations = JSON.parse(JSON.stringify(forNode.init.declarations));
-				const updateArgument = forNode.update.argument;
-				if (!Array.isArray(declarations) || declarations.length < 1) {
-					debugLog(this.jsFunctionString);
-					throw new Error('Error: Incompatible for loop declaration');
-				}
-
-				if (declarations.length > 1) {
-					let initArgument = null;
-					for (let i = 0; i < declarations.length; i++) {
-						const declaration = declarations[i];
-						if (declaration.id.name === updateArgument.name) {
-							initArgument = declaration;
-							declarations.splice(i, 1);
-						} else {
-							retArr.push('float ');
-							this.astGeneric(declaration, retArr);
-							retArr.push(';');
-						}
-					}
-
-					retArr.push('for (float ');
-					this.astGeneric(initArgument, retArr);
-					retArr.push(';');
-				} else {
-					retArr.push('for (');
-					this.astGeneric(forNode.init, retArr);
-				}
-
-				this.astGeneric(forNode.test, retArr);
-				retArr.push(';');
-				this.astGeneric(forNode.update, retArr);
-				retArr.push(')');
-				this.astGeneric(forNode.body, retArr);
-				return retArr;
 			}
+			this.popState('in-for-loop-init');
+		} else {
+			isSafe = false;
 		}
 
-		throw this.astErrorOutput(
-			'Invalid for statement',
-			forNode
-		);
+		if (forNode.test) {
+			this.pushState('force-integer');
+			this.astGeneric(forNode.test, testArr);
+			this.popState('force-integer');
+		} else {
+			isSafe = false;
+		}
+
+		if (forNode.update) {
+			this.astGeneric(forNode.update, updateArr);
+		} else {
+			isSafe = false;
+		}
+
+		if (forNode.body) {
+			this.pushState('loop-body');
+			this.astGeneric(forNode.body, bodyArr);
+			this.popState('loop-body');
+		}
+
+		// have all parts, now make them safe
+		if (isSafe === null) {
+			isSafe = this.isSafe(forNode.init) && this.isSafe(forNode.test);
+		}
+
+		if (isSafe) {
+			retArr.push(`for (${initArr.join('')};${testArr.join('')};${updateArr.join('')}){\n`);
+			retArr.push(bodyArr.join(''));
+			retArr.push('}\n');
+		} else {
+			const iVariableName = this.getInternalVariableName('safeI');
+			if (initArr.length > 0) {
+				retArr.push(initArr.join(''), ';\n');
+			}
+			retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
+			if (testArr.length > 0) {
+				retArr.push(`if (!${testArr.join('')}) break;\n`);
+			}
+			retArr.push(bodyArr.join(''));
+			retArr.push(`\n${updateArr.join('')};`);
+			retArr.push('}\n');
+		}
+		return retArr;
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astWhileStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *while* loop
-	 *
-	 *
 	 * @param {Object} whileNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the parsed webgl string
 	 */
 	astWhileStatement(whileNode, retArr) {
 		if (whileNode.type !== 'WhileStatement') {
-			throw this.astErrorOutput(
-				'Invalid while statment',
-				whileNode
-			);
+			throw this.astErrorOutput('Invalid while statement', whileNode);
 		}
 
-		retArr.push('for (float i = 0.0; i < LOOP_MAX; i++) {');
-		retArr.push('if (');
+		const iVariableName = this.getInternalVariableName('safeI');
+		retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
+		retArr.push('if (!');
 		this.astGeneric(whileNode.test, retArr);
-		retArr.push(') {\n');
+		retArr.push(') break;\n');
 		this.astGeneric(whileNode.body, retArr);
-		retArr.push('} else {\n');
-		retArr.push('break;\n');
-		retArr.push('}\n');
 		retArr.push('}\n');
 
 		return retArr;
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astWhileStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *do while* loop
-	 *
-	 *
 	 * @param {Object} doWhileNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the parsed webgl string
 	 */
 	astDoWhileStatement(doWhileNode, retArr) {
 		if (doWhileNode.type !== 'DoWhileStatement') {
-			throw this.astErrorOutput(
-				'Invalid while statment',
-				doWhileNode
-			);
+			throw this.astErrorOutput('Invalid while statement', doWhileNode);
 		}
 
-		retArr.push('for (float i = 0.0; i < LOOP_MAX; i++) {');
+		const iVariableName = this.getInternalVariableName('safeI');
+		retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
 		this.astGeneric(doWhileNode.body, retArr);
 		retArr.push('if (!');
 		this.astGeneric(doWhileNode.test, retArr);
-		retArr.push(') {\n');
-		retArr.push('break;\n');
-		retArr.push('}\n');
+		retArr.push(') break;\n');
 		retArr.push('}\n');
 
 		return retArr;
-
 	}
 
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astAssignmentExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *Assignment* Expression
-	 *
 	 * @param {Object} assNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astAssignmentExpression(assNode, retArr) {
@@ -560,204 +523,105 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			this.astGeneric(assNode.right, retArr);
 			retArr.push(')');
 		} else {
+			const leftType = this.getType(assNode.left);
+			const rightType = this.getType(assNode.right);
 			this.astGeneric(assNode.left, retArr);
 			retArr.push(assNode.operator);
-			this.astGeneric(assNode.right, retArr);
+			if (leftType !== 'Integer' && rightType === 'Integer') {
+				retArr.push('float(');
+				this.astGeneric(assNode.right, retArr);
+				retArr.push(')');
+			} else {
+				this.astGeneric(assNode.right, retArr);
+			}
 			return retArr;
 		}
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astEmptyStatement
-	 *
-	 * @desc Parses the abstract syntax tree for an *Empty* Statement
-	 *
-	 * @param {Object} eNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astEmptyStatement(eNode, retArr) {
-		//retArr.push(';\n');
-		return retArr;
-	}
-
-	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astBlockStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *Block* statement
-	 *
 	 * @param {Object} bNode - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astBlockStatement(bNode, retArr) {
-		retArr.push('{\n');
+		if (!this.isState('loop-body')) {
+			retArr.push('{\n');
+		}
 		for (let i = 0; i < bNode.body.length; i++) {
 			this.astGeneric(bNode.body[i], retArr);
 		}
-		retArr.push('}\n');
+		if (!this.isState('loop-body')) {
+			retArr.push('}\n');
+		}
 		return retArr;
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astExpressionStatement
-	 *
-	 * @desc Parses the abstract syntax tree for *generic expression* statement
-	 *
-	 * @param {Object} esNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astExpressionStatement(esNode, retArr) {
-		this.astGeneric(esNode.expression, retArr);
-		retArr.push(';');
-		return retArr;
-	}
-
-	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astVariableDeclaration
-	 *
 	 * @desc Parses the abstract syntax tree for *Variable Declaration*
-	 *
-	 * @param {Object} vardecNode - An ast Node
+	 * @param {Object} varDecNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
-	astVariableDeclaration(vardecNode, retArr) {
-		for (let i = 0; i < vardecNode.declarations.length; i++) {
-			const declaration = vardecNode.declarations[i];
-			if (i > 0) {
-				retArr.push(',');
-			}
-			const retDeclaration = [];
-			this.astGeneric(declaration, retDeclaration);
-			let declarationType = 'Number';
-			if (i === 0) {
-				const init = declaration.init;
-				if (init) {
-					if (init.object) {
-						if (
-							init.object.type === 'MemberExpression' &&
-							init.object.object
-						) {
-							// this.thread.x, this.thread.y, this.thread.z
-							if (
-								init.object.object.type === 'ThisExpression' &&
-								init.object.property &&
-								(
-									init.object.property.name === 'thread' ||
-									init.object.property.name === 'output'
-								)
-							) {
-								declarationType = 'Integer';
-							}
-							// param[]
-							else if (init.object.object.type === 'Identifier') {
-								const type = this.getParamType(init.object.object.name);
-								declarationType = typeLookupMap[type];
-							}
-							// param[][]
-							else if (
-								init.object.object.object &&
-								init.object.object.object.type === 'Identifier'
-							) {
-								const type = this.getParamType(init.object.object.object.name);
-								declarationType = typeLookupMap[type];
-							}
-							// this.constants.param[]
-							else if (
-								init.object.object.object &&
-								init.object.object.object.object &&
-								init.object.object.object.object.type === 'ThisExpression' &&
-								init.object.object.object.property.name === 'constants'
-							) {
-								const type = this.getConstantType(init.object.object.property.name);
-								declarationType = typeLookupMap[type];
-							}
-							// this.constants.param[][]
-							else if (
-								init.object.object.object &&
-								init.object.object.object.object &&
-								init.object.object.object.object.object &&
-								init.object.object.object.object.object.type === 'ThisExpression' &&
-								init.object.object.object.object.property.name === 'constants'
-							) {
-								const type = this.getConstantType(init.object.object.object.property.name);
-								declarationType = typeLookupMap[type];
-							}
-						}
-						if (!declarationType) {
-							throw new Error(`unknown lookup type ${ typeLookupMap }`);
-						}
-					} else {
-						if (init.name && this.declarations[init.name]) {
-							declarationType = this.declarations[init.name];
-						} else if (init.type === 'ArrayExpression') {
-							declarationType = `Array(${ init.elements.length })`;
-						} else if (init.type === 'CallExpression') {
-							const node = this.builder.nodeMap[init.callee.name];
-							if (node && node.returnType) {
-								declarationType = node.returnType;
-							}
-						}
-					}
-				}
-				const type = typeMap[declarationType];
-				if (!type) {
-					throw new Error(`type ${ declarationType } not handled`);
-				}
-				retArr.push(type + ' ');
-			}
-			this.declarations[declaration.id.name] = declarationType;
-			retArr.push.apply(retArr, retDeclaration);
+	astVariableDeclaration(varDecNode, retArr) {
+		const declarations = varDecNode.declarations;
+		if (!declarations || !declarations[0] || !declarations[0].init) {
+			throw this.astErrorOutput('Unexpected expression', varDecNode);
 		}
-		retArr.push(';');
-		return retArr;
-	}
+		const result = [];
+		const firstDeclaration = declarations[0];
+		const init = firstDeclaration.init;
+		const actualType = this.getType(init);
+		let type = this.isState('in-for-loop-init') ? 'Integer' : actualType;
+		if (type === 'LiteralInteger') {
+			// We had the choice to go either float or int, choosing float
+			type = 'Number';
+		}
+		const markupType = typeMap[type];
+		if (!markupType) {
+			throw this.astErrorOutput(`Markup type ${ markupType } not handled`, varDecNode);
+		}
+		let dependencies = this.getDependencies(firstDeclaration.init);
+		this.declarations[firstDeclaration.id.name] = Object.freeze({
+			type,
+			dependencies,
+			isSafe: this.isSafeDependencies(dependencies),
+		});
+		const initResult = [];
+		initResult.push([`${markupType} `]);
+		initResult.push(`user_${firstDeclaration.id.name}=`);
+		if (actualType === 'Number' && type === 'Integer') {
+			initResult.push('int(');
+			this.astGeneric(init, initResult);
+			initResult.push(')');
+		} else {
+			this.astGeneric(init, initResult);
+		}
+		result.push(initResult.join(''));
 
-	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astVariableDeclarator
-	 *
-	 * @desc Parses the abstract syntax tree for *Variable Declarator*
-	 *
-	 * @param {Object} ivardecNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astVariableDeclarator(ivardecNode, retArr) {
-		this.astGeneric(ivardecNode.id, retArr);
-		if (ivardecNode.init !== null) {
-			retArr.push('=');
-			this.astGeneric(ivardecNode.init, retArr);
+		// first declaration is done, now any added ones setup
+		for (let i = 1; i < declarations.length; i++) {
+			const declaration = declarations[i];
+			dependencies = this.getDependencies(declaration);
+			this.declarations[declaration.id.name] = Object.freeze({
+				type,
+				dependencies: dependencies,
+				isSafe: this.isSafeDependencies(dependencies),
+			});
+			this.astGeneric(declaration, result);
+		}
+
+		retArr.push(result.join(','));
+		if (!this.isState('in-for-loop-init')) {
+			retArr.push(';');
 		}
 		return retArr;
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astIfStatement
-	 *
 	 * @desc Parses the abstract syntax tree for *If* Statement
-	 *
 	 * @param {Object} ifNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astIfStatement(ifNode, retArr) {
@@ -783,122 +647,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			}
 		}
 		return retArr;
-
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astBreakStatement
-	 *
-	 * @desc Parses the abstract syntax tree for *Break* Statement
-	 *
-	 * @param {Object} brNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astBreakStatement(brNode, retArr) {
-		retArr.push('break;\n');
-		return retArr;
-	}
-
-	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astContinueStatement
-	 *
-	 * @desc Parses the abstract syntax tree for *Continue* Statement
-	 *
-	 * @param {Object} crNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astContinueStatement(crNode, retArr) {
-		retArr.push('continue;\n');
-		return retArr;
-	}
-
-	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astLogicalExpression
-	 *
-	 * @desc Parses the abstract syntax tree for *Logical* Expression
-	 *
-	 * @param {Object} logNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astLogicalExpression(logNode, retArr) {
-		retArr.push('(');
-		this.astGeneric(logNode.left, retArr);
-		retArr.push(logNode.operator);
-		this.astGeneric(logNode.right, retArr);
-		retArr.push(')');
-		return retArr;
-	}
-
-	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astUpdateExpression
-	 *
-	 * @desc Parses the abstract syntax tree for *Update* Expression
-	 *
-	 * @param {Object} uNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astUpdateExpression(uNode, retArr) {
-		if (uNode.prefix) {
-			retArr.push(uNode.operator);
-			this.astGeneric(uNode.argument, retArr);
-		} else {
-			this.astGeneric(uNode.argument, retArr);
-			retArr.push(uNode.operator);
-		}
-
-		return retArr;
-	}
-
-	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astUnaryExpression
-	 *
-	 * @desc Parses the abstract syntax tree for *Unary* Expression
-	 *
-	 * @param {Object} uNode - An ast Node
-	 * @param {Array} retArr - return array string
-	 *
-	 * @returns {Array} the append retArr
-	 */
-	astUnaryExpression(uNode, retArr) {
-		if (uNode.prefix) {
-			retArr.push(uNode.operator);
-			this.astGeneric(uNode.argument, retArr);
-		} else {
-			this.astGeneric(uNode.argument, retArr);
-			retArr.push(uNode.operator);
-		}
-
-		return retArr;
-	}
-
-	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astThisExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *This* expression
-	 *
 	 * @param {Object} tNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astThisExpression(tNode, retArr) {
@@ -907,274 +661,128 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astMemberExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *Member* Expression
-	 *
 	 * @param {Object} mNode - An ast Node
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astMemberExpression(mNode, retArr) {
-		debugLog("[in] astMemberExpression " + mNode.object.type);
-		if (mNode.computed) {
-			if (mNode.object.type === 'Identifier' ||
-				(
-					mNode.object.type === 'MemberExpression' &&
-					// mNode.object.object &&
-					mNode.object.object.object &&
-					mNode.object.object.object.type === 'ThisExpression' &&
-					mNode.object.object.property.name === 'constants'
-				)
-			) {
-				// Working logger
-				const reqName = mNode.object.name;
-				const funcName = this.functionName || 'kernel';
-				let assumeNotTexture = false;
-
-				// Possibly an array request - handle it as such
-				if (this.paramNames) {
-					const idx = this.paramNames.indexOf(reqName);
-					if (idx >= 0 && this.paramTypes[idx] === 'Number') {
-						assumeNotTexture = true;
-					}
+		const {
+			property,
+			name,
+			signature,
+			origin,
+			type,
+			xProperty,
+			yProperty,
+			zProperty
+		} = this.getMemberExpressionDetails(mNode);
+		switch (signature) {
+			case 'this.thread.value':
+				retArr.push(`threadId.${ name }`);
+				return retArr;
+			case 'this.output.value':
+				switch (name) {
+					case 'x':
+						retArr.push(this.output[0]);
+						break;
+					case 'y':
+						retArr.push(this.output[1]);
+						break;
+					case 'z':
+						retArr.push(this.output[2]);
+						break;
+					default:
+						throw this.astErrorOutput('Unexpected expression', mNode);
 				}
-				debugLog("- astMemberExpression " + reqName + " " + funcName);
-				if (assumeNotTexture) {
-					// Get from array
-					this.astGeneric(mNode.object, retArr);
-					retArr.push('[int(');
-					this.astGeneric(mNode.property, retArr);
-					retArr.push(')]');
-				} else {
-					const isInGetParams = this.isState('in-get-call-parameters');
-					const multiMemberExpression = this.isState('multi-member-expression');
-					if (multiMemberExpression) {
-						this.popState('multi-member-expression');
-					}
-					this.pushState('not-in-get-call-parameters');
-
-					// This normally refers to the global read only input vars
-					let variableType = null;
-					if (mNode.object.name) {
-						if (this.declarations[mNode.object.name]) {
-							variableType = this.declarations[mNode.object.name];
-						} else {
-							variableType = this.getParamType(mNode.object.name);
-						}
-					} else if (
-						mNode.object &&
-						mNode.object.object &&
-						mNode.object.object.object &&
-						mNode.object.object.object.type === 'ThisExpression'
-					) {
-						variableType = this.getConstantType(mNode.object.property.name);
-					}
-					switch (variableType) {
-						case 'Array(2)':
-						case 'Array(3)':
-						case 'Array(4)':
-							// Get from local vec4
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('[');
-							retArr.push(mNode.property.raw);
-							retArr.push(']');
-							if (multiMemberExpression) {
-								this.popState('not-in-get-call-parameters');
-							}
-							break;
-						case 'HTMLImageArray':
-							// Get from image
-							retArr.push('getImage3D(');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push(', ivec2(');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Size[0],');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Size[1]), ivec3(');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Dim[0],');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Dim[1],');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Dim[2]');
-							retArr.push('), ');
-							this.popState('not-in-get-call-parameters');
-							this.pushState('in-get-call-parameters');
-							this.astGeneric(mNode.property, retArr);
-							if (!multiMemberExpression) {
-								this.popState('in-get-call-parameters');
-							}
-							retArr.push(')');
-							break;
-						case 'ArrayTexture(4)':
-						case 'HTMLImage':
-							// Get from image
-							retArr.push('getImage2D(');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push(', ivec2(');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Size[0],');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Size[1]), ivec3(');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Dim[0],');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Dim[1],');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Dim[2]');
-							retArr.push('), ');
-							this.popState('not-in-get-call-parameters');
-							this.pushState('in-get-call-parameters');
-							this.astGeneric(mNode.property, retArr);
-							if (!multiMemberExpression) {
-								this.popState('in-get-call-parameters');
-							}
-							retArr.push(')');
-							break;
-						default:
-							// Get from texture
-							if (isInGetParams) {
-								retArr.push('int(');
-							}
-							retArr.push('get(');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push(', ivec2(');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Size[0],');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Size[1]), ivec3(');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Dim[0],');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Dim[1],');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('Dim[2]');
-							retArr.push('), ');
-							this.astGeneric(mNode.object, retArr);
-							retArr.push('BitRatio');
-							retArr.push(', ');
-							this.popState('not-in-get-call-parameters');
-							this.pushState('in-get-call-parameters');
-							this.astGeneric(mNode.property, retArr);
-							if (!multiMemberExpression) {
-								this.popState('in-get-call-parameters');
-							}
-							retArr.push(')');
-							if (isInGetParams) {
-								retArr.push(')');
-							}
-							break;
-					}
+				return retArr;
+			case 'value':
+				throw this.astErrorOutput('Unexpected expression', mNode);
+			case 'value[]':
+			case 'value[][]':
+			case 'value[][][]':
+			case 'value.value':
+				if (origin === 'Math') {
+					retArr.push(Math[name]);
+					return retArr;
 				}
-			} else {
-
-				debugLog("- astMemberExpression obj:", mNode.object);
-				const stateStackDepth = this.states.length;
-				const startedInGetParamsState = this.isState('in-get-call-parameters');
-				if (!startedInGetParamsState) {
-					this.pushState('multi-member-expression');
+				switch (property) {
+					case 'r':
+						retArr.push(`user_${ name }.r`);
+						return retArr;
+					case 'g':
+						retArr.push(`user_${ name }.g`);
+						return retArr;
+					case 'b':
+						retArr.push(`user_${ name }.b`);
+						return retArr;
+					case 'a':
+						retArr.push(`user_${ name }.a`);
+						return retArr;
 				}
-				this.astGeneric(mNode.object, retArr);
-				if (this.isState('multi-member-expression')) {
-					this.popState('multi-member-expression');
-				}
-				const changedGetParamsState = !startedInGetParamsState && this.isState('in-get-call-parameters');
-				const last = retArr.pop();
-				retArr.push(',');
-				debugLog("- astMemberExpression prop:", mNode.property);
-				const shouldPopParamState = this.isState('should-pop-in-get-call-parameters');
-				if (shouldPopParamState) {
-					// go back to in-get-call-parameters state
-					this.popState('should-pop-in-get-call-parameters');
-				}
-				this.astGeneric(mNode.property, retArr);
-				retArr.push(last);
-
-				if (changedGetParamsState) {
-					// calling memberExpression should pop...
-					this.pushState('should-pop-in-get-call-parameters');
-				} else if (shouldPopParamState) {
-					// do the popping!
-					this.popState('in-get-call-parameters')
-				}
-			}
-		} else {
-
-			// Unroll the member expression
-			let unrolled = this.astMemberExpressionUnroll(mNode);
-			let unrolled_lc = unrolled.toLowerCase();
-			debugLog("- astMemberExpression unrolled:", unrolled);
-			// Its a constant, remove this.constants.
-			if (unrolled.indexOf(constantsPrefix) === 0) {
-				unrolled = 'constants_' + unrolled.slice(constantsPrefix.length);
-			}
-
-			// do we need to cast addressing vales to float?
-			const castFloat = !this.isState('in-get-call-parameters');
-
-			switch (unrolled_lc) {
-				case 'this.thread.x':
-					castFloat && retArr.push('float(');
-					retArr.push('threadId.x');
-					castFloat && retArr.push(')');
-					break;
-				case 'this.thread.y':
-					castFloat && retArr.push('float(');
-					retArr.push('threadId.y');
-					castFloat && retArr.push(')');
-					break;
-				case 'this.thread.z':
-					castFloat && retArr.push('float(');
-					retArr.push('threadId.z');
-					castFloat && retArr.push(')');
-					break;
-				case 'this.output.x':
-					retArr.push(this.output[0] + '.0');
-					break;
-				case 'this.output.y':
-					retArr.push(this.output[1] + '.0');
-					break;
-				case 'this.output.z':
-					retArr.push(this.output[2] + '.0');
-					break;
-				default:
-					if (
-						mNode.object &&
-						mNode.object.name &&
-						this.declarations[mNode.object.name]) {
-						retArr.push('user_');
-					}
-					retArr.push(unrolled);
-			}
+				break;
+			case 'this.constants.value':
+			case 'this.constants.value[]':
+			case 'this.constants.value[][]':
+			case 'this.constants.value[][][]':
+				break;
+			case 'fn()[]':
+				this.astCallExpression(mNode.object, retArr);
+				retArr.push('[');
+				retArr.push(this.memberExpressionPropertyMarkup(property));
+				retArr.push(']');
+				return retArr;
+			default:
+				throw this.astErrorOutput('Unexpected expression', mNode);
 		}
-		debugLog("[out] astMemberExpression " + mNode.object.type);
-		return retArr;
-	}
 
-	astSequenceExpression(sNode, retArr) {
-		for (let i = 0; i < sNode.expressions.length; i++) {
-			if (i > 0) {
-				retArr.push(',');
-			}
-			this.astGeneric(sNode.expressions, retArr);
+		if (type === 'Number' || type === 'Integer') {
+			retArr.push(`${ origin }_${ name}`);
+			return retArr;
+		}
+
+		// argument may have come from a parent
+		let synonymName;
+		if (this.parent) {
+			synonymName = this.getUserArgumentName(name);
+		}
+
+		const markupName = `${origin}_${synonymName || name}`;
+
+		switch (type) {
+			case 'Array(2)':
+			case 'Array(3)':
+			case 'Array(4)':
+				// Get from local vec4
+				this.astGeneric(mNode.object, retArr);
+				retArr.push('[');
+				retArr.push(this.memberExpressionPropertyMarkup(xProperty));
+				retArr.push(']');
+				break;
+			case 'HTMLImageArray':
+				retArr.push(`getImage3D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+				retArr.push(')');
+				break;
+			case 'ArrayTexture(4)':
+			case 'HTMLImage':
+				retArr.push(`getImage2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+				retArr.push(')');
+				break;
+			default:
+				retArr.push(`get(${ markupName }, ${ markupName }Size, ${ markupName }Dim, ${ markupName }BitRatio, `);
+				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+				retArr.push(')');
+				break;
 		}
 		return retArr;
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astCallExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *call* expression
-	 *
 	 * @param {Object} ast - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns  {Array} the append retArr
 	 */
 	astCallExpression(ast, retArr) {
@@ -1201,12 +809,23 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			if (this.calledFunctions.indexOf(funcName) < 0) {
 				this.calledFunctions.push(funcName);
 			}
-			if (!this.hasOwnProperty('funcName')) {
+			if (!this.calledFunctionsArguments[funcName]) {
 				this.calledFunctionsArguments[funcName] = [];
 			}
 
 			const functionArguments = [];
 			this.calledFunctionsArguments[funcName].push(functionArguments);
+
+			if (funcName === 'random' && this.plugins) {
+				for (let i = 0; i < this.plugins.length; i++) {
+					const plugin = this.plugins[i];
+					if (plugin.functionMatch === 'Math.random()' && plugin.functionReplace) {
+						functionArguments.push(plugin.functionReturnType);
+						retArr.push(plugin.functionReplace);
+					}
+				}
+				return retArr;
+			}
 
 			// Call the function
 			retArr.push(funcName);
@@ -1221,16 +840,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 					retArr.push(', ');
 				}
 				this.astGeneric(argument, retArr);
-				if (argument.type === 'Identifier') {
-					const paramIndex = this.paramNames.indexOf(argument.name);
-					if (paramIndex === -1) {
-						functionArguments.push(null);
-					} else {
-						functionArguments.push({
-							name: argument.name,
-							type: this.paramTypes[paramIndex] || 'Number'
-						});
-					}
+				const argumentType = this.getType(argument);
+				if (argumentType) {
+					functionArguments.push({
+						name: argument.name || null,
+						type: argumentType
+					});
 				} else {
 					functionArguments.push(null);
 				}
@@ -1247,20 +862,12 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 			'Unknown CallExpression',
 			ast
 		);
-
-		return retArr;
 	}
 
 	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name astArrayExpression
-	 *
 	 * @desc Parses the abstract syntax tree for *Array* Expression
-	 *
-	 * @param {Object} ast - the AST object to parse
+	 * @param {Object} arrNode - the AST object to parse
 	 * @param {Array} retArr - return array string
-	 *
 	 * @returns {Array} the append retArr
 	 */
 	astArrayExpression(arrNode, retArr) {
@@ -1277,35 +884,45 @@ module.exports = class WebGLFunctionNode extends FunctionNodeBase {
 		retArr.push(')');
 
 		return retArr;
-
-		// // Failure, unknown expression
-		// throw this.astErrorOutput(
-		// 	'Unknown  ArrayExpression',
-		// 	arrNode
-		//);
 	}
 
-	/**
-	 * @memberOf WebGLFunctionNode#
-	 * @function
-	 * @name getFunctionPrototypeString
-	 *
-	 * @desc Returns the converted webgl shader function equivalent of the JS function
-	 *
-	 * @returns {String} webgl function string, result is cached under this.getFunctionPrototypeString
-	 *
-	 */
-	getFunctionPrototypeString() {
-		if (this.webGlFunctionPrototypeString) {
-			return this.webGlFunctionPrototypeString;
+	memberExpressionXYZ(x, y, z, retArr) {
+		if (z) {
+			retArr.push(this.memberExpressionPropertyMarkup(z), ', ');
+		} else {
+			retArr.push('0, ');
 		}
-		return this.webGlFunctionPrototypeString = this.generate();
+		if (y) {
+			retArr.push(this.memberExpressionPropertyMarkup(y), ', ');
+		} else {
+			retArr.push('0, ');
+		}
+		retArr.push(this.memberExpressionPropertyMarkup(x));
+		return retArr;
 	}
 
-	build() {
-		return this.getFunctionPrototypeString().length > 0;
+	memberExpressionPropertyMarkup(property) {
+		if (!property) {
+			throw new Error('Property not set');
+		}
+		const type = this.getType(property);
+		const result = [];
+		if (type === 'Number') {
+			this.pushState('casting-to-integer');
+			result.push('int(');
+			this.astGeneric(property, result);
+			result.push(')');
+			this.popState('casting-to-integer');
+		} else if (type === 'LiteralInteger') {
+			this.pushState('casting-to-integer');
+			this.astGeneric(property, result);
+			this.popState('casting-to-integer');
+		} else {
+			this.astGeneric(property, result);
+		}
+		return result.join('');
 	}
-};
+}
 
 const typeMap = {
 	'Array': 'sampler2D',
@@ -1316,38 +933,17 @@ const typeMap = {
 	'Array3D': 'sampler2D',
 	'Float': 'float',
 	'Input': 'sampler2D',
-	'Integer': 'float',
+	'Integer': 'int',
 	'Number': 'float',
 	'NumberTexture': 'sampler2D',
 	'ArrayTexture(4)': 'sampler2D'
 };
 
-const typeLookupMap = {
-	'Array': 'Number',
-	'Array2D': 'Number',
-	'Array3D': 'Number',
-	'HTMLImage': 'Array(4)',
-	'HTMLImageArray': 'Array(4)',
-	'NumberTexture': 'Number',
-	'ArrayTexture(4)': 'Array(4)',
+const operatorMap = {
+	'===': '==',
+	'!==': '!='
 };
 
-/**
- * @ignore
- * @function
- * @name webgl_regex_optimize
- *
- * @desc [INTERNAL] Takes the near final webgl function string, and do regex search and replacments.
- * For voodoo optimize out the following:
- *
- * - decode32(encode32( <br>
- * - encode32(decode32( <br>
- *
- * @param {String} inStr - The webGl function String
- *
- */
-function webGlRegexOptimize(inStr) {
-	return inStr
-		.replace(DECODE32_ENCODE32, '((')
-		.replace(ENCODE32_DECODE32, '((');
-}
+module.exports = {
+	WebGLFunctionNode
+};

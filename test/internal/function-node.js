@@ -1,108 +1,287 @@
-///
-/// Test the various basic functionality of functionNode
-///
+const { assert, test, module: describe, only } = require('qunit');
+const { CPUFunctionNode, WebGLFunctionNode, WebGL2FunctionNode } = require('../../src');
+
+describe('internal: function node');
 
 /// Test the creation of a hello_world function
-QUnit.test( "hello_world: just return magic 42", function( assert ) {
-	assert.notEqual( GPU.CPUFunctionNode, null, "script include check" );
-	
+test('hello_world: just return magic 42 cpu', () => {
 	// Create a function hello node
-	var node = new GPU.WebGLFunctionNode(
-		"hello_world",
-		function() {
+	const node = new CPUFunctionNode(
+		(function() {
 			return 42;
-		}
+		}).toString(), { name: 'hello_world', output: [1] }
 	);
 
-	assert.notEqual( node, null, "class creation check" );
-	assert.notEqual( node.getJsAST(), null, "AST fetch check" );
+	assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
 	assert.equal(
-		node.getFunctionString().replace(/\s+/g,' '),
-		"float hello_world() { return 42.0; }",
-		"webgl function conversion check"
+		node.toString(),
+		'function hello_world() {'
+		+ '\nreturn 42;'
+		+ '\n}',
+		'function conversion check'
+	);
+});
+
+test('hello_world: just return magic 42 webgl', () => {
+	// Create a function hello node
+	const node = new WebGLFunctionNode(
+		(function() {
+			return 42;
+		}).toString(), { name: 'hello_world', output: [1] }
+	);
+
+	assert.notEqual(node.getJsAST(), null, 'AST fetch check');
+
+	assert.equal(
+		node.toString(),
+		'float hello_world() {'
+		+ '\nreturn 42.0;'
+		+ '\n}',
+		'function conversion check'
+	);
+});
+
+test('hello_world: just return magic 42 webgl2', () => {
+	// Create a function hello node
+	const node = new WebGL2FunctionNode(
+		(function() {
+			return 42;
+		}).toString(), { name: 'hello_world', output: [1] }
+	);
+
+	assert.notEqual(node.getJsAST(), null, 'AST fetch check');
+
+	assert.equal(
+		node.toString(),
+		'float hello_world() {'
+		+ '\nreturn 42.0;'
+		+ '\n}',
+		'function conversion check'
 	);
 });
 
 /// Test creation of function, that calls another function
-QUnit.test( "hello_inner: call a function inside a function", function( assert ) {
-	assert.notEqual( GPU.CPUFunctionNode, null, "script include check" );
-	
+test('hello_inner: call a function inside a function cpu', () => {
 	function inner() {
 		return 42;
 	}
-	
+
 	// Create a function hello node
-	var node = new GPU.WebGLFunctionNode(
-		"hello_inner",
-		function() {
+	const node = new CPUFunctionNode(
+		(function() {
 			return inner();
-		}
+		}).toString(), { name: 'hello_inner', output: [1] }
 	);
 
-	assert.notEqual( node, null, "class creation check" );
-	assert.notEqual( node.getJsAST(), null, "AST fetch check" );
+	assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
 	assert.equal(
-		node.getFunctionString().replace(/\s+/g,' '),
-		"float hello_inner() { return inner(); }",
-		"webgl function conversion check"
+		node.toString(),
+		'function hello_inner() {'
+		+ '\nreturn inner();'
+		+ '\n}',
+		'function conversion check'
 	);
 
-	assert.deepEqual( node.calledFunctions, ["inner"] );
+	assert.deepEqual(node.calledFunctions, ['inner'] );
+});
+
+test('hello_inner: call a function inside a function webgl', () => {
+	function inner() {
+		return 42;
+	}
+
+	// Create a function hello node
+	const node = new WebGLFunctionNode(
+		(function() {
+			return inner();
+		}).toString(), { name: 'hello_inner', output: [1] }
+	);
+
+	assert.notEqual(node.getJsAST(), null, 'AST fetch check');
+
+	assert.equal(
+		node.toString(),
+		'float hello_inner() {'
+		+ '\nreturn inner();'
+		+ '\n}',
+		'function conversion check'
+	);
+
+	assert.deepEqual(node.calledFunctions, ['inner'] );
+});
+
+/// Test creation of function, that calls another function
+test('hello_inner: call a function inside a function webgl2', () => {
+	function inner() {
+		return 42;
+	}
+
+	// Create a function hello node
+	const node = new WebGL2FunctionNode(
+		(function() {
+			return inner();
+		}).toString(), { name: 'hello_inner', output: [1] }
+	);
+
+	assert.notEqual(node.getJsAST(), null, 'AST fetch check');
+
+	assert.equal(
+		node.toString(),
+		'float hello_inner() {'
+		+ '\nreturn inner();'
+		+ '\n}',
+		'function conversion check'
+	);
+
+	assert.deepEqual(node.calledFunctions, ['inner'] );
 });
 
 /// Test creation of function, that calls another function, with ARGS
-QUnit.test( "Math.round implementation: A function with arguments", function( assert ) {
+test('Math.round implementation: A function with arguments cpu', () => {
 	// Math.round node
-	var node = new GPU.WebGLFunctionNode(
-		"round",
-		function(a) {
-			return Math.floor( a + 0.5 );
+	const node = new CPUFunctionNode(
+		(function(a) {
+			return Math.floor(a + 0.5 );
+		}).toString(), { name: 'foo', output: [1] }
+	);
+
+	assert.notEqual(node.getJsAST(), null, 'AST fetch check');
+
+	assert.equal(
+		node.toString(),
+		'function foo(user_a) {'
+		+ '\nreturn Math.floor((user_a+0.5));'
+		+ '\n}',
+		'function conversion check'
+	);
+
+	assert.deepEqual(node.calledFunctions, ['Math.floor']);
+});
+
+test('Math.round implementation: A function with arguments webgl', () => {
+	// Math.round node
+	const node = new WebGLFunctionNode(
+		(function(a) {
+			return Math.floor(a + 0.5 );
+		}).toString(), {
+			name: 'foo',
+			output: [1],
+			argumentTypes: ['Number']
 		}
 	);
 
-	assert.notEqual( node, null, "class creation check" );
-	assert.notEqual( node.getJsAST(), null, "AST fetch check" );
+	assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
 	assert.equal(
-		node.getFunctionString().replace(/\s+/g,' ').replace(/user_/g,''),
-		"float round(float a) { return floor((a+0.5)); }",
-		"webgl function conversion check"
+		node.toString(),
+		'float foo(float user_a) {'
+		+ '\nreturn floor((user_a+0.5));'
+		+ '\n}',
+		'function conversion check'
 	);
 
-	assert.deepEqual( node.calledFunctions, ["floor"] );
+	assert.deepEqual(node.calledFunctions, ['floor'] );
+});
+
+test('Math.round implementation: A function with arguments webgl2', () => {
+	// Math.round node
+	const node = new WebGL2FunctionNode(
+		(function(a) {
+			return Math.floor(a + 0.5 );
+		}).toString(), {
+			name: 'foo',
+			output: [1],
+			argumentTypes: ['Number']
+		}
+	);
+
+	assert.notEqual(node.getJsAST(), null, 'AST fetch check');
+
+	assert.equal(
+		node.toString(),
+		'float foo(float user_a) {'
+		+ '\nreturn floor((user_a+0.5));'
+		+ '\n}',
+		'function conversion check'
+	);
+
+	assert.deepEqual(node.calledFunctions, ['floor'] );
 });
 
 /// Test creation of function, that calls another function, with ARGS
-QUnit.test( "Two arguments test", function( assert ) {
-	
-	var node = new GPU.WebGLFunctionNode(
-		"add_together",
-		function(a,b) {
+test('Two arguments test webgl', function(assert){
+	const node = new WebGLFunctionNode(
+		(function(a,b) {
 			return a+b;
+		}).toString(), {
+			name: 'add_together',
+			output: [1],
+			argumentTypes: ['Number', 'Number']
 		}
 	);
 
-	assert.notEqual( node, null, "class creation check" );
-	assert.notEqual( node.getJsAST(), null, "AST fetch check" );
+	assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
 	assert.equal(
-		node.getFunctionString().replace(/\s+/g,' ').replace(/user_/g,''),
-		"float add_together(float a, float b) { return (a+b); }",
-		"webgl function conversion check"
+		node.toString(),
+		'float add_together(float user_a, float user_b) {'
+		+ '\nreturn (user_a+user_b);'
+		+ '\n}',
+		'function conversion check'
+	);
+});
+
+test('Two arguments test webgl2', function(assert){
+	const node = new WebGL2FunctionNode(
+		(function(a,b) {
+			return a+b;
+		}).toString(), {
+			name: 'add_together',
+			output: [1],
+			argumentTypes: ['Number', 'Number']
+		}
+	);
+
+	assert.notEqual(node.getJsAST(), null, 'AST fetch check');
+
+	assert.equal(
+		node.toString(),
+		'float add_together(float user_a, float user_b) {'
+		+ '\nreturn (user_a+user_b);'
+		+ '\n}',
+		'function conversion check'
 	);
 });
 
 /// Test the creation of a hello_world function
-QUnit.test( "Automatic naming support", function( assert ) {
-	assert.notEqual( GPU.CPUFunctionNode, null, "script include check" );
-	
+test('Automatic naming support cpu', () => {
 	function hello_world() {
 		return 42;
 	}
 	// Create a function hello node
-	var node = new GPU.CPUFunctionNode(null, hello_world);
-	assert.notEqual( node, null, "class creation check" );
-	assert.equal( node.functionName, "hello_world" );
+	const node = new CPUFunctionNode(hello_world.toString(), { output: [1] });
+	assert.notEqual(node, null, 'class creation check');
+	assert.equal(node.name, 'hello_world');
+});
+
+test('Automatic naming support webgl', () => {
+	function hello_world() {
+		return 42;
+	}
+	// Create a function hello node
+	const node = new WebGLFunctionNode(hello_world.toString(), { output: [1] });
+	assert.notEqual(node, null, 'class creation check');
+	assert.equal(node.name, 'hello_world');
+});
+
+test('Automatic naming support webgl2', () => {
+	function hello_world() {
+		return 42;
+	}
+	// Create a function hello node
+	const node = new WebGL2FunctionNode(hello_world.toString(), { output: [1] });
+	assert.notEqual(node, null, 'class creation check');
+	assert.equal(node.name, 'hello_world');
 });

@@ -1,60 +1,49 @@
-(function() {
-	var WIDTH = 600;
-	var HEIGHT = 400;
-	var gpu;
-	function buildKernel(mode) {
-		gpu = new GPU({ mode });
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-		var initMatrix = gpu.createKernel(function(value) {  
-			return value;
-		})
-			.setOutput([WIDTH, HEIGHT]);
+describe('issue #279');
 
-		var render = gpu.createKernel(function(matrix) {
-			var i = matrix[this.thread.y][this.thread.x];
-			this.color(i, i, i, 1);
-		})
-			.setOutput([WIDTH, HEIGHT])
-			.setGraphical(true);
+const WIDTH = 600;
+const HEIGHT = 400;
+function wrongCanvasSize(mode) {
+	const gpu = new GPU({ mode });
 
-		var matrix = initMatrix(0.5);
-		render(matrix);
-		return render;
-	}
-	
-	QUnit.test('Issue #279 wrong canvas size - auto', () => {
-		var canvas = buildKernel().getCanvas();
-		QUnit.assert.equal(canvas.width, WIDTH);
-		QUnit.assert.equal(canvas.height, HEIGHT);
-		gpu.destroy();
-	});
+	const initMatrix = gpu.createKernel(function(value) {
+		return value;
+	})
+		.setOutput([WIDTH, HEIGHT]);
 
-	QUnit.test('Issue #279 wrong canvas size - cpu', () => {
-		var canvas = buildKernel('cpu').getCanvas();
-		QUnit.assert.equal(canvas.width, WIDTH);
-		QUnit.assert.equal(canvas.height, HEIGHT);
-		gpu.destroy();
-	});
+	const render = gpu.createKernel(function(matrix) {
+		const i = matrix[this.thread.y][this.thread.x];
+		this.color(i, i, i, 1);
+	})
+		.setOutput([WIDTH, HEIGHT])
+		.setGraphical(true);
 
-	QUnit.test('Issue #279 wrong canvas size - gpu', () => {
-		var canvas = buildKernel('gpu').getCanvas();
-		QUnit.assert.equal(canvas.width, WIDTH);
-		QUnit.assert.equal(canvas.height, HEIGHT);
-		gpu.destroy();
-	});
+	const matrix = initMatrix(0.5);
+	render(matrix);
+	const canvas = render.canvas;
+	assert.equal(canvas.width, WIDTH);
+	assert.equal(canvas.height, HEIGHT);
+	gpu.destroy();
+}
 
-	QUnit.test('Issue #279 wrong canvas size - webgl', () => {
-		var canvas = buildKernel('webgl').getCanvas();
-		QUnit.assert.equal(canvas.width, WIDTH);
-		QUnit.assert.equal(canvas.height, HEIGHT);
-		gpu.destroy();
-	});
+(GPU.isCanvasSupported ? test : skip)('Issue #279 wrong canvas size - cpu', () => {
+	wrongCanvasSize('cpu');
+});
 
-	QUnit.test('Issue #279 wrong canvas size - webgl2', () => {
-		var canvas = buildKernel('webgl2').getCanvas();
-		QUnit.assert.equal(canvas.width, WIDTH);
-		QUnit.assert.equal(canvas.height, HEIGHT);
-		gpu.destroy();
-	});
-	
-  })();
+test('Issue #279 wrong canvas size - gpu', () => {
+	wrongCanvasSize('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('Issue #279 wrong canvas size - webgl', () => {
+	wrongCanvasSize('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('Issue #279 wrong canvas size - webgl2', () => {
+	wrongCanvasSize('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('Issue #279 wrong canvas size - headlessgl', () => {
+	wrongCanvasSize('headlessgl');
+});

@@ -1,68 +1,59 @@
-(function() {
-  function getResult(mode) {
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-    var A = [
-      [1, 1, 1],
-      [1, 1, 1]
-    ];
+describe('issue #96');
 
-    var B = [
-      [1, 1],
-      [1, 1],
-      [1, 1]
-    ];
+function getResult(mode) {
+  const A = [
+    [1, 1, 1],
+    [1, 1, 1]
+  ];
 
-    var gpu = new GPU({ mode: mode });
+  const B = [
+    [1, 1],
+    [1, 1],
+    [1, 1]
+  ];
 
-    function multiply(m, n, y, x) {
-      var sum = 0;
-      for (var i = 0; i < 2; i++) {
-        sum += m[y][i] * n[i][x];
-      }
-      return sum;
+  const gpu = new GPU({ mode });
+
+  function multiply(m, n, y, x) {
+    let sum = 0;
+    for (let i = 0; i < 2; i++) {
+      sum += m[y][i] * n[i][x];
     }
-
-    var kernels = gpu.createKernelMap({
-      multiplyResult: multiply
-    }, function (a, b) {
-      return multiply(b, a, this.thread.y, this.thread.x);
-    })
-      .setOutput([B.length, A.length]);
-    
-    var result = kernels(A, B).result;
-    gpu.destroy();
-    return result;
+    return sum;
   }
-  QUnit.test( "Issue #96 - param names (auto)", function() {
-    var result = getResult();
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[2]), []);
-  });
 
-  QUnit.test( "Issue #96 - param names (cpu)", function() {
-    var result = getResult('cpu');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[2]), []);
-  });
+  const kernels = gpu.createKernelMap({
+    multiplyResult: multiply
+  }, function (a, b) {
+    return multiply(b, a, this.thread.y, this.thread.x);
+  })
+    .setOutput([B.length, A.length]);
 
-  QUnit.test( "Issue #96 - param names (gpu)", function() {
-    var result = getResult('gpu');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[2]), []);
-  });
-  QUnit.test( "Issue #96 - param names (webgl)", function() {
-    var result = getResult('webgl');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[2]), []);
-  });
-  QUnit.test( "Issue #96 - param names (GPU only) (webgl2)", function() {
-    var result = getResult('webgl2');
-    QUnit.assert.deepEqual(QUnit.extend([], result[0]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[1]), [2,2,2]);
-    QUnit.assert.deepEqual(QUnit.extend([], result[2]), []);
-  });
-})();
+  const result = kernels(A, B).result;
+  assert.deepEqual(Array.from(result[0]), [2,2,2]);
+  assert.deepEqual(Array.from(result[1]), [2,2,2]);
+  assert.deepEqual(result.length, 2);
+  gpu.destroy();
+  return result;
+}
+(GPU.isKernelMapSupported ? test : skip)("Issue #96 - param names auto", () => {
+  getResult();
+});
+(GPU.isKernelMapSupported ? test : skip)("Issue #96 - param names gpu", () => {
+  getResult('gpu');
+});
+(GPU.isWebGLSupported ? test : skip)("Issue #96 - param names webgl", () => {
+  getResult('webgl');
+});
+(GPU.isWebGL2Supported ? test : skip)("Issue #96 - param names webgl2", () => {
+  getResult('webgl2');
+});
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)("Issue #96 - param names headlessgl", () => {
+  getResult('headlessgl');
+});
+test("Issue #96 - param names cpu", () => {
+  getResult('cpu');
+});

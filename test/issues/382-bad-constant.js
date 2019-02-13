@@ -1,26 +1,33 @@
-(function() {
-	function testModKernel(mode) {
-		var gpu = new GPU({ mode: mode });
-    var conflictingName = 0.4;
-		var kernel = gpu.createKernel(function(a, conflictingName) {
-      return a[this.thread.x] + this.constants.conflictingName + conflictingName;
-    })
-			.setOutput([1])
-			.setConstants({
-        conflictingName: conflictingName
-			});
+const { assert, skip, test, module: describe, only } = require('qunit');
+const { GPU } = require('../../src');
 
-		var result = kernel([1], 0.6);
+describe('issue #382');
 
-		QUnit.assert.equal(result[0], 2);
-		gpu.destroy();
-	}
+function testModKernel(mode) {
+	const gpu = new GPU({ mode: mode });
+	const conflictingName = 0.4;
+	const kernel = gpu.createKernel(function(a, conflictingName) {
+		return a[this.thread.x] + this.constants.conflictingName + conflictingName;
+	})
+		.setOutput([1])
+		.setConstants({
+			conflictingName: conflictingName
+		});
 
-	QUnit.test('Issue #382 - bad constant (webgl)', function() {
-		testModKernel('webgl')
-	});
+	const result = kernel([1], 0.6);
 
-	QUnit.test('Issue #382 - bad constant (webgl2)', function() {
-		testModKernel('webgl2')
-	});
-})();
+	assert.equal(result[0], 2);
+	gpu.destroy();
+}
+
+(GPU.isWebGLSupported ? test : skip)('Issue #382 - bad constant webgl', () => {
+	testModKernel('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('Issue #382 - bad constant webgl2', () => {
+	testModKernel('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('Issue #382 - bad constant headlessgl', () => {
+	testModKernel('headlessgl');
+});

@@ -1,7 +1,9 @@
-'use strict';
-
-const utils = require('../../core/utils');
-const kernelRunShortcut = require('../kernel-run-shortcut');
+const {
+	utils
+} = require('../../utils');
+const {
+	kernelRunShortcut
+} = require('../../kernel-run-shortcut');
 
 function removeFnNoise(fn) {
 	if (/^function /.test(fn)) {
@@ -11,35 +13,35 @@ function removeFnNoise(fn) {
 }
 
 function removeNoise(str) {
-	return str.replace(/[_]typeof/g, 'typeof');
+	return str
+		.replace(/^[A-Za-z]+/, 'function')
+		.replace(/[_]typeof/g, 'typeof');
 }
 
-module.exports = function(cpuKernel, name) {
+function cpuKernelString(cpuKernel, name) {
 	return `() => {
     ${ kernelRunShortcut.toString() };
     const utils = {
       allPropertiesOf: ${ removeNoise(utils.allPropertiesOf.toString()) },
       clone: ${ removeNoise(utils.clone.toString()) },
-      checkOutput: ${ removeNoise(utils.checkOutput.toString()) }
     };
-    const Utils = utils;
     let Input = function() {};
     class ${ name || 'Kernel' } {
       constructor() {        
         this.argumentsLength = 0;
-        this._canvas = null;
-        this._webGl = null;
+        this.canvas = null;
+        this.context = null;
         this.built = false;
         this.program = null;
-        this.paramNames = ${ JSON.stringify(cpuKernel.paramNames) };
-        this.paramTypes = ${ JSON.stringify(cpuKernel.paramTypes) };
-        this.texSize = ${ JSON.stringify(cpuKernel.texSize) };
+        this.argumentNames = ${ JSON.stringify(cpuKernel.argumentNames) };
+        this.argumentTypes = ${ JSON.stringify(cpuKernel.argumentTypes) };
+        this.argumentSizes = ${ JSON.stringify(cpuKernel.argumentSizes) };
         this.output = ${ JSON.stringify(cpuKernel.output) };
         this._kernelString = \`${ cpuKernel._kernelString }\`;
         this.output = ${ JSON.stringify(cpuKernel.output) };
 		    this.run = function() {
           this.run = null;
-          this.build();
+          this.build(arguments);
           return this.run.apply(this, arguments);
         }.bind(this);
         this.thread = {
@@ -48,16 +50,21 @@ module.exports = function(cpuKernel, name) {
           z: 0
         };
       }
-      setCanvas(canvas) { this._canvas = canvas; return this; }
-      setWebGl(webGl) { this._webGl = webGl; return this; }
+      setCanvas(canvas) { this.canvas = canvas; return this; }
+      setContext(context) { this.context = context; return this; }
       setInput(Type) { Input = Type; }
       ${ removeFnNoise(cpuKernel.build.toString()) }
-      ${ removeFnNoise(cpuKernel.setupParams.toString()) }
+      setupArguments() {}
       ${ removeFnNoise(cpuKernel.setupConstants.toString()) }
       run () { ${ cpuKernel.kernelString } }
       getKernelString() { return this._kernelString; }
-      ${ removeFnNoise(cpuKernel.validateOptions.toString()) }
+      ${ removeFnNoise(cpuKernel.validateSettings.toString()) }
+      ${ removeFnNoise(cpuKernel.checkOutput.toString()) }
     };
     return kernelRunShortcut(new Kernel());
   };`;
+}
+
+module.exports = {
+	cpuKernelString
 };

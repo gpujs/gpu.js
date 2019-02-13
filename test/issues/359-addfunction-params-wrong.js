@@ -1,31 +1,39 @@
-(function() {
-	function testAddFunctionKernel(mode) {
-		var gpu = new GPU({mode});
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-		gpu.addFunction(function clcC(xx) {
-			return Math.abs(xx);
-		});
+describe('issue #359');
 
-		gpu.addFunction(function itermediate(c1) {
-			return clcC(c1);
-		});
-
-		const nestFunctionsKernel = gpu.createKernel(function() {
-			return itermediate(-1);
-		}, {
-			output: [1]
-		});
-
-		QUnit.assert.equal(nestFunctionsKernel()[0], 1);
-
-		gpu.destroy();
+function testAddFunctionKernel(mode) {
+	const gpu = new GPU({mode});
+	function clcC(xx) {
+		return Math.abs(xx);
+	}
+	function intermediate(c1) {
+		return clcC(c1);
 	}
 
-	QUnit.test('Issue #359 - addFunction calls addFunction issue (webgl)', function() {
-		testAddFunctionKernel('webgl')
+	gpu.addFunction(clcC);
+	gpu.addFunction(intermediate);
+
+	const nestFunctionsKernel = gpu.createKernel(function() {
+		return intermediate(-1);
+	}, {
+		output: [1]
 	});
 
-	QUnit.test('Issue #359 - addFunction calls addFunction issue (webgl2)', function() {
-		testAddFunctionKernel('webgl2')
-	})
-})();
+	assert.equal(nestFunctionsKernel()[0], 1);
+
+	gpu.destroy();
+}
+
+(GPU.isWebGLSupported ? test : skip)('Issue #359 - addFunction calls addFunction issue webgl', () => {
+	testAddFunctionKernel('webgl')
+});
+
+(GPU.isWebGL2Supported ? test : skip)('Issue #359 - addFunction calls addFunction issue webgl2', () => {
+	testAddFunctionKernel('webgl2')
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('Issue #359 - addFunction calls addFunction issue headlessgl', () => {
+	testAddFunctionKernel('headlessgl')
+});

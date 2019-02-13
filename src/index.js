@@ -1,55 +1,64 @@
-'use strict';
+const {
+	GPU
+} = require('./gpu');
+const {
+	alias
+} = require('./alias');
+const {
+	utils
+} = require('./utils');
+const {
+	Input,
+	input
+} = require('./input');
+const {
+	Texture
+} = require('./texture');
+const {
+	FunctionBuilder
+} = require('./backend/function-builder');
+const {
+	FunctionNode
+} = require('./backend/function-node');
+const {
+	CPUFunctionNode
+} = require('./backend/cpu/function-node');
+const {
+	CPUKernel
+} = require('./backend/cpu/kernel');
 
-const GPU = require('./core/gpu');
-const alias = require('./core/alias');
-const utils = require('./core/utils');
-const Input = require('./core/input');
-const Texture = require('./core/texture');
+const {
+	HeadlessGLKernel
+} = require('./backend/headless-gl/kernel');
 
-const CPUFunctionBuilder = require('./backend/cpu/function-builder');
-const CPUFunctionNode = require('./backend/cpu/function-node');
-const CPUKernel = require('./backend/cpu/kernel');
-const CPURunner = require('./backend/cpu/runner');
+const {
+	WebGLFunctionNode
+} = require('./backend/web-gl/function-node');
+const {
+	WebGLKernel
+} = require('./backend/web-gl/kernel');
 
-const WebGLFunctionBuilder = require('./backend/web-gl/function-builder');
-const WebGLFunctionNode = require('./backend/web-gl/function-node');
-const WebGLKernel = require('./backend/web-gl/kernel');
-const WebGLRunner = require('./backend/web-gl/runner');
+const {
+	WebGL2FunctionNode
+} = require('./backend/web-gl2/function-node');
+const {
+	WebGL2Kernel
+} = require('./backend/web-gl2/kernel');
 
-const WebGL2FunctionBuilder = require('./backend/web-gl2/function-builder');
-const WebGL2FunctionNode = require('./backend/web-gl2/function-node');
-const WebGL2Kernel = require('./backend/web-gl2/kernel');
-const WebGL2Runner = require('./backend/web-gl2/runner');
-
-GPU.alias = alias;
-GPU.utils = utils;
-GPU.Texture = Texture;
-GPU.Input = Input;
-GPU.input = (value, size) => {
-	return new Input(value, size);
+module.exports = {
+	alias,
+	CPUFunctionNode,
+	CPUKernel,
+	GPU,
+	FunctionBuilder,
+	FunctionNode,
+	HeadlessGLKernel,
+	Input,
+	input,
+	Texture,
+	utils,
+	WebGL2FunctionNode,
+	WebGL2Kernel,
+	WebGLFunctionNode,
+	WebGLKernel,
 };
-
-GPU.CPUFunctionBuilder = CPUFunctionBuilder;
-GPU.CPUFunctionNode = CPUFunctionNode;
-GPU.CPUKernel = CPUKernel;
-GPU.CPURunner = CPURunner;
-
-GPU.WebGLFunctionBuilder = WebGLFunctionBuilder;
-GPU.WebGLFunctionNode = WebGLFunctionNode;
-GPU.WebGLKernel = WebGLKernel;
-GPU.WebGLRunner = WebGLRunner;
-
-GPU.WebGL2FunctionBuilder = WebGL2FunctionBuilder;
-GPU.WebGL2FunctionNode = WebGL2FunctionNode;
-GPU.WebGL2Kernel = WebGL2Kernel;
-GPU.WebGL2Runner = WebGL2Runner;
-
-if (typeof module !== 'undefined') {
-	module.exports = GPU;
-}
-if (typeof window !== 'undefined') {
-	window.GPU = GPU;
-}
-if (typeof self !== 'undefined') {
-	self.GPU = GPU;
-}

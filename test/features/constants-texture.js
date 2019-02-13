@@ -1,149 +1,149 @@
-(function() {
-  function textureConstantTest(mode) {
-    var gpu = new GPU({ mode: mode });
-    var createTexture = gpu
-      .createKernel(function() {
-        return 200;
-      })
-      .setOutput([2])
-      .setOutputToTexture(true);
-    var texture = createTexture();
-    var tryConst = gpu.createKernel(
-      function() {
-        return this.constants.texture[this.thread.x];
-      },
-      {
-        constants: { texture }
-      }
-    ).setOutput([2]);
-    var result = tryConst();
-    var expected = new Float32Array([200, 200]);
-    QUnit.assert.deepEqual(result, expected, 'texture constant passed test');
-    gpu.destroy();
-  }
+const { assert, skip, test, module: describe, only } = require('qunit');
+const { GPU } = require('../../src');
 
-  QUnit.test( 'textureConstantTest (auto)', function() {
-    var mode = null;
-    textureConstantTest(mode);
-  });
+describe('features: constants texture 1d');
+function test1D(mode) {
+  const gpu = new GPU({ mode });
+  const createTexture = gpu
+    .createKernel(function() {
+      return 200;
+    })
+    .setOutput([2])
+    .setPipeline(true);
+  const texture = createTexture();
+  const tryConst = gpu.createKernel(
+    function() {
+      return this.constants.texture[this.thread.x];
+    },
+    {
+      constants: { texture }
+    }
+  ).setOutput([2]);
+  const result = tryConst();
+  const expected = new Float32Array([200, 200]);
+  assert.deepEqual(result, expected, 'texture constant passed test');
+  gpu.destroy();
+}
 
-  QUnit.test( 'textureConstantTest (gpu)', function() {
-    var mode = 'gpu';
-    textureConstantTest(mode);
-  });
+test('auto', () => {
+  test1D(null);
+});
 
-  QUnit.test( 'textureConstantTest (webgl)', function() {
-    var mode = 'webgl';
-    textureConstantTest(mode);
-  });
+test('gpu', () => {
+  test1D('gpu');
+});
 
-  QUnit.test( 'textureConstantTest (webgl2)', function() {
-    var mode = 'webgl2';
-    textureConstantTest(mode);
-  });
+(GPU.isWebGLSupported ? test : skip)('webgl', function () {
+  test1D('webgl');
+});
 
-  QUnit.test( 'textureConstantTest (cpu)', function() {
-    var mode = 'cpu';
-    textureConstantTest(mode);
-  });
-})();
+(GPU.isWebGL2Supported ? test : skip)('webgl2', function () {
+  test1D('webgl2');
+});
 
-(function() {
-  function texture2DConstantTest(mode) {
-    var gpu = new GPU({ mode: mode });
-    var createTexture = gpu
-      .createKernel(function() {
-        return 200;
-      })
-      .setOutput([2, 2])
-      .setOutputToTexture(true);
-    var texture = createTexture();
-    var tryConst = gpu.createKernel(
-      function() {
-        return this.constants.texture[this.thread.y][this.thread.x];
-      },
-      {
-        constants: { texture }
-      }
-    ).setOutput([2, 2]);
-    var result = tryConst();
-    var expected = [new Float32Array([200, 200]), new Float32Array([200, 200])];
-    QUnit.assert.deepEqual(result, expected, 'texture constant passed test');
-    gpu.destroy();
-  }
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', function () {
+  test1D('headlessgl');
+});
 
-  QUnit.test( 'texture2DConstantTest (auto)', function() {
-    var mode = null;
-    texture2DConstantTest(mode);
-  });
+test('cpu', () => {
+  test1D('cpu');
+});
 
-  QUnit.test( 'texture2DConstantTest (gpu)', function() {
-    var mode = 'gpu';
-    texture2DConstantTest(mode);
-  });
 
-  QUnit.test( 'texture2DConstantTest (webgl)', function() {
-    var mode = 'webgl';
-    texture2DConstantTest(mode);
-  });
 
-  QUnit.test( 'texture2DConstantTest (webgl2)', function() {
-    var mode = 'webgl2';
-    texture2DConstantTest(mode);
-  });
+describe('features: constants texture 2d');
+function test2D(mode) {
+  const gpu = new GPU({ mode });
+  const createTexture = gpu
+    .createKernel(function() {
+      return 200;
+    })
+    .setOutput([2, 2])
+    .setPipeline(true);
+  const texture = createTexture();
+  const tryConst = gpu.createKernel(
+    function() {
+      return this.constants.texture[this.thread.y][this.thread.x];
+    },
+    {
+      constants: { texture }
+    }
+  ).setOutput([2, 2]);
+  const result = tryConst();
+  const expected = [new Float32Array([200, 200]), new Float32Array([200, 200])];
+  assert.deepEqual(result, expected, 'texture constant passed test');
+  gpu.destroy();
+}
 
-  QUnit.test( 'texture2DConstantTest (cpu)', function() {
-    var mode = 'cpu';
-    texture2DConstantTest(mode);
-  });
-})();
+test('auto', () => {
+  test2D(null);
+});
 
-(function() {
-  function texture3DConstantTest(mode) {
-    var gpu = new GPU({ mode: mode });
-    var createTexture = gpu
-      .createKernel(function() {
-        return 200;
-      })
-      .setOutput([2, 2, 2])
-      .setOutputToTexture(true);
-    var texture = createTexture();
-    var tryConst = gpu.createKernel(
-      function() {
-        return this.constants.texture[this.thread.z][this.thread.y][this.thread.x];
-      },
-      {
-        constants: { texture }
-      }
-    ).setOutput([2, 2, 2]);
-    var result = tryConst();
-    var expected = [[new Float32Array([200, 200]), new Float32Array([200, 200])],[new Float32Array([200, 200]), new Float32Array([200, 200])]];
-    QUnit.assert.deepEqual(result, expected, 'texture constant passed test');
-    gpu.destroy();
-  }
+test('gpu', () => {
+  test2D('gpu');
+});
 
-  QUnit.test( 'texture3DConstantTest (auto)', function() {
-    var mode = null;
-    texture3DConstantTest(mode);
-  });
+(GPU.isWebGLSupported ? test : skip)('webgl', function () {
+  test2D('webgl');
+});
 
-  QUnit.test( 'texture3DConstantTest (gpu)', function() {
-    var mode = 'gpu';
-    texture3DConstantTest(mode);
-  });
+(GPU.isWebGL2Supported ? test : skip)('webgl2', function () {
+  test2D('webgl2');
+});
 
-  QUnit.test( 'texture3DConstantTest (webgl)', function() {
-    var mode = 'webgl';
-    texture3DConstantTest(mode);
-  });
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', function () {
+  test2D('headlessgl');
+});
 
-    QUnit.test( 'texture3DConstantTest (webgl2)', function() {
-    var mode = 'webgl2';
-    texture3DConstantTest(mode);
-  });
+test('cpu', () => {
+  test2D('cpu');
+});
 
-  QUnit.test( 'texture3DConstantTest (cpu)', function() {
-    var mode = 'cpu';
-    texture3DConstantTest(mode);
-  });
-})();
+
+describe('features: constants texture 3d');
+function test3D(mode) {
+  const gpu = new GPU({ mode });
+  const createTexture = gpu
+    .createKernel(function() {
+      return 200;
+    })
+    .setOutput([2, 2, 2])
+    .setPipeline(true);
+  const texture = createTexture();
+  const tryConst = gpu.createKernel(
+    function() {
+      return this.constants.texture[this.thread.z][this.thread.y][this.thread.x];
+    },
+    {
+      constants: { texture }
+    }
+  ).setOutput([2, 2, 2]);
+  const result = tryConst();
+  const expected = [[new Float32Array([200, 200]), new Float32Array([200, 200])],[new Float32Array([200, 200]), new Float32Array([200, 200])]];
+  assert.deepEqual(result, expected, 'texture constant passed test');
+  gpu.destroy();
+}
+
+test('auto', () => {
+  test3D(null);
+});
+
+test('gpu', () => {
+  test3D('cpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('webgl', function () {
+  test3D('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('webgl2', function () {
+  test3D('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', function () {
+  test3D('headlessgl');
+});
+
+test('cpu', () => {
+  test3D('cpu');
+});

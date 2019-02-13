@@ -3,17 +3,35 @@
 <head>
   <meta charset="utf-8">
   <title>GPU.JS : Test All</title>
-  <link rel="stylesheet" href="../node_modules/qunitjs/qunit/qunit.css">
+  <link rel="stylesheet" href="../node_modules/qunit/qunit/qunit.css">
 
   <!-- gpu.js scripts -->
-  <script src="../bin/gpu.js"></script>
+  <script src="../bin/gpu-browser.js"></script>
 </head>
 <body>
 <div id="qunit"></div>
 <div id="qunit-fixture"></div>
-  <script src="../node_modules/qunitjs/qunit/qunit.js"></script>
-  <script src="../node_modules/qunit-assert-close/qunit-assert-close.js"></script>
-  <script src="./qunit-assert-deep-value-equal.js"></script>
+  <script>
+    const isBrowser = true;
+    const browserGPU = { GPU };
+    for (const p in GPU) {
+      if (p === 'GPU') continue;
+      browserGPU[p] = GPU[p];
+    }
+    window.process = {
+      cwd: () => {
+        return '../..';
+      }
+    };
+    window.require = (module) => {
+      switch (module) {
+        case '../../src': return browserGPU;
+        case 'qunit': return QUnit;
+        default: throw new Error('cannot find ' + module);
+      }
+    };
+  </script>
+  <script src="../node_modules/qunit/qunit/qunit.js"></script>
 
   <!-- features -->
   <script src="features/add-custom-function.js"></script>
@@ -50,46 +68,60 @@
   <script src="features/type-management.js"></script>
 
   <!-- internal -->
-  <script src="internal/context-inheritance.js"></script>
-  <script src="internal/function-builder.js"></script>
-  <script src="internal/function-node.js"></script>
-  <script src="internal/kernel-base.js"></script>
-  <script src="internal/loop-max.js"></script>
-  <script src="internal/utils.js"></script>
-  <script src="internal/precision.js"></script>
+  <script type="module" src="internal/context-inheritance.js"></script>
+  <script type="module" src="internal/function-builder.js"></script>
+  <script type="module" src="internal/function-composition.js"></script>
+  <script type="module" src="internal/function-node.js"></script>
+  <script type="module" src="internal/kernel.js"></script>
+  <script type="module" src="internal/loop-int.js"></script>
+  <script type="module" src="internal/loop-max.js"></script>
+  <script type="module" src="internal/math.random.js"></script>
+  <script type="module" src="internal/modes.js"></script>
+  <script type="module" src="internal/precision.js"></script>
+  <script type="module" src="internal/utils.js"></script>
+
+  <!-- internal / backend -->
+  <script type="module" src="internal/backend/function-node/isSafe.js"></script>
+  <script type="module" src="internal/backend/function-node/isSafeDependencies.js"></script>
+  <script type="module" src="internal/backend/web-gl/function-node/astForStatement.js"></script>
+  <script type="module" src="internal/backend/web-gl/function-node/astMemberExpression.js"></script>
+  <script type="module" src="internal/backend/web-gl/function-node/astVariableDeclaration.js"></script>
+  <script type="module" src="internal/backend/web-gl/function-node/firstAvailableTypeFromAst.js"></script>
+  <script type="module" src="internal/backend/web-gl/function-node/getDependencies.js"></script>
+  <script type="module" src="internal/backend/web-gl/function-node/getVariableSignature.js"></script>
 
   <!-- bug issues -->
-  <script src="issues/31-nested-var-declare-test.js"></script>
-  <script src="issues/91-create-kernel-map-array.js"></script>
-  <script src="issues/96-param-names.js"></script>
-  <script src="issues/114-create-kernel-map-run-second-time.js"></script>
-  <script src="issues/116-multiple-kernels-run-again.js"></script>
-  <script src="issues/130-typed-array.js"></script>
-  <script src="issues/147-missing-constant.js"></script>
-  <script src="issues/152-for-vars.js"></script>
-  <script src="issues/159-3d.js"></script>
-  <script src="issues/174-webgl-context-warning.js"></script>
-  <script src="issues/195-read-from-texture2d.js"></script>
-  <script src="issues/207-same-function-reuse.js"></script>
-  <script src="issues/212-funky-function-support.js"></script>
-  <script src="issues/233-kernel-map-float-output.js"></script>
-  <script src="issues/241-CPU-vs-GPU-maps-output-differently.js"></script>
-  <script src="issues/259-atan2.js"></script>
-  <script src="issues/263-to-string.js"></script>
-  <script src="issues/267-immutable-sub-kernels.js"></script>
-  <script src="issues/270-cache.js"></script>
-  <script src="issues/279-wrong-canvas-size.js"></script>
-  <script src="issues/300-nested-array-index.js"></script>
-  <script src="issues/313-variable-lookup.js"></script>
-  <script src="issues/314-large-input-array-addressing.js"></script>
-  <script src="issues/335-missing-z-index-issue.js"></script>
-  <script src="issues/346-uint8array-converted.js"></script>
-  <script src="issues/349-division-by-factors-of-3.js"></script>
-  <script src="issues/357-modulus-issue.js"></script>
-  <script src="issues/359-addfunction-params-wrong.js"></script>
-  <script src="issues/382-bad-constant.js"></script>
-  <script src="issues/390-thread-assignment.js"></script>
-  <script src="issues/399-double-definition.js"></script>
-  <script src="issues/401-cpu-canvas-check.js"></script>
+  <script type="module" src="issues/31-nested-var-declare-test.js"></script>
+  <script type="module" src="issues/91-create-kernel-map-array.js"></script>
+  <script type="module" src="issues/96-param-names.js"></script>
+  <script type="module" src="issues/114-create-kernel-map-run-second-time.js"></script>
+  <script type="module" src="issues/116-multiple-kernels-run-again.js"></script>
+  <script type="module" src="issues/130-typed-array.js"></script>
+  <script type="module" src="issues/147-missing-constant.js"></script>
+  <script type="module" src="issues/152-for-vars.js"></script>
+  <script type="module" src="issues/159-3d.js"></script>
+  <script type="module" src="issues/174-webgl-context-warning.js"></script>
+  <script type="module" src="issues/195-read-from-texture2d.js"></script>
+  <script type="module" src="issues/207-same-function-reuse.js"></script>
+  <script type="module" src="issues/212-funky-function-support.js"></script>
+  <script type="module" src="issues/233-kernel-map-float-output.js"></script>
+  <script type="module" src="issues/241-CPU-vs-GPU-maps-output-differently.js"></script>
+  <script type="module" src="issues/259-atan2.js"></script>
+  <script type="module" src="issues/263-to-string.js"></script>
+  <script type="module" src="issues/267-immutable-sub-kernels.js"></script>
+  <script type="module" src="issues/270-cache.js"></script>
+  <script type="module" src="issues/279-wrong-canvas-size.js"></script>
+  <script type="module" src="issues/300-nested-array-index.js"></script>
+  <script type="module" src="issues/313-variable-lookup.js"></script>
+  <script type="module" src="issues/314-large-input-array-addressing.js"></script>
+  <script type="module" src="issues/335-missing-z-index-issue.js"></script>
+  <script type="module" src="issues/346-uint8array-converted.js"></script>
+  <script type="module" src="issues/349-division-by-factors-of-3.js"></script>
+  <script type="module" src="issues/357-modulus-issue.js"></script>
+  <script type="module" src="issues/359-addfunction-params-wrong.js"></script>
+  <script type="module" src="issues/382-bad-constant.js"></script>
+  <script type="module" src="issues/390-thread-assignment.js"></script>
+  <script type="module" src="issues/399-double-definition.js"></script>
+  <script type="module" src="issues/401-cpu-canvas-check.js"></script>
 </body>
 </html>

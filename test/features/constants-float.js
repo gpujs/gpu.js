@@ -1,47 +1,49 @@
-(function() {
-  function floatConstantTest(mode) {
-    var gpu = new GPU({ mode: mode });
-    var float = 200.01;
-    var tryConst = gpu.createKernel(
-      function() {
-        return this.constants.float;
-      },
-      {
-        constants: { float }
-      }
-    ).setOutput([2]);
-    var result = tryConst();
-    var match = new Float32Array([200.01, 200.01]);
-    var test = (
-      result[0].toFixed(1) === match[0].toFixed(1)
-      && result[1].toFixed(1) === match[1].toFixed(1)
-    );
-    QUnit.assert.ok(test, 'float constant passed test');
-    gpu.destroy();
-  }
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../src');
 
-  QUnit.test( 'floatConstantTest (auto)', function() {
-    var mode = null;
-    floatConstantTest(mode);
-  });
+describe('features: constants float');
+function floatConstantTest(mode) {
+  const gpu = new GPU({ mode });
+  const float = 200.01;
+  const tryConst = gpu.createKernel(
+    function() {
+      return this.constants.float;
+    },
+    {
+      constants: { float },
+      output: [2]
+    },
+  );
+  const result = tryConst();
+  const match = new Float32Array([200.01, 200.01]);
+  const test = (
+    result[0].toFixed(1) === match[0].toFixed(1)
+    && result[1].toFixed(1) === match[1].toFixed(1)
+  );
+  assert.ok(test, 'float constant passed test');
+  gpu.destroy();
+}
 
-  QUnit.test( 'floatConstantTest (gpu)', function() {
-    var mode = 'gpu';
-    floatConstantTest(mode);
-  });
+test('auto', () => {
+  floatConstantTest(null);
+});
 
-  QUnit.test( 'floatConstantTest (webgl)', function() {
-    var mode = 'webgl';
-    floatConstantTest(mode);
-  });
+test('gpu', () => {
+  floatConstantTest('gpu');
+});
 
-  QUnit.test( 'floatConstantTest (webgl2)', function() {
-    var mode = 'webgl2';
-    floatConstantTest(mode);
-  });
+(GPU.isWebGLSupported ? test : skip)('webgl', () => {
+  floatConstantTest('webgl');
+});
 
-  QUnit.test( 'floatConstantTest (cpu)', function() {
-    var mode = 'cpu';
-    floatConstantTest(mode);
-  });
-})();
+(GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
+  floatConstantTest('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
+  floatConstantTest('headlessgl');
+});
+
+test('cpu', () => {
+  floatConstantTest('cpu');
+});

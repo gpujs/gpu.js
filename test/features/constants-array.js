@@ -1,44 +1,44 @@
-(function() {
-  function arrayConstantTest(mode) {
-    var gpu = new GPU({ mode: mode });
-    var array = [200, 200];
-    var tryConst = gpu.createKernel(
-      function() {
-        return this.constants.array[this.thread.x];
-      },
-      {
-        constants: { array }
-      }
-    ).setOutput([2]);
-    var result = tryConst();
-    var match = new Float32Array([200, 200]);
-    var test = (result[0] === match[0] && result[1] === match[1]);
-    QUnit.assert.ok(test, 'array constant passed test');
-    gpu.destroy();
-  }
+const { assert, skip, test, module: describe, only } = require('qunit');
+const { GPU } = require('../../src');
 
-  QUnit.test( 'arrayConstantTest (auto)', function() {
-    var mode = null;
-    arrayConstantTest(mode);
-  });
+describe('features: constants array');
 
-  QUnit.test( 'arrayConstantTest (gpu)', function() {
-    var mode = 'gpu';
-    arrayConstantTest(mode);
+function feature(mode) {
+  const gpu = new GPU({ mode });
+  const array = [200, 200];
+  const tryConst = gpu.createKernel(function() {
+    return this.constants.array[this.thread.x];
+  }, {
+    constants: { array },
+    output: [2]
   });
+  const result = tryConst();
+  const match = new Float32Array([200, 200]);
+  const test = (result[0] === match[0] && result[1] === match[1]);
+  assert.ok(test, 'array constant passed test');
+  gpu.destroy();
+}
 
-  QUnit.test( 'arrayConstantTest (webgl)', function() {
-    var mode = 'webgl';
-    arrayConstantTest(mode);
-  });
+test('auto', () => {
+  feature(null);
+});
 
-  QUnit.test( 'arrayConstantTest (webgl2)', function() {
-    var mode = 'webgl2';
-    arrayConstantTest(mode);
-  });
+test('gpu', () => {
+  feature('gpu');
+});
 
-  QUnit.test( 'arrayConstantTest (cpu)', function() {
-    var mode = 'cpu';
-    arrayConstantTest(mode);
-  });
-})();
+(GPU.isWebGLSupported ? test : skip)('webgl', () => {
+  feature('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
+  feature('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
+  feature('headlessgl');
+});
+
+test('arrayConstantTest cpu', () => {
+  feature('cpu');
+});
