@@ -26,7 +26,7 @@ test('value int', () => {
   assert.equal(run('const value = it', {
     argumentNames: ['it'],
     argumentTypes: ['Integer']
-  }), 'int user_value=user_it;');
+  }), 'float user_value=float(user_it);');
 });
 
 test('value[] float', () => {
@@ -73,7 +73,7 @@ test('this.constants.value int', () => {
     constantTypes: {
       it: 'Integer'
     }
-  }), 'int user_value=constants_it;');
+  }), 'float user_value=float(constants_it);');
 });
 
 test('this.constants.value[] float', () => {
@@ -100,28 +100,28 @@ test('this.constants.value[][][] float', () => {
   }), 'float user_value=get(constants_it, constants_itSize, constants_itDim, constants_itBitRatio, 1, 2, 3);');
 });
 
-test('this.thread.x int', () => {
-  assert.equal(run('const value = this.thread.x'), 'int user_value=threadId.x;');
+test('this.thread.x float', () => {
+  assert.equal(run('const value = this.thread.x'), 'float user_value=float(threadId.x);');
 });
 
-test('this.thread.y int', () => {
-  assert.equal(run('const value = this.thread.y'), 'int user_value=threadId.y;');
+test('this.thread.y float', () => {
+  assert.equal(run('const value = this.thread.y'), 'float user_value=float(threadId.y);');
 });
 
-test('this.thread.z int', () => {
-  assert.equal(run('const value = this.thread.z'), 'int user_value=threadId.z;');
+test('this.thread.z float', () => {
+  assert.equal(run('const value = this.thread.z'), 'float user_value=float(threadId.z);');
 });
 
-test('this.output.x int', () => {
-  assert.equal(run('const value = this.output.x'), 'int user_value=1;');
+test('this.output.x float', () => {
+  assert.equal(run('const value = this.output.x'), 'float user_value=1.0;');
 });
 
-test('this.output.y int', () => {
-  assert.equal(run('const value = this.output.y'), 'int user_value=2;');
+test('this.output.y float', () => {
+  assert.equal(run('const value = this.output.y'), 'float user_value=2.0;');
 });
 
-test('this.output.z int', () => {
-  assert.equal(run('const value = this.output.z'), 'int user_value=3;');
+test('this.output.z float', () => {
+  assert.equal(run('const value = this.output.z'), 'float user_value=3.0;');
 });
 
 test('this.outputs.z throws', () => {

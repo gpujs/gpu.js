@@ -341,7 +341,7 @@ class FunctionNode {
 					}
 				}
 				if (ast.name === 'Infinity') {
-					return 'Integer';
+					return 'Number';
 				}
 				return null;
 			case 'ReturnStatement':
@@ -370,7 +370,7 @@ class FunctionNode {
 						case 'this.thread.value':
 							return 'Integer';
 						case 'this.output.value':
-							return 'Integer';
+							return 'LiteralInteger';
 						case 'this.constants.value':
 							return this.getConstantType(ast.property.name);
 						case 'this.constants.value[]':
@@ -522,6 +522,7 @@ class FunctionNode {
 				this.getDependencies(ast.left, dependencies, isNotSafe);
 				this.getDependencies(ast.right, dependencies, isNotSafe);
 				return dependencies;
+			case 'UnaryExpression':
 			case 'UpdateExpression':
 				return this.getDependencies(ast.argument, dependencies, isNotSafe);
 			case 'VariableDeclaration':

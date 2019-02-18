@@ -11,14 +11,14 @@ test('Issue #390 - thread assignment webgl', function(assert) {
     return sum;
   }.toString(), { output: [1] });
   assert.equal(node.toString(), 'float assignThreadToVar() {'
-    + '\nint user_x=threadId.x;'
-    + '\nint user_y=threadId.y;'
-    + '\nint user_sum=(user_x+user_y);'
-    + '\nreturn float(user_sum);'
+    + '\nfloat user_x=float(threadId.x);'
+    + '\nfloat user_y=float(threadId.y);'
+    + '\nfloat user_sum=(user_x+user_y);'
+    + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations.x.type, 'Integer');
-  assert.equal(node.declarations.y.type, 'Integer');
-  assert.equal(node.declarations.sum.type, 'Integer');
+  assert.equal(node.declarations.x.type, 'Number');
+  assert.equal(node.declarations.y.type, 'Number');
+  assert.equal(node.declarations.sum.type, 'Number');
 });
 
 test('Issue #390 - thread assignment webgl2', function(assert) {
@@ -29,14 +29,14 @@ test('Issue #390 - thread assignment webgl2', function(assert) {
     return sum;
   }.toString(), { output: [1] });
   assert.equal(node.toString(), 'float assignThreadToVar() {'
-    + '\nint user_x=threadId.x;'
-    + '\nint user_y=threadId.y;'
-    + '\nint user_sum=(user_x+user_y);'
-    + '\nreturn float(user_sum);'
+    + '\nfloat user_x=float(threadId.x);'
+    + '\nfloat user_y=float(threadId.y);'
+    + '\nfloat user_sum=(user_x+user_y);'
+    + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations.x.type, 'Integer');
-  assert.equal(node.declarations.y.type, 'Integer');
-  assert.equal(node.declarations.sum.type, 'Integer');
+  assert.equal(node.declarations.x.type, 'Number');
+  assert.equal(node.declarations.y.type, 'Number');
+  assert.equal(node.declarations.sum.type, 'Number');
 });
 
 test('Issue #390 - thread assignment cpu', function(assert) {
@@ -69,16 +69,16 @@ test('Issue #390 (related) - output assignment webgl', function(assert) {
     output: [1,2,3]
   });
   assert.equal(node.toString(), 'float assignThreadToVar() {'
-    + '\nint user_x=1;'
-    + '\nint user_y=2;'
-    + '\nint user_z=3;'
-    + '\nint user_sum=((user_x+user_y)+user_z);'
-    + '\nreturn float(user_sum);'
+    + '\nfloat user_x=1.0;'
+    + '\nfloat user_y=2.0;'
+    + '\nfloat user_z=3.0;'
+    + '\nfloat user_sum=((user_x+user_y)+user_z);'
+    + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations.x.type, 'Integer');
-  assert.equal(node.declarations.y.type, 'Integer');
-  assert.equal(node.declarations.z.type, 'Integer');
-  assert.equal(node.declarations.sum.type, 'Integer');
+  assert.equal(node.declarations.x.type, 'Number');
+  assert.equal(node.declarations.y.type, 'Number');
+  assert.equal(node.declarations.z.type, 'Number');
+  assert.equal(node.declarations.sum.type, 'Number');
 });
 
 test('Issue #390 (related) - output assignment webgl2', function(assert) {
@@ -92,16 +92,16 @@ test('Issue #390 (related) - output assignment webgl2', function(assert) {
     output: [1,2,3]
   });
   assert.equal(node.toString(), 'float assignThreadToVar() {'
-    + '\nint user_x=1;'
-    + '\nint user_y=2;'
-    + '\nint user_z=3;'
-    + '\nint user_sum=((user_x+user_y)+user_z);'
-    + '\nreturn float(user_sum);'
+    + '\nfloat user_x=1.0;'
+    + '\nfloat user_y=2.0;'
+    + '\nfloat user_z=3.0;'
+    + '\nfloat user_sum=((user_x+user_y)+user_z);'
+    + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations.x.type, 'Integer');
-  assert.equal(node.declarations.y.type, 'Integer');
-  assert.equal(node.declarations.z.type, 'Integer');
-  assert.equal(node.declarations.sum.type, 'Integer');
+  assert.equal(node.declarations.x.type, 'Number');
+  assert.equal(node.declarations.y.type, 'Number');
+  assert.equal(node.declarations.z.type, 'Number');
+  assert.equal(node.declarations.sum.type, 'Number');
 });
 
 test('Issue #390 (related) - output assignment cpu', function(assert) {
@@ -121,9 +121,9 @@ test('Issue #390 (related) - output assignment cpu', function(assert) {
     + '\nconst user_sum=((user_x+user_y)+user_z);'
     + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations.x.type, 'Integer');
-  assert.equal(node.declarations.y.type, 'Integer');
-  assert.equal(node.declarations.z.type, 'Integer');
-  assert.equal(node.declarations.sum.type, 'Integer');
+  assert.equal(node.declarations.x.type, 'Number');
+  assert.equal(node.declarations.y.type, 'Number');
+  assert.equal(node.declarations.z.type, 'Number');
+  assert.equal(node.declarations.sum.type, 'Number');
 });
 

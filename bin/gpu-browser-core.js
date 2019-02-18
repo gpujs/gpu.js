@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.1
- * @date Sun Feb 10 2019 23:00:44 GMT-0500 (Eastern Standard Time)
+ * @version 2.0.0-rc.2
+ * @date Mon Feb 18 2019 10:52:36 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -273,7 +273,7 @@ class CPUFunctionNode extends FunctionNode {
 			if (initArr.length > 0) {
 				retArr.push(initArr.join(''), ';\n');
 			}
-			retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
+			retArr.push(`for (let ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
 			if (testArr.length > 0) {
 				retArr.push(`if (!${testArr.join('')}) break;\n`);
 			}
@@ -334,13 +334,17 @@ class CPUFunctionNode extends FunctionNode {
 	}
 
 	astBlockStatement(bNode, retArr) {
-		if (!this.isState('loop-body')) {
+		if (this.isState('loop-body')) {
+			this.pushState('block-body'); 
+			for (let i = 0; i < bNode.body.length; i++) {
+				this.astGeneric(bNode.body[i], retArr);
+			}
+			this.popState('block-body');
+		} else {
 			retArr.push('{\n');
-		}
-		for (let i = 0; i < bNode.body.length; i++) {
-			this.astGeneric(bNode.body[i], retArr);
-		}
-		if (!this.isState('loop-body')) {
+			for (let i = 0; i < bNode.body.length; i++) {
+				this.astGeneric(bNode.body[i], retArr);
+			}
 			retArr.push('}\n');
 		}
 		return retArr;
@@ -355,7 +359,7 @@ class CPUFunctionNode extends FunctionNode {
 		const type = this.getType(firstDeclaration.init);
 		for (let i = 0; i < varDecNode.declarations.length; i++) {
 			this.declarations[varDecNode.declarations[i].id.name] = {
-				type,
+				type: type === 'LiteralInteger' ? 'Number' : type,
 				dependencies: {
 					constants: [],
 					arguments: []
@@ -865,13 +869,7 @@ class CPUKernel extends Kernel {
     return function (${ this.argumentNames.map(argumentName => 'user_' + argumentName).join(', ') }) {
       ${ this._processConstants() }
       ${ this._processArguments() }
-      ${ this._kernelLoop(kernel) }
-      if (this.graphical) {
-        this._imageData.data.set(this._colorData);
-        this.context.putImageData(this._imageData, 0, 0);
-        return;
-      }
-      ${ this._kernelOutput() }
+      ${ this.graphical ? this._graphicalKernelLoop(kernel) : this._resultKernelLoop(kernel) }
       ${ prototypes.length > 0 ? prototypes.join('\n') : '' }
     }.bind(this);`;
 		return kernelString;
@@ -964,20 +962,40 @@ class CPUKernel extends Kernel {
 		return imagesArray;
 	}
 
-	_kernelLoop(kernelString) {
+	_resultKernelLoop(kernelString) {
 		switch (this.output.length) {
 			case 1:
-				return this._kernel1DLoop(kernelString);
+				return this._resultKernel1DLoop(kernelString) + this._kernelOutput();
 			case 2:
-				return this._kernel2DLoop(kernelString);
+				return this._resultKernel2DLoop(kernelString) + this._kernelOutput();
 			case 3:
-				return this._kernel3DLoop(kernelString);
+				return this._resultKernel3DLoop(kernelString) + this._kernelOutput();
 			default:
 				throw new Error('unsupported size kernel');
 		}
 	}
 
-	_kernel1DLoop(kernelString) {
+	_graphicalKernelLoop(kernelString) {
+		switch (this.output.length) {
+			case 1:
+				return this._graphicalKernel1DLoop(kernelString) + this._graphicalOutput();
+			case 2:
+				return this._graphicalKernel2DLoop(kernelString) + this._graphicalOutput();
+			case 3:
+				return this._graphicalKernel3DLoop(kernelString) + this._graphicalOutput();
+			default:
+				throw new Error('unsupported size kernel');
+		}
+	}
+
+	_graphicalOutput() {
+		return `
+    this._imageData.data.set(this._colorData);
+    this.context.putImageData(this._imageData, 0, 0);
+    return;`
+	}
+
+	_resultKernel1DLoop(kernelString) {
 		const {
 			output
 		} = this;
@@ -995,12 +1013,29 @@ class CPUKernel extends Kernel {
     }`;
 	}
 
-	_kernel2DLoop(kernelString) {
+	_graphicalKernel1DLoop(kernelString) {
 		const {
 			output
 		} = this;
-		return `const result = new Array(${ output[1] });
-    ${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
+		return `${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
+		${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Float32Array(${ output[0] });\n`).join('') }
+    for (let x = 0; x < ${ output[0] }; x++) {
+      this.thread.x = x;
+      this.thread.y = 0;
+      this.thread.z = 0;
+      let kernelResult;
+      ${ kernelString }
+      result[x] = kernelResult;
+      ${ this._mapSubKernels(subKernel => `result_${ subKernel.name }[x] = subKernelResult_${ subKernel.name };\n`).join('') }
+    }`;
+	}
+
+	_resultKernel2DLoop(kernelString) {
+		const {
+			output
+		} = this;
+		return `const result = new Array(${ output[2] });
+		${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
     ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[1] });\n`).join('') }
     for (let y = 0; y < ${ output[1] }; y++) {
       this.thread.z = 0;
@@ -1017,7 +1052,25 @@ class CPUKernel extends Kernel {
     }`;
 	}
 
-	_kernel3DLoop(kernelString) {
+	_graphicalKernel2DLoop(kernelString) {
+		const {
+			output
+		} = this;
+		return `${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
+    ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[1] });\n`).join('') }
+    for (let y = 0; y < ${ output[1] }; y++) {
+      this.thread.z = 0;
+      this.thread.y = y;
+      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}[y] = new Float32Array(${ output[0] });\n`).join('') }
+      for (let x = 0; x < ${ output[0] }; x++) {
+      	this.thread.x = x;
+        ${ kernelString }
+        ${ this._mapSubKernels(subKernel => `result_${ subKernel.name }X[x] = subKernelResult_${ subKernel.name };\n`).join('') }
+      }
+    }`;
+	}
+
+	_resultKernel3DLoop(kernelString) {
 		const {
 			output
 		} = this;
@@ -1037,6 +1090,27 @@ class CPUKernel extends Kernel {
           let kernelResult;
           ${ kernelString }
           resultX[x] = kernelResult;
+          ${ this._mapSubKernels(subKernel => `result_${ subKernel.name }X[x] = subKernelResult_${ subKernel.name };\n`).join('') }
+        }
+      }
+    }`;
+	}
+
+	_graphicalKernel3DLoop(kernelString) {
+		const {
+			output
+		} = this;
+		return `${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
+    ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[2] });\n`).join('') }
+    for (let z = 0; z < ${ output[2] }; z++) {
+      this.thread.z = z;
+      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }Y = result_${subKernel.name}[z] = new Array(${ output[1] });\n`).join('') }
+      for (let y = 0; y < ${ output[1] }; y++) {
+        this.thread.y = y;
+        ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}Y[y] = new Float32Array(${ output[0] });\n`).join('') }
+        for (let x = 0; x < ${ output[0] }; x++) {
+        	this.thread.x = x;
+          ${ kernelString }
           ${ this._mapSubKernels(subKernel => `result_${ subKernel.name }X[x] = subKernelResult_${ subKernel.name };\n`).join('') }
         }
       }
@@ -1612,7 +1686,7 @@ class FunctionNode {
 					}
 				}
 				if (ast.name === 'Infinity') {
-					return 'Integer';
+					return 'Number';
 				}
 				return null;
 			case 'ReturnStatement':
@@ -1641,7 +1715,7 @@ class FunctionNode {
 						case 'this.thread.value':
 							return 'Integer';
 						case 'this.output.value':
-							return 'Integer';
+							return 'LiteralInteger';
 						case 'this.constants.value':
 							return this.getConstantType(ast.property.name);
 						case 'this.constants.value[]':
@@ -1793,6 +1867,7 @@ class FunctionNode {
 				this.getDependencies(ast.left, dependencies, isNotSafe);
 				this.getDependencies(ast.right, dependencies, isNotSafe);
 				return dependencies;
+			case 'UnaryExpression':
 			case 'UpdateExpression':
 				return this.getDependencies(ast.argument, dependencies, isNotSafe);
 			case 'VariableDeclaration':
@@ -3206,6 +3281,7 @@ class WebGLFunctionNode extends FunctionNode {
 					this.popState('casting-to-float');
 					break;
 
+				case 'Integer & Float':
 				case 'Integer & Number':
 					this.astGeneric(ast.left, retArr);
 					retArr.push(operatorMap[ast.operator] || ast.operator);
@@ -3234,7 +3310,7 @@ class WebGLFunctionNode extends FunctionNode {
 					break;
 				case 'Float & LiteralInteger':
 				case 'Number & LiteralInteger':
-					if (this.isState('force-integer')) {
+					if (this.isState('in-for-loop-test')) {
 						retArr.push('int(');
 						this.astGeneric(ast.left, retArr);
 						retArr.push(')');
@@ -3252,7 +3328,7 @@ class WebGLFunctionNode extends FunctionNode {
 					break;
 				case 'LiteralInteger & Float':
 				case 'LiteralInteger & Number':
-					if (this.isState('force-integer') || this.isState('in-for-loop-init')) {
+					if (this.isState('in-for-loop-test') || this.isState('in-for-loop-init')) {
 						this.pushState('casting-to-integer');
 						this.astGeneric(ast.left, retArr);
 						retArr.push(operatorMap[ast.operator] || ast.operator);
@@ -3286,10 +3362,7 @@ class WebGLFunctionNode extends FunctionNode {
 
 	astIdentifierExpression(idtNode, retArr) {
 		if (idtNode.type !== 'Identifier') {
-			throw this.astErrorOutput(
-				'IdentifierExpression - not an Identifier',
-				idtNode
-			);
+			throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode);
 		}
 
 		if (idtNode.name === 'Infinity') {
@@ -3331,9 +3404,9 @@ class WebGLFunctionNode extends FunctionNode {
 		}
 
 		if (forNode.test) {
-			this.pushState('force-integer');
+			this.pushState('in-for-loop-test');
 			this.astGeneric(forNode.test, testArr);
-			this.popState('force-integer');
+			this.popState('in-for-loop-test');
 		} else {
 			isSafe = false;
 		}
@@ -3433,13 +3506,17 @@ class WebGLFunctionNode extends FunctionNode {
 	}
 
 	astBlockStatement(bNode, retArr) {
-		if (!this.isState('loop-body')) {
+		if (this.isState('loop-body')) {
+			this.pushState('block-body'); 
+			for (let i = 0; i < bNode.body.length; i++) {
+				this.astGeneric(bNode.body[i], retArr);
+			}
+			this.popState('block-body');
+		} else {
 			retArr.push('{\n');
-		}
-		for (let i = 0; i < bNode.body.length; i++) {
-			this.astGeneric(bNode.body[i], retArr);
-		}
-		if (!this.isState('loop-body')) {
+			for (let i = 0; i < bNode.body.length; i++) {
+				this.astGeneric(bNode.body[i], retArr);
+			}
 			retArr.push('}\n');
 		}
 		return retArr;
@@ -3463,20 +3540,34 @@ class WebGLFunctionNode extends FunctionNode {
 			throw this.astErrorOutput(`Markup type ${ markupType } not handled`, varDecNode);
 		}
 		let dependencies = this.getDependencies(firstDeclaration.init);
-		this.declarations[firstDeclaration.id.name] = Object.freeze({
-			type,
-			dependencies,
-			isSafe: this.isSafeDependencies(dependencies),
-		});
+
 		const initResult = [];
-		initResult.push([`${markupType} `]);
-		initResult.push(`user_${firstDeclaration.id.name}=`);
-		if (actualType === 'Number' && type === 'Integer') {
-			initResult.push('int(');
+		if (actualType === 'Integer' && type === 'Integer' && !this.isState('in-for-loop-init')) {
+			this.declarations[firstDeclaration.id.name] = Object.freeze({
+				type: 'Number',
+				dependencies,
+				isSafe: this.isSafeDependencies(dependencies),
+			});
+			initResult.push('float ');
+			initResult.push(`user_${firstDeclaration.id.name}=`);
+			initResult.push('float(');
 			this.astGeneric(init, initResult);
 			initResult.push(')');
 		} else {
-			this.astGeneric(init, initResult);
+			this.declarations[firstDeclaration.id.name] = Object.freeze({
+				type,
+				dependencies,
+				isSafe: this.isSafeDependencies(dependencies),
+			});
+			initResult.push(`${markupType} `);
+			initResult.push(`user_${firstDeclaration.id.name}=`);
+			if (actualType === 'Number' && type === 'Integer') {
+				initResult.push('int(');
+				this.astGeneric(init, initResult);
+				initResult.push(')');
+			} else {
+				this.astGeneric(init, initResult);
+			}
 		}
 		result.push(initResult.join(''));
 
@@ -3541,18 +3632,33 @@ class WebGLFunctionNode extends FunctionNode {
 		} = this.getMemberExpressionDetails(mNode);
 		switch (signature) {
 			case 'this.thread.value':
-				retArr.push(`threadId.${ name }`);
+				if (name !== 'x' && name !== 'y' && name !== 'z') {
+					throw this.astErrorOutput('Unexpected expression, expected `this.thread.x`, `this.thread.y`, or `this.thread.z`', mNode);
+				}
+				retArr.push(`threadId.${name}`);
 				return retArr;
 			case 'this.output.value':
 				switch (name) {
 					case 'x':
-						retArr.push(this.output[0]);
+						if (this.isState('casting-to-integer')) {
+							retArr.push(this.output[0]);
+						} else {
+							retArr.push(this.output[0], '.0');
+						}
 						break;
 					case 'y':
-						retArr.push(this.output[1]);
+						if (this.isState('casting-to-integer')) {
+							retArr.push(this.output[1]);
+						} else {
+							retArr.push(this.output[1], '.0');
+						}
 						break;
 					case 'z':
-						retArr.push(this.output[2]);
+						if (this.isState('casting-to-integer')) {
+							retArr.push(this.output[2]);
+						} else {
+							retArr.push(this.output[2], '.0');
+						}
 						break;
 					default:
 						throw this.astErrorOutput('Unexpected expression', mNode);

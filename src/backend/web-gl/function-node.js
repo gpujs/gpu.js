@@ -280,6 +280,7 @@ class WebGLFunctionNode extends FunctionNode {
 					this.popState('casting-to-float');
 					break;
 
+				case 'Integer & Float':
 				case 'Integer & Number':
 					this.astGeneric(ast.left, retArr);
 					retArr.push(operatorMap[ast.operator] || ast.operator);
@@ -308,7 +309,7 @@ class WebGLFunctionNode extends FunctionNode {
 					break;
 				case 'Float & LiteralInteger':
 				case 'Number & LiteralInteger':
-					if (this.isState('force-integer')) {
+					if (this.isState('in-for-loop-test')) {
 						retArr.push('int(');
 						this.astGeneric(ast.left, retArr);
 						retArr.push(')');
@@ -326,7 +327,7 @@ class WebGLFunctionNode extends FunctionNode {
 					break;
 				case 'LiteralInteger & Float':
 				case 'LiteralInteger & Number':
-					if (this.isState('force-integer') || this.isState('in-for-loop-init')) {
+					if (this.isState('in-for-loop-test') || this.isState('in-for-loop-init')) {
 						this.pushState('casting-to-integer');
 						this.astGeneric(ast.left, retArr);
 						retArr.push(operatorMap[ast.operator] || ast.operator);
@@ -366,10 +367,7 @@ class WebGLFunctionNode extends FunctionNode {
 	 */
 	astIdentifierExpression(idtNode, retArr) {
 		if (idtNode.type !== 'Identifier') {
-			throw this.astErrorOutput(
-				'IdentifierExpression - not an Identifier',
-				idtNode
-			);
+			throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode);
 		}
 
 		if (idtNode.name === 'Infinity') {
@@ -418,9 +416,9 @@ class WebGLFunctionNode extends FunctionNode {
 		}
 
 		if (forNode.test) {
-			this.pushState('force-integer');
+			this.pushState('in-for-loop-test');
 			this.astGeneric(forNode.test, testArr);
-			this.popState('force-integer');
+			this.popState('in-for-loop-test');
 		} else {
 			isSafe = false;
 		}
@@ -545,13 +543,17 @@ class WebGLFunctionNode extends FunctionNode {
 	 * @returns {Array} the append retArr
 	 */
 	astBlockStatement(bNode, retArr) {
-		if (!this.isState('loop-body')) {
+		if (this.isState('loop-body')) {
+			this.pushState('block-body'); // this prevents recursive removal of braces
+			for (let i = 0; i < bNode.body.length; i++) {
+				this.astGeneric(bNode.body[i], retArr);
+			}
+			this.popState('block-body');
+		} else {
 			retArr.push('{\n');
-		}
-		for (let i = 0; i < bNode.body.length; i++) {
-			this.astGeneric(bNode.body[i], retArr);
-		}
-		if (!this.isState('loop-body')) {
+			for (let i = 0; i < bNode.body.length; i++) {
+				this.astGeneric(bNode.body[i], retArr);
+			}
 			retArr.push('}\n');
 		}
 		return retArr;
@@ -582,20 +584,34 @@ class WebGLFunctionNode extends FunctionNode {
 			throw this.astErrorOutput(`Markup type ${ markupType } not handled`, varDecNode);
 		}
 		let dependencies = this.getDependencies(firstDeclaration.init);
-		this.declarations[firstDeclaration.id.name] = Object.freeze({
-			type,
-			dependencies,
-			isSafe: this.isSafeDependencies(dependencies),
-		});
+
 		const initResult = [];
-		initResult.push([`${markupType} `]);
-		initResult.push(`user_${firstDeclaration.id.name}=`);
-		if (actualType === 'Number' && type === 'Integer') {
-			initResult.push('int(');
+		if (actualType === 'Integer' && type === 'Integer' && !this.isState('in-for-loop-init')) {
+			this.declarations[firstDeclaration.id.name] = Object.freeze({
+				type: 'Number',
+				dependencies,
+				isSafe: this.isSafeDependencies(dependencies),
+			});
+			initResult.push('float ');
+			initResult.push(`user_${firstDeclaration.id.name}=`);
+			initResult.push('float(');
 			this.astGeneric(init, initResult);
 			initResult.push(')');
 		} else {
-			this.astGeneric(init, initResult);
+			this.declarations[firstDeclaration.id.name] = Object.freeze({
+				type,
+				dependencies,
+				isSafe: this.isSafeDependencies(dependencies),
+			});
+			initResult.push(`${markupType} `);
+			initResult.push(`user_${firstDeclaration.id.name}=`);
+			if (actualType === 'Number' && type === 'Integer') {
+				initResult.push('int(');
+				this.astGeneric(init, initResult);
+				initResult.push(')');
+			} else {
+				this.astGeneric(init, initResult);
+			}
 		}
 		result.push(initResult.join(''));
 
@@ -679,18 +695,33 @@ class WebGLFunctionNode extends FunctionNode {
 		} = this.getMemberExpressionDetails(mNode);
 		switch (signature) {
 			case 'this.thread.value':
-				retArr.push(`threadId.${ name }`);
+				if (name !== 'x' && name !== 'y' && name !== 'z') {
+					throw this.astErrorOutput('Unexpected expression, expected `this.thread.x`, `this.thread.y`, or `this.thread.z`', mNode);
+				}
+				retArr.push(`threadId.${name}`);
 				return retArr;
 			case 'this.output.value':
 				switch (name) {
 					case 'x':
-						retArr.push(this.output[0]);
+						if (this.isState('casting-to-integer')) {
+							retArr.push(this.output[0]);
+						} else {
+							retArr.push(this.output[0], '.0');
+						}
 						break;
 					case 'y':
-						retArr.push(this.output[1]);
+						if (this.isState('casting-to-integer')) {
+							retArr.push(this.output[1]);
+						} else {
+							retArr.push(this.output[1], '.0');
+						}
 						break;
 					case 'z':
-						retArr.push(this.output[2]);
+						if (this.isState('casting-to-integer')) {
+							retArr.push(this.output[2]);
+						} else {
+							retArr.push(this.output[2], '.0');
+						}
 						break;
 					default:
 						throw this.astErrorOutput('Unexpected expression', mNode);

@@ -551,17 +551,34 @@ return user_array3;\n\
 }');
 });
 
-// test('auto detect float, array, array2d, array3d - webgl', () => {
-//   const node = new WebGLFunctionNode((function(int, array, array2d, array3d) {
-//     let allValues = this.constants.int;
-//     allValues += this.constants.array[this.thread.x];
-//     allValues += this.constants.array2d[this.thread.x][this.thread.y];
-//     allValues += this.constants.array3d[this.thread.x][this.thread.y][this.thread.z];
-//     allValues += int;
-//     allValues += array[this.thread.x];
-//     allValues += array2d[this.thread.x][this.thread.y];
-//     allValues += array3d[this.thread.x][this.thread.y][this.thread.z];
-//
-//     return allValues * Math.random();
-//   }).toString(), {});
-// });
+test('auto detect float, array, array2d, array3d - webgl', () => {
+  const node = new WebGLFunctionNode(`function advancedUsed(int, array, array2d, array3d) {
+    let allValues = this.constants.int;
+    allValues += this.constants.array[this.thread.x];
+    allValues += this.constants.array2d[this.thread.x][this.thread.y];
+    allValues += this.constants.array3d[this.thread.x][this.thread.y][this.thread.z];
+    allValues += int;
+    allValues += array[this.thread.x];
+    allValues += array2d[this.thread.x][this.thread.y];
+    allValues += array3d[this.thread.x][this.thread.y][this.thread.z];
+
+    return allValues * Math.random();
+  }`, {
+    output: [1],
+    argumentTypes: ['Integer', 'Array', 'Array2D', 'Array3D'],
+    constants: { int: 1, array: [1], array2d: [[1]], array3d: [[[1]]] },
+    constantTypes: { int: 'Integer', array: 'Array', array2d: 'Array2D', array3d: 'Array3D' }
+  });
+
+  assert.equal(node.toString(), 'float advancedUsed(int user_int, sampler2D user_array, sampler2D user_array2d, sampler2D user_array3d) {'
+    + '\nfloat user_allValues=float(constants_int);'
+    + '\nuser_allValues+=get(constants_array, constants_arraySize, constants_arrayDim, constants_arrayBitRatio, 0, 0, threadId.x);'
+    + '\nuser_allValues+=get(constants_array2d, constants_array2dSize, constants_array2dDim, constants_array2dBitRatio, 0, threadId.x, threadId.y);'
+    + '\nuser_allValues+=get(constants_array3d, constants_array3dSize, constants_array3dDim, constants_array3dBitRatio, threadId.x, threadId.y, threadId.z);'
+    + '\nuser_allValues+=float(user_int);'
+    + '\nuser_allValues+=get(user_array, user_arraySize, user_arrayDim, user_arrayBitRatio, 0, 0, threadId.x);'
+    + '\nuser_allValues+=get(user_array2d, user_array2dSize, user_array2dDim, user_array2dBitRatio, 0, threadId.x, threadId.y);'
+    + '\nuser_allValues+=get(user_array3d, user_array3dSize, user_array3dDim, user_array3dBitRatio, threadId.x, threadId.y, threadId.z);'
+    + '\nreturn (user_allValues*random());'
+    + '\n}');
+});

@@ -97,15 +97,15 @@ test('this.thread.z', () => {
 });
 
 test('this.output.x', () => {
-  assert.equal(run('this.output.x'), 'Integer');
+  assert.equal(run('this.output.x'), 'LiteralInteger');
 });
 
 test('this.output.y', () => {
-  assert.equal(run('this.output.y'), 'Integer');
+  assert.equal(run('this.output.y'), 'LiteralInteger');
 });
 
 test('this.output.y', () => {
-  assert.equal(run('this.output.y'), 'Integer');
+  assert.equal(run('this.output.y'), 'LiteralInteger');
 });
 
 test('bogus this.outputs.y', () => {

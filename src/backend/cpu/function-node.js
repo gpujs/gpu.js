@@ -208,7 +208,7 @@ class CPUFunctionNode extends FunctionNode {
 			if (initArr.length > 0) {
 				retArr.push(initArr.join(''), ';\n');
 			}
-			retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
+			retArr.push(`for (let ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
 			if (testArr.length > 0) {
 				retArr.push(`if (!${testArr.join('')}) break;\n`);
 			}
@@ -293,13 +293,17 @@ class CPUFunctionNode extends FunctionNode {
 	 * @returns {Array} the append retArr
 	 */
 	astBlockStatement(bNode, retArr) {
-		if (!this.isState('loop-body')) {
+		if (this.isState('loop-body')) {
+			this.pushState('block-body'); // this prevents recursive removal of braces
+			for (let i = 0; i < bNode.body.length; i++) {
+				this.astGeneric(bNode.body[i], retArr);
+			}
+			this.popState('block-body');
+		} else {
 			retArr.push('{\n');
-		}
-		for (let i = 0; i < bNode.body.length; i++) {
-			this.astGeneric(bNode.body[i], retArr);
-		}
-		if (!this.isState('loop-body')) {
+			for (let i = 0; i < bNode.body.length; i++) {
+				this.astGeneric(bNode.body[i], retArr);
+			}
 			retArr.push('}\n');
 		}
 		return retArr;
@@ -320,7 +324,7 @@ class CPUFunctionNode extends FunctionNode {
 		const type = this.getType(firstDeclaration.init);
 		for (let i = 0; i < varDecNode.declarations.length; i++) {
 			this.declarations[varDecNode.declarations[i].id.name] = {
-				type,
+				type: type === 'LiteralInteger' ? 'Number' : type,
 				dependencies: {
 					constants: [],
 					arguments: []
