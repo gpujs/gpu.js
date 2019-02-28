@@ -11,12 +11,12 @@ export class GPU {
   constructor(settings?: IGPUSettings);
   functions: IGPUFunction[];
   nativeFunctions: IGPUNativeFunction[];
-  addFunction(kernel: KernelFunction, settings?: IGPUFunctionSettings);
-  addNativeFunction(name: string, source: string);
+  addFunction(kernel: KernelFunction, settings?: IGPUFunctionSettings): this;
+  addNativeFunction(name: string, source: string): this;
   combineKernels(): KernelFunction;
   createKernel(kernel: KernelFunction, settings?: IKernelSettings): IKernelRunShortcut;
   createKernelMap(): IKernelRunShortcut;
-  destroy();
+  destroy(): void;
   Kernel: typeof Kernel;
   mode: string;
   canvas: any;
@@ -133,8 +133,8 @@ export class Kernel {
   ): KernelVariable
   toJSON(): object;
   exec(): Promise<KernelOutput>;
-  setOutput(flag): this;
-  setArgumentTypes(flag): this;
+  setOutput(flag: any): this;
+  setArgumentTypes(flag: any): this;
   setDebug(flag: boolean): this;
   setGraphical(flag: boolean): this;
   setLoopMaxIterations(flag: number): this;
@@ -276,7 +276,7 @@ export interface ISubKernel {
 export class FunctionBuilder {
   fromKernel(kernel: IKernelSettings, FunctionNode: FunctionNode, extraNodeOptions?: any): FunctionBuilder;
   constructor(settings: IFunctionBuilderSettings);
-  addFunctionNode(functionNode: FunctionNode);
+  addFunctionNode(functionNode: FunctionNode): void;
   traceFunctionCalls(functionName: string): string[];
   getStringFromFunctionNames(functionName?: string[]): string;
   getPrototypesFromFunctionNames(functionName?: string[]): string[];
