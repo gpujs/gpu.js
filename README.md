@@ -38,7 +38,7 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 
 # Table of Contents
 
-NOTE: documentation is slightly out of date for the upcomming release of v2.  We will fix it!  In the mean time, if you'd like to assist (PLEASE) let us know.
+NOTE: documentation is slightly out of date for the upcoming release of v2.  We will fix it!  In the mean time, if you'd like to assist (PLEASE) let us know.
 
 * [Installation](#installation)
 * [`GPU` Settings](#gpu-settings)
