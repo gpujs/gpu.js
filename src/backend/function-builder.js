@@ -33,14 +33,33 @@ class FunctionBuilder {
 			})));
 		};
 
+		const parsedReturnTypes = {};
 		const lookupReturnType = (functionName) => {
+			if (parsedReturnTypes[functionName]) return parsedReturnTypes[functionName];
+			const source = functionBuilder.nativeFunctions[functionName];
+			if (source) {
+				return parsedReturnTypes[functionName] = kernel.constructor.nativeFunctionReturnType(source);
+			}
 			return functionBuilder.lookupReturnType(functionName);
 		};
+
+		const nativeFunctionReturnTypes = {};
+		const nativeFunctionArgumentTypes = {};
+
+		if (kernel.nativeFunctions) {
+			for (let i = 0; i < kernel.nativeFunctions.length; i++) {
+				const nativeFunction = kernel.nativeFunctions[i];
+				nativeFunctionReturnTypes[nativeFunction.name] = nativeFunction.returnType;
+				nativeFunctionArgumentTypes[nativeFunction.name] = nativeFunction.argumentTypes;
+			}
+		}
 
 		const nodeOptions = Object.assign({
 			isRootKernel: false,
 			onNestedFunction,
 			lookupReturnType,
+			nativeFunctionReturnTypes,
+			nativeFunctionArgumentTypes,
 			constants,
 			constantTypes,
 			debug,

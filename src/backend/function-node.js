@@ -35,6 +35,8 @@ class FunctionNode {
 		this.declarations = {};
 		this.states = [];
 		this.lookupReturnType = null;
+		this.nativeFunctionReturnTypes = null;
+		this.nativeFunctionArgumentTypes = null;
 		this.onNestedFunction = null;
 		this.loopMaxIterations = null;
 		this.argumentNames = (typeof this.source === 'string' ? utils.getArgumentNamesFromString(this.source) : null);
@@ -43,6 +45,7 @@ class FunctionNode {
 		this.returnType = null;
 		this.output = [];
 		this.plugins = null;
+		this.literalTypes = {};
 
 		if (settings) {
 			for (const p in settings) {
@@ -302,6 +305,10 @@ class FunctionNode {
 			case 'ArrayExpression':
 				return `Array(${ ast.elements.length })`;
 			case 'Literal':
+				const literalKey = `${ast.start},${ast.end}`;
+				if (this.literalTypes[literalKey]) {
+					return this.literalTypes[literalKey];
+				}
 				if (Number.isInteger(ast.value)) {
 					return 'LiteralInteger';
 				} else {
@@ -310,6 +317,10 @@ class FunctionNode {
 			case 'CallExpression':
 				if (this.isAstMathFunction(ast)) {
 					return 'Number';
+				}
+				if (!ast.callee || !ast.callee.name) return null;
+				if (this.nativeFunctionReturnTypes && this.nativeFunctionReturnTypes[ast.callee.name]) {
+					return this.nativeFunctionReturnTypes[ast.callee.name];
 				}
 				return ast.callee && ast.callee.name && this.lookupReturnType ? this.lookupReturnType(ast.callee.name) : null;
 			case 'BinaryExpression':
@@ -753,6 +764,7 @@ class FunctionNode {
 		return retArr;
 	}
 	astLiteral(ast, retArr) {
+		this.literalTypes[`${ast.start},${ast.end}`] = 'Number';
 		return retArr;
 	}
 	astBinaryExpression(ast, retArr) {

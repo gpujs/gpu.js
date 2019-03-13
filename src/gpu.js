@@ -117,7 +117,7 @@ class GPU {
 		this.kernels = [];
 		this.functions = [];
 		this.nativeFunctions = [];
-
+		this.chooseKernel();
 		// add functions from settings
 		if (settings.functions) {
 			for (let i = 0; i < settings.functions.length; i++) {
@@ -131,8 +131,6 @@ class GPU {
 				this.addNativeFunction(p, settings.nativeFunctions[p]);
 			}
 		}
-
-		this.chooseKernel();
 	}
 
 	/**
@@ -416,10 +414,13 @@ class GPU {
 		if (this.kernels.length > 0) {
 			throw new Error('Cannot call "addNativeFunction" after "createKernels" has been called.');
 		}
+		settings = settings || {};
 		this.nativeFunctions.push({
 			name,
 			source,
-			settings
+			settings,
+			argumentTypes: this.Kernel.nativeFunctionArgumentTypes(source),
+			returnType: this.Kernel.nativeFunctionReturnType(source),
 		});
 		return this;
 	}

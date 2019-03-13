@@ -45,6 +45,10 @@ const {
 	WebGL2Kernel
 } = require('./backend/web-gl2/kernel');
 
+const {
+	GLKernel
+} = require('./backend/gl-kernel');
+
 module.exports = {
 	alias,
 	CPUFunctionNode,
@@ -61,4 +65,5 @@ module.exports = {
 	WebGL2Kernel,
 	WebGLFunctionNode,
 	WebGLKernel,
+	GLKernel,
 };

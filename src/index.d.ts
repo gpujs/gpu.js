@@ -27,7 +27,7 @@ export interface IGPUFunction extends IFunctionSettings {
   source: string;
 }
 
-export interface IGPUNativeFunction {
+export interface IGPUNativeFunction extends IGPUFunctionSettings {
   name: string;
   source: string;
   settings: object;
@@ -71,6 +71,9 @@ export interface IGPUFunctionSettings {
 export class Kernel {
   static isSupported: boolean;
   static isContextMatch(context: any): boolean;
+  static nativeFunctionArgumentTypes(source: string): IArgumentTypes;
+  static nativeFunctionReturnType(source: string): string;
+  static destroyContext(context: any);
   static features: IKernelFeatures;
   source: string | object;
   output: number[];
@@ -143,6 +146,11 @@ export class Kernel {
   setImmutable(flag: boolean): this;
   setCanvas(flag: any): this;
   setContext(flag: any): this;
+}
+
+export interface IArgumentTypes {
+  names: string[],
+  types: string[],
 }
 
 export interface IConstants {
@@ -261,6 +269,8 @@ export interface IFunctionSettings {
   isSubKernel?: boolean;
   onNestedFunction?(source: string, returnType: string): void;
   lookupReturnType?(functionName: string): void;
+  nativeFunctionReturnTypes?: string[],
+  nativeFunctionArgumentTypes?: IGPUArgumentTypes[],
   plugins?: any[];
   pluginNames?: string[];
   parent?: FunctionNode

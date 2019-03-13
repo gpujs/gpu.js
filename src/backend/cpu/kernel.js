@@ -41,6 +41,14 @@ class CPUKernel extends Kernel {
 		return 'cpu';
 	}
 
+	static nativeFunctionArgumentTypes() {
+		return null;
+	}
+
+	static nativeFunctionReturnType() {
+		return null;
+	}
+
 	constructor(source, settings) {
 		super(source, settings);
 

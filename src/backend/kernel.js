@@ -28,6 +28,14 @@ class Kernel {
 		throw new Error(`"destroyContext" called on ${ this.name }`);
 	}
 
+	static nativeFunctionArgumentTypes() {
+		throw new Error(`"nativeFunctionArgumentTypes" called on ${ this.name }`);
+	}
+
+	static nativeFunctionReturnType() {
+		throw new Error(`"nativeFunctionReturnType" called on ${ this.name }`);
+	}
+
 	/**
 	 *
 	 * @param {string|object} source
@@ -109,7 +117,7 @@ class Kernel {
 
 		/**
 		 *
-		 * @type {INativeFunctionList[]}
+		 * @type {IGPUNativeFunction[]}
 		 */
 		this.nativeFunctions = null;
 
