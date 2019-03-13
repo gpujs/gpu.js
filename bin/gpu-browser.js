@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0-rc.2
- * @date Mon Feb 18 2019 10:52:36 GMT-0500 (Eastern Standard Time)
+ * @date Wed Mar 13 2019 12:38:27 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -5493,6 +5493,14 @@ class CPUKernel extends Kernel {
 		return 'cpu';
 	}
 
+	static nativeFunctionArgumentTypes() {
+		return null;
+	}
+
+	static nativeFunctionReturnType() {
+		return null;
+	}
+
 	constructor(source, settings) {
 		super(source, settings);
 
@@ -5939,14 +5947,33 @@ class FunctionBuilder {
 			})));
 		};
 
+		const parsedReturnTypes = {};
 		const lookupReturnType = (functionName) => {
+			if (parsedReturnTypes[functionName]) return parsedReturnTypes[functionName];
+			const source = functionBuilder.nativeFunctions[functionName];
+			if (source) {
+				return parsedReturnTypes[functionName] = kernel.constructor.nativeFunctionReturnType(source);
+			}
 			return functionBuilder.lookupReturnType(functionName);
 		};
+
+		const nativeFunctionReturnTypes = {};
+		const nativeFunctionArgumentTypes = {};
+
+		if (kernel.nativeFunctions) {
+			for (let i = 0; i < kernel.nativeFunctions.length; i++) {
+				const nativeFunction = kernel.nativeFunctions[i];
+				nativeFunctionReturnTypes[nativeFunction.name] = nativeFunction.returnType;
+				nativeFunctionArgumentTypes[nativeFunction.name] = nativeFunction.argumentTypes;
+			}
+		}
 
 		const nodeOptions = Object.assign({
 			isRootKernel: false,
 			onNestedFunction,
 			lookupReturnType,
+			nativeFunctionReturnTypes,
+			nativeFunctionArgumentTypes,
 			constants,
 			constantTypes,
 			debug,
@@ -6191,6 +6218,8 @@ class FunctionNode {
 		this.declarations = {};
 		this.states = [];
 		this.lookupReturnType = null;
+		this.nativeFunctionReturnTypes = null;
+		this.nativeFunctionArgumentTypes = null;
 		this.onNestedFunction = null;
 		this.loopMaxIterations = null;
 		this.argumentNames = (typeof this.source === 'string' ? utils.getArgumentNamesFromString(this.source) : null);
@@ -6199,6 +6228,7 @@ class FunctionNode {
 		this.returnType = null;
 		this.output = [];
 		this.plugins = null;
+		this.literalTypes = {};
 
 		if (settings) {
 			for (const p in settings) {
@@ -6412,6 +6442,10 @@ class FunctionNode {
 			case 'ArrayExpression':
 				return `Array(${ ast.elements.length })`;
 			case 'Literal':
+				const literalKey = `${ast.start},${ast.end}`;
+				if (this.literalTypes[literalKey]) {
+					return this.literalTypes[literalKey];
+				}
 				if (Number.isInteger(ast.value)) {
 					return 'LiteralInteger';
 				} else {
@@ -6420,6 +6454,10 @@ class FunctionNode {
 			case 'CallExpression':
 				if (this.isAstMathFunction(ast)) {
 					return 'Number';
+				}
+				if (!ast.callee || !ast.callee.name) return null;
+				if (this.nativeFunctionReturnTypes && this.nativeFunctionReturnTypes[ast.callee.name]) {
+					return this.nativeFunctionReturnTypes[ast.callee.name];
 				}
 				return ast.callee && ast.callee.name && this.lookupReturnType ? this.lookupReturnType(ast.callee.name) : null;
 			case 'BinaryExpression':
@@ -6845,6 +6883,7 @@ class FunctionNode {
 		return retArr;
 	}
 	astLiteral(ast, retArr) {
+		this.literalTypes[`${ast.start},${ast.end}`] = 'Number';
 		return retArr;
 	}
 	astBinaryExpression(ast, retArr) {
@@ -7268,7 +7307,124 @@ class GLKernel extends Kernel {
 		this.floatOutputForce = null;
 		this.fixIntegerDivisionAccuracy = null;
 	}
+
+	static nativeFunctionArgumentTypes(source) {
+		const types = [];
+		const names = [];
+		const states = [];
+		const isStartingVariableName = /^[a-zA-Z_]/;
+		const isVariableChar = /[a-zA-Z_0-9]/;
+		let i = 0;
+		let name = null;
+		let type = null;
+		while (i < source.length) {
+			const char = source[i];
+			const nextChar = source[i + 1];
+			const state = states.length > 0 ? states[states.length - 1] : null;
+
+			if (state === 'FUNCTION_ARGUMENTS' && char === '/' && nextChar === '*') {
+				states.push('MULTI_LINE_COMMENT');
+				i += 2;
+				continue;
+			} else if (state === 'MULTI_LINE_COMMENT' && char === '*' && nextChar === '/') {
+				states.pop();
+				i += 2;
+				continue;
+			}
+
+			else if (state === 'FUNCTION_ARGUMENTS' && char === '/' && nextChar === '/') {
+				states.push('COMMENT');
+				i += 2;
+				continue;
+			} else if (state === 'COMMENT' && char === '\n') {
+				states.pop();
+				i++;
+				continue;
+			}
+
+			else if (state === null && char === '(') {
+				states.push('FUNCTION_ARGUMENTS');
+				i++;
+				continue;
+			} else if (state === 'FUNCTION_ARGUMENTS') {
+				if (char === ')') {
+					states.pop();
+					break;
+				}
+				if (char === 'f' && nextChar === 'l' && source[i + 2] === 'o' && source[i + 3] === 'a' && source[i + 4] === 't' && source[i + 5] === ' ') {
+					states.push('DECLARE_VARIABLE');
+					type = 'float';
+					name = '';
+					i += 6;
+					continue;
+				} else if (char === 'i' && nextChar === 'n' && source[i + 2] === 't' && source[i + 3] === ' ') {
+					states.push('DECLARE_VARIABLE');
+					type = 'int';
+					name = '';
+					i += 4;
+					continue;
+				} else if (char === 'v' && nextChar === 'e' && source[i + 2] === 'c' && source[i + 3] === '2' && source[i + 4] === ' ') {
+					states.push('DECLARE_VARIABLE');
+					type = 'vec2';
+					name = '';
+					i += 5;
+					continue;
+				} else if (char === 'v' && nextChar === 'e' && source[i + 2] === 'c' && source[i + 3] === '3' && source[i + 4] === ' ') {
+					states.push('DECLARE_VARIABLE');
+					type = 'vec3';
+					name = '';
+					i += 5;
+					continue;
+				} else if (char === 'v' && nextChar === 'e' && source[i + 2] === 'c' && source[i + 3] === '4' && source[i + 4] === ' ') {
+					states.push('DECLARE_VARIABLE');
+					type = 'vec4';
+					name = '';
+					i += 5;
+					continue;
+				}
+			}
+
+			else if (state === 'DECLARE_VARIABLE') {
+				if (name === '') {
+					if (char === ' ') {
+						i++;
+						continue;
+					}
+					if (!isStartingVariableName.test(char)) {
+						throw new Error('variable name is not expected string');
+					}
+				}
+				name += char;
+				if (!isVariableChar.test(nextChar)) {
+					states.pop();
+					names.push(name);
+					types.push(typeMap[type]);
+				}
+			}
+
+			i++;
+		}
+		if (states.length > 0) {
+			throw new Error('GLSL function was not parsable');
+		}
+		return {
+			names,
+			types
+		};
+	}
+
+	static nativeFunctionReturnType(source) {
+		return typeMap[source.match(/int|float|vec[2-4]/)[0]];
+	}
 }
+
+const typeMap = {
+	int: 'Integer',
+	float: 'Number',
+	vec2: 'Array(2)',
+	vec3: 'Array(3)',
+	vec4: 'Array(4)',
+};
 
 module.exports = {
 	GLKernel
@@ -7408,6 +7564,14 @@ class Kernel {
 
 	static destroyContext(context) {
 		throw new Error(`"destroyContext" called on ${ this.name }`);
+	}
+
+	static nativeFunctionArgumentTypes() {
+		throw new Error(`"nativeFunctionArgumentTypes" called on ${ this.name }`);
+	}
+
+	static nativeFunctionReturnType() {
+		throw new Error(`"nativeFunctionReturnType" called on ${ this.name }`);
 	}
 
 	constructor(source, settings) {
@@ -7886,6 +8050,11 @@ class WebGLFunctionNode extends FunctionNode {
 						this.pushState('casting-to-float');
 						this.astGeneric(ast.argument, result);
 						this.popState('casting-to-float');
+
+						if (this.getType(ast) === 'Integer') {
+							result.unshift('float(');
+							result.push(')');
+						}
 						break;
 					default:
 						this.astGeneric(ast.argument, result);
@@ -7941,15 +8110,20 @@ class WebGLFunctionNode extends FunctionNode {
 
 		if (Number.isInteger(ast.value)) {
 			if (this.isState('in-for-loop-init') || this.isState('casting-to-integer')) {
+				this.literalTypes[`${ast.start},${ast.end}`] = 'Integer';
 				retArr.push(`${ast.value}`);
 			} else if (this.isState('casting-to-float')) {
+				this.literalTypes[`${ast.start},${ast.end}`] = 'Number';
 				retArr.push(`${ast.value}.0`);
 			} else {
+				this.literalTypes[`${ast.start},${ast.end}`] = 'Number';
 				retArr.push(`${ast.value}.0`);
 			}
 		} else if (this.isState('casting-to-integer')) {
+			this.literalTypes[`${ast.start},${ast.end}`] = 'Integer';
 			retArr.push(parseInt(ast.raw));
 		} else {
+			this.literalTypes[`${ast.start},${ast.end}`] = 'Number';
 			retArr.push(`${ast.value}`);
 		}
 		return retArr;
@@ -7994,27 +8168,42 @@ class WebGLFunctionNode extends FunctionNode {
 		if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
 			retArr.push('div_with_int_check(');
 
-			if (this.getType(ast.left) !== 'Number') {
-				retArr.push('int(');
-				this.pushState('casting-to-float');
-				this.astGeneric(ast.left, retArr);
-				this.popState('casting-to-float');
-				retArr.push(')');
-			} else {
-				this.astGeneric(ast.left, retArr);
+			switch (this.getType(ast.left)) {
+				case 'Integer':
+					retArr.push('float(');
+					this.pushState('casting-to-float');
+					this.astGeneric(ast.left, retArr);
+					this.popState('casting-to-float');
+					retArr.push(')');
+					break;
+				case 'LiteralInteger':
+					this.pushState('casting-to-float');
+					this.astGeneric(ast.left, retArr);
+					this.popState('casting-to-float');
+					break;
+				default:
+					this.astGeneric(ast.left, retArr);
 			}
 
 			retArr.push(', ');
 
-			if (this.getType(ast.right) !== 'Number') {
-				retArr.push('float(');
-				this.pushState('casting-to-float');
-				this.astGeneric(ast.right, retArr);
-				this.popState('casting-to-float');
-				retArr.push(')');
-			} else {
-				this.astGeneric(ast.right, retArr);
+			switch (this.getType(ast.right)) {
+				case 'Integer':
+					retArr.push('float(');
+					this.pushState('casting-to-float');
+					this.astGeneric(ast.right, retArr);
+					this.popState('casting-to-float');
+					retArr.push(')');
+					break;
+				case 'LiteralInteger':
+					this.pushState('casting-to-float');
+					this.astGeneric(ast.right, retArr);
+					this.popState('casting-to-float');
+					break;
+				default:
+					this.astGeneric(ast.right, retArr);
 			}
+
 			retArr.push(')');
 		} else {
 			const leftType = this.getType(ast.left) || 'Number';
@@ -8050,9 +8239,20 @@ class WebGLFunctionNode extends FunctionNode {
 					this.astGeneric(ast.left, retArr);
 					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.pushState('casting-to-integer');
-					retArr.push('int(');
-					this.astGeneric(ast.right, retArr);
-					retArr.push(')');
+					if (ast.right.type === 'Literal') {
+						const literalResult = [];
+						this.astGeneric(ast.right, literalResult);
+						const literalType = this.getType(ast.right);
+						if (literalType === 'Integer') {
+							retArr.push(literalResult.join(''));
+						} else {
+							throw this.astErrorOutput(`Unhandled binary expression with literal`, ast);
+						}
+					} else {
+						retArr.push('int(');
+						this.astGeneric(ast.right, retArr);
+						retArr.push(')');
+					}
 					this.popState('casting-to-integer');
 					break;
 				case 'Integer & LiteralInteger':
@@ -8295,7 +8495,8 @@ class WebGLFunctionNode extends FunctionNode {
 		const firstDeclaration = declarations[0];
 		const init = firstDeclaration.init;
 		const actualType = this.getType(init);
-		let type = this.isState('in-for-loop-init') ? 'Integer' : actualType;
+		const inForLoopInit = this.isState('in-for-loop-init');
+		let type = inForLoopInit ? 'Integer' : actualType;
 		if (type === 'LiteralInteger') {
 			type = 'Number';
 		}
@@ -8304,9 +8505,8 @@ class WebGLFunctionNode extends FunctionNode {
 			throw this.astErrorOutput(`Markup type ${ markupType } not handled`, varDecNode);
 		}
 		let dependencies = this.getDependencies(firstDeclaration.init);
-
 		const initResult = [];
-		if (actualType === 'Integer' && type === 'Integer' && !this.isState('in-for-loop-init')) {
+		if (actualType === 'Integer' && type === 'Integer' && !inForLoopInit) {
 			this.declarations[firstDeclaration.id.name] = Object.freeze({
 				type: 'Number',
 				dependencies,
@@ -8335,19 +8535,37 @@ class WebGLFunctionNode extends FunctionNode {
 		}
 		result.push(initResult.join(''));
 
+		let lastType = type;
 		for (let i = 1; i < declarations.length; i++) {
 			const declaration = declarations[i];
+			const nextResult = [];
+			if (!inForLoopInit) {
+				let possibleNewType = this.getType(declaration.init);
+				if (possibleNewType === 'LiteralInteger') {
+					possibleNewType = 'Number';
+				}
+				if (possibleNewType !== lastType) {
+					nextResult.push(';');
+					nextResult.push(typeMap[possibleNewType], ' ');
+					lastType = possibleNewType;
+				} else {
+					nextResult.push(',');
+				}
+			} else {
+				nextResult.push(',');
+			}
 			dependencies = this.getDependencies(declaration);
 			this.declarations[declaration.id.name] = Object.freeze({
-				type,
+				type: lastType,
 				dependencies: dependencies,
 				isSafe: this.isSafeDependencies(dependencies),
 			});
-			this.astGeneric(declaration, result);
+			this.astGeneric(declaration, nextResult);
+			result.push(nextResult.join(''));
 		}
 
-		retArr.push(result.join(','));
-		if (!this.isState('in-for-loop-init')) {
+		retArr.push(result.join(''));
+		if (!inForLoopInit) {
 			retArr.push(';');
 		}
 		return retArr;
@@ -8510,46 +8728,112 @@ class WebGLFunctionNode extends FunctionNode {
 	}
 
 	astCallExpression(ast, retArr) {
-		if (ast.callee) {
-			let funcName = this.astMemberExpressionUnroll(ast.callee);
+		if (!ast.callee) {
+			throw this.astErrorOutput(
+				'Unknown CallExpression',
+				ast
+			);
+		}
 
-			if (funcName.indexOf(jsMathPrefix) === 0) {
-				funcName = funcName.slice(jsMathPrefix.length);
+		let funcName = this.astMemberExpressionUnroll(ast.callee);
+
+		if (funcName.indexOf(jsMathPrefix) === 0) {
+			funcName = funcName.slice(jsMathPrefix.length);
+		}
+
+		if (funcName.indexOf(localPrefix) === 0) {
+			funcName = funcName.slice(localPrefix.length);
+		}
+
+		if (funcName === 'atan2') {
+			funcName = 'atan';
+		}
+
+		if (this.calledFunctions.indexOf(funcName) < 0) {
+			this.calledFunctions.push(funcName);
+		}
+		if (!this.calledFunctionsArguments[funcName]) {
+			this.calledFunctionsArguments[funcName] = [];
+		}
+
+		const functionArguments = [];
+		this.calledFunctionsArguments[funcName].push(functionArguments);
+
+		if (funcName === 'random' && this.plugins) {
+			for (let i = 0; i < this.plugins.length; i++) {
+				const plugin = this.plugins[i];
+				if (plugin.functionMatch === 'Math.random()' && plugin.functionReplace) {
+					functionArguments.push(plugin.functionReturnType);
+					retArr.push(plugin.functionReplace);
+				}
 			}
+			return retArr;
+		}
 
-			if (funcName.indexOf(localPrefix) === 0) {
-				funcName = funcName.slice(localPrefix.length);
-			}
+		retArr.push(funcName);
 
-			if (funcName === 'atan2') {
-				funcName = 'atan';
-			}
+		retArr.push('(');
 
-			if (this.calledFunctions.indexOf(funcName) < 0) {
-				this.calledFunctions.push(funcName);
-			}
-			if (!this.calledFunctionsArguments[funcName]) {
-				this.calledFunctionsArguments[funcName] = [];
-			}
-
-			const functionArguments = [];
-			this.calledFunctionsArguments[funcName].push(functionArguments);
-
-			if (funcName === 'random' && this.plugins) {
-				for (let i = 0; i < this.plugins.length; i++) {
-					const plugin = this.plugins[i];
-					if (plugin.functionMatch === 'Math.random()' && plugin.functionReplace) {
-						functionArguments.push(plugin.functionReturnType);
-						retArr.push(plugin.functionReplace);
+		if (this.nativeFunctionArgumentTypes && this.nativeFunctionArgumentTypes[funcName]) {
+			const nativeFunctionArgumentTypes = this.nativeFunctionArgumentTypes[funcName].types;
+			for (let i = 0; i < ast.arguments.length; ++i) {
+				const argument = ast.arguments[i];
+				const targetType = nativeFunctionArgumentTypes[i];
+				if (i > 0) {
+					retArr.push(', ');
+				}
+				const argumentType = this.getType(argument);
+				if (argumentType === 'Number' || argumentType === 'Float') {
+					if (targetType === 'Integer') {
+						retArr.push('int(');
+						this.astGeneric(argument, retArr);
+						retArr.push(')');
+						continue;
+					} else if (targetType === 'Number') {
+						this.astGeneric(argument, retArr);
+						continue;
+					}
+				} else if (argumentType === 'Integer') {
+					if (targetType === 'Number') {
+						retArr.push('float(');
+						this.astGeneric(argument, retArr);
+						retArr.push(')');
+						continue;
+					} else if (targetType === 'Integer') {
+						this.astGeneric(argument, retArr);
+						continue;
+					}
+				} else if (argumentType === 'Array(2)') {
+					if (targetType === 'Array(2)') {
+						this.astGeneric(argument, retArr);
+						continue;
+					}
+				} else if (argumentType === 'Array(3)') {
+					if (targetType === 'Array(3)') {
+						this.astGeneric(argument, retArr);
+						continue;
+					}
+				} else if (argumentType === 'Array(4)') {
+					if (targetType === 'Array(4)') {
+						this.astGeneric(argument, retArr);
+						continue;
+					}
+				} else if (argumentType === 'LiteralInteger') {
+					if (targetType === 'Integer') {
+						this.pushState('casting-to-integer');
+						this.astGeneric(argument, retArr);
+						this.popState('casting-to-integer');
+						continue;
+					} else if (targetType === 'Number') {
+						this.pushState('casting-to-float');
+						this.astGeneric(argument, retArr);
+						this.popState('casting-to-float');
+						continue;
 					}
 				}
-				return retArr;
+				throw new Error(`Unhandled argument combination of ${ argumentType } and ${ targetType }`);
 			}
-
-			retArr.push(funcName);
-
-			retArr.push('(');
-
+		} else {
 			for (let i = 0; i < ast.arguments.length; ++i) {
 				const argument = ast.arguments[i];
 				if (i > 0) {
@@ -8566,16 +8850,11 @@ class WebGLFunctionNode extends FunctionNode {
 					functionArguments.push(null);
 				}
 			}
-
-			retArr.push(')');
-
-			return retArr;
 		}
 
-		throw this.astErrorOutput(
-			'Unknown CallExpression',
-			ast
-		);
+		retArr.push(')');
+
+		return retArr;
 	}
 
 	astArrayExpression(arrNode, retArr) {
@@ -11395,7 +11674,7 @@ class GPU {
 		this.kernels = [];
 		this.functions = [];
 		this.nativeFunctions = [];
-
+		this.chooseKernel();
 		if (settings.functions) {
 			for (let i = 0; i < settings.functions.length; i++) {
 				this.addFunction(settings.functions[i]);
@@ -11407,8 +11686,6 @@ class GPU {
 				this.addNativeFunction(p, settings.nativeFunctions[p]);
 			}
 		}
-
-		this.chooseKernel();
 	}
 
 	chooseKernel() {
@@ -11616,10 +11893,13 @@ class GPU {
 		if (this.kernels.length > 0) {
 			throw new Error('Cannot call "addNativeFunction" after "createKernels" has been called.');
 		}
+		settings = settings || {};
 		this.nativeFunctions.push({
 			name,
 			source,
-			settings
+			settings,
+			argumentTypes: this.Kernel.nativeFunctionArgumentTypes(source),
+			returnType: this.Kernel.nativeFunctionReturnType(source),
 		});
 		return this;
 	}
@@ -11687,6 +11967,10 @@ const {
 	WebGL2Kernel
 } = require('./backend/web-gl2/kernel');
 
+const {
+	GLKernel
+} = require('./backend/gl-kernel');
+
 module.exports = {
 	alias,
 	CPUFunctionNode,
@@ -11703,8 +11987,9 @@ module.exports = {
 	WebGL2Kernel,
 	WebGLFunctionNode,
 	WebGLKernel,
+	GLKernel,
 };
-},{"./alias":4,"./backend/cpu/function-node":5,"./backend/cpu/kernel":7,"./backend/function-builder":8,"./backend/function-node":9,"./backend/headless-gl/kernel":11,"./backend/web-gl/function-node":14,"./backend/web-gl/kernel":16,"./backend/web-gl2/function-node":19,"./backend/web-gl2/kernel":20,"./gpu":23,"./input":25,"./texture":28,"./utils":29}],25:[function(require,module,exports){
+},{"./alias":4,"./backend/cpu/function-node":5,"./backend/cpu/kernel":7,"./backend/function-builder":8,"./backend/function-node":9,"./backend/gl-kernel":10,"./backend/headless-gl/kernel":11,"./backend/web-gl/function-node":14,"./backend/web-gl/kernel":16,"./backend/web-gl2/function-node":19,"./backend/web-gl2/kernel":20,"./gpu":23,"./input":25,"./texture":28,"./utils":29}],25:[function(require,module,exports){
 class Input {
 	constructor(value, size) {
 		this.value = value;
