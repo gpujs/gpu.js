@@ -13,9 +13,9 @@ export class GPU {
   nativeFunctions: IGPUNativeFunction[];
   addFunction(kernel: KernelFunction, settings?: IGPUFunctionSettings): this;
   addNativeFunction(name: string, source: string): this;
-  combineKernels(): KernelFunction;
+  combineKernels(...kernels: Function[]): KernelFunction;
   createKernel(kernel: KernelFunction, settings?: IKernelSettings): IKernelRunShortcut;
-  createKernelMap(): IKernelRunShortcut;
+  createKernelMap(subKernels: Object | Array<Function>, rootKernel: Function): IKernelRunShortcut;
   destroy(): void;
   Kernel: typeof Kernel;
   mode: string;
