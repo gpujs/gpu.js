@@ -1,0 +1,41 @@
+<html>
+<title>Slow Fade</title>
+<body>
+<h1>Slow Fade</h1>
+<div>
+  <canvas id="c" />
+</div>
+</body>
+<script src="../bin/gpu-browser.js"></script>
+<script>
+  const canvas = document.getElementById("c");
+  const gpu = new GPU({
+    canvas: canvas,
+    mode: "gpu"
+  });
+  const dim = 512;
+  const kernel = gpu.createKernel(
+    function(x) {
+      this.color(
+        (x * (this.thread.y + this.thread.x)) / 1024.0,
+        (x * (this.thread.y * this.thread.x)) / (1024.0 * 1024.0),
+        (x * (this.thread.y * 2 * this.thread.x)) / (1024.0 * 2),
+        1
+      );
+    },
+    {
+      output: [dim, dim],
+      graphical: true
+    }
+  );
+
+  let param = 0.0;
+  const doDraw = () => {
+    kernel(param);
+    param += 0.001;
+    window.requestAnimationFrame(doDraw);
+  };
+
+  window.requestAnimationFrame(doDraw);
+</script>
+</html>
