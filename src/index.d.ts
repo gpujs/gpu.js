@@ -56,7 +56,10 @@ export type GPUVariableType
   | 'HTMLImage'
   | 'HTMLImageArray'
   | 'Number'
-  | 'NumberTexture'
+  | GPUTextureType;
+
+export type GPUTextureType
+  = 'NumberTexture'
   | 'ArrayTexture(4)';
 
 export interface IGPUArgumentTypes {
@@ -310,8 +313,20 @@ export class WebGLFunctionNode extends FunctionNode {}
 export class WebGL2FunctionNode extends WebGLFunctionNode {}
 export class CPUFunctionNode extends FunctionNode {}
 
+export interface IGPUTextureSettings {
+  texture: WebGLTexture;
+  size: number[];
+  dimensions: number[];
+  output: number[];
+  context: WebGLRenderingContext;
+  gpu?: GPU;
+  type?: GPUTextureType;
+}
+
 export class Texture {
-  toArray(): TextureArrayOutput
+  constructor(settings: IGPUTextureSettings)
+  toArray(gpu?: GPU): TextureArrayOutput
+  delete(): void;
 }
 
 export type TextureArrayOutput = number[] | number[][] | number[][][];

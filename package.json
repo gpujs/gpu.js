@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "2.0.0-rc.3",
+  "version": "2.0.0-rc.4",
   "description": "GPU Accelerated JavaScript",
   "engines": {
     "node": ">=10.0.0"
@@ -15,9 +15,8 @@
   },
   "dependencies": {
     "acorn": "^5.1.1",
-    "gl": "^4.1.1",
-    "gpu-mock.js": "^1.0.1",
-    "typescript": "^3.3.1"
+    "gl": "^4.2.2",
+    "gpu-mock.js": "^1.0.1"
   },
   "devDependencies": {
     "benchmark": "^2.1.4",
@@ -31,6 +30,7 @@
     "gulp-strip-comments": "^2.4.5",
     "merge-stream": "^1.0.1",
     "qunit": "^2.9.1",
+    "typescript": "^3.3.1",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^2.0.0"
   },

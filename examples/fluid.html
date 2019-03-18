@@ -1,0 +1,1468 @@
+<html>
+<head>
+  <title>SSPS - Chadams Studios</title>
+  <script src="../bin/gpu-browser.js"></script>
+  <script>
+    window.xSSPS = function(PCOUNT, RSIZE) {
+
+      this.RSIZE = RSIZE || 512;
+      this.PCOUNT = PCOUNT || 512;
+
+      this.hashLength = 128;
+      this.hashWSize = 3.0;
+      this.hashBinLen = 128;
+      this.rayCount = 128;
+      this.rayDist = 20;
+      this.rfScale = 2.0;
+
+      this.restDensity = 0.1;
+      this.fieldLen = 4;
+      this.gConst = 0.02;
+      this.bound = 8;
+
+      this.shootIndex = 0;
+      this.lkeys = {};
+
+      this.canvas = document.createElement('canvas');
+      this.gpu = new GPU({
+        canvas: this.canvas,
+        mode: 'gpu'
+      });
+      this.ctx3d = this.gpu.canvas;
+
+      /*
+          RENDER SUPPORT FUNCTIONS (GLSL)
+       */
+
+      this.gpu.addNativeFunction('raySphere',
+        `vec2 raySphere(vec3 r0, vec3 rd, vec3 s0, float sr) {
+          float a = dot(rd, rd);
+          vec3 s0_r0 = r0 - s0;
+          float b = 2.0 * dot(rd, s0_r0);
+          float c = dot(s0_r0, s0_r0) - (sr * sr);
+          float test = b*b - 4.0*a*c;
+          if (test < 0.0) {
+              return vec2(-1.0, 0.);
+          }
+          test = sqrt(test);
+          float X = (-b - test)/(2.0*a);
+          float Y = (-b + test)/(2.0*a);
+          return vec2(
+              X,
+              Y-X
+          );
+        }`
+      );
+
+      this.gpu.addNativeFunction('getRay0',
+        `vec3 getRay0(vec2 uv,  vec3 c0, vec3 cd, vec3 up, float s0, float s1, float slen) {
+          up = normalize(cross(cross(cd, up), cd));
+
+          vec3 vup = normalize(cross(cd, up));
+          vec3 vleft = up;
+
+          vec2 X = (uv - vec2(0.5, 0.5)) * s0;
+
+          return c0 + vup * X.y + vleft * X.x;
+        }`
+      );
+
+      this.gpu.addNativeFunction('getRayDir',
+        `vec3 getRayDir(vec3 R0,  vec2 uv,  vec3 c0, vec3 cd, vec3 up, float s0, float s1, float slen) {
+          up = normalize(cross(cross(cd, up), cd));
+
+          vec3 vup = normalize(cross(cd, up));
+          vec3 vleft = up;
+
+          vec2 X = (uv - vec2(0.5, 0.5)) * s1;
+
+          vec3 far = vup * X.y + vleft * X.x;
+
+          return normalize((normalize(cd) * slen + far + c0) - R0);
+        }`
+      );
+
+      this.gpu.addNativeFunction('reflectWrap',
+        `vec3 reflectWrap(vec3 I, vec3 N) {
+          return normalize(reflect(normalize(I), normalize(N)));
+
+        }`
+      );
+
+      this.gpu.addNativeFunction('refractWrap',
+        `vec3 refractWrap(vec3 I, vec3 N, float eta) {
+          return normalize(refract(normalize(I), normalize(N), eta));
+
+        }`
+      );
+
+      this.gpu.addNativeFunction('distanceWrap',
+        `float distanceWrap(vec3 A, vec3 B) {
+          return length(A - B);
+        }`
+      );
+
+      /*
+          UPDATE SUPPORT FUNCTIONS (GLSL)
+       */
+
+      this.gpu.addNativeFunction('compGravity',
+        `vec3 compGravity(vec3 M, vec3 J, float jMass, float f) {
+          vec3 delta = J - M;
+          float dlen = length(delta);
+
+          if (dlen > 0.05) {
+              float dlen2 = jMass / (max(dlen*dlen, 1.) * 0.1);
+              return dlen2 * (delta / dlen) * f;
+          }
+
+          return vec3(0., 0., 0.);
+        }`
+      );
+
+      this.gpu.addNativeFunction('partDensity',
+        `vec2 partDensity(vec3 M, vec3 J, float fLen) {
+          vec3 delta = J - M;
+          float len = length(delta);
+
+          if (len < fLen) {
+              float t = 1. - (len / fLen);
+              return vec2(t*t, t*t*t);
+          }
+
+          return vec2(0., 0.);
+        }`
+      );
+
+      this.gpu.addNativeFunction('pressForce',
+        `vec3 pressForce(vec3 M, vec3 J, vec3 Mv, vec3 Jv, float fLen, float dt, float spressure, float snpressure, float viscdt) {
+          vec3 delta = J - M;
+          float len = length(delta);
+          if (len < fLen) {
+              float t = 1. - (len / fLen);
+              delta *= dt * t * (spressure + snpressure * t) / (2. * len);
+              vec3 deltaV = Jv - Mv;
+              deltaV *= dt * t * viscdt;
+              return -(delta - deltaV);
+          }
+          return vec3(0., 0., 0.);
+        }`
+      );
+
+      /*
+          INIT SUPPORT FUNCTIONS
+       */
+
+      this.gpu.addNativeFunction('random',
+        `float random(float sequence, float seed) {
+          return fract(sin(dot(vec2(seed, sequence), vec2(12.9898, 78.233))) * 43758.5453);
+        }`
+      );
+
+      /*
+          VELOCITY UPDATE KERNEL
+       */
+
+      this.velocityKernel = this.gpu.createKernel(function(positions, velocities, attrs, pullMass, playerPos, oDensity, oVisc, oMass, oIncomp, dt) {
+        // Unpack particle
+        var comp = this.thread.x % 3;
+        var me = (this.thread.x - comp) / 3;
+        var mx = positions[me*3],
+          my = positions[me*3+1],
+          mz = positions[me*3+2];
+        var mpos = [mx, my, mz];
+        var mvx = velocities[me*3],
+          mvy = velocities[me*3+1],
+          mvz = velocities[me*3+2];
+        var mvel = [mvx, mvy, mvz];
+        var mmass = oMass;
+        var incomp = oIncomp;
+        var viscdt = oVisc;
+        var ddensity = 0.0,
+          nddensity = 0.0;
+
+        // Compute pressure on this particle
+        for (var i=0; i<this.constants.PCOUNT; i++) {
+          var opos = [positions[i*3], positions[i*3+1], positions[i*3+2]];
+          var density = oDensity;
+          var dret = partDensity(mpos, opos, this.constants.fieldLen);
+          ddensity += dret[0] * density;
+          nddensity += dret[1] * density;
+        }
+
+        // Interact with player by adding pressure
+        var opos = [playerPos[0], playerPos[1], playerPos[2]];
+        var fl2 = this.constants.fieldLen;
+        var pf = [0, 0];
+        if (pullMass > 0.0) {
+          pf = partDensity(mpos, opos, fl2);
+        }
+        ddensity += pf[0] * (pullMass / 10.0 * this.constants.restDensity);
+        nddensity += pf[1] * (pullMass / 10.0 * this.constants.restDensity);
+
+        var spressure = (ddensity - this.constants.restDensity) * incomp;
+        var snpressure = nddensity * incomp;
+
+        // Compute force from pressure on this particle
+        var ret = [mvx, mvy, mvz];
+
+        for (var i=0; i<this.constants.PCOUNT; i++) {
+          if (i - me > 0.01) {
+            var opos = [positions[i*3], positions[i*3+1], positions[i*3+2]];
+            var ovel = [velocities[i*3], velocities[i*3+1], velocities[i*3+2]];
+            var mass = oMass;
+            var jmf = (2. * mass) / (mass + mmass);
+            var dret = pressForce(mpos, opos, mvel, ovel, this.constants.fieldLen, dt, spressure, snpressure, viscdt);
+            ret[0] += dret[0] * jmf; ret[1] += dret[1] * jmf; ret[2] += dret[2] * jmf;
+          }
+        }
+
+        // Player pressure
+        if (pullMass > 0.0) {
+          var opos = [playerPos[0], playerPos[1], playerPos[2]];
+          var ovel = [0, 0, 0];
+          var mass = 1.0;
+          var jmf = (2. * mass) / (mass + mmass);
+          var dret = pressForce(mpos, opos, mvel, ovel, this.constants.fieldLen, dt, spressure, snpressure, viscdt);
+          ret[0] += dret[0] * jmf; ret[1] += dret[1] * jmf; ret[2] += dret[2] * jmf;
+        }
+
+        // Compute gravitational force on this particle
+        var gf = this.constants.gConst * dt * 0.1;
+        for (var i=0; i<this.constants.PCOUNT; i++) {
+          var opos = [positions[i*3], positions[i*3+1], positions[i*3+2]];
+          var mass = attrs[i*6+2];
+          var dret = compGravity(mpos, opos, mass, gf);
+          ret[0] += dret[0]; ret[1] += dret[1]; ret[2] += dret[2];
+        }
+
+        // Enforce scene boundaries
+        if (ret[0] < 0 && mpos[0] < -this.constants.bound) {
+          ret[0] = -ret[0];
+        } else if (ret[0] > 0 && mpos[0] > this.constants.bound) {
+          ret[0] = -ret[0];
+        }
+
+        if (ret[1] < 0 && mpos[1] < -this.constants.bound) {
+          ret[1] = -ret[1];
+        } else if (ret[1] > 0 && mpos[1] > this.constants.bound) {
+          ret[1] = -ret[1];
+        }
+
+        if (ret[2] < 0 && mpos[2] < -this.constants.bound) {
+          ret[2] = -ret[2];
+        } else if (ret[2] > 0 && mpos[2] > this.constants.bound) {
+          ret[2] = -ret[2];
+        }
+
+        if (comp < 0.01) {
+          return ret[0];
+        } else if (comp < 1.01) {
+          return ret[1];
+        } else if (comp < 2.01) {
+          return ret[2];
+        }
+      }, {
+        debug: false,
+        constants: {
+          PCOUNT: this.PCOUNT,
+          bound: this.bound,
+          fieldLen: this.fieldLen,
+          gConst: this.gConst,
+          restDensity: ((4 / 3) * Math.PI * Math.pow(this.fieldLen, 3)) * this.restDensity
+        },
+        loopMaxIterations: this.PCOUNT,
+        output: [ this.PCOUNT*3 ],
+        pipeline: true,
+        // argumentTypes: {
+        //   particles: 'NumberTexture',
+        //   velocities: 'NumberTexture',
+        //   attrs: 'NumberTexture',
+        //   playerPos: 'Array(3)',
+        //   pullMass: 'Number',
+        //   dt: 'Number'
+        // }
+      });
+
+      /*
+          SET POSITION/VELOCITES
+       */
+
+      const mkSetter = (pitch) => {
+        return this.gpu.createKernel(function(list, index, setv) {
+          if (Math.abs(index - Math.floor(this.thread.x / this.constants.pitch)) < 0.01) {
+            return setv[this.thread.x % this.constants.pitch];
+          } else {
+            return list[this.thread.x];
+          }
+        }, {
+          debug: false,
+          output: [ this.PCOUNT*pitch ],
+          pipeline: true,
+          constants: { PCOUNT: this.PCOUNT, pitch },
+          loopMaxIterations: this.PCOUNT,
+          // argumentTypes: {
+          //   list: 'NumberTexture',
+          //   index: 'Number',
+          //   setv: 'Array(3)'
+          // }
+        });
+      };
+
+      this.setPosKernel = mkSetter(3);
+      this.setVelKernel = mkSetter(3);
+      // this.setAttrKernel = mkSetter(6);
+
+      /*
+          POSITION UPDATE KERNEL
+       */
+
+      this.positionKernel = this.gpu.createKernel(function(positions, velocities, dt) {
+        return positions[this.thread.x] + velocities[this.thread.x] * dt;
+      }, {
+        debug: false,
+        output: [ this.PCOUNT*3 ],
+        pipeline: true,
+        loopMaxIterations: this.PCOUNT,
+        // argumentTypes: {
+        //   particles: 'NumberTexture',
+        //   velocities: 'NumberTexture',
+        //   dt: 'Number'
+        // }
+      });
+
+      this.camRotKernel = this.gpu.createKernel(function(rotLR, rotUD, camCenter, camDir, camUp, camNearWidth, camFarWidth, camDist) {
+        var uv = [0.5+rotLR, 0.5+rotUD];
+
+        var CC = [camCenter[0], camCenter[1], camCenter[2]],
+          CD = [camDir[0], camDir[1], camDir[2]],
+          CU = [camUp[0], camUp[1], camUp[2]];
+
+        var ray0 = getRay0(uv, CC, CD, CU, camNearWidth, camFarWidth, camDist);
+        var rayDir = getRayDir(ray0, uv, CC, CD, CU, camNearWidth, camFarWidth, camDist);
+
+        if (this.thread.x < 0.01) {
+          return rayDir[0];
+        } else if (this.thread.x < 1.01) {
+          return rayDir[1];
+        } else if (this.thread.x < 2.01) {
+          return rayDir[2];
+        }
+      }, {
+        debug: false,
+        output: [ 3 ],
+        // argumentTypes: {
+        //   rotLR: 'Number',
+        //   rotUD: 'Number',
+        //   camCenter: 'Array(3)',
+        //   camDir: 'Array(3)',
+        //   camUp: 'Array(3)',
+        //   camNearWidth: 'Number',
+        //   camFarWidth: 'Number',
+        //   camDist: 'Number'
+        // }
+      });
+
+      /*
+          RENDER KERNEL
+       */
+
+      this.renderMode = 0;
+
+      this.renderKernel = [
+        this.gpu.createKernel(function(positions, camCenter, camDir, camUp, camNearWidth, camFarWidth, camDist) {
+
+          let uv = [this.thread.x / (this.constants.RSIZE-1), this.thread.y / (this.constants.RSIZE-1)];
+
+          let CC = [camCenter[0], camCenter[1], camCenter[2]],
+            CD = [camDir[0], camDir[1], camDir[2]],
+            CU = [camUp[0], camUp[1], camUp[2]];
+
+          let ray0 = getRay0(uv, CC, CD, CU, camNearWidth, camFarWidth, camDist);
+          let rayDir = getRayDir(ray0, uv, CC, CD, CU, camNearWidth, camFarWidth, camDist);
+
+          let oray0 = [ray0[0], ray0[1], ray0[2]];
+
+          this.color(0., 0., 0., 1.);
+
+          let outClr = [
+            0., 0., 0.
+          ];
+
+          let ds = 0.0;
+          let done = 0.0;
+          let norm = [0., 0., 0.];
+          for (let i=0; i<this.constants.ICOUNT; i++) {
+            if (done < 0.5) {
+              let rnow = [
+                ray0[0] + rayDir[0] * ds,
+                ray0[1] + rayDir[1] * ds,
+                ray0[2] + rayDir[2] * ds
+              ];
+
+              norm[0] = 0.; norm[1] = 0.; norm[2] = 0.;
+
+              let m = 0.0;
+              let fq = 0.0;
+              let nt = 0.0;
+              let dmin = 1000.0;
+              for (let j=0; j<this.constants.PCOUNT; j++) {
+                let off = j * 3;
+                let dx  = positions[off], dy  = positions[off+1.], dz  = positions[off+2.];
+                dx -= rnow[0];        dy -= rnow[1];           dz -= rnow[2];
+                let r = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                let x = r / this.constants.rfScale;
+                if (x < 1.0) {
+                  let q = 1.0 - x*x*x*(x*(x*6.0-15.0)+10.0);
+                  norm[0] += (dx/r) * q;
+                  norm[1] += (dy/r) * q;
+                  norm[2] += (dz/r) * q;
+                  fq += q;
+                  nt += q;
+                  m += 1.0;
+                }
+                else {
+                  dmin = Math.min(dmin, r - this.constants.rfScale);
+                }
+              }
+              let dist = dmin + 0.1;
+
+              norm[0] /= nt; norm[1] /= nt; norm[2] /= nt;
+
+              if (m > 0.5) {
+                dist = (0.5333 * this.constants.rfScale) * (0.5 - fq);
+              }
+
+              ds += dist;
+              if (dist < 0.01) {
+                done = 1.0;
+              }
+              if (ds >= this.constants.rayDist) {
+                done = 1.0;
+              }
+            }
+          }
+          ds = Math.min(ds, this.constants.rayDist);
+
+          let ref = refractWrap(norm, rayDir, 1./1.5);
+          let dot = ref[0] * rayDir[0] + ref[1] * rayDir[1] + ref[2] * rayDir[2];
+          let int = (1. - Math.pow(ds / this.constants.rayDist, 1.5));
+          let light = Math.min(1., Math.max(dot*dot, 0.)) * int;
+
+          outClr[2] = int + light;
+          outClr[1] = light;
+          outClr[0] = light;
+
+          this.color(Math.min(outClr[0], 1.), Math.min(outClr[1], 1.), Math.min(outClr[2], 1.), 1.);
+
+        }, {
+          graphical: true,
+          debug: false,
+          constants: {
+            rayDist: this.rayDist,
+            rfScale: this.rfScale,
+            bound: this.bound,
+            RSIZE: this.RSIZE,
+            PCOUNT: this.PCOUNT,
+            ICOUNT: 48
+          },
+          loopMaxIterations: 48 * this.PCOUNT,
+          output: [this.RSIZE, this.RSIZE],
+          // argumentTypes: {
+          //   hash: 'Array',
+          //   attrs: 'NumberTexture',
+          //   camCenter: 'Array(3)',
+          //   camDir: 'Array(3)',
+          //   camUp: 'Array(3)',
+          //   camNearWidth: 'Number',
+          //   camFarWidth: 'Number',
+          //   camDist: 'Number'
+          // }
+        }),
+        this.gpu.createKernel(function(positions, camCenter, camDir, camUp, camNearWidth, camFarWidth, camDist) {
+          let uv = [this.thread.x / (this.constants.RSIZE-1), this.thread.y / (this.constants.RSIZE-1)];
+
+          let CC = [camCenter[0], camCenter[1], camCenter[2]],
+            CD = [camDir[0], camDir[1], camDir[2]],
+            CU = [camUp[0], camUp[1], camUp[2]];
+
+          let ray0 = getRay0(uv, CC, CD, CU, camNearWidth, camFarWidth, camDist);
+          let rayDir = getRayDir(ray0, uv, CC, CD, CU, camNearWidth, camFarWidth, camDist);
+
+          let oray0 = [ray0[0], ray0[1], ray0[2]];
+
+          this.color(0., 0., 0., 1.);
+
+          let outClr = [
+            0., 0., 0.
+          ];
+
+          let ds = 0.0;
+          let done = 0.0;
+          let norm = [0., 0., 0.];
+          for (let i=0; i<this.constants.ICOUNT; i++) {
+            if (done < 0.5) {
+              let rnow = [
+                ray0[0] + rayDir[0] * ds,
+                ray0[1] + rayDir[1] * ds,
+                ray0[2] + rayDir[2] * ds
+              ];
+
+              norm[0] = 0.; norm[1] = 0.; norm[2] = 0.;
+
+              let m = 0.0;
+              let fq = 0.0;
+              let nt = 0.0;
+              let dmin = 1000.0;
+              for (let j=0; j<this.constants.PCOUNT; j++) {
+                let off = j * 3;
+                let dx  = positions[off], dy  = positions[off+1.], dz  = positions[off+2.];
+                dx -= rnow[0];        dy -= rnow[1];           dz -= rnow[2];
+                let r = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                let x = r / this.constants.rfScale;
+                if (x < 1.0) {
+                  let q = 1.0 - x*x*x*(x*(x*6.0-15.0)+10.0);
+                  norm[0] += (dx/r) * q;
+                  norm[1] += (dy/r) * q;
+                  norm[2] += (dz/r) * q;
+                  fq += q;
+                  nt += q;
+                  m += 1.0;
+                }
+                else {
+                  dmin = Math.min(dmin, r - this.constants.rfScale);
+                }
+              }
+              let dist = dmin + 0.1;
+
+              norm[0] /= nt; norm[1] /= nt; norm[2] /= nt;
+
+              if (m > 0.5) {
+                dist = (0.5333 * this.constants.rfScale) * (0.5 - fq);
+              }
+
+              ds += dist;
+              if (dist < 0.01) {
+                done = 1.0;
+              }
+              if (ds >= this.constants.rayDist) {
+                done = 1.0;
+              }
+            }
+          }
+          ds = Math.min(ds, this.constants.rayDist);
+
+          let ref = refractWrap(norm, rayDir, 1./1.5);
+          let dot = ref[0] * rayDir[0] + ref[1] * rayDir[1] + ref[2] * rayDir[2];
+          let int = (1. - Math.pow(ds / this.constants.rayDist, 1.5));
+          let light = Math.min(1., Math.max(dot*dot, 0.)) * int;
+
+          outClr[2] = int + light;
+          outClr[1] = light;
+          outClr[0] = light;
+
+          if (ds < (this.constants.rayDist - 0.001)) {
+            ray0[0] += rayDir[0] * ds;
+            ray0[1] += rayDir[1] * ds;
+            ray0[2] += rayDir[2] * ds;
+            let ds = 0.00;
+            let done = 0.0;
+            let nrayDir = [-norm[0], -norm[1], -norm[2]];
+            nrayDir = reflectWrap(nrayDir, rayDir);
+            norm = [0., 0., 0.];
+            ray0[0] += nrayDir[0] * 0.01;
+            ray0[1] += nrayDir[1] * 0.01;
+            ray0[2] += nrayDir[2] * 0.01;
+            for (let i=0; i<this.constants.ICOUNTR; i++) {
+              if (done < 0.5) {
+                let rnow = [
+                  ray0[0] + nrayDir[0] * ds,
+                  ray0[1] + nrayDir[1] * ds,
+                  ray0[2] + nrayDir[2] * ds
+                ];
+
+                norm[0] = 0.; norm[1] = 0.; norm[2] = 0.;
+
+                let m = 0.0;
+                let fq = 0.0;
+                let nt = 0.0;
+                let dmin = 1000.0;
+                for (let j=0; j<this.constants.PCOUNT; j++) {
+                  let off = j * 3;
+                  let dx  = positions[off], dy  = positions[off+1.], dz  = positions[off+2.];
+                  dx -= rnow[0];        dy -= rnow[1];           dz -= rnow[2];
+                  let r = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                  let x = r / this.constants.rfScale;
+                  if (x < 1.0) {
+                    let q = 1.0 - x*x*x*(x*(x*6.0-15.0)+10.0);
+                    norm[0] += (dx/r) * q;
+                    norm[1] += (dy/r) * q;
+                    norm[2] += (dz/r) * q;
+                    fq += q;
+                    nt += q;
+                    m += 1.0;
+                  } else {
+                    dmin = Math.min(dmin, r - this.constants.rfScale);
+                  }
+                }
+                let dist = dmin + 0.1;
+
+                norm[0] /= nt; norm[1] /= nt; norm[2] /= nt;
+
+                if (m > 0.5) {
+                  dist = (0.5333 * this.constants.rfScale) * (0.5 - fq);
+                }
+
+                ds += dist;
+                if (dist < 0.001) {
+                  done = 1.0;
+                }
+                if (ds >= this.constants.rayDistRef) {
+                  done = 1.0;
+                }
+              }
+            }
+            ds = Math.min(ds, this.constants.rayDistRef);
+
+            if (ds < (this.constants.rayDistRef - 0.001)) {
+              let ref = refractWrap(norm, nrayDir, 1./1.5);
+              let dot = ref[0] * nrayDir[0] + ref[1] * nrayDir[1] + ref[2] * nrayDir[2];
+              let int = 1. - Math.pow(Math.abs(ds) / this.constants.rayDistRef, 1.5);
+              let light = Math.min(1., Math.max(dot*dot, 0.)) * int;
+              outClr[2] += (int + light) * 0.1;
+              outClr[1] += (light) * 0.1;
+              outClr[0] += (light) * 0.1;
+            }
+          }
+
+          this.color(Math.min(outClr[0], 1.), Math.min(outClr[1], 1.), Math.min(outClr[2], 1.), 1.);
+        }, {
+          graphical: true,
+          debug: false,
+          constants: {
+            rayCount: this.rayCount,
+            rayDist: this.rayDist,
+            rayDistRef: Math.floor(this.rayDist / 4),
+            rfScale: this.rfScale,
+            bound: this.bound,
+            RSIZE: this.RSIZE,
+            PCOUNT: this.PCOUNT,
+            ICOUNT: 48,
+            ICOUNTR: 24
+          },
+          loopMaxIterations: 48 * this.PCOUNT,
+          output: [this.RSIZE, this.RSIZE],
+          // argumentTypes: {
+          //   hash: 'Array',
+          //   attrs: 'NumberTexture',
+          //   camCenter: 'Array(3)',
+          //   camDir: 'Array(3)',
+          //   camUp: 'Array(3)',
+          //   camNearWidth: 'Number',
+          //   camFarWidth: 'Number',
+          //   camDist: 'Number'
+          // }
+        })
+      ];
+
+      /*
+          INIT KERNEL
+       */
+
+      const makeDataTexture = (array, get) => {
+        const arr = [];
+        for (let i=0; i<array.length; i++) {
+          get(array[i], arr);
+        }
+        const size = arr.length;
+        const kern = this.gpu.createKernel(function(parray) {
+          return parray[this.thread.x];
+        }, {
+          pipeline: true,
+          output: [size]
+        });
+        return kern(arr);
+      };
+
+      const seedPositions = this.gpu.createKernel(function(){
+        var t = random(Math.floor(this.thread.x / 3), this.constants.seed + 0.5);
+        // if (Math.floor(this.thread.x / 3) > (this.constants.PCOUNT-33)) {
+        //   t + 1.0;
+        // }
+        var r = t * this.constants.maxr;
+        var a = 3.141592 * 2.0 * random(Math.floor(this.thread.x / 3), this.constants.seed + 1.5);
+        var comp = this.thread.x % 3;
+        if (comp < 0.01) {
+          return Math.cos(a) * r;
+        } else if (comp < 1.01) {
+          return Math.sin(a) * r;
+        } else {
+          return 0.0;
+        }
+      }, {
+        debug: false,
+        constants: {
+          maxr: 25,
+          seed: Math.random() * 1e6,
+          PCOUNT: this.PCOUNT
+        },
+        pipeline: true,
+        output: [this.PCOUNT * 3]
+      });
+
+      const seedVelocities = this.gpu.createKernel(function(){
+        var t = random(this.thread.x, this.constants.seed + 0.5);
+        return (t - 0.5) * this.constants.iv;
+      }, {
+        constants: {
+          iv: 1.5,
+          seed: Math.random() * 1e6,
+          PCOUNT: this.PCOUNT,
+        },
+        pipeline: true,
+        output: [this.PCOUNT * 3]
+      });
+
+      this.sDensity = [0.125, 0.25, 0.5, 1.0, 1.5, 2.0]; this.sDensityI = 5;
+      this.sMass = [0.05, 0.1, 0.2, 0.4, 0.8]; this.sMassI = 2;
+      this.sIncomp = [1.0, 0.8, 0.6, 0.4, 0.2]; this.sIncompI = 3;
+      this.sVisc = [0.05, 0.1, 0.25, 0.35, 0.5, 0.75, 0.95]; this.sViscI = 0;
+
+      const seedAttrs = this.gpu.createKernel(function(){
+        var comp = this.thread.x % 6;
+        if (comp < 0.01) {
+          return 0.25; // radius
+        } else if (comp < 1.01) {
+          return 0.5; // density
+        } else if (comp < 2.01) {
+          return 0.2; // mass
+        } else if (comp < 3.01) {
+          return 0.8; // incompress
+        } else if (comp < 4.01) {
+          return 0.35; // visc
+        } else {
+          // type
+          if (Math.floor(this.thread.x / 6) > (this.constants.PCOUNT-33)) {
+            return 1.0;
+          } else {
+            return 0.0;
+          }
+        }
+      }, {
+        constants: {
+          iv: 50,
+          seed: Math.random() * 1e6,
+          PCOUNT: this.PCOUNT
+        },
+        pipeline: true,
+        output: [this.PCOUNT * 6]
+      });
+
+      /*
+          COPPIER
+       */
+
+      const makeCoppier = (isize) => {
+        return this.gpu.createKernel(function(parray) {
+          return parray[this.thread.x];
+        }, {
+          debug: false,
+          pipeline: true,
+          output: [isize * this.PCOUNT]
+        })
+      };
+
+      /*
+       * Seed Particles
+       */
+      this.reset = () => {
+        this.cam = {
+          p: {x: 0, y: 0, z: 17.5},
+          dir: {x: 0, y: 0, z: -1},
+          up: {x: 0, y: 1, z: 0},
+          nearW: 0.0001,
+          farW: 1000,
+          farDist: 1000
+        };
+
+        this.move = {
+          toLR: 0,
+          toUD: 0,
+          toFR: 0,
+          tLR: 0,
+          tUD: 0,
+          tFR: 0,
+          toPull: 0,
+          tPull: 0,
+          toPullR: 0,
+          tPullR: 0
+        };
+
+        this.data = {
+          pos: seedPositions(),
+          vel: seedVelocities(),
+          attr: seedAttrs()
+        };
+      };
+
+      this.reset();
+
+      /*
+          Make coppiers
+       */
+      this.posCoppier = makeCoppier(3);
+      this.velCoppier = makeCoppier(3);
+      // this.attrCoppier = makeCoppier(6);
+
+      this.readArray = this.gpu.createKernel(function(arr){
+        return arr[this.thread.x];
+      }, {
+        debug: false,
+        outputToTexture: false,
+        output: [this.PCOUNT * 3]
+      });
+
+      this.hash = [];
+      for (let i=0; i<this.hashLength; i++) {
+        for (let j=0; j<this.hashBinLen; j++) {
+          this.hash.push(0); this.hash.push(0); this.hash.push(0); this.hash.push(-1);
+        }
+      }
+
+
+      this.normv = this.gpu.createKernel(function(a/*, out*/) {
+        // out = out || [0, 0, 0];
+        const length = Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
+        // out[0] = a[0] / length;
+        // out[1] = a[1] / length;
+        // out[2] = a[2] / length;
+        // return out;
+        return a[this.thread.x] / length;
+      }, {
+        output: [3],
+        pipeline: true,
+      });
+
+      this.crossv = this.gpu.createKernel(function(a, b/*, out*/) {
+        // out = out || [0, 0, 0];
+        // const a1 = a[0], a2 = a[1], a3 = a[2];
+        // const b1 = b[0], b2 = b[1], b3 = b[2];
+        // out[0] = a2 * b3 - a3 * b2;
+        // out[1] = a3 * b1 - a1 * b3;
+        // out[2] = a1 * b2 - a2 * b1;
+        // return out
+        if (this.thread.x === 0) {
+          return a[1] * b[2] - a[2] * b[1];
+        } else if (this.thread.x === 1) {
+          return a[2] * b[0] - a[0] * b[2];
+        } else if (this.thread.x === 2) {
+          return a[0] * b[1] - a[1] * b[0];
+        }
+      }, {
+        output: [3],
+        pipeline: true,
+      });
+    };
+
+    xSSPS.prototype.hashFn = function(x, y, z) {
+      const max2 = Math.floor(this.bound * 2);
+      const ix = (Math.floor(x/this.hashWSize)) + max2,
+        iy = (Math.floor(y/this.hashWSize)) + max2,
+        iz = (Math.floor(z/this.hashWSize)) + max2;
+      return ((ix * 137) + (iy * 197) + (iz * 167)) % this.hashLength;
+    };
+
+    xSSPS.prototype.updateRender = function(keys, dt) {
+      this.handleInput(keys, dt);
+
+      this.sDensityI = this.sDensityI % this.sDensity.length;
+      this.sViscI = this.sViscI % this.sVisc.length;
+      this.sMassI = this.sMassI % this.sMass.length;
+      this.sIncompI = this.sIncompI % this.sIncomp.length;
+
+      const SUBSTEPS = 2;
+
+      for (let i=0; i<SUBSTEPS; i++) {
+        // Update velocities via gravity & pressure
+        this.data.vel = this.velocityKernel(
+          this.data.pos,
+          this.velCoppier(this.data.vel),
+          this.data.attr,
+          this.move.tPull,
+          [this.cam.p.x + this.cam.dir.x * this.move.tPullR, this.cam.p.y + this.cam.dir.y * this.move.tPullR, this.cam.p.z + this.cam.dir.z * this.move.tPullR],
+          this.sDensity[this.sDensityI],
+          this.sVisc[this.sViscI],
+          this.sMass[this.sMassI],
+          this.sIncomp[this.sIncompI],
+          dt / SUBSTEPS
+        );
+
+        // Update positions
+        this.data.pos = this.positionKernel(
+          this.posCoppier(this.data.pos),
+          this.data.vel,
+          dt / SUBSTEPS
+        );
+      }
+
+      // Update hash for raytracing
+      //
+
+      // Clear hash
+      /*for (let i=0; i<this.hashLength; i++) {
+          const o1 = i * this.hashBinLen * 4;
+          for (let j=0; j<this.hashBinLen; j++) {
+              const o2 = o1 + j * 4;
+              this.hash[o2 + 3] = 0.;
+          }
+      }*/
+
+      // Insert points into hash
+      /*const positions = this.readArray(this.data.pos);
+      const hmap = {};
+      for (let i=0; i<this.PCOUNT; i++) {
+          const off = i * 3;
+          const x = positions[off], y = positions[off+1], z = positions[off+2];
+          const r = this.rfScale * 0.707;
+          const ix1 = Math.floor((x - r) / this.hashWSize) - 1,
+                iy1 = Math.floor((y - r) / this.hashWSize) - 1,
+                iz1 = Math.floor((z - r) / this.hashWSize) - 1,
+                ix2 = Math.round((x + r) / this.hashWSize) + 1,
+                iy2 = Math.round((y + r) / this.hashWSize) + 1,
+                iz2 = Math.round((z + r) / this.hashWSize) + 1;
+          for (let ix=ix1; ix<=ix2; ix ++) {
+              for (let iy=iy1; iy<=iy2; iy ++) {
+                  for (let iz=iz1; iz<=iz2; iz ++) {
+                      const xc = (ix + 0.5) * this.hashWSize,
+                            yc = (iy + 0.5) * this.hashWSize,
+                            zc = (iz + 0.5) * this.hashWSize;
+                      const dx = xc - x, dy = yc - y, dz = zc - z;
+                      const dist = Math.sqrt(dx*dx+dy*dy+dz*dz);
+                      if (dist <= (r+this.hashWSize)) {
+                          const hkey = this.hashFn(xc, yc, zc);
+                          (hmap[hkey] = hmap[hkey] || []).push({x, y, z, type: i < ((this.PCOUNT-1)-32) ? 1. : 2., dist})
+                      }
+                  }
+              }
+          }
+      }
+      const sortFn = (a, b) => (a.dist - b.dist);
+      for (var hkeyStr in hmap) {
+          const hkey = parseInt(hkeyStr);
+          const list = hmap[hkeyStr];
+          list.sort(sortFn);
+          for (let i=0; i<list.length && i<this.hashBinLen; i++) {
+              const P = list[i];
+              const off = hkey * this.hashBinLen * 4 + i * 4;
+              this.hash[off+0] = P.x;
+              this.hash[off+1] = P.y;
+              this.hash[off+2] = P.z;
+              this.hash[off+3] = P.type;
+          }
+      }*/
+
+      // Render
+      this.renderMode = this.renderMode % this.renderKernel.length;
+      this.renderKernel[this.renderMode](
+        this.data.pos,
+        [this.cam.p.x, this.cam.p.y, this.cam.p.z],
+        [this.cam.dir.x, this.cam.dir.y, this.cam.dir.z],
+        [this.cam.up.x, this.cam.up.y, this.cam.up.z],
+        this.cam.nearW, this.cam.farW, this.cam.farDist
+      );
+    };
+
+    xSSPS.prototype.handleInput = function(keys, dt) {
+
+      this.move.toLR = this.move.toFR = this.move.toUD = 0;
+
+      if (keys[37]) {
+        this.move.toLR -= 1;
+      }
+      if (keys[39]) {
+        this.move.toLR += 1;
+      }
+      if (keys[38]) {
+        this.move.toUD -= 1;
+      }
+      if (keys[40]) {
+        this.move.toUD += 1;
+      }
+      if (keys[83]) {
+        this.move.toFR -= 1;
+      }
+      if (keys[87]) {
+        this.move.toFR += 1;
+      }
+
+      if (this.lkeys[82] && !keys[82]) {
+        this.renderMode += 1;
+      }
+      if (this.lkeys[27] && !keys[27]) {
+        this.reset();
+      }
+      if (this.lkeys[49] && !keys[49]) {
+        this.sDensityI += 1;
+      }
+      if (this.lkeys[50] && !keys[50]) {
+        this.sViscI += 1;
+      }
+      if (this.lkeys[51] && !keys[51]) {
+        this.sMassI += 1;
+      }
+      if (this.lkeys[52] && !keys[52]) {
+        this.sIncompI += 1;
+      }
+
+      if (this.lkeys[32] && !keys[32]) {
+        this.data.pos = this.setPosKernel(
+          this.posCoppier(this.data.pos),
+          (this.PCOUNT-1) - this.shootIndex,
+          [
+            this.cam.p.x + this.cam.dir.x * 0.5,
+            this.cam.p.y + this.cam.dir.y * 0.5,
+            this.cam.p.z + this.cam.dir.z * 0.5
+          ]
+        );
+        this.data.vel = this.setVelKernel(
+          this.velCoppier(this.data.vel),
+          (this.PCOUNT-1) - this.shootIndex,
+          [
+            this.cam.dir.x * 15,
+            this.cam.dir.y * 15,
+            this.cam.dir.z * 15
+          ]
+        );
+        this.shootIndex = (this.shootIndex + 1) % 32;
+      }
+      if (keys[69]) {
+        this.move.toPull = 10;
+        this.move.toPullR = 5;
+      }
+      else {
+        this.move.toPull = -1;
+        this.move.toPullR = 0.25;
+      }
+
+      this.lkeys = {...keys};
+
+      this.move.tLR += (this.move.toLR - this.move.tLR) * dt * 1.5;
+      this.move.tUD += (this.move.toUD - this.move.tUD) * dt * 1.5;
+      this.move.tFR += (this.move.toFR - this.move.tFR) * dt * 1.5;
+      this.move.tPull += (this.move.toPull - this.move.tPull) * dt * 1.5;
+      this.move.tPullR += (this.move.toPullR - this.move.tPullR) * dt * 1.5;
+
+      const utmp = squat.normv(squat.crossv(squat.crossv([this.cam.dir.x, this.cam.dir.y, this.cam.dir.z], [this.cam.up.x, this.cam.up.y, this.cam.up.z]), [this.cam.dir.x, this.cam.dir.y, this.cam.dir.z]));
+      this.cam.up.x = utmp[0]; this.cam.up.y = utmp[1]; this.cam.up.z = utmp[2];
+      // TODO: make all come from GPU, no visit to CPU
+      // const camUp = this.normv(this.crossv(this.crossv([this.cam.dir.x, this.cam.dir.y, this.cam.dir.z], [this.cam.up.x, this.cam.up.y, this.cam.up.z]), [this.cam.dir.x, this.cam.dir.y, this.cam.dir.z]));
+      // console.log(camUp.toArray());
+      // debugger;
+      this.cam.up.x = utmp[0];
+      this.cam.up.y = utmp[1];
+      this.cam.up.z = utmp[2];
+
+      const ret = this.camRotKernel(
+        this.move.tLR / 35,
+        -this.move.tUD / 35,
+        [this.cam.p.x, this.cam.p.y, this.cam.p.z],
+        [this.cam.dir.x, this.cam.dir.y, this.cam.dir.z],
+        [this.cam.up.x, this.cam.up.y, this.cam.up.z],
+        1, 3.5, 2
+      );
+
+      this.cam.dir.x = ret[0];
+      this.cam.dir.y = ret[1];
+      this.cam.dir.z = ret[2];
+
+      dlen = Math.sqrt(this.cam.dir.x*this.cam.dir.x + this.cam.dir.y*this.cam.dir.y + this.cam.dir.z*this.cam.dir.z);
+      this.cam.p.x += (this.cam.dir.x/dlen) * this.move.tFR * dt * 6;
+      this.cam.p.y += (this.cam.dir.y/dlen) * this.move.tFR * dt * 6;
+      this.cam.p.z += (this.cam.dir.z/dlen) * this.move.tFR * dt * 6;
+    };
+  </script>
+  <script>
+    // (c)  oblong industries
+
+    'use strict';
+
+    /**
+     * A simple quaternion library for JavaScript that provides free functions
+     * which operate on quadruple arrays.
+     *
+     * The library assumes quaternions are of the form, given some array
+     * of numbers `q`:
+     *
+     *     q[0] + q[1]*i + q[2]*j + q[3]*k
+     *
+     * Functions which return a quaternion often have an optional
+     * argument, at the end of the argument list, which serves as an "out"
+     * parameter.  If the caller passes an object (like an `Array`, or a
+     * `Float64Array`) via this argument, the function will set the `'0'`,
+     * `'1'`, `'2'`, and `'3'` properties on the object with the computed
+     * quaternion's component values.  This can be used to recycle space
+     * in a preallocated chunk of memory in an array buffer and avoid
+     * allocating space for return values.
+     */
+
+    window.squat = {};
+
+    // internal function that constructs and returns a new, zero
+    // quaternion
+    function new_quat() {
+      return [0, 0, 0, 0];
+    }
+
+    /**
+     * Adds two quaternions.
+     */
+    squat.add = function (q1, q2, out) {
+      out = out || new_quat();
+      out[0] = q1[0] + q2[0];
+      out[1] = q1[1] + q2[1];
+      out[2] = q1[2] + q2[2];
+      out[3] = q1[3] + q2[3];
+      return out;
+    };
+
+    /**
+     * Multiplies two quaternions.
+     * Note: quaternion multiplication is noncommutative.
+     */
+    squat.mul = function (q1, q2, out) {
+      out = out || new_quat();
+
+      var a1 = q1[0], a2 = q2[0],
+        b1 = q1[1], b2 = q2[1],
+        c1 = q1[2], c2 = q2[2],
+        d1 = q1[3], d2 = q2[3];
+
+      out[0] = a1*a2 - b1*b2 - c1*c2 - d1*d2;
+      out[1] = a1*b2 + b1*a2 + c1*d2 - d1*c2;
+      out[2] = a1*c2 - b1*d2 + c1*a2 + d1*b2;
+      out[3] = a1*d2 + b1*c2 - c1*b2 + d1*a2;
+      return out;
+    };
+
+    /**
+     * Multiplies a quaternion by a scalar.
+     */
+    squat.scale = function (q, x, out) {
+      out = out || new_quat();
+      var a = q[0], b = q[1], c = q[2], d = q[3];
+
+      out[0] = a*x;
+      out[1] = b*x;
+      out[2] = c*x;
+      out[3] = d*x;
+      return out;
+    };
+
+    /**
+     * Computes the conjugate of a quaternion.
+     */
+    squat.conjugate = function (q, out) {
+      out = out || new_quat();
+      var a = q[0], b = q[1], c = q[2], d = q[3];
+      out[0] = a;
+      out[1] = -b;
+      out[2] = -c;
+      out[3] = -d;
+      return out;
+    };
+
+    /**
+     * Computes the inverse, or reciprocal, of a quaternion.
+     */
+    squat.inverse = function (q, out) {
+      out = out || new_quat();
+      var a = q[0], b = q[1], c = q[2], d = q[3];
+      var r = 1 / (a*a + b*b + c*c + d*d);
+      out[0] = a*r;
+      out[1] = -b*r;
+      out[2] = -c*r;
+      out[3] = -d*r;
+      return out;
+    };
+
+    /**
+     * Computes the length of a quaternion: that is, the square root of
+     * the product of the quaternion with its conjugate.  Also known as
+     * the "norm".
+     */
+    squat.length = function (q) {
+      var a = q[0], b = q[1], c = q[2], d = q[3];
+      return Math.sqrt(a*a + b*b + c*c + d*d);
+    };
+
+    /**
+     * Normalizes a quaternion so its length is equal to 1.  The result of
+     * normalizing a zero quaternion is undefined.
+     */
+    squat.normalized = function (q, out) {
+      out = out || new_quat();
+      var a = q[0], b = q[1], c = q[2], d = q[3];
+      var rlen = 1 / squat.length(q);
+      return squat.scale(q, rlen, out);
+    };
+
+    /**
+     * Provides the real part of the quaternion.
+     */
+    squat.real = function (q) { return q[0]; };
+
+    /**
+     * Provides the vector part of the quaternion.
+     */
+    squat.vect = function (q) { return [q[1], q[2], q[3]]; };
+
+    /**
+     * Provides an empty quaternion.
+     */
+    squat.zero = function (out) {
+      out = out || new_quat();
+      return out;
+    };
+
+    /**
+     * Constructs a rotation quaternion from an axis (a normalized
+     * "vect3") and an angle (in radians).
+     */
+    squat.from_axis_angle = function (axis, angle, out) {
+      out = out || new_quat();
+      var x = axis[0], y = axis[1], z = axis[2];
+      var r = 1/Math.sqrt(x*x + y*y + z*z);
+      var s = Math.sin(angle/2);
+      out[0] = Math.cos(angle/2);
+      out[1] = s * x * r;
+      out[2] = s * y * r;
+      out[3] = s * z * r;
+      return out;
+    };
+
+    /**
+     * Extracts the angle part, in radians, of a rotation quaternion.
+     */
+    squat.angle = function (quat) {
+      var a = quat[0];
+      if (a < -1.0 || a > 1.0)
+        return 0.0;
+      var angle = 2 * Math.acos(a);
+      if (angle > Math.PI)
+        return (angle - 2 * Math.PI);
+      return angle;
+    };
+
+    /**
+     * Extracts the axis part, as an array of three numbers, of a rotation
+     * quaternion.
+     */
+    squat.axis = function (quat) {
+      var x = quat[1], y = quat[2], z = quat[3];
+      var r = 1/Math.sqrt(x*x + y*y + z*z);
+      return [x*r, y*r, z*r];
+    };
+
+    /**
+     * Constructs a rotation quaternion from "norm" and "over" vectors.
+     */
+    squat.from_norm_over = function (norm, over, out) {
+
+    };
+
+    squat.vmul = function(quat, v, out){
+      out = out || [0, 0, 0];
+
+      var x = v[0],
+        y = v[1],
+        z = v[2];
+
+      var qx = quat[1],
+        qy = quat[2],
+        qz = quat[3],
+        qw = quat[0];
+
+      // q*v
+      var ix =  qw * x + qy * z - qz * y,
+        iy =  qw * y + qz * x - qx * z,
+        iz =  qw * z + qx * y - qy * x,
+        iw = -qx * x - qy * y - qz * z;
+
+      out[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+      out[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+      out[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+
+      return out;
+    };
+
+    squat.crossv = function(a, b, out) {
+      out = out || [0, 0, 0];
+      const a1 = a[0], a2 = a[1], a3 = a[2];
+      const b1 = b[0], b2 = b[1], b3 = b[2];
+      out[0] = a2 * b3 - a3 * b2;
+      out[1] = a3 * b1 - a1 * b3;
+      out[2] = a1 * b2 - a2 * b1;
+      return out
+    };
+
+    squat.normv = function(a, out) {
+      out = out || [0, 0, 0];
+      const length = Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
+      out[0] = a[0] / length;
+      out[1] = a[1] / length;
+      out[2] = a[2] / length;
+      return out;
+    }
+
+    /**
+     * Basis quaternions, for your convenience.
+     */
+    squat.bases = {
+      _1: [1, 0, 0, 0],
+      i:  [0, 1, 0, 0],
+      j:  [0, 0, 1, 0],
+      k:  [0, 0, 0, 1]
+    };
+  </script>
+  <script>
+    window.SSPS = function () {
+
+      this.vpw = window.innerWidth;
+      this.vph = window.innerHeight;
+
+      this.psim = new xSSPS(
+        64, // Particle count
+        256 // Render size
+      );
+
+      this.rcanvas = this.psim.canvas;
+
+      this.canvas = document.createElement('canvas');
+      this.canvas.width = this.vpw;
+      this.canvas.height = this.vph;
+      this.canvas.style.position = 'fixed';
+      this.canvas.style.left = '0%';
+      this.canvas.style.top = '0%';
+      this.canvas.style.width = '100%';
+      this.canvas.style.height = '100%';
+      this.ctx = this.canvas.getContext('2d');
+      this.ctx.imageSmoothingEnabled = true;
+      this.ctx.imageSmoothingQuality = 'high';
+      document.body.appendChild(this.canvas);
+
+      this.keys = {};
+    };
+
+    SSPS.prototype.updateRender = function(dt) {
+
+      this.psim.updateRender(this.keys, dt);
+
+      this.ctx.clearRect(0, 0, this.vpw, this.vph);
+      this.ctx.drawImage(this.rcanvas, 0, 0, this.rcanvas.width, this.rcanvas.height, this.vpw*0.5 - this.vph*0.5, 0, this.vph, this.vph);
+
+      const lines = [];
+
+      const mkOpt = (lst, i) => {
+        i = i % lst.length;
+        let ret = '';
+        for (let j=0; j<lst.length; j++) {
+          if (j === i) {
+            ret += '>>' + lst[j] + '<< ';
+          }
+          else {
+            ret += ' ' + lst[j] + ' ';
+          }
+        }
+        return ret;
+      };
+
+      lines.push('SSPS by Chadams - ' + Math.round(1 / dt) + ' fps - ' + this.psim.PCOUNT + ' particles @ ' + this.psim.RSIZE + 'x' + this.psim.RSIZE);
+      lines.push('[W] - Forward, [S] - Reverse, [ARROWS] - Look');
+      lines.push('[E] - Grab, [SPACE] - Shoot Particle');
+      lines.push('[R] - Cycle Render Mode: ' + mkOpt([1, 2], this.psim.renderMode));
+      lines.push('[1] - Cycle Particle Density: ' + mkOpt(this.psim.sDensity, this.psim.sDensityI));
+      lines.push('[2] - Cycle Particle Viscosity: ' + mkOpt(this.psim.sVisc, this.psim.sViscI));
+      lines.push('[3] - Cycle Particle Mass: ' + mkOpt(this.psim.sMass, this.psim.sMassI));
+      lines.push('[4] - Cycle Particle Incompressiveness: ' + mkOpt(this.psim.sIncomp, this.psim.sIncompI));
+      lines.push('[ESC] - Reset Particles & Camera');
+
+      const fs = 14;
+      const x = this.vpw*0.5 - this.vph*0.5 + 20;
+      let y = 20 + (fs * 0.9);
+      this.ctx.textAlign = 'left';
+      this.ctx.font = fs + 'px Courier New';
+      this.ctx.fillStyle = '#DDF';
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+
+      for (let i=0; i<lines.length; i++) {
+        this.ctx.fillText('' + lines[i], x, y);
+        this.ctx.strokeText('' + lines[i], x, y);
+
+        y += fs + 3;
+      }
+    };
+
+    SSPS.prototype.start = function () {
+      let lTime = Date.timeStamp();
+      let lDt = 1/60;
+      this.running = true;
+      this.time = 0;
+
+      document.body.addEventListener('keydown', (e) => {
+        e = e || window.event;
+        this.keys[e.keyCode] = true;
+      });
+
+      document.body.addEventListener('keyup', (e) => {
+        e = e || window.event;
+        this.keys[e.keyCode] = false;
+      });
+
+      const tick = () => {
+        if (!this.running) {
+          return;
+        }
+
+        this.updateViewport();
+
+        const cTime = Date.timeStamp();
+        const dt = (Math.max(Math.min(cTime - lTime, 1/10), 1/240) || (1/60)) * 0.1 + lDt * 0.9;
+        lDt = dt;
+        lTime = cTime;
+
+        this.time += dt;
+
+        this.updateRender(dt);
+
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    };
+
+    SSPS.prototype.stop = function () {
+      this.running = false;
+
+      document.title = 'SSPS - Stopped';
+    };
+
+    SSPS.prototype.updateViewport = function() {
+      if (this.vpw !== window.innerWidth || this.vph !== window.innerHeight) {
+        this.vpw = window.innerWidth;
+        this.vph = window.innerHeight;
+        this.canvas.width = this.vpw;
+        this.canvas.height = this.vph;
+      }
+    };
+
+    Date.timeStamp = function() {
+      return new Date().getTime() / 1000.0;
+    };
+  </script>
+</head>
+<body>
+<script>
+  const inst = new SSPS();
+  inst.start();
+</script>
+</body>
+</html>

@@ -216,7 +216,15 @@ class WebGL2Kernel extends WebGLKernel {
 					this._setupOutputTexture();
 				}
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-				return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this.context, 'ArrayTexture(4)');
+				return new Texture({
+					texture: this.outputTexture,
+					size: texSize,
+					dimensions: this.threadDim,
+					output: this.output,
+					context: this.context,
+					gpu: this.gpu,
+					type: 'ArrayTexture(4)'
+				});
 			}
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -246,7 +254,14 @@ class WebGL2Kernel extends WebGLKernel {
 					result: this.renderOutput(outputTexture)
 				};
 				for (let i = 0; i < this.subKernels.length; i++) {
-					output[this.subKernels[i].property] = new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context);
+					output[this.subKernels[i].property] = new Texture({
+						texture: this.subKernelOutputTextures[i],
+						size: texSize,
+						dimensions: this.threadDim,
+						output: this.output,
+						context: this.context,
+						gpu: this.gpu,
+					});
 				}
 				return output;
 			}

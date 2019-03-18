@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.3
- * @date Wed Mar 13 2019 12:42:18 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.4
+ * @date Sun Mar 17 2019 22:11:56 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -6386,7 +6386,7 @@ class FunctionNode {
 				return type;
 			}
 		}
-		return null;
+		throw new Error(`Type for constant "${ constantName }" not declared`);
 	}
 
 	getUserArgumentName(name) {
@@ -7606,6 +7606,8 @@ class Kernel {
 
 		this.context = null;
 
+		this.gpu = null;
+
 		this.functions = null;
 
 		this.nativeFunctions = null;
@@ -8236,6 +8238,18 @@ class WebGLFunctionNode extends FunctionNode {
 
 				case 'Integer & Float':
 				case 'Integer & Number':
+					if (ast.operator === '>' || ast.operator === '<' && ast.right.type === 'Literal') {
+						if (!Number.isInteger(ast.right.value)) {
+							this.pushState('casting-to-float');
+							retArr.push('float(');
+							this.astGeneric(ast.left, retArr);
+							retArr.push(')');
+							this.popState('casting-to-float');
+							retArr.push(operatorMap[ast.operator] || ast.operator);
+							this.astGeneric(ast.right, retArr);
+							break;
+						}
+					}
 					this.astGeneric(ast.left, retArr);
 					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.pushState('casting-to-integer');
@@ -8736,8 +8750,9 @@ class WebGLFunctionNode extends FunctionNode {
 		}
 
 		let funcName = this.astMemberExpressionUnroll(ast.callee);
+		const isMathFunction = funcName.indexOf(jsMathPrefix) === 0;
 
-		if (funcName.indexOf(jsMathPrefix) === 0) {
+		if (isMathFunction) {
 			funcName = funcName.slice(jsMathPrefix.length);
 		}
 
@@ -8759,15 +8774,15 @@ class WebGLFunctionNode extends FunctionNode {
 		const functionArguments = [];
 		this.calledFunctionsArguments[funcName].push(functionArguments);
 
-		if (funcName === 'random' && this.plugins) {
+		if (funcName === 'random' && this.plugins && this.plugins.length > 0) {
 			for (let i = 0; i < this.plugins.length; i++) {
 				const plugin = this.plugins[i];
 				if (plugin.functionMatch === 'Math.random()' && plugin.functionReplace) {
 					functionArguments.push(plugin.functionReturnType);
 					retArr.push(plugin.functionReplace);
+					return retArr;
 				}
 			}
-			return retArr;
 		}
 
 		retArr.push(funcName);
@@ -8832,6 +8847,29 @@ class WebGLFunctionNode extends FunctionNode {
 					}
 				}
 				throw new Error(`Unhandled argument combination of ${ argumentType } and ${ targetType }`);
+			}
+		} else if (isMathFunction) {
+			for (let i = 0; i < ast.arguments.length; ++i) {
+				const argument = ast.arguments[i];
+				const argumentType = this.getType(argument);
+
+				if (i > 0) {
+					retArr.push(', ');
+				}
+
+				switch (argumentType) {
+					case 'Integer':
+						this.pushState('casting-to-float');
+						retArr.push('float(');
+						this.astGeneric(argument, retArr);
+						retArr.push(')');
+						this.popState('casting-to-float');
+						break;
+					case 'LiteralInteger':
+					default:
+						this.astGeneric(argument, retArr);
+						break;
+				}
 			}
 		} else {
 			for (let i = 0; i < ast.arguments.length; ++i) {
@@ -9490,7 +9528,15 @@ class WebGLKernel extends GLKernel {
 					this._setupOutputTexture();
 				}
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-				return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this.context, 'ArrayTexture(4)');
+				return new Texture({
+					texture: this.outputTexture,
+					size: texSize,
+					dimensions: this.threadDim,
+					output: this.output,
+					context: this.context,
+					gpu: this.gpu,
+					type: 'ArrayTexture(4)'
+				});
 			}
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -9520,7 +9566,14 @@ class WebGLKernel extends GLKernel {
 					result: this.renderOutput(outputTexture),
 				};
 				for (let i = 0; i < this.subKernels.length; i++) {
-					output[this.subKernels[i].property] = new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context);
+					output[this.subKernels[i].property] = new Texture({
+						texture: this.subKernelOutputTextures[i],
+						size: texSize,
+						dimensions: this.threadDim,
+						output: this.output,
+						context: this.context,
+						gpu: this.gpu,
+					});
 				}
 				return output;
 			}
@@ -9535,7 +9588,14 @@ class WebGLKernel extends GLKernel {
 		const threadDim = this.threadDim;
 		const output = this.output;
 		if (this.pipeline) {
-			return new Texture(outputTexture, texSize, this.threadDim, output, this.context);
+			return new Texture({
+				texture: outputTexture,
+				size: texSize,
+				dimensions: this.threadDim,
+				output,
+				context: this.context,
+				gpu: this.gpu,
+			});
 		} else {
 			let result;
 			if (this.floatOutput) {
@@ -10864,7 +10924,15 @@ class WebGL2Kernel extends WebGLKernel {
 					this._setupOutputTexture();
 				}
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-				return new Texture(this.outputTexture, texSize, this.threadDim, this.output, this.context, 'ArrayTexture(4)');
+				return new Texture({
+					texture: this.outputTexture,
+					size: texSize,
+					dimensions: this.threadDim,
+					output: this.output,
+					context: this.context,
+					gpu: this.gpu,
+					type: 'ArrayTexture(4)'
+				});
 			}
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -10894,7 +10962,14 @@ class WebGL2Kernel extends WebGLKernel {
 					result: this.renderOutput(outputTexture)
 				};
 				for (let i = 0; i < this.subKernels.length; i++) {
-					output[this.subKernels[i].property] = new Texture(this.subKernelOutputTextures[i], texSize, this.threadDim, this.output, this.context);
+					output[this.subKernels[i].property] = new Texture({
+						texture: this.subKernelOutputTextures[i],
+						size: texSize,
+						dimensions: this.threadDim,
+						output: this.output,
+						context: this.context,
+						gpu: this.gpu,
+					});
 				}
 				return output;
 			}
@@ -11757,7 +11832,8 @@ class GPU {
 			context: this.context,
 			canvas: this.canvas,
 			functions: this.functions,
-			nativeFunctions: this.nativeFunctions
+			nativeFunctions: this.nativeFunctions,
+			gpu: this,
 		}, settings || {});
 
 		const kernel = kernelRunShortcut(new this.Kernel(source, mergedSettings));
@@ -12114,20 +12190,32 @@ module.exports = {
 };
 },{}],28:[function(require,module,exports){
 class Texture {
-	constructor(texture, size, dimensions, output, context, type = 'NumberTexture') {
+	constructor(settings) {
+		const {
+			texture,
+			size,
+			dimensions,
+			output,
+			context,
+			gpu,
+			type = 'NumberTexture'
+		} = settings;
+		if (!output) throw new Error('settings property "output" required.');
+		if (!context) throw new Error('settings property "context" required.');
 		this.texture = texture;
 		this.size = size;
 		this.dimensions = dimensions;
 		this.output = output;
 		this.context = context;
+		this.gpu = gpu;
 		this.kernel = null;
 		this.type = type;
 	}
 
 	toArray(gpu) {
-		if (!gpu) throw new Error('You need to pass the GPU object for toArray to work.');
 		if (this.kernel) return this.kernel(this);
-
+		gpu = gpu || this.gpu;
+		if (!gpu) throw new Error('settings property "gpu" or argument required.');
 		this.kernel = gpu.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];
 		}).setOutput(this.output);
@@ -12143,6 +12231,7 @@ class Texture {
 module.exports = {
 	Texture
 };
+
 },{}],29:[function(require,module,exports){
 const {
 	Input

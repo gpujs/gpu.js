@@ -211,7 +211,8 @@ class GPU {
 			context: this.context,
 			canvas: this.canvas,
 			functions: this.functions,
-			nativeFunctions: this.nativeFunctions
+			nativeFunctions: this.nativeFunctions,
+			gpu: this,
 		}, settings || {});
 
 		const kernel = kernelRunShortcut(new this.Kernel(source, mergedSettings));

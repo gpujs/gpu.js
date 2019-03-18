@@ -111,6 +111,12 @@ class Kernel {
 
 		/**
 		 *
+		 * @type {GPU}
+		 */
+		this.gpu = null;
+
+		/**
+		 *
 		 * @type {IGPUFunction[]}
 		 */
 		this.functions = null;

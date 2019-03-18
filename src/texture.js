@@ -8,24 +8,35 @@
  * @param {String} [type]
  */
 class Texture {
-	constructor(texture, size, dimensions, output, context, type = 'NumberTexture') {
+	constructor(settings) {
+		const {
+			texture,
+			size,
+			dimensions,
+			output,
+			context,
+			gpu,
+			type = 'NumberTexture'
+		} = settings;
+		if (!output) throw new Error('settings property "output" required.');
+		if (!context) throw new Error('settings property "context" required.');
 		this.texture = texture;
 		this.size = size;
 		this.dimensions = dimensions;
 		this.output = output;
 		this.context = context;
+		this.gpu = gpu;
 		this.kernel = null;
 		this.type = type;
 	}
 
 	/**
 	 * @desc Converts the Texture into a JavaScript Array.
-	 * @param {GPU} gpu Object
 	 */
 	toArray(gpu) {
-		if (!gpu) throw new Error('You need to pass the GPU object for toArray to work.');
 		if (this.kernel) return this.kernel(this);
-
+		gpu = gpu || this.gpu;
+		if (!gpu) throw new Error('settings property "gpu" or argument required.');
 		this.kernel = gpu.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];
 		}).setOutput(this.output);

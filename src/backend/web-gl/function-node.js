@@ -309,6 +309,19 @@ class WebGLFunctionNode extends FunctionNode {
 
 				case 'Integer & Float':
 				case 'Integer & Number':
+					if (ast.operator === '>' || ast.operator === '<' && ast.right.type === 'Literal') {
+						// if right value is actually a float, don't loose that information, cast left to right rather than the usual right to left
+						if (!Number.isInteger(ast.right.value)) {
+							this.pushState('casting-to-float');
+							retArr.push('float(');
+							this.astGeneric(ast.left, retArr);
+							retArr.push(')');
+							this.popState('casting-to-float');
+							retArr.push(operatorMap[ast.operator] || ast.operator);
+							this.astGeneric(ast.right, retArr);
+							break;
+						}
+					}
 					this.astGeneric(ast.left, retArr);
 					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.pushState('casting-to-integer');
@@ -883,9 +896,10 @@ class WebGLFunctionNode extends FunctionNode {
 
 		// Get the full function call, unrolled
 		let funcName = this.astMemberExpressionUnroll(ast.callee);
+		const isMathFunction = funcName.indexOf(jsMathPrefix) === 0;
 
 		// Its a math operator, remove the prefix
-		if (funcName.indexOf(jsMathPrefix) === 0) {
+		if (isMathFunction) {
 			funcName = funcName.slice(jsMathPrefix.length);
 		}
 
@@ -910,15 +924,15 @@ class WebGLFunctionNode extends FunctionNode {
 		const functionArguments = [];
 		this.calledFunctionsArguments[funcName].push(functionArguments);
 
-		if (funcName === 'random' && this.plugins) {
+		if (funcName === 'random' && this.plugins && this.plugins.length > 0) {
 			for (let i = 0; i < this.plugins.length; i++) {
 				const plugin = this.plugins[i];
 				if (plugin.functionMatch === 'Math.random()' && plugin.functionReplace) {
 					functionArguments.push(plugin.functionReturnType);
 					retArr.push(plugin.functionReplace);
+					return retArr;
 				}
 			}
-			return retArr;
 		}
 
 		// Call the function
@@ -927,7 +941,7 @@ class WebGLFunctionNode extends FunctionNode {
 		// Open arguments space
 		retArr.push('(');
 
-		// Add the vars
+		// Add the arguments
 		if (this.nativeFunctionArgumentTypes && this.nativeFunctionArgumentTypes[funcName]) {
 			const nativeFunctionArgumentTypes = this.nativeFunctionArgumentTypes[funcName].types;
 			for (let i = 0; i < ast.arguments.length; ++i) {
@@ -986,6 +1000,29 @@ class WebGLFunctionNode extends FunctionNode {
 					}
 				}
 				throw new Error(`Unhandled argument combination of ${ argumentType } and ${ targetType }`);
+			}
+		} else if (isMathFunction) {
+			for (let i = 0; i < ast.arguments.length; ++i) {
+				const argument = ast.arguments[i];
+				const argumentType = this.getType(argument);
+
+				if (i > 0) {
+					retArr.push(', ');
+				}
+
+				switch (argumentType) {
+					case 'Integer':
+						this.pushState('casting-to-float');
+						retArr.push('float(');
+						this.astGeneric(argument, retArr);
+						retArr.push(')');
+						this.popState('casting-to-float');
+						break;
+					case 'LiteralInteger':
+					default:
+						this.astGeneric(argument, retArr);
+						break;
+				}
 			}
 		} else {
 			for (let i = 0; i < ast.arguments.length; ++i) {

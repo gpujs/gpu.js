@@ -237,7 +237,7 @@ class FunctionNode {
 				return type;
 			}
 		}
-		return null;
+		throw new Error(`Type for constant "${ constantName }" not declared`);
 	}
 
 	/**

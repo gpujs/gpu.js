@@ -120,15 +120,15 @@ test('toString Texture gpu', () => {
   toStringTextureTest('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('toString Texture webgl', function () {
+(GPU.isWebGLSupported ? test : skip)('toString Texture webgl', () => {
   toStringTextureTest('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('toString Texture webgl2', function () {
+(GPU.isWebGL2Supported ? test : skip)('toString Texture webgl2', () => {
   toStringTextureTest('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('toString Texture headlessgl', function () {
+(GPU.isHeadlessGLSupported ? test : skip)('toString Texture headlessgl', () => {
   toStringTextureTest('headlessgl');
 });
 
@@ -178,15 +178,15 @@ test('toString Input gpu', () => {
   toStringInputTest('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('toString Input webgl', function () {
+(GPU.isWebGLSupported ? test : skip)('toString Input webgl', () => {
   toStringInputTest('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('toString Input webgl2', function () {
+(GPU.isWebGL2Supported ? test : skip)('toString Input webgl2', () => {
   toStringInputTest('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('toString Input headlessgl', function () {
+(GPU.isHeadlessGLSupported ? test : skip)('toString Input headlessgl', () => {
   toStringInputTest('headlessgl');
 });
 
