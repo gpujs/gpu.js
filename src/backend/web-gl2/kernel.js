@@ -325,7 +325,7 @@ class WebGL2Kernel extends WebGLKernel {
 	 * @desc Adds kernel parameters to the Argument Texture,
 	 * binding it to the context, etc.
 	 *
-	 * @param {Array|Texture|Number} value - The actual argument supplied to the kernel
+	 * @param {Array|Texture|Number|Input} value - The actual argument supplied to the kernel
 	 * @param {String} type - Type of the argument
 	 * @param {String} name - Name of the argument
 	 */
@@ -355,7 +355,7 @@ class WebGL2Kernel extends WebGLKernel {
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value, length);
+					} = this.formatArrayTransfer(value, length);
 
 					let buffer;
 					if (this.floatTextures) {
@@ -399,10 +399,10 @@ class WebGL2Kernel extends WebGLKernel {
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value.value, length);
+					} = this.formatArrayTransfer(value.value, length);
 
 					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 					} else {
 						const buffer = new Uint8Array(valuesFlat.buffer);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
@@ -602,7 +602,7 @@ class WebGL2Kernel extends WebGLKernel {
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value, length);
+					} = this.formatArrayTransfer(value, length);
 
 					let buffer;
 					if (this.floatTextures) {
@@ -639,10 +639,10 @@ class WebGL2Kernel extends WebGLKernel {
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value.value, length);
+					} = this.formatArrayTransfer(value.value, length);
 
 					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 					} else {
 						const buffer = new Uint8Array(valuesFlat.buffer);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);

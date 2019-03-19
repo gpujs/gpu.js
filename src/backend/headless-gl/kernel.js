@@ -31,6 +31,7 @@ class HeadlessGLKernel extends WebGLKernel {
 			OES_texture_float: testContext.getExtension('OES_texture_float'),
 			OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
 			OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
+			WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
 		};
 		features = this.getFeatures();
 	}
@@ -48,10 +49,14 @@ class HeadlessGLKernel extends WebGLKernel {
 		return Object.freeze({
 			isFloatRead: this.getIsFloatRead(),
 			isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
-			getIsTextureFloat: true,
+			isTextureFloat: this.getIsTextureFloat(),
 			isDrawBuffers,
 			kernelMap: isDrawBuffers
 		});
+	}
+
+	static getIsTextureFloat() {
+		return Boolean(testExtensions.OES_texture_float);
 	}
 
 	static getIsDrawBuffers() {
@@ -88,6 +93,7 @@ class HeadlessGLKernel extends WebGLKernel {
 			OES_texture_float: this.context.getExtension('OES_texture_float'),
 			OES_texture_float_linear: this.context.getExtension('OES_texture_float_linear'),
 			OES_element_index_uint: this.context.getExtension('OES_element_index_uint'),
+			WEBGL_draw_buffers: this.context.getExtension('WEBGL_draw_buffers'),
 		};
 	}
 
@@ -97,6 +103,7 @@ class HeadlessGLKernel extends WebGLKernel {
 		this.extensions.OES_texture_float = null;
 		this.extensions.OES_texture_float_linear = null;
 		this.extensions.OES_element_index_uint = null;
+		this.extensions.WEBGL_draw_buffers = null;
 	}
 
 	static destroyContext(context) {

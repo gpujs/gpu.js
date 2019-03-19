@@ -98,7 +98,7 @@ function webGLKernelString(gpuKernel, name) {
       ${ removeFnNoise(gpuKernel.build.toString()) }
 		  ${ removeFnNoise(gpuKernel.run.toString()) }
 		  ${ removeFnNoise(gpuKernel._addArgument.toString()) }
-		  ${ removeFnNoise(gpuKernel._formatArrayTransfer.toString()) }
+		  ${ removeFnNoise(gpuKernel.formatArrayTransfer.toString()) }
 		  ${ removeFnNoise(gpuKernel.checkOutput.toString()) }
 		  ${ removeFnNoise(gpuKernel.getArgumentTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.getTextureCache.toString()) }

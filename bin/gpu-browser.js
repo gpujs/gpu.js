@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.4
- * @date Sun Mar 17 2019 22:11:56 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.5
+ * @date Tue Mar 19 2019 08:40:39 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -7462,6 +7462,7 @@ class HeadlessGLKernel extends WebGLKernel {
 			OES_texture_float: testContext.getExtension('OES_texture_float'),
 			OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
 			OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
+			WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
 		};
 		features = this.getFeatures();
 	}
@@ -7479,10 +7480,14 @@ class HeadlessGLKernel extends WebGLKernel {
 		return Object.freeze({
 			isFloatRead: this.getIsFloatRead(),
 			isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
-			getIsTextureFloat: true,
+			isTextureFloat: this.getIsTextureFloat(),
 			isDrawBuffers,
 			kernelMap: isDrawBuffers
 		});
+	}
+
+	static getIsTextureFloat() {
+		return Boolean(testExtensions.OES_texture_float);
 	}
 
 	static getIsDrawBuffers() {
@@ -7519,6 +7524,7 @@ class HeadlessGLKernel extends WebGLKernel {
 			OES_texture_float: this.context.getExtension('OES_texture_float'),
 			OES_texture_float_linear: this.context.getExtension('OES_texture_float_linear'),
 			OES_element_index_uint: this.context.getExtension('OES_element_index_uint'),
+			WEBGL_draw_buffers: this.context.getExtension('WEBGL_draw_buffers'),
 		};
 	}
 
@@ -7528,6 +7534,7 @@ class HeadlessGLKernel extends WebGLKernel {
 		this.extensions.OES_texture_float = null;
 		this.extensions.OES_texture_float_linear = null;
 		this.extensions.OES_element_index_uint = null;
+		this.extensions.WEBGL_draw_buffers = null;
 	}
 
 	static destroyContext(context) {
@@ -9073,7 +9080,7 @@ function webGLKernelString(gpuKernel, name) {
       ${ removeFnNoise(gpuKernel.build.toString()) }
 		  ${ removeFnNoise(gpuKernel.run.toString()) }
 		  ${ removeFnNoise(gpuKernel._addArgument.toString()) }
-		  ${ removeFnNoise(gpuKernel._formatArrayTransfer.toString()) }
+		  ${ removeFnNoise(gpuKernel.formatArrayTransfer.toString()) }
 		  ${ removeFnNoise(gpuKernel.checkOutput.toString()) }
 		  ${ removeFnNoise(gpuKernel.getArgumentTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.getTextureCache.toString()) }
@@ -9843,7 +9850,7 @@ class WebGLKernel extends GLKernel {
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value, length);
+					} = this.formatArrayTransfer(value, length);
 
 					let buffer;
 					if (this.floatTextures) {
@@ -9888,7 +9895,7 @@ class WebGLKernel extends GLKernel {
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value.value, length);
+					} = this.formatArrayTransfer(value.value, length);
 
 					if (this.floatTextures) {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, input);
@@ -9980,11 +9987,15 @@ class WebGLKernel extends GLKernel {
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
 					let length = size[0] * size[1];
+					if (this.floatTextures) {
+						length *= 4;
+						length *= 4;
+					}
 
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value, length);
+					} = this.formatArrayTransfer(value, length);
 
 					let buffer;
 					if (this.floatTextures) {
@@ -10021,10 +10032,10 @@ class WebGLKernel extends GLKernel {
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value.value, length);
+					} = this.formatArrayTransfer(value.value, length);
 
 					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 					} else {
 						const buffer = new Uint8Array(valuesFlat.buffer);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
@@ -10092,9 +10103,12 @@ class WebGLKernel extends GLKernel {
 		this.constantsLength++;
 	}
 
-	_formatArrayTransfer(value, length) {
+	formatArrayTransfer(value, length) {
 		let bitRatio = 1; 
 		let valuesFlat = value;
+    if (this.floatTextures) {
+      length *= 4;
+    }
 		if (utils.isArray(value[0]) || this.floatTextures) {
 			valuesFlat = new Float32Array(length);
 			utils.flattenTo(value, valuesFlat);
@@ -10474,6 +10488,7 @@ class WebGLKernel extends GLKernel {
 		this.extensions.OES_texture_float = null;
 		this.extensions.OES_texture_float_linear = null;
 		this.extensions.OES_element_index_uint = null;
+		this.extensions.WEBGL_draw_buffers = null;
 	}
 
 	static destroyContext(context) {
@@ -10493,6 +10508,7 @@ class WebGLKernel extends GLKernel {
 module.exports = {
 	WebGLKernel
 };
+
 },{"../../plugins/triangle-noise":27,"../../texture":28,"../../utils":29,"../function-builder":8,"../gl-kernel":10,"./fragment-shader":13,"./function-node":14,"./kernel-string":15,"./vertex-shader":17}],17:[function(require,module,exports){
 const vertexShader = `precision highp float;
 precision highp int;
@@ -11055,7 +11071,7 @@ class WebGL2Kernel extends WebGLKernel {
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value, length);
+					} = this.formatArrayTransfer(value, length);
 
 					let buffer;
 					if (this.floatTextures) {
@@ -11099,10 +11115,10 @@ class WebGL2Kernel extends WebGLKernel {
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value.value, length);
+					} = this.formatArrayTransfer(value.value, length);
 
 					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 					} else {
 						const buffer = new Uint8Array(valuesFlat.buffer);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
@@ -11292,7 +11308,7 @@ class WebGL2Kernel extends WebGLKernel {
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value, length);
+					} = this.formatArrayTransfer(value, length);
 
 					let buffer;
 					if (this.floatTextures) {
@@ -11329,10 +11345,10 @@ class WebGL2Kernel extends WebGLKernel {
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value.value, length);
+					} = this.formatArrayTransfer(value.value, length);
 
 					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 					} else {
 						const buffer = new Uint8Array(valuesFlat.buffer);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
@@ -11633,6 +11649,7 @@ class WebGL2Kernel extends WebGLKernel {
 module.exports = {
 	WebGL2Kernel
 };
+
 },{"../../texture":28,"../../utils":29,"../function-builder":8,"../web-gl/kernel":16,"./fragment-shader":18,"./function-node":19,"./vertex-shader":21}],21:[function(require,module,exports){
 const vertexShader = `#version 300 es
 precision highp float;
@@ -12231,7 +12248,6 @@ class Texture {
 module.exports = {
 	Texture
 };
-
 },{}],29:[function(require,module,exports){
 const {
 	Input
@@ -12340,8 +12356,9 @@ const utils = {
 		}
 
 		if (opt.floatTextures && (!output || opt.floatOutput)) {
-			w = numTexels = Math.ceil(numTexels / 4);
+			w = numTexels * 4;
 		}
+
 		if (h > 1 && w * h === numTexels) {
 			return [w, h];
 		}

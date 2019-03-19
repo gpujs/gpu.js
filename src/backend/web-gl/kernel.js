@@ -817,7 +817,7 @@ class WebGLKernel extends GLKernel {
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value, length);
+					} = this.formatArrayTransfer(value, length);
 
 					let buffer;
 					if (this.floatTextures) {
@@ -862,7 +862,7 @@ class WebGLKernel extends GLKernel {
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value.value, length);
+					} = this.formatArrayTransfer(value.value, length);
 
 					if (this.floatTextures) {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, input);
@@ -963,11 +963,15 @@ class WebGLKernel extends GLKernel {
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
 					let length = size[0] * size[1];
+					if (this.floatTextures) {
+						length *= 4;
+						length *= 4;
+					}
 
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value, length);
+					} = this.formatArrayTransfer(value, length);
 
 					let buffer;
 					if (this.floatTextures) {
@@ -1004,10 +1008,10 @@ class WebGLKernel extends GLKernel {
 					const {
 						valuesFlat,
 						bitRatio
-					} = this._formatArrayTransfer(value.value, length);
+					} = this.formatArrayTransfer(value.value, length);
 
 					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, inputArray);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 					} else {
 						const buffer = new Uint8Array(valuesFlat.buffer);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
@@ -1080,14 +1084,17 @@ class WebGLKernel extends GLKernel {
 	 * @desc Adds kernel parameters to the Argument Texture,
 	 * binding it to the context, etc.
 	 *
-	 * @param {Array} value - The actual argument supplied to the kernel
-	 * @param {String} length - the expected total length of the output array
+	 * @param {Array|Float32Array} value - The actual argument supplied to the kernel
+	 * @param {Number} length - the expected total length of the output array
 	 * @returns {Object} bitRatio - bit storage ratio of source to target 'buffer', i.e. if 8bit array -> 32bit tex = 4
 	 *             valuesFlat - flattened array to transfer
 	 */
-	_formatArrayTransfer(value, length) {
+	formatArrayTransfer(value, length) {
 		let bitRatio = 1; // bit storage ratio of source to target 'buffer', i.e. if 8bit array -> 32bit tex = 4
 		let valuesFlat = value;
+		if (this.floatTextures) {
+			length *= 4;
+		}
 		if (utils.isArray(value[0]) || this.floatTextures) {
 			// not already flat
 			valuesFlat = new Float32Array(length);
@@ -1546,6 +1553,7 @@ class WebGLKernel extends GLKernel {
 		this.extensions.OES_texture_float = null;
 		this.extensions.OES_texture_float_linear = null;
 		this.extensions.OES_element_index_uint = null;
+		this.extensions.WEBGL_draw_buffers = null;
 	}
 
 	static destroyContext(context) {

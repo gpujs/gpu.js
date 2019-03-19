@@ -153,8 +153,9 @@ const utils = {
 		}
 
 		if (opt.floatTextures && (!output || opt.floatOutput)) {
-			w = numTexels = Math.ceil(numTexels / 4);
+			w = numTexels * 4;
 		}
+
 		// if given dimensions == a 2d image
 		if (h > 1 && w * h === numTexels) {
 			return [w, h];
@@ -235,8 +236,8 @@ const utils = {
 
 	/**
 	 * Puts a nested 1d, 2d, or 3d array into a one-dimensional target array
-	 * @param {Array|*} array
-	 * @param {Float32Array|Float64Array} target
+	 * @param {Float32Array|Uint8Array} array
+	 * @param {Float32Array} target
 	 */
 	flattenTo(array, target) {
 		if (utils.isArray(array[0])) {
