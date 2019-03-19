@@ -26,19 +26,33 @@ class WebGLFunctionNode extends FunctionNode {
 	 * @returns {Array} the append retArr
 	 */
 	astFunctionExpression(ast, retArr) {
-
 		// Setup function return type and name
 		if (this.isRootKernel) {
 			retArr.push('void');
 		} else {
+			// looking up return type, this is a little expensive, and can be avoided if returnType is set
+			if (!this.returnType) {
+				const lastReturn = this.findLastReturn();
+				if (lastReturn) {
+					this.returnType = this.getType(ast.body);
+					if (this.returnType === 'LiteralInteger') {
+						this.returnType = 'Number';
+					}
+				}
+			}
+
 			const {
 				returnType
 			} = this;
-			const type = typeMap[returnType];
-			if (!type) {
-				throw new Error(`unknown type ${ returnType }`);
+			if (!returnType) {
+				retArr.push('void');
+			} else {
+				const type = typeMap[returnType];
+				if (!type) {
+					throw new Error(`unknown type ${returnType}`);
+				}
+				retArr.push(type);
 			}
-			retArr.push(type);
 		}
 		retArr.push(' ');
 		retArr.push(this.name);
@@ -93,7 +107,16 @@ class WebGLFunctionNode extends FunctionNode {
 
 		const result = [];
 
+		if (!this.returnType) {
+			if (this.isRootKernel) {
+				this.returnType = 'Number';
+			} else {
+				this.returnType = type;
+			}
+		}
+
 		switch (this.returnType) {
+			case 'LiteralInteger':
 			case 'Number':
 			case 'Float':
 				switch (type) {
@@ -166,7 +189,6 @@ class WebGLFunctionNode extends FunctionNode {
 	 * @returns {Array} the append retArr
 	 */
 	astLiteral(ast, retArr) {
-
 		// Reject non numeric literals
 		if (isNaN(ast.value)) {
 			throw this.astErrorOutput(

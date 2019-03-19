@@ -9,7 +9,7 @@ test('Issue #390 - thread assignment webgl', function(assert) {
     const y = this.thread.y;
     const sum = x + y;
     return sum;
-  }.toString(), { output: [1] });
+  }.toString(), { output: [1], returnType: 'Number' });
   assert.equal(node.toString(), 'float assignThreadToVar() {'
     + '\nfloat user_x=float(threadId.x);'
     + '\nfloat user_y=float(threadId.y);'
@@ -27,7 +27,7 @@ test('Issue #390 - thread assignment webgl2', function(assert) {
     const y = this.thread.y;
     const sum = x + y;
     return sum;
-  }.toString(), { output: [1] });
+  }.toString(), { output: [1], returnType: 'Number' });
   assert.equal(node.toString(), 'float assignThreadToVar() {'
     + '\nfloat user_x=float(threadId.x);'
     + '\nfloat user_y=float(threadId.y);'

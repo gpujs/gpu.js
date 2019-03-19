@@ -8,6 +8,7 @@ test('divide float & float', () => {
   const node = new WebGLFunctionNode(`function kernel(left, right) {
     return left / right;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: ['Number', 'Number']
   });
@@ -21,6 +22,7 @@ test('divide float & int', () => {
   const node = new WebGLFunctionNode(`function kernel(left, right) {
     return left / right;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: ['Number', 'Integer']
   });
@@ -34,6 +36,7 @@ test('divide float & literal float', () => {
   const node = new WebGLFunctionNode(`function kernel(left) {
     return left / 1.1;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: ['Number']
   });
@@ -47,6 +50,7 @@ test('divide float & literal integer', () => {
   const node = new WebGLFunctionNode(`function kernel(left) {
     return left / 1;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: ['Number']
   });
@@ -60,6 +64,7 @@ test('divide int & float', () => {
   const node = new WebGLFunctionNode(`function kernel(left, right) {
     return left / right;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: ['Integer', 'Number']
   });
@@ -73,6 +78,7 @@ test('divide int & int', () => {
   const node = new WebGLFunctionNode(`function kernel(left, right) {
     return left / right;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: ['Integer', 'Integer']
   });
@@ -86,6 +92,7 @@ test('divide int & literal float', () => {
   const node = new WebGLFunctionNode(`function kernel(left) {
     return left / 1.1;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: ['Integer']
   });
@@ -99,6 +106,7 @@ test('divide int & literal integer', () => {
   const node = new WebGLFunctionNode(`function kernel(left) {
     return left / 1;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: ['Integer']
   });
@@ -112,6 +120,7 @@ test('divide literal integer & float', () => {
   const node = new WebGLFunctionNode(`function kernel(left) {
     return 1 / left;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: ['Number']
   });
@@ -125,6 +134,7 @@ test('divide literal integer & int', () => {
   const node = new WebGLFunctionNode(`function kernel(left) {
     return 1 / left;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: ['Integer']
   });
@@ -138,6 +148,7 @@ test('divide literal integer & literal float', () => {
   const node = new WebGLFunctionNode(`function kernel() {
     return 1 / 1.1;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: []
   });
@@ -151,6 +162,7 @@ test('divide literal integer & literal integer', () => {
   const node = new WebGLFunctionNode(`function kernel() {
     return 1 / 1;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: []
   });
@@ -164,6 +176,7 @@ test('divide literal float & float', () => {
   const node = new WebGLFunctionNode(`function kernel(right) {
     return 1.1 / right;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: ['Number']
   });
@@ -177,6 +190,7 @@ test('divide literal float & int', () => {
   const node = new WebGLFunctionNode(`function kernel(right) {
     return 1.1 / right;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: ['Integer']
   });
@@ -190,6 +204,7 @@ test('divide literal float & literal float', () => {
   const node = new WebGLFunctionNode(`function kernel() {
     return 1.1 / 1.1;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: []
   });
@@ -203,6 +218,7 @@ test('divide literal float & literal integer', () => {
   const node = new WebGLFunctionNode(`function kernel() {
     return 1.1 / 1;
   }`, {
+    returnType: 'Number',
     output: [1],
     argumentTypes: []
   });

@@ -29,18 +29,19 @@ class FunctionBuilder {
 
 		const onNestedFunction = (fnString, returnType) => {
 			functionBuilder.addFunctionNode(new FunctionNode(fnString, Object.assign({}, nodeOptions, {
-				returnType
+				returnType: returnType || 'Number',
+				lookupReturnType
 			})));
 		};
 
 		const parsedReturnTypes = {};
-		const lookupReturnType = (functionName) => {
+		const lookupReturnType = (functionName, ast, requestingNode) => {
 			if (parsedReturnTypes[functionName]) return parsedReturnTypes[functionName];
 			const source = functionBuilder.nativeFunctions[functionName];
 			if (source) {
 				return parsedReturnTypes[functionName] = kernel.constructor.nativeFunctionReturnType(source);
 			}
-			return functionBuilder.lookupReturnType(functionName);
+			return functionBuilder.lookupReturnType(functionName, ast, requestingNode);
 		};
 
 		const nativeFunctionReturnTypes = {};
@@ -91,6 +92,7 @@ class FunctionBuilder {
 				plugins,
 				constants,
 				constantTypes,
+				lookupReturnType,
 			}));
 		}
 
@@ -104,7 +106,9 @@ class FunctionBuilder {
 				return new FunctionNode(source, Object.assign({}, nodeOptions, {
 					name,
 					isSubKernel: true,
-					isRootKernel: false
+					isRootKernel: false,
+					returnType: 'Number',
+					lookupReturnType,
 				}));
 			});
 		}
@@ -318,11 +322,18 @@ class FunctionBuilder {
 		return this.getStringFromFunctionNames(Object.keys(this.functionMap));
 	}
 
-	lookupReturnType(functionName) {
+	lookupReturnType(functionName, ast, requestingNode) {
 		const node = this.functionMap[functionName];
-		if (node && node.returnType) {
-			return node.returnType;
+		if (node) {
+			if (node.returnType) {
+				return node.returnType;
+			} else {
+				// backup, just in case no returnType is set, the node can find it
+				return node.getType(node.getJsAST());
+			}
 		}
+
+		// function not found, maybe native?
 		return null;
 	}
 }

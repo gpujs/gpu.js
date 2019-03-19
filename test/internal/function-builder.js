@@ -20,9 +20,9 @@ function threeLayerTemplate(FunctionNode) {
   // Create a function hello node
   return new FunctionBuilder({
     functionNodes: [
-      new FunctionNode(layerOne.toString(), { output: [1] }),
-      new FunctionNode(layerTwo.toString(), { output: [1] }),
-      new FunctionNode(layerThree.toString(), { output: [1] }),
+      new FunctionNode(layerOne.toString(), { output: [1], lookupReturnType: () => 'Number' }),
+      new FunctionNode(layerTwo.toString(), { output: [1], lookupReturnType: () => 'Number' }),
+      new FunctionNode(layerThree.toString(), { output: [1], lookupReturnType: () => 'Number' }),
     ],
     output: [1]
   });

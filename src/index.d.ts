@@ -271,7 +271,7 @@ export interface IFunctionSettings {
   isRootKernel?: boolean;
   isSubKernel?: boolean;
   onNestedFunction?(source: string, returnType: string): void;
-  lookupReturnType?(functionName: string): void;
+  lookupReturnType?(functionName: string, ast: any, node: FunctionNode): void;
   nativeFunctionReturnTypes?: string[],
   nativeFunctionArgumentTypes?: IGPUArgumentTypes[],
   plugins?: any[];

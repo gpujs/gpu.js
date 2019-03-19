@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.5
- * @date Tue Mar 19 2019 08:40:39 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.6
+ * @date Tue Mar 19 2019 19:50:06 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -5943,18 +5943,19 @@ class FunctionBuilder {
 
 		const onNestedFunction = (fnString, returnType) => {
 			functionBuilder.addFunctionNode(new FunctionNode(fnString, Object.assign({}, nodeOptions, {
-				returnType
+				returnType: returnType || 'Number',
+				lookupReturnType
 			})));
 		};
 
 		const parsedReturnTypes = {};
-		const lookupReturnType = (functionName) => {
+		const lookupReturnType = (functionName, ast, requestingNode) => {
 			if (parsedReturnTypes[functionName]) return parsedReturnTypes[functionName];
 			const source = functionBuilder.nativeFunctions[functionName];
 			if (source) {
 				return parsedReturnTypes[functionName] = kernel.constructor.nativeFunctionReturnType(source);
 			}
-			return functionBuilder.lookupReturnType(functionName);
+			return functionBuilder.lookupReturnType(functionName, ast, requestingNode);
 		};
 
 		const nativeFunctionReturnTypes = {};
@@ -6005,6 +6006,7 @@ class FunctionBuilder {
 				plugins,
 				constants,
 				constantTypes,
+				lookupReturnType,
 			}));
 		}
 
@@ -6018,7 +6020,9 @@ class FunctionBuilder {
 				return new FunctionNode(source, Object.assign({}, nodeOptions, {
 					name,
 					isSubKernel: true,
-					isRootKernel: false
+					isRootKernel: false,
+					returnType: 'Number',
+					lookupReturnType,
 				}));
 			});
 		}
@@ -6178,11 +6182,16 @@ class FunctionBuilder {
 		return this.getStringFromFunctionNames(Object.keys(this.functionMap));
 	}
 
-	lookupReturnType(functionName) {
+	lookupReturnType(functionName, ast, requestingNode) {
 		const node = this.functionMap[functionName];
-		if (node && node.returnType) {
-			return node.returnType;
+		if (node) {
+			if (node.returnType) {
+				return node.returnType;
+			} else {
+				return node.getType(node.getJsAST());
+			}
 		}
+
 		return null;
 	}
 }
@@ -6238,7 +6247,7 @@ class FunctionNode {
 			}
 		}
 
-		if (!this.returnType) {
+		if (this.isRootKernel && !this.returnType) {
 			this.returnType = 'Number';
 		}
 
@@ -6455,16 +6464,26 @@ class FunctionNode {
 				if (this.isAstMathFunction(ast)) {
 					return 'Number';
 				}
-				if (!ast.callee || !ast.callee.name) return null;
+				if (!ast.callee || !ast.callee.name) {
+					if (ast.callee.type === 'SequenceExpression') {
+						return this.getType(ast.callee.expressions[ast.callee.expressions.length - 1]);
+					}
+					throw this.astErrorOutput('Unknown call expression', ast);
+				}
 				if (this.nativeFunctionReturnTypes && this.nativeFunctionReturnTypes[ast.callee.name]) {
 					return this.nativeFunctionReturnTypes[ast.callee.name];
 				}
-				return ast.callee && ast.callee.name && this.lookupReturnType ? this.lookupReturnType(ast.callee.name) : null;
+				if (ast.callee && ast.callee.name && this.lookupReturnType) {
+					return this.lookupReturnType(ast.callee.name, ast, this);
+				}
+				throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
 			case 'BinaryExpression':
-				if (ast.operator === '%') {
-					return 'Number';
-				} else if (ast.operator === '>' || ast.operator === '<') {
-					return 'Boolean';
+				switch (ast.operator) {
+					case '%':
+						return 'Number';
+					case '>':
+					case '<':
+						return 'Boolean';
 				}
 				const type = this.getType(ast.left);
 				return typeLookupMap[type] || type;
@@ -6489,6 +6508,10 @@ class FunctionNode {
 				}
 				if (ast.name === 'Infinity') {
 					return 'Number';
+				}
+				const origin = this.findIdentifierOrigin(ast);
+				if (origin && origin.init) {
+					return this.getType(origin.init);
 				}
 				return null;
 			case 'ReturnStatement':
@@ -6546,6 +6569,9 @@ class FunctionNode {
 								case 'a':
 									return typeLookupMap[this.getVariableType(ast.object.name)];
 							}
+							if (ast.object.name === '_' + ast.property.name && this.lookupReturnType) {
+								return this.lookupReturnType(ast.property.name, ast, this);
+							}
 					}
 					throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
 				}
@@ -6554,6 +6580,8 @@ class FunctionNode {
 				return this.getType(ast.body);
 			case 'ConditionalExpression':
 				return this.getType(ast.consequent);
+			case 'FunctionExpression':
+				return this.getType(ast.body);
 			default:
 				throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
 		}
@@ -7190,6 +7218,53 @@ class FunctionNode {
 			default:
 				throw this.astErrorOutput('Unexpected expression', ast);
 		}
+	}
+
+	findIdentifierOrigin(astToFind) {
+		const stack = [this.ast];
+
+		while (stack.length > 0) {
+			const atNode = stack[0];
+			if (atNode.type === 'VariableDeclarator' && atNode.id && atNode.id.name && atNode.id.name === astToFind.name) {
+				return atNode;
+			}
+			stack.shift();
+			if (atNode.argument) {
+				stack.push(atNode.argument);
+			} else if (atNode.body) {
+				stack.push(atNode.body);
+			} else if (atNode.declarations) {
+				stack.push(atNode.declarations);
+			} else if (Array.isArray(atNode)) {
+				for (let i = 0; i < atNode.length; i++) {
+					stack.push(atNode[i]);
+				}
+			}
+		}
+		return null;
+	}
+
+	findLastReturn() {
+		const stack = [this.ast];
+
+		while (stack.length > 0) {
+			const atNode = stack.pop();
+			if (atNode.type === 'ReturnStatement') {
+				return atNode;
+			}
+			if (atNode.argument) {
+				stack.push(atNode.argument);
+			} else if (atNode.body) {
+				stack.push(atNode.body);
+			} else if (atNode.declarations) {
+				stack.push(atNode.declarations);
+			} else if (Array.isArray(atNode)) {
+				for (let i = 0; i < atNode.length; i++) {
+					stack.push(atNode[i]);
+				}
+			}
+		}
+		return null;
 	}
 
 	getInternalVariableName(name) {
@@ -7990,18 +8065,31 @@ class WebGLFunctionNode extends FunctionNode {
 	}
 
 	astFunctionExpression(ast, retArr) {
-
 		if (this.isRootKernel) {
 			retArr.push('void');
 		} else {
+			if (!this.returnType) {
+				const lastReturn = this.findLastReturn();
+				if (lastReturn) {
+					this.returnType = this.getType(ast.body);
+					if (this.returnType === 'LiteralInteger') {
+						this.returnType = 'Number';
+					}
+				}
+			}
+
 			const {
 				returnType
 			} = this;
-			const type = typeMap[returnType];
-			if (!type) {
-				throw new Error(`unknown type ${ returnType }`);
+			if (!returnType) {
+				retArr.push('void');
+			} else {
+				const type = typeMap[returnType];
+				if (!type) {
+					throw new Error(`unknown type ${returnType}`);
+				}
+				retArr.push(type);
 			}
-			retArr.push(type);
 		}
 		retArr.push(' ');
 		retArr.push(this.name);
@@ -8046,7 +8134,16 @@ class WebGLFunctionNode extends FunctionNode {
 
 		const result = [];
 
+		if (!this.returnType) {
+			if (this.isRootKernel) {
+				this.returnType = 'Number';
+			} else {
+				this.returnType = type;
+			}
+		}
+
 		switch (this.returnType) {
+			case 'LiteralInteger':
 			case 'Number':
 			case 'Float':
 				switch (type) {
@@ -8109,7 +8206,6 @@ class WebGLFunctionNode extends FunctionNode {
 	}
 
 	astLiteral(ast, retArr) {
-
 		if (isNaN(ast.value)) {
 			throw this.astErrorOutput(
 				'Non-numeric literal not supported : ' + ast.value,
@@ -10106,9 +10202,9 @@ class WebGLKernel extends GLKernel {
 	formatArrayTransfer(value, length) {
 		let bitRatio = 1; 
 		let valuesFlat = value;
-    if (this.floatTextures) {
-      length *= 4;
-    }
+		if (this.floatTextures) {
+			length *= 4;
+		}
 		if (utils.isArray(value[0]) || this.floatTextures) {
 			valuesFlat = new Float32Array(length);
 			utils.flattenTo(value, valuesFlat);
@@ -10508,7 +10604,6 @@ class WebGLKernel extends GLKernel {
 module.exports = {
 	WebGLKernel
 };
-
 },{"../../plugins/triangle-noise":27,"../../texture":28,"../../utils":29,"../function-builder":8,"../gl-kernel":10,"./fragment-shader":13,"./function-node":14,"./kernel-string":15,"./vertex-shader":17}],17:[function(require,module,exports){
 const vertexShader = `precision highp float;
 precision highp int;
@@ -11649,7 +11744,6 @@ class WebGL2Kernel extends WebGLKernel {
 module.exports = {
 	WebGL2Kernel
 };
-
 },{"../../texture":28,"../../utils":29,"../function-builder":8,"../web-gl/kernel":16,"./fragment-shader":18,"./function-node":19,"./vertex-shader":21}],21:[function(require,module,exports){
 const vertexShader = `#version 300 es
 precision highp float;

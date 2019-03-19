@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Frakal</title>
+  <style>
+    body { background: black; display: flex; justify-content: center; align-items: center; margin: 0; min-height: 100vh; overflow: hidden; }
+    .panel { display: flex; flex-direction: row-reverse; color: white }
+    .settings { margin-left: 20px; display: flex; flex-direction: column }
+    .field { margin-top: 20px; }
+    .keys { color: #666; }
+    input { border: white; }
+    #myCanvas { cursor: pointer }
+    #rayMinDist { background: black; color: #666;}
+  </style>
+</head>
+<body>
+<div class="panel">
+  <canvas id="myCanvas" class="viewport" width=500 height=500></canvas>
+  <div class="settings">
+    <h1>Mandelbulb - Real-time 3d fractal<br> in Javascript</h1>
+    <small>Kamil Kiełczewski <a href="http://airavana.net">Airavana</a></small>
+    <div class="field">
+      <div>Instruction</div>
+      <div>Click on picture and <span class="keys">move mouse</span> around<br>
+        <span class="keys">A S D W E C</span> keys for change view poin position <br>
+        Push ESC to stop move and unlock mouse
+      </div>
+    </div>
+    <div class="field">
+      <div>Calculate Light</div>
+      <div><input type="checkbox" onclick="settingsSetLight(event)" checked></div>
+    </div>
+    <div class="field">
+      <div>
+        Level of Details (and camera speed) <br>
+        <span class="keys">Mouse whell</span> or <span class="keys">+/-</span> keys
+
+      </div>
+      <div>
+        <input id="rayMinDist" type="text" value="166" disabled >
+      </div>
+    </div>
+    <div class="field">
+      <div>Info</div>
+      <div>
+        <a href="http://blog.hvidtfeldts.net/index.php/2011/06/distance-estimated-3d-fractals-part-i/" class="c">Fraactals 3d/ray-marching</a>
+      </div>
+      <div><a href="http://iquilezles.org/www/articles/distfunctions/distfunctions.htm">Distance functions</a></div>
+      <div><a href="https://github.com/gpujs/gpu.js">GPU JS</a></div>
+      <div><a href="https://github.com/kamil-kielczewski/fractals">This project</a></div>
+    </div>
+  </div>
+</div>
+<script src="../bin/gpu-browser.js"></script>
+<script>
+  // ----------------------------------------------------
+  //
+  // Init params
+  //
+  // ----------------------------------------------------
+  class RaytracerParams {
+    constructor() {
+      this.params = {
+        ray: {rayMaxSteps:512, rayMinDist:0.001, calcLight: 1 },
+        eye:    { x:0, y:1, z:0 },
+        light:    { x:-10, y:10, z:10 },
+        target:    { x:0, y:0, z:1 },
+        vertical: { x:0, y:1, z: 0}, // wektor pionu
+        screen: { pxWidth: 0, pxHeight: 0 },
+        camera: { yaw: 0, pitch: 0, speed: 0.01, rotateSpeed: 0.01, fov: 90, locked: true }
+      }
+    }
+
+    getParams() {
+      return this.params;
+    }
+
+    setScreenSize(width, height) {
+      this.params.screen.pxWidth = width;
+      this.params.screen.pxHeight = height;
+      return this;
+    }
+
+    // yaw = left/right, pitch = up/down
+    // [x,y,z] = position
+    moveCamera(yawDelta, pitchDelta, forwardBackward, leftRight, upDown) {
+      let e = this.params.eye;
+      let t = this.params.target;
+      let v = this.params.vertical;
+      let d = this.sub(t,e);
+
+      this.params.camera.yaw += yawDelta * this.params.camera.rotateSpeed;
+      this.params.camera.pitch += pitchDelta * this.params.camera.rotateSpeed;
+      let yaw = this.params.camera.yaw;
+      let pitch = this.params.camera.pitch;
+
+      // rotate
+      t.x = e.x + Math.sin(yaw)*Math.cos(pitch);
+      t.z = e.z + Math.cos(yaw)*Math.cos(pitch);
+      t.y = e.y + Math.sin(pitch);
+
+      // move forward
+      let fb = this.scale( this.params.camera.speed * forwardBackward , d);
+      this.addInPlace(e,fb);
+      this.addInPlace(t,fb);
+
+
+      // move left-right
+      let lr = this.scale( this.params.camera.speed * leftRight , this.norm(this.cross(v, d)));
+      this.addInPlace(e,lr);
+      this.addInPlace(t,lr);
+
+      // move up-down
+      let ud = this.scale( this.params.camera.speed * upDown, v);
+      this.addInPlace(e,ud);
+      this.addInPlace(t,ud);
+    }
+
+    calcRayBase() {
+      let E = this.params.eye;
+      let T = this.params.target;
+      let w = this.params.vertical;
+
+      let t = this.sub(T,E); // = viewport center
+      let tn = this.norm(t);
+
+      let b = this.cross(w, t);
+      let bn = this.norm(b);
+      let vn = this.cross(tn,bn);
+
+      let m = this.params.screen.pxHeight;
+      let k = this.params.screen.pxWidth;
+      let gx = Math.tan((2*Math.PI*this.params.camera.fov/360)/2);
+      let gy = gx*m/k;
+
+      // P1M is left bottom viewport pixel
+      let P1M = this.add( tn, this.scale(-gx, bn), this.scale(-gy, vn) ) // chnage C to tn (tn= C-E)
+
+      let QX = this.scale(2*gx/(k-1), bn);
+      let QY = this.scale(2*gy/(m-1), vn);
+
+      // Pij = P1M + (i-1)*bnp + (j-1)*vnp
+      return {E, P1M, QX, QY};
+
+    }
+
+    cross(a,b) {
+      let x = a.y*b.z - a.z*b.y;
+      let y = a.z*b.x - a.x*b.z;
+      let z = a.x*b.y - a.y*b.x;
+      return {x,y,z};
+    }
+
+    norm(a) {
+      let size = 1/Math.sqrt(a.x*a.x + a.y*a.y + a.z*a.z);
+      return {x: a.x*size, y: a.y*size, z: a.z*size };
+    }
+
+    addInPlace(a,b) {
+      a.x += b.x;
+      a.y += b.y;
+      a.z += b.z;
+      return a;
+    }
+
+    add(...vs) {
+      return vs.reduce( (a,b) => ({ x: a.x+b.x, y: a.y+b.y, z: a.z+b.z }) )
+      // return {
+      //     x: a.x + b.x,
+      //     y: a.y + b.y,
+      //     z: a.z + b.z
+      // }
+
+    }
+
+    sub(a,b) {
+      return this.add(a,this.scale(-1,b));
+    }
+
+    scale(s, a) {
+      return { x: a.x*s, y: a.y*s, z: a.z*s }
+    }
+  }
+
+
+  // ----------------------------------------------------
+  //
+  // GPU & Canvas
+  //
+  // ----------------------------------------------------
+
+  // T - target
+  // E - eye
+  // vvn - wektor pionu kamery (normalny)
+  // fov - kont widzenia (stopnie)
+  // ar - aspect ratio
+  // k - liczba pixeli widht
+  // m - liczba pixeli height
+  let kernelMarchingRays = function(calcLight, rayMaxSteps, rayMinDist, Ex,Ey,Ez, P1Mx, P1My, P1Mz, QXx, QXy, QXz, QYx, QYy,QYz, Lx, Ly, Lz) {
+    let i = this.thread.x;
+    let j = this.thread.y;
+    let rx = P1Mx + QXx*(i-1) + QYx*(j-1);
+    let ry = P1My + QXy*(i-1) + QYy*(j-1);
+    let rz = P1Mz + QXz*(i-1) + QYz*(j-1);
+
+    let sr = 1/Math.sqrt(rx*rx + ry*ry + rz*rz);
+    let rnx = rx*sr;
+    let rny = ry*sr;
+    let rnz = rz*sr;
+
+    let totalDistance = 0.0;
+    let MaximumRaySteps= rayMaxSteps; //255;
+    let MinimumDistance= rayMinDist; //0.0001;
+    let stepsVal = 0;
+    let ppx = 0;
+    let ppy = 0;
+    let ppz = 0;
+    let distance = 0;
+    let hit = 0;
+    let dd= [0,0,0];
+    let hitObjectId = 0; // 0 = no hit
+
+    for (let steps=0 ; steps < MaximumRaySteps; steps++) {
+      ppx = Ex + totalDistance * rnx;
+      ppy = Ey + totalDistance * rny;
+      ppz = Ez + totalDistance * rnz;
+
+      dd = distScene(ppx,ppy,ppz);
+      distance = dd[0]; // --- Distance estimator
+
+      totalDistance += distance;
+      if (distance < MinimumDistance) {
+        stepsVal = steps;
+        hit=1;
+        hitObjectId = dd[2];
+        break
+      }
+    }
+
+    let iterFrac = dd[1];
+
+    let color_r = 0;
+    let color_g = 0;
+    let color_b = 0;
+
+    // --- calculate normals and light ---
+    if(calcLight==1) {
+      let eps = rayMinDist*10;
+      if(eps>0.00015) { eps = 0.00015; }
+
+      dd = distScene(ppx + eps, ppy, ppz);
+      let nx = dd[0] - distance; // - distScene(ppx - eps, ppy, ppz);
+      dd = distScene(ppx, ppy + eps, ppz);
+      let ny = dd[0] - distance; // - distScene(ppx, ppy - eps, ppz);
+      dd = distScene(ppx, ppy, ppz + eps);
+      let nz = dd[0] - distance; // - distScene(ppx, ppy, ppz - eps);
+
+      let sn = 1/Math.sqrt(nx*nx + ny*ny + nz*nz);
+      nx = nx * sn;
+      ny = ny * sn;
+      nz = nz * sn;
+
+      let lx = Lx - ppx;
+      let ly = Lz - ppy;
+      let lz = Lz - ppz;
+      let sl = 1/Math.sqrt(lx*lx + ly*ly + lz*lz);
+      lx *= sl;
+      ly *= sl;
+      lz *= sl;
+
+      //let colBcg = hsv2rgb(0.6,1,0.2*(0.4+((i+j))/(1024)));
+      //let colBcg = [j/4024,i/4024,0];
+      let colBcg = [0,0,0];
+      let light = lx * nx + ly*ny + lz*nz;
+      light = (light+1)/2;
+      //let col = hsv2rgb(((iterFrac*666)%100)/10, 1, light);
+      let distLight = -10/Math.log2(rayMinDist);///totalDistance; //1.0/(Math.pow(totalDistance,5));
+      //if(distLight>1) distLight=1;
+      let col = hsv2rgb(
+        (ppx+ppy+ppz),
+        1,
+        distLight*8*light*stepsVal/MaximumRaySteps
+      );
+
+      color_r = col[0];
+      color_g = col[1];
+      color_b = col[2];
+
+      if(hitObjectId===0) {
+        color_r = colBcg[0];
+        color_g = colBcg[1];
+        color_b = colBcg[2];
+      }
+
+      if(hitObjectId===1) {
+        color_r = 0;
+        color_g = 1*light;
+        color_b = 0;
+      }
+
+      //color_r = Math.max(light,0) + hit*0.2;
+      //color_g = light;
+      //color_b = light;
+
+    } else {
+      let trace= 2*stepsVal/MaximumRaySteps;
+      color_r = trace;
+      color_g = trace;
+      color_b = trace;
+    }
+
+    this.color(color_r, color_g, color_b ,1);
+  };
+
+  function hsv2rgb(h,s,v) {
+    //h = 3.1415*2*(h%360)/360;
+    // h=3.1415*2*h/100; // 100 is from max number of function mandelbulb iterations
+
+    let c = v*s;
+    let k = (h%1)*6;
+    let x = c*(1 - Math.abs(k%2-1));
+
+    let r=0;
+    let g=0;
+    let b=0;
+
+    if(k>=0 && k<=1) { r=c; g=x }
+    if(k>1 && k<=2)  { r=x; g=c }
+    if(k>2 && k<=3)  { g=c; b=x }
+    if(k>3 && k<=4)  { g=x; b=c }
+    if(k>4 && k<=5)  { r=x; b=c }
+    if(k>5 && k<=6)  { r=c; b=x }
+
+    let m = v-c;
+
+    return [r+m,g+m,b+m]
+  }
+
+  // x,y,z - point on ray (marching)
+  function distScene(x,y,z) {
+    //let p = sdPlane(x,y,z, 0,1,0,1);
+    let mm = mandelbulb(x,y,z);
+    let m = mm[0];
+    let letIter = mm[1];
+    let dis = m; //Math.min(p,m);
+    //let dis = Math.min(p,m);
+    let objId = 1; // 1= plane
+    if(dis===m) objId = 2; // 2= plane
+
+    return [ dis, letIter, objId ] ;
+  }
+
+  function sdPlane(px,py,pz, nx,ny,nz,nw) {
+    return px*nx + py*ny + pz*nz + nw;
+  }
+
+  function mandelbulb(px,py,pz) {
+    let zx=px; let zy=py; let zz=pz;
+    let dr = 1;
+    let r = 0;
+    let iterations = 100;
+    let bailout = 2;
+    let power = 8;
+    let j=0;
+
+    for (let i=0 ; i < iterations ; i++) {
+      r = Math.sqrt(zx*zx + zy*zy + zz*zz);
+      if (r>bailout) break;
+
+      // convert to polar coordinates
+      let theta = Math.acos(zz/r);
+      let phi = Math.atan(zy,zx);
+
+      dr =  Math.pow( r, power-1.0)*power*dr + 1.0;
+
+      // scale and rotate the point
+      let zzr = Math.pow( r,power);
+      theta = theta*power;
+      phi = phi*power;
+
+      // convert back to cartesian coordinates
+      zx = zzr * Math.sin(theta) * Math.cos(phi);
+      zy = zzr * Math.sin(phi) * Math.sin(theta);
+      zz = zzr * Math.cos(theta);
+      zx+=px;
+      zy+=py;
+      zz+=pz;
+
+      j++;
+    }
+    return [0.5*Math.log(r)*r/dr, j];
+  }
+
+  // Pointer Locking enable
+  // https://www.html5rocks.com/en/tutorials/pointerlock/intro/
+  // https://w3c.github.io/pointerlock/
+  // continue this tommorow...
+  function canvasOnClick_enablePointerLocking(event) {
+    if(par.camera.locked) {
+      let canvas = event.target;
+
+      canvas.requestPointerLock = canvas.requestPointerLock ||
+        canvas.mozRequestPointerLock ||
+        canvas.webkitRequestPointerLock;
+      // Ask the browser to lock the pointer
+
+      canvas.requestPointerLock();
+    }
+  }
+
+  function lockChange(e) {
+    par = raytracerParams.getParams();
+    par.camera.locked = !par.camera.locked;
+  }
+
+  function initFractalGPU(raytracerParams) {
+    params = raytracerParams.getParams();
+    let pxWidth = params.screen.pxWidth;
+    let pxHeight = params.screen.pxHeight;
+    let canvas = document.getElementById("myCanvas");
+    if(canvas) { canvas.remove(); }
+    canvas = document.createElement('canvas');
+    canvas.id = 'myCanvas';
+    document.body.querySelector('.panel').appendChild(canvas);
+
+    //canvas.width = pxWidth;
+    //canvas.height = pxHeight;
+
+    canvas.addEventListener('click', canvasOnClick_enablePointerLocking);
+    document.addEventListener('pointerlockchange', lockChange, false);
+
+    const gl = canvas.getContext('webgl2', { premultipliedAlpha: false });
+    const gpu = new GPU({ canvas, webGl: gl });
+
+    const raytracer = gpu.createKernel(kernelMarchingRays)
+      .setConstants({ pxWidth, pxHeight })
+      .setOutput([pxWidth, pxHeight])
+      .setGraphical(true)
+      .setLoopMaxIterations(10000);
+    gpu.addFunction(sdPlane);
+    gpu.addFunction(mandelbulb);
+    gpu.addFunction(distScene);
+    gpu.addFunction(hsv2rgb);
+    return raytracer;
+  }
+
+  // ----------------------------------------------------
+  //
+  // UX
+  //
+  // ----------------------------------------------------
+
+  function initGui() {
+    raytracer.canvas.addEventListener('wheel',(event) => { mouseWheel(event); return false; }, false);
+    raytracer.canvas.addEventListener('mousemove',(event) => { mouseMove(event); return false; }, false);
+    document.onkeypress = (e) => {
+      if(e.key === "w") moveCamera(1,0,0);
+      if(e.key === "s") moveCamera(-1,0,0);
+      if(e.key === "a") moveCamera(0,-1,0);
+      if(e.key === "d") moveCamera(0,1,0);
+      if(e.key === "e") moveCamera(0,0,1);
+      if(e.key === "c") moveCamera(0,0,-1);
+
+      if(e.key === "+") mouseWheel({deltaY: -10});
+      if(e.key === "-") mouseWheel({deltaY: 10});
+    };
+    chceckScreenResize();
+
+    refresh();
+  }
+
+  function moveCamera(forwardBackward, leftRight, upDown) {
+    par = raytracerParams.getParams();
+    // par.camera.locked
+    raytracerParams.moveCamera(0,0, forwardBackward, leftRight, upDown);
+    refresh();
+  }
+
+  function refresh() {
+    // unlock on refresh demand
+    // (after changing some render parameter by key/mose move)
+    locked = false;
+  }
+
+  function refreshWindow(timestamp) {
+    // redraw only if some render parameter change (user move mose, push button etc.)
+    if(!locked) {
+      locked = true;
+      let par = raytracerParams.getParams();
+      let r = raytracerParams.calcRayBase(); // {E, P1M, Bn, Vn};
+
+      raytracer(
+        par.ray.calcLight, par.ray.rayMaxSteps, par.ray.rayMinDist,
+        r.E.x, r.E.y, r.E.z,
+        r.P1M.x, r.P1M.y, r.P1M.z,
+        r.QX.x, r.QX.y, r.QX.z,
+        r.QY.x, r.QY.y, r.QY.z,
+        par.light.x, par.light.y, par.light.z,
+      );
+    }
+
+    //
+    window.requestAnimationFrame(refreshWindow);
+  }
+
+  function mouseMove(e) {
+    par = raytracerParams.getParams();
+
+    //let canvas = document.getElementById("myCanvas");
+    //console.log('clock',canvas.requestPointerLock);
+
+    //raytracerParams.moveCamera(e.offsetX/100, e.offsetY/100); // yaw = left/right, pitch = up/down
+    if(!par.camera.locked) {
+      raytracerParams.moveCamera(e.movementX, -e.movementY, 0,0,0); // yaw = left/right, pitch = up/down
+      refresh();
+    }
+  }
+
+  function mouseWheel(e) {
+    tmpMouseWhellY += e.deltaY;
+    tmpMouseWhellY = tmpMouseWhellY>-2000 ? -2000 : tmpMouseWhellY;
+    tmpMouseWhellY = tmpMouseWhellY<-8000 ? -8000 : tmpMouseWhellY;
+    n = Math.pow(10, tmpMouseWhellY/1000);
+
+    par.ray.rayMinDist = n;
+    par.camera.speed = n*10;
+
+    document.querySelector("#rayMinDist").value = Math.floor((-tmpMouseWhellY-2000)/6);
+    refresh();
+  }
+
+  function chceckScreenResize() {
+    window.addEventListener("resize",() => {
+      //refreshScreenSize();
+    });
+  }
+
+  function refreshScreenSize() {
+    //raytracerParams.setScreenSize(window.innerWidth, window.innerHeight);
+    raytracerParams.setScreenSize(500, 500);
+    raytracer = initFractalGPU(raytracerParams);
+    refresh();
+  }
+
+  function settingsSetLight(e) {
+    par = raytracerParams.getParams();
+    par.ray.calcLight = 1-par.ray.calcLight;
+    refresh();
+  }
+
+  function settingsRayMinDist(e, direct=false) {
+    let n = ("0." + "0".repeat(e.target.value-1) + "1")*1;
+    par.ray.rayMinDist = n;
+    par.camera.speed = n*10;
+
+    document.querySelector("#rayMinDist").value = e.target.value;
+    refresh();
+    //rayMinDist
+    //par = raytracerParams.getParams();
+  }
+
+  function settingsRayMaxSteps(e) {
+    par = raytracerParams.getParams();
+    par.ray.rayMaxSteps = e.target.value;
+    document.querySelector("#rayMaxSteps").value = par.ray.rayMaxSteps;
+    refresh();
+  }
+
+
+  // ----------------------------------------------------
+  //
+  // Main
+  //
+  // ----------------------------------------------------
+  let raytracerParams = new RaytracerParams();
+  let tmpMouseWhellY = -3000;
+  let locked = false;
+  let start;
+  refreshScreenSize();
+  //let raytracer = initFractalGPU(raytracerParams);
+  initGui(raytracerParams);
+
+  window.requestAnimationFrame(refreshWindow);
+</script>
+</body>
+</html>

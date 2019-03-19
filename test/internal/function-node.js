@@ -96,7 +96,7 @@ test('hello_inner: call a function inside a function webgl', () => {
 	const node = new WebGLFunctionNode(
 		(function() {
 			return inner();
-		}).toString(), { name: 'hello_inner', output: [1] }
+		}).toString(), { name: 'hello_inner', output: [1], lookupReturnType: () => 'Number' }
 	);
 
 	assert.notEqual(node.getJsAST(), null, 'AST fetch check');
@@ -122,7 +122,7 @@ test('hello_inner: call a function inside a function webgl2', () => {
 	const node = new WebGL2FunctionNode(
 		(function() {
 			return inner();
-		}).toString(), { name: 'hello_inner', output: [1] }
+		}).toString(), { name: 'hello_inner', output: [1], lookupReturnType: () => 'Number' }
 	);
 
 	assert.notEqual(node.getJsAST(), null, 'AST fetch check');

@@ -55,7 +55,7 @@ class FunctionNode {
 			}
 		}
 
-		if (!this.returnType) {
+		if (this.isRootKernel && !this.returnType) {
 			this.returnType = 'Number';
 		}
 
@@ -318,17 +318,27 @@ class FunctionNode {
 				if (this.isAstMathFunction(ast)) {
 					return 'Number';
 				}
-				if (!ast.callee || !ast.callee.name) return null;
+				if (!ast.callee || !ast.callee.name) {
+					if (ast.callee.type === 'SequenceExpression') {
+						return this.getType(ast.callee.expressions[ast.callee.expressions.length - 1]);
+					}
+					throw this.astErrorOutput('Unknown call expression', ast);
+				}
 				if (this.nativeFunctionReturnTypes && this.nativeFunctionReturnTypes[ast.callee.name]) {
 					return this.nativeFunctionReturnTypes[ast.callee.name];
 				}
-				return ast.callee && ast.callee.name && this.lookupReturnType ? this.lookupReturnType(ast.callee.name) : null;
+				if (ast.callee && ast.callee.name && this.lookupReturnType) {
+					return this.lookupReturnType(ast.callee.name, ast, this);
+				}
+				throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
 			case 'BinaryExpression':
 				// modulos is Number
-				if (ast.operator === '%') {
-					return 'Number';
-				} else if (ast.operator === '>' || ast.operator === '<') {
-					return 'Boolean';
+				switch (ast.operator) {
+					case '%':
+						return 'Number';
+					case '>':
+					case '<':
+						return 'Boolean';
 				}
 				const type = this.getType(ast.left);
 				return typeLookupMap[type] || type;
@@ -353,6 +363,10 @@ class FunctionNode {
 				}
 				if (ast.name === 'Infinity') {
 					return 'Number';
+				}
+				const origin = this.findIdentifierOrigin(ast);
+				if (origin && origin.init) {
+					return this.getType(origin.init);
 				}
 				return null;
 			case 'ReturnStatement':
@@ -410,6 +424,9 @@ class FunctionNode {
 								case 'a':
 									return typeLookupMap[this.getVariableType(ast.object.name)];
 							}
+							if (ast.object.name === '_' + ast.property.name && this.lookupReturnType) {
+								return this.lookupReturnType(ast.property.name, ast, this);
+							}
 					}
 					throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
 				}
@@ -418,6 +435,8 @@ class FunctionNode {
 				return this.getType(ast.body);
 			case 'ConditionalExpression':
 				return this.getType(ast.consequent);
+			case 'FunctionExpression':
+				return this.getType(ast.body);
 			default:
 				throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
 		}
@@ -1127,6 +1146,53 @@ class FunctionNode {
 			default:
 				throw this.astErrorOutput('Unexpected expression', ast);
 		}
+	}
+
+	findIdentifierOrigin(astToFind) {
+		const stack = [this.ast];
+
+		while (stack.length > 0) {
+			const atNode = stack[0];
+			if (atNode.type === 'VariableDeclarator' && atNode.id && atNode.id.name && atNode.id.name === astToFind.name) {
+				return atNode;
+			}
+			stack.shift();
+			if (atNode.argument) {
+				stack.push(atNode.argument);
+			} else if (atNode.body) {
+				stack.push(atNode.body);
+			} else if (atNode.declarations) {
+				stack.push(atNode.declarations);
+			} else if (Array.isArray(atNode)) {
+				for (let i = 0; i < atNode.length; i++) {
+					stack.push(atNode[i]);
+				}
+			}
+		}
+		return null;
+	}
+
+	findLastReturn() {
+		const stack = [this.ast];
+
+		while (stack.length > 0) {
+			const atNode = stack.pop();
+			if (atNode.type === 'ReturnStatement') {
+				return atNode;
+			}
+			if (atNode.argument) {
+				stack.push(atNode.argument);
+			} else if (atNode.body) {
+				stack.push(atNode.body);
+			} else if (atNode.declarations) {
+				stack.push(atNode.declarations);
+			} else if (Array.isArray(atNode)) {
+				for (let i = 0; i < atNode.length; i++) {
+					stack.push(atNode[i]);
+				}
+			}
+		}
+		return null;
 	}
 
 	getInternalVariableName(name) {
