@@ -60,7 +60,7 @@ Or alternatively you can experiment around with the [kernel playground here](htt
 * [Contributing](#contributing)
 * [Terms Explained](#terms-explained)
 * [License](#license)
-* [Demos](#example-applications)
+* [Demos](#demos)
 
 ## Installation
 
