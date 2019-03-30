@@ -76,7 +76,7 @@ export class Kernel {
   static isContextMatch(context: any): boolean;
   static nativeFunctionArgumentTypes(source: string): IArgumentTypes;
   static nativeFunctionReturnType(source: string): string;
-  static destroyContext(context: any);
+  static destroyContext(context: any): void;
   static features: IKernelFeatures;
   source: string | object;
   output: number[];
