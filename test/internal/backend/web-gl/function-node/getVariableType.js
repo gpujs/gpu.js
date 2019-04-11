@@ -6,14 +6,20 @@ describe('WebGLFunctionNode.getVariableType()');
 test('Native function > detects same native argument type float, and no cast', () => {
   const nativeFunction = `float nativeFunction(float value) { return value + 1.0; }`;
   const returnType = GLKernel.nativeFunctionReturnType(nativeFunction);
-  const argumentTypes = GLKernel.nativeFunctionArgumentTypes(nativeFunction);
+  const { argumentTypes } = GLKernel.nativeFunctionArguments(nativeFunction);
   const node = new WebGLFunctionNode(`function kernel(value) {
     return nativeFunction(value);
   }`, {
     output: [1],
     argumentTypes: ['Number'],
-    nativeFunctionReturnTypes: { nativeFunction: returnType },
-    nativeFunctionArgumentTypes: { nativeFunction: argumentTypes },
+    lookupReturnType: (name, ast, node) => {
+      if (name === 'nativeFunction') return returnType;
+      throw new Error('unknown function');
+    },
+    lookupFunctionArgumentTypes: (functionName) => {
+      if (functionName === 'nativeFunction') return argumentTypes;
+      throw new Error('unknown function');
+    }
   });
 
   assert.equal(node.toString(), 'float kernel(float user_value) {'
@@ -24,14 +30,20 @@ test('Native function > detects same native argument type float, and no cast', (
 test('Native function > detects same native argument type int, and no cast', () => {
   const nativeFunction = `float nativeFunction(int value) { return float(value + 1); }`;
   const returnType = GLKernel.nativeFunctionReturnType(nativeFunction);
-  const argumentTypes = GLKernel.nativeFunctionArgumentTypes(nativeFunction);
+  const { argumentTypes } = GLKernel.nativeFunctionArguments(nativeFunction);
   const node = new WebGLFunctionNode(`function kernel(value) {
     return nativeFunction(value);
   }`, {
     output: [1],
     argumentTypes: ['Integer'],
-    nativeFunctionReturnTypes: { nativeFunction: returnType },
-    nativeFunctionArgumentTypes: { nativeFunction: argumentTypes },
+    lookupReturnType: (name, ast, node) => {
+      if (name === 'nativeFunction') return returnType;
+      throw new Error('unknown function');
+    },
+    lookupFunctionArgumentTypes: (functionName) => {
+      if (functionName === 'nativeFunction') return argumentTypes;
+      throw new Error('unknown function');
+    }
   });
 
   assert.equal(node.toString(), 'float kernel(int user_value) {'
@@ -42,14 +54,20 @@ test('Native function > detects same native argument type int, and no cast', () 
 test('Native function > detects different native argument type int from literal, and cast to it from float', () => {
   const nativeFunction = `float nativeFunction(int value) { return float(value + 1); }`;
   const returnType = GLKernel.nativeFunctionReturnType(nativeFunction);
-  const argumentTypes = GLKernel.nativeFunctionArgumentTypes(nativeFunction);
+  const { argumentTypes } = GLKernel.nativeFunctionArguments(nativeFunction);
   const node = new WebGLFunctionNode(`function kernel(value) {
     return nativeFunction(1.5);
   }`, {
     output: [1],
     argumentTypes: ['Number'],
-    nativeFunctionReturnTypes: { nativeFunction: returnType },
-    nativeFunctionArgumentTypes: { nativeFunction: argumentTypes },
+    lookupReturnType: (name, ast, node) => {
+      if (name === 'nativeFunction') return returnType;
+      throw new Error('unknown function');
+    },
+    lookupFunctionArgumentTypes: (functionName) => {
+      if (functionName === 'nativeFunction') return argumentTypes;
+      throw new Error('unknown function');
+    }
   });
 
   assert.equal(node.toString(), 'float kernel(float user_value) {'
@@ -60,14 +78,20 @@ test('Native function > detects different native argument type int from literal,
 test('Native function > detects different native argument type float from literal, and cast to it from int', () => {
   const nativeFunction = `float nativeFunction(int value) { return float(value + 1); }`;
   const returnType = GLKernel.nativeFunctionReturnType(nativeFunction);
-  const argumentTypes = GLKernel.nativeFunctionArgumentTypes(nativeFunction);
+  const { argumentTypes } = GLKernel.nativeFunctionArguments(nativeFunction);
   const node = new WebGLFunctionNode(`function kernel(value) {
     return nativeFunction(1);
   }`, {
     output: [1],
     argumentTypes: ['Number'],
-    nativeFunctionReturnTypes: { nativeFunction: returnType },
-    nativeFunctionArgumentTypes: { nativeFunction: argumentTypes },
+    lookupReturnType: (name, ast, node) => {
+      if (name === 'nativeFunction') return returnType;
+      throw new Error('unknown function');
+    },
+    lookupFunctionArgumentTypes: (functionName) => {
+      if (functionName === 'nativeFunction') return argumentTypes;
+      throw new Error('unknown function');
+    }
   });
 
   assert.equal(node.toString(), 'float kernel(float user_value) {'
@@ -78,14 +102,20 @@ test('Native function > detects different native argument type float from litera
 test('Native function > detects different native argument type int, and cast to it from float', () => {
   const nativeFunction = `float nativeFunction(int value) { return float(value + 1); }`;
   const returnType = GLKernel.nativeFunctionReturnType(nativeFunction);
-  const argumentTypes = GLKernel.nativeFunctionArgumentTypes(nativeFunction);
+  const { argumentTypes } = GLKernel.nativeFunctionArguments(nativeFunction);
   const node = new WebGLFunctionNode(`function kernel(value) {
     return nativeFunction(value);
   }`, {
     output: [1],
     argumentTypes: ['Number'],
-    nativeFunctionReturnTypes: { nativeFunction: returnType },
-    nativeFunctionArgumentTypes: { nativeFunction: argumentTypes },
+    lookupReturnType: (name, ast, node) => {
+      if (name === 'nativeFunction') return returnType;
+      throw new Error('unknown function');
+    },
+    lookupFunctionArgumentTypes: (functionName) => {
+      if (functionName === 'nativeFunction') return argumentTypes;
+      throw new Error('unknown function');
+    }
   });
 
   assert.equal(node.toString(), 'float kernel(float user_value) {'
@@ -96,14 +126,20 @@ test('Native function > detects different native argument type int, and cast to 
 test('Native function > detects different native argument type float, and cast to it from int', () => {
   const nativeFunction = `float nativeFunction(float value) { return value + 1.0; }`;
   const returnType = GLKernel.nativeFunctionReturnType(nativeFunction);
-  const argumentTypes = GLKernel.nativeFunctionArgumentTypes(nativeFunction);
+  const { argumentTypes } = GLKernel.nativeFunctionArguments(nativeFunction);
   const node = new WebGLFunctionNode(`function kernel(value) {
     return nativeFunction(value);
   }`, {
     output: [1],
     argumentTypes: ['Integer'],
-    nativeFunctionReturnTypes: { nativeFunction: returnType },
-    nativeFunctionArgumentTypes: { nativeFunction: argumentTypes },
+    lookupReturnType: (name, ast, node) => {
+      if (name === 'nativeFunction') return returnType;
+      throw new Error('unknown function');
+    },
+    lookupFunctionArgumentTypes: (functionName) => {
+      if (functionName === 'nativeFunction') return argumentTypes;
+      throw new Error('unknown function');
+    }
   });
 
   assert.equal(node.toString(), 'float kernel(int user_value) {'

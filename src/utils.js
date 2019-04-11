@@ -290,6 +290,18 @@ const utils = {
 		} while (obj = Object.getPrototypeOf(obj));
 
 		return props;
+	},
+
+	/**
+	 * @param {Array} lines - An Array of strings
+	 * @returns {String} Single combined String, seperated by *\n*
+	 */
+	linesToString(lines) {
+		if (lines.length > 0) {
+			return lines.join(';\n') + ';\n';
+		} else {
+			return '\n';
+		}
 	}
 };
 

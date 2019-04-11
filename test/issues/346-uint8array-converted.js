@@ -17,6 +17,7 @@ function buildUintArrayInputKernel(mode, data) {
 		return data[this.thread.x];
 	})
 		.setOutput([DATA_MAX]);
+	debugger;
 	const result = largeArrayAddressKernel(data);
 	let same = true;
 	let i = 0;

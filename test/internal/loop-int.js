@@ -15,7 +15,8 @@ test('loop int constant output webgl', () => {
     output: [1],
     constantTypes: {
       max: 'Integer'
-    }
+    },
+    argumentTypes: ['Array']
   });
   assert.equal(
     functionNode.toString(),
@@ -39,7 +40,8 @@ test('loop int constant output webgl2', () => {
   const functionNode = new WebGL2FunctionNode(kernel.toString(), {
     isRootKernel: true,
     output: [1],
-    constantTypes: { max: 'Integer' }
+    constantTypes: { max: 'Integer' },
+    argumentTypes: ['Array'],
   });
   assert.equal(
     functionNode.toString(),
@@ -123,7 +125,11 @@ test('loop int literal output webgl', () => {
     }
     return sum;
   }
-  const functionNode = new WebGLFunctionNode(kernel.toString(), { isRootKernel: true, output: [1] });
+  const functionNode = new WebGLFunctionNode(kernel.toString(), {
+    isRootKernel: true,
+    output: [1],
+    argumentTypes: ['Array']
+  });
   assert.equal(
     functionNode.toString(),
     'void kernel() {' +
@@ -143,7 +149,11 @@ test('loop int literal output webgl2', () => {
     }
     return sum;
   }
-  const functionNode = new WebGL2FunctionNode(kernel.toString(), { isRootKernel: true, output: [1] });
+  const functionNode = new WebGL2FunctionNode(kernel.toString(), {
+    isRootKernel: true,
+    output: [1],
+    argumentTypes: ['Array']
+  });
   assert.equal(
     functionNode.toString(),
     'void kernel() {' +

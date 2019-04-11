@@ -43,7 +43,8 @@ function functionCompositionFunctionNode(FunctionNode) {
     return inner();
   }`, {
     output,
-    lookupReturnType: () => 'Number'
+    lookupReturnType: () => 'Number',
+    lookupFunctionArgumentTypes: () => {}
   });
 
   return node.toString();

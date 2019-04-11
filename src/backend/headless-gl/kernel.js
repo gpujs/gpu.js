@@ -1,4 +1,3 @@
-// const exokit = require('exokit');
 const getContext = require('gl');
 const {
 	WebGLKernel

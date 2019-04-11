@@ -30,14 +30,19 @@ class FunctionNode {
 		this.constantTypes = {};
 		this.isRootKernel = false;
 		this.isSubKernel = false;
-		this.parent = null;
 		this.debug = null;
 		this.declarations = {};
 		this.states = [];
 		this.lookupReturnType = null;
-		this.nativeFunctionReturnTypes = null;
-		this.nativeFunctionArgumentTypes = null;
+		this.lookupArgumentType = null;
+		this.lookupFunctionArgumentTypes = null;
+		this.triggerImplyArgumentType = null;
+		this.triggerTrackArgumentSynonym = null;
+		this.lookupArgumentSynonym = null;
 		this.onNestedFunction = null;
+		this.onFunctionCall = null;
+		this.optimizeFloatMemory = null;
+		this.floatOutput = null;
 		this.loopMaxIterations = null;
 		this.argumentNames = (typeof this.source === 'string' ? utils.getArgumentNamesFromString(this.source) : null);
 		this.argumentTypes = [];
@@ -45,7 +50,6 @@ class FunctionNode {
 		this.returnType = null;
 		this.output = [];
 		this.plugins = null;
-		this.literalTypes = {};
 
 		if (settings) {
 			for (const p in settings) {
@@ -54,6 +58,11 @@ class FunctionNode {
 				this[p] = settings[p];
 			}
 		}
+
+		this.synonymIndex = -1;
+		this.synonymUseIndex = 0;
+		this.argumentSynonym = {};
+		this.literalTypes = {};
 
 		if (this.isRootKernel && !this.returnType) {
 			this.returnType = 'Number';
@@ -175,6 +184,9 @@ class FunctionNode {
 		if (typeof this.source === 'object') {
 			return this.ast = this.source;
 		}
+		if (this.ast) {
+			return this.ast;
+		}
 
 		inParser = inParser || acorn;
 		if (inParser === null) {
@@ -209,16 +221,8 @@ class FunctionNode {
 			const argumentType = this.argumentTypes[argumentIndex];
 			if (argumentType) {
 				type = argumentType;
-			} else if (this.parent) {
-				const calledFunctionArguments = this.parent.calledFunctionsArguments[this.name];
-				for (let i = 0; i < calledFunctionArguments.length; i++) {
-					const calledFunctionArgument = calledFunctionArguments[i];
-					if (calledFunctionArgument[argumentIndex] !== null) {
-						type = calledFunctionArgument[argumentIndex].type;
-						this.argumentTypes[argumentIndex] = type;
-						break;
-					}
-				}
+			} else if (this.lookupArgumentType) {
+				type = this.argumentTypes[argumentIndex] = this.lookupArgumentType(name, this);
 			}
 		}
 		if (!type) {
@@ -247,19 +251,11 @@ class FunctionNode {
 	 * @param {String} name - Name of the argument
 	 * @returns {String} Name of the parameter
 	 */
-	getUserArgumentName(name) {
+	getKernelArgumentName(name) {
+		if (!this.lookupArgumentSynonym) return null;
 		const argumentIndex = this.argumentNames.indexOf(name);
 		if (argumentIndex === -1) return null;
-		if (!this.parent || this.isRootKernel) return null;
-		const calledFunctionArguments = this.parent.calledFunctionsArguments[this.name];
-		for (let i = 0; i < calledFunctionArguments.length; i++) {
-			const calledFunctionArgument = calledFunctionArguments[i];
-			const argument = calledFunctionArgument[argumentIndex];
-			if (argument && argument.type !== 'Integer' && argument.type !== 'LiteralInteger' && argument.type !== 'Number') {
-				return argument.name;
-			}
-		}
-		return null;
+		return this.lookupArgumentSynonym('kernel', this.name, name);
 	}
 
 	toString() {
@@ -293,7 +289,7 @@ class FunctionNode {
 	/**
 	 * Recursively looks up type for ast expression until it's found
 	 * @param ast
-	 * @returns {string}
+	 * @returns {String|null}
 	 */
 	getType(ast) {
 		if (Array.isArray(ast)) {
@@ -319,15 +315,12 @@ class FunctionNode {
 					return 'Number';
 				}
 				if (!ast.callee || !ast.callee.name) {
-					if (ast.callee.type === 'SequenceExpression') {
-						return this.getType(ast.callee.expressions[ast.callee.expressions.length - 1]);
+					if (ast.callee.type === 'SequenceExpression' && ast.callee.expressions[ast.callee.expressions.length - 1].property.name) {
+						return this.lookupReturnType(ast.callee.expressions[ast.callee.expressions.length - 1].property.name, ast, this);
 					}
 					throw this.astErrorOutput('Unknown call expression', ast);
 				}
-				if (this.nativeFunctionReturnTypes && this.nativeFunctionReturnTypes[ast.callee.name]) {
-					return this.nativeFunctionReturnTypes[ast.callee.name];
-				}
-				if (ast.callee && ast.callee.name && this.lookupReturnType) {
+				if (ast.callee && ast.callee.name) {
 					return this.lookupReturnType(ast.callee.name, ast, this);
 				}
 				throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
@@ -392,6 +385,8 @@ class FunctionNode {
 							return typeLookupMap[this.getVariableType(ast.object.object.name)];
 						case 'value[][][]':
 							return typeLookupMap[this.getVariableType(ast.object.object.object.name)];
+						case 'value[][][][]':
+							return typeLookupMap[this.getVariableType(ast.object.object.object.object.name)];
 						case 'this.thread.value':
 							return 'Integer';
 						case 'this.output.value':
@@ -404,6 +399,8 @@ class FunctionNode {
 							return typeLookupMap[this.getConstantType(ast.object.object.property.name)];
 						case 'this.constants.value[][][]':
 							return typeLookupMap[this.getConstantType(ast.object.object.object.property.name)];
+						case 'this.constants.value[][][][]':
+							return typeLookupMap[this.getConstantType(ast.object.object.object.object.property.name)];
 						case 'fn()[]':
 							return typeLookupMap[this.getType(ast.object)];
 						case 'fn()[][]':
@@ -424,19 +421,23 @@ class FunctionNode {
 								case 'a':
 									return typeLookupMap[this.getVariableType(ast.object.name)];
 							}
-							if (ast.object.name === '_' + ast.property.name && this.lookupReturnType) {
-								return this.lookupReturnType(ast.property.name, ast, this);
-							}
+						case '[][]':
+							return 'Number';
 					}
 					throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
 				}
 				throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
-			case 'FunctionDeclaration':
-				return this.getType(ast.body);
 			case 'ConditionalExpression':
 				return this.getType(ast.consequent);
+			case 'FunctionDeclaration':
 			case 'FunctionExpression':
-				return this.getType(ast.body);
+				const lastReturn = this.findLastReturn(ast.body);
+				if (lastReturn) {
+					return this.getType(lastReturn);
+				}
+				return null;
+			case 'IfStatement':
+				return this.getType(ast.consequent);
 			default:
 				throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
 		}
@@ -614,6 +615,8 @@ class FunctionNode {
 				signature.unshift('value');
 			} else if (ast.callee && ast.callee.name) {
 				signature.unshift('fn()');
+			} else if (ast.elements) {
+				signature.unshift('[]');
 			} else {
 				signature.unshift('unknown');
 			}
@@ -626,6 +629,7 @@ class FunctionNode {
 			'value[]',
 			'value[][]',
 			'value[][][]',
+			'value[][][][]',
 			'value.value',
 			'this.thread.value',
 			'this.output.value',
@@ -633,9 +637,11 @@ class FunctionNode {
 			'this.constants.value[]',
 			'this.constants.value[][]',
 			'this.constants.value[][][]',
+			'this.constants.value[][][][]',
 			'fn()[]',
 			'fn()[][]',
 			'fn()[][][]',
+			'[][]',
 		];
 		if (allowedExpressions.indexOf(signatureString) > -1) {
 			return signatureString;
@@ -1039,6 +1045,20 @@ class FunctionNode {
 					yProperty: ast.object.property,
 					xProperty: ast.property,
 				};
+			case 'value[][][][]':
+				if (typeof ast.object.object.object.object.name !== 'string') {
+					throw this.astErrorOutput('Unexpected expression', ast);
+				}
+				name = ast.object.object.object.object.name;
+				return {
+					name,
+					origin: 'user',
+					signature: variableSignature,
+					type: this.getVariableType(name),
+					zProperty: ast.object.object.property,
+					yProperty: ast.object.property,
+					xProperty: ast.property,
+				};
 			case 'value.value':
 				if (typeof ast.property.name !== 'string') {
 					throw this.astErrorOutput('Unexpected expression', ast);
@@ -1139,9 +1159,10 @@ class FunctionNode {
 					};
 				}
 			case 'fn()[]':
+			case '[][]':
 				return {
 					signature: variableSignature,
-					property: ast.property
+					property: ast.property,
 				};
 			default:
 				throw this.astErrorOutput('Unexpected expression', ast);
@@ -1172,8 +1193,8 @@ class FunctionNode {
 		return null;
 	}
 
-	findLastReturn() {
-		const stack = [this.ast];
+	findLastReturn(ast) {
+		const stack = [ast || this.ast];
 
 		while (stack.length > 0) {
 			const atNode = stack.pop();
@@ -1190,6 +1211,8 @@ class FunctionNode {
 				for (let i = 0; i < atNode.length; i++) {
 					stack.push(atNode[i]);
 				}
+			} else if (atNode.consequent) {
+				stack.push(atNode.consequent);
 			}
 		}
 		return null;
@@ -1214,9 +1237,14 @@ const typeLookupMap = {
 	'Array(4)': 'Number',
 	'Array2D': 'Number',
 	'Array3D': 'Number',
+	'Input': 'Number',
 	'HTMLImage': 'Array(4)',
 	'HTMLImageArray': 'Array(4)',
 	'NumberTexture': 'Number',
+	'MemoryOptimizedNumberTexture': 'Number',
+	'ArrayTexture(1)': 'Number',
+	'ArrayTexture(2)': 'Array(2)',
+	'ArrayTexture(3)': 'Array(3)',
 	'ArrayTexture(4)': 'Array(4)',
 };
 

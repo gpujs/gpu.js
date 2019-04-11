@@ -116,23 +116,57 @@ float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int z, int y
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
-  __GET_TEXTURE_CHANNEL__;
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  __GET_TEXTURE_INDEX__;
   vec4 texel = texture2D(tex, st / vec2(texSize));
-  __GET_RESULT__;
+  return decode(texel, x, bitRatio);
+}
+
+float getMemoryOptimized(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
+  __GET_WRAPAROUND__;
+  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int channel = integerMod(index, 4);
+  index = index / 4;
+  int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  index = index / 4;
+  vec4 texel = texture2D(tex, st / vec2(texSize));
+  if (channel == 0) return texel.r;
+  if (channel == 1) return texel.g;
+  if (channel == 2) return texel.b;
+  if (channel == 3) return texel.a;
+  return 0.0;
 }
 
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
-  __GET_TEXTURE_CHANNEL__;
+  int channel = integerMod(index, 4);
+	index = index / 4;
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  __GET_TEXTURE_INDEX__;
   return texture2D(tex, st / vec2(texSize));
+}
+
+float getFloatFromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
+  return result[0];
+}
+
+vec2 getVec2FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
+  return vec2(result[0], result[1]);
+}
+
+vec3 getVec3FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
+  return vec3(result[0], result[1], result[2]);
+}
+
+vec4 getVec4FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  return getImage2D(tex, texSize, texDim, z, y, x);
 }
 
 vec4 actualColor;

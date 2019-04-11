@@ -2,41 +2,69 @@ const { assert, skip, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('infinity');
-let gpu;
-function input(mode) {
-  gpu = new GPU({ mode });
-  return gpu.createKernel(function() {
+function inputWithoutFloat(checks, mode) {
+  const gpu = new GPU({ mode });
+  checks(gpu.createKernel(function() {
     return Infinity;
-  })
-    .setOutput([1])();
+  }, { floatOutput: false })
+    .setOutput([1])());
+  gpu.destroy();
 }
 
-test("Infinity auto", () => {
-  assert.deepEqual(input()[0], NaN);
-  gpu.destroy();
+test("Infinity without float auto", () => {
+  inputWithoutFloat((v) => assert.deepEqual(v[0], NaN));
 });
 
-test("Infinity cpu", () => {
-  assert.deepEqual(input('cpu')[0], Infinity);
-  gpu.destroy();
+test("Infinity without float cpu", () => {
+  inputWithoutFloat((v) => assert.deepEqual(v[0], Infinity), 'cpu');
 });
 
-test("Infinity gpu", () => {
-  assert.deepEqual(input('gpu')[0], NaN);
-  gpu.destroy();
+test("Infinity without float gpu", () => {
+  inputWithoutFloat((v) => assert.deepEqual(v[0], NaN), 'gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)("Infinity webgl", () => {
-  assert.deepEqual(input('webgl')[0], NaN);
-  gpu.destroy();
+(GPU.isWebGLSupported ? test : skip)("Infinity without float webgl", () => {
+  inputWithoutFloat((v) => assert.deepEqual(v[0], NaN), 'webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)("Infinity webgl2", () => {
-  assert.deepEqual(input('webgl2')[0], NaN);
-  gpu.destroy();
+(GPU.isWebGL2Supported ? test : skip)("Infinity without float webgl2", () => {
+  inputWithoutFloat((v) => assert.deepEqual(v[0], NaN), 'webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)("Infinity headlessgl", () => {
-  assert.deepEqual(input('headlessgl')[0], NaN);
+(GPU.isHeadlessGLSupported ? test : skip)("Infinity without float headlessgl", () => {
+  inputWithoutFloat((v) => assert.deepEqual(v[0], NaN), 'headlessgl');
+});
+
+
+function inputWithFloat(checks, mode) {
+  const gpu = new GPU({ mode });
+  checks(gpu.createKernel(function() {
+    return Infinity;
+  }, { floatOutput: true })
+    .setOutput([1])());
   gpu.destroy();
+}
+
+test("Infinity with float auto", () => {
+  inputWithFloat((v) => assert.deepEqual(v[0], 3.4028234663852886e+38));
+});
+
+test("Infinity with float cpu", () => {
+  inputWithFloat((v) => assert.deepEqual(v[0], Infinity), 'cpu');
+});
+
+test("Infinity with float gpu", () => {
+  inputWithFloat((v) => assert.deepEqual(v[0], 3.4028234663852886e+38), 'gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)("Infinity with float webgl", () => {
+  inputWithFloat((v) => assert.deepEqual(v[0], 3.4028234663852886e+38), 'webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)("Infinity with float webgl2", () => {
+  inputWithFloat((v) => assert.deepEqual(v[0], 3.4028234663852886e+38), 'webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)("Infinity with float headlessgl", () => {
+  inputWithFloat((v) => assert.deepEqual(v[0], 3.4028234663852886e+38), 'headlessgl');
 });

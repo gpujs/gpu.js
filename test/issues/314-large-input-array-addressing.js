@@ -22,6 +22,7 @@ function buildLargeArrayAddressKernel(mode) {
 		return data[this.thread.x];
 	})
 		.setOutput([DATA_MAX]);
+
 	const result = largeArrayAddressKernel(data);
 
 	let same = true;

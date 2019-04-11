@@ -91,7 +91,7 @@ test('this.whatever.value', () => {
   assert.equal(run('this.whatever.value'), null);
 });
 test('this.constants.value[][][][]', () => {
-  assert.equal(run('this.constants.value[0][0][0][0]'), null);
+  assert.equal(run('this.constants.value[0][0][0][0]'), 'this.constants.value[][][][]');
 });
 test('this.constants.value.something', () => {
   assert.equal(run('this.constants.value.something'), null);

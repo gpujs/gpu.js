@@ -23,13 +23,14 @@ const A = splitArray(Array.apply(null, Array(matrixSize * matrixSize)).map((_, i
 function readFromTexture(mode) {
   const gpu = new GPU({ mode });
   const noTexture = makeKernel(gpu);
-  const texture = makeKernel(gpu).setPipeline(true);
+  const texture = makeKernel(gpu)
+    .setPipeline(true);
 
   const result = noTexture(A);
   const textureResult = texture(A).toArray(gpu);
 
-  assert.deepEqual(result.map(function(v) { return Array.from(v); }), A);
-  assert.deepEqual(textureResult.map(function(v) { return Array.from(v); }), A);
+  assert.deepEqual(result.map((v) => Array.from(v)), A);
+  assert.deepEqual(textureResult.map((v) => Array.from(v)), A);
   assert.deepEqual(textureResult, result);
   gpu.destroy();
 }

@@ -64,10 +64,10 @@ vec4 encode32(float f) {
   float exponent = floor(log2(F));
   float mantissa = (exp2(-exponent) * F);
   // exponent += floor(log2(mantissa));
-  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;
+  vec4 rgba = vec4(F * exp2(23.0 - exponent)) * SCALE_FACTOR_INV;
   rgba.rg = integerMod(rgba.rg, 256.0);
   rgba.b = integerMod(rgba.b, 128.0);
-  rgba.a = exponent*0.5 + 63.5;
+  rgba.a = exponent * 0.5 + 63.5;
   rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;
   rgba = floor(rgba);
   rgba *= 0.003921569; // 1/255
@@ -75,6 +75,20 @@ vec4 encode32(float f) {
   return rgba;
 }
 // Dragons end here
+
+float decodeMemoryOptimized(vec4 rgba, int x, int bitRatio) {
+  if (bitRatio == 1) {
+    return decode32(rgba);
+  }
+  __DECODE32_ENDIANNESS__;
+  int channel = integerMod(x, bitRatio);
+  if (bitRatio == 4) {
+    return rgba[channel] * 255.0;
+  }
+  else {
+    return rgba[channel*2] * 255.0 + rgba[channel*2 + 1] * 65280.0;
+  }
+}
 
 float decode(vec4 rgba, int x, int bitRatio) {
   if (bitRatio == 1) {
@@ -105,22 +119,31 @@ float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int z, int y
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
-  __GET_TEXTURE_CHANNEL__;
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  __GET_TEXTURE_INDEX__;
   vec4 texel = texture(tex, st / vec2(texSize));
-  __GET_RESULT__;
+  return decode32(texel);
+}
+
+float getMemoryOptimized(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
+  __GET_WRAPAROUND__;
+  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int channel = integerMod(index, 4);
+  index = index / 4;
+  int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  index = index / 4;
+  vec4 texel = texture(tex, st / vec2(texSize));
+  return texel[channel];
 }
 
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
-  __GET_TEXTURE_CHANNEL__;
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  __GET_TEXTURE_INDEX__;
   return texture(tex, st / vec2(texSize));
 }
 
@@ -128,11 +151,28 @@ vec4 getImage3D(sampler2DArray tex, ivec2 texSize, ivec3 texDim, int z, int y, i
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
-  __GET_TEXTURE_CHANNEL__;
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  __GET_TEXTURE_INDEX__;
   return texture(tex, vec3(st / vec2(texSize), z));
+}
+
+float getFloatFromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
+  return result[0];
+}
+
+vec2 getVec2FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
+  return vec2(result[0], result[1]);
+}
+
+vec3 getVec3FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
+  return vec3(result[0], result[1], result[2]);
+}
+
+vec4 getVec4FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  return getImage2D(tex, texSize, texDim, z, y, x);
 }
 
 vec4 actualColor;

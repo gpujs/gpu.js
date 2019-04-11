@@ -46,6 +46,7 @@ export interface IGPUSettings {
   context?: object;
   functions?: KernelFunction[];
   nativeFunctions?: INativeFunctionList;
+  format: 'Float32Array' | 'Float16Array' | 'Float'
 }
 
 export type GPUVariableType
@@ -56,6 +57,8 @@ export type GPUVariableType
   | 'HTMLImage'
   | 'HTMLImageArray'
   | 'Number'
+  | 'Float'
+  | 'Integer'
   | GPUTextureType;
 
 export type GPUTextureType
@@ -67,18 +70,21 @@ export interface IGPUArgumentTypes {
 }
 
 export interface IGPUFunctionSettings {
-  argumentTypes?: IGPUArgumentTypes,
+  argumentTypes?: IGPUArgumentTypes | string[],
   returnType: GPUVariableType;
 }
 
-export class Kernel {
+export abstract class Kernel {
   static isSupported: boolean;
   static isContextMatch(context: any): boolean;
-  static nativeFunctionArgumentTypes(source: string): IArgumentTypes;
+  static disableValidation(): void;
+  static enableValidation(): void;
+  static nativeFunctionArguments(source: string): IArgumentTypes;
   static nativeFunctionReturnType(source: string): string;
   static destroyContext(context: any);
   static features: IKernelFeatures;
   source: string | object;
+  Kernel: Kernel;
   output: number[];
   debug: boolean;
   graphical: boolean;
@@ -94,6 +100,7 @@ export class Kernel {
   immutable: boolean;
   pipeline: boolean;
   plugins: IPlugin[];
+  constructor(kernel: KernelFunction, settings?: IKernelSettings); // TODO: JSON support
   build(
     arg1?: KernelVariable,
     arg2?: KernelVariable,
@@ -152,8 +159,8 @@ export class Kernel {
 }
 
 export interface IArgumentTypes {
-  names: string[],
-  types: string[],
+  argumentTypes: string[],
+  argumentNames: string[],
 }
 
 export interface IConstants {
@@ -182,6 +189,7 @@ export interface IKernelSettings {
   pipeline?: boolean;
   immutable?: boolean;
   graphical?: boolean;
+  onRequestFallback?: () => Kernel;
 }
 
 export interface IKernelRunShortcut extends Kernel {
@@ -272,11 +280,7 @@ export interface IFunctionSettings {
   isSubKernel?: boolean;
   onNestedFunction?(source: string, returnType: string): void;
   lookupReturnType?(functionName: string, ast: any, node: FunctionNode): void;
-  nativeFunctionReturnTypes?: string[],
-  nativeFunctionArgumentTypes?: IGPUArgumentTypes[],
   plugins?: any[];
-  pluginNames?: string[];
-  parent?: FunctionNode
 }
 
 export interface ISubKernel {
@@ -298,10 +302,11 @@ export class FunctionBuilder {
 
 
 export interface IFunctionBuilderSettings {
+  kernel: Kernel;
   rootNode: FunctionNode;
   functionNodes?: FunctionNode[];
-  subKernelNodes?: FunctionNode[];
   nativeFunctions?: INativeFunctionList;
+  subKernelNodes?: FunctionNode[];
 }
 
 // These are mostly internal

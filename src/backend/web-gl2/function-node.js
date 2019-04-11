@@ -29,7 +29,7 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 				retArr.push('intBitsToFloat(2139095039)');
 				break;
 			default:
-				const userArgumentName = this.getUserArgumentName(idtNode.name);
+				const userArgumentName = this.getKernelArgumentName(idtNode.name);
 				if (userArgumentName) {
 					retArr.push(`user_${userArgumentName}`);
 				} else {

@@ -72,6 +72,7 @@ function webGLKernelString(gpuKernel, name) {
         this.output = ${ JSON.stringify(gpuKernel.output) };
         this.compiledFragmentShader = \`${ gpuKernel.compiledFragmentShader }\`;
 		    this.compiledVertexShader = \`${ gpuKernel.compiledVertexShader }\`;
+		    this.returnType = '${ gpuKernel.returnType }';
 		    this.programUniformLocationCache = {};
 		    this.textureCache = {};
 		    this.subKernelOutputTextures = null;
@@ -96,6 +97,8 @@ function webGLKernelString(gpuKernel, name) {
       setInput(Type) { Input = Type; }
       ${ removeFnNoise(gpuKernel.getUniformLocation.toString()) }
       ${ removeFnNoise(gpuKernel.build.toString()) }
+      translateSource() {}
+      pickRenderStrategy() {}
 		  ${ removeFnNoise(gpuKernel.run.toString()) }
 		  ${ removeFnNoise(gpuKernel._addArgument.toString()) }
 		  ${ removeFnNoise(gpuKernel.formatArrayTransfer.toString()) }
@@ -103,7 +106,10 @@ function webGLKernelString(gpuKernel, name) {
 		  ${ removeFnNoise(gpuKernel.getArgumentTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.getTextureCache.toString()) }
 		  ${ removeFnNoise(gpuKernel.getOutputTexture.toString()) }
-		  ${ removeFnNoise(gpuKernel.renderOutput.toString()) }
+		  renderOutput() { ${ utils.getFunctionBodyFromString(removeFnNoise(gpuKernel.renderOutput.toString())) } }
+		  ${ removeFnNoise(gpuKernel.readPackedPixelsToFloat32Array.toString()) }
+		  ${ removeFnNoise(gpuKernel.readPackedPixelsToUint8Array.toString()) }
+		  ${ removeFnNoise(gpuKernel.readFloatPixelsToFloat32Array.toString()) }
 		  ${ removeFnNoise(gpuKernel.updateMaxTexSize.toString()) }
 		  ${ removeFnNoise(gpuKernel._setupOutputTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.detachTextureCache.toString()) }
@@ -114,6 +120,7 @@ function webGLKernelString(gpuKernel, name) {
 		  ${ removeFnNoise(gpuKernel.setUniform2iv.toString()) }
 		  ${ removeFnNoise(gpuKernel.setUniform3fv.toString()) }
 		  ${ removeFnNoise(gpuKernel.setUniform3iv.toString()) }
+		  getReturnTextureType() { return "${ gpuKernel.getReturnTextureType() }"; }
     };
     return kernelRunShortcut(new ${ name || 'Kernel' }());
   };`;

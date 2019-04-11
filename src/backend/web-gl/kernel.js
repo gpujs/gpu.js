@@ -96,7 +96,8 @@ class WebGLKernel extends GLKernel {
 			isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
 			isTextureFloat: this.getIsTextureFloat(),
 			isDrawBuffers,
-			kernelMap: isDrawBuffers
+			kernelMap: isDrawBuffers,
+			channelCount: this.getChannelCount(),
 		});
 	}
 
@@ -106,6 +107,10 @@ class WebGLKernel extends GLKernel {
 
 	static getIsDrawBuffers() {
 		return Boolean(testExtensions.WEBGL_draw_buffers);
+	}
+
+	static getChannelCount() {
+		return testExtensions.WEBGL_draw_buffers ? testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL : 1;
 	}
 
 	static get testCanvas() {
@@ -179,24 +184,25 @@ class WebGLKernel extends GLKernel {
 			depth: false,
 			antialias: false
 		};
-		const context = this.canvas.getContext('webgl', settings) || this.canvas.getContext('experimental-webgl', settings);
-		return context;
+		return this.canvas.getContext('webgl', settings) || this.canvas.getContext('experimental-webgl', settings);
 	}
 
 	initPlugins(settings) {
 		// default plugins
 		const pluginsToUse = [];
-
-		if (typeof this.source === 'string') {
+		const {
+			source
+		} = this;
+		if (typeof source === 'string') {
 			for (let i = 0; i < plugins.length; i++) {
 				const plugin = plugins[i];
-				if (this.source.match(plugin.functionMatch)) {
+				if (source.match(plugin.functionMatch)) {
 					pluginsToUse.push(plugin);
 				}
 			}
-		} else if (typeof this.source === 'object') {
-			// this.source is from object, json
-			if (settings.pluginNames) {
+		} else if (typeof source === 'object') {
+			// `source` is from object, json
+			if (settings.pluginNames) { //TODO: pluginNames, may not exist here
 				for (let i = 0; i < plugins.length; i++) {
 					const plugin = plugins[i];
 					const usePlugin = settings.pluginNames.some(pluginName => pluginName === plugin.name);
@@ -215,20 +221,23 @@ class WebGLKernel extends GLKernel {
 			OES_texture_float_linear: this.context.getExtension('OES_texture_float_linear'),
 			OES_element_index_uint: this.context.getExtension('OES_element_index_uint'),
 			WEBGL_draw_buffers: this.context.getExtension('WEBGL_draw_buffers'),
+			WEBGL_color_buffer_float: this.context.getExtension('WEBGL_color_buffer_float'),
 		};
 	}
 
 	validateSettings() {
-		if (this.skipValidate) {
+		if (!this.validate) {
 			this.texSize = utils.dimToTexSize({
-				floatTextures: this.floatTextures,
+				floatTextures: this.optimizeFloatMemory,
 				floatOutput: this.floatOutput
 			}, this.output, true);
 			return;
 		}
 
-		const features = this.constructor.features;
-		if (this.floatTextures === true && !features.isTextureFloat) {
+		const {
+			features
+		} = this.constructor;
+		if (this.optimizeFloatMemory === true && !features.isTextureFloat) {
 			throw new Error('Float textures are not supported');
 		} else if (this.floatOutput === true && this.floatOutputForce !== true && !features.isFloatRead) {
 			throw new Error('Float texture outputs are not supported');
@@ -280,14 +289,16 @@ class WebGLKernel extends GLKernel {
 			}
 
 			this.texSize = utils.clone(this.output);
-		} else if (this.floatOutput === undefined && features.isTextureFloat) {
+		} else if (this.floatOutput === null && features.isTextureFloat) {
 			this.floatOutput = true;
 		}
 	}
 
 	updateMaxTexSize() {
-		const texSize = this.texSize;
-		const canvas = this.canvas;
+		const {
+			texSize,
+			canvas
+		} = this;
 		if (this.maxTexSize === null) {
 			let canvasIndex = canvases.indexOf(canvas);
 			if (canvasIndex === -1) {
@@ -305,19 +316,67 @@ class WebGLKernel extends GLKernel {
 		}
 	}
 
+	_oldtranslateSource() {
+		const functionBuilder = FunctionBuilder.fromKernel(this, WebGLFunctionNode, {
+			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
+		});
+
+		// need this line to automatically get returnType
+		const translatedSource = functionBuilder.getPrototypeString('kernel');
+
+		if (!this.returnType) {
+			this.returnType = functionBuilder.getKernelResultType();
+		}
+
+		let requiredChannels = 0;
+		const returnTypes = functionBuilder.getReturnTypes();
+		for (let i = 0; i < returnTypes.length; i++) {
+			switch (returnTypes[i]) {
+				case 'Float':
+				case 'Number':
+				case 'Integer':
+					requiredChannels++;
+					break;
+				case 'Array(2)':
+					requiredChannels += 2;
+					break;
+				case 'Array(3)':
+					requiredChannels += 3;
+					break;
+				case 'Array(4)':
+					requiredChannels += 4;
+					break;
+			}
+		}
+
+		if (features && requiredChannels > features.channelCount) {
+			throw new Error('Too many channels!');
+		}
+
+		return this.translatedSource = translatedSource;
+	}
+
 	build() {
 		this.initExtensions();
 		this.validateSettings();
 		this.setupConstants();
 		this.setupArguments(arguments);
 		this.updateMaxTexSize();
+		this.translateSource();
+		this.pickRenderStrategy();
 		const texSize = this.texSize;
 		const gl = this.context;
 		const canvas = this.canvas;
 		gl.enable(gl.SCISSOR_TEST);
-		gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
-		canvas.width = this.maxTexSize[0];
-		canvas.height = this.maxTexSize[1];
+		if (this.pipeline && this.floatOutput) {
+      gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
+      canvas.width = this.maxTexSize[0];
+      canvas.height = this.maxTexSize[1];
+    } else  {
+      gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
+      canvas.width = this.maxTexSize[0];
+      canvas.height = this.maxTexSize[1];
+    }
 		const threadDim = this.threadDim = utils.clone(this.output);
 		while (threadDim.length < 3) {
 			threadDim.push(1);
@@ -409,6 +468,16 @@ class WebGLKernel extends GLKernel {
 		}
 	}
 
+	translateSource() {
+		const functionBuilder = FunctionBuilder.fromKernel(this, WebGLFunctionNode, {
+			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
+		});
+		this.translatedSource = functionBuilder.getPrototypeString('kernel');
+		if (!this.graphical && !this.returnType) {
+			this.returnType = functionBuilder.getKernelResultType();
+		}
+	}
+
 	run() {
 		if (this.program === null) {
 			this.build.apply(this, arguments);
@@ -457,7 +526,7 @@ class WebGLKernel extends GLKernel {
 					output: this.output,
 					context: this.context,
 					gpu: this.gpu,
-					type: 'ArrayTexture(4)'
+					type: this.getReturnTextureType(),
 				});
 			}
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
@@ -470,7 +539,6 @@ class WebGLKernel extends GLKernel {
 		if (this.immutable) {
 			this._setupOutputTexture();
 		}
-		const outputTexture = this.outputTexture;
 
 		if (this.subKernels !== null) {
 			if (this.immutable) {
@@ -485,23 +553,38 @@ class WebGLKernel extends GLKernel {
 		if (this.subKernelOutputTextures !== null) {
 			if (this.subKernels !== null) {
 				const output = {
-					result: this.renderOutput(outputTexture),
+					result: this.renderOutput(),
 				};
-				for (let i = 0; i < this.subKernels.length; i++) {
-					output[this.subKernels[i].property] = new Texture({
-						texture: this.subKernelOutputTextures[i],
-						size: texSize,
-						dimensions: this.threadDim,
-						output: this.output,
-						context: this.context,
-						gpu: this.gpu,
-					});
+				if (this.pipeline) {
+					for (let i = 0; i < this.subKernels.length; i++) {
+						output[this.subKernels[i].property] = new Texture({
+							texture: this.subKernelOutputTextures[i],
+							size: texSize,
+							dimensions: this.threadDim,
+							output: this.output,
+							context: this.context,
+							gpu: this.gpu,
+							type: this.getReturnTextureType(),
+						});
+					}
+				} else {
+					for (let i = 0; i < this.subKernels.length; i++) {
+						output[this.subKernels[i].property] = new Texture({
+							texture: this.subKernelOutputTextures[i],
+							size: texSize,
+							dimensions: this.threadDim,
+							output: this.output,
+							context: this.context,
+							gpu: this.gpu,
+							type: this.getReturnTextureType(),
+						}).toArray();
+					}
 				}
 				return output;
 			}
 		}
 
-		return this.renderOutput(outputTexture);
+		return this.renderOutput();
 	}
 
 	/**
@@ -510,49 +593,49 @@ class WebGLKernel extends GLKernel {
 	 * output of the program back to CPU and then return them.
 	 * *Note*: This should not be called directly.
 	 *
-	 * @param {Texture} outputTexture - Target to write to
 	 * @returns {Object|Array} result
 	 */
-	renderOutput(outputTexture) {
-		const texSize = this.texSize;
-		const gl = this.context;
-		const threadDim = this.threadDim;
-		const output = this.output;
-		if (this.pipeline) {
-			return new Texture({
-				texture: outputTexture,
-				size: texSize,
-				dimensions: this.threadDim,
-				output,
-				context: this.context,
-				gpu: this.gpu,
-			});
-		} else {
-			let result;
-			if (this.floatOutput) {
-				const w = texSize[0];
-				const h = Math.ceil(texSize[1] / 4);
-				result = new Float32Array(w * h * 4);
-				gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
-			} else {
-				const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
-				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
-				result = new Float32Array(bytes.buffer);
-			}
-			result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
-
-			if (output.length === 1) {
-				return result;
-			} else if (output.length === 2) {
-				return utils.splitArray(result, output[0]);
-			} else if (output.length === 3) {
-				const cube = utils.splitArray(result, output[0] * output[1]);
-				return cube.map(function(x) {
-					return utils.splitArray(x, output[0]);
-				});
-			}
-		}
-	}
+	// renderOutput() {
+	// 	const texSize = this.texSize;
+	// 	const gl = this.context;
+	// 	const threadDim = this.threadDim;
+	// 	const output = this.output;
+	// 	if (this.pipeline) {
+	// 		return new Texture({
+	// 			texture: this.outputTexture,
+	// 			size: texSize,
+	// 			dimensions: this.threadDim,
+	// 			output,
+	// 			context: this.context,
+	// 			gpu: this.gpu,
+	// 			type: this.getReturnTextureType(),
+	// 		});
+	// 	} else {
+	// 		let result;
+	// 		if (this.floatOutput) {
+	// 			const w = texSize[0];
+	// 			const h = Math.ceil(texSize[1] / 4);
+	// 			result = new Float32Array(w * h * 4);
+	// 			gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
+	// 		} else {
+	// 			const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
+	// 			gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
+	// 			result = new Float32Array(bytes.buffer);
+	// 		}
+	// 		result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
+	//
+	// 		if (output.length === 1) {
+	// 			return result;
+	// 		} else if (output.length === 2) {
+	// 			return utils.splitArray(result, output[0]);
+	// 		} else if (output.length === 3) {
+	// 			const cube = utils.splitArray(result, output[0] * output[1]);
+	// 			return cube.map(function(x) {
+	// 				return utils.splitArray(x, output[0]);
+	// 			});
+	// 		}
+	// 	}
+	// }
 
 	/**
 	 * @desc This return defined outputTexture, which is setup in .build(), or if immutable, is defined in .run()
@@ -575,8 +658,38 @@ class WebGLKernel extends GLKernel {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		// if (this.floatOutput) {
+		// 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+		// } else {
+		// 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		// }
 		if (this.floatOutput) {
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+			if (this.pipeline) {
+				switch (this.returnType) {
+					case 'Number':
+					case 'Float':
+					case 'Integer':
+						if (this.optimizeFloatMemory) {
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+						} else {
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+						}
+						break;
+					case 'Array(2)':
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+						break;
+					case 'Array(3)':
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+						break;
+					case 'Array(4)':
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+						break;
+					default:
+						throw new Error('Unhandled return type');
+				}
+			} else {
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+			}
 		} else {
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 		}
@@ -768,13 +881,10 @@ class WebGLKernel extends GLKernel {
 			ENCODE32_ENDIANNESS: this._getEncode32EndiannessString(),
 			DIVIDE_WITH_INTEGER_CHECK: this._getDivideWithIntegerCheckString(),
 			GET_WRAPAROUND: this._getGetWraparoundString(),
-			GET_TEXTURE_CHANNEL: this._getGetTextureChannelString(),
-			GET_TEXTURE_INDEX: this._getGetTextureIndexString(),
-			GET_RESULT: this._getGetResultString(),
 			MAIN_CONSTANTS: this._getMainConstantsString(),
 			MAIN_ARGUMENTS: this._getMainArgumentsString(args),
-			KERNEL: this._getKernelString(),
-			MAIN_RESULT: this._getMainResultString()
+			KERNEL: this.getKernelString(),
+			MAIN_RESULT: this.getMainResultString()
 		};
 	}
 
@@ -802,7 +912,7 @@ class WebGLKernel extends GLKernel {
 				{
 					const dim = utils.getDimensions(value, true);
 					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
+						floatTextures: this.optimizeFloatMemory,
 						floatOutput: this.floatOutput
 					}, dim);
 					gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
@@ -820,7 +930,7 @@ class WebGLKernel extends GLKernel {
 					} = this.formatArrayTransfer(value, length);
 
 					let buffer;
-					if (this.floatTextures) {
+					if (this.optimizeFloatMemory) {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 					} else {
 						buffer = new Uint8Array(valuesFlat.buffer);
@@ -836,6 +946,10 @@ class WebGLKernel extends GLKernel {
 					break;
 				}
 			case 'Integer':
+				{
+					this.setUniform1i(`user_${name}`, value);
+					break;
+				}
 			case 'Float':
 			case 'Number':
 				{
@@ -847,7 +961,7 @@ class WebGLKernel extends GLKernel {
 					const input = value;
 					const dim = input.size;
 					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
+						floatTextures: this.optimizeFloatMemory,
 						floatOutput: this.floatOutput
 					}, dim);
 					gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
@@ -864,7 +978,7 @@ class WebGLKernel extends GLKernel {
 						bitRatio
 					} = this.formatArrayTransfer(value.value, length);
 
-					if (this.floatTextures) {
+					if (this.optimizeFloatMemory) {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, input);
 					} else {
 						const buffer = new Uint8Array(valuesFlat.buffer);
@@ -908,7 +1022,28 @@ class WebGLKernel extends GLKernel {
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
+			case 'ArrayTexture(1)':
+			case 'ArrayTexture(2)':
+			case 'ArrayTexture(3)':
 			case 'ArrayTexture(4)':
+				{
+					const inputTexture = value;
+					if (inputTexture.context !== this.context) {
+						throw new Error(`argument ${ name} (${ type }) must be from same context`);
+					}
+					const dim = inputTexture.dimensions;
+					const size = inputTexture.size;
+
+					gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
+
+					this.setUniform3iv(`user_${name}Dim`, dim);
+					this.setUniform2iv(`user_${name}Size`, size);
+					this.setUniform1i(`user_${name}BitRatio`, 4);
+					this.setUniform1i(`user_${name}`, this.argumentsLength);
+					break;
+				}
+			case 'MemoryOptimizedNumberTexture':
 			case 'NumberTexture':
 				{
 					const inputTexture = value;
@@ -928,7 +1063,7 @@ class WebGLKernel extends GLKernel {
 					break;
 				}
 			default:
-				throw new Error('Input type not supported: ' + value);
+				throw new Error('Argument type not supported: ' + value);
 		}
 		this.argumentsLength++;
 	}
@@ -952,7 +1087,7 @@ class WebGLKernel extends GLKernel {
 				{
 					const dim = utils.getDimensions(value, true);
 					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
+						floatTextures: this.optimizeFloatMemory,
 						floatOutput: this.floatOutput
 					}, dim);
 					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
@@ -963,10 +1098,6 @@ class WebGLKernel extends GLKernel {
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
 					let length = size[0] * size[1];
-					if (this.floatTextures) {
-						length *= 4;
-						length *= 4;
-					}
 
 					const {
 						valuesFlat,
@@ -974,7 +1105,7 @@ class WebGLKernel extends GLKernel {
 					} = this.formatArrayTransfer(value, length);
 
 					let buffer;
-					if (this.floatTextures) {
+					if (this.optimizeFloatMemory) {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 					} else {
 						buffer = new Uint8Array(valuesFlat.buffer);
@@ -994,7 +1125,7 @@ class WebGLKernel extends GLKernel {
 					const input = value;
 					const dim = input.size;
 					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
+						floatTextures: this.optimizeFloatMemory,
 						floatOutput: this.floatOutput
 					}, dim);
 					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
@@ -1010,7 +1141,7 @@ class WebGLKernel extends GLKernel {
 						bitRatio
 					} = this.formatArrayTransfer(value.value, length);
 
-					if (this.floatTextures) {
+					if (this.optimizeFloatMemory) {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 					} else {
 						const buffer = new Uint8Array(valuesFlat.buffer);
@@ -1054,12 +1185,33 @@ class WebGLKernel extends GLKernel {
 					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
+			case 'ArrayTexture(1)':
+			case 'ArrayTexture(2)':
+			case 'ArrayTexture(3)':
 			case 'ArrayTexture(4)':
+			{
+				const inputTexture = value;
+				if (inputTexture.context !== this.context) {
+					throw new Error(`constant ${ name} (${ type }) must be from same context`);
+				}
+				const dim = inputTexture.dimensions;
+				const size = inputTexture.size;
+
+				gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+				gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
+
+				this.setUniform3iv(`constants_${name}Dim`, dim);
+				this.setUniform2iv(`constants_${name}Size`, size);
+				this.setUniform1i(`constants_${name}BitRatio`, 4);
+				this.setUniform1i(`constants_${name}`, this.constantsLength);
+				break;
+			}
+			case 'MemoryOptimizedNumberTexture':
 			case 'NumberTexture':
 				{
 					const inputTexture = value;
 					if (inputTexture.context !== this.context) {
-						throw new Error(`argument ${ name} (${ type }) must be from same context`);
+						throw new Error(`constant ${ name} (${ type }) must be from same context`);
 					}
 					const dim = inputTexture.dimensions;
 					const size = inputTexture.size;
@@ -1075,7 +1227,7 @@ class WebGLKernel extends GLKernel {
 			case 'Integer':
 			case 'Float':
 			default:
-				throw new Error('Input type not supported: ' + value);
+				throw new Error('constant type not supported: ' + value);
 		}
 		this.constantsLength++;
 	}
@@ -1092,10 +1244,10 @@ class WebGLKernel extends GLKernel {
 	formatArrayTransfer(value, length) {
 		let bitRatio = 1; // bit storage ratio of source to target 'buffer', i.e. if 8bit array -> 32bit tex = 4
 		let valuesFlat = value;
-		if (this.floatTextures) {
+		if (this.floatTextures || this.optimizeFloatMemory) {
 			length *= 4;
 		}
-		if (utils.isArray(value[0]) || this.floatTextures) {
+		if (utils.isArray(value[0]) || this.floatTextures || this.optimizeFloatMemory) {
 			// not already flat
 			valuesFlat = new Float32Array(length);
 			utils.flattenTo(value, valuesFlat);
@@ -1163,8 +1315,10 @@ class WebGLKernel extends GLKernel {
 	 */
 	_getConstantsString() {
 		const result = [];
-		const threadDim = this.threadDim;
-		const texSize = this.texSize;
+		const {
+			threadDim,
+			texSize
+		} = this;
 		if (this.hardcodeConstants) {
 			result.push(
 				`ivec3 uOutputDim = ivec3(${threadDim[0]}, ${threadDim[1]}, ${threadDim[2]})`,
@@ -1177,7 +1331,7 @@ class WebGLKernel extends GLKernel {
 			);
 		}
 
-		return this._linesToString(result);
+		return utils.linesToString(result);
 	}
 
 	/**
@@ -1243,41 +1397,6 @@ class WebGLKernel extends GLKernel {
 		);
 	}
 
-	_getGetTextureChannelString() {
-		if (!this.floatTextures) return '';
-
-		return this._linesToString([
-			'  int channel = integerMod(index, 4)',
-			'  index = index / 4'
-		]);
-	}
-
-	/**
-	 * @desc Get generic texture index string, if floatTextures flag is true.
-	 * @example
-	 * '  index = float(int(index)/4);\n'
-	 *
-	 */
-	_getGetTextureIndexString() {
-		return (
-			this.floatTextures ?
-			'  index = index / 4;\n' :
-			''
-		);
-	}
-
-	_getGetResultString() {
-		if (!this.floatTextures) {
-			return '  return decode(texel, x, bitRatio);';
-		}
-		return this._linesToString([
-			'  if (channel == 0) return texel.r',
-			'  if (channel == 1) return texel.g',
-			'  if (channel == 2) return texel.b',
-			'  if (channel == 3) return texel.a'
-		]);
-	}
-
 	/**
 	 * @desc Generate transpiled glsl Strings for user-defined parameters sent to a kernel
 	 * @param {Array} args - The actual parameters sent to the Kernel
@@ -1285,57 +1404,95 @@ class WebGLKernel extends GLKernel {
 	 */
 	_getMainArgumentsString(args) {
 		const result = [];
-		const argumentTypes = this.argumentTypes;
-		const argumentNames = this.argumentNames;
+		const {
+			argumentTypes,
+			argumentNames,
+			hardcodeConstants,
+			optimizeFloatMemory,
+			floatOutput,
+		} = this;
 		for (let i = 0; i < argumentNames.length; i++) {
 			const value = args[i];
 			const name = argumentNames[i];
 			const type = argumentTypes[i];
-			if (this.hardcodeConstants) {
-				if (type === 'Array' || type === 'NumberTexture' || type === 'ArrayTexture(4)') {
-					const dim = utils.getDimensions(value, true);
-					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, dim);
+			if (hardcodeConstants) {
+				switch (type) {
+					case 'Array':
+					case 'NumberTexture':
+					case 'MemoryOptimizedNumberTexture':
+					case 'ArrayTexture(1)':
+					case 'ArrayTexture(2)':
+					case 'ArrayTexture(3)':
+					case 'ArrayTexture(4)':
+					case 'Input':
+					case 'HTMLImage':
+						const dim = utils.getDimensions(value, true);
+						const size = utils.dimToTexSize({
+							floatTextures: optimizeFloatMemory,
+							floatOutput,
+						}, dim);
 
-					result.push(
-						`uniform sampler2D user_${name}`,
-						`ivec2 user_${name}Size = ivec2(${size[0]}, ${size[1]})`,
-						`ivec3 user_${name}Dim = ivec3(${dim[0]}, ${dim[1]}, ${dim[2]})`,
-						`uniform int user_${name}BitRatio`
-					);
-				} else if (type === 'Integer') {
-					result.push(`float user_${name} = ${value}.0`);
-				} else if (type === 'Float') {
-					result.push(`float user_${name} = ${value}`);
+						result.push(
+							`uniform sampler2D user_${name}`,
+							`ivec2 user_${name}Size = ivec2(${size[0]}, ${size[1]})`,
+							`ivec3 user_${name}Dim = ivec3(${dim[0]}, ${dim[1]}, ${dim[2]})`,
+							`uniform int user_${name}BitRatio`,
+						);
+						break;
+					case 'Integer':
+						result.push(`float user_${name} = ${value}.0`);
+						break;
+					case 'Float':
+					case 'Number':
+						result.push(`float user_${name} = ${value}`);
+						break;
+					default:
+						throw new Error(`Param type ${type} not supported in WebGL`);
 				}
 			} else {
-				if (type === 'Array' || type === 'NumberTexture' || type === 'ArrayTexture(4)' || type === 'Input' || type === 'HTMLImage') {
-					result.push(
-						`uniform sampler2D user_${name}`,
-						`uniform ivec2 user_${name}Size`,
-						`uniform ivec3 user_${name}Dim`
-					);
-					if (type !== 'HTMLImage') {
-						result.push(`uniform int user_${name}BitRatio`)
-					}
-				} else if (type === 'Integer' || type === 'Float' || type === 'Number') {
-					result.push(`uniform float user_${name}`);
-				} else {
-					throw new Error(`Param type ${type} not supported in WebGL`);
+				switch (type) {
+					case 'Array':
+					case 'NumberTexture':
+					case 'MemoryOptimizedNumberTexture':
+					case 'ArrayTexture(1)':
+					case 'ArrayTexture(2)':
+					case 'ArrayTexture(3)':
+					case 'ArrayTexture(4)':
+					case 'Input':
+					case 'HTMLImage':
+						result.push(
+							`uniform sampler2D user_${name}`,
+							`uniform ivec2 user_${name}Size`,
+							`uniform ivec3 user_${name}Dim`,
+						);
+						if (type !== 'HTMLImage') {
+							result.push(`uniform int user_${name}BitRatio`)
+						}
+						break;
+					case 'Integer':
+						result.push(`uniform int user_${name}`);
+						break;
+					case 'Float':
+					case 'Number':
+						result.push(`uniform float user_${name}`);
+						break;
+					default:
+						throw new Error(`Param type ${type} not supported in WebGL`);
 				}
 			}
 		}
-		return this._linesToString(result);
+		return utils.linesToString(result);
 	}
 
 	_getMainConstantsString() {
 		const result = [];
-		if (this.constants) {
-			for (let name in this.constants) {
-				if (!this.constants.hasOwnProperty(name)) continue;
-				let value = this.constants[name];
+		const {
+			constants
+		} = this;
+		if (constants) {
+			for (let name in constants) {
+				if (!constants.hasOwnProperty(name)) continue;
+				let value = constants[name];
 				let type = utils.getVariableType(value);
 				switch (type) {
 					case 'Integer':
@@ -1347,8 +1504,11 @@ class WebGLKernel extends GLKernel {
 					case 'Array':
 					case 'Input':
 					case 'HTMLImage':
-					case 'NumberTexture':
+					case 'ArrayTexture(1)':
+					case 'ArrayTexture(2)':
+					case 'ArrayTexture(3)':
 					case 'ArrayTexture(4)':
+					case 'NumberTexture':
 						result.push(
 							`uniform sampler2D constants_${name}`,
 							`uniform ivec2 constants_${name}Size`,
@@ -1361,32 +1521,220 @@ class WebGLKernel extends GLKernel {
 				}
 			}
 		}
-		return this._linesToString(result);
+		return utils.linesToString(result);
 	}
 
 	/**
 	 * @desc Get Kernel program string (in *glsl*) for a kernel.
 	 * @returns {String} result
 	 */
-	_getKernelString() {
+	getKernelString() {
+		let kernelResultDeclaration;
+		switch (this.returnType) {
+			case 'Array(2)':
+				kernelResultDeclaration = 'vec2 kernelResult';
+				break;
+			case 'Array(3)':
+				kernelResultDeclaration = 'vec3 kernelResult';
+				break;
+			case 'Array(4)':
+				kernelResultDeclaration = 'vec4 kernelResult';
+				break;
+			case 'Float':
+			case 'Number':
+			case 'Integer':
+				kernelResultDeclaration = 'float kernelResult';
+				break;
+			default:
+				if (this.graphical) {
+					kernelResultDeclaration = 'float kernelResult';
+				} else {
+					throw new Error('unrecognized output type');
+				}
+		}
+
 		const result = [];
 		const subKernels = this.subKernels;
 		if (subKernels !== null) {
-			result.push('float kernelResult = 0.0');
+			result.push(
+				kernelResultDeclaration
+			);
 			for (let i = 0; i < subKernels.length; i++) {
 				result.push(
-					`float subKernelResult_${subKernels[i].name} = 0.0`
+					`float subKernelResult_${ subKernels[i].name } = 0.0`
 				);
 			}
 		} else {
-			result.push('float kernelResult = 0.0');
+			result.push(
+				kernelResultDeclaration
+			);
 		}
 
-		const functionBuilder = FunctionBuilder.fromKernel(this, WebGLFunctionNode, {
-			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
-		});
+		return utils.linesToString(result) + this.translatedSource;
+	}
 
-		return this._linesToString(result) + functionBuilder.getPrototypeString('kernel');
+	getMainResultGraphical() {
+		return utils.linesToString([
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  gl_FragColor = actualColor',
+		]);
+	}
+
+	getMainResultPackedPixels() {
+		switch (this.returnType) {
+			case 'Number':
+			case 'Integer':
+			case 'Float':
+				return utils.linesToString(this.getMainResultKernelPackedPixels())
+					+ utils.linesToString(this.getMainResultSubKernelPackedPixels());
+			default:
+				throw new Error(`packed output only usable with Numbers, ${this.returnType} specified`);
+		}
+	}
+
+	getMainResultKernelPackedPixels() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  gl_FragData[0] = encode32(kernelResult)'
+		];
+	}
+
+	getMainResultSubKernelPackedPixels() {
+		const result = [];
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; i++) {
+			result.push(
+				`  gl_FragData[${i + 1}] = encode32(subKernelResult_${this.subKernels[i].name})`
+			);
+		}
+		return result;
+	}
+
+	getMainResultMemoryOptimizedFloats() {
+		const result = [
+			'  index *= 4',
+		];
+
+		switch (this.returnType) {
+			case 'Number':
+			case 'Integer':
+			case 'Float':
+				const channels = ['r', 'g', 'b', 'a'];
+				for (let i = 0; i < channels.length; i++) {
+					const channel = channels[i];
+					this.getMainResultKernelMemoryOptimizedFloats(result, channel);
+					this.getMainResultSubKernelMemoryOptimizedFloats(result, channel);
+					if (i + 1 < channels.length) {
+						result.push('  index += 1');
+					}
+				}
+				break;
+			default:
+				throw new Error(`optimized output only usable with Numbers, ${this.returnType} specified`);
+		}
+
+		return utils.linesToString(result);
+	}
+
+	getMainResultKernelMemoryOptimizedFloats(result, channel) {
+		result.push(
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			`  gl_FragData[0].${channel} = kernelResult`,
+		);
+	}
+
+	getMainResultSubKernelMemoryOptimizedFloats(result, channel) {
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; i++) {
+			result.push(
+				`  gl_FragData[${i + 1}].${channel} = subKernelResult_${this.subKernels[i].name}`,
+			);
+		}
+	}
+
+	getMainResultKernelNumberTexture() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  gl_FragData[0][0] = kernelResult',
+		];
+	}
+
+	getMainResultSubKernelNumberTexture() {
+		const result = [];
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; ++i) {
+			result.push(
+				`  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}`,
+			);
+		}
+		return result;
+	}
+
+	getMainResultKernelArray2Texture() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  gl_FragData[0][0] = kernelResult[0]',
+			'  gl_FragData[0][1] = kernelResult[1]',
+		];
+	}
+
+	getMainResultSubKernelArray2Texture() {
+		const result = [];
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; ++i) {
+			result.push(
+				`  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}[0]`,
+				`  gl_FragData[${i + 1}][1] = subKernelResult_${this.subKernels[i].name}[1]`,
+			);
+		}
+		return result;
+	}
+
+	getMainResultKernelArray3Texture() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  gl_FragData[0][0] = kernelResult[0]',
+			'  gl_FragData[0][1] = kernelResult[1]',
+			'  gl_FragData[0][2] = kernelResult[2]',
+		];
+	}
+
+	getMainResultSubKernelArray3Texture() {
+		const result = [];
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; ++i) {
+			result.push(
+				`  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}[0]`,
+				`  gl_FragData[${i + 1}][1] = subKernelResult_${this.subKernels[i].name}[1]`,
+				`  gl_FragData[${i + 1}][2] = subKernelResult_${this.subKernels[i].name}[2]`,
+			);
+		}
+		return result;
+	}
+
+	getMainResultKernelArray4Texture() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  gl_FragData[0] = kernelResult',
+		];
+	}
+
+	getMainResultSubKernelArray4Texture() {
+		const result = [];
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; ++i) {
+			result.push(
+				`  gl_FragData[${i + 1}] = subKernelResult_${this.subKernels[i].name}`,
+			);
+		}
+		return result;
 	}
 
 	/**
@@ -1394,20 +1742,26 @@ class WebGLKernel extends GLKernel {
 	 * @returns {String} result
 	 */
 	_getMainResultString() {
-		const subKernels = this.subKernels;
+		const {
+			subKernels,
+			floatOutput,
+			floatTextures,
+			graphical,
+			pipeline
+		} = this;
 		const result = [];
 
-		if (this.floatOutput) {
+		if (floatOutput) {
 			result.push('  index *= 4');
 		}
 
-		if (this.graphical) {
+		if (graphical) {
 			result.push(
 				'  threadId = indexTo3D(index, uOutputDim)',
 				'  kernel()',
-				'  gl_FragColor = actualColor'
+				'  gl_FragColor = actualColor',
 			);
-		} else if (this.floatOutput) {
+		} else if (floatOutput) {
 			const channels = ['r', 'g', 'b', 'a'];
 
 			for (let i = 0; i < channels.length; ++i) {
@@ -1439,23 +1793,11 @@ class WebGLKernel extends GLKernel {
 			result.push(
 				'  threadId = indexTo3D(index, uOutputDim)',
 				'  kernel()',
-				'  gl_FragColor = encode32(kernelResult)'
+				'  gl_FragColor = encode32(kernelResult)',
 			);
 		}
 
-		return this._linesToString(result);
-	}
-
-	/**
-	 * @param {Array} lines - An Array of strings
-	 * @returns {String} Single combined String, seperated by *\n*
-	 */
-	_linesToString(lines) {
-		if (lines.length > 0) {
-			return lines.join(';\n') + ';\n';
-		} else {
-			return '\n';
-		}
+		return utils.linesToString(result);
 	}
 
 	/**
@@ -1488,7 +1830,7 @@ class WebGLKernel extends GLKernel {
 
 	/**
 	 * @desc Get the vertical shader String
-	 * @param {Array} args - The actual parameters sent to the Kernel
+	 * @param {Array|IArguments} args - The actual parameters sent to the Kernel
 	 * @returns {string} Vertical Shader string
 	 */
 	getVertexShader(args) {

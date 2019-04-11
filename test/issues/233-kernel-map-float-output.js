@@ -3,6 +3,9 @@ const { GPU } = require('../../src');
 
 describe('issue # 233');
 
+//TODO: Write for 2D and 3D and textures
+//TODO: remove floatTextures completely
+//TODO: Write for pipeline as well
 function kernelMapFloatOutput(mode) {
   const lst = [1, 2, 3, 4, 5, 6, 7];
   const gpu = new GPU({ mode });
@@ -28,13 +31,16 @@ function kernelMapFloatOutput(mode) {
   const result = kernels(lst);
   const unwrap = gpu.createKernel(function(x) {
     return x[this.thread.x];
-  }, { output: [lst.length], floatTextures: true });
-
+  }, {
+    output: [lst.length],
+    floatOutput: true,
+    optimizeFloatMemory: true,
+  });
   const stepAResult = unwrap(result.stepA);
   const stepBResult = unwrap(result.stepB);
 
-  assert.deepEqual(Array.from(stepAResult), lst.map(function (x) { return x * x }));
-  assert.deepEqual(Array.from(stepBResult), lst.map(function (x) { return x + 1 }));
+  assert.deepEqual(Array.from(stepAResult), lst.map((x) => x * x));
+  assert.deepEqual(Array.from(stepBResult), lst.map((x) => x + 1));
   assert.deepEqual(Array.from(result.result), lst);
   gpu.destroy();
 }
@@ -61,4 +67,192 @@ function kernelMapFloatOutput(mode) {
 
 test('Issue #233 - kernel map with float output cpu', () => {
   kernelMapFloatOutput('cpu');
+});
+
+
+function kernelMapFloatOutput2D(mode) {
+  const lst = [
+    [1,2,3],
+    [4,5,6],
+    [7,8,9]
+  ];
+  const stepAExpected = [
+    [1,4,9],
+    [16,25,36],
+    [49,64,81],
+  ];
+  const stepBExpected = [
+    [2,3,4],
+    [5,6,7],
+    [8,9,10]
+  ];
+  const gpu = new GPU({ mode });
+  const kernels = gpu.createKernelMap({
+    stepA: function (x) {
+      return x * x;
+    },
+    stepB: function (x) {
+      return x + 1;
+    }
+  }, function (lst) {
+    const val = lst[this.thread.y][this.thread.x];
+
+    stepA(val);
+    stepB(val);
+
+    return val;
+  }, {
+    floatOutput: true,
+    output: [3, 3]
+  });
+
+  const result = kernels(lst);
+  assert.deepEqual(result.stepA.map(v => Array.from(v)), stepAExpected);
+  assert.deepEqual(result.stepB.map(v => Array.from(v)), stepBExpected);
+  assert.deepEqual(result.result.map(v => Array.from(v)), lst);
+  const memoryOptimize = gpu.createKernel(function(x) {
+    return x[this.thread.y][this.thread.x];
+  }, {
+    output: [3, 3],
+    floatOutput: true,
+    optimizeFloatMemory: true,
+  });
+  const stepAOptimized = memoryOptimize(result.stepA);
+  const stepBOptimized = memoryOptimize(result.stepB);
+  const resultOptimized = memoryOptimize(result.result);
+
+  assert.deepEqual(stepAOptimized.map(v => Array.from(v)), stepAExpected);
+  assert.deepEqual(stepBOptimized.map(v => Array.from(v)), stepBExpected);
+  assert.deepEqual(resultOptimized.map(v => Array.from(v)), lst);
+  gpu.destroy();
+}
+
+(GPU.isFloatOutputSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output 2d auto', () => {
+  kernelMapFloatOutput2D();
+});
+
+(GPU.isFloatOutputSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output 2d gpu', () => {
+  kernelMapFloatOutput2D('gpu');
+});
+
+(GPU.isFloatOutputSupported && GPU.isWebGLSupported ? test : skip)('Issue #233 - kernel map with float output 2d webgl', () => {
+  kernelMapFloatOutput2D('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('Issue #233 - kernel map with float output 2d webgl2', () => {
+  kernelMapFloatOutput2D('webgl2');
+});
+
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output 2d headlessgl', () => {
+  kernelMapFloatOutput2D('headlessgl');
+});
+
+test('Issue #233 - kernel map with float output 2d cpu', () => {
+  kernelMapFloatOutput2D('cpu');
+});
+
+function kernelMapFloatOutput3D(mode) {
+  const lst = [
+    [
+      [1,2,3],
+      [4,5,6],
+      [7,8,9]
+    ],
+    [
+      [10,11,12],
+      [13,14,15],
+      [16,17,18]
+    ]
+  ];
+  const stepAExpected = [
+    [
+      [1,4,9],
+      [16,25,36],
+      [49,64,81],
+    ],
+    [
+      [100,121,144],
+      [169,196,225],
+      [256,289,324],
+    ]
+  ];
+  const stepBExpected = [
+    [
+      [2,3,4],
+      [5,6,7],
+      [8,9,10]
+    ],
+    [
+      [11,12,13],
+      [14,15,16],
+      [17,18,19]
+    ]
+  ];
+  const gpu = new GPU({ mode });
+  const kernels = gpu.createKernelMap({
+    stepA: function (x) {
+      return x * x;
+    },
+    stepB: function (x) {
+      return x + 1;
+    }
+  }, function (lst) {
+    const val = lst[this.thread.z][this.thread.y][this.thread.x];
+
+    stepA(val);
+    stepB(val);
+
+    return val;
+  }, {
+    floatOutput: true,
+    output: [3, 3, 2]
+  });
+
+  const result = kernels(lst);
+  assert.deepEqual(arrayFromCube(result.stepA), stepAExpected);
+  assert.deepEqual(arrayFromCube(result.stepB), stepBExpected);
+  assert.deepEqual(arrayFromCube(result.result), lst);
+  const memoryOptimize = gpu.createKernel(function(x) {
+    return x[this.thread.z][this.thread.y][this.thread.x];
+  }, {
+    output: [3, 3, 2],
+    floatOutput: true,
+    optimizeFloatMemory: true,
+  });
+  const stepAOptimized = memoryOptimize(result.stepA);
+  const stepBOptimized = memoryOptimize(result.stepB);
+  const resultOptimized = memoryOptimize(result.result);
+
+  assert.deepEqual(arrayFromCube(stepAOptimized), stepAExpected);
+  assert.deepEqual(arrayFromCube(stepBOptimized), stepBExpected);
+  assert.deepEqual(arrayFromCube(resultOptimized), lst);
+
+  function arrayFromCube(cube) {
+    return cube.map(matrix => matrix.map(row => Array.from(row)));
+  }
+  gpu.destroy();
+}
+
+(GPU.isFloatOutputSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output 3d auto', () => {
+  kernelMapFloatOutput3D();
+});
+
+(GPU.isFloatOutputSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output 3d gpu', () => {
+  kernelMapFloatOutput3D('gpu');
+});
+
+(GPU.isFloatOutputSupported && GPU.isWebGLSupported ? test : skip)('Issue #233 - kernel map with float output 3d webgl', () => {
+  kernelMapFloatOutput3D('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('Issue #233 - kernel map with float output 3d webgl2', () => {
+  kernelMapFloatOutput3D('webgl2');
+});
+
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output 3d headlessgl', () => {
+  kernelMapFloatOutput3D('headlessgl');
+});
+
+test('Issue #233 - kernel map with float output 3d cpu', () => {
+  kernelMapFloatOutput3D('cpu');
 });

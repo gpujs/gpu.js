@@ -28,12 +28,16 @@ class Kernel {
 		throw new Error(`"destroyContext" called on ${ this.name }`);
 	}
 
-	static nativeFunctionArgumentTypes() {
-		throw new Error(`"nativeFunctionArgumentTypes" called on ${ this.name }`);
+	static nativeFunctionArguments() {
+		throw new Error(`"nativeFunctionArguments" called on ${ this.name }`);
 	}
 
 	static nativeFunctionReturnType() {
 		throw new Error(`"nativeFunctionReturnType" called on ${ this.name }`);
+	}
+
+	static combineKernels() {
+		throw new Error(`"combineKernels" called on ${ this.name }`);
 	}
 
 	/**
@@ -51,6 +55,8 @@ class Kernel {
 			}
 		}
 
+		this.onRequestFallback = null;
+
 		/**
 		 * Name of the arguments found from parsing source argument
 		 * @type {String[]}
@@ -58,6 +64,9 @@ class Kernel {
 		this.argumentNames = typeof source === 'string' ? utils.getArgumentNamesFromString(source) : null;
 		this.argumentTypes = null;
 		this.argumentSizes = null;
+		this.argumentsLength = 0;
+		this.constantsLength = 0;
+
 
 		/**
 		 * The function source
@@ -137,7 +146,7 @@ class Kernel {
 		 *
 		 * @type {Boolean}
 		 */
-		this.skipValidate = false;
+		this.validate = true;
 		this.wraparound = null;
 
 		/**
@@ -153,6 +162,8 @@ class Kernel {
 		this.pipeline = false;
 
 		this.plugins = null;
+
+		this.returnType = null;
 	}
 
 	mergeSettings(settings) {
@@ -218,12 +229,18 @@ class Kernel {
 	 * @param {IArguments} args - The actual parameters sent to the Kernel
 	 */
 	setupArguments(args) {
-		this.argumentTypes = [];
+		if (!this.argumentTypes) {
+			this.argumentTypes = [];
+			for (let i = 0; i < args.length; i++) {
+				const argType = utils.getVariableType(args[i]);
+				this.argumentTypes.push(argType === 'Integer' ? 'Number' : argType);
+			}
+		}
+
+		// setup sizes
 		this.argumentSizes = [];
 		for (let i = 0; i < args.length; i++) {
 			const arg = args[i];
-			const argType = utils.getVariableType(arg);
-			this.argumentTypes.push(argType === 'Integer' ? 'Number' : argType);
 			this.argumentSizes.push(arg.constructor === Input ? arg.size : null);
 		}
 
@@ -343,6 +360,13 @@ class Kernel {
 		return this;
 	}
 
+	requestFallback(args) {
+		if (!this.onRequestFallback) {
+			throw new Error(`"onRequestFallback" not defined on ${ this.constructor.name }`);
+		}
+		return this.onRequestFallback(args);
+	}
+
 	/**
 	 * @desc Validate settings
 	 * @abstract
@@ -412,6 +436,7 @@ class Kernel {
 			constants: this.constants,
 			constantsLength: this.constantsLength,
 			pluginNames: this.plugins ? this.plugins.map(plugin => plugin.name) : null,
+			returnType: this.returnType,
 		};
 		return {
 			settings
