@@ -31,7 +31,9 @@ class Texture {
 	 * @returns {Number[]|Number[][]|Number[][][]}
 	 */
 	toArray(gpu) {
-		let { kernel } = this;
+		let {
+			kernel
+		} = this;
 		if (kernel) return kernel(this);
 		gpu = gpu || this.gpu;
 		if (!gpu) throw new Error('settings property "gpu" or argument required.');

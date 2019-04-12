@@ -6,7 +6,9 @@ const {
 	Texture
 } = require('../texture');
 
-const { utils } = require('../utils');
+const {
+	utils
+} = require('../utils');
 
 /**
  * @abstract
@@ -419,57 +421,79 @@ class GLKernel extends Kernel {
 	 * @abstract
 	 * @returns String[]
 	 */
-	getMainResultKernelNumberTexture() { throw new Error(`abstract method call`); }
+	getMainResultKernelNumberTexture() {
+		throw new Error(`abstract method call`);
+	}
 	/**
 	 * @abstract
 	 * @returns String[]
 	 */
-	getMainResultSubKernelNumberTexture() { throw new Error(`abstract method call`); }
+	getMainResultSubKernelNumberTexture() {
+		throw new Error(`abstract method call`);
+	}
 	/**
 	 * @abstract
 	 * @returns String[]
 	 */
-	getMainResultKernelArray2Texture() { throw new Error(`abstract method call`); }
+	getMainResultKernelArray2Texture() {
+		throw new Error(`abstract method call`);
+	}
 	/**
 	 * @abstract
 	 * @returns String[]
 	 */
-	getMainResultSubKernelArray2Texture() { throw new Error(`abstract method call`); }
+	getMainResultSubKernelArray2Texture() {
+		throw new Error(`abstract method call`);
+	}
 	/**
 	 * @abstract
 	 * @returns String[]
 	 */
-	getMainResultKernelArray3Texture() { throw new Error(`abstract method call`); }
+	getMainResultKernelArray3Texture() {
+		throw new Error(`abstract method call`);
+	}
 	/**
 	 * @abstract
 	 * @returns String[]
 	 */
-	getMainResultSubKernelArray3Texture() { throw new Error(`abstract method call`); }
+	getMainResultSubKernelArray3Texture() {
+		throw new Error(`abstract method call`);
+	}
 	/**
 	 * @abstract
 	 * @returns String[]
 	 */
-	getMainResultKernelArray4Texture() { throw new Error(`abstract method call`); }
+	getMainResultKernelArray4Texture() {
+		throw new Error(`abstract method call`);
+	}
 	/**
 	 * @abstract
 	 * @returns String[]
 	 */
-	getMainResultSubKernelArray4Texture() { throw new Error(`abstract method call`); }
+	getMainResultSubKernelArray4Texture() {
+		throw new Error(`abstract method call`);
+	}
 	/**
 	 * @abstract
 	 * @returns String[]
 	 */
-	getMainResultGraphical() { throw new Error(`abstract method call`); }
+	getMainResultGraphical() {
+		throw new Error(`abstract method call`);
+	}
 	/**
 	 * @abstract
 	 * @returns String[]
 	 */
-	getMainResultMemoryOptimizedFloats() { throw new Error(`abstract method call`); }
+	getMainResultMemoryOptimizedFloats() {
+		throw new Error(`abstract method call`);
+	}
 	/**
 	 * @abstract
 	 * @returns String[]
 	 */
-	getMainResultPackedPixels() { throw new Error(`abstract method call`); }
+	getMainResultPackedPixels() {
+		throw new Error(`abstract method call`);
+	}
 
 	getMainResultString() {
 		if (this.graphical) {
@@ -485,23 +509,23 @@ class GLKernel extends Kernel {
 	}
 
 	getMainResultNumberTexture() {
-		return utils.linesToString(this.getMainResultKernelNumberTexture())
-			+ utils.linesToString(this.getMainResultSubKernelNumberTexture());
+		return utils.linesToString(this.getMainResultKernelNumberTexture()) +
+			utils.linesToString(this.getMainResultSubKernelNumberTexture());
 	}
 
 	getMainResultArray2Texture() {
-		return utils.linesToString(this.getMainResultKernelArray2Texture())
-			+ utils.linesToString(this.getMainResultSubKernelArray2Texture());
+		return utils.linesToString(this.getMainResultKernelArray2Texture()) +
+			utils.linesToString(this.getMainResultSubKernelArray2Texture());
 	}
 
 	getMainResultArray3Texture() {
-		return utils.linesToString(this.getMainResultKernelArray3Texture())
-			+ utils.linesToString(this.getMainResultSubKernelArray3Texture());
+		return utils.linesToString(this.getMainResultKernelArray3Texture()) +
+			utils.linesToString(this.getMainResultSubKernelArray3Texture());
 	}
 
 	getMainResultArray4Texture() {
-		return utils.linesToString(this.getMainResultKernelArray4Texture())
-			+ utils.linesToString(this.getMainResultSubKernelArray4Texture());
+		return utils.linesToString(this.getMainResultKernelArray4Texture()) +
+			utils.linesToString(this.getMainResultSubKernelArray4Texture());
 	}
 
 	getReturnTextureType() {
@@ -554,7 +578,10 @@ class GLKernel extends Kernel {
 		});
 	}
 	readPackedPixelsToUint8Array() {
-		const { texSize, context: gl } = this;
+		const {
+			texSize,
+			context: gl
+		} = this;
 		const result = new Uint8Array(texSize[0] * texSize[1] * 4);
 		gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, result);
 		return result;
@@ -564,7 +591,10 @@ class GLKernel extends Kernel {
 	}
 	readFloatPixelsToFloat32Array() {
 		if (!this.floatOutput) throw new Error('Requires this.floutOutput');
-		const { texSize, context: gl } = this;
+		const {
+			texSize,
+			context: gl
+		} = this;
 		const w = texSize[0];
 		const h = texSize[1];
 		const result = new Float32Array(w * h * 4);
@@ -573,7 +603,10 @@ class GLKernel extends Kernel {
 	}
 	readMemoryOptimizedFloatPixelsToFloat32Array() {
 		if (!this.floatOutput) throw new Error('Requires this.floutOutput');
-		const { texSize, context: gl } = this;
+		const {
+			texSize,
+			context: gl
+		} = this;
 		const w = texSize[0];
 		const h = texSize[1];
 		const result = new Float32Array(w * h * 4);

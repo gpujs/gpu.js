@@ -203,7 +203,9 @@ class CPUKernel extends Kernel {
 		if (this._kernelString !== null) return this._kernelString;
 
 		let kernel = null;
-		let { translatedSources } = this;
+		let {
+			translatedSources
+		} = this;
 		if (translatedSources.length > 1) {
 			translatedSources = translatedSources.filter(fn => {
 				if (/^function/.test(fn)) return fn;

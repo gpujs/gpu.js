@@ -82,7 +82,7 @@ function immutableKernelWithFloats(mode) {
   // this is often used in neural networks
   const result2 = output2.toArray()[0];
   const result3 = output3.toArray()[0];
-  console.log(output2.toArray())
+  console.log(output2.toArray());
   debugger;
   assert.equal(result1, 2);
   assert.equal(result2, 3);
@@ -137,7 +137,7 @@ function immutableSubKernelsWithoutFloats(mode) {
       immutable: true,
       pipeline: true,
       floatOutput: false,
-      debug: true,
+      // debug: true,
     }
   );
 

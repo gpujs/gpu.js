@@ -271,7 +271,6 @@ function floatPipeline2DOutput(mode) {
   });
   const texture = kernel(matrix);
   const result = texture.toArray();
-  console.log(texture.kernel.kernel.compiledFragmentShader);
   assert.deepEqual(result.map(row => Array.from(row)), matrix);
   gpu.destroy();
 }

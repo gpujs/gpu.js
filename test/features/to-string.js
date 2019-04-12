@@ -16,7 +16,6 @@ function sumABTest(mode) {
   const originalResult = originalKernel(a,b);
   assert.deepEqual(Array.from(originalResult), expected);
   const kernelString = originalKernel.toString();
-  console.log(kernelString);
   const newKernel = new Function('return ' + kernelString)()();
   newKernel
     .setContext(originalKernel.context)

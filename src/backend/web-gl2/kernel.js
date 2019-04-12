@@ -151,7 +151,7 @@ class WebGL2Kernel extends WebGLKernel {
 					this.output = utils.getDimensions(argType);
 					break;
 				case 'NumberTexture':
-        case 'MemoryOptimizedNumberTexture':
+				case 'MemoryOptimizedNumberTexture':
 				case 'ArrayTexture(1)':
 				case 'ArrayTexture(2)':
 				case 'ArrayTexture(3)':
@@ -202,7 +202,11 @@ class WebGL2Kernel extends WebGLKernel {
 		if (this.program === null) {
 			this.build.apply(this, arguments);
 		}
-		const { argumentNames, argumentTypes, texSize } = this;
+		const {
+			argumentNames,
+			argumentTypes,
+			texSize
+		} = this;
 		const gl = this.context;
 
 		gl.useProgram(this.program);
@@ -314,7 +318,9 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	_setupOutputTexture() {
-		const { texSize } = this;
+		const {
+			texSize
+		} = this;
 		const gl = this.context;
 		const texture = this.outputTexture = gl.createTexture();
 		gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentNames.length);
@@ -324,8 +330,8 @@ class WebGL2Kernel extends WebGLKernel {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		if (this.floatOutput) {
-		  if (this.pipeline) {
-		  	switch (this.returnType) {
+			if (this.pipeline) {
+				switch (this.returnType) {
 					case 'Number':
 					case 'Float':
 					case 'Integer':
@@ -347,9 +353,9 @@ class WebGL2Kernel extends WebGLKernel {
 					default:
 						throw new Error('Unhandled return type');
 				}
-      } else {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-      }
+			} else {
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+			}
 		} else {
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 		}
@@ -357,7 +363,9 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	_setupSubOutputTextures(length) {
-		const { texSize } = this;
+		const {
+			texSize
+		} = this;
 		const gl = this.context;
 		const drawBuffersMap = this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
 		const textures = this.subKernelOutputTextures = [];
@@ -1049,8 +1057,8 @@ class WebGL2Kernel extends WebGLKernel {
 			case 'Number':
 			case 'Integer':
 			case 'Float':
-				return utils.linesToString(this.getMainResultKernelPackedPixels())
-					+ utils.linesToString(this.getMainResultSubKernelPackedPixels());
+				return utils.linesToString(this.getMainResultKernelPackedPixels()) +
+					utils.linesToString(this.getMainResultSubKernelPackedPixels());
 			default:
 				throw new Error(`packed output only usable with Numbers, ${this.returnType} specified`);
 		}

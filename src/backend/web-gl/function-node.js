@@ -857,7 +857,7 @@ class WebGLFunctionNode extends FunctionNode {
 				retArr.push(this.memberExpressionPropertyMarkup(property));
 				retArr.push(']');
 				return retArr;
-      case '[][]':
+			case '[][]':
 				this.astArrayExpression(mNode.object, retArr);
 				retArr.push('[');
 				retArr.push(this.memberExpressionPropertyMarkup(property));
@@ -898,15 +898,15 @@ class WebGLFunctionNode extends FunctionNode {
 				retArr.push(')');
 				break;
 			case 'ArrayTexture(2)':
-        retArr.push(`getVec2FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
-        this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
-        retArr.push(')');
-        break;
+				retArr.push(`getVec2FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+				retArr.push(')');
+				break;
 			case 'ArrayTexture(3)':
-        retArr.push(`getVec3FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
-        this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
-        retArr.push(')');
-        break;
+				retArr.push(`getVec3FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+				retArr.push(')');
+				break;
 			case 'ArrayTexture(4)':
 			case 'HTMLImage':
 				retArr.push(`getVec4FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);

@@ -103,7 +103,6 @@ function combineKernelsFloatTextures(mode) {
     return c[this.thread.x] * d[this.thread.x];
   }, { output: [5], floatTextures: true });
 
-  console.log(kernel1([1,2,3,4,5], [1,2,3,4,5]));
   const superKernel = gpu.combineKernels(kernel1, kernel2, function(array1, array2, array3) {
     return kernel2(kernel1(array1, array2), array3);
   });

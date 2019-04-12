@@ -369,14 +369,14 @@ class WebGLKernel extends GLKernel {
 		const canvas = this.canvas;
 		gl.enable(gl.SCISSOR_TEST);
 		if (this.pipeline && this.floatOutput) {
-      gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
-      canvas.width = this.maxTexSize[0];
-      canvas.height = this.maxTexSize[1];
-    } else  {
-      gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
-      canvas.width = this.maxTexSize[0];
-      canvas.height = this.maxTexSize[1];
-    }
+			gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
+			canvas.width = this.maxTexSize[0];
+			canvas.height = this.maxTexSize[1];
+		} else {
+			gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
+			canvas.width = this.maxTexSize[0];
+			canvas.height = this.maxTexSize[1];
+		}
 		const threadDim = this.threadDim = utils.clone(this.output);
 		while (threadDim.length < 3) {
 			threadDim.push(1);
@@ -1189,23 +1189,23 @@ class WebGLKernel extends GLKernel {
 			case 'ArrayTexture(2)':
 			case 'ArrayTexture(3)':
 			case 'ArrayTexture(4)':
-			{
-				const inputTexture = value;
-				if (inputTexture.context !== this.context) {
-					throw new Error(`constant ${ name} (${ type }) must be from same context`);
+				{
+					const inputTexture = value;
+					if (inputTexture.context !== this.context) {
+						throw new Error(`constant ${ name} (${ type }) must be from same context`);
+					}
+					const dim = inputTexture.dimensions;
+					const size = inputTexture.size;
+
+					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
+
+					this.setUniform3iv(`constants_${name}Dim`, dim);
+					this.setUniform2iv(`constants_${name}Size`, size);
+					this.setUniform1i(`constants_${name}BitRatio`, 4);
+					this.setUniform1i(`constants_${name}`, this.constantsLength);
+					break;
 				}
-				const dim = inputTexture.dimensions;
-				const size = inputTexture.size;
-
-				gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
-				gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
-
-				this.setUniform3iv(`constants_${name}Dim`, dim);
-				this.setUniform2iv(`constants_${name}Size`, size);
-				this.setUniform1i(`constants_${name}BitRatio`, 4);
-				this.setUniform1i(`constants_${name}`, this.constantsLength);
-				break;
-			}
 			case 'MemoryOptimizedNumberTexture':
 			case 'NumberTexture':
 				{
@@ -1586,8 +1586,8 @@ class WebGLKernel extends GLKernel {
 			case 'Number':
 			case 'Integer':
 			case 'Float':
-				return utils.linesToString(this.getMainResultKernelPackedPixels())
-					+ utils.linesToString(this.getMainResultSubKernelPackedPixels());
+				return utils.linesToString(this.getMainResultKernelPackedPixels()) +
+					utils.linesToString(this.getMainResultSubKernelPackedPixels());
 			default:
 				throw new Error(`packed output only usable with Numbers, ${this.returnType} specified`);
 		}

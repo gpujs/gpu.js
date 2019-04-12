@@ -11,7 +11,6 @@ function floatOutputKernel(mode) {
     floatOutput: true,
     output: [lst.length]
   });
-  console.log(kernel.kernel);
   assert.deepEqual(kernel(lst), lst);
   gpu.destroy();
 }
