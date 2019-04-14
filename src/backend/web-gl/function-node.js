@@ -166,7 +166,7 @@ class WebGLFunctionNode extends FunctionNode {
 				this.astGeneric(ast.argument, result);
 				break;
 			default:
-				throw this.astErrorOutput('Unknown return handler', ast);
+				throw this.astErrorOutput(`Unhandled returnType ${ this.returnType }`, ast);
 		}
 
 		if (this.isRootKernel) {
@@ -1089,6 +1089,7 @@ class WebGLFunctionNode extends FunctionNode {
 						}
 						break;
 					case 'Array':
+					case 'Input':
 						if (targetType === argumentType) {
 							this.triggerTrackArgumentSynonym(this.name, argument.name, functionName, i);
 							this.astGeneric(argument, retArr);

@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0-rc.6
- * @date Fri Apr 12 2019 14:06:34 GMT-0400 (Eastern Daylight Time)
+ * @date Sun Apr 14 2019 11:56:24 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -5383,7 +5383,6 @@ class CPUFunctionNode extends FunctionNode {
 module.exports = {
 	CPUFunctionNode
 };
-
 },{"../function-node":9}],6:[function(require,module,exports){
 const {
 	utils
@@ -5457,7 +5456,6 @@ function cpuKernelString(cpuKernel, name) {
 module.exports = {
 	cpuKernelString
 };
-
 },{"../../kernel-run-shortcut":26,"../../utils":29}],7:[function(require,module,exports){
 const {
 	Kernel
@@ -5636,7 +5634,9 @@ class CPUKernel extends Kernel {
 		if (this._kernelString !== null) return this._kernelString;
 
 		let kernel = null;
-		let { translatedSources } = this;
+		let {
+			translatedSources
+		} = this;
 		if (translatedSources.length > 1) {
 			translatedSources = translatedSources.filter(fn => {
 				if (/^function/.test(fn)) return fn;
@@ -5961,7 +5961,6 @@ class CPUKernel extends Kernel {
 module.exports = {
 	CPUKernel
 };
-
 },{"../../utils":29,"../function-builder":8,"../kernel":12,"./function-node":5,"./kernel-string":6}],8:[function(require,module,exports){
 class FunctionBuilder {
 	static fromKernel(kernel, FunctionNode, extraNodeOptions) {
@@ -6411,7 +6410,6 @@ class FunctionBuilder {
 module.exports = {
 	FunctionBuilder
 };
-
 },{}],9:[function(require,module,exports){
 const {
 	utils
@@ -7536,7 +7534,6 @@ const typeLookupMap = {
 module.exports = {
 	FunctionNode
 };
-
 },{"../utils":29,"acorn":1}],10:[function(require,module,exports){
 const {
 	Kernel
@@ -7546,7 +7543,9 @@ const {
 	Texture
 } = require('../texture');
 
-const { utils } = require('../utils');
+const {
+	utils
+} = require('../utils');
 
 class GLKernel extends Kernel {
 	static get mode() {
@@ -7907,17 +7906,39 @@ class GLKernel extends Kernel {
 		}
 	}
 
-	getMainResultKernelNumberTexture() { throw new Error(`abstract method call`); }
-	getMainResultSubKernelNumberTexture() { throw new Error(`abstract method call`); }
-	getMainResultKernelArray2Texture() { throw new Error(`abstract method call`); }
-	getMainResultSubKernelArray2Texture() { throw new Error(`abstract method call`); }
-	getMainResultKernelArray3Texture() { throw new Error(`abstract method call`); }
-	getMainResultSubKernelArray3Texture() { throw new Error(`abstract method call`); }
-	getMainResultKernelArray4Texture() { throw new Error(`abstract method call`); }
-	getMainResultSubKernelArray4Texture() { throw new Error(`abstract method call`); }
-	getMainResultGraphical() { throw new Error(`abstract method call`); }
-	getMainResultMemoryOptimizedFloats() { throw new Error(`abstract method call`); }
-	getMainResultPackedPixels() { throw new Error(`abstract method call`); }
+	getMainResultKernelNumberTexture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultSubKernelNumberTexture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultKernelArray2Texture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultSubKernelArray2Texture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultKernelArray3Texture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultSubKernelArray3Texture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultKernelArray4Texture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultSubKernelArray4Texture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultGraphical() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultMemoryOptimizedFloats() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultPackedPixels() {
+		throw new Error(`abstract method call`);
+	}
 
 	getMainResultString() {
 		if (this.graphical) {
@@ -7933,23 +7954,23 @@ class GLKernel extends Kernel {
 	}
 
 	getMainResultNumberTexture() {
-		return utils.linesToString(this.getMainResultKernelNumberTexture())
-			+ utils.linesToString(this.getMainResultSubKernelNumberTexture());
+		return utils.linesToString(this.getMainResultKernelNumberTexture()) +
+			utils.linesToString(this.getMainResultSubKernelNumberTexture());
 	}
 
 	getMainResultArray2Texture() {
-		return utils.linesToString(this.getMainResultKernelArray2Texture())
-			+ utils.linesToString(this.getMainResultSubKernelArray2Texture());
+		return utils.linesToString(this.getMainResultKernelArray2Texture()) +
+			utils.linesToString(this.getMainResultSubKernelArray2Texture());
 	}
 
 	getMainResultArray3Texture() {
-		return utils.linesToString(this.getMainResultKernelArray3Texture())
-			+ utils.linesToString(this.getMainResultSubKernelArray3Texture());
+		return utils.linesToString(this.getMainResultKernelArray3Texture()) +
+			utils.linesToString(this.getMainResultSubKernelArray3Texture());
 	}
 
 	getMainResultArray4Texture() {
-		return utils.linesToString(this.getMainResultKernelArray4Texture())
-			+ utils.linesToString(this.getMainResultSubKernelArray4Texture());
+		return utils.linesToString(this.getMainResultKernelArray4Texture()) +
+			utils.linesToString(this.getMainResultSubKernelArray4Texture());
 	}
 
 	getReturnTextureType() {
@@ -8002,7 +8023,10 @@ class GLKernel extends Kernel {
 		});
 	}
 	readPackedPixelsToUint8Array() {
-		const { texSize, context: gl } = this;
+		const {
+			texSize,
+			context: gl
+		} = this;
 		const result = new Uint8Array(texSize[0] * texSize[1] * 4);
 		gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, result);
 		return result;
@@ -8012,7 +8036,10 @@ class GLKernel extends Kernel {
 	}
 	readFloatPixelsToFloat32Array() {
 		if (!this.floatOutput) throw new Error('Requires this.floutOutput');
-		const { texSize, context: gl } = this;
+		const {
+			texSize,
+			context: gl
+		} = this;
 		const w = texSize[0];
 		const h = texSize[1];
 		const result = new Float32Array(w * h * 4);
@@ -8021,7 +8048,10 @@ class GLKernel extends Kernel {
 	}
 	readMemoryOptimizedFloatPixelsToFloat32Array() {
 		if (!this.floatOutput) throw new Error('Requires this.floutOutput');
-		const { texSize, context: gl } = this;
+		const {
+			texSize,
+			context: gl
+		} = this;
 		const w = texSize[0];
 		const h = texSize[1];
 		const result = new Float32Array(w * h * 4);
@@ -8288,7 +8318,6 @@ module.exports = {
 	GLKernel,
 	renderStrategy
 };
-
 },{"../texture":28,"../utils":29,"./kernel":12}],11:[function(require,module,exports){
 const getContext = require('gl');
 const {
@@ -8408,7 +8437,6 @@ class HeadlessGLKernel extends WebGLKernel {
 module.exports = {
 	HeadlessGLKernel
 };
-
 },{"../web-gl/kernel":16,"gl":2}],12:[function(require,module,exports){
 const {
 	utils
@@ -8695,7 +8723,6 @@ class Kernel {
 module.exports = {
 	Kernel
 };
-
 },{"../input":25,"../utils":29}],13:[function(require,module,exports){
 const fragmentShader = `__HEADER__;
 precision highp float;
@@ -8891,7 +8918,6 @@ void main(void) {
 module.exports = {
 	fragmentShader
 };
-
 },{}],14:[function(require,module,exports){
 const {
 	FunctionNode
@@ -9034,7 +9060,7 @@ class WebGLFunctionNode extends FunctionNode {
 				this.astGeneric(ast.argument, result);
 				break;
 			default:
-				throw this.astErrorOutput('Unknown return handler', ast);
+				throw this.astErrorOutput(`Unhandled returnType ${ this.returnType }`, ast);
 		}
 
 		if (this.isRootKernel) {
@@ -9645,7 +9671,7 @@ class WebGLFunctionNode extends FunctionNode {
 				retArr.push(this.memberExpressionPropertyMarkup(property));
 				retArr.push(']');
 				return retArr;
-      case '[][]':
+			case '[][]':
 				this.astArrayExpression(mNode.object, retArr);
 				retArr.push('[');
 				retArr.push(this.memberExpressionPropertyMarkup(property));
@@ -9684,15 +9710,15 @@ class WebGLFunctionNode extends FunctionNode {
 				retArr.push(')');
 				break;
 			case 'ArrayTexture(2)':
-        retArr.push(`getVec2FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
-        this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
-        retArr.push(')');
-        break;
+				retArr.push(`getVec2FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+				retArr.push(')');
+				break;
 			case 'ArrayTexture(3)':
-        retArr.push(`getVec3FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
-        this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
-        retArr.push(')');
-        break;
+				retArr.push(`getVec3FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+				retArr.push(')');
+				break;
 			case 'ArrayTexture(4)':
 			case 'HTMLImage':
 				retArr.push(`getVec4FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
@@ -9859,6 +9885,7 @@ class WebGLFunctionNode extends FunctionNode {
 						}
 						break;
 					case 'Array':
+					case 'Input':
 						if (targetType === argumentType) {
 							this.triggerTrackArgumentSynonym(this.name, argument.name, functionName, i);
 							this.astGeneric(argument, retArr);
@@ -10088,7 +10115,6 @@ function webGLKernelString(gpuKernel, name) {
 module.exports = {
 	webGLKernelString
 };
-
 },{"../../kernel-run-shortcut":26,"../../utils":29}],16:[function(require,module,exports){
 const {
 	GLKernel
@@ -10438,14 +10464,14 @@ class WebGLKernel extends GLKernel {
 		const canvas = this.canvas;
 		gl.enable(gl.SCISSOR_TEST);
 		if (this.pipeline && this.floatOutput) {
-      gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
-      canvas.width = this.maxTexSize[0];
-      canvas.height = this.maxTexSize[1];
-    } else  {
-      gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
-      canvas.width = this.maxTexSize[0];
-      canvas.height = this.maxTexSize[1];
-    }
+			gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
+			canvas.width = this.maxTexSize[0];
+			canvas.height = this.maxTexSize[1];
+		} else {
+			gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
+			canvas.width = this.maxTexSize[0];
+			canvas.height = this.maxTexSize[1];
+		}
 		const threadDim = this.threadDim = utils.clone(this.output);
 		while (threadDim.length < 3) {
 			threadDim.push(1);
@@ -11151,23 +11177,23 @@ class WebGLKernel extends GLKernel {
 			case 'ArrayTexture(2)':
 			case 'ArrayTexture(3)':
 			case 'ArrayTexture(4)':
-			{
-				const inputTexture = value;
-				if (inputTexture.context !== this.context) {
-					throw new Error(`constant ${ name} (${ type }) must be from same context`);
+				{
+					const inputTexture = value;
+					if (inputTexture.context !== this.context) {
+						throw new Error(`constant ${ name} (${ type }) must be from same context`);
+					}
+					const dim = inputTexture.dimensions;
+					const size = inputTexture.size;
+
+					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
+
+					this.setUniform3iv(`constants_${name}Dim`, dim);
+					this.setUniform2iv(`constants_${name}Size`, size);
+					this.setUniform1i(`constants_${name}BitRatio`, 4);
+					this.setUniform1i(`constants_${name}`, this.constantsLength);
+					break;
 				}
-				const dim = inputTexture.dimensions;
-				const size = inputTexture.size;
-
-				gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
-				gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
-
-				this.setUniform3iv(`constants_${name}Dim`, dim);
-				this.setUniform2iv(`constants_${name}Size`, size);
-				this.setUniform1i(`constants_${name}BitRatio`, 4);
-				this.setUniform1i(`constants_${name}`, this.constantsLength);
-				break;
-			}
 			case 'MemoryOptimizedNumberTexture':
 			case 'NumberTexture':
 				{
@@ -11494,8 +11520,8 @@ class WebGLKernel extends GLKernel {
 			case 'Number':
 			case 'Integer':
 			case 'Float':
-				return utils.linesToString(this.getMainResultKernelPackedPixels())
-					+ utils.linesToString(this.getMainResultSubKernelPackedPixels());
+				return utils.linesToString(this.getMainResultKernelPackedPixels()) +
+					utils.linesToString(this.getMainResultSubKernelPackedPixels());
 			default:
 				throw new Error(`packed output only usable with Numbers, ${this.returnType} specified`);
 		}
@@ -11799,7 +11825,6 @@ class WebGLKernel extends GLKernel {
 module.exports = {
 	WebGLKernel
 };
-
 },{"../../plugins/triangle-noise":27,"../../texture":28,"../../utils":29,"../function-builder":8,"../gl-kernel":10,"./fragment-shader":13,"./function-node":14,"./kernel-string":15,"./vertex-shader":17}],17:[function(require,module,exports){
 const vertexShader = `precision highp float;
 precision highp int;
@@ -12018,7 +12043,6 @@ void main(void) {
 module.exports = {
 	fragmentShader
 };
-
 },{}],19:[function(require,module,exports){
 const {
 	WebGLFunctionNode
@@ -12054,7 +12078,6 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 module.exports = {
 	WebGL2FunctionNode
 };
-
 },{"../web-gl/function-node":14}],20:[function(require,module,exports){
 const {
 	WebGLKernel
@@ -12208,7 +12231,7 @@ class WebGL2Kernel extends WebGLKernel {
 					this.output = utils.getDimensions(argType);
 					break;
 				case 'NumberTexture':
-        case 'MemoryOptimizedNumberTexture':
+				case 'MemoryOptimizedNumberTexture':
 				case 'ArrayTexture(1)':
 				case 'ArrayTexture(2)':
 				case 'ArrayTexture(3)':
@@ -12259,7 +12282,11 @@ class WebGL2Kernel extends WebGLKernel {
 		if (this.program === null) {
 			this.build.apply(this, arguments);
 		}
-		const { argumentNames, argumentTypes, texSize } = this;
+		const {
+			argumentNames,
+			argumentTypes,
+			texSize
+		} = this;
 		const gl = this.context;
 
 		gl.useProgram(this.program);
@@ -12371,7 +12398,9 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	_setupOutputTexture() {
-		const { texSize } = this;
+		const {
+			texSize
+		} = this;
 		const gl = this.context;
 		const texture = this.outputTexture = gl.createTexture();
 		gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentNames.length);
@@ -12381,8 +12410,8 @@ class WebGL2Kernel extends WebGLKernel {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		if (this.floatOutput) {
-		  if (this.pipeline) {
-		  	switch (this.returnType) {
+			if (this.pipeline) {
+				switch (this.returnType) {
 					case 'Number':
 					case 'Float':
 					case 'Integer':
@@ -12404,9 +12433,9 @@ class WebGL2Kernel extends WebGLKernel {
 					default:
 						throw new Error('Unhandled return type');
 				}
-      } else {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-      }
+			} else {
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+			}
 		} else {
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 		}
@@ -12414,7 +12443,9 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	_setupSubOutputTextures(length) {
-		const { texSize } = this;
+		const {
+			texSize
+		} = this;
 		const gl = this.context;
 		const drawBuffersMap = this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
 		const textures = this.subKernelOutputTextures = [];
@@ -13065,8 +13096,8 @@ class WebGL2Kernel extends WebGLKernel {
 			case 'Number':
 			case 'Integer':
 			case 'Float':
-				return utils.linesToString(this.getMainResultKernelPackedPixels())
-					+ utils.linesToString(this.getMainResultSubKernelPackedPixels());
+				return utils.linesToString(this.getMainResultKernelPackedPixels()) +
+					utils.linesToString(this.getMainResultSubKernelPackedPixels());
 			default:
 				throw new Error(`packed output only usable with Numbers, ${this.returnType} specified`);
 		}
@@ -13245,7 +13276,6 @@ class WebGL2Kernel extends WebGLKernel {
 module.exports = {
 	WebGL2Kernel
 };
-
 },{"../../texture":28,"../../utils":29,"../function-builder":8,"../web-gl/kernel":16,"./fragment-shader":18,"./function-node":19,"./vertex-shader":21}],21:[function(require,module,exports){
 const vertexShader = `#version 300 es
 precision highp float;
@@ -13609,7 +13639,6 @@ module.exports = {
 	kernelOrder,
 	kernelTypes
 };
-
 },{"./backend/cpu/kernel":7,"./backend/headless-gl/kernel":11,"./backend/web-gl/kernel":16,"./backend/web-gl2/kernel":20,"./kernel-run-shortcut":26,"./utils":29,"gpu-mock.js":3}],24:[function(require,module,exports){
 const {
 	GPU
@@ -13758,7 +13787,6 @@ function kernelRunShortcut(kernel) {
 module.exports = {
 	kernelRunShortcut
 };
-
 },{"./utils":29}],27:[function(require,module,exports){
 const source = `
 
@@ -13834,7 +13862,9 @@ class Texture {
 	}
 
 	toArray(gpu) {
-		let { kernel } = this;
+		let {
+			kernel
+		} = this;
 		if (kernel) return kernel(this);
 		gpu = gpu || this.gpu;
 		if (!gpu) throw new Error('settings property "gpu" or argument required.');
@@ -13873,7 +13903,6 @@ class Texture {
 module.exports = {
 	Texture
 };
-
 },{}],29:[function(require,module,exports){
 const {
 	Input
@@ -14103,5 +14132,4 @@ const _systemEndianness = utils.getSystemEndianness();
 module.exports = {
 	utils
 };
-
 },{"./input":25,"./texture":28}]},{},[22]);
