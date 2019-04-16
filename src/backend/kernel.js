@@ -262,6 +262,16 @@ class Kernel {
 	}
 
 	/**
+	 *
+	 * @param flag
+	 * @returns {Kernel}
+	 */
+	setOptimizeFloatMemory(flag) {
+		this.optimizeFloatMemory = flag;
+		return this;
+	}
+
+	/**
 	 * @desc Set output dimensions of the kernel function
 	 * @param {Array|Object} output - The output array to set the kernel output size to
 	 */

@@ -21,6 +21,7 @@ function addAB(mode) {
   const b = [4, 5, 6, 1, 2, 3];
 
   const result = kernel(a, b);
+  console.log(kernel.kernel.compiledFragmentShader);
   const expected = [5, 7, 9, 6, 8, 10];
 
   assert.deepEqual(Array.from(result), expected);
@@ -70,7 +71,8 @@ function sumAB(mode) {
     return customAdder(a, b);
   }, {
     output: [6],
-    constants: {width: 6}
+    constants: {width: 6},
+    floatOutput: false
   });
 
   assert.ok(kernel !== null, 'function generated test');

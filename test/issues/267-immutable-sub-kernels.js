@@ -63,30 +63,16 @@ function immutableKernelWithFloats(mode) {
     floatOutput: true,
   });
 
-  const kernel2 = gpu.createKernel(function (v) {
-    return v[this.thread.x] + 1;
-  }, {
-    output: [1],
-    immutable: true,
-    pipeline: true,
-    floatOutput: true,
-  });
-
   // start with a value on CPU
+  // reuse that output, simulating that this value will be monitored, and updated via the same kernel
+  // this is often used in neural networks
   const output1 = kernel([1]);
   const output2 = kernel(output1);
   const output3 = kernel(output2);
 
-  const result1 = output1.toArray()[0];
-  // reuse that output, simulating that this value will be monitored, and updated via the same kernel
-  // this is often used in neural networks
-  const result2 = output2.toArray()[0];
-  const result3 = output3.toArray()[0];
-  console.log(output2.toArray());
-  debugger;
-  assert.equal(result1, 2);
-  assert.equal(result2, 3);
-  assert.equal(result3, 4);
+  assert.equal(output1.toArray()[0], 2);
+  assert.equal(output2.toArray()[0], 3);
+  assert.equal(output3.toArray()[0], 4);
   gpu.destroy();
 }
 

@@ -158,6 +158,18 @@ export abstract class Kernel {
   setContext(flag: any): this;
 }
 
+export class WebGLKernel extends Kernel {
+
+}
+
+export class WebGL2Kernel extends Kernel {
+
+}
+
+export class HeadlessGLKernel extends Kernel {
+
+}
+
 export interface IArgumentTypes {
   argumentTypes: string[],
   argumentNames: string[],
@@ -344,3 +356,6 @@ export interface IPlugin {
   functionReturnType: GPUVariableType;
   onBeforeRun: (kernel: Kernel) => void;
 }
+
+export type OutputDimensions = [number, number, number];
+export type TextureDimensions = [number, number];

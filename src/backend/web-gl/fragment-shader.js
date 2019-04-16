@@ -119,7 +119,7 @@ float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int z, int y
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   vec4 texel = texture2D(tex, st / vec2(texSize));
-  return decode(texel, x, bitRatio);
+  return decode32(texel);
 }
 
 float getMemoryOptimized(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int z, int y, int x) {

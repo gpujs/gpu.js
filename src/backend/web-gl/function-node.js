@@ -163,10 +163,11 @@ class WebGLFunctionNode extends FunctionNode {
 			case 'Array(4)':
 			case 'Array(3)':
 			case 'Array(2)':
+			case 'Input':
 				this.astGeneric(ast.argument, result);
 				break;
 			default:
-				throw this.astErrorOutput(`Unhandled returnType ${ this.returnType }`, ast);
+				throw this.astErrorOutput(`unhandled return type ${this.returnType}`, ast);
 		}
 
 		if (this.isRootKernel) {
@@ -919,7 +920,7 @@ class WebGLFunctionNode extends FunctionNode {
 			case 'Array3D':
 			case 'Array4D':
 			case 'Input':
-				if (this.optimizeFloatMemory) {
+				if (this.floatOutput) {
 					retArr.push(`getMemoryOptimized(${markupName}, ${markupName}Size, ${markupName}Dim, ${markupName}BitRatio, `);
 					this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
 					retArr.push(')');

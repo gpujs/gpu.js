@@ -279,6 +279,8 @@ class GLKernel extends Kernel {
 		this.fixIntegerDivisionAccuracy = null;
 		this.translatedSource = null;
 		this.renderStrategy = null;
+		this.compiledFragmentShader = null;
+		this.compiledVertexShader = null;
 
 		this.optimizeFloatMemory = null;
 	}
@@ -578,6 +580,7 @@ class GLKernel extends Kernel {
 		});
 	}
 	readPackedPixelsToUint8Array() {
+		if (this.floatOutput) throw new Error('Requires this.floatOutput to be false');
 		const {
 			texSize,
 			context: gl
@@ -590,7 +593,7 @@ class GLKernel extends Kernel {
 		return new Float32Array(this.readPackedPixelsToUint8Array().buffer);
 	}
 	readFloatPixelsToFloat32Array() {
-		if (!this.floatOutput) throw new Error('Requires this.floutOutput');
+		if (!this.floatOutput) throw new Error('Requires this.floatOutput to be true');
 		const {
 			texSize,
 			context: gl
@@ -602,7 +605,7 @@ class GLKernel extends Kernel {
 		return result;
 	}
 	readMemoryOptimizedFloatPixelsToFloat32Array() {
-		if (!this.floatOutput) throw new Error('Requires this.floutOutput');
+		if (!this.floatOutput) throw new Error('Requires this.floatOutput to be true');
 		const {
 			texSize,
 			context: gl
@@ -833,6 +836,12 @@ class GLKernel extends Kernel {
 			zResults[z] = yResults;
 		}
 		return zResults;
+	}
+	getArgumentTextureSize() {
+
+	}
+	getOutputTextureSize() {
+
 	}
 }
 

@@ -3,14 +3,16 @@ const { GPU } = require('../../src');
 
 describe('issue #279');
 
+// TODO: handle without optimizeFloatMemory = true
 const WIDTH = 600;
-const HEIGHT = 400;
+const HEIGHT = 	400;
 function wrongCanvasSize(mode) {
 	const gpu = new GPU({ mode });
 
 	const initMatrix = gpu.createKernel(function(value) {
 		return value;
 	})
+		.setOptimizeFloatMemory(true)
 		.setOutput([WIDTH, HEIGHT]);
 
 	const render = gpu.createKernel(function(matrix) {

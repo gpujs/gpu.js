@@ -119,6 +119,8 @@ class FunctionBuilder {
 				plugins,
 				constants,
 				constantTypes,
+				optimizeFloatMemory,
+				floatOutput,
 				lookupReturnType,
 				lookupArgumentType,
 				lookupFunctionArgumentTypes,

@@ -145,38 +145,58 @@ const utils = {
 
 
 	dimToTexSize(opt, dimensions, output) {
-		let numTexels = dimensions[0];
-		let w = dimensions[0];
-		let h = dimensions[1];
-		for (let i = 1; i < dimensions.length; i++) {
-			numTexels *= dimensions[i];
-		}
+		let [w, h, d] = dimensions;
+		let numTexels = (w || 1) * (h || 1) * (d || 1);
 
 		if (opt.floatTextures && (!output || opt.floatOutput)) {
 			w = numTexels * 4;
 		}
 
 		// if given dimensions == a 2d image
-		if (h > 1 && w * h === numTexels) {
-			return [w, h];
+		if (h > 1 && !d && w * h === numTexels) {
+			return new Int32Array([w, h]);
 		}
-		// find as close to square width, height sizes as possible
-		const sqrt = Math.sqrt(numTexels);
-		let high = Math.ceil(sqrt);
-		let low = Math.floor(sqrt);
-		while (high * low > numTexels) {
-			high--;
-			low = Math.ceil(numTexels / high);
-		}
-		w = low;
-		h = Math.ceil(numTexels / w);
-		return [w, h];
+		return utils.closestSquareDimensions(numTexels);
 	},
 
+	/**
+	 *
+	 * @param {Number} length
+	 * @returns {TextureDimensions}
+	 */
+	closestSquareDimensions(length) {
+		const sqrt = Math.sqrt(length);
+		let high = Math.ceil(sqrt);
+		let low = Math.floor(sqrt);
+		while (high * low < length) {
+			high--;
+			low = Math.ceil(length / high);
+		}
+		return [low, Math.ceil(length / low)];
+	},
+
+	/**
+	 * A texture takes up four
+	 * @param {OutputDimensions} dimensions
+	 * @returns {TextureDimensions}
+	 */
+	getMemoryOptimizedFloatTextureSize(dimensions) {
+		let [w, h, d] = dimensions;
+		let totalArea = utils.roundTo((w || 1) * (h || 1) * (d || 1), 4);
+
+		const texelCount = totalArea / 4;
+
+		return utils.closestSquareDimensions(texelCount);
+	},
+
+	roundTo(n, d) {
+		return Math.floor((n + d - 1) / d) * d;
+	},
 	/**
 	 * @desc Return the dimension of an array.
 	 * @param {Array|String|Texture|Input} x - The array
 	 * @param {Boolean} [pad] - To include padding in the dimension calculation
+	 * @returns {OutputDimensions}
 	 */
 	getDimensions(x, pad) {
 		let ret;
@@ -193,7 +213,7 @@ const utils = {
 		} else if (x instanceof Input) {
 			ret = x.size;
 		} else {
-			throw new Error('Unknown dimensions of ' + x);
+			throw new Error(`Unknown dimensions of ${x}`);
 		}
 
 		if (pad) {
