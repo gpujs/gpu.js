@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0-rc.6
- * @date Tue Apr 16 2019 08:31:58 GMT-0400 (Eastern Daylight Time)
+ * @date Tue Apr 16 2019 20:43:45 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -1197,7 +1197,6 @@ class CPUKernel extends Kernel {
 module.exports = {
 	CPUKernel
 };
-
 },{"../../utils":28,"../function-builder":7,"../kernel":11,"./function-node":4,"./kernel-string":5}],7:[function(require,module,exports){
 class FunctionBuilder {
 	static fromKernel(kernel, FunctionNode, extraNodeOptions) {
@@ -3566,7 +3565,6 @@ module.exports = {
 	GLKernel,
 	renderStrategy
 };
-
 },{"../texture":27,"../utils":28,"./kernel":11}],10:[function(require,module,exports){
 const getContext = require('gl');
 const {
@@ -3977,7 +3975,6 @@ class Kernel {
 module.exports = {
 	Kernel
 };
-
 },{"../input":24,"../utils":28}],12:[function(require,module,exports){
 const fragmentShader = `__HEADER__;
 precision highp float;
@@ -4173,7 +4170,6 @@ void main(void) {
 module.exports = {
 	fragmentShader
 };
-
 },{}],13:[function(require,module,exports){
 const {
 	FunctionNode
@@ -5223,6 +5219,7 @@ const typeMap = {
 	'Input': 'sampler2D',
 	'Integer': 'int',
 	'Number': 'float',
+  'LiteralInteger': 'float',
 	'NumberTexture': 'sampler2D',
 	'MemoryOptimizedNumberTexture': 'sampler2D',
 	'ArrayTexture(1)': 'sampler2D',
@@ -5375,7 +5372,6 @@ function webGLKernelString(gpuKernel, name) {
 module.exports = {
 	webGLKernelString
 };
-
 },{"../../kernel-run-shortcut":25,"../../utils":28}],15:[function(require,module,exports){
 const {
 	GLKernel
@@ -7170,7 +7166,6 @@ class WebGLKernel extends GLKernel {
 module.exports = {
 	WebGLKernel
 };
-
 },{"../../plugins/triangle-noise":26,"../../texture":27,"../../utils":28,"../function-builder":7,"../gl-kernel":9,"./fragment-shader":12,"./function-node":13,"./kernel-string":14,"./vertex-shader":16}],16:[function(require,module,exports){
 const vertexShader = `precision highp float;
 precision highp int;
@@ -7389,7 +7384,6 @@ void main(void) {
 module.exports = {
 	fragmentShader
 };
-
 },{}],18:[function(require,module,exports){
 const {
 	WebGLFunctionNode
@@ -8699,7 +8693,6 @@ class WebGL2Kernel extends WebGLKernel {
 module.exports = {
 	WebGL2Kernel
 };
-
 },{"../../texture":27,"../../utils":28,"../function-builder":7,"../web-gl/kernel":15,"./fragment-shader":17,"./function-node":18,"./vertex-shader":20}],20:[function(require,module,exports){
 const vertexShader = `#version 300 es
 precision highp float;
@@ -9428,7 +9421,7 @@ const utils = {
 
 	dimToTexSize(opt, dimensions, output) {
 		let [w, h, d] = dimensions;
-		let numTexels = (w||1) * (h||1) * (d||1);
+		let numTexels = (w || 1) * (h || 1) * (d || 1);
 
 		if (opt.floatTextures && (!output || opt.floatOutput)) {
 			w = numTexels * 4;
@@ -9440,20 +9433,20 @@ const utils = {
 		return utils.closestSquareDimensions(numTexels);
 	},
 
-  closestSquareDimensions(length) {
-    const sqrt = Math.sqrt(length);
-    let high = Math.ceil(sqrt);
-    let low = Math.floor(sqrt);
-    while (high * low < length) {
-      high--;
-      low = Math.ceil(length / high);
-    }
-    return [low, Math.ceil(length / low)];
-  },
+	closestSquareDimensions(length) {
+		const sqrt = Math.sqrt(length);
+		let high = Math.ceil(sqrt);
+		let low = Math.floor(sqrt);
+		while (high * low < length) {
+			high--;
+			low = Math.ceil(length / high);
+		}
+		return [low, Math.ceil(length / low)];
+	},
 
 	getMemoryOptimizedFloatTextureSize(dimensions) {
-		let [w,h,d] = dimensions;
-		let totalArea = utils.roundTo((w||1) * (h||1) * (d||1), 4);
+		let [w, h, d] = dimensions;
+		let totalArea = utils.roundTo((w || 1) * (h || 1) * (d || 1), 4);
 
 		const texelCount = totalArea / 4;
 
@@ -9566,5 +9559,4 @@ const _systemEndianness = utils.getSystemEndianness();
 module.exports = {
 	utils
 };
-
 },{"./input":24,"./texture":27}]},{},[21]);

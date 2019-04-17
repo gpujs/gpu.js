@@ -1178,7 +1178,7 @@ const typeMap = {
 	'Input': 'sampler2D',
 	'Integer': 'int',
 	'Number': 'float',
-  'LiteralInteger': 'float',
+	'LiteralInteger': 'float',
 	'NumberTexture': 'sampler2D',
 	'MemoryOptimizedNumberTexture': 'sampler2D',
 	'ArrayTexture(1)': 'sampler2D',
