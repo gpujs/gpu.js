@@ -3,6 +3,47 @@ const { GPU } = require('../../src');
 
 describe('internal: Function return type detection');
 
+function canDetectNumberFromAddedFunction(mode) {
+  const gpu = new GPU({ mode });
+  function number() {
+    return 1;
+  }
+  gpu.addFunction(number);
+  const kernel = gpu.createKernel(function() {
+    const values = number();
+    return values + values;
+  }, { output: [1] });
+
+  const result = kernel();
+  assert.equal(result[0], 2);
+
+  gpu.destroy();
+}
+
+test('can detect Number auto', () => {
+  canDetectNumberFromAddedFunction();
+});
+
+test('can detect Number gpu', () => {
+  canDetectNumberFromAddedFunction('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('can detect Number webgl', () => {
+  canDetectNumberFromAddedFunction('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('can detect Number webgl2', () => {
+  canDetectNumberFromAddedFunction('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('can detect Number headlessgl', () => {
+  canDetectNumberFromAddedFunction('headlessgl');
+});
+
+test('can detect Number cpu', () => {
+  canDetectNumberFromAddedFunction('cpu');
+});
+
 function canDetectArray2FromAddedFunction(mode) {
   const gpu = new GPU({ mode });
   function array2() {
