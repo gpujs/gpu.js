@@ -121,12 +121,14 @@ test('bogus this.threads.y', () => {
 });
 
 test('unknown function call', () => {
-  assert.equal(run('value()'), null);
+  assert.throws(() => {
+    assert.equal(run('value()'), null);
+  });
 });
 
 test('function call', () => {
   assert.equal(run('value()', {
-    lookupReturnType: (name) => name === 'value' ? 'Fake Type' : null,
+    lookupReturnType: (name, ast, node) => name === 'value' ? 'Fake Type' : null,
   }), 'Fake Type');
 });
 
@@ -150,7 +152,7 @@ test('simple right expression', () => {
 
 test('function call expression', () => {
   assert.equal(run('otherFunction() + value', {
-    lookupReturnType: (name) => name === 'otherFunction' ? 'Fake Type' : null,
+    lookupReturnType: (name, ast, node) => name === 'otherFunction' ? 'Fake Type' : null,
   }), 'Fake Type');
 });
 

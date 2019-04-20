@@ -28,24 +28,31 @@ class FunctionNode {
 		this.calledFunctionsArguments = {};
 		this.constants = {};
 		this.constantTypes = {};
+		this.constantBitRatios = {};
 		this.isRootKernel = false;
 		this.isSubKernel = false;
-		this.parent = null;
 		this.debug = null;
 		this.declarations = {};
 		this.states = [];
 		this.lookupReturnType = null;
-		this.nativeFunctionReturnTypes = null;
-		this.nativeFunctionArgumentTypes = null;
+		this.lookupArgumentType = null;
+		this.lookupFunctionArgumentTypes = null;
+		this.lookupFunctionArgumentBitRatio = null;
+		this.triggerImplyArgumentType = null;
+		this.triggerTrackArgumentSynonym = null;
+		this.lookupArgumentSynonym = null;
 		this.onNestedFunction = null;
+		this.onFunctionCall = null;
+		this.optimizeFloatMemory = null;
+		this.precision = null;
 		this.loopMaxIterations = null;
 		this.argumentNames = (typeof this.source === 'string' ? utils.getArgumentNamesFromString(this.source) : null);
 		this.argumentTypes = [];
 		this.argumentSizes = [];
+		this.argumentBitRatios = null;
 		this.returnType = null;
 		this.output = [];
 		this.plugins = null;
-		this.literalTypes = {};
 
 		if (settings) {
 			for (const p in settings) {
@@ -55,7 +62,12 @@ class FunctionNode {
 			}
 		}
 
-		if (!this.returnType) {
+		this.synonymIndex = -1;
+		this.synonymUseIndex = 0;
+		this.argumentSynonym = {};
+		this.literalTypes = {};
+
+		if (this.isRootKernel && !this.returnType) {
 			this.returnType = 'Number';
 		}
 
@@ -175,6 +187,9 @@ class FunctionNode {
 		if (typeof this.source === 'object') {
 			return this.ast = this.source;
 		}
+		if (this.ast) {
+			return this.ast;
+		}
 
 		inParser = inParser || acorn;
 		if (inParser === null) {
@@ -209,16 +224,8 @@ class FunctionNode {
 			const argumentType = this.argumentTypes[argumentIndex];
 			if (argumentType) {
 				type = argumentType;
-			} else if (this.parent) {
-				const calledFunctionArguments = this.parent.calledFunctionsArguments[this.name];
-				for (let i = 0; i < calledFunctionArguments.length; i++) {
-					const calledFunctionArgument = calledFunctionArguments[i];
-					if (calledFunctionArgument[argumentIndex] !== null) {
-						type = calledFunctionArgument[argumentIndex].type;
-						this.argumentTypes[argumentIndex] = type;
-						break;
-					}
-				}
+			} else if (this.lookupArgumentType) {
+				type = this.argumentTypes[argumentIndex] = this.lookupArgumentType(name, this);
 			}
 		}
 		if (!type) {
@@ -247,19 +254,11 @@ class FunctionNode {
 	 * @param {String} name - Name of the argument
 	 * @returns {String} Name of the parameter
 	 */
-	getUserArgumentName(name) {
+	getKernelArgumentName(name) {
+		if (!this.lookupArgumentSynonym) return null;
 		const argumentIndex = this.argumentNames.indexOf(name);
 		if (argumentIndex === -1) return null;
-		if (!this.parent || this.isRootKernel) return null;
-		const calledFunctionArguments = this.parent.calledFunctionsArguments[this.name];
-		for (let i = 0; i < calledFunctionArguments.length; i++) {
-			const calledFunctionArgument = calledFunctionArguments[i];
-			const argument = calledFunctionArgument[argumentIndex];
-			if (argument && argument.type !== 'Integer' && argument.type !== 'LiteralInteger' && argument.type !== 'Number') {
-				return argument.name;
-			}
-		}
-		return null;
+		return this.lookupArgumentSynonym('kernel', this.name, name);
 	}
 
 	toString() {
@@ -293,7 +292,7 @@ class FunctionNode {
 	/**
 	 * Recursively looks up type for ast expression until it's found
 	 * @param ast
-	 * @returns {string}
+	 * @returns {String|null}
 	 */
 	getType(ast) {
 		if (Array.isArray(ast)) {
@@ -318,17 +317,24 @@ class FunctionNode {
 				if (this.isAstMathFunction(ast)) {
 					return 'Number';
 				}
-				if (!ast.callee || !ast.callee.name) return null;
-				if (this.nativeFunctionReturnTypes && this.nativeFunctionReturnTypes[ast.callee.name]) {
-					return this.nativeFunctionReturnTypes[ast.callee.name];
+				if (!ast.callee || !ast.callee.name) {
+					if (ast.callee.type === 'SequenceExpression' && ast.callee.expressions[ast.callee.expressions.length - 1].property.name) {
+						return this.lookupReturnType(ast.callee.expressions[ast.callee.expressions.length - 1].property.name, ast, this);
+					}
+					throw this.astErrorOutput('Unknown call expression', ast);
 				}
-				return ast.callee && ast.callee.name && this.lookupReturnType ? this.lookupReturnType(ast.callee.name) : null;
+				if (ast.callee && ast.callee.name) {
+					return this.lookupReturnType(ast.callee.name, ast, this);
+				}
+				throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
 			case 'BinaryExpression':
 				// modulos is Number
-				if (ast.operator === '%') {
-					return 'Number';
-				} else if (ast.operator === '>' || ast.operator === '<') {
-					return 'Boolean';
+				switch (ast.operator) {
+					case '%':
+						return 'Number';
+					case '>':
+					case '<':
+						return 'Boolean';
 				}
 				const type = this.getType(ast.left);
 				return typeLookupMap[type] || type;
@@ -354,6 +360,10 @@ class FunctionNode {
 				if (ast.name === 'Infinity') {
 					return 'Number';
 				}
+				const origin = this.findIdentifierOrigin(ast);
+				if (origin && origin.init) {
+					return this.getType(origin.init);
+				}
 				return null;
 			case 'ReturnStatement':
 				return this.getType(ast.argument);
@@ -378,6 +388,8 @@ class FunctionNode {
 							return typeLookupMap[this.getVariableType(ast.object.object.name)];
 						case 'value[][][]':
 							return typeLookupMap[this.getVariableType(ast.object.object.object.name)];
+						case 'value[][][][]':
+							return typeLookupMap[this.getVariableType(ast.object.object.object.object.name)];
 						case 'this.thread.value':
 							return 'Integer';
 						case 'this.output.value':
@@ -390,6 +402,8 @@ class FunctionNode {
 							return typeLookupMap[this.getConstantType(ast.object.object.property.name)];
 						case 'this.constants.value[][][]':
 							return typeLookupMap[this.getConstantType(ast.object.object.object.property.name)];
+						case 'this.constants.value[][][][]':
+							return typeLookupMap[this.getConstantType(ast.object.object.object.object.property.name)];
 						case 'fn()[]':
 							return typeLookupMap[this.getType(ast.object)];
 						case 'fn()[][]':
@@ -410,13 +424,22 @@ class FunctionNode {
 								case 'a':
 									return typeLookupMap[this.getVariableType(ast.object.name)];
 							}
+						case '[][]':
+							return 'Number';
 					}
 					throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
 				}
 				throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
-			case 'FunctionDeclaration':
-				return this.getType(ast.body);
 			case 'ConditionalExpression':
+				return this.getType(ast.consequent);
+			case 'FunctionDeclaration':
+			case 'FunctionExpression':
+				const lastReturn = this.findLastReturn(ast.body);
+				if (lastReturn) {
+					return this.getType(lastReturn);
+				}
+				return null;
+			case 'IfStatement':
 				return this.getType(ast.consequent);
 			default:
 				throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
@@ -595,6 +618,8 @@ class FunctionNode {
 				signature.unshift('value');
 			} else if (ast.callee && ast.callee.name) {
 				signature.unshift('fn()');
+			} else if (ast.elements) {
+				signature.unshift('[]');
 			} else {
 				signature.unshift('unknown');
 			}
@@ -607,6 +632,7 @@ class FunctionNode {
 			'value[]',
 			'value[][]',
 			'value[][][]',
+			'value[][][][]',
 			'value.value',
 			'this.thread.value',
 			'this.output.value',
@@ -614,9 +640,11 @@ class FunctionNode {
 			'this.constants.value[]',
 			'this.constants.value[][]',
 			'this.constants.value[][][]',
+			'this.constants.value[][][][]',
 			'fn()[]',
 			'fn()[][]',
 			'fn()[][][]',
+			'[][]',
 		];
 		if (allowedExpressions.indexOf(signatureString) > -1) {
 			return signatureString;
@@ -1020,6 +1048,20 @@ class FunctionNode {
 					yProperty: ast.object.property,
 					xProperty: ast.property,
 				};
+			case 'value[][][][]':
+				if (typeof ast.object.object.object.object.name !== 'string') {
+					throw this.astErrorOutput('Unexpected expression', ast);
+				}
+				name = ast.object.object.object.object.name;
+				return {
+					name,
+					origin: 'user',
+					signature: variableSignature,
+					type: this.getVariableType(name),
+					zProperty: ast.object.object.property,
+					yProperty: ast.object.property,
+					xProperty: ast.property,
+				};
 			case 'value.value':
 				if (typeof ast.property.name !== 'string') {
 					throw this.astErrorOutput('Unexpected expression', ast);
@@ -1120,13 +1162,63 @@ class FunctionNode {
 					};
 				}
 			case 'fn()[]':
+			case '[][]':
 				return {
 					signature: variableSignature,
-					property: ast.property
+					property: ast.property,
 				};
 			default:
 				throw this.astErrorOutput('Unexpected expression', ast);
 		}
+	}
+
+	findIdentifierOrigin(astToFind) {
+		const stack = [this.ast];
+
+		while (stack.length > 0) {
+			const atNode = stack[0];
+			if (atNode.type === 'VariableDeclarator' && atNode.id && atNode.id.name && atNode.id.name === astToFind.name) {
+				return atNode;
+			}
+			stack.shift();
+			if (atNode.argument) {
+				stack.push(atNode.argument);
+			} else if (atNode.body) {
+				stack.push(atNode.body);
+			} else if (atNode.declarations) {
+				stack.push(atNode.declarations);
+			} else if (Array.isArray(atNode)) {
+				for (let i = 0; i < atNode.length; i++) {
+					stack.push(atNode[i]);
+				}
+			}
+		}
+		return null;
+	}
+
+	findLastReturn(ast) {
+		const stack = [ast || this.ast];
+
+		while (stack.length > 0) {
+			const atNode = stack.pop();
+			if (atNode.type === 'ReturnStatement') {
+				return atNode;
+			}
+			if (atNode.argument) {
+				stack.push(atNode.argument);
+			} else if (atNode.body) {
+				stack.push(atNode.body);
+			} else if (atNode.declarations) {
+				stack.push(atNode.declarations);
+			} else if (Array.isArray(atNode)) {
+				for (let i = 0; i < atNode.length; i++) {
+					stack.push(atNode[i]);
+				}
+			} else if (atNode.consequent) {
+				stack.push(atNode.consequent);
+			}
+		}
+		return null;
 	}
 
 	getInternalVariableName(name) {
@@ -1148,9 +1240,14 @@ const typeLookupMap = {
 	'Array(4)': 'Number',
 	'Array2D': 'Number',
 	'Array3D': 'Number',
+	'Input': 'Number',
 	'HTMLImage': 'Array(4)',
 	'HTMLImageArray': 'Array(4)',
 	'NumberTexture': 'Number',
+	'MemoryOptimizedNumberTexture': 'Number',
+	'ArrayTexture(1)': 'Number',
+	'ArrayTexture(2)': 'Array(2)',
+	'ArrayTexture(3)': 'Array(3)',
 	'ArrayTexture(4)': 'Array(4)',
 };
 

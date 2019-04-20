@@ -32,54 +32,60 @@ test('value int', () => {
 test('value[] float', () => {
   assert.equal(run('const value = it[1]', {
     argumentNames: ['it'],
-    argumentTypes: ['Array']
-  }), 'float user_value=get(user_it, user_itSize, user_itDim, user_itBitRatio, 0, 0, 1);');
+    argumentTypes: ['Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
+  }), 'float user_value=get32(user_it, user_itSize, user_itDim, 0, 0, 1);');
 });
 
 test('value[][] float', () => {
   assert.equal(run('const value = it[1][2]', {
     argumentNames: ['it'],
-    argumentTypes: ['Array2D']
-  }), 'float user_value=get(user_it, user_itSize, user_itDim, user_itBitRatio, 0, 1, 2);');
+    argumentTypes: ['Array2D'],
+    lookupFunctionArgumentBitRatio: () => 4,
+  }), 'float user_value=get32(user_it, user_itSize, user_itDim, 0, 1, 2);');
 });
 
 test('value[][][] float', () => {
   assert.equal(run('const value = it[1][2][3]', {
     argumentNames: ['it'],
-    argumentTypes: ['Array3D']
-  }), 'float user_value=get(user_it, user_itSize, user_itDim, user_itBitRatio, 1, 2, 3);');
+    argumentTypes: ['Array3D'],
+    lookupFunctionArgumentBitRatio: () => 4,
+  }), 'float user_value=get32(user_it, user_itSize, user_itDim, 1, 2, 3);');
 });
 
 test('Array2 value[] from value[]', () => {
   assert.equal(run('const value = [arg1[0], arg2[0]];', {
     argumentNames: ['arg1', 'arg2'],
-    argumentTypes: ['Array', 'Array']
+    argumentTypes: ['Array', 'Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
   }), 'vec2 user_value=vec2('
-    + 'get(user_arg1, user_arg1Size, user_arg1Dim, user_arg1BitRatio, 0, 0, 0), '
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 0)'
+    + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), '
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0)'
     + ');');
 });
 
 test('Array3 value[] from value[]', () => {
   assert.equal(run('const value = [arg1[0], arg2[0], arg3[0]];', {
     argumentNames: ['arg1', 'arg2', 'arg3'],
-    argumentTypes: ['Array', 'Array', 'Array']
+    argumentTypes: ['Array', 'Array', 'Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
   }), 'vec3 user_value=vec3('
-    + 'get(user_arg1, user_arg1Size, user_arg1Dim, user_arg1BitRatio, 0, 0, 0), '
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 0), '
-    + 'get(user_arg3, user_arg3Size, user_arg3Dim, user_arg3BitRatio, 0, 0, 0)'
+    + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), '
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), '
+    + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0)'
     + ');');
 });
 
 test('Array4 value[] from value[]', () => {
   assert.equal(run('const value = [arg1[0], arg2[0], arg3[0], arg4[0]];', {
     argumentNames: ['arg1', 'arg2', 'arg3', 'arg4'],
-    argumentTypes: ['Array', 'Array', 'Array', 'Array']
+    argumentTypes: ['Array', 'Array', 'Array', 'Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
   }), 'vec4 user_value=vec4('
-    + 'get(user_arg1, user_arg1Size, user_arg1Dim, user_arg1BitRatio, 0, 0, 0), '
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 0), '
-    + 'get(user_arg3, user_arg3Size, user_arg3Dim, user_arg3BitRatio, 0, 0, 0), '
-    + 'get(user_arg4, user_arg4Size, user_arg4Dim, user_arg4BitRatio, 0, 0, 0)'
+    + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), '
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), '
+    + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0), '
+    + 'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 0)'
     + ');');
 });
 
@@ -89,22 +95,23 @@ test('float, Array2, Array3 chain values', () => {
     + 'value3 = [arg1[0], arg2[0], arg3[0]], '
     + 'value4 = [arg1[0], arg2[0], arg3[0], arg4[0]];', {
     argumentNames: ['arg1', 'arg2', 'arg3', 'arg4'],
-    argumentTypes: ['Array', 'Array', 'Array', 'Array']
+    argumentTypes: ['Array', 'Array', 'Array', 'Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
   }), 'float user_value1=1.0;'
     + 'vec2 user_value2=vec2('
-    + 'get(user_arg1, user_arg1Size, user_arg1Dim, user_arg1BitRatio, 0, 0, 0), '
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 0)'
+    + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), '
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0)'
     + ');'
     + 'vec3 user_value3=vec3('
-    + 'get(user_arg1, user_arg1Size, user_arg1Dim, user_arg1BitRatio, 0, 0, 0), '
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 0), '
-    + 'get(user_arg3, user_arg3Size, user_arg3Dim, user_arg3BitRatio, 0, 0, 0)'
+    + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), '
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), '
+    + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0)'
     + ');'
     + 'vec4 user_value4=vec4('
-    + 'get(user_arg1, user_arg1Size, user_arg1Dim, user_arg1BitRatio, 0, 0, 0), '
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 0), '
-    + 'get(user_arg3, user_arg3Size, user_arg3Dim, user_arg3BitRatio, 0, 0, 0), '
-    + 'get(user_arg4, user_arg4Size, user_arg4Dim, user_arg4BitRatio, 0, 0, 0)'
+    + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), '
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), '
+    + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0), '
+    + 'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 0)'
     + ');');
 });
 
@@ -114,22 +121,23 @@ test('float, Array2, Array3, Array4 multiple values', () => {
     + 'value3 = [arg1[0], arg2[0], arg3[0]], '
     + 'value4 = [arg1[0], arg2[0], arg3[0], arg4[0]];', {
     argumentNames: ['arg1', 'arg2', 'arg3', 'arg4'],
-    argumentTypes: ['Array', 'Array', 'Array', 'Array']
+    argumentTypes: ['Array', 'Array', 'Array', 'Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
   }), 'float user_value1=1.0;'
     + 'vec2 user_value2=vec2('
-    + 'get(user_arg1, user_arg1Size, user_arg1Dim, user_arg1BitRatio, 0, 0, 0), '
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 0)'
+    + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), '
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0)'
     + ');'
     + 'vec3 user_value3=vec3('
-    + 'get(user_arg1, user_arg1Size, user_arg1Dim, user_arg1BitRatio, 0, 0, 0), '
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 0), '
-    + 'get(user_arg3, user_arg3Size, user_arg3Dim, user_arg3BitRatio, 0, 0, 0)'
+    + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), '
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), '
+    + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0)'
     + ');'
     + 'vec4 user_value4=vec4('
-    + 'get(user_arg1, user_arg1Size, user_arg1Dim, user_arg1BitRatio, 0, 0, 0), '
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 0), '
-    + 'get(user_arg3, user_arg3Size, user_arg3Dim, user_arg3BitRatio, 0, 0, 0), '
-    + 'get(user_arg4, user_arg4Size, user_arg4Dim, user_arg4BitRatio, 0, 0, 0)'
+    + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), '
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), '
+    + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0), '
+    + 'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 0)'
     + ');');
 });
 
@@ -139,25 +147,26 @@ test('float, float, Array4, Array4, Array4 chain values', () => {
     + 'value4 = [arg4[4], arg3[4], arg2[4], arg1[4]], '
     + 'value5 = [arg2[1], arg2[2], arg2[3], arg2[4]];', {
     argumentNames: ['arg1', 'arg2', 'arg3', 'arg4'],
-    argumentTypes: ['Array', 'Array', 'Array', 'Array']
+    argumentTypes: ['Array', 'Array', 'Array', 'Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
   }), 'float user_value1=1.0,user_value2=1.5;'
     + 'vec4 user_value3=vec4('
-    + 'get(user_arg1, user_arg1Size, user_arg1Dim, user_arg1BitRatio, 0, 0, 0), '
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 0), '
-    + 'get(user_arg3, user_arg3Size, user_arg3Dim, user_arg3BitRatio, 0, 0, 0), '
-    + 'get(user_arg4, user_arg4Size, user_arg4Dim, user_arg4BitRatio, 0, 0, 0)'
+    + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), '
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), '
+    + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0), '
+    + 'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 0)'
     + '),'
     + 'user_value4=vec4('
-    + 'get(user_arg4, user_arg4Size, user_arg4Dim, user_arg4BitRatio, 0, 0, 4), '
-    + 'get(user_arg3, user_arg3Size, user_arg3Dim, user_arg3BitRatio, 0, 0, 4), '
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 4), '
-    + 'get(user_arg1, user_arg1Size, user_arg1Dim, user_arg1BitRatio, 0, 0, 4)'
+    + 'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 4), '
+    + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 4), '
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 4), '
+    + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 4)'
     + '),'
     + 'user_value5=vec4('
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 1), '
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 2), '
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 3), '
-    + 'get(user_arg2, user_arg2Size, user_arg2Dim, user_arg2BitRatio, 0, 0, 4)'
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 1), '
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 2), '
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 3), '
+    + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 4)'
     + ');');
 });
 
@@ -207,24 +216,27 @@ test('this.constants.value[] float', () => {
   assert.equal(run('const value = this.constants.it[1]', {
     constantTypes: {
       it: 'Array'
-    }
-  }), 'float user_value=get(constants_it, constants_itSize, constants_itDim, constants_itBitRatio, 0, 0, 1);');
+    },
+    constantBitRatios: { it: 4 },
+  }), 'float user_value=get32(constants_it, constants_itSize, constants_itDim, 0, 0, 1);');
 });
 
 test('this.constants.value[][] float', () => {
   assert.equal(run('const value = this.constants.it[1][2]', {
     constantTypes: {
       it: 'Array2D'
-    }
-  }), 'float user_value=get(constants_it, constants_itSize, constants_itDim, constants_itBitRatio, 0, 1, 2);');
+    },
+    constantBitRatios: { it: 4 },
+  }), 'float user_value=get32(constants_it, constants_itSize, constants_itDim, 0, 1, 2);');
 });
 
 test('this.constants.value[][][] float', () => {
   assert.equal(run('const value = this.constants.it[1][2][3]', {
     constantTypes: {
       it: 'Array3D'
-    }
-  }), 'float user_value=get(constants_it, constants_itSize, constants_itDim, constants_itBitRatio, 1, 2, 3);');
+    },
+    constantBitRatios: { it: 4 },
+  }), 'float user_value=get32(constants_it, constants_itSize, constants_itDim, 1, 2, 3);');
 });
 
 test('this.thread.x float', () => {

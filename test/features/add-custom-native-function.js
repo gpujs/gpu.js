@@ -13,7 +13,7 @@ const jsDivide = `function divide(a, b) {
 function nativeDivide(mode, fn) {
   const gpu = new GPU({ mode });
 
-  gpu.addNativeFunction('divide', fn);
+  gpu.addNativeFunction('divide', fn, { returnType: 'Number' });
 
   const f = gpu.createKernel(function(a, b) {
     return divide(a[this.thread.x], b[this.thread.x]);

@@ -41,7 +41,7 @@ class CPUKernel extends Kernel {
 		return 'cpu';
 	}
 
-	static nativeFunctionArgumentTypes() {
+	static nativeFunctionArguments() {
 		return null;
 	}
 
@@ -49,9 +49,12 @@ class CPUKernel extends Kernel {
 		return null;
 	}
 
+	static combineKernels(combinedKernel) {
+		return combinedKernel;
+	}
+
 	constructor(source, settings) {
 		super(source, settings);
-
 		this.mergeSettings(source.settings || settings);
 
 		this._imageData = null;
@@ -62,7 +65,7 @@ class CPUKernel extends Kernel {
 			y: 0,
 			z: 0
 		};
-
+		this.translatedSources = null;
 		this.run = function() { //note: need arguments
 			this.run = null;
 			this.build.apply(this, arguments);
@@ -110,6 +113,14 @@ class CPUKernel extends Kernel {
 		this.checkOutput();
 	}
 
+	translateSource() {
+		const functionBuilder = FunctionBuilder.fromKernel(this, CPUFunctionNode);
+		this.translatedSources = functionBuilder.getPrototypes('kernel');
+		if (!this.graphical && !this.returnType) {
+			this.returnType = functionBuilder.getKernelResultType();
+		}
+	}
+
 	/**
 	 * @desc Builds the Kernel, by generating the kernel
 	 * string using thread dimensions, and arguments
@@ -121,6 +132,7 @@ class CPUKernel extends Kernel {
 		this.setupConstants();
 		this.setupArguments(arguments);
 		this.validateSettings();
+		this.translateSource();
 
 		if (this.graphical) {
 			const {
@@ -190,18 +202,18 @@ class CPUKernel extends Kernel {
 	getKernelString() {
 		if (this._kernelString !== null) return this._kernelString;
 
-		const functionBuilder = FunctionBuilder.fromKernel(this, CPUFunctionNode);
-
-		let prototypes = functionBuilder.getPrototypes('kernel');
 		let kernel = null;
-		if (prototypes.length > 1) {
-			prototypes = prototypes.filter(fn => {
+		let {
+			translatedSources
+		} = this;
+		if (translatedSources.length > 1) {
+			translatedSources = translatedSources.filter(fn => {
 				if (/^function/.test(fn)) return fn;
 				kernel = fn;
 				return false;
 			})
 		} else {
-			kernel = prototypes.shift();
+			kernel = translatedSources.shift();
 		}
 		const kernelString = this._kernelString = `
 		const LOOP_MAX = ${ this._getLoopMaxString() }
@@ -211,7 +223,7 @@ class CPUKernel extends Kernel {
       ${ this._processConstants() }
       ${ this._processArguments() }
       ${ this.graphical ? this._graphicalKernelLoop(kernel) : this._resultKernelLoop(kernel) }
-      ${ prototypes.length > 0 ? prototypes.join('\n') : '' }
+      ${ translatedSources.length > 0 ? translatedSources.join('\n') : '' }
     }.bind(this);`;
 		return kernelString;
 	}
@@ -343,13 +355,33 @@ class CPUKernel extends Kernel {
     return;`
 	}
 
+	_getKernelResultTypeConstructorString() {
+		switch (this.returnType) {
+			case 'LiteralInteger':
+			case 'Number':
+			case 'Integer':
+			case 'Float':
+				return 'Float32Array';
+			case 'Array(2)':
+			case 'Array(3)':
+			case 'Array(4)':
+				return 'Array';
+			default:
+				if (this.graphical) {
+					return 'Float32Array';
+				}
+				throw new Error(`unhandled returnType ${ this.returnType }`);
+		}
+	}
+
 	_resultKernel1DLoop(kernelString) {
 		const {
 			output
 		} = this;
-		return `const result = new Float32Array(${ output[0] });
+		const constructorString = this._getKernelResultTypeConstructorString();
+		return `const result = new ${constructorString}(${ output[0] });
     ${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
-		${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Float32Array(${ output[0] });\n`).join('') }
+		${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new ${constructorString}(${ output[0] });\n`).join('') }
     for (let x = 0; x < ${ output[0] }; x++) {
       this.thread.x = x;
       this.thread.y = 0;
@@ -365,8 +397,9 @@ class CPUKernel extends Kernel {
 		const {
 			output
 		} = this;
+		const constructorString = this._getKernelResultTypeConstructorString();
 		return `${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
-		${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Float32Array(${ output[0] });\n`).join('') }
+		${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new ${constructorString}(${ output[0] });\n`).join('') }
     for (let x = 0; x < ${ output[0] }; x++) {
       this.thread.x = x;
       this.thread.y = 0;
@@ -382,14 +415,15 @@ class CPUKernel extends Kernel {
 		const {
 			output
 		} = this;
+		const constructorString = this._getKernelResultTypeConstructorString();
 		return `const result = new Array(${ output[2] });
 		${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
     ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[1] });\n`).join('') }
     for (let y = 0; y < ${ output[1] }; y++) {
       this.thread.z = 0;
       this.thread.y = y;
-      const resultX = result[y] = new Float32Array(${ output[0] });
-      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}[y] = new Float32Array(${ output[0] });\n`).join('') }
+      const resultX = result[y] = new ${constructorString}(${ output[0] });
+      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}[y] = new ${constructorString}(${ output[0] });\n`).join('') }
       for (let x = 0; x < ${ output[0] }; x++) {
       	this.thread.x = x;
         let kernelResult;
@@ -404,12 +438,13 @@ class CPUKernel extends Kernel {
 		const {
 			output
 		} = this;
+		const constructorString = this._getKernelResultTypeConstructorString();
 		return `${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
     ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[1] });\n`).join('') }
     for (let y = 0; y < ${ output[1] }; y++) {
       this.thread.z = 0;
       this.thread.y = y;
-      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}[y] = new Float32Array(${ output[0] });\n`).join('') }
+      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}[y] = new ${constructorString}(${ output[0] });\n`).join('') }
       for (let x = 0; x < ${ output[0] }; x++) {
       	this.thread.x = x;
         ${ kernelString }
@@ -422,6 +457,7 @@ class CPUKernel extends Kernel {
 		const {
 			output
 		} = this;
+		const constructorString = this._getKernelResultTypeConstructorString();
 		return `const result = new Array(${ output[2] });
     ${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
     ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[2] });\n`).join('') }
@@ -431,8 +467,8 @@ class CPUKernel extends Kernel {
       ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }Y = result_${subKernel.name}[z] = new Array(${ output[1] });\n`).join('') }
       for (let y = 0; y < ${ output[1] }; y++) {
         this.thread.y = y;
-        const resultX = resultY[y] = new Float32Array(${ output[0] });
-        ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}Y[y] = new Float32Array(${ output[0] });\n`).join('') }
+        const resultX = resultY[y] = new ${constructorString}(${ output[0] });
+        ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}Y[y] = new ${constructorString}(${ output[0] });\n`).join('') }
         for (let x = 0; x < ${ output[0] }; x++) {
         	this.thread.x = x;
           let kernelResult;
@@ -448,6 +484,7 @@ class CPUKernel extends Kernel {
 		const {
 			output
 		} = this;
+		const constructorString = this._getKernelResultTypeConstructorString();
 		return `${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
     ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[2] });\n`).join('') }
     for (let z = 0; z < ${ output[2] }; z++) {
@@ -455,7 +492,7 @@ class CPUKernel extends Kernel {
       ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }Y = result_${subKernel.name}[z] = new Array(${ output[1] });\n`).join('') }
       for (let y = 0; y < ${ output[1] }; y++) {
         this.thread.y = y;
-        ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}Y[y] = new Float32Array(${ output[0] });\n`).join('') }
+        ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}Y[y] = new ${constructorString}(${ output[0] });\n`).join('') }
         for (let x = 0; x < ${ output[0] }; x++) {
         	this.thread.x = x;
           ${ kernelString }
@@ -479,6 +516,8 @@ class CPUKernel extends Kernel {
 		return this.subKernels === null ? [''] :
 			this.subKernels.map(fn);
 	}
+
+
 
 	destroy(removeCanvasReference) {
 		if (removeCanvasReference) {

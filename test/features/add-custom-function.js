@@ -70,7 +70,8 @@ function sumAB(mode) {
     return customAdder(a, b);
   }, {
     output: [6],
-    constants: {width: 6}
+    constants: {width: 6},
+    precision: 'unsigned',
   });
 
   assert.ok(kernel !== null, 'function generated test');

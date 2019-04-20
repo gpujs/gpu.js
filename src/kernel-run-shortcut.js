@@ -17,6 +17,11 @@ function kernelRunShortcut(kernel) {
 						kernel[key].apply(kernel, arguments);
 						return shortcut;
 					};
+				} else if (key === 'requestFallback') {
+					const requestFallback = kernel[key].bind(kernel);
+					shortcut[key] = () => {
+						kernel = requestFallback();
+					};
 				} else {
 					shortcut[key] = kernel[key].bind(kernel);
 				}

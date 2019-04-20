@@ -20,6 +20,7 @@ const {
 
 
 /**
+ *
  * @type {Kernel[]}
  */
 const kernelOrder = [HeadlessGLKernel, WebGL2Kernel, WebGLKernel];
@@ -36,10 +37,20 @@ const internalKernels = {
 	'webgl': WebGLKernel,
 };
 
+let validate = true;
+
 /**
  * The GPU.js library class which manages the GPU context for the creating kernels
  */
 class GPU {
+	static disableValidation() {
+		validate = false;
+	}
+
+	static enableValidation() {
+		validate = true;
+	}
+
 	static get isGPUSupported() {
 		return kernelOrder.some(Kernel => Kernel.isSupported);
 	}
@@ -96,10 +107,10 @@ class GPU {
 	}
 
 	/**
-	 * @desc TRUE if platform supports FloatOutput}
+	 * @desc TRUE if platform supports single precision}
 	 * @returns {boolean}
 	 */
-	static get isFloatOutputSupported() {
+	static get isSinglePrecisionSupported() {
 		return kernelOrder.some(Kernel => Kernel.isSupported && Kernel.features.isFloatRead && Kernel.features.isTextureFloat);
 	}
 
@@ -145,6 +156,9 @@ class GPU {
 			for (let i = 0; i < kernelOrder.length; i++) {
 				const ExternalKernel = kernelOrder[i];
 				if (ExternalKernel.isContextMatch(this.context)) {
+					if (!ExternalKernel.isSupported) {
+						throw new Error(`Kernel type ${ExternalKernel.name} not supported`);
+					}
 					Kernel = ExternalKernel;
 					break;
 				}
@@ -213,6 +227,11 @@ class GPU {
 			functions: this.functions,
 			nativeFunctions: this.nativeFunctions,
 			gpu: this,
+			validate,
+			onRequestFallback: (args) => {
+				const fallbackKernel = new CPUKernel(source, mergedSettings);
+				return fallbackKernel.apply(fallbackKernel, args);
+			}
 		}, settings || {});
 
 		const kernel = kernelRunShortcut(new this.Kernel(source, mergedSettings));
@@ -329,50 +348,25 @@ class GPU {
 	 *
 	 */
 	combineKernels() {
-		const lastKernel = arguments[arguments.length - 2];
+		const firstKernel = arguments[0];
 		const combinedKernel = arguments[arguments.length - 1];
-		if (this.mode === 'cpu') return combinedKernel;
-
+		if (firstKernel.kernel.constructor.mode === 'cpu') return combinedKernel;
 		const canvas = arguments[0].canvas;
-		let context = arguments[0].context;
-
-		for (let i = 0; i < arguments.length - 1; i++) {
+		const context = arguments[0].context;
+		const max = arguments.length - 1;
+		for (let i = 0; i < max; i++) {
 			arguments[i]
 				.setCanvas(canvas)
 				.setContext(context)
 				.setPipeline(true);
 		}
 
-		//TODO: needs moved to kernel
 		return function() {
-			combinedKernel.apply(null, arguments);
-			const texSize = lastKernel.texSize;
-			const gl = lastKernel.context;
-			const threadDim = lastKernel.threadDim;
-			let result;
-			if (lastKernel.floatOutput) {
-				const w = texSize[0];
-				const h = Math.ceil(texSize[1] / 4);
-				result = new Float32Array(w * h * 4);
-				gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
-			} else {
-				const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
-				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
-				result = new Float32Array(bytes.buffer);
+			const texture = combinedKernel.apply(this, arguments);
+			if (texture.toArray) {
+				return texture.toArray();
 			}
-
-			result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
-
-			if (lastKernel.output.length === 1) {
-				return result;
-			} else if (lastKernel.output.length === 2) {
-				return utils.splitArray(result, lastKernel.output[0]);
-			} else if (lastKernel.output.length === 3) {
-				const cube = utils.splitArray(result, lastKernel.output[0] * lastKernel.output[1]);
-				return cube.map(function(x) {
-					return utils.splitArray(x, lastKernel.output[0]);
-				});
-			}
+			return texture;
 		};
 	}
 
@@ -389,7 +383,9 @@ class GPU {
 
 		let argumentTypes = [];
 
-		if (typeof settings.argumentTypes === 'object') {
+		if (Array.isArray(settings.argumentTypes)) {
+			argumentTypes = settings.argumentTypes;
+		} else if (typeof settings.argumentTypes === 'object') {
 			argumentTypes = utils.getArgumentNamesFromString(sourceString)
 				.map(name => settings.argumentTypes[name]) || [];
 		} else {
@@ -416,12 +412,17 @@ class GPU {
 			throw new Error('Cannot call "addNativeFunction" after "createKernels" has been called.');
 		}
 		settings = settings || {};
+		const {
+			argumentTypes,
+			argumentNames
+		} = this.Kernel.nativeFunctionArguments(source) || {};
 		this.nativeFunctions.push({
 			name,
 			source,
 			settings,
-			argumentTypes: this.Kernel.nativeFunctionArgumentTypes(source),
-			returnType: this.Kernel.nativeFunctionReturnType(source),
+			argumentTypes,
+			argumentNames,
+			returnType: settings.returnType || this.Kernel.nativeFunctionReturnType(source),
 		});
 		return this;
 	}

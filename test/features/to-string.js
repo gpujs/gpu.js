@@ -2,8 +2,8 @@ const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU, Input, input, Texture } = require('../../src');
 
 describe('features: toString sumAB');
-function sumABTest(mode, canvas, context) {
-  const gpu = new GPU({ mode: 'cpu' });
+function sumABTest(mode) {
+  const gpu = new GPU({ mode });
   const originalKernel = gpu.createKernel(function(a, b) {
     return a[this.thread.x] + b[this.thread.x];
   }, {
@@ -26,19 +26,11 @@ function sumABTest(mode, canvas, context) {
 }
 
 test('toString sumAB auto', () => {
-  if (GPU.isHeadlessGLSupported) {
-    sumABTest(null, {}, require('gl')(1, 1));
-  } else {
-    sumABTest(null);
-  }
+  sumABTest(null);
 });
 
-test('toString sumAB gpu', () => {
-  if (GPU.isHeadlessGLSupported) {
-    sumABTest('gpu', {}, require('gl')(1, 1));
-  } else {
-    sumABTest('gpu');
-  }
+(GPU.isGPUSupported ? test : skip)('toString sumAB gpu', () => {
+  sumABTest('gpu');
 });
 
 (GPU.isWebGLSupported ? test : skip)('toString sumAB webgl', () => {
@@ -50,7 +42,7 @@ test('toString sumAB gpu', () => {
 });
 
 (GPU.isHeadlessGLSupported ? test : skip)('toString sumAB headlessgl', () => {
-  sumABTest('headlessgl', {}, require('gl')(1, 1));
+  sumABTest('headlessgl');
 });
 
 test('toString sumAB cpu', () => {

@@ -15,53 +15,90 @@ class FunctionBuilder {
 			argumentNames,
 			argumentTypes,
 			argumentSizes,
+			argumentBitRatios,
 			constants,
 			constantTypes,
+			constantBitRatios,
 			debug,
 			loopMaxIterations,
 			nativeFunctions,
 			output,
+			optimizeFloatMemory,
+			precision,
 			plugins,
 			source,
 			subKernels,
 			functions,
 		} = kernel;
 
+		const lookupReturnType = (functionName, ast, requestingNode) => {
+			return functionBuilder.lookupReturnType(functionName, ast, requestingNode);
+		};
+
+		const lookupArgumentType = (argumentName, requestingNode) => {
+			return functionBuilder.lookupArgumentType(argumentName, requestingNode);
+		};
+
+		const lookupFunctionArgumentTypes = (functionName) => {
+			return functionBuilder.lookupFunctionArgumentTypes(functionName);
+		};
+
+		const lookupFunctionArgumentName = (functionName, argumentIndex) => {
+			return functionBuilder.lookupFunctionArgumentName(functionName, argumentIndex);
+		};
+
+		const lookupFunctionArgumentBitRatio = (functionName, argumentName) => {
+			return functionBuilder.lookupFunctionArgumentBitRatio(functionName, argumentName);
+		};
+
+		const triggerImplyArgumentType = (functionName, i, argumentType, requestingNode) => {
+			functionBuilder.assignArgumentType(functionName, i, argumentType, requestingNode);
+		};
+
+		const triggerTrackArgumentSynonym = (functionName, argumentName, calleeFunctionName, argumentIndex) => {
+			functionBuilder.trackArgumentSynonym(functionName, argumentName, calleeFunctionName, argumentIndex);
+		};
+
+		const lookupArgumentSynonym = (originFunctionName, functionName, argumentName) => {
+			return functionBuilder.lookupArgumentSynonym(originFunctionName, functionName, argumentName);
+		};
+
+		const onFunctionCall = (functionName, calleeFunctionName) => {
+			functionBuilder.trackFunctionCall(functionName, calleeFunctionName);
+		};
+
 		const onNestedFunction = (fnString, returnType) => {
 			functionBuilder.addFunctionNode(new FunctionNode(fnString, Object.assign({}, nodeOptions, {
-				returnType
+				returnType: returnType || 'Number',
+				lookupReturnType,
+				lookupArgumentType,
+				lookupFunctionArgumentTypes,
+				lookupFunctionArgumentName,
+				lookupFunctionArgumentBitRatio,
+				triggerImplyArgumentType,
+				triggerTrackArgumentSynonym,
+				lookupArgumentSynonym,
+				onFunctionCall
 			})));
 		};
-
-		const parsedReturnTypes = {};
-		const lookupReturnType = (functionName) => {
-			if (parsedReturnTypes[functionName]) return parsedReturnTypes[functionName];
-			const source = functionBuilder.nativeFunctions[functionName];
-			if (source) {
-				return parsedReturnTypes[functionName] = kernel.constructor.nativeFunctionReturnType(source);
-			}
-			return functionBuilder.lookupReturnType(functionName);
-		};
-
-		const nativeFunctionReturnTypes = {};
-		const nativeFunctionArgumentTypes = {};
-
-		if (kernel.nativeFunctions) {
-			for (let i = 0; i < kernel.nativeFunctions.length; i++) {
-				const nativeFunction = kernel.nativeFunctions[i];
-				nativeFunctionReturnTypes[nativeFunction.name] = nativeFunction.returnType;
-				nativeFunctionArgumentTypes[nativeFunction.name] = nativeFunction.argumentTypes;
-			}
-		}
 
 		const nodeOptions = Object.assign({
 			isRootKernel: false,
 			onNestedFunction,
 			lookupReturnType,
-			nativeFunctionReturnTypes,
-			nativeFunctionArgumentTypes,
+			lookupArgumentType,
+			lookupFunctionArgumentTypes,
+			lookupFunctionArgumentName,
+			lookupFunctionArgumentBitRatio,
+			triggerImplyArgumentType,
+			triggerTrackArgumentSynonym,
+			lookupArgumentSynonym,
+			onFunctionCall,
+			optimizeFloatMemory,
+			precision,
 			constants,
 			constantTypes,
+			constantBitRatios,
 			debug,
 			loopMaxIterations,
 			output,
@@ -74,6 +111,7 @@ class FunctionBuilder {
 			argumentNames,
 			argumentTypes,
 			argumentSizes,
+			argumentBitRatios,
 		});
 
 		if (typeof source === 'object' && source.functionNodes) {
@@ -91,6 +129,18 @@ class FunctionBuilder {
 				plugins,
 				constants,
 				constantTypes,
+				constantBitRatios,
+				optimizeFloatMemory,
+				precision,
+				lookupReturnType,
+				lookupArgumentType,
+				lookupFunctionArgumentTypes,
+				lookupFunctionArgumentName,
+				lookupFunctionArgumentBitRatio,
+				triggerImplyArgumentType,
+				triggerTrackArgumentSynonym,
+				lookupArgumentSynonym,
+				onFunctionCall,
 			}));
 		}
 
@@ -104,12 +154,14 @@ class FunctionBuilder {
 				return new FunctionNode(source, Object.assign({}, nodeOptions, {
 					name,
 					isSubKernel: true,
-					isRootKernel: false
+					isRootKernel: false,
+					returnType: 'Number',
 				}));
 			});
 		}
 
 		const functionBuilder = new FunctionBuilder({
+			kernel,
 			rootNode,
 			functionNodes,
 			nativeFunctions,
@@ -125,12 +177,16 @@ class FunctionBuilder {
 	 */
 	constructor(settings) {
 		settings = settings || {};
+		this.kernel = settings.kernel;
 		this.rootNode = settings.rootNode;
 		this.functionNodes = settings.functionNodes || [];
 		this.subKernelNodes = settings.subKernelNodes || [];
 		this.nativeFunctions = settings.nativeFunctions || [];
 		this.functionMap = {};
 		this.nativeFunctionNames = [];
+		this.lookupChain = [];
+		this.argumentChain = [];
+		this.functionNodeDependencies = {};
 
 		if (this.rootNode) {
 			this.functionMap['kernel'] = this.rootNode;
@@ -150,7 +206,8 @@ class FunctionBuilder {
 
 		if (this.nativeFunctions) {
 			for (let i = 0; i < this.nativeFunctions.length; i++) {
-				this.nativeFunctionNames.push(this.nativeFunctions[i].name);
+				const nativeFunction = this.nativeFunctions[i];
+				this.nativeFunctionNames.push(nativeFunction.name);
 			}
 		}
 	}
@@ -176,18 +233,15 @@ class FunctionBuilder {
 	 *
 	 * @param {String} functionName - Function name to trace from, default to 'kernel'
 	 * @param {String[]} [retList] - Returning list of function names that is traced. Including itself.
-	 * @param {Object} [parent] - Parent node
 	 *
 	 * @returns {String[]}  Returning list of function names that is traced. Including itself.
 	 */
-	traceFunctionCalls(functionName, retList, parent) {
+	traceFunctionCalls(functionName, retList) {
 		functionName = functionName || 'kernel';
 		retList = retList || [];
 
 		if (this.nativeFunctionNames.indexOf(functionName) > -1) {
-			if (retList.indexOf(functionName) >= 0) {
-				// Does nothing if already traced
-			} else {
+			if (retList.indexOf(functionName) === -1) {
 				retList.push(functionName);
 			}
 			return retList;
@@ -199,12 +253,9 @@ class FunctionBuilder {
 			const functionIndex = retList.indexOf(functionName);
 			if (functionIndex === -1) {
 				retList.push(functionName);
-				if (parent) {
-					functionNode.parent = parent;
-				}
 				functionNode.toString(); //ensure JS trace is done
 				for (let i = 0; i < functionNode.calledFunctions.length; ++i) {
-					this.traceFunctionCalls(functionNode.calledFunctions[i], retList, functionNode);
+					this.traceFunctionCalls(functionNode.calledFunctions[i], retList);
 				}
 			} else {
 				/**
@@ -284,10 +335,11 @@ class FunctionBuilder {
 
 	toJSON() {
 		return this.traceFunctionCalls(this.rootNode.name).reverse().map(name => {
-			if (this.nativeFunctions[name]) {
+			const nativeIndex = this.nativeFunctions.indexOf(name);
+			if (nativeIndex > -1) {
 				return {
 					name,
-					source: this.nativeFunctions[name]
+					source: this.nativeFunctions[nativeIndex].source
 				};
 			} else if (this.functionMap[name]) {
 				return this.functionMap[name].toJSON();
@@ -318,12 +370,177 @@ class FunctionBuilder {
 		return this.getStringFromFunctionNames(Object.keys(this.functionMap));
 	}
 
-	lookupReturnType(functionName) {
-		const node = this.functionMap[functionName];
-		if (node && node.returnType) {
-			return node.returnType;
+	lookupArgumentType(argumentName, requestingNode) {
+		const index = requestingNode.argumentNames.indexOf(argumentName);
+		if (index === -1) return null;
+		if (this.lookupChain.length === 0) return null;
+		let link = this.lookupChain[this.lookupChain.length - 1 - this.argumentChain.length];
+		if (!link) return null;
+		const {
+			ast,
+			requestingNode: parentRequestingNode
+		} = link;
+		if (ast.arguments.length === 0) return null;
+		const usedVariable = ast.arguments[index];
+		if (!usedVariable) return null;
+		this.argumentChain.push(argumentName);
+		const type = parentRequestingNode.getType(usedVariable);
+		this.argumentChain.pop();
+		return type;
+	}
+
+	lookupReturnType(functionName, ast, requestingNode) {
+		// TODO: track circlical logic
+		if (ast.type !== 'CallExpression') {
+			throw new Error(`expected ast type of "CallExpression", but is ${ ast.type }`);
+		}
+		if (this._isNativeFunction(functionName)) {
+			return this._lookupNativeFunctionReturnType(functionName);
+		} else if (this._isFunction(functionName)) {
+			const node = this._getFunction(functionName);
+			if (node.returnType) {
+				return node.returnType;
+			} else {
+				// get ready for a ride!
+				this.lookupChain.push({
+					name: requestingNode.name,
+					ast,
+					requestingNode
+				});
+				const type = node.getType(node.getJsAST());
+				this.lookupChain.pop();
+				return node.returnType = type;
+			}
+		}
+
+		// function not found, maybe native?
+		return null;
+	}
+
+	_getFunction(functionName) {
+		if (!this._isFunction(functionName)) {
+			new Error(`Function ${functionName} not found`);
+		}
+		return this.functionMap[functionName];
+	}
+
+	_isFunction(functionName) {
+		return Boolean(this.functionMap[functionName]);
+	}
+
+	_getNativeFunction(functionName) {
+		for (let i = 0; i < this.nativeFunctions.length; i++) {
+			if (this.nativeFunctions[i].name === functionName) return this.nativeFunctions[i];
 		}
 		return null;
+	}
+
+	_isNativeFunction(functionName) {
+		return Boolean(this._getNativeFunction(functionName));
+	}
+
+	_lookupNativeFunctionReturnType(functionName) {
+		let nativeFunction = this._getNativeFunction(functionName);
+		if (nativeFunction) {
+			return nativeFunction.returnType;
+		}
+		throw new Error(`Native function ${ functionName } not found`);
+	}
+
+	lookupFunctionArgumentTypes(functionName) {
+		if (this._isNativeFunction(functionName)) {
+			return this._getNativeFunction(functionName).argumentTypes;
+		} else if (this._isFunction(functionName)) {
+			return this._getFunction(functionName).argumentTypes;
+		}
+		return null;
+	}
+
+	lookupFunctionArgumentName(functionName, argumentIndex) {
+		return this._getFunction(functionName).argumentNames[argumentIndex];
+	}
+
+	lookupFunctionArgumentBitRatio(functionName, argumentName) {
+		if (!this._isFunction(functionName)) {
+			throw new Error('function not found');
+		}
+		if (this.rootNode.name === functionName) {
+			const i = this.rootNode.argumentNames.indexOf(argumentName);
+			if (i !== -1) {
+				return this.rootNode.argumentBitRatios[i];
+			} else {
+				throw new Error('argument bit ratio not found');
+			}
+		} else {
+			const node = this._getFunction(functionName);
+			const argumentSynonym = node.argumentSynonym[node.synonymIndex];
+			if (!argumentSynonym) {
+				throw new Error('argument synonym not found');
+			}
+			return this.lookupFunctionArgumentBitRatio(argumentSynonym.functionName, argumentSynonym.argumentName);
+		}
+	}
+
+	assignArgumentType(functionName, i, argumentType, requestingNode) {
+		if (!this._isFunction(functionName)) return;
+		this._getFunction(functionName).argumentTypes[i] = argumentType;
+	}
+
+	trackArgumentSynonym(functionName, argumentName, calleeFunctionName, argumentIndex) {
+		if (!this._isFunction(calleeFunctionName)) return;
+		const node = this._getFunction(calleeFunctionName);
+		if (!node.argumentSynonym) {
+			node.argumentSynonym = {};
+		}
+		const calleeArgumentName = node.argumentNames[argumentIndex];
+		if (!node.argumentSynonym[calleeArgumentName]) {
+			node.argumentSynonym[calleeArgumentName] = {};
+		}
+		node.synonymIndex++;
+		node.argumentSynonym[node.synonymIndex] = {
+			functionName,
+			argumentName,
+			calleeArgumentName,
+			calleeFunctionName,
+		};
+	}
+
+	lookupArgumentSynonym(originFunctionName, functionName, argumentName) {
+		if (originFunctionName === functionName) return argumentName;
+		if (!this._isFunction(functionName)) return null;
+		const node = this._getFunction(functionName);
+		const argumentSynonym = node.argumentSynonym[node.synonymUseIndex];
+		if (!argumentSynonym) return null;
+		if (argumentSynonym.calleeArgumentName !== argumentName) return null;
+		node.synonymUseIndex++;
+		if (originFunctionName !== functionName) {
+			return this.lookupArgumentSynonym(originFunctionName, argumentSynonym.functionName, argumentSynonym.argumentName);
+		}
+		return argumentSynonym.argumentName;
+	}
+
+	trackFunctionCall(functionName, calleeFunctionName) {
+		if (!this.functionNodeDependencies[functionName]) {
+			this.functionNodeDependencies[functionName] = new Set();
+		}
+		this.functionNodeDependencies[functionName].add(calleeFunctionName);
+	}
+
+	getKernelResultType() {
+		return this.rootNode.getType(this.rootNode.ast);
+	}
+
+	getReturnTypes() {
+		const result = {
+			[this.rootNode.name]: this.rootNode.getType(this.rootNode.ast),
+		};
+		const list = this.traceFunctionCalls(this.rootNode.name);
+		for (let i = 0; i < list.length; i++) {
+			const functionName = list[i];
+			const functionNode = this.functionMap[functionName];
+			result[functionName] = functionNode.getType(functionNode.ast);
+		}
+		return result;
 	}
 }
 

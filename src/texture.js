@@ -1,11 +1,6 @@
 /**
  * @desc WebGl Texture implementation in JS
- * @param {Object} texture
- * @param {Array} size
- * @param {Object|Array} dimensions
- * @param {Array} output
- * @param {Object} context
- * @param {String} [type]
+ * @param {ITextureSettings} settings
  */
 class Texture {
 	constructor(settings) {
@@ -16,7 +11,7 @@ class Texture {
 			output,
 			context,
 			gpu,
-			type = 'NumberTexture'
+			type = 'NumberTexture',
 		} = settings;
 		if (!output) throw new Error('settings property "output" required.');
 		if (!context) throw new Error('settings property "context" required.');
@@ -32,16 +27,41 @@ class Texture {
 
 	/**
 	 * @desc Converts the Texture into a JavaScript Array.
+	 * @param {GPU} [gpu]
+	 * @returns {Number[]|Number[][]|Number[][][]}
 	 */
 	toArray(gpu) {
-		if (this.kernel) return this.kernel(this);
+		let {
+			kernel
+		} = this;
+		if (kernel) return kernel(this);
 		gpu = gpu || this.gpu;
 		if (!gpu) throw new Error('settings property "gpu" or argument required.');
-		this.kernel = gpu.createKernel(function(x) {
+		kernel = gpu.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];
-		}).setOutput(this.output);
+		}, {
+			output: this.output,
+			precision: this.getPrecision(),
+			optimizeFloatMemory: this.type === 'MemoryOptimizedNumberTexture',
+		});
 
-		return this.kernel(this);
+		this.kernel = kernel;
+		return kernel(this);
+	}
+
+	getPrecision() {
+		switch (this.type) {
+			case 'NumberTexture':
+				return 'unsigned';
+			case 'MemoryOptimizedNumberTexture':
+			case 'ArrayTexture(1)':
+			case 'ArrayTexture(2)':
+			case 'ArrayTexture(3)':
+			case 'ArrayTexture(4)':
+				return 'single';
+			default:
+				throw new Error('Unknown texture type');
+		}
 	}
 
 	/**

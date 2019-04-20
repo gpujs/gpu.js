@@ -37,6 +37,9 @@ function webGLKernelString(gpuKernel, name) {
       getVariableType: ${ removeNoise(utils.getVariableType.toString()) },
       getDimensions: ${ removeNoise(utils.getDimensions.toString()) },
       dimToTexSize: ${ removeNoise(utils.dimToTexSize.toString()) },
+      closestSquareDimensions: ${ removeNoise(utils.closestSquareDimensions.toString()) },
+      getMemoryOptimizedFloatTextureSize: ${ removeNoise(utils.getMemoryOptimizedFloatTextureSize.toString()) },
+      roundTo: ${ removeNoise(utils.roundTo.toString()) },
       flattenTo: ${ removeNoise(utils.flattenTo.toString()) },
       flatten2dArrayTo: ${ removeNoise(utils.flatten2dArrayTo.toString()) },
       flatten3dArrayTo: ${ removeNoise(utils.flatten3dArrayTo.toString()) },
@@ -52,6 +55,7 @@ function webGLKernelString(gpuKernel, name) {
         this.maxTexSize = null;
         this.argumentsLength = 0;
         this.constantsLength = 0;
+        this.constantBitRatios = ${ gpuKernel.constantBitRatios ? JSON.stringify(gpuKernel.constantBitRatios) : 'null' };
         this.canvas = null;
         this.context = null;
         this.program = null;
@@ -62,16 +66,20 @@ function webGLKernelString(gpuKernel, name) {
         this.endianness = '${ gpuKernel.endianness }';
         this.graphical = ${ boolToString(gpuKernel.graphical) };
         this.floatTextures = ${ boolToString(gpuKernel.floatTextures) };
-        this.floatOutput = ${ boolToString(gpuKernel.floatOutput) };
+        this.precision = "${ gpuKernel.precision }";
+        // TODO: not sure how to handle
         this.floatOutputForce = ${ boolToString(gpuKernel.floatOutputForce) };
         this.hardcodeConstants = ${ boolToString(gpuKernel.hardcodeConstants) };
         this.pipeline = ${ boolToString(gpuKernel.pipeline) };
         this.argumentNames = ${ JSON.stringify(gpuKernel.argumentNames) };
         this.argumentTypes = ${ JSON.stringify(gpuKernel.argumentTypes) };
-        this.texSize = ${ JSON.stringify(gpuKernel.texSize) };
+        this.argumentBitRatios = ${ JSON.stringify(gpuKernel.argumentBitRatios) };
+       
+        this.texSize = ${ JSON.stringify(Array.from(gpuKernel.texSize)) };
         this.output = ${ JSON.stringify(gpuKernel.output) };
         this.compiledFragmentShader = \`${ gpuKernel.compiledFragmentShader }\`;
 		    this.compiledVertexShader = \`${ gpuKernel.compiledVertexShader }\`;
+		    this.returnType = '${ gpuKernel.returnType }';
 		    this.programUniformLocationCache = {};
 		    this.textureCache = {};
 		    this.subKernelOutputTextures = null;
@@ -96,14 +104,19 @@ function webGLKernelString(gpuKernel, name) {
       setInput(Type) { Input = Type; }
       ${ removeFnNoise(gpuKernel.getUniformLocation.toString()) }
       ${ removeFnNoise(gpuKernel.build.toString()) }
+      translateSource() {}
+      pickRenderStrategy() {}
 		  ${ removeFnNoise(gpuKernel.run.toString()) }
-		  ${ removeFnNoise(gpuKernel._addArgument.toString()) }
+		  ${ removeFnNoise(gpuKernel.addArgument.toString()) }
 		  ${ removeFnNoise(gpuKernel.formatArrayTransfer.toString()) }
 		  ${ removeFnNoise(gpuKernel.checkOutput.toString()) }
 		  ${ removeFnNoise(gpuKernel.getArgumentTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.getTextureCache.toString()) }
 		  ${ removeFnNoise(gpuKernel.getOutputTexture.toString()) }
-		  ${ removeFnNoise(gpuKernel.renderOutput.toString()) }
+		  renderOutput() { ${ utils.getFunctionBodyFromString(removeFnNoise(gpuKernel.renderOutput.toString())) } }
+		  ${ removeFnNoise(gpuKernel.readPackedPixelsToFloat32Array.toString()) }
+		  ${ removeFnNoise(gpuKernel.readPackedPixelsToUint8Array.toString()) }
+		  ${ removeFnNoise(gpuKernel.readFloatPixelsToFloat32Array.toString()) }
 		  ${ removeFnNoise(gpuKernel.updateMaxTexSize.toString()) }
 		  ${ removeFnNoise(gpuKernel._setupOutputTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.detachTextureCache.toString()) }
@@ -114,6 +127,7 @@ function webGLKernelString(gpuKernel, name) {
 		  ${ removeFnNoise(gpuKernel.setUniform2iv.toString()) }
 		  ${ removeFnNoise(gpuKernel.setUniform3fv.toString()) }
 		  ${ removeFnNoise(gpuKernel.setUniform3iv.toString()) }
+		  getReturnTextureType() { return "${ gpuKernel.getReturnTextureType() }"; }
     };
     return kernelRunShortcut(new ${ name || 'Kernel' }());
   };`;

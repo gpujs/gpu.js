@@ -3,27 +3,28 @@ const { GPU } = require('../../src');
 
 describe('issue #267 kernel');
 
-function immutableKernel(mode) {
+function immutableKernelWithoutFloats(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function (v) {
     return v[this.thread.x] + 1;
   }, {
     output: [1],
     immutable: true,
-    pipeline: true
+    pipeline: true,
+    precision: 'unsigned',
   });
 
   // start with a value on CPU
   const output1 = kernel([1]);
-  const result1 = output1.toArray(gpu)[0];
+  const result1 = output1.toArray()[0];
 
   // reuse that output, simulating that this value will be monitored, and updated via the same kernel
   // this is often used in neural networks
   const output2 = kernel(output1);
-  const result2 = output2.toArray(gpu)[0];
+  const result2 = output2.toArray()[0];
 
   const output3 = kernel(output2);
-  const result3 = output3.toArray(gpu)[0];
+  const result3 = output3.toArray()[0];
 
   assert.equal(result1, 2);
   assert.equal(result2, 3);
@@ -31,31 +32,74 @@ function immutableKernel(mode) {
   gpu.destroy();
 }
 
-test('Issue #267 immutable kernel output - auto', () => {
-  immutableKernel();
+test('Issue #267 immutable kernel output without floats - auto', () => {
+  immutableKernelWithoutFloats();
 });
 
-test('Issue #267 immutable kernel output - gpu', () => {
-  immutableKernel('gpu');
+test('Issue #267 immutable kernel output without floats - gpu', () => {
+  immutableKernelWithoutFloats('gpu');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel output - webgl', () => {
-  immutableKernel('webgl');
+(GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel output without floats - webgl', () => {
+  immutableKernelWithoutFloats('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel output - webgl2', () => {
-  immutableKernel('webgl2');
+(GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel output without floats - webgl2', () => {
+  immutableKernelWithoutFloats('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #267 immutable kernel output - headlessgl', () => {
-  immutableKernel('headlessgl');
+(GPU.isHeadlessGLSupported ? test : skip)('Issue #267 immutable kernel output without floats - headlessgl', () => {
+  immutableKernelWithoutFloats('headlessgl');
 });
 
+function immutableKernelWithFloats(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function (v) {
+    return v[this.thread.x] + 1;
+  }, {
+    output: [1],
+    immutable: true,
+    pipeline: true,
+    precision: 'single',
+  });
+
+  // start with a value on CPU
+  // reuse that output, simulating that this value will be monitored, and updated via the same kernel
+  // this is often used in neural networks
+  const output1 = kernel([1]);
+  const output2 = kernel(output1);
+  const output3 = kernel(output2);
+
+  assert.equal(output1.toArray()[0], 2);
+  assert.equal(output2.toArray()[0], 3);
+  assert.equal(output3.toArray()[0], 4);
+  gpu.destroy();
+}
+
+test('Issue #267 immutable kernel output with floats - auto', () => {
+  immutableKernelWithFloats();
+});
+
+test('Issue #267 immutable kernel output with floats - gpu', () => {
+  immutableKernelWithFloats('gpu');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel output with floats - webgl', () => {
+  immutableKernelWithFloats('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel output with floats - webgl2', () => {
+  immutableKernelWithFloats('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('Issue #267 immutable kernel output with floats - headlessgl', () => {
+  immutableKernelWithFloats('headlessgl');
+});
 
 
 describe('issue #267 sub kernel');
 
-function immutableSubKernels(mode) {
+function immutableSubKernelsWithoutFloats(mode) {
   function value1(value) {
     return value + 1;
   }
@@ -77,21 +121,22 @@ function immutableSubKernels(mode) {
     {
       output: [1],
       immutable: true,
-      pipeline: true
+      pipeline: true,
+      precision: 'unsigned',
     }
   );
 
   // start with a value on CPU
   const output1 = kernel([1], [2]);
-  const result1 = output1.valueOutput1.toArray(gpu)[0];
+  const result1 = output1.valueOutput1.toArray()[0];
 
   // reuse that output, simulating that this value will be monitored, and updated via the same kernel
   // this is often used in neural networks
   const output2 = kernel(output1.valueOutput1, output1.valueOutput2);
-  const result2 = output2.valueOutput1.toArray(gpu)[0];
+  const result2 = output2.valueOutput1.toArray()[0];
 
   const output3 = kernel(output2.valueOutput1, output2.valueOutput2);
-  const result3 = output3.valueOutput1.toArray(gpu)[0];
+  const result3 = output3.valueOutput1.toArray()[0];
 
   assert.equal(result1, 2);
   assert.equal(result2, 3);
@@ -99,29 +144,29 @@ function immutableSubKernels(mode) {
   gpu.destroy();
 }
 (GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable sub-kernel output - auto', () => {
-  immutableSubKernels();
+  immutableSubKernelsWithoutFloats();
 });
 
 (GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable sub-kernel output - gpu', () => {
-  immutableSubKernels('gpu');
+  immutableSubKernelsWithoutFloats('gpu');
 });
 
 (GPU.isWebGLSupported ? test : skip)('Issue #267 immutable sub-kernel output - webgl', () => {
-  immutableSubKernels('webgl');
+  immutableSubKernelsWithoutFloats('webgl');
 });
 
 (GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable sub-kernel output - webgl2', () => {
-  immutableSubKernels('webgl2');
+  immutableSubKernelsWithoutFloats('webgl2');
 });
 
 (GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable sub-kernel output - headlessgl', () => {
-  immutableSubKernels('headlessgl');
+  immutableSubKernelsWithoutFloats('headlessgl');
 });
 
 
 
 describe('issue #267 sub kernels mixed');
-function immutableKernelsMixed(mode) {
+function immutableKernelsMixedWithoutFloats(mode) {
   function value1(value) {
     return value + 1;
   }
@@ -143,21 +188,22 @@ function immutableKernelsMixed(mode) {
     {
       output: [1],
       immutable: true,
-      pipeline: true
+      pipeline: true,
+      precision: 'unsigned',
     }
   );
 
   // start with a value on CPU
   const output1 = kernel([1], [2]);
-  const result1 = output1.result.toArray(gpu)[0];
+  const result1 = output1.result.toArray()[0];
 
   // reuse that output, simulating that this value will be monitored, and updated via the same kernel
   // this is often used in neural networks
   const output2 = kernel(output1.result, output1.valueOutput2);
-  const result2 = output2.result.toArray(gpu)[0];
+  const result2 = output2.result.toArray()[0];
 
   const output3 = kernel(output2.result, output2.valueOutput2);
-  const result3 = output3.result.toArray(gpu)[0];
+  const result3 = output3.result.toArray()[0];
 
   assert.equal(result1, 4);
   assert.equal(result2, 5);
@@ -165,22 +211,22 @@ function immutableKernelsMixed(mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable kernel & sub-kernel output - auto', () => {
-  immutableKernelsMixed();
+(GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable kernel & sub-kernel output without floats - auto', () => {
+  immutableKernelsMixedWithoutFloats();
 });
 
-(GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable kernel & sub-kernel output - gpu', () => {
-  immutableKernelsMixed('gpu');
+(GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable kernel & sub-kernel output without floats - gpu', () => {
+  immutableKernelsMixedWithoutFloats('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #267 immutable kernel & sub-kernel output - webgl', () => {
-  immutableKernelsMixed('webgl');
+(GPU.isWebGLSupported ? test : skip)('Issue #267 immutable kernel & sub-kernel output without floats - webgl', () => {
+  immutableKernelsMixedWithoutFloats('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel & sub-kernel output - webgl2', () => {
-  immutableKernelsMixed('webgl2');
+(GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel & sub-kernel output without floats - webgl2', () => {
+  immutableKernelsMixedWithoutFloats('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable kernel & sub-kernel output - headlessgl', () => {
-  immutableKernelsMixed('headlessgl');
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable kernel & sub-kernel output without floats - headlessgl', () => {
+  immutableKernelsMixedWithoutFloats('headlessgl');
 });

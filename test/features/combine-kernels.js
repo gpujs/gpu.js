@@ -1,4 +1,4 @@
-const { assert, skip, test, module: describe } = require('qunit');
+const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('features: combine kernels');
@@ -22,26 +22,116 @@ function combineKernels(mode) {
   gpu.destroy()
 }
 
-test('auto', () => {
+test('combine kernel auto', () => {
   combineKernels();
 });
 
-test('gpu', () => {
+test('combine kernel gpu', () => {
   combineKernels('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('webgl', () => {
+(GPU.isWebGLSupported ? test : skip)('combine kernel webgl', () => {
   combineKernels('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
+(GPU.isWebGL2Supported ? test : skip)('combine kernel webgl2', () => {
   combineKernels('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('combine kernel headlessgl', () => {
   combineKernels('headlessgl');
 });
 
-test('cpu', () => {
+test('combine kernel cpu', () => {
   combineKernels('cpu');
+});
+
+
+function combineKernelsSinglePrecision(mode) {
+  const gpu = new GPU({ mode });
+
+  const kernel1 = gpu.createKernel(function(a, b) {
+    return a[this.thread.x] + b[this.thread.x];
+  }, { output: [5], precision: 'single' });
+
+  const kernel2 = gpu.createKernel(function(c, d) {
+    return c[this.thread.x] * d[this.thread.x];
+  }, { output: [5], precision: 'single' });
+
+  const superKernel = gpu.combineKernels(kernel1, kernel2, function(array1, array2, array3) {
+    return kernel2(kernel1(array1, array2), array3);
+  });
+
+  const result = superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]);
+  assert.deepEqual(Array.from(result), [2, 8, 18, 32, 50]);
+  gpu.destroy()
+}
+
+(GPU.isSinglePrecisionSupported ? test : skip)('combine kernel single precision auto', () => {
+  combineKernelsSinglePrecision();
+});
+
+(GPU.isSinglePrecisionSupported ? test : skip)('combine kernel single precision gpu', () => {
+  combineKernelsSinglePrecision('gpu');
+});
+
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('combine kernel single precision webgl', () => {
+  combineKernelsSinglePrecision('webgl');
+});
+
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('combine kernel single precision webgl2', () => {
+  combineKernelsSinglePrecision('webgl2');
+});
+
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('combine kernel single precision headlessgl', () => {
+  combineKernelsSinglePrecision('headlessgl');
+});
+
+test('combine kernel single precision cpu', () => {
+  combineKernelsSinglePrecision('cpu');
+});
+
+
+function combineKernelsFloatTextures(mode) {
+  const gpu = new GPU({ mode });
+
+  const kernel1 = gpu.createKernel(function(a, b) {
+    return a[this.thread.x] + b[this.thread.x];
+  }, { output: [5], floatTextures: true });
+
+  const kernel2 = gpu.createKernel(function(c, d) {
+    return c[this.thread.x] * d[this.thread.x];
+  }, { output: [5], floatTextures: true });
+
+  const superKernel = gpu.combineKernels(kernel1, kernel2, function(array1, array2, array3) {
+    return kernel2(kernel1(array1, array2), array3);
+  });
+
+  const result = superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]);
+  assert.deepEqual(Array.from(result), [2, 8, 18, 32, 50]);
+  gpu.destroy()
+}
+
+(GPU.isSinglePrecisionSupported ? test : skip)('combine kernel float textures auto', () => {
+  combineKernelsFloatTextures();
+});
+
+(GPU.isSinglePrecisionSupported ? test : skip)('combine kernel float textures gpu', () => {
+  combineKernelsFloatTextures('gpu');
+});
+
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('combine kernel float textures webgl', () => {
+  combineKernelsFloatTextures('webgl');
+});
+
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('combine kernel float textures webgl2', () => {
+  combineKernelsFloatTextures('webgl2');
+});
+
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('combine kernel float textures headlessgl', () => {
+  combineKernelsFloatTextures('headlessgl');
+});
+
+test('combine kernel float textures cpu', () => {
+  combineKernelsFloatTextures('cpu');
 });

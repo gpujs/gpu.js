@@ -51,3 +51,41 @@ test('handles Math.pow with ints', () => {
     + '\nreturn pow(float(user_v), float(user_v2));'
     + '\n}');
 });
+test('handles argument of type Input', () => {
+  let lookupReturnTypeCalls = 0;
+  let lookupFunctionArgumentTypes = 0;
+  let triggerTrackArgumentSynonymCalls = 0;
+  const node = new WebGLFunctionNode('function kernel(v) {'
+    + '\n return childFunction(v);'
+    + '\n}', {
+    output: [1],
+    argumentTypes: ['Input'],
+    lookupReturnType: (functionName) => {
+      lookupReturnTypeCalls++;
+      if (functionName === 'childFunction') {
+        return 'Number';
+      }
+      throw new Error(`unhanded lookupReturnType for ${functionName}`);
+    },
+    lookupFunctionArgumentTypes: (functionName) => {
+      lookupFunctionArgumentTypes++;
+      if (functionName === 'childFunction') {
+        return ['Input'];
+      }
+      throw new Error(`unhanded lookupFunctionArgumentTypes for ${functionName}`);
+    },
+    triggerTrackArgumentSynonym: (kernelName, argumentName, functionName, argumentIndex) => {
+      triggerTrackArgumentSynonymCalls++;
+      if (kernelName === 'kernel' && argumentName === 'v' && functionName === 'childFunction' && argumentIndex === 0) {
+        return;
+      }
+      throw new Error(`unhandled triggerTrackArgumentSynonym`);
+    },
+  });
+  assert.equal(node.toString(), 'float kernel(sampler2D user_v) {'
+    + '\nreturn childFunction(user_v);'
+    + '\n}');
+  assert.equal(lookupReturnTypeCalls, 2);
+  assert.equal(lookupFunctionArgumentTypes, 1);
+  assert.equal(triggerTrackArgumentSynonymCalls, 1);
+});

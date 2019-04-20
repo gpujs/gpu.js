@@ -10,6 +10,7 @@ test('Issue #401 - cpu no canvas graphical', function(assert) {
 			setupArguments: function() {},
 			validateSettings: function() {},
 			getKernelString: function() {},
+			translateSource: function() {},
 			graphical: true,
 			output: [1],
 			canvas: null
@@ -25,6 +26,7 @@ test('Issue #401 - cpu no canvas', function(assert) {
 		setupArguments: function() {},
 		validateSettings: function() {},
 		getKernelString: function() {},
+		translateSource: function() {},
 		graphical: false,
 		output: [1],
 		canvas: null

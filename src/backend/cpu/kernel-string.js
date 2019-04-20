@@ -56,6 +56,8 @@ function cpuKernelString(cpuKernel, name) {
       ${ removeFnNoise(cpuKernel.build.toString()) }
       setupArguments() {}
       ${ removeFnNoise(cpuKernel.setupConstants.toString()) }
+      translateSource() {}
+      pickRenderStrategy() {}
       run () { ${ cpuKernel.kernelString } }
       getKernelString() { return this._kernelString; }
       ${ removeFnNoise(cpuKernel.validateSettings.toString()) }

@@ -147,9 +147,6 @@ function colorSyntaxTest(mode) {
   assert.equal(resultA[3][1].toFixed(2), '0.14');
   assert.equal(resultA[3][2].toFixed(2), '0.15');
   assert.equal(resultA[3][3].toFixed(2), '0.16');
-
-
-  assert.ok('color syntax passed test');
   gpu.destroy();
 }
 

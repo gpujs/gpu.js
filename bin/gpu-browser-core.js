@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.5
- * @date Tue Mar 19 2019 08:40:39 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.6
+ * @date Sat Apr 20 2019 09:55:46 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -205,9 +205,8 @@ class CPUFunctionNode extends FunctionNode {
 				if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
 					retArr.push('constants_' + idtNode.name);
 				} else {
-					const name = this.getUserArgumentName(idtNode.name);
-					const type = this.getType(idtNode);
-					if (name && type && this.parent && type !== 'Number' && type !== 'Integer' && type !== 'LiteralInteger') {
+					const name = this.getKernelArgumentName(idtNode.name);
+					if (name) {
 						retArr.push('user_' + name);
 					} else {
 						retArr.push('user_' + idtNode.name);
@@ -483,11 +482,7 @@ class CPUFunctionNode extends FunctionNode {
 			return retArr;
 		}
 
-		let synonymName;
-		if (this.parent) {
-			synonymName = this.getUserArgumentName(name);
-		}
-
+		const synonymName = this.getKernelArgumentName(name);
 		const markupName = `${origin}_${synonymName || name}`;
 
 		switch (type) {
@@ -495,6 +490,9 @@ class CPUFunctionNode extends FunctionNode {
 			case 'Array(3)':
 			case 'Array(4)':
 			case 'HTMLImageArray':
+			case 'ArrayTexture(1)':
+			case 'ArrayTexture(2)':
+			case 'ArrayTexture(3)':
 			case 'ArrayTexture(4)':
 			case 'HTMLImage':
 			default:
@@ -621,6 +619,7 @@ class CPUFunctionNode extends FunctionNode {
 module.exports = {
 	CPUFunctionNode
 };
+
 },{"../function-node":8}],5:[function(require,module,exports){
 const {
 	utils
@@ -680,6 +679,8 @@ function cpuKernelString(cpuKernel, name) {
       ${ removeFnNoise(cpuKernel.build.toString()) }
       setupArguments() {}
       ${ removeFnNoise(cpuKernel.setupConstants.toString()) }
+      translateSource() {}
+      pickRenderStrategy() {}
       run () { ${ cpuKernel.kernelString } }
       getKernelString() { return this._kernelString; }
       ${ removeFnNoise(cpuKernel.validateSettings.toString()) }
@@ -729,7 +730,7 @@ class CPUKernel extends Kernel {
 		return 'cpu';
 	}
 
-	static nativeFunctionArgumentTypes() {
+	static nativeFunctionArguments() {
 		return null;
 	}
 
@@ -737,9 +738,12 @@ class CPUKernel extends Kernel {
 		return null;
 	}
 
+	static combineKernels(combinedKernel) {
+		return combinedKernel;
+	}
+
 	constructor(source, settings) {
 		super(source, settings);
-
 		this.mergeSettings(source.settings || settings);
 
 		this._imageData = null;
@@ -750,7 +754,7 @@ class CPUKernel extends Kernel {
 			y: 0,
 			z: 0
 		};
-
+		this.translatedSources = null;
 		this.run = function() { 
 			this.run = null;
 			this.build.apply(this, arguments);
@@ -794,10 +798,19 @@ class CPUKernel extends Kernel {
 		this.checkOutput();
 	}
 
+	translateSource() {
+		const functionBuilder = FunctionBuilder.fromKernel(this, CPUFunctionNode);
+		this.translatedSources = functionBuilder.getPrototypes('kernel');
+		if (!this.graphical && !this.returnType) {
+			this.returnType = functionBuilder.getKernelResultType();
+		}
+	}
+
 	build() {
 		this.setupConstants();
 		this.setupArguments(arguments);
 		this.validateSettings();
+		this.translateSource();
 
 		if (this.graphical) {
 			const {
@@ -857,18 +870,18 @@ class CPUKernel extends Kernel {
 	getKernelString() {
 		if (this._kernelString !== null) return this._kernelString;
 
-		const functionBuilder = FunctionBuilder.fromKernel(this, CPUFunctionNode);
-
-		let prototypes = functionBuilder.getPrototypes('kernel');
 		let kernel = null;
-		if (prototypes.length > 1) {
-			prototypes = prototypes.filter(fn => {
+		let {
+			translatedSources
+		} = this;
+		if (translatedSources.length > 1) {
+			translatedSources = translatedSources.filter(fn => {
 				if (/^function/.test(fn)) return fn;
 				kernel = fn;
 				return false;
 			})
 		} else {
-			kernel = prototypes.shift();
+			kernel = translatedSources.shift();
 		}
 		const kernelString = this._kernelString = `
 		const LOOP_MAX = ${ this._getLoopMaxString() }
@@ -878,7 +891,7 @@ class CPUKernel extends Kernel {
       ${ this._processConstants() }
       ${ this._processArguments() }
       ${ this.graphical ? this._graphicalKernelLoop(kernel) : this._resultKernelLoop(kernel) }
-      ${ prototypes.length > 0 ? prototypes.join('\n') : '' }
+      ${ translatedSources.length > 0 ? translatedSources.join('\n') : '' }
     }.bind(this);`;
 		return kernelString;
 	}
@@ -1003,13 +1016,33 @@ class CPUKernel extends Kernel {
     return;`
 	}
 
+	_getKernelResultTypeConstructorString() {
+		switch (this.returnType) {
+			case 'LiteralInteger':
+			case 'Number':
+			case 'Integer':
+			case 'Float':
+				return 'Float32Array';
+			case 'Array(2)':
+			case 'Array(3)':
+			case 'Array(4)':
+				return 'Array';
+			default:
+				if (this.graphical) {
+					return 'Float32Array';
+				}
+				throw new Error(`unhandled returnType ${ this.returnType }`);
+		}
+	}
+
 	_resultKernel1DLoop(kernelString) {
 		const {
 			output
 		} = this;
-		return `const result = new Float32Array(${ output[0] });
+		const constructorString = this._getKernelResultTypeConstructorString();
+		return `const result = new ${constructorString}(${ output[0] });
     ${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
-		${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Float32Array(${ output[0] });\n`).join('') }
+		${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new ${constructorString}(${ output[0] });\n`).join('') }
     for (let x = 0; x < ${ output[0] }; x++) {
       this.thread.x = x;
       this.thread.y = 0;
@@ -1025,8 +1058,9 @@ class CPUKernel extends Kernel {
 		const {
 			output
 		} = this;
+		const constructorString = this._getKernelResultTypeConstructorString();
 		return `${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
-		${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Float32Array(${ output[0] });\n`).join('') }
+		${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new ${constructorString}(${ output[0] });\n`).join('') }
     for (let x = 0; x < ${ output[0] }; x++) {
       this.thread.x = x;
       this.thread.y = 0;
@@ -1042,14 +1076,15 @@ class CPUKernel extends Kernel {
 		const {
 			output
 		} = this;
+		const constructorString = this._getKernelResultTypeConstructorString();
 		return `const result = new Array(${ output[2] });
 		${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
     ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[1] });\n`).join('') }
     for (let y = 0; y < ${ output[1] }; y++) {
       this.thread.z = 0;
       this.thread.y = y;
-      const resultX = result[y] = new Float32Array(${ output[0] });
-      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}[y] = new Float32Array(${ output[0] });\n`).join('') }
+      const resultX = result[y] = new ${constructorString}(${ output[0] });
+      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}[y] = new ${constructorString}(${ output[0] });\n`).join('') }
       for (let x = 0; x < ${ output[0] }; x++) {
       	this.thread.x = x;
         let kernelResult;
@@ -1064,12 +1099,13 @@ class CPUKernel extends Kernel {
 		const {
 			output
 		} = this;
+		const constructorString = this._getKernelResultTypeConstructorString();
 		return `${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
     ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[1] });\n`).join('') }
     for (let y = 0; y < ${ output[1] }; y++) {
       this.thread.z = 0;
       this.thread.y = y;
-      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}[y] = new Float32Array(${ output[0] });\n`).join('') }
+      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}[y] = new ${constructorString}(${ output[0] });\n`).join('') }
       for (let x = 0; x < ${ output[0] }; x++) {
       	this.thread.x = x;
         ${ kernelString }
@@ -1082,6 +1118,7 @@ class CPUKernel extends Kernel {
 		const {
 			output
 		} = this;
+		const constructorString = this._getKernelResultTypeConstructorString();
 		return `const result = new Array(${ output[2] });
     ${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
     ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[2] });\n`).join('') }
@@ -1091,8 +1128,8 @@ class CPUKernel extends Kernel {
       ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }Y = result_${subKernel.name}[z] = new Array(${ output[1] });\n`).join('') }
       for (let y = 0; y < ${ output[1] }; y++) {
         this.thread.y = y;
-        const resultX = resultY[y] = new Float32Array(${ output[0] });
-        ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}Y[y] = new Float32Array(${ output[0] });\n`).join('') }
+        const resultX = resultY[y] = new ${constructorString}(${ output[0] });
+        ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}Y[y] = new ${constructorString}(${ output[0] });\n`).join('') }
         for (let x = 0; x < ${ output[0] }; x++) {
         	this.thread.x = x;
           let kernelResult;
@@ -1108,6 +1145,7 @@ class CPUKernel extends Kernel {
 		const {
 			output
 		} = this;
+		const constructorString = this._getKernelResultTypeConstructorString();
 		return `${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
     ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[2] });\n`).join('') }
     for (let z = 0; z < ${ output[2] }; z++) {
@@ -1115,7 +1153,7 @@ class CPUKernel extends Kernel {
       ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }Y = result_${subKernel.name}[z] = new Array(${ output[1] });\n`).join('') }
       for (let y = 0; y < ${ output[1] }; y++) {
         this.thread.y = y;
-        ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}Y[y] = new Float32Array(${ output[0] });\n`).join('') }
+        ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}Y[y] = new ${constructorString}(${ output[0] });\n`).join('') }
         for (let x = 0; x < ${ output[0] }; x++) {
         	this.thread.x = x;
           ${ kernelString }
@@ -1140,6 +1178,8 @@ class CPUKernel extends Kernel {
 			this.subKernels.map(fn);
 	}
 
+
+
 	destroy(removeCanvasReference) {
 		if (removeCanvasReference) {
 			delete this.canvas;
@@ -1158,6 +1198,7 @@ class CPUKernel extends Kernel {
 module.exports = {
 	CPUKernel
 };
+
 },{"../../utils":28,"../function-builder":7,"../kernel":11,"./function-node":4,"./kernel-string":5}],7:[function(require,module,exports){
 class FunctionBuilder {
 	static fromKernel(kernel, FunctionNode, extraNodeOptions) {
@@ -1165,53 +1206,90 @@ class FunctionBuilder {
 			argumentNames,
 			argumentTypes,
 			argumentSizes,
+			argumentBitRatios,
 			constants,
 			constantTypes,
+			constantBitRatios,
 			debug,
 			loopMaxIterations,
 			nativeFunctions,
 			output,
+			optimizeFloatMemory,
+			precision,
 			plugins,
 			source,
 			subKernels,
 			functions,
 		} = kernel;
 
+		const lookupReturnType = (functionName, ast, requestingNode) => {
+			return functionBuilder.lookupReturnType(functionName, ast, requestingNode);
+		};
+
+		const lookupArgumentType = (argumentName, requestingNode) => {
+			return functionBuilder.lookupArgumentType(argumentName, requestingNode);
+		};
+
+		const lookupFunctionArgumentTypes = (functionName) => {
+			return functionBuilder.lookupFunctionArgumentTypes(functionName);
+		};
+
+		const lookupFunctionArgumentName = (functionName, argumentIndex) => {
+			return functionBuilder.lookupFunctionArgumentName(functionName, argumentIndex);
+		};
+
+		const lookupFunctionArgumentBitRatio = (functionName, argumentName) => {
+			return functionBuilder.lookupFunctionArgumentBitRatio(functionName, argumentName);
+		};
+
+		const triggerImplyArgumentType = (functionName, i, argumentType, requestingNode) => {
+			functionBuilder.assignArgumentType(functionName, i, argumentType, requestingNode);
+		};
+
+		const triggerTrackArgumentSynonym = (functionName, argumentName, calleeFunctionName, argumentIndex) => {
+			functionBuilder.trackArgumentSynonym(functionName, argumentName, calleeFunctionName, argumentIndex);
+		};
+
+		const lookupArgumentSynonym = (originFunctionName, functionName, argumentName) => {
+			return functionBuilder.lookupArgumentSynonym(originFunctionName, functionName, argumentName);
+		};
+
+		const onFunctionCall = (functionName, calleeFunctionName) => {
+			functionBuilder.trackFunctionCall(functionName, calleeFunctionName);
+		};
+
 		const onNestedFunction = (fnString, returnType) => {
 			functionBuilder.addFunctionNode(new FunctionNode(fnString, Object.assign({}, nodeOptions, {
-				returnType
+				returnType: returnType || 'Number',
+				lookupReturnType,
+				lookupArgumentType,
+				lookupFunctionArgumentTypes,
+				lookupFunctionArgumentName,
+				lookupFunctionArgumentBitRatio,
+				triggerImplyArgumentType,
+				triggerTrackArgumentSynonym,
+				lookupArgumentSynonym,
+				onFunctionCall
 			})));
 		};
-
-		const parsedReturnTypes = {};
-		const lookupReturnType = (functionName) => {
-			if (parsedReturnTypes[functionName]) return parsedReturnTypes[functionName];
-			const source = functionBuilder.nativeFunctions[functionName];
-			if (source) {
-				return parsedReturnTypes[functionName] = kernel.constructor.nativeFunctionReturnType(source);
-			}
-			return functionBuilder.lookupReturnType(functionName);
-		};
-
-		const nativeFunctionReturnTypes = {};
-		const nativeFunctionArgumentTypes = {};
-
-		if (kernel.nativeFunctions) {
-			for (let i = 0; i < kernel.nativeFunctions.length; i++) {
-				const nativeFunction = kernel.nativeFunctions[i];
-				nativeFunctionReturnTypes[nativeFunction.name] = nativeFunction.returnType;
-				nativeFunctionArgumentTypes[nativeFunction.name] = nativeFunction.argumentTypes;
-			}
-		}
 
 		const nodeOptions = Object.assign({
 			isRootKernel: false,
 			onNestedFunction,
 			lookupReturnType,
-			nativeFunctionReturnTypes,
-			nativeFunctionArgumentTypes,
+			lookupArgumentType,
+			lookupFunctionArgumentTypes,
+			lookupFunctionArgumentName,
+			lookupFunctionArgumentBitRatio,
+			triggerImplyArgumentType,
+			triggerTrackArgumentSynonym,
+			lookupArgumentSynonym,
+			onFunctionCall,
+			optimizeFloatMemory,
+			precision,
 			constants,
 			constantTypes,
+			constantBitRatios,
 			debug,
 			loopMaxIterations,
 			output,
@@ -1224,6 +1302,7 @@ class FunctionBuilder {
 			argumentNames,
 			argumentTypes,
 			argumentSizes,
+			argumentBitRatios,
 		});
 
 		if (typeof source === 'object' && source.functionNodes) {
@@ -1241,6 +1320,18 @@ class FunctionBuilder {
 				plugins,
 				constants,
 				constantTypes,
+				constantBitRatios,
+				optimizeFloatMemory,
+				precision,
+				lookupReturnType,
+				lookupArgumentType,
+				lookupFunctionArgumentTypes,
+				lookupFunctionArgumentName,
+				lookupFunctionArgumentBitRatio,
+				triggerImplyArgumentType,
+				triggerTrackArgumentSynonym,
+				lookupArgumentSynonym,
+				onFunctionCall,
 			}));
 		}
 
@@ -1254,12 +1345,14 @@ class FunctionBuilder {
 				return new FunctionNode(source, Object.assign({}, nodeOptions, {
 					name,
 					isSubKernel: true,
-					isRootKernel: false
+					isRootKernel: false,
+					returnType: 'Number',
 				}));
 			});
 		}
 
 		const functionBuilder = new FunctionBuilder({
+			kernel,
 			rootNode,
 			functionNodes,
 			nativeFunctions,
@@ -1271,12 +1364,16 @@ class FunctionBuilder {
 
 	constructor(settings) {
 		settings = settings || {};
+		this.kernel = settings.kernel;
 		this.rootNode = settings.rootNode;
 		this.functionNodes = settings.functionNodes || [];
 		this.subKernelNodes = settings.subKernelNodes || [];
 		this.nativeFunctions = settings.nativeFunctions || [];
 		this.functionMap = {};
 		this.nativeFunctionNames = [];
+		this.lookupChain = [];
+		this.argumentChain = [];
+		this.functionNodeDependencies = {};
 
 		if (this.rootNode) {
 			this.functionMap['kernel'] = this.rootNode;
@@ -1296,7 +1393,8 @@ class FunctionBuilder {
 
 		if (this.nativeFunctions) {
 			for (let i = 0; i < this.nativeFunctions.length; i++) {
-				this.nativeFunctionNames.push(this.nativeFunctions[i].name);
+				const nativeFunction = this.nativeFunctions[i];
+				this.nativeFunctionNames.push(nativeFunction.name);
 			}
 		}
 	}
@@ -1308,13 +1406,12 @@ class FunctionBuilder {
 		}
 	}
 
-	traceFunctionCalls(functionName, retList, parent) {
+	traceFunctionCalls(functionName, retList) {
 		functionName = functionName || 'kernel';
 		retList = retList || [];
 
 		if (this.nativeFunctionNames.indexOf(functionName) > -1) {
-			if (retList.indexOf(functionName) >= 0) {
-			} else {
+			if (retList.indexOf(functionName) === -1) {
 				retList.push(functionName);
 			}
 			return retList;
@@ -1325,12 +1422,9 @@ class FunctionBuilder {
 			const functionIndex = retList.indexOf(functionName);
 			if (functionIndex === -1) {
 				retList.push(functionName);
-				if (parent) {
-					functionNode.parent = parent;
-				}
 				functionNode.toString(); 
 				for (let i = 0; i < functionNode.calledFunctions.length; ++i) {
-					this.traceFunctionCalls(functionNode.calledFunctions[i], retList, functionNode);
+					this.traceFunctionCalls(functionNode.calledFunctions[i], retList);
 				}
 			} else {
 				const dependantFunctionName = retList.splice(functionIndex, 1)[0];
@@ -1385,10 +1479,11 @@ class FunctionBuilder {
 
 	toJSON() {
 		return this.traceFunctionCalls(this.rootNode.name).reverse().map(name => {
-			if (this.nativeFunctions[name]) {
+			const nativeIndex = this.nativeFunctions.indexOf(name);
+			if (nativeIndex > -1) {
 				return {
 					name,
-					source: this.nativeFunctions[name]
+					source: this.nativeFunctions[nativeIndex].source
 				};
 			} else if (this.functionMap[name]) {
 				return this.functionMap[name].toJSON();
@@ -1414,18 +1509,181 @@ class FunctionBuilder {
 		return this.getStringFromFunctionNames(Object.keys(this.functionMap));
 	}
 
-	lookupReturnType(functionName) {
-		const node = this.functionMap[functionName];
-		if (node && node.returnType) {
-			return node.returnType;
+	lookupArgumentType(argumentName, requestingNode) {
+		const index = requestingNode.argumentNames.indexOf(argumentName);
+		if (index === -1) return null;
+		if (this.lookupChain.length === 0) return null;
+		let link = this.lookupChain[this.lookupChain.length - 1 - this.argumentChain.length];
+		if (!link) return null;
+		const {
+			ast,
+			requestingNode: parentRequestingNode
+		} = link;
+		if (ast.arguments.length === 0) return null;
+		const usedVariable = ast.arguments[index];
+		if (!usedVariable) return null;
+		this.argumentChain.push(argumentName);
+		const type = parentRequestingNode.getType(usedVariable);
+		this.argumentChain.pop();
+		return type;
+	}
+
+	lookupReturnType(functionName, ast, requestingNode) {
+		if (ast.type !== 'CallExpression') {
+			throw new Error(`expected ast type of "CallExpression", but is ${ ast.type }`);
+		}
+		if (this._isNativeFunction(functionName)) {
+			return this._lookupNativeFunctionReturnType(functionName);
+		} else if (this._isFunction(functionName)) {
+			const node = this._getFunction(functionName);
+			if (node.returnType) {
+				return node.returnType;
+			} else {
+				this.lookupChain.push({
+					name: requestingNode.name,
+					ast,
+					requestingNode
+				});
+				const type = node.getType(node.getJsAST());
+				this.lookupChain.pop();
+				return node.returnType = type;
+			}
+		}
+
+		return null;
+	}
+
+	_getFunction(functionName) {
+		if (!this._isFunction(functionName)) {
+			new Error(`Function ${functionName} not found`);
+		}
+		return this.functionMap[functionName];
+	}
+
+	_isFunction(functionName) {
+		return Boolean(this.functionMap[functionName]);
+	}
+
+	_getNativeFunction(functionName) {
+		for (let i = 0; i < this.nativeFunctions.length; i++) {
+			if (this.nativeFunctions[i].name === functionName) return this.nativeFunctions[i];
 		}
 		return null;
+	}
+
+	_isNativeFunction(functionName) {
+		return Boolean(this._getNativeFunction(functionName));
+	}
+
+	_lookupNativeFunctionReturnType(functionName) {
+		let nativeFunction = this._getNativeFunction(functionName);
+		if (nativeFunction) {
+			return nativeFunction.returnType;
+		}
+		throw new Error(`Native function ${ functionName } not found`);
+	}
+
+	lookupFunctionArgumentTypes(functionName) {
+		if (this._isNativeFunction(functionName)) {
+			return this._getNativeFunction(functionName).argumentTypes;
+		} else if (this._isFunction(functionName)) {
+			return this._getFunction(functionName).argumentTypes;
+		}
+		return null;
+	}
+
+	lookupFunctionArgumentName(functionName, argumentIndex) {
+		return this._getFunction(functionName).argumentNames[argumentIndex];
+	}
+
+	lookupFunctionArgumentBitRatio(functionName, argumentName) {
+		if (!this._isFunction(functionName)) {
+			throw new Error('function not found');
+		}
+		if (this.rootNode.name === functionName) {
+			const i = this.rootNode.argumentNames.indexOf(argumentName);
+			if (i !== -1) {
+				return this.rootNode.argumentBitRatios[i];
+			} else {
+				throw new Error('argument bit ratio not found');
+			}
+		} else {
+			const node = this._getFunction(functionName);
+			const argumentSynonym = node.argumentSynonym[node.synonymIndex];
+			if (!argumentSynonym) {
+				throw new Error('argument synonym not found');
+			}
+			return this.lookupFunctionArgumentBitRatio(argumentSynonym.functionName, argumentSynonym.argumentName);
+		}
+	}
+
+	assignArgumentType(functionName, i, argumentType, requestingNode) {
+		if (!this._isFunction(functionName)) return;
+		this._getFunction(functionName).argumentTypes[i] = argumentType;
+	}
+
+	trackArgumentSynonym(functionName, argumentName, calleeFunctionName, argumentIndex) {
+		if (!this._isFunction(calleeFunctionName)) return;
+		const node = this._getFunction(calleeFunctionName);
+		if (!node.argumentSynonym) {
+			node.argumentSynonym = {};
+		}
+		const calleeArgumentName = node.argumentNames[argumentIndex];
+		if (!node.argumentSynonym[calleeArgumentName]) {
+			node.argumentSynonym[calleeArgumentName] = {};
+		}
+		node.synonymIndex++;
+		node.argumentSynonym[node.synonymIndex] = {
+			functionName,
+			argumentName,
+			calleeArgumentName,
+			calleeFunctionName,
+		};
+	}
+
+	lookupArgumentSynonym(originFunctionName, functionName, argumentName) {
+		if (originFunctionName === functionName) return argumentName;
+		if (!this._isFunction(functionName)) return null;
+		const node = this._getFunction(functionName);
+		const argumentSynonym = node.argumentSynonym[node.synonymUseIndex];
+		if (!argumentSynonym) return null;
+		if (argumentSynonym.calleeArgumentName !== argumentName) return null;
+		node.synonymUseIndex++;
+		if (originFunctionName !== functionName) {
+			return this.lookupArgumentSynonym(originFunctionName, argumentSynonym.functionName, argumentSynonym.argumentName);
+		}
+		return argumentSynonym.argumentName;
+	}
+
+	trackFunctionCall(functionName, calleeFunctionName) {
+		if (!this.functionNodeDependencies[functionName]) {
+			this.functionNodeDependencies[functionName] = new Set();
+		}
+		this.functionNodeDependencies[functionName].add(calleeFunctionName);
+	}
+
+	getKernelResultType() {
+		return this.rootNode.getType(this.rootNode.ast);
+	}
+
+	getReturnTypes() {
+		const result = {
+			[this.rootNode.name]: this.rootNode.getType(this.rootNode.ast),
+		};
+		const list = this.traceFunctionCalls(this.rootNode.name);
+		for (let i = 0; i < list.length; i++) {
+			const functionName = list[i];
+			const functionNode = this.functionMap[functionName];
+			result[functionName] = functionNode.getType(functionNode.ast);
+		}
+		return result;
 	}
 }
 
 module.exports = {
 	FunctionBuilder
 };
+
 },{}],8:[function(require,module,exports){
 const {
 	utils
@@ -1447,24 +1705,31 @@ class FunctionNode {
 		this.calledFunctionsArguments = {};
 		this.constants = {};
 		this.constantTypes = {};
+		this.constantBitRatios = {};
 		this.isRootKernel = false;
 		this.isSubKernel = false;
-		this.parent = null;
 		this.debug = null;
 		this.declarations = {};
 		this.states = [];
 		this.lookupReturnType = null;
-		this.nativeFunctionReturnTypes = null;
-		this.nativeFunctionArgumentTypes = null;
+		this.lookupArgumentType = null;
+		this.lookupFunctionArgumentTypes = null;
+		this.lookupFunctionArgumentBitRatio = null;
+		this.triggerImplyArgumentType = null;
+		this.triggerTrackArgumentSynonym = null;
+		this.lookupArgumentSynonym = null;
 		this.onNestedFunction = null;
+		this.onFunctionCall = null;
+		this.optimizeFloatMemory = null;
+		this.precision = null;
 		this.loopMaxIterations = null;
 		this.argumentNames = (typeof this.source === 'string' ? utils.getArgumentNamesFromString(this.source) : null);
 		this.argumentTypes = [];
 		this.argumentSizes = [];
+		this.argumentBitRatios = null;
 		this.returnType = null;
 		this.output = [];
 		this.plugins = null;
-		this.literalTypes = {};
 
 		if (settings) {
 			for (const p in settings) {
@@ -1474,7 +1739,12 @@ class FunctionNode {
 			}
 		}
 
-		if (!this.returnType) {
+		this.synonymIndex = -1;
+		this.synonymUseIndex = 0;
+		this.argumentSynonym = {};
+		this.literalTypes = {};
+
+		if (this.isRootKernel && !this.returnType) {
 			this.returnType = 'Number';
 		}
 
@@ -1568,6 +1838,9 @@ class FunctionNode {
 		if (typeof this.source === 'object') {
 			return this.ast = this.source;
 		}
+		if (this.ast) {
+			return this.ast;
+		}
 
 		inParser = inParser || acorn;
 		if (inParser === null) {
@@ -1596,16 +1869,8 @@ class FunctionNode {
 			const argumentType = this.argumentTypes[argumentIndex];
 			if (argumentType) {
 				type = argumentType;
-			} else if (this.parent) {
-				const calledFunctionArguments = this.parent.calledFunctionsArguments[this.name];
-				for (let i = 0; i < calledFunctionArguments.length; i++) {
-					const calledFunctionArgument = calledFunctionArguments[i];
-					if (calledFunctionArgument[argumentIndex] !== null) {
-						type = calledFunctionArgument[argumentIndex].type;
-						this.argumentTypes[argumentIndex] = type;
-						break;
-					}
-				}
+			} else if (this.lookupArgumentType) {
+				type = this.argumentTypes[argumentIndex] = this.lookupArgumentType(name, this);
 			}
 		}
 		if (!type) {
@@ -1625,19 +1890,11 @@ class FunctionNode {
 		throw new Error(`Type for constant "${ constantName }" not declared`);
 	}
 
-	getUserArgumentName(name) {
+	getKernelArgumentName(name) {
+		if (!this.lookupArgumentSynonym) return null;
 		const argumentIndex = this.argumentNames.indexOf(name);
 		if (argumentIndex === -1) return null;
-		if (!this.parent || this.isRootKernel) return null;
-		const calledFunctionArguments = this.parent.calledFunctionsArguments[this.name];
-		for (let i = 0; i < calledFunctionArguments.length; i++) {
-			const calledFunctionArgument = calledFunctionArguments[i];
-			const argument = calledFunctionArgument[argumentIndex];
-			if (argument && argument.type !== 'Integer' && argument.type !== 'LiteralInteger' && argument.type !== 'Number') {
-				return argument.name;
-			}
-		}
-		return null;
+		return this.lookupArgumentSynonym('kernel', this.name, name);
 	}
 
 	toString() {
@@ -1691,16 +1948,23 @@ class FunctionNode {
 				if (this.isAstMathFunction(ast)) {
 					return 'Number';
 				}
-				if (!ast.callee || !ast.callee.name) return null;
-				if (this.nativeFunctionReturnTypes && this.nativeFunctionReturnTypes[ast.callee.name]) {
-					return this.nativeFunctionReturnTypes[ast.callee.name];
+				if (!ast.callee || !ast.callee.name) {
+					if (ast.callee.type === 'SequenceExpression' && ast.callee.expressions[ast.callee.expressions.length - 1].property.name) {
+						return this.lookupReturnType(ast.callee.expressions[ast.callee.expressions.length - 1].property.name, ast, this);
+					}
+					throw this.astErrorOutput('Unknown call expression', ast);
 				}
-				return ast.callee && ast.callee.name && this.lookupReturnType ? this.lookupReturnType(ast.callee.name) : null;
+				if (ast.callee && ast.callee.name) {
+					return this.lookupReturnType(ast.callee.name, ast, this);
+				}
+				throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
 			case 'BinaryExpression':
-				if (ast.operator === '%') {
-					return 'Number';
-				} else if (ast.operator === '>' || ast.operator === '<') {
-					return 'Boolean';
+				switch (ast.operator) {
+					case '%':
+						return 'Number';
+					case '>':
+					case '<':
+						return 'Boolean';
 				}
 				const type = this.getType(ast.left);
 				return typeLookupMap[type] || type;
@@ -1726,6 +1990,10 @@ class FunctionNode {
 				if (ast.name === 'Infinity') {
 					return 'Number';
 				}
+				const origin = this.findIdentifierOrigin(ast);
+				if (origin && origin.init) {
+					return this.getType(origin.init);
+				}
 				return null;
 			case 'ReturnStatement':
 				return this.getType(ast.argument);
@@ -1750,6 +2018,8 @@ class FunctionNode {
 							return typeLookupMap[this.getVariableType(ast.object.object.name)];
 						case 'value[][][]':
 							return typeLookupMap[this.getVariableType(ast.object.object.object.name)];
+						case 'value[][][][]':
+							return typeLookupMap[this.getVariableType(ast.object.object.object.object.name)];
 						case 'this.thread.value':
 							return 'Integer';
 						case 'this.output.value':
@@ -1762,6 +2032,8 @@ class FunctionNode {
 							return typeLookupMap[this.getConstantType(ast.object.object.property.name)];
 						case 'this.constants.value[][][]':
 							return typeLookupMap[this.getConstantType(ast.object.object.object.property.name)];
+						case 'this.constants.value[][][][]':
+							return typeLookupMap[this.getConstantType(ast.object.object.object.object.property.name)];
 						case 'fn()[]':
 							return typeLookupMap[this.getType(ast.object)];
 						case 'fn()[][]':
@@ -1782,13 +2054,22 @@ class FunctionNode {
 								case 'a':
 									return typeLookupMap[this.getVariableType(ast.object.name)];
 							}
+						case '[][]':
+							return 'Number';
 					}
 					throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
 				}
 				throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
-			case 'FunctionDeclaration':
-				return this.getType(ast.body);
 			case 'ConditionalExpression':
+				return this.getType(ast.consequent);
+			case 'FunctionDeclaration':
+			case 'FunctionExpression':
+				const lastReturn = this.findLastReturn(ast.body);
+				if (lastReturn) {
+					return this.getType(lastReturn);
+				}
+				return null;
+			case 'IfStatement':
 				return this.getType(ast.consequent);
 			default:
 				throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
@@ -1967,6 +2248,8 @@ class FunctionNode {
 				signature.unshift('value');
 			} else if (ast.callee && ast.callee.name) {
 				signature.unshift('fn()');
+			} else if (ast.elements) {
+				signature.unshift('[]');
 			} else {
 				signature.unshift('unknown');
 			}
@@ -1979,6 +2262,7 @@ class FunctionNode {
 			'value[]',
 			'value[][]',
 			'value[][][]',
+			'value[][][][]',
 			'value.value',
 			'this.thread.value',
 			'this.output.value',
@@ -1986,9 +2270,11 @@ class FunctionNode {
 			'this.constants.value[]',
 			'this.constants.value[][]',
 			'this.constants.value[][][]',
+			'this.constants.value[][][][]',
 			'fn()[]',
 			'fn()[][]',
 			'fn()[][][]',
+			'[][]',
 		];
 		if (allowedExpressions.indexOf(signatureString) > -1) {
 			return signatureString;
@@ -2319,6 +2605,20 @@ class FunctionNode {
 					yProperty: ast.object.property,
 					xProperty: ast.property,
 				};
+			case 'value[][][][]':
+				if (typeof ast.object.object.object.object.name !== 'string') {
+					throw this.astErrorOutput('Unexpected expression', ast);
+				}
+				name = ast.object.object.object.object.name;
+				return {
+					name,
+					origin: 'user',
+					signature: variableSignature,
+					type: this.getVariableType(name),
+					zProperty: ast.object.object.property,
+					yProperty: ast.object.property,
+					xProperty: ast.property,
+				};
 			case 'value.value':
 				if (typeof ast.property.name !== 'string') {
 					throw this.astErrorOutput('Unexpected expression', ast);
@@ -2419,13 +2719,63 @@ class FunctionNode {
 					};
 				}
 			case 'fn()[]':
+			case '[][]':
 				return {
 					signature: variableSignature,
-					property: ast.property
+					property: ast.property,
 				};
 			default:
 				throw this.astErrorOutput('Unexpected expression', ast);
 		}
+	}
+
+	findIdentifierOrigin(astToFind) {
+		const stack = [this.ast];
+
+		while (stack.length > 0) {
+			const atNode = stack[0];
+			if (atNode.type === 'VariableDeclarator' && atNode.id && atNode.id.name && atNode.id.name === astToFind.name) {
+				return atNode;
+			}
+			stack.shift();
+			if (atNode.argument) {
+				stack.push(atNode.argument);
+			} else if (atNode.body) {
+				stack.push(atNode.body);
+			} else if (atNode.declarations) {
+				stack.push(atNode.declarations);
+			} else if (Array.isArray(atNode)) {
+				for (let i = 0; i < atNode.length; i++) {
+					stack.push(atNode[i]);
+				}
+			}
+		}
+		return null;
+	}
+
+	findLastReturn(ast) {
+		const stack = [ast || this.ast];
+
+		while (stack.length > 0) {
+			const atNode = stack.pop();
+			if (atNode.type === 'ReturnStatement') {
+				return atNode;
+			}
+			if (atNode.argument) {
+				stack.push(atNode.argument);
+			} else if (atNode.body) {
+				stack.push(atNode.body);
+			} else if (atNode.declarations) {
+				stack.push(atNode.declarations);
+			} else if (Array.isArray(atNode)) {
+				for (let i = 0; i < atNode.length; i++) {
+					stack.push(atNode[i]);
+				}
+			} else if (atNode.consequent) {
+				stack.push(atNode.consequent);
+			}
+		}
+		return null;
 	}
 
 	getInternalVariableName(name) {
@@ -2447,19 +2797,33 @@ const typeLookupMap = {
 	'Array(4)': 'Number',
 	'Array2D': 'Number',
 	'Array3D': 'Number',
+	'Input': 'Number',
 	'HTMLImage': 'Array(4)',
 	'HTMLImageArray': 'Array(4)',
 	'NumberTexture': 'Number',
+	'MemoryOptimizedNumberTexture': 'Number',
+	'ArrayTexture(1)': 'Number',
+	'ArrayTexture(2)': 'Array(2)',
+	'ArrayTexture(3)': 'Array(3)',
 	'ArrayTexture(4)': 'Array(4)',
 };
 
 module.exports = {
 	FunctionNode
 };
+
 },{"../utils":28,"acorn":1}],9:[function(require,module,exports){
 const {
 	Kernel
 } = require('./kernel');
+
+const {
+	Texture
+} = require('../texture');
+
+const {
+	utils
+} = require('../utils');
 
 class GLKernel extends Kernel {
 	static get mode() {
@@ -2467,17 +2831,17 @@ class GLKernel extends Kernel {
 	}
 
 	static getIsFloatRead() {
-		function kernelFunction() {
+		const kernelString = `function kernelFunction() {
 			return 1;
-		}
-		const kernel = new this(kernelFunction.toString(), {
+		}`;
+		const kernel = new this(kernelString, {
 			context: this.testContext,
 			canvas: this.testCanvas,
-			skipValidate: true,
-			output: [2],
-			floatTextures: true,
-			floatOutput: true,
-			floatOutputForce: true
+			validate: false,
+			output: [1],
+			precision: 'single',
+			floatOutputForce: true,
+			returnType: 'Number'
 		});
 		const result = kernel.run();
 		kernel.destroy(true);
@@ -2491,8 +2855,10 @@ class GLKernel extends Kernel {
 		const kernel = new this(kernelFunction.toString(), {
 			context: this.testContext,
 			canvas: this.testCanvas,
-			skipValidate: true,
-			output: [2]
+			validate: false,
+			output: [2],
+			returnType: 'Number',
+			precision: 'unsigned',
 		});
 		const result = kernel.run([6, 6030401], [3, 3991]);
 		kernel.destroy(true);
@@ -2520,8 +2886,8 @@ class GLKernel extends Kernel {
 		return this;
 	}
 
-	setFloatOutput(flag) {
-		this.floatOutput = flag;
+	setPrecision(flag) {
+		this.precision = flag;
 		return this;
 	}
 
@@ -2535,24 +2901,15 @@ class GLKernel extends Kernel {
 		return this;
 	}
 
-	constructor(source, settings) {
-		super(source, settings);
-		this.texSize = null;
-		this.floatTextures = null;
-		this.floatOutput = null;
-		this.floatOutputForce = null;
-		this.fixIntegerDivisionAccuracy = null;
-	}
-
-	static nativeFunctionArgumentTypes(source) {
-		const types = [];
-		const names = [];
+	static nativeFunctionArguments(source) {
+		const argumentTypes = [];
+		const argumentNames = [];
 		const states = [];
 		const isStartingVariableName = /^[a-zA-Z_]/;
 		const isVariableChar = /[a-zA-Z_0-9]/;
 		let i = 0;
-		let name = null;
-		let type = null;
+		let argumentName = null;
+		let argumentType = null;
 		while (i < source.length) {
 			const char = source[i];
 			const nextChar = source[i + 1];
@@ -2589,39 +2946,39 @@ class GLKernel extends Kernel {
 				}
 				if (char === 'f' && nextChar === 'l' && source[i + 2] === 'o' && source[i + 3] === 'a' && source[i + 4] === 't' && source[i + 5] === ' ') {
 					states.push('DECLARE_VARIABLE');
-					type = 'float';
-					name = '';
+					argumentType = 'float';
+					argumentName = '';
 					i += 6;
 					continue;
 				} else if (char === 'i' && nextChar === 'n' && source[i + 2] === 't' && source[i + 3] === ' ') {
 					states.push('DECLARE_VARIABLE');
-					type = 'int';
-					name = '';
+					argumentType = 'int';
+					argumentName = '';
 					i += 4;
 					continue;
 				} else if (char === 'v' && nextChar === 'e' && source[i + 2] === 'c' && source[i + 3] === '2' && source[i + 4] === ' ') {
 					states.push('DECLARE_VARIABLE');
-					type = 'vec2';
-					name = '';
+					argumentType = 'vec2';
+					argumentName = '';
 					i += 5;
 					continue;
 				} else if (char === 'v' && nextChar === 'e' && source[i + 2] === 'c' && source[i + 3] === '3' && source[i + 4] === ' ') {
 					states.push('DECLARE_VARIABLE');
-					type = 'vec3';
-					name = '';
+					argumentType = 'vec3';
+					argumentName = '';
 					i += 5;
 					continue;
 				} else if (char === 'v' && nextChar === 'e' && source[i + 2] === 'c' && source[i + 3] === '4' && source[i + 4] === ' ') {
 					states.push('DECLARE_VARIABLE');
-					type = 'vec4';
-					name = '';
+					argumentType = 'vec4';
+					argumentName = '';
 					i += 5;
 					continue;
 				}
 			}
 
 			else if (state === 'DECLARE_VARIABLE') {
-				if (name === '') {
+				if (argumentName === '') {
 					if (char === ' ') {
 						i++;
 						continue;
@@ -2630,11 +2987,11 @@ class GLKernel extends Kernel {
 						throw new Error('variable name is not expected string');
 					}
 				}
-				name += char;
+				argumentName += char;
 				if (!isVariableChar.test(nextChar)) {
 					states.pop();
-					names.push(name);
-					types.push(typeMap[type]);
+					argumentNames.push(argumentName);
+					argumentTypes.push(typeMap[argumentType]);
 				}
 			}
 
@@ -2644,15 +3001,603 @@ class GLKernel extends Kernel {
 			throw new Error('GLSL function was not parsable');
 		}
 		return {
-			names,
-			types
+			argumentNames,
+			argumentTypes,
 		};
 	}
 
 	static nativeFunctionReturnType(source) {
 		return typeMap[source.match(/int|float|vec[2-4]/)[0]];
 	}
+
+	static combineKernels(combinedKernel, lastKernel) {
+		combinedKernel.apply(null, arguments);
+		const {
+			texSize,
+			context,
+			threadDim
+		} = lastKernel.texSize;
+		let result;
+		if (lastKernel.precision === 'single') {
+			const w = texSize[0];
+			const h = Math.ceil(texSize[1] / 4);
+			result = new Float32Array(w * h * 4 * 4);
+			context.readPixels(0, 0, w, h * 4, context.RGBA, context.FLOAT, result);
+		} else {
+			const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
+			context.readPixels(0, 0, texSize[0], texSize[1], context.RGBA, context.UNSIGNED_BYTE, bytes);
+			result = new Float32Array(bytes.buffer);
+		}
+
+		result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
+
+		if (lastKernel.output.length === 1) {
+			return result;
+		} else if (lastKernel.output.length === 2) {
+			return utils.splitArray(result, lastKernel.output[0]);
+		} else if (lastKernel.output.length === 3) {
+			const cube = utils.splitArray(result, lastKernel.output[0] * lastKernel.output[1]);
+			return cube.map(function(x) {
+				return utils.splitArray(x, lastKernel.output[0]);
+			});
+		}
+	}
+
+	constructor(source, settings) {
+		super(source, settings);
+		this.texSize = null;
+		this.floatTextures = null;
+		this.floatOutputForce = null;
+		this.fixIntegerDivisionAccuracy = null;
+		this.translatedSource = null;
+		this.renderStrategy = null;
+		this.compiledFragmentShader = null;
+		this.compiledVertexShader = null;
+
+		this.optimizeFloatMemory = null;
+	}
+
+	translateSource() {
+		throw new Error(`"translateSource" not defined on ${this.constructor.name}`);
+	}
+
+	pickRenderStrategy(args) {
+		if (this.graphical) return;
+		if (this.precision === 'unsigned') {
+			switch (this.returnType) {
+				case 'LiteralInteger':
+				case 'Float':
+				case 'Number':
+				case 'Integer':
+					if (this.pipeline) {
+						this.renderStrategy = renderStrategy.PackedTexture;
+						this.renderOutput = this.renderTexture;
+					} else if (this.output[2] > 0) {
+						this.renderStrategy = renderStrategy.PackedPixelTo3DFloat;
+						this.renderOutput = this.render3DPackedFloat;
+					} else if (this.output[1] > 0) {
+						this.renderStrategy = renderStrategy.PackedPixelTo2DFloat;
+						this.renderOutput = this.render2DPackedFloat;
+					} else {
+						this.renderStrategy = renderStrategy.PackedPixelToFloat;
+						this.renderOutput = this.renderPackedFloat;
+					}
+					return true;
+				case 'Array(2)':
+				case 'Array(3)':
+				case 'Array(4)':
+					this.onRequestFallback(args);
+					return false;
+			}
+		} else if (this.precision === 'single') {
+			if (this.pipeline) {
+				this.renderStrategy = renderStrategy.FloatTexture;
+				this.renderOutput = this.renderTexture;
+				return true;
+			}
+			switch (this.returnType) {
+				case 'LiteralInteger':
+				case 'Float':
+				case 'Number':
+				case 'Integer':
+					if (this.output[2] > 0) {
+						if (this.optimizeFloatMemory) {
+							this.renderStrategy = renderStrategy.MemoryOptimizedFloatPixelToMemoryOptimized3DFloat;
+							this.renderOutput = this.renderMemoryOptimized3DFloat;
+						} else {
+							this.renderStrategy = renderStrategy.FloatPixelTo3DFloat;
+							this.renderOutput = this.render3DFloat;
+						}
+					} else if (this.output[1] > 0) {
+						if (this.optimizeFloatMemory) {
+							this.renderStrategy = renderStrategy.MemoryOptimizedFloatPixelToMemoryOptimized2DFloat;
+							this.renderOutput = this.renderMemoryOptimized2DFloat;
+						} else {
+							this.renderStrategy = renderStrategy.FloatPixelTo2DFloat;
+							this.renderOutput = this.render2DFloat;
+						}
+					} else {
+						if (this.optimizeFloatMemory) {
+							this.renderStrategy = renderStrategy.MemoryOptimizedFloatPixelToMemoryOptimizedFloat;
+							this.renderOutput = this.renderMemoryOptimizedFloat;
+						} else {
+							this.renderStrategy = renderStrategy.FloatPixelToFloat;
+							this.renderOutput = this.renderFloat;
+						}
+					}
+					return true;
+				case 'Array(2)':
+					if (this.output[2] > 0) {
+						this.renderStrategy = renderStrategy.FloatPixelTo3DArray2;
+						this.renderOutput = this.render3DArray2;
+					} else if (this.output[1] > 0) {
+						this.renderStrategy = renderStrategy.FloatPixelTo2DArray2;
+						this.renderOutput = this.render2DArray2;
+					} else {
+						this.renderStrategy = renderStrategy.FloatPixelToArray2;
+						this.renderOutput = this.renderArray2;
+					}
+					return true;
+				case 'Array(3)':
+					if (this.output[2] > 0) {
+						this.renderStrategy = renderStrategy.FloatPixelTo3DArray3;
+						this.renderOutput = this.render3DArray3;
+					} else if (this.output[1] > 0) {
+						this.renderStrategy = renderStrategy.FloatPixelTo2DArray3;
+						this.renderOutput = this.render2DArray3;
+					} else {
+						this.renderStrategy = renderStrategy.FloatPixelToArray3;
+						this.renderOutput = this.renderArray3;
+					}
+					return true;
+				case 'Array(4)':
+					if (this.output[2] > 0) {
+						this.renderStrategy = renderStrategy.FloatPixelTo3DArray4;
+						this.renderOutput = this.render3DArray4;
+					} else if (this.output[1] > 0) {
+						this.renderStrategy = renderStrategy.FloatPixelTo2DArray4;
+						this.renderOutput = this.render2DArray4;
+					} else {
+						this.renderStrategy = renderStrategy.FloatPixelToArray4;
+						this.renderOutput = this.renderArray4;
+					}
+					return true;
+			}
+		} else {
+			throw new Error(`unhandled precision of "${this.precision}"`);
+		}
+
+		throw new Error(`unhandled return type "${this.returnType}"`);
+	}
+
+	getKernelString() {
+		throw new Error(`abstract method call`);
+	}
+
+	getMainResultTexture() {
+		switch (this.returnType) {
+			case 'LiteralInteger':
+			case 'Float':
+			case 'Integer':
+			case 'Number':
+				return this.getMainResultNumberTexture();
+			case 'Array(2)':
+				return this.getMainResultArray2Texture();
+			case 'Array(3)':
+				return this.getMainResultArray3Texture();
+			case 'Array(4)':
+				return this.getMainResultArray4Texture();
+			default:
+				throw new Error(`unhandled returnType type ${ this.returnType }`);
+		}
+	}
+
+	getMainResultKernelNumberTexture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultSubKernelNumberTexture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultKernelArray2Texture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultSubKernelArray2Texture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultKernelArray3Texture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultSubKernelArray3Texture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultKernelArray4Texture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultSubKernelArray4Texture() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultGraphical() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultMemoryOptimizedFloats() {
+		throw new Error(`abstract method call`);
+	}
+	getMainResultPackedPixels() {
+		throw new Error(`abstract method call`);
+	}
+
+	getMainResultString() {
+		if (this.graphical) {
+			return this.getMainResultGraphical();
+		} else if (this.precision === 'single') {
+			if (this.optimizeFloatMemory) {
+				return this.getMainResultMemoryOptimizedFloats();
+			}
+			return this.getMainResultTexture();
+		} else {
+			return this.getMainResultPackedPixels();
+		}
+	}
+
+	getMainResultNumberTexture() {
+		return utils.linesToString(this.getMainResultKernelNumberTexture()) +
+			utils.linesToString(this.getMainResultSubKernelNumberTexture());
+	}
+
+	getMainResultArray2Texture() {
+		return utils.linesToString(this.getMainResultKernelArray2Texture()) +
+			utils.linesToString(this.getMainResultSubKernelArray2Texture());
+	}
+
+	getMainResultArray3Texture() {
+		return utils.linesToString(this.getMainResultKernelArray3Texture()) +
+			utils.linesToString(this.getMainResultSubKernelArray3Texture());
+	}
+
+	getMainResultArray4Texture() {
+		return utils.linesToString(this.getMainResultKernelArray4Texture()) +
+			utils.linesToString(this.getMainResultSubKernelArray4Texture());
+	}
+
+	getReturnTextureType() {
+		if (this.graphical) {
+			return 'ArrayTexture(4)';
+		}
+		if (this.precision === 'single') {
+			switch (this.returnType) {
+				case 'Float':
+				case 'Number':
+				case 'Integer':
+					if (this.optimizeFloatMemory) {
+						return 'MemoryOptimizedNumberTexture';
+					} else {
+						return 'ArrayTexture(1)';
+					}
+				case 'Array(2)':
+					return 'ArrayTexture(2)';
+				case 'Array(3)':
+					return 'ArrayTexture(3)';
+				case 'Array(4)':
+					return 'ArrayTexture(4)';
+				default:
+					throw new Error(`unsupported returnType ${this.returnType}`);
+			}
+		} else {
+			switch (this.returnType) {
+				case 'Float':
+				case 'Number':
+				case 'Integer':
+					return 'NumberTexture';
+				case 'Array(2)':
+				case 'Array(3)':
+				case 'Array(4)':
+				default:
+					throw new Error(`unsupported returnType ${ this.returnType }`);
+			}
+		}
+	}
+
+	renderTexture() {
+		return new Texture({
+			texture: this.outputTexture,
+			size: this.texSize,
+			dimensions: this.threadDim,
+			output: this.output,
+			context: this.context,
+			gpu: this.gpu,
+			type: this.getReturnTextureType(),
+		});
+	}
+	readPackedPixelsToUint8Array() {
+		if (this.precision !== 'unsigned') throw new Error('Requires this.precision to be "unsigned"');
+		const {
+			texSize,
+			context: gl
+		} = this;
+		const result = new Uint8Array(texSize[0] * texSize[1] * 4);
+		gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, result);
+		return result;
+	}
+	readPackedPixelsToFloat32Array() {
+		return new Float32Array(this.readPackedPixelsToUint8Array().buffer);
+	}
+	readFloatPixelsToFloat32Array() {
+		if (this.precision !== 'single') throw new Error('Requires this.precision to be "single"');
+		const {
+			texSize,
+			context: gl
+		} = this;
+		const w = texSize[0];
+		const h = texSize[1];
+		const result = new Float32Array(w * h * 4);
+		gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
+		return result;
+	}
+	readMemoryOptimizedFloatPixelsToFloat32Array() {
+		if (this.precision !== 'single') throw new Error('Requires this.precision to be "single"');
+		const {
+			texSize,
+			context: gl
+		} = this;
+		const w = texSize[0];
+		const h = texSize[1];
+		const result = new Float32Array(w * h * 4);
+		gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
+		return result;
+	}
+	renderPackedFloat() {
+		const [xMax] = this.output;
+		return this.readPackedPixelsToFloat32Array().subarray(0, xMax);
+	}
+	render2DPackedFloat() {
+		const pixels = this.readPackedPixelsToFloat32Array();
+		const [xMax, yMax] = this.output;
+		const yResults = new Array(yMax);
+		for (let y = 0; y < yMax; y++) {
+			const xStart = y * xMax;
+			const xEnd = xStart + xMax;
+			yResults[y] = pixels.subarray(xStart, xEnd);
+		}
+		return yResults;
+	}
+	render3DPackedFloat() {
+		const pixels = this.readPackedPixelsToFloat32Array();
+		const [xMax, yMax, zMax] = this.output;
+		const zResults = new Array(zMax);
+		for (let z = 0; z < zMax; z++) {
+			const yResults = new Array(yMax);
+			for (let y = 0; y < yMax; y++) {
+				const xStart = (z * yMax * xMax) + y * xMax;
+				const xEnd = xStart + xMax;
+				yResults[y] = pixels.subarray(xStart, xEnd);
+			}
+			zResults[z] = yResults;
+		}
+		return zResults;
+	}
+	renderFloat() {
+		const pixels = this.readFloatPixelsToFloat32Array();
+		const [xMax] = this.output;
+		const xResults = new Float32Array(xMax);
+		let i = 0;
+		for (let x = 0; x < xMax; x++) {
+			xResults[x] = pixels[i];
+			i += 4;
+		}
+		return xResults;
+	}
+	renderMemoryOptimizedFloat() {
+		const pixels = this.readMemoryOptimizedFloatPixelsToFloat32Array();
+		const [xMax] = this.output;
+		return pixels.subarray(0, xMax);
+	}
+	render2DFloat() {
+		const pixels = this.readFloatPixelsToFloat32Array();
+		const [xMax, yMax] = this.output;
+		const yResults = new Array(yMax);
+		let i = 0;
+		for (let y = 0; y < yMax; y++) {
+			const xResults = new Float32Array(xMax);
+			for (let x = 0; x < xMax; x++) {
+				xResults[x] = pixels[i];
+				i += 4;
+			}
+			yResults[y] = xResults;
+		}
+		return yResults;
+	}
+	renderMemoryOptimized2DFloat() {
+		const pixels = this.readFloatPixelsToFloat32Array();
+		const [xMax, yMax] = this.output;
+		const yResults = new Array(yMax);
+		for (let y = 0; y < yMax; y++) {
+			const offset = y * xMax;
+			yResults[y] = pixels.subarray(offset, offset + xMax);
+		}
+		return yResults;
+	}
+	render3DFloat() {
+		const pixels = this.readFloatPixelsToFloat32Array();
+		const [xMax, yMax, zMax] = this.output;
+		const zResults = new Array(zMax);
+		let i = 0;
+		for (let z = 0; z < zMax; z++) {
+			const yResults = new Array(yMax);
+			for (let y = 0; y < yMax; y++) {
+				const xResults = new Float32Array(xMax);
+				for (let x = 0; x < xMax; x++) {
+					xResults[x] = pixels[i];
+					i += 4;
+				}
+				yResults[y] = xResults;
+			}
+			zResults[z] = yResults;
+		}
+		return zResults;
+	}
+	renderMemoryOptimized3DFloat() {
+		const pixels = this.readFloatPixelsToFloat32Array();
+		const [xMax, yMax, zMax] = this.output;
+		const zResults = new Array(zMax);
+		for (let z = 0; z < zMax; z++) {
+			const yResults = new Array(yMax);
+			for (let y = 0; y < yMax; y++) {
+				const offset = (z * yMax * xMax) + (y * xMax);
+				yResults[y] = pixels.subarray(offset, offset + xMax);
+			}
+			zResults[z] = yResults;
+		}
+		return zResults;
+	}
+	renderArray2() {
+		const pixels = this.readFloatPixelsToFloat32Array();
+		const [xMax] = this.output;
+		const xResults = new Array(xMax);
+		for (let x = 0; x < xMax; x += 4) {
+			xResults[x] = pixels.subarray(x, x + 2);
+		}
+		return xResults;
+	}
+	render2DArray2() {
+		const pixels = this.readFloatPixelsToFloat32Array();
+		const [xMax, yMax] = this.output;
+		const yResults = new Array(yMax);
+		for (let y = 0; y < yMax; y++) {
+			const xResults = new Array(xMax);
+			for (let x = 0; x < xMax; x += 4) {
+				xResults[x] = pixels.subarray(x, x + 2);
+			}
+			yResults[y] = xResults;
+		}
+		return yResults;
+	}
+	render3DArray2() {
+		const pixels = this.readFloatPixelsToFloat32Array();
+		const [xMax, yMax, zMax] = this.output;
+		const zResults = new Array(zMax);
+		for (let z = 0; z < zMax; z++) {
+			const yResults = new Array(yMax);
+			for (let y = 0; y < yMax; y++) {
+				const xResults = new Array(xMax);
+				for (let x = 0; x < xMax; x += 4) {
+					xResults[x] = pixels.subarray(x, x + 2);
+				}
+				yResults[y] = xResults;
+			}
+			zResults[z] = yResults;
+		}
+		return zResults;
+	}
+	renderArray3() {
+		const pixels = this.readFloatPixelsToFloat32Array();
+		const [xMax] = this.output;
+		const xResults = new Array(xMax);
+		for (let x = 0; x < xMax; x += 4) {
+			xResults[x] = pixels.subarray(x, x + 3);
+		}
+		return xResults;
+	}
+	render2DArray3() {
+		const pixels = this.readFloatPixelsToFloat32Array();
+		const [xMax, yMax] = this.output;
+		const yResults = new Array(yMax);
+		for (let y = 0; y < yMax; y++) {
+			const xResults = new Array(xMax);
+			for (let x = 0; x < xMax; x += 4) {
+				xResults[x] = pixels.subarray(x, x + 3);
+			}
+			yResults[y] = xResults;
+		}
+		return yResults;
+	}
+	render3DArray3() {
+		const pixels = this.readFloatPixelsToFloat32Array();
+		const [xMax, yMax, zMax] = this.output;
+		const zResults = new Array(zMax);
+		for (let z = 0; z < zMax; z++) {
+			const yResults = new Array(yMax);
+			for (let y = 0; y < yMax; y++) {
+				const xResults = new Array(xMax);
+				for (let x = 0; x < xMax; x += 4) {
+					xResults[x] = pixels.subarray(x, x + 3);
+				}
+				yResults[y] = xResults;
+			}
+			zResults[z] = yResults;
+		}
+		return zResults;
+	}
+	renderArray4() {
+		const pixels = this.readFloatPixelsToFloat32Array();
+		const [xMax] = this.output;
+		const xResults = new Array(xMax);
+		for (let x = 0; x < xMax; x += 4) {
+			xResults[x] = pixels.subarray(x, x + 4);
+		}
+		return xResults;
+	}
+	render2DArray4() {
+		const pixels = this.readFloatPixelsToFloat32Array();
+		const [xMax, yMax] = this.output;
+		const yResults = new Array(yMax);
+		for (let y = 0; y < yMax; y++) {
+			const xResults = new Array(xMax);
+			for (let x = 0; x < xMax; x += 4) {
+				xResults[x] = pixels.subarray(x, x + 4);
+			}
+			yResults[y] = xResults;
+		}
+		return yResults;
+	}
+	render3DArray4() {
+		const pixels = this.readFloatPixelsToFloat32Array();
+		const [xMax, yMax, zMax] = this.output;
+		const zResults = new Array(zMax);
+		for (let z = 0; z < zMax; z++) {
+			const yResults = new Array(yMax);
+			for (let y = 0; y < yMax; y++) {
+				const xResults = new Array(xMax);
+				for (let x = 0; x < xMax; x += 4) {
+					xResults[x] = pixels.subarray(x, x + 4);
+				}
+				yResults[y] = xResults;
+			}
+			zResults[z] = yResults;
+		}
+		return zResults;
+	}
+	getArgumentTextureSize() {
+
+	}
+	getOutputTextureSize() {
+
+	}
 }
+
+const renderStrategy = Object.freeze({
+	PackedPixelToUint8Array: Symbol('PackedPixelToUint8Array'),
+	PackedPixelToFloat: Symbol('PackedPixelToFloat'),
+	PackedPixelTo2DFloat: Symbol('PackedPixelTo2DFloat'),
+	PackedPixelTo3DFloat: Symbol('PackedPixelTo3DFloat'),
+	PackedTexture: Symbol('PackedTexture'),
+	FloatPixelToFloat32Array: Symbol('FloatPixelToFloat32Array'),
+	FloatPixelToFloat: Symbol('FloatPixelToFloat'),
+	FloatPixelTo2DFloat: Symbol('FloatPixelTo2DFloat'),
+	FloatPixelTo3DFloat: Symbol('FloatPixelTo3DFloat'),
+	FloatPixelToArray2: Symbol('FloatPixelToArray2'),
+	FloatPixelTo2DArray2: Symbol('FloatPixelTo2DArray2'),
+	FloatPixelTo3DArray2: Symbol('FloatPixelTo3DArray2'),
+	FloatPixelToArray3: Symbol('FloatPixelToArray3'),
+	FloatPixelTo2DArray3: Symbol('FloatPixelTo2DArray3'),
+	FloatPixelTo3DArray3: Symbol('FloatPixelTo3DArray3'),
+	FloatPixelToArray4: Symbol('FloatPixelToArray4'),
+	FloatPixelTo2DArray4: Symbol('FloatPixelTo2DArray4'),
+	FloatPixelTo3DArray4: Symbol('FloatPixelTo3DArray4'),
+	FloatTexture: Symbol('FloatTexture'),
+	MemoryOptimizedFloatPixelToMemoryOptimizedFloat: Symbol('MemoryOptimizedFloatPixelToFloat'),
+	MemoryOptimizedFloatPixelToMemoryOptimized2DFloat: Symbol('MemoryOptimizedFloatPixelTo2DFloat'),
+	MemoryOptimizedFloatPixelToMemoryOptimized3DFloat: Symbol('MemoryOptimizedFloatPixelTo3DFloat'),
+});
 
 const typeMap = {
 	int: 'Integer',
@@ -2663,9 +3608,11 @@ const typeMap = {
 };
 
 module.exports = {
-	GLKernel
+	GLKernel,
+	renderStrategy
 };
-},{"./kernel":11}],10:[function(require,module,exports){
+
+},{"../texture":27,"../utils":28,"./kernel":11}],10:[function(require,module,exports){
 const getContext = require('gl');
 const {
 	WebGLKernel
@@ -2809,12 +3756,16 @@ class Kernel {
 		throw new Error(`"destroyContext" called on ${ this.name }`);
 	}
 
-	static nativeFunctionArgumentTypes() {
-		throw new Error(`"nativeFunctionArgumentTypes" called on ${ this.name }`);
+	static nativeFunctionArguments() {
+		throw new Error(`"nativeFunctionArguments" called on ${ this.name }`);
 	}
 
 	static nativeFunctionReturnType() {
 		throw new Error(`"nativeFunctionReturnType" called on ${ this.name }`);
+	}
+
+	static combineKernels() {
+		throw new Error(`"combineKernels" called on ${ this.name }`);
 	}
 
 	constructor(source, settings) {
@@ -2827,9 +3778,15 @@ class Kernel {
 			}
 		}
 
+		this.onRequestFallback = null;
+
 		this.argumentNames = typeof source === 'string' ? utils.getArgumentNamesFromString(source) : null;
 		this.argumentTypes = null;
 		this.argumentSizes = null;
+		this.argumentBitRatios = null;
+		this.argumentsLength = 0;
+		this.constantsLength = 0;
+
 
 		this.source = source;
 
@@ -2843,6 +3800,7 @@ class Kernel {
 
 		this.constants = null;
 		this.constantTypes = null;
+		this.constantBitRatios = null;
 		this.hardcodeConstants = null;
 
 		this.canvas = null;
@@ -2857,14 +3815,17 @@ class Kernel {
 
 		this.subKernels = null;
 
-		this.skipValidate = false;
+		this.validate = true;
 		this.wraparound = null;
 
 		this.immutable = false;
 
 		this.pipeline = false;
+		this.precision = null;
 
 		this.plugins = null;
+
+		this.returnType = null;
 	}
 
 	mergeSettings(settings) {
@@ -2900,13 +3861,21 @@ class Kernel {
 	}
 
 	setupArguments(args) {
-		this.argumentTypes = [];
-		this.argumentSizes = [];
+		if (!this.argumentTypes) {
+			this.argumentTypes = [];
+			for (let i = 0; i < args.length; i++) {
+				const argType = utils.getVariableType(args[i]);
+				this.argumentTypes.push(argType === 'Integer' ? 'Number' : argType);
+			}
+		}
+
+		this.argumentSizes = new Array(args.length);
+		this.argumentBitRatios = new Int32Array(args.length);
+
 		for (let i = 0; i < args.length; i++) {
 			const arg = args[i];
-			const argType = utils.getVariableType(arg);
-			this.argumentTypes.push(argType === 'Integer' ? 'Number' : argType);
-			this.argumentSizes.push(arg.constructor === Input ? arg.size : null);
+			this.argumentSizes[i] = arg.constructor === Input ? arg.size : null;
+			this.argumentBitRatios[i] = this.getBitRatio(arg);
 		}
 
 		if (this.argumentNames.length !== args.length) {
@@ -2916,11 +3885,18 @@ class Kernel {
 
 	setupConstants() {
 		this.constantTypes = {};
+		this.constantBitRatios = {};
 		if (this.constants) {
 			for (let p in this.constants) {
 				this.constantTypes[p] = utils.getVariableType(this.constants[p]);
+				this.constantBitRatios[p] = this.getBitRatio(this.constants[p]);
 			}
 		}
+	}
+
+	setOptimizeFloatMemory(flag) {
+		this.optimizeFloatMemory = flag;
+		return this;
 	}
 
 	setOutput(output) {
@@ -2985,6 +3961,13 @@ class Kernel {
 		return this;
 	}
 
+	requestFallback(args) {
+		if (!this.onRequestFallback) {
+			throw new Error(`"onRequestFallback" not defined on ${ this.constructor.name }`);
+		}
+		return this.onRequestFallback(args);
+	}
+
 	validateSettings() {
 		throw new Error(`"validateSettings" not defined on ${ this.constructor.name }`);
 	}
@@ -3015,6 +3998,24 @@ class Kernel {
 		throw new Error(`"destroy" called on ${ this.constructor.name }`);
 	}
 
+	getBitRatio(value) {
+		if (value.constructor === Input) {
+			return this.getBitRatio(value.value);
+		}
+		switch (value.constructor) {
+			case Uint8Array:
+			case Int8Array:
+				return 1;
+			case Uint16Array:
+			case Int16Array:
+				return 2;
+			case Float32Array:
+			case Int32Array:
+			default:
+				return 4;
+		}
+	}
+
 	checkOutput() {
 		if (!this.output || !Array.isArray(this.output)) throw new Error('kernel.output not an array');
 		if (this.output.length < 1) throw new Error('kernel.output is empty, needs at least 1 value');
@@ -3036,6 +4037,7 @@ class Kernel {
 			constants: this.constants,
 			constantsLength: this.constantsLength,
 			pluginNames: this.plugins ? this.plugins.map(plugin => plugin.name) : null,
+			returnType: this.returnType,
 		};
 		return {
 			settings
@@ -3046,6 +4048,7 @@ class Kernel {
 module.exports = {
 	Kernel
 };
+
 },{"../input":24,"../utils":28}],12:[function(require,module,exports){
 const fragmentShader = `__HEADER__;
 precision highp float;
@@ -3100,18 +4103,34 @@ __DIVIDE_WITH_INTEGER_CHECK__;
 const vec2 MAGIC_VEC = vec2(1.0, -256.0);
 const vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);
 const vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536
-float decode32(vec4 rgba) {
+float decode32(vec4 texel) {
   __DECODE32_ENDIANNESS__;
-  rgba *= 255.0;
+  texel *= 255.0;
   vec2 gte128;
-  gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;
-  gte128.y = rgba.a >= 128.0 ? 1.0 : 0.0;
-  float exponent = 2.0 * rgba.a - 127.0 + dot(gte128, MAGIC_VEC);
+  gte128.x = texel.b >= 128.0 ? 1.0 : 0.0;
+  gte128.y = texel.a >= 128.0 ? 1.0 : 0.0;
+  float exponent = 2.0 * texel.a - 127.0 + dot(gte128, MAGIC_VEC);
   float res = exp2(round(exponent));
-  rgba.b = rgba.b - 128.0 * gte128.x;
-  res = dot(rgba, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;
+  texel.b = texel.b - 128.0 * gte128.x;
+  res = dot(texel, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;
   res *= gte128.y * -2.0 + 1.0;
   return res;
+}
+
+float decode16(vec4 texel, int index) {
+	int channel = integerMod(index, 2);
+	if (channel == 0) return texel.r * 255.0 + texel.g * 65280.0;
+	if (channel == 1) return texel.b * 255.0 + texel.a * 65280.0;
+	return 0.0;
+}
+
+float decode8(vec4 texel, int index) {
+  int channel = integerMod(index, 4);
+  if (channel == 0) return texel.r * 255.0;
+  if (channel == 1) return texel.g * 255.0;
+  if (channel == 2) return texel.b * 255.0;
+  if (channel == 3) return texel.a * 255.0;
+  return 0.0;
 }
 
 vec4 encode32(float f) {
@@ -3120,35 +4139,17 @@ vec4 encode32(float f) {
   float exponent = floor(log2(F));
   float mantissa = (exp2(-exponent) * F);
   // exponent += floor(log2(mantissa));
-  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;
-  rgba.rg = integerMod(rgba.rg, 256.0);
-  rgba.b = integerMod(rgba.b, 128.0);
-  rgba.a = exponent*0.5 + 63.5;
-  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;
-  rgba = floor(rgba);
-  rgba *= 0.003921569; // 1/255
+  vec4 texel = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;
+  texel.rg = integerMod(texel.rg, 256.0);
+  texel.b = integerMod(texel.b, 128.0);
+  texel.a = exponent*0.5 + 63.5;
+  texel.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;
+  texel = floor(texel);
+  texel *= 0.003921569; // 1/255
   __ENCODE32_ENDIANNESS__;
-  return rgba;
+  return texel;
 }
 // Dragons end here
-
-float decode(vec4 rgba, int x, int bitRatio) {
-  if (bitRatio == 1) {
-    return decode32(rgba);
-  }
-  __DECODE32_ENDIANNESS__;
-  int channel = integerMod(x, bitRatio);
-  if (bitRatio == 4) {
-    if (channel == 0) return rgba.r * 255.0;
-    if (channel == 1) return rgba.g * 255.0;
-    if (channel == 2) return rgba.b * 255.0;
-    if (channel == 3) return rgba.a * 255.0;
-  }
-  else {
-    if (channel == 0) return rgba.r * 255.0 + rgba.g * 65280.0;
-    if (channel == 1) return rgba.b * 255.0 + rgba.a * 65280.0;
-  }
-}
 
 int index;
 ivec3 threadId;
@@ -3161,27 +4162,110 @@ ivec3 indexTo3D(int idx, ivec3 texDim) {
   return ivec3(x, y, z);
 }
 
-float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int z, int y, int x) {
+float get32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
-  __GET_TEXTURE_CHANNEL__;
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  __GET_TEXTURE_INDEX__;
   vec4 texel = texture2D(tex, st / vec2(texSize));
-  __GET_RESULT__;
+  return decode32(texel);
+}
+
+float get16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
+  __GET_WRAPAROUND__;
+  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int w = texSize.x * 2;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  vec4 texel = texture2D(tex, st / vec2(texSize.x * 2, texSize.y));
+  return decode16(texel, index);
+}
+
+float get8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
+  __GET_WRAPAROUND__;
+  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int w = texSize.x * 4;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  vec4 texel = texture2D(tex, st / vec2(texSize.x * 4, texSize.y));
+  return decode8(texel, index);
+}
+
+float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
+  __GET_WRAPAROUND__;
+  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int channel = integerMod(index, 4);
+  index = index / 4;
+  int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  vec4 texel = texture2D(tex, st / vec2(texSize));
+  if (channel == 0) return texel.r;
+  if (channel == 1) return texel.g;
+  if (channel == 2) return texel.b;
+  if (channel == 3) return texel.a;
+  return 0.0;
+}
+
+float getMemoryOptimized16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
+  __GET_WRAPAROUND__;
+  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int channel = integerMod(index, 4);
+  index = index / 4;
+  int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  vec4 texel = texture2D(tex, st / vec2(texSize));
+  if (channel == 0) return texel.r;
+  if (channel == 1) return texel.g;
+  if (channel == 2) return texel.b;
+  if (channel == 3) return texel.a;
+  return 0.0;
+}
+
+float getMemoryOptimized8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
+  __GET_WRAPAROUND__;
+  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int channel = integerMod(index, 4);
+  index = index / 4;
+  int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  vec4 texel = texture2D(tex, st / vec2(texSize));
+  if (channel == 0) return texel.r;
+  if (channel == 1) return texel.g;
+  if (channel == 2) return texel.b;
+  if (channel == 3) return texel.a;
+  return 0.0;
 }
 
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
-  __GET_TEXTURE_CHANNEL__;
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  __GET_TEXTURE_INDEX__;
   return texture2D(tex, st / vec2(texSize));
+}
+
+float getFloatFromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
+  return result[0];
+}
+
+vec2 getVec2FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
+  return vec2(result[0], result[1]);
+}
+
+vec3 getVec3FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
+  return vec3(result[0], result[1], result[2]);
+}
+
+vec4 getVec4FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  return getImage2D(tex, texSize, texDim, z, y, x);
 }
 
 vec4 actualColor;
@@ -3209,6 +4293,7 @@ void main(void) {
 module.exports = {
 	fragmentShader
 };
+
 },{}],13:[function(require,module,exports){
 const {
 	FunctionNode
@@ -3226,18 +4311,31 @@ class WebGLFunctionNode extends FunctionNode {
 	}
 
 	astFunctionExpression(ast, retArr) {
-
 		if (this.isRootKernel) {
 			retArr.push('void');
 		} else {
+			if (!this.returnType) {
+				const lastReturn = this.findLastReturn();
+				if (lastReturn) {
+					this.returnType = this.getType(ast.body);
+					if (this.returnType === 'LiteralInteger') {
+						this.returnType = 'Number';
+					}
+				}
+			}
+
 			const {
 				returnType
 			} = this;
-			const type = typeMap[returnType];
-			if (!type) {
-				throw new Error(`unknown type ${ returnType }`);
+			if (!returnType) {
+				retArr.push('void');
+			} else {
+				const type = typeMap[returnType];
+				if (!type) {
+					throw new Error(`unknown type ${returnType}`);
+				}
+				retArr.push(type);
 			}
-			retArr.push(type);
 		}
 		retArr.push(' ');
 		retArr.push(this.name);
@@ -3282,7 +4380,16 @@ class WebGLFunctionNode extends FunctionNode {
 
 		const result = [];
 
+		if (!this.returnType) {
+			if (this.isRootKernel) {
+				this.returnType = 'Number';
+			} else {
+				this.returnType = type;
+			}
+		}
+
 		switch (this.returnType) {
+			case 'LiteralInteger':
 			case 'Number':
 			case 'Float':
 				switch (type) {
@@ -3326,10 +4433,11 @@ class WebGLFunctionNode extends FunctionNode {
 			case 'Array(4)':
 			case 'Array(3)':
 			case 'Array(2)':
+			case 'Input':
 				this.astGeneric(ast.argument, result);
 				break;
 			default:
-				throw this.astErrorOutput('Unknown return handler', ast);
+				throw this.astErrorOutput(`unhandled return type ${this.returnType}`, ast);
 		}
 
 		if (this.isRootKernel) {
@@ -3345,7 +4453,6 @@ class WebGLFunctionNode extends FunctionNode {
 	}
 
 	astLiteral(ast, retArr) {
-
 		if (isNaN(ast.value)) {
 			throw this.astErrorOutput(
 				'Non-numeric literal not supported : ' + ast.value,
@@ -3549,7 +4656,7 @@ class WebGLFunctionNode extends FunctionNode {
 					break;
 				case 'LiteralInteger & Float':
 				case 'LiteralInteger & Number':
-					if (this.isState('in-for-loop-test') || this.isState('in-for-loop-init')) {
+					if (this.isState('in-for-loop-test') || this.isState('in-for-loop-init') || this.isState('casting-to-integer')) {
 						this.pushState('casting-to-integer');
 						this.astGeneric(ast.left, retArr);
 						retArr.push(operatorMap[ast.operator] || ast.operator);
@@ -3589,7 +4696,7 @@ class WebGLFunctionNode extends FunctionNode {
 		if (idtNode.name === 'Infinity') {
 			retArr.push('3.402823466e+38');
 		} else {
-			const userArgumentName = this.getUserArgumentName(idtNode.name);
+			const userArgumentName = this.getKernelArgumentName(idtNode.name);
 			if (userArgumentName) {
 				retArr.push(`user_${userArgumentName}`);
 			} else {
@@ -3908,6 +5015,7 @@ class WebGLFunctionNode extends FunctionNode {
 			case 'value[]':
 			case 'value[][]':
 			case 'value[][][]':
+			case 'value[][][][]':
 			case 'value.value':
 				if (origin === 'Math') {
 					retArr.push(Math[name]);
@@ -3932,9 +5040,16 @@ class WebGLFunctionNode extends FunctionNode {
 			case 'this.constants.value[]':
 			case 'this.constants.value[][]':
 			case 'this.constants.value[][][]':
+			case 'this.constants.value[][][][]':
 				break;
 			case 'fn()[]':
 				this.astCallExpression(mNode.object, retArr);
+				retArr.push('[');
+				retArr.push(this.memberExpressionPropertyMarkup(property));
+				retArr.push(']');
+				return retArr;
+			case '[][]':
+				this.astArrayExpression(mNode.object, retArr);
 				retArr.push('[');
 				retArr.push(this.memberExpressionPropertyMarkup(property));
 				retArr.push(']');
@@ -3948,10 +5063,7 @@ class WebGLFunctionNode extends FunctionNode {
 			return retArr;
 		}
 
-		let synonymName;
-		if (this.parent) {
-			synonymName = this.getUserArgumentName(name);
-		}
+		let synonymName = this.getKernelArgumentName(name);
 
 		const markupName = `${origin}_${synonymName || name}`;
 
@@ -3969,17 +5081,84 @@ class WebGLFunctionNode extends FunctionNode {
 				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
 				retArr.push(')');
 				break;
+			case 'ArrayTexture(1)':
+				retArr.push(`getFloatFromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+				retArr.push(')');
+				break;
+			case 'ArrayTexture(2)':
+				retArr.push(`getVec2FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+				retArr.push(')');
+				break;
+			case 'ArrayTexture(3)':
+				retArr.push(`getVec3FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+				retArr.push(')');
+				break;
 			case 'ArrayTexture(4)':
 			case 'HTMLImage':
-				retArr.push(`getImage2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+				retArr.push(`getVec4FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+				retArr.push(')');
+				break;
+			case 'NumberTexture':
+			case 'Array':
+			case 'Array2D':
+			case 'Array3D':
+			case 'Array4D':
+			case 'Input':
+				const bitRatio = (origin === 'user'
+						? this.lookupFunctionArgumentBitRatio(this.name, name)
+						: this.constantBitRatios[name]
+				);
+				if (this.precision === 'single') {
+					switch (bitRatio) {
+						case 1:
+							retArr.push(`getMemoryOptimized8(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+							this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+							retArr.push(')');
+							break;
+						case 2:
+							retArr.push(`getMemoryOptimized16(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+							this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+							retArr.push(')');
+							break;
+						case 4:
+						case 0:
+							retArr.push(`getMemoryOptimized32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+							this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+							retArr.push(')');
+							break;
+						default:
+							throw new Error(`unhandled bit ratio of ${ bitRatio}`);
+					}
+				} else {
+				  switch (bitRatio) {
+            case 1:
+              retArr.push(`get8(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+              break;
+            case 2:
+              retArr.push(`get16(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+              break;
+            case 4:
+						case 0:
+              retArr.push(`get32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+              break;
+            default:
+              throw new Error(`unhandled bit ratio of ${ bitRatio}`);
+          }
+					this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+					retArr.push(')');
+				}
+				break;
+			case 'MemoryOptimizedNumberTexture':
+				retArr.push(`getMemoryOptimized32(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
 				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
 				retArr.push(')');
 				break;
 			default:
-				retArr.push(`get(${ markupName }, ${ markupName }Size, ${ markupName }Dim, ${ markupName }BitRatio, `);
-				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
-				retArr.push(')');
-				break;
+				throw new Error(`unhandled member expression "${ type }"`);
 		}
 		return retArr;
 	}
@@ -3992,110 +5171,47 @@ class WebGLFunctionNode extends FunctionNode {
 			);
 		}
 
-		let funcName = this.astMemberExpressionUnroll(ast.callee);
-		const isMathFunction = funcName.indexOf(jsMathPrefix) === 0;
+		let functionName = this.astMemberExpressionUnroll(ast.callee);
+		const isMathFunction = functionName.indexOf(jsMathPrefix) === 0;
 
 		if (isMathFunction) {
-			funcName = funcName.slice(jsMathPrefix.length);
+			functionName = functionName.slice(jsMathPrefix.length);
 		}
 
-		if (funcName.indexOf(localPrefix) === 0) {
-			funcName = funcName.slice(localPrefix.length);
+		if (functionName.indexOf(localPrefix) === 0) {
+			functionName = functionName.slice(localPrefix.length);
 		}
 
-		if (funcName === 'atan2') {
-			funcName = 'atan';
+		if (functionName === 'atan2') {
+			functionName = 'atan';
 		}
 
-		if (this.calledFunctions.indexOf(funcName) < 0) {
-			this.calledFunctions.push(funcName);
-		}
-		if (!this.calledFunctionsArguments[funcName]) {
-			this.calledFunctionsArguments[funcName] = [];
+		if (this.calledFunctions.indexOf(functionName) < 0) {
+			this.calledFunctions.push(functionName);
 		}
 
-		const functionArguments = [];
-		this.calledFunctionsArguments[funcName].push(functionArguments);
-
-		if (funcName === 'random' && this.plugins && this.plugins.length > 0) {
+		if (functionName === 'random' && this.plugins && this.plugins.length > 0) {
 			for (let i = 0; i < this.plugins.length; i++) {
 				const plugin = this.plugins[i];
 				if (plugin.functionMatch === 'Math.random()' && plugin.functionReplace) {
-					functionArguments.push(plugin.functionReturnType);
 					retArr.push(plugin.functionReplace);
 					return retArr;
 				}
 			}
 		}
 
-		retArr.push(funcName);
+		if (this.onFunctionCall) {
+			this.onFunctionCall(this.name, functionName);
+		}
+
+		retArr.push(functionName);
 
 		retArr.push('(');
 
-		if (this.nativeFunctionArgumentTypes && this.nativeFunctionArgumentTypes[funcName]) {
-			const nativeFunctionArgumentTypes = this.nativeFunctionArgumentTypes[funcName].types;
-			for (let i = 0; i < ast.arguments.length; ++i) {
-				const argument = ast.arguments[i];
-				const targetType = nativeFunctionArgumentTypes[i];
-				if (i > 0) {
-					retArr.push(', ');
-				}
-				const argumentType = this.getType(argument);
-				if (argumentType === 'Number' || argumentType === 'Float') {
-					if (targetType === 'Integer') {
-						retArr.push('int(');
-						this.astGeneric(argument, retArr);
-						retArr.push(')');
-						continue;
-					} else if (targetType === 'Number') {
-						this.astGeneric(argument, retArr);
-						continue;
-					}
-				} else if (argumentType === 'Integer') {
-					if (targetType === 'Number') {
-						retArr.push('float(');
-						this.astGeneric(argument, retArr);
-						retArr.push(')');
-						continue;
-					} else if (targetType === 'Integer') {
-						this.astGeneric(argument, retArr);
-						continue;
-					}
-				} else if (argumentType === 'Array(2)') {
-					if (targetType === 'Array(2)') {
-						this.astGeneric(argument, retArr);
-						continue;
-					}
-				} else if (argumentType === 'Array(3)') {
-					if (targetType === 'Array(3)') {
-						this.astGeneric(argument, retArr);
-						continue;
-					}
-				} else if (argumentType === 'Array(4)') {
-					if (targetType === 'Array(4)') {
-						this.astGeneric(argument, retArr);
-						continue;
-					}
-				} else if (argumentType === 'LiteralInteger') {
-					if (targetType === 'Integer') {
-						this.pushState('casting-to-integer');
-						this.astGeneric(argument, retArr);
-						this.popState('casting-to-integer');
-						continue;
-					} else if (targetType === 'Number') {
-						this.pushState('casting-to-float');
-						this.astGeneric(argument, retArr);
-						this.popState('casting-to-float');
-						continue;
-					}
-				}
-				throw new Error(`Unhandled argument combination of ${ argumentType } and ${ targetType }`);
-			}
-		} else if (isMathFunction) {
+		if (isMathFunction) {
 			for (let i = 0; i < ast.arguments.length; ++i) {
 				const argument = ast.arguments[i];
 				const argumentType = this.getType(argument);
-
 				if (i > 0) {
 					retArr.push(', ');
 				}
@@ -4108,31 +5224,89 @@ class WebGLFunctionNode extends FunctionNode {
 						retArr.push(')');
 						this.popState('casting-to-float');
 						break;
-					case 'LiteralInteger':
 					default:
 						this.astGeneric(argument, retArr);
 						break;
 				}
 			}
 		} else {
+			const targetTypes = this.lookupFunctionArgumentTypes(functionName) || [];
 			for (let i = 0; i < ast.arguments.length; ++i) {
 				const argument = ast.arguments[i];
+				let targetType = targetTypes[i];
 				if (i > 0) {
 					retArr.push(', ');
 				}
-				this.astGeneric(argument, retArr);
 				const argumentType = this.getType(argument);
-				if (argumentType) {
-					functionArguments.push({
-						name: argument.name || null,
-						type: argumentType
-					});
-				} else {
-					functionArguments.push(null);
+				if (!targetType) {
+					this.triggerImplyArgumentType(functionName, i, argumentType, this);
+					targetType = argumentType;
 				}
+				switch (argumentType) {
+					case 'Number':
+					case 'Float':
+						if (targetType === 'Integer') {
+							retArr.push('int(');
+							this.astGeneric(argument, retArr);
+							retArr.push(')');
+							continue;
+						} else if (targetType === 'Number' || targetType === 'Float') {
+							this.astGeneric(argument, retArr);
+							continue;
+						} else if (targetType === 'LiteralInteger') {
+							this.pushState('casting-to-float');
+							this.astGeneric(argument, retArr);
+							this.popState('casting-to-float');
+							continue;
+						}
+						break;
+					case 'Integer':
+						if (targetType === 'Number' || targetType === 'Float') {
+							retArr.push('float(');
+							this.astGeneric(argument, retArr);
+							retArr.push(')');
+							continue;
+						} else if (targetType === 'Integer') {
+							this.astGeneric(argument, retArr);
+							continue;
+						}
+						break;
+					case 'LiteralInteger':
+						if (targetType === 'Integer') {
+							this.pushState('casting-to-integer');
+							this.astGeneric(argument, retArr);
+							this.popState('casting-to-integer');
+							continue;
+						} else if (targetType === 'Number' || targetType === 'Float') {
+							this.pushState('casting-to-float');
+							this.astGeneric(argument, retArr);
+							this.popState('casting-to-float');
+							continue;
+						} else if (targetType === 'LiteralInteger') {
+							this.astGeneric(argument, retArr);
+							continue;
+						}
+						break;
+					case 'Array(2)':
+					case 'Array(3)':
+					case 'Array(4)':
+						if (targetType === argumentType) {
+							this.astGeneric(argument, retArr);
+							continue;
+						}
+						break;
+					case 'Array':
+					case 'Input':
+						if (targetType === argumentType) {
+							this.triggerTrackArgumentSynonym(this.name, argument.name, functionName, i);
+							this.astGeneric(argument, retArr);
+							continue;
+						}
+						break;
+				}
+				throw new Error(`Unhandled argument combination of ${ argumentType } and ${ targetType }`);
 			}
 		}
-
 		retArr.push(')');
 
 		return retArr;
@@ -4203,8 +5377,13 @@ const typeMap = {
 	'Input': 'sampler2D',
 	'Integer': 'int',
 	'Number': 'float',
+	'LiteralInteger': 'float',
 	'NumberTexture': 'sampler2D',
-	'ArrayTexture(4)': 'sampler2D'
+	'MemoryOptimizedNumberTexture': 'sampler2D',
+	'ArrayTexture(1)': 'sampler2D',
+	'ArrayTexture(2)': 'sampler2D',
+	'ArrayTexture(3)': 'sampler2D',
+	'ArrayTexture(4)': 'sampler2D',
 };
 
 const operatorMap = {
@@ -4215,6 +5394,7 @@ const operatorMap = {
 module.exports = {
 	WebGLFunctionNode
 };
+
 },{"../function-node":8}],14:[function(require,module,exports){
 const {
 	utils
@@ -4255,6 +5435,9 @@ function webGLKernelString(gpuKernel, name) {
       getVariableType: ${ removeNoise(utils.getVariableType.toString()) },
       getDimensions: ${ removeNoise(utils.getDimensions.toString()) },
       dimToTexSize: ${ removeNoise(utils.dimToTexSize.toString()) },
+      closestSquareDimensions: ${ removeNoise(utils.closestSquareDimensions.toString()) },
+      getMemoryOptimizedFloatTextureSize: ${ removeNoise(utils.getMemoryOptimizedFloatTextureSize.toString()) },
+      roundTo: ${ removeNoise(utils.roundTo.toString()) },
       flattenTo: ${ removeNoise(utils.flattenTo.toString()) },
       flatten2dArrayTo: ${ removeNoise(utils.flatten2dArrayTo.toString()) },
       flatten3dArrayTo: ${ removeNoise(utils.flatten3dArrayTo.toString()) },
@@ -4270,6 +5453,7 @@ function webGLKernelString(gpuKernel, name) {
         this.maxTexSize = null;
         this.argumentsLength = 0;
         this.constantsLength = 0;
+        this.constantBitRatios = ${ gpuKernel.constantBitRatios ? JSON.stringify(gpuKernel.constantBitRatios) : 'null' };
         this.canvas = null;
         this.context = null;
         this.program = null;
@@ -4280,16 +5464,20 @@ function webGLKernelString(gpuKernel, name) {
         this.endianness = '${ gpuKernel.endianness }';
         this.graphical = ${ boolToString(gpuKernel.graphical) };
         this.floatTextures = ${ boolToString(gpuKernel.floatTextures) };
-        this.floatOutput = ${ boolToString(gpuKernel.floatOutput) };
+        this.precision = "${ gpuKernel.precision }";
+        // TODO: not sure how to handle
         this.floatOutputForce = ${ boolToString(gpuKernel.floatOutputForce) };
         this.hardcodeConstants = ${ boolToString(gpuKernel.hardcodeConstants) };
         this.pipeline = ${ boolToString(gpuKernel.pipeline) };
         this.argumentNames = ${ JSON.stringify(gpuKernel.argumentNames) };
         this.argumentTypes = ${ JSON.stringify(gpuKernel.argumentTypes) };
-        this.texSize = ${ JSON.stringify(gpuKernel.texSize) };
+        this.argumentBitRatios = ${ JSON.stringify(gpuKernel.argumentBitRatios) };
+       
+        this.texSize = ${ JSON.stringify(Array.from(gpuKernel.texSize)) };
         this.output = ${ JSON.stringify(gpuKernel.output) };
         this.compiledFragmentShader = \`${ gpuKernel.compiledFragmentShader }\`;
 		    this.compiledVertexShader = \`${ gpuKernel.compiledVertexShader }\`;
+		    this.returnType = '${ gpuKernel.returnType }';
 		    this.programUniformLocationCache = {};
 		    this.textureCache = {};
 		    this.subKernelOutputTextures = null;
@@ -4314,14 +5502,19 @@ function webGLKernelString(gpuKernel, name) {
       setInput(Type) { Input = Type; }
       ${ removeFnNoise(gpuKernel.getUniformLocation.toString()) }
       ${ removeFnNoise(gpuKernel.build.toString()) }
+      translateSource() {}
+      pickRenderStrategy() {}
 		  ${ removeFnNoise(gpuKernel.run.toString()) }
-		  ${ removeFnNoise(gpuKernel._addArgument.toString()) }
+		  ${ removeFnNoise(gpuKernel.addArgument.toString()) }
 		  ${ removeFnNoise(gpuKernel.formatArrayTransfer.toString()) }
 		  ${ removeFnNoise(gpuKernel.checkOutput.toString()) }
 		  ${ removeFnNoise(gpuKernel.getArgumentTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.getTextureCache.toString()) }
 		  ${ removeFnNoise(gpuKernel.getOutputTexture.toString()) }
-		  ${ removeFnNoise(gpuKernel.renderOutput.toString()) }
+		  renderOutput() { ${ utils.getFunctionBodyFromString(removeFnNoise(gpuKernel.renderOutput.toString())) } }
+		  ${ removeFnNoise(gpuKernel.readPackedPixelsToFloat32Array.toString()) }
+		  ${ removeFnNoise(gpuKernel.readPackedPixelsToUint8Array.toString()) }
+		  ${ removeFnNoise(gpuKernel.readFloatPixelsToFloat32Array.toString()) }
 		  ${ removeFnNoise(gpuKernel.updateMaxTexSize.toString()) }
 		  ${ removeFnNoise(gpuKernel._setupOutputTexture.toString()) }
 		  ${ removeFnNoise(gpuKernel.detachTextureCache.toString()) }
@@ -4332,6 +5525,7 @@ function webGLKernelString(gpuKernel, name) {
 		  ${ removeFnNoise(gpuKernel.setUniform2iv.toString()) }
 		  ${ removeFnNoise(gpuKernel.setUniform3fv.toString()) }
 		  ${ removeFnNoise(gpuKernel.setUniform3iv.toString()) }
+		  getReturnTextureType() { return "${ gpuKernel.getReturnTextureType() }"; }
     };
     return kernelRunShortcut(new ${ name || 'Kernel' }());
   };`;
@@ -4340,6 +5534,7 @@ function webGLKernelString(gpuKernel, name) {
 module.exports = {
 	webGLKernelString
 };
+
 },{"../../kernel-run-shortcut":25,"../../utils":28}],15:[function(require,module,exports){
 const {
 	GLKernel
@@ -4420,7 +5615,8 @@ class WebGLKernel extends GLKernel {
 			isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
 			isTextureFloat: this.getIsTextureFloat(),
 			isDrawBuffers,
-			kernelMap: isDrawBuffers
+			kernelMap: isDrawBuffers,
+			channelCount: this.getChannelCount(),
 		});
 	}
 
@@ -4430,6 +5626,10 @@ class WebGLKernel extends GLKernel {
 
 	static getIsDrawBuffers() {
 		return Boolean(testExtensions.WEBGL_draw_buffers);
+	}
+
+	static getChannelCount() {
+		return testExtensions.WEBGL_draw_buffers ? testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL : 1;
 	}
 
 	static get testCanvas() {
@@ -4502,22 +5702,23 @@ class WebGLKernel extends GLKernel {
 			depth: false,
 			antialias: false
 		};
-		const context = this.canvas.getContext('webgl', settings) || this.canvas.getContext('experimental-webgl', settings);
-		return context;
+		return this.canvas.getContext('webgl', settings) || this.canvas.getContext('experimental-webgl', settings);
 	}
 
 	initPlugins(settings) {
 		const pluginsToUse = [];
-
-		if (typeof this.source === 'string') {
+		const {
+			source
+		} = this;
+		if (typeof source === 'string') {
 			for (let i = 0; i < plugins.length; i++) {
 				const plugin = plugins[i];
-				if (this.source.match(plugin.functionMatch)) {
+				if (source.match(plugin.functionMatch)) {
 					pluginsToUse.push(plugin);
 				}
 			}
-		} else if (typeof this.source === 'object') {
-			if (settings.pluginNames) {
+		} else if (typeof source === 'object') {
+			if (settings.pluginNames) { 
 				for (let i = 0; i < plugins.length; i++) {
 					const plugin = plugins[i];
 					const usePlugin = settings.pluginNames.some(pluginName => pluginName === plugin.name);
@@ -4536,26 +5737,29 @@ class WebGLKernel extends GLKernel {
 			OES_texture_float_linear: this.context.getExtension('OES_texture_float_linear'),
 			OES_element_index_uint: this.context.getExtension('OES_element_index_uint'),
 			WEBGL_draw_buffers: this.context.getExtension('WEBGL_draw_buffers'),
+			WEBGL_color_buffer_float: this.context.getExtension('WEBGL_color_buffer_float'),
 		};
 	}
 
 	validateSettings() {
-		if (this.skipValidate) {
+		if (!this.validate) {
 			this.texSize = utils.dimToTexSize({
-				floatTextures: this.floatTextures,
-				floatOutput: this.floatOutput
+				floatTextures: this.optimizeFloatMemory,
+				floatOutput: this.precision === 'single',
 			}, this.output, true);
 			return;
 		}
 
-		const features = this.constructor.features;
-		if (this.floatTextures === true && !features.isTextureFloat) {
+		const {
+			features
+		} = this.constructor;
+		if (this.optimizeFloatMemory === true && !features.isTextureFloat) {
 			throw new Error('Float textures are not supported');
-		} else if (this.floatOutput === true && this.floatOutputForce !== true && !features.isFloatRead) {
-			throw new Error('Float texture outputs are not supported');
-		} else if (this.floatTextures === undefined && features.isTextureFloat) {
+		} else if (this.precision === 'single' && this.floatOutputForce !== true && !features.isFloatRead) {
+			throw new Error('Single precision not supported');
+		} else if (!this.graphical && this.floatTextures === null && this.precision === null && features.isTextureFloat) {
 			this.floatTextures = true;
-			this.floatOutput = features.isFloatRead;
+			this.precision = features.isFloatRead ? 'single' : 'unsigned';
 		}
 
 		if (this.subKernels && this.subKernels.length > 0 && !this.extensions.WEBGL_draw_buffers) {
@@ -4585,30 +5789,33 @@ class WebGLKernel extends GLKernel {
 			}
 		}
 
-		this.texSize = utils.dimToTexSize({
-			floatTextures: this.floatTextures,
-			floatOutput: this.floatOutput
-		}, this.output, true);
-
 		if (this.graphical) {
 			if (this.output.length !== 2) {
 				throw new Error('Output must have 2 dimensions on graphical mode');
 			}
 
-			if (this.floatOutput) {
-				this.floatOutput = false;
-				console.warn('Cannot use graphical mode and float output at the same time');
+			if (this.precision === 'precision') {
+				this.precision = 'unsigned';
+				console.warn('Cannot use graphical mode and single precision at the same time');
 			}
 
 			this.texSize = utils.clone(this.output);
-		} else if (this.floatOutput === undefined && features.isTextureFloat) {
-			this.floatOutput = true;
+			return;
+		} else if (this.precision === null && features.isTextureFloat) {
+			this.precision = 'single';
 		}
+
+		this.texSize = utils.dimToTexSize({
+			floatTextures: this.floatTextures,
+			floatOutput: this.precision === 'single'
+		}, this.output, true);
 	}
 
 	updateMaxTexSize() {
-		const texSize = this.texSize;
-		const canvas = this.canvas;
+		const {
+			texSize,
+			canvas
+		} = this;
 		if (this.maxTexSize === null) {
 			let canvasIndex = canvases.indexOf(canvas);
 			if (canvasIndex === -1) {
@@ -4626,20 +5833,67 @@ class WebGLKernel extends GLKernel {
 		}
 	}
 
+	_oldtranslateSource() {
+		const functionBuilder = FunctionBuilder.fromKernel(this, WebGLFunctionNode, {
+			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
+		});
+
+		const translatedSource = functionBuilder.getPrototypeString('kernel');
+
+		if (!this.returnType) {
+			this.returnType = functionBuilder.getKernelResultType();
+		}
+
+		let requiredChannels = 0;
+		const returnTypes = functionBuilder.getReturnTypes();
+		for (let i = 0; i < returnTypes.length; i++) {
+			switch (returnTypes[i]) {
+				case 'Float':
+				case 'Number':
+				case 'Integer':
+					requiredChannels++;
+					break;
+				case 'Array(2)':
+					requiredChannels += 2;
+					break;
+				case 'Array(3)':
+					requiredChannels += 3;
+					break;
+				case 'Array(4)':
+					requiredChannels += 4;
+					break;
+			}
+		}
+
+		if (features && requiredChannels > features.channelCount) {
+			throw new Error('Too many channels!');
+		}
+
+		return this.translatedSource = translatedSource;
+	}
+
 	build() {
 		this.initExtensions();
 		this.validateSettings();
 		this.setupConstants();
 		this.setupArguments(arguments);
 		this.updateMaxTexSize();
+		this.translateSource();
+		this.pickRenderStrategy();
 		const texSize = this.texSize;
 		const gl = this.context;
 		const canvas = this.canvas;
 		gl.enable(gl.SCISSOR_TEST);
-		gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
-		canvas.width = this.maxTexSize[0];
-		canvas.height = this.maxTexSize[1];
-		const threadDim = this.threadDim = utils.clone(this.output);
+		if (this.pipeline && this.precision === 'single') {
+			gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
+			canvas.width = this.maxTexSize[0];
+			canvas.height = this.maxTexSize[1];
+		} else {
+			gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
+			canvas.width = this.maxTexSize[0];
+			canvas.height = this.maxTexSize[1];
+		}
+		const threadDim = this.threadDim = Array.from(this.output);
 		while (threadDim.length < 3) {
 			threadDim.push(1);
 		}
@@ -4716,7 +5970,7 @@ class WebGLKernel extends GLKernel {
 				continue;
 			}
 			gl.useProgram(this.program);
-			this._addConstant(this.constants[p], type, p);
+			this.addConstant(this.constants[p], type, p);
 		}
 
 		if (!this.immutable) {
@@ -4727,6 +5981,16 @@ class WebGLKernel extends GLKernel {
 			) {
 				this._setupSubOutputTextures(this.subKernels.length);
 			}
+		}
+	}
+
+	translateSource() {
+		const functionBuilder = FunctionBuilder.fromKernel(this, WebGLFunctionNode, {
+			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
+		});
+		this.translatedSource = functionBuilder.getPrototypeString('kernel');
+		if (!this.graphical && !this.returnType) {
+			this.returnType = functionBuilder.getKernelResultType();
 		}
 	}
 
@@ -4751,7 +6015,7 @@ class WebGLKernel extends GLKernel {
 
 		this.argumentsLength = 0;
 		for (let texIndex = 0; texIndex < argumentNames.length; texIndex++) {
-			this._addArgument(arguments[texIndex], argumentTypes[texIndex], argumentNames[texIndex]);
+			this.addArgument(arguments[texIndex], argumentTypes[texIndex], argumentNames[texIndex]);
 		}
 
 		if (this.plugins) {
@@ -4778,7 +6042,7 @@ class WebGLKernel extends GLKernel {
 					output: this.output,
 					context: this.context,
 					gpu: this.gpu,
-					type: 'ArrayTexture(4)'
+					type: this.getReturnTextureType(),
 				});
 			}
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
@@ -4791,7 +6055,6 @@ class WebGLKernel extends GLKernel {
 		if (this.immutable) {
 			this._setupOutputTexture();
 		}
-		const outputTexture = this.outputTexture;
 
 		if (this.subKernels !== null) {
 			if (this.immutable) {
@@ -4806,65 +6069,40 @@ class WebGLKernel extends GLKernel {
 		if (this.subKernelOutputTextures !== null) {
 			if (this.subKernels !== null) {
 				const output = {
-					result: this.renderOutput(outputTexture),
+					result: this.renderOutput(),
 				};
-				for (let i = 0; i < this.subKernels.length; i++) {
-					output[this.subKernels[i].property] = new Texture({
-						texture: this.subKernelOutputTextures[i],
-						size: texSize,
-						dimensions: this.threadDim,
-						output: this.output,
-						context: this.context,
-						gpu: this.gpu,
-					});
+				if (this.pipeline) {
+					for (let i = 0; i < this.subKernels.length; i++) {
+						output[this.subKernels[i].property] = new Texture({
+							texture: this.subKernelOutputTextures[i],
+							size: texSize,
+							dimensions: this.threadDim,
+							output: this.output,
+							context: this.context,
+							gpu: this.gpu,
+							type: this.getReturnTextureType(),
+						});
+					}
+				} else {
+					for (let i = 0; i < this.subKernels.length; i++) {
+						output[this.subKernels[i].property] = new Texture({
+							texture: this.subKernelOutputTextures[i],
+							size: texSize,
+							dimensions: this.threadDim,
+							output: this.output,
+							context: this.context,
+							gpu: this.gpu,
+							type: this.getReturnTextureType(),
+						}).toArray();
+					}
 				}
 				return output;
 			}
 		}
 
-		return this.renderOutput(outputTexture);
+		return this.renderOutput();
 	}
 
-	renderOutput(outputTexture) {
-		const texSize = this.texSize;
-		const gl = this.context;
-		const threadDim = this.threadDim;
-		const output = this.output;
-		if (this.pipeline) {
-			return new Texture({
-				texture: outputTexture,
-				size: texSize,
-				dimensions: this.threadDim,
-				output,
-				context: this.context,
-				gpu: this.gpu,
-			});
-		} else {
-			let result;
-			if (this.floatOutput) {
-				const w = texSize[0];
-				const h = Math.ceil(texSize[1] / 4);
-				result = new Float32Array(w * h * 4);
-				gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
-			} else {
-				const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
-				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
-				result = new Float32Array(bytes.buffer);
-			}
-			result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
-
-			if (output.length === 1) {
-				return result;
-			} else if (output.length === 2) {
-				return utils.splitArray(result, output[0]);
-			} else if (output.length === 3) {
-				const cube = utils.splitArray(result, output[0] * output[1]);
-				return cube.map(function(x) {
-					return utils.splitArray(x, output[0]);
-				});
-			}
-		}
-	}
 
 	getOutputTexture() {
 		return this.outputTexture;
@@ -4880,8 +6118,35 @@ class WebGLKernel extends GLKernel {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		if (this.floatOutput) {
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+		if (this.precision === 'single') {
+			if (this.pipeline) {
+				switch (this.returnType) {
+					case 'Number':
+					case 'Float':
+					case 'Integer':
+						if (this.optimizeFloatMemory) {
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+						} else {
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+						}
+						break;
+					case 'Array(2)':
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+						break;
+					case 'Array(3)':
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+						break;
+					case 'Array(4)':
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+						break;
+					default:
+					  if (!this.graphical) {
+              throw new Error('Unhandled return type');
+            }
+				}
+			} else {
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+			}
 		} else {
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 		}
@@ -4903,7 +6168,7 @@ class WebGLKernel extends GLKernel {
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-			if (this.floatOutput) {
+			if (this.precision === 'single') {
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
 			} else {
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
@@ -5045,19 +6310,200 @@ class WebGLKernel extends GLKernel {
 			ENCODE32_ENDIANNESS: this._getEncode32EndiannessString(),
 			DIVIDE_WITH_INTEGER_CHECK: this._getDivideWithIntegerCheckString(),
 			GET_WRAPAROUND: this._getGetWraparoundString(),
-			GET_TEXTURE_CHANNEL: this._getGetTextureChannelString(),
-			GET_TEXTURE_INDEX: this._getGetTextureIndexString(),
-			GET_RESULT: this._getGetResultString(),
 			MAIN_CONSTANTS: this._getMainConstantsString(),
 			MAIN_ARGUMENTS: this._getMainArgumentsString(args),
-			KERNEL: this._getKernelString(),
-			MAIN_RESULT: this._getMainResultString()
+			KERNEL: this.getKernelString(),
+			MAIN_RESULT: this.getMainResultString()
 		};
 	}
 
-	_addArgument(value, type, name) {
+	addArgument(value, type, name) {
 		const gl = this.context;
 		const argumentTexture = this.getArgumentTexture(name);
+		if (value instanceof Texture) {
+			type = value.type;
+		}
+
+		switch (type) {
+			case 'Array':
+			case 'Array(2)':
+			case 'Array(3)':
+			case 'Array(4)':
+			case 'Array2D':
+			case 'Array3D':
+				{
+					const dim = utils.getDimensions(value, true);
+					const bitRatio = this.argumentBitRatios[this.argumentsLength];
+					if (this.precision === 'single') {
+						const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						const length = textureSize[0] * textureSize[1] * bitRatio;
+						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? value : new Float32Array(value), length);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
+
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`user_${name}Dim`, dim);
+							this.setUniform2iv(`user_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`user_${name}`, this.argumentsLength);
+					} else {
+						const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+						const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
+						const valuesFlat = this.formatArrayTransfer(value, length);
+						const buffer = new Uint8Array(valuesFlat.buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`user_${name}Dim`, dim);
+							this.setUniform2iv(`user_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`user_${name}`, this.argumentsLength);
+					}
+
+					break;
+				}
+			case 'Integer':
+				{
+					this.setUniform1i(`user_${name}`, value);
+					break;
+				}
+			case 'Float':
+			case 'Number':
+				{
+					this.setUniform1f(`user_${name}`, value);
+					break;
+				}
+			case 'Input':
+				{
+					const input = value;
+					const dim = utils.getDimensions(input, true);
+					const bitRatio = this.argumentBitRatios[this.argumentsLength];
+					if (this.precision === 'single') {
+						const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						const length = textureSize[0] * textureSize[1] * bitRatio;
+						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? input.value : new Float32Array(input.value), length);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
+
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`user_${name}Dim`, dim);
+							this.setUniform2iv(`user_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`user_${name}`, this.argumentsLength);
+					} else {
+						const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+						const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
+						const valuesFlat = this.formatArrayTransfer(input.value, length);
+						const buffer = new Uint8Array(valuesFlat.buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`user_${name}Dim`, dim);
+							this.setUniform2iv(`user_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`user_${name}`, this.argumentsLength);
+					}
+					break;
+				}
+			case 'HTMLImage':
+				{
+					const inputImage = value;
+					const dim = [inputImage.width, inputImage.height, 1];
+					const size = [inputImage.width, inputImage.height];
+
+					gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+					gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+					const mipLevel = 0; 
+					const internalFormat = gl.RGBA; 
+					const srcFormat = gl.RGBA; 
+					const srcType = gl.UNSIGNED_BYTE; 
+					gl.texImage2D(gl.TEXTURE_2D,
+						mipLevel,
+						internalFormat,
+						srcFormat,
+						srcType,
+						inputImage);
+					this.setUniform3iv(`user_${name}Dim`, dim);
+					this.setUniform2iv(`user_${name}Size`, size);
+					this.setUniform1i(`user_${name}`, this.argumentsLength);
+					break;
+				}
+			case 'ArrayTexture(1)':
+			case 'ArrayTexture(2)':
+			case 'ArrayTexture(3)':
+			case 'ArrayTexture(4)':
+				{
+					const inputTexture = value;
+					if (inputTexture.context !== this.context) {
+						throw new Error(`argument ${ name} (${ type }) must be from same context`);
+					}
+					const dim = inputTexture.dimensions;
+					const size = inputTexture.size;
+
+					gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
+
+					this.setUniform3iv(`user_${name}Dim`, dim);
+					this.setUniform2iv(`user_${name}Size`, size);
+					this.setUniform1i(`user_${name}`, this.argumentsLength);
+					break;
+				}
+			case 'MemoryOptimizedNumberTexture':
+			case 'NumberTexture':
+				{
+					const inputTexture = value;
+					if (inputTexture.context !== this.context) {
+						throw new Error(`argument ${ name} (${ type }) must be from same context`);
+					}
+					const dim = inputTexture.dimensions;
+					const size = inputTexture.size;
+
+					gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
+
+					this.setUniform3iv(`user_${name}Dim`, dim);
+					this.setUniform2iv(`user_${name}Size`, size);
+					this.setUniform1i(`user_${name}`, this.argumentsLength);
+					break;
+				}
+			default:
+				throw new Error('Argument type not supported: ' + value);
+		}
+		this.argumentsLength++;
+	}
+
+	addConstant(value, type, name) {
+		const gl = this.context;
+		const constantTexture = this.getArgumentTexture(name);
 		if (value instanceof Texture) {
 			type = value.type;
 		}
@@ -5070,219 +6516,89 @@ class WebGLKernel extends GLKernel {
 			case 'Array3D':
 				{
 					const dim = utils.getDimensions(value, true);
-					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, dim);
-					gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
-					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+					const bitRatio = this.constantBitRatios[name];
+					if (this.precision === 'single') {
+						const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+						gl.bindTexture(gl.TEXTURE_2D, constantTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						const length = textureSize[0] * textureSize[1] * bitRatio;
+						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? value : new Float32Array(value), length);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
-					let length = size[0] * size[1];
-
-					const {
-						valuesFlat,
-						bitRatio
-					} = this.formatArrayTransfer(value, length);
-
-					let buffer;
-					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`constants_${name}Dim`, dim);
+							this.setUniform2iv(`constants_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`constants_${name}`, this.constantsLength);
 					} else {
-						buffer = new Uint8Array(valuesFlat.buffer);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+						const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+						gl.bindTexture(gl.TEXTURE_2D, constantTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+						const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
+						const valuesFlat = this.formatArrayTransfer(value, length);
+						const buffer = new Uint8Array(valuesFlat.buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`constants_${name}Dim`, dim);
+							this.setUniform2iv(`constants_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`constants_${name}`, this.constantsLength);
 					}
 
-					if (!this.hardcodeConstants) {
-						this.setUniform3iv(`user_${name}Dim`, dim);
-						this.setUniform2iv(`user_${name}Size`, size);
-					}
-					this.setUniform1i(`user_${name}BitRatio`, bitRatio);
-					this.setUniform1i(`user_${name}`, this.argumentsLength);
-					break;
-				}
-			case 'Integer':
-			case 'Float':
-			case 'Number':
-				{
-					this.setUniform1f(`user_${name}`, value);
 					break;
 				}
 			case 'Input':
 				{
 					const input = value;
-					const dim = input.size;
-					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, dim);
-					gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
-					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+					const dim = utils.getDimensions(input, true);
+					const bitRatio = this.constantBitRatios[name];
+					if (this.precision === 'single') {
+						const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+						gl.bindTexture(gl.TEXTURE_2D, constantTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						const length = textureSize[0] * textureSize[1] * bitRatio;
+						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? input.value : new Float32Array(input.value), length);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
-					let length = size[0] * size[1];
-
-					const {
-						valuesFlat,
-						bitRatio
-					} = this.formatArrayTransfer(value.value, length);
-
-					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, input);
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`constants_${name}Dim`, dim);
+							this.setUniform2iv(`constants_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`constants_${name}`, this.constantsLength);
 					} else {
+						const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+						gl.bindTexture(gl.TEXTURE_2D, constantTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+						const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
+						const valuesFlat = this.formatArrayTransfer(input.value, length);
 						const buffer = new Uint8Array(valuesFlat.buffer);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`constants_${name}Dim`, dim);
+							this.setUniform2iv(`constants_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`constants_${name}`, this.argumentsLength);
 					}
-
-					if (!this.hardcodeConstants) {
-						this.setUniform3iv(`user_${name}Dim`, dim);
-						this.setUniform2iv(`user_${name}Size`, size);
-					}
-					this.setUniform1i(`user_${name}BitRatio`, bitRatio);
-					this.setUniform1i(`user_${name}`, this.argumentsLength);
-					break;
-				}
-			case 'HTMLImage':
-				{
-					const inputImage = value;
-					const dim = [inputImage.width, inputImage.height, 1];
-					const size = [inputImage.width, inputImage.height];
-
-					gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
-					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-					gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-					const mipLevel = 0; 
-					const internalFormat = gl.RGBA; 
-					const srcFormat = gl.RGBA; 
-					const srcType = gl.UNSIGNED_BYTE; 
-					gl.texImage2D(gl.TEXTURE_2D,
-						mipLevel,
-						internalFormat,
-						srcFormat,
-						srcType,
-						inputImage);
-					this.setUniform3iv(`user_${name}Dim`, dim);
-					this.setUniform2iv(`user_${name}Size`, size);
-					this.setUniform1i(`user_${name}`, this.argumentsLength);
-					break;
-				}
-			case 'ArrayTexture(4)':
-			case 'NumberTexture':
-				{
-					const inputTexture = value;
-					if (inputTexture.context !== this.context) {
-						throw new Error(`argument ${ name} (${ type }) must be from same context`);
-					}
-					const dim = inputTexture.dimensions;
-					const size = inputTexture.size;
-
-					gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
-					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
-
-					this.setUniform3iv(`user_${name}Dim`, dim);
-					this.setUniform2iv(`user_${name}Size`, size);
-					this.setUniform1i(`user_${name}BitRatio`, 1); 
-					this.setUniform1i(`user_${name}`, this.argumentsLength);
-					break;
-				}
-			default:
-				throw new Error('Input type not supported: ' + value);
-		}
-		this.argumentsLength++;
-	}
-
-	_addConstant(value, type, name) {
-		const gl = this.context;
-		const argumentTexture = this.getArgumentTexture(name);
-		if (value instanceof Texture) {
-			type = value.type;
-		}
-		switch (type) {
-			case 'Array':
-				{
-					const dim = utils.getDimensions(value, true);
-					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, dim);
-					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
-					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-					let length = size[0] * size[1];
-					if (this.floatTextures) {
-						length *= 4;
-						length *= 4;
-					}
-
-					const {
-						valuesFlat,
-						bitRatio
-					} = this.formatArrayTransfer(value, length);
-
-					let buffer;
-					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
-					} else {
-						buffer = new Uint8Array(valuesFlat.buffer);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
-					}
-
-					if (!this.hardcodeConstants) {
-						this.setUniform3iv(`constants_${name}Dim`, dim);
-						this.setUniform2iv(`constants_${name}Size`, size);
-					}
-					this.setUniform1i(`constants_${name}BitRatio`, bitRatio);
-					this.setUniform1i(`constants_${name}`, this.constantsLength);
-					break;
-				}
-			case 'Input':
-				{
-					const input = value;
-					const dim = input.size;
-					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, dim);
-					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
-					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-					let length = size[0] * size[1];
-					const {
-						valuesFlat,
-						bitRatio
-					} = this.formatArrayTransfer(value.value, length);
-
-					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
-					} else {
-						const buffer = new Uint8Array(valuesFlat.buffer);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
-					}
-
-					if (!this.hardcodeConstants) {
-						this.setUniform3iv(`constants_${name}Dim`, dim);
-						this.setUniform2iv(`constants_${name}Size`, size);
-					}
-					this.setUniform1i(`constants_${name}BitRatio`, bitRatio);
-					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
 			case 'HTMLImage':
@@ -5292,7 +6608,7 @@ class WebGLKernel extends GLKernel {
 					const size = [inputImage.width, inputImage.height];
 
 					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
-					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+					gl.bindTexture(gl.TEXTURE_2D, constantTexture);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -5313,12 +6629,32 @@ class WebGLKernel extends GLKernel {
 					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
+			case 'ArrayTexture(1)':
+			case 'ArrayTexture(2)':
+			case 'ArrayTexture(3)':
 			case 'ArrayTexture(4)':
+				{
+					const inputTexture = value;
+					if (inputTexture.context !== this.context) {
+						throw new Error(`constant ${ name} (${ type }) must be from same context`);
+					}
+					const dim = inputTexture.dimensions;
+					const size = inputTexture.size;
+
+					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
+
+					this.setUniform3iv(`constants_${name}Dim`, dim);
+					this.setUniform2iv(`constants_${name}Size`, size);
+					this.setUniform1i(`constants_${name}`, this.constantsLength);
+					break;
+				}
+			case 'MemoryOptimizedNumberTexture':
 			case 'NumberTexture':
 				{
 					const inputTexture = value;
 					if (inputTexture.context !== this.context) {
-						throw new Error(`argument ${ name} (${ type }) must be from same context`);
+						throw new Error(`constant ${ name} (${ type }) must be from same context`);
 					}
 					const dim = inputTexture.dimensions;
 					const size = inputTexture.size;
@@ -5327,50 +6663,42 @@ class WebGLKernel extends GLKernel {
 					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
 					this.setUniform3iv(`constants_${name}Dim`, dim);
 					this.setUniform2iv(`constants_${name}Size`, size);
-					this.setUniform1i(`constants_${name}BitRatio`, 1); 
 					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
 			case 'Integer':
 			case 'Float':
 			default:
-				throw new Error('Input type not supported: ' + value);
+				throw new Error('constant type not supported: ' + value);
 		}
 		this.constantsLength++;
 	}
 
 	formatArrayTransfer(value, length) {
-		let bitRatio = 1; 
-		let valuesFlat = value;
-    if (this.floatTextures) {
-      length *= 4;
-    }
-		if (utils.isArray(value[0]) || this.floatTextures) {
-			valuesFlat = new Float32Array(length);
+		if (this.floatTextures) {
+		}
+		if (utils.isArray(value[0]) || this.optimizeFloatMemory) {
+			const valuesFlat = new Float32Array(length);
 			utils.flattenTo(value, valuesFlat);
+			return valuesFlat;
 		} else {
-
 			switch (value.constructor) {
 				case Uint8Array:
 				case Int8Array:
-					bitRatio = 4;
-					break;
 				case Uint16Array:
 				case Int16Array:
-					bitRatio = 2;
 				case Float32Array:
 				case Int32Array:
-					break;
-
-				default:
-					valuesFlat = new Float32Array(length);
+					const valuesFlat = new value.constructor(length);
 					utils.flattenTo(value, valuesFlat);
+					return valuesFlat;
+				default: {
+					const valuesFlat = new Float32Array(length);
+					utils.flattenTo(value, valuesFlat);
+					return valuesFlat;
+				}
 			}
 		}
-		return {
-			bitRatio,
-			valuesFlat
-		};
 	}
 
 	_getHeaderString() {
@@ -5396,8 +6724,10 @@ class WebGLKernel extends GLKernel {
 
 	_getConstantsString() {
 		const result = [];
-		const threadDim = this.threadDim;
-		const texSize = this.texSize;
+		const {
+			threadDim,
+			texSize
+		} = this;
 		if (this.hardcodeConstants) {
 			result.push(
 				`ivec3 uOutputDim = ivec3(${threadDim[0]}, ${threadDim[1]}, ${threadDim[2]})`,
@@ -5410,7 +6740,7 @@ class WebGLKernel extends GLKernel {
 			);
 		}
 
-		return this._linesToString(result);
+		return utils.linesToString(result);
 	}
 
 	_getTextureCoordinate() {
@@ -5426,7 +6756,7 @@ class WebGLKernel extends GLKernel {
 		return (
 			this.endianness === 'LE' ?
 			'' :
-			'  rgba.rgba = rgba.abgr;\n'
+			'  texel.rgba = texel.abgr;\n'
 		);
 	}
 
@@ -5434,7 +6764,7 @@ class WebGLKernel extends GLKernel {
 		return (
 			this.endianness === 'LE' ?
 			'' :
-			'  rgba.rgba = rgba.abgr;\n'
+			'  texel.rgba = texel.abgr;\n'
 		);
 	}
 
@@ -5457,88 +6787,93 @@ class WebGLKernel extends GLKernel {
 		);
 	}
 
-	_getGetTextureChannelString() {
-		if (!this.floatTextures) return '';
-
-		return this._linesToString([
-			'  int channel = integerMod(index, 4)',
-			'  index = index / 4'
-		]);
-	}
-
-	_getGetTextureIndexString() {
-		return (
-			this.floatTextures ?
-			'  index = index / 4;\n' :
-			''
-		);
-	}
-
-	_getGetResultString() {
-		if (!this.floatTextures) {
-			return '  return decode(texel, x, bitRatio);';
-		}
-		return this._linesToString([
-			'  if (channel == 0) return texel.r',
-			'  if (channel == 1) return texel.g',
-			'  if (channel == 2) return texel.b',
-			'  if (channel == 3) return texel.a'
-		]);
-	}
-
 	_getMainArgumentsString(args) {
 		const result = [];
-		const argumentTypes = this.argumentTypes;
-		const argumentNames = this.argumentNames;
+		const {
+			argumentTypes,
+			argumentNames,
+			hardcodeConstants,
+			optimizeFloatMemory,
+			precision,
+		} = this;
 		for (let i = 0; i < argumentNames.length; i++) {
 			const value = args[i];
 			const name = argumentNames[i];
 			const type = argumentTypes[i];
-			if (this.hardcodeConstants) {
-				if (type === 'Array' || type === 'NumberTexture' || type === 'ArrayTexture(4)') {
-					const dim = utils.getDimensions(value, true);
-					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, dim);
+			if (hardcodeConstants) {
+				switch (type) {
+					case 'Array':
+					case 'NumberTexture':
+					case 'MemoryOptimizedNumberTexture':
+					case 'ArrayTexture(1)':
+					case 'ArrayTexture(2)':
+					case 'ArrayTexture(3)':
+					case 'ArrayTexture(4)':
+					case 'Input':
+					case 'HTMLImage':
+						const dim = utils.getDimensions(value, true);
+						const size = utils.dimToTexSize({
+							floatTextures: optimizeFloatMemory,
+							floatOutput: precision === 'single',
+						}, dim);
 
-					result.push(
-						`uniform sampler2D user_${name}`,
-						`ivec2 user_${name}Size = ivec2(${size[0]}, ${size[1]})`,
-						`ivec3 user_${name}Dim = ivec3(${dim[0]}, ${dim[1]}, ${dim[2]})`,
-						`uniform int user_${name}BitRatio`
-					);
-				} else if (type === 'Integer') {
-					result.push(`float user_${name} = ${value}.0`);
-				} else if (type === 'Float') {
-					result.push(`float user_${name} = ${value}`);
+						result.push(
+							`uniform sampler2D user_${name}`,
+							`ivec2 user_${name}Size = ivec2(${size[0]}, ${size[1]})`,
+							`ivec3 user_${name}Dim = ivec3(${dim[0]}, ${dim[1]}, ${dim[2]})`,
+						);
+						break;
+					case 'Integer':
+						result.push(`float user_${name} = ${value}.0`);
+						break;
+					case 'Float':
+					case 'Number':
+						result.push(`float user_${name} = ${value}`);
+						break;
+					default:
+						throw new Error(`Param type ${type} not supported in WebGL`);
 				}
 			} else {
-				if (type === 'Array' || type === 'NumberTexture' || type === 'ArrayTexture(4)' || type === 'Input' || type === 'HTMLImage') {
-					result.push(
-						`uniform sampler2D user_${name}`,
-						`uniform ivec2 user_${name}Size`,
-						`uniform ivec3 user_${name}Dim`
-					);
-					if (type !== 'HTMLImage') {
-						result.push(`uniform int user_${name}BitRatio`)
-					}
-				} else if (type === 'Integer' || type === 'Float' || type === 'Number') {
-					result.push(`uniform float user_${name}`);
-				} else {
-					throw new Error(`Param type ${type} not supported in WebGL`);
+				switch (type) {
+					case 'Array':
+					case 'NumberTexture':
+					case 'MemoryOptimizedNumberTexture':
+					case 'ArrayTexture(1)':
+					case 'ArrayTexture(2)':
+					case 'ArrayTexture(3)':
+					case 'ArrayTexture(4)':
+					case 'Input':
+					case 'HTMLImage':
+						result.push(
+							`uniform sampler2D user_${name}`,
+							`uniform ivec2 user_${name}Size`,
+							`uniform ivec3 user_${name}Dim`,
+						);
+						break;
+					case 'Integer':
+						result.push(`uniform int user_${name}`);
+						break;
+					case 'Float':
+					case 'Number':
+						result.push(`uniform float user_${name}`);
+						break;
+					default:
+						throw new Error(`Param type ${type} not supported in WebGL`);
 				}
 			}
 		}
-		return this._linesToString(result);
+		return utils.linesToString(result);
 	}
 
 	_getMainConstantsString() {
 		const result = [];
-		if (this.constants) {
-			for (let name in this.constants) {
-				if (!this.constants.hasOwnProperty(name)) continue;
-				let value = this.constants[name];
+		const {
+			constants
+		} = this;
+		if (constants) {
+			for (let name in constants) {
+				if (!constants.hasOwnProperty(name)) continue;
+				let value = constants[name];
 				let type = utils.getVariableType(value);
 				switch (type) {
 					case 'Integer':
@@ -5550,13 +6885,15 @@ class WebGLKernel extends GLKernel {
 					case 'Array':
 					case 'Input':
 					case 'HTMLImage':
-					case 'NumberTexture':
+					case 'ArrayTexture(1)':
+					case 'ArrayTexture(2)':
+					case 'ArrayTexture(3)':
 					case 'ArrayTexture(4)':
+					case 'NumberTexture':
 						result.push(
 							`uniform sampler2D constants_${name}`,
 							`uniform ivec2 constants_${name}Size`,
 							`uniform ivec3 constants_${name}Dim`,
-							`uniform int constants_${name}BitRatio`
 						);
 						break;
 					default:
@@ -5564,45 +6901,241 @@ class WebGLKernel extends GLKernel {
 				}
 			}
 		}
-		return this._linesToString(result);
+		return utils.linesToString(result);
 	}
 
-	_getKernelString() {
+	getKernelString() {
+		let kernelResultDeclaration;
+		switch (this.returnType) {
+			case 'Array(2)':
+				kernelResultDeclaration = 'vec2 kernelResult';
+				break;
+			case 'Array(3)':
+				kernelResultDeclaration = 'vec3 kernelResult';
+				break;
+			case 'Array(4)':
+				kernelResultDeclaration = 'vec4 kernelResult';
+				break;
+			case 'LiteralInteger':
+			case 'Float':
+			case 'Number':
+			case 'Integer':
+				kernelResultDeclaration = 'float kernelResult';
+				break;
+			default:
+				if (this.graphical) {
+					kernelResultDeclaration = 'float kernelResult';
+				} else {
+					throw new Error(`unrecognized output type "${ this.returnType }"`);
+				}
+		}
+
 		const result = [];
 		const subKernels = this.subKernels;
 		if (subKernels !== null) {
-			result.push('float kernelResult = 0.0');
+			result.push(
+				kernelResultDeclaration
+			);
 			for (let i = 0; i < subKernels.length; i++) {
 				result.push(
-					`float subKernelResult_${subKernels[i].name} = 0.0`
+					`float subKernelResult_${ subKernels[i].name } = 0.0`
 				);
 			}
 		} else {
-			result.push('float kernelResult = 0.0');
+			result.push(
+				kernelResultDeclaration
+			);
 		}
 
-		const functionBuilder = FunctionBuilder.fromKernel(this, WebGLFunctionNode, {
-			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
-		});
+		return utils.linesToString(result) + this.translatedSource;
+	}
 
-		return this._linesToString(result) + functionBuilder.getPrototypeString('kernel');
+	getMainResultGraphical() {
+		return utils.linesToString([
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  gl_FragColor = actualColor',
+		]);
+	}
+
+	getMainResultPackedPixels() {
+		switch (this.returnType) {
+			case 'LiteralInteger':
+			case 'Number':
+			case 'Integer':
+			case 'Float':
+				return utils.linesToString(this.getMainResultKernelPackedPixels()) +
+					utils.linesToString(this.getMainResultSubKernelPackedPixels());
+			default:
+				throw new Error(`packed output only usable with Numbers, "${this.returnType}" specified`);
+		}
+	}
+
+	getMainResultKernelPackedPixels() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  gl_FragData[0] = encode32(kernelResult)'
+		];
+	}
+
+	getMainResultSubKernelPackedPixels() {
+		const result = [];
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; i++) {
+			result.push(
+				`  gl_FragData[${i + 1}] = encode32(subKernelResult_${this.subKernels[i].name})`
+			);
+		}
+		return result;
+	}
+
+	getMainResultMemoryOptimizedFloats() {
+		const result = [
+			'  index *= 4',
+		];
+
+		switch (this.returnType) {
+			case 'Number':
+			case 'Integer':
+			case 'Float':
+				const channels = ['r', 'g', 'b', 'a'];
+				for (let i = 0; i < channels.length; i++) {
+					const channel = channels[i];
+					this.getMainResultKernelMemoryOptimizedFloats(result, channel);
+					this.getMainResultSubKernelMemoryOptimizedFloats(result, channel);
+					if (i + 1 < channels.length) {
+						result.push('  index += 1');
+					}
+				}
+				break;
+			default:
+				throw new Error(`optimized output only usable with Numbers, ${this.returnType} specified`);
+		}
+
+		return utils.linesToString(result);
+	}
+
+	getMainResultKernelMemoryOptimizedFloats(result, channel) {
+		result.push(
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			`  gl_FragData[0].${channel} = kernelResult`,
+		);
+	}
+
+	getMainResultSubKernelMemoryOptimizedFloats(result, channel) {
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; i++) {
+			result.push(
+				`  gl_FragData[${i + 1}].${channel} = subKernelResult_${this.subKernels[i].name}`,
+			);
+		}
+	}
+
+	getMainResultKernelNumberTexture() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  gl_FragData[0][0] = kernelResult',
+		];
+	}
+
+	getMainResultSubKernelNumberTexture() {
+		const result = [];
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; ++i) {
+			result.push(
+				`  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}`,
+			);
+		}
+		return result;
+	}
+
+	getMainResultKernelArray2Texture() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  gl_FragData[0][0] = kernelResult[0]',
+			'  gl_FragData[0][1] = kernelResult[1]',
+		];
+	}
+
+	getMainResultSubKernelArray2Texture() {
+		const result = [];
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; ++i) {
+			result.push(
+				`  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}[0]`,
+				`  gl_FragData[${i + 1}][1] = subKernelResult_${this.subKernels[i].name}[1]`,
+			);
+		}
+		return result;
+	}
+
+	getMainResultKernelArray3Texture() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  gl_FragData[0][0] = kernelResult[0]',
+			'  gl_FragData[0][1] = kernelResult[1]',
+			'  gl_FragData[0][2] = kernelResult[2]',
+		];
+	}
+
+	getMainResultSubKernelArray3Texture() {
+		const result = [];
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; ++i) {
+			result.push(
+				`  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}[0]`,
+				`  gl_FragData[${i + 1}][1] = subKernelResult_${this.subKernels[i].name}[1]`,
+				`  gl_FragData[${i + 1}][2] = subKernelResult_${this.subKernels[i].name}[2]`,
+			);
+		}
+		return result;
+	}
+
+	getMainResultKernelArray4Texture() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  gl_FragData[0] = kernelResult',
+		];
+	}
+
+	getMainResultSubKernelArray4Texture() {
+		const result = [];
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; ++i) {
+			result.push(
+				`  gl_FragData[${i + 1}] = subKernelResult_${this.subKernels[i].name}`,
+			);
+		}
+		return result;
 	}
 
 	_getMainResultString() {
-		const subKernels = this.subKernels;
+		const {
+			subKernels,
+			precision,
+			floatTextures,
+			graphical,
+			pipeline
+		} = this;
 		const result = [];
 
-		if (this.floatOutput) {
+		if (precision === 'single') {
 			result.push('  index *= 4');
 		}
 
-		if (this.graphical) {
+		if (graphical) {
 			result.push(
 				'  threadId = indexTo3D(index, uOutputDim)',
 				'  kernel()',
-				'  gl_FragColor = actualColor'
+				'  gl_FragColor = actualColor',
 			);
-		} else if (this.floatOutput) {
+		} else if (precision === 'single') {
 			const channels = ['r', 'g', 'b', 'a'];
 
 			for (let i = 0; i < channels.length; ++i) {
@@ -5634,19 +7167,11 @@ class WebGLKernel extends GLKernel {
 			result.push(
 				'  threadId = indexTo3D(index, uOutputDim)',
 				'  kernel()',
-				'  gl_FragColor = encode32(kernelResult)'
+				'  gl_FragColor = encode32(kernelResult)',
 			);
 		}
 
-		return this._linesToString(result);
-	}
-
-	_linesToString(lines) {
-		if (lines.length > 0) {
-			return lines.join(';\n') + ';\n';
-		} else {
-			return '\n';
-		}
+		return utils.linesToString(result);
 	}
 
 	replaceArtifacts(src, map) {
@@ -5811,18 +7336,28 @@ __DIVIDE_WITH_INTEGER_CHECK__;
 const vec2 MAGIC_VEC = vec2(1.0, -256.0);
 const vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);
 const vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536
-float decode32(vec4 rgba) {
+float decode32(vec4 texel) {
   __DECODE32_ENDIANNESS__;
-  rgba *= 255.0;
+  texel *= 255.0;
   vec2 gte128;
-  gte128.x = rgba.b >= 128.0 ? 1.0 : 0.0;
-  gte128.y = rgba.a >= 128.0 ? 1.0 : 0.0;
-  float exponent = 2.0 * rgba.a - 127.0 + dot(gte128, MAGIC_VEC);
+  gte128.x = texel.b >= 128.0 ? 1.0 : 0.0;
+  gte128.y = texel.a >= 128.0 ? 1.0 : 0.0;
+  float exponent = 2.0 * texel.a - 127.0 + dot(gte128, MAGIC_VEC);
   float res = exp2(round(exponent));
-  rgba.b = rgba.b - 128.0 * gte128.x;
-  res = dot(rgba, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;
+  texel.b = texel.b - 128.0 * gte128.x;
+  res = dot(texel, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;
   res *= gte128.y * -2.0 + 1.0;
   return res;
+}
+
+float decode16(vec4 texel, int index) {
+  int channel = integerMod(index, 2);
+  return texel[channel*2] * 255.0 + texel[channel*2 + 1] * 65280.0;
+}
+
+float decode8(vec4 texel, int index) {
+	int channel = integerMod(index, 4);
+  return texel[channel] * 255.0;
 }
 
 vec4 encode32(float f) {
@@ -5831,31 +7366,17 @@ vec4 encode32(float f) {
   float exponent = floor(log2(F));
   float mantissa = (exp2(-exponent) * F);
   // exponent += floor(log2(mantissa));
-  vec4 rgba = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;
-  rgba.rg = integerMod(rgba.rg, 256.0);
-  rgba.b = integerMod(rgba.b, 128.0);
-  rgba.a = exponent*0.5 + 63.5;
-  rgba.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;
-  rgba = floor(rgba);
-  rgba *= 0.003921569; // 1/255
+  vec4 texel = vec4(F * exp2(23.0 - exponent)) * SCALE_FACTOR_INV;
+  texel.rg = integerMod(texel.rg, 256.0);
+  texel.b = integerMod(texel.b, 128.0);
+  texel.a = exponent * 0.5 + 63.5;
+  texel.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;
+  texel = floor(texel);
+  texel *= 0.003921569; // 1/255
   __ENCODE32_ENDIANNESS__;
-  return rgba;
+  return texel;
 }
 // Dragons end here
-
-float decode(vec4 rgba, int x, int bitRatio) {
-  if (bitRatio == 1) {
-    return decode32(rgba);
-  }
-  __DECODE32_ENDIANNESS__;
-  int channel = integerMod(x, bitRatio);
-  if (bitRatio == 4) {
-    return rgba[channel] * 255.0;
-  }
-  else {
-    return rgba[channel*2] * 255.0 + rgba[channel*2 + 1] * 65280.0;
-  }
-}
 
 int index;
 ivec3 threadId;
@@ -5868,26 +7389,81 @@ ivec3 indexTo3D(int idx, ivec3 texDim) {
   return ivec3(x, y, z);
 }
 
-float get(sampler2D tex, ivec2 texSize, ivec3 texDim, int bitRatio, int z, int y, int x) {
+float get32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
-  __GET_TEXTURE_CHANNEL__;
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  __GET_TEXTURE_INDEX__;
   vec4 texel = texture(tex, st / vec2(texSize));
-  __GET_RESULT__;
+  return decode32(texel);
+}
+
+float get16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
+  __GET_WRAPAROUND__;
+  int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
+  int w = texSize.x * 2;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  vec4 texel = texture(tex, st / vec2(texSize.x * 2, texSize.y));
+  return decode16(texel, index);
+}
+
+float get8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
+  __GET_WRAPAROUND__;
+  int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
+  int w = texSize.x * 4;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  vec4 texel = texture(tex, st / vec2(texSize.x * 4, texSize.y));
+  return decode8(texel, index);
+}
+
+float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
+  __GET_WRAPAROUND__;
+  int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
+  int channel = integerMod(index, 4);
+  index = index / 4;
+  int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  index = index / 4;
+  vec4 texel = texture(tex, st / vec2(texSize));
+  return texel[channel];
+}
+
+float getMemoryOptimized16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
+  __GET_WRAPAROUND__;
+  int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
+  int channel = integerMod(index, 4);
+  index = index / 4;
+  int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  index = index / 4;
+  vec4 texel = texture(tex, st / vec2(texSize));
+  return texel[channel];
+}
+
+float getMemoryOptimized8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  ivec3 xyz = ivec3(x, y, z);
+  __GET_WRAPAROUND__;
+  int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
+  int channel = integerMod(index, 4);
+  index = index / 4;
+  int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  index = index / 4;
+  vec4 texel = texture(tex, st / vec2(texSize));
+  return texel[channel];
 }
 
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
-  __GET_TEXTURE_CHANNEL__;
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  __GET_TEXTURE_INDEX__;
   return texture(tex, st / vec2(texSize));
 }
 
@@ -5895,11 +7471,28 @@ vec4 getImage3D(sampler2DArray tex, ivec2 texSize, ivec3 texDim, int z, int y, i
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
-  __GET_TEXTURE_CHANNEL__;
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  __GET_TEXTURE_INDEX__;
   return texture(tex, vec3(st / vec2(texSize), z));
+}
+
+float getFloatFromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
+  return result[0];
+}
+
+vec2 getVec2FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
+  return vec2(result[0], result[1]);
+}
+
+vec3 getVec3FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
+  return vec3(result[0], result[1], result[2]);
+}
+
+vec4 getVec4FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  return getImage2D(tex, texSize, texDim, z, y, x);
 }
 
 vec4 actualColor;
@@ -5923,6 +7516,7 @@ void main(void) {
 module.exports = {
 	fragmentShader
 };
+
 },{}],18:[function(require,module,exports){
 const {
 	WebGLFunctionNode
@@ -5943,7 +7537,7 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 				retArr.push('intBitsToFloat(2139095039)');
 				break;
 			default:
-				const userArgumentName = this.getUserArgumentName(idtNode.name);
+				const userArgumentName = this.getKernelArgumentName(idtNode.name);
 				if (userArgumentName) {
 					retArr.push(`user_${userArgumentName}`);
 				} else {
@@ -6026,8 +7620,13 @@ class WebGL2Kernel extends WebGLKernel {
 		return Object.freeze({
 			isFloatRead: this.getIsFloatRead(),
 			isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
-			kernelMap: true
+			kernelMap: true,
+			isTextureFloat: true,
 		});
+	}
+
+	static getIsTextureFloat() {
+		return true;
 	}
 
 	static getIsIntegerDivisionAccurate() {
@@ -6071,20 +7670,20 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	validateSettings() {
-		if (this.skipValidate) {
+		if (!this.validate) {
 			this.texSize = utils.dimToTexSize({
-				floatTextures: this.floatTextures,
-				floatOutput: this.floatOutput
+				floatTextures: this.optimizeFloatMemory,
+				floatOutput: this.precision === 'single',
 			}, this.output, true);
 			return;
 		}
 
 		const features = this.constructor.features;
-		if (this.floatOutput === true && this.floatOutputForce !== true && !features.isFloatRead) {
+		if (this.precision === 'single' && this.floatOutputForce !== true && !features.isFloatRead) {
 			throw new Error('Float texture outputs are not supported');
-		} else if (this.floatTextures === undefined) {
+		} else if (!this.graphical && this.floatTextures === null && this.precision === null) {
 			this.floatTextures = true;
-			this.floatOutput = features.isFloatRead;
+			this.precision = features.isFloatRead ? 'single' : 'unsigned';
 		}
 
 		if (this.fixIntegerDivisionAccuracy === null) {
@@ -6101,37 +7700,56 @@ class WebGL2Kernel extends WebGLKernel {
 			}
 
 			const argType = utils.getVariableType(arguments[0]);
-			if (argType === 'Array') {
-				this.output = utils.getDimensions(argType);
-			} else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
-				this.output = arguments[0].output;
-			} else {
-				throw new Error('Auto output not supported for input type: ' + argType);
+			switch (argType) {
+				case 'Array':
+					this.output = utils.getDimensions(argType);
+					break;
+				case 'NumberTexture':
+				case 'MemoryOptimizedNumberTexture':
+				case 'ArrayTexture(1)':
+				case 'ArrayTexture(2)':
+				case 'ArrayTexture(3)':
+				case 'ArrayTexture(4)':
+					this.output = arguments[0].output;
+					break;
+				default:
+					throw new Error('Auto output not supported for input type: ' + argType);
 			}
 		}
-
-		this.texSize = utils.dimToTexSize({
-			floatTextures: this.floatTextures,
-			floatOutput: this.floatOutput
-		}, this.output, true);
 
 		if (this.graphical) {
 			if (this.output.length !== 2) {
 				throw new Error('Output must have 2 dimensions on graphical mode');
 			}
 
-			if (this.floatOutput) {
-				this.floatOutput = false;
-				console.warn('Cannot use graphical mode and float output at the same time');
+			if (this.precision === 'single') {
+				console.warn('Cannot use graphical mode and single precision at the same time');
+				this.precision = 'unsigned';
 			}
 
 			this.texSize = utils.clone(this.output);
-		} else if (this.floatOutput === undefined) {
-			this.floatOutput = true;
+			return;
+		} else if (!this.graphical && this.precision === null && features.isTextureFloat) {
+			this.precision = 'single';
 		}
 
-		if (this.floatOutput || this.floatOutputForce) {
+		this.texSize = utils.dimToTexSize({
+			floatTextures: !this.optimizeFloatMemory,
+			floatOutput: this.precision === 'single',
+		}, this.output, true);
+
+		if (this.precision === 'single' || this.floatOutputForce) {
 			this.context.getExtension('EXT_color_buffer_float');
+		}
+	}
+
+	translateSource() {
+		const functionBuilder = FunctionBuilder.fromKernel(this, WebGL2FunctionNode, {
+			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
+		});
+		this.translatedSource = functionBuilder.getPrototypeString('kernel');
+		if (!this.graphical && !this.returnType) {
+			this.returnType = functionBuilder.getKernelResultType();
 		}
 	}
 
@@ -6139,9 +7757,11 @@ class WebGL2Kernel extends WebGLKernel {
 		if (this.program === null) {
 			this.build.apply(this, arguments);
 		}
-		const argumentNames = this.argumentNames;
-		const argumentTypes = this.argumentTypes;
-		const texSize = this.texSize;
+		const {
+			argumentNames,
+			argumentTypes,
+			texSize
+		} = this;
 		const gl = this.context;
 
 		gl.useProgram(this.program);
@@ -6156,7 +7776,7 @@ class WebGL2Kernel extends WebGLKernel {
 
 		this.argumentsLength = 0;
 		for (let texIndex = 0; texIndex < argumentNames.length; texIndex++) {
-			this._addArgument(arguments[texIndex], argumentTypes[texIndex], argumentNames[texIndex]);
+			this.addArgument(arguments[texIndex], argumentTypes[texIndex], argumentNames[texIndex]);
 		}
 
 		if (this.plugins) {
@@ -6183,7 +7803,7 @@ class WebGL2Kernel extends WebGLKernel {
 					output: this.output,
 					context: this.context,
 					gpu: this.gpu,
-					type: 'ArrayTexture(4)'
+					type: this.getReturnTextureType(),
 				});
 			}
 			gl.bindRenderbuffer(gl.RENDERBUFFER, null);
@@ -6196,7 +7816,6 @@ class WebGL2Kernel extends WebGLKernel {
 		if (this.immutable) {
 			this._setupOutputTexture();
 		}
-		const outputTexture = this.outputTexture;
 
 		if (this.subKernels !== null) {
 			if (this.immutable) {
@@ -6211,23 +7830,38 @@ class WebGL2Kernel extends WebGLKernel {
 		if (this.subKernelOutputTextures !== null) {
 			if (this.subKernels !== null) {
 				const output = {
-					result: this.renderOutput(outputTexture)
+					result: this.renderOutput()
 				};
-				for (let i = 0; i < this.subKernels.length; i++) {
-					output[this.subKernels[i].property] = new Texture({
-						texture: this.subKernelOutputTextures[i],
-						size: texSize,
-						dimensions: this.threadDim,
-						output: this.output,
-						context: this.context,
-						gpu: this.gpu,
-					});
+				if (this.pipeline) {
+					for (let i = 0; i < this.subKernels.length; i++) {
+						output[this.subKernels[i].property] = new Texture({
+							texture: this.subKernelOutputTextures[i],
+							size: texSize,
+							dimensions: this.threadDim,
+							output: this.output,
+							context: this.context,
+							gpu: this.gpu,
+							type: this.getReturnTextureType(),
+						});
+					}
+				} else {
+					for (let i = 0; i < this.subKernels.length; i++) {
+						output[this.subKernels[i].property] = new Texture({
+							texture: this.subKernelOutputTextures[i],
+							size: texSize,
+							dimensions: this.threadDim,
+							output: this.output,
+							context: this.context,
+							gpu: this.gpu,
+							type: this.getReturnTextureType(),
+						}).toArray();
+					}
 				}
 				return output;
 			}
 		}
 
-		return this.renderOutput(outputTexture);
+		return this.renderOutput();
 	}
 
 	drawBuffers() {
@@ -6239,17 +7873,44 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	_setupOutputTexture() {
+		const {
+			texSize
+		} = this;
 		const gl = this.context;
-		const texSize = this.texSize;
-		const texture = this.outputTexture = this.context.createTexture();
+		const texture = this.outputTexture = gl.createTexture();
 		gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentNames.length);
 		gl.bindTexture(gl.TEXTURE_2D, texture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		if (this.floatOutput) {
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+		if (this.precision === 'single') {
+			if (this.pipeline) {
+				switch (this.returnType) {
+					case 'Number':
+					case 'Float':
+					case 'Integer':
+						if (this.optimizeFloatMemory) {
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+						} else {
+							gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, texSize[0], texSize[1], 0, gl.RED, gl.FLOAT, null);
+						}
+						break;
+					case 'Array(2)':
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, texSize[0], texSize[1], 0, gl.RG, gl.FLOAT, null);
+						break;
+					case 'Array(3)':
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB32F, texSize[0], texSize[1], 0, gl.RGB, gl.FLOAT, null);
+						break;
+					case 'Array(4)':
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+						break;
+					default:
+						throw new Error('Unhandled return type');
+				}
+			} else {
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+			}
 		} else {
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 		}
@@ -6257,8 +7918,10 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 	_setupSubOutputTextures(length) {
+		const {
+			texSize
+		} = this;
 		const gl = this.context;
-		const texSize = this.texSize;
 		const drawBuffersMap = this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
 		const textures = this.subKernelOutputTextures = [];
 		for (let i = 0; i < length; i++) {
@@ -6271,7 +7934,7 @@ class WebGL2Kernel extends WebGLKernel {
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-			if (this.floatOutput) {
+			if (this.precision === 'single') {
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
 			} else {
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
@@ -6281,7 +7944,7 @@ class WebGL2Kernel extends WebGLKernel {
 	}
 
 
-	_addArgument(value, type, name) {
+	addArgument(value, type, name) {
 		const gl = this.context;
 		const argumentTexture = this.getArgumentTexture(name);
 		if (value instanceof Texture) {
@@ -6289,40 +7952,51 @@ class WebGL2Kernel extends WebGLKernel {
 		}
 		switch (type) {
 			case 'Array':
+			case 'Array(2)':
+			case 'Array(3)':
+			case 'Array(4)':
+			case 'Array2D':
+			case 'Array3D':
 				{
-					const dim = utils.getDimensions(value, true);
-					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, dim);
-					gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
-					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+          const dim = utils.getDimensions(value, true);
+          const bitRatio = this.argumentBitRatios[this.argumentsLength];
+          if (this.precision === 'single') {
+            const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
+            gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+            gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            const length = textureSize[0] * textureSize[1] * bitRatio;
+            const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? value : new Float32Array(value), length);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
-					let length = size[0] * size[1];
+            if (!this.hardcodeConstants) {
+              this.setUniform3iv(`user_${name}Dim`, dim);
+              this.setUniform2iv(`user_${name}Size`, textureSize);
+            }
+            this.setUniform1i(`user_${name}`, this.argumentsLength);
+          } else {
+            const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
+            gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+            gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-					const {
-						valuesFlat,
-						bitRatio
-					} = this.formatArrayTransfer(value, length);
+            const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
+            const valuesFlat = this.formatArrayTransfer(value, length);
+            const buffer = new Uint8Array(valuesFlat.buffer);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 
-					let buffer;
-					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
-					} else {
-						buffer = new Uint8Array(valuesFlat.buffer);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
-					}
-
-					if (!this.hardcodeConstants) {
-						this.setUniform3iv(`user_${name}Dim`, dim);
-						this.setUniform2iv(`user_${name}Size`, size);
-					}
-					this.setUniform1i(`user_${name}BitRatio`, bitRatio);
-					this.setUniform1i(`user_${name}`, this.argumentsLength);
+            if (!this.hardcodeConstants) {
+              this.setUniform3iv(`user_${name}Dim`, dim);
+              this.setUniform2iv(`user_${name}Size`, textureSize);
+            }
+            this.setUniform1i(`user_${name}`, this.argumentsLength);
+          }
 					break;
 				}
 			case 'Integer':
@@ -6334,38 +8008,46 @@ class WebGL2Kernel extends WebGLKernel {
 				}
 			case 'Input':
 				{
-					const input = value;
-					const dim = input.size;
-					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, dim);
-					gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
-					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+          const input = value;
+          const dim = utils.getDimensions(input, true);
+          const bitRatio = this.argumentBitRatios[this.argumentsLength];
+          if (this.precision === 'single') {
+            const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
+            gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+            gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            const length = textureSize[0] * textureSize[1] * bitRatio;
+            const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? input.value : new Float32Array(input.value), length);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
-					let length = size[0] * size[1];
-					const {
-						valuesFlat,
-						bitRatio
-					} = this.formatArrayTransfer(value.value, length);
+            if (!this.hardcodeConstants) {
+              this.setUniform3iv(`user_${name}Dim`, dim);
+              this.setUniform2iv(`user_${name}Size`, textureSize);
+            }
+            this.setUniform1i(`user_${name}`, this.argumentsLength);
+          } else {
+            const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
+            gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+            gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
-					} else {
-						const buffer = new Uint8Array(valuesFlat.buffer);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
-					}
+            const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
+            const valuesFlat = this.formatArrayTransfer(input.value, length);
+            const buffer = new Uint8Array(valuesFlat.buffer);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 
-					if (!this.hardcodeConstants) {
-						this.setUniform3iv(`user_${name}Dim`, dim);
-						this.setUniform2iv(`user_${name}Size`, size);
-					}
-					this.setUniform1i(`user_${name}BitRatio`, bitRatio);
-					this.setUniform1i(`user_${name}`, this.argumentsLength);
+            if (!this.hardcodeConstants) {
+              this.setUniform3iv(`user_${name}Dim`, dim);
+              this.setUniform2iv(`user_${name}Size`, textureSize);
+            }
+            this.setUniform1i(`user_${name}`, this.argumentsLength);
+          }
 					break;
 				}
 			case 'HTMLImage':
@@ -6450,7 +8132,27 @@ class WebGL2Kernel extends WebGLKernel {
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
+			case 'ArrayTexture(1)':
+			case 'ArrayTexture(2)':
+			case 'ArrayTexture(3)':
 			case 'ArrayTexture(4)':
+				{
+					const inputTexture = value;
+					if (inputTexture.context !== this.context) {
+						throw new Error(`argument ${ name} (${ type }) must be from same context`);
+					}
+					const dim = inputTexture.dimensions;
+					const size = inputTexture.size;
+
+					gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
+
+					this.setUniform3iv(`user_${name}Dim`, dim);
+					this.setUniform2iv(`user_${name}Size`, size);
+					this.setUniform1i(`user_${name}`, this.argumentsLength);
+					break;
+				}
+			case 'MemoryOptimizedNumberTexture':
 			case 'NumberTexture':
 				{
 					const inputTexture = value;
@@ -6465,12 +8167,11 @@ class WebGL2Kernel extends WebGLKernel {
 
 					this.setUniform3iv(`user_${name}Dim`, dim);
 					this.setUniform2iv(`user_${name}Size`, size);
-					this.setUniform1i(`user_${name}BitRatio`, 1); 
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
 			default:
-				throw new Error('Input type not supported: ' + value);
+				throw new Error('Argument type not supported: ' + value);
 		}
 		this.argumentsLength++;
 	}
@@ -6492,13 +8193,15 @@ class WebGL2Kernel extends WebGLKernel {
 					case 'Array':
 					case 'Input':
 					case 'HTMLImage':
+					case 'ArrayTexture(1)':
+					case 'ArrayTexture(2)':
+					case 'ArrayTexture(3)':
 					case 'ArrayTexture(4)':
 					case 'NumberTexture':
 						result.push(
 							`uniform highp sampler2D constants_${ name }`,
 							`uniform highp ivec2 constants_${ name }Size`,
 							`uniform highp ivec3 constants_${ name }Dim`,
-							`uniform highp int constants_${ name }BitRatio`
 						);
 						break;
 					case 'HTMLImageArray':
@@ -6506,7 +8209,6 @@ class WebGL2Kernel extends WebGLKernel {
 							`uniform highp sampler2DArray constants_${ name }`,
 							`uniform highp ivec2 constants_${ name }Size`,
 							`uniform highp ivec3 constants_${ name }Dim`,
-							`uniform highp int constants_${ name }BitRatio`
 						);
 						break;
 
@@ -6515,89 +8217,108 @@ class WebGL2Kernel extends WebGLKernel {
 				}
 			}
 		}
-		return this._linesToString(result);
+		return utils.linesToString(result);
 	}
 
-	_addConstant(value, type, name) {
+	addConstant(value, type, name) {
 		const gl = this.context;
-		const argumentTexture = this.getArgumentTexture(name);
+		const constantTexture = this.getArgumentTexture(name);
 		if (value instanceof Texture) {
 			type = value.type;
 		}
 		switch (type) {
 			case 'Array':
-				{
-					const dim = utils.getDimensions(value, true);
-					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, dim);
-					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
-					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+			case 'Array(2)':
+			case 'Array(3)':
+			case 'Array(4)':
+			case 'Array2D':
+			case 'Array3D':
+			  {
+          const dim = utils.getDimensions(value, true);
+          const bitRatio = this.constantBitRatios[name];
+          if (this.precision === 'single') {
+            const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
+            gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+            gl.bindTexture(gl.TEXTURE_2D, constantTexture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            const length = textureSize[0] * textureSize[1] * bitRatio;
+            const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? value : new Float32Array(value), length);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
-					let length = size[0] * size[1];
+            if (!this.hardcodeConstants) {
+              this.setUniform3iv(`constants_${name}Dim`, dim);
+              this.setUniform2iv(`constants_${name}Size`, textureSize);
+            }
+            this.setUniform1i(`constants_${name}`, this.constantsLength);
+          } else {
+            const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
+            gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+            gl.bindTexture(gl.TEXTURE_2D, constantTexture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-					const {
-						valuesFlat,
-						bitRatio
-					} = this.formatArrayTransfer(value, length);
+            const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
+            const valuesFlat = this.formatArrayTransfer(value, length);
+            const buffer = new Uint8Array(valuesFlat.buffer);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 
-					let buffer;
-					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
-					} else {
-						buffer = new Uint8Array(valuesFlat.buffer);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
-					}
-
-					if (!this.hardcodeConstants) {
-						this.setUniform3iv(`constants_${name}Dim`, dim);
-						this.setUniform2iv(`constants_${name}Size`, size);
-					}
-					this.setUniform1i(`constants_${name}BitRatio`, bitRatio);
-					this.setUniform1i(`constants_${name}`, this.constantsLength);
-					break;
-				}
+            if (!this.hardcodeConstants) {
+              this.setUniform3iv(`constants_${name}Dim`, dim);
+              this.setUniform2iv(`constants_${name}Size`, textureSize);
+            }
+            this.setUniform1i(`constants_${name}`, this.constantsLength);
+          }
+        }
+        break;
 			case 'Input':
-				{
-					const input = value;
-					const dim = input.size;
-					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, dim);
-					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
-					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        {
+          const input = value;
+          const dim = utils.getDimensions(input, true);
+          const bitRatio = this.constantBitRatios[name];
+          if (this.precision === 'single') {
+            const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
+            gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+            gl.bindTexture(gl.TEXTURE_2D, constantTexture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            const length = textureSize[0] * textureSize[1] * bitRatio;
+            const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? input.value : new Float32Array(input.value), length);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
-					let length = size[0] * size[1];
-					const {
-						valuesFlat,
-						bitRatio
-					} = this.formatArrayTransfer(value.value, length);
+            if (!this.hardcodeConstants) {
+              this.setUniform3iv(`constants_${name}Dim`, dim);
+              this.setUniform2iv(`constants_${name}Size`, textureSize);
+            }
+            this.setUniform1i(`constants_${name}`, this.constantsLength);
+          } else {
+            const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
+            gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+            gl.bindTexture(gl.TEXTURE_2D, constantTexture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-					if (this.floatTextures) {
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, size[0], size[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
-					} else {
-						const buffer = new Uint8Array(valuesFlat.buffer);
-						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size[0] / bitRatio, size[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
-					}
+            const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
+            const valuesFlat = this.formatArrayTransfer(input.value, length);
+            const buffer = new Uint8Array(valuesFlat.buffer);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 
-					if (!this.hardcodeConstants) {
-						this.setUniform3iv(`constants_${name}Dim`, dim);
-						this.setUniform2iv(`constants_${name}Size`, size);
-					}
-					this.setUniform1i(`constants_${name}BitRatio`, bitRatio);
-					this.setUniform1i(`constants_${name}`, this.constantsLength);
-					break;
-				}
+            if (!this.hardcodeConstants) {
+              this.setUniform3iv(`constants_${name}Dim`, dim);
+              this.setUniform2iv(`constants_${name}Size`, textureSize);
+            }
+            this.setUniform1i(`constants_${name}`, this.argumentsLength);
+          }
+          break;
+        }
 			case 'HTMLImage':
 				{
 					const inputImage = value;
@@ -6605,7 +8326,7 @@ class WebGL2Kernel extends WebGLKernel {
 					const size = [inputImage.width, inputImage.height];
 
 					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
-					gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+					gl.bindTexture(gl.TEXTURE_2D, constantTexture);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -6633,7 +8354,7 @@ class WebGL2Kernel extends WebGLKernel {
 					const size = [inputImages[0].width, inputImages[0].height];
 
 					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
-					gl.bindTexture(gl.TEXTURE_2D_ARRAY, argumentTexture);
+					gl.bindTexture(gl.TEXTURE_2D_ARRAY, constantTexture);
 					gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 					gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 					gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -6680,12 +8401,14 @@ class WebGL2Kernel extends WebGLKernel {
 					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
+			case 'ArrayTexture(1)':
+			case 'ArrayTexture(2)':
+			case 'ArrayTexture(3)':
 			case 'ArrayTexture(4)':
-			case 'NumberTexture':
 				{
 					const inputTexture = value;
 					if (inputTexture.context !== this.context) {
-						throw new Error(`argument ${ name} (${ type }) must be from same context`);
+						throw new Error(`constant ${ name} (${ type }) must be from same context`);
 					}
 					const dim = inputTexture.dimensions;
 					const size = inputTexture.size;
@@ -6695,22 +8418,33 @@ class WebGL2Kernel extends WebGLKernel {
 
 					this.setUniform3iv(`constants_${name}Dim`, dim);
 					this.setUniform2iv(`constants_${name}Size`, size);
-					this.setUniform1i(`constants_${name}BitRatio`, 1); 
+					this.setUniform1i(`constants_${name}`, this.constantsLength);
+					break;
+				}
+			case 'MemoryOptimizedNumberTexture':
+			case 'NumberTexture':
+				{
+					const inputTexture = value;
+					if (inputTexture.context !== this.context) {
+						throw new Error(`constant ${ name} (${ type }) must be from same context`);
+					}
+					const dim = inputTexture.dimensions;
+					const size = inputTexture.size;
+
+					gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+					gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
+
+					this.setUniform3iv(`constants_${name}Dim`, dim);
+					this.setUniform2iv(`constants_${name}Size`, size);
 					this.setUniform1i(`constants_${name}`, this.constantsLength);
 					break;
 				}
 			case 'Integer':
 			case 'Float':
 			default:
-				throw new Error('Input type not supported: ' + value);
+				throw new Error('constant type not supported: ' + value);
 		}
 		this.constantsLength++;
-	}
-	_getGetResultString() {
-		if (!this.floatTextures) {
-			return '  return decode(texel, x, bitRatio);';
-		}
-		return '  return texel[channel];';
 	}
 
 	_getHeaderString() {
@@ -6735,56 +8469,108 @@ class WebGL2Kernel extends WebGLKernel {
 			const name = argumentNames[i];
 			const type = argumentTypes[i];
 			if (this.hardcodeConstants) {
-				if (type === 'Array' || type === 'NumberTexture' || type === 'ArrayTexture(4)') {
-					const dim = utils.getDimensions(value, true);
-					const size = utils.dimToTexSize({
-						floatTextures: this.floatTextures,
-						floatOutput: this.floatOutput
-					}, dim);
+				switch (type) {
+					case 'Array':
+					case 'NumberTexture':
+					case 'MemoryOptimizedNumberTexture':
+					case 'ArrayTexture(1)':
+					case 'ArrayTexture(2)':
+					case 'ArrayTexture(3)':
+					case 'ArrayTexture(4)':
+					case 'Input':
+					case 'HTMLImage':
+						const dim = utils.getDimensions(value, true);
+						const size = utils.dimToTexSize({
+							floatTextures: this.optimizeFloatMemory,
+							floatOutput: this.precision === 'single'
+						}, dim);
 
-					result.push(
-						`uniform highp sampler2D user_${ name }`,
-						`highp ivec2 user_${ name }Size = ivec2(${ size[0] }, ${ size[1] })`,
-						`highp ivec3 user_${ name }Dim = ivec3(${ dim[0] }, ${ dim[1]}, ${ dim[2] })`,
-						`uniform highp int user_${ name }BitRatio`
-					);
-				} else if (type === 'Integer') {
-					result.push(`highp float user_${ name } = ${ value }.0`);
-				} else if (type === 'Float') {
-					result.push(`highp float user_${ name } = ${ value }`);
+						result.push(
+							`uniform highp sampler2D user_${ name }`,
+							`highp ivec2 user_${ name }Size = ivec2(${ size[0] }, ${ size[1] })`,
+							`highp ivec3 user_${ name }Dim = ivec3(${ dim[0] }, ${ dim[1]}, ${ dim[2] })`,
+						);
+						break;
+					case 'Integer':
+						result.push(`highp float user_${ name } = ${ value }.0`);
+						break;
+					case 'Float':
+					case 'Number':
+						result.push(`highp float user_${ name } = ${ value }`);
+						break;
+					default:
+						throw new Error(`Param type ${type} not supported in WebGL2`);
 				}
 			} else {
-				if (type === 'Array' || type === 'NumberTexture' || type === 'ArrayTexture(4)' || type === 'Input' || type === 'HTMLImage') {
-					result.push(
-						`uniform highp sampler2D user_${ name }`,
-						`uniform highp ivec2 user_${ name }Size`,
-						`uniform highp ivec3 user_${ name }Dim`
-					);
-					if (type !== 'HTMLImage') {
-						result.push(`uniform highp int user_${ name }BitRatio`)
-					}
-				} else if (type === 'HTMLImageArray') {
-					result.push(
-						`uniform highp sampler2DArray user_${ name }`,
-						`uniform highp ivec2 user_${ name }Size`,
-						`uniform highp ivec3 user_${ name }Dim`
-					);
-				} else if (type === 'Integer' || type === 'Float' || type === 'Number') {
-					result.push(`uniform float user_${ name }`);
-				} else {
-					throw new Error(`Param type ${type} not supported in WebGL2`);
+				switch (type) {
+					case 'Array':
+					case 'NumberTexture':
+					case 'MemoryOptimizedNumberTexture':
+					case 'ArrayTexture(1)':
+					case 'ArrayTexture(2)':
+					case 'ArrayTexture(3)':
+					case 'ArrayTexture(4)':
+					case 'Input':
+					case 'HTMLImage':
+						result.push(
+							`uniform highp sampler2D user_${ name }`,
+							`uniform highp ivec2 user_${ name }Size`,
+							`uniform highp ivec3 user_${ name }Dim`
+						);
+						break;
+					case 'HTMLImageArray':
+						result.push(
+							`uniform highp sampler2DArray user_${ name }`,
+							`uniform highp ivec2 user_${ name }Size`,
+							`uniform highp ivec3 user_${ name }Dim`
+						);
+						break;
+					case 'Integer':
+					case 'Float':
+					case 'Number':
+						result.push(`uniform float user_${ name }`);
+						break;
+					default:
+						throw new Error(`Param type ${type} not supported in WebGL2`);
 				}
 			}
 		}
-		return this._linesToString(result);
+		return utils.linesToString(result);
 	}
 
-	_getKernelString() {
+	getKernelString() {
+		let kernelResultDeclaration;
+		switch (this.returnType) {
+			case 'Array(2)':
+				kernelResultDeclaration = 'vec2 kernelResult';
+				break;
+			case 'Array(3)':
+				kernelResultDeclaration = 'vec3 kernelResult';
+				break;
+			case 'Array(4)':
+				kernelResultDeclaration = 'vec4 kernelResult';
+				break;
+			case 'LiteralInteger':
+			case 'Float':
+			case 'Number':
+			case 'Integer':
+				kernelResultDeclaration = 'float kernelResult';
+				break;
+			default:
+				if (this.graphical) {
+					kernelResultDeclaration = 'float kernelResult';
+				} else {
+					throw new Error(`unrecognized output type "${ this.returnType }"`);
+				}
+		}
+
 		const result = [];
 		const subKernels = this.subKernels;
 		if (subKernels !== null) {
-			result.push('float kernelResult = 0.0');
-			result.push('layout(location = 0) out vec4 data0');
+			result.push(
+				kernelResultDeclaration,
+				'layout(location = 0) out vec4 data0'
+			);
 			for (let i = 0; i < subKernels.length; i++) {
 				result.push(
 					`float subKernelResult_${ subKernels[i].name } = 0.0`,
@@ -6792,68 +8578,178 @@ class WebGL2Kernel extends WebGLKernel {
 				);
 			}
 		} else {
-			result.push('out vec4 data0');
-			result.push('float kernelResult = 0.0');
+			result.push(
+				'out vec4 data0',
+				kernelResultDeclaration
+			);
 		}
 
-		const functionBuilder = FunctionBuilder.fromKernel(this, WebGL2FunctionNode, {
-			fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
-		});
-
-		return this._linesToString(result) + functionBuilder.getPrototypeString('kernel');
+		return utils.linesToString(result) + this.translatedSource;
 	}
 
-	_getMainResultString() {
-		const subKernels = this.subKernels;
+	getMainResultGraphical() {
+		return utils.linesToString([
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  data0 = actualColor',
+		]);
+	}
+
+	getMainResultPackedPixels() {
+		switch (this.returnType) {
+			case 'LiteralInteger':
+			case 'Number':
+			case 'Integer':
+			case 'Float':
+				return utils.linesToString(this.getMainResultKernelPackedPixels()) +
+					utils.linesToString(this.getMainResultSubKernelPackedPixels());
+			default:
+				throw new Error(`packed output only usable with Numbers, "${this.returnType}" specified`);
+		}
+	}
+
+	getMainResultKernelPackedPixels() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  data0 = encode32(kernelResult)'
+		];
+	}
+
+	getMainResultSubKernelPackedPixels() {
 		const result = [];
-
-		if (this.floatOutput) {
-			result.push('  index *= 4');
-		}
-
-		if (this.graphical) {
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; i++) {
 			result.push(
-				'  threadId = indexTo3D(index, uOutputDim)',
-				'  kernel()',
-				'  data0 = actualColor'
+				`  data${i + 1} = encode32(subKernelResult_${this.subKernels[i].name})`
 			);
-		} else if (this.floatOutput) {
-			const channels = ['r', 'g', 'b', 'a'];
+		}
+		return result;
+	}
 
-			for (let i = 0; i < channels.length; ++i) {
-				result.push('  threadId = indexTo3D(index, uOutputDim)');
-				result.push('  kernel()');
+	getMainResultMemoryOptimizedFloats() {
+		const result = [
+			'  index *= 4',
+		];
 
-				if (subKernels) {
-					result.push(`  data0.${channels[i]} = kernelResult`);
-
-					for (let j = 0; j < subKernels.length; ++j) {
-						result.push(`  data${ j + 1 }.${channels[i]} = subKernelResult_${ subKernels[j].name }`);
+		switch (this.returnType) {
+			case 'Number':
+			case 'Integer':
+			case 'Float':
+				const channels = ['r', 'g', 'b', 'a'];
+				for (let i = 0; i < channels.length; i++) {
+					const channel = channels[i];
+					this.getMainResultKernelMemoryOptimizedFloats(result, channel);
+					this.getMainResultSubKernelMemoryOptimizedFloats(result, channel);
+					if (i + 1 < channels.length) {
+						result.push('  index += 1');
 					}
-				} else {
-					result.push(`  data0.${channels[i]} = kernelResult`);
 				}
-
-				if (i < channels.length - 1) {
-					result.push('  index += 1');
-				}
-			}
-		} else if (subKernels !== null) {
-			result.push('  threadId = indexTo3D(index, uOutputDim)');
-			result.push('  kernel()');
-			result.push('  data0 = encode32(kernelResult)');
-			for (let i = 0; i < subKernels.length; i++) {
-				result.push(`  data${ i + 1 } = encode32(subKernelResult_${ subKernels[i].name })`);
-			}
-		} else {
-			result.push(
-				'  threadId = indexTo3D(index, uOutputDim)',
-				'  kernel()',
-				'  data0 = encode32(kernelResult)'
-			);
+				break;
+			default:
+				throw new Error(`optimized output only usable with Numbers, ${this.returnType} specified`);
 		}
 
-		return this._linesToString(result);
+		return utils.linesToString(result);
+	}
+
+	getMainResultKernelMemoryOptimizedFloats(result, channel) {
+		result.push(
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			`  data0.${channel} = kernelResult`,
+		);
+	}
+
+	getMainResultSubKernelMemoryOptimizedFloats(result, channel) {
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; i++) {
+			result.push(
+				`  data${i + 1}.${channel} = subKernelResult_${this.subKernels[i].name}`,
+			);
+		}
+	}
+
+	getMainResultKernelNumberTexture() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  data0[0] = kernelResult',
+		];
+	}
+
+	getMainResultSubKernelNumberTexture() {
+		const result = [];
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; ++i) {
+			result.push(
+				`  data${i + 1}[0] = subKernelResult_${this.subKernels[i].name}`,
+			);
+		}
+		return result;
+	}
+
+	getMainResultKernelArray2Texture() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  data0[0] = kernelResult[0]',
+			'  data0[1] = kernelResult[1]',
+		];
+	}
+
+	getMainResultSubKernelArray2Texture() {
+		const result = [];
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; ++i) {
+			result.push(
+				`  data${i + 1}[0] = subKernelResult_${this.subKernels[i].name}[0]`,
+				`  data${i + 1}[1] = subKernelResult_${this.subKernels[i].name}[1]`,
+			);
+		}
+		return result;
+	}
+
+	getMainResultKernelArray3Texture() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  data0[0] = kernelResult[0]',
+			'  data0[1] = kernelResult[1]',
+			'  data0[2] = kernelResult[2]',
+		];
+	}
+
+	getMainResultSubKernelArray3Texture() {
+		const result = [];
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; ++i) {
+			result.push(
+				`  data${i + 1}[0] = subKernelResult_${this.subKernels[i].name}[0]`,
+				`  data${i + 1}[1] = subKernelResult_${this.subKernels[i].name}[1]`,
+				`  data${i + 1}[2] = subKernelResult_${this.subKernels[i].name}[2]`,
+			);
+		}
+		return result;
+	}
+
+	getMainResultKernelArray4Texture() {
+		return [
+			'  threadId = indexTo3D(index, uOutputDim)',
+			'  kernel()',
+			'  data0 = kernelResult',
+		];
+	}
+
+	getMainResultSubKernelArray4Texture() {
+		const result = [];
+		if (!this.subKernels) return result;
+		for (let i = 0; i < this.subKernels.length; ++i) {
+			result.push(
+				`  data${i + 1} = subKernelResult_${this.subKernels[i].name}`,
+			);
+		}
+		return result;
 	}
 
 	getFragmentShader(args) {
@@ -6955,7 +8851,17 @@ const internalKernels = {
 	'webgl': WebGLKernel,
 };
 
+let validate = true;
+
 class GPU {
+	static disableValidation() {
+		validate = false;
+	}
+
+	static enableValidation() {
+		validate = true;
+	}
+
 	static get isGPUSupported() {
 		return kernelOrder.some(Kernel => Kernel.isSupported);
 	}
@@ -6988,7 +8894,7 @@ class GPU {
 		return WebGL2Kernel.isSupported;
 	}
 
-	static get isFloatOutputSupported() {
+	static get isSinglePrecisionSupported() {
 		return kernelOrder.some(Kernel => Kernel.isSupported && Kernel.features.isFloatRead && Kernel.features.isTextureFloat);
 	}
 
@@ -7025,6 +8931,9 @@ class GPU {
 			for (let i = 0; i < kernelOrder.length; i++) {
 				const ExternalKernel = kernelOrder[i];
 				if (ExternalKernel.isContextMatch(this.context)) {
+					if (!ExternalKernel.isSupported) {
+						throw new Error(`Kernel type ${ExternalKernel.name} not supported`);
+					}
 					Kernel = ExternalKernel;
 					break;
 				}
@@ -7087,6 +8996,11 @@ class GPU {
 			functions: this.functions,
 			nativeFunctions: this.nativeFunctions,
 			gpu: this,
+			validate,
+			onRequestFallback: (args) => {
+				const fallbackKernel = new CPUKernel(source, mergedSettings);
+				return fallbackKernel.apply(fallbackKernel, args);
+			}
 		}, settings || {});
 
 		const kernel = kernelRunShortcut(new this.Kernel(source, mergedSettings));
@@ -7150,14 +9064,13 @@ class GPU {
 	}
 
 	combineKernels() {
-		const lastKernel = arguments[arguments.length - 2];
+		const firstKernel = arguments[0];
 		const combinedKernel = arguments[arguments.length - 1];
-		if (this.mode === 'cpu') return combinedKernel;
-
+		if (firstKernel.kernel.constructor.mode === 'cpu') return combinedKernel;
 		const canvas = arguments[0].canvas;
-		let context = arguments[0].context;
-
-		for (let i = 0; i < arguments.length - 1; i++) {
+		const context = arguments[0].context;
+		const max = arguments.length - 1;
+		for (let i = 0; i < max; i++) {
 			arguments[i]
 				.setCanvas(canvas)
 				.setContext(context)
@@ -7165,34 +9078,11 @@ class GPU {
 		}
 
 		return function() {
-			combinedKernel.apply(null, arguments);
-			const texSize = lastKernel.texSize;
-			const gl = lastKernel.context;
-			const threadDim = lastKernel.threadDim;
-			let result;
-			if (lastKernel.floatOutput) {
-				const w = texSize[0];
-				const h = Math.ceil(texSize[1] / 4);
-				result = new Float32Array(w * h * 4);
-				gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
-			} else {
-				const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
-				gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
-				result = new Float32Array(bytes.buffer);
+			const texture = combinedKernel.apply(this, arguments);
+			if (texture.toArray) {
+				return texture.toArray();
 			}
-
-			result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
-
-			if (lastKernel.output.length === 1) {
-				return result;
-			} else if (lastKernel.output.length === 2) {
-				return utils.splitArray(result, lastKernel.output[0]);
-			} else if (lastKernel.output.length === 3) {
-				const cube = utils.splitArray(result, lastKernel.output[0] * lastKernel.output[1]);
-				return cube.map(function(x) {
-					return utils.splitArray(x, lastKernel.output[0]);
-				});
-			}
+			return texture;
 		};
 	}
 
@@ -7203,7 +9093,9 @@ class GPU {
 
 		let argumentTypes = [];
 
-		if (typeof settings.argumentTypes === 'object') {
+		if (Array.isArray(settings.argumentTypes)) {
+			argumentTypes = settings.argumentTypes;
+		} else if (typeof settings.argumentTypes === 'object') {
 			argumentTypes = utils.getArgumentNamesFromString(sourceString)
 				.map(name => settings.argumentTypes[name]) || [];
 		} else {
@@ -7223,12 +9115,17 @@ class GPU {
 			throw new Error('Cannot call "addNativeFunction" after "createKernels" has been called.');
 		}
 		settings = settings || {};
+		const {
+			argumentTypes,
+			argumentNames
+		} = this.Kernel.nativeFunctionArguments(source) || {};
 		this.nativeFunctions.push({
 			name,
 			source,
 			settings,
-			argumentTypes: this.Kernel.nativeFunctionArgumentTypes(source),
-			returnType: this.Kernel.nativeFunctionReturnType(source),
+			argumentTypes,
+			argumentNames,
+			returnType: settings.returnType || this.Kernel.nativeFunctionReturnType(source),
 		});
 		return this;
 	}
@@ -7248,6 +9145,7 @@ module.exports = {
 	kernelOrder,
 	kernelTypes
 };
+
 },{"./backend/cpu/kernel":6,"./backend/headless-gl/kernel":10,"./backend/web-gl/kernel":15,"./backend/web-gl2/kernel":19,"./kernel-run-shortcut":25,"./utils":28,"gpu-mock.js":2}],23:[function(require,module,exports){
 const {
 	GPU
@@ -7322,22 +9220,24 @@ module.exports = {
 class Input {
 	constructor(value, size) {
 		this.value = value;
+		this.size = new Int32Array(3);
 		if (Array.isArray(size)) {
-			this.size = [];
-			for (let i = 0; i < size.length; i++) {
-				this.size[i] = size[i];
-			}
-			while (this.size.length < 3) {
-				this.size.push(1);
+			for (let i = 0; i < this.size.length; i++) {
+				this.size[i] = size[i] || 1;
 			}
 		} else {
 			if (size.z) {
-				this.size = [size.x, size.y, size.z];
+				this.size = new Int32Array([size.x, size.y, size.z]);
 			} else if (size.y) {
-				this.size = [size.x, size.y, 1];
+				this.size = new Int32Array([size.x, size.y, 1]);
 			} else {
-				this.size = [size.x, 1, 1];
+				this.size = new Int32Array([size.x, 1, 1]);
 			}
+		}
+
+		const [h,w,d] = this.size;
+		if (this.value.length !== (h * w * d)) {
+			throw new Error(`Input size ${this.value.length} does not match ${w} * ${h} * ${d} = ${(h * w * d)}`);
 		}
 	}
 }
@@ -7350,6 +9250,7 @@ module.exports = {
 	Input,
 	input
 };
+
 },{}],25:[function(require,module,exports){
 const {
 	utils
@@ -7369,6 +9270,11 @@ function kernelRunShortcut(kernel) {
 					shortcut[key] = function() {
 						kernel[key].apply(kernel, arguments);
 						return shortcut;
+					};
+				} else if (key === 'requestFallback') {
+					const requestFallback = kernel[key].bind(kernel);
+					shortcut[key] = () => {
+						kernel = requestFallback();
 					};
 				} else {
 					shortcut[key] = kernel[key].bind(kernel);
@@ -7451,7 +9357,7 @@ class Texture {
 			output,
 			context,
 			gpu,
-			type = 'NumberTexture'
+			type = 'NumberTexture',
 		} = settings;
 		if (!output) throw new Error('settings property "output" required.');
 		if (!context) throw new Error('settings property "context" required.');
@@ -7466,14 +9372,37 @@ class Texture {
 	}
 
 	toArray(gpu) {
-		if (this.kernel) return this.kernel(this);
+		let {
+			kernel
+		} = this;
+		if (kernel) return kernel(this);
 		gpu = gpu || this.gpu;
 		if (!gpu) throw new Error('settings property "gpu" or argument required.');
-		this.kernel = gpu.createKernel(function(x) {
+		kernel = gpu.createKernel(function(x) {
 			return x[this.thread.z][this.thread.y][this.thread.x];
-		}).setOutput(this.output);
+		}, {
+			output: this.output,
+			precision: this.getPrecision(),
+			optimizeFloatMemory: this.type === 'MemoryOptimizedNumberTexture',
+		});
 
-		return this.kernel(this);
+		this.kernel = kernel;
+		return kernel(this);
+	}
+
+	getPrecision() {
+		switch (this.type) {
+			case 'NumberTexture':
+				return 'unsigned';
+			case 'MemoryOptimizedNumberTexture':
+			case 'ArrayTexture(1)':
+			case 'ArrayTexture(2)':
+			case 'ArrayTexture(3)':
+			case 'ArrayTexture(4)':
+				return 'single';
+			default:
+				throw new Error('Unknown texture type');
+		}
 	}
 
 	delete() {
@@ -7484,6 +9413,7 @@ class Texture {
 module.exports = {
 	Texture
 };
+
 },{}],28:[function(require,module,exports){
 const {
 	Input
@@ -7584,32 +9514,46 @@ const utils = {
 
 
 	dimToTexSize(opt, dimensions, output) {
-		let numTexels = dimensions[0];
-		let w = dimensions[0];
-		let h = dimensions[1];
-		for (let i = 1; i < dimensions.length; i++) {
-			numTexels *= dimensions[i];
-		}
+		let [w, h, d] = dimensions;
+		let texelCount = (w || 1) * (h || 1) * (d || 1);
 
-		if (opt.floatTextures && (!output || opt.floatOutput)) {
-			w = numTexels * 4;
+		if (opt.floatTextures && (!output || opt.precision === 'single')) {
+			w = texelCount = Math.ceil(texelCount / 4);
 		}
-
-		if (h > 1 && w * h === numTexels) {
-			return [w, h];
+		if (h > 1 && w * h === texelCount) {
+			return new Int32Array([w, h]);
 		}
-		const sqrt = Math.sqrt(numTexels);
-		let high = Math.ceil(sqrt);
-		let low = Math.floor(sqrt);
-		while (high * low > numTexels) {
-			high--;
-			low = Math.ceil(numTexels / high);
-		}
-		w = low;
-		h = Math.ceil(numTexels / w);
-		return [w, h];
+		return utils.closestSquareDimensions(texelCount);
 	},
 
+	closestSquareDimensions(length) {
+		const sqrt = Math.sqrt(length);
+		let high = Math.ceil(sqrt);
+		let low = Math.floor(sqrt);
+		while (high * low < length) {
+			high--;
+			low = Math.ceil(length / high);
+		}
+		return new Int32Array([low, Math.ceil(length / low)]);
+	},
+
+	getMemoryOptimizedFloatTextureSize(dimensions, bitRatio) {
+		const [w, h, d] = dimensions;
+		const totalArea = utils.roundTo((w || 1) * (h || 1) * (d || 1), 4);
+		const texelCount = totalArea / bitRatio;
+		return utils.closestSquareDimensions(texelCount);
+	},
+
+	getMemoryOptimizedPackedTextureSize(dimensions, bitRatio) {
+		const [w, h, d] = dimensions;
+		const totalArea = utils.roundTo((w || 1) * (h || 1) * (d || 1), 4);
+		const texelCount = totalArea / (4 / bitRatio);
+		return utils.closestSquareDimensions(texelCount);
+	},
+
+	roundTo(n, d) {
+		return Math.floor((n + d - 1) / d) * d;
+	},
 	getDimensions(x, pad) {
 		let ret;
 		if (utils.isArray(x)) {
@@ -7625,11 +9569,11 @@ const utils = {
 		} else if (x instanceof Input) {
 			ret = x.size;
 		} else {
-			throw new Error('Unknown dimensions of ' + x);
+			throw new Error(`Unknown dimensions of ${x}`);
 		}
 
 		if (pad) {
-			ret = utils.clone(ret);
+			ret = Array.from(ret);
 			while (ret.length < 3) {
 				ret.push(1);
 			}
@@ -7697,6 +9641,14 @@ const utils = {
 		} while (obj = Object.getPrototypeOf(obj));
 
 		return props;
+	},
+
+	linesToString(lines) {
+		if (lines.length > 0) {
+			return lines.join(';\n') + ';\n';
+		} else {
+			return '\n';
+		}
 	}
 };
 
@@ -7705,4 +9657,5 @@ const _systemEndianness = utils.getSystemEndianness();
 module.exports = {
 	utils
 };
+
 },{"./input":24,"./texture":27}]},{},[21]);
