@@ -146,17 +146,16 @@ const utils = {
 
 	dimToTexSize(opt, dimensions, output) {
 		let [w, h, d] = dimensions;
-		let numTexels = (w || 1) * (h || 1) * (d || 1);
+		let texelCount = (w || 1) * (h || 1) * (d || 1);
 
-		if (opt.floatTextures && (!output || opt.floatOutput)) {
-			w = numTexels * 4;
+		if (opt.floatTextures && (!output || opt.precision === 'single')) {
+			w = texelCount = Math.ceil(texelCount / 4);
 		}
-
 		// if given dimensions == a 2d image
-		if (h > 1 && !d && w * h === numTexels) {
+		if (h > 1 && w * h === texelCount) {
 			return new Int32Array([w, h]);
 		}
-		return utils.closestSquareDimensions(numTexels);
+		return utils.closestSquareDimensions(texelCount);
 	},
 
 	/**
@@ -172,20 +171,32 @@ const utils = {
 			high--;
 			low = Math.ceil(length / high);
 		}
-		return [low, Math.ceil(length / low)];
+		return new Int32Array([low, Math.ceil(length / low)]);
 	},
 
 	/**
 	 * A texture takes up four
 	 * @param {OutputDimensions} dimensions
+	 * @param {Number} bitRatio
 	 * @returns {TextureDimensions}
 	 */
-	getMemoryOptimizedFloatTextureSize(dimensions) {
-		let [w, h, d] = dimensions;
-		let totalArea = utils.roundTo((w || 1) * (h || 1) * (d || 1), 4);
+	getMemoryOptimizedFloatTextureSize(dimensions, bitRatio) {
+		const [w, h, d] = dimensions;
+		const totalArea = utils.roundTo((w || 1) * (h || 1) * (d || 1), 4);
+		const texelCount = totalArea / bitRatio;
+		return utils.closestSquareDimensions(texelCount);
+	},
 
-		const texelCount = totalArea / 4;
-
+	/**
+	 *
+	 * @param dimensions
+	 * @param bitRatio
+	 * @returns {*|TextureDimensions}
+	 */
+	getMemoryOptimizedPackedTextureSize(dimensions, bitRatio) {
+		const [w, h, d] = dimensions;
+		const totalArea = utils.roundTo((w || 1) * (h || 1) * (d || 1), 4);
+		const texelCount = totalArea / (4 / bitRatio);
 		return utils.closestSquareDimensions(texelCount);
 	},
 
@@ -217,7 +228,7 @@ const utils = {
 		}
 
 		if (pad) {
-			ret = utils.clone(ret);
+			ret = Array.from(ret);
 			while (ret.length < 3) {
 				ret.push(1);
 			}
@@ -256,7 +267,7 @@ const utils = {
 
 	/**
 	 * Puts a nested 1d, 2d, or 3d array into a one-dimensional target array
-	 * @param {Float32Array|Uint8Array} array
+	 * @param {Float32Array|Uint16Array|Uint8Array} array
 	 * @param {Float32Array} target
 	 */
 	flattenTo(array, target) {

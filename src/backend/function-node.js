@@ -28,6 +28,7 @@ class FunctionNode {
 		this.calledFunctionsArguments = {};
 		this.constants = {};
 		this.constantTypes = {};
+		this.constantBitRatios = {};
 		this.isRootKernel = false;
 		this.isSubKernel = false;
 		this.debug = null;
@@ -36,17 +37,19 @@ class FunctionNode {
 		this.lookupReturnType = null;
 		this.lookupArgumentType = null;
 		this.lookupFunctionArgumentTypes = null;
+		this.lookupFunctionArgumentBitRatio = null;
 		this.triggerImplyArgumentType = null;
 		this.triggerTrackArgumentSynonym = null;
 		this.lookupArgumentSynonym = null;
 		this.onNestedFunction = null;
 		this.onFunctionCall = null;
 		this.optimizeFloatMemory = null;
-		this.floatOutput = null;
+		this.precision = null;
 		this.loopMaxIterations = null;
 		this.argumentNames = (typeof this.source === 'string' ? utils.getArgumentNamesFromString(this.source) : null);
 		this.argumentTypes = [];
 		this.argumentSizes = [];
+		this.argumentBitRatios = null;
 		this.returnType = null;
 		this.output = [];
 		this.plugins = null;

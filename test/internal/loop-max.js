@@ -14,7 +14,8 @@ test('loop max output webgl', () => {
     isRootKernel: true,
     name: 'kernel',
     output: [1],
-    argumentTypes: ['Number', 'Array']
+    argumentTypes: ['Number', 'Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
   });
 
   assert.equal(
@@ -24,7 +25,7 @@ test('loop max output webgl', () => {
     '\nint user_i=0;' +
     '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
     '\nif (!(user_i<int(user_a))) break;' +
-    '\nuser_sum+=get(user_b, user_bSize, user_bDim, user_bBitRatio, 0, threadId.x, user_i);' +
+    '\nuser_sum+=get32(user_b, user_bSize, user_bDim, 0, threadId.x, user_i);' +
     '\nuser_i++;}' +
     '\n' +
     '\nkernelResult = user_sum;return;' +
@@ -43,6 +44,7 @@ test('loop max output webgl2', () => {
     name: 'kernel',
     output: [1],
     argumentTypes: ['Number', 'Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
   });
 
   assert.equal(
@@ -52,7 +54,7 @@ test('loop max output webgl2', () => {
     '\nint user_i=0;' +
     '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
     '\nif (!(user_i<int(user_a))) break;' +
-    '\nuser_sum+=get(user_b, user_bSize, user_bDim, user_bBitRatio, 0, threadId.x, user_i);' +
+    '\nuser_sum+=get32(user_b, user_bSize, user_bDim, 0, threadId.x, user_i);' +
     '\nuser_i++;}' +
     '\n' +
     '\nkernelResult = user_sum;return;' +

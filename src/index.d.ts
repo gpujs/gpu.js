@@ -7,7 +7,7 @@ export class GPU {
   static isKernelMapSupported: boolean;
   static isOffscreenCanvasSupported: boolean;
   static isGPUHTMLImageArraySupported: boolean;
-  static isFloatOutputSupported: boolean;
+  static isSinglePrecisionSupported: boolean;
   constructor(settings?: IGPUSettings);
   functions: IGPUFunction[];
   nativeFunctions: IGPUNativeFunction[];
@@ -195,6 +195,7 @@ export interface IKernelXYZ {
 
 export interface IKernelSettings {
   output: number[] | IKernelXYZ;
+  precision: 'single' | 'unsigned';
   constants?: object;
   context?: any;
   canvas?: any;
@@ -359,3 +360,10 @@ export interface IPlugin {
 
 export type OutputDimensions = [number, number, number];
 export type TextureDimensions = [number, number];
+
+export class Input {
+  value: number[];
+  size: number[];
+  constructor(value: number[], size: OutputDimensions);
+}
+export type input = (value: number[], size: OutputDimensions) => Input;

@@ -27,7 +27,8 @@ class GLKernel extends Kernel {
 			canvas: this.testCanvas,
 			validate: false,
 			output: [1],
-			floatOutput: true,
+			precision: 'single',
+			//TODO: not sure how to handle?
 			floatOutputForce: true,
 			returnType: 'Number'
 		});
@@ -45,7 +46,8 @@ class GLKernel extends Kernel {
 			canvas: this.testCanvas,
 			validate: false,
 			output: [2],
-			returnType: 'Number'
+			returnType: 'Number',
+			precision: 'unsigned',
 		});
 		const result = kernel.run([6, 6030401], [3, 3991]);
 		kernel.destroy(true);
@@ -93,13 +95,14 @@ class GLKernel extends Kernel {
 
 	/**
 	 * @desc Toggle output mode
-	 * @param {Boolean} flag - true to enable float
+	 * @param {String} flag - 'single' or 'unsigned'
 	 */
-	setFloatOutput(flag) {
-		this.floatOutput = flag;
+	setPrecision(flag) {
+		this.precision = flag;
 		return this;
 	}
 
+	// TODO: not sure how to handle
 	setFloatOutputForce(flag) {
 		this.floatOutputForce = flag;
 		return this;
@@ -245,7 +248,7 @@ class GLKernel extends Kernel {
 			threadDim
 		} = lastKernel.texSize;
 		let result;
-		if (lastKernel.floatOutput) {
+		if (lastKernel.precision === 'single') {
 			const w = texSize[0];
 			const h = Math.ceil(texSize[1] / 4);
 			result = new Float32Array(w * h * 4 * 4);
@@ -274,7 +277,7 @@ class GLKernel extends Kernel {
 		super(source, settings);
 		this.texSize = null;
 		this.floatTextures = null;
-		this.floatOutput = null;
+		// TODO: not sure how to handle
 		this.floatOutputForce = null;
 		this.fixIntegerDivisionAccuracy = null;
 		this.translatedSource = null;
@@ -292,8 +295,9 @@ class GLKernel extends Kernel {
 	pickRenderStrategy(args) {
 		// TODO: replace boolean returns with setting a state that belongs on this that represents the need for fallback
 		if (this.graphical) return;
-		if (!this.floatOutput) {
+		if (this.precision === 'unsigned') {
 			switch (this.returnType) {
+				case 'LiteralInteger':
 				case 'Float':
 				case 'Number':
 				case 'Integer':
@@ -317,78 +321,82 @@ class GLKernel extends Kernel {
 					this.onRequestFallback(args);
 					return false;
 			}
-		}
-		if (this.pipeline) {
-			this.renderStrategy = renderStrategy.FloatTexture;
-			this.renderOutput = this.renderTexture;
-			return true;
-		}
-		switch (this.returnType) {
-			case 'Float':
-			case 'Number':
-			case 'Integer':
-				if (this.output[2] > 0) {
-					if (this.optimizeFloatMemory) {
-						this.renderStrategy = renderStrategy.MemoryOptimizedFloatPixelToMemoryOptimized3DFloat;
-						this.renderOutput = this.renderMemoryOptimized3DFloat;
+		} else if (this.precision === 'single') {
+			if (this.pipeline) {
+				this.renderStrategy = renderStrategy.FloatTexture;
+				this.renderOutput = this.renderTexture;
+				return true;
+			}
+			switch (this.returnType) {
+				case 'LiteralInteger':
+				case 'Float':
+				case 'Number':
+				case 'Integer':
+					if (this.output[2] > 0) {
+						if (this.optimizeFloatMemory) {
+							this.renderStrategy = renderStrategy.MemoryOptimizedFloatPixelToMemoryOptimized3DFloat;
+							this.renderOutput = this.renderMemoryOptimized3DFloat;
+						} else {
+							this.renderStrategy = renderStrategy.FloatPixelTo3DFloat;
+							this.renderOutput = this.render3DFloat;
+						}
+					} else if (this.output[1] > 0) {
+						if (this.optimizeFloatMemory) {
+							this.renderStrategy = renderStrategy.MemoryOptimizedFloatPixelToMemoryOptimized2DFloat;
+							this.renderOutput = this.renderMemoryOptimized2DFloat;
+						} else {
+							this.renderStrategy = renderStrategy.FloatPixelTo2DFloat;
+							this.renderOutput = this.render2DFloat;
+						}
 					} else {
-						this.renderStrategy = renderStrategy.FloatPixelTo3DFloat;
-						this.renderOutput = this.render3DFloat;
+						if (this.optimizeFloatMemory) {
+							this.renderStrategy = renderStrategy.MemoryOptimizedFloatPixelToMemoryOptimizedFloat;
+							this.renderOutput = this.renderMemoryOptimizedFloat;
+						} else {
+							this.renderStrategy = renderStrategy.FloatPixelToFloat;
+							this.renderOutput = this.renderFloat;
+						}
 					}
-				} else if (this.output[1] > 0) {
-					if (this.optimizeFloatMemory) {
-						this.renderStrategy = renderStrategy.MemoryOptimizedFloatPixelToMemoryOptimized2DFloat;
-						this.renderOutput = this.renderMemoryOptimized2DFloat;
+					return true;
+				case 'Array(2)':
+					if (this.output[2] > 0) {
+						this.renderStrategy = renderStrategy.FloatPixelTo3DArray2;
+						this.renderOutput = this.render3DArray2;
+					} else if (this.output[1] > 0) {
+						this.renderStrategy = renderStrategy.FloatPixelTo2DArray2;
+						this.renderOutput = this.render2DArray2;
 					} else {
-						this.renderStrategy = renderStrategy.FloatPixelTo2DFloat;
-						this.renderOutput = this.render2DFloat;
+						this.renderStrategy = renderStrategy.FloatPixelToArray2;
+						this.renderOutput = this.renderArray2;
 					}
-				} else {
-					if (this.optimizeFloatMemory) {
-						this.renderStrategy = renderStrategy.MemoryOptimizedFloatPixelToMemoryOptimizedFloat;
-						this.renderOutput = this.renderMemoryOptimizedFloat;
+					return true;
+				case 'Array(3)':
+					if (this.output[2] > 0) {
+						this.renderStrategy = renderStrategy.FloatPixelTo3DArray3;
+						this.renderOutput = this.render3DArray3;
+					} else if (this.output[1] > 0) {
+						this.renderStrategy = renderStrategy.FloatPixelTo2DArray3;
+						this.renderOutput = this.render2DArray3;
 					} else {
-						this.renderStrategy = renderStrategy.FloatPixelToFloat;
-						this.renderOutput = this.renderFloat;
+						this.renderStrategy = renderStrategy.FloatPixelToArray3;
+						this.renderOutput = this.renderArray3;
 					}
-				}
-				return true;
-			case 'Array(2)':
-				if (this.output[2] > 0) {
-					this.renderStrategy = renderStrategy.FloatPixelTo3DArray2;
-					this.renderOutput = this.render3DArray2;
-				} else if (this.output[1] > 0) {
-					this.renderStrategy = renderStrategy.FloatPixelTo2DArray2;
-					this.renderOutput = this.render2DArray2;
-				} else {
-					this.renderStrategy = renderStrategy.FloatPixelToArray2;
-					this.renderOutput = this.renderArray2;
-				}
-				return true;
-			case 'Array(3)':
-				if (this.output[2] > 0) {
-					this.renderStrategy = renderStrategy.FloatPixelTo3DArray3;
-					this.renderOutput = this.render3DArray3;
-				} else if (this.output[1] > 0) {
-					this.renderStrategy = renderStrategy.FloatPixelTo2DArray3;
-					this.renderOutput = this.render2DArray3;
-				} else {
-					this.renderStrategy = renderStrategy.FloatPixelToArray3;
-					this.renderOutput = this.renderArray3;
-				}
-				return true;
-			case 'Array(4)':
-				if (this.output[2] > 0) {
-					this.renderStrategy = renderStrategy.FloatPixelTo3DArray4;
-					this.renderOutput = this.render3DArray4;
-				} else if (this.output[1] > 0) {
-					this.renderStrategy = renderStrategy.FloatPixelTo2DArray4;
-					this.renderOutput = this.render2DArray4;
-				} else {
-					this.renderStrategy = renderStrategy.FloatPixelToArray4;
-					this.renderOutput = this.renderArray4;
-				}
-				return true;
+					return true;
+				case 'Array(4)':
+					if (this.output[2] > 0) {
+						this.renderStrategy = renderStrategy.FloatPixelTo3DArray4;
+						this.renderOutput = this.render3DArray4;
+					} else if (this.output[1] > 0) {
+						this.renderStrategy = renderStrategy.FloatPixelTo2DArray4;
+						this.renderOutput = this.render2DArray4;
+					} else {
+						this.renderStrategy = renderStrategy.FloatPixelToArray4;
+						this.renderOutput = this.renderArray4;
+					}
+					return true;
+			}
+		} else {
+			throw new Error(`unhandled precision of "${this.precision}"`);
 		}
 
 		throw new Error(`unhandled return type "${this.returnType}"`);
@@ -404,6 +412,7 @@ class GLKernel extends Kernel {
 
 	getMainResultTexture() {
 		switch (this.returnType) {
+			case 'LiteralInteger':
 			case 'Float':
 			case 'Integer':
 			case 'Number':
@@ -500,7 +509,7 @@ class GLKernel extends Kernel {
 	getMainResultString() {
 		if (this.graphical) {
 			return this.getMainResultGraphical();
-		} else if (this.floatOutput) {
+		} else if (this.precision === 'single') {
 			if (this.optimizeFloatMemory) {
 				return this.getMainResultMemoryOptimizedFloats();
 			}
@@ -534,7 +543,7 @@ class GLKernel extends Kernel {
 		if (this.graphical) {
 			return 'ArrayTexture(4)';
 		}
-		if (this.floatOutput) {
+		if (this.precision === 'single') {
 			switch (this.returnType) {
 				case 'Float':
 				case 'Number':
@@ -580,7 +589,7 @@ class GLKernel extends Kernel {
 		});
 	}
 	readPackedPixelsToUint8Array() {
-		if (this.floatOutput) throw new Error('Requires this.floatOutput to be false');
+		if (this.precision !== 'unsigned') throw new Error('Requires this.precision to be "unsigned"');
 		const {
 			texSize,
 			context: gl
@@ -593,7 +602,7 @@ class GLKernel extends Kernel {
 		return new Float32Array(this.readPackedPixelsToUint8Array().buffer);
 	}
 	readFloatPixelsToFloat32Array() {
-		if (!this.floatOutput) throw new Error('Requires this.floatOutput to be true');
+		if (this.precision !== 'single') throw new Error('Requires this.precision to be "single"');
 		const {
 			texSize,
 			context: gl
@@ -605,7 +614,7 @@ class GLKernel extends Kernel {
 		return result;
 	}
 	readMemoryOptimizedFloatPixelsToFloat32Array() {
-		if (!this.floatOutput) throw new Error('Requires this.floatOutput to be true');
+		if (this.precision !== 'single') throw new Error('Requires this.precision to be "single"');
 		const {
 			texSize,
 			context: gl

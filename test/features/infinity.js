@@ -6,7 +6,7 @@ function inputWithoutFloat(checks, mode) {
   const gpu = new GPU({ mode });
   checks(gpu.createKernel(function() {
     return Infinity;
-  }, { floatOutput: false })
+  }, { precision: 'unsigned' })
     .setOutput([1])());
   gpu.destroy();
 }
@@ -40,7 +40,7 @@ function inputWithFloat(checks, mode) {
   const gpu = new GPU({ mode });
   checks(gpu.createKernel(function() {
     return Infinity;
-  }, { floatOutput: true })
+  }, { precision: 'single' })
     .setOutput([1])());
   gpu.destroy();
 }

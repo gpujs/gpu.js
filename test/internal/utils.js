@@ -58,14 +58,73 @@ test('getDimensions Array of 1,1,6, padded', () => {
 	assert.deepEqual(Array.from(utils.getDimensions([[[1]],[[1]],[[1]],[[1]],[[1]],[[1]]], true)), [1,1,6]);
 });
 
-test('getMemoryOptimizedFloatTextureSize [6,1,1]', () => {
-	assert.deepEqual(Array.from(utils.getMemoryOptimizedFloatTextureSize([6, 1, 1])), [1, 2]);
+test('getMemoryOptimizedFloatTextureSize [6,1,1], bitRatio 4', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedFloatTextureSize([6, 1, 1], 4)), [1, 2]);
 });
 
-test('getMemoryOptimizedFloatTextureSize [1,6,1]', () => {
-	assert.deepEqual(Array.from(utils.getMemoryOptimizedFloatTextureSize([1, 6, 1])), [1, 2]);
+test('getMemoryOptimizedFloatTextureSize [1,6,1], bitRatio 4', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedFloatTextureSize([1, 6, 1], 4)), [1, 2]);
 });
 
-test('getMemoryOptimizedFloatTextureSize [1,1,6]', () => {
-	assert.deepEqual(Array.from(utils.getMemoryOptimizedFloatTextureSize([1, 1, 6])), [1, 2]);
+test('getMemoryOptimizedFloatTextureSize [1,1,6], bitRatio 4', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedFloatTextureSize([1, 1, 6], 4)), [1, 2]);
+});
+
+test('getMemoryOptimizedFloatTextureSize [6,1,1], bitRatio 2', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedFloatTextureSize([6, 1, 1], 2)), [2, 2]);
+});
+
+test('getMemoryOptimizedFloatTextureSize [1,6,1], bitRatio 2', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedFloatTextureSize([1, 6, 1], 2)), [2, 2]);
+});
+
+test('getMemoryOptimizedFloatTextureSize [1,1,6], bitRatio 2', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedFloatTextureSize([1, 1, 6], 2)), [2, 2]);
+});
+
+test('getMemoryOptimizedFloatTextureSize [6,1,1], bitRatio 1', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedFloatTextureSize([6, 1, 1], 1)), [4, 2]);
+});
+
+test('getMemoryOptimizedFloatTextureSize [1,6,1], bitRatio 1', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedFloatTextureSize([1, 6, 1], 1)), [4, 2]);
+});
+
+test('getMemoryOptimizedFloatTextureSize [1,1,6], bitRatio 1', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedFloatTextureSize([1, 1, 6], 1)), [4, 2]);
+});
+
+test('getMemoryOptimizedPackedTextureSize [6,1,1], bitRatio 4', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedPackedTextureSize([6, 1, 1], 4)), [4, 2]);
+});
+
+test('getMemoryOptimizedPackedTextureSize [1,6,1], bitRatio 4', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedPackedTextureSize([1, 6, 1], 4)), [4, 2]);
+});
+
+test('getMemoryOptimizedPackedTextureSize [1,1,6], bitRatio 4', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedPackedTextureSize([1, 1, 6], 4)), [4, 2]);
+});
+
+test('getMemoryOptimizedPackedTextureSize [6,1,1], bitRatio 2', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedPackedTextureSize([6, 1, 1], 2)), [2, 2]);
+});
+
+test('getMemoryOptimizedPackedTextureSize [1,6,1], bitRatio 2', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedPackedTextureSize([1, 6, 1], 2)), [2, 2]);
+});
+
+test('getMemoryOptimizedPackedTextureSize [1,1,6], bitRatio 2', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedPackedTextureSize([1, 1, 6], 2)), [2, 2]);
+});
+test('getMemoryOptimizedPackedTextureSize [6,1,1], bitRatio 1', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedPackedTextureSize([6, 1, 1], 1)), [1, 2]);
+});
+
+test('getMemoryOptimizedPackedTextureSize [1,6,1], bitRatio 1', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedPackedTextureSize([1, 6, 1], 1)), [1, 2]);
+});
+
+test('getMemoryOptimizedPackedTextureSize [1,1,6], bitRatio 1', () => {
+	assert.deepEqual(Array.from(utils.getMemoryOptimizedPackedTextureSize([1, 1, 6], 1)), [1, 2]);
 });

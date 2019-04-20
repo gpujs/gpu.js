@@ -357,10 +357,10 @@ class CPUKernel extends Kernel {
 
 	_getKernelResultTypeConstructorString() {
 		switch (this.returnType) {
+			case 'LiteralInteger':
 			case 'Number':
 			case 'Integer':
 			case 'Float':
-			case 'LiteralInteger':
 				return 'Float32Array';
 			case 'Array(2)':
 			case 'Array(3)':

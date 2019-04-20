@@ -7,7 +7,7 @@ function whenEnabledCallsCorrectRenderFunction(mode) {
   const gpu = new GPU({ mode });
   const fn = gpu.createKernel(function() { return 1 }, {
     output: [1],
-    floatOutput: true,
+    precision: 'single',
     optimizeFloatMemory: true,
   });
   let called = false;
@@ -39,7 +39,7 @@ function whenEnabledCallsCorrectRenderFunction2D(mode) {
   const gpu = new GPU({ mode });
   const fn = gpu.createKernel(function() { return 1 }, {
     output: [1, 1],
-    floatOutput: true,
+    precision: 'single',
     optimizeFloatMemory: true,
   });
   let called = false;
@@ -65,7 +65,7 @@ function whenEnabledCallsCorrectRenderFunction3D(mode) {
   const gpu = new GPU({ mode });
   const fn = gpu.createKernel(function() { return 1 }, {
     output: [1, 1, 1],
-    floatOutput: true,
+    precision: 'single',
     optimizeFloatMemory: true,
   });
   let called = false;
@@ -87,7 +87,7 @@ function whenEnabledCallsCorrectRenderFunction3D(mode) {
   whenEnabledCallsCorrectRenderFunction3D('headlessgl');
 });
 
-function floatOutput(mode) {
+function singlePrecision(mode) {
   const gpu = new GPU({ mode });
   const array = [1,2,3,4,5];
   const kernel = gpu.createKernel(function(array) {
@@ -95,35 +95,35 @@ function floatOutput(mode) {
   }, {
     output: [5],
     optimizeFloatMemory: true,
-    floatOutput: true,
+    precision: 'single',
   });
   const result = kernel(array);
   assert.deepEqual(Array.from(result), array);
   gpu.destroy();
 }
 
-test('float output auto', () => {
-  floatOutput();
+test('single precision auto', () => {
+  singlePrecision();
 });
 
-(GPU.isGPUSupported ? test : skip)('float output gpu', () => {
-  floatOutput('gpu');
+(GPU.isGPUSupported ? test : skip)('single precision gpu', () => {
+  singlePrecision('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('float output webgl', () => {
-  floatOutput('webgl');
+(GPU.isWebGLSupported ? test : skip)('single precision webgl', () => {
+  singlePrecision('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('float output webgl2', () => {
-  floatOutput('webgl2');
+(GPU.isWebGL2Supported ? test : skip)('single precision webgl2', () => {
+  singlePrecision('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('float output headlessgl', () => {
-  floatOutput('headlessgl');
+(GPU.isHeadlessGLSupported ? test : skip)('single precision headlessgl', () => {
+  singlePrecision('headlessgl');
 });
 
-test('float output cpu', () => {
-  floatOutput('cpu');
+test('single precision cpu', () => {
+  singlePrecision('cpu');
 });
 
 
@@ -139,7 +139,7 @@ function float2DOutput(mode) {
   }, {
     output: [5, 3],
     optimizeFloatMemory: true,
-    floatOutput: true,
+    precision: 'single',
   });
   const result = kernel(matrix);
   assert.deepEqual(result.map(row => Array.from(row)), matrix);
@@ -190,7 +190,7 @@ function float3DOutput(mode) {
   }, {
     output: [5, 3, 2],
     optimizeFloatMemory: true,
-    floatOutput: true,
+    precision: 'single',
   });
   const result = kernel(cube);
   assert.deepEqual(result.map(matrix => matrix.map(row => Array.from(row))), cube);
@@ -229,7 +229,7 @@ function floatPipelineOutput(mode) {
   }, {
     output: [5],
     optimizeFloatMemory: true,
-    floatOutput: true,
+    precision: 'single',
     pipeline: true,
   });
   const result = kernel(array).toArray();
@@ -266,7 +266,7 @@ function floatPipeline2DOutput(mode) {
   }, {
     output: [5, 3],
     optimizeFloatMemory: true,
-    floatOutput: true,
+    precision: 'single',
     pipeline: true,
   });
   const texture = kernel(matrix);
@@ -312,7 +312,7 @@ function floatPipeline3DOutput(mode) {
   }, {
     output: [5, 3, 2],
     optimizeFloatMemory: true,
-    floatOutput: true,
+    precision: 'single',
     pipeline: true,
   });
   const result = kernel(cube).toArray();

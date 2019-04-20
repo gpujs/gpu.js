@@ -1,7 +1,7 @@
 const { assert, skip, test, only, module: describe } = require('qunit');
 const { GPU } = require('../../src');
 
-describe('features: float output textures');
+describe('features: single precision textures');
 
 //TODO: handle 2d and 3d
 function floatTexturesKernel(output, mode) {

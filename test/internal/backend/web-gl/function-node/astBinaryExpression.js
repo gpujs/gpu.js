@@ -66,11 +66,12 @@ test('divide float & Input', () => {
   }`, {
     returnType: 'Number',
     output: [1],
-    argumentTypes: ['Number', 'Input']
+    argumentTypes: ['Number', 'Input'],
+    lookupFunctionArgumentBitRatio: () => 4,
   });
 
   assert.equal(node.toString(), 'float kernel(float user_left, sampler2D user_right) {'
-    + '\nreturn (user_left/get(user_right, user_rightSize, user_rightDim, user_rightBitRatio, 0, 0, threadId.x));'
+    + '\nreturn (user_left/get32(user_right, user_rightSize, user_rightDim, 0, 0, threadId.x));'
     + '\n}');
 });
 
@@ -136,11 +137,12 @@ test('divide int & Input', () => {
   }`, {
     returnType: 'Number',
     output: [1],
-    argumentTypes: ['Integer', 'Input']
+    argumentTypes: ['Integer', 'Input'],
+    lookupFunctionArgumentBitRatio: () => 4,
   });
 
   assert.equal(node.toString(), 'float kernel(int user_left, sampler2D user_right) {'
-    + '\nreturn float((user_left/int(get(user_right, user_rightSize, user_rightDim, user_rightBitRatio, 0, 0, threadId.x))));'
+    + '\nreturn float((user_left/int(get32(user_right, user_rightSize, user_rightDim, 0, 0, threadId.x))));'
     + '\n}');
 });
 
@@ -206,11 +208,12 @@ test('divide literal integer & Input', () => {
   }`, {
     returnType: 'Number',
     output: [1],
-    argumentTypes: ['Input']
+    argumentTypes: ['Input'],
+    lookupFunctionArgumentBitRatio: () => 4,
   });
 
   assert.equal(node.toString(), 'float kernel(sampler2D user_v) {'
-    + '\nreturn (1.0/get(user_v, user_vSize, user_vDim, user_vBitRatio, 0, 0, threadId.x));'
+    + '\nreturn (1.0/get32(user_v, user_vSize, user_vDim, 0, 0, threadId.x));'
     + '\n}');
 });
 
@@ -276,46 +279,63 @@ test('divide literal float & Input', () => {
   }`, {
     returnType: 'Number',
     output: [1],
-    argumentTypes: ['Input']
+    argumentTypes: ['Input'],
+    lookupFunctionArgumentBitRatio: () => 4,
   });
 
   assert.equal(node.toString(), 'float kernel(sampler2D user_v) {'
-    + '\nreturn (1.1/get(user_v, user_vSize, user_vDim, user_vBitRatio, 0, 0, threadId.x));'
+    + '\nreturn (1.1/get32(user_v, user_vSize, user_vDim, 0, 0, threadId.x));'
     + '\n}');
 });
 
 test('multiply Input and Input', () => {
   const node = new WebGLFunctionNode('function kernel(v1, v2) {'
     + '\n return v1[this.thread.x] * v2[this.thread.x];'
-    + '\n}', { output: [1], argumentTypes: ['Input', 'Input']});
+    + '\n}', {
+    output: [1],
+    argumentTypes: ['Input', 'Input'],
+    lookupFunctionArgumentBitRatio: () => 4,
+  });
   assert.equal(node.toString(), 'float kernel(sampler2D user_v1, sampler2D user_v2) {'
-    + '\nreturn (get(user_v1, user_v1Size, user_v1Dim, user_v1BitRatio, 0, 0, threadId.x)*get(user_v2, user_v2Size, user_v2Dim, user_v2BitRatio, 0, 0, threadId.x));'
+    + '\nreturn (get32(user_v1, user_v1Size, user_v1Dim, 0, 0, threadId.x)*get32(user_v2, user_v2Size, user_v2Dim, 0, 0, threadId.x));'
     + '\n}');
 });
 
 test('multiply Input and int', () => {
   const node = new WebGLFunctionNode('function kernel(v1, v2) {'
     + '\n return v1[this.thread.x] * v2;'
-    + '\n}', { output: [1], argumentTypes: ['Input', 'Integer']});
+    + '\n}', {
+    output: [1],
+    argumentTypes: ['Input', 'Integer'],
+    lookupFunctionArgumentBitRatio: () => 4,
+  });
   assert.equal(node.toString(), 'float kernel(sampler2D user_v1, int user_v2) {'
-    + '\nreturn (get(user_v1, user_v1Size, user_v1Dim, user_v1BitRatio, 0, 0, threadId.x)*float(user_v2));'
+    + '\nreturn (get32(user_v1, user_v1Size, user_v1Dim, 0, 0, threadId.x)*float(user_v2));'
     + '\n}');
 });
 
 test('multiply Input and float', () => {
   const node = new WebGLFunctionNode('function kernel(v1, v2) {'
     + '\n return v1[this.thread.x] * v2;'
-    + '\n}', { output: [1], argumentTypes: ['Input', 'Float']});
+    + '\n}', {
+    output: [1],
+    argumentTypes: ['Input', 'Float'],
+    lookupFunctionArgumentBitRatio: () => 4,
+  });
   assert.equal(node.toString(), 'float kernel(sampler2D user_v1, float user_v2) {'
-    + '\nreturn (get(user_v1, user_v1Size, user_v1Dim, user_v1BitRatio, 0, 0, threadId.x)*user_v2);'
+    + '\nreturn (get32(user_v1, user_v1Size, user_v1Dim, 0, 0, threadId.x)*user_v2);'
     + '\n}');
 });
 
 test('multiply Input and Number', () => {
   const node = new WebGLFunctionNode('function kernel(v1, v2) {'
     + '\n return v1[this.thread.x] * v2;'
-    + '\n}', { output: [1], argumentTypes: ['Input', 'Number']});
+    + '\n}', {
+    output: [1],
+    argumentTypes: ['Input', 'Number'],
+    lookupFunctionArgumentBitRatio: () => 4,
+  });
   assert.equal(node.toString(), 'float kernel(sampler2D user_v1, float user_v2) {'
-    + '\nreturn (get(user_v1, user_v1Size, user_v1Dim, user_v1BitRatio, 0, 0, threadId.x)*user_v2);'
+    + '\nreturn (get32(user_v1, user_v1Size, user_v1Dim, 0, 0, threadId.x)*user_v2);'
     + '\n}');
 });

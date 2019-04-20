@@ -9,21 +9,21 @@ function testDivideByThree(mode) {
 		return v1 / v2;
 	}, {
 		output: [1],
-		floatOutput: true
+		precision: 'single'
 	});
 	assert.equal(k(6, 3)[0], 2);
 	gpu.destroy();
 }
 
-(GPU.isFloatOutputSupported ? test : skip)('Issue #349 - divide by three auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('Issue #349 - divide by three auto', () => {
 	testDivideByThree();
 });
 
-(GPU.isFloatOutputSupported ? test : skip)('Issue #349 - divide by three gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('Issue #349 - divide by three gpu', () => {
 	testDivideByThree('gpu');
 });
 
-(GPU.isFloatOutputSupported && GPU.isWebGLSupported ? test : skip)('Issue #349 - divide by three webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('Issue #349 - divide by three webgl', () => {
 	testDivideByThree('webgl');
 });
 
@@ -57,7 +57,7 @@ function someRandomWholeNumberDivisions(mode) {
 		return v1[this.thread.x] / v2[this.thread.x];
 	}, {
 		output: [DATA_MAX],
-		floatOutput: true
+		precision: 'single'
 	});
 	const result = k(dividendData, divisorData);
 	let same = true;
@@ -72,13 +72,13 @@ function someRandomWholeNumberDivisions(mode) {
 	gpu.destroy();
 }
 
-(GPU.isFloatOutputSupported ? test : skip)('Issue #349 - some random whole number divisions auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('Issue #349 - some random whole number divisions auto', () => {
 	someRandomWholeNumberDivisions();
 });
-(GPU.isFloatOutputSupported ? test : skip)('Issue #349 - some random whole number divisions gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('Issue #349 - some random whole number divisions gpu', () => {
 	someRandomWholeNumberDivisions('gpu');
 });
-(GPU.isFloatOutputSupported && GPU.isWebGLSupported ? test : skip)('Issue #349 - some random whole number divisions webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('Issue #349 - some random whole number divisions webgl', () => {
 	someRandomWholeNumberDivisions('webgl');
 });
 (GPU.isWebGL2Supported ? test : skip)('Issue #349 - some random whole number divisions webgl2', () => {
@@ -97,13 +97,13 @@ function testDisableFixIntegerDivisionBug(mode) {
 	const gpu = new GPU({mode});
 	const idFix = gpu.createKernel(function(v1, v2) {
 		return v1 / v2;
-	}, { floatOutput: true, output: [1] });
+	}, { precision: 'single', output: [1] });
 
 	const idDixOff = gpu.createKernel(function(v1, v2) {
 		return v1 / v2;
 	}, {
 		output: [1],
-		floatOutput: true,
+		precision: 'single',
 		fixIntegerDivisionAccuracy: false
 	});
 
@@ -121,15 +121,15 @@ function testDisableFixIntegerDivisionBug(mode) {
 	}
 	gpu.destroy();
 }
-(GPU.isFloatOutputSupported ? test : skip)('Issue #349 - test disable fix integer division bug auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('Issue #349 - test disable fix integer division bug auto', () => {
 	testDisableFixIntegerDivisionBug();
 });
 
-(GPU.isFloatOutputSupported ? test : skip)('Issue #349 - test disable fix integer division bug gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('Issue #349 - test disable fix integer division bug gpu', () => {
 	testDisableFixIntegerDivisionBug('gpu');
 });
 
-(GPU.isFloatOutputSupported  && GPU.isWebGLSupported ? test : skip)('Issue #349 - test disable fix integer division bug webgl', () => {
+(GPU.isSinglePrecisionSupported  && GPU.isWebGLSupported ? test : skip)('Issue #349 - test disable fix integer division bug webgl', () => {
 	testDisableFixIntegerDivisionBug('webgl');
 });
 

@@ -6,7 +6,7 @@ describe('issue # 233');
 //TODO: Write for 2D and 3D and textures
 //TODO: remove floatTextures completely
 //TODO: Write for pipeline as well
-function kernelMapFloatOutput(mode) {
+function kernelMapSinglePrecision(mode) {
   const lst = [1, 2, 3, 4, 5, 6, 7];
   const gpu = new GPU({ mode });
   const kernels = gpu.createKernelMap({
@@ -24,7 +24,7 @@ function kernelMapFloatOutput(mode) {
 
     return val;
   }, {
-    floatOutput: true,
+    precision: 'single',
     output: [lst.length]
   });
 
@@ -33,7 +33,7 @@ function kernelMapFloatOutput(mode) {
     return x[this.thread.x];
   }, {
     output: [lst.length],
-    floatOutput: true,
+    precision: 'single',
     optimizeFloatMemory: true,
   });
   const stepAResult = unwrap(result.stepA);
@@ -45,32 +45,32 @@ function kernelMapFloatOutput(mode) {
   gpu.destroy();
 }
 
-(GPU.isFloatOutputSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output auto', () => {
-  kernelMapFloatOutput();
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision auto', () => {
+  kernelMapSinglePrecision();
 });
 
-(GPU.isFloatOutputSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output gpu', () => {
-  kernelMapFloatOutput('gpu');
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision gpu', () => {
+  kernelMapSinglePrecision('gpu');
 });
 
-(GPU.isFloatOutputSupported && GPU.isWebGLSupported ? test : skip)('Issue #233 - kernel map with float output webgl', () => {
-  kernelMapFloatOutput('webgl');
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('Issue #233 - kernel map with single precision webgl', () => {
+  kernelMapSinglePrecision('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #233 - kernel map with float output webgl2', () => {
-  kernelMapFloatOutput('webgl2');
+(GPU.isWebGL2Supported ? test : skip)('Issue #233 - kernel map with single precision webgl2', () => {
+  kernelMapSinglePrecision('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output headlessgl', () => {
-  kernelMapFloatOutput('headlessgl');
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision headlessgl', () => {
+  kernelMapSinglePrecision('headlessgl');
 });
 
-test('Issue #233 - kernel map with float output cpu', () => {
-  kernelMapFloatOutput('cpu');
+test('Issue #233 - kernel map with single precision cpu', () => {
+  kernelMapSinglePrecision('cpu');
 });
 
 
-function kernelMapFloatOutput2D(mode) {
+function kernelMapSinglePrecision2D(mode) {
   const lst = [
     [1,2,3],
     [4,5,6],
@@ -102,7 +102,7 @@ function kernelMapFloatOutput2D(mode) {
 
     return val;
   }, {
-    floatOutput: true,
+    precision: 'single',
     output: [3, 3]
   });
 
@@ -114,7 +114,7 @@ function kernelMapFloatOutput2D(mode) {
     return x[this.thread.y][this.thread.x];
   }, {
     output: [3, 3],
-    floatOutput: true,
+    precision: 'single',
     optimizeFloatMemory: true,
   });
   const stepAOptimized = memoryOptimize(result.stepA);
@@ -127,31 +127,31 @@ function kernelMapFloatOutput2D(mode) {
   gpu.destroy();
 }
 
-(GPU.isFloatOutputSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output 2d auto', () => {
-  kernelMapFloatOutput2D();
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision 2d auto', () => {
+  kernelMapSinglePrecision2D();
 });
 
-(GPU.isFloatOutputSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output 2d gpu', () => {
-  kernelMapFloatOutput2D('gpu');
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision 2d gpu', () => {
+  kernelMapSinglePrecision2D('gpu');
 });
 
-(GPU.isFloatOutputSupported && GPU.isWebGLSupported ? test : skip)('Issue #233 - kernel map with float output 2d webgl', () => {
-  kernelMapFloatOutput2D('webgl');
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('Issue #233 - kernel map with single precision 2d webgl', () => {
+  kernelMapSinglePrecision2D('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #233 - kernel map with float output 2d webgl2', () => {
-  kernelMapFloatOutput2D('webgl2');
+(GPU.isWebGL2Supported ? test : skip)('Issue #233 - kernel map with single precision 2d webgl2', () => {
+  kernelMapSinglePrecision2D('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output 2d headlessgl', () => {
-  kernelMapFloatOutput2D('headlessgl');
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision 2d headlessgl', () => {
+  kernelMapSinglePrecision2D('headlessgl');
 });
 
-test('Issue #233 - kernel map with float output 2d cpu', () => {
-  kernelMapFloatOutput2D('cpu');
+test('Issue #233 - kernel map with single precision 2d cpu', () => {
+  kernelMapSinglePrecision2D('cpu');
 });
 
-function kernelMapFloatOutput3D(mode) {
+function kernelMapSinglePrecision3D(mode) {
   const lst = [
     [
       [1,2,3],
@@ -204,7 +204,7 @@ function kernelMapFloatOutput3D(mode) {
 
     return val;
   }, {
-    floatOutput: true,
+    precision: 'single',
     output: [3, 3, 2]
   });
 
@@ -216,7 +216,7 @@ function kernelMapFloatOutput3D(mode) {
     return x[this.thread.z][this.thread.y][this.thread.x];
   }, {
     output: [3, 3, 2],
-    floatOutput: true,
+    precision: 'single',
     optimizeFloatMemory: true,
   });
   const stepAOptimized = memoryOptimize(result.stepA);
@@ -233,26 +233,26 @@ function kernelMapFloatOutput3D(mode) {
   gpu.destroy();
 }
 
-(GPU.isFloatOutputSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output 3d auto', () => {
-  kernelMapFloatOutput3D();
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision 3d auto', () => {
+  kernelMapSinglePrecision3D();
 });
 
-(GPU.isFloatOutputSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output 3d gpu', () => {
-  kernelMapFloatOutput3D('gpu');
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision 3d gpu', () => {
+  kernelMapSinglePrecision3D('gpu');
 });
 
-(GPU.isFloatOutputSupported && GPU.isWebGLSupported ? test : skip)('Issue #233 - kernel map with float output 3d webgl', () => {
-  kernelMapFloatOutput3D('webgl');
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('Issue #233 - kernel map with single precision 3d webgl', () => {
+  kernelMapSinglePrecision3D('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #233 - kernel map with float output 3d webgl2', () => {
-  kernelMapFloatOutput3D('webgl2');
+(GPU.isWebGL2Supported ? test : skip)('Issue #233 - kernel map with single precision 3d webgl2', () => {
+  kernelMapSinglePrecision3D('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with float output 3d headlessgl', () => {
-  kernelMapFloatOutput3D('headlessgl');
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision 3d headlessgl', () => {
+  kernelMapSinglePrecision3D('headlessgl');
 });
 
-test('Issue #233 - kernel map with float output 3d cpu', () => {
-  kernelMapFloatOutput3D('cpu');
+test('Issue #233 - kernel map with single precision 3d cpu', () => {
+  kernelMapSinglePrecision3D('cpu');
 });

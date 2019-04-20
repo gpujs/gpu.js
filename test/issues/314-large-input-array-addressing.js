@@ -20,6 +20,8 @@ function buildLargeArrayAddressKernel(mode) {
 	const gpu = new GPU({ mode });
 	const largeArrayAddressKernel = gpu.createKernel(function(data) {
 		return data[this.thread.x];
+	}, {
+		precision: 'unsigned',
 	})
 		.setOutput([DATA_MAX]);
 

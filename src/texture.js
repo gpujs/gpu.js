@@ -41,7 +41,7 @@ class Texture {
 			return x[this.thread.z][this.thread.y][this.thread.x];
 		}, {
 			output: this.output,
-			floatOutput: this.getIsFloat(),
+			precision: this.getPrecision(),
 			optimizeFloatMemory: this.type === 'MemoryOptimizedNumberTexture',
 		});
 
@@ -49,16 +49,16 @@ class Texture {
 		return kernel(this);
 	}
 
-	getIsFloat() {
+	getPrecision() {
 		switch (this.type) {
 			case 'NumberTexture':
-				return false;
+				return 'unsigned';
 			case 'MemoryOptimizedNumberTexture':
 			case 'ArrayTexture(1)':
 			case 'ArrayTexture(2)':
 			case 'ArrayTexture(3)':
 			case 'ArrayTexture(4)':
-				return true;
+				return 'single';
 			default:
 				throw new Error('Unknown texture type');
 		}

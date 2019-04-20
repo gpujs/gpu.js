@@ -11,7 +11,7 @@ function immutableKernelWithoutFloats(mode) {
     output: [1],
     immutable: true,
     pipeline: true,
-    floatOutput: false,
+    precision: 'unsigned',
   });
 
   // start with a value on CPU
@@ -60,7 +60,7 @@ function immutableKernelWithFloats(mode) {
     output: [1],
     immutable: true,
     pipeline: true,
-    floatOutput: true,
+    precision: 'single',
   });
 
   // start with a value on CPU
@@ -122,8 +122,7 @@ function immutableSubKernelsWithoutFloats(mode) {
       output: [1],
       immutable: true,
       pipeline: true,
-      floatOutput: false,
-      // debug: true,
+      precision: 'unsigned',
     }
   );
 
@@ -190,7 +189,7 @@ function immutableKernelsMixedWithoutFloats(mode) {
       output: [1],
       immutable: true,
       pipeline: true,
-      floatOutput: false,
+      precision: 'unsigned',
     }
   );
 

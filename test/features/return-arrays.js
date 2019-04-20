@@ -7,7 +7,7 @@ function returnArray2FromKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return [1, 2];
-  }, { output: [1], floatOutput: true });
+  }, { output: [1], precision: 'single' });
   const result = kernel();
   assert.deepEqual(result.map(v => Array.from(v)), [[1, 2]]);
   gpu.destroy();
@@ -42,7 +42,7 @@ function returnArray3FromKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return [1, 2, 3];
-  }, { output: [1], floatOutput: true });
+  }, { output: [1], precision: 'single' });
   const result = kernel();
   assert.deepEqual(Array.from(result.map(v => Array.from(v))), [[1, 2, 3]]);
   gpu.destroy();
@@ -76,7 +76,7 @@ function returnArray4FromKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return [1, 2, 3, 4];
-  }, { output: [1], floatOutput: true });
+  }, { output: [1], precision: 'single' });
   const result = kernel();
   assert.deepEqual(result.map(v => Array.from(v)), [[1, 2, 3, 4]]);
   gpu.destroy();

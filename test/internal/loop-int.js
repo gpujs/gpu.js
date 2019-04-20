@@ -16,14 +16,15 @@ test('loop int constant output webgl', () => {
     constantTypes: {
       max: 'Integer'
     },
-    argumentTypes: ['Array']
+    argumentTypes: ['Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
   });
   assert.equal(
     functionNode.toString(),
     'void kernel() {' +
     '\nfloat user_sum=0.0;' +
     '\nfor (int user_i=0;(user_i<constants_max);user_i++){' +
-    '\nuser_sum+=get(user_a, user_aSize, user_aDim, user_aBitRatio, 0, threadId.x, user_i);}' +
+    '\nuser_sum+=get32(user_a, user_aSize, user_aDim, 0, threadId.x, user_i);}' +
     '\n' +
     '\nkernelResult = user_sum;return;' +
     '\n}');
@@ -42,13 +43,14 @@ test('loop int constant output webgl2', () => {
     output: [1],
     constantTypes: { max: 'Integer' },
     argumentTypes: ['Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
   });
   assert.equal(
     functionNode.toString(),
     'void kernel() {' +
     '\nfloat user_sum=0.0;' +
     '\nfor (int user_i=0;(user_i<constants_max);user_i++){' +
-    '\nuser_sum+=get(user_a, user_aSize, user_aDim, user_aBitRatio, 0, threadId.x, user_i);}' +
+    '\nuser_sum+=get32(user_a, user_aSize, user_aDim, 0, threadId.x, user_i);}' +
     '\n' +
     '\nkernelResult = user_sum;return;' +
     '\n}');
@@ -128,14 +130,15 @@ test('loop int literal output webgl', () => {
   const functionNode = new WebGLFunctionNode(kernel.toString(), {
     isRootKernel: true,
     output: [1],
-    argumentTypes: ['Array']
+    argumentTypes: ['Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
   });
   assert.equal(
     functionNode.toString(),
     'void kernel() {' +
     '\nfloat user_sum=0.0;' +
     '\nfor (int user_i=0;(user_i<10);user_i++){' +
-    '\nuser_sum+=get(user_a, user_aSize, user_aDim, user_aBitRatio, 0, threadId.x, user_i);}' +
+    '\nuser_sum+=get32(user_a, user_aSize, user_aDim, 0, threadId.x, user_i);}' +
     '\n' +
     '\nkernelResult = user_sum;return;' +
     '\n}');
@@ -152,14 +155,15 @@ test('loop int literal output webgl2', () => {
   const functionNode = new WebGL2FunctionNode(kernel.toString(), {
     isRootKernel: true,
     output: [1],
-    argumentTypes: ['Array']
+    argumentTypes: ['Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
   });
   assert.equal(
     functionNode.toString(),
     'void kernel() {' +
     '\nfloat user_sum=0.0;' +
     '\nfor (int user_i=0;(user_i<10);user_i++){' +
-    '\nuser_sum+=get(user_a, user_aSize, user_aDim, user_aBitRatio, 0, threadId.x, user_i);}' +
+    '\nuser_sum+=get32(user_a, user_aSize, user_aDim, 0, threadId.x, user_i);}' +
     '\n' +
     '\nkernelResult = user_sum;return;' +
     '\n}');
@@ -227,7 +231,8 @@ test('loop int parameter output webgl', () => {
   const functionNode = new WebGLFunctionNode(kernel.toString(), {
     isRootKernel: true,
     output: [1],
-    argumentTypes: ['Number', 'Array']
+    argumentTypes: ['Number', 'Array'],
+    lookupFunctionArgumentBitRatio: () => 4
   });
   assert.equal(
     functionNode.toString(),
@@ -236,7 +241,7 @@ test('loop int parameter output webgl', () => {
     '\nint user_i=0;' +
     '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
     '\nif (!(user_i<int(user_a))) break;' +
-    '\nuser_sum+=get(user_b, user_bSize, user_bDim, user_bBitRatio, 0, threadId.x, user_i);' +
+    '\nuser_sum+=get32(user_b, user_bSize, user_bDim, 0, threadId.x, user_i);' +
     '\nuser_i++;}' +
     '\n' +
     '\nkernelResult = user_sum;return;' +
@@ -254,7 +259,8 @@ test('loop int parameter output webgl2', () => {
   const functionNode = new WebGL2FunctionNode(kernel.toString(), {
     isRootKernel: true,
     output: [1],
-    argumentTypes: ['Number', 'Array']
+    argumentTypes: ['Number', 'Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
   });
   assert.equal(
     functionNode.toString(),
@@ -263,7 +269,7 @@ test('loop int parameter output webgl2', () => {
     '\nint user_i=0;' +
     '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
     '\nif (!(user_i<int(user_a))) break;' +
-    '\nuser_sum+=get(user_b, user_bSize, user_bDim, user_bBitRatio, 0, threadId.x, user_i);' +
+    '\nuser_sum+=get32(user_b, user_bSize, user_bDim, 0, threadId.x, user_i);' +
     '\nuser_i++;}' +
     '\n' +
     '\nkernelResult = user_sum;return;' +

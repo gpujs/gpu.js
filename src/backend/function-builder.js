@@ -15,14 +15,16 @@ class FunctionBuilder {
 			argumentNames,
 			argumentTypes,
 			argumentSizes,
+			argumentBitRatios,
 			constants,
 			constantTypes,
+			constantBitRatios,
 			debug,
 			loopMaxIterations,
 			nativeFunctions,
 			output,
 			optimizeFloatMemory,
-			floatOutput,
+			precision,
 			plugins,
 			source,
 			subKernels,
@@ -43,6 +45,10 @@ class FunctionBuilder {
 
 		const lookupFunctionArgumentName = (functionName, argumentIndex) => {
 			return functionBuilder.lookupFunctionArgumentName(functionName, argumentIndex);
+		};
+
+		const lookupFunctionArgumentBitRatio = (functionName, argumentName) => {
+			return functionBuilder.lookupFunctionArgumentBitRatio(functionName, argumentName);
 		};
 
 		const triggerImplyArgumentType = (functionName, i, argumentType, requestingNode) => {
@@ -68,6 +74,7 @@ class FunctionBuilder {
 				lookupArgumentType,
 				lookupFunctionArgumentTypes,
 				lookupFunctionArgumentName,
+				lookupFunctionArgumentBitRatio,
 				triggerImplyArgumentType,
 				triggerTrackArgumentSynonym,
 				lookupArgumentSynonym,
@@ -82,14 +89,16 @@ class FunctionBuilder {
 			lookupArgumentType,
 			lookupFunctionArgumentTypes,
 			lookupFunctionArgumentName,
+			lookupFunctionArgumentBitRatio,
 			triggerImplyArgumentType,
 			triggerTrackArgumentSynonym,
 			lookupArgumentSynonym,
 			onFunctionCall,
 			optimizeFloatMemory,
-			floatOutput,
+			precision,
 			constants,
 			constantTypes,
+			constantBitRatios,
 			debug,
 			loopMaxIterations,
 			output,
@@ -102,6 +111,7 @@ class FunctionBuilder {
 			argumentNames,
 			argumentTypes,
 			argumentSizes,
+			argumentBitRatios,
 		});
 
 		if (typeof source === 'object' && source.functionNodes) {
@@ -119,12 +129,14 @@ class FunctionBuilder {
 				plugins,
 				constants,
 				constantTypes,
+				constantBitRatios,
 				optimizeFloatMemory,
-				floatOutput,
+				precision,
 				lookupReturnType,
 				lookupArgumentType,
 				lookupFunctionArgumentTypes,
 				lookupFunctionArgumentName,
+				lookupFunctionArgumentBitRatio,
 				triggerImplyArgumentType,
 				triggerTrackArgumentSynonym,
 				lookupArgumentSynonym,
@@ -397,7 +409,7 @@ class FunctionBuilder {
 				});
 				const type = node.getType(node.getJsAST());
 				this.lookupChain.pop();
-				return type;
+				return node.returnType = type;
 			}
 		}
 
@@ -446,6 +458,27 @@ class FunctionBuilder {
 
 	lookupFunctionArgumentName(functionName, argumentIndex) {
 		return this._getFunction(functionName).argumentNames[argumentIndex];
+	}
+
+	lookupFunctionArgumentBitRatio(functionName, argumentName) {
+		if (!this._isFunction(functionName)) {
+			throw new Error('function not found');
+		}
+		if (this.rootNode.name === functionName) {
+			const i = this.rootNode.argumentNames.indexOf(argumentName);
+			if (i !== -1) {
+				return this.rootNode.argumentBitRatios[i];
+			} else {
+				throw new Error('argument bit ratio not found');
+			}
+		} else {
+			const node = this._getFunction(functionName);
+			const argumentSynonym = node.argumentSynonym[node.synonymIndex];
+			if (!argumentSynonym) {
+				throw new Error('argument synonym not found');
+			}
+			return this.lookupFunctionArgumentBitRatio(argumentSynonym.functionName, argumentSynonym.argumentName);
+		}
 	}
 
 	assignArgumentType(functionName, i, argumentType, requestingNode) {

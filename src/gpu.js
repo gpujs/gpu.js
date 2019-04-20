@@ -107,10 +107,10 @@ class GPU {
 	}
 
 	/**
-	 * @desc TRUE if platform supports FloatOutput}
+	 * @desc TRUE if platform supports single precision}
 	 * @returns {boolean}
 	 */
-	static get isFloatOutputSupported() {
+	static get isSinglePrecisionSupported() {
 		return kernelOrder.some(Kernel => Kernel.isSupported && Kernel.features.isFloatRead && Kernel.features.isTextureFloat);
 	}
 

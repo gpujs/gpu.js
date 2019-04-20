@@ -64,6 +64,7 @@ class Kernel {
 		this.argumentNames = typeof source === 'string' ? utils.getArgumentNamesFromString(source) : null;
 		this.argumentTypes = null;
 		this.argumentSizes = null;
+		this.argumentBitRatios = null;
 		this.argumentsLength = 0;
 		this.constantsLength = 0;
 
@@ -104,6 +105,7 @@ class Kernel {
 		 */
 		this.constants = null;
 		this.constantTypes = null;
+		this.constantBitRatios = null;
 		this.hardcodeConstants = null;
 
 		/**
@@ -160,6 +162,7 @@ class Kernel {
 		 * @type {Boolean}
 		 */
 		this.pipeline = false;
+		this.precision = null;
 
 		this.plugins = null;
 
@@ -238,10 +241,13 @@ class Kernel {
 		}
 
 		// setup sizes
-		this.argumentSizes = [];
+		this.argumentSizes = new Array(args.length);
+		this.argumentBitRatios = new Int32Array(args.length);
+
 		for (let i = 0; i < args.length; i++) {
 			const arg = args[i];
-			this.argumentSizes.push(arg.constructor === Input ? arg.size : null);
+			this.argumentSizes[i] = arg.constructor === Input ? arg.size : null;
+			this.argumentBitRatios[i] = this.getBitRatio(arg);
 		}
 
 		if (this.argumentNames.length !== args.length) {
@@ -254,9 +260,11 @@ class Kernel {
 	 */
 	setupConstants() {
 		this.constantTypes = {};
+		this.constantBitRatios = {};
 		if (this.constants) {
 			for (let p in this.constants) {
 				this.constantTypes[p] = utils.getVariableType(this.constants[p]);
+				this.constantBitRatios[p] = this.getBitRatio(this.constants[p]);
 			}
 		}
 	}
@@ -423,6 +431,29 @@ class Kernel {
 	 */
 	destroy(removeCanvasReferences) {
 		throw new Error(`"destroy" called on ${ this.constructor.name }`);
+	}
+
+	/**
+	 * bit storage ratio of source to target 'buffer', i.e. if 8bit array -> 32bit tex = 4
+	 * @param value
+	 * @returns {number}
+	 */
+	getBitRatio(value) {
+		if (value.constructor === Input) {
+			return this.getBitRatio(value.value);
+		}
+		switch (value.constructor) {
+			case Uint8Array:
+			case Int8Array:
+				return 1;
+			case Uint16Array:
+			case Int16Array:
+				return 2;
+			case Float32Array:
+			case Int32Array:
+			default:
+				return 4;
+		}
 	}
 
 	checkOutput() {

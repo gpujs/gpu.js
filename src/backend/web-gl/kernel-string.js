@@ -55,6 +55,7 @@ function webGLKernelString(gpuKernel, name) {
         this.maxTexSize = null;
         this.argumentsLength = 0;
         this.constantsLength = 0;
+        this.constantBitRatios = ${ gpuKernel.constantBitRatios ? JSON.stringify(gpuKernel.constantBitRatios) : 'null' };
         this.canvas = null;
         this.context = null;
         this.program = null;
@@ -65,13 +66,16 @@ function webGLKernelString(gpuKernel, name) {
         this.endianness = '${ gpuKernel.endianness }';
         this.graphical = ${ boolToString(gpuKernel.graphical) };
         this.floatTextures = ${ boolToString(gpuKernel.floatTextures) };
-        this.floatOutput = ${ boolToString(gpuKernel.floatOutput) };
+        this.precision = "${ gpuKernel.precision }";
+        // TODO: not sure how to handle
         this.floatOutputForce = ${ boolToString(gpuKernel.floatOutputForce) };
         this.hardcodeConstants = ${ boolToString(gpuKernel.hardcodeConstants) };
         this.pipeline = ${ boolToString(gpuKernel.pipeline) };
         this.argumentNames = ${ JSON.stringify(gpuKernel.argumentNames) };
         this.argumentTypes = ${ JSON.stringify(gpuKernel.argumentTypes) };
-        this.texSize = ${ JSON.stringify(gpuKernel.texSize) };
+        this.argumentBitRatios = ${ JSON.stringify(gpuKernel.argumentBitRatios) };
+       
+        this.texSize = ${ JSON.stringify(Array.from(gpuKernel.texSize)) };
         this.output = ${ JSON.stringify(gpuKernel.output) };
         this.compiledFragmentShader = \`${ gpuKernel.compiledFragmentShader }\`;
 		    this.compiledVertexShader = \`${ gpuKernel.compiledVertexShader }\`;
@@ -103,7 +107,7 @@ function webGLKernelString(gpuKernel, name) {
       translateSource() {}
       pickRenderStrategy() {}
 		  ${ removeFnNoise(gpuKernel.run.toString()) }
-		  ${ removeFnNoise(gpuKernel._addArgument.toString()) }
+		  ${ removeFnNoise(gpuKernel.addArgument.toString()) }
 		  ${ removeFnNoise(gpuKernel.formatArrayTransfer.toString()) }
 		  ${ removeFnNoise(gpuKernel.checkOutput.toString()) }
 		  ${ removeFnNoise(gpuKernel.getArgumentTexture.toString()) }

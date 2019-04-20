@@ -47,16 +47,16 @@ test('combine kernel cpu', () => {
 });
 
 
-function combineKernelsFloatOutput(mode) {
+function combineKernelsSinglePrecision(mode) {
   const gpu = new GPU({ mode });
 
   const kernel1 = gpu.createKernel(function(a, b) {
     return a[this.thread.x] + b[this.thread.x];
-  }, { output: [5], floatOutput: true });
+  }, { output: [5], precision: 'single' });
 
   const kernel2 = gpu.createKernel(function(c, d) {
     return c[this.thread.x] * d[this.thread.x];
-  }, { output: [5], floatOutput: true });
+  }, { output: [5], precision: 'single' });
 
   const superKernel = gpu.combineKernels(kernel1, kernel2, function(array1, array2, array3) {
     return kernel2(kernel1(array1, array2), array3);
@@ -67,28 +67,28 @@ function combineKernelsFloatOutput(mode) {
   gpu.destroy()
 }
 
-(GPU.isFloatOutputSupported ? test : skip)('combine kernel float output auto', () => {
-  combineKernelsFloatOutput();
+(GPU.isSinglePrecisionSupported ? test : skip)('combine kernel single precision auto', () => {
+  combineKernelsSinglePrecision();
 });
 
-(GPU.isFloatOutputSupported ? test : skip)('combine kernel float output gpu', () => {
-  combineKernelsFloatOutput('gpu');
+(GPU.isSinglePrecisionSupported ? test : skip)('combine kernel single precision gpu', () => {
+  combineKernelsSinglePrecision('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isFloatOutputSupported ? test : skip)('combine kernel float output webgl', () => {
-  combineKernelsFloatOutput('webgl');
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('combine kernel single precision webgl', () => {
+  combineKernelsSinglePrecision('webgl');
 });
 
-(GPU.isWebGL2Supported && GPU.isFloatOutputSupported ? test : skip)('combine kernel float output webgl2', () => {
-  combineKernelsFloatOutput('webgl2');
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('combine kernel single precision webgl2', () => {
+  combineKernelsSinglePrecision('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isFloatOutputSupported ? test : skip)('combine kernel float output headlessgl', () => {
-  combineKernelsFloatOutput('headlessgl');
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('combine kernel single precision headlessgl', () => {
+  combineKernelsSinglePrecision('headlessgl');
 });
 
-test('combine kernel float output cpu', () => {
-  combineKernelsFloatOutput('cpu');
+test('combine kernel single precision cpu', () => {
+  combineKernelsSinglePrecision('cpu');
 });
 
 
@@ -112,23 +112,23 @@ function combineKernelsFloatTextures(mode) {
   gpu.destroy()
 }
 
-(GPU.isFloatOutputSupported ? test : skip)('combine kernel float textures auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('combine kernel float textures auto', () => {
   combineKernelsFloatTextures();
 });
 
-(GPU.isFloatOutputSupported ? test : skip)('combine kernel float textures gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('combine kernel float textures gpu', () => {
   combineKernelsFloatTextures('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isFloatOutputSupported ? test : skip)('combine kernel float textures webgl', () => {
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('combine kernel float textures webgl', () => {
   combineKernelsFloatTextures('webgl');
 });
 
-(GPU.isWebGL2Supported && GPU.isFloatOutputSupported ? test : skip)('combine kernel float textures webgl2', () => {
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('combine kernel float textures webgl2', () => {
   combineKernelsFloatTextures('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isFloatOutputSupported ? test : skip)('combine kernel float textures headlessgl', () => {
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('combine kernel float textures headlessgl', () => {
   combineKernelsFloatTextures('headlessgl');
 });
 

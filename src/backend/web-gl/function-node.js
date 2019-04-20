@@ -920,18 +920,52 @@ class WebGLFunctionNode extends FunctionNode {
 			case 'Array3D':
 			case 'Array4D':
 			case 'Input':
-				if (this.floatOutput) {
-					retArr.push(`getMemoryOptimized(${markupName}, ${markupName}Size, ${markupName}Dim, ${markupName}BitRatio, `);
-					this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
-					retArr.push(')');
+				const bitRatio = (origin === 'user' ?
+					this.lookupFunctionArgumentBitRatio(this.name, name) :
+					this.constantBitRatios[name]
+				);
+				if (this.precision === 'single') {
+					switch (bitRatio) {
+						case 1:
+							retArr.push(`getMemoryOptimized8(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+							this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+							retArr.push(')');
+							break;
+						case 2:
+							retArr.push(`getMemoryOptimized16(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+							this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+							retArr.push(')');
+							break;
+						case 4:
+						case 0:
+							retArr.push(`getMemoryOptimized32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+							this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+							retArr.push(')');
+							break;
+						default:
+							throw new Error(`unhandled bit ratio of ${ bitRatio}`);
+					}
 				} else {
-					retArr.push(`get(${markupName}, ${markupName}Size, ${markupName}Dim, ${markupName}BitRatio, `);
+					switch (bitRatio) {
+						case 1:
+							retArr.push(`get8(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+							break;
+						case 2:
+							retArr.push(`get16(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+							break;
+						case 4:
+						case 0:
+							retArr.push(`get32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+							break;
+						default:
+							throw new Error(`unhandled bit ratio of ${ bitRatio}`);
+					}
 					this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
 					retArr.push(')');
 				}
 				break;
 			case 'MemoryOptimizedNumberTexture':
-				retArr.push(`getMemoryOptimized(${ markupName }, ${ markupName }Size, ${ markupName }Dim, ${ markupName }BitRatio, `);
+				retArr.push(`getMemoryOptimized32(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
 				this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
 				retArr.push(')');
 				break;
