@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.6
- * @date Sat Apr 20 2019 09:55:46 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.7
+ * @date Sun Apr 21 2019 12:01:28 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -5383,7 +5383,6 @@ class CPUFunctionNode extends FunctionNode {
 module.exports = {
 	CPUFunctionNode
 };
-
 },{"../function-node":9}],6:[function(require,module,exports){
 const {
 	utils
@@ -5962,7 +5961,6 @@ class CPUKernel extends Kernel {
 module.exports = {
 	CPUKernel
 };
-
 },{"../../utils":29,"../function-builder":8,"../kernel":12,"./function-node":5,"./kernel-string":6}],8:[function(require,module,exports){
 class FunctionBuilder {
 	static fromKernel(kernel, FunctionNode, extraNodeOptions) {
@@ -6447,7 +6445,6 @@ class FunctionBuilder {
 module.exports = {
 	FunctionBuilder
 };
-
 },{}],9:[function(require,module,exports){
 const {
 	utils
@@ -7575,7 +7572,6 @@ const typeLookupMap = {
 module.exports = {
 	FunctionNode
 };
-
 },{"../utils":29,"acorn":1}],10:[function(require,module,exports){
 const {
 	Kernel
@@ -7661,7 +7657,13 @@ class GLKernel extends Kernel {
 	}
 
 	setFloatTextures(flag) {
+		utils.warnDeprecated('method', 'setFloatTextures', 'setOptimizeFloatMemory');
 		this.floatTextures = flag;
+		return this;
+	}
+
+	setOptimizeFloatMemory(flag) {
+		this.optimizeFloatMemory = flag;
 		return this;
 	}
 
@@ -7810,7 +7812,6 @@ class GLKernel extends Kernel {
 	constructor(source, settings) {
 		super(source, settings);
 		this.texSize = null;
-		this.floatTextures = null;
 		this.floatOutputForce = null;
 		this.fixIntegerDivisionAccuracy = null;
 		this.translatedSource = null;
@@ -8217,8 +8218,10 @@ class GLKernel extends Kernel {
 		const pixels = this.readFloatPixelsToFloat32Array();
 		const [xMax] = this.output;
 		const xResults = new Array(xMax);
-		for (let x = 0; x < xMax; x += 4) {
-			xResults[x] = pixels.subarray(x, x + 2);
+		const xResultsMax = xMax * 4;
+		let i = 0;
+		for (let x = 0; x < xResultsMax; x += 4) {
+			xResults[i++] = pixels.subarray(x, x + 2);
 		}
 		return xResults;
 	}
@@ -8226,10 +8229,12 @@ class GLKernel extends Kernel {
 		const pixels = this.readFloatPixelsToFloat32Array();
 		const [xMax, yMax] = this.output;
 		const yResults = new Array(yMax);
+		const XResultsMax = xMax * 4;
 		for (let y = 0; y < yMax; y++) {
 			const xResults = new Array(xMax);
-			for (let x = 0; x < xMax; x += 4) {
-				xResults[x] = pixels.subarray(x, x + 2);
+			let i = 0;
+			for (let x = 0; x < XResultsMax; x += 4) {
+				xResults[i++] = pixels.subarray(x, x + 2);
 			}
 			yResults[y] = xResults;
 		}
@@ -8238,13 +8243,15 @@ class GLKernel extends Kernel {
 	render3DArray2() {
 		const pixels = this.readFloatPixelsToFloat32Array();
 		const [xMax, yMax, zMax] = this.output;
+		const xResultsMax = xMax * 4;
 		const zResults = new Array(zMax);
 		for (let z = 0; z < zMax; z++) {
 			const yResults = new Array(yMax);
 			for (let y = 0; y < yMax; y++) {
 				const xResults = new Array(xMax);
-				for (let x = 0; x < xMax; x += 4) {
-					xResults[x] = pixels.subarray(x, x + 2);
+				let i = 0;
+				for (let x = 0; x < xResultsMax; x += 4) {
+					xResults[i++] = pixels.subarray(x, x + 2);
 				}
 				yResults[y] = xResults;
 			}
@@ -8256,19 +8263,24 @@ class GLKernel extends Kernel {
 		const pixels = this.readFloatPixelsToFloat32Array();
 		const [xMax] = this.output;
 		const xResults = new Array(xMax);
-		for (let x = 0; x < xMax; x += 4) {
-			xResults[x] = pixels.subarray(x, x + 3);
+		const xResultsMax = xMax * 4;
+		console.log(pixels);
+		let i = 0;
+		for (let x = 0; x < xResultsMax; x += 4) {
+			xResults[i++] = pixels.subarray(x, x + 3);
 		}
 		return xResults;
 	}
 	render2DArray3() {
 		const pixels = this.readFloatPixelsToFloat32Array();
 		const [xMax, yMax] = this.output;
+		const xMaxResults = xMax * 4;
 		const yResults = new Array(yMax);
 		for (let y = 0; y < yMax; y++) {
 			const xResults = new Array(xMax);
-			for (let x = 0; x < xMax; x += 4) {
-				xResults[x] = pixels.subarray(x, x + 3);
+			let i = 0;
+			for (let x = 0; x < xMaxResults; x += 4) {
+				xResults[i++] = pixels.subarray(x, x + 3);
 			}
 			yResults[y] = xResults;
 		}
@@ -8277,13 +8289,15 @@ class GLKernel extends Kernel {
 	render3DArray3() {
 		const pixels = this.readFloatPixelsToFloat32Array();
 		const [xMax, yMax, zMax] = this.output;
+		const xMaxResults = xMax * 4;
 		const zResults = new Array(zMax);
 		for (let z = 0; z < zMax; z++) {
 			const yResults = new Array(yMax);
 			for (let y = 0; y < yMax; y++) {
 				const xResults = new Array(xMax);
-				for (let x = 0; x < xMax; x += 4) {
-					xResults[x] = pixels.subarray(x, x + 3);
+				let i = 0;
+				for (let x = 0; x < xMaxResults; x += 4) {
+					xResults[i++] = pixels.subarray(x, x + 3);
 				}
 				yResults[y] = xResults;
 			}
@@ -8295,19 +8309,23 @@ class GLKernel extends Kernel {
 		const pixels = this.readFloatPixelsToFloat32Array();
 		const [xMax] = this.output;
 		const xResults = new Array(xMax);
-		for (let x = 0; x < xMax; x += 4) {
-			xResults[x] = pixels.subarray(x, x + 4);
+		const xResultsMax = xMax * 4;
+		let i = 0;
+		for (let x = 0; x < xResultsMax; x += 4) {
+			xResults[i++] = pixels.subarray(x, x + 4);
 		}
 		return xResults;
 	}
 	render2DArray4() {
 		const pixels = this.readFloatPixelsToFloat32Array();
 		const [xMax, yMax] = this.output;
+		const xMaxResult = xMax * 4;
 		const yResults = new Array(yMax);
 		for (let y = 0; y < yMax; y++) {
 			const xResults = new Array(xMax);
-			for (let x = 0; x < xMax; x += 4) {
-				xResults[x] = pixels.subarray(x, x + 4);
+			let i = 0;
+			for (let x = 0; x < xMaxResult; x += 4) {
+				xResults[i++] = pixels.subarray(x, x + 4);
 			}
 			yResults[y] = xResults;
 		}
@@ -8316,25 +8334,21 @@ class GLKernel extends Kernel {
 	render3DArray4() {
 		const pixels = this.readFloatPixelsToFloat32Array();
 		const [xMax, yMax, zMax] = this.output;
+		const xResultsMap = xMax * 4;
 		const zResults = new Array(zMax);
 		for (let z = 0; z < zMax; z++) {
 			const yResults = new Array(yMax);
 			for (let y = 0; y < yMax; y++) {
 				const xResults = new Array(xMax);
-				for (let x = 0; x < xMax; x += 4) {
-					xResults[x] = pixels.subarray(x, x + 4);
+				let i = 0;
+				for (let x = 0; x < xResultsMap; x += 4) {
+					xResults[i++] = pixels.subarray(x, x + 4);
 				}
 				yResults[y] = xResults;
 			}
 			zResults[z] = yResults;
 		}
 		return zResults;
-	}
-	getArgumentTextureSize() {
-
-	}
-	getOutputTextureSize() {
-
 	}
 }
 
@@ -8375,7 +8389,6 @@ module.exports = {
 	GLKernel,
 	renderStrategy
 };
-
 },{"../texture":28,"../utils":29,"./kernel":12}],11:[function(require,module,exports){
 const getContext = require('gl');
 const {
@@ -8715,6 +8728,16 @@ class Kernel {
 		return this;
 	}
 
+	getCanvas() {
+		utils.warnDeprecated('method', 'getCanvas');
+		return this.canvas;
+	}
+
+	getWebGl() {
+		utils.warnDeprecated('method', 'getWebGl');
+		return this.context;
+	}
+
 	setContext(context) {
 		this.context = context;
 		return this;
@@ -8763,7 +8786,11 @@ class Kernel {
 	}
 
 	getBitRatio(value) {
-		if (value.constructor === Input) {
+		if (this.precision === 'single') {
+			return 4;
+		} else if (Array.isArray(value[0])) {
+			return this.getBitRatio(value[0]);
+		} else if (value.constructor === Input) {
 			return this.getBitRatio(value.value);
 		}
 		switch (value.constructor) {
@@ -8812,7 +8839,6 @@ class Kernel {
 module.exports = {
 	Kernel
 };
-
 },{"../input":25,"../utils":29}],13:[function(require,module,exports){
 const fragmentShader = `__HEADER__;
 precision highp float;
@@ -8972,38 +8998,6 @@ float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, in
   return 0.0;
 }
 
-float getMemoryOptimized16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
-  int channel = integerMod(index, 4);
-  index = index / 4;
-  int w = texSize.x;
-  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  vec4 texel = texture2D(tex, st / vec2(texSize));
-  if (channel == 0) return texel.r;
-  if (channel == 1) return texel.g;
-  if (channel == 2) return texel.b;
-  if (channel == 3) return texel.a;
-  return 0.0;
-}
-
-float getMemoryOptimized8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
-  int channel = integerMod(index, 4);
-  index = index / 4;
-  int w = texSize.x;
-  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  vec4 texel = texture2D(tex, st / vec2(texSize));
-  if (channel == 0) return texel.r;
-  if (channel == 1) return texel.g;
-  if (channel == 2) return texel.b;
-  if (channel == 3) return texel.a;
-  return 0.0;
-}
-
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
@@ -9057,7 +9051,6 @@ void main(void) {
 module.exports = {
 	fragmentShader
 };
-
 },{}],14:[function(require,module,exports){
 const {
 	FunctionNode
@@ -9872,46 +9865,30 @@ class WebGLFunctionNode extends FunctionNode {
 			case 'Array3D':
 			case 'Array4D':
 			case 'Input':
-				const bitRatio = (origin === 'user'
-						? this.lookupFunctionArgumentBitRatio(this.name, name)
-						: this.constantBitRatios[name]
-				);
+
 				if (this.precision === 'single') {
+					retArr.push(`getMemoryOptimized32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+					this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+					retArr.push(')');
+				} else {
+					const bitRatio = (origin === 'user' ?
+						this.lookupFunctionArgumentBitRatio(this.name, name) :
+						this.constantBitRatios[name]
+					);
 					switch (bitRatio) {
 						case 1:
-							retArr.push(`getMemoryOptimized8(${markupName}, ${markupName}Size, ${markupName}Dim, `);
-							this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
-							retArr.push(')');
+							retArr.push(`get8(${markupName}, ${markupName}Size, ${markupName}Dim, `);
 							break;
 						case 2:
-							retArr.push(`getMemoryOptimized16(${markupName}, ${markupName}Size, ${markupName}Dim, `);
-							this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
-							retArr.push(')');
+							retArr.push(`get16(${markupName}, ${markupName}Size, ${markupName}Dim, `);
 							break;
 						case 4:
 						case 0:
-							retArr.push(`getMemoryOptimized32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
-							this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
-							retArr.push(')');
+							retArr.push(`get32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
 							break;
 						default:
 							throw new Error(`unhandled bit ratio of ${ bitRatio}`);
 					}
-				} else {
-				  switch (bitRatio) {
-            case 1:
-              retArr.push(`get8(${markupName}, ${markupName}Size, ${markupName}Dim, `);
-              break;
-            case 2:
-              retArr.push(`get16(${markupName}, ${markupName}Size, ${markupName}Dim, `);
-              break;
-            case 4:
-						case 0:
-              retArr.push(`get32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
-              break;
-            default:
-              throw new Error(`unhandled bit ratio of ${ bitRatio}`);
-          }
 					this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
 					retArr.push(')');
 				}
@@ -10158,7 +10135,6 @@ const operatorMap = {
 module.exports = {
 	WebGLFunctionNode
 };
-
 },{"../function-node":9}],15:[function(require,module,exports){
 const {
 	utils
@@ -10227,7 +10203,7 @@ function webGLKernelString(gpuKernel, name) {
         this.drawBuffersMap = ${ gpuKernel.drawBuffersMap ? JSON.stringify(gpuKernel.drawBuffersMap) : 'null' };
         this.endianness = '${ gpuKernel.endianness }';
         this.graphical = ${ boolToString(gpuKernel.graphical) };
-        this.floatTextures = ${ boolToString(gpuKernel.floatTextures) };
+        this.optimizeFloatMemory = ${ boolToString(gpuKernel.optimizeFloatMemory) };
         this.precision = "${ gpuKernel.precision }";
         // TODO: not sure how to handle
         this.floatOutputForce = ${ boolToString(gpuKernel.floatOutputForce) };
@@ -10298,7 +10274,6 @@ function webGLKernelString(gpuKernel, name) {
 module.exports = {
 	webGLKernelString
 };
-
 },{"../../kernel-run-shortcut":26,"../../utils":29}],16:[function(require,module,exports){
 const {
 	GLKernel
@@ -10521,8 +10496,7 @@ class WebGLKernel extends GLKernel {
 			throw new Error('Float textures are not supported');
 		} else if (this.precision === 'single' && this.floatOutputForce !== true && !features.isFloatRead) {
 			throw new Error('Single precision not supported');
-		} else if (!this.graphical && this.floatTextures === null && this.precision === null && features.isTextureFloat) {
-			this.floatTextures = true;
+		} else if (!this.graphical && this.precision === null && features.isTextureFloat) {
 			this.precision = features.isFloatRead ? 'single' : 'unsigned';
 		}
 
@@ -10904,9 +10878,9 @@ class WebGLKernel extends GLKernel {
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
 						break;
 					default:
-					  if (!this.graphical) {
-              throw new Error('Unhandled return type');
-            }
+						if (!this.graphical) {
+							throw new Error('Unhandled return type');
+						}
 				}
 			} else {
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
@@ -11107,7 +11081,7 @@ class WebGLKernel extends GLKernel {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 						const length = textureSize[0] * textureSize[1] * bitRatio;
-						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? value : new Float32Array(value), length);
+						const valuesFlat = this.formatArrayTransfer(value, length, Float32Array);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
 						if (!this.hardcodeConstants) {
@@ -11163,7 +11137,7 @@ class WebGLKernel extends GLKernel {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 						const length = textureSize[0] * textureSize[1] * bitRatio;
-						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? input.value : new Float32Array(input.value), length);
+						const valuesFlat = this.formatArrayTransfer(input.value, length, Float32Array);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
 						if (!this.hardcodeConstants) {
@@ -11290,7 +11264,7 @@ class WebGLKernel extends GLKernel {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 						const length = textureSize[0] * textureSize[1] * bitRatio;
-						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? value : new Float32Array(value), length);
+						const valuesFlat = this.formatArrayTransfer(value, length, Float32Array);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
 						if (!this.hardcodeConstants) {
@@ -11335,7 +11309,7 @@ class WebGLKernel extends GLKernel {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 						const length = textureSize[0] * textureSize[1] * bitRatio;
-						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? input.value : new Float32Array(input.value), length);
+						const valuesFlat = this.formatArrayTransfer(input.value, length, Float32Array);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
 						if (!this.hardcodeConstants) {
@@ -11438,7 +11412,7 @@ class WebGLKernel extends GLKernel {
 		this.constantsLength++;
 	}
 
-	formatArrayTransfer(value, length) {
+	formatArrayTransfer(value, length, Type) {
 		if (this.floatTextures) {
 		}
 		if (utils.isArray(value[0]) || this.optimizeFloatMemory) {
@@ -11453,14 +11427,15 @@ class WebGLKernel extends GLKernel {
 				case Int16Array:
 				case Float32Array:
 				case Int32Array:
-					const valuesFlat = new value.constructor(length);
+					const valuesFlat = new(Type || value.constructor)(length);
 					utils.flattenTo(value, valuesFlat);
 					return valuesFlat;
-				default: {
-					const valuesFlat = new Float32Array(length);
-					utils.flattenTo(value, valuesFlat);
-					return valuesFlat;
-				}
+				default:
+					{
+						const valuesFlat = new Float32Array(length);
+						utils.flattenTo(value, valuesFlat);
+						return valuesFlat;
+					}
 			}
 		}
 	}
@@ -12033,7 +12008,6 @@ class WebGLKernel extends GLKernel {
 module.exports = {
 	WebGLKernel
 };
-
 },{"../../plugins/triangle-noise":27,"../../texture":28,"../../utils":29,"../function-builder":8,"../gl-kernel":10,"./fragment-shader":13,"./function-node":14,"./kernel-string":15,"./vertex-shader":17}],17:[function(require,module,exports){
 const vertexShader = `precision highp float;
 precision highp int;
@@ -12196,32 +12170,6 @@ float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, in
   return texel[channel];
 }
 
-float getMemoryOptimized16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
-  int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
-  int channel = integerMod(index, 4);
-  index = index / 4;
-  int w = texSize.x;
-  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  index = index / 4;
-  vec4 texel = texture(tex, st / vec2(texSize));
-  return texel[channel];
-}
-
-float getMemoryOptimized8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
-  int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
-  int channel = integerMod(index, 4);
-  index = index / 4;
-  int w = texSize.x;
-  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  index = index / 4;
-  vec4 texel = texture(tex, st / vec2(texSize));
-  return texel[channel];
-}
-
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;
@@ -12280,7 +12228,6 @@ void main(void) {
 module.exports = {
 	fragmentShader
 };
-
 },{}],19:[function(require,module,exports){
 const {
 	WebGLFunctionNode
@@ -12445,8 +12392,7 @@ class WebGL2Kernel extends WebGLKernel {
 		const features = this.constructor.features;
 		if (this.precision === 'single' && this.floatOutputForce !== true && !features.isFloatRead) {
 			throw new Error('Float texture outputs are not supported');
-		} else if (!this.graphical && this.floatTextures === null && this.precision === null) {
-			this.floatTextures = true;
+		} else if (!this.graphical && this.precision === null) {
 			this.precision = features.isFloatRead ? 'single' : 'unsigned';
 		}
 
@@ -12722,45 +12668,45 @@ class WebGL2Kernel extends WebGLKernel {
 			case 'Array2D':
 			case 'Array3D':
 				{
-          const dim = utils.getDimensions(value, true);
-          const bitRatio = this.argumentBitRatios[this.argumentsLength];
-          if (this.precision === 'single') {
-            const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
-            gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
-            gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            const length = textureSize[0] * textureSize[1] * bitRatio;
-            const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? value : new Float32Array(value), length);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
+					const dim = utils.getDimensions(value, true);
+					const bitRatio = this.argumentBitRatios[this.argumentsLength];
+					if (this.precision === 'single') {
+						const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						const length = textureSize[0] * textureSize[1] * bitRatio;
+						const valuesFlat = this.formatArrayTransfer(value, length, Float32Array);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
-            if (!this.hardcodeConstants) {
-              this.setUniform3iv(`user_${name}Dim`, dim);
-              this.setUniform2iv(`user_${name}Size`, textureSize);
-            }
-            this.setUniform1i(`user_${name}`, this.argumentsLength);
-          } else {
-            const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
-            gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
-            gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`user_${name}Dim`, dim);
+							this.setUniform2iv(`user_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`user_${name}`, this.argumentsLength);
+					} else {
+						const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-            const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
-            const valuesFlat = this.formatArrayTransfer(value, length);
-            const buffer = new Uint8Array(valuesFlat.buffer);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+						const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
+						const valuesFlat = this.formatArrayTransfer(value, length);
+						const buffer = new Uint8Array(valuesFlat.buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 
-            if (!this.hardcodeConstants) {
-              this.setUniform3iv(`user_${name}Dim`, dim);
-              this.setUniform2iv(`user_${name}Size`, textureSize);
-            }
-            this.setUniform1i(`user_${name}`, this.argumentsLength);
-          }
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`user_${name}Dim`, dim);
+							this.setUniform2iv(`user_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`user_${name}`, this.argumentsLength);
+					}
 					break;
 				}
 			case 'Integer':
@@ -12772,46 +12718,46 @@ class WebGL2Kernel extends WebGLKernel {
 				}
 			case 'Input':
 				{
-          const input = value;
-          const dim = utils.getDimensions(input, true);
-          const bitRatio = this.argumentBitRatios[this.argumentsLength];
-          if (this.precision === 'single') {
-            const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
-            gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
-            gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            const length = textureSize[0] * textureSize[1] * bitRatio;
-            const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? input.value : new Float32Array(input.value), length);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
+					const input = value;
+					const dim = utils.getDimensions(input, true);
+					const bitRatio = this.argumentBitRatios[this.argumentsLength];
+					if (this.precision === 'single') {
+						const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						const length = textureSize[0] * textureSize[1] * bitRatio;
+						const valuesFlat = this.formatArrayTransfer(input.value, length, Float32Array);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
-            if (!this.hardcodeConstants) {
-              this.setUniform3iv(`user_${name}Dim`, dim);
-              this.setUniform2iv(`user_${name}Size`, textureSize);
-            }
-            this.setUniform1i(`user_${name}`, this.argumentsLength);
-          } else {
-            const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
-            gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
-            gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`user_${name}Dim`, dim);
+							this.setUniform2iv(`user_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`user_${name}`, this.argumentsLength);
+					} else {
+						const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentsLength);
+						gl.bindTexture(gl.TEXTURE_2D, argumentTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-            const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
-            const valuesFlat = this.formatArrayTransfer(input.value, length);
-            const buffer = new Uint8Array(valuesFlat.buffer);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+						const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
+						const valuesFlat = this.formatArrayTransfer(input.value, length);
+						const buffer = new Uint8Array(valuesFlat.buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 
-            if (!this.hardcodeConstants) {
-              this.setUniform3iv(`user_${name}Dim`, dim);
-              this.setUniform2iv(`user_${name}Size`, textureSize);
-            }
-            this.setUniform1i(`user_${name}`, this.argumentsLength);
-          }
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`user_${name}Dim`, dim);
+							this.setUniform2iv(`user_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`user_${name}`, this.argumentsLength);
+					}
 					break;
 				}
 			case 'HTMLImage':
@@ -12997,92 +12943,92 @@ class WebGL2Kernel extends WebGLKernel {
 			case 'Array(4)':
 			case 'Array2D':
 			case 'Array3D':
-			  {
-          const dim = utils.getDimensions(value, true);
-          const bitRatio = this.constantBitRatios[name];
-          if (this.precision === 'single') {
-            const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
-            gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
-            gl.bindTexture(gl.TEXTURE_2D, constantTexture);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            const length = textureSize[0] * textureSize[1] * bitRatio;
-            const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? value : new Float32Array(value), length);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
+				{
+					const dim = utils.getDimensions(value, true);
+					const bitRatio = this.constantBitRatios[name];
+					if (this.precision === 'single') {
+						const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+						gl.bindTexture(gl.TEXTURE_2D, constantTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						const length = textureSize[0] * textureSize[1] * bitRatio;
+						const valuesFlat = this.formatArrayTransfer(value, length, Float32Array);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
-            if (!this.hardcodeConstants) {
-              this.setUniform3iv(`constants_${name}Dim`, dim);
-              this.setUniform2iv(`constants_${name}Size`, textureSize);
-            }
-            this.setUniform1i(`constants_${name}`, this.constantsLength);
-          } else {
-            const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
-            gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
-            gl.bindTexture(gl.TEXTURE_2D, constantTexture);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`constants_${name}Dim`, dim);
+							this.setUniform2iv(`constants_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`constants_${name}`, this.constantsLength);
+					} else {
+						const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+						gl.bindTexture(gl.TEXTURE_2D, constantTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-            const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
-            const valuesFlat = this.formatArrayTransfer(value, length);
-            const buffer = new Uint8Array(valuesFlat.buffer);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+						const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
+						const valuesFlat = this.formatArrayTransfer(value, length);
+						const buffer = new Uint8Array(valuesFlat.buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 
-            if (!this.hardcodeConstants) {
-              this.setUniform3iv(`constants_${name}Dim`, dim);
-              this.setUniform2iv(`constants_${name}Size`, textureSize);
-            }
-            this.setUniform1i(`constants_${name}`, this.constantsLength);
-          }
-        }
-        break;
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`constants_${name}Dim`, dim);
+							this.setUniform2iv(`constants_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`constants_${name}`, this.constantsLength);
+					}
+				}
+				break;
 			case 'Input':
-        {
-          const input = value;
-          const dim = utils.getDimensions(input, true);
-          const bitRatio = this.constantBitRatios[name];
-          if (this.precision === 'single') {
-            const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
-            gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
-            gl.bindTexture(gl.TEXTURE_2D, constantTexture);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            const length = textureSize[0] * textureSize[1] * bitRatio;
-            const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? input.value : new Float32Array(input.value), length);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
+				{
+					const input = value;
+					const dim = utils.getDimensions(input, true);
+					const bitRatio = this.constantBitRatios[name];
+					if (this.precision === 'single') {
+						const textureSize = utils.getMemoryOptimizedFloatTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+						gl.bindTexture(gl.TEXTURE_2D, constantTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						const length = textureSize[0] * textureSize[1] * bitRatio;
+						const valuesFlat = this.formatArrayTransfer(input.value, length, Float32Array);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
-            if (!this.hardcodeConstants) {
-              this.setUniform3iv(`constants_${name}Dim`, dim);
-              this.setUniform2iv(`constants_${name}Size`, textureSize);
-            }
-            this.setUniform1i(`constants_${name}`, this.constantsLength);
-          } else {
-            const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
-            gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
-            gl.bindTexture(gl.TEXTURE_2D, constantTexture);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`constants_${name}Dim`, dim);
+							this.setUniform2iv(`constants_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`constants_${name}`, this.constantsLength);
+					} else {
+						const textureSize = utils.getMemoryOptimizedPackedTextureSize(dim, bitRatio);
+						gl.activeTexture(gl.TEXTURE0 + this.constantsLength);
+						gl.bindTexture(gl.TEXTURE_2D, constantTexture);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-            const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
-            const valuesFlat = this.formatArrayTransfer(input.value, length);
-            const buffer = new Uint8Array(valuesFlat.buffer);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+						const length = textureSize[0] * textureSize[1] * (4 / bitRatio);
+						const valuesFlat = this.formatArrayTransfer(input.value, length);
+						const buffer = new Uint8Array(valuesFlat.buffer);
+						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
 
-            if (!this.hardcodeConstants) {
-              this.setUniform3iv(`constants_${name}Dim`, dim);
-              this.setUniform2iv(`constants_${name}Size`, textureSize);
-            }
-            this.setUniform1i(`constants_${name}`, this.argumentsLength);
-          }
-          break;
-        }
+						if (!this.hardcodeConstants) {
+							this.setUniform3iv(`constants_${name}Dim`, dim);
+							this.setUniform2iv(`constants_${name}Size`, textureSize);
+						}
+						this.setUniform1i(`constants_${name}`, this.argumentsLength);
+					}
+					break;
+				}
 			case 'HTMLImage':
 				{
 					const inputImage = value;
@@ -13750,7 +13696,7 @@ class GPU {
 		}
 
 		if (this.mode === 'dev') {
-			return gpuMock(source, settings);
+			return gpuMock(source, upgradeDeprecatedCreateKernelSettings(settings));
 		}
 
 		source = typeof source === 'function' ? source.toString() : source;
@@ -13765,7 +13711,7 @@ class GPU {
 				const fallbackKernel = new CPUKernel(source, mergedSettings);
 				return fallbackKernel.apply(fallbackKernel, args);
 			}
-		}, settings || {});
+		}, upgradeDeprecatedCreateKernelSettings(settings) || {});
 
 		const kernel = kernelRunShortcut(new this.Kernel(source, mergedSettings));
 
@@ -13798,7 +13744,7 @@ class GPU {
 			}
 		}
 
-		const kernel = this.createKernel(fn, settings);
+		const kernel = this.createKernel(fn, upgradeDeprecatedCreateKernelSettings(settings));
 		if (Array.isArray(arguments[0])) {
 			const functions = arguments[0];
 			for (let i = 0; i < functions.length; i++) {
@@ -13904,12 +13850,38 @@ class GPU {
 	}
 }
 
+
+function upgradeDeprecatedCreateKernelSettings(settings) {
+	if (!settings) {
+		return;
+	}
+	const upgradedSettings = {
+		...settings
+	};
+	if (settings.hasOwnProperty('floatOutput')) {
+		utils.warnDeprecated('setting', 'floatOutput', 'precision');
+		upgradedSettings.precision = settings.floatOutput ? 'single' : 'unsigned';
+	}
+	if (settings.hasOwnProperty('outputToTexture')) {
+		utils.warnDeprecated('setting', 'outputToTexture', 'pipeline');
+		upgradedSettings.pipeline = Boolean(settings.outputToTexture);
+	}
+	if (settings.hasOwnProperty('outputImmutable')) {
+		utils.warnDeprecated('setting', 'outputImmutable', 'immutable');
+		upgradedSettings.immutable = Boolean(settings.outputImmutable);
+	}
+	if (settings.hasOwnProperty('floatTextures')) {
+		utils.warnDeprecated('setting', 'floatTextures', 'optimizeFloatMemory');
+		upgradedSettings.optimizeFloatMemory = Boolean(settings.floatTextures);
+	}
+	return upgradedSettings;
+}
+
 module.exports = {
 	GPU,
 	kernelOrder,
 	kernelTypes
 };
-
 },{"./backend/cpu/kernel":7,"./backend/headless-gl/kernel":11,"./backend/web-gl/kernel":16,"./backend/web-gl2/kernel":20,"./kernel-run-shortcut":26,"./utils":29,"gpu-mock.js":3}],24:[function(require,module,exports){
 const {
 	GPU
@@ -13962,6 +13934,10 @@ const {
 	GLKernel
 } = require('./backend/gl-kernel');
 
+const {
+	Kernel
+} = require('./backend/kernel');
+
 module.exports = {
 	alias,
 	CPUFunctionNode,
@@ -13979,8 +13955,9 @@ module.exports = {
 	WebGLFunctionNode,
 	WebGLKernel,
 	GLKernel,
+	Kernel,
 };
-},{"./alias":4,"./backend/cpu/function-node":5,"./backend/cpu/kernel":7,"./backend/function-builder":8,"./backend/function-node":9,"./backend/gl-kernel":10,"./backend/headless-gl/kernel":11,"./backend/web-gl/function-node":14,"./backend/web-gl/kernel":16,"./backend/web-gl2/function-node":19,"./backend/web-gl2/kernel":20,"./gpu":23,"./input":25,"./texture":28,"./utils":29}],25:[function(require,module,exports){
+},{"./alias":4,"./backend/cpu/function-node":5,"./backend/cpu/kernel":7,"./backend/function-builder":8,"./backend/function-node":9,"./backend/gl-kernel":10,"./backend/headless-gl/kernel":11,"./backend/kernel":12,"./backend/web-gl/function-node":14,"./backend/web-gl/kernel":16,"./backend/web-gl2/function-node":19,"./backend/web-gl2/kernel":20,"./gpu":23,"./input":25,"./texture":28,"./utils":29}],25:[function(require,module,exports){
 class Input {
 	constructor(value, size) {
 		this.value = value;
@@ -13999,7 +13976,7 @@ class Input {
 			}
 		}
 
-		const [h,w,d] = this.size;
+		const [h, w, d] = this.size;
 		if (this.value.length !== (h * w * d)) {
 			throw new Error(`Input size ${this.value.length} does not match ${w} * ${h} * ${d} = ${(h * w * d)}`);
 		}
@@ -14014,7 +13991,6 @@ module.exports = {
 	Input,
 	input
 };
-
 },{}],26:[function(require,module,exports){
 const {
 	utils
@@ -14177,7 +14153,6 @@ class Texture {
 module.exports = {
 	Texture
 };
-
 },{}],29:[function(require,module,exports){
 const {
 	Input
@@ -14413,6 +14388,13 @@ const utils = {
 		} else {
 			return '\n';
 		}
+	},
+	warnDeprecated(type, oldName, newName) {
+		if (newName) {
+			console.warn(`You are using a deprecated ${ type } "${ oldName }". It has been replaced with "${ newName }". Fixing, but please upgrade as it will soon be removed.`);
+		} else {
+			console.warn(`You are using a deprecated ${ type } "${ oldName }". It has been removed. Fixing, but please upgrade as it will soon be removed.`);
+		}
 	}
 };
 
@@ -14421,5 +14403,4 @@ const _systemEndianness = utils.getSystemEndianness();
 module.exports = {
 	utils
 };
-
 },{"./input":25,"./texture":28}]},{},[22]);

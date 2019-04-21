@@ -365,6 +365,24 @@ class Kernel {
 	}
 
 	/**
+	 * @deprecated
+	 * @returns {Object}
+	 */
+	getCanvas() {
+		utils.warnDeprecated('method', 'getCanvas');
+		return this.canvas;
+	}
+
+	/**
+	 * @deprecated
+	 * @returns {Object}
+	 */
+	getWebGl() {
+		utils.warnDeprecated('method', 'getWebGl');
+		return this.context;
+	}
+
+	/**
 	 * @desc Bind the webGL instance to kernel
 	 * @param {WebGLRenderingContext} context - webGl instance to bind
 	 */
@@ -439,7 +457,12 @@ class Kernel {
 	 * @returns {number}
 	 */
 	getBitRatio(value) {
-		if (value.constructor === Input) {
+		if (this.precision === 'single') {
+			// 8 and 16 are upconverted to float32
+			return 4;
+		} else if (Array.isArray(value[0])) {
+			return this.getBitRatio(value[0]);
+		} else if (value.constructor === Input) {
 			return this.getBitRatio(value.value);
 		}
 		switch (value.constructor) {

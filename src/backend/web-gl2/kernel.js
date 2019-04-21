@@ -127,8 +127,7 @@ class WebGL2Kernel extends WebGLKernel {
 		const features = this.constructor.features;
 		if (this.precision === 'single' && this.floatOutputForce !== true && !features.isFloatRead) {
 			throw new Error('Float texture outputs are not supported');
-		} else if (!this.graphical && this.floatTextures === null && this.precision === null) {
-			this.floatTextures = true;
+		} else if (!this.graphical && this.precision === null) {
 			this.precision = features.isFloatRead ? 'single' : 'unsigned';
 		}
 
@@ -424,9 +423,7 @@ class WebGL2Kernel extends WebGLKernel {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 						const length = textureSize[0] * textureSize[1] * bitRatio;
-						// TODO: better handle 16 and 8 bit?
-						// const ext = gl.getExtension('OES_texture_half_float');
-						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? value : new Float32Array(value), length);
+						const valuesFlat = this.formatArrayTransfer(value, length, Float32Array);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
 						if (!this.hardcodeConstants) {
@@ -477,9 +474,7 @@ class WebGL2Kernel extends WebGLKernel {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 						const length = textureSize[0] * textureSize[1] * bitRatio;
-						// TODO: better handle 16 and 8 bit?
-						// const ext = gl.getExtension('OES_texture_half_float');
-						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? input.value : new Float32Array(input.value), length);
+						const valuesFlat = this.formatArrayTransfer(input.value, length, Float32Array);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
 						if (!this.hardcodeConstants) {
@@ -714,9 +709,7 @@ class WebGL2Kernel extends WebGLKernel {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 						const length = textureSize[0] * textureSize[1] * bitRatio;
-						// TODO: better handle 16 and 8 bit?
-						// const ext = gl.getExtension('OES_texture_half_float');
-						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? value : new Float32Array(value), length);
+						const valuesFlat = this.formatArrayTransfer(value, length, Float32Array);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
 						if (!this.hardcodeConstants) {
@@ -762,7 +755,7 @@ class WebGL2Kernel extends WebGLKernel {
 						const length = textureSize[0] * textureSize[1] * bitRatio;
 						// TODO: better handle 16 and 8 bit?
 						// const ext = gl.getExtension('OES_texture_half_float');
-						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? input.value : new Float32Array(input.value), length);
+						const valuesFlat = this.formatArrayTransfer(input.value, length, Float32Array);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
 						if (!this.hardcodeConstants) {

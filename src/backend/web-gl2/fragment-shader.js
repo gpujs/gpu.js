@@ -140,32 +140,6 @@ float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, in
   return texel[channel];
 }
 
-float getMemoryOptimized16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
-  int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
-  int channel = integerMod(index, 4);
-  index = index / 4;
-  int w = texSize.x;
-  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  index = index / 4;
-  vec4 texel = texture(tex, st / vec2(texSize));
-  return texel[channel];
-}
-
-float getMemoryOptimized8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
-  int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
-  int channel = integerMod(index, 4);
-  index = index / 4;
-  int w = texSize.x;
-  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
-  index = index / 4;
-  vec4 texel = texture(tex, st / vec2(texSize));
-  return texel[channel];
-}
-
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
   __GET_WRAPAROUND__;

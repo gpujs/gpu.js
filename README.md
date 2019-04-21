@@ -109,7 +109,7 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
 * constants: object
 * wraparound: boolean
 * hardcodeConstants: boolean
-* floatTextures: boolean - input/working textures use float32 for each colour channel
+* optimizeFloatMemory: boolean - causes a float32 texture to use all 4 channels rather than 1, using less memory, but consuming more GPU.
 * precision: 'single' or 'unsigned' - if 'single' output texture uses float32 for each colour channel rather than 8
 * fixIntegerDivisionAccuracy: boolean - some cards have accuracy issues dividing by factors of three and some other primes (most apple kit?). Default on for affected cards, disable if accuracy not required.
 * functions: array or object

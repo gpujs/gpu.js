@@ -241,8 +241,7 @@ class WebGLKernel extends GLKernel {
 			throw new Error('Float textures are not supported');
 		} else if (this.precision === 'single' && this.floatOutputForce !== true && !features.isFloatRead) {
 			throw new Error('Single precision not supported');
-		} else if (!this.graphical && this.floatTextures === null && this.precision === null && features.isTextureFloat) {
-			this.floatTextures = true;
+		} else if (!this.graphical && this.precision === null && features.isTextureFloat) {
 			this.precision = features.isFloatRead ? 'single' : 'unsigned';
 		}
 
@@ -927,9 +926,7 @@ class WebGLKernel extends GLKernel {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 						const length = textureSize[0] * textureSize[1] * bitRatio;
-						// TODO: better handle 16 and 8 bit?
-						// const ext = gl.getExtension('OES_texture_half_float');
-						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? value : new Float32Array(value), length);
+						const valuesFlat = this.formatArrayTransfer(value, length, Float32Array);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
 						if (!this.hardcodeConstants) {
@@ -985,9 +982,7 @@ class WebGLKernel extends GLKernel {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 						const length = textureSize[0] * textureSize[1] * bitRatio;
-						// TODO: better handle 16 and 8 bit?
-						// const ext = gl.getExtension('OES_texture_half_float');
-						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? input.value : new Float32Array(input.value), length);
+						const valuesFlat = this.formatArrayTransfer(input.value, length, Float32Array);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
 						if (!this.hardcodeConstants) {
@@ -1123,9 +1118,7 @@ class WebGLKernel extends GLKernel {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 						const length = textureSize[0] * textureSize[1] * bitRatio;
-						// TODO: better handle 16 and 8 bit?
-						// const ext = gl.getExtension('OES_texture_half_float');
-						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? value : new Float32Array(value), length);
+						const valuesFlat = this.formatArrayTransfer(value, length, Float32Array);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
 						if (!this.hardcodeConstants) {
@@ -1170,9 +1163,7 @@ class WebGLKernel extends GLKernel {
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 						gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 						const length = textureSize[0] * textureSize[1] * bitRatio;
-						// TODO: better handle 16 and 8 bit?
-						// const ext = gl.getExtension('OES_texture_half_float');
-						const valuesFlat = this.formatArrayTransfer(bitRatio === 4 ? input.value : new Float32Array(input.value), length);
+						const valuesFlat = this.formatArrayTransfer(input.value, length, Float32Array);
 						gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, textureSize[0], textureSize[1], 0, gl.RGBA, gl.FLOAT, valuesFlat);
 
 						if (!this.hardcodeConstants) {
@@ -1282,9 +1273,10 @@ class WebGLKernel extends GLKernel {
 	 *
 	 * @param {Array|Float32Array|Uint16Array} value - The actual argument supplied to the kernel
 	 * @param {Number} length - the expected total length of the output array
+	 * @param {Object} [Type]
 	 * @returns {Float32Array|Uint16Array|Uint8Array} flattened array to transfer
 	 */
-	formatArrayTransfer(value, length) {
+	formatArrayTransfer(value, length, Type) {
 		if (this.floatTextures) {
 			// length *= 4;
 		}
@@ -1301,7 +1293,7 @@ class WebGLKernel extends GLKernel {
 				case Int16Array:
 				case Float32Array:
 				case Int32Array:
-					const valuesFlat = new value.constructor(length);
+					const valuesFlat = new(Type || value.constructor)(length);
 					utils.flattenTo(value, valuesFlat);
 					return valuesFlat;
 				default:

@@ -298,14 +298,15 @@ test('Uint16Array with single precision', () => {
       1,2,3,4,
       5
     ]),
-    expectedBitRatio: 2,
+    // upconverted from 2
+    expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       1,2,3,4,
       5,0,0,0
     ]),
     expectedDim: new Int32Array([5,1,1]),
-    expectedSize: new Int32Array([2,2]),
+    expectedSize: new Int32Array([1,2]),
     expectedType: gl.FLOAT,
   });
 });
@@ -320,14 +321,15 @@ test('Uint8Array with single precision', () => {
       1,2,3,4,
       5
     ]),
-    expectedBitRatio: 1,
+    // upconverted from 1
+    expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       1,2,3,4,
       5,0,0,0
     ]),
     expectedDim: new Int32Array([5,1,1]),
-    expectedSize: new Int32Array([4,2]),
+    expectedSize: new Int32Array([1,2]),
     expectedType: gl.FLOAT,
   });
 });
@@ -537,27 +539,24 @@ test('Uint16Array with single precision length 33', () => {
     },
     constant: new Uint16Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      // NOTE: Packing is 2 per RGBA, so only 2 of the 4 channels is used
-      // NOTE: 4x5
-      1,2,   3,4,   5,6,    7,8,
-      9,10,  11,12, 13,14,  15,16,
-      17,18, 19,20, 21,22,  23,24,
-      25,26, 27,28, 29,30,  31,32,
-      33
+      // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
+      // NOTE: 3x3
+      1,2,3,4,       5,6,7,8,         9,10,11,12,
+      13,14,15,16,   17,18,19,20,     21,22,23,24,
+      25,26,27,28,   29,30,31,32,     33
     ]),
-    expectedBitRatio: 2,
+    // upconverted from 2
+    expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      // NOTE: Packing is 2 per RGBA, so only 2 of the 4 channels is used
-      // NOTE: 4x5
-      1,2,   3,4,   5,6,   7,8,
-      9,10,  11,12, 13,14, 15,16,
-      17,18, 19,20, 21,22, 23,24,
-      25,26, 27,28, 29,30, 31,32,
-      33,0,  0,0,   0,0,   0,0
+      // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
+      // NOTE: 3x3
+      1,2,3,4,       5,6,7,8,         9,10,11,12,
+      13,14,15,16,   17,18,19,20,     21,22,23,24,
+      25,26,27,28,   29,30,31,32,     33,0,0,0
     ]),
     expectedDim: new Int32Array([33,1,1]),
-    expectedSize: new Int32Array([4,5]), // 4 * 5 = 20 / 2 = 10
+    expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 36
     expectedType: gl.FLOAT,
   });
 });
@@ -570,34 +569,29 @@ test('Uint8Array with single precision length 33', () => {
     },
     constant: new Uint8Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      // NOTE: Packing is 1 per RGBA, so only 1 of the 4 channels is used
-      // NOTE: 6x6
-      1,    2,     3,     4,     5,     6,
-      7,    8,     9,     10,    11,    12,
-      13,   14,    15,    16,    17,    18,
-      19,   20,    21,    22,    23,    24,
-      25,   26,    27,    28,    29,    30,
-      31,   32,    33
+      // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
+      // NOTE: 3x3
+      1,2,3,4,       5,6,7,8,         9,10,11,12,
+      13,14,15,16,   17,18,19,20,     21,22,23,24,
+      25,26,27,28,   29,30,31,32,     33
     ]),
-    expectedBitRatio: 1,
+    // upconverted from 1
+    expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      // NOTE: Packing is 1 per RGBA, so only 1 of the 4 channels is used
-      // NOTE: 6x6
-      1,     2,     3,     4,     5,      6,
-      7,     8,     9,     10,    11,     12,
-      13,    14,    15,    16,    17,     18,
-      19,    20,    21,    22,    23,     24,
-      25,    26,    27,    28,    29,     30,
-      31,    32,    33,    0,     0,      0,
+      // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
+      // NOTE: 3x3
+      1,2,3,4,       5,6,7,8,         9,10,11,12,
+      13,14,15,16,   17,18,19,20,     21,22,23,24,
+      25,26,27,28,   29,30,31,32,     33,0,0,0
     ]),
     expectedDim: new Int32Array([33,1,1]),
-    expectedSize: new Int32Array([6,6]), // 6 * 6 = 36 / 1 = 36
+    expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 36
     expectedType: gl.FLOAT,
   });
 });
 
-describe('internal WebGLKernel.addConstant Input');
+describe('internal WebGL2Kernel.addConstant Input');
 // requires at least 5 entire pixels
 test('Input(Array) with unsigned precision 5 length', () => {
   addConstantTestSuite({
@@ -750,14 +744,15 @@ test('Input(Uint16Array) with single precision', () => {
       1,2,3,4,
       5,0
     ]), [2,3]),
-    expectedBitRatio: 2,
+    // upconverted from 2
+    expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       1,2,3,4,
       5,0,0,0
     ]),
     expectedDim: new Int32Array([2,3,1]),
-    expectedSize: new Int32Array([2,2]),
+    expectedSize: new Int32Array([1,2]),
     expectedType: gl.FLOAT,
   });
 });
@@ -772,14 +767,15 @@ test('Input(Uint8Array) with single precision', () => {
       1,2,3,4,
       5,0
     ]), [2,3]),
-    expectedBitRatio: 1,
+    // upconverted from 1
+    expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       1,2,3,4,
       5,0,0,0
     ]),
     expectedDim: new Int32Array([2,3,1]),
-    expectedSize: new Int32Array([4,2]),
+    expectedSize: new Int32Array([1,2]),
     expectedType: gl.FLOAT,
   });
 });
@@ -989,27 +985,24 @@ test('Input(Uint16Array) with single precision length 33', () => {
     },
     constant: input(new Uint16Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      // NOTE: Packing is 2 per RGBA, so only 2 of the 4 channels is used
-      // NOTE: 4x5
-      1,2,   3,4,   5,6,    7,8,
-      9,10,  11,12, 13,14,  15,16,
-      17,18, 19,20, 21,22,  23,24,
-      25,26, 27,28, 29,30,  31,32,
-      33
+      // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
+      // NOTE: 3x3
+      1,2,3,4,       5,6,7,8,         9,10,11,12,
+      13,14,15,16,   17,18,19,20,     21,22,23,24,
+      25,26,27,28,   29,30,31,32,     33
     ]), [33]),
-    expectedBitRatio: 2,
+    // upconverted from 2
+    expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      // NOTE: Packing is 2 per RGBA, so only 2 of the 4 channels is used
-      // NOTE: 4x5
-      1,2,   3,4,   5,6,   7,8,
-      9,10,  11,12, 13,14, 15,16,
-      17,18, 19,20, 21,22, 23,24,
-      25,26, 27,28, 29,30, 31,32,
-      33,0,  0,0,   0,0,   0,0
+      // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
+      // NOTE: 3x3
+      1,2,3,4,       5,6,7,8,         9,10,11,12,
+      13,14,15,16,   17,18,19,20,     21,22,23,24,
+      25,26,27,28,   29,30,31,32,     33,0,0,0
     ]),
     expectedDim: new Int32Array([33,1,1]),
-    expectedSize: new Int32Array([4,5]), // 4 * 5 = 20 / 2 = 10
+    expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 36
     expectedType: gl.FLOAT,
   });
 });
@@ -1022,29 +1015,24 @@ test('Input(Uint8Array) with single precision length 33', () => {
     },
     constant: input(new Uint8Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      // NOTE: Packing is 1 per RGBA, so only 1 of the 4 channels is used
-      // NOTE: 6x6
-      1,    2,     3,     4,     5,     6,
-      7,    8,     9,     10,    11,    12,
-      13,   14,    15,    16,    17,    18,
-      19,   20,    21,    22,    23,    24,
-      25,   26,    27,    28,    29,    30,
-      31,   32,    33
+      // NOTE: Packing is 4 per RGBA (8 bit, but upconverted to float32), so only 4 of the 4 channels is used
+      // NOTE: 3x3
+      1,2,3,4,        5,6,7,8,        9,10,11,12,
+      13,14,15,16,    17,18,19,20,    21,22,23,24,
+      25,26,27,28,    29,30,31,32,    33
     ]), [33]),
-    expectedBitRatio: 1,
+    // upconverted to float32
+    expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      // NOTE: Packing is 1 per RGBA, so only 1 of the 4 channels is used
-      // NOTE: 6x6
-      1,     2,     3,     4,     5,      6,
-      7,     8,     9,     10,    11,     12,
-      13,    14,    15,    16,    17,     18,
-      19,    20,    21,    22,    23,     24,
-      25,    26,    27,    28,    29,     30,
-      31,    32,    33,    0,     0,      0,
+      // NOTE: Packing is 4 per RGBA (8 bit, but upconverted to float32), so only 4 of the 4 channels is used
+      // NOTE: 3x3
+      1,2,3,4,        5,6,7,8,        9,10,11,12,
+      13,14,15,16,    17,18,19,20,    21,22,23,24,
+      25,26,27,28,    29,30,31,32,    33,0,0,0
     ]),
     expectedDim: new Int32Array([33,1,1]),
-    expectedSize: new Int32Array([6,6]), // 6 * 6 = 36 / 1 = 36
+    expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 36
     expectedType: gl.FLOAT,
   });
 });

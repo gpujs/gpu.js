@@ -65,7 +65,7 @@ function webGLKernelString(gpuKernel, name) {
         this.drawBuffersMap = ${ gpuKernel.drawBuffersMap ? JSON.stringify(gpuKernel.drawBuffersMap) : 'null' };
         this.endianness = '${ gpuKernel.endianness }';
         this.graphical = ${ boolToString(gpuKernel.graphical) };
-        this.floatTextures = ${ boolToString(gpuKernel.floatTextures) };
+        this.optimizeFloatMemory = ${ boolToString(gpuKernel.optimizeFloatMemory) };
         this.precision = "${ gpuKernel.precision }";
         // TODO: not sure how to handle
         this.floatOutputForce = ${ boolToString(gpuKernel.floatOutputForce) };

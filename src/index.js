@@ -49,6 +49,10 @@ const {
 	GLKernel
 } = require('./backend/gl-kernel');
 
+const {
+	Kernel
+} = require('./backend/kernel');
+
 module.exports = {
 	alias,
 	CPUFunctionNode,
@@ -66,4 +70,5 @@ module.exports = {
 	WebGLFunctionNode,
 	WebGLKernel,
 	GLKernel,
+	Kernel,
 };

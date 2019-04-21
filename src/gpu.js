@@ -217,7 +217,7 @@ class GPU {
 		}
 
 		if (this.mode === 'dev') {
-			return gpuMock(source, settings);
+			return gpuMock(source, upgradeDeprecatedCreateKernelSettings(settings));
 		}
 
 		source = typeof source === 'function' ? source.toString() : source;
@@ -232,7 +232,7 @@ class GPU {
 				const fallbackKernel = new CPUKernel(source, mergedSettings);
 				return fallbackKernel.apply(fallbackKernel, args);
 			}
-		}, settings || {});
+		}, upgradeDeprecatedCreateKernelSettings(settings) || {});
 
 		const kernel = kernelRunShortcut(new this.Kernel(source, mergedSettings));
 
@@ -297,7 +297,7 @@ class GPU {
 			}
 		}
 
-		const kernel = this.createKernel(fn, settings);
+		const kernel = this.createKernel(fn, upgradeDeprecatedCreateKernelSettings(settings));
 		if (Array.isArray(arguments[0])) {
 			const functions = arguments[0];
 			for (let i = 0; i < functions.length; i++) {
@@ -440,6 +440,33 @@ class GPU {
 			this.kernels[0].kernel.constructor.destroyContext(this.context);
 		}, 0);
 	}
+}
+
+
+function upgradeDeprecatedCreateKernelSettings(settings) {
+	if (!settings) {
+		return;
+	}
+	const upgradedSettings = {
+		...settings
+	};
+	if (settings.hasOwnProperty('floatOutput')) {
+		utils.warnDeprecated('setting', 'floatOutput', 'precision');
+		upgradedSettings.precision = settings.floatOutput ? 'single' : 'unsigned';
+	}
+	if (settings.hasOwnProperty('outputToTexture')) {
+		utils.warnDeprecated('setting', 'outputToTexture', 'pipeline');
+		upgradedSettings.pipeline = Boolean(settings.outputToTexture);
+	}
+	if (settings.hasOwnProperty('outputImmutable')) {
+		utils.warnDeprecated('setting', 'outputImmutable', 'immutable');
+		upgradedSettings.immutable = Boolean(settings.outputImmutable);
+	}
+	if (settings.hasOwnProperty('floatTextures')) {
+		utils.warnDeprecated('setting', 'floatTextures', 'optimizeFloatMemory');
+		upgradedSettings.optimizeFloatMemory = Boolean(settings.floatTextures);
+	}
+	return upgradedSettings;
 }
 
 module.exports = {

@@ -920,32 +920,18 @@ class WebGLFunctionNode extends FunctionNode {
 			case 'Array3D':
 			case 'Array4D':
 			case 'Input':
-				const bitRatio = (origin === 'user' ?
-					this.lookupFunctionArgumentBitRatio(this.name, name) :
-					this.constantBitRatios[name]
-				);
+
 				if (this.precision === 'single') {
-					switch (bitRatio) {
-						case 1:
-							retArr.push(`getMemoryOptimized8(${markupName}, ${markupName}Size, ${markupName}Dim, `);
-							this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
-							retArr.push(')');
-							break;
-						case 2:
-							retArr.push(`getMemoryOptimized16(${markupName}, ${markupName}Size, ${markupName}Dim, `);
-							this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
-							retArr.push(')');
-							break;
-						case 4:
-						case 0:
-							retArr.push(`getMemoryOptimized32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
-							this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
-							retArr.push(')');
-							break;
-						default:
-							throw new Error(`unhandled bit ratio of ${ bitRatio}`);
-					}
+					// bitRatio is always 4 here, javascript doesn't yet have 8 or 16 bit support
+					// TODO: make 8 or 16 bit work anyway!
+					retArr.push(`getMemoryOptimized32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+					this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+					retArr.push(')');
 				} else {
+					const bitRatio = (origin === 'user' ?
+						this.lookupFunctionArgumentBitRatio(this.name, name) :
+						this.constantBitRatios[name]
+					);
 					switch (bitRatio) {
 						case 1:
 							retArr.push(`get8(${markupName}, ${markupName}Size, ${markupName}Dim, `);

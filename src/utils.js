@@ -333,6 +333,13 @@ const utils = {
 		} else {
 			return '\n';
 		}
+	},
+	warnDeprecated(type, oldName, newName) {
+		if (newName) {
+			console.warn(`You are using a deprecated ${ type } "${ oldName }". It has been replaced with "${ newName }". Fixing, but please upgrade as it will soon be removed.`);
+		} else {
+			console.warn(`You are using a deprecated ${ type } "${ oldName }". It has been removed. Fixing, but please upgrade as it will soon be removed.`);
+		}
 	}
 };
 
