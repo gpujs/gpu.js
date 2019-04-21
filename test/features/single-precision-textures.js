@@ -89,7 +89,6 @@ function singlePrecisionTexturesWithUint16Array(output, mode) {
   }, {
     output: [9],
     precision: 'single',
-    debug: true
   });
 
   const result = kernel(original);
