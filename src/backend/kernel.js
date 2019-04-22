@@ -345,6 +345,12 @@ class Kernel {
 		return this;
 	}
 
+	setOutputToTexture(flag) {
+		utils.warnDeprecated('method', 'setOutputToTexture', 'setPipeline');
+		this.pipeline = flag;
+		return this;
+	}
+
 	/**
 	 * Set to immutable
 	 * @param flag

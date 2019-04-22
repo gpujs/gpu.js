@@ -90,3 +90,9 @@ test('Kernel.getWebGl', () => {
   });
   assert.equal(kernel.getWebGl(), context);
 });
+
+test('Kernel.setOutputToTexture', () => {
+  const kernel = new Kernel(`function() {}`);
+  kernel.setOutputToTexture(true);
+  assert.equal(kernel.pipeline, true);
+});

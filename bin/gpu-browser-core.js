@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0-rc.7
- * @date Sun Apr 21 2019 12:01:27 GMT-0400 (Eastern Daylight Time)
+ * @date Sun Apr 21 2019 17:22:52 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -3814,7 +3814,7 @@ class Kernel {
 		this.constants = null;
 		this.constantTypes = null;
 		this.constantBitRatios = null;
-		this.hardcodeConstants = null;
+		this.hardcodeConstants = false;
 
 		this.canvas = null;
 
@@ -4075,6 +4075,7 @@ class Kernel {
 module.exports = {
 	Kernel
 };
+
 },{"../input":24,"../utils":28}],12:[function(require,module,exports){
 const fragmentShader = `__HEADER__;
 precision highp float;
@@ -6803,7 +6804,7 @@ class WebGLKernel extends GLKernel {
 						break;
 					case 'Float':
 					case 'Number':
-						result.push(`float user_${name} = ${value}`);
+						result.push(`float user_${name} = ${ value % 1 === 0 ? value + '.0' : value }`);
 						break;
 					default:
 						throw new Error(`Param type ${type} not supported in WebGL`);
@@ -8442,7 +8443,7 @@ class WebGL2Kernel extends WebGLKernel {
 						break;
 					case 'Float':
 					case 'Number':
-						result.push(`highp float user_${ name } = ${ value }`);
+						result.push(`highp float user_${ name } = ${ value % 1 === 0 ? value + '.0' : value }`);
 						break;
 					default:
 						throw new Error(`Param type ${type} not supported in WebGL2`);
@@ -8727,7 +8728,6 @@ class WebGL2Kernel extends WebGLKernel {
 module.exports = {
 	WebGL2Kernel
 };
-
 },{"../../texture":27,"../../utils":28,"../function-builder":7,"../web-gl/kernel":15,"./fragment-shader":17,"./function-node":18,"./vertex-shader":20}],20:[function(require,module,exports){
 const vertexShader = `#version 300 es
 precision highp float;
