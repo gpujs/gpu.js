@@ -980,7 +980,7 @@ class WebGL2Kernel extends WebGLKernel {
 						break;
 					case 'Float':
 					case 'Number':
-						result.push(`highp float user_${ name } = ${ value }`);
+						result.push(`highp float user_${ name } = ${ Number.isInteger(value) ? value + '.0' : value }`);
 						break;
 					default:
 						throw new Error(`Param type ${type} not supported in WebGL2`);

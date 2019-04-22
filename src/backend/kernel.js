@@ -106,7 +106,7 @@ class Kernel {
 		this.constants = null;
 		this.constantTypes = null;
 		this.constantBitRatios = null;
-		this.hardcodeConstants = null;
+		this.hardcodeConstants = false;
 
 		/**
 		 *
