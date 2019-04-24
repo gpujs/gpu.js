@@ -69,17 +69,16 @@ class WebGLKernel extends GLKernel {
 		} else if (typeof OffscreenCanvas !== 'undefined') {
 			testCanvas = new OffscreenCanvas(0, 0);
 		}
-
-		if (testCanvas) {
-			testContext = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
-			testExtensions = {
-				OES_texture_float: testContext.getExtension('OES_texture_float'),
-				OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
-				OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
-				WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
-			};
-			features = this.getFeatures();
-		}
+		if (!testCanvas) return;
+		testContext = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+		if (!testContext || !testContext.getExtension) return;
+		testExtensions = {
+			OES_texture_float: testContext.getExtension('OES_texture_float'),
+			OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
+			OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
+			WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
+		};
+		features = this.getFeatures();
 	}
 
 	static isContextMatch(context) {

@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.8
- * @date Tue Apr 23 2019 22:02:53 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.9
+ * @date Wed Apr 24 2019 07:46:43 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -3624,7 +3624,6 @@ module.exports = {
 	GLKernel,
 	renderStrategy
 };
-
 },{"../texture":27,"../utils":28,"./kernel":11}],10:[function(require,module,exports){
 const getContext = require('gl');
 const {
@@ -4102,7 +4101,6 @@ class Kernel {
 module.exports = {
 	Kernel
 };
-
 },{"../input":24,"../utils":28}],12:[function(require,module,exports){
 const fragmentShader = `__HEADER__;
 precision highp float;
@@ -4310,7 +4308,6 @@ void main(void) {
 module.exports = {
 	fragmentShader
 };
-
 },{}],13:[function(require,module,exports){
 const {
 	FunctionNode
@@ -5537,7 +5534,6 @@ function webGLKernelString(gpuKernel, name) {
 module.exports = {
 	webGLKernelString
 };
-
 },{"../../kernel-run-shortcut":25,"../../utils":28}],15:[function(require,module,exports){
 const {
 	GLKernel
@@ -5591,17 +5587,16 @@ class WebGLKernel extends GLKernel {
 		} else if (typeof OffscreenCanvas !== 'undefined') {
 			testCanvas = new OffscreenCanvas(0, 0);
 		}
-
-		if (testCanvas) {
-			testContext = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
-			testExtensions = {
-				OES_texture_float: testContext.getExtension('OES_texture_float'),
-				OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
-				OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
-				WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
-			};
-			features = this.getFeatures();
-		}
+		if (!testCanvas) return;
+		testContext = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+		if (!testContext || !testContext.getExtension) return;
+		testExtensions = {
+			OES_texture_float: testContext.getExtension('OES_texture_float'),
+			OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
+			OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
+			WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
+		};
+		features = this.getFeatures();
 	}
 
 	static isContextMatch(context) {
@@ -7263,7 +7258,6 @@ class WebGLKernel extends GLKernel {
 module.exports = {
 	WebGLKernel
 };
-
 },{"../../plugins/triangle-noise":26,"../../texture":27,"../../utils":28,"../function-builder":7,"../gl-kernel":9,"./fragment-shader":12,"./function-node":13,"./kernel-string":14,"./vertex-shader":16}],16:[function(require,module,exports){
 const vertexShader = `precision highp float;
 precision highp int;
@@ -7478,7 +7472,6 @@ void main(void) {
 module.exports = {
 	fragmentShader
 };
-
 },{}],18:[function(require,module,exports){
 const {
 	WebGLFunctionNode
@@ -7559,16 +7552,14 @@ class WebGL2Kernel extends WebGLKernel {
 		} else if (typeof OffscreenCanvas !== 'undefined') {
 			testCanvas = new OffscreenCanvas(0, 0);
 		}
-
-		if (testCanvas) {
-			testContext = testCanvas.getContext('webgl2');
-			if (!testContext) return;
-			testExtensions = {
-				EXT_color_buffer_float: testContext.getExtension('EXT_color_buffer_float'),
-				OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
-			};
-			features = this.getFeatures();
-		}
+		if (!testCanvas) return;
+		testContext = testCanvas.getContext('webgl2');
+		if (!testContext || !testContext.getExtension) return;
+		testExtensions = {
+			EXT_color_buffer_float: testContext.getExtension('EXT_color_buffer_float'),
+			OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
+		};
+		features = this.getFeatures();
 	}
 
 	static isContextMatch(context) {

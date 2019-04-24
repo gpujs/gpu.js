@@ -42,16 +42,14 @@ class WebGL2Kernel extends WebGLKernel {
 		} else if (typeof OffscreenCanvas !== 'undefined') {
 			testCanvas = new OffscreenCanvas(0, 0);
 		}
-
-		if (testCanvas) {
-			testContext = testCanvas.getContext('webgl2');
-			if (!testContext) return;
-			testExtensions = {
-				EXT_color_buffer_float: testContext.getExtension('EXT_color_buffer_float'),
-				OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
-			};
-			features = this.getFeatures();
-		}
+		if (!testCanvas) return;
+		testContext = testCanvas.getContext('webgl2');
+		if (!testContext || !testContext.getExtension) return;
+		testExtensions = {
+			EXT_color_buffer_float: testContext.getExtension('EXT_color_buffer_float'),
+			OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
+		};
+		features = this.getFeatures();
 	}
 
 	static isContextMatch(context) {
