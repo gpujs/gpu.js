@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.9
- * @date Wed Apr 24 2019 07:46:43 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.10
+ * @date Wed Apr 24 2019 08:10:18 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -8416,15 +8416,17 @@ class HeadlessGLKernel extends WebGLKernel {
 			preserveDrawingBuffer: true
 		});
 		if (!testContext || !testContext.getExtension) return;
-		testExtensions = {
-			STACKGL_resize_drawingbuffer: testContext.getExtension('STACKGL_resize_drawingbuffer'),
-			STACKGL_destroy_context: testContext.getExtension('STACKGL_destroy_context'),
-			OES_texture_float: testContext.getExtension('OES_texture_float'),
-			OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
-			OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
-			WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
-		};
-		features = this.getFeatures();
+		try { 
+			testExtensions = {
+				STACKGL_resize_drawingbuffer: testContext.getExtension('STACKGL_resize_drawingbuffer'),
+				STACKGL_destroy_context: testContext.getExtension('STACKGL_destroy_context'),
+				OES_texture_float: testContext.getExtension('OES_texture_float'),
+				OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
+				OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
+				WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
+			};
+			features = this.getFeatures();
+		} catch (e) {}
 	}
 
 	static isContextMatch(context) {
@@ -8508,6 +8510,7 @@ class HeadlessGLKernel extends WebGLKernel {
 module.exports = {
 	HeadlessGLKernel
 };
+
 },{"../web-gl/kernel":16,"gl":2}],12:[function(require,module,exports){
 const {
 	utils
