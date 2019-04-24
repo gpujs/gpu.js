@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.10
- * @date Wed Apr 24 2019 08:10:18 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.11
+ * @date Wed Apr 24 2019 17:53:53 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -8412,11 +8412,11 @@ class HeadlessGLKernel extends WebGLKernel {
 		testCanvas = null;
 		testExtensions = null;
 		if (typeof getContext !== 'function') return;
-		testContext = getContext(2, 2, {
-			preserveDrawingBuffer: true
-		});
-		if (!testContext || !testContext.getExtension) return;
 		try { 
+			testContext = getContext(2, 2, {
+				preserveDrawingBuffer: true
+			});
+			if (!testContext || !testContext.getExtension) return;
 			testExtensions = {
 				STACKGL_resize_drawingbuffer: testContext.getExtension('STACKGL_resize_drawingbuffer'),
 				STACKGL_destroy_context: testContext.getExtension('STACKGL_destroy_context'),
@@ -8510,7 +8510,6 @@ class HeadlessGLKernel extends WebGLKernel {
 module.exports = {
 	HeadlessGLKernel
 };
-
 },{"../web-gl/kernel":16,"gl":2}],12:[function(require,module,exports){
 const {
 	utils
