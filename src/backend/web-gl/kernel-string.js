@@ -39,6 +39,7 @@ function webGLKernelString(gpuKernel, name) {
       dimToTexSize: ${ removeNoise(utils.dimToTexSize.toString()) },
       closestSquareDimensions: ${ removeNoise(utils.closestSquareDimensions.toString()) },
       getMemoryOptimizedFloatTextureSize: ${ removeNoise(utils.getMemoryOptimizedFloatTextureSize.toString()) },
+      getMemoryOptimizedPackedTextureSize: ${ removeNoise(utils.getMemoryOptimizedPackedTextureSize.toString()) },
       roundTo: ${ removeNoise(utils.roundTo.toString()) },
       flattenTo: ${ removeNoise(utils.flattenTo.toString()) },
       flatten2dArrayTo: ${ removeNoise(utils.flatten2dArrayTo.toString()) },
@@ -61,7 +62,6 @@ function webGLKernelString(gpuKernel, name) {
         this.program = null;
         this.subKernels = null;
         this.subKernelNames = null;
-        this.wraparound = null;
         this.drawBuffersMap = ${ gpuKernel.drawBuffersMap ? JSON.stringify(gpuKernel.drawBuffersMap) : 'null' };
         this.endianness = '${ gpuKernel.endianness }';
         this.graphical = ${ boolToString(gpuKernel.graphical) };

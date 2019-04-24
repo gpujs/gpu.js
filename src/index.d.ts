@@ -96,7 +96,6 @@ export abstract class Kernel {
   nativeFunctions: INativeFunctionList[];
   subKernels: ISubKernel[];
   skipValidate: boolean;
-  wraparound: boolean;
   immutable: boolean;
   pipeline: boolean;
   plugins: IPlugin[];
@@ -156,6 +155,7 @@ export abstract class Kernel {
   setImmutable(flag: boolean): this;
   setCanvas(flag: any): this;
   setContext(flag: any): this;
+  setFunctions(flag: IFunction[]|KernelFunction[]): this;
 }
 
 export class WebGLKernel extends Kernel {

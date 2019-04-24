@@ -24,6 +24,7 @@ class HeadlessGLKernel extends WebGLKernel {
 		testContext = getContext(2, 2, {
 			preserveDrawingBuffer: true
 		});
+		if (!testContext || !testContext.getExtension) return;
 		testExtensions = {
 			STACKGL_resize_drawingbuffer: testContext.getExtension('STACKGL_resize_drawingbuffer'),
 			STACKGL_destroy_context: testContext.getExtension('STACKGL_destroy_context'),

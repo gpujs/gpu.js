@@ -34,8 +34,7 @@ function addConstantTestSuite(testSuiteSettings) {
   let uniform3ivCalled = false;
   let uniform2ivCalled = false;
   let uniform1iCalled = false;
-  const mockContext = {
-    ...gl,
+  const mockContext = Object.assign({
     activeTexture: (index) => {
       assert.equal(index, 0);
       activeTextureCalled = true;
@@ -125,12 +124,12 @@ function addConstantTestSuite(testSuiteSettings) {
       assert.deepEqual(pixels, expectedPixels);
       texImage2DCalled = true;
     }
-  };
+  }, gl);
   const source = `function(v) { return this.constants.v[this.thread.x]; }`;
   const settings = {
     context: mockContext,
   };
-  const kernel = new WebGL2Kernel(source, {...settings, ...gpuSettings, constants: { v: constant } });
+  const kernel = new WebGL2Kernel(source, Object.assign({ constants: { v: constant } }, settings, gpuSettings));
   kernel.program = 'program';
   kernel.setupConstants();
   assert.equal(kernel.constantBitRatios.v, expectedBitRatio);

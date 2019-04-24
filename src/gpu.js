@@ -377,26 +377,7 @@ class GPU {
 	 * @returns {GPU} returns itself
 	 */
 	addFunction(source, settings) {
-		settings = settings || {};
-		if (typeof source !== 'string' && typeof source !== 'function') throw new Error('source not a string or function');
-		const sourceString = typeof source === 'string' ? source : source.toString();
-
-		let argumentTypes = [];
-
-		if (Array.isArray(settings.argumentTypes)) {
-			argumentTypes = settings.argumentTypes;
-		} else if (typeof settings.argumentTypes === 'object') {
-			argumentTypes = utils.getArgumentNamesFromString(sourceString)
-				.map(name => settings.argumentTypes[name]) || [];
-		} else {
-			argumentTypes = settings.argumentTypes || [];
-		}
-
-		this.functions.push({
-			source: sourceString,
-			argumentTypes,
-			returnType: settings.returnType
-		});
+		this.functions.push(utils.functionToIFunction(source, settings));
 		return this;
 	}
 
@@ -447,9 +428,8 @@ function upgradeDeprecatedCreateKernelSettings(settings) {
 	if (!settings) {
 		return;
 	}
-	const upgradedSettings = {
-		...settings
-	};
+	const upgradedSettings = Object.assign({}, settings);
+
 	if (settings.hasOwnProperty('floatOutput')) {
 		utils.warnDeprecated('setting', 'floatOutput', 'precision');
 		upgradedSettings.precision = settings.floatOutput ? 'single' : 'unsigned';

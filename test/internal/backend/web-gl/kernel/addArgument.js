@@ -33,8 +33,7 @@ function addArgumentTestSuite(testSuiteSettings) {
   let uniform3ivCalled = false;
   let uniform2ivCalled = false;
   let uniform1iCalled = false;
-  const mockContext = {
-    ...gl,
+  const mockContext = Object.assign({
     activeTexture: (index) => {
       assert.equal(index, 0);
       activeTextureCalled = true;
@@ -124,12 +123,12 @@ function addArgumentTestSuite(testSuiteSettings) {
       assert.deepEqual(pixels, expectedPixels);
       texImage2DCalled = true;
     }
-  };
+  }, gl);
   const source = `function(v) { return v[this.thread.x]; }`;
   const settings = {
     context: mockContext,
   };
-  const kernel = new WebGLKernel(source, {...settings, ...gpuSettings});
+  const kernel = new WebGLKernel(source, Object.assign({}, settings, gpuSettings));
   const args = [argument];
   kernel.program = 'program';
   assert.equal(kernel.argumentsLength, 0);

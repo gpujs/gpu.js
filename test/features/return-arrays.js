@@ -13,23 +13,23 @@ function returnArray2FromKernel(mode) {
   gpu.destroy();
 }
 
-test('return Array(2) from kernel auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array(2) from kernel auto', () => {
   returnArray2FromKernel();
 });
 
-test('return Array(2) from kernel gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array(2) from kernel gpu', () => {
   returnArray2FromKernel('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('return Array(2) from kernel webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('return Array(2) from kernel webgl', () => {
   returnArray2FromKernel('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('return Array(2) from kernel webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('return Array(2) from kernel webgl2', () => {
   returnArray2FromKernel('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('return Array(2) from kernel headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('return Array(2) from kernel headlessgl', () => {
   returnArray2FromKernel('headlessgl');
 });
 
@@ -47,23 +47,23 @@ function returnArray2D2FromKernel(mode) {
   gpu.destroy();
 }
 
-test('return Array2D(2) from kernel auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array2D(2) from kernel auto', () => {
   returnArray2D2FromKernel();
 });
 
-test('return Array2D(2) from kernel gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array2D(2) from kernel gpu', () => {
   returnArray2D2FromKernel('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('return Array2D(2) from kernel webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('return Array2D(2) from kernel webgl', () => {
   returnArray2D2FromKernel('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('return Array2D(2) from kernel webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('return Array2D(2) from kernel webgl2', () => {
   returnArray2D2FromKernel('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('return Array2D(2) from kernel headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('return Array2D(2) from kernel headlessgl', () => {
   returnArray2D2FromKernel('headlessgl');
 });
 
@@ -81,23 +81,23 @@ function returnArray3D2FromKernel(mode) {
   gpu.destroy();
 }
 
-test('return Array3D(2) from kernel auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array3D(2) from kernel auto', () => {
   returnArray3D2FromKernel();
 });
 
-test('return Array3D(2) from kernel gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array3D(2) from kernel gpu', () => {
   returnArray3D2FromKernel('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('return Array3D(2) from kernel webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('return Array3D(2) from kernel webgl', () => {
   returnArray3D2FromKernel('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('return Array3D(2) from kernel webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('return Array3D(2) from kernel webgl2', () => {
   returnArray3D2FromKernel('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('return Array3D(2) from kernel headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('return Array3D(2) from kernel headlessgl', () => {
   returnArray3D2FromKernel('headlessgl');
 });
 
@@ -116,23 +116,23 @@ function returnArray3FromKernel(mode) {
   gpu.destroy();
 }
 
-test('return Array(3) from kernel auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array(3) from kernel auto', () => {
   returnArray3FromKernel();
 });
 
-test('return Array(3) from kernel gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array(3) from kernel gpu', () => {
   returnArray3FromKernel('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('return Array(3) from kernel webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('return Array(3) from kernel webgl', () => {
   returnArray3FromKernel('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('return Array(3) from kernel webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('return Array(3) from kernel webgl2', () => {
   returnArray3FromKernel('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('return Array(3) from kernel headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('return Array(3) from kernel headlessgl', () => {
   returnArray3FromKernel('headlessgl');
 });
 
@@ -150,23 +150,23 @@ function returnArray2D3FromKernel(mode) {
   gpu.destroy();
 }
 
-test('return Array2D(3) from kernel auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array2D(3) from kernel auto', () => {
   returnArray2D3FromKernel();
 });
 
-test('return Array2D(3) from kernel gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array2D(3) from kernel gpu', () => {
   returnArray2D3FromKernel('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('return Array2D(3) from kernel webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('return Array2D(3) from kernel webgl', () => {
   returnArray2D3FromKernel('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('return Array2D(3) from kernel webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('return Array2D(3) from kernel webgl2', () => {
   returnArray2D3FromKernel('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('return Array2D(3) from kernel headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('return Array2D(3) from kernel headlessgl', () => {
   returnArray2D3FromKernel('headlessgl');
 });
 
@@ -184,23 +184,23 @@ function returnArray3D3FromKernel(mode) {
   gpu.destroy();
 }
 
-test('return Array3D(3) from kernel auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array3D(3) from kernel auto', () => {
   returnArray3D3FromKernel();
 });
 
-test('return Array3D(3) from kernel gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array3D(3) from kernel gpu', () => {
   returnArray3D3FromKernel('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('return Array3D(3) from kernel webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('return Array3D(3) from kernel webgl', () => {
   returnArray3D3FromKernel('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('return Array3D(3) from kernel webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('return Array3D(3) from kernel webgl2', () => {
   returnArray3D3FromKernel('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('return Array3D(3) from kernel headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('return Array3D(3) from kernel headlessgl', () => {
   returnArray3D3FromKernel('headlessgl');
 });
 
@@ -218,23 +218,23 @@ function returnArray4FromKernel(mode) {
   gpu.destroy();
 }
 
-test('return Array(4) from kernel auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array(4) from kernel auto', () => {
   returnArray4FromKernel();
 });
 
-test('return Array(4) from kernel gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array(4) from kernel gpu', () => {
   returnArray4FromKernel('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('return Array(4) from kernel webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('return Array(4) from kernel webgl', () => {
   returnArray4FromKernel('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('return Array(4) from kernel webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('return Array(4) from kernel webgl2', () => {
   returnArray4FromKernel('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('return Array(4) from kernel headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('return Array(4) from kernel headlessgl', () => {
   returnArray4FromKernel('headlessgl');
 });
 
@@ -252,23 +252,23 @@ function returnArray2D4FromKernel(mode) {
   gpu.destroy();
 }
 
-test('return Array2D(4) from kernel auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array2D(4) from kernel auto', () => {
   returnArray2D4FromKernel();
 });
 
-test('return Array2D(4) from kernel gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array2D(4) from kernel gpu', () => {
   returnArray2D4FromKernel('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('return Array2D(4) from kernel webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('return Array2D(4) from kernel webgl', () => {
   returnArray2D4FromKernel('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('return Array2D(4) from kernel webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('return Array2D(4) from kernel webgl2', () => {
   returnArray2D4FromKernel('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('return Array2D(4) from kernel headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('return Array2D(4) from kernel headlessgl', () => {
   returnArray2D4FromKernel('headlessgl');
 });
 
@@ -286,23 +286,23 @@ function returnArray3D4FromKernel(mode) {
   gpu.destroy();
 }
 
-test('return Array3D(4) from kernel auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array3D(4) from kernel auto', () => {
   returnArray3D4FromKernel();
 });
 
-test('return Array3D(4) from kernel gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array3D(4) from kernel gpu', () => {
   returnArray3D4FromKernel('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('return Array3D(4) from kernel webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('return Array3D(4) from kernel webgl', () => {
   returnArray3D4FromKernel('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('return Array3D(4) from kernel webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('return Array3D(4) from kernel webgl2', () => {
   returnArray3D4FromKernel('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('return Array3D(4) from kernel headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('return Array3D(4) from kernel headlessgl', () => {
   returnArray3D4FromKernel('headlessgl');
 });
 
@@ -323,23 +323,23 @@ function returnArray2FromKernelVariables33Length(mode) {
   gpu.destroy();
 }
 
-test('return Array(2) from kernel variables 33 in length auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array(2) from kernel variables 33 in length auto', () => {
   returnArray2FromKernelVariables33Length();
 });
 
-(GPU.isGPUSupported ? test : skip)('return Array(2) from kernel variables 33 in length gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('return Array(2) from kernel variables 33 in length gpu', () => {
   returnArray2FromKernelVariables33Length('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('return Array(2) from kernel variables 33 in length webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('return Array(2) from kernel variables 33 in length webgl', () => {
   returnArray2FromKernelVariables33Length('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('return Array(2) from kernel variables 33 in length webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('return Array(2) from kernel variables 33 in length webgl2', () => {
   returnArray2FromKernelVariables33Length('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('return Array(2) from kernel variables 33 in length headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('return Array(2) from kernel variables 33 in length headlessgl', () => {
   returnArray2FromKernelVariables33Length('headlessgl');
 });
 
@@ -362,23 +362,23 @@ function returnArray3FromKernelVariables33Length(mode) {
   gpu.destroy();
 }
 
-test('return Array(3) from kernel variables 33 in length auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array(3) from kernel variables 33 in length auto', () => {
   returnArray3FromKernelVariables33Length();
 });
 
-(GPU.isGPUSupported ? test : skip)('return Array(3) from kernel variables 33 in length gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('return Array(3) from kernel variables 33 in length gpu', () => {
   returnArray3FromKernelVariables33Length('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('return Array(3) from kernel variables 33 in length webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('return Array(3) from kernel variables 33 in length webgl', () => {
   returnArray3FromKernelVariables33Length('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('return Array(3) from kernel variables 33 in length webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('return Array(3) from kernel variables 33 in length webgl2', () => {
   returnArray3FromKernelVariables33Length('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('return Array(3) from kernel variables 33 in length headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('return Array(3) from kernel variables 33 in length headlessgl', () => {
   returnArray3FromKernelVariables33Length('headlessgl');
 });
 
@@ -401,23 +401,23 @@ function returnArray4FromKernelVariables33Length(mode) {
   gpu.destroy();
 }
 
-test('return Array(4) from kernel variables 33 in length auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('return Array(4) from kernel variables 33 in length auto', () => {
   returnArray4FromKernelVariables33Length();
 });
 
-(GPU.isGPUSupported ? test : skip)('return Array(4) from kernel variables 33 in length gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('return Array(4) from kernel variables 33 in length gpu', () => {
   returnArray4FromKernelVariables33Length('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('return Array(4) from kernel variables 33 in length webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('return Array(4) from kernel variables 33 in length webgl', () => {
   returnArray4FromKernelVariables33Length('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('return Array(4) from kernel variables 33 in length webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('return Array(4) from kernel variables 33 in length webgl2', () => {
   returnArray4FromKernelVariables33Length('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('return Array(4) from kernel variables 33 in length headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('return Array(4) from kernel variables 33 in length headlessgl', () => {
   returnArray4FromKernelVariables33Length('headlessgl');
 });
 

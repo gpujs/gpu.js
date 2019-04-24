@@ -340,6 +340,34 @@ const utils = {
 		} else {
 			console.warn(`You are using a deprecated ${ type } "${ oldName }". It has been removed. Fixing, but please upgrade as it will soon be removed.`);
 		}
+	},
+	/**
+	 *
+	 * @param {String|Function} source
+	 * @param {IFunctionSettings} [settings]
+	 * @returns {IFunction}
+	 */
+	functionToIFunction(source, settings) {
+		settings = settings || {};
+		if (typeof source !== 'string' && typeof source !== 'function') throw new Error('source not a string or function');
+		const sourceString = typeof source === 'string' ? source : source.toString();
+
+		let argumentTypes = [];
+
+		if (Array.isArray(settings.argumentTypes)) {
+			argumentTypes = settings.argumentTypes;
+		} else if (typeof settings.argumentTypes === 'object') {
+			argumentTypes = utils.getArgumentNamesFromString(sourceString)
+				.map(name => settings.argumentTypes[name]) || [];
+		} else {
+			argumentTypes = settings.argumentTypes || [];
+		}
+
+		return {
+			source: sourceString,
+			argumentTypes,
+			returnType: settings.returnType || null,
+		};
 	}
 };
 

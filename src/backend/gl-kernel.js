@@ -784,7 +784,6 @@ class GLKernel extends Kernel {
 		const [xMax] = this.output;
 		const xResults = new Array(xMax);
 		const xResultsMax = xMax * 4;
-		console.log(pixels);
 		let i = 0;
 		for (let x = 0; x < xResultsMax; x += 4) {
 			xResults[i++] = pixels.subarray(x, x + 3);

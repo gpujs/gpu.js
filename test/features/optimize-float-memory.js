@@ -21,16 +21,16 @@ function whenEnabledCallsCorrectRenderFunction(mode) {
   assert.equal(called, true);
 }
 
-(GPU.isGPUSupported ? test : skip)('when enabled calls correct render function gpu (GPU ONLY)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('when enabled calls correct render function gpu (GPU ONLY)', () => {
   whenEnabledCallsCorrectRenderFunction('gpu');
 });
-(GPU.isWebGLSupported ? test : skip)('when enabled calls correct render function webgl (GPU ONLY)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('when enabled calls correct render function webgl (GPU ONLY)', () => {
   whenEnabledCallsCorrectRenderFunction('webgl');
 });
-(GPU.isWebGL2Supported ? test : skip)('when enabled calls correct render function webgl2 (GPU ONLY)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('when enabled calls correct render function webgl2 (GPU ONLY)', () => {
   whenEnabledCallsCorrectRenderFunction('webgl2');
 });
-(GPU.isHeadlessGLSupported ? test : skip)('when enabled calls correct render function headlessgl (GPU ONLY)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('when enabled calls correct render function headlessgl (GPU ONLY)', () => {
   whenEnabledCallsCorrectRenderFunction('headlessgl');
 });
 
@@ -48,16 +48,16 @@ function whenEnabledCallsCorrectRenderFunction2D(mode) {
   assert.equal(called, true);
 }
 
-(GPU.isGPUSupported ? test : skip)('when enabled calls correct render function 2d gpu (GPU ONLY)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('when enabled calls correct render function 2d gpu (GPU ONLY)', () => {
   whenEnabledCallsCorrectRenderFunction2D('gpu');
 });
-(GPU.isWebGLSupported ? test : skip)('when enabled calls correct render function 2d webgl (GPU ONLY)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('when enabled calls correct render function 2d webgl (GPU ONLY)', () => {
   whenEnabledCallsCorrectRenderFunction2D('webgl');
 });
-(GPU.isWebGL2Supported ? test : skip)('when enabled calls correct render function 2d webgl2 (GPU ONLY)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('when enabled calls correct render function 2d webgl2 (GPU ONLY)', () => {
   whenEnabledCallsCorrectRenderFunction2D('webgl2');
 });
-(GPU.isHeadlessGLSupported ? test : skip)('when enabled calls correct render function 2d headlessgl (GPU ONLY)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('when enabled calls correct render function 2d headlessgl (GPU ONLY)', () => {
   whenEnabledCallsCorrectRenderFunction2D('headlessgl');
 });
 
@@ -74,16 +74,16 @@ function whenEnabledCallsCorrectRenderFunction3D(mode) {
   assert.equal(called, true);
 }
 
-(GPU.isGPUSupported ? test : skip)('when enabled calls correct render function 3d gpu (GPU ONLY)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('when enabled calls correct render function 3d gpu (GPU ONLY)', () => {
   whenEnabledCallsCorrectRenderFunction3D('gpu');
 });
-(GPU.isWebGLSupported ? test : skip)('when enabled calls correct render function 3d webgl (GPU ONLY)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('when enabled calls correct render function 3d webgl (GPU ONLY)', () => {
   whenEnabledCallsCorrectRenderFunction3D('webgl');
 });
-(GPU.isWebGL2Supported ? test : skip)('when enabled calls correct render function 3d webgl2 (GPU ONLY)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('when enabled calls correct render function 3d webgl2 (GPU ONLY)', () => {
   whenEnabledCallsCorrectRenderFunction3D('webgl2');
 });
-(GPU.isHeadlessGLSupported ? test : skip)('when enabled calls correct render function 3d headlessgl (GPU ONLY)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('when enabled calls correct render function 3d headlessgl (GPU ONLY)', () => {
   whenEnabledCallsCorrectRenderFunction3D('headlessgl');
 });
 
@@ -102,23 +102,23 @@ function singlePrecision(mode) {
   gpu.destroy();
 }
 
-test('single precision auto', () => {
+(GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('single precision auto', () => {
   singlePrecision();
 });
 
-(GPU.isGPUSupported ? test : skip)('single precision gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('single precision gpu', () => {
   singlePrecision('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('single precision webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('single precision webgl', () => {
   singlePrecision('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('single precision webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('single precision webgl2', () => {
   singlePrecision('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('single precision headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('single precision headlessgl', () => {
   singlePrecision('headlessgl');
 });
 
@@ -146,23 +146,23 @@ function float2DOutput(mode) {
   gpu.destroy();
 }
 
-test('float 2d output auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('float 2d output auto', () => {
   float2DOutput();
 });
 
-(GPU.isGPUSupported ? test : skip)('float 2d output gpu', () => {
+(GPU.isSinglePrecisionSupported  && GPU.isGPUSupported ? test : skip)('float 2d output gpu', () => {
   float2DOutput('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('float 2d output webgl', () => {
+(GPU.isSinglePrecisionSupported  && GPU.isWebGLSupported ? test : skip)('float 2d output webgl', () => {
   float2DOutput('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('float 2d output webgl2', () => {
+(GPU.isSinglePrecisionSupported  && GPU.isWebGL2Supported ? test : skip)('float 2d output webgl2', () => {
   float2DOutput('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('float 2d output headlessgl', () => {
+(GPU.isSinglePrecisionSupported  && GPU.isHeadlessGLSupported ? test : skip)('float 2d output headlessgl', () => {
   float2DOutput('headlessgl');
 });
 
@@ -197,23 +197,23 @@ function float3DOutput(mode) {
   gpu.destroy();
 }
 
-test('float 3d output auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('float 3d output auto', () => {
   float3DOutput();
 });
 
-(GPU.isGPUSupported ? test : skip)('float 3d output gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('float 3d output gpu', () => {
   float3DOutput('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('float 3d output webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('float 3d output webgl', () => {
   float3DOutput('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('float 3d output webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('float 3d output webgl2', () => {
   float3DOutput('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('float 3d output headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('float 3d output headlessgl', () => {
   float3DOutput('headlessgl');
 });
 
@@ -237,19 +237,19 @@ function floatPipelineOutput(mode) {
   gpu.destroy();
 }
 
-(GPU.isGPUSupported ? test : skip)('float pipeline output gpu (GPU only)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('float pipeline output gpu (GPU only)', () => {
   floatPipelineOutput('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('float pipeline output webgl (GPU only)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('float pipeline output webgl (GPU only)', () => {
   floatPipelineOutput('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('float pipeline output webgl2 (GPU only)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('float pipeline output webgl2 (GPU only)', () => {
   floatPipelineOutput('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('float pipeline output headlessgl (GPU only)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('float pipeline output headlessgl (GPU only)', () => {
   floatPipelineOutput('headlessgl');
 });
 
@@ -276,19 +276,19 @@ function floatPipeline2DOutput(mode) {
 }
 
 
-(GPU.isGPUSupported ? test : skip)('float pipeline 2d output gpu (GPU Only)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('float pipeline 2d output gpu (GPU Only)', () => {
   floatPipeline2DOutput('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('float pipeline 2d output webgl (GPU Only)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('float pipeline 2d output webgl (GPU Only)', () => {
   floatPipeline2DOutput('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('float pipeline 2d output webgl2 (GPU Only)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('float pipeline 2d output webgl2 (GPU Only)', () => {
   floatPipeline2DOutput('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('float pipeline 2d output headlessgl (GPU Only)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('float pipeline 2d output headlessgl (GPU Only)', () => {
   floatPipeline2DOutput('headlessgl');
 });
 
@@ -321,18 +321,18 @@ function floatPipeline3DOutput(mode) {
 }
 
 
-(GPU.isGPUSupported ? test : skip)('float pipeline 3d output gpu (GPU only)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('float pipeline 3d output gpu (GPU only)', () => {
   floatPipeline3DOutput('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('float pipeline 3d output webgl (GPU only)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('float pipeline 3d output webgl (GPU only)', () => {
   floatPipeline3DOutput('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('float pipeline 3d output webgl2 (GPU only)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('float pipeline 3d output webgl2 (GPU only)', () => {
   floatPipeline3DOutput('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('float pipeline 3d output headlessgl (GPU only)', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('float pipeline 3d output headlessgl (GPU only)', () => {
   floatPipeline3DOutput('headlessgl');
 });

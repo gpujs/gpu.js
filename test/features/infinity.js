@@ -45,26 +45,26 @@ function inputWithFloat(checks, mode) {
   gpu.destroy();
 }
 
-test("Infinity with float auto", () => {
+(GPU.isSinglePrecisionSupported ? test : skip)("Infinity with float auto", () => {
   inputWithFloat((v) => assert.deepEqual(v[0], 3.4028234663852886e+38));
 });
 
-test("Infinity with float cpu", () => {
+(GPU.isSinglePrecisionSupported ? test : skip)("Infinity with float cpu", () => {
   inputWithFloat((v) => assert.deepEqual(v[0], Infinity), 'cpu');
 });
 
-test("Infinity with float gpu", () => {
+(GPU.isSinglePrecisionSupported ? test : skip)("Infinity with float gpu", () => {
   inputWithFloat((v) => assert.deepEqual(v[0], 3.4028234663852886e+38), 'gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)("Infinity with float webgl", () => {
+(GPU.isSinglePrecisionSupported  && GPU.isWebGLSupported ? test : skip)("Infinity with float webgl", () => {
   inputWithFloat((v) => assert.deepEqual(v[0], 3.4028234663852886e+38), 'webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)("Infinity with float webgl2", () => {
+(GPU.isSinglePrecisionSupported  && GPU.isWebGL2Supported ? test : skip)("Infinity with float webgl2", () => {
   inputWithFloat((v) => assert.deepEqual(v[0], 3.4028234663852886e+38), 'webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)("Infinity with float headlessgl", () => {
+(GPU.isSinglePrecisionSupported  && GPU.isHeadlessGLSupported ? test : skip)("Infinity with float headlessgl", () => {
   inputWithFloat((v) => assert.deepEqual(v[0], 3.4028234663852886e+38), 'headlessgl');
 });

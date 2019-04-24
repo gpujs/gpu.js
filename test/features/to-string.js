@@ -14,6 +14,7 @@ function sumABTest(mode) {
   const b = [4, 5, 6, 1, 2, 3];
   const expected = [5, 7, 9, 6, 8, 10];
   const originalResult = originalKernel(a,b);
+  console.log(originalResult);
   assert.deepEqual(Array.from(originalResult), expected);
   const kernelString = originalKernel.toString();
   const newKernel = new Function('return ' + kernelString)()();

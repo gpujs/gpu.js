@@ -613,10 +613,6 @@ class CPUFunctionNode extends FunctionNode {
 		retArr.push('debugger;');
 		return retArr;
 	}
-
-	varWarn() {
-		console.warn('var declarations are not supported, weird things happen.  Use const or let');
-	}
 }
 
 module.exports = {

@@ -3,7 +3,7 @@ const { GPU } = require('../../src');
 
 describe('features: single precision textures');
 
-function singlePrecisionTexturesWithArray(output, mode) {
+function singlePrecisionTexturesWithArray(mode) {
   const original = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(packed) {
@@ -18,7 +18,7 @@ function singlePrecisionTexturesWithArray(output, mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('with Array auto', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Array auto', () => {
   singlePrecisionTexturesWithArray();
 });
 
@@ -26,23 +26,23 @@ test('with Array cpu', () => {
   singlePrecisionTexturesWithArray('cpu');
 });
 
-(GPU.isKernelMapSupported ? test : skip)('with Array gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Array gpu', () => {
   singlePrecisionTexturesWithArray('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Array webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Array webgl', () => {
   singlePrecisionTexturesWithArray('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('with Array webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('with Array webgl2', () => {
   singlePrecisionTexturesWithArray('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Array headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Array headlessgl', () => {
   singlePrecisionTexturesWithArray('headlessgl');
 });
 
-function singlePrecisionTexturesWithFloat32Array(output, mode) {
+function singlePrecisionTexturesWithFloat32Array(mode) {
   const original = new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(packed) {
@@ -57,7 +57,7 @@ function singlePrecisionTexturesWithFloat32Array(output, mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('with Float32Array auto', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array auto', () => {
   singlePrecisionTexturesWithFloat32Array();
 });
 
@@ -65,23 +65,23 @@ test('with Float32Array cpu', () => {
   singlePrecisionTexturesWithFloat32Array('cpu');
 });
 
-(GPU.isKernelMapSupported ? test : skip)('with Float32Array gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array gpu', () => {
   singlePrecisionTexturesWithFloat32Array('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array webgl', () => {
   singlePrecisionTexturesWithFloat32Array('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('with Float32Array webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('with Float32Array webgl2', () => {
   singlePrecisionTexturesWithFloat32Array('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array headlessgl', () => {
   singlePrecisionTexturesWithFloat32Array('headlessgl');
 });
 
-function singlePrecisionTexturesWithUint16Array(output, mode) {
+function singlePrecisionTexturesWithUint16Array(mode) {
   const original = new Uint16Array([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(packed) {
@@ -96,7 +96,7 @@ function singlePrecisionTexturesWithUint16Array(output, mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('with Uint16Array auto', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array auto', () => {
   singlePrecisionTexturesWithUint16Array();
 });
 
@@ -104,23 +104,23 @@ test('with Uint16Array cpu', () => {
   singlePrecisionTexturesWithUint16Array('cpu');
 });
 
-(GPU.isKernelMapSupported ? test : skip)('with Uint16Array gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array gpu', () => {
   singlePrecisionTexturesWithUint16Array('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array webgl', () => {
   singlePrecisionTexturesWithUint16Array('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('with Uint16Array webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('with Uint16Array webgl2', () => {
   singlePrecisionTexturesWithUint16Array('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array headlessgl', () => {
   singlePrecisionTexturesWithUint16Array('headlessgl');
 });
 
-function singlePrecisionTexturesWithUint8Array(output, mode) {
+function singlePrecisionTexturesWithUint8Array(mode) {
   const original = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(packed) {
@@ -135,7 +135,7 @@ function singlePrecisionTexturesWithUint8Array(output, mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('with Uint8Array auto', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array auto', () => {
   singlePrecisionTexturesWithUint8Array();
 });
 
@@ -143,23 +143,23 @@ test('with Uint8Array cpu', () => {
   singlePrecisionTexturesWithUint8Array('cpu');
 });
 
-(GPU.isKernelMapSupported ? test : skip)('with Uint8Array gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array gpu', () => {
   singlePrecisionTexturesWithUint8Array('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array webgl', () => {
   singlePrecisionTexturesWithUint8Array('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('with Uint8Array webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('with Uint8Array webgl2', () => {
   singlePrecisionTexturesWithUint8Array('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array headlessgl', () => {
   singlePrecisionTexturesWithUint8Array('headlessgl');
 });
 
-function singlePrecisionTexturesWithArray2D(output, mode) {
+function singlePrecisionTexturesWithArray2D(mode) {
   const original = [
     [1, 2, 3, 4, 5, 6, 7, 8, 9],
     [10, 11, 12, 13, 14, 15, 16, 18, 19],
@@ -177,7 +177,7 @@ function singlePrecisionTexturesWithArray2D(output, mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('with Array2D auto', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Array2D auto', () => {
   singlePrecisionTexturesWithArray2D();
 });
 
@@ -185,23 +185,23 @@ test('with Array2D cpu', () => {
   singlePrecisionTexturesWithArray2D('cpu');
 });
 
-(GPU.isKernelMapSupported ? test : skip)('with Array2D gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Array2D gpu', () => {
   singlePrecisionTexturesWithArray2D('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Array2D webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Array2D webgl', () => {
   singlePrecisionTexturesWithArray2D('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('with Array2D webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('with Array2D webgl2', () => {
   singlePrecisionTexturesWithArray2D('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Array2D headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Array2D headlessgl', () => {
   singlePrecisionTexturesWithArray2D('headlessgl');
 });
 
-function singlePrecisionTexturesWithFloat32Array2D(output, mode) {
+function singlePrecisionTexturesWithFloat32Array2D(mode) {
   const original = [
     new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
     new Float32Array([10, 11, 12, 13, 14, 15, 16, 18, 19]),
@@ -219,7 +219,7 @@ function singlePrecisionTexturesWithFloat32Array2D(output, mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('with Float32Array2D auto', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array2D auto', () => {
   singlePrecisionTexturesWithFloat32Array2D();
 });
 
@@ -227,23 +227,23 @@ test('with Float32Array2D cpu', () => {
   singlePrecisionTexturesWithFloat32Array2D('cpu');
 });
 
-(GPU.isKernelMapSupported ? test : skip)('with Float32Array2D gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array2D gpu', () => {
   singlePrecisionTexturesWithFloat32Array2D('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array2D webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array2D webgl', () => {
   singlePrecisionTexturesWithFloat32Array2D('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('with Float32Array2D webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('with Float32Array2D webgl2', () => {
   singlePrecisionTexturesWithFloat32Array2D('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array2D headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array2D headlessgl', () => {
   singlePrecisionTexturesWithFloat32Array2D('headlessgl');
 });
 
-function singlePrecisionTexturesWithUint16Array2D(output, mode) {
+function singlePrecisionTexturesWithUint16Array2D(mode) {
   const original = [
     new Uint16Array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
     new Uint16Array([10, 11, 12, 13, 14, 15, 16, 18, 19]),
@@ -261,7 +261,7 @@ function singlePrecisionTexturesWithUint16Array2D(output, mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('with Uint16Array2D auto', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array2D auto', () => {
   singlePrecisionTexturesWithUint16Array2D();
 });
 
@@ -269,23 +269,23 @@ test('with Uint16Array2D cpu', () => {
   singlePrecisionTexturesWithUint16Array2D('cpu');
 });
 
-(GPU.isKernelMapSupported ? test : skip)('with Uint16Array2D gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array2D gpu', () => {
   singlePrecisionTexturesWithUint16Array2D('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array2D webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array2D webgl', () => {
   singlePrecisionTexturesWithUint16Array2D('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('with Uint16Array2D webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('with Uint16Array2D webgl2', () => {
   singlePrecisionTexturesWithUint16Array2D('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array2D headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array2D headlessgl', () => {
   singlePrecisionTexturesWithUint16Array2D('headlessgl');
 });
 
-function singlePrecisionTexturesWithUint8Array2D(output, mode) {
+function singlePrecisionTexturesWithUint8Array2D(mode) {
   const original = [
     new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
     new Uint8Array([10, 11, 12, 13, 14, 15, 16, 18, 19]),
@@ -303,7 +303,7 @@ function singlePrecisionTexturesWithUint8Array2D(output, mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('with Uint8Array2D auto', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array2D auto', () => {
   singlePrecisionTexturesWithUint8Array2D();
 });
 
@@ -311,23 +311,23 @@ test('with Uint8Array2D cpu', () => {
   singlePrecisionTexturesWithUint8Array2D('cpu');
 });
 
-(GPU.isKernelMapSupported ? test : skip)('with Uint8Array2D gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array2D gpu', () => {
   singlePrecisionTexturesWithUint8Array2D('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array2D webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array2D webgl', () => {
   singlePrecisionTexturesWithUint8Array2D('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('with Uint8Array2D webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('with Uint8Array2D webgl2', () => {
   singlePrecisionTexturesWithUint8Array2D('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array2D headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array2D headlessgl', () => {
   singlePrecisionTexturesWithUint8Array2D('headlessgl');
 });
 
-function singlePrecisionTexturesWithArray3D(output, mode) {
+function singlePrecisionTexturesWithArray3D(mode) {
   const original = [
     [
       [1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -351,7 +351,7 @@ function singlePrecisionTexturesWithArray3D(output, mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('with Array3D auto', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Array3D auto', () => {
   singlePrecisionTexturesWithArray3D();
 });
 
@@ -359,23 +359,23 @@ test('with Array3D cpu', () => {
   singlePrecisionTexturesWithArray3D('cpu');
 });
 
-(GPU.isKernelMapSupported ? test : skip)('with Array3D gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Array3D gpu', () => {
   singlePrecisionTexturesWithArray3D('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Array3D webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Array3D webgl', () => {
   singlePrecisionTexturesWithArray3D('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('with Array3D webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('with Array3D webgl2', () => {
   singlePrecisionTexturesWithArray3D('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Array3D headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Array3D headlessgl', () => {
   singlePrecisionTexturesWithArray3D('headlessgl');
 });
 
-function singlePrecisionTexturesWithFloat32Array3D(output, mode) {
+function singlePrecisionTexturesWithFloat32Array3D(mode) {
   const original = [
     [
       new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
@@ -399,7 +399,7 @@ function singlePrecisionTexturesWithFloat32Array3D(output, mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('with Float32Array3D auto', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array3D auto', () => {
   singlePrecisionTexturesWithFloat32Array3D();
 });
 
@@ -407,23 +407,23 @@ test('with Float32Array3D cpu', () => {
   singlePrecisionTexturesWithFloat32Array3D('cpu');
 });
 
-(GPU.isKernelMapSupported ? test : skip)('with Float32Array3D gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array3D gpu', () => {
   singlePrecisionTexturesWithFloat32Array3D('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array3D webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array3D webgl', () => {
   singlePrecisionTexturesWithFloat32Array3D('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('with Float32Array3D webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('with Float32Array3D webgl2', () => {
   singlePrecisionTexturesWithFloat32Array3D('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array3D headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Float32Array3D headlessgl', () => {
   singlePrecisionTexturesWithFloat32Array3D('headlessgl');
 });
 
-function singlePrecisionTexturesWithUint16Array3D(output, mode) {
+function singlePrecisionTexturesWithUint16Array3D(mode) {
   const original = [
     [
       new Uint16Array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
@@ -447,7 +447,7 @@ function singlePrecisionTexturesWithUint16Array3D(output, mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('with Uint16Array3D auto', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array3D auto', () => {
   singlePrecisionTexturesWithUint16Array3D();
 });
 
@@ -455,23 +455,23 @@ test('with Uint16Array3D cpu', () => {
   singlePrecisionTexturesWithUint16Array3D('cpu');
 });
 
-(GPU.isKernelMapSupported ? test : skip)('with Uint16Array3D gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array3D gpu', () => {
   singlePrecisionTexturesWithUint16Array3D('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array3D webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array3D webgl', () => {
   singlePrecisionTexturesWithUint16Array3D('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('with Uint16Array3D webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('with Uint16Array3D webgl2', () => {
   singlePrecisionTexturesWithUint16Array3D('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array3D headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint16Array3D headlessgl', () => {
   singlePrecisionTexturesWithUint16Array3D('headlessgl');
 });
 
-function singlePrecisionTexturesWithUint8Array3D(output, mode) {
+function singlePrecisionTexturesWithUint8Array3D(mode) {
   const original = [
     [
       new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
@@ -495,7 +495,7 @@ function singlePrecisionTexturesWithUint8Array3D(output, mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('with Uint8Array3D auto', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array3D auto', () => {
   singlePrecisionTexturesWithUint8Array3D();
 });
 
@@ -503,18 +503,18 @@ test('with Uint8Array3D cpu', () => {
   singlePrecisionTexturesWithUint8Array3D('cpu');
 });
 
-(GPU.isKernelMapSupported ? test : skip)('with Uint8Array3D gpu', () => {
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array3D gpu', () => {
   singlePrecisionTexturesWithUint8Array3D('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array3D webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array3D webgl', () => {
   singlePrecisionTexturesWithUint8Array3D('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('with Uint8Array3D webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('with Uint8Array3D webgl2', () => {
   singlePrecisionTexturesWithUint8Array3D('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array3D headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8Array3D headlessgl', () => {
   singlePrecisionTexturesWithUint8Array3D('headlessgl');
 });

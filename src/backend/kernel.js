@@ -149,7 +149,6 @@ class Kernel {
 		 * @type {Boolean}
 		 */
 		this.validate = true;
-		this.wraparound = null;
 
 		/**
 		 * Enforces kernel to write to a new array or texture on run
@@ -172,11 +171,18 @@ class Kernel {
 	mergeSettings(settings) {
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
+			if (p === 'output') {
+				if (!Array.isArray(settings.output)) {
+					this.setOutput(settings.output); // Flatten output object
+					continue;
+				}
+			} else if (p === 'functions' && typeof settings.functions[0] === 'function') {
+				this.functions = settings.functions.map(source => utils.functionToIFunction(source));
+				continue;
+			}
 			this[p] = settings[p];
 		}
-		if (settings.hasOwnProperty('output') && !Array.isArray(settings.output)) {
-			this.setOutput(settings.output); // Flatten output object
-		}
+
 		if (!this.canvas) this.canvas = this.initCanvas();
 		if (!this.context) this.context = this.initContext();
 		if (!this.plugins) this.plugins = this.initPlugins(settings);
@@ -336,12 +342,36 @@ class Kernel {
 	}
 
 	/**
+	 *
+	 * @param {IFunction[]|KernelFunction[]} functions
+	 * @returns {Kernel}
+	 */
+	setFunctions(functions) {
+		if (typeof functions[0] === 'function') {
+			this.functions = functions.map(source => utils.functionToIFunction(source));
+		} else {
+			this.functions = functions;
+		}
+		return this;
+	}
+
+	/**
 	 * Set writing to texture on/off
 	 * @param flag
 	 * @returns {Kernel}
 	 */
 	setPipeline(flag) {
 		this.pipeline = flag;
+		return this;
+	}
+
+	/**
+	 * Set precision to 'unsigned' or 'single'
+	 * @param {String} flag 'unsigned' or 'single'
+	 * @returns {Kernel}
+	 */
+	setPrecision(flag) {
+		this.precision = flag;
 		return this;
 	}
 

@@ -76,23 +76,23 @@ function immutableKernelWithFloats(mode) {
   gpu.destroy();
 }
 
-test('Issue #267 immutable kernel output with floats - auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('Issue #267 immutable kernel output with floats - auto', () => {
   immutableKernelWithFloats();
 });
 
-test('Issue #267 immutable kernel output with floats - gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('Issue #267 immutable kernel output with floats - gpu', () => {
   immutableKernelWithFloats('gpu');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel output with floats - webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel output with floats - webgl', () => {
   immutableKernelWithFloats('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel output with floats - webgl2', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel output with floats - webgl2', () => {
   immutableKernelWithFloats('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #267 immutable kernel output with floats - headlessgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('Issue #267 immutable kernel output with floats - headlessgl', () => {
   immutableKernelWithFloats('headlessgl');
 });
 

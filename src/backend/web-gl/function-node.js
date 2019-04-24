@@ -641,6 +641,9 @@ class WebGLFunctionNode extends FunctionNode {
 	 * @returns {Array} the append retArr
 	 */
 	astVariableDeclaration(varDecNode, retArr) {
+		if (varDecNode.kind === 'var') {
+			this.varWarn();
+		}
 		const declarations = varDecNode.declarations;
 		if (!declarations || !declarations[0] || !declarations[0].init) {
 			throw this.astErrorOutput('Unexpected expression', varDecNode);

@@ -128,3 +128,41 @@ test('getMemoryOptimizedPackedTextureSize [1,6,1], bitRatio 1', () => {
 test('getMemoryOptimizedPackedTextureSize [1,1,6], bitRatio 1', () => {
 	assert.deepEqual(Array.from(utils.getMemoryOptimizedPackedTextureSize([1, 1, 6], 1)), [1, 2]);
 });
+
+test('functionToIFunction with function', () => {
+	const fn = function() {};
+	const result = utils.functionToIFunction(fn);
+	assert.deepEqual(result, { source: fn.toString(), argumentTypes: [], returnType: null });
+});
+
+test('functionToIFunction with function and argumentTypes array', () => {
+	const fn = function(a, b) {};
+	const argumentTypes = ['number','string'];
+	const result = utils.functionToIFunction(fn, { argumentTypes });
+	assert.deepEqual(result, {
+		source: fn.toString(),
+		argumentTypes: ['number', 'string'],
+		returnType: null,
+	});
+});
+
+test('functionToIFunction with function and argumentTypes object', () => {
+	const fn = function(a, b) {};
+	const argumentTypes = { a: 'number', b: 'string' };
+	const result = utils.functionToIFunction(fn, { argumentTypes });
+	assert.deepEqual(result, {
+		source: fn.toString(),
+		argumentTypes: ['number', 'string'],
+		returnType: null,
+	});
+});
+
+test('functionToIFunction with function and returnType', () => {
+	const fn = function(a, b) {};
+	const result = utils.functionToIFunction(fn, { returnType: 'string' });
+	assert.deepEqual(result, {
+		source: fn.toString(),
+		argumentTypes: [],
+		returnType: 'string',
+	});
+});

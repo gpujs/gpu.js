@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.7
- * @date Sun Apr 21 2019 17:22:52 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.8
+ * @date Tue Apr 23 2019 22:02:53 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -609,10 +609,6 @@ class CPUFunctionNode extends FunctionNode {
 	astDebuggerStatement(arrNode, retArr) {
 		retArr.push('debugger;');
 		return retArr;
-	}
-
-	varWarn() {
-		console.warn('var declarations are not supported, weird things happen.  Use const or let');
 	}
 }
 
@@ -2785,6 +2781,10 @@ class FunctionNode {
 		}
 		return name + this._internalVariableNames[name];
 	}
+
+	varWarn() {
+		console.warn('var declarations are deprecated, weird things happen when falling back to CPU because var scope differs in javascript than in most languages.  Use const or let');
+	}
 }
 
 const typeLookupMap = {
@@ -3500,7 +3500,6 @@ class GLKernel extends Kernel {
 		const [xMax] = this.output;
 		const xResults = new Array(xMax);
 		const xResultsMax = xMax * 4;
-		console.log(pixels);
 		let i = 0;
 		for (let x = 0; x < xResultsMax; x += 4) {
 			xResults[i++] = pixels.subarray(x, x + 3);
@@ -3625,6 +3624,7 @@ module.exports = {
 	GLKernel,
 	renderStrategy
 };
+
 },{"../texture":27,"../utils":28,"./kernel":11}],10:[function(require,module,exports){
 const getContext = require('gl');
 const {
@@ -3652,6 +3652,7 @@ class HeadlessGLKernel extends WebGLKernel {
 		testContext = getContext(2, 2, {
 			preserveDrawingBuffer: true
 		});
+		if (!testContext || !testContext.getExtension) return;
 		testExtensions = {
 			STACKGL_resize_drawingbuffer: testContext.getExtension('STACKGL_resize_drawingbuffer'),
 			STACKGL_destroy_context: testContext.getExtension('STACKGL_destroy_context'),
@@ -3829,7 +3830,6 @@ class Kernel {
 		this.subKernels = null;
 
 		this.validate = true;
-		this.wraparound = null;
 
 		this.immutable = false;
 
@@ -3844,11 +3844,18 @@ class Kernel {
 	mergeSettings(settings) {
 		for (let p in settings) {
 			if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
+			if (p === 'output') {
+				if (!Array.isArray(settings.output)) {
+					this.setOutput(settings.output); 
+					continue;
+				}
+			} else if (p === 'functions' && typeof settings.functions[0] === 'function') {
+				this.functions = settings.functions.map(source => utils.functionToIFunction(source));
+				continue;
+			}
 			this[p] = settings[p];
 		}
-		if (settings.hasOwnProperty('output') && !Array.isArray(settings.output)) {
-			this.setOutput(settings.output); 
-		}
+
 		if (!this.canvas) this.canvas = this.initCanvas();
 		if (!this.context) this.context = this.initContext();
 		if (!this.plugins) this.plugins = this.initPlugins(settings);
@@ -3949,7 +3956,27 @@ class Kernel {
 		return this;
 	}
 
+	setFunctions(functions) {
+		if (typeof functions[0] === 'function') {
+			this.functions = functions.map(source => utils.functionToIFunction(source));
+		} else {
+			this.functions = functions;
+		}
+		return this;
+	}
+
 	setPipeline(flag) {
+		this.pipeline = flag;
+		return this;
+	}
+
+	setPrecision(flag) {
+		this.precision = flag;
+		return this;
+	}
+
+	setOutputToTexture(flag) {
+		utils.warnDeprecated('method', 'setOutputToTexture', 'setPipeline');
 		this.pipeline = flag;
 		return this;
 	}
@@ -4191,7 +4218,6 @@ ivec3 indexTo3D(int idx, ivec3 texDim) {
 
 float get32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
@@ -4201,7 +4227,6 @@ float get32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 
 float get16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
   int w = texSize.x * 2;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
@@ -4211,7 +4236,6 @@ float get16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 
 float get8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
   int w = texSize.x * 4;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
@@ -4221,7 +4245,6 @@ float get8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 
 float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
   int channel = integerMod(index, 4);
   index = index / 4;
@@ -4237,7 +4260,6 @@ float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, in
 
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
@@ -4288,6 +4310,7 @@ void main(void) {
 module.exports = {
 	fragmentShader
 };
+
 },{}],13:[function(require,module,exports){
 const {
 	FunctionNode
@@ -4845,6 +4868,9 @@ class WebGLFunctionNode extends FunctionNode {
 	}
 
 	astVariableDeclaration(varDecNode, retArr) {
+		if (varDecNode.kind === 'var') {
+			this.varWarn();
+		}
 		const declarations = varDecNode.declarations;
 		if (!declarations || !declarations[0] || !declarations[0].init) {
 			throw this.astErrorOutput('Unexpected expression', varDecNode);
@@ -5414,6 +5440,7 @@ function webGLKernelString(gpuKernel, name) {
       dimToTexSize: ${ removeNoise(utils.dimToTexSize.toString()) },
       closestSquareDimensions: ${ removeNoise(utils.closestSquareDimensions.toString()) },
       getMemoryOptimizedFloatTextureSize: ${ removeNoise(utils.getMemoryOptimizedFloatTextureSize.toString()) },
+      getMemoryOptimizedPackedTextureSize: ${ removeNoise(utils.getMemoryOptimizedPackedTextureSize.toString()) },
       roundTo: ${ removeNoise(utils.roundTo.toString()) },
       flattenTo: ${ removeNoise(utils.flattenTo.toString()) },
       flatten2dArrayTo: ${ removeNoise(utils.flatten2dArrayTo.toString()) },
@@ -5436,7 +5463,6 @@ function webGLKernelString(gpuKernel, name) {
         this.program = null;
         this.subKernels = null;
         this.subKernelNames = null;
-        this.wraparound = null;
         this.drawBuffersMap = ${ gpuKernel.drawBuffersMap ? JSON.stringify(gpuKernel.drawBuffersMap) : 'null' };
         this.endianness = '${ gpuKernel.endianness }';
         this.graphical = ${ boolToString(gpuKernel.graphical) };
@@ -5511,6 +5537,7 @@ function webGLKernelString(gpuKernel, name) {
 module.exports = {
 	webGLKernelString
 };
+
 },{"../../kernel-run-shortcut":25,"../../utils":28}],15:[function(require,module,exports){
 const {
 	GLKernel
@@ -6284,7 +6311,6 @@ class WebGLKernel extends GLKernel {
 			DECODE32_ENDIANNESS: this._getDecode32EndiannessString(),
 			ENCODE32_ENDIANNESS: this._getEncode32EndiannessString(),
 			DIVIDE_WITH_INTEGER_CHECK: this._getDivideWithIntegerCheckString(),
-			GET_WRAPAROUND: this._getGetWraparoundString(),
 			MAIN_CONSTANTS: this._getMainConstantsString(),
 			MAIN_ARGUMENTS: this._getMainArgumentsString(args),
 			KERNEL: this.getKernelString(),
@@ -6755,14 +6781,6 @@ class WebGLKernel extends GLKernel {
 			'';
 	}
 
-	_getGetWraparoundString() {
-		return (
-			this.wraparound ?
-			'  xyz = mod(xyz, texDim);\n' :
-			''
-		);
-	}
-
 	_getMainArgumentsString(args) {
 		const result = [];
 		const {
@@ -6804,7 +6822,7 @@ class WebGLKernel extends GLKernel {
 						break;
 					case 'Float':
 					case 'Number':
-						result.push(`float user_${name} = ${ value % 1 === 0 ? value + '.0' : value }`);
+						result.push(`float user_${name} = ${ Number.isInteger(value) ? value + '.0' : value }`);
 						break;
 					default:
 						throw new Error(`Param type ${type} not supported in WebGL`);
@@ -7245,6 +7263,7 @@ class WebGLKernel extends GLKernel {
 module.exports = {
 	WebGLKernel
 };
+
 },{"../../plugins/triangle-noise":26,"../../texture":27,"../../utils":28,"../function-builder":7,"../gl-kernel":9,"./fragment-shader":12,"./function-node":13,"./kernel-string":14,"./vertex-shader":16}],16:[function(require,module,exports){
 const vertexShader = `precision highp float;
 precision highp int;
@@ -7366,7 +7385,6 @@ ivec3 indexTo3D(int idx, ivec3 texDim) {
 
 float get32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
@@ -7376,7 +7394,6 @@ float get32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 
 float get16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
   int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
   int w = texSize.x * 2;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
@@ -7386,7 +7403,6 @@ float get16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 
 float get8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
   int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
   int w = texSize.x * 4;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
@@ -7396,7 +7412,6 @@ float get8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 
 float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
   int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
   int channel = integerMod(index, 4);
   index = index / 4;
@@ -7409,7 +7424,6 @@ float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, in
 
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
@@ -7418,7 +7432,6 @@ vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x)
 
 vec4 getImage3D(sampler2DArray tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   ivec3 xyz = ivec3(x, y, z);
-  __GET_WRAPAROUND__;
   int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
@@ -7465,6 +7478,7 @@ void main(void) {
 module.exports = {
 	fragmentShader
 };
+
 },{}],18:[function(require,module,exports){
 const {
 	WebGLFunctionNode
@@ -8443,7 +8457,7 @@ class WebGL2Kernel extends WebGLKernel {
 						break;
 					case 'Float':
 					case 'Number':
-						result.push(`highp float user_${ name } = ${ value % 1 === 0 ? value + '.0' : value }`);
+						result.push(`highp float user_${ name } = ${ Number.isInteger(value) ? value + '.0' : value }`);
 						break;
 					default:
 						throw new Error(`Param type ${type} not supported in WebGL2`);
@@ -9033,26 +9047,7 @@ class GPU {
 	}
 
 	addFunction(source, settings) {
-		settings = settings || {};
-		if (typeof source !== 'string' && typeof source !== 'function') throw new Error('source not a string or function');
-		const sourceString = typeof source === 'string' ? source : source.toString();
-
-		let argumentTypes = [];
-
-		if (Array.isArray(settings.argumentTypes)) {
-			argumentTypes = settings.argumentTypes;
-		} else if (typeof settings.argumentTypes === 'object') {
-			argumentTypes = utils.getArgumentNamesFromString(sourceString)
-				.map(name => settings.argumentTypes[name]) || [];
-		} else {
-			argumentTypes = settings.argumentTypes || [];
-		}
-
-		this.functions.push({
-			source: sourceString,
-			argumentTypes,
-			returnType: settings.returnType
-		});
+		this.functions.push(utils.functionToIFunction(source, settings));
 		return this;
 	}
 
@@ -9091,9 +9086,8 @@ function upgradeDeprecatedCreateKernelSettings(settings) {
 	if (!settings) {
 		return;
 	}
-	const upgradedSettings = {
-		...settings
-	};
+	const upgradedSettings = Object.assign({}, settings);
+
 	if (settings.hasOwnProperty('floatOutput')) {
 		utils.warnDeprecated('setting', 'floatOutput', 'precision');
 		upgradedSettings.precision = settings.floatOutput ? 'single' : 'unsigned';
@@ -9631,6 +9625,28 @@ const utils = {
 		} else {
 			console.warn(`You are using a deprecated ${ type } "${ oldName }". It has been removed. Fixing, but please upgrade as it will soon be removed.`);
 		}
+	},
+	functionToIFunction(source, settings) {
+		settings = settings || {};
+		if (typeof source !== 'string' && typeof source !== 'function') throw new Error('source not a string or function');
+		const sourceString = typeof source === 'string' ? source : source.toString();
+
+		let argumentTypes = [];
+
+		if (Array.isArray(settings.argumentTypes)) {
+			argumentTypes = settings.argumentTypes;
+		} else if (typeof settings.argumentTypes === 'object') {
+			argumentTypes = utils.getArgumentNamesFromString(sourceString)
+				.map(name => settings.argumentTypes[name]) || [];
+		} else {
+			argumentTypes = settings.argumentTypes || [];
+		}
+
+		return {
+			source: sourceString,
+			argumentTypes,
+			returnType: settings.returnType || null,
+		};
 	}
 };
 

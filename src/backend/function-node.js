@@ -1231,6 +1231,10 @@ class FunctionNode {
 		}
 		return name + this._internalVariableNames[name];
 	}
+
+	varWarn() {
+		console.warn('var declarations are deprecated, weird things happen when falling back to CPU because var scope differs in javascript than in most languages.  Use const or let');
+	}
 }
 
 const typeLookupMap = {

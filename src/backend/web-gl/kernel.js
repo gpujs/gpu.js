@@ -884,7 +884,6 @@ class WebGLKernel extends GLKernel {
 			DECODE32_ENDIANNESS: this._getDecode32EndiannessString(),
 			ENCODE32_ENDIANNESS: this._getEncode32EndiannessString(),
 			DIVIDE_WITH_INTEGER_CHECK: this._getDivideWithIntegerCheckString(),
-			GET_WRAPAROUND: this._getGetWraparoundString(),
 			MAIN_CONSTANTS: this._getMainConstantsString(),
 			MAIN_ARGUMENTS: this._getMainArgumentsString(args),
 			KERNEL: this.getKernelString(),
@@ -1414,17 +1413,6 @@ class WebGLKernel extends GLKernel {
   return x / y;
 }` :
 			'';
-	}
-
-	/**
-	 * @returns {String} wraparound string
-	 */
-	_getGetWraparoundString() {
-		return (
-			this.wraparound ?
-			'  xyz = mod(xyz, texDim);\n' :
-			''
-		);
 	}
 
 	/**

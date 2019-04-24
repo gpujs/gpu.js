@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "2.0.0-rc.7",
+  "version": "2.0.0-rc.8",
   "description": "GPU Accelerated JavaScript",
   "engines": {
     "node": ">=10.0.0"
@@ -30,7 +30,6 @@
     "gulp-strip-comments": "^2.4.5",
     "merge-stream": "^1.0.1",
     "qunit": "^2.9.1",
-    "typescript": "^3.3.1",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^2.0.0"
   },
