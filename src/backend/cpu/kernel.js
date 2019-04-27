@@ -110,6 +110,12 @@ class CPUKernel extends Kernel {
 			}
 		}
 
+		if (this.graphical) {
+			if (this.output.length !== 2) {
+				throw new Error('Output must have 2 dimensions on graphical mode');
+			}
+		}
+
 		this.checkOutput();
 	}
 
@@ -222,7 +228,7 @@ class CPUKernel extends Kernel {
     return function (${ this.argumentNames.map(argumentName => 'user_' + argumentName).join(', ') }) {
       ${ this._processConstants() }
       ${ this._processArguments() }
-      ${ this.graphical ? this._graphicalKernelLoop(kernel) : this._resultKernelLoop(kernel) }
+      ${ this.graphical ? this._graphicalKernelBody(kernel) : this._resultKernelBody(kernel) }
       ${ translatedSources.length > 0 ? translatedSources.join('\n') : '' }
     }.bind(this);`;
 		return kernelString;
@@ -302,16 +308,41 @@ class CPUKernel extends Kernel {
 		const imageArray = new Array(image.height);
 		let index = 0;
 		for (let y = image.height - 1; y >= 0; y--) {
-			imageArray[y] = new Array(image.width);
+			const row = imageArray[y] = new Array(image.width);
 			for (let x = 0; x < image.width; x++) {
-				const r = pixelsData[index++] / 255;
-				const g = pixelsData[index++] / 255;
-				const b = pixelsData[index++] / 255;
-				const a = pixelsData[index++] / 255;
-				imageArray[y][x] = [r, g, b, a];
+				const pixel = new Float32Array(4);
+				pixel[0] = pixelsData[index++] / 255; // r
+				pixel[1] = pixelsData[index++] / 255; // g
+				pixel[2] = pixelsData[index++] / 255; // b
+				pixel[3] = pixelsData[index++] / 255; // a
+				row[x] = pixel;
 			}
 		}
 		return imageArray;
+	}
+
+	getPixels() {
+		// https://stackoverflow.com/a/41973289/1324039
+		const [width, height] = this.output;
+		const halfHeight = height / 2 | 0; // the | 0 keeps the result an int
+		const bytesPerRow = width * 4;
+		// make a temp buffer to hold one row
+		const temp = new Uint8Array(width * 4);
+		const pixels = this._imageData.data.slice(0);
+		for (let y = 0; y < halfHeight; ++y) {
+			var topOffset = y * bytesPerRow;
+			var bottomOffset = (height - y - 1) * bytesPerRow;
+
+			// make copy of a row on the top half
+			temp.set(pixels.subarray(topOffset, topOffset + bytesPerRow));
+
+			// copy a row from the bottom half to the top
+			pixels.copyWithin(topOffset, bottomOffset, bottomOffset + bytesPerRow);
+
+			// copy the copy of the top half row to the bottom half
+			pixels.set(temp, bottomOffset);
+		}
+		return pixels;
 	}
 
 	_imageTo3DArray(images) {
@@ -322,7 +353,7 @@ class CPUKernel extends Kernel {
 		return imagesArray;
 	}
 
-	_resultKernelLoop(kernelString) {
+	_resultKernelBody(kernelString) {
 		switch (this.output.length) {
 			case 1:
 				return this._resultKernel1DLoop(kernelString) + this._kernelOutput();
@@ -335,14 +366,10 @@ class CPUKernel extends Kernel {
 		}
 	}
 
-	_graphicalKernelLoop(kernelString) {
+	_graphicalKernelBody(kernelString) {
 		switch (this.output.length) {
-			case 1:
-				return this._graphicalKernel1DLoop(kernelString) + this._graphicalOutput();
 			case 2:
 				return this._graphicalKernel2DLoop(kernelString) + this._graphicalOutput();
-			case 3:
-				return this._graphicalKernel3DLoop(kernelString) + this._graphicalOutput();
 			default:
 				throw new Error('unsupported size kernel');
 		}
@@ -393,30 +420,12 @@ class CPUKernel extends Kernel {
     }`;
 	}
 
-	_graphicalKernel1DLoop(kernelString) {
-		const {
-			output
-		} = this;
-		const constructorString = this._getKernelResultTypeConstructorString();
-		return `${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
-		${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new ${constructorString}(${ output[0] });\n`).join('') }
-    for (let x = 0; x < ${ output[0] }; x++) {
-      this.thread.x = x;
-      this.thread.y = 0;
-      this.thread.z = 0;
-      let kernelResult;
-      ${ kernelString }
-      result[x] = kernelResult;
-      ${ this._mapSubKernels(subKernel => `result_${ subKernel.name }[x] = subKernelResult_${ subKernel.name };\n`).join('') }
-    }`;
-	}
-
 	_resultKernel2DLoop(kernelString) {
 		const {
 			output
 		} = this;
 		const constructorString = this._getKernelResultTypeConstructorString();
-		return `const result = new Array(${ output[2] });
+		return `const result = new Array(${ output[1] });
 		${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
     ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[1] });\n`).join('') }
     for (let y = 0; y < ${ output[1] }; y++) {
@@ -474,28 +483,6 @@ class CPUKernel extends Kernel {
           let kernelResult;
           ${ kernelString }
           resultX[x] = kernelResult;
-          ${ this._mapSubKernels(subKernel => `result_${ subKernel.name }X[x] = subKernelResult_${ subKernel.name };\n`).join('') }
-        }
-      }
-    }`;
-	}
-
-	_graphicalKernel3DLoop(kernelString) {
-		const {
-			output
-		} = this;
-		const constructorString = this._getKernelResultTypeConstructorString();
-		return `${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
-    ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[2] });\n`).join('') }
-    for (let z = 0; z < ${ output[2] }; z++) {
-      this.thread.z = z;
-      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }Y = result_${subKernel.name}[z] = new Array(${ output[1] });\n`).join('') }
-      for (let y = 0; y < ${ output[1] }; y++) {
-        this.thread.y = y;
-        ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}Y[y] = new ${constructorString}(${ output[0] });\n`).join('') }
-        for (let x = 0; x < ${ output[0] }; x++) {
-        	this.thread.x = x;
-          ${ kernelString }
           ${ this._mapSubKernels(subKernel => `result_${ subKernel.name }X[x] = subKernelResult_${ subKernel.name };\n`).join('') }
         }
       }

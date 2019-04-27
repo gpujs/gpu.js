@@ -515,6 +515,13 @@ class Kernel {
 		}
 	}
 
+	/**
+	 * @returns {number[]}
+	 */
+	getPixels() {
+		throw new Error(`"getPixels" called on ${ this.constructor.name }`);
+	}
+
 	checkOutput() {
 		if (!this.output || !Array.isArray(this.output)) throw new Error('kernel.output not an array');
 		if (this.output.length < 1) throw new Error('kernel.output is empty, needs at least 1 value');

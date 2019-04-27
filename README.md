@@ -399,6 +399,25 @@ document.getElementsByTagName('body')[0].appendChild(canvas);
 Note: To animate the rendering, use `requestAnimationFrame` instead of `setTimeout` for optimal performance. For more information, see [this](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame).
 
 
+### .getPixels() **New in V2!**
+To make it easier to get pixels from a context, use `kernel.getPixels()`, which returns a flat array similar to what you get from WebGL's `readPixels` method.
+A note on why: webgl's `readPixels` returns an array ordered differently from javascript's `getImageData`.
+This makes them behave similarly.
+While the values may be somewhat different, because of graphical precision available in the kernel, and alpha, this allows us to easily get pixel data in unified way.  
+
+Example:
+```js
+const render = gpu.createKernel(function() {
+    this.color(0, 0, 0, 1);
+})
+  .setOutput([20, 20])
+  .setGraphical(true);
+
+render();
+const pixels = render.getPixels();
+// [r,g,b,a, r,g,b,a...
+```
+
 ### Alpha
 
 Currently, if you need alpha do something like enabling `premultipliedAlpha` with your own gl context:

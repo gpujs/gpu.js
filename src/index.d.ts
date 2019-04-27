@@ -99,6 +99,7 @@ export abstract class Kernel {
   immutable: boolean;
   pipeline: boolean;
   plugins: IPlugin[];
+  getPixels: number[];
   constructor(kernel: KernelFunction, settings?: IKernelSettings); // TODO: JSON support
   build(
     arg1?: KernelVariable,
@@ -240,6 +241,10 @@ export interface IKernelFunctionThis {
   output: IKernelXYZ;
   thread: IKernelXYZ;
   constants: IConstantsThis;
+  color(r: number),
+  color(r: number, g: number),
+  color(r: number, g: number, b: number),
+  color(r: number, g: number, b: number, a: number),
 }
 
 export type KernelVariable = number | number[] | number[][] | number[][][] | Texture | HTMLImageElement | HTMLImageElement[];

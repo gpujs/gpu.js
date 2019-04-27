@@ -869,6 +869,16 @@ class GLKernel extends Kernel {
 		}
 		return zResults;
 	}
+	getPixels() {
+		const {
+			context: gl,
+			output
+		} = this;
+		const [width, height] = output;
+		const pixels = new Uint8Array(width * height * 4);
+		gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+		return pixels;
+	}
 }
 
 const renderStrategy = Object.freeze({
