@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0-rc.12
- * @date Fri Apr 26 2019 22:06:12 GMT-0400 (Eastern Daylight Time)
+ * @date Sun Apr 28 2019 15:00:27 GMT+0200 (CEST)
  *
  * @license MIT
  * The MIT License
@@ -8214,9 +8214,10 @@ class GLKernel extends Kernel {
 		const XResultsMax = xMax * 4;
 		for (let y = 0; y < yMax; y++) {
 			const xResults = new Array(xMax);
+			const offset = y * XResultsMax;
 			let i = 0;
 			for (let x = 0; x < XResultsMax; x += 4) {
-				xResults[i++] = pixels.subarray(x, x + 2);
+				xResults[i++] = pixels.subarray(x + offset, x + offset + 2);
 			}
 			yResults[y] = xResults;
 		}
@@ -8231,9 +8232,10 @@ class GLKernel extends Kernel {
 			const yResults = new Array(yMax);
 			for (let y = 0; y < yMax; y++) {
 				const xResults = new Array(xMax);
+				const offset = (z * xResultsMax * yMax) + (y * xResultsMax);
 				let i = 0;
 				for (let x = 0; x < xResultsMax; x += 4) {
-					xResults[i++] = pixels.subarray(x, x + 2);
+					xResults[i++] = pixels.subarray(x + offset, x + offset + 2);
 				}
 				yResults[y] = xResults;
 			}
@@ -8255,13 +8257,14 @@ class GLKernel extends Kernel {
 	render2DArray3() {
 		const pixels = this.readFloatPixelsToFloat32Array();
 		const [xMax, yMax] = this.output;
-		const xMaxResults = xMax * 4;
+		const xResultsMax = xMax * 4;
 		const yResults = new Array(yMax);
 		for (let y = 0; y < yMax; y++) {
 			const xResults = new Array(xMax);
+			const offset = y * xResultsMax;
 			let i = 0;
-			for (let x = 0; x < xMaxResults; x += 4) {
-				xResults[i++] = pixels.subarray(x, x + 3);
+			for (let x = 0; x < xResultsMax; x += 4) {
+				xResults[i++] = pixels.subarray(x + offset, x + offset + 3);
 			}
 			yResults[y] = xResults;
 		}
@@ -8270,15 +8273,16 @@ class GLKernel extends Kernel {
 	render3DArray3() {
 		const pixels = this.readFloatPixelsToFloat32Array();
 		const [xMax, yMax, zMax] = this.output;
-		const xMaxResults = xMax * 4;
+		const xResultsMax = xMax * 4;
 		const zResults = new Array(zMax);
 		for (let z = 0; z < zMax; z++) {
 			const yResults = new Array(yMax);
 			for (let y = 0; y < yMax; y++) {
 				const xResults = new Array(xMax);
+				const offset = (z * xResultsMax * yMax) + (y * xResultsMax);
 				let i = 0;
-				for (let x = 0; x < xMaxResults; x += 4) {
-					xResults[i++] = pixels.subarray(x, x + 3);
+				for (let x = 0; x < xResultsMax; x += 4) {
+					xResults[i++] = pixels.subarray(x + offset, x + offset + 3);
 				}
 				yResults[y] = xResults;
 			}
@@ -8300,13 +8304,14 @@ class GLKernel extends Kernel {
 	render2DArray4() {
 		const pixels = this.readFloatPixelsToFloat32Array();
 		const [xMax, yMax] = this.output;
-		const xMaxResult = xMax * 4;
+		const xResultsMax = xMax * 4;
 		const yResults = new Array(yMax);
 		for (let y = 0; y < yMax; y++) {
 			const xResults = new Array(xMax);
+			const offset = y * xResultsMax;
 			let i = 0;
-			for (let x = 0; x < xMaxResult; x += 4) {
-				xResults[i++] = pixels.subarray(x, x + 4);
+			for (let x = 0; x < xResultsMax; x += 4) {
+				xResults[i++] = pixels.subarray(x + offset, x + offset + 4);
 			}
 			yResults[y] = xResults;
 		}
@@ -8315,15 +8320,16 @@ class GLKernel extends Kernel {
 	render3DArray4() {
 		const pixels = this.readFloatPixelsToFloat32Array();
 		const [xMax, yMax, zMax] = this.output;
-		const xResultsMap = xMax * 4;
+		const xResultsMax = xMax * 4;
 		const zResults = new Array(zMax);
 		for (let z = 0; z < zMax; z++) {
 			const yResults = new Array(yMax);
 			for (let y = 0; y < yMax; y++) {
 				const xResults = new Array(xMax);
+				const offset = (z * xResultsMax * yMax) + (y * xResultsMax);
 				let i = 0;
-				for (let x = 0; x < xResultsMap; x += 4) {
-					xResults[i++] = pixels.subarray(x, x + 4);
+				for (let x = 0; x < xResultsMax; x += 4) {
+					xResults[i++] = pixels.subarray(x + offset, x + offset + 4);
 				}
 				yResults[y] = xResults;
 			}
