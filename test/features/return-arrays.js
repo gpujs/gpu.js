@@ -40,10 +40,15 @@ test('return Array(2) from kernel cpu', () => {
 function returnArray2D2FromKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
-    return [1, 2];
-  }, { output: [2, 2], precision: 'single' });
-  const result = kernel();
-  assert.deepEqual(result.map(matrix => matrix.map(row => Array.from(row))), [[[1, 2], [1, 2]],[[1, 2], [1, 2]]]);
+    return [this.thread.x, this.thread.y];
+  }, { output : [3, 7], precision: 'single' });
+  const res = kernel();
+  for (let y = 0; y < 7; ++y) {
+    for (let x = 0; x < 3; ++x) {
+        assert.equal(res[y][x][0], x);
+        assert.equal(res[y][x][1], y);
+    }
+  }
   gpu.destroy();
 }
 
@@ -73,11 +78,18 @@ test('return Array2D(2) from kernel cpu', () => {
 
 function returnArray3D2FromKernel(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return [1, 2];
-  }, { output: [2, 2, 2], precision: 'single' });
-  const result = kernel();
-  assert.deepEqual(result.map(cube => cube.map(matrix => matrix.map(row => Array.from(row)))), [[[[1, 2], [1, 2]],[[1, 2], [1, 2]]],[[[1, 2], [1, 2]],[[1, 2], [1, 2]]]]);
+const kernel = gpu.createKernel(function() {
+    return [this.thread.y, this.thread.z];
+  }, { output : [3, 5, 7], precision: 'single' });
+  const res = kernel();
+  for (let z = 0; z < 7; ++z) {
+    for (let y = 0; y < 5; ++y) {
+      for (let x = 0; x < 3; ++x) {
+        assert.equal(res[z][y][x][0], y);
+        assert.equal(res[z][y][x][1], z);
+      }
+    }
+  }
   gpu.destroy();
 }
 
@@ -143,10 +155,16 @@ test('return Array(3) from kernel cpu', () => {
 function returnArray2D3FromKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
-    return [1, 2, 3];
-  }, { output: [2,2], precision: 'single' });
-  const result = kernel();
-  assert.deepEqual(Array.from(result.map(matrix => matrix.map(row => Array.from(row)))), [[[1, 2, 3],[1, 2, 3]],[[1, 2, 3],[1, 2, 3]]]);
+    return [this.thread.x, this.thread.y, this.thread.x * this.thread.y];
+  }, { output : [3, 7] ,precision: 'single' });
+  const res = kernel();
+  for (let y = 0; y < 7; ++y) {
+    for (let x = 0; x < 3; ++x) {
+        assert.equal(res[y][x][0], x);
+        assert.equal(res[y][x][1], y);
+        assert.equal(res[y][x][2], x * y);
+    }
+  }
   gpu.destroy();
 }
 
@@ -177,10 +195,18 @@ test('return Array2D(3) from kernel cpu', () => {
 function returnArray3D3FromKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
-    return [1, 2, 3];
-  }, { output: [2,2,2], precision: 'single' });
-  const result = kernel();
-  assert.deepEqual(Array.from(result.map(cube => cube.map(matrix => matrix.map(row => Array.from(row))))), [[[[1, 2, 3],[1, 2, 3]],[[1, 2, 3],[1, 2, 3]]],[[[1, 2, 3],[1, 2, 3]],[[1, 2, 3],[1, 2, 3]]]]);
+    return [this.thread.x, this.thread.y, this.thread.z];
+  }, { output : [3, 5, 7] ,precision: 'single' });
+  const res = kernel();
+  for (let z = 0; z < 7; ++z) {
+    for (let y = 0; y < 5; ++y) {
+      for (let x = 0; x < 3; ++x) {
+        assert.equal(res[z][y][x][0], x);
+        assert.equal(res[z][y][x][1], y);
+        assert.equal(res[z][y][x][2], z);
+      }
+    }
+  }
   gpu.destroy();
 }
 
@@ -245,10 +271,17 @@ test('return Array(4) from kernel cpu', () => {
 function returnArray2D4FromKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
-    return [1, 2, 3, 4];
-  }, { output: [2,2], precision: 'single' });
-  const result = kernel();
-  assert.deepEqual(result.map(matrix => matrix.map(row => Array.from(row))), [[[1, 2, 3, 4],[1, 2, 3, 4]],[[1, 2, 3, 4],[1, 2, 3, 4]]]);
+    return [this.thread.x, this.thread.y, this.thread.x * this.thread.y, this.thread.x - this.thread.y];
+  }, { output : [3, 7], precision: 'single' });
+  const res = kernel();
+  for (let y = 0; y < 3; ++y) {
+    for (let x = 0; x < 3; ++x) {
+        assert.equal(res[y][x][0], x);
+        assert.equal(res[y][x][1], y);
+        assert.equal(res[y][x][2], x * y);
+        assert.equal(res[y][x][3], x - y);
+    }
+  }
   gpu.destroy();
 }
 
@@ -279,10 +312,19 @@ test('return Array2D(4) from kernel cpu', () => {
 function returnArray3D4FromKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
-    return [1, 2, 3, 4];
-  }, { output: [2,2,2], precision: 'single' });
-  const result = kernel();
-  assert.deepEqual(result.map(cube => cube.map(matrix => matrix.map(row => Array.from(row)))), [[[[1, 2, 3, 4],[1, 2, 3, 4]],[[1, 2, 3, 4],[1, 2, 3, 4]]],[[[1, 2, 3, 4],[1, 2, 3, 4]],[[1, 2, 3, 4],[1, 2, 3, 4]]]]);
+    return [this.thread.x, this.thread.y, this.thread.z, this.thread.x * this.thread.y * this.thread.z];
+  }, { output : [3, 5, 7], precision: 'single' });
+  const res = kernel();
+  for (let z = 0; z < 7; ++z) {
+    for (let y = 0; y < 5; ++y) {
+      for (let x = 0; x < 3; ++x) {
+        assert.equal(res[z][y][x][0], x);
+        assert.equal(res[z][y][x][1], y);
+        assert.equal(res[z][y][x][2], z);
+        assert.equal(res[z][y][x][3], x * y * z);
+      }
+    }
+  }
   gpu.destroy();
 }
 
