@@ -624,6 +624,11 @@ class WebGL2Kernel extends WebGLKernel {
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
+			case 'Boolean':
+				{
+					this.setUniform1i(`user_${name}`, value ? 1 : 0);
+					break;
+				}
 			default:
 				throw new Error('Argument type not supported: ' + value);
 		}
@@ -665,7 +670,9 @@ class WebGL2Kernel extends WebGLKernel {
 							`uniform highp ivec3 constants_${ name }Dim`,
 						);
 						break;
-
+					case 'Boolean':
+						result.push('const bool constants_' + name + ' = ' + (value ? 'true' : 'false'));
+						break;
 					default:
 						throw new Error(`Unsupported constant ${ name } type ${ type }`);
 				}
@@ -980,8 +987,11 @@ class WebGL2Kernel extends WebGLKernel {
 					case 'Number':
 						result.push(`highp float user_${ name } = ${ Number.isInteger(value) ? value + '.0' : value }`);
 						break;
+					case 'Boolean':
+						result.push(`uniform int user_${name}`);
+						break;
 					default:
-						throw new Error(`Param type ${type} not supported in WebGL2`);
+						throw new Error(`Argument type ${type} not supported in WebGL2`);
 				}
 			} else {
 				switch (type) {
@@ -1012,8 +1022,11 @@ class WebGL2Kernel extends WebGLKernel {
 					case 'Number':
 						result.push(`uniform float user_${ name }`);
 						break;
+					case 'Boolean':
+						result.push(`uniform int user_${name}`);
+						break;
 					default:
-						throw new Error(`Param type ${type} not supported in WebGL2`);
+						throw new Error(`Argument type ${type} not supported in WebGL2`);
 				}
 			}
 		}

@@ -24,17 +24,23 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 			);
 		}
 
-		switch (idtNode.name) {
-			case 'Infinity':
-				retArr.push('intBitsToFloat(2139095039)');
-				break;
-			default:
-				const userArgumentName = this.getKernelArgumentName(idtNode.name);
-				if (userArgumentName) {
-					retArr.push(`user_${userArgumentName}`);
-				} else {
-					retArr.push(`user_${idtNode.name}`);
-				}
+		const type = this.getType(idtNode);
+
+		if (idtNode.name === 'Infinity') {
+			retArr.push('intBitsToFloat(2139095039)');
+		} else if (type === 'Boolean') {
+			if (this.argumentNames.indexOf(idtNode.name) > -1) {
+				retArr.push(`bool(user_${idtNode.name})`);
+			} else {
+				retArr.push(`user_${idtNode.name}`);
+			}
+		} else {
+			const userArgumentName = this.getKernelArgumentName(idtNode.name);
+			if (userArgumentName) {
+				retArr.push(`user_${userArgumentName}`);
+			} else {
+				retArr.push(`user_${idtNode.name}`);
+			}
 		}
 
 		return retArr;

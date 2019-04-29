@@ -450,7 +450,7 @@ class WebGLKernel extends GLKernel {
 		for (let p in this.constants) {
 			const value = this.constants[p];
 			const type = utils.getVariableType(value);
-			if (type === 'Float' || type === 'Integer') {
+			if (type === 'Float' || type === 'Integer' || type === 'Boolean') {
 				continue;
 			}
 			gl.useProgram(this.program);
@@ -1077,6 +1077,11 @@ class WebGLKernel extends GLKernel {
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
+			case 'Boolean':
+				{
+					this.setUniform1i(`user_${name}`, value ? 1 : 0);
+					break;
+				}
 			default:
 				throw new Error('Argument type not supported: ' + value);
 		}
@@ -1259,6 +1264,7 @@ class WebGLKernel extends GLKernel {
 				}
 			case 'Integer':
 			case 'Float':
+			case 'Boolean':
 			default:
 				throw new Error('constant type not supported: ' + value);
 		}
@@ -1463,7 +1469,7 @@ class WebGLKernel extends GLKernel {
 						result.push(`float user_${name} = ${ Number.isInteger(value) ? value + '.0' : value }`);
 						break;
 					default:
-						throw new Error(`Param type ${type} not supported in WebGL`);
+						throw new Error(`Argument type ${type} not supported in WebGL`);
 				}
 			} else {
 				switch (type) {
@@ -1489,8 +1495,11 @@ class WebGLKernel extends GLKernel {
 					case 'Number':
 						result.push(`uniform float user_${name}`);
 						break;
+					case 'Boolean':
+						result.push(`uniform int user_${name}`);
+						break;
 					default:
-						throw new Error(`Param type ${type} not supported in WebGL`);
+						throw new Error(`Argument type ${type} not supported in WebGL`);
 				}
 			}
 		}
@@ -1527,6 +1536,9 @@ class WebGLKernel extends GLKernel {
 							`uniform ivec2 constants_${name}Size`,
 							`uniform ivec3 constants_${name}Dim`,
 						);
+						break;
+					case 'Boolean':
+						result.push('const bool constants_' + name + ' = ' + (value ? 'true' : 'false'));
 						break;
 					default:
 						throw new Error(`Unsupported constant ${name} type ${type}`);

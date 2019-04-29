@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.12
- * @date Fri Apr 26 2019 22:06:12 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.13
+ * @date Mon Apr 29 2019 08:45:14 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -4914,9 +4914,11 @@ class CPUFunctionNode extends FunctionNode {
 
 	astReturnStatement(ast, retArr) {
 		if (this.isRootKernel) {
-			retArr.push('kernelResult = ');
+			retArr.push(this.leadingReturnStatement);
 			this.astGeneric(ast.argument, retArr);
-			retArr.push(';');
+			retArr.push(';\n');
+			retArr.push(this.followingReturnStatement);
+			retArr.push('continue;\n');
 		} else if (this.isSubKernel) {
 			retArr.push(`subKernelResult_${ this.name } = `);
 			this.astGeneric(ast.argument, retArr);
@@ -5241,9 +5243,13 @@ class CPUFunctionNode extends FunctionNode {
 				throw this.astErrorOutput('Unexpected expression', mNode);
 		}
 
-		if (type === 'Number' || type === 'Integer') {
-			retArr.push(`${origin}_${name}`);
-			return retArr;
+		switch (type) {
+			case 'Number':
+			case 'Integer':
+			case 'Float':
+			case 'Boolean':
+				retArr.push(`${ origin }_${ name}`);
+				return retArr;
 		}
 
 		const synonymName = this.getKernelArgumentName(name);
@@ -5564,6 +5570,17 @@ class CPUKernel extends Kernel {
 	}
 
 	translateSource() {
+		this.leadingReturnStatement = this.output.length > 1 ? 'resultX[x] = ' : 'result[x] = ';
+		if (this.subKernels) {
+			const followingReturnStatement = []
+			for (let i = 0; i < this.subKernels.length; i++) {
+				const {
+					name
+				} = this.subKernels[i];
+				followingReturnStatement.push(this.output.length > 1 ? `resultX_${ name }[x] = subKernelResult_${ name };\n` : `result_${ name }[x] = subKernelResult_${ name };\n`);
+			}
+			this.followingReturnStatement = followingReturnStatement.join('');
+		}
 		const functionBuilder = FunctionBuilder.fromKernel(this, CPUFunctionNode);
 		this.translatedSources = functionBuilder.getPrototypes('kernel');
 		if (!this.graphical && !this.returnType) {
@@ -5635,29 +5652,28 @@ class CPUKernel extends Kernel {
 	getKernelString() {
 		if (this._kernelString !== null) return this._kernelString;
 
-		let kernel = null;
+		let kernelThreadString = null;
 		let {
 			translatedSources
 		} = this;
 		if (translatedSources.length > 1) {
 			translatedSources = translatedSources.filter(fn => {
 				if (/^function/.test(fn)) return fn;
-				kernel = fn;
+				kernelThreadString = fn;
 				return false;
 			})
 		} else {
-			kernel = translatedSources.shift();
+			kernelThreadString = translatedSources.shift();
 		}
-		const kernelString = this._kernelString = `
-		const LOOP_MAX = ${ this._getLoopMaxString() }
-		const constants = this.constants;
-		const _this = this;
-    return function (${ this.argumentNames.map(argumentName => 'user_' + argumentName).join(', ') }) {
-      ${ this._processConstants() }
-      ${ this._processArguments() }
-      ${ this.graphical ? this._graphicalKernelBody(kernel) : this._resultKernelBody(kernel) }
-      ${ translatedSources.length > 0 ? translatedSources.join('\n') : '' }
-    }.bind(this);`;
+		const kernelString = this._kernelString = `  const LOOP_MAX = ${ this._getLoopMaxString() }
+  const constants = this.constants;
+  const _this = this;
+  return (${ this.argumentNames.map(argumentName => 'user_' + argumentName).join(', ') }) => {
+    ${ this._processConstants() }
+    ${ this._processArguments() }
+    ${ this.graphical ? this._graphicalKernelBody(kernelThreadString) : this._resultKernelBody(kernelThreadString) }
+    ${ translatedSources.length > 0 ? translatedSources.join('\n') : '' }
+  };`;
 		return kernelString;
 	}
 
@@ -5668,8 +5684,8 @@ class CPUKernel extends Kernel {
 	_getLoopMaxString() {
 		return (
 			this.loopMaxIterations ?
-			` ${ parseInt(this.loopMaxIterations) };\n` :
-			' 1000;\n'
+			` ${ parseInt(this.loopMaxIterations) };` :
+			' 1000;'
 		);
 	}
 
@@ -5681,19 +5697,19 @@ class CPUKernel extends Kernel {
 			const type = this.constantTypes[p];
 			switch (type) {
 				case 'HTMLImage':
-					result.push(`  const constants_${p} = this._imageTo2DArray(this.constants.${p});`);
+					result.push(`    const constants_${p} = this._imageTo2DArray(this.constants.${p});\n`);
 					break;
 				case 'HTMLImageArray':
-					result.push(`  const constants_${p} = this._imageTo3DArray(this.constants.${p});`);
+					result.push(`    const constants_${p} = this._imageTo3DArray(this.constants.${p});\n`);
 					break;
 				case 'Input':
-					result.push(`  const constants_${p} = this.constants.${p}.value;`);
+					result.push(`    const constants_${p} = this.constants.${p}.value;\n`);
 					break;
 				default:
-					result.push(`  const constants_${p} = this.constants.${p};`);
+					result.push(`    const constants_${p} = this.constants.${p};\n`);
 			}
 		}
-		return result.join('\n');
+		return result.join('');
 	}
 
 	_processArguments() {
@@ -5701,17 +5717,17 @@ class CPUKernel extends Kernel {
 		for (let i = 0; i < this.argumentTypes.length; i++) {
 			switch (this.argumentTypes[i]) {
 				case 'HTMLImage':
-					result.push(`  user_${this.argumentNames[i]} = this._imageTo2DArray(user_${this.argumentNames[i]});`);
+					result.push(`    user_${this.argumentNames[i]} = this._imageTo2DArray(user_${this.argumentNames[i]});\n`);
 					break;
 				case 'HTMLImageArray':
-					result.push(`  user_${this.argumentNames[i]} = this._imageTo3DArray(user_${this.argumentNames[i]});`);
+					result.push(`    user_${this.argumentNames[i]} = this._imageTo3DArray(user_${this.argumentNames[i]});\n`);
 					break;
 				case 'Input':
-					result.push(`  user_${this.argumentNames[i]} = user_${this.argumentNames[i]}.value;`);
+					result.push(`    user_${this.argumentNames[i]} = user_${this.argumentNames[i]}.value;\n`);
 					break;
 			}
 		}
-		return result.join(';\n');
+		return result.join('');
 	}
 
 	_imageTo2DArray(image) {
@@ -5781,10 +5797,10 @@ class CPUKernel extends Kernel {
 		}
 	}
 
-	_graphicalKernelBody(kernelString) {
+	_graphicalKernelBody(kernelThreadString) {
 		switch (this.output.length) {
 			case 2:
-				return this._graphicalKernel2DLoop(kernelString) + this._graphicalOutput();
+				return this._graphicalKernel2DLoop(kernelThreadString) + this._graphicalOutput();
 			default:
 				throw new Error('unsupported size kernel');
 		}
@@ -5822,16 +5838,13 @@ class CPUKernel extends Kernel {
 		} = this;
 		const constructorString = this._getKernelResultTypeConstructorString();
 		return `const result = new ${constructorString}(${ output[0] });
-    ${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
-		${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new ${constructorString}(${ output[0] });\n`).join('') }
+    ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new ${constructorString}(${ output[0] });\n`).join('    ') }
+    ${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };\n`).join('    ') }
     for (let x = 0; x < ${ output[0] }; x++) {
       this.thread.x = x;
       this.thread.y = 0;
       this.thread.z = 0;
-      let kernelResult;
       ${ kernelString }
-      result[x] = kernelResult;
-      ${ this._mapSubKernels(subKernel => `result_${ subKernel.name }[x] = subKernelResult_${ subKernel.name };\n`).join('') }
     }`;
 	}
 
@@ -5841,19 +5854,16 @@ class CPUKernel extends Kernel {
 		} = this;
 		const constructorString = this._getKernelResultTypeConstructorString();
 		return `const result = new Array(${ output[1] });
-		${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
-    ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[1] });\n`).join('') }
+		${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[1] });\n`).join('    ') }
+		${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };\n`).join('    ') }
     for (let y = 0; y < ${ output[1] }; y++) {
       this.thread.z = 0;
       this.thread.y = y;
       const resultX = result[y] = new ${constructorString}(${ output[0] });
-      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}[y] = new ${constructorString}(${ output[0] });\n`).join('') }
+      ${ this._mapSubKernels(subKernel => `const resultX_${ subKernel.name } = result_${subKernel.name}[y] = new ${constructorString}(${ output[0] });\n`).join('') }
       for (let x = 0; x < ${ output[0] }; x++) {
       	this.thread.x = x;
-        let kernelResult;
         ${ kernelString }
-        resultX[x] = kernelResult;
-        ${ this._mapSubKernels(subKernel => `result_${ subKernel.name }X[x] = subKernelResult_${ subKernel.name };\n`).join('') }
       }
     }`;
 	}
@@ -5863,16 +5873,15 @@ class CPUKernel extends Kernel {
 			output
 		} = this;
 		const constructorString = this._getKernelResultTypeConstructorString();
-		return `${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
-    ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[1] });\n`).join('') }
+		return `  ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[1] });\n`).join('    ') }
+		${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };\n`).join('    ') }
     for (let y = 0; y < ${ output[1] }; y++) {
       this.thread.z = 0;
       this.thread.y = y;
-      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}[y] = new ${constructorString}(${ output[0] });\n`).join('') }
+      ${ this._mapSubKernels(subKernel => `const resultX_${ subKernel.name } = result_${subKernel.name}[y] = new ${constructorString}(${ output[0] });\n`).join('') }
       for (let x = 0; x < ${ output[0] }; x++) {
       	this.thread.x = x;
         ${ kernelString }
-        ${ this._mapSubKernels(subKernel => `result_${ subKernel.name }X[x] = subKernelResult_${ subKernel.name };\n`).join('') }
       }
     }`;
 	}
@@ -5883,22 +5892,19 @@ class CPUKernel extends Kernel {
 		} = this;
 		const constructorString = this._getKernelResultTypeConstructorString();
 		return `const result = new Array(${ output[2] });
-    ${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };`).join('\n') }
-    ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[2] });\n`).join('') }
+    ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name } = new Array(${ output[2] });\n`).join('    ') }
+    ${ this._mapSubKernels(subKernel => `let subKernelResult_${ subKernel.name };\n`).join('    ') }
     for (let z = 0; z < ${ output[2] }; z++) {
       this.thread.z = z;
       const resultY = result[z] = new Array(${ output[1] });
-      ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }Y = result_${subKernel.name}[z] = new Array(${ output[1] });\n`).join('') }
+      ${ this._mapSubKernels(subKernel => `const resultY_${ subKernel.name } = result_${subKernel.name}[z] = new Array(${ output[1] });\n`).join('      ') }
       for (let y = 0; y < ${ output[1] }; y++) {
         this.thread.y = y;
         const resultX = resultY[y] = new ${constructorString}(${ output[0] });
-        ${ this._mapSubKernels(subKernel => `const result_${ subKernel.name }X = result_${subKernel.name}Y[y] = new ${constructorString}(${ output[0] });\n`).join('') }
+        ${ this._mapSubKernels(subKernel => `const resultX_${ subKernel.name } = resultY_${subKernel.name}[y] = new ${constructorString}(${ output[0] });\n`).join('        ') }
         for (let x = 0; x < ${ output[0] }; x++) {
         	this.thread.x = x;
-          let kernelResult;
           ${ kernelString }
-          resultX[x] = kernelResult;
-          ${ this._mapSubKernels(subKernel => `result_${ subKernel.name }X[x] = subKernelResult_${ subKernel.name };\n`).join('') }
         }
       }
     }`;
@@ -5906,11 +5912,11 @@ class CPUKernel extends Kernel {
 
 	_kernelOutput() {
 		if (!this.subKernels) {
-			return 'return result;';
+			return '\n    return result;';
 		}
-		return `return {
+		return `\n    return {
       result: result,
-      ${ this.subKernels.map(subKernel => `${ subKernel.property }: result_${ subKernel.name }`).join(',\n') }
+      ${ this.subKernels.map(subKernel => `${ subKernel.property }: result_${ subKernel.name }`).join(',\n      ') }
     };`;
 	}
 
@@ -5960,6 +5966,8 @@ class FunctionBuilder {
 			source,
 			subKernels,
 			functions,
+			leadingReturnStatement,
+			followingReturnStatement,
 		} = kernel;
 
 		const lookupReturnType = (functionName, ast, requestingNode) => {
@@ -6000,7 +6008,7 @@ class FunctionBuilder {
 
 		const onNestedFunction = (fnString, returnType) => {
 			functionBuilder.addFunctionNode(new FunctionNode(fnString, Object.assign({}, nodeOptions, {
-				returnType: returnType || 'Number',
+				returnType: returnType || 'Number', 
 				lookupReturnType,
 				lookupArgumentType,
 				lookupFunctionArgumentTypes,
@@ -6043,6 +6051,8 @@ class FunctionBuilder {
 			argumentTypes,
 			argumentSizes,
 			argumentBitRatios,
+			leadingReturnStatement,
+			followingReturnStatement,
 		});
 
 		if (typeof source === 'object' && source.functionNodes) {
@@ -6086,7 +6096,7 @@ class FunctionBuilder {
 					name,
 					isSubKernel: true,
 					isRootKernel: false,
-					returnType: 'Number',
+					returnType: 'Number', 
 				}));
 			});
 		}
@@ -6469,6 +6479,8 @@ class FunctionNode {
 		this.returnType = null;
 		this.output = [];
 		this.plugins = null;
+		this.leadingReturnStatement = null;
+		this.followingReturnStatement = null;
 
 		if (settings) {
 			for (const p in settings) {
@@ -6655,7 +6667,9 @@ class FunctionNode {
 			argumentNames: this.argumentNames,
 			argumentTypes: this.argumentTypes,
 			argumentSizes: this.argumentSizes,
-			returnType: this.returnType
+			returnType: this.returnType,
+			leadingReturnStatement: this.leadingReturnStatement,
+			followingReturnStatement: this.followingReturnStatement,
 		};
 
 		return {
@@ -6680,6 +6694,8 @@ class FunctionNode {
 				}
 				if (Number.isInteger(ast.value)) {
 					return 'LiteralInteger';
+				} else if (ast.value === true || ast.value === false) {
+					return 'Boolean';
 				} else {
 					return 'Number';
 				}
@@ -8596,6 +8612,8 @@ class Kernel {
 		this.plugins = null;
 
 		this.returnType = null;
+		this.leadingReturnStatement = null;
+		this.followingReturnStatement = null;
 	}
 
 	mergeSettings(settings) {
@@ -9455,6 +9473,13 @@ class WebGLFunctionNode extends FunctionNode {
 					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.astGeneric(ast.right, retArr);
 					break;
+
+				case 'Boolean & Boolean':
+					this.astGeneric(ast.left, retArr);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
+					this.astGeneric(ast.right, retArr);
+					break;
+
 				default:
 					throw this.astErrorOutput(`Unhandled binary expression between ${key}`, ast);
 			}
@@ -9469,8 +9494,16 @@ class WebGLFunctionNode extends FunctionNode {
 			throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode);
 		}
 
+		const type = this.getType(idtNode);
+
 		if (idtNode.name === 'Infinity') {
 			retArr.push('3.402823466e+38');
+		} else if (type === 'Boolean') {
+			if (this.argumentNames.indexOf(idtNode.name) > -1) {
+				retArr.push(`bool(user_${idtNode.name})`);
+			} else {
+				retArr.push(`user_${idtNode.name}`);
+			}
 		} else {
 			const userArgumentName = this.getKernelArgumentName(idtNode.name);
 			if (userArgumentName) {
@@ -9837,9 +9870,15 @@ class WebGLFunctionNode extends FunctionNode {
 				throw this.astErrorOutput('Unexpected expression', mNode);
 		}
 
-		if (type === 'Number' || type === 'Integer') {
-			retArr.push(`${ origin }_${ name}`);
-			return retArr;
+		switch (type) {
+			case 'Number':
+			case 'Integer':
+			case 'Float':
+				retArr.push(`${ origin }_${ name}`);
+				return retArr;
+			case 'Boolean':
+				retArr.push(`bool(${ origin }_${ name})`);
+				return retArr;
 		}
 
 		let synonymName = this.getKernelArgumentName(name);
@@ -10136,6 +10175,7 @@ const typeMap = {
 	'Array(4)': 'vec4',
 	'Array2D': 'sampler2D',
 	'Array3D': 'sampler2D',
+	'Boolean': 'bool',
 	'Float': 'float',
 	'Input': 'sampler2D',
 	'Integer': 'int',
@@ -10725,7 +10765,7 @@ class WebGLKernel extends GLKernel {
 		for (let p in this.constants) {
 			const value = this.constants[p];
 			const type = utils.getVariableType(value);
-			if (type === 'Float' || type === 'Integer') {
+			if (type === 'Float' || type === 'Integer' || type === 'Boolean') {
 				continue;
 			}
 			gl.useProgram(this.program);
@@ -11253,6 +11293,11 @@ class WebGLKernel extends GLKernel {
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
+			case 'Boolean':
+				{
+					this.setUniform1i(`user_${name}`, value ? 1 : 0);
+					break;
+				}
 			default:
 				throw new Error('Argument type not supported: ' + value);
 		}
@@ -11426,6 +11471,7 @@ class WebGLKernel extends GLKernel {
 				}
 			case 'Integer':
 			case 'Float':
+			case 'Boolean':
 			default:
 				throw new Error('constant type not supported: ' + value);
 		}
@@ -11582,7 +11628,7 @@ class WebGLKernel extends GLKernel {
 						result.push(`float user_${name} = ${ Number.isInteger(value) ? value + '.0' : value }`);
 						break;
 					default:
-						throw new Error(`Param type ${type} not supported in WebGL`);
+						throw new Error(`Argument type ${type} not supported in WebGL`);
 				}
 			} else {
 				switch (type) {
@@ -11608,8 +11654,11 @@ class WebGLKernel extends GLKernel {
 					case 'Number':
 						result.push(`uniform float user_${name}`);
 						break;
+					case 'Boolean':
+						result.push(`uniform int user_${name}`);
+						break;
 					default:
-						throw new Error(`Param type ${type} not supported in WebGL`);
+						throw new Error(`Argument type ${type} not supported in WebGL`);
 				}
 			}
 		}
@@ -11646,6 +11695,9 @@ class WebGLKernel extends GLKernel {
 							`uniform ivec2 constants_${name}Size`,
 							`uniform ivec3 constants_${name}Dim`,
 						);
+						break;
+					case 'Boolean':
+						result.push('const bool constants_' + name + ' = ' + (value ? 'true' : 'false'));
 						break;
 					default:
 						throw new Error(`Unsupported constant ${name} type ${type}`);
@@ -12249,17 +12301,23 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 			);
 		}
 
-		switch (idtNode.name) {
-			case 'Infinity':
-				retArr.push('intBitsToFloat(2139095039)');
-				break;
-			default:
-				const userArgumentName = this.getKernelArgumentName(idtNode.name);
-				if (userArgumentName) {
-					retArr.push(`user_${userArgumentName}`);
-				} else {
-					retArr.push(`user_${idtNode.name}`);
-				}
+		const type = this.getType(idtNode);
+
+		if (idtNode.name === 'Infinity') {
+			retArr.push('intBitsToFloat(2139095039)');
+		} else if (type === 'Boolean') {
+			if (this.argumentNames.indexOf(idtNode.name) > -1) {
+				retArr.push(`bool(user_${idtNode.name})`);
+			} else {
+				retArr.push(`user_${idtNode.name}`);
+			}
+		} else {
+			const userArgumentName = this.getKernelArgumentName(idtNode.name);
+			if (userArgumentName) {
+				retArr.push(`user_${userArgumentName}`);
+			} else {
+				retArr.push(`user_${idtNode.name}`);
+			}
 		}
 
 		return retArr;
@@ -12884,6 +12942,11 @@ class WebGL2Kernel extends WebGLKernel {
 					this.setUniform1i(`user_${name}`, this.argumentsLength);
 					break;
 				}
+			case 'Boolean':
+				{
+					this.setUniform1i(`user_${name}`, value ? 1 : 0);
+					break;
+				}
 			default:
 				throw new Error('Argument type not supported: ' + value);
 		}
@@ -12925,7 +12988,9 @@ class WebGL2Kernel extends WebGLKernel {
 							`uniform highp ivec3 constants_${ name }Dim`,
 						);
 						break;
-
+					case 'Boolean':
+						result.push('const bool constants_' + name + ' = ' + (value ? 'true' : 'false'));
+						break;
 					default:
 						throw new Error(`Unsupported constant ${ name } type ${ type }`);
 				}
@@ -13212,8 +13277,11 @@ class WebGL2Kernel extends WebGLKernel {
 					case 'Number':
 						result.push(`highp float user_${ name } = ${ Number.isInteger(value) ? value + '.0' : value }`);
 						break;
+					case 'Boolean':
+						result.push(`uniform int user_${name}`);
+						break;
 					default:
-						throw new Error(`Param type ${type} not supported in WebGL2`);
+						throw new Error(`Argument type ${type} not supported in WebGL2`);
 				}
 			} else {
 				switch (type) {
@@ -13244,8 +13312,11 @@ class WebGL2Kernel extends WebGLKernel {
 					case 'Number':
 						result.push(`uniform float user_${ name }`);
 						break;
+					case 'Boolean':
+						result.push(`uniform int user_${name}`);
+						break;
 					default:
-						throw new Error(`Param type ${type} not supported in WebGL2`);
+						throw new Error(`Argument type ${type} not supported in WebGL2`);
 				}
 			}
 		}
@@ -14223,6 +14294,8 @@ const utils = {
 				return 'Integer';
 			}
 			return 'Float';
+		} else if (typeof value === 'boolean') {
+			return 'Boolean';
 		} else if (value instanceof Texture) {
 			return value.type;
 		} else if (value instanceof Input) {

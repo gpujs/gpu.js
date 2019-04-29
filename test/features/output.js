@@ -195,7 +195,7 @@ test('graphical output array cpu', () => {
   outputGraphicalArray('cpu');
 });
 
-function outputGraphicalMatrix(mode, context, canvas) {
+function outputGraphicalMatrix(mode, canvas, context) {
   const gpu = new GPU({ mode });
   const input = [
     [0.25,.50],
@@ -217,65 +217,23 @@ function outputGraphicalMatrix(mode, context, canvas) {
   return pixels;
 }
 
-test('graphical output matrix auto', () => {
-  const pixels = outputGraphicalMatrix();
-  assert.deepEqual(pixels, [
-    64,
-    64,
-    64,
-    255,
-    128,
-    128,
-    128,
-    255,
-    191,
-    191,
-    191,
-    255,
-    255,
-    255,
-    255,
-    255
-  ]);
-});
-
-test('graphical output matrix gpu', () => {
-  const pixels = outputGraphicalMatrix('gpu');
-  assert.deepEqual(pixels, [
-    64,
-    64,
-    64,
-    255,
-    128,
-    128,
-    128,
-    255,
-    191,
-    191,
-    191,
-    255,
-    255,
-    255,
-    255,
-    255
-  ]);
-});
-
 (GPU.isWebGLSupported ? test : skip)('graphical output matrix webgl', () => {
-  const pixels = outputGraphicalMatrix('webgl');
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl', { premultipliedAlpha: false });
+  const pixels = outputGraphicalMatrix('webgl', canvas, context);
   assert.deepEqual(pixels, [
     64,
     64,
     64,
-    255,
+    64,
     128,
     128,
     128,
-    255,
+    128,
     191,
     191,
     191,
-    255,
+    191,
     255,
     255,
     255,
@@ -284,20 +242,22 @@ test('graphical output matrix gpu', () => {
 });
 
 (GPU.isWebGL2Supported ? test : skip)('graphical output matrix webgl2', () => {
-  const pixels = outputGraphicalMatrix('webgl2');
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl2', { premultipliedAlpha: false });
+  const pixels = outputGraphicalMatrix('webgl2', canvas, context);
   assert.deepEqual(pixels, [
     64,
     64,
     64,
-    255,
+    64,
     128,
     128,
     128,
-    255,
+    128,
     191,
     191,
     191,
-    255,
+    191,
     255,
     255,
     255,
@@ -311,15 +271,15 @@ test('graphical output matrix gpu', () => {
     64,
     64,
     64,
-    255,
+    64,
     128,
     128,
     128,
-    255,
+    128,
     191,
     191,
     191,
-    255,
+    191,
     255,
     255,
     255,
@@ -369,7 +329,7 @@ test('graphical output matrix cpu with mocked canvas', () => {
   const mockCanvas = {
     getContext: () => mockContext,
   };
-  const pixels = outputGraphicalMatrix('cpu', mockContext, mockCanvas);
+  const pixels = outputGraphicalMatrix('cpu', mockCanvas, mockContext);
   assert.deepEqual(pixels, [
     63,
     63,

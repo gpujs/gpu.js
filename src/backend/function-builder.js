@@ -29,6 +29,8 @@ class FunctionBuilder {
 			source,
 			subKernels,
 			functions,
+			leadingReturnStatement,
+			followingReturnStatement,
 		} = kernel;
 
 		const lookupReturnType = (functionName, ast, requestingNode) => {
@@ -69,7 +71,7 @@ class FunctionBuilder {
 
 		const onNestedFunction = (fnString, returnType) => {
 			functionBuilder.addFunctionNode(new FunctionNode(fnString, Object.assign({}, nodeOptions, {
-				returnType: returnType || 'Number',
+				returnType: returnType || 'Number', // TODO: I think this needs removed
 				lookupReturnType,
 				lookupArgumentType,
 				lookupFunctionArgumentTypes,
@@ -112,6 +114,8 @@ class FunctionBuilder {
 			argumentTypes,
 			argumentSizes,
 			argumentBitRatios,
+			leadingReturnStatement,
+			followingReturnStatement,
 		});
 
 		if (typeof source === 'object' && source.functionNodes) {
@@ -155,7 +159,7 @@ class FunctionBuilder {
 					name,
 					isSubKernel: true,
 					isRootKernel: false,
-					returnType: 'Number',
+					returnType: 'Number', // TODO: I think this needs removed
 				}));
 			});
 		}

@@ -125,7 +125,7 @@ function sumABThisOutputX(mode) {
   const kernel = gpu.createKernel(function(a, b) {
     return customAdder(a, b);
   }, {
-    output : [6]
+    output : [6],
   });
 
   assert.ok(kernel !== null, 'function generated test');

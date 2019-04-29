@@ -1,7 +1,10 @@
-const GPU = require('../src/index.js');
+const { GPU } = require('../src/index.js');
 const Benchmark = require('benchmark');
+
 const suite = new Benchmark.Suite;
+
 const size = 512;
+
 const gpu = new GPU({ mode: 'gpu' });
 const cpu = new GPU({ mode: 'cpu' });
 
@@ -46,12 +49,12 @@ suite
   .add('cpu', () => {
     cpuKernel(cpuArg1, cpuArg2);
   })
-  .on('cycle', function(event) {
+  .on('cycle', (event) => {
     console.log(String(event.target));
   })
-  .on('complete', () => {
-    console.log('Fastest is ' + this.filter('fastest').map('name'));
+  .on('complete', function () {
     gpu.destroy();
     cpu.destroy();
+    console.log('Fastest is ' + this.filter('fastest').map('name'));
   })
   .run();

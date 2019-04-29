@@ -59,9 +59,11 @@ class CPUFunctionNode extends FunctionNode {
 	 */
 	astReturnStatement(ast, retArr) {
 		if (this.isRootKernel) {
-			retArr.push('kernelResult = ');
+			retArr.push(this.leadingReturnStatement);
 			this.astGeneric(ast.argument, retArr);
-			retArr.push(';');
+			retArr.push(';\n');
+			retArr.push(this.followingReturnStatement);
+			retArr.push('continue;\n');
 		} else if (this.isSubKernel) {
 			retArr.push(`subKernelResult_${ this.name } = `);
 			this.astGeneric(ast.argument, retArr);
@@ -460,11 +462,17 @@ class CPUFunctionNode extends FunctionNode {
 				throw this.astErrorOutput('Unexpected expression', mNode);
 		}
 
-		if (type === 'Number' || type === 'Integer') {
-			retArr.push(`${origin}_${name}`);
-			return retArr;
+		// handle simple types
+		switch (type) {
+			case 'Number':
+			case 'Integer':
+			case 'Float':
+			case 'Boolean':
+				retArr.push(`${ origin }_${ name}`);
+				return retArr;
 		}
 
+		// handle more complex types
 		// argument may have come from a parent
 		const synonymName = this.getKernelArgumentName(name);
 		const markupName = `${origin}_${synonymName || name}`;
