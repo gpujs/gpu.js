@@ -244,10 +244,10 @@ export interface IKernelFunctionThis {
   output: IKernelXYZ;
   thread: IKernelXYZ;
   constants: IConstantsThis;
-  color(r: number),
-  color(r: number, g: number),
-  color(r: number, g: number, b: number),
-  color(r: number, g: number, b: number, a: number),
+  color(r: number): void,
+  color(r: number, g: number): void,
+  color(r: number, g: number, b: number): void,
+  color(r: number, g: number, b: number, a: number): void,
 }
 
 export type KernelVariable = number | number[] | number[][] | number[][][] | Texture | HTMLImageElement | HTMLImageElement[];
