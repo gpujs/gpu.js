@@ -74,12 +74,14 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [`GPU` Settings](#gpu-settings)
 * [`gpu.createKernel` Settings](#gpu-createkernel-settings)
 * [Creating and Running Functions](#creating-and-running-functions)
+* [Debugging](#debugging)
 * [Accepting Input](#accepting-input)
 * [Graphical Output](#graphical-output)
 * [Combining Kernels](#combining-kernels)
 * [Create Kernel Map](#create-kernel-map)
 * [Adding Custom Functions](#adding-custom-functions)
 * [Adding Custom Functions Directly to Kernel](#adding-custom-functions-directly-to-kernel)
+* [Types](#types)
 * [Loops](#loops)
 * [Pipelining](#pipelining)
 * [Offscreen Canvas](#offscreen-canvas)
@@ -292,6 +294,68 @@ Directly returned
      return [0.08, 2, 0.1, 3];
  }).setOutput([100]);
 ```
+## Debugging
+Debugging can be done in a variety of ways, and there are different levels of debugging.
+* Debugging kernels with breakpoints can be done with `new GPU({ mode: 'dev' })`
+  * This puts `GPU.js` into development mode.  Here you can insert breakpoints, and be somewhat liberal in how your kernel is developed.
+  * This mode _does not_ actually "compile" (parse, and eval) a kernel, it simply iterates on your code.
+  * You can break a lot of rules here, because your kernel's function still has context of the state it came from.
+  * Example:
+    ```js
+    const gpu = new GPU({ mode: 'dev' });
+    const kernel = gpu.createKernel(function(arg1, time) {
+        // put a breakpoint on the next line, and watch it get hit
+        const v = arg1[this.thread.y][this.thread.x * time];
+        return v;
+    }, { output: [100, 100] });
+    ```
+* Debugging actual kernels on CPU with `debugger`:
+  * This will cause "breakpoint" like behaviour, but in an actual CPU kernel.  You'll peer into the compiled kernel here, for a CPU. 
+  * Example:
+    ```js
+    const gpu = new GPU({ mode: 'cpu' });
+    const kernel = gpu.createKernel(function(arg1, time) {
+        debugger; // <--NOTICE THIS, IMPORTANT!
+        const v = arg1[this.thread.y][this.thread.x * time];
+        return v;
+    }, { output: [100, 100] });
+    ```
+* Debugging an actual GPU kernel:
+  * There are no breakpoints available on the GPU, period.  By providing the same level of abstraction and logic, the above methods should give you enough insight to debug, but sometimes we just need to see what is on the GPU.
+  * Be VERY specific and deliberate, and use the kernel to your advantage, rather than just getting frustrated or giving up.
+  * Example:
+    ```js
+    const gpu = new GPU({ mode: 'cpu' });
+    const kernel = gpu.createKernel(function(arg1, time) {
+      const x = this.thread.x * time;
+      return x; // <--NOTICE THIS, IMPORTANT!
+      const v = arg1[this.thread.y][x];
+      return v;
+    }, { output: [100, 100] });
+    ```
+    In this example, we return early the value of x, to see exactly what it is.  The rest of the logic is ignored, but now you can see the value that is calculated from `x`, and debug it.
+    This is an overly simplified problem.
+  * Sometimes you need to solve graphical problems, that can be done similarly.
+  * Example:
+    ```js
+    const gpu = new GPU({ mode: 'cpu' });
+    const kernel = gpu.createKernel(function(arg1, time) {
+      const x = this.thread.x * time;
+      if (x < 4 || x > 2) {
+        // RED
+        this.color(1, 0, 0); // <--NOTICE THIS, IMPORTANT!
+        return;
+      }
+      if (x > 6 && x < 12) {
+        // GREEN
+        this.color(0, 1, 0); // <--NOTICE THIS, IMPORTANT!
+        return;
+      }
+      const v = arg1[this.thread.y][x];
+      return v;
+    }, { output: [100, 100], graphical: true });
+    ```
+    Here we are making the canvas red or green depending on the value of `x`.
 
 ## Accepting Input
 ### Supported Input Types
@@ -514,25 +578,11 @@ const kernel = gpu.createKernel(function(a, b) {
 
 ### Adding strongly typed functions
 
-To strongly type a function you may use settings.  Settings take an optional hash values:
-`returnType`: optional, defaults to inference from `FunctionNode`, the value you'd like to return from the function.  By setting this value, it makes the build step of the kernel less resource intensive. 
-`argumentTypes`: optional, defaults to inference from `FunctionNode` for each param, a hash of param names with values of the return types.  By setting this value, it makes the build step of the kernel less resource intensive.
-
-Types: that may be used for `returnType` or for each property of `argumentTypes`:
-* 'Array'
-* 'Array(2)'
-* 'Array(3)'
-* 'Array(4)'
-* 'HTMLImage'
-* 'HTMLImageArray'
-* 'Number'
-* 'Float'
-* 'Integer'
-* 'NumberTexture'
-* 'ArrayTexture(1)'
-* 'ArrayTexture(2)'
-* 'ArrayTexture(3)'
-* 'ArrayTexture(4)'
+To manually strongly type a function you may use settings.
+By setting this value, it makes the build step of the kernel less resource intensive.
+Settings take an optional hash values:
+* `returnType`: optional, defaults to inference from `FunctionBuilder`, the value you'd like to return from the function. 
+* `argumentTypes`: optional, defaults to inference from `FunctionBuilder` for each param, a hash of param names with values of the return types.
 
 Example:
 ```js
@@ -554,6 +604,44 @@ const kernel = gpu.createKernel(function(a, b) {
   .setFunctions([mySuperFunction]);
 
 ```
+
+
+## Types
+GPU.js does type inference when types are not defined, so even if you code weak type, you are typing strongly typed.
+This is needed because c++, which glsl is a subset of, is, of course, strongly typed.
+Types that can be used with GPU.js are as follows:
+
+### Argument Types
+Types: that may be used for `returnType` or for each property of `argumentTypes`:
+* 'Array'
+* 'Array(2)'
+* 'Array(3)'
+* 'Array(4)'
+* 'HTMLImage'
+* 'HTMLImageArray'
+* 'Number'
+* 'Float'
+* 'Integer'
+* 'Boolean' **New in V2!**
+
+### Return Types
+Types: that may be used for `returnType` or for each property of `argumentTypes`:
+* 'Array(2)'
+* 'Array(3)'
+* 'Array(4)'
+* 'HTMLImage'
+* 'HTMLImageArray'
+* 'Number'
+* 'Float'
+* 'Integer'
+
+### Internal Types
+Types generally used in the `Texture` class, for #pipelining or for advanced usage.
+* 'NumberTexture'
+* 'ArrayTexture(1)' **New in V2!**
+* 'ArrayTexture(2)' **New in V2!**
+* 'ArrayTexture(3)' **New in V2!**
+* 'ArrayTexture(4)' **New in V2!**
 
 ## Loops
 * Any loops defined inside the kernel must have a maximum iteration count defined by the loopMaxIterations setting.

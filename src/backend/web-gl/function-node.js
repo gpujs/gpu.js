@@ -425,6 +425,13 @@ class WebGLFunctionNode extends FunctionNode {
 					retArr.push(operatorMap[ast.operator] || ast.operator);
 					this.astGeneric(ast.right, retArr);
 					break;
+
+				case 'Boolean & Boolean':
+					this.astGeneric(ast.left, retArr);
+					retArr.push(operatorMap[ast.operator] || ast.operator);
+					this.astGeneric(ast.right, retArr);
+					break;
+
 				default:
 					throw this.astErrorOutput(`Unhandled binary expression between ${key}`, ast);
 			}
@@ -445,9 +452,17 @@ class WebGLFunctionNode extends FunctionNode {
 			throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode);
 		}
 
+		const type = this.getType(idtNode);
+
 		if (idtNode.name === 'Infinity') {
 			// https://stackoverflow.com/a/47543127/1324039
 			retArr.push('3.402823466e+38');
+		} else if (type === 'Boolean') {
+			if (this.argumentNames.indexOf(idtNode.name) > -1) {
+				retArr.push(`bool(user_${idtNode.name})`);
+			} else {
+				retArr.push(`user_${idtNode.name}`);
+			}
 		} else {
 			const userArgumentName = this.getKernelArgumentName(idtNode.name);
 			if (userArgumentName) {
@@ -871,11 +886,19 @@ class WebGLFunctionNode extends FunctionNode {
 				throw this.astErrorOutput('Unexpected expression', mNode);
 		}
 
-		if (type === 'Number' || type === 'Integer') {
-			retArr.push(`${ origin }_${ name}`);
-			return retArr;
+		// handle simple types
+		switch (type) {
+			case 'Number':
+			case 'Integer':
+			case 'Float':
+				retArr.push(`${ origin }_${ name}`);
+				return retArr;
+			case 'Boolean':
+				retArr.push(`bool(${ origin }_${ name})`);
+				return retArr;
 		}
 
+		// handle more complex types
 		// argument may have come from a parent
 		let synonymName = this.getKernelArgumentName(name);
 
@@ -1197,6 +1220,7 @@ const typeMap = {
 	'Array(4)': 'vec4',
 	'Array2D': 'sampler2D',
 	'Array3D': 'sampler2D',
+	'Boolean': 'bool',
 	'Float': 'float',
 	'Input': 'sampler2D',
 	'Integer': 'int',

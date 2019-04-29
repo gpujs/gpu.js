@@ -153,11 +153,14 @@ export abstract class Kernel {
   setLoopMaxIterations(flag: number): this;
   setConstants(flag: object): this;
   setPipeline(flag: boolean): this;
+  setPrecision(flag: Precision): this;
   setImmutable(flag: boolean): this;
   setCanvas(flag: any): this;
   setContext(flag: any): this;
   setFunctions(flag: IFunction[]|KernelFunction[]): this;
 }
+
+export type Precision = 'single' | 'unsigned';
 
 export class WebGLKernel extends Kernel {
 
@@ -241,10 +244,10 @@ export interface IKernelFunctionThis {
   output: IKernelXYZ;
   thread: IKernelXYZ;
   constants: IConstantsThis;
-  color(r: number),
-  color(r: number, g: number),
-  color(r: number, g: number, b: number),
-  color(r: number, g: number, b: number, a: number),
+  color(r: number): void,
+  color(r: number, g: number): void,
+  color(r: number, g: number, b: number): void,
+  color(r: number, g: number, b: number, a: number): void,
 }
 
 export type KernelVariable = number | number[] | number[][] | number[][][] | Texture | HTMLImageElement | HTMLImageElement[];

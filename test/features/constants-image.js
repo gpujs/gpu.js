@@ -26,7 +26,7 @@ function imageConstantTest(mode, done) {
       },
       {
         constants: { image },
-        output: [width, height, 3]
+        output: [width, height, 3],
       }
     );
     const result = tryConst();

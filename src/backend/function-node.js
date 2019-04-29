@@ -53,6 +53,8 @@ class FunctionNode {
 		this.returnType = null;
 		this.output = [];
 		this.plugins = null;
+		this.leadingReturnStatement = null;
+		this.followingReturnStatement = null;
 
 		if (settings) {
 			for (const p in settings) {
@@ -280,7 +282,9 @@ class FunctionNode {
 			argumentNames: this.argumentNames,
 			argumentTypes: this.argumentTypes,
 			argumentSizes: this.argumentSizes,
-			returnType: this.returnType
+			returnType: this.returnType,
+			leadingReturnStatement: this.leadingReturnStatement,
+			followingReturnStatement: this.followingReturnStatement,
 		};
 
 		return {
@@ -310,6 +314,8 @@ class FunctionNode {
 				}
 				if (Number.isInteger(ast.value)) {
 					return 'LiteralInteger';
+				} else if (ast.value === true || ast.value === false) {
+					return 'Boolean';
 				} else {
 					return 'Number';
 				}

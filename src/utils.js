@@ -132,6 +132,8 @@ const utils = {
 				return 'Integer';
 			}
 			return 'Float';
+		} else if (typeof value === 'boolean') {
+			return 'Boolean';
 		} else if (value instanceof Texture) {
 			return value.type;
 		} else if (value instanceof Input) {

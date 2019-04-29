@@ -166,6 +166,8 @@ class Kernel {
 		this.plugins = null;
 
 		this.returnType = null;
+		this.leadingReturnStatement = null;
+		this.followingReturnStatement = null;
 	}
 
 	mergeSettings(settings) {
