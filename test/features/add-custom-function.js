@@ -4,11 +4,10 @@ const { GPU } = require('../../src');
 describe('features: add custom function');
 
 function addAB(mode) {
-  const gpu = new GPU({mode, functions: [customAdder] });
-
   function customAdder(a, b) {
     return a + b;
   }
+  const gpu = new GPU({mode, functions: [customAdder] });
   const kernel = gpu.createKernel(function (a, b) {
     return customAdder(a[this.thread.x], b[this.thread.x]);
   }, {

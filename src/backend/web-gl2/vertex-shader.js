@@ -15,5 +15,5 @@ void main(void) {
 }`;
 
 module.exports = {
-	vertexShader
+  vertexShader
 };

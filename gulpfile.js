@@ -80,9 +80,11 @@ gulp.task('default', gulp.series('minify','bsync'));
 gulp.task('beautify', function() {
 	return gulp.src(['src/**/*.js'])
 		.pipe(jsprettify({
-			indent_size: 3,
+			indent_size: 2,
 			indent_char: ' ',
-			indent_with_tabs: true
+			indent_with_tabs: false,
+			eol: '\n',
+			brace_style: 'preserve-inline'
 		}))
 		.pipe(gulp.dest('src'));
 });

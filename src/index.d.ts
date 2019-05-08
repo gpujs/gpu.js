@@ -46,7 +46,7 @@ export interface IGPUSettings {
   context?: object;
   functions?: KernelFunction[];
   nativeFunctions?: INativeFunctionList;
-  format: 'Float32Array' | 'Float16Array' | 'Float'
+  // format: 'Float32Array' | 'Float16Array' | 'Float' // WE WANT THIS!
 }
 
 export type GPUVariableType
@@ -146,7 +146,8 @@ export abstract class Kernel {
   ): KernelVariable
   toJSON(): object;
   exec(): Promise<KernelOutput>;
-  setOutput(flag: any): this;
+  setOutput(flag: number[]): this;
+  setOptimizeFloatMemory(flag: boolean): this;
   setArgumentTypes(flag: any): this;
   setDebug(flag: boolean): this;
   setGraphical(flag: boolean): this;
@@ -374,4 +375,40 @@ export class Input {
   size: number[];
   constructor(value: number[], size: OutputDimensions);
 }
+
 export type input = (value: number[], size: OutputDimensions) => Input;
+
+export function alias(name: string, source: KernelFunction):KernelFunction;
+
+export class KernelArgument {
+  constructor(settings: IKernelArgumentSettings);
+  getSource(value: any): string;
+  setup(): void;
+  updateValue(value: any)
+}
+
+export interface IKernelArgumentSettings {
+  kernel: Kernel;
+  name: string;
+  type: GPUVariableType;
+  size: number[],
+  index: number;
+  context: any;
+  contextHandle: number;
+}
+
+export interface IKernelConstantSettings extends IKernelArgumentSettings {
+
+}
+
+export class WebGLKernelArgument {
+  constructor(value: any, settings: IWebGLKernelArgumentSettings);
+}
+
+export interface IWebGLKernelArgumentSettings extends IKernelArgumentSettings {
+  texture: any;
+}
+
+export interface IWebGLKenelConstantSettings extends IWebGLKernelArgumentSettings {
+
+}

@@ -202,5 +202,5 @@ void main(void) {
 }`;
 
 module.exports = {
-	fragmentShader
+  fragmentShader
 };

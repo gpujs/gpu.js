@@ -1,25 +1,21 @@
-const {
-	utils
-} = require('../../utils');
-const {
-	kernelRunShortcut
-} = require('../../kernel-run-shortcut');
+const { utils } = require('../../utils');
+const { kernelRunShortcut } = require('../../kernel-run-shortcut');
 
 function removeFnNoise(fn) {
-	if (/^function /.test(fn)) {
-		fn = fn.substring(9);
-	}
-	return fn.replace(/[_]typeof/g, 'typeof');
+  if (/^function /.test(fn)) {
+    fn = fn.substring(9);
+  }
+  return fn.replace(/[_]typeof/g, 'typeof');
 }
 
 function removeNoise(str) {
-	return str
-		.replace(/^[A-Za-z]+/, 'function')
-		.replace(/[_]typeof/g, 'typeof');
+  return str
+    .replace(/^[A-Za-z]+/, 'function')
+    .replace(/[_]typeof/g, 'typeof');
 }
 
 function cpuKernelString(cpuKernel, name) {
-	return `() => {
+  return `() => {
     ${ kernelRunShortcut.toString() };
     const utils = {
       allPropertiesOf: ${ removeNoise(utils.allPropertiesOf.toString()) },
@@ -68,5 +64,5 @@ function cpuKernelString(cpuKernel, name) {
 }
 
 module.exports = {
-	cpuKernelString
+  cpuKernelString
 };

@@ -16,7 +16,7 @@ function castingOffsetByThreadXAndOutputX(mode) {
   });
   const result = kernel(1);
   assert.equal(result[0], 1);
-  assert.deepEqual(kernel.argumentTypes, ['Number']);
+  assert.deepEqual(kernel.argumentTypes, ['Integer']);
   gpu.destroy();
 }
 
@@ -101,7 +101,7 @@ function handleCastingMixedWithNativeFunctions(mode) {
   });
   const result = kernel(1, 2.5);
   assert.deepEqual(Array.from(result), [3]);
-  assert.deepEqual(kernel.argumentTypes, ['Number', 'Float']);
+  assert.deepEqual(kernel.argumentTypes, ['Integer', 'Float']);
   gpu.destroy();
 }
 
@@ -135,6 +135,43 @@ function handleCastingFloat(mode) {
   gpu.destroy();
 }
 
-(GPU.isHeadlessGLSupported ? test : skip)('handle casting float', () => {
+(GPU.isWebGLSupported ? test : skip)('handle casting float webgl', () => {
+  handleCastingFloat('webgl');
+});
+
+(GPU.isWebGLSupported ? test : skip)('handle casting float webgl2', () => {
+  handleCastingFloat('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('handle casting float headlessgl', () => {
   handleCastingFloat('headlessgl');
+});
+
+
+function handleCastingBeforeReturn(mode) {
+  const gpu = new GPU({ mode });
+  function addOne(v) {
+    return v + v;
+  }
+  gpu.addFunction(addOne, {
+    argumentTypes: { v: 'Float' },
+    returnType: 'Integer',
+  });
+  const kernel = gpu.createKernel(function(v) {
+    return addOne(v);
+  }, { output: [1] });
+  assert.equal(kernel(1)[0], 2);
+  gpu.destroy();
+}
+
+(GPU.isWebGLSupported ? test : skip)('handle casting before return webgl', () => {
+  handleCastingBeforeReturn('webgl');
+});
+
+(GPU.isWebGLSupported ? test : skip)('handle casting before return webgl2', () => {
+  handleCastingBeforeReturn('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? only : skip)('handle casting before return headlessgl', () => {
+  handleCastingBeforeReturn('headlessgl');
 });

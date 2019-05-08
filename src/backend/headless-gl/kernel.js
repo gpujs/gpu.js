@@ -1,6 +1,6 @@
 const getContext = require('gl');
 const {
-	WebGLKernel
+  WebGLKernel
 } = require('../web-gl/kernel');
 
 let isSupported = null;
@@ -10,112 +10,112 @@ let testExtensions = null;
 let features = null;
 
 class HeadlessGLKernel extends WebGLKernel {
-	static get isSupported() {
-		if (isSupported !== null) return isSupported;
-		this.setupFeatureChecks();
-		isSupported = testContext !== null;
-		return isSupported;
-	}
+  static get isSupported() {
+    if (isSupported !== null) return isSupported;
+    this.setupFeatureChecks();
+    isSupported = testContext !== null;
+    return isSupported;
+  }
 
-	static setupFeatureChecks() {
-		testCanvas = null;
-		testExtensions = null;
-		if (typeof getContext !== 'function') return;
-		try { // just in case, edge cases
-			testContext = getContext(2, 2, {
-				preserveDrawingBuffer: true
-			});
-			if (!testContext || !testContext.getExtension) return;
-			testExtensions = {
-				STACKGL_resize_drawingbuffer: testContext.getExtension('STACKGL_resize_drawingbuffer'),
-				STACKGL_destroy_context: testContext.getExtension('STACKGL_destroy_context'),
-				OES_texture_float: testContext.getExtension('OES_texture_float'),
-				OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
-				OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
-				WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
-			};
-			features = this.getFeatures();
-		} catch (e) {}
-	}
+  static setupFeatureChecks() {
+    testCanvas = null;
+    testExtensions = null;
+    if (typeof getContext !== 'function') return;
+    try { // just in case, edge cases
+      testContext = getContext(2, 2, {
+        preserveDrawingBuffer: true
+      });
+      if (!testContext || !testContext.getExtension) return;
+      testExtensions = {
+        STACKGL_resize_drawingbuffer: testContext.getExtension('STACKGL_resize_drawingbuffer'),
+        STACKGL_destroy_context: testContext.getExtension('STACKGL_destroy_context'),
+        OES_texture_float: testContext.getExtension('OES_texture_float'),
+        OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
+        OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
+        WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
+      };
+      features = this.getFeatures();
+    } catch (e) {}
+  }
 
-	static isContextMatch(context) {
-		try {
-			return context.getParameter(context.RENDERER) === 'ANGLE';
-		} catch (e) {
-			return false;
-		}
-	}
+  static isContextMatch(context) {
+    try {
+      return context.getParameter(context.RENDERER) === 'ANGLE';
+    } catch (e) {
+      return false;
+    }
+  }
 
-	static getFeatures() {
-		const isDrawBuffers = this.getIsDrawBuffers();
-		return Object.freeze({
-			isFloatRead: this.getIsFloatRead(),
-			isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
-			isTextureFloat: this.getIsTextureFloat(),
-			isDrawBuffers,
-			kernelMap: isDrawBuffers
-		});
-	}
+  static getFeatures() {
+    const isDrawBuffers = this.getIsDrawBuffers();
+    return Object.freeze({
+      isFloatRead: this.getIsFloatRead(),
+      isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+      isTextureFloat: this.getIsTextureFloat(),
+      isDrawBuffers,
+      kernelMap: isDrawBuffers
+    });
+  }
 
-	static getIsTextureFloat() {
-		return Boolean(testExtensions.OES_texture_float);
-	}
+  static getIsTextureFloat() {
+    return Boolean(testExtensions.OES_texture_float);
+  }
 
-	static getIsDrawBuffers() {
-		return Boolean(testExtensions.WEBGL_draw_buffers);
-	}
+  static getIsDrawBuffers() {
+    return Boolean(testExtensions.WEBGL_draw_buffers);
+  }
 
-	static get testCanvas() {
-		return testCanvas;
-	}
+  static get testCanvas() {
+    return testCanvas;
+  }
 
-	static get testContext() {
-		return testContext;
-	}
+  static get testContext() {
+    return testContext;
+  }
 
-	static get features() {
-		return features;
-	}
+  static get features() {
+    return features;
+  }
 
-	initCanvas() {
-		return {};
-	}
+  initCanvas() {
+    return {};
+  }
 
-	initContext() {
-		const context = getContext(2, 2, {
-			preserveDrawingBuffer: true
-		});
-		return context;
-	}
+  initContext() {
+    const context = getContext(2, 2, {
+      preserveDrawingBuffer: true
+    });
+    return context;
+  }
 
-	initExtensions() {
-		this.extensions = {
-			STACKGL_resize_drawingbuffer: this.context.getExtension('STACKGL_resize_drawingbuffer'),
-			STACKGL_destroy_context: this.context.getExtension('STACKGL_destroy_context'),
-			OES_texture_float: this.context.getExtension('OES_texture_float'),
-			OES_texture_float_linear: this.context.getExtension('OES_texture_float_linear'),
-			OES_element_index_uint: this.context.getExtension('OES_element_index_uint'),
-			WEBGL_draw_buffers: this.context.getExtension('WEBGL_draw_buffers'),
-		};
-	}
+  initExtensions() {
+    this.extensions = {
+      STACKGL_resize_drawingbuffer: this.context.getExtension('STACKGL_resize_drawingbuffer'),
+      STACKGL_destroy_context: this.context.getExtension('STACKGL_destroy_context'),
+      OES_texture_float: this.context.getExtension('OES_texture_float'),
+      OES_texture_float_linear: this.context.getExtension('OES_texture_float_linear'),
+      OES_element_index_uint: this.context.getExtension('OES_element_index_uint'),
+      WEBGL_draw_buffers: this.context.getExtension('WEBGL_draw_buffers'),
+    };
+  }
 
-	destroyExtensions() {
-		this.extensions.STACKGL_resize_drawingbuffer = null;
-		this.extensions.STACKGL_destroy_context = null;
-		this.extensions.OES_texture_float = null;
-		this.extensions.OES_texture_float_linear = null;
-		this.extensions.OES_element_index_uint = null;
-		this.extensions.WEBGL_draw_buffers = null;
-	}
+  destroyExtensions() {
+    this.extensions.STACKGL_resize_drawingbuffer = null;
+    this.extensions.STACKGL_destroy_context = null;
+    this.extensions.OES_texture_float = null;
+    this.extensions.OES_texture_float_linear = null;
+    this.extensions.OES_element_index_uint = null;
+    this.extensions.WEBGL_draw_buffers = null;
+  }
 
-	static destroyContext(context) {
-		const extension = context.getExtension('STACKGL_destroy_context');
-		if (extension && extension.destroy) {
-			extension.destroy();
-		}
-	}
+  static destroyContext(context) {
+    const extension = context.getExtension('STACKGL_destroy_context');
+    if (extension && extension.destroy) {
+      extension.destroy();
+    }
+  }
 }
 
 module.exports = {
-	HeadlessGLKernel
+  HeadlessGLKernel
 };

@@ -36,7 +36,7 @@ const functionReplace = 'n4rand(vTexCoord)';
 const functionReturnType = 'Number';
 
 const onBeforeRun = (kernel) => {
-	kernel.setUniform1f('triangle_noise_seed', Math.random());
+  kernel.setUniform1f('triangle_noise_seed', Math.random());
 };
 
 /**
@@ -44,10 +44,10 @@ const onBeforeRun = (kernel) => {
  * @type IPlugin
  */
 module.exports = {
-	name,
-	onBeforeRun,
-	functionMatch,
-	functionReplace,
-	functionReturnType,
-	source
+  name,
+  onBeforeRun,
+  functionMatch,
+  functionReplace,
+  functionReturnType,
+  source
 };

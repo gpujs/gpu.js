@@ -1,34 +1,30 @@
-const {
-	utils
-} = require('../../utils');
-const {
-	kernelRunShortcut
-} = require('../../kernel-run-shortcut');
+const { utils } = require('../../utils');
+const { kernelRunShortcut } = require('../../kernel-run-shortcut');
 
 function removeFnNoise(fn) {
-	if (/^function /.test(fn)) {
-		fn = fn.substring(9);
-	}
-	return fn.replace(/[_]typeof/g, 'typeof');
+  if (/^function /.test(fn)) {
+    fn = fn.substring(9);
+  }
+  return fn.replace(/[_]typeof/g, 'typeof');
 }
 
 function removeNoise(str) {
-	return str
-		.replace(/^[A-Za-z23]+/, 'function')
-		.replace(/[_]typeof/g, 'typeof');
+  return str
+    .replace(/^[A-Za-z23]+/, 'function')
+    .replace(/[_]typeof/g, 'typeof');
 }
 
 function boolToString(value) {
-	if (value) {
-		return 'true';
-	} else if (value === false) {
-		return 'false';
-	}
-	return 'null';
+  if (value) {
+    return 'true';
+  } else if (value === false) {
+    return 'false';
+  }
+  return 'null';
 }
 
 function webGLKernelString(gpuKernel, name) {
-	return `() => {
+  return `() => {
     ${ kernelRunShortcut.toString() };
     const utils = {
       allPropertiesOf: ${ removeNoise(utils.allPropertiesOf.toString()) },
@@ -134,5 +130,5 @@ function webGLKernelString(gpuKernel, name) {
 }
 
 module.exports = {
-	webGLKernelString
+  webGLKernelString
 };

@@ -75,25 +75,16 @@ function addConstantTestSuite(testSuiteSettings) {
     },
     createTexture: () => 'TEXTURE',
     getUniformLocation: (program, name) => {
-      switch (getUniformLocationCalls) {
-        case 0:
-          assert.equal(program, 'program');
-          assert.equal(name, 'constants_vDim');
-          getUniformLocationCalls++;
-          return 'constants_vDimLocation';
-        case 1:
-          assert.equal(program, 'program');
-          assert.equal(name, 'constants_vSize');
-          getUniformLocationCalls++;
-          return 'constants_vSizeLocation';
-        case 2:
-          assert.equal(program, 'program');
-          assert.equal(name, 'constants_v');
-          getUniformLocationCalls++;
-          return 'constants_vLocation';
-        default:
-          throw new Error('called too many times');
+      assert.equal(program, 'program');
+      if (getUniformLocationCalls > 3) {
+        throw new Error('called too many times');
       }
+      getUniformLocationCalls++;
+      return {
+        constants_vDim: 'constants_vDimLocation',
+        constants_vSize: 'constants_vSizeLocation',
+        constants_v: 'constants_vLocation',
+      }[name];
     },
     uniform3iv: (location, value) => {
       assert.equal(location, 'constants_vDimLocation');
@@ -132,14 +123,15 @@ function addConstantTestSuite(testSuiteSettings) {
   kernel.program = 'program';
   kernel.setupConstants();
   assert.equal(kernel.constantBitRatios.v, expectedBitRatio);
-  kernel.addConstant(constant, kernel.constantTypes.v, 'v');
+  assert.equal(kernel.kernelConstants.length, 1);
+  kernel.kernelConstants[0].updateValue(constant);
   assert.ok(texImage2DCalled);
   assert.ok(activeTextureCalled);
   assert.ok(bindTextureCalled);
   assert.equal(texParameteriCalls, 4);
-  assert.equal(getUniformLocationCalls, 3);
-  assert.ok(uniform3ivCalled);
-  assert.ok(uniform2ivCalled);
+  assert.equal(getUniformLocationCalls, 1);
+  assert.notOk(uniform3ivCalled);
+  assert.notOk(uniform2ivCalled);
   assert.ok(uniform1iCalled);
 }
 

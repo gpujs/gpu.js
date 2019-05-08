@@ -75,25 +75,16 @@ function addArgumentTestSuite(testSuiteSettings) {
     },
     createTexture: () => 'TEXTURE',
     getUniformLocation: (program, name) => {
-      switch (getUniformLocationCalls) {
-        case 0:
-          assert.equal(program, 'program');
-          assert.equal(name, 'user_vDim');
-          getUniformLocationCalls++;
-          return 'user_vDimLocation';
-        case 1:
-          assert.equal(program, 'program');
-          assert.equal(name, 'user_vSize');
-          getUniformLocationCalls++;
-          return 'user_vSizeLocation';
-        case 2:
-          assert.equal(program, 'program');
-          assert.equal(name, 'user_v');
-          getUniformLocationCalls++;
-          return 'user_vLocation';
-        default:
-          throw new Error('called too many times');
+      assert.equal(program, 'program');
+      if (getUniformLocationCalls > 3) {
+        throw new Error('called too many times');
       }
+      getUniformLocationCalls++;
+      return {
+        user_vDim: 'user_vDimLocation',
+        user_vSize: 'user_vSizeLocation',
+        user_v: 'user_vLocation',
+      }[name];
     },
     uniform3iv: (location, value) => {
       assert.equal(location, 'user_vDimLocation');
@@ -134,15 +125,16 @@ function addArgumentTestSuite(testSuiteSettings) {
   assert.equal(kernel.argumentsLength, 0);
   kernel.setupArguments(args);
   assert.equal(kernel.argumentBitRatios[0], expectedBitRatio);
-  kernel.addArgument(argument, kernel.argumentTypes[0], 'v');
+  assert.equal(kernel.kernelArguments.length, 1);
+  kernel.kernelArguments[0].updateValue(argument);
   assert.equal(kernel.argumentsLength, 1);
   assert.ok(texImage2DCalled);
   assert.ok(activeTextureCalled);
   assert.ok(bindTextureCalled);
   assert.equal(texParameteriCalls, 4);
-  assert.equal(getUniformLocationCalls, 3);
-  assert.ok(uniform3ivCalled);
-  assert.ok(uniform2ivCalled);
+  assert.equal(getUniformLocationCalls, 1);
+  assert.notOk(uniform3ivCalled);
+  assert.notOk(uniform2ivCalled);
   assert.ok(uniform1iCalled);
 }
 
