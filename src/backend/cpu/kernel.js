@@ -90,7 +90,7 @@ class CPUKernel extends Kernel {
         throw 'Auto dimensions only supported for kernels with only one input';
       }
 
-      const argType = utils.getVariableType(arguments[0]);
+      const argType = utils.getVariableType(arguments[0], this.strictIntegers);
       if (argType === 'Array') {
         this.output = utils.getDimensions(argType);
       } else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {

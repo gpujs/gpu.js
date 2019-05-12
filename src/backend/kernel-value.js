@@ -16,6 +16,7 @@ class KernelValue {
       context,
       contextHandle,
       origin,
+      strictIntegers,
     } = settings;
     if (!name) {
       throw new Error('name not set');
@@ -30,7 +31,8 @@ class KernelValue {
     this.origin = origin;
     this.id = `${this.origin}_${name}`;
     this.kernel = kernel;
-    this.type = utils.getVariableType(value);
+    this.strictIntegers = strictIntegers;
+    this.type = utils.getVariableType(value, strictIntegers);
     this.size = value.size || null;
     this.index = index;
     this.context = context;

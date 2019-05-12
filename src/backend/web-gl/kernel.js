@@ -1,4 +1,4 @@
-const { GLKernel } = require('../gl-kernel');
+const { GLKernel } = require('../gl/kernel');
 const { FunctionBuilder } = require('../function-builder');
 const { WebGLFunctionNode } = require('./function-node');
 const { utils } = require('../../utils');
@@ -6,7 +6,7 @@ const { Texture } = require('../../texture');
 const triangleNoise = require('../../plugins/triangle-noise');
 const { fragmentShader } = require('./fragment-shader');
 const { vertexShader } = require('./vertex-shader');
-const { webGLKernelString } = require('./kernel-string');
+const { glKernelString } = require('../gl/kernel-string');
 const { lookupKernelValueType } = require('./kernel-value-maps');
 
 let isSupported = null;
@@ -248,7 +248,7 @@ class WebGLKernel extends GLKernel {
         throw new Error('Auto output only supported for kernels with only one input');
       }
 
-      const argType = utils.getVariableType(arguments[0]);
+      const argType = utils.getVariableType(arguments[0], this.strictIntegers);
       if (argType === 'Array') {
         this.output = utils.getDimensions(argType);
       } else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
@@ -355,7 +355,7 @@ class WebGLKernel extends GLKernel {
     for (let index = 0; index < args.length; index++) {
       const value = args[index];
       const name = this.argumentNames[index];
-      const type = utils.getVariableType(value);
+      const type = utils.getVariableType(value, this.strictIntegers);
       this.argumentTypes.push(type);
       const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArgument ? 'dynamic' : 'static', this.precision);
       if (KernelValue === null) {
@@ -370,6 +370,7 @@ class WebGLKernel extends GLKernel {
         context: this.context,
         kernel: this,
         contextHandle: gl.TEXTURE0 + this.constantsLength + index,
+        strictIntegers: this.strictIntegers,
         onRequestTexture: () => {
           this.argumentsLength++;
           return this.context.createTexture();
@@ -389,7 +390,7 @@ class WebGLKernel extends GLKernel {
     let index = 0;
     for (const name in this.constants) {
       const value = this.constants[name];
-      const type = utils.getVariableType(value);
+      const type = utils.getVariableType(value, this.strictIntegers);
       this.constantTypes[name] = type;
       const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArgument ? 'dynamic' : 'static', this.precision);
       if (KernelValue === null) {
@@ -404,6 +405,7 @@ class WebGLKernel extends GLKernel {
         context: this.context,
         kernel: this,
         contextHandle: gl.TEXTURE0 + index,
+        strictIntegers: this.strictIntegers,
         onRequestTexture: () => {
           this.constantsLength++;
           return this.context.createTexture();
@@ -534,8 +536,6 @@ class WebGLKernel extends GLKernel {
     if (this.program === null) {
       this.build.apply(this, arguments);
     }
-    const argumentNames = this.argumentNames;
-    const argumentTypes = this.argumentTypes;
     const { kernelArguments } = this;
     const texSize = this.texSize;
     const gl = this.context;
@@ -638,56 +638,6 @@ class WebGLKernel extends GLKernel {
 
     return this.renderOutput();
   }
-
-  /**
-   * @desc Helper function to return webGl function's output.
-   * Since the program runs on GPU, we need to get the
-   * output of the program back to CPU and then return them.
-   * *Note*: This should not be called directly.
-   *
-   * @returns {Object|Array} result
-   */
-  // renderOutput() {
-  // 	const texSize = this.texSize;
-  // 	const gl = this.context;
-  // 	const threadDim = this.threadDim;
-  // 	const output = this.output;
-  // 	if (this.pipeline) {
-  // 		return new Texture({
-  // 			texture: this.outputTexture,
-  // 			size: texSize,
-  // 			dimensions: this.threadDim,
-  // 			output,
-  // 			context: this.context,
-  // 			gpu: this.gpu,
-  // 			type: this.getReturnTextureType(),
-  // 		});
-  // 	} else {
-  // 		let result;
-  // 		if (this.precision === 'single') {
-  // 			const w = texSize[0];
-  // 			const h = Math.ceil(texSize[1] / 4);
-  // 			result = new Float32Array(w * h * 4);
-  // 			gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
-  // 		} else {
-  // 			const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
-  // 			gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, bytes);
-  // 			result = new Float32Array(bytes.buffer);
-  // 		}
-  // 		result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
-  //
-  // 		if (output.length === 1) {
-  // 			return result;
-  // 		} else if (output.length === 2) {
-  // 			return utils.splitArray(result, output[0]);
-  // 		} else if (output.length === 3) {
-  // 			const cube = utils.splitArray(result, output[0] * output[1]);
-  // 			return cube.map(function(x) {
-  // 				return utils.splitArray(x, output[0]);
-  // 			});
-  // 		}
-  // 	}
-  // }
 
   /**
    * @desc This return defined outputTexture, which is setup in .build(), or if immutable, is defined in .run()
@@ -1055,96 +1005,16 @@ class WebGLKernel extends GLKernel {
    * @returns {String} result
    */
   _getMainArgumentsString(args) {
-    const preResult = [];
-    const result = [];
-    const {
-      argumentTypes,
-      argumentNames,
-      hardcodeConstants,
-      optimizeFloatMemory,
-      precision,
-    } = this;
+    const results = [];
+    const { argumentNames } = this;
     for (let i = 0; i < argumentNames.length; i++) {
-      if (this.kernelArguments[i]) {
-        preResult.push(this.kernelArguments[i].getSource(args[i]));
-        continue;
-      }
-      throw new Error('no longer in use');
-      const value = args[i];
-      const name = argumentNames[i];
-      const type = argumentTypes[i];
-      if (hardcodeConstants) {
-        switch (type) {
-          case 'Array':
-          case 'NumberTexture':
-          case 'MemoryOptimizedNumberTexture':
-          case 'ArrayTexture(1)':
-          case 'ArrayTexture(2)':
-          case 'ArrayTexture(3)':
-          case 'ArrayTexture(4)':
-          case 'Input':
-          case 'HTMLImage':
-            const dim = utils.getDimensions(value, true);
-            const size = utils.dimToTexSize({
-              floatTextures: optimizeFloatMemory,
-              floatOutput: precision === 'single',
-            }, dim);
-
-            result.push(
-              `uniform sampler2D user_${name}`,
-              `ivec2 user_${name}Size = ivec2(${size[0]}, ${size[1]})`,
-              `ivec3 user_${name}Dim = ivec3(${dim[0]}, ${dim[1]}, ${dim[2]})`,
-            );
-            break;
-          case 'Integer':
-            result.push(`float user_${name} = ${value}.0`);
-            break;
-          case 'Float':
-          case 'Number':
-            result.push(`float user_${name} = ${ Number.isInteger(value) ? value + '.0' : value }`);
-            break;
-          case 'Boolean':
-            result.push(`uniform int user_${name}`);
-          default:
-            throw new Error(`Argument type ${type} not supported in WebGL`);
-        }
-      } else {
-        switch (type) {
-          case 'Array':
-          case 'NumberTexture':
-          case 'MemoryOptimizedNumberTexture':
-          case 'ArrayTexture(1)':
-          case 'ArrayTexture(2)':
-          case 'ArrayTexture(3)':
-          case 'ArrayTexture(4)':
-          case 'Input':
-          case 'HTMLImage':
-            result.push(
-              `uniform sampler2D user_${name}`,
-              `uniform ivec2 user_${name}Size`,
-              `uniform ivec3 user_${name}Dim`,
-            );
-            break;
-          case 'Integer':
-            result.push(`uniform int user_${name}`);
-            break;
-          case 'Float':
-          case 'Number':
-            result.push(`uniform float user_${name}`);
-            break;
-          case 'Boolean':
-            result.push(`uniform int user_${name}`);
-            break;
-          default:
-            throw new Error(`Argument type ${type} not supported in WebGL`);
-        }
-      }
+      results.push(this.kernelArguments[i].getSource(args[i]));
     }
-    return preResult.join('') + utils.linesToString(result);
+    return results.join('');
   }
 
   _getMainConstantsString() {
-    let result = [];
+    const result = [];
     const { constants } = this;
     if (constants) {
       let i = 0;
@@ -1477,7 +1347,10 @@ class WebGLKernel extends GLKernel {
    * @desc Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
    */
   toString() {
-    return webGLKernelString(this);
+    const setupContextString = utils.linesToString([
+      `const gl = context`,
+    ]);
+    return glKernelString(this.constructor, arguments, this, setupContextString);
   }
 
   destroy(removeCanvasReferences) {

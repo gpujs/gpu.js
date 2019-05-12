@@ -133,7 +133,7 @@ class WebGL2Kernel extends WebGLKernel {
         throw new Error('Auto output only supported for kernels with only one input');
       }
 
-      const argType = utils.getVariableType(arguments[0]);
+      const argType = utils.getVariableType(arguments[0], this.strictIntegers);
       switch (argType) {
         case 'Array':
           this.output = utils.getDimensions(argType);
@@ -399,92 +399,12 @@ class WebGL2Kernel extends WebGLKernel {
    * @returns {String} result
    */
   _getMainArgumentsString(args) {
-    const preResult = [];
     const result = [];
-    const argumentTypes = this.argumentTypes;
     const argumentNames = this.argumentNames;
     for (let i = 0; i < argumentNames.length; i++) {
-      if (this.kernelArguments[i]) {
-        preResult.push(this.kernelArguments[i].getSource(args[i]));
-        continue;
-      }
-      const value = args[i];
-      const name = argumentNames[i];
-      const type = argumentTypes[i];
-      if (this.hardcodeConstants) {
-        switch (type) {
-          case 'Array':
-          case 'NumberTexture':
-          case 'MemoryOptimizedNumberTexture':
-          case 'ArrayTexture(1)':
-          case 'ArrayTexture(2)':
-          case 'ArrayTexture(3)':
-          case 'ArrayTexture(4)':
-          case 'Input':
-          case 'HTMLImage':
-            const dim = utils.getDimensions(value, true);
-            const size = utils.dimToTexSize({
-              floatTextures: this.optimizeFloatMemory,
-              floatOutput: this.precision === 'single'
-            }, dim);
-
-            result.push(
-              `uniform highp sampler2D user_${ name }`,
-              `highp ivec2 user_${ name }Size = ivec2(${ size[0] }, ${ size[1] })`,
-              `highp ivec3 user_${ name }Dim = ivec3(${ dim[0] }, ${ dim[1]}, ${ dim[2] })`,
-            );
-            break;
-          case 'Integer':
-            result.push(`highp float user_${ name } = ${ value }.0`);
-            break;
-          case 'Float':
-          case 'Number':
-            result.push(`highp float user_${ name } = ${ Number.isInteger(value) ? value + '.0' : value }`);
-            break;
-          case 'Boolean':
-            result.push(`uniform int user_${name}`);
-            break;
-          default:
-            throw new Error(`Argument type ${type} not supported in WebGL2`);
-        }
-      } else {
-        switch (type) {
-          case 'Array':
-          case 'NumberTexture':
-          case 'MemoryOptimizedNumberTexture':
-          case 'ArrayTexture(1)':
-          case 'ArrayTexture(2)':
-          case 'ArrayTexture(3)':
-          case 'ArrayTexture(4)':
-          case 'Input':
-          case 'HTMLImage':
-            result.push(
-              `uniform highp sampler2D user_${ name }`,
-              `uniform highp ivec2 user_${ name }Size`,
-              `uniform highp ivec3 user_${ name }Dim`
-            );
-            break;
-          case 'HTMLImageArray':
-            result.push(
-              `uniform highp sampler2DArray user_${ name }`,
-              `uniform highp ivec2 user_${ name }Size`,
-              `uniform highp ivec3 user_${ name }Dim`
-            );
-            break;
-          case 'Integer':
-          case 'Float':
-          case 'Number':
-            result.push(`uniform float user_${ name }`);
-            break;
-          case 'Boolean':
-            result.push(`uniform int user_${name}`);
-            break;
-          default:
-            throw new Error(`Argument type ${type} not supported in WebGL2`);
-        }
-      }
+      result.push(this.kernelArguments[i].getSource(args[i]));
     }
-    return preResult.join('') + utils.linesToString(result);
+    return result.join('');
   }
 
   /**

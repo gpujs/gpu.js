@@ -7,6 +7,7 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
     this.requestTexture();
     this.dimensions = value.dimensions;
     this.textureSize = value.size;
+    this.uploadValue = value.texture;
   }
 
   getSource() {
@@ -23,7 +24,7 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
     }
     const { context: gl } = this;
     gl.activeTexture(this.contextHandle);
-    gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
+    gl.bindTexture(gl.TEXTURE_2D, this.uploadValue = inputTexture.texture);
     this.kernel.setUniform1i(this.id, this.index);
   }
 }

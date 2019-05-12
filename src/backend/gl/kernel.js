@@ -1,6 +1,6 @@
-const { Kernel } = require('./kernel');
-const { Texture } = require('../texture');
-const { utils } = require('../utils');
+const { Kernel } = require('../kernel');
+const { Texture } = require('../../texture');
+const { utils } = require('../../utils');
 
 /**
  * @abstract

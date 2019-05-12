@@ -12,12 +12,23 @@ class WebGLKernelValue extends KernelValue {
     this.dimensionsId = null;
     this.sizeId = null;
     this.onRequestTexture = settings.onRequestTexture;
+    this.uploadValue = null;
   }
 
   requestTexture() {
     this.dimensionsId = this.id + 'Dim';
     this.sizeId = this.id + 'Size';
     this.texture = this.onRequestTexture();
+  }
+
+  getTransferArrayType(value) {
+    if (Array.isArray(value[0])) {
+      return this.getTransferArrayType(value[0]);
+    }
+    if (value.constructor === Array) {
+      return Float32Array;
+    }
+    return value.constructor;
   }
   /**
    * @desc Adds kernel parameters to the Value Texture,
@@ -78,6 +89,13 @@ class WebGLKernelValue extends KernelValue {
       default:
         return 4;
     }
+  }
+
+  /**
+   * Used for when we want a string output of our kernel, so we can still input values to the kernel
+   */
+  getStringValueHandler() {
+    throw new Error(`"getStringValueHandler" not implemented on ${this.constructor.name}`);
   }
 }
 

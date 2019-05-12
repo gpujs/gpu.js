@@ -9,6 +9,17 @@ class WebGLKernelValueUnsignedArray extends WebGLKernelValue {
     this.dimensions = utils.getDimensions(value, true);
     this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.TranserArrayType = this.getTransferArrayType(value);
+    this.preUploadValue = new this.TranserArrayType(this.uploadArrayLength);
+    this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
+  }
+
+  getStringValueHandler() {
+    return utils.linesToString([
+      `const preUploadValue_${this.name} = new ${this.TranserArrayType.name}(${this.uploadArrayLength})`,
+      `const uploadValue_${this.name} = new Uint8Array(preUploadValue_${this.name}.buffer)`,
+      `flattenTo(${this.name}, preUploadValue_${this.name})`,
+    ]);
   }
 
   getSource() {
@@ -21,15 +32,14 @@ class WebGLKernelValueUnsignedArray extends WebGLKernelValue {
 
   updateValue(value) {
     const { context: gl } = this;
+    utils.flattenTo(value, this.preUploadValue);
     gl.activeTexture(this.contextHandle);
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    const valuesFlat = this.formatArrayTransfer(value, this.uploadArrayLength);
-    const buffer = new Uint8Array(valuesFlat.buffer);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.textureSize[0], this.textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, buffer);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.textureSize[0], this.textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, this.uploadValue);
     this.kernel.setUniform1i(this.id, this.index);
   }
 }

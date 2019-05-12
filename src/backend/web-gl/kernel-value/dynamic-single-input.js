@@ -14,8 +14,7 @@ class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
     this.dimensions = value.size;
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
-    // TODO: use upload buffer if possible
-    this.uploadBuffer = new Float32Array(this.uploadArrayLength);
+    this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
     super.updateValue(value);

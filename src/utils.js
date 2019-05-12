@@ -117,24 +117,29 @@ const utils = {
    * @param {Object} value - The argument object to evaluate type
    * @returns {String}  Argument type Array/Number/Float/Texture/Unknown
    */
-  getVariableType(value) {
+  getVariableType(value, strictIntegers) {
     if (utils.isArray(value)) {
       if (value[0].nodeName === 'IMG') {
         return 'HTMLImageArray';
       }
       return 'Array';
-    } else if (typeof value === 'number') {
-      if (Number.isInteger(value)) {
-        return 'Integer';
-      }
-      return 'Float';
-    } else if (typeof value === 'boolean') {
-      return 'Boolean';
-    } else if (value instanceof Texture) {
-      return value.type;
-    } else if (value instanceof Input) {
-      return 'Input';
-    } else if (value.nodeName === 'IMG') {
+    }
+
+    switch (value.constructor) {
+      case Boolean:
+        return 'Boolean';
+      case Number:
+        if (strictIntegers && Number.isInteger(value)) {
+          return 'Integer';
+        }
+        return 'Float';
+      case Texture:
+        return value.type;
+      case Input:
+        return 'Input';
+    }
+
+    if (value.nodeName === 'IMG') {
       return 'HTMLImage';
     } else {
       return 'Unknown';
@@ -323,7 +328,7 @@ const utils = {
 
   /**
    * @param {Array} lines - An Array of strings
-   * @returns {String} Single combined String, seperated by *\n*
+   * @returns {String} Single combined String, separated by *\n*
    */
   linesToString(lines) {
     if (lines.length > 0) {

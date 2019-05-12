@@ -429,6 +429,16 @@ class WebGLFunctionNode extends FunctionNode {
           this.astGeneric(ast.right, retArr);
           break;
 
+        case 'Float & Integer':
+          this.astGeneric(ast.left, retArr);
+          retArr.push(operatorMap[ast.operator] || ast.operator);
+          this.pushState('casting-to-integer');
+          retArr.push('float(');
+          this.astGeneric(ast.right, retArr);
+          retArr.push(')');
+          this.popState('casting-to-integer');
+          break;
+
         default:
           throw this.astErrorOutput(`Unhandled binary expression between ${key}`, ast);
       }
@@ -888,10 +898,8 @@ class WebGLFunctionNode extends FunctionNode {
       case 'Number':
       case 'Integer':
       case 'Float':
-        retArr.push(`${ origin }_${ name}`);
-        return retArr;
       case 'Boolean':
-        retArr.push(`bool(${ origin }_${ name})`);
+        retArr.push(`${ origin }_${ name}`);
         return retArr;
     }
 

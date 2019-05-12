@@ -251,9 +251,9 @@ export interface IKernelFunctionThis {
   color(r: number, g: number, b: number, a: number): void,
 }
 
-export type KernelVariable = number | number[] | number[][] | number[][][] | Texture | HTMLImageElement | HTMLImageElement[];
+export type KernelVariable = boolean | number | number[] | number[][] | number[][][] | Texture | HTMLImageElement | HTMLImageElement[];
 
-export type ThreadKernelVariable = number | number[] | number[][] | number[][][];
+export type ThreadKernelVariable = boolean | number | number[] | number[][] | number[][][];
 export type KernelFunction = ((
   this: IKernelFunctionThis,
   arg1?: ThreadKernelVariable,

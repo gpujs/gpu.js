@@ -172,6 +172,6 @@ function handleCastingBeforeReturn(mode) {
   handleCastingBeforeReturn('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? only : skip)('handle casting before return headlessgl', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('handle casting before return headlessgl', () => {
   handleCastingBeforeReturn('headlessgl');
 });

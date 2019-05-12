@@ -52,7 +52,7 @@ class WebGL2KernelValueHtmlImageArray extends WebGLKernelValue {
         imageDepth,
         gl.RGBA,
         gl.UNSIGNED_BYTE,
-        images[i]
+        this.uploadValue = images[i]
       );
     }
     this.kernel.setUniform1i(this.id, this.index);

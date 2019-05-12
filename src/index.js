@@ -16,7 +16,7 @@ const { WebGLKernel } = require('./backend/web-gl/kernel');
 const { WebGL2FunctionNode } = require('./backend/web-gl2/function-node');
 const { WebGL2Kernel } = require('./backend/web-gl2/kernel');
 
-const { GLKernel } = require('./backend/gl-kernel');
+const { GLKernel } = require('./backend/gl/kernel');
 
 const { Kernel } = require('./backend/kernel');
 

@@ -31,7 +31,7 @@ Matrix multiplication (perform matrix multiplication on 2 matrices of size 512 x
         }
         return sum;
     }).setOutput([512, 512]);
-    
+
     const c = multiplyMatrix(a, b);
 </script>
 ```
@@ -65,7 +65,7 @@ const multiplyMatrix = gpu.createKernel(function(a: number[][], b: number[][]) {
 
 const c = multiplyMatrix(a, b) as number[][];
 ```
- 
+
 # Table of Contents
 
 NOTE: documentation is slightly out of date for the upcoming release of v2.  We will fix it!  In the mean time, if you'd like to assist (PLEASE) let us know.
@@ -145,7 +145,7 @@ Settings are an object used to create an instance of `GPU`.  Example: `new GPU(s
   * 'webgl2': Use the `WebGL2Kernel` for transpiling a kernel
   * 'headlessgl' **New in V2!**: Use the `HeadlessGLKernel` for transpiling a kernel
   * 'cpu': Use the `CPUKernel` for transpiling a kernel
-  
+
 ## `gpu.createKernel` Settings
 Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.createKernel(settings)`
 * `output`: array or object that describes the output of kernel.
@@ -173,6 +173,7 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
   * VERY IMPORTANT! - Use this to add special native functions to your environment when you need specific functionality is needed.
 * `subKernels`: array, generally inherited from `GPU` instance.
 * `immutable`: boolean, default = `false`
+* `strictIntegers`: boolean, default = `false` - allows undefined argumentTypes and function return values to use strict integer declarations.
 
 
 
@@ -310,7 +311,7 @@ Debugging can be done in a variety of ways, and there are different levels of de
     }, { output: [100, 100] });
     ```
 * Debugging actual kernels on CPU with `debugger`:
-  * This will cause "breakpoint" like behaviour, but in an actual CPU kernel.  You'll peer into the compiled kernel here, for a CPU. 
+  * This will cause "breakpoint" like behaviour, but in an actual CPU kernel.  You'll peer into the compiled kernel here, for a CPU.
   * Example:
     ```js
     const gpu = new GPU({ mode: 'cpu' });
@@ -366,7 +367,7 @@ Debugging can be done in a variety of ways, and there are different levels of de
   * Example:
   ```js
   const { input } = require('gpu.js');
-  const value = input(flattenedArray, [width, height, depth]); 
+  const value = input(flattenedArray, [width, height, depth]);
   ```
 * HTML Image
 * Array of HTML Images
@@ -467,7 +468,7 @@ Note: To animate the rendering, use `requestAnimationFrame` instead of `setTimeo
 To make it easier to get pixels from a context, use `kernel.getPixels()`, which returns a flat array similar to what you get from WebGL's `readPixels` method.
 A note on why: webgl's `readPixels` returns an array ordered differently from javascript's `getImageData`.
 This makes them behave similarly.
-While the values may be somewhat different, because of graphical precision available in the kernel, and alpha, this allows us to easily get pixel data in unified way.  
+While the values may be somewhat different, because of graphical precision available in the kernel, and alpha, this allows us to easily get pixel data in unified way.
 
 Example:
 ```js
@@ -581,7 +582,7 @@ const kernel = gpu.createKernel(function(a, b) {
 To manually strongly type a function you may use settings.
 By setting this value, it makes the build step of the kernel less resource intensive.
 Settings take an optional hash values:
-* `returnType`: optional, defaults to inference from `FunctionBuilder`, the value you'd like to return from the function. 
+* `returnType`: optional, defaults to inference from `FunctionBuilder`, the value you'd like to return from the function.
 * `argumentTypes`: optional, defaults to inference from `FunctionBuilder` for each param, a hash of param names with values of the return types.
 
 Example:
@@ -787,7 +788,7 @@ This is a list of the supported ones:
   We then seed the subsequent randoms from the previous random value.
   So we seed from CPU, and generate from GPU.
   Which is still not as good as CPU, but closer.
-  While this isn't perfect, it should suffice in most scenarios.  
+  While this isn't perfect, it should suffice in most scenarios.
 * `Math.round()`
 * `Math.sign()`
 * `Math.sin()`

@@ -1,7 +1,6 @@
 const getContext = require('gl');
-const {
-  WebGLKernel
-} = require('../web-gl/kernel');
+const { WebGLKernel } = require('../web-gl/kernel');
+const { glKernelString } = require('../gl/kernel-string');
 
 let isSupported = null;
 let testCanvas = null;
@@ -113,6 +112,15 @@ class HeadlessGLKernel extends WebGLKernel {
     if (extension && extension.destroy) {
       extension.destroy();
     }
+  }
+
+  /**
+   * @desc Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
+   */
+  toString() {
+    const setupContextString = `const gl = context || require('gl')(1, 1);\n`;
+    const destroyContextString = `if (!context) { gl.getExtension('STACKGL_destroy_context').destroy(); }\n`;
+    return glKernelString(this.constructor, arguments, this, setupContextString, destroyContextString);
   }
 }
 

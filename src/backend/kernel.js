@@ -167,6 +167,7 @@ class Kernel {
     this.leadingReturnStatement = null;
     this.followingReturnStatement = null;
     this.optimizeFloatMemory = null;
+    this.strictIntegers = false;
   }
 
   mergeSettings(settings) {
@@ -254,7 +255,7 @@ class Kernel {
       this.kernelArguments = [];
       this.argumentTypes = [];
       for (let i = 0; i < args.length; i++) {
-        const argType = utils.getVariableType(args[i]);
+        const argType = utils.getVariableType(args[i], this.strictIntegers);
         this.argumentTypes.push(argType === 'Integer' ? 'Number' : argType);
       }
     }
@@ -283,7 +284,7 @@ class Kernel {
     this.constantBitRatios = {};
     if (this.constants) {
       for (let p in this.constants) {
-        this.constantTypes[p] = utils.getVariableType(this.constants[p]);
+        this.constantTypes[p] = utils.getVariableType(this.constants[p], this.strictIntegers);
         this.constantBitRatios[p] = this.getBitRatio(this.constants[p]);
       }
     }

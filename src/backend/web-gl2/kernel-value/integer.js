@@ -11,7 +11,7 @@ class WebGL2KernelValueInteger extends WebGLKernelValueInteger {
 
   updateValue(value) {
     if (this.origin === 'constants') return;
-    this.kernel.setUniform1i(this.id, value);
+    this.kernel.setUniform1i(this.id, this.uploadValue = value);
   }
 }
 

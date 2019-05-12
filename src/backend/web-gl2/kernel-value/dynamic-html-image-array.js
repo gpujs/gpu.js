@@ -12,7 +12,6 @@ class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageA
   updateValue(images) {
     this.dimensions = [images[0].width, images[0].height, images.length];
     this.textureSize = [images[0].width, images[0].height];
-    // TODO: use upload buffer if possible
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
     super.updateValue(images);

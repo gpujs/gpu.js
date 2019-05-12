@@ -9,6 +9,11 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
     this.bitRatio = this.getBitRatio(value);
     this.dimensions = dimensions;
     this.textureSize = textureSize;
+    this.uploadValue = value.texture;
+  }
+
+  getStringValueHandler() {
+    return `const uploadValue_${this.name} = ${this.name};\n`;
   }
 
   getSource() {
@@ -25,7 +30,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
     }
     const { context: gl } = this;
     gl.activeTexture(this.contextHandle);
-    gl.bindTexture(gl.TEXTURE_2D, inputTexture.texture);
+    gl.bindTexture(gl.TEXTURE_2D, this.uploadValue = inputTexture.texture);
   }
 }
 

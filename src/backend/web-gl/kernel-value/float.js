@@ -2,6 +2,10 @@ const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
 class WebGLKernelValueFloat extends WebGLKernelValue {
+  constructor(value, settings) {
+    super(value, settings);
+    this.uploadValue = value;
+  }
   getSource(value) {
     if (this.origin === 'constants') {
       if (Number.isInteger(value)) {
@@ -14,7 +18,7 @@ class WebGLKernelValueFloat extends WebGLKernelValue {
 
   updateValue(value) {
     if (this.origin === 'constants') return;
-    this.kernel.setUniform1f(this.id, value);
+    this.kernel.setUniform1f(this.id, this.uploadValue = value);
   }
 }
 

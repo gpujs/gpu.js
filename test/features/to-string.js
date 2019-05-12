@@ -1,70 +1,109 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU, Input, input, Texture } = require('../../src');
+const { GPU, input, Texture } = require('../../src');
 
 describe('features: toString sumAB');
-function sumABTest(mode) {
+function sumABTestSinglePrecision(mode, context, canvas) {
   const gpu = new GPU({ mode });
   const originalKernel = gpu.createKernel(function(a, b) {
     return a[this.thread.x] + b[this.thread.x];
   }, {
-    output : [6]
+    canvas,
+    context,
+    output: [6],
+    precision: 'single',
   });
 
   const a = [1, 2, 3, 5, 6, 7];
   const b = [4, 5, 6, 1, 2, 3];
   const expected = [5, 7, 9, 6, 8, 10];
-  const originalResult = originalKernel(a,b);
+  const originalResult = originalKernel(a, b);
   assert.deepEqual(Array.from(originalResult), expected);
-  const kernelString = originalKernel.toString();
-  const newKernel = new Function('return ' + kernelString)()();
-  newKernel
-    .setContext(originalKernel.context)
-    .setCanvas(originalKernel.canvas);
-  const newResult = newKernel(a,b);
+  const kernelString = originalKernel.toString(a, b);
+  const newResult = new Function('return ' + kernelString)()(context)(a,b);
   assert.deepEqual(Array.from(newResult), expected);
   gpu.destroy();
 }
 
-test('toString sumAB auto', () => {
-  sumABTest(null);
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('toString sumAB single precision webgl', () => {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl');
+  sumABTestSinglePrecision('webgl', context, canvas);
 });
 
-(GPU.isGPUSupported ? test : skip)('toString sumAB gpu', () => {
-  sumABTest('gpu');
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('toString sumAB single precision webgl2', () => {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl2');
+  sumABTestSinglePrecision('webgl2', context, canvas);
 });
 
-(GPU.isWebGLSupported ? test : skip)('toString sumAB webgl', () => {
-  sumABTest('webgl');
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('toString sumAB single precision headlessgl', () => {
+  sumABTestSinglePrecision('headlessgl', require('gl')(1, 1), null);
 });
 
-(GPU.isWebGL2Supported ? test : skip)('toString sumAB webgl2', () => {
-  sumABTest('webgl2');
+test('toString sumAB single precision cpu', () => {
+  sumABTestSinglePrecision('cpu');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('toString sumAB headlessgl', () => {
-  sumABTest('headlessgl');
+function sumABTestUnsignedPrecision(mode, context, canvas) {
+  const gpu = new GPU({ mode });
+  const originalKernel = gpu.createKernel(function(a, b) {
+    return a[this.thread.x] + b[this.thread.x];
+  }, {
+    canvas,
+    context,
+    output: [6],
+    precision: 'unsigned',
+  });
+
+  const a = [1, 2, 3, 5, 6, 7];
+  const b = [4, 5, 6, 1, 2, 3];
+  const expected = [5, 7, 9, 6, 8, 10];
+  const originalResult = originalKernel(a, b);
+  assert.deepEqual(Array.from(originalResult), expected);
+  const kernelString = originalKernel.toString(a, b);
+  const newResult = new Function('return ' + kernelString)()(context)(a,b);
+  assert.deepEqual(Array.from(newResult), expected);
+  gpu.destroy();
+}
+
+(GPU.isWebGLSupported ? test : skip)('toString sumAB unsigned precision webgl', () => {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl');
+  sumABTestUnsignedPrecision('webgl', context, canvas);
 });
 
-test('toString sumAB cpu', () => {
-  sumABTest('cpu');
+(GPU.isWebGL2Supported ? test : skip)('toString sumAB unsigned precision webgl2', () => {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl2');
+  sumABTestUnsignedPrecision('webgl2', context, canvas);
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('toString sumAB unsigned precision headlessgl', () => {
+  sumABTestUnsignedPrecision('headlessgl', require('gl')(1, 1), null);
+});
+
+test('toString sumAB unsigned precision cpu', () => {
+  sumABTestUnsignedPrecision('cpu');
 });
 
 
 describe('features: toString Texture');
-function toStringTextureTest(mode) {
-  const gpu = new GPU({ mode });
+function toStringTextureTestSinglePrecision(mode, context, canvas) {
+  const gpu = new GPU({ mode, context, canvas });
   const a = [1, 2, 3, 5, 6, 7];
   const expected = [0.5, 1, 1.5, 2.5, 3, 3.5];
   const textureKernel = gpu.createKernel(function(a) {
     return a[this.thread.x] / 2;
   }, {
     output: [6],
-    pipeline: true
+    pipeline: true,
+    precision: 'single',
   });
   const numberKernel = gpu.createKernel(function(a) {
     return a[this.thread.x];
   }, {
-    output: [6]
+    output: [6],
+    precision: 'single',
   });
   const textureResult = textureKernel(a);
   assert.equal(textureResult.constructor, Texture);
@@ -77,21 +116,10 @@ function toStringTextureTest(mode) {
   assert.strictEqual(textureKernel.canvas, numberKernel.canvas);
   assert.strictEqual(textureKernel.context, numberKernel.context);
 
-  const textureKernelString = textureKernel.toString();
-  const numberKernelString = numberKernel.toString();
-  const newTextureKernel = new Function('return ' + textureKernelString)()();
-  const newNumberKernel = new Function('return ' + numberKernelString)()();
-  const canvas = textureKernel.canvas;
-  const context = textureKernel.context;
-  newTextureKernel
-    .setTexture(Texture)
-    .setContext(context)
-    .setCanvas(canvas);
-  newNumberKernel
-    .setTexture(Texture)
-    .setContext(context)
-    .setCanvas(canvas);
-
+  const textureKernelString = textureKernel.toString(a);
+  const numberKernelString = numberKernel.toString(textureResult);
+  const newTextureKernel = new Function('return ' + textureKernelString)()(context);
+  const newNumberKernel = new Function('return ' + numberKernelString)()(context);
   const newKernelResult = newTextureKernel(a);
   assert.equal(textureResult.constructor, Texture);
   const newResult = newNumberKernel(newKernelResult);
@@ -104,29 +132,85 @@ function toStringTextureTest(mode) {
   gpu.destroy();
 }
 
-test('toString Texture auto', () => {
-  toStringTextureTest();
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('toString Texture single precision webgl', () => {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl');
+  toStringTextureTestSinglePrecision('webgl', context, canvas);
 });
 
-test('toString Texture gpu', () => {
-  toStringTextureTest('gpu');
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('toString Texture single precision webgl2', () => {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl2');
+  toStringTextureTestSinglePrecision('webgl2', context, canvas);
 });
 
-(GPU.isWebGLSupported ? test : skip)('toString Texture webgl', () => {
-  toStringTextureTest('webgl');
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('toString Texture single precision headlessgl', () => {
+  toStringTextureTestSinglePrecision('headlessgl', require('gl')(1,1), null);
 });
 
-(GPU.isWebGL2Supported ? test : skip)('toString Texture webgl2', () => {
-  toStringTextureTest('webgl2');
+function toStringTextureTestUnsignedPrecision(mode, context, canvas) {
+  const gpu = new GPU({ mode, context, canvas });
+  const a = [1, 2, 3, 5, 6, 7];
+  const expected = [0.5, 1, 1.5, 2.5, 3, 3.5];
+  const textureKernel = gpu.createKernel(function(a) {
+    return a[this.thread.x] / 2;
+  }, {
+    output: [6],
+    pipeline: true,
+    precision: 'unsigned',
+  });
+  const numberKernel = gpu.createKernel(function(a) {
+    return a[this.thread.x];
+  }, {
+    output: [6],
+    precision: 'unsigned',
+  });
+  const textureResult = textureKernel(a);
+  assert.equal(textureResult.constructor, Texture);
+  const originalResult = numberKernel(textureResult);
+  assert.equal(originalResult.constructor, Float32Array);
+  assert.equal(originalResult.length, expected.length);
+  for(let i = 0; i < expected.length; ++i) {
+    assert.equal(originalResult[i], expected[i], 'Result index: ' + i);
+  }
+  assert.strictEqual(textureKernel.canvas, numberKernel.canvas);
+  assert.strictEqual(textureKernel.context, numberKernel.context);
+
+  const textureKernelString = textureKernel.toString(a);
+  const numberKernelString = numberKernel.toString(textureResult);
+  const newTextureKernel = new Function('return ' + textureKernelString)()(context);
+  const newNumberKernel = new Function('return ' + numberKernelString)()(context);
+  const newKernelResult = newTextureKernel(a);
+  assert.equal(textureResult.constructor, Texture);
+  const newResult = newNumberKernel(newKernelResult);
+  assert.equal(newResult.constructor, Float32Array);
+  assert.equal(newResult.length, expected.length);
+  for(let i = 0; i < expected.length; ++i) {
+    assert.equal(newResult[i], expected[i], 'Result index: ' + i);
+  }
+
+  gpu.destroy();
+}
+
+(GPU.isWebGLSupported ? test : skip)('toString Texture unsigned precision webgl', () => {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl');
+  toStringTextureTestUnsignedPrecision('webgl', context, canvas);
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('toString Texture headlessgl', () => {
-  toStringTextureTest('headlessgl');
+(GPU.isWebGL2Supported ? test : skip)('toString Texture unsigned precision webgl2', () => {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl2');
+  toStringTextureTestUnsignedPrecision('webgl2', context, canvas);
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('toString Texture unsigned precision headlessgl', () => {
+  toStringTextureTestUnsignedPrecision('headlessgl', require('gl')(1,1), null);
 });
 
 describe('features: toString Input');
-function toStringInputTest(mode) {
-  const gpu = new GPU({ mode });
+function toStringInputTest(mode, context, canvas) {
+  const gpu = new GPU({ mode, context, canvas });
   const a = [
     1, 2, 3, 5, 6, 7,
     8, 9,10,11,12,13,
@@ -147,39 +231,28 @@ function toStringInputTest(mode) {
   });
   const originalResult = originalKernel(input(a, [6, 6]));
   assert.deepEqual(Array.from(originalResult), expected);
-  const kernelString = originalKernel.toString();
-  const newKernel = new Function('return ' + kernelString)()();
-  const canvas = originalKernel.canvas;
-  const context = originalKernel.context;
-  newKernel
-    .setInput(Input)
-    .setContext(context)
-    .setCanvas(canvas);
-
+  const kernelString = originalKernel.toString(input(a, [6, 6]));
+  const newKernel = new Function('return ' + kernelString)()(context);
   const newResult = newKernel(input(a, [6, 6]));
   assert.deepEqual(Array.from(newResult), expected);
 
   gpu.destroy();
 }
 
-test('toString Input auto', () => {
-  toStringInputTest();
-});
-
-test('toString Input gpu', () => {
-  toStringInputTest('gpu');
-});
-
 (GPU.isWebGLSupported ? test : skip)('toString Input webgl', () => {
-  toStringInputTest('webgl');
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl');
+  toStringInputTest('webgl', context, canvas);
 });
 
 (GPU.isWebGL2Supported ? test : skip)('toString Input webgl2', () => {
-  toStringInputTest('webgl2');
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl2');
+  toStringInputTest('webgl2', context, canvas);
 });
 
 (GPU.isHeadlessGLSupported ? test : skip)('toString Input headlessgl', () => {
-  toStringInputTest('headlessgl');
+  toStringInputTest('headlessgl', require('gl')(1, 1), null);
 });
 
 test('toString Input cpu', () => {
