@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0-rc.14
- * @date Sun May 12 2019 14:36:40 GMT-0400 (Eastern Daylight Time)
+ * @date Mon May 13 2019 06:05:48 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -30,13 +30,13 @@ function glWiretap(gl, options = {}) {
   return proxy;
   function listen(obj, property) {
     switch (property) {
-      case 'toString': return toString;
       case 'addComment': return addComment;
       case 'checkThrowError': return checkThrowError;
-      case 'reset': return reset;
-      case 'insertVariable': return insertVariable;
-      case 'setIndent': return setIndent;
       case 'getReadPixelsVariableName': return readPixelsVariableName;
+      case 'insertVariable': return insertVariable;
+      case 'reset': return reset;
+      case 'setIndent': return setIndent;
+      case 'toString': return toString;
     }
     if (typeof gl[property] === 'function') {
       return function() { 
@@ -48,7 +48,7 @@ function glWiretap(gl, options = {}) {
               recording.push(`${indent}${contextName}.getError();`); 
             }
             return gl.getError();
-          case 'getExtension':
+          case 'getExtension': {
             const variableName = `${contextName}Variables${contextVariables.length}`;
             recording.push(`${indent}const ${variableName} = ${contextName}.getExtension('${arguments[0]}');`);
             const extension = gl.getExtension(arguments[0]);
@@ -60,6 +60,7 @@ function glWiretap(gl, options = {}) {
                 contextName: variableName,
                 contextVariables,
                 variables,
+                indent,
               });
               contextVariables.push(tappedExtension);
               return tappedExtension;
@@ -67,6 +68,7 @@ function glWiretap(gl, options = {}) {
               contextVariables.push(null);
             }
             return extension;
+          }
           case 'readPixels':
             const i = contextVariables.indexOf(arguments[6]);
             let targetVariableName;
@@ -106,7 +108,12 @@ function glWiretap(gl, options = {}) {
               break;
             }
           default:
-            recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
+            if (result === null) {
+              recording.push(`${methodCallToString(property, arguments)};`);
+            } else {
+              recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
+            }
+
             contextVariables.push(result);
         }
         return result;
@@ -138,8 +145,8 @@ function glWiretap(gl, options = {}) {
   }
   function addVariable(value, source) {
     const variableName = `${contextName}Variable${contextVariables.length}`;
-    contextVariables.push(value);
     recording.push(`${indent}const ${variableName} = ${source};`);
+    contextVariables.push(value);
     return variableName;
   }
   function writePPM(width, height) {
@@ -197,6 +204,7 @@ function glExtensionWiretap(extension, options) {
     useTrackablePrimitives,
     recording,
     variables,
+    indent,
   } = options;
   return proxy;
   function listen(obj, property) {
@@ -223,7 +231,11 @@ function glExtensionWiretap(extension, options) {
             }
             break;
           default:
-            recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
+            if (result === null) {
+              recording.push(`${methodCallToString(property, arguments)};`);
+            } else {
+              recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
+            }
             contextVariables.push(result);
         }
         return result;
@@ -234,7 +246,10 @@ function glExtensionWiretap(extension, options) {
   }
 
   function getExtensionEntity(value) {
-    return extensionEntityNames[value] || getEntity(value);
+    if (extensionEntityNames.hasOwnProperty(value)) {
+      return `${contextName}.${extensionEntityNames[value]}`;
+    }
+    return getEntity(value);
   }
 
   function methodCallToString(method, args) {
@@ -297,31 +312,16 @@ function argumentToString(arg, options) {
       } else {
         return '\'' + arg + '\'';
       }
-    case 'Number': {
-      const name = getEntity(arg);
-      return name || arg;
-    }
-    case 'Boolean': {
-      const name = getEntity(arg);
-      return name || (arg ? 'true' : 'false');
-    }
-    case 'WebGLBuffer': {
-      const name = getEntity(arg);
-      if (name) {
-        return name;
-      } else {
-        throw new Error('argument not found');
-      }
-    }
+    case 'Number': return getEntity(arg);
+    case 'Boolean': return getEntity(arg);
     case 'Array':
-      return JSON.stringify(Array.from(arg));
+      return addVariable(arg, `new ${arg.constructor.name}(${Array.from(arg).join(',')})`);
     case 'Float32Array':
     case 'Uint8Array':
     case 'Uint16Array':
     case 'Int32Array':
       return addVariable(arg, `new ${arg.constructor.name}(${JSON.stringify(Array.from(arg))})`);
     default:
-      debugger;
       throw new Error('unrecognized argument');
   }
 }
@@ -10625,18 +10625,22 @@ class WebGLFunctionNode extends FunctionNode {
     }
     const type = this.getType(property);
     const result = [];
-    if (type === 'Number') {
-      this.pushState('casting-to-integer');
-      result.push('int(');
-      this.astGeneric(property, result);
-      result.push(')');
-      this.popState('casting-to-integer');
-    } else if (type === 'LiteralInteger') {
-      this.pushState('casting-to-integer');
-      this.astGeneric(property, result);
-      this.popState('casting-to-integer');
-    } else {
-      this.astGeneric(property, result);
+    switch (type) {
+      case 'Number':
+      case 'Float':
+        this.pushState('casting-to-integer');
+        result.push('int(');
+        this.astGeneric(property, result);
+        result.push(')');
+        this.popState('casting-to-integer');
+        break;
+      case 'LiteralInteger':
+        this.pushState('casting-to-integer');
+        this.astGeneric(property, result);
+        this.popState('casting-to-integer');
+        break;
+      default:
+        this.astGeneric(property, result);
     }
     return result.join('');
   }
@@ -10671,6 +10675,7 @@ const operatorMap = {
 module.exports = {
   WebGLFunctionNode
 };
+
 },{"../function-node":10}],18:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGLKernelValueFloat } = require('./kernel-value/float');

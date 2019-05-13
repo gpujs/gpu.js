@@ -1201,18 +1201,22 @@ class WebGLFunctionNode extends FunctionNode {
     }
     const type = this.getType(property);
     const result = [];
-    if (type === 'Number') {
-      this.pushState('casting-to-integer');
-      result.push('int(');
-      this.astGeneric(property, result);
-      result.push(')');
-      this.popState('casting-to-integer');
-    } else if (type === 'LiteralInteger') {
-      this.pushState('casting-to-integer');
-      this.astGeneric(property, result);
-      this.popState('casting-to-integer');
-    } else {
-      this.astGeneric(property, result);
+    switch (type) {
+      case 'Number':
+      case 'Float':
+        this.pushState('casting-to-integer');
+        result.push('int(');
+        this.astGeneric(property, result);
+        result.push(')');
+        this.popState('casting-to-integer');
+        break;
+      case 'LiteralInteger':
+        this.pushState('casting-to-integer');
+        this.astGeneric(property, result);
+        this.popState('casting-to-integer');
+        break;
+      default:
+        this.astGeneric(property, result);
     }
     return result.join('');
   }
