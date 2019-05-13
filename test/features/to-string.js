@@ -1,6 +1,8 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU, input, Texture } = require('../../src');
 
+//TODO: test all constant types and argument types
+
 describe('features: toString sumAB');
 function sumABTestSinglePrecision(mode, context, canvas) {
   const gpu = new GPU({ mode });
