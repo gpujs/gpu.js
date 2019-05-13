@@ -19,6 +19,10 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
   }
 
   updateValue(inputTexture) {
+    if (inputTexture.constructor !== this.initialValueConstructor) {
+      this.onConstructorMismatch();
+      return;
+    }
     if (inputTexture.context !== this.context) {
       throw new Error(`Value ${this.name} (${this.type }) must be from same context`);
     }

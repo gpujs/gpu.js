@@ -47,6 +47,28 @@ class Texture {
 
     this.kernel = kernel;
     return kernel(this);
+
+    // const { context: gl } = this;
+    // const framebuffer = gl.createFramebuffer();
+    // gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    // gl.framebufferTexture2D(
+    //   gl.FRAMEBUFFER,
+    //   gl.COLOR_ATTACHMENT0,
+    //   gl.TEXTURE_2D,
+    //   this.texture,
+    //   0
+    // );
+    // const result = new Uint8Array(this.size[0] * this.size[1] * 4);
+    // const canRead = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+    // if (!canRead) {
+    //   throw new Error('cannot read texture');
+    // }
+    // gl.readPixels(0, 0, this.size[0], this.size[1], gl.RGBA, gl.UNSIGNED_BYTE, result);
+    //
+    // console.log(result);
+    // // Unbind the framebuffer
+    // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    // return new Float32Array(result.buffer);
   }
 
   getPrecision() {

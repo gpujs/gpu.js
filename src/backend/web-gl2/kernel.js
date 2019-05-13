@@ -191,7 +191,7 @@ class WebGL2Kernel extends WebGLKernel {
     if (this.program === null) {
       this.build.apply(this, arguments);
     }
-    const { argumentNames, argumentTypes, texSize } = this;
+    const { kernelArguments, texSize } = this;
     const gl = this.context;
 
     gl.useProgram(this.program);
@@ -204,8 +204,14 @@ class WebGL2Kernel extends WebGLKernel {
 
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
-    for (let texIndex = 0; texIndex < argumentNames.length; texIndex++) {
-      this.kernelArguments[texIndex].updateValue(arguments[texIndex]);
+    for (let i = 0; i < kernelArguments.length; i++) {
+      if (this.switchingKernels) break;
+      kernelArguments[i].updateValue(arguments[i]);
+    }
+
+    if (this.switchingKernels) {
+      this.switchingKernels = false;
+      return this.onRequestSwitchKernel(arguments, this);
     }
 
     if (this.plugins) {

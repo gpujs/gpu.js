@@ -181,14 +181,11 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
 Depending on your output type, specify the intended size of your output.
 You cannot have an accelerated function that does not specify any output size.
 
-Output size   |   `IKernelSettings.flipCoodrinates` value    |  How to specify output size   |  How to reference in kernel
---------------|----------------------------------------------|-------------------------------|--------------------------------
- 1D           | `false`                                      | `[length]`                    |  `value[this.thread.x]`
- 2D           | `false`                                      | `[width, height]`             |  `value[this.thread.y][this.thread.x]`
- 3D           | `false`                                      | `[width, height, depth]`      |  `value[this.thread.z][this.thread.y][this.thread.x]`
- 1D           | `true`                                       | `[length]`                    |  `value[this.thread.x]`
- 2D           | `true`                                       | `[width, height]`             |  `value[this.thread.x][this.thread.y]`
- 3D           | `true`                                       | `[width, height, depth]`      |  `value[this.thread.x][this.thread.y][this.thread.z]`
+Output size   |  How to specify output size   |  How to reference in kernel
+--------------|-------------------------------|--------------------------------
+ 1D           | `[length]`                    |  `value[this.thread.x]`
+ 2D           | `[width, height]`             |  `value[this.thread.y][this.thread.x]`
+ 3D           | `[width, height, depth]`      |  `value[this.thread.z][this.thread.y][this.thread.x]`
 
 ```js
 const settings = {

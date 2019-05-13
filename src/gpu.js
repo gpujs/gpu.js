@@ -209,6 +209,7 @@ class GPU {
     }
 
     source = typeof source === 'function' ? source.toString() : source;
+    const switchableKernels = {};
     const mergedSettings = Object.assign({
       context: this.context,
       canvas: this.canvas,
@@ -220,7 +221,39 @@ class GPU {
         const fallbackKernel = new CPUKernel(source, mergedSettings);
         return fallbackKernel.apply(fallbackKernel, args);
       },
-      onRequestRecompile: (args) => {}
+      onRequestSwitchKernel: (args, kernel) => {
+        const signatureArray = [];
+        for (let i = 0; i < args.length; i++) {
+          signatureArray.push(utils.getVariableType(args[i]));
+        }
+        const signature = signatureArray.join(',');
+        const existingKernel = switchableKernels[signature];
+        if (existingKernel) {
+          return existingKernel.run.apply(existingKernel, args);
+        }
+        const newKernel = switchableKernels[signature] = new this.Kernel(source, {
+          graphical: kernel.graphical,
+          constants: kernel.constants,
+          context: kernel.context,
+          canvas: kernel.canvas,
+          output: kernel.output,
+          precision: kernel.precision,
+          pipeline: kernel.pipeline,
+          immutable: kernel.immutable,
+          optimizeFloatMemory: kernel.optimizeFloatMemory,
+          fixIntegerDivisionAccuracy: kernel.fixIntegerDivisionAccuracy,
+          functions: kernel.functions,
+          nativeFunctions: kernel.nativeFunctions,
+          subKernels: kernel.subKernels,
+          strictIntegers: kernel.strictIntegers,
+          debug: kernel.debug,
+          gpu: this,
+          validate,
+        });
+        const result = newKernel.run.apply(newKernel, args);
+        console.log(newKernel.toString.apply(newKernel, args));
+        return result;
+      }
     }, upgradeDeprecatedCreateKernelSettings(settings) || {});
 
     const kernel = kernelRunShortcut(new this.Kernel(source, mergedSettings));

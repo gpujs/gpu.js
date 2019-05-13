@@ -124,12 +124,6 @@ class WebGLKernel extends GLKernel {
 
   constructor(source, settings) {
     super(source, settings);
-    this.textureCache = {};
-    this.threadDim = {};
-    this.programUniformLocationCache = {};
-    this.framebuffer = null;
-
-    this.buffer = null;
     this.program = null;
     this.pipeline = settings.pipeline;
     this.endianness = utils.systemEndianness();
@@ -145,6 +139,16 @@ class WebGLKernel extends GLKernel {
     this.drawBuffersMap = null;
     this.outputTexture = null;
     this.maxTexSize = null;
+    this.switchingKernels = false;
+    this.onRequestSwitchKernel = null;
+
+    this.mergeSettings(source.settings || settings);
+
+    this.textureCache = {};
+    this.threadDim = {};
+    this.programUniformLocationCache = {};
+    this.framebuffer = null;
+    this.buffer = null;
     this.uniform1fCache = {};
     this.uniform1iCache = {};
     this.uniform2fCache = {};
@@ -152,8 +156,6 @@ class WebGLKernel extends GLKernel {
     this.uniform2ivCache = {};
     this.uniform3fvCache = {};
     this.uniform3ivCache = {};
-
-    this.mergeSettings(source.settings || settings);
   }
 
   initCanvas() {
@@ -374,7 +376,10 @@ class WebGLKernel extends GLKernel {
         onRequestTexture: () => {
           this.argumentsLength++;
           return this.context.createTexture();
-        }
+        },
+        onConstructorMismatch: () => {
+          this.switchingKernels = true;
+        },
       });
       this.kernelArguments.push(kernelArgument);
       this.argumentSizes.push(kernelArgument.textureSize);
@@ -551,7 +556,13 @@ class WebGLKernel extends GLKernel {
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
     for (let i = 0; i < kernelArguments.length; i++) {
+      if (this.switchingKernels) break;
       kernelArguments[i].updateValue(arguments[i]);
+    }
+
+    if (this.switchingKernels) {
+      this.switchingKernels = false;
+      return this.onRequestSwitchKernel(arguments, this);
     }
 
     if (this.plugins) {
@@ -1238,69 +1249,6 @@ class WebGLKernel extends GLKernel {
       );
     }
     return result;
-  }
-
-  /**
-   * @desc Get main result string with checks for precision, graphical, subKernelsResults, etc.
-   * @returns {String} result
-   */
-  _getMainResultString() {
-    const {
-      subKernels,
-      precision,
-      floatTextures,
-      graphical,
-      pipeline
-    } = this;
-    const result = [];
-
-    if (precision === 'single') {
-      result.push('  index *= 4');
-    }
-
-    if (graphical) {
-      result.push(
-        '  threadId = indexTo3D(index, uOutputDim)',
-        '  kernel()',
-        '  gl_FragColor = actualColor',
-      );
-    } else if (precision === 'single') {
-      const channels = ['r', 'g', 'b', 'a'];
-
-      for (let i = 0; i < channels.length; ++i) {
-        result.push('  threadId = indexTo3D(index, uOutputDim)');
-        result.push('  kernel()');
-
-        if (subKernels) {
-          result.push(`  gl_FragData[0].${channels[i]} = kernelResult`);
-
-          for (let j = 0; j < subKernels.length; ++j) {
-            result.push(`  gl_FragData[${j + 1}].${channels[i]} = subKernelResult_${subKernels[j].name}`);
-          }
-        } else {
-          result.push(`  gl_FragColor.${channels[i]} = kernelResult`);
-        }
-
-        if (i < channels.length - 1) {
-          result.push('  index += 1');
-        }
-      }
-    } else if (subKernels !== null) {
-      result.push('  threadId = indexTo3D(index, uOutputDim)');
-      result.push('  kernel()');
-      result.push('  gl_FragData[0] = encode32(kernelResult)');
-      for (let i = 0; i < subKernels.length; i++) {
-        result.push(`  gl_FragData[${i + 1}] = encode32(subKernelResult_${subKernels[i].name})`);
-      }
-    } else {
-      result.push(
-        '  threadId = indexTo3D(index, uOutputDim)',
-        '  kernel()',
-        '  gl_FragColor = encode32(kernelResult)',
-      );
-    }
-
-    return utils.linesToString(result);
   }
 
   /**

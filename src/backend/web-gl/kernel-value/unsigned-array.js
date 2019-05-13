@@ -31,6 +31,10 @@ class WebGLKernelValueUnsignedArray extends WebGLKernelValue {
   }
 
   updateValue(value) {
+    if (value.constructor !== this.initialValueConstructor) {
+      this.onConstructorMismatch();
+      return;
+    }
     const { context: gl } = this;
     utils.flattenTo(value, this.preUploadValue);
     gl.activeTexture(this.contextHandle);

@@ -11,6 +11,8 @@ class WebGLKernelValue extends KernelValue {
     super(value, settings);
     this.dimensionsId = null;
     this.sizeId = null;
+    this.initialValueConstructor = value.constructor;
+    this.onConstructorMismatch = settings.onConstructorMismatch;
     this.onRequestTexture = settings.onRequestTexture;
     this.uploadValue = null;
   }
