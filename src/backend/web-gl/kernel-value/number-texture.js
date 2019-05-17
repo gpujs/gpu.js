@@ -4,7 +4,7 @@ const { WebGLKernelValue } = require('./index');
 class WebGLKernelValueNumberTexture extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
-    this.requestTexture();
+    this.setupTexture();
     const { size: textureSize, dimensions } = value;
     this.bitRatio = this.getBitRatio(value);
     this.dimensions = dimensions;
@@ -26,7 +26,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
 
   updateValue(inputTexture) {
     if (inputTexture.constructor !== this.initialValueConstructor) {
-      this.onConstructorMismatch();
+      this.onUpdateValueMismatch();
       return;
     }
     if (inputTexture.context !== this.context) {
@@ -35,6 +35,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
     const { context: gl } = this;
     gl.activeTexture(this.contextHandle);
     gl.bindTexture(gl.TEXTURE_2D, this.uploadValue = inputTexture.texture);
+    this.kernel.setUniform1i(this.id, this.index);
   }
 }
 

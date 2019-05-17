@@ -6,8 +6,7 @@ describe('internal: mixed memory optimize');
 function getOffKernel(gpu) {
   return gpu.createKernel(function(value) {
     return value[this.thread.x];
-  })
-    .setDebug(true) // getFloatFromSampler2D
+  }) // getFloatFromSampler2D
     .setPrecision('single')
     .setOutput([10])
     .setPipeline(true)
@@ -18,8 +17,7 @@ function getOffKernel(gpu) {
 function getOnKernel(gpu) {
   return gpu.createKernel(function(value) {
     return value[this.thread.x];
-  })
-    .setDebug(false) // getMemoryOptimized32
+  }) // getMemoryOptimized32
     .setPrecision('single')
     .setOutput([10])
     .setPipeline(true)
@@ -81,10 +79,6 @@ function onOffOn(mode) {
   const result2 = Array.from(textureResult2.toArray());
   const result3 = Array.from(textureResult3.toArray());
 
-  console.log(result1);
-  console.log(result2);
-  console.log(result3);
-
   assert.deepEqual(Array.from(result1), value);
   assert.deepEqual(Array.from(result2), value);
   assert.deepEqual(Array.from(result3), value);
@@ -107,7 +101,7 @@ test('on off on auto', () => {
   onOffOn('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? only : skip)('on off on headlessgl', () => {
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('on off on headlessgl', () => {
   onOffOn('headlessgl');
 });
 

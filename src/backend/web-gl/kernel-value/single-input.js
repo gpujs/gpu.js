@@ -28,6 +28,10 @@ class WebGLKernelValueSingleInput extends WebGLKernelValue {
   }
 
   updateValue(input) {
+    if (input.constructor !== this.initialValueConstructor) {
+      this.onUpdateValueMismatch();
+      return;
+    }
     const { context: gl } = this;
     utils.flattenTo(input.value, this.uploadValue);
     gl.activeTexture(this.contextHandle);

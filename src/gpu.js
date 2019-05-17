@@ -219,7 +219,7 @@ class GPU {
       validate,
       onRequestFallback: (args) => {
         const fallbackKernel = new CPUKernel(source, mergedSettings);
-        return fallbackKernel.apply(fallbackKernel, args);
+        return fallbackKernel.run.apply(fallbackKernel, args);
       },
       onRequestSwitchKernel: (args, kernel) => {
         const signatureArray = [];
@@ -250,9 +250,9 @@ class GPU {
           gpu: this,
           validate,
         });
-        const result = newKernel.run.apply(newKernel, args);
-        console.log(newKernel.toString.apply(newKernel, args));
-        return result;
+        // console.log(newKernel.toString.apply(newKernel, args));
+        // console.log(newKernel.context.COLOR_ATTACHMENT0);
+        return newKernel.run.apply(newKernel, args);
       }
     }, upgradeDeprecatedCreateKernelSettings(settings) || {});
 

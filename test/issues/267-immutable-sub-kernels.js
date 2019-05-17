@@ -1,4 +1,4 @@
-const { assert, skip, test, module: describe } = require('qunit');
+const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('issue #267 kernel');
@@ -179,7 +179,7 @@ function immutableKernelsMixedWithoutFloats(mode) {
   const kernel = gpu.createKernelMap(
     {
       valueOutput1: value1,
-      valueOutput2: value2
+      valueOutput2: value2,
     },
     function (a, b) {
       value1(a[this.thread.x]);
@@ -195,7 +195,6 @@ function immutableKernelsMixedWithoutFloats(mode) {
 
   // start with a value on CPU
   const output1 = kernel([10], [20]);
-  // console.log(kernel.toString([10], [20]));
 
   // reuse that output, simulating that this value will be monitored, and updated via the same kernel
   // this is often used in neural networks

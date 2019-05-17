@@ -4,7 +4,7 @@ const { WebGLKernelValue } = require('./index');
 class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
-    this.requestTexture();
+    this.setupTexture();
     this.dimensions = value.dimensions;
     this.textureSize = value.size;
     this.uploadValue = value.texture;
@@ -20,7 +20,7 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
 
   updateValue(inputTexture) {
     if (inputTexture.constructor !== this.initialValueConstructor) {
-      this.onConstructorMismatch();
+      this.onUpdateValueMismatch();
       return;
     }
     if (inputTexture.context !== this.context) {

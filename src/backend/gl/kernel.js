@@ -20,8 +20,6 @@ class GLKernel extends Kernel {
       validate: false,
       output: [1],
       precision: 'single',
-      //TODO: not sure how to handle?
-      floatOutputForce: true,
       returnType: 'Number'
     });
     const result = kernel.run();
@@ -94,15 +92,10 @@ class GLKernel extends Kernel {
     return this;
   }
 
-  // TODO: not sure how to handle
-  setFloatOutputForce(flag) {
-    this.floatOutputForce = flag;
-    return this;
-  }
-
   /**
    * @desc Toggle texture output mode
    * @param {Boolean} flag - true to enable floatTextures
+   * @deprecated
    */
   setFloatTextures(flag) {
     utils.warnDeprecated('method', 'setFloatTextures', 'setOptimizeFloatMemory');
@@ -269,8 +262,6 @@ class GLKernel extends Kernel {
   constructor(source, settings) {
     super(source, settings);
     this.texSize = null;
-    // TODO: not sure how to handle
-    this.floatOutputForce = null;
     this.fixIntegerDivisionAccuracy = null;
     this.translatedSource = null;
     this.renderStrategy = null;

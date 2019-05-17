@@ -114,7 +114,7 @@ class WebGL2Kernel extends WebGLKernel {
     }
 
     const features = this.constructor.features;
-    if (this.precision === 'single' && this.floatOutputForce !== true && !features.isFloatRead) {
+    if (this.precision === 'single' && !features.isFloatRead) {
       throw new Error('Float texture outputs are not supported');
     } else if (!this.graphical && this.precision === null) {
       this.precision = features.isFloatRead ? 'single' : 'unsigned';
@@ -172,7 +172,7 @@ class WebGL2Kernel extends WebGLKernel {
       floatOutput: this.precision === 'single',
     }, this.output, true);
 
-    if (this.precision === 'single' || this.floatOutputForce) {
+    if (this.precision === 'single') {
       this.context.getExtension('EXT_color_buffer_float');
     }
   }
@@ -311,7 +311,7 @@ class WebGL2Kernel extends WebGLKernel {
     const { texSize } = this;
     const gl = this.context;
     const texture = this.outputTexture = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentNames.length);
+    gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -359,7 +359,7 @@ class WebGL2Kernel extends WebGLKernel {
       const texture = this.context.createTexture();
       textures.push(texture);
       this.drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
-      gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentNames.length + i);
+      gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount + i);
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);

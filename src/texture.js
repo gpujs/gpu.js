@@ -48,6 +48,7 @@ class Texture {
     this.kernel = kernel;
     return kernel(this);
 
+    // TODO: Break up textures into their individual types and handle their specific render there
     // const { context: gl } = this;
     // const framebuffer = gl.createFramebuffer();
     // gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);

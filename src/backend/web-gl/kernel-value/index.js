@@ -12,15 +12,23 @@ class WebGLKernelValue extends KernelValue {
     this.dimensionsId = null;
     this.sizeId = null;
     this.initialValueConstructor = value.constructor;
-    this.onConstructorMismatch = settings.onConstructorMismatch;
     this.onRequestTexture = settings.onRequestTexture;
+    this.onRequestIndex = settings.onRequestIndex;
     this.uploadValue = null;
+    this.textureSize = null;
+    this.bitRatio = null;
   }
 
   requestTexture() {
+    this.texture = this.onRequestTexture();
+    this.setupTexture();
+  }
+
+  setupTexture() {
+    this.contextHandle = this.onRequestContextHandle();
+    this.index = this.onRequestIndex();
     this.dimensionsId = this.id + 'Dim';
     this.sizeId = this.id + 'Size';
-    this.texture = this.onRequestTexture();
   }
 
   getTransferArrayType(value) {

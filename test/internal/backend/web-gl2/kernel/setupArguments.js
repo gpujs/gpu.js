@@ -1,11 +1,12 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU, WebGLKernel, input } = require('../../../../../src');
+const { WebGL2Kernel, input } = require('../../../../../src');
 
-describe('internal WebGLKernel.addArgument Array');
+describe('internal WebGL2Kernel.setupArguments Array');
 const gl = {
   TEXTURE0: 0,
   TEXTURE_2D: 'TEXTURE_2D',
   RGBA: 'RGBA',
+  RGBA32F: 'RGBA32F',
   UNSIGNED_BYTE: 'UNSIGNED_BYTE',
   FLOAT: 'FLOAT',
   TEXTURE_WRAP_S: 'TEXTURE_WRAP_S',
@@ -15,7 +16,7 @@ const gl = {
   TEXTURE_MAG_FILTER: 'TEXTURE_MAG_FILTER',
   NEAREST: 'NEAREST'
 };
-function addArgumentTestSuite(testSuiteSettings) {
+function setupArgumentsTestSuite(testSuiteSettings) {
   const {
     gpuSettings,
     argument,
@@ -24,6 +25,7 @@ function addArgumentTestSuite(testSuiteSettings) {
     expectedDim,
     expectedSize,
     expectedType,
+    expectedArgumentTextureCount,
   } = testSuiteSettings;
   let texImage2DCalled = false;
   let activeTextureCalled = false;
@@ -104,7 +106,7 @@ function addArgumentTestSuite(testSuiteSettings) {
     texImage2D: (target, level, internalFormat, width, height, border, format, type, pixels) => {
       assert.equal(target, gl.TEXTURE_2D);
       assert.equal(level, 0);
-      assert.equal(internalFormat, gl.RGBA);
+      assert.equal(internalFormat, gpuSettings.precision === 'single' ? gl.RGBA32F : gl.RGBA);
       assert.equal(width, expectedSize[0]);
       assert.equal(height, expectedSize[1]);
       assert.equal(border, 0);
@@ -119,15 +121,15 @@ function addArgumentTestSuite(testSuiteSettings) {
   const settings = {
     context: mockContext,
   };
-  const kernel = new WebGLKernel(source, Object.assign({}, settings, gpuSettings));
+  const kernel = new WebGL2Kernel(source, Object.assign({}, settings, gpuSettings));
   const args = [argument];
   kernel.program = 'program';
-  assert.equal(kernel.argumentsLength, 0);
+  assert.equal(kernel.argumentTextureCount, 0);
   kernel.setupArguments(args);
   assert.equal(kernel.argumentBitRatios[0], expectedBitRatio);
   assert.equal(kernel.kernelArguments.length, 1);
   kernel.kernelArguments[0].updateValue(argument);
-  assert.equal(kernel.argumentsLength, 1);
+  assert.equal(kernel.argumentTextureCount, expectedArgumentTextureCount);
   assert.ok(texImage2DCalled);
   assert.ok(activeTextureCalled);
   assert.ok(bindTextureCalled);
@@ -142,7 +144,7 @@ function addArgumentTestSuite(testSuiteSettings) {
 
 // requires at least 5 entire pixels
 test('Array with unsigned precision 5 length', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [4]
@@ -161,10 +163,11 @@ test('Array with unsigned precision 5 length', () => {
     expectedDim: new Int32Array([5,1,1]),
     expectedSize: new Int32Array([4,2]), // 4 * 2 = 8
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 test('Float32Array with unsigned precision 5 length', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [4]
@@ -185,10 +188,11 @@ test('Float32Array with unsigned precision 5 length', () => {
     expectedDim: new Int32Array([5,1,1]),
     expectedSize: new Int32Array([4,2]), // 4 * 2 * 1 = 8
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 test('Uint16Array with unsigned precision 5 length', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [4]
@@ -209,10 +213,11 @@ test('Uint16Array with unsigned precision 5 length', () => {
     expectedDim: new Int32Array([5,1,1]),
     expectedSize: new Int32Array([2,2]), // 2 * 2 * 2 = 8
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 test('Uint8Array with unsigned precision 5 length', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [5]
@@ -230,11 +235,12 @@ test('Uint8Array with unsigned precision 5 length', () => {
     expectedDim: new Int32Array([5,1,1]),
     expectedSize: new Int32Array([1,2]), // 1 * 2 * 4 = 8
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Array with single precision', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [4]
@@ -255,10 +261,11 @@ test('Array with single precision', () => {
     expectedType: gl.FLOAT,
     expectedTextureWidth: 1,
     expectedTextureHeight: 2,
+    expectedArgumentTextureCount: 1,
   });
 });
 test('Float32Array with single precision', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [4]
@@ -279,10 +286,11 @@ test('Float32Array with single precision', () => {
     expectedType: gl.FLOAT,
     expectedTextureWidth: 1,
     expectedTextureHeight: 2,
+    expectedArgumentTextureCount: 1,
   });
 });
 test('Uint16Array with single precision', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [4]
@@ -302,10 +310,11 @@ test('Uint16Array with single precision', () => {
     expectedDim: new Int32Array([5,1,1]),
     expectedSize: new Int32Array([1,2]),
     expectedType: gl.FLOAT,
+    expectedArgumentTextureCount: 1,
   });
 });
 test('Uint8Array with single precision', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [4]
@@ -325,11 +334,12 @@ test('Uint8Array with single precision', () => {
     expectedDim: new Int32Array([5,1,1]),
     expectedSize: new Int32Array([1,2]),
     expectedType: gl.FLOAT,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Array with unsigned precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [5]
@@ -362,11 +372,12 @@ test('Array with unsigned precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([6,6]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Float32Array with unsigned precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [5]
@@ -399,11 +410,12 @@ test('Float32Array with unsigned precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([6,6]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Uint16Array with unsigned precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [5]
@@ -434,11 +446,12 @@ test('Uint16Array with unsigned precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([4,5]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Uint8Array with unsigned precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [5]
@@ -464,11 +477,12 @@ test('Uint8Array with unsigned precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Array with single precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [5]
@@ -493,11 +507,12 @@ test('Array with single precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.FLOAT,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Float32Array with single precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [5]
@@ -522,11 +537,12 @@ test('Float32Array with single precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 36
     expectedType: gl.FLOAT,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Uint16Array with single precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [5]
@@ -552,11 +568,12 @@ test('Uint16Array with single precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 36
     expectedType: gl.FLOAT,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Uint8Array with single precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [5]
@@ -582,13 +599,14 @@ test('Uint8Array with single precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 36
     expectedType: gl.FLOAT,
+    expectedArgumentTextureCount: 1,
   });
 });
 
-describe('internal WebGLKernel.addArgument Input');
+describe('internal WebGL2Kernel.setupArguments Input');
 // requires at least 5 entire pixels
 test('Input(Array) with unsigned precision 5 length', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [4]
@@ -607,10 +625,11 @@ test('Input(Array) with unsigned precision 5 length', () => {
     expectedDim: new Int32Array([2,3,1]),
     expectedSize: new Int32Array([4,2]), // 4 * 2 = 8
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 test('Input(Float32Array) with unsigned precision 5 length', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [4]
@@ -631,10 +650,11 @@ test('Input(Float32Array) with unsigned precision 5 length', () => {
     expectedDim: new Int32Array([5,1,1]),
     expectedSize: new Int32Array([4,2]), // 4 * 2 * 1 = 8
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 test('Input(Uint16Array) with unsigned precision 5 length', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [4]
@@ -655,10 +675,11 @@ test('Input(Uint16Array) with unsigned precision 5 length', () => {
     expectedDim: new Int32Array([2,3,1]),
     expectedSize: new Int32Array([2,2]), // 2 * 2 * 2 = 8
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 test('Input(Uint8Array) with unsigned precision 5 length', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [5]
@@ -676,11 +697,12 @@ test('Input(Uint8Array) with unsigned precision 5 length', () => {
     expectedDim: new Int32Array([2,3,1]),
     expectedSize: new Int32Array([1,2]), // 1 * 2 * 4 = 8
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Input(Array) with single precision', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [4]
@@ -701,10 +723,11 @@ test('Input(Array) with single precision', () => {
     expectedType: gl.FLOAT,
     expectedTextureWidth: 1,
     expectedTextureHeight: 2,
+    expectedArgumentTextureCount: 1,
   });
 });
 test('Input(Float32Array) with single precision', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [4]
@@ -725,10 +748,11 @@ test('Input(Float32Array) with single precision', () => {
     expectedType: gl.FLOAT,
     expectedTextureWidth: 1,
     expectedTextureHeight: 2,
+    expectedArgumentTextureCount: 1,
   });
 });
 test('Input(Uint16Array) with single precision', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [4]
@@ -748,10 +772,11 @@ test('Input(Uint16Array) with single precision', () => {
     expectedDim: new Int32Array([2,3,1]),
     expectedSize: new Int32Array([1,2]),
     expectedType: gl.FLOAT,
+    expectedArgumentTextureCount: 1,
   });
 });
 test('Input(Uint8Array) with single precision', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [4]
@@ -771,11 +796,12 @@ test('Input(Uint8Array) with single precision', () => {
     expectedDim: new Int32Array([2,3,1]),
     expectedSize: new Int32Array([1,2]),
     expectedType: gl.FLOAT,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Input(Array) with unsigned precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [5]
@@ -808,11 +834,12 @@ test('Input(Array) with unsigned precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([6,6]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Input(Float32Array) with unsigned precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [5]
@@ -845,11 +872,12 @@ test('Input(Float32Array) with unsigned precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([6,6]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Input(Uint16Array) with unsigned precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [5]
@@ -880,11 +908,12 @@ test('Input(Uint16Array) with unsigned precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([4,5]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Input(Uint8Array) with unsigned precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'unsigned',
       output: [5]
@@ -910,11 +939,12 @@ test('Input(Uint8Array) with unsigned precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Input(Array) with single precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [5]
@@ -939,11 +969,12 @@ test('Input(Array) with single precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.FLOAT,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Input(Float32Array) with single precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [5]
@@ -968,11 +999,12 @@ test('Input(Float32Array) with single precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.FLOAT,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Input(Uint16Array) with single precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [5]
@@ -998,11 +1030,12 @@ test('Input(Uint16Array) with single precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 36
     expectedType: gl.FLOAT,
+    expectedArgumentTextureCount: 1,
   });
 });
 
 test('Input(Uint8Array) with single precision length 33', () => {
-  addArgumentTestSuite({
+  setupArgumentsTestSuite({
     gpuSettings: {
       precision: 'single',
       output: [5]
@@ -1028,5 +1061,6 @@ test('Input(Uint8Array) with single precision length 33', () => {
     expectedDim: new Int32Array([33,1,1]),
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 36
     expectedType: gl.FLOAT,
+    expectedArgumentTextureCount: 1,
   });
 });

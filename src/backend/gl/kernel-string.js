@@ -3,7 +3,9 @@ const { utils } = require('../../utils');
 const { Texture } = require('../../texture');
 
 function toStringWithoutUtils(fn) {
-  return fn.toString().replace(/utils[.]/g, '/*utils.*/');
+  return fn.toString()
+    .replace(/^function /, '')
+    .replace(/utils[.]/g, '/*utils.*/');
 }
 
 /**
@@ -68,7 +70,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
     result.push(Texture.toString());
     result.push(
       `  const renderOutput = function ${
-				kernel.renderOutput.toString()
+        toStringWithoutUtils(kernel.renderOutput.toString())
 					.replace(`this.outputTexture`, 'null')
 					.replace('this.texSize', `new Int32Array(${JSON.stringify(Array.from(kernel.texSize))})`)
 					.replace('this.threadDim', `new Int32Array(${JSON.stringify(Array.from(kernel.threadDim))})`)
@@ -80,7 +82,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
     );
   } else {
     result.push(
-      `  const renderOutput = function ${kernel.renderOutput.toString()
+      `  const renderOutput = function ${toStringWithoutUtils(kernel.renderOutput.toString())
 				.replace('() {', '(pixels) {')
 				.replace('    const pixels = this.readFloatPixelsToFloat32Array();\n', '')
 				.replace('this.readPackedPixelsToFloat32Array()', 'new Float32Array(pixels.buffer)')

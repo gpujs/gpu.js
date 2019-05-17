@@ -9,8 +9,8 @@ class WebGLKernelValueUnsignedInput extends WebGLKernelValue {
     this.dimensions = value.size;
     this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
-    const Type = this.getTransferArrayType(value.value);
-    this.preUploadValue = new Type(this.uploadArrayLength);
+    this.TranserArrayType = this.getTransferArrayType(value.value);
+    this.preUploadValue = new this.TranserArrayType(this.uploadArrayLength);
     this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
   }
 
@@ -18,7 +18,7 @@ class WebGLKernelValueUnsignedInput extends WebGLKernelValue {
     return utils.linesToString([
       `const preUploadValue_${this.name} = new ${this.TranserArrayType.name}(${this.uploadArrayLength})`,
       `const uploadValue_${this.name} = new Uint8Array(preUploadValue_${this.name}.buffer)`,
-      `flattenTo(${this.name}, preUploadValue_${this.name})`,
+      `flattenTo(${this.name}.value, preUploadValue_${this.name})`,
     ]);
   }
 
@@ -31,6 +31,10 @@ class WebGLKernelValueUnsignedInput extends WebGLKernelValue {
   }
 
   updateValue(input) {
+    if (input.constructor !== this.initialValueConstructor) {
+      this.onUpdateValueMismatch();
+      return;
+    }
     const { context: gl } = this;
     utils.flattenTo(input.value, this.preUploadValue);
     gl.activeTexture(this.contextHandle);

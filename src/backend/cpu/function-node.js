@@ -602,7 +602,7 @@ class CPUFunctionNode extends FunctionNode {
   astArrayExpression(arrNode, retArr) {
     const arrLen = arrNode.elements.length;
 
-    retArr.push('[');
+    retArr.push('new Float32Array([');
     for (let i = 0; i < arrLen; ++i) {
       if (i > 0) {
         retArr.push(', ');
@@ -610,7 +610,7 @@ class CPUFunctionNode extends FunctionNode {
       const subNode = arrNode.elements[i];
       this.astGeneric(subNode, retArr)
     }
-    retArr.push(']');
+    retArr.push('])');
 
     return retArr;
   }

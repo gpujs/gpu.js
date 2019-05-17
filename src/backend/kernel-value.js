@@ -11,10 +11,10 @@ class KernelValue {
   constructor(value, settings) {
     const {
       name,
-      index,
       kernel,
       context,
-      contextHandle,
+      onRequestContextHandle,
+      onUpdateValueMismatch,
       origin,
       strictIntegers,
     } = settings;
@@ -27,6 +27,9 @@ class KernelValue {
     if (origin !== 'user' && origin !== 'constants') {
       throw new Error(`origin must be "user" or "constants" value is "${ origin }"`);
     }
+    if (!onRequestContextHandle) {
+      throw new Error('onRequestContextHandle is not set');
+    }
     this.name = name;
     this.origin = origin;
     this.id = `${this.origin}_${name}`;
@@ -34,9 +37,11 @@ class KernelValue {
     this.strictIntegers = strictIntegers;
     this.type = utils.getVariableType(value, strictIntegers);
     this.size = value.size || null;
-    this.index = index;
+    this.index = null;
     this.context = context;
-    this.contextHandle = contextHandle;
+    this.contextHandle = null;
+    this.onRequestContextHandle = onRequestContextHandle;
+    this.onUpdateValueMismatch = onUpdateValueMismatch;
   }
 
   getSource() {

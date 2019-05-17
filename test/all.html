@@ -40,6 +40,8 @@
 <script type="module" src="features/add-custom-function.js"></script>
 <script type="module" src="features/add-custom-native-function.js"></script>
 <script type="module" src="features/add-typed-functions.js"></script>
+<script type="module" src="features/arithmetic-operators.js"></script>
+<script type="module" src="features/assignment-operators.js"></script>
 <script type="module" src="features/basic-math.js"></script>
 <script type="module" src="features/combine-kernels.js"></script>
 <script type="module" src="features/constants-array.js"></script>
@@ -87,13 +89,15 @@
 <script type="module" src="internal/function-node.js"></script>
 <script type="module" src="internal/function-return-type-detection.js"></script>
 <script type="module" src="internal/gpu-methods.js"></script>
-<script type="module" src="internal/implied-return.js"></script>
+<script type="module" src="internal/implied-else.js"></script>
 <script type="module" src="internal/kernel.js"></script>
 <script type="module" src="internal/loop-int.js"></script>
 <script type="module" src="internal/loop-max.js"></script>
 <script type="module" src="internal/math.random.js"></script>
+<script type="module" src="internal/mixed-memory-optimize.js"></script>
 <script type="module" src="internal/modes.js"></script>
 <script type="module" src="internal/precision.js"></script>
+<script type="module" src="internal/texture-index.js"></script>
 <script type="module" src="internal/utils.js"></script>
 
 <!-- internal / backend -->
@@ -109,12 +113,12 @@
 <script type="module" src="internal/backend/web-gl/function-node/getDependencies.js"></script>
 <script type="module" src="internal/backend/web-gl/function-node/getVariableSignature.js"></script>
 <script type="module" src="internal/backend/web-gl/function-node/getVariableType.js"></script>
-<script type="module" src="internal/backend/web-gl/kernel/addArgument.js"></script>
-<script type="module" src="internal/backend/web-gl/kernel/addConstant.js"></script>
 <script type="module" src="internal/backend/web-gl/kernel/index.js"></script>
-<script type="module" src="internal/backend/web-gl2/kernel/addArgument.js"></script>
-<script type="module" src="internal/backend/web-gl2/kernel/addConstant.js"></script>
+<script type="module" src="internal/backend/web-gl/kernel/setupArguments.js"></script>
+<script type="module" src="internal/backend/web-gl/kernel/setupConstants.js"></script>
 <script type="module" src="internal/backend/web-gl2/kernel/index.js"></script>
+<script type="module" src="internal/backend/web-gl2/kernel/setupArguments.js"></script>
+<script type="module" src="internal/backend/web-gl2/kernel/setupConstants.js"></script>
 
 <!-- bug issues -->
 <script type="module" src="issues/31-nested-var-declare-test.js"></script>

@@ -24,7 +24,6 @@ function cpuKernelString(cpuKernel, name) {
     let Input = function() {};
     class ${ name || 'Kernel' } {
       constructor() {        
-        this.argumentsLength = 0;
         this.canvas = null;
         this.context = null;
         this.built = false;

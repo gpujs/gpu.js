@@ -32,7 +32,7 @@ class WebGLKernelValueUnsignedArray extends WebGLKernelValue {
 
   updateValue(value) {
     if (value.constructor !== this.initialValueConstructor) {
-      this.onConstructorMismatch();
+      this.onUpdateValueMismatch();
       return;
     }
     const { context: gl } = this;

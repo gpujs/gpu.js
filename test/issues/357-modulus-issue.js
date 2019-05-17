@@ -3,7 +3,7 @@ const { GPU } = require('../../src');
 
 describe('issue #357');
 
-//TODO: move to math features
+// complimentary tests in features/arithmetic-operators.js & features/assignment-operators.js
 function testModKernel(mode) {
 	const gpu = new GPU({mode});
 	const nValues = 100;

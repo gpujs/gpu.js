@@ -10,7 +10,6 @@ function functionReturnFloat( mode ) {
   }, {
     output : [1]
   });
-  assert.ok( f !== null, 'function generated test');
   assert.equal(f()[0], 42);
   gpu.destroy();
 }
@@ -47,32 +46,30 @@ function functionReturnArray2( mode ) {
   }, {
     output : [1]
   });
-  assert.ok( f !== null, 'function generated test');
   const result = f();
-  // TODO, make assertion work
-  // assert(result[0].constructor, Float32Array);
+  assert.equal(result[0].constructor, Float32Array);
   assert.equal(result[0][0], 42);
   assert.equal(result[0][1], 43);
   gpu.destroy();
 }
 
-test('Array(2) auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('Array(2) auto', () => {
   functionReturnArray2(null);
 });
 
-test('Array(2) gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('Array(2) gpu', () => {
   functionReturnArray2('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Array(2) webgl', () => {
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(2) webgl', () => {
   functionReturnArray2('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('Array(2) webgl2', () => {
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('Array(2) webgl2', () => {
   functionReturnArray2('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('Array(2) headlessgl', () => {
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(2) headlessgl', () => {
   functionReturnArray2('headlessgl');
 });
 
@@ -87,33 +84,31 @@ function functionReturnArray3( mode ) {
   }, {
     output : [1]
   });
-  assert.ok( f !== null, 'function generated test');
   const result = f();
-  // TODO, make assertion work
-  // assert(result[0].constructor, Float32Array);
+  assert.equal(result[0].constructor, Float32Array);
   assert.equal(result[0][0], 42);
   assert.equal(result[0][1], 43);
   assert.equal(result[0][2], 44);
   gpu.destroy();
 }
 
-test('Array(3) auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('Array(3) auto', () => {
   functionReturnArray3(null);
 });
 
-test('Array(3) gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('Array(3) gpu', () => {
   functionReturnArray3('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Array(3) webgl', () => {
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(3) webgl', () => {
   functionReturnArray3('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('Array(3) webgl2', () => {
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('Array(3) webgl2', () => {
   functionReturnArray3('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('Array(3) headlessgl', () => {
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(3) headlessgl', () => {
   functionReturnArray3('headlessgl');
 });
 
@@ -129,10 +124,9 @@ function functionReturnArray4( mode ) {
   }, {
     output : [1]
   });
-  assert.ok( f !== null, 'function generated test');
+
   const result = f();
-  // TODO, make assertion work
-  // assert(result[0].constructor, Float32Array);
+  assert.equal(result[0].constructor, Float32Array);
   assert.equal(result[0][0], 42);
   assert.equal(result[0][1], 43);
   assert.equal(result[0][2], 44);
@@ -140,23 +134,23 @@ function functionReturnArray4( mode ) {
   gpu.destroy();
 }
 
-test('Array(4) auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('Array(4) auto', () => {
   functionReturnArray4(null);
 });
 
-test('Array(4) gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('Array(4) gpu', () => {
   functionReturnArray4('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Array(4) webgl', () => {
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(4) webgl', () => {
   functionReturnArray4('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('Array(4) webgl2', () => {
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('Array(4) webgl2', () => {
   functionReturnArray4('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('Array(4) headlessgl', () => {
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(4) headlessgl', () => {
   functionReturnArray4('headlessgl');
 });
 

@@ -25,7 +25,7 @@ test('arrays directly - Array(2) cpu', () => {
     return [0, 0];
   }).toString(), { returnType: 'Array(2)', output: [1] });
   assert.equal(node.toString(), 'function direct() {\n\
-return [0, 0];\n\
+return new Float32Array([0, 0]);\n\
 }');
 });
 
@@ -50,7 +50,7 @@ test('arrays directly - Array(3) cpu', () => {
     return [0, 0, 0];
   }).toString(), { returnType: 'Array(3)', output: [1] });
   assert.equal(node.toString(), 'function direct() {\n\
-return [0, 0, 0];\n\
+return new Float32Array([0, 0, 0]);\n\
 }');
 });
 
@@ -76,7 +76,7 @@ test("arrays directly - Array(4) cpu", function(assert) {
     return [0, 0, 0, 0];
   }).toString(), { returnType: 'Array(4)', output: [1] });
   assert.equal(node.toString(), 'function direct() {\n\
-return [0, 0, 0, 0];\n\
+return new Float32Array([0, 0, 0, 0]);\n\
 }');
 });
 
@@ -107,7 +107,7 @@ test('arrays referenced directly - Array(2) cpu', () => {
     return array;
   }).toString(), { returnType: 'Array(2)', output: [1] });
   assert.equal(node.toString(), 'function refDirect() {\n\
-const user_array=[0, 0];\n\
+const user_array=new Float32Array([0, 0]);\n\
 return user_array;\n\
 }');
 });
@@ -139,7 +139,7 @@ test('arrays referenced directly - Array(3) cpu', () => {
     return array;
   }).toString(), { returnType: 'Array(3)', output: [1] });
   assert.equal(node.toString(), 'function refDirect() {\n\
-const user_array=[0, 0, 0];\n\
+const user_array=new Float32Array([0, 0, 0]);\n\
 return user_array;\n\
 }');
 });
@@ -171,7 +171,7 @@ test('arrays referenced directly - Array(4) cpu', () => {
     return array;
   }).toString(), { returnType: 'Array(4)', output: [1] });
   assert.equal(node.toString(), 'function refDirect() {\n\
-const user_array=[0, 0, 0, 0];\n\
+const user_array=new Float32Array([0, 0, 0, 0]);\n\
 return user_array;\n\
 }');
 });
@@ -208,7 +208,7 @@ test('arrays referenced indirectly - Array(2) cpu', () => {
     return array2;
   }).toString(), { returnType: 'Array(2)', output: [1] });
   assert.equal(node.toString(), 'function indirect() {\n\
-const user_array=[0, 0];\n\
+const user_array=new Float32Array([0, 0]);\n\
 const user_array2=user_array;\n\
 return user_array2;\n\
 }');
@@ -246,7 +246,7 @@ test('arrays referenced indirectly - Array(3) cpu', () => {
     return array2;
   }).toString(), { returnType: 'Array(3)', output: [1] });
   assert.equal(node.toString(), 'function indirect() {\n\
-const user_array=[0, 0, 0];\n\
+const user_array=new Float32Array([0, 0, 0]);\n\
 const user_array2=user_array;\n\
 return user_array2;\n\
 }');
@@ -284,7 +284,7 @@ test('arrays referenced indirectly - Array(4) cpu', () => {
     return array2;
   }).toString(), { returnType: 'Array(4)', output: [1] });
   assert.equal(node.toString(), 'function indirect() {\n\
-const user_array=[0, 0, 0, 0];\n\
+const user_array=new Float32Array([0, 0, 0, 0]);\n\
 const user_array2=user_array;\n\
 return user_array2;\n\
 }');
@@ -327,7 +327,7 @@ test('arrays arguments - Array(2) cpu', () => {
     return array3;
   }).toString(), { argumentTypes: ['Array(2)', 'Array(2)'], output: [1] });
   assert.equal(node.toString(), 'function arrayArguments(user_array, user_array2) {\n\
-const user_array3=[0, 0];\n\
+const user_array3=new Float32Array([0, 0]);\n\
 user_array3[0]=user_array[0];\n\
 user_array3[1]=(user_array[1]*user_array2[1]);\n\
 return user_array3;\n\
@@ -370,7 +370,7 @@ test('arrays arguments - Array(3) cpu', () => {
     return array3;
   }).toString(), { argumentTypes: ['Array(3)', 'Array(3)'], output: [1] });
   assert.equal(node.toString(), 'function arrayArguments(user_array, user_array2) {\n\
-const user_array3=[0, 0, 0];\n\
+const user_array3=new Float32Array([0, 0, 0]);\n\
 user_array3[0]=user_array[0];\n\
 user_array3[1]=(user_array[1]*user_array2[1]);\n\
 return user_array3;\n\
@@ -414,7 +414,7 @@ test('arrays arguments - Array(4) cpu', () => {
     return array3;
   }).toString(), { argumentTypes: ['Array(4)', 'Array(4)'], output: [1] });
   assert.equal(node.toString(), 'function arrayArguments(user_array, user_array2) {\n\
-const user_array3=[0, 0, 0, 0];\n\
+const user_array3=new Float32Array([0, 0, 0, 0]);\n\
 user_array3[0]=user_array[0];\n\
 user_array3[1]=(user_array[1]*user_array2[1]);\n\
 return user_array3;\n\
@@ -457,7 +457,7 @@ test('arrays inherited - Array(2) cpu', () => {
     return array3;
   }).toString(), { argumentTypes: ['Array(2)', 'Array(2)'], returnType: 'Array(2)', output: [1] });
   assert.equal(node.toString(), 'function inherited(user_array, user_array2) {\n\
-const user_array3=[0, 0];\n\
+const user_array3=new Float32Array([0, 0]);\n\
 user_array3[0]=user_array[0];\n\
 user_array3[1]=(user_array[1]*user_array2[1]);\n\
 return user_array3;\n\
@@ -501,7 +501,7 @@ test('arrays inherited - Array(3) cpu', () => {
     return array3;
   }).toString(), { argumentTypes: ['Array(3)', 'Array(3)'], returnType: 'Array(3)', output: [1] });
   assert.equal(node.toString(), 'function inherited(user_array, user_array2) {\n\
-const user_array3=[0, 0, 0];\n\
+const user_array3=new Float32Array([0, 0, 0]);\n\
 user_array3[0]=user_array[0];\n\
 user_array3[1]=(user_array[1]*user_array2[1]);\n\
 return user_array3;\n\
@@ -544,7 +544,7 @@ test('arrays inherited - Array(4) cpu', () => {
     return array3;
   }).toString(), { argumentTypes: ['Array(4)', 'Array(4)'], returnType: 'Array(4)', output: [1] });
   assert.equal(node.toString(), 'function inherited(user_array, user_array2) {\n\
-const user_array3=[0, 0, 0, 0];\n\
+const user_array3=new Float32Array([0, 0, 0, 0]);\n\
 user_array3[0]=user_array[0];\n\
 user_array3[1]=(user_array[1]*user_array2[1]);\n\
 return user_array3;\n\

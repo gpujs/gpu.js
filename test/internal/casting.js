@@ -142,7 +142,7 @@ function handleCastingFloat(mode) {
   handleCastingFloat('webgl');
 });
 
-(GPU.isWebGLSupported ? test : skip)('handle casting float webgl2', () => {
+(GPU.isWebGL2Supported ? test : skip)('handle casting float webgl2', () => {
   handleCastingFloat('webgl2');
 });
 
@@ -171,7 +171,7 @@ function handleCastingBeforeReturn(mode) {
   handleCastingBeforeReturn('webgl');
 });
 
-(GPU.isWebGLSupported ? test : skip)('handle casting before return webgl2', () => {
+(GPU.isWebGL2Supported ? test : skip)('handle casting before return webgl2', () => {
   handleCastingBeforeReturn('webgl2');
 });
 

@@ -2,6 +2,7 @@ const { assert, skip, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('internal: overloading');
+// TODO: planned for after v2, overload generated functions so as to cut down on casting
 // TODO: Complain with incompatible signatures
 // TODO: Cast actual return type to addFunction's returnType when they do not match.
 // TODO: Look into
@@ -21,7 +22,7 @@ test('with Han', () => {
       dbl(Math.PI);
       return sum;
     }, { output: [1], debug: true });
-    console.log(kernel(1));
+    // console.log(kernel(1));
   } finally {
     gpu.destroy();
   }

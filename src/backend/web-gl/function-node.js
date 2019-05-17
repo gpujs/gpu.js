@@ -258,6 +258,40 @@ class WebGLFunctionNode extends FunctionNode {
       return retArr;
     }
 
+    if (ast.operator === '**') {
+      retArr.push('pow(');
+
+      const leftType = this.getType(ast.left);
+      if (leftType === 'Integer') {
+        retArr.push('float(');
+        this.astGeneric(ast.left, retArr);
+        retArr.push(')');
+      } else if (leftType === 'LiteralInteger') {
+        this.pushState('casting-to-float');
+        this.astGeneric(ast.left, retArr);
+        this.popState('casting-to-float');
+      } else {
+        this.astGeneric(ast.left, retArr);
+      }
+
+      retArr.push(',');
+      const rightType = this.getType(ast.right);
+
+      if (rightType === 'Integer') {
+        retArr.push('float(');
+        this.astGeneric(ast.right, retArr);
+        retArr.push(')');
+      } else if (rightType === 'LiteralInteger') {
+        this.pushState('casting-to-float');
+        this.astGeneric(ast.right, retArr);
+        this.popState('casting-to-float');
+      } else {
+        this.astGeneric(ast.right, retArr);
+      }
+      retArr.push(')');
+      return retArr;
+    }
+
     retArr.push('(');
     if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
       retArr.push('div_with_int_check(');
@@ -609,10 +643,19 @@ class WebGLFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astAssignmentExpression(assNode, retArr) {
+    // TODO: casting needs implemented here
     if (assNode.operator === '%=') {
       this.astGeneric(assNode.left, retArr);
       retArr.push('=');
       retArr.push('mod(');
+      this.astGeneric(assNode.left, retArr);
+      retArr.push(',');
+      this.astGeneric(assNode.right, retArr);
+      retArr.push(')');
+    } else if (assNode.operator === '**=') {
+      this.astGeneric(assNode.left, retArr);
+      retArr.push('=');
+      retArr.push('pow(');
       this.astGeneric(assNode.left, retArr);
       retArr.push(',');
       this.astGeneric(assNode.right, retArr);

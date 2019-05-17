@@ -35,7 +35,6 @@ const maxTexSizes = {};
  * @prop {Boolean} pipeline - Set output type to FAST mode (GPU to GPU via Textures), instead of float
  * @prop {String} endianness - Endian information like Little-endian, Big-endian.
  * @prop {Array} argumentTypes - Types of parameters sent to the Kernel
- * @prop {number} argumentsLength - Number of parameters sent to the Kernel
  * @prop {String} compiledFragmentShader - Compiled fragment shader string
  * @prop {String} compiledVertexShader - Compiled Vertical shader string
  */
@@ -130,8 +129,8 @@ class WebGLKernel extends GLKernel {
     this.extensions = {};
     this.subKernelOutputTextures = null;
     this.kernelArguments = null;
-    this.argumentsLength = 0;
-    this.constantsLength = 0;
+    this.argumentTextureCount = 0;
+    this.constantTextureCount = 0;
     this.compiledFragmentShader = null;
     this.compiledVertexShader = null;
     this.fragShader = null;
@@ -192,7 +191,7 @@ class WebGLKernel extends GLKernel {
       }
     } else if (typeof source === 'object') {
       // `source` is from object, json
-      if (settings.pluginNames) { //TODO: pluginNames, may not exist here
+      if (settings.pluginNames) { //TODO: in context of JSON support, pluginNames may not exist here
         for (let i = 0; i < plugins.length; i++) {
           const plugin = plugins[i];
           const usePlugin = settings.pluginNames.some(pluginName => pluginName === plugin.name);
@@ -227,7 +226,7 @@ class WebGLKernel extends GLKernel {
     const { features } = this.constructor;
     if (this.optimizeFloatMemory === true && !features.isTextureFloat) {
       throw new Error('Float textures are not supported');
-    } else if (this.precision === 'single' && this.floatOutputForce !== true && !features.isFloatRead) {
+    } else if (this.precision === 'single' && !features.isFloatRead) {
       throw new Error('Single precision not supported');
     } else if (!this.graphical && this.precision === null && features.isTextureFloat) {
       this.precision = features.isFloatRead ? 'single' : 'unsigned';
@@ -344,7 +343,7 @@ class WebGLKernel extends GLKernel {
 
   setupArguments(args) {
     this.kernelArguments = [];
-    this.argumentsLength = 0;
+    this.argumentTextureCount = 0;
     // TODO: remove
     this.argumentTypes = [];
     this.argumentSizes = [];
@@ -353,7 +352,15 @@ class WebGLKernel extends GLKernel {
     if (!this.precision) {
       // throw new Error(`precision must be set but is ${ this.precision }`);
     }
+
+    if (args.length < this.argumentNames.length) {
+      throw new Error('not enough arguments for kernel');
+    } else if (args.length > this.argumentNames.length) {
+      throw new Error('too many arguments for kernel');
+    }
+
     const { context: gl } = this;
+    let textureIndexes = 0;
     for (let index = 0; index < args.length; index++) {
       const value = args[index];
       const name = this.argumentNames[index];
@@ -362,24 +369,27 @@ class WebGLKernel extends GLKernel {
       const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArgument ? 'dynamic' : 'static', this.precision);
       if (KernelValue === null) {
         throw new Error('unsupported argument');
-        // TODO: Downgrade?
+        // TODO: Downgrade? Example: HTMLImageArrays
         continue;
       }
       const kernelArgument = new KernelValue(value, {
         name,
         origin: 'user',
-        index,
-        context: this.context,
+        context: gl,
         kernel: this,
-        contextHandle: gl.TEXTURE0 + this.constantsLength + index,
         strictIntegers: this.strictIntegers,
         onRequestTexture: () => {
-          this.argumentsLength++;
           return this.context.createTexture();
         },
-        onConstructorMismatch: () => {
+        onRequestIndex: () => {
+          return textureIndexes++;
+        },
+        onUpdateValueMismatch: () => {
           this.switchingKernels = true;
         },
+        onRequestContextHandle: () => {
+          return gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount++;
+        }
       });
       this.kernelArguments.push(kernelArgument);
       this.argumentSizes.push(kernelArgument.textureSize);
@@ -392,7 +402,7 @@ class WebGLKernel extends GLKernel {
     this.kernelConstants = [];
     this.constantTypes = {};
     this.constantBitRatios = {};
-    let index = 0;
+    let textureIndexes = 0;
     for (const name in this.constants) {
       const value = this.constants[name];
       const type = utils.getVariableType(value, this.strictIntegers);
@@ -406,14 +416,17 @@ class WebGLKernel extends GLKernel {
       const kernelValue = new KernelValue(value, {
         name,
         origin: 'constants',
-        index,
         context: this.context,
         kernel: this,
-        contextHandle: gl.TEXTURE0 + index,
         strictIntegers: this.strictIntegers,
         onRequestTexture: () => {
-          this.constantsLength++;
           return this.context.createTexture();
+        },
+        onRequestIndex: () => {
+          return textureIndexes++;
+        },
+        onRequestContextHandle: () => {
+          return gl.TEXTURE0 + this.constantTextureCount++;
         }
       });
       this.constantBitRatios[name] = kernelValue.bitRatio;
@@ -605,7 +618,6 @@ class WebGLKernel extends GLKernel {
 
     if (this.subKernels !== null) {
       if (this.immutable) {
-        this.subKernelOutputTextures = [];
         this._setupSubOutputTextures(this.subKernels.length);
       }
       this.extensions.WEBGL_draw_buffers.drawBuffersWEBGL(this.drawBuffersMap);
@@ -665,7 +677,7 @@ class WebGLKernel extends GLKernel {
     const gl = this.context;
     const texSize = this.texSize;
     const texture = this.outputTexture = this.context.createTexture();
-    gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentNames.length);
+    gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -724,7 +736,7 @@ class WebGLKernel extends GLKernel {
       const texture = this.context.createTexture();
       textures.push(texture);
       drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
-      gl.activeTexture(gl.TEXTURE0 + this.constantsLength + this.argumentNames.length + i);
+      gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount + i);
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);

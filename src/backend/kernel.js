@@ -62,8 +62,6 @@ class Kernel {
     this.argumentSizes = null;
     this.argumentBitRatios = null;
     this.kernelArguments = null;
-    this.argumentsLength = 0;
-    this.constantsLength = 0;
     this.kernelConstants = null;
 
 
@@ -391,6 +389,11 @@ class Kernel {
     return this;
   }
 
+  /**
+   * @param flag
+   * @returns {Kernel}
+   * @deprecated
+   */
   setOutputToTexture(flag) {
     utils.warnDeprecated('method', 'setOutputToTexture', 'setPipeline');
     this.pipeline = flag;
@@ -555,9 +558,7 @@ class Kernel {
       pipeline: this.pipeline,
       argumentNames: this.argumentNames,
       argumentsTypes: this.argumentTypes,
-      argumentsLength: this.argumentsLength,
       constants: this.constants,
-      constantsLength: this.constantsLength,
       pluginNames: this.plugins ? this.plugins.map(plugin => plugin.name) : null,
       returnType: this.returnType,
     };
