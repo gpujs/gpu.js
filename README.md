@@ -98,6 +98,7 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [License](#license)
 
 ## Installation
+On Linux, ensure you have the correct header files installed: `sudo apt install mesa-common-dev libxi-dev` (adjust for your distribution)
 
 ### npm
 
