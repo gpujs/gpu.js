@@ -11,8 +11,20 @@ let isSupported = null;
 let testCanvas = null;
 let testContext = null;
 let testExtensions = null;
+/**
+ *
+ * @type {{
+ *   isFloatRead: Boolean,
+ *   isIntegerDivisionAccurate: Boolean,
+ *   kernelMap: Boolean,
+ *   isTextureFloat: Boolean,
+ * }|null}
+ */
 let features = null;
 
+/**
+ * @extends WebGLKernel
+ */
 class WebGL2Kernel extends WebGLKernel {
   static get isSupported() {
     if (isSupported !== null) {
@@ -76,6 +88,10 @@ class WebGL2Kernel extends WebGLKernel {
     return testContext;
   }
 
+  /**
+   *
+   * @returns {{isFloatRead: Boolean, isIntegerDivisionAccurate: Boolean, kernelMap: Boolean, isTextureFloat: Boolean}}
+   */
   static get features() {
     return features;
   }
@@ -188,9 +204,6 @@ class WebGL2Kernel extends WebGLKernel {
   }
 
   run() {
-    if (this.program === null) {
-      this.build.apply(this, arguments);
-    }
     const { kernelArguments, texSize } = this;
     const gl = this.context;
 
@@ -205,13 +218,8 @@ class WebGL2Kernel extends WebGLKernel {
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
     for (let i = 0; i < kernelArguments.length; i++) {
-      if (this.switchingKernels) break;
+      if (this.switchingKernels) return;
       kernelArguments[i].updateValue(arguments[i]);
-    }
-
-    if (this.switchingKernels) {
-      this.switchingKernels = false;
-      return this.onRequestSwitchKernel(arguments, this);
     }
 
     if (this.plugins) {
@@ -254,49 +262,12 @@ class WebGL2Kernel extends WebGLKernel {
 
     if (this.subKernels !== null) {
       if (this.immutable) {
-        this.subKernelOutputTextures = [];
         this._setupSubOutputTextures(this.subKernels.length);
       }
       gl.drawBuffers(this.drawBuffersMap);
     }
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-    if (this.subKernelOutputTextures !== null) {
-      if (this.subKernels !== null) {
-        const output = {
-          result: this.renderOutput()
-        };
-        if (this.pipeline) {
-          for (let i = 0; i < this.subKernels.length; i++) {
-            output[this.subKernels[i].property] = new Texture({
-              texture: this.subKernelOutputTextures[i],
-              size: texSize,
-              dimensions: this.threadDim,
-              output: this.output,
-              context: this.context,
-              gpu: this.gpu,
-              type: this.getReturnTextureType(),
-            });
-          }
-        } else {
-          for (let i = 0; i < this.subKernels.length; i++) {
-            output[this.subKernels[i].property] = new Texture({
-              texture: this.subKernelOutputTextures[i],
-              size: texSize,
-              dimensions: this.threadDim,
-              output: this.output,
-              context: this.context,
-              gpu: this.gpu,
-              type: this.getReturnTextureType(),
-            }).toArray();
-          }
-        }
-        return output;
-      }
-    }
-
-    return this.renderOutput();
   }
 
   drawBuffers() {
@@ -354,10 +325,10 @@ class WebGL2Kernel extends WebGLKernel {
     const { texSize } = this;
     const gl = this.context;
     this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
-    const textures = this.subKernelOutputTextures = [];
+    this.subKernelOutputTextures = [];
     for (let i = 0; i < length; i++) {
       const texture = this.context.createTexture();
-      textures.push(texture);
+      this.subKernelOutputTextures.push(texture);
       this.drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
       gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount + i);
       gl.bindTexture(gl.TEXTURE_2D, texture);

@@ -22,7 +22,7 @@ function getOnKernel(gpu) {
     .setOutput([10])
     .setPipeline(true)
     .setImmutable(true)
-    .setOptimizeFloatMemory(false);
+    .setOptimizeFloatMemory(true);
 }
 
 function offOnOff(mode) {
@@ -38,7 +38,7 @@ function offOnOff(mode) {
   gpu.destroy();
 }
 
-test('off on off auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('off on off auto', () => {
   offOnOff();
 });
 
@@ -85,7 +85,7 @@ function onOffOn(mode) {
   gpu.destroy();
 }
 
-test('on off on auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('on off on auto', () => {
   onOffOn();
 });
 

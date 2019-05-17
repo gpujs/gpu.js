@@ -4,6 +4,7 @@ const { utils } = require('../../utils');
 
 /**
  * @abstract
+ * @extends Kernel
  */
 class GLKernel extends Kernel {
   static get mode() {
@@ -12,8 +13,8 @@ class GLKernel extends Kernel {
 
   static getIsFloatRead() {
     const kernelString = `function kernelFunction() {
-			return 1;
-		}`;
+      return 1;
+    }`;
     const kernel = new this(kernelString, {
       context: this.testContext,
       canvas: this.testCanvas,
@@ -22,7 +23,9 @@ class GLKernel extends Kernel {
       precision: 'single',
       returnType: 'Number'
     });
-    const result = kernel.run();
+    kernel.build();
+    kernel.run();
+    const result = kernel.renderOutput();
     kernel.destroy(true);
     return result[0] === 1;
   }
@@ -39,7 +42,13 @@ class GLKernel extends Kernel {
       returnType: 'Number',
       precision: 'unsigned',
     });
-    const result = kernel.run([6, 6030401], [3, 3991]);
+    const args = [
+      [6, 6030401],
+      [3, 3991]
+    ];
+    kernel.build.apply(kernel, args);
+    kernel.run.apply(kernel, args);
+    const result = kernel.renderOutput();
     kernel.destroy(true);
     // have we not got whole numbers for 6/3 or 6030401/3991
     // add more here if others see this problem
@@ -261,6 +270,8 @@ class GLKernel extends Kernel {
 
   constructor(source, settings) {
     super(source, settings);
+    this.renderOutput = null;
+    this.renderRawOutput = null;
     this.texSize = null;
     this.fixIntegerDivisionAccuracy = null;
     this.translatedSource = null;
@@ -277,6 +288,7 @@ class GLKernel extends Kernel {
     // TODO: replace boolean returns with setting a state that belongs on this that represents the need for fallback
     if (this.graphical) return;
     if (this.precision === 'unsigned') {
+      this.renderRawOutput = this.readPackedPixelsToUint8Array;
       switch (this.returnType) {
         case 'LiteralInteger':
         case 'Float':
@@ -285,6 +297,10 @@ class GLKernel extends Kernel {
           if (this.pipeline) {
             this.renderStrategy = renderStrategy.PackedTexture;
             this.renderOutput = this.renderTexture;
+            if (this.subKernels !== null) {
+              this.renderKernels = this.renderKernelsToTextures;
+            }
+            return true;
           } else if (this.output[2] > 0) {
             this.renderStrategy = renderStrategy.PackedPixelTo3DFloat;
             this.renderOutput = this.render3DPackedFloat;
@@ -295,6 +311,9 @@ class GLKernel extends Kernel {
             this.renderStrategy = renderStrategy.PackedPixelToFloat;
             this.renderOutput = this.renderPackedFloat;
           }
+          if (this.subKernels !== null) {
+            this.renderKernels = this.renderKernelsToArrays;
+          }
           return true;
         case 'Array(2)':
         case 'Array(3)':
@@ -303,9 +322,13 @@ class GLKernel extends Kernel {
           return false;
       }
     } else if (this.precision === 'single') {
+      this.renderRawOutput = this.readFloatPixelsToFloat32Array;
       if (this.pipeline) {
         this.renderStrategy = renderStrategy.FloatTexture;
         this.renderOutput = this.renderTexture;
+        if (this.subKernels !== null) {
+          this.renderKernels = this.renderKernelsToTextures;
+        }
         return true;
       }
       switch (this.returnType) {
@@ -338,6 +361,9 @@ class GLKernel extends Kernel {
               this.renderOutput = this.renderFloat;
             }
           }
+          if (this.subKernels !== null) {
+            this.renderKernels = this.renderKernelsToArrays;
+          }
           return true;
         case 'Array(2)':
           if (this.output[2] > 0) {
@@ -349,6 +375,9 @@ class GLKernel extends Kernel {
           } else {
             this.renderStrategy = renderStrategy.FloatPixelToArray2;
             this.renderOutput = this.renderArray2;
+          }
+          if (this.subKernels !== null) {
+            this.renderKernels = this.renderKernelsToArrays;
           }
           return true;
         case 'Array(3)':
@@ -362,6 +391,9 @@ class GLKernel extends Kernel {
             this.renderStrategy = renderStrategy.FloatPixelToArray3;
             this.renderOutput = this.renderArray3;
           }
+          if (this.subKernels !== null) {
+            this.renderKernels = this.renderKernelsToArrays;
+          }
           return true;
         case 'Array(4)':
           if (this.output[2] > 0) {
@@ -373,6 +405,9 @@ class GLKernel extends Kernel {
           } else {
             this.renderStrategy = renderStrategy.FloatPixelToArray4;
             this.renderOutput = this.renderArray4;
+          }
+          if (this.subKernels !== null) {
+            this.renderKernels = this.renderKernelsToArrays;
           }
           return true;
       }
@@ -579,9 +614,11 @@ class GLKernel extends Kernel {
     gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, result);
     return result;
   }
+
   readPackedPixelsToFloat32Array() {
     return new Float32Array(this.readPackedPixelsToUint8Array().buffer);
   }
+
   readFloatPixelsToFloat32Array() {
     if (this.precision !== 'single') throw new Error('Requires this.precision to be "single"');
     const {
@@ -594,6 +631,7 @@ class GLKernel extends Kernel {
     gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
     return result;
   }
+
   readMemoryOptimizedFloatPixelsToFloat32Array() {
     if (this.precision !== 'single') throw new Error('Requires this.precision to be "single"');
     const {
@@ -606,10 +644,12 @@ class GLKernel extends Kernel {
     gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
     return result;
   }
+
   renderPackedFloat() {
     const [xMax] = this.output;
     return this.readPackedPixelsToFloat32Array().subarray(0, xMax);
   }
+
   render2DPackedFloat() {
     const pixels = this.readPackedPixelsToFloat32Array();
     const [xMax, yMax] = this.output;
@@ -621,6 +661,7 @@ class GLKernel extends Kernel {
     }
     return yResults;
   }
+
   render3DPackedFloat() {
     const pixels = this.readPackedPixelsToFloat32Array();
     const [xMax, yMax, zMax] = this.output;
@@ -636,6 +677,7 @@ class GLKernel extends Kernel {
     }
     return zResults;
   }
+
   renderFloat() {
     const pixels = this.readFloatPixelsToFloat32Array();
     const [xMax] = this.output;
@@ -647,11 +689,13 @@ class GLKernel extends Kernel {
     }
     return xResults;
   }
+
   renderMemoryOptimizedFloat() {
     const pixels = this.readMemoryOptimizedFloatPixelsToFloat32Array();
     const [xMax] = this.output;
     return pixels.subarray(0, xMax);
   }
+
   render2DFloat() {
     const pixels = this.readFloatPixelsToFloat32Array();
     const [xMax, yMax] = this.output;
@@ -667,6 +711,7 @@ class GLKernel extends Kernel {
     }
     return yResults;
   }
+
   renderMemoryOptimized2DFloat() {
     const pixels = this.readFloatPixelsToFloat32Array();
     const [xMax, yMax] = this.output;
@@ -677,6 +722,7 @@ class GLKernel extends Kernel {
     }
     return yResults;
   }
+
   render3DFloat() {
     const pixels = this.readFloatPixelsToFloat32Array();
     const [xMax, yMax, zMax] = this.output;
@@ -696,6 +742,7 @@ class GLKernel extends Kernel {
     }
     return zResults;
   }
+
   renderMemoryOptimized3DFloat() {
     const pixels = this.readFloatPixelsToFloat32Array();
     const [xMax, yMax, zMax] = this.output;
@@ -710,6 +757,7 @@ class GLKernel extends Kernel {
     }
     return zResults;
   }
+
   renderArray2() {
     const pixels = this.readFloatPixelsToFloat32Array();
     const [xMax] = this.output;
@@ -721,6 +769,7 @@ class GLKernel extends Kernel {
     }
     return xResults;
   }
+
   render2DArray2() {
     const pixels = this.readFloatPixelsToFloat32Array();
     const [xMax, yMax] = this.output;
@@ -737,6 +786,7 @@ class GLKernel extends Kernel {
     }
     return yResults;
   }
+
   render3DArray2() {
     const pixels = this.readFloatPixelsToFloat32Array();
     const [xMax, yMax, zMax] = this.output;
@@ -757,6 +807,7 @@ class GLKernel extends Kernel {
     }
     return zResults;
   }
+
   renderArray3() {
     const pixels = this.readFloatPixelsToFloat32Array();
     const [xMax] = this.output;
@@ -768,6 +819,7 @@ class GLKernel extends Kernel {
     }
     return xResults;
   }
+
   render2DArray3() {
     const pixels = this.readFloatPixelsToFloat32Array();
     const [xMax, yMax] = this.output;
@@ -784,6 +836,7 @@ class GLKernel extends Kernel {
     }
     return yResults;
   }
+
   render3DArray3() {
     const pixels = this.readFloatPixelsToFloat32Array();
     const [xMax, yMax, zMax] = this.output;
@@ -804,6 +857,7 @@ class GLKernel extends Kernel {
     }
     return zResults;
   }
+
   renderArray4() {
     const pixels = this.readFloatPixelsToFloat32Array();
     const [xMax] = this.output;
@@ -815,6 +869,7 @@ class GLKernel extends Kernel {
     }
     return xResults;
   }
+
   render2DArray4() {
     const pixels = this.readFloatPixelsToFloat32Array();
     const [xMax, yMax] = this.output;
@@ -831,6 +886,7 @@ class GLKernel extends Kernel {
     }
     return yResults;
   }
+
   render3DArray4() {
     const pixels = this.readFloatPixelsToFloat32Array();
     const [xMax, yMax, zMax] = this.output;
@@ -860,6 +916,44 @@ class GLKernel extends Kernel {
     const pixels = new Uint8Array(width * height * 4);
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     return pixels;
+  }
+
+  renderKernelsToArrays() {
+    const result = {
+      result: this.renderOutput(),
+    };
+    const type = this.getReturnTextureType();
+    for (let i = 0; i < this.subKernels.length; i++) {
+      result[this.subKernels[i].property] = new Texture({
+        texture: this.subKernelOutputTextures[i],
+        size: this.texSize,
+        dimensions: this.threadDim,
+        output: this.output,
+        context: this.context,
+        gpu: this.gpu,
+        type,
+      }).toArray();
+    }
+    return result;
+  }
+
+  renderKernelsToTextures() {
+    const result = {
+      result: this.renderOutput(),
+    };
+    const type = this.getReturnTextureType();
+    for (let i = 0; i < this.subKernels.length; i++) {
+      result[this.subKernels[i].property] = new Texture({
+        texture: this.subKernelOutputTextures[i],
+        size: this.texSize,
+        dimensions: this.threadDim,
+        output: this.output,
+        context: this.context,
+        gpu: this.gpu,
+        type,
+      });
+    }
+    return result;
   }
 }
 

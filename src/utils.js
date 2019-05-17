@@ -33,7 +33,7 @@ const utils = {
   /**
    * @descReturn TRUE, on a JS function
    * @param {Function} funcObj - Object to validate if its a function
-   * @returns	{Boolean} TRUE if the object is a JS function
+   * @returns  {Boolean} TRUE if the object is a JS function
    */
   isFunction(funcObj) {
     return typeof(funcObj) === 'function';

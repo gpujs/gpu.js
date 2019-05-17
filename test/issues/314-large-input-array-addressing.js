@@ -12,48 +12,48 @@ const divisor = 100;
 const data = new Uint16Array(DATA_MAX);
 
 for (let i = 0; i < DATA_MAX/divisor; i++) {
-	for (let j = 0; j < divisor; j++) {
-		data[i*divisor + j] = j*2;
-	}
+  for (let j = 0; j < divisor; j++) {
+    data[i*divisor + j] = j*2;
+  }
 }
 function buildLargeArrayAddressKernel(mode) {
-	const gpu = new GPU({ mode });
-	const largeArrayAddressKernel = gpu.createKernel(function(data) {
-		return data[this.thread.x];
-	}, {
-		precision: 'unsigned',
-	})
-		.setOutput([DATA_MAX]);
+  const gpu = new GPU({ mode });
+  const largeArrayAddressKernel = gpu.createKernel(function(data) {
+    return data[this.thread.x];
+  }, {
+    precision: 'unsigned',
+  })
+    .setOutput([DATA_MAX]);
 
-	const result = largeArrayAddressKernel(data);
+  const result = largeArrayAddressKernel(data);
 
-	let same = true;
-	let i = 0;
-	for (; i < DATA_MAX; i++) {
-		if (result[i] !== data[i]) {
-			same = false;
-			break;
-		}
-	}
-	assert.ok(same, "not all elements are the same, failed on index:" + i);
-	gpu.destroy();
+  let same = true;
+  let i = 0;
+  for (; i < DATA_MAX; i++) {
+    if (result[i] !== data[i]) {
+      same = false;
+      break;
+    }
+  }
+  assert.ok(same, "not all elements are the same, failed on index:" + i);
+  gpu.destroy();
 }
 
 test('Issue #314 Large array addressing - auto', () => {
-	buildLargeArrayAddressKernel(null);
+  buildLargeArrayAddressKernel(null);
 });
 
 test('Issue #314 Large array addressing - gpu', () => {
-	buildLargeArrayAddressKernel('gpu');
+  buildLargeArrayAddressKernel('gpu');
 });
 
 (GPU.isWebGLSupported ? test : skip)('Issue #314 Large array addressing - webgl', () => {
-	buildLargeArrayAddressKernel('webgl');
+  buildLargeArrayAddressKernel('webgl');
 });
 
 (GPU.isWebGL2Supported ? test : skip)('Issue #314 Large array addressing - webgl2', () => {
-	buildLargeArrayAddressKernel('webgl2');
+  buildLargeArrayAddressKernel('webgl2');
 });
 (GPU.isHeadlessGLSupported ? test : skip)('Issue #314 Large array addressing - headlessgl', () => {
-	buildLargeArrayAddressKernel('headlessgl');
+  buildLargeArrayAddressKernel('headlessgl');
 });

@@ -313,13 +313,14 @@ export interface ISubKernel {
 
 
 export class FunctionBuilder {
-  fromKernel(kernel: IKernelSettings, FunctionNode: FunctionNode, extraNodeOptions?: any): FunctionBuilder;
+  static fromKernel(kernel: IKernelSettings, FunctionNode: FunctionNode, extraNodeOptions?: any): FunctionBuilder;
   constructor(settings: IFunctionBuilderSettings);
   addFunctionNode(functionNode: FunctionNode): void;
   traceFunctionCalls(functionName: string): string[];
   getStringFromFunctionNames(functionName?: string[]): string;
   getPrototypesFromFunctionNames(functionName?: string[]): string[];
   getString(functionName: string): string;
+  getPrototypeString(functionName: string): string;
 }
 
 

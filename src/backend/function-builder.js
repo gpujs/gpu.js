@@ -1,14 +1,16 @@
 /**
  * @desc This handles all the raw state, converted state, etc. of a single function.
  * [INTERNAL] A collection of functionNodes.
+ * @class
  */
 class FunctionBuilder {
   /**
    *
-   * @param {Kernel} kernel
+   * @param {typeof Kernel} kernel
    * @param {FunctionNode} FunctionNode
    * @param {object} [extraNodeOptions]
-   * @returns FunctionBuilder
+   * @returns {FunctionBuilder}
+   * @static
    */
   static fromKernel(kernel, FunctionNode, extraNodeOptions) {
     const {

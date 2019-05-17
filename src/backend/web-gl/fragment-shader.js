@@ -66,10 +66,10 @@ float decode32(vec4 texel) {
 }
 
 float decode16(vec4 texel, int index) {
-	int channel = integerMod(index, 2);
-	if (channel == 0) return texel.r * 255.0 + texel.g * 65280.0;
-	if (channel == 1) return texel.b * 255.0 + texel.a * 65280.0;
-	return 0.0;
+  int channel = integerMod(index, 2);
+  if (channel == 0) return texel.r * 255.0 + texel.g * 65280.0;
+  if (channel == 1) return texel.b * 255.0 + texel.a * 65280.0;
+  return 0.0;
 }
 
 float decode8(vec4 texel, int index) {

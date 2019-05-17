@@ -1,8 +1,59 @@
 const { utils } = require('./utils');
 
+/**
+ * Makes kernels easier for mortals (including me)
+ * @param kernel
+ * @returns {function()}
+ */
 function kernelRunShortcut(kernel) {
+  let run = function() {
+    kernel.build.apply(kernel, arguments);
+    if (kernel.renderKernels) {
+      run = function() {
+        kernel.run.apply(kernel, arguments);
+        kernel.run.apply(kernel, arguments);
+        if (kernel.switchingKernels) {
+          kernel.switchingKernels = false;
+          return kernel.onRequestSwitchKernel(arguments, kernel);
+        }
+        return kernel.renderKernels();
+      };
+      kernel.run.apply(kernel, arguments);
+      return kernel.renderKernels();
+    } else if (kernel.renderOutput) {
+      run = function() {
+        kernel.run.apply(kernel, arguments);
+        if (kernel.switchingKernels) {
+          kernel.switchingKernels = false;
+          return kernel.onRequestSwitchKernel(arguments, kernel);
+        }
+        return kernel.renderOutput();
+      };
+      kernel.run.apply(kernel, arguments);
+      return kernel.renderOutput();
+    } else {
+      run = function() {
+        return kernel.run.apply(kernel, arguments);
+      };
+      return kernel.run.apply(kernel, arguments);
+    }
+  };
   const shortcut = function() {
-    return kernel.run.apply(kernel, arguments);
+    return run.apply(kernel, arguments);
+  };
+
+  /**
+   * Run kernel in async mode
+   * @returns {Promise<KernelOutput>}
+   */
+  shortcut.exec = function() {
+    return new Promise((accept, reject) => {
+      try {
+        accept(run.apply(this, arguments));
+      } catch (e) {
+        reject(e);
+      }
+    });
   };
 
   utils

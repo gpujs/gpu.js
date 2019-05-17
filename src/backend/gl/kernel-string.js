@@ -71,23 +71,23 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
     result.push(
       `  const renderOutput = function ${
         toStringWithoutUtils(kernel.renderOutput.toString())
-					.replace(`this.outputTexture`, 'null')
-					.replace('this.texSize', `new Int32Array(${JSON.stringify(Array.from(kernel.texSize))})`)
-					.replace('this.threadDim', `new Int32Array(${JSON.stringify(Array.from(kernel.threadDim))})`)
-					.replace('this.output', `new Int32Array(${JSON.stringify(this.output)})`)
-					.replace('this.context', 'gl')
-					.replace('this.gpu', 'null')
-					.replace('this.getReturnTextureType()', `'${kernel.getReturnTextureType()}'`)
-			};`
+          .replace(`this.outputTexture`, 'null')
+          .replace('this.texSize', `new Int32Array(${JSON.stringify(Array.from(kernel.texSize))})`)
+          .replace('this.threadDim', `new Int32Array(${JSON.stringify(Array.from(kernel.threadDim))})`)
+          .replace('this.output', `new Int32Array(${JSON.stringify(this.output)})`)
+          .replace('this.context', 'gl')
+          .replace('this.gpu', 'null')
+          .replace('this.getReturnTextureType()', `'${kernel.getReturnTextureType()}'`)
+      };`
     );
   } else {
     result.push(
       `  const renderOutput = function ${toStringWithoutUtils(kernel.renderOutput.toString())
-				.replace('() {', '(pixels) {')
-				.replace('    const pixels = this.readFloatPixelsToFloat32Array();\n', '')
-				.replace('this.readPackedPixelsToFloat32Array()', 'new Float32Array(pixels.buffer)')
-				.replace('this.output;', JSON.stringify(kernel.output) + ';')
-				};`
+        .replace('() {', '(pixels) {')
+        .replace('    const pixels = this.readFloatPixelsToFloat32Array();\n', '')
+        .replace('this.readPackedPixelsToFloat32Array()', 'new Float32Array(pixels.buffer)')
+        .replace('this.output;', JSON.stringify(kernel.output) + ';')
+        };`
     );
   }
   kernel.kernelArguments.forEach(kernelArgument => {
@@ -97,6 +97,11 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   result.push(`  return function (${kernel.kernelArguments.map(kernelArgument => kernelArgument.name).join(', ')}) {`);
   context.setIndent(4);
   kernel.run.apply(kernel, args);
+  if (kernel.renderKernels) {
+    kernel.renderKernels();
+  } else if (kernel.renderOutput) {
+    kernel.renderOutput();
+  }
   result.push('/** start setup uploads for kernel values **/');
   kernel.kernelArguments.forEach(kernelArgument => {
     result.push(kernelArgument.getStringValueHandler());

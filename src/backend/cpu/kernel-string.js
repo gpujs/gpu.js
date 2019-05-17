@@ -34,7 +34,7 @@ function cpuKernelString(cpuKernel, name) {
         this.output = ${ JSON.stringify(cpuKernel.output) };
         this._kernelString = \`${ cpuKernel._kernelString }\`;
         this.output = ${ JSON.stringify(cpuKernel.output) };
-		    this.run = function() {
+        this.run = function() {
           this.run = null;
           this.build(arguments);
           return this.run.apply(this, arguments);

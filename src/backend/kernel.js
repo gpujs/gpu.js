@@ -157,6 +157,12 @@ class Kernel {
      * @type {Boolean}
      */
     this.pipeline = false;
+
+    /**
+     * Make GPU use single precison or unsigned.  Acceptable values: 'single' or 'unsigned'
+     * @type {String|null}
+     * @enum 'single' | 'unsigned'
+     */
     this.precision = null;
 
     this.plugins = null;
@@ -464,21 +470,6 @@ class Kernel {
    */
   validateSettings() {
     throw new Error(`"validateSettings" not defined on ${ this.constructor.name }`);
-  }
-
-  /**
-   * Run kernel in async mode
-   * @returns {Promise<KernelOutput>}
-   */
-  exec() {
-    const args = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
-    return new Promise((accept, reject) => {
-      try {
-        accept(this.run.apply(this, args));
-      } catch (e) {
-        reject(e);
-      }
-    });
   }
 
   /**

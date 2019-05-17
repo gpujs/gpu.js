@@ -229,7 +229,12 @@ class GPU {
         const signature = signatureArray.join(',');
         const existingKernel = switchableKernels[signature];
         if (existingKernel) {
-          return existingKernel.run.apply(existingKernel, args);
+          existingKernel.run.apply(existingKernel, args);
+          if (existingKernel.renderKernels) {
+            return existingKernel.renderKernels();
+          } else {
+            return existingKernel.renderOutput();
+          }
         }
         const newKernel = switchableKernels[signature] = new this.Kernel(source, {
           graphical: kernel.graphical,
@@ -250,9 +255,13 @@ class GPU {
           gpu: this,
           validate,
         });
-        // console.log(newKernel.toString.apply(newKernel, args));
-        // console.log(newKernel.context.COLOR_ATTACHMENT0);
-        return newKernel.run.apply(newKernel, args);
+        newKernel.build.apply(newKernel, args);
+        newKernel.run.apply(newKernel, args);
+        if (newKernel.renderKernels) {
+          return newKernel.renderKernels();
+        } else {
+          return newKernel.renderOutput();
+        }
       }
     }, upgradeDeprecatedCreateKernelSettings(settings) || {});
 
@@ -362,9 +371,9 @@ class GPU {
    * @param {Function} rootKernel - Root kernel to combine kernels into
    *
    * @example
-   * 	combineKernels(add, multiply, function(a,b,c){
-   *	 	return add(multiply(a,b), c)
-   *	})
+   *   combineKernels(add, multiply, function(a,b,c){
+   *     return add(multiply(a,b), c)
+   *  })
    *
    * @returns {Function} Callable kernel function
    *

@@ -64,7 +64,7 @@ float decode16(vec4 texel, int index) {
 }
 
 float decode8(vec4 texel, int index) {
-	int channel = integerMod(index, 4);
+  int channel = integerMod(index, 4);
   return texel[channel] * 255.0;
 }
 
