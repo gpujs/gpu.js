@@ -316,28 +316,10 @@ class CPUKernel extends Kernel {
     return imageArray;
   }
 
-  getPixels() {
-    // https://stackoverflow.com/a/41973289/1324039
+  getPixels(flip) {
     const [width, height] = this.output;
-    const halfHeight = height / 2 | 0; // the | 0 keeps the result an int
-    const bytesPerRow = width * 4;
-    // make a temp buffer to hold one row
-    const temp = new Uint8Array(width * 4);
-    const pixels = this._imageData.data.slice(0);
-    for (let y = 0; y < halfHeight; ++y) {
-      var topOffset = y * bytesPerRow;
-      var bottomOffset = (height - y - 1) * bytesPerRow;
-
-      // make copy of a row on the top half
-      temp.set(pixels.subarray(topOffset, topOffset + bytesPerRow));
-
-      // copy a row from the bottom half to the top
-      pixels.copyWithin(topOffset, bottomOffset, bottomOffset + bytesPerRow);
-
-      // copy the copy of the top half row to the bottom half
-      pixels.set(temp, bottomOffset);
-    }
-    return pixels;
+    // cpu is not flipped by default
+    return flip ? utils.flipPixels(this._imageData.data, width, height) : this._imageData.data.slice(0);
   }
 
   _imageTo3DArray(images) {

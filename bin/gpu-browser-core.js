@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0-rc.14
- * @date Fri May 17 2019 18:42:16 GMT-0400 (Eastern Daylight Time)
+ * @date Sat May 18 2019 17:22:46 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -1297,23 +1297,9 @@ class CPUKernel extends Kernel {
     return imageArray;
   }
 
-  getPixels() {
+  getPixels(flip) {
     const [width, height] = this.output;
-    const halfHeight = height / 2 | 0; 
-    const bytesPerRow = width * 4;
-    const temp = new Uint8Array(width * 4);
-    const pixels = this._imageData.data.slice(0);
-    for (let y = 0; y < halfHeight; ++y) {
-      var topOffset = y * bytesPerRow;
-      var bottomOffset = (height - y - 1) * bytesPerRow;
-
-      temp.set(pixels.subarray(topOffset, topOffset + bytesPerRow));
-
-      pixels.copyWithin(topOffset, bottomOffset, bottomOffset + bytesPerRow);
-
-      pixels.set(temp, bottomOffset);
-    }
-    return pixels;
+    return flip ? utils.flipPixels(this._imageData.data, width, height) : this._imageData.data.slice(0);
   }
 
   _imageTo3DArray(images) {
@@ -4035,7 +4021,8 @@ class GLKernel extends Kernel {
     }
     return zResults;
   }
-  getPixels() {
+
+  getPixels(flip) {
     const {
       context: gl,
       output
@@ -4043,7 +4030,7 @@ class GLKernel extends Kernel {
     const [width, height] = output;
     const pixels = new Uint8Array(width * height * 4);
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    return pixels;
+    return flip ? pixels : utils.flipPixels(pixels, width, height);
   }
 
   renderKernelsToArrays() {
@@ -4122,7 +4109,6 @@ module.exports = {
   GLKernel,
   renderStrategy
 };
-
 },{"../../texture":68,"../../utils":69,"../kernel":14}],12:[function(require,module,exports){
 const getContext = require('gl');
 const { WebGLKernel } = require('../web-gl/kernel');
@@ -10364,6 +10350,23 @@ const utils = {
       argumentTypes,
       returnType: settings.returnType || null,
     };
+  },
+  flipPixels: (pixels, width, height) => {
+    const halfHeight = height / 2 | 0; 
+    const bytesPerRow = width * 4;
+    const temp = new Uint8Array(width * 4);
+    const result = pixels.slice(0);
+    for (let y = 0; y < halfHeight; ++y) {
+      const topOffset = y * bytesPerRow;
+      const bottomOffset = (height - y - 1) * bytesPerRow;
+
+      temp.set(result.subarray(topOffset, topOffset + bytesPerRow));
+
+      result.copyWithin(topOffset, bottomOffset, bottomOffset + bytesPerRow);
+
+      result.set(temp, bottomOffset);
+    }
+    return result;
   }
 };
 

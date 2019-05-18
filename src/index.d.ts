@@ -99,7 +99,7 @@ export abstract class Kernel {
   immutable: boolean;
   pipeline: boolean;
   plugins: IPlugin[];
-  getPixels: number[];
+  getPixels(flip?: boolean): number[];
   constructor(kernel: KernelFunction, settings?: IKernelSettings); // TODO: JSON support
   build(
     arg1?: KernelVariable,

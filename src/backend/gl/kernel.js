@@ -907,7 +907,13 @@ class GLKernel extends Kernel {
     }
     return zResults;
   }
-  getPixels() {
+
+  /**
+   *
+   * @param {Boolean} [flip]
+   * @return {Uint8Array}
+   */
+  getPixels(flip) {
     const {
       context: gl,
       output
@@ -915,7 +921,8 @@ class GLKernel extends Kernel {
     const [width, height] = output;
     const pixels = new Uint8Array(width * height * 4);
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    return pixels;
+    // flipped by default, so invert
+    return flip ? pixels : utils.flipPixels(pixels, width, height);
   }
 
   renderKernelsToArrays() {

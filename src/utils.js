@@ -371,6 +371,28 @@ const utils = {
       argumentTypes,
       returnType: settings.returnType || null,
     };
+  },
+  flipPixels: (pixels, width, height) => {
+    // https://stackoverflow.com/a/41973289/1324039
+    const halfHeight = height / 2 | 0; // the | 0 keeps the result an int
+    const bytesPerRow = width * 4;
+    // make a temp buffer to hold one row
+    const temp = new Uint8Array(width * 4);
+    const result = pixels.slice(0);
+    for (let y = 0; y < halfHeight; ++y) {
+      const topOffset = y * bytesPerRow;
+      const bottomOffset = (height - y - 1) * bytesPerRow;
+
+      // make copy of a row on the top half
+      temp.set(result.subarray(topOffset, topOffset + bytesPerRow));
+
+      // copy a row from the bottom half to the top
+      result.copyWithin(topOffset, bottomOffset, bottomOffset + bytesPerRow);
+
+      // copy the copy of the top half row to the bottom half
+      result.set(temp, bottomOffset);
+    }
+    return result;
   }
 };
 
