@@ -115,9 +115,9 @@ test('Issue #390 (related) - output assignment cpu', function(assert) {
     output: [1,2,3]
   });
   assert.equal(node.toString(), 'function assignThreadToVar() {'
-    + '\nconst user_x=1;'
-    + '\nconst user_y=2;'
-    + '\nconst user_z=3;'
+    + '\nconst user_x=outputX;'
+    + '\nconst user_y=outputY;'
+    + '\nconst user_z=outputZ;'
     + '\nconst user_sum=((user_x+user_y)+user_z);'
     + '\nreturn user_sum;'
     + '\n}');

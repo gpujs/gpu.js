@@ -102,7 +102,8 @@ class Kernel {
     this.constants = null;
     this.constantTypes = null;
     this.constantBitRatios = null;
-    this.hardcodeConstants = false;
+    this.dynamicArguments = false;
+    this.dynamicOutput = true;
 
     /**
      *
@@ -426,6 +427,47 @@ class Kernel {
   }
 
   /**
+   * @param {Boolean} flag
+   * @return {Kernel}
+   */
+  setStrictIntegers(flag) {
+    this.strictIntegers = flag;
+    return this;
+  }
+
+  /**
+   *
+   * @param flag
+   * @return {Kernel}
+   */
+  setDynamicOutput(flag) {
+    this.dynamicOutput = flag;
+    return this;
+  }
+
+  /**
+   * @deprecated
+   * @param flag
+   * @return {Kernel}
+   */
+  setHardcodeConstants(flag) {
+    utils.warnDeprecated('method', 'setHardcodeConstants');
+    this.setDynamicOutput(flag);
+    this.setDynamicArguments(flag);
+    return this;
+  }
+
+  /**
+   *
+   * @param flag
+   * @return {Kernel}
+   */
+  setDynamicArguments(flag) {
+    this.dynamicArguments = flag;
+    return this;
+  }
+
+  /**
    * @deprecated
    * @returns {Object}
    */
@@ -533,7 +575,7 @@ class Kernel {
   }
 
   checkOutput() {
-    if (!this.output || !Array.isArray(this.output)) throw new Error('kernel.output not an array');
+    if (!this.output || !utils.isArray(this.output)) throw new Error('kernel.output not an array');
     if (this.output.length < 1) throw new Error('kernel.output is empty, needs at least 1 value');
     for (let i = 0; i < this.output.length; i++) {
       if (isNaN(this.output[i]) || this.output[i] < 1) {

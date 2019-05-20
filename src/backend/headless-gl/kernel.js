@@ -122,6 +122,15 @@ class HeadlessGLKernel extends WebGLKernel {
     const destroyContextString = `if (!context) { gl.getExtension('STACKGL_destroy_context').destroy(); }\n`;
     return glKernelString(this.constructor, arguments, this, setupContextString, destroyContextString);
   }
+
+  setOutput(output) {
+    super.setOutput(output);
+    if (this.graphical) {
+      const { context: gl } = this;
+      const [width, height] = this.output;
+      (this.extensions.STACKGL_resize_drawingbuffer || gl.getExtension('STACKGL_resize_drawingbuffer')).resize(width, height);
+    }
+  }
 }
 
 module.exports = {

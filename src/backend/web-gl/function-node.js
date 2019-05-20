@@ -862,30 +862,58 @@ class WebGLFunctionNode extends FunctionNode {
         retArr.push(`threadId.${name}`);
         return retArr;
       case 'this.output.value':
-        switch (name) {
-          case 'x':
-            if (this.isState('casting-to-integer')) {
-              retArr.push(this.output[0]);
-            } else {
-              retArr.push(this.output[0], '.0');
-            }
-            break;
-          case 'y':
-            if (this.isState('casting-to-integer')) {
-              retArr.push(this.output[1]);
-            } else {
-              retArr.push(this.output[1], '.0');
-            }
-            break;
-          case 'z':
-            if (this.isState('casting-to-integer')) {
-              retArr.push(this.output[2]);
-            } else {
-              retArr.push(this.output[2], '.0');
-            }
-            break;
-          default:
-            throw this.astErrorOutput('Unexpected expression', mNode);
+        if (this.dynamicOutput) {
+          switch (name) {
+            case 'x':
+              if (this.isState('casting-to-float')) {
+                retArr.push('float(uOutputDim.x)');
+              } else {
+                retArr.push('uOutputDim.x');
+              }
+              break;
+            case 'y':
+              if (this.isState('casting-to-float')) {
+                retArr.push('float(uOutputDim.y)');
+              } else {
+                retArr.push('uOutputDim.y');
+              }
+              break;
+            case 'z':
+              if (this.isState('casting-to-float')) {
+                retArr.push('float(uOutputDim.z)');
+              } else {
+                retArr.push('uOutputDim.z');
+              }
+              break;
+            default:
+              throw this.astErrorOutput('Unexpected expression', mNode);
+          }
+        } else {
+          switch (name) {
+            case 'x':
+              if (this.isState('casting-to-integer')) {
+                retArr.push(this.output[0]);
+              } else {
+                retArr.push(this.output[0], '.0');
+              }
+              break;
+            case 'y':
+              if (this.isState('casting-to-integer')) {
+                retArr.push(this.output[1]);
+              } else {
+                retArr.push(this.output[1], '.0');
+              }
+              break;
+            case 'z':
+              if (this.isState('casting-to-integer')) {
+                retArr.push(this.output[2]);
+              } else {
+                retArr.push(this.output[2], '.0');
+              }
+              break;
+            default:
+              throw this.astErrorOutput('Unexpected expression', mNode);
+          }
         }
         return retArr;
       case 'value':

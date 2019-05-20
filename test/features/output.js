@@ -222,14 +222,6 @@ function outputGraphicalMatrix(mode, canvas, context) {
   const context = canvas.getContext('webgl', { premultipliedAlpha: false });
   const pixels = outputGraphicalMatrix('webgl', canvas, context);
   assert.deepEqual(pixels, [
-    64,
-    64,
-    64,
-    64,
-    128,
-    128,
-    128,
-    128,
     191,
     191,
     191,
@@ -237,7 +229,15 @@ function outputGraphicalMatrix(mode, canvas, context) {
     255,
     255,
     255,
-    255
+    255,
+    64,
+    64,
+    64,
+    64,
+    128,
+    128,
+    128,
+    128
   ]);
 });
 
@@ -246,14 +246,6 @@ function outputGraphicalMatrix(mode, canvas, context) {
   const context = canvas.getContext('webgl2', { premultipliedAlpha: false });
   const pixels = outputGraphicalMatrix('webgl2', canvas, context);
   assert.deepEqual(pixels, [
-    64,
-    64,
-    64,
-    64,
-    128,
-    128,
-    128,
-    128,
     191,
     191,
     191,
@@ -261,21 +253,21 @@ function outputGraphicalMatrix(mode, canvas, context) {
     255,
     255,
     255,
-    255
+    255,
+    64,
+    64,
+    64,
+    64,
+    128,
+    128,
+    128,
+    128
   ]);
 });
 
 (GPU.isHeadlessGLSupported ? test : skip)('graphical output matrix headlessgl', () => {
   const pixels = outputGraphicalMatrix('headlessgl');
   assert.deepEqual(pixels, [
-    64,
-    64,
-    64,
-    64,
-    128,
-    128,
-    128,
-    128,
     191,
     191,
     191,
@@ -283,21 +275,21 @@ function outputGraphicalMatrix(mode, canvas, context) {
     255,
     255,
     255,
-    255
+    255,
+    64,
+    64,
+    64,
+    64,
+    128,
+    128,
+    128,
+    128
   ]);
 });
 
 (GPU.isCanvasSupported ? test : skip)('graphical output matrix cpu with real canvas', () => {
   const pixels = outputGraphicalMatrix('cpu');
   assert.deepEqual(pixels, [
-    63,
-    63,
-    63,
-    63,
-    127,
-    127,
-    127,
-    127,
     191,
     191,
     191,
@@ -305,7 +297,15 @@ function outputGraphicalMatrix(mode, canvas, context) {
     255,
     255,
     255,
-    255
+    255,
+    63,
+    63,
+    63,
+    63,
+    127,
+    127,
+    127,
+    127
   ]);
 });
 
@@ -331,14 +331,6 @@ test('graphical output matrix cpu with mocked canvas', () => {
   };
   const pixels = outputGraphicalMatrix('cpu', mockCanvas, mockContext);
   assert.deepEqual(pixels, [
-    63,
-    63,
-    63,
-    63,
-    127,
-    127,
-    127,
-    127,
     191,
     191,
     191,
@@ -346,7 +338,15 @@ test('graphical output matrix cpu with mocked canvas', () => {
     255,
     255,
     255,
-    255
+    255,
+    63,
+    63,
+    63,
+    63,
+    127,
+    127,
+    127,
+    127
   ]);
 });
 

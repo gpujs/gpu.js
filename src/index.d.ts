@@ -199,8 +199,8 @@ export interface IKernelXYZ {
 }
 
 export interface IKernelSettings {
-  output: number[] | IKernelXYZ;
-  precision: 'single' | 'unsigned';
+  output?: number[] | IKernelXYZ;
+  precision?: 'single' | 'unsigned';
   constants?: object;
   context?: any;
   canvas?: any;

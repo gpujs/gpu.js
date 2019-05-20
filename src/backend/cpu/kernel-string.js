@@ -20,6 +20,7 @@ function cpuKernelString(cpuKernel, name) {
     const utils = {
       allPropertiesOf: ${ removeNoise(utils.allPropertiesOf.toString()) },
       clone: ${ removeNoise(utils.clone.toString()) },
+      isArray: ${ removeNoise(utils.isArray.toString()) },
     };
     let Input = function() {};
     class ${ name || 'Kernel' } {

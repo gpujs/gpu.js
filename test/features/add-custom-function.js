@@ -14,12 +14,11 @@ function addAB(mode) {
     output: [6]
   });
 
-  assert.ok(kernel !== null, 'function generated test');
-
   const a = [1, 2, 3, 5, 6, 7];
   const b = [4, 5, 6, 1, 2, 3];
 
   const result = kernel(a, b);
+
   const expected = [5, 7, 9, 6, 8, 10];
 
   assert.deepEqual(Array.from(result), expected);

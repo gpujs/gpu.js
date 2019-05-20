@@ -569,14 +569,14 @@ class GLKernel extends Kernel {
           } else {
             return 'ArrayTexture(1)';
           }
-        case 'Array(2)':
-          return 'ArrayTexture(2)';
-        case 'Array(3)':
-          return 'ArrayTexture(3)';
-        case 'Array(4)':
-          return 'ArrayTexture(4)';
-        default:
-          throw new Error(`unsupported returnType ${this.returnType}`);
+          case 'Array(2)':
+            return 'ArrayTexture(2)';
+          case 'Array(3)':
+            return 'ArrayTexture(3)';
+          case 'Array(4)':
+            return 'ArrayTexture(4)';
+          default:
+            throw new Error(`unsupported returnType ${this.returnType}`);
       }
     } else {
       switch (this.returnType) {
@@ -961,6 +961,30 @@ class GLKernel extends Kernel {
       });
     }
     return result;
+  }
+
+  setOutput(output) {
+    super.setOutput(output);
+    if (this.program) {
+      this.threadDim = [this.output[0], this.output[1] || 1, this.output[2] || 1];
+      this.texSize = utils.dimToTexSize({
+        floatTextures: this.optimizeFloatMemory,
+        floatOutput: this.precision === 'single',
+      }, this.threadDim, true);
+      const { context: gl } = this;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+      this.updateMaxTexSize();
+      this.framebuffer.width = this.texSize[0];
+      this.framebuffer.height = this.texSize[1];
+      this.context.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
+      this.canvas.width = this.maxTexSize[0];
+      this.canvas.height = this.maxTexSize[1];
+      this._setupOutputTexture();
+      if (this.subKernels && this.subKernels.length > 0) {
+        this._setupSubOutputTextures();
+      }
+    }
+    return this;
   }
 }
 

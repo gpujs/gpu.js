@@ -380,7 +380,7 @@ class WebGLKernel extends GLKernel {
       const name = this.argumentNames[index];
       const type = utils.getVariableType(value, this.strictIntegers);
       this.argumentTypes.push(type);
-      const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArgument ? 'dynamic' : 'static', this.precision);
+      const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArguments ? 'dynamic' : 'static', this.precision);
       if (KernelValue === null) {
         throw new Error('unsupported argument');
         // TODO: Downgrade? Example: HTMLImageArrays
@@ -421,7 +421,7 @@ class WebGLKernel extends GLKernel {
       const value = this.constants[name];
       const type = utils.getVariableType(value, this.strictIntegers);
       this.constantTypes[name] = type;
-      const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArgument ? 'dynamic' : 'static', this.precision);
+      const KernelValue = this.constructor.lookupKernelValueType(type, 'static', this.precision);
       if (KernelValue === null) {
         throw new Error(`unsupported constant ${ type }`);
         // TODO: Downgrade?
@@ -549,7 +549,7 @@ class WebGLKernel extends GLKernel {
         this.subKernels !== null &&
         this.subKernels.length > 0
       ) {
-        this._setupSubOutputTextures(this.subKernels.length);
+        this._setupSubOutputTextures();
       }
     }
   }
@@ -572,7 +572,7 @@ class WebGLKernel extends GLKernel {
     gl.useProgram(this.program);
     gl.scissor(0, 0, texSize[0], texSize[1]);
 
-    if (!this.hardcodeConstants) {
+    if (this.dynamicOutput) {
       this.setUniform3iv('uOutputDim', this.threadDim);
       this.setUniform2iv('uTexSize', texSize);
     }
@@ -625,7 +625,7 @@ class WebGLKernel extends GLKernel {
 
     if (this.subKernels !== null) {
       if (this.immutable) {
-        this._setupSubOutputTextures(this.subKernels.length);
+        this._setupSubOutputTextures();
       }
       this.extensions.WEBGL_draw_buffers.drawBuffersWEBGL(this.drawBuffersMap);
     }
@@ -698,12 +698,12 @@ class WebGLKernel extends GLKernel {
   /**
    * @desc Setup and replace sub-output textures
    */
-  _setupSubOutputTextures(length) {
+  _setupSubOutputTextures() {
     const gl = this.context;
     const texSize = this.texSize;
     this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
     this.subKernelOutputTextures = [];
-    for (let i = 0; i < length; i++) {
+    for (let i = 0; i < this.subKernels.length; i++) {
       const texture = this.context.createTexture();
       this.subKernelOutputTextures.push(texture);
       this.drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
@@ -919,25 +919,22 @@ class WebGLKernel extends GLKernel {
 
   /**
    * @desc Generate transpiled glsl Strings for constant parameters sent to a kernel
-   * They can be defined by *hardcodeConstants*
-   *
    * @returns {String} result
    */
   _getConstantsString() {
     const result = [];
     const { threadDim, texSize } = this;
-    if (this.hardcodeConstants) {
-      result.push(
-        `ivec3 uOutputDim = ivec3(${threadDim[0]}, ${threadDim[1]}, ${threadDim[2]})`,
-        `ivec2 uTexSize = ivec2(${texSize[0]}, ${texSize[1]})`
-      );
-    } else {
+    if (this.dynamicOutput) {
       result.push(
         'uniform ivec3 uOutputDim',
         'uniform ivec2 uTexSize'
       );
+    } else {
+      result.push(
+        `ivec3 uOutputDim = ivec3(${threadDim[0]}, ${threadDim[1]}, ${threadDim[2]})`,
+        `ivec2 uTexSize = ivec2(${texSize[0]}, ${texSize[1]})`
+      );
     }
-
     return utils.linesToString(result);
   }
 

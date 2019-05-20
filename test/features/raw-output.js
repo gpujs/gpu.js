@@ -70,23 +70,23 @@ function rawSinglePrecisionRenderOutput(mode) {
   gpu.destroy();
 }
 
-test('raw single precision render output auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('raw single precision render output auto', () => {
   rawSinglePrecisionRenderOutput();
 });
 
-(GPU.isGPUSupported ? test : skip)('raw single precision render output gpu', () => {
+(GPU.isGPUSupported && GPU.isSinglePrecisionSupported ? test : skip)('raw single precision render output gpu', () => {
   rawSinglePrecisionRenderOutput('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('raw single precision render output webgl', () => {
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('raw single precision render output webgl', () => {
   rawSinglePrecisionRenderOutput('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('raw single precision render output webgl2', () => {
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('raw single precision render output webgl2', () => {
   rawSinglePrecisionRenderOutput('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('raw single precision render output headlessgl', () => {
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('raw single precision render output headlessgl', () => {
   rawSinglePrecisionRenderOutput('headlessgl');
 });
 

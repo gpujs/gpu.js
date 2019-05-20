@@ -148,10 +148,10 @@ Settings are an object used to create an instance of `GPU`.  Example: `new GPU(s
 
 ## `gpu.createKernel` Settings
 Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.createKernel(settings)`
-* `output`: array or object that describes the output of kernel.
+* `output` or `kernel.setOutput(output)`: `array` or `object` that describes the output of kernel.  When using `kernel.setOutput()` you _can_ call it after the kernel has compiled if `kernel.dynamicOutput` is `true`, to resize your output.  Example:
   * as array: `[width]`, `[width, height]`, or `[width, height, depth]`
   * as object: `{ x: width, y: height, z: depth }`
-* `pipeline` **New in V2!**: boolean, default = `false`
+* `pipeline` or `kernel.setPipeline(true)` **New in V2!**: boolean, default = `false`
   * Causes `kernel()` calls to output a `Texture`.  To get array's from a `Texture`, use:
   ```js
   const result = kernel();
@@ -161,19 +161,20 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
   ```js
   kernel(texture);
   ```
-* `graphical`: boolean, default = `false`
-* `loopMaxIterations`: number, default = 1000
-* `constants`: object, default = null
-* `hardcodeConstants`: boolean, default = false
-* `optimizeFloatMemory` **New in V2!**: boolean - causes a float32 texture to use all 4 channels rather than 1, using less memory, but consuming more GPU.
-* `precision` **New in V2!**: 'single' or 'unsigned' - if 'single' output texture uses float32 for each colour channel rather than 8
-* `fixIntegerDivisionAccuracy`: boolean - some cards have accuracy issues dividing by factors of three and some other primes (most apple kit?). Default on for affected cards, disable if accuracy not required.
-* `functions`: array, array of functions to be used inside kernel.  If undefined, inherits from `GPU` instance.
-* `nativeFunctions`: object, defined as: `{ functionName: functionSource }`
+* `graphical` or `kernel.setGraphical(boolean)`: boolean, default = `false`
+* `loopMaxIterations` or `kernel.setLoopMaxIterations(number)`: number, default = 1000
+* `constants` or `kernel.setConstants(object)`: object, default = null
+* `dynamicOutput` or `kernel.setDynamicOutput(boolean)`: boolean, default = false - turns dynamic output on or off
+* `dynamicArguments` or `kernel.setDynamicArguments(boolean)`: boolean, default = false - turns dynamic arguments (use different size arrays and textures) on or off
+* `optimizeFloatMemory` or `kernel.setOptimizeFloatMemory(boolean)` **New in V2!**: boolean - causes a float32 texture to use all 4 channels rather than 1, using less memory, but consuming more GPU.
+* `precision` or `kernel.setPrecision('unsigned' | 'single')` **New in V2!**: 'single' or 'unsigned' - if 'single' output texture uses float32 for each colour channel rather than 8
+* `fixIntegerDivisionAccuracy` or `kernel.setFixIntegerDivisionAccuracy(boolean)` : boolean - some cards have accuracy issues dividing by factors of three and some other primes (most apple kit?). Default on for affected cards, disable if accuracy not required.
+* `functions` or `kernel.setFunctions(object)`: array, array of functions to be used inside kernel.  If undefined, inherits from `GPU` instance.
+* `nativeFunctions` or `kernel.setNativeFunctions(object)`: object, defined as: `{ functionName: functionSource }`
   * VERY IMPORTANT! - Use this to add special native functions to your environment when you need specific functionality is needed.
-* `subKernels`: array, generally inherited from `GPU` instance.
-* `immutable`: boolean, default = `false`
-* `strictIntegers`: boolean, default = `false` - allows undefined argumentTypes and function return values to use strict integer declarations.
+* `subKernels` or `kernel.setSubKernels(array)`: array, generally inherited from `GPU` instance.
+* `immutable` or `kernel.setImmutable(boolean)`: boolean, default = `false`
+* `strictIntegers` or `kernel.setStrictIntegers(boolean)`: boolean, default = `false` - allows undefined argumentTypes and function return values to use strict integer declarations.
 
 
 

@@ -34,6 +34,7 @@ class FunctionBuilder {
       functions,
       leadingReturnStatement,
       followingReturnStatement,
+      dynamicOutput,
     } = kernel;
 
     const lookupReturnType = (functionName, ast, requestingNode) => {
@@ -108,6 +109,7 @@ class FunctionBuilder {
       loopMaxIterations,
       output,
       plugins,
+      dynamicOutput,
     }, extraNodeOptions || {});
 
     const rootNodeOptions = Object.assign({}, nodeOptions, {

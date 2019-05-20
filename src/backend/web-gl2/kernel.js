@@ -210,7 +210,7 @@ class WebGL2Kernel extends WebGLKernel {
     gl.useProgram(this.program);
     gl.scissor(0, 0, texSize[0], texSize[1]);
 
-    if (!this.hardcodeConstants) {
+    if (this.dynamicOutput) {
       this.setUniform3iv('uOutputDim', new Int32Array(this.threadDim));
       this.setUniform2iv('uTexSize', texSize);
     }
@@ -262,7 +262,7 @@ class WebGL2Kernel extends WebGLKernel {
 
     if (this.subKernels !== null) {
       if (this.immutable) {
-        this._setupSubOutputTextures(this.subKernels.length);
+        this._setupSubOutputTextures();
       }
       gl.drawBuffers(this.drawBuffersMap);
     }
@@ -321,12 +321,12 @@ class WebGL2Kernel extends WebGLKernel {
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
   }
 
-  _setupSubOutputTextures(length) {
+  _setupSubOutputTextures() {
     const { texSize } = this;
     const gl = this.context;
     this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
     this.subKernelOutputTextures = [];
-    for (let i = 0; i < length; i++) {
+    for (let i = 0; i < this.subKernels.length; i++) {
       const texture = this.context.createTexture();
       this.subKernelOutputTextures.push(texture);
       this.drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);

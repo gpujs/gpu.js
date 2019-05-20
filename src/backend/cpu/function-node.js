@@ -408,13 +408,13 @@ class CPUFunctionNode extends FunctionNode {
       case 'this.output.value':
         switch (name) {
           case 'x':
-            retArr.push(this.output[0]);
+            retArr.push('outputX');
             break;
           case 'y':
-            retArr.push(this.output[1]);
+            retArr.push('outputY');
             break;
           case 'z':
-            retArr.push(this.output[2]);
+            retArr.push('outputZ');
             break;
           default:
             throw this.astErrorOutput('Unexpected expression', mNode);
