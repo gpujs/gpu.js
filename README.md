@@ -505,15 +505,15 @@ Sometimes you want to do multiple math operations on the gpu without the round t
 _**Note:**_ Kernels can have different output sizes.
 ```js
 const add = gpu.createKernel(function(a, b) {
-  return a + b;
+  return a[this.thread.x] + b[this.thread.x];
 }).setOutput([20]);
 
 const multiply = gpu.createKernel(function(a, b) {
-  return a * b;
+  return a[this.thread.x] * b[this.thread.x];
 }).setOutput([20]);
 
 const superKernel = gpu.combineKernels(add, multiply, function(a, b, c) {
-  return multiply(add(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
+  return multiply(add(a, b), c);
 });
 
 superKernel(a, b, c);
