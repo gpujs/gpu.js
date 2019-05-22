@@ -853,7 +853,6 @@ To assist with mostly unit tests, but perhaps in scenarios outside of GPU.js, th
 * `GPU.isCanvasSupported`: `boolean` - checks if canvas is supported
 * `GPU.isGPUHTMLImageArraySupported`: `boolean` - checks if the platform supports HTMLImageArray's
 * `GPU.isSinglePrecisionSupported`: `boolean` - checks if the system supports single precision float 32 values
-```
 
 ## Typescript Typings
 Typescript is supported!  Typings can be found [here](src/index.d.ts)!
