@@ -41,7 +41,6 @@ function kernelRunShortcut(kernel) {
   const shortcut = function() {
     return run.apply(kernel, arguments);
   };
-
   /**
    * Run kernel in async mode
    * @returns {Promise<KernelOutput>}
@@ -54,6 +53,9 @@ function kernelRunShortcut(kernel) {
         reject(e);
       }
     });
+  };
+  shortcut.replaceKernel = function(replacementKernel) {
+    kernel = replacementKernel;
   };
 
   utils

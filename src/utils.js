@@ -142,6 +142,9 @@ const utils = {
     if (value.nodeName === 'IMG') {
       return 'HTMLImage';
     } else {
+      if (value instanceof Texture) {
+        return value.type;
+      }
       return 'Unknown';
     }
   },
@@ -393,6 +396,216 @@ const utils = {
       result.set(temp, bottomOffset);
     }
     return result;
+  },
+  erectPackedFloat: (array, width) => {
+    return array.subarray(0, width);
+  },
+  erect2DPackedFloat: (array, width, height) => {
+    const yResults = new Array(height);
+    for (let y = 0; y < height; y++) {
+      const xStart = y * width;
+      const xEnd = xStart + width;
+      yResults[y] = array.subarray(xStart, xEnd);
+    }
+    return yResults;
+  },
+  erect3DPackedFloat: (array, width, height, depth) => {
+    const zResults = new Array(depth);
+    for (let z = 0; z < depth; z++) {
+      const yResults = new Array(height);
+      for (let y = 0; y < height; y++) {
+        const xStart = (z * height * width) + y * width;
+        const xEnd = xStart + width;
+        yResults[y] = array.subarray(xStart, xEnd);
+      }
+      zResults[z] = yResults;
+    }
+    return zResults;
+  },
+  erectMemoryOptimizedFloat: (array, width) => {
+    return array.subarray(0, width);
+  },
+  erectMemoryOptimized2DFloat: (array, width, height) => {
+    const yResults = new Array(height);
+    for (let y = 0; y < height; y++) {
+      const offset = y * width;
+      yResults[y] = array.subarray(offset, offset + width);
+    }
+    return yResults;
+  },
+  erectMemoryOptimized3DFloat: (array, width, height, depth) => {
+    const zResults = new Array(depth);
+    for (let z = 0; z < depth; z++) {
+      const yResults = new Array(height);
+      for (let y = 0; y < height; y++) {
+        const offset = (z * height * width) + (y * width);
+        yResults[y] = array.subarray(offset, offset + width);
+      }
+      zResults[z] = yResults;
+    }
+    return zResults;
+  },
+  erectFloat: (array, width) => {
+    const xResults = new Float32Array(width);
+    let i = 0;
+    for (let x = 0; x < width; x++) {
+      xResults[x] = array[i];
+      i += 4;
+    }
+    return xResults;
+  },
+  erect2DFloat: (array, width, height) => {
+    const yResults = new Array(height);
+    let i = 0;
+    for (let y = 0; y < height; y++) {
+      const xResults = new Float32Array(width);
+      for (let x = 0; x < width; x++) {
+        xResults[x] = array[i];
+        i += 4;
+      }
+      yResults[y] = xResults;
+    }
+    return yResults;
+  },
+  erect3DFloat: (array, width, height, depth) => {
+    const zResults = new Array(depth);
+    let i = 0;
+    for (let z = 0; z < depth; z++) {
+      const yResults = new Array(height);
+      for (let y = 0; y < height; y++) {
+        const xResults = new Float32Array(width);
+        for (let x = 0; x < width; x++) {
+          xResults[x] = array[i];
+          i += 4;
+        }
+        yResults[y] = xResults;
+      }
+      zResults[z] = yResults;
+    }
+    return zResults;
+  },
+  erectArray2: (array, width) => {
+    const xResults = new Array(width);
+    const xResultsMax = width * 4;
+    let i = 0;
+    for (let x = 0; x < xResultsMax; x += 4) {
+      xResults[i++] = array.subarray(x, x + 2);
+    }
+    return xResults;
+  },
+  erect2DArray2: (array, width, height) => {
+    const yResults = new Array(height);
+    const XResultsMax = width * 4;
+    for (let y = 0; y < height; y++) {
+      const xResults = new Array(width);
+      const offset = y * XResultsMax;
+      let i = 0;
+      for (let x = 0; x < XResultsMax; x += 4) {
+        xResults[i++] = array.subarray(x + offset, x + offset + 2);
+      }
+      yResults[y] = xResults;
+    }
+    return yResults;
+  },
+  erect3DArray2: (array, width, height, depth) => {
+    const xResultsMax = width * 4;
+    const zResults = new Array(depth);
+    for (let z = 0; z < depth; z++) {
+      const yResults = new Array(height);
+      for (let y = 0; y < height; y++) {
+        const xResults = new Array(width);
+        const offset = (z * xResultsMax * height) + (y * xResultsMax);
+        let i = 0;
+        for (let x = 0; x < xResultsMax; x += 4) {
+          xResults[i++] = array.subarray(x + offset, x + offset + 2);
+        }
+        yResults[y] = xResults;
+      }
+      zResults[z] = yResults;
+    }
+    return zResults;
+  },
+  erectArray3: (array, width) => {
+    const xResults = new Array(width);
+    const xResultsMax = width * 4;
+    let i = 0;
+    for (let x = 0; x < xResultsMax; x += 4) {
+      xResults[i++] = array.subarray(x, x + 3);
+    }
+    return xResults;
+  },
+  erect2DArray3: (array, width, height) => {
+    const xResultsMax = width * 4;
+    const yResults = new Array(height);
+    for (let y = 0; y < height; y++) {
+      const xResults = new Array(width);
+      const offset = y * xResultsMax;
+      let i = 0;
+      for (let x = 0; x < xResultsMax; x += 4) {
+        xResults[i++] = array.subarray(x + offset, x + offset + 3);
+      }
+      yResults[y] = xResults;
+    }
+    return yResults;
+  },
+  erect3DArray3: (array, width, height, depth) => {
+    const xResultsMax = width * 4;
+    const zResults = new Array(depth);
+    for (let z = 0; z < depth; z++) {
+      const yResults = new Array(height);
+      for (let y = 0; y < height; y++) {
+        const xResults = new Array(width);
+        const offset = (z * xResultsMax * height) + (y * xResultsMax);
+        let i = 0;
+        for (let x = 0; x < xResultsMax; x += 4) {
+          xResults[i++] = array.subarray(x + offset, x + offset + 3);
+        }
+        yResults[y] = xResults;
+      }
+      zResults[z] = yResults;
+    }
+    return zResults;
+  },
+  erectArray4: (array, width) => {
+    const xResults = new Array(array);
+    const xResultsMax = width * 4;
+    let i = 0;
+    for (let x = 0; x < xResultsMax; x += 4) {
+      xResults[i++] = array.subarray(x, x + 4);
+    }
+    return xResults;
+  },
+  erect2DArray4: (array, width, height) => {
+    const xResultsMax = width * 4;
+    const yResults = new Array(height);
+    for (let y = 0; y < height; y++) {
+      const xResults = new Array(width);
+      const offset = y * xResultsMax;
+      let i = 0;
+      for (let x = 0; x < xResultsMax; x += 4) {
+        xResults[i++] = array.subarray(x + offset, x + offset + 4);
+      }
+      yResults[y] = xResults;
+    }
+    return yResults;
+  },
+  erect3DArray4: (array, width, height, depth) => {
+    const xResultsMax = width * 4;
+    const zResults = new Array(depth);
+    for (let z = 0; z < depth; z++) {
+      const yResults = new Array(height);
+      for (let y = 0; y < height; y++) {
+        const xResults = new Array(width);
+        const offset = (z * xResultsMax * height) + (y * xResultsMax);
+        let i = 0;
+        for (let x = 0; x < xResultsMax; x += 4) {
+          xResults[i++] = array.subarray(x + offset, x + offset + 4);
+        }
+        yResults[y] = xResults;
+      }
+      zResults[z] = yResults;
+    }
+    return zResults;
   }
 };
 

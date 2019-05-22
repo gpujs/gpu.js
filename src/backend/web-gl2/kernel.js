@@ -2,7 +2,6 @@ const { WebGLKernel } = require('../web-gl/kernel');
 const { WebGL2FunctionNode } = require('./function-node');
 const { FunctionBuilder } = require('../function-builder');
 const { utils } = require('../../utils');
-const { Texture } = require('../../texture');
 const { fragmentShader } = require('./fragment-shader');
 const { vertexShader } = require('./vertex-shader');
 const { lookupKernelValueType } = require('./kernel-value-maps');
@@ -239,14 +238,12 @@ class WebGL2Kernel extends WebGLKernel {
           this._setupOutputTexture();
         }
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        return new Texture({
+        return new this.TextureConstructor({
           texture: this.outputTexture,
           size: texSize,
           dimensions: this.threadDim,
           output: this.output,
-          context: this.context,
-          gpu: this.gpu,
-          type: this.getReturnTextureType(),
+          context: this.context
         });
       }
       gl.bindRenderbuffer(gl.RENDERBUFFER, null);

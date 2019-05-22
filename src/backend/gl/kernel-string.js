@@ -4,6 +4,7 @@ const { Texture } = require('../../texture');
 
 function toStringWithoutUtils(fn) {
   return fn.toString()
+    .replace('=>', '')
     .replace(/^function /, '')
     .replace(/utils[.]/g, '/*utils.*/');
 }
@@ -12,7 +13,7 @@ function toStringWithoutUtils(fn) {
  *
  * @param {Kernel} Kernel
  * @param {KernelVariable[]} args
- * @param {IKernel} originKernel
+ * @param {Kernel} originKernel
  * @param {string} [setupContextString]
  * @param {string} [destroyContextString]
  * @returns {string}
@@ -68,26 +69,12 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   result.push(`function ${toStringWithoutUtils(utils.isArray)}`);
   if (kernel.renderOutput === kernel.renderTexture) {
     result.push(Texture.toString());
-    result.push(
-      `  const renderOutput = function ${
-        toStringWithoutUtils(kernel.renderOutput.toString())
-          .replace(`this.outputTexture`, 'null')
-          .replace('this.texSize', `new Int32Array(${JSON.stringify(Array.from(kernel.texSize))})`)
-          .replace('this.threadDim', `new Int32Array(${JSON.stringify(Array.from(kernel.threadDim))})`)
-          .replace('this.output', `new Int32Array(${JSON.stringify(this.output)})`)
-          .replace('this.context', 'gl')
-          .replace('this.gpu', 'null')
-          .replace('this.getReturnTextureType()', `'${kernel.getReturnTextureType()}'`)
-      };`
-    );
+    if (kernel.TextureConstructor !== Texture) {
+      result.push(kernel.TextureConstructor.toString());
+    }
   } else {
     result.push(
-      `  const renderOutput = function ${toStringWithoutUtils(kernel.renderOutput.toString())
-        .replace('() {', '(pixels) {')
-        .replace('    const pixels = this.readFloatPixelsToFloat32Array();\n', '')
-        .replace('this.readPackedPixelsToFloat32Array()', 'new Float32Array(pixels.buffer)')
-        .replace('this.output;', JSON.stringify(kernel.output) + ';')
-        };`
+      `  const renderOutput = function ${toStringWithoutUtils(kernel.formatValues)};`
     );
   }
   kernel.kernelArguments.forEach(kernelArgument => {
@@ -108,7 +95,12 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   });
   result.push('/** end setup uploads for kernel values **/');
   result.push(context.toString());
-  result.push(`    ${destroyContextString ? '\n' + destroyContextString + '    ': ''}return renderOutput(${context.getReadPixelsVariableName});`);
+  result.push(`    ${destroyContextString ? '\n' + destroyContextString + '    ': ''}`);
+  if (context.getReadPixelsVariableName) {
+    result.push(`    return renderOutput(${kernel.precision === 'single' ? context.getReadPixelsVariableName : `new Float32Array(${context.getReadPixelsVariableName}.buffer)`}, ${kernel.output[0]}, ${kernel.output[1]}, ${kernel.output[2]});`);
+  } else {
+    result.push(`    return null;`);
+  }
   result.push('  };');
   return `function kernel(context = null) {
   ${setupContextString ? setupContextString : ''}${result.join('\n')} }`;

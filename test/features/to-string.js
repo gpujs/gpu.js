@@ -108,7 +108,7 @@ function toStringTextureTestSinglePrecision(mode, context, canvas) {
     precision: 'single',
   });
   const textureResult = textureKernel(a);
-  assert.equal(textureResult.constructor, Texture);
+  assert.equal(textureResult.constructor.name, 'GLTextureFloat');
   const originalResult = numberKernel(textureResult);
   assert.equal(originalResult.constructor, Float32Array);
   assert.equal(originalResult.length, expected.length);
@@ -123,7 +123,7 @@ function toStringTextureTestSinglePrecision(mode, context, canvas) {
   const newTextureKernel = new Function('return ' + textureKernelString)()(context);
   const newNumberKernel = new Function('return ' + numberKernelString)()(context);
   const newKernelResult = newTextureKernel(a);
-  assert.equal(textureResult.constructor, Texture);
+  assert.equal(textureResult.constructor.name, 'GLTextureFloat');
   const newResult = newNumberKernel(newKernelResult);
   assert.equal(newResult.constructor, Float32Array);
   assert.equal(newResult.length, expected.length);
@@ -168,7 +168,7 @@ function toStringTextureTestUnsignedPrecision(mode, context, canvas) {
     precision: 'unsigned',
   });
   const textureResult = textureKernel(a);
-  assert.equal(textureResult.constructor, Texture);
+  assert.equal(textureResult.constructor.name, 'GLTextureUnsigned');
   const originalResult = numberKernel(textureResult);
   assert.equal(originalResult.constructor, Float32Array);
   assert.equal(originalResult.length, expected.length);
@@ -183,7 +183,7 @@ function toStringTextureTestUnsignedPrecision(mode, context, canvas) {
   const newTextureKernel = new Function('return ' + textureKernelString)()(context);
   const newNumberKernel = new Function('return ' + numberKernelString)()(context);
   const newKernelResult = newTextureKernel(a);
-  assert.equal(textureResult.constructor, Texture);
+  assert.equal(textureResult.constructor.name, 'GLTextureUnsigned');
   const newResult = newNumberKernel(newKernelResult);
   assert.equal(newResult.constructor, Float32Array);
   assert.equal(newResult.length, expected.length);

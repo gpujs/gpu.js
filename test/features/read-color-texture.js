@@ -62,7 +62,7 @@ function colorSyntaxTest(mode) {
   const resultB = readBTexture(texture);
   const resultA = readATexture(texture);
 
-  assert.equal(texture.constructor.name, 'Texture');
+  assert.equal(texture.constructor.name, 'GLTextureGraphical');
 
   // R
   assert.equal(resultR[0][0].toFixed(2), '0.01');

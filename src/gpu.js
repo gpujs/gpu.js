@@ -219,7 +219,10 @@ class GPU {
       validate,
       onRequestFallback: (args) => {
         const fallbackKernel = new CPUKernel(source, mergedSettings);
-        return fallbackKernel.run.apply(fallbackKernel, args);
+        fallbackKernel.build.apply(fallbackKernel, args);
+        const result = fallbackKernel.run.apply(fallbackKernel, args);
+        kernel.replaceKernel(fallbackKernel);
+        return result;
       },
       onRequestSwitchKernel: (args, kernel) => {
         const signatureArray = [];

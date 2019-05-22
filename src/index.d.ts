@@ -91,7 +91,7 @@ export abstract class Kernel {
   loopMaxIterations: number;
   constants: IConstants;
   canvas: any;
-  context: any;
+  context: WebGLRenderingContext | any;
   functions: IFunction[];
   nativeFunctions: INativeFunctionList[];
   subKernels: ISubKernel[];

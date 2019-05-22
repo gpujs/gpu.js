@@ -113,7 +113,7 @@ class Kernel {
 
     /**
      *
-     * @type {Object}
+     * @type {WebGLRenderingContext}
      */
     this.context = null;
 

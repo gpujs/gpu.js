@@ -2,7 +2,6 @@ const { GLKernel } = require('../gl/kernel');
 const { FunctionBuilder } = require('../function-builder');
 const { WebGLFunctionNode } = require('./function-node');
 const { utils } = require('../../utils');
-const { Texture } = require('../../texture');
 const triangleNoise = require('../../plugins/triangle-noise');
 const { fragmentShader } = require('./fragment-shader');
 const { vertexShader } = require('./vertex-shader');
@@ -455,7 +454,10 @@ class WebGLKernel extends GLKernel {
     this.setupArguments(arguments);
     this.updateMaxTexSize();
     this.translateSource();
-    this.pickRenderStrategy();
+    const failureResult = this.pickRenderStrategy(arguments);
+    if (failureResult) {
+      return failureResult;
+    }
     const { texSize, context: gl, canvas } = this;
     gl.enable(gl.SCISSOR_TEST);
     if (this.pipeline && this.precision === 'single') {
@@ -602,14 +604,12 @@ class WebGLKernel extends GLKernel {
           this._setupOutputTexture();
         }
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        return new Texture({
+        return new this.TextureConstructor({
           texture: this.outputTexture,
           size: texSize,
           dimensions: this.threadDim,
           output: this.output,
           context: this.context,
-          gpu: this.gpu,
-          type: this.getReturnTextureType(),
         });
       }
       gl.bindRenderbuffer(gl.RENDERBUFFER, null);
