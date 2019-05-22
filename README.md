@@ -90,6 +90,7 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [Flattened typed array support](#flattened-typed-array-support)
 * [Precompiled and Lighter Weight Kernels](#precompiled-and-lighter-weight-kernels)
 * [Supported Math functions](#supported-math-functions)
+* [How to check what is supported](#how-to-check-what-is-supported)
 * [Typescript Typings](#typescript-typings)
 * [Full API reference](#full-api-reference)
 * [Automatically-built Documentation](#automatically-built-documentation)
@@ -837,6 +838,22 @@ This is a list of the supported ones:
 * `Math.sin()`
 * `Math.sqrt()`
 * `Math.tan()`
+
+## How to check what is supported
+
+To assist with mostly unit tests, but perhaps in scenarios outside of GPU.js, there are the following logical checks to determine what support level the system executing a GPU.js kernel may have:
+* `GPU.disableValidation()` - turn off all kernel validation
+* `GPU.enableValidation()` - turn on all kernel validation
+* `GPU.isGPUSupported`: `boolean` - checks if GPU is in-fact supported
+* `GPU.isKernelMapSupported`: `boolean` - checks if kernel maps are supported
+* `GPU.isOffscreenCanvasSupported`: `boolean` - checks if offscreen canvas is supported
+* `GOU.isWebGLSupported`: `boolean` - checks if WebGL v1 is supported
+* `GOU.isWebGL2Supported`: `boolean` - checks if WebGL v2 is supported
+* `GPU.isHeadlessGLSupported`: `boolean` - checks if headlessgl is supported
+* `GPU.isCanvasSupported`: `boolean` - checks if canvas is supported
+* `GPU.isGPUHTMLImageArraySupported`: `boolean` - checks if the platform supports HTMLImageArray's
+* `GPU.isSinglePrecisionSupported`: `boolean` - checks if the system supports single precision float 32 values
+```
 
 ## Typescript Typings
 Typescript is supported!  Typings can be found [here](src/index.d.ts)!
