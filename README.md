@@ -88,6 +88,7 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [Offscreen Canvas](#offscreen-canvas)
 * [Cleanup](#cleanup)
 * [Flattened typed array support](#flattened-typed-array-support)
+* [Precompiled and Lighter Weight Kernels](#precompiled-and-lighter-weight-kernels)
 * [Supported Math functions](#supported-math-functions)
 * [Typescript Typings](#typescript-typings)
 * [Full API reference](#full-api-reference)
@@ -759,6 +760,49 @@ kernel(
 ```
 
 Note: `input(value, size)` is a simple pointer for `new Input(value, size)`
+
+## Precompiled and Lighter Weight Kernels
+
+### using JSON
+GPU.js packs a lot of functionality into a single file, such as a complete javascript parse, which may not be needed in some cases.
+To aid in keeping your kernels lightweight, the `kernel.toJSON()` method was added.
+This allows you to reuse a previously built kernel, without the need to re-parse the javascript.
+Here is an example:
+
+```js
+const gpu = new GPU();
+const kernel = gpu.createKernel(function() {
+  return [1,2,3,4];
+}, { output: [1] });
+console.log(kernel()); // [Float32Array([1,2,3,4])];
+const json = kernel.toJSON();
+const newKernelFromJson = gpu.createKernel(json);
+console.log(newKernelFromJSON()); // [Float32Array([1,2,3,4])];
+```
+
+NOTE: There is lighter weight, pre-built, version of GPU.js to assist with serializing from to and from json in the bin folder of the project, which include:
+* [bin/gpu-browser-core.js](bin/gpu-browser-core.js)
+* [bin/gpu-browser-core.min.js](bin/gpu-browser-core.min.js)
+
+### using `kernel.toString(args...)`
+GPU.js supports seeing exactly how it is interacting with the graphics processor by means of the `kernel.toString(...)` method.
+This method, when called, creates a kernel that executes _exactly the instruction set given to the GPU_ as a function that sets up a kernel.
+Here is an example:
+
+```js
+const gpu = new GPU();
+const kernel = gpu.createKernel(function(a) {
+  let sum = 0;
+  for (let i = 0; i < 6; i++) {
+    sum += a[this.thread.x][i];
+  }
+  return sum;
+  }, { output: [6] });
+kernel(input(a, [6, 6]));
+const kernelString = kernel.toString(input(a, [6, 6]));
+const newKernel = new Function('return ' + kernelString)()(context);
+newKernel(input(a, [6, 6]));
+```
 
 ## Supported Math functions
 
