@@ -89,7 +89,7 @@ class GLKernel extends Kernel {
   }
 
   /**
-   * @abstract
+   * @type {IKernelFeatures}
    */
   static get features() {
     throw new Error(`"features" not defined on ${ this.name }`);
@@ -331,7 +331,6 @@ class GLKernel extends Kernel {
           case 'Float':
           case 'Number':
           case 'Integer':
-            ;
             if (this.output[2] > 0) {
               this.TextureConstructor = GLTextureUnsigned3D;
               this.renderStrategy = renderStrategy.PackedPixelTo3DFloat;

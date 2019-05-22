@@ -93,7 +93,9 @@ class WebGLKernel extends GLKernel {
   }
 
   static getChannelCount() {
-    return testExtensions.WEBGL_draw_buffers ? testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL : 1;
+    return testExtensions.WEBGL_draw_buffers ?
+      testContext.getParameter(testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL) :
+      1;
   }
 
   static lookupKernelValueType(type, dynamic, precision) {

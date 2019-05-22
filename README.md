@@ -5,6 +5,7 @@
 GPU.js is a JavaScript Acceleration library for GPGPU (General purpose computing on GPUs) in JavaScript for Web and Node.
 GPU.js automatically transpiles simple JavaScript functions into shader language and compiles them so they run on your GPU.
 In case a GPU is not available, the functions will still run in regular JavaScript.
+For some more quick concepts, see [Quick Concepts](https://github.com/gpujs/gpu.js/wiki/Quick-Concepts) on the wiki.
 
 
 [![Join the chat at https://gitter.im/gpujs/gpu.js](https://badges.gitter.im/gpujs/gpu.js.svg)](https://gitter.im/gpujs/gpu.js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)

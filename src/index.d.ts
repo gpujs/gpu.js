@@ -208,6 +208,7 @@ export interface IKernelSettings {
   immutable?: boolean;
   graphical?: boolean;
   onRequestFallback?: () => Kernel;
+  optimizeFloatMemory?: boolean;
 }
 
 export interface IKernelRunShortcut extends Kernel {
@@ -237,8 +238,11 @@ export interface IKernelRunShortcut extends Kernel {
 }
 
 export interface IKernelFeatures {
+  isFloatRead: boolean;
   kernelMap: boolean;
   isIntegerDivisionAccurate: boolean;
+  isTextureFloat: boolean;
+  channelCount: number;
 }
 
 export interface IKernelFunctionThis {

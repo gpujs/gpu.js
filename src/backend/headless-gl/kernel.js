@@ -52,7 +52,8 @@ class HeadlessGLKernel extends WebGLKernel {
       isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
       isTextureFloat: this.getIsTextureFloat(),
       isDrawBuffers,
-      kernelMap: isDrawBuffers
+      kernelMap: isDrawBuffers,
+      channelCount: this.getChannelCount(),
     });
   }
 
@@ -62,6 +63,12 @@ class HeadlessGLKernel extends WebGLKernel {
 
   static getIsDrawBuffers() {
     return Boolean(testExtensions.WEBGL_draw_buffers);
+  }
+
+  static getChannelCount() {
+    return testExtensions.WEBGL_draw_buffers ?
+      testContext.getParameter(testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL) :
+      1;
   }
 
   static get testCanvas() {

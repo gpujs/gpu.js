@@ -64,6 +64,7 @@ class WebGL2Kernel extends WebGLKernel {
       isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
       kernelMap: true,
       isTextureFloat: true,
+      channelCount: this.getChannelCount(),
     });
   }
 
@@ -73,6 +74,10 @@ class WebGL2Kernel extends WebGLKernel {
 
   static getIsIntegerDivisionAccurate() {
     return super.getIsIntegerDivisionAccurate();
+  }
+
+  static getChannelCount() {
+    return testContext.getParameter(testContext.MAX_DRAW_BUFFERS);
   }
 
   static lookupKernelValueType(type, dynamic, precision) {

@@ -274,15 +274,38 @@ class CPUKernel extends Kernel {
   _processArguments() {
     const result = [];
     for (let i = 0; i < this.argumentTypes.length; i++) {
+      const variableName = `user_${this.argumentNames[i]}`;
       switch (this.argumentTypes[i]) {
         case 'HTMLImage':
-          result.push(`    user_${this.argumentNames[i]} = this._imageTo2DArray(user_${this.argumentNames[i]});\n`);
+          result.push(`    ${variableName} = this._imageTo2DArray(${variableName});\n`);
           break;
         case 'HTMLImageArray':
-          result.push(`    user_${this.argumentNames[i]} = this._imageTo3DArray(user_${this.argumentNames[i]});\n`);
+          result.push(`    ${variableName} = this._imageTo3DArray(${variableName});\n`);
           break;
         case 'Input':
-          result.push(`    user_${this.argumentNames[i]} = user_${this.argumentNames[i]}.value;\n`);
+          result.push(`    ${variableName} = ${variableName}.value;\n`);
+          break;
+        case 'ArrayTexture(1)':
+        case 'ArrayTexture(2)':
+        case 'ArrayTexture(3)':
+        case 'ArrayTexture(4)':
+        case 'NumberTexture':
+        case 'MemoryOptimizedNumberTexture':
+          result.push(`
+    if (${variableName}.toArray) {
+      if (!_this.textureCache) {
+        _this.textureCache = [];
+        _this.arrayCache = [];
+      }
+      const textureIndex = _this.textureCache.indexOf(${variableName});
+      if (textureIndex !== -1) {
+        ${variableName} = _this.arrayCache[textureIndex];
+      } else {
+        _this.textureCache.push(${variableName});
+        ${variableName} = ${variableName}.toArray();
+        _this.arrayCache.push(${variableName});
+      }
+    }`);
           break;
       }
     }

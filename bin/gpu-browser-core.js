@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0-rc.14
- * @date Wed May 22 2019 08:21:57 GMT-0400 (Eastern Daylight Time)
+ * @date Wed May 22 2019 15:57:55 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -1256,15 +1256,38 @@ class CPUKernel extends Kernel {
   _processArguments() {
     const result = [];
     for (let i = 0; i < this.argumentTypes.length; i++) {
+      const variableName = `user_${this.argumentNames[i]}`;
       switch (this.argumentTypes[i]) {
         case 'HTMLImage':
-          result.push(`    user_${this.argumentNames[i]} = this._imageTo2DArray(user_${this.argumentNames[i]});\n`);
+          result.push(`    ${variableName} = this._imageTo2DArray(${variableName});\n`);
           break;
         case 'HTMLImageArray':
-          result.push(`    user_${this.argumentNames[i]} = this._imageTo3DArray(user_${this.argumentNames[i]});\n`);
+          result.push(`    ${variableName} = this._imageTo3DArray(${variableName});\n`);
           break;
         case 'Input':
-          result.push(`    user_${this.argumentNames[i]} = user_${this.argumentNames[i]}.value;\n`);
+          result.push(`    ${variableName} = ${variableName}.value;\n`);
+          break;
+        case 'ArrayTexture(1)':
+        case 'ArrayTexture(2)':
+        case 'ArrayTexture(3)':
+        case 'ArrayTexture(4)':
+        case 'NumberTexture':
+        case 'MemoryOptimizedNumberTexture':
+          result.push(`
+    if (${variableName}.toArray) {
+      if (!_this.textureCache) {
+        _this.textureCache = [];
+        _this.arrayCache = [];
+      }
+      const textureIndex = _this.textureCache.indexOf(${variableName});
+      if (textureIndex !== -1) {
+        ${variableName} = _this.arrayCache[textureIndex];
+      } else {
+        _this.textureCache.push(${variableName});
+        ${variableName} = ${variableName}.toArray();
+        _this.arrayCache.push(${variableName});
+      }
+    }`);
           break;
       }
     }
@@ -3508,7 +3531,6 @@ class GLKernel extends Kernel {
           case 'Float':
           case 'Number':
           case 'Integer':
-            ;
             if (this.output[2] > 0) {
               this.TextureConstructor = GLTextureUnsigned3D;
               this.renderStrategy = renderStrategy.PackedPixelTo3DFloat;
@@ -4468,7 +4490,8 @@ class HeadlessGLKernel extends WebGLKernel {
       isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
       isTextureFloat: this.getIsTextureFloat(),
       isDrawBuffers,
-      kernelMap: isDrawBuffers
+      kernelMap: isDrawBuffers,
+      channelCount: this.getChannelCount(),
     });
   }
 
@@ -4478,6 +4501,12 @@ class HeadlessGLKernel extends WebGLKernel {
 
   static getIsDrawBuffers() {
     return Boolean(testExtensions.WEBGL_draw_buffers);
+  }
+
+  static getChannelCount() {
+    return testExtensions.WEBGL_draw_buffers ?
+      testContext.getParameter(testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL) :
+      1;
   }
 
   static get testCanvas() {
@@ -7274,7 +7303,9 @@ class WebGLKernel extends GLKernel {
   }
 
   static getChannelCount() {
-    return testExtensions.WEBGL_draw_buffers ? testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL : 1;
+    return testExtensions.WEBGL_draw_buffers ?
+      testContext.getParameter(testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL) :
+      1;
   }
 
   static lookupKernelValueType(type, dynamic, precision) {
@@ -9227,6 +9258,7 @@ class WebGL2Kernel extends WebGLKernel {
       isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
       kernelMap: true,
       isTextureFloat: true,
+      channelCount: this.getChannelCount(),
     });
   }
 
@@ -9236,6 +9268,10 @@ class WebGL2Kernel extends WebGLKernel {
 
   static getIsIntegerDivisionAccurate() {
     return super.getIsIntegerDivisionAccurate();
+  }
+
+  static getChannelCount() {
+    return testContext.getParameter(testContext.MAX_DRAW_BUFFERS);
   }
 
   static lookupKernelValueType(type, dynamic, precision) {
