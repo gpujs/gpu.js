@@ -908,7 +908,9 @@ Thank you to all our backers! 🙏 [[Become a backer](https://opencollective.com
 
 Support this project by becoming a sponsor. Your logo will show up here with a link to your website. [[Become a sponsor](https://opencollective.com/gpujs#sponsor)]
 
+![](https://www.leadergpu.com/assets/main/logo_leadergpu-a8cacac0c90d204b7f7f6c8420c6a149e71ebe53f3f28f3fc94a01cd05c0bd93.png)
 Sponsored NodeJS GPU environment from [LeaderGPU](https://www.leadergpu.com) - These guys rock!
+
 <a href="https://opencollective.com/gpujs/sponsor/0/website" target="_blank"><img src="https://opencollective.com/gpujs/sponsor/0/avatar.svg"></a>
 <a href="https://opencollective.com/gpujs/sponsor/1/website" target="_blank"><img src="https://opencollective.com/gpujs/sponsor/1/avatar.svg"></a>
 <a href="https://opencollective.com/gpujs/sponsor/2/website" target="_blank"><img src="https://opencollective.com/gpujs/sponsor/2/avatar.svg"></a>
