@@ -535,7 +535,7 @@ const megaKernel = gpu.createKernelMap({
   },
 }, function(a, b, c) {
   return multiply(add(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
-});
+}, { output: [10] });
 
 megaKernel(a, b, c);
 // Result: { addResult: Float32Array, multiplyResult: Float32Array, result: Float32Array }
@@ -551,7 +551,7 @@ const megaKernel = gpu.createKernelMap([
   }
 ], function(a, b, c) {
   return multiply(add(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
-});
+}, { output: [10] });
 
 megaKernel(a, b, c);
 // Result: { 0: Float32Array, 1: Float32Array, result: Float32Array }
