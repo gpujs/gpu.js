@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0-rc.14
- * @date Wed May 22 2019 15:57:55 GMT-0400 (Eastern Daylight Time)
+ * @date Thu May 23 2019 14:25:29 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -8775,10 +8775,10 @@ class GLKernel extends Kernel {
     super.setOutput(output);
     if (this.program) {
       this.threadDim = [this.output[0], this.output[1] || 1, this.output[2] || 1];
-      this.texSize = utils.dimToTexSize({
-        floatTextures: this.optimizeFloatMemory,
-        floatOutput: this.precision === 'single',
-      }, this.threadDim, true);
+      this.texSize = utils.getKernelTextureSize({
+        optimizeFloatMemory: this.optimizeFloatMemory,
+        precision: this.precision,
+      }, this.output);
       const { context: gl } = this;
       gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
       this.updateMaxTexSize();
@@ -12189,10 +12189,10 @@ class WebGLKernel extends GLKernel {
 
   validateSettings() {
     if (!this.validate) {
-      this.texSize = utils.dimToTexSize({
-        floatTextures: this.optimizeFloatMemory,
-        floatOutput: this.precision === 'single',
-      }, this.output, true);
+      this.texSize = utils.getKernelTextureSize({
+        optimizeFloatMemory: this.optimizeFloatMemory,
+        precision: this.precision,
+      }, this.output);
       return;
     }
 
@@ -12248,10 +12248,10 @@ class WebGLKernel extends GLKernel {
       this.precision = 'single';
     }
 
-    this.texSize = utils.dimToTexSize({
-      floatTextures: this.floatTextures,
-      floatOutput: this.precision === 'single'
-    }, this.output, true);
+    this.texSize = utils.getKernelTextureSize({
+      optimizeFloatMemory: this.optimizeFloatMemory,
+      precision: this.precision,
+    }, this.output);
   }
 
   updateMaxTexSize() {
@@ -14080,10 +14080,10 @@ class WebGL2Kernel extends WebGLKernel {
 
   validateSettings() {
     if (!this.validate) {
-      this.texSize = utils.dimToTexSize({
-        floatTextures: this.optimizeFloatMemory,
-        floatOutput: this.precision === 'single',
-      }, this.output, true);
+      this.texSize = utils.getKernelTextureSize({
+        optimizeFloatMemory: this.optimizeFloatMemory,
+        precision: this.precision,
+      }, this.output);
       return;
     }
 
@@ -14141,14 +14141,10 @@ class WebGL2Kernel extends WebGLKernel {
       this.precision = 'single';
     }
 
-    this.texSize = utils.dimToTexSize({
-      floatTextures: !this.optimizeFloatMemory,
-      floatOutput: this.precision === 'single',
-    }, this.output, true);
-
-    if (this.precision === 'single') {
-      this.context.getExtension('EXT_color_buffer_float');
-    }
+    this.texSize = utils.getKernelTextureSize({
+      optimizeFloatMemory: this.optimizeFloatMemory,
+      precision: this.precision,
+    }, this.output);
   }
 
   translateSource() {
@@ -14251,25 +14247,23 @@ class WebGL2Kernel extends WebGLKernel {
           case 'Float':
           case 'Integer':
             if (this.optimizeFloatMemory) {
-              gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+              gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, texSize[0], texSize[1]);
             } else {
-              gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, texSize[0], texSize[1], 0, gl.RED, gl.FLOAT, null);
+              gl.texStorage2D(gl.TEXTURE_2D, 1, gl.R32F, texSize[0], texSize[1]);
             }
             break;
           case 'Array(2)':
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, texSize[0], texSize[1], 0, gl.RG, gl.FLOAT, null);
+            gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RG32F, texSize[0], texSize[1]);
             break;
-          case 'Array(3)':
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB32F, texSize[0], texSize[1], 0, gl.RGB, gl.FLOAT, null);
-            break;
+          case 'Array(3)': 
           case 'Array(4)':
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+            gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, texSize[0], texSize[1]);
             break;
           default:
             throw new Error('Unhandled return type');
         }
       } else {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+        gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, texSize[0], texSize[1]);
       }
     } else {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
@@ -14566,6 +14560,7 @@ class WebGL2Kernel extends WebGLKernel {
 module.exports = {
   WebGL2Kernel
 };
+
 },{"../../utils":89,"../function-builder":9,"../web-gl/kernel":56,"./fragment-shader":58,"./function-node":59,"./kernel-value-maps":60,"./vertex-shader":81}],81:[function(require,module,exports){
 const vertexShader = `#version 300 es
 precision highp float;
@@ -15095,33 +15090,34 @@ function kernelRunShortcut(kernel) {
     kernel = replacementKernel;
   };
 
-  utils
-    .allPropertiesOf(kernel)
-    .forEach((key) => {
-      if (key[0] === '_' && key[1] === '_') return;
-      if (typeof kernel[key] === 'function') {
-        if (key.substring(0, 3) === 'add' || key.substring(0, 3) === 'set') {
-          shortcut[key] = function() {
-            kernel[key].apply(kernel, arguments);
-            return shortcut;
-          };
-        } else if (key === 'requestFallback') {
-          const requestFallback = kernel[key].bind(kernel);
-          shortcut[key] = () => {
-            kernel = requestFallback();
+  const properties = utils.allPropertiesOf(kernel);
+  for (let i = 0; i < properties.length; i++) {
+    const property = properties[i];
+    if (property[0] === '_' && property[1] === '_') continue;
+    if (typeof kernel[property] === 'function') {
+      if (property.substring(0, 3) === 'add' || property.substring(0, 3) === 'set') {
+        shortcut[property] = function() {
+          kernel[property].apply(kernel, arguments);
+          return shortcut;
+        };
+      } else {
+        if (property === 'toString') {
+          shortcut.toString = function() {
+            return kernel.toString.apply(kernel, arguments);
           };
         } else {
-          shortcut[key] = kernel[key].bind(kernel);
+          shortcut[property] = kernel[property].bind(kernel);
         }
-      } else {
-        shortcut.__defineGetter__(key, () => {
-          return kernel[key];
-        });
-        shortcut.__defineSetter__(key, (value) => {
-          kernel[key] = value;
-        });
       }
-    });
+    } else {
+      shortcut.__defineGetter__(property, () => {
+        return kernel[property];
+      });
+      shortcut.__defineSetter__(property, (value) => {
+        kernel[property] = value;
+      });
+    }
+  }
 
   shortcut.kernel = kernel;
 
@@ -15320,11 +15316,11 @@ const utils = {
   },
 
 
-  dimToTexSize(opt, dimensions, output) {
+  getKernelTextureSize(settings, dimensions) {
     let [w, h, d] = dimensions;
     let texelCount = (w || 1) * (h || 1) * (d || 1);
 
-    if (opt.floatTextures && (!output || opt.precision === 'single')) {
+    if (settings.optimizeFloatMemory && settings.precision === 'single') {
       w = texelCount = Math.ceil(texelCount / 4);
     }
     if (h > 1 && w * h === texelCount) {

@@ -39,7 +39,6 @@ function whenEnabledCallsCorrectRenderFunction2D(mode) {
     optimizeFloatMemory: true,
   });
   const result = fn();
-  console.log(result);
   assert.equal(fn.TextureConstructor.name, 'GLTextureMemoryOptimized2D');
   assert.equal(fn.renderStrategy.toString(), 'Symbol(MemoryOptimizedFloatPixelTo2DFloat)');
   assert.equal(fn.formatValues, utils.erectMemoryOptimized2DFloat);

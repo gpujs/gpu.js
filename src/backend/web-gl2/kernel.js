@@ -126,10 +126,10 @@ class WebGL2Kernel extends WebGLKernel {
 
   validateSettings() {
     if (!this.validate) {
-      this.texSize = utils.dimToTexSize({
-        floatTextures: this.optimizeFloatMemory,
-        floatOutput: this.precision === 'single',
-      }, this.output, true);
+      this.texSize = utils.getKernelTextureSize({
+        optimizeFloatMemory: this.optimizeFloatMemory,
+        precision: this.precision,
+      }, this.output);
       return;
     }
 
@@ -187,14 +187,10 @@ class WebGL2Kernel extends WebGLKernel {
       this.precision = 'single';
     }
 
-    this.texSize = utils.dimToTexSize({
-      floatTextures: !this.optimizeFloatMemory,
-      floatOutput: this.precision === 'single',
-    }, this.output, true);
-
-    if (this.precision === 'single') {
-      this.context.getExtension('EXT_color_buffer_float');
-    }
+    this.texSize = utils.getKernelTextureSize({
+      optimizeFloatMemory: this.optimizeFloatMemory,
+      precision: this.precision,
+    }, this.output);
   }
 
   translateSource() {
@@ -297,25 +293,23 @@ class WebGL2Kernel extends WebGLKernel {
           case 'Float':
           case 'Integer':
             if (this.optimizeFloatMemory) {
-              gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+              gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, texSize[0], texSize[1]);
             } else {
-              gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, texSize[0], texSize[1], 0, gl.RED, gl.FLOAT, null);
+              gl.texStorage2D(gl.TEXTURE_2D, 1, gl.R32F, texSize[0], texSize[1]);
             }
             break;
           case 'Array(2)':
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, texSize[0], texSize[1], 0, gl.RG, gl.FLOAT, null);
+            gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RG32F, texSize[0], texSize[1]);
             break;
-          case 'Array(3)':
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB32F, texSize[0], texSize[1], 0, gl.RGB, gl.FLOAT, null);
-            break;
+          case 'Array(3)': // there is _no_ 3 channel format which is guaranteed to be color-renderable
           case 'Array(4)':
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+            gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, texSize[0], texSize[1]);
             break;
           default:
             throw new Error('Unhandled return type');
         }
       } else {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+        gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, texSize[0], texSize[1]);
       }
     } else {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);

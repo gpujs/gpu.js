@@ -21,12 +21,12 @@ function vanillaMatrixMultiply(a, b) {
   return result;
 }
 
-function randomMatrix(width, height) {
+function filledMatrix(width, height) {
   const matrix = new Array(height);
   for (let y = 0; y < height; y++) {
     const row = matrix[y] = new Float32Array(width);
     for (let x = 0; x < width; x++) {
-      row[x] = Math.random();
+      row[x] = Math.random() * 10;
     }
   }
   return matrix;
@@ -35,8 +35,8 @@ function randomMatrix(width, height) {
 function test512x512MatrixUnsignedPrecision(mode) {
   const width = 512;
   const height = 512;
-  const a = randomMatrix(width, height);
-  const b = randomMatrix(width, height);
+  const a = filledMatrix(width, height);
+  const b = filledMatrix(width, height);
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(a, b) {
     let sum = 0;
@@ -95,8 +95,8 @@ test('512x512 unsigned precision cpu', () => {
 function test10x512MatrixUnsignedPrecision(mode) {
   const width = 10;
   const height = 512;
-  const a = randomMatrix(width, height);
-  const b = randomMatrix(width, height);
+  const a = filledMatrix(width, height);
+  const b = filledMatrix(width, height);
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(a, b) {
     let sum = 0;
@@ -155,8 +155,8 @@ test('10x512 unsigned precision cpu', () => {
 function test512x512MatrixSinglePrecision(mode) {
   const width = 512;
   const height = 512;
-  const a = randomMatrix(width, height);
-  const b = randomMatrix(width, height);
+  const a = filledMatrix(width, height);
+  const b = filledMatrix(width, height);
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(a, b) {
     let sum = 0;
@@ -188,23 +188,23 @@ function test512x512MatrixSinglePrecision(mode) {
   gpu.destroy();
 }
 
-test('512x512 single precision auto', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('512x512 single precision auto', () => {
   test512x512MatrixSinglePrecision();
 });
 
-test('512x512 single precision gpu', () => {
+(GPU.isSinglePrecisionSupported ? test : skip)('512x512 single precision gpu', () => {
   test512x512MatrixSinglePrecision('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('512x512 single precision webgl', () => {
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('512x512 single precision webgl', () => {
   test512x512MatrixSinglePrecision('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('512x512 single precision webgl2', () => {
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('512x512 single precision webgl2', () => {
   test512x512MatrixSinglePrecision('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('512x512 single precision headlessgl', () => {
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('512x512 single precision headlessgl', () => {
   test512x512MatrixSinglePrecision('headlessgl');
 });
 
@@ -215,8 +215,8 @@ test('512x512 single precision cpu', () => {
 function test10x512MatrixSinglePrecision(mode) {
   const width = 10;
   const height = 512;
-  const a = randomMatrix(width, height);
-  const b = randomMatrix(width, height);
+  const a = filledMatrix(width, height);
+  const b = filledMatrix(width, height);
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(a, b) {
     let sum = 0;

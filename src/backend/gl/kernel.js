@@ -865,10 +865,10 @@ class GLKernel extends Kernel {
     super.setOutput(output);
     if (this.program) {
       this.threadDim = [this.output[0], this.output[1] || 1, this.output[2] || 1];
-      this.texSize = utils.dimToTexSize({
-        floatTextures: this.optimizeFloatMemory,
-        floatOutput: this.precision === 'single',
-      }, this.threadDim, true);
+      this.texSize = utils.getKernelTextureSize({
+        optimizeFloatMemory: this.optimizeFloatMemory,
+        precision: this.precision,
+      }, this.output);
       const { context: gl } = this;
       gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
       this.updateMaxTexSize();

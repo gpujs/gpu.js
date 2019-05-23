@@ -166,3 +166,99 @@ test('functionToIFunction with function and returnType', () => {
     returnType: 'string',
   });
 });
+
+test('getKernelTextureSize for [1,2] output, optimizeFloatMemory = true, and precision = "unsigned"', () => {
+  const textureSize = utils.getKernelTextureSize({
+    optimizeFloatMemory: true,
+    precision: 'unsigned',
+  }, [1,2]);
+  assert.deepEqual(textureSize, new Int32Array([1,2]));
+});
+
+test('getKernelTextureSize for [2,3] output, optimizeFloatMemory = true, and precision = "unsigned"', () => {
+  const textureSize = utils.getKernelTextureSize({
+    optimizeFloatMemory: true,
+    precision: 'unsigned',
+  }, [2,3]);
+  assert.deepEqual(textureSize, new Int32Array([2,3]));
+});
+
+test('getKernelTextureSize for [4,2] output, optimizeFloatMemory = true, and precision = "unsigned"', () => {
+  const textureSize = utils.getKernelTextureSize({
+    optimizeFloatMemory: true,
+    precision: 'unsigned',
+  }, [4,2]);
+  assert.deepEqual(textureSize, new Int32Array([4,2]));
+});
+
+test('getKernelTextureSize for [6,1,1] output, optimizeFloatMemory = true, and precision = "unsigned"', () => {
+  const textureSize = utils.getKernelTextureSize({
+    optimizeFloatMemory: true,
+    precision: 'unsigned',
+  }, [6,1,1]);
+  assert.deepEqual(textureSize, new Int32Array([2,3]));
+});
+
+test('getKernelTextureSize for [1,6,1] output, optimizeFloatMemory = true, and precision = "unsigned"', () => {
+  const textureSize = utils.getKernelTextureSize({
+    optimizeFloatMemory: true,
+    precision: 'unsigned',
+  }, [1,6,1]);
+  assert.deepEqual(textureSize, new Int32Array([1,6]));
+});
+
+test('getKernelTextureSize for [1,1,6] output, optimizeFloatMemory = true, and precision = "unsigned"', () => {
+  const textureSize = utils.getKernelTextureSize({
+    optimizeFloatMemory: true,
+    precision: 'unsigned',
+  }, [1,1,6]);
+  assert.deepEqual(textureSize, new Int32Array([2,3]));
+});
+
+test('getKernelTextureSize for [1,2] output, optimizeFloatMemory = true, and precision = "single"', () => {
+  const textureSize = utils.getKernelTextureSize({
+    optimizeFloatMemory: true,
+    precision: 'single',
+  }, [1,2]);
+  assert.deepEqual(textureSize, new Int32Array([1,1]));
+});
+
+test('getKernelTextureSize for [2,3] output, optimizeFloatMemory = true, and precision = "single"', () => {
+  const textureSize = utils.getKernelTextureSize({
+    optimizeFloatMemory: true,
+    precision: 'single',
+  }, [2,3]);
+  assert.deepEqual(textureSize, new Int32Array([1,2]));
+});
+
+test('getKernelTextureSize for [4,2] output, optimizeFloatMemory = true, and precision = "single"', () => {
+  const textureSize = utils.getKernelTextureSize({
+    optimizeFloatMemory: true,
+    precision: 'single',
+  }, [4,2]);
+  assert.deepEqual(textureSize, new Int32Array([1,2]));
+});
+
+test('getKernelTextureSize for [6,1,1] output, optimizeFloatMemory = true, and precision = "single"', () => {
+  const textureSize = utils.getKernelTextureSize({
+    optimizeFloatMemory: true,
+    precision: 'single',
+  }, [6,1,1]);
+  assert.deepEqual(textureSize, new Int32Array([1,2]));
+});
+
+test('getKernelTextureSize for [1,6,1] output, optimizeFloatMemory = true, and precision = "single"', () => {
+  const textureSize = utils.getKernelTextureSize({
+    optimizeFloatMemory: true,
+    precision: 'single',
+  }, [1,6,1]);
+  assert.deepEqual(textureSize, new Int32Array([1,2]));
+});
+
+test('getKernelTextureSize for [1,1,6] output, optimizeFloatMemory = true, and precision = "single"', () => {
+  const textureSize = utils.getKernelTextureSize({
+    optimizeFloatMemory: true,
+    precision: 'single',
+  }, [1,1,6]);
+  assert.deepEqual(textureSize, new Int32Array([1,2]));
+});

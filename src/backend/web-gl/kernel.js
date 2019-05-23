@@ -231,10 +231,10 @@ class WebGLKernel extends GLKernel {
 
   validateSettings() {
     if (!this.validate) {
-      this.texSize = utils.dimToTexSize({
-        floatTextures: this.optimizeFloatMemory,
-        floatOutput: this.precision === 'single',
-      }, this.output, true);
+      this.texSize = utils.getKernelTextureSize({
+        optimizeFloatMemory: this.optimizeFloatMemory,
+        precision: this.precision,
+      }, this.output);
       return;
     }
 
@@ -290,10 +290,10 @@ class WebGLKernel extends GLKernel {
       this.precision = 'single';
     }
 
-    this.texSize = utils.dimToTexSize({
-      floatTextures: this.floatTextures,
-      floatOutput: this.precision === 'single'
-    }, this.output, true);
+    this.texSize = utils.getKernelTextureSize({
+      optimizeFloatMemory: this.optimizeFloatMemory,
+      precision: this.precision,
+    }, this.output);
   }
 
   updateMaxTexSize() {

@@ -58,33 +58,34 @@ function kernelRunShortcut(kernel) {
     kernel = replacementKernel;
   };
 
-  utils
-    .allPropertiesOf(kernel)
-    .forEach((key) => {
-      if (key[0] === '_' && key[1] === '_') return;
-      if (typeof kernel[key] === 'function') {
-        if (key.substring(0, 3) === 'add' || key.substring(0, 3) === 'set') {
-          shortcut[key] = function() {
-            kernel[key].apply(kernel, arguments);
-            return shortcut;
-          };
-        } else if (key === 'requestFallback') {
-          const requestFallback = kernel[key].bind(kernel);
-          shortcut[key] = () => {
-            kernel = requestFallback();
+  const properties = utils.allPropertiesOf(kernel);
+  for (let i = 0; i < properties.length; i++) {
+    const property = properties[i];
+    if (property[0] === '_' && property[1] === '_') continue;
+    if (typeof kernel[property] === 'function') {
+      if (property.substring(0, 3) === 'add' || property.substring(0, 3) === 'set') {
+        shortcut[property] = function() {
+          kernel[property].apply(kernel, arguments);
+          return shortcut;
+        };
+      } else {
+        if (property === 'toString') {
+          shortcut.toString = function() {
+            return kernel.toString.apply(kernel, arguments);
           };
         } else {
-          shortcut[key] = kernel[key].bind(kernel);
+          shortcut[property] = kernel[property].bind(kernel);
         }
-      } else {
-        shortcut.__defineGetter__(key, () => {
-          return kernel[key];
-        });
-        shortcut.__defineSetter__(key, (value) => {
-          kernel[key] = value;
-        });
       }
-    });
+    } else {
+      shortcut.__defineGetter__(property, () => {
+        return kernel[property];
+      });
+      shortcut.__defineSetter__(property, (value) => {
+        kernel[property] = value;
+      });
+    }
+  }
 
   shortcut.kernel = kernel;
 

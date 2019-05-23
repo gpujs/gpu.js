@@ -150,11 +150,11 @@ const utils = {
   },
 
 
-  dimToTexSize(opt, dimensions, output) {
+  getKernelTextureSize(settings, dimensions) {
     let [w, h, d] = dimensions;
     let texelCount = (w || 1) * (h || 1) * (d || 1);
 
-    if (opt.floatTextures && (!output || opt.precision === 'single')) {
+    if (settings.optimizeFloatMemory && settings.precision === 'single') {
       w = texelCount = Math.ceil(texelCount / 4);
     }
     // if given dimensions == a 2d image
