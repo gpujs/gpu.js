@@ -105,6 +105,11 @@ class HeadlessGLKernel extends WebGLKernel {
     };
   }
 
+  build() {
+    super.build.apply(this, arguments);
+    this.extensions.STACKGL_resize_drawingbuffer.resize(this.maxTexSize[0], this.maxTexSize[1]);
+  }
+
   destroyExtensions() {
     this.extensions.STACKGL_resize_drawingbuffer = null;
     this.extensions.STACKGL_destroy_context = null;
@@ -133,9 +138,7 @@ class HeadlessGLKernel extends WebGLKernel {
   setOutput(output) {
     super.setOutput(output);
     if (this.graphical) {
-      const { context: gl } = this;
-      const [width, height] = this.output;
-      (this.extensions.STACKGL_resize_drawingbuffer || gl.getExtension('STACKGL_resize_drawingbuffer')).resize(width, height);
+      this.extensions.STACKGL_resize_drawingbuffer.resize(this.maxTexSize[0], this.maxTexSize[1]);
     }
   }
 }

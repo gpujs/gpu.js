@@ -209,6 +209,8 @@ export interface IKernelSettings {
   graphical?: boolean;
   onRequestFallback?: () => Kernel;
   optimizeFloatMemory?: boolean;
+  dynamicOutput?: boolean;
+  dynamicArguments?: boolean;
 }
 
 export interface IKernelRunShortcut extends Kernel {

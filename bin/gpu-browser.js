@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0-rc.14
- * @date Thu May 23 2019 14:25:29 GMT-0400 (Eastern Daylight Time)
+ * @date Thu May 23 2019 16:47:13 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -9307,6 +9307,11 @@ class HeadlessGLKernel extends WebGLKernel {
     };
   }
 
+  build() {
+    super.build.apply(this, arguments);
+    this.extensions.STACKGL_resize_drawingbuffer.resize(this.maxTexSize[0], this.maxTexSize[1]);
+  }
+
   destroyExtensions() {
     this.extensions.STACKGL_resize_drawingbuffer = null;
     this.extensions.STACKGL_destroy_context = null;
@@ -9332,9 +9337,7 @@ class HeadlessGLKernel extends WebGLKernel {
   setOutput(output) {
     super.setOutput(output);
     if (this.graphical) {
-      const { context: gl } = this;
-      const [width, height] = this.output;
-      (this.extensions.STACKGL_resize_drawingbuffer || gl.getExtension('STACKGL_resize_drawingbuffer')).resize(width, height);
+      this.extensions.STACKGL_resize_drawingbuffer.resize(this.maxTexSize[0], this.maxTexSize[1]);
     }
   }
 }
@@ -9342,6 +9345,7 @@ class HeadlessGLKernel extends WebGLKernel {
 module.exports = {
   HeadlessGLKernel
 };
+
 },{"../gl/kernel-string":11,"../web-gl/kernel":56,"gl":3}],33:[function(require,module,exports){
 const { utils } = require('../utils');
 
@@ -14560,7 +14564,6 @@ class WebGL2Kernel extends WebGLKernel {
 module.exports = {
   WebGL2Kernel
 };
-
 },{"../../utils":89,"../function-builder":9,"../web-gl/kernel":56,"./fragment-shader":58,"./function-node":59,"./kernel-value-maps":60,"./vertex-shader":81}],81:[function(require,module,exports){
 const vertexShader = `#version 300 es
 precision highp float;
