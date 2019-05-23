@@ -57,6 +57,7 @@ class WebGLKernelValue extends KernelValue {
       return valuesFlat;
     } else {
       switch (value.constructor) {
+        case Uint8ClampedArray:
         case Uint8Array:
         case Int8Array:
         case Uint16Array:
@@ -88,6 +89,7 @@ class WebGLKernelValue extends KernelValue {
       return this.getBitRatio(value.value);
     }
     switch (value.constructor) {
+      case Uint8ClampedArray:
       case Uint8Array:
       case Int8Array:
         return 1;

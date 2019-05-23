@@ -714,78 +714,66 @@ class WebGLFunctionNode extends FunctionNode {
       throw this.astErrorOutput('Unexpected expression', varDecNode);
     }
     const result = [];
-    const firstDeclaration = declarations[0];
-    const init = firstDeclaration.init;
-    const actualType = this.getType(init);
+    let lastType = null;
     const inForLoopInit = this.isState('in-for-loop-init');
-    let type = inForLoopInit ? 'Integer' : actualType;
-    if (type === 'LiteralInteger') {
-      // We had the choice to go either float or int, choosing float
-      type = 'Number';
-    }
-    const markupType = typeMap[type];
-    if (!markupType) {
-      throw this.astErrorOutput(`Markup type ${ markupType } not handled`, varDecNode);
-    }
-    let dependencies = this.getDependencies(firstDeclaration.init);
-    const initResult = [];
-    if (actualType === 'Integer' && type === 'Integer' && !inForLoopInit) {
-      this.declarations[firstDeclaration.id.name] = Object.freeze({
-        type: 'Number',
-        dependencies,
-        isSafe: this.isSafeDependencies(dependencies),
-      });
-      initResult.push('float ');
-      initResult.push(`user_${firstDeclaration.id.name}=`);
-      initResult.push('float(');
-      this.astGeneric(init, initResult);
-      initResult.push(')');
-    } else {
-      this.declarations[firstDeclaration.id.name] = Object.freeze({
-        type,
-        dependencies,
-        isSafe: this.isSafeDependencies(dependencies),
-      });
-      initResult.push(`${markupType} `);
-      initResult.push(`user_${firstDeclaration.id.name}=`);
-      if (actualType === 'Number' && type === 'Integer') {
-        initResult.push('int(');
-        this.astGeneric(init, initResult);
-        initResult.push(')');
-      } else {
-        this.astGeneric(init, initResult);
-      }
-    }
-    result.push(initResult.join(''));
-
-    // first declaration is done, now add multiple statements
-    let lastType = type;
-    for (let i = 1; i < declarations.length; i++) {
+    for (let i = 0; i < declarations.length; i++) {
       const declaration = declarations[i];
-      const nextResult = [];
-      if (!inForLoopInit) {
-        let possibleNewType = this.getType(declaration.init);
-        if (possibleNewType === 'LiteralInteger') {
-          possibleNewType = 'Number';
-        }
-        if (possibleNewType !== lastType) {
-          nextResult.push(';');
-          nextResult.push(typeMap[possibleNewType], ' ');
-          lastType = possibleNewType;
-        } else {
-          nextResult.push(',');
-        }
-      } else {
-        nextResult.push(',');
+      const init = declaration.init;
+      const actualType = this.getType(init);
+      let dependencies = this.getDependencies(init);
+      let type = inForLoopInit ? 'Integer' : actualType;
+      if (type === 'LiteralInteger') {
+        // We had the choice to go either float or int, choosing float
+        type = 'Number';
       }
-      dependencies = this.getDependencies(declaration);
-      this.declarations[declaration.id.name] = Object.freeze({
-        type: lastType,
-        dependencies: dependencies,
-        isSafe: this.isSafeDependencies(dependencies),
-      });
-      this.astGeneric(declaration, nextResult);
-      result.push(nextResult.join(''));
+      const markupType = typeMap[type];
+      if (!markupType) {
+        throw this.astErrorOutput(`Markup type ${ markupType } not handled`, varDecNode);
+      }
+      const declarationResult = [];
+      if (actualType === 'Integer' && type === 'Integer' && !inForLoopInit) {
+        this.declarations[declaration.id.name] = Object.freeze({
+          type: 'Number',
+          dependencies,
+          isSafe: this.isSafeDependencies(dependencies),
+        });
+        if (i === 0 || lastType === null) {
+          declarationResult.push('float ');
+        } else if (actualType !== lastType) {
+          throw new Error('Unhandled declaration');
+        } else {
+          declarationResult.push(',');
+        }
+        lastType = type;
+        declarationResult.push(`user_${declaration.id.name}=`);
+        declarationResult.push('float(');
+        this.astGeneric(init, declarationResult);
+        declarationResult.push(')');
+      } else {
+        this.declarations[declaration.id.name] = Object.freeze({
+          type,
+          dependencies,
+          isSafe: this.isSafeDependencies(dependencies),
+        });
+        if (i === 0 || lastType === null) {
+          declarationResult.push(`${markupType} `);
+        } else if (actualType !== lastType) {
+          result.push(';');
+          declarationResult.push(`${markupType} `);
+        } else {
+          declarationResult.push(',');
+        }
+        lastType = type;
+        declarationResult.push(`user_${declaration.id.name}=`);
+        if (actualType === 'Number' && type === 'Integer') {
+          declarationResult.push('int(');
+          this.astGeneric(init, declarationResult);
+          declarationResult.push(')');
+        } else {
+          this.astGeneric(init, declarationResult);
+        }
+      }
+      result.push(declarationResult.join(''));
     }
 
     retArr.push(result.join(''));
