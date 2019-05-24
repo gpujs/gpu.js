@@ -15,6 +15,7 @@ function testCanvasIssue(mode) {
   render();
 
   assert.equal(render.canvas.constructor.name, 'HTMLCanvasElement');
+  gpu.destroy();
 }
 
 (GPU.isCanvasSupported ? test : skip)('auto', () => {
