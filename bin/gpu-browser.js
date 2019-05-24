@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0-rc.14
- * @date Thu May 23 2019 18:11:32 GMT-0400 (Eastern Daylight Time)
+ * @date Thu May 23 2019 20:48:22 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -6276,7 +6276,6 @@ class CPUKernel extends Kernel {
 module.exports = {
   CPUKernel
 };
-
 },{"../../utils":89,"../function-builder":9,"../kernel":34,"./function-node":6,"./kernel-string":7}],9:[function(require,module,exports){
 class FunctionBuilder {
   static fromKernel(kernel, FunctionNode, extraNodeOptions) {
@@ -9337,7 +9336,7 @@ class HeadlessGLKernel extends WebGLKernel {
 
   setOutput(output) {
     super.setOutput(output);
-    if (this.graphical) {
+    if (this.graphical && this.extensions.STACKGL_resize_drawingbuffer) {
       this.extensions.STACKGL_resize_drawingbuffer.resize(this.maxTexSize[0], this.maxTexSize[1]);
     }
   }
@@ -9346,6 +9345,7 @@ class HeadlessGLKernel extends WebGLKernel {
 module.exports = {
   HeadlessGLKernel
 };
+
 },{"../gl/kernel-string":11,"../web-gl/kernel":56,"gl":3}],33:[function(require,module,exports){
 const { utils } = require('../utils');
 
@@ -10645,7 +10645,7 @@ class WebGLFunctionNode extends FunctionNode {
         });
         if (i === 0 || lastType === null) {
           declarationResult.push('float ');
-        } else if (actualType !== lastType) {
+        } else if (type !== lastType) {
           throw new Error('Unhandled declaration');
         } else {
           declarationResult.push(',');
@@ -10663,7 +10663,7 @@ class WebGLFunctionNode extends FunctionNode {
         });
         if (i === 0 || lastType === null) {
           declarationResult.push(`${markupType} `);
-        } else if (actualType !== lastType) {
+        } else if (type !== lastType) {
           result.push(';');
           declarationResult.push(`${markupType} `);
         } else {
@@ -11169,6 +11169,7 @@ const operatorMap = {
 module.exports = {
   WebGLFunctionNode
 };
+
 },{"../function-node":10}],37:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGLKernelValueFloat } = require('./kernel-value/float');
