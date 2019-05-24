@@ -258,10 +258,12 @@ class Kernel {
   setupArguments(args) {
     if (!this.argumentTypes) {
       this.kernelArguments = [];
-      this.argumentTypes = [];
-      for (let i = 0; i < args.length; i++) {
-        const argType = utils.getVariableType(args[i], this.strictIntegers);
-        this.argumentTypes.push(argType === 'Integer' ? 'Number' : argType);
+      if (!this.argumentTypes) {
+        this.argumentTypes = [];
+        for (let i = 0; i < args.length; i++) {
+          const argType = utils.getVariableType(args[i], this.strictIntegers);
+          this.argumentTypes.push(argType === 'Integer' ? 'Number' : argType);
+        }
       }
     }
 

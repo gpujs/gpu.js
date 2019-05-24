@@ -210,6 +210,11 @@ class GPU {
 
     source = typeof source === 'function' ? source.toString() : source;
     const switchableKernels = {};
+    const settingsCopy = upgradeDeprecatedCreateKernelSettings(settings) || {};
+    // handle conversion of argumentTypes
+    if (settings && typeof settings.argumentTypes === 'object') {
+      settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
+    }
     const mergedSettings = Object.assign({
       context: this.context,
       canvas: this.canvas,
@@ -266,7 +271,7 @@ class GPU {
           return newKernel.renderOutput();
         }
       }
-    }, upgradeDeprecatedCreateKernelSettings(settings) || {});
+    }, settingsCopy);
 
     const kernel = kernelRunShortcut(new this.Kernel(source, mergedSettings));
 
@@ -331,7 +336,13 @@ class GPU {
       }
     }
 
-    const kernel = this.createKernel(fn, upgradeDeprecatedCreateKernelSettings(settings));
+    const settingsCopy = upgradeDeprecatedCreateKernelSettings(settings);
+    // handle conversion of argumentTypes
+    if (settings && typeof settings.argumentTypes === 'object') {
+      settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
+    }
+    const kernel = this.createKernel(fn, settingsCopy);
+
     if (Array.isArray(arguments[0])) {
       const functions = arguments[0];
       for (let i = 0; i < functions.length; i++) {

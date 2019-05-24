@@ -359,8 +359,11 @@ class WebGLKernel extends GLKernel {
   setupArguments(args) {
     this.kernelArguments = [];
     this.argumentTextureCount = 0;
+    const needsArgumentTypes = this.argumentTypes === null;
     // TODO: remove
-    this.argumentTypes = [];
+    if (needsArgumentTypes) {
+      this.argumentTypes = [];
+    }
     this.argumentSizes = [];
     this.argumentBitRatios = [];
     // TODO: end remove
@@ -379,8 +382,13 @@ class WebGLKernel extends GLKernel {
     for (let index = 0; index < args.length; index++) {
       const value = args[index];
       const name = this.argumentNames[index];
-      const type = utils.getVariableType(value, this.strictIntegers);
-      this.argumentTypes.push(type);
+      let type;
+      if (needsArgumentTypes) {
+        type = utils.getVariableType(value, this.strictIntegers);
+        this.argumentTypes.push(type);
+      } else {
+        type = this.argumentTypes[index];
+      }
       const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArguments ? 'dynamic' : 'static', this.precision);
       if (KernelValue === null) {
         throw new Error('unsupported argument');

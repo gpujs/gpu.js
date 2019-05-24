@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0-rc.14
- * @date Thu May 23 2019 20:48:22 GMT-0400 (Eastern Daylight Time)
+ * @date Thu May 23 2019 21:45:45 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -9345,7 +9345,6 @@ class HeadlessGLKernel extends WebGLKernel {
 module.exports = {
   HeadlessGLKernel
 };
-
 },{"../gl/kernel-string":11,"../web-gl/kernel":56,"gl":3}],33:[function(require,module,exports){
 const { utils } = require('../utils');
 
@@ -9549,10 +9548,12 @@ class Kernel {
   setupArguments(args) {
     if (!this.argumentTypes) {
       this.kernelArguments = [];
-      this.argumentTypes = [];
-      for (let i = 0; i < args.length; i++) {
-        const argType = utils.getVariableType(args[i], this.strictIntegers);
-        this.argumentTypes.push(argType === 'Integer' ? 'Number' : argType);
+      if (!this.argumentTypes) {
+        this.argumentTypes = [];
+        for (let i = 0; i < args.length; i++) {
+          const argType = utils.getVariableType(args[i], this.strictIntegers);
+          this.argumentTypes.push(argType === 'Integer' ? 'Number' : argType);
+        }
       }
     }
 
@@ -11169,7 +11170,6 @@ const operatorMap = {
 module.exports = {
   WebGLFunctionNode
 };
-
 },{"../function-node":10}],37:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGLKernelValueFloat } = require('./kernel-value/float');
@@ -12312,7 +12312,10 @@ class WebGLKernel extends GLKernel {
   setupArguments(args) {
     this.kernelArguments = [];
     this.argumentTextureCount = 0;
-    this.argumentTypes = [];
+    const needsArgumentTypes = this.argumentTypes === null;
+    if (needsArgumentTypes) {
+      this.argumentTypes = [];
+    }
     this.argumentSizes = [];
     this.argumentBitRatios = [];
     if (!this.precision) {
@@ -12329,8 +12332,13 @@ class WebGLKernel extends GLKernel {
     for (let index = 0; index < args.length; index++) {
       const value = args[index];
       const name = this.argumentNames[index];
-      const type = utils.getVariableType(value, this.strictIntegers);
-      this.argumentTypes.push(type);
+      let type;
+      if (needsArgumentTypes) {
+        type = utils.getVariableType(value, this.strictIntegers);
+        this.argumentTypes.push(type);
+      } else {
+        type = this.argumentTypes[index];
+      }
       const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArguments ? 'dynamic' : 'static', this.precision);
       if (KernelValue === null) {
         throw new Error('unsupported argument');
@@ -14754,6 +14762,10 @@ class GPU {
 
     source = typeof source === 'function' ? source.toString() : source;
     const switchableKernels = {};
+    const settingsCopy = upgradeDeprecatedCreateKernelSettings(settings) || {};
+    if (settings && typeof settings.argumentTypes === 'object') {
+      settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
+    }
     const mergedSettings = Object.assign({
       context: this.context,
       canvas: this.canvas,
@@ -14810,7 +14822,7 @@ class GPU {
           return newKernel.renderOutput();
         }
       }
-    }, upgradeDeprecatedCreateKernelSettings(settings) || {});
+    }, settingsCopy);
 
     const kernel = kernelRunShortcut(new this.Kernel(source, mergedSettings));
 
@@ -14843,7 +14855,12 @@ class GPU {
       }
     }
 
-    const kernel = this.createKernel(fn, upgradeDeprecatedCreateKernelSettings(settings));
+    const settingsCopy = upgradeDeprecatedCreateKernelSettings(settings);
+    if (settings && typeof settings.argumentTypes === 'object') {
+      settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
+    }
+    const kernel = this.createKernel(fn, settingsCopy);
+
     if (Array.isArray(arguments[0])) {
       const functions = arguments[0];
       for (let i = 0; i < functions.length; i++) {
@@ -14958,6 +14975,7 @@ module.exports = {
   kernelOrder,
   kernelTypes
 };
+
 },{"./backend/cpu/kernel":8,"./backend/headless-gl/kernel":32,"./backend/web-gl/kernel":56,"./backend/web-gl2/kernel":80,"./kernel-run-shortcut":86,"./utils":89,"gpu-mock.js":4}],84:[function(require,module,exports){
 const { GPU } = require('./gpu');
 const { alias } = require('./alias');
