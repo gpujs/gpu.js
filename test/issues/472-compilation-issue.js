@@ -19,7 +19,6 @@ function testCompilationIssue(mode) {
     constants: { w: 4, h: 4 },
     output: [2, 2],
     graphical: true,
-    debug: true,
   });
   render(new Uint8ClampedArray([
     230,233,240,255,
@@ -51,6 +50,6 @@ test('gpu', () => {
   testCompilationIssue('headlessgl');
 });
 
-test('cpu', () => {
+(GPU.isCanvasSupported ? test : skip)('cpu', () => {
   testCompilationIssue('cpu');
 });

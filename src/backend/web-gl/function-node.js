@@ -739,7 +739,7 @@ class WebGLFunctionNode extends FunctionNode {
         });
         if (i === 0 || lastType === null) {
           declarationResult.push('float ');
-        } else if (actualType !== lastType) {
+        } else if (type !== lastType) {
           throw new Error('Unhandled declaration');
         } else {
           declarationResult.push(',');
@@ -757,7 +757,7 @@ class WebGLFunctionNode extends FunctionNode {
         });
         if (i === 0 || lastType === null) {
           declarationResult.push(`${markupType} `);
-        } else if (actualType !== lastType) {
+        } else if (type !== lastType) {
           result.push(';');
           declarationResult.push(`${markupType} `);
         } else {

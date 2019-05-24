@@ -137,7 +137,7 @@ class HeadlessGLKernel extends WebGLKernel {
 
   setOutput(output) {
     super.setOutput(output);
-    if (this.graphical) {
+    if (this.graphical && this.extensions.STACKGL_resize_drawingbuffer) {
       this.extensions.STACKGL_resize_drawingbuffer.resize(this.maxTexSize[0], this.maxTexSize[1]);
     }
   }
