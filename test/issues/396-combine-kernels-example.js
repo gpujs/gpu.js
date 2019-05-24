@@ -1,7 +1,7 @@
 const { assert, skip, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
 
-describe('issues #396 - combine kernels example');
+describe('issue #396 - combine kernels example');
 
 function combineKernelsExample(mode) {
   const gpu = new GPU({ mode });

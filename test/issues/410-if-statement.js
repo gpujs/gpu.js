@@ -1,7 +1,7 @@
 const { assert, skip, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
 
-describe('issues #410 - if statement when unsigned on NVidia');
+describe('issue #410 - if statement when unsigned on NVidia');
 
 function ifStatement(mode) {
   const gpu = new GPU({ mode });

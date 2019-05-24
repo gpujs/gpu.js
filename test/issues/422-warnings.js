@@ -1,7 +1,7 @@
 const { assert, skip, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
 
-describe('issues #422 - warnings');
+describe('issue #422 - warnings');
 
 function warnings(mode) {
   const gpu = new GPU({ mode });

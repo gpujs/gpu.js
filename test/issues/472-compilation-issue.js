@@ -1,7 +1,7 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../src');
 
-describe('issues #472 - compilation issue');
+describe('issue #472 - compilation issue');
 
 function testCompilationIssue(mode) {
   const gpu = new GPU({ mode });
