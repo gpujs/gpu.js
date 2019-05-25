@@ -64,8 +64,9 @@ class WebGLFunctionNode extends FunctionNode {
           retArr.push(', ');
         }
         let argumentType = this.getVariableType(argumentName);
+        // The type is too loose ended, here we descide to solidify a type, lets go with float
         if (!argumentType || argumentType === 'LiteralInteger') {
-          argumentType = 'Number';
+          this.argumentTypes[i] = argumentType = 'Number';
         }
         const type = typeMap[argumentType];
         if (!type) {
@@ -123,9 +124,7 @@ class WebGLFunctionNode extends FunctionNode {
             result.push(')');
             break;
           case 'LiteralInteger':
-            this.pushState('casting-to-float');
-            this.astGeneric(ast.argument, result);
-            this.popState('casting-to-float');
+            this.castLiteralToFloat(ast.argument, result);
 
             // Running astGeneric forces the LiteralInteger to pick a type, and here, if we are returning a float, yet
             // the LiteralInteger has picked to be an integer because of constraints on it we cast it to float.
@@ -142,16 +141,10 @@ class WebGLFunctionNode extends FunctionNode {
         switch (type) {
           case 'Float':
           case 'Number':
-            this.pushState('casting-to-integer');
-            result.push('int(');
-            this.astGeneric(ast.argument, result);
-            result.push(')');
-            this.popState('casting-to-integer');
+            this.castValueToInteger(ast.argument, result);
             break;
           case 'LiteralInteger':
-            this.pushState('casting-to-integer');
-            this.astGeneric(ast.argument, result);
-            this.popState('casting-to-integer');
+            this.castLiteralToInteger(ast.argument, result);
             break;
           default:
             this.astGeneric(ast.argument, result);
@@ -224,261 +217,313 @@ class WebGLFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astBinaryExpression(ast, retArr) {
-    if (ast.operator === '%') {
-      retArr.push('mod(');
-
-      const leftType = this.getType(ast.left);
-      if (leftType === 'Integer') {
-        retArr.push('float(');
-        this.astGeneric(ast.left, retArr);
-        retArr.push(')');
-      } else if (leftType === 'LiteralInteger') {
-        this.pushState('casting-to-float');
-        this.astGeneric(ast.left, retArr);
-        this.popState('casting-to-float');
-      } else {
-        this.astGeneric(ast.left, retArr);
-      }
-
-      retArr.push(',');
-      const rightType = this.getType(ast.right);
-
-      if (rightType === 'Integer') {
-        retArr.push('float(');
-        this.astGeneric(ast.right, retArr);
-        retArr.push(')');
-      } else if (rightType === 'LiteralInteger') {
-        this.pushState('casting-to-float');
-        this.astGeneric(ast.right, retArr);
-        this.popState('casting-to-float');
-      } else {
-        this.astGeneric(ast.right, retArr);
-      }
-      retArr.push(')');
+    if (this.checkAndUpconvertOperator(ast, retArr)) {
       return retArr;
     }
 
-    if (ast.operator === '**') {
-      retArr.push('pow(');
-
-      const leftType = this.getType(ast.left);
-      if (leftType === 'Integer') {
-        retArr.push('float(');
-        this.astGeneric(ast.left, retArr);
-        retArr.push(')');
-      } else if (leftType === 'LiteralInteger') {
-        this.pushState('casting-to-float');
-        this.astGeneric(ast.left, retArr);
-        this.popState('casting-to-float');
-      } else {
-        this.astGeneric(ast.left, retArr);
+    if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
+      retArr.push('div_with_int_check(');
+      switch (this.getType(ast.left)) {
+        case 'Integer':
+          this.castValueToFloat(ast.left, retArr);
+          break;
+        case 'LiteralInteger':
+          this.castLiteralToFloat(ast.left, retArr);
+          break;
+        default:
+          this.astGeneric(ast.left, retArr);
       }
-
-      retArr.push(',');
-      const rightType = this.getType(ast.right);
-
-      if (rightType === 'Integer') {
-        retArr.push('float(');
-        this.astGeneric(ast.right, retArr);
-        retArr.push(')');
-      } else if (rightType === 'LiteralInteger') {
-        this.pushState('casting-to-float');
-        this.astGeneric(ast.right, retArr);
-        this.popState('casting-to-float');
-      } else {
-        this.astGeneric(ast.right, retArr);
+      retArr.push(', ');
+      switch (this.getType(ast.right)) {
+        case 'Integer':
+          this.castValueToFloat(ast.right, retArr);
+          break;
+        case 'LiteralInteger':
+          this.castLiteralToFloat(ast.right, retArr);
+          break;
+        default:
+          this.astGeneric(ast.right, retArr);
       }
       retArr.push(')');
       return retArr;
     }
 
     retArr.push('(');
-    if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
-      retArr.push('div_with_int_check(');
-
-      switch (this.getType(ast.left)) {
-        case 'Integer':
-          retArr.push('float(');
-          this.pushState('casting-to-float');
-          this.astGeneric(ast.left, retArr);
-          this.popState('casting-to-float');
-          retArr.push(')');
-          break;
-        case 'LiteralInteger':
-          this.pushState('casting-to-float');
-          this.astGeneric(ast.left, retArr);
-          this.popState('casting-to-float');
-          break;
-        default:
-          this.astGeneric(ast.left, retArr);
-      }
-
-      retArr.push(', ');
-
-      switch (this.getType(ast.right)) {
-        case 'Integer':
-          retArr.push('float(');
-          this.pushState('casting-to-float');
-          this.astGeneric(ast.right, retArr);
-          this.popState('casting-to-float');
-          retArr.push(')');
-          break;
-        case 'LiteralInteger':
-          this.pushState('casting-to-float');
-          this.astGeneric(ast.right, retArr);
-          this.popState('casting-to-float');
-          break;
-        default:
-          this.astGeneric(ast.right, retArr);
-      }
-
-      retArr.push(')');
-    } else {
-      const leftType = this.getType(ast.left) || 'Number';
-      const rightType = this.getType(ast.right) || 'Number';
-      if (!leftType || !rightType) {
-        throw this.astErrorOutput(`Unhandled binary expression`, ast);
-      }
-      const key = leftType + ' & ' + rightType;
-      switch (key) {
-        case 'Integer & Integer':
-          this.astGeneric(ast.left, retArr);
-          retArr.push(operatorMap[ast.operator] || ast.operator);
-          this.astGeneric(ast.right, retArr);
-          break;
-        case 'Number & Float':
-        case 'Float & Number':
-        case 'Float & Float':
-        case 'Number & Number':
-          this.astGeneric(ast.left, retArr);
-          retArr.push(operatorMap[ast.operator] || ast.operator);
-          this.astGeneric(ast.right, retArr);
-          break;
-        case 'LiteralInteger & LiteralInteger':
-          this.pushState('casting-to-float');
-          this.astGeneric(ast.left, retArr);
-          retArr.push(operatorMap[ast.operator] || ast.operator);
-          this.astGeneric(ast.right, retArr);
-          this.popState('casting-to-float');
-          break;
-
-        case 'Integer & Float':
-        case 'Integer & Number':
-          if (ast.operator === '>' || ast.operator === '<' && ast.right.type === 'Literal') {
-            // if right value is actually a float, don't loose that information, cast left to right rather than the usual right to left
-            if (!Number.isInteger(ast.right.value)) {
-              this.pushState('casting-to-float');
-              retArr.push('float(');
-              this.astGeneric(ast.left, retArr);
-              retArr.push(')');
-              this.popState('casting-to-float');
-              retArr.push(operatorMap[ast.operator] || ast.operator);
-              this.astGeneric(ast.right, retArr);
-              break;
-            }
-          }
-          this.astGeneric(ast.left, retArr);
-          retArr.push(operatorMap[ast.operator] || ast.operator);
-          this.pushState('casting-to-integer');
-          if (ast.right.type === 'Literal') {
-            const literalResult = [];
-            this.astGeneric(ast.right, literalResult);
-            const literalType = this.getType(ast.right);
-            if (literalType === 'Integer') {
-              retArr.push(literalResult.join(''));
-            } else {
-              throw this.astErrorOutput(`Unhandled binary expression with literal`, ast);
-            }
-          } else {
-            retArr.push('int(');
-            this.astGeneric(ast.right, retArr);
-            retArr.push(')');
-          }
-          this.popState('casting-to-integer');
-          break;
-        case 'Integer & LiteralInteger':
-          this.astGeneric(ast.left, retArr);
-          retArr.push(operatorMap[ast.operator] || ast.operator);
-          this.pushState('casting-to-integer');
-          this.astGeneric(ast.right, retArr);
-          this.popState('casting-to-integer');
-          break;
-
-        case 'Number & Integer':
-          this.astGeneric(ast.left, retArr);
-          retArr.push(operatorMap[ast.operator] || ast.operator);
-          this.pushState('casting-to-float');
-          retArr.push('float(');
-          this.astGeneric(ast.right, retArr);
-          retArr.push(')');
-          this.popState('casting-to-float');
-          break;
-        case 'Float & LiteralInteger':
-        case 'Number & LiteralInteger':
-          if (this.isState('in-for-loop-test')) {
-            retArr.push('int(');
-            this.astGeneric(ast.left, retArr);
-            retArr.push(')');
-            retArr.push(operatorMap[ast.operator] || ast.operator);
-            this.pushState('casting-to-integer');
-            this.astGeneric(ast.right, retArr);
-            this.popState('casting-to-integer');
-          } else {
-            this.astGeneric(ast.left, retArr);
-            retArr.push(operatorMap[ast.operator] || ast.operator);
-            this.pushState('casting-to-float');
-            this.astGeneric(ast.right, retArr);
-            this.popState('casting-to-float');
-          }
-          break;
-        case 'LiteralInteger & Float':
-        case 'LiteralInteger & Number':
-          if (this.isState('in-for-loop-test') || this.isState('in-for-loop-init') || this.isState('casting-to-integer')) {
-            this.pushState('casting-to-integer');
-            this.astGeneric(ast.left, retArr);
-            retArr.push(operatorMap[ast.operator] || ast.operator);
-            retArr.push('int(');
-            this.astGeneric(ast.right, retArr);
-            retArr.push(')');
-            this.popState('casting-to-integer');
-          } else {
-            this.astGeneric(ast.left, retArr);
-            retArr.push(operatorMap[ast.operator] || ast.operator);
-            this.pushState('casting-to-float');
-            this.astGeneric(ast.right, retArr);
-            this.popState('casting-to-float');
-          }
-          break;
-        case 'LiteralInteger & Integer':
-          this.pushState('casting-to-integer');
-          this.astGeneric(ast.left, retArr);
-          this.popState('casting-to-integer');
-          retArr.push(operatorMap[ast.operator] || ast.operator);
-          this.astGeneric(ast.right, retArr);
-          break;
-
-        case 'Boolean & Boolean':
-          this.astGeneric(ast.left, retArr);
-          retArr.push(operatorMap[ast.operator] || ast.operator);
-          this.astGeneric(ast.right, retArr);
-          break;
-
-        case 'Float & Integer':
-          this.astGeneric(ast.left, retArr);
-          retArr.push(operatorMap[ast.operator] || ast.operator);
-          this.pushState('casting-to-integer');
-          retArr.push('float(');
-          this.astGeneric(ast.right, retArr);
-          retArr.push(')');
-          this.popState('casting-to-integer');
-          break;
-
-        default:
-          throw this.astErrorOutput(`Unhandled binary expression between ${key}`, ast);
-      }
+    const leftType = this.getType(ast.left) || 'Number';
+    const rightType = this.getType(ast.right) || 'Number';
+    if (!leftType || !rightType) {
+      throw this.astErrorOutput(`Unhandled binary expression`, ast);
     }
+    const key = leftType + ' & ' + rightType;
+    switch (key) {
+      case 'Integer & Integer':
+        this.astGeneric(ast.left, retArr);
+        retArr.push(operatorMap[ast.operator] || ast.operator);
+        this.astGeneric(ast.right, retArr);
+        break;
+      case 'Number & Float':
+      case 'Float & Number':
+      case 'Float & Float':
+      case 'Number & Number':
+        this.astGeneric(ast.left, retArr);
+        retArr.push(operatorMap[ast.operator] || ast.operator);
+        this.astGeneric(ast.right, retArr);
+        break;
+      case 'LiteralInteger & LiteralInteger':
+        this.castLiteralToFloat(ast.left, retArr);
+        retArr.push(operatorMap[ast.operator] || ast.operator);
+        this.castLiteralToFloat(ast.right, retArr);
+        break;
 
+      case 'Integer & Float':
+      case 'Integer & Number':
+        if (ast.operator === '>' || ast.operator === '<' && ast.right.type === 'Literal') {
+          // if right value is actually a float, don't loose that information, cast left to right rather than the usual right to left
+          if (!Number.isInteger(ast.right.value)) {
+            this.castValueToFloat(ast.left, retArr);
+            retArr.push(operatorMap[ast.operator] || ast.operator);
+            this.astGeneric(ast.right, retArr);
+            break;
+          }
+        }
+        this.astGeneric(ast.left, retArr);
+        retArr.push(operatorMap[ast.operator] || ast.operator);
+        this.pushState('casting-to-integer');
+        if (ast.right.type === 'Literal') {
+          const literalResult = [];
+          this.astGeneric(ast.right, literalResult);
+          const literalType = this.getType(ast.right);
+          if (literalType === 'Integer') {
+            retArr.push(literalResult.join(''));
+          } else {
+            throw this.astErrorOutput(`Unhandled binary expression with literal`, ast);
+          }
+        } else {
+          retArr.push('int(');
+          this.astGeneric(ast.right, retArr);
+          retArr.push(')');
+        }
+        this.popState('casting-to-integer');
+        break;
+      case 'Integer & LiteralInteger':
+        this.astGeneric(ast.left, retArr);
+        retArr.push(operatorMap[ast.operator] || ast.operator);
+        this.castLiteralToInteger(ast.right, retArr);
+        break;
+
+      case 'Number & Integer':
+        this.astGeneric(ast.left, retArr);
+        retArr.push(operatorMap[ast.operator] || ast.operator);
+        this.castValueToFloat(ast.right, retArr);
+        break;
+      case 'Float & LiteralInteger':
+      case 'Number & LiteralInteger':
+        if (this.isState('in-for-loop-test')) {
+          retArr.push('int(');
+          this.astGeneric(ast.left, retArr);
+          retArr.push(')');
+          retArr.push(operatorMap[ast.operator] || ast.operator);
+          this.castLiteralToInteger(ast.right, retArr);
+        } else {
+          this.astGeneric(ast.left, retArr);
+          retArr.push(operatorMap[ast.operator] || ast.operator);
+          this.castLiteralToFloat(ast.right, retArr);
+        }
+        break;
+      case 'LiteralInteger & Float':
+      case 'LiteralInteger & Number':
+        if (this.isState('in-for-loop-test') || this.isState('in-for-loop-init') || this.isState('casting-to-integer')) {
+          this.castLiteralToInteger(ast.left, retArr);
+          retArr.push(operatorMap[ast.operator] || ast.operator);
+          this.castValueToInteger(ast.right, retArr);
+        } else {
+          this.astGeneric(ast.left, retArr);
+          retArr.push(operatorMap[ast.operator] || ast.operator);
+          this.pushState('casting-to-float');
+          this.astGeneric(ast.right, retArr);
+          this.popState('casting-to-float');
+        }
+        break;
+      case 'LiteralInteger & Integer':
+        this.castLiteralToInteger(ast.left, retArr);
+        retArr.push(operatorMap[ast.operator] || ast.operator);
+        this.astGeneric(ast.right, retArr);
+        break;
+
+      case 'Boolean & Boolean':
+        this.astGeneric(ast.left, retArr);
+        retArr.push(operatorMap[ast.operator] || ast.operator);
+        this.astGeneric(ast.right, retArr);
+        break;
+
+      case 'Float & Integer':
+        this.astGeneric(ast.left, retArr);
+        retArr.push(operatorMap[ast.operator] || ast.operator);
+        this.castValueToFloat(ast.right, retArr);
+        break;
+
+      default:
+        throw this.astErrorOutput(`Unhandled binary expression between ${key}`, ast);
+    }
     retArr.push(')');
+
+    return retArr;
+  }
+
+  checkAndUpconvertOperator(ast, retArr) {
+    const bitwiseResult = this.checkAndUpconvertBitwiseOperators(ast, retArr);
+    if (bitwiseResult) {
+      return bitwiseResult;
+    }
+    const upconvertableOperators = {
+      '%': 'mod',
+      '**': 'pow',
+    };
+    const foundOperator = upconvertableOperators[ast.operator];
+    if (!foundOperator) return null;
+    retArr.push(foundOperator);
+    retArr.push('(');
+    switch (this.getType(ast.left)) {
+      case 'Integer':
+        this.castValueToFloat(ast.left, retArr);
+        break;
+      case 'LiteralInteger':
+        this.castLiteralToFloat(ast.left, retArr);
+        break;
+      default:
+        this.astGeneric(ast.left, retArr);
+    }
+    retArr.push(',');
+    switch (this.getType(ast.right)) {
+      case 'Integer':
+        this.castValueToFloat(ast.right, retArr);
+        break;
+      case 'LiteralInteger':
+        this.castLiteralToFloat(ast.right, retArr);
+        break;
+      default:
+        this.astGeneric(ast.right, retArr);
+    }
+    retArr.push(')');
+    return retArr;
+  }
+
+  checkAndUpconvertBitwiseOperators(ast, retArr) {
+    const upconvertableOperators = {
+      '&': 'bitwiseAnd',
+      '|': 'bitwiseOr',
+      '^': 'bitwiseXOR',
+      '<<': 'bitwiseZeroFillLeftShift',
+      '>>': 'bitwiseSignedRightShift',
+      '>>>': 'bitwiseZeroFillRightShift',
+    };
+    const foundOperator = upconvertableOperators[ast.operator];
+    if (!foundOperator) return null;
+    retArr.push(foundOperator);
+    retArr.push('(');
+    switch (this.getType(ast.left)) {
+      case 'Number':
+      case 'Float':
+        this.castValueToInteger(ast.left, retArr);
+        break;
+      case 'LiteralInteger':
+        this.castLiteralToInteger(ast.left, retArr);
+        break;
+      default:
+        this.astGeneric(ast.left, retArr);
+    }
+    retArr.push(',');
+    switch (this.getType(ast.right)) {
+      case 'Number':
+      case 'Float':
+        this.castValueToInteger(ast.right, retArr);
+        break;
+      case 'LiteralInteger':
+        this.castLiteralToInteger(ast.right, retArr);
+        break;
+      default:
+        this.astGeneric(ast.right, retArr);
+    }
+    retArr.push(')');
+    return retArr;
+  }
+
+  checkAndUpconvertBitwiseUnary(ast, retArr) {
+    const upconvertableOperators = {
+      '~': 'bitwiseNot',
+    };
+    const foundOperator = upconvertableOperators[ast.operator];
+    if (!foundOperator) return null;
+    retArr.push(foundOperator);
+    retArr.push('(');
+    switch (this.getType(ast.argument)) {
+      case 'Number':
+      case 'Float':
+        this.castValueToInteger(ast.argument, retArr);
+        break;
+      case 'LiteralInteger':
+        this.castLiteralToInteger(ast.argument, retArr);
+        break;
+      default:
+        this.astGeneric(ast.argument, retArr);
+    }
+    retArr.push(')');
+    return retArr;
+  }
+
+  /**
+   *
+   * @param {Object} ast
+   * @param {Array} retArr
+   * @return {String[]}
+   */
+  castLiteralToInteger(ast, retArr) {
+    this.pushState('casting-to-integer');
+    this.astGeneric(ast, retArr);
+    this.popState('casting-to-integer');
+    return retArr;
+  }
+
+  /**
+   *
+   * @param {Object} ast
+   * @param {Array} retArr
+   * @return {String[]}
+   */
+  castLiteralToFloat(ast, retArr) {
+    this.pushState('casting-to-float');
+    this.astGeneric(ast, retArr);
+    this.popState('casting-to-float');
+    return retArr;
+  }
+
+  /**
+   *
+   * @param {Object} ast
+   * @param {Array} retArr
+   * @return {String[]}
+   */
+  castValueToInteger(ast, retArr) {
+    this.pushState('casting-to-integer');
+    retArr.push('int(');
+    this.astGeneric(ast, retArr);
+    retArr.push(')');
+    this.popState('casting-to-integer');
+    return retArr;
+  }
+
+  /**
+   *
+   * @param {Object} ast
+   * @param {Array} retArr
+   * @return {String[]}
+   */
+  castValueToFloat(ast, retArr) {
+    this.pushState('casting-to-float');
+    retArr.push('float(');
+    this.astGeneric(ast, retArr);
+    retArr.push(')');
+    this.popState('casting-to-float');
     return retArr;
   }
 
@@ -1122,11 +1167,7 @@ class WebGLFunctionNode extends FunctionNode {
 
         switch (argumentType) {
           case 'Integer':
-            this.pushState('casting-to-float');
-            retArr.push('float(');
-            this.astGeneric(argument, retArr);
-            retArr.push(')');
-            this.popState('casting-to-float');
+            this.castValueToFloat(argument, retArr);
             break;
           default:
             this.astGeneric(argument, retArr);
@@ -1158,9 +1199,7 @@ class WebGLFunctionNode extends FunctionNode {
               this.astGeneric(argument, retArr);
               continue;
             } else if (targetType === 'LiteralInteger') {
-              this.pushState('casting-to-float');
-              this.astGeneric(argument, retArr);
-              this.popState('casting-to-float');
+              this.castLiteralToFloat(argument, retArr);
               continue;
             }
             break;
@@ -1177,14 +1216,10 @@ class WebGLFunctionNode extends FunctionNode {
             break;
           case 'LiteralInteger':
             if (targetType === 'Integer') {
-              this.pushState('casting-to-integer');
-              this.astGeneric(argument, retArr);
-              this.popState('casting-to-integer');
+              this.castLiteralToInteger(argument, retArr);
               continue;
             } else if (targetType === 'Number' || targetType === 'Float') {
-              this.pushState('casting-to-float');
-              this.astGeneric(argument, retArr);
-              this.popState('casting-to-float');
+              this.castLiteralToFloat(argument, retArr);
               continue;
             } else if (targetType === 'LiteralInteger') {
               this.astGeneric(argument, retArr);
@@ -1263,16 +1298,10 @@ class WebGLFunctionNode extends FunctionNode {
     switch (type) {
       case 'Number':
       case 'Float':
-        this.pushState('casting-to-integer');
-        result.push('int(');
-        this.astGeneric(property, result);
-        result.push(')');
-        this.popState('casting-to-integer');
+        this.castValueToInteger(property, result);
         break;
       case 'LiteralInteger':
-        this.pushState('casting-to-integer');
-        this.astGeneric(property, result);
-        this.popState('casting-to-integer');
+        this.castLiteralToInteger(property, result);
         break;
       default:
         this.astGeneric(property, result);

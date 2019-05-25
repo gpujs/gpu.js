@@ -11,6 +11,129 @@ __CONSTANTS__;
 
 in vec2 vTexCoord;
 
+const int BIT_COUNT = 32;
+int modi(int x, int y) {
+  return x - y * (x / y);
+}
+
+int bitwiseOr(int a, int b) {
+  int result = 0;
+  int n = 1;
+  
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if ((modi(a, 2) == 1) || (modi(b, 2) == 1)) {
+      result += n;
+    }
+    a = a / 2;
+    b = b / 2;
+    n = n * 2;
+    if(!(a > 0 || b > 0)) {
+      break;
+    }
+  }
+  return result;
+}
+int bitwiseXOR(int a, int b) {
+  int result = 0;
+  int n = 1;
+  
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if ((modi(a, 2) == 1) != (modi(b, 2) == 1)) {
+      result += n;
+    }
+    a = a / 2;
+    b = b / 2;
+    n = n * 2;
+    if(!(a > 0 || b > 0)) {
+      break;
+    }
+  }
+  return result;
+}
+int bitwiseAnd(int a, int b) {
+  int result = 0;
+  int n = 1;
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if ((modi(a, 2) == 1) && (modi(b, 2) == 1)) {
+      result += n;
+    }
+    a = a / 2;
+    b = b / 2;
+    n = n * 2;
+    if(!(a > 0 && b > 0)) {
+      break;
+    }
+  }
+  return result;
+}
+int bitwiseNot(int a) {
+  int result = 0;
+  int n = 1;
+  
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if (modi(a, 2) == 0) {
+      result += n;    
+    }
+    a = a / 2;
+    n = n * 2;
+  }
+  return result;
+}
+int bitwiseZeroFillLeftShift(int n, int shift) {
+  int maxBytes = BIT_COUNT;
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if (maxBytes >= n) {
+      break;
+    }
+    maxBytes *= 2;
+  }
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if (i >= shift) {
+      break;
+    }
+    n *= 2;
+  }
+
+  int result = 0;
+  int byteVal = 1;
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if (i >= maxBytes) break;
+    if (modi(n, 2) > 0) { result += byteVal; }
+    n = int(n / 2);
+    byteVal *= 2;
+  }
+  return result;
+}
+
+int bitwiseSignedRightShift(int num, int shifts) {
+  return int(floor(float(num) / pow(2.0, float(shifts))));
+}
+
+int bitwiseZeroFillRightShift(int n, int shift) {
+  int maxBytes = BIT_COUNT;
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if (maxBytes >= n) {
+      break;
+    }
+    maxBytes *= 2;
+  }
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if (i >= shift) {
+      break;
+    }
+    n /= 2;
+  }
+  int result = 0;
+  int byteVal = 1;
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if (i >= maxBytes) break;
+    if (modi(n, 2) > 0) { result += byteVal; }
+    n = int(n / 2);
+    byteVal *= 2;
+  }
+  return result;
+}
+
 vec2 integerMod(vec2 x, float y) {
   vec2 res = floor(mod(x, y));
   return res * step(1.0 - floor(y), -res);

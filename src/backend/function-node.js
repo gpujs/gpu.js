@@ -342,12 +342,22 @@ class FunctionNode {
             case '>':
             case '<':
               return 'Boolean';
+            case '&':
+            case '|':
+            case '^':
+            case '<<':
+            case '>>':
+            case '>>>':
+              return 'Integer';
           }
           const type = this.getType(ast.left);
           return typeLookupMap[type] || type;
         case 'UpdateExpression':
           return this.getType(ast.argument);
         case 'UnaryExpression':
+          if (ast.operator === '~') {
+            return 'Integer';
+          }
           return this.getType(ast.argument);
         case 'VariableDeclaration':
           return this.getType(ast.declarations[0]);
@@ -956,6 +966,11 @@ class FunctionNode {
    * @returns {Array} the append retArr
    */
   astUnaryExpression(uNode, retArr) {
+    const unaryResult = this.checkAndUpconvertBitwiseUnary(uNode, retArr);
+    if (unaryResult) {
+      return retArr;
+    }
+
     if (uNode.prefix) {
       retArr.push(uNode.operator);
       this.astGeneric(uNode.argument, retArr);
@@ -966,6 +981,9 @@ class FunctionNode {
 
     return retArr;
   }
+
+  checkAndUpconvertBitwiseUnary(uNode, retArr) {}
+
   /**
    * @desc Parses the abstract syntax tree for *Update* Expression
    * @param {Object} uNode - An ast Node
