@@ -270,9 +270,15 @@ class WebGLFunctionNode extends FunctionNode {
         this.astGeneric(ast.right, retArr);
         break;
       case 'LiteralInteger & LiteralInteger':
-        this.castLiteralToFloat(ast.left, retArr);
-        retArr.push(operatorMap[ast.operator] || ast.operator);
-        this.castLiteralToFloat(ast.right, retArr);
+        if (this.isState('casting-to-integer')) {
+          this.astGeneric(ast.left, retArr);
+          retArr.push(operatorMap[ast.operator] || ast.operator);
+          this.astGeneric(ast.right, retArr);
+        } else {
+          this.castLiteralToFloat(ast.left, retArr);
+          retArr.push(operatorMap[ast.operator] || ast.operator);
+          this.castLiteralToFloat(ast.right, retArr);
+        }
         break;
 
       case 'Integer & Float':
@@ -421,7 +427,8 @@ class WebGLFunctionNode extends FunctionNode {
     if (!foundOperator) return null;
     retArr.push(foundOperator);
     retArr.push('(');
-    switch (this.getType(ast.left)) {
+    const leftType = this.getType(ast.left);
+    switch (leftType) {
       case 'Number':
       case 'Float':
         this.castValueToInteger(ast.left, retArr);
@@ -433,7 +440,8 @@ class WebGLFunctionNode extends FunctionNode {
         this.astGeneric(ast.left, retArr);
     }
     retArr.push(',');
-    switch (this.getType(ast.right)) {
+    const rightType = this.getType(ast.right);
+    switch (rightType) {
       case 'Number':
       case 'Float':
         this.castValueToInteger(ast.right, retArr);

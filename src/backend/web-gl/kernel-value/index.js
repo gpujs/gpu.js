@@ -1,6 +1,6 @@
 const { utils } = require('../../../utils');
 const { Input } = require('../../../input');
-const { KernelValue } = require('../../kernel-Value');
+const { KernelValue } = require('../../kernel-value');
 
 class WebGLKernelValue extends KernelValue {
   /**
