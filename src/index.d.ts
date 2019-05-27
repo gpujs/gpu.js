@@ -99,6 +99,7 @@ export abstract class Kernel {
   immutable: boolean;
   pipeline: boolean;
   plugins: IPlugin[];
+  useLegacyEncoder: boolean;
   getPixels(flip?: boolean): number[];
   constructor(kernel: KernelFunction, settings?: IKernelSettings); // TODO: JSON support
   build(
@@ -309,6 +310,8 @@ export interface IFunctionSettings {
   onNestedFunction?(source: string, returnType: string): void;
   lookupReturnType?(functionName: string, ast: any, node: FunctionNode): void;
   plugins?: any[];
+
+  useLegacyEncoder?: boolean;
 }
 
 export interface ISubKernel {

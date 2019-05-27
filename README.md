@@ -178,7 +178,7 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
 * `subKernels` or `kernel.setSubKernels(array)`: array, generally inherited from `GPU` instance.
 * `immutable` or `kernel.setImmutable(boolean)`: boolean, default = `false`
 * `strictIntegers` or `kernel.setStrictIntegers(boolean)`: boolean, default = `false` - allows undefined argumentTypes and function return values to use strict integer declarations.
-
+* `useLegacyEncoder` or `kernel.setUseLegacyEncoder(boolean)`: boolean, default `false` - more info [here](https://github.com/gpujs/gpu.js/wiki/Encoder-details).
 
 
 ## Creating and Running Functions

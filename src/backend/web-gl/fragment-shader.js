@@ -204,26 +204,25 @@ float decode8(vec4 texel, int index) {
   return 0.0;
 }
 
-vec4 oldEncode32(float f) {
+vec4 legacyEncode32(float f) {
   float F = abs(f);
-  float sign = step(0.0, -f);
-  float exponent = floor(log2(f));
-  float mantissa = f * pow(2.0, -exponent) - 1.0;
+  float sign = f < 0.0 ? 1.0 : 0.0;
+  float exponent = floor(log2(F));
+  float mantissa = (exp2(-exponent) * F);
   // exponent += floor(log2(mantissa));
   exponent = exponent + 127.0;
   vec4 texel = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;
   texel.rg = integerMod(texel.rg, 256.0);
   texel.b = integerMod(texel.b, 128.0);
   texel.a = exponent*0.5 + 63.5;
-  texel.ba += vec2(integerMod(exponent, 2.0), sign) * 128.0;
+  texel.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;
   texel = floor(texel);
   texel *= 0.003921569; // 1/255
   __ENCODE32_ENDIANNESS__;
   return texel;
 }
 
-// Borrowed from exellect info here: http://www.vizitsolutions.com/portfolio/webgl/gpgpu/speedBumps.html
-// http://www.vizitsolutions.com/portfolio/webgl/gpgpu/js/ToUnsignedBytes.js
+// https://github.com/gpujs/gpu.js/wiki/Encoder-details
 vec4 encode32(float value) {
   if (value == 0.0) return vec4(0, 0, 0, 0);
 
