@@ -50,7 +50,7 @@ class Kernel {
         throw new Error('source not a function string');
       }
     }
-
+    this.useLegacyEncoder = false;
     this.onRequestFallback = null;
 
     /**
@@ -466,6 +466,15 @@ class Kernel {
    */
   setDynamicArguments(flag) {
     this.dynamicArguments = flag;
+    return this;
+  }
+
+  /**
+   * @param {Boolean} flag
+   * @return {Kernel}
+   */
+  setUseLegacyEncoder(flag) {
+    this.useLegacyEncoder = flag;
     return this;
   }
 

@@ -447,30 +447,36 @@ class WebGL2Kernel extends WebGLKernel {
       case 'Number':
       case 'Integer':
       case 'Float':
-        return utils.linesToString(this.getMainResultKernelPackedPixels()) +
-          utils.linesToString(this.getMainResultSubKernelPackedPixels());
+        return this.getMainResultKernelPackedPixels() +
+          this.getMainResultSubKernelPackedPixels();
       default:
         throw new Error(`packed output only usable with Numbers, "${this.returnType}" specified`);
     }
   }
 
+  /**
+   * @return {String}
+   */
   getMainResultKernelPackedPixels() {
-    return [
+    return utils.linesToString([
       '  threadId = indexTo3D(index, uOutputDim)',
       '  kernel()',
-      '  data0 = encode32(kernelResult)'
-    ];
+      `  data0 = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(kernelResult)`
+    ]);
   }
 
+  /**
+   * @return {String}
+   */
   getMainResultSubKernelPackedPixels() {
     const result = [];
-    if (!this.subKernels) return result;
+    if (!this.subKernels) return '';
     for (let i = 0; i < this.subKernels.length; i++) {
       result.push(
-        `  data${i + 1} = encode32(subKernelResult_${this.subKernels[i].name})`
+        `  data${i + 1} = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(subKernelResult_${this.subKernels[i].name})`
       );
     }
-    return result;
+    return utils.linesToString(result);
   }
 
   getMainResultMemoryOptimizedFloats() {

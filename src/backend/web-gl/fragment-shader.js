@@ -204,12 +204,13 @@ float decode8(vec4 texel, int index) {
   return 0.0;
 }
 
-vec4 encode32(float f) {
+vec4 legacyEncode32(float f) {
   float F = abs(f);
   float sign = f < 0.0 ? 1.0 : 0.0;
   float exponent = floor(log2(F));
   float mantissa = (exp2(-exponent) * F);
   // exponent += floor(log2(mantissa));
+  exponent = exponent + 127.0;
   vec4 texel = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;
   texel.rg = integerMod(texel.rg, 256.0);
   texel.b = integerMod(texel.b, 128.0);
@@ -219,6 +220,39 @@ vec4 encode32(float f) {
   texel *= 0.003921569; // 1/255
   __ENCODE32_ENDIANNESS__;
   return texel;
+}
+
+// https://github.com/gpujs/gpu.js/wiki/Encoder-details
+vec4 encode32(float value) {
+  if (value == 0.0) return vec4(0, 0, 0, 0);
+
+  float exponent;
+  float mantissa;
+  vec4  result;
+  float sgn;
+
+  sgn = step(0.0, -value);
+  value = abs(value);
+
+  exponent = floor(log2(value));
+
+  mantissa = value*pow(2.0, -exponent)-1.0;
+  exponent = exponent+127.0;
+  result   = vec4(0,0,0,0);
+
+  result.a = floor(exponent/2.0);
+  exponent = exponent - result.a*2.0;
+  result.a = result.a + 128.0*sgn;
+
+  result.b = floor(mantissa * 128.0);
+  mantissa = mantissa - result.b / 128.0;
+  result.b = result.b + exponent*128.0;
+
+  result.g = floor(mantissa*32768.0);
+  mantissa = mantissa - result.g/32768.0;
+
+  result.r = floor(mantissa*8388608.0);
+  return result/255.0;
 }
 // Dragons end here
 
