@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0-rc.14
- * @date Mon May 27 2019 14:59:27 GMT-0400 (Eastern Daylight Time)
+ * @date Mon May 27 2019 15:03:41 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -9811,7 +9811,6 @@ class Kernel {
 module.exports = {
   Kernel
 };
-
 },{"../input":85,"../utils":89}],35:[function(require,module,exports){
 const fragmentShader = `__HEADER__;
 precision highp float;
@@ -10025,6 +10024,7 @@ vec4 legacyEncode32(float f) {
   float exponent = floor(log2(F));
   float mantissa = (exp2(-exponent) * F);
   // exponent += floor(log2(mantissa));
+  exponent = exponent + 127.0;
   vec4 texel = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;
   texel.rg = integerMod(texel.rg, 256.0);
   texel.b = integerMod(texel.b, 128.0);
@@ -13773,7 +13773,6 @@ void main(void) {
 module.exports = {
   fragmentShader
 };
-
 },{}],59:[function(require,module,exports){
 const { WebGLFunctionNode } = require('../web-gl/function-node');
 
