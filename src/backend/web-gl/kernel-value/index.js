@@ -63,18 +63,16 @@ class WebGLKernelValue extends KernelValue {
         case Uint16Array:
         case Int16Array:
         case Float32Array:
-        case Int32Array:
-          {
-            const valuesFlat = new(Type || value.constructor)(length);
-            utils.flattenTo(value, valuesFlat);
-            return valuesFlat;
-          }
-        default:
-          {
-            const valuesFlat = new Float32Array(length);
-            utils.flattenTo(value, valuesFlat);
-            return valuesFlat;
-          }
+        case Int32Array: {
+          const valuesFlat = new(Type || value.constructor)(length);
+          utils.flattenTo(value, valuesFlat);
+          return valuesFlat;
+        }
+        default: {
+          const valuesFlat = new Float32Array(length);
+          utils.flattenTo(value, valuesFlat);
+          return valuesFlat;
+        }
       }
     }
   }
