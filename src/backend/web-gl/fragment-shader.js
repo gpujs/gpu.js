@@ -210,7 +210,6 @@ vec4 legacyEncode32(float f) {
   float exponent = floor(log2(F));
   float mantissa = (exp2(-exponent) * F);
   // exponent += floor(log2(mantissa));
-  exponent = exponent + 127.0;
   vec4 texel = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;
   texel.rg = integerMod(texel.rg, 256.0);
   texel.b = integerMod(texel.b, 128.0);

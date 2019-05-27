@@ -197,10 +197,10 @@ vec4 legacyEncode32(float f) {
   float exponent = floor(log2(F));
   float mantissa = (exp2(-exponent) * F);
   // exponent += floor(log2(mantissa));
-  vec4 texel = vec4(F * exp2(23.0 - exponent)) * SCALE_FACTOR_INV;
+  vec4 texel = vec4(F * exp2(23.0-exponent)) * SCALE_FACTOR_INV;
   texel.rg = integerMod(texel.rg, 256.0);
   texel.b = integerMod(texel.b, 128.0);
-  texel.a = exponent * 0.5 + 63.5;
+  texel.a = exponent*0.5 + 63.5;
   texel.ba += vec2(integerMod(exponent+127.0, 2.0), sign) * 128.0;
   texel = floor(texel);
   texel *= 0.003921569; // 1/255
