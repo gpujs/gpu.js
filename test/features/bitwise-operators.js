@@ -28,7 +28,7 @@ function testBitwiseAndSinglePrecision(mode) {
   testBitwiseAndSinglePrecision('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('bitwise AND single precision webgl', () => {
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('bitwise AND single precision webgl', () => {
   testBitwiseAndSinglePrecision('webgl');
 });
 
@@ -36,7 +36,7 @@ function testBitwiseAndSinglePrecision(mode) {
   testBitwiseAndSinglePrecision('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('bitwise AND single precision headlessgl', () => {
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('bitwise AND single precision headlessgl', () => {
   testBitwiseAndSinglePrecision('headlessgl');
 });
 
@@ -61,11 +61,11 @@ function testBitwiseAndUnsignedPrecision(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('bitwise AND unsigned precision auto', () => {
+test('bitwise AND unsigned precision auto', () => {
   testBitwiseAndUnsignedPrecision();
 });
 
-(GPU.isSinglePrecisionSupported ? test : skip)('bitwise AND unsigned precision gpu', () => {
+test('bitwise AND unsigned precision gpu', () => {
   testBitwiseAndUnsignedPrecision('gpu');
 });
 
@@ -110,7 +110,7 @@ function testBitwiseOrSinglePrecision(mode) {
   testBitwiseOrSinglePrecision('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('bitwise OR single precision webgl', () => {
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('bitwise OR single precision webgl', () => {
   testBitwiseOrSinglePrecision('webgl');
 });
 
@@ -118,7 +118,7 @@ function testBitwiseOrSinglePrecision(mode) {
   testBitwiseOrSinglePrecision('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('bitwise OR single precision headlessgl', () => {
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported? test : skip)('bitwise OR single precision headlessgl', () => {
   testBitwiseOrSinglePrecision('headlessgl');
 });
 
@@ -143,11 +143,11 @@ function testBitwiseOrUnsignedPrecision(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('bitwise OR unsigned precision auto', () => {
+test('bitwise OR unsigned precision auto', () => {
   testBitwiseOrUnsignedPrecision();
 });
 
-(GPU.isSinglePrecisionSupported ? test : skip)('bitwise OR unsigned precision gpu', () => {
+test('bitwise OR unsigned precision gpu', () => {
   testBitwiseOrUnsignedPrecision('gpu');
 });
 
@@ -192,7 +192,7 @@ function testBitwiseXORSinglePrecision(mode) {
   testBitwiseXORSinglePrecision('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('bitwise XOR single precision webgl', () => {
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('bitwise XOR single precision webgl', () => {
   testBitwiseXORSinglePrecision('webgl');
 });
 
@@ -200,7 +200,7 @@ function testBitwiseXORSinglePrecision(mode) {
   testBitwiseXORSinglePrecision('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('bitwise XOR single precision headlessgl', () => {
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('bitwise XOR single precision headlessgl', () => {
   testBitwiseXORSinglePrecision('headlessgl');
 });
 
@@ -225,11 +225,11 @@ function testBitwiseXORUnsignedPrecision(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('bitwise XOR unsigned precision auto', () => {
+test('bitwise XOR unsigned precision auto', () => {
   testBitwiseXORUnsignedPrecision();
 });
 
-(GPU.isSinglePrecisionSupported ? test : skip)('bitwise XOR unsigned precision gpu', () => {
+test('bitwise XOR unsigned precision gpu', () => {
   testBitwiseXORUnsignedPrecision('gpu');
 });
 
@@ -272,7 +272,7 @@ function testBitwiseNotSinglePrecision(mode) {
   testBitwiseNotSinglePrecision('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('bitwise NOT single precision webgl', () => {
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('bitwise NOT single precision webgl', () => {
   testBitwiseNotSinglePrecision('webgl');
 });
 
@@ -280,7 +280,7 @@ function testBitwiseNotSinglePrecision(mode) {
   testBitwiseNotSinglePrecision('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('bitwise NOT single precision headlessgl', () => {
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('bitwise NOT single precision headlessgl', () => {
   testBitwiseNotSinglePrecision('headlessgl');
 });
 
@@ -303,11 +303,11 @@ function testBitwiseNotUnsignedPrecision(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('bitwise NOT unsigned precision auto', () => {
+test('bitwise NOT unsigned precision auto', () => {
   testBitwiseNotUnsignedPrecision();
 });
 
-(GPU.isSinglePrecisionSupported ? test : skip)('bitwise NOT unsigned precision gpu', () => {
+test('bitwise NOT unsigned precision gpu', () => {
   testBitwiseNotUnsignedPrecision('gpu');
 });
 
@@ -352,7 +352,7 @@ function testBitwiseZeroFillLeftShiftSinglePrecision(mode) {
   testBitwiseZeroFillLeftShiftSinglePrecision('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('bitwise zero fill left shift single precision webgl', () => {
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('bitwise zero fill left shift single precision webgl', () => {
   testBitwiseZeroFillLeftShiftSinglePrecision('webgl');
 });
 
@@ -360,7 +360,7 @@ function testBitwiseZeroFillLeftShiftSinglePrecision(mode) {
   testBitwiseZeroFillLeftShiftSinglePrecision('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('bitwise zero fill left shift single precision headlessgl', () => {
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('bitwise zero fill left shift single precision headlessgl', () => {
   testBitwiseZeroFillLeftShiftSinglePrecision('headlessgl');
 });
 
@@ -385,11 +385,11 @@ function testBitwiseZeroFillLeftShiftUnsignedPrecision(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('bitwise zero fill left shift unsigned precision auto', () => {
+test('bitwise zero fill left shift unsigned precision auto', () => {
   testBitwiseZeroFillLeftShiftUnsignedPrecision();
 });
 
-(GPU.isSinglePrecisionSupported ? test : skip)('bitwise zero fill left shift unsigned precision gpu', () => {
+test('bitwise zero fill left shift unsigned precision gpu', () => {
   testBitwiseZeroFillLeftShiftUnsignedPrecision('gpu');
 });
 
@@ -434,7 +434,7 @@ function testBitwiseSignedRightShiftSinglePrecision(mode) {
   testBitwiseSignedRightShiftSinglePrecision('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('bitwise signed fill right shift single precision webgl', () => {
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('bitwise signed fill right shift single precision webgl', () => {
   testBitwiseSignedRightShiftSinglePrecision('webgl');
 });
 
@@ -442,7 +442,7 @@ function testBitwiseSignedRightShiftSinglePrecision(mode) {
   testBitwiseSignedRightShiftSinglePrecision('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('bitwise signed fill right shift single precision headlessgl', () => {
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('bitwise signed fill right shift single precision headlessgl', () => {
   testBitwiseSignedRightShiftSinglePrecision('headlessgl');
 });
 
@@ -467,11 +467,11 @@ function testBitwiseSignedRightShiftUnsignedPrecision(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('bitwise signed fill right shift unsigned precision auto', () => {
+test('bitwise signed fill right shift unsigned precision auto', () => {
   testBitwiseSignedRightShiftUnsignedPrecision();
 });
 
-(GPU.isSinglePrecisionSupported ? test : skip)('bitwise signed fill right shift unsigned precision gpu', () => {
+test('bitwise signed fill right shift unsigned precision gpu', () => {
   testBitwiseSignedRightShiftUnsignedPrecision('gpu');
 });
 
@@ -516,7 +516,7 @@ function testBitwiseZeroFillRightShiftSinglePrecision(mode) {
   testBitwiseZeroFillRightShiftSinglePrecision('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('bitwise zero fill right shift single precision webgl', () => {
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('bitwise zero fill right shift single precision webgl', () => {
   testBitwiseZeroFillRightShiftSinglePrecision('webgl');
 });
 
@@ -524,7 +524,7 @@ function testBitwiseZeroFillRightShiftSinglePrecision(mode) {
   testBitwiseZeroFillRightShiftSinglePrecision('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('bitwise zero fill right shift single precision headlessgl', () => {
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('bitwise zero fill right shift single precision headlessgl', () => {
   testBitwiseZeroFillRightShiftSinglePrecision('headlessgl');
 });
 
@@ -549,11 +549,11 @@ function testBitwiseZeroFillRightShiftUnsignedPrecision(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('bitwise zero fill right shift unsigned precision auto', () => {
+test('bitwise zero fill right shift unsigned precision auto', () => {
   testBitwiseZeroFillRightShiftUnsignedPrecision();
 });
 
-(GPU.isSinglePrecisionSupported ? test : skip)('bitwise zero fill right shift unsigned precision gpu', () => {
+test('bitwise zero fill right shift unsigned precision gpu', () => {
   testBitwiseZeroFillRightShiftUnsignedPrecision('gpu');
 });
 
