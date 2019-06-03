@@ -5,6 +5,7 @@
 GPU.js is a JavaScript Acceleration library for GPGPU (General purpose computing on GPUs) in JavaScript for Web and Node.
 GPU.js automatically transpiles simple JavaScript functions into shader language and compiles them so they run on your GPU.
 In case a GPU is not available, the functions will still run in regular JavaScript.
+For some more quick concepts, see [Quick Concepts](https://github.com/gpujs/gpu.js/wiki/Quick-Concepts) on the wiki.
 
 
 [![Join the chat at https://gitter.im/gpujs/gpu.js](https://badges.gitter.im/gpujs/gpu.js.svg)](https://gitter.im/gpujs/gpu.js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -31,7 +32,7 @@ Matrix multiplication (perform matrix multiplication on 2 matrices of size 512 x
         }
         return sum;
     }).setOutput([512, 512]);
-    
+
     const c = multiplyMatrix(a, b);
 </script>
 ```
@@ -65,7 +66,7 @@ const multiplyMatrix = gpu.createKernel(function(a: number[][], b: number[][]) {
 
 const c = multiplyMatrix(a, b) as number[][];
 ```
- 
+
 # Table of Contents
 
 NOTE: documentation is slightly out of date for the upcoming release of v2.  We will fix it!  In the mean time, if you'd like to assist (PLEASE) let us know.
@@ -87,7 +88,9 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [Offscreen Canvas](#offscreen-canvas)
 * [Cleanup](#cleanup)
 * [Flattened typed array support](#flattened-typed-array-support)
+* [Precompiled and Lighter Weight Kernels](#precompiled-and-lighter-weight-kernels)
 * [Supported Math functions](#supported-math-functions)
+* [How to check what is supported](#how-to-check-what-is-supported)
 * [Typescript Typings](#typescript-typings)
 * [Full API reference](#full-api-reference)
 * [Automatically-built Documentation](#automatically-built-documentation)
@@ -146,13 +149,13 @@ Settings are an object used to create an instance of `GPU`.  Example: `new GPU(s
   * 'webgl2': Use the `WebGL2Kernel` for transpiling a kernel
   * 'headlessgl' **New in V2!**: Use the `HeadlessGLKernel` for transpiling a kernel
   * 'cpu': Use the `CPUKernel` for transpiling a kernel
-  
+
 ## `gpu.createKernel` Settings
 Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.createKernel(settings)`
-* `output`: array or object that describes the output of kernel.
+* `output` or `kernel.setOutput(output)`: `array` or `object` that describes the output of kernel.  When using `kernel.setOutput()` you _can_ call it after the kernel has compiled if `kernel.dynamicOutput` is `true`, to resize your output.  Example:
   * as array: `[width]`, `[width, height]`, or `[width, height, depth]`
   * as object: `{ x: width, y: height, z: depth }`
-* `pipeline` **New in V2!**: boolean, default = `false`
+* `pipeline` or `kernel.setPipeline(true)` **New in V2!**: boolean, default = `false`
   * Causes `kernel()` calls to output a `Texture`.  To get array's from a `Texture`, use:
   ```js
   const result = kernel();
@@ -162,33 +165,32 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
   ```js
   kernel(texture);
   ```
-* `graphical`: boolean, default = `false`
-* `loopMaxIterations`: number, default = 1000
-* `constants`: object, default = null
-* `hardcodeConstants`: boolean, default = false
-* `optimizeFloatMemory` **New in V2!**: boolean - causes a float32 texture to use all 4 channels rather than 1, using less memory, but consuming more GPU.
-* `precision` **New in V2!**: 'single' or 'unsigned' - if 'single' output texture uses float32 for each colour channel rather than 8
-* `fixIntegerDivisionAccuracy`: boolean - some cards have accuracy issues dividing by factors of three and some other primes (most apple kit?). Default on for affected cards, disable if accuracy not required.
-* `functions`: array, array of functions to be used inside kernel.  If undefined, inherits from `GPU` instance.
-* `nativeFunctions`: object, defined as: `{ functionName: functionSource }`
+* `graphical` or `kernel.setGraphical(boolean)`: boolean, default = `false`
+* `loopMaxIterations` or `kernel.setLoopMaxIterations(number)`: number, default = 1000
+* `constants` or `kernel.setConstants(object)`: object, default = null
+* `dynamicOutput` or `kernel.setDynamicOutput(boolean)`: boolean, default = false - turns dynamic output on or off
+* `dynamicArguments` or `kernel.setDynamicArguments(boolean)`: boolean, default = false - turns dynamic arguments (use different size arrays and textures) on or off
+* `optimizeFloatMemory` or `kernel.setOptimizeFloatMemory(boolean)` **New in V2!**: boolean - causes a float32 texture to use all 4 channels rather than 1, using less memory, but consuming more GPU.
+* `precision` or `kernel.setPrecision('unsigned' | 'single')` **New in V2!**: 'single' or 'unsigned' - if 'single' output texture uses float32 for each colour channel rather than 8
+* `fixIntegerDivisionAccuracy` or `kernel.setFixIntegerDivisionAccuracy(boolean)` : boolean - some cards have accuracy issues dividing by factors of three and some other primes (most apple kit?). Default on for affected cards, disable if accuracy not required.
+* `functions` or `kernel.setFunctions(object)`: array, array of functions to be used inside kernel.  If undefined, inherits from `GPU` instance.
+* `nativeFunctions` or `kernel.setNativeFunctions(object)`: object, defined as: `{ functionName: functionSource }`
   * VERY IMPORTANT! - Use this to add special native functions to your environment when you need specific functionality is needed.
-* `subKernels`: array, generally inherited from `GPU` instance.
-* `immutable`: boolean, default = `false`
-
+* `subKernels` or `kernel.setSubKernels(array)`: array, generally inherited from `GPU` instance.
+* `immutable` or `kernel.setImmutable(boolean)`: boolean, default = `false`
+* `strictIntegers` or `kernel.setStrictIntegers(boolean)`: boolean, default = `false` - allows undefined argumentTypes and function return values to use strict integer declarations.
+* `useLegacyEncoder` or `kernel.setUseLegacyEncoder(boolean)`: boolean, default `false` - more info [here](https://github.com/gpujs/gpu.js/wiki/Encoder-details).
 
 
 ## Creating and Running Functions
 Depending on your output type, specify the intended size of your output.
 You cannot have an accelerated function that does not specify any output size.
 
-Output size   |   `IKernelSettings.flipCoodrinates` value    |  How to specify output size   |  How to reference in kernel
---------------|----------------------------------------------|-------------------------------|--------------------------------
- 1D           | `false`                                      | `[length]`                    |  `value[this.thread.x]`
- 2D           | `false`                                      | `[width, height]`             |  `value[this.thread.y][this.thread.x]`
- 3D           | `false`                                      | `[width, height, depth]`      |  `value[this.thread.z][this.thread.y][this.thread.x]`
- 1D           | `true`                                       | `[length]`                    |  `value[this.thread.x]`
- 2D           | `true`                                       | `[width, height]`             |  `value[this.thread.x][this.thread.y]`
- 3D           | `true`                                       | `[width, height, depth]`      |  `value[this.thread.x][this.thread.y][this.thread.z]`
+Output size   |  How to specify output size   |  How to reference in kernel
+--------------|-------------------------------|--------------------------------
+ 1D           | `[length]`                    |  `value[this.thread.x]`
+ 2D           | `[width, height]`             |  `value[this.thread.y][this.thread.x]`
+ 3D           | `[width, height, depth]`      |  `value[this.thread.z][this.thread.y][this.thread.x]`
 
 ```js
 const settings = {
@@ -311,7 +313,7 @@ Debugging can be done in a variety of ways, and there are different levels of de
     }, { output: [100, 100] });
     ```
 * Debugging actual kernels on CPU with `debugger`:
-  * This will cause "breakpoint" like behaviour, but in an actual CPU kernel.  You'll peer into the compiled kernel here, for a CPU. 
+  * This will cause "breakpoint" like behaviour, but in an actual CPU kernel.  You'll peer into the compiled kernel here, for a CPU.
   * Example:
     ```js
     const gpu = new GPU({ mode: 'cpu' });
@@ -367,7 +369,7 @@ Debugging can be done in a variety of ways, and there are different levels of de
   * Example:
   ```js
   const { input } = require('gpu.js');
-  const value = input(flattenedArray, [width, height, depth]); 
+  const value = input(flattenedArray, [width, height, depth]);
   ```
 * HTML Image
 * Array of HTML Images
@@ -468,7 +470,7 @@ Note: To animate the rendering, use `requestAnimationFrame` instead of `setTimeo
 To make it easier to get pixels from a context, use `kernel.getPixels()`, which returns a flat array similar to what you get from WebGL's `readPixels` method.
 A note on why: webgl's `readPixels` returns an array ordered differently from javascript's `getImageData`.
 This makes them behave similarly.
-While the values may be somewhat different, because of graphical precision available in the kernel, and alpha, this allows us to easily get pixel data in unified way.  
+While the values may be somewhat different, because of graphical precision available in the kernel, and alpha, this allows us to easily get pixel data in unified way.
 
 Example:
 ```js
@@ -507,15 +509,15 @@ Sometimes you want to do multiple math operations on the gpu without the round t
 _**Note:**_ Kernels can have different output sizes.
 ```js
 const add = gpu.createKernel(function(a, b) {
-  return a + b;
+  return a[this.thread.x] + b[this.thread.x];
 }).setOutput([20]);
 
 const multiply = gpu.createKernel(function(a, b) {
-  return a * b;
+  return a[this.thread.x] * b[this.thread.x];
 }).setOutput([20]);
 
 const superKernel = gpu.combineKernels(add, multiply, function(a, b, c) {
-  return multiply(add(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
+  return multiply(add(a, b), c);
 });
 
 superKernel(a, b, c);
@@ -537,7 +539,7 @@ const megaKernel = gpu.createKernelMap({
   },
 }, function(a, b, c) {
   return multiply(add(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
-});
+}, { output: [10] });
 
 megaKernel(a, b, c);
 // Result: { addResult: Float32Array, multiplyResult: Float32Array, result: Float32Array }
@@ -553,7 +555,7 @@ const megaKernel = gpu.createKernelMap([
   }
 ], function(a, b, c) {
   return multiply(add(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
-});
+}, { output: [10] });
 
 megaKernel(a, b, c);
 // Result: { 0: Float32Array, 1: Float32Array, result: Float32Array }
@@ -582,7 +584,7 @@ const kernel = gpu.createKernel(function(a, b) {
 To manually strongly type a function you may use settings.
 By setting this value, it makes the build step of the kernel less resource intensive.
 Settings take an optional hash values:
-* `returnType`: optional, defaults to inference from `FunctionBuilder`, the value you'd like to return from the function. 
+* `returnType`: optional, defaults to inference from `FunctionBuilder`, the value you'd like to return from the function.
 * `argumentTypes`: optional, defaults to inference from `FunctionBuilder` for each param, a hash of param names with values of the return types.
 
 Example:
@@ -761,6 +763,49 @@ kernel(
 
 Note: `input(value, size)` is a simple pointer for `new Input(value, size)`
 
+## Precompiled and Lighter Weight Kernels
+
+### using JSON
+GPU.js packs a lot of functionality into a single file, such as a complete javascript parse, which may not be needed in some cases.
+To aid in keeping your kernels lightweight, the `kernel.toJSON()` method was added.
+This allows you to reuse a previously built kernel, without the need to re-parse the javascript.
+Here is an example:
+
+```js
+const gpu = new GPU();
+const kernel = gpu.createKernel(function() {
+  return [1,2,3,4];
+}, { output: [1] });
+console.log(kernel()); // [Float32Array([1,2,3,4])];
+const json = kernel.toJSON();
+const newKernelFromJson = gpu.createKernel(json);
+console.log(newKernelFromJSON()); // [Float32Array([1,2,3,4])];
+```
+
+NOTE: There is lighter weight, pre-built, version of GPU.js to assist with serializing from to and from json in the bin folder of the project, which include:
+* [bin/gpu-browser-core.js](bin/gpu-browser-core.js)
+* [bin/gpu-browser-core.min.js](bin/gpu-browser-core.min.js)
+
+### using `kernel.toString(args...)`
+GPU.js supports seeing exactly how it is interacting with the graphics processor by means of the `kernel.toString(...)` method.
+This method, when called, creates a kernel that executes _exactly the instruction set given to the GPU_ as a function that sets up a kernel.
+Here is an example:
+
+```js
+const gpu = new GPU();
+const kernel = gpu.createKernel(function(a) {
+  let sum = 0;
+  for (let i = 0; i < 6; i++) {
+    sum += a[this.thread.x][i];
+  }
+  return sum;
+  }, { output: [6] });
+kernel(input(a, [6, 6]));
+const kernelString = kernel.toString(input(a, [6, 6]));
+const newKernel = new Function('return ' + kernelString)()(context);
+newKernel(input(a, [6, 6]));
+```
+
 ## Supported Math functions
 
 Since the code running in the kernel is actually compiled to GLSL code, not all functions from the JavaScript Math module are supported.
@@ -788,12 +833,27 @@ This is a list of the supported ones:
   We then seed the subsequent randoms from the previous random value.
   So we seed from CPU, and generate from GPU.
   Which is still not as good as CPU, but closer.
-  While this isn't perfect, it should suffice in most scenarios.  
+  While this isn't perfect, it should suffice in most scenarios.
 * `Math.round()`
 * `Math.sign()`
 * `Math.sin()`
 * `Math.sqrt()`
 * `Math.tan()`
+
+## How to check what is supported
+
+To assist with mostly unit tests, but perhaps in scenarios outside of GPU.js, there are the following logical checks to determine what support level the system executing a GPU.js kernel may have:
+* `GPU.disableValidation()` - turn off all kernel validation
+* `GPU.enableValidation()` - turn on all kernel validation
+* `GPU.isGPUSupported`: `boolean` - checks if GPU is in-fact supported
+* `GPU.isKernelMapSupported`: `boolean` - checks if kernel maps are supported
+* `GPU.isOffscreenCanvasSupported`: `boolean` - checks if offscreen canvas is supported
+* `GOU.isWebGLSupported`: `boolean` - checks if WebGL v1 is supported
+* `GOU.isWebGL2Supported`: `boolean` - checks if WebGL v2 is supported
+* `GPU.isHeadlessGLSupported`: `boolean` - checks if headlessgl is supported
+* `GPU.isCanvasSupported`: `boolean` - checks if canvas is supported
+* `GPU.isGPUHTMLImageArraySupported`: `boolean` - checks if the platform supports HTMLImageArray's
+* `GPU.isSinglePrecisionSupported`: `boolean` - checks if the system supports single precision float 32 values
 
 ## Typescript Typings
 Typescript is supported!  Typings can be found [here](src/index.d.ts)!
@@ -848,6 +908,9 @@ Thank you to all our backers! 🙏 [[Become a backer](https://opencollective.com
 ### Sponsors
 
 Support this project by becoming a sponsor. Your logo will show up here with a link to your website. [[Become a sponsor](https://opencollective.com/gpujs#sponsor)]
+
+![](https://www.leadergpu.com/assets/main/logo_leadergpu-a8cacac0c90d204b7f7f6c8420c6a149e71ebe53f3f28f3fc94a01cd05c0bd93.png)
+Sponsored NodeJS GPU environment from [LeaderGPU](https://www.leadergpu.com) - These guys rock!
 
 <a href="https://opencollective.com/gpujs/sponsor/0/website" target="_blank"><img src="https://opencollective.com/gpujs/sponsor/0/avatar.svg"></a>
 <a href="https://opencollective.com/gpujs/sponsor/1/website" target="_blank"><img src="https://opencollective.com/gpujs/sponsor/1/avatar.svg"></a>

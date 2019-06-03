@@ -134,7 +134,7 @@ function array2FunctionCompositionFunctionBuilder(FunctionNode) {
 
 test('CPUFunctionNode', () => {
   assert.equal(array2FunctionCompositionFunctionBuilder(CPUFunctionNode), 'function inner() {'
-    + '\nreturn [1, 2, 3, 4];'
+    + '\nreturn new Float32Array([1, 2, 3, 4]);'
     + '\n}'
     + '\nresultX[x] = inner()[0];\ncontinue;');
 });

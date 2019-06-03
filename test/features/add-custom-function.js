@@ -4,23 +4,21 @@ const { GPU } = require('../../src');
 describe('features: add custom function');
 
 function addAB(mode) {
-  const gpu = new GPU({mode, functions: [customAdder] });
-
   function customAdder(a, b) {
     return a + b;
   }
+  const gpu = new GPU({mode, functions: [customAdder] });
   const kernel = gpu.createKernel(function (a, b) {
     return customAdder(a[this.thread.x], b[this.thread.x]);
   }, {
     output: [6]
   });
 
-  assert.ok(kernel !== null, 'function generated test');
-
   const a = [1, 2, 3, 5, 6, 7];
   const b = [4, 5, 6, 1, 2, 3];
 
   const result = kernel(a, b);
+
   const expected = [5, 7, 9, 6, 8, 10];
 
   assert.deepEqual(Array.from(result), expected);

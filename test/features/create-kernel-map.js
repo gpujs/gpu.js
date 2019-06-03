@@ -3,31 +3,31 @@ const { GPU, alias } = require('../../src');
 
 describe('features: create kernel map');
 function createPropertyKernels(gpu, output) {
-  function divide(v1, v2) {
-    return v1 / v2;
+  function divide(d1, d2) {
+    return d1 / d2;
   }
-  const adder = alias('adder', function add(v1, v2) {
-    return v1 + v2;
+  const adder = alias('adder', function add(a1, a2) {
+    return a1 + a2;
   });
   return gpu.createKernelMap({
     addResult: adder,
     divideResult: divide
-  }, function (a, b, c) {
-    return divide(adder(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
+  }, function (k1, k2, k3) {
+    return divide(adder(k1[this.thread.x], k2[this.thread.x]), k3[this.thread.x]);
   }).setOutput(output);
 }
 
 function createArrayKernels(gpu, output) {
-  function add(v1, v2) {
-    return v1 + v2;
+  function add(a1, a2) {
+    return a1 + a2;
   }
-  function divide(v1, v2) {
-    return v1 / v2;
+  function divide(d1, d2) {
+    return d1 / d2;
   }
   return gpu.createKernelMap([
     add, divide
-  ], function (a, b, c) {
-    return divide(add(a[this.thread.x], b[this.thread.x]), c[this.thread.x]);
+  ], function (k1, k2, k3) {
+    return divide(add(k1[this.thread.x], k2[this.thread.x]), k3[this.thread.x]);
   }).setOutput(output)
 }
 

@@ -18,6 +18,129 @@ float round(float x) {
   return floor(x + 0.5);
 }
 
+const int BIT_COUNT = 32;
+int modi(int x, int y) {
+  return x - y * (x / y);
+}
+
+int bitwiseOr(int a, int b) {
+  int result = 0;
+  int n = 1;
+  
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if ((modi(a, 2) == 1) || (modi(b, 2) == 1)) {
+      result += n;
+    }
+    a = a / 2;
+    b = b / 2;
+    n = n * 2;
+    if(!(a > 0 || b > 0)) {
+      break;
+    }
+  }
+  return result;
+}
+int bitwiseXOR(int a, int b) {
+  int result = 0;
+  int n = 1;
+  
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if ((modi(a, 2) == 1) != (modi(b, 2) == 1)) {
+      result += n;
+    }
+    a = a / 2;
+    b = b / 2;
+    n = n * 2;
+    if(!(a > 0 || b > 0)) {
+      break;
+    }
+  }
+  return result;
+}
+int bitwiseAnd(int a, int b) {
+  int result = 0;
+  int n = 1;
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if ((modi(a, 2) == 1) && (modi(b, 2) == 1)) {
+      result += n;
+    }
+    a = a / 2;
+    b = b / 2;
+    n = n * 2;
+    if(!(a > 0 && b > 0)) {
+      break;
+    }
+  }
+  return result;
+}
+int bitwiseNot(int a) {
+  int result = 0;
+  int n = 1;
+  
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if (modi(a, 2) == 0) {
+      result += n;    
+    }
+    a = a / 2;
+    n = n * 2;
+  }
+  return result;
+}
+int bitwiseZeroFillLeftShift(int n, int shift) {
+  int maxBytes = BIT_COUNT;
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if (maxBytes >= n) {
+      break;
+    }
+    maxBytes *= 2;
+  }
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if (i >= shift) {
+      break;
+    }
+    n *= 2;
+  }
+
+  int result = 0;
+  int byteVal = 1;
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if (i >= maxBytes) break;
+    if (modi(n, 2) > 0) { result += byteVal; }
+    n = int(n / 2);
+    byteVal *= 2;
+  }
+  return result;
+}
+
+int bitwiseSignedRightShift(int num, int shifts) {
+  return int(floor(float(num) / pow(2.0, float(shifts))));
+}
+
+int bitwiseZeroFillRightShift(int n, int shift) {
+  int maxBytes = BIT_COUNT;
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if (maxBytes >= n) {
+      break;
+    }
+    maxBytes *= 2;
+  }
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if (i >= shift) {
+      break;
+    }
+    n /= 2;
+  }
+  int result = 0;
+  int byteVal = 1;
+  for (int i = 0; i < BIT_COUNT; i++) {
+    if (i >= maxBytes) break;
+    if (modi(n, 2) > 0) { result += byteVal; }
+    n = int(n / 2);
+    byteVal *= 2;
+  }
+  return result;
+}
+
 vec2 integerMod(vec2 x, float y) {
   vec2 res = floor(mod(x, y));
   return res * step(1.0 - floor(y), -res);
@@ -66,10 +189,10 @@ float decode32(vec4 texel) {
 }
 
 float decode16(vec4 texel, int index) {
-	int channel = integerMod(index, 2);
-	if (channel == 0) return texel.r * 255.0 + texel.g * 65280.0;
-	if (channel == 1) return texel.b * 255.0 + texel.a * 65280.0;
-	return 0.0;
+  int channel = integerMod(index, 2);
+  if (channel == 0) return texel.r * 255.0 + texel.g * 65280.0;
+  if (channel == 1) return texel.b * 255.0 + texel.a * 65280.0;
+  return 0.0;
 }
 
 float decode8(vec4 texel, int index) {
@@ -81,7 +204,7 @@ float decode8(vec4 texel, int index) {
   return 0.0;
 }
 
-vec4 encode32(float f) {
+vec4 legacyEncode32(float f) {
   float F = abs(f);
   float sign = f < 0.0 ? 1.0 : 0.0;
   float exponent = floor(log2(F));
@@ -96,6 +219,39 @@ vec4 encode32(float f) {
   texel *= 0.003921569; // 1/255
   __ENCODE32_ENDIANNESS__;
   return texel;
+}
+
+// https://github.com/gpujs/gpu.js/wiki/Encoder-details
+vec4 encode32(float value) {
+  if (value == 0.0) return vec4(0, 0, 0, 0);
+
+  float exponent;
+  float mantissa;
+  vec4  result;
+  float sgn;
+
+  sgn = step(0.0, -value);
+  value = abs(value);
+
+  exponent = floor(log2(value));
+
+  mantissa = value*pow(2.0, -exponent)-1.0;
+  exponent = exponent+127.0;
+  result   = vec4(0,0,0,0);
+
+  result.a = floor(exponent/2.0);
+  exponent = exponent - result.a*2.0;
+  result.a = result.a + 128.0*sgn;
+
+  result.b = floor(mantissa * 128.0);
+  mantissa = mantissa - result.b / 128.0;
+  result.b = result.b + exponent*128.0;
+
+  result.g = floor(mantissa*32768.0);
+  mantissa = mantissa - result.g/32768.0;
+
+  result.r = floor(mantissa*8388608.0);
+  return result/255.0;
 }
 // Dragons end here
 
@@ -202,5 +358,5 @@ void main(void) {
 }`;
 
 module.exports = {
-	fragmentShader
+  fragmentShader
 };

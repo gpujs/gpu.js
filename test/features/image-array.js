@@ -1,5 +1,5 @@
-const { assert, skip, test, module: describe } = require('qunit');
-const { GPU, WebGLKernel } = require('../../src');
+const { assert, skip, test, module: describe, only } = require('qunit');
+const { GPU, CPUKernel } = require('../../src');
 
 describe('features: image array');
 function getImages(callback) {
@@ -37,17 +37,16 @@ function imageArrayTest(mode, done) {
     output : [138, 91]
   });
   getImages(function(images) {
-    if (gpu.Kernel === WebGLKernel) {
-      assert.throws(function() {
-        // TODO: fallback to cpu?  Probably not worth it.
-        imageKernel(images);
-      })
-    } else {
-      imageKernel(images);
-      assert.equal(true, true, 'does not throw');
-    }
+    imageKernel(images);
+    const pixels = imageKernel.getPixels();
+    assert.equal(pixels.length, 50232);
+    // way too large to test the whole picture, just test the first pixel
+    assert.equal(pixels[0], 147);
+    assert.equal(pixels[1], 168);
+    assert.equal(pixels[2], 251);
+    assert.equal(pixels[3], 255);
     gpu.destroy();
-    done();
+    done(imageKernel);
   });
 }
 
@@ -60,7 +59,12 @@ function imageArrayTest(mode, done) {
 });
 
 (GPU.isWebGLSupported ? test : skip)('image array webgl', t => {
-  imageArrayTest('webgl', t.async());
+  const done = t.async();
+  imageArrayTest('webgl', kernel => {
+    // They aren't supported, so test that kernel falls back
+    assert.equal(kernel.kernel.constructor, CPUKernel);
+    done();
+  });
 });
 
 (GPU.isWebGL2Supported ? test : skip)('image array webgl2', t => {

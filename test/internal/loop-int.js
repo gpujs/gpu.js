@@ -326,3 +326,66 @@ test('loop int parameter output webgl2', () => {
   );
   gpu.destroy();
 });
+
+(GPU.isWebGLSupported ? test : skip)('loop int dynamic output webgl', () => {
+  function kernel(a) {
+    let sum = 0;
+    for (let i = 0; i < this.output.x; i++) {
+      sum += a[this.thread.x][i];
+    }
+    return sum;
+  }
+  const gpu = new GPU({ mode: 'webgl' });
+  const output = gpu.createKernel(kernel, {
+    dynamicOutput: true,
+    output: [1],
+  })([[3]]);
+
+  assert.deepEqual(
+    Array.from(output),
+    [3]
+  );
+  gpu.destroy();
+});
+
+(GPU.isWebGL2Supported ? test : skip)('loop int dynamic output webgl2', () => {
+  function kernel(a) {
+    let sum = 0;
+    for (let i = 0; i < this.output.x; i++) {
+      sum += a[this.thread.x][i];
+    }
+    return sum;
+  }
+  const gpu = new GPU({ mode: 'webgl2' });
+  const output = gpu.createKernel(kernel, {
+    dynamicOutput: true,
+    output: [1]
+  })([[3]]);
+
+  assert.deepEqual(
+    Array.from(output),
+    [3]
+  );
+  gpu.destroy();
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('loop int dynamic output headlessgl', () => {
+  function kernel(a) {
+    let sum = 0;
+    for (let i = 0; i < this.output.x; i++) {
+      sum += a[this.thread.x][i];
+    }
+    return sum;
+  }
+  const gpu = new GPU({ mode: 'headlessgl' });
+  const output = gpu.createKernel(kernel, {
+    dynamicOutput: true,
+    output: [1],
+  })([[3]]);
+
+  assert.deepEqual(
+    Array.from(output),
+    [3]
+  );
+  gpu.destroy();
+});

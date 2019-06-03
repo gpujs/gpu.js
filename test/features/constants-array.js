@@ -13,9 +13,7 @@ function feature(mode) {
     output: [2]
   });
   const result = tryConst();
-  const match = new Float32Array([200, 200]);
-  const test = (result[0] === match[0] && result[1] === match[1]);
-  assert.ok(test, 'array constant passed test');
+  assert.deepEqual(Array.from(result), [200, 200], 'array constant passed test');
   gpu.destroy();
 }
 

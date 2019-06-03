@@ -1,74 +1,41 @@
-const {
-	GPU
-} = require('./gpu');
-const {
-	alias
-} = require('./alias');
-const {
-	utils
-} = require('./utils');
-const {
-	Input,
-	input
-} = require('./input');
-const {
-	Texture
-} = require('./texture');
-const {
-	FunctionBuilder
-} = require('./backend/function-builder');
-const {
-	FunctionNode
-} = require('./backend/function-node');
-const {
-	CPUFunctionNode
-} = require('./backend/cpu/function-node');
-const {
-	CPUKernel
-} = require('./backend/cpu/kernel');
+const { GPU } = require('./gpu');
+const { alias } = require('./alias');
+const { utils } = require('./utils');
+const { Input, input } = require('./input');
+const { Texture } = require('./texture');
+const { FunctionBuilder } = require('./backend/function-builder');
+const { FunctionNode } = require('./backend/function-node');
+const { CPUFunctionNode } = require('./backend/cpu/function-node');
+const { CPUKernel } = require('./backend/cpu/kernel');
 
-const {
-	HeadlessGLKernel
-} = require('./backend/headless-gl/kernel');
+const { HeadlessGLKernel } = require('./backend/headless-gl/kernel');
 
-const {
-	WebGLFunctionNode
-} = require('./backend/web-gl/function-node');
-const {
-	WebGLKernel
-} = require('./backend/web-gl/kernel');
+const { WebGLFunctionNode } = require('./backend/web-gl/function-node');
+const { WebGLKernel } = require('./backend/web-gl/kernel');
 
-const {
-	WebGL2FunctionNode
-} = require('./backend/web-gl2/function-node');
-const {
-	WebGL2Kernel
-} = require('./backend/web-gl2/kernel');
+const { WebGL2FunctionNode } = require('./backend/web-gl2/function-node');
+const { WebGL2Kernel } = require('./backend/web-gl2/kernel');
 
-const {
-	GLKernel
-} = require('./backend/gl-kernel');
+const { GLKernel } = require('./backend/gl/kernel');
 
-const {
-	Kernel
-} = require('./backend/kernel');
+const { Kernel } = require('./backend/kernel');
 
 module.exports = {
-	alias,
-	CPUFunctionNode,
-	CPUKernel,
-	GPU,
-	FunctionBuilder,
-	FunctionNode,
-	HeadlessGLKernel,
-	Input,
-	input,
-	Texture,
-	utils,
-	WebGL2FunctionNode,
-	WebGL2Kernel,
-	WebGLFunctionNode,
-	WebGLKernel,
-	GLKernel,
-	Kernel,
+  alias,
+  CPUFunctionNode,
+  CPUKernel,
+  GPU,
+  FunctionBuilder,
+  FunctionNode,
+  HeadlessGLKernel,
+  Input,
+  input,
+  Texture,
+  utils,
+  WebGL2FunctionNode,
+  WebGL2Kernel,
+  WebGLFunctionNode,
+  WebGLKernel,
+  GLKernel,
+  Kernel,
 };

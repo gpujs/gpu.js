@@ -15,10 +15,7 @@ test('.createKernelMap() object map with settings', () => {
       settings = _settings;
       this.context = 'context';
       this.canvas = 'canvas';
-      this.subKernels = [];
-    }
-    addSubKernel(subKernel) {
-      this.subKernels.push(subKernel);
+      this.subKernels = _settings.subKernels;
     }
   }
   gpu.Kernel = MockKernel;
@@ -63,10 +60,7 @@ test('.createKernelMap() array map with settings', () => {
       settings = _settings;
       this.context = 'context';
       this.canvas = 'canvas';
-      this.subKernels = [];
-    }
-    addSubKernel(subKernel) {
-      this.subKernels.push(subKernel);
+      this.subKernels = _settings.subKernels;
     }
   }
   gpu.Kernel = MockKernel;

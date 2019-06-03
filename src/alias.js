@@ -1,6 +1,4 @@
-const {
-	utils
-} = require('./utils');
+const { utils } = require('./utils');
 
 /**
  *
@@ -9,12 +7,12 @@ const {
  * @returns {Function}
  */
 function alias(name, source) {
-	const fnString = source.toString();
-	return new Function(`return function ${ name } (${ utils.getArgumentNamesFromString(fnString).join(', ') }) {
+  const fnString = source.toString();
+  return new Function(`return function ${ name } (${ utils.getArgumentNamesFromString(fnString).join(', ') }) {
   ${ utils.getFunctionBodyFromString(fnString) }
 }`)();
 }
 
 module.exports = {
-	alias
+  alias
 };

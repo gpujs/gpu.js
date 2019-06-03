@@ -12,11 +12,12 @@ function castingOffsetByThreadXAndOutputX(mode) {
     // return value will be float
     return this.thread.x + (this.output.x * value);
   }, {
-    output: [1]
+    output: [1],
+    strictIntegers: true,
   });
   const result = kernel(1);
   assert.equal(result[0], 1);
-  assert.deepEqual(kernel.argumentTypes, ['Number']);
+  assert.deepEqual(kernel.argumentTypes, ['Integer']);
   gpu.destroy();
 }
 
@@ -68,7 +69,8 @@ function handleCastingFloatsWithNativeFunctions(mode) {
     return add(value1, value2);
   }, {
     argumentTypes: ['Integer', 'Integer'],
-    output: [1]
+    output: [1],
+    strictIntegers: true,
   });
   const result = kernel(1, 2);
   assert.deepEqual(Array.from(result), [3]);
@@ -97,11 +99,12 @@ function handleCastingMixedWithNativeFunctions(mode) {
   const kernel = gpu.createKernel(function(value1, value2) {
     return add(value1, value2);
   }, {
-    output: [1]
+    output: [1],
+    strictIntegers: true,
   });
   const result = kernel(1, 2.5);
   assert.deepEqual(Array.from(result), [3]);
-  assert.deepEqual(kernel.argumentTypes, ['Number', 'Float']);
+  assert.deepEqual(kernel.argumentTypes, ['Integer', 'Float']);
   gpu.destroy();
 }
 
@@ -135,6 +138,43 @@ function handleCastingFloat(mode) {
   gpu.destroy();
 }
 
-(GPU.isHeadlessGLSupported ? test : skip)('handle casting float', () => {
+(GPU.isWebGLSupported ? test : skip)('handle casting float webgl', () => {
+  handleCastingFloat('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('handle casting float webgl2', () => {
+  handleCastingFloat('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('handle casting float headlessgl', () => {
   handleCastingFloat('headlessgl');
+});
+
+
+function handleCastingBeforeReturn(mode) {
+  const gpu = new GPU({ mode });
+  function addOne(v) {
+    return v + v;
+  }
+  gpu.addFunction(addOne, {
+    argumentTypes: { v: 'Float' },
+    returnType: 'Integer',
+  });
+  const kernel = gpu.createKernel(function(v) {
+    return addOne(v);
+  }, { output: [1] });
+  assert.equal(kernel(1)[0], 2);
+  gpu.destroy();
+}
+
+(GPU.isWebGLSupported ? test : skip)('handle casting before return webgl', () => {
+  handleCastingBeforeReturn('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('handle casting before return webgl2', () => {
+  handleCastingBeforeReturn('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('handle casting before return headlessgl', () => {
+  handleCastingBeforeReturn('headlessgl');
 });

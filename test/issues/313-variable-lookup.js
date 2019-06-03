@@ -14,7 +14,7 @@ function variableLookup(mode) {
   });
 
   const render1 = gpu.createKernel(function(input) {
-    return (mult2(input) + mult2(input*2) + mult2(input*1))	// RIGHT
+    return (mult2(input) + mult2(input*2) + mult2(input*1))  // RIGHT
   })
     .setOutput([1]);
 

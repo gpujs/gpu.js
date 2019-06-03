@@ -1,4 +1,4 @@
-const { assert, skip, test, module: describe } = require('qunit');
+const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('issue #267 kernel');
@@ -168,22 +168,22 @@ function immutableSubKernelsWithoutFloats(mode) {
 describe('issue #267 sub kernels mixed');
 function immutableKernelsMixedWithoutFloats(mode) {
   function value1(value) {
-    return value + 1;
+    return value + 10;
   }
 
   function value2(value) {
-    return value + 1;
+    return value + 50;
   }
 
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernelMap(
     {
       valueOutput1: value1,
-      valueOutput2: value2
+      valueOutput2: value2,
     },
     function (a, b) {
       value1(a[this.thread.x]);
-      return value2(b[this.thread.x]) + 1;
+      return value2(b[this.thread.x]) + 100;
     },
     {
       output: [1],
@@ -194,20 +194,29 @@ function immutableKernelsMixedWithoutFloats(mode) {
   );
 
   // start with a value on CPU
-  const output1 = kernel([1], [2]);
-  const result1 = output1.result.toArray()[0];
+  const output1 = kernel([10], [20]);
 
   // reuse that output, simulating that this value will be monitored, and updated via the same kernel
   // this is often used in neural networks
   const output2 = kernel(output1.result, output1.valueOutput2);
-  const result2 = output2.result.toArray()[0];
-
   const output3 = kernel(output2.result, output2.valueOutput2);
-  const result3 = output3.result.toArray()[0];
 
-  assert.equal(result1, 4);
-  assert.equal(result2, 5);
-  assert.equal(result3, 6);
+  function toArray(value) {
+    return value.toArray ? value.toArray() : value;
+  }
+
+  assert.equal(toArray(output1.valueOutput1)[0], 20); // 10 + 10
+  assert.equal(toArray(output1.valueOutput2)[0], 70); // 20 + 50
+  assert.equal(toArray(output1.result)[0], 170); // (20 + 50) + 100
+
+  assert.equal(toArray(output2.valueOutput1)[0], 180); // 170 + 10
+  assert.equal(toArray(output2.valueOutput2)[0], 120); // 70 + 50
+  assert.equal(toArray(output2.result)[0], 220); // (70 + 50) + 100
+
+  assert.equal(toArray(output3.valueOutput1)[0], 230); // 220 + 10
+  assert.equal(toArray(output3.valueOutput2)[0], 170); // 120 + 50
+  assert.equal(toArray(output3.result)[0], 270); // (120 + 50) + 100
+
   gpu.destroy();
 }
 
@@ -229,4 +238,8 @@ function immutableKernelsMixedWithoutFloats(mode) {
 
 (GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable kernel & sub-kernel output without floats - headlessgl', () => {
   immutableKernelsMixedWithoutFloats('headlessgl');
+});
+
+test('Issue #267 immutable kernel & sub-kernel output without floats - cpu', () => {
+  immutableKernelsMixedWithoutFloats('cpu');
 });

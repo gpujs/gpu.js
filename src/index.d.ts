@@ -46,7 +46,7 @@ export interface IGPUSettings {
   context?: object;
   functions?: KernelFunction[];
   nativeFunctions?: INativeFunctionList;
-  format: 'Float32Array' | 'Float16Array' | 'Float'
+  // format: 'Float32Array' | 'Float16Array' | 'Float' // WE WANT THIS!
 }
 
 export type GPUVariableType
@@ -91,7 +91,7 @@ export abstract class Kernel {
   loopMaxIterations: number;
   constants: IConstants;
   canvas: any;
-  context: any;
+  context: WebGLRenderingContext | any;
   functions: IFunction[];
   nativeFunctions: INativeFunctionList[];
   subKernels: ISubKernel[];
@@ -99,7 +99,8 @@ export abstract class Kernel {
   immutable: boolean;
   pipeline: boolean;
   plugins: IPlugin[];
-  getPixels: number[];
+  useLegacyEncoder: boolean;
+  getPixels(flip?: boolean): number[];
   constructor(kernel: KernelFunction, settings?: IKernelSettings); // TODO: JSON support
   build(
     arg1?: KernelVariable,
@@ -143,10 +144,32 @@ export abstract class Kernel {
     arg18?: KernelVariable,
     arg19?: KernelVariable,
     arg20?: KernelVariable
-  ): KernelVariable
+  ): KernelVariable;
+  toString(
+    arg1?: KernelVariable,
+    arg2?: KernelVariable,
+    arg3?: KernelVariable,
+    arg4?: KernelVariable,
+    arg5?: KernelVariable,
+    arg6?: KernelVariable,
+    arg7?: KernelVariable,
+    arg8?: KernelVariable,
+    arg9?: KernelVariable,
+    arg10?: KernelVariable,
+    arg11?: KernelVariable,
+    arg12?: KernelVariable,
+    arg13?: KernelVariable,
+    arg14?: KernelVariable,
+    arg15?: KernelVariable,
+    arg16?: KernelVariable,
+    arg17?: KernelVariable,
+    arg18?: KernelVariable,
+    arg19?: KernelVariable,
+    arg20?: KernelVariable
+  ): string;
   toJSON(): object;
-  exec(): Promise<KernelOutput>;
-  setOutput(flag: any): this;
+  setOutput(flag: number[]): this;
+  setOptimizeFloatMemory(flag: boolean): this;
   setArgumentTypes(flag: any): this;
   setDebug(flag: boolean): this;
   setGraphical(flag: boolean): this;
@@ -158,6 +181,7 @@ export abstract class Kernel {
   setCanvas(flag: any): this;
   setContext(flag: any): this;
   setFunctions(flag: IFunction[]|KernelFunction[]): this;
+  addSubKernel(subKernel: ISubKernel): this;
 }
 
 export type Precision = 'single' | 'unsigned';
@@ -198,8 +222,8 @@ export interface IKernelXYZ {
 }
 
 export interface IKernelSettings {
-  output: number[] | IKernelXYZ;
-  precision: 'single' | 'unsigned';
+  output?: number[] | IKernelXYZ;
+  precision?: 'single' | 'unsigned';
   constants?: object;
   context?: any;
   canvas?: any;
@@ -207,6 +231,9 @@ export interface IKernelSettings {
   immutable?: boolean;
   graphical?: boolean;
   onRequestFallback?: () => Kernel;
+  optimizeFloatMemory?: boolean;
+  dynamicOutput?: boolean;
+  dynamicArguments?: boolean;
 }
 
 export interface IKernelRunShortcut extends Kernel {
@@ -232,12 +259,16 @@ export interface IKernelRunShortcut extends Kernel {
     arg18?: KernelVariable,
     arg19?: KernelVariable,
     arg20?: KernelVariable
-  ): KernelOutput
+  ): KernelOutput;
+  exec(): Promise<KernelOutput>;
 }
 
 export interface IKernelFeatures {
+  isFloatRead: boolean;
   kernelMap: boolean;
   isIntegerDivisionAccurate: boolean;
+  isTextureFloat: boolean;
+  channelCount: number;
 }
 
 export interface IKernelFunctionThis {
@@ -250,9 +281,18 @@ export interface IKernelFunctionThis {
   color(r: number, g: number, b: number, a: number): void,
 }
 
-export type KernelVariable = number | number[] | number[][] | number[][][] | Texture | HTMLImageElement | HTMLImageElement[];
+export type KernelVariable =
+  boolean
+  | number
+  | number[]
+  | number[][]
+  | number[][][]
+  | Texture
+  | Input
+  | HTMLImageElement
+  | HTMLImageElement[];
 
-export type ThreadKernelVariable = number | number[] | number[][] | number[][][];
+export type ThreadKernelVariable = boolean | number | number[] | number[][] | number[][][];
 export type KernelFunction = ((
   this: IKernelFunctionThis,
   arg1?: ThreadKernelVariable,
@@ -302,23 +342,27 @@ export interface IFunctionSettings {
   onNestedFunction?(source: string, returnType: string): void;
   lookupReturnType?(functionName: string, ast: any, node: FunctionNode): void;
   plugins?: any[];
+
+  useLegacyEncoder?: boolean;
 }
 
 export interface ISubKernel {
   name: string;
   source: string;
   property: string | number;
+  returnType: string;
 }
 
 
 export class FunctionBuilder {
-  fromKernel(kernel: IKernelSettings, FunctionNode: FunctionNode, extraNodeOptions?: any): FunctionBuilder;
+  static fromKernel(kernel: IKernelSettings, FunctionNode: FunctionNode, extraNodeOptions?: any): FunctionBuilder;
   constructor(settings: IFunctionBuilderSettings);
   addFunctionNode(functionNode: FunctionNode): void;
   traceFunctionCalls(functionName: string): string[];
   getStringFromFunctionNames(functionName?: string[]): string;
   getPrototypesFromFunctionNames(functionName?: string[]): string[];
   getString(functionName: string): string;
+  getPrototypeString(functionName: string): string;
 }
 
 
@@ -374,4 +418,40 @@ export class Input {
   size: number[];
   constructor(value: number[], size: OutputDimensions);
 }
+
 export type input = (value: number[], size: OutputDimensions) => Input;
+
+export function alias(name: string, source: KernelFunction):KernelFunction;
+
+export class KernelArgument {
+  constructor(settings: IKernelArgumentSettings);
+  getSource(value: any): string;
+  setup(): void;
+  updateValue(value: any)
+}
+
+export interface IKernelArgumentSettings {
+  kernel: Kernel;
+  name: string;
+  type: GPUVariableType;
+  size: number[],
+  index: number;
+  context: any;
+  contextHandle: number;
+}
+
+export interface IKernelConstantSettings extends IKernelArgumentSettings {
+
+}
+
+export class WebGLKernelArgument {
+  constructor(value: any, settings: IWebGLKernelArgumentSettings);
+}
+
+export interface IWebGLKernelArgumentSettings extends IKernelArgumentSettings {
+  texture: any;
+}
+
+export interface IWebGLKenelConstantSettings extends IWebGLKernelArgumentSettings {
+
+}

@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU, utils } = require('../../src');
 
 describe('feature: optimizeFloatMemory');
 
@@ -10,15 +10,11 @@ function whenEnabledCallsCorrectRenderFunction(mode) {
     precision: 'single',
     optimizeFloatMemory: true,
   });
-  let called = false;
-  fn.kernel.renderMemoryOptimizedFloat = function() {
-    if (called) {
-      throw new Error('called again');
-    }
-    called = true; return [1];
-  };
-  fn();
-  assert.equal(called, true);
+  const result = fn();
+  assert.equal(fn.TextureConstructor.name, 'GLTextureMemoryOptimized');
+  assert.equal(fn.renderStrategy.toString(), 'Symbol(MemoryOptimizedFloatPixelToFloat)');
+  assert.equal(fn.formatValues, utils.erectMemoryOptimizedFloat);
+  assert.equal(result[0], 1);
 }
 
 (GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('when enabled calls correct render function gpu (GPU ONLY)', () => {
@@ -38,14 +34,15 @@ function whenEnabledCallsCorrectRenderFunction(mode) {
 function whenEnabledCallsCorrectRenderFunction2D(mode) {
   const gpu = new GPU({ mode });
   const fn = gpu.createKernel(function() { return 1 }, {
-    output: [1, 1],
+    output: [2, 2],
     precision: 'single',
     optimizeFloatMemory: true,
   });
-  let called = false;
-  fn.kernel.renderMemoryOptimized2DFloat = function() { called = true; return [[1]]; };
-  fn();
-  assert.equal(called, true);
+  const result = fn();
+  assert.equal(fn.TextureConstructor.name, 'GLTextureMemoryOptimized2D');
+  assert.equal(fn.renderStrategy.toString(), 'Symbol(MemoryOptimizedFloatPixelTo2DFloat)');
+  assert.equal(fn.formatValues, utils.erectMemoryOptimized2DFloat);
+  assert.deepEqual(result.map(row => Array.from(row)), [[1,1],[1,1]]);
 }
 
 (GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('when enabled calls correct render function 2d gpu (GPU ONLY)', () => {
@@ -64,14 +61,15 @@ function whenEnabledCallsCorrectRenderFunction2D(mode) {
 function whenEnabledCallsCorrectRenderFunction3D(mode) {
   const gpu = new GPU({ mode });
   const fn = gpu.createKernel(function() { return 1 }, {
-    output: [1, 1, 1],
+    output: [2, 2, 2],
     precision: 'single',
     optimizeFloatMemory: true,
   });
-  let called = false;
-  fn.kernel.renderMemoryOptimized3DFloat = function() { called = true; return [[[1]]]; };
-  fn();
-  assert.equal(called, true);
+  const result = fn();
+  assert.equal(fn.TextureConstructor.name, 'GLTextureMemoryOptimized3D');
+  assert.equal(fn.renderStrategy.toString(), 'Symbol(MemoryOptimizedFloatPixelTo3DFloat)');
+  assert.equal(fn.formatValues, utils.erectMemoryOptimized3DFloat);
+  assert.deepEqual(result.map(matrix => matrix.map(row => Array.from(row))), [[[1,1],[1,1]],[[1,1],[1,1]]]);
 }
 
 (GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('when enabled calls correct render function 3d gpu (GPU ONLY)', () => {
