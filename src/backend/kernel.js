@@ -51,6 +51,7 @@ class Kernel {
       }
     }
     this.useLegacyEncoder = false;
+    this.fallbackRequested = false;
     this.onRequestFallback = null;
 
     /**
@@ -116,6 +117,12 @@ class Kernel {
      * @type {WebGLRenderingContext}
      */
     this.context = null;
+
+    /**
+     *
+     * @type {Boolean}
+     */
+    this.checkContext = null;
 
     /**
      *
@@ -514,6 +521,7 @@ class Kernel {
     if (!this.onRequestFallback) {
       throw new Error(`"onRequestFallback" not defined on ${ this.constructor.name }`);
     }
+    this.fallbackRequested = true;
     return this.onRequestFallback(args);
   }
 

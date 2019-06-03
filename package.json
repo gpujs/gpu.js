@@ -16,7 +16,7 @@
   "dependencies": {
     "acorn": "^5.1.1",
     "gl": "^4.3.3",
-    "gl-wiretap": "^0.3.0",
+    "gl-wiretap": "^0.6.0",
     "gpu-mock.js": "^1.0.1"
   },
   "devDependencies": {
@@ -31,6 +31,7 @@
     "gulp-strip-comments": "^2.4.5",
     "merge-stream": "^1.0.1",
     "qunit": "^2.9.1",
+    "sinon": "^7.3.2",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^2.0.0"
   },

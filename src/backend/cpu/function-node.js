@@ -373,6 +373,31 @@ class CPUFunctionNode extends FunctionNode {
 
   }
 
+  astSwitchStatement(ast, retArr) {
+    const { discriminant, cases } = ast;
+    retArr.push('switch (');
+    this.astGeneric(discriminant, retArr);
+    retArr.push(') {\n');
+    for (let i = 0; i < cases.length; i++) {
+      if (cases[i].test === null) {
+        retArr.push('default:\n');
+        this.astGeneric(cases[i].consequent, retArr);
+        if (cases[i].consequent && cases[i].consequent.length > 0) {
+          retArr.push('break;\n');
+        }
+        continue;
+      }
+      retArr.push('case ');
+      this.astGeneric(cases[i].test, retArr);
+      retArr.push(':\n');
+      if (cases[i].consequent && cases[i].consequent.length > 0) {
+        this.astGeneric(cases[i].consequent, retArr);
+        retArr.push('break;\n');
+      }
+    }
+    retArr.push('\n}');
+  }
+
   /**
    * @desc Parses the abstract syntax tree for *This* expression
    * @param {Object} tNode - An ast Node
@@ -486,11 +511,19 @@ class CPUFunctionNode extends FunctionNode {
       case 'ArrayTexture(4)':
       case 'HTMLImage':
       default:
-        const isInput = this.isInput(synonymName || name);
+        let size;
+        let isInput;
+        if (origin === 'constants') {
+          const constant = this.constants[name];
+          isInput = this.constantTypes[name] === 'Input';
+          size = isInput ? constant.size : null;
+        } else {
+          isInput = this.isInput(synonymName || name);
+          size = isInput ? this.argumentSizes[this.argumentNames.indexOf(name)] : null;
+        }
         retArr.push(`${ markupName }`);
         if (zProperty && yProperty) {
           if (isInput) {
-            const size = this.argumentSizes[this.argumentNames.indexOf(name)];
             retArr.push('[(');
             this.astGeneric(zProperty, retArr);
             retArr.push(`*${ size[1] * size[0]})+(`);
@@ -511,7 +544,6 @@ class CPUFunctionNode extends FunctionNode {
           }
         } else if (yProperty) {
           if (isInput) {
-            const size = this.argumentSizes[this.argumentNames.indexOf(name)];
             retArr.push('[(');
             this.astGeneric(yProperty, retArr);
             retArr.push(`*${ size[0] })+`);

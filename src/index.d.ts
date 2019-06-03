@@ -144,9 +144,30 @@ export abstract class Kernel {
     arg18?: KernelVariable,
     arg19?: KernelVariable,
     arg20?: KernelVariable
-  ): KernelVariable
+  ): KernelVariable;
+  toString(
+    arg1?: KernelVariable,
+    arg2?: KernelVariable,
+    arg3?: KernelVariable,
+    arg4?: KernelVariable,
+    arg5?: KernelVariable,
+    arg6?: KernelVariable,
+    arg7?: KernelVariable,
+    arg8?: KernelVariable,
+    arg9?: KernelVariable,
+    arg10?: KernelVariable,
+    arg11?: KernelVariable,
+    arg12?: KernelVariable,
+    arg13?: KernelVariable,
+    arg14?: KernelVariable,
+    arg15?: KernelVariable,
+    arg16?: KernelVariable,
+    arg17?: KernelVariable,
+    arg18?: KernelVariable,
+    arg19?: KernelVariable,
+    arg20?: KernelVariable
+  ): string;
   toJSON(): object;
-  exec(): Promise<KernelOutput>;
   setOutput(flag: number[]): this;
   setOptimizeFloatMemory(flag: boolean): this;
   setArgumentTypes(flag: any): this;
@@ -160,6 +181,7 @@ export abstract class Kernel {
   setCanvas(flag: any): this;
   setContext(flag: any): this;
   setFunctions(flag: IFunction[]|KernelFunction[]): this;
+  addSubKernel(subKernel: ISubKernel): this;
 }
 
 export type Precision = 'single' | 'unsigned';
@@ -237,7 +259,8 @@ export interface IKernelRunShortcut extends Kernel {
     arg18?: KernelVariable,
     arg19?: KernelVariable,
     arg20?: KernelVariable
-  ): KernelOutput
+  ): KernelOutput;
+  exec(): Promise<KernelOutput>;
 }
 
 export interface IKernelFeatures {
@@ -258,7 +281,16 @@ export interface IKernelFunctionThis {
   color(r: number, g: number, b: number, a: number): void,
 }
 
-export type KernelVariable = boolean | number | number[] | number[][] | number[][][] | Texture | HTMLImageElement | HTMLImageElement[];
+export type KernelVariable =
+  boolean
+  | number
+  | number[]
+  | number[][]
+  | number[][][]
+  | Texture
+  | Input
+  | HTMLImageElement
+  | HTMLImageElement[];
 
 export type ThreadKernelVariable = boolean | number | number[] | number[][] | number[][][];
 export type KernelFunction = ((
@@ -318,6 +350,7 @@ export interface ISubKernel {
   name: string;
   source: string;
   property: string | number;
+  returnType: string;
 }
 
 

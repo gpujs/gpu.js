@@ -106,7 +106,7 @@ class WebGLFunctionNode extends FunctionNode {
     const result = [];
 
     if (!this.returnType) {
-      if (this.isRootKernel) {
+      if (type === 'LiteralInteger' || type === 'Integer') {
         this.returnType = 'Number';
       } else {
         this.returnType = type;
@@ -863,6 +863,102 @@ class WebGLFunctionNode extends FunctionNode {
         this.astGeneric(ifNode.alternate, retArr);
         retArr.push('\n}\n');
       }
+    }
+    return retArr;
+  }
+
+  astSwitchStatement(ast, retArr) {
+    if (ast.type !== 'SwitchStatement') {
+      throw this.astErrorOutput('Invalid switch statement', ast);
+    }
+    const { discriminant, cases } = ast;
+    const type = this.getType(discriminant);
+    const varName = `switchDiscriminant${ast.start}_${ast.end}`;
+    switch (type) {
+      case 'Float':
+      case 'Number':
+        retArr.push(`float ${varName} = `);
+        this.astGeneric(discriminant, retArr);
+        retArr.push(';\n');
+        break;
+      case 'Integer':
+        retArr.push(`int ${varName} = `);
+        this.astGeneric(discriminant, retArr);
+        retArr.push(';\n');
+        break;
+    }
+    // switch with just a default:
+    if (cases.length === 1 && !cases[0].test) {
+      this.astGeneric(cases[0].consequent, retArr);
+      return retArr;
+    }
+
+    // regular switches:
+    let fallingThrough = false;
+    let defaultResult = [];
+    let movingDefaultToEnd = false;
+    let pastFirstIf = false;
+    for (let i = 0; i < cases.length; i++) {
+      // default
+      if (!cases[i].test) {
+        if (cases.length > i + 1) {
+          movingDefaultToEnd = true;
+          this.astGeneric(cases[i].consequent, defaultResult);
+          continue;
+        } else {
+          retArr.push(' else {\n');
+        }
+      } else {
+        // all others
+        if (i === 0 || !pastFirstIf) {
+          pastFirstIf = true;
+          retArr.push(`if (${varName} == `);
+        } else {
+          if (fallingThrough) {
+            retArr.push(`${varName} == `);
+            fallingThrough = false;
+          } else {
+            retArr.push(` else if (${varName} == `);
+          }
+        }
+        if (type === 'Integer') {
+          const testType = this.getType(cases[i].test);
+          switch (testType) {
+            case 'Number':
+            case 'Float':
+              this.castValueToInteger(cases[i].test, retArr);
+              break;
+            case 'LiteralInteger':
+              this.castLiteralToInteger(cases[i].test, retArr);
+              break;
+          }
+        } else if (type === 'Float') {
+          const testType = this.getType(cases[i].test);
+          switch (testType) {
+            case 'LiteralInteger':
+              this.castLiteralToFloat(cases[i].test, retArr);
+              break;
+            case 'Integer':
+              this.castValueToFloat(cases[i].test, retArr);
+              break;
+          }
+        } else {
+          throw new Error('unhanlded');
+        }
+        if (!cases[i].consequent || cases[i].consequent.length === 0) {
+          fallingThrough = true;
+          retArr.push(' || ');
+          continue;
+        }
+        retArr.push(`) {\n`);
+      }
+      this.astGeneric(cases[i].consequent, retArr);
+      retArr.push('\n}');
+    }
+    if (movingDefaultToEnd) {
+      retArr.push(' else {');
+      retArr.push(defaultResult.join(''));
+      retArr.push('}');
     }
     return retArr;
   }

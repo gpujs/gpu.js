@@ -6,7 +6,9 @@ class WebGLKernelValueInteger extends WebGLKernelValue {
     super(value, settings);
     this.uploadValue = value;
   }
-
+  getStringValueHandler() {
+    return `const uploadValue_${this.name} = ${this.varName};\n`;
+  }
   getSource(value) {
     if (this.origin === 'constants') {
       return `const int ${this.id} = ${ parseInt(value) };\n`;

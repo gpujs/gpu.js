@@ -13,7 +13,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
   }
 
   getStringValueHandler() {
-    return `const uploadValue_${this.name} = ${this.name};\n`;
+    return `const uploadValue_${this.name} = ${this.varName}.texture;\n`;
   }
 
   getSource() {
@@ -29,7 +29,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
       this.onUpdateValueMismatch();
       return;
     }
-    if (inputTexture.context !== this.context) {
+    if (this.checkContext && inputTexture.context !== this.context) {
       throw new Error(`Value ${this.name} (${this.type}) must be from same context`);
     }
     const { context: gl } = this;

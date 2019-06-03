@@ -15,7 +15,7 @@ class WebGLKernelValueSingleArray extends WebGLKernelValue {
   getStringValueHandler() {
     return utils.linesToString([
       `const uploadValue_${this.name} = new Float32Array(${this.uploadArrayLength})`,
-      `flattenTo(${this.name}, uploadValue_${this.name})`,
+      `flattenTo(${this.varName}, uploadValue_${this.name})`,
     ]);
   }
 

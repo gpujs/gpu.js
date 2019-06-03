@@ -341,32 +341,33 @@ class GPU {
     if (settings && typeof settings.argumentTypes === 'object') {
       settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
     }
-    const kernel = this.createKernel(fn, settingsCopy);
-
     if (Array.isArray(arguments[0])) {
+      settingsCopy.subKernels = [];
       const functions = arguments[0];
       for (let i = 0; i < functions.length; i++) {
         const source = functions[i].toString();
         const name = utils.getFunctionNameFromString(source);
-        kernel.addSubKernel({
+        settingsCopy.subKernels.push({
           name,
           source,
           property: i,
         });
       }
     } else {
+      settingsCopy.subKernels = [];
       const functions = arguments[0];
       for (let p in functions) {
         if (!functions.hasOwnProperty(p)) continue;
         const source = functions[p].toString();
         const name = utils.getFunctionNameFromString(source);
-        kernel.addSubKernel({
+        settingsCopy.subKernels.push({
           name: name || p,
           source,
           property: p,
         });
       }
     }
+    const kernel = this.createKernel(fn, settingsCopy);
 
     return kernel;
   }
@@ -468,7 +469,7 @@ class GPU {
 
 function upgradeDeprecatedCreateKernelSettings(settings) {
   if (!settings) {
-    return;
+    return {};
   }
   const upgradedSettings = Object.assign({}, settings);
 

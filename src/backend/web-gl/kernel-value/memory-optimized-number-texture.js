@@ -10,6 +10,10 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
     this.uploadValue = value.texture;
   }
 
+  getStringValueHandler() {
+    return `const uploadValue_${this.name} = ${this.varName}.texture;\n`;
+  }
+
   getSource() {
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
@@ -23,7 +27,7 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
       this.onUpdateValueMismatch();
       return;
     }
-    if (inputTexture.context !== this.context) {
+    if (this.checkContext && inputTexture.context !== this.context) {
       throw new Error(`Value ${this.name} (${this.type }) must be from same context`);
     }
     const { context: gl } = this;

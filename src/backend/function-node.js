@@ -1,5 +1,5 @@
-const { utils } = require('../utils');
 const acorn = require('acorn');
+const { utils } = require('../utils');
 
 /**
  *
@@ -67,10 +67,6 @@ class FunctionNode {
     this.synonymUseIndex = 0;
     this.argumentSynonym = {};
     this.literalTypes = {};
-
-    if (this.isRootKernel && !this.returnType) {
-      this.returnType = 'Number';
-    }
 
     this.validate();
     this._string = null;
@@ -721,6 +717,8 @@ class FunctionNode {
           return this.astBlockStatement(ast, retArr);
         case 'IfStatement':
           return this.astIfStatement(ast, retArr);
+        case 'SwitchStatement':
+          return this.astSwitchStatement(ast, retArr);
         case 'BreakStatement':
           return this.astBreakStatement(ast, retArr);
         case 'ContinueStatement':
@@ -853,6 +851,9 @@ class FunctionNode {
     return retArr;
   }
   astIfStatement(ast, retArr) {
+    return retArr;
+  }
+  astSwitchStatement(ast, retArr) {
     return retArr;
   }
   /**
@@ -1247,6 +1248,8 @@ class FunctionNode {
         }
       } else if (atNode.consequent) {
         stack.push(atNode.consequent);
+      } else if (atNode.cases) {
+        stack.push(atNode.cases);
       }
     }
     return null;
@@ -1269,6 +1272,8 @@ class FunctionNode {
 }
 
 const typeLookupMap = {
+  'Float': 'Float',
+  'Integer': 'Integer',
   'Array': 'Number',
   'Array(2)': 'Number',
   'Array(3)': 'Number',

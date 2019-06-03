@@ -18,7 +18,7 @@ class WebGLKernelValueUnsignedArray extends WebGLKernelValue {
     return utils.linesToString([
       `const preUploadValue_${this.name} = new ${this.TranserArrayType.name}(${this.uploadArrayLength})`,
       `const uploadValue_${this.name} = new Uint8Array(preUploadValue_${this.name}.buffer)`,
-      `flattenTo(${this.name}, preUploadValue_${this.name})`,
+      `flattenTo(${this.varName}, preUploadValue_${this.name})`,
     ]);
   }
 

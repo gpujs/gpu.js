@@ -201,6 +201,15 @@ class WebGL2Kernel extends WebGLKernel {
     if (!this.graphical && !this.returnType) {
       this.returnType = functionBuilder.getKernelResultType();
     }
+
+    if (this.subKernels && this.subKernels.length > 0) {
+      for (let i = 0; i < this.subKernels.length; i++) {
+        const subKernel = this.subKernels[i];
+        if (!subKernel.returnType) {
+          subKernel.returnType = functionBuilder.getSubKernelResultType(i);
+        }
+      }
+    }
   }
 
   run() {
@@ -418,8 +427,11 @@ class WebGL2Kernel extends WebGLKernel {
         'layout(location = 0) out vec4 data0'
       );
       for (let i = 0; i < subKernels.length; i++) {
+        const subKernel = subKernels[i];
         result.push(
-          `float subKernelResult_${ subKernels[i].name } = 0.0`,
+          subKernel.returnType === 'Integer' ?
+          `int subKernelResult_${ subKernel.name } = 0` :
+          `float subKernelResult_${ subKernel.name } = 0.0`,
           `layout(location = ${ i + 1 }) out vec4 data${ i + 1 }`
         );
       }
@@ -472,9 +484,16 @@ class WebGL2Kernel extends WebGLKernel {
     const result = [];
     if (!this.subKernels) return '';
     for (let i = 0; i < this.subKernels.length; i++) {
-      result.push(
-        `  data${i + 1} = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(subKernelResult_${this.subKernels[i].name})`
-      );
+      const subKernel = this.subKernels[i];
+      if (subKernel.returnType === 'Integer') {
+        result.push(
+          `  data${i + 1} = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(float(subKernelResult_${this.subKernels[i].name}))`
+        );
+      } else {
+        result.push(
+          `  data${i + 1} = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(subKernelResult_${this.subKernels[i].name})`
+        );
+      }
     }
     return utils.linesToString(result);
   }
@@ -516,9 +535,16 @@ class WebGL2Kernel extends WebGLKernel {
   getMainResultSubKernelMemoryOptimizedFloats(result, channel) {
     if (!this.subKernels) return result;
     for (let i = 0; i < this.subKernels.length; i++) {
-      result.push(
-        `  data${i + 1}.${channel} = subKernelResult_${this.subKernels[i].name}`,
-      );
+      const subKernel = this.subKernels[i];
+      if (subKernel.returnType === 'Integer') {
+        result.push(
+          `  data${i + 1}.${channel} = float(subKernelResult_${subKernel.name})`,
+        );
+      } else {
+        result.push(
+          `  data${i + 1}.${channel} = subKernelResult_${subKernel.name}`,
+        );
+      }
     }
   }
 
@@ -534,9 +560,16 @@ class WebGL2Kernel extends WebGLKernel {
     const result = [];
     if (!this.subKernels) return result;
     for (let i = 0; i < this.subKernels.length; ++i) {
-      result.push(
-        `  data${i + 1}[0] = subKernelResult_${this.subKernels[i].name}`,
-      );
+      const subKernel = this.subKernels[i];
+      if (subKernel.returnType === 'Integer') {
+        result.push(
+          `  data${i + 1}[0] = float(subKernelResult_${subKernel.name})`,
+        );
+      } else {
+        result.push(
+          `  data${i + 1}[0] = subKernelResult_${subKernel.name}`,
+        );
+      }
     }
     return result;
   }
@@ -554,9 +587,10 @@ class WebGL2Kernel extends WebGLKernel {
     const result = [];
     if (!this.subKernels) return result;
     for (let i = 0; i < this.subKernels.length; ++i) {
+      const subKernel = this.subKernels[i];
       result.push(
-        `  data${i + 1}[0] = subKernelResult_${this.subKernels[i].name}[0]`,
-        `  data${i + 1}[1] = subKernelResult_${this.subKernels[i].name}[1]`,
+        `  data${i + 1}[0] = subKernelResult_${subKernel.name}[0]`,
+        `  data${i + 1}[1] = subKernelResult_${subKernel.name}[1]`,
       );
     }
     return result;
@@ -576,10 +610,11 @@ class WebGL2Kernel extends WebGLKernel {
     const result = [];
     if (!this.subKernels) return result;
     for (let i = 0; i < this.subKernels.length; ++i) {
+      const subKernel = this.subKernels[i];
       result.push(
-        `  data${i + 1}[0] = subKernelResult_${this.subKernels[i].name}[0]`,
-        `  data${i + 1}[1] = subKernelResult_${this.subKernels[i].name}[1]`,
-        `  data${i + 1}[2] = subKernelResult_${this.subKernels[i].name}[2]`,
+        `  data${i + 1}[0] = subKernelResult_${subKernel.name}[0]`,
+        `  data${i + 1}[1] = subKernelResult_${subKernel.name}[1]`,
+        `  data${i + 1}[2] = subKernelResult_${subKernel.name}[2]`,
       );
     }
     return result;

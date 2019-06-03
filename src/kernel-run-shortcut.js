@@ -11,7 +11,6 @@ function kernelRunShortcut(kernel) {
     if (kernel.renderKernels) {
       run = function() {
         kernel.run.apply(kernel, arguments);
-        kernel.run.apply(kernel, arguments);
         if (kernel.switchingKernels) {
           kernel.switchingKernels = false;
           return kernel.onRequestSwitchKernel(arguments, kernel);
@@ -56,8 +55,16 @@ function kernelRunShortcut(kernel) {
   };
   shortcut.replaceKernel = function(replacementKernel) {
     kernel = replacementKernel;
+    bindKernelToShortcut(kernel, shortcut);
+    shortcut.kernel = kernel;
   };
 
+  bindKernelToShortcut(kernel, shortcut);
+  shortcut.kernel = kernel;
+  return shortcut;
+}
+
+function bindKernelToShortcut(kernel, shortcut) {
   const properties = utils.allPropertiesOf(kernel);
   for (let i = 0; i < properties.length; i++) {
     const property = properties[i];
@@ -86,12 +93,7 @@ function kernelRunShortcut(kernel) {
       });
     }
   }
-
-  shortcut.kernel = kernel;
-
-  return shortcut;
 }
-
 module.exports = {
   kernelRunShortcut
 };

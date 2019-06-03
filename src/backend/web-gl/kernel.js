@@ -391,14 +391,13 @@ class WebGLKernel extends GLKernel {
       }
       const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArguments ? 'dynamic' : 'static', this.precision);
       if (KernelValue === null) {
-        throw new Error('unsupported argument');
-        // TODO: Downgrade? Example: HTMLImageArrays
-        continue;
+        return this.requestFallback(args);
       }
       const kernelArgument = new KernelValue(value, {
         name,
         origin: 'user',
         context: gl,
+        checkContext: this.checkContext,
         kernel: this,
         strictIntegers: this.strictIntegers,
         onRequestTexture: () => {
@@ -420,7 +419,7 @@ class WebGLKernel extends GLKernel {
     }
   }
 
-  setupConstants() {
+  setupConstants(args) {
     const { context: gl } = this;
     this.kernelConstants = [];
     this.constantTypes = {};
@@ -432,14 +431,13 @@ class WebGLKernel extends GLKernel {
       this.constantTypes[name] = type;
       const KernelValue = this.constructor.lookupKernelValueType(type, 'static', this.precision);
       if (KernelValue === null) {
-        throw new Error(`unsupported constant ${ type }`);
-        // TODO: Downgrade?
-        continue;
+        return this.requestFallback(args);
       }
       const kernelValue = new KernelValue(value, {
         name,
         origin: 'constants',
         context: this.context,
+        checkContext: this.checkContext,
         kernel: this,
         strictIntegers: this.strictIntegers,
         onRequestTexture: () => {
@@ -460,8 +458,10 @@ class WebGLKernel extends GLKernel {
   build() {
     this.initExtensions();
     this.validateSettings();
-    this.setupConstants();
+    this.setupConstants(arguments);
+    if (this.fallbackRequested) return;
     this.setupArguments(arguments);
+    if (this.fallbackRequested) return;
     this.updateMaxTexSize();
     this.translateSource();
     const failureResult = this.pickRenderStrategy(arguments);
@@ -574,6 +574,15 @@ class WebGLKernel extends GLKernel {
     if (!this.graphical && !this.returnType) {
       this.returnType = functionBuilder.getKernelResultType();
     }
+
+    if (this.subKernels && this.subKernels.length > 0) {
+      for (let i = 0; i < this.subKernels.length; i++) {
+        const subKernel = this.subKernels[i];
+        if (!subKernel.returnType) {
+          subKernel.returnType = functionBuilder.getSubKernelResultType(i);
+        }
+      }
+    }
   }
 
   run() {
@@ -591,6 +600,7 @@ class WebGLKernel extends GLKernel {
 
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
+    this.switchingKernels = false;
     for (let i = 0; i < kernelArguments.length; i++) {
       // this will be handled in renderOutput
       if (this.switchingKernels) return;
@@ -1062,10 +1072,40 @@ class WebGLKernel extends GLKernel {
       result.push(
         kernelResultDeclaration
       );
-      for (let i = 0; i < subKernels.length; i++) {
-        result.push(
-          `float subKernelResult_${ subKernels[i].name } = 0.0`
-        );
+      switch (this.returnType) {
+        case 'Number':
+        case 'Float':
+        case 'Integer':
+          for (let i = 0; i < subKernels.length; i++) {
+            const subKernel = subKernels[i];
+            result.push(
+              subKernel.returnType === 'Integer' ?
+              `int subKernelResult_${ subKernel.name } = 0` :
+              `float subKernelResult_${ subKernel.name } = 0.0`
+            );
+          }
+          break;
+        case 'Array(2)':
+          for (let i = 0; i < subKernels.length; i++) {
+            result.push(
+              `vec2 subKernelResult_${ subKernels[i].name }`
+            );
+          }
+          break;
+        case 'Array(3)':
+          for (let i = 0; i < subKernels.length; i++) {
+            result.push(
+              `vec3 subKernelResult_${ subKernels[i].name }`
+            );
+          }
+          break;
+        case 'Array(4)':
+          for (let i = 0; i < subKernels.length; i++) {
+            result.push(
+              `vec4 subKernelResult_${ subKernels[i].name }`
+            );
+          }
+          break;
       }
     } else {
       result.push(
@@ -1115,9 +1155,16 @@ class WebGLKernel extends GLKernel {
     const result = [];
     if (!this.subKernels) return '';
     for (let i = 0; i < this.subKernels.length; i++) {
-      result.push(
-        `  gl_FragData[${i + 1}] = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(subKernelResult_${this.subKernels[i].name})`
-      );
+      const subKernel = this.subKernels[i];
+      if (subKernel.returnType === 'Integer') {
+        result.push(
+          `  gl_FragData[${i + 1}] = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(float(subKernelResult_${this.subKernels[i].name}))`
+        );
+      } else {
+        result.push(
+          `  gl_FragData[${i + 1}] = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(subKernelResult_${this.subKernels[i].name})`
+        );
+      }
     }
     return utils.linesToString(result);
   }
@@ -1159,9 +1206,16 @@ class WebGLKernel extends GLKernel {
   getMainResultSubKernelMemoryOptimizedFloats(result, channel) {
     if (!this.subKernels) return result;
     for (let i = 0; i < this.subKernels.length; i++) {
-      result.push(
-        `  gl_FragData[${i + 1}].${channel} = subKernelResult_${this.subKernels[i].name}`,
-      );
+      const subKernel = this.subKernels[i];
+      if (subKernel.returnType === 'Integer') {
+        result.push(
+          `  gl_FragData[${i + 1}].${channel} = float(subKernelResult_${this.subKernels[i].name})`,
+        );
+      } else {
+        result.push(
+          `  gl_FragData[${i + 1}].${channel} = subKernelResult_${this.subKernels[i].name}`,
+        );
+      }
     }
   }
 
@@ -1177,9 +1231,16 @@ class WebGLKernel extends GLKernel {
     const result = [];
     if (!this.subKernels) return result;
     for (let i = 0; i < this.subKernels.length; ++i) {
-      result.push(
-        `  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}`,
-      );
+      const subKernel = this.subKernels[i];
+      if (subKernel.returnType === 'Integer') {
+        result.push(
+          `  gl_FragData[${i + 1}][0] = float(subKernelResult_${subKernel.name})`,
+        );
+      } else {
+        result.push(
+          `  gl_FragData[${i + 1}][0] = subKernelResult_${subKernel.name}`,
+        );
+      }
     }
     return result;
   }
@@ -1239,11 +1300,52 @@ class WebGLKernel extends GLKernel {
   getMainResultSubKernelArray4Texture() {
     const result = [];
     if (!this.subKernels) return result;
-    for (let i = 0; i < this.subKernels.length; ++i) {
-      result.push(
-        `  gl_FragData[${i + 1}] = subKernelResult_${this.subKernels[i].name}`,
-      );
+    switch (this.returnType) {
+      case 'Number':
+      case 'Float':
+      case 'Integer':
+        for (let i = 0; i < this.subKernels.length; ++i) {
+          const subKernel = this.subKernels[i];
+          if (subKernel.returnType === 'Integer') {
+            result.push(
+              `  gl_FragData[${i + 1}] = float(subKernelResult_${this.subKernels[i].name})`,
+            );
+          } else {
+            result.push(
+              `  gl_FragData[${i + 1}] = subKernelResult_${this.subKernels[i].name}`,
+            );
+          }
+        }
+        break;
+      case 'Array(2)':
+        for (let i = 0; i < this.subKernels.length; ++i) {
+          result.push(
+            `  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}[0]`,
+            `  gl_FragData[${i + 1}][1] = subKernelResult_${this.subKernels[i].name}[1]`,
+          );
+        }
+        break;
+      case 'Array(3)':
+        for (let i = 0; i < this.subKernels.length; ++i) {
+          result.push(
+            `  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}[0]`,
+            `  gl_FragData[${i + 1}][1] = subKernelResult_${this.subKernels[i].name}[1]`,
+            `  gl_FragData[${i + 1}][2] = subKernelResult_${this.subKernels[i].name}[2]`,
+          );
+        }
+        break;
+      case 'Array(4)':
+        for (let i = 0; i < this.subKernels.length; ++i) {
+          result.push(
+            `  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}[0]`,
+            `  gl_FragData[${i + 1}][1] = subKernelResult_${this.subKernels[i].name}[1]`,
+            `  gl_FragData[${i + 1}][2] = subKernelResult_${this.subKernels[i].name}[2]`,
+            `  gl_FragData[${i + 1}][3] = subKernelResult_${this.subKernels[i].name}[3]`,
+          );
+        }
+        break;
     }
+
     return result;
   }
 

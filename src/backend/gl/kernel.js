@@ -348,7 +348,7 @@ class GLKernel extends Kernel {
           case 'Array(2)':
           case 'Array(3)':
           case 'Array(4)':
-            return this.onRequestFallback(args);
+            return this.requestFallback(args);
         }
       } else {
         if (this.subKernels !== null) {
@@ -381,7 +381,7 @@ class GLKernel extends Kernel {
           case 'Array(2)':
           case 'Array(3)':
           case 'Array(4)':
-            return this.onRequestFallback(args);
+            return this.requestFallback(args);
         }
       }
     } else if (this.precision === 'single') {
@@ -826,7 +826,7 @@ class GLKernel extends Kernel {
     const pixels = new Uint8Array(width * height * 4);
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     // flipped by default, so invert
-    return flip ? pixels : utils.flipPixels(pixels, width, height);
+    return new Uint8ClampedArray((flip ? pixels : utils.flipPixels(pixels, width, height)).buffer);
   }
 
   renderKernelsToArrays() {

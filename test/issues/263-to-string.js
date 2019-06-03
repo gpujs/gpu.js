@@ -12,7 +12,7 @@ function toString(mode, context, canvas) {
   });
   kernel.build();
   const string = kernel.toString();
-  const kernel2 = new Function('return ' + string)()(context);
+  const kernel2 = new Function('return ' + string)()({ context, canvas });
   const result = kernel2();
   assert.equal(result[0], 1);
   gpu.destroy();

@@ -75,7 +75,7 @@ class FunctionBuilder {
 
     const onNestedFunction = (fnString, returnType) => {
       functionBuilder.addFunctionNode(new FunctionNode(fnString, Object.assign({}, nodeOptions, {
-        returnType: returnType || 'Number', // TODO: I think this needs removed
+        returnType: returnType,
         lookupReturnType,
         lookupArgumentType,
         lookupFunctionArgumentTypes,
@@ -161,7 +161,6 @@ class FunctionBuilder {
           name,
           isSubKernel: true,
           isRootKernel: false,
-          returnType: 'Number', // TODO: I think this needs removed
         }));
       });
     }
@@ -378,25 +377,36 @@ class FunctionBuilder {
 
   lookupArgumentType(argumentName, requestingNode) {
     const index = requestingNode.argumentNames.indexOf(argumentName);
-    if (index === -1) return null;
-    if (this.lookupChain.length === 0) return null;
+    if (index === -1) {
+      return null;
+    }
+    if (this.lookupChain.length === 0) {
+      return null;
+    }
     let link = this.lookupChain[this.lookupChain.length - 1 - this.argumentChain.length];
-    if (!link) return null;
+    if (!link) {
+      return null;
+    }
     const {
       ast,
       requestingNode: parentRequestingNode
     } = link;
-    if (ast.arguments.length === 0) return null;
-    const usedVariable = ast.arguments[index];
-    if (!usedVariable) return null;
+    if (ast.arguments.length === 0) {
+      return null;
+    }
+    const usedArgument = ast.arguments[index];
+    if (!usedArgument) {
+      return null;
+    }
+
     this.argumentChain.push(argumentName);
-    const type = parentRequestingNode.getType(usedVariable);
+
+    const type = parentRequestingNode.getType(usedArgument);
     this.argumentChain.pop();
     return type;
   }
 
   lookupReturnType(functionName, ast, requestingNode) {
-    // TODO: track circlical logic
     if (ast.type !== 'CallExpression') {
       throw new Error(`expected ast type of "CallExpression", but is ${ ast.type }`);
     }
@@ -407,6 +417,22 @@ class FunctionBuilder {
       if (node.returnType) {
         return node.returnType;
       } else {
+        for (let i = 0; i < this.lookupChain.length; i++) {
+          // detect circlical logic
+          if (this.lookupChain[i].ast === ast) {
+            // detect if arguments have not resolved, preventing a return type
+            // if so, go ahead and resolve them, so we can resolve the return type
+            if (node.argumentTypes.length === 0 && ast.arguments.length > 0) {
+              const args = ast.arguments;
+              for (let j = 0; j < args.length; j++) {
+                node.argumentTypes[j] = requestingNode.getType(args[j]);
+              }
+              return node.returnType = node.getType(node.getJsAST());
+            }
+
+            throw new Error('circlical logic detected!');
+          }
+        }
         // get ready for a ride!
         this.lookupChain.push({
           name: requestingNode.name,
@@ -533,7 +559,12 @@ class FunctionBuilder {
   }
 
   getKernelResultType() {
-    return this.rootNode.getType(this.rootNode.ast);
+    return this.rootNode.returnType || this.rootNode.getType(this.rootNode.ast);
+  }
+
+  getSubKernelResultType(index) {
+    const subKernelNode = this.subKernelNodes[index];
+    return subKernelNode.returnType || subKernelNode.getType(subKernelNode.getJsAST());
   }
 
   getReturnTypes() {

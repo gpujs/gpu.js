@@ -1,3 +1,4 @@
+const acorn = require('acorn');
 const { Input } = require('./input');
 const { Texture } = require('./texture');
 
@@ -142,7 +143,7 @@ const utils = {
     if (value.nodeName === 'IMG') {
       return 'HTMLImage';
     } else {
-      if (value instanceof Texture) {
+      if (value.hasOwnProperty('type')) {
         return value.type;
       }
       return 'Unknown';
@@ -380,7 +381,7 @@ const utils = {
     const halfHeight = height / 2 | 0; // the | 0 keeps the result an int
     const bytesPerRow = width * 4;
     // make a temp buffer to hold one row
-    const temp = new Uint8Array(width * 4);
+    const temp = new Uint8ClampedArray(width * 4);
     const result = pixels.slice(0);
     for (let y = 0; y < halfHeight; ++y) {
       const topOffset = y * bytesPerRow;
@@ -606,6 +607,163 @@ const utils = {
       zResults[z] = yResults;
     }
     return zResults;
+  },
+
+  /**
+   *
+   * @param {String} source
+   * @param {Object} settings
+   * @return {String}
+   */
+  flattenFunctionToString: (source, settings) => {
+    const { findDependency, thisLookup, doNotDefine } = settings;
+    let flattened = settings.flattened;
+    if (!flattened) {
+      flattened = settings.flattened = {};
+    }
+    const ast = acorn.parse(source);
+    const functionDependencies = [];
+
+    function flatten(ast) {
+      if (Array.isArray(ast)) {
+        const results = [];
+        for (let i = 0; i < ast.length; i++) {
+          results.push(flatten(ast[i]));
+        }
+        return results.join('');
+      }
+      switch (ast.type) {
+        case 'Program':
+          return flatten(ast.body);
+        case 'FunctionDeclaration':
+          return `function ${ast.id.name}(${ast.params.map(flatten).join(', ')}) ${ flatten(ast.body) }`;
+        case 'BlockStatement': {
+          const result = [];
+          for (let i = 0; i < ast.body.length; i++) {
+            result.push(flatten(ast.body[i]), ';\n');
+          }
+          return `{\n${result.join('')}}`;
+        }
+        case 'VariableDeclaration':
+          switch (ast.declarations[0].id.type) {
+            case 'ObjectPattern': {
+              const source = flatten(ast.declarations[0].init);
+              const properties = ast.declarations.map(declaration => declaration.id.properties.map(flatten))[0];
+              if (/this/.test(source)) {
+                const result = [];
+                const lookups = properties.map(thisLookup);
+                for (let i = 0; i < lookups.length; i++) {
+                  const lookup = lookups[i];
+                  if (lookup === null) continue;
+                  const property = properties[i];
+                  result.push(`${ast.kind} ${ property } = ${ lookup };\n`);
+                }
+
+                return result.join('');
+              }
+              return `${ast.kind} { ${properties} } = ${source}`;
+            }
+            case 'ArrayPattern':
+              return `${ast.kind} [ ${ ast.declarations.map(declaration => flatten(declaration.id)).join(', ') } ] = ${flatten(ast.declarations[0].init)}`;
+          }
+          if (doNotDefine && doNotDefine.indexOf(ast.declarations[0].id.name) !== -1) {
+            return '';
+          }
+          return `${ast.kind} ${ast.declarations[0].id.name} = ${flatten(ast.declarations[0].init)}`;
+        case 'CallExpression': {
+          if (ast.callee.property.name === 'subarray') {
+            return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          }
+          if (ast.callee.object.name === 'gl' || ast.callee.object.name === 'context') {
+            return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          }
+          if (ast.callee.object.type === 'ThisExpression') {
+            functionDependencies.push(findDependency('this', ast.callee.property.name));
+            return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          } else if (ast.callee.object.name) {
+            const foundSource = findDependency(ast.callee.object.name, ast.callee.property.name);
+            if (foundSource === null) {
+              // we're not flattening it
+              return `${ast.callee.object.name}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+            } else {
+              functionDependencies.push(foundSource);
+              // we're flattening it
+              return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+            }
+          } else if (ast.callee.object.type === 'MemberExpression') {
+            return `${flatten(ast.callee.object)}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          } else {
+            throw new Error('unknown ast.callee');
+          }
+        }
+        case 'ReturnStatement':
+          return `return ${flatten(ast.argument)}`;
+        case 'BinaryExpression':
+          return `(${flatten(ast.left)}${ast.operator}${flatten(ast.right)})`;
+        case 'UnaryExpression':
+          if (ast.prefix) {
+            return `${ast.operator} ${flatten(ast.argument)}`;
+          } else {
+            return `${flatten(ast.argument)} ${ast.operator}`;
+          }
+          case 'ExpressionStatement':
+            return `(${flatten(ast.expression)})`;
+          case 'ArrowFunctionExpression':
+            return `(${ast.params.map(flatten).join(', ')}) => ${flatten(ast.body)}`;
+          case 'Literal':
+            return ast.raw;
+          case 'Identifier':
+            return ast.name;
+          case 'MemberExpression':
+            if (ast.object.type === 'ThisExpression') {
+              return thisLookup(ast.property.name);
+            }
+            if (ast.computed) {
+              return `${flatten(ast.object)}[${flatten(ast.property)}]`;
+            }
+            return flatten(ast.object) + '.' + flatten(ast.property);
+          case 'ThisExpression':
+            return 'this';
+          case 'NewExpression':
+            return `new ${flatten(ast.callee)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          case 'ForStatement':
+            return `for (${flatten(ast.init)};${flatten(ast.test)};${flatten(ast.update)}) ${flatten(ast.body)}`;
+          case 'AssignmentExpression':
+            return `${flatten(ast.left)}${ast.operator}${flatten(ast.right)}`;
+          case 'UpdateExpression':
+            return `${flatten(ast.argument)}${ast.operator}`;
+          case 'IfStatement':
+            return `if (${flatten(ast.test)}) ${flatten(ast.consequent)}`;
+          case 'ThrowStatement':
+            return `throw ${flatten(ast.argument)}`;
+          case 'ObjectPattern':
+            return ast.properties.map(flatten).join(', ');
+          case 'ArrayPattern':
+            return ast.elements.map(flatten).join(', ');
+          case 'DebuggerStatement':
+            return 'debugger;';
+          case 'ConditionalExpression':
+            return `${flatten(ast.test)}?${flatten(ast.consequent)}:${flatten(ast.alternate)}`;
+          case 'Property':
+            if (ast.kind === 'init') {
+              return flatten(ast.key);
+            }
+      }
+      throw new Error(`unhandled ast.type of ${ ast.type }`);
+    }
+    const result = flatten(ast);
+    if (functionDependencies.length > 0) {
+      const flattenedFunctionDependencies = [];
+      for (let i = 0; i < functionDependencies.length; i++) {
+        const functionDependency = functionDependencies[i];
+        if (!flattened[functionDependency]) {
+          flattened[functionDependency] = true;
+        }
+        flattenedFunctionDependencies.push(utils.flattenFunctionToString(functionDependency, settings) + ';\n');
+      }
+      return flattenedFunctionDependencies.join('') + result;
+    }
+    return result;
   }
 };
 

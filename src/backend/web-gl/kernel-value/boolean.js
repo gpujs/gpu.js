@@ -14,7 +14,7 @@ class WebGLKernelValueBoolean extends WebGLKernelValue {
   }
 
   getStringValueHandler() {
-    return `const uploadValue_${this.name} = ${this.name};\n`;
+    return `const uploadValue_${this.name} = ${this.varName};\n`;
   }
 
   updateValue(value) {

@@ -11,6 +11,10 @@ class WebGLKernelValueHTMLImage extends WebGLKernelValue {
     this.uploadValue = value;
   }
 
+  getStringValueHandler() {
+    return `const uploadValue_${this.name} = ${this.varName};\n`;
+  }
+
   getSource() {
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
@@ -20,6 +24,10 @@ class WebGLKernelValueHTMLImage extends WebGLKernelValue {
   }
 
   updateValue(inputImage) {
+    if (inputImage.constructor !== this.initialValueConstructor) {
+      this.onUpdateValueMismatch();
+      return;
+    }
     const { context: gl } = this;
     gl.activeTexture(this.contextHandle);
     gl.bindTexture(gl.TEXTURE_2D, this.texture);

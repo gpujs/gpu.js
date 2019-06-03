@@ -8,7 +8,9 @@ class WebGL2KernelValueHtmlImageArray extends WebGLKernelValue {
     this.dimensions = [value[0].width, value[0].height, value.length];
     this.textureSize = [value[0].width, value[0].height];
   }
-
+  getStringValueHandler() {
+    return `const uploadValue_${this.name} = ${this.varName};\n`;
+  }
   getSource() {
     return utils.linesToString([
       `uniform highp sampler2DArray ${this.id}`,
