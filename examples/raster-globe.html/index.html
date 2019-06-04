@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Raster projection with GPU.js</title>
+  <script src="../../bin/gpu-browser.js"></script>
+</head>
+<body>
+<h1>Raster projection with GPU.js from <a href="https://observablehq.com/d/b70d084526a1a764">https://observablehq.com/d/b70d084526a1a764</a></h1>
+<div id="log-fps"></div>
+</body>
+<script>
+  function frac(n) {
+    return n - Math.floor(n);
+  }
+  function applyRotation(rotatex, rotatey, rotatez, lambda, phi, which) {
+    const degrees = 57.29577951308232;
+
+    lambda = lambda / degrees;
+    phi = phi / degrees;
+
+    var cosphi = Math.cos(phi),
+      x = Math.cos(lambda) * cosphi,
+      y = Math.sin(lambda) * cosphi,
+      z = Math.sin(phi);
+
+    // inverse rotation
+    var deltaLambda = rotatex / degrees; // rotate[0]
+    var deltaPhi = -rotatey / degrees;   // rotate[1]
+    var deltaGamma = -rotatez / degrees; // rotate[2]
+
+    var cosDeltaPhi = Math.cos(deltaPhi),
+      sinDeltaPhi = Math.sin(deltaPhi),
+      cosDeltaGamma = Math.cos(deltaGamma),
+      sinDeltaGamma = Math.sin(deltaGamma);
+
+    var k = z * cosDeltaGamma - y * sinDeltaGamma;
+
+    lambda = Math.atan2(
+      y * cosDeltaGamma + z * sinDeltaGamma,
+      x * cosDeltaPhi + k * sinDeltaPhi
+    ) - deltaLambda;
+    k = k * cosDeltaPhi - x * sinDeltaPhi;
+
+    phi = Math.asin(k);
+
+    lambda *= degrees;
+    phi *= degrees;
+
+    // return [lambda,phi]; // fails so we need to call this function twice
+    // and ask first for lambda, then for phi
+    if (which === 0) return lambda;
+    else return phi;
+  }
+  // the kernel runs for each pixel, with:
+  // - this.thread.x = horizontal position in pixels from the left edge
+  // - this.thread.y = vertical position in pixels from the bottom edge (*opposite of canvas*)
+  const kernel = function(pixels, rotate0, rotate1, rotate2, scale) {
+
+    // azimuthal equal area
+    function radius(rho) {
+      return 2.0 * Math.asin(rho / 2.0);
+    }
+    // orthographic
+    function __radius(rho) {
+      return Math.asin(rho);
+    }
+
+    // equirectangular projection (reads the (lon,lat) color from the base image)
+    function pixelx(lon, srcw) {
+      lon = frac((lon + 180) / 360);
+      return Math.floor(lon * srcw);
+    }
+    function pixely(lat, srch) {
+      lat = frac((lat + 90) / 180);
+      return Math.floor(lat * srch);
+    }
+
+    var x = (this.thread.x / this.constants.w - 1 / 2) / scale,
+      y = ((this.thread.y - this.constants.h / 2) / this.constants.w) / scale;
+
+    // inverse projection
+    const rho = Math.sqrt(x * x + y * y) + 1e-12;
+
+    const c = radius(rho),
+      sinc = Math.sin(c),
+      cosc = Math.cos(c);
+
+    // x, y :  pixel coordinates if rotation was null
+    const lambda = Math.atan2(x * sinc, rho * cosc) * 57.29577951308232;
+    const z = y * sinc / rho;
+    if (Math.abs(z) < 1) {
+      const phi = Math.asin(z) * 57.29577951308232;
+
+      // apply rotation
+      // [lambda, phi] = applyRotation(centerx, centery, centerz, lambda, phi); // TODO
+      const lambdan = applyRotation(rotate0, rotate1, rotate2, lambda, phi, 0);
+      const phin = applyRotation(rotate0, rotate1, rotate2, lambda, phi, 1);
+      //var n = n0(lambda, phi, this.constants.srcw, this.constants.srch);
+      //this.color(pixels[n]/256, pixels[n+1]/256,pixels[n+2]/256,1);
+      const pixel = pixels[pixely(phin, this.constants.srch)][pixelx(lambdan, this.constants.srcw)];
+      this.color(pixel[0], pixel[1], pixel[2], 1);
+    }
+  };
+  const gpu = new GPU();
+  const logFps = document.querySelector('#log-fps');
+  const image = new Image();
+  image.src = './earth-map.jpg';
+  image.onload = () => {
+    const w = 975;
+    const h = 975;
+    const render = gpu
+      .createKernel(kernel, { functions: [applyRotation, frac] })
+      .setConstants({ w, h, srcw: image.width, srch: image.height  })
+      .setOutput([w, h])
+      .setGraphical(true);
+    const canvas = render.canvas;
+    document.body.appendChild(canvas);
+    var lastCalledTime;
+    var fps;
+    function callRender() {
+      let r0 = (-Date.now() / 30) % 360,
+        r1 = 35 * Math.sin((-Date.now() / 1030) % 360),
+        r2 = 0,
+        scale = 0.49;
+      render(image, r0, r1, r2, scale);
+      delta = (Date.now() - lastCalledTime)/1000;
+      lastCalledTime = Date.now();
+      fps = 1/delta;
+      logFps.innerHTML = fps.toFixed(0) + ' FPS';
+      window.requestAnimationFrame(() => {
+        callRender();
+      });
+    }
+    callRender();
+  };
+</script>
+</html>
