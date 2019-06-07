@@ -427,7 +427,7 @@ export class KernelArgument {
   constructor(settings: IKernelArgumentSettings);
   getSource(value: any): string;
   setup(): void;
-  updateValue(value: any)
+  updateValue(value: any): void;
 }
 
 export interface IKernelArgumentSettings {
