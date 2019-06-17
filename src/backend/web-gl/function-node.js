@@ -1,3 +1,4 @@
+const { utils } = require('../../utils');
 const { FunctionNode } = require('../function-node');
 // Closure capture for the ast function, prevent collision with existing AST functions
 // The prefixes to use
@@ -24,12 +25,13 @@ class WebGLFunctionNode extends FunctionNode {
    * @param {Array} retArr - return array string
    * @returns {Array} the append retArr
    */
-  astFunctionExpression(ast, retArr) {
+  astFunction(ast, retArr) {
     // Setup function return type and name
     if (this.isRootKernel) {
       retArr.push('void');
     } else {
       // looking up return type, this is a little expensive, and can be avoided if returnType is set
+      let lastReturn = null;
       if (!this.returnType) {
         const lastReturn = this.findLastReturn();
         if (lastReturn) {
@@ -63,9 +65,12 @@ class WebGLFunctionNode extends FunctionNode {
         if (i > 0) {
           retArr.push(', ');
         }
-        let argumentType = this.getVariableType(argumentName);
+        let argumentType = this.argumentTypes[this.argumentNames.indexOf(argumentName)];
         // The type is too loose ended, here we descide to solidify a type, lets go with float
-        if (!argumentType || argumentType === 'LiteralInteger') {
+        if (!argumentType) {
+          throw this.astErrorOutput(`Unknown argument ${argumentName} type`, ast);
+        }
+        if (argumentType === 'LiteralInteger') {
           this.argumentTypes[i] = argumentType = 'Number';
         }
         const type = typeMap[argumentType];
@@ -696,6 +701,10 @@ class WebGLFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astAssignmentExpression(assNode, retArr) {
+    const declaration = this.getDeclaration(assNode.left);
+    if (declaration && !declaration.assignable) {
+      throw new this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
+    }
     // TODO: casting needs implemented here
     if (assNode.operator === '%=') {
       this.astGeneric(assNode.left, retArr);
@@ -772,8 +781,10 @@ class WebGLFunctionNode extends FunctionNode {
     for (let i = 0; i < declarations.length; i++) {
       const declaration = declarations[i];
       const init = declaration.init;
-      const actualType = this.getType(init);
-      let dependencies = this.getDependencies(init);
+      const info = this.getDeclaration(declaration.id);
+      const valueType = info.valueType;
+      const actualType = this.getType(declaration.init);
+      let dependencies = info.dependencies;
       let type = inForLoopInit ? 'Integer' : actualType;
       if (type === 'LiteralInteger') {
         // We had the choice to go either float or int, choosing float
@@ -785,11 +796,8 @@ class WebGLFunctionNode extends FunctionNode {
       }
       const declarationResult = [];
       if (actualType === 'Integer' && type === 'Integer' && !inForLoopInit) {
-        this.declarations[declaration.id.name] = Object.freeze({
-          type: 'Number',
-          dependencies,
-          isSafe: this.isSafeDependencies(dependencies),
-        });
+        // Since we are assigning to a float, ensure valueType is reset to that
+        info.valueType = 'Number';
         if (i === 0 || lastType === null) {
           declarationResult.push('float ');
         } else if (type !== lastType) {
@@ -803,11 +811,8 @@ class WebGLFunctionNode extends FunctionNode {
         this.astGeneric(init, declarationResult);
         declarationResult.push(')');
       } else {
-        this.declarations[declaration.id.name] = Object.freeze({
-          type,
-          dependencies,
-          isSafe: this.isSafeDependencies(dependencies),
-        });
+        // Since we are assigning to a float, ensure valueType is reset to that
+        info.valueType = type;
         if (i === 0 || lastType === null) {
           declarationResult.push(`${markupType} `);
         } else if (type !== lastType) {
@@ -1101,14 +1106,16 @@ class WebGLFunctionNode extends FunctionNode {
         throw this.astErrorOutput('Unexpected expression', mNode);
     }
 
-    // handle simple types
-    switch (type) {
-      case 'Number':
-      case 'Integer':
-      case 'Float':
-      case 'Boolean':
-        retArr.push(`${ origin }_${ name}`);
-        return retArr;
+    if (mNode.computed === false) {
+      // handle simple types
+      switch (type) {
+        case 'Number':
+        case 'Integer':
+        case 'Float':
+        case 'Boolean':
+          retArr.push(`${origin}_${name}`);
+          return retArr;
+      }
     }
 
     // handle more complex types
@@ -1208,25 +1215,25 @@ class WebGLFunctionNode extends FunctionNode {
    */
   astCallExpression(ast, retArr) {
     if (!ast.callee) {
-      // Failure, unknown expression
-      throw this.astErrorOutput(
-        'Unknown CallExpression',
-        ast
-      );
+      throw this.astErrorOutput('Unknown CallExpression', ast);
     }
 
-    // Get the full function call, unrolled
-    let functionName = this.astMemberExpressionUnroll(ast.callee);
-    const isMathFunction = functionName.indexOf(jsMathPrefix) === 0;
+    let functionName = null;
+    const isMathFunction = this.isAstMathFunction(ast);
 
-    // Its a math operator, remove the prefix
-    if (isMathFunction) {
-      functionName = functionName.slice(jsMathPrefix.length);
+    // Its a math operator or this.something(), remove the prefix
+    if (isMathFunction || (ast.callee.object && ast.callee.object.type === 'ThisExpression')) {
+      functionName = ast.callee.property.name;
+    }
+    // Issue #212, BABEL!
+    else if (ast.callee.type === 'SequenceExpression' && ast.callee.expressions[0].type === 'Literal' && !isNaN(ast.callee.expressions[0].raw)) {
+      functionName = ast.callee.expressions[1].property.name;
+    } else {
+      functionName = ast.callee.name;
     }
 
-    // Its a local function, remove this
-    if (functionName.indexOf(localPrefix) === 0) {
-      functionName = functionName.slice(localPrefix.length);
+    if (!functionName) {
+      throw this.astErrorOutput(`Unhandled function, couldn't find name`, ast);
     }
 
     // if this if grows to more than one, lets use a switch
@@ -1251,7 +1258,7 @@ class WebGLFunctionNode extends FunctionNode {
 
     // track the function was called
     if (this.onFunctionCall) {
-      this.onFunctionCall(this.name, functionName);
+      this.onFunctionCall(this.name, functionName, ast.arguments);
     }
 
     // Call the function
@@ -1338,6 +1345,10 @@ class WebGLFunctionNode extends FunctionNode {
               continue;
             }
             break;
+          case 'ArrayTexture(1)':
+          case 'ArrayTexture(2)':
+          case 'ArrayTexture(3)':
+          case 'ArrayTexture(4)':
           case 'Array':
           case 'Input':
             if (targetType === argumentType) {

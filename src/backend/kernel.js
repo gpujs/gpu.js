@@ -552,7 +552,7 @@ class Kernel {
 
   /**
    * @desc Destroys all memory associated with this kernel
-   * @param {Boolean} removeCanvasReferences remove any associated canvas references?
+   * @param {Boolean} [removeCanvasReferences] remove any associated canvas references
    */
   destroy(removeCanvasReferences) {
     throw new Error(`"destroy" called on ${ this.constructor.name }`);

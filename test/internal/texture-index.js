@@ -124,7 +124,7 @@ function createKernelMapWithArrayConstantsAndTextureArguments(mode) {
     mappedValue1: calcValue1,
     mappedValue2: calcValue2,
   }, function(value1, value2) {
-    return value1[this.thread.x] + value2[this.thread.x] + this.constants.v1[this.thread.x] + this.constants.v2[this.thread.x];
+    return calcValue1(value1[this.thread.x] + value2[this.thread.x]) + calcValue2(this.constants.v1[this.thread.x] + this.constants.v2[this.thread.x]);
   }, { output: [1], constants: { v1: [1], v2: [1] } });
 
   kernel(texture1, texture2);

@@ -30,7 +30,7 @@ const kernelValueMaps = {
   unsigned: {
     dynamic: {
       'Boolean': WebGL2KernelValueBoolean,
-      'Interger': WebGL2KernelValueInteger,
+      'Integer': WebGL2KernelValueInteger,
       'Float': WebGL2KernelValueFloat,
       'Array': WebGL2KernelValueDynamicUnsignedArray,
       'Input': WebGL2KernelValueDynamicUnsignedInput,
@@ -45,7 +45,6 @@ const kernelValueMaps = {
     },
     static: {
       'Boolean': WebGL2KernelValueBoolean,
-      'Interger': WebGL2KernelValueInteger,
       'Float': WebGL2KernelValueFloat,
       'Integer': WebGL2KernelValueInteger,
       'Array': WebGL2KernelValueUnsignedArray,
@@ -63,7 +62,7 @@ const kernelValueMaps = {
   single: {
     dynamic: {
       'Boolean': WebGL2KernelValueBoolean,
-      'Interger': WebGL2KernelValueInteger,
+      'Integer': WebGL2KernelValueInteger,
       'Float': WebGL2KernelValueFloat,
       'Array': WebGL2KernelValueDynamicSingleArray,
       'Input': WebGL2KernelValueDynamicSingleInput,
@@ -78,7 +77,6 @@ const kernelValueMaps = {
     },
     static: {
       'Boolean': WebGL2KernelValueBoolean,
-      'Interger': WebGL2KernelValueInteger,
       'Float': WebGL2KernelValueFloat,
       'Integer': WebGL2KernelValueInteger,
       'Array': WebGL2KernelValueSingleArray,

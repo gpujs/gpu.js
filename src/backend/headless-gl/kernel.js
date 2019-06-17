@@ -34,7 +34,9 @@ class HeadlessGLKernel extends WebGLKernel {
         WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
       };
       features = this.getFeatures();
-    } catch (e) {}
+    } catch (e) {
+      console.warn(e);
+    }
   }
 
   static isContextMatch(context) {

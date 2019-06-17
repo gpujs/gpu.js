@@ -10,7 +10,7 @@ function secondKernelMap(mode) {
     return a + b;
   }
   const kernels = gpu.createKernelMap([add], function(a, b) {
-    return a[this.thread.x] + b[this.thread.x];
+    return add(a[this.thread.x], b[this.thread.x]);
   })
     .setOutput([5]);
 

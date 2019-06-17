@@ -553,7 +553,8 @@ return user_array3;\n\
 
 test('auto detect float, array, array2d, array3d - webgl', () => {
   const node = new WebGLFunctionNode(`function advancedUsed(int, array, array2d, array3d) {
-    let allValues = this.constants.int;
+    let allValues = this.constants.float;
+    allValues += this.constants.int;
     allValues += this.constants.array[this.thread.x];
     allValues += this.constants.array2d[this.thread.x][this.thread.y];
     allValues += this.constants.array3d[this.thread.x][this.thread.y][this.thread.z];
@@ -567,14 +568,15 @@ test('auto detect float, array, array2d, array3d - webgl', () => {
     returnType: 'Number',
     output: [1],
     argumentTypes: ['Integer', 'Array', 'Array2D', 'Array3D'],
-    constants: { int: 1, array: [1], array2d: [[1]], array3d: [[[1]]] },
-    constantTypes: { int: 'Integer', array: 'Array', array2d: 'Array2D', array3d: 'Array3D' },
-    constantBitRatios: { int: 0, array: 4, array2d: 4, array3d: 4 },
+    constants: { float: 1, int: 1, array: [1], array2d: [[1]], array3d: [[[1]]] },
+    constantTypes: { float: 'Float', int: 'Integer', array: 'Array', array2d: 'Array2D', array3d: 'Array3D' },
+    constantBitRatios: { float: 0, int: 0, array: 4, array2d: 4, array3d: 4 },
     lookupFunctionArgumentBitRatio: () => 4,
   });
 
   assert.equal(node.toString(), 'float advancedUsed(int user_int, sampler2D user_array, sampler2D user_array2d, sampler2D user_array3d) {'
-    + '\nfloat user_allValues=float(constants_int);'
+    + '\nfloat user_allValues=constants_float;'
+    + '\nuser_allValues+=float(constants_int);'
     + '\nuser_allValues+=get32(constants_array, constants_arraySize, constants_arrayDim, 0, 0, threadId.x);'
     + '\nuser_allValues+=get32(constants_array2d, constants_array2dSize, constants_array2dDim, 0, threadId.x, threadId.y);'
     + '\nuser_allValues+=get32(constants_array3d, constants_array3dSize, constants_array3dDim, threadId.x, threadId.y, threadId.z);'

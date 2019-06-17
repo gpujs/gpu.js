@@ -27,7 +27,7 @@ const kernelValueMaps = {
   unsigned: {
     dynamic: {
       'Boolean': WebGLKernelValueBoolean,
-      'Interger': WebGLKernelValueInteger,
+      'Integer': WebGLKernelValueInteger,
       'Float': WebGLKernelValueFloat,
       'Array': WebGLKernelValueDynamicUnsignedArray,
       'Input': WebGLKernelValueDynamicUnsignedInput,
@@ -42,7 +42,6 @@ const kernelValueMaps = {
     },
     static: {
       'Boolean': WebGLKernelValueBoolean,
-      'Interger': WebGLKernelValueInteger,
       'Float': WebGLKernelValueFloat,
       'Integer': WebGLKernelValueInteger,
       'Array': WebGLKernelValueUnsignedArray,
@@ -60,7 +59,7 @@ const kernelValueMaps = {
   single: {
     dynamic: {
       'Boolean': WebGLKernelValueBoolean,
-      'Interger': WebGLKernelValueInteger,
+      'Integer': WebGLKernelValueInteger,
       'Float': WebGLKernelValueFloat,
       'Array': WebGLKernelValueDynamicSingleArray,
       'Input': WebGLKernelValueDynamicSingleInput,
@@ -75,7 +74,6 @@ const kernelValueMaps = {
     },
     static: {
       'Boolean': WebGLKernelValueBoolean,
-      'Interger': WebGLKernelValueInteger,
       'Float': WebGLKernelValueFloat,
       'Integer': WebGLKernelValueInteger,
       'Array': WebGLKernelValueSingleArray,

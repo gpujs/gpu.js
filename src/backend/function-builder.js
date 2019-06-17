@@ -69,13 +69,20 @@ class FunctionBuilder {
       return functionBuilder.lookupArgumentSynonym(originFunctionName, functionName, argumentName);
     };
 
-    const onFunctionCall = (functionName, calleeFunctionName) => {
-      functionBuilder.trackFunctionCall(functionName, calleeFunctionName);
+    const onFunctionCall = (functionName, calleeFunctionName, args) => {
+      functionBuilder.trackFunctionCall(functionName, calleeFunctionName, args);
     };
 
-    const onNestedFunction = (fnString, returnType) => {
-      functionBuilder.addFunctionNode(new FunctionNode(fnString, Object.assign({}, nodeOptions, {
-        returnType: returnType,
+    const onNestedFunction = (ast, returnType) => {
+      const argumentNames = [];
+      for (let i = 0; i < ast.params.length; i++) {
+        argumentNames.push(ast.params[i].name);
+      }
+      const nestedFunction = new FunctionNode(null, Object.assign({}, nodeOptions, {
+        returnType: null,
+        ast,
+        name: ast.id.name,
+        argumentNames,
         lookupReturnType,
         lookupArgumentType,
         lookupFunctionArgumentTypes,
@@ -85,7 +92,9 @@ class FunctionBuilder {
         triggerTrackArgumentSynonym,
         lookupArgumentSynonym,
         onFunctionCall
-      })));
+      }));
+      nestedFunction.traceFunctionAST(ast);
+      functionBuilder.addFunctionNode(nestedFunction);
     };
 
     const nodeOptions = Object.assign({
@@ -192,6 +201,7 @@ class FunctionBuilder {
     this.lookupChain = [];
     this.argumentChain = [];
     this.functionNodeDependencies = {};
+    this.functionCalls = {};
 
     if (this.rootNode) {
       this.functionMap['kernel'] = this.rootNode;
@@ -224,6 +234,7 @@ class FunctionBuilder {
    *
    */
   addFunctionNode(functionNode) {
+    if (!functionNode.name) throw new Error('functionNode.name needs set');
     this.functionMap[functionNode.name] = functionNode;
     if (functionNode.isRootKernel) {
       this.rootNode = functionNode;
@@ -551,11 +562,13 @@ class FunctionBuilder {
     return argumentSynonym.argumentName;
   }
 
-  trackFunctionCall(functionName, calleeFunctionName) {
+  trackFunctionCall(functionName, calleeFunctionName, args) {
     if (!this.functionNodeDependencies[functionName]) {
       this.functionNodeDependencies[functionName] = new Set();
+      this.functionCalls[functionName] = [];
     }
     this.functionNodeDependencies[functionName].add(calleeFunctionName);
+    this.functionCalls[functionName].push(args);
   }
 
   getKernelResultType() {
@@ -564,6 +577,16 @@ class FunctionBuilder {
 
   getSubKernelResultType(index) {
     const subKernelNode = this.subKernelNodes[index];
+    let called = false;
+    for (let functionCallIndex = 0; functionCallIndex < this.rootNode.functionCalls.length; functionCallIndex++) {
+      const functionCall = this.rootNode.functionCalls[functionCallIndex];
+      if (functionCall.ast.callee.name === subKernelNode.name) {
+        called = true;
+      }
+    }
+    if (!called) {
+      throw new Error(`SubKernel ${ subKernelNode.name } never called by kernel`);
+    }
     return subKernelNode.returnType || subKernelNode.getType(subKernelNode.getJsAST());
   }
 

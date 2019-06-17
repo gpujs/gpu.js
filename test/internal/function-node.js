@@ -71,7 +71,13 @@ test('hello_inner: call a function inside a function cpu', () => {
   const node = new CPUFunctionNode(
     (function() {
       return inner();
-    }).toString(), { name: 'hello_inner', output: [1] }
+    }).toString(),
+    {
+      name: 'hello_inner',
+      output: [1],
+      lookupReturnType: () => 'Number',
+      lookupFunctionArgumentTypes: () => {}
+    }
   );
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
@@ -153,8 +159,15 @@ test('Math.round implementation: A function with arguments cpu', () => {
   // Math.round node
   const node = new CPUFunctionNode(
     (function(a) {
-      return Math.floor(a + 0.5 );
-    }).toString(), { name: 'foo', output: [1] }
+      return Math.floor(a + 0.5);
+    }).toString(),
+    {
+      name: 'foo',
+      output: [1],
+      argumentTypes: ['Number'],
+      lookupFunctionArgumentTypes: () => {},
+      triggerImplyArgumentType: () => {},
+    }
   );
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
@@ -174,7 +187,7 @@ test('Math.round implementation: A function with arguments webgl', () => {
   // Math.round node
   const node = new WebGLFunctionNode(
     (function(a) {
-      return Math.floor(a + 0.5 );
+      return Math.floor(a + 0.5);
     }).toString(), {
       name: 'foo',
       output: [1],
@@ -199,7 +212,7 @@ test('Math.round implementation: A function with arguments webgl2', () => {
   // Math.round node
   const node = new WebGL2FunctionNode(
     (function(a) {
-      return Math.floor(a + 0.5 );
+      return Math.floor(a + 0.5);
     }).toString(), {
       name: 'foo',
       output: [1],

@@ -9,6 +9,7 @@ function run(value, settings) {
   }`, Object.assign({ output: [1] }, settings));
 
   const ast = node.getJsAST();
+  node.traceFunctionAST(ast);
   assert.equal(ast.type, 'FunctionExpression');
   assert.equal(ast.body.type, 'BlockStatement');
   assert.equal(ast.body.body[0].type, 'ExpressionStatement');
@@ -25,7 +26,9 @@ test('literal 0.1', () => {
 });
 
 test('unknown value from arguments', () => {
-  assert.equal(run('value'), null);
+  assert.throws(() => {
+    run('value');
+  });
 });
 
 test('value Number from arguments', () => {
@@ -133,7 +136,9 @@ test('function call', () => {
 });
 
 test('simple unknown expression', () => {
-  assert.equal(run('value + value2'), null);
+  assert.throws(() => {
+    run('value + value2');
+  });
 });
 
 test('simple expression', () => {

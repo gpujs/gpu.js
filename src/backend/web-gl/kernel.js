@@ -367,9 +367,6 @@ class WebGLKernel extends GLKernel {
     this.argumentSizes = [];
     this.argumentBitRatios = [];
     // TODO: end remove
-    if (!this.precision) {
-      // throw new Error(`precision must be set but is ${ this.precision }`);
-    }
 
     if (args.length < this.argumentNames.length) {
       throw new Error('not enough arguments for kernel');

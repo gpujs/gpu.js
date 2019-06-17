@@ -21,7 +21,7 @@ function nestedVarRedeclareFunction() {
 function nestedVarRedeclareTest(mode) {
   const gpu = new GPU({ mode });
   const f = gpu.createKernel(nestedVarRedeclareFunction, {
-    output: [1]
+    output: [1],
   });
   assert.throws(() => {
     f();
@@ -79,7 +79,7 @@ test('Issue #31 - nestedVarRedeclare : AST handling cpu', () => {
     output: [1]
   });
   assert.throws(() => {
-    builder.getStringFromFunctionNames(['nestedVarRedeclareFunction'])
+    builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
   });
 });
 

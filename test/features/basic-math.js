@@ -9,7 +9,7 @@ function sumABTest(mode) {
     return (a[this.thread.x] + b[this.thread.x]);
   }, {
     output : [6],
-    mode : mode
+    mode : mode,
   });
 
   assert.ok( f !== null, 'function generated test');

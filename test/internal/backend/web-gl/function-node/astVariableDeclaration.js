@@ -9,6 +9,7 @@ function run(value, settings) {
   }`, Object.assign({ output: [1, 2, 3] }, settings));
 
   const ast = node.getJsAST();
+  node.traceFunctionAST(ast);
   assert.equal(ast.type, 'FunctionExpression');
   assert.equal(ast.body.type, 'BlockStatement');
   assert.equal(ast.body.body[0].type, 'VariableDeclaration');

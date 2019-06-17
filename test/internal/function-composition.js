@@ -1,4 +1,5 @@
 const { assert, test, skip, module: describe, only } = require('qunit');
+const sinon = require('sinon');
 const { CPUFunctionNode, FunctionBuilder, GPU, WebGL2FunctionNode, WebGLFunctionNode } = require('../../src');
 
 describe('internal: function composition return values');
@@ -43,11 +44,14 @@ function functionCompositionFunctionNode(FunctionNode) {
     return inner();
   }`, {
     output,
+    onNestedFunction: sinon.spy(),
     lookupReturnType: () => 'Number',
     lookupFunctionArgumentTypes: () => {}
   });
 
-  return node.toString();
+  const string = node.toString();
+  assert.equal(node.onNestedFunction.callCount, 1);
+  return string;
 }
 
 test('CPUFunctionNode', () => {

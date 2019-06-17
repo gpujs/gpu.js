@@ -12,7 +12,7 @@ class CPUFunctionNode extends FunctionNode {
    * @param {Array} retArr - return array string
    * @returns {Array} the append retArr
    */
-  astFunctionExpression(ast, retArr) {
+  astFunction(ast, retArr) {
 
     // Setup function return type and name
     if (!this.isRootKernel) {
@@ -56,6 +56,12 @@ class CPUFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astReturnStatement(ast, retArr) {
+    const type = this.returnType || this.getType(ast.argument);
+
+    if (!this.returnType) {
+      this.returnType = type;
+    }
+
     if (this.isRootKernel) {
       retArr.push(this.leadingReturnStatement);
       this.astGeneric(ast.argument, retArr);
@@ -279,6 +285,10 @@ class CPUFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astAssignmentExpression(assNode, retArr) {
+    const declaration = this.getDeclaration(assNode.left);
+    if (declaration && !declaration.assignable) {
+      throw new this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
+    }
     this.astGeneric(assNode.left, retArr);
     retArr.push(assNode.operator);
     this.astGeneric(assNode.right, retArr);
@@ -319,21 +329,12 @@ class CPUFunctionNode extends FunctionNode {
       this.varWarn();
     }
     retArr.push(`${varDecNode.kind} `);
-    const firstDeclaration = varDecNode.declarations[0];
-    const type = this.getType(firstDeclaration.init);
-    for (let i = 0; i < varDecNode.declarations.length; i++) {
-      this.declarations[varDecNode.declarations[i].id.name] = {
-        type: type === 'LiteralInteger' ? 'Number' : type,
-        dependencies: {
-          constants: [],
-          arguments: []
-        },
-        isUnsafe: false
-      };
+    const { declarations } = varDecNode;
+    for (let i = 0; i < declarations.length; i++) {
       if (i > 0) {
         retArr.push(',');
       }
-      this.astGeneric(varDecNode.declarations[i], retArr);
+      this.astGeneric(declarations[i], retArr);
     }
     if (!this.isState('in-for-loop-init')) {
       retArr.push(';');
@@ -485,14 +486,16 @@ class CPUFunctionNode extends FunctionNode {
         throw this.astErrorOutput('Unexpected expression', mNode);
     }
 
-    // handle simple types
-    switch (type) {
-      case 'Number':
-      case 'Integer':
-      case 'Float':
-      case 'Boolean':
-        retArr.push(`${ origin }_${ name}`);
-        return retArr;
+    if (!mNode.computed) {
+      // handle simple types
+      switch (type) {
+        case 'Number':
+        case 'Integer':
+        case 'Float':
+        case 'Boolean':
+          retArr.push(`${origin}_${name}`);
+          return retArr;
+      }
     }
 
     // handle more complex types
@@ -573,56 +576,50 @@ class CPUFunctionNode extends FunctionNode {
    * @returns  {Array} the append retArr
    */
   astCallExpression(ast, retArr) {
-    if (ast.callee) {
-      // Get the full function call, unrolled
-      let funcName = this.astMemberExpressionUnroll(ast.callee);
+    if (ast.type !== 'CallExpression') {
+      // Failure, unknown expression
+      throw this.astErrorOutput('Unknown CallExpression', ast);
+    }
+    // Get the full function call, unrolled
+    let functionName = this.astMemberExpressionUnroll(ast.callee);
 
-      // Register the function into the called registry
-      if (this.calledFunctions.indexOf(funcName) < 0) {
-        this.calledFunctions.push(funcName);
-      }
-      if (!this.calledFunctionsArguments[funcName]) {
-        this.calledFunctionsArguments[funcName] = [];
-      }
-
-      const functionArguments = [];
-      this.calledFunctionsArguments[funcName].push(functionArguments);
-
-      // Call the function
-      retArr.push(funcName);
-
-      // Open arguments space
-      retArr.push('(');
-
-      // Add the vars
-      for (let i = 0; i < ast.arguments.length; ++i) {
-        const argument = ast.arguments[i];
-        if (i > 0) {
-          retArr.push(', ');
-        }
-        this.astGeneric(argument, retArr);
-        const argumentType = this.getType(argument);
-        if (argumentType) {
-          functionArguments.push({
-            name: argument.name || null,
-            type: argumentType
-          });
-        } else {
-          functionArguments.push(null);
-        }
-      }
-
-      // Close arguments space
-      retArr.push(')');
-
-      return retArr;
+    // Register the function into the called registry
+    if (this.calledFunctions.indexOf(functionName) < 0) {
+      this.calledFunctions.push(functionName);
     }
 
-    // Failure, unknown expression
-    throw this.astErrorOutput(
-      'Unknown CallExpression',
-      ast
-    );
+    const isMathFunction = this.isAstMathFunction(ast);
+
+    // track the function was called
+    if (this.onFunctionCall) {
+      this.onFunctionCall(this.name, functionName, ast.arguments);
+    }
+
+    // Call the function
+    retArr.push(functionName);
+
+    // Open arguments space
+    retArr.push('(');
+    const targetTypes = this.lookupFunctionArgumentTypes(functionName) || [];
+    // Add the arguments
+    for (let i = 0; i < ast.arguments.length; ++i) {
+      const argument = ast.arguments[i];
+
+      // in order to track return type, even though this is CPU
+      let argumentType = this.getType(argument);
+      if (!targetTypes[i]) {
+        this.triggerImplyArgumentType(functionName, i, argumentType, this);
+      }
+
+      if (i > 0) {
+        retArr.push(', ');
+      }
+      this.astGeneric(argument, retArr);
+    }
+    // Close arguments space
+    retArr.push(')');
+
+    return retArr;
   }
 
   /**

@@ -247,3 +247,187 @@ function circlicalLogic(mode) {
 (GPU.isHeadlessGLSupported ? test : skip)('circlical logic webgl', () => {
   circlicalLogic('headlessgl');
 });
+
+function arrayTexture1(mode) {
+  const gpu = new GPU({ mode });
+  function addOne(functionValue) {
+    return functionValue[this.thread.x] + 1;
+  }
+  gpu.addFunction(addOne);
+  const texture1 = gpu.createKernel(function() {
+    return 1;
+  }, {
+    output: [1],
+    precision: 'single',
+    pipeline: true,
+  })();
+  if (mode !== 'cpu') {
+    assert.equal(texture1.type, 'ArrayTexture(1)');
+  }
+
+  const kernel = gpu.createKernel(function(kernelValue) {
+    return addOne(kernelValue);
+  }, { output: [1] });
+  const result = kernel(texture1);
+  assert.equal(result[0], 2);
+  gpu.destroy();
+}
+
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(1) auto', ()=> {
+  arrayTexture1();
+});
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(1) gpu', ()=> {
+  arrayTexture1('gpu');
+});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('ArrayTexture(1) webgl', ()=> {
+  arrayTexture1('webgl');
+});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('ArrayTexture(1) webgl2', ()=> {
+  arrayTexture1('webgl2');
+});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('ArrayTexture(1) headlessgl', ()=> {
+  arrayTexture1('headlessgl');
+});
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(1) cpu', ()=> {
+  arrayTexture1('cpu');
+});
+
+function arrayTexture2(mode) {
+  const gpu = new GPU({ mode });
+  function addOne(functionValue) {
+    const declaredValue = functionValue[this.thread.x];
+    return declaredValue[0] + 1 + declaredValue[1] + 1;
+  }
+  gpu.addFunction(addOne);
+  const texture1 = gpu.createKernel(function() {
+    return [1,2];
+  }, {
+    output: [1],
+    precision: 'single',
+    pipeline: true,
+  })();
+  if (mode !== 'cpu') {
+    assert.equal(texture1.type, 'ArrayTexture(2)');
+  }
+
+  const kernel = gpu.createKernel(function(kernelValue) {
+    return addOne(kernelValue);
+  }, { output: [1] });
+  const result = kernel(texture1);
+  assert.equal(result[0], 5);
+  gpu.destroy();
+}
+
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(2) auto', ()=> {
+  arrayTexture2();
+});
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(2) gpu', ()=> {
+  arrayTexture2('gpu');
+});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('ArrayTexture(2) webgl', ()=> {
+  arrayTexture2('webgl');
+});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('ArrayTexture(2) webgl2', ()=> {
+  arrayTexture2('webgl2');
+});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('ArrayTexture(2) headlessgl', ()=> {
+  arrayTexture2('headlessgl');
+});
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(2) cpu', ()=> {
+  arrayTexture2('cpu');
+});
+
+function arrayTexture3(mode) {
+  const gpu = new GPU({ mode });
+  function addOne(functionValue) {
+    const declaredValue = functionValue[this.thread.x];
+    return declaredValue[0] + 1
+      + declaredValue[1] + 1
+      + declaredValue[2] + 1;
+  }
+  gpu.addFunction(addOne);
+  const texture1 = gpu.createKernel(function() {
+    return [1,2,3];
+  }, {
+    output: [1],
+    precision: 'single',
+    pipeline: true,
+  })();
+  if (mode !== 'cpu') {
+    assert.equal(texture1.type, 'ArrayTexture(3)');
+  }
+
+  const kernel = gpu.createKernel(function(kernelValue) {
+    return addOne(kernelValue);
+  }, { output: [1] });
+  const result = kernel(texture1);
+  assert.equal(result[0], 9);
+  gpu.destroy();
+}
+
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(3) auto', ()=> {
+  arrayTexture3();
+});
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(3) gpu', ()=> {
+  arrayTexture3('gpu');
+});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('ArrayTexture(3) webgl', ()=> {
+  arrayTexture3('webgl');
+});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('ArrayTexture(3) webgl2', ()=> {
+  arrayTexture3('webgl2');
+});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('ArrayTexture(3) headlessgl', ()=> {
+  arrayTexture3('headlessgl');
+});
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(3) cpu', ()=> {
+  arrayTexture3('cpu');
+});
+
+function arrayTexture4(mode) {
+  const gpu = new GPU({ mode });
+  function addOne(functionValue) {
+    const declaredValue = functionValue[this.thread.x];
+    return declaredValue[0] + 1
+     + declaredValue[1] + 1
+     + declaredValue[2] + 1
+     + declaredValue[3] + 1;
+  }
+  gpu.addFunction(addOne);
+  const texture1 = gpu.createKernel(function() {
+    return [1,2,3,4];
+  }, {
+    output: [1],
+    precision: 'single',
+    pipeline: true,
+  })();
+  if (mode !== 'cpu') {
+    assert.equal(texture1.type, 'ArrayTexture(4)');
+  }
+
+  const kernel = gpu.createKernel(function(kernelValue) {
+    return addOne(kernelValue);
+  }, { output: [1] });
+  const result = kernel(texture1);
+  assert.equal(result[0], 14);
+  gpu.destroy();
+}
+
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(4) auto', ()=> {
+  arrayTexture4();
+});
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(4) gpu', ()=> {
+  arrayTexture4('gpu');
+});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('ArrayTexture(4) webgl', ()=> {
+  arrayTexture4('webgl');
+});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('ArrayTexture(4) webgl2', ()=> {
+  arrayTexture4('webgl2');
+});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('ArrayTexture(4) headlessgl', ()=> {
+  arrayTexture4('headlessgl');
+});
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(4) cpu', ()=> {
+  arrayTexture4('cpu');
+});

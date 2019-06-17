@@ -182,6 +182,7 @@ export abstract class Kernel {
   setContext(flag: any): this;
   setFunctions(flag: IFunction[]|KernelFunction[]): this;
   addSubKernel(subKernel: ISubKernel): this;
+  destroy(removeCanvasReferences?: boolean): void;
 }
 
 export type Precision = 'single' | 'unsigned';
@@ -344,6 +345,7 @@ export interface IFunctionSettings {
   plugins?: any[];
 
   useLegacyEncoder?: boolean;
+  ast?: any;
 }
 
 export interface ISubKernel {
@@ -454,4 +456,14 @@ export interface IWebGLKernelArgumentSettings extends IKernelArgumentSettings {
 
 export interface IWebGLKenelConstantSettings extends IWebGLKernelArgumentSettings {
 
+}
+
+export interface IFunctionNodeMemberExpressionDetails {
+  xProperty: object;
+  yProperty: object;
+  zProperty: object;
+  property: string;
+  type: string;
+  origin: 'user' | 'constants';
+  signature: string;
 }
