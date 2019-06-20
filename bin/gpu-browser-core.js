@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.15
- * @date Mon Jun 17 2019 18:00:12 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.16
+ * @date Thu Jun 20 2019 10:09:00 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -2021,7 +2021,13 @@ class FunctionBuilder {
             if (node.argumentTypes.length === 0 && ast.arguments.length > 0) {
               const args = ast.arguments;
               for (let j = 0; j < args.length; j++) {
+                this.lookupChain.push({
+                  name: requestingNode.name,
+                  ast: args[i],
+                  requestingNode
+                });
                 node.argumentTypes[j] = requestingNode.getType(args[j]);
+                this.lookupChain.pop();
               }
               return node.returnType = node.getType(node.getJsAST());
             }
@@ -2109,7 +2115,10 @@ class FunctionBuilder {
 
   assignArgumentType(functionName, i, argumentType, requestingNode) {
     if (!this._isFunction(functionName)) return;
-    this._getFunction(functionName).argumentTypes[i] = argumentType;
+    const fnNode = this._getFunction(functionName);
+    if (!fnNode.argumentTypes[i]) {
+      fnNode.argumentTypes[i] = argumentType;
+    }
   }
 
   trackArgumentSynonym(functionName, argumentName, calleeFunctionName, argumentIndex) {
@@ -2454,7 +2463,11 @@ class FunctionNode {
       if (argumentType) {
         type = argumentType;
       } else if (this.lookupArgumentType) {
-        type = this.argumentTypes[argumentIndex] = this.lookupArgumentType(ast.name, this);
+        const foundArgumentType = this.lookupArgumentType(ast.name, this);
+        if (!this.argumentTypes[argumentIndex]) {
+          this.argumentTypes[argumentIndex] = foundArgumentType;
+        }
+        type = foundArgumentType;
       }
     }
     if (!type && this.strictTypingChecking) {
@@ -2647,6 +2660,7 @@ class FunctionNode {
                 return this.getLookupType(this.getVariableType(ast.object.object.object));
               case 'value[][][][]':
                 return this.getLookupType(this.getVariableType(ast.object.object.object.object));
+              case 'value.thread.value':
               case 'this.thread.value':
                 return 'Integer';
               case 'this.output.value':
@@ -2930,6 +2944,7 @@ class FunctionNode {
       'value[][][]',
       'value[][][][]',
       'value.value',
+      'value.thread.value',
       'this.thread.value',
       'this.output.value',
       'this.constants.value',
@@ -3252,6 +3267,7 @@ class FunctionNode {
     switch (variableSignature) {
       case 'value':
         return null;
+      case 'value.thread.value':
       case 'this.thread.value':
       case 'this.output.value':
         return {
@@ -3514,7 +3530,6 @@ const typeLookupMap = {
 module.exports = {
   FunctionNode
 };
-
 },{"../utils":89,"./function-tracer":10,"acorn":1}],10:[function(require,module,exports){
 class FunctionTracer {
   constructor(ast) {
@@ -6975,6 +6990,7 @@ class WebGLFunctionNode extends FunctionNode {
       zProperty
     } = this.getMemberExpressionDetails(mNode);
     switch (signature) {
+      case 'value.thread.value':
       case 'this.thread.value':
         if (name !== 'x' && name !== 'y' && name !== 'z') {
           throw this.astErrorOutput('Unexpected expression, expected `this.thread.x`, `this.thread.y`, or `this.thread.z`', mNode);
@@ -7140,7 +7156,9 @@ class WebGLFunctionNode extends FunctionNode {
       case 'Array3D':
       case 'Array4D':
       case 'Input':
-
+      case 'Number':
+      case 'Float':
+      case 'Integer':
         if (this.precision === 'single') {
           retArr.push(`getMemoryOptimized32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
           this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
@@ -7849,9 +7867,21 @@ class WebGLKernelValue extends KernelValue {
     if (Array.isArray(value[0])) {
       return this.getTransferArrayType(value[0]);
     }
-    if (value.constructor === Array) {
-      return Float32Array;
+    switch (value.constructor) {
+      case Array:
+      case Int32Array:
+      case Int16Array:
+      case Int8Array:
+        return Float32Array;
+      case Uint8ClampedArray:
+      case Uint8Array:
+      case Uint16Array:
+      case Uint32Array:
+      case Float32Array:
+      case Float64Array:
+        return value.constructor;
     }
+    console.warn('Unfamiliar constructor type.  Will go ahead and use, but likley this may result in a transfer of zeros');
     return value.constructor;
   }
   formatArrayTransfer(value, length, Type) {

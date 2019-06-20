@@ -436,7 +436,13 @@ class FunctionBuilder {
             if (node.argumentTypes.length === 0 && ast.arguments.length > 0) {
               const args = ast.arguments;
               for (let j = 0; j < args.length; j++) {
+                this.lookupChain.push({
+                  name: requestingNode.name,
+                  ast: args[i],
+                  requestingNode
+                });
                 node.argumentTypes[j] = requestingNode.getType(args[j]);
+                this.lookupChain.pop();
               }
               return node.returnType = node.getType(node.getJsAST());
             }
@@ -526,7 +532,10 @@ class FunctionBuilder {
 
   assignArgumentType(functionName, i, argumentType, requestingNode) {
     if (!this._isFunction(functionName)) return;
-    this._getFunction(functionName).argumentTypes[i] = argumentType;
+    const fnNode = this._getFunction(functionName);
+    if (!fnNode.argumentTypes[i]) {
+      fnNode.argumentTypes[i] = argumentType;
+    }
   }
 
   trackArgumentSynonym(functionName, argumentName, calleeFunctionName, argumentIndex) {

@@ -16,17 +16,19 @@ function oneLayerDeepFloat(mode) {
   }, { output: [1] });
   sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
-  const result = kernel(1.5);
-  assert.equal(result[0], 2.5);
+  try {
+    const result = kernel(1.5);
+    assert.equal(result[0], 2.5);
 
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 1);
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'childFunctionArgument1');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 1);
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'childFunctionArgument1');
 
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 1);
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'childFunction');
-
-  FunctionBuilder.prototype.lookupArgumentType.restore();
-  FunctionBuilder.prototype.lookupReturnType.restore();
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 1);
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'childFunction');
+  } finally {
+    FunctionBuilder.prototype.lookupArgumentType.restore();
+    FunctionBuilder.prototype.lookupReturnType.restore();
+  }
 }
 
 (GPU.isWebGLSupported ? test : skip)('one layer deep float WebGL', () => {
@@ -55,19 +57,21 @@ function twoLayerDeepFloat(mode) {
   }, { output: [1] });
   sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
-  const result = kernel(1.5);
-  assert.equal(result[0], 2.5);
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 2);
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'child2FunctionArgument1');
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'child1FunctionArgument1');
+  try {
+    const result = kernel(1.5);
+    assert.equal(result[0], 2.5);
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 2);
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'child2FunctionArgument1');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'child1FunctionArgument1');
 
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 3);
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child1Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child2Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child2Function');
-
-  FunctionBuilder.prototype.lookupArgumentType.restore();
-  FunctionBuilder.prototype.lookupReturnType.restore();
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 3);
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child1Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child2Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child2Function');
+  } finally {
+    FunctionBuilder.prototype.lookupArgumentType.restore();
+    FunctionBuilder.prototype.lookupReturnType.restore();
+  }
 }
 
 (GPU.isWebGLSupported ? test : skip)('two layer deep float WebGL', () => {
@@ -96,21 +100,23 @@ function twoArgumentLayerDeepFloat(mode) {
   }, { output: [1] });
   sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
-  const result = kernel(1.5);
-  assert.equal(kernel.returnType, 'Float');
-  assert.equal(result[0], 3.5);
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 2);
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'child1FunctionArgument1');
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'child2FunctionArgument1');
+  try {
+    const result = kernel(1.5);
+    assert.equal(kernel.returnType, 'Float');
+    assert.equal(result[0], 3.5);
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 2);
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'child1FunctionArgument1');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'child2FunctionArgument1');
 
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 4);
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child1Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child2Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child2Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'child2Function');
-
-  FunctionBuilder.prototype.lookupArgumentType.restore();
-  FunctionBuilder.prototype.lookupReturnType.restore();
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 4);
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child1Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child2Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child2Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'child2Function');
+  } finally {
+    FunctionBuilder.prototype.lookupArgumentType.restore();
+    FunctionBuilder.prototype.lookupReturnType.restore();
+  }
 }
 
 (GPU.isWebGLSupported ? test : skip)('two argument layer deep float WebGL', () => {
@@ -144,22 +150,24 @@ function threeLayerDeepFloat(mode) {
   }, { output: [1] });
   sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
-  const result = kernel(1.5);
-  assert.equal(result[0], 3.5);
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 3);
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'child3FunctionArgument1');
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'child2FunctionArgument1');
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[2][0], 'child1FunctionArgument1');
+  try {
+    const result = kernel(1.5);
+    assert.equal(result[0], 3.5);
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 3);
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'child3FunctionArgument1');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'child2FunctionArgument1');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[2][0], 'child1FunctionArgument1');
 
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 5);
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child1Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child2Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child3Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'child2Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[4][0], 'child3Function');
-
-  FunctionBuilder.prototype.lookupArgumentType.restore();
-  FunctionBuilder.prototype.lookupReturnType.restore();
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 5);
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child1Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child2Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child3Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'child2Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[4][0], 'child3Function');
+  } finally {
+    FunctionBuilder.prototype.lookupArgumentType.restore();
+    FunctionBuilder.prototype.lookupReturnType.restore();
+  }
 }
 
 (GPU.isWebGLSupported ? test : skip)('three layer deep float WebGL', () => {
@@ -192,25 +200,26 @@ function threeArgumentLayerDeepFloat(mode) {
   }, { output: [1] });
   sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
-  const result = kernel(1.5);
-  assert.equal(result[0], 4.5);
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 3);
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'child1FunctionArgument1');
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'child2FunctionArgument1');
-  assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[2][0], 'child3FunctionArgument1');
+  try {
+    const result = kernel(1.5);
+    assert.equal(result[0], 4.5);
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 3);
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'child1FunctionArgument1');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'child2FunctionArgument1');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[2][0], 'child3FunctionArgument1');
 
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 8);
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child1Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child2Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child2Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'child3Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[4][0], 'child2Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[5][0], 'child3Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[6][0], 'child2Function');
-  assert.equal(FunctionBuilder.prototype.lookupReturnType.args[7][0], 'child3Function');
-
-  FunctionBuilder.prototype.lookupArgumentType.restore();
-  FunctionBuilder.prototype.lookupReturnType.restore();
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 7);
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child1Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child2Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child2Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'child3Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[4][0], 'child3Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[5][0], 'child2Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[6][0], 'child3Function');
+  } finally {
+    FunctionBuilder.prototype.lookupArgumentType.restore();
+    FunctionBuilder.prototype.lookupReturnType.restore();
+  }
 }
 
 (GPU.isWebGLSupported ? test : skip)('three argument layer deep float WebGL', () => {
@@ -221,6 +230,61 @@ function threeArgumentLayerDeepFloat(mode) {
 });
 (GPU.isHeadlessGLSupported ? test : skip)('three argument layer deep float HeadlessGL', () => {
   threeArgumentLayerDeepFloat('headlessgl');
+});
+
+function threeArgumentLayerDeepNumberTexture1(mode) {
+  const gpu = new GPU({ mode });
+  const texture = gpu.createKernel(function() {
+    return 1.5;
+  }, { output: [1], pipeline: true, precision: 'single' })();
+  function child1Function(child1FunctionArgument1) {
+    return child1FunctionArgument1 + 1;
+  }
+  function child2Function(child2FunctionArgument1) {
+    return child2FunctionArgument1 + 1;
+  }
+  function child3Function(child3FunctionArgument1) {
+    return child3FunctionArgument1[this.thread.x] + 1;
+  }
+  gpu
+    .addFunction(child1Function)
+    .addFunction(child2Function)
+    .addFunction(child3Function);
+  const kernel = gpu.createKernel(function(kernelArgument1) {
+    return child1Function(child2Function(child3Function(kernelArgument1)));
+  }, { output: [1] });
+  sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
+  sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
+  try {
+    const result = kernel(texture);
+    assert.equal(result[0], 4.5);
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 3);
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'child1FunctionArgument1');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'child2FunctionArgument1');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[2][0], 'child3FunctionArgument1');
+
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 7);
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child1Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child2Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child2Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'child3Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[4][0], 'child3Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[5][0], 'child2Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[6][0], 'child3Function');
+  } finally {
+    FunctionBuilder.prototype.lookupArgumentType.restore();
+    FunctionBuilder.prototype.lookupReturnType.restore();
+  }
+}
+
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('three argument layer deep NumberTexture(1) WebGL', () => {
+  threeArgumentLayerDeepNumberTexture1('webgl');
+});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('three argument layer deep NumberTexture(1) WebGL2', () => {
+  threeArgumentLayerDeepNumberTexture1('webgl2');
+});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('three argument layer deep NumberTexture(1) HeadlessGL', () => {
+  threeArgumentLayerDeepNumberTexture1('headlessgl');
 });
 
 function circlicalLogic(mode) {
@@ -430,4 +494,90 @@ function arrayTexture4(mode) {
 });
 (GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(4) cpu', ()=> {
   arrayTexture4('cpu');
+});
+
+function testTortureTest(mode) {
+  const gpu = new GPU({ mode });
+  function addFloatArray(addFloatArrayArgument1, addFloatArrayArgument2) {
+    return addFloatArrayArgument1 + addFloatArrayArgument2[this.thread.x];
+  }
+  function addArrayFloat(addArrayFloatArgument1, addArrayFloatArgument2) {
+    return addArrayFloatArgument1[this.thread.x] + addArrayFloatArgument2;
+  }
+  function addArrayArray(addArrayArrayArgument1, addArrayArrayArgument2) {
+    return addArrayArrayArgument1[this.thread.x] + addArrayArrayArgument2[this.thread.x];
+  }
+  function addFloatFloat(addFloatFloatArgument1, addFloatFloatArgument2) {
+    return addFloatFloatArgument1 + addFloatFloatArgument2;
+  }
+  gpu
+    .addFunction(addFloatArray)
+    .addFunction(addArrayFloat)
+    .addFunction(addArrayArray)
+    .addFunction(addFloatFloat);
+
+  const texture = gpu.createKernel(function() { return 2; }, { output: [1], precision: 'single' })();
+  sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
+  sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
+
+  try {
+    const kernel = gpu.createKernel(function (v1, v2, v3, v4, v5) {
+      return addFloatFloat(v4, addArrayFloat(v3, addFloatArray(addArrayArray(v1, v5), v2)));
+    }, {output: [1]});
+
+    const result = kernel([1], texture, [3], 4, new Float32Array([5]));
+    assert.equal(result[0], 1 + 2 + 3 + 4 + 5);
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 4);
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.returnValues.length, 4);
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'addFloatFloatArgument1');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.returnValues[0], 'Float');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'addArrayFloatArgument1');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.returnValues[1], 'Array');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[2][0], 'addFloatArrayArgument1');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.returnValues[2], 'Number');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[3][0], 'addArrayArrayArgument1');
+    assert.equal(FunctionBuilder.prototype.lookupArgumentType.returnValues[3], 'Number');
+
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 6);
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues.length, 6);
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'addFloatFloat');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[0], 'Float');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'addArrayFloat');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[1], 'Number');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'addFloatArray');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[2], 'Number');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'addArrayArray');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[3], 'Number');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[4][0], 'addArrayArray');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[4], 'Number');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[5][0], 'addArrayArray');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[5], 'Number');
+  } finally {
+    FunctionBuilder.prototype.lookupArgumentType.restore();
+    FunctionBuilder.prototype.lookupReturnType.restore();
+  }
+}
+
+(GPU.isSinglePrecisionSupported ? test : skip)('torture test auto', () => {
+  testTortureTest();
+});
+
+(GPU.isSinglePrecisionSupported ? test : skip)('torture test gpu', () => {
+  testTortureTest('gpu');
+});
+
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('torture test webgl', () => {
+  testTortureTest('webgl');
+});
+
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('torture test webgl2', () => {
+  testTortureTest('webgl2');
+});
+
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('torture test headlessgl', () => {
+  testTortureTest('headlessgl');
+});
+
+test('torture test cpu', () => {
+  testTortureTest('cpu');
 });

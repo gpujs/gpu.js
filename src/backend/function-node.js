@@ -303,7 +303,12 @@ class FunctionNode {
       if (argumentType) {
         type = argumentType;
       } else if (this.lookupArgumentType) {
-        type = this.argumentTypes[argumentIndex] = this.lookupArgumentType(ast.name, this);
+        const foundArgumentType = this.lookupArgumentType(ast.name, this);
+        // argumentType may be filled in by now
+        if (!this.argumentTypes[argumentIndex]) {
+          this.argumentTypes[argumentIndex] = foundArgumentType;
+        }
+        type = foundArgumentType;
       }
     }
     if (!type && this.strictTypingChecking) {
@@ -514,6 +519,7 @@ class FunctionNode {
                 return this.getLookupType(this.getVariableType(ast.object.object.object));
               case 'value[][][][]':
                 return this.getLookupType(this.getVariableType(ast.object.object.object.object));
+              case 'value.thread.value':
               case 'this.thread.value':
                 return 'Integer';
               case 'this.output.value':
@@ -804,6 +810,7 @@ class FunctionNode {
       'value[][][]',
       'value[][][][]',
       'value.value',
+      'value.thread.value',
       'this.thread.value',
       'this.output.value',
       'this.constants.value',
@@ -1210,6 +1217,7 @@ class FunctionNode {
     switch (variableSignature) {
       case 'value':
         return null;
+      case 'value.thread.value':
       case 'this.thread.value':
       case 'this.output.value':
         return {

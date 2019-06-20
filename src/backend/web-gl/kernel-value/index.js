@@ -35,9 +35,21 @@ class WebGLKernelValue extends KernelValue {
     if (Array.isArray(value[0])) {
       return this.getTransferArrayType(value[0]);
     }
-    if (value.constructor === Array) {
-      return Float32Array;
+    switch (value.constructor) {
+      case Array:
+      case Int32Array:
+      case Int16Array:
+      case Int8Array:
+        return Float32Array;
+      case Uint8ClampedArray:
+      case Uint8Array:
+      case Uint16Array:
+      case Uint32Array:
+      case Float32Array:
+      case Float64Array:
+        return value.constructor;
     }
+    console.warn('Unfamiliar constructor type.  Will go ahead and use, but likley this may result in a transfer of zeros');
     return value.constructor;
   }
   /**

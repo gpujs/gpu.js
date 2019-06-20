@@ -997,6 +997,7 @@ class WebGLFunctionNode extends FunctionNode {
       zProperty
     } = this.getMemberExpressionDetails(mNode);
     switch (signature) {
+      case 'value.thread.value':
       case 'this.thread.value':
         if (name !== 'x' && name !== 'y' && name !== 'z') {
           throw this.astErrorOutput('Unexpected expression, expected `this.thread.x`, `this.thread.y`, or `this.thread.z`', mNode);
@@ -1166,7 +1167,9 @@ class WebGLFunctionNode extends FunctionNode {
       case 'Array3D':
       case 'Array4D':
       case 'Input':
-
+      case 'Number':
+      case 'Float':
+      case 'Integer':
         if (this.precision === 'single') {
           // bitRatio is always 4 here, javascript doesn't yet have 8 or 16 bit support
           // TODO: make 8 or 16 bit work anyway!

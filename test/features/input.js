@@ -278,3 +278,37 @@ test("inputZYXVariables gpu", () => {
 test("inputZYXVariables cpu", () => {
   inputZYXVariables('cpu');
 });
+
+function inputInt32ArrayX(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function(a) {
+    return a[this.thread.x];
+  })
+    .setPrecision('unsigned')
+    .setOutput([9]);
+
+  const a = new Int32Array([1,2,3,4,5,6,7,8,9]);
+  const result = kernel(input(a, [3, 3]));
+  assert.deepEqual(result, new Float32Array([1,2,3,4,5,6,7,8,9]));
+  gpu.destroy();
+}
+
+test("inputInt32ArrayX auto", () => {
+  inputInt32ArrayX();
+});
+
+test("inputInt32ArrayX gpu", () => {
+  inputInt32ArrayX('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)("inputInt32ArrayX webgl", () => {
+  inputInt32ArrayX('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)("inputInt32ArrayX webgl2", () => {
+  inputInt32ArrayX('webgl2');
+});
+
+test("inputInt32ArrayX cpu", () => {
+  inputInt32ArrayX('cpu');
+});
