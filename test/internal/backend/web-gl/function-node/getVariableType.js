@@ -19,7 +19,8 @@ test('Native function > detects same native argument type float, and no cast', (
     lookupFunctionArgumentTypes: (functionName) => {
       if (functionName === 'nativeFunction') return argumentTypes;
       throw new Error('unknown function');
-    }
+    },
+    needsArgumentType: () => false
   });
 
   assert.equal(node.toString(), 'float kernel(float user_value) {'
@@ -43,7 +44,8 @@ test('Native function > detects same native argument type int, and no cast', () 
     lookupFunctionArgumentTypes: (functionName) => {
       if (functionName === 'nativeFunction') return argumentTypes;
       throw new Error('unknown function');
-    }
+    },
+    needsArgumentType: () => false
   });
 
   assert.equal(node.toString(), 'float kernel(int user_value) {'
@@ -67,7 +69,8 @@ test('Native function > detects different native argument type int from literal,
     lookupFunctionArgumentTypes: (functionName) => {
       if (functionName === 'nativeFunction') return argumentTypes;
       throw new Error('unknown function');
-    }
+    },
+    needsArgumentType: () => false
   });
 
   assert.equal(node.toString(), 'float kernel(float user_value) {'
@@ -91,7 +94,8 @@ test('Native function > detects different native argument type float from litera
     lookupFunctionArgumentTypes: (functionName) => {
       if (functionName === 'nativeFunction') return argumentTypes;
       throw new Error('unknown function');
-    }
+    },
+    needsArgumentType: () => false
   });
 
   assert.equal(node.toString(), 'float kernel(float user_value) {'
@@ -115,7 +119,8 @@ test('Native function > detects different native argument type int, and cast to 
     lookupFunctionArgumentTypes: (functionName) => {
       if (functionName === 'nativeFunction') return argumentTypes;
       throw new Error('unknown function');
-    }
+    },
+    needsArgumentType: () => false
   });
 
   assert.equal(node.toString(), 'float kernel(float user_value) {'
@@ -139,7 +144,8 @@ test('Native function > detects different native argument type float, and cast t
     lookupFunctionArgumentTypes: (functionName) => {
       if (functionName === 'nativeFunction') return argumentTypes;
       throw new Error('unknown function');
-    }
+    },
+    needsArgumentType: () => false
   });
 
   assert.equal(node.toString(), 'float kernel(int user_value) {'

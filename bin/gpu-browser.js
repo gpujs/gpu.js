@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.16
- * @date Thu Jun 20 2019 10:09:00 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.17
+ * @date Mon Jun 24 2019 21:10:10 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -6441,12 +6441,16 @@ class FunctionBuilder {
       dynamicOutput,
     } = kernel;
 
-    const lookupReturnType = (functionName, ast, requestingNode) => {
-      return functionBuilder.lookupReturnType(functionName, ast, requestingNode);
+    const needsArgumentType = (functionName, index) => {
+      return functionBuilder.needsArgumentType(functionName, index);
     };
 
-    const lookupArgumentType = (argumentName, requestingNode) => {
-      return functionBuilder.lookupArgumentType(argumentName, requestingNode);
+    const assignArgumentType = (functionName, index, type) => {
+      functionBuilder.assignArgumentType(functionName, index, type);
+    };
+
+    const lookupReturnType = (functionName, ast, requestingNode) => {
+      return functionBuilder.lookupReturnType(functionName, ast, requestingNode);
     };
 
     const lookupFunctionArgumentTypes = (functionName) => {
@@ -6488,10 +6492,11 @@ class FunctionBuilder {
         name: ast.id.name,
         argumentNames,
         lookupReturnType,
-        lookupArgumentType,
         lookupFunctionArgumentTypes,
         lookupFunctionArgumentName,
         lookupFunctionArgumentBitRatio,
+        needsArgumentType,
+        assignArgumentType,
         triggerImplyArgumentType,
         triggerTrackArgumentSynonym,
         lookupArgumentSynonym,
@@ -6505,10 +6510,11 @@ class FunctionBuilder {
       isRootKernel: false,
       onNestedFunction,
       lookupReturnType,
-      lookupArgumentType,
       lookupFunctionArgumentTypes,
       lookupFunctionArgumentName,
       lookupFunctionArgumentBitRatio,
+      needsArgumentType,
+      assignArgumentType,
       triggerImplyArgumentType,
       triggerTrackArgumentSynonym,
       lookupArgumentSynonym,
@@ -6555,10 +6561,11 @@ class FunctionBuilder {
         optimizeFloatMemory,
         precision,
         lookupReturnType,
-        lookupArgumentType,
         lookupFunctionArgumentTypes,
         lookupFunctionArgumentName,
         lookupFunctionArgumentBitRatio,
+        needsArgumentType,
+        assignArgumentType,
         triggerImplyArgumentType,
         triggerTrackArgumentSynonym,
         lookupArgumentSynonym,
@@ -6738,37 +6745,6 @@ class FunctionBuilder {
     return this.getStringFromFunctionNames(Object.keys(this.functionMap));
   }
 
-  lookupArgumentType(argumentName, requestingNode) {
-    const index = requestingNode.argumentNames.indexOf(argumentName);
-    if (index === -1) {
-      return null;
-    }
-    if (this.lookupChain.length === 0) {
-      return null;
-    }
-    let link = this.lookupChain[this.lookupChain.length - 1 - this.argumentChain.length];
-    if (!link) {
-      return null;
-    }
-    const {
-      ast,
-      requestingNode: parentRequestingNode
-    } = link;
-    if (ast.arguments.length === 0) {
-      return null;
-    }
-    const usedArgument = ast.arguments[index];
-    if (!usedArgument) {
-      return null;
-    }
-
-    this.argumentChain.push(argumentName);
-
-    const type = parentRequestingNode.getType(usedArgument);
-    this.argumentChain.pop();
-    return type;
-  }
-
   lookupReturnType(functionName, ast, requestingNode) {
     if (ast.type !== 'CallExpression') {
       throw new Error(`expected ast type of "CallExpression", but is ${ ast.type }`);
@@ -6811,6 +6787,7 @@ class FunctionBuilder {
     }
 
     return null;
+
   }
 
   _getFunction(functionName) {
@@ -6875,6 +6852,12 @@ class FunctionBuilder {
       }
       return this.lookupFunctionArgumentBitRatio(argumentSynonym.functionName, argumentSynonym.argumentName);
     }
+  }
+
+  needsArgumentType(functionName, i) {
+    if (!this._isFunction(functionName)) return false;
+    const fnNode = this._getFunction(functionName);
+    return !fnNode.argumentTypes[i];
   }
 
   assignArgumentType(functionName, i, argumentType, requestingNode) {
@@ -6992,8 +6975,9 @@ class FunctionNode {
     this.contexts = null;
     this.functionCalls = null;
     this.states = [];
+    this.needsArgumentType = null;
+    this.assignArgumentType = null;
     this.lookupReturnType = null;
-    this.lookupArgumentType = null;
     this.lookupFunctionArgumentTypes = null;
     this.lookupFunctionArgumentBitRatio = null;
     this.triggerImplyArgumentType = null;
@@ -7226,12 +7210,6 @@ class FunctionNode {
       const argumentType = this.argumentTypes[argumentIndex];
       if (argumentType) {
         type = argumentType;
-      } else if (this.lookupArgumentType) {
-        const foundArgumentType = this.lookupArgumentType(ast.name, this);
-        if (!this.argumentTypes[argumentIndex]) {
-          this.argumentTypes[argumentIndex] = foundArgumentType;
-        }
-        type = foundArgumentType;
       }
     }
     if (!type && this.strictTypingChecking) {
@@ -7325,12 +7303,16 @@ class FunctionNode {
           }
           if (!ast.callee || !ast.callee.name) {
             if (ast.callee.type === 'SequenceExpression' && ast.callee.expressions[ast.callee.expressions.length - 1].property.name) {
-              return this.lookupReturnType(ast.callee.expressions[ast.callee.expressions.length - 1].property.name, ast, this);
+              const functionName = ast.callee.expressions[ast.callee.expressions.length - 1].property.name;
+              this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
+              return this.lookupReturnType(functionName, ast, this);
             }
             throw this.astErrorOutput('Unknown call expression', ast);
           }
           if (ast.callee && ast.callee.name) {
-            return this.lookupReturnType(ast.callee.name, ast, this);
+            const functionName = ast.callee.name;
+            this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
+            return this.lookupReturnType(functionName, ast, this);
           }
           throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
         case 'BinaryExpression':
@@ -7478,6 +7460,17 @@ class FunctionNode {
           return this.getType(ast.consequent);
         default:
           throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
+    }
+  }
+
+  inferArgumentTypesIfNeeded(functionName, args) {
+    for (let i = 0; i < args.length; i++) {
+      if (!this.needsArgumentType(functionName, i)) continue;
+      const type = this.getType(args[i]);
+      if (!type) {
+        throw this.astErrorOutput(`Unable to infer argument ${i}`, args[i]);
+      }
+      this.assignArgumentType(functionName, i, type);
     }
   }
 
@@ -12098,7 +12091,7 @@ class WebGLFunctionNode extends FunctionNode {
             }
             break;
         }
-        throw this.astErrorOutput(`Unhandled argument combination of ${ argumentType } and ${ targetType }`, ast);
+        throw this.astErrorOutput(`Unhandled argument combination of ${ argumentType } and ${ targetType } for argument named "${ argument.name }"`, ast);
       }
     }
     retArr.push(')');
@@ -16782,11 +16775,15 @@ const utils = {
     const start = ast.loc.start;
     const end = ast.loc.end;
     const result = [];
-    result.push(lines[start.line - 1].slice(start.column));
-    for (let i = start.line; i < end.line - 1; i++) {
-      result.push(lines[i]);
+    if (start.line === end.line) {
+      result.push(lines[start.line - 1].substring(start.column, end.column));
+    } else {
+      result.push(lines[start.line - 1].slice(start.column));
+      for (let i = start.line; i < end.line; i++) {
+        result.push(lines[i]);
+      }
+      result.push(lines[end.line - 1].slice(0, end.column));
     }
-    result.push(lines[end.line - 1].slice(0, end.column));
     return result.join('\n');
   },
 

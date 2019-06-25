@@ -36,8 +36,9 @@ class FunctionNode {
     this.contexts = null;
     this.functionCalls = null;
     this.states = [];
+    this.needsArgumentType = null;
+    this.assignArgumentType = null;
     this.lookupReturnType = null;
-    this.lookupArgumentType = null;
     this.lookupFunctionArgumentTypes = null;
     this.lookupFunctionArgumentBitRatio = null;
     this.triggerImplyArgumentType = null;
@@ -302,13 +303,6 @@ class FunctionNode {
       const argumentType = this.argumentTypes[argumentIndex];
       if (argumentType) {
         type = argumentType;
-      } else if (this.lookupArgumentType) {
-        const foundArgumentType = this.lookupArgumentType(ast.name, this);
-        // argumentType may be filled in by now
-        if (!this.argumentTypes[argumentIndex]) {
-          this.argumentTypes[argumentIndex] = foundArgumentType;
-        }
-        type = foundArgumentType;
       }
     }
     if (!type && this.strictTypingChecking) {
@@ -419,12 +413,16 @@ class FunctionNode {
           }
           if (!ast.callee || !ast.callee.name) {
             if (ast.callee.type === 'SequenceExpression' && ast.callee.expressions[ast.callee.expressions.length - 1].property.name) {
-              return this.lookupReturnType(ast.callee.expressions[ast.callee.expressions.length - 1].property.name, ast, this);
+              const functionName = ast.callee.expressions[ast.callee.expressions.length - 1].property.name;
+              this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
+              return this.lookupReturnType(functionName, ast, this);
             }
             throw this.astErrorOutput('Unknown call expression', ast);
           }
           if (ast.callee && ast.callee.name) {
-            return this.lookupReturnType(ast.callee.name, ast, this);
+            const functionName = ast.callee.name;
+            this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
+            return this.lookupReturnType(functionName, ast, this);
           }
           throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
         case 'BinaryExpression':
@@ -573,6 +571,18 @@ class FunctionNode {
           return this.getType(ast.consequent);
         default:
           throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
+    }
+  }
+
+  inferArgumentTypesIfNeeded(functionName, args) {
+    // ensure arguments are filled in, so when we lookup return type, we already can infer it
+    for (let i = 0; i < args.length; i++) {
+      if (!this.needsArgumentType(functionName, i)) continue;
+      const type = this.getType(args[i]);
+      if (!type) {
+        throw this.astErrorOutput(`Unable to infer argument ${i}`, args[i]);
+      }
+      this.assignArgumentType(functionName, i, type);
     }
   }
 

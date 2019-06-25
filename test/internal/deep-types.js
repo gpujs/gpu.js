@@ -14,19 +14,13 @@ function oneLayerDeepFloat(mode) {
   const kernel = gpu.createKernel(function(kernelArgument1) {
     return childFunction(kernelArgument1);
   }, { output: [1] });
-  sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
   try {
     const result = kernel(1.5);
     assert.equal(result[0], 2.5);
-
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 1);
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'childFunctionArgument1');
-
     assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 1);
     assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'childFunction');
   } finally {
-    FunctionBuilder.prototype.lookupArgumentType.restore();
     FunctionBuilder.prototype.lookupReturnType.restore();
   }
 }
@@ -55,21 +49,15 @@ function twoLayerDeepFloat(mode) {
   const kernel = gpu.createKernel(function(kernelArgument1) {
     return child1Function(kernelArgument1);
   }, { output: [1] });
-  sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
   try {
     const result = kernel(1.5);
     assert.equal(result[0], 2.5);
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 2);
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'child2FunctionArgument1');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'child1FunctionArgument1');
-
     assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 3);
     assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child1Function');
     assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child2Function');
     assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child2Function');
   } finally {
-    FunctionBuilder.prototype.lookupArgumentType.restore();
     FunctionBuilder.prototype.lookupReturnType.restore();
   }
 }
@@ -98,23 +86,16 @@ function twoArgumentLayerDeepFloat(mode) {
   const kernel = gpu.createKernel(function(kernelArgument1) {
     return child1Function(child2Function(kernelArgument1));
   }, { output: [1] });
-  sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
   try {
     const result = kernel(1.5);
     assert.equal(kernel.returnType, 'Float');
     assert.equal(result[0], 3.5);
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 2);
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'child1FunctionArgument1');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'child2FunctionArgument1');
-
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 4);
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child1Function');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child2Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 3);
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child2Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child1Function');
     assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child2Function');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'child2Function');
   } finally {
-    FunctionBuilder.prototype.lookupArgumentType.restore();
     FunctionBuilder.prototype.lookupReturnType.restore();
   }
 }
@@ -148,16 +129,10 @@ function threeLayerDeepFloat(mode) {
   const kernel = gpu.createKernel(function(kernelArgument1) {
     return child1Function(kernelArgument1);
   }, { output: [1] });
-  sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
   try {
     const result = kernel(1.5);
     assert.equal(result[0], 3.5);
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 3);
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'child3FunctionArgument1');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'child2FunctionArgument1');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[2][0], 'child1FunctionArgument1');
-
     assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 5);
     assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child1Function');
     assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child2Function');
@@ -165,7 +140,6 @@ function threeLayerDeepFloat(mode) {
     assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'child2Function');
     assert.equal(FunctionBuilder.prototype.lookupReturnType.args[4][0], 'child3Function');
   } finally {
-    FunctionBuilder.prototype.lookupArgumentType.restore();
     FunctionBuilder.prototype.lookupReturnType.restore();
   }
 }
@@ -198,26 +172,17 @@ function threeArgumentLayerDeepFloat(mode) {
   const kernel = gpu.createKernel(function(kernelArgument1) {
     return child1Function(child2Function(child3Function(kernelArgument1)));
   }, { output: [1] });
-  sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
   try {
     const result = kernel(1.5);
     assert.equal(result[0], 4.5);
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 3);
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'child1FunctionArgument1');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'child2FunctionArgument1');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[2][0], 'child3FunctionArgument1');
-
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 7);
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child1Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 5);
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child3Function');
     assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child2Function');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child2Function');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'child3Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child1Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'child2Function');
     assert.equal(FunctionBuilder.prototype.lookupReturnType.args[4][0], 'child3Function');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[5][0], 'child2Function');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[6][0], 'child3Function');
   } finally {
-    FunctionBuilder.prototype.lookupArgumentType.restore();
     FunctionBuilder.prototype.lookupReturnType.restore();
   }
 }
@@ -253,26 +218,17 @@ function threeArgumentLayerDeepNumberTexture1(mode) {
   const kernel = gpu.createKernel(function(kernelArgument1) {
     return child1Function(child2Function(child3Function(kernelArgument1)));
   }, { output: [1] });
-  sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
   try {
     const result = kernel(texture);
     assert.equal(result[0], 4.5);
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 3);
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'child1FunctionArgument1');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'child2FunctionArgument1');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[2][0], 'child3FunctionArgument1');
-
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 7);
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child1Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 5);
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'child3Function');
     assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'child2Function');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child2Function');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'child3Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'child1Function');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'child2Function');
     assert.equal(FunctionBuilder.prototype.lookupReturnType.args[4][0], 'child3Function');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[5][0], 'child2Function');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[6][0], 'child3Function');
   } finally {
-    FunctionBuilder.prototype.lookupArgumentType.restore();
     FunctionBuilder.prototype.lookupReturnType.restore();
   }
 }
@@ -517,7 +473,7 @@ function testTortureTest(mode) {
     .addFunction(addFloatFloat);
 
   const texture = gpu.createKernel(function() { return 2; }, { output: [1], precision: 'single' })();
-  sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
+  // sinon.spy(FunctionBuilder.prototype, 'lookupArgumentType');
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
 
   try {
@@ -527,33 +483,23 @@ function testTortureTest(mode) {
 
     const result = kernel([1], texture, [3], 4, new Float32Array([5]));
     assert.equal(result[0], 1 + 2 + 3 + 4 + 5);
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.callCount, 4);
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.returnValues.length, 4);
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[0][0], 'addFloatFloatArgument1');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.returnValues[0], 'Float');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[1][0], 'addArrayFloatArgument1');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.returnValues[1], 'Array');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[2][0], 'addFloatArrayArgument1');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.returnValues[2], 'Number');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.args[3][0], 'addArrayArrayArgument1');
-    assert.equal(FunctionBuilder.prototype.lookupArgumentType.returnValues[3], 'Number');
-
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 6);
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues.length, 6);
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'addFloatFloat');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[0], 'Float');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'addArrayFloat');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.callCount, 7);
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues.length, 7);
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[0][0], 'addArrayArray');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[0], 'Number');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[1][0], 'addFloatArray');
     assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[1], 'Number');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'addFloatArray');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[2][0], 'addArrayFloat');
     assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[2], 'Number');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'addArrayArray');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[3], 'Number');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[4][0], 'addArrayArray');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[3][0], 'addFloatFloat');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[3], 'Float');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[4][0], 'addArrayFloat');
     assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[4], 'Number');
-    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[5][0], 'addArrayArray');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[5][0], 'addFloatArray');
     assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[5], 'Number');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.args[6][0], 'addArrayArray');
+    assert.equal(FunctionBuilder.prototype.lookupReturnType.returnValues[6], 'Number');
   } finally {
-    FunctionBuilder.prototype.lookupArgumentType.restore();
     FunctionBuilder.prototype.lookupReturnType.restore();
   }
 }
@@ -580,4 +526,42 @@ function testTortureTest(mode) {
 
 test('torture test cpu', () => {
   testTortureTest('cpu');
+});
+
+function testKernelMap(mode) {
+  const gpu = new GPU({ mode });
+  function calc1(v1, v2) {
+    return v2[this.thread.x] - v1;
+  }
+  function calc2(v1, v2) {
+    return v1 * v2;
+  }
+  const kernelMap = gpu.createKernelMap({
+    calc1,
+    calc2,
+  }, function (outputs, targets) {
+    const output = outputs[this.thread.x];
+    return calc2(calc1(output, targets), output);
+  }, { output: [1], pipeline: true });
+  try {
+    const result = kernelMap([1], [3]);
+    assert.equal(result.calc1.toArray()[0], 2);
+    assert.equal(result.calc2.toArray()[0], 2);
+    assert.equal(result.result.toArray()[0], 2);
+  } finally {
+    gpu.destroy();
+  }
+}
+
+
+(GPU.isWebGLSupported ? test : skip)('kernel map webgl', () => {
+  testKernelMap('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('kernel map webgl2', () => {
+  testKernelMap('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('kernel map headlessgl', () => {
+  testKernelMap('headlessgl');
 });

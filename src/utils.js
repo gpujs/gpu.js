@@ -312,11 +312,15 @@ const utils = {
     const start = ast.loc.start;
     const end = ast.loc.end;
     const result = [];
-    result.push(lines[start.line - 1].slice(start.column));
-    for (let i = start.line; i < end.line - 1; i++) {
-      result.push(lines[i]);
+    if (start.line === end.line) {
+      result.push(lines[start.line - 1].substring(start.column, end.column));
+    } else {
+      result.push(lines[start.line - 1].slice(start.column));
+      for (let i = start.line; i < end.line; i++) {
+        result.push(lines[i]);
+      }
+      result.push(lines[end.line - 1].slice(0, end.column));
     }
-    result.push(lines[end.line - 1].slice(0, end.column));
     return result.join('\n');
   },
 

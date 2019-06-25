@@ -37,12 +37,16 @@ class FunctionBuilder {
       dynamicOutput,
     } = kernel;
 
-    const lookupReturnType = (functionName, ast, requestingNode) => {
-      return functionBuilder.lookupReturnType(functionName, ast, requestingNode);
+    const needsArgumentType = (functionName, index) => {
+      return functionBuilder.needsArgumentType(functionName, index);
     };
 
-    const lookupArgumentType = (argumentName, requestingNode) => {
-      return functionBuilder.lookupArgumentType(argumentName, requestingNode);
+    const assignArgumentType = (functionName, index, type) => {
+      functionBuilder.assignArgumentType(functionName, index, type);
+    };
+
+    const lookupReturnType = (functionName, ast, requestingNode) => {
+      return functionBuilder.lookupReturnType(functionName, ast, requestingNode);
     };
 
     const lookupFunctionArgumentTypes = (functionName) => {
@@ -84,10 +88,11 @@ class FunctionBuilder {
         name: ast.id.name,
         argumentNames,
         lookupReturnType,
-        lookupArgumentType,
         lookupFunctionArgumentTypes,
         lookupFunctionArgumentName,
         lookupFunctionArgumentBitRatio,
+        needsArgumentType,
+        assignArgumentType,
         triggerImplyArgumentType,
         triggerTrackArgumentSynonym,
         lookupArgumentSynonym,
@@ -101,10 +106,11 @@ class FunctionBuilder {
       isRootKernel: false,
       onNestedFunction,
       lookupReturnType,
-      lookupArgumentType,
       lookupFunctionArgumentTypes,
       lookupFunctionArgumentName,
       lookupFunctionArgumentBitRatio,
+      needsArgumentType,
+      assignArgumentType,
       triggerImplyArgumentType,
       triggerTrackArgumentSynonym,
       lookupArgumentSynonym,
@@ -151,10 +157,11 @@ class FunctionBuilder {
         optimizeFloatMemory,
         precision,
         lookupReturnType,
-        lookupArgumentType,
         lookupFunctionArgumentTypes,
         lookupFunctionArgumentName,
         lookupFunctionArgumentBitRatio,
+        needsArgumentType,
+        assignArgumentType,
         triggerImplyArgumentType,
         triggerTrackArgumentSynonym,
         lookupArgumentSynonym,
@@ -386,37 +393,6 @@ class FunctionBuilder {
     return this.getStringFromFunctionNames(Object.keys(this.functionMap));
   }
 
-  lookupArgumentType(argumentName, requestingNode) {
-    const index = requestingNode.argumentNames.indexOf(argumentName);
-    if (index === -1) {
-      return null;
-    }
-    if (this.lookupChain.length === 0) {
-      return null;
-    }
-    let link = this.lookupChain[this.lookupChain.length - 1 - this.argumentChain.length];
-    if (!link) {
-      return null;
-    }
-    const {
-      ast,
-      requestingNode: parentRequestingNode
-    } = link;
-    if (ast.arguments.length === 0) {
-      return null;
-    }
-    const usedArgument = ast.arguments[index];
-    if (!usedArgument) {
-      return null;
-    }
-
-    this.argumentChain.push(argumentName);
-
-    const type = parentRequestingNode.getType(usedArgument);
-    this.argumentChain.pop();
-    return type;
-  }
-
   lookupReturnType(functionName, ast, requestingNode) {
     if (ast.type !== 'CallExpression') {
       throw new Error(`expected ast type of "CallExpression", but is ${ ast.type }`);
@@ -464,6 +440,59 @@ class FunctionBuilder {
 
     // function not found, maybe native?
     return null;
+
+    /**
+     * first iteration
+     * kernel.outputs = Array
+     * kernel.targets = Array
+     * kernel.returns = null
+     * kernel.calls.calcErrorOutput = [kernel.output, kernel.targets]
+     * kernel.calls.calcDeltas = [calcErrorOutput.returns, kernel.output]
+     * calcErrorOutput.output = null
+     * calcErrorOutput.targets = null
+     * calcErrorOutput.returns = null
+     * calcDeltasSigmoid.error = null
+     * calcDeltasSigmoid.output = Number
+     * calcDeltasSigmoid.returns = null
+     *
+     * resolvable are:
+     * calcErrorOutput.output
+     * calcErrorOutput.targets
+     * calcErrorOutput.returns
+     *
+     * second iteration
+     * kernel.outputs = Array
+     * kernel.targets = Array
+     * kernel.returns = null
+     * kernel.calls.calcErrorOutput = [kernel.output, kernel.targets]
+     * kernel.calls.calcDeltas = [calcErrorOutput.returns, kernel.output]
+     * calcErrorOutput.output = Number
+     * calcErrorOutput.targets = Array
+     * calcErrorOutput.returns = Number
+     * calcDeltasSigmoid.error = null
+     * calcDeltasSigmoid.output = Number
+     * calcDeltasSigmoid.returns = null
+     *
+     * resolvable are:
+     * calcDeltasSigmoid.error
+     * calcDeltasSigmoid.returns
+     * kernel.returns
+     *
+     * third iteration
+     * kernel.outputs = Array
+     * kernel.targets = Array
+     * kernel.returns = Number
+     * kernel.calls.calcErrorOutput = [kernel.output, kernel.targets]
+     * kernel.calls.calcDeltas = [calcErrorOutput.returns, kernel.output]
+     * calcErrorOutput.output = Number
+     * calcErrorOutput.targets = Array
+     * calcErrorOutput.returns = Number
+     * calcDeltasSigmoid.error = Number
+     * calcDeltasSigmoid.output = Number
+     * calcDeltasSigmoid.returns = Number
+     *
+     *
+     */
   }
 
   _getFunction(functionName) {
@@ -528,6 +557,12 @@ class FunctionBuilder {
       }
       return this.lookupFunctionArgumentBitRatio(argumentSynonym.functionName, argumentSynonym.argumentName);
     }
+  }
+
+  needsArgumentType(functionName, i) {
+    if (!this._isFunction(functionName)) return false;
+    const fnNode = this._getFunction(functionName);
+    return !fnNode.argumentTypes[i];
   }
 
   assignArgumentType(functionName, i, argumentType, requestingNode) {

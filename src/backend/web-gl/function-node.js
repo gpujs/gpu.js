@@ -1361,7 +1361,7 @@ class WebGLFunctionNode extends FunctionNode {
             }
             break;
         }
-        throw this.astErrorOutput(`Unhandled argument combination of ${ argumentType } and ${ targetType }`, ast);
+        throw this.astErrorOutput(`Unhandled argument combination of ${ argumentType } and ${ targetType } for argument named "${ argument.name }"`, ast);
       }
     }
     // Close arguments space

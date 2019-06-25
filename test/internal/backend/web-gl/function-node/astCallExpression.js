@@ -81,6 +81,7 @@ test('handles argument of type Input', () => {
       }
       throw new Error(`unhandled triggerTrackArgumentSynonym`);
     },
+    assignArgumentType: () => {}
   });
   assert.equal(node.toString(), 'float kernel(sampler2D user_v) {'
     + '\nreturn childFunction(user_v);'
