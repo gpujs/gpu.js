@@ -5,12 +5,4 @@ for (const p in lib) {
   if (p === 'GPU') continue; //prevent recursive reference
   GPU[p] = lib[p];
 }
-if (typeof module !== 'undefined') {
-  module.exports = GPU;
-}
-if (typeof window !== 'undefined') {
-  window.GPU = GPU;
-}
-if (typeof self !== 'undefined') {
-  self.GPU = GPU;
-}
+module.exports = GPU;
