@@ -1,3 +1,4 @@
+language: node_js
 install:
 - yarn install
 script:
