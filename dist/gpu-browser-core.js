@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.17
- * @date Wed Jun 26 2019 14:12:44 GMT-0700 (Pacific Daylight Time)
+ * @version 2.0.0-rc.18
+ * @date Thu Jun 27 2019 13:44:26 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -11160,7 +11160,6 @@ for (const p in lib) {
   GPU[p] = lib[p];
 }
 module.exports = GPU;
-
 },{"./index":84}],83:[function(require,module,exports){
 const gpuMock = require('gpu-mock.js');
 const { utils } = require('./utils');

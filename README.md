@@ -21,7 +21,7 @@ Matrix multiplication (perform matrix multiplication on 2 matrices of size 512 x
 
 ## Browser
 ```html
-<script src="bin/gpu-browser.min.js"></script>
+<script src="dist/gpu-browser.min.js"></script>
 <script>
     // GPU is a constructor and namespace for browser
     const gpu = new GPU();
@@ -133,7 +133,7 @@ const gpu = new GPU();
 Download the latest version of GPU.js and include the files in your HTML page using the following tags:
 
 ```html
-<script src="bin/gpu-browser.min.js"></script>
+<script src="dist/gpu-browser.min.js"></script>
 <script>
     const gpu = new GPU();
 </script>
@@ -782,9 +782,9 @@ const newKernelFromJson = gpu.createKernel(json);
 console.log(newKernelFromJSON()); // [Float32Array([1,2,3,4])];
 ```
 
-NOTE: There is lighter weight, pre-built, version of GPU.js to assist with serializing from to and from json in the bin folder of the project, which include:
-* [bin/gpu-browser-core.js](bin/gpu-browser-core.js)
-* [bin/gpu-browser-core.min.js](bin/gpu-browser-core.min.js)
+NOTE: There is lighter weight, pre-built, version of GPU.js to assist with serializing from to and from json in the dist folder of the project, which include:
+* [dist/gpu-browser-core.js](dist/gpu-browser-core.js)
+* [dist/gpu-browser-core.min.js](dist/gpu-browser-core.min.js)
 
 ### using `kernel.toString(args...)`
 GPU.js supports seeing exactly how it is interacting with the graphics processor by means of the `kernel.toString(...)` method.
