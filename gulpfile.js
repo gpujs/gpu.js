@@ -12,17 +12,17 @@ const stripComments = require('gulp-strip-comments');
 const merge = require('merge-stream');
 
 gulp.task('build', function() {
-  const gpu = browserify('./src/browser.js')
+  const gpu = browserify('./src/browser.js', {standalone: 'GPU'})
     .ignore('gl')
     .bundle()
     .pipe(source('gpu-browser.js'))
     .pipe(buffer())
     .pipe(stripComments())
     .pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
-    .pipe(gulp.dest('bin'))
+    .pipe(gulp.dest('dist'))
     .on('error', console.error);
 
-  const gpuCore = browserify('./src/browser.js')
+  const gpuCore = browserify('./src/browser.js', {standalone: 'GPU'})
     .ignore('gl')
     .ignore('acorn')
     .bundle()
@@ -30,7 +30,7 @@ gulp.task('build', function() {
     .pipe(buffer())
     .pipe(stripComments())
     .pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
-    .pipe(gulp.dest('bin'))
+    .pipe(gulp.dest('dist'))
     .on('error', console.error);
 
   return merge(gpu, gpuCore);
@@ -38,16 +38,16 @@ gulp.task('build', function() {
 
 /// Minify the build script, after building it
 gulp.task('minify', function() {
-  const gpu = gulp.src('bin/gpu-browser.js')
+  const gpu = gulp.src('dist/gpu-browser.js')
     .pipe(rename('gpu-browser.min.js'))
     .pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
-    .pipe(gulp.dest('bin'))
+    .pipe(gulp.dest('dist'))
     .on('error', console.error);
 
-  const gpuCore = gulp.src('bin/gpu-browser-core.js')
+  const gpuCore = gulp.src('dist/gpu-browser-core.js')
     .pipe(rename('gpu-browser-core.min.js'))
     .pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
-    .pipe(gulp.dest('bin'))
+    .pipe(gulp.dest('dist'))
     .on('error', console.error);
 
   return merge(gpu, gpuCore);

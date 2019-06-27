@@ -7,8 +7,10 @@
   },
   "main": "./src/index.js",
   "files": [
-    "src"
+    "src", "dist"
   ],
+  "unpkg": "./dist/gpu-browser.min.js",
+  "jsdelivr": "./dist/gpu-browser.min.js",
   "directories": {
     "doc": "doc",
     "test": "test"
