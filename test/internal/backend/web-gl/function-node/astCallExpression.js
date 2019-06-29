@@ -60,6 +60,7 @@ test('handles argument of type Input', () => {
     + '\n}', {
     output: [1],
     argumentTypes: ['Input'],
+    needsArgumentType: () => false,
     lookupReturnType: (functionName) => {
       lookupReturnTypeCalls++;
       if (functionName === 'childFunction') {
