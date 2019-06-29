@@ -180,6 +180,7 @@ class Kernel {
     this.followingReturnStatement = null;
     this.optimizeFloatMemory = null;
     this.strictIntegers = false;
+    this.fixIntegerDivisionAccuracy = null;
   }
 
   mergeSettings(settings) {

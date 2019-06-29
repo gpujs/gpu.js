@@ -141,7 +141,7 @@ class FunctionTracer {
         this.scan(ast.elements);
         break;
       case 'ConditionalExpression':
-        this.scan(ast.consequent);
+        this.scan(ast.test);
         this.scan(ast.alternate);
         this.scan(ast.consequent);
         break;

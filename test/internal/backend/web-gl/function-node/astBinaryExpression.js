@@ -288,6 +288,38 @@ test('divide literal float & Input', () => {
     + '\n}');
 });
 
+test('divide this.thread.x by this.output.x and multiple, integer, integer, and float with this.fixIntegerDivisionAccuracy = false', () => {
+  const node = new WebGLFunctionNode(`function kernel() {
+    return (this.thread.x / this.output.x) * 4;
+  }`, {
+    returnType: 'Number',
+    output: [1],
+    argumentTypes: [],
+    lookupFunctionArgumentBitRatio: () => 4,
+    fixIntegerDivisionAccuracy: false,
+  });
+
+  assert.equal(node.toString(), 'float kernel() {'
+    + '\nreturn float(((threadId.x/1)*4));'
+    + '\n}');
+});
+
+test('divide this.thread.x by this.output.x and multiple, integer, integer, and float with this.fixIntegerDivisionAccuracy = true', () => {
+  const node = new WebGLFunctionNode(`function kernel() {
+    return (this.thread.x / this.output.x) * 4;
+  }`, {
+    returnType: 'Number',
+    output: [1],
+    argumentTypes: [],
+    lookupFunctionArgumentBitRatio: () => 4,
+    fixIntegerDivisionAccuracy: true,
+  });
+
+  assert.equal(node.toString(), 'float kernel() {'
+    + '\nreturn (div_with_int_check(float(threadId.x), 1.0)*4.0);'
+    + '\n}');
+});
+
 test('multiply Input and Input', () => {
   const node = new WebGLFunctionNode('function kernel(v1, v2) {'
     + '\n return v1[this.thread.x] * v2[this.thread.x];'

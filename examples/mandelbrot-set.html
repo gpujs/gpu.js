@@ -1,180 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
-  <script  id = "shader-vs" type = "x-shader/x-vertex">
-    precision highp float;
-    attribute vec2 a_Position;
-    void main() {
-      gl_Position = vec4(a_Position.x, a_Position.y, 0.0, 1.0);
-    }
-  </script>
-  <script>
-    function f(x, c) {
-      return [
-        x[0] * x[0] + c[0],
-        x[1] * x[1] + c[1]
-      ];
-    }
-    function palette(t, a, b, c, d) {
-      return [
-        a[0] + b[0] * Math.cos(6.28318 * (c[0] * t[0] + d[0])),
-        a[1] + b[1] * Math.cos(6.28318 * (c[1] * t[1] + d[1])),
-        a[2] + b[2] * Math.cos(6.28318 * (c[2] * t[2] + d[2]))
-      ];
-    }
-    function vectorLength(vector) {
-      return Math.sqrt(vector[0]*vector[0]+vector[1]*vector[1]);
-    }
-    function kernel(zoom, zoomSize, maxIterations) {
-      let x = [0, 0];
-      let escaped = false;
-      let iterations = 0;
-      for (let i = 0; i < maxIterations; i++) {
-        iterations = i;
-        x = f(x, c);
-        if (vectorLength(x) > 2) {
-          escaped = true;
-          break;
-        }
-      }
-      escaped
-        ? this.color(palette(iterations / maxIterations, [0, 0, 0], [.59, .55, .75], [.1, .2, .3], [.75, .75, .75]), 1)
-        : this.color(.85, .99, 1, 1);
-    }
-  </script>
-  <script id = "shader-fs" type = "x-shader/x-fragment">
-    precision highp float;
-
-    uniform vec2 u_zoomCenter;
-    uniform float u_zoomSize;
-    uniform int u_maxIterations;
-
-    vec2 f(vec2 x, vec2 c) {
-      return mat2(x,-x.y,x.x)*x + c;
-    }
-    vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d) {
-      return a + b*cos( 6.28318*(c*t+d) );
-    }
-    void main() {
-      vec2 uv = gl_FragCoord.xy / vec2(800.0, 800.0);
-      vec2 c = u_zoomCenter + (uv * 4.0 - vec2(2.0)) * (u_zoomSize / 4.0);
-      vec2 x = vec2(0.0);
-      bool escaped = false;
-      int iterations = 0;
-      for (int i = 0; i < 10000; i++) {
-        if (i > u_maxIterations) break;
-        iterations = i;
-        x = f(x, c);
-        if (length(x) > 2.0) {
-          escaped = true;
-          break;
-        }
-      }
-      gl_FragColor = escaped ? vec4(palette(float(iterations)/float(u_maxIterations), vec3(0.0),vec3(0.59,0.55,0.75),vec3(0.1, 0.2, 0.3),vec3(0.75)),1.0) : vec4(vec3(0.85, 0.99, 1.0), 1.0);
-    }
-  </script>
-  <script type="text/javascript">
-    function main() {
-      /* locate the canvas element */
-      var canvas_element = document.getElementById("maincanvas");
-
-      /* obtain a webgl rendering context */
-      var gl = canvas_element.getContext("webgl");
-
-      /* get shader code from the <script> tags */
-      var vertex_shader_src = document.getElementById("shader-vs").text;
-      var fragment_shader_src = document.getElementById("shader-fs").text;
-
-      /* compile and link shaders */
-      var vertex_shader = gl.createShader(gl.VERTEX_SHADER);
-      var fragment_shader = gl.createShader(gl.FRAGMENT_SHADER);
-      gl.shaderSource(vertex_shader, vertex_shader_src);
-      gl.shaderSource(fragment_shader, fragment_shader_src);
-      gl.compileShader(vertex_shader);
-      console.log(gl.getShaderInfoLog(vertex_shader));
-      gl.compileShader(fragment_shader);
-      console.log(gl.getShaderInfoLog(fragment_shader));
-      var mandelbrot_program = gl.createProgram();
-      gl.attachShader(mandelbrot_program, vertex_shader);
-      gl.attachShader(mandelbrot_program, fragment_shader);
-      gl.linkProgram(mandelbrot_program);
-      gl.useProgram(mandelbrot_program);
-
-      /* create a vertex buffer for a full-screen triangle */
-      var vertex_buf = gl.createBuffer(gl.ARRAY_BUFFER);
-      gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buf);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-
-      /* set up the position attribute */
-      var position_attrib_location = gl.getAttribLocation(mandelbrot_program, "a_Position");
-      gl.enableVertexAttribArray(position_attrib_location);
-      gl.vertexAttribPointer(position_attrib_location, 2, gl.FLOAT, false, 0, 0);
-
-      /* find uniform locations */
-      var zoom_center_uniform = gl.getUniformLocation(mandelbrot_program, "u_zoomCenter");
-      var zoom_size_uniform = gl.getUniformLocation(mandelbrot_program, "u_zoomSize");
-      var max_iterations_uniform = gl.getUniformLocation(mandelbrot_program, "u_maxIterations");
-
-      /* these hold the state of zoom operation */
-      var zoom_center = [0.0, 0.0];
-      var target_zoom_center = [0.0, 0.0];
-      var zoom_size = 4.0;
-      var stop_zooming = true;
-      var zoom_factor = 1.0;
-      var max_iterations = 500;
-
-      var renderFrame = function () {
-        /* bind inputs & render frame */
-        gl.uniform2f(zoom_center_uniform, zoom_center[0], zoom_center[1]);
-        gl.uniform1f(zoom_size_uniform, zoom_size);
-        gl.uniform1i(max_iterations_uniform, max_iterations);
-        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.drawArrays(gl.TRIANGLES, 0, 3);
-
-        /* handle zoom */
-        if (!stop_zooming) { /* zooming in progress */
-          /* gradually decrease number of iterations, reducing detail, to speed up rendering */
-          max_iterations -= 10;
-          if (max_iterations < 50) max_iterations = 50;
-
-          /* zoom in */
-          zoom_size *= zoom_factor;
-
-          /* move zoom center towards target */
-          zoom_center[0] += 0.1 * (target_zoom_center[0] - zoom_center[0]);
-          zoom_center[1] += 0.1 * ( target_zoom_center[1] - zoom_center[1]);
-
-          window.requestAnimationFrame(renderFrame);
-        } else if (max_iterations < 500) {
-          /* once zoom operation is complete, bounce back to normal detail level */
-          max_iterations += 10;
-          window.requestAnimationFrame(renderFrame);
-        }
-      }
-
-      /* input handling */
-      canvas_element.onmousedown = function(e) {
-        var x_part = e.offsetX / canvas_element.width;
-        var y_part = e.offsetY / canvas_element.height;
-        target_zoom_center[0] = zoom_center[0] - zoom_size / 2.0 + x_part * zoom_size;
-        target_zoom_center[1] = zoom_center[1] + zoom_size / 2.0 - y_part * zoom_size;
-        stop_zooming = false;
-        zoom_factor = e.buttons & 1 ? 0.99 : 1.01;
-        renderFrame();
-        return true;
-      }
-      canvas_element.oncontextmenu = function(e){return false;}
-      canvas_element.onmouseup = function(e) { stop_zooming = true; }
-
-      /* display initial frame */
-      renderFrame();
-    }
-  </script>
-</head>
-<body onload="main()">
-<center>
-  <p>Left click to zoom in, right click to zoom out.</p>
-  <canvas id="maincanvas" width = "800" height = "800" style="border:1px solid black">canvas not supported</canvas>
-</center>
+<script src="../dist/gpu-browser.js"></script>
+<style>
+  body {
+    text-align: center;
+    margin: 0;
+  }
+  canvas {
+    padding: 0;
+    margin: 0;
+  }
+  div {
+    position: absolute;
+    color: white;
+    margin-left: auto;
+    margin-right: auto;
+    left: 0;
+    right: 0;
+  }
+</style>
+<body>
+  <div>Left click to zoom in, right click to zoom out.</div>
 </body>
+<script>
+  function f(x, c) {
+    return [
+      (x[0] * x[0]) - (x[1] * x[1]) + c[0],
+      (x[0] * x[1]) + (x[0] * x[1]) + c[1],
+    ];
+  }
+
+  function palette(t, a, b, c, d) {
+    return [
+      a[0] + b[0] * Math.cos(6.28318 * (c[0] * t + d[0])),
+      a[1] + b[1] * Math.cos(6.28318 * (c[1] * t + d[1])),
+      a[2] + b[2] * Math.cos(6.28318 * (c[2] * t + d[2]))
+    ];
+  }
+
+  function vectorLength(vector) {
+    return Math.sqrt(vector[0]*vector[0]+vector[1]*vector[1]);
+  }
+
+  const gpu = new GPU();
+
+  gpu
+    .addFunction(f)
+    .addFunction(palette)
+    .addFunction(vectorLength);
+
+  const calculateMandelbrotSet = gpu.createKernel(function(zoomCenter, zoomSize, maxIterations) {
+    let x = [0, 0];
+    let c = [
+      zoomCenter[0] + ((this.thread.x / this.output.x) * 4 - 2) * (zoomSize / 4),
+      zoomCenter[1] + ((this.thread.y / this.output.y) * 4 - 2) * (zoomSize / 4)
+    ];
+    let escaped = false;
+    let iterations = 0;
+    for (let i = 0; i < maxIterations; i++) {
+      iterations = i;
+      x = f(x, c);
+      if (vectorLength(x) > 2) {
+        escaped = true;
+        break;
+      }
+    }
+    if (escaped) {
+      const pixel = palette(iterations / maxIterations, [0, 0, 0], [.59, .55, .75], [.1, .2, .3], [.75, .75, .75]);
+      this.color(pixel[0], pixel[1], pixel[2], 1);
+    } else {
+      this.color(.85, .99, 1, 1);
+    }
+  })
+    .setGraphical(true)
+    .setDebug(true)
+    .setOutput([800, 800]);
+
+  let targetZoomCenter = [0, 0],
+    zoomFactor = 1,
+    zoomCenter = [0, 0],
+    zoomSize = 4,
+    maxIterations = 500,
+    stopZooming = true;
+
+  calculateMandelbrotSet(zoomCenter, zoomSize, maxIterations);
+  const canvas = calculateMandelbrotSet.canvas;
+  document.body.appendChild(canvas);
+
+  canvas.onmousedown = (e) => {
+    let x = e.offsetX / canvas.width,
+      y = e.offsetY / canvas.height;
+    targetZoomCenter[0] = zoomCenter[0] - zoomSize / 2.0 + x * zoomSize;
+    targetZoomCenter[1] = zoomCenter[1] + zoomSize / 2.0 - y * zoomSize;
+    stopZooming = false;
+    zoomFactor = e.buttons & 1 ? 0.99 : 1.01;
+    render();
+    return true;
+  };
+  canvas.oncontextmenu = () => { return false; };
+  canvas.onmouseup = () => { stopZooming = true; };
+
+  function render() {
+    calculateMandelbrotSet(zoomCenter, zoomSize, maxIterations);
+    if (!stopZooming) {
+      maxIterations -= 10;
+      if (maxIterations < 50) {
+        maxIterations = 50;
+      }
+
+      zoomSize *= zoomFactor;
+
+      zoomCenter[0] += 0.1 * (targetZoomCenter[0] - zoomCenter[0]);
+      zoomCenter[1] += 0.1 * ( targetZoomCenter[1] - zoomCenter[1]);
+
+      window.requestAnimationFrame(render);
+    } else if (maxIterations < 500) {
+      maxIterations += 10;
+      window.requestAnimationFrame(render);
+    }
+  }
+  window.requestAnimationFrame(render);
+</script>
 </html>

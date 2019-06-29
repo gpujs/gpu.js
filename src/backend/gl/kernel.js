@@ -295,7 +295,6 @@ class GLKernel extends Kernel {
     this.renderOutput = null;
     this.renderRawOutput = null;
     this.texSize = null;
-    this.fixIntegerDivisionAccuracy = null;
     this.translatedSource = null;
     this.renderStrategy = null;
     this.compiledFragmentShader = null;

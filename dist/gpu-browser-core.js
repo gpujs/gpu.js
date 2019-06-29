@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0-rc.18
- * @date Thu Jun 27 2019 13:44:26 GMT-0400 (Eastern Daylight Time)
+ * @date Sat Jun 29 2019 10:06:59 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -2235,6 +2235,7 @@ class FunctionNode {
     this.followingReturnStatement = null;
     this.dynamicOutput = null;
     this.strictTypingChecking = false;
+    this.fixIntegerDivisionAccuracy = null;
 
     if (settings) {
       for (const p in settings) {
@@ -2554,17 +2555,22 @@ class FunctionNode {
         case 'BinaryExpression':
           switch (ast.operator) {
             case '%':
-              return 'Number';
-            case '>':
-            case '<':
-              return 'Boolean';
-            case '&':
-            case '|':
-            case '^':
-            case '<<':
-            case '>>':
-            case '>>>':
-              return 'Integer';
+            case '/':
+              if (this.fixIntegerDivisionAccuracy) {
+                return 'Number';
+              } else {
+                break;
+              }
+              case '>':
+              case '<':
+                return 'Boolean';
+              case '&':
+              case '|':
+              case '^':
+              case '<<':
+              case '>>':
+              case '>>>':
+                return 'Integer';
           }
           const type = this.getType(ast.left);
           return typeLookupMap[type] || type;
@@ -3663,7 +3669,7 @@ class FunctionTracer {
         this.scan(ast.elements);
         break;
       case 'ConditionalExpression':
-        this.scan(ast.consequent);
+        this.scan(ast.test);
         this.scan(ast.alternate);
         this.scan(ast.consequent);
         break;
@@ -4222,7 +4228,6 @@ class GLKernel extends Kernel {
     this.renderOutput = null;
     this.renderRawOutput = null;
     this.texSize = null;
-    this.fixIntegerDivisionAccuracy = null;
     this.translatedSource = null;
     this.renderStrategy = null;
     this.compiledFragmentShader = null;
@@ -5459,6 +5464,7 @@ class Kernel {
     this.followingReturnStatement = null;
     this.optimizeFloatMemory = null;
     this.strictIntegers = false;
+    this.fixIntegerDivisionAccuracy = null;
   }
 
   mergeSettings(settings) {
@@ -6130,7 +6136,6 @@ const localPrefix = 'this.';
 class WebGLFunctionNode extends FunctionNode {
   constructor(source, settings) {
     super(source, settings);
-    this.fixIntegerDivisionAccuracy = null;
     if (settings && settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
       this.fixIntegerDivisionAccuracy = settings.fixIntegerDivisionAccuracy;
     }

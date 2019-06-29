@@ -60,6 +60,7 @@ class FunctionNode {
     this.followingReturnStatement = null;
     this.dynamicOutput = null;
     this.strictTypingChecking = false;
+    this.fixIntegerDivisionAccuracy = null;
 
     if (settings) {
       for (const p in settings) {
@@ -429,17 +430,22 @@ class FunctionNode {
           // modulos is Number
           switch (ast.operator) {
             case '%':
-              return 'Number';
-            case '>':
-            case '<':
-              return 'Boolean';
-            case '&':
-            case '|':
-            case '^':
-            case '<<':
-            case '>>':
-            case '>>>':
-              return 'Integer';
+            case '/':
+              if (this.fixIntegerDivisionAccuracy) {
+                return 'Number';
+              } else {
+                break;
+              }
+              case '>':
+              case '<':
+                return 'Boolean';
+              case '&':
+              case '|':
+              case '^':
+              case '<<':
+              case '>>':
+              case '>>>':
+                return 'Integer';
           }
           const type = this.getType(ast.left);
           return typeLookupMap[type] || type;

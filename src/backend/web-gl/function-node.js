@@ -13,7 +13,6 @@ const localPrefix = 'this.';
 class WebGLFunctionNode extends FunctionNode {
   constructor(source, settings) {
     super(source, settings);
-    this.fixIntegerDivisionAccuracy = null;
     if (settings && settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
       this.fixIntegerDivisionAccuracy = settings.fixIntegerDivisionAccuracy;
     }
