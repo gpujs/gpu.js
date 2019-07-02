@@ -3,6 +3,7 @@ __HEADER__;
 precision highp float;
 precision highp int;
 precision highp sampler2D;
+precision highp sampler2DArray;
 
 const int LOOP_MAX = __LOOP_MAX__;
 

@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.18
- * @date Sat Jun 29 2019 10:06:59 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.19
+ * @date Tue Jul 02 2019 12:17:44 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -1223,19 +1223,19 @@ class CPUKernel extends Kernel {
     return [];
   }
 
-  validateSettings() {
+  validateSettings(args) {
     if (!this.output || this.output.length === 0) {
-      if (arguments.length !== 1) {
-        throw 'Auto dimensions only supported for kernels with only one input';
+      if (args.length !== 1) {
+        throw new Error('Auto output only supported for kernels with only one input');
       }
 
-      const argType = utils.getVariableType(arguments[0], this.strictIntegers);
+      const argType = utils.getVariableType(args[0], this.strictIntegers);
       if (argType === 'Array') {
         this.output = utils.getDimensions(argType);
       } else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
-        this.output = arguments[0].output;
+        this.output = args[0].output;
       } else {
-        throw 'Auto dimensions not supported for input type: ' + argType;
+        throw new Error('Auto output not supported for input type: ' + argType);
       }
     }
 
@@ -1270,7 +1270,7 @@ class CPUKernel extends Kernel {
   build() {
     this.setupConstants();
     this.setupArguments(arguments);
-    this.validateSettings();
+    this.validateSettings(arguments);
     this.translateSource();
 
     if (this.graphical) {
@@ -8462,7 +8462,7 @@ class WebGLKernel extends GLKernel {
     };
   }
 
-  validateSettings() {
+  validateSettings(args) {
     if (!this.validate) {
       this.texSize = utils.getKernelTextureSize({
         optimizeFloatMemory: this.optimizeFloatMemory,
@@ -8493,15 +8493,15 @@ class WebGLKernel extends GLKernel {
     this.checkOutput();
 
     if (!this.output || this.output.length === 0) {
-      if (arguments.length !== 1) {
+      if (args.length !== 1) {
         throw new Error('Auto output only supported for kernels with only one input');
       }
 
-      const argType = utils.getVariableType(arguments[0], this.strictIntegers);
+      const argType = utils.getVariableType(args[0], this.strictIntegers);
       if (argType === 'Array') {
         this.output = utils.getDimensions(argType);
       } else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
-        this.output = arguments[0].output;
+        this.output = args[0].output;
       } else {
         throw new Error('Auto output not supported for input type: ' + argType);
       }
@@ -8683,7 +8683,7 @@ class WebGLKernel extends GLKernel {
 
   build() {
     this.initExtensions();
-    this.validateSettings();
+    this.validateSettings(arguments);
     this.setupConstants(arguments);
     if (this.fallbackRequested) return;
     this.setupArguments(arguments);
@@ -9611,6 +9611,7 @@ __HEADER__;
 precision highp float;
 precision highp int;
 precision highp sampler2D;
+precision highp sampler2DArray;
 
 const int LOOP_MAX = __LOOP_MAX__;
 
@@ -10619,7 +10620,7 @@ class WebGL2Kernel extends WebGLKernel {
     };
   }
 
-  validateSettings() {
+  validateSettings(args) {
     if (!this.validate) {
       this.texSize = utils.getKernelTextureSize({
         optimizeFloatMemory: this.optimizeFloatMemory,
@@ -10644,11 +10645,11 @@ class WebGL2Kernel extends WebGLKernel {
     this.checkOutput();
 
     if (!this.output || this.output.length === 0) {
-      if (arguments.length !== 1) {
+      if (args.length !== 1) {
         throw new Error('Auto output only supported for kernels with only one input');
       }
 
-      const argType = utils.getVariableType(arguments[0], this.strictIntegers);
+      const argType = utils.getVariableType(args[0], this.strictIntegers);
       switch (argType) {
         case 'Array':
           this.output = utils.getDimensions(argType);
@@ -10659,7 +10660,7 @@ class WebGL2Kernel extends WebGLKernel {
         case 'ArrayTexture(2)':
         case 'ArrayTexture(3)':
         case 'ArrayTexture(4)':
-          this.output = arguments[0].output;
+          this.output = args[0].output;
           break;
         default:
           throw new Error('Auto output not supported for input type: ' + argType);

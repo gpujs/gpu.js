@@ -229,7 +229,11 @@ class WebGLKernel extends GLKernel {
     };
   }
 
-  validateSettings() {
+  /**
+   * @desc Validate settings related to Kernel, such as dimensions size, and auto output support.
+   * @param {IArguments} args
+   */
+  validateSettings(args) {
     if (!this.validate) {
       this.texSize = utils.getKernelTextureSize({
         optimizeFloatMemory: this.optimizeFloatMemory,
@@ -260,15 +264,15 @@ class WebGLKernel extends GLKernel {
     this.checkOutput();
 
     if (!this.output || this.output.length === 0) {
-      if (arguments.length !== 1) {
+      if (args.length !== 1) {
         throw new Error('Auto output only supported for kernels with only one input');
       }
 
-      const argType = utils.getVariableType(arguments[0], this.strictIntegers);
+      const argType = utils.getVariableType(args[0], this.strictIntegers);
       if (argType === 'Array') {
         this.output = utils.getDimensions(argType);
       } else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
-        this.output = arguments[0].output;
+        this.output = args[0].output;
       } else {
         throw new Error('Auto output not supported for input type: ' + argType);
       }
@@ -454,7 +458,7 @@ class WebGLKernel extends GLKernel {
 
   build() {
     this.initExtensions();
-    this.validateSettings();
+    this.validateSettings(arguments);
     this.setupConstants(arguments);
     if (this.fallbackRequested) return;
     this.setupArguments(arguments);

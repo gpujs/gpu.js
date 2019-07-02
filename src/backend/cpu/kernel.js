@@ -76,22 +76,22 @@ class CPUKernel extends Kernel {
   }
 
   /**
-   * @desc Validate settings related to CPU Kernel, such as
-   * dimensions size, and auto dimension support.
+   * @desc Validate settings related to Kernel, such as dimensions size, and auto output support.
+   * @param {IArguments} args
    */
-  validateSettings() {
+  validateSettings(args) {
     if (!this.output || this.output.length === 0) {
-      if (arguments.length !== 1) {
-        throw 'Auto dimensions only supported for kernels with only one input';
+      if (args.length !== 1) {
+        throw new Error('Auto output only supported for kernels with only one input');
       }
 
-      const argType = utils.getVariableType(arguments[0], this.strictIntegers);
+      const argType = utils.getVariableType(args[0], this.strictIntegers);
       if (argType === 'Array') {
         this.output = utils.getDimensions(argType);
       } else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
-        this.output = arguments[0].output;
+        this.output = args[0].output;
       } else {
-        throw 'Auto dimensions not supported for input type: ' + argType;
+        throw new Error('Auto output not supported for input type: ' + argType);
       }
     }
 
@@ -133,7 +133,7 @@ class CPUKernel extends Kernel {
   build() {
     this.setupConstants();
     this.setupArguments(arguments);
-    this.validateSettings();
+    this.validateSettings(arguments);
     this.translateSource();
 
     if (this.graphical) {

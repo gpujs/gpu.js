@@ -1,6 +1,6 @@
 if (typeof importScripts !== 'undefined') {
   // inside Worker
-  importScripts('../../bin/gpu-browser.js');
+  importScripts('../../dist/gpu-browser.js');
   onmessage = function (e) {
     const gpu = new GPU();
     const a = [1,2,3];

@@ -183,19 +183,24 @@ export abstract class Kernel {
   setFunctions(flag: IFunction[]|KernelFunction[]): this;
   addSubKernel(subKernel: ISubKernel): this;
   destroy(removeCanvasReferences?: boolean): void;
+  validateSettings(IArguments): void;
 }
 
 export type Precision = 'single' | 'unsigned';
 
-export class WebGLKernel extends Kernel {
+export class CPUKernel extends Kernel {
 
 }
-
-export class WebGL2Kernel extends Kernel {
+export class GLKernel extends Kernel {
 
 }
+export class WebGLKernel extends GLKernel {
 
-export class HeadlessGLKernel extends Kernel {
+}
+export class WebGL2Kernel extends GLKernel {
+
+}
+export class HeadlessGLKernel extends GLKernel {
 
 }
 
