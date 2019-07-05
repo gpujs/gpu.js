@@ -325,7 +325,7 @@ class CPUFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astVariableDeclaration(varDecNode, retArr) {
-    if (varDecNode.kind === 'var') {
+    if (varDecNode.kind === 'var' && this.warnVarUsage) {
       this.varWarn();
     }
     retArr.push(`${varDecNode.kind} `);
@@ -529,9 +529,9 @@ class CPUFunctionNode extends FunctionNode {
           if (isInput) {
             retArr.push('[(');
             this.astGeneric(zProperty, retArr);
-            retArr.push(`*${ size[1] * size[0]})+(`);
+            retArr.push(`*${ this.dynamicArguments ? '(outputY * outputX)' : size[1] * size[0] })+(`);
             this.astGeneric(yProperty, retArr);
-            retArr.push(`*${ size[0] })+`);
+            retArr.push(`*${ this.dynamicArguments ? 'outputX' : size[0] })+`);
             this.astGeneric(xProperty, retArr);
             retArr.push(']');
           } else {
@@ -549,7 +549,7 @@ class CPUFunctionNode extends FunctionNode {
           if (isInput) {
             retArr.push('[(');
             this.astGeneric(yProperty, retArr);
-            retArr.push(`*${ size[0] })+`);
+            retArr.push(`*${ this.dynamicArguments ? 'outputX' : size[0] })+`);
             this.astGeneric(xProperty, retArr);
             retArr.push(']');
           } else {

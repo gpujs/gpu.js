@@ -16,6 +16,10 @@ class Kernel {
     throw new Error(`"isContextMatch" not implemented on ${ this.name }`);
   }
 
+  /**
+   * @type {IKernelFeatures}
+   * Used internally to populate the kernel.feature, which is a getter for the output of this value
+   */
   static getFeatures() {
     throw new Error(`"getFeatures" not implemented on ${ this.name }`);
   }
@@ -181,6 +185,7 @@ class Kernel {
     this.optimizeFloatMemory = null;
     this.strictIntegers = false;
     this.fixIntegerDivisionAccuracy = null;
+    this.warnVarUsage = true;
   }
 
   mergeSettings(settings) {
@@ -483,6 +488,16 @@ class Kernel {
    */
   setUseLegacyEncoder(flag) {
     this.useLegacyEncoder = flag;
+    return this;
+  }
+
+  /**
+   *
+   * @param {Boolean} flag
+   * @return {Kernel}
+   */
+  setWarnVarUsage(flag) {
+    this.warnVarUsage = flag;
     return this;
   }
 

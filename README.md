@@ -92,6 +92,7 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [Supported Math functions](#supported-math-functions)
 * [How to check what is supported](#how-to-check-what-is-supported)
 * [Typescript Typings](#typescript-typings)
+* [Dealing With Transpilation](#dealing-with-transpilation)
 * [Full API reference](#full-api-reference)
 * [Automatically-built Documentation](#automatically-built-documentation)
 * [Contributors](#contributors)
@@ -180,6 +181,7 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
 * `immutable` or `kernel.setImmutable(boolean)`: boolean, default = `false`
 * `strictIntegers` or `kernel.setStrictIntegers(boolean)`: boolean, default = `false` - allows undefined argumentTypes and function return values to use strict integer declarations.
 * `useLegacyEncoder` or `kernel.setUseLegacyEncoder(boolean)`: boolean, default `false` - more info [here](https://github.com/gpujs/gpu.js/wiki/Encoder-details).
+* `warnVarUsage` or `kernel.setWarnVarUsage(boolean)`: turn off var usage warnings, they can be irritating, and in transpiled environments, there is nothing we can do about it.
 
 
 ## Creating and Running Functions
@@ -857,6 +859,21 @@ To assist with mostly unit tests, but perhaps in scenarios outside of GPU.js, th
 
 ## Typescript Typings
 Typescript is supported!  Typings can be found [here](src/index.d.ts)!
+
+## Dealing With Transpilation
+Transpilation doesn't do the best job of keeping code beautiful.  To aid in this endeavor GPU.js can handle some scenarios to still aid you harnessing the GPU in less than ideal circumstances.
+Here is a list of a few things that GPU.js does to fix transpilation:
+
+* When a transpiler such as [Babel](https://babeljs.io/) changes `myCall()` to `(0, _myCall.myCall)`, it is gracefully handled.
+* Using `var` will have a lot of warnings by default, this can be irritating because sometimes there is nothing we can do about this in transpiled environment.
+  To aid in the irritation, there is an option to alleviate the irritation.
+  When `const` and `let` are converted to `var`, and you'r prefer not to see it, use the following:
+  ```js
+  const kernel = gpu.createKernel(myKernelFunction)
+    .setWarnVarUsage(false);
+  // or
+  const kernel = gpu.createKernel(myKernelFunction, { output: [1], warnVarUsage: false });
+  ```
 
 ## Full API Reference
 

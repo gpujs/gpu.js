@@ -10,14 +10,10 @@ let isSupported = null;
 let testCanvas = null;
 let testContext = null;
 let testExtensions = null;
+
 /**
  *
- * @type {{
- *   isFloatRead: Boolean,
- *   isIntegerDivisionAccurate: Boolean,
- *   kernelMap: Boolean,
- *   isTextureFloat: Boolean,
- * }|null}
+ * @type {IKernelFeatures}
  */
 let features = null;
 

@@ -1,7 +1,7 @@
 const { utils } = require('../../../utils');
-const { WebGLKernelValueDynamicInput } = require('../../web-gl/kernel-value/dynamic-html-image');
+const { WebGLKernelValueDynamicHTMLImage } = require('../../web-gl/kernel-value/dynamic-html-image');
 
-class WebGL2KernelValueDynamicInput extends WebGLKernelValueDynamicInput {
+class WebGL2KernelValueDynamicHTMLImage extends WebGLKernelValueDynamicHTMLImage {
   getSource() {
     return utils.linesToString([
       `uniform highp sampler2D ${this.id}`,
@@ -12,5 +12,5 @@ class WebGL2KernelValueDynamicInput extends WebGLKernelValueDynamicInput {
 }
 
 module.exports = {
-  WebGL2KernelValueDynamicInput
+  WebGL2KernelValueDynamicHTMLImage
 };

@@ -6,7 +6,7 @@
 class FunctionBuilder {
   /**
    *
-   * @param {typeof Kernel} kernel
+   * @param {Kernel} kernel
    * @param {FunctionNode} FunctionNode
    * @param {object} [extraNodeOptions]
    * @returns {FunctionBuilder}
@@ -34,7 +34,9 @@ class FunctionBuilder {
       functions,
       leadingReturnStatement,
       followingReturnStatement,
+      dynamicArguments,
       dynamicOutput,
+      warnVarUsage,
     } = kernel;
 
     const needsArgumentType = (functionName, index) => {
@@ -96,7 +98,8 @@ class FunctionBuilder {
         triggerImplyArgumentType,
         triggerTrackArgumentSynonym,
         lookupArgumentSynonym,
-        onFunctionCall
+        onFunctionCall,
+        warnVarUsage,
       }));
       nestedFunction.traceFunctionAST(ast);
       functionBuilder.addFunctionNode(nestedFunction);
@@ -124,6 +127,7 @@ class FunctionBuilder {
       loopMaxIterations,
       output,
       plugins,
+      dynamicArguments,
       dynamicOutput,
     }, extraNodeOptions || {});
 

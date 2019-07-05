@@ -83,6 +83,7 @@ export abstract class Kernel {
   static nativeFunctionReturnType(source: string): string;
   static destroyContext(context: any): void;
   static features: IKernelFeatures;
+  static getFeatures(): IKernelFeatures;
   source: string | object;
   Kernel: Kernel;
   output: number[];
@@ -169,6 +170,7 @@ export abstract class Kernel {
   ): string;
   toJSON(): object;
   setOutput(flag: number[]): this;
+  setWarnVarUsage(flag: boolean): this;
   setOptimizeFloatMemory(flag: boolean): this;
   setArgumentTypes(flag: any): this;
   setDebug(flag: boolean): this;
@@ -197,10 +199,10 @@ export class GLKernel extends Kernel {
 export class WebGLKernel extends GLKernel {
 
 }
-export class WebGL2Kernel extends GLKernel {
+export class WebGL2Kernel extends WebGLKernel {
 
 }
-export class HeadlessGLKernel extends GLKernel {
+export class HeadlessGLKernel extends WebGLKernel {
 
 }
 

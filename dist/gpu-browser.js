@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.19
- * @date Tue Jul 02 2019 12:17:44 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.20
+ * @date Fri Jul 05 2019 11:02:54 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -5481,7 +5481,7 @@ class CPUFunctionNode extends FunctionNode {
   }
 
   astVariableDeclaration(varDecNode, retArr) {
-    if (varDecNode.kind === 'var') {
+    if (varDecNode.kind === 'var' && this.warnVarUsage) {
       this.varWarn();
     }
     retArr.push(`${varDecNode.kind} `);
@@ -5664,9 +5664,9 @@ class CPUFunctionNode extends FunctionNode {
           if (isInput) {
             retArr.push('[(');
             this.astGeneric(zProperty, retArr);
-            retArr.push(`*${ size[1] * size[0]})+(`);
+            retArr.push(`*${ this.dynamicArguments ? '(outputY * outputX)' : size[1] * size[0] })+(`);
             this.astGeneric(yProperty, retArr);
-            retArr.push(`*${ size[0] })+`);
+            retArr.push(`*${ this.dynamicArguments ? 'outputX' : size[0] })+`);
             this.astGeneric(xProperty, retArr);
             retArr.push(']');
           } else {
@@ -5684,7 +5684,7 @@ class CPUFunctionNode extends FunctionNode {
           if (isInput) {
             retArr.push('[(');
             this.astGeneric(yProperty, retArr);
-            retArr.push(`*${ size[0] })+`);
+            retArr.push(`*${ this.dynamicArguments ? 'outputX' : size[0] })+`);
             this.astGeneric(xProperty, retArr);
             retArr.push(']');
           } else {
@@ -6438,7 +6438,9 @@ class FunctionBuilder {
       functions,
       leadingReturnStatement,
       followingReturnStatement,
+      dynamicArguments,
       dynamicOutput,
+      warnVarUsage,
     } = kernel;
 
     const needsArgumentType = (functionName, index) => {
@@ -6500,7 +6502,8 @@ class FunctionBuilder {
         triggerImplyArgumentType,
         triggerTrackArgumentSynonym,
         lookupArgumentSynonym,
-        onFunctionCall
+        onFunctionCall,
+        warnVarUsage,
       }));
       nestedFunction.traceFunctionAST(ast);
       functionBuilder.addFunctionNode(nestedFunction);
@@ -6528,6 +6531,7 @@ class FunctionBuilder {
       loopMaxIterations,
       output,
       plugins,
+      dynamicArguments,
       dynamicOutput,
     }, extraNodeOptions || {});
 
@@ -6998,8 +7002,10 @@ class FunctionNode {
     this.leadingReturnStatement = null;
     this.followingReturnStatement = null;
     this.dynamicOutput = null;
+    this.dynamicArguments = null;
     this.strictTypingChecking = false;
     this.fixIntegerDivisionAccuracy = null;
+    this.warnVarUsage = true;
 
     if (settings) {
       for (const p in settings) {
@@ -10229,6 +10235,7 @@ class Kernel {
     this.optimizeFloatMemory = null;
     this.strictIntegers = false;
     this.fixIntegerDivisionAccuracy = null;
+    this.warnVarUsage = true;
   }
 
   mergeSettings(settings) {
@@ -10421,6 +10428,11 @@ class Kernel {
 
   setUseLegacyEncoder(flag) {
     this.useLegacyEncoder = flag;
+    return this;
+  }
+
+  setWarnVarUsage(flag) {
+    this.warnVarUsage = flag;
     return this;
   }
 
@@ -11548,7 +11560,7 @@ class WebGLFunctionNode extends FunctionNode {
   }
 
   astVariableDeclaration(varDecNode, retArr) {
-    if (varDecNode.kind === 'var') {
+    if (varDecNode.kind === 'var' && this.warnVarUsage) {
       this.varWarn();
     }
     const declarations = varDecNode.declarations;
@@ -12333,7 +12345,7 @@ module.exports = {
 const { utils } = require('../../../utils');
 const { WebGLKernelValueHTMLImage } = require('./html-image');
 
-class WebGLKernelValueDynamicInput extends WebGLKernelValueHTMLImage {
+class WebGLKernelValueDynamicHTMLImage extends WebGLKernelValueHTMLImage {
   getSource() {
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
@@ -12353,7 +12365,7 @@ class WebGLKernelValueDynamicInput extends WebGLKernelValueHTMLImage {
 }
 
 module.exports = {
-  WebGLKernelValueDynamicInput
+  WebGLKernelValueDynamicHTMLImage
 };
 },{"../../../utils":90,"./html-image":48}],41:[function(require,module,exports){
 const { utils } = require('../../../utils');
@@ -12394,8 +12406,8 @@ class WebGLKernelValueDynamicNumberTexture extends WebGLKernelValueNumberTexture
   }
 
   updateValue(value) {
-    this.dimensions = inputTexture.dimensions;
-    this.textureSize = inputTexture.size;
+    this.dimensions = value.dimensions;
+    this.textureSize = value.size;
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
     super.updateValue(value);
@@ -12448,7 +12460,7 @@ class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
   updateValue(value) {
     this.dimensions = value.size;
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
-    this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
@@ -14721,6 +14733,7 @@ void main(void) {
 module.exports = {
   fragmentShader
 };
+
 },{}],60:[function(require,module,exports){
 const { WebGLFunctionNode } = require('../web-gl/function-node');
 
@@ -14912,9 +14925,9 @@ module.exports = {
 };
 },{"./html-image-array":72}],64:[function(require,module,exports){
 const { utils } = require('../../../utils');
-const { WebGLKernelValueDynamicInput } = require('../../web-gl/kernel-value/dynamic-html-image');
+const { WebGLKernelValueDynamicHTMLImage } = require('../../web-gl/kernel-value/dynamic-html-image');
 
-class WebGL2KernelValueDynamicInput extends WebGLKernelValueDynamicInput {
+class WebGL2KernelValueDynamicHTMLImage extends WebGLKernelValueDynamicHTMLImage {
   getSource() {
     return utils.linesToString([
       `uniform highp sampler2D ${this.id}`,
@@ -14925,7 +14938,7 @@ class WebGL2KernelValueDynamicInput extends WebGLKernelValueDynamicInput {
 }
 
 module.exports = {
-  WebGL2KernelValueDynamicInput
+  WebGL2KernelValueDynamicHTMLImage
 };
 },{"../../../utils":90,"../../web-gl/kernel-value/dynamic-html-image":40}],65:[function(require,module,exports){
 const { utils } = require('../../../utils');
@@ -14963,26 +14976,36 @@ module.exports = {
 };
 },{"../../../utils":90,"../../web-gl/kernel-value/dynamic-number-texture":42}],67:[function(require,module,exports){
 const { utils } = require('../../../utils');
-const { WebGLKernelValueDynamicSingleArray } = require('../../web-gl/kernel-value/dynamic-single-array');
+const { WebGL2KernelValueSingleArray } = require('../../web-gl2/kernel-value/single-array');
 
-class WebGL2KernelValueDynamicSingleArray extends WebGLKernelValueDynamicSingleArray {
+class WebGL2KernelValueDynamicSingleArray extends WebGL2KernelValueSingleArray {
   getSource() {
     return utils.linesToString([
       `uniform highp sampler2D ${this.id}`,
       `uniform highp ivec2 ${this.sizeId}`,
       `uniform highp ivec3 ${this.dimensionsId}`,
     ]);
+  }
+
+  updateValue(value) {
+    this.dimensions = utils.getDimensions(value, true);
+    this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
+    this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.uploadValue = new Float32Array(this.uploadArrayLength);
+    this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
+    this.kernel.setUniform2iv(this.sizeId, this.textureSize);
+    super.updateValue(value);
   }
 }
 
 module.exports = {
   WebGL2KernelValueDynamicSingleArray
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/dynamic-single-array":43}],68:[function(require,module,exports){
+},{"../../../utils":90,"../../web-gl2/kernel-value/single-array":77}],68:[function(require,module,exports){
 const { utils } = require('../../../utils');
-const { WebGLKernelValueDynamicSingleInput } = require('../../web-gl/kernel-value/dynamic-single-input');
+const { WebGL2KernelValueSingleInput } = require('../../web-gl2/kernel-value/single-input');
 
-class WebGL2KernelValueDynamicSingleInput extends WebGLKernelValueDynamicSingleInput {
+class WebGL2KernelValueDynamicSingleInput extends WebGL2KernelValueSingleInput {
   getSource() {
     return utils.linesToString([
       `uniform highp sampler2D ${this.id}`,
@@ -14990,12 +15013,22 @@ class WebGL2KernelValueDynamicSingleInput extends WebGLKernelValueDynamicSingleI
       `uniform highp ivec3 ${this.dimensionsId}`,
     ]);
   }
+
+  updateValue(value) {
+    this.dimensions = value.size;
+    this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
+    this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.uploadValue = new Float32Array(this.uploadArrayLength);
+    this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
+    this.kernel.setUniform2iv(this.sizeId, this.textureSize);
+    super.updateValue(value);
+  }
 }
 
 module.exports = {
   WebGL2KernelValueDynamicSingleInput
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/dynamic-single-input":44}],69:[function(require,module,exports){
+},{"../../../utils":90,"../../web-gl2/kernel-value/single-input":78}],69:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicUnsignedArray } = require('../../web-gl/kernel-value/dynamic-unsigned-array');
 
@@ -15287,6 +15320,7 @@ let isSupported = null;
 let testCanvas = null;
 let testContext = null;
 let testExtensions = null;
+
 let features = null;
 
 class WebGL2Kernel extends WebGLKernel {
@@ -16102,7 +16136,25 @@ class GPU {
       gpu: this,
       validate,
       onRequestFallback: (args) => {
-        const fallbackKernel = new CPUKernel(source, mergedSettings);
+        const fallbackKernel = new CPUKernel(source, {
+          graphical: kernel.graphical,
+          loopMaxIterations: kernel.loopMaxIterations,
+          constants: kernel.constants,
+          dynamicOutput: kernel.dynamicOutput,
+          dynamicArgument: kernel.dynamicArguments,
+          output: kernel.output,
+          precision: kernel.precision,
+          pipeline: kernel.pipeline,
+          immutable: kernel.immutable,
+          optimizeFloatMemory: kernel.optimizeFloatMemory,
+          fixIntegerDivisionAccuracy: kernel.fixIntegerDivisionAccuracy,
+          functions: kernel.functions,
+          nativeFunctions: kernel.nativeFunctions,
+          subKernels: kernel.subKernels,
+          strictIntegers: kernel.strictIntegers,
+          debug: kernel.debug,
+          warnVarUsage: kernel.warnVarUsage,
+        });
         fallbackKernel.build.apply(fallbackKernel, args);
         const result = fallbackKernel.run.apply(fallbackKernel, args);
         kernel.replaceKernel(fallbackKernel);
@@ -16125,7 +16177,10 @@ class GPU {
         }
         const newKernel = switchableKernels[signature] = new this.Kernel(source, {
           graphical: kernel.graphical,
+          loopMaxIterations: kernel.loopMaxIterations,
           constants: kernel.constants,
+          dynamicOutput: kernel.dynamicOutput,
+          dynamicArgument: kernel.dynamicArguments,
           context: kernel.context,
           canvas: kernel.canvas,
           output: kernel.output,
@@ -16141,6 +16196,7 @@ class GPU {
           debug: kernel.debug,
           gpu: this,
           validate,
+          warnVarUsage: kernel.warnVarUsage,
         });
         newKernel.build.apply(newKernel, args);
         newKernel.run.apply(newKernel, args);

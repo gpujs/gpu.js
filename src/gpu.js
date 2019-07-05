@@ -223,7 +223,25 @@ class GPU {
       gpu: this,
       validate,
       onRequestFallback: (args) => {
-        const fallbackKernel = new CPUKernel(source, mergedSettings);
+        const fallbackKernel = new CPUKernel(source, {
+          graphical: kernel.graphical,
+          loopMaxIterations: kernel.loopMaxIterations,
+          constants: kernel.constants,
+          dynamicOutput: kernel.dynamicOutput,
+          dynamicArgument: kernel.dynamicArguments,
+          output: kernel.output,
+          precision: kernel.precision,
+          pipeline: kernel.pipeline,
+          immutable: kernel.immutable,
+          optimizeFloatMemory: kernel.optimizeFloatMemory,
+          fixIntegerDivisionAccuracy: kernel.fixIntegerDivisionAccuracy,
+          functions: kernel.functions,
+          nativeFunctions: kernel.nativeFunctions,
+          subKernels: kernel.subKernels,
+          strictIntegers: kernel.strictIntegers,
+          debug: kernel.debug,
+          warnVarUsage: kernel.warnVarUsage,
+        });
         fallbackKernel.build.apply(fallbackKernel, args);
         const result = fallbackKernel.run.apply(fallbackKernel, args);
         kernel.replaceKernel(fallbackKernel);
@@ -246,7 +264,10 @@ class GPU {
         }
         const newKernel = switchableKernels[signature] = new this.Kernel(source, {
           graphical: kernel.graphical,
+          loopMaxIterations: kernel.loopMaxIterations,
           constants: kernel.constants,
+          dynamicOutput: kernel.dynamicOutput,
+          dynamicArgument: kernel.dynamicArguments,
           context: kernel.context,
           canvas: kernel.canvas,
           output: kernel.output,
@@ -262,6 +283,7 @@ class GPU {
           debug: kernel.debug,
           gpu: this,
           validate,
+          warnVarUsage: kernel.warnVarUsage,
         });
         newKernel.build.apply(newKernel, args);
         newKernel.run.apply(newKernel, args);

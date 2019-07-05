@@ -59,8 +59,10 @@ class FunctionNode {
     this.leadingReturnStatement = null;
     this.followingReturnStatement = null;
     this.dynamicOutput = null;
+    this.dynamicArguments = null;
     this.strictTypingChecking = false;
     this.fixIntegerDivisionAccuracy = null;
+    this.warnVarUsage = true;
 
     if (settings) {
       for (const p in settings) {
