@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.20
- * @date Fri Jul 05 2019 11:02:54 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.21
+ * @date Thu Jul 11 2019 13:18:11 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -5137,85 +5137,262 @@ if (typeof window !== 'undefined') {
 }
 
 },{}],4:[function(require,module,exports){
-'use strict';
+function setupArguments(args) {
+  const newArguments = new Array(args.length);
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg.toArray) {
+      newArguments[i] = arg.toArray();
+    } else {
+      newArguments[i] = arg;
+    }
+  }
+  return newArguments;
+}
 
 function mock1D() {
-  const row = [];
+  const args = setupArguments(arguments);
+  const row = new Float32Array(this.output.x);
   for (let x = 0; x < this.output.x; x++) {
     this.thread.x = x;
     this.thread.y = 0;
     this.thread.z = 0;
-    row.push(this._fn.apply(this, arguments));
+    row[x] = this._fn.apply(this, args);
   }
   return row;
 }
 
 function mock2D() {
-  const matrix = [];
+  const args = setupArguments(arguments);
+  const matrix = new Array(this.output.y);
   for (let y = 0; y < this.output.y; y++) {
-    const row = [];
+    const row = new Float32Array(this.output.x);
     for (let x = 0; x < this.output.x; x++) {
       this.thread.x = x;
       this.thread.y = y;
       this.thread.z = 0;
-      row.push(this._fn.apply(this, arguments));
+      row[x] = this._fn.apply(this, args);
     }
-    matrix.push(row);
+    matrix[y] = row;
   }
   return matrix;
 }
 
+function mock2DGraphical() {
+  const args = setupArguments(arguments);
+  for (let y = 0; y < this.output.y; y++) {
+    for (let x = 0; x < this.output.x; x++) {
+      this.thread.x = x;
+      this.thread.y = y;
+      this.thread.z = 0;
+      this._fn.apply(this, args);
+    }
+  }
+}
+
 function mock3D() {
-  const cube = [];
+  const args = setupArguments(arguments);
+  const cube = new Array(this.output.z);
   for (let z = 0; z < this.output.z; z++) {
-    const matrix = [];
+    const matrix = new Array(this.output.y);
     for (let y = 0; y < this.output.y; y++) {
-      const row = [];
+      const row = new Float32Array(this.output.x);
       for (let x = 0; x < this.output.x; x++) {
         this.thread.x = x;
         this.thread.y = y;
         this.thread.z = z;
-        row.push(this._fn.apply(this, arguments));
+        row[x] = this._fn.apply(this, args);
       }
-      matrix.push(row);
+      matrix[y] = row;
     }
-    cube.push(matrix);
+    cube[z] = matrix;
   }
   return cube;
 }
 
-module.exports = function gpuMock(fn, options) {
-  let contextOutput = null;
-  if (options.output.length) {
-    if (options.output.length === 3) {
-      contextOutput = { x: options.output[0], y: options.output[1], z: options.output[2] };
-    } else if (options.output.length === 2) {
-      contextOutput = { x: options.output[0], y: options.output[1] };
-    } else {
-      contextOutput = { x: options.output[0] };
-    }
-  } else {
-    contextOutput = options.output;
-  }
-
-  const context = {
-    _fn: fn,
-    constants: options.constants,
-    output: contextOutput,
-    thread: {
-      x: 0,
-      y: 0,
-      z: 0
+function apiDecorate(kernel) {
+  kernel.setOutput = (output) => {
+    kernel.output = setupOutput(output);
+    if (kernel.graphical) {
+      setupGraphical(kernel);
     }
   };
+  kernel.toJSON = () => {
+    throw new Error('Not usable with gpuMock');
+  };
+  kernel.setConstants = (flag) => {
+    kernel.constants = flag;
+    return kernel;
+  };
+  kernel.setGraphical = (flag) => {
+    kernel.graphical = flag;
+    return kernel;
+  };
+  kernel.setCanvas = (flag) => {
+    kernel.canvas = flag;
+    return kernel;
+  };
+  kernel.setContext = (flag) => {
+    kernel.context = flag;
+    return kernel;
+  };
+  kernel.exec = function() {
+    return new Promise((resolve, reject) => {
+      try {
+        resolve(kernel.apply(kernel, arguments));
+      } catch(e) {
+        reject(e);
+      }
+    });
+  };
+  kernel.getPixels = (flip) => {
+    const {x, y} = kernel.output;
+    return flip ? flipPixels(kernel._imageData.data, x, y) : kernel._imageData.data.slice(0);
+  };
+  kernel.color = function(r, g, b, a) {
+    if (typeof a === 'undefined') {
+      a = 1;
+    }
 
-  if (contextOutput.z) {
-    return mock3D.bind(context);
-  } else if (contextOutput.y) {
-    return mock2D.bind(context);
-  } else {
-    return mock1D.bind(context);
+    r = Math.floor(r * 255);
+    g = Math.floor(g * 255);
+    b = Math.floor(b * 255);
+    a = Math.floor(a * 255);
+
+    const width = kernel.output.x;
+    const height = kernel.output.y;
+
+    const x = kernel.thread.x;
+    const y = height - kernel.thread.y - 1;
+
+    const index = x + y * width;
+
+    kernel._colorData[index * 4 + 0] = r;
+    kernel._colorData[index * 4 + 1] = g;
+    kernel._colorData[index * 4 + 2] = b;
+    kernel._colorData[index * 4 + 3] = a;
+  };
+
+  kernel.setWarnVarUsage = () => {
+    return kernel;
+  };
+  kernel.setOptimizeFloatMemory = () => {
+    return kernel;
+  };
+  kernel.setArgumentTypes = () => {
+    return kernel;
+  };
+  kernel.setDebug = () => {
+    return kernel;
+  };
+  kernel.setLoopMaxIterations = () => {
+    return kernel;
+  };
+  kernel.setPipeline = () => {
+    return kernel;
+  };
+  kernel.setPrecision = () => {
+    return kernel;
+  };
+  kernel.setImmutable = () => {
+    return kernel;
+  };
+  kernel.setFunctions = () => {
+    return kernel;
+  };
+  kernel.addSubKernel = () => {
+    return kernel;
+  };
+  kernel.destroy = () => {};
+  kernel.validateSettings = () => {};
+  if (kernel.graphical && kernel.output) {
+    setupGraphical(kernel);
   }
+  return kernel;
+}
+
+function setupGraphical(kernel) {
+  const {x, y} = kernel.output;
+  if (kernel.context && kernel.context.createImageData) {
+    const data = new Uint8ClampedArray(x * y * 4);
+    kernel._imageData = kernel.context.createImageData(x, y);
+    kernel._colorData = data;
+  } else {
+    const data = new Uint8ClampedArray(x * y * 4);
+    kernel._imageData = { data };
+    kernel._colorData = data;
+  }
+}
+
+function setupOutput(output) {
+  let result = null;
+  if (output.length) {
+    if (output.length === 3) {
+      const [x,y,z] = output;
+      result = { x, y, z };
+    } else if (output.length === 2) {
+      const [x,y] = output;
+      result = { x, y };
+    } else {
+      const [x] = output;
+      result = { x };
+    }
+  } else {
+    result = output;
+  }
+  return result;
+}
+
+function gpuMock(fn, settings = {}) {
+  const output = settings.output ? setupOutput(settings.output) : null;
+  function kernel() {
+    if (kernel.output.z) {
+      return mock3D.apply(kernel, arguments);
+    } else if (kernel.output.y) {
+      if (kernel.graphical) {
+        return mock2DGraphical.apply(kernel, arguments);
+      }
+      return mock2D.apply(kernel, arguments);
+    } else {
+      return mock1D.apply(kernel, arguments);
+    }
+  }
+  kernel._fn = fn;
+  kernel.constants = settings.constants || null;
+  kernel.context = settings.context || null;
+  kernel.canvas = settings.canvas || null;
+  kernel.graphical = settings.graphical || false;
+  kernel._imageData = null;
+  kernel._colorData = null;
+  kernel.output = output;
+  kernel.thread = {
+    x: 0,
+    y: 0,
+    z: 0
+  };
+  return apiDecorate(kernel);
+}
+
+function flipPixels(pixels, width, height) {
+  const halfHeight = height / 2 | 0; 
+  const bytesPerRow = width * 4;
+  const temp = new Uint8ClampedArray(width * 4);
+  const result = pixels.slice(0);
+  for (let y = 0; y < halfHeight; ++y) {
+    const topOffset = y * bytesPerRow;
+    const bottomOffset = (height - y - 1) * bytesPerRow;
+
+    temp.set(result.subarray(topOffset, topOffset + bytesPerRow));
+
+    result.copyWithin(topOffset, bottomOffset, bottomOffset + bytesPerRow);
+
+    result.set(temp, bottomOffset);
+  }
+  return result;
+}
+
+module.exports = {
+  gpuMock
 };
 
 },{}],5:[function(require,module,exports){
@@ -11418,9 +11595,17 @@ class WebGLFunctionNode extends FunctionNode {
     if (forNode.init) {
       this.pushState('in-for-loop-init');
       this.astGeneric(forNode.init, initArr);
-      for (let i = 0; i < initArr.length; i++) {
-        if (initArr[i].includes && initArr[i].includes(',')) {
+      const { declarations } = forNode.init;
+      for (let i = 0; i < declarations.length; i++) {
+        if (declarations[i].init && declarations[i].init.type !== 'Literal') {
           isSafe = false;
+        }
+      }
+      if (isSafe) {
+        for (let i = 0; i < initArr.length; i++) {
+          if (initArr[i].includes && initArr[i].includes(',')) {
+            isSafe = false;
+          }
         }
       }
       this.popState('in-for-loop-init');
@@ -12458,7 +12643,8 @@ class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
   }
 
   updateValue(value) {
-    this.dimensions = value.size;
+    let [w, h, d] = value.size;
+    this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
     this.uploadValue = new Float32Array(this.uploadArrayLength);
@@ -12514,7 +12700,8 @@ class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput
   }
 
   updateValue(value) {
-    this.dimensions = value.size;
+    let [w, h, d] = value.size;
+    this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
     const Type = this.getTransferArrayType(value.value);
@@ -12890,7 +13077,8 @@ class WebGLKernelValueSingleInput extends WebGLKernelValue {
     super(value, settings);
     this.requestTexture();
     this.bitRatio = 4;
-    this.dimensions = value.size;
+    let [w, h, d] = value.size;
+    this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
     this.uploadValue = new Float32Array(this.uploadArrayLength);
@@ -12995,7 +13183,8 @@ class WebGLKernelValueUnsignedInput extends WebGLKernelValue {
     super(value, settings);
     this.requestTexture();
     this.bitRatio = this.getBitRatio(value);
-    this.dimensions = value.size;
+    const [w, h, d] = value.size;
+    this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
     this.TranserArrayType = this.getTransferArrayType(value.value);
@@ -14733,7 +14922,6 @@ void main(void) {
 module.exports = {
   fragmentShader
 };
-
 },{}],60:[function(require,module,exports){
 const { WebGLFunctionNode } = require('../web-gl/function-node');
 
@@ -15015,7 +15203,8 @@ class WebGL2KernelValueDynamicSingleInput extends WebGL2KernelValueSingleInput {
   }
 
   updateValue(value) {
-    this.dimensions = value.size;
+    let [w, h, d] = value.size;
+    this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
     this.uploadValue = new Float32Array(this.uploadArrayLength);
@@ -15965,7 +16154,7 @@ for (const p in lib) {
 }
 module.exports = GPU;
 },{"./index":85}],84:[function(require,module,exports){
-const gpuMock = require('gpu-mock.js');
+const { gpuMock } = require('gpu-mock.js');
 const { utils } = require('./utils');
 const { CPUKernel } = require('./backend/cpu/kernel');
 const { HeadlessGLKernel } = require('./backend/headless-gl/kernel');
@@ -16320,6 +16509,7 @@ class GPU {
   }
 
   destroy() {
+    if (!this.kernels) return;
     setTimeout(() => {
       for (let i = 0; i < this.kernels.length; i++) {
         this.kernels[i].destroy(true); 
@@ -16406,24 +16596,45 @@ module.exports = {
 class Input {
   constructor(value, size) {
     this.value = value;
-    this.size = new Int32Array(3);
     if (Array.isArray(size)) {
-      for (let i = 0; i < this.size.length; i++) {
-        this.size[i] = size[i] || 1;
-      }
+      this.size = size;
     } else {
+      this.size = new Int32Array(3);
       if (size.z) {
         this.size = new Int32Array([size.x, size.y, size.z]);
       } else if (size.y) {
-        this.size = new Int32Array([size.x, size.y, 1]);
+        this.size = new Int32Array([size.x, size.y]);
       } else {
-        this.size = new Int32Array([size.x, 1, 1]);
+        this.size = new Int32Array([size.x]);
       }
     }
 
-    const [h, w, d] = this.size;
-    if (this.value.length !== (h * w * d)) {
-      throw new Error(`Input size ${this.value.length} does not match ${w} * ${h} * ${d} = ${(h * w * d)}`);
+    const [w, h, d] = this.size;
+    if (d) {
+      if (this.value.length !== (w * h * d)) {
+        throw new Error(`Input size ${this.value.length} does not match ${w} * ${h} * ${d} = ${(h * w * d)}`);
+      }
+    } else if (h) {
+      if (this.value.length !== (w * h)) {
+        throw new Error(`Input size ${this.value.length} does not match ${w} * ${h} = ${(h * w)}`);
+      }
+    } else {
+      if (this.value.length !== w) {
+        throw new Error(`Input size ${this.value.length} does not match ${w}`);
+      }
+    }
+
+  }
+
+  toArray() {
+    const { utils } = require('./utils');
+    const [w, h, d] = this.size;
+    if (d) {
+      return utils.erectMemoryOptimized3DFloat(this.value.subarray ? this.value : new Float32Array(this.value), w, h, d);
+    } else if (h) {
+      return utils.erectMemoryOptimized2DFloat(this.value.subarray ? this.value : new Float32Array(this.value), w, h);
+    } else {
+      return this.value;
     }
   }
 }
@@ -16436,7 +16647,7 @@ module.exports = {
   Input,
   input
 };
-},{}],87:[function(require,module,exports){
+},{"./utils":90}],87:[function(require,module,exports){
 const { utils } = require('./utils');
 
 function kernelRunShortcut(kernel) {

@@ -593,9 +593,17 @@ class WebGLFunctionNode extends FunctionNode {
     if (forNode.init) {
       this.pushState('in-for-loop-init');
       this.astGeneric(forNode.init, initArr);
-      for (let i = 0; i < initArr.length; i++) {
-        if (initArr[i].includes && initArr[i].includes(',')) {
+      const { declarations } = forNode.init;
+      for (let i = 0; i < declarations.length; i++) {
+        if (declarations[i].init && declarations[i].init.type !== 'Literal') {
           isSafe = false;
+        }
+      }
+      if (isSafe) {
+        for (let i = 0; i < initArr.length; i++) {
+          if (initArr[i].includes && initArr[i].includes(',')) {
+            isSafe = false;
+          }
         }
       }
       this.popState('in-for-loop-init');

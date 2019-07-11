@@ -1,13 +1,14 @@
 {
   "name": "gpu.js",
-  "version": "2.0.0-rc.20",
+  "version": "2.0.0-rc.21",
   "description": "GPU Accelerated JavaScript",
   "engines": {
     "node": ">=10.0.0"
   },
   "main": "./src/index.js",
   "files": [
-    "src", "dist"
+    "src",
+    "dist"
   ],
   "unpkg": "./dist/gpu-browser.min.js",
   "jsdelivr": "./dist/gpu-browser.min.js",
@@ -19,7 +20,7 @@
     "acorn": "^5.1.1",
     "gl": "^4.3.3",
     "gl-wiretap": "^0.6.0",
-    "gpu-mock.js": "^1.0.1"
+    "gpu-mock.js": "^1.1.0"
   },
   "devDependencies": {
     "benchmark": "^2.1.4",

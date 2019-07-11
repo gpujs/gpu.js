@@ -312,3 +312,25 @@ test("inputInt32ArrayX gpu", () => {
 test("inputInt32ArrayX cpu", () => {
   inputInt32ArrayX('cpu');
 });
+
+test('.toArray() with array', () => {
+  assert.deepEqual(input([1,2,3,4], [4]).toArray(), [1,2,3,4]);
+});
+test('.toArray() with matrix', () => {
+  assert.deepEqual(input([1,2,3,4,5,6,7,8], [4,2]).toArray(), [new Float32Array([1,2,3,4]), new Float32Array([5,6,7,8])]);
+});
+test('.toArray() with grid', () => {
+  assert.deepEqual(
+    input([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16], [4,2,2]).toArray(),
+    [
+      [
+        new Float32Array([1,2,3,4]),
+        new Float32Array([5,6,7,8]),
+      ],
+      [
+        new Float32Array([9,10,11,12]),
+        new Float32Array([13,14,15,16])
+      ]
+    ]
+  );
+});

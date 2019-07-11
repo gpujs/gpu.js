@@ -11,7 +11,8 @@ class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput
   }
 
   updateValue(value) {
-    this.dimensions = value.size;
+    let [w, h, d] = value.size;
+    this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
     const Type = this.getTransferArrayType(value.value);

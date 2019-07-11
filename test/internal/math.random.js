@@ -83,22 +83,22 @@ test('never above 1 every time auto', () => {
   mathRandomNeverAboveOne();
 });
 
-test('never above 1 every time  gpu', () => {
+test('never above 1 every time gpu', () => {
   mathRandomNeverAboveOne('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('never above 1 every time  webgl', () => {
+(GPU.isWebGLSupported ? test : skip)('never above 1 every time webgl', () => {
   mathRandomNeverAboveOne('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('never above 1 every time  webgl2', () => {
+(GPU.isWebGL2Supported ? test : skip)('never above 1 every time webgl2', () => {
   mathRandomNeverAboveOne('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('never above 1 every time  headlessgl', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('never above 1 every time headlessgl', () => {
   mathRandomNeverAboveOne('headlessgl');
 });
 
-test('never above 1 every time  cpu', () => {
+test('never above 1 every time cpu', () => {
   mathRandomNeverAboveOne('cpu');
 });

@@ -1,4 +1,4 @@
-const gpuMock = require('gpu-mock.js');
+const { gpuMock } = require('gpu-mock.js');
 const { utils } = require('./utils');
 const { CPUKernel } = require('./backend/cpu/kernel');
 const { HeadlessGLKernel } = require('./backend/headless-gl/kernel');
@@ -477,6 +477,7 @@ class GPU {
    * @desc Destroys all memory associated with gpu.js & the webGl if we created it
    */
   destroy() {
+    if (!this.kernels) return;
     // perform on next run loop - for some reason we dont get lose context events
     // if webGl is created and destroyed in the same run loop.
     setTimeout(() => {

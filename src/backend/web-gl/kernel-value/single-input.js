@@ -6,7 +6,8 @@ class WebGLKernelValueSingleInput extends WebGLKernelValue {
     super(value, settings);
     this.requestTexture();
     this.bitRatio = 4;
-    this.dimensions = value.size;
+    let [w, h, d] = value.size;
+    this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
     this.uploadValue = new Float32Array(this.uploadArrayLength);
