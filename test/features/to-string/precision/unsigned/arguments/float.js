@@ -12,8 +12,9 @@ function testArgument(mode, context, canvas) {
     context,
     output: [1],
     precision: 'unsigned',
-    argumentTypes: ['Float'],
+    argumentTypes: { a: 'Float' },
   });
+  assert.equal(originalKernel.argumentTypes[0], 'Float');
   assert.deepEqual(originalKernel(100)[0], 42);
   assert.deepEqual(originalKernel(10)[0], -42);
   const kernelString = originalKernel.toString(100);

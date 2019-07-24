@@ -361,12 +361,11 @@
     let zx=px; let zy=py; let zz=pz;
     let dr = 1;
     let r = 0;
-    let iterations = 100;
     let bailout = 2;
     let power = 8;
     let j=0;
 
-    for (let i=0 ; i < iterations ; i++) {
+    for (let i=0 ; i < this.constants.iterations; i++) {
       r = Math.sqrt(zx*zx + zy*zy + zz*zz);
       if (r>bailout) break;
 
@@ -436,9 +435,10 @@
     const gpu = new GPU({ canvas, webGl: gl });
 
     const raytracer = gpu.createKernel(kernelMarchingRays)
-      .setConstants({ pxWidth, pxHeight })
+      .setConstants({ pxWidth, pxHeight, iterations: 100 })
       .setOutput([pxWidth, pxHeight])
       .setGraphical(true)
+      .setDebug(true)
       .setLoopMaxIterations(10000);
     gpu.addFunction(sdPlane);
     gpu.addFunction(mandelbulb);

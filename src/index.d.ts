@@ -54,6 +54,15 @@ export type GPUVariableType
   | 'Array(2)'
   | 'Array(3)'
   | 'Array(4)'
+  | 'Array1D(2)'
+  | 'Array2D(2)'
+  | 'Array3D(2)'
+  | 'Array1D(3)'
+  | 'Array2D(3)'
+  | 'Array3D(3)'
+  | 'Array1D(4)'
+  | 'Array2D(4)'
+  | 'Array3D(4)'
   | 'HTMLImage'
   | 'HTMLImageArray'
   | 'Number'
@@ -242,6 +251,12 @@ export interface IKernelSettings {
   optimizeFloatMemory?: boolean;
   dynamicOutput?: boolean;
   dynamicArguments?: boolean;
+  argumentTypes?: ITypesList;
+  constantTypes?: ITypesList;
+}
+
+export interface ITypesList {
+  [typeName: string]: GPUVariableType
 }
 
 export interface IKernelRunShortcut extends Kernel {

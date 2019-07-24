@@ -217,7 +217,7 @@ function setUniform3fvTest(Kernel) {
       return name;
     }
   };
-  const kernel = new WebGLKernel('function() {}', { canvas, context, output: [1] });
+  const kernel = new Kernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
   kernel.setUniform3fv('test', [1, 2, 3]);
   assert.deepEqual(kernel.uniform3fvCache['test'], [1, 2, 3]);
@@ -239,4 +239,72 @@ test('WebGL2Kernel.setUniform3fv only calls context when values change', () => {
 });
 test('HeadlessGLKernel.setUniform3fv only calls context when values change', () => {
   setUniform3fvTest(HeadlessGLKernel);
+});
+
+function setUniform4ivTest(Kernel) {
+  const canvas = {};
+  const context = {
+    uniform4iv: () => {
+      if (throws) new Error('This should not get called');
+    },
+    getUniformLocation: (name) => {
+      return name;
+    }
+  };
+  const kernel = new Kernel('function() {}', { canvas, context, output: [1] });
+  let throws = false;
+  kernel.setUniform4iv('test', [1, 2, 3, 4]);
+  assert.deepEqual(kernel.uniform4ivCache['test'], [1, 2, 3, 4]);
+
+  throws = true;
+  kernel.setUniform4iv('test', [1, 2, 3, 4]);
+  assert.deepEqual(kernel.uniform4ivCache['test'], [1, 2, 3, 4]);
+
+  throws = false;
+  kernel.setUniform4iv('test', [2, 3, 4, 5]);
+  assert.deepEqual(kernel.uniform4ivCache['test'], [2, 3, 4, 5]);
+  kernel.destroy();
+}
+test('WebGLKernel.setUniform4iv only calls context when values change', () => {
+  setUniform4ivTest(WebGLKernel);
+});
+test('WebGL2Kernel.setUniform4iv only calls context when values change', () => {
+  setUniform4ivTest(WebGL2Kernel);
+});
+test('HeadlessGLKernel.setUniform4iv only calls context when values change', () => {
+  setUniform4ivTest(HeadlessGLKernel);
+});
+
+function setUniform4fvTest(Kernel) {
+  const canvas = {};
+  const context = {
+    uniform4fv: () => {
+      if (throws) new Error('This should not get called');
+    },
+    getUniformLocation: (name) => {
+      return name;
+    }
+  };
+  const kernel = new Kernel('function() {}', { canvas, context, output: [1] });
+  let throws = false;
+  kernel.setUniform4fv('test', [1, 2, 3, 4]);
+  assert.deepEqual(kernel.uniform4fvCache['test'], [1, 2, 3, 4]);
+
+  throws = true;
+  kernel.setUniform4fv('test', [1, 2, 3, 4]);
+  assert.deepEqual(kernel.uniform4fvCache['test'], [1, 2, 3, 4]);
+
+  throws = false;
+  kernel.setUniform4fv('test', [2, 3, 4, 5]);
+  assert.deepEqual(kernel.uniform4fvCache['test'], [2, 3, 4, 5]);
+  kernel.destroy();
+}
+test('WebGLKernel.setUniform4fv only calls context when values change', () => {
+  setUniform4fvTest(WebGLKernel);
+});
+test('WebGL2Kernel.setUniform4fv only calls context when values change', () => {
+  setUniform4fvTest(WebGL2Kernel);
+});
+test('HeadlessGLKernel.setUniform4fv only calls context when values change', () => {
+  setUniform4fvTest(HeadlessGLKernel);
 });

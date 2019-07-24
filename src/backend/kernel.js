@@ -300,11 +300,16 @@ class Kernel {
    */
   setupConstants() {
     this.kernelConstants = [];
-    this.constantTypes = {};
+    let needsConstantTypes = this.constantTypes === null;
+    if (needsConstantTypes) {
+      this.constantTypes = {};
+    }
     this.constantBitRatios = {};
     if (this.constants) {
       for (let p in this.constants) {
-        this.constantTypes[p] = utils.getVariableType(this.constants[p], this.strictIntegers);
+        if (needsConstantTypes) {
+          this.constantTypes[p] = utils.getVariableType(this.constants[p], this.strictIntegers);
+        }
         this.constantBitRatios[p] = this.getBitRatio(this.constants[p]);
       }
     }
@@ -529,7 +534,14 @@ class Kernel {
   }
 
   setArgumentTypes(argumentTypes) {
-    this.argumentTypes = argumentTypes;
+    if (Array.isArray(argumentTypes)) {
+      this.argumentTypes = argumentTypes;
+    } else {
+      this.argumentTypes = [];
+      for (const p in argumentTypes) {
+        this.argumentTypes[this.argumentNames.indexOf(p)] = argumentTypes[p];
+      }
+    }
     return this;
   }
 

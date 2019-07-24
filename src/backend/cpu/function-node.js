@@ -560,7 +560,7 @@ class CPUFunctionNode extends FunctionNode {
             this.astGeneric(xProperty, retArr);
             retArr.push(']');
           }
-        } else {
+        } else if (typeof xProperty !== 'undefined') {
           retArr.push('[');
           this.astGeneric(xProperty, retArr);
           retArr.push(']');

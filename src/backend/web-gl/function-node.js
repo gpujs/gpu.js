@@ -1093,25 +1093,34 @@ class WebGLFunctionNode extends FunctionNode {
         }
         break;
       case 'this.constants.value':
-      case 'this.constants.value[]':
-      case 'this.constants.value[][]':
-      case 'this.constants.value[][][]':
-      case 'this.constants.value[][][][]':
-        break;
-      case 'fn()[]':
-        this.astCallExpression(mNode.object, retArr);
-        retArr.push('[');
-        retArr.push(this.memberExpressionPropertyMarkup(property));
-        retArr.push(']');
-        return retArr;
-      case '[][]':
-        this.astArrayExpression(mNode.object, retArr);
-        retArr.push('[');
-        retArr.push(this.memberExpressionPropertyMarkup(property));
-        retArr.push(']');
-        return retArr;
-      default:
-        throw this.astErrorOutput('Unexpected expression', mNode);
+        if (typeof xProperty === 'undefined') {
+          switch (type) {
+            case 'Array(2)':
+            case 'Array(3)':
+            case 'Array(4)':
+              retArr.push(`constants_${ name }`);
+              return retArr;
+          }
+        }
+        case 'this.constants.value[]':
+        case 'this.constants.value[][]':
+        case 'this.constants.value[][][]':
+        case 'this.constants.value[][][][]':
+          break;
+        case 'fn()[]':
+          this.astCallExpression(mNode.object, retArr);
+          retArr.push('[');
+          retArr.push(this.memberExpressionPropertyMarkup(property));
+          retArr.push(']');
+          return retArr;
+        case '[][]':
+          this.astArrayExpression(mNode.object, retArr);
+          retArr.push('[');
+          retArr.push(this.memberExpressionPropertyMarkup(property));
+          retArr.push(']');
+          return retArr;
+        default:
+          throw this.astErrorOutput('Unexpected expression', mNode);
     }
 
     if (mNode.computed === false) {
@@ -1152,13 +1161,34 @@ class WebGLFunctionNode extends FunctionNode {
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
+      case 'Array1D(2)':
+      case 'Array2D(2)':
+      case 'Array3D(2)':
+        retArr.push(`getMemoryOptimizedVec2(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+        retArr.push(')');
+        break;
       case 'ArrayTexture(2)':
         retArr.push(`getVec2FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
+      case 'Array1D(3)':
+      case 'Array2D(3)':
+      case 'Array3D(3)':
+        retArr.push(`getMemoryOptimizedVec3(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+        retArr.push(')');
+        break;
       case 'ArrayTexture(3)':
         retArr.push(`getVec3FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+        retArr.push(')');
+        break;
+      case 'Array1D(4)':
+      case 'Array2D(4)':
+      case 'Array3D(4)':
+        retArr.push(`getMemoryOptimizedVec4(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;

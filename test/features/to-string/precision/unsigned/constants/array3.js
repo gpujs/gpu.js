@@ -1,43 +1,29 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../../../../../src');
 
-describe('feature: to-string unsigned precision constants Array(3)');
+describe('feature: to-string single precision constants Array(3)');
 
 function testConstant(mode, context, canvas) {
   const gpu = new GPU({ mode });
-  const a = [
-    [
-      [1, 2],
-      [3, 4],
-    ],
-    [
-      [5, 6],
-      [7, 8],
-    ]
-  ];
   const originalKernel = gpu.createKernel(function() {
-    let sum = 0;
-    for (let z = 0; z < 2; z++) {
-      for (let y = 0; y < 2; y++) {
-        sum += this.constants.a[z][y][this.thread.x];
-      }
-    }
-    return sum;
+    return this.constants.a;
   }, {
     canvas,
     context,
-    output: [2],
+    output: [1],
     precision: 'unsigned',
     constants: {
-      a
+      a: new Float32Array([1, 2, 3])
+    },
+    constantTypes: {
+      a: 'Array(3)'
     }
   });
-
-  const expected = new Float32Array([16, 20]);
+  const expected = [new Float32Array([1, 2, 3])];
   const originalResult = originalKernel();
   assert.deepEqual(originalResult, expected);
   const kernelString = originalKernel.toString();
-  const newResult = new Function('return ' + kernelString)()({ context, constants: { a } })();
+  const newResult = new Function('return ' + kernelString)()({ context, constants: { a: new Float32Array([1, 2, 3]) } })();
   assert.deepEqual(newResult, expected);
   gpu.destroy();
 }

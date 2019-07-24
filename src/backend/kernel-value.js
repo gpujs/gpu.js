@@ -1,5 +1,3 @@
-const { utils } = require('../utils');
-
 /**
  * @class KernelValue
  */
@@ -18,9 +16,13 @@ class KernelValue {
       onUpdateValueMismatch,
       origin,
       strictIntegers,
+      type,
     } = settings;
     if (!name) {
       throw new Error('name not set');
+    }
+    if (!type) {
+      throw new Error('type not set');
     }
     if (!origin) {
       throw new Error('origin not set');
@@ -37,7 +39,7 @@ class KernelValue {
     this.varName = origin === 'constants' ? `constants.${name}` : name;
     this.kernel = kernel;
     this.strictIntegers = strictIntegers;
-    this.type = utils.getVariableType(value, strictIntegers);
+    this.type = type;
     this.size = value.size || null;
     this.index = null;
     this.context = context;

@@ -5,6 +5,7 @@
   <title>GPU.JS : Test All</title>
   <link rel="stylesheet" href="../node_modules/qunit/qunit/qunit.css">
 
+  <script src="browser-test-utils.js"></script>
   <!-- gpu.js scripts -->
   <script src="../dist/gpu-browser.js"></script>
 </head>
@@ -24,126 +25,22 @@
     }
   };
   window.require = (module) => {
-    switch (module) {
-      case '../../../../../../../src': return browserGPU;
-      case '../../../../../../src': return browserGPU;
-      case '../../../../../src': return browserGPU;
-      case '../../../../src': return browserGPU;
-      case '../../../src': return browserGPU;
-      case '../../src': return browserGPU;
-      case 'sinon': return sinon;
-      case 'qunit': return QUnit;
-      default: throw new Error('cannot find ' + module);
-    }
+    if (module.match(/[.][.]\/src$/)) return browserGPU;
+    if (module === 'sinon') return sinon;
+    if (module === 'qunit') return QUnit;
+    if (module.match(/[.][.]\/browser-test-utils$/)) return browserTestUtils;
+    throw new Error('cannot find ' + module);
   };
 </script>
 <script src="../node_modules/sinon/pkg/sinon.js"></script>
 <script src="../node_modules/qunit/qunit/qunit.js"></script>
-
-<!-- features -->
-
-<!-- features: toString -->
-<!-- features: toString single precision arguments -->
-<script type="module" src="features/to-string/precision/single/arguments/array.js"></script>
-<script type="module" src="features/to-string/precision/single/arguments/array2.js"></script>
-<script type="module" src="features/to-string/precision/single/arguments/array3.js"></script>
-<script type="module" src="features/to-string/precision/single/arguments/boolean.js"></script>
-<script type="module" src="features/to-string/precision/single/arguments/float.js"></script>
-<script type="module" src="features/to-string/precision/single/arguments/html-image.js"></script>
-<script type="module" src="features/to-string/precision/single/arguments/html-image-array.js"></script>
-<script type="module" src="features/to-string/precision/single/arguments/input.js"></script>
-<script type="module" src="features/to-string/precision/single/arguments/integer.js"></script>
-<script type="module" src="features/to-string/precision/single/arguments/memory-optimized-number-texture.js"></script>
-<script type="module" src="features/to-string/precision/single/arguments/number-texture.js"></script>
-
-<!-- features: toString single precision constants -->
-<script type="module" src="features/to-string/precision/single/constants/array.js"></script>
-<script type="module" src="features/to-string/precision/single/constants/array2.js"></script>
-<script type="module" src="features/to-string/precision/single/constants/array3.js"></script>
-<script type="module" src="features/to-string/precision/single/constants/boolean.js"></script>
-<script type="module" src="features/to-string/precision/single/constants/float.js"></script>
-<script type="module" src="features/to-string/precision/single/constants/html-image.js"></script>
-<script type="module" src="features/to-string/precision/single/constants/html-image-array.js"></script>
-<script type="module" src="features/to-string/precision/single/constants/input.js"></script>
-<script type="module" src="features/to-string/precision/single/constants/integer.js"></script>
-<script type="module" src="features/to-string/precision/single/constants/memory-optimized-number-texture.js"></script>
-<script type="module" src="features/to-string/precision/single/constants/number-texture.js"></script>
-
-<!-- features: toString single precision kernel-map array -->
-<script type="module" src="features/to-string/precision/single/kernel-map/array/array.js"></script>
-<script type="module" src="features/to-string/precision/single/kernel-map/array/array2d.js"></script>
-<script type="module" src="features/to-string/precision/single/kernel-map/array/array3d.js"></script>
-<script type="module" src="features/to-string/precision/single/kernel-map/array/memory-optimized-number-texture.js"></script>
-<script type="module" src="features/to-string/precision/single/kernel-map/array/number-texture.js"></script>
-
-<!-- features: toString single precision kernel-map object -->
-<script type="module" src="features/to-string/precision/single/kernel-map/object/array.js"></script>
-<script type="module" src="features/to-string/precision/single/kernel-map/object/array2d.js"></script>
-<script type="module" src="features/to-string/precision/single/kernel-map/object/array3d.js"></script>
-<script type="module" src="features/to-string/precision/single/kernel-map/object/memory-optimized-number-texture.js"></script>
-<script type="module" src="features/to-string/precision/single/kernel-map/object/number-texture.js"></script>
-
-<!-- features: toString single precision returns -->
-<script type="module" src="features/to-string/precision/single/returns/array.js"></script>
-<script type="module" src="features/to-string/precision/single/returns/array2d.js"></script>
-<script type="module" src="features/to-string/precision/single/returns/array3d.js"></script>
-
-<!-- features: toString single precision graphical -->
-<script type="module" src="features/to-string/precision/single/graphical.js"></script>
-
-<!-- features: toString unsigned precision arguments -->
-<script type="module" src="features/to-string/precision/unsigned/arguments/array.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/arguments/array2.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/arguments/array3.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/arguments/boolean.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/arguments/float.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/arguments/html-image.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/arguments/html-image-array.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/arguments/input.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/arguments/integer.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/arguments/memory-optimized-number-texture.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/arguments/number-texture.js"></script>
-
-<!-- features: toString unsigned precision constants -->
-<script type="module" src="features/to-string/precision/unsigned/constants/array.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/constants/array2.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/constants/array3.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/constants/boolean.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/constants/float.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/constants/html-image.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/constants/html-image-array.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/constants/input.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/constants/integer.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/constants/memory-optimized-number-texture.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/constants/number-texture.js"></script>
-
-<!-- features: toString unsigned precision returns -->
-<script type="module" src="features/to-string/precision/unsigned/returns/array.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/returns/array2d.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/returns/array3d.js"></script>
-
-<!-- features: toString single precision kernel-map array -->
-<script type="module" src="features/to-string/precision/unsigned/kernel-map/array/array.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/kernel-map/array/array2d.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/kernel-map/array/array3d.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/kernel-map/array/memory-optimized-number-texture.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/kernel-map/array/number-texture.js"></script>
-
-<!-- features: toString single precision kernel-map object -->
-<script type="module" src="features/to-string/precision/unsigned/kernel-map/object/array.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/kernel-map/object/array2d.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/kernel-map/object/array3d.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/kernel-map/object/memory-optimized-number-texture.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/kernel-map/object/number-texture.js"></script>
-
-<!-- features: toString unsigned precision returns -->
-<script type="module" src="features/to-string/precision/unsigned/returns/array.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/returns/array2d.js"></script>
-<script type="module" src="features/to-string/precision/unsigned/returns/array3d.js"></script>
-
 <script type="module" src="features/add-custom-function.js"></script>
 <script type="module" src="features/add-custom-native-function.js"></script>
 <script type="module" src="features/add-typed-functions.js"></script>
+<script type="module" src="features/argument-array-types.js"></script>
+<script type="module" src="features/argument-array1d-types.js"></script>
+<script type="module" src="features/argument-array2d-types.js"></script>
+<script type="module" src="features/argument-array3d-types.js"></script>
 <script type="module" src="features/arithmetic-operators.js"></script>
 <script type="module" src="features/assignment-operators.js"></script>
 <script type="module" src="features/basic-math.js"></script>
@@ -152,8 +49,8 @@
 <script type="module" src="features/constants-array.js"></script>
 <script type="module" src="features/constants-bool.js"></script>
 <script type="module" src="features/constants-float.js"></script>
-<script type="module" src="features/constants-image.js"></script>
 <script type="module" src="features/constants-image-array.js"></script>
+<script type="module" src="features/constants-image.js"></script>
 <script type="module" src="features/constants-integer.js"></script>
 <script type="module" src="features/constants-texture.js"></script>
 <script type="module" src="features/cpu-with-textures.js"></script>
@@ -166,8 +63,8 @@
 <script type="module" src="features/get-canvas.js"></script>
 <script type="module" src="features/get-pixels.js"></script>
 <script type="module" src="features/if-else.js"></script>
-<script type="module" src="features/image.js"></script>
 <script type="module" src="features/image-array.js"></script>
+<script type="module" src="features/image.js"></script>
 <script type="module" src="features/infinity.js"></script>
 <script type="module" src="features/input.js"></script>
 <script type="module" src="features/json.js"></script>
@@ -183,14 +80,12 @@
 <script type="module" src="features/read-color-texture.js"></script>
 <script type="module" src="features/read-from-texture.js"></script>
 <script type="module" src="features/return-arrays.js"></script>
-<script type="module" src="features/single-precision.js"></script>
 <script type="module" src="features/single-precision-textures.js"></script>
+<script type="module" src="features/single-precision.js"></script>
 <script type="module" src="features/switches.js"></script>
 <script type="module" src="features/ternary.js"></script>
 <script type="module" src="features/type-management.js"></script>
 <script type="module" src="features/unsigned-precision-textures.js"></script>
-
-<!-- internal -->
 <script type="module" src="internal/boolean.js"></script>
 <script type="module" src="internal/casting.js"></script>
 <script type="module" src="internal/constructor-features.js"></script>
@@ -210,34 +105,10 @@
 <script type="module" src="internal/matrix-multiply-precision.js"></script>
 <script type="module" src="internal/mixed-memory-optimize.js"></script>
 <script type="module" src="internal/modes.js"></script>
+<script type="module" src="internal/overloading.js"></script>
 <script type="module" src="internal/precision.js"></script>
 <script type="module" src="internal/texture-index.js"></script>
 <script type="module" src="internal/utils.js"></script>
-
-<!-- internal / backend -->
-<script type="module" src="internal/backend/cpu/function-node.js"></script>
-<script type="module" src="internal/backend/function-node/isSafe.js"></script>
-<script type="module" src="internal/backend/function-node/isSafeDependencies.js"></script>
-<script type="module" src="internal/backend/headless-gl/kernel/index.js"></script>
-<script type="module" src="internal/backend/web-gl/function-node/astBinaryExpression.js"></script>
-<script type="module" src="internal/backend/web-gl/function-node/index.js"></script>
-<script type="module" src="internal/backend/web-gl/function-node/astForStatement.js"></script>
-<script type="module" src="internal/backend/web-gl/function-node/astVariableDeclaration.js"></script>
-<script type="module" src="internal/backend/web-gl/function-node/firstAvailableTypeFromAst.js"></script>
-<script type="module" src="internal/backend/web-gl/function-node/getDependencies.js"></script>
-<script type="module" src="internal/backend/web-gl/function-node/getVariableSignature.js"></script>
-<script type="module" src="internal/backend/web-gl/function-node/getVariableType.js"></script>
-<script type="module" src="internal/backend/web-gl/kernel/index.js"></script>
-<script type="module" src="internal/backend/web-gl/kernel/setupArguments.js"></script>
-<script type="module" src="internal/backend/web-gl/kernel/setupConstants.js"></script>
-<script type="module" src="internal/backend/web-gl2/kernel/index.js"></script>
-<script type="module" src="internal/backend/web-gl2/kernel/setupArguments.js"></script>
-<script type="module" src="internal/backend/web-gl2/kernel/setupConstants.js"></script>
-
-<!-- bug issues -->
-<script type="module" src="issues/31-nested-var-declare-test.js"></script>
-<script type="module" src="issues/91-create-kernel-map-array.js"></script>
-<script type="module" src="issues/96-param-names.js"></script>
 <script type="module" src="issues/114-create-kernel-map-run-second-time.js"></script>
 <script type="module" src="issues/116-multiple-kernels-run-again.js"></script>
 <script type="module" src="issues/130-typed-array.js"></script>
@@ -256,6 +127,7 @@
 <script type="module" src="issues/270-cache.js"></script>
 <script type="module" src="issues/279-wrong-canvas-size.js"></script>
 <script type="module" src="issues/300-nested-array-index.js"></script>
+<script type="module" src="issues/31-nested-var-declare-test.js"></script>
 <script type="module" src="issues/313-variable-lookup.js"></script>
 <script type="module" src="issues/314-large-input-array-addressing.js"></script>
 <script type="module" src="issues/335-missing-z-index-issue.js"></script>
@@ -276,5 +148,113 @@
 <script type="module" src="issues/472-compilation-issue.js"></script>
 <script type="module" src="issues/473-4-pixels.js"></script>
 <script type="module" src="issues/487-dynamic-arguments.js"></script>
+<script type="module" src="issues/91-create-kernel-map-array.js"></script>
+<script type="module" src="issues/96-param-names.js"></script>
+<script type="module" src="internal/backend/gl-kernel.js"></script>
+<script type="module" src="internal/backend/cpu/function-node.js"></script>
+<script type="module" src="internal/backend/function-node/isSafe.js"></script>
+<script type="module" src="internal/backend/function-node/isSafeDependencies.js"></script>
+<script type="module" src="features/to-string/precision/single/graphical.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/graphical.js"></script>
+<script type="module" src="internal/backend/headless-gl/kernel/index.js"></script>
+<script type="module" src="internal/backend/web-gl/function-node/astBinaryExpression.js"></script>
+<script type="module" src="internal/backend/web-gl/function-node/astCallExpression.js"></script>
+<script type="module" src="internal/backend/web-gl/function-node/astForStatement.js"></script>
+<script type="module" src="internal/backend/web-gl/function-node/astVariableDeclaration.js"></script>
+<script type="module" src="internal/backend/web-gl/function-node/firstAvailableTypeFromAst.js"></script>
+<script type="module" src="internal/backend/web-gl/function-node/getDependencies.js"></script>
+<script type="module" src="internal/backend/web-gl/function-node/getVariableSignature.js"></script>
+<script type="module" src="internal/backend/web-gl/function-node/getVariableType.js"></script>
+<script type="module" src="internal/backend/web-gl/function-node/index.js"></script>
+<script type="module" src="internal/backend/web-gl/kernel/index.js"></script>
+<script type="module" src="internal/backend/web-gl/kernel/setupArguments.js"></script>
+<script type="module" src="internal/backend/web-gl/kernel/setupConstants.js"></script>
+<script type="module" src="internal/backend/web-gl2/kernel/index.js"></script>
+<script type="module" src="internal/backend/web-gl2/kernel/setupArguments.js"></script>
+<script type="module" src="internal/backend/web-gl2/kernel/setupConstants.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/array.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/array2.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/array2d.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/array2d2.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/array2d3.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/array3.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/array3d.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/array4.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/boolean.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/float.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/html-image-array.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/html-image.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/input.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/integer.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/memory-optimized-number-texture.js"></script>
+<script type="module" src="features/to-string/precision/single/arguments/number-texture.js"></script>
+<script type="module" src="features/to-string/precision/single/constants/array.js"></script>
+<script type="module" src="features/to-string/precision/single/constants/array2.js"></script>
+<script type="module" src="features/to-string/precision/single/constants/array2d.js"></script>
+<script type="module" src="features/to-string/precision/single/constants/array3.js"></script>
+<script type="module" src="features/to-string/precision/single/constants/array3d.js"></script>
+<script type="module" src="features/to-string/precision/single/constants/array4.js"></script>
+<script type="module" src="features/to-string/precision/single/constants/boolean.js"></script>
+<script type="module" src="features/to-string/precision/single/constants/float.js"></script>
+<script type="module" src="features/to-string/precision/single/constants/html-image-array.js"></script>
+<script type="module" src="features/to-string/precision/single/constants/html-image.js"></script>
+<script type="module" src="features/to-string/precision/single/constants/input.js"></script>
+<script type="module" src="features/to-string/precision/single/constants/integer.js"></script>
+<script type="module" src="features/to-string/precision/single/constants/memory-optimized-number-texture.js"></script>
+<script type="module" src="features/to-string/precision/single/constants/number-texture.js"></script>
+<script type="module" src="features/to-string/precision/single/returns/array.js"></script>
+<script type="module" src="features/to-string/precision/single/returns/array2d.js"></script>
+<script type="module" src="features/to-string/precision/single/returns/array3d.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/arguments/array.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/arguments/array2.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/arguments/array2d.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/arguments/array3.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/arguments/array3d.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/arguments/array4.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/arguments/boolean.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/arguments/float.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/arguments/html-image-array.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/arguments/html-image.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/arguments/input.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/arguments/integer.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/arguments/memory-optimized-number-texture.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/arguments/number-texture.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/constants/array.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/constants/array2.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/constants/array2d.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/constants/array3.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/constants/array3d.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/constants/array4.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/constants/boolean.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/constants/float.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/constants/html-image-array.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/constants/html-image.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/constants/input.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/constants/integer.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/constants/memory-optimized-number-texture.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/constants/number-texture.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/returns/array.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/returns/array2d.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/returns/array3d.js"></script>
+<script type="module" src="features/to-string/precision/single/kernel-map/array/array.js"></script>
+<script type="module" src="features/to-string/precision/single/kernel-map/array/array2d.js"></script>
+<script type="module" src="features/to-string/precision/single/kernel-map/array/array3d.js"></script>
+<script type="module" src="features/to-string/precision/single/kernel-map/array/memory-optimized-number-texture.js"></script>
+<script type="module" src="features/to-string/precision/single/kernel-map/array/number-texture.js"></script>
+<script type="module" src="features/to-string/precision/single/kernel-map/object/array.js"></script>
+<script type="module" src="features/to-string/precision/single/kernel-map/object/array2d.js"></script>
+<script type="module" src="features/to-string/precision/single/kernel-map/object/array3d.js"></script>
+<script type="module" src="features/to-string/precision/single/kernel-map/object/memory-optimized-number-texture.js"></script>
+<script type="module" src="features/to-string/precision/single/kernel-map/object/number-texture.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/kernel-map/array/array.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/kernel-map/array/array2d.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/kernel-map/array/array3d.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/kernel-map/array/memory-optimized-number-texture.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/kernel-map/array/number-texture.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/kernel-map/object/array.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/kernel-map/object/array2d.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/kernel-map/object/array3d.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/kernel-map/object/memory-optimized-number-texture.js"></script>
+<script type="module" src="features/to-string/precision/unsigned/kernel-map/object/number-texture.js"></script>
 </body>
 </html>

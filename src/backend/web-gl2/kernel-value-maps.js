@@ -23,6 +23,19 @@ const { WebGL2KernelValueDynamicNumberTexture } = require('./kernel-value/dynami
 const { WebGL2KernelValueSingleArray } = require('./kernel-value/single-array');
 const { WebGL2KernelValueDynamicSingleArray } = require('./kernel-value/dynamic-single-array');
 
+const { WebGL2KernelValueSingleArray1DI } = require('./kernel-value/single-array1d-i');
+const { WebGL2KernelValueDynamicSingleArray1DI } = require('./kernel-value/dynamic-single-array1d-i');
+
+const { WebGL2KernelValueSingleArray2DI } = require('./kernel-value/single-array2d-i');
+const { WebGL2KernelValueDynamicSingleArray2DI } = require('./kernel-value/dynamic-single-array2d-i');
+
+const { WebGL2KernelValueSingleArray3DI } = require('./kernel-value/single-array3d-i');
+const { WebGL2KernelValueDynamicSingleArray3DI } = require('./kernel-value/dynamic-single-array3d-i');
+
+const { WebGL2KernelValueSingleArray2 } = require('./kernel-value/single-array2');
+const { WebGL2KernelValueSingleArray3 } = require('./kernel-value/single-array3');
+const { WebGL2KernelValueSingleArray4 } = require('./kernel-value/single-array4');
+
 const { WebGL2KernelValueUnsignedArray } = require('./kernel-value/unsigned-array');
 const { WebGL2KernelValueDynamicUnsignedArray } = require('./kernel-value/dynamic-unsigned-array');
 
@@ -33,6 +46,18 @@ const kernelValueMaps = {
       'Integer': WebGL2KernelValueInteger,
       'Float': WebGL2KernelValueFloat,
       'Array': WebGL2KernelValueDynamicUnsignedArray,
+      'Array(2)': false,
+      'Array(3)': false,
+      'Array(4)': false,
+      'Array1D(2)': false,
+      'Array1D(3)': false,
+      'Array1D(4)': false,
+      'Array2D(2)': false,
+      'Array2D(3)': false,
+      'Array2D(4)': false,
+      'Array3D(2)': false,
+      'Array3D(3)': false,
+      'Array3D(4)': false,
       'Input': WebGL2KernelValueDynamicUnsignedInput,
       'NumberTexture': WebGL2KernelValueDynamicNumberTexture,
       'ArrayTexture(1)': WebGL2KernelValueDynamicNumberTexture,
@@ -48,6 +73,18 @@ const kernelValueMaps = {
       'Float': WebGL2KernelValueFloat,
       'Integer': WebGL2KernelValueInteger,
       'Array': WebGL2KernelValueUnsignedArray,
+      'Array(2)': false,
+      'Array(3)': false,
+      'Array(4)': false,
+      'Array1D(2)': false,
+      'Array1D(3)': false,
+      'Array1D(4)': false,
+      'Array2D(2)': false,
+      'Array2D(3)': false,
+      'Array2D(4)': false,
+      'Array3D(2)': false,
+      'Array3D(3)': false,
+      'Array3D(4)': false,
       'Input': WebGL2KernelValueUnsignedInput,
       'NumberTexture': WebGL2KernelValueNumberTexture,
       'ArrayTexture(1)': WebGL2KernelValueNumberTexture,
@@ -65,6 +102,18 @@ const kernelValueMaps = {
       'Integer': WebGL2KernelValueInteger,
       'Float': WebGL2KernelValueFloat,
       'Array': WebGL2KernelValueDynamicSingleArray,
+      'Array(2)': WebGL2KernelValueSingleArray2,
+      'Array(3)': WebGL2KernelValueSingleArray3,
+      'Array(4)': WebGL2KernelValueSingleArray4,
+      'Array1D(2)': WebGL2KernelValueDynamicSingleArray1DI,
+      'Array1D(3)': WebGL2KernelValueDynamicSingleArray1DI,
+      'Array1D(4)': WebGL2KernelValueDynamicSingleArray1DI,
+      'Array2D(2)': WebGL2KernelValueDynamicSingleArray2DI,
+      'Array2D(3)': WebGL2KernelValueDynamicSingleArray2DI,
+      'Array2D(4)': WebGL2KernelValueDynamicSingleArray2DI,
+      'Array3D(2)': WebGL2KernelValueDynamicSingleArray3DI,
+      'Array3D(3)': WebGL2KernelValueDynamicSingleArray3DI,
+      'Array3D(4)': WebGL2KernelValueDynamicSingleArray3DI,
       'Input': WebGL2KernelValueDynamicSingleInput,
       'NumberTexture': WebGL2KernelValueDynamicNumberTexture,
       'ArrayTexture(1)': WebGL2KernelValueDynamicNumberTexture,
@@ -80,6 +129,18 @@ const kernelValueMaps = {
       'Float': WebGL2KernelValueFloat,
       'Integer': WebGL2KernelValueInteger,
       'Array': WebGL2KernelValueSingleArray,
+      'Array(2)': WebGL2KernelValueSingleArray2,
+      'Array(3)': WebGL2KernelValueSingleArray3,
+      'Array(4)': WebGL2KernelValueSingleArray4,
+      'Array1D(2)': WebGL2KernelValueSingleArray1DI,
+      'Array1D(3)': WebGL2KernelValueSingleArray1DI,
+      'Array1D(4)': WebGL2KernelValueSingleArray1DI,
+      'Array2D(2)': WebGL2KernelValueSingleArray2DI,
+      'Array2D(3)': WebGL2KernelValueSingleArray2DI,
+      'Array2D(4)': WebGL2KernelValueSingleArray2DI,
+      'Array3D(2)': WebGL2KernelValueSingleArray3DI,
+      'Array3D(3)': WebGL2KernelValueSingleArray3DI,
+      'Array3D(4)': WebGL2KernelValueSingleArray3DI,
       'Input': WebGL2KernelValueSingleInput,
       'NumberTexture': WebGL2KernelValueNumberTexture,
       'ArrayTexture(1)': WebGL2KernelValueNumberTexture,

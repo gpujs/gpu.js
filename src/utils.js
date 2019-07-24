@@ -188,8 +188,7 @@ const utils = {
    * @returns {TextureDimensions}
    */
   getMemoryOptimizedFloatTextureSize(dimensions, bitRatio) {
-    const [w, h, d] = dimensions;
-    const totalArea = utils.roundTo((w || 1) * (h || 1) * (d || 1), 4);
+    const totalArea = utils.roundTo((dimensions[0] || 1) * (dimensions[1] || 1) * (dimensions[2] || 1) * (dimensions[3] || 1), 4);
     const texelCount = totalArea / bitRatio;
     return utils.closestSquareDimensions(texelCount);
   },
@@ -273,6 +272,23 @@ const utils = {
   },
 
   /**
+   * Puts a nested 4d array into a one-dimensional target array
+   * @param {Array|*} array
+   * @param {Float32Array|Float64Array} target
+   */
+  flatten4dArrayTo(array, target) {
+    let offset = 0;
+    for (let l = 0; l < array.length; l++) {
+      for (let z = 0; z < array[l].length; z++) {
+        for (let y = 0; y < array[l][z].length; y++) {
+          target.set(array[l][z][y], offset);
+          offset += array[l][z][y].length;
+        }
+      }
+    }
+  },
+
+  /**
    * Puts a nested 1d, 2d, or 3d array into a one-dimensional target array
    * @param {Float32Array|Uint16Array|Uint8Array} array
    * @param {Float32Array} target
@@ -280,7 +296,11 @@ const utils = {
   flattenTo(array, target) {
     if (utils.isArray(array[0])) {
       if (utils.isArray(array[0][0])) {
-        utils.flatten3dArrayTo(array, target);
+        if (utils.isArray(array[0][0][0])) {
+          utils.flatten4dArrayTo(array, target);
+        } else {
+          utils.flatten3dArrayTo(array, target);
+        }
       } else {
         utils.flatten2dArrayTo(array, target);
       }
@@ -768,6 +788,107 @@ const utils = {
       return flattenedFunctionDependencies.join('') + result;
     }
     return result;
+  },
+
+  splitHTMLImageToRGB: (image, mode) => {
+    const gpu = new GPU({ mode });
+
+    const rKernel = gpu.createKernel(function(a) {
+      const pixel = a[this.thread.y][this.thread.x];
+      return pixel.r * 255;
+    }, {
+      output: [image.width, image.height],
+      precision: 'unsigned',
+      argumentTypes: ['HTMLImage'],
+    });
+    const gKernel = gpu.createKernel(function(a) {
+      const pixel = a[this.thread.y][this.thread.x];
+      return pixel.g * 255;
+    }, {
+      output: [image.width, image.height],
+      precision: 'unsigned',
+      argumentTypes: ['HTMLImage'],
+    });
+    const bKernel = gpu.createKernel(function(a) {
+      const pixel = a[this.thread.y][this.thread.x];
+      return pixel.b * 255;
+    }, {
+      output: [image.width, image.height],
+      precision: 'unsigned',
+      argumentTypes: ['HTMLImage'],
+    });
+    const aKernel = gpu.createKernel(function(a) {
+      const pixel = a[this.thread.y][this.thread.x];
+      return pixel.a * 255;
+    }, {
+      output: [image.width, image.height],
+      precision: 'unsigned',
+      argumentTypes: ['HTMLImage'],
+    });
+    const result = [
+      rKernel(image),
+      gKernel(image),
+      bKernel(image),
+      aKernel(image),
+    ];
+    result.rKernel = rKernel;
+    result.gKernel = gKernel;
+    result.bKernel = bKernel;
+    result.aKernel = aKernel;
+    result.gpu = gpu;
+    return result;
+  },
+
+  /**
+   * A visual debug utility
+   * @param rgba
+   * @param width
+   * @param height
+   * @param mode
+   * @return {[any, any, any, any]}
+   */
+  splitRGBAToCanvases: (rgba, width, height, mode) => {
+    const { GPU } = require('./gpu.js');
+
+    const visualGPUR = new GPU({ mode });
+    const visualKernelR = visualGPUR.createKernel(function(v) {
+      const pixel = v[this.thread.y][this.thread.x];
+      this.color(pixel.r / 255, 0, 0, 255);
+    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    visualKernelR(rgba);
+
+    const visualGPUG = new GPU({ mode });
+    const visualKernelG = visualGPUG.createKernel(function(v) {
+      const pixel = v[this.thread.y][this.thread.x];
+      this.color(0, pixel.g / 255, 0, 255);
+    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    visualKernelG(rgba);
+
+    const visualGPUB = new GPU({ mode });
+    const visualKernelB = visualGPUB.createKernel(function(v) {
+      const pixel = v[this.thread.y][this.thread.x];
+      this.color(0, 0, pixel.b / 255, 255);
+    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    visualKernelB(rgba);
+
+    const visualGPUA = new GPU({ mode });
+    const visualKernelA = visualGPUA.createKernel(function(v) {
+      const pixel = v[this.thread.y][this.thread.x];
+      this.color(255, 255, 255, pixel.a / 255);
+    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    visualKernelA(rgba);
+
+    visualGPUR.destroy();
+    visualGPUG.destroy();
+    visualGPUB.destroy();
+    visualGPUA.destroy();
+
+    return [
+      visualKernelR.canvas,
+      visualKernelG.canvas,
+      visualKernelB.canvas,
+      visualKernelA.canvas,
+    ];
   }
 };
 

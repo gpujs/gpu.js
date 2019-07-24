@@ -115,8 +115,17 @@ function cpuKernelString(cpuKernel, name) {
     thisProperties.push(`    _imageTo3DArray,`);
   } else if (cpuKernel.argumentTypes.indexOf('HTMLImage') !== -1 || constantTypes.indexOf('HTMLImage') !== -1) {
     const flattenedImageTo2DArray = utils.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel._imageTo2DArray.toString(), {
-      findDependency: () => {
-        debugger;
+      findDependency: (object, name) => {
+        return null;
+      },
+      thisLookup: (propertyName) => {
+        switch (propertyName) {
+          case 'canvas':
+            return 'settings.canvas';
+          case 'context':
+            return 'settings.context';
+        }
+        throw new Error('unhandled thisLookup');
       }
     });
     beforeReturn.push(flattenedImageTo2DArray);

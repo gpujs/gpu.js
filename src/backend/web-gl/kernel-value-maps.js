@@ -20,6 +20,19 @@ const { WebGLKernelValueDynamicNumberTexture } = require('./kernel-value/dynamic
 const { WebGLKernelValueSingleArray } = require('./kernel-value/single-array');
 const { WebGLKernelValueDynamicSingleArray } = require('./kernel-value/dynamic-single-array');
 
+const { WebGLKernelValueSingleArray1DI } = require('./kernel-value/single-array1d-i');
+const { WebGLKernelValueDynamicSingleArray1DI } = require('./kernel-value/dynamic-single-array1d-i');
+
+const { WebGLKernelValueSingleArray2DI } = require('./kernel-value/single-array2d-i');
+const { WebGLKernelValueDynamicSingleArray2DI } = require('./kernel-value/dynamic-single-array2d-i');
+
+const { WebGLKernelValueSingleArray3DI } = require('./kernel-value/single-array3d-i');
+const { WebGLKernelValueDynamicSingleArray3DI } = require('./kernel-value/dynamic-single-array3d-i');
+
+const { WebGLKernelValueSingleArray2 } = require('./kernel-value/single-array2');
+const { WebGLKernelValueSingleArray3 } = require('./kernel-value/single-array3');
+const { WebGLKernelValueSingleArray4 } = require('./kernel-value/single-array4');
+
 const { WebGLKernelValueUnsignedArray } = require('./kernel-value/unsigned-array');
 const { WebGLKernelValueDynamicUnsignedArray } = require('./kernel-value/dynamic-unsigned-array');
 
@@ -30,6 +43,18 @@ const kernelValueMaps = {
       'Integer': WebGLKernelValueInteger,
       'Float': WebGLKernelValueFloat,
       'Array': WebGLKernelValueDynamicUnsignedArray,
+      'Array(2)': false,
+      'Array(3)': false,
+      'Array(4)': false,
+      'Array1D(2)': false,
+      'Array1D(3)': false,
+      'Array1D(4)': false,
+      'Array2D(2)': false,
+      'Array2D(3)': false,
+      'Array2D(4)': false,
+      'Array3D(2)': false,
+      'Array3D(3)': false,
+      'Array3D(4)': false,
       'Input': WebGLKernelValueDynamicUnsignedInput,
       'NumberTexture': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(1)': WebGLKernelValueDynamicNumberTexture,
@@ -45,6 +70,18 @@ const kernelValueMaps = {
       'Float': WebGLKernelValueFloat,
       'Integer': WebGLKernelValueInteger,
       'Array': WebGLKernelValueUnsignedArray,
+      'Array(2)': false,
+      'Array(3)': false,
+      'Array(4)': false,
+      'Array1D(2)': false,
+      'Array1D(3)': false,
+      'Array1D(4)': false,
+      'Array2D(2)': false,
+      'Array2D(3)': false,
+      'Array2D(4)': false,
+      'Array3D(2)': false,
+      'Array3D(3)': false,
+      'Array3D(4)': false,
       'Input': WebGLKernelValueUnsignedInput,
       'NumberTexture': WebGLKernelValueNumberTexture,
       'ArrayTexture(1)': WebGLKernelValueNumberTexture,
@@ -62,6 +99,19 @@ const kernelValueMaps = {
       'Integer': WebGLKernelValueInteger,
       'Float': WebGLKernelValueFloat,
       'Array': WebGLKernelValueDynamicSingleArray,
+      'Array(2)': WebGLKernelValueSingleArray2,
+      'Array(3)': WebGLKernelValueSingleArray3,
+      'Array(4)': WebGLKernelValueSingleArray4,
+      'Array1D(2)': WebGLKernelValueDynamicSingleArray1DI,
+      'Array1D(3)': WebGLKernelValueDynamicSingleArray1DI,
+      'Array1D(4)': WebGLKernelValueDynamicSingleArray1DI,
+      'Array2D(2)': WebGLKernelValueDynamicSingleArray2DI,
+      'Array2D(3)': WebGLKernelValueDynamicSingleArray2DI,
+      'Array2D(4)': WebGLKernelValueDynamicSingleArray2DI,
+      'Array3D(2)': WebGLKernelValueDynamicSingleArray3DI,
+      'Array3D(3)': WebGLKernelValueDynamicSingleArray3DI,
+      'Array3D(4)': WebGLKernelValueDynamicSingleArray3DI,
+      'Array': WebGLKernelValueDynamicSingleArray,
       'Input': WebGLKernelValueDynamicSingleInput,
       'NumberTexture': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(1)': WebGLKernelValueDynamicNumberTexture,
@@ -77,6 +127,18 @@ const kernelValueMaps = {
       'Float': WebGLKernelValueFloat,
       'Integer': WebGLKernelValueInteger,
       'Array': WebGLKernelValueSingleArray,
+      'Array(2)': WebGLKernelValueSingleArray2,
+      'Array(3)': WebGLKernelValueSingleArray3,
+      'Array(4)': WebGLKernelValueSingleArray4,
+      'Array1D(2)': WebGLKernelValueSingleArray1DI,
+      'Array1D(3)': WebGLKernelValueSingleArray1DI,
+      'Array1D(4)': WebGLKernelValueSingleArray1DI,
+      'Array2D(2)': WebGLKernelValueSingleArray2DI,
+      'Array2D(3)': WebGLKernelValueSingleArray2DI,
+      'Array2D(4)': WebGLKernelValueSingleArray2DI,
+      'Array3D(2)': WebGLKernelValueSingleArray3DI,
+      'Array3D(3)': WebGLKernelValueSingleArray3DI,
+      'Array3D(4)': WebGLKernelValueSingleArray3DI,
       'Input': WebGLKernelValueSingleInput,
       'NumberTexture': WebGLKernelValueNumberTexture,
       'ArrayTexture(1)': WebGLKernelValueNumberTexture,

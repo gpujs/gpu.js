@@ -224,6 +224,8 @@ class GPU {
       validate,
       onRequestFallback: (args) => {
         const fallbackKernel = new CPUKernel(source, {
+          argumentTypes: kernel.argumentTypes,
+          constantTypes: kernel.constantTypes,
           graphical: kernel.graphical,
           loopMaxIterations: kernel.loopMaxIterations,
           constants: kernel.constants,
@@ -262,7 +264,10 @@ class GPU {
             return existingKernel.renderOutput();
           }
         }
+
         const newKernel = switchableKernels[signature] = new this.Kernel(source, {
+          // Don't send kernel.argumentTypes, as they are different and need to be recalculated here
+          constantTypes: kernel.constantTypes,
           graphical: kernel.graphical,
           loopMaxIterations: kernel.loopMaxIterations,
           constants: kernel.constants,

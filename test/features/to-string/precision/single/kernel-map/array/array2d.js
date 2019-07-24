@@ -1,7 +1,7 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../../../../../../src');
 
-describe('feature: to-string single precision array style kernel map returns Array2D');
+describe('feature: to-string single precision array style kernel map returns 2D Array');
 
 function testReturn(mode, context, canvas) {
   const gpu = new GPU({ mode });

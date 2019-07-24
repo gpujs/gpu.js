@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>GPU.JS : Test All</title>
+  <link rel="stylesheet" href="../node_modules/qunit/qunit/qunit.css">
+
+  <script src="browser-test-utils.js"></script>
+  <!-- gpu.js scripts -->
+  <script src="../dist/gpu-browser.js"></script>
+</head>
+<body>
+<div id="qunit"></div>
+<div id="qunit-fixture"></div>
+<script>
+  const isBrowser = true;
+  const browserGPU = { GPU };
+  for (const p in GPU) {
+    if (p === 'GPU') continue;
+    browserGPU[p] = GPU[p];
+  }
+  window.process = {
+    cwd: () => {
+      return '../..';
+    }
+  };
+  window.require = (module) => {
+    if (module.match(/[.][.]\/src$/)) return browserGPU;
+    if (module === 'sinon') return sinon;
+    if (module === 'qunit') return QUnit;
+    if (module.match(/[.][.]\/browser-test-utils$/)) return browserTestUtils;
+    throw new Error('cannot find ' + module);
+  };
+</script>
+<script src="../node_modules/sinon/pkg/sinon.js"></script>
+<script src="../node_modules/qunit/qunit/qunit.js"></script>
+{{test-files}}
+</body>
+</html>

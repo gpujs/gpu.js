@@ -170,6 +170,8 @@ class WebGLKernel extends GLKernel {
     this.uniform2ivCache = {};
     this.uniform3fvCache = {};
     this.uniform3ivCache = {};
+    this.uniform4fvCache = {};
+    this.uniform4ivCache = {};
   }
 
   initCanvas() {
@@ -396,6 +398,7 @@ class WebGLKernel extends GLKernel {
       }
       const kernelArgument = new KernelValue(value, {
         name,
+        type,
         origin: 'user',
         context: gl,
         checkContext: this.checkContext,
@@ -423,19 +426,28 @@ class WebGLKernel extends GLKernel {
   setupConstants(args) {
     const { context: gl } = this;
     this.kernelConstants = [];
-    this.constantTypes = {};
+    let needsConstantTypes = this.constantTypes === null;
+    if (needsConstantTypes) {
+      this.constantTypes = {};
+    }
     this.constantBitRatios = {};
     let textureIndexes = 0;
     for (const name in this.constants) {
       const value = this.constants[name];
-      const type = utils.getVariableType(value, this.strictIntegers);
-      this.constantTypes[name] = type;
+      let type;
+      if (needsConstantTypes) {
+        type = utils.getVariableType(value, this.strictIntegers);
+        this.constantTypes[name] = type;
+      } else {
+        type = this.constantTypes[name];
+      }
       const KernelValue = this.constructor.lookupKernelValueType(type, 'static', this.precision);
       if (KernelValue === null) {
         return this.requestFallback(args);
       }
       const kernelValue = new KernelValue(value, {
         name,
+        type,
         origin: 'constants',
         context: this.context,
         checkContext: this.checkContext,
@@ -870,6 +882,56 @@ class WebGLKernel extends GLKernel {
     this.uniform3ivCache[name] = value;
     const loc = this.getUniformLocation(name);
     this.context.uniform3iv(loc, value);
+  }
+
+  setUniform3fv(name, value) {
+    if (this.uniform3fvCache.hasOwnProperty(name)) {
+      const cache = this.uniform3fvCache[name];
+      if (
+        value[0] === cache[0] &&
+        value[1] === cache[1] &&
+        value[2] === cache[2]
+      ) {
+        return;
+      }
+    }
+    this.uniform3fvCache[name] = value;
+    const loc = this.getUniformLocation(name);
+    this.context.uniform3fv(loc, value);
+  }
+
+  setUniform4iv(name, value) {
+    if (this.uniform4ivCache.hasOwnProperty(name)) {
+      const cache = this.uniform4ivCache[name];
+      if (
+        value[0] === cache[0] &&
+        value[1] === cache[1] &&
+        value[2] === cache[2] &&
+        value[3] === cache[3]
+      ) {
+        return;
+      }
+    }
+    this.uniform4ivCache[name] = value;
+    const loc = this.getUniformLocation(name);
+    this.context.uniform4iv(loc, value);
+  }
+
+  setUniform4fv(name, value) {
+    if (this.uniform4fvCache.hasOwnProperty(name)) {
+      const cache = this.uniform4fvCache[name];
+      if (
+        value[0] === cache[0] &&
+        value[1] === cache[1] &&
+        value[2] === cache[2] &&
+        value[3] === cache[3]
+      ) {
+        return;
+      }
+    }
+    this.uniform4fvCache[name] = value;
+    const loc = this.getUniformLocation(name);
+    this.context.uniform4fv(loc, value);
   }
 
   /**

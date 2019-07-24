@@ -617,11 +617,19 @@ This is needed because c++, which glsl is a subset of, is, of course, strongly t
 Types that can be used with GPU.js are as follows:
 
 ### Argument Types
-Types: that may be used for `returnType` or for each property of `argumentTypes`:
 * 'Array'
-* 'Array(2)'
-* 'Array(3)'
-* 'Array(4)'
+* 'Array(2)' **New in V2!**
+* 'Array(3)' **New in V2!**
+* 'Array(4)' **New in V2!**
+* 'Array1D(2)' **New in V2!**
+* 'Array1D(3)' **New in V2!**
+* 'Array1D(4)' **New in V2!**
+* 'Array2D(2)' **New in V2!**
+* 'Array2D(3)' **New in V2!**
+* 'Array2D(4)' **New in V2!**
+* 'Array3D(2)' **New in V2!**
+* 'Array3D(3)' **New in V2!**
+* 'Array3D(4)' **New in V2!**
 * 'HTMLImage'
 * 'HTMLImageArray'
 * 'Number'
@@ -630,23 +638,22 @@ Types: that may be used for `returnType` or for each property of `argumentTypes`
 * 'Boolean' **New in V2!**
 
 ### Return Types
-Types: that may be used for `returnType` or for each property of `argumentTypes`:
+NOTE: These refer the the return type of the kernel function, the actual result will always be a collection in the size of the defined `output`
 * 'Array(2)'
 * 'Array(3)'
 * 'Array(4)'
-* 'HTMLImage'
-* 'HTMLImageArray'
 * 'Number'
 * 'Float'
 * 'Integer'
 
 ### Internal Types
 Types generally used in the `Texture` class, for #pipelining or for advanced usage.
-* 'NumberTexture'
 * 'ArrayTexture(1)' **New in V2!**
 * 'ArrayTexture(2)' **New in V2!**
 * 'ArrayTexture(3)' **New in V2!**
 * 'ArrayTexture(4)' **New in V2!**
+* 'NumberTexture'
+* 'MemoryOptimizedNumberTexture' **New in V2!**
 
 ## Loops
 * Any loops defined inside the kernel must have a maximum iteration count defined by the loopMaxIterations setting.

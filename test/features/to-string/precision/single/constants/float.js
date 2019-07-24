@@ -15,8 +15,9 @@ function testConstant(mode, context, canvas) {
     constants: {
       a: 100
     },
-    constantTypes: ['Float']
+    constantTypes: { a: 'Float' }
   });
+  assert.equal(originalKernel.constantTypes.a, 'Float');
   assert.deepEqual(originalKernel()[0], 42);
   const kernelString = originalKernel.toString();
   const newKernel = new Function('return ' + kernelString)()({ context, constants: { a: 100 } });

@@ -1,9 +1,9 @@
 {
   "name": "gpu.js",
-  "version": "2.0.0-rc.21",
+  "version": "2.0.0-rc.22",
   "description": "GPU Accelerated JavaScript",
   "engines": {
-    "node": ">=10.0.0"
+    "node": ">=8.0.0"
   },
   "main": "./src/index.js",
   "files": [
@@ -24,16 +24,18 @@
   },
   "devDependencies": {
     "benchmark": "^2.1.4",
-    "browser-sync": "^2.26.3",
+    "browser-sync": "^2.26.7",
     "browserify": "^16.2.3",
     "gulp": "^4.0.0",
     "gulp-concat": "^2.6.0",
     "gulp-header": "^1.7.1",
     "gulp-jsbeautifier": "^2.1.0",
     "gulp-rename": "^1.2.2",
+    "gulp-replace": "^1.0.0",
     "gulp-strip-comments": "^2.4.5",
     "merge-stream": "^1.0.1",
     "qunit": "^2.9.1",
+    "read-dir-deep": "^7.0.1",
     "sinon": "^7.3.2",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^2.0.0"
@@ -42,7 +44,7 @@
     "test": "qunit",
     "setup": "npm i -g gulp-cli",
     "build-docs": "./node_modules/.bin/jsdoc -c jsdoc.json src -r -d doc --debug && gulp injectCSS",
-    "make": "gulp build && gulp beautify && gulp minify"
+    "make": "gulp make"
   },
   "repository": {
     "type": "git",

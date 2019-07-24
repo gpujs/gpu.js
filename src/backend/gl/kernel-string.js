@@ -74,6 +74,8 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
     nativeFunctions,
     subKernels,
     immutable,
+    argumentTypes,
+    constantTypes,
     kernelArguments,
     kernelConstants,
   } = originKernel;
@@ -93,6 +95,8 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
     nativeFunctions,
     subKernels,
     immutable,
+    argumentTypes,
+    constantTypes,
   });
   let result = [];
   context.setIndent(2);
@@ -119,6 +123,9 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
 
         // non-primitives
       case 'Array':
+      case 'Array(2)':
+      case 'Array(3)':
+      case 'Array(4)':
         context.insertVariable(`uploadValue_${kernelArgument.name}`, upgradedArguments[i]);
         break;
       case 'HTMLImage':
@@ -135,6 +142,9 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
         break;
       case 'MemoryOptimizedNumberTexture':
       case 'NumberTexture':
+      case 'Array2D(2)':
+      case 'Array2D(3)':
+      case 'Array2D(4)':
       case 'ArrayTexture(1)':
       case 'ArrayTexture(2)':
       case 'ArrayTexture(3)':

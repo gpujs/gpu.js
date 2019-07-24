@@ -261,10 +261,10 @@ function circlicalLogic(mode) {
 (GPU.isWebGLSupported ? test : skip)('circlical logic webgl', () => {
   circlicalLogic('webgl');
 });
-(GPU.isWebGL2Supported ? test : skip)('circlical logic webgl', () => {
+(GPU.isWebGL2Supported ? test : skip)('circlical logic webgl2', () => {
   circlicalLogic('webgl2');
 });
-(GPU.isHeadlessGLSupported ? test : skip)('circlical logic webgl', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('circlical logic headlessgl', () => {
   circlicalLogic('headlessgl');
 });
 

@@ -5,32 +5,25 @@ describe('feature: to-string single precision constants Array(2)');
 
 function testConstant(mode, context, canvas) {
   const gpu = new GPU({ mode });
-  const a = [
-    [1, 2, 3, 4],
-    [5, 6, 7, 8],
-    [9, 10, 11, 12],
-    [13, 14, 15, 16],
-  ];
   const originalKernel = gpu.createKernel(function() {
-    let sum = 0;
-    for (let y = 0; y < 4; y++) {
-      sum += this.constants.a[y][this.thread.x];
-    }
-    return sum;
+    return this.constants.a;
   }, {
     canvas,
     context,
-    output: [4],
+    output: [1],
     precision: 'single',
     constants: {
-      a
+      a: new Float32Array([1, 2])
+    },
+    constantTypes: {
+      a: 'Array(2)'
     }
   });
-  const expected = new Float32Array([28,32,36,40]);
+  const expected = [new Float32Array([1, 2])];
   const originalResult = originalKernel();
   assert.deepEqual(originalResult, expected);
   const kernelString = originalKernel.toString();
-  const newResult = new Function('return ' + kernelString)()({ context, constants: { a } })();
+  const newResult = new Function('return ' + kernelString)()({ context, constants: { a: new Float32Array([1, 2]) } })();
   assert.deepEqual(newResult, expected);
   gpu.destroy();
 }

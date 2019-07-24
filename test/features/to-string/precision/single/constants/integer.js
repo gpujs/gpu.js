@@ -15,8 +15,9 @@ function testConstant(mode, context, canvas) {
     constants: {
       a: 100
     },
-    constantTypes: ['Integer']
+    constantTypes: { a: 'Integer' }
   });
+  assert.equal(originalKernel.constantTypes.a, 'Integer');
   assert.deepEqual(originalKernel()[0], 42);
   const kernelString = originalKernel.toString();
   const newKernel = new Function('return ' + kernelString)()({ context, constants: { a: 100 } });

@@ -1,3 +1,4 @@
+// language=GLSL
 const fragmentShader = `__HEADER__;
 precision highp float;
 precision highp int;
@@ -267,8 +268,7 @@ ivec3 indexTo3D(int idx, ivec3 texDim) {
 }
 
 float get32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = x + texDim.x * (y + texDim.y * z);
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   vec4 texel = texture2D(tex, st / vec2(texSize));
@@ -276,8 +276,7 @@ float get32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 }
 
 float get16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = x + texDim.x * (y + texDim.y * z);
   int w = texSize.x * 2;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   vec4 texel = texture2D(tex, st / vec2(texSize.x * 2, texSize.y));
@@ -285,8 +284,7 @@ float get16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 }
 
 float get8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = x + texDim.x * (y + texDim.y * z);
   int w = texSize.x * 4;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   vec4 texel = texture2D(tex, st / vec2(texSize.x * 4, texSize.y));
@@ -294,8 +292,7 @@ float get8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 }
 
 float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = x + texDim.x * (y + texDim.y * z);
   int channel = integerMod(index, 4);
   index = index / 4;
   int w = texSize.x;
@@ -309,8 +306,7 @@ float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, in
 }
 
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = x + texDim.x * (y + texDim.y * z);
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   return texture2D(tex, st / vec2(texSize));
@@ -326,13 +322,61 @@ vec2 getVec2FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int
   return vec2(result[0], result[1]);
 }
 
+vec2 getMemoryOptimizedVec2(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  int index = x + (texDim.x * (y + (texDim.y * z)));
+  int channel = integerMod(index, 2);
+  index = index / 2;
+  int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  vec4 texel = texture2D(tex, st / vec2(texSize));
+  if (channel == 0) return vec2(texel.r, texel.g);
+  if (channel == 1) return vec2(texel.b, texel.a);
+  return vec2(0.0, 0.0);
+}
+
 vec3 getVec3FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
   return vec3(result[0], result[1], result[2]);
 }
 
+vec3 getMemoryOptimizedVec3(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  int fieldIndex = 3 * (x + texDim.x * (y + texDim.y * z));
+  int vectorIndex = fieldIndex / 4;
+  int vectorOffset = fieldIndex - vectorIndex * 4;
+  int readY = vectorIndex / texSize.x;
+  int readX = vectorIndex - readY * texSize.x;
+  vec4 tex1 = texture2D(tex, (vec2(readX, readY) + 0.5) / vec2(texSize));
+  
+  if (vectorOffset == 0) {
+    return tex1.xyz;
+  } else if (vectorOffset == 1) {
+    return tex1.yzw;
+  } else {
+    readX++;
+    if (readX >= texSize.x) {
+      readX = 0;
+      readY++;
+    }
+    vec4 tex2 = texture2D(tex, vec2(readX, readY) / vec2(texSize));
+    if (vectorOffset == 2) {
+      return vec3(tex1.z, tex1.w, tex2.x);
+    } else {
+      return vec3(tex1.w, tex2.x, tex2.y);
+    }
+  }
+}
+
 vec4 getVec4FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   return getImage2D(tex, texSize, texDim, z, y, x);
+}
+
+vec4 getMemoryOptimizedVec4(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  int index = x + texDim.x * (y + texDim.y * z);
+  int channel = integerMod(index, 2);
+  int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  vec4 texel = texture2D(tex, st / vec2(texSize));
+  return vec4(texel.r, texel.g, texel.b, texel.a);
 }
 
 vec4 actualColor;

@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.21
- * @date Thu Jul 11 2019 13:18:11 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.22
+ * @date Wed Jul 24 2019 12:50:53 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -5408,7 +5408,7 @@ function alias(name, source) {
 module.exports = {
   alias
 };
-},{"./utils":90}],6:[function(require,module,exports){
+},{"./utils":108}],6:[function(require,module,exports){
 const { FunctionNode } = require('../function-node');
 
 class CPUFunctionNode extends FunctionNode {
@@ -5872,7 +5872,7 @@ class CPUFunctionNode extends FunctionNode {
             this.astGeneric(xProperty, retArr);
             retArr.push(']');
           }
-        } else {
+        } else if (typeof xProperty !== 'undefined') {
           retArr.push('[');
           this.astGeneric(xProperty, retArr);
           retArr.push(']');
@@ -6062,8 +6062,17 @@ function cpuKernelString(cpuKernel, name) {
     thisProperties.push(`    _imageTo3DArray,`);
   } else if (cpuKernel.argumentTypes.indexOf('HTMLImage') !== -1 || constantTypes.indexOf('HTMLImage') !== -1) {
     const flattenedImageTo2DArray = utils.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel._imageTo2DArray.toString(), {
-      findDependency: () => {
-        debugger;
+      findDependency: (object, name) => {
+        return null;
+      },
+      thisLookup: (propertyName) => {
+        switch (propertyName) {
+          case 'canvas':
+            return 'settings.canvas';
+          case 'context':
+            return 'settings.context';
+        }
+        throw new Error('unhandled thisLookup');
       }
     });
     beforeReturn.push(flattenedImageTo2DArray);
@@ -6093,7 +6102,7 @@ ${cpuKernel._kernelString}
 module.exports = {
   cpuKernelString
 };
-},{"../../input":86,"../../utils":90}],8:[function(require,module,exports){
+},{"../../input":104,"../../utils":108}],8:[function(require,module,exports){
 const { Kernel } = require('../kernel');
 const { FunctionBuilder } = require('../function-builder');
 const { CPUFunctionNode } = require('./function-node');
@@ -6591,7 +6600,7 @@ class CPUKernel extends Kernel {
 module.exports = {
   CPUKernel
 };
-},{"../../utils":90,"../function-builder":9,"../kernel":35,"./function-node":6,"./kernel-string":7}],9:[function(require,module,exports){
+},{"../../utils":108,"../function-builder":9,"../kernel":35,"./function-node":6,"./kernel-string":7}],9:[function(require,module,exports){
 class FunctionBuilder {
   static fromKernel(kernel, FunctionNode, extraNodeOptions) {
     const {
@@ -8467,6 +8476,15 @@ const typeLookupMap = {
   'HTMLImageArray': 'Array(4)',
   'NumberTexture': 'Number',
   'MemoryOptimizedNumberTexture': 'Number',
+  'Array1D(2)': 'Array(2)',
+  'Array1D(3)': 'Array(3)',
+  'Array1D(4)': 'Array(4)',
+  'Array2D(2)': 'Array(2)',
+  'Array2D(3)': 'Array(3)',
+  'Array2D(4)': 'Array(4)',
+  'Array3D(2)': 'Array(2)',
+  'Array3D(3)': 'Array(3)',
+  'Array3D(4)': 'Array(4)',
   'ArrayTexture(1)': 'Number',
   'ArrayTexture(2)': 'Array(2)',
   'ArrayTexture(3)': 'Array(3)',
@@ -8476,7 +8494,7 @@ const typeLookupMap = {
 module.exports = {
   FunctionNode
 };
-},{"../utils":90,"./function-tracer":11,"acorn":1}],11:[function(require,module,exports){
+},{"../utils":108,"./function-tracer":11,"acorn":1}],11:[function(require,module,exports){
 class FunctionTracer {
   constructor(ast) {
     this.runningContexts = [];
@@ -8717,6 +8735,8 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
     nativeFunctions,
     subKernels,
     immutable,
+    argumentTypes,
+    constantTypes,
     kernelArguments,
     kernelConstants,
   } = originKernel;
@@ -8736,6 +8756,8 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
     nativeFunctions,
     subKernels,
     immutable,
+    argumentTypes,
+    constantTypes,
   });
   let result = [];
   context.setIndent(2);
@@ -8760,6 +8782,9 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
         break;
 
       case 'Array':
+      case 'Array(2)':
+      case 'Array(3)':
+      case 'Array(4)':
         context.insertVariable(`uploadValue_${kernelArgument.name}`, upgradedArguments[i]);
         break;
       case 'HTMLImage':
@@ -8776,6 +8801,9 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
         break;
       case 'MemoryOptimizedNumberTexture':
       case 'NumberTexture':
+      case 'Array2D(2)':
+      case 'Array2D(3)':
+      case 'Array2D(4)':
       case 'ArrayTexture(1)':
       case 'ArrayTexture(2)':
       case 'ArrayTexture(3)':
@@ -8922,7 +8950,7 @@ function getToArrayString(kernelResult, textureName) {
 module.exports = {
   glKernelString
 };
-},{"../../utils":90,"gl-wiretap":3}],13:[function(require,module,exports){
+},{"../../utils":108,"gl-wiretap":3}],13:[function(require,module,exports){
 const { Kernel } = require('../kernel');
 const { Texture } = require('../../texture');
 const { utils } = require('../../utils');
@@ -9751,7 +9779,7 @@ module.exports = {
   GLKernel,
   renderStrategy
 };
-},{"../../texture":89,"../../utils":90,"../kernel":35,"./texture/array-2-float":16,"./texture/array-2-float-2d":14,"./texture/array-2-float-3d":15,"./texture/array-3-float":19,"./texture/array-3-float-2d":17,"./texture/array-3-float-3d":18,"./texture/array-4-float":22,"./texture/array-4-float-2d":20,"./texture/array-4-float-3d":21,"./texture/float":25,"./texture/float-2d":23,"./texture/float-3d":24,"./texture/graphical":26,"./texture/memory-optimized":29,"./texture/memory-optimized-2d":27,"./texture/memory-optimized-3d":28,"./texture/unsigned":32,"./texture/unsigned-2d":30,"./texture/unsigned-3d":31}],14:[function(require,module,exports){
+},{"../../texture":107,"../../utils":108,"../kernel":35,"./texture/array-2-float":16,"./texture/array-2-float-2d":14,"./texture/array-2-float-3d":15,"./texture/array-3-float":19,"./texture/array-3-float-2d":17,"./texture/array-3-float-3d":18,"./texture/array-4-float":22,"./texture/array-4-float-2d":20,"./texture/array-4-float-3d":21,"./texture/float":25,"./texture/float-2d":23,"./texture/float-3d":24,"./texture/graphical":26,"./texture/memory-optimized":29,"./texture/memory-optimized-2d":27,"./texture/memory-optimized-3d":28,"./texture/unsigned":32,"./texture/unsigned-2d":30,"./texture/unsigned-3d":31}],14:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -9768,7 +9796,7 @@ class GLTextureArray2Float2D extends GLTextureFloat {
 module.exports = {
   GLTextureArray2Float2D
 };
-},{"../../../utils":90,"./float":25}],15:[function(require,module,exports){
+},{"../../../utils":108,"./float":25}],15:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -9785,7 +9813,7 @@ class GLTextureArray2Float3D extends GLTextureFloat {
 module.exports = {
   GLTextureArray2Float3D
 };
-},{"../../../utils":90,"./float":25}],16:[function(require,module,exports){
+},{"../../../utils":108,"./float":25}],16:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -9802,7 +9830,7 @@ class GLTextureArray2Float extends GLTextureFloat {
 module.exports = {
   GLTextureArray2Float
 };
-},{"../../../utils":90,"./float":25}],17:[function(require,module,exports){
+},{"../../../utils":108,"./float":25}],17:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -9819,7 +9847,7 @@ class GLTextureArray3Float2D extends GLTextureFloat {
 module.exports = {
   GLTextureArray3Float2D
 };
-},{"../../../utils":90,"./float":25}],18:[function(require,module,exports){
+},{"../../../utils":108,"./float":25}],18:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -9836,7 +9864,7 @@ class GLTextureArray3Float3D extends GLTextureFloat {
 module.exports = {
   GLTextureArray3Float3D
 };
-},{"../../../utils":90,"./float":25}],19:[function(require,module,exports){
+},{"../../../utils":108,"./float":25}],19:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -9853,7 +9881,7 @@ class GLTextureArray3Float extends GLTextureFloat {
 module.exports = {
   GLTextureArray3Float
 };
-},{"../../../utils":90,"./float":25}],20:[function(require,module,exports){
+},{"../../../utils":108,"./float":25}],20:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -9870,7 +9898,7 @@ class GLTextureArray4Float2D extends GLTextureFloat {
 module.exports = {
   GLTextureArray4Float2D
 };
-},{"../../../utils":90,"./float":25}],21:[function(require,module,exports){
+},{"../../../utils":108,"./float":25}],21:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -9887,7 +9915,7 @@ class GLTextureArray4Float3D extends GLTextureFloat {
 module.exports = {
   GLTextureArray4Float3D
 };
-},{"../../../utils":90,"./float":25}],22:[function(require,module,exports){
+},{"../../../utils":108,"./float":25}],22:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -9904,7 +9932,7 @@ class GLTextureArray4Float extends GLTextureFloat {
 module.exports = {
   GLTextureArray4Float
 };
-},{"../../../utils":90,"./float":25}],23:[function(require,module,exports){
+},{"../../../utils":108,"./float":25}],23:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -9921,7 +9949,7 @@ class GLTextureFloat2D extends GLTextureFloat {
 module.exports = {
   GLTextureFloat2D
 };
-},{"../../../utils":90,"./float":25}],24:[function(require,module,exports){
+},{"../../../utils":108,"./float":25}],24:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -9938,7 +9966,7 @@ class GLTextureFloat3D extends GLTextureFloat {
 module.exports = {
   GLTextureFloat3D
 };
-},{"../../../utils":90,"./float":25}],25:[function(require,module,exports){
+},{"../../../utils":108,"./float":25}],25:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { Texture } = require('../../../texture');
 
@@ -9973,7 +10001,7 @@ class GLTextureFloat extends Texture {
 module.exports = {
   GLTextureFloat
 };
-},{"../../../texture":89,"../../../utils":90}],26:[function(require,module,exports){
+},{"../../../texture":107,"../../../utils":108}],26:[function(require,module,exports){
 const { GLTextureUnsigned } = require('./unsigned');
 
 class GLTextureGraphical extends GLTextureUnsigned {
@@ -10006,7 +10034,7 @@ class GLTextureMemoryOptimized2D extends GLTextureFloat {
 module.exports = {
   GLTextureMemoryOptimized2D
 };
-},{"../../../utils":90,"./float":25}],28:[function(require,module,exports){
+},{"../../../utils":108,"./float":25}],28:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -10023,7 +10051,7 @@ class GLTextureMemoryOptimized3D extends GLTextureFloat {
 module.exports = {
   GLTextureMemoryOptimized3D
 };
-},{"../../../utils":90,"./float":25}],29:[function(require,module,exports){
+},{"../../../utils":108,"./float":25}],29:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -10040,7 +10068,7 @@ class GLTextureMemoryOptimized extends GLTextureFloat {
 module.exports = {
   GLTextureMemoryOptimized
 };
-},{"../../../utils":90,"./float":25}],30:[function(require,module,exports){
+},{"../../../utils":108,"./float":25}],30:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureUnsigned } = require('./unsigned');
 
@@ -10057,7 +10085,7 @@ class GLTextureUnsigned2D extends GLTextureUnsigned {
 module.exports = {
   GLTextureUnsigned2D
 };
-},{"../../../utils":90,"./unsigned":32}],31:[function(require,module,exports){
+},{"../../../utils":108,"./unsigned":32}],31:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureUnsigned } = require('./unsigned');
 
@@ -10074,7 +10102,7 @@ class GLTextureUnsigned3D extends GLTextureUnsigned {
 module.exports = {
   GLTextureUnsigned3D
 };
-},{"../../../utils":90,"./unsigned":32}],32:[function(require,module,exports){
+},{"../../../utils":108,"./unsigned":32}],32:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { Texture } = require('../../../texture');
 
@@ -10109,7 +10137,7 @@ class GLTextureUnsigned extends Texture {
 module.exports = {
   GLTextureUnsigned
 };
-},{"../../../texture":89,"../../../utils":90}],33:[function(require,module,exports){
+},{"../../../texture":107,"../../../utils":108}],33:[function(require,module,exports){
 const getContext = require('gl');
 const { WebGLKernel } = require('../web-gl/kernel');
 const { glKernelString } = require('../gl/kernel-string');
@@ -10221,7 +10249,9 @@ class HeadlessGLKernel extends WebGLKernel {
 
   build() {
     super.build.apply(this, arguments);
-    this.extensions.STACKGL_resize_drawingbuffer.resize(this.maxTexSize[0], this.maxTexSize[1]);
+    if (!this.fallbackRequested) {
+      this.extensions.STACKGL_resize_drawingbuffer.resize(this.maxTexSize[0], this.maxTexSize[1]);
+    }
   }
 
   destroyExtensions() {
@@ -10257,9 +10287,7 @@ class HeadlessGLKernel extends WebGLKernel {
 module.exports = {
   HeadlessGLKernel
 };
-},{"../gl/kernel-string":12,"../web-gl/kernel":57,"gl":2}],34:[function(require,module,exports){
-const { utils } = require('../utils');
-
+},{"../gl/kernel-string":12,"../web-gl/kernel":66,"gl":2}],34:[function(require,module,exports){
 class KernelValue {
   constructor(value, settings) {
     const {
@@ -10271,9 +10299,13 @@ class KernelValue {
       onUpdateValueMismatch,
       origin,
       strictIntegers,
+      type,
     } = settings;
     if (!name) {
       throw new Error('name not set');
+    }
+    if (!type) {
+      throw new Error('type not set');
     }
     if (!origin) {
       throw new Error('origin not set');
@@ -10290,7 +10322,7 @@ class KernelValue {
     this.varName = origin === 'constants' ? `constants.${name}` : name;
     this.kernel = kernel;
     this.strictIntegers = strictIntegers;
-    this.type = utils.getVariableType(value, strictIntegers);
+    this.type = type;
     this.size = value.size || null;
     this.index = null;
     this.context = context;
@@ -10312,7 +10344,7 @@ class KernelValue {
 module.exports = {
   KernelValue
 };
-},{"../utils":90}],35:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 const { utils } = require('../utils');
 const { Input } = require('../input');
 
@@ -10493,11 +10525,16 @@ class Kernel {
 
   setupConstants() {
     this.kernelConstants = [];
-    this.constantTypes = {};
+    let needsConstantTypes = this.constantTypes === null;
+    if (needsConstantTypes) {
+      this.constantTypes = {};
+    }
     this.constantBitRatios = {};
     if (this.constants) {
       for (let p in this.constants) {
-        this.constantTypes[p] = utils.getVariableType(this.constants[p], this.strictIntegers);
+        if (needsConstantTypes) {
+          this.constantTypes[p] = utils.getVariableType(this.constants[p], this.strictIntegers);
+        }
         this.constantBitRatios[p] = this.getBitRatio(this.constants[p]);
       }
     }
@@ -10629,7 +10666,14 @@ class Kernel {
   }
 
   setArgumentTypes(argumentTypes) {
-    this.argumentTypes = argumentTypes;
+    if (Array.isArray(argumentTypes)) {
+      this.argumentTypes = argumentTypes;
+    } else {
+      this.argumentTypes = [];
+      for (const p in argumentTypes) {
+        this.argumentTypes[this.argumentNames.indexOf(p)] = argumentTypes[p];
+      }
+    }
     return this;
   }
 
@@ -10717,7 +10761,7 @@ class Kernel {
 module.exports = {
   Kernel
 };
-},{"../input":86,"../utils":90}],36:[function(require,module,exports){
+},{"../input":104,"../utils":108}],36:[function(require,module,exports){
 const fragmentShader = `__HEADER__;
 precision highp float;
 precision highp int;
@@ -10987,8 +11031,7 @@ ivec3 indexTo3D(int idx, ivec3 texDim) {
 }
 
 float get32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = x + texDim.x * (y + texDim.y * z);
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   vec4 texel = texture2D(tex, st / vec2(texSize));
@@ -10996,8 +11039,7 @@ float get32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 }
 
 float get16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = x + texDim.x * (y + texDim.y * z);
   int w = texSize.x * 2;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   vec4 texel = texture2D(tex, st / vec2(texSize.x * 2, texSize.y));
@@ -11005,8 +11047,7 @@ float get16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 }
 
 float get8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = x + texDim.x * (y + texDim.y * z);
   int w = texSize.x * 4;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   vec4 texel = texture2D(tex, st / vec2(texSize.x * 4, texSize.y));
@@ -11014,8 +11055,7 @@ float get8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 }
 
 float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = x + texDim.x * (y + texDim.y * z);
   int channel = integerMod(index, 4);
   index = index / 4;
   int w = texSize.x;
@@ -11029,8 +11069,7 @@ float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, in
 }
 
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = x + texDim.x * (y + texDim.y * z);
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   return texture2D(tex, st / vec2(texSize));
@@ -11046,13 +11085,61 @@ vec2 getVec2FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int
   return vec2(result[0], result[1]);
 }
 
+vec2 getMemoryOptimizedVec2(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  int index = x + (texDim.x * (y + (texDim.y * z)));
+  int channel = integerMod(index, 2);
+  index = index / 2;
+  int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  vec4 texel = texture2D(tex, st / vec2(texSize));
+  if (channel == 0) return vec2(texel.r, texel.g);
+  if (channel == 1) return vec2(texel.b, texel.a);
+  return vec2(0.0, 0.0);
+}
+
 vec3 getVec3FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
   return vec3(result[0], result[1], result[2]);
 }
 
+vec3 getMemoryOptimizedVec3(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  int fieldIndex = 3 * (x + texDim.x * (y + texDim.y * z));
+  int vectorIndex = fieldIndex / 4;
+  int vectorOffset = fieldIndex - vectorIndex * 4;
+  int readY = vectorIndex / texSize.x;
+  int readX = vectorIndex - readY * texSize.x;
+  vec4 tex1 = texture2D(tex, (vec2(readX, readY) + 0.5) / vec2(texSize));
+  
+  if (vectorOffset == 0) {
+    return tex1.xyz;
+  } else if (vectorOffset == 1) {
+    return tex1.yzw;
+  } else {
+    readX++;
+    if (readX >= texSize.x) {
+      readX = 0;
+      readY++;
+    }
+    vec4 tex2 = texture2D(tex, vec2(readX, readY) / vec2(texSize));
+    if (vectorOffset == 2) {
+      return vec3(tex1.z, tex1.w, tex2.x);
+    } else {
+      return vec3(tex1.w, tex2.x, tex2.y);
+    }
+  }
+}
+
 vec4 getVec4FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   return getImage2D(tex, texSize, texDim, z, y, x);
+}
+
+vec4 getMemoryOptimizedVec4(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  int index = x + texDim.x * (y + texDim.y * z);
+  int channel = integerMod(index, 2);
+  int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  vec4 texel = texture2D(tex, st / vec2(texSize));
+  return vec4(texel.r, texel.g, texel.b, texel.a);
 }
 
 vec4 actualColor;
@@ -12038,25 +12125,34 @@ class WebGLFunctionNode extends FunctionNode {
         }
         break;
       case 'this.constants.value':
-      case 'this.constants.value[]':
-      case 'this.constants.value[][]':
-      case 'this.constants.value[][][]':
-      case 'this.constants.value[][][][]':
-        break;
-      case 'fn()[]':
-        this.astCallExpression(mNode.object, retArr);
-        retArr.push('[');
-        retArr.push(this.memberExpressionPropertyMarkup(property));
-        retArr.push(']');
-        return retArr;
-      case '[][]':
-        this.astArrayExpression(mNode.object, retArr);
-        retArr.push('[');
-        retArr.push(this.memberExpressionPropertyMarkup(property));
-        retArr.push(']');
-        return retArr;
-      default:
-        throw this.astErrorOutput('Unexpected expression', mNode);
+        if (typeof xProperty === 'undefined') {
+          switch (type) {
+            case 'Array(2)':
+            case 'Array(3)':
+            case 'Array(4)':
+              retArr.push(`constants_${ name }`);
+              return retArr;
+          }
+        }
+        case 'this.constants.value[]':
+        case 'this.constants.value[][]':
+        case 'this.constants.value[][][]':
+        case 'this.constants.value[][][][]':
+          break;
+        case 'fn()[]':
+          this.astCallExpression(mNode.object, retArr);
+          retArr.push('[');
+          retArr.push(this.memberExpressionPropertyMarkup(property));
+          retArr.push(']');
+          return retArr;
+        case '[][]':
+          this.astArrayExpression(mNode.object, retArr);
+          retArr.push('[');
+          retArr.push(this.memberExpressionPropertyMarkup(property));
+          retArr.push(']');
+          return retArr;
+        default:
+          throw this.astErrorOutput('Unexpected expression', mNode);
     }
 
     if (mNode.computed === false) {
@@ -12093,13 +12189,34 @@ class WebGLFunctionNode extends FunctionNode {
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
+      case 'Array1D(2)':
+      case 'Array2D(2)':
+      case 'Array3D(2)':
+        retArr.push(`getMemoryOptimizedVec2(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+        retArr.push(')');
+        break;
       case 'ArrayTexture(2)':
         retArr.push(`getVec2FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
+      case 'Array1D(3)':
+      case 'Array2D(3)':
+      case 'Array3D(3)':
+        retArr.push(`getMemoryOptimizedVec3(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+        retArr.push(')');
+        break;
       case 'ArrayTexture(3)':
         retArr.push(`getVec3FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
+        retArr.push(')');
+        break;
+      case 'Array1D(4)':
+      case 'Array2D(4)':
+      case 'Array3D(4)':
+        retArr.push(`getMemoryOptimizedVec4(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
@@ -12382,7 +12499,7 @@ const operatorMap = {
 module.exports = {
   WebGLFunctionNode
 };
-},{"../../utils":90,"../function-node":10}],38:[function(require,module,exports){
+},{"../../utils":108,"../function-node":10}],38:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGLKernelValueFloat } = require('./kernel-value/float');
 const { WebGLKernelValueInteger } = require('./kernel-value/integer');
@@ -12405,6 +12522,19 @@ const { WebGLKernelValueDynamicNumberTexture } = require('./kernel-value/dynamic
 const { WebGLKernelValueSingleArray } = require('./kernel-value/single-array');
 const { WebGLKernelValueDynamicSingleArray } = require('./kernel-value/dynamic-single-array');
 
+const { WebGLKernelValueSingleArray1DI } = require('./kernel-value/single-array1d-i');
+const { WebGLKernelValueDynamicSingleArray1DI } = require('./kernel-value/dynamic-single-array1d-i');
+
+const { WebGLKernelValueSingleArray2DI } = require('./kernel-value/single-array2d-i');
+const { WebGLKernelValueDynamicSingleArray2DI } = require('./kernel-value/dynamic-single-array2d-i');
+
+const { WebGLKernelValueSingleArray3DI } = require('./kernel-value/single-array3d-i');
+const { WebGLKernelValueDynamicSingleArray3DI } = require('./kernel-value/dynamic-single-array3d-i');
+
+const { WebGLKernelValueSingleArray2 } = require('./kernel-value/single-array2');
+const { WebGLKernelValueSingleArray3 } = require('./kernel-value/single-array3');
+const { WebGLKernelValueSingleArray4 } = require('./kernel-value/single-array4');
+
 const { WebGLKernelValueUnsignedArray } = require('./kernel-value/unsigned-array');
 const { WebGLKernelValueDynamicUnsignedArray } = require('./kernel-value/dynamic-unsigned-array');
 
@@ -12415,6 +12545,18 @@ const kernelValueMaps = {
       'Integer': WebGLKernelValueInteger,
       'Float': WebGLKernelValueFloat,
       'Array': WebGLKernelValueDynamicUnsignedArray,
+      'Array(2)': false,
+      'Array(3)': false,
+      'Array(4)': false,
+      'Array1D(2)': false,
+      'Array1D(3)': false,
+      'Array1D(4)': false,
+      'Array2D(2)': false,
+      'Array2D(3)': false,
+      'Array2D(4)': false,
+      'Array3D(2)': false,
+      'Array3D(3)': false,
+      'Array3D(4)': false,
       'Input': WebGLKernelValueDynamicUnsignedInput,
       'NumberTexture': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(1)': WebGLKernelValueDynamicNumberTexture,
@@ -12430,6 +12572,18 @@ const kernelValueMaps = {
       'Float': WebGLKernelValueFloat,
       'Integer': WebGLKernelValueInteger,
       'Array': WebGLKernelValueUnsignedArray,
+      'Array(2)': false,
+      'Array(3)': false,
+      'Array(4)': false,
+      'Array1D(2)': false,
+      'Array1D(3)': false,
+      'Array1D(4)': false,
+      'Array2D(2)': false,
+      'Array2D(3)': false,
+      'Array2D(4)': false,
+      'Array3D(2)': false,
+      'Array3D(3)': false,
+      'Array3D(4)': false,
       'Input': WebGLKernelValueUnsignedInput,
       'NumberTexture': WebGLKernelValueNumberTexture,
       'ArrayTexture(1)': WebGLKernelValueNumberTexture,
@@ -12447,6 +12601,19 @@ const kernelValueMaps = {
       'Integer': WebGLKernelValueInteger,
       'Float': WebGLKernelValueFloat,
       'Array': WebGLKernelValueDynamicSingleArray,
+      'Array(2)': WebGLKernelValueSingleArray2,
+      'Array(3)': WebGLKernelValueSingleArray3,
+      'Array(4)': WebGLKernelValueSingleArray4,
+      'Array1D(2)': WebGLKernelValueDynamicSingleArray1DI,
+      'Array1D(3)': WebGLKernelValueDynamicSingleArray1DI,
+      'Array1D(4)': WebGLKernelValueDynamicSingleArray1DI,
+      'Array2D(2)': WebGLKernelValueDynamicSingleArray2DI,
+      'Array2D(3)': WebGLKernelValueDynamicSingleArray2DI,
+      'Array2D(4)': WebGLKernelValueDynamicSingleArray2DI,
+      'Array3D(2)': WebGLKernelValueDynamicSingleArray3DI,
+      'Array3D(3)': WebGLKernelValueDynamicSingleArray3DI,
+      'Array3D(4)': WebGLKernelValueDynamicSingleArray3DI,
+      'Array': WebGLKernelValueDynamicSingleArray,
       'Input': WebGLKernelValueDynamicSingleInput,
       'NumberTexture': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(1)': WebGLKernelValueDynamicNumberTexture,
@@ -12462,6 +12629,18 @@ const kernelValueMaps = {
       'Float': WebGLKernelValueFloat,
       'Integer': WebGLKernelValueInteger,
       'Array': WebGLKernelValueSingleArray,
+      'Array(2)': WebGLKernelValueSingleArray2,
+      'Array(3)': WebGLKernelValueSingleArray3,
+      'Array(4)': WebGLKernelValueSingleArray4,
+      'Array1D(2)': WebGLKernelValueSingleArray1DI,
+      'Array1D(3)': WebGLKernelValueSingleArray1DI,
+      'Array1D(4)': WebGLKernelValueSingleArray1DI,
+      'Array2D(2)': WebGLKernelValueSingleArray2DI,
+      'Array2D(3)': WebGLKernelValueSingleArray2DI,
+      'Array2D(4)': WebGLKernelValueSingleArray2DI,
+      'Array3D(2)': WebGLKernelValueSingleArray3DI,
+      'Array3D(3)': WebGLKernelValueSingleArray3DI,
+      'Array3D(4)': WebGLKernelValueSingleArray3DI,
       'Input': WebGLKernelValueSingleInput,
       'NumberTexture': WebGLKernelValueNumberTexture,
       'ArrayTexture(1)': WebGLKernelValueNumberTexture,
@@ -12497,7 +12676,7 @@ function lookupKernelValueType(type, dynamic, precision) {
 module.exports = {
   lookupKernelValueType
 };
-},{"./kernel-value/boolean":39,"./kernel-value/dynamic-html-image":40,"./kernel-value/dynamic-memory-optimized-number-texture":41,"./kernel-value/dynamic-number-texture":42,"./kernel-value/dynamic-single-array":43,"./kernel-value/dynamic-single-input":44,"./kernel-value/dynamic-unsigned-array":45,"./kernel-value/dynamic-unsigned-input":46,"./kernel-value/float":47,"./kernel-value/html-image":48,"./kernel-value/integer":50,"./kernel-value/memory-optimized-number-texture":51,"./kernel-value/number-texture":52,"./kernel-value/single-array":53,"./kernel-value/single-input":54,"./kernel-value/unsigned-array":55,"./kernel-value/unsigned-input":56}],39:[function(require,module,exports){
+},{"./kernel-value/boolean":39,"./kernel-value/dynamic-html-image":40,"./kernel-value/dynamic-memory-optimized-number-texture":41,"./kernel-value/dynamic-number-texture":42,"./kernel-value/dynamic-single-array":43,"./kernel-value/dynamic-single-array1d-i":44,"./kernel-value/dynamic-single-array2d-i":45,"./kernel-value/dynamic-single-array3d-i":46,"./kernel-value/dynamic-single-input":47,"./kernel-value/dynamic-unsigned-array":48,"./kernel-value/dynamic-unsigned-input":49,"./kernel-value/float":50,"./kernel-value/html-image":51,"./kernel-value/integer":53,"./kernel-value/memory-optimized-number-texture":54,"./kernel-value/number-texture":55,"./kernel-value/single-array":56,"./kernel-value/single-array1d-i":57,"./kernel-value/single-array2":58,"./kernel-value/single-array2d-i":59,"./kernel-value/single-array3":60,"./kernel-value/single-array3d-i":61,"./kernel-value/single-array4":62,"./kernel-value/single-input":63,"./kernel-value/unsigned-array":64,"./kernel-value/unsigned-input":65}],39:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -12526,7 +12705,7 @@ class WebGLKernelValueBoolean extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueBoolean
 };
-},{"../../../utils":90,"./index":49}],40:[function(require,module,exports){
+},{"../../../utils":108,"./index":52}],40:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueHTMLImage } = require('./html-image');
 
@@ -12552,7 +12731,7 @@ class WebGLKernelValueDynamicHTMLImage extends WebGLKernelValueHTMLImage {
 module.exports = {
   WebGLKernelValueDynamicHTMLImage
 };
-},{"../../../utils":90,"./html-image":48}],41:[function(require,module,exports){
+},{"../../../utils":108,"./html-image":51}],41:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueMemoryOptimizedNumberTexture } = require('./memory-optimized-number-texture');
 
@@ -12577,7 +12756,7 @@ class WebGLKernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelVal
 module.exports = {
   WebGLKernelValueDynamicMemoryOptimizedNumberTexture
 };
-},{"../../../utils":90,"./memory-optimized-number-texture":51}],42:[function(require,module,exports){
+},{"../../../utils":108,"./memory-optimized-number-texture":54}],42:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueNumberTexture } = require('./number-texture');
 
@@ -12602,7 +12781,7 @@ class WebGLKernelValueDynamicNumberTexture extends WebGLKernelValueNumberTexture
 module.exports = {
   WebGLKernelValueDynamicNumberTexture
 };
-},{"../../../utils":90,"./number-texture":52}],43:[function(require,module,exports){
+},{"../../../utils":108,"./number-texture":55}],43:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray } = require('./single-array');
 
@@ -12629,7 +12808,79 @@ class WebGLKernelValueDynamicSingleArray extends WebGLKernelValueSingleArray {
 module.exports = {
   WebGLKernelValueDynamicSingleArray
 };
-},{"../../../utils":90,"./single-array":53}],44:[function(require,module,exports){
+},{"../../../utils":108,"./single-array":56}],44:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGLKernelValueSingleArray1DI } = require('./single-array1d-i');
+
+class WebGLKernelValueDynamicSingleArray1DI extends WebGLKernelValueSingleArray1DI {
+  getSource() {
+    return utils.linesToString([
+      `uniform sampler2D ${this.id}`,
+      `uniform ivec2 ${this.sizeId}`,
+      `uniform ivec3 ${this.dimensionsId}`,
+    ]);
+  }
+
+  updateValue(value) {
+    this.setShape(value);
+    this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
+    this.kernel.setUniform2iv(this.sizeId, this.textureSize);
+    super.updateValue(value);
+  }
+}
+
+module.exports = {
+  WebGLKernelValueDynamicSingleArray1DI
+};
+},{"../../../utils":108,"./single-array1d-i":57}],45:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGLKernelValueSingleArray2DI } = require('./single-array2d-i');
+
+class WebGLKernelValueDynamicSingleArray2DI extends WebGLKernelValueSingleArray2DI {
+  getSource() {
+    return utils.linesToString([
+      `uniform sampler2D ${this.id}`,
+      `uniform ivec2 ${this.sizeId}`,
+      `uniform ivec3 ${this.dimensionsId}`,
+    ]);
+  }
+
+  updateValue(value) {
+    this.setShape(value);
+    this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
+    this.kernel.setUniform2iv(this.sizeId, this.textureSize);
+    super.updateValue(value);
+  }
+}
+
+module.exports = {
+  WebGLKernelValueDynamicSingleArray2DI
+};
+},{"../../../utils":108,"./single-array2d-i":59}],46:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGLKernelValueSingleArray3DI } = require('./single-array3d-i');
+
+class WebGLKernelValueDynamicSingleArray3DI extends WebGLKernelValueSingleArray3DI {
+  getSource() {
+    return utils.linesToString([
+      `uniform sampler2D ${this.id}`,
+      `uniform ivec2 ${this.sizeId}`,
+      `uniform ivec3 ${this.dimensionsId}`,
+    ]);
+  }
+
+  updateValue(value) {
+    this.setShape(value);
+    this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
+    this.kernel.setUniform2iv(this.sizeId, this.textureSize);
+    super.updateValue(value);
+  }
+}
+
+module.exports = {
+  WebGLKernelValueDynamicSingleArray3DI
+};
+},{"../../../utils":108,"./single-array3d-i":61}],47:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleInput } = require('./single-input');
 
@@ -12657,7 +12908,7 @@ class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
 module.exports = {
   WebGLKernelValueDynamicSingleInput
 };
-},{"../../../utils":90,"./single-input":54}],45:[function(require,module,exports){
+},{"../../../utils":108,"./single-input":63}],48:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedArray } = require('./unsigned-array');
 
@@ -12686,7 +12937,7 @@ class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray
 module.exports = {
   WebGLKernelValueDynamicUnsignedArray
 };
-},{"../../../utils":90,"./unsigned-array":55}],46:[function(require,module,exports){
+},{"../../../utils":108,"./unsigned-array":64}],49:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedInput } = require('./unsigned-input');
 
@@ -12716,7 +12967,7 @@ class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput
 module.exports = {
   WebGLKernelValueDynamicUnsignedInput
 };
-},{"../../../utils":90,"./unsigned-input":56}],47:[function(require,module,exports){
+},{"../../../utils":108,"./unsigned-input":65}],50:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -12747,7 +12998,7 @@ class WebGLKernelValueFloat extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueFloat
 };
-},{"../../../utils":90,"./index":49}],48:[function(require,module,exports){
+},{"../../../utils":108,"./index":52}],51:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -12794,7 +13045,7 @@ class WebGLKernelValueHTMLImage extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueHTMLImage
 };
-},{"../../../utils":90,"./index":49}],49:[function(require,module,exports){
+},{"../../../utils":108,"./index":52}],52:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { Input } = require('../../../input');
 const { KernelValue } = require('../../kernel-value');
@@ -12901,7 +13152,7 @@ class WebGLKernelValue extends KernelValue {
 module.exports = {
   WebGLKernelValue
 };
-},{"../../../input":86,"../../../utils":90,"../../kernel-value":34}],50:[function(require,module,exports){
+},{"../../../input":104,"../../../utils":108,"../../kernel-value":34}],53:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -12929,7 +13180,7 @@ class WebGLKernelValueInteger extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueInteger
 };
-},{"../../../utils":90,"./index":49}],51:[function(require,module,exports){
+},{"../../../utils":108,"./index":52}],54:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -12972,7 +13223,7 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueMemoryOptimizedNumberTexture
 };
-},{"../../../utils":90,"./index":49}],52:[function(require,module,exports){
+},{"../../../utils":108,"./index":52}],55:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -13017,7 +13268,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueNumberTexture
 };
-},{"../../../utils":90,"./index":49}],53:[function(require,module,exports){
+},{"../../../utils":108,"./index":52}],56:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -13068,7 +13319,262 @@ class WebGLKernelValueSingleArray extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueSingleArray
 };
-},{"../../../utils":90,"./index":49}],54:[function(require,module,exports){
+},{"../../../utils":108,"./index":52}],57:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGLKernelValue } = require('./index');
+
+class WebGLKernelValueSingleArray1DI extends WebGLKernelValue {
+  constructor(value, settings) {
+    super(value, settings);
+    this.requestTexture();
+    this.bitRatio = 4;
+    this.setShape(value);
+  }
+
+  setShape(value) {
+    const valueDimensions = utils.getDimensions(value, true);
+    this.textureSize = utils.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
+    this.dimensions = new Int32Array([valueDimensions[1], 1, 1]);
+    this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.uploadValue = new Float32Array(this.uploadArrayLength);
+  }
+
+  getStringValueHandler() {
+    return utils.linesToString([
+      `const uploadValue_${this.name} = new Float32Array(${this.uploadArrayLength})`,
+      `flattenTo(${this.varName}, uploadValue_${this.name})`,
+    ]);
+  }
+
+  getSource() {
+    return utils.linesToString([
+      `uniform sampler2D ${this.id}`,
+      `ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
+      `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+    ]);
+  }
+
+  updateValue(value) {
+    if (value.constructor !== this.initialValueConstructor) {
+      this.onUpdateValueMismatch();
+      return;
+    }
+    const { context: gl } = this;
+    utils.flatten2dArrayTo(value, this.uploadValue);
+    gl.activeTexture(this.contextHandle);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.textureSize[0], this.textureSize[1], 0, gl.RGBA, gl.FLOAT, this.uploadValue);
+    this.kernel.setUniform1i(this.id, this.index);
+  }
+}
+
+module.exports = {
+  WebGLKernelValueSingleArray1DI
+};
+},{"../../../utils":108,"./index":52}],58:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGLKernelValue } = require('./index');
+
+class WebGLKernelValueSingleArray2 extends WebGLKernelValue {
+  constructor(value, settings) {
+    super(value, settings);
+    this.uploadValue = value;
+  }
+  getSource(value) {
+    if (this.origin === 'constants') {
+      return `const vec2 ${this.id} = vec2(${value[0]},${value[1]});\n`;
+    }
+    return `uniform vec2 ${this.id};\n`;
+  }
+
+  getStringValueHandler() {
+    return `const uploadValue_${this.name} = ${this.varName};\n`;
+  }
+
+  updateValue(value) {
+    if (this.origin === 'constants') return;
+    this.kernel.setUniform2fv(this.id, this.uploadValue = value);
+  }
+}
+
+module.exports = {
+  WebGLKernelValueSingleArray2
+};
+},{"../../../utils":108,"./index":52}],59:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGLKernelValue } = require('./index');
+
+class WebGLKernelValueSingleArray2DI extends WebGLKernelValue {
+  constructor(value, settings) {
+    super(value, settings);
+    this.requestTexture();
+    this.bitRatio = 4;
+    this.setShape(value);
+  }
+
+  setShape(value) {
+    const valueDimensions = utils.getDimensions(value, true);
+    this.textureSize = utils.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
+    this.dimensions = new Int32Array([valueDimensions[1], valueDimensions[2], 1]);
+    this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.uploadValue = new Float32Array(this.uploadArrayLength);
+  }
+
+  getStringValueHandler() {
+    return utils.linesToString([
+      `const uploadValue_${this.name} = new Float32Array(${this.uploadArrayLength})`,
+      `flattenTo(${this.varName}, uploadValue_${this.name})`,
+    ]);
+  }
+
+  getSource() {
+    return utils.linesToString([
+      `uniform sampler2D ${this.id}`,
+      `ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
+      `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+    ]);
+  }
+
+  updateValue(value) {
+    if (value.constructor !== this.initialValueConstructor) {
+      this.onUpdateValueMismatch();
+      return;
+    }
+    const { context: gl } = this;
+    utils.flatten3dArrayTo(value, this.uploadValue);
+    gl.activeTexture(this.contextHandle);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.textureSize[0], this.textureSize[1], 0, gl.RGBA, gl.FLOAT, this.uploadValue);
+    this.kernel.setUniform1i(this.id, this.index);
+  }
+}
+
+module.exports = {
+  WebGLKernelValueSingleArray2DI
+};
+},{"../../../utils":108,"./index":52}],60:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGLKernelValue } = require('./index');
+
+class WebGLKernelValueSingleArray3 extends WebGLKernelValue {
+  constructor(value, settings) {
+    super(value, settings);
+    this.uploadValue = value;
+  }
+  getSource(value) {
+    if (this.origin === 'constants') {
+      return `const vec3 ${this.id} = vec3(${value[0]},${value[1]},${value[2]});\n`;
+    }
+    return `uniform vec3 ${this.id};\n`;
+  }
+
+  getStringValueHandler() {
+    return `const uploadValue_${this.name} = ${this.varName};\n`;
+  }
+
+  updateValue(value) {
+    if (this.origin === 'constants') return;
+    this.kernel.setUniform3fv(this.id, this.uploadValue = value);
+  }
+}
+
+module.exports = {
+  WebGLKernelValueSingleArray3
+};
+},{"../../../utils":108,"./index":52}],61:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGLKernelValue } = require('./index');
+
+class WebGLKernelValueSingleArray3DI extends WebGLKernelValue {
+  constructor(value, settings) {
+    super(value, settings);
+    this.requestTexture();
+    this.bitRatio = 4;
+    this.setShape(value);
+  }
+
+  setShape(value) {
+    const valueDimensions = utils.getDimensions(value, true);
+    this.textureSize = utils.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
+    this.dimensions = new Int32Array([valueDimensions[1], valueDimensions[2], valueDimensions[3]]);
+    this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.uploadValue = new Float32Array(this.uploadArrayLength);
+  }
+
+  getStringValueHandler() {
+    return utils.linesToString([
+      `const uploadValue_${this.name} = new Float32Array(${this.uploadArrayLength})`,
+      `flattenTo(${this.varName}, uploadValue_${this.name})`,
+    ]);
+  }
+
+  getSource() {
+    return utils.linesToString([
+      `uniform sampler2D ${this.id}`,
+      `ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
+      `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+    ]);
+  }
+
+  updateValue(value) {
+    if (value.constructor !== this.initialValueConstructor) {
+      this.onUpdateValueMismatch();
+      return;
+    }
+    const { context: gl } = this;
+    utils.flatten4dArrayTo(value, this.uploadValue);
+    gl.activeTexture(this.contextHandle);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.textureSize[0], this.textureSize[1], 0, gl.RGBA, gl.FLOAT, this.uploadValue);
+    this.kernel.setUniform1i(this.id, this.index);
+  }
+}
+
+module.exports = {
+  WebGLKernelValueSingleArray3DI
+};
+},{"../../../utils":108,"./index":52}],62:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGLKernelValue } = require('./index');
+
+class WebGLKernelValueSingleArray4 extends WebGLKernelValue {
+  constructor(value, settings) {
+    super(value, settings);
+    this.uploadValue = value;
+  }
+  getSource(value) {
+    if (this.origin === 'constants') {
+      return `const vec4 ${this.id} = vec4(${value[0]},${value[1]},${value[2]},${value[3]});\n`;
+    }
+    return `uniform vec4 ${this.id};\n`;
+  }
+
+  getStringValueHandler() {
+    return `const uploadValue_${this.name} = ${this.varName};\n`;
+  }
+
+  updateValue(value) {
+    if (this.origin === 'constants') return;
+    this.kernel.setUniform4fv(this.id, this.uploadValue = value);
+  }
+}
+
+module.exports = {
+  WebGLKernelValueSingleArray4
+};
+},{"../../../utils":108,"./index":52}],63:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -13120,7 +13626,7 @@ class WebGLKernelValueSingleInput extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueSingleInput
 };
-},{"../../../utils":90,"./index":49}],55:[function(require,module,exports){
+},{"../../../utils":108,"./index":52}],64:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -13174,7 +13680,7 @@ class WebGLKernelValueUnsignedArray extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueUnsignedArray
 };
-},{"../../../utils":90,"./index":49}],56:[function(require,module,exports){
+},{"../../../utils":108,"./index":52}],65:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -13229,7 +13735,7 @@ class WebGLKernelValueUnsignedInput extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueUnsignedInput
 };
-},{"../../../utils":90,"./index":49}],57:[function(require,module,exports){
+},{"../../../utils":108,"./index":52}],66:[function(require,module,exports){
 const { GLKernel } = require('../gl/kernel');
 const { FunctionBuilder } = require('../function-builder');
 const { WebGLFunctionNode } = require('./function-node');
@@ -13371,6 +13877,8 @@ class WebGLKernel extends GLKernel {
     this.uniform2ivCache = {};
     this.uniform3fvCache = {};
     this.uniform3ivCache = {};
+    this.uniform4fvCache = {};
+    this.uniform4ivCache = {};
   }
 
   initCanvas() {
@@ -13586,6 +14094,7 @@ class WebGLKernel extends GLKernel {
       }
       const kernelArgument = new KernelValue(value, {
         name,
+        type,
         origin: 'user',
         context: gl,
         checkContext: this.checkContext,
@@ -13613,19 +14122,28 @@ class WebGLKernel extends GLKernel {
   setupConstants(args) {
     const { context: gl } = this;
     this.kernelConstants = [];
-    this.constantTypes = {};
+    let needsConstantTypes = this.constantTypes === null;
+    if (needsConstantTypes) {
+      this.constantTypes = {};
+    }
     this.constantBitRatios = {};
     let textureIndexes = 0;
     for (const name in this.constants) {
       const value = this.constants[name];
-      const type = utils.getVariableType(value, this.strictIntegers);
-      this.constantTypes[name] = type;
+      let type;
+      if (needsConstantTypes) {
+        type = utils.getVariableType(value, this.strictIntegers);
+        this.constantTypes[name] = type;
+      } else {
+        type = this.constantTypes[name];
+      }
       const KernelValue = this.constructor.lookupKernelValueType(type, 'static', this.precision);
       if (KernelValue === null) {
         return this.requestFallback(args);
       }
       const kernelValue = new KernelValue(value, {
         name,
+        type,
         origin: 'constants',
         context: this.context,
         checkContext: this.checkContext,
@@ -14030,6 +14548,56 @@ class WebGLKernel extends GLKernel {
     this.uniform3ivCache[name] = value;
     const loc = this.getUniformLocation(name);
     this.context.uniform3iv(loc, value);
+  }
+
+  setUniform3fv(name, value) {
+    if (this.uniform3fvCache.hasOwnProperty(name)) {
+      const cache = this.uniform3fvCache[name];
+      if (
+        value[0] === cache[0] &&
+        value[1] === cache[1] &&
+        value[2] === cache[2]
+      ) {
+        return;
+      }
+    }
+    this.uniform3fvCache[name] = value;
+    const loc = this.getUniformLocation(name);
+    this.context.uniform3fv(loc, value);
+  }
+
+  setUniform4iv(name, value) {
+    if (this.uniform4ivCache.hasOwnProperty(name)) {
+      const cache = this.uniform4ivCache[name];
+      if (
+        value[0] === cache[0] &&
+        value[1] === cache[1] &&
+        value[2] === cache[2] &&
+        value[3] === cache[3]
+      ) {
+        return;
+      }
+    }
+    this.uniform4ivCache[name] = value;
+    const loc = this.getUniformLocation(name);
+    this.context.uniform4iv(loc, value);
+  }
+
+  setUniform4fv(name, value) {
+    if (this.uniform4fvCache.hasOwnProperty(name)) {
+      const cache = this.uniform4fvCache[name];
+      if (
+        value[0] === cache[0] &&
+        value[1] === cache[1] &&
+        value[2] === cache[2] &&
+        value[3] === cache[3]
+      ) {
+        return;
+      }
+    }
+    this.uniform4fvCache[name] = value;
+    const loc = this.getUniformLocation(name);
+    this.context.uniform4fv(loc, value);
   }
 
   getUniformLocation(name) {
@@ -14551,7 +15119,7 @@ class WebGLKernel extends GLKernel {
 module.exports = {
   WebGLKernel
 };
-},{"../../plugins/triangle-noise":88,"../../utils":90,"../function-builder":9,"../gl/kernel":13,"../gl/kernel-string":12,"./fragment-shader":36,"./function-node":37,"./kernel-value-maps":38,"./vertex-shader":58}],58:[function(require,module,exports){
+},{"../../plugins/triangle-noise":106,"../../utils":108,"../function-builder":9,"../gl/kernel":13,"../gl/kernel-string":12,"./fragment-shader":36,"./function-node":37,"./kernel-value-maps":38,"./vertex-shader":67}],67:[function(require,module,exports){
 const vertexShader = `precision highp float;
 precision highp int;
 precision highp sampler2D;
@@ -14570,7 +15138,7 @@ void main(void) {
 module.exports = {
   vertexShader
 };
-},{}],59:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 const fragmentShader = `#version 300 es
 __HEADER__;
 precision highp float;
@@ -14828,8 +15396,7 @@ ivec3 indexTo3D(int idx, ivec3 texDim) {
 }
 
 float get32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = x + texDim.x * (y + texDim.y * z);
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   vec4 texel = texture(tex, st / vec2(texSize));
@@ -14837,8 +15404,7 @@ float get32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 }
 
 float get16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
+  int index = x + (texDim.x * (y + (texDim.y * z)));
   int w = texSize.x * 2;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   vec4 texel = texture(tex, st / vec2(texSize.x * 2, texSize.y));
@@ -14846,8 +15412,7 @@ float get16(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 }
 
 float get8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
+  int index = x + (texDim.x * (y + (texDim.y * z)));
   int w = texSize.x * 4;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   vec4 texel = texture(tex, st / vec2(texSize.x * 4, texSize.y));
@@ -14855,8 +15420,7 @@ float get8(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
 }
 
 float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + (texDim.x * (xyz.y + (texDim.y * xyz.z)));
+  int index = x + (texDim.x * (y + (texDim.y * z)));
   int channel = integerMod(index, 4);
   index = index / 4;
   int w = texSize.x;
@@ -14867,16 +15431,14 @@ float getMemoryOptimized32(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, in
 }
 
 vec4 getImage2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = x + texDim.x * (y + texDim.y * z);
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   return texture(tex, st / vec2(texSize));
 }
 
 vec4 getImage3D(sampler2DArray tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
-  ivec3 xyz = ivec3(x, y, z);
-  int index = xyz.x + texDim.x * (xyz.y + texDim.y * xyz.z);
+  int index = x + texDim.x * (y + texDim.y * z);
   int w = texSize.x;
   vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
   return texture(tex, vec3(st / vec2(texSize), z));
@@ -14892,13 +15454,61 @@ vec2 getVec2FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int
   return vec2(result[0], result[1]);
 }
 
+vec2 getMemoryOptimizedVec2(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  int index = x + texDim.x * (y + texDim.y * z);
+  int channel = integerMod(index, 2);
+  index = index / 2;
+  int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  vec4 texel = texture(tex, st / vec2(texSize));
+  if (channel == 0) return vec2(texel.r, texel.g);
+  if (channel == 1) return vec2(texel.b, texel.a);
+  return vec2(0.0, 0.0);
+}
+
 vec3 getVec3FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   vec4 result = getImage2D(tex, texSize, texDim, z, y, x);
   return vec3(result[0], result[1], result[2]);
 }
 
+vec3 getMemoryOptimizedVec3(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  int fieldIndex = 3 * (x + texDim.x * (y + texDim.y * z));
+  int vectorIndex = fieldIndex / 4;
+  int vectorOffset = fieldIndex - vectorIndex * 4;
+  int readY = vectorIndex / texSize.x;
+  int readX = vectorIndex - readY * texSize.x;
+  vec4 tex1 = texture(tex, (vec2(readX, readY) + 0.5) / vec2(texSize));
+
+  if (vectorOffset == 0) {
+    return tex1.xyz;
+  } else if (vectorOffset == 1) {
+    return tex1.yzw;
+  } else {
+    readX++;
+    if (readX >= texSize.x) {
+      readX = 0;
+      readY++;
+    }
+    vec4 tex2 = texture(tex, vec2(readX, readY) / vec2(texSize));
+    if (vectorOffset == 2) {
+      return vec3(tex1.z, tex1.w, tex2.x);
+    } else {
+      return vec3(tex1.w, tex2.x, tex2.y);
+    }
+  }
+}
+
 vec4 getVec4FromSampler2D(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
   return getImage2D(tex, texSize, texDim, z, y, x);
+}
+
+vec4 getMemoryOptimizedVec4(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, int y, int x) {
+  int index = x + texDim.x * (y + texDim.y * z);
+  int channel = integerMod(index, 2);
+  int w = texSize.x;
+  vec2 st = vec2(float(integerMod(index, w)), float(index / w)) + 0.5;
+  vec4 texel = texture(tex, st / vec2(texSize));
+  return vec4(texel.r, texel.g, texel.b, texel.a);
 }
 
 vec4 actualColor;
@@ -14922,7 +15532,8 @@ void main(void) {
 module.exports = {
   fragmentShader
 };
-},{}],60:[function(require,module,exports){
+
+},{}],69:[function(require,module,exports){
 const { WebGLFunctionNode } = require('../web-gl/function-node');
 
 class WebGL2FunctionNode extends WebGLFunctionNode {
@@ -14961,7 +15572,7 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 module.exports = {
   WebGL2FunctionNode
 };
-},{"../web-gl/function-node":37}],61:[function(require,module,exports){
+},{"../web-gl/function-node":37}],70:[function(require,module,exports){
 const { WebGL2KernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGL2KernelValueFloat } = require('./kernel-value/float');
 const { WebGL2KernelValueInteger } = require('./kernel-value/integer');
@@ -14987,6 +15598,19 @@ const { WebGL2KernelValueDynamicNumberTexture } = require('./kernel-value/dynami
 const { WebGL2KernelValueSingleArray } = require('./kernel-value/single-array');
 const { WebGL2KernelValueDynamicSingleArray } = require('./kernel-value/dynamic-single-array');
 
+const { WebGL2KernelValueSingleArray1DI } = require('./kernel-value/single-array1d-i');
+const { WebGL2KernelValueDynamicSingleArray1DI } = require('./kernel-value/dynamic-single-array1d-i');
+
+const { WebGL2KernelValueSingleArray2DI } = require('./kernel-value/single-array2d-i');
+const { WebGL2KernelValueDynamicSingleArray2DI } = require('./kernel-value/dynamic-single-array2d-i');
+
+const { WebGL2KernelValueSingleArray3DI } = require('./kernel-value/single-array3d-i');
+const { WebGL2KernelValueDynamicSingleArray3DI } = require('./kernel-value/dynamic-single-array3d-i');
+
+const { WebGL2KernelValueSingleArray2 } = require('./kernel-value/single-array2');
+const { WebGL2KernelValueSingleArray3 } = require('./kernel-value/single-array3');
+const { WebGL2KernelValueSingleArray4 } = require('./kernel-value/single-array4');
+
 const { WebGL2KernelValueUnsignedArray } = require('./kernel-value/unsigned-array');
 const { WebGL2KernelValueDynamicUnsignedArray } = require('./kernel-value/dynamic-unsigned-array');
 
@@ -14997,6 +15621,18 @@ const kernelValueMaps = {
       'Integer': WebGL2KernelValueInteger,
       'Float': WebGL2KernelValueFloat,
       'Array': WebGL2KernelValueDynamicUnsignedArray,
+      'Array(2)': false,
+      'Array(3)': false,
+      'Array(4)': false,
+      'Array1D(2)': false,
+      'Array1D(3)': false,
+      'Array1D(4)': false,
+      'Array2D(2)': false,
+      'Array2D(3)': false,
+      'Array2D(4)': false,
+      'Array3D(2)': false,
+      'Array3D(3)': false,
+      'Array3D(4)': false,
       'Input': WebGL2KernelValueDynamicUnsignedInput,
       'NumberTexture': WebGL2KernelValueDynamicNumberTexture,
       'ArrayTexture(1)': WebGL2KernelValueDynamicNumberTexture,
@@ -15012,6 +15648,18 @@ const kernelValueMaps = {
       'Float': WebGL2KernelValueFloat,
       'Integer': WebGL2KernelValueInteger,
       'Array': WebGL2KernelValueUnsignedArray,
+      'Array(2)': false,
+      'Array(3)': false,
+      'Array(4)': false,
+      'Array1D(2)': false,
+      'Array1D(3)': false,
+      'Array1D(4)': false,
+      'Array2D(2)': false,
+      'Array2D(3)': false,
+      'Array2D(4)': false,
+      'Array3D(2)': false,
+      'Array3D(3)': false,
+      'Array3D(4)': false,
       'Input': WebGL2KernelValueUnsignedInput,
       'NumberTexture': WebGL2KernelValueNumberTexture,
       'ArrayTexture(1)': WebGL2KernelValueNumberTexture,
@@ -15029,6 +15677,18 @@ const kernelValueMaps = {
       'Integer': WebGL2KernelValueInteger,
       'Float': WebGL2KernelValueFloat,
       'Array': WebGL2KernelValueDynamicSingleArray,
+      'Array(2)': WebGL2KernelValueSingleArray2,
+      'Array(3)': WebGL2KernelValueSingleArray3,
+      'Array(4)': WebGL2KernelValueSingleArray4,
+      'Array1D(2)': WebGL2KernelValueDynamicSingleArray1DI,
+      'Array1D(3)': WebGL2KernelValueDynamicSingleArray1DI,
+      'Array1D(4)': WebGL2KernelValueDynamicSingleArray1DI,
+      'Array2D(2)': WebGL2KernelValueDynamicSingleArray2DI,
+      'Array2D(3)': WebGL2KernelValueDynamicSingleArray2DI,
+      'Array2D(4)': WebGL2KernelValueDynamicSingleArray2DI,
+      'Array3D(2)': WebGL2KernelValueDynamicSingleArray3DI,
+      'Array3D(3)': WebGL2KernelValueDynamicSingleArray3DI,
+      'Array3D(4)': WebGL2KernelValueDynamicSingleArray3DI,
       'Input': WebGL2KernelValueDynamicSingleInput,
       'NumberTexture': WebGL2KernelValueDynamicNumberTexture,
       'ArrayTexture(1)': WebGL2KernelValueDynamicNumberTexture,
@@ -15044,6 +15704,18 @@ const kernelValueMaps = {
       'Float': WebGL2KernelValueFloat,
       'Integer': WebGL2KernelValueInteger,
       'Array': WebGL2KernelValueSingleArray,
+      'Array(2)': WebGL2KernelValueSingleArray2,
+      'Array(3)': WebGL2KernelValueSingleArray3,
+      'Array(4)': WebGL2KernelValueSingleArray4,
+      'Array1D(2)': WebGL2KernelValueSingleArray1DI,
+      'Array1D(3)': WebGL2KernelValueSingleArray1DI,
+      'Array1D(4)': WebGL2KernelValueSingleArray1DI,
+      'Array2D(2)': WebGL2KernelValueSingleArray2DI,
+      'Array2D(3)': WebGL2KernelValueSingleArray2DI,
+      'Array2D(4)': WebGL2KernelValueSingleArray2DI,
+      'Array3D(2)': WebGL2KernelValueSingleArray3DI,
+      'Array3D(3)': WebGL2KernelValueSingleArray3DI,
+      'Array3D(4)': WebGL2KernelValueSingleArray3DI,
       'Input': WebGL2KernelValueSingleInput,
       'NumberTexture': WebGL2KernelValueNumberTexture,
       'ArrayTexture(1)': WebGL2KernelValueNumberTexture,
@@ -15079,7 +15751,7 @@ function lookupKernelValueType(type, dynamic, precision) {
 module.exports = {
   lookupKernelValueType
 };
-},{"./kernel-value/boolean":62,"./kernel-value/dynamic-html-image":64,"./kernel-value/dynamic-html-image-array":63,"./kernel-value/dynamic-memory-optimized-number-texture":65,"./kernel-value/dynamic-number-texture":66,"./kernel-value/dynamic-single-array":67,"./kernel-value/dynamic-single-input":68,"./kernel-value/dynamic-unsigned-array":69,"./kernel-value/dynamic-unsigned-input":70,"./kernel-value/float":71,"./kernel-value/html-image":73,"./kernel-value/html-image-array":72,"./kernel-value/integer":74,"./kernel-value/memory-optimized-number-texture":75,"./kernel-value/number-texture":76,"./kernel-value/single-array":77,"./kernel-value/single-input":78,"./kernel-value/unsigned-array":79,"./kernel-value/unsigned-input":80}],62:[function(require,module,exports){
+},{"./kernel-value/boolean":71,"./kernel-value/dynamic-html-image":73,"./kernel-value/dynamic-html-image-array":72,"./kernel-value/dynamic-memory-optimized-number-texture":74,"./kernel-value/dynamic-number-texture":75,"./kernel-value/dynamic-single-array":76,"./kernel-value/dynamic-single-array1d-i":77,"./kernel-value/dynamic-single-array2d-i":78,"./kernel-value/dynamic-single-array3d-i":79,"./kernel-value/dynamic-single-input":80,"./kernel-value/dynamic-unsigned-array":81,"./kernel-value/dynamic-unsigned-input":82,"./kernel-value/float":83,"./kernel-value/html-image":85,"./kernel-value/html-image-array":84,"./kernel-value/integer":86,"./kernel-value/memory-optimized-number-texture":87,"./kernel-value/number-texture":88,"./kernel-value/single-array":89,"./kernel-value/single-array1d-i":90,"./kernel-value/single-array2":91,"./kernel-value/single-array2d-i":92,"./kernel-value/single-array3":93,"./kernel-value/single-array3d-i":94,"./kernel-value/single-array4":95,"./kernel-value/single-input":96,"./kernel-value/unsigned-array":97,"./kernel-value/unsigned-input":98}],71:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('../../web-gl/kernel-value/boolean');
 
 class WebGL2KernelValueBoolean extends WebGLKernelValueBoolean {}
@@ -15087,7 +15759,7 @@ class WebGL2KernelValueBoolean extends WebGLKernelValueBoolean {}
 module.exports = {
   WebGL2KernelValueBoolean
 };
-},{"../../web-gl/kernel-value/boolean":39}],63:[function(require,module,exports){
+},{"../../web-gl/kernel-value/boolean":39}],72:[function(require,module,exports){
 const { WebGL2KernelValueHtmlImageArray } = require('./html-image-array');
 
 class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageArray {
@@ -15111,7 +15783,7 @@ class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageA
 module.exports = {
   WebGL2KernelValueDynamicHtmlImageArray
 };
-},{"./html-image-array":72}],64:[function(require,module,exports){
+},{"./html-image-array":84}],73:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicHTMLImage } = require('../../web-gl/kernel-value/dynamic-html-image');
 
@@ -15128,7 +15800,7 @@ class WebGL2KernelValueDynamicHTMLImage extends WebGLKernelValueDynamicHTMLImage
 module.exports = {
   WebGL2KernelValueDynamicHTMLImage
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/dynamic-html-image":40}],65:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/dynamic-html-image":40}],74:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicMemoryOptimizedNumberTexture } = require('../../web-gl/kernel-value/dynamic-memory-optimized-number-texture');
 
@@ -15145,7 +15817,7 @@ class WebGL2KernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelVa
 module.exports = {
   WebGL2KernelValueDynamicMemoryOptimizedNumberTexture
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/dynamic-memory-optimized-number-texture":41}],66:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/dynamic-memory-optimized-number-texture":41}],75:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicNumberTexture } = require('../../web-gl/kernel-value/dynamic-number-texture');
 
@@ -15162,7 +15834,7 @@ class WebGL2KernelValueDynamicNumberTexture extends WebGLKernelValueDynamicNumbe
 module.exports = {
   WebGL2KernelValueDynamicNumberTexture
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/dynamic-number-texture":42}],67:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/dynamic-number-texture":42}],76:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleArray } = require('../../web-gl2/kernel-value/single-array');
 
@@ -15189,7 +15861,79 @@ class WebGL2KernelValueDynamicSingleArray extends WebGL2KernelValueSingleArray {
 module.exports = {
   WebGL2KernelValueDynamicSingleArray
 };
-},{"../../../utils":90,"../../web-gl2/kernel-value/single-array":77}],68:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl2/kernel-value/single-array":89}],77:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGL2KernelValueSingleArray1DI } = require('../../web-gl2/kernel-value/single-array1d-i');
+
+class WebGL2KernelValueDynamicSingleArray1DI extends WebGL2KernelValueSingleArray1DI {
+  getSource() {
+    return utils.linesToString([
+      `uniform highp sampler2D ${this.id}`,
+      `uniform highp ivec2 ${this.sizeId}`,
+      `uniform highp ivec3 ${this.dimensionsId}`,
+    ]);
+  }
+
+  updateValue(value) {
+    this.setShape(value);
+    this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
+    this.kernel.setUniform2iv(this.sizeId, this.textureSize);
+    super.updateValue(value);
+  }
+}
+
+module.exports = {
+  WebGL2KernelValueDynamicSingleArray1DI
+};
+},{"../../../utils":108,"../../web-gl2/kernel-value/single-array1d-i":90}],78:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGL2KernelValueSingleArray2DI } = require('../../web-gl2/kernel-value/single-array2d-i');
+
+class WebGL2KernelValueDynamicSingleArray2DI extends WebGL2KernelValueSingleArray2DI {
+  getSource() {
+    return utils.linesToString([
+      `uniform highp sampler2D ${this.id}`,
+      `uniform highp ivec2 ${this.sizeId}`,
+      `uniform highp ivec3 ${this.dimensionsId}`,
+    ]);
+  }
+
+  updateValue(value) {
+    this.setShape(value);
+    this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
+    this.kernel.setUniform2iv(this.sizeId, this.textureSize);
+    super.updateValue(value);
+  }
+}
+
+module.exports = {
+  WebGL2KernelValueDynamicSingleArray2DI
+};
+},{"../../../utils":108,"../../web-gl2/kernel-value/single-array2d-i":92}],79:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGL2KernelValueSingleArray3DI } = require('../../web-gl2/kernel-value/single-array3d-i');
+
+class WebGL2KernelValueDynamicSingleArray3DI extends WebGL2KernelValueSingleArray3DI {
+  getSource() {
+    return utils.linesToString([
+      `uniform highp sampler2D ${this.id}`,
+      `uniform highp ivec2 ${this.sizeId}`,
+      `uniform highp ivec3 ${this.dimensionsId}`,
+    ]);
+  }
+
+  updateValue(value) {
+    this.setShape(value);
+    this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
+    this.kernel.setUniform2iv(this.sizeId, this.textureSize);
+    super.updateValue(value);
+  }
+}
+
+module.exports = {
+  WebGL2KernelValueDynamicSingleArray3DI
+};
+},{"../../../utils":108,"../../web-gl2/kernel-value/single-array3d-i":94}],80:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleInput } = require('../../web-gl2/kernel-value/single-input');
 
@@ -15217,7 +15961,7 @@ class WebGL2KernelValueDynamicSingleInput extends WebGL2KernelValueSingleInput {
 module.exports = {
   WebGL2KernelValueDynamicSingleInput
 };
-},{"../../../utils":90,"../../web-gl2/kernel-value/single-input":78}],69:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl2/kernel-value/single-input":96}],81:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicUnsignedArray } = require('../../web-gl/kernel-value/dynamic-unsigned-array');
 
@@ -15234,7 +15978,7 @@ class WebGL2KernelValueDynamicUnsignedArray extends WebGLKernelValueDynamicUnsig
 module.exports = {
   WebGL2KernelValueDynamicUnsignedArray
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/dynamic-unsigned-array":45}],70:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/dynamic-unsigned-array":48}],82:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicUnsignedInput } = require('../../web-gl/kernel-value/dynamic-unsigned-input');
 
@@ -15251,7 +15995,7 @@ class WebGL2KernelValueDynamicUnsignedInput extends WebGLKernelValueDynamicUnsig
 module.exports = {
   WebGL2KernelValueDynamicUnsignedInput
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/dynamic-unsigned-input":46}],71:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/dynamic-unsigned-input":49}],83:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueFloat } = require('../../web-gl/kernel-value/float');
 
@@ -15260,7 +16004,7 @@ class WebGL2KernelValueFloat extends WebGLKernelValueFloat {}
 module.exports = {
   WebGL2KernelValueFloat
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/float":47}],72:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/float":50}],84:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('../../web-gl/kernel-value/index');
 
@@ -15326,7 +16070,7 @@ class WebGL2KernelValueHtmlImageArray extends WebGLKernelValue {
 module.exports = {
   WebGL2KernelValueHtmlImageArray
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/index":49}],73:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/index":52}],85:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueHTMLImage } = require('../../web-gl/kernel-value/html-image');
 
@@ -15343,7 +16087,7 @@ class WebGL2KernelValueHTMLImage extends WebGLKernelValueHTMLImage {
 module.exports = {
   WebGL2KernelValueHTMLImage
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/html-image":48}],74:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/html-image":51}],86:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueInteger } = require('../../web-gl/kernel-value/integer');
 
@@ -15364,7 +16108,7 @@ class WebGL2KernelValueInteger extends WebGLKernelValueInteger {
 module.exports = {
   WebGL2KernelValueInteger
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/integer":50}],75:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/integer":53}],87:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueMemoryOptimizedNumberTexture } = require('../../web-gl/kernel-value/memory-optimized-number-texture');
 
@@ -15381,7 +16125,7 @@ class WebGL2KernelValueMemoryOptimizedNumberTexture extends WebGLKernelValueMemo
 module.exports = {
   WebGL2KernelValueMemoryOptimizedNumberTexture
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/memory-optimized-number-texture":51}],76:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/memory-optimized-number-texture":54}],88:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueNumberTexture } = require('../../web-gl/kernel-value/number-texture');
 
@@ -15398,7 +16142,7 @@ class WebGL2KernelValueNumberTexture extends WebGLKernelValueNumberTexture {
 module.exports = {
   WebGL2KernelValueNumberTexture
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/number-texture":52}],77:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/number-texture":55}],89:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray } = require('../../web-gl/kernel-value/single-array');
 
@@ -15432,7 +16176,109 @@ class WebGL2KernelValueSingleArray extends WebGLKernelValueSingleArray {
 module.exports = {
   WebGL2KernelValueSingleArray
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/single-array":53}],78:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/single-array":56}],90:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGLKernelValueSingleArray1DI } = require('../../web-gl/kernel-value/single-array1d-i');
+
+class WebGL2KernelValueSingleArray1DI extends WebGLKernelValueSingleArray1DI {
+  updateValue(value) {
+    if (value.constructor !== this.initialValueConstructor) {
+      this.onUpdateValueMismatch();
+      return;
+    }
+    const { context: gl } = this;
+    utils.flattenTo(value, this.uploadValue);
+    gl.activeTexture(this.contextHandle);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, this.textureSize[0], this.textureSize[1], 0, gl.RGBA, gl.FLOAT, this.uploadValue);
+    this.kernel.setUniform1i(this.id, this.index);
+  }
+}
+
+module.exports = {
+  WebGL2KernelValueSingleArray1DI
+};
+},{"../../../utils":108,"../../web-gl/kernel-value/single-array1d-i":57}],91:[function(require,module,exports){
+const { WebGLKernelValueSingleArray2 } = require('../../web-gl/kernel-value/single-array2');
+
+class WebGL2KernelValueSingleArray2 extends WebGLKernelValueSingleArray2 {}
+
+module.exports = {
+  WebGL2KernelValueSingleArray2
+};
+},{"../../web-gl/kernel-value/single-array2":58}],92:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGLKernelValueSingleArray2DI } = require('../../web-gl/kernel-value/single-array2d-i');
+
+class WebGL2KernelValueSingleArray2DI extends WebGLKernelValueSingleArray2DI {
+  updateValue(value) {
+    if (value.constructor !== this.initialValueConstructor) {
+      this.onUpdateValueMismatch();
+      return;
+    }
+    const { context: gl } = this;
+    utils.flattenTo(value, this.uploadValue);
+    gl.activeTexture(this.contextHandle);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, this.textureSize[0], this.textureSize[1], 0, gl.RGBA, gl.FLOAT, this.uploadValue);
+    this.kernel.setUniform1i(this.id, this.index);
+  }
+}
+
+module.exports = {
+  WebGL2KernelValueSingleArray2DI
+};
+},{"../../../utils":108,"../../web-gl/kernel-value/single-array2d-i":59}],93:[function(require,module,exports){
+const { WebGLKernelValueSingleArray3 } = require('../../web-gl/kernel-value/single-array3');
+
+class WebGL2KernelValueSingleArray3 extends WebGLKernelValueSingleArray3 {}
+
+module.exports = {
+  WebGL2KernelValueSingleArray3
+};
+},{"../../web-gl/kernel-value/single-array3":60}],94:[function(require,module,exports){
+const { utils } = require('../../../utils');
+const { WebGLKernelValueSingleArray3DI } = require('../../web-gl/kernel-value/single-array3d-i');
+
+class WebGL2KernelValueSingleArray3DI extends WebGLKernelValueSingleArray3DI {
+  updateValue(value) {
+    if (value.constructor !== this.initialValueConstructor) {
+      this.onUpdateValueMismatch();
+      return;
+    }
+    const { context: gl } = this;
+    utils.flattenTo(value, this.uploadValue);
+    gl.activeTexture(this.contextHandle);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, this.textureSize[0], this.textureSize[1], 0, gl.RGBA, gl.FLOAT, this.uploadValue);
+    this.kernel.setUniform1i(this.id, this.index);
+  }
+}
+
+module.exports = {
+  WebGL2KernelValueSingleArray3DI
+};
+},{"../../../utils":108,"../../web-gl/kernel-value/single-array3d-i":61}],95:[function(require,module,exports){
+const { WebGLKernelValueSingleArray4 } = require('../../web-gl/kernel-value/single-array4');
+
+class WebGL2KernelValueSingleArray4 extends WebGLKernelValueSingleArray4 {}
+
+module.exports = {
+  WebGL2KernelValueSingleArray4
+};
+},{"../../web-gl/kernel-value/single-array4":62}],96:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleInput } = require('../../web-gl/kernel-value/single-input');
 
@@ -15462,7 +16308,7 @@ class WebGL2KernelValueSingleInput extends WebGLKernelValueSingleInput {
 module.exports = {
   WebGL2KernelValueSingleInput
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/single-input":54}],79:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/single-input":63}],97:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedArray } = require('../../web-gl/kernel-value/unsigned-array');
 
@@ -15479,7 +16325,7 @@ class WebGL2KernelValueUnsignedArray extends WebGLKernelValueUnsignedArray {
 module.exports = {
   WebGL2KernelValueUnsignedArray
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/unsigned-array":55}],80:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/unsigned-array":64}],98:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedInput } = require('../../web-gl/kernel-value/unsigned-input');
 
@@ -15496,7 +16342,7 @@ class WebGL2KernelValueUnsignedInput extends WebGLKernelValueUnsignedInput {
 module.exports = {
   WebGL2KernelValueUnsignedInput
 };
-},{"../../../utils":90,"../../web-gl/kernel-value/unsigned-input":56}],81:[function(require,module,exports){
+},{"../../../utils":108,"../../web-gl/kernel-value/unsigned-input":65}],99:[function(require,module,exports){
 const { WebGLKernel } = require('../web-gl/kernel');
 const { WebGL2FunctionNode } = require('./function-node');
 const { FunctionBuilder } = require('../function-builder');
@@ -16124,7 +16970,7 @@ class WebGL2Kernel extends WebGLKernel {
 module.exports = {
   WebGL2Kernel
 };
-},{"../../utils":90,"../function-builder":9,"../web-gl/kernel":57,"./fragment-shader":59,"./function-node":60,"./kernel-value-maps":61,"./vertex-shader":82}],82:[function(require,module,exports){
+},{"../../utils":108,"../function-builder":9,"../web-gl/kernel":66,"./fragment-shader":68,"./function-node":69,"./kernel-value-maps":70,"./vertex-shader":100}],100:[function(require,module,exports){
 const vertexShader = `#version 300 es
 precision highp float;
 precision highp int;
@@ -16144,7 +16990,7 @@ void main(void) {
 module.exports = {
   vertexShader
 };
-},{}],83:[function(require,module,exports){
+},{}],101:[function(require,module,exports){
 const lib = require('./index');
 const GPU = lib.GPU;
 for (const p in lib) {
@@ -16153,7 +16999,7 @@ for (const p in lib) {
   GPU[p] = lib[p];
 }
 module.exports = GPU;
-},{"./index":85}],84:[function(require,module,exports){
+},{"./index":103}],102:[function(require,module,exports){
 const { gpuMock } = require('gpu-mock.js');
 const { utils } = require('./utils');
 const { CPUKernel } = require('./backend/cpu/kernel');
@@ -16326,6 +17172,8 @@ class GPU {
       validate,
       onRequestFallback: (args) => {
         const fallbackKernel = new CPUKernel(source, {
+          argumentTypes: kernel.argumentTypes,
+          constantTypes: kernel.constantTypes,
           graphical: kernel.graphical,
           loopMaxIterations: kernel.loopMaxIterations,
           constants: kernel.constants,
@@ -16364,7 +17212,9 @@ class GPU {
             return existingKernel.renderOutput();
           }
         }
+
         const newKernel = switchableKernels[signature] = new this.Kernel(source, {
+          constantTypes: kernel.constantTypes,
           graphical: kernel.graphical,
           loopMaxIterations: kernel.loopMaxIterations,
           constants: kernel.constants,
@@ -16550,7 +17400,7 @@ module.exports = {
   kernelOrder,
   kernelTypes
 };
-},{"./backend/cpu/kernel":8,"./backend/headless-gl/kernel":33,"./backend/web-gl/kernel":57,"./backend/web-gl2/kernel":81,"./kernel-run-shortcut":87,"./utils":90,"gpu-mock.js":4}],85:[function(require,module,exports){
+},{"./backend/cpu/kernel":8,"./backend/headless-gl/kernel":33,"./backend/web-gl/kernel":66,"./backend/web-gl2/kernel":99,"./kernel-run-shortcut":105,"./utils":108,"gpu-mock.js":4}],103:[function(require,module,exports){
 const { GPU } = require('./gpu');
 const { alias } = require('./alias');
 const { utils } = require('./utils');
@@ -16592,7 +17442,7 @@ module.exports = {
   GLKernel,
   Kernel,
 };
-},{"./alias":5,"./backend/cpu/function-node":6,"./backend/cpu/kernel":8,"./backend/function-builder":9,"./backend/function-node":10,"./backend/gl/kernel":13,"./backend/headless-gl/kernel":33,"./backend/kernel":35,"./backend/web-gl/function-node":37,"./backend/web-gl/kernel":57,"./backend/web-gl2/function-node":60,"./backend/web-gl2/kernel":81,"./gpu":84,"./input":86,"./texture":89,"./utils":90}],86:[function(require,module,exports){
+},{"./alias":5,"./backend/cpu/function-node":6,"./backend/cpu/kernel":8,"./backend/function-builder":9,"./backend/function-node":10,"./backend/gl/kernel":13,"./backend/headless-gl/kernel":33,"./backend/kernel":35,"./backend/web-gl/function-node":37,"./backend/web-gl/kernel":66,"./backend/web-gl2/function-node":69,"./backend/web-gl2/kernel":99,"./gpu":102,"./input":104,"./texture":107,"./utils":108}],104:[function(require,module,exports){
 class Input {
   constructor(value, size) {
     this.value = value;
@@ -16647,7 +17497,7 @@ module.exports = {
   Input,
   input
 };
-},{"./utils":90}],87:[function(require,module,exports){
+},{"./utils":108}],105:[function(require,module,exports){
 const { utils } = require('./utils');
 
 function kernelRunShortcut(kernel) {
@@ -16738,7 +17588,7 @@ function bindKernelToShortcut(kernel, shortcut) {
 module.exports = {
   kernelRunShortcut
 };
-},{"./utils":90}],88:[function(require,module,exports){
+},{"./utils":108}],106:[function(require,module,exports){
 const source = `
 
 uniform highp float triangle_noise_seed;
@@ -16788,7 +17638,7 @@ module.exports = {
   functionReturnType,
   source
 };
-},{}],89:[function(require,module,exports){
+},{}],107:[function(require,module,exports){
 class Texture {
   constructor(settings) {
     const {
@@ -16822,7 +17672,7 @@ class Texture {
 module.exports = {
   Texture
 };
-},{}],90:[function(require,module,exports){
+},{}],108:[function(require,module,exports){
 const acorn = require('acorn');
 const { Input } = require('./input');
 const { Texture } = require('./texture');
@@ -16953,8 +17803,7 @@ const utils = {
   },
 
   getMemoryOptimizedFloatTextureSize(dimensions, bitRatio) {
-    const [w, h, d] = dimensions;
-    const totalArea = utils.roundTo((w || 1) * (h || 1) * (d || 1), 4);
+    const totalArea = utils.roundTo((dimensions[0] || 1) * (dimensions[1] || 1) * (dimensions[2] || 1) * (dimensions[3] || 1), 4);
     const texelCount = totalArea / bitRatio;
     return utils.closestSquareDimensions(texelCount);
   },
@@ -17015,10 +17864,26 @@ const utils = {
     }
   },
 
+  flatten4dArrayTo(array, target) {
+    let offset = 0;
+    for (let l = 0; l < array.length; l++) {
+      for (let z = 0; z < array[l].length; z++) {
+        for (let y = 0; y < array[l][z].length; y++) {
+          target.set(array[l][z][y], offset);
+          offset += array[l][z][y].length;
+        }
+      }
+    }
+  },
+
   flattenTo(array, target) {
     if (utils.isArray(array[0])) {
       if (utils.isArray(array[0][0])) {
-        utils.flatten3dArrayTo(array, target);
+        if (utils.isArray(array[0][0][0])) {
+          utils.flatten4dArrayTo(array, target);
+        } else {
+          utils.flatten3dArrayTo(array, target);
+        }
       } else {
         utils.flatten2dArrayTo(array, target);
       }
@@ -17473,6 +18338,99 @@ const utils = {
       return flattenedFunctionDependencies.join('') + result;
     }
     return result;
+  },
+
+  splitHTMLImageToRGB: (image, mode) => {
+    const gpu = new GPU({ mode });
+
+    const rKernel = gpu.createKernel(function(a) {
+      const pixel = a[this.thread.y][this.thread.x];
+      return pixel.r * 255;
+    }, {
+      output: [image.width, image.height],
+      precision: 'unsigned',
+      argumentTypes: ['HTMLImage'],
+    });
+    const gKernel = gpu.createKernel(function(a) {
+      const pixel = a[this.thread.y][this.thread.x];
+      return pixel.g * 255;
+    }, {
+      output: [image.width, image.height],
+      precision: 'unsigned',
+      argumentTypes: ['HTMLImage'],
+    });
+    const bKernel = gpu.createKernel(function(a) {
+      const pixel = a[this.thread.y][this.thread.x];
+      return pixel.b * 255;
+    }, {
+      output: [image.width, image.height],
+      precision: 'unsigned',
+      argumentTypes: ['HTMLImage'],
+    });
+    const aKernel = gpu.createKernel(function(a) {
+      const pixel = a[this.thread.y][this.thread.x];
+      return pixel.a * 255;
+    }, {
+      output: [image.width, image.height],
+      precision: 'unsigned',
+      argumentTypes: ['HTMLImage'],
+    });
+    const result = [
+      rKernel(image),
+      gKernel(image),
+      bKernel(image),
+      aKernel(image),
+    ];
+    result.rKernel = rKernel;
+    result.gKernel = gKernel;
+    result.bKernel = bKernel;
+    result.aKernel = aKernel;
+    result.gpu = gpu;
+    return result;
+  },
+
+  splitRGBAToCanvases: (rgba, width, height, mode) => {
+    const { GPU } = require('./gpu.js');
+
+    const visualGPUR = new GPU({ mode });
+    const visualKernelR = visualGPUR.createKernel(function(v) {
+      const pixel = v[this.thread.y][this.thread.x];
+      this.color(pixel.r / 255, 0, 0, 255);
+    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    visualKernelR(rgba);
+
+    const visualGPUG = new GPU({ mode });
+    const visualKernelG = visualGPUG.createKernel(function(v) {
+      const pixel = v[this.thread.y][this.thread.x];
+      this.color(0, pixel.g / 255, 0, 255);
+    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    visualKernelG(rgba);
+
+    const visualGPUB = new GPU({ mode });
+    const visualKernelB = visualGPUB.createKernel(function(v) {
+      const pixel = v[this.thread.y][this.thread.x];
+      this.color(0, 0, pixel.b / 255, 255);
+    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    visualKernelB(rgba);
+
+    const visualGPUA = new GPU({ mode });
+    const visualKernelA = visualGPUA.createKernel(function(v) {
+      const pixel = v[this.thread.y][this.thread.x];
+      this.color(255, 255, 255, pixel.a / 255);
+    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    visualKernelA(rgba);
+
+    visualGPUR.destroy();
+    visualGPUG.destroy();
+    visualGPUB.destroy();
+    visualGPUA.destroy();
+
+    return [
+      visualKernelR.canvas,
+      visualKernelG.canvas,
+      visualKernelB.canvas,
+      visualKernelA.canvas,
+    ];
   }
 };
 
@@ -17481,5 +18439,5 @@ const _systemEndianness = utils.getSystemEndianness();
 module.exports = {
   utils
 };
-},{"./input":86,"./texture":89,"acorn":1}]},{},[83])(83)
+},{"./gpu.js":102,"./input":104,"./texture":107,"acorn":1}]},{},[101])(101)
 });
