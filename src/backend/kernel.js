@@ -269,14 +269,24 @@ class Kernel {
    * @param {IArguments} args - The actual parameters sent to the Kernel
    */
   setupArguments(args) {
+    this.kernelArguments = [];
     if (!this.argumentTypes) {
-      this.kernelArguments = [];
       if (!this.argumentTypes) {
         this.argumentTypes = [];
         for (let i = 0; i < args.length; i++) {
           const argType = utils.getVariableType(args[i], this.strictIntegers);
-          this.argumentTypes.push(argType === 'Integer' ? 'Number' : argType);
+          const type = argType === 'Integer' ? 'Number' : argType;
+          this.argumentTypes.push(type);
+          this.kernelArguments.push({
+            type
+          });
         }
+      }
+    } else {
+      for (let i = 0; i < this.argumentTypes.length; i++) {
+        this.kernelArguments.push({
+          type: this.argumentTypes[i]
+        });
       }
     }
 
@@ -306,11 +316,21 @@ class Kernel {
     }
     this.constantBitRatios = {};
     if (this.constants) {
-      for (let p in this.constants) {
+      for (let name in this.constants) {
         if (needsConstantTypes) {
-          this.constantTypes[p] = utils.getVariableType(this.constants[p], this.strictIntegers);
+          const type = utils.getVariableType(this.constants[name], this.strictIntegers);
+          this.constantTypes[name] = type;
+          this.kernelConstants.push({
+            name,
+            type
+          });
+        } else {
+          this.kernelConstants.push({
+            name,
+            type: this.constantTypes[name]
+          });
         }
-        this.constantBitRatios[p] = this.getBitRatio(this.constants[p]);
+        this.constantBitRatios[name] = this.getBitRatio(this.constants[name]);
       }
     }
   }
@@ -318,7 +338,7 @@ class Kernel {
   /**
    *
    * @param flag
-   * @returns {Kernel}
+   * @return {Kernel}
    */
   setOptimizeFloatMemory(flag) {
     this.optimizeFloatMemory = flag;
@@ -368,6 +388,7 @@ class Kernel {
   /**
    * @desc Set the maximum number of loop iterations
    * @param {number} max - iterations count
+   *
    */
   setLoopMaxIterations(max) {
     this.loopMaxIterations = max;
@@ -384,8 +405,18 @@ class Kernel {
 
   /**
    *
+   * @param [IKernelValueTypes] constantTypes
+   * @return {Kernel}
+   */
+  setConstantTypes(constantTypes) {
+    this.constantTypes = constantTypes;
+    return this;
+  }
+
+  /**
+   *
    * @param {IFunction[]|KernelFunction[]} functions
-   * @returns {Kernel}
+   * @return {Kernel}
    */
   setFunctions(functions) {
     if (typeof functions[0] === 'function') {
@@ -399,7 +430,7 @@ class Kernel {
   /**
    * Set writing to texture on/off
    * @param flag
-   * @returns {Kernel}
+   * @return {Kernel}
    */
   setPipeline(flag) {
     this.pipeline = flag;
@@ -409,7 +440,7 @@ class Kernel {
   /**
    * Set precision to 'unsigned' or 'single'
    * @param {String} flag 'unsigned' or 'single'
-   * @returns {Kernel}
+   * @return {Kernel}
    */
   setPrecision(flag) {
     this.precision = flag;
@@ -418,7 +449,7 @@ class Kernel {
 
   /**
    * @param flag
-   * @returns {Kernel}
+   * @return {Kernel}
    * @deprecated
    */
   setOutputToTexture(flag) {
@@ -430,7 +461,7 @@ class Kernel {
   /**
    * Set to immutable
    * @param flag
-   * @returns {Kernel}
+   * @return {Kernel}
    */
   setImmutable(flag) {
     this.immutable = flag;
@@ -533,13 +564,20 @@ class Kernel {
     return this;
   }
 
+  /**
+   *
+   * @param [IKernelValueTypes|GPUVariableType[]] argumentTypes
+   * @return {Kernel}
+   */
   setArgumentTypes(argumentTypes) {
     if (Array.isArray(argumentTypes)) {
       this.argumentTypes = argumentTypes;
     } else {
       this.argumentTypes = [];
       for (const p in argumentTypes) {
-        this.argumentTypes[this.argumentNames.indexOf(p)] = argumentTypes[p];
+        const argumentIndex = this.argumentNames.indexOf(p);
+        if (argumentIndex === -1) throw new Error(`unable to find argument ${ p }`);
+        this.argumentTypes[argumentIndex] = argumentTypes[p];
       }
     }
     return this;

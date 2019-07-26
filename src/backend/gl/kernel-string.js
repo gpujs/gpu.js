@@ -142,9 +142,15 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
         break;
       case 'MemoryOptimizedNumberTexture':
       case 'NumberTexture':
+      case 'Array1D(2)':
+      case 'Array1D(3)':
+      case 'Array1D(4)':
       case 'Array2D(2)':
       case 'Array2D(3)':
       case 'Array2D(4)':
+      case 'Array3D(2)':
+      case 'Array3D(3)':
+      case 'Array3D(4)':
       case 'ArrayTexture(1)':
       case 'ArrayTexture(2)':
       case 'ArrayTexture(3)':

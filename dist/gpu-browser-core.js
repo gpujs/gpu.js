@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.22
- * @date Wed Jul 24 2019 12:50:53 GMT-0400 (EDT)
+ * @version 2.0.0-rc.23
+ * @date Fri Jul 26 2019 14:52:24 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -1841,12 +1841,11 @@ class FunctionBuilder {
   static fromKernel(kernel, FunctionNode, extraNodeOptions) {
     const {
       kernelArguments,
+      kernelConstants,
       argumentNames,
-      argumentTypes,
       argumentSizes,
       argumentBitRatios,
       constants,
-      constantTypes,
       constantBitRatios,
       debug,
       loopMaxIterations,
@@ -1864,6 +1863,18 @@ class FunctionBuilder {
       dynamicOutput,
       warnVarUsage,
     } = kernel;
+
+    const argumentTypes = new Array(kernelArguments.length);
+    const constantTypes = {};
+
+    for (let i = 0; i < kernelArguments.length; i++) {
+      argumentTypes[i] = kernelArguments[i].type;
+    }
+
+    for (let i = 0; i < kernelConstants.length; i++) {
+      const kernelConstant = kernelConstants[i]
+      constantTypes[kernelConstant.name] = kernelConstant.type;
+    }
 
     const needsArgumentType = (functionName, index) => {
       return functionBuilder.needsArgumentType(functionName, index);
@@ -4037,9 +4048,15 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
         break;
       case 'MemoryOptimizedNumberTexture':
       case 'NumberTexture':
+      case 'Array1D(2)':
+      case 'Array1D(3)':
+      case 'Array1D(4)':
       case 'Array2D(2)':
       case 'Array2D(3)':
       case 'Array2D(4)':
+      case 'Array3D(2)':
+      case 'Array3D(3)':
+      case 'Array3D(4)':
       case 'ArrayTexture(1)':
       case 'ArrayTexture(2)':
       case 'ArrayTexture(3)':
@@ -5558,7 +5575,7 @@ class KernelValue {
     this.varName = origin === 'constants' ? `constants.${name}` : name;
     this.kernel = kernel;
     this.strictIntegers = strictIntegers;
-    this.type = type;
+    this.type = value.type || type;
     this.size = value.size || null;
     this.index = null;
     this.context = context;
@@ -5734,14 +5751,24 @@ class Kernel {
   }
 
   setupArguments(args) {
+    this.kernelArguments = [];
     if (!this.argumentTypes) {
-      this.kernelArguments = [];
       if (!this.argumentTypes) {
         this.argumentTypes = [];
         for (let i = 0; i < args.length; i++) {
           const argType = utils.getVariableType(args[i], this.strictIntegers);
-          this.argumentTypes.push(argType === 'Integer' ? 'Number' : argType);
+          const type = argType === 'Integer' ? 'Number' : argType;
+          this.argumentTypes.push(type);
+          this.kernelArguments.push({
+            type
+          });
         }
+      }
+    } else {
+      for (let i = 0; i < this.argumentTypes.length; i++) {
+        this.kernelArguments.push({
+          type: this.argumentTypes[i]
+        });
       }
     }
 
@@ -5767,11 +5794,21 @@ class Kernel {
     }
     this.constantBitRatios = {};
     if (this.constants) {
-      for (let p in this.constants) {
+      for (let name in this.constants) {
         if (needsConstantTypes) {
-          this.constantTypes[p] = utils.getVariableType(this.constants[p], this.strictIntegers);
+          const type = utils.getVariableType(this.constants[name], this.strictIntegers);
+          this.constantTypes[name] = type;
+          this.kernelConstants.push({
+            name,
+            type
+          });
+        } else {
+          this.kernelConstants.push({
+            name,
+            type: this.constantTypes[name]
+          });
         }
-        this.constantBitRatios[p] = this.getBitRatio(this.constants[p]);
+        this.constantBitRatios[name] = this.getBitRatio(this.constants[name]);
       }
     }
   }
@@ -5816,6 +5853,11 @@ class Kernel {
 
   setConstants(constants) {
     this.constants = constants;
+    return this;
+  }
+
+  setConstantTypes(constantTypes) {
+    this.constantTypes = constantTypes;
     return this;
   }
 
@@ -5907,7 +5949,9 @@ class Kernel {
     } else {
       this.argumentTypes = [];
       for (const p in argumentTypes) {
-        this.argumentTypes[this.argumentNames.indexOf(p)] = argumentTypes[p];
+        const argumentIndex = this.argumentNames.indexOf(p);
+        if (argumentIndex === -1) throw new Error(`unable to find argument ${ p }`);
+        this.argumentTypes[argumentIndex] = argumentTypes[p];
       }
     }
     return this;
@@ -7890,7 +7934,7 @@ const kernelValueMaps = {
   },
 };
 
-function lookupKernelValueType(type, dynamic, precision) {
+function lookupKernelValueType(type, dynamic, precision, value) {
   if (!type) {
     throw new Error('type missing');
   }
@@ -7899,6 +7943,9 @@ function lookupKernelValueType(type, dynamic, precision) {
   }
   if (!precision) {
     throw new Error('precision missing');
+  }
+  if (value.type) {
+    type = value.type;
   }
   const types = kernelValueMaps[precision][dynamic];
   if (types[type] === false) {
@@ -9054,8 +9101,8 @@ class WebGLKernel extends GLKernel {
       1;
   }
 
-  static lookupKernelValueType(type, dynamic, precision) {
-    return lookupKernelValueType(type, dynamic, precision);
+  static lookupKernelValueType(type, dynamic, precision, value) {
+    return lookupKernelValueType(type, dynamic, precision, value);
   }
 
   static get testCanvas() {
@@ -9324,7 +9371,7 @@ class WebGLKernel extends GLKernel {
       } else {
         type = this.argumentTypes[index];
       }
-      const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArguments ? 'dynamic' : 'static', this.precision);
+      const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArguments ? 'dynamic' : 'static', this.precision, args[index]);
       if (KernelValue === null) {
         return this.requestFallback(args);
       }
@@ -9373,7 +9420,7 @@ class WebGLKernel extends GLKernel {
       } else {
         type = this.constantTypes[name];
       }
-      const KernelValue = this.constructor.lookupKernelValueType(type, 'static', this.precision);
+      const KernelValue = this.constructor.lookupKernelValueType(type, 'static', this.precision, value);
       if (KernelValue === null) {
         return this.requestFallback(args);
       }
@@ -9547,8 +9594,8 @@ class WebGLKernel extends GLKernel {
 
     this.switchingKernels = false;
     for (let i = 0; i < kernelArguments.length; i++) {
-      if (this.switchingKernels) return;
       kernelArguments[i].updateValue(arguments[i]);
+      if (this.switchingKernels) return;
     }
 
     if (this.plugins) {
@@ -10768,7 +10815,6 @@ void main(void) {
 module.exports = {
   fragmentShader
 };
-
 },{}],68:[function(require,module,exports){
 const { WebGLFunctionNode } = require('../web-gl/function-node');
 
@@ -10965,7 +11011,7 @@ const kernelValueMaps = {
   },
 };
 
-function lookupKernelValueType(type, dynamic, precision) {
+function lookupKernelValueType(type, dynamic, precision, value) {
   if (!type) {
     throw new Error('type missing');
   }
@@ -10974,6 +11020,9 @@ function lookupKernelValueType(type, dynamic, precision) {
   }
   if (!precision) {
     throw new Error('precision missing');
+  }
+  if (value.type) {
+    type = value.type;
   }
   const types = kernelValueMaps[precision][dynamic];
   if (types[type] === false) {
@@ -11649,8 +11698,8 @@ class WebGL2Kernel extends WebGLKernel {
     return testContext.getParameter(testContext.MAX_DRAW_BUFFERS);
   }
 
-  static lookupKernelValueType(type, dynamic, precision) {
-    return lookupKernelValueType(type, dynamic, precision);
+  static lookupKernelValueType(type, dynamic, precision, value) {
+    return lookupKernelValueType(type, dynamic, precision, value);
   }
 
   static get testCanvas() {
@@ -11792,8 +11841,8 @@ class WebGL2Kernel extends WebGLKernel {
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
     for (let i = 0; i < kernelArguments.length; i++) {
-      if (this.switchingKernels) return;
       kernelArguments[i].updateValue(arguments[i]);
+      if (this.switchingKernels) return;
     }
 
     if (this.plugins) {
@@ -12399,6 +12448,102 @@ class GPU {
     if (settings && typeof settings.argumentTypes === 'object') {
       settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
     }
+
+    function onRequestFallback(args) {
+      const fallbackKernel = new CPUKernel(source, {
+        argumentTypes: kernelRun.argumentTypes,
+        constantTypes: kernelRun.constantTypes,
+        graphical: kernelRun.graphical,
+        loopMaxIterations: kernelRun.loopMaxIterations,
+        constants: kernelRun.constants,
+        dynamicOutput: kernelRun.dynamicOutput,
+        dynamicArgument: kernelRun.dynamicArguments,
+        output: kernelRun.output,
+        precision: kernelRun.precision,
+        pipeline: kernelRun.pipeline,
+        immutable: kernelRun.immutable,
+        optimizeFloatMemory: kernelRun.optimizeFloatMemory,
+        fixIntegerDivisionAccuracy: kernelRun.fixIntegerDivisionAccuracy,
+        functions: kernelRun.functions,
+        nativeFunctions: kernelRun.nativeFunctions,
+        subKernels: kernelRun.subKernels,
+        strictIntegers: kernelRun.strictIntegers,
+        debug: kernelRun.debug,
+        warnVarUsage: kernelRun.warnVarUsage,
+      });
+      fallbackKernel.build.apply(fallbackKernel, args);
+      const result = fallbackKernel.run.apply(fallbackKernel, args);
+      kernelRun.replaceKernel(fallbackKernel);
+      return result;
+    }
+
+    function onRequestSwitchKernel(args, kernel) {
+      const argumentTypes = new Array(args.length);
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        const type = kernel.argumentTypes[i];
+        if (arg.type) {
+          argumentTypes[i] = arg.type;
+        } else {
+          switch (type) {
+            case 'Number':
+            case 'Integer':
+            case 'Float':
+              argumentTypes[i] = utils.getVariableType(arg);
+              break;
+            default:
+              argumentTypes[i] = type;
+          }
+        }
+      }
+      const signature = argumentTypes.join(',');
+      const existingKernel = switchableKernels[signature];
+      if (existingKernel) {
+        existingKernel.run.apply(existingKernel, args);
+        if (existingKernel.renderKernels) {
+          return existingKernel.renderKernels();
+        } else {
+          return existingKernel.renderOutput();
+        }
+      }
+
+      const newKernel = switchableKernels[signature] = new kernel.constructor(source, {
+        argumentTypes,
+        constantTypes: kernel.constantTypes,
+        graphical: kernel.graphical,
+        loopMaxIterations: kernel.loopMaxIterations,
+        constants: kernel.constants,
+        dynamicOutput: kernel.dynamicOutput,
+        dynamicArgument: kernel.dynamicArguments,
+        context: kernel.context,
+        canvas: kernel.canvas,
+        output: kernel.output,
+        precision: kernel.precision,
+        pipeline: kernel.pipeline,
+        immutable: kernel.immutable,
+        optimizeFloatMemory: kernel.optimizeFloatMemory,
+        fixIntegerDivisionAccuracy: kernel.fixIntegerDivisionAccuracy,
+        functions: kernel.functions,
+        nativeFunctions: kernel.nativeFunctions,
+        subKernels: kernel.subKernels,
+        strictIntegers: kernel.strictIntegers,
+        debug: kernel.debug,
+        gpu: kernel.gpu,
+        validate,
+        warnVarUsage: kernel.warnVarUsage,
+        returnType: kernel.returnType,
+        onRequestFallback,
+        onRequestSwitchKernel,
+      });
+      newKernel.build.apply(newKernel, args);
+      newKernel.run.apply(newKernel, args);
+      kernelRun.replaceKernel(newKernel);
+      if (newKernel.renderKernels) {
+        return newKernel.renderKernels();
+      } else {
+        return newKernel.renderOutput();
+      }
+    }
     const mergedSettings = Object.assign({
       context: this.context,
       canvas: this.canvas,
@@ -12406,96 +12551,23 @@ class GPU {
       nativeFunctions: this.nativeFunctions,
       gpu: this,
       validate,
-      onRequestFallback: (args) => {
-        const fallbackKernel = new CPUKernel(source, {
-          argumentTypes: kernel.argumentTypes,
-          constantTypes: kernel.constantTypes,
-          graphical: kernel.graphical,
-          loopMaxIterations: kernel.loopMaxIterations,
-          constants: kernel.constants,
-          dynamicOutput: kernel.dynamicOutput,
-          dynamicArgument: kernel.dynamicArguments,
-          output: kernel.output,
-          precision: kernel.precision,
-          pipeline: kernel.pipeline,
-          immutable: kernel.immutable,
-          optimizeFloatMemory: kernel.optimizeFloatMemory,
-          fixIntegerDivisionAccuracy: kernel.fixIntegerDivisionAccuracy,
-          functions: kernel.functions,
-          nativeFunctions: kernel.nativeFunctions,
-          subKernels: kernel.subKernels,
-          strictIntegers: kernel.strictIntegers,
-          debug: kernel.debug,
-          warnVarUsage: kernel.warnVarUsage,
-        });
-        fallbackKernel.build.apply(fallbackKernel, args);
-        const result = fallbackKernel.run.apply(fallbackKernel, args);
-        kernel.replaceKernel(fallbackKernel);
-        return result;
-      },
-      onRequestSwitchKernel: (args, kernel) => {
-        const signatureArray = [];
-        for (let i = 0; i < args.length; i++) {
-          signatureArray.push(utils.getVariableType(args[i]));
-        }
-        const signature = signatureArray.join(',');
-        const existingKernel = switchableKernels[signature];
-        if (existingKernel) {
-          existingKernel.run.apply(existingKernel, args);
-          if (existingKernel.renderKernels) {
-            return existingKernel.renderKernels();
-          } else {
-            return existingKernel.renderOutput();
-          }
-        }
-
-        const newKernel = switchableKernels[signature] = new this.Kernel(source, {
-          constantTypes: kernel.constantTypes,
-          graphical: kernel.graphical,
-          loopMaxIterations: kernel.loopMaxIterations,
-          constants: kernel.constants,
-          dynamicOutput: kernel.dynamicOutput,
-          dynamicArgument: kernel.dynamicArguments,
-          context: kernel.context,
-          canvas: kernel.canvas,
-          output: kernel.output,
-          precision: kernel.precision,
-          pipeline: kernel.pipeline,
-          immutable: kernel.immutable,
-          optimizeFloatMemory: kernel.optimizeFloatMemory,
-          fixIntegerDivisionAccuracy: kernel.fixIntegerDivisionAccuracy,
-          functions: kernel.functions,
-          nativeFunctions: kernel.nativeFunctions,
-          subKernels: kernel.subKernels,
-          strictIntegers: kernel.strictIntegers,
-          debug: kernel.debug,
-          gpu: this,
-          validate,
-          warnVarUsage: kernel.warnVarUsage,
-        });
-        newKernel.build.apply(newKernel, args);
-        newKernel.run.apply(newKernel, args);
-        if (newKernel.renderKernels) {
-          return newKernel.renderKernels();
-        } else {
-          return newKernel.renderOutput();
-        }
-      }
+      onRequestFallback,
+      onRequestSwitchKernel
     }, settingsCopy);
 
-    const kernel = kernelRunShortcut(new this.Kernel(source, mergedSettings));
+    const kernelRun = kernelRunShortcut(new this.Kernel(source, mergedSettings));
 
     if (!this.canvas) {
-      this.canvas = kernel.canvas;
+      this.canvas = kernelRun.canvas;
     }
 
     if (!this.context) {
-      this.context = kernel.context;
+      this.context = kernelRun.context;
     }
 
-    this.kernels.push(kernel);
+    this.kernels.push(kernelRun);
 
-    return kernel;
+    return kernelRun;
   }
 
   createKernelMap() {
@@ -12748,8 +12820,6 @@ function kernelRunShortcut(kernel) {
         }
         return kernel.renderKernels();
       };
-      kernel.run.apply(kernel, arguments);
-      return kernel.renderKernels();
     } else if (kernel.renderOutput) {
       run = function() {
         kernel.run.apply(kernel, arguments);
@@ -12759,14 +12829,12 @@ function kernelRunShortcut(kernel) {
         }
         return kernel.renderOutput();
       };
-      kernel.run.apply(kernel, arguments);
-      return kernel.renderOutput();
     } else {
       run = function() {
         return kernel.run.apply(kernel, arguments);
       };
-      return kernel.run.apply(kernel, arguments);
     }
+    return run.apply(kernel, arguments);
   };
   const shortcut = function() {
     return run.apply(kernel, arguments);
@@ -13675,5 +13743,6 @@ const _systemEndianness = utils.getSystemEndianness();
 module.exports = {
   utils
 };
+
 },{"./gpu.js":101,"./input":103,"./texture":106,"acorn":1}]},{},[100])(100)
 });

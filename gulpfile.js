@@ -8,6 +8,7 @@ const replace = require('gulp-replace');
 const source = require('vinyl-source-stream');
 const buffer = require('vinyl-buffer');
 const path = require('path');
+const uglify = require('gulp-uglify-es').default;
 const pkg = require('./package.json');
 const jsprettify = require('gulp-jsbeautifier');
 const stripComments = require('gulp-strip-comments');
@@ -42,12 +43,14 @@ gulp.task('build', () => {
 /// Minify the build script, after building it
 gulp.task('minify', () => {
   const gpu = gulp.src('dist/gpu-browser.js')
+    .pipe(uglify())
     .pipe(rename('gpu-browser.min.js'))
     .pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
     .pipe(gulp.dest('dist'))
     .on('error', console.error);
 
   const gpuCore = gulp.src('dist/gpu-browser-core.js')
+    .pipe(uglify())
     .pipe(rename('gpu-browser-core.min.js'))
     .pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
     .pipe(gulp.dest('dist'))
@@ -55,7 +58,6 @@ gulp.task('minify', () => {
 
   return merge(gpu, gpuCore);
 });
-
 
 /// The browser sync prototyping
 gulp.task('bsync', () => {
@@ -99,6 +101,7 @@ gulp.task('build-tests', () => {
     fs.unlinkSync(`${folder}/${testFile}`);
   } catch (e) {}
   const rootPath = path.resolve(process.cwd(), folder);
+  const warning = '<!-- the following list of javascript files is built automatically -->\n';
   const files = readDirDeepSync(rootPath, {
     patterns: [
       '**/*.js'
@@ -109,7 +112,7 @@ gulp.task('build-tests', () => {
   })
     .map(file => file.replace(/^test\//, ''));
   return gulp.src(`${folder}/all-template.html`)
-    .pipe(replace('{{test-files}}', files.map(file => `<script type="module" src="${file}"></script>`).join('\n')))
+    .pipe(replace('{{test-files}}', warning + files.map(file => `<script type="module" src="${file}"></script>`).join('\n')))
     .pipe(rename(testFile))
     .pipe(gulp.dest(folder));
 });

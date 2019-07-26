@@ -181,11 +181,12 @@ export abstract class Kernel {
   setOutput(flag: number[]): this;
   setWarnVarUsage(flag: boolean): this;
   setOptimizeFloatMemory(flag: boolean): this;
-  setArgumentTypes(flag: any): this;
+  setArgumentTypes(flag: IKernelValueTypes): this;
   setDebug(flag: boolean): this;
   setGraphical(flag: boolean): this;
   setLoopMaxIterations(flag: number): this;
   setConstants(flag: object): this;
+  setConstantTypes(flag: IKernelValueTypes): this;
   setPipeline(flag: boolean): this;
   setPrecision(flag: Precision): this;
   setImmutable(flag: boolean): this;
@@ -216,7 +217,7 @@ export class HeadlessGLKernel extends WebGLKernel {
 }
 
 export interface IArgumentTypes {
-  argumentTypes: string[],
+  argumentTypes: GPUVariableType[],
   argumentNames: string[],
 }
 
@@ -224,8 +225,8 @@ export interface IConstants {
   [constantName: string]: KernelVariable;
 }
 
-export interface IConstantTypes {
-  [constantType: string]: string;
+export interface IKernelValueTypes {
+  [constantType: string]: GPUVariableType;
 }
 
 export interface IConstantsThis {
@@ -313,7 +314,8 @@ export type KernelVariable =
   | Texture
   | Input
   | HTMLImageElement
-  | HTMLImageElement[];
+  | HTMLImageElement[]
+  | KernelOutput;
 
 export type ThreadKernelVariable = boolean | number | number[] | number[][] | number[][][];
 export type KernelFunction = ((
@@ -340,7 +342,12 @@ export type KernelFunction = ((
   arg20?: ThreadKernelVariable,
 ) => KernelOutput) | object | string;
 
-export type KernelOutput = void | KernelVariable;
+export type KernelOutput = void
+  | number[]
+  | number[][]
+  | number[][][]
+  | number[][][][]
+  | Texture;
 
 export interface IFunction {
   source: string;
@@ -355,7 +362,7 @@ export interface IFunctionSettings {
   argumentSizes?: number[];
 
   constants?: IConstants;
-  constantTypes?: IConstantTypes;
+  constantTypes?: IKernelValueTypes;
 
   output?: number[];
   loopMaxIterations?: number;
@@ -379,7 +386,7 @@ export interface ISubKernel {
 
 
 export class FunctionBuilder {
-  static fromKernel(kernel: IKernelSettings, FunctionNode: FunctionNode, extraNodeOptions?: any): FunctionBuilder;
+  static fromKernel(kernel: Kernel, FunctionNode: FunctionNode, extraNodeOptions?: any): FunctionBuilder;
   constructor(settings: IFunctionBuilderSettings);
   addFunctionNode(functionNode: FunctionNode): void;
   traceFunctionCalls(functionName: string): string[];

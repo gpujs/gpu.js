@@ -1,5 +1,3 @@
-
-
 function imageToArray(image) {
   const canvas = document.createElement('canvas');
   canvas.width = image.width;

@@ -152,7 +152,7 @@ const kernelValueMaps = {
   },
 };
 
-function lookupKernelValueType(type, dynamic, precision) {
+function lookupKernelValueType(type, dynamic, precision, value) {
   if (!type) {
     throw new Error('type missing');
   }
@@ -161,6 +161,9 @@ function lookupKernelValueType(type, dynamic, precision) {
   }
   if (!precision) {
     throw new Error('precision missing');
+  }
+  if (value.type) {
+    type = value.type;
   }
   const types = kernelValueMaps[precision][dynamic];
   if (types[type] === false) {

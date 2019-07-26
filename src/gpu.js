@@ -194,7 +194,7 @@ class GPU {
    * @desc This creates a callable function object to call the kernel function with the argument parameter set
    * @param {Function|String|object} source - The calling to perform the conversion
    * @param {Object} [settings] - The parameter configuration object
-   * @returns {Kernel} callable function to run
+   * @return {Kernel} callable function to run
    */
   createKernel(source, settings) {
     if (typeof source === 'undefined') {
@@ -215,6 +215,102 @@ class GPU {
     if (settings && typeof settings.argumentTypes === 'object') {
       settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
     }
+
+    function onRequestFallback(args) {
+      const fallbackKernel = new CPUKernel(source, {
+        argumentTypes: kernelRun.argumentTypes,
+        constantTypes: kernelRun.constantTypes,
+        graphical: kernelRun.graphical,
+        loopMaxIterations: kernelRun.loopMaxIterations,
+        constants: kernelRun.constants,
+        dynamicOutput: kernelRun.dynamicOutput,
+        dynamicArgument: kernelRun.dynamicArguments,
+        output: kernelRun.output,
+        precision: kernelRun.precision,
+        pipeline: kernelRun.pipeline,
+        immutable: kernelRun.immutable,
+        optimizeFloatMemory: kernelRun.optimizeFloatMemory,
+        fixIntegerDivisionAccuracy: kernelRun.fixIntegerDivisionAccuracy,
+        functions: kernelRun.functions,
+        nativeFunctions: kernelRun.nativeFunctions,
+        subKernels: kernelRun.subKernels,
+        strictIntegers: kernelRun.strictIntegers,
+        debug: kernelRun.debug,
+        warnVarUsage: kernelRun.warnVarUsage,
+      });
+      fallbackKernel.build.apply(fallbackKernel, args);
+      const result = fallbackKernel.run.apply(fallbackKernel, args);
+      kernelRun.replaceKernel(fallbackKernel);
+      return result;
+    }
+
+    function onRequestSwitchKernel(args, kernel) {
+      const argumentTypes = new Array(args.length);
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        const type = kernel.argumentTypes[i];
+        if (arg.type) {
+          argumentTypes[i] = arg.type;
+        } else {
+          switch (type) {
+            case 'Number':
+            case 'Integer':
+            case 'Float':
+              argumentTypes[i] = utils.getVariableType(arg);
+              break;
+            default:
+              argumentTypes[i] = type;
+          }
+        }
+      }
+      const signature = argumentTypes.join(',');
+      const existingKernel = switchableKernels[signature];
+      if (existingKernel) {
+        existingKernel.run.apply(existingKernel, args);
+        if (existingKernel.renderKernels) {
+          return existingKernel.renderKernels();
+        } else {
+          return existingKernel.renderOutput();
+        }
+      }
+
+      const newKernel = switchableKernels[signature] = new kernel.constructor(source, {
+        argumentTypes,
+        constantTypes: kernel.constantTypes,
+        graphical: kernel.graphical,
+        loopMaxIterations: kernel.loopMaxIterations,
+        constants: kernel.constants,
+        dynamicOutput: kernel.dynamicOutput,
+        dynamicArgument: kernel.dynamicArguments,
+        context: kernel.context,
+        canvas: kernel.canvas,
+        output: kernel.output,
+        precision: kernel.precision,
+        pipeline: kernel.pipeline,
+        immutable: kernel.immutable,
+        optimizeFloatMemory: kernel.optimizeFloatMemory,
+        fixIntegerDivisionAccuracy: kernel.fixIntegerDivisionAccuracy,
+        functions: kernel.functions,
+        nativeFunctions: kernel.nativeFunctions,
+        subKernels: kernel.subKernels,
+        strictIntegers: kernel.strictIntegers,
+        debug: kernel.debug,
+        gpu: kernel.gpu,
+        validate,
+        warnVarUsage: kernel.warnVarUsage,
+        returnType: kernel.returnType,
+        onRequestFallback,
+        onRequestSwitchKernel,
+      });
+      newKernel.build.apply(newKernel, args);
+      newKernel.run.apply(newKernel, args);
+      kernelRun.replaceKernel(newKernel);
+      if (newKernel.renderKernels) {
+        return newKernel.renderKernels();
+      } else {
+        return newKernel.renderOutput();
+      }
+    }
     const mergedSettings = Object.assign({
       context: this.context,
       canvas: this.canvas,
@@ -222,99 +318,25 @@ class GPU {
       nativeFunctions: this.nativeFunctions,
       gpu: this,
       validate,
-      onRequestFallback: (args) => {
-        const fallbackKernel = new CPUKernel(source, {
-          argumentTypes: kernel.argumentTypes,
-          constantTypes: kernel.constantTypes,
-          graphical: kernel.graphical,
-          loopMaxIterations: kernel.loopMaxIterations,
-          constants: kernel.constants,
-          dynamicOutput: kernel.dynamicOutput,
-          dynamicArgument: kernel.dynamicArguments,
-          output: kernel.output,
-          precision: kernel.precision,
-          pipeline: kernel.pipeline,
-          immutable: kernel.immutable,
-          optimizeFloatMemory: kernel.optimizeFloatMemory,
-          fixIntegerDivisionAccuracy: kernel.fixIntegerDivisionAccuracy,
-          functions: kernel.functions,
-          nativeFunctions: kernel.nativeFunctions,
-          subKernels: kernel.subKernels,
-          strictIntegers: kernel.strictIntegers,
-          debug: kernel.debug,
-          warnVarUsage: kernel.warnVarUsage,
-        });
-        fallbackKernel.build.apply(fallbackKernel, args);
-        const result = fallbackKernel.run.apply(fallbackKernel, args);
-        kernel.replaceKernel(fallbackKernel);
-        return result;
-      },
-      onRequestSwitchKernel: (args, kernel) => {
-        const signatureArray = [];
-        for (let i = 0; i < args.length; i++) {
-          signatureArray.push(utils.getVariableType(args[i]));
-        }
-        const signature = signatureArray.join(',');
-        const existingKernel = switchableKernels[signature];
-        if (existingKernel) {
-          existingKernel.run.apply(existingKernel, args);
-          if (existingKernel.renderKernels) {
-            return existingKernel.renderKernels();
-          } else {
-            return existingKernel.renderOutput();
-          }
-        }
-
-        const newKernel = switchableKernels[signature] = new this.Kernel(source, {
-          // Don't send kernel.argumentTypes, as they are different and need to be recalculated here
-          constantTypes: kernel.constantTypes,
-          graphical: kernel.graphical,
-          loopMaxIterations: kernel.loopMaxIterations,
-          constants: kernel.constants,
-          dynamicOutput: kernel.dynamicOutput,
-          dynamicArgument: kernel.dynamicArguments,
-          context: kernel.context,
-          canvas: kernel.canvas,
-          output: kernel.output,
-          precision: kernel.precision,
-          pipeline: kernel.pipeline,
-          immutable: kernel.immutable,
-          optimizeFloatMemory: kernel.optimizeFloatMemory,
-          fixIntegerDivisionAccuracy: kernel.fixIntegerDivisionAccuracy,
-          functions: kernel.functions,
-          nativeFunctions: kernel.nativeFunctions,
-          subKernels: kernel.subKernels,
-          strictIntegers: kernel.strictIntegers,
-          debug: kernel.debug,
-          gpu: this,
-          validate,
-          warnVarUsage: kernel.warnVarUsage,
-        });
-        newKernel.build.apply(newKernel, args);
-        newKernel.run.apply(newKernel, args);
-        if (newKernel.renderKernels) {
-          return newKernel.renderKernels();
-        } else {
-          return newKernel.renderOutput();
-        }
-      }
+      onRequestFallback,
+      onRequestSwitchKernel
     }, settingsCopy);
 
-    const kernel = kernelRunShortcut(new this.Kernel(source, mergedSettings));
+    const kernelRun = kernelRunShortcut(new this.Kernel(source, mergedSettings));
 
     //if canvas didn't come from this, propagate from kernel
     if (!this.canvas) {
-      this.canvas = kernel.canvas;
+      this.canvas = kernelRun.canvas;
     }
 
     //if context didn't come from this, propagate from kernel
     if (!this.context) {
-      this.context = kernel.context;
+      this.context = kernelRun.context;
     }
 
-    this.kernels.push(kernel);
+    this.kernels.push(kernelRun);
 
-    return kernel;
+    return kernelRun;
   }
 
   /**

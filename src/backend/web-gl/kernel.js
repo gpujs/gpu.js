@@ -98,8 +98,8 @@ class WebGLKernel extends GLKernel {
       1;
   }
 
-  static lookupKernelValueType(type, dynamic, precision) {
-    return lookupKernelValueType(type, dynamic, precision);
+  static lookupKernelValueType(type, dynamic, precision, value) {
+    return lookupKernelValueType(type, dynamic, precision, value);
   }
 
   static get testCanvas() {
@@ -392,7 +392,7 @@ class WebGLKernel extends GLKernel {
       } else {
         type = this.argumentTypes[index];
       }
-      const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArguments ? 'dynamic' : 'static', this.precision);
+      const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArguments ? 'dynamic' : 'static', this.precision, args[index]);
       if (KernelValue === null) {
         return this.requestFallback(args);
       }
@@ -441,7 +441,7 @@ class WebGLKernel extends GLKernel {
       } else {
         type = this.constantTypes[name];
       }
-      const KernelValue = this.constructor.lookupKernelValueType(type, 'static', this.precision);
+      const KernelValue = this.constructor.lookupKernelValueType(type, 'static', this.precision, value);
       if (KernelValue === null) {
         return this.requestFallback(args);
       }
@@ -615,9 +615,8 @@ class WebGLKernel extends GLKernel {
 
     this.switchingKernels = false;
     for (let i = 0; i < kernelArguments.length; i++) {
-      // this will be handled in renderOutput
-      if (this.switchingKernels) return;
       kernelArguments[i].updateValue(arguments[i]);
+      if (this.switchingKernels) return;
     }
 
     if (this.plugins) {

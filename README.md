@@ -94,7 +94,6 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [Typescript Typings](#typescript-typings)
 * [Dealing With Transpilation](#dealing-with-transpilation)
 * [Full API reference](#full-api-reference)
-* [Automatically-built Documentation](#automatically-built-documentation)
 * [Contributors](#contributors)
 * [Contributing](#contributing)
 * [How possible in node](#how-possible-in-node)
@@ -885,10 +884,6 @@ Here is a list of a few things that GPU.js does to fix transpilation:
 ## Full API Reference
 
 You can find a [complete API reference here](https://doxdox.org/gpujs/gpu.js/).
-
-## Automatically-built Documentation
-
-Documentation of the codebase is [automatically built](https://github.com/gpujs/gpu.js/wiki/Automatic-Documentation).
 
 ## Terms Explained
 * Kernel - A function that is tightly coupled to program that runs on the Graphic Processor

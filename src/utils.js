@@ -845,7 +845,7 @@ const utils = {
    * @param width
    * @param height
    * @param mode
-   * @return {[any, any, any, any]}
+   * @return {Object[]}
    */
   splitRGBAToCanvases: (rgba, width, height, mode) => {
     const { GPU } = require('./gpu.js');

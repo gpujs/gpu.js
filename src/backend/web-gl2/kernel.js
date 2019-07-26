@@ -76,8 +76,8 @@ class WebGL2Kernel extends WebGLKernel {
     return testContext.getParameter(testContext.MAX_DRAW_BUFFERS);
   }
 
-  static lookupKernelValueType(type, dynamic, precision) {
-    return lookupKernelValueType(type, dynamic, precision);
+  static lookupKernelValueType(type, dynamic, precision, value) {
+    return lookupKernelValueType(type, dynamic, precision, value);
   }
 
   static get testCanvas() {
@@ -227,8 +227,8 @@ class WebGL2Kernel extends WebGLKernel {
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
     for (let i = 0; i < kernelArguments.length; i++) {
-      if (this.switchingKernels) return;
       kernelArguments[i].updateValue(arguments[i]);
+      if (this.switchingKernels) return;
     }
 
     if (this.plugins) {

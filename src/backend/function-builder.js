@@ -15,12 +15,11 @@ class FunctionBuilder {
   static fromKernel(kernel, FunctionNode, extraNodeOptions) {
     const {
       kernelArguments,
+      kernelConstants,
       argumentNames,
-      argumentTypes,
       argumentSizes,
       argumentBitRatios,
       constants,
-      constantTypes,
       constantBitRatios,
       debug,
       loopMaxIterations,
@@ -38,6 +37,18 @@ class FunctionBuilder {
       dynamicOutput,
       warnVarUsage,
     } = kernel;
+
+    const argumentTypes = new Array(kernelArguments.length);
+    const constantTypes = {};
+
+    for (let i = 0; i < kernelArguments.length; i++) {
+      argumentTypes[i] = kernelArguments[i].type;
+    }
+
+    for (let i = 0; i < kernelConstants.length; i++) {
+      const kernelConstant = kernelConstants[i]
+      constantTypes[kernelConstant.name] = kernelConstant.type;
+    }
 
     const needsArgumentType = (functionName, index) => {
       return functionBuilder.needsArgumentType(functionName, index);

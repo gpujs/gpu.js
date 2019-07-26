@@ -17,8 +17,6 @@ function kernelRunShortcut(kernel) {
         }
         return kernel.renderKernels();
       };
-      kernel.run.apply(kernel, arguments);
-      return kernel.renderKernels();
     } else if (kernel.renderOutput) {
       run = function() {
         kernel.run.apply(kernel, arguments);
@@ -28,14 +26,12 @@ function kernelRunShortcut(kernel) {
         }
         return kernel.renderOutput();
       };
-      kernel.run.apply(kernel, arguments);
-      return kernel.renderOutput();
     } else {
       run = function() {
         return kernel.run.apply(kernel, arguments);
       };
-      return kernel.run.apply(kernel, arguments);
     }
+    return run.apply(kernel, arguments);
   };
   const shortcut = function() {
     return run.apply(kernel, arguments);

@@ -39,7 +39,8 @@ class KernelValue {
     this.varName = origin === 'constants' ? `constants.${name}` : name;
     this.kernel = kernel;
     this.strictIntegers = strictIntegers;
-    this.type = type;
+    // handle textures
+    this.type = value.type || type;
     this.size = value.size || null;
     this.index = null;
     this.context = context;

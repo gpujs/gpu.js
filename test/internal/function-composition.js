@@ -85,6 +85,8 @@ function numberFunctionCompositionFunctionBuilder(FunctionNode) {
   }`,
     argumentTypes: [],
     argumentNames: [],
+    kernelArguments: [],
+    kernelConstants: [],
     output,
     leadingReturnStatement: 'resultX[x] = '
   }, FunctionNode);
@@ -129,6 +131,8 @@ function array2FunctionCompositionFunctionBuilder(FunctionNode) {
   }`,
     argumentTypes: [],
     argumentNames: [],
+    kernelArguments: [],
+    kernelConstants: [],
     output,
     leadingReturnStatement: 'resultX[x] = '
   }, FunctionNode);

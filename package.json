@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "2.0.0-rc.22",
+  "version": "2.0.0-rc.23",
   "description": "GPU Accelerated JavaScript",
   "engines": {
     "node": ">=8.0.0"
@@ -33,6 +33,7 @@
     "gulp-rename": "^1.2.2",
     "gulp-replace": "^1.0.0",
     "gulp-strip-comments": "^2.4.5",
+    "gulp-uglify-es": "^1.0.4",
     "merge-stream": "^1.0.1",
     "qunit": "^2.9.1",
     "read-dir-deep": "^7.0.1",
@@ -43,7 +44,6 @@
   "scripts": {
     "test": "qunit",
     "setup": "npm i -g gulp-cli",
-    "build-docs": "./node_modules/.bin/jsdoc -c jsdoc.json src -r -d doc --debug && gulp injectCSS",
     "make": "gulp make"
   },
   "repository": {
