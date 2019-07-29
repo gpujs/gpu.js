@@ -105,7 +105,9 @@ class WebGLFunctionNode extends FunctionNode {
    */
   astReturnStatement(ast, retArr) {
     if (!ast.argument) throw this.astErrorOutput('Unexpected return statement', ast);
+    this.pushState('skip-literal-correction');
     const type = this.getType(ast.argument);
+    this.popState('skip-literal-correction');
 
     const result = [];
 
@@ -193,22 +195,23 @@ class WebGLFunctionNode extends FunctionNode {
       );
     }
 
+    const key = `${ast.start},${ast.end}`;
     if (Number.isInteger(ast.value)) {
-      if (this.isState('in-for-loop-init') || this.isState('casting-to-integer')) {
-        this.literalTypes[`${ast.start},${ast.end}`] = 'Integer';
+      if (this.isState('in-for-loop-init') || this.isState('casting-to-integer') || this.isState('building-integer')) {
+        this.literalTypes[key] = 'Integer';
         retArr.push(`${ast.value}`);
-      } else if (this.isState('casting-to-float')) {
-        this.literalTypes[`${ast.start},${ast.end}`] = 'Number';
+      } else if (this.isState('casting-to-float') || this.isState('building-float')) {
+        this.literalTypes[key] = 'Number';
         retArr.push(`${ast.value}.0`);
       } else {
-        this.literalTypes[`${ast.start},${ast.end}`] = 'Number';
+        this.literalTypes[key] = 'Number';
         retArr.push(`${ast.value}.0`);
       }
-    } else if (this.isState('casting-to-integer')) {
-      this.literalTypes[`${ast.start},${ast.end}`] = 'Integer';
-      retArr.push(parseInt(ast.raw));
+    } else if (this.isState('casting-to-integer') || this.isState('building-integer')) {
+      this.literalTypes[key] = 'Integer';
+      retArr.push(Math.round(ast.value));
     } else {
-      this.literalTypes[`${ast.start},${ast.end}`] = 'Number';
+      this.literalTypes[key] = 'Number';
       retArr.push(`${ast.value}`);
     }
     return retArr;
@@ -227,6 +230,7 @@ class WebGLFunctionNode extends FunctionNode {
 
     if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
       retArr.push('div_with_int_check(');
+      this.pushState('building-float');
       switch (this.getType(ast.left)) {
         case 'Integer':
           this.castValueToFloat(ast.left, retArr);
@@ -248,6 +252,7 @@ class WebGLFunctionNode extends FunctionNode {
         default:
           this.astGeneric(ast.right, retArr);
       }
+      this.popState('building-float');
       retArr.push(')');
       return retArr;
     }
@@ -261,27 +266,35 @@ class WebGLFunctionNode extends FunctionNode {
     const key = leftType + ' & ' + rightType;
     switch (key) {
       case 'Integer & Integer':
+        this.pushState('building-integer');
         this.astGeneric(ast.left, retArr);
         retArr.push(operatorMap[ast.operator] || ast.operator);
         this.astGeneric(ast.right, retArr);
+        this.popState('building-integer');
         break;
       case 'Number & Float':
       case 'Float & Number':
       case 'Float & Float':
       case 'Number & Number':
+        this.pushState('building-float');
         this.astGeneric(ast.left, retArr);
         retArr.push(operatorMap[ast.operator] || ast.operator);
         this.astGeneric(ast.right, retArr);
+        this.popState('building-float');
         break;
       case 'LiteralInteger & LiteralInteger':
-        if (this.isState('casting-to-integer')) {
+        if (this.isState('casting-to-integer') || this.isState('building-integer')) {
+          this.pushState('building-integer');
           this.astGeneric(ast.left, retArr);
           retArr.push(operatorMap[ast.operator] || ast.operator);
           this.astGeneric(ast.right, retArr);
+          this.popState('building-integer');
         } else {
+          this.pushState('building-float');
           this.castLiteralToFloat(ast.left, retArr);
           retArr.push(operatorMap[ast.operator] || ast.operator);
           this.castLiteralToFloat(ast.right, retArr);
+          this.popState('building-float');
         }
         break;
 
@@ -290,12 +303,15 @@ class WebGLFunctionNode extends FunctionNode {
         if (ast.operator === '>' || ast.operator === '<' && ast.right.type === 'Literal') {
           // if right value is actually a float, don't loose that information, cast left to right rather than the usual right to left
           if (!Number.isInteger(ast.right.value)) {
+            this.pushState('building-float');
             this.castValueToFloat(ast.left, retArr);
             retArr.push(operatorMap[ast.operator] || ast.operator);
             this.astGeneric(ast.right, retArr);
+            this.popState('building-float');
             break;
           }
         }
+        this.pushState('building-integer');
         this.astGeneric(ast.left, retArr);
         retArr.push(operatorMap[ast.operator] || ast.operator);
         this.pushState('casting-to-integer');
@@ -314,62 +330,81 @@ class WebGLFunctionNode extends FunctionNode {
           retArr.push(')');
         }
         this.popState('casting-to-integer');
+        this.popState('building-integer');
         break;
       case 'Integer & LiteralInteger':
+        this.pushState('building-integer');
         this.astGeneric(ast.left, retArr);
         retArr.push(operatorMap[ast.operator] || ast.operator);
         this.castLiteralToInteger(ast.right, retArr);
+        this.popState('building-integer');
         break;
 
       case 'Number & Integer':
+        this.pushState('building-float');
         this.astGeneric(ast.left, retArr);
         retArr.push(operatorMap[ast.operator] || ast.operator);
         this.castValueToFloat(ast.right, retArr);
+        this.popState('building-float');
         break;
       case 'Float & LiteralInteger':
       case 'Number & LiteralInteger':
         if (this.isState('in-for-loop-test')) {
+          this.pushState('building-integer');
           retArr.push('int(');
           this.astGeneric(ast.left, retArr);
           retArr.push(')');
           retArr.push(operatorMap[ast.operator] || ast.operator);
           this.castLiteralToInteger(ast.right, retArr);
+          this.popState('building-integer');
         } else {
+          this.pushState('building-float');
           this.astGeneric(ast.left, retArr);
           retArr.push(operatorMap[ast.operator] || ast.operator);
           this.castLiteralToFloat(ast.right, retArr);
+          this.popState('building-float');
         }
         break;
       case 'LiteralInteger & Float':
       case 'LiteralInteger & Number':
         if (this.isState('in-for-loop-test') || this.isState('in-for-loop-init') || this.isState('casting-to-integer')) {
+          this.pushState('building-integer');
           this.castLiteralToInteger(ast.left, retArr);
           retArr.push(operatorMap[ast.operator] || ast.operator);
           this.castValueToInteger(ast.right, retArr);
+          this.popState('building-integer');
         } else {
+          this.pushState('building-float');
           this.astGeneric(ast.left, retArr);
           retArr.push(operatorMap[ast.operator] || ast.operator);
           this.pushState('casting-to-float');
           this.astGeneric(ast.right, retArr);
           this.popState('casting-to-float');
+          this.popState('building-float');
         }
         break;
       case 'LiteralInteger & Integer':
+        this.pushState('building-integer');
         this.castLiteralToInteger(ast.left, retArr);
         retArr.push(operatorMap[ast.operator] || ast.operator);
         this.astGeneric(ast.right, retArr);
+        this.popState('building-integer');
         break;
 
       case 'Boolean & Boolean':
+        this.pushState('building-boolean');
         this.astGeneric(ast.left, retArr);
         retArr.push(operatorMap[ast.operator] || ast.operator);
         this.astGeneric(ast.right, retArr);
+        this.popState('building-boolean');
         break;
 
       case 'Float & Integer':
+        this.pushState('building-float');
         this.astGeneric(ast.left, retArr);
         retArr.push(operatorMap[ast.operator] || ast.operator);
         this.castValueToFloat(ast.right, retArr);
+        this.popState('building-float');
         break;
 
       default:
@@ -831,9 +866,13 @@ class WebGLFunctionNode extends FunctionNode {
         lastType = type;
         declarationResult.push(`user_${declaration.id.name}=`);
         if (actualType === 'Number' && type === 'Integer') {
-          declarationResult.push('int(');
-          this.astGeneric(init, declarationResult);
-          declarationResult.push(')');
+          if (init.left && init.left.type === 'Literal') {
+            this.astGeneric(init, declarationResult);
+          } else {
+            declarationResult.push('int(');
+            this.astGeneric(init, declarationResult);
+            declarationResult.push(')');
+          }
         } else {
           this.astGeneric(init, declarationResult);
         }

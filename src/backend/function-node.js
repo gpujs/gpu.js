@@ -450,6 +450,18 @@ class FunctionNode {
                 return 'Integer';
           }
           const type = this.getType(ast.left);
+          if (this.isState('skip-literal-correction')) return type;
+          if (type === 'LiteralInteger') {
+            const rightType = this.getType(ast.right);
+            if (rightType === 'LiteralInteger') {
+              if (ast.left.value % 1 === 0) {
+                return 'Integer';
+              } else {
+                return 'Float';
+              }
+            }
+            return rightType;
+          }
           return typeLookupMap[type] || type;
         case 'UpdateExpression':
           return this.getType(ast.argument);

@@ -193,6 +193,7 @@ export abstract class Kernel {
   setCanvas(flag: any): this;
   setContext(flag: any): this;
   setFunctions(flag: IFunction[]|KernelFunction[]): this;
+  setStrictIntegers(flag: boolean): this;
   addSubKernel(subKernel: ISubKernel): this;
   destroy(removeCanvasReferences?: boolean): void;
   validateSettings(IArguments): void;
