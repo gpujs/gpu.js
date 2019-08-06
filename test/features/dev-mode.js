@@ -3,6 +3,16 @@ const { GPU, input } = require('../../src');
 
 describe('features: dev mode');
 
+test('are added to GPU instance .kernels property', () => {
+  const gpu = new GPU({ mode: 'dev' });
+  const kernel = gpu.createKernel(function(value) {
+    return value;
+  }, { output: [1] });
+  assert.equal(gpu.kernels.length, 1);
+  assert.deepEqual(kernel(1), new Float32Array([1]));
+  gpu.destroy();
+});
+
 test('works with integer', () => {
   const gpu = new GPU({ mode: 'dev' });
   const kernel = gpu.createKernel(function(value) {
@@ -143,5 +153,18 @@ test('works with texture', () => {
       new Float32Array([13,14,15,16]),
     ]
   ]);
+  gpu.destroy();
+});
+
+test('works with adding functions', () => {
+  const gpu = new GPU({ mode: 'dev' });
+  function addOne(value) {
+    return value + 1;
+  }
+  gpu.addFunction(addOne);
+  const kernel = gpu.createKernel(function(value) {
+    return addOne(value);
+  }, { output: [1] });
+  assert.deepEqual(kernel(1), new Float32Array([2]));
   gpu.destroy();
 });

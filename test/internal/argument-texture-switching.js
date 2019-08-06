@@ -3,6 +3,95 @@ const { GPU } = require('../../src');
 
 describe('internal: argument texture switching');
 
+function testArrayWithoutTypeDefined(mode) {
+  const gpu = new GPU({ mode });
+  const texture = (
+    gpu.createKernel(function() { return this.thread.x; })
+      .setOutput([10])
+      .setPipeline(true)
+      .setPrecision('single')
+  )();
+  const expected = texture.toArray();
+  const kernel = gpu.createKernel(function(value) {
+    return value[this.thread.x];
+  })
+    .setOutput([10])
+    .setPipeline(false)
+    .setPrecision('single');
+
+  assert.notEqual(texture.constructor, Array);
+  assert.equal(expected.constructor, Float32Array);
+  assert.deepEqual(kernel(texture), expected);
+  assert.deepEqual(kernel(expected), expected);
+  gpu.destroy();
+}
+
+(GPU.isSinglePrecisionSupported ? test : skip)('Array without type defined (GPU only) auto', () => {
+  testArrayWithoutTypeDefined();
+});
+
+(GPU.isSinglePrecisionSupported ? test : skip)('Array without type defined (GPU only) gpu', () => {
+  testArrayWithoutTypeDefined('gpu');
+});
+
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('Array without type defined (GPU only) webgl', () => {
+  testArrayWithoutTypeDefined('webgl');
+});
+
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('Array without type defined (GPU only) webgl2', () => {
+  testArrayWithoutTypeDefined('webgl2');
+});
+
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('Array without type defined (GPU only) headlessgl', () => {
+  testArrayWithoutTypeDefined('headlessgl');
+});
+
+function testArrayWithTypeDefined(mode) {
+  const gpu = new GPU({ mode });
+  const texture = (
+    gpu.createKernel(function() { return this.thread.x; })
+      .setOutput([10])
+      .setPipeline(true)
+      .setPrecision('single')
+  )();
+  const expected = texture.toArray();
+  const kernel = gpu.createKernel(function(value) {
+    return value[this.thread.x];
+  })
+    .setArgumentTypes({
+      value: 'Array'
+    })
+    .setOutput([10])
+    .setPipeline(false)
+    .setPrecision('single');
+
+  assert.notEqual(texture.constructor, Array);
+  assert.equal(expected.constructor, Float32Array);
+  assert.deepEqual(kernel(texture), expected);
+  assert.deepEqual(kernel(expected), expected);
+  gpu.destroy();
+}
+
+(GPU.isSinglePrecisionSupported ? test : skip)('Array with type defined (GPU only) auto', () => {
+  testArrayWithTypeDefined();
+});
+
+(GPU.isSinglePrecisionSupported ? test : skip)('Array with type defined (GPU only) gpu', () => {
+  testArrayWithTypeDefined('gpu');
+});
+
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('Array with type defined (GPU only) webgl', () => {
+  testArrayWithTypeDefined('webgl');
+});
+
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('Array with type defined (GPU only) webgl2', () => {
+  testArrayWithTypeDefined('webgl2');
+});
+
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('Array with type defined (GPU only) headlessgl', () => {
+  testArrayWithTypeDefined('headlessgl');
+});
+
 function testArray1D2(mode) {
   const gpu = new GPU({ mode });
   const texture = (

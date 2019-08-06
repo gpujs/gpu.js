@@ -111,11 +111,11 @@ class GPU {
     this.canvas = settings.canvas || null;
     this.context = settings.context || null;
     this.mode = settings.mode;
-    if (this.mode === 'dev') return;
     this.Kernel = null;
     this.kernels = [];
     this.functions = [];
     this.nativeFunctions = [];
+    if (this.mode === 'dev') return;
     this.chooseKernel();
     // add functions from settings
     if (settings.functions) {
@@ -205,7 +205,9 @@ class GPU {
     }
 
     if (this.mode === 'dev') {
-      return gpuMock(source, upgradeDeprecatedCreateKernelSettings(settings));
+      const devKernel = gpuMock(source, upgradeDeprecatedCreateKernelSettings(settings));
+      this.kernels.push(devKernel);
+      return devKernel;
     }
 
     source = typeof source === 'function' ? source.toString() : source;
@@ -256,6 +258,7 @@ class GPU {
             case 'Number':
             case 'Integer':
             case 'Float':
+            case 'ArrayTexture(1)':
               argumentTypes[i] = utils.getVariableType(arg);
               break;
             default:
@@ -379,9 +382,11 @@ class GPU {
       fn = arguments[arguments.length - 1];
     }
 
-    if (!this.Kernel.isSupported || !this.Kernel.features.kernelMap) {
-      if (this.mode && kernelTypes.indexOf(this.mode) < 0) {
-        throw new Error(`kernelMap not supported on ${this.Kernel.name}`);
+    if (this.mode !== 'dev') {
+      if (!this.Kernel.isSupported || !this.Kernel.features.kernelMap) {
+        if (this.mode && kernelTypes.indexOf(this.mode) < 0) {
+          throw new Error(`kernelMap not supported on ${this.Kernel.name}`);
+        }
       }
     }
 
@@ -390,6 +395,7 @@ class GPU {
     if (settings && typeof settings.argumentTypes === 'object') {
       settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
     }
+
     if (Array.isArray(arguments[0])) {
       settingsCopy.subKernels = [];
       const functions = arguments[0];
@@ -511,7 +517,17 @@ class GPU {
       for (let i = 0; i < this.kernels.length; i++) {
         this.kernels[i].destroy(true); // remove canvas if exists
       }
-      this.kernels[0].kernel.constructor.destroyContext(this.context);
+      // all kernels are associated with one context, go ahead and take care of it here
+      let firstKernel = this.kernels[0];
+      if (firstKernel) {
+        // if it is shortcut
+        if (firstKernel.kernel) {
+          firstKernel = firstKernel.kernel;
+        }
+        if (firstKernel.constructor.destroyContext) {
+          firstKernel.constructor.destroyContext(this.context);
+        }
+      }
     }, 0);
   }
 }
