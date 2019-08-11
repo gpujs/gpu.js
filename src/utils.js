@@ -120,7 +120,7 @@ const utils = {
    */
   getVariableType(value, strictIntegers) {
     if (utils.isArray(value)) {
-      if (value[0].nodeName === 'IMG') {
+      if (value.length > 0 && value[0].nodeName === 'IMG') {
         return 'HTMLImageArray';
       }
       return 'Array';
