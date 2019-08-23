@@ -73,7 +73,7 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 
 * [Installation](#installation)
 * [`GPU` Settings](#gpu-settings)
-* [`gpu.createKernel` Settings](#gpu-createkernel-settings)
+* [`gpu.createKernel` Settings](#gpucreatekernel-settings)
 * [Creating and Running Functions](#creating-and-running-functions)
 * [Debugging](#debugging)
 * [Accepting Input](#accepting-input)
@@ -305,6 +305,7 @@ Debugging can be done in a variety of ways, and there are different levels of de
   * This puts `GPU.js` into development mode.  Here you can insert breakpoints, and be somewhat liberal in how your kernel is developed.
   * This mode _does not_ actually "compile" (parse, and eval) a kernel, it simply iterates on your code.
   * You can break a lot of rules here, because your kernel's function still has context of the state it came from.
+  * PLEASE NOTE: Mapped kernels are not supported in this mode.  They simply cannot work because of context.
   * Example:
     ```js
     const gpu = new GPU({ mode: 'dev' });
@@ -886,14 +887,13 @@ Here is a list of a few things that GPU.js does to fix transpilation:
 
 You can find a [complete API reference here](https://doxdox.org/gpujs/gpu.js/).
 
-## Terms Explained
-* Kernel - A function that is tightly coupled to program that runs on the Graphic Processor
-* Texture - A graphical artifact that is packed with data, in the case of GPU.js, bit shifted parts of a 32 bit floating point decimal
-
 ## How possible in node?
 GPU.js uses [HeadlessGL](https://github.com/stackgl/headless-gl) in node for GPU acceleration.
 GPU.js is written in such a way, you can introduce your own backend.  Have a suggestion?  We'd love to hear it!
 
+## Terms Explained
+* Kernel - A function that is tightly coupled to program that runs on the Graphic Processor
+* Texture - A graphical artifact that is packed with data, in the case of GPU.js, bit shifted parts of a 32 bit floating point decimal
 
 # Get Involved!
 
