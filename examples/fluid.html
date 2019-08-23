@@ -276,6 +276,7 @@
         loopMaxIterations: this.PCOUNT,
         output: [ this.PCOUNT*3 ],
         pipeline: true,
+        tactic: 'speed',
       });
 
       /*
@@ -295,6 +296,7 @@
           pipeline: true,
           constants: { PCOUNT: this.PCOUNT, pitch },
           loopMaxIterations: this.PCOUNT,
+          tactic: 'speed',
         });
       };
 
@@ -313,6 +315,7 @@
         output: [ this.PCOUNT*3 ],
         pipeline: true,
         loopMaxIterations: this.PCOUNT,
+        tactic: 'speed',
       });
 
       this.camRotKernel = this.gpu.createKernel(function(rotLR, rotUD, camCenter, camDir, camUp, camNearWidth, camFarWidth, camDist) {
@@ -335,6 +338,7 @@
       }, {
         debug: false,
         output: [ 3 ],
+        tactic: 'speed',
       });
 
       /*
@@ -442,6 +446,7 @@
           },
           loopMaxIterations: 48 * this.PCOUNT,
           output: [this.RSIZE, this.RSIZE],
+          tactic: 'speed',
         }),
         this.gpu.createKernel(function(positions, camCenter, camDir, camUp, camNearWidth, camFarWidth, camDist) {
           let uv = [this.thread.x / (this.constants.RSIZE-1), this.thread.y / (this.constants.RSIZE-1)];
@@ -616,6 +621,7 @@
           },
           loopMaxIterations: 48 * this.PCOUNT,
           output: [this.RSIZE, this.RSIZE],
+          tactic: 'speed',
         })
       ];
 
@@ -633,7 +639,8 @@
           return parray[this.thread.x];
         }, {
           pipeline: true,
-          output: [size]
+          output: [size],
+          tactic: 'speed',
         });
         return kern(arr);
       };
@@ -661,7 +668,8 @@
           PCOUNT: this.PCOUNT
         },
         pipeline: true,
-        output: [this.PCOUNT * 3]
+        output: [this.PCOUNT * 3],
+        tactic: 'speed',
       });
 
       const seedVelocities = this.gpu.createKernel(function(){
@@ -674,7 +682,8 @@
           PCOUNT: this.PCOUNT,
         },
         pipeline: true,
-        output: [this.PCOUNT * 3]
+        output: [this.PCOUNT * 3],
+        tactic: 'speed',
       });
 
       this.sDensity = [0.125, 0.25, 0.5, 1.0, 1.5, 2.0]; this.sDensityI = 5;
@@ -709,7 +718,8 @@
           PCOUNT: this.PCOUNT
         },
         pipeline: true,
-        output: [this.PCOUNT * 6]
+        output: [this.PCOUNT * 6],
+        tactic: 'speed',
       });
 
       /*
@@ -722,7 +732,8 @@
         }, {
           debug: false,
           pipeline: true,
-          output: [isize * this.PCOUNT]
+          output: [isize * this.PCOUNT],
+          tactic: 'speed',
         })
       };
 
@@ -773,7 +784,8 @@
       }, {
         debug: false,
         pipeline: false,
-        output: [this.PCOUNT * 3]
+        output: [this.PCOUNT * 3],
+        tactic: 'speed',
       });
 
       this.hash = [];
@@ -795,6 +807,7 @@
       }, {
         output: [3],
         pipeline: true,
+        tactic: 'speed',
       });
 
       this.crossv = this.gpu.createKernel(function(a, b/*, out*/) {
@@ -815,6 +828,7 @@
       }, {
         output: [3],
         pipeline: true,
+        tactic: 'speed',
       });
     };
 

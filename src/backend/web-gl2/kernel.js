@@ -655,34 +655,6 @@ class WebGL2Kernel extends WebGLKernel {
     return result;
   }
 
-  /**
-   * @desc Get the fragment shader String.
-   * If the String hasn't been compiled yet,
-   * then this method compiles it as well
-   *
-   * @param {Array} args - The actual parameters sent to the Kernel
-   * @returns {string} Fragment Shader string
-   */
-  getFragmentShader(args) {
-    if (this.compiledFragmentShader !== null) {
-      return this.compiledFragmentShader;
-    }
-    return this.compiledFragmentShader = this.replaceArtifacts(this.constructor.fragmentShader, this._getFragShaderArtifactMap(args));
-  }
-
-  /**
-   * @desc Get the vertical shader String
-   * @param {Array} args - The actual parameters sent to the Kernel
-   * @returns {string} Vertical Shader string
-   *
-   */
-  getVertexShader(args) {
-    if (this.compiledVertexShader !== null) {
-      return this.compiledVertexShader;
-    }
-    return this.compiledVertexShader = this.constructor.vertexShader;
-  }
-
   destroyExtensions() {
     this.extensions.EXT_color_buffer_float = null;
     this.extensions.OES_texture_float_linear = null;
