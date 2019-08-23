@@ -230,6 +230,8 @@ export interface IKernelValueTypes {
   [constantType: string]: GPUVariableType;
 }
 
+export type Tactic = 'speed' | 'balanced' | 'precision';
+
 export interface IConstantsThis {
   [constantName: string]: ThreadKernelVariable;
 }
@@ -242,7 +244,7 @@ export interface IKernelXYZ {
 
 export interface IKernelSettings {
   output?: number[] | IKernelXYZ;
-  precision?: 'single' | 'unsigned';
+  precision?: Precision;
   constants?: object;
   context?: any;
   canvas?: any;

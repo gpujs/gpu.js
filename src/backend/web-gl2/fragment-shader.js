@@ -1,10 +1,10 @@
 // language=GLSL
 const fragmentShader = `#version 300 es
 __HEADER__;
-precision highp float;
-precision highp int;
-precision highp sampler2D;
-precision highp sampler2DArray;
+__FLOAT_TACTIC_DECLARATION__;
+__INT_TACTIC_DECLARATION__;
+__SAMPLER_2D_TACTIC_DECLARATION__;
+__SAMPLER_2D_ARRAY_TACTIC_DECLARATION__;
 
 const int LOOP_MAX = __LOOP_MAX__;
 

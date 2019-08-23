@@ -121,6 +121,18 @@ class WebGLKernelValue extends KernelValue {
   getStringValueHandler() {
     throw new Error(`"getStringValueHandler" not implemented on ${this.constructor.name}`);
   }
+
+  getVariablePrecisionString() {
+    switch (this.tactic) {
+      case 'speed':
+        return 'lowp';
+      case 'performance':
+        return 'highp';
+      case 'balanced':
+      default:
+        return 'mediump';
+    }
+  }
 }
 
 module.exports = {

@@ -369,9 +369,25 @@ class WebGL2Kernel extends WebGLKernel {
   _getTextureCoordinate() {
     const subKernels = this.subKernels;
     if (subKernels === null || subKernels.length < 1) {
-      return 'in highp vec2 vTexCoord;\n';
+      switch (this.tactic) {
+        case 'speed':
+          return 'in lowp vec2 vTexCoord;\n';
+        case 'performance':
+          return 'in highp vec2 vTexCoord;\n';
+        case 'balanced':
+        default:
+          return 'in mediump vec2 vTexCoord;\n';
+      }
     } else {
-      return 'out highp vec2 vTexCoord;\n';
+      switch (this.tactic) {
+        case 'speed':
+          return 'out lowp vec2 vTexCoord;\n';
+        case 'performance':
+          return 'out highp vec2 vTexCoord;\n';
+        case 'balanced':
+        default:
+          return 'out mediump vec2 vTexCoord;\n';
+      }
     }
   }
 

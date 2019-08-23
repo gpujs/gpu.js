@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.25
- * @date Tue Aug 06 2019 16:11:04 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.26
+ * @date Fri Aug 23 2019 10:13:09 GMT-0400 (EDT)
  *
  * @license MIT
  * The MIT License
@@ -9018,7 +9018,8 @@ class GLKernel extends Kernel {
       validate: false,
       output: [1],
       precision: 'single',
-      returnType: 'Number'
+      returnType: 'Number',
+      tactic: 'speed',
     });
     kernel.build();
     kernel.run();
@@ -9038,6 +9039,7 @@ class GLKernel extends Kernel {
       output: [2],
       returnType: 'Number',
       precision: 'unsigned',
+      tactic: 'speed',
     });
     const args = [
       [6, 6030401],
@@ -9645,6 +9647,42 @@ class GLKernel extends Kernel {
       utils.linesToString(this.getMainResultSubKernelArray4Texture());
   }
 
+  getFloatTacticDeclaration() {
+    switch (this.tactic) {
+      case 'speed': return 'precision lowp float;\n';
+      case 'performance': return 'precision highp float;\n';
+      case 'balanced':
+      default: return 'precision mediump float;\n';
+    }
+  }
+
+  getIntTacticDeclaration() {
+    switch (this.tactic) {
+      case 'speed': return 'precision lowp int;\n';
+      case 'performance': return 'precision highp int;\n';
+      case 'balanced':
+      default: return 'precision mediump int;\n';
+    }
+  }
+
+  getSampler2DTacticDeclaration() {
+    switch (this.tactic) {
+      case 'speed': return 'precision lowp sampler2D;\n';
+      case 'performance': return 'precision highp sampler2D;\n';
+      case 'balanced':
+      default: return 'precision mediump sampler2D;\n';
+    }
+  }
+
+  getSampler2DArrayTacticDeclaration() {
+    switch (this.tactic) {
+      case 'speed': return 'precision lowp sampler2DArray;\n';
+      case 'performance': return 'precision highp sampler2DArray;\n';
+      case 'balanced':
+      default: return 'precision mediump sampler2DArray;\n';
+    }
+  }
+
   renderTexture() {
     return new this.TextureConstructor({
       texture: this.outputTexture,
@@ -9808,6 +9846,7 @@ module.exports = {
   GLKernel,
   renderStrategy
 };
+
 },{"../../texture":107,"../../utils":108,"../kernel":35,"./texture/array-2-float":16,"./texture/array-2-float-2d":14,"./texture/array-2-float-3d":15,"./texture/array-3-float":19,"./texture/array-3-float-2d":17,"./texture/array-3-float-3d":18,"./texture/array-4-float":22,"./texture/array-4-float-2d":20,"./texture/array-4-float-3d":21,"./texture/float":25,"./texture/float-2d":23,"./texture/float-3d":24,"./texture/graphical":26,"./texture/memory-optimized":29,"./texture/memory-optimized-2d":27,"./texture/memory-optimized-3d":28,"./texture/unsigned":32,"./texture/unsigned-2d":30,"./texture/unsigned-3d":31}],14:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
@@ -10329,6 +10368,7 @@ class KernelValue {
       origin,
       strictIntegers,
       type,
+      tactic,
     } = settings;
     if (!name) {
       throw new Error('name not set');
@@ -10339,6 +10379,9 @@ class KernelValue {
     if (!origin) {
       throw new Error('origin not set');
     }
+    if (!tactic) {
+      throw new Error('tactic not set');
+    }
     if (origin !== 'user' && origin !== 'constants') {
       throw new Error(`origin must be "user" or "constants" value is "${ origin }"`);
     }
@@ -10347,6 +10390,7 @@ class KernelValue {
     }
     this.name = name;
     this.origin = origin;
+    this.tactic = tactic;
     this.id = `${this.origin}_${name}`;
     this.varName = origin === 'constants' ? `constants.${name}` : name;
     this.kernel = kernel;
@@ -10368,11 +10412,16 @@ class KernelValue {
   updateValue(value) {
     throw new Error(`"updateValue" not defined on ${ this.constructor.name }`);
   }
+
+  getFocusString() {
+    throw new Error(`"getFocusString" not defined on ${ this.constructor.name }`);
+  }
 }
 
 module.exports = {
   KernelValue
 };
+
 },{}],35:[function(require,module,exports){
 const { utils } = require('../utils');
 const { Input } = require('../input');
@@ -10464,6 +10513,8 @@ class Kernel {
     this.pipeline = false;
 
     this.precision = null;
+
+    this.tactic = 'balanced';
 
     this.plugins = null;
 
@@ -10733,6 +10784,11 @@ class Kernel {
     return this;
   }
 
+  setTactic(tactic) {
+    this.tactic = tactic;
+    return this;
+  }
+
   requestFallback(args) {
     if (!this.onRequestFallback) {
       throw new Error(`"onRequestFallback" not defined on ${ this.constructor.name }`);
@@ -10817,11 +10873,12 @@ class Kernel {
 module.exports = {
   Kernel
 };
+
 },{"../input":104,"../utils":108}],36:[function(require,module,exports){
 const fragmentShader = `__HEADER__;
-precision highp float;
-precision highp int;
-precision highp sampler2D;
+__FLOAT_TACTIC_DECLARATION__;
+__INT_TACTIC_DECLARATION__;
+__SAMPLER_2D_TACTIC_DECLARATION__;
 
 const int LOOP_MAX = __LOOP_MAX__;
 
@@ -11223,6 +11280,7 @@ void main(void) {
 module.exports = {
   fragmentShader
 };
+
 },{}],37:[function(require,module,exports){
 const { utils } = require('../../utils');
 const { FunctionNode } = require('../function-node');
@@ -13245,11 +13303,21 @@ class WebGLKernelValue extends KernelValue {
   getStringValueHandler() {
     throw new Error(`"getStringValueHandler" not implemented on ${this.constructor.name}`);
   }
+
+  getVariablePrecisionString() {
+    switch (this.tactic) {
+      case 'speed': return 'lowp';
+      case 'performance': return 'highp';
+      case 'balanced':
+      default: return 'mediump';
+    }
+  }
 }
 
 module.exports = {
   WebGLKernelValue
 };
+
 },{"../../../input":104,"../../../utils":108,"../../kernel-value":34}],53:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
@@ -14193,6 +14261,7 @@ class WebGLKernel extends GLKernel {
       const kernelArgument = new KernelValue(value, {
         name,
         type,
+        tactic: this.tactic,
         origin: 'user',
         context: gl,
         checkContext: this.checkContext,
@@ -14242,6 +14311,7 @@ class WebGLKernel extends GLKernel {
       const kernelValue = new KernelValue(value, {
         name,
         type,
+        tactic: this.tactic,
         origin: 'constants',
         context: this.context,
         checkContext: this.checkContext,
@@ -14717,7 +14787,20 @@ class WebGLKernel extends GLKernel {
       MAIN_CONSTANTS: this._getMainConstantsString(),
       MAIN_ARGUMENTS: this._getMainArgumentsString(args),
       KERNEL: this.getKernelString(),
-      MAIN_RESULT: this.getMainResultString()
+      MAIN_RESULT: this.getMainResultString(),
+      FLOAT_TACTIC_DECLARATION: this.getFloatTacticDeclaration(),
+      INT_TACTIC_DECLARATION: this.getIntTacticDeclaration(),
+      SAMPLER_2D_TACTIC_DECLARATION: this.getSampler2DTacticDeclaration(),
+      SAMPLER_2D_ARRAY_TACTIC_DECLARATION: this.getSampler2DArrayTacticDeclaration(),
+    };
+  }
+
+  _getVertShaderArtifactMap(args) {
+    return {
+      FLOAT_TACTIC_DECLARATION: this.getFloatTacticDeclaration(),
+      INT_TACTIC_DECLARATION: this.getIntTacticDeclaration(),
+      SAMPLER_2D_TACTIC_DECLARATION: this.getSampler2DTacticDeclaration(),
+      SAMPLER_2D_ARRAY_TACTIC_DECLARATION: this.getSampler2DArrayTacticDeclaration(),
     };
   }
 
@@ -15120,7 +15203,7 @@ class WebGLKernel extends GLKernel {
   }
 
   replaceArtifacts(src, map) {
-    return src.replace(/[ ]*__([A-Z]+[0-9]*([_]?[A-Z])*)__;\n/g, (match, artifact) => {
+    return src.replace(/[ ]*__([A-Z]+[0-9]*([_]?[A-Z]*[0-9]?)*)__;\n/g, (match, artifact) => {
       if (map.hasOwnProperty(artifact)) {
         return map[artifact];
       }
@@ -15139,7 +15222,7 @@ class WebGLKernel extends GLKernel {
     if (this.compiledVertexShader !== null) {
       return this.compiledVertexShader;
     }
-    return this.compiledVertexShader = this.constructor.vertexShader;
+    return this.compiledVertexShader = this.replaceArtifacts(this.constructor.vertexShader, this._getVertShaderArtifactMap(args));
   }
 
   toString() {
@@ -15217,10 +15300,11 @@ class WebGLKernel extends GLKernel {
 module.exports = {
   WebGLKernel
 };
+
 },{"../../plugins/triangle-noise":106,"../../utils":108,"../function-builder":9,"../gl/kernel":13,"../gl/kernel-string":12,"./fragment-shader":36,"./function-node":37,"./kernel-value-maps":38,"./vertex-shader":67}],67:[function(require,module,exports){
-const vertexShader = `precision highp float;
-precision highp int;
-precision highp sampler2D;
+const vertexShader = `__FLOAT_TACTIC_DECLARATION__;
+__INT_TACTIC_DECLARATION__;
+__SAMPLER_2D_TACTIC_DECLARATION__;
 
 attribute vec2 aPos;
 attribute vec2 aTexCoord;
@@ -15236,13 +15320,14 @@ void main(void) {
 module.exports = {
   vertexShader
 };
+
 },{}],68:[function(require,module,exports){
 const fragmentShader = `#version 300 es
 __HEADER__;
-precision highp float;
-precision highp int;
-precision highp sampler2D;
-precision highp sampler2DArray;
+__FLOAT_TACTIC_DECLARATION__;
+__INT_TACTIC_DECLARATION__;
+__SAMPLER_2D_TACTIC_DECLARATION__;
+__SAMPLER_2D_ARRAY_TACTIC_DECLARATION__;
 
 const int LOOP_MAX = __LOOP_MAX__;
 
@@ -15630,6 +15715,7 @@ void main(void) {
 module.exports = {
   fragmentShader
 };
+
 },{}],69:[function(require,module,exports){
 const { WebGLFunctionNode } = require('../web-gl/function-node');
 
@@ -15864,10 +15950,11 @@ const { WebGL2KernelValueHtmlImageArray } = require('./html-image-array');
 
 class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageArray {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2DArray ${this.id}`,
-      `uniform highp ivec2 ${this.sizeId}`,
-      `uniform highp ivec3 ${this.dimensionsId}`,
+      `uniform ${ variablePrecision } sampler2DArray ${this.id}`,
+      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
+      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
     ]);
   }
 
@@ -15883,16 +15970,18 @@ class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageA
 module.exports = {
   WebGL2KernelValueDynamicHtmlImageArray
 };
+
 },{"./html-image-array":84}],73:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicHTMLImage } = require('../../web-gl/kernel-value/dynamic-html-image');
 
 class WebGL2KernelValueDynamicHTMLImage extends WebGLKernelValueDynamicHTMLImage {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `uniform highp ivec2 ${this.sizeId}`,
-      `uniform highp ivec3 ${this.dimensionsId}`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
+      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
     ]);
   }
 }
@@ -15900,6 +15989,7 @@ class WebGL2KernelValueDynamicHTMLImage extends WebGLKernelValueDynamicHTMLImage
 module.exports = {
   WebGL2KernelValueDynamicHTMLImage
 };
+
 },{"../../../utils":108,"../../web-gl/kernel-value/dynamic-html-image":40}],74:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicMemoryOptimizedNumberTexture } = require('../../web-gl/kernel-value/dynamic-memory-optimized-number-texture');
@@ -15923,10 +16013,11 @@ const { WebGLKernelValueDynamicNumberTexture } = require('../../web-gl/kernel-va
 
 class WebGL2KernelValueDynamicNumberTexture extends WebGLKernelValueDynamicNumberTexture {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `uniform highp ivec2 ${this.sizeId}`,
-      `uniform highp ivec3 ${this.dimensionsId}`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
+      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
     ]);
   }
 }
@@ -15934,16 +16025,18 @@ class WebGL2KernelValueDynamicNumberTexture extends WebGLKernelValueDynamicNumbe
 module.exports = {
   WebGL2KernelValueDynamicNumberTexture
 };
+
 },{"../../../utils":108,"../../web-gl/kernel-value/dynamic-number-texture":42}],76:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleArray } = require('../../web-gl2/kernel-value/single-array');
 
 class WebGL2KernelValueDynamicSingleArray extends WebGL2KernelValueSingleArray {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `uniform highp ivec2 ${this.sizeId}`,
-      `uniform highp ivec3 ${this.dimensionsId}`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
+      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
     ]);
   }
 
@@ -15961,16 +16054,18 @@ class WebGL2KernelValueDynamicSingleArray extends WebGL2KernelValueSingleArray {
 module.exports = {
   WebGL2KernelValueDynamicSingleArray
 };
+
 },{"../../../utils":108,"../../web-gl2/kernel-value/single-array":89}],77:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleArray1DI } = require('../../web-gl2/kernel-value/single-array1d-i');
 
 class WebGL2KernelValueDynamicSingleArray1DI extends WebGL2KernelValueSingleArray1DI {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `uniform highp ivec2 ${this.sizeId}`,
-      `uniform highp ivec3 ${this.dimensionsId}`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
+      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
     ]);
   }
 
@@ -15985,16 +16080,18 @@ class WebGL2KernelValueDynamicSingleArray1DI extends WebGL2KernelValueSingleArra
 module.exports = {
   WebGL2KernelValueDynamicSingleArray1DI
 };
+
 },{"../../../utils":108,"../../web-gl2/kernel-value/single-array1d-i":90}],78:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleArray2DI } = require('../../web-gl2/kernel-value/single-array2d-i');
 
 class WebGL2KernelValueDynamicSingleArray2DI extends WebGL2KernelValueSingleArray2DI {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `uniform highp ivec2 ${this.sizeId}`,
-      `uniform highp ivec3 ${this.dimensionsId}`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
+      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
     ]);
   }
 
@@ -16009,16 +16106,18 @@ class WebGL2KernelValueDynamicSingleArray2DI extends WebGL2KernelValueSingleArra
 module.exports = {
   WebGL2KernelValueDynamicSingleArray2DI
 };
+
 },{"../../../utils":108,"../../web-gl2/kernel-value/single-array2d-i":92}],79:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleArray3DI } = require('../../web-gl2/kernel-value/single-array3d-i');
 
 class WebGL2KernelValueDynamicSingleArray3DI extends WebGL2KernelValueSingleArray3DI {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `uniform highp ivec2 ${this.sizeId}`,
-      `uniform highp ivec3 ${this.dimensionsId}`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
+      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
     ]);
   }
 
@@ -16033,16 +16132,18 @@ class WebGL2KernelValueDynamicSingleArray3DI extends WebGL2KernelValueSingleArra
 module.exports = {
   WebGL2KernelValueDynamicSingleArray3DI
 };
+
 },{"../../../utils":108,"../../web-gl2/kernel-value/single-array3d-i":94}],80:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleInput } = require('../../web-gl2/kernel-value/single-input');
 
 class WebGL2KernelValueDynamicSingleInput extends WebGL2KernelValueSingleInput {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `uniform highp ivec2 ${this.sizeId}`,
-      `uniform highp ivec3 ${this.dimensionsId}`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
+      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
     ]);
   }
 
@@ -16061,16 +16162,18 @@ class WebGL2KernelValueDynamicSingleInput extends WebGL2KernelValueSingleInput {
 module.exports = {
   WebGL2KernelValueDynamicSingleInput
 };
+
 },{"../../../utils":108,"../../web-gl2/kernel-value/single-input":96}],81:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicUnsignedArray } = require('../../web-gl/kernel-value/dynamic-unsigned-array');
 
 class WebGL2KernelValueDynamicUnsignedArray extends WebGLKernelValueDynamicUnsignedArray {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `uniform highp ivec2 ${this.sizeId}`,
-      `uniform highp ivec3 ${this.dimensionsId}`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
+      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
     ]);
   }
 }
@@ -16078,16 +16181,18 @@ class WebGL2KernelValueDynamicUnsignedArray extends WebGLKernelValueDynamicUnsig
 module.exports = {
   WebGL2KernelValueDynamicUnsignedArray
 };
+
 },{"../../../utils":108,"../../web-gl/kernel-value/dynamic-unsigned-array":48}],82:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicUnsignedInput } = require('../../web-gl/kernel-value/dynamic-unsigned-input');
 
 class WebGL2KernelValueDynamicUnsignedInput extends WebGLKernelValueDynamicUnsignedInput {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `uniform highp ivec2 ${this.sizeId}`,
-      `uniform highp ivec3 ${this.dimensionsId}`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
+      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
     ]);
   }
 }
@@ -16095,6 +16200,7 @@ class WebGL2KernelValueDynamicUnsignedInput extends WebGLKernelValueDynamicUnsig
 module.exports = {
   WebGL2KernelValueDynamicUnsignedInput
 };
+
 },{"../../../utils":108,"../../web-gl/kernel-value/dynamic-unsigned-input":49}],83:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueFloat } = require('../../web-gl/kernel-value/float');
@@ -16119,10 +16225,11 @@ class WebGL2KernelValueHtmlImageArray extends WebGLKernelValue {
     return `const uploadValue_${this.name} = ${this.varName};\n`;
   }
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2DArray ${this.id}`,
-      `highp ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `highp ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+      `uniform ${ variablePrecision } sampler2DArray ${this.id}`,
+      `${ variablePrecision } ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
+      `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
     ]);
   }
 
@@ -16170,16 +16277,18 @@ class WebGL2KernelValueHtmlImageArray extends WebGLKernelValue {
 module.exports = {
   WebGL2KernelValueHtmlImageArray
 };
+
 },{"../../../utils":108,"../../web-gl/kernel-value/index":52}],85:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueHTMLImage } = require('../../web-gl/kernel-value/html-image');
 
 class WebGL2KernelValueHTMLImage extends WebGLKernelValueHTMLImage {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `highp ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `highp ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `${ variablePrecision } ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
+      `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
     ]);
   }
 }
@@ -16187,16 +16296,18 @@ class WebGL2KernelValueHTMLImage extends WebGLKernelValueHTMLImage {
 module.exports = {
   WebGL2KernelValueHTMLImage
 };
+
 },{"../../../utils":108,"../../web-gl/kernel-value/html-image":51}],86:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueInteger } = require('../../web-gl/kernel-value/integer');
 
 class WebGL2KernelValueInteger extends WebGLKernelValueInteger {
   getSource(value) {
+    const variablePrecision = this.getVariablePrecisionString();
     if (this.origin === 'constants') {
-      return `const highp int ${this.id} = ${ parseInt(value) };\n`;
+      return `const ${ variablePrecision } int ${this.id} = ${ parseInt(value) };\n`;
     }
-    return `uniform highp int ${this.id};\n`;
+    return `uniform ${ variablePrecision } int ${this.id};\n`;
   }
 
   updateValue(value) {
@@ -16208,16 +16319,18 @@ class WebGL2KernelValueInteger extends WebGLKernelValueInteger {
 module.exports = {
   WebGL2KernelValueInteger
 };
+
 },{"../../../utils":108,"../../web-gl/kernel-value/integer":53}],87:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueMemoryOptimizedNumberTexture } = require('../../web-gl/kernel-value/memory-optimized-number-texture');
 
 class WebGL2KernelValueMemoryOptimizedNumberTexture extends WebGLKernelValueMemoryOptimizedNumberTexture {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
-      `highp ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `highp ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+      `${ variablePrecision } ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
+      `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
     ]);
   }
 }
@@ -16225,16 +16338,18 @@ class WebGL2KernelValueMemoryOptimizedNumberTexture extends WebGLKernelValueMemo
 module.exports = {
   WebGL2KernelValueMemoryOptimizedNumberTexture
 };
+
 },{"../../../utils":108,"../../web-gl/kernel-value/memory-optimized-number-texture":54}],88:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueNumberTexture } = require('../../web-gl/kernel-value/number-texture');
 
 class WebGL2KernelValueNumberTexture extends WebGLKernelValueNumberTexture {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `highp ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `highp ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `${ variablePrecision } ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
+      `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
     ]);
   }
 }
@@ -16242,16 +16357,18 @@ class WebGL2KernelValueNumberTexture extends WebGLKernelValueNumberTexture {
 module.exports = {
   WebGL2KernelValueNumberTexture
 };
+
 },{"../../../utils":108,"../../web-gl/kernel-value/number-texture":55}],89:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray } = require('../../web-gl/kernel-value/single-array');
 
 class WebGL2KernelValueSingleArray extends WebGLKernelValueSingleArray {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `highp ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `highp ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `${ variablePrecision } ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
+      `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
     ]);
   }
 
@@ -16276,6 +16393,7 @@ class WebGL2KernelValueSingleArray extends WebGLKernelValueSingleArray {
 module.exports = {
   WebGL2KernelValueSingleArray
 };
+
 },{"../../../utils":108,"../../web-gl/kernel-value/single-array":56}],90:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray1DI } = require('../../web-gl/kernel-value/single-array1d-i');
@@ -16384,10 +16502,11 @@ const { WebGLKernelValueSingleInput } = require('../../web-gl/kernel-value/singl
 
 class WebGL2KernelValueSingleInput extends WebGLKernelValueSingleInput {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `highp ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `highp ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `${ variablePrecision } ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
+      `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
     ]);
   }
 
@@ -16408,16 +16527,18 @@ class WebGL2KernelValueSingleInput extends WebGLKernelValueSingleInput {
 module.exports = {
   WebGL2KernelValueSingleInput
 };
+
 },{"../../../utils":108,"../../web-gl/kernel-value/single-input":63}],97:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedArray } = require('../../web-gl/kernel-value/unsigned-array');
 
 class WebGL2KernelValueUnsignedArray extends WebGLKernelValueUnsignedArray {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `highp ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `highp ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `${ variablePrecision } ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
+      `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
     ]);
   }
 }
@@ -16425,16 +16546,18 @@ class WebGL2KernelValueUnsignedArray extends WebGLKernelValueUnsignedArray {
 module.exports = {
   WebGL2KernelValueUnsignedArray
 };
+
 },{"../../../utils":108,"../../web-gl/kernel-value/unsigned-array":64}],98:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedInput } = require('../../web-gl/kernel-value/unsigned-input');
 
 class WebGL2KernelValueUnsignedInput extends WebGLKernelValueUnsignedInput {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `highp ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `highp ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `${ variablePrecision } ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
+      `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
     ]);
   }
 }
@@ -16442,6 +16565,7 @@ class WebGL2KernelValueUnsignedInput extends WebGLKernelValueUnsignedInput {
 module.exports = {
   WebGL2KernelValueUnsignedInput
 };
+
 },{"../../../utils":108,"../../web-gl/kernel-value/unsigned-input":65}],99:[function(require,module,exports){
 const { WebGLKernel } = require('../web-gl/kernel');
 const { WebGL2FunctionNode } = require('./function-node');
@@ -16786,9 +16910,19 @@ class WebGL2Kernel extends WebGLKernel {
   _getTextureCoordinate() {
     const subKernels = this.subKernels;
     if (subKernels === null || subKernels.length < 1) {
-      return 'in highp vec2 vTexCoord;\n';
+      switch (this.tactic) {
+        case 'speed': return 'in lowp vec2 vTexCoord;\n';
+        case 'performance': return 'in highp vec2 vTexCoord;\n';
+        case 'balanced':
+        default: return 'in mediump vec2 vTexCoord;\n';
+      }
     } else {
-      return 'out highp vec2 vTexCoord;\n';
+      switch (this.tactic) {
+        case 'speed': return 'out lowp vec2 vTexCoord;\n';
+        case 'performance': return 'out highp vec2 vTexCoord;\n';
+        case 'balanced':
+        default: return 'out mediump vec2 vTexCoord;\n';
+      }
     }
   }
 
@@ -17070,11 +17204,12 @@ class WebGL2Kernel extends WebGLKernel {
 module.exports = {
   WebGL2Kernel
 };
+
 },{"../../utils":108,"../function-builder":9,"../web-gl/kernel":66,"./fragment-shader":68,"./function-node":69,"./kernel-value-maps":70,"./vertex-shader":100}],100:[function(require,module,exports){
 const vertexShader = `#version 300 es
-precision highp float;
-precision highp int;
-precision highp sampler2D;
+__FLOAT_TACTIC_DECLARATION__;
+__INT_TACTIC_DECLARATION__;
+__SAMPLER_2D_TACTIC_DECLARATION__;
 
 in vec2 aPos;
 in vec2 aTexCoord;
@@ -17090,6 +17225,7 @@ void main(void) {
 module.exports = {
   vertexShader
 };
+
 },{}],101:[function(require,module,exports){
 const lib = require('./index');
 const GPU = lib.GPU;

@@ -3,10 +3,11 @@ const { WebGL2KernelValueSingleArray } = require('../../web-gl2/kernel-value/sin
 
 class WebGL2KernelValueDynamicSingleArray extends WebGL2KernelValueSingleArray {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2D ${this.id}`,
-      `uniform highp ivec2 ${this.sizeId}`,
-      `uniform highp ivec3 ${this.dimensionsId}`,
+      `uniform ${ variablePrecision } sampler2D ${this.id}`,
+      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
+      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
     ]);
   }
 

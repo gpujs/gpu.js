@@ -177,6 +177,13 @@ class Kernel {
      */
     this.precision = null;
 
+    /**
+     *
+     * @type {String|null}
+     * @enum 'speed' | 'balanced' | 'precision'
+     */
+    this.tactic = 'balanced';
+
     this.plugins = null;
 
     this.returnType = null;
@@ -580,6 +587,16 @@ class Kernel {
         this.argumentTypes[argumentIndex] = argumentTypes[p];
       }
     }
+    return this;
+  }
+
+  /**
+   *
+   * @param [Tactic] tactic
+   * @return {Kernel}
+   */
+  setTactic(tactic) {
+    this.tactic = tactic;
     return this;
   }
 

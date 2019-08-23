@@ -2,10 +2,11 @@ const { WebGL2KernelValueHtmlImageArray } = require('./html-image-array');
 
 class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageArray {
   getSource() {
+    const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform highp sampler2DArray ${this.id}`,
-      `uniform highp ivec2 ${this.sizeId}`,
-      `uniform highp ivec3 ${this.dimensionsId}`,
+      `uniform ${ variablePrecision } sampler2DArray ${this.id}`,
+      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
+      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
     ]);
   }
 

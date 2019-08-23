@@ -17,6 +17,7 @@ class KernelValue {
       origin,
       strictIntegers,
       type,
+      tactic,
     } = settings;
     if (!name) {
       throw new Error('name not set');
@@ -27,6 +28,9 @@ class KernelValue {
     if (!origin) {
       throw new Error('origin not set');
     }
+    if (!tactic) {
+      throw new Error('tactic not set');
+    }
     if (origin !== 'user' && origin !== 'constants') {
       throw new Error(`origin must be "user" or "constants" value is "${ origin }"`);
     }
@@ -35,6 +39,7 @@ class KernelValue {
     }
     this.name = name;
     this.origin = origin;
+    this.tactic = tactic;
     this.id = `${this.origin}_${name}`;
     this.varName = origin === 'constants' ? `constants.${name}` : name;
     this.kernel = kernel;
@@ -56,6 +61,10 @@ class KernelValue {
 
   updateValue(value) {
     throw new Error(`"updateValue" not defined on ${ this.constructor.name }`);
+  }
+
+  getFocusString() {
+    throw new Error(`"getFocusString" not defined on ${ this.constructor.name }`);
   }
 }
 

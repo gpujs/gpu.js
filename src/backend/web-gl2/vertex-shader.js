@@ -1,7 +1,8 @@
+// language=GLSL
 const vertexShader = `#version 300 es
-precision highp float;
-precision highp int;
-precision highp sampler2D;
+__FLOAT_TACTIC_DECLARATION__;
+__INT_TACTIC_DECLARATION__;
+__SAMPLER_2D_TACTIC_DECLARATION__;
 
 in vec2 aPos;
 in vec2 aTexCoord;

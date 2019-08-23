@@ -181,6 +181,7 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
 * `strictIntegers` or `kernel.setStrictIntegers(boolean)`: boolean, default = `false` - allows undefined argumentTypes and function return values to use strict integer declarations.
 * `useLegacyEncoder` or `kernel.setUseLegacyEncoder(boolean)`: boolean, default `false` - more info [here](https://github.com/gpujs/gpu.js/wiki/Encoder-details).
 * `warnVarUsage` or `kernel.setWarnVarUsage(boolean)`: turn off var usage warnings, they can be irritating, and in transpiled environments, there is nothing we can do about it.
+* `tactic` or `kernel.setTactic('speed' | 'balanced' | 'performance')` **New in V2!**: Set the kernel's tactic for compilation.  Allows for compilation to better fit how GPU.js is being used (internally uses `lowp` for 'speed', `mediump` for 'balanced', and `highp` for 'precision').  Default is 'balanced'.
 
 
 ## Creating and Running Functions

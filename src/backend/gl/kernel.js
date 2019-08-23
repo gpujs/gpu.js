@@ -40,7 +40,8 @@ class GLKernel extends Kernel {
       validate: false,
       output: [1],
       precision: 'single',
-      returnType: 'Number'
+      returnType: 'Number',
+      tactic: 'speed',
     });
     kernel.build();
     kernel.run();
@@ -60,6 +61,7 @@ class GLKernel extends Kernel {
       output: [2],
       returnType: 'Number',
       precision: 'unsigned',
+      tactic: 'speed',
     });
     const args = [
       [6, 6030401],
@@ -759,6 +761,66 @@ class GLKernel extends Kernel {
   getMainResultArray4Texture() {
     return utils.linesToString(this.getMainResultKernelArray4Texture()) +
       utils.linesToString(this.getMainResultSubKernelArray4Texture());
+  }
+
+  /**
+   *
+   * @return {string}
+   */
+  getFloatTacticDeclaration() {
+    switch (this.tactic) {
+      case 'speed':
+        return 'precision lowp float;\n';
+      case 'performance':
+        return 'precision highp float;\n';
+      case 'balanced':
+      default:
+        return 'precision mediump float;\n';
+    }
+  }
+
+  /**
+   *
+   * @return {string}
+   */
+  getIntTacticDeclaration() {
+    switch (this.tactic) {
+      case 'speed':
+        return 'precision lowp int;\n';
+      case 'performance':
+        return 'precision highp int;\n';
+      case 'balanced':
+      default:
+        return 'precision mediump int;\n';
+    }
+  }
+
+  /**
+   *
+   * @return {string}
+   */
+  getSampler2DTacticDeclaration() {
+    switch (this.tactic) {
+      case 'speed':
+        return 'precision lowp sampler2D;\n';
+      case 'performance':
+        return 'precision highp sampler2D;\n';
+      case 'balanced':
+      default:
+        return 'precision mediump sampler2D;\n';
+    }
+  }
+
+  getSampler2DArrayTacticDeclaration() {
+    switch (this.tactic) {
+      case 'speed':
+        return 'precision lowp sampler2DArray;\n';
+      case 'performance':
+        return 'precision highp sampler2DArray;\n';
+      case 'balanced':
+      default:
+        return 'precision mediump sampler2DArray;\n';
+    }
   }
 
   renderTexture() {

@@ -399,6 +399,7 @@ class WebGLKernel extends GLKernel {
       const kernelArgument = new KernelValue(value, {
         name,
         type,
+        tactic: this.tactic,
         origin: 'user',
         context: gl,
         checkContext: this.checkContext,
@@ -448,6 +449,7 @@ class WebGLKernel extends GLKernel {
       const kernelValue = new KernelValue(value, {
         name,
         type,
+        tactic: this.tactic,
         origin: 'constants',
         context: this.context,
         checkContext: this.checkContext,
@@ -964,7 +966,27 @@ class WebGLKernel extends GLKernel {
       MAIN_CONSTANTS: this._getMainConstantsString(),
       MAIN_ARGUMENTS: this._getMainArgumentsString(args),
       KERNEL: this.getKernelString(),
-      MAIN_RESULT: this.getMainResultString()
+      MAIN_RESULT: this.getMainResultString(),
+      FLOAT_TACTIC_DECLARATION: this.getFloatTacticDeclaration(),
+      INT_TACTIC_DECLARATION: this.getIntTacticDeclaration(),
+      SAMPLER_2D_TACTIC_DECLARATION: this.getSampler2DTacticDeclaration(),
+      SAMPLER_2D_ARRAY_TACTIC_DECLARATION: this.getSampler2DArrayTacticDeclaration(),
+    };
+  }
+
+  /**
+   * @desc Generate Shader artifacts for the kernel program.
+   * The final object contains HEADER, KERNEL, MAIN_RESULT, and others.
+   *
+   * @param {Array} args - The actual parameters sent to the Kernel
+   * @returns {Object} An object containing the Shader Artifacts(CONSTANTS, HEADER, KERNEL, etc.)
+   */
+  _getVertShaderArtifactMap(args) {
+    return {
+      FLOAT_TACTIC_DECLARATION: this.getFloatTacticDeclaration(),
+      INT_TACTIC_DECLARATION: this.getIntTacticDeclaration(),
+      SAMPLER_2D_TACTIC_DECLARATION: this.getSampler2DTacticDeclaration(),
+      SAMPLER_2D_ARRAY_TACTIC_DECLARATION: this.getSampler2DArrayTacticDeclaration(),
     };
   }
 
@@ -1416,7 +1438,7 @@ class WebGLKernel extends GLKernel {
    * @param {Object} map - Variables/Constants associated with shader
    */
   replaceArtifacts(src, map) {
-    return src.replace(/[ ]*__([A-Z]+[0-9]*([_]?[A-Z])*)__;\n/g, (match, artifact) => {
+    return src.replace(/[ ]*__([A-Z]+[0-9]*([_]?[A-Z]*[0-9]?)*)__;\n/g, (match, artifact) => {
       if (map.hasOwnProperty(artifact)) {
         return map[artifact];
       }
@@ -1448,7 +1470,7 @@ class WebGLKernel extends GLKernel {
     if (this.compiledVertexShader !== null) {
       return this.compiledVertexShader;
     }
-    return this.compiledVertexShader = this.constructor.vertexShader;
+    return this.compiledVertexShader = this.replaceArtifacts(this.constructor.vertexShader, this._getVertShaderArtifactMap(args));
   }
 
   /**
