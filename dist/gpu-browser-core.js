@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.26
- * @date Fri Aug 23 2019 10:23:34 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0-rc.27
+ * @date Mon Sep 09 2019 19:55:19 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -12420,7 +12420,6 @@ class WebGL2Kernel extends WebGLKernel {
 module.exports = {
   WebGL2Kernel
 };
-
 },{"../../utils":107,"../function-builder":8,"../web-gl/kernel":65,"./fragment-shader":67,"./function-node":68,"./kernel-value-maps":69,"./vertex-shader":99}],99:[function(require,module,exports){
 const vertexShader = `#version 300 es
 __FLOAT_TACTIC_DECLARATION__;

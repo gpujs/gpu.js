@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "2.0.0-rc.26",
+  "version": "2.0.0-rc.27",
   "description": "GPU Accelerated JavaScript",
   "engines": {
     "node": ">=8.0.0"
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "acorn": "^5.1.1",
-    "gl": "^4.3.3",
+    "gl": "^4.4.0",
     "gl-wiretap": "^0.6.0",
     "gpu-mock.js": "^1.1.0"
   },
