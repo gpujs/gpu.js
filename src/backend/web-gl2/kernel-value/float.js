@@ -1,8 +1,3 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueFloat } = require('../../web-gl/kernel-value/float');
+import { WebGLKernelValueFloat } from '../../web-gl/kernel-value/float';
 
-class WebGL2KernelValueFloat extends WebGLKernelValueFloat {}
-
-module.exports = {
-  WebGL2KernelValueFloat
-};
+export class WebGL2KernelValueFloat extends WebGLKernelValueFloat {}

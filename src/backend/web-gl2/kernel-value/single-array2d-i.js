@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueSingleArray2DI } = require('../../web-gl/kernel-value/single-array2d-i');
+import { utils } from '../../../utils';
+import { WebGLKernelValueSingleArray2DI } from '../../web-gl/kernel-value/single-array2d-i';
 
-class WebGL2KernelValueSingleArray2DI extends WebGLKernelValueSingleArray2DI {
+export class WebGL2KernelValueSingleArray2DI extends WebGLKernelValueSingleArray2DI {
   updateValue(value) {
     if (value.constructor !== this.initialValueConstructor) {
       this.onUpdateValueMismatch();
@@ -19,7 +19,3 @@ class WebGL2KernelValueSingleArray2DI extends WebGLKernelValueSingleArray2DI {
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueSingleArray2DI
-};

@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValue } = require('./index');
+import { utils } from '../../../utils';
+import { WebGLKernelValue } from './index';
 
-class WebGLKernelValueUnsignedInput extends WebGLKernelValue {
+export class WebGLKernelValueUnsignedInput extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
     this.requestTexture();
@@ -48,7 +48,3 @@ class WebGLKernelValueUnsignedInput extends WebGLKernelValue {
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGLKernelValueUnsignedInput
-};

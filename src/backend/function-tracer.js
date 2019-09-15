@@ -1,4 +1,4 @@
-class FunctionTracer {
+export class FunctionTracer {
   constructor(ast) {
     this.runningContexts = [];
     this.contexts = [];
@@ -170,7 +170,3 @@ class FunctionTracer {
     }
   }
 }
-
-module.exports = {
-  FunctionTracer,
-};

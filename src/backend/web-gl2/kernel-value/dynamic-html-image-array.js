@@ -1,6 +1,6 @@
-const { WebGL2KernelValueHtmlImageArray } = require('./html-image-array');
+import { WebGL2KernelValueHtmlImageArray } from './html-image-array';
 
-class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageArray {
+export class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageArray {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
@@ -18,7 +18,3 @@ class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageA
     super.updateValue(images);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueDynamicHtmlImageArray
-};

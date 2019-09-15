@@ -1,5 +1,5 @@
 // language=GLSL
-const fragmentShader = `#version 300 es
+export const fragmentShader = `#version 300 es
 __HEADER__;
 __FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
@@ -21,7 +21,7 @@ int modi(int x, int y) {
 int bitwiseOr(int a, int b) {
   int result = 0;
   int n = 1;
-  
+
   for (int i = 0; i < BIT_COUNT; i++) {
     if ((modi(a, 2) == 1) || (modi(b, 2) == 1)) {
       result += n;
@@ -38,7 +38,7 @@ int bitwiseOr(int a, int b) {
 int bitwiseXOR(int a, int b) {
   int result = 0;
   int n = 1;
-  
+
   for (int i = 0; i < BIT_COUNT; i++) {
     if ((modi(a, 2) == 1) != (modi(b, 2) == 1)) {
       result += n;
@@ -71,10 +71,10 @@ int bitwiseAnd(int a, int b) {
 int bitwiseNot(int a) {
   int result = 0;
   int n = 1;
-  
+
   for (int i = 0; i < BIT_COUNT; i++) {
     if (modi(a, 2) == 0) {
-      result += n;    
+      result += n;
     }
     a = a / 2;
     n = n * 2;
@@ -388,7 +388,3 @@ void main(void) {
   index = int(vTexCoord.s * float(uTexSize.x)) + int(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;
   __MAIN_RESULT__;
 }`;
-
-module.exports = {
-  fragmentShader
-};

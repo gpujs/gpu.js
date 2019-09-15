@@ -1,14 +1,14 @@
-const { Kernel } = require('../kernel');
-const { FunctionBuilder } = require('../function-builder');
-const { CPUFunctionNode } = require('./function-node');
-const { utils } = require('../../utils');
-const { cpuKernelString } = require('./kernel-string');
+import { Kernel } from '../kernel';
+import { FunctionBuilder } from '../function-builder';
+import { CPUFunctionNode } from './function-node';
+import { getVariableType, utils } from '../../utils';
+import { cpuKernelString } from './kernel-string';
 
 /**
  * @desc Kernel Implementation for CPU.
  * <p>Instantiates properties to the CPU Kernel.</p>
  */
-class CPUKernel extends Kernel {
+export class CPUKernel extends Kernel {
   static getFeatures() {
     return this.features;
   }
@@ -85,7 +85,7 @@ class CPUKernel extends Kernel {
         throw new Error('Auto output only supported for kernels with only one input');
       }
 
-      const argType = utils.getVariableType(args[0], this.strictIntegers);
+      const argType = getVariableType(args[0], this.strictIntegers);
       if (argType === 'Array') {
         this.output = utils.getDimensions(argType);
       } else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
@@ -527,7 +527,3 @@ class CPUKernel extends Kernel {
     }
   }
 }
-
-module.exports = {
-  CPUKernel
-};

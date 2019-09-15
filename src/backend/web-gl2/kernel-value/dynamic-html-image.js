@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueDynamicHTMLImage } = require('../../web-gl/kernel-value/dynamic-html-image');
+import { utils } from '../../../utils';
+import { WebGLKernelValueDynamicHTMLImage } from '../../web-gl/kernel-value/dynamic-html-image';
 
-class WebGL2KernelValueDynamicHTMLImage extends WebGLKernelValueDynamicHTMLImage {
+export class WebGL2KernelValueDynamicHTMLImage extends WebGLKernelValueDynamicHTMLImage {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
@@ -11,7 +11,3 @@ class WebGL2KernelValueDynamicHTMLImage extends WebGLKernelValueDynamicHTMLImage
     ]);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueDynamicHTMLImage
-};

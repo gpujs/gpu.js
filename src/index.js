@@ -1,26 +1,21 @@
-const { GPU } = require('./gpu');
-const { alias } = require('./alias');
-const { utils } = require('./utils');
-const { Input, input } = require('./input');
-const { Texture } = require('./texture');
-const { FunctionBuilder } = require('./backend/function-builder');
-const { FunctionNode } = require('./backend/function-node');
-const { CPUFunctionNode } = require('./backend/cpu/function-node');
-const { CPUKernel } = require('./backend/cpu/kernel');
+import { GPU } from './gpu';
+import { alias } from './alias';
+import { utils } from './utils';
+import { Input, input } from './input';
+import { Texture } from './texture';
+import { FunctionBuilder } from './backend/function-builder';
+import { FunctionNode } from './backend/function-node';
+import { CPUFunctionNode } from './backend/cpu/function-node';
+import { CPUKernel } from './backend/cpu/kernel';
+import { HeadlessGLKernel } from './backend/headless-gl/kernel';
+import { WebGLFunctionNode } from './backend/web-gl/function-node';
+import { WebGLKernel } from './backend/web-gl/kernel';
+import { WebGL2FunctionNode } from './backend/web-gl2/function-node';
+import { WebGL2Kernel } from './backend/web-gl2/kernel';
+import { GLKernel } from './backend/gl/kernel';
+import { Kernel } from './backend/kernel';
 
-const { HeadlessGLKernel } = require('./backend/headless-gl/kernel');
-
-const { WebGLFunctionNode } = require('./backend/web-gl/function-node');
-const { WebGLKernel } = require('./backend/web-gl/kernel');
-
-const { WebGL2FunctionNode } = require('./backend/web-gl2/function-node');
-const { WebGL2Kernel } = require('./backend/web-gl2/kernel');
-
-const { GLKernel } = require('./backend/gl/kernel');
-
-const { Kernel } = require('./backend/kernel');
-
-module.exports = {
+export {
   alias,
   CPUFunctionNode,
   CPUKernel,

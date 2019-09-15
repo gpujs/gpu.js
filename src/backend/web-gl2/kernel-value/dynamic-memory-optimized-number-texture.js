@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueDynamicMemoryOptimizedNumberTexture } = require('../../web-gl/kernel-value/dynamic-memory-optimized-number-texture');
+import { utils } from '../../../utils';
+import { WebGLKernelValueDynamicMemoryOptimizedNumberTexture } from '../../web-gl/kernel-value/dynamic-memory-optimized-number-texture';
 
-class WebGL2KernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelValueDynamicMemoryOptimizedNumberTexture {
+export class WebGL2KernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelValueDynamicMemoryOptimizedNumberTexture {
   getSource() {
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
@@ -10,7 +10,3 @@ class WebGL2KernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelVa
     ]);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueDynamicMemoryOptimizedNumberTexture
-};

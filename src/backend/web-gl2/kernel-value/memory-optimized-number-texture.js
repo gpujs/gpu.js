@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueMemoryOptimizedNumberTexture } = require('../../web-gl/kernel-value/memory-optimized-number-texture');
+import { utils } from '../../../utils';
+import { WebGLKernelValueMemoryOptimizedNumberTexture } from '../../web-gl/kernel-value/memory-optimized-number-texture';
 
-class WebGL2KernelValueMemoryOptimizedNumberTexture extends WebGLKernelValueMemoryOptimizedNumberTexture {
+export class WebGL2KernelValueMemoryOptimizedNumberTexture extends WebGLKernelValueMemoryOptimizedNumberTexture {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
@@ -11,7 +11,3 @@ class WebGL2KernelValueMemoryOptimizedNumberTexture extends WebGLKernelValueMemo
     ]);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueMemoryOptimizedNumberTexture
-};

@@ -1,87 +1,88 @@
-const acorn = require('acorn');
-const { Input } = require('./input');
-const { Texture } = require('./texture');
+import { parse } from 'acorn';
+import { Texture } from './texture';
+import { Input } from './input';
+import {
+  getAstString,
+  erectMemoryOptimized2DFloat,
+  erectMemoryOptimized3DFloat,
+  functionToIFunction,
+  getArgumentNamesFromString,
+  getFunctionNameFromString,
+  isArray,
+  isFunction,
+  isFunctionString,
+  warnDeprecated
+} from './common';
 
-const FUNCTION_NAME = /function ([^(]*)/;
-const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-const ARGUMENT_NAMES = /([^\s,]+)/g;
+export function getSystemEndianness() {
+  const b = new ArrayBuffer(4);
+  const a = new Uint32Array(b);
+  const c = new Uint8Array(b);
+  a[0] = 0xdeadbeef;
+  if (c[0] === 0xef) return 'LE';
+  if (c[0] === 0xde) return 'BE';
+  throw new Error('unknown endianness');
+};
+
+const _systemEndianness = getSystemEndianness();
 
 /**
  *
+ * @desc Gets the system endianness, and cache it
+ * @returns {String} 'LE' or 'BE' depending on system architecture
+ * Credit: https://gist.github.com/TooTallNate/4750953
+ */
+export function systemEndianness() {
+  return _systemEndianness;
+};
+
+/**
+ * @desc Evaluate the argument type, to apply respective logic for it
+ * @param {Object} value - The argument object to evaluate type
+ * @returns {String}  Argument type Array/Number/Float/Texture/Unknown
+ */
+export function getVariableType(value, strictIntegers) {
+  if (isArray(value)) {
+    if (value[0].nodeName === 'IMG') {
+      return 'HTMLImageArray';
+    }
+    return 'Array';
+  }
+
+  switch (value.constructor) {
+    case Boolean:
+      return 'Boolean';
+    case Number:
+      return strictIntegers && Number.isInteger(value) ? 'Integer' : 'Float';
+    case Texture:
+      return value.type;
+    case Input:
+      return 'Input';
+  }
+
+  if (value.nodeName === 'IMG') {
+    return 'HTMLImage';
+  } else {
+    return value.hasOwnProperty('type') ? value.type : 'Unknown';
+  }
+};
+
+/**
  * @desc Various utility functions / snippets of code that GPU.JS uses internally.
  * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
  */
 const utils = {
-  /**
-   *
-   * @desc Gets the system endianness, and cache it
-   * @returns {String} 'LE' or 'BE' depending on system architecture
-   * Credit: https://gist.github.com/TooTallNate/4750953
-   */
-  systemEndianness() {
-    return _systemEndianness;
-  },
-  getSystemEndianness() {
-    const b = new ArrayBuffer(4);
-    const a = new Uint32Array(b);
-    const c = new Uint8Array(b);
-    a[0] = 0xdeadbeef;
-    if (c[0] === 0xef) return 'LE';
-    if (c[0] === 0xde) return 'BE';
-    throw new Error('unknown endianness');
-  },
-
-  /**
-   * @descReturn TRUE, on a JS function
-   * @param {Function} funcObj - Object to validate if its a function
-   * @returns  {Boolean} TRUE if the object is a JS function
-   */
-  isFunction(funcObj) {
-    return typeof(funcObj) === 'function';
-  },
-
-  /**
-   * @desc Return TRUE, on a valid JS function string
-   * Note: This does just a VERY simply sanity check. And may give false positives.
-   *
-   * @param {String} fn - String of JS function to validate
-   * @returns {Boolean} TRUE if the string passes basic validation
-   */
-  isFunctionString(fn) {
-    if (typeof fn === 'string') {
-      return (fn
-        .slice(0, 'function'.length)
-        .toLowerCase() === 'function');
-    }
-    return false;
-  },
-
-  /**
-   * @desc Return the function name from a JS function string
-   * @param {String} funcStr - String of JS function to validate
-   * @returns {String} Function name string (if found)
-   */
-  getFunctionNameFromString(funcStr) {
-    return FUNCTION_NAME.exec(funcStr)[1].trim();
-  },
+  systemEndianness,
+  getSystemEndianness,
+  isFunction,
+  isFunctionString,
+  getFunctionNameFromString,
 
   getFunctionBodyFromString(funcStr) {
     return funcStr.substring(funcStr.indexOf('{') + 1, funcStr.lastIndexOf('}'));
   },
 
-  /**
-   * @desc Return list of argument names extracted from a javascript function
-   * @param {String} fn - String of JS function to validate
-   * @returns {String[]}  Array representing all the parameter names
-   */
-  getArgumentNamesFromString(fn) {
-    const fnStr = fn.replace(STRIP_COMMENTS, '');
-    let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
-    if (result === null) {
-      result = [];
-    }
-    return result;
-  },
+  getArgumentNamesFromString,
 
   /**
    * @desc Returns a clone
@@ -104,52 +105,8 @@ const utils = {
     return temp;
   },
 
-  /**
-   * @desc Checks if is an array or Array-like object
-   * @param {Object} array - The argument object to check if is array
-   * @returns {Boolean}  true if is array or Array-like object
-   */
-  isArray(array) {
-    return !isNaN(array.length);
-  },
-
-  /**
-   * @desc Evaluate the argument type, to apply respective logic for it
-   * @param {Object} value - The argument object to evaluate type
-   * @returns {String}  Argument type Array/Number/Float/Texture/Unknown
-   */
-  getVariableType(value, strictIntegers) {
-    if (utils.isArray(value)) {
-      if (value[0].nodeName === 'IMG') {
-        return 'HTMLImageArray';
-      }
-      return 'Array';
-    }
-
-    switch (value.constructor) {
-      case Boolean:
-        return 'Boolean';
-      case Number:
-        if (strictIntegers && Number.isInteger(value)) {
-          return 'Integer';
-        }
-        return 'Float';
-      case Texture:
-        return value.type;
-      case Input:
-        return 'Input';
-    }
-
-    if (value.nodeName === 'IMG') {
-      return 'HTMLImage';
-    } else {
-      if (value.hasOwnProperty('type')) {
-        return value.type;
-      }
-      return 'Unknown';
-    }
-  },
-
+  isArray,
+  getVariableType,
 
   getKernelTextureSize(settings, dimensions) {
     let [w, h, d] = dimensions;
@@ -217,10 +174,10 @@ const utils = {
    */
   getDimensions(x, pad) {
     let ret;
-    if (utils.isArray(x)) {
+    if (isArray(x)) {
       const dim = [];
       let temp = x;
-      while (utils.isArray(temp)) {
+      while (isArray(temp)) {
         dim.push(temp.length);
         temp = temp[0];
       }
@@ -294,9 +251,9 @@ const utils = {
    * @param {Float32Array} target
    */
   flattenTo(array, target) {
-    if (utils.isArray(array[0])) {
-      if (utils.isArray(array[0][0])) {
-        if (utils.isArray(array[0][0][0])) {
+    if (isArray(array[0])) {
+      if (isArray(array[0][0])) {
+        if (isArray(array[0][0][0])) {
           utils.flatten4dArrayTo(array, target);
         } else {
           utils.flatten3dArrayTo(array, target);
@@ -327,22 +284,7 @@ const utils = {
     return result;
   },
 
-  getAstString(source, ast) {
-    const lines = Array.isArray(source) ? source : source.split(/\r?\n/g);
-    const start = ast.loc.start;
-    const end = ast.loc.end;
-    const result = [];
-    if (start.line === end.line) {
-      result.push(lines[start.line - 1].substring(start.column, end.column));
-    } else {
-      result.push(lines[start.line - 1].slice(start.column));
-      for (let i = start.line; i < end.line; i++) {
-        result.push(lines[i]);
-      }
-      result.push(lines[end.line - 1].slice(0, end.column));
-    }
-    return result.join('\n');
-  },
+  getAstString,
 
   allPropertiesOf(obj) {
     const props = [];
@@ -365,42 +307,11 @@ const utils = {
       return '\n';
     }
   },
-  warnDeprecated(type, oldName, newName) {
-    if (newName) {
-      console.warn(`You are using a deprecated ${ type } "${ oldName }". It has been replaced with "${ newName }". Fixing, but please upgrade as it will soon be removed.`);
-    } else {
-      console.warn(`You are using a deprecated ${ type } "${ oldName }". It has been removed. Fixing, but please upgrade as it will soon be removed.`);
-    }
-  },
-  /**
-   *
-   * @param {String|Function} source
-   * @param {IFunctionSettings} [settings]
-   * @returns {IFunction}
-   */
-  functionToIFunction(source, settings) {
-    settings = settings || {};
-    if (typeof source !== 'string' && typeof source !== 'function') throw new Error('source not a string or function');
-    const sourceString = typeof source === 'string' ? source : source.toString();
 
-    let argumentTypes = [];
+  warnDeprecated,
+  functionToIFunction,
 
-    if (Array.isArray(settings.argumentTypes)) {
-      argumentTypes = settings.argumentTypes;
-    } else if (typeof settings.argumentTypes === 'object') {
-      argumentTypes = utils.getArgumentNamesFromString(sourceString)
-        .map(name => settings.argumentTypes[name]) || [];
-    } else {
-      argumentTypes = settings.argumentTypes || [];
-    }
-
-    return {
-      source: sourceString,
-      argumentTypes,
-      returnType: settings.returnType || null,
-    };
-  },
-  flipPixels: (pixels, width, height) => {
+  flipPixels(pixels, width, height) {
     // https://stackoverflow.com/a/41973289/1324039
     const halfHeight = height / 2 | 0; // the | 0 keeps the result an int
     const bytesPerRow = width * 4;
@@ -422,6 +333,7 @@ const utils = {
     }
     return result;
   },
+
   erectPackedFloat: (array, width) => {
     return array.subarray(0, width);
   },
@@ -450,26 +362,8 @@ const utils = {
   erectMemoryOptimizedFloat: (array, width) => {
     return array.subarray(0, width);
   },
-  erectMemoryOptimized2DFloat: (array, width, height) => {
-    const yResults = new Array(height);
-    for (let y = 0; y < height; y++) {
-      const offset = y * width;
-      yResults[y] = array.subarray(offset, offset + width);
-    }
-    return yResults;
-  },
-  erectMemoryOptimized3DFloat: (array, width, height, depth) => {
-    const zResults = new Array(depth);
-    for (let z = 0; z < depth; z++) {
-      const yResults = new Array(height);
-      for (let y = 0; y < height; y++) {
-        const offset = (z * height * width) + (y * width);
-        yResults[y] = array.subarray(offset, offset + width);
-      }
-      zResults[z] = yResults;
-    }
-    return zResults;
-  },
+  erectMemoryOptimized2DFloat,
+  erectMemoryOptimized3DFloat,
   erectFloat: (array, width) => {
     const xResults = new Float32Array(width);
     let i = 0;
@@ -634,7 +528,6 @@ const utils = {
   },
 
   /**
-   *
    * @param {String} source
    * @param {Object} settings
    * @return {String}
@@ -645,7 +538,12 @@ const utils = {
     if (!flattened) {
       flattened = settings.flattened = {};
     }
-    const ast = acorn.parse(source);
+
+    if (parse === null) {
+      throw new Error('Missing JS to AST parser');
+    }
+
+    const ast = parse(source);
     const functionDependencies = [];
 
     function flatten(ast) {
@@ -789,111 +687,6 @@ const utils = {
     }
     return result;
   },
-
-  splitHTMLImageToRGB: (image, mode) => {
-    const gpu = new GPU({ mode });
-
-    const rKernel = gpu.createKernel(function(a) {
-      const pixel = a[this.thread.y][this.thread.x];
-      return pixel.r * 255;
-    }, {
-      output: [image.width, image.height],
-      precision: 'unsigned',
-      argumentTypes: ['HTMLImage'],
-    });
-    const gKernel = gpu.createKernel(function(a) {
-      const pixel = a[this.thread.y][this.thread.x];
-      return pixel.g * 255;
-    }, {
-      output: [image.width, image.height],
-      precision: 'unsigned',
-      argumentTypes: ['HTMLImage'],
-    });
-    const bKernel = gpu.createKernel(function(a) {
-      const pixel = a[this.thread.y][this.thread.x];
-      return pixel.b * 255;
-    }, {
-      output: [image.width, image.height],
-      precision: 'unsigned',
-      argumentTypes: ['HTMLImage'],
-    });
-    const aKernel = gpu.createKernel(function(a) {
-      const pixel = a[this.thread.y][this.thread.x];
-      return pixel.a * 255;
-    }, {
-      output: [image.width, image.height],
-      precision: 'unsigned',
-      argumentTypes: ['HTMLImage'],
-    });
-    const result = [
-      rKernel(image),
-      gKernel(image),
-      bKernel(image),
-      aKernel(image),
-    ];
-    result.rKernel = rKernel;
-    result.gKernel = gKernel;
-    result.bKernel = bKernel;
-    result.aKernel = aKernel;
-    result.gpu = gpu;
-    return result;
-  },
-
-  /**
-   * A visual debug utility
-   * @param rgba
-   * @param width
-   * @param height
-   * @param mode
-   * @return {Object[]}
-   */
-  splitRGBAToCanvases: (rgba, width, height, mode) => {
-    const { GPU } = require('./gpu.js');
-
-    const visualGPUR = new GPU({ mode });
-    const visualKernelR = visualGPUR.createKernel(function(v) {
-      const pixel = v[this.thread.y][this.thread.x];
-      this.color(pixel.r / 255, 0, 0, 255);
-    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
-    visualKernelR(rgba);
-
-    const visualGPUG = new GPU({ mode });
-    const visualKernelG = visualGPUG.createKernel(function(v) {
-      const pixel = v[this.thread.y][this.thread.x];
-      this.color(0, pixel.g / 255, 0, 255);
-    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
-    visualKernelG(rgba);
-
-    const visualGPUB = new GPU({ mode });
-    const visualKernelB = visualGPUB.createKernel(function(v) {
-      const pixel = v[this.thread.y][this.thread.x];
-      this.color(0, 0, pixel.b / 255, 255);
-    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
-    visualKernelB(rgba);
-
-    const visualGPUA = new GPU({ mode });
-    const visualKernelA = visualGPUA.createKernel(function(v) {
-      const pixel = v[this.thread.y][this.thread.x];
-      this.color(255, 255, 255, pixel.a / 255);
-    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
-    visualKernelA(rgba);
-
-    visualGPUR.destroy();
-    visualGPUG.destroy();
-    visualGPUB.destroy();
-    visualGPUA.destroy();
-
-    return [
-      visualKernelR.canvas,
-      visualKernelG.canvas,
-      visualKernelB.canvas,
-      visualKernelA.canvas,
-    ];
-  }
 };
 
-const _systemEndianness = utils.getSystemEndianness();
-
-module.exports = {
-  utils
-};
+export { utils };

@@ -1,11 +1,11 @@
-const { utils } = require('./utils');
+import { utils } from './utils';
 
 /**
  * Makes kernels easier for mortals (including me)
  * @param kernel
  * @returns {function()}
  */
-function kernelRunShortcut(kernel) {
+export function kernelRunShortcut(kernel) {
   let run = function() {
     kernel.build.apply(kernel, arguments);
     if (kernel.renderKernels) {
@@ -90,6 +90,3 @@ function bindKernelToShortcut(kernel, shortcut) {
     }
   }
 }
-module.exports = {
-  kernelRunShortcut
-};

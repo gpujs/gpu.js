@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueHTMLImage } = require('./html-image');
+import { utils } from '../../../utils';
+import { WebGLKernelValueHTMLImage } from './html-image';
 
-class WebGLKernelValueDynamicHTMLImage extends WebGLKernelValueHTMLImage {
+export class WebGLKernelValueDynamicHTMLImage extends WebGLKernelValueHTMLImage {
   getSource() {
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
@@ -19,7 +19,3 @@ class WebGLKernelValueDynamicHTMLImage extends WebGLKernelValueHTMLImage {
     super.updateValue(value);
   }
 }
-
-module.exports = {
-  WebGLKernelValueDynamicHTMLImage
-};

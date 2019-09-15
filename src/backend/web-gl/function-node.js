@@ -1,5 +1,5 @@
-const { utils } = require('../../utils');
-const { FunctionNode } = require('../function-node');
+import { utils } from '../../utils';
+import { FunctionNode } from '../function-node';
 // Closure capture for the ast function, prevent collision with existing AST functions
 // The prefixes to use
 const jsMathPrefix = 'Math.';
@@ -10,7 +10,7 @@ const localPrefix = 'this.';
  * @extends FunctionNode
  * @returns the converted WebGL function string
  */
-class WebGLFunctionNode extends FunctionNode {
+export class WebGLFunctionNode extends FunctionNode {
   constructor(source, settings) {
     super(source, settings);
     if (settings && settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
@@ -1528,8 +1528,4 @@ const typeMap = {
 const operatorMap = {
   '===': '==',
   '!==': '!='
-};
-
-module.exports = {
-  WebGLFunctionNode
 };

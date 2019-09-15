@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValue } = require('./index');
+import { utils } from '../../../utils';
+import { WebGLKernelValue } from './index';
 
-class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
+export class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
     this.setupTexture();
@@ -36,7 +36,3 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGLKernelValueMemoryOptimizedNumberTexture
-};

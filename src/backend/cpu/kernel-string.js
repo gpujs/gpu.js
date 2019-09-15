@@ -1,5 +1,4 @@
-const { utils } = require('../../utils');
-const { Input } = require('../../input');
+import { utils } from '../../utils';
 
 function constantsToString(constants) {
   const results = [];
@@ -14,7 +13,7 @@ function constantsToString(constants) {
   return `{ ${ results.join() } }`;
 }
 
-function cpuKernelString(cpuKernel, name) {
+export function cpuKernelString(cpuKernel, name) {
   const header = [];
   const thisProperties = [];
   const beforeReturn = [];
@@ -151,7 +150,3 @@ ${cpuKernel._kernelString}
   return kernel;
 }`;
 }
-
-module.exports = {
-  cpuKernelString
-};

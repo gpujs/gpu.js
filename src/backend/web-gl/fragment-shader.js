@@ -1,5 +1,5 @@
 // language=GLSL
-const fragmentShader = `__HEADER__;
+export const fragmentShader = `__HEADER__;
 __FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
 __SAMPLER_2D_TACTIC_DECLARATION__;
@@ -27,7 +27,7 @@ int modi(int x, int y) {
 int bitwiseOr(int a, int b) {
   int result = 0;
   int n = 1;
-  
+
   for (int i = 0; i < BIT_COUNT; i++) {
     if ((modi(a, 2) == 1) || (modi(b, 2) == 1)) {
       result += n;
@@ -44,7 +44,7 @@ int bitwiseOr(int a, int b) {
 int bitwiseXOR(int a, int b) {
   int result = 0;
   int n = 1;
-  
+
   for (int i = 0; i < BIT_COUNT; i++) {
     if ((modi(a, 2) == 1) != (modi(b, 2) == 1)) {
       result += n;
@@ -77,10 +77,10 @@ int bitwiseAnd(int a, int b) {
 int bitwiseNot(int a) {
   int result = 0;
   int n = 1;
-  
+
   for (int i = 0; i < BIT_COUNT; i++) {
     if (modi(a, 2) == 0) {
-      result += n;    
+      result += n;
     }
     a = a / 2;
     n = n * 2;
@@ -346,7 +346,7 @@ vec3 getMemoryOptimizedVec3(sampler2D tex, ivec2 texSize, ivec3 texDim, int z, i
   int readY = vectorIndex / texSize.x;
   int readX = vectorIndex - readY * texSize.x;
   vec4 tex1 = texture2D(tex, (vec2(readX, readY) + 0.5) / vec2(texSize));
-  
+
   if (vectorOffset == 0) {
     return tex1.xyz;
   } else if (vectorOffset == 1) {
@@ -400,7 +400,3 @@ void main(void) {
   index = int(vTexCoord.s * float(uTexSize.x)) + int(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;
   __MAIN_RESULT__;
 }`;
-
-module.exports = {
-  fragmentShader
-};

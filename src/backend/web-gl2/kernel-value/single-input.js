@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueSingleInput } = require('../../web-gl/kernel-value/single-input');
+import { utils } from '../../../utils';
+import { WebGLKernelValueSingleInput } from '../../web-gl/kernel-value/single-input';
 
-class WebGL2KernelValueSingleInput extends WebGLKernelValueSingleInput {
+export class WebGL2KernelValueSingleInput extends WebGLKernelValueSingleInput {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
@@ -24,7 +24,3 @@ class WebGL2KernelValueSingleInput extends WebGLKernelValueSingleInput {
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueSingleInput
-};

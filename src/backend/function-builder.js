@@ -3,7 +3,7 @@
  * [INTERNAL] A collection of functionNodes.
  * @class
  */
-class FunctionBuilder {
+export class FunctionBuilder {
   /**
    *
    * @param {Kernel} kernel
@@ -662,7 +662,3 @@ class FunctionBuilder {
     return result;
   }
 }
-
-module.exports = {
-  FunctionBuilder
-};

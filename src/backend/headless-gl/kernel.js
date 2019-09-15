@@ -1,6 +1,6 @@
-const getContext = require('gl');
-const { WebGLKernel } = require('../web-gl/kernel');
-const { glKernelString } = require('../gl/kernel-string');
+import getContext from 'gl'
+import { WebGLKernel } from '../web-gl/kernel';
+import { glKernelString } from '../gl/kernel-string';
 
 let isSupported = null;
 let testCanvas = null;
@@ -8,7 +8,7 @@ let testContext = null;
 let testExtensions = null;
 let features = null;
 
-class HeadlessGLKernel extends WebGLKernel {
+export class HeadlessGLKernel extends WebGLKernel {
   static get isSupported() {
     if (isSupported !== null) return isSupported;
     this.setupFeatureChecks();
@@ -20,7 +20,8 @@ class HeadlessGLKernel extends WebGLKernel {
     testCanvas = null;
     testExtensions = null;
     if (typeof getContext !== 'function') return;
-    try { // just in case, edge cases
+    try {
+      // Edge cases (just in case)
       testContext = getContext(2, 2, {
         preserveDrawingBuffer: true
       });
@@ -145,8 +146,4 @@ class HeadlessGLKernel extends WebGLKernel {
       this.extensions.STACKGL_resize_drawingbuffer.resize(this.maxTexSize[0], this.maxTexSize[1]);
     }
   }
-}
-
-module.exports = {
-  HeadlessGLKernel
 };

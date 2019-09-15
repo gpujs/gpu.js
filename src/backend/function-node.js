@@ -1,13 +1,18 @@
-const acorn = require('acorn');
-const { utils } = require('../utils');
-const { FunctionTracer } = require('./function-tracer');
+import { parse } from 'acorn';
+import { FunctionTracer } from './function-tracer';
+import {
+  getArgumentNamesFromString,
+  getAstString,
+  getFunctionNameFromString,
+  isFunctionString,
+} from '../common';
 
 /**
  *
  * @desc Represents a single function, inside JS, webGL, or openGL.
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
  */
-class FunctionNode {
+export class FunctionNode {
   /**
    *
    * @param {string|object} source
@@ -22,7 +27,7 @@ class FunctionNode {
     this.ast = null;
     this.name = typeof source === 'string' ? settings.isRootKernel ?
       'kernel' :
-      (settings.name || utils.getFunctionNameFromString(source)) : null;
+      (settings.name || getFunctionNameFromString(source)) : null;
     this.calledFunctions = [];
     this.constants = {};
     this.constantTypes = {};
@@ -49,7 +54,7 @@ class FunctionNode {
     this.optimizeFloatMemory = null;
     this.precision = null;
     this.loopMaxIterations = null;
-    this.argumentNames = (typeof this.source === 'string' ? utils.getArgumentNamesFromString(this.source) : null);
+    this.argumentNames = (typeof this.source === 'string' ? getArgumentNamesFromString(this.source) : null);
     this.argumentTypes = [];
     this.argumentSizes = [];
     this.argumentBitRatios = null;
@@ -87,7 +92,7 @@ class FunctionNode {
       throw new Error('this.source not a string');
     }
 
-    if (!this.ast && !utils.isFunctionString(this.source)) {
+    if (!this.ast && !isFunctionString(this.source)) {
       throw new Error('this.source not a function string');
     }
 
@@ -185,7 +190,7 @@ class FunctionNode {
    * @desc Parses the class function JS, and returns its Abstract Syntax Tree object.
    * This is used internally to convert to shader code
    *
-   * @param {Object} [inParser] - Parser to use, assumes in scope 'parser' if null or undefined
+   * @param {Object} [import { $1 } from $2] - Parser to use, assumes in scope 'parser' if null or undefined
    *
    * @returns {Object} The function AST Object, note that result is cached under this.ast;
    */
@@ -198,12 +203,12 @@ class FunctionNode {
       return this.ast = this.source;
     }
 
-    inParser = inParser || acorn;
+    const parser = inParser && inParser.hasOwnProperty('parse') ? inParser.parse : parse
     if (inParser === null) {
       throw new Error('Missing JS to AST parser');
     }
 
-    const ast = Object.freeze(inParser.parse(`const parser_${ this.name } = ${ this.source };`, {
+    const ast = Object.freeze(parser(`const parser_${ this.name } = ${ this.source };`, {
       locations: true
     }));
     // take out the function object, outside the var declarations
@@ -954,7 +959,7 @@ class FunctionNode {
       return new Error(error);
     }
 
-    const debugString = utils.getAstString(this.source, ast);
+    const debugString = getAstString(this.source, ast);
     const leadingSource = this.source.substr(ast.start);
     const splitLines = leadingSource.split(/\n/);
     const lineBefore = splitLines.length > 0 ? splitLines[splitLines.length - 1] : 0;
@@ -1514,8 +1519,4 @@ const typeLookupMap = {
   'ArrayTexture(2)': 'Array(2)',
   'ArrayTexture(3)': 'Array(3)',
   'ArrayTexture(4)': 'Array(4)',
-};
-
-module.exports = {
-  FunctionNode
 };

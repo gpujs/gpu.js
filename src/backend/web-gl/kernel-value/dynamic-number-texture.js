@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueNumberTexture } = require('./number-texture');
+import { utils } from '../../../utils';
+import { WebGLKernelValueNumberTexture } from './number-texture';
 
-class WebGLKernelValueDynamicNumberTexture extends WebGLKernelValueNumberTexture {
+export class WebGLKernelValueDynamicNumberTexture extends WebGLKernelValueNumberTexture {
   getSource() {
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
@@ -18,7 +18,3 @@ class WebGLKernelValueDynamicNumberTexture extends WebGLKernelValueNumberTexture
     super.updateValue(value);
   }
 }
-
-module.exports = {
-  WebGLKernelValueDynamicNumberTexture
-};

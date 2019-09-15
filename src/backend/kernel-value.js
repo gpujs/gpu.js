@@ -1,7 +1,7 @@
 /**
  * @class KernelValue
  */
-class KernelValue {
+export class KernelValue {
   /**
    *
    * @param {IKernelArgumentSettings} settings
@@ -67,7 +67,3 @@ class KernelValue {
     throw new Error(`"getFocusString" not defined on ${ this.constructor.name }`);
   }
 }
-
-module.exports = {
-  KernelValue
-};

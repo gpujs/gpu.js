@@ -1,8 +1,35 @@
-const lib = require('./index');
-const GPU = lib.GPU;
-for (const p in lib) {
-  if (!lib.hasOwnProperty(p)) continue;
-  if (p === 'GPU') continue; //prevent recursive reference
-  GPU[p] = lib[p];
-}
-module.exports = GPU;
+import { GPU } from './base-gpu';
+import { alias } from './alias';
+import { utils } from './utils';
+import * as common from './common';
+import { Input, input } from './input';
+import { Texture } from './texture';
+import { FunctionBuilder } from './backend/function-builder';
+import { FunctionNode } from './backend/function-node';
+import { CPUFunctionNode } from './backend/cpu/function-node';
+import { CPUKernel } from './backend/cpu/kernel';
+import { WebGLFunctionNode } from './backend/web-gl/function-node';
+import { WebGLKernel } from './backend/web-gl/kernel';
+import { WebGL2FunctionNode } from './backend/web-gl2/function-node';
+import { WebGL2Kernel } from './backend/web-gl2/kernel';
+import { GLKernel } from './backend/gl/kernel';
+import { Kernel } from './backend/kernel';
+
+const lib = GPU;
+lib.alias = alias;
+lib.CPUFunctionNode = CPUFunctionNode;
+lib.CPUKernel = CPUKernel;
+lib.FunctionBuilder = FunctionBuilder;
+lib.FunctionNode = FunctionNode;
+lib.Input = Input;
+lib.input = input;
+lib.Texture = Texture;
+lib.utils = { ...common, ...utils };
+lib.WebGL2FunctionNode = WebGL2FunctionNode;
+lib.WebGL2Kernel = WebGL2Kernel;
+lib.WebGLFunctionNode = WebGLFunctionNode;
+lib.WebGLKernel = WebGLKernel;
+lib.GLKernel = GLKernel;
+lib.Kernel = Kernel;
+
+export default lib;

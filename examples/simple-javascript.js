@@ -1,4 +1,4 @@
-const { GPU } = require('../src');
+const { GPU } = require('../');
 
 const gpu = new GPU({ mode: 'gpu' });
 

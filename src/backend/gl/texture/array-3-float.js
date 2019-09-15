@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { GLTextureFloat } = require('./float');
+import { utils } from '../../../utils';
+import { GLTextureFloat } from './float';
 
-class GLTextureArray3Float extends GLTextureFloat {
+export class GLTextureArray3Float extends GLTextureFloat {
   constructor(settings) {
     super(settings);
     this.type = 'ArrayTexture(3)';
@@ -10,7 +10,3 @@ class GLTextureArray3Float extends GLTextureFloat {
     return utils.erectArray3(this.renderValues(), this.output[0]);
   }
 }
-
-module.exports = {
-  GLTextureArray3Float
-};

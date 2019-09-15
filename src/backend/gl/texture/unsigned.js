@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { Texture } = require('../../../texture');
+import { utils } from '../../../utils';
+import { Texture } from '../../../texture';
 
-class GLTextureUnsigned extends Texture {
+export class GLTextureUnsigned extends Texture {
   constructor(settings) {
     super(settings);
     this.type = 'NumberTexture';
@@ -28,7 +28,3 @@ class GLTextureUnsigned extends Texture {
     return utils.erectPackedFloat(this.renderValues(), this.output[0]);
   }
 }
-
-module.exports = {
-  GLTextureUnsigned
-};
