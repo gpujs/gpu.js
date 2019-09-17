@@ -1233,6 +1233,7 @@ class WebGLFunctionNode extends FunctionNode {
         break;
       case 'ArrayTexture(4)':
       case 'HTMLImage':
+      case 'HTMLVideo':
         retArr.push(`getVec4FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');

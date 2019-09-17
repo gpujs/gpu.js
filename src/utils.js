@@ -139,17 +139,17 @@ const utils = {
       case Input:
         return 'Input';
     }
-
-    if (value.nodeName === 'IMG') {
-      return 'HTMLImage';
-    } else {
-      if (value.hasOwnProperty('type')) {
-        return value.type;
-      }
-      return 'Unknown';
+    switch (value.nodeName) {
+      case 'IMG':
+        return 'HTMLImage';
+      case 'VIDEO':
+        return 'HTMLVideo';
     }
+    if (value.hasOwnProperty('type')) {
+      return value.type;
+    }
+    return 'Unknown';
   },
-
 
   getKernelTextureSize(settings, dimensions) {
     let [w, h, d] = dimensions;

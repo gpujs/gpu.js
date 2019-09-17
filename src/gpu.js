@@ -115,6 +115,7 @@ class GPU {
     this.kernels = [];
     this.functions = [];
     this.nativeFunctions = [];
+    this.injectedNative = null;
     if (this.mode === 'dev') return;
     this.chooseKernel();
     // add functions from settings
@@ -235,6 +236,7 @@ class GPU {
         fixIntegerDivisionAccuracy: kernelRun.fixIntegerDivisionAccuracy,
         functions: kernelRun.functions,
         nativeFunctions: kernelRun.nativeFunctions,
+        injectedNative: kernelRun.injectedNative,
         subKernels: kernelRun.subKernels,
         strictIntegers: kernelRun.strictIntegers,
         debug: kernelRun.debug,
@@ -295,6 +297,7 @@ class GPU {
         fixIntegerDivisionAccuracy: kernel.fixIntegerDivisionAccuracy,
         functions: kernel.functions,
         nativeFunctions: kernel.nativeFunctions,
+        injectedNative: kernel.injectedNative,
         subKernels: kernel.subKernels,
         strictIntegers: kernel.strictIntegers,
         debug: kernel.debug,
@@ -319,6 +322,7 @@ class GPU {
       canvas: this.canvas,
       functions: this.functions,
       nativeFunctions: this.nativeFunctions,
+      injectedNative: this.injectedNative,
       gpu: this,
       validate,
       onRequestFallback,
@@ -503,6 +507,16 @@ class GPU {
       argumentNames,
       returnType: settings.returnType || this.Kernel.nativeFunctionReturnType(source),
     });
+    return this;
+  }
+
+  /**
+   * Inject a string just before translated kernel functions
+   * @param {String} source
+   * @return {GPU}
+   */
+  injectNative(source) {
+    this.injectedNative = source;
     return this;
   }
 

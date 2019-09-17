@@ -218,6 +218,7 @@ class CPUKernel extends Kernel {
       kernelThreadString = translatedSources.shift();
     }
     const kernelString = this._kernelString = `  const LOOP_MAX = ${ this._getLoopMaxString() }
+  ${ this.injectedNative || '' }
   const constants = this.constants;
   const _this = this;
   return (${ this.argumentNames.map(argumentName => 'user_' + argumentName).join(', ') }) => {

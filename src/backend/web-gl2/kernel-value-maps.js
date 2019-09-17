@@ -8,6 +8,9 @@ const { WebGL2KernelValueDynamicHTMLImage } = require('./kernel-value/dynamic-ht
 const { WebGL2KernelValueHtmlImageArray } = require('./kernel-value/html-image-array');
 const { WebGL2KernelValueDynamicHtmlImageArray } = require('./kernel-value/dynamic-html-image-array');
 
+const { WebGL2KernelValueHTMLVideo } = require('./kernel-value/html-video');
+const { WebGL2KernelValueDynamicHTMLVideo } = require('./kernel-value/dynamic-html-video');
+
 const { WebGL2KernelValueSingleInput } = require('./kernel-value/single-input');
 const { WebGL2KernelValueDynamicSingleInput } = require('./kernel-value/dynamic-single-input');
 
@@ -67,6 +70,7 @@ const kernelValueMaps = {
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImageArray': WebGL2KernelValueDynamicHtmlImageArray,
+      'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
     static: {
       'Boolean': WebGL2KernelValueBoolean,
@@ -94,6 +98,7 @@ const kernelValueMaps = {
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueHTMLImage,
       'HTMLImageArray': WebGL2KernelValueHtmlImageArray,
+      'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
   },
   single: {
@@ -123,6 +128,7 @@ const kernelValueMaps = {
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImageArray': WebGL2KernelValueDynamicHtmlImageArray,
+      'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
     static: {
       'Boolean': WebGL2KernelValueBoolean,
@@ -150,6 +156,7 @@ const kernelValueMaps = {
       'MemoryOptimizedNumberTexture': WebGL2KernelValueMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueHTMLImage,
       'HTMLImageArray': WebGL2KernelValueHtmlImageArray,
+      'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
   },
 };

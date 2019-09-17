@@ -118,17 +118,13 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       case 'Boolean':
       case 'Number':
       case 'Float':
-        context.insertVariable(`uploadValue_${kernelArgument.name}`, upgradedArguments[i]);
-        break;
-
         // non-primitives
       case 'Array':
       case 'Array(2)':
       case 'Array(3)':
       case 'Array(4)':
-        context.insertVariable(`uploadValue_${kernelArgument.name}`, upgradedArguments[i]);
-        break;
       case 'HTMLImage':
+      case 'HTMLVideo':
         context.insertVariable(`uploadValue_${kernelArgument.name}`, upgradedArguments[i]);
         break;
       case 'HTMLImageArray':

@@ -963,6 +963,7 @@ class WebGLKernel extends GLKernel {
       DECODE32_ENDIANNESS: this._getDecode32EndiannessString(),
       ENCODE32_ENDIANNESS: this._getEncode32EndiannessString(),
       DIVIDE_WITH_INTEGER_CHECK: this._getDivideWithIntegerCheckString(),
+      INJECTED_NATIVE: this._getInjectedNative(),
       MAIN_CONSTANTS: this._getMainConstantsString(),
       MAIN_ARGUMENTS: this._getMainArgumentsString(args),
       KERNEL: this.getKernelString(),
@@ -1106,6 +1107,10 @@ class WebGLKernel extends GLKernel {
       results.push(this.kernelArguments[i].getSource(args[i]));
     }
     return results.join('');
+  }
+
+  _getInjectedNative() {
+    return this.injectedNative || '';
   }
 
   _getMainConstantsString() {
