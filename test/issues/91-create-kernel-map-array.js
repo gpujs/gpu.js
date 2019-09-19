@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU, HeadlessGLKernel, WebGLKernel, WebGL2Kernel, CPUKernel } = require('../../src');
+const { GPU, HeadlessGLKernel, WebGLKernel, WebGL2Kernel, CPUKernel } = require('../../dist/gpu.js');
 
 describe('issue #91');
 function getResult(mode) {

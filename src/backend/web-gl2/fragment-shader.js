@@ -380,6 +380,7 @@ void color(float r, float g, float b) {
   color(r,g,b,1.0);
 }
 
+__INJECTED_NATIVE__;
 __MAIN_CONSTANTS__;
 __MAIN_ARGUMENTS__;
 __KERNEL__;

@@ -5,6 +5,9 @@ import { WebGLKernelValueInteger } from './kernel-value/integer';
 import { WebGLKernelValueHTMLImage } from './kernel-value/html-image';
 import { WebGLKernelValueDynamicHTMLImage } from './kernel-value/dynamic-html-image';
 
+import { WebGLKernelValueHTMLVideo } from './kernel-value/html-video';
+import { WebGLKernelValueDynamicHTMLVideo } from './kernel-value/dynamic-html-video';
+
 import { WebGLKernelValueSingleInput } from './kernel-value/single-input';
 import { WebGLKernelValueDynamicSingleInput } from './kernel-value/dynamic-single-input';
 
@@ -64,6 +67,7 @@ const kernelValueMaps = {
       'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
+      'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
     },
     static: {
       'Boolean': WebGLKernelValueBoolean,
@@ -91,6 +95,7 @@ const kernelValueMaps = {
       'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
+      'HTMLVideo': WebGLKernelValueHTMLVideo,
     }
   },
   single: {
@@ -121,6 +126,7 @@ const kernelValueMaps = {
       'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
+      'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
     },
     static: {
       'Boolean': WebGLKernelValueBoolean,
@@ -148,6 +154,7 @@ const kernelValueMaps = {
       'MemoryOptimizedNumberTexture': WebGLKernelValueMemoryOptimizedNumberTexture,
       'HTMLImage': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
+      'HTMLVideo': WebGLKernelValueHTMLVideo,
     }
   },
 };

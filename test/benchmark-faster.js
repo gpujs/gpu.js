@@ -1,4 +1,4 @@
-const { GPU } = require('../src/index.js');
+const { GPU } = require('../dist/gpu.js');
 const Benchmark = require('benchmark');
 
 const suite = new Benchmark.Suite;

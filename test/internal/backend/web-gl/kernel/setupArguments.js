@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { WebGLKernel, input } = require('../../../../../src');
+const { WebGLKernel, input } = require('../../../../../dist/gpu.js');
 
 describe('internal WebGLKernel.setupArguments Array');
 const gl = {

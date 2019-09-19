@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0-rc.26
- * @date Sat Sep 14 2019 19:37:50 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.0
+ * @date Thu Sep 19 2019 11:40:19 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -5819,11 +5819,14 @@ var GPU = (function () {
         return 'Input';
     }
 
-    if (value.nodeName === 'IMG') {
-      return 'HTMLImage';
-    } else {
-      return value.hasOwnProperty('type') ? value.type : 'Unknown';
+    switch (value.nodeName) {
+      case 'IMG':
+        return 'HTMLImage';
+      case 'VIDEO':
+        return 'HTMLVideo';
     }
+
+    return value.hasOwnProperty('type') ? value.type : 'Unknown';
   }
   /**
    * @desc Various utility functions / snippets of code that GPU.JS uses internally.
@@ -6594,6 +6597,12 @@ var GPU = (function () {
 
       /**
        *
+       * @type {String}
+       */
+      this.injectedNative = null;
+
+      /**
+       *
        * @type {ISubKernel[]}
        */
       this.subKernels = null;
@@ -6877,6 +6886,26 @@ var GPU = (function () {
       } else {
         this.functions = functions;
       }
+      return this;
+    }
+
+    /**
+     *
+     * @param {IGPUNativeFunction} nativeFunctions
+     * @return {Kernel}
+     */
+    setNativeFunctions(nativeFunctions) {
+      this.nativeFunctions = nativeFunctions;
+      return this;
+    }
+
+    /**
+     *
+     * @param {String} injectedNative
+     * @return {Kernel}
+     */
+    setInjectedNative(injectedNative) {
+      this.injectedNative = injectedNative;
       return this;
     }
 
@@ -9482,6 +9511,7 @@ var GPU = (function () {
     'Array3D': 'Number',
     'Input': 'Number',
     'HTMLImage': 'Array(4)',
+    'HTMLVideo': 'Array(4)',
     'HTMLImageArray': 'Array(4)',
     'NumberTexture': 'Number',
     'MemoryOptimizedNumberTexture': 'Number',
@@ -10515,6 +10545,7 @@ ${cpuKernel._kernelString}
         kernelThreadString = translatedSources.shift();
       }
       const kernelString = this._kernelString = `  const LOOP_MAX = ${ this._getLoopMaxString() }
+  ${ this.injectedNative || '' }
   const constants = this.constants;
   const _this = this;
   return (${ this.argumentNames.map(argumentName => 'user_' + argumentName).join(', ') }) => {
@@ -13232,6 +13263,7 @@ ${cpuKernel._kernelString}
           break;
         case 'ArrayTexture(4)':
         case 'HTMLImage':
+        case 'HTMLVideo':
           retArr.push(`getVec4FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
           this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
           retArr.push(')');
@@ -13976,6 +14008,7 @@ void color(sampler2D image) {
   actualColor = texture2D(image, vTexCoord);
 }
 
+__INJECTED_NATIVE__;
 __MAIN_CONSTANTS__;
 __MAIN_ARGUMENTS__;
 __KERNEL__;
@@ -14497,17 +14530,13 @@ ${indent}})();`);
         case 'Boolean':
         case 'Number':
         case 'Float':
-          context.insertVariable(`uploadValue_${kernelArgument.name}`, upgradedArguments[i]);
-          break;
-
           // non-primitives
         case 'Array':
         case 'Array(2)':
         case 'Array(3)':
         case 'Array(4)':
-          context.insertVariable(`uploadValue_${kernelArgument.name}`, upgradedArguments[i]);
-          break;
         case 'HTMLImage':
+        case 'HTMLVideo':
           context.insertVariable(`uploadValue_${kernelArgument.name}`, upgradedArguments[i]);
           break;
         case 'HTMLImageArray':
@@ -15002,6 +15031,10 @@ ${result.join('\n')}
       super.updateValue(value);
     }
   }
+
+  class WebGLKernelValueHTMLVideo extends WebGLKernelValueHTMLImage {}
+
+  class WebGLKernelValueDynamicHTMLVideo extends WebGLKernelValueDynamicHTMLImage {}
 
   class WebGLKernelValueSingleInput extends WebGLKernelValue {
     constructor(value, settings) {
@@ -15675,6 +15708,7 @@ ${result.join('\n')}
         'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
         'HTMLImage': WebGLKernelValueDynamicHTMLImage,
         'HTMLImageArray': false,
+        'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
       },
       static: {
         'Boolean': WebGLKernelValueBoolean,
@@ -15702,6 +15736,7 @@ ${result.join('\n')}
         'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
         'HTMLImage': WebGLKernelValueHTMLImage,
         'HTMLImageArray': false,
+        'HTMLVideo': WebGLKernelValueHTMLVideo,
       }
     },
     single: {
@@ -15732,6 +15767,7 @@ ${result.join('\n')}
         'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
         'HTMLImage': WebGLKernelValueDynamicHTMLImage,
         'HTMLImageArray': false,
+        'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
       },
       static: {
         'Boolean': WebGLKernelValueBoolean,
@@ -15759,6 +15795,7 @@ ${result.join('\n')}
         'MemoryOptimizedNumberTexture': WebGLKernelValueMemoryOptimizedNumberTexture,
         'HTMLImage': WebGLKernelValueHTMLImage,
         'HTMLImageArray': false,
+        'HTMLVideo': WebGLKernelValueHTMLVideo,
       }
     },
   };
@@ -16740,6 +16777,7 @@ ${result.join('\n')}
         DECODE32_ENDIANNESS: this._getDecode32EndiannessString(),
         ENCODE32_ENDIANNESS: this._getEncode32EndiannessString(),
         DIVIDE_WITH_INTEGER_CHECK: this._getDivideWithIntegerCheckString(),
+        INJECTED_NATIVE: this._getInjectedNative(),
         MAIN_CONSTANTS: this._getMainConstantsString(),
         MAIN_ARGUMENTS: this._getMainArgumentsString(args),
         KERNEL: this.getKernelString(),
@@ -16883,6 +16921,10 @@ ${result.join('\n')}
         results.push(this.kernelArguments[i].getSource(args[i]));
       }
       return results.join('');
+    }
+
+    _getInjectedNative() {
+      return this.injectedNative || '';
     }
 
     _getMainConstantsString() {
@@ -17752,6 +17794,7 @@ void color(float r, float g, float b) {
   color(r,g,b,1.0);
 }
 
+__INJECTED_NATIVE__;
 __MAIN_CONSTANTS__;
 __MAIN_ARGUMENTS__;
 __KERNEL__;
@@ -17898,6 +17941,10 @@ void main(void) {
       super.updateValue(images);
     }
   }
+
+  class WebGL2KernelValueHTMLVideo extends WebGL2KernelValueHTMLImage {}
+
+  class WebGL2KernelValueDynamicHTMLVideo extends WebGL2KernelValueDynamicHTMLImage {}
 
   class WebGL2KernelValueSingleInput extends WebGLKernelValueSingleInput {
     getSource() {
@@ -18226,6 +18273,7 @@ void main(void) {
         'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
         'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
         'HTMLImageArray': WebGL2KernelValueDynamicHtmlImageArray,
+        'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
       },
       static: {
         'Boolean': WebGL2KernelValueBoolean,
@@ -18253,6 +18301,7 @@ void main(void) {
         'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
         'HTMLImage': WebGL2KernelValueHTMLImage,
         'HTMLImageArray': WebGL2KernelValueHtmlImageArray,
+        'HTMLVideo': WebGL2KernelValueHTMLVideo,
       }
     },
     single: {
@@ -18282,6 +18331,7 @@ void main(void) {
         'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
         'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
         'HTMLImageArray': WebGL2KernelValueDynamicHtmlImageArray,
+        'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
       },
       static: {
         'Boolean': WebGL2KernelValueBoolean,
@@ -18309,6 +18359,7 @@ void main(void) {
         'MemoryOptimizedNumberTexture': WebGL2KernelValueMemoryOptimizedNumberTexture,
         'HTMLImage': WebGL2KernelValueHTMLImage,
         'HTMLImageArray': WebGL2KernelValueHtmlImageArray,
+        'HTMLVideo': WebGL2KernelValueHTMLVideo,
       }
     },
   };
@@ -19192,6 +19243,7 @@ void main(void) {
       this.kernels = [];
       this.functions = [];
       this.nativeFunctions = [];
+      this.injectedNative = null;
       if (this.mode === 'dev') return;
       this.chooseKernel();
       // add functions from settings
@@ -19207,6 +19259,10 @@ void main(void) {
           this.addNativeFunction(p, settings.nativeFunctions[p]);
         }
       }
+    }
+
+    getValidate() {
+      return validate;
     }
 
     /**
@@ -19312,6 +19368,7 @@ void main(void) {
           fixIntegerDivisionAccuracy: kernelRun.fixIntegerDivisionAccuracy,
           functions: kernelRun.functions,
           nativeFunctions: kernelRun.nativeFunctions,
+          injectedNative: kernelRun.injectedNative,
           subKernels: kernelRun.subKernels,
           strictIntegers: kernelRun.strictIntegers,
           debug: kernelRun.debug,
@@ -19372,6 +19429,7 @@ void main(void) {
           fixIntegerDivisionAccuracy: kernel.fixIntegerDivisionAccuracy,
           functions: kernel.functions,
           nativeFunctions: kernel.nativeFunctions,
+          injectedNative: kernel.injectedNative,
           subKernels: kernel.subKernels,
           strictIntegers: kernel.strictIntegers,
           debug: kernel.debug,
@@ -19396,6 +19454,7 @@ void main(void) {
         canvas: this.canvas,
         functions: this.functions,
         nativeFunctions: this.nativeFunctions,
+        injectedNative: this.injectedNative,
         gpu: this,
         validate,
         onRequestFallback,
@@ -19580,6 +19639,16 @@ void main(void) {
         argumentNames,
         returnType: settings.returnType || this.Kernel.nativeFunctionReturnType(source),
       });
+      return this;
+    }
+
+    /**
+     * Inject a string just before translated kernel functions
+     * @param {String} source
+     * @return {GPU}
+     */
+    injectNative(source) {
+      this.injectedNative = source;
       return this;
     }
 

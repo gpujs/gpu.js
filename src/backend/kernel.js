@@ -155,6 +155,12 @@ export class Kernel {
 
     /**
      *
+     * @type {String}
+     */
+    this.injectedNative = null;
+
+    /**
+     *
      * @type {ISubKernel[]}
      */
     this.subKernels = null;
@@ -438,6 +444,26 @@ export class Kernel {
     } else {
       this.functions = functions;
     }
+    return this;
+  }
+
+  /**
+   *
+   * @param {IGPUNativeFunction} nativeFunctions
+   * @return {Kernel}
+   */
+  setNativeFunctions(nativeFunctions) {
+    this.nativeFunctions = nativeFunctions;
+    return this;
+  }
+
+  /**
+   *
+   * @param {String} injectedNative
+   * @return {Kernel}
+   */
+  setInjectedNative(injectedNative) {
+    this.injectedNative = injectedNative;
     return this;
   }
 

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Video input with GPU.js</title>
+  <script src="../../dist/gpu-browser.min.js"></script>
+</head>
+<body>
+<h1>Video input with GPU.js</h1>
+<div id="log-fps"></div>
+<!-- ty https://commons.wikimedia.org/wiki/File:Jellyfish_in_Vr%C3%A5ngo.webm -->
+<video src="../../test/jellyfish.webm" controls width="337" height="599"></video>
+<script src="dist/gpu-browser.js"></script>
+<script>
+  const gpu = new GPU({ mode: 'webgl2' });
+  const kernel = gpu.createKernel(function(frame) {
+    const pixel = frame[this.output.y - this.thread.y][this.output.x - this.thread.x];
+    this.color(pixel.b, pixel.g, pixel.r, pixel.a);
+  }, {
+    output: [337, 599],
+    graphical: true
+  });
+  const videoElement = document.querySelector('video');
+  document.body.appendChild(kernel.canvas);
+  function render() {
+    kernel(videoElement);
+    window.requestAnimationFrame(render);
+  }
+  render();
+</script>
+</body>
+</html>

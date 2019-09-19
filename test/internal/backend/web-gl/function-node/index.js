@@ -1,6 +1,6 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
 const sinon = require('sinon');
-const { WebGLFunctionNode } = require('../../../../../src');
+const { WebGLFunctionNode } = require('../../../../../dist/gpu.js');
 
 describe('internal: WebGLFunctionNode');
 

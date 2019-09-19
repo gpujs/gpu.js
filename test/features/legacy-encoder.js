@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU, HeadlessGLKernel, WebGLKernel, WebGL2Kernel } = require('../../src');
+const { GPU, HeadlessGLKernel, WebGLKernel, WebGL2Kernel } = require('../../dist/gpu.js');
 
 describe('features: legacy encoder');
 

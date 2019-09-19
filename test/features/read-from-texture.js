@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU, HeadlessGLKernel } = require('../../src');
+const { GPU, HeadlessGLKernel } = require('../../dist/gpu.js');
 
 describe('features: read from texture');
 

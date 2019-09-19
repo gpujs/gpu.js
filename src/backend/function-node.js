@@ -1503,6 +1503,7 @@ const typeLookupMap = {
   'Array3D': 'Number',
   'Input': 'Number',
   'HTMLImage': 'Array(4)',
+  'HTMLVideo': 'Array(4)',
   'HTMLImageArray': 'Array(4)',
   'NumberTexture': 'Number',
   'MemoryOptimizedNumberTexture': 'Number',

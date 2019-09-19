@@ -1,5 +1,6 @@
 import { GPU as BaseGPU } from './base-gpu';
 import { HeadlessGLKernel } from './backend/headless-gl/kernel';
+import { CPUKernel } from './backend/cpu/kernel';
 
 /**
  * Extends the BaseGPU class to cover HeadlessGL instead of WebGL.
@@ -52,7 +53,7 @@ export class GPU extends BaseGPU {
       }
     } else if (this.mode) {
       if (this.mode === 'headlessgl') {
-        if (!validate || HeadlessGLKernel.isSupported) {
+        if (!this.getValidate() || HeadlessGLKernel.isSupported) {
           Kernel = HeadlessGLKernel;
         }
       } else if (this.mode === 'gpu') {

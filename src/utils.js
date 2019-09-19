@@ -60,11 +60,14 @@ export function getVariableType(value, strictIntegers) {
       return 'Input';
   }
 
-  if (value.nodeName === 'IMG') {
-    return 'HTMLImage';
-  } else {
-    return value.hasOwnProperty('type') ? value.type : 'Unknown';
+  switch (value.nodeName) {
+    case 'IMG':
+      return 'HTMLImage';
+    case 'VIDEO':
+      return 'HTMLVideo';
   }
+
+  return value.hasOwnProperty('type') ? value.type : 'Unknown';
 };
 
 /**

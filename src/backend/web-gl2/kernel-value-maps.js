@@ -8,6 +8,9 @@ import { WebGL2KernelValueDynamicHTMLImage } from './kernel-value/dynamic-html-i
 import { WebGL2KernelValueHtmlImageArray } from './kernel-value/html-image-array';
 import { WebGL2KernelValueDynamicHtmlImageArray } from './kernel-value/dynamic-html-image-array';
 
+import { WebGL2KernelValueHTMLVideo } from './kernel-value/html-video';
+import { WebGL2KernelValueDynamicHTMLVideo } from './kernel-value/dynamic-html-video';
+
 import { WebGL2KernelValueSingleInput } from './kernel-value/single-input';
 import { WebGL2KernelValueDynamicSingleInput } from './kernel-value/dynamic-single-input';
 
@@ -67,6 +70,7 @@ const kernelValueMaps = {
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImageArray': WebGL2KernelValueDynamicHtmlImageArray,
+      'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
     static: {
       'Boolean': WebGL2KernelValueBoolean,
@@ -94,6 +98,7 @@ const kernelValueMaps = {
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueHTMLImage,
       'HTMLImageArray': WebGL2KernelValueHtmlImageArray,
+      'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
   },
   single: {
@@ -123,6 +128,7 @@ const kernelValueMaps = {
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImageArray': WebGL2KernelValueDynamicHtmlImageArray,
+      'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
     static: {
       'Boolean': WebGL2KernelValueBoolean,
@@ -150,6 +156,7 @@ const kernelValueMaps = {
       'MemoryOptimizedNumberTexture': WebGL2KernelValueMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueHTMLImage,
       'HTMLImageArray': WebGL2KernelValueHtmlImageArray,
+      'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
   },
 };

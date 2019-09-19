@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../../dist/gpu.js');
 
 describe('issue #487 - pipeline dynamic arguments');
 

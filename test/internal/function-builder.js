@@ -1,5 +1,5 @@
 const { assert, test, module: describe, only } = require('qunit');
-const { FunctionBuilder, CPUFunctionNode, WebGL2FunctionNode, WebGLFunctionNode } = require('../../src');
+const { FunctionBuilder, CPUFunctionNode, WebGL2FunctionNode, WebGLFunctionNode } = require('../../dist/gpu.js');
 
 describe('internal: function builder');
 

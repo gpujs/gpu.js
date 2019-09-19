@@ -1,5 +1,5 @@
 const { assert, test, module: describe, only, skip } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../../dist/gpu.js');
 
 describe('internal: constructor features');
 

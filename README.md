@@ -174,8 +174,9 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
 * `precision` or `kernel.setPrecision('unsigned' | 'single')` **New in V2!**: 'single' or 'unsigned' - if 'single' output texture uses float32 for each colour channel rather than 8
 * `fixIntegerDivisionAccuracy` or `kernel.setFixIntegerDivisionAccuracy(boolean)` : boolean - some cards have accuracy issues dividing by factors of three and some other primes (most apple kit?). Default on for affected cards, disable if accuracy not required.
 * `functions` or `kernel.setFunctions(object)`: array, array of functions to be used inside kernel.  If undefined, inherits from `GPU` instance.
-* `nativeFunctions` or `kernel.setNativeFunctions(object)`: object, defined as: `{ functionName: functionSource }`
+* `nativeFunctions` or `kernel.setNativeFunctions(object)`: object, defined as: `{ name: string, source: string, settings: object }`.  This is generally set via using GPU.addNativeFunction()
   * VERY IMPORTANT! - Use this to add special native functions to your environment when you need specific functionality is needed.
+* `injectedNative` or `kernel.setInjectedNative(string)` **New in V2!**: string, defined as: `{ functionName: functionSource }`.  This is for injecting native code before translated kernel functions.
 * `subKernels` or `kernel.setSubKernels(array)`: array, generally inherited from `GPU` instance.
 * `immutable` or `kernel.setImmutable(boolean)`: boolean, default = `false`
 * `strictIntegers` or `kernel.setStrictIntegers(boolean)`: boolean, default = `false` - allows undefined argumentTypes and function return values to use strict integer declarations.
@@ -376,6 +377,7 @@ Debugging can be done in a variety of ways, and there are different levels of de
   ```
 * HTML Image
 * Array of HTML Images
+* Video Element **New in V2!**
 To define an argument, simply add it to the kernel function like regular JavaScript.
 
 ### Input Examples
@@ -407,7 +409,7 @@ const kernel = gpu.createKernel(function(image) {
     this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
 })
   .setGraphical(true)
-  .setOutput([100]);
+  .setOutput([100, 100]);
 
 const image = new document.createElement('img');
 image.src = 'my/image/source.png';
@@ -425,7 +427,7 @@ const kernel = gpu.createKernel(function(image) {
     this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
 })
   .setGraphical(true)
-  .setOutput([100]);
+  .setOutput([100, 100]);
 
 const image1 = new document.createElement('img');
 image1.src = 'my/image/source1.png';
@@ -445,6 +447,22 @@ function onload() {
     // Result: colorful image composed of many images
   }
 };
+```
+
+An HTML Video: **New in V2!**
+
+```js
+const kernel = gpu.createKernel(function(videoFrame) {
+    const pixel = videoFrame[this.thread.y][this.thread.x];
+    this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
+})
+  .setGraphical(true)
+  .setOutput([100, 100]);
+
+const video = new document.createElement('video');
+video.src = 'my/video/source.webm';
+kernel(image); //note, try and use requestAnimationFrame, and the video should be ready or playing
+// Result: video frame
 ```
 
 ## Graphical Output
@@ -633,6 +651,7 @@ Types that can be used with GPU.js are as follows:
 * 'Array3D(4)' **New in V2!**
 * 'HTMLImage'
 * 'HTMLImageArray'
+* 'HTMLVideo' **New in V2!**
 * 'Number'
 * 'Float'
 * 'Integer'

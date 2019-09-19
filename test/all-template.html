@@ -21,6 +21,7 @@
   };
   window.require = (module) => {
     if (module.match(/[.][.]\/src$/)) return { GPU, ...GPU };
+    if (module.match(/[.][.]\/dist$/)) return { GPU, ...GPU };
     if (module === 'sinon') return sinon;
     if (module === 'qunit') return QUnit;
     if (module.match(/[.][.]\/browser-test-utils$/)) return browserTestUtils;

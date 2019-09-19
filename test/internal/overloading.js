@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../../dist/gpu.js');
 
 describe('internal: overloading');
 // TODO: planned for after v2, overload generated functions so as to cut down on casting
