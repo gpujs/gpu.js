@@ -73,7 +73,9 @@ const main = {
   plugins: [
     json(),
     resolve(),
-    commonjs()
+    commonjs(),
+    cleanup(),
+    terser(terserOptions),
   ]
 }
 
@@ -88,7 +90,7 @@ const browser = {
     resolve(),
     commonjs(),
     production && cleanup(),
-    production ? [ terser(terserOptions) ] : browsersync(browsersyncOptions)
+    production ? terser(terserOptions) : browsersync(browsersyncOptions)
   ]
 }
 

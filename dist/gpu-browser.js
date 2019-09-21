@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0
- * @date Fri Sep 20 2019 21:34:42 GMT-0400 (Eastern Daylight Time)
+ * @date Fri Sep 20 2019 21:54:46 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -27,7 +27,6 @@ var GPU = (function () {
     }
     return newArguments;
   }
-
   function mock1D() {
     const args = setupArguments(arguments);
     const row = new Float32Array(this.output.x);
@@ -39,7 +38,6 @@ var GPU = (function () {
     }
     return row;
   }
-
   function mock2D() {
     const args = setupArguments(arguments);
     const matrix = new Array(this.output.y);
@@ -55,7 +53,6 @@ var GPU = (function () {
     }
     return matrix;
   }
-
   function mock2DGraphical() {
     const args = setupArguments(arguments);
     for (let y = 0; y < this.output.y; y++) {
@@ -67,7 +64,6 @@ var GPU = (function () {
       }
     }
   }
-
   function mock3D() {
     const args = setupArguments(arguments);
     const cube = new Array(this.output.z);
@@ -87,7 +83,6 @@ var GPU = (function () {
     }
     return cube;
   }
-
   function apiDecorate(kernel) {
     kernel.setOutput = (output) => {
       kernel.output = setupOutput(output);
@@ -125,34 +120,26 @@ var GPU = (function () {
     };
     kernel.getPixels = (flip) => {
       const {x, y} = kernel.output;
-      // cpu is not flipped by default
       return flip ? flipPixels(kernel._imageData.data, x, y) : kernel._imageData.data.slice(0);
     };
     kernel.color = function(r, g, b, a) {
       if (typeof a === 'undefined') {
         a = 1;
       }
-
       r = Math.floor(r * 255);
       g = Math.floor(g * 255);
       b = Math.floor(b * 255);
       a = Math.floor(a * 255);
-
       const width = kernel.output.x;
       const height = kernel.output.y;
-
       const x = kernel.thread.x;
       const y = height - kernel.thread.y - 1;
-
       const index = x + y * width;
-
       kernel._colorData[index * 4 + 0] = r;
       kernel._colorData[index * 4 + 1] = g;
       kernel._colorData[index * 4 + 2] = b;
       kernel._colorData[index * 4 + 3] = a;
     };
-
-    // these are added for api compatibility, but have no affect
     kernel.setWarnVarUsage = () => {
       return kernel;
     };
@@ -190,7 +177,6 @@ var GPU = (function () {
     }
     return kernel;
   }
-
   function setupGraphical(kernel) {
     const {x, y} = kernel.output;
     if (kernel.context && kernel.context.createImageData) {
@@ -203,7 +189,6 @@ var GPU = (function () {
       kernel._colorData = data;
     }
   }
-
   function setupOutput(output) {
     let result = null;
     if (output.length) {
@@ -222,7 +207,6 @@ var GPU = (function () {
     }
     return result;
   }
-
   function gpuMock(fn, settings = {}) {
     const output = settings.output ? setupOutput(settings.output) : null;
     function kernel() {
@@ -252,72 +236,37 @@ var GPU = (function () {
     };
     return apiDecorate(kernel);
   }
-
   function flipPixels(pixels, width, height) {
-    // https://stackoverflow.com/a/41973289/1324039
-    const halfHeight = height / 2 | 0; // the | 0 keeps the result an int
+    const halfHeight = height / 2 | 0;
     const bytesPerRow = width * 4;
-    // make a temp buffer to hold one row
     const temp = new Uint8ClampedArray(width * 4);
     const result = pixels.slice(0);
     for (let y = 0; y < halfHeight; ++y) {
       const topOffset = y * bytesPerRow;
       const bottomOffset = (height - y - 1) * bytesPerRow;
-
-      // make copy of a row on the top half
       temp.set(result.subarray(topOffset, topOffset + bytesPerRow));
-
-      // copy a row from the bottom half to the top
       result.copyWithin(topOffset, bottomOffset, bottomOffset + bytesPerRow);
-
-      // copy the copy of the top half row to the bottom half
       result.set(temp, bottomOffset);
     }
     return result;
   }
-
   var gpuMock_js = {
     gpuMock
   };
   var gpuMock_js_1 = gpuMock_js.gpuMock;
 
-  /**
-   * @fileoverview Branch of utils to prevent circular dependencies.
-   */
-
   const ARGUMENT_NAMES = /([^\s,]+)/g;
   const FUNCTION_NAME = /function ([^(]*)/;
   const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-
-  /**
-   * @descReturn TRUE, on a JS function
-   * @param {Function} funcObj - Object to validate if its a function
-   * @returns  {Boolean} TRUE if the object is a JS function
-   */
   function isFunction(funcObj) {
     return typeof(funcObj) === 'function';
-  }
-  /**
-   * @desc Return the function name from a JS function string
-   * @param {String} funcStr - String of JS function to validate
-   * @returns {String} Function name string (if found)
-   */
-  function getFunctionNameFromString(funcStr) {
+  }function getFunctionNameFromString(funcStr) {
     return FUNCTION_NAME.exec(funcStr)[1].trim();
-  }
-  /**
-   *
-   * @param {String|Function} source
-   * @param {IFunctionSettings} [settings]
-   * @returns {IFunction}
-   */
-  function functionToIFunction(source, settings) {
+  }function functionToIFunction(source, settings) {
     settings = settings || {};
     if (typeof source !== 'string' && typeof source !== 'function') throw new Error('source not a string or function');
     const sourceString = typeof source === 'string' ? source : source.toString();
-
     let argumentTypes = [];
-
     if (Array.isArray(settings.argumentTypes)) {
       argumentTypes = settings.argumentTypes;
     } else if (typeof settings.argumentTypes === 'object') {
@@ -326,64 +275,40 @@ var GPU = (function () {
     } else {
       argumentTypes = settings.argumentTypes || [];
     }
-
     return {
       source: sourceString,
       argumentTypes,
       returnType: settings.returnType || null,
     };
-  }
-  function warnDeprecated(type, oldName, newName) {
+  }function warnDeprecated(type, oldName, newName) {
     const msg = newName
       ? `It has been replaced with "${ newName }"`
       : 'It has been removed';
     console.warn(`You are using a deprecated ${ type } "${ oldName }". ${msg}. Fixing, but please upgrade as it will soon be removed.`);
-  }
-  /**
-   * @desc Return TRUE, on a valid JS function string
-   * Note: This does just a VERY simply sanity check. And may give false positives.
-   *
-   * @param {String} fn - String of JS function to validate
-   * @returns {Boolean} TRUE if the string passes basic validation
-   */
-  function isFunctionString(fn) {
+  }function isFunctionString(fn) {
     if (typeof fn === 'string') {
       return (fn
         .slice(0, 'function'.length)
         .toLowerCase() === 'function');
     }
     return false;
-  }
-  /**
-   * @desc Return list of argument names extracted from a javascript function
-   * @param {String} fn - String of JS function to validate
-   * @returns {String[]}  Array representing all the parameter names
-   */
-  function getArgumentNamesFromString(fn) {
+  }function getArgumentNamesFromString(fn) {
     const fnStr = fn.replace(STRIP_COMMENTS, '');
     let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
     if (result === null) {
       result = [];
     }
     return result;
-  }
-  /**
-   * @desc Checks if is an array or Array-like object
-   * @param {Object} array - The argument object to check if is array
-   * @returns {Boolean}  true if is array or Array-like object
-   */
-  function isArray(array) {
+  }function isArray(array) {
     return !isNaN(array.length);
-  }
-  function erectMemoryOptimized2DFloat(array, width, height) {
+  }function erectMemoryOptimized2DFloat(array, width, height) {
     const yResults = new Array(height);
     for (let y = 0; y < height; y++) {
       const offset = y * width;
       yResults[y] = array.subarray(offset, offset + width);
     }
     return yResults;
-  }
-  function erectMemoryOptimized3DFloat(array, width, height, depth) {
+  }function erectMemoryOptimized3DFloat(array, width, height, depth) {
     const zResults = new Array(depth);
     for (let z = 0; z < depth; z++) {
       const yResults = new Array(height);
@@ -394,8 +319,7 @@ var GPU = (function () {
       zResults[z] = yResults;
     }
     return zResults;
-  }
-  function getAstString(source, ast) {
+  }function getAstString(source, ast) {
     const lines = Array.isArray(source) ? source : source.split(/\r?\n/g);
     const start = ast.loc.start;
     const end = ast.loc.end;
@@ -440,7 +364,6 @@ var GPU = (function () {
           this.size = new Int32Array([size.x]);
         }
       }
-
       const [w, h, d] = this.size;
       if (d) {
         if (this.value.length !== (w * h * d)) {
@@ -455,9 +378,7 @@ var GPU = (function () {
           throw new Error(`Input size ${this.value.length} does not match ${w}`);
         }
       }
-
     }
-
     toArray() {
       const [ w, h, d ] = this.size;
       if (d) {
@@ -468,12 +389,9 @@ var GPU = (function () {
         return this.value;
       }
     }
-  }
-  function input(value, size) {
+  }function input(value, size) {
     return new Input(value, size);
   }
-
-  // Reserved word lists for various dialects of the language
 
   var reservedWords = {
     3: "abstract boolean byte char class double enum export extends final float goto implements import int interface long native package private protected public short static super synchronized throws transient volatile",
@@ -482,49 +400,19 @@ var GPU = (function () {
     strict: "implements interface let package private protected public static yield",
     strictBind: "eval arguments"
   };
-
-  // And the keywords
-
   var ecma5AndLessKeywords = "break case catch continue debugger default do else finally for function if return switch throw try var while with null true false instanceof typeof void delete new in this";
-
   var keywords = {
     5: ecma5AndLessKeywords,
     6: ecma5AndLessKeywords + " const class extends export import super"
   };
-
   var keywordRelationalOperator = /^in(stanceof)?$/;
-
-  // ## Character categories
-
-  // Big ugly regular expressions that match characters in the
-  // whitespace, identifier, and identifier-start categories. These
-  // are only applied when a character is found to actually have a
-  // code point above 128.
-  // Generated by `bin/generate-identifier-regex.js`.
-
   var nonASCIIidentifierStartChars = "\xaa\xb5\xba\xc0-\xd6\xd8-\xf6\xf8-\u02c1\u02c6-\u02d1\u02e0-\u02e4\u02ec\u02ee\u0370-\u0374\u0376\u0377\u037a-\u037d\u037f\u0386\u0388-\u038a\u038c\u038e-\u03a1\u03a3-\u03f5\u03f7-\u0481\u048a-\u052f\u0531-\u0556\u0559\u0560-\u0588\u05d0-\u05ea\u05ef-\u05f2\u0620-\u064a\u066e\u066f\u0671-\u06d3\u06d5\u06e5\u06e6\u06ee\u06ef\u06fa-\u06fc\u06ff\u0710\u0712-\u072f\u074d-\u07a5\u07b1\u07ca-\u07ea\u07f4\u07f5\u07fa\u0800-\u0815\u081a\u0824\u0828\u0840-\u0858\u0860-\u086a\u08a0-\u08b4\u08b6-\u08bd\u0904-\u0939\u093d\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098c\u098f\u0990\u0993-\u09a8\u09aa-\u09b0\u09b2\u09b6-\u09b9\u09bd\u09ce\u09dc\u09dd\u09df-\u09e1\u09f0\u09f1\u09fc\u0a05-\u0a0a\u0a0f\u0a10\u0a13-\u0a28\u0a2a-\u0a30\u0a32\u0a33\u0a35\u0a36\u0a38\u0a39\u0a59-\u0a5c\u0a5e\u0a72-\u0a74\u0a85-\u0a8d\u0a8f-\u0a91\u0a93-\u0aa8\u0aaa-\u0ab0\u0ab2\u0ab3\u0ab5-\u0ab9\u0abd\u0ad0\u0ae0\u0ae1\u0af9\u0b05-\u0b0c\u0b0f\u0b10\u0b13-\u0b28\u0b2a-\u0b30\u0b32\u0b33\u0b35-\u0b39\u0b3d\u0b5c\u0b5d\u0b5f-\u0b61\u0b71\u0b83\u0b85-\u0b8a\u0b8e-\u0b90\u0b92-\u0b95\u0b99\u0b9a\u0b9c\u0b9e\u0b9f\u0ba3\u0ba4\u0ba8-\u0baa\u0bae-\u0bb9\u0bd0\u0c05-\u0c0c\u0c0e-\u0c10\u0c12-\u0c28\u0c2a-\u0c39\u0c3d\u0c58-\u0c5a\u0c60\u0c61\u0c80\u0c85-\u0c8c\u0c8e-\u0c90\u0c92-\u0ca8\u0caa-\u0cb3\u0cb5-\u0cb9\u0cbd\u0cde\u0ce0\u0ce1\u0cf1\u0cf2\u0d05-\u0d0c\u0d0e-\u0d10\u0d12-\u0d3a\u0d3d\u0d4e\u0d54-\u0d56\u0d5f-\u0d61\u0d7a-\u0d7f\u0d85-\u0d96\u0d9a-\u0db1\u0db3-\u0dbb\u0dbd\u0dc0-\u0dc6\u0e01-\u0e30\u0e32\u0e33\u0e40-\u0e46\u0e81\u0e82\u0e84\u0e87\u0e88\u0e8a\u0e8d\u0e94-\u0e97\u0e99-\u0e9f\u0ea1-\u0ea3\u0ea5\u0ea7\u0eaa\u0eab\u0ead-\u0eb0\u0eb2\u0eb3\u0ebd\u0ec0-\u0ec4\u0ec6\u0edc-\u0edf\u0f00\u0f40-\u0f47\u0f49-\u0f6c\u0f88-\u0f8c\u1000-\u102a\u103f\u1050-\u1055\u105a-\u105d\u1061\u1065\u1066\u106e-\u1070\u1075-\u1081\u108e\u10a0-\u10c5\u10c7\u10cd\u10d0-\u10fa\u10fc-\u1248\u124a-\u124d\u1250-\u1256\u1258\u125a-\u125d\u1260-\u1288\u128a-\u128d\u1290-\u12b0\u12b2-\u12b5\u12b8-\u12be\u12c0\u12c2-\u12c5\u12c8-\u12d6\u12d8-\u1310\u1312-\u1315\u1318-\u135a\u1380-\u138f\u13a0-\u13f5\u13f8-\u13fd\u1401-\u166c\u166f-\u167f\u1681-\u169a\u16a0-\u16ea\u16ee-\u16f8\u1700-\u170c\u170e-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176c\u176e-\u1770\u1780-\u17b3\u17d7\u17dc\u1820-\u1878\u1880-\u18a8\u18aa\u18b0-\u18f5\u1900-\u191e\u1950-\u196d\u1970-\u1974\u1980-\u19ab\u19b0-\u19c9\u1a00-\u1a16\u1a20-\u1a54\u1aa7\u1b05-\u1b33\u1b45-\u1b4b\u1b83-\u1ba0\u1bae\u1baf\u1bba-\u1be5\u1c00-\u1c23\u1c4d-\u1c4f\u1c5a-\u1c7d\u1c80-\u1c88\u1c90-\u1cba\u1cbd-\u1cbf\u1ce9-\u1cec\u1cee-\u1cf1\u1cf5\u1cf6\u1d00-\u1dbf\u1e00-\u1f15\u1f18-\u1f1d\u1f20-\u1f45\u1f48-\u1f4d\u1f50-\u1f57\u1f59\u1f5b\u1f5d\u1f5f-\u1f7d\u1f80-\u1fb4\u1fb6-\u1fbc\u1fbe\u1fc2-\u1fc4\u1fc6-\u1fcc\u1fd0-\u1fd3\u1fd6-\u1fdb\u1fe0-\u1fec\u1ff2-\u1ff4\u1ff6-\u1ffc\u2071\u207f\u2090-\u209c\u2102\u2107\u210a-\u2113\u2115\u2118-\u211d\u2124\u2126\u2128\u212a-\u2139\u213c-\u213f\u2145-\u2149\u214e\u2160-\u2188\u2c00-\u2c2e\u2c30-\u2c5e\u2c60-\u2ce4\u2ceb-\u2cee\u2cf2\u2cf3\u2d00-\u2d25\u2d27\u2d2d\u2d30-\u2d67\u2d6f\u2d80-\u2d96\u2da0-\u2da6\u2da8-\u2dae\u2db0-\u2db6\u2db8-\u2dbe\u2dc0-\u2dc6\u2dc8-\u2dce\u2dd0-\u2dd6\u2dd8-\u2dde\u3005-\u3007\u3021-\u3029\u3031-\u3035\u3038-\u303c\u3041-\u3096\u309b-\u309f\u30a1-\u30fa\u30fc-\u30ff\u3105-\u312f\u3131-\u318e\u31a0-\u31ba\u31f0-\u31ff\u3400-\u4db5\u4e00-\u9fef\ua000-\ua48c\ua4d0-\ua4fd\ua500-\ua60c\ua610-\ua61f\ua62a\ua62b\ua640-\ua66e\ua67f-\ua69d\ua6a0-\ua6ef\ua717-\ua71f\ua722-\ua788\ua78b-\ua7b9\ua7f7-\ua801\ua803-\ua805\ua807-\ua80a\ua80c-\ua822\ua840-\ua873\ua882-\ua8b3\ua8f2-\ua8f7\ua8fb\ua8fd\ua8fe\ua90a-\ua925\ua930-\ua946\ua960-\ua97c\ua984-\ua9b2\ua9cf\ua9e0-\ua9e4\ua9e6-\ua9ef\ua9fa-\ua9fe\uaa00-\uaa28\uaa40-\uaa42\uaa44-\uaa4b\uaa60-\uaa76\uaa7a\uaa7e-\uaaaf\uaab1\uaab5\uaab6\uaab9-\uaabd\uaac0\uaac2\uaadb-\uaadd\uaae0-\uaaea\uaaf2-\uaaf4\uab01-\uab06\uab09-\uab0e\uab11-\uab16\uab20-\uab26\uab28-\uab2e\uab30-\uab5a\uab5c-\uab65\uab70-\uabe2\uac00-\ud7a3\ud7b0-\ud7c6\ud7cb-\ud7fb\uf900-\ufa6d\ufa70-\ufad9\ufb00-\ufb06\ufb13-\ufb17\ufb1d\ufb1f-\ufb28\ufb2a-\ufb36\ufb38-\ufb3c\ufb3e\ufb40\ufb41\ufb43\ufb44\ufb46-\ufbb1\ufbd3-\ufd3d\ufd50-\ufd8f\ufd92-\ufdc7\ufdf0-\ufdfb\ufe70-\ufe74\ufe76-\ufefc\uff21-\uff3a\uff41-\uff5a\uff66-\uffbe\uffc2-\uffc7\uffca-\uffcf\uffd2-\uffd7\uffda-\uffdc";
   var nonASCIIidentifierChars = "\u200c\u200d\xb7\u0300-\u036f\u0387\u0483-\u0487\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7\u0610-\u061a\u064b-\u0669\u0670\u06d6-\u06dc\u06df-\u06e4\u06e7\u06e8\u06ea-\u06ed\u06f0-\u06f9\u0711\u0730-\u074a\u07a6-\u07b0\u07c0-\u07c9\u07eb-\u07f3\u07fd\u0816-\u0819\u081b-\u0823\u0825-\u0827\u0829-\u082d\u0859-\u085b\u08d3-\u08e1\u08e3-\u0903\u093a-\u093c\u093e-\u094f\u0951-\u0957\u0962\u0963\u0966-\u096f\u0981-\u0983\u09bc\u09be-\u09c4\u09c7\u09c8\u09cb-\u09cd\u09d7\u09e2\u09e3\u09e6-\u09ef\u09fe\u0a01-\u0a03\u0a3c\u0a3e-\u0a42\u0a47\u0a48\u0a4b-\u0a4d\u0a51\u0a66-\u0a71\u0a75\u0a81-\u0a83\u0abc\u0abe-\u0ac5\u0ac7-\u0ac9\u0acb-\u0acd\u0ae2\u0ae3\u0ae6-\u0aef\u0afa-\u0aff\u0b01-\u0b03\u0b3c\u0b3e-\u0b44\u0b47\u0b48\u0b4b-\u0b4d\u0b56\u0b57\u0b62\u0b63\u0b66-\u0b6f\u0b82\u0bbe-\u0bc2\u0bc6-\u0bc8\u0bca-\u0bcd\u0bd7\u0be6-\u0bef\u0c00-\u0c04\u0c3e-\u0c44\u0c46-\u0c48\u0c4a-\u0c4d\u0c55\u0c56\u0c62\u0c63\u0c66-\u0c6f\u0c81-\u0c83\u0cbc\u0cbe-\u0cc4\u0cc6-\u0cc8\u0cca-\u0ccd\u0cd5\u0cd6\u0ce2\u0ce3\u0ce6-\u0cef\u0d00-\u0d03\u0d3b\u0d3c\u0d3e-\u0d44\u0d46-\u0d48\u0d4a-\u0d4d\u0d57\u0d62\u0d63\u0d66-\u0d6f\u0d82\u0d83\u0dca\u0dcf-\u0dd4\u0dd6\u0dd8-\u0ddf\u0de6-\u0def\u0df2\u0df3\u0e31\u0e34-\u0e3a\u0e47-\u0e4e\u0e50-\u0e59\u0eb1\u0eb4-\u0eb9\u0ebb\u0ebc\u0ec8-\u0ecd\u0ed0-\u0ed9\u0f18\u0f19\u0f20-\u0f29\u0f35\u0f37\u0f39\u0f3e\u0f3f\u0f71-\u0f84\u0f86\u0f87\u0f8d-\u0f97\u0f99-\u0fbc\u0fc6\u102b-\u103e\u1040-\u1049\u1056-\u1059\u105e-\u1060\u1062-\u1064\u1067-\u106d\u1071-\u1074\u1082-\u108d\u108f-\u109d\u135d-\u135f\u1369-\u1371\u1712-\u1714\u1732-\u1734\u1752\u1753\u1772\u1773\u17b4-\u17d3\u17dd\u17e0-\u17e9\u180b-\u180d\u1810-\u1819\u18a9\u1920-\u192b\u1930-\u193b\u1946-\u194f\u19d0-\u19da\u1a17-\u1a1b\u1a55-\u1a5e\u1a60-\u1a7c\u1a7f-\u1a89\u1a90-\u1a99\u1ab0-\u1abd\u1b00-\u1b04\u1b34-\u1b44\u1b50-\u1b59\u1b6b-\u1b73\u1b80-\u1b82\u1ba1-\u1bad\u1bb0-\u1bb9\u1be6-\u1bf3\u1c24-\u1c37\u1c40-\u1c49\u1c50-\u1c59\u1cd0-\u1cd2\u1cd4-\u1ce8\u1ced\u1cf2-\u1cf4\u1cf7-\u1cf9\u1dc0-\u1df9\u1dfb-\u1dff\u203f\u2040\u2054\u20d0-\u20dc\u20e1\u20e5-\u20f0\u2cef-\u2cf1\u2d7f\u2de0-\u2dff\u302a-\u302f\u3099\u309a\ua620-\ua629\ua66f\ua674-\ua67d\ua69e\ua69f\ua6f0\ua6f1\ua802\ua806\ua80b\ua823-\ua827\ua880\ua881\ua8b4-\ua8c5\ua8d0-\ua8d9\ua8e0-\ua8f1\ua8ff-\ua909\ua926-\ua92d\ua947-\ua953\ua980-\ua983\ua9b3-\ua9c0\ua9d0-\ua9d9\ua9e5\ua9f0-\ua9f9\uaa29-\uaa36\uaa43\uaa4c\uaa4d\uaa50-\uaa59\uaa7b-\uaa7d\uaab0\uaab2-\uaab4\uaab7\uaab8\uaabe\uaabf\uaac1\uaaeb-\uaaef\uaaf5\uaaf6\uabe3-\uabea\uabec\uabed\uabf0-\uabf9\ufb1e\ufe00-\ufe0f\ufe20-\ufe2f\ufe33\ufe34\ufe4d-\ufe4f\uff10-\uff19\uff3f";
-
   var nonASCIIidentifierStart = new RegExp("[" + nonASCIIidentifierStartChars + "]");
   var nonASCIIidentifier = new RegExp("[" + nonASCIIidentifierStartChars + nonASCIIidentifierChars + "]");
-
   nonASCIIidentifierStartChars = nonASCIIidentifierChars = null;
-
-  // These are a run-length and offset encoded representation of the
-  // >0xffff code points that are a valid part of identifiers. The
-  // offset starts at 0x10000, and each pair of numbers represents an
-  // offset to the next range, and then a size of the range. They were
-  // generated by bin/generate-identifier-regex.js
-
-  // eslint-disable-next-line comma-spacing
   var astralIdentifierStartCodes = [0,11,2,25,2,18,2,1,2,14,3,13,35,122,70,52,268,28,4,48,48,31,14,29,6,37,11,29,3,35,5,7,2,4,43,157,19,35,5,35,5,39,9,51,157,310,10,21,11,7,153,5,3,0,2,43,2,1,4,0,3,22,11,22,10,30,66,18,2,1,11,21,11,25,71,55,7,1,65,0,16,3,2,2,2,28,43,28,4,28,36,7,2,27,28,53,11,21,11,18,14,17,111,72,56,50,14,50,14,35,477,28,11,0,9,21,190,52,76,44,33,24,27,35,30,0,12,34,4,0,13,47,15,3,22,0,2,0,36,17,2,24,85,6,2,0,2,3,2,14,2,9,8,46,39,7,3,1,3,21,2,6,2,1,2,4,4,0,19,0,13,4,159,52,19,3,54,47,21,1,2,0,185,46,42,3,37,47,21,0,60,42,86,26,230,43,117,63,32,0,257,0,11,39,8,0,22,0,12,39,3,3,20,0,35,56,264,8,2,36,18,0,50,29,113,6,2,1,2,37,22,0,26,5,2,1,2,31,15,0,328,18,270,921,103,110,18,195,2749,1070,4050,582,8634,568,8,30,114,29,19,47,17,3,32,20,6,18,689,63,129,68,12,0,67,12,65,1,31,6129,15,754,9486,286,82,395,2309,106,6,12,4,8,8,9,5991,84,2,70,2,1,3,0,3,1,3,3,2,11,2,0,2,6,2,64,2,3,3,7,2,6,2,27,2,3,2,4,2,0,4,6,2,339,3,24,2,24,2,30,2,24,2,30,2,24,2,30,2,24,2,30,2,24,2,7,4149,196,60,67,1213,3,2,26,2,1,2,0,3,0,2,9,2,3,2,0,2,0,7,0,5,0,2,0,2,0,2,2,2,1,2,0,3,0,2,0,2,0,2,0,2,0,2,1,2,0,3,3,2,6,2,3,2,3,2,0,2,9,2,16,6,2,2,4,2,16,4421,42710,42,4148,12,221,3,5761,15,7472,3104,541];
-
-  // eslint-disable-next-line comma-spacing
   var astralIdentifierCodes = [509,0,227,0,150,4,294,9,1368,2,2,1,6,3,41,2,5,0,166,1,574,3,9,9,525,10,176,2,54,14,32,9,16,3,46,10,54,9,7,2,37,13,2,9,6,1,45,0,13,2,49,13,9,3,4,9,83,11,7,0,161,11,6,9,7,3,56,1,2,6,3,1,3,2,10,0,11,1,3,6,4,4,193,17,10,9,5,0,82,19,13,9,214,6,3,8,28,1,83,16,16,9,82,12,9,9,84,14,5,9,243,14,166,9,280,9,41,6,2,3,9,0,10,10,47,15,406,7,2,7,17,9,57,21,2,13,123,5,4,0,2,1,2,6,2,0,9,9,49,4,2,1,2,4,9,9,330,3,19306,9,135,4,60,6,26,9,1016,45,17,3,19723,1,5319,4,4,5,9,7,3,6,31,3,149,2,1418,49,513,54,5,49,9,0,15,0,23,4,2,14,1361,6,2,16,3,6,2,1,2,4,2214,6,110,6,6,9,792487,239];
-
-  // This has a complexity linear to the value of the code. The
-  // assumption is that looking up astral identifier characters is
-  // rare.
   function isInAstralSet(code, set) {
     var pos = 0x10000;
     for (var i = 0; i < set.length; i += 2) {
@@ -534,9 +422,6 @@ var GPU = (function () {
       if (pos >= code) { return true }
     }
   }
-
-  // Test whether a given character code starts an identifier.
-
   function isIdentifierStart(code, astral) {
     if (code < 65) { return code === 36 }
     if (code < 91) { return true }
@@ -546,9 +431,6 @@ var GPU = (function () {
     if (astral === false) { return false }
     return isInAstralSet(code, astralIdentifierStartCodes)
   }
-
-  // Test whether a given character is part of an identifier.
-
   function isIdentifierChar(code, astral) {
     if (code < 48) { return code === 36 }
     if (code < 58) { return true }
@@ -560,33 +442,8 @@ var GPU = (function () {
     if (astral === false) { return false }
     return isInAstralSet(code, astralIdentifierStartCodes) || isInAstralSet(code, astralIdentifierCodes)
   }
-
-  // ## Token types
-
-  // The assignment of fine-grained, information-carrying type objects
-  // allows the tokenizer to store the information it has about a
-  // token in a way that is very cheap for the parser to look up.
-
-  // All token type variables start with an underscore, to make them
-  // easy to recognize.
-
-  // The `beforeExpr` property is used to disambiguate between regular
-  // expressions and divisions. It is set on all token types that can
-  // be followed by an expression (thus, a slash after them would be a
-  // regular expression).
-  //
-  // The `startsExpr` property is used to check if the token ends a
-  // `yield` expression. It is set on all token types that either can
-  // directly start an expression (like a quotation mark) or can
-  // continue an expression (like the body of a string).
-  //
-  // `isLoop` marks a keyword as starting a loop, which is important
-  // to know when parsing a label, in order to allow or disallow
-  // continue jumps to that label.
-
   var TokenType = function TokenType(label, conf) {
     if ( conf === void 0 ) conf = {};
-
     this.label = label;
     this.keyword = conf.keyword;
     this.beforeExpr = !!conf.beforeExpr;
@@ -598,33 +455,23 @@ var GPU = (function () {
     this.binop = conf.binop || null;
     this.updateContext = null;
   };
-
   function binop(name, prec) {
     return new TokenType(name, {beforeExpr: true, binop: prec})
   }
   var beforeExpr = {beforeExpr: true};
   var startsExpr = {startsExpr: true};
-
-  // Map keyword names to token types.
-
   var keywords$1 = {};
-
-  // Succinct definitions of keyword token types
   function kw(name, options) {
     if ( options === void 0 ) options = {};
-
     options.keyword = name;
     return keywords$1[name] = new TokenType(name, options)
   }
-
   var types = {
     num: new TokenType("num", startsExpr),
     regexp: new TokenType("regexp", startsExpr),
     string: new TokenType("string", startsExpr),
     name: new TokenType("name", startsExpr),
     eof: new TokenType("eof"),
-
-    // Punctuation token types.
     bracketL: new TokenType("[", {beforeExpr: true, startsExpr: true}),
     bracketR: new TokenType("]"),
     braceL: new TokenType("{", {beforeExpr: true, startsExpr: true}),
@@ -642,21 +489,6 @@ var GPU = (function () {
     ellipsis: new TokenType("...", beforeExpr),
     backQuote: new TokenType("`", startsExpr),
     dollarBraceL: new TokenType("${", {beforeExpr: true, startsExpr: true}),
-
-    // Operators. These carry several kinds of properties to help the
-    // parser use them properly (the presence of these properties is
-    // what categorizes them as operators).
-    //
-    // `binop`, when present, specifies that this operator is a binary
-    // operator, and will refer to its precedence.
-    //
-    // `prefix` and `postfix` mark the operator as a prefix or postfix
-    // unary operator.
-    //
-    // `isAssign` marks all of `=`, `+=`, `-=` etcetera, which act as
-    // binary operators with a very low precedence, that should result
-    // in AssignmentExpression nodes.
-
     eq: new TokenType("=", {beforeExpr: true, isAssign: true}),
     assign: new TokenType("_=", {beforeExpr: true, isAssign: true}),
     incDec: new TokenType("++/--", {prefix: true, postfix: true, startsExpr: true}),
@@ -674,8 +506,6 @@ var GPU = (function () {
     star: binop("*", 10),
     slash: binop("/", 10),
     starstar: new TokenType("**", {beforeExpr: true}),
-
-    // Keyword token types.
     _break: kw("break"),
     _case: kw("case", beforeExpr),
     _catch: kw("catch"),
@@ -712,59 +542,34 @@ var GPU = (function () {
     _void: kw("void", {beforeExpr: true, prefix: true, startsExpr: true}),
     _delete: kw("delete", {beforeExpr: true, prefix: true, startsExpr: true})
   };
-
-  // Matches a whole line break (where CRLF is considered a single
-  // line break). Used to count lines.
-
   var lineBreak = /\r\n?|\n|\u2028|\u2029/;
   var lineBreakG = new RegExp(lineBreak.source, "g");
-
   function isNewLine(code, ecma2019String) {
     return code === 10 || code === 13 || (!ecma2019String && (code === 0x2028 || code === 0x2029))
   }
-
   var nonASCIIwhitespace = /[\u1680\u180e\u2000-\u200a\u202f\u205f\u3000\ufeff]/;
-
   var skipWhiteSpace = /(?:\s|\/\/.*|\/\*[^]*?\*\/)*/g;
-
   var ref = Object.prototype;
   var hasOwnProperty = ref.hasOwnProperty;
   var toString = ref.toString;
-
-  // Checks if an object has a property.
-
   function has(obj, propName) {
     return hasOwnProperty.call(obj, propName)
   }
-
   var isArray$1 = Array.isArray || (function (obj) { return (
     toString.call(obj) === "[object Array]"
   ); });
-
-  // These are used when `options.locations` is on, for the
-  // `startLoc` and `endLoc` properties.
-
   var Position = function Position(line, col) {
     this.line = line;
     this.column = col;
   };
-
   Position.prototype.offset = function offset (n) {
     return new Position(this.line, this.column + n)
   };
-
   var SourceLocation = function SourceLocation(p, start, end) {
     this.start = start;
     this.end = end;
     if (p.sourceFile !== null) { this.source = p.sourceFile; }
   };
-
-  // The `getLineInfo` function is mostly useful when the
-  // `locations` option is off (for performance reasons) and you
-  // want to find the line/column position for a given character
-  // offset. `input` should be the code string that the offset refers
-  // into.
-
   function getLineInfo(input, offset) {
     for (var line = 1, cur = 0;;) {
       lineBreakG.lastIndex = cur;
@@ -777,119 +582,42 @@ var GPU = (function () {
       }
     }
   }
-
-  // A second optional argument can be given to further configure
-  // the parser process. These options are recognized:
-
   var defaultOptions = {
-    // `ecmaVersion` indicates the ECMAScript version to parse. Must
-    // be either 3, 5, 6 (2015), 7 (2016), or 8 (2017). This influences support
-    // for strict mode, the set of reserved words, and support for
-    // new syntax features. The default is 7.
     ecmaVersion: 7,
-    // `sourceType` indicates the mode the code should be parsed in.
-    // Can be either `"script"` or `"module"`. This influences global
-    // strict mode and parsing of `import` and `export` declarations.
     sourceType: "script",
-    // `onInsertedSemicolon` can be a callback that will be called
-    // when a semicolon is automatically inserted. It will be passed
-    // th position of the comma as an offset, and if `locations` is
-    // enabled, it is given the location as a `{line, column}` object
-    // as second argument.
     onInsertedSemicolon: null,
-    // `onTrailingComma` is similar to `onInsertedSemicolon`, but for
-    // trailing commas.
     onTrailingComma: null,
-    // By default, reserved words are only enforced if ecmaVersion >= 5.
-    // Set `allowReserved` to a boolean value to explicitly turn this on
-    // an off. When this option has the value "never", reserved words
-    // and keywords can also not be used as property names.
     allowReserved: null,
-    // When enabled, a return at the top level is not considered an
-    // error.
     allowReturnOutsideFunction: false,
-    // When enabled, import/export statements are not constrained to
-    // appearing at the top of the program.
     allowImportExportEverywhere: false,
-    // When enabled, await identifiers are allowed to appear at the top-level scope,
-    // but they are still not allowed in non-async functions.
     allowAwaitOutsideFunction: false,
-    // When enabled, hashbang directive in the beginning of file
-    // is allowed and treated as a line comment.
     allowHashBang: false,
-    // When `locations` is on, `loc` properties holding objects with
-    // `start` and `end` properties in `{line, column}` form (with
-    // line being 1-based and column 0-based) will be attached to the
-    // nodes.
     locations: false,
-    // A function can be passed as `onToken` option, which will
-    // cause Acorn to call that function with object in the same
-    // format as tokens returned from `tokenizer().getToken()`. Note
-    // that you are not allowed to call the parser from the
-    // callback—that will corrupt its internal state.
     onToken: null,
-    // A function can be passed as `onComment` option, which will
-    // cause Acorn to call that function with `(block, text, start,
-    // end)` parameters whenever a comment is skipped. `block` is a
-    // boolean indicating whether this is a block (`/* */`) comment,
-    // `text` is the content of the comment, and `start` and `end` are
-    // character offsets that denote the start and end of the comment.
-    // When the `locations` option is on, two more parameters are
-    // passed, the full `{line, column}` locations of the start and
-    // end of the comments. Note that you are not allowed to call the
-    // parser from the callback—that will corrupt its internal state.
     onComment: null,
-    // Nodes have their start and end characters offsets recorded in
-    // `start` and `end` properties (directly on the node, rather than
-    // the `loc` object, which holds line/column data. To also add a
-    // [semi-standardized][range] `range` property holding a `[start,
-    // end]` array with the same numbers, set the `ranges` option to
-    // `true`.
-    //
-    // [range]: https://bugzilla.mozilla.org/show_bug.cgi?id=745678
     ranges: false,
-    // It is possible to parse multiple files into a single AST by
-    // passing the tree produced by parsing the first file as
-    // `program` option in subsequent parses. This will add the
-    // toplevel forms of the parsed file to the `Program` (top) node
-    // of an existing parse tree.
     program: null,
-    // When `locations` is on, you can pass this to record the source
-    // file in every node's `loc` object.
     sourceFile: null,
-    // This value, if given, is stored in every node, whether
-    // `locations` is on or off.
     directSourceFile: null,
-    // When enabled, parenthesized expressions are represented by
-    // (non-standard) ParenthesizedExpression nodes
     preserveParens: false,
     plugins: {}
   };
-
-  // Interpret and default an options object
-
   function getOptions(opts) {
     var options = {};
-
     for (var opt in defaultOptions)
       { options[opt] = opts && has(opts, opt) ? opts[opt] : defaultOptions[opt]; }
-
     if (options.ecmaVersion >= 2015)
       { options.ecmaVersion -= 2009; }
-
     if (options.allowReserved == null)
       { options.allowReserved = options.ecmaVersion < 5; }
-
     if (isArray$1(options.onToken)) {
       var tokens = options.onToken;
       options.onToken = function (token) { return tokens.push(token); };
     }
     if (isArray$1(options.onComment))
       { options.onComment = pushComment(options, options.onComment); }
-
     return options
   }
-
   function pushComment(options, array) {
     return function(block, text, start, end, startLoc, endLoc) {
       var comment = {
@@ -905,14 +633,10 @@ var GPU = (function () {
       array.push(comment);
     }
   }
-
-  // Registered plugins
   var plugins = {};
-
   function keywordRegexp(words) {
     return new RegExp("^(?:" + words.replace(/ /g, "|") + ")$")
   }
-
   var Parser = function Parser(options, input, startPos) {
     this.options = options = getOptions(options);
     this.sourceFile = options.sourceFile;
@@ -928,18 +652,8 @@ var GPU = (function () {
     this.reservedWordsStrict = keywordRegexp(reservedStrict);
     this.reservedWordsStrictBind = keywordRegexp(reservedStrict + " " + reservedWords.strictBind);
     this.input = String(input);
-
-    // Used to signal to callers of `readWord1` whether the word
-    // contained any escape sequences. This is needed because words with
-    // escape sequences must not be interpreted as keywords.
     this.containsEsc = false;
-
-    // Load plugins
     this.loadPlugins(options.plugins);
-
-    // Set up token state
-
-    // The current position of the tokenizer in the input.
     if (startPos) {
       this.pos = startPos;
       this.lineStart = this.input.lastIndexOf("\n", startPos - 1) + 1;
@@ -948,86 +662,48 @@ var GPU = (function () {
       this.pos = this.lineStart = 0;
       this.curLine = 1;
     }
-
-    // Properties of the current token:
-    // Its type
     this.type = types.eof;
-    // For tokens that include more information than their type, the value
     this.value = null;
-    // Its start and end offset
     this.start = this.end = this.pos;
-    // And, if locations are used, the {line, column} object
-    // corresponding to those offsets
     this.startLoc = this.endLoc = this.curPosition();
-
-    // Position information for the previous token
     this.lastTokEndLoc = this.lastTokStartLoc = null;
     this.lastTokStart = this.lastTokEnd = this.pos;
-
-    // The context stack is used to superficially track syntactic
-    // context to predict whether a regular expression is allowed in a
-    // given position.
     this.context = this.initialContext();
     this.exprAllowed = true;
-
-    // Figure out if it's a module code.
     this.inModule = options.sourceType === "module";
     this.strict = this.inModule || this.strictDirective(this.pos);
-
-    // Used to signify the start of a potential arrow function
     this.potentialArrowAt = -1;
-
-    // Flags to track whether we are in a function, a generator, an async function.
     this.inFunction = this.inGenerator = this.inAsync = false;
-    // Positions to delayed-check that yield/await does not exist in default parameters.
     this.yieldPos = this.awaitPos = 0;
-    // Labels in scope.
     this.labels = [];
-
-    // If enabled, skip leading hashbang line.
     if (this.pos === 0 && options.allowHashBang && this.input.slice(0, 2) === "#!")
       { this.skipLineComment(2); }
-
-    // Scope tracking for duplicate variable names (see scope.js)
     this.scopeStack = [];
     this.enterFunctionScope();
-
-    // For RegExp validation
     this.regexpState = null;
   };
-
-  // DEPRECATED Kept for backwards compatibility until 3.0 in case a plugin uses them
   Parser.prototype.isKeyword = function isKeyword (word) { return this.keywords.test(word) };
   Parser.prototype.isReservedWord = function isReservedWord (word) { return this.reservedWords.test(word) };
-
   Parser.prototype.extend = function extend (name, f) {
     this[name] = f(this[name]);
   };
-
   Parser.prototype.loadPlugins = function loadPlugins (pluginConfigs) {
       var this$1 = this;
-
     for (var name in pluginConfigs) {
       var plugin = plugins[name];
       if (!plugin) { throw new Error("Plugin '" + name + "' not found") }
       plugin(this$1, pluginConfigs[name]);
     }
   };
-
   Parser.prototype.parse = function parse () {
     var node = this.options.program || this.startNode();
     this.nextToken();
     return this.parseTopLevel(node)
   };
-
   var pp = Parser.prototype;
-
-  // ## Parser utilities
-
   var literal = /^(?:'((?:\\.|[^'])*?)'|"((?:\\.|[^"])*?)"|;)/;
   pp.strictDirective = function(start) {
     var this$1 = this;
-
     for (;;) {
       skipWhiteSpace.lastIndex = start;
       start += skipWhiteSpace.exec(this$1.input)[0].length;
@@ -1037,10 +713,6 @@ var GPU = (function () {
       start += match[0].length;
     }
   };
-
-  // Predicate that tests whether the next token is of the given
-  // type, and if yes, consumes it as a side effect.
-
   pp.eat = function(type) {
     if (this.type === type) {
       this.next();
@@ -1049,35 +721,22 @@ var GPU = (function () {
       return false
     }
   };
-
-  // Tests whether parsed token is a contextual keyword.
-
   pp.isContextual = function(name) {
     return this.type === types.name && this.value === name && !this.containsEsc
   };
-
-  // Consumes contextual keyword if possible.
-
   pp.eatContextual = function(name) {
     if (!this.isContextual(name)) { return false }
     this.next();
     return true
   };
-
-  // Asserts that following token is given contextual keyword.
-
   pp.expectContextual = function(name) {
     if (!this.eatContextual(name)) { this.unexpected(); }
   };
-
-  // Test whether a semicolon can be inserted at the current position.
-
   pp.canInsertSemicolon = function() {
     return this.type === types.eof ||
       this.type === types.braceR ||
       lineBreak.test(this.input.slice(this.lastTokEnd, this.start))
   };
-
   pp.insertSemicolon = function() {
     if (this.canInsertSemicolon()) {
       if (this.options.onInsertedSemicolon)
@@ -1085,14 +744,9 @@ var GPU = (function () {
       return true
     }
   };
-
-  // Consume a semicolon, or, failing that, see if we are allowed to
-  // pretend that there is a semicolon at this position.
-
   pp.semicolon = function() {
     if (!this.eat(types.semi) && !this.insertSemicolon()) { this.unexpected(); }
   };
-
   pp.afterTrailingComma = function(tokType, notNext) {
     if (this.type === tokType) {
       if (this.options.onTrailingComma)
@@ -1102,20 +756,12 @@ var GPU = (function () {
       return true
     }
   };
-
-  // Expect a token of a given type. If found, consume it, otherwise,
-  // raise an unexpected token error.
-
   pp.expect = function(type) {
     this.eat(type) || this.unexpected();
   };
-
-  // Raise an unexpected token error.
-
   pp.unexpected = function(pos) {
     this.raise(pos != null ? pos : this.start, "Unexpected token");
   };
-
   function DestructuringErrors() {
     this.shorthandAssign =
     this.trailingComma =
@@ -1124,7 +770,6 @@ var GPU = (function () {
     this.doubleProto =
       -1;
   }
-
   pp.checkPatternErrors = function(refDestructuringErrors, isAssign) {
     if (!refDestructuringErrors) { return }
     if (refDestructuringErrors.trailingComma > -1)
@@ -1132,7 +777,6 @@ var GPU = (function () {
     var parens = isAssign ? refDestructuringErrors.parenthesizedAssign : refDestructuringErrors.parenthesizedBind;
     if (parens > -1) { this.raiseRecoverable(parens, "Parenthesized pattern"); }
   };
-
   pp.checkExpressionErrors = function(refDestructuringErrors, andThrow) {
     if (!refDestructuringErrors) { return false }
     var shorthandAssign = refDestructuringErrors.shorthandAssign;
@@ -1143,32 +787,20 @@ var GPU = (function () {
     if (doubleProto >= 0)
       { this.raiseRecoverable(doubleProto, "Redefinition of __proto__ property"); }
   };
-
   pp.checkYieldAwaitInDefaultParams = function() {
     if (this.yieldPos && (!this.awaitPos || this.yieldPos < this.awaitPos))
       { this.raise(this.yieldPos, "Yield expression cannot be a default value"); }
     if (this.awaitPos)
       { this.raise(this.awaitPos, "Await expression cannot be a default value"); }
   };
-
   pp.isSimpleAssignTarget = function(expr) {
     if (expr.type === "ParenthesizedExpression")
       { return this.isSimpleAssignTarget(expr.expression) }
     return expr.type === "Identifier" || expr.type === "MemberExpression"
   };
-
   var pp$1 = Parser.prototype;
-
-  // ### Statement parsing
-
-  // Parse a program. Initializes the parser, reads any number of
-  // statements, and wraps them in a Program node.  Optionally takes a
-  // `program` argument.  If present, the statements will be appended
-  // to its body instead of creating a new node.
-
   pp$1.parseTopLevel = function(node) {
     var this$1 = this;
-
     var exports = {};
     if (!node.body) { node.body = []; }
     while (this.type !== types.eof) {
@@ -1182,16 +814,14 @@ var GPU = (function () {
     }
     return this.finishNode(node, "Program")
   };
-
   var loopLabel = {kind: "loop"};
   var switchLabel = {kind: "switch"};
-
   pp$1.isLet = function() {
     if (this.options.ecmaVersion < 6 || !this.isContextual("let")) { return false }
     skipWhiteSpace.lastIndex = this.pos;
     var skip = skipWhiteSpace.exec(this.input);
     var next = this.pos + skip[0].length, nextCh = this.input.charCodeAt(next);
-    if (nextCh === 91 || nextCh === 123) { return true } // '{' and '['
+    if (nextCh === 91 || nextCh === 123) { return true }
     if (isIdentifierStart(nextCh, true)) {
       var pos = next + 1;
       while (isIdentifierChar(this.input.charCodeAt(pos), true)) { ++pos; }
@@ -1200,14 +830,9 @@ var GPU = (function () {
     }
     return false
   };
-
-  // check 'async [no LineTerminator here] function'
-  // - 'async /*foo*/ function' is OK.
-  // - 'async /*\n*/ function' is invalid.
   pp$1.isAsyncFunction = function() {
     if (this.options.ecmaVersion < 8 || !this.isContextual("async"))
       { return false }
-
     skipWhiteSpace.lastIndex = this.pos;
     var skip = skipWhiteSpace.exec(this.input);
     var next = this.pos + skip[0].length;
@@ -1215,26 +840,12 @@ var GPU = (function () {
       this.input.slice(next, next + 8) === "function" &&
       (next + 8 === this.input.length || !isIdentifierChar(this.input.charAt(next + 8)))
   };
-
-  // Parse a single statement.
-  //
-  // If expecting a statement and finding a slash operator, parse a
-  // regular expression literal. This is to handle cases like
-  // `if (foo) /blah/.exec(foo)`, where looking at the previous token
-  // does not help.
-
   pp$1.parseStatement = function(declaration, topLevel, exports) {
     var starttype = this.type, node = this.startNode(), kind;
-
     if (this.isLet()) {
       starttype = types._var;
       kind = "let";
     }
-
-    // Most types of statements are recognized by the keyword they
-    // start with. Many are trivial to parse, some require a bit of
-    // complexity.
-
     switch (starttype) {
     case types._break: case types._continue: return this.parseBreakContinueStatement(node, starttype.keyword)
     case types._debugger: return this.parseDebuggerStatement(node)
@@ -1268,29 +879,20 @@ var GPU = (function () {
           { this.raise(this.start, "'import' and 'export' may appear only with 'sourceType: module'"); }
       }
       return starttype === types._import ? this.parseImport(node) : this.parseExport(node, exports)
-
-      // If the statement does not start with a statement keyword or a
-      // brace, it's an ExpressionStatement or LabeledStatement. We
-      // simply start parsing an expression, and afterwards, if the
-      // next token is a colon and the expression was a simple
-      // Identifier node, we switch to interpreting it as a label.
     default:
       if (this.isAsyncFunction()) {
         if (!declaration) { this.unexpected(); }
         this.next();
         return this.parseFunctionStatement(node, true)
       }
-
       var maybeName = this.value, expr = this.parseExpression();
       if (starttype === types.name && expr.type === "Identifier" && this.eat(types.colon))
         { return this.parseLabeledStatement(node, maybeName, expr) }
       else { return this.parseExpressionStatement(node, expr) }
     }
   };
-
   pp$1.parseBreakContinueStatement = function(node, keyword) {
     var this$1 = this;
-
     var isBreak = keyword === "break";
     this.next();
     if (this.eat(types.semi) || this.insertSemicolon()) { node.label = null; }
@@ -1299,9 +901,6 @@ var GPU = (function () {
       node.label = this.parseIdent();
       this.semicolon();
     }
-
-    // Verify that there is an actual destination to break or
-    // continue to.
     var i = 0;
     for (; i < this.labels.length; ++i) {
       var lab = this$1.labels[i];
@@ -1313,13 +912,11 @@ var GPU = (function () {
     if (i === this.labels.length) { this.raise(node.start, "Unsyntactic " + keyword); }
     return this.finishNode(node, isBreak ? "BreakStatement" : "ContinueStatement")
   };
-
   pp$1.parseDebuggerStatement = function(node) {
     this.next();
     this.semicolon();
     return this.finishNode(node, "DebuggerStatement")
   };
-
   pp$1.parseDoStatement = function(node) {
     this.next();
     this.labels.push(loopLabel);
@@ -1333,15 +930,6 @@ var GPU = (function () {
       { this.semicolon(); }
     return this.finishNode(node, "DoWhileStatement")
   };
-
-  // Disambiguating between a `for` and a `for`/`in` or `for`/`of`
-  // loop is non-trivial. Basically, we have to parse the init `var`
-  // statement or expression, disallowing the `in` operator (see
-  // the second parameter to `parseExpression`), and then check
-  // whether the next token is `in` or `of`. When there is no init
-  // part (semicolon immediately after the opening parenthesis), it
-  // is a regular `for` loop.
-
   pp$1.parseForStatement = function(node) {
     this.next();
     var awaitAt = (this.options.ecmaVersion >= 9 && (this.inAsync || (!this.inFunction && this.options.allowAwaitOutsideFunction)) && this.eatContextual("await")) ? this.lastTokStart : -1;
@@ -1387,49 +975,33 @@ var GPU = (function () {
     if (awaitAt > -1) { this.unexpected(awaitAt); }
     return this.parseFor(node, init)
   };
-
   pp$1.parseFunctionStatement = function(node, isAsync) {
     this.next();
     return this.parseFunction(node, true, false, isAsync)
   };
-
   pp$1.parseIfStatement = function(node) {
     this.next();
     node.test = this.parseParenExpression();
-    // allow function declarations in branches, but only in non-strict mode
     node.consequent = this.parseStatement(!this.strict && this.type === types._function);
     node.alternate = this.eat(types._else) ? this.parseStatement(!this.strict && this.type === types._function) : null;
     return this.finishNode(node, "IfStatement")
   };
-
   pp$1.parseReturnStatement = function(node) {
     if (!this.inFunction && !this.options.allowReturnOutsideFunction)
       { this.raise(this.start, "'return' outside of function"); }
     this.next();
-
-    // In `return` (and `break`/`continue`), the keywords with
-    // optional arguments, we eagerly look for a semicolon or the
-    // possibility to insert one.
-
     if (this.eat(types.semi) || this.insertSemicolon()) { node.argument = null; }
     else { node.argument = this.parseExpression(); this.semicolon(); }
     return this.finishNode(node, "ReturnStatement")
   };
-
   pp$1.parseSwitchStatement = function(node) {
     var this$1 = this;
-
     this.next();
     node.discriminant = this.parseParenExpression();
     node.cases = [];
     this.expect(types.braceL);
     this.labels.push(switchLabel);
     this.enterLexicalScope();
-
-    // Statements under must be grouped (by label) in SwitchCase
-    // nodes. `cur` is used to keep the node that we are currently
-    // adding statements to.
-
     var cur;
     for (var sawDefault = false; this.type !== types.braceR;) {
       if (this$1.type === types._case || this$1.type === types._default) {
@@ -1453,11 +1025,10 @@ var GPU = (function () {
     }
     this.exitLexicalScope();
     if (cur) { this.finishNode(cur, "SwitchCase"); }
-    this.next(); // Closing brace
+    this.next();
     this.labels.pop();
     return this.finishNode(node, "SwitchStatement")
   };
-
   pp$1.parseThrowStatement = function(node) {
     this.next();
     if (lineBreak.test(this.input.slice(this.lastTokEnd, this.start)))
@@ -1466,11 +1037,7 @@ var GPU = (function () {
     this.semicolon();
     return this.finishNode(node, "ThrowStatement")
   };
-
-  // Reused empty array added for node fields that are always empty.
-
   var empty = [];
-
   pp$1.parseTryStatement = function(node) {
     this.next();
     node.block = this.parseBlock();
@@ -1497,14 +1064,12 @@ var GPU = (function () {
       { this.raise(node.start, "Missing catch or finally clause"); }
     return this.finishNode(node, "TryStatement")
   };
-
   pp$1.parseVarStatement = function(node, kind) {
     this.next();
     this.parseVar(node, false, kind);
     this.semicolon();
     return this.finishNode(node, "VariableDeclaration")
   };
-
   pp$1.parseWhileStatement = function(node) {
     this.next();
     node.test = this.parseParenExpression();
@@ -1513,7 +1078,6 @@ var GPU = (function () {
     this.labels.pop();
     return this.finishNode(node, "WhileStatement")
   };
-
   pp$1.parseWithStatement = function(node) {
     if (this.strict) { this.raise(this.start, "'with' in strict mode"); }
     this.next();
@@ -1521,19 +1085,15 @@ var GPU = (function () {
     node.body = this.parseStatement(false);
     return this.finishNode(node, "WithStatement")
   };
-
   pp$1.parseEmptyStatement = function(node) {
     this.next();
     return this.finishNode(node, "EmptyStatement")
   };
-
   pp$1.parseLabeledStatement = function(node, maybeName, expr) {
     var this$1 = this;
-
     for (var i$1 = 0, list = this$1.labels; i$1 < list.length; i$1 += 1)
       {
       var label = list[i$1];
-
       if (label.name === maybeName)
         { this$1.raise(expr.start, "Label '" + maybeName + "' is already declared");
     } }
@@ -1541,7 +1101,6 @@ var GPU = (function () {
     for (var i = this.labels.length - 1; i >= 0; i--) {
       var label$1 = this$1.labels[i];
       if (label$1.statementStart === node.start) {
-        // Update information about previous labels on this node
         label$1.statementStart = this$1.start;
         label$1.kind = kind;
       } else { break }
@@ -1556,21 +1115,14 @@ var GPU = (function () {
     node.label = expr;
     return this.finishNode(node, "LabeledStatement")
   };
-
   pp$1.parseExpressionStatement = function(node, expr) {
     node.expression = expr;
     this.semicolon();
     return this.finishNode(node, "ExpressionStatement")
   };
-
-  // Parse a semicolon-enclosed block of statements, handling `"use
-  // strict"` declarations when `allowStrict` is true (used for
-  // function bodies).
-
   pp$1.parseBlock = function(createNewLexicalScope) {
     var this$1 = this;
     if ( createNewLexicalScope === void 0 ) createNewLexicalScope = true;
-
     var node = this.startNode();
     node.body = [];
     this.expect(types.braceL);
@@ -1586,11 +1138,6 @@ var GPU = (function () {
     }
     return this.finishNode(node, "BlockStatement")
   };
-
-  // Parse a regular `for` loop. The disambiguation code in
-  // `parseStatement` will already have parsed the init statement or
-  // expression.
-
   pp$1.parseFor = function(node, init) {
     node.init = init;
     this.expect(types.semi);
@@ -1603,10 +1150,6 @@ var GPU = (function () {
     this.labels.pop();
     return this.finishNode(node, "ForStatement")
   };
-
-  // Parse a `for`/`in` and `for`/`of` loop, which are almost
-  // same from parser's perspective.
-
   pp$1.parseForIn = function(node, init) {
     var type = this.type === types._in ? "ForInStatement" : "ForOfStatement";
     this.next();
@@ -1624,12 +1167,8 @@ var GPU = (function () {
     this.labels.pop();
     return this.finishNode(node, type)
   };
-
-  // Parse a list of variable declarations.
-
   pp$1.parseVar = function(node, isFor, kind) {
     var this$1 = this;
-
     node.declarations = [];
     node.kind = kind;
     for (;;) {
@@ -1649,29 +1188,22 @@ var GPU = (function () {
     }
     return node
   };
-
   pp$1.parseVarId = function(decl, kind) {
     decl.id = this.parseBindingAtom(kind);
     this.checkLVal(decl.id, kind, false);
   };
-
-  // Parse a function declaration or literal (depending on the
-  // `isStatement` parameter).
-
   pp$1.parseFunction = function(node, isStatement, allowExpressionBody, isAsync) {
     this.initFunction(node);
     if (this.options.ecmaVersion >= 9 || this.options.ecmaVersion >= 6 && !isAsync)
       { node.generator = this.eat(types.star); }
     if (this.options.ecmaVersion >= 8)
       { node.async = !!isAsync; }
-
     if (isStatement) {
       node.id = isStatement === "nullableID" && this.type !== types.name ? null : this.parseIdent();
       if (node.id) {
         this.checkLVal(node.id, this.inModule && !this.inFunction ? "let" : "var");
       }
     }
-
     var oldInGen = this.inGenerator, oldInAsync = this.inAsync,
         oldYieldPos = this.yieldPos, oldAwaitPos = this.awaitPos, oldInFunc = this.inFunction;
     this.inGenerator = node.generator;
@@ -1680,13 +1212,10 @@ var GPU = (function () {
     this.awaitPos = 0;
     this.inFunction = true;
     this.enterFunctionScope();
-
     if (!isStatement)
       { node.id = this.type === types.name ? this.parseIdent() : null; }
-
     this.parseFunctionParams(node);
     this.parseFunctionBody(node, allowExpressionBody);
-
     this.inGenerator = oldInGen;
     this.inAsync = oldInAsync;
     this.yieldPos = oldYieldPos;
@@ -1694,21 +1223,14 @@ var GPU = (function () {
     this.inFunction = oldInFunc;
     return this.finishNode(node, isStatement ? "FunctionDeclaration" : "FunctionExpression")
   };
-
   pp$1.parseFunctionParams = function(node) {
     this.expect(types.parenL);
     node.params = this.parseBindingList(types.parenR, false, this.options.ecmaVersion >= 8);
     this.checkYieldAwaitInDefaultParams();
   };
-
-  // Parse a class declaration or literal (depending on the
-  // `isStatement` parameter).
-
   pp$1.parseClass = function(node, isStatement) {
     var this$1 = this;
-
     this.next();
-
     this.parseClassId(node, isStatement);
     this.parseClassSuper(node);
     var classBody = this.startNode();
@@ -1725,16 +1247,12 @@ var GPU = (function () {
     node.body = this.finishNode(classBody, "ClassBody");
     return this.finishNode(node, isStatement ? "ClassDeclaration" : "ClassExpression")
   };
-
   pp$1.parseClassMember = function(classBody) {
     var this$1 = this;
-
     if (this.eat(types.semi)) { return null }
-
     var method = this.startNode();
     var tryContextual = function (k, noLineBreak) {
       if ( noLineBreak === void 0 ) noLineBreak = false;
-
       var start = this$1.start, startLoc = this$1.startLoc;
       if (!this$1.eatContextual(k)) { return false }
       if (this$1.type !== types.parenL && (!noLineBreak || !this$1.canInsertSemicolon())) { return true }
@@ -1745,7 +1263,6 @@ var GPU = (function () {
       this$1.finishNode(method.key, "Identifier");
       return false
     };
-
     method.kind = "method";
     method.static = tryContextual("static");
     var isGenerator = this.eat(types.star);
@@ -1780,27 +1297,19 @@ var GPU = (function () {
       { this.raiseRecoverable(method.value.params[0].start, "Setter cannot use rest params"); }
     return method
   };
-
   pp$1.parseClassMethod = function(classBody, method, isGenerator, isAsync) {
     method.value = this.parseMethod(isGenerator, isAsync);
     classBody.body.push(this.finishNode(method, "MethodDefinition"));
   };
-
   pp$1.parseClassId = function(node, isStatement) {
     node.id = this.type === types.name ? this.parseIdent() : isStatement === true ? this.unexpected() : null;
   };
-
   pp$1.parseClassSuper = function(node) {
     node.superClass = this.eat(types._extends) ? this.parseExprSubscripts() : null;
   };
-
-  // Parses module export declaration.
-
   pp$1.parseExport = function(node, exports) {
     var this$1 = this;
-
     this.next();
-    // export * from '...'
     if (this.eat(types.star)) {
       this.expectContextual("from");
       if (this.type !== types.string) { this.unexpected(); }
@@ -1808,7 +1317,7 @@ var GPU = (function () {
       this.semicolon();
       return this.finishNode(node, "ExportAllDeclaration")
     }
-    if (this.eat(types._default)) { // export default ...
+    if (this.eat(types._default)) {
       this.checkExport(exports, "default", this.lastTokStart);
       var isAsync;
       if (this.type === types._function || (isAsync = this.isAsyncFunction())) {
@@ -1825,7 +1334,6 @@ var GPU = (function () {
       }
       return this.finishNode(node, "ExportDefaultDeclaration")
     }
-    // export var|const|let|function|class ...
     if (this.shouldParseExportStatement()) {
       node.declaration = this.parseStatement(true);
       if (node.declaration.type === "VariableDeclaration")
@@ -1834,37 +1342,31 @@ var GPU = (function () {
         { this.checkExport(exports, node.declaration.id.name, node.declaration.id.start); }
       node.specifiers = [];
       node.source = null;
-    } else { // export { x, y as z } [from '...']
+    } else {
       node.declaration = null;
       node.specifiers = this.parseExportSpecifiers(exports);
       if (this.eatContextual("from")) {
         if (this.type !== types.string) { this.unexpected(); }
         node.source = this.parseExprAtom();
       } else {
-        // check for keywords used as local names
         for (var i = 0, list = node.specifiers; i < list.length; i += 1) {
           var spec = list[i];
-
           this$1.checkUnreserved(spec.local);
         }
-
         node.source = null;
       }
       this.semicolon();
     }
     return this.finishNode(node, "ExportNamedDeclaration")
   };
-
   pp$1.checkExport = function(exports, name, pos) {
     if (!exports) { return }
     if (has(exports, name))
       { this.raiseRecoverable(pos, "Duplicate export '" + name + "'"); }
     exports[name] = true;
   };
-
   pp$1.checkPatternExport = function(exports, pat) {
     var this$1 = this;
-
     var type = pat.type;
     if (type === "Identifier")
       { this.checkExport(exports, pat.name, pat.start); }
@@ -1872,13 +1374,11 @@ var GPU = (function () {
       { for (var i = 0, list = pat.properties; i < list.length; i += 1)
         {
           var prop = list[i];
-
           this$1.checkPatternExport(exports, prop);
         } }
     else if (type === "ArrayPattern")
       { for (var i$1 = 0, list$1 = pat.elements; i$1 < list$1.length; i$1 += 1) {
         var elt = list$1[i$1];
-
           if (elt) { this$1.checkPatternExport(exports, elt); }
       } }
     else if (type === "Property")
@@ -1890,19 +1390,15 @@ var GPU = (function () {
     else if (type === "ParenthesizedExpression")
       { this.checkPatternExport(exports, pat.expression); }
   };
-
   pp$1.checkVariableExport = function(exports, decls) {
     var this$1 = this;
-
     if (!exports) { return }
     for (var i = 0, list = decls; i < list.length; i += 1)
       {
       var decl = list[i];
-
       this$1.checkPatternExport(exports, decl.id);
     }
   };
-
   pp$1.shouldParseExportStatement = function() {
     return this.type.keyword === "var" ||
       this.type.keyword === "const" ||
@@ -1911,21 +1407,15 @@ var GPU = (function () {
       this.isLet() ||
       this.isAsyncFunction()
   };
-
-  // Parses a comma-separated list of module exports.
-
   pp$1.parseExportSpecifiers = function(exports) {
     var this$1 = this;
-
     var nodes = [], first = true;
-    // export { x, y as z } [from '...']
     this.expect(types.braceL);
     while (!this.eat(types.braceR)) {
       if (!first) {
         this$1.expect(types.comma);
         if (this$1.afterTrailingComma(types.braceR)) { break }
       } else { first = false; }
-
       var node = this$1.startNode();
       node.local = this$1.parseIdent(true);
       node.exported = this$1.eatContextual("as") ? this$1.parseIdent(true) : node.local;
@@ -1934,12 +1424,8 @@ var GPU = (function () {
     }
     return nodes
   };
-
-  // Parses import declaration.
-
   pp$1.parseImport = function(node) {
     this.next();
-    // import '...'
     if (this.type === types.string) {
       node.specifiers = empty;
       node.source = this.parseExprAtom();
@@ -1951,15 +1437,10 @@ var GPU = (function () {
     this.semicolon();
     return this.finishNode(node, "ImportDeclaration")
   };
-
-  // Parses a comma-separated list of module imports.
-
   pp$1.parseImportSpecifiers = function() {
     var this$1 = this;
-
     var nodes = [], first = true;
     if (this.type === types.name) {
-      // import defaultObj, { x, y as z } from '...'
       var node = this.startNode();
       node.local = this.parseIdent();
       this.checkLVal(node.local, "let");
@@ -1981,7 +1462,6 @@ var GPU = (function () {
         this$1.expect(types.comma);
         if (this$1.afterTrailingComma(types.braceR)) { break }
       } else { first = false; }
-
       var node$2 = this$1.startNode();
       node$2.imported = this$1.parseIdent(true);
       if (this$1.eatContextual("as")) {
@@ -1995,8 +1475,6 @@ var GPU = (function () {
     }
     return nodes
   };
-
-  // Set `ExpressionStatement#directive` property for directive prologues.
   pp$1.adaptDirectivePrologue = function(statements) {
     for (var i = 0; i < statements.length && this.isDirectiveCandidate(statements[i]); ++i) {
       statements[i].directive = statements[i].expression.raw.slice(1, -1);
@@ -2007,43 +1485,28 @@ var GPU = (function () {
       statement.type === "ExpressionStatement" &&
       statement.expression.type === "Literal" &&
       typeof statement.expression.value === "string" &&
-      // Reject parenthesized strings.
       (this.input[statement.start] === "\"" || this.input[statement.start] === "'")
     )
   };
-
   var pp$2 = Parser.prototype;
-
-  // Convert existing expression atom to assignable pattern
-  // if possible.
-
   pp$2.toAssignable = function(node, isBinding, refDestructuringErrors) {
     var this$1 = this;
-
     if (this.options.ecmaVersion >= 6 && node) {
       switch (node.type) {
       case "Identifier":
         if (this.inAsync && node.name === "await")
           { this.raise(node.start, "Can not use 'await' as identifier inside an async function"); }
         break
-
       case "ObjectPattern":
       case "ArrayPattern":
       case "RestElement":
         break
-
       case "ObjectExpression":
         node.type = "ObjectPattern";
         if (refDestructuringErrors) { this.checkPatternErrors(refDestructuringErrors, true); }
         for (var i = 0, list = node.properties; i < list.length; i += 1) {
           var prop = list[i];
-
         this$1.toAssignable(prop, isBinding);
-          // Early error:
-          //   AssignmentRestProperty[Yield, Await] :
-          //     `...` DestructuringAssignmentTarget[Yield, Await]
-          //
-          //   It is a Syntax Error if |DestructuringAssignmentTarget| is an |ArrayLiteral| or an |ObjectLiteral|.
           if (
             prop.type === "RestElement" &&
             (prop.argument.type === "ArrayPattern" || prop.argument.type === "ObjectPattern")
@@ -2052,55 +1515,41 @@ var GPU = (function () {
           }
         }
         break
-
       case "Property":
-        // AssignmentProperty has type === "Property"
         if (node.kind !== "init") { this.raise(node.key.start, "Object pattern can't contain getter or setter"); }
         this.toAssignable(node.value, isBinding);
         break
-
       case "ArrayExpression":
         node.type = "ArrayPattern";
         if (refDestructuringErrors) { this.checkPatternErrors(refDestructuringErrors, true); }
         this.toAssignableList(node.elements, isBinding);
         break
-
       case "SpreadElement":
         node.type = "RestElement";
         this.toAssignable(node.argument, isBinding);
         if (node.argument.type === "AssignmentPattern")
           { this.raise(node.argument.start, "Rest elements cannot have a default value"); }
         break
-
       case "AssignmentExpression":
         if (node.operator !== "=") { this.raise(node.left.end, "Only '=' operator can be used for specifying default value."); }
         node.type = "AssignmentPattern";
         delete node.operator;
         this.toAssignable(node.left, isBinding);
-        // falls through to AssignmentPattern
-
       case "AssignmentPattern":
         break
-
       case "ParenthesizedExpression":
         this.toAssignable(node.expression, isBinding);
         break
-
       case "MemberExpression":
         if (!isBinding) { break }
-
       default:
         this.raise(node.start, "Assigning to rvalue");
       }
     } else if (refDestructuringErrors) { this.checkPatternErrors(refDestructuringErrors, true); }
     return node
   };
-
-  // Convert list of expression atoms to binding list.
-
   pp$2.toAssignableList = function(exprList, isBinding) {
     var this$1 = this;
-
     var end = exprList.length;
     for (var i = 0; i < end; i++) {
       var elt = exprList[i];
@@ -2113,31 +1562,20 @@ var GPU = (function () {
     }
     return exprList
   };
-
-  // Parses spread element.
-
   pp$2.parseSpread = function(refDestructuringErrors) {
     var node = this.startNode();
     this.next();
     node.argument = this.parseMaybeAssign(false, refDestructuringErrors);
     return this.finishNode(node, "SpreadElement")
   };
-
   pp$2.parseRestBinding = function() {
     var node = this.startNode();
     this.next();
-
-    // RestElement inside of a function parameter must be an identifier
     if (this.options.ecmaVersion === 6 && this.type !== types.name)
       { this.unexpected(); }
-
     node.argument = this.parseBindingAtom();
-
     return this.finishNode(node, "RestElement")
   };
-
-  // Parses lvalue (assignable) atom.
-
   pp$2.parseBindingAtom = function() {
     if (this.options.ecmaVersion >= 6) {
       switch (this.type) {
@@ -2146,17 +1584,14 @@ var GPU = (function () {
         this.next();
         node.elements = this.parseBindingList(types.bracketR, true, true);
         return this.finishNode(node, "ArrayPattern")
-
       case types.braceL:
         return this.parseObj(true)
       }
     }
     return this.parseIdent()
   };
-
   pp$2.parseBindingList = function(close, allowEmpty, allowTrailingComma) {
     var this$1 = this;
-
     var elts = [], first = true;
     while (!this.eat(close)) {
       if (first) { first = false; }
@@ -2180,13 +1615,9 @@ var GPU = (function () {
     }
     return elts
   };
-
   pp$2.parseBindingListItem = function(param) {
     return param
   };
-
-  // Parses assignment pattern around given atom if possible.
-
   pp$2.parseMaybeDefault = function(startPos, startLoc, left) {
     left = left || this.parseBindingAtom();
     if (this.options.ecmaVersion < 6 || !this.eat(types.eq)) { return left }
@@ -2195,17 +1626,8 @@ var GPU = (function () {
     node.right = this.parseMaybeAssign();
     return this.finishNode(node, "AssignmentPattern")
   };
-
-  // Verify that a node is an lval — something that can be assigned
-  // to.
-  // bindingType can be either:
-  // 'var' indicating that the lval creates a 'var' binding
-  // 'let' indicating that the lval creates a lexical ('let' or 'const') binding
-  // 'none' indicating that the binding should be checked for illegal identifiers, but not for duplicate references
-
   pp$2.checkLVal = function(expr, bindingType, checkClashes) {
     var this$1 = this;
-
     switch (expr.type) {
     case "Identifier":
       if (this.strict && this.reservedWordsStrictBind.test(expr.name))
@@ -2229,75 +1651,39 @@ var GPU = (function () {
         }
       }
       break
-
     case "MemberExpression":
       if (bindingType) { this.raiseRecoverable(expr.start, "Binding member expression"); }
       break
-
     case "ObjectPattern":
       for (var i = 0, list = expr.properties; i < list.length; i += 1)
         {
       var prop = list[i];
-
       this$1.checkLVal(prop, bindingType, checkClashes);
     }
       break
-
     case "Property":
-      // AssignmentProperty has type === "Property"
       this.checkLVal(expr.value, bindingType, checkClashes);
       break
-
     case "ArrayPattern":
       for (var i$1 = 0, list$1 = expr.elements; i$1 < list$1.length; i$1 += 1) {
         var elem = list$1[i$1];
-
       if (elem) { this$1.checkLVal(elem, bindingType, checkClashes); }
       }
       break
-
     case "AssignmentPattern":
       this.checkLVal(expr.left, bindingType, checkClashes);
       break
-
     case "RestElement":
       this.checkLVal(expr.argument, bindingType, checkClashes);
       break
-
     case "ParenthesizedExpression":
       this.checkLVal(expr.expression, bindingType, checkClashes);
       break
-
     default:
       this.raise(expr.start, (bindingType ? "Binding" : "Assigning to") + " rvalue");
     }
   };
-
-  // A recursive descent parser operates by defining functions for all
-  // syntactic elements, and recursively calling those, each function
-  // advancing the input stream and returning an AST node. Precedence
-  // of constructs (for example, the fact that `!x[1]` means `!(x[1])`
-  // instead of `(!x)[1]` is handled by the fact that the parser
-  // function that parses unary prefix operators is called first, and
-  // in turn calls the function that parses `[]` subscripts — that
-  // way, it'll receive the node for `x[1]` already parsed, and wraps
-  // *that* in the unary operator node.
-  //
-  // Acorn uses an [operator precedence parser][opp] to handle binary
-  // operator precedence, because it is much more compact than using
-  // the technique outlined above, which uses different, nesting
-  // functions to specify precedence, for all of the ten binary
-  // precedence levels that JavaScript defines.
-  //
-  // [opp]: http://en.wikipedia.org/wiki/Operator-precedence_parser
-
   var pp$3 = Parser.prototype;
-
-  // Check if property name clashes with already added.
-  // Object/class getters and setters are not allowed to clash —
-  // either with each other or with an init property — and in
-  // strict mode, init properties are also not allowed to be repeated.
-
   pp$3.checkPropClash = function(prop, propHash, refDestructuringErrors) {
     if (this.options.ecmaVersion >= 9 && prop.type === "SpreadElement")
       { return }
@@ -2315,7 +1701,6 @@ var GPU = (function () {
       if (name === "__proto__" && kind === "init") {
         if (propHash.proto) {
           if (refDestructuringErrors && refDestructuringErrors.doubleProto < 0) { refDestructuringErrors.doubleProto = key.start; }
-          // Backwards-compat kludge. Can be removed in version 6.0
           else { this.raiseRecoverable(key.start, "Redefinition of __proto__ property"); }
         }
         propHash.proto = true;
@@ -2342,25 +1727,8 @@ var GPU = (function () {
     }
     other[kind] = true;
   };
-
-  // ### Expression parsing
-
-  // These nest, from the most general expression type at the top to
-  // 'atomic', nondivisible expression types at the bottom. Most of
-  // the functions will simply let the function(s) below them parse,
-  // and, *if* the syntactic construct they handle is present, wrap
-  // the AST node that the inner parser gave them in another node.
-
-  // Parse a full expression. The optional arguments are used to
-  // forbid the `in` operator (in for loops initalization expressions)
-  // and provide reference for storing '=' operator inside shorthand
-  // property assignment in contexts where both object expression
-  // and object pattern might appear (so it's possible to raise
-  // delayed syntax error at correct position).
-
   pp$3.parseExpression = function(noIn, refDestructuringErrors) {
     var this$1 = this;
-
     var startPos = this.start, startLoc = this.startLoc;
     var expr = this.parseMaybeAssign(noIn, refDestructuringErrors);
     if (this.type === types.comma) {
@@ -2371,13 +1739,8 @@ var GPU = (function () {
     }
     return expr
   };
-
-  // Parse an assignment expression. This includes applications of
-  // operators like `+=`.
-
   pp$3.parseMaybeAssign = function(noIn, refDestructuringErrors, afterLeftParse) {
     if (this.inGenerator && this.isContextual("yield")) { return this.parseYield() }
-
     var ownDestructuringErrors = false, oldParenAssign = -1, oldTrailingComma = -1;
     if (refDestructuringErrors) {
       oldParenAssign = refDestructuringErrors.parenthesizedAssign;
@@ -2387,7 +1750,6 @@ var GPU = (function () {
       refDestructuringErrors = new DestructuringErrors;
       ownDestructuringErrors = true;
     }
-
     var startPos = this.start, startLoc = this.startLoc;
     if (this.type === types.parenL || this.type === types.name)
       { this.potentialArrowAt = this.start; }
@@ -2398,7 +1760,7 @@ var GPU = (function () {
       node.operator = this.value;
       node.left = this.type === types.eq ? this.toAssignable(left, false, refDestructuringErrors) : left;
       if (!ownDestructuringErrors) { DestructuringErrors.call(refDestructuringErrors); }
-      refDestructuringErrors.shorthandAssign = -1; // reset because shorthand default was used correctly
+      refDestructuringErrors.shorthandAssign = -1;
       this.checkLVal(left);
       this.next();
       node.right = this.parseMaybeAssign(noIn);
@@ -2410,9 +1772,6 @@ var GPU = (function () {
     if (oldTrailingComma > -1) { refDestructuringErrors.trailingComma = oldTrailingComma; }
     return left
   };
-
-  // Parse a ternary conditional (`?:`) operator.
-
   pp$3.parseMaybeConditional = function(noIn, refDestructuringErrors) {
     var startPos = this.start, startLoc = this.startLoc;
     var expr = this.parseExprOps(noIn, refDestructuringErrors);
@@ -2427,22 +1786,12 @@ var GPU = (function () {
     }
     return expr
   };
-
-  // Start the precedence parser.
-
   pp$3.parseExprOps = function(noIn, refDestructuringErrors) {
     var startPos = this.start, startLoc = this.startLoc;
     var expr = this.parseMaybeUnary(refDestructuringErrors, false);
     if (this.checkExpressionErrors(refDestructuringErrors)) { return expr }
     return expr.start === startPos && expr.type === "ArrowFunctionExpression" ? expr : this.parseExprOp(expr, startPos, startLoc, -1, noIn)
   };
-
-  // Parse binary operators with the operator precedence parsing
-  // algorithm. `left` is the left-hand side of the operator.
-  // `minPrec` provides context that allows the function to stop and
-  // defer further parser to one of its callers when it encounters an
-  // operator that has a lower precedence than the set it is parsing.
-
   pp$3.parseExprOp = function(left, leftStartPos, leftStartLoc, minPrec, noIn) {
     var prec = this.type.binop;
     if (prec != null && (!noIn || this.type !== types._in)) {
@@ -2458,7 +1807,6 @@ var GPU = (function () {
     }
     return left
   };
-
   pp$3.buildBinary = function(startPos, startLoc, left, right, op, logical) {
     var node = this.startNodeAt(startPos, startLoc);
     node.left = left;
@@ -2466,12 +1814,8 @@ var GPU = (function () {
     node.right = right;
     return this.finishNode(node, logical ? "LogicalExpression" : "BinaryExpression")
   };
-
-  // Parse unary operators, both prefix and postfix.
-
   pp$3.parseMaybeUnary = function(refDestructuringErrors, sawUnary) {
     var this$1 = this;
-
     var startPos = this.start, startLoc = this.startLoc, expr;
     if (this.isContextual("await") && (this.inAsync || (!this.inFunction && this.options.allowAwaitOutsideFunction))) {
       expr = this.parseAwait();
@@ -2502,15 +1846,11 @@ var GPU = (function () {
         expr = this$1.finishNode(node$1, "UpdateExpression");
       }
     }
-
     if (!sawUnary && this.eat(types.starstar))
       { return this.buildBinary(startPos, startLoc, expr, this.parseMaybeUnary(null, false), "**", false) }
     else
       { return expr }
   };
-
-  // Parse call, dot, and `[]`-subscript expressions.
-
   pp$3.parseExprSubscripts = function(refDestructuringErrors) {
     var startPos = this.start, startLoc = this.startLoc;
     var expr = this.parseExprAtom(refDestructuringErrors);
@@ -2523,10 +1863,8 @@ var GPU = (function () {
     }
     return result
   };
-
   pp$3.parseSubscripts = function(base, startPos, startLoc, noCalls) {
     var this$1 = this;
-
     var maybeAsyncArrow = this.options.ecmaVersion >= 8 && base.type === "Identifier" && base.name === "async" &&
         this.lastTokEnd === base.end && !this.canInsertSemicolon() && this.input.slice(base.start, base.end) === "async";
     for (var computed = (void 0);;) {
@@ -2566,12 +1904,6 @@ var GPU = (function () {
       }
     }
   };
-
-  // Parse an atomic expression — either a single token that is an
-  // expression, an expression started by a keyword like `function` or
-  // `new`, or an expression wrapped in punctuation like `()`, `[]`,
-  // or `{}`.
-
   pp$3.parseExprAtom = function(refDestructuringErrors) {
     var node, canBeArrow = this.potentialArrowAt === this.start;
     switch (this.type) {
@@ -2580,21 +1912,13 @@ var GPU = (function () {
         { this.raise(this.start, "'super' outside of function or class"); }
       node = this.startNode();
       this.next();
-      // The `super` keyword can appear at below:
-      // SuperProperty:
-      //     super [ Expression ]
-      //     super . IdentifierName
-      // SuperCall:
-      //     super Arguments
       if (this.type !== types.dot && this.type !== types.bracketL && this.type !== types.parenL)
         { this.unexpected(); }
       return this.finishNode(node, "Super")
-
     case types._this:
       node = this.startNode();
       this.next();
       return this.finishNode(node, "ThisExpression")
-
     case types.name:
       var startPos = this.start, startLoc = this.startLoc, containsEsc = this.containsEsc;
       var id = this.parseIdent(this.type !== types.name);
@@ -2611,23 +1935,19 @@ var GPU = (function () {
         }
       }
       return id
-
     case types.regexp:
       var value = this.value;
       node = this.parseLiteral(value.value);
       node.regex = {pattern: value.pattern, flags: value.flags};
       return node
-
     case types.num: case types.string:
       return this.parseLiteral(this.value)
-
     case types._null: case types._true: case types._false:
       node = this.startNode();
       node.value = this.type === types._null ? null : this.type === types._true;
       node.raw = this.type.keyword;
       this.next();
       return this.finishNode(node, "Literal")
-
     case types.parenL:
       var start = this.start, expr = this.parseParenAndDistinguishExpression(canBeArrow);
       if (refDestructuringErrors) {
@@ -2637,35 +1957,27 @@ var GPU = (function () {
           { refDestructuringErrors.parenthesizedBind = start; }
       }
       return expr
-
     case types.bracketL:
       node = this.startNode();
       this.next();
       node.elements = this.parseExprList(types.bracketR, true, true, refDestructuringErrors);
       return this.finishNode(node, "ArrayExpression")
-
     case types.braceL:
       return this.parseObj(false, refDestructuringErrors)
-
     case types._function:
       node = this.startNode();
       this.next();
       return this.parseFunction(node, false)
-
     case types._class:
       return this.parseClass(this.startNode(), false)
-
     case types._new:
       return this.parseNew()
-
     case types.backQuote:
       return this.parseTemplate()
-
     default:
       this.unexpected();
     }
   };
-
   pp$3.parseLiteral = function(value) {
     var node = this.startNode();
     node.value = value;
@@ -2673,21 +1985,17 @@ var GPU = (function () {
     this.next();
     return this.finishNode(node, "Literal")
   };
-
   pp$3.parseParenExpression = function() {
     this.expect(types.parenL);
     var val = this.parseExpression();
     this.expect(types.parenR);
     return val
   };
-
   pp$3.parseParenAndDistinguishExpression = function(canBeArrow) {
     var this$1 = this;
-
     var startPos = this.start, startLoc = this.startLoc, val, allowTrailingComma = this.options.ecmaVersion >= 8;
     if (this.options.ecmaVersion >= 6) {
       this.next();
-
       var innerStartPos = this.start, innerStartLoc = this.startLoc;
       var exprList = [], first = true, lastIsComma = false;
       var refDestructuringErrors = new DestructuringErrors, oldYieldPos = this.yieldPos, oldAwaitPos = this.awaitPos, spreadStart;
@@ -2709,7 +2017,6 @@ var GPU = (function () {
       }
       var innerEndPos = this.start, innerEndLoc = this.startLoc;
       this.expect(types.parenR);
-
       if (canBeArrow && !this.canInsertSemicolon() && this.eat(types.arrow)) {
         this.checkPatternErrors(refDestructuringErrors, false);
         this.checkYieldAwaitInDefaultParams();
@@ -2717,13 +2024,11 @@ var GPU = (function () {
         this.awaitPos = oldAwaitPos;
         return this.parseParenArrowList(startPos, startLoc, exprList)
       }
-
       if (!exprList.length || lastIsComma) { this.unexpected(this.lastTokStart); }
       if (spreadStart) { this.unexpected(spreadStart); }
       this.checkExpressionErrors(refDestructuringErrors, true);
       this.yieldPos = oldYieldPos || this.yieldPos;
       this.awaitPos = oldAwaitPos || this.awaitPos;
-
       if (exprList.length > 1) {
         val = this.startNodeAt(innerStartPos, innerStartLoc);
         val.expressions = exprList;
@@ -2734,7 +2039,6 @@ var GPU = (function () {
     } else {
       val = this.parseParenExpression();
     }
-
     if (this.options.preserveParens) {
       var par = this.startNodeAt(startPos, startLoc);
       par.expression = val;
@@ -2743,23 +2047,13 @@ var GPU = (function () {
       return val
     }
   };
-
   pp$3.parseParenItem = function(item) {
     return item
   };
-
   pp$3.parseParenArrowList = function(startPos, startLoc, exprList) {
     return this.parseArrowExpression(this.startNodeAt(startPos, startLoc), exprList)
   };
-
-  // New's precedence is slightly tricky. It must allow its argument to
-  // be a `[]` or dot subscript expression, but not a call — at least,
-  // not without wrapping it in parentheses. Thus, it uses the noCalls
-  // argument to parseSubscripts to prevent it from consuming the
-  // argument list.
-
   var empty$1 = [];
-
   pp$3.parseNew = function() {
     var node = this.startNode();
     var meta = this.parseIdent(true);
@@ -2779,12 +2073,8 @@ var GPU = (function () {
     else { node.arguments = empty$1; }
     return this.finishNode(node, "NewExpression")
   };
-
-  // Parse template expression.
-
   pp$3.parseTemplateElement = function(ref) {
     var isTagged = ref.isTagged;
-
     var elem = this.startNode();
     if (this.type === types.invalidTemplate) {
       if (!isTagged) {
@@ -2804,12 +2094,10 @@ var GPU = (function () {
     elem.tail = this.type === types.backQuote;
     return this.finishNode(elem, "TemplateElement")
   };
-
   pp$3.parseTemplate = function(ref) {
     var this$1 = this;
     if ( ref === void 0 ) ref = {};
     var isTagged = ref.isTagged; if ( isTagged === void 0 ) isTagged = false;
-
     var node = this.startNode();
     this.next();
     node.expressions = [];
@@ -2825,18 +2113,13 @@ var GPU = (function () {
     this.next();
     return this.finishNode(node, "TemplateLiteral")
   };
-
   pp$3.isAsyncProp = function(prop) {
     return !prop.computed && prop.key.type === "Identifier" && prop.key.name === "async" &&
       (this.type === types.name || this.type === types.num || this.type === types.string || this.type === types.bracketL || this.type.keyword || (this.options.ecmaVersion >= 9 && this.type === types.star)) &&
       !lineBreak.test(this.input.slice(this.lastTokEnd, this.start))
   };
-
-  // Parse an object literal or binding pattern.
-
   pp$3.parseObj = function(isPattern, refDestructuringErrors) {
     var this$1 = this;
-
     var node = this.startNode(), first = true, propHash = {};
     node.properties = [];
     this.next();
@@ -2845,14 +2128,12 @@ var GPU = (function () {
         this$1.expect(types.comma);
         if (this$1.afterTrailingComma(types.braceR)) { break }
       } else { first = false; }
-
       var prop = this$1.parseProperty(isPattern, refDestructuringErrors);
       if (!isPattern) { this$1.checkPropClash(prop, propHash, refDestructuringErrors); }
       node.properties.push(prop);
     }
     return this.finishNode(node, isPattern ? "ObjectPattern" : "ObjectExpression")
   };
-
   pp$3.parseProperty = function(isPattern, refDestructuringErrors) {
     var prop = this.startNode(), isGenerator, isAsync, startPos, startLoc;
     if (this.options.ecmaVersion >= 9 && this.eat(types.ellipsis)) {
@@ -2863,7 +2144,6 @@ var GPU = (function () {
         }
         return this.finishNode(prop, "RestElement")
       }
-      // To disallow parenthesized identifier via `this.toAssignable()`.
       if (this.type === types.parenL && refDestructuringErrors) {
         if (refDestructuringErrors.parenthesizedAssign < 0) {
           refDestructuringErrors.parenthesizedAssign = this.start;
@@ -2872,13 +2152,10 @@ var GPU = (function () {
           refDestructuringErrors.parenthesizedBind = this.start;
         }
       }
-      // Parse argument.
       prop.argument = this.parseMaybeAssign(false, refDestructuringErrors);
-      // To disallow trailing comma via `this.toAssignable()`.
       if (this.type === types.comma && refDestructuringErrors && refDestructuringErrors.trailingComma < 0) {
         refDestructuringErrors.trailingComma = this.start;
       }
-      // Finish
       return this.finishNode(prop, "SpreadElement")
     }
     if (this.options.ecmaVersion >= 6) {
@@ -2903,11 +2180,9 @@ var GPU = (function () {
     this.parsePropertyValue(prop, isPattern, isGenerator, isAsync, startPos, startLoc, refDestructuringErrors, containsEsc);
     return this.finishNode(prop, "Property")
   };
-
   pp$3.parsePropertyValue = function(prop, isPattern, isGenerator, isAsync, startPos, startLoc, refDestructuringErrors, containsEsc) {
     if ((isGenerator || isAsync) && this.type === types.colon)
       { this.unexpected(); }
-
     if (this.eat(types.colon)) {
       prop.value = isPattern ? this.parseMaybeDefault(this.start, this.startLoc) : this.parseMaybeAssign(false, refDestructuringErrors);
       prop.kind = "init";
@@ -2950,7 +2225,6 @@ var GPU = (function () {
       prop.shorthand = true;
     } else { this.unexpected(); }
   };
-
   pp$3.parsePropertyName = function(prop) {
     if (this.options.ecmaVersion >= 6) {
       if (this.eat(types.bracketL)) {
@@ -2964,9 +2238,6 @@ var GPU = (function () {
     }
     return prop.key = this.type === types.num || this.type === types.string ? this.parseExprAtom() : this.parseIdent(true)
   };
-
-  // Initialize empty function node.
-
   pp$3.initFunction = function(node) {
     node.id = null;
     if (this.options.ecmaVersion >= 6) {
@@ -2976,31 +2247,24 @@ var GPU = (function () {
     if (this.options.ecmaVersion >= 8)
       { node.async = false; }
   };
-
-  // Parse object or class method.
-
   pp$3.parseMethod = function(isGenerator, isAsync) {
     var node = this.startNode(), oldInGen = this.inGenerator, oldInAsync = this.inAsync,
         oldYieldPos = this.yieldPos, oldAwaitPos = this.awaitPos, oldInFunc = this.inFunction;
-
     this.initFunction(node);
     if (this.options.ecmaVersion >= 6)
       { node.generator = isGenerator; }
     if (this.options.ecmaVersion >= 8)
       { node.async = !!isAsync; }
-
     this.inGenerator = node.generator;
     this.inAsync = node.async;
     this.yieldPos = 0;
     this.awaitPos = 0;
     this.inFunction = true;
     this.enterFunctionScope();
-
     this.expect(types.parenL);
     node.params = this.parseBindingList(types.parenR, false, this.options.ecmaVersion >= 8);
     this.checkYieldAwaitInDefaultParams();
     this.parseFunctionBody(node, false);
-
     this.inGenerator = oldInGen;
     this.inAsync = oldInAsync;
     this.yieldPos = oldYieldPos;
@@ -3008,27 +2272,20 @@ var GPU = (function () {
     this.inFunction = oldInFunc;
     return this.finishNode(node, "FunctionExpression")
   };
-
-  // Parse arrow function expression with given parameters.
-
   pp$3.parseArrowExpression = function(node, params, isAsync) {
     var oldInGen = this.inGenerator, oldInAsync = this.inAsync,
         oldYieldPos = this.yieldPos, oldAwaitPos = this.awaitPos, oldInFunc = this.inFunction;
-
     this.enterFunctionScope();
     this.initFunction(node);
     if (this.options.ecmaVersion >= 8)
       { node.async = !!isAsync; }
-
     this.inGenerator = false;
     this.inAsync = node.async;
     this.yieldPos = 0;
     this.awaitPos = 0;
     this.inFunction = true;
-
     node.params = this.toAssignableList(params, true);
     this.parseFunctionBody(node, true);
-
     this.inGenerator = oldInGen;
     this.inAsync = oldInAsync;
     this.yieldPos = oldYieldPos;
@@ -3036,13 +2293,9 @@ var GPU = (function () {
     this.inFunction = oldInFunc;
     return this.finishNode(node, "ArrowFunctionExpression")
   };
-
-  // Parse function body and check parameters.
-
   pp$3.parseFunctionBody = function(node, isArrowFunction) {
     var isExpression = isArrowFunction && this.type !== types.braceL;
     var oldStrict = this.strict, useStrict = false;
-
     if (isExpression) {
       node.body = this.parseMaybeAssign();
       node.expression = true;
@@ -3051,20 +2304,12 @@ var GPU = (function () {
       var nonSimple = this.options.ecmaVersion >= 7 && !this.isSimpleParamList(node.params);
       if (!oldStrict || nonSimple) {
         useStrict = this.strictDirective(this.end);
-        // If this is a strict mode function, verify that argument names
-        // are not repeated, and it does not try to bind the words `eval`
-        // or `arguments`.
         if (useStrict && nonSimple)
           { this.raiseRecoverable(node.start, "Illegal 'use strict' directive in function with non-simple parameter list"); }
       }
-      // Start a new scope with regard to labels and the `inFunction`
-      // flag (restore them to their old value afterwards).
       var oldLabels = this.labels;
       this.labels = [];
       if (useStrict) { this.strict = true; }
-
-      // Add the params to varDeclaredNames to ensure that an error is thrown
-      // if a let/const declaration in the function clashes with one of the params.
       this.checkParams(node, !oldStrict && !useStrict && !isArrowFunction && this.isSimpleParamList(node.params));
       node.body = this.parseBlock(false);
       node.expression = false;
@@ -3072,55 +2317,36 @@ var GPU = (function () {
       this.labels = oldLabels;
     }
     this.exitFunctionScope();
-
     if (this.strict && node.id) {
-      // Ensure the function name isn't a forbidden identifier in strict mode, e.g. 'eval'
       this.checkLVal(node.id, "none");
     }
     this.strict = oldStrict;
   };
-
   pp$3.isSimpleParamList = function(params) {
     for (var i = 0, list = params; i < list.length; i += 1)
       {
       var param = list[i];
-
       if (param.type !== "Identifier") { return false
     } }
     return true
   };
-
-  // Checks function params for various disallowed patterns such as using "eval"
-  // or "arguments" and duplicate parameters.
-
   pp$3.checkParams = function(node, allowDuplicates) {
     var this$1 = this;
-
     var nameHash = {};
     for (var i = 0, list = node.params; i < list.length; i += 1)
       {
       var param = list[i];
-
       this$1.checkLVal(param, "var", allowDuplicates ? null : nameHash);
     }
   };
-
-  // Parses a comma-separated list of expressions, and returns them as
-  // an array. `close` is the token type that ends the list, and
-  // `allowEmpty` can be turned on to allow subsequent commas with
-  // nothing in between them to be parsed as `null` (which is needed
-  // for array literals).
-
   pp$3.parseExprList = function(close, allowTrailingComma, allowEmpty, refDestructuringErrors) {
     var this$1 = this;
-
     var elts = [], first = true;
     while (!this.eat(close)) {
       if (!first) {
         this$1.expect(types.comma);
         if (allowTrailingComma && this$1.afterTrailingComma(close)) { break }
       } else { first = false; }
-
       var elt = (void 0);
       if (allowEmpty && this$1.type === types.comma)
         { elt = null; }
@@ -3135,12 +2361,10 @@ var GPU = (function () {
     }
     return elts
   };
-
   pp$3.checkUnreserved = function(ref) {
     var start = ref.start;
     var end = ref.end;
     var name = ref.name;
-
     if (this.inGenerator && name === "yield")
       { this.raiseRecoverable(start, "Can not use 'yield' as identifier inside a generator"); }
     if (this.inAsync && name === "await")
@@ -3156,11 +2380,6 @@ var GPU = (function () {
       this.raiseRecoverable(start, ("The keyword '" + name + "' is reserved"));
     }
   };
-
-  // Parse the next token as an identifier. If `liberal` is true (used
-  // when parsing properties), it will also convert keywords into
-  // identifiers.
-
   pp$3.parseIdent = function(liberal, isBinding) {
     var node = this.startNode();
     if (liberal && this.options.allowReserved === "never") { liberal = false; }
@@ -3168,11 +2387,6 @@ var GPU = (function () {
       node.name = this.value;
     } else if (this.type.keyword) {
       node.name = this.type.keyword;
-
-      // To fix https://github.com/acornjs/acorn/issues/575
-      // `class` and `function` keywords push new context into this.context.
-      // But there is no chance to pop the context if the keyword is consumed as an identifier such as a property name.
-      // If the previous token is a dot, this does not apply because the context-managing code already ignored the keyword
       if ((node.name === "class" || node.name === "function") &&
           (this.lastTokEnd !== this.lastTokStart + 1 || this.input.charCodeAt(this.lastTokStart) !== 46)) {
         this.context.pop();
@@ -3185,12 +2399,8 @@ var GPU = (function () {
     if (!liberal) { this.checkUnreserved(node); }
     return node
   };
-
-  // Parses yield expression inside generator.
-
   pp$3.parseYield = function() {
     if (!this.yieldPos) { this.yieldPos = this.start; }
-
     var node = this.startNode();
     this.next();
     if (this.type === types.semi || this.canInsertSemicolon() || (this.type !== types.star && !this.type.startsExpr)) {
@@ -3202,24 +2412,14 @@ var GPU = (function () {
     }
     return this.finishNode(node, "YieldExpression")
   };
-
   pp$3.parseAwait = function() {
     if (!this.awaitPos) { this.awaitPos = this.start; }
-
     var node = this.startNode();
     this.next();
     node.argument = this.parseMaybeUnary(null, true);
     return this.finishNode(node, "AwaitExpression")
   };
-
   var pp$4 = Parser.prototype;
-
-  // This function is used to raise exceptions on parse errors. It
-  // takes an offset integer (into the current `input`) to indicate
-  // the location of the error, attaches the position to the end
-  // of the error message, and then raises a `SyntaxError` with that
-  // message.
-
   pp$4.raise = function(pos, message) {
     var loc = getLineInfo(this.input, pos);
     message += " (" + loc.line + ":" + loc.column + ")";
@@ -3227,25 +2427,18 @@ var GPU = (function () {
     err.pos = pos; err.loc = loc; err.raisedAt = this.pos;
     throw err
   };
-
   pp$4.raiseRecoverable = pp$4.raise;
-
   pp$4.curPosition = function() {
     if (this.options.locations) {
       return new Position(this.curLine, this.pos - this.lineStart)
     }
   };
-
   var pp$5 = Parser.prototype;
-
-  // Object.assign polyfill
   var assign = Object.assign || function(target) {
     var sources = [], len = arguments.length - 1;
     while ( len-- > 0 ) sources[ len ] = arguments[ len + 1 ];
-
     for (var i = 0, list = sources; i < list.length; i += 1) {
       var source = list[i];
-
       for (var key in source) {
         if (has(source, key)) {
           target[key] = source[key];
@@ -3254,65 +2447,37 @@ var GPU = (function () {
     }
     return target
   };
-
-  // The functions in this module keep track of declared variables in the current scope in order to detect duplicate variable names.
-
   pp$5.enterFunctionScope = function() {
-    // var: a hash of var-declared names in the current lexical scope
-    // lexical: a hash of lexically-declared names in the current lexical scope
-    // childVar: a hash of var-declared names in all child lexical scopes of the current lexical scope (within the current function scope)
-    // parentLexical: a hash of lexically-declared names in all parent lexical scopes of the current lexical scope (within the current function scope)
     this.scopeStack.push({var: {}, lexical: {}, childVar: {}, parentLexical: {}});
   };
-
   pp$5.exitFunctionScope = function() {
     this.scopeStack.pop();
   };
-
   pp$5.enterLexicalScope = function() {
     var parentScope = this.scopeStack[this.scopeStack.length - 1];
     var childScope = {var: {}, lexical: {}, childVar: {}, parentLexical: {}};
-
     this.scopeStack.push(childScope);
     assign(childScope.parentLexical, parentScope.lexical, parentScope.parentLexical);
   };
-
   pp$5.exitLexicalScope = function() {
     var childScope = this.scopeStack.pop();
     var parentScope = this.scopeStack[this.scopeStack.length - 1];
-
     assign(parentScope.childVar, childScope.var, childScope.childVar);
   };
-
-  /**
-   * A name can be declared with `var` if there are no variables with the same name declared with `let`/`const`
-   * in the current lexical scope or any of the parent lexical scopes in this function.
-   */
   pp$5.canDeclareVarName = function(name) {
     var currentScope = this.scopeStack[this.scopeStack.length - 1];
-
     return !has(currentScope.lexical, name) && !has(currentScope.parentLexical, name)
   };
-
-  /**
-   * A name can be declared with `let`/`const` if there are no variables with the same name declared with `let`/`const`
-   * in the current scope, and there are no variables with the same name declared with `var` in the current scope or in
-   * any child lexical scopes in this function.
-   */
   pp$5.canDeclareLexicalName = function(name) {
     var currentScope = this.scopeStack[this.scopeStack.length - 1];
-
     return !has(currentScope.lexical, name) && !has(currentScope.var, name) && !has(currentScope.childVar, name)
   };
-
   pp$5.declareVarName = function(name) {
     this.scopeStack[this.scopeStack.length - 1].var[name] = true;
   };
-
   pp$5.declareLexicalName = function(name) {
     this.scopeStack[this.scopeStack.length - 1].lexical[name] = true;
   };
-
   var Node = function Node(parser, pos, loc) {
     this.type = "";
     this.start = pos;
@@ -3324,21 +2489,13 @@ var GPU = (function () {
     if (parser.options.ranges)
       { this.range = [pos, 0]; }
   };
-
-  // Start an AST node, attaching a start offset.
-
   var pp$6 = Parser.prototype;
-
   pp$6.startNode = function() {
     return new Node(this, this.start, this.startLoc)
   };
-
   pp$6.startNodeAt = function(pos, loc) {
     return new Node(this, pos, loc)
   };
-
-  // Finish an AST node, adding `type` and `end` properties.
-
   function finishNodeAt(node, type, pos, loc) {
     node.type = type;
     node.end = pos;
@@ -3348,21 +2505,12 @@ var GPU = (function () {
       { node.range[1] = pos; }
     return node
   }
-
   pp$6.finishNode = function(node, type) {
     return finishNodeAt.call(this, node, type, this.lastTokEnd, this.lastTokEndLoc)
   };
-
-  // Finish node at given position
-
   pp$6.finishNodeAt = function(node, type, pos, loc) {
     return finishNodeAt.call(this, node, type, pos, loc)
   };
-
-  // The algorithm used to determine whether a regexp can appear at a
-  // given point in the program is loosely based on sweet.js' approach.
-  // See https://github.com/mozilla/sweet.js/wiki/design
-
   var TokContext = function TokContext(token, isExpr, preserveSpace, override, generator) {
     this.token = token;
     this.isExpr = !!isExpr;
@@ -3370,7 +2518,6 @@ var GPU = (function () {
     this.override = override;
     this.generator = !!generator;
   };
-
   var types$1 = {
     b_stat: new TokContext("{", false),
     b_expr: new TokContext("{", true),
@@ -3383,23 +2530,16 @@ var GPU = (function () {
     f_expr_gen: new TokContext("function", true, false, null, true),
     f_gen: new TokContext("function", false, false, null, true)
   };
-
   var pp$7 = Parser.prototype;
-
   pp$7.initialContext = function() {
     return [types$1.b_stat]
   };
-
   pp$7.braceIsBlock = function(prevType) {
     var parent = this.curContext();
     if (parent === types$1.f_expr || parent === types$1.f_stat)
       { return true }
     if (prevType === types.colon && (parent === types$1.b_stat || parent === types$1.b_expr))
       { return !parent.isExpr }
-
-    // The check for `tt.name && exprAllowed` detects whether we are
-    // after a `yield` or `of` construct. See the `updateContext` for
-    // `tt.name`.
     if (prevType === types._return || prevType === types.name && this.exprAllowed)
       { return lineBreak.test(this.input.slice(this.lastTokEnd, this.start)) }
     if (prevType === types._else || prevType === types.semi || prevType === types.eof || prevType === types.parenR || prevType === types.arrow)
@@ -3410,10 +2550,8 @@ var GPU = (function () {
       { return false }
     return !this.exprAllowed
   };
-
   pp$7.inGeneratorContext = function() {
     var this$1 = this;
-
     for (var i = this.context.length - 1; i >= 1; i--) {
       var context = this$1.context[i];
       if (context.token === "function")
@@ -3421,7 +2559,6 @@ var GPU = (function () {
     }
     return false
   };
-
   pp$7.updateContext = function(prevType) {
     var update, type = this.type;
     if (type.keyword && prevType === types.dot)
@@ -3431,9 +2568,6 @@ var GPU = (function () {
     else
       { this.exprAllowed = type.beforeExpr; }
   };
-
-  // Token-specific context update code
-
   types.parenR.updateContext = types.braceR.updateContext = function() {
     if (this.context.length === 1) {
       this.exprAllowed = true;
@@ -3445,27 +2579,21 @@ var GPU = (function () {
     }
     this.exprAllowed = !out.isExpr;
   };
-
   types.braceL.updateContext = function(prevType) {
     this.context.push(this.braceIsBlock(prevType) ? types$1.b_stat : types$1.b_expr);
     this.exprAllowed = true;
   };
-
   types.dollarBraceL.updateContext = function() {
     this.context.push(types$1.b_tmpl);
     this.exprAllowed = true;
   };
-
   types.parenL.updateContext = function(prevType) {
     var statementParens = prevType === types._if || prevType === types._for || prevType === types._with || prevType === types._while;
     this.context.push(statementParens ? types$1.p_stat : types$1.p_expr);
     this.exprAllowed = true;
   };
-
   types.incDec.updateContext = function() {
-    // tokExprAllowed stays unchanged
   };
-
   types._function.updateContext = types._class.updateContext = function(prevType) {
     if (prevType.beforeExpr && prevType !== types.semi && prevType !== types._else &&
         !((prevType === types.colon || prevType === types.braceL) && this.curContext() === types$1.b_stat))
@@ -3474,7 +2602,6 @@ var GPU = (function () {
       { this.context.push(types$1.f_stat); }
     this.exprAllowed = false;
   };
-
   types.backQuote.updateContext = function() {
     if (this.curContext() === types$1.q_tmpl)
       { this.context.pop(); }
@@ -3482,7 +2609,6 @@ var GPU = (function () {
       { this.context.push(types$1.q_tmpl); }
     this.exprAllowed = false;
   };
-
   types.star.updateContext = function(prevType) {
     if (prevType === types._function) {
       var index = this.context.length - 1;
@@ -3493,7 +2619,6 @@ var GPU = (function () {
     }
     this.exprAllowed = true;
   };
-
   types.name.updateContext = function(prevType) {
     var allowed = false;
     if (this.options.ecmaVersion >= 6 && prevType !== types.dot) {
@@ -3503,7 +2628,6 @@ var GPU = (function () {
     }
     this.exprAllowed = allowed;
   };
-
   var data = {
     "$LONE": [
       "ASCII",
@@ -3965,9 +3089,7 @@ var GPU = (function () {
   Array.prototype.push.apply(data.$LONE, data.General_Category);
   data.gc = data.General_Category;
   data.sc = data.Script_Extensions = data.scx = data.Script;
-
   var pp$9 = Parser.prototype;
-
   var RegExpValidationState = function RegExpValidationState(parser) {
     this.parser = parser;
     this.validFlags = "gim" + (parser.options.ecmaVersion >= 6 ? "uy" : "") + (parser.options.ecmaVersion >= 9 ? "s" : "");
@@ -3985,7 +3107,6 @@ var GPU = (function () {
     this.groupNames = [];
     this.backReferenceNames = [];
   };
-
   RegExpValidationState.prototype.reset = function reset (start, pattern, flags) {
     var unicode = flags.indexOf("u") !== -1;
     this.start = start | 0;
@@ -3994,13 +3115,9 @@ var GPU = (function () {
     this.switchU = unicode && this.parser.options.ecmaVersion >= 6;
     this.switchN = unicode && this.parser.options.ecmaVersion >= 9;
   };
-
   RegExpValidationState.prototype.raise = function raise (message) {
     this.parser.raiseRecoverable(this.start, ("Invalid regular expression: /" + (this.source) + "/: " + message));
   };
-
-  // If u flag is given, this returns the code point at the index (it combines a surrogate pair).
-  // Otherwise, this returns the code unit of the index (can be a part of a surrogate pair).
   RegExpValidationState.prototype.at = function at (i) {
     var s = this.source;
     var l = s.length;
@@ -4013,7 +3130,6 @@ var GPU = (function () {
     }
     return (c << 10) + s.charCodeAt(i + 1) - 0x35FDC00
   };
-
   RegExpValidationState.prototype.nextIndex = function nextIndex (i) {
     var s = this.source;
     var l = s.length;
@@ -4026,19 +3142,15 @@ var GPU = (function () {
     }
     return i + 2
   };
-
   RegExpValidationState.prototype.current = function current () {
     return this.at(this.pos)
   };
-
   RegExpValidationState.prototype.lookahead = function lookahead () {
     return this.at(this.nextIndex(this.pos))
   };
-
   RegExpValidationState.prototype.advance = function advance () {
     this.pos = this.nextIndex(this.pos);
   };
-
   RegExpValidationState.prototype.eat = function eat (ch) {
     if (this.current() === ch) {
       this.advance();
@@ -4046,25 +3158,15 @@ var GPU = (function () {
     }
     return false
   };
-
   function codePointToString$1(ch) {
     if (ch <= 0xFFFF) { return String.fromCharCode(ch) }
     ch -= 0x10000;
     return String.fromCharCode((ch >> 10) + 0xD800, (ch & 0x03FF) + 0xDC00)
   }
-
-  /**
-   * Validate the flags part of a given RegExpLiteral.
-   *
-   * @param {RegExpValidationState} state The state to validate RegExp.
-   * @returns {void}
-   */
   pp$9.validateRegExpFlags = function(state) {
     var this$1 = this;
-
     var validFlags = state.validFlags;
     var flags = state.flags;
-
     for (var i = 0; i < flags.length; i++) {
       var flag = flags.charAt(i);
       if (validFlags.indexOf(flag) === -1) {
@@ -4075,28 +3177,13 @@ var GPU = (function () {
       }
     }
   };
-
-  /**
-   * Validate the pattern part of a given RegExpLiteral.
-   *
-   * @param {RegExpValidationState} state The state to validate RegExp.
-   * @returns {void}
-   */
   pp$9.validateRegExpPattern = function(state) {
     this.regexp_pattern(state);
-
-    // The goal symbol for the parse is |Pattern[~U, ~N]|. If the result of
-    // parsing contains a |GroupName|, reparse with the goal symbol
-    // |Pattern[~U, +N]| and use this result instead. Throw a *SyntaxError*
-    // exception if _P_ did not conform to the grammar, if any elements of _P_
-    // were not matched by the parse, or if any Early Error conditions exist.
     if (!state.switchN && this.options.ecmaVersion >= 9 && state.groupNames.length > 0) {
       state.switchN = true;
       this.regexp_pattern(state);
     }
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-Pattern
   pp$9.regexp_pattern = function(state) {
     state.pos = 0;
     state.lastIntValue = 0;
@@ -4106,15 +3193,12 @@ var GPU = (function () {
     state.maxBackReference = 0;
     state.groupNames.length = 0;
     state.backReferenceNames.length = 0;
-
     this.regexp_disjunction(state);
-
     if (state.pos !== state.source.length) {
-      // Make the same messages as V8.
-      if (state.eat(0x29 /* ) */)) {
+      if (state.eat(0x29 )) {
         state.raise("Unmatched ')'");
       }
-      if (state.eat(0x5D /* [ */) || state.eat(0x7D /* } */)) {
+      if (state.eat(0x5D ) || state.eat(0x7D )) {
         state.raise("Lone quantifier brackets");
       }
     }
@@ -4123,129 +3207,98 @@ var GPU = (function () {
     }
     for (var i = 0, list = state.backReferenceNames; i < list.length; i += 1) {
       var name = list[i];
-
       if (state.groupNames.indexOf(name) === -1) {
         state.raise("Invalid named capture referenced");
       }
     }
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-Disjunction
   pp$9.regexp_disjunction = function(state) {
     var this$1 = this;
-
     this.regexp_alternative(state);
-    while (state.eat(0x7C /* | */)) {
+    while (state.eat(0x7C )) {
       this$1.regexp_alternative(state);
     }
-
-    // Make the same message as V8.
     if (this.regexp_eatQuantifier(state, true)) {
       state.raise("Nothing to repeat");
     }
-    if (state.eat(0x7B /* { */)) {
+    if (state.eat(0x7B )) {
       state.raise("Lone quantifier brackets");
     }
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-Alternative
   pp$9.regexp_alternative = function(state) {
     while (state.pos < state.source.length && this.regexp_eatTerm(state))
       {  }
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-Term
   pp$9.regexp_eatTerm = function(state) {
     if (this.regexp_eatAssertion(state)) {
-      // Handle `QuantifiableAssertion Quantifier` alternative.
-      // `state.lastAssertionIsQuantifiable` is true if the last eaten Assertion
-      // is a QuantifiableAssertion.
       if (state.lastAssertionIsQuantifiable && this.regexp_eatQuantifier(state)) {
-        // Make the same message as V8.
         if (state.switchU) {
           state.raise("Invalid quantifier");
         }
       }
       return true
     }
-
     if (state.switchU ? this.regexp_eatAtom(state) : this.regexp_eatExtendedAtom(state)) {
       this.regexp_eatQuantifier(state);
       return true
     }
-
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-Assertion
   pp$9.regexp_eatAssertion = function(state) {
     var start = state.pos;
     state.lastAssertionIsQuantifiable = false;
-
-    // ^, $
-    if (state.eat(0x5E /* ^ */) || state.eat(0x24 /* $ */)) {
+    if (state.eat(0x5E ) || state.eat(0x24 )) {
       return true
     }
-
-    // \b \B
-    if (state.eat(0x5C /* \ */)) {
-      if (state.eat(0x42 /* B */) || state.eat(0x62 /* b */)) {
+    if (state.eat(0x5C )) {
+      if (state.eat(0x42 ) || state.eat(0x62 )) {
         return true
       }
       state.pos = start;
     }
-
-    // Lookahead / Lookbehind
-    if (state.eat(0x28 /* ( */) && state.eat(0x3F /* ? */)) {
+    if (state.eat(0x28 ) && state.eat(0x3F )) {
       var lookbehind = false;
       if (this.options.ecmaVersion >= 9) {
-        lookbehind = state.eat(0x3C /* < */);
+        lookbehind = state.eat(0x3C );
       }
-      if (state.eat(0x3D /* = */) || state.eat(0x21 /* ! */)) {
+      if (state.eat(0x3D ) || state.eat(0x21 )) {
         this.regexp_disjunction(state);
-        if (!state.eat(0x29 /* ) */)) {
+        if (!state.eat(0x29 )) {
           state.raise("Unterminated group");
         }
         state.lastAssertionIsQuantifiable = !lookbehind;
         return true
       }
     }
-
     state.pos = start;
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-Quantifier
   pp$9.regexp_eatQuantifier = function(state, noError) {
     if ( noError === void 0 ) noError = false;
-
     if (this.regexp_eatQuantifierPrefix(state, noError)) {
-      state.eat(0x3F /* ? */);
+      state.eat(0x3F );
       return true
     }
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-QuantifierPrefix
   pp$9.regexp_eatQuantifierPrefix = function(state, noError) {
     return (
-      state.eat(0x2A /* * */) ||
-      state.eat(0x2B /* + */) ||
-      state.eat(0x3F /* ? */) ||
+      state.eat(0x2A ) ||
+      state.eat(0x2B ) ||
+      state.eat(0x3F ) ||
       this.regexp_eatBracedQuantifier(state, noError)
     )
   };
   pp$9.regexp_eatBracedQuantifier = function(state, noError) {
     var start = state.pos;
-    if (state.eat(0x7B /* { */)) {
+    if (state.eat(0x7B )) {
       var min = 0, max = -1;
       if (this.regexp_eatDecimalDigits(state)) {
         min = state.lastIntValue;
-        if (state.eat(0x2C /* , */) && this.regexp_eatDecimalDigits(state)) {
+        if (state.eat(0x2C ) && this.regexp_eatDecimalDigits(state)) {
           max = state.lastIntValue;
         }
-        if (state.eat(0x7D /* } */)) {
-          // SyntaxError in https://www.ecma-international.org/ecma-262/8.0/#sec-term
+        if (state.eat(0x7D )) {
           if (max !== -1 && max < min && !noError) {
             state.raise("numbers out of order in {} quantifier");
           }
@@ -4259,12 +3312,10 @@ var GPU = (function () {
     }
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-Atom
   pp$9.regexp_eatAtom = function(state) {
     return (
       this.regexp_eatPatternCharacters(state) ||
-      state.eat(0x2E /* . */) ||
+      state.eat(0x2E ) ||
       this.regexp_eatReverseSolidusAtomEscape(state) ||
       this.regexp_eatCharacterClass(state) ||
       this.regexp_eatUncapturingGroup(state) ||
@@ -4273,7 +3324,7 @@ var GPU = (function () {
   };
   pp$9.regexp_eatReverseSolidusAtomEscape = function(state) {
     var start = state.pos;
-    if (state.eat(0x5C /* \ */)) {
+    if (state.eat(0x5C )) {
       if (this.regexp_eatAtomEscape(state)) {
         return true
       }
@@ -4283,10 +3334,10 @@ var GPU = (function () {
   };
   pp$9.regexp_eatUncapturingGroup = function(state) {
     var start = state.pos;
-    if (state.eat(0x28 /* ( */)) {
-      if (state.eat(0x3F /* ? */) && state.eat(0x3A /* : */)) {
+    if (state.eat(0x28 )) {
+      if (state.eat(0x3F ) && state.eat(0x3A )) {
         this.regexp_disjunction(state);
-        if (state.eat(0x29 /* ) */)) {
+        if (state.eat(0x29 )) {
           return true
         }
         state.raise("Unterminated group");
@@ -4296,14 +3347,14 @@ var GPU = (function () {
     return false
   };
   pp$9.regexp_eatCapturingGroup = function(state) {
-    if (state.eat(0x28 /* ( */)) {
+    if (state.eat(0x28 )) {
       if (this.options.ecmaVersion >= 9) {
         this.regexp_groupSpecifier(state);
-      } else if (state.current() === 0x3F /* ? */) {
+      } else if (state.current() === 0x3F ) {
         state.raise("Invalid group");
       }
       this.regexp_disjunction(state);
-      if (state.eat(0x29 /* ) */)) {
+      if (state.eat(0x29 )) {
         state.numCapturingParens += 1;
         return true
       }
@@ -4311,11 +3362,9 @@ var GPU = (function () {
     }
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-ExtendedAtom
   pp$9.regexp_eatExtendedAtom = function(state) {
     return (
-      state.eat(0x2E /* . */) ||
+      state.eat(0x2E ) ||
       this.regexp_eatReverseSolidusAtomEscape(state) ||
       this.regexp_eatCharacterClass(state) ||
       this.regexp_eatUncapturingGroup(state) ||
@@ -4324,16 +3373,12 @@ var GPU = (function () {
       this.regexp_eatExtendedPatternCharacter(state)
     )
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-InvalidBracedQuantifier
   pp$9.regexp_eatInvalidBracedQuantifier = function(state) {
     if (this.regexp_eatBracedQuantifier(state, true)) {
       state.raise("Nothing to repeat");
     }
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-SyntaxCharacter
   pp$9.regexp_eatSyntaxCharacter = function(state) {
     var ch = state.current();
     if (isSyntaxCharacter(ch)) {
@@ -4345,17 +3390,14 @@ var GPU = (function () {
   };
   function isSyntaxCharacter(ch) {
     return (
-      ch === 0x24 /* $ */ ||
-      ch >= 0x28 /* ( */ && ch <= 0x2B /* + */ ||
-      ch === 0x2E /* . */ ||
-      ch === 0x3F /* ? */ ||
-      ch >= 0x5B /* [ */ && ch <= 0x5E /* ^ */ ||
-      ch >= 0x7B /* { */ && ch <= 0x7D /* } */
+      ch === 0x24  ||
+      ch >= 0x28  && ch <= 0x2B  ||
+      ch === 0x2E  ||
+      ch === 0x3F  ||
+      ch >= 0x5B  && ch <= 0x5E  ||
+      ch >= 0x7B  && ch <= 0x7D
     )
   }
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-PatternCharacter
-  // But eat eager.
   pp$9.regexp_eatPatternCharacters = function(state) {
     var start = state.pos;
     var ch = 0;
@@ -4364,31 +3406,25 @@ var GPU = (function () {
     }
     return state.pos !== start
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-ExtendedPatternCharacter
   pp$9.regexp_eatExtendedPatternCharacter = function(state) {
     var ch = state.current();
     if (
       ch !== -1 &&
-      ch !== 0x24 /* $ */ &&
-      !(ch >= 0x28 /* ( */ && ch <= 0x2B /* + */) &&
-      ch !== 0x2E /* . */ &&
-      ch !== 0x3F /* ? */ &&
-      ch !== 0x5B /* [ */ &&
-      ch !== 0x5E /* ^ */ &&
-      ch !== 0x7C /* | */
+      ch !== 0x24  &&
+      !(ch >= 0x28  && ch <= 0x2B ) &&
+      ch !== 0x2E  &&
+      ch !== 0x3F  &&
+      ch !== 0x5B  &&
+      ch !== 0x5E  &&
+      ch !== 0x7C
     ) {
       state.advance();
       return true
     }
     return false
   };
-
-  // GroupSpecifier[U] ::
-  //   [empty]
-  //   `?` GroupName[?U]
   pp$9.regexp_groupSpecifier = function(state) {
-    if (state.eat(0x3F /* ? */)) {
+    if (state.eat(0x3F )) {
       if (this.regexp_eatGroupName(state)) {
         if (state.groupNames.indexOf(state.lastStringValue) !== -1) {
           state.raise("Duplicate capture group name");
@@ -4399,25 +3435,16 @@ var GPU = (function () {
       state.raise("Invalid group");
     }
   };
-
-  // GroupName[U] ::
-  //   `<` RegExpIdentifierName[?U] `>`
-  // Note: this updates `state.lastStringValue` property with the eaten name.
   pp$9.regexp_eatGroupName = function(state) {
     state.lastStringValue = "";
-    if (state.eat(0x3C /* < */)) {
-      if (this.regexp_eatRegExpIdentifierName(state) && state.eat(0x3E /* > */)) {
+    if (state.eat(0x3C )) {
+      if (this.regexp_eatRegExpIdentifierName(state) && state.eat(0x3E )) {
         return true
       }
       state.raise("Invalid capture group name");
     }
     return false
   };
-
-  // RegExpIdentifierName[U] ::
-  //   RegExpIdentifierStart[?U]
-  //   RegExpIdentifierName[?U] RegExpIdentifierPart[?U]
-  // Note: this updates `state.lastStringValue` property with the eaten name.
   pp$9.regexp_eatRegExpIdentifierName = function(state) {
     state.lastStringValue = "";
     if (this.regexp_eatRegExpIdentifierStart(state)) {
@@ -4429,60 +3456,40 @@ var GPU = (function () {
     }
     return false
   };
-
-  // RegExpIdentifierStart[U] ::
-  //   UnicodeIDStart
-  //   `$`
-  //   `_`
-  //   `\` RegExpUnicodeEscapeSequence[?U]
   pp$9.regexp_eatRegExpIdentifierStart = function(state) {
     var start = state.pos;
     var ch = state.current();
     state.advance();
-
-    if (ch === 0x5C /* \ */ && this.regexp_eatRegExpUnicodeEscapeSequence(state)) {
+    if (ch === 0x5C  && this.regexp_eatRegExpUnicodeEscapeSequence(state)) {
       ch = state.lastIntValue;
     }
     if (isRegExpIdentifierStart(ch)) {
       state.lastIntValue = ch;
       return true
     }
-
     state.pos = start;
     return false
   };
   function isRegExpIdentifierStart(ch) {
-    return isIdentifierStart(ch, true) || ch === 0x24 /* $ */ || ch === 0x5F /* _ */
+    return isIdentifierStart(ch, true) || ch === 0x24  || ch === 0x5F
   }
-
-  // RegExpIdentifierPart[U] ::
-  //   UnicodeIDContinue
-  //   `$`
-  //   `_`
-  //   `\` RegExpUnicodeEscapeSequence[?U]
-  //   <ZWNJ>
-  //   <ZWJ>
   pp$9.regexp_eatRegExpIdentifierPart = function(state) {
     var start = state.pos;
     var ch = state.current();
     state.advance();
-
-    if (ch === 0x5C /* \ */ && this.regexp_eatRegExpUnicodeEscapeSequence(state)) {
+    if (ch === 0x5C  && this.regexp_eatRegExpUnicodeEscapeSequence(state)) {
       ch = state.lastIntValue;
     }
     if (isRegExpIdentifierPart(ch)) {
       state.lastIntValue = ch;
       return true
     }
-
     state.pos = start;
     return false
   };
   function isRegExpIdentifierPart(ch) {
-    return isIdentifierChar(ch, true) || ch === 0x24 /* $ */ || ch === 0x5F /* _ */ || ch === 0x200C /* <ZWNJ> */ || ch === 0x200D /* <ZWJ> */
+    return isIdentifierChar(ch, true) || ch === 0x24  || ch === 0x5F  || ch === 0x200C  || ch === 0x200D
   }
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-AtomEscape
   pp$9.regexp_eatAtomEscape = function(state) {
     if (
       this.regexp_eatBackReference(state) ||
@@ -4493,8 +3500,7 @@ var GPU = (function () {
       return true
     }
     if (state.switchU) {
-      // Make the same message as V8.
-      if (state.current() === 0x63 /* c */) {
+      if (state.current() === 0x63 ) {
         state.raise("Invalid unicode escape");
       }
       state.raise("Invalid escape");
@@ -4506,7 +3512,6 @@ var GPU = (function () {
     if (this.regexp_eatDecimalEscape(state)) {
       var n = state.lastIntValue;
       if (state.switchU) {
-        // For SyntaxError in https://www.ecma-international.org/ecma-262/8.0/#sec-atomescape
         if (n > state.maxBackReference) {
           state.maxBackReference = n;
         }
@@ -4520,7 +3525,7 @@ var GPU = (function () {
     return false
   };
   pp$9.regexp_eatKGroupName = function(state) {
-    if (state.eat(0x6B /* k */)) {
+    if (state.eat(0x6B )) {
       if (this.regexp_eatGroupName(state)) {
         state.backReferenceNames.push(state.lastStringValue);
         return true
@@ -4529,8 +3534,6 @@ var GPU = (function () {
     }
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-CharacterEscape
   pp$9.regexp_eatCharacterEscape = function(state) {
     return (
       this.regexp_eatControlEscape(state) ||
@@ -4544,7 +3547,7 @@ var GPU = (function () {
   };
   pp$9.regexp_eatCControlLetter = function(state) {
     var start = state.pos;
-    if (state.eat(0x63 /* c */)) {
+    if (state.eat(0x63 )) {
       if (this.regexp_eatControlLetter(state)) {
         return true
       }
@@ -4553,46 +3556,42 @@ var GPU = (function () {
     return false
   };
   pp$9.regexp_eatZero = function(state) {
-    if (state.current() === 0x30 /* 0 */ && !isDecimalDigit(state.lookahead())) {
+    if (state.current() === 0x30  && !isDecimalDigit(state.lookahead())) {
       state.lastIntValue = 0;
       state.advance();
       return true
     }
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-ControlEscape
   pp$9.regexp_eatControlEscape = function(state) {
     var ch = state.current();
-    if (ch === 0x74 /* t */) {
-      state.lastIntValue = 0x09; /* \t */
+    if (ch === 0x74 ) {
+      state.lastIntValue = 0x09;
       state.advance();
       return true
     }
-    if (ch === 0x6E /* n */) {
-      state.lastIntValue = 0x0A; /* \n */
+    if (ch === 0x6E ) {
+      state.lastIntValue = 0x0A;
       state.advance();
       return true
     }
-    if (ch === 0x76 /* v */) {
-      state.lastIntValue = 0x0B; /* \v */
+    if (ch === 0x76 ) {
+      state.lastIntValue = 0x0B;
       state.advance();
       return true
     }
-    if (ch === 0x66 /* f */) {
-      state.lastIntValue = 0x0C; /* \f */
+    if (ch === 0x66 ) {
+      state.lastIntValue = 0x0C;
       state.advance();
       return true
     }
-    if (ch === 0x72 /* r */) {
-      state.lastIntValue = 0x0D; /* \r */
+    if (ch === 0x72 ) {
+      state.lastIntValue = 0x0D;
       state.advance();
       return true
     }
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-ControlLetter
   pp$9.regexp_eatControlLetter = function(state) {
     var ch = state.current();
     if (isControlLetter(ch)) {
@@ -4604,21 +3603,18 @@ var GPU = (function () {
   };
   function isControlLetter(ch) {
     return (
-      (ch >= 0x41 /* A */ && ch <= 0x5A /* Z */) ||
-      (ch >= 0x61 /* a */ && ch <= 0x7A /* z */)
+      (ch >= 0x41  && ch <= 0x5A ) ||
+      (ch >= 0x61  && ch <= 0x7A )
     )
   }
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-RegExpUnicodeEscapeSequence
   pp$9.regexp_eatRegExpUnicodeEscapeSequence = function(state) {
     var start = state.pos;
-
-    if (state.eat(0x75 /* u */)) {
+    if (state.eat(0x75 )) {
       if (this.regexp_eatFixedHexDigits(state, 4)) {
         var lead = state.lastIntValue;
         if (state.switchU && lead >= 0xD800 && lead <= 0xDBFF) {
           var leadSurrogateEnd = state.pos;
-          if (state.eat(0x5C /* \ */) && state.eat(0x75 /* u */) && this.regexp_eatFixedHexDigits(state, 4)) {
+          if (state.eat(0x5C ) && state.eat(0x75 ) && this.regexp_eatFixedHexDigits(state, 4)) {
             var trail = state.lastIntValue;
             if (trail >= 0xDC00 && trail <= 0xDFFF) {
               state.lastIntValue = (lead - 0xD800) * 0x400 + (trail - 0xDC00) + 0x10000;
@@ -4632,9 +3628,9 @@ var GPU = (function () {
       }
       if (
         state.switchU &&
-        state.eat(0x7B /* { */) &&
+        state.eat(0x7B ) &&
         this.regexp_eatHexDigits(state) &&
-        state.eat(0x7D /* } */) &&
+        state.eat(0x7D ) &&
         isValidUnicode(state.lastIntValue)
       ) {
         return true
@@ -4644,98 +3640,80 @@ var GPU = (function () {
       }
       state.pos = start;
     }
-
     return false
   };
   function isValidUnicode(ch) {
     return ch >= 0 && ch <= 0x10FFFF
   }
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-IdentityEscape
   pp$9.regexp_eatIdentityEscape = function(state) {
     if (state.switchU) {
       if (this.regexp_eatSyntaxCharacter(state)) {
         return true
       }
-      if (state.eat(0x2F /* / */)) {
-        state.lastIntValue = 0x2F; /* / */
+      if (state.eat(0x2F )) {
+        state.lastIntValue = 0x2F;
         return true
       }
       return false
     }
-
     var ch = state.current();
-    if (ch !== 0x63 /* c */ && (!state.switchN || ch !== 0x6B /* k */)) {
+    if (ch !== 0x63  && (!state.switchN || ch !== 0x6B )) {
       state.lastIntValue = ch;
       state.advance();
       return true
     }
-
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-DecimalEscape
   pp$9.regexp_eatDecimalEscape = function(state) {
     state.lastIntValue = 0;
     var ch = state.current();
-    if (ch >= 0x31 /* 1 */ && ch <= 0x39 /* 9 */) {
+    if (ch >= 0x31  && ch <= 0x39 ) {
       do {
-        state.lastIntValue = 10 * state.lastIntValue + (ch - 0x30 /* 0 */);
+        state.lastIntValue = 10 * state.lastIntValue + (ch - 0x30 );
         state.advance();
-      } while ((ch = state.current()) >= 0x30 /* 0 */ && ch <= 0x39 /* 9 */)
+      } while ((ch = state.current()) >= 0x30  && ch <= 0x39 )
       return true
     }
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-CharacterClassEscape
   pp$9.regexp_eatCharacterClassEscape = function(state) {
     var ch = state.current();
-
     if (isCharacterClassEscape(ch)) {
       state.lastIntValue = -1;
       state.advance();
       return true
     }
-
     if (
       state.switchU &&
       this.options.ecmaVersion >= 9 &&
-      (ch === 0x50 /* P */ || ch === 0x70 /* p */)
+      (ch === 0x50  || ch === 0x70 )
     ) {
       state.lastIntValue = -1;
       state.advance();
       if (
-        state.eat(0x7B /* { */) &&
+        state.eat(0x7B ) &&
         this.regexp_eatUnicodePropertyValueExpression(state) &&
-        state.eat(0x7D /* } */)
+        state.eat(0x7D )
       ) {
         return true
       }
       state.raise("Invalid property name");
     }
-
     return false
   };
   function isCharacterClassEscape(ch) {
     return (
-      ch === 0x64 /* d */ ||
-      ch === 0x44 /* D */ ||
-      ch === 0x73 /* s */ ||
-      ch === 0x53 /* S */ ||
-      ch === 0x77 /* w */ ||
-      ch === 0x57 /* W */
+      ch === 0x64  ||
+      ch === 0x44  ||
+      ch === 0x73  ||
+      ch === 0x53  ||
+      ch === 0x77  ||
+      ch === 0x57
     )
   }
-
-  // UnicodePropertyValueExpression ::
-  //   UnicodePropertyName `=` UnicodePropertyValue
-  //   LoneUnicodePropertyNameOrValue
   pp$9.regexp_eatUnicodePropertyValueExpression = function(state) {
     var start = state.pos;
-
-    // UnicodePropertyName `=` UnicodePropertyValue
-    if (this.regexp_eatUnicodePropertyName(state) && state.eat(0x3D /* = */)) {
+    if (this.regexp_eatUnicodePropertyName(state) && state.eat(0x3D )) {
       var name = state.lastStringValue;
       if (this.regexp_eatUnicodePropertyValue(state)) {
         var value = state.lastStringValue;
@@ -4744,8 +3722,6 @@ var GPU = (function () {
       }
     }
     state.pos = start;
-
-    // LoneUnicodePropertyNameOrValue
     if (this.regexp_eatLoneUnicodePropertyNameOrValue(state)) {
       var nameOrValue = state.lastStringValue;
       this.regexp_validateUnicodePropertyNameOrValue(state, nameOrValue);
@@ -4763,9 +3739,6 @@ var GPU = (function () {
       state.raise("Invalid property name");
     }
   };
-
-  // UnicodePropertyName ::
-  //   UnicodePropertyNameCharacters
   pp$9.regexp_eatUnicodePropertyName = function(state) {
     var ch = 0;
     state.lastStringValue = "";
@@ -4776,11 +3749,8 @@ var GPU = (function () {
     return state.lastStringValue !== ""
   };
   function isUnicodePropertyNameCharacter(ch) {
-    return isControlLetter(ch) || ch === 0x5F /* _ */
+    return isControlLetter(ch) || ch === 0x5F
   }
-
-  // UnicodePropertyValue ::
-  //   UnicodePropertyValueCharacters
   pp$9.regexp_eatUnicodePropertyValue = function(state) {
     var ch = 0;
     state.lastStringValue = "";
@@ -4793,36 +3763,25 @@ var GPU = (function () {
   function isUnicodePropertyValueCharacter(ch) {
     return isUnicodePropertyNameCharacter(ch) || isDecimalDigit(ch)
   }
-
-  // LoneUnicodePropertyNameOrValue ::
-  //   UnicodePropertyValueCharacters
   pp$9.regexp_eatLoneUnicodePropertyNameOrValue = function(state) {
     return this.regexp_eatUnicodePropertyValue(state)
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-CharacterClass
   pp$9.regexp_eatCharacterClass = function(state) {
-    if (state.eat(0x5B /* [ */)) {
-      state.eat(0x5E /* ^ */);
+    if (state.eat(0x5B )) {
+      state.eat(0x5E );
       this.regexp_classRanges(state);
-      if (state.eat(0x5D /* [ */)) {
+      if (state.eat(0x5D )) {
         return true
       }
-      // Unreachable since it threw "unterminated regular expression" error before.
       state.raise("Unterminated character class");
     }
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-ClassRanges
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-NonemptyClassRanges
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-NonemptyClassRangesNoDash
   pp$9.regexp_classRanges = function(state) {
     var this$1 = this;
-
     while (this.regexp_eatClassAtom(state)) {
       var left = state.lastIntValue;
-      if (state.eat(0x2D /* - */) && this$1.regexp_eatClassAtom(state)) {
+      if (state.eat(0x2D ) && this$1.regexp_eatClassAtom(state)) {
         var right = state.lastIntValue;
         if (state.switchU && (left === -1 || right === -1)) {
           state.raise("Invalid character class");
@@ -4833,79 +3792,62 @@ var GPU = (function () {
       }
     }
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-ClassAtom
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-ClassAtomNoDash
   pp$9.regexp_eatClassAtom = function(state) {
     var start = state.pos;
-
-    if (state.eat(0x5C /* \ */)) {
+    if (state.eat(0x5C )) {
       if (this.regexp_eatClassEscape(state)) {
         return true
       }
       if (state.switchU) {
-        // Make the same message as V8.
         var ch$1 = state.current();
-        if (ch$1 === 0x63 /* c */ || isOctalDigit(ch$1)) {
+        if (ch$1 === 0x63  || isOctalDigit(ch$1)) {
           state.raise("Invalid class escape");
         }
         state.raise("Invalid escape");
       }
       state.pos = start;
     }
-
     var ch = state.current();
-    if (ch !== 0x5D /* [ */) {
+    if (ch !== 0x5D ) {
       state.lastIntValue = ch;
       state.advance();
       return true
     }
-
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-ClassEscape
   pp$9.regexp_eatClassEscape = function(state) {
     var start = state.pos;
-
-    if (state.eat(0x62 /* b */)) {
-      state.lastIntValue = 0x08; /* <BS> */
+    if (state.eat(0x62 )) {
+      state.lastIntValue = 0x08;
       return true
     }
-
-    if (state.switchU && state.eat(0x2D /* - */)) {
-      state.lastIntValue = 0x2D; /* - */
+    if (state.switchU && state.eat(0x2D )) {
+      state.lastIntValue = 0x2D;
       return true
     }
-
-    if (!state.switchU && state.eat(0x63 /* c */)) {
+    if (!state.switchU && state.eat(0x63 )) {
       if (this.regexp_eatClassControlLetter(state)) {
         return true
       }
       state.pos = start;
     }
-
     return (
       this.regexp_eatCharacterClassEscape(state) ||
       this.regexp_eatCharacterEscape(state)
     )
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-ClassControlLetter
   pp$9.regexp_eatClassControlLetter = function(state) {
     var ch = state.current();
-    if (isDecimalDigit(ch) || ch === 0x5F /* _ */) {
+    if (isDecimalDigit(ch) || ch === 0x5F ) {
       state.lastIntValue = ch % 0x20;
       state.advance();
       return true
     }
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-HexEscapeSequence
   pp$9.regexp_eatHexEscapeSequence = function(state) {
     var start = state.pos;
-    if (state.eat(0x78 /* x */)) {
+    if (state.eat(0x78 )) {
       if (this.regexp_eatFixedHexDigits(state, 2)) {
         return true
       }
@@ -4916,23 +3858,19 @@ var GPU = (function () {
     }
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-DecimalDigits
   pp$9.regexp_eatDecimalDigits = function(state) {
     var start = state.pos;
     var ch = 0;
     state.lastIntValue = 0;
     while (isDecimalDigit(ch = state.current())) {
-      state.lastIntValue = 10 * state.lastIntValue + (ch - 0x30 /* 0 */);
+      state.lastIntValue = 10 * state.lastIntValue + (ch - 0x30 );
       state.advance();
     }
     return state.pos !== start
   };
   function isDecimalDigit(ch) {
-    return ch >= 0x30 /* 0 */ && ch <= 0x39 /* 9 */
+    return ch >= 0x30  && ch <= 0x39
   }
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-HexDigits
   pp$9.regexp_eatHexDigits = function(state) {
     var start = state.pos;
     var ch = 0;
@@ -4945,23 +3883,20 @@ var GPU = (function () {
   };
   function isHexDigit(ch) {
     return (
-      (ch >= 0x30 /* 0 */ && ch <= 0x39 /* 9 */) ||
-      (ch >= 0x41 /* A */ && ch <= 0x46 /* F */) ||
-      (ch >= 0x61 /* a */ && ch <= 0x66 /* f */)
+      (ch >= 0x30  && ch <= 0x39 ) ||
+      (ch >= 0x41  && ch <= 0x46 ) ||
+      (ch >= 0x61  && ch <= 0x66 )
     )
   }
   function hexToInt(ch) {
-    if (ch >= 0x41 /* A */ && ch <= 0x46 /* F */) {
-      return 10 + (ch - 0x41 /* A */)
+    if (ch >= 0x41  && ch <= 0x46 ) {
+      return 10 + (ch - 0x41 )
     }
-    if (ch >= 0x61 /* a */ && ch <= 0x66 /* f */) {
-      return 10 + (ch - 0x61 /* a */)
+    if (ch >= 0x61  && ch <= 0x66 ) {
+      return 10 + (ch - 0x61 )
     }
-    return ch - 0x30 /* 0 */
+    return ch - 0x30
   }
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-annexB-LegacyOctalEscapeSequence
-  // Allows only 0-377(octal) i.e. 0-255(decimal).
   pp$9.regexp_eatLegacyOctalEscapeSequence = function(state) {
     if (this.regexp_eatOctalDigit(state)) {
       var n1 = state.lastIntValue;
@@ -4979,12 +3914,10 @@ var GPU = (function () {
     }
     return false
   };
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-OctalDigit
   pp$9.regexp_eatOctalDigit = function(state) {
     var ch = state.current();
     if (isOctalDigit(ch)) {
-      state.lastIntValue = ch - 0x30; /* 0 */
+      state.lastIntValue = ch - 0x30;
       state.advance();
       return true
     }
@@ -4992,12 +3925,8 @@ var GPU = (function () {
     return false
   };
   function isOctalDigit(ch) {
-    return ch >= 0x30 /* 0 */ && ch <= 0x37 /* 7 */
+    return ch >= 0x30  && ch <= 0x37
   }
-
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-Hex4Digits
-  // https://www.ecma-international.org/ecma-262/8.0/#prod-HexDigit
-  // And HexDigit HexDigit in https://www.ecma-international.org/ecma-262/8.0/#prod-HexEscapeSequence
   pp$9.regexp_eatFixedHexDigits = function(state, length) {
     var start = state.pos;
     state.lastIntValue = 0;
@@ -5012,11 +3941,6 @@ var GPU = (function () {
     }
     return true
   };
-
-  // Object type used to represent tokens. Note that normally, tokens
-  // simply exist as properties on the parser object. This is only
-  // used for the onToken callback and the external tokenizer.
-
   var Token = function Token(p) {
     this.type = p.type;
     this.value = p.value;
@@ -5027,34 +3951,23 @@ var GPU = (function () {
     if (p.options.ranges)
       { this.range = [p.start, p.end]; }
   };
-
-  // ## Tokenizer
-
   var pp$8 = Parser.prototype;
-
-  // Move to the next token
-
   pp$8.next = function() {
     if (this.options.onToken)
       { this.options.onToken(new Token(this)); }
-
     this.lastTokEnd = this.end;
     this.lastTokStart = this.start;
     this.lastTokEndLoc = this.endLoc;
     this.lastTokStartLoc = this.startLoc;
     this.nextToken();
   };
-
   pp$8.getToken = function() {
     this.next();
     return new Token(this)
   };
-
-  // If we're in an ES6 environment, make parsers iterable
   if (typeof Symbol !== "undefined")
     { pp$8[Symbol.iterator] = function() {
       var this$1 = this;
-
       return {
         next: function () {
           var token = this$1.getToken();
@@ -5065,48 +3978,31 @@ var GPU = (function () {
         }
       }
     }; }
-
-  // Toggle strict mode. Re-reads the next number or string to please
-  // pedantic tests (`"use strict"; 010;` should fail).
-
   pp$8.curContext = function() {
     return this.context[this.context.length - 1]
   };
-
-  // Read a single token, updating the parser object's token-related
-  // properties.
-
   pp$8.nextToken = function() {
     var curContext = this.curContext();
     if (!curContext || !curContext.preserveSpace) { this.skipSpace(); }
-
     this.start = this.pos;
     if (this.options.locations) { this.startLoc = this.curPosition(); }
     if (this.pos >= this.input.length) { return this.finishToken(types.eof) }
-
     if (curContext.override) { return curContext.override(this) }
     else { this.readToken(this.fullCharCodeAtPos()); }
   };
-
   pp$8.readToken = function(code) {
-    // Identifier or keyword. '\uXXXX' sequences are allowed in
-    // identifiers, so '\' also dispatches to that.
-    if (isIdentifierStart(code, this.options.ecmaVersion >= 6) || code === 92 /* '\' */)
+    if (isIdentifierStart(code, this.options.ecmaVersion >= 6) || code === 92 )
       { return this.readWord() }
-
     return this.getTokenFromCode(code)
   };
-
   pp$8.fullCharCodeAtPos = function() {
     var code = this.input.charCodeAt(this.pos);
     if (code <= 0xd7ff || code >= 0xe000) { return code }
     var next = this.input.charCodeAt(this.pos + 1);
     return (code << 10) + next - 0x35fdc00
   };
-
   pp$8.skipBlockComment = function() {
     var this$1 = this;
-
     var startLoc = this.options.onComment && this.curPosition();
     var start = this.pos, end = this.input.indexOf("*/", this.pos += 2);
     if (end === -1) { this.raise(this.pos - 2, "Unterminated comment"); }
@@ -5123,10 +4019,8 @@ var GPU = (function () {
       { this.options.onComment(true, this.input.slice(start + 2, end), start, this.pos,
                              startLoc, this.curPosition()); }
   };
-
   pp$8.skipLineComment = function(startSkip) {
     var this$1 = this;
-
     var start = this.pos;
     var startLoc = this.options.onComment && this.curPosition();
     var ch = this.input.charCodeAt(this.pos += startSkip);
@@ -5137,17 +4031,12 @@ var GPU = (function () {
       { this.options.onComment(false, this.input.slice(start + startSkip, this.pos), start, this.pos,
                              startLoc, this.curPosition()); }
   };
-
-  // Called at the start of the parse and after every token. Skips
-  // whitespace and comments, and.
-
   pp$8.skipSpace = function() {
     var this$1 = this;
-
     loop: while (this.pos < this.input.length) {
       var ch = this$1.input.charCodeAt(this$1.pos);
       switch (ch) {
-      case 32: case 160: // ' '
+      case 32: case 160:
         ++this$1.pos;
         break
       case 13:
@@ -5161,9 +4050,9 @@ var GPU = (function () {
           this$1.lineStart = this$1.pos;
         }
         break
-      case 47: // '/'
+      case 47:
         switch (this$1.input.charCodeAt(this$1.pos + 1)) {
-        case 42: // '*'
+        case 42:
           this$1.skipBlockComment();
           break
         case 47:
@@ -5182,36 +4071,19 @@ var GPU = (function () {
       }
     }
   };
-
-  // Called at the end of every token. Sets `end`, `val`, and
-  // maintains `context` and `exprAllowed`, and skips the space after
-  // the token, so that the next one's `start` will point at the
-  // right position.
-
   pp$8.finishToken = function(type, val) {
     this.end = this.pos;
     if (this.options.locations) { this.endLoc = this.curPosition(); }
     var prevType = this.type;
     this.type = type;
     this.value = val;
-
     this.updateContext(prevType);
   };
-
-  // ### Token reading
-
-  // This is the function that is called to fetch the next token. It
-  // is somewhat obscure, because it works in character codes rather
-  // than characters, and because operator parsing has been inlined
-  // into it.
-  //
-  // All in the name of speed.
-  //
   pp$8.readToken_dot = function() {
     var next = this.input.charCodeAt(this.pos + 1);
     if (next >= 48 && next <= 57) { return this.readNumber(true) }
     var next2 = this.input.charCodeAt(this.pos + 2);
-    if (this.options.ecmaVersion >= 6 && next === 46 && next2 === 46) { // 46 = dot '.'
+    if (this.options.ecmaVersion >= 6 && next === 46 && next2 === 46) {
       this.pos += 3;
       return this.finishToken(types.ellipsis)
     } else {
@@ -5219,49 +4091,40 @@ var GPU = (function () {
       return this.finishToken(types.dot)
     }
   };
-
-  pp$8.readToken_slash = function() { // '/'
+  pp$8.readToken_slash = function() {
     var next = this.input.charCodeAt(this.pos + 1);
     if (this.exprAllowed) { ++this.pos; return this.readRegexp() }
     if (next === 61) { return this.finishOp(types.assign, 2) }
     return this.finishOp(types.slash, 1)
   };
-
-  pp$8.readToken_mult_modulo_exp = function(code) { // '%*'
+  pp$8.readToken_mult_modulo_exp = function(code) {
     var next = this.input.charCodeAt(this.pos + 1);
     var size = 1;
     var tokentype = code === 42 ? types.star : types.modulo;
-
-    // exponentiation operator ** and **=
     if (this.options.ecmaVersion >= 7 && code === 42 && next === 42) {
       ++size;
       tokentype = types.starstar;
       next = this.input.charCodeAt(this.pos + 2);
     }
-
     if (next === 61) { return this.finishOp(types.assign, size + 1) }
     return this.finishOp(tokentype, size)
   };
-
-  pp$8.readToken_pipe_amp = function(code) { // '|&'
+  pp$8.readToken_pipe_amp = function(code) {
     var next = this.input.charCodeAt(this.pos + 1);
     if (next === code) { return this.finishOp(code === 124 ? types.logicalOR : types.logicalAND, 2) }
     if (next === 61) { return this.finishOp(types.assign, 2) }
     return this.finishOp(code === 124 ? types.bitwiseOR : types.bitwiseAND, 1)
   };
-
-  pp$8.readToken_caret = function() { // '^'
+  pp$8.readToken_caret = function() {
     var next = this.input.charCodeAt(this.pos + 1);
     if (next === 61) { return this.finishOp(types.assign, 2) }
     return this.finishOp(types.bitwiseXOR, 1)
   };
-
-  pp$8.readToken_plus_min = function(code) { // '+-'
+  pp$8.readToken_plus_min = function(code) {
     var next = this.input.charCodeAt(this.pos + 1);
     if (next === code) {
       if (next === 45 && !this.inModule && this.input.charCodeAt(this.pos + 2) === 62 &&
           (this.lastTokEnd === 0 || lineBreak.test(this.input.slice(this.lastTokEnd, this.pos)))) {
-        // A `-->` line comment
         this.skipLineComment(3);
         this.skipSpace();
         return this.nextToken()
@@ -5271,8 +4134,7 @@ var GPU = (function () {
     if (next === 61) { return this.finishOp(types.assign, 2) }
     return this.finishOp(types.plusMin, 1)
   };
-
-  pp$8.readToken_lt_gt = function(code) { // '<>'
+  pp$8.readToken_lt_gt = function(code) {
     var next = this.input.charCodeAt(this.pos + 1);
     var size = 1;
     if (next === code) {
@@ -5282,7 +4144,6 @@ var GPU = (function () {
     }
     if (next === 33 && code === 60 && !this.inModule && this.input.charCodeAt(this.pos + 2) === 45 &&
         this.input.charCodeAt(this.pos + 3) === 45) {
-      // `<!--`, an XML-style comment that should be interpreted as a line comment
       this.skipLineComment(4);
       this.skipSpace();
       return this.nextToken()
@@ -5290,25 +4151,19 @@ var GPU = (function () {
     if (next === 61) { size = 2; }
     return this.finishOp(types.relational, size)
   };
-
-  pp$8.readToken_eq_excl = function(code) { // '=!'
+  pp$8.readToken_eq_excl = function(code) {
     var next = this.input.charCodeAt(this.pos + 1);
     if (next === 61) { return this.finishOp(types.equality, this.input.charCodeAt(this.pos + 2) === 61 ? 3 : 2) }
-    if (code === 61 && next === 62 && this.options.ecmaVersion >= 6) { // '=>'
+    if (code === 61 && next === 62 && this.options.ecmaVersion >= 6) {
       this.pos += 2;
       return this.finishToken(types.arrow)
     }
     return this.finishOp(code === 61 ? types.eq : types.prefix, 1)
   };
-
   pp$8.getTokenFromCode = function(code) {
     switch (code) {
-    // The interpretation of a dot depends on whether it is followed
-    // by a digit or another two dots.
-    case 46: // '.'
+    case 46:
       return this.readToken_dot()
-
-    // Punctuation tokens.
     case 40: ++this.pos; return this.finishToken(types.parenL)
     case 41: ++this.pos; return this.finishToken(types.parenR)
     case 59: ++this.pos; return this.finishToken(types.semi)
@@ -5319,71 +4174,47 @@ var GPU = (function () {
     case 125: ++this.pos; return this.finishToken(types.braceR)
     case 58: ++this.pos; return this.finishToken(types.colon)
     case 63: ++this.pos; return this.finishToken(types.question)
-
-    case 96: // '`'
+    case 96:
       if (this.options.ecmaVersion < 6) { break }
       ++this.pos;
       return this.finishToken(types.backQuote)
-
-    case 48: // '0'
+    case 48:
       var next = this.input.charCodeAt(this.pos + 1);
-      if (next === 120 || next === 88) { return this.readRadixNumber(16) } // '0x', '0X' - hex number
+      if (next === 120 || next === 88) { return this.readRadixNumber(16) }
       if (this.options.ecmaVersion >= 6) {
-        if (next === 111 || next === 79) { return this.readRadixNumber(8) } // '0o', '0O' - octal number
-        if (next === 98 || next === 66) { return this.readRadixNumber(2) } // '0b', '0B' - binary number
+        if (next === 111 || next === 79) { return this.readRadixNumber(8) }
+        if (next === 98 || next === 66) { return this.readRadixNumber(2) }
       }
-
-    // Anything else beginning with a digit is an integer, octal
-    // number, or float.
-    case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57: // 1-9
+    case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57:
       return this.readNumber(false)
-
-    // Quotes produce strings.
-    case 34: case 39: // '"', "'"
+    case 34: case 39:
       return this.readString(code)
-
-    // Operators are parsed inline in tiny state machines. '=' (61) is
-    // often referred to. `finishOp` simply skips the amount of
-    // characters it is given as second argument, and returns a token
-    // of the type given by its first argument.
-
-    case 47: // '/'
+    case 47:
       return this.readToken_slash()
-
-    case 37: case 42: // '%*'
+    case 37: case 42:
       return this.readToken_mult_modulo_exp(code)
-
-    case 124: case 38: // '|&'
+    case 124: case 38:
       return this.readToken_pipe_amp(code)
-
-    case 94: // '^'
+    case 94:
       return this.readToken_caret()
-
-    case 43: case 45: // '+-'
+    case 43: case 45:
       return this.readToken_plus_min(code)
-
-    case 60: case 62: // '<>'
+    case 60: case 62:
       return this.readToken_lt_gt(code)
-
-    case 61: case 33: // '=!'
+    case 61: case 33:
       return this.readToken_eq_excl(code)
-
-    case 126: // '~'
+    case 126:
       return this.finishOp(types.prefix, 1)
     }
-
     this.raise(this.pos, "Unexpected character '" + codePointToString(code) + "'");
   };
-
   pp$8.finishOp = function(type, size) {
     var str = this.input.slice(this.pos, this.pos + size);
     this.pos += size;
     return this.finishToken(type, str)
   };
-
   pp$8.readRegexp = function() {
     var this$1 = this;
-
     var escaped, inClass, start = this.pos;
     for (;;) {
       if (this$1.pos >= this$1.input.length) { this$1.raise(start, "Unterminated regular expression"); }
@@ -5402,58 +4233,40 @@ var GPU = (function () {
     var flagsStart = this.pos;
     var flags = this.readWord1();
     if (this.containsEsc) { this.unexpected(flagsStart); }
-
-    // Validate pattern
     var state = this.regexpState || (this.regexpState = new RegExpValidationState(this));
     state.reset(start, pattern, flags);
     this.validateRegExpFlags(state);
     this.validateRegExpPattern(state);
-
-    // Create Literal#value property value.
     var value = null;
     try {
       value = new RegExp(pattern, flags);
     } catch (e) {
-      // ESTree requires null if it failed to instantiate RegExp object.
-      // https://github.com/estree/estree/blob/a27003adf4fd7bfad44de9cef372a2eacd527b1c/es5.md#regexpliteral
     }
-
     return this.finishToken(types.regexp, {pattern: pattern, flags: flags, value: value})
   };
-
-  // Read an integer in the given radix. Return null if zero digits
-  // were read, the integer value otherwise. When `len` is given, this
-  // will return `null` unless the integer has exactly `len` digits.
-
   pp$8.readInt = function(radix, len) {
     var this$1 = this;
-
     var start = this.pos, total = 0;
     for (var i = 0, e = len == null ? Infinity : len; i < e; ++i) {
       var code = this$1.input.charCodeAt(this$1.pos), val = (void 0);
-      if (code >= 97) { val = code - 97 + 10; } // a
-      else if (code >= 65) { val = code - 65 + 10; } // A
-      else if (code >= 48 && code <= 57) { val = code - 48; } // 0-9
+      if (code >= 97) { val = code - 97 + 10; }
+      else if (code >= 65) { val = code - 65 + 10; }
+      else if (code >= 48 && code <= 57) { val = code - 48; }
       else { val = Infinity; }
       if (val >= radix) { break }
       ++this$1.pos;
       total = total * radix + val;
     }
     if (this.pos === start || len != null && this.pos - start !== len) { return null }
-
     return total
   };
-
   pp$8.readRadixNumber = function(radix) {
-    this.pos += 2; // 0x
+    this.pos += 2;
     var val = this.readInt(radix);
     if (val == null) { this.raise(this.start + 2, "Expected number in radix " + radix); }
     if (isIdentifierStart(this.fullCharCodeAtPos())) { this.raise(this.pos, "Identifier directly after number"); }
     return this.finishToken(types.num, val)
   };
-
-  // Read an integer, octal integer, or floating-point number.
-
   pp$8.readNumber = function(startsWithDot) {
     var start = this.pos;
     if (!startsWithDot && this.readInt(10) === null) { this.raise(start, "Invalid number"); }
@@ -5461,29 +4274,24 @@ var GPU = (function () {
     if (octal && this.strict) { this.raise(start, "Invalid number"); }
     if (octal && /[89]/.test(this.input.slice(start, this.pos))) { octal = false; }
     var next = this.input.charCodeAt(this.pos);
-    if (next === 46 && !octal) { // '.'
+    if (next === 46 && !octal) {
       ++this.pos;
       this.readInt(10);
       next = this.input.charCodeAt(this.pos);
     }
-    if ((next === 69 || next === 101) && !octal) { // 'eE'
+    if ((next === 69 || next === 101) && !octal) {
       next = this.input.charCodeAt(++this.pos);
-      if (next === 43 || next === 45) { ++this.pos; } // '+-'
+      if (next === 43 || next === 45) { ++this.pos; }
       if (this.readInt(10) === null) { this.raise(start, "Invalid number"); }
     }
     if (isIdentifierStart(this.fullCharCodeAtPos())) { this.raise(this.pos, "Identifier directly after number"); }
-
     var str = this.input.slice(start, this.pos);
     var val = octal ? parseInt(str, 8) : parseFloat(str);
     return this.finishToken(types.num, val)
   };
-
-  // Read a string value, interpreting backslash-escapes.
-
   pp$8.readCodePoint = function() {
     var ch = this.input.charCodeAt(this.pos), code;
-
-    if (ch === 123) { // '{'
+    if (ch === 123) {
       if (this.options.ecmaVersion < 6) { this.unexpected(); }
       var codePos = ++this.pos;
       code = this.readHexChar(this.input.indexOf("}", this.pos) - this.pos);
@@ -5494,23 +4302,19 @@ var GPU = (function () {
     }
     return code
   };
-
   function codePointToString(code) {
-    // UTF-16 Decoding
     if (code <= 0xFFFF) { return String.fromCharCode(code) }
     code -= 0x10000;
     return String.fromCharCode((code >> 10) + 0xD800, (code & 1023) + 0xDC00)
   }
-
   pp$8.readString = function(quote) {
     var this$1 = this;
-
     var out = "", chunkStart = ++this.pos;
     for (;;) {
       if (this$1.pos >= this$1.input.length) { this$1.raise(this$1.start, "Unterminated string constant"); }
       var ch = this$1.input.charCodeAt(this$1.pos);
       if (ch === quote) { break }
-      if (ch === 92) { // '\'
+      if (ch === 92) {
         out += this$1.input.slice(chunkStart, this$1.pos);
         out += this$1.readEscapedChar(false);
         chunkStart = this$1.pos;
@@ -5522,11 +4326,7 @@ var GPU = (function () {
     out += this.input.slice(chunkStart, this.pos++);
     return this.finishToken(types.string, out)
   };
-
-  // Reads template string tokens.
-
   var INVALID_TEMPLATE_ESCAPE_ERROR = {};
-
   pp$8.tryReadTemplateToken = function() {
     this.inTemplateElement = true;
     try {
@@ -5538,10 +4338,8 @@ var GPU = (function () {
         throw err
       }
     }
-
     this.inTemplateElement = false;
   };
-
   pp$8.invalidStringToken = function(position, message) {
     if (this.inTemplateElement && this.options.ecmaVersion >= 9) {
       throw INVALID_TEMPLATE_ESCAPE_ERROR
@@ -5549,15 +4347,13 @@ var GPU = (function () {
       this.raise(position, message);
     }
   };
-
   pp$8.readTmplToken = function() {
     var this$1 = this;
-
     var out = "", chunkStart = this.pos;
     for (;;) {
       if (this$1.pos >= this$1.input.length) { this$1.raise(this$1.start, "Unterminated template"); }
       var ch = this$1.input.charCodeAt(this$1.pos);
-      if (ch === 96 || ch === 36 && this$1.input.charCodeAt(this$1.pos + 1) === 123) { // '`', '${'
+      if (ch === 96 || ch === 36 && this$1.input.charCodeAt(this$1.pos + 1) === 123) {
         if (this$1.pos === this$1.start && (this$1.type === types.template || this$1.type === types.invalidTemplate)) {
           if (ch === 36) {
             this$1.pos += 2;
@@ -5570,7 +4366,7 @@ var GPU = (function () {
         out += this$1.input.slice(chunkStart, this$1.pos);
         return this$1.finishToken(types.template, out)
       }
-      if (ch === 92) { // '\'
+      if (ch === 92) {
         out += this$1.input.slice(chunkStart, this$1.pos);
         out += this$1.readEscapedChar(true);
         chunkStart = this$1.pos;
@@ -5597,48 +4393,37 @@ var GPU = (function () {
       }
     }
   };
-
-  // Reads a template token to search for the end, without validating any escape sequences
   pp$8.readInvalidTemplateToken = function() {
     var this$1 = this;
-
     for (; this.pos < this.input.length; this.pos++) {
       switch (this$1.input[this$1.pos]) {
       case "\\":
         ++this$1.pos;
         break
-
       case "$":
         if (this$1.input[this$1.pos + 1] !== "{") {
           break
         }
-      // falls through
-
       case "`":
         return this$1.finishToken(types.invalidTemplate, this$1.input.slice(this$1.start, this$1.pos))
-
-      // no default
       }
     }
     this.raise(this.start, "Unterminated template");
   };
-
-  // Used to read escaped characters
-
   pp$8.readEscapedChar = function(inTemplate) {
     var ch = this.input.charCodeAt(++this.pos);
     ++this.pos;
     switch (ch) {
-    case 110: return "\n" // 'n' -> '\n'
-    case 114: return "\r" // 'r' -> '\r'
-    case 120: return String.fromCharCode(this.readHexChar(2)) // 'x'
-    case 117: return codePointToString(this.readCodePoint()) // 'u'
-    case 116: return "\t" // 't' -> '\t'
-    case 98: return "\b" // 'b' -> '\b'
-    case 118: return "\u000b" // 'v' -> '\u000b'
-    case 102: return "\f" // 'f' -> '\f'
-    case 13: if (this.input.charCodeAt(this.pos) === 10) { ++this.pos; } // '\r\n'
-    case 10: // ' \n'
+    case 110: return "\n"
+    case 114: return "\r"
+    case 120: return String.fromCharCode(this.readHexChar(2))
+    case 117: return codePointToString(this.readCodePoint())
+    case 116: return "\t"
+    case 98: return "\b"
+    case 118: return "\u000b"
+    case 102: return "\f"
+    case 13: if (this.input.charCodeAt(this.pos) === 10) { ++this.pos; }
+    case 10:
       if (this.options.locations) { this.lineStart = this.pos; ++this.curLine; }
       return ""
     default:
@@ -5664,25 +4449,14 @@ var GPU = (function () {
       return String.fromCharCode(ch)
     }
   };
-
-  // Used to read character escape sequences ('\x', '\u', '\U').
-
   pp$8.readHexChar = function(len) {
     var codePos = this.pos;
     var n = this.readInt(16, len);
     if (n === null) { this.invalidStringToken(codePos, "Bad character escape sequence"); }
     return n
   };
-
-  // Read an identifier, and return it as a string. Sets `this.containsEsc`
-  // to whether the word contained a '\u' escape.
-  //
-  // Incrementally adds only escaped chars, adding other chunks as-is
-  // as a micro-optimization.
-
   pp$8.readWord1 = function() {
     var this$1 = this;
-
     this.containsEsc = false;
     var word = "", first = true, chunkStart = this.pos;
     var astral = this.options.ecmaVersion >= 6;
@@ -5690,11 +4464,11 @@ var GPU = (function () {
       var ch = this$1.fullCharCodeAtPos();
       if (isIdentifierChar(ch, astral)) {
         this$1.pos += ch <= 0xffff ? 1 : 2;
-      } else if (ch === 92) { // "\"
+      } else if (ch === 92) {
         this$1.containsEsc = true;
         word += this$1.input.slice(chunkStart, this$1.pos);
         var escStart = this$1.pos;
-        if (this$1.input.charCodeAt(++this$1.pos) !== 117) // "u"
+        if (this$1.input.charCodeAt(++this$1.pos) !== 117)
           { this$1.invalidStringToken(this$1.pos, "Expecting Unicode escape sequence \\uXXXX"); }
         ++this$1.pos;
         var esc = this$1.readCodePoint();
@@ -5709,10 +4483,6 @@ var GPU = (function () {
     }
     return word + this.input.slice(chunkStart, this.pos)
   };
-
-  // Read an identifier or keyword token. Will check for reserved
-  // words when necessary.
-
   pp$8.readWord = function() {
     var word = this.readWord1();
     var type = types.name;
@@ -5722,22 +4492,10 @@ var GPU = (function () {
     }
     return this.finishToken(type, word)
   };
-
-  // The main exported interface (under `self.acorn` when in the
-  // browser) is a `parse` function that takes a code string and
-  // returns an abstract syntax tree as specified by [Mozilla parser
-  // API][api].
-  //
-  // [api]: https://developer.mozilla.org/en-US/docs/SpiderMonkey/Parser_API
-
   function parse(input, options) {
     return new Parser(options, input).parse()
   }
 
-  /**
-   * @desc WebGl Texture implementation in JS
-   * @param {ITextureSettings} settings
-   */
   class Texture {
     constructor(settings) {
       const {
@@ -5758,18 +4516,9 @@ var GPU = (function () {
       this.kernel = null;
       this.type = type;
     }
-
-    /**
-     * @desc Converts the Texture into a JavaScript Array
-     * @returns {Number[]|Number[][]|Number[][][]}
-     */
     toArray() {
       throw new Error(`Not implemented on ${this.constructor.name}`);
     }
-
-    /**
-     * @desc Deletes the Texture
-     */
     delete() {
       return this.context.deleteTexture(this.texture);
     }
@@ -5783,31 +4532,16 @@ var GPU = (function () {
     if (c[0] === 0xef) return 'LE';
     if (c[0] === 0xde) return 'BE';
     throw new Error('unknown endianness');
-  }
-  const _systemEndianness = getSystemEndianness();
-
-  /**
-   *
-   * @desc Gets the system endianness, and cache it
-   * @returns {String} 'LE' or 'BE' depending on system architecture
-   * Credit: https://gist.github.com/TooTallNate/4750953
-   */
+  }const _systemEndianness = getSystemEndianness();
   function systemEndianness() {
     return _systemEndianness;
-  }
-  /**
-   * @desc Evaluate the argument type, to apply respective logic for it
-   * @param {Object} value - The argument object to evaluate type
-   * @returns {String}  Argument type Array/Number/Float/Texture/Unknown
-   */
-  function getVariableType(value, strictIntegers) {
+  }function getVariableType(value, strictIntegers) {
     if (isArray(value)) {
       if (value[0].nodeName === 'IMG') {
         return 'HTMLImageArray';
       }
       return 'Array';
     }
-
     switch (value.constructor) {
       case Boolean:
         return 'Boolean';
@@ -5818,43 +4552,26 @@ var GPU = (function () {
       case Input:
         return 'Input';
     }
-
     switch (value.nodeName) {
       case 'IMG':
         return 'HTMLImage';
       case 'VIDEO':
         return 'HTMLVideo';
     }
-
     return value.hasOwnProperty('type') ? value.type : 'Unknown';
-  }
-  /**
-   * @desc Various utility functions / snippets of code that GPU.JS uses internally.
-   * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
-   */
-  const utils$1 = {
+  }const utils$1 = {
     systemEndianness,
     getSystemEndianness,
     isFunction,
     isFunctionString,
     getFunctionNameFromString,
-
     getFunctionBodyFromString(funcStr) {
       return funcStr.substring(funcStr.indexOf('{') + 1, funcStr.lastIndexOf('}'));
     },
-
     getArgumentNamesFromString,
-
-    /**
-     * @desc Returns a clone
-     * @param {Object} obj - Object to clone
-     * @returns {Object|Array} Cloned object
-     */
     clone(obj) {
       if (obj === null || typeof obj !== 'object' || obj.hasOwnProperty('isActiveClone')) return obj;
-
-      const temp = obj.constructor(); // changed
-
+      const temp = obj.constructor();
       for (let key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
           obj.isActiveClone = null;
@@ -5862,32 +4579,21 @@ var GPU = (function () {
           delete obj.isActiveClone;
         }
       }
-
       return temp;
     },
-
     isArray,
     getVariableType,
-
     getKernelTextureSize(settings, dimensions) {
       let [w, h, d] = dimensions;
       let texelCount = (w || 1) * (h || 1) * (d || 1);
-
       if (settings.optimizeFloatMemory && settings.precision === 'single') {
         w = texelCount = Math.ceil(texelCount / 4);
       }
-      // if given dimensions == a 2d image
       if (h > 1 && w * h === texelCount) {
         return new Int32Array([w, h]);
       }
       return utils$1.closestSquareDimensions(texelCount);
     },
-
-    /**
-     *
-     * @param {Number} length
-     * @returns {TextureDimensions}
-     */
     closestSquareDimensions(length) {
       const sqrt = Math.sqrt(length);
       let high = Math.ceil(sqrt);
@@ -5898,41 +4604,20 @@ var GPU = (function () {
       }
       return new Int32Array([low, Math.ceil(length / low)]);
     },
-
-    /**
-     * A texture takes up four
-     * @param {OutputDimensions} dimensions
-     * @param {Number} bitRatio
-     * @returns {TextureDimensions}
-     */
     getMemoryOptimizedFloatTextureSize(dimensions, bitRatio) {
       const totalArea = utils$1.roundTo((dimensions[0] || 1) * (dimensions[1] || 1) * (dimensions[2] || 1) * (dimensions[3] || 1), 4);
       const texelCount = totalArea / bitRatio;
       return utils$1.closestSquareDimensions(texelCount);
     },
-
-    /**
-     *
-     * @param dimensions
-     * @param bitRatio
-     * @returns {*|TextureDimensions}
-     */
     getMemoryOptimizedPackedTextureSize(dimensions, bitRatio) {
       const [w, h, d] = dimensions;
       const totalArea = utils$1.roundTo((w || 1) * (h || 1) * (d || 1), 4);
       const texelCount = totalArea / (4 / bitRatio);
       return utils$1.closestSquareDimensions(texelCount);
     },
-
     roundTo(n, d) {
       return Math.floor((n + d - 1) / d) * d;
     },
-    /**
-     * @desc Return the dimension of an array.
-     * @param {Array|String|Texture|Input} x - The array
-     * @param {Boolean} [pad] - To include padding in the dimension calculation
-     * @returns {OutputDimensions}
-     */
     getDimensions(x, pad) {
       let ret;
       if (isArray(x)) {
@@ -5950,22 +4635,14 @@ var GPU = (function () {
       } else {
         throw new Error(`Unknown dimensions of ${x}`);
       }
-
       if (pad) {
         ret = Array.from(ret);
         while (ret.length < 3) {
           ret.push(1);
         }
       }
-
       return new Int32Array(ret);
     },
-
-    /**
-     * Puts a nested 2d array into a one-dimensional target array
-     * @param {Array|*} array
-     * @param {Float32Array|Float64Array} target
-     */
     flatten2dArrayTo(array, target) {
       let offset = 0;
       for (let y = 0; y < array.length; y++) {
@@ -5973,12 +4650,6 @@ var GPU = (function () {
         offset += array[y].length;
       }
     },
-
-    /**
-     * Puts a nested 3d array into a one-dimensional target array
-     * @param {Array|*} array
-     * @param {Float32Array|Float64Array} target
-     */
     flatten3dArrayTo(array, target) {
       let offset = 0;
       for (let z = 0; z < array.length; z++) {
@@ -5988,12 +4659,6 @@ var GPU = (function () {
         }
       }
     },
-
-    /**
-     * Puts a nested 4d array into a one-dimensional target array
-     * @param {Array|*} array
-     * @param {Float32Array|Float64Array} target
-     */
     flatten4dArrayTo(array, target) {
       let offset = 0;
       for (let l = 0; l < array.length; l++) {
@@ -6005,12 +4670,6 @@ var GPU = (function () {
         }
       }
     },
-
-    /**
-     * Puts a nested 1d, 2d, or 3d array into a one-dimensional target array
-     * @param {Float32Array|Uint16Array|Uint8Array} array
-     * @param {Float32Array} target
-     */
     flattenTo(array, target) {
       if (isArray(array[0])) {
         if (isArray(array[0][0])) {
@@ -6026,17 +4685,6 @@ var GPU = (function () {
         target.set(array);
       }
     },
-
-    /**
-     *
-     * @desc Splits an array into smaller arrays.
-     * Number of elements in one small chunk is given by `part`
-     *
-     * @param {Number[]} array - The array to split into chunks
-     * @param {Number} part - elements in one chunk
-     *
-     * @returns {Number[]} An array of smaller chunks
-     */
     splitArray(array, part) {
       const result = [];
       for (let i = 0; i < array.length; i += part) {
@@ -6044,23 +4692,14 @@ var GPU = (function () {
       }
       return result;
     },
-
     getAstString,
-
     allPropertiesOf(obj) {
       const props = [];
-
       do {
         props.push.apply(props, Object.getOwnPropertyNames(obj));
       } while (obj = Object.getPrototypeOf(obj));
-
       return props;
     },
-
-    /**
-     * @param {Array} lines - An Array of strings
-     * @returns {String} Single combined String, separated by *\n*
-     */
     linesToString(lines) {
       if (lines.length > 0) {
         return lines.join(';\n') + ';\n';
@@ -6068,33 +4707,22 @@ var GPU = (function () {
         return '\n';
       }
     },
-
     warnDeprecated,
     functionToIFunction,
-
     flipPixels(pixels, width, height) {
-      // https://stackoverflow.com/a/41973289/1324039
-      const halfHeight = height / 2 | 0; // the | 0 keeps the result an int
+      const halfHeight = height / 2 | 0;
       const bytesPerRow = width * 4;
-      // make a temp buffer to hold one row
       const temp = new Uint8ClampedArray(width * 4);
       const result = pixels.slice(0);
       for (let y = 0; y < halfHeight; ++y) {
         const topOffset = y * bytesPerRow;
         const bottomOffset = (height - y - 1) * bytesPerRow;
-
-        // make copy of a row on the top half
         temp.set(result.subarray(topOffset, topOffset + bytesPerRow));
-
-        // copy a row from the bottom half to the top
         result.copyWithin(topOffset, bottomOffset, bottomOffset + bytesPerRow);
-
-        // copy the copy of the top half row to the bottom half
         result.set(temp, bottomOffset);
       }
       return result;
     },
-
     erectPackedFloat: (array, width) => {
       return array.subarray(0, width);
     },
@@ -6287,26 +4915,17 @@ var GPU = (function () {
       }
       return zResults;
     },
-
-    /**
-     * @param {String} source
-     * @param {Object} settings
-     * @return {String}
-     */
     flattenFunctionToString: (source, settings) => {
       const { findDependency, thisLookup, doNotDefine } = settings;
       let flattened = settings.flattened;
       if (!flattened) {
         flattened = settings.flattened = {};
       }
-
       if (parse === null) {
         throw new Error('Missing JS to AST parser');
       }
-
       const ast = parse(source);
       const functionDependencies = [];
-
       function flatten(ast) {
         if (Array.isArray(ast)) {
           const results = [];
@@ -6341,7 +4960,6 @@ var GPU = (function () {
                     const property = properties[i];
                     result.push(`${ast.kind} ${ property } = ${ lookup };\n`);
                   }
-
                   return result.join('');
                 }
                 return `${ast.kind} { ${properties} } = ${source}`;
@@ -6366,11 +4984,9 @@ var GPU = (function () {
             } else if (ast.callee.object.name) {
               const foundSource = findDependency(ast.callee.object.name, ast.callee.property.name);
               if (foundSource === null) {
-                // we're not flattening it
                 return `${ast.callee.object.name}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
               } else {
                 functionDependencies.push(foundSource);
-                // we're flattening it
                 return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
               }
             } else if (ast.callee.object.type === 'MemberExpression') {
@@ -6451,49 +5067,27 @@ var GPU = (function () {
   };
 
   class Kernel {
-    /**
-     * @type {Boolean}
-     */
     static get isSupported() {
       throw new Error(`"isSupported" not implemented on ${ this.name }`);
     }
-
-    /**
-     * @type {Boolean}
-     */
     static isContextMatch(context) {
       throw new Error(`"isContextMatch" not implemented on ${ this.name }`);
     }
-
-    /**
-     * @type {IKernelFeatures}
-     * Used internally to populate the kernel.feature, which is a getter for the output of this value
-     */
     static getFeatures() {
       throw new Error(`"getFeatures" not implemented on ${ this.name }`);
     }
-
     static destroyContext(context) {
       throw new Error(`"destroyContext" called on ${ this.name }`);
     }
-
     static nativeFunctionArguments() {
       throw new Error(`"nativeFunctionArguments" called on ${ this.name }`);
     }
-
     static nativeFunctionReturnType() {
       throw new Error(`"nativeFunctionReturnType" called on ${ this.name }`);
     }
-
     static combineKernels() {
       throw new Error(`"combineKernels" called on ${ this.name }`);
     }
-
-    /**
-     *
-     * @param {string|object} source
-     * @param [settings]
-     */
     constructor(source, settings) {
       if (typeof source !== 'object') {
         if (typeof source !== 'string') {
@@ -6506,141 +5100,36 @@ var GPU = (function () {
       this.useLegacyEncoder = false;
       this.fallbackRequested = false;
       this.onRequestFallback = null;
-
-      /**
-       * Name of the arguments found from parsing source argument
-       * @type {String[]}
-       */
       this.argumentNames = typeof source === 'string' ? getArgumentNamesFromString(source) : null;
       this.argumentTypes = null;
       this.argumentSizes = null;
       this.argumentBitRatios = null;
       this.kernelArguments = null;
       this.kernelConstants = null;
-
-
-      /**
-       * The function source
-       * @type {String}
-       */
       this.source = source;
-
-      /**
-       * The size of the kernel's output
-       * @type {Number[]}
-       */
       this.output = null;
-
-      /**
-       * Debug mode
-       * @type {Boolean}
-       */
       this.debug = false;
-
-      /**
-       * Graphical mode
-       * @type {Boolean}
-       */
       this.graphical = false;
-
-      /**
-       * Maximum loops when using argument values to prevent infinity
-       * @type {Number}
-       */
       this.loopMaxIterations = 0;
-
-      /**
-       * Constants used in kernel via `this.constants`
-       * @type {Object}
-       */
       this.constants = null;
       this.constantTypes = null;
       this.constantBitRatios = null;
       this.dynamicArguments = false;
       this.dynamicOutput = true;
-
-      /**
-       *
-       * @type {Object}
-       */
       this.canvas = null;
-
-      /**
-       *
-       * @type {WebGLRenderingContext}
-       */
       this.context = null;
-
-      /**
-       *
-       * @type {Boolean}
-       */
       this.checkContext = null;
-
-      /**
-       *
-       * @type {GPU}
-       */
       this.gpu = null;
-
-      /**
-       *
-       * @type {IGPUFunction[]}
-       */
       this.functions = null;
-
-      /**
-       *
-       * @type {IGPUNativeFunction[]}
-       */
       this.nativeFunctions = null;
-
-      /**
-       *
-       * @type {String}
-       */
       this.injectedNative = null;
-
-      /**
-       *
-       * @type {ISubKernel[]}
-       */
       this.subKernels = null;
-
-      /**
-       *
-       * @type {Boolean}
-       */
       this.validate = true;
-
-      /**
-       * Enforces kernel to write to a new array or texture on run
-       * @type {Boolean}
-       */
       this.immutable = false;
-
-      /**
-       * Enforces kernel to write to a texture on run
-       * @type {Boolean}
-       */
       this.pipeline = false;
-
-      /**
-       * Make GPU use single precison or unsigned.  Acceptable values: 'single' or 'unsigned'
-       * @type {String|null}
-       * @enum 'single' | 'unsigned'
-       */
       this.precision = null;
-
-      /**
-       *
-       * @type {String|null}
-       * @enum 'speed' | 'balanced' | 'precision'
-       */
       this.tactic = 'balanced';
-
       this.plugins = null;
-
       this.returnType = null;
       this.leadingReturnStatement = null;
       this.followingReturnStatement = null;
@@ -6649,14 +5138,13 @@ var GPU = (function () {
       this.fixIntegerDivisionAccuracy = null;
       this.warnVarUsage = true;
     }
-
     mergeSettings(settings) {
       for (let p in settings) {
         if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
         switch (p) {
           case 'output':
             if (!Array.isArray(settings.output)) {
-              this.setOutput(settings.output); // Flatten output object
+              this.setOutput(settings.output);
               continue;
             }
             break;
@@ -6675,61 +5163,25 @@ var GPU = (function () {
         }
         this[p] = settings[p];
       }
-
       if (!this.canvas) this.canvas = this.initCanvas();
       if (!this.context) this.context = this.initContext();
       if (!this.plugins) this.plugins = this.initPlugins(settings);
     }
-    /**
-     * @desc Builds the Kernel, by compiling Fragment and Vertical Shaders,
-     * and instantiates the program.
-     * @abstract
-     */
     build() {
       throw new Error(`"build" not defined on ${ this.constructor.name }`);
     }
-
-    /**
-     * @desc Run the kernel program, and send the output to renderOutput
-     * <p> This method calls a helper method *renderOutput* to return the result. </p>
-     * @returns {Float32Array|Float32Array[]|Float32Array[][]|void} Result The final output of the program, as float, and as Textures for reuse.
-     * @abstract
-     */
     run() {
       throw new Error(`"run" not defined on ${ this.constructor.name }`)
     }
-
-    /**
-     * @abstract
-     * @return {Object}
-     */
     initCanvas() {
       throw new Error(`"initCanvas" not defined on ${ this.constructor.name }`);
     }
-
-    /**
-     * @abstract
-     * @return {Object}
-     */
     initContext() {
       throw new Error(`"initContext" not defined on ${ this.constructor.name }`);
     }
-
-    /**
-     * @param {IFunctionSettings} settings
-     * @return {Object};
-     * @abstract
-     */
     initPlugins(settings) {
       throw new Error(`"initPlugins" not defined on ${ this.constructor.name }`);
     }
-
-    /**
-     * @desc Setup the parameter types for the parameters
-     * supplied to the Kernel function
-     *
-     * @param {IArguments} args - The actual parameters sent to the Kernel
-     */
     setupArguments(args) {
       this.kernelArguments = [];
       if (!this.argumentTypes) {
@@ -6751,25 +5203,17 @@ var GPU = (function () {
           });
         }
       }
-
-      // setup sizes
       this.argumentSizes = new Array(args.length);
       this.argumentBitRatios = new Int32Array(args.length);
-
       for (let i = 0; i < args.length; i++) {
         const arg = args[i];
         this.argumentSizes[i] = arg.constructor === Input ? arg.size : null;
         this.argumentBitRatios[i] = this.getBitRatio(arg);
       }
-
       if (this.argumentNames.length !== args.length) {
         throw new Error(`arguments are miss-aligned`);
       }
     }
-
-    /**
-     * Setup constants
-     */
     setupConstants() {
       this.kernelConstants = [];
       let needsConstantTypes = this.constantTypes === null;
@@ -6796,21 +5240,10 @@ var GPU = (function () {
         }
       }
     }
-
-    /**
-     *
-     * @param flag
-     * @return {Kernel}
-     */
     setOptimizeFloatMemory(flag) {
       this.optimizeFloatMemory = flag;
       return this;
     }
-
-    /**
-     * @desc Set output dimensions of the kernel function
-     * @param {Array|Object} output - The output array to set the kernel output size to
-     */
     setOutput(output) {
       if (output.hasOwnProperty('x')) {
         if (output.hasOwnProperty('y')) {
@@ -6827,59 +5260,27 @@ var GPU = (function () {
       }
       return this;
     }
-
-    /**
-     * @desc Toggle debug mode
-     * @param {Boolean} flag - true to enable debug
-     */
     setDebug(flag) {
       this.debug = flag;
       return this;
     }
-
-    /**
-     * @desc Toggle graphical output mode
-     * @param {Boolean} flag - true to enable graphical output
-     */
     setGraphical(flag) {
       this.graphical = flag;
       this.precision = 'unsigned';
       return this;
     }
-
-    /**
-     * @desc Set the maximum number of loop iterations
-     * @param {number} max - iterations count
-     *
-     */
     setLoopMaxIterations(max) {
       this.loopMaxIterations = max;
       return this;
     }
-
-    /**
-     * @desc Set Constants
-     */
     setConstants(constants) {
       this.constants = constants;
       return this;
     }
-
-    /**
-     *
-     * @param [IKernelValueTypes] constantTypes
-     * @return {Kernel}
-     */
     setConstantTypes(constantTypes) {
       this.constantTypes = constantTypes;
       return this;
     }
-
-    /**
-     *
-     * @param {IFunction[]|KernelFunction[]} functions
-     * @return {Kernel}
-     */
     setFunctions(functions) {
       if (typeof functions[0] === 'function') {
         this.functions = functions.map(source => functionToIFunction(source));
@@ -6888,169 +5289,73 @@ var GPU = (function () {
       }
       return this;
     }
-
-    /**
-     *
-     * @param {IGPUNativeFunction} nativeFunctions
-     * @return {Kernel}
-     */
     setNativeFunctions(nativeFunctions) {
       this.nativeFunctions = nativeFunctions;
       return this;
     }
-
-    /**
-     *
-     * @param {String} injectedNative
-     * @return {Kernel}
-     */
     setInjectedNative(injectedNative) {
       this.injectedNative = injectedNative;
       return this;
     }
-
-    /**
-     * Set writing to texture on/off
-     * @param flag
-     * @return {Kernel}
-     */
     setPipeline(flag) {
       this.pipeline = flag;
       return this;
     }
-
-    /**
-     * Set precision to 'unsigned' or 'single'
-     * @param {String} flag 'unsigned' or 'single'
-     * @return {Kernel}
-     */
     setPrecision(flag) {
       this.precision = flag;
       return this;
     }
-
-    /**
-     * @param flag
-     * @return {Kernel}
-     * @deprecated
-     */
     setOutputToTexture(flag) {
       warnDeprecated('method', 'setOutputToTexture', 'setPipeline');
       this.pipeline = flag;
       return this;
     }
-
-    /**
-     * Set to immutable
-     * @param flag
-     * @return {Kernel}
-     */
     setImmutable(flag) {
       this.immutable = flag;
       return this;
     }
-
-    /**
-     * @desc Bind the canvas to kernel
-     * @param {Object} canvas
-     */
     setCanvas(canvas) {
       this.canvas = canvas;
       return this;
     }
-
-    /**
-     * @param {Boolean} flag
-     * @return {Kernel}
-     */
     setStrictIntegers(flag) {
       this.strictIntegers = flag;
       return this;
     }
-
-    /**
-     *
-     * @param flag
-     * @return {Kernel}
-     */
     setDynamicOutput(flag) {
       this.dynamicOutput = flag;
       return this;
     }
-
-    /**
-     * @deprecated
-     * @param flag
-     * @return {Kernel}
-     */
     setHardcodeConstants(flag) {
       warnDeprecated('method', 'setHardcodeConstants');
       this.setDynamicOutput(flag);
       this.setDynamicArguments(flag);
       return this;
     }
-
-    /**
-     *
-     * @param flag
-     * @return {Kernel}
-     */
     setDynamicArguments(flag) {
       this.dynamicArguments = flag;
       return this;
     }
-
-    /**
-     * @param {Boolean} flag
-     * @return {Kernel}
-     */
     setUseLegacyEncoder(flag) {
       this.useLegacyEncoder = flag;
       return this;
     }
-
-    /**
-     *
-     * @param {Boolean} flag
-     * @return {Kernel}
-     */
     setWarnVarUsage(flag) {
       this.warnVarUsage = flag;
       return this;
     }
-
-    /**
-     * @deprecated
-     * @returns {Object}
-     */
     getCanvas() {
       warnDeprecated('method', 'getCanvas');
       return this.canvas;
     }
-
-    /**
-     * @deprecated
-     * @returns {Object}
-     */
     getWebGl() {
       warnDeprecated('method', 'getWebGl');
       return this.context;
     }
-
-    /**
-     * @desc Bind the webGL instance to kernel
-     * @param {WebGLRenderingContext} context - webGl instance to bind
-     */
     setContext(context) {
       this.context = context;
       return this;
     }
-
-    /**
-     *
-     * @param [IKernelValueTypes|GPUVariableType[]] argumentTypes
-     * @return {Kernel}
-     */
     setArgumentTypes(argumentTypes) {
       if (Array.isArray(argumentTypes)) {
         this.argumentTypes = argumentTypes;
@@ -7064,17 +5369,10 @@ var GPU = (function () {
       }
       return this;
     }
-
-    /**
-     *
-     * @param [Tactic] tactic
-     * @return {Kernel}
-     */
     setTactic(tactic) {
       this.tactic = tactic;
       return this;
     }
-
     requestFallback(args) {
       if (!this.onRequestFallback) {
         throw new Error(`"onRequestFallback" not defined on ${ this.constructor.name }`);
@@ -7082,21 +5380,9 @@ var GPU = (function () {
       this.fallbackRequested = true;
       return this.onRequestFallback(args);
     }
-
-    /**
-     * @desc Validate settings
-     * @abstract
-     */
     validateSettings() {
       throw new Error(`"validateSettings" not defined on ${ this.constructor.name }`);
     }
-
-    /**
-     * @desc Add a sub kernel to the root kernel instance.
-     * This is what `createKernelMap` uses.
-     *
-     * @param {ISubKernel} subKernel - function (as a String) of the subKernel to add
-     */
     addSubKernel(subKernel) {
       if (this.subKernels === null) {
         this.subKernels = [];
@@ -7107,23 +5393,11 @@ var GPU = (function () {
       this.subKernels.push(subKernel);
       return this;
     }
-
-    /**
-     * @desc Destroys all memory associated with this kernel
-     * @param {Boolean} [removeCanvasReferences] remove any associated canvas references
-     */
     destroy(removeCanvasReferences) {
       throw new Error(`"destroy" called on ${ this.constructor.name }`);
     }
-
-    /**
-     * bit storage ratio of source to target 'buffer', i.e. if 8bit array -> 32bit tex = 4
-     * @param value
-     * @returns {number}
-     */
     getBitRatio(value) {
       if (this.precision === 'single') {
-        // 8 and 16 are upconverted to float32
         return 4;
       } else if (Array.isArray(value[0])) {
         return this.getBitRatio(value[0]);
@@ -7144,14 +5418,9 @@ var GPU = (function () {
           return 4;
       }
     }
-
-    /**
-     * @returns {number[]}
-     */
     getPixels() {
       throw new Error(`"getPixels" called on ${ this.constructor.name }`);
     }
-
     checkOutput() {
       if (!this.output || !isArray(this.output)) throw new Error('kernel.output not an array');
       if (this.output.length < 1) throw new Error('kernel.output is empty, needs at least 1 value');
@@ -7161,7 +5430,6 @@ var GPU = (function () {
         }
       }
     }
-
     toJSON() {
       const settings = {
         output: this.output,
@@ -7179,20 +5447,7 @@ var GPU = (function () {
     }
   }
 
-  /**
-   * @desc This handles all the raw state, converted state, etc. of a single function.
-   * [INTERNAL] A collection of functionNodes.
-   * @class
-   */
   class FunctionBuilder {
-    /**
-     *
-     * @param {Kernel} kernel
-     * @param {FunctionNode} FunctionNode
-     * @param {object} [extraNodeOptions]
-     * @returns {FunctionBuilder}
-     * @static
-     */
     static fromKernel(kernel, FunctionNode, extraNodeOptions) {
       const {
         kernelArguments,
@@ -7218,59 +5473,45 @@ var GPU = (function () {
         dynamicOutput,
         warnVarUsage,
       } = kernel;
-
       const argumentTypes = new Array(kernelArguments.length);
       const constantTypes = {};
-
       for (let i = 0; i < kernelArguments.length; i++) {
         argumentTypes[i] = kernelArguments[i].type;
       }
-
       for (let i = 0; i < kernelConstants.length; i++) {
         const kernelConstant = kernelConstants[i];
         constantTypes[kernelConstant.name] = kernelConstant.type;
       }
-
       const needsArgumentType = (functionName, index) => {
         return functionBuilder.needsArgumentType(functionName, index);
       };
-
       const assignArgumentType = (functionName, index, type) => {
         functionBuilder.assignArgumentType(functionName, index, type);
       };
-
       const lookupReturnType = (functionName, ast, requestingNode) => {
         return functionBuilder.lookupReturnType(functionName, ast, requestingNode);
       };
-
       const lookupFunctionArgumentTypes = (functionName) => {
         return functionBuilder.lookupFunctionArgumentTypes(functionName);
       };
-
       const lookupFunctionArgumentName = (functionName, argumentIndex) => {
         return functionBuilder.lookupFunctionArgumentName(functionName, argumentIndex);
       };
-
       const lookupFunctionArgumentBitRatio = (functionName, argumentName) => {
         return functionBuilder.lookupFunctionArgumentBitRatio(functionName, argumentName);
       };
-
       const triggerImplyArgumentType = (functionName, i, argumentType, requestingNode) => {
         functionBuilder.assignArgumentType(functionName, i, argumentType, requestingNode);
       };
-
       const triggerTrackArgumentSynonym = (functionName, argumentName, calleeFunctionName, argumentIndex) => {
         functionBuilder.trackArgumentSynonym(functionName, argumentName, calleeFunctionName, argumentIndex);
       };
-
       const lookupArgumentSynonym = (originFunctionName, functionName, argumentName) => {
         return functionBuilder.lookupArgumentSynonym(originFunctionName, functionName, argumentName);
       };
-
       const onFunctionCall = (functionName, calleeFunctionName, args) => {
         functionBuilder.trackFunctionCall(functionName, calleeFunctionName, args);
       };
-
       const onNestedFunction = (ast, returnType) => {
         const argumentNames = [];
         for (let i = 0; i < ast.params.length; i++) {
@@ -7296,7 +5537,6 @@ var GPU = (function () {
         nestedFunction.traceFunctionAST(ast);
         functionBuilder.addFunctionNode(nestedFunction);
       };
-
       const nodeOptions = Object.assign({
         isRootKernel: false,
         onNestedFunction,
@@ -7322,7 +5562,6 @@ var GPU = (function () {
         dynamicArguments,
         dynamicOutput,
       }, extraNodeOptions || {});
-
       const rootNodeOptions = Object.assign({}, nodeOptions, {
         isRootKernel: true,
         name: 'kernel',
@@ -7333,13 +5572,10 @@ var GPU = (function () {
         leadingReturnStatement,
         followingReturnStatement,
       });
-
       if (typeof source === 'object' && source.functionNodes) {
         return new FunctionBuilder().fromJSON(source.functionNodes, FunctionNode);
       }
-
       const rootNode = new FunctionNode(source, rootNodeOptions);
-
       let functionNodes = null;
       if (functions) {
         functionNodes = functions.map((fn) => new FunctionNode(fn.source, {
@@ -7364,7 +5600,6 @@ var GPU = (function () {
           onFunctionCall,
         }));
       }
-
       let subKernelNodes = null;
       if (subKernels) {
         subKernelNodes = subKernels.map((subKernel) => {
@@ -7376,7 +5611,6 @@ var GPU = (function () {
           }));
         });
       }
-
       const functionBuilder = new FunctionBuilder({
         kernel,
         rootNode,
@@ -7384,14 +5618,8 @@ var GPU = (function () {
         nativeFunctions,
         subKernelNodes
       });
-
       return functionBuilder;
     }
-
-    /**
-     *
-     * @param {IFunctionBuilderSettings} [settings]
-     */
     constructor(settings) {
       settings = settings || {};
       this.kernel = settings.kernel;
@@ -7405,23 +5633,19 @@ var GPU = (function () {
       this.argumentChain = [];
       this.functionNodeDependencies = {};
       this.functionCalls = {};
-
       if (this.rootNode) {
         this.functionMap['kernel'] = this.rootNode;
       }
-
       if (this.functionNodes) {
         for (let i = 0; i < this.functionNodes.length; i++) {
           this.functionMap[this.functionNodes[i].name] = this.functionNodes[i];
         }
       }
-
       if (this.subKernelNodes) {
         for (let i = 0; i < this.subKernelNodes.length; i++) {
           this.functionMap[this.subKernelNodes[i].name] = this.subKernelNodes[i];
         }
       }
-
       if (this.nativeFunctions) {
         for (let i = 0; i < this.nativeFunctions.length; i++) {
           const nativeFunction = this.nativeFunctions[i];
@@ -7429,13 +5653,6 @@ var GPU = (function () {
         }
       }
     }
-
-    /**
-     * @desc Add the function node directly
-     *
-     * @param {FunctionNode} functionNode - functionNode to add
-     *
-     */
     addFunctionNode(functionNode) {
       if (!functionNode.name) throw new Error('functionNode.name needs set');
       this.functionMap[functionNode.name] = functionNode;
@@ -7443,67 +5660,34 @@ var GPU = (function () {
         this.rootNode = functionNode;
       }
     }
-
-    /**
-     * @desc Trace all the depending functions being called, from a single function
-     *
-     * This allow for 'unneeded' functions to be automatically optimized out.
-     * Note that the 0-index, is the starting function trace.
-     *
-     * @param {String} functionName - Function name to trace from, default to 'kernel'
-     * @param {String[]} [retList] - Returning list of function names that is traced. Including itself.
-     *
-     * @returns {String[]}  Returning list of function names that is traced. Including itself.
-     */
     traceFunctionCalls(functionName, retList) {
       functionName = functionName || 'kernel';
       retList = retList || [];
-
       if (this.nativeFunctionNames.indexOf(functionName) > -1) {
         if (retList.indexOf(functionName) === -1) {
           retList.push(functionName);
         }
         return retList;
       }
-
       const functionNode = this.functionMap[functionName];
       if (functionNode) {
-        // Check if function already exists
         const functionIndex = retList.indexOf(functionName);
         if (functionIndex === -1) {
           retList.push(functionName);
-          functionNode.toString(); //ensure JS trace is done
+          functionNode.toString();
           for (let i = 0; i < functionNode.calledFunctions.length; ++i) {
             this.traceFunctionCalls(functionNode.calledFunctions[i], retList);
           }
         } else {
-          /**
-           * https://github.com/gpujs/gpu.js/issues/207
-           * if dependent function is already in the list, because a function depends on it, and because it has
-           * already been traced, we know that we must move the dependent function to the end of the the retList.
-           * */
           const dependantFunctionName = retList.splice(functionIndex, 1)[0];
           retList.push(dependantFunctionName);
         }
       }
-
       return retList;
     }
-
-    /**
-     * @desc Return the string for a function
-     * @param {String} functionName - Function name to trace from. If null, it returns the WHOLE builder stack
-     * @returns {String} The full string, of all the various functions. Trace optimized if functionName given
-     */
     getPrototypeString(functionName) {
       return this.getPrototypes(functionName).join('\n');
     }
-
-    /**
-     * @desc Return the string for a function
-     * @param {String} [functionName] - Function name to trace from. If null, it returns the WHOLE builder stack
-     * @returns {Array} The full string, of all the various functions. Trace optimized if functionName given
-     */
     getPrototypes(functionName) {
       if (this.rootNode) {
         this.rootNode.toString();
@@ -7513,12 +5697,6 @@ var GPU = (function () {
       }
       return this.getPrototypesFromFunctionNames(Object.keys(this.functionMap));
     }
-
-    /**
-     * @desc Get string from function names
-     * @param {String[]} functionList - List of function to build string
-     * @returns {String} The string, of all the various functions. Trace optimized if functionName given
-     */
     getStringFromFunctionNames(functionList) {
       const ret = [];
       for (let i = 0; i < functionList.length; ++i) {
@@ -7529,12 +5707,6 @@ var GPU = (function () {
       }
       return ret.join('\n');
     }
-
-    /**
-     * @desc Return string of all functions converted
-     * @param {String[]} functionList - List of function names to build the string.
-     * @returns {Array} Prototypes of all functions converted
-     */
     getPrototypesFromFunctionNames(functionList) {
       const ret = [];
       for (let i = 0; i < functionList.length; ++i) {
@@ -7551,7 +5723,6 @@ var GPU = (function () {
       }
       return ret;
     }
-
     toJSON() {
       return this.traceFunctionCalls(this.rootNode.name).reverse().map(name => {
         const nativeIndex = this.nativeFunctions.indexOf(name);
@@ -7567,7 +5738,6 @@ var GPU = (function () {
         }
       });
     }
-
     fromJSON(jsonFunctionNodes, FunctionNode) {
       this.functionMap = {};
       for (let i = 0; i < jsonFunctionNodes.length; i++) {
@@ -7576,19 +5746,12 @@ var GPU = (function () {
       }
       return this;
     }
-
-    /**
-     * @desc Get string for a particular function name
-     * @param {String} functionName - Function name to trace from. If null, it returns the WHOLE builder stack
-     * @returns {String} settings - The string, of all the various functions. Trace optimized if functionName given
-     */
     getString(functionName) {
       if (functionName) {
         return this.getStringFromFunctionNames(this.traceFunctionCalls(functionName).reverse());
       }
       return this.getStringFromFunctionNames(Object.keys(this.functionMap));
     }
-
     lookupReturnType(functionName, ast, requestingNode) {
       if (ast.type !== 'CallExpression') {
         throw new Error(`expected ast type of "CallExpression", but is ${ ast.type }`);
@@ -7601,10 +5764,7 @@ var GPU = (function () {
           return node.returnType;
         } else {
           for (let i = 0; i < this.lookupChain.length; i++) {
-            // detect circlical logic
             if (this.lookupChain[i].ast === ast) {
-              // detect if arguments have not resolved, preventing a return type
-              // if so, go ahead and resolve them, so we can resolve the return type
               if (node.argumentTypes.length === 0 && ast.arguments.length > 0) {
                 const args = ast.arguments;
                 for (let j = 0; j < args.length; j++) {
@@ -7618,11 +5778,9 @@ var GPU = (function () {
                 }
                 return node.returnType = node.getType(node.getJsAST());
               }
-
               throw new Error('circlical logic detected!');
             }
           }
-          // get ready for a ride!
           this.lookupChain.push({
             name: requestingNode.name,
             ast,
@@ -7633,84 +5791,24 @@ var GPU = (function () {
           return node.returnType = type;
         }
       }
-
-      // function not found, maybe native?
       return null;
-
-      /**
-       * first iteration
-       * kernel.outputs = Array
-       * kernel.targets = Array
-       * kernel.returns = null
-       * kernel.calls.calcErrorOutput = [kernel.output, kernel.targets]
-       * kernel.calls.calcDeltas = [calcErrorOutput.returns, kernel.output]
-       * calcErrorOutput.output = null
-       * calcErrorOutput.targets = null
-       * calcErrorOutput.returns = null
-       * calcDeltasSigmoid.error = null
-       * calcDeltasSigmoid.output = Number
-       * calcDeltasSigmoid.returns = null
-       *
-       * resolvable are:
-       * calcErrorOutput.output
-       * calcErrorOutput.targets
-       * calcErrorOutput.returns
-       *
-       * second iteration
-       * kernel.outputs = Array
-       * kernel.targets = Array
-       * kernel.returns = null
-       * kernel.calls.calcErrorOutput = [kernel.output, kernel.targets]
-       * kernel.calls.calcDeltas = [calcErrorOutput.returns, kernel.output]
-       * calcErrorOutput.output = Number
-       * calcErrorOutput.targets = Array
-       * calcErrorOutput.returns = Number
-       * calcDeltasSigmoid.error = null
-       * calcDeltasSigmoid.output = Number
-       * calcDeltasSigmoid.returns = null
-       *
-       * resolvable are:
-       * calcDeltasSigmoid.error
-       * calcDeltasSigmoid.returns
-       * kernel.returns
-       *
-       * third iteration
-       * kernel.outputs = Array
-       * kernel.targets = Array
-       * kernel.returns = Number
-       * kernel.calls.calcErrorOutput = [kernel.output, kernel.targets]
-       * kernel.calls.calcDeltas = [calcErrorOutput.returns, kernel.output]
-       * calcErrorOutput.output = Number
-       * calcErrorOutput.targets = Array
-       * calcErrorOutput.returns = Number
-       * calcDeltasSigmoid.error = Number
-       * calcDeltasSigmoid.output = Number
-       * calcDeltasSigmoid.returns = Number
-       *
-       *
-       */
     }
-
     _getFunction(functionName) {
       if (!this._isFunction(functionName)) ;
       return this.functionMap[functionName];
     }
-
     _isFunction(functionName) {
       return Boolean(this.functionMap[functionName]);
     }
-
     _getNativeFunction(functionName) {
       for (let i = 0; i < this.nativeFunctions.length; i++) {
         if (this.nativeFunctions[i].name === functionName) return this.nativeFunctions[i];
       }
       return null;
     }
-
     _isNativeFunction(functionName) {
       return Boolean(this._getNativeFunction(functionName));
     }
-
     _lookupNativeFunctionReturnType(functionName) {
       let nativeFunction = this._getNativeFunction(functionName);
       if (nativeFunction) {
@@ -7718,7 +5816,6 @@ var GPU = (function () {
       }
       throw new Error(`Native function ${ functionName } not found`);
     }
-
     lookupFunctionArgumentTypes(functionName) {
       if (this._isNativeFunction(functionName)) {
         return this._getNativeFunction(functionName).argumentTypes;
@@ -7727,11 +5824,9 @@ var GPU = (function () {
       }
       return null;
     }
-
     lookupFunctionArgumentName(functionName, argumentIndex) {
       return this._getFunction(functionName).argumentNames[argumentIndex];
     }
-
     lookupFunctionArgumentBitRatio(functionName, argumentName) {
       if (!this._isFunction(functionName)) {
         throw new Error('function not found');
@@ -7752,13 +5847,11 @@ var GPU = (function () {
         return this.lookupFunctionArgumentBitRatio(argumentSynonym.functionName, argumentSynonym.argumentName);
       }
     }
-
     needsArgumentType(functionName, i) {
       if (!this._isFunction(functionName)) return false;
       const fnNode = this._getFunction(functionName);
       return !fnNode.argumentTypes[i];
     }
-
     assignArgumentType(functionName, i, argumentType, requestingNode) {
       if (!this._isFunction(functionName)) return;
       const fnNode = this._getFunction(functionName);
@@ -7766,7 +5859,6 @@ var GPU = (function () {
         fnNode.argumentTypes[i] = argumentType;
       }
     }
-
     trackArgumentSynonym(functionName, argumentName, calleeFunctionName, argumentIndex) {
       if (!this._isFunction(calleeFunctionName)) return;
       const node = this._getFunction(calleeFunctionName);
@@ -7785,7 +5877,6 @@ var GPU = (function () {
         calleeFunctionName,
       };
     }
-
     lookupArgumentSynonym(originFunctionName, functionName, argumentName) {
       if (originFunctionName === functionName) return argumentName;
       if (!this._isFunction(functionName)) return null;
@@ -7799,7 +5890,6 @@ var GPU = (function () {
       }
       return argumentSynonym.argumentName;
     }
-
     trackFunctionCall(functionName, calleeFunctionName, args) {
       if (!this.functionNodeDependencies[functionName]) {
         this.functionNodeDependencies[functionName] = new Set();
@@ -7808,11 +5898,9 @@ var GPU = (function () {
       this.functionNodeDependencies[functionName].add(calleeFunctionName);
       this.functionCalls[functionName].push(args);
     }
-
     getKernelResultType() {
       return this.rootNode.returnType || this.rootNode.getType(this.rootNode.ast);
     }
-
     getSubKernelResultType(index) {
       const subKernelNode = this.subKernelNodes[index];
       let called = false;
@@ -7827,7 +5915,6 @@ var GPU = (function () {
       }
       return subKernelNode.returnType || subKernelNode.getType(subKernelNode.getJsAST());
     }
-
     getReturnTypes() {
       const result = {
         [this.rootNode.name]: this.rootNode.getType(this.rootNode.ast),
@@ -7854,11 +5941,9 @@ var GPU = (function () {
       this.inLoopInit = false;
       this.scan(ast);
     }
-
     get currentContext() {
       return this.runningContexts.length > 0 ? this.runningContexts[this.runningContexts.length - 1] : null;
     }
-
     newContext(run) {
       const newContext = Object.assign({}, this.currentContext);
       this.contexts.push(newContext);
@@ -7866,11 +5951,6 @@ var GPU = (function () {
       run();
       this.runningContexts.pop();
     }
-
-    /**
-     * Recursively scans AST for declarations and functions, and add them to their respective context
-     * @param ast
-     */
     scan(ast) {
       if (Array.isArray(ast)) {
         for (let i = 0; i < ast.length; i++) {
@@ -8015,17 +6095,7 @@ var GPU = (function () {
     }
   }
 
-  /**
-   *
-   * @desc Represents a single function, inside JS, webGL, or openGL.
-   * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
-   */
   class FunctionNode {
-    /**
-     *
-     * @param {string|object} source
-     * @param {IFunctionSettings} [settings]
-     */
     constructor(source, settings) {
       if (!source && !settings.ast) {
         throw new Error('source parameter is missing');
@@ -8076,7 +6146,6 @@ var GPU = (function () {
       this.strictTypingChecking = false;
       this.fixIntegerDivisionAccuracy = null;
       this.warnVarUsage = true;
-
       if (settings) {
         for (const p in settings) {
           if (!settings.hasOwnProperty(p)) continue;
@@ -8084,96 +6153,64 @@ var GPU = (function () {
           this[p] = settings[p];
         }
       }
-
       this.synonymIndex = -1;
       this.synonymUseIndex = 0;
       this.argumentSynonym = {};
       this.literalTypes = {};
-
       this.validate();
       this._string = null;
       this._internalVariableNames = {};
     }
-
     validate() {
       if (typeof this.source !== 'string' && !this.ast) {
         throw new Error('this.source not a string');
       }
-
       if (!this.ast && !isFunctionString(this.source)) {
         throw new Error('this.source not a function string');
       }
-
       if (!this.name) {
         throw new Error('this.name could not be set');
       }
-
       if (this.argumentTypes.length > 0 && this.argumentTypes.length !== this.argumentNames.length) {
         throw new Error(`argumentTypes count of ${ this.argumentTypes.length } exceeds ${ this.argumentNames.length }`);
       }
-
       if (this.output.length < 1) {
         throw new Error('this.output is not big enough');
       }
     }
-
-    /**
-     * @param {String} name
-     * @returns {boolean}
-     */
     isIdentifierConstant(name) {
       if (!this.constants) return false;
       return this.constants.hasOwnProperty(name);
     }
-
     isInput(argumentName) {
       return this.argumentTypes[this.argumentNames.indexOf(argumentName)] === 'Input';
     }
-
     pushState(state) {
       this.states.push(state);
     }
-
     popState(state) {
       if (this.state !== state) {
         throw new Error(`Cannot popState ${ state } when in ${ this.state }`);
       }
       this.states.pop();
     }
-
     isState(state) {
       return this.state === state;
     }
-
     get state() {
       return this.states[this.states.length - 1];
     }
-
-    /**
-     * @function
-     * @name astMemberExpressionUnroll
-     * @desc Parses the abstract syntax tree for binary expression.
-     *
-     * <p>Utility function for astCallExpression.</p>
-     *
-     * @param {Object} ast - the AST object to parse
-     *
-     * @returns {String} the function namespace call, unrolled
-     */
     astMemberExpressionUnroll(ast) {
       if (ast.type === 'Identifier') {
         return ast.name;
       } else if (ast.type === 'ThisExpression') {
         return 'this';
       }
-
       if (ast.type === 'MemberExpression') {
         if (ast.object && ast.property) {
-          //babel sniffing
           if (ast.object.hasOwnProperty('name') && ast.object.name[0] === '_') {
             return this.astMemberExpressionUnroll(ast.property);
           }
-
           return (
             this.astMemberExpressionUnroll(ast.object) +
             '.' +
@@ -8181,27 +6218,14 @@ var GPU = (function () {
           );
         }
       }
-
-      //babel sniffing
       if (ast.hasOwnProperty('expressions')) {
         const firstExpression = ast.expressions[0];
         if (firstExpression.type === 'Literal' && firstExpression.value === 0 && ast.expressions.length === 2) {
           return this.astMemberExpressionUnroll(ast.expressions[1]);
         }
       }
-
-      // Failure, unknown expression
       throw this.astErrorOutput('Unknown astMemberExpressionUnroll', ast);
     }
-
-    /**
-     * @desc Parses the class function JS, and returns its Abstract Syntax Tree object.
-     * This is used internally to convert to shader code
-     *
-     * @param {Object} [import { $1 } from $2] - Parser to use, assumes in scope 'parser' if null or undefined
-     *
-     * @returns {Object} The function AST Object, note that result is cached under this.ast;
-     */
     getJsAST(inParser) {
       if (this.ast) {
         return this.ast;
@@ -8210,26 +6234,20 @@ var GPU = (function () {
         this.traceFunctionAST(this.source);
         return this.ast = this.source;
       }
-
       const parser = inParser && inParser.hasOwnProperty('parse') ? inParser.parse : parse;
       if (inParser === null) {
         throw new Error('Missing JS to AST parser');
       }
-
       const ast = Object.freeze(parser(`const parser_${ this.name } = ${ this.source };`, {
         locations: true
       }));
-      // take out the function object, outside the var declarations
       const functionAST = ast.body[0].declarations[0].init;
       this.traceFunctionAST(functionAST);
-
       if (!ast) {
         throw new Error('Failed to parse JS code');
       }
-
       return this.ast = functionAST;
     }
-
     traceFunctionAST(ast) {
       const { contexts, declarations, functions, identifiers, functionCalls } = new FunctionTracer(ast);
       this.contexts = contexts;
@@ -8243,7 +6261,6 @@ var GPU = (function () {
         const { init } = ast;
         const dependencies = this.getDependencies(init);
         let valueType = null;
-
         if (forceInteger) {
           valueType = 'Integer';
         } else {
@@ -8278,12 +6295,10 @@ var GPU = (function () {
           assignable,
         });
       }
-
       for (let i = 0; i < functions.length; i++) {
         this.onNestedFunction(functions[i]);
       }
     }
-
     getDeclaration(ast) {
       for (let i = 0; i < this.identifiers.length; i++) {
         const identifier = this.identifiers[i];
@@ -8298,12 +6313,6 @@ var GPU = (function () {
       }
       return null;
     }
-
-    /**
-     * @desc Return the type of parameter sent to subKernel/Kernel.
-     * @param {Object} ast - Identifier
-     * @returns {String} Type of the parameter
-     */
     getVariableType(ast) {
       if (ast.type !== 'Identifier') {
         throw new Error(`ast of ${ast.type} not "Identifier"`);
@@ -8326,19 +6335,12 @@ var GPU = (function () {
       }
       return type;
     }
-
-    /**
-     * Generally used to lookup the value type returned from a member expressions
-     * @param {String} type
-     * @return {String}
-     */
     getLookupType(type) {
       if (!typeLookupMap.hasOwnProperty(type)) {
         throw new Error(`unknown typeLookupMap ${ type }`);
       }
       return typeLookupMap[type];
     }
-
     getConstantType(constantName) {
       if (this.constantTypes[constantName]) {
         const type = this.constantTypes[constantName];
@@ -8350,26 +6352,16 @@ var GPU = (function () {
       }
       throw new Error(`Type for constant "${ constantName }" not declared`);
     }
-
-    /**
-     * @desc Return the name of the *user argument*(subKernel argument) corresponding
-     * to the argument supplied to the kernel
-     *
-     * @param {String} name - Name of the argument
-     * @returns {String} Name of the parameter
-     */
     getKernelArgumentName(name) {
       if (!this.lookupArgumentSynonym) return null;
       const argumentIndex = this.argumentNames.indexOf(name);
       if (argumentIndex === -1) return null;
       return this.lookupArgumentSynonym('kernel', this.name, name);
     }
-
     toString() {
       if (this._string) return this._string;
       return this._string = this.astGeneric(this.getJsAST(), []).join('').trim();
     }
-
     toJSON() {
       const settings = {
         source: this.source,
@@ -8388,18 +6380,11 @@ var GPU = (function () {
         leadingReturnStatement: this.leadingReturnStatement,
         followingReturnStatement: this.followingReturnStatement,
       };
-
       return {
         ast: this.ast,
         settings
       };
     }
-
-    /**
-     * Recursively looks up type for ast expression until it's found
-     * @param ast
-     * @returns {String|null}
-     */
     getType(ast) {
       if (Array.isArray(ast)) {
         return this.getType(ast[ast.length - 1]);
@@ -8442,7 +6427,6 @@ var GPU = (function () {
             }
             throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
           case 'BinaryExpression':
-            // modulos is Number
             switch (ast.operator) {
               case '%':
               case '/':
@@ -8500,11 +6484,9 @@ var GPU = (function () {
             if (!declaration) {
               throw this.astErrorOutput(`Unable to find declarator`, ast);
             }
-
             if (!declaration.valueType) {
               throw this.astErrorOutput(`Unable to find declarator valueType`, ast);
             }
-
             return declaration.valueType;
           case 'Identifier':
             if (ast.name === 'Infinity') {
@@ -8606,9 +6588,7 @@ var GPU = (function () {
             throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
       }
     }
-
     inferArgumentTypesIfNeeded(functionName, args) {
-      // ensure arguments are filled in, so when we lookup return type, we already can infer it
       for (let i = 0; i < args.length; i++) {
         if (!this.needsArgumentType(functionName, i)) continue;
         const type = this.getType(args[i]);
@@ -8618,7 +6598,6 @@ var GPU = (function () {
         this.assignArgumentType(functionName, i, type);
       }
     }
-
     isAstMathVariable(ast) {
       const mathProperties = [
         'E',
@@ -8637,7 +6616,6 @@ var GPU = (function () {
         ast.property.type === 'Identifier' &&
         mathProperties.indexOf(ast.property.name) > -1;
     }
-
     isAstMathFunction(ast) {
       const mathFunctions = [
         'abs',
@@ -8671,26 +6649,15 @@ var GPU = (function () {
         ast.callee.property.type === 'Identifier' &&
         mathFunctions.indexOf(ast.callee.property.name) > -1;
     }
-
     isAstVariable(ast) {
       return ast.type === 'Identifier' || ast.type === 'MemberExpression';
     }
-
     isSafe(ast) {
       return this.isSafeDependencies(this.getDependencies(ast));
     }
-
     isSafeDependencies(dependencies) {
       return dependencies && dependencies.every ? dependencies.every(dependency => dependency.isSafe) : true;
     }
-
-    /**
-     *
-     * @param ast
-     * @param dependencies
-     * @param isNotSafe
-     * @return {Array}
-     */
     getDependencies(ast, dependencies, isNotSafe) {
       if (!dependencies) {
         dependencies = [];
@@ -8802,7 +6769,6 @@ var GPU = (function () {
       }
       return dependencies;
     }
-
     getVariableSignature(ast) {
       if (!this.isAstVariable(ast)) {
         throw new Error(`ast of type "${ ast.type }" is not a variable signature`);
@@ -8844,7 +6810,6 @@ var GPU = (function () {
         }
         ast = ast.object;
       }
-
       const signatureString = signature.join('');
       const allowedExpressions = [
         'value',
@@ -8871,17 +6836,9 @@ var GPU = (function () {
       }
       return null;
     }
-
     build() {
       return this.toString().length > 0;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for generically to its respective function
-     * @param {Object} ast - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns {Array} the parsed string array
-     */
     astGeneric(ast, retArr) {
       if (ast === null) {
         throw this.astErrorOutput('NULL ast', ast);
@@ -8892,7 +6849,6 @@ var GPU = (function () {
           }
           return retArr;
         }
-
         switch (ast.type) {
           case 'FunctionDeclaration':
             return this.astFunctionDeclaration(ast, retArr);
@@ -8953,31 +6909,22 @@ var GPU = (function () {
           case 'ConditionalExpression':
             return this.astConditionalExpression(ast, retArr);
         }
-
         throw this.astErrorOutput('Unknown ast type : ' + ast.type, ast);
       }
     }
-    /**
-     * @desc To throw the AST error, with its location.
-     * @param {string} error - the error message output
-     * @param {Object} ast - the AST object where the error is
-     */
     astErrorOutput(error, ast) {
       if (typeof this.source !== 'string') {
         return new Error(error);
       }
-
       const debugString = getAstString(this.source, ast);
       const leadingSource = this.source.substr(ast.start);
       const splitLines = leadingSource.split(/\n/);
       const lineBefore = splitLines.length > 0 ? splitLines[splitLines.length - 1] : 0;
       return new Error(`${error} on line ${ splitLines.length }, position ${ lineBefore.length }:\n ${ debugString }`);
     }
-
     astDebuggerStatement(arrNode, retArr) {
       return retArr;
     }
-
     astConditionalExpression(ast, retArr) {
       if (ast.type !== 'ConditionalExpression') {
         throw this.astErrorOutput('Not a conditional expression', ast);
@@ -8991,23 +6938,9 @@ var GPU = (function () {
       retArr.push(')');
       return retArr;
     }
-
-    /**
-     * @abstract
-     * @param {Object} ast
-     * @param {String[]} retArr
-     * @returns {String[]}
-     */
     astFunction(ast, retArr) {
       throw new Error(`"astFunction" not defined on ${ this.constructor.name }`);
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for to its *named function declaration*
-     * @param {Object} ast - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astFunctionDeclaration(ast, retArr) {
       if (this.isChildFunction(ast)) {
         return retArr;
@@ -9044,23 +6977,11 @@ var GPU = (function () {
     astAssignmentExpression(ast, retArr) {
       return retArr;
     }
-    /**
-     * @desc Parses the abstract syntax tree for *generic expression* statement
-     * @param {Object} esNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astExpressionStatement(esNode, retArr) {
       this.astGeneric(esNode.expression, retArr);
       retArr.push(';');
       return retArr;
     }
-    /**
-     * @desc Parses the abstract syntax tree for an *Empty* Statement
-     * @param {Object} eNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astEmptyStatement(eNode, retArr) {
       return retArr;
     }
@@ -9073,22 +6994,10 @@ var GPU = (function () {
     astSwitchStatement(ast, retArr) {
       return retArr;
     }
-    /**
-     * @desc Parses the abstract syntax tree for *Break* Statement
-     * @param {Object} brNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astBreakStatement(brNode, retArr) {
       retArr.push('break;');
       return retArr;
     }
-    /**
-     * @desc Parses the abstract syntax tree for *Continue* Statement
-     * @param {Object} crNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astContinueStatement(crNode, retArr) {
       retArr.push('continue;\n');
       return retArr;
@@ -9102,12 +7011,6 @@ var GPU = (function () {
     astDoWhileStatement(ast, retArr) {
       return retArr;
     }
-    /**
-     * @desc Parses the abstract syntax tree for *Variable Declaration*
-     * @param {Object} varDecNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astVariableDeclaration(varDecNode, retArr) {
       const declarations = varDecNode.declarations;
       if (!declarations || !declarations[0] || !declarations[0].init) {
@@ -9118,7 +7021,6 @@ var GPU = (function () {
       const init = firstDeclaration.init;
       let type = this.isState('in-for-loop-init') ? 'Integer' : this.getType(init);
       if (type === 'LiteralInteger') {
-        // We had the choice to go either float or int, choosing float
         type = 'Number';
       }
       const markupType = typeMap[type];
@@ -9135,8 +7037,6 @@ var GPU = (function () {
       const initResult = [`${type} user_${firstDeclaration.id.name}=`];
       this.astGeneric(init, initResult);
       result.push(initResult.join(''));
-
-      // first declaration is done, now any added ones setup
       for (let i = 1; i < declarations.length; i++) {
         const declaration = declarations[i];
         dependencies = this.getDependencies(declaration);
@@ -9148,17 +7048,10 @@ var GPU = (function () {
         });
         this.astGeneric(declaration, result);
       }
-
       retArr.push(retArr, result.join(','));
       retArr.push(';');
       return retArr;
     }
-    /**
-     * @desc Parses the abstract syntax tree for *Variable Declarator*
-     * @param {Object} iVarDecNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astVariableDeclarator(iVarDecNode, retArr) {
       this.astGeneric(iVarDecNode.id, retArr);
       if (iVarDecNode.init !== null) {
@@ -9179,18 +7072,11 @@ var GPU = (function () {
       }
       return retArr;
     }
-    /**
-     * @desc Parses the abstract syntax tree for *Unary* Expression
-     * @param {Object} uNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astUnaryExpression(uNode, retArr) {
       const unaryResult = this.checkAndUpconvertBitwiseUnary(uNode, retArr);
       if (unaryResult) {
         return retArr;
       }
-
       if (uNode.prefix) {
         retArr.push(uNode.operator);
         this.astGeneric(uNode.argument, retArr);
@@ -9198,18 +7084,9 @@ var GPU = (function () {
         this.astGeneric(uNode.argument, retArr);
         retArr.push(uNode.operator);
       }
-
       return retArr;
     }
-
     checkAndUpconvertBitwiseUnary(uNode, retArr) {}
-
-    /**
-     * @desc Parses the abstract syntax tree for *Update* Expression
-     * @param {Object} uNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astUpdateExpression(uNode, retArr) {
       if (uNode.prefix) {
         retArr.push(uNode.operator);
@@ -9218,15 +7095,8 @@ var GPU = (function () {
         this.astGeneric(uNode.argument, retArr);
         retArr.push(uNode.operator);
       }
-
       return retArr;
     }
-    /**
-     * @desc Parses the abstract syntax tree for *Logical* Expression
-     * @param {Object} logNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astLogicalExpression(logNode, retArr) {
       retArr.push('(');
       this.astGeneric(logNode.left, retArr);
@@ -9244,12 +7114,6 @@ var GPU = (function () {
     astArrayExpression(ast, retArr) {
       return retArr;
     }
-
-    /**
-     *
-     * @param ast
-     * @return {IFunctionNodeMemberExpressionDetails}
-     */
     getMemberExpressionDetails(ast) {
       if (ast.type !== 'MemberExpression') {
         throw this.astErrorOutput(`Expression ${ ast.type } not a MemberExpression`, ast);
@@ -9428,10 +7292,8 @@ var GPU = (function () {
             throw this.astErrorOutput('Unexpected expression', ast);
       }
     }
-
     findIdentifierOrigin(astToFind) {
       const stack = [this.ast];
-
       while (stack.length > 0) {
         const atNode = stack[0];
         if (atNode.type === 'VariableDeclarator' && atNode.id && atNode.id.name && atNode.id.name === astToFind.name) {
@@ -9452,10 +7314,8 @@ var GPU = (function () {
       }
       return null;
     }
-
     findLastReturn(ast) {
       const stack = [ast || this.ast];
-
       while (stack.length > 0) {
         const atNode = stack.pop();
         if (atNode.type === 'ReturnStatement') {
@@ -9482,7 +7342,6 @@ var GPU = (function () {
       }
       return null;
     }
-
     getInternalVariableName(name) {
       if (!this._internalVariableNames.hasOwnProperty(name)) {
         this._internalVariableNames[name] = 0;
@@ -9493,12 +7352,10 @@ var GPU = (function () {
       }
       return name + this._internalVariableNames[name];
     }
-
     varWarn() {
       console.warn('var declarations are deprecated, weird things happen when falling back to CPU because var scope differs in javascript than in most languages.  Use const or let');
     }
   }
-
   const typeLookupMap = {
     'Number': 'Number',
     'Float': 'Float',
@@ -9530,68 +7387,37 @@ var GPU = (function () {
     'ArrayTexture(4)': 'Array(4)',
   };
 
-  /**
-   * @desc [INTERNAL] Represents a single function, inside JS
-   *
-   * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
-   */
   class CPUFunctionNode extends FunctionNode {
-    /**
-     * @desc Parses the abstract syntax tree for to its *named function*
-     * @param {Object} ast - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astFunction(ast, retArr) {
-
-      // Setup function return type and name
       if (!this.isRootKernel) {
         retArr.push('function');
         retArr.push(' ');
         retArr.push(this.name);
         retArr.push('(');
-
-        // Arguments handling
         for (let i = 0; i < this.argumentNames.length; ++i) {
           const argumentName = this.argumentNames[i];
-
           if (i > 0) {
             retArr.push(', ');
           }
           retArr.push('user_');
           retArr.push(argumentName);
         }
-
-        // Function opening
         retArr.push(') {\n');
       }
-
-      // Body statement iteration
       for (let i = 0; i < ast.body.body.length; ++i) {
         this.astGeneric(ast.body.body[i], retArr);
         retArr.push('\n');
       }
-
       if (!this.isRootKernel) {
-        // Function closing
         retArr.push('}\n');
       }
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for to *return* statement
-     * @param {Object} ast - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astReturnStatement(ast, retArr) {
       const type = this.returnType || this.getType(ast.argument);
-
       if (!this.returnType) {
         this.returnType = type;
       }
-
       if (this.isRootKernel) {
         retArr.push(this.leadingReturnStatement);
         this.astGeneric(ast.argument, retArr);
@@ -9610,34 +7436,16 @@ var GPU = (function () {
       }
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *literal value*
-     * @param {Object} ast - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astLiteral(ast, retArr) {
-
-      // Reject non numeric literals
       if (isNaN(ast.value)) {
         throw this.astErrorOutput(
           'Non-numeric literal not supported : ' + ast.value,
           ast
         );
       }
-
       retArr.push(ast.value);
-
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *binary* expression
-     * @param {Object} ast - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astBinaryExpression(ast, retArr) {
       retArr.push('(');
       this.astGeneric(ast.left, retArr);
@@ -9646,13 +7454,6 @@ var GPU = (function () {
       retArr.push(')');
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *identifier* expression
-     * @param {Object} idtNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astIdentifierExpression(idtNode, retArr) {
       if (idtNode.type !== 'Identifier') {
         throw this.astErrorOutput(
@@ -9660,7 +7461,6 @@ var GPU = (function () {
           idtNode
         );
       }
-
       switch (idtNode.name) {
         case 'Infinity':
           retArr.push('Infinity');
@@ -9677,27 +7477,17 @@ var GPU = (function () {
             }
           }
       }
-
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *for-loop* expression
-     * @param {Object} forNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the parsed webgl string
-     */
     astForStatement(forNode, retArr) {
       if (forNode.type !== 'ForStatement') {
         throw this.astErrorOutput('Invalid for statement', forNode);
       }
-
       const initArr = [];
       const testArr = [];
       const updateArr = [];
       const bodyArr = [];
       let isSafe = null;
-
       if (forNode.init) {
         this.pushState('in-for-loop-init');
         this.astGeneric(forNode.init, initArr);
@@ -9710,30 +7500,24 @@ var GPU = (function () {
       } else {
         isSafe = false;
       }
-
       if (forNode.test) {
         this.astGeneric(forNode.test, testArr);
       } else {
         isSafe = false;
       }
-
       if (forNode.update) {
         this.astGeneric(forNode.update, updateArr);
       } else {
         isSafe = false;
       }
-
       if (forNode.body) {
         this.pushState('loop-body');
         this.astGeneric(forNode.body, bodyArr);
         this.popState('loop-body');
       }
-
-      // have all parts, now make them safe
       if (isSafe === null) {
         isSafe = this.isSafe(forNode.init) && this.isSafe(forNode.test);
       }
-
       if (isSafe) {
         retArr.push(`for (${initArr.join('')};${testArr.join('')};${updateArr.join('')}){\n`);
         retArr.push(bodyArr.join(''));
@@ -9753,13 +7537,6 @@ var GPU = (function () {
       }
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *while* loop
-     * @param {Object} whileNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the parsed javascript string
-     */
     astWhileStatement(whileNode, retArr) {
       if (whileNode.type !== 'WhileStatement') {
         throw this.astErrorOutput(
@@ -9767,7 +7544,6 @@ var GPU = (function () {
           whileNode
         );
       }
-
       retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
       retArr.push('if (');
       this.astGeneric(whileNode.test, retArr);
@@ -9777,16 +7553,8 @@ var GPU = (function () {
       retArr.push('break;\n');
       retArr.push('}\n');
       retArr.push('}\n');
-
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *do while* loop
-     * @param {Object} doWhileNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the parsed webgl string
-     */
     astDoWhileStatement(doWhileNode, retArr) {
       if (doWhileNode.type !== 'DoWhileStatement') {
         throw this.astErrorOutput(
@@ -9794,7 +7562,6 @@ var GPU = (function () {
           doWhileNode
         );
       }
-
       retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
       this.astGeneric(doWhileNode.body, retArr);
       retArr.push('if (!');
@@ -9803,17 +7570,8 @@ var GPU = (function () {
       retArr.push('break;\n');
       retArr.push('}\n');
       retArr.push('}\n');
-
       return retArr;
-
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *Assignment* Expression
-     * @param {Object} assNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astAssignmentExpression(assNode, retArr) {
       const declaration = this.getDeclaration(assNode.left);
       if (declaration && !declaration.assignable) {
@@ -9824,16 +7582,9 @@ var GPU = (function () {
       this.astGeneric(assNode.right, retArr);
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *Block* statement
-     * @param {Object} bNode - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astBlockStatement(bNode, retArr) {
       if (this.isState('loop-body')) {
-        this.pushState('block-body'); // this prevents recursive removal of braces
+        this.pushState('block-body');
         for (let i = 0; i < bNode.body.length; i++) {
           this.astGeneric(bNode.body[i], retArr);
         }
@@ -9847,13 +7598,6 @@ var GPU = (function () {
       }
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *Variable Declaration*
-     * @param {Object} varDecNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astVariableDeclaration(varDecNode, retArr) {
       if (varDecNode.kind === 'var' && this.warnVarUsage) {
         this.varWarn();
@@ -9871,13 +7615,6 @@ var GPU = (function () {
       }
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *If* Statement
-     * @param {Object} ifNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astIfStatement(ifNode, retArr) {
       retArr.push('if (');
       this.astGeneric(ifNode.test, retArr);
@@ -9889,7 +7626,6 @@ var GPU = (function () {
         this.astGeneric(ifNode.consequent, retArr);
         retArr.push('\n}\n');
       }
-
       if (ifNode.alternate) {
         retArr.push('else ');
         if (ifNode.alternate.type === 'BlockStatement') {
@@ -9901,9 +7637,7 @@ var GPU = (function () {
         }
       }
       return retArr;
-
     }
-
     astSwitchStatement(ast, retArr) {
       const { discriminant, cases } = ast;
       retArr.push('switch (');
@@ -9928,24 +7662,10 @@ var GPU = (function () {
       }
       retArr.push('\n}');
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *This* expression
-     * @param {Object} tNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astThisExpression(tNode, retArr) {
       retArr.push('_this');
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *Member* Expression
-     * @param {Object} mNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astMemberExpression(mNode, retArr) {
       const {
         signature,
@@ -10015,9 +7735,7 @@ var GPU = (function () {
         default:
           throw this.astErrorOutput('Unexpected expression', mNode);
       }
-
       if (!mNode.computed) {
-        // handle simple types
         switch (type) {
           case 'Number':
           case 'Integer':
@@ -10027,12 +7745,8 @@ var GPU = (function () {
             return retArr;
         }
       }
-
-      // handle more complex types
-      // argument may have come from a parent
       const synonymName = this.getKernelArgumentName(name);
       const markupName = `${origin}_${synonymName || name}`;
-
       switch (type) {
         case 'Array(2)':
         case 'Array(3)':
@@ -10098,69 +7812,37 @@ var GPU = (function () {
       }
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *call* expression
-     * @param {Object} ast - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns  {Array} the append retArr
-     */
     astCallExpression(ast, retArr) {
       if (ast.type !== 'CallExpression') {
-        // Failure, unknown expression
         throw this.astErrorOutput('Unknown CallExpression', ast);
       }
-      // Get the full function call, unrolled
       let functionName = this.astMemberExpressionUnroll(ast.callee);
-
-      // Register the function into the called registry
       if (this.calledFunctions.indexOf(functionName) < 0) {
         this.calledFunctions.push(functionName);
       }
-
       const isMathFunction = this.isAstMathFunction(ast);
-
-      // track the function was called
       if (this.onFunctionCall) {
         this.onFunctionCall(this.name, functionName, ast.arguments);
       }
-
-      // Call the function
       retArr.push(functionName);
-
-      // Open arguments space
       retArr.push('(');
       const targetTypes = this.lookupFunctionArgumentTypes(functionName) || [];
-      // Add the arguments
       for (let i = 0; i < ast.arguments.length; ++i) {
         const argument = ast.arguments[i];
-
-        // in order to track return type, even though this is CPU
         let argumentType = this.getType(argument);
         if (!targetTypes[i]) {
           this.triggerImplyArgumentType(functionName, i, argumentType, this);
         }
-
         if (i > 0) {
           retArr.push(', ');
         }
         this.astGeneric(argument, retArr);
       }
-      // Close arguments space
       retArr.push(')');
-
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *Array* Expression
-     * @param {Object} arrNode - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astArrayExpression(arrNode, retArr) {
       const arrLen = arrNode.elements.length;
-
       retArr.push('new Float32Array([');
       for (let i = 0; i < arrLen; ++i) {
         if (i > 0) {
@@ -10170,10 +7852,8 @@ var GPU = (function () {
         this.astGeneric(subNode, retArr);
       }
       retArr.push('])');
-
       return retArr;
     }
-
     astDebuggerStatement(arrNode, retArr) {
       retArr.push('debugger;');
       return retArr;
@@ -10192,31 +7872,25 @@ var GPU = (function () {
     }
     return `{ ${ results.join() } }`;
   }
-
   function cpuKernelString(cpuKernel, name) {
     const header = [];
     const thisProperties = [];
     const beforeReturn = [];
-
     const useFunctionKeyword = !/^function/.test(cpuKernel.color.toString());
-
     header.push(
       '  const { context, canvas, constants } = settings;',
       `  const output = new Int32Array(${JSON.stringify(Array.from(cpuKernel.output))});`,
       `  const _constants = ${constantsToString(cpuKernel.constants)};`,
     );
-
     thisProperties.push(
       '    constants: _constants,',
       '    context,',
       '    output,',
       '    thread: {x: 0, y: 0, z: 0},',
     );
-
     if (cpuKernel.graphical) {
       header.push(`  const _imageData = context.createImageData(${cpuKernel.output[0]}, ${cpuKernel.output[1]});`);
       header.push(`  const _colorData = new Uint8ClampedArray(${cpuKernel.output[0]} * ${cpuKernel.output[1]} * 4);`);
-
       const colorFn = utils$1.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel.color.toString(), {
         thisLookup: (propertyName) => {
           switch (propertyName) {
@@ -10235,7 +7909,6 @@ var GPU = (function () {
           return null;
         }
       });
-
       const getPixelsFn = utils$1.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel.getPixels.toString(), {
         thisLookup: (propertyName) => {
           switch (propertyName) {
@@ -10254,18 +7927,15 @@ var GPU = (function () {
           return null;
         }
       });
-
       thisProperties.push(
         '    _imageData,',
         '    _colorData,',
         `    color: ${colorFn},`,
       );
-
       beforeReturn.push(
         `  kernel.getPixels = ${getPixelsFn};`
       );
     }
-
     const constantTypes = [];
     const constantKeys = Object.keys(cpuKernel.constantTypes);
     for (let i = 0; i < constantKeys.length; i++) {
@@ -10310,7 +7980,6 @@ var GPU = (function () {
       beforeReturn.push(flattenedImageTo2DArray);
       thisProperties.push(`    _imageTo2DArray,`);
     }
-
     return `function(settings) {
 ${ header.join('\n') }
   for (const p in constants) {
@@ -10331,10 +8000,6 @@ ${cpuKernel._kernelString}
 }`;
   }
 
-  /**
-   * @desc Kernel Implementation for CPU.
-   * <p>Instantiates properties to the CPU Kernel.</p>
-   */
   class CPUKernel extends Kernel {
     static getFeatures() {
       return this.features;
@@ -10351,29 +8016,21 @@ ${cpuKernel._kernelString}
     static isContextMatch(context) {
       return false;
     }
-    /**
-     * @desc The current mode in which gpu.js is executing.
-     */
     static get mode() {
       return 'cpu';
     }
-
     static nativeFunctionArguments() {
       return null;
     }
-
     static nativeFunctionReturnType() {
       return null;
     }
-
     static combineKernels(combinedKernel) {
       return combinedKernel;
     }
-
     constructor(source, settings) {
       super(source, settings);
       this.mergeSettings(source.settings || settings);
-
       this._imageData = null;
       this._colorData = null;
       this._kernelString = null;
@@ -10384,7 +8041,6 @@ ${cpuKernel._kernelString}
       };
       this.translatedSources = null;
     }
-
     initCanvas() {
       if (typeof document !== 'undefined') {
         return document.createElement('canvas');
@@ -10392,26 +8048,18 @@ ${cpuKernel._kernelString}
         return new OffscreenCanvas(0, 0);
       }
     }
-
     initContext() {
       if (!this.canvas) return null;
       return this.canvas.getContext('2d');
     }
-
     initPlugins(settings) {
       return [];
     }
-
-    /**
-     * @desc Validate settings related to Kernel, such as dimensions size, and auto output support.
-     * @param {IArguments} args
-     */
     validateSettings(args) {
       if (!this.output || this.output.length === 0) {
         if (args.length !== 1) {
           throw new Error('Auto output only supported for kernels with only one input');
         }
-
         const argType = getVariableType(args[0], this.strictIntegers);
         if (argType === 'Array') {
           this.output = utils$1.getDimensions(argType);
@@ -10421,16 +8069,13 @@ ${cpuKernel._kernelString}
           throw new Error('Auto output not supported for input type: ' + argType);
         }
       }
-
       if (this.graphical) {
         if (this.output.length !== 2) {
           throw new Error('Output must have 2 dimensions on graphical mode');
         }
       }
-
       this.checkOutput();
     }
-
     translateSource() {
       this.leadingReturnStatement = this.output.length > 1 ? 'resultX[x] = ' : 'result[x] = ';
       if (this.subKernels) {
@@ -10449,20 +8094,11 @@ ${cpuKernel._kernelString}
         this.returnType = functionBuilder.getKernelResultType();
       }
     }
-
-    /**
-     * @desc Builds the Kernel, by generating the kernel
-     * string using thread dimensions, and arguments
-     * supplied to the kernel.
-     *
-     * <p>If the graphical flag is enabled, canvas is used.</p>
-     */
     build() {
       this.setupConstants();
       this.setupArguments(arguments);
       this.validateSettings(arguments);
       this.translateSource();
-
       if (this.graphical) {
         const {
           canvas,
@@ -10478,59 +8114,38 @@ ${cpuKernel._kernelString}
         this._imageData = this.context.createImageData(width, height);
         this._colorData = new Uint8ClampedArray(width * height * 4);
       }
-
       const kernelString = this.getKernelString();
       this.kernelString = kernelString;
-
       if (this.debug) {
         console.log('Function output:');
         console.log(kernelString);
       }
-
       try {
         this.run = new Function([], kernelString).bind(this)();
       } catch (e) {
         console.error('An error occurred compiling the javascript: ', e);
       }
     }
-
     color(r, g, b, a) {
       if (typeof a === 'undefined') {
         a = 1;
       }
-
       r = Math.floor(r * 255);
       g = Math.floor(g * 255);
       b = Math.floor(b * 255);
       a = Math.floor(a * 255);
-
       const width = this.output[0];
       const height = this.output[1];
-
       const x = this.thread.x;
       const y = height - this.thread.y - 1;
-
       const index = x + y * width;
-
       this._colorData[index * 4 + 0] = r;
       this._colorData[index * 4 + 1] = g;
       this._colorData[index * 4 + 2] = b;
       this._colorData[index * 4 + 3] = a;
     }
-
-    /**
-     * @desc Generates kernel string for this kernel program.
-     *
-     * <p>If sub-kernels are supplied, they are also factored in.
-     * This string can be saved by calling the `toString` method
-     * and then can be reused later.</p>
-     *
-     * @returns {String} result
-     *
-     */
     getKernelString() {
       if (this._kernelString !== null) return this._kernelString;
-
       let kernelThreadString = null;
       let {
         translatedSources
@@ -10556,18 +8171,9 @@ ${cpuKernel._kernelString}
   };`;
       return kernelString;
     }
-
-    /**
-     * @desc Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
-     */
     toString() {
       return cpuKernelString(this);
     }
-
-    /**
-     * @desc Get the maximum loop size String.
-     * @returns {String} result
-     */
     _getLoopMaxString() {
       return (
         this.loopMaxIterations ?
@@ -10575,10 +8181,8 @@ ${cpuKernel._kernelString}
         ' 1000;'
       );
     }
-
     _processConstants() {
       if (!this.constants) return '';
-
       const result = [];
       for (let p in this.constants) {
         const type = this.constantTypes[p];
@@ -10598,7 +8202,6 @@ ${cpuKernel._kernelString}
       }
       return result.join('');
     }
-
     _processArguments() {
       const result = [];
       for (let i = 0; i < this.argumentTypes.length; i++) {
@@ -10639,7 +8242,6 @@ ${cpuKernel._kernelString}
       }
       return result.join('');
     }
-
     _imageTo2DArray(image) {
       const canvas = this.canvas;
       if (canvas.width < image.width) {
@@ -10657,22 +8259,19 @@ ${cpuKernel._kernelString}
         const row = imageArray[y] = new Array(image.width);
         for (let x = 0; x < image.width; x++) {
           const pixel = new Float32Array(4);
-          pixel[0] = pixelsData[index++] / 255; // r
-          pixel[1] = pixelsData[index++] / 255; // g
-          pixel[2] = pixelsData[index++] / 255; // b
-          pixel[3] = pixelsData[index++] / 255; // a
+          pixel[0] = pixelsData[index++] / 255;
+          pixel[1] = pixelsData[index++] / 255;
+          pixel[2] = pixelsData[index++] / 255;
+          pixel[3] = pixelsData[index++] / 255;
           row[x] = pixel;
         }
       }
       return imageArray;
     }
-
     getPixels(flip) {
       const [width, height] = this.output;
-      // cpu is not flipped by default
       return flip ? utils$1.flipPixels(this._imageData.data, width, height) : this._imageData.data.slice(0);
     }
-
     _imageTo3DArray(images) {
       const imagesArray = new Array(images.length);
       for (let i = 0; i < images.length; i++) {
@@ -10680,7 +8279,6 @@ ${cpuKernel._kernelString}
       }
       return imagesArray;
     }
-
     _resultKernelBody(kernelString) {
       switch (this.output.length) {
         case 1:
@@ -10693,7 +8291,6 @@ ${cpuKernel._kernelString}
           throw new Error('unsupported size kernel');
       }
     }
-
     _graphicalKernelBody(kernelThreadString) {
       switch (this.output.length) {
         case 2:
@@ -10702,14 +8299,12 @@ ${cpuKernel._kernelString}
           throw new Error('unsupported size kernel');
       }
     }
-
     _graphicalOutput() {
       return `
     this._imageData.data.set(this._colorData);
     this.context.putImageData(this._imageData, 0, 0);
     return;`
     }
-
     _getKernelResultTypeConstructorString() {
       switch (this.returnType) {
         case 'LiteralInteger':
@@ -10728,7 +8323,6 @@ ${cpuKernel._kernelString}
           throw new Error(`unhandled returnType ${ this.returnType }`);
       }
     }
-
     _resultKernel1DLoop(kernelString) {
       const constructorString = this._getKernelResultTypeConstructorString();
       return `  const outputX = _this.output[0];
@@ -10742,7 +8336,6 @@ ${cpuKernel._kernelString}
       ${ kernelString }
     }`;
     }
-
     _resultKernel2DLoop(kernelString) {
       const constructorString = this._getKernelResultTypeConstructorString();
       return `  const outputX = _this.output[0];
@@ -10761,7 +8354,6 @@ ${cpuKernel._kernelString}
       }
     }`;
     }
-
     _graphicalKernel2DLoop(kernelString) {
       const constructorString = this._getKernelResultTypeConstructorString();
       return `  const outputX = _this.output[0];
@@ -10778,7 +8370,6 @@ ${cpuKernel._kernelString}
       }
     }`;
     }
-
     _resultKernel3DLoop(kernelString) {
       const constructorString = this._getKernelResultTypeConstructorString();
       return `  const outputX = _this.output[0];
@@ -10802,7 +8393,6 @@ ${cpuKernel._kernelString}
       }
     }`;
     }
-
     _kernelOutput() {
       if (!this.subKernels) {
         return '\n    return result;';
@@ -10812,28 +8402,21 @@ ${cpuKernel._kernelString}
       ${ this.subKernels.map(subKernel => `${ subKernel.property }: result_${ subKernel.name }`).join(',\n      ') }
     };`;
     }
-
     _mapSubKernels(fn) {
       return this.subKernels === null ? [''] :
         this.subKernels.map(fn);
     }
-
-
-
     destroy(removeCanvasReference) {
       if (removeCanvasReference) {
         delete this.canvas;
       }
     }
-
     static destroyContext(context) {}
-
     toJSON() {
       const json = super.toJSON();
       json.functionNodes = FunctionBuilder.fromKernel(this, CPUFunctionNode).toJSON();
       return json;
     }
-
     setOutput(output) {
       super.setOutput(output);
       const [width, height] = this.output;
@@ -11070,15 +8653,10 @@ ${cpuKernel._kernelString}
     }
   }
 
-  /**
-   * @abstract
-   * @extends Kernel
-   */
   class GLKernel extends Kernel {
     static get mode() {
       return 'gpu';
     }
-
     static getIsFloatRead() {
       const kernelString = `function kernelFunction() {
       return 1;
@@ -11098,7 +8676,6 @@ ${cpuKernel._kernelString}
       kernel.destroy(true);
       return result[0] === 1;
     }
-
     static getIsIntegerDivisionAccurate() {
       function kernelFunction(v1, v2) {
         return v1[this.thread.x] / v2[this.thread.x];
@@ -11120,73 +8697,33 @@ ${cpuKernel._kernelString}
       kernel.run.apply(kernel, args);
       const result = kernel.renderOutput();
       kernel.destroy(true);
-      // have we not got whole numbers for 6/3 or 6030401/3991
-      // add more here if others see this problem
       return result[0] === 2 && result[1] === 1511;
     }
-
-    /**
-     * @abstract
-     */
     static get testCanvas() {
       throw new Error(`"testCanvas" not defined on ${ this.name }`);
     }
-
-    /**
-     * @abstract
-     */
     static get testContext() {
       throw new Error(`"testContext" not defined on ${ this.name }`);
     }
-
-    /**
-     * @type {IKernelFeatures}
-     */
     static get features() {
       throw new Error(`"features" not defined on ${ this.name }`);
     }
-
-    /**
-     * @abstract
-     */
     static setupFeatureChecks() {
       throw new Error(`"setupFeatureChecks" not defined on ${ this.name }`);
     }
-
-    /**
-     * @desc Fix division by factor of 3 FP accuracy bug
-     * @param {Boolean} fix - should fix
-     */
     setFixIntegerDivisionAccuracy(fix) {
       this.fixIntegerDivisionAccuracy = fix;
       return this;
     }
-
-    /**
-     * @desc Toggle output mode
-     * @param {String} flag - 'single' or 'unsigned'
-     */
     setPrecision(flag) {
       this.precision = flag;
       return this;
     }
-
-    /**
-     * @desc Toggle texture output mode
-     * @param {Boolean} flag - true to enable floatTextures
-     * @deprecated
-     */
     setFloatTextures(flag) {
       utils$1.warnDeprecated('method', 'setFloatTextures', 'setOptimizeFloatMemory');
       this.floatTextures = flag;
       return this;
     }
-
-    /**
-     * A highly readable very forgiving micro-parser for a glsl function that gets argument types
-     * @param {String} source
-     * @returns {{argumentTypes: String[], argumentNames: String[]}}
-     */
     static nativeFunctionArguments(source) {
       const argumentTypes = [];
       const argumentNames = [];
@@ -11200,8 +8737,6 @@ ${cpuKernel._kernelString}
         const char = source[i];
         const nextChar = source[i + 1];
         const state = states.length > 0 ? states[states.length - 1] : null;
-
-        // begin MULTI_LINE_COMMENT handling
         if (state === 'FUNCTION_ARGUMENTS' && char === '/' && nextChar === '*') {
           states.push('MULTI_LINE_COMMENT');
           i += 2;
@@ -11211,9 +8746,6 @@ ${cpuKernel._kernelString}
           i += 2;
           continue;
         }
-        // end MULTI_LINE_COMMENT handling
-
-        // begin COMMENT handling
         else if (state === 'FUNCTION_ARGUMENTS' && char === '/' && nextChar === '/') {
           states.push('COMMENT');
           i += 2;
@@ -11223,9 +8755,6 @@ ${cpuKernel._kernelString}
           i++;
           continue;
         }
-        // end COMMENT handling
-
-        // being FUNCTION_ARGUMENTS handling
         else if (state === null && char === '(') {
           states.push('FUNCTION_ARGUMENTS');
           i++;
@@ -11267,9 +8796,6 @@ ${cpuKernel._kernelString}
             continue;
           }
         }
-        // end FUNCTION_ARGUMENTS handling
-
-        // begin DECLARE_VARIABLE handling
         else if (state === 'DECLARE_VARIABLE') {
           if (argumentName === '') {
             if (char === ' ') {
@@ -11287,9 +8813,6 @@ ${cpuKernel._kernelString}
             argumentTypes.push(typeMap$1[argumentType]);
           }
         }
-        // end DECLARE_VARIABLE handling
-
-        // Progress to next character
         i++;
       }
       if (states.length > 0) {
@@ -11300,11 +8823,9 @@ ${cpuKernel._kernelString}
         argumentTypes,
       };
     }
-
     static nativeFunctionReturnType(source) {
       return typeMap$1[source.match(/int|float|vec[2-4]/)[0]];
     }
-
     static combineKernels(combinedKernel, lastKernel) {
       combinedKernel.apply(null, arguments);
       const {
@@ -11323,9 +8844,7 @@ ${cpuKernel._kernelString}
         context.readPixels(0, 0, texSize[0], texSize[1], context.RGBA, context.UNSIGNED_BYTE, bytes);
         result = new Float32Array(bytes.buffer);
       }
-
       result = result.subarray(0, threadDim[0] * threadDim[1] * threadDim[2]);
-
       if (lastKernel.output.length === 1) {
         return result;
       } else if (lastKernel.output.length === 2) {
@@ -11337,7 +8856,6 @@ ${cpuKernel._kernelString}
         });
       }
     }
-
     constructor(source, settings) {
       super(source, settings);
       this.transferValues = null;
@@ -11351,16 +8869,9 @@ ${cpuKernel._kernelString}
       this.compiledFragmentShader = null;
       this.compiledVertexShader = null;
     }
-
     translateSource() {
       throw new Error(`"translateSource" not defined on ${this.constructor.name}`);
     }
-
-    /**
-     * Picks a render strategy for the now finally parsed kernel
-     * @param args
-     * @return {null|KernelOutput}
-     */
     pickRenderStrategy(args) {
       if (this.graphical) {
         this.renderRawOutput = this.readPackedPixelsToUint8Array;
@@ -11426,7 +8937,6 @@ ${cpuKernel._kernelString}
                 this.formatValues = utils$1.erectPackedFloat;
                 return null;
               }
-
               break;
             case 'Array(2)':
             case 'Array(3)':
@@ -11671,18 +9181,11 @@ ${cpuKernel._kernelString}
       } else {
         throw new Error(`unhandled precision of "${this.precision}"`);
       }
-
       throw new Error(`unhandled return type "${this.returnType}"`);
     }
-
-    /**
-     * @abstract
-     * @returns String
-     */
     getKernelString() {
       throw new Error(`abstract method call`);
     }
-
     getMainResultTexture() {
       switch (this.returnType) {
         case 'LiteralInteger':
@@ -11700,85 +9203,39 @@ ${cpuKernel._kernelString}
           throw new Error(`unhandled returnType type ${ this.returnType }`);
       }
     }
-
-    /**
-     * @abstract
-     * @returns String[]
-     */
     getMainResultKernelNumberTexture() {
       throw new Error(`abstract method call`);
     }
-    /**
-     * @abstract
-     * @returns String[]
-     */
     getMainResultSubKernelNumberTexture() {
       throw new Error(`abstract method call`);
     }
-    /**
-     * @abstract
-     * @returns String[]
-     */
     getMainResultKernelArray2Texture() {
       throw new Error(`abstract method call`);
     }
-    /**
-     * @abstract
-     * @returns String[]
-     */
     getMainResultSubKernelArray2Texture() {
       throw new Error(`abstract method call`);
     }
-    /**
-     * @abstract
-     * @returns String[]
-     */
     getMainResultKernelArray3Texture() {
       throw new Error(`abstract method call`);
     }
-    /**
-     * @abstract
-     * @returns String[]
-     */
     getMainResultSubKernelArray3Texture() {
       throw new Error(`abstract method call`);
     }
-    /**
-     * @abstract
-     * @returns String[]
-     */
     getMainResultKernelArray4Texture() {
       throw new Error(`abstract method call`);
     }
-    /**
-     * @abstract
-     * @returns String[]
-     */
     getMainResultSubKernelArray4Texture() {
       throw new Error(`abstract method call`);
     }
-    /**
-     * @abstract
-     * @returns String[]
-     */
     getMainResultGraphical() {
       throw new Error(`abstract method call`);
     }
-    /**
-     * @abstract
-     * @returns String[]
-     */
     getMainResultMemoryOptimizedFloats() {
       throw new Error(`abstract method call`);
     }
-    /**
-     * @abstract
-     * @returns String[]
-     */
     getMainResultPackedPixels() {
       throw new Error(`abstract method call`);
     }
-
     getMainResultString() {
       if (this.graphical) {
         return this.getMainResultGraphical();
@@ -11791,31 +9248,22 @@ ${cpuKernel._kernelString}
         return this.getMainResultPackedPixels();
       }
     }
-
     getMainResultNumberTexture() {
       return utils$1.linesToString(this.getMainResultKernelNumberTexture()) +
         utils$1.linesToString(this.getMainResultSubKernelNumberTexture());
     }
-
     getMainResultArray2Texture() {
       return utils$1.linesToString(this.getMainResultKernelArray2Texture()) +
         utils$1.linesToString(this.getMainResultSubKernelArray2Texture());
     }
-
     getMainResultArray3Texture() {
       return utils$1.linesToString(this.getMainResultKernelArray3Texture()) +
         utils$1.linesToString(this.getMainResultSubKernelArray3Texture());
     }
-
     getMainResultArray4Texture() {
       return utils$1.linesToString(this.getMainResultKernelArray4Texture()) +
         utils$1.linesToString(this.getMainResultSubKernelArray4Texture());
     }
-
-    /**
-     *
-     * @return {string}
-     */
     getFloatTacticDeclaration() {
       switch (this.tactic) {
         case 'speed':
@@ -11827,11 +9275,6 @@ ${cpuKernel._kernelString}
           return 'precision mediump float;\n';
       }
     }
-
-    /**
-     *
-     * @return {string}
-     */
     getIntTacticDeclaration() {
       switch (this.tactic) {
         case 'speed':
@@ -11843,11 +9286,6 @@ ${cpuKernel._kernelString}
           return 'precision mediump int;\n';
       }
     }
-
-    /**
-     *
-     * @return {string}
-     */
     getSampler2DTacticDeclaration() {
       switch (this.tactic) {
         case 'speed':
@@ -11859,7 +9297,6 @@ ${cpuKernel._kernelString}
           return 'precision mediump sampler2D;\n';
       }
     }
-
     getSampler2DArrayTacticDeclaration() {
       switch (this.tactic) {
         case 'speed':
@@ -11871,7 +9308,6 @@ ${cpuKernel._kernelString}
           return 'precision mediump sampler2DArray;\n';
       }
     }
-
     renderTexture() {
       return new this.TextureConstructor({
         texture: this.outputTexture,
@@ -11891,11 +9327,9 @@ ${cpuKernel._kernelString}
       gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, result);
       return result;
     }
-
     readPackedPixelsToFloat32Array() {
       return new Float32Array(this.readPackedPixelsToUint8Array().buffer);
     }
-
     readFloatPixelsToFloat32Array() {
       if (this.precision !== 'single') throw new Error('Requires this.precision to be "single"');
       const {
@@ -11908,7 +9342,6 @@ ${cpuKernel._kernelString}
       gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
       return result;
     }
-
     readMemoryOptimizedFloatPixelsToFloat32Array() {
       if (this.precision !== 'single') throw new Error('Requires this.precision to be "single"');
       const {
@@ -11921,12 +9354,6 @@ ${cpuKernel._kernelString}
       gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, result);
       return result;
     }
-
-    /**
-     *
-     * @param {Boolean} [flip]
-     * @return {Uint8Array}
-     */
     getPixels(flip) {
       const {
         context: gl,
@@ -11935,10 +9362,8 @@ ${cpuKernel._kernelString}
       const [width, height] = output;
       const pixels = new Uint8Array(width * height * 4);
       gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-      // flipped by default, so invert
       return new Uint8ClampedArray((flip ? pixels : utils$1.flipPixels(pixels, width, height)).buffer);
     }
-
     renderKernelsToArrays() {
       const result = {
         result: this.renderOutput(),
@@ -11954,7 +9379,6 @@ ${cpuKernel._kernelString}
       }
       return result;
     }
-
     renderKernelsToTextures() {
       const result = {
         result: this.renderOutput(),
@@ -11970,7 +9394,6 @@ ${cpuKernel._kernelString}
       }
       return result;
     }
-
     setOutput(output) {
       super.setOutput(output);
       if (this.program) {
@@ -12003,7 +9426,6 @@ ${cpuKernel._kernelString}
       );
     }
   }
-
   const renderStrategy = Object.freeze({
     PackedPixelToUint8Array: Symbol('PackedPixelToUint8Array'),
     PackedPixelToFloat: Symbol('PackedPixelToFloat'),
@@ -12028,7 +9450,6 @@ ${cpuKernel._kernelString}
     MemoryOptimizedFloatPixelToMemoryOptimized2DFloat: Symbol('MemoryOptimizedFloatPixelTo2DFloat'),
     MemoryOptimizedFloatPixelToMemoryOptimized3DFloat: Symbol('MemoryOptimizedFloatPixelTo3DFloat'),
   });
-
   const typeMap$1 = {
     int: 'Integer',
     float: 'Number',
@@ -12037,11 +9458,6 @@ ${cpuKernel._kernelString}
     vec4: 'Array(4)',
   };
 
-  /**
-   * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective WebGL code
-   * @extends FunctionNode
-   * @returns the converted WebGL function string
-   */
   class WebGLFunctionNode extends FunctionNode {
     constructor(source, settings) {
       super(source, settings);
@@ -12049,15 +9465,7 @@ ${cpuKernel._kernelString}
         this.fixIntegerDivisionAccuracy = settings.fixIntegerDivisionAccuracy;
       }
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for to its *named function*
-     * @param {Object} ast - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astFunction(ast, retArr) {
-      // Setup function return type and name
       if (this.isRootKernel) {
         retArr.push('void');
       } else {
@@ -12070,7 +9478,6 @@ ${cpuKernel._kernelString}
             }
           }
         }
-
         const { returnType } = this;
         if (!returnType) {
           retArr.push('void');
@@ -12085,17 +9492,13 @@ ${cpuKernel._kernelString}
       retArr.push(' ');
       retArr.push(this.name);
       retArr.push('(');
-
       if (!this.isRootKernel) {
-        // Arguments handling
         for (let i = 0; i < this.argumentNames.length; ++i) {
           const argumentName = this.argumentNames[i];
-
           if (i > 0) {
             retArr.push(', ');
           }
           let argumentType = this.argumentTypes[this.argumentNames.indexOf(argumentName)];
-          // The type is too loose ended, here we descide to solidify a type, lets go with float
           if (!argumentType) {
             throw this.astErrorOutput(`Unknown argument ${argumentName} type`, ast);
           }
@@ -12112,35 +9515,20 @@ ${cpuKernel._kernelString}
           retArr.push(argumentName);
         }
       }
-
-      // Function opening
       retArr.push(') {\n');
-
-      // Body statement iteration
       for (let i = 0; i < ast.body.body.length; ++i) {
         this.astGeneric(ast.body.body[i], retArr);
         retArr.push('\n');
       }
-
-      // Function closing
       retArr.push('}\n');
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for to *return* statement
-     * @param {Object} ast - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astReturnStatement(ast, retArr) {
       if (!ast.argument) throw this.astErrorOutput('Unexpected return statement', ast);
       this.pushState('skip-literal-correction');
       const type = this.getType(ast.argument);
       this.popState('skip-literal-correction');
-
       const result = [];
-
       if (!this.returnType) {
         if (type === 'LiteralInteger' || type === 'Integer') {
           this.returnType = 'Number';
@@ -12148,7 +9536,6 @@ ${cpuKernel._kernelString}
           this.returnType = type;
         }
       }
-
       switch (this.returnType) {
         case 'LiteralInteger':
         case 'Number':
@@ -12161,9 +9548,6 @@ ${cpuKernel._kernelString}
               break;
             case 'LiteralInteger':
               this.castLiteralToFloat(ast.argument, result);
-
-              // Running astGeneric forces the LiteralInteger to pick a type, and here, if we are returning a float, yet
-              // the LiteralInteger has picked to be an integer because of constraints on it we cast it to float.
               if (this.getType(ast) === 'Integer') {
                 result.unshift('float(');
                 result.push(')');
@@ -12195,7 +9579,6 @@ ${cpuKernel._kernelString}
         default:
           throw this.astErrorOutput(`unhandled return type ${this.returnType}`, ast);
       }
-
       if (this.isRootKernel) {
         retArr.push(`kernelResult = ${ result.join('') };`);
         retArr.push('return;');
@@ -12207,24 +9590,13 @@ ${cpuKernel._kernelString}
       }
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *literal value*
-     *
-     * @param {Object} ast - the AST object to parse
-     * @param {Array} retArr - return array string
-     *
-     * @returns {Array} the append retArr
-     */
     astLiteral(ast, retArr) {
-      // Reject non numeric literals
       if (isNaN(ast.value)) {
         throw this.astErrorOutput(
           'Non-numeric literal not supported : ' + ast.value,
           ast
         );
       }
-
       const key = `${ast.start},${ast.end}`;
       if (Number.isInteger(ast.value)) {
         if (this.isState('in-for-loop-init') || this.isState('casting-to-integer') || this.isState('building-integer')) {
@@ -12246,18 +9618,10 @@ ${cpuKernel._kernelString}
       }
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *binary* expression
-     * @param {Object} ast - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astBinaryExpression(ast, retArr) {
       if (this.checkAndUpconvertOperator(ast, retArr)) {
         return retArr;
       }
-
       if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
         retArr.push('div_with_int_check(');
         this.pushState('building-float');
@@ -12286,7 +9650,6 @@ ${cpuKernel._kernelString}
         retArr.push(')');
         return retArr;
       }
-
       retArr.push('(');
       const leftType = this.getType(ast.left) || 'Number';
       const rightType = this.getType(ast.right) || 'Number';
@@ -12327,11 +9690,9 @@ ${cpuKernel._kernelString}
             this.popState('building-float');
           }
           break;
-
         case 'Integer & Float':
         case 'Integer & Number':
           if (ast.operator === '>' || ast.operator === '<' && ast.right.type === 'Literal') {
-            // if right value is actually a float, don't loose that information, cast left to right rather than the usual right to left
             if (!Number.isInteger(ast.right.value)) {
               this.pushState('building-float');
               this.castValueToFloat(ast.left, retArr);
@@ -12369,7 +9730,6 @@ ${cpuKernel._kernelString}
           this.castLiteralToInteger(ast.right, retArr);
           this.popState('building-integer');
           break;
-
         case 'Number & Integer':
           this.pushState('building-float');
           this.astGeneric(ast.left, retArr);
@@ -12420,7 +9780,6 @@ ${cpuKernel._kernelString}
           this.astGeneric(ast.right, retArr);
           this.popState('building-integer');
           break;
-
         case 'Boolean & Boolean':
           this.pushState('building-boolean');
           this.astGeneric(ast.left, retArr);
@@ -12428,7 +9787,6 @@ ${cpuKernel._kernelString}
           this.astGeneric(ast.right, retArr);
           this.popState('building-boolean');
           break;
-
         case 'Float & Integer':
           this.pushState('building-float');
           this.astGeneric(ast.left, retArr);
@@ -12436,15 +9794,12 @@ ${cpuKernel._kernelString}
           this.castValueToFloat(ast.right, retArr);
           this.popState('building-float');
           break;
-
         default:
           throw this.astErrorOutput(`Unhandled binary expression between ${key}`, ast);
       }
       retArr.push(')');
-
       return retArr;
     }
-
     checkAndUpconvertOperator(ast, retArr) {
       const bitwiseResult = this.checkAndUpconvertBitwiseOperators(ast, retArr);
       if (bitwiseResult) {
@@ -12482,7 +9837,6 @@ ${cpuKernel._kernelString}
       retArr.push(')');
       return retArr;
     }
-
     checkAndUpconvertBitwiseOperators(ast, retArr) {
       const upconvertableOperators = {
         '&': 'bitwiseAnd',
@@ -12524,7 +9878,6 @@ ${cpuKernel._kernelString}
       retArr.push(')');
       return retArr;
     }
-
     checkAndUpconvertBitwiseUnary(ast, retArr) {
       const upconvertableOperators = {
         '~': 'bitwiseNot',
@@ -12547,39 +9900,18 @@ ${cpuKernel._kernelString}
       retArr.push(')');
       return retArr;
     }
-
-    /**
-     *
-     * @param {Object} ast
-     * @param {Array} retArr
-     * @return {String[]}
-     */
     castLiteralToInteger(ast, retArr) {
       this.pushState('casting-to-integer');
       this.astGeneric(ast, retArr);
       this.popState('casting-to-integer');
       return retArr;
     }
-
-    /**
-     *
-     * @param {Object} ast
-     * @param {Array} retArr
-     * @return {String[]}
-     */
     castLiteralToFloat(ast, retArr) {
       this.pushState('casting-to-float');
       this.astGeneric(ast, retArr);
       this.popState('casting-to-float');
       return retArr;
     }
-
-    /**
-     *
-     * @param {Object} ast
-     * @param {Array} retArr
-     * @return {String[]}
-     */
     castValueToInteger(ast, retArr) {
       this.pushState('casting-to-integer');
       retArr.push('int(');
@@ -12588,13 +9920,6 @@ ${cpuKernel._kernelString}
       this.popState('casting-to-integer');
       return retArr;
     }
-
-    /**
-     *
-     * @param {Object} ast
-     * @param {Array} retArr
-     * @return {String[]}
-     */
     castValueToFloat(ast, retArr) {
       this.pushState('casting-to-float');
       retArr.push('float(');
@@ -12603,22 +9928,12 @@ ${cpuKernel._kernelString}
       this.popState('casting-to-float');
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *identifier* expression
-     * @param {Object} idtNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astIdentifierExpression(idtNode, retArr) {
       if (idtNode.type !== 'Identifier') {
         throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode);
       }
-
       const type = this.getType(idtNode);
-
       if (idtNode.name === 'Infinity') {
-        // https://stackoverflow.com/a/47543127/1324039
         retArr.push('3.402823466e+38');
       } else if (type === 'Boolean') {
         if (this.argumentNames.indexOf(idtNode.name) > -1) {
@@ -12634,27 +9949,17 @@ ${cpuKernel._kernelString}
           retArr.push(`user_${idtNode.name}`);
         }
       }
-
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *for-loop* expression
-     * @param {Object} forNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the parsed webgl string
-     */
     astForStatement(forNode, retArr) {
       if (forNode.type !== 'ForStatement') {
         throw this.astErrorOutput('Invalid for statement', forNode);
       }
-
       const initArr = [];
       const testArr = [];
       const updateArr = [];
       const bodyArr = [];
       let isSafe = null;
-
       if (forNode.init) {
         this.pushState('in-for-loop-init');
         this.astGeneric(forNode.init, initArr);
@@ -12675,7 +9980,6 @@ ${cpuKernel._kernelString}
       } else {
         isSafe = false;
       }
-
       if (forNode.test) {
         this.pushState('in-for-loop-test');
         this.astGeneric(forNode.test, testArr);
@@ -12683,24 +9987,19 @@ ${cpuKernel._kernelString}
       } else {
         isSafe = false;
       }
-
       if (forNode.update) {
         this.astGeneric(forNode.update, updateArr);
       } else {
         isSafe = false;
       }
-
       if (forNode.body) {
         this.pushState('loop-body');
         this.astGeneric(forNode.body, bodyArr);
         this.popState('loop-body');
       }
-
-      // have all parts, now make them safe
       if (isSafe === null) {
         isSafe = this.isSafe(forNode.init) && this.isSafe(forNode.test);
       }
-
       if (isSafe) {
         retArr.push(`for (${initArr.join('')};${testArr.join('')};${updateArr.join('')}){\n`);
         retArr.push(bodyArr.join(''));
@@ -12720,18 +10019,10 @@ ${cpuKernel._kernelString}
       }
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *while* loop
-     * @param {Object} whileNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the parsed webgl string
-     */
     astWhileStatement(whileNode, retArr) {
       if (whileNode.type !== 'WhileStatement') {
         throw this.astErrorOutput('Invalid while statement', whileNode);
       }
-
       const iVariableName = this.getInternalVariableName('safeI');
       retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
       retArr.push('if (!');
@@ -12739,21 +10030,12 @@ ${cpuKernel._kernelString}
       retArr.push(') break;\n');
       this.astGeneric(whileNode.body, retArr);
       retArr.push('}\n');
-
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *do while* loop
-     * @param {Object} doWhileNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the parsed webgl string
-     */
     astDoWhileStatement(doWhileNode, retArr) {
       if (doWhileNode.type !== 'DoWhileStatement') {
         throw this.astErrorOutput('Invalid while statement', doWhileNode);
       }
-
       const iVariableName = this.getInternalVariableName('safeI');
       retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
       this.astGeneric(doWhileNode.body, retArr);
@@ -12761,23 +10043,13 @@ ${cpuKernel._kernelString}
       this.astGeneric(doWhileNode.test, retArr);
       retArr.push(') break;\n');
       retArr.push('}\n');
-
       return retArr;
     }
-
-
-    /**
-     * @desc Parses the abstract syntax tree for *Assignment* Expression
-     * @param {Object} assNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astAssignmentExpression(assNode, retArr) {
       const declaration = this.getDeclaration(assNode.left);
       if (declaration && !declaration.assignable) {
         throw new this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
       }
-      // TODO: casting needs implemented here
       if (assNode.operator === '%=') {
         this.astGeneric(assNode.left, retArr);
         retArr.push('=');
@@ -12809,16 +10081,9 @@ ${cpuKernel._kernelString}
         return retArr;
       }
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *Block* statement
-     * @param {Object} bNode - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astBlockStatement(bNode, retArr) {
       if (this.isState('loop-body')) {
-        this.pushState('block-body'); // this prevents recursive removal of braces
+        this.pushState('block-body');
         for (let i = 0; i < bNode.body.length; i++) {
           this.astGeneric(bNode.body[i], retArr);
         }
@@ -12832,13 +10097,6 @@ ${cpuKernel._kernelString}
       }
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *Variable Declaration*
-     * @param {Object} varDecNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astVariableDeclaration(varDecNode, retArr) {
       if (varDecNode.kind === 'var' && this.warnVarUsage) {
         this.varWarn();
@@ -12859,7 +10117,6 @@ ${cpuKernel._kernelString}
         let dependencies = info.dependencies;
         let type = inForLoopInit ? 'Integer' : actualType;
         if (type === 'LiteralInteger') {
-          // We had the choice to go either float or int, choosing float
           type = 'Number';
         }
         const markupType = typeMap$2[type];
@@ -12868,7 +10125,6 @@ ${cpuKernel._kernelString}
         }
         const declarationResult = [];
         if (actualType === 'Integer' && type === 'Integer' && !inForLoopInit) {
-          // Since we are assigning to a float, ensure valueType is reset to that
           info.valueType = 'Number';
           if (i === 0 || lastType === null) {
             declarationResult.push('float ');
@@ -12883,7 +10139,6 @@ ${cpuKernel._kernelString}
           this.astGeneric(init, declarationResult);
           declarationResult.push(')');
         } else {
-          // Since we are assigning to a float, ensure valueType is reset to that
           info.valueType = type;
           if (i === 0 || lastType === null) {
             declarationResult.push(`${markupType} `);
@@ -12909,20 +10164,12 @@ ${cpuKernel._kernelString}
         }
         result.push(declarationResult.join(''));
       }
-
       retArr.push(result.join(''));
       if (!inForLoopInit) {
         retArr.push(';');
       }
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *If* Statement
-     * @param {Object} ifNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astIfStatement(ifNode, retArr) {
       retArr.push('if (');
       this.astGeneric(ifNode.test, retArr);
@@ -12934,7 +10181,6 @@ ${cpuKernel._kernelString}
         this.astGeneric(ifNode.consequent, retArr);
         retArr.push('\n}\n');
       }
-
       if (ifNode.alternate) {
         retArr.push('else ');
         if (ifNode.alternate.type === 'BlockStatement') {
@@ -12947,7 +10193,6 @@ ${cpuKernel._kernelString}
       }
       return retArr;
     }
-
     astSwitchStatement(ast, retArr) {
       if (ast.type !== 'SwitchStatement') {
         throw this.astErrorOutput('Invalid switch statement', ast);
@@ -12968,19 +10213,15 @@ ${cpuKernel._kernelString}
           retArr.push(';\n');
           break;
       }
-      // switch with just a default:
       if (cases.length === 1 && !cases[0].test) {
         this.astGeneric(cases[0].consequent, retArr);
         return retArr;
       }
-
-      // regular switches:
       let fallingThrough = false;
       let defaultResult = [];
       let movingDefaultToEnd = false;
       let pastFirstIf = false;
       for (let i = 0; i < cases.length; i++) {
-        // default
         if (!cases[i].test) {
           if (cases.length > i + 1) {
             movingDefaultToEnd = true;
@@ -12990,7 +10231,6 @@ ${cpuKernel._kernelString}
             retArr.push(' else {\n');
           }
         } else {
-          // all others
           if (i === 0 || !pastFirstIf) {
             pastFirstIf = true;
             retArr.push(`if (${varName} == `);
@@ -13043,24 +10283,10 @@ ${cpuKernel._kernelString}
       }
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *This* expression
-     * @param {Object} tNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astThisExpression(tNode, retArr) {
       retArr.push('this');
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *Member* Expression
-     * @param {Object} mNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astMemberExpression(mNode, retArr) {
       const {
         property,
@@ -13191,9 +10417,7 @@ ${cpuKernel._kernelString}
           default:
             throw this.astErrorOutput('Unexpected expression', mNode);
       }
-
       if (mNode.computed === false) {
-        // handle simple types
         switch (type) {
           case 'Number':
           case 'Integer':
@@ -13203,18 +10427,12 @@ ${cpuKernel._kernelString}
             return retArr;
         }
       }
-
-      // handle more complex types
-      // argument may have come from a parent
       let synonymName = this.getKernelArgumentName(name);
-
       const markupName = `${origin}_${synonymName || name}`;
-
       switch (type) {
         case 'Array(2)':
         case 'Array(3)':
         case 'Array(4)':
-          // Get from local vec4
           this.astGeneric(mNode.object, retArr);
           retArr.push('[');
           retArr.push(this.memberExpressionPropertyMarkup(xProperty));
@@ -13278,8 +10496,6 @@ ${cpuKernel._kernelString}
         case 'Float':
         case 'Integer':
           if (this.precision === 'single') {
-            // bitRatio is always 4 here, javascript doesn't yet have 8 or 16 bit support
-            // TODO: make 8 or 16 bit work anyway!
             retArr.push(`getMemoryOptimized32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
             this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
             retArr.push(')');
@@ -13316,46 +10532,29 @@ ${cpuKernel._kernelString}
       }
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *call* expression
-     * @param {Object} ast - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns  {Array} the append retArr
-     */
     astCallExpression(ast, retArr) {
       if (!ast.callee) {
         throw this.astErrorOutput('Unknown CallExpression', ast);
       }
-
       let functionName = null;
       const isMathFunction = this.isAstMathFunction(ast);
-
-      // Its a math operator or this.something(), remove the prefix
       if (isMathFunction || (ast.callee.object && ast.callee.object.type === 'ThisExpression')) {
         functionName = ast.callee.property.name;
       }
-      // Issue #212, BABEL!
       else if (ast.callee.type === 'SequenceExpression' && ast.callee.expressions[0].type === 'Literal' && !isNaN(ast.callee.expressions[0].raw)) {
         functionName = ast.callee.expressions[1].property.name;
       } else {
         functionName = ast.callee.name;
       }
-
       if (!functionName) {
         throw this.astErrorOutput(`Unhandled function, couldn't find name`, ast);
       }
-
-      // if this if grows to more than one, lets use a switch
       if (functionName === 'atan2') {
         functionName = 'atan';
       }
-
-      // Register the function into the called registry
       if (this.calledFunctions.indexOf(functionName) < 0) {
         this.calledFunctions.push(functionName);
       }
-
       if (functionName === 'random' && this.plugins && this.plugins.length > 0) {
         for (let i = 0; i < this.plugins.length; i++) {
           const plugin = this.plugins[i];
@@ -13365,19 +10564,11 @@ ${cpuKernel._kernelString}
           }
         }
       }
-
-      // track the function was called
       if (this.onFunctionCall) {
         this.onFunctionCall(this.name, functionName, ast.arguments);
       }
-
-      // Call the function
       retArr.push(functionName);
-
-      // Open arguments space
       retArr.push('(');
-
-      // Add the arguments
       if (isMathFunction) {
         for (let i = 0; i < ast.arguments.length; ++i) {
           const argument = ast.arguments[i];
@@ -13385,7 +10576,6 @@ ${cpuKernel._kernelString}
           if (i > 0) {
             retArr.push(', ');
           }
-
           switch (argumentType) {
             case 'Integer':
               this.castValueToFloat(argument, retArr);
@@ -13471,21 +10661,11 @@ ${cpuKernel._kernelString}
           throw this.astErrorOutput(`Unhandled argument combination of ${ argumentType } and ${ targetType } for argument named "${ argument.name }"`, ast);
         }
       }
-      // Close arguments space
       retArr.push(')');
-
       return retArr;
     }
-
-    /**
-     * @desc Parses the abstract syntax tree for *Array* Expression
-     * @param {Object} arrNode - the AST object to parse
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astArrayExpression(arrNode, retArr) {
       const arrLen = arrNode.elements.length;
-
       retArr.push('vec' + arrLen + '(');
       for (let i = 0; i < arrLen; ++i) {
         if (i > 0) {
@@ -13495,10 +10675,8 @@ ${cpuKernel._kernelString}
         this.astGeneric(subNode, retArr);
       }
       retArr.push(')');
-
       return retArr;
     }
-
     memberExpressionXYZ(x, y, z, retArr) {
       if (z) {
         retArr.push(this.memberExpressionPropertyMarkup(z), ', ');
@@ -13513,7 +10691,6 @@ ${cpuKernel._kernelString}
       retArr.push(this.memberExpressionPropertyMarkup(x));
       return retArr;
     }
-
     memberExpressionPropertyMarkup(property) {
       if (!property) {
         throw new Error('Property not set');
@@ -13534,7 +10711,6 @@ ${cpuKernel._kernelString}
       return result.join('');
     }
   }
-
   const typeMap$2 = {
     'Array': 'sampler2D',
     'Array(2)': 'vec2',
@@ -13555,7 +10731,6 @@ ${cpuKernel._kernelString}
     'ArrayTexture(3)': 'sampler2D',
     'ArrayTexture(4)': 'sampler2D',
   };
-
   const operatorMap = {
     '===': '==',
     '!==': '!='
@@ -13589,22 +10764,13 @@ float n4rand( vec2 n )
   triangle_noise_shift = result + 0.000001;
   return result;
 }`;
-
   const name$1 = 'triangle-noise-noise';
-
   const functionMatch = 'Math.random()';
-
   const functionReplace = 'n4rand(vTexCoord)';
-
   const functionReturnType = 'Number';
-
   const onBeforeRun = (kernel) => {
     kernel.setUniform1f('triangle_noise_seed', Math.random());
   };
-
-  /**
-   * @type IPlugin
-   */
   var triangleNoise = {
     name: name$1,
     onBeforeRun,
@@ -13614,7 +10780,6 @@ float n4rand( vec2 n )
     source
   };
 
-  // language=GLSL
   const fragmentShader = `__HEADER__;
 __FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
@@ -14018,7 +11183,6 @@ void main(void) {
   __MAIN_RESULT__;
 }`;
 
-  // language=GLSL
   const vertexShader = `__FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
 __SAMPLER_2D_TACTIC_DECLARATION__;
@@ -14039,12 +11203,6 @@ void main(void) {
   }
 
   var glWiretap_1 = createCommonjsModule(function (module) {
-  /**
-   *
-   * @param {WebGLRenderingContext} gl
-   * @param {IGLWiretapOptions} [options]
-   * @returns {GLWiretapProxy}
-   */
   function glWiretap(gl, options = {}) {
     const {
       contextName = 'gl',
@@ -14075,13 +11233,13 @@ void main(void) {
         case 'getContextVariableName': return getContextVariableName;
       }
       if (typeof gl[property] === 'function') {
-        return function() { // need arguments from this, fyi
+        return function() {
           switch (property) {
             case 'getError':
               if (throwGetError) {
                 recording.push(`${indent}if (${contextName}.getError() !== ${contextName}.NONE) throw new Error('error');`);
               } else {
-                recording.push(`${indent}${contextName}.getError();`); // flush out errors
+                recording.push(`${indent}${contextName}.getError();`);
               }
               return gl.getError();
             case 'getExtension': {
@@ -14162,7 +11320,6 @@ void main(void) {
               } else {
                 recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
               }
-
               contextVariables.push(result);
           }
           return result;
@@ -14230,7 +11387,6 @@ ${indent}})();`);
     function methodCallToString(method, args) {
       return `${contextName}.${method}(${argumentsToString(args, { contextName, contextVariables, getEntity, addVariable, variables, onUnrecognizedArgumentLookup })})`;
     }
-
     function getVariableName(value) {
       if (variables) {
         for (const name in variables) {
@@ -14241,7 +11397,6 @@ ${indent}})();`);
       }
       return null;
     }
-
     function getContextVariableName(value) {
       const i = contextVariables.indexOf(value);
       if (i !== -1) {
@@ -14250,13 +11405,6 @@ ${indent}})();`);
       return null;
     }
   }
-
-  /**
-   *
-   * @param extension
-   * @param {IGLExtensionWiretapOptions} options
-   * @returns {*}
-   */
   function glExtensionWiretap(extension, options) {
     const proxy = new Proxy(extension, { get: listen });
     const extensionEntityNames = {};
@@ -14308,18 +11456,15 @@ ${indent}})();`);
       extensionEntityNames[extension[property]] = property;
       return extension[property];
     }
-
     function getExtensionEntity(value) {
       if (extensionEntityNames.hasOwnProperty(value)) {
         return `${contextName}.${extensionEntityNames[value]}`;
       }
       return getEntity(value);
     }
-
     function methodCallToString(method, args) {
       return `${contextName}.${method}(${argumentsToString(args, { contextName, contextVariables, getEntity: getExtensionEntity, addVariable, variables, onUnrecognizedArgumentLookup })})`;
     }
-
     function addVariable(value, source) {
       const variableName = `${contextName}Variable${contextVariables.length}`;
       contextVariables.push(value);
@@ -14327,7 +11472,6 @@ ${indent}})();`);
       return variableName;
     }
   }
-
   function argumentsToString(args, options) {
     const { variables } = options;
     return (Array.from(args).map((arg) => {
@@ -14337,7 +11481,6 @@ ${indent}})();`);
       }
       return argumentToString(arg, options);
     }).join(', '));
-
     function getVariableName(value) {
       if (variables) {
         for (const name in variables) {
@@ -14349,7 +11492,6 @@ ${indent}})();`);
       return null;
     }
   }
-
   function argumentToString(arg, options) {
     const { contextName, contextVariables, getEntity, addVariable, onUnrecognizedArgumentLookup } = options;
     if (typeof arg === 'undefined') {
@@ -14395,16 +11537,12 @@ ${indent}})();`);
         throw new Error(`unrecognized argument type ${arg.constructor.name}`);
     }
   }
-
   function trackablePrimitive(value) {
-    // wrapped in object, so track-able
     return new value.constructor(value);
   }
-
   {
     module.exports = { glWiretap, glExtensionWiretap };
   }
-
   if (typeof window !== 'undefined') {
     glWiretap.glExtensionWiretap = glExtensionWiretap;
     window.glWiretap = glWiretap;
@@ -14419,16 +11557,6 @@ ${indent}})();`);
       .replace(/^function /, '')
       .replace(/utils[.]/g, '/*utils.*/');
   }
-
-  /**
-   *
-   * @param {Kernel} Kernel
-   * @param {KernelVariable[]} args
-   * @param {Kernel} originKernel
-   * @param {string} [setupContextString]
-   * @param {string} [destroyContextString]
-   * @returns {string}
-   */
   function glKernelString(Kernel, args, originKernel, setupContextString, destroyContextString) {
     const postResult = [];
     const context = glWiretap_2(originKernel.context, {
@@ -14525,12 +11653,10 @@ ${indent}})();`);
     });
     kernel.kernelArguments.forEach((kernelArgument, i) => {
       switch (kernelArgument.type) {
-        // primitives
         case 'Integer':
         case 'Boolean':
         case 'Number':
         case 'Float':
-          // non-primitives
         case 'Array':
         case 'Array(2)':
         case 'Array(3)':
@@ -14627,7 +11753,6 @@ ${indent}})();`);
       result.push(`innerKernel.getPixels = getPixels;`);
     }
     result.push('  return innerKernel;');
-
     let constantsUpload = [];
     kernelConstants.forEach((kernelConstant) => {
       constantsUpload.push(`${  kernelConstant.getStringValueHandler()}`);
@@ -14639,7 +11764,6 @@ ${indent}})();`);
 ${result.join('\n')}
 }`;
   }
-
   function getRenderString(targetName, kernel) {
     const readBackValue = kernel.precision === 'single' ? targetName : `new Float32Array(${targetName}.buffer)`;
     if (kernel.output[2]) {
@@ -14648,10 +11772,8 @@ ${result.join('\n')}
     if (kernel.output[1]) {
       return `renderOutput(${readBackValue}, ${kernel.output[0]}, ${kernel.output[1]})`;
     }
-
     return `renderOutput(${readBackValue}, ${kernel.output[0]})`;
   }
-
   function getGetPixelsString(kernel) {
     const getPixels = kernel.getPixels.toString();
     const useFunctionKeyword = !/^function/.test(getPixels);
@@ -14673,7 +11795,6 @@ ${result.join('\n')}
       }
     });
   }
-
   function getToArrayString(kernelResult, textureName) {
     const toArray = kernelResult.toArray.toString();
     const useFunctionKeyword = !/^function/.test(toArray);
@@ -14703,14 +11824,7 @@ ${result.join('\n')}
   }`;
   }
 
-  /**
-   * @class KernelValue
-   */
   class KernelValue {
-    /**
-     *
-     * @param {IKernelArgumentSettings} settings
-     */
     constructor(value, settings) {
       const {
         name,
@@ -14749,7 +11863,6 @@ ${result.join('\n')}
       this.varName = origin === 'constants' ? `constants.${name}` : name;
       this.kernel = kernel;
       this.strictIntegers = strictIntegers;
-      // handle textures
       this.type = value.type || type;
       this.size = value.size || null;
       this.index = null;
@@ -14759,25 +11872,18 @@ ${result.join('\n')}
       this.onRequestContextHandle = onRequestContextHandle;
       this.onUpdateValueMismatch = onUpdateValueMismatch;
     }
-
     getSource() {
       throw new Error(`"getSource" not defined on ${ this.constructor.name }`);
     }
-
     updateValue(value) {
       throw new Error(`"updateValue" not defined on ${ this.constructor.name }`);
     }
-
     getFocusString() {
       throw new Error(`"getFocusString" not defined on ${ this.constructor.name }`);
     }
   }
 
   class WebGLKernelValue extends KernelValue {
-    /**
-     *
-     * @param {IWebGLKernerlValueSettings} settings
-     */
     constructor(value, settings) {
       super(value, settings);
       this.dimensionsId = null;
@@ -14789,19 +11895,16 @@ ${result.join('\n')}
       this.textureSize = null;
       this.bitRatio = null;
     }
-
     requestTexture() {
       this.texture = this.onRequestTexture();
       this.setupTexture();
     }
-
     setupTexture() {
       this.contextHandle = this.onRequestContextHandle();
       this.index = this.onRequestIndex();
       this.dimensionsId = this.id + 'Dim';
       this.sizeId = this.id + 'Size';
     }
-
     getTransferArrayType(value) {
       if (Array.isArray(value[0])) {
         return this.getTransferArrayType(value[0]);
@@ -14823,18 +11926,8 @@ ${result.join('\n')}
       console.warn('Unfamiliar constructor type.  Will go ahead and use, but likley this may result in a transfer of zeros');
       return value.constructor;
     }
-    /**
-     * @desc Adds kernel parameters to the Value Texture,
-     * binding it to the context, etc.
-     *
-     * @param {Array|Float32Array|Uint16Array} value - The actual Value supplied to the kernel
-     * @param {Number} length - the expected total length of the output array
-     * @param {Object} [Type]
-     * @returns {Float32Array|Uint16Array|Uint8Array} flattened array to transfer
-     */
     formatArrayTransfer(value, length, Type) {
       if (utils$1.isArray(value[0]) || this.optimizeFloatMemory) {
-        // not already flat
         const valuesFlat = new Float32Array(length);
         utils$1.flattenTo(value, valuesFlat);
         return valuesFlat;
@@ -14859,12 +11952,6 @@ ${result.join('\n')}
         }
       }
     }
-
-    /**
-     * bit storage ratio of source to target 'buffer', i.e. if 8bit array -> 32bit tex = 4
-     * @param value
-     * @returns {number}
-     */
     getBitRatio(value) {
       if (Array.isArray(value[0])) {
         return this.getBitRatio(value[0]);
@@ -14885,14 +11972,9 @@ ${result.join('\n')}
           return 4;
       }
     }
-
-    /**
-     * Used for when we want a string output of our kernel, so we can still input values to the kernel
-     */
     getStringValueHandler() {
       throw new Error(`"getStringValueHandler" not implemented on ${this.constructor.name}`);
     }
-
     getVariablePrecisionString() {
       switch (this.tactic) {
         case 'speed':
@@ -14917,11 +11999,9 @@ ${result.join('\n')}
       }
       return `uniform bool ${this.id};\n`;
     }
-
     getStringValueHandler() {
       return `const uploadValue_${this.name} = ${this.varName};\n`;
     }
-
     updateValue(value) {
       if (this.origin === 'constants') return;
       this.kernel.setUniform1i(this.id, this.uploadValue = value);
@@ -14945,7 +12025,6 @@ ${result.join('\n')}
       }
       return `uniform float ${this.id};\n`;
     }
-
     updateValue(value) {
       if (this.origin === 'constants') return;
       this.kernel.setUniform1f(this.id, this.uploadValue = value);
@@ -14966,7 +12045,6 @@ ${result.join('\n')}
       }
       return `uniform int ${this.id};\n`;
     }
-
     updateValue(value) {
       if (this.origin === 'constants') return;
       this.kernel.setUniform1i(this.id, this.uploadValue = value);
@@ -14982,11 +12060,9 @@ ${result.join('\n')}
       this.textureSize = [width, height];
       this.uploadValue = value;
     }
-
     getStringValueHandler() {
       return `const uploadValue_${this.name} = ${this.varName};\n`;
     }
-
     getSource() {
       return utils$1.linesToString([
         `uniform sampler2D ${this.id}`,
@@ -14994,7 +12070,6 @@ ${result.join('\n')}
         `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
       ]);
     }
-
     updateValue(inputImage) {
       if (inputImage.constructor !== this.initialValueConstructor) {
         this.onUpdateValueMismatch();
@@ -15021,7 +12096,6 @@ ${result.join('\n')}
         `uniform ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(value) {
       const { width, height } = value;
       this.dimensions = [width, height, 1];
@@ -15047,14 +12121,12 @@ ${result.join('\n')}
       this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
       this.uploadValue = new Float32Array(this.uploadArrayLength);
     }
-
     getStringValueHandler() {
       return utils$1.linesToString([
         `const uploadValue_${this.name} = new Float32Array(${this.uploadArrayLength})`,
         `flattenTo(${this.varName}.value, uploadValue_${this.name})`,
       ]);
     }
-
     getSource() {
       return utils$1.linesToString([
         `uniform sampler2D ${this.id}`,
@@ -15062,7 +12134,6 @@ ${result.join('\n')}
         `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
       ]);
     }
-
     updateValue(input) {
       if (input.constructor !== this.initialValueConstructor) {
         this.onUpdateValueMismatch();
@@ -15089,7 +12160,6 @@ ${result.join('\n')}
         `uniform ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(value) {
       let [w, h, d] = value.size;
       this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
@@ -15115,7 +12185,6 @@ ${result.join('\n')}
       this.preUploadValue = new this.TranserArrayType(this.uploadArrayLength);
       this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
     }
-
     getStringValueHandler() {
       return utils$1.linesToString([
         `const preUploadValue_${this.name} = new ${this.TranserArrayType.name}(${this.uploadArrayLength})`,
@@ -15123,7 +12192,6 @@ ${result.join('\n')}
         `flattenTo(${this.varName}.value, preUploadValue_${this.name})`,
       ]);
     }
-
     getSource() {
       return utils$1.linesToString([
         `uniform sampler2D ${this.id}`,
@@ -15131,7 +12199,6 @@ ${result.join('\n')}
         `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
       ]);
     }
-
     updateValue(input) {
       if (input.constructor !== this.initialValueConstructor) {
         this.onUpdateValueMismatch();
@@ -15158,7 +12225,6 @@ ${result.join('\n')}
         `uniform ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(value) {
       let [w, h, d] = value.size;
       this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
@@ -15181,11 +12247,9 @@ ${result.join('\n')}
       this.textureSize = value.size;
       this.uploadValue = value.texture;
     }
-
     getStringValueHandler() {
       return `const uploadValue_${this.name} = ${this.varName}.texture;\n`;
     }
-
     getSource() {
       return utils$1.linesToString([
         `uniform sampler2D ${this.id}`,
@@ -15193,7 +12257,6 @@ ${result.join('\n')}
         `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
       ]);
     }
-
     updateValue(inputTexture) {
       if (inputTexture.constructor !== this.initialValueConstructor) {
         this.onUpdateValueMismatch();
@@ -15217,7 +12280,6 @@ ${result.join('\n')}
         `uniform ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(inputTexture) {
       this.dimensions = inputTexture.dimensions;
       this.textureSize = inputTexture.size;
@@ -15237,11 +12299,9 @@ ${result.join('\n')}
       this.textureSize = textureSize;
       this.uploadValue = value.texture;
     }
-
     getStringValueHandler() {
       return `const uploadValue_${this.name} = ${this.varName}.texture;\n`;
     }
-
     getSource() {
       return utils$1.linesToString([
         `uniform sampler2D ${this.id}`,
@@ -15249,7 +12309,6 @@ ${result.join('\n')}
         `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
       ]);
     }
-
     updateValue(inputTexture) {
       if (inputTexture.constructor !== this.initialValueConstructor) {
         this.onUpdateValueMismatch();
@@ -15273,7 +12332,6 @@ ${result.join('\n')}
         `uniform ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(value) {
       this.dimensions = value.dimensions;
       this.textureSize = value.size;
@@ -15293,14 +12351,12 @@ ${result.join('\n')}
       this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
       this.uploadValue = new Float32Array(this.uploadArrayLength);
     }
-
     getStringValueHandler() {
       return utils$1.linesToString([
         `const uploadValue_${this.name} = new Float32Array(${this.uploadArrayLength})`,
         `flattenTo(${this.varName}, uploadValue_${this.name})`,
       ]);
     }
-
     getSource() {
       return utils$1.linesToString([
         `uniform sampler2D ${this.id}`,
@@ -15308,7 +12364,6 @@ ${result.join('\n')}
         `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
       ]);
     }
-
     updateValue(value) {
       if (value.constructor !== this.initialValueConstructor) {
         this.onUpdateValueMismatch();
@@ -15335,7 +12390,6 @@ ${result.join('\n')}
         `uniform ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(value) {
       this.dimensions = utils$1.getDimensions(value, true);
       this.textureSize = utils$1.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
@@ -15354,7 +12408,6 @@ ${result.join('\n')}
       this.bitRatio = 4;
       this.setShape(value);
     }
-
     setShape(value) {
       const valueDimensions = utils$1.getDimensions(value, true);
       this.textureSize = utils$1.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
@@ -15362,14 +12415,12 @@ ${result.join('\n')}
       this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
       this.uploadValue = new Float32Array(this.uploadArrayLength);
     }
-
     getStringValueHandler() {
       return utils$1.linesToString([
         `const uploadValue_${this.name} = new Float32Array(${this.uploadArrayLength})`,
         `flattenTo(${this.varName}, uploadValue_${this.name})`,
       ]);
     }
-
     getSource() {
       return utils$1.linesToString([
         `uniform sampler2D ${this.id}`,
@@ -15377,7 +12428,6 @@ ${result.join('\n')}
         `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
       ]);
     }
-
     updateValue(value) {
       if (value.constructor !== this.initialValueConstructor) {
         this.onUpdateValueMismatch();
@@ -15404,7 +12454,6 @@ ${result.join('\n')}
         `uniform ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(value) {
       this.setShape(value);
       this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
@@ -15420,7 +12469,6 @@ ${result.join('\n')}
       this.bitRatio = 4;
       this.setShape(value);
     }
-
     setShape(value) {
       const valueDimensions = utils$1.getDimensions(value, true);
       this.textureSize = utils$1.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
@@ -15428,14 +12476,12 @@ ${result.join('\n')}
       this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
       this.uploadValue = new Float32Array(this.uploadArrayLength);
     }
-
     getStringValueHandler() {
       return utils$1.linesToString([
         `const uploadValue_${this.name} = new Float32Array(${this.uploadArrayLength})`,
         `flattenTo(${this.varName}, uploadValue_${this.name})`,
       ]);
     }
-
     getSource() {
       return utils$1.linesToString([
         `uniform sampler2D ${this.id}`,
@@ -15443,7 +12489,6 @@ ${result.join('\n')}
         `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
       ]);
     }
-
     updateValue(value) {
       if (value.constructor !== this.initialValueConstructor) {
         this.onUpdateValueMismatch();
@@ -15470,7 +12515,6 @@ ${result.join('\n')}
         `uniform ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(value) {
       this.setShape(value);
       this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
@@ -15486,7 +12530,6 @@ ${result.join('\n')}
       this.bitRatio = 4;
       this.setShape(value);
     }
-
     setShape(value) {
       const valueDimensions = utils$1.getDimensions(value, true);
       this.textureSize = utils$1.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
@@ -15494,14 +12537,12 @@ ${result.join('\n')}
       this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
       this.uploadValue = new Float32Array(this.uploadArrayLength);
     }
-
     getStringValueHandler() {
       return utils$1.linesToString([
         `const uploadValue_${this.name} = new Float32Array(${this.uploadArrayLength})`,
         `flattenTo(${this.varName}, uploadValue_${this.name})`,
       ]);
     }
-
     getSource() {
       return utils$1.linesToString([
         `uniform sampler2D ${this.id}`,
@@ -15509,7 +12550,6 @@ ${result.join('\n')}
         `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
       ]);
     }
-
     updateValue(value) {
       if (value.constructor !== this.initialValueConstructor) {
         this.onUpdateValueMismatch();
@@ -15536,7 +12576,6 @@ ${result.join('\n')}
         `uniform ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(value) {
       this.setShape(value);
       this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
@@ -15556,11 +12595,9 @@ ${result.join('\n')}
       }
       return `uniform vec2 ${this.id};\n`;
     }
-
     getStringValueHandler() {
       return `const uploadValue_${this.name} = ${this.varName};\n`;
     }
-
     updateValue(value) {
       if (this.origin === 'constants') return;
       this.kernel.setUniform2fv(this.id, this.uploadValue = value);
@@ -15578,11 +12615,9 @@ ${result.join('\n')}
       }
       return `uniform vec3 ${this.id};\n`;
     }
-
     getStringValueHandler() {
       return `const uploadValue_${this.name} = ${this.varName};\n`;
     }
-
     updateValue(value) {
       if (this.origin === 'constants') return;
       this.kernel.setUniform3fv(this.id, this.uploadValue = value);
@@ -15600,11 +12635,9 @@ ${result.join('\n')}
       }
       return `uniform vec4 ${this.id};\n`;
     }
-
     getStringValueHandler() {
       return `const uploadValue_${this.name} = ${this.varName};\n`;
     }
-
     updateValue(value) {
       if (this.origin === 'constants') return;
       this.kernel.setUniform4fv(this.id, this.uploadValue = value);
@@ -15623,7 +12656,6 @@ ${result.join('\n')}
       this.preUploadValue = new this.TranserArrayType(this.uploadArrayLength);
       this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
     }
-
     getStringValueHandler() {
       return utils$1.linesToString([
         `const preUploadValue_${this.name} = new ${this.TranserArrayType.name}(${this.uploadArrayLength})`,
@@ -15631,7 +12663,6 @@ ${result.join('\n')}
         `flattenTo(${this.varName}, preUploadValue_${this.name})`,
       ]);
     }
-
     getSource() {
       return utils$1.linesToString([
         `uniform sampler2D ${this.id}`,
@@ -15639,7 +12670,6 @@ ${result.join('\n')}
         `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
       ]);
     }
-
     updateValue(value) {
       if (value.constructor !== this.initialValueConstructor) {
         this.onUpdateValueMismatch();
@@ -15666,7 +12696,6 @@ ${result.join('\n')}
         `uniform ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(value) {
       this.dimensions = utils$1.getDimensions(value, true);
       this.textureSize = utils$1.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
@@ -15799,7 +12828,6 @@ ${result.join('\n')}
       }
     },
   };
-
   function lookupKernelValueType(type, dynamic, precision, value) {
     if (!type) {
       throw new Error('type missing');
@@ -15827,30 +12855,9 @@ ${result.join('\n')}
   let testContext = null;
   let testExtensions = null;
   let features = null;
-
   const plugins$1 = [triangleNoise];
   const canvases = [];
   const maxTexSizes = {};
-
-  /**
-   * @desc Kernel Implementation for WebGL.
-   *
-   * This builds the shaders and runs them on the GPU, then outputs the result
-   * back as float (enabled by default) and Texture.
-   *
-   * @prop {Object} textureCache - webGl Texture cache
-   * @prop {Object} programUniformLocationCache - Location of program variables in memory
-   * @prop {Object} framebuffer - Webgl frameBuffer
-   * @prop {Object} buffer - WebGL buffer
-   * @prop {Object} program - The webGl Program
-   * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
-   * @prop {Boolean} pipeline - Set output type to FAST mode (GPU to GPU via Textures), instead of float
-   * @prop {String} endianness - Endian information like Little-endian, Big-endian.
-   * @prop {Array} argumentTypes - Types of parameters sent to the Kernel
-   * @prop {String} compiledFragmentShader - Compiled fragment shader string
-   * @prop {String} compiledVertexShader - Compiled Vertical shader string
-   * @extends GLKernel
-   */
   class WebGLKernel extends GLKernel {
     static get isSupported() {
       if (isSupported !== null) {
@@ -15860,7 +12867,6 @@ ${result.join('\n')}
       isSupported = this.isContextMatch(testContext);
       return isSupported;
     }
-
     static setupFeatureChecks() {
       if (typeof document !== 'undefined') {
         testCanvas = document.createElement('canvas');
@@ -15878,14 +12884,12 @@ ${result.join('\n')}
       };
       features = this.getFeatures();
     }
-
     static isContextMatch(context) {
       if (typeof WebGLRenderingContext !== 'undefined') {
         return context instanceof WebGLRenderingContext;
       }
       return false;
     }
-
     static getFeatures() {
       const isDrawBuffers = this.getIsDrawBuffers();
       return Object.freeze({
@@ -15897,50 +12901,35 @@ ${result.join('\n')}
         channelCount: this.getChannelCount(),
       });
     }
-
     static getIsTextureFloat() {
       return Boolean(testExtensions.OES_texture_float);
     }
-
     static getIsDrawBuffers() {
       return Boolean(testExtensions.WEBGL_draw_buffers);
     }
-
     static getChannelCount() {
       return testExtensions.WEBGL_draw_buffers ?
         testContext.getParameter(testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL) :
         1;
     }
-
     static lookupKernelValueType(type, dynamic, precision, value) {
       return lookupKernelValueType(type, dynamic, precision, value);
     }
-
     static get testCanvas() {
       return testCanvas;
     }
-
     static get testContext() {
       return testContext;
     }
-
     static get features() {
       return features;
     }
-
     static get fragmentShader() {
       return fragmentShader;
     }
-
     static get vertexShader() {
       return vertexShader;
     }
-
-    /**
-     *
-     * @param {String} source
-     * @param {IKernelSettings} settings
-     */
     constructor(source, settings) {
       super(source, settings);
       this.program = null;
@@ -15957,21 +12946,10 @@ ${result.join('\n')}
       this.vertShader = null;
       this.drawBuffersMap = null;
       this.outputTexture = null;
-
-      /**
-       *
-       * @type {Int32Array|null}
-       */
       this.maxTexSize = null;
       this.switchingKernels = false;
       this.onRequestSwitchKernel = null;
-
       this.mergeSettings(source.settings || settings);
-
-      /**
-       * The thread dimensions, x, y and z
-       * @type {Array|null}
-       */
       this.threadDim = null;
       this.framebuffer = null;
       this.buffer = null;
@@ -15987,11 +12965,9 @@ ${result.join('\n')}
       this.uniform4fvCache = {};
       this.uniform4ivCache = {};
     }
-
     initCanvas() {
       if (typeof document !== 'undefined') {
         const canvas = document.createElement('canvas');
-        // Default width and height, to fix webgl issue in safari
         canvas.width = 2;
         canvas.height = 2;
         return canvas;
@@ -15999,7 +12975,6 @@ ${result.join('\n')}
         return new OffscreenCanvas(0, 0);
       }
     }
-
     initContext() {
       const settings = {
         alpha: false,
@@ -16008,9 +12983,7 @@ ${result.join('\n')}
       };
       return this.canvas.getContext('webgl', settings) || this.canvas.getContext('experimental-webgl', settings);
     }
-
     initPlugins(settings) {
-      // default plugins
       const pluginsToUse = [];
       const { source } = this;
       if (typeof source === 'string') {
@@ -16021,8 +12994,7 @@ ${result.join('\n')}
           }
         }
       } else if (typeof source === 'object') {
-        // `source` is from object, json
-        if (settings.pluginNames) { //TODO: in context of JSON support, pluginNames may not exist here
+        if (settings.pluginNames) {
           for (let i = 0; i < plugins$1.length; i++) {
             const plugin = plugins$1[i];
             const usePlugin = settings.pluginNames.some(pluginName => pluginName === plugin.name);
@@ -16034,7 +13006,6 @@ ${result.join('\n')}
       }
       return pluginsToUse;
     }
-
     initExtensions() {
       this.extensions = {
         OES_texture_float: this.context.getExtension('OES_texture_float'),
@@ -16044,11 +13015,6 @@ ${result.join('\n')}
         WEBGL_color_buffer_float: this.context.getExtension('WEBGL_color_buffer_float'),
       };
     }
-
-    /**
-     * @desc Validate settings related to Kernel, such as dimensions size, and auto output support.
-     * @param {IArguments} args
-     */
     validateSettings(args) {
       if (!this.validate) {
         this.texSize = utils$1.getKernelTextureSize({
@@ -16057,7 +13023,6 @@ ${result.join('\n')}
         }, this.output);
         return;
       }
-
       const { features } = this.constructor;
       if (this.optimizeFloatMemory === true && !features.isTextureFloat) {
         throw new Error('Float textures are not supported');
@@ -16066,24 +13031,19 @@ ${result.join('\n')}
       } else if (!this.graphical && this.precision === null && features.isTextureFloat) {
         this.precision = features.isFloatRead ? 'single' : 'unsigned';
       }
-
       if (this.subKernels && this.subKernels.length > 0 && !this.extensions.WEBGL_draw_buffers) {
         throw new Error('could not instantiate draw buffers extension');
       }
-
       if (this.fixIntegerDivisionAccuracy === null) {
         this.fixIntegerDivisionAccuracy = !features.isIntegerDivisionAccurate;
       } else if (this.fixIntegerDivisionAccuracy && features.isIntegerDivisionAccurate) {
         this.fixIntegerDivisionAccuracy = false;
       }
-
       this.checkOutput();
-
       if (!this.output || this.output.length === 0) {
         if (args.length !== 1) {
           throw new Error('Auto output only supported for kernels with only one input');
         }
-
         const argType = utils$1.getVariableType(args[0], this.strictIntegers);
         if (argType === 'Array') {
           this.output = utils$1.getDimensions(argType);
@@ -16093,29 +13053,24 @@ ${result.join('\n')}
           throw new Error('Auto output not supported for input type: ' + argType);
         }
       }
-
       if (this.graphical) {
         if (this.output.length !== 2) {
           throw new Error('Output must have 2 dimensions on graphical mode');
         }
-
         if (this.precision === 'precision') {
           this.precision = 'unsigned';
           console.warn('Cannot use graphical mode and single precision at the same time');
         }
-
         this.texSize = utils$1.clone(this.output);
         return;
       } else if (this.precision === null && features.isTextureFloat) {
         this.precision = 'single';
       }
-
       this.texSize = utils$1.getKernelTextureSize({
         optimizeFloatMemory: this.optimizeFloatMemory,
         precision: this.precision,
       }, this.output);
     }
-
     updateMaxTexSize() {
       const { texSize, canvas } = this;
       if (this.maxTexSize === null) {
@@ -16134,20 +13089,14 @@ ${result.join('\n')}
         this.maxTexSize[1] = texSize[1];
       }
     }
-
-    // TODO: move channel checks to new place
     _oldtranslateSource() {
       const functionBuilder = FunctionBuilder.fromKernel(this, WebGLFunctionNode, {
         fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
       });
-
-      // need this line to automatically get returnType
       const translatedSource = functionBuilder.getPrototypeString('kernel');
-
       if (!this.returnType) {
         this.returnType = functionBuilder.getKernelResultType();
       }
-
       let requiredChannels = 0;
       const returnTypes = functionBuilder.getReturnTypes();
       for (let i = 0; i < returnTypes.length; i++) {
@@ -16168,32 +13117,25 @@ ${result.join('\n')}
             break;
         }
       }
-
       if (features && requiredChannels > features.channelCount) {
         throw new Error('Too many channels!');
       }
-
       return this.translatedSource = translatedSource;
     }
-
     setupArguments(args) {
       this.kernelArguments = [];
       this.argumentTextureCount = 0;
       const needsArgumentTypes = this.argumentTypes === null;
-      // TODO: remove
       if (needsArgumentTypes) {
         this.argumentTypes = [];
       }
       this.argumentSizes = [];
       this.argumentBitRatios = [];
-      // TODO: end remove
-
       if (args.length < this.argumentNames.length) {
         throw new Error('not enough arguments for kernel');
       } else if (args.length > this.argumentNames.length) {
         throw new Error('too many arguments for kernel');
       }
-
       const { context: gl } = this;
       let textureIndexes = 0;
       for (let index = 0; index < args.length; index++) {
@@ -16237,7 +13179,6 @@ ${result.join('\n')}
         this.argumentBitRatios[index] = kernelArgument.bitRatio;
       }
     }
-
     setupConstants(args) {
       const { context: gl } = this;
       this.kernelConstants = [];
@@ -16283,7 +13224,6 @@ ${result.join('\n')}
         this.kernelConstants.push(kernelValue);
       }
     }
-
     build() {
       this.initExtensions();
       this.validateSettings(arguments);
@@ -16312,31 +13252,26 @@ ${result.join('\n')}
       while (threadDim.length < 3) {
         threadDim.push(1);
       }
-
       const compiledVertexShader = this.getVertexShader(arguments);
       const vertShader = gl.createShader(gl.VERTEX_SHADER);
       gl.shaderSource(vertShader, compiledVertexShader);
       gl.compileShader(vertShader);
       this.vertShader = vertShader;
-
       const compiledFragmentShader = this.getFragmentShader(arguments);
       const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
       gl.shaderSource(fragShader, compiledFragmentShader);
       gl.compileShader(fragShader);
       this.fragShader = fragShader;
-
       if (this.debug) {
         console.log('GLSL Shader Output:');
         console.log(compiledFragmentShader);
       }
-
       if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
         throw new Error('Error compiling vertex shader: ' + gl.getShaderInfoLog(vertShader));
       }
       if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
         throw new Error('Error compiling fragment shader: ' + gl.getShaderInfoLog(fragShader));
       }
-
       const program = this.program = gl.createProgram();
       gl.attachShader(program, vertShader);
       gl.attachShader(program, fragShader);
@@ -16344,7 +13279,6 @@ ${result.join('\n')}
       this.framebuffer = gl.createFramebuffer();
       this.framebuffer.width = texSize[0];
       this.framebuffer.height = texSize[1];
-
       const vertices = new Float32Array([-1, -1,
         1, -1, -1, 1,
         1, 1
@@ -16355,9 +13289,7 @@ ${result.join('\n')}
         0, 1,
         1, 1
       ]);
-
       const texCoordOffset = vertices.byteLength;
-
       let buffer = this.buffer;
       if (!buffer) {
         buffer = this.buffer = gl.createBuffer();
@@ -16366,10 +13298,8 @@ ${result.join('\n')}
       } else {
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
       }
-
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices);
       gl.bufferSubData(gl.ARRAY_BUFFER, texCoordOffset, texCoords);
-
       const aPosLoc = gl.getAttribLocation(this.program, 'aPos');
       gl.enableVertexAttribArray(aPosLoc);
       gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, false, 0, 0);
@@ -16377,13 +13307,11 @@ ${result.join('\n')}
       gl.enableVertexAttribArray(aTexCoordLoc);
       gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, false, 0, texCoordOffset);
       gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-
       let i = 0;
       gl.useProgram(this.program);
       for (let p in this.constants) {
         this.kernelConstants[i++].updateValue(this.constants[p]);
       }
-
       if (!this.immutable) {
         this._setupOutputTexture();
         if (
@@ -16394,7 +13322,6 @@ ${result.join('\n')}
         }
       }
     }
-
     translateSource() {
       const functionBuilder = FunctionBuilder.fromKernel(this, WebGLFunctionNode, {
         fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
@@ -16403,7 +13330,6 @@ ${result.join('\n')}
       if (!this.graphical && !this.returnType) {
         this.returnType = functionBuilder.getKernelResultType();
       }
-
       if (this.subKernels && this.subKernels.length > 0) {
         for (let i = 0; i < this.subKernels.length; i++) {
           const subKernel = this.subKernels[i];
@@ -16413,28 +13339,22 @@ ${result.join('\n')}
         }
       }
     }
-
     run() {
       const { kernelArguments } = this;
       const texSize = this.texSize;
       const gl = this.context;
-
       gl.useProgram(this.program);
       gl.scissor(0, 0, texSize[0], texSize[1]);
-
       if (this.dynamicOutput) {
         this.setUniform3iv('uOutputDim', this.threadDim);
         this.setUniform2iv('uTexSize', texSize);
       }
-
       this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
-
       this.switchingKernels = false;
       for (let i = 0; i < kernelArguments.length; i++) {
         kernelArguments[i].updateValue(arguments[i]);
         if (this.switchingKernels) return;
       }
-
       if (this.plugins) {
         for (let i = 0; i < this.plugins.length; i++) {
           const plugin = this.plugins[i];
@@ -16443,7 +13363,6 @@ ${result.join('\n')}
           }
         }
       }
-
       if (this.graphical) {
         if (this.pipeline) {
           gl.bindRenderbuffer(gl.RENDERBUFFER, null);
@@ -16465,33 +13384,21 @@ ${result.join('\n')}
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         return;
       }
-
       gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
       if (this.immutable) {
         this._setupOutputTexture();
       }
-
       if (this.subKernels !== null) {
         if (this.immutable) {
           this._setupSubOutputTextures();
         }
         this.extensions.WEBGL_draw_buffers.drawBuffersWEBGL(this.drawBuffersMap);
       }
-
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
-
-    /**
-     * @desc This return defined outputTexture, which is setup in .build(), or if immutable, is defined in .run()
-     * @returns {Object} Output Texture Cache
-     */
     getOutputTexture() {
       return this.outputTexture;
     }
-
-    /**
-     * @desc Setup and replace output texture
-     */
     _setupOutputTexture() {
       const gl = this.context;
       const texSize = this.texSize;
@@ -16502,14 +13409,8 @@ ${result.join('\n')}
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      // if (this.precision === 'single') {
-      //   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-      // } else {
-      //   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-      // }
       if (this.precision === 'single') {
         if (this.pipeline) {
-          // TODO: investigate if webgl1 can handle gl.RED usage in gl.texImage2D, otherwise, simplify the below
           switch (this.returnType) {
             case 'Number':
             case 'Float':
@@ -16542,10 +13443,6 @@ ${result.join('\n')}
       }
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
     }
-
-    /**
-     * @desc Setup and replace sub-output textures
-     */
     _setupSubOutputTextures() {
       const gl = this.context;
       const texSize = this.texSize;
@@ -16569,35 +13466,18 @@ ${result.join('\n')}
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, texture, 0);
       }
     }
-
-    /**
-     * @desc This uses *getTextureCache** to get the Texture Cache of the argument supplied
-     * @param {String} name - Name of the argument
-     */
     getArgumentTexture(name) {
       return this.getTextureCache(`ARGUMENT_${name}`);
     }
-
-    /**
-     * @desc Returns the Texture Cache of the supplied parameter (can be kernel, sub-kernel or argument)
-     * @param {String} name - Name of the subkernel, argument, or kernel.
-     * @returns {Object} Texture cache
-     */
     getTextureCache(name) {
       if (this.textureCache.hasOwnProperty(name)) {
         return this.textureCache[name];
       }
       return this.textureCache[name] = this.context.createTexture();
     }
-
-    /**
-     * @desc removes a texture from the kernel's cache
-     * @param {String} name - Name of texture
-     */
     detachTextureCache(name) {
       delete this.textureCache[name];
     }
-
     setUniform1f(name, value) {
       if (this.uniform1fCache.hasOwnProperty(name)) {
         const cache = this.uniform1fCache[name];
@@ -16609,7 +13489,6 @@ ${result.join('\n')}
       const loc = this.getUniformLocation(name);
       this.context.uniform1f(loc, value);
     }
-
     setUniform1i(name, value) {
       if (this.uniform1iCache.hasOwnProperty(name)) {
         const cache = this.uniform1iCache[name];
@@ -16621,7 +13500,6 @@ ${result.join('\n')}
       const loc = this.getUniformLocation(name);
       this.context.uniform1i(loc, value);
     }
-
     setUniform2f(name, value1, value2) {
       if (this.uniform2fCache.hasOwnProperty(name)) {
         const cache = this.uniform2fCache[name];
@@ -16636,7 +13514,6 @@ ${result.join('\n')}
       const loc = this.getUniformLocation(name);
       this.context.uniform2f(loc, value1, value2);
     }
-
     setUniform2fv(name, value) {
       if (this.uniform2fvCache.hasOwnProperty(name)) {
         const cache = this.uniform2fvCache[name];
@@ -16651,7 +13528,6 @@ ${result.join('\n')}
       const loc = this.getUniformLocation(name);
       this.context.uniform2fv(loc, value);
     }
-
     setUniform2iv(name, value) {
       if (this.uniform2ivCache.hasOwnProperty(name)) {
         const cache = this.uniform2ivCache[name];
@@ -16666,7 +13542,6 @@ ${result.join('\n')}
       const loc = this.getUniformLocation(name);
       this.context.uniform2iv(loc, value);
     }
-
     setUniform3fv(name, value) {
       if (this.uniform3fvCache.hasOwnProperty(name)) {
         const cache = this.uniform3fvCache[name];
@@ -16682,7 +13557,6 @@ ${result.join('\n')}
       const loc = this.getUniformLocation(name);
       this.context.uniform3fv(loc, value);
     }
-
     setUniform3iv(name, value) {
       if (this.uniform3ivCache.hasOwnProperty(name)) {
         const cache = this.uniform3ivCache[name];
@@ -16698,7 +13572,6 @@ ${result.join('\n')}
       const loc = this.getUniformLocation(name);
       this.context.uniform3iv(loc, value);
     }
-
     setUniform3fv(name, value) {
       if (this.uniform3fvCache.hasOwnProperty(name)) {
         const cache = this.uniform3fvCache[name];
@@ -16714,7 +13587,6 @@ ${result.join('\n')}
       const loc = this.getUniformLocation(name);
       this.context.uniform3fv(loc, value);
     }
-
     setUniform4iv(name, value) {
       if (this.uniform4ivCache.hasOwnProperty(name)) {
         const cache = this.uniform4ivCache[name];
@@ -16731,7 +13603,6 @@ ${result.join('\n')}
       const loc = this.getUniformLocation(name);
       this.context.uniform4iv(loc, value);
     }
-
     setUniform4fv(name, value) {
       if (this.uniform4fvCache.hasOwnProperty(name)) {
         const cache = this.uniform4fvCache[name];
@@ -16748,26 +13619,12 @@ ${result.join('\n')}
       const loc = this.getUniformLocation(name);
       this.context.uniform4fv(loc, value);
     }
-
-    /**
-     * @desc Return WebGlUniformLocation for various variables
-     * related to webGl program, such as user-defined variables,
-     * as well as, dimension sizes, etc.
-     */
     getUniformLocation(name) {
       if (this.programUniformLocationCache.hasOwnProperty(name)) {
         return this.programUniformLocationCache[name];
       }
       return this.programUniformLocationCache[name] = this.context.getUniformLocation(this.program, name);
     }
-
-    /**
-     * @desc Generate Shader artifacts for the kernel program.
-     * The final object contains HEADER, KERNEL, MAIN_RESULT, and others.
-     *
-     * @param {Array} args - The actual parameters sent to the Kernel
-     * @returns {Object} An object containing the Shader Artifacts(CONSTANTS, HEADER, KERNEL, etc.)
-     */
     _getFragShaderArtifactMap(args) {
       return {
         HEADER: this._getHeaderString(),
@@ -16788,14 +13645,6 @@ ${result.join('\n')}
         SAMPLER_2D_ARRAY_TACTIC_DECLARATION: this.getSampler2DArrayTacticDeclaration(),
       };
     }
-
-    /**
-     * @desc Generate Shader artifacts for the kernel program.
-     * The final object contains HEADER, KERNEL, MAIN_RESULT, and others.
-     *
-     * @param {Array} args - The actual parameters sent to the Kernel
-     * @returns {Object} An object containing the Shader Artifacts(CONSTANTS, HEADER, KERNEL, etc.)
-     */
     _getVertShaderArtifactMap(args) {
       return {
         FLOAT_TACTIC_DECLARATION: this.getFloatTacticDeclaration(),
@@ -16804,13 +13653,6 @@ ${result.join('\n')}
         SAMPLER_2D_ARRAY_TACTIC_DECLARATION: this.getSampler2DArrayTacticDeclaration(),
       };
     }
-
-    /**
-     * @desc Get the header string for the program.
-     * This returns an empty string if no sub-kernels are defined.
-     *
-     * @returns {String} result
-     */
     _getHeaderString() {
       return (
         this.subKernels !== null ?
@@ -16818,11 +13660,6 @@ ${result.join('\n')}
         ''
       );
     }
-
-    /**
-     * @desc Get the maximum loop size String.
-     * @returns {String} result
-     */
     _getLoopMaxString() {
       return (
         this.loopMaxIterations ?
@@ -16830,16 +13667,10 @@ ${result.join('\n')}
         ' 1000;\n'
       );
     }
-
     _getPluginsString() {
       if (!this.plugins) return '\n';
       return this.plugins.map(plugin => plugin.source && this.source.match(plugin.functionMatch) ? plugin.source : '').join('\n');
     }
-
-    /**
-     * @desc Generate transpiled glsl Strings for constant parameters sent to a kernel
-     * @returns {String} result
-     */
     _getConstantsString() {
       const result = [];
       const { threadDim, texSize } = this;
@@ -16856,11 +13687,6 @@ ${result.join('\n')}
       }
       return utils$1.linesToString(result);
     }
-
-    /**
-     * @desc Get texture coordinate string for the program
-     * @returns {String} result
-     */
     _getTextureCoordinate() {
       const subKernels = this.subKernels;
       if (subKernels === null || subKernels.length < 1) {
@@ -16869,11 +13695,6 @@ ${result.join('\n')}
         return 'out vec2 vTexCoord;\n';
       }
     }
-
-    /**
-     * @desc Get Decode32 endianness string for little-endian and big-endian
-     * @returns {String} result
-     */
     _getDecode32EndiannessString() {
       return (
         this.endianness === 'LE' ?
@@ -16881,11 +13702,6 @@ ${result.join('\n')}
         '  texel.rgba = texel.abgr;\n'
       );
     }
-
-    /**
-     * @desc Get Encode32 endianness string for little-endian and big-endian
-     * @returns {String} result
-     */
     _getEncode32EndiannessString() {
       return (
         this.endianness === 'LE' ?
@@ -16893,11 +13709,6 @@ ${result.join('\n')}
         '  texel.rgba = texel.abgr;\n'
       );
     }
-
-    /**
-     * @desc if fixIntegerDivisionAccuracy provide method to replace /
-     * @returns {String} result
-     */
     _getDivideWithIntegerCheckString() {
       return this.fixIntegerDivisionAccuracy ?
         `float div_with_int_check(float x, float y) {
@@ -16908,12 +13719,6 @@ ${result.join('\n')}
 }` :
         '';
     }
-
-    /**
-     * @desc Generate transpiled glsl Strings for user-defined parameters sent to a kernel
-     * @param {Array} args - The actual parameters sent to the Kernel
-     * @returns {String} result
-     */
     _getMainArgumentsString(args) {
       const results = [];
       const { argumentNames } = this;
@@ -16922,11 +13727,9 @@ ${result.join('\n')}
       }
       return results.join('');
     }
-
     _getInjectedNative() {
       return this.injectedNative || '';
     }
-
     _getMainConstantsString() {
       const result = [];
       const { constants } = this;
@@ -16938,11 +13741,6 @@ ${result.join('\n')}
       }
       return result.join('');
     }
-
-    /**
-     * @desc Get Kernel program string (in *glsl*) for a kernel.
-     * @returns {String} result
-     */
     getKernelString() {
       let kernelResultDeclaration;
       switch (this.returnType) {
@@ -16968,7 +13766,6 @@ ${result.join('\n')}
             throw new Error(`unrecognized output type "${ this.returnType }"`);
           }
       }
-
       const result = [];
       const subKernels = this.subKernels;
       if (subKernels !== null) {
@@ -17015,10 +13812,8 @@ ${result.join('\n')}
           kernelResultDeclaration
         );
       }
-
       return utils$1.linesToString(result) + this.translatedSource;
     }
-
     getMainResultGraphical() {
       return utils$1.linesToString([
         '  threadId = indexTo3D(index, uOutputDim)',
@@ -17026,7 +13821,6 @@ ${result.join('\n')}
         '  gl_FragColor = actualColor',
       ]);
     }
-
     getMainResultPackedPixels() {
       switch (this.returnType) {
         case 'LiteralInteger':
@@ -17039,10 +13833,6 @@ ${result.join('\n')}
           throw new Error(`packed output only usable with Numbers, "${this.returnType}" specified`);
       }
     }
-
-    /**
-     * @return {String}
-     */
     getMainResultKernelPackedPixels() {
       return utils$1.linesToString([
         '  threadId = indexTo3D(index, uOutputDim)',
@@ -17050,10 +13840,6 @@ ${result.join('\n')}
         `  gl_FragData[0] = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(kernelResult)`
       ]);
     }
-
-    /**
-     * @return {String}
-     */
     getMainResultSubKernelPackedPixels() {
       const result = [];
       if (!this.subKernels) return '';
@@ -17071,12 +13857,10 @@ ${result.join('\n')}
       }
       return utils$1.linesToString(result);
     }
-
     getMainResultMemoryOptimizedFloats() {
       const result = [
         '  index *= 4',
       ];
-
       switch (this.returnType) {
         case 'Number':
         case 'Integer':
@@ -17094,10 +13878,8 @@ ${result.join('\n')}
         default:
           throw new Error(`optimized output only usable with Numbers, ${this.returnType} specified`);
       }
-
       return utils$1.linesToString(result);
     }
-
     getMainResultKernelMemoryOptimizedFloats(result, channel) {
       result.push(
         '  threadId = indexTo3D(index, uOutputDim)',
@@ -17105,7 +13887,6 @@ ${result.join('\n')}
         `  gl_FragData[0].${channel} = kernelResult`,
       );
     }
-
     getMainResultSubKernelMemoryOptimizedFloats(result, channel) {
       if (!this.subKernels) return result;
       for (let i = 0; i < this.subKernels.length; i++) {
@@ -17121,7 +13902,6 @@ ${result.join('\n')}
         }
       }
     }
-
     getMainResultKernelNumberTexture() {
       return [
         '  threadId = indexTo3D(index, uOutputDim)',
@@ -17129,7 +13909,6 @@ ${result.join('\n')}
         '  gl_FragData[0][0] = kernelResult',
       ];
     }
-
     getMainResultSubKernelNumberTexture() {
       const result = [];
       if (!this.subKernels) return result;
@@ -17147,7 +13926,6 @@ ${result.join('\n')}
       }
       return result;
     }
-
     getMainResultKernelArray2Texture() {
       return [
         '  threadId = indexTo3D(index, uOutputDim)',
@@ -17156,7 +13934,6 @@ ${result.join('\n')}
         '  gl_FragData[0][1] = kernelResult[1]',
       ];
     }
-
     getMainResultSubKernelArray2Texture() {
       const result = [];
       if (!this.subKernels) return result;
@@ -17168,7 +13945,6 @@ ${result.join('\n')}
       }
       return result;
     }
-
     getMainResultKernelArray3Texture() {
       return [
         '  threadId = indexTo3D(index, uOutputDim)',
@@ -17178,7 +13954,6 @@ ${result.join('\n')}
         '  gl_FragData[0][2] = kernelResult[2]',
       ];
     }
-
     getMainResultSubKernelArray3Texture() {
       const result = [];
       if (!this.subKernels) return result;
@@ -17191,7 +13966,6 @@ ${result.join('\n')}
       }
       return result;
     }
-
     getMainResultKernelArray4Texture() {
       return [
         '  threadId = indexTo3D(index, uOutputDim)',
@@ -17199,7 +13973,6 @@ ${result.join('\n')}
         '  gl_FragData[0] = kernelResult',
       ];
     }
-
     getMainResultSubKernelArray4Texture() {
       const result = [];
       if (!this.subKernels) return result;
@@ -17248,14 +14021,8 @@ ${result.join('\n')}
           }
           break;
       }
-
       return result;
     }
-
-    /**
-     * @param {String} src - Shader string
-     * @param {Object} map - Variables/Constants associated with shader
-     */
     replaceArtifacts(src, map) {
       return src.replace(/[ ]*__([A-Z]+[0-9]*([_]?[A-Z]*[0-9]?)*)__;\n/g, (match, artifact) => {
         if (map.hasOwnProperty(artifact)) {
@@ -17264,44 +14031,24 @@ ${result.join('\n')}
         throw `unhandled artifact ${artifact}`;
       });
     }
-
-    /**
-     * @desc Get the fragment shader String.
-     * If the String hasn't been compiled yet,
-     * then this method compiles it as well
-     *
-     * @param {Array} args - The actual parameters sent to the Kernel
-     * @returns {string} Fragment Shader string
-     */
     getFragmentShader(args) {
       if (this.compiledFragmentShader !== null) {
         return this.compiledFragmentShader;
       }
       return this.compiledFragmentShader = this.replaceArtifacts(this.constructor.fragmentShader, this._getFragShaderArtifactMap(args));
     }
-
-    /**
-     * @desc Get the vertical shader String
-     * @param {Array|IArguments} args - The actual parameters sent to the Kernel
-     * @returns {string} Vertical Shader string
-     */
     getVertexShader(args) {
       if (this.compiledVertexShader !== null) {
         return this.compiledVertexShader;
       }
       return this.compiledVertexShader = this.replaceArtifacts(this.constructor.vertexShader, this._getVertShaderArtifactMap(args));
     }
-
-    /**
-     * @desc Returns the *pre-compiled* Kernel as a JS Object String, that can be reused.
-     */
     toString() {
       const setupContextString = utils$1.linesToString([
         `const gl = context`,
       ]);
       return glKernelString(this.constructor, arguments, this, setupContextString);
     }
-
     destroy(removeCanvasReferences) {
       if (this.outputTexture) {
         this.context.deleteTexture(this.outputTexture);
@@ -17321,14 +14068,11 @@ ${result.join('\n')}
       if (this.program) {
         this.context.deleteProgram(this.program);
       }
-
       const keys = Object.keys(this.textureCache);
-
       for (let i = 0; i < keys.length; i++) {
         const name = keys[i];
         this.context.deleteTexture(this.textureCache[name]);
       }
-
       if (this.subKernelOutputTextures) {
         for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
           this.context.deleteTexture(this.subKernelOutputTextures[i]);
@@ -17345,21 +14089,18 @@ ${result.join('\n')}
       delete this.context;
       delete this.canvas;
     }
-
     destroyExtensions() {
       this.extensions.OES_texture_float = null;
       this.extensions.OES_texture_float_linear = null;
       this.extensions.OES_element_index_uint = null;
       this.extensions.WEBGL_draw_buffers = null;
     }
-
     static destroyContext(context) {
       const extension = context.getExtension('WEBGL_lose_context');
       if (extension) {
         extension.loseContext();
       }
     }
-
     toJSON() {
       const json = super.toJSON();
       json.functionNodes = FunctionBuilder.fromKernel(this, WebGLFunctionNode).toJSON();
@@ -17367,20 +14108,7 @@ ${result.join('\n')}
     }
   }
 
-  /**
-   * @class WebGL2FunctionNode
-   * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective webGL code.
-   * @extends WebGLFunctionNode
-   * @returns the converted webGL function string
-   */
   class WebGL2FunctionNode extends WebGLFunctionNode {
-
-    /**
-     * @desc Parses the abstract syntax tree for *identifier* expression
-     * @param {Object} idtNode - An ast Node
-     * @param {Array} retArr - return array string
-     * @returns {Array} the append retArr
-     */
     astIdentifierExpression(idtNode, retArr) {
       if (idtNode.type !== 'Identifier') {
         throw this.astErrorOutput(
@@ -17388,9 +14116,7 @@ ${result.join('\n')}
           idtNode
         );
       }
-
       const type = this.getType(idtNode);
-
       if (idtNode.name === 'Infinity') {
         retArr.push('intBitsToFloat(2139095039)');
       } else if (type === 'Boolean') {
@@ -17407,12 +14133,10 @@ ${result.join('\n')}
           retArr.push(`user_${idtNode.name}`);
         }
       }
-
       return retArr;
     }
   }
 
-  // language=GLSL
   const fragmentShader$1 = `#version 300 es
 __HEADER__;
 __FLOAT_TACTIC_DECLARATION__;
@@ -17804,7 +14528,6 @@ void main(void) {
   __MAIN_RESULT__;
 }`;
 
-  // language=GLSL
   const vertexShader$1 = `#version 300 es
 __FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
@@ -17833,7 +14556,6 @@ void main(void) {
       }
       return `uniform ${ variablePrecision } int ${this.id};\n`;
     }
-
     updateValue(value) {
       if (this.origin === 'constants') return;
       this.kernel.setUniform1i(this.id, this.uploadValue = value);
@@ -17880,7 +14602,6 @@ void main(void) {
         `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
       ]);
     }
-
     updateValue(images) {
       const { context: gl } = this;
       gl.activeTexture(this.contextHandle);
@@ -17888,7 +14609,6 @@ void main(void) {
       gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-      // Upload the images into the texture.
       gl.texImage3D(
         gl.TEXTURE_2D_ARRAY,
         0,
@@ -17932,7 +14652,6 @@ void main(void) {
         `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(images) {
       this.dimensions = [images[0].width, images[0].height, images.length];
       this.textureSize = [images[0].width, images[0].height];
@@ -17955,7 +14674,6 @@ void main(void) {
         `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
       ]);
     }
-
     updateValue(input) {
       const { context: gl } = this;
       utils$1.flattenTo(input.value, this.uploadValue);
@@ -17979,7 +14697,6 @@ void main(void) {
         `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(value) {
       let [w, h, d] = value.size;
       this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
@@ -18066,7 +14783,6 @@ void main(void) {
         `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
       ]);
     }
-
     updateValue(value) {
       if (value.constructor !== this.initialValueConstructor) {
         this.onUpdateValueMismatch();
@@ -18094,7 +14810,6 @@ void main(void) {
         `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(value) {
       this.dimensions = utils$1.getDimensions(value, true);
       this.textureSize = utils$1.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
@@ -18134,7 +14849,6 @@ void main(void) {
         `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(value) {
       this.setShape(value);
       this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
@@ -18171,7 +14885,6 @@ void main(void) {
         `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(value) {
       this.setShape(value);
       this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
@@ -18208,7 +14921,6 @@ void main(void) {
         `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
       ]);
     }
-
     updateValue(value) {
       this.setShape(value);
       this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
@@ -18363,7 +15075,6 @@ void main(void) {
       }
     },
   };
-
   function lookupKernelValueType$1(type, dynamic, precision, value) {
     if (!type) {
       throw new Error('type missing');
@@ -18390,16 +15101,7 @@ void main(void) {
   let testCanvas$1 = null;
   let testContext$1 = null;
   let testExtensions$1 = null;
-
-  /**
-   *
-   * @type {IKernelFeatures}
-   */
   let features$1 = null;
-
-  /**
-   * @extends WebGLKernel
-   */
   class WebGL2Kernel extends WebGLKernel {
     static get isSupported() {
       if (isSupported$1 !== null) {
@@ -18409,7 +15111,6 @@ void main(void) {
       isSupported$1 = this.isContextMatch(testContext$1);
       return isSupported$1;
     }
-
     static setupFeatureChecks() {
       if (typeof document !== 'undefined') {
         testCanvas$1 = document.createElement('canvas');
@@ -18425,15 +15126,12 @@ void main(void) {
       };
       features$1 = this.getFeatures();
     }
-
     static isContextMatch(context) {
-      // from global
       if (typeof WebGL2RenderingContext !== 'undefined') {
         return context instanceof WebGL2RenderingContext;
       }
       return false;
     }
-
     static getFeatures() {
       return Object.freeze({
         isFloatRead: this.getIsFloatRead(),
@@ -18443,46 +15141,33 @@ void main(void) {
         channelCount: this.getChannelCount(),
       });
     }
-
     static getIsTextureFloat() {
       return true;
     }
-
     static getIsIntegerDivisionAccurate() {
       return super.getIsIntegerDivisionAccurate();
     }
-
     static getChannelCount() {
       return testContext$1.getParameter(testContext$1.MAX_DRAW_BUFFERS);
     }
-
     static lookupKernelValueType(type, dynamic, precision, value) {
       return lookupKernelValueType$1(type, dynamic, precision, value);
     }
-
     static get testCanvas() {
       return testCanvas$1;
     }
-
     static get testContext() {
       return testContext$1;
     }
-
-    /**
-     *
-     * @returns {{isFloatRead: Boolean, isIntegerDivisionAccurate: Boolean, kernelMap: Boolean, isTextureFloat: Boolean}}
-     */
     static get features() {
       return features$1;
     }
-
     static get fragmentShader() {
       return fragmentShader$1;
     }
     static get vertexShader() {
       return vertexShader$1;
     }
-
     initContext() {
       const settings = {
         alpha: false,
@@ -18492,18 +15177,12 @@ void main(void) {
       const context = this.canvas.getContext('webgl2', settings);
       return context;
     }
-
     initExtensions() {
       this.extensions = {
         EXT_color_buffer_float: this.context.getExtension('EXT_color_buffer_float'),
         OES_texture_float_linear: this.context.getExtension('OES_texture_float_linear'),
       };
     }
-
-    /**
-     * @desc Validate settings related to Kernel, such as dimensions size, and auto output support.
-     * @param {IArguments} args
-     */
     validateSettings(args) {
       if (!this.validate) {
         this.texSize = utils$1.getKernelTextureSize({
@@ -18512,27 +15191,22 @@ void main(void) {
         }, this.output);
         return;
       }
-
       const features = this.constructor.features;
       if (this.precision === 'single' && !features.isFloatRead) {
         throw new Error('Float texture outputs are not supported');
       } else if (!this.graphical && this.precision === null) {
         this.precision = features.isFloatRead ? 'single' : 'unsigned';
       }
-
       if (this.fixIntegerDivisionAccuracy === null) {
         this.fixIntegerDivisionAccuracy = !features.isIntegerDivisionAccurate;
       } else if (this.fixIntegerDivisionAccuracy && features.isIntegerDivisionAccurate) {
         this.fixIntegerDivisionAccuracy = false;
       }
-
       this.checkOutput();
-
       if (!this.output || this.output.length === 0) {
         if (args.length !== 1) {
           throw new Error('Auto output only supported for kernels with only one input');
         }
-
         const argType = utils$1.getVariableType(args[0], this.strictIntegers);
         switch (argType) {
           case 'Array':
@@ -18550,29 +15224,24 @@ void main(void) {
             throw new Error('Auto output not supported for input type: ' + argType);
         }
       }
-
       if (this.graphical) {
         if (this.output.length !== 2) {
           throw new Error('Output must have 2 dimensions on graphical mode');
         }
-
         if (this.precision === 'single') {
           console.warn('Cannot use graphical mode and single precision at the same time');
           this.precision = 'unsigned';
         }
-
         this.texSize = utils$1.clone(this.output);
         return;
       } else if (!this.graphical && this.precision === null && features.isTextureFloat) {
         this.precision = 'single';
       }
-
       this.texSize = utils$1.getKernelTextureSize({
         optimizeFloatMemory: this.optimizeFloatMemory,
         precision: this.precision,
       }, this.output);
     }
-
     translateSource() {
       const functionBuilder = FunctionBuilder.fromKernel(this, WebGL2FunctionNode, {
         fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
@@ -18581,7 +15250,6 @@ void main(void) {
       if (!this.graphical && !this.returnType) {
         this.returnType = functionBuilder.getKernelResultType();
       }
-
       if (this.subKernels && this.subKernels.length > 0) {
         for (let i = 0; i < this.subKernels.length; i++) {
           const subKernel = this.subKernels[i];
@@ -18591,26 +15259,20 @@ void main(void) {
         }
       }
     }
-
     run() {
       const { kernelArguments, texSize } = this;
       const gl = this.context;
-
       gl.useProgram(this.program);
       gl.scissor(0, 0, texSize[0], texSize[1]);
-
       if (this.dynamicOutput) {
         this.setUniform3iv('uOutputDim', new Int32Array(this.threadDim));
         this.setUniform2iv('uTexSize', texSize);
       }
-
       this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
-
       for (let i = 0; i < kernelArguments.length; i++) {
         kernelArguments[i].updateValue(arguments[i]);
         if (this.switchingKernels) return;
       }
-
       if (this.plugins) {
         for (let i = 0; i < this.plugins.length; i++) {
           const plugin = this.plugins[i];
@@ -18619,7 +15281,6 @@ void main(void) {
           }
         }
       }
-
       if (this.graphical) {
         if (this.pipeline) {
           gl.bindRenderbuffer(gl.RENDERBUFFER, null);
@@ -18641,30 +15302,24 @@ void main(void) {
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         return;
       }
-
       gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
       if (this.immutable) {
         this._setupOutputTexture();
       }
-
       if (this.subKernels !== null) {
         if (this.immutable) {
           this._setupSubOutputTextures();
         }
         gl.drawBuffers(this.drawBuffersMap);
       }
-
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
-
     drawBuffers() {
       this.context.drawBuffers(this.drawBuffersMap);
     }
-
     getOutputTexture() {
       return this.outputTexture;
     }
-
     _setupOutputTexture() {
       const { texSize } = this;
       const gl = this.context;
@@ -18690,7 +15345,7 @@ void main(void) {
             case 'Array(2)':
               gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RG32F, texSize[0], texSize[1]);
               break;
-            case 'Array(3)': // there is _no_ 3 channel format which is guaranteed to be color-renderable
+            case 'Array(3)':
             case 'Array(4)':
               gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, texSize[0], texSize[1]);
               break;
@@ -18705,7 +15360,6 @@ void main(void) {
       }
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
     }
-
     _setupSubOutputTextures() {
       const { texSize } = this;
       const gl = this.context;
@@ -18721,7 +15375,6 @@ void main(void) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        // TODO: upgrade this
         if (this.precision === 'single') {
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
         } else {
@@ -18730,22 +15383,9 @@ void main(void) {
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, texture, 0);
       }
     }
-
-    /**
-     *
-     * @desc Get the header string for the program.
-     * This returns an empty string if no sub-kernels are defined.
-     *
-     * @returns {String} result
-     */
     _getHeaderString() {
       return '';
     }
-
-    /**
-     * @desc Get texture coordinate string for the program
-     * @returns {String} result
-     */
     _getTextureCoordinate() {
       const subKernels = this.subKernels;
       if (subKernels === null || subKernels.length < 1) {
@@ -18770,12 +15410,6 @@ void main(void) {
         }
       }
     }
-
-    /**
-     * @desc Generate transpiled glsl Strings for user-defined parameters sent to a kernel
-     * @param {Array} args - The actual parameters sent to the Kernel
-     * @returns {String} result
-     */
     _getMainArgumentsString(args) {
       const result = [];
       const argumentNames = this.argumentNames;
@@ -18784,11 +15418,6 @@ void main(void) {
       }
       return result.join('');
     }
-
-    /**
-     * @desc Get Kernel program string (in *glsl*) for a kernel.
-     * @returns {String} result
-     */
     getKernelString() {
       let kernelResultDeclaration;
       switch (this.returnType) {
@@ -18814,7 +15443,6 @@ void main(void) {
             throw new Error(`unrecognized output type "${ this.returnType }"`);
           }
       }
-
       const result = [];
       const subKernels = this.subKernels;
       if (subKernels !== null) {
@@ -18837,10 +15465,8 @@ void main(void) {
           kernelResultDeclaration
         );
       }
-
       return utils$1.linesToString(result) + this.translatedSource;
     }
-
     getMainResultGraphical() {
       return utils$1.linesToString([
         '  threadId = indexTo3D(index, uOutputDim)',
@@ -18848,7 +15474,6 @@ void main(void) {
         '  data0 = actualColor',
       ]);
     }
-
     getMainResultPackedPixels() {
       switch (this.returnType) {
         case 'LiteralInteger':
@@ -18861,10 +15486,6 @@ void main(void) {
           throw new Error(`packed output only usable with Numbers, "${this.returnType}" specified`);
       }
     }
-
-    /**
-     * @return {String}
-     */
     getMainResultKernelPackedPixels() {
       return utils$1.linesToString([
         '  threadId = indexTo3D(index, uOutputDim)',
@@ -18872,10 +15493,6 @@ void main(void) {
         `  data0 = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(kernelResult)`
       ]);
     }
-
-    /**
-     * @return {String}
-     */
     getMainResultSubKernelPackedPixels() {
       const result = [];
       if (!this.subKernels) return '';
@@ -18893,12 +15510,10 @@ void main(void) {
       }
       return utils$1.linesToString(result);
     }
-
     getMainResultMemoryOptimizedFloats() {
       const result = [
         '  index *= 4',
       ];
-
       switch (this.returnType) {
         case 'Number':
         case 'Integer':
@@ -18916,10 +15531,8 @@ void main(void) {
         default:
           throw new Error(`optimized output only usable with Numbers, ${this.returnType} specified`);
       }
-
       return utils$1.linesToString(result);
     }
-
     getMainResultKernelMemoryOptimizedFloats(result, channel) {
       result.push(
         '  threadId = indexTo3D(index, uOutputDim)',
@@ -18927,7 +15540,6 @@ void main(void) {
         `  data0.${channel} = kernelResult`,
       );
     }
-
     getMainResultSubKernelMemoryOptimizedFloats(result, channel) {
       if (!this.subKernels) return result;
       for (let i = 0; i < this.subKernels.length; i++) {
@@ -18943,7 +15555,6 @@ void main(void) {
         }
       }
     }
-
     getMainResultKernelNumberTexture() {
       return [
         '  threadId = indexTo3D(index, uOutputDim)',
@@ -18951,7 +15562,6 @@ void main(void) {
         '  data0[0] = kernelResult',
       ];
     }
-
     getMainResultSubKernelNumberTexture() {
       const result = [];
       if (!this.subKernels) return result;
@@ -18969,7 +15579,6 @@ void main(void) {
       }
       return result;
     }
-
     getMainResultKernelArray2Texture() {
       return [
         '  threadId = indexTo3D(index, uOutputDim)',
@@ -18978,7 +15587,6 @@ void main(void) {
         '  data0[1] = kernelResult[1]',
       ];
     }
-
     getMainResultSubKernelArray2Texture() {
       const result = [];
       if (!this.subKernels) return result;
@@ -18991,7 +15599,6 @@ void main(void) {
       }
       return result;
     }
-
     getMainResultKernelArray3Texture() {
       return [
         '  threadId = indexTo3D(index, uOutputDim)',
@@ -19001,7 +15608,6 @@ void main(void) {
         '  data0[2] = kernelResult[2]',
       ];
     }
-
     getMainResultSubKernelArray3Texture() {
       const result = [];
       if (!this.subKernels) return result;
@@ -19015,7 +15621,6 @@ void main(void) {
       }
       return result;
     }
-
     getMainResultKernelArray4Texture() {
       return [
         '  threadId = indexTo3D(index, uOutputDim)',
@@ -19023,7 +15628,6 @@ void main(void) {
         '  data0 = kernelResult',
       ];
     }
-
     getMainResultSubKernelArray4Texture() {
       const result = [];
       if (!this.subKernels) return result;
@@ -19034,12 +15638,10 @@ void main(void) {
       }
       return result;
     }
-
     destroyExtensions() {
       this.extensions.EXT_color_buffer_float = null;
       this.extensions.OES_texture_float_linear = null;
     }
-
     toJSON() {
       const json = super.toJSON();
       json.functionNodes = FunctionBuilder.fromKernel(this, WebGL2FunctionNode).toJSON();
@@ -19047,11 +15649,6 @@ void main(void) {
     }
   }
 
-  /**
-   * Makes kernels easier for mortals (including me)
-   * @param kernel
-   * @returns {function()}
-   */
   function kernelRunShortcut(kernel) {
     let run = function() {
       kernel.build.apply(kernel, arguments);
@@ -19083,10 +15680,6 @@ void main(void) {
     const shortcut = function() {
       return run.apply(kernel, arguments);
     };
-    /**
-     * Run kernel in async mode
-     * @returns {Promise<KernelOutput>}
-     */
     shortcut.exec = function() {
       return new Promise((accept, reject) => {
         try {
@@ -19101,12 +15694,10 @@ void main(void) {
       bindKernelToShortcut(kernel, shortcut);
       shortcut.kernel = kernel;
     };
-
     bindKernelToShortcut(kernel, shortcut);
     shortcut.kernel = kernel;
     return shortcut;
   }
-
   function bindKernelToShortcut(kernel, shortcut) {
     const properties = utils$1.allPropertiesOf(kernel);
     for (let i = 0; i < properties.length; i++) {
@@ -19138,102 +15729,47 @@ void main(void) {
     }
   }
 
-  /**
-   * @type {Kernel[]}
-   */
   const kernelOrder = [ WebGL2Kernel, WebGLKernel ];
-
-  /**
-   * @type {string[]}
-   */
   const kernelTypes = [ 'gpu', 'cpu' ];
-
   const internalKernels = {
     'webgl2': WebGL2Kernel,
     'webgl': WebGLKernel,
   };
-
   let validate = true;
-
-  /**
-   * The GPU.js library class which manages the GPU context for the creating kernels
-   */
   class GPU {
     static disableValidation() {
       validate = false;
     }
-
     static enableValidation() {
       validate = true;
     }
-
     static get isGPUSupported() {
       return kernelOrder.some(Kernel => Kernel.isSupported);
     }
-
-    /**
-     *
-     * @returns {boolean}
-     */
     static get isKernelMapSupported() {
       return kernelOrder.some(Kernel => Kernel.isSupported && Kernel.features.kernelMap);
     }
-
-    /**
-     * @desc TRUE is platform supports OffscreenCanvas
-     */
     static get isOffscreenCanvasSupported() {
       return (typeof Worker !== 'undefined' && typeof OffscreenCanvas !== 'undefined') || typeof importScripts !== 'undefined';
     }
-
-    /**
-     * @desc TRUE if platform supports WebGL
-     */
     static get isWebGLSupported() {
       return WebGLKernel.isSupported;
     }
-
-    /**
-     * @desc TRUE if platform supports WebGL2
-     */
     static get isWebGL2Supported() {
       return WebGL2Kernel.isSupported;
     }
-
-    /**
-     * @desc TRUE if platform supports HeadlessGL
-     */
     static get isHeadlessGLSupported() {
       return false;
     }
-
-    /**
-     *
-     * @desc TRUE if platform supports Canvas
-     */
     static get isCanvasSupported() {
       return typeof HTMLCanvasElement !== 'undefined';
     }
-
-    /**
-     * @desc TRUE if platform supports HTMLImageArray}
-     */
     static get isGPUHTMLImageArraySupported() {
       return WebGL2Kernel.isSupported;
     }
-
-    /**
-     * @desc TRUE if platform supports single precision}
-     * @returns {boolean}
-     */
     static get isSinglePrecisionSupported() {
       return kernelOrder.some(Kernel => Kernel.isSupported && Kernel.features.isFloatRead && Kernel.features.isTextureFloat);
     }
-
-    /**
-     * Creates an instance of GPU.
-     * @param {IGPUSettings} [settings] - Settings to set mode, and other properties
-     */
     constructor(settings) {
       settings = settings || {};
       this.canvas = settings.canvas || null;
@@ -19246,33 +15782,23 @@ void main(void) {
       this.injectedNative = null;
       if (this.mode === 'dev') return;
       this.chooseKernel();
-      // add functions from settings
       if (settings.functions) {
         for (let i = 0; i < settings.functions.length; i++) {
           this.addFunction(settings.functions[i]);
         }
       }
-
-      // add native functions from settings
       if (settings.nativeFunctions) {
         for (const p in settings.nativeFunctions) {
           this.addNativeFunction(p, settings.nativeFunctions[p]);
         }
       }
     }
-
     getValidate() {
       return validate;
     }
-
-    /**
-     * Choose kernel type and save on .Kernel property of GPU
-     */
     chooseKernel() {
       if (this.Kernel) return;
-
       let Kernel = null;
-
       if (this.context) {
         for (let i = 0; i < kernelOrder.length; i++) {
           const ExternalKernel = kernelOrder[i];
@@ -19316,19 +15842,11 @@ void main(void) {
           Kernel = CPUKernel;
         }
       }
-
       if (!this.mode) {
         this.mode = Kernel.mode;
       }
       this.Kernel = Kernel;
     }
-
-    /**
-     * @desc This creates a callable function object to call the kernel function with the argument parameter set
-     * @param {Function|String|object} source - The calling to perform the conversion
-     * @param {Object} [settings] - The parameter configuration object
-     * @return {Kernel} callable function to run
-     */
     createKernel(source, settings) {
       if (typeof source === 'undefined') {
         throw new Error('Missing source parameter');
@@ -19336,21 +15854,17 @@ void main(void) {
       if (typeof source !== 'object' && !isFunction(source) && typeof source !== 'string') {
         throw new Error('source parameter not a function');
       }
-
       if (this.mode === 'dev') {
         const devKernel = gpuMock_js_1(source, upgradeDeprecatedCreateKernelSettings(settings));
         this.kernels.push(devKernel);
         return devKernel;
       }
-
       source = typeof source === 'function' ? source.toString() : source;
       const switchableKernels = {};
       const settingsCopy = upgradeDeprecatedCreateKernelSettings(settings) || {};
-      // handle conversion of argumentTypes
       if (settings && typeof settings.argumentTypes === 'object') {
         settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
       }
-
       function onRequestFallback(args) {
         const fallbackKernel = new CPUKernel(source, {
           argumentTypes: kernelRun.argumentTypes,
@@ -19379,7 +15893,6 @@ void main(void) {
         kernelRun.replaceKernel(fallbackKernel);
         return result;
       }
-
       function onRequestSwitchKernel(args, kernel) {
         const argumentTypes = new Array(args.length);
         for (let i = 0; i < args.length; i++) {
@@ -19410,7 +15923,6 @@ void main(void) {
             return existingKernel.renderOutput();
           }
         }
-
         const newKernel = switchableKernels[signature] = new kernel.constructor(source, {
           argumentTypes,
           constantTypes: kernel.constantTypes,
@@ -19460,54 +15972,16 @@ void main(void) {
         onRequestFallback,
         onRequestSwitchKernel
       }, settingsCopy);
-
       const kernelRun = kernelRunShortcut(new this.Kernel(source, mergedSettings));
-
-      //if canvas didn't come from this, propagate from kernel
       if (!this.canvas) {
         this.canvas = kernelRun.canvas;
       }
-
-      //if context didn't come from this, propagate from kernel
       if (!this.context) {
         this.context = kernelRun.context;
       }
-
       this.kernels.push(kernelRun);
-
       return kernelRun;
     }
-
-    /**
-     *
-     * Create a super kernel which executes sub kernels
-     * and saves their output to be used with the next sub kernel.
-     * This can be useful if we want to save the output on one kernel,
-     * and then use it as an input to another kernel. *Machine Learning*
-     *
-     * @param {Object|Array} subKernels - Sub kernels for this kernel
-     * @param {Function} rootKernel - Root kernel
-     *
-     * @returns {Function} callable kernel function
-     *
-     * @example
-     * const megaKernel = gpu.createKernelMap({
-     *   addResult: function add(a, b) {
-     *     return a[this.thread.x] + b[this.thread.x];
-     *   },
-     *   multiplyResult: function multiply(a, b) {
-     *     return a[this.thread.x] * b[this.thread.x];
-     *   },
-     *  }, function(a, b, c) {
-     *       return multiply(add(a, b), c);
-     * });
-     *
-     * megaKernel(a, b, c);
-     *
-     * Note: You can also define subKernels as an array of functions.
-     * > [add, multiply]
-     *
-     */
     createKernelMap() {
       let fn;
       let settings;
@@ -19517,7 +15991,6 @@ void main(void) {
       } else {
         fn = arguments[arguments.length - 1];
       }
-
       if (this.mode !== 'dev') {
         if (!this.Kernel.isSupported || !this.Kernel.features.kernelMap) {
           if (this.mode && kernelTypes.indexOf(this.mode) < 0) {
@@ -19525,13 +15998,10 @@ void main(void) {
           }
         }
       }
-
       const settingsCopy = upgradeDeprecatedCreateKernelSettings(settings);
-      // handle conversion of argumentTypes
       if (settings && typeof settings.argumentTypes === 'object') {
         settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
       }
-
       if (Array.isArray(arguments[0])) {
         settingsCopy.subKernels = [];
         const functions = arguments[0];
@@ -19559,31 +16029,8 @@ void main(void) {
         }
       }
       const kernel = this.createKernel(fn, settingsCopy);
-
       return kernel;
     }
-
-    /**
-     *
-     * Combine different kernels into one super Kernel,
-     * useful to perform multiple operations inside one
-     * kernel without the penalty of data transfer between
-     * cpu and gpu.
-     *
-     * The number of kernel functions sent to this method can be variable.
-     * You can send in one, two, etc.
-     *
-     * @param {Function} subKernels - Kernel function(s) to combine.
-     * @param {Function} rootKernel - Root kernel to combine kernels into
-     *
-     * @example
-     *   combineKernels(add, multiply, function(a,b,c){
-     *     return add(multiply(a,b), c)
-     *  })
-     *
-     * @returns {Function} Callable kernel function
-     *
-     */
     combineKernels() {
       const firstKernel = arguments[0];
       const combinedKernel = arguments[arguments.length - 1];
@@ -19597,7 +16044,6 @@ void main(void) {
           .setContext(context)
           .setPipeline(true);
       }
-
       return function() {
         const texture = combinedKernel.apply(this, arguments);
         if (texture.toArray) {
@@ -19606,25 +16052,10 @@ void main(void) {
         return texture;
       };
     }
-
-    /**
-     * @desc Adds additional functions, that the kernel may call.
-     * @param {Function|String} source - Javascript function to convert
-     * @param {IFunctionSettings} [settings]
-     * @returns {GPU} returns itself
-     */
     addFunction(source, settings) {
       this.functions.push(functionToIFunction(source, settings));
       return this;
     }
-
-    /**
-     * @desc Adds additional native functions, that the kernel may call.
-     * @param {String} name - native function name, used for reverse lookup
-     * @param {String} source - the native function implementation, as it would be defined in it's entirety
-     * @param {object} [settings]
-     * @returns {GPU} returns itself
-     */
     addNativeFunction(name, source, settings) {
       if (this.kernels.length > 0) {
         throw new Error('Cannot call "addNativeFunction" after "createKernels" has been called.');
@@ -19641,32 +16072,18 @@ void main(void) {
       });
       return this;
     }
-
-    /**
-     * Inject a string just before translated kernel functions
-     * @param {String} source
-     * @return {GPU}
-     */
     injectNative(source) {
       this.injectedNative = source;
       return this;
     }
-
-    /**
-     * @desc Destroys all memory associated with gpu.js & the webGl if we created it
-     */
     destroy() {
       if (!this.kernels) return;
-      // perform on next run loop - for some reason we dont get lose context events
-      // if webGl is created and destroyed in the same run loop.
       setTimeout(() => {
         for (let i = 0; i < this.kernels.length; i++) {
-          this.kernels[i].destroy(true); // remove canvas if exists
+          this.kernels[i].destroy(true);
         }
-        // all kernels are associated with one context, go ahead and take care of it here
         let firstKernel = this.kernels[0];
         if (firstKernel) {
-          // if it is shortcut
           if (firstKernel.kernel) {
             firstKernel = firstKernel.kernel;
           }
@@ -19677,13 +16094,11 @@ void main(void) {
       }, 0);
     }
   }
-
   function upgradeDeprecatedCreateKernelSettings(settings) {
     if (!settings) {
       return {};
     }
     const upgradedSettings = Object.assign({}, settings);
-
     if (settings.hasOwnProperty('floatOutput')) {
       warnDeprecated('setting', 'floatOutput', 'precision');
       upgradedSettings.precision = settings.floatOutput ? 'single' : 'unsigned';
@@ -19703,11 +16118,6 @@ void main(void) {
     return upgradedSettings;
   }
 
-  /**
-   * @param name
-   * @param source
-   * @returns {Function}
-   */
   function alias(name, source) {
     const fnString = source.toString();
     return new Function(`return function ${ name } (${ utils$1.getArgumentNamesFromString(fnString).join(', ') }) {
@@ -19715,9 +16125,6 @@ void main(void) {
 }`)();
   }
 
-  /**
-   * Stub for HeadlessGL.
-   */
   class HeadlessGLKernel extends WebGLKernel {
     static get isSupported() { return false }
     static isContextMatch() { return false }
@@ -19736,7 +16143,6 @@ void main(void) {
     build() {}
     destroyExtensions() {}
     setOutput() {}
-
     static getFeatures() {
       return Object.freeze({
         isFloatRead: false,
@@ -19747,8 +16153,7 @@ void main(void) {
         channelCount: 1,
       });
     }
-  }
-  const lib = GPU;
+  }const lib = GPU;
   lib.alias = alias;
   lib.CPUFunctionNode = CPUFunctionNode;
   lib.CPUKernel = CPUKernel;
