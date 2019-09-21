@@ -29,7 +29,7 @@
   "scripts": {
     "build-tests": "node build-tests",
     "build": "rollup -c",
-    "pretest": "npm run build",
+    "pretest": "npm run build && npm run build-tests",
     "prewatch": "npm run build-tests",
     "test": "qunit",
     "watch": "rollup -c -w"
@@ -48,6 +48,7 @@
     "qunit": "^2.9.1",
     "read-dir-deep": "^7.0.1",
     "rollup": "^1.21.4",
+    "rollup-plugin-cleanup": "^3.1.1",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-json": "^4.0.0",
     "rollup-plugin-node-resolve": "^5.2.0",

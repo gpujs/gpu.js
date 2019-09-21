@@ -1,6 +1,7 @@
 import { GPU } from './gpu';
 import { alias } from './alias';
-import { utils } from './utils';
+import * as common from './common';
+import { utils as util } from './utils';
 import { Input, input } from './input';
 import { Texture } from './texture';
 import { FunctionBuilder } from './backend/function-builder';
@@ -14,6 +15,8 @@ import { WebGL2FunctionNode } from './backend/web-gl2/function-node';
 import { WebGL2Kernel } from './backend/web-gl2/kernel';
 import { GLKernel } from './backend/gl/kernel';
 import { Kernel } from './backend/kernel';
+
+const utils = { ...common, ...util };
 
 export {
   alias,

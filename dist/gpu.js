@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0
- * @date Thu Sep 19 2019 11:40:19 GMT-0400 (Eastern Daylight Time)
+ * @date Fri Sep 20 2019 21:23:08 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -417,6 +417,19 @@ function getAstString(source, ast) {
   }
   return result.join('\n');
 }
+
+var common = /*#__PURE__*/Object.freeze({
+  isFunction: isFunction,
+  getFunctionNameFromString: getFunctionNameFromString,
+  functionToIFunction: functionToIFunction,
+  warnDeprecated: warnDeprecated,
+  isFunctionString: isFunctionString,
+  getArgumentNamesFromString: getArgumentNamesFromString,
+  isArray: isArray,
+  erectMemoryOptimized2DFloat: erectMemoryOptimized2DFloat,
+  erectMemoryOptimized3DFloat: erectMemoryOptimized3DFloat,
+  getAstString: getAstString
+});
 
 class Input {
   constructor(value, size) {
@@ -14671,6 +14684,8 @@ function alias(name, source) {
 }`)();
 }
 
+const utils$2 = { ...common, ...utils$1 };
+
 exports.CPUFunctionNode = CPUFunctionNode;
 exports.CPUKernel = CPUKernel;
 exports.FunctionBuilder = FunctionBuilder;
@@ -14687,5 +14702,5 @@ exports.WebGLFunctionNode = WebGLFunctionNode;
 exports.WebGLKernel = WebGLKernel;
 exports.alias = alias;
 exports.input = input;
-exports.utils = utils$1;
+exports.utils = utils$2;
 //# sourceMappingURL=gpu.js.map

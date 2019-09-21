@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.0.0
- * @date Thu Sep 19 2019 11:40:19 GMT-0400 (Eastern Daylight Time)
+ * @date Fri Sep 20 2019 21:34:42 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -19715,12 +19715,46 @@ void main(void) {
 }`)();
   }
 
+  /**
+   * Stub for HeadlessGL.
+   */
+  class HeadlessGLKernel extends WebGLKernel {
+    static get isSupported() { return false }
+    static isContextMatch() { return false }
+    static getIsTextureFloat() { return false }
+    static getIsDrawBuffers() { return false }
+    static getChannelCount() { return 1 }
+    static get testCanvas() { return null }
+    static get testContext() { return null }
+    static get features() { return null }
+    static setupFeatureChecks() {}
+    static destroyContext() {}
+    initCanvas() { return {} }
+    initContext() { return null }
+    toString() { return '' }
+    initExtensions() {}
+    build() {}
+    destroyExtensions() {}
+    setOutput() {}
+
+    static getFeatures() {
+      return Object.freeze({
+        isFloatRead: false,
+        isIntegerDivisionAccurate: false,
+        isTextureFloat: false,
+        isDrawBuffers: false,
+        kernelMap: false,
+        channelCount: 1,
+      });
+    }
+  }
   const lib = GPU;
   lib.alias = alias;
   lib.CPUFunctionNode = CPUFunctionNode;
   lib.CPUKernel = CPUKernel;
   lib.FunctionBuilder = FunctionBuilder;
   lib.FunctionNode = FunctionNode;
+  lib.HeadlessGLKernel = HeadlessGLKernel;
   lib.Input = Input;
   lib.input = input;
   lib.Texture = Texture;

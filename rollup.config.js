@@ -1,4 +1,5 @@
 import BrowserSync from 'browser-sync';
+import cleanup from 'rollup-plugin-cleanup';
 import commonjs from 'rollup-plugin-commonjs';
 import json from 'rollup-plugin-json';
 import pkg from './package.json';
@@ -86,7 +87,8 @@ const browser = {
     json(),
     resolve(),
     commonjs(),
-    production ? terser(terserOptions) : browsersync(browsersyncOptions)
+    production && cleanup(),
+    production ? [ terser(terserOptions) ] : browsersync(browsersyncOptions)
   ]
 }
 
@@ -101,6 +103,7 @@ const core = {
     json(),
     resolve(),
     commonjs(),
+    cleanup(),
     terser(terserOptions)
   ]
 }
