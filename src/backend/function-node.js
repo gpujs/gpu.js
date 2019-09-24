@@ -42,8 +42,7 @@ class FunctionNode {
     this.lookupFunctionArgumentTypes = null;
     this.lookupFunctionArgumentBitRatio = null;
     this.triggerImplyArgumentType = null;
-    this.triggerTrackArgumentSynonym = null;
-    this.lookupArgumentSynonym = null;
+    this.triggerImplyArgumentBitRatio = null;
     this.onNestedFunction = null;
     this.onFunctionCall = null;
     this.optimizeFloatMemory = null;
@@ -72,9 +71,6 @@ class FunctionNode {
       }
     }
 
-    this.synonymIndex = -1;
-    this.synonymUseIndex = 0;
-    this.argumentSynonym = {};
     this.literalTypes = {};
 
     this.validate();
@@ -336,20 +332,6 @@ class FunctionNode {
       }
     }
     throw new Error(`Type for constant "${ constantName }" not declared`);
-  }
-
-  /**
-   * @desc Return the name of the *user argument*(subKernel argument) corresponding
-   * to the argument supplied to the kernel
-   *
-   * @param {String} name - Name of the argument
-   * @returns {String} Name of the parameter
-   */
-  getKernelArgumentName(name) {
-    if (!this.lookupArgumentSynonym) return null;
-    const argumentIndex = this.argumentNames.indexOf(name);
-    if (argumentIndex === -1) return null;
-    return this.lookupArgumentSynonym('kernel', this.name, name);
   }
 
   toString() {

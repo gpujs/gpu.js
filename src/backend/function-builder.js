@@ -46,7 +46,7 @@ class FunctionBuilder {
     }
 
     for (let i = 0; i < kernelConstants.length; i++) {
-      const kernelConstant = kernelConstants[i]
+      const kernelConstant = kernelConstants[i];
       constantTypes[kernelConstant.name] = kernelConstant.type;
     }
 
@@ -78,12 +78,8 @@ class FunctionBuilder {
       functionBuilder.assignArgumentType(functionName, i, argumentType, requestingNode);
     };
 
-    const triggerTrackArgumentSynonym = (functionName, argumentName, calleeFunctionName, argumentIndex) => {
-      functionBuilder.trackArgumentSynonym(functionName, argumentName, calleeFunctionName, argumentIndex);
-    };
-
-    const lookupArgumentSynonym = (originFunctionName, functionName, argumentName) => {
-      return functionBuilder.lookupArgumentSynonym(originFunctionName, functionName, argumentName);
+    const triggerImplyArgumentBitRatio = (functionName, argumentName, calleeFunctionName, argumentIndex) => {
+      functionBuilder.assignArgumentBitRatio(functionName, argumentName, calleeFunctionName, argumentIndex);
     };
 
     const onFunctionCall = (functionName, calleeFunctionName, args) => {
@@ -107,8 +103,7 @@ class FunctionBuilder {
         needsArgumentType,
         assignArgumentType,
         triggerImplyArgumentType,
-        triggerTrackArgumentSynonym,
-        lookupArgumentSynonym,
+        triggerImplyArgumentBitRatio,
         onFunctionCall,
         warnVarUsage,
       }));
@@ -126,8 +121,7 @@ class FunctionBuilder {
       needsArgumentType,
       assignArgumentType,
       triggerImplyArgumentType,
-      triggerTrackArgumentSynonym,
-      lookupArgumentSynonym,
+      triggerImplyArgumentBitRatio,
       onFunctionCall,
       optimizeFloatMemory,
       precision,
@@ -178,8 +172,7 @@ class FunctionBuilder {
         needsArgumentType,
         assignArgumentType,
         triggerImplyArgumentType,
-        triggerTrackArgumentSynonym,
-        lookupArgumentSynonym,
+        triggerImplyArgumentBitRatio,
         onFunctionCall,
       }));
     }
@@ -453,63 +446,15 @@ class FunctionBuilder {
       }
     }
 
-    // function not found, maybe native?
     return null;
-
-    /**
-     * first iteration
-     * kernel.outputs = Array
-     * kernel.targets = Array
-     * kernel.returns = null
-     * kernel.calls.calcErrorOutput = [kernel.output, kernel.targets]
-     * kernel.calls.calcDeltas = [calcErrorOutput.returns, kernel.output]
-     * calcErrorOutput.output = null
-     * calcErrorOutput.targets = null
-     * calcErrorOutput.returns = null
-     * calcDeltasSigmoid.error = null
-     * calcDeltasSigmoid.output = Number
-     * calcDeltasSigmoid.returns = null
-     *
-     * resolvable are:
-     * calcErrorOutput.output
-     * calcErrorOutput.targets
-     * calcErrorOutput.returns
-     *
-     * second iteration
-     * kernel.outputs = Array
-     * kernel.targets = Array
-     * kernel.returns = null
-     * kernel.calls.calcErrorOutput = [kernel.output, kernel.targets]
-     * kernel.calls.calcDeltas = [calcErrorOutput.returns, kernel.output]
-     * calcErrorOutput.output = Number
-     * calcErrorOutput.targets = Array
-     * calcErrorOutput.returns = Number
-     * calcDeltasSigmoid.error = null
-     * calcDeltasSigmoid.output = Number
-     * calcDeltasSigmoid.returns = null
-     *
-     * resolvable are:
-     * calcDeltasSigmoid.error
-     * calcDeltasSigmoid.returns
-     * kernel.returns
-     *
-     * third iteration
-     * kernel.outputs = Array
-     * kernel.targets = Array
-     * kernel.returns = Number
-     * kernel.calls.calcErrorOutput = [kernel.output, kernel.targets]
-     * kernel.calls.calcDeltas = [calcErrorOutput.returns, kernel.output]
-     * calcErrorOutput.output = Number
-     * calcErrorOutput.targets = Array
-     * calcErrorOutput.returns = Number
-     * calcDeltasSigmoid.error = Number
-     * calcDeltasSigmoid.output = Number
-     * calcDeltasSigmoid.returns = Number
-     *
-     *
-     */
   }
 
+  /**
+   *
+   * @param {String} functionName
+   * @return {FunctionNode}
+   * @private
+   */
   _getFunction(functionName) {
     if (!this._isFunction(functionName)) {
       new Error(`Function ${functionName} not found`);
@@ -553,6 +498,12 @@ class FunctionBuilder {
     return this._getFunction(functionName).argumentNames[argumentIndex];
   }
 
+  /**
+   *
+   * @param {string} functionName
+   * @param {string} argumentName
+   * @return {number}
+   */
   lookupFunctionArgumentBitRatio(functionName, argumentName) {
     if (!this._isFunction(functionName)) {
       throw new Error('function not found');
@@ -561,17 +512,18 @@ class FunctionBuilder {
       const i = this.rootNode.argumentNames.indexOf(argumentName);
       if (i !== -1) {
         return this.rootNode.argumentBitRatios[i];
-      } else {
-        throw new Error('argument bit ratio not found');
       }
-    } else {
-      const node = this._getFunction(functionName);
-      const argumentSynonym = node.argumentSynonym[node.synonymIndex];
-      if (!argumentSynonym) {
-        throw new Error('argument synonym not found');
-      }
-      return this.lookupFunctionArgumentBitRatio(argumentSynonym.functionName, argumentSynonym.argumentName);
     }
+    const node = this._getFunction(functionName);
+    const i = node.argumentNames.indexOf(argumentName);
+    if (i === -1) {
+      throw new Error('argument not found');
+    }
+    const bitRatio = node.argumentBitRatios[i];
+    if (typeof bitRatio !== 'number') {
+      throw new Error('argument bit ratio not found');
+    }
+    return bitRatio;
   }
 
   needsArgumentType(functionName, i) {
@@ -588,37 +540,36 @@ class FunctionBuilder {
     }
   }
 
-  trackArgumentSynonym(functionName, argumentName, calleeFunctionName, argumentIndex) {
-    if (!this._isFunction(calleeFunctionName)) return;
-    const node = this._getFunction(calleeFunctionName);
-    if (!node.argumentSynonym) {
-      node.argumentSynonym = {};
-    }
-    const calleeArgumentName = node.argumentNames[argumentIndex];
-    if (!node.argumentSynonym[calleeArgumentName]) {
-      node.argumentSynonym[calleeArgumentName] = {};
-    }
-    node.synonymIndex++;
-    node.argumentSynonym[node.synonymIndex] = {
-      functionName,
-      argumentName,
-      calleeArgumentName,
-      calleeFunctionName,
-    };
-  }
-
-  lookupArgumentSynonym(originFunctionName, functionName, argumentName) {
-    if (originFunctionName === functionName) return argumentName;
-    if (!this._isFunction(functionName)) return null;
+  /**
+   * @param {string} functionName
+   * @param {string} argumentName
+   * @param {string} calleeFunctionName
+   * @param {number} argumentIndex
+   * @return {number}
+   */
+  assignArgumentBitRatio(functionName, argumentName, calleeFunctionName, argumentIndex) {
     const node = this._getFunction(functionName);
-    const argumentSynonym = node.argumentSynonym[node.synonymUseIndex];
-    if (!argumentSynonym) return null;
-    if (argumentSynonym.calleeArgumentName !== argumentName) return null;
-    node.synonymUseIndex++;
-    if (originFunctionName !== functionName) {
-      return this.lookupArgumentSynonym(originFunctionName, argumentSynonym.functionName, argumentSynonym.argumentName);
+    const calleeNode = this._getFunction(calleeFunctionName);
+    const i = node.argumentNames.indexOf(argumentName);
+    if (i === -1) {
+      throw new Error(`Argument ${argumentName} not found in arguments from function ${functionName}`);
     }
-    return argumentSynonym.argumentName;
+    const bitRatio = node.argumentBitRatios[i];
+    if (typeof bitRatio !== 'number') {
+      throw new Error(`Bit ratio for argument ${argumentName} not found in function ${functionName}`);
+    }
+    if (!calleeNode.argumentBitRatios) {
+      calleeNode.argumentBitRatios = new Array(calleeNode.argumentNames.length);
+    }
+    const calleeBitRatio = calleeNode.argumentBitRatios[i];
+    if (typeof calleeBitRatio === 'number') {
+      if (calleeBitRatio !== bitRatio) {
+        throw new Error(`Incompatible bit ratio found at function ${functionName} at argument ${argumentName}`);
+      }
+      return calleeBitRatio;
+    }
+    calleeNode.argumentBitRatios[i] = bitRatio;
+    return bitRatio;
   }
 
   trackFunctionCall(functionName, calleeFunctionName, args) {

@@ -76,10 +76,13 @@ class WebGLFunctionNode extends FunctionNode {
         if (!type) {
           throw this.astErrorOutput('Unexpected expression', ast);
         }
-        retArr.push(type);
-        retArr.push(' ');
-        retArr.push('user_');
-        retArr.push(argumentName);
+
+        if (type === 'sampler2D' || type === 'sampler2DArray') {
+          // mash needed arguments together, since now we have end to end inference
+          retArr.push(`${type} user_${argumentName},ivec2 user_${argumentName}Size,ivec3 user_${argumentName}Dim`);
+        } else {
+          retArr.push(`${type} user_${argumentName}`);
+        }
       }
     }
 
@@ -597,12 +600,7 @@ class WebGLFunctionNode extends FunctionNode {
         retArr.push(`user_${idtNode.name}`);
       }
     } else {
-      const userArgumentName = this.getKernelArgumentName(idtNode.name);
-      if (userArgumentName) {
-        retArr.push(`user_${userArgumentName}`);
-      } else {
-        retArr.push(`user_${idtNode.name}`);
-      }
+      retArr.push(`user_${idtNode.name}`);
     }
 
     return retArr;
@@ -1176,9 +1174,7 @@ class WebGLFunctionNode extends FunctionNode {
 
     // handle more complex types
     // argument may have come from a parent
-    let synonymName = this.getKernelArgumentName(name);
-
-    const markupName = `${origin}_${synonymName || name}`;
+    const markupName = `${origin}_${name}`;
 
     switch (type) {
       case 'Array(2)':
@@ -1432,8 +1428,9 @@ class WebGLFunctionNode extends FunctionNode {
           case 'Array':
           case 'Input':
             if (targetType === argumentType) {
-              this.triggerTrackArgumentSynonym(this.name, argument.name, functionName, i);
-              this.astGeneric(argument, retArr);
+              if (argument.type !== 'Identifier') throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
+              this.triggerImplyArgumentBitRatio(this.name, argument.name, functionName, i);
+              retArr.push(`user_${argument.name},user_${argument.name}Size,user_${argument.name}Dim`);
               continue;
             }
             break;

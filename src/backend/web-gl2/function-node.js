@@ -33,12 +33,7 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
         retArr.push(`user_${idtNode.name}`);
       }
     } else {
-      const userArgumentName = this.getKernelArgumentName(idtNode.name);
-      if (userArgumentName) {
-        retArr.push(`user_${userArgumentName}`);
-      } else {
-        retArr.push(`user_${idtNode.name}`);
-      }
+      retArr.push(`user_${idtNode.name}`);
     }
 
     return retArr;

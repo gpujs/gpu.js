@@ -139,12 +139,7 @@ class CPUFunctionNode extends FunctionNode {
         if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
           retArr.push('constants_' + idtNode.name);
         } else {
-          const name = this.getKernelArgumentName(idtNode.name);
-          if (name) {
-            retArr.push('user_' + name);
-          } else {
-            retArr.push('user_' + idtNode.name);
-          }
+          retArr.push('user_' + idtNode.name);
         }
     }
 
@@ -500,8 +495,7 @@ class CPUFunctionNode extends FunctionNode {
 
     // handle more complex types
     // argument may have come from a parent
-    const synonymName = this.getKernelArgumentName(name);
-    const markupName = `${origin}_${synonymName || name}`;
+    const markupName = `${origin}_${name}`;
 
     switch (type) {
       case 'Array(2)':
@@ -521,7 +515,7 @@ class CPUFunctionNode extends FunctionNode {
           isInput = this.constantTypes[name] === 'Input';
           size = isInput ? constant.size : null;
         } else {
-          isInput = this.isInput(synonymName || name);
+          isInput = this.isInput(name);
           size = isInput ? this.argumentSizes[this.argumentNames.indexOf(name)] : null;
         }
         retArr.push(`${ markupName }`);

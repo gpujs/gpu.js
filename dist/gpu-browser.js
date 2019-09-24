@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0
- * @date Tue Sep 17 2019 10:31:32 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.1
+ * @date Tue Sep 24 2019 09:38:44 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -5509,12 +5509,7 @@ class CPUFunctionNode extends FunctionNode {
         if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
           retArr.push('constants_' + idtNode.name);
         } else {
-          const name = this.getKernelArgumentName(idtNode.name);
-          if (name) {
-            retArr.push('user_' + name);
-          } else {
-            retArr.push('user_' + idtNode.name);
-          }
+          retArr.push('user_' + idtNode.name);
         }
     }
 
@@ -5812,8 +5807,7 @@ class CPUFunctionNode extends FunctionNode {
       }
     }
 
-    const synonymName = this.getKernelArgumentName(name);
-    const markupName = `${origin}_${synonymName || name}`;
+    const markupName = `${origin}_${name}`;
 
     switch (type) {
       case 'Array(2)':
@@ -5833,7 +5827,7 @@ class CPUFunctionNode extends FunctionNode {
           isInput = this.constantTypes[name] === 'Input';
           size = isInput ? constant.size : null;
         } else {
-          isInput = this.isInput(synonymName || name);
+          isInput = this.isInput(name);
           size = isInput ? this.argumentSizes[this.argumentNames.indexOf(name)] : null;
         }
         retArr.push(`${ markupName }`);
@@ -6058,10 +6052,10 @@ function cpuKernelString(cpuKernel, name) {
       }
     })
     beforeReturn.push(flattenedImageTo3DArray);
-    thisProperties.push(`    _imageTo2DArray,`);
+    thisProperties.push(`    _mediaTo2DArray,`);
     thisProperties.push(`    _imageTo3DArray,`);
   } else if (cpuKernel.argumentTypes.indexOf('HTMLImage') !== -1 || constantTypes.indexOf('HTMLImage') !== -1) {
-    const flattenedImageTo2DArray = utils.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel._imageTo2DArray.toString(), {
+    const flattenedImageTo2DArray = utils.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel._mediaTo2DArray.toString(), {
       findDependency: (object, name) => {
         return null;
       },
@@ -6076,7 +6070,7 @@ function cpuKernelString(cpuKernel, name) {
       }
     });
     beforeReturn.push(flattenedImageTo2DArray);
-    thisProperties.push(`    _imageTo2DArray,`);
+    thisProperties.push(`    _mediaTo2DArray,`);
   }
 
   return `function(settings) {
@@ -6327,7 +6321,8 @@ class CPUKernel extends Kernel {
       const type = this.constantTypes[p];
       switch (type) {
         case 'HTMLImage':
-          result.push(`    const constants_${p} = this._imageTo2DArray(this.constants.${p});\n`);
+        case 'HTMLVideo':
+          result.push(`    const constants_${p} = this._mediaTo2DArray(this.constants.${p});\n`);
           break;
         case 'HTMLImageArray':
           result.push(`    const constants_${p} = this._imageTo3DArray(this.constants.${p});\n`);
@@ -6348,7 +6343,8 @@ class CPUKernel extends Kernel {
       const variableName = `user_${this.argumentNames[i]}`;
       switch (this.argumentTypes[i]) {
         case 'HTMLImage':
-          result.push(`    ${variableName} = this._imageTo2DArray(${variableName});\n`);
+        case 'HTMLVideo':
+          result.push(`    ${variableName} = this._mediaTo2DArray(${variableName});\n`);
           break;
         case 'HTMLImageArray':
           result.push(`    ${variableName} = this._imageTo3DArray(${variableName});\n`);
@@ -6383,22 +6379,24 @@ class CPUKernel extends Kernel {
     return result.join('');
   }
 
-  _imageTo2DArray(image) {
+  _mediaTo2DArray(media) {
     const canvas = this.canvas;
-    if (canvas.width < image.width) {
-      canvas.width = image.width;
+    const width = media.width > 0 ? media.width : media.videoWidth;
+    const height = media.height > 0 ? media.height : media.videoHeight;
+    if (canvas.width < width) {
+      canvas.width = width;
     }
-    if (canvas.height < image.height) {
-      canvas.height = image.height;
+    if (canvas.height < height) {
+      canvas.height = height;
     }
     const ctx = this.context;
-    ctx.drawImage(image, 0, 0, image.width, image.height);
-    const pixelsData = ctx.getImageData(0, 0, image.width, image.height).data;
-    const imageArray = new Array(image.height);
+    ctx.drawImage(media, 0, 0, width, height);
+    const pixelsData = ctx.getImageData(0, 0, width, height).data;
+    const imageArray = new Array(height);
     let index = 0;
-    for (let y = image.height - 1; y >= 0; y--) {
-      const row = imageArray[y] = new Array(image.width);
-      for (let x = 0; x < image.width; x++) {
+    for (let y = height - 1; y >= 0; y--) {
+      const row = imageArray[y] = new Array(width);
+      for (let x = 0; x < width; x++) {
         const pixel = new Float32Array(4);
         pixel[0] = pixelsData[index++] / 255; 
         pixel[1] = pixelsData[index++] / 255; 
@@ -6418,7 +6416,7 @@ class CPUKernel extends Kernel {
   _imageTo3DArray(images) {
     const imagesArray = new Array(images.length);
     for (let i = 0; i < images.length; i++) {
-      imagesArray[i] = this._imageTo2DArray(images[i]);
+      imagesArray[i] = this._mediaTo2DArray(images[i]);
     }
     return imagesArray;
   }
@@ -6637,7 +6635,7 @@ class FunctionBuilder {
     }
 
     for (let i = 0; i < kernelConstants.length; i++) {
-      const kernelConstant = kernelConstants[i]
+      const kernelConstant = kernelConstants[i];
       constantTypes[kernelConstant.name] = kernelConstant.type;
     }
 
@@ -6669,12 +6667,8 @@ class FunctionBuilder {
       functionBuilder.assignArgumentType(functionName, i, argumentType, requestingNode);
     };
 
-    const triggerTrackArgumentSynonym = (functionName, argumentName, calleeFunctionName, argumentIndex) => {
-      functionBuilder.trackArgumentSynonym(functionName, argumentName, calleeFunctionName, argumentIndex);
-    };
-
-    const lookupArgumentSynonym = (originFunctionName, functionName, argumentName) => {
-      return functionBuilder.lookupArgumentSynonym(originFunctionName, functionName, argumentName);
+    const triggerImplyArgumentBitRatio = (functionName, argumentName, calleeFunctionName, argumentIndex) => {
+      functionBuilder.assignArgumentBitRatio(functionName, argumentName, calleeFunctionName, argumentIndex);
     };
 
     const onFunctionCall = (functionName, calleeFunctionName, args) => {
@@ -6698,8 +6692,7 @@ class FunctionBuilder {
         needsArgumentType,
         assignArgumentType,
         triggerImplyArgumentType,
-        triggerTrackArgumentSynonym,
-        lookupArgumentSynonym,
+        triggerImplyArgumentBitRatio,
         onFunctionCall,
         warnVarUsage,
       }));
@@ -6717,8 +6710,7 @@ class FunctionBuilder {
       needsArgumentType,
       assignArgumentType,
       triggerImplyArgumentType,
-      triggerTrackArgumentSynonym,
-      lookupArgumentSynonym,
+      triggerImplyArgumentBitRatio,
       onFunctionCall,
       optimizeFloatMemory,
       precision,
@@ -6769,8 +6761,7 @@ class FunctionBuilder {
         needsArgumentType,
         assignArgumentType,
         triggerImplyArgumentType,
-        triggerTrackArgumentSynonym,
-        lookupArgumentSynonym,
+        triggerImplyArgumentBitRatio,
         onFunctionCall,
       }));
     }
@@ -6989,7 +6980,6 @@ class FunctionBuilder {
     }
 
     return null;
-
   }
 
   _getFunction(functionName) {
@@ -7043,17 +7033,18 @@ class FunctionBuilder {
       const i = this.rootNode.argumentNames.indexOf(argumentName);
       if (i !== -1) {
         return this.rootNode.argumentBitRatios[i];
-      } else {
-        throw new Error('argument bit ratio not found');
       }
-    } else {
-      const node = this._getFunction(functionName);
-      const argumentSynonym = node.argumentSynonym[node.synonymIndex];
-      if (!argumentSynonym) {
-        throw new Error('argument synonym not found');
-      }
-      return this.lookupFunctionArgumentBitRatio(argumentSynonym.functionName, argumentSynonym.argumentName);
     }
+    const node = this._getFunction(functionName);
+    const i = node.argumentNames.indexOf(argumentName);
+    if (i === -1) {
+      throw new Error('argument not found');
+    }
+    const bitRatio = node.argumentBitRatios[i];
+    if (typeof bitRatio !== 'number') {
+      throw new Error('argument bit ratio not found');
+    }
+    return bitRatio;
   }
 
   needsArgumentType(functionName, i) {
@@ -7070,37 +7061,29 @@ class FunctionBuilder {
     }
   }
 
-  trackArgumentSynonym(functionName, argumentName, calleeFunctionName, argumentIndex) {
-    if (!this._isFunction(calleeFunctionName)) return;
-    const node = this._getFunction(calleeFunctionName);
-    if (!node.argumentSynonym) {
-      node.argumentSynonym = {};
-    }
-    const calleeArgumentName = node.argumentNames[argumentIndex];
-    if (!node.argumentSynonym[calleeArgumentName]) {
-      node.argumentSynonym[calleeArgumentName] = {};
-    }
-    node.synonymIndex++;
-    node.argumentSynonym[node.synonymIndex] = {
-      functionName,
-      argumentName,
-      calleeArgumentName,
-      calleeFunctionName,
-    };
-  }
-
-  lookupArgumentSynonym(originFunctionName, functionName, argumentName) {
-    if (originFunctionName === functionName) return argumentName;
-    if (!this._isFunction(functionName)) return null;
+  assignArgumentBitRatio(functionName, argumentName, calleeFunctionName, argumentIndex) {
     const node = this._getFunction(functionName);
-    const argumentSynonym = node.argumentSynonym[node.synonymUseIndex];
-    if (!argumentSynonym) return null;
-    if (argumentSynonym.calleeArgumentName !== argumentName) return null;
-    node.synonymUseIndex++;
-    if (originFunctionName !== functionName) {
-      return this.lookupArgumentSynonym(originFunctionName, argumentSynonym.functionName, argumentSynonym.argumentName);
+    const calleeNode = this._getFunction(calleeFunctionName);
+    const i = node.argumentNames.indexOf(argumentName);
+    if (i === -1) {
+      throw new Error(`Argument ${argumentName} not found in arguments from function ${functionName}`);
     }
-    return argumentSynonym.argumentName;
+    const bitRatio = node.argumentBitRatios[i];
+    if (typeof bitRatio !== 'number') {
+      throw new Error(`Bit ratio for argument ${argumentName} not found in function ${functionName}`);
+    }
+    if (!calleeNode.argumentBitRatios) {
+      calleeNode.argumentBitRatios = new Array(calleeNode.argumentNames.length);
+    }
+    const calleeBitRatio = calleeNode.argumentBitRatios[i];
+    if (typeof calleeBitRatio === 'number') {
+      if (calleeBitRatio !== bitRatio) {
+        throw new Error(`Incompatible bit ratio found at function ${functionName} at argument ${argumentName}`);
+      }
+      return calleeBitRatio;
+    }
+    calleeNode.argumentBitRatios[i] = bitRatio;
+    return bitRatio;
   }
 
   trackFunctionCall(functionName, calleeFunctionName, args) {
@@ -7183,8 +7166,7 @@ class FunctionNode {
     this.lookupFunctionArgumentTypes = null;
     this.lookupFunctionArgumentBitRatio = null;
     this.triggerImplyArgumentType = null;
-    this.triggerTrackArgumentSynonym = null;
-    this.lookupArgumentSynonym = null;
+    this.triggerImplyArgumentBitRatio = null;
     this.onNestedFunction = null;
     this.onFunctionCall = null;
     this.optimizeFloatMemory = null;
@@ -7213,9 +7195,6 @@ class FunctionNode {
       }
     }
 
-    this.synonymIndex = -1;
-    this.synonymUseIndex = 0;
-    this.argumentSynonym = {};
     this.literalTypes = {};
 
     this.validate();
@@ -7440,13 +7419,6 @@ class FunctionNode {
       }
     }
     throw new Error(`Type for constant "${ constantName }" not declared`);
-  }
-
-  getKernelArgumentName(name) {
-    if (!this.lookupArgumentSynonym) return null;
-    const argumentIndex = this.argumentNames.indexOf(name);
-    if (argumentIndex === -1) return null;
-    return this.lookupArgumentSynonym('kernel', this.name, name);
   }
 
   toString() {
@@ -7776,6 +7748,11 @@ class FunctionNode {
       case 'AssignmentExpression':
         this.getDependencies(ast.left, dependencies, isNotSafe);
         this.getDependencies(ast.right, dependencies, isNotSafe);
+        return dependencies;
+      case 'ConditionalExpression':
+        this.getDependencies(ast.test, dependencies, isNotSafe);
+        this.getDependencies(ast.alternate, dependencies, isNotSafe);
+        this.getDependencies(ast.consequent, dependencies, isNotSafe);
         return dependencies;
       case 'Literal':
         dependencies.push({
@@ -8546,6 +8523,7 @@ class FunctionTracer {
   }
 
   scan(ast) {
+    if (!ast) return;
     if (Array.isArray(ast)) {
       for (let i = 0; i < ast.length; i++) {
         this.scan(ast[i]);
@@ -8562,16 +8540,15 @@ class FunctionTracer {
         });
         break;
       case 'AssignmentExpression':
+      case 'LogicalExpression':
         this.scan(ast.left);
         this.scan(ast.right);
         break;
       case 'BinaryExpression':
         this.scan(ast.left);
-        if (ast.right) this.scan(ast.right);
+        this.scan(ast.right);
         break;
       case 'UpdateExpression':
-        this.scan(ast.argument);
-        break;
       case 'UnaryExpression':
         this.scan(ast.argument);
         break;
@@ -8608,14 +8585,10 @@ class FunctionTracer {
         break;
       case 'ForStatement':
         this.newContext(() => {
-          if (ast.init) {
-            this.inLoopInit = true;
-            this.scan(ast.init);
-            this.inLoopInit = false;
-          }
-          if (ast.test) {
-            this.scan(ast.test);
-          }
+          this.inLoopInit = true;
+          this.scan(ast.init);
+          this.inLoopInit = false;
+          this.scan(ast.test);
           this.scan(ast.update);
           this.newContext(() => {
             this.scan(ast.body);
@@ -8646,8 +8619,6 @@ class FunctionTracer {
       case 'ExpressionStatement':
         this.scan(ast.expression);
         break;
-      case 'ThisExpression':
-        break;
       case 'CallExpression':
         this.functionCalls.push({
           context: this.currentContext,
@@ -8668,21 +8639,18 @@ class FunctionTracer {
         this.scan(ast.cases);
         break;
       case 'SwitchCase':
-        if (ast.test) this.scan(ast.test);
+        this.scan(ast.test);
         this.scan(ast.consequent);
         break;
-      case 'LogicalExpression':
-        this.scan(ast.left);
-        this.scan(ast.right);
-        break;
+
+      case 'ThisExpression':
       case 'Literal':
-        break;
       case 'DebuggerStatement':
-        break;
       case 'EmptyStatement':
-        break;
       case 'BreakStatement':
+      case 'ContinueStatement':
         break;
+
       default:
         throw new Error(`unhandled type "${ast.type}"`);
     }
@@ -8692,6 +8660,7 @@ class FunctionTracer {
 module.exports = {
   FunctionTracer,
 };
+
 },{}],12:[function(require,module,exports){
 const { glWiretap } = require('gl-wiretap');
 const { utils } = require('../../utils');
@@ -10273,6 +10242,7 @@ class HeadlessGLKernel extends WebGLKernel {
       isDrawBuffers,
       kernelMap: isDrawBuffers,
       channelCount: this.getChannelCount(),
+      maxTextureSize: this.getMaxTextureSize(),
     });
   }
 
@@ -10288,6 +10258,10 @@ class HeadlessGLKernel extends WebGLKernel {
     return testExtensions.WEBGL_draw_buffers ?
       testContext.getParameter(testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL) :
       1;
+  }
+
+  static getMaxTextureSize() {
+    return testContext.getParameter(testContext.MAX_TEXTURE_SIZE);
   }
 
   static get testCanvas() {
@@ -10893,7 +10867,6 @@ class Kernel {
 module.exports = {
   Kernel
 };
-
 },{"../input":108,"../utils":112}],36:[function(require,module,exports){
 const fragmentShader = `__HEADER__;
 __FLOAT_TACTIC_DECLARATION__;
@@ -11363,10 +11336,12 @@ class WebGLFunctionNode extends FunctionNode {
         if (!type) {
           throw this.astErrorOutput('Unexpected expression', ast);
         }
-        retArr.push(type);
-        retArr.push(' ');
-        retArr.push('user_');
-        retArr.push(argumentName);
+
+        if (type === 'sampler2D' || type === 'sampler2DArray') {
+          retArr.push(`${type} user_${argumentName},ivec2 user_${argumentName}Size,ivec3 user_${argumentName}Dim`);
+        } else {
+          retArr.push(`${type} user_${argumentName}`);
+        }
       }
     }
 
@@ -11826,12 +11801,7 @@ class WebGLFunctionNode extends FunctionNode {
         retArr.push(`user_${idtNode.name}`);
       }
     } else {
-      const userArgumentName = this.getKernelArgumentName(idtNode.name);
-      if (userArgumentName) {
-        retArr.push(`user_${userArgumentName}`);
-      } else {
-        retArr.push(`user_${idtNode.name}`);
-      }
+      retArr.push(`user_${idtNode.name}`);
     }
 
     return retArr;
@@ -12339,9 +12309,7 @@ class WebGLFunctionNode extends FunctionNode {
       }
     }
 
-    let synonymName = this.getKernelArgumentName(name);
-
-    const markupName = `${origin}_${synonymName || name}`;
+    const markupName = `${origin}_${name}`;
 
     switch (type) {
       case 'Array(2)':
@@ -12566,11 +12534,9 @@ class WebGLFunctionNode extends FunctionNode {
           case 'Array(2)':
           case 'Array(3)':
           case 'Array(4)':
-            if (targetType === argumentType) {
-              this.astGeneric(argument, retArr);
-              continue;
-            }
-            break;
+          case 'HTMLImage':
+          case 'HTMLImageArray':
+          case 'HTMLVideo':
           case 'ArrayTexture(1)':
           case 'ArrayTexture(2)':
           case 'ArrayTexture(3)':
@@ -12578,8 +12544,9 @@ class WebGLFunctionNode extends FunctionNode {
           case 'Array':
           case 'Input':
             if (targetType === argumentType) {
-              this.triggerTrackArgumentSynonym(this.name, argument.name, functionName, i);
-              this.astGeneric(argument, retArr);
+              if (argument.type !== 'Identifier') throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
+              this.triggerImplyArgumentBitRatio(this.name, argument.name, functionName, i);
+              retArr.push(`user_${argument.name},user_${argument.name}Size,user_${argument.name}Dim`);
               continue;
             }
             break;
@@ -12663,6 +12630,9 @@ const typeMap = {
   'ArrayTexture(2)': 'sampler2D',
   'ArrayTexture(3)': 'sampler2D',
   'ArrayTexture(4)': 'sampler2D',
+  'HTMLVideo': 'sampler2D',
+  'HTMLImage': 'sampler2D',
+  'HTMLImageArray': 'sampler2DArray',
 };
 
 const operatorMap = {
@@ -12768,7 +12738,7 @@ const kernelValueMaps = {
       'ArrayTexture(2)': WebGLKernelValueNumberTexture,
       'ArrayTexture(3)': WebGLKernelValueNumberTexture,
       'ArrayTexture(4)': WebGLKernelValueNumberTexture,
-      'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
+      'MemoryOptimizedNumberTexture': WebGLKernelValueMemoryOptimizedNumberTexture,
       'HTMLImage': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueHTMLVideo,
@@ -12792,7 +12762,6 @@ const kernelValueMaps = {
       'Array3D(2)': WebGLKernelValueDynamicSingleArray3DI,
       'Array3D(3)': WebGLKernelValueDynamicSingleArray3DI,
       'Array3D(4)': WebGLKernelValueDynamicSingleArray3DI,
-      'Array': WebGLKernelValueDynamicSingleArray,
       'Input': WebGLKernelValueDynamicSingleInput,
       'NumberTexture': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(1)': WebGLKernelValueDynamicNumberTexture,
@@ -12858,8 +12827,10 @@ function lookupKernelValueType(type, dynamic, precision, value) {
 }
 
 module.exports = {
-  lookupKernelValueType
+  lookupKernelValueType,
+  kernelValueMaps,
 };
+
 },{"./kernel-value/boolean":39,"./kernel-value/dynamic-html-image":40,"./kernel-value/dynamic-html-video":41,"./kernel-value/dynamic-memory-optimized-number-texture":42,"./kernel-value/dynamic-number-texture":43,"./kernel-value/dynamic-single-array":44,"./kernel-value/dynamic-single-array1d-i":45,"./kernel-value/dynamic-single-array2d-i":46,"./kernel-value/dynamic-single-array3d-i":47,"./kernel-value/dynamic-single-input":48,"./kernel-value/dynamic-unsigned-array":49,"./kernel-value/dynamic-unsigned-input":50,"./kernel-value/float":51,"./kernel-value/html-image":52,"./kernel-value/html-video":53,"./kernel-value/integer":55,"./kernel-value/memory-optimized-number-texture":56,"./kernel-value/number-texture":57,"./kernel-value/single-array":58,"./kernel-value/single-array1d-i":59,"./kernel-value/single-array2":60,"./kernel-value/single-array2d-i":61,"./kernel-value/single-array3":62,"./kernel-value/single-array3d-i":63,"./kernel-value/single-array4":64,"./kernel-value/single-input":65,"./kernel-value/unsigned-array":66,"./kernel-value/unsigned-input":67}],39:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
@@ -12904,6 +12875,7 @@ class WebGLKernelValueDynamicHTMLImage extends WebGLKernelValueHTMLImage {
 
   updateValue(value) {
     const { width, height } = value;
+    this.checkSize(width, height);
     this.dimensions = [width, height, 1];
     this.textureSize = [width, height];
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
@@ -12916,7 +12888,6 @@ module.exports = {
   WebGLKernelValueDynamicHTMLImage
 };
 },{"../../../utils":112,"./html-image":52}],41:[function(require,module,exports){
-const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicHTMLImage } = require('./dynamic-html-image');
 
 class WebGLKernelValueDynamicHTMLVideo extends WebGLKernelValueDynamicHTMLImage {}
@@ -12924,7 +12895,8 @@ class WebGLKernelValueDynamicHTMLVideo extends WebGLKernelValueDynamicHTMLImage 
 module.exports = {
   WebGLKernelValueDynamicHTMLVideo
 };
-},{"../../../utils":112,"./dynamic-html-image":40}],42:[function(require,module,exports){
+
+},{"./dynamic-html-image":40}],42:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueMemoryOptimizedNumberTexture } = require('./memory-optimized-number-texture');
 
@@ -12938,6 +12910,7 @@ class WebGLKernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelVal
   }
 
   updateValue(inputTexture) {
+    this.checkSize(inputTexture.size[0], inputTexture.size[1]);
     this.dimensions = inputTexture.dimensions;
     this.textureSize = inputTexture.size;
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
@@ -12964,6 +12937,7 @@ class WebGLKernelValueDynamicNumberTexture extends WebGLKernelValueNumberTexture
 
   updateValue(value) {
     this.dimensions = value.dimensions;
+    this.checkSize(value.size[0], value.size[1]);
     this.textureSize = value.size;
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
@@ -12991,6 +12965,7 @@ class WebGLKernelValueDynamicSingleArray extends WebGLKernelValueSingleArray {
     this.dimensions = utils.getDimensions(value, true);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
@@ -13025,6 +13000,7 @@ class WebGLKernelValueDynamicSingleArray1DI extends WebGLKernelValueSingleArray1
 module.exports = {
   WebGLKernelValueDynamicSingleArray1DI
 };
+
 },{"../../../utils":112,"./single-array1d-i":59}],46:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray2DI } = require('./single-array2d-i');
@@ -13049,6 +13025,7 @@ class WebGLKernelValueDynamicSingleArray2DI extends WebGLKernelValueSingleArray2
 module.exports = {
   WebGLKernelValueDynamicSingleArray2DI
 };
+
 },{"../../../utils":112,"./single-array2d-i":61}],47:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray3DI } = require('./single-array3d-i');
@@ -13073,6 +13050,7 @@ class WebGLKernelValueDynamicSingleArray3DI extends WebGLKernelValueSingleArray3
 module.exports = {
   WebGLKernelValueDynamicSingleArray3DI
 };
+
 },{"../../../utils":112,"./single-array3d-i":63}],48:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleInput } = require('./single-input');
@@ -13091,6 +13069,7 @@ class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
@@ -13118,6 +13097,7 @@ class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray
     this.dimensions = utils.getDimensions(value, true);
     this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.checkSize(this.textureSize[0] * (4 / this.bitRatio), this.textureSize[1] * (4 / this.bitRatio));
     const Type = this.getTransferArrayType(value);
     this.preUploadValue = new Type(this.uploadArrayLength);
     this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
@@ -13148,6 +13128,7 @@ class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.checkSize(this.textureSize[0] * (4 / this.bitRatio), this.textureSize[1] * (4 / this.bitRatio));
     const Type = this.getTransferArrayType(value.value);
     this.preUploadValue = new Type(this.uploadArrayLength);
     this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
@@ -13199,6 +13180,7 @@ class WebGLKernelValueHTMLImage extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
     const { width, height } = value;
+    this.checkSize(width, height);
     this.dimensions = [width, height, 1];
     this.requestTexture();
     this.textureSize = [width, height];
@@ -13263,6 +13245,18 @@ class WebGLKernelValue extends KernelValue {
     this.uploadValue = null;
     this.textureSize = null;
     this.bitRatio = null;
+  }
+
+  checkSize(width, height) {
+    if (!this.kernel.validate) return;
+    const { maxTextureSize } = this.kernel.constructor.features;
+    if (width > maxTextureSize || height > maxTextureSize) {
+      if (width > height) {
+        throw new Error(`Argument width of ${width} larger than maximum size of ${maxTextureSize} for your GPU`);
+      } else {
+        throw new Error(`Argument height of ${height} larger than maximum size of ${maxTextureSize} for your GPU`);
+      }
+    }
   }
 
   requestTexture() {
@@ -13366,6 +13360,7 @@ class WebGLKernelValue extends KernelValue {
 module.exports = {
   WebGLKernelValue
 };
+
 },{"../../../input":108,"../../../utils":112,"../../kernel-value":34}],55:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
@@ -13401,6 +13396,8 @@ const { WebGLKernelValue } = require('./index');
 class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
+    const [width, height] = value.size;
+    this.checkSize(width, height);
     this.setupTexture();
     this.dimensions = value.dimensions;
     this.textureSize = value.size;
@@ -13444,6 +13441,8 @@ const { WebGLKernelValue } = require('./index');
 class WebGLKernelValueNumberTexture extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
+    const [width, height] = value.size;
+    this.checkSize(width, height);
     this.setupTexture();
     const { size: textureSize, dimensions } = value;
     this.bitRatio = this.getBitRatio(value);
@@ -13494,6 +13493,7 @@ class WebGLKernelValueSingleArray extends WebGLKernelValue {
     this.dimensions = utils.getDimensions(value, true);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
 
@@ -13550,6 +13550,7 @@ class WebGLKernelValueSingleArray1DI extends WebGLKernelValue {
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
     this.dimensions = new Int32Array([valueDimensions[1], 1, 1]);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
 
@@ -13589,6 +13590,7 @@ class WebGLKernelValueSingleArray1DI extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueSingleArray1DI
 };
+
 },{"../../../utils":112,"./index":54}],60:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
@@ -13635,6 +13637,7 @@ class WebGLKernelValueSingleArray2DI extends WebGLKernelValue {
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
     this.dimensions = new Int32Array([valueDimensions[1], valueDimensions[2], 1]);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
 
@@ -13674,6 +13677,7 @@ class WebGLKernelValueSingleArray2DI extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueSingleArray2DI
 };
+
 },{"../../../utils":112,"./index":54}],62:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
@@ -13720,6 +13724,7 @@ class WebGLKernelValueSingleArray3DI extends WebGLKernelValue {
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
     this.dimensions = new Int32Array([valueDimensions[1], valueDimensions[2], valueDimensions[3]]);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
 
@@ -13759,6 +13764,7 @@ class WebGLKernelValueSingleArray3DI extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueSingleArray3DI
 };
+
 },{"../../../utils":112,"./index":54}],64:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
@@ -13801,6 +13807,7 @@ class WebGLKernelValueSingleInput extends WebGLKernelValue {
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
 
@@ -13852,6 +13859,7 @@ class WebGLKernelValueUnsignedArray extends WebGLKernelValue {
     this.dimensions = utils.getDimensions(value, true);
     this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.checkSize(this.textureSize[0] * (4 / this.bitRatio), this.textureSize[1] * (4 / this.bitRatio));
     this.TranserArrayType = this.getTransferArrayType(value);
     this.preUploadValue = new this.TranserArrayType(this.uploadArrayLength);
     this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
@@ -13907,6 +13915,7 @@ class WebGLKernelValueUnsignedInput extends WebGLKernelValue {
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.checkSize(this.textureSize[0] * (4 / this.bitRatio), this.textureSize[1] * (4 / this.bitRatio));
     this.TranserArrayType = this.getTransferArrayType(value.value);
     this.preUploadValue = new this.TranserArrayType(this.uploadArrayLength);
     this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
@@ -14015,6 +14024,7 @@ class WebGLKernel extends GLKernel {
       isDrawBuffers,
       kernelMap: isDrawBuffers,
       channelCount: this.getChannelCount(),
+      maxTextureSize: this.getMaxTextureSize(),
     });
   }
 
@@ -14030,6 +14040,10 @@ class WebGLKernel extends GLKernel {
     return testExtensions.WEBGL_draw_buffers ?
       testContext.getParameter(testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL) :
       1;
+  }
+
+  static getMaxTextureSize() {
+    return testContext.getParameter(testContext.MAX_TEXTURE_SIZE);
   }
 
   static lookupKernelValueType(type, dynamic, precision, value) {
@@ -15791,12 +15805,7 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
         retArr.push(`user_${idtNode.name}`);
       }
     } else {
-      const userArgumentName = this.getKernelArgumentName(idtNode.name);
-      if (userArgumentName) {
-        retArr.push(`user_${userArgumentName}`);
-      } else {
-        retArr.push(`user_${idtNode.name}`);
-      }
+      retArr.push(`user_${idtNode.name}`);
     }
 
     return retArr;
@@ -15814,8 +15823,8 @@ const { WebGL2KernelValueInteger } = require('./kernel-value/integer');
 const { WebGL2KernelValueHTMLImage } = require('./kernel-value/html-image');
 const { WebGL2KernelValueDynamicHTMLImage } = require('./kernel-value/dynamic-html-image');
 
-const { WebGL2KernelValueHtmlImageArray } = require('./kernel-value/html-image-array');
-const { WebGL2KernelValueDynamicHtmlImageArray } = require('./kernel-value/dynamic-html-image-array');
+const { WebGL2KernelValueHTMLImageArray } = require('./kernel-value/html-image-array');
+const { WebGL2KernelValueDynamicHTMLImageArray } = require('./kernel-value/dynamic-html-image-array');
 
 const { WebGL2KernelValueHTMLVideo } = require('./kernel-value/html-video');
 const { WebGL2KernelValueDynamicHTMLVideo } = require('./kernel-value/dynamic-html-video');
@@ -15878,7 +15887,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueDynamicHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
     static: {
@@ -15906,7 +15915,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
   },
@@ -15936,7 +15945,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueDynamicHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
     static: {
@@ -15964,7 +15973,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
   },
@@ -15993,8 +16002,10 @@ function lookupKernelValueType(type, dynamic, precision, value) {
 }
 
 module.exports = {
+  kernelValueMaps,
   lookupKernelValueType
 };
+
 },{"./kernel-value/boolean":73,"./kernel-value/dynamic-html-image":75,"./kernel-value/dynamic-html-image-array":74,"./kernel-value/dynamic-html-video":76,"./kernel-value/dynamic-memory-optimized-number-texture":77,"./kernel-value/dynamic-number-texture":78,"./kernel-value/dynamic-single-array":79,"./kernel-value/dynamic-single-array1d-i":80,"./kernel-value/dynamic-single-array2d-i":81,"./kernel-value/dynamic-single-array3d-i":82,"./kernel-value/dynamic-single-input":83,"./kernel-value/dynamic-unsigned-array":84,"./kernel-value/dynamic-unsigned-input":85,"./kernel-value/float":86,"./kernel-value/html-image":88,"./kernel-value/html-image-array":87,"./kernel-value/html-video":89,"./kernel-value/integer":90,"./kernel-value/memory-optimized-number-texture":91,"./kernel-value/number-texture":92,"./kernel-value/single-array":93,"./kernel-value/single-array1d-i":94,"./kernel-value/single-array2":95,"./kernel-value/single-array2d-i":96,"./kernel-value/single-array3":97,"./kernel-value/single-array3d-i":98,"./kernel-value/single-array4":99,"./kernel-value/single-input":100,"./kernel-value/unsigned-array":101,"./kernel-value/unsigned-input":102}],73:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('../../web-gl/kernel-value/boolean');
 
@@ -16004,9 +16015,9 @@ module.exports = {
   WebGL2KernelValueBoolean
 };
 },{"../../web-gl/kernel-value/boolean":39}],74:[function(require,module,exports){
-const { WebGL2KernelValueHtmlImageArray } = require('./html-image-array');
+const { WebGL2KernelValueHTMLImageArray } = require('./html-image-array');
 
-class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageArray {
+class WebGL2KernelValueDynamicHTMLImageArray extends WebGL2KernelValueHTMLImageArray {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
@@ -16017,6 +16028,7 @@ class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageA
   }
 
   updateValue(images) {
+    this.checkSize(images[0].width, images[0].height);
     this.dimensions = [images[0].width, images[0].height, images.length];
     this.textureSize = [images[0].width, images[0].height];
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
@@ -16026,8 +16038,9 @@ class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageA
 }
 
 module.exports = {
-  WebGL2KernelValueDynamicHtmlImageArray
+  WebGL2KernelValueDynamicHTMLImageArray
 };
+
 },{"./html-image-array":87}],75:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicHTMLImage } = require('../../web-gl/kernel-value/dynamic-html-image');
@@ -16108,6 +16121,7 @@ class WebGL2KernelValueDynamicSingleArray extends WebGL2KernelValueSingleArray {
     this.dimensions = utils.getDimensions(value, true);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
@@ -16212,6 +16226,7 @@ class WebGL2KernelValueDynamicSingleInput extends WebGL2KernelValueSingleInput {
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
@@ -16271,9 +16286,10 @@ module.exports = {
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('../../web-gl/kernel-value/index');
 
-class WebGL2KernelValueHtmlImageArray extends WebGLKernelValue {
+class WebGL2KernelValueHTMLImageArray extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
+    this.checkSize(value[0].width, value[0].height);
     this.requestTexture();
     this.dimensions = [value[0].width, value[0].height, value.length];
     this.textureSize = [value[0].width, value[0].height];
@@ -16332,8 +16348,9 @@ class WebGL2KernelValueHtmlImageArray extends WebGLKernelValue {
 }
 
 module.exports = {
-  WebGL2KernelValueHtmlImageArray
+  WebGL2KernelValueHTMLImageArray
 };
+
 },{"../../../utils":112,"../../web-gl/kernel-value/index":54}],88:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueHTMLImage } = require('../../web-gl/kernel-value/html-image');
@@ -16587,6 +16604,7 @@ class WebGL2KernelValueSingleInput extends WebGLKernelValueSingleInput {
 module.exports = {
   WebGL2KernelValueSingleInput
 };
+
 },{"../../../utils":112,"../../web-gl/kernel-value/single-input":65}],101:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedArray } = require('../../web-gl/kernel-value/unsigned-array');
@@ -16679,6 +16697,7 @@ class WebGL2Kernel extends WebGLKernel {
       kernelMap: true,
       isTextureFloat: true,
       channelCount: this.getChannelCount(),
+      maxTextureSize: this.getMaxTextureSize(),
     });
   }
 
@@ -16692,6 +16711,10 @@ class WebGL2Kernel extends WebGLKernel {
 
   static getChannelCount() {
     return testContext.getParameter(testContext.MAX_DRAW_BUFFERS);
+  }
+
+  static getMaxTextureSize() {
+    return testContext.getParameter(testContext.MAX_TEXTURE_SIZE);
   }
 
   static lookupKernelValueType(type, dynamic, precision, value) {
@@ -17744,13 +17767,17 @@ const { HeadlessGLKernel } = require('./backend/headless-gl/kernel');
 
 const { WebGLFunctionNode } = require('./backend/web-gl/function-node');
 const { WebGLKernel } = require('./backend/web-gl/kernel');
+const { kernelValueMaps: webGLKernelValueMaps } = require('./backend/web-gl/kernel-value-maps');
 
 const { WebGL2FunctionNode } = require('./backend/web-gl2/function-node');
 const { WebGL2Kernel } = require('./backend/web-gl2/kernel');
+const { kernelValueMaps: webGL2KernelValueMaps } = require('./backend/web-gl2/kernel-value-maps');
 
 const { GLKernel } = require('./backend/gl/kernel');
 
 const { Kernel } = require('./backend/kernel');
+
+const { FunctionTracer } = require('./backend/function-tracer');
 
 module.exports = {
   alias,
@@ -17764,14 +17791,21 @@ module.exports = {
   input,
   Texture,
   utils,
+
   WebGL2FunctionNode,
   WebGL2Kernel,
+  webGL2KernelValueMaps,
+
   WebGLFunctionNode,
   WebGLKernel,
+  webGLKernelValueMaps,
+
   GLKernel,
   Kernel,
+  FunctionTracer,
 };
-},{"./alias":5,"./backend/cpu/function-node":6,"./backend/cpu/kernel":8,"./backend/function-builder":9,"./backend/function-node":10,"./backend/gl/kernel":13,"./backend/headless-gl/kernel":33,"./backend/kernel":35,"./backend/web-gl/function-node":37,"./backend/web-gl/kernel":68,"./backend/web-gl2/function-node":71,"./backend/web-gl2/kernel":103,"./gpu":106,"./input":108,"./texture":111,"./utils":112}],108:[function(require,module,exports){
+
+},{"./alias":5,"./backend/cpu/function-node":6,"./backend/cpu/kernel":8,"./backend/function-builder":9,"./backend/function-node":10,"./backend/function-tracer":11,"./backend/gl/kernel":13,"./backend/headless-gl/kernel":33,"./backend/kernel":35,"./backend/web-gl/function-node":37,"./backend/web-gl/kernel":68,"./backend/web-gl/kernel-value-maps":38,"./backend/web-gl2/function-node":71,"./backend/web-gl2/kernel":103,"./backend/web-gl2/kernel-value-maps":72,"./gpu":106,"./input":108,"./texture":111,"./utils":112}],108:[function(require,module,exports){
 class Input {
   constructor(value, size) {
     this.value = value;
