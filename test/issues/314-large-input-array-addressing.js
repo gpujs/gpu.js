@@ -7,7 +7,6 @@ describe('issue #314');
 // after this fix max addressing is 2^31 which is the max a int32 can handle
 // run out of heap before being able to create a butter that big!
 // wanted to use uints but caused more problems than it solved
-WebGLKernel.setupFeatureChecks();
 const DATA_MAX = (GPU.isHeadlessGLSupported ? HeadlessGLKernel : WebGLKernel).features.maxTextureSize*8;
 const divisor = 100;
 const data = new Uint16Array(DATA_MAX);
