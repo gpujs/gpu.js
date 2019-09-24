@@ -28,6 +28,7 @@ class FunctionTracer {
    * @param ast
    */
   scan(ast) {
+    if (!ast) return;
     if (Array.isArray(ast)) {
       for (let i = 0; i < ast.length; i++) {
         this.scan(ast[i]);
@@ -44,16 +45,15 @@ class FunctionTracer {
         });
         break;
       case 'AssignmentExpression':
+      case 'LogicalExpression':
         this.scan(ast.left);
         this.scan(ast.right);
         break;
       case 'BinaryExpression':
         this.scan(ast.left);
-        if (ast.right) this.scan(ast.right);
+        this.scan(ast.right);
         break;
       case 'UpdateExpression':
-        this.scan(ast.argument);
-        break;
       case 'UnaryExpression':
         this.scan(ast.argument);
         break;
@@ -90,14 +90,10 @@ class FunctionTracer {
         break;
       case 'ForStatement':
         this.newContext(() => {
-          if (ast.init) {
-            this.inLoopInit = true;
-            this.scan(ast.init);
-            this.inLoopInit = false;
-          }
-          if (ast.test) {
-            this.scan(ast.test);
-          }
+          this.inLoopInit = true;
+          this.scan(ast.init);
+          this.inLoopInit = false;
+          this.scan(ast.test);
           this.scan(ast.update);
           this.newContext(() => {
             this.scan(ast.body);
@@ -128,8 +124,6 @@ class FunctionTracer {
       case 'ExpressionStatement':
         this.scan(ast.expression);
         break;
-      case 'ThisExpression':
-        break;
       case 'CallExpression':
         this.functionCalls.push({
           context: this.currentContext,
@@ -150,21 +144,18 @@ class FunctionTracer {
         this.scan(ast.cases);
         break;
       case 'SwitchCase':
-        if (ast.test) this.scan(ast.test);
+        this.scan(ast.test);
         this.scan(ast.consequent);
         break;
-      case 'LogicalExpression':
-        this.scan(ast.left);
-        this.scan(ast.right);
-        break;
+
+      case 'ThisExpression':
       case 'Literal':
-        break;
       case 'DebuggerStatement':
-        break;
       case 'EmptyStatement':
-        break;
       case 'BreakStatement':
+      case 'ContinueStatement':
         break;
+
       default:
         throw new Error(`unhandled type "${ast.type}"`);
     }
