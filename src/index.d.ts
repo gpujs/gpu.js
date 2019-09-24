@@ -63,6 +63,7 @@ export type GPUVariableType
   | 'Array1D(4)'
   | 'Array2D(4)'
   | 'Array3D(4)'
+  | 'Boolean'
   | 'HTMLImage'
   | 'HTMLImageArray'
   | 'Number'
@@ -230,6 +231,24 @@ export interface IKernelValueTypes {
   [constantType: string]: GPUVariableType;
 }
 
+export interface IWebGLKernelValueSettings extends IKernelValueSettings {
+  onRequestTexture: () => object;
+  onRequestIndex: () => number;
+}
+
+export interface IKernelValueSettings {
+  name: string;
+  kernel: Kernel;
+  context: WebGLRenderingContext;
+  checkContext?: boolean;
+  onRequestContextHandle: () => number;
+  onUpdateValueMismatch: () => void;
+  origin: 'user' | 'constants';
+  strictIntegers?: boolean;
+  type: GPUVariableType;
+  tactic: Tactic;
+}
+
 export type Tactic = 'speed' | 'balanced' | 'precision';
 
 export interface IConstantsThis {
@@ -296,6 +315,7 @@ export interface IKernelFeatures {
   isIntegerDivisionAccurate: boolean;
   isTextureFloat: boolean;
   channelCount: number;
+  maxTextureSize: number;
 }
 
 export interface IKernelFunctionThis {
@@ -317,6 +337,7 @@ export type KernelVariable =
   | Texture
   | Input
   | HTMLImageElement
+  | HTMLVideoElement
   | HTMLImageElement[]
   | KernelOutput;
 

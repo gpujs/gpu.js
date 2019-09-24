@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU, WebGLKernel } = require('../../src');
 
 describe('issue #314');
 
@@ -7,13 +7,13 @@ describe('issue #314');
 // after this fix max addressing is 2^31 which is the max a int32 can handle
 // run out of heap before being able to create a butter that big!
 // wanted to use uints but caused more problems than it solved
-const DATA_MAX = 8388800*8;
+const DATA_MAX = WebGLKernel.features.maxTextureSize*8;
 const divisor = 100;
 const data = new Uint16Array(DATA_MAX);
-
+let v = 0;
 for (let i = 0; i < DATA_MAX/divisor; i++) {
   for (let j = 0; j < divisor; j++) {
-    data[i*divisor + j] = j*2;
+    data[i*divisor + j] = v++;
   }
 }
 function buildLargeArrayAddressKernel(mode) {
