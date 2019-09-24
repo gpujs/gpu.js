@@ -56,6 +56,7 @@ class HeadlessGLKernel extends WebGLKernel {
       isDrawBuffers,
       kernelMap: isDrawBuffers,
       channelCount: this.getChannelCount(),
+      maxTextureSize: this.getMaxTextureSize(),
     });
   }
 
@@ -71,6 +72,10 @@ class HeadlessGLKernel extends WebGLKernel {
     return testExtensions.WEBGL_draw_buffers ?
       testContext.getParameter(testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL) :
       1;
+  }
+
+  static getMaxTextureSize() {
+    return testContext.getParameter(testContext.MAX_TEXTURE_SIZE);
   }
 
   static get testCanvas() {

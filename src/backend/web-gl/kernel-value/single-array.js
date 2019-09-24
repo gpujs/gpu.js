@@ -9,6 +9,7 @@ class WebGLKernelValueSingleArray extends WebGLKernelValue {
     this.dimensions = utils.getDimensions(value, true);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
 

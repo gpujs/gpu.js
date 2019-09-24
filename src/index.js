@@ -12,13 +12,17 @@ const { HeadlessGLKernel } = require('./backend/headless-gl/kernel');
 
 const { WebGLFunctionNode } = require('./backend/web-gl/function-node');
 const { WebGLKernel } = require('./backend/web-gl/kernel');
+const { kernelValueMaps: webGLKernelValueMaps } = require('./backend/web-gl/kernel-value-maps');
 
 const { WebGL2FunctionNode } = require('./backend/web-gl2/function-node');
 const { WebGL2Kernel } = require('./backend/web-gl2/kernel');
+const { kernelValueMaps: webGL2KernelValueMaps } = require('./backend/web-gl2/kernel-value-maps');
 
 const { GLKernel } = require('./backend/gl/kernel');
 
 const { Kernel } = require('./backend/kernel');
+
+const { FunctionTracer } = require('./backend/function-tracer');
 
 module.exports = {
   alias,
@@ -32,10 +36,16 @@ module.exports = {
   input,
   Texture,
   utils,
+
   WebGL2FunctionNode,
   WebGL2Kernel,
+  webGL2KernelValueMaps,
+
   WebGLFunctionNode,
   WebGLKernel,
+  webGLKernelValueMaps,
+
   GLKernel,
   Kernel,
+  FunctionTracer,
 };

@@ -4,6 +4,8 @@ const { WebGLKernelValue } = require('./index');
 class WebGLKernelValueNumberTexture extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
+    const [width, height] = value.size;
+    this.checkSize(width, height);
     this.setupTexture();
     const { size: textureSize, dimensions } = value;
     this.bitRatio = this.getBitRatio(value);

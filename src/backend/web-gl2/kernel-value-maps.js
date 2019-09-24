@@ -5,8 +5,8 @@ const { WebGL2KernelValueInteger } = require('./kernel-value/integer');
 const { WebGL2KernelValueHTMLImage } = require('./kernel-value/html-image');
 const { WebGL2KernelValueDynamicHTMLImage } = require('./kernel-value/dynamic-html-image');
 
-const { WebGL2KernelValueHtmlImageArray } = require('./kernel-value/html-image-array');
-const { WebGL2KernelValueDynamicHtmlImageArray } = require('./kernel-value/dynamic-html-image-array');
+const { WebGL2KernelValueHTMLImageArray } = require('./kernel-value/html-image-array');
+const { WebGL2KernelValueDynamicHTMLImageArray } = require('./kernel-value/dynamic-html-image-array');
 
 const { WebGL2KernelValueHTMLVideo } = require('./kernel-value/html-video');
 const { WebGL2KernelValueDynamicHTMLVideo } = require('./kernel-value/dynamic-html-video');
@@ -69,7 +69,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueDynamicHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
     static: {
@@ -97,7 +97,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
   },
@@ -127,7 +127,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueDynamicHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
     static: {
@@ -155,7 +155,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
   },
@@ -184,5 +184,6 @@ function lookupKernelValueType(type, dynamic, precision, value) {
 }
 
 module.exports = {
+  kernelValueMaps,
   lookupKernelValueType
 };

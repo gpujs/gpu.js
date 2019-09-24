@@ -61,6 +61,7 @@ class WebGL2Kernel extends WebGLKernel {
       kernelMap: true,
       isTextureFloat: true,
       channelCount: this.getChannelCount(),
+      maxTextureSize: this.getMaxTextureSize(),
     });
   }
 
@@ -74,6 +75,10 @@ class WebGL2Kernel extends WebGLKernel {
 
   static getChannelCount() {
     return testContext.getParameter(testContext.MAX_DRAW_BUFFERS);
+  }
+
+  static getMaxTextureSize() {
+    return testContext.getParameter(testContext.MAX_TEXTURE_SIZE);
   }
 
   static lookupKernelValueType(type, dynamic, precision, value) {
@@ -191,6 +196,8 @@ class WebGL2Kernel extends WebGLKernel {
       optimizeFloatMemory: this.optimizeFloatMemory,
       precision: this.precision,
     }, this.output);
+
+    this.checkTextureSize();
   }
 
   translateSource() {

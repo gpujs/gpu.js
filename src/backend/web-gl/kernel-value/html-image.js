@@ -5,6 +5,7 @@ class WebGLKernelValueHTMLImage extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
     const { width, height } = value;
+    this.checkSize(width, height);
     this.dimensions = [width, height, 1];
     this.requestTexture();
     this.textureSize = [width, height];

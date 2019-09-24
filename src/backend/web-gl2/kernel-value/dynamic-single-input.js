@@ -16,6 +16,7 @@ class WebGL2KernelValueDynamicSingleInput extends WebGL2KernelValueSingleInput {
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);

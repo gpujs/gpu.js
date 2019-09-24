@@ -3,7 +3,7 @@
  */
 class KernelValue {
   /**
-   *
+   * @param {KernelVariable} value
    * @param {IKernelArgumentSettings} settings
    */
   constructor(value, settings) {

@@ -14,6 +14,7 @@ class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray
     this.dimensions = utils.getDimensions(value, true);
     this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.checkSize(this.textureSize[0] * (4 / this.bitRatio), this.textureSize[1] * (4 / this.bitRatio));
     const Type = this.getTransferArrayType(value);
     this.preUploadValue = new Type(this.uploadArrayLength);
     this.uploadValue = new Uint8Array(this.preUploadValue.buffer);

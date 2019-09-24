@@ -92,7 +92,7 @@ const kernelValueMaps = {
       'ArrayTexture(2)': WebGLKernelValueNumberTexture,
       'ArrayTexture(3)': WebGLKernelValueNumberTexture,
       'ArrayTexture(4)': WebGLKernelValueNumberTexture,
-      'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
+      'MemoryOptimizedNumberTexture': WebGLKernelValueMemoryOptimizedNumberTexture,
       'HTMLImage': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueHTMLVideo,
@@ -116,7 +116,6 @@ const kernelValueMaps = {
       'Array3D(2)': WebGLKernelValueDynamicSingleArray3DI,
       'Array3D(3)': WebGLKernelValueDynamicSingleArray3DI,
       'Array3D(4)': WebGLKernelValueDynamicSingleArray3DI,
-      'Array': WebGLKernelValueDynamicSingleArray,
       'Input': WebGLKernelValueDynamicSingleInput,
       'NumberTexture': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(1)': WebGLKernelValueDynamicNumberTexture,
@@ -182,5 +181,6 @@ function lookupKernelValueType(type, dynamic, precision, value) {
 }
 
 module.exports = {
-  lookupKernelValueType
+  lookupKernelValueType,
+  kernelValueMaps,
 };

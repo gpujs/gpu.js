@@ -12,6 +12,7 @@ class WebGLKernelValueDynamicHTMLImage extends WebGLKernelValueHTMLImage {
 
   updateValue(value) {
     const { width, height } = value;
+    this.checkSize(width, height);
     this.dimensions = [width, height, 1];
     this.textureSize = [width, height];
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);

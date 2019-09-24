@@ -81,6 +81,7 @@ class WebGLKernel extends GLKernel {
       isDrawBuffers,
       kernelMap: isDrawBuffers,
       channelCount: this.getChannelCount(),
+      maxTextureSize: this.getMaxTextureSize(),
     });
   }
 
@@ -96,6 +97,10 @@ class WebGLKernel extends GLKernel {
     return testExtensions.WEBGL_draw_buffers ?
       testContext.getParameter(testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL) :
       1;
+  }
+
+  static getMaxTextureSize() {
+    return testContext.getParameter(testContext.MAX_TEXTURE_SIZE);
   }
 
   static lookupKernelValueType(type, dynamic, precision, value) {
@@ -245,6 +250,7 @@ class WebGLKernel extends GLKernel {
     }
 
     const { features } = this.constructor;
+
     if (this.optimizeFloatMemory === true && !features.isTextureFloat) {
       throw new Error('Float textures are not supported');
     } else if (this.precision === 'single' && !features.isFloatRead) {
@@ -300,6 +306,8 @@ class WebGLKernel extends GLKernel {
       optimizeFloatMemory: this.optimizeFloatMemory,
       precision: this.precision,
     }, this.output);
+
+    this.checkTextureSize();
   }
 
   updateMaxTexSize() {

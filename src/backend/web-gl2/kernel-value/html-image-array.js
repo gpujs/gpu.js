@@ -1,9 +1,10 @@
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('../../web-gl/kernel-value/index');
 
-class WebGL2KernelValueHtmlImageArray extends WebGLKernelValue {
+class WebGL2KernelValueHTMLImageArray extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
+    this.checkSize(value[0].width, value[0].height);
     this.requestTexture();
     this.dimensions = [value[0].width, value[0].height, value.length];
     this.textureSize = [value[0].width, value[0].height];
@@ -63,5 +64,5 @@ class WebGL2KernelValueHtmlImageArray extends WebGLKernelValue {
 }
 
 module.exports = {
-  WebGL2KernelValueHtmlImageArray
+  WebGL2KernelValueHTMLImageArray
 };

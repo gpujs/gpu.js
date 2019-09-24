@@ -4,8 +4,8 @@ const { KernelValue } = require('../../kernel-value');
 
 class WebGLKernelValue extends KernelValue {
   /**
-   *
-   * @param {IWebGLKernerlValueSettings} settings
+   * @param {KernelVariable} value
+   * @param {IWebGLKernelValueSettings} settings
    */
   constructor(value, settings) {
     super(value, settings);
@@ -17,6 +17,23 @@ class WebGLKernelValue extends KernelValue {
     this.uploadValue = null;
     this.textureSize = null;
     this.bitRatio = null;
+  }
+
+  /**
+   *
+   * @param {number} width
+   * @param {number} height
+   */
+  checkSize(width, height) {
+    if (!this.kernel.validate) return;
+    const { maxTextureSize } = this.kernel.constructor.features;
+    if (width > maxTextureSize || height > maxTextureSize) {
+      if (width > height) {
+        throw new Error(`Argument width of ${width} larger than maximum size of ${maxTextureSize} for your GPU`);
+      } else {
+        throw new Error(`Argument height of ${height} larger than maximum size of ${maxTextureSize} for your GPU`);
+      }
+    }
   }
 
   requestTexture() {

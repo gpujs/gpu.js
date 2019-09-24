@@ -1,6 +1,6 @@
-const { WebGL2KernelValueHtmlImageArray } = require('./html-image-array');
+const { WebGL2KernelValueHTMLImageArray } = require('./html-image-array');
 
-class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageArray {
+class WebGL2KernelValueDynamicHTMLImageArray extends WebGL2KernelValueHTMLImageArray {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
@@ -11,6 +11,7 @@ class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageA
   }
 
   updateValue(images) {
+    this.checkSize(images[0].width, images[0].height);
     this.dimensions = [images[0].width, images[0].height, images.length];
     this.textureSize = [images[0].width, images[0].height];
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
@@ -20,5 +21,5 @@ class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageA
 }
 
 module.exports = {
-  WebGL2KernelValueDynamicHtmlImageArray
+  WebGL2KernelValueDynamicHTMLImageArray
 };
