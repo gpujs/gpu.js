@@ -1416,11 +1416,9 @@ class WebGLFunctionNode extends FunctionNode {
           case 'Array(2)':
           case 'Array(3)':
           case 'Array(4)':
-            if (targetType === argumentType) {
-              this.astGeneric(argument, retArr);
-              continue;
-            }
-            break;
+          case 'HTMLImage':
+          case 'HTMLImageArray':
+          case 'HTMLVideo':
           case 'ArrayTexture(1)':
           case 'ArrayTexture(2)':
           case 'ArrayTexture(3)':
@@ -1521,6 +1519,9 @@ const typeMap = {
   'ArrayTexture(2)': 'sampler2D',
   'ArrayTexture(3)': 'sampler2D',
   'ArrayTexture(4)': 'sampler2D',
+  'HTMLVideo': 'sampler2D',
+  'HTMLImage': 'sampler2D',
+  'HTMLImageArray': 'sampler2DArray',
 };
 
 const operatorMap = {
