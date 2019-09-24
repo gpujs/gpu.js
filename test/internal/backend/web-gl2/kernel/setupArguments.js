@@ -122,6 +122,12 @@ function setupArgumentsTestSuite(testSuiteSettings) {
     context: mockContext,
   };
   const kernel = new WebGL2Kernel(source, Object.assign({}, settings, gpuSettings));
+  kernel.constructor = {
+    lookupKernelValueType: WebGL2Kernel.lookupKernelValueType,
+    features: {
+      maxTextureSize: 9999
+    }
+  };
   const args = [argument];
   kernel.program = 'program';
   assert.equal(kernel.argumentTextureCount, 0);
