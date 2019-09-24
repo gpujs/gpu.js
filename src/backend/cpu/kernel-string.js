@@ -111,10 +111,10 @@ function cpuKernelString(cpuKernel, name) {
       }
     })
     beforeReturn.push(flattenedImageTo3DArray);
-    thisProperties.push(`    _imageTo2DArray,`);
+    thisProperties.push(`    _mediaTo2DArray,`);
     thisProperties.push(`    _imageTo3DArray,`);
   } else if (cpuKernel.argumentTypes.indexOf('HTMLImage') !== -1 || constantTypes.indexOf('HTMLImage') !== -1) {
-    const flattenedImageTo2DArray = utils.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel._imageTo2DArray.toString(), {
+    const flattenedImageTo2DArray = utils.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel._mediaTo2DArray.toString(), {
       findDependency: (object, name) => {
         return null;
       },
@@ -129,7 +129,7 @@ function cpuKernelString(cpuKernel, name) {
       }
     });
     beforeReturn.push(flattenedImageTo2DArray);
-    thisProperties.push(`    _imageTo2DArray,`);
+    thisProperties.push(`    _mediaTo2DArray,`);
   }
 
   return `function(settings) {
