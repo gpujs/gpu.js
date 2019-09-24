@@ -676,6 +676,11 @@ class FunctionNode {
         this.getDependencies(ast.left, dependencies, isNotSafe);
         this.getDependencies(ast.right, dependencies, isNotSafe);
         return dependencies;
+      case 'ConditionalExpression':
+        this.getDependencies(ast.test, dependencies, isNotSafe);
+        this.getDependencies(ast.alternate, dependencies, isNotSafe);
+        this.getDependencies(ast.consequent, dependencies, isNotSafe);
+        return dependencies;
       case 'Literal':
         dependencies.push({
           origin: 'literal',
