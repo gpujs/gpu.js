@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.1
- * @date Tue Sep 24 2019 10:21:24 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.2
+ * @date Wed Sep 25 2019 10:14:32 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -9831,7 +9831,6 @@ module.exports = {
   GLKernel,
   renderStrategy
 };
-
 },{"../../texture":111,"../../utils":112,"../kernel":35,"./texture/array-2-float":16,"./texture/array-2-float-2d":14,"./texture/array-2-float-3d":15,"./texture/array-3-float":19,"./texture/array-3-float-2d":17,"./texture/array-3-float-3d":18,"./texture/array-4-float":22,"./texture/array-4-float-2d":20,"./texture/array-4-float-3d":21,"./texture/float":25,"./texture/float-2d":23,"./texture/float-3d":24,"./texture/graphical":26,"./texture/memory-optimized":29,"./texture/memory-optimized-2d":27,"./texture/memory-optimized-3d":28,"./texture/unsigned":32,"./texture/unsigned-2d":30,"./texture/unsigned-3d":31}],14:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
@@ -10401,10 +10400,6 @@ class KernelValue {
 
   updateValue(value) {
     throw new Error(`"updateValue" not defined on ${ this.constructor.name }`);
-  }
-
-  getFocusString() {
-    throw new Error(`"getFocusString" not defined on ${ this.constructor.name }`);
   }
 }
 
@@ -13363,7 +13358,6 @@ class WebGLKernelValue extends KernelValue {
 module.exports = {
   WebGLKernelValue
 };
-
 },{"../../../input":108,"../../../utils":112,"../../kernel-value":34}],55:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
@@ -15370,7 +15364,6 @@ class WebGLKernel extends GLKernel {
 module.exports = {
   WebGLKernel
 };
-
 },{"../../plugins/triangle-noise":110,"../../utils":112,"../function-builder":9,"../gl/kernel":13,"../gl/kernel-string":12,"./fragment-shader":36,"./function-node":37,"./kernel-value-maps":38,"./vertex-shader":69}],69:[function(require,module,exports){
 const vertexShader = `__FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
@@ -17278,7 +17271,6 @@ class WebGL2Kernel extends WebGLKernel {
 module.exports = {
   WebGL2Kernel
 };
-
 },{"../../utils":112,"../function-builder":9,"../web-gl/kernel":68,"./fragment-shader":70,"./function-node":71,"./kernel-value-maps":72,"./vertex-shader":104}],104:[function(require,module,exports){
 const vertexShader = `#version 300 es
 __FLOAT_TACTIC_DECLARATION__;
