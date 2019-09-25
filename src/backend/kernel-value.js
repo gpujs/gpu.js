@@ -4,7 +4,7 @@
 class KernelValue {
   /**
    * @param {KernelVariable} value
-   * @param {IKernelArgumentSettings} settings
+   * @param {IKernelValueSettings} settings
    */
   constructor(value, settings) {
     const {
@@ -61,10 +61,6 @@ class KernelValue {
 
   updateValue(value) {
     throw new Error(`"updateValue" not defined on ${ this.constructor.name }`);
-  }
-
-  getFocusString() {
-    throw new Error(`"getFocusString" not defined on ${ this.constructor.name }`);
   }
 }
 

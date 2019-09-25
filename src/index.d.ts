@@ -240,6 +240,7 @@ export interface IKernelValueSettings {
   name: string;
   kernel: Kernel;
   context: WebGLRenderingContext;
+  contextHandle?: number;
   checkContext?: boolean;
   onRequestContextHandle: () => number;
   onUpdateValueMismatch: () => void;
@@ -247,6 +248,8 @@ export interface IKernelValueSettings {
   strictIntegers?: boolean;
   type: GPUVariableType;
   tactic: Tactic;
+  size: number[];
+  index?: number;
 }
 
 export type Tactic = 'speed' | 'balanced' | 'precision';
@@ -413,9 +416,9 @@ export class FunctionBuilder {
   static fromKernel(kernel: Kernel, FunctionNode: FunctionNode, extraNodeOptions?: any): FunctionBuilder;
   constructor(settings: IFunctionBuilderSettings);
   addFunctionNode(functionNode: FunctionNode): void;
-  traceFunctionCalls(functionName: string): string[];
-  getStringFromFunctionNames(functionName?: string[]): string;
-  getPrototypesFromFunctionNames(functionName?: string[]): string[];
+  traceFunctionCalls(functionName: string, retList?: string[]): string[];
+  getStringFromFunctionNames(functionName: string[]): string;
+  getPrototypesFromFunctionNames(functionName: string[]): string[];
   getString(functionName: string): string;
   getPrototypeString(functionName: string): string;
 }
@@ -454,7 +457,7 @@ export class Texture {
   delete(): void;
 }
 
-export type TextureArrayOutput = number[] | number[][] | number[][][];
+export type TextureArrayOutput = number[] | number[][] | number[][][] | number[][][][];
 
 export interface IPlugin {
   source: string;
@@ -478,37 +481,19 @@ export type input = (value: number[], size: OutputDimensions) => Input;
 
 export function alias(name: string, source: KernelFunction):KernelFunction;
 
-export class KernelArgument {
-  constructor(settings: IKernelArgumentSettings);
-  getSource(value: any): string;
+export class KernelValue {
+  constructor(value: KernelValue, settings: IKernelValueSettings);
+  getSource(): string;
   setup(): void;
-  updateValue(value: any): void;
+  updateValue(value: KernelVariable): void;
 }
 
-export interface IKernelArgumentSettings {
-  kernel: Kernel;
-  name: string;
-  type: GPUVariableType;
-  size: number[],
-  index: number;
-  context: any;
-  contextHandle: number;
+export class WebGLKernelValue {
+  constructor(value: any, settings: IWebGLKernelValueSettings);
 }
 
-export interface IKernelConstantSettings extends IKernelArgumentSettings {
-
-}
-
-export class WebGLKernelArgument {
-  constructor(value: any, settings: IWebGLKernelArgumentSettings);
-}
-
-export interface IWebGLKernelArgumentSettings extends IKernelArgumentSettings {
+export interface IWebGLKernelValueSettings extends IKernelValueSettings {
   texture: any;
-}
-
-export interface IWebGLKenelConstantSettings extends IWebGLKernelArgumentSettings {
-
 }
 
 export interface IFunctionNodeMemberExpressionDetails {
