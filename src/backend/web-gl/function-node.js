@@ -743,7 +743,7 @@ class WebGLFunctionNode extends FunctionNode {
   astAssignmentExpression(assNode, retArr) {
     const declaration = this.getDeclaration(assNode.left);
     if (declaration && !declaration.assignable) {
-      throw new this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
+      throw this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
     }
     // TODO: casting needs implemented here
     if (assNode.operator === '%=') {
