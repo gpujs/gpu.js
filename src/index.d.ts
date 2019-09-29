@@ -197,7 +197,7 @@ export abstract class Kernel {
   setStrictIntegers(flag: boolean): this;
   addSubKernel(subKernel: ISubKernel): this;
   destroy(removeCanvasReferences?: boolean): void;
-  validateSettings(IArguments): void;
+  validateSettings(args: IArguments): void;
 }
 
 export type Precision = 'single' | 'unsigned';
