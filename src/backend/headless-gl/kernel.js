@@ -140,7 +140,7 @@ class HeadlessGLKernel extends WebGLKernel {
    */
   toString() {
     const setupContextString = `const gl = context || require('gl')(1, 1);\n`;
-    const destroyContextString = `if (!context) { gl.getExtension('STACKGL_destroy_context').destroy(); }\n`;
+    const destroyContextString = `    if (!context) { gl.getExtension('STACKGL_destroy_context').destroy(); }\n`;
     return glKernelString(this.constructor, arguments, this, setupContextString, destroyContextString);
   }
 

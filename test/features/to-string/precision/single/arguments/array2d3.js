@@ -13,6 +13,7 @@ function testArgument(mode, context, canvas) {
     context,
     output: [2,2],
     precision: 'single',
+    dynamicOutput: true,
     argumentTypes: {
       a: 'Array2D(3)'
     }

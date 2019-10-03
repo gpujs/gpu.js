@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.2
- * @date Wed Sep 25 2019 10:14:32 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.3
+ * @date Wed Oct 02 2019 21:31:03 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -5056,7 +5056,7 @@ function glExtensionWiretap(extension, options) {
 }
 
 function argumentsToString(args, options) {
-  const { variables } = options;
+  const { variables, onUnrecognizedArgumentLookup } = options;
   return (Array.from(args).map((arg) => {
     const variableName = getVariableName(arg);
     if (variableName) {
@@ -5068,10 +5068,14 @@ function argumentsToString(args, options) {
   function getVariableName(value) {
     if (variables) {
       for (const name in variables) {
+        if (!variables.hasOwnProperty(name)) continue;
         if (variables[name] === value) {
           return name;
         }
       }
+    }
+    if (onUnrecognizedArgumentLookup) {
+      return onUnrecognizedArgumentLookup(value);
     }
     return null;
   }
@@ -5106,7 +5110,7 @@ function argumentToString(arg, options) {
     case 'Number': return getEntity(arg);
     case 'Boolean': return getEntity(arg);
     case 'Array':
-      return addVariable(arg, `new ${arg.constructor.name}(${Array.from(arg).join(',')})`);
+      return addVariable(arg, `new ${arg.constructor.name}([${Array.from(arg).join(',')}])`);
     case 'Float32Array':
     case 'Uint8Array':
     case 'Uint16Array':
@@ -5627,7 +5631,7 @@ class CPUFunctionNode extends FunctionNode {
   astAssignmentExpression(assNode, retArr) {
     const declaration = this.getDeclaration(assNode.left);
     if (declaration && !declaration.assignable) {
-      throw new this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
+      throw this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
     }
     this.astGeneric(assNode.left, retArr);
     retArr.push(assNode.operator);
@@ -8672,6 +8676,17 @@ function toStringWithoutUtils(fn) {
 }
 
 function glKernelString(Kernel, args, originKernel, setupContextString, destroyContextString) {
+  args = args ? Array.from(args).map(arg => {
+    switch (typeof arg) {
+      case 'boolean':
+        return new Boolean(arg);
+      case 'number':
+        return new Number(arg);
+      default:
+        return arg;
+    }
+  }) : null;
+  const uploadedValues = [];
   const postResult = [];
   const context = glWiretap(originKernel.context, {
     useTrackablePrimitives: true,
@@ -8696,19 +8711,15 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       }
     },
     onUnrecognizedArgumentLookup: (argument) => {
-      for (let i = 0; i < kernel.kernelConstants.length; i++) {
-        const value = kernel.kernelConstants[i];
-        if (value.type === 'HTMLImageArray') {
-          const constant = kernel.constants[value.name];
-          const variable = `uploadValue_${value.name}[${constant.indexOf(value.uploadValue)}]`;
-          context.insertVariable(variable, kernel.constants);
-          return variable;
-        } else if (value.uploadValue === argument) {
-          const variable = `uploadValue_${value.name}`;
-          context.insertVariable(variable, value);
-          return variable;
-        }
+      const argumentName = findKernelValue(argument, kernel.kernelArguments, [], context, uploadedValues);
+      if (argumentName) {
+        return argumentName;
       }
+      const constantName = findKernelValue(argument, kernel.kernelConstants, constants ? Object.keys(constants).map(key => constants[key]) : [], context, uploadedValues);
+      if (constantName) {
+        return constantName;
+      }
+      return null;
     }
   });
   let subKernelsResultVariableSetup = false;
@@ -8757,14 +8768,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   kernel.build.apply(kernel, args);
   result.push(context.toString());
   context.reset();
-  const upgradedArguments = Array.from(args).map(arg => {
-    switch (typeof arg) {
-      case 'number':
-      case 'boolean':
-        return new arg.constructor(arg);
-    }
-    return arg;
-  });
+
   kernel.kernelArguments.forEach((kernelArgument, i) => {
     switch (kernelArgument.type) {
       case 'Integer':
@@ -8777,7 +8781,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       case 'Array(4)':
       case 'HTMLImage':
       case 'HTMLVideo':
-        context.insertVariable(`uploadValue_${kernelArgument.name}`, upgradedArguments[i]);
+        context.insertVariable(`uploadValue_${kernelArgument.name}`, kernelArgument.uploadValue);
         break;
       case 'HTMLImageArray':
         for (let imageIndex = 0; imageIndex < args[i].length; imageIndex++) {
@@ -8803,7 +8807,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       case 'ArrayTexture(2)':
       case 'ArrayTexture(3)':
       case 'ArrayTexture(4)':
-        context.insertVariable(`uploadValue_${kernelArgument.name}`, upgradedArguments[i].texture);
+        context.insertVariable(`uploadValue_${kernelArgument.name}`, args[i].texture);
         break;
       default:
         throw new Error(`unhandled kernelArgumentType insertion for glWiretap of type ${kernelArgument.type}`);
@@ -8813,6 +8817,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   result.push(`function ${toStringWithoutUtils(utils.flattenTo)}`);
   result.push(`function ${toStringWithoutUtils(utils.flatten2dArrayTo)}`);
   result.push(`function ${toStringWithoutUtils(utils.flatten3dArrayTo)}`);
+  result.push(`function ${toStringWithoutUtils(utils.flatten4dArrayTo)}`);
   result.push(`function ${toStringWithoutUtils(utils.isArray)}`);
   if (kernel.renderOutput !== kernel.renderTexture && kernel.formatValues) {
     result.push(
@@ -8822,17 +8827,17 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   result.push('/** end of injected functions **/');
   result.push(`  const innerKernel = function (${kernel.kernelArguments.map(kernelArgument => kernelArgument.varName).join(', ')}) {`);
   context.setIndent(4);
-  kernel.run.apply(kernel, upgradedArguments);
+  kernel.run.apply(kernel, args);
   if (kernel.renderKernels) {
     kernel.renderKernels();
   } else if (kernel.renderOutput) {
     kernel.renderOutput();
   }
-  result.push('/** start setup uploads for kernel values **/');
+  result.push('    /** start setup uploads for kernel values **/');
   kernel.kernelArguments.forEach(kernelArgument => {
-    result.push(kernelArgument.getStringValueHandler());
+    result.push('    ' + kernelArgument.getStringValueHandler().split('\n').join('\n    '));
   });
-  result.push('/** end setup uploads for kernel values **/');
+  result.push('    /** end setup uploads for kernel values **/');
   result.push(context.toString());
   if (kernel.renderOutput === kernel.renderTexture) {
     context.reset();
@@ -8864,7 +8869,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   result.push('  };');
   if (kernel.graphical) {
     result.push(getGetPixelsString(kernel));
-    result.push(`innerKernel.getPixels = getPixels;`);
+    result.push(`  innerKernel.getPixels = getPixels;`);
   }
   result.push('  return innerKernel;');
 
@@ -8942,6 +8947,41 @@ function getToArrayString(kernelResult, textureName) {
   return toArray();
   }`;
 }
+
+function findKernelValue(argument, kernelValues, values, context, uploadedValues) {
+  if (argument === null) return null;
+  switch (typeof argument) {
+    case 'boolean':
+    case 'number':
+      return null;
+  }
+  if (
+    typeof HTMLImageElement !== 'undefined' &&
+    argument instanceof HTMLImageElement
+  ) {
+    for (let i = 0; i < kernelValues.length; i++) {
+      const kernelValue = kernelValues[i];
+      if (kernelValue.type !== 'HTMLImageArray') continue;
+      if (kernelValue.uploadValue !== argument) continue;
+      const variableIndex = values[i].indexOf(argument);
+      if (variableIndex === -1) continue;
+      const variableName = `uploadValue_${kernelValue.name}[${variableIndex}]`;
+      context.insertVariable(variableName, argument);
+      return variableName;
+    }
+    return null;
+  }
+
+  for (let i = 0; i < kernelValues.length; i++) {
+    const kernelValue = kernelValues[i];
+    if (argument !== kernelValue.uploadValue) continue;
+    const variable = `uploadValue_${kernelValue.name}`;
+    context.insertVariable(variable, kernelValue);
+    return variable;
+  }
+  return null;
+}
+
 module.exports = {
   glKernelString
 };
@@ -10329,7 +10369,7 @@ class HeadlessGLKernel extends WebGLKernel {
 
   toString() {
     const setupContextString = `const gl = context || require('gl')(1, 1);\n`;
-    const destroyContextString = `if (!context) { gl.getExtension('STACKGL_destroy_context').destroy(); }\n`;
+    const destroyContextString = `    if (!context) { gl.getExtension('STACKGL_destroy_context').destroy(); }\n`;
     return glKernelString(this.constructor, arguments, this, setupContextString, destroyContextString);
   }
 
@@ -10406,7 +10446,6 @@ class KernelValue {
 module.exports = {
   KernelValue
 };
-
 },{}],35:[function(require,module,exports){
 const { utils } = require('../utils');
 const { Input } = require('../input');
@@ -10475,7 +10514,7 @@ class Kernel {
     this.constantTypes = null;
     this.constantBitRatios = null;
     this.dynamicArguments = false;
-    this.dynamicOutput = true;
+    this.dynamicOutput = false;
 
     this.canvas = null;
 
@@ -11922,7 +11961,7 @@ class WebGLFunctionNode extends FunctionNode {
   astAssignmentExpression(assNode, retArr) {
     const declaration = this.getDeclaration(assNode.left);
     if (declaration && !declaration.assignable) {
-      throw new this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
+      throw this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
     }
     if (assNode.operator === '%=') {
       this.astGeneric(assNode.left, retArr);
@@ -14530,7 +14569,7 @@ class WebGLKernel extends GLKernel {
     gl.scissor(0, 0, texSize[0], texSize[1]);
 
     if (this.dynamicOutput) {
-      this.setUniform3iv('uOutputDim', this.threadDim);
+      this.setUniform3iv('uOutputDim', new Int32Array(this.threadDim));
       this.setUniform2iv('uTexSize', texSize);
     }
 

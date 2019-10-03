@@ -7,7 +7,7 @@ function dynamicOutput1DGrows(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return this.output.x + this.thread.x;
-  });
+  }, { dynamicOutput: true });
 
   kernel.setOutput([5]);
   let result = kernel();
@@ -53,7 +53,7 @@ function dynamicOutput1DShrinks(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return this.output.x + this.thread.x;
-  });
+  }, { dynamicOutput: true });
 
   kernel.setOutput([10]);
   let result = kernel();
@@ -102,7 +102,7 @@ function dynamicOutput1DKernelMapGrows(mode) {
     }
   }, function() {
     return map(this.output.x + this.thread.x);
-  });
+  }, { dynamicOutput: true });
 
   kernel.setOutput([5]);
   let result = kernel();
@@ -156,7 +156,7 @@ function dynamicOutput1DKernelMapShrinks(mode) {
     }
   }, function() {
     return map(this.output.x + this.thread.x);
-  });
+  }, { dynamicOutput: true });
 
   kernel.setOutput([10]);
   let result = kernel();
@@ -205,7 +205,7 @@ function dynamicOutput2DGrows(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return this.output.x + this.output.y + this.thread.x + this.thread.y;
-  });
+  }, { dynamicOutput: true });
 
   kernel.setOutput([2,2]);
   let result = kernel();
@@ -251,7 +251,7 @@ function dynamicOutput2DShrinks(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return this.output.x + this.output.y + this.thread.x + this.thread.y;
-  });
+  }, { dynamicOutput: true });
 
   kernel.setOutput([3,3]);
   let result = kernel();
@@ -300,7 +300,7 @@ function dynamicOutput2DKernelMapGrows(mode) {
     }
   }, function() {
     return map(this.output.x + this.output.y + this.thread.x + this.thread.y);
-  });
+  }, { dynamicOutput: true });
 
   kernel.setOutput([2,2]);
   let result = kernel();
@@ -354,7 +354,7 @@ function dynamicOutput2DKernelMapShrinks(mode) {
     }
   }, function() {
     return map(this.output.x + this.output.y + this.thread.x + this.thread.y);
-  });
+  }, { dynamicOutput: true });
 
   kernel.setOutput([3,3]);
   let result = kernel();
@@ -404,7 +404,7 @@ function dynamicOutput2DGraphicalGrows(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     this.color(1,1,1,1);
-  }, { graphical: true });
+  }, { graphical: true, dynamicOutput: true });
 
   kernel.setOutput([2,2]);
   kernel();
@@ -467,7 +467,7 @@ function dynamicOutput2DGraphicalShrinks(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     this.color(1,1,1,1);
-  }, { graphical: true });
+  }, { graphical: true, dynamicOutput: true });
 
   kernel.setOutput([3,3]);
   kernel();
@@ -529,7 +529,7 @@ function dynamicOutput3DGrows(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return this.output.x + this.output.y + this.thread.z + this.thread.x + this.thread.y + this.thread.z;
-  });
+  }, { dynamicOutput: true });
 
   kernel.setOutput([2,2,2]);
   let result = kernel();
@@ -591,7 +591,7 @@ function dynamicOutput3DShrinks(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return this.output.x + this.output.y + this.thread.z + this.thread.x + this.thread.y + this.thread.z;
-  });
+  }, { dynamicOutput: true });
 
   kernel.setOutput([3,3,3]);
   let result = kernel();
@@ -656,7 +656,7 @@ function dynamicOutput3DKernelMapGrows(mode) {
     }
   }, function() {
     return map(this.output.x + this.output.y + this.thread.z + this.thread.x + this.thread.y + this.thread.z);
-  });
+  }, { dynamicOutput: true });
 
   kernel.setOutput([2,2,2]);
   let result = kernel();
@@ -742,7 +742,7 @@ function dynamicOutput3DKernelMapShrinks(mode) {
     }
   }, function() {
     return map(this.output.x + this.output.y + this.thread.z + this.thread.x + this.thread.y + this.thread.z);
-  });
+  }, { dynamicOutput: true });
 
   kernel.setOutput([3,3,3]);
   let result = kernel();

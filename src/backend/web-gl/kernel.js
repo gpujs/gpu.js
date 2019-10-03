@@ -617,7 +617,7 @@ class WebGLKernel extends GLKernel {
     gl.scissor(0, 0, texSize[0], texSize[1]);
 
     if (this.dynamicOutput) {
-      this.setUniform3iv('uOutputDim', this.threadDim);
+      this.setUniform3iv('uOutputDim', new Int32Array(this.threadDim));
       this.setUniform2iv('uTexSize', texSize);
     }
 

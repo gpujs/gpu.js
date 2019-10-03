@@ -188,6 +188,8 @@ export abstract class Kernel {
   setLoopMaxIterations(flag: number): this;
   setConstants(flag: object): this;
   setConstantTypes(flag: IKernelValueTypes): this;
+  setDynamicOutput(flag: boolean): this;
+  setDynamicArguments(flag: boolean): this;
   setPipeline(flag: boolean): this;
   setPrecision(flag: Precision): this;
   setImmutable(flag: boolean): this;
@@ -468,7 +470,7 @@ export interface IPlugin {
   onBeforeRun: (kernel: Kernel) => void;
 }
 
-export type OutputDimensions = [number, number, number];
+export type OutputDimensions = [number, number, number] | Int32Array;
 export type TextureDimensions = [number, number];
 
 export class Input {
