@@ -834,7 +834,7 @@ NOTE: When exporting a kernel and using `constants` the following constants are 
 * `Boolean`
 
 Here is an example used to/from file:
-```
+```js
 import { GPU } from 'gpu.js';
 import * as fs from 'fs';
 const gpu = new GPU();
@@ -847,7 +847,6 @@ fs.writeFileSync('./my-exported-kernel.js', 'module.exports = ' + kernelString);
 import * as MyExportedKernel from './my-exported-kernel';
 import gl from 'gl';
 const myExportedKernel = MyExportedKernel({ context: gl(1,1), constants: { v1: 100 } });
-
 ```
 
 
