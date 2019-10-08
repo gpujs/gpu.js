@@ -89,14 +89,18 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [Cleanup](#cleanup)
 * [Flattened typed array support](#flattened-typed-array-support)
 * [Precompiled and Lighter Weight Kernels](#precompiled-and-lighter-weight-kernels)
+  * [using JSON](#using-json)
+  * [Exporting kernel](#exporting-kernel)
 * [Supported Math functions](#supported-math-functions)
 * [How to check what is supported](#how-to-check-what-is-supported)
 * [Typescript Typings](#typescript-typings)
 * [Dealing With Transpilation](#dealing-with-transpilation)
 * [Full API reference](#full-api-reference)
+* [How possible in node](#how-possible-in-node)
+* [Testing](#testing)
+* [Building](#building)
 * [Contributors](#contributors)
 * [Contributing](#contributing)
-* [How possible in node](#how-possible-in-node)
 * [Terms Explained](#terms-explained)
 * [License](#license)
 
@@ -815,10 +819,39 @@ NOTE: There is lighter weight, pre-built, version of GPU.js to assist with seria
 * [dist/gpu-browser-core.js](dist/gpu-browser-core.js)
 * [dist/gpu-browser-core.min.js](dist/gpu-browser-core.min.js)
 
-### using `kernel.toString(args...)`
+### Exporting kernel
 GPU.js supports seeing exactly how it is interacting with the graphics processor by means of the `kernel.toString(...)` method.
-This method, when called, creates a kernel that executes _exactly the instruction set given to the GPU_ as a function that sets up a kernel.
-Here is an example:
+This method, when called, creates a kernel that executes _exactly the instruction set given to the GPU (or CPU)_ *as a
+very tiny reusable function* that instantiates a kernel.
+
+NOTE: When exporting a kernel and using `constants` the following constants are *not changeable*:
+* `Array(2)`
+* `Array(3)`
+* `Array(4)`
+* `Integer`
+* `Number`
+* `Float`
+* `Boolean`
+
+Here is an example used to/from file:
+```
+import { GPU } from 'gpu.js';
+import * as fs from 'fs';
+const gpu = new GPU();
+const kernel = gpu.createKernel(function(v) {
+  return this.thread.x + v + this.constants.v1;
+}, { output: [10], constants: { v1: 100 } });
+const result = kernel(1);
+const kernelString = kernel.toString(1);
+fs.writeFileSync('./my-exported-kernel.js', 'module.exports = ' + kernelString);
+import * as MyExportedKernel from './my-exported-kernel';
+import gl from 'gl';
+const myExportedKernel = MyExportedKernel({ context: gl(1,1), constants: { v1: 100 } });
+
+```
+
+
+Here is an example for just-in-time function creation:
 
 ```js
 const gpu = new GPU();
@@ -831,9 +864,12 @@ const kernel = gpu.createKernel(function(a) {
   }, { output: [6] });
 kernel(input(a, [6, 6]));
 const kernelString = kernel.toString(input(a, [6, 6]));
-const newKernel = new Function('return ' + kernelString)()(context);
+const newKernel = new Function('return ' + kernelString)()({ context });
 newKernel(input(a, [6, 6]));
 ```
+
+#### using constants with `kernel.toString(...args)`
+You can assign _some_ new constants when using the function output from `.toString()`,
 
 ## Supported Math functions
 
@@ -913,6 +949,17 @@ GPU.js is written in such a way, you can introduce your own backend.  Have a sug
 ## Terms Explained
 * Kernel - A function that is tightly coupled to program that runs on the Graphic Processor
 * Texture - A graphical artifact that is packed with data, in the case of GPU.js, bit shifted parts of a 32 bit floating point decimal
+
+## Testing
+Testing is done (right now) manually, (help wanted (here)[https://github.com/gpujs/gpu.js/issues/515] if you can!), using the following:
+* For browser, setup a webserver on the root of the gpu.js project and visit htt://url/test/all.html
+* For node, run either of the 3 commands:
+  * `yarn test test/features`
+  * `yarn test test/internal`
+  * `yarn test test/issues`
+
+## Building
+Building isn't required on node, but is for browser.  To build the browser's files, run: `yarn make`
 
 # Get Involved!
 

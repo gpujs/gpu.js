@@ -12,6 +12,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
     this.dimensions = dimensions;
     this.textureSize = textureSize;
     this.uploadValue = value.texture;
+    this.forceUploadEachRun = true;
   }
 
   getStringValueHandler() {

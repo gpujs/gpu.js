@@ -68,6 +68,7 @@ class Kernel {
     this.argumentBitRatios = null;
     this.kernelArguments = null;
     this.kernelConstants = null;
+    this.forceUploadKernelConstants = null;
 
 
     /**

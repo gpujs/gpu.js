@@ -13,6 +13,14 @@ function testConstant(mode, context, canvas) {
     precision: 'unsigned',
     pipeline: true,
   })();
+  const texture2 = gpu.createKernel(function() {
+    return this.output.x - this.thread.x;
+  }, {
+    output: [4],
+    optimizeFloatMemory: true,
+    precision: 'unsigned',
+    pipeline: true,
+  })();
   const originalKernel = gpu.createKernel(function() {
     return this.constants.a[this.thread.x];
   }, {
@@ -24,8 +32,13 @@ function testConstant(mode, context, canvas) {
   });
   assert.deepEqual(originalKernel(), new Float32Array([0,1,2,3]));
   const kernelString = originalKernel.toString();
-  const newKernel = new Function('return ' + kernelString)()({ context, constants: { a: texture } });
+  const Kernel = new Function('return ' + kernelString)();
+  const newKernel = Kernel({ context, constants: { a: texture } });
+  const newKernel2 = Kernel({ context, constants: { a: texture2 } });
+  assert.deepEqual(texture2.toArray ? texture2.toArray() : texture2, new Float32Array([4,3,2,1]));
+  assert.deepEqual(texture.toArray ? texture.toArray() : texture, new Float32Array([0,1,2,3]));
   assert.deepEqual(newKernel(), new Float32Array([0,1,2,3]));
+  assert.deepEqual(newKernel2(), new Float32Array([4,3,2,1]));
   gpu.destroy();
 }
 

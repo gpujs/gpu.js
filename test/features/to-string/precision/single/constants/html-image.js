@@ -4,27 +4,27 @@ const { GPU } = require('../../../../../../src');
 describe('feature: to-string single precision constants HTMLImage');
 
 function testArgument(mode, done) {
-  const image = new Image();
-  image.src = 'jellyfish.jpeg';
-  image.onload = () => {
-    const gpu = new GPU({mode});
-    const originalKernel = gpu.createKernel(function (a) {
-      const pixel = a[0][0];
-      return pixel.b * 255;
-    }, {
-      output: [1],
-      precision: 'single',
-      argumentTypes: ['HTMLImage'],
+  loadImages(['jellyfish-1.jpeg', 'jellyfish-2.jpeg'])
+    .then(([image1, image2]) => {
+      const gpu = new GPU({mode});
+      const originalKernel = gpu.createKernel(function (a) {
+        const pixel = a[0][0];
+        return pixel.b * 255;
+      }, {
+        output: [1],
+        precision: 'single',
+        argumentTypes: ['HTMLImage'],
+      });
+      const canvas = originalKernel.canvas;
+      const context = originalKernel.context;
+      assert.deepEqual(originalKernel(image1)[0], 253);
+      const kernelString = originalKernel.toString(image1);
+      const newKernel = new Function('return ' + kernelString)()({context, canvas});
+      assert.deepEqual(newKernel(image1)[0], 253);
+      assert.deepEqual(newKernel(image2)[0], 255);
+      gpu.destroy();
+      done();
     });
-    const canvas = originalKernel.canvas;
-    const context = originalKernel.context;
-    assert.deepEqual(originalKernel(image)[0], 253);
-    const kernelString = originalKernel.toString(image);
-    const newKernel = new Function('return ' + kernelString)()({context, canvas});
-    assert.deepEqual(newKernel(image)[0], 253);
-    gpu.destroy();
-    done();
-  }
 }
 
 (GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('webgl', t => {
@@ -33,6 +33,10 @@ function testArgument(mode, done) {
 
 (GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('webgl2', t => {
   testArgument('webgl2', t.async());
+});
+
+(GPU.isSinglePrecisionSupported && (GPU.isWebGLSupported || GPU.isWebGL2Supported) ? test : skip)('cpu', t => {
+  testArgument('cpu', t.async());
 });
 
 

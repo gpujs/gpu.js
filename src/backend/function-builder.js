@@ -545,10 +545,11 @@ class FunctionBuilder {
    * @param {string} argumentName
    * @param {string} calleeFunctionName
    * @param {number} argumentIndex
-   * @return {number}
+   * @return {number|null}
    */
   assignArgumentBitRatio(functionName, argumentName, calleeFunctionName, argumentIndex) {
     const node = this._getFunction(functionName);
+    if (this._isNativeFunction(calleeFunctionName)) return null;
     const calleeNode = this._getFunction(calleeFunctionName);
     const i = node.argumentNames.indexOf(argumentName);
     if (i === -1) {

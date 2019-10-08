@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.3
- * @date Wed Oct 02 2019 21:31:03 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.4
+ * @date Tue Oct 08 2019 10:27:37 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -1180,16 +1180,25 @@ module.exports = {
 };
 },{"../function-node":9}],6:[function(require,module,exports){
 const { utils } = require('../../utils');
-const { Input } = require('../../input');
 
-function constantsToString(constants) {
+function constantsToString(constants, types) {
   const results = [];
-  for (const p in constants) {
-    const constant = constants[p];
-    switch (typeof constant) {
-      case 'number':
-      case 'boolean':
-        results.push(`${p}:${constant}`);
+  for (const name in types) {
+    if (!types.hasOwnProperty(name)) continue;
+    const type = types[name];
+    const constant = constants[name];
+    switch (type) {
+      case 'Number':
+      case 'Integer':
+      case 'Float':
+      case 'Boolean':
+        results.push(`${name}:${constant}`);
+        break;
+      case 'Array(2)':
+      case 'Array(3)':
+      case 'Array(4)':
+        results.push(`${name}:new ${constant.constructor.name}(${JSON.stringify(Array.from(constant))})`);
+        break;
     }
   }
   return `{ ${ results.join() } }`;
@@ -1203,9 +1212,10 @@ function cpuKernelString(cpuKernel, name) {
   const useFunctionKeyword = !/^function/.test(cpuKernel.color.toString());
 
   header.push(
-    '  const { context, canvas, constants } = settings;',
+    '  const { context, canvas, constants: incomingConstants } = settings;',
     `  const output = new Int32Array(${JSON.stringify(Array.from(cpuKernel.output))});`,
-    `  const _constants = ${constantsToString(cpuKernel.constants)};`,
+    `  const _constantTypes = ${JSON.stringify(cpuKernel.constantTypes)};`,
+    `  const _constants = ${constantsToString(cpuKernel.constants, cpuKernel.constantTypes)};`,
   );
 
   thisProperties.push(
@@ -1290,7 +1300,7 @@ function cpuKernelString(cpuKernel, name) {
             return 'context';
         }
       }
-    })
+    });
     beforeReturn.push(flattenedImageTo3DArray);
     thisProperties.push(`    _mediaTo2DArray,`);
     thisProperties.push(`    _imageTo3DArray,`);
@@ -1315,14 +1325,26 @@ function cpuKernelString(cpuKernel, name) {
 
   return `function(settings) {
 ${ header.join('\n') }
-  for (const p in constants) {
-    const constant = constants[p];
-    switch (typeof constant) {
-      case 'number':
-      case 'boolean':
+  for (const p in _constantTypes) {
+    if (!_constantTypes.hasOwnProperty(p)) continue;
+    const type = _constantTypes[p];
+    switch (type) {
+      case 'Number':
+      case 'Integer':
+      case 'Float':
+      case 'Boolean':
+      case 'Array(2)':
+      case 'Array(3)':
+      case 'Array(4)':
+        if (incomingConstants.hasOwnProperty(p)) {
+          console.warn('constant ' + p + ' of type ' + type + ' cannot be resigned');
+        }
         continue;
     }
-    _constants[p] = constant;
+    if (!incomingConstants.hasOwnProperty(p)) {
+      throw new Error('constant ' + p + ' not found');
+    }
+    _constants[p] = incomingConstants[p];
   }
   const kernel = (function() {
 ${cpuKernel._kernelString}
@@ -1336,7 +1358,7 @@ ${cpuKernel._kernelString}
 module.exports = {
   cpuKernelString
 };
-},{"../../input":107,"../../utils":111}],7:[function(require,module,exports){
+},{"../../utils":111}],7:[function(require,module,exports){
 const { Kernel } = require('../kernel');
 const { FunctionBuilder } = require('../function-builder');
 const { CPUFunctionNode } = require('./function-node');
@@ -1528,17 +1550,15 @@ class CPUKernel extends Kernel {
     } else {
       kernelThreadString = translatedSources.shift();
     }
-    const kernelString = this._kernelString = `  const LOOP_MAX = ${ this._getLoopMaxString() }
+    return this._kernelString = `  const LOOP_MAX = ${ this._getLoopMaxString() };
   ${ this.injectedNative || '' }
-  const constants = this.constants;
   const _this = this;
+  ${ this._processConstants() }
   return (${ this.argumentNames.map(argumentName => 'user_' + argumentName).join(', ') }) => {
-    ${ this._processConstants() }
     ${ this._processArguments() }
     ${ this.graphical ? this._graphicalKernelBody(kernelThreadString) : this._resultKernelBody(kernelThreadString) }
     ${ translatedSources.length > 0 ? translatedSources.join('\n') : '' }
   };`;
-    return kernelString;
   }
 
   toString() {
@@ -2303,6 +2323,7 @@ class FunctionBuilder {
 
   assignArgumentBitRatio(functionName, argumentName, calleeFunctionName, argumentIndex) {
     const node = this._getFunction(functionName);
+    if (this._isNativeFunction(calleeFunctionName)) return null;
     const calleeNode = this._getFunction(calleeFunctionName);
     const i = node.argumentNames.indexOf(argumentName);
     if (i === -1) {
@@ -5668,6 +5689,7 @@ class KernelValue {
     this.contextHandle = null;
     this.onRequestContextHandle = onRequestContextHandle;
     this.onUpdateValueMismatch = onUpdateValueMismatch;
+    this.forceUploadEachRun = null;
   }
 
   getSource() {
@@ -5734,6 +5756,7 @@ class Kernel {
     this.argumentBitRatios = null;
     this.kernelArguments = null;
     this.kernelConstants = null;
+    this.forceUploadKernelConstants = null;
 
 
     this.source = source;
@@ -7195,10 +7218,6 @@ class WebGLFunctionNode extends FunctionNode {
 
 
   astAssignmentExpression(assNode, retArr) {
-    const declaration = this.getDeclaration(assNode.left);
-    if (declaration && !declaration.assignable) {
-      throw this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
-    }
     if (assNode.operator === '%=') {
       this.astGeneric(assNode.left, retArr);
       retArr.push('=');
@@ -7812,6 +7831,13 @@ class WebGLFunctionNode extends FunctionNode {
           case 'Array(2)':
           case 'Array(3)':
           case 'Array(4)':
+            if (targetType === argumentType) {
+              if (argument.type !== 'Identifier') throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
+              this.triggerImplyArgumentBitRatio(this.name, argument.name, functionName, i);
+              retArr.push(`user_${argument.name}`);
+              continue;
+            }
+            break;
           case 'HTMLImage':
           case 'HTMLImageArray':
           case 'HTMLVideo':
@@ -8674,6 +8700,7 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
     this.dimensions = value.dimensions;
     this.textureSize = value.size;
     this.uploadValue = value.texture;
+    this.forceUploadEachRun = true;
   }
 
   getStringValueHandler() {
@@ -8721,6 +8748,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
     this.dimensions = dimensions;
     this.textureSize = textureSize;
     this.uploadValue = value.texture;
+    this.forceUploadEachRun = true;
   }
 
   getStringValueHandler() {
@@ -8879,6 +8907,7 @@ class WebGLKernelValueSingleArray2 extends WebGLKernelValue {
   }
 
   getStringValueHandler() {
+    if (this.origin === 'constants') return '';
     return `const uploadValue_${this.name} = ${this.varName};\n`;
   }
 
@@ -8965,6 +8994,7 @@ class WebGLKernelValueSingleArray3 extends WebGLKernelValue {
   }
 
   getStringValueHandler() {
+    if (this.origin === 'constants') return '';
     return `const uploadValue_${this.name} = ${this.varName};\n`;
   }
 
@@ -9051,6 +9081,7 @@ class WebGLKernelValueSingleArray4 extends WebGLKernelValue {
   }
 
   getStringValueHandler() {
+    if (this.origin === 'constants') return '';
     return `const uploadValue_${this.name} = ${this.varName};\n`;
   }
 
@@ -9623,6 +9654,7 @@ class WebGLKernel extends GLKernel {
   setupConstants(args) {
     const { context: gl } = this;
     this.kernelConstants = [];
+    this.forceUploadKernelConstants = [];
     let needsConstantTypes = this.constantTypes === null;
     if (needsConstantTypes) {
       this.constantTypes = {};
@@ -9663,6 +9695,9 @@ class WebGLKernel extends GLKernel {
       });
       this.constantBitRatios[name] = kernelValue.bitRatio;
       this.kernelConstants.push(kernelValue);
+      if (kernelValue.forceUploadEachRun) {
+        this.forceUploadKernelConstants.push(kernelValue);
+      }
     }
   }
 
@@ -9797,7 +9832,7 @@ class WebGLKernel extends GLKernel {
   }
 
   run() {
-    const { kernelArguments } = this;
+    const { kernelArguments, forceUploadKernelConstants } = this;
     const texSize = this.texSize;
     const gl = this.context;
 
@@ -9812,6 +9847,11 @@ class WebGLKernel extends GLKernel {
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
     this.switchingKernels = false;
+    for (let i = 0; i < forceUploadKernelConstants.length; i++) {
+      const constant = forceUploadKernelConstants[i];
+      constant.updateValue(this.constants[constant.name]);
+      if (this.switchingKernels) return;
+    }
     for (let i = 0; i < kernelArguments.length; i++) {
       kernelArguments[i].updateValue(arguments[i]);
       if (this.switchingKernels) return;
@@ -9934,10 +9974,6 @@ class WebGLKernel extends GLKernel {
       }
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, texture, 0);
     }
-  }
-
-  getArgumentTexture(name) {
-    return this.getTextureCache(`ARGUMENT_${name}`);
   }
 
   getTextureCache(name) {
@@ -11299,9 +11335,10 @@ class WebGL2KernelValueDynamicHTMLImageArray extends WebGL2KernelValueHTMLImageA
   }
 
   updateValue(images) {
-    this.checkSize(images[0].width, images[0].height);
-    this.dimensions = [images[0].width, images[0].height, images.length];
-    this.textureSize = [images[0].width, images[0].height];
+    const { width, height } = images[0];
+    this.checkSize(width, height);
+    this.dimensions = [width, height, images.length];
+    this.textureSize = [width, height];
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
     super.updateValue(images);
@@ -11675,11 +11712,12 @@ const { WebGLKernelValueMemoryOptimizedNumberTexture } = require('../../web-gl/k
 
 class WebGL2KernelValueMemoryOptimizedNumberTexture extends WebGLKernelValueMemoryOptimizedNumberTexture {
   getSource() {
+    const { id, sizeId, textureSize, dimensionsId, dimensions } = this;
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform sampler2D ${this.id}`,
-      `${ variablePrecision } ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+      `uniform sampler2D ${id}`,
+      `${ variablePrecision } ivec2 ${sizeId} = ivec2(${textureSize[0]}, ${textureSize[1]})`,
+      `${ variablePrecision } ivec3 ${dimensionsId} = ivec3(${dimensions[0]}, ${dimensions[1]}, ${dimensions[2]})`,
     ]);
   }
 }
@@ -11693,11 +11731,12 @@ const { WebGLKernelValueNumberTexture } = require('../../web-gl/kernel-value/num
 
 class WebGL2KernelValueNumberTexture extends WebGLKernelValueNumberTexture {
   getSource() {
+    const { id, sizeId, textureSize, dimensionsId, dimensions } = this;
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform ${ variablePrecision } sampler2D ${this.id}`,
-      `${ variablePrecision } ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+      `uniform ${ variablePrecision } sampler2D ${id}`,
+      `${ variablePrecision } ivec2 ${sizeId} = ivec2(${textureSize[0]}, ${textureSize[1]})`,
+      `${ variablePrecision } ivec3 ${dimensionsId} = ivec3(${dimensions[0]}, ${dimensions[1]}, ${dimensions[2]})`,
     ]);
   }
 }
@@ -12116,7 +12155,7 @@ class WebGL2Kernel extends WebGLKernel {
   }
 
   run() {
-    const { kernelArguments, texSize } = this;
+    const { kernelArguments, texSize, forceUploadKernelConstants } = this;
     const gl = this.context;
 
     gl.useProgram(this.program);
@@ -12129,6 +12168,12 @@ class WebGL2Kernel extends WebGLKernel {
 
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
+    this.switchingKernels = false;
+    for (let i = 0; i < forceUploadKernelConstants.length; i++) {
+      const constant = forceUploadKernelConstants[i];
+      constant.updateValue(this.constants[constant.name]);
+      if (this.switchingKernels) return;
+    }
     for (let i = 0; i < kernelArguments.length; i++) {
       kernelArguments[i].updateValue(arguments[i]);
       if (this.switchingKernels) return;

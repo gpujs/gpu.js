@@ -435,6 +435,7 @@ class WebGLKernel extends GLKernel {
   setupConstants(args) {
     const { context: gl } = this;
     this.kernelConstants = [];
+    this.forceUploadKernelConstants = [];
     let needsConstantTypes = this.constantTypes === null;
     if (needsConstantTypes) {
       this.constantTypes = {};
@@ -475,6 +476,9 @@ class WebGLKernel extends GLKernel {
       });
       this.constantBitRatios[name] = kernelValue.bitRatio;
       this.kernelConstants.push(kernelValue);
+      if (kernelValue.forceUploadEachRun) {
+        this.forceUploadKernelConstants.push(kernelValue);
+      }
     }
   }
 
@@ -609,7 +613,7 @@ class WebGLKernel extends GLKernel {
   }
 
   run() {
-    const { kernelArguments } = this;
+    const { kernelArguments, forceUploadKernelConstants } = this;
     const texSize = this.texSize;
     const gl = this.context;
 
@@ -624,6 +628,11 @@ class WebGLKernel extends GLKernel {
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
     this.switchingKernels = false;
+    for (let i = 0; i < forceUploadKernelConstants.length; i++) {
+      const constant = forceUploadKernelConstants[i];
+      constant.updateValue(this.constants[constant.name]);
+      if (this.switchingKernels) return;
+    }
     for (let i = 0; i < kernelArguments.length; i++) {
       kernelArguments[i].updateValue(arguments[i]);
       if (this.switchingKernels) return;
@@ -762,14 +771,6 @@ class WebGLKernel extends GLKernel {
       }
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, texture, 0);
     }
-  }
-
-  /**
-   * @desc This uses *getTextureCache** to get the Texture Cache of the argument supplied
-   * @param {String} name - Name of the argument
-   */
-  getArgumentTexture(name) {
-    return this.getTextureCache(`ARGUMENT_${name}`);
   }
 
   /**

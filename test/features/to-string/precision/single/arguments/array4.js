@@ -20,8 +20,14 @@ function testArgument(mode, context, canvas) {
   const originalResult = originalKernel(a);
   assert.deepEqual(originalResult, expected);
   const kernelString = originalKernel.toString(a);
-  const newResult = new Function('return ' + kernelString)()({ context })(a);
+  const newKernel = new Function('return ' + kernelString)()({ context });
+  const newResult = newKernel(a);
   assert.deepEqual(newResult, expected);
+
+  const b = new Float32Array([1, 1, 1, 1]);
+  const expected2 = [new Float32Array([1,1,1,1])];
+  const newResult2 = newKernel(b);
+  assert.deepEqual(newResult2, expected2);
   gpu.destroy();
 }
 

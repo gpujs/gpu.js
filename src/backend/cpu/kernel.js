@@ -217,17 +217,15 @@ class CPUKernel extends Kernel {
     } else {
       kernelThreadString = translatedSources.shift();
     }
-    const kernelString = this._kernelString = `  const LOOP_MAX = ${ this._getLoopMaxString() }
+    return this._kernelString = `  const LOOP_MAX = ${ this._getLoopMaxString() };
   ${ this.injectedNative || '' }
-  const constants = this.constants;
   const _this = this;
+  ${ this._processConstants() }
   return (${ this.argumentNames.map(argumentName => 'user_' + argumentName).join(', ') }) => {
-    ${ this._processConstants() }
     ${ this._processArguments() }
     ${ this.graphical ? this._graphicalKernelBody(kernelThreadString) : this._resultKernelBody(kernelThreadString) }
     ${ translatedSources.length > 0 ? translatedSources.join('\n') : '' }
   };`;
-    return kernelString;
   }
 
   /**

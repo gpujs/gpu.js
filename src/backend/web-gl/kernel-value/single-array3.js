@@ -14,6 +14,8 @@ class WebGLKernelValueSingleArray3 extends WebGLKernelValue {
   }
 
   getStringValueHandler() {
+    // resetting isn't supported for Array(3)
+    if (this.origin === 'constants') return '';
     return `const uploadValue_${this.name} = ${this.varName};\n`;
   }
 

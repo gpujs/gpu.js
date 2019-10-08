@@ -29,10 +29,19 @@ function imageToArray(image) {
 
 function loadImage(image) {
   return new Promise((resolve) => {
+    if (typeof image === 'string') {
+      const src = image;
+      image = new Image();
+      image.src = src;
+    }
     image.onload = () => {
       resolve(image);
     };
   });
+}
+
+function loadImages(images) {
+  return Promise.all(images.map(image => loadImage(image)));
 }
 
 function check2DImage(result, expected, channel) {

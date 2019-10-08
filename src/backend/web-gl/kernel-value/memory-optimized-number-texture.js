@@ -10,6 +10,7 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
     this.dimensions = value.dimensions;
     this.textureSize = value.size;
     this.uploadValue = value.texture;
+    this.forceUploadEachRun = true;
   }
 
   getStringValueHandler() {

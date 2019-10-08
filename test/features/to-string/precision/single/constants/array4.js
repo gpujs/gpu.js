@@ -5,6 +5,7 @@ describe('feature: to-string single precision constants Array(4)');
 
 function testConstant(mode, context, canvas) {
   const gpu = new GPU({ mode });
+  const a = new Float32Array([1, 2, 3, 4]);
   const originalKernel = gpu.createKernel(function() {
     return this.constants.a;
   }, {
@@ -13,7 +14,7 @@ function testConstant(mode, context, canvas) {
     output: [1],
     precision: 'single',
     constants: {
-      a: new Float32Array([1, 2, 3, 4])
+      a
     },
     constantTypes: {
       a: 'Array(4)'
@@ -23,8 +24,14 @@ function testConstant(mode, context, canvas) {
   const originalResult = originalKernel();
   assert.deepEqual(originalResult, expected);
   const kernelString = originalKernel.toString();
-  const newResult = new Function('return ' + kernelString)()({ context, constants: { a: new Float32Array([1, 2, 3, 4]) } })();
+  const newResult = new Function('return ' + kernelString)()({ context, constants: { a } })();
   assert.deepEqual(newResult, expected);
+
+  // Array(3) is "sticky" as a constant, and cannot reset
+  const b = new Float32Array([4, 3, 2, 1]);
+  const expected2 = [new Float32Array([1, 2, 3, 4])];
+  const newResult2 = new Function('return ' + kernelString)()({ context, constants: { a: b } })();
+  assert.deepEqual(newResult2, expected2);
   gpu.destroy();
 }
 

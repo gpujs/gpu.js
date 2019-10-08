@@ -20,7 +20,10 @@ function testConstant(mode, context, canvas) {
   assert.equal(originalKernel.constantTypes.a, 'Float');
   assert.deepEqual(originalKernel()[0], 42);
   const kernelString = originalKernel.toString();
-  const newKernel = new Function('return ' + kernelString)()({ context, constants: { a: 100 } });
+  const Kernel = new Function('return ' + kernelString)();
+
+  // Float is "sticky" as a constant, and cannot reset
+  const newKernel = Kernel({ context, constants: { a: 100 } });
   assert.deepEqual(newKernel()[0], 42);
   gpu.destroy();
 }

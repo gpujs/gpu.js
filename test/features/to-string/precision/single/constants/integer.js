@@ -20,8 +20,13 @@ function testConstant(mode, context, canvas) {
   assert.equal(originalKernel.constantTypes.a, 'Integer');
   assert.deepEqual(originalKernel()[0], 42);
   const kernelString = originalKernel.toString();
-  const newKernel = new Function('return ' + kernelString)()({ context, constants: { a: 100 } });
+  const Kernel = new Function('return ' + kernelString)();
+  const newKernel = Kernel({ context, constants: { a: 100 } });
   assert.deepEqual(newKernel()[0], 42);
+
+  // Integer is "sticky" as a constant, and cannot reset
+  const newKernel2 = Kernel({ context, constants: { a: 200 } });
+  assert.deepEqual(newKernel2()[0], 42);
   gpu.destroy();
 }
 

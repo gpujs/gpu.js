@@ -53,6 +53,7 @@ class KernelValue {
     this.contextHandle = null;
     this.onRequestContextHandle = onRequestContextHandle;
     this.onUpdateValueMismatch = onUpdateValueMismatch;
+    this.forceUploadEachRun = null;
   }
 
   getSource() {

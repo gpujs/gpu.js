@@ -220,7 +220,7 @@ class WebGL2Kernel extends WebGLKernel {
   }
 
   run() {
-    const { kernelArguments, texSize } = this;
+    const { kernelArguments, texSize, forceUploadKernelConstants } = this;
     const gl = this.context;
 
     gl.useProgram(this.program);
@@ -233,6 +233,12 @@ class WebGL2Kernel extends WebGLKernel {
 
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
+    this.switchingKernels = false;
+    for (let i = 0; i < forceUploadKernelConstants.length; i++) {
+      const constant = forceUploadKernelConstants[i];
+      constant.updateValue(this.constants[constant.name]);
+      if (this.switchingKernels) return;
+    }
     for (let i = 0; i < kernelArguments.length; i++) {
       kernelArguments[i].updateValue(arguments[i]);
       if (this.switchingKernels) return;

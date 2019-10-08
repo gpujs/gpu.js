@@ -741,10 +741,6 @@ class WebGLFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astAssignmentExpression(assNode, retArr) {
-    const declaration = this.getDeclaration(assNode.left);
-    if (declaration && !declaration.assignable) {
-      throw this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
-    }
     // TODO: casting needs implemented here
     if (assNode.operator === '%=') {
       this.astGeneric(assNode.left, retArr);
@@ -1416,6 +1412,13 @@ class WebGLFunctionNode extends FunctionNode {
           case 'Array(2)':
           case 'Array(3)':
           case 'Array(4)':
+            if (targetType === argumentType) {
+              if (argument.type !== 'Identifier') throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
+              this.triggerImplyArgumentBitRatio(this.name, argument.name, functionName, i);
+              retArr.push(`user_${argument.name}`);
+              continue;
+            }
+            break;
           case 'HTMLImage':
           case 'HTMLImageArray':
           case 'HTMLVideo':
