@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.4
- * @date Tue Oct 08 2019 10:27:37 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.5
+ * @date Fri Oct 11 2019 07:23:33 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -2023,6 +2023,7 @@ class FunctionBuilder {
         triggerImplyArgumentType,
         triggerImplyArgumentBitRatio,
         onFunctionCall,
+        onNestedFunction,
       }));
     }
 
@@ -2392,6 +2393,7 @@ class FunctionBuilder {
 module.exports = {
   FunctionBuilder
 };
+
 },{}],9:[function(require,module,exports){
 const acorn = require('acorn');
 const { utils } = require('../utils');

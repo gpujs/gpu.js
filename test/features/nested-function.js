@@ -50,3 +50,44 @@ test('nested_sum gpu', () => {
 test('nested_sum cpu', () => {
   nestedSumABTest('cpu');
 });
+
+function testNestedInCustomFunction(mode) {
+  function custom1() {
+    function nested1() {
+      return 1;
+    }
+
+    return nested1();
+  }
+  const gpu = new GPU({ mode });
+  gpu.addFunction(custom1);
+  const kernel = gpu.createKernel(function() {
+    return custom1();
+  }, { output: [1] });
+  assert.deepEqual(kernel(), new Float32Array([1]));
+  gpu.destroy();
+}
+
+test('nested in custom auto', () => {
+  testNestedInCustomFunction();
+});
+
+test('nested in custom gpu', () => {
+  testNestedInCustomFunction('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('nested in custom webgl', () => {
+  testNestedInCustomFunction('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('nested in custom webgl2', () => {
+  testNestedInCustomFunction('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('nested in custom headlessgl', () => {
+  testNestedInCustomFunction('headlessgl');
+});
+
+test('nested in custom cpu', () => {
+  testNestedInCustomFunction('cpu');
+});

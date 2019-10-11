@@ -174,6 +174,7 @@ class FunctionBuilder {
         triggerImplyArgumentType,
         triggerImplyArgumentBitRatio,
         onFunctionCall,
+        onNestedFunction,
       }));
     }
 
