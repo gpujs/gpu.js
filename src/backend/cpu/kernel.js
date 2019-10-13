@@ -107,7 +107,7 @@ class CPUKernel extends Kernel {
   translateSource() {
     this.leadingReturnStatement = this.output.length > 1 ? 'resultX[x] = ' : 'result[x] = ';
     if (this.subKernels) {
-      const followingReturnStatement = []
+      const followingReturnStatement = [];
       for (let i = 0; i < this.subKernels.length; i++) {
         const {
           name
@@ -342,6 +342,11 @@ class CPUKernel extends Kernel {
     return imageArray;
   }
 
+  /**
+   *
+   * @param flip
+   * @return {Uint8ClampedArray}
+   */
   getPixels(flip) {
     const [width, height] = this.output;
     // cpu is not flipped by default
@@ -405,9 +410,6 @@ class CPUKernel extends Kernel {
   }
 
   _resultKernel1DLoop(kernelString) {
-    const {
-      output
-    } = this;
     const constructorString = this._getKernelResultTypeConstructorString();
     return `  const outputX = _this.output[0];
     const result = new ${constructorString}(outputX);
@@ -422,9 +424,6 @@ class CPUKernel extends Kernel {
   }
 
   _resultKernel2DLoop(kernelString) {
-    const {
-      output
-    } = this;
     const constructorString = this._getKernelResultTypeConstructorString();
     return `  const outputX = _this.output[0];
     const outputY = _this.output[1];
@@ -444,9 +443,6 @@ class CPUKernel extends Kernel {
   }
 
   _graphicalKernel2DLoop(kernelString) {
-    const {
-      output
-    } = this;
     const constructorString = this._getKernelResultTypeConstructorString();
     return `  const outputX = _this.output[0];
     const outputY = _this.output[1];
@@ -464,9 +460,6 @@ class CPUKernel extends Kernel {
   }
 
   _resultKernel3DLoop(kernelString) {
-    const {
-      output
-    } = this;
     const constructorString = this._getKernelResultTypeConstructorString();
     return `  const outputX = _this.output[0];
     const outputY = _this.output[1];
@@ -504,8 +497,6 @@ class CPUKernel extends Kernel {
     return this.subKernels === null ? [''] :
       this.subKernels.map(fn);
   }
-
-
 
   destroy(removeCanvasReference) {
     if (removeCanvasReference) {

@@ -215,7 +215,6 @@ class FunctionBuilder {
     this.functionMap = {};
     this.nativeFunctionNames = [];
     this.lookupChain = [];
-    this.argumentChain = [];
     this.functionNodeDependencies = {};
     this.functionCalls = {};
 

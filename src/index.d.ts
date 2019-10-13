@@ -14,8 +14,8 @@ export class GPU {
   addFunction(kernel: KernelFunction, settings?: IGPUFunctionSettings): this;
   addNativeFunction(name: string, source: string): this;
   combineKernels(...kernels: Function[]): KernelFunction;
-  createKernel(kernel: KernelFunction, settings?: IKernelSettings): IKernelRunShortcut;
-  createKernelMap(subKernels: Object | Array<Function>, rootKernel: Function, settings?: IKernelSettings): IKernelRunShortcut;
+  createKernel(kernel: KernelFunction, settings?: IGPUKernelSettings): IKernelRunShortcut;
+  createKernelMap(subKernels: Object | Array<Function>, rootKernel: Function, settings?: IGPUKernelSettings): IKernelRunShortcut;
   destroy(): void;
   Kernel: typeof Kernel;
   mode: string;
@@ -94,7 +94,7 @@ export abstract class Kernel {
   static destroyContext(context: any): void;
   static features: IKernelFeatures;
   static getFeatures(): IKernelFeatures;
-  source: string | object;
+  source: string | IJSON;
   Kernel: Kernel;
   output: number[];
   debug: boolean;
@@ -106,13 +106,13 @@ export abstract class Kernel {
   functions: IFunction[];
   nativeFunctions: INativeFunctionList[];
   subKernels: ISubKernel[];
-  skipValidate: boolean;
+  validate: boolean;
   immutable: boolean;
   pipeline: boolean;
   plugins: IPlugin[];
   useLegacyEncoder: boolean;
-  getPixels(flip?: boolean): number[];
-  constructor(kernel: KernelFunction, settings?: IKernelSettings); // TODO: JSON support
+  getPixels(flip?: boolean): Uint8ClampedArray[];
+  constructor(kernel: KernelFunction|IJSON, settings?: IDirectKernelSettings);
   build(
     arg1?: KernelVariable,
     arg2?: KernelVariable,
@@ -178,7 +178,7 @@ export abstract class Kernel {
     arg19?: KernelVariable,
     arg20?: KernelVariable
   ): string;
-  toJSON(): object;
+  toJSON(): IJSON;
   setOutput(flag: number[]): this;
   setWarnVarUsage(flag: boolean): this;
   setOptimizeFloatMemory(flag: boolean): this;
@@ -266,7 +266,12 @@ export interface IKernelXYZ {
   z?: number;
 }
 
+export interface IGPUKernelSettings extends IKernelSettings {
+  argumentTypes?: ITypesList;
+}
+
 export interface IKernelSettings {
+  pluginNames?: string[];
   output?: number[] | IKernelXYZ;
   precision?: Precision;
   constants?: object;
@@ -279,8 +284,12 @@ export interface IKernelSettings {
   optimizeFloatMemory?: boolean;
   dynamicOutput?: boolean;
   dynamicArguments?: boolean;
-  argumentTypes?: ITypesList;
   constantTypes?: ITypesList;
+}
+
+export interface IDirectKernelSettings extends IKernelSettings {
+  argumentTypes?: string[];
+  functions?: string[]|IFunction;
 }
 
 export interface ITypesList {
@@ -455,8 +464,10 @@ export interface IGPUTextureSettings {
 
 export class Texture {
   constructor(settings: IGPUTextureSettings)
-  toArray(gpu?: GPU): TextureArrayOutput
+  toArray(): TextureArrayOutput;
+  clone(): Texture;
   delete(): void;
+  kernel: Kernel;
 }
 
 export type TextureArrayOutput = number[] | number[][] | number[][][] | number[][][][];
@@ -506,4 +517,21 @@ export interface IFunctionNodeMemberExpressionDetails {
   type: string;
   origin: 'user' | 'constants';
   signature: string;
+}
+
+export interface IJSON {
+  settings: IJSONSettings;
+  functionNodes?: object;
+}
+
+export interface IJSONSettings {
+  output: number[];
+  argumentsTypes: GPUVariableType;
+  returnType: string;
+  argumentNames?: string[];
+  constants?: IConstants;
+  pipeline?: boolean;
+  pluginNames?: string[];
+  tactic?: boolean;
+  threadDim?: number[];
 }

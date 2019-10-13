@@ -128,6 +128,7 @@ class GPU {
     // add native functions from settings
     if (settings.nativeFunctions) {
       for (const p in settings.nativeFunctions) {
+        if (!settings.nativeFunctions.hasOwnProperty(p)) continue;
         this.addNativeFunction(p, settings.nativeFunctions[p]);
       }
     }
@@ -194,7 +195,7 @@ class GPU {
   /**
    * @desc This creates a callable function object to call the kernel function with the argument parameter set
    * @param {Function|String|object} source - The calling to perform the conversion
-   * @param {Object} [settings] - The parameter configuration object
+   * @param {IGPUKernelSettings} [settings] - The parameter configuration object
    * @return {Kernel} callable function to run
    */
   createKernel(source, settings) {
@@ -426,9 +427,7 @@ class GPU {
         });
       }
     }
-    const kernel = this.createKernel(fn, settingsCopy);
-
-    return kernel;
+    return this.createKernel(fn, settingsCopy);
   }
 
   /**

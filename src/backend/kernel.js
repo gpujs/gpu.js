@@ -42,7 +42,7 @@ class Kernel {
 
   /**
    *
-   * @param {string|object} source
+   * @param {string|IJSON} source
    * @param [settings]
    */
   constructor(source, settings) {
@@ -73,7 +73,7 @@ class Kernel {
 
     /**
      * The function source
-     * @type {String}
+     * @type {String|IJSON}
      */
     this.source = source;
 
@@ -119,7 +119,7 @@ class Kernel {
 
     /**
      *
-     * @type {WebGLRenderingContext}
+     * @type {Object}
      */
     this.context = null;
 
@@ -202,6 +202,10 @@ class Kernel {
     this.warnVarUsage = true;
   }
 
+  /**
+   *
+   * @param {IDirectKernelSettings|IJSONSettings} settings
+   */
   mergeSettings(settings) {
     for (let p in settings) {
       if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
@@ -268,8 +272,8 @@ class Kernel {
   }
 
   /**
-   * @param {IFunctionSettings} settings
-   * @return {Object};
+   * @param {IDirectKernelSettings} settings
+   * @return {string[]};
    * @abstract
    */
   initPlugins(settings) {
@@ -362,6 +366,7 @@ class Kernel {
   /**
    * @desc Set output dimensions of the kernel function
    * @param {Array|Object} output - The output array to set the kernel output size to
+   * @return {Kernel}
    */
   setOutput(output) {
     if (output.hasOwnProperty('x')) {
@@ -383,6 +388,7 @@ class Kernel {
   /**
    * @desc Toggle debug mode
    * @param {Boolean} flag - true to enable debug
+   * @return {Kernel}
    */
   setDebug(flag) {
     this.debug = flag;
@@ -392,6 +398,7 @@ class Kernel {
   /**
    * @desc Toggle graphical output mode
    * @param {Boolean} flag - true to enable graphical output
+   * @return {Kernel}
    */
   setGraphical(flag) {
     this.graphical = flag;
@@ -402,7 +409,7 @@ class Kernel {
   /**
    * @desc Set the maximum number of loop iterations
    * @param {number} max - iterations count
-   *
+   * @return {Kernel}
    */
   setLoopMaxIterations(max) {
     this.loopMaxIterations = max;
@@ -411,6 +418,7 @@ class Kernel {
 
   /**
    * @desc Set Constants
+   * @return {Kernel}
    */
   setConstants(constants) {
     this.constants = constants;
@@ -419,7 +427,7 @@ class Kernel {
 
   /**
    *
-   * @param [IKernelValueTypes] constantTypes
+   * @param {IKernelValueTypes} constantTypes
    * @return {Kernel}
    */
   setConstantTypes(constantTypes) {
@@ -600,7 +608,7 @@ class Kernel {
 
   /**
    *
-   * @param [IKernelValueTypes|GPUVariableType[]] argumentTypes
+   * @param {IKernelValueTypes|GPUVariableType[]} argumentTypes
    * @return {Kernel}
    */
   setArgumentTypes(argumentTypes) {
@@ -609,6 +617,7 @@ class Kernel {
     } else {
       this.argumentTypes = [];
       for (const p in argumentTypes) {
+        if (!argumentTypes.hasOwnProperty(p)) continue;
         const argumentIndex = this.argumentNames.indexOf(p);
         if (argumentIndex === -1) throw new Error(`unable to find argument ${ p }`);
         this.argumentTypes[argumentIndex] = argumentTypes[p];
@@ -619,7 +628,7 @@ class Kernel {
 
   /**
    *
-   * @param [Tactic] tactic
+   * @param {Tactic} tactic
    * @return {Kernel}
    */
   setTactic(tactic) {
@@ -698,9 +707,10 @@ class Kernel {
   }
 
   /**
-   * @returns {number[]}
+   * @param {Boolean} [flip]
+   * @returns {Uint8ClampedArray}
    */
-  getPixels() {
+  getPixels(flip) {
     throw new Error(`"getPixels" called on ${ this.constructor.name }`);
   }
 
@@ -714,19 +724,20 @@ class Kernel {
     }
   }
 
+  /**
+   * @return {IJSON}
+   */
   toJSON() {
-    const settings = {
-      output: this.output,
-      threadDim: this.threadDim,
-      pipeline: this.pipeline,
-      argumentNames: this.argumentNames,
-      argumentsTypes: this.argumentTypes,
-      constants: this.constants,
-      pluginNames: this.plugins ? this.plugins.map(plugin => plugin.name) : null,
-      returnType: this.returnType,
-    };
     return {
-      settings
+      settings: {
+        output: this.output,
+        pipeline: this.pipeline,
+        argumentNames: this.argumentNames,
+        argumentsTypes: this.argumentTypes,
+        constants: this.constants,
+        pluginNames: this.plugins ? this.plugins.map(plugin => plugin.name) : null,
+        returnType: this.returnType,
+      }
     };
   }
 }

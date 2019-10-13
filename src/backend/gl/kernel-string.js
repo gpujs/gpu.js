@@ -183,7 +183,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   });
   result.push('    /** end setup uploads for kernel values **/');
   result.push(context.toString());
-  if (kernel.renderOutput === kernel.renderTexture) {
+  if (kernel.renderOutput === kernel.renderTexture && kernel.renderKernels) {
     context.reset();
     const results = kernel.renderKernels();
     const textureName = context.getContextVariableName(kernel.outputTexture);

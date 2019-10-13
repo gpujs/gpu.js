@@ -129,8 +129,8 @@ class WebGLKernel extends GLKernel {
 
   /**
    *
-   * @param {String} source
-   * @param {IKernelSettings} settings
+   * @param {String|IJSONSettings} source
+   * @param {IDirectKernelSettings} settings
    */
   constructor(source, settings) {
     super(source, settings);
@@ -139,11 +139,8 @@ class WebGLKernel extends GLKernel {
     this.endianness = utils.systemEndianness();
     this.extensions = {};
     this.subKernelOutputTextures = null;
-    this.kernelArguments = null;
     this.argumentTextureCount = 0;
     this.constantTextureCount = 0;
-    this.compiledFragmentShader = null;
-    this.compiledVertexShader = null;
     this.fragShader = null;
     this.vertShader = null;
     this.drawBuffersMap = null;
@@ -191,6 +188,10 @@ class WebGLKernel extends GLKernel {
     }
   }
 
+  /**
+   *
+   * @return {WebGLRenderingContext}
+   */
   initContext() {
     const settings = {
       alpha: false,
@@ -200,6 +201,11 @@ class WebGLKernel extends GLKernel {
     return this.canvas.getContext('webgl', settings) || this.canvas.getContext('experimental-webgl', settings);
   }
 
+  /**
+   *
+   * @param {IDirectKernelSettings} settings
+   * @return {string[]}
+   */
   initPlugins(settings) {
     // default plugins
     const pluginsToUse = [];
@@ -277,12 +283,20 @@ class WebGLKernel extends GLKernel {
       }
 
       const argType = utils.getVariableType(args[0], this.strictIntegers);
-      if (argType === 'Array') {
-        this.output = utils.getDimensions(argType);
-      } else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
-        this.output = args[0].output;
-      } else {
-        throw new Error('Auto output not supported for input type: ' + argType);
+      switch (argType) {
+        case 'Array':
+          this.output = utils.getDimensions(argType);
+          break;
+        case 'NumberTexture':
+        case 'MemoryOptimizedNumberTexture':
+        case 'ArrayTexture(1)':
+        case 'ArrayTexture(2)':
+        case 'ArrayTexture(3)':
+        case 'ArrayTexture(4)':
+          this.output = args[0].output;
+          break;
+        default:
+          throw new Error('Auto output not supported for input type: ' + argType);
       }
     }
 
@@ -598,6 +612,10 @@ class WebGLKernel extends GLKernel {
       fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
     });
     this.translatedSource = functionBuilder.getPrototypeString('kernel');
+    this.setupReturnTypes(functionBuilder);
+  }
+
+  setupReturnTypes(functionBuilder) {
     if (!this.graphical && !this.returnType) {
       this.returnType = functionBuilder.getKernelResultType();
     }
@@ -613,8 +631,7 @@ class WebGLKernel extends GLKernel {
   }
 
   run() {
-    const { kernelArguments, forceUploadKernelConstants } = this;
-    const texSize = this.texSize;
+    const { kernelArguments, texSize, forceUploadKernelConstants } = this;
     const gl = this.context;
 
     gl.useProgram(this.program);
@@ -678,18 +695,14 @@ class WebGLKernel extends GLKernel {
       if (this.immutable) {
         this._setupSubOutputTextures();
       }
-      this.extensions.WEBGL_draw_buffers.drawBuffersWEBGL(this.drawBuffersMap);
+      this.drawBuffers();
     }
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
-  /**
-   * @desc This return defined outputTexture, which is setup in .build(), or if immutable, is defined in .run()
-   * @returns {Object} Output Texture Cache
-   */
-  getOutputTexture() {
-    return this.outputTexture;
+  drawBuffers() {
+    this.extensions.WEBGL_draw_buffers.drawBuffersWEBGL(this.drawBuffersMap);
   }
 
   /**
@@ -771,26 +784,6 @@ class WebGLKernel extends GLKernel {
       }
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, texture, 0);
     }
-  }
-
-  /**
-   * @desc Returns the Texture Cache of the supplied parameter (can be kernel, sub-kernel or argument)
-   * @param {String} name - Name of the subkernel, argument, or kernel.
-   * @returns {Object} Texture cache
-   */
-  getTextureCache(name) {
-    if (this.textureCache.hasOwnProperty(name)) {
-      return this.textureCache[name];
-    }
-    return this.textureCache[name] = this.context.createTexture();
-  }
-
-  /**
-   * @desc removes a texture from the kernel's cache
-   * @param {String} name - Name of texture
-   */
-  detachTextureCache(name) {
-    delete this.textureCache[name];
   }
 
   setUniform1f(name, value) {
@@ -894,20 +887,21 @@ class WebGLKernel extends GLKernel {
     this.context.uniform3iv(loc, value);
   }
 
-  setUniform3fv(name, value) {
-    if (this.uniform3fvCache.hasOwnProperty(name)) {
-      const cache = this.uniform3fvCache[name];
+  setUniform4fv(name, value) {
+    if (this.uniform4fvCache.hasOwnProperty(name)) {
+      const cache = this.uniform4fvCache[name];
       if (
         value[0] === cache[0] &&
         value[1] === cache[1] &&
-        value[2] === cache[2]
+        value[2] === cache[2] &&
+        value[3] === cache[3]
       ) {
         return;
       }
     }
-    this.uniform3fvCache[name] = value;
+    this.uniform4fvCache[name] = value;
     const loc = this.getUniformLocation(name);
-    this.context.uniform3fv(loc, value);
+    this.context.uniform4fv(loc, value);
   }
 
   setUniform4iv(name, value) {
@@ -925,23 +919,6 @@ class WebGLKernel extends GLKernel {
     this.uniform4ivCache[name] = value;
     const loc = this.getUniformLocation(name);
     this.context.uniform4iv(loc, value);
-  }
-
-  setUniform4fv(name, value) {
-    if (this.uniform4fvCache.hasOwnProperty(name)) {
-      const cache = this.uniform4fvCache[name];
-      if (
-        value[0] === cache[0] &&
-        value[1] === cache[1] &&
-        value[2] === cache[2] &&
-        value[3] === cache[3]
-      ) {
-        return;
-      }
-    }
-    this.uniform4fvCache[name] = value;
-    const loc = this.getUniformLocation(name);
-    this.context.uniform4fv(loc, value);
   }
 
   /**
@@ -1128,48 +1105,42 @@ class WebGLKernel extends GLKernel {
     if (constants) {
       let i = 0;
       for (const name in constants) {
+        if (!this.constants.hasOwnProperty(name)) continue;
         result.push(this.kernelConstants[i++].getSource(this.constants[name]));
       }
     }
     return result.join('');
   }
 
+  getKernelResultDeclaration() {
+    switch (this.returnType) {
+      case 'Array(2)':
+        return 'vec2 kernelResult';
+      case 'Array(3)':
+        return 'vec3 kernelResult';
+      case 'Array(4)':
+        return 'vec4 kernelResult';
+      case 'LiteralInteger':
+      case 'Float':
+      case 'Number':
+      case 'Integer':
+        return 'float kernelResult';
+      default:
+        if (this.graphical) {
+          return 'float kernelResult';
+        } else {
+          throw new Error(`unrecognized output type "${ this.returnType }"`);
+        }
+    }
+  }
   /**
    * @desc Get Kernel program string (in *glsl*) for a kernel.
    * @returns {String} result
    */
   getKernelString() {
-    let kernelResultDeclaration;
-    switch (this.returnType) {
-      case 'Array(2)':
-        kernelResultDeclaration = 'vec2 kernelResult';
-        break;
-      case 'Array(3)':
-        kernelResultDeclaration = 'vec3 kernelResult';
-        break;
-      case 'Array(4)':
-        kernelResultDeclaration = 'vec4 kernelResult';
-        break;
-      case 'LiteralInteger':
-      case 'Float':
-      case 'Number':
-      case 'Integer':
-        kernelResultDeclaration = 'float kernelResult';
-        break;
-      default:
-        if (this.graphical) {
-          kernelResultDeclaration = 'float kernelResult';
-        } else {
-          throw new Error(`unrecognized output type "${ this.returnType }"`);
-        }
-    }
-
-    const result = [];
-    const subKernels = this.subKernels;
+    const result = [this.getKernelResultDeclaration()];
+    const { subKernels } = this;
     if (subKernels !== null) {
-      result.push(
-        kernelResultDeclaration
-      );
       switch (this.returnType) {
         case 'Number':
         case 'Float':
@@ -1205,10 +1176,6 @@ class WebGLKernel extends GLKernel {
           }
           break;
       }
-    } else {
-      result.push(
-        kernelResultDeclaration
-      );
     }
 
     return utils.linesToString(result) + this.translatedSource;
@@ -1555,9 +1522,13 @@ class WebGLKernel extends GLKernel {
     }
   }
 
+  /**
+   * @return {IJSON}
+   */
   toJSON() {
     const json = super.toJSON();
     json.functionNodes = FunctionBuilder.fromKernel(this, WebGLFunctionNode).toJSON();
+    json.settings.threadDim = this.threadDim;
     return json;
   }
 }

@@ -85,6 +85,7 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [Types](#types)
 * [Loops](#loops)
 * [Pipelining](#pipelining)
+  * [Cloning Textures](#cloning-textures)
 * [Offscreen Canvas](#offscreen-canvas)
 * [Cleanup](#cleanup)
 * [Flattened typed array support](#flattened-typed-array-support)
@@ -711,6 +712,9 @@ const matMult = gpu.createKernel(function(a, b) {
 ## Pipelining
 [Pipeline](https://en.wikipedia.org/wiki/Pipeline_(computing)) is a feature where values are sent directly from kernel to kernel via a texture.
 This results in extremely fast computing.  This is achieved with the kernel setting `pipeline: boolean` or by calling `kernel.setPipeline(true)`
+
+### Cloning Textures **New in V2!**
+When using pipeline mode the outputs from kernels can be cloned using `texture.clone()`.
 
 ```js
 const kernel1 = gpu.createKernel(function(v) {
