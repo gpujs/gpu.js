@@ -12,6 +12,7 @@
   ],
   "unpkg": "./dist/gpu-browser.min.js",
   "jsdelivr": "./dist/gpu-browser.min.js",
+  "browser": "./dist/gpu-browser.js",
   "directories": {
     "doc": "doc",
     "test": "test"
