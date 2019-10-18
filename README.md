@@ -895,7 +895,7 @@ This is a list of the supported ones:
 * `Math.min()`
 * `Math.pow()`
 * `Math.random()`
-  * A note on random.  We use [a plugin](src/plugins/triangle-noise.js) to generate random.
+  * A note on random.  We use [a plugin](src/plugins/math-random-uniformly-distributed.js) to generate random.
   Random seeded _and_ generated, _both from the GPU_, is not as good as random from the CPU as there are more things that the CPU can seed random from.
   However, we seed random on the GPU, _from a random value in the CPU_.
   We then seed the subsequent randoms from the previous random value.
