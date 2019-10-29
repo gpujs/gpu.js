@@ -574,7 +574,7 @@ test('auto detect float, array, array2d, array3d - webgl', () => {
     lookupFunctionArgumentBitRatio: () => 4,
   });
 
-  assert.equal(node.toString(), 'float advancedUsed(int user_int, sampler2D user_array, sampler2D user_array2d, sampler2D user_array3d) {'
+  assert.equal(node.toString(), 'float advancedUsed(int user_int, sampler2D user_array,ivec2 user_arraySize,ivec3 user_arrayDim, sampler2D user_array2d,ivec2 user_array2dSize,ivec3 user_array2dDim, sampler2D user_array3d,ivec2 user_array3dSize,ivec3 user_array3dDim) {'
     + '\nfloat user_allValues=constants_float;'
     + '\nuser_allValues+=float(constants_int);'
     + '\nuser_allValues+=get32(constants_array, constants_arraySize, constants_arrayDim, 0, 0, threadId.x);'

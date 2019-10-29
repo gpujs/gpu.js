@@ -47,8 +47,7 @@ export class FunctionNode {
     this.lookupFunctionArgumentTypes = null;
     this.lookupFunctionArgumentBitRatio = null;
     this.triggerImplyArgumentType = null;
-    this.triggerTrackArgumentSynonym = null;
-    this.lookupArgumentSynonym = null;
+    this.triggerImplyArgumentBitRatio = null;
     this.onNestedFunction = null;
     this.onFunctionCall = null;
     this.optimizeFloatMemory = null;
@@ -77,9 +76,6 @@ export class FunctionNode {
       }
     }
 
-    this.synonymIndex = -1;
-    this.synonymUseIndex = 0;
-    this.argumentSynonym = {};
     this.literalTypes = {};
 
     this.validate();
@@ -190,7 +186,7 @@ export class FunctionNode {
    * @desc Parses the class function JS, and returns its Abstract Syntax Tree object.
    * This is used internally to convert to shader code
    *
-   * @param {Object} [import { $1 } from $2] - Parser to use, assumes in scope 'parser' if null or undefined
+   * @param {Object} [inParser] - Parser to use, assumes in scope 'parser' if null or undefined
    *
    * @returns {Object} The function AST Object, note that result is cached under this.ast;
    */
@@ -341,20 +337,6 @@ export class FunctionNode {
       }
     }
     throw new Error(`Type for constant "${ constantName }" not declared`);
-  }
-
-  /**
-   * @desc Return the name of the *user argument*(subKernel argument) corresponding
-   * to the argument supplied to the kernel
-   *
-   * @param {String} name - Name of the argument
-   * @returns {String} Name of the parameter
-   */
-  getKernelArgumentName(name) {
-    if (!this.lookupArgumentSynonym) return null;
-    const argumentIndex = this.argumentNames.indexOf(name);
-    if (argumentIndex === -1) return null;
-    return this.lookupArgumentSynonym('kernel', this.name, name);
   }
 
   toString() {
@@ -698,6 +680,11 @@ export class FunctionNode {
       case 'AssignmentExpression':
         this.getDependencies(ast.left, dependencies, isNotSafe);
         this.getDependencies(ast.right, dependencies, isNotSafe);
+        return dependencies;
+      case 'ConditionalExpression':
+        this.getDependencies(ast.test, dependencies, isNotSafe);
+        this.getDependencies(ast.alternate, dependencies, isNotSafe);
+        this.getDependencies(ast.consequent, dependencies, isNotSafe);
         return dependencies;
       case 'Literal':
         dependencies.push({

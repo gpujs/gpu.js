@@ -31,10 +31,14 @@ function testConstant(mode, context, canvas) {
   assert.deepEqual(originalKernel2()[0], -42);
   const kernelString1 = originalKernel1.toString();
   const kernelString2 = originalKernel2.toString();
-  const newKernel1 = new Function('return ' + kernelString1)()({ context, constants: { a: true } });
-  const newKernel2 = new Function('return ' + kernelString1)()({ context, constants: { a: false } });
-  const newKernel3 = new Function('return ' + kernelString2)()({ context, constants: { a: false } });
-  const newKernel4 = new Function('return ' + kernelString2)()({ context, constants: { a: true } });
+  const Kernel1 = new Function('return ' + kernelString1)();
+  const Kernel2 = new Function('return ' + kernelString2)();
+  const newKernel1 = Kernel1({ context, constants: { a: true } });
+  const newKernel2 = Kernel1({ context, constants: { a: false } });
+  const newKernel3 = Kernel2({ context, constants: { a: false } });
+  const newKernel4 = Kernel2({ context, constants: { a: true } });
+
+  // Boolean is "sticky" as a constant, and cannot reset
   assert.deepEqual(newKernel1()[0], 42);
   assert.deepEqual(newKernel2()[0], 42);
   assert.deepEqual(newKernel3()[0], -42);

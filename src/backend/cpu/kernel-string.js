@@ -1,13 +1,23 @@
-import { utils } from '../../utils';
+import { utils } from '../../utils'
 
-function constantsToString(constants) {
+function constantsToString(constants, types) {
   const results = [];
-  for (const p in constants) {
-    const constant = constants[p];
-    switch (typeof constant) {
-      case 'number':
-      case 'boolean':
-        results.push(`${p}:${constant}`);
+  for (const name in types) {
+    if (!types.hasOwnProperty(name)) continue;
+    const type = types[name];
+    const constant = constants[name];
+    switch (type) {
+      case 'Number':
+      case 'Integer':
+      case 'Float':
+      case 'Boolean':
+        results.push(`${name}:${constant}`);
+        break;
+      case 'Array(2)':
+      case 'Array(3)':
+      case 'Array(4)':
+        results.push(`${name}:new ${constant.constructor.name}(${JSON.stringify(Array.from(constant))})`);
+        break;
     }
   }
   return `{ ${ results.join() } }`;
@@ -21,9 +31,10 @@ export function cpuKernelString(cpuKernel, name) {
   const useFunctionKeyword = !/^function/.test(cpuKernel.color.toString());
 
   header.push(
-    '  const { context, canvas, constants } = settings;',
+    '  const { context, canvas, constants: incomingConstants } = settings;',
     `  const output = new Int32Array(${JSON.stringify(Array.from(cpuKernel.output))});`,
-    `  const _constants = ${constantsToString(cpuKernel.constants)};`,
+    `  const _constantTypes = ${JSON.stringify(cpuKernel.constantTypes)};`,
+    `  const _constants = ${constantsToString(cpuKernel.constants, cpuKernel.constantTypes)};`,
   );
 
   thisProperties.push(
@@ -108,12 +119,12 @@ export function cpuKernelString(cpuKernel, name) {
             return 'context';
         }
       }
-    })
+    });
     beforeReturn.push(flattenedImageTo3DArray);
-    thisProperties.push(`    _imageTo2DArray,`);
+    thisProperties.push(`    _mediaTo2DArray,`);
     thisProperties.push(`    _imageTo3DArray,`);
   } else if (cpuKernel.argumentTypes.indexOf('HTMLImage') !== -1 || constantTypes.indexOf('HTMLImage') !== -1) {
-    const flattenedImageTo2DArray = utils.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel._imageTo2DArray.toString(), {
+    const flattenedImageTo2DArray = utils.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel._mediaTo2DArray.toString(), {
       findDependency: (object, name) => {
         return null;
       },
@@ -128,19 +139,31 @@ export function cpuKernelString(cpuKernel, name) {
       }
     });
     beforeReturn.push(flattenedImageTo2DArray);
-    thisProperties.push(`    _imageTo2DArray,`);
+    thisProperties.push(`    _mediaTo2DArray,`);
   }
 
   return `function(settings) {
 ${ header.join('\n') }
-  for (const p in constants) {
-    const constant = constants[p];
-    switch (typeof constant) {
-      case 'number':
-      case 'boolean':
+  for (const p in _constantTypes) {
+    if (!_constantTypes.hasOwnProperty(p)) continue;
+    const type = _constantTypes[p];
+    switch (type) {
+      case 'Number':
+      case 'Integer':
+      case 'Float':
+      case 'Boolean':
+      case 'Array(2)':
+      case 'Array(3)':
+      case 'Array(4)':
+        if (incomingConstants.hasOwnProperty(p)) {
+          console.warn('constant ' + p + ' of type ' + type + ' cannot be resigned');
+        }
         continue;
     }
-    _constants[p] = constant;
+    if (!incomingConstants.hasOwnProperty(p)) {
+      throw new Error('constant ' + p + ' not found');
+    }
+    _constants[p] = incomingConstants[p];
   }
   const kernel = (function() {
 ${cpuKernel._kernelString}

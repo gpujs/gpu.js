@@ -3,30 +3,98 @@
 <head>
   <meta charset="utf-8">
   <title>Video input with GPU.js</title>
-  <script src="../../dist/gpu-browser.min.js"></script>
+  <script src="../../dist/gpu-browser.js"></script>
 </head>
 <body>
-<h1>Video input with GPU.js</h1>
-<div id="log-fps"></div>
+<h1>Video input (and output) with GPU.js</h1>
 <!-- ty https://commons.wikimedia.org/wiki/File:Jellyfish_in_Vr%C3%A5ngo.webm -->
-<video src="../../test/jellyfish.webm" controls width="337" height="599"></video>
+<div style="text-align: center">
+  <label><input type="checkbox" id="flip-xy" /> Flip XY</label><br />
+  <label><input type="checkbox" id="alter-colors" /> Alter colors</label><br />
+  <label><input type="checkbox" id="gpu-enabled" checked /> GPU enabled</label><br />
+  <label><input type="checkbox" id="pause-gpu" /> Pause GPU</label><br />
+</div>
+<style>
+  .grid-container {
+    display: grid;
+    grid-template-columns: auto auto;
+  }
+  .grid-item {
+    padding: 20px;
+    text-align: center;
+  }
+</style>
+<div class="grid-container">
+<div class="grid-item">
+<h3>Video</h3>
+<video src="../../test/jellyfish.webm" controls width="337" height="599" loop></video>
+</div>
+<div id="canvas-parent" class="grid-item">
+  <h3>GPU.js Graphical Output <span id="fps-number">0</span><span> fps</span></h3>
+</div>
+</div>
 <script src="dist/gpu-browser.js"></script>
 <script>
-  const gpu = new GPU({ mode: 'webgl2' });
-  const kernel = gpu.createKernel(function(frame) {
-    const pixel = frame[this.output.y - this.thread.y][this.output.x - this.thread.x];
-    this.color(pixel.b, pixel.g, pixel.r, pixel.a);
-  }, {
-    output: [337, 599],
-    graphical: true
-  });
-  const videoElement = document.querySelector('video');
-  document.body.appendChild(kernel.canvas);
-  function render() {
-    kernel(videoElement);
-    window.requestAnimationFrame(render);
+  const canvasParent = document.getElementById('canvas-parent');
+  const flipXY = document.getElementById('flip-xy');
+  const alterColors = document.getElementById('alter-colors');
+  const gpuEnabled = document.getElementById('gpu-enabled');
+  const pauseGPU = document.getElementById('pause-gpu');
+  const fpsNumber = document.getElementById('fps-number');
+  let lastCalledTime = Date.now();
+  let fps;
+  let delta;
+  let dispose = setup();
+  gpuEnabled.onchange = () => {
+    if (dispose) dispose();
+    dispose = setup();
+  };
+  function setup() {
+    let disposed = false;
+    const gpu = new GPU({ mode: gpuEnabled.checked ? 'gpu' : 'cpu' });
+
+    // THIS IS THE IMPORTANT STUFF
+    const kernel = gpu.createKernel(function (frame, flipXY, alterColors) {
+      // NOTE: better to do alterColors and flipXY out of the kernel, but showing here for brevity
+      const pixel = flipXY
+        ? frame[this.output.y - 1 - this.thread.y][this.output.x - 1 - this.thread.x]
+        : frame[this.thread.y][this.thread.x];
+
+      if (alterColors) {
+        this.color(pixel.b, pixel.g, pixel.r, pixel.a);
+      } else {
+        this.color(pixel.r, pixel.g, pixel.b, pixel.a);
+      }
+    }, {
+      output: [337, 599],
+      graphical: true
+    });
+    canvasParent.appendChild(kernel.canvas);
+    const videoElement = document.querySelector('video');
+    function render() {
+      if (disposed) {
+        return;
+      }
+      if (pauseGPU.checked) return setTimeout(render, 100); // save a little resources when paused
+      kernel(videoElement, flipXY.checked, alterColors.checked);
+      window.requestAnimationFrame(render);
+      calcFPS();
+    }
+
+    render();
+    return () => {
+      canvasParent.removeChild(kernel.canvas);
+      gpu.destroy();
+      disposed = true;
+    };
   }
-  render();
+
+  function calcFPS() {
+    delta = (Date.now() - lastCalledTime) / 1000;
+    lastCalledTime = Date.now();
+    fps = 1 / delta;
+    fpsNumber.innerHTML = fps.toFixed(0);
+  }
 </script>
 </body>
 </html>

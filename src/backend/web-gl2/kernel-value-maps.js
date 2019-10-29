@@ -5,8 +5,8 @@ import { WebGL2KernelValueInteger } from './kernel-value/integer';
 import { WebGL2KernelValueHTMLImage } from './kernel-value/html-image';
 import { WebGL2KernelValueDynamicHTMLImage } from './kernel-value/dynamic-html-image';
 
-import { WebGL2KernelValueHtmlImageArray } from './kernel-value/html-image-array';
-import { WebGL2KernelValueDynamicHtmlImageArray } from './kernel-value/dynamic-html-image-array';
+import { WebGL2KernelValueHTMLImageArray } from './kernel-value/html-image-array';
+import { WebGL2KernelValueDynamicHTMLImageArray } from './kernel-value/dynamic-html-image-array';
 
 import { WebGL2KernelValueHTMLVideo } from './kernel-value/html-video';
 import { WebGL2KernelValueDynamicHTMLVideo } from './kernel-value/dynamic-html-video';
@@ -42,7 +42,7 @@ import { WebGL2KernelValueSingleArray4 } from './kernel-value/single-array4';
 import { WebGL2KernelValueUnsignedArray } from './kernel-value/unsigned-array';
 import { WebGL2KernelValueDynamicUnsignedArray } from './kernel-value/dynamic-unsigned-array';
 
-const kernelValueMaps = {
+export const kernelValueMaps = {
   unsigned: {
     dynamic: {
       'Boolean': WebGL2KernelValueBoolean,
@@ -69,7 +69,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueDynamicHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
     static: {
@@ -97,7 +97,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
   },
@@ -127,7 +127,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueDynamicHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
     static: {
@@ -155,7 +155,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
   },

@@ -300,6 +300,8 @@ export class WebGLKernel extends GLKernel {
       optimizeFloatMemory: this.optimizeFloatMemory,
       precision: this.precision,
     }, this.output);
+
+    this.checkTextureSize();
   }
 
   updateMaxTexSize() {
@@ -427,6 +429,7 @@ export class WebGLKernel extends GLKernel {
   setupConstants(args) {
     const { context: gl } = this;
     this.kernelConstants = [];
+    this.forceUploadKernelConstants = [];
     let needsConstantTypes = this.constantTypes === null;
     if (needsConstantTypes) {
       this.constantTypes = {};
@@ -467,6 +470,9 @@ export class WebGLKernel extends GLKernel {
       });
       this.constantBitRatios[name] = kernelValue.bitRatio;
       this.kernelConstants.push(kernelValue);
+      if (kernelValue.forceUploadEachRun) {
+        this.forceUploadKernelConstants.push(kernelValue);
+      }
     }
   }
 
@@ -601,7 +607,7 @@ export class WebGLKernel extends GLKernel {
   }
 
   run() {
-    const { kernelArguments } = this;
+    const { kernelArguments, forceUploadKernelConstants } = this;
     const texSize = this.texSize;
     const gl = this.context;
 
@@ -609,13 +615,18 @@ export class WebGLKernel extends GLKernel {
     gl.scissor(0, 0, texSize[0], texSize[1]);
 
     if (this.dynamicOutput) {
-      this.setUniform3iv('uOutputDim', this.threadDim);
+      this.setUniform3iv('uOutputDim', new Int32Array(this.threadDim));
       this.setUniform2iv('uTexSize', texSize);
     }
 
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
     this.switchingKernels = false;
+    for (let i = 0; i < forceUploadKernelConstants.length; i++) {
+      const constant = forceUploadKernelConstants[i];
+      constant.updateValue(this.constants[constant.name]);
+      if (this.switchingKernels) return;
+    }
     for (let i = 0; i < kernelArguments.length; i++) {
       kernelArguments[i].updateValue(arguments[i]);
       if (this.switchingKernels) return;
@@ -754,14 +765,6 @@ export class WebGLKernel extends GLKernel {
       }
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, texture, 0);
     }
-  }
-
-  /**
-   * @desc This uses *getTextureCache** to get the Texture Cache of the argument supplied
-   * @param {String} name - Name of the argument
-   */
-  getArgumentTexture(name) {
-    return this.getTextureCache(`ARGUMENT_${name}`);
   }
 
   /**

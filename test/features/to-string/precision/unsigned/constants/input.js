@@ -25,8 +25,13 @@ function testConstant(mode, context, canvas) {
   });
   assert.deepEqual(originalKernel()[0], 10);
   const kernelString = originalKernel.toString();
-  const newKernel = new Function('return ' + kernelString)()({ context, constants: { a } });
+  const Kernel = new Function('return ' + kernelString)();
+  const newKernel = Kernel({ context, constants: { a } });
   assert.deepEqual(newKernel()[0], 10);
+
+  const b = input([1,1,1,1],[2,2]);
+  const newKernel2 = Kernel({ context, constants: { a: b } });
+  assert.deepEqual(newKernel2()[0], 4);
   gpu.destroy();
 }
 

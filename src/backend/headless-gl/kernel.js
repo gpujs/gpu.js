@@ -57,6 +57,7 @@ export class HeadlessGLKernel extends WebGLKernel {
       isDrawBuffers,
       kernelMap: isDrawBuffers,
       channelCount: this.getChannelCount(),
+      maxTextureSize: this.getMaxTextureSize(),
     });
   }
 
@@ -76,6 +77,10 @@ export class HeadlessGLKernel extends WebGLKernel {
 
   static get testCanvas() {
     return testCanvas;
+  }
+
+  static getMaxTextureSize() {
+    return testContext.getParameter(testContext.MAX_TEXTURE_SIZE);
   }
 
   static get testContext() {
@@ -136,7 +141,7 @@ export class HeadlessGLKernel extends WebGLKernel {
    */
   toString() {
     const setupContextString = `const gl = context || require('gl')(1, 1);\n`;
-    const destroyContextString = `if (!context) { gl.getExtension('STACKGL_destroy_context').destroy(); }\n`;
+    const destroyContextString = `    if (!context) { gl.getExtension('STACKGL_destroy_context').destroy(); }\n`;
     return glKernelString(this.constructor, arguments, this, setupContextString, destroyContextString);
   }
 

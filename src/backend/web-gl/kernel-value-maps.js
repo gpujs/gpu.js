@@ -39,7 +39,7 @@ import { WebGLKernelValueSingleArray4 } from './kernel-value/single-array4';
 import { WebGLKernelValueUnsignedArray } from './kernel-value/unsigned-array';
 import { WebGLKernelValueDynamicUnsignedArray } from './kernel-value/dynamic-unsigned-array';
 
-const kernelValueMaps = {
+export const kernelValueMaps = {
   unsigned: {
     dynamic: {
       'Boolean': WebGLKernelValueBoolean,
@@ -64,7 +64,7 @@ const kernelValueMaps = {
       'ArrayTexture(2)': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(3)': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(4)': WebGLKernelValueDynamicNumberTexture,
-      'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
+      'MemoryOptimizedNumberTexture': WebGLKernelValueMemoryOptimizedNumberTexture,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
@@ -116,7 +116,6 @@ const kernelValueMaps = {
       'Array3D(2)': WebGLKernelValueDynamicSingleArray3DI,
       'Array3D(3)': WebGLKernelValueDynamicSingleArray3DI,
       'Array3D(4)': WebGLKernelValueDynamicSingleArray3DI,
-      'Array': WebGLKernelValueDynamicSingleArray,
       'Input': WebGLKernelValueDynamicSingleInput,
       'NumberTexture': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(1)': WebGLKernelValueDynamicNumberTexture,

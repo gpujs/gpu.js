@@ -597,12 +597,7 @@ export class WebGLFunctionNode extends FunctionNode {
         retArr.push(`user_${idtNode.name}`);
       }
     } else {
-      const userArgumentName = this.getKernelArgumentName(idtNode.name);
-      if (userArgumentName) {
-        retArr.push(`user_${userArgumentName}`);
-      } else {
-        retArr.push(`user_${idtNode.name}`);
-      }
+      retArr.push(`user_${idtNode.name}`);
     }
 
     return retArr;
@@ -743,10 +738,6 @@ export class WebGLFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astAssignmentExpression(assNode, retArr) {
-    const declaration = this.getDeclaration(assNode.left);
-    if (declaration && !declaration.assignable) {
-      throw new this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
-    }
     // TODO: casting needs implemented here
     if (assNode.operator === '%=') {
       this.astGeneric(assNode.left, retArr);
@@ -1176,9 +1167,7 @@ export class WebGLFunctionNode extends FunctionNode {
 
     // handle more complex types
     // argument may have come from a parent
-    let synonymName = this.getKernelArgumentName(name);
-
-    const markupName = `${origin}_${synonymName || name}`;
+    const markupName = `${origin}_${name}`;
 
     switch (type) {
       case 'Array(2)':
@@ -1421,10 +1410,15 @@ export class WebGLFunctionNode extends FunctionNode {
           case 'Array(3)':
           case 'Array(4)':
             if (targetType === argumentType) {
-              this.astGeneric(argument, retArr);
+              if (argument.type !== 'Identifier') throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
+              this.triggerImplyArgumentBitRatio(this.name, argument.name, functionName, i);
+              retArr.push(`user_${argument.name}`);
               continue;
             }
             break;
+          case 'HTMLImage':
+          case 'HTMLImageArray':
+          case 'HTMLVideo':
           case 'ArrayTexture(1)':
           case 'ArrayTexture(2)':
           case 'ArrayTexture(3)':
@@ -1432,8 +1426,9 @@ export class WebGLFunctionNode extends FunctionNode {
           case 'Array':
           case 'Input':
             if (targetType === argumentType) {
-              this.triggerTrackArgumentSynonym(this.name, argument.name, functionName, i);
-              this.astGeneric(argument, retArr);
+              if (argument.type !== 'Identifier') throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
+              this.triggerImplyArgumentBitRatio(this.name, argument.name, functionName, i);
+              retArr.push(`user_${argument.name},user_${argument.name}Size,user_${argument.name}Dim`);
               continue;
             }
             break;
@@ -1524,6 +1519,9 @@ const typeMap = {
   'ArrayTexture(2)': 'sampler2D',
   'ArrayTexture(3)': 'sampler2D',
   'ArrayTexture(4)': 'sampler2D',
+  'HTMLVideo': 'sampler2D',
+  'HTMLImage': 'sampler2D',
+  'HTMLImageArray': 'sampler2DArray',
 };
 
 const operatorMap = {

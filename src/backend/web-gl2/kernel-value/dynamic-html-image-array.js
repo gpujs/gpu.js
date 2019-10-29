@@ -1,6 +1,6 @@
-import { WebGL2KernelValueHtmlImageArray } from './html-image-array';
+import { WebGL2KernelValueHTMLImageArray } from './html-image-array';
 
-export class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageArray {
+export class WebGL2KernelValueDynamicHTMLImageArray extends WebGL2KernelValueHTMLImageArray {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
@@ -11,8 +11,10 @@ export class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtm
   }
 
   updateValue(images) {
-    this.dimensions = [images[0].width, images[0].height, images.length];
-    this.textureSize = [images[0].width, images[0].height];
+    const { width, height } = images[0];
+    this.checkSize(width, height);
+    this.dimensions = [width, height, images.length];
+    this.textureSize = [width, height];
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
     super.updateValue(images);

@@ -24,12 +24,23 @@ function testArgument(mode, context, canvas) {
     [9, 10, 11, 12],
     [13, 14, 15, 16],
   ];
+  const b = [
+    [1, 1, 1, 1],
+    [1, 1, 1, 1],
+    [1, 1, 1, 1],
+    [1, 1, 1, 1],
+  ];
   const expected = new Float32Array([28,32,36,40]);
   const originalResult = originalKernel(a);
   assert.deepEqual(originalResult, expected);
   const kernelString = originalKernel.toString(a);
-  const newResult = new Function('return ' + kernelString)()({ context })(a);
+  const newKernel = new Function('return ' + kernelString)()({ context });
+  const newResult = newKernel(a);
   assert.deepEqual(newResult, expected);
+
+  const expected2 = new Float32Array([4,4,4,4]);
+  const newResult2 = newKernel(b);
+  assert.deepEqual(newResult2, expected2);
   gpu.destroy();
 }
 

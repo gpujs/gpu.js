@@ -4,10 +4,13 @@ import { WebGLKernelValue } from './index';
 export class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
+    const [width, height] = value.size;
+    this.checkSize(width, height);
     this.setupTexture();
     this.dimensions = value.dimensions;
     this.textureSize = value.size;
     this.uploadValue = value.texture;
+    this.forceUploadEachRun = true;
   }
 
   getStringValueHandler() {

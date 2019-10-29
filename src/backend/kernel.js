@@ -115,7 +115,7 @@ export class Kernel {
     this.constantTypes = null;
     this.constantBitRatios = null;
     this.dynamicArguments = false;
-    this.dynamicOutput = true;
+    this.dynamicOutput = false;
 
     /**
      *

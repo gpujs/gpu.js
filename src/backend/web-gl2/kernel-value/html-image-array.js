@@ -1,9 +1,10 @@
 import { utils } from '../../../utils';
 import { WebGLKernelValue } from '../../web-gl/kernel-value/index';
 
-export class WebGL2KernelValueHtmlImageArray extends WebGLKernelValue {
+export class WebGL2KernelValueHTMLImageArray extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
+    this.checkSize(value[0].width, value[0].height);
     this.requestTexture();
     this.dimensions = [value[0].width, value[0].height, value.length];
     this.textureSize = [value[0].width, value[0].height];

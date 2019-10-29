@@ -32,4 +32,5 @@ node_modules
 #yarn
 yarn.lock
 
+# OSX .DS_Store
 .DS_Store

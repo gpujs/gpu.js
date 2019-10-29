@@ -61,6 +61,7 @@ export class WebGL2Kernel extends WebGLKernel {
       kernelMap: true,
       isTextureFloat: true,
       channelCount: this.getChannelCount(),
+      maxTextureSize: this.getMaxTextureSize(),
     });
   }
 
@@ -74,6 +75,10 @@ export class WebGL2Kernel extends WebGLKernel {
 
   static getChannelCount() {
     return testContext.getParameter(testContext.MAX_DRAW_BUFFERS);
+  }
+
+  static getMaxTextureSize() {
+    return testContext.getParameter(testContext.MAX_TEXTURE_SIZE);
   }
 
   static lookupKernelValueType(type, dynamic, precision, value) {
@@ -191,6 +196,8 @@ export class WebGL2Kernel extends WebGLKernel {
       optimizeFloatMemory: this.optimizeFloatMemory,
       precision: this.precision,
     }, this.output);
+
+    this.checkTextureSize();
   }
 
   translateSource() {
@@ -213,7 +220,7 @@ export class WebGL2Kernel extends WebGLKernel {
   }
 
   run() {
-    const { kernelArguments, texSize } = this;
+    const { kernelArguments, texSize, forceUploadKernelConstants } = this;
     const gl = this.context;
 
     gl.useProgram(this.program);
@@ -226,6 +233,12 @@ export class WebGL2Kernel extends WebGLKernel {
 
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
+    this.switchingKernels = false;
+    for (let i = 0; i < forceUploadKernelConstants.length; i++) {
+      const constant = forceUploadKernelConstants[i];
+      constant.updateValue(this.constants[constant.name]);
+      if (this.switchingKernels) return;
+    }
     for (let i = 0; i < kernelArguments.length; i++) {
       kernelArguments[i].updateValue(arguments[i]);
       if (this.switchingKernels) return;

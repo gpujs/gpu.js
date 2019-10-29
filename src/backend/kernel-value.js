@@ -4,7 +4,8 @@
 export class KernelValue {
   /**
    *
-   * @param {IKernelArgumentSettings} settings
+   * @param {KernelVariable} value
+   * @param {IKernelValueSettings} settings
    */
   constructor(value, settings) {
     const {
@@ -53,6 +54,7 @@ export class KernelValue {
     this.contextHandle = null;
     this.onRequestContextHandle = onRequestContextHandle;
     this.onUpdateValueMismatch = onUpdateValueMismatch;
+    this.forceUploadEachRun = null;
   }
 
   getSource() {
@@ -61,9 +63,5 @@ export class KernelValue {
 
   updateValue(value) {
     throw new Error(`"updateValue" not defined on ${ this.constructor.name }`);
-  }
-
-  getFocusString() {
-    throw new Error(`"getFocusString" not defined on ${ this.constructor.name }`);
   }
 }

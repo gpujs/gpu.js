@@ -23,8 +23,13 @@ function testConstant(mode, context, canvas) {
   const originalResult = originalKernel();
   assert.deepEqual(originalResult, expected);
   const kernelString = originalKernel.toString();
-  const newResult = new Function('return ' + kernelString)()({ context, constants: { a: new Float32Array([1, 2]) } })();
+  const Kernel = new Function('return ' + kernelString)();
+  const newResult = Kernel({ context, constants: { a: new Float32Array([1, 2]) } })();
   assert.deepEqual(newResult, expected);
+
+  // Array(2) is "sticky" as a constant, and cannot reset
+  const newResult2 = Kernel({ context, constants: { a: new Float32Array([2, 1]) } })();
+  assert.deepEqual(newResult2, expected);
   gpu.destroy();
 }
 

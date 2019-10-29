@@ -70,7 +70,7 @@ test('divide float & Input', () => {
     lookupFunctionArgumentBitRatio: () => 4,
   });
 
-  assert.equal(node.toString(), 'float kernel(float user_left, sampler2D user_right) {'
+  assert.equal(node.toString(), 'float kernel(float user_left, sampler2D user_right,ivec2 user_rightSize,ivec3 user_rightDim) {'
     + '\nreturn (user_left/get32(user_right, user_rightSize, user_rightDim, 0, 0, threadId.x));'
     + '\n}');
 });
@@ -141,7 +141,7 @@ test('divide int & Input', () => {
     lookupFunctionArgumentBitRatio: () => 4,
   });
 
-  assert.equal(node.toString(), 'float kernel(int user_left, sampler2D user_right) {'
+  assert.equal(node.toString(), 'float kernel(int user_left, sampler2D user_right,ivec2 user_rightSize,ivec3 user_rightDim) {'
     + '\nreturn float((user_left/int(get32(user_right, user_rightSize, user_rightDim, 0, 0, threadId.x))));'
     + '\n}');
 });
@@ -212,7 +212,7 @@ test('divide literal integer & Input', () => {
     lookupFunctionArgumentBitRatio: () => 4,
   });
 
-  assert.equal(node.toString(), 'float kernel(sampler2D user_v) {'
+  assert.equal(node.toString(), 'float kernel(sampler2D user_v,ivec2 user_vSize,ivec3 user_vDim) {'
     + '\nreturn (1.0/get32(user_v, user_vSize, user_vDim, 0, 0, threadId.x));'
     + '\n}');
 });
@@ -283,7 +283,7 @@ test('divide literal float & Input', () => {
     lookupFunctionArgumentBitRatio: () => 4,
   });
 
-  assert.equal(node.toString(), 'float kernel(sampler2D user_v) {'
+  assert.equal(node.toString(), 'float kernel(sampler2D user_v,ivec2 user_vSize,ivec3 user_vDim) {'
     + '\nreturn (1.1/get32(user_v, user_vSize, user_vDim, 0, 0, threadId.x));'
     + '\n}');
 });
@@ -328,7 +328,7 @@ test('multiply Input and Input', () => {
     argumentTypes: ['Input', 'Input'],
     lookupFunctionArgumentBitRatio: () => 4,
   });
-  assert.equal(node.toString(), 'float kernel(sampler2D user_v1, sampler2D user_v2) {'
+  assert.equal(node.toString(), 'float kernel(sampler2D user_v1,ivec2 user_v1Size,ivec3 user_v1Dim, sampler2D user_v2,ivec2 user_v2Size,ivec3 user_v2Dim) {'
     + '\nreturn (get32(user_v1, user_v1Size, user_v1Dim, 0, 0, threadId.x)*get32(user_v2, user_v2Size, user_v2Dim, 0, 0, threadId.x));'
     + '\n}');
 });
@@ -341,7 +341,7 @@ test('multiply Input and int', () => {
     argumentTypes: ['Input', 'Integer'],
     lookupFunctionArgumentBitRatio: () => 4,
   });
-  assert.equal(node.toString(), 'float kernel(sampler2D user_v1, int user_v2) {'
+  assert.equal(node.toString(), 'float kernel(sampler2D user_v1,ivec2 user_v1Size,ivec3 user_v1Dim, int user_v2) {'
     + '\nreturn (get32(user_v1, user_v1Size, user_v1Dim, 0, 0, threadId.x)*float(user_v2));'
     + '\n}');
 });
@@ -354,7 +354,7 @@ test('multiply Input and float', () => {
     argumentTypes: ['Input', 'Float'],
     lookupFunctionArgumentBitRatio: () => 4,
   });
-  assert.equal(node.toString(), 'float kernel(sampler2D user_v1, float user_v2) {'
+  assert.equal(node.toString(), 'float kernel(sampler2D user_v1,ivec2 user_v1Size,ivec3 user_v1Dim, float user_v2) {'
     + '\nreturn (get32(user_v1, user_v1Size, user_v1Dim, 0, 0, threadId.x)*user_v2);'
     + '\n}');
 });
@@ -367,7 +367,7 @@ test('multiply Input and Number', () => {
     argumentTypes: ['Input', 'Number'],
     lookupFunctionArgumentBitRatio: () => 4,
   });
-  assert.equal(node.toString(), 'float kernel(sampler2D user_v1, float user_v2) {'
+  assert.equal(node.toString(), 'float kernel(sampler2D user_v1,ivec2 user_v1Size,ivec3 user_v1Dim, float user_v2) {'
     + '\nreturn (get32(user_v1, user_v1Size, user_v1Dim, 0, 0, threadId.x)*user_v2);'
     + '\n}');
 });

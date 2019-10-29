@@ -22,6 +22,10 @@ function testConstant(mode, context, canvas) {
   const kernelString = originalKernel.toString();
   const newResult = new Function('return ' + kernelString)()({ context, constants: { a: [1, 2, 3, 4] } })();
   assert.deepEqual(newResult, expected);
+
+  const expected2 = new Float32Array([4,3,2,1]);
+  const newResult2 = new Function('return ' + kernelString)()({ context, constants: { a: [4, 3, 2, 1] } })();
+  assert.deepEqual(newResult2, expected2);
   gpu.destroy();
 }
 

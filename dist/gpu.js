@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.0.0
- * @date Fri Sep 20 2019 21:54:46 GMT-0400 (Eastern Daylight Time)
+ * @version 2.0.5
+ * @date Tue Oct 29 2019 10:46:59 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -824,9 +824,6 @@ function systemEndianness() {
     if (!flattened) {
       flattened = settings.flattened = {};
     }
-    if (acorn.parse === null) {
-      throw new Error('Missing JS to AST parser');
-    }
     const ast = acorn.parse(source);
     const functionDependencies = [];
     function flatten(ast) {
@@ -1018,7 +1015,7 @@ class Kernel {
     this.constantTypes = null;
     this.constantBitRatios = null;
     this.dynamicArguments = false;
-    this.dynamicOutput = true;
+    this.dynamicOutput = false;
     this.canvas = null;
     this.context = null;
     this.checkContext = null;
@@ -1871,16 +1868,15 @@ class FunctionTracer {
         });
         break;
       case 'AssignmentExpression':
+      case 'LogicalExpression':
         this.scan(ast.left);
         this.scan(ast.right);
         break;
       case 'BinaryExpression':
         this.scan(ast.left);
-        if (ast.right) this.scan(ast.right);
+        this.scan(ast.right);
         break;
       case 'UpdateExpression':
-        this.scan(ast.argument);
-        break;
       case 'UnaryExpression':
         this.scan(ast.argument);
         break;
@@ -1917,14 +1913,10 @@ class FunctionTracer {
         break;
       case 'ForStatement':
         this.newContext(() => {
-          if (ast.init) {
-            this.inLoopInit = true;
-            this.scan(ast.init);
-            this.inLoopInit = false;
-          }
-          if (ast.test) {
-            this.scan(ast.test);
-          }
+          this.inLoopInit = true;
+          this.scan(ast.init);
+          this.inLoopInit = false;
+          this.scan(ast.test);
           this.scan(ast.update);
           this.newContext(() => {
             this.scan(ast.body);
@@ -1955,8 +1947,6 @@ class FunctionTracer {
       case 'ExpressionStatement':
         this.scan(ast.expression);
         break;
-      case 'ThisExpression':
-        break;
       case 'CallExpression':
         this.functionCalls.push({
           context: this.currentContext,
@@ -1977,20 +1967,18 @@ class FunctionTracer {
         this.scan(ast.cases);
         break;
       case 'SwitchCase':
-        if (ast.test) this.scan(ast.test);
+        this.scan(ast.test);
         this.scan(ast.consequent);
         break;
-      case 'LogicalExpression':
+      case 'ThisExpression':
         this.scan(ast.left);
         this.scan(ast.right);
         break;
       case 'Literal':
-        break;
       case 'DebuggerStatement':
-        break;
       case 'EmptyStatement':
-        break;
       case 'BreakStatement':
+      case 'ContinueStatement':
         break;
       default:
         throw new Error(`unhandled type "${ast.type}"`);
@@ -2028,8 +2016,7 @@ class FunctionNode {
     this.lookupFunctionArgumentTypes = null;
     this.lookupFunctionArgumentBitRatio = null;
     this.triggerImplyArgumentType = null;
-    this.triggerTrackArgumentSynonym = null;
-    this.lookupArgumentSynonym = null;
+    this.triggerImplyArgumentBitRatio = null;
     this.onNestedFunction = null;
     this.onFunctionCall = null;
     this.optimizeFloatMemory = null;
@@ -2056,9 +2043,6 @@ class FunctionNode {
         this[p] = settings[p];
       }
     }
-    this.synonymIndex = -1;
-    this.synonymUseIndex = 0;
-    this.argumentSynonym = {};
     this.literalTypes = {};
     this.validate();
     this._string = null;
@@ -2254,12 +2238,6 @@ class FunctionNode {
       }
     }
     throw new Error(`Type for constant "${ constantName }" not declared`);
-  }
-  getKernelArgumentName(name) {
-    if (!this.lookupArgumentSynonym) return null;
-    const argumentIndex = this.argumentNames.indexOf(name);
-    if (argumentIndex === -1) return null;
-    return this.lookupArgumentSynonym('kernel', this.name, name);
   }
   toString() {
     if (this._string) return this._string;
@@ -2576,6 +2554,11 @@ class FunctionNode {
       case 'AssignmentExpression':
         this.getDependencies(ast.left, dependencies, isNotSafe);
         this.getDependencies(ast.right, dependencies, isNotSafe);
+        return dependencies;
+      case 'ConditionalExpression':
+        this.getDependencies(ast.test, dependencies, isNotSafe);
+        this.getDependencies(ast.alternate, dependencies, isNotSafe);
+        this.getDependencies(ast.consequent, dependencies, isNotSafe);
         return dependencies;
       case 'Literal':
         dependencies.push({
@@ -3372,12 +3355,7 @@ class CPUFunctionNode extends FunctionNode {
         if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
           retArr.push('constants_' + idtNode.name);
         } else {
-          const name = this.getKernelArgumentName(idtNode.name);
-          if (name) {
-            retArr.push('user_' + name);
-          } else {
-            retArr.push('user_' + idtNode.name);
-          }
+          retArr.push('user_' + idtNode.name);
         }
     }
     return retArr;
@@ -3648,8 +3626,7 @@ class CPUFunctionNode extends FunctionNode {
           return retArr;
       }
     }
-    const synonymName = this.getKernelArgumentName(name);
-    const markupName = `${origin}_${synonymName || name}`;
+    const markupName = `${origin}_${name}`;
     switch (type) {
       case 'Array(2)':
       case 'Array(3)':
@@ -3668,7 +3645,7 @@ class CPUFunctionNode extends FunctionNode {
           isInput = this.constantTypes[name] === 'Input';
           size = isInput ? constant.size : null;
         } else {
-          isInput = this.isInput(synonymName || name);
+          isInput = this.isInput(name);
           size = isInput ? this.argumentSizes[this.argumentNames.indexOf(name)] : null;
         }
         retArr.push(`${ markupName }`);
@@ -3763,14 +3740,24 @@ class CPUFunctionNode extends FunctionNode {
   }
 }
 
-function constantsToString(constants) {
+function constantsToString(constants, types) {
   const results = [];
-  for (const p in constants) {
-    const constant = constants[p];
-    switch (typeof constant) {
-      case 'number':
-      case 'boolean':
-        results.push(`${p}:${constant}`);
+  for (const name in types) {
+    if (!types.hasOwnProperty(name)) continue;
+    const type = types[name];
+    const constant = constants[name];
+    switch (type) {
+      case 'Number':
+      case 'Integer':
+      case 'Float':
+      case 'Boolean':
+        results.push(`${name}:${constant}`);
+        break;
+      case 'Array(2)':
+      case 'Array(3)':
+      case 'Array(4)':
+        results.push(`${name}:new ${constant.constructor.name}(${JSON.stringify(Array.from(constant))})`);
+        break;
     }
   }
   return `{ ${ results.join() } }`;
@@ -3781,9 +3768,10 @@ function cpuKernelString(cpuKernel, name) {
   const beforeReturn = [];
   const useFunctionKeyword = !/^function/.test(cpuKernel.color.toString());
   header.push(
-    '  const { context, canvas, constants } = settings;',
+    '  const { context, canvas, constants: incomingConstants } = settings;',
     `  const output = new Int32Array(${JSON.stringify(Array.from(cpuKernel.output))});`,
-    `  const _constants = ${constantsToString(cpuKernel.constants)};`,
+    `  const _constantTypes = ${JSON.stringify(cpuKernel.constantTypes)};`,
+    `  const _constants = ${constantsToString(cpuKernel.constants, cpuKernel.constantTypes)};`,
   );
   thisProperties.push(
     '    constants: _constants,',
@@ -3863,10 +3851,10 @@ function cpuKernelString(cpuKernel, name) {
       }
     });
     beforeReturn.push(flattenedImageTo3DArray);
-    thisProperties.push(`    _imageTo2DArray,`);
+    thisProperties.push(`    _mediaTo2DArray,`);
     thisProperties.push(`    _imageTo3DArray,`);
   } else if (cpuKernel.argumentTypes.indexOf('HTMLImage') !== -1 || constantTypes.indexOf('HTMLImage') !== -1) {
-    const flattenedImageTo2DArray = utils$1.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel._imageTo2DArray.toString(), {
+    const flattenedImageTo2DArray = utils$1.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel._mediaTo2DArray.toString(), {
       findDependency: (object, name) => {
         return null;
       },
@@ -3881,18 +3869,30 @@ function cpuKernelString(cpuKernel, name) {
       }
     });
     beforeReturn.push(flattenedImageTo2DArray);
-    thisProperties.push(`    _imageTo2DArray,`);
+    thisProperties.push(`    _mediaTo2DArray,`);
   }
   return `function(settings) {
 ${ header.join('\n') }
-  for (const p in constants) {
-    const constant = constants[p];
-    switch (typeof constant) {
-      case 'number':
-      case 'boolean':
+  for (const p in _constantTypes) {
+    if (!_constantTypes.hasOwnProperty(p)) continue;
+    const type = _constantTypes[p];
+    switch (type) {
+      case 'Number':
+      case 'Integer':
+      case 'Float':
+      case 'Boolean':
+      case 'Array(2)':
+      case 'Array(3)':
+      case 'Array(4)':
+        if (incomingConstants.hasOwnProperty(p)) {
+          console.warn('constant ' + p + ' of type ' + type + ' cannot be resigned');
+        }
         continue;
     }
-    _constants[p] = constant;
+    if (!incomingConstants.hasOwnProperty(p)) {
+      throw new Error('constant ' + p + ' not found');
+    }
+    _constants[p] = incomingConstants[p];
   }
   const kernel = (function() {
 ${cpuKernel._kernelString}
@@ -3963,7 +3963,7 @@ class CPUKernel extends Kernel {
       if (args.length !== 1) {
         throw new Error('Auto output only supported for kernels with only one input');
       }
-      const argType = getVariableType(args[0], this.strictIntegers);
+      const argType = utils$1.getVariableType(args[0], this.strictIntegers);
       if (argType === 'Array') {
         this.output = utils$1.getDimensions(argType);
       } else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
@@ -4062,17 +4062,15 @@ class CPUKernel extends Kernel {
     } else {
       kernelThreadString = translatedSources.shift();
     }
-    const kernelString = this._kernelString = `  const LOOP_MAX = ${ this._getLoopMaxString() }
+    return this._kernelString = `  const LOOP_MAX = ${ this._getLoopMaxString() };
   ${ this.injectedNative || '' }
-  const constants = this.constants;
   const _this = this;
+  ${ this._processConstants() }
   return (${ this.argumentNames.map(argumentName => 'user_' + argumentName).join(', ') }) => {
-    ${ this._processConstants() }
     ${ this._processArguments() }
     ${ this.graphical ? this._graphicalKernelBody(kernelThreadString) : this._resultKernelBody(kernelThreadString) }
     ${ translatedSources.length > 0 ? translatedSources.join('\n') : '' }
   };`;
-    return kernelString;
   }
   toString() {
     return cpuKernelString(this);
@@ -4091,7 +4089,8 @@ class CPUKernel extends Kernel {
       const type = this.constantTypes[p];
       switch (type) {
         case 'HTMLImage':
-          result.push(`    const constants_${p} = this._imageTo2DArray(this.constants.${p});\n`);
+        case 'HTMLVideo':
+          result.push(`    const constants_${p} = this._mediaTo2DArray(this.constants.${p});\n`);
           break;
         case 'HTMLImageArray':
           result.push(`    const constants_${p} = this._imageTo3DArray(this.constants.${p});\n`);
@@ -4111,7 +4110,8 @@ class CPUKernel extends Kernel {
       const variableName = `user_${this.argumentNames[i]}`;
       switch (this.argumentTypes[i]) {
         case 'HTMLImage':
-          result.push(`    ${variableName} = this._imageTo2DArray(${variableName});\n`);
+        case 'HTMLVideo':
+          result.push(`    ${variableName} = this._mediaTo2DArray(${variableName});\n`);
           break;
         case 'HTMLImageArray':
           result.push(`    ${variableName} = this._imageTo3DArray(${variableName});\n`);
@@ -4145,22 +4145,24 @@ class CPUKernel extends Kernel {
     }
     return result.join('');
   }
-  _imageTo2DArray(image) {
+  _mediaTo2DArray(media) {
     const canvas = this.canvas;
-    if (canvas.width < image.width) {
-      canvas.width = image.width;
+    const width = media.width > 0 ? media.width : media.videoWidth;
+    const height = media.height > 0 ? media.height : media.videoHeight;
+    if (canvas.width < width) {
+      canvas.width = width;
     }
-    if (canvas.height < image.height) {
-      canvas.height = image.height;
+    if (canvas.height < height) {
+      canvas.height = height;
     }
     const ctx = this.context;
-    ctx.drawImage(image, 0, 0, image.width, image.height);
-    const pixelsData = ctx.getImageData(0, 0, image.width, image.height).data;
-    const imageArray = new Array(image.height);
+    ctx.drawImage(media, 0, 0, width, height);
+    const pixelsData = ctx.getImageData(0, 0, width, height).data;
+    const imageArray = new Array(height);
     let index = 0;
-    for (let y = image.height - 1; y >= 0; y--) {
-      const row = imageArray[y] = new Array(image.width);
-      for (let x = 0; x < image.width; x++) {
+    for (let y = height - 1; y >= 0; y--) {
+      const row = imageArray[y] = new Array(width);
+      for (let x = 0; x < width; x++) {
         const pixel = new Float32Array(4);
         pixel[0] = pixelsData[index++] / 255;
         pixel[1] = pixelsData[index++] / 255;
@@ -4178,7 +4180,7 @@ class CPUKernel extends Kernel {
   _imageTo3DArray(images) {
     const imagesArray = new Array(images.length);
     for (let i = 0; i < images.length; i++) {
-      imagesArray[i] = this._imageTo2DArray(images[i]);
+      imagesArray[i] = this._mediaTo2DArray(images[i]);
     }
     return imagesArray;
   }
@@ -4771,6 +4773,12 @@ class GLKernel extends Kernel {
     this.renderStrategy = null;
     this.compiledFragmentShader = null;
     this.compiledVertexShader = null;
+  }
+  checkTextureSize() {
+    const { features } = this.constructor;
+    if (this.texSize[0] > features.maxTextureSize || this.texSize[1] > features.maxTextureSize) {
+      throw new Error(`Texture size [${this.texSize[0]},${this.texSize[1]}] generated by kernel is larger than supported size [${features.maxTextureSize},${features.maxTextureSize}]`);
+    }
   }
   translateSource() {
     throw new Error(`"translateSource" not defined on ${this.constructor.name}`);
@@ -5845,12 +5853,7 @@ class WebGLFunctionNode extends FunctionNode {
         retArr.push(`user_${idtNode.name}`);
       }
     } else {
-      const userArgumentName = this.getKernelArgumentName(idtNode.name);
-      if (userArgumentName) {
-        retArr.push(`user_${userArgumentName}`);
-      } else {
-        retArr.push(`user_${idtNode.name}`);
-      }
+      retArr.push(`user_${idtNode.name}`);
     }
     return retArr;
   }
@@ -5949,10 +5952,6 @@ class WebGLFunctionNode extends FunctionNode {
     return retArr;
   }
   astAssignmentExpression(assNode, retArr) {
-    const declaration = this.getDeclaration(assNode.left);
-    if (declaration && !declaration.assignable) {
-      throw new this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
-    }
     if (assNode.operator === '%=') {
       this.astGeneric(assNode.left, retArr);
       retArr.push('=');
@@ -6330,8 +6329,7 @@ class WebGLFunctionNode extends FunctionNode {
           return retArr;
       }
     }
-    let synonymName = this.getKernelArgumentName(name);
-    const markupName = `${origin}_${synonymName || name}`;
+    const markupName = `${origin}_${name}`;
     switch (type) {
       case 'Array(2)':
       case 'Array(3)':
@@ -6544,10 +6542,15 @@ class WebGLFunctionNode extends FunctionNode {
           case 'Array(3)':
           case 'Array(4)':
             if (targetType === argumentType) {
-              this.astGeneric(argument, retArr);
+              if (argument.type !== 'Identifier') throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
+              this.triggerImplyArgumentBitRatio(this.name, argument.name, functionName, i);
+              retArr.push(`user_${argument.name}`);
               continue;
             }
             break;
+          case 'HTMLImage':
+          case 'HTMLImageArray':
+          case 'HTMLVideo':
           case 'ArrayTexture(1)':
           case 'ArrayTexture(2)':
           case 'ArrayTexture(3)':
@@ -6555,8 +6558,9 @@ class WebGLFunctionNode extends FunctionNode {
           case 'Array':
           case 'Input':
             if (targetType === argumentType) {
-              this.triggerTrackArgumentSynonym(this.name, argument.name, functionName, i);
-              this.astGeneric(argument, retArr);
+              if (argument.type !== 'Identifier') throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
+              this.triggerImplyArgumentBitRatio(this.name, argument.name, functionName, i);
+              retArr.push(`user_${argument.name},user_${argument.name}Size,user_${argument.name}Dim`);
               continue;
             }
             break;
@@ -6633,6 +6637,9 @@ const typeMap$2 = {
   'ArrayTexture(2)': 'sampler2D',
   'ArrayTexture(3)': 'sampler2D',
   'ArrayTexture(4)': 'sampler2D',
+  'HTMLVideo': 'sampler2D',
+  'HTMLImage': 'sampler2D',
+  'HTMLImageArray': 'sampler2DArray',
 };
 const operatorMap = {
   '===': '==',
@@ -7376,7 +7383,7 @@ function glExtensionWiretap(extension, options) {
   }
 }
 function argumentsToString(args, options) {
-  const { variables } = options;
+  const { variables, onUnrecognizedArgumentLookup } = options;
   return (Array.from(args).map((arg) => {
     const variableName = getVariableName(arg);
     if (variableName) {
@@ -7387,10 +7394,14 @@ function argumentsToString(args, options) {
   function getVariableName(value) {
     if (variables) {
       for (const name in variables) {
+        if (!variables.hasOwnProperty(name)) continue;
         if (variables[name] === value) {
           return name;
         }
       }
+    }
+    if (onUnrecognizedArgumentLookup) {
+      return onUnrecognizedArgumentLookup(value);
     }
     return null;
   }
@@ -7424,7 +7435,7 @@ function argumentToString(arg, options) {
     case 'Number': return getEntity(arg);
     case 'Boolean': return getEntity(arg);
     case 'Array':
-      return addVariable(arg, `new ${arg.constructor.name}(${Array.from(arg).join(',')})`);
+      return addVariable(arg, `new ${arg.constructor.name}([${Array.from(arg).join(',')}])`);
     case 'Float32Array':
     case 'Uint8Array':
     case 'Uint16Array':
@@ -7461,6 +7472,16 @@ function toStringWithoutUtils(fn) {
     .replace(/utils[.]/g, '/*utils.*/');
 }
 function glKernelString(Kernel, args, originKernel, setupContextString, destroyContextString) {
+  args = args ? Array.from(args).map(arg => {
+    switch (typeof arg) {
+      case 'boolean':
+        return new Boolean(arg);
+      case 'number':
+        return new Number(arg);
+      default:
+        return arg;
+    }
+  }) : null;
   const postResult = [];
   const context = glWiretap_2(originKernel.context, {
     useTrackablePrimitives: true,
@@ -7485,19 +7506,15 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       }
     },
     onUnrecognizedArgumentLookup: (argument) => {
-      for (let i = 0; i < kernel.kernelConstants.length; i++) {
-        const value = kernel.kernelConstants[i];
-        if (value.type === 'HTMLImageArray') {
-          const constant = kernel.constants[value.name];
-          const variable = `uploadValue_${value.name}[${constant.indexOf(value.uploadValue)}]`;
-          context.insertVariable(variable, kernel.constants);
-          return variable;
-        } else if (value.uploadValue === argument) {
-          const variable = `uploadValue_${value.name}`;
-          context.insertVariable(variable, value);
-          return variable;
-        }
+      const argumentName = findKernelValue(argument, kernel.kernelArguments, [], context);
+      if (argumentName) {
+        return argumentName;
       }
+      const constantName = findKernelValue(argument, kernel.kernelConstants, constants ? Object.keys(constants).map(key => constants[key]) : [], context);
+      if (constantName) {
+        return constantName;
+      }
+      return null;
     }
   });
   let subKernelsResultVariableSetup = false;
@@ -7546,14 +7563,6 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   kernel.build.apply(kernel, args);
   result.push(context.toString());
   context.reset();
-  const upgradedArguments = Array.from(args).map(arg => {
-    switch (typeof arg) {
-      case 'number':
-      case 'boolean':
-        return new arg.constructor(arg);
-    }
-    return arg;
-  });
   kernel.kernelArguments.forEach((kernelArgument, i) => {
     switch (kernelArgument.type) {
       case 'Integer':
@@ -7566,7 +7575,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       case 'Array(4)':
       case 'HTMLImage':
       case 'HTMLVideo':
-        context.insertVariable(`uploadValue_${kernelArgument.name}`, upgradedArguments[i]);
+        context.insertVariable(`uploadValue_${kernelArgument.name}`, kernelArgument.uploadValue);
         break;
       case 'HTMLImageArray':
         for (let imageIndex = 0; imageIndex < args[i].length; imageIndex++) {
@@ -7592,7 +7601,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       case 'ArrayTexture(2)':
       case 'ArrayTexture(3)':
       case 'ArrayTexture(4)':
-        context.insertVariable(`uploadValue_${kernelArgument.name}`, upgradedArguments[i].texture);
+        context.insertVariable(`uploadValue_${kernelArgument.name}`, args[i].texture);
         break;
       default:
         throw new Error(`unhandled kernelArgumentType insertion for glWiretap of type ${kernelArgument.type}`);
@@ -7602,6 +7611,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   result.push(`function ${toStringWithoutUtils(utils$1.flattenTo)}`);
   result.push(`function ${toStringWithoutUtils(utils$1.flatten2dArrayTo)}`);
   result.push(`function ${toStringWithoutUtils(utils$1.flatten3dArrayTo)}`);
+  result.push(`function ${toStringWithoutUtils(utils$1.flatten4dArrayTo)}`);
   result.push(`function ${toStringWithoutUtils(utils$1.isArray)}`);
   if (kernel.renderOutput !== kernel.renderTexture && kernel.formatValues) {
     result.push(
@@ -7611,17 +7621,17 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   result.push('/** end of injected functions **/');
   result.push(`  const innerKernel = function (${kernel.kernelArguments.map(kernelArgument => kernelArgument.varName).join(', ')}) {`);
   context.setIndent(4);
-  kernel.run.apply(kernel, upgradedArguments);
+  kernel.run.apply(kernel, args);
   if (kernel.renderKernels) {
     kernel.renderKernels();
   } else if (kernel.renderOutput) {
     kernel.renderOutput();
   }
-  result.push('/** start setup uploads for kernel values **/');
+  result.push('    /** start setup uploads for kernel values **/');
   kernel.kernelArguments.forEach(kernelArgument => {
-    result.push(kernelArgument.getStringValueHandler());
+    result.push('    ' + kernelArgument.getStringValueHandler().split('\n').join('\n    '));
   });
-  result.push('/** end setup uploads for kernel values **/');
+  result.push('    /** end setup uploads for kernel values **/');
   result.push(context.toString());
   if (kernel.renderOutput === kernel.renderTexture) {
     context.reset();
@@ -7653,7 +7663,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   result.push('  };');
   if (kernel.graphical) {
     result.push(getGetPixelsString(kernel));
-    result.push(`innerKernel.getPixels = getPixels;`);
+    result.push(`  innerKernel.getPixels = getPixels;`);
   }
   result.push('  return innerKernel;');
   let constantsUpload = [];
@@ -7726,6 +7736,38 @@ function getToArrayString(kernelResult, textureName) {
   return toArray();
   }`;
 }
+function findKernelValue(argument, kernelValues, values, context, uploadedValues) {
+  if (argument === null) return null;
+  switch (typeof argument) {
+    case 'boolean':
+    case 'number':
+      return null;
+  }
+  if (
+    typeof HTMLImageElement !== 'undefined' &&
+    argument instanceof HTMLImageElement
+  ) {
+    for (let i = 0; i < kernelValues.length; i++) {
+      const kernelValue = kernelValues[i];
+      if (kernelValue.type !== 'HTMLImageArray') continue;
+      if (kernelValue.uploadValue !== argument) continue;
+      const variableIndex = values[i].indexOf(argument);
+      if (variableIndex === -1) continue;
+      const variableName = `uploadValue_${kernelValue.name}[${variableIndex}]`;
+      context.insertVariable(variableName, argument);
+      return variableName;
+    }
+    return null;
+  }
+  for (let i = 0; i < kernelValues.length; i++) {
+    const kernelValue = kernelValues[i];
+    if (argument !== kernelValue.uploadValue) continue;
+    const variable = `uploadValue_${kernelValue.name}`;
+    context.insertVariable(variable, kernelValue);
+    return variable;
+  }
+  return null;
+}
 
 class KernelValue {
   constructor(value, settings) {
@@ -7774,15 +7816,13 @@ class KernelValue {
     this.contextHandle = null;
     this.onRequestContextHandle = onRequestContextHandle;
     this.onUpdateValueMismatch = onUpdateValueMismatch;
+    this.forceUploadEachRun = null;
   }
   getSource() {
     throw new Error(`"getSource" not defined on ${ this.constructor.name }`);
   }
   updateValue(value) {
     throw new Error(`"updateValue" not defined on ${ this.constructor.name }`);
-  }
-  getFocusString() {
-    throw new Error(`"getFocusString" not defined on ${ this.constructor.name }`);
   }
 }
 
@@ -7797,6 +7837,17 @@ class WebGLKernelValue extends KernelValue {
     this.uploadValue = null;
     this.textureSize = null;
     this.bitRatio = null;
+  }
+  checkSize(width, height) {
+    if (!this.kernel.validate) return;
+    const { maxTextureSize } = this.kernel.constructor.features;
+    if (width > maxTextureSize || height > maxTextureSize) {
+      if (width > height) {
+        throw new Error(`Argument width of ${width} larger than maximum size of ${maxTextureSize} for your GPU`);
+      } else {
+        throw new Error(`Argument height of ${height} larger than maximum size of ${maxTextureSize} for your GPU`);
+      }
+    }
   }
   requestTexture() {
     this.texture = this.onRequestTexture();
@@ -7958,6 +8009,7 @@ class WebGLKernelValueHTMLImage extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
     const { width, height } = value;
+    this.checkSize(width, height);
     this.dimensions = [width, height, 1];
     this.requestTexture();
     this.textureSize = [width, height];
@@ -8001,6 +8053,7 @@ class WebGLKernelValueDynamicHTMLImage extends WebGLKernelValueHTMLImage {
   }
   updateValue(value) {
     const { width, height } = value;
+    this.checkSize(width, height);
     this.dimensions = [width, height, 1];
     this.textureSize = [width, height];
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
@@ -8022,6 +8075,7 @@ class WebGLKernelValueSingleInput extends WebGLKernelValue {
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils$1.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
   getStringValueHandler() {
@@ -8068,6 +8122,7 @@ class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils$1.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
@@ -8084,6 +8139,7 @@ class WebGLKernelValueUnsignedInput extends WebGLKernelValue {
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils$1.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.checkSize(this.textureSize[0] * (4 / this.bitRatio), this.textureSize[1] * (4 / this.bitRatio));
     this.TranserArrayType = this.getTransferArrayType(value.value);
     this.preUploadValue = new this.TranserArrayType(this.uploadArrayLength);
     this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
@@ -8133,6 +8189,7 @@ class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils$1.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.checkSize(this.textureSize[0] * (4 / this.bitRatio), this.textureSize[1] * (4 / this.bitRatio));
     const Type = this.getTransferArrayType(value.value);
     this.preUploadValue = new Type(this.uploadArrayLength);
     this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
@@ -8145,10 +8202,13 @@ class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput
 class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
+    const [width, height] = value.size;
+    this.checkSize(width, height);
     this.setupTexture();
     this.dimensions = value.dimensions;
     this.textureSize = value.size;
     this.uploadValue = value.texture;
+    this.forceUploadEachRun = true;
   }
   getStringValueHandler() {
     return `const uploadValue_${this.name} = ${this.varName}.texture;\n`;
@@ -8184,6 +8244,7 @@ class WebGLKernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelVal
     ]);
   }
   updateValue(inputTexture) {
+    this.checkSize(inputTexture.size[0], inputTexture.size[1]);
     this.dimensions = inputTexture.dimensions;
     this.textureSize = inputTexture.size;
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
@@ -8195,12 +8256,15 @@ class WebGLKernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelVal
 class WebGLKernelValueNumberTexture extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
+    const [width, height] = value.size;
+    this.checkSize(width, height);
     this.setupTexture();
     const { size: textureSize, dimensions } = value;
     this.bitRatio = this.getBitRatio(value);
     this.dimensions = dimensions;
     this.textureSize = textureSize;
     this.uploadValue = value.texture;
+    this.forceUploadEachRun = true;
   }
   getStringValueHandler() {
     return `const uploadValue_${this.name} = ${this.varName}.texture;\n`;
@@ -8237,6 +8301,7 @@ class WebGLKernelValueDynamicNumberTexture extends WebGLKernelValueNumberTexture
   }
   updateValue(value) {
     this.dimensions = value.dimensions;
+    this.checkSize(value.size[0], value.size[1]);
     this.textureSize = value.size;
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
@@ -8252,6 +8317,7 @@ class WebGLKernelValueSingleArray extends WebGLKernelValue {
     this.dimensions = utils$1.getDimensions(value, true);
     this.textureSize = utils$1.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
   getStringValueHandler() {
@@ -8297,6 +8363,7 @@ class WebGLKernelValueDynamicSingleArray extends WebGLKernelValueSingleArray {
     this.dimensions = utils$1.getDimensions(value, true);
     this.textureSize = utils$1.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
@@ -8316,6 +8383,7 @@ class WebGLKernelValueSingleArray1DI extends WebGLKernelValue {
     this.textureSize = utils$1.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
     this.dimensions = new Int32Array([valueDimensions[1], 1, 1]);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
   getStringValueHandler() {
@@ -8377,6 +8445,7 @@ class WebGLKernelValueSingleArray2DI extends WebGLKernelValue {
     this.textureSize = utils$1.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
     this.dimensions = new Int32Array([valueDimensions[1], valueDimensions[2], 1]);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
   getStringValueHandler() {
@@ -8438,6 +8507,7 @@ class WebGLKernelValueSingleArray3DI extends WebGLKernelValue {
     this.textureSize = utils$1.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
     this.dimensions = new Int32Array([valueDimensions[1], valueDimensions[2], valueDimensions[3]]);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
   getStringValueHandler() {
@@ -8499,6 +8569,7 @@ class WebGLKernelValueSingleArray2 extends WebGLKernelValue {
     return `uniform vec2 ${this.id};\n`;
   }
   getStringValueHandler() {
+    if (this.origin === 'constants') return '';
     return `const uploadValue_${this.name} = ${this.varName};\n`;
   }
   updateValue(value) {
@@ -8519,6 +8590,7 @@ class WebGLKernelValueSingleArray3 extends WebGLKernelValue {
     return `uniform vec3 ${this.id};\n`;
   }
   getStringValueHandler() {
+    if (this.origin === 'constants') return '';
     return `const uploadValue_${this.name} = ${this.varName};\n`;
   }
   updateValue(value) {
@@ -8539,6 +8611,7 @@ class WebGLKernelValueSingleArray4 extends WebGLKernelValue {
     return `uniform vec4 ${this.id};\n`;
   }
   getStringValueHandler() {
+    if (this.origin === 'constants') return '';
     return `const uploadValue_${this.name} = ${this.varName};\n`;
   }
   updateValue(value) {
@@ -8555,6 +8628,7 @@ class WebGLKernelValueUnsignedArray extends WebGLKernelValue {
     this.dimensions = utils$1.getDimensions(value, true);
     this.textureSize = utils$1.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.checkSize(this.textureSize[0] * (4 / this.bitRatio), this.textureSize[1] * (4 / this.bitRatio));
     this.TranserArrayType = this.getTransferArrayType(value);
     this.preUploadValue = new this.TranserArrayType(this.uploadArrayLength);
     this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
@@ -8603,6 +8677,7 @@ class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray
     this.dimensions = utils$1.getDimensions(value, true);
     this.textureSize = utils$1.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.checkSize(this.textureSize[0] * (4 / this.bitRatio), this.textureSize[1] * (4 / this.bitRatio));
     const Type = this.getTransferArrayType(value);
     this.preUploadValue = new Type(this.uploadArrayLength);
     this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
@@ -8637,7 +8712,7 @@ const kernelValueMaps = {
       'ArrayTexture(2)': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(3)': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(4)': WebGLKernelValueDynamicNumberTexture,
-      'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
+      'MemoryOptimizedNumberTexture': WebGLKernelValueMemoryOptimizedNumberTexture,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
@@ -8689,7 +8764,6 @@ const kernelValueMaps = {
       'Array3D(2)': WebGLKernelValueDynamicSingleArray3DI,
       'Array3D(3)': WebGLKernelValueDynamicSingleArray3DI,
       'Array3D(4)': WebGLKernelValueDynamicSingleArray3DI,
-      'Array': WebGLKernelValueDynamicSingleArray,
       'Input': WebGLKernelValueDynamicSingleInput,
       'NumberTexture': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(1)': WebGLKernelValueDynamicNumberTexture,
@@ -8973,6 +9047,7 @@ class WebGLKernel extends GLKernel {
       optimizeFloatMemory: this.optimizeFloatMemory,
       precision: this.precision,
     }, this.output);
+    this.checkTextureSize();
   }
   updateMaxTexSize() {
     const { texSize, canvas } = this;
@@ -9085,6 +9160,7 @@ class WebGLKernel extends GLKernel {
   setupConstants(args) {
     const { context: gl } = this;
     this.kernelConstants = [];
+    this.forceUploadKernelConstants = [];
     let needsConstantTypes = this.constantTypes === null;
     if (needsConstantTypes) {
       this.constantTypes = {};
@@ -9125,6 +9201,9 @@ class WebGLKernel extends GLKernel {
       });
       this.constantBitRatios[name] = kernelValue.bitRatio;
       this.kernelConstants.push(kernelValue);
+      if (kernelValue.forceUploadEachRun) {
+        this.forceUploadKernelConstants.push(kernelValue);
+      }
     }
   }
   build() {
@@ -9243,17 +9322,22 @@ class WebGLKernel extends GLKernel {
     }
   }
   run() {
-    const { kernelArguments } = this;
+    const { kernelArguments, forceUploadKernelConstants } = this;
     const texSize = this.texSize;
     const gl = this.context;
     gl.useProgram(this.program);
     gl.scissor(0, 0, texSize[0], texSize[1]);
     if (this.dynamicOutput) {
-      this.setUniform3iv('uOutputDim', this.threadDim);
+      this.setUniform3iv('uOutputDim', new Int32Array(this.threadDim));
       this.setUniform2iv('uTexSize', texSize);
     }
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
     this.switchingKernels = false;
+    for (let i = 0; i < forceUploadKernelConstants.length; i++) {
+      const constant = forceUploadKernelConstants[i];
+      constant.updateValue(this.constants[constant.name]);
+      if (this.switchingKernels) return;
+    }
     for (let i = 0; i < kernelArguments.length; i++) {
       kernelArguments[i].updateValue(arguments[i]);
       if (this.switchingKernels) return;
@@ -9368,9 +9452,6 @@ class WebGLKernel extends GLKernel {
       }
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, texture, 0);
     }
-  }
-  getArgumentTexture(name) {
-    return this.getTextureCache(`ARGUMENT_${name}`);
   }
   getTextureCache(name) {
     if (this.textureCache.hasOwnProperty(name)) {
@@ -10029,12 +10110,7 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
         retArr.push(`user_${idtNode.name}`);
       }
     } else {
-      const userArgumentName = this.getKernelArgumentName(idtNode.name);
-      if (userArgumentName) {
-        retArr.push(`user_${userArgumentName}`);
-      } else {
-        retArr.push(`user_${idtNode.name}`);
-      }
+      retArr.push(`user_${idtNode.name}`);
     }
     return retArr;
   }
@@ -10487,9 +10563,10 @@ class WebGL2KernelValueDynamicHTMLImage extends WebGLKernelValueDynamicHTMLImage
   }
 }
 
-class WebGL2KernelValueHtmlImageArray extends WebGLKernelValue {
+class WebGL2KernelValueHTMLImageArray extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
+    this.checkSize(value[0].width, value[0].height);
     this.requestTexture();
     this.dimensions = [value[0].width, value[0].height, value.length];
     this.textureSize = [value[0].width, value[0].height];
@@ -10546,7 +10623,7 @@ class WebGL2KernelValueHtmlImageArray extends WebGLKernelValue {
   }
 }
 
-class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageArray {
+class WebGL2KernelValueDynamicHTMLImageArray extends WebGL2KernelValueHTMLImageArray {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
@@ -10556,8 +10633,10 @@ class WebGL2KernelValueDynamicHtmlImageArray extends WebGL2KernelValueHtmlImageA
     ]);
   }
   updateValue(images) {
-    this.dimensions = [images[0].width, images[0].height, images.length];
-    this.textureSize = [images[0].width, images[0].height];
+    const { width, height } = images[0];
+    this.checkSize(width, height);
+    this.dimensions = [width, height, images.length];
+    this.textureSize = [width, height];
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
     super.updateValue(images);
@@ -10605,6 +10684,7 @@ class WebGL2KernelValueDynamicSingleInput extends WebGL2KernelValueSingleInput {
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils$1.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
@@ -10636,11 +10716,12 @@ class WebGL2KernelValueDynamicUnsignedInput extends WebGLKernelValueDynamicUnsig
 
 class WebGL2KernelValueMemoryOptimizedNumberTexture extends WebGLKernelValueMemoryOptimizedNumberTexture {
   getSource() {
+    const { id, sizeId, textureSize, dimensionsId, dimensions } = this;
     const variablePrecision = this.getVariablePrecisionString();
     return utils$1.linesToString([
-      `uniform sampler2D ${this.id}`,
-      `${ variablePrecision } ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+      `uniform sampler2D ${id}`,
+      `${ variablePrecision } ivec2 ${sizeId} = ivec2(${textureSize[0]}, ${textureSize[1]})`,
+      `${ variablePrecision } ivec3 ${dimensionsId} = ivec3(${dimensions[0]}, ${dimensions[1]}, ${dimensions[2]})`,
     ]);
   }
 }
@@ -10657,11 +10738,12 @@ class WebGL2KernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelVa
 
 class WebGL2KernelValueNumberTexture extends WebGLKernelValueNumberTexture {
   getSource() {
+    const { id, sizeId, textureSize, dimensionsId, dimensions } = this;
     const variablePrecision = this.getVariablePrecisionString();
     return utils$1.linesToString([
-      `uniform ${ variablePrecision } sampler2D ${this.id}`,
-      `${ variablePrecision } ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+      `uniform ${ variablePrecision } sampler2D ${id}`,
+      `${ variablePrecision } ivec2 ${sizeId} = ivec2(${textureSize[0]}, ${textureSize[1]})`,
+      `${ variablePrecision } ivec3 ${dimensionsId} = ivec3(${dimensions[0]}, ${dimensions[1]}, ${dimensions[2]})`,
     ]);
   }
 }
@@ -10717,6 +10799,7 @@ class WebGL2KernelValueDynamicSingleArray extends WebGL2KernelValueSingleArray {
     this.dimensions = utils$1.getDimensions(value, true);
     this.textureSize = utils$1.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
@@ -10887,7 +10970,7 @@ const kernelValueMaps$1 = {
       'ArrayTexture(4)': WebGL2KernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueDynamicHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
     static: {
@@ -10915,7 +10998,7 @@ const kernelValueMaps$1 = {
       'ArrayTexture(4)': WebGL2KernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
   },
@@ -10945,7 +11028,7 @@ const kernelValueMaps$1 = {
       'ArrayTexture(4)': WebGL2KernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueDynamicHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
     static: {
@@ -10973,7 +11056,7 @@ const kernelValueMaps$1 = {
       'ArrayTexture(4)': WebGL2KernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueMemoryOptimizedNumberTexture,
       'HTMLImage': WebGL2KernelValueHTMLImage,
-      'HTMLImageArray': WebGL2KernelValueHtmlImageArray,
+      'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
   },
@@ -11042,6 +11125,7 @@ class WebGL2Kernel extends WebGLKernel {
       kernelMap: true,
       isTextureFloat: true,
       channelCount: this.getChannelCount(),
+      maxTextureSize: this.getMaxTextureSize(),
     });
   }
   static getIsTextureFloat() {
@@ -11052,6 +11136,9 @@ class WebGL2Kernel extends WebGLKernel {
   }
   static getChannelCount() {
     return testContext$1.getParameter(testContext$1.MAX_DRAW_BUFFERS);
+  }
+  static getMaxTextureSize() {
+    return testContext$1.getParameter(testContext$1.MAX_TEXTURE_SIZE);
   }
   static lookupKernelValueType(type, dynamic, precision, value) {
     return lookupKernelValueType$1(type, dynamic, precision, value);
@@ -11144,6 +11231,7 @@ class WebGL2Kernel extends WebGLKernel {
       optimizeFloatMemory: this.optimizeFloatMemory,
       precision: this.precision,
     }, this.output);
+    this.checkTextureSize();
   }
   translateSource() {
     const functionBuilder = FunctionBuilder.fromKernel(this, WebGL2FunctionNode, {
@@ -11163,7 +11251,7 @@ class WebGL2Kernel extends WebGLKernel {
     }
   }
   run() {
-    const { kernelArguments, texSize } = this;
+    const { kernelArguments, texSize, forceUploadKernelConstants } = this;
     const gl = this.context;
     gl.useProgram(this.program);
     gl.scissor(0, 0, texSize[0], texSize[1]);
@@ -11172,6 +11260,12 @@ class WebGL2Kernel extends WebGLKernel {
       this.setUniform2iv('uTexSize', texSize);
     }
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
+    this.switchingKernels = false;
+    for (let i = 0; i < forceUploadKernelConstants.length; i++) {
+      const constant = forceUploadKernelConstants[i];
+      constant.updateValue(this.constants[constant.name]);
+      if (this.switchingKernels) return;
+    }
     for (let i = 0; i < kernelArguments.length; i++) {
       kernelArguments[i].updateValue(arguments[i]);
       if (this.switchingKernels) return;
@@ -12071,6 +12165,7 @@ class HeadlessGLKernel extends WebGLKernel {
       isDrawBuffers,
       kernelMap: isDrawBuffers,
       channelCount: this.getChannelCount(),
+      maxTextureSize: this.getMaxTextureSize(),
     });
   }
   static getIsTextureFloat() {
@@ -12086,6 +12181,9 @@ class HeadlessGLKernel extends WebGLKernel {
   }
   static get testCanvas() {
     return testCanvas$2;
+  }
+  static getMaxTextureSize() {
+    return testContext$2.getParameter(testContext$2.MAX_TEXTURE_SIZE);
   }
   static get testContext() {
     return testContext$2;
@@ -12134,7 +12232,7 @@ class HeadlessGLKernel extends WebGLKernel {
   }
   toString() {
     const setupContextString = `const gl = context || require('gl')(1, 1);\n`;
-    const destroyContextString = `if (!context) { gl.getExtension('STACKGL_destroy_context').destroy(); }\n`;
+    const destroyContextString = `    if (!context) { gl.getExtension('STACKGL_destroy_context').destroy(); }\n`;
     return glKernelString(this.constructor, arguments, this, setupContextString, destroyContextString);
   }
   setOutput(output) {
@@ -12220,6 +12318,7 @@ exports.CPUFunctionNode = CPUFunctionNode;
 exports.CPUKernel = CPUKernel;
 exports.FunctionBuilder = FunctionBuilder;
 exports.FunctionNode = FunctionNode;
+exports.FunctionTracer = FunctionTracer;
 exports.GLKernel = GLKernel;
 exports.GPU = GPU$1;
 exports.HeadlessGLKernel = HeadlessGLKernel;
@@ -12233,4 +12332,6 @@ exports.WebGLKernel = WebGLKernel;
 exports.alias = alias;
 exports.input = input;
 exports.utils = utils$2;
+exports.webGL2KernelValueMaps = kernelValueMaps$1;
+exports.webGLKernelValueMaps = kernelValueMaps;
 //# sourceMappingURL=gpu.js.map

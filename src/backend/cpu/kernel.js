@@ -1,7 +1,7 @@
 import { Kernel } from '../kernel';
 import { FunctionBuilder } from '../function-builder';
 import { CPUFunctionNode } from './function-node';
-import { getVariableType, utils } from '../../utils';
+import { utils } from '../../utils';
 import { cpuKernelString } from './kernel-string';
 
 /**
@@ -85,7 +85,7 @@ export class CPUKernel extends Kernel {
         throw new Error('Auto output only supported for kernels with only one input');
       }
 
-      const argType = getVariableType(args[0], this.strictIntegers);
+      const argType = utils.getVariableType(args[0], this.strictIntegers);
       if (argType === 'Array') {
         this.output = utils.getDimensions(argType);
       } else if (argType === 'NumberTexture' || argType === 'ArrayTexture(4)') {
@@ -217,17 +217,15 @@ export class CPUKernel extends Kernel {
     } else {
       kernelThreadString = translatedSources.shift();
     }
-    const kernelString = this._kernelString = `  const LOOP_MAX = ${ this._getLoopMaxString() }
+    return this._kernelString = `  const LOOP_MAX = ${ this._getLoopMaxString() };
   ${ this.injectedNative || '' }
-  const constants = this.constants;
   const _this = this;
+  ${ this._processConstants() }
   return (${ this.argumentNames.map(argumentName => 'user_' + argumentName).join(', ') }) => {
-    ${ this._processConstants() }
     ${ this._processArguments() }
     ${ this.graphical ? this._graphicalKernelBody(kernelThreadString) : this._resultKernelBody(kernelThreadString) }
     ${ translatedSources.length > 0 ? translatedSources.join('\n') : '' }
   };`;
-    return kernelString;
   }
 
   /**
@@ -257,7 +255,8 @@ export class CPUKernel extends Kernel {
       const type = this.constantTypes[p];
       switch (type) {
         case 'HTMLImage':
-          result.push(`    const constants_${p} = this._imageTo2DArray(this.constants.${p});\n`);
+        case 'HTMLVideo':
+          result.push(`    const constants_${p} = this._mediaTo2DArray(this.constants.${p});\n`);
           break;
         case 'HTMLImageArray':
           result.push(`    const constants_${p} = this._imageTo3DArray(this.constants.${p});\n`);
@@ -278,7 +277,8 @@ export class CPUKernel extends Kernel {
       const variableName = `user_${this.argumentNames[i]}`;
       switch (this.argumentTypes[i]) {
         case 'HTMLImage':
-          result.push(`    ${variableName} = this._imageTo2DArray(${variableName});\n`);
+        case 'HTMLVideo':
+          result.push(`    ${variableName} = this._mediaTo2DArray(${variableName});\n`);
           break;
         case 'HTMLImageArray':
           result.push(`    ${variableName} = this._imageTo3DArray(${variableName});\n`);
@@ -313,22 +313,24 @@ export class CPUKernel extends Kernel {
     return result.join('');
   }
 
-  _imageTo2DArray(image) {
+  _mediaTo2DArray(media) {
     const canvas = this.canvas;
-    if (canvas.width < image.width) {
-      canvas.width = image.width;
+    const width = media.width > 0 ? media.width : media.videoWidth;
+    const height = media.height > 0 ? media.height : media.videoHeight;
+    if (canvas.width < width) {
+      canvas.width = width;
     }
-    if (canvas.height < image.height) {
-      canvas.height = image.height;
+    if (canvas.height < height) {
+      canvas.height = height;
     }
     const ctx = this.context;
-    ctx.drawImage(image, 0, 0, image.width, image.height);
-    const pixelsData = ctx.getImageData(0, 0, image.width, image.height).data;
-    const imageArray = new Array(image.height);
+    ctx.drawImage(media, 0, 0, width, height);
+    const pixelsData = ctx.getImageData(0, 0, width, height).data;
+    const imageArray = new Array(height);
     let index = 0;
-    for (let y = image.height - 1; y >= 0; y--) {
-      const row = imageArray[y] = new Array(image.width);
-      for (let x = 0; x < image.width; x++) {
+    for (let y = height - 1; y >= 0; y--) {
+      const row = imageArray[y] = new Array(width);
+      for (let x = 0; x < width; x++) {
         const pixel = new Float32Array(4);
         pixel[0] = pixelsData[index++] / 255; // r
         pixel[1] = pixelsData[index++] / 255; // g
@@ -349,7 +351,7 @@ export class CPUKernel extends Kernel {
   _imageTo3DArray(images) {
     const imagesArray = new Array(images.length);
     for (let i = 0; i < images.length; i++) {
-      imagesArray[i] = this._imageTo2DArray(images[i]);
+      imagesArray[i] = this._mediaTo2DArray(images[i]);
     }
     return imagesArray;
   }

@@ -122,6 +122,12 @@ function setupConstantsTestSuite(testSuiteSettings) {
     context: mockContext,
   };
   const kernel = new WebGL2Kernel(source, Object.assign({ constants: { v: constant } }, settings, gpuSettings));
+  kernel.constructor = {
+    lookupKernelValueType: WebGL2Kernel.lookupKernelValueType,
+    features: {
+      maxTextureSize: 9999
+    }
+  };
   kernel.program = 'program';
   assert.equal(kernel.constantTextureCount, 0);
   kernel.setupConstants();

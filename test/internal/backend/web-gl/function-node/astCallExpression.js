@@ -54,7 +54,6 @@ test('handles Math.pow with ints', () => {
 test('handles argument of type Input', () => {
   let lookupReturnTypeCalls = 0;
   let lookupFunctionArgumentTypes = 0;
-  let triggerTrackArgumentSynonymCalls = 0;
   const node = new WebGLFunctionNode('function kernel(v) {'
     + '\n return childFunction(v);'
     + '\n}', {
@@ -75,19 +74,44 @@ test('handles argument of type Input', () => {
       }
       throw new Error(`unhanded lookupFunctionArgumentTypes for ${functionName}`);
     },
-    triggerTrackArgumentSynonym: (kernelName, argumentName, functionName, argumentIndex) => {
-      triggerTrackArgumentSynonymCalls++;
-      if (kernelName === 'kernel' && argumentName === 'v' && functionName === 'childFunction' && argumentIndex === 0) {
-        return;
-      }
-      throw new Error(`unhandled triggerTrackArgumentSynonym`);
-    },
+    triggerImplyArgumentBitRatio: () => {},
     assignArgumentType: () => {}
   });
-  assert.equal(node.toString(), 'float kernel(sampler2D user_v) {'
-    + '\nreturn childFunction(user_v);'
+  assert.equal(node.toString(), 'float kernel(sampler2D user_v,ivec2 user_vSize,ivec3 user_vDim) {'
+    + '\nreturn childFunction(user_v,user_vSize,user_vDim);'
     + '\n}');
   assert.equal(lookupReturnTypeCalls, 2);
   assert.equal(lookupFunctionArgumentTypes, 1);
-  assert.equal(triggerTrackArgumentSynonymCalls, 1);
+});
+test('handles argument of type HTMLImageArray', () => {
+  let lookupReturnTypeCalls = 0;
+  let lookupFunctionArgumentTypes = 0;
+  const node = new WebGLFunctionNode('function kernel(v) {'
+    + '\n return childFunction(v);'
+    + '\n}', {
+    output: [1],
+    argumentTypes: ['HTMLImageArray'],
+    needsArgumentType: () => false,
+    lookupReturnType: (functionName) => {
+      lookupReturnTypeCalls++;
+      if (functionName === 'childFunction') {
+        return 'Number';
+      }
+      throw new Error(`unhanded lookupReturnType for ${functionName}`);
+    },
+    lookupFunctionArgumentTypes: (functionName) => {
+      lookupFunctionArgumentTypes++;
+      if (functionName === 'childFunction') {
+        return ['HTMLImageArray'];
+      }
+      throw new Error(`unhanded lookupFunctionArgumentTypes for ${functionName}`);
+    },
+    triggerImplyArgumentBitRatio: () => {},
+    assignArgumentType: () => {}
+  });
+  assert.equal(node.toString(), 'float kernel(sampler2DArray user_v,ivec2 user_vSize,ivec3 user_vDim) {'
+    + '\nreturn childFunction(user_v,user_vSize,user_vDim);'
+    + '\n}');
+  assert.equal(lookupReturnTypeCalls, 2);
+  assert.equal(lookupFunctionArgumentTypes, 1);
 });

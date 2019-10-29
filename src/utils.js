@@ -542,10 +542,6 @@ const utils = {
       flattened = settings.flattened = {};
     }
 
-    if (parse === null) {
-      throw new Error('Missing JS to AST parser');
-    }
-
     const ast = parse(source);
     const functionDependencies = [];
 

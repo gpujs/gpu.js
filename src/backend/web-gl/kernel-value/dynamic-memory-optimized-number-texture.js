@@ -11,6 +11,7 @@ export class WebGLKernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKe
   }
 
   updateValue(inputTexture) {
+    this.checkSize(inputTexture.size[0], inputTexture.size[1]);
     this.dimensions = inputTexture.dimensions;
     this.textureSize = inputTexture.size;
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
