@@ -153,6 +153,7 @@ class WebGLKernel extends GLKernel {
     this.maxTexSize = null;
     this.switchingKernels = false;
     this.onRequestSwitchKernel = null;
+    this.removeIstanbulCoverage = true;
 
     this.mergeSettings(source.settings || settings);
 
