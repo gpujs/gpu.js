@@ -21,8 +21,7 @@ test('with Han', () => {
       // const output1
       dbl(Math.PI);
       return sum;
-    }, { output: [1], debug: true });
-    // console.log(kernel(1));
+    }, { output: [1] });
   } finally {
     gpu.destroy();
   }

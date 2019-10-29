@@ -50,6 +50,7 @@ class CPUKernel extends Kernel {
     this._imageData = null;
     this._colorData = null;
     this._kernelString = null;
+    this._prependedString = [];
     this.thread = {
       x: 0,
       y: 0,
@@ -213,7 +214,7 @@ class CPUKernel extends Kernel {
         if (/^function/.test(fn)) return fn;
         kernelThreadString = fn;
         return false;
-      })
+      });
     } else {
       kernelThreadString = translatedSources.shift();
     }
@@ -222,6 +223,7 @@ class CPUKernel extends Kernel {
   const _this = this;
   ${ this._processConstants() }
   return (${ this.argumentNames.map(argumentName => 'user_' + argumentName).join(', ') }) => {
+    ${ this._prependedString.join('') }
     ${ this._processArguments() }
     ${ this.graphical ? this._graphicalKernelBody(kernelThreadString) : this._resultKernelBody(kernelThreadString) }
     ${ translatedSources.length > 0 ? translatedSources.join('\n') : '' }
@@ -519,6 +521,15 @@ class CPUKernel extends Kernel {
       this._imageData = this.context.createImageData(width, height);
       this._colorData = new Uint8ClampedArray(width * height * 4);
     }
+  }
+
+  prependString(value) {
+    if (this._kernelString) throw new Error('Kernel already built');
+    this._prependedString.push(value);
+  }
+
+  hasPrependString(value) {
+    return this._prependedString.indexOf(value) > -1;
   }
 }
 

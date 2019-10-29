@@ -200,6 +200,8 @@ class Kernel {
     this.strictIntegers = false;
     this.fixIntegerDivisionAccuracy = null;
     this.warnVarUsage = true;
+    this.onIstanbulCoverageVariable = null;
+    this.removeIstanbulCoverage = false;
   }
 
   /**
@@ -722,6 +724,23 @@ class Kernel {
         throw new Error(`${ this.constructor.name }.output[${ i }] incorrectly defined as \`${ this.output[i] }\`, needs to be numeric, and greater than 0`);
       }
     }
+  }
+
+  /**
+   *
+   * @param {String} value
+   */
+  prependString(value) {
+    throw new Error(`"prependString" called on ${ this.constructor.name }`);
+  }
+
+  /**
+   *
+   * @param {String} value
+   * @return Boolean
+   */
+  hasPrependString(value) {
+    throw new Error(`"hasPrependString" called on ${ this.constructor.name }`);
   }
 
   /**
