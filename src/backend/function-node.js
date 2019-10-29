@@ -62,6 +62,8 @@ class FunctionNode {
     this.strictTypingChecking = false;
     this.fixIntegerDivisionAccuracy = null;
     this.warnVarUsage = true;
+    this.onIstanbulCoverageVariable = null;
+    this.removeIstanbulCoverage = false;
 
     if (settings) {
       for (const p in settings) {
@@ -571,6 +573,8 @@ class FunctionNode {
           return null;
         case 'IfStatement':
           return this.getType(ast.consequent);
+        case 'SequenceExpression':
+          return this.getType(ast.expressions[ast.expressions.length - 1]);
         default:
           throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
     }
@@ -771,6 +775,8 @@ class FunctionNode {
           }
           return dependencies;
         }
+        case 'SequenceExpression':
+          return this.getDependencies(ast.expressions, dependencies, isNotSafe);
         default:
           throw this.astErrorOutput(`Unhandled type ${ ast.type } in getDependencies`, ast);
     }
@@ -827,6 +833,8 @@ class FunctionNode {
       'value[][][]',
       'value[][][][]',
       'value.value',
+      'value.value[]', // istanbul coverage
+      'value.value[][]', // istanbul coverage
       'value.thread.value',
       'this.thread.value',
       'this.output.value',
@@ -1144,12 +1152,28 @@ class FunctionNode {
   astThisExpression(ast, retArr) {
     return retArr;
   }
+  isIstanbulAST(ast) {
+    const variableSignature = this.getVariableSignature(ast);
+    return variableSignature === 'value.value[]' || variableSignature === 'value.value[][]';
+  }
   astSequenceExpression(sNode, retArr) {
-    for (let i = 0; i < sNode.expressions.length; i++) {
-      if (i > 0) {
-        retArr.push(',');
+    const { expressions } = sNode;
+    const sequenceResult = [];
+    for (let i = 0; i < expressions.length; i++) {
+      const expression = expressions[i];
+      if (this.removeIstanbulCoverage) {
+        if (expression.type === 'UpdateExpression' && this.isIstanbulAST(expression.argument)) {
+          continue;
+        }
       }
-      this.astGeneric(sNode.expressions, retArr);
+      const expressionResult = [];
+      this.astGeneric(expression, expressionResult);
+      sequenceResult.push(expressionResult.join(''));
+    }
+    if (sequenceResult.length > 1) {
+      retArr.push('(', sequenceResult.join(','), ')');
+    } else {
+      retArr.push(sequenceResult[0]);
     }
     return retArr;
   }
@@ -1185,6 +1209,12 @@ class FunctionNode {
    * @returns {Array} the append retArr
    */
   astUpdateExpression(uNode, retArr) {
+    if (this.removeIstanbulCoverage) {
+      const signature = this.getVariableSignature(uNode.argument);
+      if (this.isIstanbulAST(uNode.argument)) {
+        return retArr;
+      }
+    }
     if (uNode.prefix) {
       retArr.push(uNode.operator);
       this.astGeneric(uNode.argument, retArr);
@@ -1398,8 +1428,28 @@ class FunctionNode {
             signature: variableSignature,
               property: ast.property,
           };
-        default:
-          throw this.astErrorOutput('Unexpected expression', ast);
+        case 'value.value[]': // istanbul coverage
+          if (this.removeIstanbulCoverage) {
+            return { signature: variableSignature };
+          }
+          if (this.onIstanbulCoverageVariable) {
+            this.onIstanbulCoverageVariable(ast.object.object.name);
+            return {
+              signature: variableSignature
+            };
+          }
+          case 'value.value[][]': // istanbul coverage
+            if (this.removeIstanbulCoverage) {
+              return { signature: variableSignature };
+            }
+            if (this.onIstanbulCoverageVariable) {
+              this.onIstanbulCoverageVariable(ast.object.object.object.name);
+              return {
+                signature: variableSignature
+              };
+            }
+            default:
+              throw this.astErrorOutput('Unexpected expression', ast);
     }
   }
 

@@ -124,6 +124,9 @@ class FunctionTracer {
       case 'ExpressionStatement':
         this.scan(ast.expression);
         break;
+      case 'SequenceExpression':
+        this.scan(ast.expressions);
+        break;
       case 'CallExpression':
         this.functionCalls.push({
           context: this.currentContext,
@@ -155,7 +158,6 @@ class FunctionTracer {
       case 'BreakStatement':
       case 'ContinueStatement':
         break;
-
       default:
         throw new Error(`unhandled type "${ast.type}"`);
     }

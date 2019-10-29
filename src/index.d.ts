@@ -46,6 +46,8 @@ export interface IGPUSettings {
   context?: object;
   functions?: KernelFunction[];
   nativeFunctions?: INativeFunctionList;
+  onIstanbulCoverageVariable?: (value: string, kernel: Kernel) => void;
+  removeIstanbulCoverage?: boolean;
   // format: 'Float32Array' | 'Float16Array' | 'Float' // WE WANT THIS!
 }
 
@@ -112,6 +114,8 @@ export abstract class Kernel {
   plugins: IPlugin[];
   useLegacyEncoder: boolean;
   getPixels(flip?: boolean): Uint8ClampedArray[];
+  prependString(value: string): void;
+  hasPrependString(value: string): boolean;
   constructor(kernel: KernelFunction|IJSON, settings?: IDirectKernelSettings);
   build(
     arg1?: KernelVariable,
@@ -413,6 +417,9 @@ export interface IFunctionSettings {
 
   useLegacyEncoder?: boolean;
   ast?: any;
+
+  onIstanbulCoverageVariable?(name: string): void;
+  removeIstanbulCoverage?: boolean;
 }
 
 export interface ISubKernel {

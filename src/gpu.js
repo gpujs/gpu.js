@@ -116,6 +116,8 @@ class GPU {
     this.functions = [];
     this.nativeFunctions = [];
     this.injectedNative = null;
+    this.onIstanbulCoverageVariable = settings.onIstanbulCoverageVariable || null;
+    this.removeIstanbulCoverage = settings.removeIstanbulCoverage || false;
     if (this.mode === 'dev') return;
     this.chooseKernel();
     // add functions from settings
@@ -306,6 +308,8 @@ class GPU {
         validate,
         warnVarUsage: kernel.warnVarUsage,
         returnType: kernel.returnType,
+        onIstanbulCoverageVariable: kernel.onIstanbulCoverageVariable,
+        removeIstanbulCoverage: kernel.removeIstanbulCoverage,
         onRequestFallback,
         onRequestSwitchKernel,
       });
@@ -324,6 +328,8 @@ class GPU {
       functions: this.functions,
       nativeFunctions: this.nativeFunctions,
       injectedNative: this.injectedNative,
+      onIstanbulCoverageVariable: this.onIstanbulCoverageVariable,
+      removeIstanbulCoverage: this.removeIstanbulCoverage,
       gpu: this,
       validate,
       onRequestFallback,

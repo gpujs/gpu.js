@@ -154,6 +154,26 @@ Settings are an object used to create an instance of `GPU`.  Example: `new GPU(s
   * 'webgl2': Use the `WebGL2Kernel` for transpiling a kernel
   * 'headlessgl' **New in V2!**: Use the `HeadlessGLKernel` for transpiling a kernel
   * 'cpu': Use the `CPUKernel` for transpiling a kernel
+* `onIstanbulCoverageVariable`: For testing. Used for when coverage is inject into function values, and is desired to be preserved (`cpu` mode ONLY).
+  Use like this:
+  ```
+  const { getFileCoverageDataByName } = require('istanbul-spy');
+  const gpu = new GPU({
+    mode: 'cpu',
+    onIstanbulCoverageVariable: (name, kernel) => {
+      const data = getFileCoverageDataByName(name);
+      if (!data) {
+        throw new Error(`Could not find istanbul identifier ${name}`);
+      }
+      const { path } = getFileCoverageDataByName(name);
+      const variable = `const ${name} = __coverage__['${path}'];\n`;
+      if (!kernel.hasPrependString(variable)) {
+        kernel.prependString(variable);
+      }
+    }
+  });
+  ```
+* `removeIstanbulCoverage`: Boolean. For testing and code coverage. Removes istanbul artifacts that were injected at testing runtime.
 
 ## `gpu.createKernel` Settings
 Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.createKernel(settings)`

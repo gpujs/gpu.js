@@ -22,7 +22,7 @@ function mathRandomUnique(mode) {
   const kernel = gpu.createKernel(`function() {
     ${checkSource.join('\n')}
     return 0;
-  }`, { output: [1], debug: true });
+  }`, { output: [1] });
 
   const result = kernel();
   assert.ok(result.every(value => value === 0));
