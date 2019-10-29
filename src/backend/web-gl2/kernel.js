@@ -274,7 +274,7 @@ class WebGL2Kernel extends WebGLKernel {
     this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
     this.subKernelOutputTextures = [];
     for (let i = 0; i < this.subKernels.length; i++) {
-      const texture = this.context.createTexture();
+      const texture = this.createTexture();
       this.subKernelOutputTextures.push(texture);
       this.drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
       gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount + i);
