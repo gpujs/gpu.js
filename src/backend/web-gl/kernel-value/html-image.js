@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValue } = require('./index');
+import { utils } from '../../../utils';
+import { WebGLKernelValue } from './index';
 
-class WebGLKernelValueHTMLImage extends WebGLKernelValue {
+export class WebGLKernelValueHTMLImage extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
     const { width, height } = value;
@@ -41,7 +41,3 @@ class WebGLKernelValueHTMLImage extends WebGLKernelValue {
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGLKernelValueHTMLImage
-};

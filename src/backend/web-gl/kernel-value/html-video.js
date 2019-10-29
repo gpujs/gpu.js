@@ -1,8 +1,3 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueHTMLImage } = require('./html-image');
+import { WebGLKernelValueHTMLImage } from './html-image';
 
-class WebGLKernelValueHTMLVideo extends WebGLKernelValueHTMLImage {}
-
-module.exports = {
-  WebGLKernelValueHTMLVideo
-};
+export class WebGLKernelValueHTMLVideo extends WebGLKernelValueHTMLImage {}

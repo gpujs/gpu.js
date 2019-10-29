@@ -1,6 +1,6 @@
 const sinon = require('sinon');
 const { assert, test, module: describe, only, skip } = require('qunit');
-const { GPU, FunctionBuilder } = require('../../src');
+const { GPU, FunctionBuilder } = require('../../dist/gpu.js');
 
 describe('internal: deep types');
 

@@ -1,6 +1,6 @@
 const { assert, test, skip, module: describe, only } = require('qunit');
 const sinon = require('sinon');
-const { CPUFunctionNode, FunctionBuilder, GPU, WebGL2FunctionNode, WebGLFunctionNode } = require('../../src');
+const { CPUFunctionNode, FunctionBuilder, GPU, WebGL2FunctionNode, WebGLFunctionNode } = require('../../dist/gpu.js');
 
 describe('internal: function composition return values');
 

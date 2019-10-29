@@ -1,48 +1,48 @@
-const { WebGL2KernelValueBoolean } = require('./kernel-value/boolean');
-const { WebGL2KernelValueFloat } = require('./kernel-value/float');
-const { WebGL2KernelValueInteger } = require('./kernel-value/integer');
+import { WebGL2KernelValueBoolean } from './kernel-value/boolean';
+import { WebGL2KernelValueFloat } from './kernel-value/float';
+import { WebGL2KernelValueInteger } from './kernel-value/integer';
 
-const { WebGL2KernelValueHTMLImage } = require('./kernel-value/html-image');
-const { WebGL2KernelValueDynamicHTMLImage } = require('./kernel-value/dynamic-html-image');
+import { WebGL2KernelValueHTMLImage } from './kernel-value/html-image';
+import { WebGL2KernelValueDynamicHTMLImage } from './kernel-value/dynamic-html-image';
 
-const { WebGL2KernelValueHTMLImageArray } = require('./kernel-value/html-image-array');
-const { WebGL2KernelValueDynamicHTMLImageArray } = require('./kernel-value/dynamic-html-image-array');
+import { WebGL2KernelValueHTMLImageArray } from './kernel-value/html-image-array';
+import { WebGL2KernelValueDynamicHTMLImageArray } from './kernel-value/dynamic-html-image-array';
 
-const { WebGL2KernelValueHTMLVideo } = require('./kernel-value/html-video');
-const { WebGL2KernelValueDynamicHTMLVideo } = require('./kernel-value/dynamic-html-video');
+import { WebGL2KernelValueHTMLVideo } from './kernel-value/html-video';
+import { WebGL2KernelValueDynamicHTMLVideo } from './kernel-value/dynamic-html-video';
 
-const { WebGL2KernelValueSingleInput } = require('./kernel-value/single-input');
-const { WebGL2KernelValueDynamicSingleInput } = require('./kernel-value/dynamic-single-input');
+import { WebGL2KernelValueSingleInput } from './kernel-value/single-input';
+import { WebGL2KernelValueDynamicSingleInput } from './kernel-value/dynamic-single-input';
 
-const { WebGL2KernelValueUnsignedInput } = require('./kernel-value/unsigned-input');
-const { WebGL2KernelValueDynamicUnsignedInput } = require('./kernel-value/dynamic-unsigned-input');
+import { WebGL2KernelValueUnsignedInput } from './kernel-value/unsigned-input';
+import { WebGL2KernelValueDynamicUnsignedInput } from './kernel-value/dynamic-unsigned-input';
 
-const { WebGL2KernelValueMemoryOptimizedNumberTexture } = require('./kernel-value/memory-optimized-number-texture');
-const { WebGL2KernelValueDynamicMemoryOptimizedNumberTexture } = require('./kernel-value/dynamic-memory-optimized-number-texture');
+import { WebGL2KernelValueMemoryOptimizedNumberTexture } from './kernel-value/memory-optimized-number-texture';
+import { WebGL2KernelValueDynamicMemoryOptimizedNumberTexture } from './kernel-value/dynamic-memory-optimized-number-texture';
 
-const { WebGL2KernelValueNumberTexture } = require('./kernel-value/number-texture');
-const { WebGL2KernelValueDynamicNumberTexture } = require('./kernel-value/dynamic-number-texture');
+import { WebGL2KernelValueNumberTexture } from './kernel-value/number-texture';
+import { WebGL2KernelValueDynamicNumberTexture } from './kernel-value/dynamic-number-texture';
 
-const { WebGL2KernelValueSingleArray } = require('./kernel-value/single-array');
-const { WebGL2KernelValueDynamicSingleArray } = require('./kernel-value/dynamic-single-array');
+import { WebGL2KernelValueSingleArray } from './kernel-value/single-array';
+import { WebGL2KernelValueDynamicSingleArray } from './kernel-value/dynamic-single-array';
 
-const { WebGL2KernelValueSingleArray1DI } = require('./kernel-value/single-array1d-i');
-const { WebGL2KernelValueDynamicSingleArray1DI } = require('./kernel-value/dynamic-single-array1d-i');
+import { WebGL2KernelValueSingleArray1DI } from './kernel-value/single-array1d-i';
+import { WebGL2KernelValueDynamicSingleArray1DI } from './kernel-value/dynamic-single-array1d-i';
 
-const { WebGL2KernelValueSingleArray2DI } = require('./kernel-value/single-array2d-i');
-const { WebGL2KernelValueDynamicSingleArray2DI } = require('./kernel-value/dynamic-single-array2d-i');
+import { WebGL2KernelValueSingleArray2DI } from './kernel-value/single-array2d-i';
+import { WebGL2KernelValueDynamicSingleArray2DI } from './kernel-value/dynamic-single-array2d-i';
 
-const { WebGL2KernelValueSingleArray3DI } = require('./kernel-value/single-array3d-i');
-const { WebGL2KernelValueDynamicSingleArray3DI } = require('./kernel-value/dynamic-single-array3d-i');
+import { WebGL2KernelValueSingleArray3DI } from './kernel-value/single-array3d-i';
+import { WebGL2KernelValueDynamicSingleArray3DI } from './kernel-value/dynamic-single-array3d-i';
 
-const { WebGL2KernelValueSingleArray2 } = require('./kernel-value/single-array2');
-const { WebGL2KernelValueSingleArray3 } = require('./kernel-value/single-array3');
-const { WebGL2KernelValueSingleArray4 } = require('./kernel-value/single-array4');
+import { WebGL2KernelValueSingleArray2 } from './kernel-value/single-array2';
+import { WebGL2KernelValueSingleArray3 } from './kernel-value/single-array3';
+import { WebGL2KernelValueSingleArray4 } from './kernel-value/single-array4';
 
-const { WebGL2KernelValueUnsignedArray } = require('./kernel-value/unsigned-array');
-const { WebGL2KernelValueDynamicUnsignedArray } = require('./kernel-value/dynamic-unsigned-array');
+import { WebGL2KernelValueUnsignedArray } from './kernel-value/unsigned-array';
+import { WebGL2KernelValueDynamicUnsignedArray } from './kernel-value/dynamic-unsigned-array';
 
-const kernelValueMaps = {
+export const kernelValueMaps = {
   unsigned: {
     dynamic: {
       'Boolean': WebGL2KernelValueBoolean,
@@ -161,7 +161,7 @@ const kernelValueMaps = {
   },
 };
 
-function lookupKernelValueType(type, dynamic, precision, value) {
+export function lookupKernelValueType(type, dynamic, precision, value) {
   if (!type) {
     throw new Error('type missing');
   }
@@ -182,8 +182,3 @@ function lookupKernelValueType(type, dynamic, precision, value) {
   }
   return types[type];
 }
-
-module.exports = {
-  kernelValueMaps,
-  lookupKernelValueType
-};

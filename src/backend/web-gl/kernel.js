@@ -1,12 +1,12 @@
-const { GLKernel } = require('../gl/kernel');
-const { FunctionBuilder } = require('../function-builder');
-const { WebGLFunctionNode } = require('./function-node');
-const { utils } = require('../../utils');
-const triangleNoise = require('../../plugins/triangle-noise');
-const { fragmentShader } = require('./fragment-shader');
-const { vertexShader } = require('./vertex-shader');
-const { glKernelString } = require('../gl/kernel-string');
-const { lookupKernelValueType } = require('./kernel-value-maps');
+import { GLKernel } from '../gl/kernel';
+import { FunctionBuilder } from '../function-builder';
+import { WebGLFunctionNode } from './function-node';
+import { utils } from '../../utils';
+import triangleNoise from '../../plugins/triangle-noise';
+import { fragmentShader } from './fragment-shader';
+import { vertexShader } from './vertex-shader';
+import { glKernelString } from '../gl/kernel-string';
+import { lookupKernelValueType } from './kernel-value-maps';
 
 let isSupported = null;
 let testCanvas = null;
@@ -18,11 +18,11 @@ const plugins = [triangleNoise];
 const canvases = [];
 const maxTexSizes = {};
 
-
 /**
  * @desc Kernel Implementation for WebGL.
- * <p>This builds the shaders and runs them on the GPU,
- * the outputs the result back as float(enabled by default) and Texture.</p>
+ *
+ * This builds the shaders and runs them on the GPU, then outputs the result
+ * back as float (enabled by default) and Texture.
  *
  * @prop {Object} textureCache - webGl Texture cache
  * @prop {Object} programUniformLocationCache - Location of program variables in memory
@@ -37,7 +37,7 @@ const maxTexSizes = {};
  * @prop {String} compiledVertexShader - Compiled Vertical shader string
  * @extends GLKernel
  */
-class WebGLKernel extends GLKernel {
+export class WebGLKernel extends GLKernel {
   static get isSupported() {
     if (isSupported !== null) {
       return isSupported;
@@ -81,7 +81,6 @@ class WebGLKernel extends GLKernel {
       isDrawBuffers,
       kernelMap: isDrawBuffers,
       channelCount: this.getChannelCount(),
-      maxTextureSize: this.getMaxTextureSize(),
     });
   }
 
@@ -97,10 +96,6 @@ class WebGLKernel extends GLKernel {
     return testExtensions.WEBGL_draw_buffers ?
       testContext.getParameter(testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL) :
       1;
-  }
-
-  static getMaxTextureSize() {
-    return testContext.getParameter(testContext.MAX_TEXTURE_SIZE);
   }
 
   static lookupKernelValueType(type, dynamic, precision, value) {
@@ -250,7 +245,6 @@ class WebGLKernel extends GLKernel {
     }
 
     const { features } = this.constructor;
-
     if (this.optimizeFloatMemory === true && !features.isTextureFloat) {
       throw new Error('Float textures are not supported');
     } else if (this.precision === 'single' && !features.isFloatRead) {
@@ -1561,7 +1555,3 @@ class WebGLKernel extends GLKernel {
     return json;
   }
 }
-
-module.exports = {
-  WebGLKernel
-};

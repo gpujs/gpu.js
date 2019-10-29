@@ -1,4 +1,4 @@
-class FunctionTracer {
+export class FunctionTracer {
   constructor(ast) {
     this.runningContexts = [];
     this.contexts = [];
@@ -28,7 +28,6 @@ class FunctionTracer {
    * @param ast
    */
   scan(ast) {
-    if (!ast) return;
     if (Array.isArray(ast)) {
       for (let i = 0; i < ast.length; i++) {
         this.scan(ast[i]);
@@ -147,21 +146,18 @@ class FunctionTracer {
         this.scan(ast.test);
         this.scan(ast.consequent);
         break;
-
       case 'ThisExpression':
+        this.scan(ast.left);
+        this.scan(ast.right);
+        break;
       case 'Literal':
       case 'DebuggerStatement':
       case 'EmptyStatement':
       case 'BreakStatement':
       case 'ContinueStatement':
         break;
-
       default:
         throw new Error(`unhandled type "${ast.type}"`);
     }
   }
 }
-
-module.exports = {
-  FunctionTracer,
-};

@@ -14,21 +14,16 @@
 <div id="qunit-fixture"></div>
 <script>
   const isBrowser = true;
-  const browserGPU = { GPU };
-  for (const p in GPU) {
-    if (p === 'GPU') continue;
-    browserGPU[p] = GPU[p];
-  }
   window.process = {
     cwd: () => {
       return '../..';
     }
   };
   window.require = (module) => {
-    if (module.match(/[.][.]\/src$/)) return browserGPU;
+    if (/\.\.\/(?:dist|src)/g.test(module)) return { GPU, ...GPU };
     if (module === 'sinon') return sinon;
     if (module === 'qunit') return QUnit;
-    if (module.match(/[.][.]\/browser-test-utils$/)) return browserTestUtils;
+    if (/\.\.\/browser-test-utils/g.test(module)) return browserTestUtils;
     throw new Error('cannot find ' + module);
   };
 </script>

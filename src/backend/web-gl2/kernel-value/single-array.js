@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueSingleArray } = require('../../web-gl/kernel-value/single-array');
+import { utils } from '../../../utils';
+import { WebGLKernelValueSingleArray } from '../../web-gl/kernel-value/single-array';
 
-class WebGL2KernelValueSingleArray extends WebGLKernelValueSingleArray {
+export class WebGL2KernelValueSingleArray extends WebGLKernelValueSingleArray {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
@@ -28,7 +28,3 @@ class WebGL2KernelValueSingleArray extends WebGLKernelValueSingleArray {
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueSingleArray
-};

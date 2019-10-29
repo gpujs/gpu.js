@@ -2,7 +2,7 @@
  * @desc WebGl Texture implementation in JS
  * @param {ITextureSettings} settings
  */
-class Texture {
+export class Texture {
   constructor(settings) {
     const {
       texture,
@@ -37,8 +37,4 @@ class Texture {
   delete() {
     return this.context.deleteTexture(this.texture);
   }
-}
-
-module.exports = {
-  Texture
 };

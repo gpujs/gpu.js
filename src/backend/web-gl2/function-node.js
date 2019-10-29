@@ -1,4 +1,4 @@
-const { WebGLFunctionNode } = require('../web-gl/function-node');
+import { WebGLFunctionNode } from '../web-gl/function-node';
 
 /**
  * @class WebGL2FunctionNode
@@ -6,7 +6,7 @@ const { WebGLFunctionNode } = require('../web-gl/function-node');
  * @extends WebGLFunctionNode
  * @returns the converted webGL function string
  */
-class WebGL2FunctionNode extends WebGLFunctionNode {
+export class WebGL2FunctionNode extends WebGLFunctionNode {
 
   /**
    * @desc Parses the abstract syntax tree for *identifier* expression
@@ -39,7 +39,3 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
     return retArr;
   }
 }
-
-module.exports = {
-  WebGL2FunctionNode
-};

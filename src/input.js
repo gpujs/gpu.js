@@ -1,4 +1,6 @@
-class Input {
+import { erectMemoryOptimized2DFloat, erectMemoryOptimized3DFloat } from './common';
+
+export class Input {
   constructor(value, size) {
     this.value = value;
     if (Array.isArray(size)) {
@@ -32,23 +34,17 @@ class Input {
   }
 
   toArray() {
-    const { utils } = require('./utils');
-    const [w, h, d] = this.size;
+    const [ w, h, d ] = this.size;
     if (d) {
-      return utils.erectMemoryOptimized3DFloat(this.value.subarray ? this.value : new Float32Array(this.value), w, h, d);
+      return erectMemoryOptimized3DFloat(this.value.subarray ? this.value : new Float32Array(this.value), w, h, d);
     } else if (h) {
-      return utils.erectMemoryOptimized2DFloat(this.value.subarray ? this.value : new Float32Array(this.value), w, h);
+      return erectMemoryOptimized2DFloat(this.value.subarray ? this.value : new Float32Array(this.value), w, h);
     } else {
       return this.value;
     }
   }
-}
+};
 
-function input(value, size) {
+export function input(value, size) {
   return new Input(value, size);
-}
-
-module.exports = {
-  Input,
-  input
 };

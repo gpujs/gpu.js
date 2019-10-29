@@ -2,20 +2,39 @@
   "name": "gpu.js",
   "version": "2.0.5",
   "description": "GPU Accelerated JavaScript",
+  "author": "The gpu.js Team",
+  "license": "MIT",
+  "homepage": "https://gpu.rocks/",
+  "main": "./dist/gpu.js",
+  "browser": "./dist/gpu-browser.min.js",
+  "unpkg": "./dist/gpu-browser.min.js",
+  "jsdelivr": "./dist/gpu-browser.min.js",
+  "module": "./dist/gpu.mjs",
+  "typings": "./src/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "engines": {
     "node": ">=8.0.0"
   },
-  "main": "./src/index.js",
-  "files": [
-    "src",
-    "dist"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gpujs/gpu.js.git"
+  },
+  "keywords": [
+    "gpgpu",
+    "webgl"
   ],
-  "unpkg": "./dist/gpu-browser.min.js",
-  "jsdelivr": "./dist/gpu-browser.min.js",
-  "browser": "./dist/gpu-browser.js",
-  "directories": {
-    "doc": "doc",
-    "test": "test"
+  "bugs": {
+    "url": "https://github.com/gpujs/gpu.js/issues"
+  },
+  "scripts": {
+    "build-tests": "node build-tests",
+    "build": "rollup -c",
+    "pretest": "npm run build && npm run build-tests",
+    "prewatch": "npm run build-tests",
+    "test": "qunit",
+    "watch": "rollup -c -w"
   },
   "dependencies": {
     "acorn": "^5.1.1",
@@ -26,40 +45,16 @@
   "devDependencies": {
     "benchmark": "^2.1.4",
     "browser-sync": "^2.26.7",
-    "browserify": "^16.2.3",
-    "gulp": "^4.0.0",
-    "gulp-concat": "^2.6.0",
-    "gulp-header": "^1.7.1",
-    "gulp-jsbeautifier": "^2.1.0",
-    "gulp-rename": "^1.2.2",
-    "gulp-replace": "^1.0.0",
-    "gulp-strip-comments": "^2.4.5",
-    "gulp-uglify-es": "^1.0.4",
-    "merge-stream": "^1.0.1",
+    "chai": "^4.2.0",
+    "npm-run-all": "^4.1.5",
     "qunit": "^2.9.1",
     "read-dir-deep": "^7.0.1",
-    "sinon": "^7.3.2",
-    "vinyl-buffer": "^1.0.0",
-    "vinyl-source-stream": "^2.0.0"
-  },
-  "scripts": {
-    "test": "qunit",
-    "setup": "npm i -g gulp-cli",
-    "make": "gulp make"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/gpujs/gpu.js.git"
-  },
-  "keywords": [
-    "gpgpu",
-    "webgl"
-  ],
-  "author": "The gpu.js Team",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/gpujs/gpu.js/issues"
-  },
-  "homepage": "http://gpu.rocks/",
-  "typings": "./src/index.d.ts"
+    "rollup": "^1.21.4",
+    "rollup-plugin-cleanup": "^3.1.1",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-json": "^4.0.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-terser": "^5.1.2",
+    "sinon": "^7.4.2"
+  }
 }

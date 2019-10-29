@@ -1,6 +1,6 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
 const sinon = require('sinon');
-const { CPUFunctionNode } = require('../../../../src');
+const { CPUFunctionNode } = require('../../../../dist/gpu.js');
 
 describe('internal: CPUFunctionNode');
 

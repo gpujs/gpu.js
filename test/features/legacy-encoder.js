@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU, HeadlessGLKernel, WebGLKernel, WebGL2Kernel } = require('../../src');
+const { GPU, HeadlessGLKernel, WebGLKernel, WebGL2Kernel } = require('../../dist/gpu.js');
 
 describe('features: legacy encoder');
 
@@ -141,7 +141,7 @@ test('subKernels on cpu', () => {
   testSubKernelsLegacyEncoderOn('cpu');
 });
 
-test('HeadlessGLKernel.getMainResultKernelPackedPixels useLegacyEncoder = false', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('HeadlessGLKernel.getMainResultKernelPackedPixels useLegacyEncoder = false', () => {
   const result = HeadlessGLKernel.prototype.getMainResultKernelPackedPixels.apply({
     useLegacyEncoder: false
   });
@@ -151,7 +151,7 @@ test('HeadlessGLKernel.getMainResultKernelPackedPixels useLegacyEncoder = false'
 `);
 });
 
-test('WebGLKernel.getMainResultKernelPackedPixels useLegacyEncoder = false', () => {
+(GPU.isWebGLSupported ? test : skip)('WebGLKernel.getMainResultKernelPackedPixels useLegacyEncoder = false', () => {
   const result = WebGLKernel.prototype.getMainResultKernelPackedPixels.apply({
     useLegacyEncoder: false
   });
@@ -161,7 +161,7 @@ test('WebGLKernel.getMainResultKernelPackedPixels useLegacyEncoder = false', () 
 `);
 });
 
-test('WebGL2Kernel.getMainResultKernelPackedPixels useLegacyEncoder = false', () => {
+(GPU.isWebGL2Supported ? test : skip)('WebGL2Kernel.getMainResultKernelPackedPixels useLegacyEncoder = false', () => {
   const result = WebGL2Kernel.prototype.getMainResultKernelPackedPixels.apply({
     useLegacyEncoder: false
   });
@@ -171,7 +171,7 @@ test('WebGL2Kernel.getMainResultKernelPackedPixels useLegacyEncoder = false', ()
 `);
 });
 
-test('HeadlessGLKernel.getMainResultKernelPackedPixels useLegacyEncoder = true', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('HeadlessGLKernel.getMainResultKernelPackedPixels useLegacyEncoder = true', () => {
   const result = HeadlessGLKernel.prototype.getMainResultKernelPackedPixels.apply({
     useLegacyEncoder: true
   });
@@ -181,7 +181,7 @@ test('HeadlessGLKernel.getMainResultKernelPackedPixels useLegacyEncoder = true',
 `);
 });
 
-test('WebGLKernel.getMainResultKernelPackedPixels useLegacyEncoder = true', () => {
+(GPU.isWebGLSupported ? test : skip)('WebGLKernel.getMainResultKernelPackedPixels useLegacyEncoder = true', () => {
   const result = WebGLKernel.prototype.getMainResultKernelPackedPixels.apply({
     useLegacyEncoder: true
   });
@@ -191,7 +191,7 @@ test('WebGLKernel.getMainResultKernelPackedPixels useLegacyEncoder = true', () =
 `);
 });
 
-test('WebGL2Kernel.getMainResultKernelPackedPixels useLegacyEncoder = true', () => {
+(GPU.isWebGL2Supported ? test : skip)('WebGL2Kernel.getMainResultKernelPackedPixels useLegacyEncoder = true', () => {
   const result = WebGL2Kernel.prototype.getMainResultKernelPackedPixels.apply({
     useLegacyEncoder: true
   });
@@ -201,7 +201,7 @@ test('WebGL2Kernel.getMainResultKernelPackedPixels useLegacyEncoder = true', () 
 `);
 });
 
-test('HeadlessGLKernel.getMainResultSubKernelPackedPixels useLegacyEncoder = false', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('HeadlessGLKernel.getMainResultSubKernelPackedPixels useLegacyEncoder = false', () => {
   const result = HeadlessGLKernel.prototype.getMainResultSubKernelPackedPixels.apply({
     useLegacyEncoder: false,
     subKernels: [{
@@ -212,7 +212,7 @@ test('HeadlessGLKernel.getMainResultSubKernelPackedPixels useLegacyEncoder = fal
 `);
 });
 
-test('WebGLKernel.getMainResultSubKernelPackedPixels useLegacyEncoder = false', () => {
+(GPU.isWebGLSupported ? test : skip)('WebGLKernel.getMainResultSubKernelPackedPixels useLegacyEncoder = false', () => {
   const result = WebGLKernel.prototype.getMainResultSubKernelPackedPixels.apply({
     useLegacyEncoder: false,
     subKernels: [{
@@ -223,7 +223,7 @@ test('WebGLKernel.getMainResultSubKernelPackedPixels useLegacyEncoder = false', 
 `);
 });
 
-test('WebGL2Kernel.getMainResultSubKernelPackedPixels useLegacyEncoder = false', () => {
+(GPU.isWebGL2Supported ? test : skip)('WebGL2Kernel.getMainResultSubKernelPackedPixels useLegacyEncoder = false', () => {
   const result = WebGL2Kernel.prototype.getMainResultSubKernelPackedPixels.apply({
     useLegacyEncoder: false,
     subKernels: [{
@@ -234,7 +234,7 @@ test('WebGL2Kernel.getMainResultSubKernelPackedPixels useLegacyEncoder = false',
 `);
 });
 
-test('HeadlessGLKernel.getMainResultSubKernelPackedPixels useLegacyEncoder = true', () => {
+(GPU.isHeadlessGLSupported ? test : skip)('HeadlessGLKernel.getMainResultSubKernelPackedPixels useLegacyEncoder = true', () => {
   const result = HeadlessGLKernel.prototype.getMainResultSubKernelPackedPixels.apply({
     useLegacyEncoder: true,
     subKernels: [{
@@ -245,7 +245,7 @@ test('HeadlessGLKernel.getMainResultSubKernelPackedPixels useLegacyEncoder = tru
 `);
 });
 
-test('WebGLKernel.getMainResultSubKernelPackedPixels useLegacyEncoder = true', () => {
+(GPU.isWebGLSupported ? test : skip)('WebGLKernel.getMainResultSubKernelPackedPixels useLegacyEncoder = true', () => {
   const result = WebGLKernel.prototype.getMainResultSubKernelPackedPixels.apply({
     useLegacyEncoder: true,
     subKernels: [{
@@ -256,7 +256,7 @@ test('WebGLKernel.getMainResultSubKernelPackedPixels useLegacyEncoder = true', (
 `);
 });
 
-test('WebGL2Kernel.getMainResultSubKernelPackedPixels useLegacyEncoder = true', () => {
+(GPU.isWebGL2Supported ? test : skip)('WebGL2Kernel.getMainResultSubKernelPackedPixels useLegacyEncoder = true', () => {
   const result = WebGL2Kernel.prototype.getMainResultSubKernelPackedPixels.apply({
     useLegacyEncoder: true,
     subKernels: [{

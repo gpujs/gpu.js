@@ -1,8 +1,3 @@
-const { utils } = require('../../../utils');
-const { WebGL2KernelValueDynamicHTMLImage } = require('./dynamic-html-image');
+import { WebGL2KernelValueDynamicHTMLImage } from './dynamic-html-image';
 
-class WebGL2KernelValueDynamicHTMLVideo extends WebGL2KernelValueDynamicHTMLImage {}
-
-module.exports = {
-  WebGL2KernelValueDynamicHTMLVideo
-};
+export class WebGL2KernelValueDynamicHTMLVideo extends WebGL2KernelValueDynamicHTMLImage {}

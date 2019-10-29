@@ -1,5 +1,5 @@
-const { utils } = require('../../utils');
-const { FunctionNode } = require('../function-node');
+import { utils } from '../../utils';
+import { FunctionNode } from '../function-node';
 // Closure capture for the ast function, prevent collision with existing AST functions
 // The prefixes to use
 const jsMathPrefix = 'Math.';
@@ -10,7 +10,7 @@ const localPrefix = 'this.';
  * @extends FunctionNode
  * @returns the converted WebGL function string
  */
-class WebGLFunctionNode extends FunctionNode {
+export class WebGLFunctionNode extends FunctionNode {
   constructor(source, settings) {
     super(source, settings);
     if (settings && settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
@@ -76,13 +76,10 @@ class WebGLFunctionNode extends FunctionNode {
         if (!type) {
           throw this.astErrorOutput('Unexpected expression', ast);
         }
-
-        if (type === 'sampler2D' || type === 'sampler2DArray') {
-          // mash needed arguments together, since now we have end to end inference
-          retArr.push(`${type} user_${argumentName},ivec2 user_${argumentName}Size,ivec3 user_${argumentName}Dim`);
-        } else {
-          retArr.push(`${type} user_${argumentName}`);
-        }
+        retArr.push(type);
+        retArr.push(' ');
+        retArr.push('user_');
+        retArr.push(argumentName);
       }
     }
 
@@ -1530,8 +1527,4 @@ const typeMap = {
 const operatorMap = {
   '===': '==',
   '!==': '!='
-};
-
-module.exports = {
-  WebGLFunctionNode
 };

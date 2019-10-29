@@ -19,7 +19,7 @@ float n4rand( vec2 n )
 {
   float t = fract( triangle_noise_seed + triangle_noise_shift );
   float nrnd0 = nrand( n + 0.07*t );
-  float nrnd1 = nrand( n + 0.11*t );  
+  float nrnd1 = nrand( n + 0.11*t );
   float nrnd2 = nrand( n + 0.13*t );
   float nrnd3 = nrand( n + 0.17*t );
   float result = (nrnd0+nrnd1+nrnd2+nrnd3) / 4.0;
@@ -40,10 +40,9 @@ const onBeforeRun = (kernel) => {
 };
 
 /**
- *
  * @type IPlugin
  */
-module.exports = {
+export default {
   name,
   onBeforeRun,
   functionMatch,

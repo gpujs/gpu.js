@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGL2KernelValueSingleArray } = require('../../web-gl2/kernel-value/single-array');
+import { utils } from '../../../utils';
+import { WebGL2KernelValueSingleArray } from '../../web-gl2/kernel-value/single-array';
 
-class WebGL2KernelValueDynamicSingleArray extends WebGL2KernelValueSingleArray {
+export class WebGL2KernelValueDynamicSingleArray extends WebGL2KernelValueSingleArray {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
@@ -22,7 +22,3 @@ class WebGL2KernelValueDynamicSingleArray extends WebGL2KernelValueSingleArray {
     super.updateValue(value);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueDynamicSingleArray
-};

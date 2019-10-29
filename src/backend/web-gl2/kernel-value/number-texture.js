@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueNumberTexture } = require('../../web-gl/kernel-value/number-texture');
+import { utils } from '../../../utils';
+import { WebGLKernelValueNumberTexture } from '../../web-gl/kernel-value/number-texture';
 
-class WebGL2KernelValueNumberTexture extends WebGLKernelValueNumberTexture {
+export class WebGL2KernelValueNumberTexture extends WebGLKernelValueNumberTexture {
   getSource() {
     const { id, sizeId, textureSize, dimensionsId, dimensions } = this;
     const variablePrecision = this.getVariablePrecisionString();
@@ -12,7 +12,3 @@ class WebGL2KernelValueNumberTexture extends WebGLKernelValueNumberTexture {
     ]);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueNumberTexture
-};

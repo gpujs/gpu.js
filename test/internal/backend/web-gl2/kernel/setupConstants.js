@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { WebGL2Kernel, input } = require('../../../../../src');
+const { WebGL2Kernel, input } = require('../../../../../dist/gpu.js');
 
 describe('internal WebGL2Kernel.setupConstants Array');
 const gl = {

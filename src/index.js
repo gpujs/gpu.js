@@ -1,30 +1,27 @@
-const { GPU } = require('./gpu');
-const { alias } = require('./alias');
-const { utils } = require('./utils');
-const { Input, input } = require('./input');
-const { Texture } = require('./texture');
-const { FunctionBuilder } = require('./backend/function-builder');
-const { FunctionNode } = require('./backend/function-node');
-const { CPUFunctionNode } = require('./backend/cpu/function-node');
-const { CPUKernel } = require('./backend/cpu/kernel');
+import { GPU } from './gpu';
+import { alias } from './alias';
+import * as common from './common';
+import { utils as util } from './utils';
+import { Input, input } from './input';
+import { Texture } from './texture';
+import { FunctionBuilder } from './backend/function-builder';
+import { FunctionNode } from './backend/function-node';
+import { CPUFunctionNode } from './backend/cpu/function-node';
+import { CPUKernel } from './backend/cpu/kernel';
+import { HeadlessGLKernel } from './backend/headless-gl/kernel';
+import { WebGLFunctionNode } from './backend/web-gl/function-node';
+import { WebGLKernel } from './backend/web-gl/kernel';
+import { WebGL2FunctionNode } from './backend/web-gl2/function-node';
+import { WebGL2Kernel } from './backend/web-gl2/kernel';
+import { GLKernel } from './backend/gl/kernel';
+import { Kernel } from './backend/kernel';
+import { kernelValueMaps as webGLKernelValueMaps } from './backend/web-gl/kernel-value-maps';
+import { kernelValueMaps as webGL2KernelValueMaps } from './backend/web-gl2/kernel-value-maps';
+import { FunctionTracer } from './backend/function-tracer';
 
-const { HeadlessGLKernel } = require('./backend/headless-gl/kernel');
+const utils = { ...common, ...util };
 
-const { WebGLFunctionNode } = require('./backend/web-gl/function-node');
-const { WebGLKernel } = require('./backend/web-gl/kernel');
-const { kernelValueMaps: webGLKernelValueMaps } = require('./backend/web-gl/kernel-value-maps');
-
-const { WebGL2FunctionNode } = require('./backend/web-gl2/function-node');
-const { WebGL2Kernel } = require('./backend/web-gl2/kernel');
-const { kernelValueMaps: webGL2KernelValueMaps } = require('./backend/web-gl2/kernel-value-maps');
-
-const { GLKernel } = require('./backend/gl/kernel');
-
-const { Kernel } = require('./backend/kernel');
-
-const { FunctionTracer } = require('./backend/function-tracer');
-
-module.exports = {
+export {
   alias,
   CPUFunctionNode,
   CPUKernel,
@@ -36,15 +33,12 @@ module.exports = {
   input,
   Texture,
   utils,
-
   WebGL2FunctionNode,
   WebGL2Kernel,
   webGL2KernelValueMaps,
-
   WebGLFunctionNode,
   WebGLKernel,
   webGLKernelValueMaps,
-
   GLKernel,
   Kernel,
   FunctionTracer,

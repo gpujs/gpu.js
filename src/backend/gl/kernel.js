@@ -1,31 +1,30 @@
-const { Kernel } = require('../kernel');
-const { Texture } = require('../../texture');
-const { utils } = require('../../utils');
-const { GLTextureArray2Float } = require('./texture/array-2-float');
-const { GLTextureArray2Float2D } = require('./texture/array-2-float-2d');
-const { GLTextureArray2Float3D } = require('./texture/array-2-float-3d');
-const { GLTextureArray3Float } = require('./texture/array-3-float');
-const { GLTextureArray3Float2D } = require('./texture/array-3-float-2d');
-const { GLTextureArray3Float3D } = require('./texture/array-3-float-3d');
-const { GLTextureArray4Float } = require('./texture/array-4-float');
-const { GLTextureArray4Float2D } = require('./texture/array-4-float-2d');
-const { GLTextureArray4Float3D } = require('./texture/array-4-float-3d');
-const { GLTextureFloat } = require('./texture/float');
-const { GLTextureFloat2D } = require('./texture/float-2d');
-const { GLTextureFloat3D } = require('./texture/float-3d');
-const { GLTextureMemoryOptimized } = require('./texture/memory-optimized');
-const { GLTextureMemoryOptimized2D } = require('./texture/memory-optimized-2d');
-const { GLTextureMemoryOptimized3D } = require('./texture/memory-optimized-3d');
-const { GLTextureUnsigned } = require('./texture/unsigned');
-const { GLTextureUnsigned2D } = require('./texture/unsigned-2d');
-const { GLTextureUnsigned3D } = require('./texture/unsigned-3d');
-const { GLTextureGraphical } = require('./texture/graphical');
+import { Kernel } from '../kernel';
+import { utils } from '../../utils';
+import { GLTextureArray2Float } from './texture/array-2-float';
+import { GLTextureArray2Float2D } from './texture/array-2-float-2d';
+import { GLTextureArray2Float3D } from './texture/array-2-float-3d';
+import { GLTextureArray3Float } from './texture/array-3-float';
+import { GLTextureArray3Float2D } from './texture/array-3-float-2d';
+import { GLTextureArray3Float3D } from './texture/array-3-float-3d';
+import { GLTextureArray4Float } from './texture/array-4-float';
+import { GLTextureArray4Float2D } from './texture/array-4-float-2d';
+import { GLTextureArray4Float3D } from './texture/array-4-float-3d';
+import { GLTextureFloat } from './texture/float';
+import { GLTextureFloat2D } from './texture/float-2d';
+import { GLTextureFloat3D } from './texture/float-3d';
+import { GLTextureMemoryOptimized } from './texture/memory-optimized';
+import { GLTextureMemoryOptimized2D } from './texture/memory-optimized-2d';
+import { GLTextureMemoryOptimized3D } from './texture/memory-optimized-3d';
+import { GLTextureUnsigned } from './texture/unsigned';
+import { GLTextureUnsigned2D } from './texture/unsigned-2d';
+import { GLTextureUnsigned3D } from './texture/unsigned-3d';
+import { GLTextureGraphical } from './texture/graphical';
 
 /**
  * @abstract
  * @extends Kernel
  */
-class GLKernel extends Kernel {
+export class GLKernel extends Kernel {
   static get mode() {
     return 'gpu';
   }
@@ -962,7 +961,7 @@ class GLKernel extends Kernel {
   }
 }
 
-const renderStrategy = Object.freeze({
+export const renderStrategy = Object.freeze({
   PackedPixelToUint8Array: Symbol('PackedPixelToUint8Array'),
   PackedPixelToFloat: Symbol('PackedPixelToFloat'),
   PackedPixelTo2DFloat: Symbol('PackedPixelTo2DFloat'),
@@ -993,9 +992,4 @@ const typeMap = {
   vec2: 'Array(2)',
   vec3: 'Array(3)',
   vec4: 'Array(4)',
-};
-
-module.exports = {
-  GLKernel,
-  renderStrategy
 };

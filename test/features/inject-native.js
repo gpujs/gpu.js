@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../../dist/gpu.js');
 
 describe('features: inject native');
 
@@ -9,7 +9,7 @@ function gpuAddAB(mode) {
     .injectNative(`
 int customAdder(int a, int b) {
   return a + b;
-}  
+}
 `)
     .addNativeFunction('customAdderLink', `int customAdderLink(int a, int b) {
   return customAdder(a, b);

@@ -1,7 +1,14 @@
-const { utils } = require('../utils');
-const { Input } = require('../input');
+import { Input } from '../input';
+import {
+  functionToIFunction,
+  getArgumentNamesFromString,
+  isArray,
+  isFunctionString,
+  warnDeprecated
+} from '../common';
+import { getVariableType } from '../utils';
 
-class Kernel {
+export class Kernel {
   /**
    * @type {Boolean}
    */
@@ -50,7 +57,7 @@ class Kernel {
       if (typeof source !== 'string') {
         throw new Error('source not a string');
       }
-      if (!utils.isFunctionString(source)) {
+      if (!isFunctionString(source)) {
         throw new Error('source not a function string');
       }
     }
@@ -62,13 +69,12 @@ class Kernel {
      * Name of the arguments found from parsing source argument
      * @type {String[]}
      */
-    this.argumentNames = typeof source === 'string' ? utils.getArgumentNamesFromString(source) : null;
+    this.argumentNames = typeof source === 'string' ? getArgumentNamesFromString(source) : null;
     this.argumentTypes = null;
     this.argumentSizes = null;
     this.argumentBitRatios = null;
     this.kernelArguments = null;
     this.kernelConstants = null;
-    this.forceUploadKernelConstants = null;
 
 
     /**
@@ -214,7 +220,7 @@ class Kernel {
           break;
         case 'functions':
           if (typeof settings.functions[0] === 'function') {
-            this.functions = settings.functions.map(source => utils.functionToIFunction(source));
+            this.functions = settings.functions.map(source => functionToIFunction(source));
             continue;
           }
           break;
@@ -288,7 +294,7 @@ class Kernel {
       if (!this.argumentTypes) {
         this.argumentTypes = [];
         for (let i = 0; i < args.length; i++) {
-          const argType = utils.getVariableType(args[i], this.strictIntegers);
+          const argType = getVariableType(args[i], this.strictIntegers);
           const type = argType === 'Integer' ? 'Number' : argType;
           this.argumentTypes.push(type);
           this.kernelArguments.push({
@@ -332,7 +338,7 @@ class Kernel {
     if (this.constants) {
       for (let name in this.constants) {
         if (needsConstantTypes) {
-          const type = utils.getVariableType(this.constants[name], this.strictIntegers);
+          const type = getVariableType(this.constants[name], this.strictIntegers);
           this.constantTypes[name] = type;
           this.kernelConstants.push({
             name,
@@ -434,7 +440,7 @@ class Kernel {
    */
   setFunctions(functions) {
     if (typeof functions[0] === 'function') {
-      this.functions = functions.map(source => utils.functionToIFunction(source));
+      this.functions = functions.map(source => functionToIFunction(source));
     } else {
       this.functions = functions;
     }
@@ -487,7 +493,7 @@ class Kernel {
    * @deprecated
    */
   setOutputToTexture(flag) {
-    utils.warnDeprecated('method', 'setOutputToTexture', 'setPipeline');
+    warnDeprecated('method', 'setOutputToTexture', 'setPipeline');
     this.pipeline = flag;
     return this;
   }
@@ -536,7 +542,7 @@ class Kernel {
    * @return {Kernel}
    */
   setHardcodeConstants(flag) {
-    utils.warnDeprecated('method', 'setHardcodeConstants');
+    warnDeprecated('method', 'setHardcodeConstants');
     this.setDynamicOutput(flag);
     this.setDynamicArguments(flag);
     return this;
@@ -576,7 +582,7 @@ class Kernel {
    * @returns {Object}
    */
   getCanvas() {
-    utils.warnDeprecated('method', 'getCanvas');
+    warnDeprecated('method', 'getCanvas');
     return this.canvas;
   }
 
@@ -585,7 +591,7 @@ class Kernel {
    * @returns {Object}
    */
   getWebGl() {
-    utils.warnDeprecated('method', 'getWebGl');
+    warnDeprecated('method', 'getWebGl');
     return this.context;
   }
 
@@ -705,7 +711,7 @@ class Kernel {
   }
 
   checkOutput() {
-    if (!this.output || !utils.isArray(this.output)) throw new Error('kernel.output not an array');
+    if (!this.output || !isArray(this.output)) throw new Error('kernel.output not an array');
     if (this.output.length < 1) throw new Error('kernel.output is empty, needs at least 1 value');
     for (let i = 0; i < this.output.length; i++) {
       if (isNaN(this.output[i]) || this.output[i] < 1) {
@@ -730,7 +736,3 @@ class Kernel {
     };
   }
 }
-
-module.exports = {
-  Kernel
-};

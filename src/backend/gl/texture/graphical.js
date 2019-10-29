@@ -1,6 +1,6 @@
-const { GLTextureUnsigned } = require('./unsigned');
+import { GLTextureUnsigned } from './unsigned';
 
-class GLTextureGraphical extends GLTextureUnsigned {
+export class GLTextureGraphical extends GLTextureUnsigned {
   constructor(settings) {
     super(settings);
     this.type = 'ArrayTexture(4)';
@@ -9,7 +9,3 @@ class GLTextureGraphical extends GLTextureUnsigned {
     return this.renderValues();
   }
 }
-
-module.exports = {
-  GLTextureGraphical
-};

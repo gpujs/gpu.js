@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../../../../../src');
+const { GPU } = require('../../../../../../dist/gpu.js');
 
 describe('feature: to-string unsigned precision arguments Array3D');
 

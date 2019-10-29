@@ -1,8 +1,9 @@
 /**
  * @class KernelValue
  */
-class KernelValue {
+export class KernelValue {
   /**
+   *
    * @param {KernelVariable} value
    * @param {IKernelValueSettings} settings
    */
@@ -64,7 +65,3 @@ class KernelValue {
     throw new Error(`"updateValue" not defined on ${ this.constructor.name }`);
   }
 }
-
-module.exports = {
-  KernelValue
-};

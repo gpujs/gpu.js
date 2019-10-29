@@ -1,10 +1,10 @@
-const { WebGLKernel } = require('../web-gl/kernel');
-const { WebGL2FunctionNode } = require('./function-node');
-const { FunctionBuilder } = require('../function-builder');
-const { utils } = require('../../utils');
-const { fragmentShader } = require('./fragment-shader');
-const { vertexShader } = require('./vertex-shader');
-const { lookupKernelValueType } = require('./kernel-value-maps');
+import { WebGLKernel } from '../web-gl/kernel';
+import { WebGL2FunctionNode } from './function-node';
+import { FunctionBuilder } from '../function-builder';
+import { utils } from '../../utils';
+import { fragmentShader } from './fragment-shader';
+import { vertexShader } from './vertex-shader';
+import { lookupKernelValueType } from './kernel-value-maps';
 
 let isSupported = null;
 let testCanvas = null;
@@ -20,7 +20,7 @@ let features = null;
 /**
  * @extends WebGLKernel
  */
-class WebGL2Kernel extends WebGLKernel {
+export class WebGL2Kernel extends WebGLKernel {
   static get isSupported() {
     if (isSupported !== null) {
       return isSupported;
@@ -679,7 +679,3 @@ class WebGL2Kernel extends WebGLKernel {
     return json;
   }
 }
-
-module.exports = {
-  WebGL2Kernel
-};

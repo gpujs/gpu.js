@@ -1,4 +1,4 @@
-const { GPU } = require('../src');
+const { GPU } = require('../');
 const gpu1 = new GPU();
 
 const kernel1 = gpu1.createKernel(function(value) {

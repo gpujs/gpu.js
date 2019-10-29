@@ -1,11 +1,11 @@
-const { FunctionNode } = require('../function-node');
+import { FunctionNode } from '../function-node';
 
 /**
  * @desc [INTERNAL] Represents a single function, inside JS
  *
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
  */
-class CPUFunctionNode extends FunctionNode {
+export class CPUFunctionNode extends FunctionNode {
   /**
    * @desc Parses the abstract syntax tree for to its *named function*
    * @param {Object} ast - the AST object to parse
@@ -282,7 +282,7 @@ class CPUFunctionNode extends FunctionNode {
   astAssignmentExpression(assNode, retArr) {
     const declaration = this.getDeclaration(assNode.left);
     if (declaration && !declaration.assignable) {
-      throw this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
+      throw new this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
     }
     this.astGeneric(assNode.left, retArr);
     retArr.push(assNode.operator);
@@ -643,7 +643,3 @@ class CPUFunctionNode extends FunctionNode {
     return retArr;
   }
 }
-
-module.exports = {
-  CPUFunctionNode
-};

@@ -1,6 +1,7 @@
+const { module: describe, test: it } = require('qunit');
 const { expect } = require('chai');
 
-const GPU = require('../src/index.js');
+const { GPU } = require('../dist/gpu.js');
 
 describe('Test Node GPU', () => {
   describe('gpu mode', () => {
