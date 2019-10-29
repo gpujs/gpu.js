@@ -163,7 +163,7 @@ class WebGLKernel extends GLKernel {
     this.threadDim = null;
     this.framebuffer = null;
     this.buffer = null;
-    this.textureCache = {};
+    this.textureCache = [];
     this.programUniformLocationCache = {};
     this.uniform1fCache = {};
     this.uniform1iCache = {};
@@ -428,7 +428,7 @@ class WebGLKernel extends GLKernel {
         kernel: this,
         strictIntegers: this.strictIntegers,
         onRequestTexture: () => {
-          return this.context.createTexture();
+          return this.createTexture();
         },
         onRequestIndex: () => {
           return textureIndexes++;
@@ -444,6 +444,12 @@ class WebGLKernel extends GLKernel {
       this.argumentSizes.push(kernelArgument.textureSize);
       this.argumentBitRatios[index] = kernelArgument.bitRatio;
     }
+  }
+
+  createTexture() {
+    const texture = this.context.createTexture();
+    this.textureCache.push(texture);
+    return texture;
   }
 
   setupConstants(args) {
@@ -479,7 +485,7 @@ class WebGLKernel extends GLKernel {
         kernel: this,
         strictIntegers: this.strictIntegers,
         onRequestTexture: () => {
-          return this.context.createTexture();
+          return this.createTexture();
         },
         onRequestIndex: () => {
           return textureIndexes++;
@@ -711,7 +717,7 @@ class WebGLKernel extends GLKernel {
   _setupOutputTexture() {
     const gl = this.context;
     const texSize = this.texSize;
-    const texture = this.outputTexture = this.context.createTexture();
+    const texture = this.outputTexture = this.createTexture();
     gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -768,7 +774,7 @@ class WebGLKernel extends GLKernel {
     this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
     this.subKernelOutputTextures = [];
     for (let i = 0; i < this.subKernels.length; i++) {
-      const texture = this.context.createTexture();
+      const texture = this.createTexture();
       this.subKernelOutputTextures.push(texture);
       this.drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
       gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount + i);
@@ -1465,9 +1471,6 @@ class WebGLKernel extends GLKernel {
   }
 
   destroy(removeCanvasReferences) {
-    if (this.outputTexture) {
-      this.context.deleteTexture(this.outputTexture);
-    }
     if (this.buffer) {
       this.context.deleteBuffer(this.buffer);
     }
@@ -1483,18 +1486,9 @@ class WebGLKernel extends GLKernel {
     if (this.program) {
       this.context.deleteProgram(this.program);
     }
-
-    const keys = Object.keys(this.textureCache);
-
-    for (let i = 0; i < keys.length; i++) {
-      const name = keys[i];
-      this.context.deleteTexture(this.textureCache[name]);
-    }
-
-    if (this.subKernelOutputTextures) {
-      for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
-        this.context.deleteTexture(this.subKernelOutputTextures[i]);
-      }
+    while (this.textureCache.length > 0) {
+      const texture = this.textureCache.pop();
+      this.context.deleteTexture(texture);
     }
     if (removeCanvasReferences) {
       const idx = canvases.indexOf(this.canvas);
