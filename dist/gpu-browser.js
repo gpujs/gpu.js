@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.1.0
- * @date Sun Oct 13 2019 15:49:17 GMT-0400 (Eastern Daylight Time)
+ * @date Fri Oct 18 2019 07:18:16 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -6606,7 +6606,6 @@ class CPUKernel extends Kernel {
 module.exports = {
   CPUKernel
 };
-
 },{"../../utils":112,"../function-builder":9,"../kernel":35,"./function-node":6,"./kernel-string":7}],9:[function(require,module,exports){
 class FunctionBuilder {
   static fromKernel(kernel, FunctionNode, extraNodeOptions) {
@@ -9851,7 +9850,6 @@ module.exports = {
   GLKernel,
   renderStrategy
 };
-
 },{"../../utils":112,"../kernel":35,"./texture/array-2-float":16,"./texture/array-2-float-2d":14,"./texture/array-2-float-3d":15,"./texture/array-3-float":19,"./texture/array-3-float-2d":17,"./texture/array-3-float-3d":18,"./texture/array-4-float":22,"./texture/array-4-float-2d":20,"./texture/array-4-float-3d":21,"./texture/float":25,"./texture/float-2d":23,"./texture/float-3d":24,"./texture/graphical":26,"./texture/memory-optimized":29,"./texture/memory-optimized-2d":27,"./texture/memory-optimized-3d":28,"./texture/unsigned":32,"./texture/unsigned-2d":30,"./texture/unsigned-3d":31}],14:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
@@ -10365,7 +10363,6 @@ class HeadlessGLKernel extends WebGLKernel {
 module.exports = {
   HeadlessGLKernel
 };
-
 },{"../gl/kernel-string":12,"../web-gl/kernel":68,"gl":2}],34:[function(require,module,exports){
 class KernelValue {
   constructor(value, settings) {
@@ -10892,7 +10889,6 @@ class Kernel {
 module.exports = {
   Kernel
 };
-
 },{"../input":108,"../utils":112}],36:[function(require,module,exports){
 const fragmentShader = `__HEADER__;
 __FLOAT_TACTIC_DECLARATION__;
@@ -12670,7 +12666,6 @@ const operatorMap = {
 module.exports = {
   WebGLFunctionNode
 };
-
 },{"../function-node":10}],38:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGLKernelValueFloat } = require('./kernel-value/float');
@@ -13987,7 +13982,7 @@ const { GLKernel } = require('../gl/kernel');
 const { FunctionBuilder } = require('../function-builder');
 const { WebGLFunctionNode } = require('./function-node');
 const { utils } = require('../../utils');
-const triangleNoise = require('../../plugins/triangle-noise');
+const mrud = require('../../plugins/math-random-uniformly-distributed');
 const { fragmentShader } = require('./fragment-shader');
 const { vertexShader } = require('./vertex-shader');
 const { glKernelString } = require('../gl/kernel-string');
@@ -13999,7 +13994,7 @@ let testContext = null;
 let testExtensions = null;
 let features = null;
 
-const plugins = [triangleNoise];
+const plugins = [mrud];
 const canvases = [];
 const maxTexSizes = {};
 
@@ -15371,8 +15366,7 @@ class WebGLKernel extends GLKernel {
 module.exports = {
   WebGLKernel
 };
-
-},{"../../plugins/triangle-noise":110,"../../utils":112,"../function-builder":9,"../gl/kernel":13,"../gl/kernel-string":12,"./fragment-shader":36,"./function-node":37,"./kernel-value-maps":38,"./vertex-shader":69}],69:[function(require,module,exports){
+},{"../../plugins/math-random-uniformly-distributed":110,"../../utils":112,"../function-builder":9,"../gl/kernel":13,"../gl/kernel-string":12,"./fragment-shader":36,"./function-node":37,"./kernel-value-maps":38,"./vertex-shader":69}],69:[function(require,module,exports){
 const vertexShader = `__FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
 __SAMPLER_2D_TACTIC_DECLARATION__;
@@ -17626,7 +17620,6 @@ module.exports = {
   kernelOrder,
   kernelTypes
 };
-
 },{"./backend/cpu/kernel":8,"./backend/headless-gl/kernel":33,"./backend/web-gl/kernel":68,"./backend/web-gl2/kernel":103,"./kernel-run-shortcut":109,"./utils":112,"gpu-mock.js":4}],107:[function(require,module,exports){
 const { GPU } = require('./gpu');
 const { alias } = require('./alias');
@@ -17823,44 +17816,28 @@ module.exports = {
 };
 },{"./utils":112}],110:[function(require,module,exports){
 const source = `
-
-uniform highp float triangle_noise_seed;
-highp float triangle_noise_shift = 0.000001;
-
-//https://www.shadertoy.com/view/4t2SDh
+// https://www.shadertoy.com/view/4t2SDh
 //note: uniformly distributed, normalized rand, [0;1[
-float nrand( vec2 n )
-{
-  return fract(sin(dot(n.xy, vec2(12.9898, 78.233)))* 43758.5453);
-}
-//note: remaps v to [0;1] in interval [a;b]
-float remap( float a, float b, float v )
-{
-  return clamp( (v-a) / (b-a), 0.0, 1.0 );
-}
-
-float n4rand( vec2 n )
-{
-  float t = fract( triangle_noise_seed + triangle_noise_shift );
-  float nrnd0 = nrand( n + 0.07*t );
-  float nrnd1 = nrand( n + 0.11*t );  
-  float nrnd2 = nrand( n + 0.13*t );
-  float nrnd3 = nrand( n + 0.17*t );
-  float result = (nrnd0+nrnd1+nrnd2+nrnd3) / 4.0;
-  triangle_noise_shift = result + 0.000001;
+mediump float random_seed_shift = 0.00001;
+uniform mediump float random_seed1;
+uniform mediump float random_seed2;
+float nrand(vec2 n) {
+  float result = fract(sin(dot(n.xy * vec2(random_seed1, random_seed_shift * random_seed2), vec2(12.9898, 78.233)))* 43758.5453);
+  random_seed_shift = result;
   return result;
 }`;
 
-const name = 'triangle-noise-noise';
+const name = 'math-random-uniformly-distributed';
 
 const functionMatch = 'Math.random()';
 
-const functionReplace = 'n4rand(vTexCoord)';
+const functionReplace = 'nrand(vTexCoord)';
 
 const functionReturnType = 'Number';
 
 const onBeforeRun = (kernel) => {
-  kernel.setUniform1f('triangle_noise_seed', Math.random());
+  kernel.setUniform1f('random_seed1', Math.random());
+  kernel.setUniform1f('random_seed2', Math.random());
 };
 
 module.exports = {

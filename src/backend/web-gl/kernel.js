@@ -2,7 +2,7 @@ const { GLKernel } = require('../gl/kernel');
 const { FunctionBuilder } = require('../function-builder');
 const { WebGLFunctionNode } = require('./function-node');
 const { utils } = require('../../utils');
-const triangleNoise = require('../../plugins/triangle-noise');
+const mrud = require('../../plugins/math-random-uniformly-distributed');
 const { fragmentShader } = require('./fragment-shader');
 const { vertexShader } = require('./vertex-shader');
 const { glKernelString } = require('../gl/kernel-string');
@@ -14,7 +14,7 @@ let testContext = null;
 let testExtensions = null;
 let features = null;
 
-const plugins = [triangleNoise];
+const plugins = [mrud];
 const canvases = [];
 const maxTexSizes = {};
 
