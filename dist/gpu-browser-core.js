@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.1.0
- * @date Fri Oct 18 2019 07:18:16 GMT-0400 (Eastern Daylight Time)
+ * @version 2.2.0
+ * @date Tue Oct 29 2019 17:51:53 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -1018,6 +1018,18 @@ class CPUFunctionNode extends FunctionNode {
             return retArr;
         }
         break;
+      case 'value.value[]': 
+        if (this.removeIstanbulCoverage) {
+          return retArr;
+        }
+        retArr.push(`${mNode.object.object.name}.${mNode.object.property.name}[${mNode.property.value}]`);
+        return retArr;
+      case 'value.value[][]': 
+        if (this.removeIstanbulCoverage) {
+          return retArr;
+        }
+        retArr.push(`${mNode.object.object.object.name}.${mNode.object.object.property.name}[${mNode.object.property.value}][${mNode.property.value}]`);
+        return retArr;
       case 'this.constants.value':
       case 'this.constants.value[]':
       case 'this.constants.value[][]':
@@ -1401,6 +1413,7 @@ class CPUKernel extends Kernel {
     this._imageData = null;
     this._colorData = null;
     this._kernelString = null;
+    this._prependedString = [];
     this.thread = {
       x: 0,
       y: 0,
@@ -1543,7 +1556,7 @@ class CPUKernel extends Kernel {
         if (/^function/.test(fn)) return fn;
         kernelThreadString = fn;
         return false;
-      })
+      });
     } else {
       kernelThreadString = translatedSources.shift();
     }
@@ -1552,6 +1565,7 @@ class CPUKernel extends Kernel {
   const _this = this;
   ${ this._processConstants() }
   return (${ this.argumentNames.map(argumentName => 'user_' + argumentName).join(', ') }) => {
+    ${ this._prependedString.join('') }
     ${ this._processArguments() }
     ${ this.graphical ? this._graphicalKernelBody(kernelThreadString) : this._resultKernelBody(kernelThreadString) }
     ${ translatedSources.length > 0 ? translatedSources.join('\n') : '' }
@@ -1837,6 +1851,15 @@ class CPUKernel extends Kernel {
       this._colorData = new Uint8ClampedArray(width * height * 4);
     }
   }
+
+  prependString(value) {
+    if (this._kernelString) throw new Error('Kernel already built');
+    this._prependedString.push(value);
+  }
+
+  hasPrependString(value) {
+    return this._prependedString.indexOf(value) > -1;
+  }
 }
 
 module.exports = {
@@ -1868,6 +1891,8 @@ class FunctionBuilder {
       dynamicArguments,
       dynamicOutput,
       warnVarUsage,
+      onIstanbulCoverageVariable,
+      removeIstanbulCoverage,
     } = kernel;
 
     const argumentTypes = new Array(kernelArguments.length);
@@ -1955,6 +1980,9 @@ class FunctionBuilder {
       triggerImplyArgumentType,
       triggerImplyArgumentBitRatio,
       onFunctionCall,
+      warnVarUsage,
+      onIstanbulCoverageVariable: onIstanbulCoverageVariable ? (name) => onIstanbulCoverageVariable(name, kernel) : null,
+      removeIstanbulCoverage,
       optimizeFloatMemory,
       precision,
       constants,
@@ -2007,6 +2035,8 @@ class FunctionBuilder {
         triggerImplyArgumentBitRatio,
         onFunctionCall,
         onNestedFunction,
+        onIstanbulCoverageVariable: onIstanbulCoverageVariable ? (name) => onIstanbulCoverageVariable(name, kernel) : null,
+        removeIstanbulCoverage,
       }));
     }
 
@@ -2430,6 +2460,8 @@ class FunctionNode {
     this.strictTypingChecking = false;
     this.fixIntegerDivisionAccuracy = null;
     this.warnVarUsage = true;
+    this.onIstanbulCoverageVariable = null;
+    this.removeIstanbulCoverage = false;
 
     if (settings) {
       for (const p in settings) {
@@ -2896,6 +2928,8 @@ class FunctionNode {
           return null;
         case 'IfStatement':
           return this.getType(ast.consequent);
+        case 'SequenceExpression':
+          return this.getType(ast.expressions[ast.expressions.length - 1]);
         default:
           throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
     }
@@ -3088,6 +3122,8 @@ class FunctionNode {
           }
           return dependencies;
         }
+        case 'SequenceExpression':
+          return this.getDependencies(ast.expressions, dependencies, isNotSafe);
         default:
           throw this.astErrorOutput(`Unhandled type ${ ast.type } in getDependencies`, ast);
     }
@@ -3144,6 +3180,8 @@ class FunctionNode {
       'value[][][]',
       'value[][][][]',
       'value.value',
+      'value.value[]', 
+      'value.value[][]', 
       'value.thread.value',
       'this.thread.value',
       'this.output.value',
@@ -3400,12 +3438,28 @@ class FunctionNode {
   astThisExpression(ast, retArr) {
     return retArr;
   }
+  isIstanbulAST(ast) {
+    const variableSignature = this.getVariableSignature(ast);
+    return variableSignature === 'value.value[]' || variableSignature === 'value.value[][]';
+  }
   astSequenceExpression(sNode, retArr) {
-    for (let i = 0; i < sNode.expressions.length; i++) {
-      if (i > 0) {
-        retArr.push(',');
+    const { expressions } = sNode;
+    const sequenceResult = [];
+    for (let i = 0; i < expressions.length; i++) {
+      const expression = expressions[i];
+      if (this.removeIstanbulCoverage) {
+        if (expression.type === 'UpdateExpression' && this.isIstanbulAST(expression.argument)) {
+          continue;
+        }
       }
-      this.astGeneric(sNode.expressions, retArr);
+      const expressionResult = [];
+      this.astGeneric(expression, expressionResult);
+      sequenceResult.push(expressionResult.join(''));
+    }
+    if (sequenceResult.length > 1) {
+      retArr.push('(', sequenceResult.join(','), ')');
+    } else {
+      retArr.push(sequenceResult[0]);
     }
     return retArr;
   }
@@ -3429,6 +3483,12 @@ class FunctionNode {
   checkAndUpconvertBitwiseUnary(uNode, retArr) {}
 
   astUpdateExpression(uNode, retArr) {
+    if (this.removeIstanbulCoverage) {
+      const signature = this.getVariableSignature(uNode.argument);
+      if (this.isIstanbulAST(uNode.argument)) {
+        return retArr;
+      }
+    }
     if (uNode.prefix) {
       retArr.push(uNode.operator);
       this.astGeneric(uNode.argument, retArr);
@@ -3631,8 +3691,28 @@ class FunctionNode {
             signature: variableSignature,
               property: ast.property,
           };
-        default:
-          throw this.astErrorOutput('Unexpected expression', ast);
+        case 'value.value[]': 
+          if (this.removeIstanbulCoverage) {
+            return { signature: variableSignature };
+          }
+          if (this.onIstanbulCoverageVariable) {
+            this.onIstanbulCoverageVariable(ast.object.object.name);
+            return {
+              signature: variableSignature
+            };
+          }
+          case 'value.value[][]': 
+            if (this.removeIstanbulCoverage) {
+              return { signature: variableSignature };
+            }
+            if (this.onIstanbulCoverageVariable) {
+              this.onIstanbulCoverageVariable(ast.object.object.object.name);
+              return {
+                signature: variableSignature
+              };
+            }
+            default:
+              throw this.astErrorOutput('Unexpected expression', ast);
     }
   }
 
@@ -3863,6 +3943,9 @@ class FunctionTracer {
       case 'ExpressionStatement':
         this.scan(ast.expression);
         break;
+      case 'SequenceExpression':
+        this.scan(ast.expressions);
+        break;
       case 'CallExpression':
         this.functionCalls.push({
           context: this.currentContext,
@@ -3894,7 +3977,6 @@ class FunctionTracer {
       case 'BreakStatement':
       case 'ContinueStatement':
         break;
-
       default:
         throw new Error(`unhandled type "${ast.type}"`);
     }
@@ -5768,6 +5850,8 @@ class Kernel {
     this.strictIntegers = false;
     this.fixIntegerDivisionAccuracy = null;
     this.warnVarUsage = true;
+    this.onIstanbulCoverageVariable = null;
+    this.removeIstanbulCoverage = false;
   }
 
   mergeSettings(settings) {
@@ -6105,6 +6189,14 @@ class Kernel {
         throw new Error(`${ this.constructor.name }.output[${ i }] incorrectly defined as \`${ this.output[i] }\`, needs to be numeric, and greater than 0`);
       }
     }
+  }
+
+  prependString(value) {
+    throw new Error(`"prependString" called on ${ this.constructor.name }`);
+  }
+
+  hasPrependString(value) {
+    throw new Error(`"hasPrependString" called on ${ this.constructor.name }`);
   }
 
   toJSON() {
@@ -7542,8 +7634,13 @@ class WebGLFunctionNode extends FunctionNode {
           retArr.push(this.memberExpressionPropertyMarkup(property));
           retArr.push(']');
           return retArr;
-        default:
-          throw this.astErrorOutput('Unexpected expression', mNode);
+        case 'value.value[]':
+        case 'value.value[][]':
+          if (this.removeIstanbulCoverage) {
+            return retArr;
+          }
+          default:
+            throw this.astErrorOutput('Unexpected expression', mNode);
     }
 
     if (mNode.computed === false) {
@@ -9342,13 +9439,14 @@ class WebGLKernel extends GLKernel {
     this.maxTexSize = null;
     this.switchingKernels = false;
     this.onRequestSwitchKernel = null;
+    this.removeIstanbulCoverage = true;
 
     this.mergeSettings(source.settings || settings);
 
     this.threadDim = null;
     this.framebuffer = null;
     this.buffer = null;
-    this.textureCache = {};
+    this.textureCache = [];
     this.programUniformLocationCache = {};
     this.uniform1fCache = {};
     this.uniform1iCache = {};
@@ -9593,7 +9691,7 @@ class WebGLKernel extends GLKernel {
         kernel: this,
         strictIntegers: this.strictIntegers,
         onRequestTexture: () => {
-          return this.context.createTexture();
+          return this.createTexture();
         },
         onRequestIndex: () => {
           return textureIndexes++;
@@ -9609,6 +9707,12 @@ class WebGLKernel extends GLKernel {
       this.argumentSizes.push(kernelArgument.textureSize);
       this.argumentBitRatios[index] = kernelArgument.bitRatio;
     }
+  }
+
+  createTexture() {
+    const texture = this.context.createTexture();
+    this.textureCache.push(texture);
+    return texture;
   }
 
   setupConstants(args) {
@@ -9644,7 +9748,7 @@ class WebGLKernel extends GLKernel {
         kernel: this,
         strictIntegers: this.strictIntegers,
         onRequestTexture: () => {
-          return this.context.createTexture();
+          return this.createTexture();
         },
         onRequestIndex: () => {
           return textureIndexes++;
@@ -9873,7 +9977,7 @@ class WebGLKernel extends GLKernel {
   _setupOutputTexture() {
     const gl = this.context;
     const texSize = this.texSize;
-    const texture = this.outputTexture = this.context.createTexture();
+    const texture = this.outputTexture = this.createTexture();
     gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -9921,7 +10025,7 @@ class WebGLKernel extends GLKernel {
     this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
     this.subKernelOutputTextures = [];
     for (let i = 0; i < this.subKernels.length; i++) {
-      const texture = this.context.createTexture();
+      const texture = this.createTexture();
       this.subKernelOutputTextures.push(texture);
       this.drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
       gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount + i);
@@ -10534,9 +10638,6 @@ class WebGLKernel extends GLKernel {
   }
 
   destroy(removeCanvasReferences) {
-    if (this.outputTexture) {
-      this.context.deleteTexture(this.outputTexture);
-    }
     if (this.buffer) {
       this.context.deleteBuffer(this.buffer);
     }
@@ -10552,18 +10653,9 @@ class WebGLKernel extends GLKernel {
     if (this.program) {
       this.context.deleteProgram(this.program);
     }
-
-    const keys = Object.keys(this.textureCache);
-
-    for (let i = 0; i < keys.length; i++) {
-      const name = keys[i];
-      this.context.deleteTexture(this.textureCache[name]);
-    }
-
-    if (this.subKernelOutputTextures) {
-      for (let i = 0; i < this.subKernelOutputTextures.length; i++) {
-        this.context.deleteTexture(this.subKernelOutputTextures[i]);
-      }
+    while (this.textureCache.length > 0) {
+      const texture = this.textureCache.pop();
+      this.context.deleteTexture(texture);
     }
     if (removeCanvasReferences) {
       const idx = canvases.indexOf(this.canvas);
@@ -12120,7 +12212,7 @@ class WebGL2Kernel extends WebGLKernel {
     this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
     this.subKernelOutputTextures = [];
     for (let i = 0; i < this.subKernels.length; i++) {
-      const texture = this.context.createTexture();
+      const texture = this.createTexture();
       this.subKernelOutputTextures.push(texture);
       this.drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
       gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount + i);
@@ -12487,6 +12579,8 @@ class GPU {
     this.functions = [];
     this.nativeFunctions = [];
     this.injectedNative = null;
+    this.onIstanbulCoverageVariable = settings.onIstanbulCoverageVariable || null;
+    this.removeIstanbulCoverage = settings.removeIstanbulCoverage || false;
     if (this.mode === 'dev') return;
     this.chooseKernel();
     if (settings.functions) {
@@ -12665,6 +12759,8 @@ class GPU {
         validate,
         warnVarUsage: kernel.warnVarUsage,
         returnType: kernel.returnType,
+        onIstanbulCoverageVariable: kernel.onIstanbulCoverageVariable,
+        removeIstanbulCoverage: kernel.removeIstanbulCoverage,
         onRequestFallback,
         onRequestSwitchKernel,
       });
@@ -12683,6 +12779,8 @@ class GPU {
       functions: this.functions,
       nativeFunctions: this.nativeFunctions,
       injectedNative: this.injectedNative,
+      onIstanbulCoverageVariable: this.onIstanbulCoverageVariable,
+      removeIstanbulCoverage: this.removeIstanbulCoverage,
       gpu: this,
       validate,
       onRequestFallback,
