@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.2.0
- * @date Tue Oct 29 2019 17:51:53 GMT-0400 (Eastern Daylight Time)
+ * @version 2.2.1
+ * @date Wed Oct 30 2019 16:55:19 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -10640,6 +10640,11 @@ class Kernel {
           }
           this[p] = settings[p];
           continue;
+        case 'removeIstanbulCoverage':
+          if (settings[p] !== null) {
+            this[p] = settings[p];
+          }
+          continue;
       }
       this[p] = settings[p];
     }
@@ -10981,6 +10986,7 @@ class Kernel {
 module.exports = {
   Kernel
 };
+
 },{"../input":108,"../utils":112}],36:[function(require,module,exports){
 const fragmentShader = `__HEADER__;
 __FLOAT_TACTIC_DECLARATION__;
@@ -17344,7 +17350,7 @@ class GPU {
     this.nativeFunctions = [];
     this.injectedNative = null;
     this.onIstanbulCoverageVariable = settings.onIstanbulCoverageVariable || null;
-    this.removeIstanbulCoverage = settings.removeIstanbulCoverage || false;
+    this.removeIstanbulCoverage = settings.hasOwnProperty('removeIstanbulCoverage') ? settings.removeIstanbulCoverage : null;
     if (this.mode === 'dev') return;
     this.chooseKernel();
     if (settings.functions) {

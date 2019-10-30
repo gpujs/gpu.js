@@ -117,7 +117,7 @@ class GPU {
     this.nativeFunctions = [];
     this.injectedNative = null;
     this.onIstanbulCoverageVariable = settings.onIstanbulCoverageVariable || null;
-    this.removeIstanbulCoverage = settings.removeIstanbulCoverage || false;
+    this.removeIstanbulCoverage = settings.hasOwnProperty('removeIstanbulCoverage') ? settings.removeIstanbulCoverage : null;
     if (this.mode === 'dev') return;
     this.chooseKernel();
     // add functions from settings

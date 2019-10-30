@@ -230,6 +230,11 @@ class Kernel {
           }
           this[p] = settings[p];
           continue;
+        case 'removeIstanbulCoverage':
+          if (settings[p] !== null) {
+            this[p] = settings[p];
+          }
+          continue;
       }
       this[p] = settings[p];
     }

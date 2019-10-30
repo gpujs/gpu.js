@@ -10,7 +10,8 @@ function testOnIstanbulCoverageVariable(mode) {
   const onIstanbulCoverageVariableSpy = sinon.stub().returns('');
   const gpu = new GPU({
     mode,
-    onIstanbulCoverageVariable: onIstanbulCoverageVariableSpy
+    onIstanbulCoverageVariable: onIstanbulCoverageVariableSpy,
+    removeIstanbulCoverage: false,
   });
   try {
     const kernel = gpu.createKernel(`function() {
@@ -18,7 +19,7 @@ function testOnIstanbulCoverageVariable(mode) {
     mockGlobalValue.f[101][100]++;
     return 1;
   }`, {output: [1]});
-
+    assert.equal(kernel.removeIstanbulCoverage, false);
     kernel();
     assert.equal(onIstanbulCoverageVariableSpy.args[0][0], 'mockGlobalValue');
     assert.equal(onIstanbulCoverageVariableSpy.args[0][1], kernel.kernel);
