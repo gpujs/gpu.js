@@ -85,6 +85,7 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [Types](#types)
 * [Loops](#loops)
 * [Pipelining](#pipelining)
+  * [Cloning Textures](#cloning-textures)
 * [Offscreen Canvas](#offscreen-canvas)
 * [Cleanup](#cleanup)
 * [Flattened typed array support](#flattened-typed-array-support)
@@ -153,6 +154,26 @@ Settings are an object used to create an instance of `GPU`.  Example: `new GPU(s
   * 'webgl2': Use the `WebGL2Kernel` for transpiling a kernel
   * 'headlessgl' **New in V2!**: Use the `HeadlessGLKernel` for transpiling a kernel
   * 'cpu': Use the `CPUKernel` for transpiling a kernel
+* `onIstanbulCoverageVariable`: For testing. Used for when coverage is inject into function values, and is desired to be preserved (`cpu` mode ONLY).
+  Use like this:
+  ```
+  const { getFileCoverageDataByName } = require('istanbul-spy');
+  const gpu = new GPU({
+    mode: 'cpu',
+    onIstanbulCoverageVariable: (name, kernel) => {
+      const data = getFileCoverageDataByName(name);
+      if (!data) {
+        throw new Error(`Could not find istanbul identifier ${name}`);
+      }
+      const { path } = getFileCoverageDataByName(name);
+      const variable = `const ${name} = __coverage__['${path}'];\n`;
+      if (!kernel.hasPrependString(variable)) {
+        kernel.prependString(variable);
+      }
+    }
+  });
+  ```
+* `removeIstanbulCoverage`: Boolean. For testing and code coverage. Removes istanbul artifacts that were injected at testing runtime.
 
 ## `gpu.createKernel` Settings
 Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.createKernel(settings)`
@@ -712,6 +733,9 @@ const matMult = gpu.createKernel(function(a, b) {
 [Pipeline](https://en.wikipedia.org/wiki/Pipeline_(computing)) is a feature where values are sent directly from kernel to kernel via a texture.
 This results in extremely fast computing.  This is achieved with the kernel setting `pipeline: boolean` or by calling `kernel.setPipeline(true)`
 
+### Cloning Textures **New in V2!**
+When using pipeline mode the outputs from kernels can be cloned using `texture.clone()`.
+
 ```js
 const kernel1 = gpu.createKernel(function(v) {
     return v[this.thread.x];
@@ -891,13 +915,14 @@ This is a list of the supported ones:
 * `Math.min()`
 * `Math.pow()`
 * `Math.random()`
-  * A note on random.  We use [a plugin](src/plugins/triangle-noise.js) to generate random.
+  * A note on random.  We use [a plugin](src/plugins/math-random-uniformly-distributed.js) to generate random.
   Random seeded _and_ generated, _both from the GPU_, is not as good as random from the CPU as there are more things that the CPU can seed random from.
   However, we seed random on the GPU, _from a random value in the CPU_.
   We then seed the subsequent randoms from the previous random value.
   So we seed from CPU, and generate from GPU.
   Which is still not as good as CPU, but closer.
   While this isn't perfect, it should suffice in most scenarios.
+  In any case, we must give thanks to [RandomPower](https://www.randompower.eu/), and this [issue](https://github.com/gpujs/gpu.js/issues/498), for assisting in improving our implementation of random.
 * `Math.round()`
 * `Math.sign()`
 * `Math.sin()`

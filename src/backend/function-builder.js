@@ -36,6 +36,8 @@ class FunctionBuilder {
       dynamicArguments,
       dynamicOutput,
       warnVarUsage,
+      onIstanbulCoverageVariable,
+      removeIstanbulCoverage,
     } = kernel;
 
     const argumentTypes = new Array(kernelArguments.length);
@@ -123,6 +125,9 @@ class FunctionBuilder {
       triggerImplyArgumentType,
       triggerImplyArgumentBitRatio,
       onFunctionCall,
+      warnVarUsage,
+      onIstanbulCoverageVariable: onIstanbulCoverageVariable ? (name) => onIstanbulCoverageVariable(name, kernel) : null,
+      removeIstanbulCoverage,
       optimizeFloatMemory,
       precision,
       constants,
@@ -175,6 +180,8 @@ class FunctionBuilder {
         triggerImplyArgumentBitRatio,
         onFunctionCall,
         onNestedFunction,
+        onIstanbulCoverageVariable: onIstanbulCoverageVariable ? (name) => onIstanbulCoverageVariable(name, kernel) : null,
+        removeIstanbulCoverage,
       }));
     }
 
@@ -215,7 +222,6 @@ class FunctionBuilder {
     this.functionMap = {};
     this.nativeFunctionNames = [];
     this.lookupChain = [];
-    this.argumentChain = [];
     this.functionNodeDependencies = {};
     this.functionCalls = {};
 

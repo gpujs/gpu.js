@@ -50,6 +50,7 @@ class CPUKernel extends Kernel {
     this._imageData = null;
     this._colorData = null;
     this._kernelString = null;
+    this._prependedString = [];
     this.thread = {
       x: 0,
       y: 0,
@@ -107,7 +108,7 @@ class CPUKernel extends Kernel {
   translateSource() {
     this.leadingReturnStatement = this.output.length > 1 ? 'resultX[x] = ' : 'result[x] = ';
     if (this.subKernels) {
-      const followingReturnStatement = []
+      const followingReturnStatement = [];
       for (let i = 0; i < this.subKernels.length; i++) {
         const {
           name
@@ -213,7 +214,7 @@ class CPUKernel extends Kernel {
         if (/^function/.test(fn)) return fn;
         kernelThreadString = fn;
         return false;
-      })
+      });
     } else {
       kernelThreadString = translatedSources.shift();
     }
@@ -222,6 +223,7 @@ class CPUKernel extends Kernel {
   const _this = this;
   ${ this._processConstants() }
   return (${ this.argumentNames.map(argumentName => 'user_' + argumentName).join(', ') }) => {
+    ${ this._prependedString.join('') }
     ${ this._processArguments() }
     ${ this.graphical ? this._graphicalKernelBody(kernelThreadString) : this._resultKernelBody(kernelThreadString) }
     ${ translatedSources.length > 0 ? translatedSources.join('\n') : '' }
@@ -342,6 +344,11 @@ class CPUKernel extends Kernel {
     return imageArray;
   }
 
+  /**
+   *
+   * @param flip
+   * @return {Uint8ClampedArray}
+   */
   getPixels(flip) {
     const [width, height] = this.output;
     // cpu is not flipped by default
@@ -405,9 +412,6 @@ class CPUKernel extends Kernel {
   }
 
   _resultKernel1DLoop(kernelString) {
-    const {
-      output
-    } = this;
     const constructorString = this._getKernelResultTypeConstructorString();
     return `  const outputX = _this.output[0];
     const result = new ${constructorString}(outputX);
@@ -422,9 +426,6 @@ class CPUKernel extends Kernel {
   }
 
   _resultKernel2DLoop(kernelString) {
-    const {
-      output
-    } = this;
     const constructorString = this._getKernelResultTypeConstructorString();
     return `  const outputX = _this.output[0];
     const outputY = _this.output[1];
@@ -444,9 +445,6 @@ class CPUKernel extends Kernel {
   }
 
   _graphicalKernel2DLoop(kernelString) {
-    const {
-      output
-    } = this;
     const constructorString = this._getKernelResultTypeConstructorString();
     return `  const outputX = _this.output[0];
     const outputY = _this.output[1];
@@ -464,9 +462,6 @@ class CPUKernel extends Kernel {
   }
 
   _resultKernel3DLoop(kernelString) {
-    const {
-      output
-    } = this;
     const constructorString = this._getKernelResultTypeConstructorString();
     return `  const outputX = _this.output[0];
     const outputY = _this.output[1];
@@ -505,8 +500,6 @@ class CPUKernel extends Kernel {
       this.subKernels.map(fn);
   }
 
-
-
   destroy(removeCanvasReference) {
     if (removeCanvasReference) {
       delete this.canvas;
@@ -528,6 +521,15 @@ class CPUKernel extends Kernel {
       this._imageData = this.context.createImageData(width, height);
       this._colorData = new Uint8ClampedArray(width * height * 4);
     }
+  }
+
+  prependString(value) {
+    if (this._kernelString) throw new Error('Kernel already built');
+    this._prependedString.push(value);
+  }
+
+  hasPrependString(value) {
+    return this._prependedString.indexOf(value) > -1;
   }
 }
 

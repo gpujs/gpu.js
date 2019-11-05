@@ -391,6 +391,22 @@ test('works with ExpressionStatement', () => {
   assert.equal(calledExpression, mockExpression);
 });
 
+test('works with SequenceExpression', () => {
+  const mockExpression = {};
+  const mockExpressions = [mockExpression];
+  let called = false;
+  let calledExpression = null;
+  const mockInstance = {
+    scan: (body) => {
+      called = true;
+      calledExpression = body;
+    }
+  };
+  FunctionTracer.prototype.scan.call(mockInstance, { type: 'SequenceExpression', expressions: mockExpressions });
+  assert.ok(called);
+  assert.equal(calledExpression, mockExpressions);
+});
+
 test('works with CallExpression', () => {
   const mockArguments = {};
   let called = false;

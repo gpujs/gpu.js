@@ -1,9 +1,4 @@
-const { utils } = require('../../utils');
 const { FunctionNode } = require('../function-node');
-// Closure capture for the ast function, prevent collision with existing AST functions
-// The prefixes to use
-const jsMathPrefix = 'Math.';
-const localPrefix = 'this.';
 
 /**
  * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective WebGL code
@@ -30,7 +25,6 @@ class WebGLFunctionNode extends FunctionNode {
       retArr.push('void');
     } else {
       // looking up return type, this is a little expensive, and can be avoided if returnType is set
-      let lastReturn = null;
       if (!this.returnType) {
         const lastReturn = this.findLastReturn();
         if (lastReturn) {
@@ -818,9 +812,7 @@ class WebGLFunctionNode extends FunctionNode {
       const declaration = declarations[i];
       const init = declaration.init;
       const info = this.getDeclaration(declaration.id);
-      const valueType = info.valueType;
       const actualType = this.getType(declaration.init);
-      let dependencies = info.dependencies;
       let type = inForLoopInit ? 'Integer' : actualType;
       if (type === 'LiteralInteger') {
         // We had the choice to go either float or int, choosing float
@@ -1152,8 +1144,13 @@ class WebGLFunctionNode extends FunctionNode {
           retArr.push(this.memberExpressionPropertyMarkup(property));
           retArr.push(']');
           return retArr;
-        default:
-          throw this.astErrorOutput('Unexpected expression', mNode);
+        case 'value.value[]':
+        case 'value.value[][]':
+          if (this.removeIstanbulCoverage) {
+            return retArr;
+          }
+          default:
+            throw this.astErrorOutput('Unexpected expression', mNode);
     }
 
     if (mNode.computed === false) {
@@ -1413,9 +1410,13 @@ class WebGLFunctionNode extends FunctionNode {
           case 'Array(3)':
           case 'Array(4)':
             if (targetType === argumentType) {
-              if (argument.type !== 'Identifier') throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
-              this.triggerImplyArgumentBitRatio(this.name, argument.name, functionName, i);
-              retArr.push(`user_${argument.name}`);
+              if (argument.type === 'Identifier') {
+                retArr.push(`user_${argument.name}`);
+              } else if (argument.type === 'ArrayExpression') {
+                this.astGeneric(argument, retArr);
+              } else {
+                throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
+              }
               continue;
             }
             break;

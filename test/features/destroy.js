@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU, WebGLKernel } = require('../../src');
 const sinon = require('sinon');
 
 describe('features: destroy');
@@ -54,4 +54,32 @@ function testWithDestroyContext(done, mode) {
 test('with destroy context', (t) => {
   const done = t.async();
   testWithDestroyContext(done);
+});
+
+
+function testTexturesAreDestroyed(done, mode) {
+  const mockTexture1 = {};
+  const mockTexture2 = {};
+  const mockTexture3 = {};
+  const deleteTextureMock = sinon.spy();
+  const mockContext = {
+    deleteTexture: deleteTextureMock,
+  };
+  const mockKernelInstance = {
+    textureCache: [mockTexture1, mockTexture2, mockTexture3],
+    context: mockContext,
+    destroyExtensions: () => {},
+  };
+  mockKernelInstance.destroy = WebGLKernel.prototype.destroy.bind(mockKernelInstance);
+  GPU.prototype.destroy.call({ kernels: [mockKernelInstance] });
+  setTimeout(() => {
+    assert.equal(deleteTextureMock.callCount, 3);
+    assert.ok(true);
+    done();
+  }, 2);
+}
+
+test('textures are destroyed', (t) => {
+  const done = t.async();
+  testTexturesAreDestroyed(done);
 });

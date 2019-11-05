@@ -466,6 +466,18 @@ class CPUFunctionNode extends FunctionNode {
             return retArr;
         }
         break;
+      case 'value.value[]': // istanbul coverage variable
+        if (this.removeIstanbulCoverage) {
+          return retArr;
+        }
+        retArr.push(`${mNode.object.object.name}.${mNode.object.property.name}[${mNode.property.value}]`);
+        return retArr;
+      case 'value.value[][]': // istanbul coverage variable
+        if (this.removeIstanbulCoverage) {
+          return retArr;
+        }
+        retArr.push(`${mNode.object.object.object.name}.${mNode.object.object.property.name}[${mNode.object.property.value}][${mNode.property.value}]`);
+        return retArr;
       case 'this.constants.value':
       case 'this.constants.value[]':
       case 'this.constants.value[][]':

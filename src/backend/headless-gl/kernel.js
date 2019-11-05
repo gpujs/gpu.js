@@ -95,10 +95,9 @@ class HeadlessGLKernel extends WebGLKernel {
   }
 
   initContext() {
-    const context = getContext(2, 2, {
+    return getContext(2, 2, {
       preserveDrawingBuffer: true
     });
-    return context;
   }
 
   initExtensions() {
@@ -149,6 +148,7 @@ class HeadlessGLKernel extends WebGLKernel {
     if (this.graphical && this.extensions.STACKGL_resize_drawingbuffer) {
       this.extensions.STACKGL_resize_drawingbuffer.resize(this.maxTexSize[0], this.maxTexSize[1]);
     }
+    return this;
   }
 }
 

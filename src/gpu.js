@@ -116,6 +116,8 @@ class GPU {
     this.functions = [];
     this.nativeFunctions = [];
     this.injectedNative = null;
+    this.onIstanbulCoverageVariable = settings.onIstanbulCoverageVariable || null;
+    this.removeIstanbulCoverage = settings.hasOwnProperty('removeIstanbulCoverage') ? settings.removeIstanbulCoverage : null;
     if (this.mode === 'dev') return;
     this.chooseKernel();
     // add functions from settings
@@ -128,6 +130,7 @@ class GPU {
     // add native functions from settings
     if (settings.nativeFunctions) {
       for (const p in settings.nativeFunctions) {
+        if (!settings.nativeFunctions.hasOwnProperty(p)) continue;
         this.addNativeFunction(p, settings.nativeFunctions[p]);
       }
     }
@@ -194,7 +197,7 @@ class GPU {
   /**
    * @desc This creates a callable function object to call the kernel function with the argument parameter set
    * @param {Function|String|object} source - The calling to perform the conversion
-   * @param {Object} [settings] - The parameter configuration object
+   * @param {IGPUKernelSettings} [settings] - The parameter configuration object
    * @return {Kernel} callable function to run
    */
   createKernel(source, settings) {
@@ -305,6 +308,8 @@ class GPU {
         validate,
         warnVarUsage: kernel.warnVarUsage,
         returnType: kernel.returnType,
+        onIstanbulCoverageVariable: kernel.onIstanbulCoverageVariable,
+        removeIstanbulCoverage: kernel.removeIstanbulCoverage,
         onRequestFallback,
         onRequestSwitchKernel,
       });
@@ -323,6 +328,8 @@ class GPU {
       functions: this.functions,
       nativeFunctions: this.nativeFunctions,
       injectedNative: this.injectedNative,
+      onIstanbulCoverageVariable: this.onIstanbulCoverageVariable,
+      removeIstanbulCoverage: this.removeIstanbulCoverage,
       gpu: this,
       validate,
       onRequestFallback,
@@ -426,9 +433,7 @@ class GPU {
         });
       }
     }
-    const kernel = this.createKernel(fn, settingsCopy);
-
-    return kernel;
+    return this.createKernel(fn, settingsCopy);
   }
 
   /**
