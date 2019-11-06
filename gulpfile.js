@@ -16,17 +16,17 @@ const merge = require('merge-stream');
 const { readDirDeepSync } = require('read-dir-deep');
 
 gulp.task('build', () => {
-  const gpu = browserify('./src/browser.js', {standalone: 'GPU'})
+  const gpu = browserify('./src/browser.js', { standalone: 'GPU', browserField: false })
     .ignore('gl')
     .bundle()
     .pipe(source('gpu-browser.js'))
     .pipe(buffer())
     .pipe(stripComments())
     .pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
-    .pipe(gulp.dest('dist'))
+    .pipe(gulp.dest('./dist'))
     .on('error', console.error);
 
-  const gpuCore = browserify('./src/browser.js', {standalone: 'GPU'})
+  const gpuCore = browserify('./src/browser.js', { standalone: 'GPU', browserField: false })
     .ignore('gl')
     .ignore('acorn')
     .bundle()
@@ -34,7 +34,7 @@ gulp.task('build', () => {
     .pipe(buffer())
     .pipe(stripComments())
     .pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
-    .pipe(gulp.dest('dist'))
+    .pipe(gulp.dest('./dist'))
     .on('error', console.error);
 
   return merge(gpu, gpuCore);
@@ -46,14 +46,14 @@ gulp.task('minify', () => {
     .pipe(uglify())
     .pipe(rename('gpu-browser.min.js'))
     .pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
-    .pipe(gulp.dest('dist'))
+    .pipe(gulp.dest('./dist'))
     .on('error', console.error);
 
   const gpuCore = gulp.src('dist/gpu-browser-core.js')
     .pipe(uglify())
     .pipe(rename('gpu-browser-core.min.js'))
     .pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
-    .pipe(gulp.dest('dist'))
+    .pipe(gulp.dest('./dist'))
     .on('error', console.error);
 
   return merge(gpu, gpuCore);
@@ -74,7 +74,7 @@ gulp.task('bsync', () => {
   });
 
   // Detect change -> rebuild TS
-  gulp.watch(['src/**.js'], ['minify']);
+  gulp.watch(['src/**.js'], gulp.series('minify'));
 });
 
 /// Auto rebuild and host
