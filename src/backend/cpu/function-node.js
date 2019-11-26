@@ -357,7 +357,7 @@ class CPUFunctionNode extends FunctionNode {
 
     if (ifNode.alternate) {
       retArr.push('else ');
-      if (ifNode.alternate.type === 'BlockStatement') {
+      if (ifNode.alternate.type === 'BlockStatement' || ifNode.alternate.type === 'IfStatement') {
         this.astGeneric(ifNode.alternate, retArr);
       } else {
         retArr.push(' {\n');
