@@ -189,7 +189,7 @@ class Kernel {
      * @type {String|null}
      * @enum 'speed' | 'balanced' | 'precision'
      */
-    this.tactic = 'balanced';
+    this.tactic = null;
 
     this.plugins = null;
 
@@ -202,6 +202,7 @@ class Kernel {
     this.warnVarUsage = true;
     this.onIstanbulCoverageVariable = null;
     this.removeIstanbulCoverage = false;
+    this.built = false;
   }
 
   /**
@@ -371,24 +372,33 @@ class Kernel {
   }
 
   /**
+   *
+   * @param {Array|Object} output
+   * @return {number[]}
+   */
+  toKernelOutput(output) {
+    if (output.hasOwnProperty('x')) {
+      if (output.hasOwnProperty('y')) {
+        if (output.hasOwnProperty('z')) {
+          return [output.x, output.y, output.z];
+        } else {
+          return [output.x, output.y];
+        }
+      } else {
+        return [output.x];
+      }
+    } else {
+      return output;
+    }
+  }
+
+  /**
    * @desc Set output dimensions of the kernel function
    * @param {Array|Object} output - The output array to set the kernel output size to
    * @return {Kernel}
    */
   setOutput(output) {
-    if (output.hasOwnProperty('x')) {
-      if (output.hasOwnProperty('y')) {
-        if (output.hasOwnProperty('z')) {
-          this.output = [output.x, output.y, output.z];
-        } else {
-          this.output = [output.x, output.y];
-        }
-      } else {
-        this.output = [output.x];
-      }
-    } else {
-      this.output = output;
-    }
+    this.output = this.toKernelOutput(output);
     return this;
   }
 

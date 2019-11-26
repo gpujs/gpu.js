@@ -116,7 +116,7 @@ test('works with UnaryExpression', () => {
 });
 
 test('works with VariableDeclaration', () => {
-  const mockDeclarations = {};
+  const mockDeclarations = [];
   let called = false;
   let calledDeclarations = null;
   const mockInstance = {
@@ -127,7 +127,7 @@ test('works with VariableDeclaration', () => {
   };
   FunctionTracer.prototype.scan.call(mockInstance, { type: 'VariableDeclaration', declarations: mockDeclarations });
   assert.ok(called);
-  assert.equal(calledDeclarations, mockDeclarations);
+  assert.deepEqual(calledDeclarations, mockDeclarations);
 });
 
 test('works with VariableDeclarator', () => {

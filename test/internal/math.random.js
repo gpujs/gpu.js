@@ -1,31 +1,43 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const sinon = require('sinon');
+const { GPU, plugins: { mathRandom } } = require('../../src');
 
 describe('Math.random() unique');
 
 function mathRandomUnique(mode) {
   const gpu = new GPU({ mode });
   const checkCount = 20;
-  const checkSource = [];
-
-  for (let i = 0; i < checkCount; i++) {
-    checkSource.push(`const check${ i } = Math.random();`);
-  }
-
-  for (let i = 0; i < checkCount; i++) {
-    for (let j = 0; j < checkCount; j++) {
-      if (i === j) continue;
-      checkSource.push(`if (check${i} === check${j}) return ${j};`);
+  let seed1 = Math.random();
+  let seed2 = Math.random();
+  let stub = sinon.stub(mathRandom, 'onBeforeRun').callsFake((kernel) => {
+    kernel.setUniform1f('randomSeed1', seed1);
+    kernel.setUniform1f('randomSeed2', seed2);
+  });
+  try {
+    gpu.addNativeFunction('getSeed', `highp float getSeed() {
+    return randomSeedShift;
+  }`);
+    const kernel = gpu.createKernel(function () {
+      const v = Math.random();
+      return getSeed();
+    }, {output: [1]});
+    const results = [];
+    for (let i = 0; i < checkCount; i++) {
+      const result = kernel();
+      assert.ok(results.indexOf(result[0]) === -1, `duplication at index ${results.indexOf(result[0])} from new value ${result[0]}.  Values ${JSON.stringify(results)}`);
+      results.push(result[0]);
+      seed2 = result[0];
+      assert.ok(stub.called);
+      stub.restore();
+      stub.callsFake((kernel) => {
+        kernel.setUniform1f('randomSeed1', seed1);
+        kernel.setUniform1f('randomSeed2', seed2);
+      });
     }
+  } finally {
+    stub.restore();
+    gpu.destroy();
   }
-
-  const kernel = gpu.createKernel(`function() {
-    ${checkSource.join('\n')}
-    return 0;
-  }`, { output: [1] });
-
-  const result = kernel();
-  assert.ok(result.every(value => value === 0));
 }
 
 test('unique every time auto', () => {
@@ -46,10 +58,6 @@ test('unique every time gpu', () => {
 
 (GPU.isHeadlessGLSupported ? test : skip)('unique every time headlessgl', () => {
   mathRandomUnique('headlessgl');
-});
-
-test('unique every time cpu', () => {
-  mathRandomUnique('cpu');
 });
 
 describe('never above 1');

@@ -51,69 +51,54 @@
   <div class="center">
     <span id="fps"></span><span> fps</span>
   </div>
+  <div id="canvas-holder"></div>
 </div>
 <script src="../dist/gpu-browser.min.js"></script>
 <script>
-  var Vector = (function () {
-    function Vector(x, y, z) {
+  class Vector {
+    constructor(x, y, z) {
       this.x = x;
       this.y = y;
       this.z = z;
     }
-    Vector.prototype.toArray = function () {
+    toArray() {
       return [this.x, this.y, this.z];
-    };
-    Vector.times = function (k, v) {
+    }
+    static times(k, v) {
       return new Vector(k * v.x, k * v.y, k * v.z);
-    };
-    Vector.minus = function (v1, v2) {
+    }
+    static minus(v1, v2) {
       return new Vector(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
-    };
-    Vector.plus = function (v1, v2) {
-      return new Vector(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
-    };
-    Vector.dot = function (v1, v2) {
-      return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
-    };
-    Vector.magnitude = function (v) {
+    }
+    static magnitude(v) {
       return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-    };
-    Vector.norm = function (v) {
-      var mag = Vector.magnitude(v);
-      var div = (mag === 0) ? Infinity : 1.0 / mag;
+    }
+    static norm(v) {
+      const mag = Vector.magnitude(v);
+      const div = (mag === 0) ? Infinity : 1.0 / mag;
       return Vector.times(div, v);
-    };
-    Vector.cross = function (v1, v2) {
+    }
+    static cross(v1, v2) {
       return new Vector(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x);
-    };
-    return Vector;
-  }());
-  var Mode;
-  (function (Mode) {
-    Mode[Mode["GPU"] = 0] = "GPU";
-    Mode[Mode["CPU"] = 1] = "CPU";
-  })(Mode || (Mode = {}));
-  var Thing;
-  (function (Thing) {
-    Thing[Thing["SPHERE"] = 0] = "SPHERE";
-  })(Thing || (Thing = {}));
-  var stringOfMode = function (mode) {
+    }
+  }
+  const stringOfMode = function (mode) {
     switch (mode) {
       case 1: return 'cpu';
       case 0: return 'gpu';
     }
   };
-  var height = (window.innerWidth < 600) ? (window.innerWidth - 20) : 600;
-  var width = height;
-  var initialMode = 1;
-  var camera = [
+  const canvasHeight = (window.innerWidth < 600) ? (window.innerWidth - 20) : 600;
+  const canvasWidth = canvasHeight;
+  const initialMode = 1;
+  const camera = [
     0, 0, 16, 0, 0, 1, 45
   ];
-  var lights = [
+  const lights = [
     [-16, 16, 8],
     [16, 16, 8],
   ];
-  var things = [
+  const things = [
     [0, 13,
       1.0, 0.0, 0.0,
       0.3, 0.7, 0.2, 1.0,
@@ -139,87 +124,90 @@
       0.3, 0.7, 0.2, 1.0,
       2, -2, -2, 1],
   ];
-  var constants = {
+  const constants = {
     LIGHTSCOUNT: lights.length,
     THINGSCOUNT: things.length
   };
-  var opt = function (mode) {
+  const opt = function (mode) {
     return {
       constants: constants,
-      debug: false,
       graphical: true,
       mode: stringOfMode(mode),
-      output: [width, height]
+      output: [canvasWidth, canvasHeight],
+      tactic: 'precision'
     };
   };
-  var gpu = new GPU();
-  var cpu = new GPU({ mode: 'cpu'});
+  const gpu = new GPU();
+  const cpu = new GPU({ mode: 'cpu'});
   function vectorDotProduct(V1x, V1y, V1z, V2x, V2y, V2z) {
     return (V1x * V2x) + (V1y * V2y) + (V1z * V2z);
   }
   function unitVectorX(Vx, Vy, Vz) {
-    var magnitude = Math.sqrt((Vx * Vx) + (Vy * Vy) + (Vz * Vz));
-    var div = 1.0 / magnitude;
+    const magnitude = Math.sqrt((Vx * Vx) + (Vy * Vy) + (Vz * Vz));
+    const div = 1.0 / magnitude;
     return div * Vx;
   }
   function unitVectorY(Vx, Vy, Vz) {
-    var magnitude = Math.sqrt((Vx * Vx) + (Vy * Vy) + (Vz * Vz));
-    var div = 1.0 / magnitude;
+    const magnitude = Math.sqrt((Vx * Vx) + (Vy * Vy) + (Vz * Vz));
+    const div = 1.0 / magnitude;
     return div * Vy;
   }
   function unitVectorZ(Vx, Vy, Vz) {
-    var magnitude = Math.sqrt((Vx * Vx) + (Vy * Vy) + (Vz * Vz));
-    var div = 1.0 / magnitude;
+    const magnitude = Math.sqrt((Vx * Vx) + (Vy * Vy) + (Vz * Vz));
+    const div = 1.0 / magnitude;
     return div * Vz;
   }
   function sphereNormalX(Sx, Sy, Sz, radius, Px, Py, Pz) {
-    var SPx = Px - Sx;
-    var SPy = Py - Sy;
-    var SPz = Pz - Sz;
-    var magnitude = (SPx * SPx) + (SPy * SPy) + (SPz * SPz);
-    var div = Infinity;
-    if (magnitude > 0)
+    const SPx = Px - Sx;
+    const SPy = Py - Sy;
+    const SPz = Pz - Sz;
+    const magnitude = (SPx * SPx) + (SPy * SPy) + (SPz * SPz);
+    let div = Infinity;
+    if (magnitude > 0) {
       div = 1.0 / magnitude;
+    }
     return div * SPx;
   }
   function sphereNormalY(Sx, Sy, Sz, radius, Px, Py, Pz) {
-    var SPx = Px - Sx;
-    var SPy = Py - Sy;
-    var SPz = Pz - Sz;
-    var magnitude = (SPx * SPx) + (SPy * SPy) + (SPz * SPz);
-    var div = Infinity;
-    if (magnitude > 0)
+    const SPx = Px - Sx;
+    const SPy = Py - Sy;
+    const SPz = Pz - Sz;
+    const magnitude = (SPx * SPx) + (SPy * SPy) + (SPz * SPz);
+    let div = Infinity;
+    if (magnitude > 0) {
       div = 1.0 / magnitude;
+    }
     return div * SPy;
   }
   function sphereNormalZ(Sx, Sy, Sz, radius, Px, Py, Pz) {
-    var SPx = Px - Sx;
-    var SPy = Py - Sy;
-    var SPz = Pz - Sz;
-    var magnitude = (SPx * SPx) + (SPy * SPy) + (SPz * SPz);
-    var div = Infinity;
-    if (magnitude > 0)
+    const SPx = Px - Sx;
+    const SPy = Py - Sy;
+    const SPz = Pz - Sz;
+    const magnitude = (SPx * SPx) + (SPy * SPy) + (SPz * SPz);
+    let div = Infinity;
+    if (magnitude > 0) {
       div = 1.0 / magnitude;
+    }
     return div * SPz;
   }
   function vectorReflectX(Vx, Vy, Vz, Nx, Ny, Nz) {
-    var V1x = ((Vx * Nx) + (Vy * Ny) + (Vz * Nz)) * Nx;
+    const V1x = ((Vx * Nx) + (Vy * Ny) + (Vz * Nz)) * Nx;
     return (V1x * 2) - Vx;
   }
   function vectorReflectY(Vx, Vy, Vz, Nx, Ny, Nz) {
-    var V1y = ((Vx * Nx) + (Vy * Ny) + (Vz * Nz)) * Ny;
+    const V1y = ((Vx * Nx) + (Vy * Ny) + (Vz * Nz)) * Ny;
     return (V1y * 2) - Vy;
   }
   function vectorReflectZ(Vx, Vy, Vz, Nx, Ny, Nz) {
-    var V1z = ((Vx * Nx) + (Vy * Ny) + (Vz * Nz)) * Nz;
+    const V1z = ((Vx * Nx) + (Vy * Ny) + (Vz * Nz)) * Nz;
     return (V1z * 2) - Vz;
   }
   function sphereIntersectionDistance(Sx, Sy, Sz, radius, Ex, Ey, Ez, Vx, Vy, Vz) {
-    var EOx = Sx - Ex;
-    var EOy = Sy - Ey;
-    var EOz = Sz - Ez;
-    var v = (EOx * Vx) + (EOy * Vy) + (EOz * Vz);
-    var discriminant = (radius * radius)
+    const EOx = Sx - Ex;
+    const EOy = Sy - Ey;
+    const EOz = Sz - Ez;
+    const v = (EOx * Vx) + (EOy * Vy) + (EOz * Vz);
+    const discriminant = (radius * radius)
       - ((EOx * EOx) + (EOy * EOy) + (EOz * EOz))
       + (v * v);
     if (discriminant < 0) {
@@ -229,7 +217,7 @@
       return v - Math.sqrt(discriminant);
     }
   }
-  var kernelFunctions = [
+  const kernelFunctions = [
     vectorDotProduct,
     unitVectorX, unitVectorY, unitVectorZ,
     sphereNormalX, sphereNormalY, sphereNormalZ,
@@ -240,68 +228,68 @@
     cpu.addFunction(f);
     gpu.addFunction(f);
   });
-  var createKernel = function (mode) {
-    var kernel = (mode === 0 ? gpu : cpu).createKernel(function (camera, lights, things, eyeV, rightV, upV, halfHeight, halfWidth, pixelHeight, pixelWidth, lambertianReflectance, specularReflection) {
-      var x = this.thread.x;
-      var y = this.thread.y;
-      var rayPx = camera[0];
-      var rayPy = camera[1];
-      var rayPz = camera[2];
-      var xCompVx = ((x * pixelWidth) - halfWidth) * rightV[0];
-      var xCompVy = ((x * pixelWidth) - halfWidth) * rightV[1];
-      var xCompVz = ((x * pixelWidth) - halfWidth) * rightV[2];
-      var yCompVx = ((y * pixelHeight) - halfHeight) * upV[0];
-      var yCompVy = ((y * pixelHeight) - halfHeight) * upV[1];
-      var yCompVz = ((y * pixelHeight) - halfHeight) * upV[2];
-      var sumVx = eyeV[0] + xCompVx + yCompVx;
-      var sumVy = eyeV[1] + xCompVy + yCompVy;
-      var sumVz = eyeV[2] + xCompVz + yCompVz;
-      var rayVx = unitVectorX(sumVx, sumVy, sumVz);
-      var rayVy = unitVectorY(sumVx, sumVy, sumVz);
-      var rayVz = unitVectorZ(sumVx, sumVy, sumVz);
-      var closest = this.constants.THINGSCOUNT;
-      var closestDistance = Infinity;
-      for (var i = 0; i < this.constants.THINGSCOUNT; i++) {
-        var distance = sphereIntersectionDistance(things[i][9], things[i][10], things[i][11], things[i][12], rayPx, rayPy, rayPz, rayVx, rayVy, rayVz);
+  const createKernel = function (mode) {
+    return (mode === 0 ? gpu : cpu).createKernel(function (camera, lights, things, eyeV, rightV, upV, halfHeight, halfWidth, pixelHeight, pixelWidth, lambertianReflectance, specularReflection) {
+      const x = this.thread.x;
+      const y = this.thread.y;
+      const rayPx = camera[0];
+      const rayPy = camera[1];
+      const rayPz = camera[2];
+      const xCompVx = ((x * pixelWidth) - halfWidth) * rightV[0];
+      const xCompVy = ((x * pixelWidth) - halfWidth) * rightV[1];
+      const xCompVz = ((x * pixelWidth) - halfWidth) * rightV[2];
+      const yCompVx = ((y * pixelHeight) - halfHeight) * upV[0];
+      const yCompVy = ((y * pixelHeight) - halfHeight) * upV[1];
+      const yCompVz = ((y * pixelHeight) - halfHeight) * upV[2];
+      const sumVx = eyeV[0] + xCompVx + yCompVx;
+      const sumVy = eyeV[1] + xCompVy + yCompVy;
+      const sumVz = eyeV[2] + xCompVz + yCompVz;
+      const rayVx = unitVectorX(sumVx, sumVy, sumVz);
+      const rayVy = unitVectorY(sumVx, sumVy, sumVz);
+      const rayVz = unitVectorZ(sumVx, sumVy, sumVz);
+      let closest = this.constants.THINGSCOUNT;
+      let closestDistance = Infinity;
+      for (let i = 0; i < this.constants.THINGSCOUNT; i++) {
+        const distance = sphereIntersectionDistance(things[i][9], things[i][10], things[i][11], things[i][12], rayPx, rayPy, rayPz, rayVx, rayVy, rayVz);
         if (distance < closestDistance) {
           closest = i;
           closestDistance = distance;
         }
       }
       if (closestDistance < Infinity) {
-        var px = rayPx + rayVx * closestDistance;
-        var py = rayPy + rayVy * closestDistance;
-        var pz = rayPz + rayVz * closestDistance;
-        var sx = things[closest][9];
-        var sy = things[closest][10];
-        var sz = things[closest][11];
-        var sRadius = things[closest][12];
-        var snVx = sphereNormalX(sx, sy, sz, sRadius, px, py, pz);
-        var snVy = sphereNormalY(sx, sy, sz, sRadius, px, py, pz);
-        var snVz = sphereNormalZ(sx, sy, sz, sRadius, px, py, pz);
-        var sRed = things[closest][2];
-        var sGreen = things[closest][3];
-        var sBlue = things[closest][4];
-        var ambient = things[closest][7];
-        var lambert = things[closest][6];
-        var lambertAmount = 0;
+        const px = rayPx + rayVx * closestDistance;
+        const py = rayPy + rayVy * closestDistance;
+        const pz = rayPz + rayVz * closestDistance;
+        const sx = things[closest][9];
+        const sy = things[closest][10];
+        const sz = things[closest][11];
+        const sRadius = things[closest][12];
+        const snVx = sphereNormalX(sx, sy, sz, sRadius, px, py, pz);
+        const snVy = sphereNormalY(sx, sy, sz, sRadius, px, py, pz);
+        const snVz = sphereNormalZ(sx, sy, sz, sRadius, px, py, pz);
+        const sRed = things[closest][2];
+        const sGreen = things[closest][3];
+        const sBlue = things[closest][4];
+        const ambient = things[closest][7];
+        const lambert = things[closest][6];
+        let lambertAmount = 0;
         if (lambertianReflectance > 0 && lambert > 0) {
-          for (var i = 0; i < this.constants.LIGHTSCOUNT; i++) {
-            var LPx = px - lights[i][0];
-            var LPy = py - lights[i][1];
-            var LPz = pz - lights[i][2];
-            var uLPx = unitVectorX(LPx, LPy, LPz);
-            var uLPy = unitVectorY(LPx, LPy, LPz);
-            var uLPz = unitVectorZ(LPx, LPy, LPz);
-            var closestDistance_1 = Infinity;
-            for (var j = 0; j < this.constants.THINGSCOUNT; j++) {
-              var distance = Infinity;
-              var EOx = things[j][9] - px;
-              var EOy = things[j][10] - py;
-              var EOz = things[j][11] - pz;
-              var v = (EOx * uLPx) + (EOy * uLPy) + (EOz * uLPz);
-              var radius = things[j][12];
-              var discriminant = (radius * radius)
+          for (let i = 0; i < this.constants.LIGHTSCOUNT; i++) {
+            const LPx = px - lights[i][0];
+            const LPy = py - lights[i][1];
+            const LPz = pz - lights[i][2];
+            const uLPx = unitVectorX(LPx, LPy, LPz);
+            const uLPy = unitVectorY(LPx, LPy, LPz);
+            const uLPz = unitVectorZ(LPx, LPy, LPz);
+            let closestDistance_1 = Infinity;
+            for (let j = 0; j < this.constants.THINGSCOUNT; j++) {
+              let distance = Infinity;
+              const EOx = things[j][9] - px;
+              const EOy = things[j][10] - py;
+              const EOz = things[j][11] - pz;
+              const v = (EOx * uLPx) + (EOy * uLPy) + (EOz * uLPz);
+              const radius = things[j][12];
+              const discriminant = (radius * radius)
                 - ((EOx * EOx) + (EOy * EOy) + (EOz * EOz))
                 + (v * v);
               if (discriminant >= 0) {
@@ -312,77 +300,79 @@
               }
             }
             if (closestDistance_1 > -0.005) {
-              var PLx = -LPx;
-              var PLy = -LPy;
-              var PLz = -LPz;
-              var uPLx = unitVectorX(PLx, PLy, PLz);
-              var uPLy = unitVectorY(PLx, PLy, PLz);
-              var uPLz = unitVectorZ(PLx, PLy, PLz);
-              var contribution = vectorDotProduct(uPLx, uPLy, uPLz, snVx, snVy, snVz);
-              if (contribution > 0)
+              const PLx = -LPx;
+              const PLy = -LPy;
+              const PLz = -LPz;
+              const uPLx = unitVectorX(PLx, PLy, PLz);
+              const uPLy = unitVectorY(PLx, PLy, PLz);
+              const uPLz = unitVectorZ(PLx, PLy, PLz);
+              const contribution = vectorDotProduct(uPLx, uPLy, uPLz, snVx, snVy, snVz);
+              if (contribution > 0) {
                 lambertAmount += contribution;
+              }
             }
           }
         }
-        if (lambertianReflectance > 0)
+        if (lambertianReflectance > 0) {
           lambertAmount = Math.min(1, lambertAmount);
-        var specular = things[closest][5];
-        var cVx = 0;
-        var cVy = 0;
-        var cVz = 0;
+        }
+        const specular = things[closest][5];
+        let cVx = 0;
+        let cVy = 0;
+        let cVz = 0;
         if (specularReflection > 0 && specular > 0) {
-          var rRayPx = px;
-          var rRayPy = py;
-          var rRayPz = pz;
-          var rRayVx = vectorReflectX(rayVx, rayVy, rayVz, snVx, snVy, snVz);
-          var rRayVy = vectorReflectY(rayVx, rayVy, rayVz, snVx, snVy, snVz);
-          var rRayVz = vectorReflectZ(rayVx, rayVy, rayVz, snVx, snVy, snVz);
-          var closest_1 = this.constants.THINGSCOUNT;
-          var closestDistance_2 = Infinity;
-          for (var i = 0; i < this.constants.THINGSCOUNT; i++) {
-            var distance = sphereIntersectionDistance(things[i][9], things[i][10], things[i][11], things[i][12], rRayPx, rRayPy, rRayPz, rRayVx, rRayVy, rRayVz);
+          const rRayPx = px;
+          const rRayPy = py;
+          const rRayPz = pz;
+          const rRayVx = vectorReflectX(rayVx, rayVy, rayVz, snVx, snVy, snVz);
+          const rRayVy = vectorReflectY(rayVx, rayVy, rayVz, snVx, snVy, snVz);
+          const rRayVz = vectorReflectZ(rayVx, rayVy, rayVz, snVx, snVy, snVz);
+          let closest_1 = this.constants.THINGSCOUNT;
+          let closestDistance_2 = Infinity;
+          for (let i = 0; i < this.constants.THINGSCOUNT; i++) {
+            const distance = sphereIntersectionDistance(things[i][9], things[i][10], things[i][11], things[i][12], rRayPx, rRayPy, rRayPz, rRayVx, rRayVy, rRayVz);
             if (distance < closestDistance_2) {
               closest_1 = i;
               closestDistance_2 = distance;
             }
           }
-          var reflectedRed = 1;
-          var reflectedGreen = 1;
-          var reflectedBlue = 1;
+          let reflectedRed = 1;
+          let reflectedGreen = 1;
+          let reflectedBlue = 1;
           if (closestDistance_2 < Infinity) {
-            var px_1 = rRayPx + rRayVx * closestDistance_2;
-            var py_1 = rRayPy + rRayVy * closestDistance_2;
-            var pz_1 = rRayPz + rRayVz * closestDistance_2;
-            var sx_1 = things[closest_1][9];
-            var sy_1 = things[closest_1][10];
-            var sz_1 = things[closest_1][11];
-            var sRadius_1 = things[closest_1][12];
-            var snVx_1 = sphereNormalX(sx_1, sy_1, sz_1, sRadius_1, px_1, py_1, pz_1);
-            var snVy_1 = sphereNormalY(sx_1, sy_1, sz_1, sRadius_1, px_1, py_1, pz_1);
-            var snVz_1 = sphereNormalZ(sx_1, sy_1, sz_1, sRadius_1, px_1, py_1, pz_1);
-            var rsRed = things[closest_1][2];
-            var rsGreen = things[closest_1][3];
-            var rsBlue = things[closest_1][4];
-            var rambient = things[closest_1][7];
-            var rlambert = things[closest_1][6];
-            var rlambertAmount = 0;
+            const px_1 = rRayPx + rRayVx * closestDistance_2;
+            const py_1 = rRayPy + rRayVy * closestDistance_2;
+            const pz_1 = rRayPz + rRayVz * closestDistance_2;
+            const sx_1 = things[closest_1][9];
+            const sy_1 = things[closest_1][10];
+            const sz_1 = things[closest_1][11];
+            const sRadius_1 = things[closest_1][12];
+            const snVx_1 = sphereNormalX(sx_1, sy_1, sz_1, sRadius_1, px_1, py_1, pz_1);
+            const snVy_1 = sphereNormalY(sx_1, sy_1, sz_1, sRadius_1, px_1, py_1, pz_1);
+            const snVz_1 = sphereNormalZ(sx_1, sy_1, sz_1, sRadius_1, px_1, py_1, pz_1);
+            const rsRed = things[closest_1][2];
+            const rsGreen = things[closest_1][3];
+            const rsBlue = things[closest_1][4];
+            const rambient = things[closest_1][7];
+            const rlambert = things[closest_1][6];
+            let rlambertAmount = 0;
             if (lambertianReflectance > 0 && rlambert > 0) {
-              for (var i = 0; i < this.constants.LIGHTSCOUNT; i++) {
-                var LPx = px_1 - lights[i][0];
-                var LPy = py_1 - lights[i][1];
-                var LPz = pz_1 - lights[i][2];
-                var uLPx = unitVectorX(LPx, LPy, LPz);
-                var uLPy = unitVectorY(LPx, LPy, LPz);
-                var uLPz = unitVectorZ(LPx, LPy, LPz);
-                var closestDistance_3 = Infinity;
-                for (var j = 0; j < this.constants.THINGSCOUNT; j++) {
-                  var distance = Infinity;
-                  var EOx = things[j][9] - px_1;
-                  var EOy = things[j][10] - py_1;
-                  var EOz = things[j][11] - pz_1;
-                  var v = (EOx * uLPx) + (EOy * uLPy) + (EOz * uLPz);
-                  var radius = things[j][12];
-                  var discriminant = (radius * radius)
+              for (let i = 0; i < this.constants.LIGHTSCOUNT; i++) {
+                const LPx = px_1 - lights[i][0];
+                const LPy = py_1 - lights[i][1];
+                const LPz = pz_1 - lights[i][2];
+                const uLPx = unitVectorX(LPx, LPy, LPz);
+                const uLPy = unitVectorY(LPx, LPy, LPz);
+                const uLPz = unitVectorZ(LPx, LPy, LPz);
+                let closestDistance_3 = Infinity;
+                for (let j = 0; j < this.constants.THINGSCOUNT; j++) {
+                  let distance = Infinity;
+                  const EOx = things[j][9] - px_1;
+                  const EOy = things[j][10] - py_1;
+                  const EOz = things[j][11] - pz_1;
+                  const v = (EOx * uLPx) + (EOy * uLPy) + (EOz * uLPz);
+                  const radius = things[j][12];
+                  const discriminant = (radius * radius)
                     - ((EOx * EOx) + (EOy * EOy) + (EOz * EOz))
                     + (v * v);
                   if (discriminant >= 0) {
@@ -393,15 +383,16 @@
                   }
                 }
                 if (closestDistance_3 > -0.005) {
-                  var PLx = -LPx;
-                  var PLy = -LPy;
-                  var PLz = -LPz;
-                  var uPLx = unitVectorX(PLx, PLy, PLz);
-                  var uPLy = unitVectorY(PLx, PLy, PLz);
-                  var uPLz = unitVectorZ(PLx, PLy, PLz);
-                  var contribution = vectorDotProduct(uPLx, uPLy, uPLz, snVx_1, snVy_1, snVz_1);
-                  if (contribution > 0)
+                  const PLx = -LPx;
+                  const PLy = -LPy;
+                  const PLz = -LPz;
+                  const uPLx = unitVectorX(PLx, PLy, PLz);
+                  const uPLy = unitVectorY(PLx, PLy, PLz);
+                  const uPLz = unitVectorZ(PLx, PLy, PLz);
+                  const contribution = vectorDotProduct(uPLx, uPLy, uPLz, snVx_1, snVy_1, snVz_1);
+                  if (contribution > 0) {
                     rlambertAmount += contribution;
+                  }
                 }
               }
             }
@@ -415,26 +406,24 @@
             cVz = cVz + (specular * reflectedBlue);
           }
         }
-        var red = cVx + (sRed * lambertAmount * lambert) + (sRed * ambient);
-        var green = cVy + (sGreen * lambertAmount * lambert) + (sGreen * ambient);
-        var blue = cVz + (sBlue * lambertAmount * lambert) + (sBlue * ambient);
+        const red = cVx + (sRed * lambertAmount * lambert) + (sRed * ambient);
+        const green = cVy + (sGreen * lambertAmount * lambert) + (sGreen * ambient);
+        const blue = cVz + (sBlue * lambertAmount * lambert) + (sBlue * ambient);
         this.color(red, green, blue);
       }
       else {
         this.color(0.95, 0.95, 0.95);
       }
     }, opt(mode));
-
-    return kernel;
   };
-  var fps = {
+  const fps = {
     startTime: 0,
     frameNumber: 0,
     getFPS: function () {
       this.frameNumber++;
-      var d = new Date().getTime();
-      var currentTime = (d - this.startTime) / 1000;
-      var result = Math.floor(this.frameNumber / currentTime);
+      const d = new Date().getTime();
+      const currentTime = (d - this.startTime) / 1000;
+      const result = Math.floor(this.frameNumber / currentTime);
       if (currentTime > 1) {
         this.startTime = new Date().getTime();
         this.frameNumber = 0;
@@ -442,28 +431,35 @@
       return result;
     }
   };
-  var cameraPoint = new Vector(camera[0], camera[1], camera[2]);
-  var cameraVector = new Vector(camera[3], camera[4], camera[5]);
-  var eyeVector = Vector.norm(Vector.minus(cameraVector, cameraPoint));
-  var vpRight = Vector.norm(Vector.cross(eyeVector, new Vector(0, 1, 0)));
-  var vpUp = Vector.norm(Vector.cross(vpRight, eyeVector));
-  var fovRadians = Math.PI * (camera[6] / 2) / 180;
-  var heightWidthRatio = height / width;
-  var halfWidth = Math.tan(fovRadians);
-  var halfHeight = heightWidthRatio * halfWidth;
-  var cameraWidth = halfWidth * 2;
-  var cameraHeight = halfHeight * 2;
-  var pixelWidth = cameraWidth / (width - 1);
-  var pixelHeight = cameraHeight / (height - 1);
-  var gpuKernel = createKernel(0);
-  var cpuKernel = createKernel(1);
-  var gpuCanvas = gpuKernel.canvas;
-  var cpuCanvas = cpuKernel.canvas;
+  const cameraPoint = new Vector(camera[0], camera[1], camera[2]);
+  const cameraVector = new Vector(camera[3], camera[4], camera[5]);
+  const eyeVector = Vector.norm(Vector.minus(cameraVector, cameraPoint));
+  const vpRight = Vector.norm(Vector.cross(eyeVector, new Vector(0, 1, 0)));
+  const vpUp = Vector.norm(Vector.cross(vpRight, eyeVector));
+  const fovRadians = Math.PI * (camera[6] / 2) / 180;
+  const heightWidthRatio = canvasHeight / canvasWidth;
+  const halfWidth = Math.tan(fovRadians);
+  const halfHeight = heightWidthRatio * halfWidth;
+  const cameraWidth = halfWidth * 2;
+  const cameraHeight = halfHeight * 2;
+  const pixelWidth = cameraWidth / (canvasWidth - 1);
+  const pixelHeight = cameraHeight / (canvasHeight - 1);
+  const gpuKernel = createKernel(0);
+  const cpuKernel = createKernel(1);
+  const gpuCanvas = gpuKernel.canvas;
+  const cpuCanvas = cpuKernel.canvas;
   document.getElementById(stringOfMode(initialMode)).checked = true;
-  document.getElementById('container')
-    .appendChild((initialMode === 1) ? cpuCanvas : gpuCanvas);
-  var requestId = null;
-  var togglePause = function () {
+  const canvasContainer = document.getElementById('canvas-holder');
+  canvasContainer.appendChild(gpuCanvas);
+  canvasContainer.appendChild(cpuCanvas);
+  let canvas;
+  if (initialMode === 1) {
+    showCPUCanvas();
+  } else {
+    showGPUCanvas();
+  }
+  let requestId = null;
+  function togglePause() {
     if (requestId) {
       if (document.getElementById('pause').value === 'Pause') {
         cancelAnimationFrame(requestId);
@@ -475,36 +471,50 @@
       }
     }
   };
-  var f = document.getElementById('fps');
+  const f = document.getElementById('fps');
+  const lambert = document.getElementById('lambert');
+  const specular = document.getElementById('specular');
+  const cpuProcessor = document.getElementById('cpu');
   function renderLoop() {
     f.innerHTML = fps.getFPS().toString();
-    var lambertianReflectance = (document.getElementById('lambert').checked)
-      ? 1 : 0;
-    var specularReflection = (document.getElementById('specular').checked)
-      ? 1 : 0;
-    if (document.getElementById('cpu').checked) {
+    const lambertianReflectance = lambert.checked ? 1 : 0;
+    const specularReflection = specular.checked ? 1 : 0;
+    if (cpuProcessor.checked) {
       cpuKernel(camera, lights, things, eyeVector.toArray(), vpRight.toArray(), vpUp.toArray(), halfHeight, halfWidth, pixelHeight, pixelWidth, lambertianReflectance, specularReflection);
-      var t2 = performance.now();
-      var canvas = cpuKernel.canvas;
-      var cv = document.getElementsByTagName('canvas')[0];
-      cv.parentNode.replaceChild(canvas, cv);
-    }
-    else {
+      if (canvas !== cpuKernel.canvas) {
+        showCPUCanvas();
+      }
+    } else {
+
       gpuKernel(camera, lights, things, eyeVector.toArray(), vpRight.toArray(), vpUp.toArray(), halfHeight, halfWidth, pixelHeight, pixelWidth, lambertianReflectance, specularReflection);
-      var canvas = gpuKernel.canvas;
-      var cv = document.getElementsByTagName('canvas')[0];
-      cv.parentNode.replaceChild(canvas, cv);
+      if (canvas !== gpuKernel.canvas) {
+        showGPUCanvas();
+      }
     }
-    things.forEach(function (thing) {
-      var height = this.height / (halfHeight * 2 * 100);
-      if (thing[10] < height)
+    for (let i = 0; i < things.length; i++) {
+      const thing = things[i];
+      const height = canvasHeight / (halfHeight * 2 * 100);
+      if (thing[10] < height) {
         thing[10] = (thing[10] + 0.02) % (height + 1);
-      else
+      } else {
         thing[10] = -1 * height;
-    });
+      }
+    }
     requestId = requestAnimationFrame(renderLoop);
   }
   window.onload = renderLoop;
+
+  function showCPUCanvas() {
+    cpuCanvas.style.display = '';
+    gpuCanvas.style.display = 'none';
+    canvas = cpuCanvas;
+  }
+
+  function showGPUCanvas() {
+    cpuCanvas.style.display = 'none';
+    gpuCanvas.style.display = '';
+    canvas = gpuCanvas;
+  }
 </script>
 </body>
 </html>

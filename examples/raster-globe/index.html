@@ -13,28 +13,28 @@
   function frac(n) {
     return n - Math.floor(n);
   }
-  function applyRotation(rotatex, rotatey, rotatez, lambda, phi, which) {
+  function applyRotation(rotatex, rotatey, rotatez, lambda, phi) {
     const degrees = 57.29577951308232;
 
     lambda = lambda / degrees;
     phi = phi / degrees;
 
-    var cosphi = Math.cos(phi),
+    const cosphi = Math.cos(phi),
       x = Math.cos(lambda) * cosphi,
       y = Math.sin(lambda) * cosphi,
       z = Math.sin(phi);
 
     // inverse rotation
-    var deltaLambda = rotatex / degrees; // rotate[0]
-    var deltaPhi = -rotatey / degrees;   // rotate[1]
-    var deltaGamma = -rotatez / degrees; // rotate[2]
+    const deltaLambda = rotatex / degrees; // rotate[0]
+    const deltaPhi = -rotatey / degrees;   // rotate[1]
+    const deltaGamma = -rotatez / degrees; // rotate[2]
 
-    var cosDeltaPhi = Math.cos(deltaPhi),
+    const cosDeltaPhi = Math.cos(deltaPhi),
       sinDeltaPhi = Math.sin(deltaPhi),
       cosDeltaGamma = Math.cos(deltaGamma),
       sinDeltaGamma = Math.sin(deltaGamma);
 
-    var k = z * cosDeltaGamma - y * sinDeltaGamma;
+    let k = z * cosDeltaGamma - y * sinDeltaGamma;
 
     lambda = Math.atan2(
       y * cosDeltaGamma + z * sinDeltaGamma,
@@ -46,11 +46,7 @@
 
     lambda *= degrees;
     phi *= degrees;
-
-    // return [lambda,phi]; // fails so we need to call this function twice
-    // and ask first for lambda, then for phi
-    if (which === 0) return lambda;
-    else return phi;
+    return [lambda, phi];
   }
   // the kernel runs for each pixel, with:
   // - this.thread.x = horizontal position in pixels from the left edge
@@ -76,7 +72,7 @@
       return Math.floor(lat * srch);
     }
 
-    var x = (this.thread.x / this.constants.w - 1 / 2) / scale,
+    const x = (this.thread.x / this.constants.w - 1 / 2) / scale,
       y = ((this.thread.y - this.constants.h / 2) / this.constants.w) / scale;
 
     // inverse projection
@@ -93,9 +89,9 @@
       const phi = Math.asin(z) * 57.29577951308232;
 
       // apply rotation
-      // [lambda, phi] = applyRotation(centerx, centery, centerz, lambda, phi); // TODO
-      const lambdan = applyRotation(rotate0, rotate1, rotate2, lambda, phi, 0);
-      const phin = applyRotation(rotate0, rotate1, rotate2, lambda, phi, 1);
+      const rotation = applyRotation(rotate0, rotate1, rotate2, lambda, phi);
+      const lambdan = rotation[0];
+      const phin = rotation[1];
       //var n = n0(lambda, phi, this.constants.srcw, this.constants.srch);
       //this.color(pixels[n]/256, pixels[n+1]/256,pixels[n+2]/256,1);
       const pixel = pixels[pixely(phin, this.constants.srch)][pixelx(lambdan, this.constants.srcw)];
@@ -113,11 +109,12 @@
       .createKernel(kernel, { functions: [applyRotation, frac] })
       .setConstants({ w, h, srcw: image.width, srch: image.height  })
       .setOutput([w, h])
+      .setTactic('precision')
       .setGraphical(true);
     const canvas = render.canvas;
     document.body.appendChild(canvas);
-    var lastCalledTime;
-    var fps;
+    let lastCalledTime;
+    let fps;
     function callRender() {
       let r0 = (-Date.now() / 30) % 360,
         r1 = 35 * Math.sin((-Date.now() / 1030) % 360),

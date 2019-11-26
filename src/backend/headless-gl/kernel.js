@@ -32,6 +32,7 @@ class HeadlessGLKernel extends WebGLKernel {
         OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
         OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
         WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
+        WEBGL_color_buffer_float: testContext.getExtension('WEBGL_color_buffer_float'),
       };
       features = this.getFeatures();
     } catch (e) {
@@ -45,19 +46,6 @@ class HeadlessGLKernel extends WebGLKernel {
     } catch (e) {
       return false;
     }
-  }
-
-  static getFeatures() {
-    const isDrawBuffers = this.getIsDrawBuffers();
-    return Object.freeze({
-      isFloatRead: this.getIsFloatRead(),
-      isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
-      isTextureFloat: this.getIsTextureFloat(),
-      isDrawBuffers,
-      kernelMap: isDrawBuffers,
-      channelCount: this.getChannelCount(),
-      maxTextureSize: this.getMaxTextureSize(),
-    });
   }
 
   static getIsTextureFloat() {

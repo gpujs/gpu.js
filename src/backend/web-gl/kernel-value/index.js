@@ -140,15 +140,7 @@ class WebGLKernelValue extends KernelValue {
   }
 
   getVariablePrecisionString() {
-    switch (this.tactic) {
-      case 'speed':
-        return 'lowp';
-      case 'performance':
-        return 'highp';
-      case 'balanced':
-      default:
-        return 'mediump';
-    }
+    return this.kernel.getVariablePrecisionString(this.textureSize || undefined, this.tactic || undefined);
   }
 }
 

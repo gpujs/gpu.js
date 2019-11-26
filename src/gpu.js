@@ -9,7 +9,7 @@ const { kernelRunShortcut } = require('./kernel-run-shortcut');
 
 /**
  *
- * @type {Kernel[]}
+ * @type {typeof Kernel[]}
  */
 const kernelOrder = [HeadlessGLKernel, WebGL2Kernel, WebGLKernel];
 
@@ -223,6 +223,7 @@ class GPU {
     }
 
     function onRequestFallback(args) {
+      console.warn('Falling back to CPU');
       const fallbackKernel = new CPUKernel(source, {
         argumentTypes: kernelRun.argumentTypes,
         constantTypes: kernelRun.constantTypes,
@@ -251,7 +252,17 @@ class GPU {
       return result;
     }
 
-    function onRequestSwitchKernel(args, kernel) {
+    function onRequestSwitchKernel(reasons, args, kernel) {
+      console.warn('Switching kernels');
+      let newOutput = null;
+      if (kernel.dynamicOutput) {
+        for (let i = reasons.length - 1; i >= 0; i--) {
+          const reason = reasons[i];
+          if (reason.type === 'outputPrecisionMismatch') {
+            newOutput = reason.needed;
+          }
+        }
+      }
       const argumentTypes = new Array(args.length);
       for (let i = 0; i < args.length; i++) {
         const arg = args[i];
@@ -271,15 +282,10 @@ class GPU {
           }
         }
       }
-      const signature = argumentTypes.join(',');
+      const signature = kernel.getVariablePrecisionString() + (argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '');
       const existingKernel = switchableKernels[signature];
       if (existingKernel) {
-        existingKernel.run.apply(existingKernel, args);
-        if (existingKernel.renderKernels) {
-          return existingKernel.renderKernels();
-        } else {
-          return existingKernel.renderOutput();
-        }
+        return existingKernel;
       }
 
       const newKernel = switchableKernels[signature] = new kernel.constructor(source, {
@@ -292,7 +298,7 @@ class GPU {
         dynamicArgument: kernel.dynamicArguments,
         context: kernel.context,
         canvas: kernel.canvas,
-        output: kernel.output,
+        output: newOutput || kernel.output,
         precision: kernel.precision,
         pipeline: kernel.pipeline,
         immutable: kernel.immutable,
@@ -310,17 +316,13 @@ class GPU {
         returnType: kernel.returnType,
         onIstanbulCoverageVariable: kernel.onIstanbulCoverageVariable,
         removeIstanbulCoverage: kernel.removeIstanbulCoverage,
+        tactic: kernel.tactic,
         onRequestFallback,
         onRequestSwitchKernel,
       });
       newKernel.build.apply(newKernel, args);
-      newKernel.run.apply(newKernel, args);
       kernelRun.replaceKernel(newKernel);
-      if (newKernel.renderKernels) {
-        return newKernel.renderKernels();
-      } else {
-        return newKernel.renderOutput();
-      }
+      return newKernel;
     }
     const mergedSettings = Object.assign({
       context: this.context,

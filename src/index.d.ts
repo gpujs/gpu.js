@@ -113,10 +113,14 @@ export abstract class Kernel {
   pipeline: boolean;
   plugins: IPlugin[];
   useLegacyEncoder: boolean;
+  tactic: Tactic;
+  built: boolean;
+  texSize: [number, number];
   getPixels(flip?: boolean): Uint8ClampedArray[];
   prependString(value: string): void;
   hasPrependString(value: string): boolean;
   constructor(kernel: KernelFunction|IJSON, settings?: IDirectKernelSettings);
+  onRequestSwitchKernel?: Kernel;
   build(
     arg1?: KernelVariable,
     arg2?: KernelVariable,
@@ -201,9 +205,29 @@ export abstract class Kernel {
   setContext(flag: any): this;
   setFunctions(flag: IFunction[]|KernelFunction[]): this;
   setStrictIntegers(flag: boolean): this;
+  setTactic(flag: Tactic): this;
+  setUseLegacyEncoder(flag: boolean): this;
   addSubKernel(subKernel: ISubKernel): this;
   destroy(removeCanvasReferences?: boolean): void;
   validateSettings(args: IArguments): void;
+
+  setUniform1f(name: string, value: number): void;
+  setUniform2f(name: string, value1: number, value2: number): void;
+  setUniform3f(name: string, value1: number, value2: number, value3: number): void;
+  setUniform4f(name: string, value1: number, value2: number, value3: number, value4: number): void;
+
+  setUniform2fv(name: string, value: [number, number]): void;
+  setUniform3fv(name: string, value: [number, number, number]): void;
+  setUniform4fv(name: string, value: [number, number, number, number]): void;
+
+  setUniform1i(name: string, value: number): void;
+  setUniform2i(name: string, value1: number, value2: number): void;
+  setUniform3i(name: string, value1: number, value2: number, value3: number): void;
+  setUniform4i(name: string, value1: number, value2: number, value3: number, value4: number): void;
+
+  setUniform2iv(name: string, value: [number, number]): void;
+  setUniform3iv(name: string, value: [number, number, number]): void;
+  setUniform4iv(name: string, value: [number, number, number, number]): void;
 }
 
 export type Precision = 'single' | 'unsigned';
@@ -249,11 +273,11 @@ export interface IKernelValueSettings {
   contextHandle?: number;
   checkContext?: boolean;
   onRequestContextHandle: () => number;
-  onUpdateValueMismatch: () => void;
+  onUpdateValueMismatch: (constructor: object) => void;
   origin: 'user' | 'constants';
   strictIntegers?: boolean;
   type: GPUVariableType;
-  tactic: Tactic;
+  tactic?: Tactic;
   size: number[];
   index?: number;
 }
@@ -270,8 +294,15 @@ export interface IKernelXYZ {
   z?: number;
 }
 
+export interface FunctionList {
+  [functionName: string]: Function
+}
+
 export interface IGPUKernelSettings extends IKernelSettings {
   argumentTypes?: ITypesList;
+  functions?: Function[]|FunctionList;
+  tactic?: Tactic;
+  onRequestSwitchKernel?: Kernel;
 }
 
 export interface IKernelSettings {
@@ -289,6 +320,7 @@ export interface IKernelSettings {
   dynamicOutput?: boolean;
   dynamicArguments?: boolean;
   constantTypes?: ITypesList;
+  useLegacyEncoder?: boolean;
 }
 
 export interface IDirectKernelSettings extends IKernelSettings {
@@ -332,8 +364,15 @@ export interface IKernelFeatures {
   kernelMap: boolean;
   isIntegerDivisionAccurate: boolean;
   isTextureFloat: boolean;
+  isDrawBuffers: boolean;
   channelCount: number;
   maxTextureSize: number;
+  lowIntPrecision: { rangeMax: number };
+  mediumIntPrecision: { rangeMax: number };
+  highIntPrecision: { rangeMax: number };
+  lowFloatPrecision: { rangeMax: number };
+  mediumFloatPrecision: { rangeMax: number };
+  highFloatPrecision: { rangeMax: number };
 }
 
 export interface IKernelFunctionThis {
@@ -539,6 +578,6 @@ export interface IJSONSettings {
   constants?: IConstants;
   pipeline?: boolean;
   pluginNames?: string[];
-  tactic?: boolean;
+  tactic?: Tactic;
   threadDim?: number[];
 }

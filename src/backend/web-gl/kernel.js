@@ -72,19 +72,6 @@ class WebGLKernel extends GLKernel {
     return false;
   }
 
-  static getFeatures() {
-    const isDrawBuffers = this.getIsDrawBuffers();
-    return Object.freeze({
-      isFloatRead: this.getIsFloatRead(),
-      isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
-      isTextureFloat: this.getIsTextureFloat(),
-      isDrawBuffers,
-      kernelMap: isDrawBuffers,
-      channelCount: this.getChannelCount(),
-      maxTextureSize: this.getMaxTextureSize(),
-    });
-  }
-
   static getIsTextureFloat() {
     return Boolean(testExtensions.OES_texture_float);
   }
@@ -129,7 +116,7 @@ class WebGLKernel extends GLKernel {
 
   /**
    *
-   * @param {String|IJSONSettings} source
+   * @param {String|IJSON} source
    * @param {IDirectKernelSettings} settings
    */
   constructor(source, settings) {
@@ -151,7 +138,6 @@ class WebGLKernel extends GLKernel {
      * @type {Int32Array|null}
      */
     this.maxTexSize = null;
-    this.switchingKernels = false;
     this.onRequestSwitchKernel = null;
     this.removeIstanbulCoverage = true;
 
@@ -164,6 +150,7 @@ class WebGLKernel extends GLKernel {
     this.threadDim = null;
     this.framebuffer = null;
     this.buffer = null;
+    this.textureGarbage = [];
     this.textureCache = [];
     this.programUniformLocationCache = {};
     this.uniform1fCache = {};
@@ -344,47 +331,6 @@ class WebGLKernel extends GLKernel {
     }
   }
 
-  // TODO: move channel checks to new place
-  _oldtranslateSource() {
-    const functionBuilder = FunctionBuilder.fromKernel(this, WebGLFunctionNode, {
-      fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
-    });
-
-    // need this line to automatically get returnType
-    const translatedSource = functionBuilder.getPrototypeString('kernel');
-
-    if (!this.returnType) {
-      this.returnType = functionBuilder.getKernelResultType();
-    }
-
-    let requiredChannels = 0;
-    const returnTypes = functionBuilder.getReturnTypes();
-    for (let i = 0; i < returnTypes.length; i++) {
-      switch (returnTypes[i]) {
-        case 'Float':
-        case 'Number':
-        case 'Integer':
-          requiredChannels++;
-          break;
-        case 'Array(2)':
-          requiredChannels += 2;
-          break;
-        case 'Array(3)':
-          requiredChannels += 3;
-          break;
-        case 'Array(4)':
-          requiredChannels += 4;
-          break;
-      }
-    }
-
-    if (features && requiredChannels > features.channelCount) {
-      throw new Error('Too many channels!');
-    }
-
-    return this.translatedSource = translatedSource;
-  }
-
   setupArguments(args) {
     this.kernelArguments = [];
     this.argumentTextureCount = 0;
@@ -405,6 +351,23 @@ class WebGLKernel extends GLKernel {
 
     const { context: gl } = this;
     let textureIndexes = 0;
+
+    const onRequestTexture = () => {
+      return this.createTexture();
+    };
+    const onRequestIndex = () => {
+      return textureIndexes++;
+    };
+    const onUpdateValueMismatch = (constructor) => {
+      this.switchKernels({
+        type: 'argumentMismatch',
+        needed: constructor
+      });
+    };
+    const onRequestContextHandle = () => {
+      return gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount++;
+    };
+
     for (let index = 0; index < args.length; index++) {
       const value = args[index];
       const name = this.argumentNames[index];
@@ -428,18 +391,10 @@ class WebGLKernel extends GLKernel {
         checkContext: this.checkContext,
         kernel: this,
         strictIntegers: this.strictIntegers,
-        onRequestTexture: () => {
-          return this.createTexture();
-        },
-        onRequestIndex: () => {
-          return textureIndexes++;
-        },
-        onUpdateValueMismatch: () => {
-          this.switchingKernels = true;
-        },
-        onRequestContextHandle: () => {
-          return gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount++;
-        }
+        onRequestTexture,
+        onRequestIndex,
+        onUpdateValueMismatch,
+        onRequestContextHandle,
       });
       this.kernelArguments.push(kernelArgument);
       this.argumentSizes.push(kernelArgument.textureSize);
@@ -612,6 +567,7 @@ class WebGLKernel extends GLKernel {
         this._setupSubOutputTextures();
       }
     }
+    this.built = true;
   }
 
   translateSource() {
@@ -638,8 +594,7 @@ class WebGLKernel extends GLKernel {
   }
 
   run() {
-    const { kernelArguments, texSize, forceUploadKernelConstants } = this;
-    const gl = this.context;
+    const { kernelArguments, texSize, forceUploadKernelConstants, context: gl } = this;
 
     gl.useProgram(this.program);
     gl.scissor(0, 0, texSize[0], texSize[1]);
@@ -651,7 +606,6 @@ class WebGLKernel extends GLKernel {
 
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
-    this.switchingKernels = false;
     for (let i = 0; i < forceUploadKernelConstants.length; i++) {
       const constant = forceUploadKernelConstants[i];
       constant.updateValue(this.constants[constant.name]);
@@ -685,11 +639,14 @@ class WebGLKernel extends GLKernel {
           dimensions: this.threadDim,
           output: this.output,
           context: this.context,
+          internalFormat: this.getInternalFormat(),
+          textureFormat: this.getTextureFormat(),
         });
       }
       gl.bindRenderbuffer(gl.RENDERBUFFER, null);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      this.garbageCollect();
       return;
     }
 
@@ -706,12 +663,31 @@ class WebGLKernel extends GLKernel {
     }
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    this.garbageCollect();
+  }
+
+  garbageCollect() {
+    while (this.textureGarbage.length > 0) {
+      this.textureGarbage.pop().delete();
+    }
   }
 
   drawBuffers() {
     this.extensions.WEBGL_draw_buffers.drawBuffersWEBGL(this.drawBuffersMap);
   }
 
+  getInternalFormat() {
+    return this.context.RGBA;
+  }
+  getTextureFormat() {
+    const { context: gl } = this;
+    switch (this.getInternalFormat()) {
+      case gl.RGBA:
+        return gl.RGBA;
+      default:
+        throw new Error('Unknown internal format');
+    }
+  }
   /**
    * @desc Setup and replace output texture
    */
@@ -725,43 +701,11 @@ class WebGLKernel extends GLKernel {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    // if (this.precision === 'single') {
-    //   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-    // } else {
-    //   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    // }
+    const format = this.getInternalFormat();
     if (this.precision === 'single') {
-      if (this.pipeline) {
-        // TODO: investigate if webgl1 can handle gl.RED usage in gl.texImage2D, otherwise, simplify the below
-        switch (this.returnType) {
-          case 'Number':
-          case 'Float':
-          case 'Integer':
-            if (this.optimizeFloatMemory) {
-              gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-            } else {
-              gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-            }
-            break;
-          case 'Array(2)':
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-            break;
-          case 'Array(3)':
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-            break;
-          case 'Array(4)':
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-            break;
-          default:
-            if (!this.graphical) {
-              throw new Error('Unhandled return type');
-            }
-        }
-      } else {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-      }
+      gl.texImage2D(gl.TEXTURE_2D, 0, format, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
     } else {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texImage2D(gl.TEXTURE_2D, 0, format, texSize[0], texSize[1], 0, format, gl.UNSIGNED_BYTE, null);
     }
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
   }

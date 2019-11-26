@@ -26,7 +26,7 @@
     return result;
   }
   const kernel = function(data, wobble) {
-    var x = this.thread.x,
+    let x = this.thread.x,
       y = this.thread.y;
 
     //var data = this.constants.data;
@@ -34,7 +34,7 @@
     x = Math.floor(x + wobble * Math.sin(y / 10));
     y = Math.floor(y + wobble * Math.cos(x / 10));
 
-    var n = 4 * (x + (this.constants.w * y));
+    const n = 4 * (x + (this.constants.w * y));
     this.color(data[n]/256, data[n+1]/256,data[n+2]/256,1);
   };
 
@@ -50,14 +50,14 @@
       .setGraphical(true);
     const canvas = render.canvas;
     document.body.appendChild(canvas);
-    var lastCalledTime;
-    var fps;
+    let lastCalledTime;
+    let fps;
     function callRender() {
       const wobble = 14 * Math.sin(Date.now() / 400);
       render(array, wobble);
-      var delta = (Date.now() - lastCalledTime)/1000;
+      const delta = (Date.now() - lastCalledTime)/1000;
       lastCalledTime = Date.now();
-      fps = 1/delta;
+      fps = 1 / delta;
       logFps.innerHTML = fps.toFixed(0) + ' FPS';
       window.requestAnimationFrame(() => {
         callRender();

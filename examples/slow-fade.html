@@ -12,28 +12,29 @@
 </body>
 <script src="../dist/gpu-browser.min.js"></script>
 <script>
-  const canvas = document.getElementById("c");
+  const canvas = document.getElementById('c');
   const gpu = new GPU({
     canvas: canvas,
-    mode: "gpu"
+    mode: 'gpu'
   });
   const dim = 512;
   const kernel = gpu.createKernel(
     function(x) {
       this.color(
-        (x * (this.thread.y + this.thread.x)) / 1024.0,
-        (x * (this.thread.y * this.thread.x)) / (1024.0 * 1024.0),
-        (x * (this.thread.y * 2 * this.thread.x)) / (1024.0 * 2),
+        (x * (this.thread.y + this.thread.x)) / 1024,
+        (x * (this.thread.y * this.thread.x)) / (1024 * 1024),
+        (x * (this.thread.y * 2 * this.thread.x)) / (1024 * 2),
         1
       );
     },
     {
+      useLegacyEncoder: true,
       output: [dim, dim],
       graphical: true
     }
   );
 
-  let param = 0.0;
+  let param = 0;
   const doDraw = () => {
     kernel(param);
     param += 0.001;

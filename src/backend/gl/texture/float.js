@@ -1,7 +1,10 @@
 const { utils } = require('../../../utils');
-const { Texture } = require('../../../texture');
+const { GLTexture } = require('./index');
 
-class GLTextureFloat extends Texture {
+class GLTextureFloat extends GLTexture {
+  get textureType() {
+    return this.context.FLOAT;
+  }
   constructor(settings) {
     super(settings);
     this.type = 'ArrayTexture(1)';
@@ -22,6 +25,7 @@ class GLTextureFloat extends Texture {
     return result;
   }
   renderValues() {
+    if (this._deleted) return null;
     return this.renderRawOutput();
   }
   toArray() {

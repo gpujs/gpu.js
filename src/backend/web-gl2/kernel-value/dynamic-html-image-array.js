@@ -1,3 +1,4 @@
+const { utils } = require('../../../utils');
 const { WebGL2KernelValueHTMLImageArray } = require('./html-image-array');
 
 class WebGL2KernelValueDynamicHTMLImageArray extends WebGL2KernelValueHTMLImageArray {
