@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Video input with GPU.js</title>
-  <script src="../../dist/gpu-browser.js"></script>
+  <script src="../../dist/gpu-browser.min.js"></script>
 </head>
 <body>
 <h1>Video input (and output) with GPU.js</h1>
@@ -67,7 +67,8 @@
       }
     }, {
       output: [337, 599],
-      graphical: true
+      graphical: true,
+      tactic: 'precision'
     });
     canvasParent.appendChild(kernel.canvas);
     const videoElement = document.querySelector('video');

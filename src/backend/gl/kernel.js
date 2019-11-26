@@ -89,11 +89,24 @@ class GLKernel extends Kernel {
     throw new Error(`"testContext" not defined on ${ this.name }`);
   }
 
-  /**
-   * @type {IKernelFeatures}
-   */
-  static get features() {
-    throw new Error(`"features" not defined on ${ this.name }`);
+  static getFeatures() {
+    const gl = this.testContext;
+    const isDrawBuffers = this.getIsDrawBuffers();
+    return Object.freeze({
+      isFloatRead: this.getIsFloatRead(),
+      isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+      isTextureFloat: this.getIsTextureFloat(),
+      isDrawBuffers,
+      kernelMap: isDrawBuffers,
+      channelCount: this.getChannelCount(),
+      maxTextureSize: this.getMaxTextureSize(),
+      lowIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.LOW_INT),
+      lowFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.LOW_FLOAT),
+      mediumIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.MEDIUM_INT),
+      mediumFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.MEDIUM_FLOAT),
+      highIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_INT),
+      highFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT),
+    });
   }
 
   /**
@@ -300,6 +313,7 @@ class GLKernel extends Kernel {
     this.renderStrategy = null;
     this.compiledFragmentShader = null;
     this.compiledVertexShader = null;
+    this.switchingKernels = null;
   }
 
   checkTextureSize() {
@@ -762,15 +776,8 @@ class GLKernel extends Kernel {
    * @return {string}
    */
   getFloatTacticDeclaration() {
-    switch (this.tactic) {
-      case 'speed':
-        return 'precision lowp float;\n';
-      case 'performance':
-        return 'precision highp float;\n';
-      case 'balanced':
-      default:
-        return 'precision mediump float;\n';
-    }
+    const variablePrecision = this.getVariablePrecisionString(this.texSize, this.tactic);
+    return `precision ${variablePrecision} float;\n`;
   }
 
   /**
@@ -778,15 +785,7 @@ class GLKernel extends Kernel {
    * @return {string}
    */
   getIntTacticDeclaration() {
-    switch (this.tactic) {
-      case 'speed':
-        return 'precision lowp int;\n';
-      case 'performance':
-        return 'precision highp int;\n';
-      case 'balanced':
-      default:
-        return 'precision mediump int;\n';
-    }
+    return `precision ${this.getVariablePrecisionString(this.texSize, this.tactic, true)} int;\n`;
   }
 
   /**
@@ -794,27 +793,11 @@ class GLKernel extends Kernel {
    * @return {string}
    */
   getSampler2DTacticDeclaration() {
-    switch (this.tactic) {
-      case 'speed':
-        return 'precision lowp sampler2D;\n';
-      case 'performance':
-        return 'precision highp sampler2D;\n';
-      case 'balanced':
-      default:
-        return 'precision mediump sampler2D;\n';
-    }
+    return `precision ${this.getVariablePrecisionString(this.texSize, this.tactic)} sampler2D;\n`;
   }
 
   getSampler2DArrayTacticDeclaration() {
-    switch (this.tactic) {
-      case 'speed':
-        return 'precision lowp sampler2DArray;\n';
-      case 'performance':
-        return 'precision highp sampler2DArray;\n';
-      case 'balanced':
-      default:
-        return 'precision mediump sampler2DArray;\n';
-    }
+    return `precision ${this.getVariablePrecisionString(this.texSize, this.tactic)} sampler2DArray;\n`;
   }
 
   renderTexture() {
@@ -825,6 +808,8 @@ class GLKernel extends Kernel {
       output: this.output,
       context: this.context,
       kernel: this,
+      internalFormat: this.getInternalFormat(),
+      textureFormat: this.getTextureFormat(),
     });
   }
   readPackedPixelsToUint8Array() {
@@ -883,6 +868,8 @@ class GLKernel extends Kernel {
         dimensions: this.threadDim,
         output: this.output,
         context: this.context,
+        internalFormat: this.getInternalFormat(),
+        textureFormat: this.getTextureFormat(),
       }).toArray();
     }
     return result;
@@ -899,31 +886,61 @@ class GLKernel extends Kernel {
         dimensions: this.threadDim,
         output: this.output,
         context: this.context,
+        internalFormat: this.getInternalFormat(),
+        textureFormat: this.getTextureFormat(),
       });
     }
     return result;
   }
 
+  resetSwitchingKernels() {
+    const existingValue = this.switchingKernels;
+    this.switchingKernels = null;
+    return existingValue;
+  }
+
   setOutput(output) {
-    super.setOutput(output);
+    const newOutput = this.toKernelOutput(output);
     if (this.program) {
-      this.threadDim = [this.output[0], this.output[1] || 1, this.output[2] || 1];
-      this.texSize = utils.getKernelTextureSize({
+      if (!this.dynamicOutput) {
+        throw new Error('Resizing a kernel with dynamicOutput: false is not possible');
+      }
+      const newThreadDim = [newOutput[0], newOutput[1] || 1, newOutput[2] || 1];
+      const newTexSize = utils.getKernelTextureSize({
         optimizeFloatMemory: this.optimizeFloatMemory,
         precision: this.precision,
-      }, this.output);
+      }, newThreadDim);
+      const oldTexSize = this.texSize;
+      if (oldTexSize) {
+        const oldPrecision = this.getVariablePrecisionString(oldTexSize, this.tactic);
+        const newPrecision = this.getVariablePrecisionString(newTexSize, this.tactic);
+        if (oldPrecision !== newPrecision) {
+          console.warn('Precision requirement changed, asking GPU instance to recompile');
+          this.switchKernels({
+            type: 'outputPrecisionMismatch',
+            precision: newPrecision,
+            needed: output
+          });
+          return;
+        }
+      }
+      this.output = newOutput;
+      this.threadDim = newThreadDim;
+      this.texSize = newTexSize;
       const { context: gl } = this;
       gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
       this.updateMaxTexSize();
       this.framebuffer.width = this.texSize[0];
       this.framebuffer.height = this.texSize[1];
-      this.context.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
+      gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
       this.canvas.width = this.maxTexSize[0];
       this.canvas.height = this.maxTexSize[1];
       this._setupOutputTexture();
       if (this.subKernels && this.subKernels.length > 0) {
         this._setupSubOutputTextures();
       }
+    } else {
+      this.output = newOutput;
     }
     return this;
   }
@@ -934,6 +951,40 @@ class GLKernel extends Kernel {
       this.output[1],
       this.output[2]
     );
+  }
+  switchKernels(reason) {
+    if (this.switchingKernels) {
+      this.switchingKernels.push(reason);
+    } else {
+      this.switchingKernels = [reason];
+    }
+  }
+  getVariablePrecisionString(textureSize = this.texSize, tactic = this.tactic, isInt = false) {
+    if (!tactic) {
+      const low = this.constructor.features[isInt ? 'lowIntPrecision' : 'lowFloatPrecision'];
+      const medium = this.constructor.features[isInt ? 'mediumIntPrecision' : 'mediumFloatPrecision'];
+      const high = this.constructor.features[isInt ? 'highIntPrecision' : 'highFloatPrecision'];
+      const requiredSize = Math.log2(textureSize[0] * textureSize[1]);
+      if (requiredSize <= low.rangeMax) {
+        return 'lowp';
+      } else if (requiredSize <= medium.rangeMax) {
+        return 'mediump';
+      } else if (requiredSize <= high.rangeMax) {
+        return 'highp';
+      } else {
+        throw new Error(`The required size exceeds that of the ability of your system`);
+      }
+    }
+    switch (tactic) {
+      case 'speed':
+        return 'lowp';
+      case 'balanced':
+        return 'mediump';
+      case 'precision':
+        return 'highp';
+      default:
+        throw new Error(`Unknown tactic "${tactic}" use "speed", "balanced", "precision", or empty for auto`);
+    }
   }
 }
 

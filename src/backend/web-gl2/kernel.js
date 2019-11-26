@@ -67,13 +67,21 @@ class WebGL2Kernel extends WebGLKernel {
    * @return {IKernelFeatures}
    */
   static getFeatures() {
+    const gl = this.testContext;
     return Object.freeze({
       isFloatRead: this.getIsFloatRead(),
       isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
       kernelMap: true,
       isTextureFloat: true,
+      isDrawBuffers: true,
       channelCount: this.getChannelCount(),
       maxTextureSize: this.getMaxTextureSize(),
+      lowIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.LOW_INT),
+      lowFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.LOW_FLOAT),
+      mediumIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.MEDIUM_INT),
+      mediumFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.MEDIUM_FLOAT),
+      highIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_INT),
+      highFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT),
     });
   }
 
@@ -227,16 +235,24 @@ class WebGL2Kernel extends WebGLKernel {
     this.context.drawBuffers(this.drawBuffersMap);
   }
 
-  _setupOutputTexture() {
-    const { texSize } = this;
-    const gl = this.context;
-    const texture = this.outputTexture = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  getTextureFormat() {
+    const { context: gl } = this;
+    switch (this.getInternalFormat()) {
+      case gl.R32F:
+        return gl.RED;
+      case gl.RG32F:
+        return gl.RG;
+      case gl.RGBA32F:
+        return gl.RGBA;
+      case gl.RGBA:
+        return gl.RGBA;
+      default:
+        throw new Error('Unknown internal format');
+    }
+  }
+  getInternalFormat() {
+    const { context: gl, optimizeFloatMemory, pipeline, precision } = this;
+
     if (this.precision === 'single') {
       if (this.pipeline) {
         switch (this.returnType) {
@@ -244,26 +260,39 @@ class WebGL2Kernel extends WebGLKernel {
           case 'Float':
           case 'Integer':
             if (this.optimizeFloatMemory) {
-              gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, texSize[0], texSize[1]);
+              return gl.RGBA32F;
             } else {
-              gl.texStorage2D(gl.TEXTURE_2D, 1, gl.R32F, texSize[0], texSize[1]);
+              return gl.R32F;
             }
-            break;
-          case 'Array(2)':
-            gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RG32F, texSize[0], texSize[1]);
-            break;
-          case 'Array(3)': // there is _no_ 3 channel format which is guaranteed to be color-renderable
-          case 'Array(4)':
-            gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, texSize[0], texSize[1]);
-            break;
-          default:
-            throw new Error('Unhandled return type');
+            case 'Array(2)':
+              return gl.RG32F;
+            case 'Array(3)': // there is _no_ 3 channel format which is guaranteed to be color-renderable
+            case 'Array(4)':
+              return gl.RGBA32F;
+            default:
+              throw new Error('Unhandled return type');
         }
-      } else {
-        gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, texSize[0], texSize[1]);
       }
+      return gl.RGBA32F;
+    }
+    return gl.RGBA;
+  }
+
+  _setupOutputTexture() {
+    const { texSize } = this;
+    const gl = this.context;
+    const texture = this.outputTexture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    const format = this.getInternalFormat();
+    if (this.precision === 'single') {
+      gl.texStorage2D(gl.TEXTURE_2D, 1, format, texSize[0], texSize[1]);
     } else {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texImage2D(gl.TEXTURE_2D, 0, format, texSize[0], texSize[1], 0, format, gl.UNSIGNED_BYTE, null);
     }
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
   }
@@ -310,26 +339,11 @@ class WebGL2Kernel extends WebGLKernel {
    */
   _getTextureCoordinate() {
     const subKernels = this.subKernels;
+    const variablePrecision = this.getVariablePrecisionString(this.texSize, this.tactic);
     if (subKernels === null || subKernels.length < 1) {
-      switch (this.tactic) {
-        case 'speed':
-          return 'in lowp vec2 vTexCoord;\n';
-        case 'performance':
-          return 'in highp vec2 vTexCoord;\n';
-        case 'balanced':
-        default:
-          return 'in mediump vec2 vTexCoord;\n';
-      }
+      return `in ${ variablePrecision } vec2 vTexCoord;\n`;
     } else {
-      switch (this.tactic) {
-        case 'speed':
-          return 'out lowp vec2 vTexCoord;\n';
-        case 'performance':
-          return 'out highp vec2 vTexCoord;\n';
-        case 'balanced':
-        default:
-          return 'out mediump vec2 vTexCoord;\n';
-      }
+      return `out ${ variablePrecision } vec2 vTexCoord;\n`;
     }
   }
 

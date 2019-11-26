@@ -18,6 +18,9 @@ function toStringWithoutUtils(fn) {
  * @returns {string}
  */
 function glKernelString(Kernel, args, originKernel, setupContextString, destroyContextString) {
+  if (!originKernel.built) {
+    originKernel.build.apply(originKernel, args);
+  }
   args = args ? Array.from(args).map(arg => {
     switch (typeof arg) {
       case 'boolean':
@@ -85,6 +88,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
     constantTypes,
     kernelArguments,
     kernelConstants,
+    tactic,
   } = originKernel;
   const kernel = new Kernel(source, {
     canvas,
@@ -104,6 +108,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
     immutable,
     argumentTypes,
     constantTypes,
+    tactic,
   });
   let result = [];
   context.setIndent(2);
@@ -183,30 +188,40 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   });
   result.push('    /** end setup uploads for kernel values **/');
   result.push(context.toString());
-  if (kernel.renderOutput === kernel.renderTexture && kernel.renderKernels) {
+  if (kernel.renderOutput === kernel.renderTexture) {
     context.reset();
-    const results = kernel.renderKernels();
-    const textureName = context.getContextVariableName(kernel.outputTexture);
-    result.push(`    return {
+    if (kernel.renderKernels) {
+      const results = kernel.renderKernels();
+      const textureName = context.getContextVariableName(kernel.outputTexture);
+      result.push(`    return {
       result: {
         texture: ${ textureName },
         type: '${ results.result.type }',
         toArray: ${ getToArrayString(results.result, textureName) }
       },`);
-    const { subKernels, subKernelOutputTextures } = kernel;
-    for (let i = 0; i < subKernels.length; i++) {
-      const texture = subKernelOutputTextures[i];
-      const subKernel = subKernels[i];
-      const subKernelResult = results[subKernel.property];
-      const subKernelTextureName = context.getContextVariableName(texture);
-      result.push(`
+      const { subKernels, subKernelOutputTextures } = kernel;
+      for (let i = 0; i < subKernels.length; i++) {
+        const texture = subKernelOutputTextures[i];
+        const subKernel = subKernels[i];
+        const subKernelResult = results[subKernel.property];
+        const subKernelTextureName = context.getContextVariableName(texture);
+        result.push(`
       ${subKernel.property}: {
         texture: ${ subKernelTextureName },
         type: '${ subKernelResult.type }',
         toArray: ${ getToArrayString(subKernelResult, subKernelTextureName) }
       },`);
+      }
+      result.push(`    };`);
+    } else {
+      const rendered = kernel.renderOutput();
+      const textureName = context.getContextVariableName(kernel.outputTexture);
+      result.push(`    return {
+        texture: ${ textureName },
+        type: '${ rendered.type }',
+        toArray: ${ getToArrayString(rendered, textureName) }
+      };`);
     }
-    result.push(`    };`);
   }
   result.push(`    ${destroyContextString ? '\n' + destroyContextString + '    ': ''}`);
   result.push(postResult.join('\n'));
@@ -279,6 +294,9 @@ function getToArrayString(kernelResult, textureName) {
     thisLookup: (property) => {
       if (property === 'texture') {
         return textureName;
+      }
+      if (property === 'context') {
+        return null;
       }
       if (kernelResult.hasOwnProperty(property)) {
         return JSON.stringify(kernelResult[property]);

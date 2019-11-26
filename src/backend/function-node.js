@@ -381,7 +381,7 @@ class FunctionNode {
       case 'ArrayExpression':
         return `Array(${ ast.elements.length })`;
       case 'Literal':
-        const literalKey = `${ast.start},${ast.end}`;
+        const literalKey = this.astKey(ast);
         if (this.literalTypes[literalKey]) {
           return this.literalTypes[literalKey];
         }
@@ -1014,7 +1014,7 @@ class FunctionNode {
     return retArr;
   }
   astLiteral(ast, retArr) {
-    this.literalTypes[`${ast.start},${ast.end}`] = 'Number';
+    this.literalTypes[this.astKey(ast)] = 'Number';
     return retArr;
   }
   astBinaryExpression(ast, retArr) {
@@ -1520,6 +1520,11 @@ class FunctionNode {
 
   varWarn() {
     console.warn('var declarations are deprecated, weird things happen when falling back to CPU because var scope differs in javascript than in most languages.  Use const or let');
+  }
+
+  astKey(ast, separator = ',') {
+    if (!ast.start || !ast.end) throw new Error('AST start and end needed');
+    return `${ast.start}${separator}${ast.end}`;
   }
 }
 

@@ -24,6 +24,8 @@ const { Kernel } = require('./backend/kernel');
 
 const { FunctionTracer } = require('./backend/function-tracer');
 
+const mathRandom = require('./plugins/math-random-uniformly-distributed');
+
 module.exports = {
   alias,
   CPUFunctionNode,
@@ -48,4 +50,8 @@ module.exports = {
   GLKernel,
   Kernel,
   FunctionTracer,
+
+  plugins: {
+    mathRandom
+  }
 };

@@ -1,4 +1,3 @@
-const { utils } = require('../../../utils');
 const { WebGLKernelValueInteger } = require('../../web-gl/kernel-value/integer');
 
 class WebGL2KernelValueInteger extends WebGLKernelValueInteger {

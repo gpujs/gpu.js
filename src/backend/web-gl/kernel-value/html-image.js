@@ -26,7 +26,7 @@ class WebGLKernelValueHTMLImage extends WebGLKernelValue {
 
   updateValue(inputImage) {
     if (inputImage.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(inputImage.constructor);
       return;
     }
     const { context: gl } = this;

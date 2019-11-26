@@ -89,3 +89,45 @@ test('gpu', () => {
 test('cpu', () => {
   ifElseLookupTest('cpu');
 });
+
+describe('if else if');
+function ifElseIfTest( mode ) {
+  const gpu = new GPU({ mode });
+  const f = gpu.createKernel(function(x) {
+    const v = x[this.thread.x];
+    if (v > 0) {
+      return 0;
+    } else if (v < 1) {
+      return .5;
+    }
+    return 1;
+  }, {
+    output : [2]
+  });
+  assert.deepEqual(Array.from(f([-1, 1])), [.5, 0], 'basic return function test');
+  gpu.destroy();
+}
+
+test('auto', () => {
+  ifElseIfTest(null);
+});
+
+test('gpu', () => {
+  ifElseIfTest('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('webgl', () => {
+  ifElseIfTest('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
+  ifElseIfTest('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
+  ifElseIfTest('headlessgl');
+});
+
+test('cpu', () => {
+  ifElseIfTest('cpu');
+});

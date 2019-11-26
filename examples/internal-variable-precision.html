@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>GPU.js Internal Variable Precision</title>
+</head>
+<body>
+<h2>GPU.js Internal variable precision: <span id="ivp"></span></h2>
+</body>
+<script src="../dist/gpu-browser.min.js"></script>
+<script>
+  const ivp = document.getElementById('ivp');
+  const gpu = new GPU();
+  const startSize = 10;
+  const fullSize = window.innerWidth;
+  const kernel = gpu.createKernel(function() {
+    const x = this.thread.x / this.output.x;
+    const y = this.thread.y / this.output.y;
+    this.color(x, y, y, 1);
+  }, {
+    graphical: true,
+    dynamicOutput: true,
+    precision: 'unsigned'
+  });
+  document.body.appendChild(kernel.canvas);
+
+  let currentSize = startSize;
+  // const expected = 0;
+  // let tore = false;
+  function render() {
+    if (currentSize < fullSize) {
+      kernel.setOutput([
+        ++currentSize,
+        currentSize
+      ]);
+      kernel();
+      // const pixels = kernel.getPixels();
+      // if (tore || pixels[kernel.canvas.width * 4] !== expected) {
+      //   tore = true;
+      //   if (!confirm(`canvas tore at ${currentSize}x${currentSize}, continue?`)) {
+      //     return;
+      //   }
+      // }
+      ivp.textContent = kernel.getVariablePrecisionString();
+      requestAnimationFrame(render);
+    } else {
+      alert('reached the width of the window without tearing');
+    }
+  }
+  requestAnimationFrame(render);
+</script>
+</html>

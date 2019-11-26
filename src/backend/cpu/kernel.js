@@ -166,6 +166,7 @@ class CPUKernel extends Kernel {
     } catch (e) {
       console.error('An error occurred compiling the javascript: ', e);
     }
+    this.built = true;
   }
 
   color(r, g, b, a) {

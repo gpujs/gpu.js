@@ -1,7 +1,10 @@
 const { utils } = require('../../../utils');
-const { Texture } = require('../../../texture');
+const { GLTexture } = require('./index');
 
-class GLTextureUnsigned extends Texture {
+class GLTextureUnsigned extends GLTexture {
+  get textureType() {
+    return this.context.UNSIGNED_BYTE;
+  }
   constructor(settings) {
     super(settings);
     this.type = 'NumberTexture';
@@ -22,6 +25,7 @@ class GLTextureUnsigned extends Texture {
     return result;
   }
   renderValues() {
+    if (this._deleted) return null;
     return new Float32Array(this.renderRawOutput().buffer);
   }
   toArray() {

@@ -60,6 +60,7 @@ test('.updateValue() checks ok height & width', () => {
     setUniform3iv: () => {},
     setUniform2iv: () => {},
     setUniform1i: () => {},
+    outputTexture: {}
   };
   const mockContext = {
     activeTexture: () => {},
@@ -81,7 +82,8 @@ test('.updateValue() checks ok height & width', () => {
   });
   v.updateValue({
     size: [1,1],
-    context: mockContext
+    context: mockContext,
+    texture: {}
   });
 
   assert.equal(v.constructor.name, 'WebGLKernelValueDynamicNumberTexture');

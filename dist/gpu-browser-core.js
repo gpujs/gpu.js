@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.2.1
- * @date Wed Oct 30 2019 16:55:19 GMT-0400 (Eastern Daylight Time)
+ * @version 2.3.0
+ * @date Tue Nov 26 2019 09:51:10 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -645,7 +645,7 @@ function alias(name, source) {
 module.exports = {
   alias
 };
-},{"./utils":111}],5:[function(require,module,exports){
+},{"./utils":112}],5:[function(require,module,exports){
 const { FunctionNode } = require('../function-node');
 
 class CPUFunctionNode extends FunctionNode {
@@ -921,7 +921,7 @@ class CPUFunctionNode extends FunctionNode {
 
     if (ifNode.alternate) {
       retArr.push('else ');
-      if (ifNode.alternate.type === 'BlockStatement') {
+      if (ifNode.alternate.type === 'BlockStatement' || ifNode.alternate.type === 'IfStatement') {
         this.astGeneric(ifNode.alternate, retArr);
       } else {
         retArr.push(' {\n');
@@ -1367,7 +1367,7 @@ ${cpuKernel._kernelString}
 module.exports = {
   cpuKernelString
 };
-},{"../../utils":111}],7:[function(require,module,exports){
+},{"../../utils":112}],7:[function(require,module,exports){
 const { Kernel } = require('../kernel');
 const { FunctionBuilder } = require('../function-builder');
 const { CPUFunctionNode } = require('./function-node');
@@ -1518,6 +1518,7 @@ class CPUKernel extends Kernel {
     } catch (e) {
       console.error('An error occurred compiling the javascript: ', e);
     }
+    this.built = true;
   }
 
   color(r, g, b, a) {
@@ -1865,7 +1866,7 @@ class CPUKernel extends Kernel {
 module.exports = {
   CPUKernel
 };
-},{"../../utils":111,"../function-builder":8,"../kernel":34,"./function-node":5,"./kernel-string":6}],8:[function(require,module,exports){
+},{"../../utils":112,"../function-builder":8,"../kernel":35,"./function-node":5,"./kernel-string":6}],8:[function(require,module,exports){
 class FunctionBuilder {
   static fromKernel(kernel, FunctionNode, extraNodeOptions) {
     const {
@@ -2737,7 +2738,7 @@ class FunctionNode {
       case 'ArrayExpression':
         return `Array(${ ast.elements.length })`;
       case 'Literal':
-        const literalKey = `${ast.start},${ast.end}`;
+        const literalKey = this.astKey(ast);
         if (this.literalTypes[literalKey]) {
           return this.literalTypes[literalKey];
         }
@@ -3338,7 +3339,7 @@ class FunctionNode {
     return retArr;
   }
   astLiteral(ast, retArr) {
-    this.literalTypes[`${ast.start},${ast.end}`] = 'Number';
+    this.literalTypes[this.astKey(ast)] = 'Number';
     return retArr;
   }
   astBinaryExpression(ast, retArr) {
@@ -3784,6 +3785,11 @@ class FunctionNode {
   varWarn() {
     console.warn('var declarations are deprecated, weird things happen when falling back to CPU because var scope differs in javascript than in most languages.  Use const or let');
   }
+
+  astKey(ast, separator = ',') {
+    if (!ast.start || !ast.end) throw new Error('AST start and end needed');
+    return `${ast.start}${separator}${ast.end}`;
+  }
 }
 
 const typeLookupMap = {
@@ -3820,7 +3826,9 @@ const typeLookupMap = {
 module.exports = {
   FunctionNode
 };
-},{"../utils":111,"./function-tracer":10,"acorn":1}],10:[function(require,module,exports){
+},{"../utils":112,"./function-tracer":10,"acorn":1}],10:[function(require,module,exports){
+const { utils } = require('../utils');
+
 class FunctionTracer {
   constructor(ast) {
     this.runningContexts = [];
@@ -3877,6 +3885,7 @@ class FunctionTracer {
         this.scan(ast.argument);
         break;
       case 'VariableDeclaration':
+        ast.declarations = utils.normalizeDeclarations(ast);
         this.scan(ast.declarations);
         break;
       case 'VariableDeclarator':
@@ -3986,7 +3995,7 @@ class FunctionTracer {
 module.exports = {
   FunctionTracer,
 };
-},{}],11:[function(require,module,exports){
+},{"../utils":112}],11:[function(require,module,exports){
 const { glWiretap } = require('gl-wiretap');
 const { utils } = require('../../utils');
 
@@ -3998,6 +4007,9 @@ function toStringWithoutUtils(fn) {
 }
 
 function glKernelString(Kernel, args, originKernel, setupContextString, destroyContextString) {
+  if (!originKernel.built) {
+    originKernel.build.apply(originKernel, args);
+  }
   args = args ? Array.from(args).map(arg => {
     switch (typeof arg) {
       case 'boolean':
@@ -4065,6 +4077,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
     constantTypes,
     kernelArguments,
     kernelConstants,
+    tactic,
   } = originKernel;
   const kernel = new Kernel(source, {
     canvas,
@@ -4084,6 +4097,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
     immutable,
     argumentTypes,
     constantTypes,
+    tactic,
   });
   let result = [];
   context.setIndent(2);
@@ -4161,30 +4175,40 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   });
   result.push('    /** end setup uploads for kernel values **/');
   result.push(context.toString());
-  if (kernel.renderOutput === kernel.renderTexture && kernel.renderKernels) {
+  if (kernel.renderOutput === kernel.renderTexture) {
     context.reset();
-    const results = kernel.renderKernels();
-    const textureName = context.getContextVariableName(kernel.outputTexture);
-    result.push(`    return {
+    if (kernel.renderKernels) {
+      const results = kernel.renderKernels();
+      const textureName = context.getContextVariableName(kernel.outputTexture);
+      result.push(`    return {
       result: {
         texture: ${ textureName },
         type: '${ results.result.type }',
         toArray: ${ getToArrayString(results.result, textureName) }
       },`);
-    const { subKernels, subKernelOutputTextures } = kernel;
-    for (let i = 0; i < subKernels.length; i++) {
-      const texture = subKernelOutputTextures[i];
-      const subKernel = subKernels[i];
-      const subKernelResult = results[subKernel.property];
-      const subKernelTextureName = context.getContextVariableName(texture);
-      result.push(`
+      const { subKernels, subKernelOutputTextures } = kernel;
+      for (let i = 0; i < subKernels.length; i++) {
+        const texture = subKernelOutputTextures[i];
+        const subKernel = subKernels[i];
+        const subKernelResult = results[subKernel.property];
+        const subKernelTextureName = context.getContextVariableName(texture);
+        result.push(`
       ${subKernel.property}: {
         texture: ${ subKernelTextureName },
         type: '${ subKernelResult.type }',
         toArray: ${ getToArrayString(subKernelResult, subKernelTextureName) }
       },`);
+      }
+      result.push(`    };`);
+    } else {
+      const rendered = kernel.renderOutput();
+      const textureName = context.getContextVariableName(kernel.outputTexture);
+      result.push(`    return {
+        texture: ${ textureName },
+        type: '${ rendered.type }',
+        toArray: ${ getToArrayString(rendered, textureName) }
+      };`);
     }
-    result.push(`    };`);
   }
   result.push(`    ${destroyContextString ? '\n' + destroyContextString + '    ': ''}`);
   result.push(postResult.join('\n'));
@@ -4258,6 +4282,9 @@ function getToArrayString(kernelResult, textureName) {
       if (property === 'texture') {
         return textureName;
       }
+      if (property === 'context') {
+        return null;
+      }
       if (kernelResult.hasOwnProperty(property)) {
         return JSON.stringify(kernelResult[property]);
       }
@@ -4307,7 +4334,7 @@ function findKernelValue(argument, kernelValues, values, context, uploadedValues
 module.exports = {
   glKernelString
 };
-},{"../../utils":111,"gl-wiretap":2}],12:[function(require,module,exports){
+},{"../../utils":112,"gl-wiretap":2}],12:[function(require,module,exports){
 const { Kernel } = require('../kernel');
 const { utils } = require('../../utils');
 const { GLTextureArray2Float } = require('./texture/array-2-float');
@@ -4387,8 +4414,24 @@ class GLKernel extends Kernel {
     throw new Error(`"testContext" not defined on ${ this.name }`);
   }
 
-  static get features() {
-    throw new Error(`"features" not defined on ${ this.name }`);
+  static getFeatures() {
+    const gl = this.testContext;
+    const isDrawBuffers = this.getIsDrawBuffers();
+    return Object.freeze({
+      isFloatRead: this.getIsFloatRead(),
+      isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+      isTextureFloat: this.getIsTextureFloat(),
+      isDrawBuffers,
+      kernelMap: isDrawBuffers,
+      channelCount: this.getChannelCount(),
+      maxTextureSize: this.getMaxTextureSize(),
+      lowIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.LOW_INT),
+      lowFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.LOW_FLOAT),
+      mediumIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.MEDIUM_INT),
+      mediumFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.MEDIUM_FLOAT),
+      highIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_INT),
+      highFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT),
+    });
   }
 
   static setupFeatureChecks() {
@@ -4565,6 +4608,7 @@ class GLKernel extends Kernel {
     this.renderStrategy = null;
     this.compiledFragmentShader = null;
     this.compiledVertexShader = null;
+    this.switchingKernels = null;
   }
 
   checkTextureSize() {
@@ -4970,51 +5014,20 @@ class GLKernel extends Kernel {
   }
 
   getFloatTacticDeclaration() {
-    switch (this.tactic) {
-      case 'speed':
-        return 'precision lowp float;\n';
-      case 'performance':
-        return 'precision highp float;\n';
-      case 'balanced':
-      default:
-        return 'precision mediump float;\n';
-    }
+    const variablePrecision = this.getVariablePrecisionString(this.texSize, this.tactic);
+    return `precision ${variablePrecision} float;\n`;
   }
 
   getIntTacticDeclaration() {
-    switch (this.tactic) {
-      case 'speed':
-        return 'precision lowp int;\n';
-      case 'performance':
-        return 'precision highp int;\n';
-      case 'balanced':
-      default:
-        return 'precision mediump int;\n';
-    }
+    return `precision ${this.getVariablePrecisionString(this.texSize, this.tactic, true)} int;\n`;
   }
 
   getSampler2DTacticDeclaration() {
-    switch (this.tactic) {
-      case 'speed':
-        return 'precision lowp sampler2D;\n';
-      case 'performance':
-        return 'precision highp sampler2D;\n';
-      case 'balanced':
-      default:
-        return 'precision mediump sampler2D;\n';
-    }
+    return `precision ${this.getVariablePrecisionString(this.texSize, this.tactic)} sampler2D;\n`;
   }
 
   getSampler2DArrayTacticDeclaration() {
-    switch (this.tactic) {
-      case 'speed':
-        return 'precision lowp sampler2DArray;\n';
-      case 'performance':
-        return 'precision highp sampler2DArray;\n';
-      case 'balanced':
-      default:
-        return 'precision mediump sampler2DArray;\n';
-    }
+    return `precision ${this.getVariablePrecisionString(this.texSize, this.tactic)} sampler2DArray;\n`;
   }
 
   renderTexture() {
@@ -5025,6 +5038,8 @@ class GLKernel extends Kernel {
       output: this.output,
       context: this.context,
       kernel: this,
+      internalFormat: this.getInternalFormat(),
+      textureFormat: this.getTextureFormat(),
     });
   }
   readPackedPixelsToUint8Array() {
@@ -5077,6 +5092,8 @@ class GLKernel extends Kernel {
         dimensions: this.threadDim,
         output: this.output,
         context: this.context,
+        internalFormat: this.getInternalFormat(),
+        textureFormat: this.getTextureFormat(),
       }).toArray();
     }
     return result;
@@ -5093,31 +5110,61 @@ class GLKernel extends Kernel {
         dimensions: this.threadDim,
         output: this.output,
         context: this.context,
+        internalFormat: this.getInternalFormat(),
+        textureFormat: this.getTextureFormat(),
       });
     }
     return result;
   }
 
+  resetSwitchingKernels() {
+    const existingValue = this.switchingKernels;
+    this.switchingKernels = null;
+    return existingValue;
+  }
+
   setOutput(output) {
-    super.setOutput(output);
+    const newOutput = this.toKernelOutput(output);
     if (this.program) {
-      this.threadDim = [this.output[0], this.output[1] || 1, this.output[2] || 1];
-      this.texSize = utils.getKernelTextureSize({
+      if (!this.dynamicOutput) {
+        throw new Error('Resizing a kernel with dynamicOutput: false is not possible');
+      }
+      const newThreadDim = [newOutput[0], newOutput[1] || 1, newOutput[2] || 1];
+      const newTexSize = utils.getKernelTextureSize({
         optimizeFloatMemory: this.optimizeFloatMemory,
         precision: this.precision,
-      }, this.output);
+      }, newThreadDim);
+      const oldTexSize = this.texSize;
+      if (oldTexSize) {
+        const oldPrecision = this.getVariablePrecisionString(oldTexSize, this.tactic);
+        const newPrecision = this.getVariablePrecisionString(newTexSize, this.tactic);
+        if (oldPrecision !== newPrecision) {
+          console.warn('Precision requirement changed, asking GPU instance to recompile');
+          this.switchKernels({
+            type: 'outputPrecisionMismatch',
+            precision: newPrecision,
+            needed: output
+          });
+          return;
+        }
+      }
+      this.output = newOutput;
+      this.threadDim = newThreadDim;
+      this.texSize = newTexSize;
       const { context: gl } = this;
       gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
       this.updateMaxTexSize();
       this.framebuffer.width = this.texSize[0];
       this.framebuffer.height = this.texSize[1];
-      this.context.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
+      gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
       this.canvas.width = this.maxTexSize[0];
       this.canvas.height = this.maxTexSize[1];
       this._setupOutputTexture();
       if (this.subKernels && this.subKernels.length > 0) {
         this._setupSubOutputTextures();
       }
+    } else {
+      this.output = newOutput;
     }
     return this;
   }
@@ -5128,6 +5175,40 @@ class GLKernel extends Kernel {
       this.output[1],
       this.output[2]
     );
+  }
+  switchKernels(reason) {
+    if (this.switchingKernels) {
+      this.switchingKernels.push(reason);
+    } else {
+      this.switchingKernels = [reason];
+    }
+  }
+  getVariablePrecisionString(textureSize = this.texSize, tactic = this.tactic, isInt = false) {
+    if (!tactic) {
+      const low = this.constructor.features[isInt ? 'lowIntPrecision' : 'lowFloatPrecision'];
+      const medium = this.constructor.features[isInt ? 'mediumIntPrecision' : 'mediumFloatPrecision'];
+      const high = this.constructor.features[isInt ? 'highIntPrecision' : 'highFloatPrecision'];
+      const requiredSize = Math.log2(textureSize[0] * textureSize[1]);
+      if (requiredSize <= low.rangeMax) {
+        return 'lowp';
+      } else if (requiredSize <= medium.rangeMax) {
+        return 'mediump';
+      } else if (requiredSize <= high.rangeMax) {
+        return 'highp';
+      } else {
+        throw new Error(`The required size exceeds that of the ability of your system`);
+      }
+    }
+    switch (tactic) {
+      case 'speed':
+        return 'lowp';
+      case 'balanced':
+        return 'mediump';
+      case 'precision':
+        return 'highp';
+      default:
+        throw new Error(`Unknown tactic "${tactic}" use "speed", "balanced", "precision", or empty for auto`);
+    }
   }
 }
 
@@ -5168,7 +5249,7 @@ module.exports = {
   GLKernel,
   renderStrategy
 };
-},{"../../utils":111,"../kernel":34,"./texture/array-2-float":15,"./texture/array-2-float-2d":13,"./texture/array-2-float-3d":14,"./texture/array-3-float":18,"./texture/array-3-float-2d":16,"./texture/array-3-float-3d":17,"./texture/array-4-float":21,"./texture/array-4-float-2d":19,"./texture/array-4-float-3d":20,"./texture/float":24,"./texture/float-2d":22,"./texture/float-3d":23,"./texture/graphical":25,"./texture/memory-optimized":28,"./texture/memory-optimized-2d":26,"./texture/memory-optimized-3d":27,"./texture/unsigned":31,"./texture/unsigned-2d":29,"./texture/unsigned-3d":30}],13:[function(require,module,exports){
+},{"../../utils":112,"../kernel":35,"./texture/array-2-float":15,"./texture/array-2-float-2d":13,"./texture/array-2-float-3d":14,"./texture/array-3-float":18,"./texture/array-3-float-2d":16,"./texture/array-3-float-3d":17,"./texture/array-4-float":21,"./texture/array-4-float-2d":19,"./texture/array-4-float-3d":20,"./texture/float":24,"./texture/float-2d":22,"./texture/float-3d":23,"./texture/graphical":25,"./texture/memory-optimized":29,"./texture/memory-optimized-2d":27,"./texture/memory-optimized-3d":28,"./texture/unsigned":32,"./texture/unsigned-2d":30,"./texture/unsigned-3d":31}],13:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5185,7 +5266,7 @@ class GLTextureArray2Float2D extends GLTextureFloat {
 module.exports = {
   GLTextureArray2Float2D
 };
-},{"../../../utils":111,"./float":24}],14:[function(require,module,exports){
+},{"../../../utils":112,"./float":24}],14:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5202,7 +5283,7 @@ class GLTextureArray2Float3D extends GLTextureFloat {
 module.exports = {
   GLTextureArray2Float3D
 };
-},{"../../../utils":111,"./float":24}],15:[function(require,module,exports){
+},{"../../../utils":112,"./float":24}],15:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5219,7 +5300,7 @@ class GLTextureArray2Float extends GLTextureFloat {
 module.exports = {
   GLTextureArray2Float
 };
-},{"../../../utils":111,"./float":24}],16:[function(require,module,exports){
+},{"../../../utils":112,"./float":24}],16:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5236,7 +5317,7 @@ class GLTextureArray3Float2D extends GLTextureFloat {
 module.exports = {
   GLTextureArray3Float2D
 };
-},{"../../../utils":111,"./float":24}],17:[function(require,module,exports){
+},{"../../../utils":112,"./float":24}],17:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5253,7 +5334,7 @@ class GLTextureArray3Float3D extends GLTextureFloat {
 module.exports = {
   GLTextureArray3Float3D
 };
-},{"../../../utils":111,"./float":24}],18:[function(require,module,exports){
+},{"../../../utils":112,"./float":24}],18:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5270,7 +5351,7 @@ class GLTextureArray3Float extends GLTextureFloat {
 module.exports = {
   GLTextureArray3Float
 };
-},{"../../../utils":111,"./float":24}],19:[function(require,module,exports){
+},{"../../../utils":112,"./float":24}],19:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5287,7 +5368,7 @@ class GLTextureArray4Float2D extends GLTextureFloat {
 module.exports = {
   GLTextureArray4Float2D
 };
-},{"../../../utils":111,"./float":24}],20:[function(require,module,exports){
+},{"../../../utils":112,"./float":24}],20:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5304,7 +5385,7 @@ class GLTextureArray4Float3D extends GLTextureFloat {
 module.exports = {
   GLTextureArray4Float3D
 };
-},{"../../../utils":111,"./float":24}],21:[function(require,module,exports){
+},{"../../../utils":112,"./float":24}],21:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5321,7 +5402,7 @@ class GLTextureArray4Float extends GLTextureFloat {
 module.exports = {
   GLTextureArray4Float
 };
-},{"../../../utils":111,"./float":24}],22:[function(require,module,exports){
+},{"../../../utils":112,"./float":24}],22:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5338,7 +5419,7 @@ class GLTextureFloat2D extends GLTextureFloat {
 module.exports = {
   GLTextureFloat2D
 };
-},{"../../../utils":111,"./float":24}],23:[function(require,module,exports){
+},{"../../../utils":112,"./float":24}],23:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5355,11 +5436,14 @@ class GLTextureFloat3D extends GLTextureFloat {
 module.exports = {
   GLTextureFloat3D
 };
-},{"../../../utils":111,"./float":24}],24:[function(require,module,exports){
+},{"../../../utils":112,"./float":24}],24:[function(require,module,exports){
 const { utils } = require('../../../utils');
-const { Texture } = require('../../../texture');
+const { GLTexture } = require('./index');
 
-class GLTextureFloat extends Texture {
+class GLTextureFloat extends GLTexture {
+  get textureType() {
+    return this.context.FLOAT;
+  }
   constructor(settings) {
     super(settings);
     this.type = 'ArrayTexture(1)';
@@ -5380,6 +5464,7 @@ class GLTextureFloat extends Texture {
     return result;
   }
   renderValues() {
+    if (this._deleted) return null;
     return this.renderRawOutput();
   }
   toArray() {
@@ -5390,7 +5475,7 @@ class GLTextureFloat extends Texture {
 module.exports = {
   GLTextureFloat
 };
-},{"../../../texture":110,"../../../utils":111}],25:[function(require,module,exports){
+},{"../../../utils":112,"./index":26}],25:[function(require,module,exports){
 const { GLTextureUnsigned } = require('./unsigned');
 
 class GLTextureGraphical extends GLTextureUnsigned {
@@ -5406,7 +5491,36 @@ class GLTextureGraphical extends GLTextureUnsigned {
 module.exports = {
   GLTextureGraphical
 };
-},{"./unsigned":31}],26:[function(require,module,exports){
+},{"./unsigned":32}],26:[function(require,module,exports){
+const { Texture } = require('../../../texture');
+
+class GLTexture extends Texture {
+  get textureType() {
+    throw new Error(`"textureType" not implemented on ${ this.name }`);
+  }
+  clone() {
+    const { context: gl, size, texture } = this;
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    const target = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, target);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, this.internalFormat, size[0], size[1], 0, this.textureFormat, this.textureType, null);
+    gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, size[0], size[1]);
+    return new this.constructor(Object.assign({}, this, { texture: target }));
+  }
+}
+module.exports = { GLTexture };
+},{"../../../texture":111}],27:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5423,7 +5537,7 @@ class GLTextureMemoryOptimized2D extends GLTextureFloat {
 module.exports = {
   GLTextureMemoryOptimized2D
 };
-},{"../../../utils":111,"./float":24}],27:[function(require,module,exports){
+},{"../../../utils":112,"./float":24}],28:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5440,7 +5554,7 @@ class GLTextureMemoryOptimized3D extends GLTextureFloat {
 module.exports = {
   GLTextureMemoryOptimized3D
 };
-},{"../../../utils":111,"./float":24}],28:[function(require,module,exports){
+},{"../../../utils":112,"./float":24}],29:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5457,7 +5571,7 @@ class GLTextureMemoryOptimized extends GLTextureFloat {
 module.exports = {
   GLTextureMemoryOptimized
 };
-},{"../../../utils":111,"./float":24}],29:[function(require,module,exports){
+},{"../../../utils":112,"./float":24}],30:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureUnsigned } = require('./unsigned');
 
@@ -5474,7 +5588,7 @@ class GLTextureUnsigned2D extends GLTextureUnsigned {
 module.exports = {
   GLTextureUnsigned2D
 };
-},{"../../../utils":111,"./unsigned":31}],30:[function(require,module,exports){
+},{"../../../utils":112,"./unsigned":32}],31:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureUnsigned } = require('./unsigned');
 
@@ -5491,11 +5605,14 @@ class GLTextureUnsigned3D extends GLTextureUnsigned {
 module.exports = {
   GLTextureUnsigned3D
 };
-},{"../../../utils":111,"./unsigned":31}],31:[function(require,module,exports){
+},{"../../../utils":112,"./unsigned":32}],32:[function(require,module,exports){
 const { utils } = require('../../../utils');
-const { Texture } = require('../../../texture');
+const { GLTexture } = require('./index');
 
-class GLTextureUnsigned extends Texture {
+class GLTextureUnsigned extends GLTexture {
+  get textureType() {
+    return this.context.UNSIGNED_BYTE;
+  }
   constructor(settings) {
     super(settings);
     this.type = 'NumberTexture';
@@ -5516,6 +5633,7 @@ class GLTextureUnsigned extends Texture {
     return result;
   }
   renderValues() {
+    if (this._deleted) return null;
     return new Float32Array(this.renderRawOutput().buffer);
   }
   toArray() {
@@ -5526,7 +5644,7 @@ class GLTextureUnsigned extends Texture {
 module.exports = {
   GLTextureUnsigned
 };
-},{"../../../texture":110,"../../../utils":111}],32:[function(require,module,exports){
+},{"../../../utils":112,"./index":26}],33:[function(require,module,exports){
 const getContext = require('gl');
 const { WebGLKernel } = require('../web-gl/kernel');
 const { glKernelString } = require('../gl/kernel-string');
@@ -5561,6 +5679,7 @@ class HeadlessGLKernel extends WebGLKernel {
         OES_texture_float_linear: testContext.getExtension('OES_texture_float_linear'),
         OES_element_index_uint: testContext.getExtension('OES_element_index_uint'),
         WEBGL_draw_buffers: testContext.getExtension('WEBGL_draw_buffers'),
+        WEBGL_color_buffer_float: testContext.getExtension('WEBGL_color_buffer_float'),
       };
       features = this.getFeatures();
     } catch (e) {
@@ -5574,19 +5693,6 @@ class HeadlessGLKernel extends WebGLKernel {
     } catch (e) {
       return false;
     }
-  }
-
-  static getFeatures() {
-    const isDrawBuffers = this.getIsDrawBuffers();
-    return Object.freeze({
-      isFloatRead: this.getIsFloatRead(),
-      isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
-      isTextureFloat: this.getIsTextureFloat(),
-      isDrawBuffers,
-      kernelMap: isDrawBuffers,
-      channelCount: this.getChannelCount(),
-      maxTextureSize: this.getMaxTextureSize(),
-    });
   }
 
   static getIsTextureFloat() {
@@ -5681,7 +5787,7 @@ class HeadlessGLKernel extends WebGLKernel {
 module.exports = {
   HeadlessGLKernel
 };
-},{"../gl/kernel-string":11,"../web-gl/kernel":67,"gl":1}],33:[function(require,module,exports){
+},{"../gl/kernel-string":11,"../web-gl/kernel":68,"gl":1}],34:[function(require,module,exports){
 class KernelValue {
   constructor(value, settings) {
     const {
@@ -5704,9 +5810,6 @@ class KernelValue {
     }
     if (!origin) {
       throw new Error('origin not set');
-    }
-    if (!tactic) {
-      throw new Error('tactic not set');
     }
     if (origin !== 'user' && origin !== 'constants') {
       throw new Error(`origin must be "user" or "constants" value is "${ origin }"`);
@@ -5744,7 +5847,7 @@ class KernelValue {
 module.exports = {
   KernelValue
 };
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 const { utils } = require('../utils');
 const { Input } = require('../input');
 
@@ -5839,7 +5942,7 @@ class Kernel {
 
     this.precision = null;
 
-    this.tactic = 'balanced';
+    this.tactic = null;
 
     this.plugins = null;
 
@@ -5852,6 +5955,7 @@ class Kernel {
     this.warnVarUsage = true;
     this.onIstanbulCoverageVariable = null;
     this.removeIstanbulCoverage = false;
+    this.built = false;
   }
 
   mergeSettings(settings) {
@@ -5977,20 +6081,24 @@ class Kernel {
     return this;
   }
 
-  setOutput(output) {
+  toKernelOutput(output) {
     if (output.hasOwnProperty('x')) {
       if (output.hasOwnProperty('y')) {
         if (output.hasOwnProperty('z')) {
-          this.output = [output.x, output.y, output.z];
+          return [output.x, output.y, output.z];
         } else {
-          this.output = [output.x, output.y];
+          return [output.x, output.y];
         }
       } else {
-        this.output = [output.x];
+        return [output.x];
       }
     } else {
-      this.output = output;
+      return output;
     }
+  }
+
+  setOutput(output) {
+    this.output = this.toKernelOutput(output);
     return this;
   }
 
@@ -6222,8 +6330,7 @@ class Kernel {
 module.exports = {
   Kernel
 };
-
-},{"../input":107,"../utils":111}],35:[function(require,module,exports){
+},{"../input":108,"../utils":112}],36:[function(require,module,exports){
 const fragmentShader = `__HEADER__;
 __FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
@@ -6630,7 +6737,7 @@ void main(void) {
 module.exports = {
   fragmentShader
 };
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 const { FunctionNode } = require('../function-node');
 
 class WebGLFunctionNode extends FunctionNode {
@@ -6789,7 +6896,7 @@ class WebGLFunctionNode extends FunctionNode {
       );
     }
 
-    const key = `${ast.start},${ast.end}`;
+    const key = this.astKey(ast);
     if (Number.isInteger(ast.value)) {
       if (this.isState('in-for-loop-init') || this.isState('casting-to-integer') || this.isState('building-integer')) {
         this.literalTypes[key] = 'Integer';
@@ -7405,7 +7512,7 @@ class WebGLFunctionNode extends FunctionNode {
 
     if (ifNode.alternate) {
       retArr.push('else ');
-      if (ifNode.alternate.type === 'BlockStatement') {
+      if (ifNode.alternate.type === 'BlockStatement' || ifNode.alternate.type === 'IfStatement') {
         this.astGeneric(ifNode.alternate, retArr);
       } else {
         retArr.push(' {\n');
@@ -7422,7 +7529,7 @@ class WebGLFunctionNode extends FunctionNode {
     }
     const { discriminant, cases } = ast;
     const type = this.getType(discriminant);
-    const varName = `switchDiscriminant${ast.start}_${ast.end}`;
+    const varName = `switchDiscriminant${this.astKey(ast, '_')}`;
     switch (type) {
       case 'Float':
       case 'Number':
@@ -8005,7 +8112,7 @@ const operatorMap = {
 module.exports = {
   WebGLFunctionNode
 };
-},{"../function-node":9}],37:[function(require,module,exports){
+},{"../function-node":9}],38:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGLKernelValueFloat } = require('./kernel-value/float');
 const { WebGLKernelValueInteger } = require('./kernel-value/integer');
@@ -8192,7 +8299,7 @@ module.exports = {
   lookupKernelValueType,
   kernelValueMaps,
 };
-},{"./kernel-value/boolean":38,"./kernel-value/dynamic-html-image":39,"./kernel-value/dynamic-html-video":40,"./kernel-value/dynamic-memory-optimized-number-texture":41,"./kernel-value/dynamic-number-texture":42,"./kernel-value/dynamic-single-array":43,"./kernel-value/dynamic-single-array1d-i":44,"./kernel-value/dynamic-single-array2d-i":45,"./kernel-value/dynamic-single-array3d-i":46,"./kernel-value/dynamic-single-input":47,"./kernel-value/dynamic-unsigned-array":48,"./kernel-value/dynamic-unsigned-input":49,"./kernel-value/float":50,"./kernel-value/html-image":51,"./kernel-value/html-video":52,"./kernel-value/integer":54,"./kernel-value/memory-optimized-number-texture":55,"./kernel-value/number-texture":56,"./kernel-value/single-array":57,"./kernel-value/single-array1d-i":58,"./kernel-value/single-array2":59,"./kernel-value/single-array2d-i":60,"./kernel-value/single-array3":61,"./kernel-value/single-array3d-i":62,"./kernel-value/single-array4":63,"./kernel-value/single-input":64,"./kernel-value/unsigned-array":65,"./kernel-value/unsigned-input":66}],38:[function(require,module,exports){
+},{"./kernel-value/boolean":39,"./kernel-value/dynamic-html-image":40,"./kernel-value/dynamic-html-video":41,"./kernel-value/dynamic-memory-optimized-number-texture":42,"./kernel-value/dynamic-number-texture":43,"./kernel-value/dynamic-single-array":44,"./kernel-value/dynamic-single-array1d-i":45,"./kernel-value/dynamic-single-array2d-i":46,"./kernel-value/dynamic-single-array3d-i":47,"./kernel-value/dynamic-single-input":48,"./kernel-value/dynamic-unsigned-array":49,"./kernel-value/dynamic-unsigned-input":50,"./kernel-value/float":51,"./kernel-value/html-image":52,"./kernel-value/html-video":53,"./kernel-value/integer":55,"./kernel-value/memory-optimized-number-texture":56,"./kernel-value/number-texture":57,"./kernel-value/single-array":58,"./kernel-value/single-array1d-i":59,"./kernel-value/single-array2":60,"./kernel-value/single-array2d-i":61,"./kernel-value/single-array3":62,"./kernel-value/single-array3d-i":63,"./kernel-value/single-array4":64,"./kernel-value/single-input":65,"./kernel-value/unsigned-array":66,"./kernel-value/unsigned-input":67}],39:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -8221,7 +8328,7 @@ class WebGLKernelValueBoolean extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueBoolean
 };
-},{"../../../utils":111,"./index":53}],39:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],40:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueHTMLImage } = require('./html-image');
 
@@ -8248,7 +8355,7 @@ class WebGLKernelValueDynamicHTMLImage extends WebGLKernelValueHTMLImage {
 module.exports = {
   WebGLKernelValueDynamicHTMLImage
 };
-},{"../../../utils":111,"./html-image":51}],40:[function(require,module,exports){
+},{"../../../utils":112,"./html-image":52}],41:[function(require,module,exports){
 const { WebGLKernelValueDynamicHTMLImage } = require('./dynamic-html-image');
 
 class WebGLKernelValueDynamicHTMLVideo extends WebGLKernelValueDynamicHTMLImage {}
@@ -8256,7 +8363,7 @@ class WebGLKernelValueDynamicHTMLVideo extends WebGLKernelValueDynamicHTMLImage 
 module.exports = {
   WebGLKernelValueDynamicHTMLVideo
 };
-},{"./dynamic-html-image":39}],41:[function(require,module,exports){
+},{"./dynamic-html-image":40}],42:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueMemoryOptimizedNumberTexture } = require('./memory-optimized-number-texture');
 
@@ -8282,7 +8389,7 @@ class WebGLKernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelVal
 module.exports = {
   WebGLKernelValueDynamicMemoryOptimizedNumberTexture
 };
-},{"../../../utils":111,"./memory-optimized-number-texture":55}],42:[function(require,module,exports){
+},{"../../../utils":112,"./memory-optimized-number-texture":56}],43:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueNumberTexture } = require('./number-texture');
 
@@ -8308,7 +8415,7 @@ class WebGLKernelValueDynamicNumberTexture extends WebGLKernelValueNumberTexture
 module.exports = {
   WebGLKernelValueDynamicNumberTexture
 };
-},{"../../../utils":111,"./number-texture":56}],43:[function(require,module,exports){
+},{"../../../utils":112,"./number-texture":57}],44:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray } = require('./single-array');
 
@@ -8336,7 +8443,7 @@ class WebGLKernelValueDynamicSingleArray extends WebGLKernelValueSingleArray {
 module.exports = {
   WebGLKernelValueDynamicSingleArray
 };
-},{"../../../utils":111,"./single-array":57}],44:[function(require,module,exports){
+},{"../../../utils":112,"./single-array":58}],45:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray1DI } = require('./single-array1d-i');
 
@@ -8360,7 +8467,7 @@ class WebGLKernelValueDynamicSingleArray1DI extends WebGLKernelValueSingleArray1
 module.exports = {
   WebGLKernelValueDynamicSingleArray1DI
 };
-},{"../../../utils":111,"./single-array1d-i":58}],45:[function(require,module,exports){
+},{"../../../utils":112,"./single-array1d-i":59}],46:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray2DI } = require('./single-array2d-i');
 
@@ -8384,7 +8491,7 @@ class WebGLKernelValueDynamicSingleArray2DI extends WebGLKernelValueSingleArray2
 module.exports = {
   WebGLKernelValueDynamicSingleArray2DI
 };
-},{"../../../utils":111,"./single-array2d-i":60}],46:[function(require,module,exports){
+},{"../../../utils":112,"./single-array2d-i":61}],47:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray3DI } = require('./single-array3d-i');
 
@@ -8408,7 +8515,7 @@ class WebGLKernelValueDynamicSingleArray3DI extends WebGLKernelValueSingleArray3
 module.exports = {
   WebGLKernelValueDynamicSingleArray3DI
 };
-},{"../../../utils":111,"./single-array3d-i":62}],47:[function(require,module,exports){
+},{"../../../utils":112,"./single-array3d-i":63}],48:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleInput } = require('./single-input');
 
@@ -8437,7 +8544,7 @@ class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
 module.exports = {
   WebGLKernelValueDynamicSingleInput
 };
-},{"../../../utils":111,"./single-input":64}],48:[function(require,module,exports){
+},{"../../../utils":112,"./single-input":65}],49:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedArray } = require('./unsigned-array');
 
@@ -8467,7 +8574,7 @@ class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray
 module.exports = {
   WebGLKernelValueDynamicUnsignedArray
 };
-},{"../../../utils":111,"./unsigned-array":65}],49:[function(require,module,exports){
+},{"../../../utils":112,"./unsigned-array":66}],50:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedInput } = require('./unsigned-input');
 
@@ -8498,7 +8605,7 @@ class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput
 module.exports = {
   WebGLKernelValueDynamicUnsignedInput
 };
-},{"../../../utils":111,"./unsigned-input":66}],50:[function(require,module,exports){
+},{"../../../utils":112,"./unsigned-input":67}],51:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -8529,7 +8636,7 @@ class WebGLKernelValueFloat extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueFloat
 };
-},{"../../../utils":111,"./index":53}],51:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],52:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -8558,7 +8665,7 @@ class WebGLKernelValueHTMLImage extends WebGLKernelValue {
 
   updateValue(inputImage) {
     if (inputImage.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(inputImage.constructor);
       return;
     }
     const { context: gl } = this;
@@ -8577,8 +8684,7 @@ class WebGLKernelValueHTMLImage extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueHTMLImage
 };
-},{"../../../utils":111,"./index":53}],52:[function(require,module,exports){
-const { utils } = require('../../../utils');
+},{"../../../utils":112,"./index":54}],53:[function(require,module,exports){
 const { WebGLKernelValueHTMLImage } = require('./html-image');
 
 class WebGLKernelValueHTMLVideo extends WebGLKernelValueHTMLImage {}
@@ -8586,7 +8692,7 @@ class WebGLKernelValueHTMLVideo extends WebGLKernelValueHTMLImage {}
 module.exports = {
   WebGLKernelValueHTMLVideo
 };
-},{"../../../utils":111,"./html-image":51}],53:[function(require,module,exports){
+},{"./html-image":52}],54:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { Input } = require('../../../input');
 const { KernelValue } = require('../../kernel-value');
@@ -8702,22 +8808,14 @@ class WebGLKernelValue extends KernelValue {
   }
 
   getVariablePrecisionString() {
-    switch (this.tactic) {
-      case 'speed':
-        return 'lowp';
-      case 'performance':
-        return 'highp';
-      case 'balanced':
-      default:
-        return 'mediump';
-    }
+    return this.kernel.getVariablePrecisionString(this.textureSize || undefined, this.tactic || undefined);
   }
 }
 
 module.exports = {
   WebGLKernelValue
 };
-},{"../../../input":107,"../../../utils":111,"../../kernel-value":33}],54:[function(require,module,exports){
+},{"../../../input":108,"../../../utils":112,"../../kernel-value":34}],55:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -8745,7 +8843,7 @@ class WebGLKernelValueInteger extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueInteger
 };
-},{"../../../utils":111,"./index":53}],55:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],56:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -8775,13 +8873,18 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
 
   updateValue(inputTexture) {
     if (inputTexture.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(inputTexture.constructor);
       return;
     }
     if (this.checkContext && inputTexture.context !== this.context) {
       throw new Error(`Value ${this.name} (${this.type }) must be from same context`);
     }
     const { context: gl } = this;
+    if (inputTexture.texture === this.kernel.outputTexture) {
+      inputTexture = inputTexture.clone();
+      gl.useProgram(this.kernel.program);
+      this.kernel.textureGarbage.push(inputTexture);
+    }
     gl.activeTexture(this.contextHandle);
     gl.bindTexture(gl.TEXTURE_2D, this.uploadValue = inputTexture.texture);
     this.kernel.setUniform1i(this.id, this.index);
@@ -8791,7 +8894,7 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueMemoryOptimizedNumberTexture
 };
-},{"../../../utils":111,"./index":53}],56:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],57:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -8823,13 +8926,18 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
 
   updateValue(inputTexture) {
     if (inputTexture.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(inputTexture.constructor);
       return;
     }
     if (this.checkContext && inputTexture.context !== this.context) {
       throw new Error(`Value ${this.name} (${this.type}) must be from same context`);
     }
     const { context: gl } = this;
+    if (inputTexture.texture === this.kernel.outputTexture) {
+      inputTexture = inputTexture.clone();
+      gl.useProgram(this.kernel.program);
+      this.kernel.textureGarbage.push(inputTexture);
+    }
     gl.activeTexture(this.contextHandle);
     gl.bindTexture(gl.TEXTURE_2D, this.uploadValue = inputTexture.texture);
     this.kernel.setUniform1i(this.id, this.index);
@@ -8839,7 +8947,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueNumberTexture
 };
-},{"../../../utils":111,"./index":53}],57:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],58:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -8891,7 +8999,7 @@ class WebGLKernelValueSingleArray extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueSingleArray
 };
-},{"../../../utils":111,"./index":53}],58:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],59:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -8929,7 +9037,7 @@ class WebGLKernelValueSingleArray1DI extends WebGLKernelValue {
 
   updateValue(value) {
     if (value.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(value.constructor);
       return;
     }
     const { context: gl } = this;
@@ -8948,7 +9056,7 @@ class WebGLKernelValueSingleArray1DI extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueSingleArray1DI
 };
-},{"../../../utils":111,"./index":53}],59:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],60:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -8978,7 +9086,7 @@ class WebGLKernelValueSingleArray2 extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueSingleArray2
 };
-},{"../../../utils":111,"./index":53}],60:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],61:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -9016,7 +9124,7 @@ class WebGLKernelValueSingleArray2DI extends WebGLKernelValue {
 
   updateValue(value) {
     if (value.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(value.constructor);
       return;
     }
     const { context: gl } = this;
@@ -9035,7 +9143,7 @@ class WebGLKernelValueSingleArray2DI extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueSingleArray2DI
 };
-},{"../../../utils":111,"./index":53}],61:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],62:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -9065,7 +9173,7 @@ class WebGLKernelValueSingleArray3 extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueSingleArray3
 };
-},{"../../../utils":111,"./index":53}],62:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],63:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -9122,7 +9230,7 @@ class WebGLKernelValueSingleArray3DI extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueSingleArray3DI
 };
-},{"../../../utils":111,"./index":53}],63:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],64:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -9152,7 +9260,7 @@ class WebGLKernelValueSingleArray4 extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueSingleArray4
 };
-},{"../../../utils":111,"./index":53}],64:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],65:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -9205,7 +9313,7 @@ class WebGLKernelValueSingleInput extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueSingleInput
 };
-},{"../../../utils":111,"./index":53}],65:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],66:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -9260,7 +9368,7 @@ class WebGLKernelValueUnsignedArray extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueUnsignedArray
 };
-},{"../../../utils":111,"./index":53}],66:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],67:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -9316,7 +9424,7 @@ class WebGLKernelValueUnsignedInput extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueUnsignedInput
 };
-},{"../../../utils":111,"./index":53}],67:[function(require,module,exports){
+},{"../../../utils":112,"./index":54}],68:[function(require,module,exports){
 const { GLKernel } = require('../gl/kernel');
 const { FunctionBuilder } = require('../function-builder');
 const { WebGLFunctionNode } = require('./function-node');
@@ -9371,19 +9479,6 @@ class WebGLKernel extends GLKernel {
       return context instanceof WebGLRenderingContext;
     }
     return false;
-  }
-
-  static getFeatures() {
-    const isDrawBuffers = this.getIsDrawBuffers();
-    return Object.freeze({
-      isFloatRead: this.getIsFloatRead(),
-      isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
-      isTextureFloat: this.getIsTextureFloat(),
-      isDrawBuffers,
-      kernelMap: isDrawBuffers,
-      channelCount: this.getChannelCount(),
-      maxTextureSize: this.getMaxTextureSize(),
-    });
   }
 
   static getIsTextureFloat() {
@@ -9443,7 +9538,6 @@ class WebGLKernel extends GLKernel {
     this.outputTexture = null;
 
     this.maxTexSize = null;
-    this.switchingKernels = false;
     this.onRequestSwitchKernel = null;
     this.removeIstanbulCoverage = true;
 
@@ -9452,6 +9546,7 @@ class WebGLKernel extends GLKernel {
     this.threadDim = null;
     this.framebuffer = null;
     this.buffer = null;
+    this.textureGarbage = [];
     this.textureCache = [];
     this.programUniformLocationCache = {};
     this.uniform1fCache = {};
@@ -9616,45 +9711,6 @@ class WebGLKernel extends GLKernel {
     }
   }
 
-  _oldtranslateSource() {
-    const functionBuilder = FunctionBuilder.fromKernel(this, WebGLFunctionNode, {
-      fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
-    });
-
-    const translatedSource = functionBuilder.getPrototypeString('kernel');
-
-    if (!this.returnType) {
-      this.returnType = functionBuilder.getKernelResultType();
-    }
-
-    let requiredChannels = 0;
-    const returnTypes = functionBuilder.getReturnTypes();
-    for (let i = 0; i < returnTypes.length; i++) {
-      switch (returnTypes[i]) {
-        case 'Float':
-        case 'Number':
-        case 'Integer':
-          requiredChannels++;
-          break;
-        case 'Array(2)':
-          requiredChannels += 2;
-          break;
-        case 'Array(3)':
-          requiredChannels += 3;
-          break;
-        case 'Array(4)':
-          requiredChannels += 4;
-          break;
-      }
-    }
-
-    if (features && requiredChannels > features.channelCount) {
-      throw new Error('Too many channels!');
-    }
-
-    return this.translatedSource = translatedSource;
-  }
-
   setupArguments(args) {
     this.kernelArguments = [];
     this.argumentTextureCount = 0;
@@ -9673,6 +9729,23 @@ class WebGLKernel extends GLKernel {
 
     const { context: gl } = this;
     let textureIndexes = 0;
+
+    const onRequestTexture = () => {
+      return this.createTexture();
+    };
+    const onRequestIndex = () => {
+      return textureIndexes++;
+    };
+    const onUpdateValueMismatch = (constructor) => {
+      this.switchKernels({
+        type: 'argumentMismatch',
+        needed: constructor
+      });
+    };
+    const onRequestContextHandle = () => {
+      return gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount++;
+    };
+
     for (let index = 0; index < args.length; index++) {
       const value = args[index];
       const name = this.argumentNames[index];
@@ -9696,18 +9769,10 @@ class WebGLKernel extends GLKernel {
         checkContext: this.checkContext,
         kernel: this,
         strictIntegers: this.strictIntegers,
-        onRequestTexture: () => {
-          return this.createTexture();
-        },
-        onRequestIndex: () => {
-          return textureIndexes++;
-        },
-        onUpdateValueMismatch: () => {
-          this.switchingKernels = true;
-        },
-        onRequestContextHandle: () => {
-          return gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount++;
-        }
+        onRequestTexture,
+        onRequestIndex,
+        onUpdateValueMismatch,
+        onRequestContextHandle,
       });
       this.kernelArguments.push(kernelArgument);
       this.argumentSizes.push(kernelArgument.textureSize);
@@ -9880,6 +9945,7 @@ class WebGLKernel extends GLKernel {
         this._setupSubOutputTextures();
       }
     }
+    this.built = true;
   }
 
   translateSource() {
@@ -9906,8 +9972,7 @@ class WebGLKernel extends GLKernel {
   }
 
   run() {
-    const { kernelArguments, texSize, forceUploadKernelConstants } = this;
-    const gl = this.context;
+    const { kernelArguments, texSize, forceUploadKernelConstants, context: gl } = this;
 
     gl.useProgram(this.program);
     gl.scissor(0, 0, texSize[0], texSize[1]);
@@ -9919,7 +9984,6 @@ class WebGLKernel extends GLKernel {
 
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
-    this.switchingKernels = false;
     for (let i = 0; i < forceUploadKernelConstants.length; i++) {
       const constant = forceUploadKernelConstants[i];
       constant.updateValue(this.constants[constant.name]);
@@ -9953,11 +10017,14 @@ class WebGLKernel extends GLKernel {
           dimensions: this.threadDim,
           output: this.output,
           context: this.context,
+          internalFormat: this.getInternalFormat(),
+          textureFormat: this.getTextureFormat(),
         });
       }
       gl.bindRenderbuffer(gl.RENDERBUFFER, null);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      this.garbageCollect();
       return;
     }
 
@@ -9974,12 +10041,31 @@ class WebGLKernel extends GLKernel {
     }
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    this.garbageCollect();
+  }
+
+  garbageCollect() {
+    while (this.textureGarbage.length > 0) {
+      this.textureGarbage.pop().delete();
+    }
   }
 
   drawBuffers() {
     this.extensions.WEBGL_draw_buffers.drawBuffersWEBGL(this.drawBuffersMap);
   }
 
+  getInternalFormat() {
+    return this.context.RGBA;
+  }
+  getTextureFormat() {
+    const { context: gl } = this;
+    switch (this.getInternalFormat()) {
+      case gl.RGBA:
+        return gl.RGBA;
+      default:
+        throw new Error('Unknown internal format');
+    }
+  }
   _setupOutputTexture() {
     const gl = this.context;
     const texSize = this.texSize;
@@ -9990,37 +10076,11 @@ class WebGLKernel extends GLKernel {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    const format = this.getInternalFormat();
     if (this.precision === 'single') {
-      if (this.pipeline) {
-        switch (this.returnType) {
-          case 'Number':
-          case 'Float':
-          case 'Integer':
-            if (this.optimizeFloatMemory) {
-              gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-            } else {
-              gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-            }
-            break;
-          case 'Array(2)':
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-            break;
-          case 'Array(3)':
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-            break;
-          case 'Array(4)':
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-            break;
-          default:
-            if (!this.graphical) {
-              throw new Error('Unhandled return type');
-            }
-        }
-      } else {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
-      }
+      gl.texImage2D(gl.TEXTURE_2D, 0, format, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
     } else {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texImage2D(gl.TEXTURE_2D, 0, format, texSize[0], texSize[1], 0, format, gl.UNSIGNED_BYTE, null);
     }
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
   }
@@ -10700,7 +10760,7 @@ class WebGLKernel extends GLKernel {
 module.exports = {
   WebGLKernel
 };
-},{"../../plugins/math-random-uniformly-distributed":109,"../../utils":111,"../function-builder":8,"../gl/kernel":12,"../gl/kernel-string":11,"./fragment-shader":35,"./function-node":36,"./kernel-value-maps":37,"./vertex-shader":68}],68:[function(require,module,exports){
+},{"../../plugins/math-random-uniformly-distributed":110,"../../utils":112,"../function-builder":8,"../gl/kernel":12,"../gl/kernel-string":11,"./fragment-shader":36,"./function-node":37,"./kernel-value-maps":38,"./vertex-shader":69}],69:[function(require,module,exports){
 const vertexShader = `__FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
 __SAMPLER_2D_TACTIC_DECLARATION__;
@@ -10719,7 +10779,7 @@ void main(void) {
 module.exports = {
   vertexShader
 };
-},{}],69:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 const fragmentShader = `#version 300 es
 __HEADER__;
 __FLOAT_TACTIC_DECLARATION__;
@@ -11114,7 +11174,7 @@ void main(void) {
 module.exports = {
   fragmentShader
 };
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 const { WebGLFunctionNode } = require('../web-gl/function-node');
 
 class WebGL2FunctionNode extends WebGLFunctionNode {
@@ -11148,7 +11208,7 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 module.exports = {
   WebGL2FunctionNode
 };
-},{"../web-gl/function-node":36}],71:[function(require,module,exports){
+},{"../web-gl/function-node":37}],72:[function(require,module,exports){
 const { WebGL2KernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGL2KernelValueFloat } = require('./kernel-value/float');
 const { WebGL2KernelValueInteger } = require('./kernel-value/integer');
@@ -11338,7 +11398,7 @@ module.exports = {
   kernelValueMaps,
   lookupKernelValueType
 };
-},{"./kernel-value/boolean":72,"./kernel-value/dynamic-html-image":74,"./kernel-value/dynamic-html-image-array":73,"./kernel-value/dynamic-html-video":75,"./kernel-value/dynamic-memory-optimized-number-texture":76,"./kernel-value/dynamic-number-texture":77,"./kernel-value/dynamic-single-array":78,"./kernel-value/dynamic-single-array1d-i":79,"./kernel-value/dynamic-single-array2d-i":80,"./kernel-value/dynamic-single-array3d-i":81,"./kernel-value/dynamic-single-input":82,"./kernel-value/dynamic-unsigned-array":83,"./kernel-value/dynamic-unsigned-input":84,"./kernel-value/float":85,"./kernel-value/html-image":87,"./kernel-value/html-image-array":86,"./kernel-value/html-video":88,"./kernel-value/integer":89,"./kernel-value/memory-optimized-number-texture":90,"./kernel-value/number-texture":91,"./kernel-value/single-array":92,"./kernel-value/single-array1d-i":93,"./kernel-value/single-array2":94,"./kernel-value/single-array2d-i":95,"./kernel-value/single-array3":96,"./kernel-value/single-array3d-i":97,"./kernel-value/single-array4":98,"./kernel-value/single-input":99,"./kernel-value/unsigned-array":100,"./kernel-value/unsigned-input":101}],72:[function(require,module,exports){
+},{"./kernel-value/boolean":73,"./kernel-value/dynamic-html-image":75,"./kernel-value/dynamic-html-image-array":74,"./kernel-value/dynamic-html-video":76,"./kernel-value/dynamic-memory-optimized-number-texture":77,"./kernel-value/dynamic-number-texture":78,"./kernel-value/dynamic-single-array":79,"./kernel-value/dynamic-single-array1d-i":80,"./kernel-value/dynamic-single-array2d-i":81,"./kernel-value/dynamic-single-array3d-i":82,"./kernel-value/dynamic-single-input":83,"./kernel-value/dynamic-unsigned-array":84,"./kernel-value/dynamic-unsigned-input":85,"./kernel-value/float":86,"./kernel-value/html-image":88,"./kernel-value/html-image-array":87,"./kernel-value/html-video":89,"./kernel-value/integer":90,"./kernel-value/memory-optimized-number-texture":91,"./kernel-value/number-texture":92,"./kernel-value/single-array":93,"./kernel-value/single-array1d-i":94,"./kernel-value/single-array2":95,"./kernel-value/single-array2d-i":96,"./kernel-value/single-array3":97,"./kernel-value/single-array3d-i":98,"./kernel-value/single-array4":99,"./kernel-value/single-input":100,"./kernel-value/unsigned-array":101,"./kernel-value/unsigned-input":102}],73:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('../../web-gl/kernel-value/boolean');
 
 class WebGL2KernelValueBoolean extends WebGLKernelValueBoolean {}
@@ -11346,7 +11406,8 @@ class WebGL2KernelValueBoolean extends WebGLKernelValueBoolean {}
 module.exports = {
   WebGL2KernelValueBoolean
 };
-},{"../../web-gl/kernel-value/boolean":38}],73:[function(require,module,exports){
+},{"../../web-gl/kernel-value/boolean":39}],74:[function(require,module,exports){
+const { utils } = require('../../../utils');
 const { WebGL2KernelValueHTMLImageArray } = require('./html-image-array');
 
 class WebGL2KernelValueDynamicHTMLImageArray extends WebGL2KernelValueHTMLImageArray {
@@ -11373,7 +11434,7 @@ class WebGL2KernelValueDynamicHTMLImageArray extends WebGL2KernelValueHTMLImageA
 module.exports = {
   WebGL2KernelValueDynamicHTMLImageArray
 };
-},{"./html-image-array":86}],74:[function(require,module,exports){
+},{"../../../utils":112,"./html-image-array":87}],75:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicHTMLImage } = require('../../web-gl/kernel-value/dynamic-html-image');
 
@@ -11391,7 +11452,7 @@ class WebGL2KernelValueDynamicHTMLImage extends WebGLKernelValueDynamicHTMLImage
 module.exports = {
   WebGL2KernelValueDynamicHTMLImage
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/dynamic-html-image":39}],75:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/dynamic-html-image":40}],76:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueDynamicHTMLImage } = require('./dynamic-html-image');
 
@@ -11400,7 +11461,7 @@ class WebGL2KernelValueDynamicHTMLVideo extends WebGL2KernelValueDynamicHTMLImag
 module.exports = {
   WebGL2KernelValueDynamicHTMLVideo
 };
-},{"../../../utils":111,"./dynamic-html-image":74}],76:[function(require,module,exports){
+},{"../../../utils":112,"./dynamic-html-image":75}],77:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicMemoryOptimizedNumberTexture } = require('../../web-gl/kernel-value/dynamic-memory-optimized-number-texture');
 
@@ -11417,7 +11478,7 @@ class WebGL2KernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelVa
 module.exports = {
   WebGL2KernelValueDynamicMemoryOptimizedNumberTexture
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/dynamic-memory-optimized-number-texture":41}],77:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/dynamic-memory-optimized-number-texture":42}],78:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicNumberTexture } = require('../../web-gl/kernel-value/dynamic-number-texture');
 
@@ -11435,7 +11496,7 @@ class WebGL2KernelValueDynamicNumberTexture extends WebGLKernelValueDynamicNumbe
 module.exports = {
   WebGL2KernelValueDynamicNumberTexture
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/dynamic-number-texture":42}],78:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/dynamic-number-texture":43}],79:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleArray } = require('../../web-gl2/kernel-value/single-array');
 
@@ -11464,7 +11525,7 @@ class WebGL2KernelValueDynamicSingleArray extends WebGL2KernelValueSingleArray {
 module.exports = {
   WebGL2KernelValueDynamicSingleArray
 };
-},{"../../../utils":111,"../../web-gl2/kernel-value/single-array":92}],79:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl2/kernel-value/single-array":93}],80:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleArray1DI } = require('../../web-gl2/kernel-value/single-array1d-i');
 
@@ -11489,7 +11550,7 @@ class WebGL2KernelValueDynamicSingleArray1DI extends WebGL2KernelValueSingleArra
 module.exports = {
   WebGL2KernelValueDynamicSingleArray1DI
 };
-},{"../../../utils":111,"../../web-gl2/kernel-value/single-array1d-i":93}],80:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl2/kernel-value/single-array1d-i":94}],81:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleArray2DI } = require('../../web-gl2/kernel-value/single-array2d-i');
 
@@ -11514,7 +11575,7 @@ class WebGL2KernelValueDynamicSingleArray2DI extends WebGL2KernelValueSingleArra
 module.exports = {
   WebGL2KernelValueDynamicSingleArray2DI
 };
-},{"../../../utils":111,"../../web-gl2/kernel-value/single-array2d-i":95}],81:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl2/kernel-value/single-array2d-i":96}],82:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleArray3DI } = require('../../web-gl2/kernel-value/single-array3d-i');
 
@@ -11539,7 +11600,7 @@ class WebGL2KernelValueDynamicSingleArray3DI extends WebGL2KernelValueSingleArra
 module.exports = {
   WebGL2KernelValueDynamicSingleArray3DI
 };
-},{"../../../utils":111,"../../web-gl2/kernel-value/single-array3d-i":97}],82:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl2/kernel-value/single-array3d-i":98}],83:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleInput } = require('../../web-gl2/kernel-value/single-input');
 
@@ -11569,7 +11630,7 @@ class WebGL2KernelValueDynamicSingleInput extends WebGL2KernelValueSingleInput {
 module.exports = {
   WebGL2KernelValueDynamicSingleInput
 };
-},{"../../../utils":111,"../../web-gl2/kernel-value/single-input":99}],83:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl2/kernel-value/single-input":100}],84:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicUnsignedArray } = require('../../web-gl/kernel-value/dynamic-unsigned-array');
 
@@ -11587,7 +11648,7 @@ class WebGL2KernelValueDynamicUnsignedArray extends WebGLKernelValueDynamicUnsig
 module.exports = {
   WebGL2KernelValueDynamicUnsignedArray
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/dynamic-unsigned-array":48}],84:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/dynamic-unsigned-array":49}],85:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicUnsignedInput } = require('../../web-gl/kernel-value/dynamic-unsigned-input');
 
@@ -11605,7 +11666,7 @@ class WebGL2KernelValueDynamicUnsignedInput extends WebGLKernelValueDynamicUnsig
 module.exports = {
   WebGL2KernelValueDynamicUnsignedInput
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/dynamic-unsigned-input":49}],85:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/dynamic-unsigned-input":50}],86:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueFloat } = require('../../web-gl/kernel-value/float');
 
@@ -11614,7 +11675,7 @@ class WebGL2KernelValueFloat extends WebGLKernelValueFloat {}
 module.exports = {
   WebGL2KernelValueFloat
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/float":50}],86:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/float":51}],87:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('../../web-gl/kernel-value/index');
 
@@ -11682,7 +11743,7 @@ class WebGL2KernelValueHTMLImageArray extends WebGLKernelValue {
 module.exports = {
   WebGL2KernelValueHTMLImageArray
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/index":53}],87:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/index":54}],88:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueHTMLImage } = require('../../web-gl/kernel-value/html-image');
 
@@ -11700,7 +11761,7 @@ class WebGL2KernelValueHTMLImage extends WebGLKernelValueHTMLImage {
 module.exports = {
   WebGL2KernelValueHTMLImage
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/html-image":51}],88:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/html-image":52}],89:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueHTMLImage } = require('./html-image');
 
@@ -11709,8 +11770,7 @@ class WebGL2KernelValueHTMLVideo extends WebGL2KernelValueHTMLImage {}
 module.exports = {
   WebGL2KernelValueHTMLVideo
 };
-},{"../../../utils":111,"./html-image":87}],89:[function(require,module,exports){
-const { utils } = require('../../../utils');
+},{"../../../utils":112,"./html-image":88}],90:[function(require,module,exports){
 const { WebGLKernelValueInteger } = require('../../web-gl/kernel-value/integer');
 
 class WebGL2KernelValueInteger extends WebGLKernelValueInteger {
@@ -11731,7 +11791,7 @@ class WebGL2KernelValueInteger extends WebGLKernelValueInteger {
 module.exports = {
   WebGL2KernelValueInteger
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/integer":54}],90:[function(require,module,exports){
+},{"../../web-gl/kernel-value/integer":55}],91:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueMemoryOptimizedNumberTexture } = require('../../web-gl/kernel-value/memory-optimized-number-texture');
 
@@ -11750,7 +11810,7 @@ class WebGL2KernelValueMemoryOptimizedNumberTexture extends WebGLKernelValueMemo
 module.exports = {
   WebGL2KernelValueMemoryOptimizedNumberTexture
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/memory-optimized-number-texture":55}],91:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/memory-optimized-number-texture":56}],92:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueNumberTexture } = require('../../web-gl/kernel-value/number-texture');
 
@@ -11769,7 +11829,7 @@ class WebGL2KernelValueNumberTexture extends WebGLKernelValueNumberTexture {
 module.exports = {
   WebGL2KernelValueNumberTexture
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/number-texture":56}],92:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/number-texture":57}],93:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray } = require('../../web-gl/kernel-value/single-array');
 
@@ -11804,7 +11864,7 @@ class WebGL2KernelValueSingleArray extends WebGLKernelValueSingleArray {
 module.exports = {
   WebGL2KernelValueSingleArray
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/single-array":57}],93:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/single-array":58}],94:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray1DI } = require('../../web-gl/kernel-value/single-array1d-i');
 
@@ -11830,7 +11890,7 @@ class WebGL2KernelValueSingleArray1DI extends WebGLKernelValueSingleArray1DI {
 module.exports = {
   WebGL2KernelValueSingleArray1DI
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/single-array1d-i":58}],94:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/single-array1d-i":59}],95:[function(require,module,exports){
 const { WebGLKernelValueSingleArray2 } = require('../../web-gl/kernel-value/single-array2');
 
 class WebGL2KernelValueSingleArray2 extends WebGLKernelValueSingleArray2 {}
@@ -11838,7 +11898,7 @@ class WebGL2KernelValueSingleArray2 extends WebGLKernelValueSingleArray2 {}
 module.exports = {
   WebGL2KernelValueSingleArray2
 };
-},{"../../web-gl/kernel-value/single-array2":59}],95:[function(require,module,exports){
+},{"../../web-gl/kernel-value/single-array2":60}],96:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray2DI } = require('../../web-gl/kernel-value/single-array2d-i');
 
@@ -11864,7 +11924,7 @@ class WebGL2KernelValueSingleArray2DI extends WebGLKernelValueSingleArray2DI {
 module.exports = {
   WebGL2KernelValueSingleArray2DI
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/single-array2d-i":60}],96:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/single-array2d-i":61}],97:[function(require,module,exports){
 const { WebGLKernelValueSingleArray3 } = require('../../web-gl/kernel-value/single-array3');
 
 class WebGL2KernelValueSingleArray3 extends WebGLKernelValueSingleArray3 {}
@@ -11872,7 +11932,7 @@ class WebGL2KernelValueSingleArray3 extends WebGLKernelValueSingleArray3 {}
 module.exports = {
   WebGL2KernelValueSingleArray3
 };
-},{"../../web-gl/kernel-value/single-array3":61}],97:[function(require,module,exports){
+},{"../../web-gl/kernel-value/single-array3":62}],98:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray3DI } = require('../../web-gl/kernel-value/single-array3d-i');
 
@@ -11898,7 +11958,7 @@ class WebGL2KernelValueSingleArray3DI extends WebGLKernelValueSingleArray3DI {
 module.exports = {
   WebGL2KernelValueSingleArray3DI
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/single-array3d-i":62}],98:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/single-array3d-i":63}],99:[function(require,module,exports){
 const { WebGLKernelValueSingleArray4 } = require('../../web-gl/kernel-value/single-array4');
 
 class WebGL2KernelValueSingleArray4 extends WebGLKernelValueSingleArray4 {}
@@ -11906,7 +11966,7 @@ class WebGL2KernelValueSingleArray4 extends WebGLKernelValueSingleArray4 {}
 module.exports = {
   WebGL2KernelValueSingleArray4
 };
-},{"../../web-gl/kernel-value/single-array4":63}],99:[function(require,module,exports){
+},{"../../web-gl/kernel-value/single-array4":64}],100:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleInput } = require('../../web-gl/kernel-value/single-input');
 
@@ -11937,7 +11997,7 @@ class WebGL2KernelValueSingleInput extends WebGLKernelValueSingleInput {
 module.exports = {
   WebGL2KernelValueSingleInput
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/single-input":64}],100:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/single-input":65}],101:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedArray } = require('../../web-gl/kernel-value/unsigned-array');
 
@@ -11955,7 +12015,7 @@ class WebGL2KernelValueUnsignedArray extends WebGLKernelValueUnsignedArray {
 module.exports = {
   WebGL2KernelValueUnsignedArray
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/unsigned-array":65}],101:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/unsigned-array":66}],102:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedInput } = require('../../web-gl/kernel-value/unsigned-input');
 
@@ -11973,7 +12033,7 @@ class WebGL2KernelValueUnsignedInput extends WebGLKernelValueUnsignedInput {
 module.exports = {
   WebGL2KernelValueUnsignedInput
 };
-},{"../../../utils":111,"../../web-gl/kernel-value/unsigned-input":66}],102:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/unsigned-input":67}],103:[function(require,module,exports){
 const { WebGLKernel } = require('../web-gl/kernel');
 const { WebGL2FunctionNode } = require('./function-node');
 const { FunctionBuilder } = require('../function-builder');
@@ -12023,13 +12083,21 @@ class WebGL2Kernel extends WebGLKernel {
   }
 
   static getFeatures() {
+    const gl = this.testContext;
     return Object.freeze({
       isFloatRead: this.getIsFloatRead(),
       isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
       kernelMap: true,
       isTextureFloat: true,
+      isDrawBuffers: true,
       channelCount: this.getChannelCount(),
       maxTextureSize: this.getMaxTextureSize(),
+      lowIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.LOW_INT),
+      lowFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.LOW_FLOAT),
+      mediumIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.MEDIUM_INT),
+      mediumFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.MEDIUM_FLOAT),
+      highIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_INT),
+      highFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT),
     });
   }
 
@@ -12171,16 +12239,24 @@ class WebGL2Kernel extends WebGLKernel {
     this.context.drawBuffers(this.drawBuffersMap);
   }
 
-  _setupOutputTexture() {
-    const { texSize } = this;
-    const gl = this.context;
-    const texture = this.outputTexture = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  getTextureFormat() {
+    const { context: gl } = this;
+    switch (this.getInternalFormat()) {
+      case gl.R32F:
+        return gl.RED;
+      case gl.RG32F:
+        return gl.RG;
+      case gl.RGBA32F:
+        return gl.RGBA;
+      case gl.RGBA:
+        return gl.RGBA;
+      default:
+        throw new Error('Unknown internal format');
+    }
+  }
+  getInternalFormat() {
+    const { context: gl, optimizeFloatMemory, pipeline, precision } = this;
+
     if (this.precision === 'single') {
       if (this.pipeline) {
         switch (this.returnType) {
@@ -12188,26 +12264,39 @@ class WebGL2Kernel extends WebGLKernel {
           case 'Float':
           case 'Integer':
             if (this.optimizeFloatMemory) {
-              gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, texSize[0], texSize[1]);
+              return gl.RGBA32F;
             } else {
-              gl.texStorage2D(gl.TEXTURE_2D, 1, gl.R32F, texSize[0], texSize[1]);
+              return gl.R32F;
             }
-            break;
-          case 'Array(2)':
-            gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RG32F, texSize[0], texSize[1]);
-            break;
-          case 'Array(3)': 
-          case 'Array(4)':
-            gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, texSize[0], texSize[1]);
-            break;
-          default:
-            throw new Error('Unhandled return type');
+            case 'Array(2)':
+              return gl.RG32F;
+            case 'Array(3)': 
+            case 'Array(4)':
+              return gl.RGBA32F;
+            default:
+              throw new Error('Unhandled return type');
         }
-      } else {
-        gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA32F, texSize[0], texSize[1]);
       }
+      return gl.RGBA32F;
+    }
+    return gl.RGBA;
+  }
+
+  _setupOutputTexture() {
+    const { texSize } = this;
+    const gl = this.context;
+    const texture = this.outputTexture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    const format = this.getInternalFormat();
+    if (this.precision === 'single') {
+      gl.texStorage2D(gl.TEXTURE_2D, 1, format, texSize[0], texSize[1]);
     } else {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texImage2D(gl.TEXTURE_2D, 0, format, texSize[0], texSize[1], 0, format, gl.UNSIGNED_BYTE, null);
     }
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
   }
@@ -12242,26 +12331,11 @@ class WebGL2Kernel extends WebGLKernel {
 
   _getTextureCoordinate() {
     const subKernels = this.subKernels;
+    const variablePrecision = this.getVariablePrecisionString(this.texSize, this.tactic);
     if (subKernels === null || subKernels.length < 1) {
-      switch (this.tactic) {
-        case 'speed':
-          return 'in lowp vec2 vTexCoord;\n';
-        case 'performance':
-          return 'in highp vec2 vTexCoord;\n';
-        case 'balanced':
-        default:
-          return 'in mediump vec2 vTexCoord;\n';
-      }
+      return `in ${ variablePrecision } vec2 vTexCoord;\n`;
     } else {
-      switch (this.tactic) {
-        case 'speed':
-          return 'out lowp vec2 vTexCoord;\n';
-        case 'performance':
-          return 'out highp vec2 vTexCoord;\n';
-        case 'balanced':
-        default:
-          return 'out mediump vec2 vTexCoord;\n';
-      }
+      return `out ${ variablePrecision } vec2 vTexCoord;\n`;
     }
   }
 
@@ -12479,7 +12553,7 @@ class WebGL2Kernel extends WebGLKernel {
 module.exports = {
   WebGL2Kernel
 };
-},{"../../utils":111,"../function-builder":8,"../web-gl/kernel":67,"./fragment-shader":69,"./function-node":70,"./kernel-value-maps":71,"./vertex-shader":103}],103:[function(require,module,exports){
+},{"../../utils":112,"../function-builder":8,"../web-gl/kernel":68,"./fragment-shader":70,"./function-node":71,"./kernel-value-maps":72,"./vertex-shader":104}],104:[function(require,module,exports){
 const vertexShader = `#version 300 es
 __FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
@@ -12499,7 +12573,7 @@ void main(void) {
 module.exports = {
   vertexShader
 };
-},{}],104:[function(require,module,exports){
+},{}],105:[function(require,module,exports){
 const lib = require('./index');
 const GPU = lib.GPU;
 for (const p in lib) {
@@ -12508,7 +12582,7 @@ for (const p in lib) {
   GPU[p] = lib[p];
 }
 module.exports = GPU;
-},{"./index":106}],105:[function(require,module,exports){
+},{"./index":107}],106:[function(require,module,exports){
 const { gpuMock } = require('gpu-mock.js');
 const { utils } = require('./utils');
 const { CPUKernel } = require('./backend/cpu/kernel');
@@ -12680,6 +12754,7 @@ class GPU {
     }
 
     function onRequestFallback(args) {
+      console.warn('Falling back to CPU');
       const fallbackKernel = new CPUKernel(source, {
         argumentTypes: kernelRun.argumentTypes,
         constantTypes: kernelRun.constantTypes,
@@ -12708,7 +12783,17 @@ class GPU {
       return result;
     }
 
-    function onRequestSwitchKernel(args, kernel) {
+    function onRequestSwitchKernel(reasons, args, kernel) {
+      console.warn('Switching kernels');
+      let newOutput = null;
+      if (kernel.dynamicOutput) {
+        for (let i = reasons.length - 1; i >= 0; i--) {
+          const reason = reasons[i];
+          if (reason.type === 'outputPrecisionMismatch') {
+            newOutput = reason.needed;
+          }
+        }
+      }
       const argumentTypes = new Array(args.length);
       for (let i = 0; i < args.length; i++) {
         const arg = args[i];
@@ -12728,15 +12813,10 @@ class GPU {
           }
         }
       }
-      const signature = argumentTypes.join(',');
+      const signature = kernel.getVariablePrecisionString() + (argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '');
       const existingKernel = switchableKernels[signature];
       if (existingKernel) {
-        existingKernel.run.apply(existingKernel, args);
-        if (existingKernel.renderKernels) {
-          return existingKernel.renderKernels();
-        } else {
-          return existingKernel.renderOutput();
-        }
+        return existingKernel;
       }
 
       const newKernel = switchableKernels[signature] = new kernel.constructor(source, {
@@ -12749,7 +12829,7 @@ class GPU {
         dynamicArgument: kernel.dynamicArguments,
         context: kernel.context,
         canvas: kernel.canvas,
-        output: kernel.output,
+        output: newOutput || kernel.output,
         precision: kernel.precision,
         pipeline: kernel.pipeline,
         immutable: kernel.immutable,
@@ -12767,17 +12847,13 @@ class GPU {
         returnType: kernel.returnType,
         onIstanbulCoverageVariable: kernel.onIstanbulCoverageVariable,
         removeIstanbulCoverage: kernel.removeIstanbulCoverage,
+        tactic: kernel.tactic,
         onRequestFallback,
         onRequestSwitchKernel,
       });
       newKernel.build.apply(newKernel, args);
-      newKernel.run.apply(newKernel, args);
       kernelRun.replaceKernel(newKernel);
-      if (newKernel.renderKernels) {
-        return newKernel.renderKernels();
-      } else {
-        return newKernel.renderOutput();
-      }
+      return newKernel;
     }
     const mergedSettings = Object.assign({
       context: this.context,
@@ -12960,7 +13036,7 @@ module.exports = {
   kernelOrder,
   kernelTypes
 };
-},{"./backend/cpu/kernel":7,"./backend/headless-gl/kernel":32,"./backend/web-gl/kernel":67,"./backend/web-gl2/kernel":102,"./kernel-run-shortcut":108,"./utils":111,"gpu-mock.js":3}],106:[function(require,module,exports){
+},{"./backend/cpu/kernel":7,"./backend/headless-gl/kernel":33,"./backend/web-gl/kernel":68,"./backend/web-gl2/kernel":103,"./kernel-run-shortcut":109,"./utils":112,"gpu-mock.js":3}],107:[function(require,module,exports){
 const { GPU } = require('./gpu');
 const { alias } = require('./alias');
 const { utils } = require('./utils');
@@ -12987,6 +13063,8 @@ const { Kernel } = require('./backend/kernel');
 
 const { FunctionTracer } = require('./backend/function-tracer');
 
+const mathRandom = require('./plugins/math-random-uniformly-distributed');
+
 module.exports = {
   alias,
   CPUFunctionNode,
@@ -13011,8 +13089,12 @@ module.exports = {
   GLKernel,
   Kernel,
   FunctionTracer,
+
+  plugins: {
+    mathRandom
+  }
 };
-},{"./alias":4,"./backend/cpu/function-node":5,"./backend/cpu/kernel":7,"./backend/function-builder":8,"./backend/function-node":9,"./backend/function-tracer":10,"./backend/gl/kernel":12,"./backend/headless-gl/kernel":32,"./backend/kernel":34,"./backend/web-gl/function-node":36,"./backend/web-gl/kernel":67,"./backend/web-gl/kernel-value-maps":37,"./backend/web-gl2/function-node":70,"./backend/web-gl2/kernel":102,"./backend/web-gl2/kernel-value-maps":71,"./gpu":105,"./input":107,"./texture":110,"./utils":111}],107:[function(require,module,exports){
+},{"./alias":4,"./backend/cpu/function-node":5,"./backend/cpu/kernel":7,"./backend/function-builder":8,"./backend/function-node":9,"./backend/function-tracer":10,"./backend/gl/kernel":12,"./backend/headless-gl/kernel":33,"./backend/kernel":35,"./backend/web-gl/function-node":37,"./backend/web-gl/kernel":68,"./backend/web-gl/kernel-value-maps":38,"./backend/web-gl2/function-node":71,"./backend/web-gl2/kernel":103,"./backend/web-gl2/kernel-value-maps":72,"./gpu":106,"./input":108,"./plugins/math-random-uniformly-distributed":110,"./texture":111,"./utils":112}],108:[function(require,module,exports){
 class Input {
   constructor(value, size) {
     this.value = value;
@@ -13067,35 +13149,27 @@ module.exports = {
   Input,
   input
 };
-},{"./utils":111}],108:[function(require,module,exports){
+},{"./utils":112}],109:[function(require,module,exports){
 const { utils } = require('./utils');
 
 function kernelRunShortcut(kernel) {
   let run = function() {
     kernel.build.apply(kernel, arguments);
-    if (kernel.renderKernels) {
-      run = function() {
-        kernel.run.apply(kernel, arguments);
-        if (kernel.switchingKernels) {
-          kernel.switchingKernels = false;
-          return kernel.onRequestSwitchKernel(arguments, kernel);
-        }
+    run = function() {
+      let result = kernel.run.apply(kernel, arguments);
+      if (kernel.switchingKernels) {
+        const reasons = kernel.resetSwitchingKernels();
+        const newKernel = kernel.onRequestSwitchKernel(reasons, arguments, kernel);
+        result = newKernel.run.apply(newKernel, arguments);
+      }
+      if (kernel.renderKernels) {
         return kernel.renderKernels();
-      };
-    } else if (kernel.renderOutput) {
-      run = function() {
-        kernel.run.apply(kernel, arguments);
-        if (kernel.switchingKernels) {
-          kernel.switchingKernels = false;
-          return kernel.onRequestSwitchKernel(arguments, kernel);
-        }
+      } else if (kernel.renderOutput) {
         return kernel.renderOutput();
-      };
-    } else {
-      run = function() {
-        return kernel.run.apply(kernel, arguments);
-      };
-    }
+      } else {
+        return result;
+      }
+    };
     return run.apply(kernel, arguments);
   };
   const shortcut = function() {
@@ -13154,33 +13228,38 @@ function bindKernelToShortcut(kernel, shortcut) {
 module.exports = {
   kernelRunShortcut
 };
-},{"./utils":111}],109:[function(require,module,exports){
-const source = `
-// https://www.shadertoy.com/view/4t2SDh
-//note: uniformly distributed, normalized rand, [0;1[
-mediump float random_seed_shift = 0.00001;
-uniform mediump float random_seed1;
-uniform mediump float random_seed2;
-float nrand(vec2 n) {
-  float result = fract(sin(dot(n.xy * vec2(random_seed1, random_seed_shift * random_seed2), vec2(12.9898, 78.233)))* 43758.5453);
-  random_seed_shift = result;
+},{"./utils":112}],110:[function(require,module,exports){
+const source = `// https://www.shadertoy.com/view/4t2SDh
+//note: uniformly distributed, normalized rand, [0,1]
+highp float randomSeedShift = 1.0;
+highp float slide = 1.0;
+uniform highp float randomSeed1;
+uniform highp float randomSeed2;
+
+highp float nrand(highp vec2 n) {
+  highp float result = fract(sin(dot((n.xy + 1.0) * vec2(randomSeed1 * slide, randomSeed2 * randomSeedShift), vec2(12.9898, 78.233))) * 43758.5453);
+  randomSeedShift = result;
+  if (randomSeedShift > 0.5) {
+    slide += 0.00009; 
+  } else {
+    slide += 0.0009;
+  }
   return result;
 }`;
 
 const name = 'math-random-uniformly-distributed';
 
-const functionMatch = 'Math.random()';
+const functionMatch = `Math.random()`;
 
-const functionReplace = 'nrand(vTexCoord)';
+const functionReplace = `nrand(vTexCoord)`;
 
 const functionReturnType = 'Number';
-
 const onBeforeRun = (kernel) => {
-  kernel.setUniform1f('random_seed1', Math.random());
-  kernel.setUniform1f('random_seed2', Math.random());
+  kernel.setUniform1f('randomSeed1', Math.random());
+  kernel.setUniform1f('randomSeed2', Math.random());
 };
 
-module.exports = {
+const plugin = {
   name,
   onBeforeRun,
   functionMatch,
@@ -13188,14 +13267,9 @@ module.exports = {
   functionReturnType,
   source
 };
-},{}],110:[function(require,module,exports){
-let clone1DKernels = {};
-const cloneKernel1DSource = `function(value) {return value[this.thread.x];}`;
-let clone2DKernels = {};
-const cloneKernel2DSource = `function(value) {return value[this.thread.y][this.thread.x];}`;
-let clone3DKernels = {};
-const cloneKernel3DSource = `function(value) {return value[this.thread.z][this.thread.y][this.thread.x];}`;
 
+module.exports = plugin;
+},{}],111:[function(require,module,exports){
 class Texture {
   constructor(settings) {
     const {
@@ -13206,6 +13280,8 @@ class Texture {
       context,
       type = 'NumberTexture',
       kernel,
+      internalFormat,
+      textureFormat
     } = settings;
     if (!output) throw new Error('settings property "output" required.');
     if (!context) throw new Error('settings property "context" required.');
@@ -13216,6 +13292,9 @@ class Texture {
     this.context = context;
     this.kernel = kernel;
     this.type = type;
+    this._deleted = false;
+    this.internalFormat = internalFormat;
+    this.textureFormat = textureFormat;
   }
 
   toArray() {
@@ -13223,56 +13302,11 @@ class Texture {
   }
 
   clone() {
-    const kernel = this._getCloneKernel();
-    kernel.run(this);
-    return kernel.renderOutput();
-  }
-
-  _getCloneKernelSettings() {
-    const { output, context, kernel } = this;
-    return {
-      argumentTypes: [this.type],
-      dynamicOutput: true,
-      dynamicArguments: true,
-      pipeline: true,
-      precision: kernel.precision,
-      tactic: kernel.tactic,
-      output,
-      context,
-    };
-  }
-
-  _getCloneKernelKey() {
-    const { kernel, type } = this;
-    return `${kernel.constructor.name}-${kernel.precision}-${kernel.tactic}-${type}`;
-  }
-
-  _getCloneKernel() {
-    const { output } = this;
-    const key = this._getCloneKernelKey();
-
-    switch (output.length) {
-      case 1:
-        return clone1DKernels[key] = this._checkBuildCloneKernel(cloneKernel1DSource, clone1DKernels[key]);
-      case 2:
-        return clone2DKernels[key] = this._checkBuildCloneKernel(cloneKernel2DSource, clone2DKernels[key]);
-      case 3:
-        return clone3DKernels[key] = this._checkBuildCloneKernel(cloneKernel3DSource, clone3DKernels[key]);
-      default:
-        throw new Error(`Cannot copy texture with ${output.length} dimensions`);
-    }
-  }
-
-  _checkBuildCloneKernel(source, cloneKernel) {
-    if (cloneKernel && cloneKernel.context === this.context) {
-      return cloneKernel.setOutput(this.output);
-    }
-    cloneKernel = new this.kernel.constructor(source, this._getCloneKernelSettings());
-    cloneKernel.build(this);
-    return cloneKernel;
+    throw new Error(`Not implemented on ${this.constructor.name}`);
   }
 
   delete() {
+    this._deleted = true;
     return this.context.deleteTexture(this.texture);
   }
 }
@@ -13280,7 +13314,7 @@ class Texture {
 module.exports = {
   Texture
 };
-},{}],111:[function(require,module,exports){
+},{}],112:[function(require,module,exports){
 const acorn = require('acorn');
 const { Input } = require('./input');
 const { Texture } = require('./texture');
@@ -13807,6 +13841,7 @@ const utils = {
     }
     const ast = acorn.parse(source);
     const functionDependencies = [];
+    let indent = 0;
 
     function flatten(ast) {
       if (Array.isArray(ast)) {
@@ -13818,118 +13853,119 @@ const utils = {
       }
       switch (ast.type) {
         case 'Program':
-          return flatten(ast.body);
+          return flatten(ast.body) + (ast.body[0].type === 'VariableDeclaration' ? ';' : '');
         case 'FunctionDeclaration':
           return `function ${ast.id.name}(${ast.params.map(flatten).join(', ')}) ${ flatten(ast.body) }`;
         case 'BlockStatement': {
           const result = [];
+          indent += 2;
           for (let i = 0; i < ast.body.length; i++) {
-            result.push(flatten(ast.body[i]), ';\n');
+            const flat = flatten(ast.body[i]);
+            if (flat) {
+              result.push(' '.repeat(indent) + flat, ';\n');
+            }
           }
+          indent -= 2;
           return `{\n${result.join('')}}`;
         }
         case 'VariableDeclaration':
-          switch (ast.declarations[0].id.type) {
-            case 'ObjectPattern': {
-              const source = flatten(ast.declarations[0].init);
-              const properties = ast.declarations.map(declaration => declaration.id.properties.map(flatten))[0];
-              if (/this/.test(source)) {
-                const result = [];
-                const lookups = properties.map(thisLookup);
-                for (let i = 0; i < lookups.length; i++) {
-                  const lookup = lookups[i];
-                  if (lookup === null) continue;
-                  const property = properties[i];
-                  result.push(`${ast.kind} ${ property } = ${ lookup };\n`);
-                }
-
-                return result.join('');
-              }
-              return `${ast.kind} { ${properties} } = ${source}`;
-            }
-            case 'ArrayPattern':
-              return `${ast.kind} [ ${ ast.declarations.map(declaration => flatten(declaration.id)).join(', ') } ] = ${flatten(ast.declarations[0].init)}`;
-          }
-          if (doNotDefine && doNotDefine.indexOf(ast.declarations[0].id.name) !== -1) {
+          const declarations = utils.normalizeDeclarations(ast)
+            .map(flatten)
+            .filter(r => r !== null);
+          if (declarations.length < 1) {
             return '';
+          } else {
+            return `${ast.kind} ${declarations.join(',')}`;
           }
-          return `${ast.kind} ${ast.declarations[0].id.name} = ${flatten(ast.declarations[0].init)}`;
-        case 'CallExpression': {
-          if (ast.callee.property.name === 'subarray') {
-            return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-          }
-          if (ast.callee.object.name === 'gl' || ast.callee.object.name === 'context') {
-            return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-          }
-          if (ast.callee.object.type === 'ThisExpression') {
-            functionDependencies.push(findDependency('this', ast.callee.property.name));
-            return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-          } else if (ast.callee.object.name) {
-            const foundSource = findDependency(ast.callee.object.name, ast.callee.property.name);
-            if (foundSource === null) {
-              return `${ast.callee.object.name}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          case 'VariableDeclarator':
+            if (ast.init.object && ast.init.object.type === 'ThisExpression') {
+              const lookup = thisLookup(ast.init.property.name);
+              if (lookup) {
+                return `${ast.id.name} = ${flatten(ast.init)}`;
+              } else {
+                return null;
+              }
             } else {
-              functionDependencies.push(foundSource);
-              return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              return `${ast.id.name} = ${flatten(ast.init)}`;
             }
-          } else if (ast.callee.object.type === 'MemberExpression') {
-            return `${flatten(ast.callee.object)}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-          } else {
-            throw new Error('unknown ast.callee');
-          }
-        }
-        case 'ReturnStatement':
-          return `return ${flatten(ast.argument)}`;
-        case 'BinaryExpression':
-          return `(${flatten(ast.left)}${ast.operator}${flatten(ast.right)})`;
-        case 'UnaryExpression':
-          if (ast.prefix) {
-            return `${ast.operator} ${flatten(ast.argument)}`;
-          } else {
-            return `${flatten(ast.argument)} ${ast.operator}`;
-          }
-          case 'ExpressionStatement':
-            return `(${flatten(ast.expression)})`;
-          case 'ArrowFunctionExpression':
-            return `(${ast.params.map(flatten).join(', ')}) => ${flatten(ast.body)}`;
-          case 'Literal':
-            return ast.raw;
-          case 'Identifier':
-            return ast.name;
-          case 'MemberExpression':
-            if (ast.object.type === 'ThisExpression') {
-              return thisLookup(ast.property.name);
+            case 'CallExpression': {
+              if (ast.callee.property.name === 'subarray') {
+                return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              }
+              if (ast.callee.object.name === 'gl' || ast.callee.object.name === 'context') {
+                return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              }
+              if (ast.callee.object.type === 'ThisExpression') {
+                functionDependencies.push(findDependency('this', ast.callee.property.name));
+                return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              } else if (ast.callee.object.name) {
+                const foundSource = findDependency(ast.callee.object.name, ast.callee.property.name);
+                if (foundSource === null) {
+                  return `${ast.callee.object.name}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+                } else {
+                  functionDependencies.push(foundSource);
+                  return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+                }
+              } else if (ast.callee.object.type === 'MemberExpression') {
+                return `${flatten(ast.callee.object)}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              } else {
+                throw new Error('unknown ast.callee');
+              }
             }
-            if (ast.computed) {
-              return `${flatten(ast.object)}[${flatten(ast.property)}]`;
-            }
-            return flatten(ast.object) + '.' + flatten(ast.property);
-          case 'ThisExpression':
-            return 'this';
-          case 'NewExpression':
-            return `new ${flatten(ast.callee)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-          case 'ForStatement':
-            return `for (${flatten(ast.init)};${flatten(ast.test)};${flatten(ast.update)}) ${flatten(ast.body)}`;
-          case 'AssignmentExpression':
-            return `${flatten(ast.left)}${ast.operator}${flatten(ast.right)}`;
-          case 'UpdateExpression':
-            return `${flatten(ast.argument)}${ast.operator}`;
-          case 'IfStatement':
-            return `if (${flatten(ast.test)}) ${flatten(ast.consequent)}`;
-          case 'ThrowStatement':
-            return `throw ${flatten(ast.argument)}`;
-          case 'ObjectPattern':
-            return ast.properties.map(flatten).join(', ');
-          case 'ArrayPattern':
-            return ast.elements.map(flatten).join(', ');
-          case 'DebuggerStatement':
-            return 'debugger;';
-          case 'ConditionalExpression':
-            return `${flatten(ast.test)}?${flatten(ast.consequent)}:${flatten(ast.alternate)}`;
-          case 'Property':
-            if (ast.kind === 'init') {
-              return flatten(ast.key);
-            }
+            case 'ReturnStatement':
+              return `return ${flatten(ast.argument)}`;
+            case 'BinaryExpression':
+              return `(${flatten(ast.left)}${ast.operator}${flatten(ast.right)})`;
+            case 'UnaryExpression':
+              if (ast.prefix) {
+                return `${ast.operator} ${flatten(ast.argument)}`;
+              } else {
+                return `${flatten(ast.argument)} ${ast.operator}`;
+              }
+              case 'ExpressionStatement':
+                return `${flatten(ast.expression)}`;
+              case 'SequenceExpression':
+                return `(${flatten(ast.expressions)})`;
+              case 'ArrowFunctionExpression':
+                return `(${ast.params.map(flatten).join(', ')}) => ${flatten(ast.body)}`;
+              case 'Literal':
+                return ast.raw;
+              case 'Identifier':
+                return ast.name;
+              case 'MemberExpression':
+                if (ast.object.type === 'ThisExpression') {
+                  return thisLookup(ast.property.name);
+                }
+                if (ast.computed) {
+                  return `${flatten(ast.object)}[${flatten(ast.property)}]`;
+                }
+                return flatten(ast.object) + '.' + flatten(ast.property);
+              case 'ThisExpression':
+                return 'this';
+              case 'NewExpression':
+                return `new ${flatten(ast.callee)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              case 'ForStatement':
+                return `for (${flatten(ast.init)};${flatten(ast.test)};${flatten(ast.update)}) ${flatten(ast.body)}`;
+              case 'AssignmentExpression':
+                return `${flatten(ast.left)}${ast.operator}${flatten(ast.right)}`;
+              case 'UpdateExpression':
+                return `${flatten(ast.argument)}${ast.operator}`;
+              case 'IfStatement':
+                return `if (${flatten(ast.test)}) ${flatten(ast.consequent)}`;
+              case 'ThrowStatement':
+                return `throw ${flatten(ast.argument)}`;
+              case 'ObjectPattern':
+                return ast.properties.map(flatten).join(', ');
+              case 'ArrayPattern':
+                return ast.elements.map(flatten).join(', ');
+              case 'DebuggerStatement':
+                return 'debugger;';
+              case 'ConditionalExpression':
+                return `${flatten(ast.test)}?${flatten(ast.consequent)}:${flatten(ast.alternate)}`;
+              case 'Property':
+                if (ast.kind === 'init') {
+                  return flatten(ast.key);
+                }
       }
       throw new Error(`unhandled ast.type of ${ ast.type }`);
     }
@@ -13941,23 +13977,118 @@ const utils = {
         if (!flattened[functionDependency]) {
           flattened[functionDependency] = true;
         }
-        flattenedFunctionDependencies.push(utils.flattenFunctionToString(functionDependency, settings) + ';\n');
+        flattenedFunctionDependencies.push(utils.flattenFunctionToString(functionDependency, settings) + '\n');
       }
       return flattenedFunctionDependencies.join('') + result;
     }
     return result;
   },
 
-  splitHTMLImageToRGB: (image, mode) => {
-    const gpu = new GPU({ mode });
+  normalizeDeclarations: (ast) => {
+    if (ast.type !== 'VariableDeclaration') throw new Error('Ast is not of type "VariableDeclaration"');
+    const normalizedDeclarations = [];
+    for (let declarationIndex = 0; declarationIndex < ast.declarations.length; declarationIndex++) {
+      const declaration = ast.declarations[declarationIndex];
+      if (declaration.id && declaration.id.type === 'ObjectPattern' && declaration.id.properties) {
+        const { properties } = declaration.id;
+        for (let propertyIndex = 0; propertyIndex < properties.length; propertyIndex++) {
+          const property = properties[propertyIndex];
+          if (property.value.type === 'ObjectPattern' && property.value.properties) {
+            for (let subPropertyIndex = 0; subPropertyIndex < property.value.properties.length; subPropertyIndex++) {
+              const subProperty = property.value.properties[subPropertyIndex];
+              if (subProperty.type === 'Property') {
+                normalizedDeclarations.push({
+                  type: 'VariableDeclarator',
+                  id: {
+                    type: 'Identifier',
+                    name: subProperty.key.name
+                  },
+                  init: {
+                    type: 'MemberExpression',
+                    object: {
+                      type: 'MemberExpression',
+                      object: declaration.init,
+                      property: {
+                        type: 'Identifier',
+                        name: property.key.name
+                      },
+                      computed: false
+                    },
+                    property: {
+                      type: 'Identifier',
+                      name: subProperty.key.name
+                    },
+                    computed: false
+                  }
+                });
+              } else {
+                throw new Error('unexpected state');
+              }
+            }
+          } else if (property.value.type === 'Identifier') {
+            normalizedDeclarations.push({
+              type: 'VariableDeclarator',
+              id: {
+                type: 'Identifier',
+                name: property.value && property.value.name ? property.value.name : property.key.name
+              },
+              init: {
+                type: 'MemberExpression',
+                object: declaration.init,
+                property: {
+                  type: 'Identifier',
+                  name: property.key.name
+                },
+                computed: false
+              }
+            });
+          } else {
+            throw new Error('unexpected state');
+          }
+        }
+      } else if (declaration.id && declaration.id.type === 'ArrayPattern' && declaration.id.elements) {
+        const { elements } = declaration.id;
+        for (let elementIndex = 0; elementIndex < elements.length; elementIndex++) {
+          const element = elements[elementIndex];
+          if (element.type === 'Identifier') {
+            normalizedDeclarations.push({
+              type: 'VariableDeclarator',
+              id: {
+                type: 'Identifier',
+                name: element.name
+              },
+              init: {
+                type: 'MemberExpression',
+                object: declaration.init,
+                property: {
+                  type: 'Literal',
+                  value: elementIndex,
+                  raw: elementIndex.toString(),
+                  start: element.start,
+                  end: element.end
+                },
+                computed: true
+              }
+            });
+          } else {
+            throw new Error('unexpected state');
+          }
+        }
+      } else {
+        normalizedDeclarations.push(declaration);
+      }
+    }
+    return normalizedDeclarations;
+  },
 
+  splitHTMLImageToRGB: (gpu, image) => {
     const rKernel = gpu.createKernel(function(a) {
       const pixel = a[this.thread.y][this.thread.x];
       return pixel.r * 255;
     }, {
       output: [image.width, image.height],
       precision: 'unsigned',
-      argumentTypes: ['HTMLImage'],
+      argumentTypes: { a: 'HTMLImage' },
     });
     const gKernel = gpu.createKernel(function(a) {
       const pixel = a[this.thread.y][this.thread.x];
@@ -13965,7 +14096,7 @@ const utils = {
     }, {
       output: [image.width, image.height],
       precision: 'unsigned',
-      argumentTypes: ['HTMLImage'],
+      argumentTypes: { a: 'HTMLImage' },
     });
     const bKernel = gpu.createKernel(function(a) {
       const pixel = a[this.thread.y][this.thread.x];
@@ -13973,7 +14104,7 @@ const utils = {
     }, {
       output: [image.width, image.height],
       precision: 'unsigned',
-      argumentTypes: ['HTMLImage'],
+      argumentTypes: { a: 'HTMLImage' },
     });
     const aKernel = gpu.createKernel(function(a) {
       const pixel = a[this.thread.y][this.thread.x];
@@ -13981,7 +14112,7 @@ const utils = {
     }, {
       output: [image.width, image.height],
       precision: 'unsigned',
-      argumentTypes: ['HTMLImage'],
+      argumentTypes: { a: 'HTMLImage' },
     });
     const result = [
       rKernel(image),
@@ -13997,42 +14128,46 @@ const utils = {
     return result;
   },
 
-  splitRGBAToCanvases: (rgba, width, height, mode) => {
-    const { GPU } = require('./gpu.js');
-
-    const visualGPUR = new GPU({ mode });
-    const visualKernelR = visualGPUR.createKernel(function(v) {
+  splitRGBAToCanvases: (gpu, rgba, width, height) => {
+    const visualKernelR = gpu.createKernel(function(v) {
       const pixel = v[this.thread.y][this.thread.x];
       this.color(pixel.r / 255, 0, 0, 255);
-    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    }, {
+      output: [width, height],
+      graphical: true,
+      argumentTypes: { v: 'Array2D(4)' }
+    });
     visualKernelR(rgba);
 
-    const visualGPUG = new GPU({ mode });
-    const visualKernelG = visualGPUG.createKernel(function(v) {
+    const visualKernelG = gpu.createKernel(function(v) {
       const pixel = v[this.thread.y][this.thread.x];
       this.color(0, pixel.g / 255, 0, 255);
-    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    }, {
+      output: [width, height],
+      graphical: true,
+      argumentTypes: { v: 'Array2D(4)' }
+    });
     visualKernelG(rgba);
 
-    const visualGPUB = new GPU({ mode });
-    const visualKernelB = visualGPUB.createKernel(function(v) {
+    const visualKernelB = gpu.createKernel(function(v) {
       const pixel = v[this.thread.y][this.thread.x];
       this.color(0, 0, pixel.b / 255, 255);
-    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    }, {
+      output: [width, height],
+      graphical: true,
+      argumentTypes: { v: 'Array2D(4)' }
+    });
     visualKernelB(rgba);
 
-    const visualGPUA = new GPU({ mode });
-    const visualKernelA = visualGPUA.createKernel(function(v) {
+    const visualKernelA = gpu.createKernel(function(v) {
       const pixel = v[this.thread.y][this.thread.x];
       this.color(255, 255, 255, pixel.a / 255);
-    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    }, {
+      output: [width, height],
+      graphical: true,
+      argumentTypes: { v: 'Array2D(4)' }
+    });
     visualKernelA(rgba);
-
-    visualGPUR.destroy();
-    visualGPUG.destroy();
-    visualGPUB.destroy();
-    visualGPUA.destroy();
-
     return [
       visualKernelR.canvas,
       visualKernelG.canvas,
@@ -14047,5 +14182,5 @@ const _systemEndianness = utils.getSystemEndianness();
 module.exports = {
   utils
 };
-},{"./gpu.js":105,"./input":107,"./texture":110,"acorn":1}]},{},[104])(104)
+},{"./input":108,"./texture":111,"acorn":1}]},{},[105])(105)
 });

@@ -1,3 +1,5 @@
+const { utils } = require('../utils');
+
 class FunctionTracer {
   constructor(ast) {
     this.runningContexts = [];
@@ -58,6 +60,7 @@ class FunctionTracer {
         this.scan(ast.argument);
         break;
       case 'VariableDeclaration':
+        ast.declarations = utils.normalizeDeclarations(ast);
         this.scan(ast.declarations);
         break;
       case 'VariableDeclarator':

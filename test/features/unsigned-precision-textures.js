@@ -647,3 +647,44 @@ test('with Uint8ClampedArray3D cpu', () => {
 (GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('with Uint8ClampedArray3D headlessgl', () => {
   unsignedPrecisionTexturesWithUint8ClampedArray3D('headlessgl');
 });
+
+function testDoesNotCollideWithKernelTexture(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function(v) {
+    return v[this.thread.x] + 1;
+  }, {
+    output: [1],
+    precision: 'unsigned',
+    pipeline: true,
+  });
+  const v = [1];
+  const result1 = kernel(v);
+  assert.deepEqual(result1.toArray(), new Float32Array([2]));
+  // kernel is getting ready to recompile, because a new type of input
+  const result2 = kernel(result1);
+  assert.deepEqual(result2.toArray(), new Float32Array([3]));
+  // now the kernel textures match, this would fail, and this is that this test is testing
+  const result3 = kernel(result2);
+  assert.deepEqual(result3.toArray(), new Float32Array([4]));
+  gpu.destroy();
+}
+
+test('does not collide with kernel texture auto', () => {
+  testDoesNotCollideWithKernelTexture();
+});
+
+test('does not collide with kernel texture gpu', () => {
+  testDoesNotCollideWithKernelTexture('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('does not collide with kernel texture webgl', () => {
+  testDoesNotCollideWithKernelTexture('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('does not collide with kernel texture webgl2', () => {
+  testDoesNotCollideWithKernelTexture('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('does not collide with kernel texture headlessgl', () => {
+  testDoesNotCollideWithKernelTexture('headlessgl');
+});

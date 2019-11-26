@@ -28,9 +28,6 @@ class KernelValue {
     if (!origin) {
       throw new Error('origin not set');
     }
-    if (!tactic) {
-      throw new Error('tactic not set');
-    }
     if (origin !== 'user' && origin !== 'constants') {
       throw new Error(`origin must be "user" or "constants" value is "${ origin }"`);
     }

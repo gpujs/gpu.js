@@ -8,29 +8,21 @@ const { utils } = require('./utils');
 function kernelRunShortcut(kernel) {
   let run = function() {
     kernel.build.apply(kernel, arguments);
-    if (kernel.renderKernels) {
-      run = function() {
-        kernel.run.apply(kernel, arguments);
-        if (kernel.switchingKernels) {
-          kernel.switchingKernels = false;
-          return kernel.onRequestSwitchKernel(arguments, kernel);
-        }
+    run = function() {
+      let result = kernel.run.apply(kernel, arguments);
+      if (kernel.switchingKernels) {
+        const reasons = kernel.resetSwitchingKernels();
+        const newKernel = kernel.onRequestSwitchKernel(reasons, arguments, kernel);
+        result = newKernel.run.apply(newKernel, arguments);
+      }
+      if (kernel.renderKernels) {
         return kernel.renderKernels();
-      };
-    } else if (kernel.renderOutput) {
-      run = function() {
-        kernel.run.apply(kernel, arguments);
-        if (kernel.switchingKernels) {
-          kernel.switchingKernels = false;
-          return kernel.onRequestSwitchKernel(arguments, kernel);
-        }
+      } else if (kernel.renderOutput) {
         return kernel.renderOutput();
-      };
-    } else {
-      run = function() {
-        return kernel.run.apply(kernel, arguments);
-      };
-    }
+      } else {
+        return result;
+      }
+    };
     return run.apply(kernel, arguments);
   };
   const shortcut = function() {

@@ -192,7 +192,7 @@ class WebGLFunctionNode extends FunctionNode {
       );
     }
 
-    const key = `${ast.start},${ast.end}`;
+    const key = this.astKey(ast);
     if (Number.isInteger(ast.value)) {
       if (this.isState('in-for-loop-init') || this.isState('casting-to-integer') || this.isState('building-integer')) {
         this.literalTypes[key] = 'Integer';
@@ -893,7 +893,7 @@ class WebGLFunctionNode extends FunctionNode {
 
     if (ifNode.alternate) {
       retArr.push('else ');
-      if (ifNode.alternate.type === 'BlockStatement') {
+      if (ifNode.alternate.type === 'BlockStatement' || ifNode.alternate.type === 'IfStatement') {
         this.astGeneric(ifNode.alternate, retArr);
       } else {
         retArr.push(' {\n');
@@ -910,7 +910,7 @@ class WebGLFunctionNode extends FunctionNode {
     }
     const { discriminant, cases } = ast;
     const type = this.getType(discriminant);
-    const varName = `switchDiscriminant${ast.start}_${ast.end}`;
+    const varName = `switchDiscriminant${this.astKey(ast, '_')}`;
     switch (type) {
       case 'Float':
       case 'Number':

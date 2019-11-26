@@ -188,7 +188,7 @@ function testFallThrough(mode) {
     }
   }, {
     argumentTypes: ['Integer'],
-    output: [1],
+    output: [1]
   });
   assert.equal(kernel(1)[0], 1);
   assert.equal(kernel(2)[0], 1);

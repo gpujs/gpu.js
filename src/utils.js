@@ -647,6 +647,7 @@ const utils = {
     }
     const ast = acorn.parse(source);
     const functionDependencies = [];
+    let indent = 0;
 
     function flatten(ast) {
       if (Array.isArray(ast)) {
@@ -658,120 +659,121 @@ const utils = {
       }
       switch (ast.type) {
         case 'Program':
-          return flatten(ast.body);
+          return flatten(ast.body) + (ast.body[0].type === 'VariableDeclaration' ? ';' : '');
         case 'FunctionDeclaration':
           return `function ${ast.id.name}(${ast.params.map(flatten).join(', ')}) ${ flatten(ast.body) }`;
         case 'BlockStatement': {
           const result = [];
+          indent += 2;
           for (let i = 0; i < ast.body.length; i++) {
-            result.push(flatten(ast.body[i]), ';\n');
+            const flat = flatten(ast.body[i]);
+            if (flat) {
+              result.push(' '.repeat(indent) + flat, ';\n');
+            }
           }
+          indent -= 2;
           return `{\n${result.join('')}}`;
         }
         case 'VariableDeclaration':
-          switch (ast.declarations[0].id.type) {
-            case 'ObjectPattern': {
-              const source = flatten(ast.declarations[0].init);
-              const properties = ast.declarations.map(declaration => declaration.id.properties.map(flatten))[0];
-              if (/this/.test(source)) {
-                const result = [];
-                const lookups = properties.map(thisLookup);
-                for (let i = 0; i < lookups.length; i++) {
-                  const lookup = lookups[i];
-                  if (lookup === null) continue;
-                  const property = properties[i];
-                  result.push(`${ast.kind} ${ property } = ${ lookup };\n`);
-                }
-
-                return result.join('');
-              }
-              return `${ast.kind} { ${properties} } = ${source}`;
-            }
-            case 'ArrayPattern':
-              return `${ast.kind} [ ${ ast.declarations.map(declaration => flatten(declaration.id)).join(', ') } ] = ${flatten(ast.declarations[0].init)}`;
-          }
-          if (doNotDefine && doNotDefine.indexOf(ast.declarations[0].id.name) !== -1) {
+          const declarations = utils.normalizeDeclarations(ast)
+            .map(flatten)
+            .filter(r => r !== null);
+          if (declarations.length < 1) {
             return '';
+          } else {
+            return `${ast.kind} ${declarations.join(',')}`;
           }
-          return `${ast.kind} ${ast.declarations[0].id.name} = ${flatten(ast.declarations[0].init)}`;
-        case 'CallExpression': {
-          if (ast.callee.property.name === 'subarray') {
-            return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-          }
-          if (ast.callee.object.name === 'gl' || ast.callee.object.name === 'context') {
-            return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-          }
-          if (ast.callee.object.type === 'ThisExpression') {
-            functionDependencies.push(findDependency('this', ast.callee.property.name));
-            return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-          } else if (ast.callee.object.name) {
-            const foundSource = findDependency(ast.callee.object.name, ast.callee.property.name);
-            if (foundSource === null) {
-              // we're not flattening it
-              return `${ast.callee.object.name}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          case 'VariableDeclarator':
+            if (ast.init.object && ast.init.object.type === 'ThisExpression') {
+              const lookup = thisLookup(ast.init.property.name);
+              if (lookup) {
+                return `${ast.id.name} = ${flatten(ast.init)}`;
+              } else {
+                return null;
+              }
             } else {
-              functionDependencies.push(foundSource);
-              // we're flattening it
-              return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              return `${ast.id.name} = ${flatten(ast.init)}`;
             }
-          } else if (ast.callee.object.type === 'MemberExpression') {
-            return `${flatten(ast.callee.object)}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-          } else {
-            throw new Error('unknown ast.callee');
-          }
-        }
-        case 'ReturnStatement':
-          return `return ${flatten(ast.argument)}`;
-        case 'BinaryExpression':
-          return `(${flatten(ast.left)}${ast.operator}${flatten(ast.right)})`;
-        case 'UnaryExpression':
-          if (ast.prefix) {
-            return `${ast.operator} ${flatten(ast.argument)}`;
-          } else {
-            return `${flatten(ast.argument)} ${ast.operator}`;
-          }
-          case 'ExpressionStatement':
-            return `(${flatten(ast.expression)})`;
-          case 'ArrowFunctionExpression':
-            return `(${ast.params.map(flatten).join(', ')}) => ${flatten(ast.body)}`;
-          case 'Literal':
-            return ast.raw;
-          case 'Identifier':
-            return ast.name;
-          case 'MemberExpression':
-            if (ast.object.type === 'ThisExpression') {
-              return thisLookup(ast.property.name);
+            case 'CallExpression': {
+              if (ast.callee.property.name === 'subarray') {
+                return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              }
+              if (ast.callee.object.name === 'gl' || ast.callee.object.name === 'context') {
+                return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              }
+              if (ast.callee.object.type === 'ThisExpression') {
+                functionDependencies.push(findDependency('this', ast.callee.property.name));
+                return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              } else if (ast.callee.object.name) {
+                const foundSource = findDependency(ast.callee.object.name, ast.callee.property.name);
+                if (foundSource === null) {
+                  // we're not flattening it
+                  return `${ast.callee.object.name}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+                } else {
+                  functionDependencies.push(foundSource);
+                  // we're flattening it
+                  return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+                }
+              } else if (ast.callee.object.type === 'MemberExpression') {
+                return `${flatten(ast.callee.object)}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              } else {
+                throw new Error('unknown ast.callee');
+              }
             }
-            if (ast.computed) {
-              return `${flatten(ast.object)}[${flatten(ast.property)}]`;
-            }
-            return flatten(ast.object) + '.' + flatten(ast.property);
-          case 'ThisExpression':
-            return 'this';
-          case 'NewExpression':
-            return `new ${flatten(ast.callee)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-          case 'ForStatement':
-            return `for (${flatten(ast.init)};${flatten(ast.test)};${flatten(ast.update)}) ${flatten(ast.body)}`;
-          case 'AssignmentExpression':
-            return `${flatten(ast.left)}${ast.operator}${flatten(ast.right)}`;
-          case 'UpdateExpression':
-            return `${flatten(ast.argument)}${ast.operator}`;
-          case 'IfStatement':
-            return `if (${flatten(ast.test)}) ${flatten(ast.consequent)}`;
-          case 'ThrowStatement':
-            return `throw ${flatten(ast.argument)}`;
-          case 'ObjectPattern':
-            return ast.properties.map(flatten).join(', ');
-          case 'ArrayPattern':
-            return ast.elements.map(flatten).join(', ');
-          case 'DebuggerStatement':
-            return 'debugger;';
-          case 'ConditionalExpression':
-            return `${flatten(ast.test)}?${flatten(ast.consequent)}:${flatten(ast.alternate)}`;
-          case 'Property':
-            if (ast.kind === 'init') {
-              return flatten(ast.key);
-            }
+            case 'ReturnStatement':
+              return `return ${flatten(ast.argument)}`;
+            case 'BinaryExpression':
+              return `(${flatten(ast.left)}${ast.operator}${flatten(ast.right)})`;
+            case 'UnaryExpression':
+              if (ast.prefix) {
+                return `${ast.operator} ${flatten(ast.argument)}`;
+              } else {
+                return `${flatten(ast.argument)} ${ast.operator}`;
+              }
+              case 'ExpressionStatement':
+                return `${flatten(ast.expression)}`;
+              case 'SequenceExpression':
+                return `(${flatten(ast.expressions)})`;
+              case 'ArrowFunctionExpression':
+                return `(${ast.params.map(flatten).join(', ')}) => ${flatten(ast.body)}`;
+              case 'Literal':
+                return ast.raw;
+              case 'Identifier':
+                return ast.name;
+              case 'MemberExpression':
+                if (ast.object.type === 'ThisExpression') {
+                  return thisLookup(ast.property.name);
+                }
+                if (ast.computed) {
+                  return `${flatten(ast.object)}[${flatten(ast.property)}]`;
+                }
+                return flatten(ast.object) + '.' + flatten(ast.property);
+              case 'ThisExpression':
+                return 'this';
+              case 'NewExpression':
+                return `new ${flatten(ast.callee)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              case 'ForStatement':
+                return `for (${flatten(ast.init)};${flatten(ast.test)};${flatten(ast.update)}) ${flatten(ast.body)}`;
+              case 'AssignmentExpression':
+                return `${flatten(ast.left)}${ast.operator}${flatten(ast.right)}`;
+              case 'UpdateExpression':
+                return `${flatten(ast.argument)}${ast.operator}`;
+              case 'IfStatement':
+                return `if (${flatten(ast.test)}) ${flatten(ast.consequent)}`;
+              case 'ThrowStatement':
+                return `throw ${flatten(ast.argument)}`;
+              case 'ObjectPattern':
+                return ast.properties.map(flatten).join(', ');
+              case 'ArrayPattern':
+                return ast.elements.map(flatten).join(', ');
+              case 'DebuggerStatement':
+                return 'debugger;';
+              case 'ConditionalExpression':
+                return `${flatten(ast.test)}?${flatten(ast.consequent)}:${flatten(ast.alternate)}`;
+              case 'Property':
+                if (ast.kind === 'init') {
+                  return flatten(ast.key);
+                }
       }
       throw new Error(`unhandled ast.type of ${ ast.type }`);
     }
@@ -783,23 +785,124 @@ const utils = {
         if (!flattened[functionDependency]) {
           flattened[functionDependency] = true;
         }
-        flattenedFunctionDependencies.push(utils.flattenFunctionToString(functionDependency, settings) + ';\n');
+        flattenedFunctionDependencies.push(utils.flattenFunctionToString(functionDependency, settings) + '\n');
       }
       return flattenedFunctionDependencies.join('') + result;
     }
     return result;
   },
 
-  splitHTMLImageToRGB: (image, mode) => {
-    const gpu = new GPU({ mode });
+  normalizeDeclarations: (ast) => {
+    if (ast.type !== 'VariableDeclaration') throw new Error('Ast is not of type "VariableDeclaration"');
+    const normalizedDeclarations = [];
+    for (let declarationIndex = 0; declarationIndex < ast.declarations.length; declarationIndex++) {
+      const declaration = ast.declarations[declarationIndex];
+      if (declaration.id && declaration.id.type === 'ObjectPattern' && declaration.id.properties) {
+        const { properties } = declaration.id;
+        for (let propertyIndex = 0; propertyIndex < properties.length; propertyIndex++) {
+          const property = properties[propertyIndex];
+          if (property.value.type === 'ObjectPattern' && property.value.properties) {
+            for (let subPropertyIndex = 0; subPropertyIndex < property.value.properties.length; subPropertyIndex++) {
+              const subProperty = property.value.properties[subPropertyIndex];
+              if (subProperty.type === 'Property') {
+                normalizedDeclarations.push({
+                  type: 'VariableDeclarator',
+                  id: {
+                    type: 'Identifier',
+                    name: subProperty.key.name
+                  },
+                  init: {
+                    type: 'MemberExpression',
+                    object: {
+                      type: 'MemberExpression',
+                      object: declaration.init,
+                      property: {
+                        type: 'Identifier',
+                        name: property.key.name
+                      },
+                      computed: false
+                    },
+                    property: {
+                      type: 'Identifier',
+                      name: subProperty.key.name
+                    },
+                    computed: false
+                  }
+                });
+              } else {
+                throw new Error('unexpected state');
+              }
+            }
+          } else if (property.value.type === 'Identifier') {
+            normalizedDeclarations.push({
+              type: 'VariableDeclarator',
+              id: {
+                type: 'Identifier',
+                name: property.value && property.value.name ? property.value.name : property.key.name
+              },
+              init: {
+                type: 'MemberExpression',
+                object: declaration.init,
+                property: {
+                  type: 'Identifier',
+                  name: property.key.name
+                },
+                computed: false
+              }
+            });
+          } else {
+            throw new Error('unexpected state');
+          }
+        }
+      } else if (declaration.id && declaration.id.type === 'ArrayPattern' && declaration.id.elements) {
+        const { elements } = declaration.id;
+        for (let elementIndex = 0; elementIndex < elements.length; elementIndex++) {
+          const element = elements[elementIndex];
+          if (element.type === 'Identifier') {
+            normalizedDeclarations.push({
+              type: 'VariableDeclarator',
+              id: {
+                type: 'Identifier',
+                name: element.name
+              },
+              init: {
+                type: 'MemberExpression',
+                object: declaration.init,
+                property: {
+                  type: 'Literal',
+                  value: elementIndex,
+                  raw: elementIndex.toString(),
+                  start: element.start,
+                  end: element.end
+                },
+                computed: true
+              }
+            });
+          } else {
+            throw new Error('unexpected state');
+          }
+        }
+      } else {
+        normalizedDeclarations.push(declaration);
+      }
+    }
+    return normalizedDeclarations;
+  },
 
+  /**
+   *
+   * @param {GPU} gpu
+   * @param image
+   * @return {[*, *, *, *]}
+   */
+  splitHTMLImageToRGB: (gpu, image) => {
     const rKernel = gpu.createKernel(function(a) {
       const pixel = a[this.thread.y][this.thread.x];
       return pixel.r * 255;
     }, {
       output: [image.width, image.height],
       precision: 'unsigned',
-      argumentTypes: ['HTMLImage'],
+      argumentTypes: { a: 'HTMLImage' },
     });
     const gKernel = gpu.createKernel(function(a) {
       const pixel = a[this.thread.y][this.thread.x];
@@ -807,7 +910,7 @@ const utils = {
     }, {
       output: [image.width, image.height],
       precision: 'unsigned',
-      argumentTypes: ['HTMLImage'],
+      argumentTypes: { a: 'HTMLImage' },
     });
     const bKernel = gpu.createKernel(function(a) {
       const pixel = a[this.thread.y][this.thread.x];
@@ -815,7 +918,7 @@ const utils = {
     }, {
       output: [image.width, image.height],
       precision: 'unsigned',
-      argumentTypes: ['HTMLImage'],
+      argumentTypes: { a: 'HTMLImage' },
     });
     const aKernel = gpu.createKernel(function(a) {
       const pixel = a[this.thread.y][this.thread.x];
@@ -823,7 +926,7 @@ const utils = {
     }, {
       output: [image.width, image.height],
       precision: 'unsigned',
-      argumentTypes: ['HTMLImage'],
+      argumentTypes: { a: 'HTMLImage' },
     });
     const result = [
       rKernel(image),
@@ -841,48 +944,52 @@ const utils = {
 
   /**
    * A visual debug utility
+   * @param {GPU} gpu
    * @param rgba
    * @param width
    * @param height
-   * @param mode
    * @return {Object[]}
    */
-  splitRGBAToCanvases: (rgba, width, height, mode) => {
-    const { GPU } = require('./gpu.js');
-
-    const visualGPUR = new GPU({ mode });
-    const visualKernelR = visualGPUR.createKernel(function(v) {
+  splitRGBAToCanvases: (gpu, rgba, width, height) => {
+    const visualKernelR = gpu.createKernel(function(v) {
       const pixel = v[this.thread.y][this.thread.x];
       this.color(pixel.r / 255, 0, 0, 255);
-    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    }, {
+      output: [width, height],
+      graphical: true,
+      argumentTypes: { v: 'Array2D(4)' }
+    });
     visualKernelR(rgba);
 
-    const visualGPUG = new GPU({ mode });
-    const visualKernelG = visualGPUG.createKernel(function(v) {
+    const visualKernelG = gpu.createKernel(function(v) {
       const pixel = v[this.thread.y][this.thread.x];
       this.color(0, pixel.g / 255, 0, 255);
-    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    }, {
+      output: [width, height],
+      graphical: true,
+      argumentTypes: { v: 'Array2D(4)' }
+    });
     visualKernelG(rgba);
 
-    const visualGPUB = new GPU({ mode });
-    const visualKernelB = visualGPUB.createKernel(function(v) {
+    const visualKernelB = gpu.createKernel(function(v) {
       const pixel = v[this.thread.y][this.thread.x];
       this.color(0, 0, pixel.b / 255, 255);
-    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    }, {
+      output: [width, height],
+      graphical: true,
+      argumentTypes: { v: 'Array2D(4)' }
+    });
     visualKernelB(rgba);
 
-    const visualGPUA = new GPU({ mode });
-    const visualKernelA = visualGPUA.createKernel(function(v) {
+    const visualKernelA = gpu.createKernel(function(v) {
       const pixel = v[this.thread.y][this.thread.x];
       this.color(255, 255, 255, pixel.a / 255);
-    }, { output: [width, height], graphical: true, argumentTypes: { v: 'Array2D(4)' } });
+    }, {
+      output: [width, height],
+      graphical: true,
+      argumentTypes: { v: 'Array2D(4)' }
+    });
     visualKernelA(rgba);
-
-    visualGPUR.destroy();
-    visualGPUG.destroy();
-    visualGPUB.destroy();
-    visualGPUA.destroy();
-
     return [
       visualKernelR.canvas,
       visualKernelG.canvas,
