@@ -110,7 +110,7 @@ const utils = {
    * @returns {Boolean}  true if is array or Array-like object
    */
   isArray(array) {
-    return !isNaN(array.length);
+    return array instanceof Object && !isNaN(array.length);
   },
 
   /**
