@@ -150,7 +150,6 @@ class WebGLKernel extends GLKernel {
     this.threadDim = null;
     this.framebuffer = null;
     this.buffer = null;
-    this.textureGarbage = [];
     this.textureCache = [];
     this.programUniformLocationCache = {};
     this.uniform1fCache = {};
@@ -629,31 +628,18 @@ class WebGLKernel extends GLKernel {
       if (this.pipeline) {
         gl.bindRenderbuffer(gl.RENDERBUFFER, null);
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-        if (!this.outputTexture || this.immutable) {
-          this._setupOutputTexture();
-        }
+        this._setupOutputTexture();
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        return new this.TextureConstructor({
-          texture: this.outputTexture,
-          size: texSize,
-          dimensions: this.threadDim,
-          output: this.output,
-          context: this.context,
-          internalFormat: this.getInternalFormat(),
-          textureFormat: this.getTextureFormat(),
-        });
+        return this.outputTexture.clone();
       }
       gl.bindRenderbuffer(gl.RENDERBUFFER, null);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      this.garbageCollect();
       return;
     }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-    if (this.immutable) {
-      this._setupOutputTexture();
-    }
+    this._setupOutputTexture();
 
     if (this.subKernels !== null) {
       if (this.immutable) {
@@ -663,13 +649,6 @@ class WebGLKernel extends GLKernel {
     }
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    this.garbageCollect();
-  }
-
-  garbageCollect() {
-    while (this.textureGarbage.length > 0) {
-      this.textureGarbage.pop().delete();
-    }
   }
 
   drawBuffers() {
@@ -692,9 +671,13 @@ class WebGLKernel extends GLKernel {
    * @desc Setup and replace output texture
    */
   _setupOutputTexture() {
+    if (this.outputTexture) {
+      this.outputTexture.beforeMutate();
+      return;
+    }
     const gl = this.context;
     const texSize = this.texSize;
-    const texture = this.outputTexture = this.createTexture();
+    const texture = this.createTexture();
     gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -708,6 +691,15 @@ class WebGLKernel extends GLKernel {
       gl.texImage2D(gl.TEXTURE_2D, 0, format, texSize[0], texSize[1], 0, format, gl.UNSIGNED_BYTE, null);
     }
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    this.outputTexture = new this.TextureConstructor({
+      texture,
+      size: texSize,
+      dimensions: this.threadDim,
+      output: this.output,
+      context: this.context,
+      internalFormat: this.getInternalFormat(),
+      textureFormat: this.getTextureFormat(),
+    });
   }
 
   /**
@@ -1443,6 +1435,12 @@ class WebGLKernel extends GLKernel {
       }
     }
     this.destroyExtensions();
+    if (this.prevInput) {
+      this.prevInput.delete();
+    }
+    if (this.outputTexture) {
+      this.outputTexture.delete();
+    }
     delete this.context;
     delete this.canvas;
   }

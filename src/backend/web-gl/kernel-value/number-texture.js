@@ -28,6 +28,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
   }
 
   updateValue(inputTexture) {
+    const { kernel, context: gl } = this;
     if (inputTexture.constructor !== this.initialValueConstructor) {
       this.onUpdateValueMismatch(inputTexture.constructor);
       return;
@@ -35,12 +36,21 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
     if (this.checkContext && inputTexture.context !== this.context) {
       throw new Error(`Value ${this.name} (${this.type}) must be from same context`);
     }
-    const { context: gl } = this;
-    if (inputTexture.texture === this.kernel.outputTexture) {
-      inputTexture = inputTexture.clone();
-      gl.useProgram(this.kernel.program);
-      this.kernel.textureGarbage.push(inputTexture);
+
+    if (kernel.outputTexture.texture === inputTexture.texture) {
+      const prev = kernel.prevInput;
+      if (prev) {
+        if (prev.ref === 1) {
+          if (kernel.outputTexture) {
+            kernel.outputTexture.delete();
+            kernel.outputTexture = prev.clone();
+          }
+        }
+        prev.delete();
+      }
+      kernel.prevInput = inputTexture.clone();
     }
+
     gl.activeTexture(this.contextHandle);
     gl.bindTexture(gl.TEXTURE_2D, this.uploadValue = inputTexture.texture);
     this.kernel.setUniform1i(this.id, this.index);
