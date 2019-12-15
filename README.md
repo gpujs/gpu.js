@@ -443,7 +443,7 @@ image.onload = () => {
   kernel(image);
   // Result: colorful image
   
-  document.getElementsByTagName('body')[0].appendChild(kernel.getCanvas());
+  document.getElementsByTagName('body')[0].appendChild(kernel.canvas);
 };
 ```
 
@@ -474,7 +474,7 @@ function onload() {
     kernel([image1, image2, image3]);
     // Result: colorful image composed of many images
 
-     document.getElementsByTagName('body')[0].appendChild(kernel.getCanvas());
+     document.getElementsByTagName('body')[0].appendChild(kernel.canvas);
   }
 };
 ```
