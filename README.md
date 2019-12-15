@@ -437,11 +437,13 @@ const kernel = gpu.createKernel(function(image) {
   .setGraphical(true)
   .setOutput([100, 100]);
 
-const image = new document.createElement('img');
+const image = document.createElement('img');
 image.src = 'my/image/source.png';
 image.onload = () => {
   kernel(image);
   // Result: colorful image
+  
+  document.getElementsByTagName('body')[0].appendChild(kernel.getCanvas());
 };
 ```
 
@@ -455,13 +457,13 @@ const kernel = gpu.createKernel(function(image) {
   .setGraphical(true)
   .setOutput([100, 100]);
 
-const image1 = new document.createElement('img');
+const image1 = document.createElement('img');
 image1.src = 'my/image/source1.png';
 image1.onload = onload;
-const image2 = new document.createElement('img');
+const image2 = document.createElement('img');
 image2.src = 'my/image/source2.png';
 image2.onload = onload;
-const image3 = new document.createElement('img');
+const image3 = document.createElement('img');
 image3.src = 'my/image/source3.png';
 image3.onload = onload;
 const totalImages = 3;
@@ -471,6 +473,8 @@ function onload() {
   if (loadedImages === totalImages) {
     kernel([image1, image2, image3]);
     // Result: colorful image composed of many images
+
+     document.getElementsByTagName('body')[0].appendChild(kernel.getCanvas());
   }
 };
 ```
