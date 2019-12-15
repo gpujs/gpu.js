@@ -20,7 +20,6 @@ You can experiment around with the [kernel playground here](http://gpu.rocks/pla
 Matrix multiplication (perform matrix multiplication on 2 matrices of size 512 x 512) written in GPU.js:
 
 ## Browser
-
 ```html
 <script src="dist/gpu-browser.min.js"></script>
 <script>
@@ -39,7 +38,6 @@ Matrix multiplication (perform matrix multiplication on 2 matrices of size 512 x
 ```
 
 ## CDN
-
 ``` 
 https://unpkg.com/gpu.js@latest/dist/gpu-browser.min.js
 https://cdn.jsdelivr.net/npm/gpu.js@latest/dist/gpu-browser.min.js
