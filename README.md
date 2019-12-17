@@ -77,6 +77,7 @@ const c = multiplyMatrix(a, b) as number[][];
 
 NOTE: documentation is slightly out of date for the upcoming release of v2.  We will fix it!  In the mean time, if you'd like to assist (PLEASE) let us know.
 
+* [Demos](#demos)
 * [Installation](#installation)
 * [`GPU` Settings](#gpu-settings)
 * [`gpu.createKernel` Settings](#gpucreatekernel-settings)
@@ -111,6 +112,31 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [Contributing](#contributing)
 * [Terms Explained](#terms-explained)
 * [License](#license)
+
+## Demos
+GPU.js in the wild, all around the net.  Add yours here!
+* [Temperature interpolation using GPU.js](https://observablehq.com/@rveciana/temperature-interpolation-using-gpu-js)
+* [Julia Set Fractal using GPU.js](https://observablehq.com/@ukabuer/julia-set-fractal-using-gpu-js)
+* [Hello, gpu.js v2](https://observablehq.com/@fil/hello-gpu-js-v2)
+* [Basic gpu.js canvas example](https://observablehq.com/@rveciana/basic-gpu-js-canvas-example)
+* [Raster projection with GPU.js](https://observablehq.com/@fil/raster-projection-with-gpu-js)
+* [GPU.js Example: Slow Fade](https://observablehq.com/@robertleeplummerjr/gpu-js-example-slow-fade)
+* [GPU.JS CA Proof of Concept](https://observablehq.com/@alexlamb/gpu-js-ca-proof-of-concept)
+* [Image Convolution using GPU.js](https://observablehq.com/@ukabuer/image-convolution-using-gpu-js)
+* [Leaflet + gpu.js canvas](https://observablehq.com/@rveciana/leaflet-gpu-js-canvas)
+* [Image to GPU.js](https://observablehq.com/@fil/image-to-gpu)
+* [GPU Accelerated Heatmap using gpu.js](https://observablehq.com/@tracyhenry/gpu-accelerated-heatmap-using-gpu-js)
+* [Dijkstra’s algorithm in gpu.js](https://observablehq.com/@fil/dijkstras-algorithm-in-gpu-js)
+* [Voronoi with gpu.js](https://observablehq.com/@fil/voronoi-with-gpu-js)
+* [The gpu.js loop](https://observablehq.com/@fil/the-gpu-js-loop)
+* [GPU.js Example: Mandelbrot Set](https://observablehq.com/@robertleeplummerjr/gpu-js-example-mandelbrot-set)
+* [GPU.js Example: Mandelbulb](https://observablehq.com/@robertleeplummerjr/gpu-js-example-mandelbulb)
+* [Inverse of the distance with gpu.js](https://observablehq.com/@rveciana/inverse-of-the-distance-with-gpu-js)
+* [gpu.js laser detection v2](https://observablehq.com/@robertleeplummerjr/gpu-js-laser-detection-v2)
+* [GPU.js Canvas](https://observablehq.com/@hubgit/gpu-js-canvas)
+* [Video Convolution using GPU.js](https://observablehq.com/@robertleeplummerjr/video-convolution-using-gpu-js)
+* [GPU Rock Paper Scissors](https://observablehq.com/@alexlamb/gpu-rock-paper-scissors)
+* [Shaded relief with gpujs and d3js](https://observablehq.com/@rveciana/shaded-relief-with-gpujs-and-d3js/2)
 
 ## Installation
 On Linux, ensure you have the correct header files installed: `sudo apt install mesa-common-dev libxi-dev` (adjust for your distribution)

@@ -13,7 +13,7 @@ export class GPU {
   nativeFunctions: IGPUNativeFunction[];
   addFunction(kernel: KernelFunction, settings?: IGPUFunctionSettings): this;
   addNativeFunction(name: string, source: string): this;
-  combineKernels(...kernels: KernelFunction[]): KernelFunction;
+  combineKernels(...kernels: KernelFunction[]): IKernelRunShortcut;
   combineKernels<KF extends KernelFunction>(...kernels: KF[]):
     ((...args: Parameters<KF>) => 
       ReturnType<KF>[]
@@ -40,6 +40,7 @@ export class GPU {
     | KernelFunction[],
     rootKernel: KernelFunction,
     settings?: IGPUKernelSettings): ((() => IMappedKernelResult) & IKernelRunShortcut);
+  // this needs further refined
   createKernelMap<KF extends KernelFunction>(
     subKernels: {
         [targetLocation: string]: KF
