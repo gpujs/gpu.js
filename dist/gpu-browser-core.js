@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.3.0
- * @date Tue Nov 26 2019 09:51:10 GMT-0500 (Eastern Standard Time)
+ * @version 2.3.1
+ * @date Tue Dec 17 2019 09:39:34 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -13389,7 +13389,7 @@ const utils = {
 
   getVariableType(value, strictIntegers) {
     if (utils.isArray(value)) {
-      if (value[0].nodeName === 'IMG') {
+      if (value.length > 0 && value[0].nodeName === 'IMG') {
         return 'HTMLImageArray';
       }
       return 'Array';
