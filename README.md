@@ -957,6 +957,75 @@ To assist with mostly unit tests, but perhaps in scenarios outside of GPU.js, th
 
 ## Typescript Typings
 Typescript is supported!  Typings can be found [here](src/index.d.ts)!
+For strongly typed kernels:
+```ts
+import { GPU, IKernelFunctionThis } from './src';
+const gpu = new GPU();
+
+function kernelFunction(this: IKernelFunctionThis): number {
+  return 1 + this.thread.x;
+}
+
+const kernelMap = gpu.createKernel<typeof kernelFunction>(kernelFunction)
+  .setOutput([3,3,3]);
+
+const result = kernelMap();
+
+console.log(result as number[][][]);
+```
+
+For strongly typed mapped kernels:
+```ts
+import { GPU, Texture, IKernelFunctionThis } from './src';
+const gpu = new GPU();
+
+function kernelFunction(this: IKernelFunctionThis): [number, number] {
+  return [1, 1];
+}
+
+function subKernel(): [number, number] {
+  return [1, 1];
+}
+
+const kernelMap = gpu.createKernelMap<typeof kernelFunction>({
+  test: subKernel,
+}, kernelFunction)
+  .setOutput([1])
+  .setPipeline(true);
+
+const result = kernelMap();
+
+console.log((result.test as Texture).toArray() as [number, number][]);
+```
+
+For extending constants:
+```ts
+import { GPU, IKernelFunctionThis } from './src';
+const gpu = new GPU();
+
+interface IConstants {
+  screen: [number, number];
+}
+
+type This = {
+  constants: IConstants
+} & IKernelFunctionThis;
+
+function kernelFunction(this: This): number {
+  const { screen } = this.constants;
+  return 1 + screen[0];
+}
+
+const kernelMap = gpu.createKernel<typeof kernelFunction>(kernelFunction)
+  .setOutput([3,3,3])
+  .setConstants<IConstants>({
+    screen: [1, 1]
+  });
+
+const result = kernelMap();
+
+console.log(result as number[][][]);
+```
 
 ## Destructured Assignments **New in V2!**
 Destructured Objects and Arrays work in GPU.js.

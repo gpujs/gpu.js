@@ -13,9 +13,57 @@ export class GPU {
   nativeFunctions: IGPUNativeFunction[];
   addFunction(kernel: KernelFunction, settings?: IGPUFunctionSettings): this;
   addNativeFunction(name: string, source: string): this;
-  combineKernels(...kernels: Function[]): KernelFunction;
+  combineKernels(...kernels: KernelFunction[]): KernelFunction;
+  combineKernels<KF extends KernelFunction>(...kernels: KF[]):
+    ((...args: Parameters<KF>) => 
+      ReturnType<KF>[]
+      | ReturnType<KF>[][]
+      | ReturnType<KF>[][][]
+      | Texture
+      | void
+    )
+    & IKernelRunShortcutBase;
   createKernel(kernel: KernelFunction, settings?: IGPUKernelSettings): IKernelRunShortcut;
-  createKernelMap(subKernels: Object | Array<Function>, rootKernel: Function, settings?: IGPUKernelSettings): IKernelRunShortcut;
+  createKernel<KF extends KernelFunction>(kernel: KF, settings?: IGPUKernelSettings): 
+    ((...args: Parameters<KF>) => 
+      ReturnType<KF>[]
+      | ReturnType<KF>[][]
+      | ReturnType<KF>[][][]
+      | Texture
+      | void
+    )
+    & IKernelRunShortcutBase;
+  createKernelMap(
+    subKernels: {
+      [targetLocation: string]: KernelFunction
+    }
+    | KernelFunction[],
+    rootKernel: KernelFunction,
+    settings?: IGPUKernelSettings): ((() => IMappedKernelResult) & IKernelRunShortcut);
+  createKernelMap<KF extends KernelFunction>(
+    subKernels: {
+        [targetLocation: string]: KF
+      }
+      | KF[],
+    rootKernel: KF,
+    settings?: IGPUKernelSettings
+  ):
+    ((...args: Parameters<KF>) => {
+      result?:
+        ReturnType<KF>[]
+        | ReturnType<KF>[][]
+        | ReturnType<KF>[][][]
+        | Texture
+        | void;
+      [targetLocation: string]:
+        ReturnType<KF>[]
+        | ReturnType<KF>[][]
+        | ReturnType<KF>[][][]
+        | Texture
+        | void
+      }
+    )
+    & IKernelRunShortcutBase;
   destroy(): void;
   Kernel: typeof Kernel;
   mode: string;
@@ -31,6 +79,11 @@ export interface IGPUNativeFunction extends IGPUFunctionSettings {
   name: string;
   source: string;
   settings: object;
+}
+
+export interface IMappedKernelResult {
+  result?: KernelVariable;
+  [targetLocation: string]: KernelVariable
 }
 
 export interface INativeFunctionList {
@@ -119,73 +172,11 @@ export abstract class Kernel {
   getPixels(flip?: boolean): Uint8ClampedArray[];
   prependString(value: string): void;
   hasPrependString(value: string): boolean;
-  constructor(kernel: KernelFunction|IJSON, settings?: IDirectKernelSettings);
+  constructor(kernel: KernelFunction|IJSON|string, settings?: IDirectKernelSettings);
   onRequestSwitchKernel?: Kernel;
-  build(
-    arg1?: KernelVariable,
-    arg2?: KernelVariable,
-    arg3?: KernelVariable,
-    arg4?: KernelVariable,
-    arg5?: KernelVariable,
-    arg6?: KernelVariable,
-    arg7?: KernelVariable,
-    arg8?: KernelVariable,
-    arg9?: KernelVariable,
-    arg10?: KernelVariable,
-    arg11?: KernelVariable,
-    arg12?: KernelVariable,
-    arg13?: KernelVariable,
-    arg14?: KernelVariable,
-    arg15?: KernelVariable,
-    arg16?: KernelVariable,
-    arg17?: KernelVariable,
-    arg18?: KernelVariable,
-    arg19?: KernelVariable,
-    arg20?: KernelVariable): void;
-  run(
-    arg1?: KernelVariable,
-    arg2?: KernelVariable,
-    arg3?: KernelVariable,
-    arg4?: KernelVariable,
-    arg5?: KernelVariable,
-    arg6?: KernelVariable,
-    arg7?: KernelVariable,
-    arg8?: KernelVariable,
-    arg9?: KernelVariable,
-    arg10?: KernelVariable,
-    arg11?: KernelVariable,
-    arg12?: KernelVariable,
-    arg13?: KernelVariable,
-    arg14?: KernelVariable,
-    arg15?: KernelVariable,
-    arg16?: KernelVariable,
-    arg17?: KernelVariable,
-    arg18?: KernelVariable,
-    arg19?: KernelVariable,
-    arg20?: KernelVariable
-  ): KernelVariable;
-  toString(
-    arg1?: KernelVariable,
-    arg2?: KernelVariable,
-    arg3?: KernelVariable,
-    arg4?: KernelVariable,
-    arg5?: KernelVariable,
-    arg6?: KernelVariable,
-    arg7?: KernelVariable,
-    arg8?: KernelVariable,
-    arg9?: KernelVariable,
-    arg10?: KernelVariable,
-    arg11?: KernelVariable,
-    arg12?: KernelVariable,
-    arg13?: KernelVariable,
-    arg14?: KernelVariable,
-    arg15?: KernelVariable,
-    arg16?: KernelVariable,
-    arg17?: KernelVariable,
-    arg18?: KernelVariable,
-    arg19?: KernelVariable,
-    arg20?: KernelVariable
-  ): string;
+  build(...args: KernelVariable[]): void;
+  run(...args: KernelVariable[]): KernelVariable;
+  toString(...args: KernelVariable[]): string;
   toJSON(): IJSON;
   setOutput(flag: number[]): this;
   setWarnVarUsage(flag: boolean): this;
@@ -194,7 +185,8 @@ export abstract class Kernel {
   setDebug(flag: boolean): this;
   setGraphical(flag: boolean): this;
   setLoopMaxIterations(flag: number): this;
-  setConstants(flag: object): this;
+  setConstants(flag: IConstants): this;
+  setConstants<T>(flag: T & IConstants): this;
   setConstantTypes(flag: IKernelValueTypes): this;
   setDynamicOutput(flag: boolean): this;
   setDynamicArguments(flag: boolean): this;
@@ -332,30 +324,14 @@ export interface ITypesList {
   [typeName: string]: GPUVariableType
 }
 
-export interface IKernelRunShortcut extends Kernel {
+export interface IKernelRunShortcutBase extends Kernel {
   kernel: Kernel;
-  (
-    arg1?: KernelVariable,
-    arg2?: KernelVariable,
-    arg3?: KernelVariable,
-    arg4?: KernelVariable,
-    arg5?: KernelVariable,
-    arg6?: KernelVariable,
-    arg7?: KernelVariable,
-    arg8?: KernelVariable,
-    arg9?: KernelVariable,
-    arg10?: KernelVariable,
-    arg11?: KernelVariable,
-    arg12?: KernelVariable,
-    arg13?: KernelVariable,
-    arg14?: KernelVariable,
-    arg15?: KernelVariable,
-    arg16?: KernelVariable,
-    arg17?: KernelVariable,
-    arg18?: KernelVariable,
-    arg19?: KernelVariable,
-    arg20?: KernelVariable
-  ): KernelOutput;
+  exec(): Promise<KernelOutput>;
+}
+
+export interface IKernelRunShortcut extends IKernelRunShortcutBase {
+  kernel: Kernel;
+  (...args: KernelVariable[]): KernelOutput;
   exec(): Promise<KernelOutput>;
 }
 
@@ -388,9 +364,6 @@ export interface IKernelFunctionThis {
 export type KernelVariable =
   boolean
   | number
-  | number[]
-  | number[][]
-  | number[][][]
   | Texture
   | Input
   | HTMLImageElement
@@ -398,36 +371,52 @@ export type KernelVariable =
   | HTMLImageElement[]
   | KernelOutput;
 
-export type ThreadKernelVariable = boolean | number | number[] | number[][] | number[][][];
-export type KernelFunction = ((
-  this: IKernelFunctionThis,
-  arg1?: ThreadKernelVariable,
-  arg2?: ThreadKernelVariable,
-  arg3?: ThreadKernelVariable,
-  arg4?: ThreadKernelVariable,
-  arg5?: ThreadKernelVariable,
-  arg6?: ThreadKernelVariable,
-  arg7?: ThreadKernelVariable,
-  arg8?: ThreadKernelVariable,
-  arg9?: ThreadKernelVariable,
-  arg10?: ThreadKernelVariable,
-  arg11?: ThreadKernelVariable,
-  arg12?: ThreadKernelVariable,
-  arg13?: ThreadKernelVariable,
-  arg14?: ThreadKernelVariable,
-  arg15?: ThreadKernelVariable,
-  arg16?: ThreadKernelVariable,
-  arg17?: ThreadKernelVariable,
-  arg18?: ThreadKernelVariable,
-  arg19?: ThreadKernelVariable,
-  arg20?: ThreadKernelVariable,
-) => KernelOutput) | object | string;
-
-export type KernelOutput = void
+export type ThreadKernelVariable
+  = boolean
+  | number
   | number[]
   | number[][]
   | number[][][]
-  | number[][][][]
+
+  | [number, number]
+  | [number, number][]
+  | [number, number][][]
+  | [number, number][][][]
+
+  | [number, number, number]
+  | [number, number, number][]
+  | [number, number, number][][]
+  | [number, number, number][][][]
+
+  | [number, number, number, number]
+  | [number, number, number, number][]
+  | [number, number, number, number][][]
+  | [number, number, number, number][][][]
+  ;
+
+export type KernelFunction = ((
+  this: IKernelFunctionThis,
+  ...args: ThreadKernelVariable[]
+) => KernelOutput);
+
+export type KernelOutput = void
+  | number
+  | number[]
+  | number[][]
+  | number[][][]
+
+  | [number, number][]
+  | [number, number, number][]
+  | [number, number, number, number][]
+
+  | [number, number][][]
+  | [number, number, number][][]
+  | [number, number, number, number][][]
+
+  | [number, number][][][]
+  | [number, number, number][][][]
+  | [number, number, number, number][][][]
+
   | Texture;
 
 export interface IFunction {
@@ -516,7 +505,23 @@ export class Texture {
   kernel: Kernel;
 }
 
-export type TextureArrayOutput = number[] | number[][] | number[][][] | number[][][][];
+export type TextureArrayOutput
+  = number[]
+  | number[][]
+  | number[][][]
+
+  | [number, number][]
+  | [number, number][][]
+  | [number, number][][][]
+
+  | [number, number, number][]
+  | [number, number, number][][]
+  | [number, number, number][][][]
+
+  | [number, number, number, number][]
+  | [number, number, number, number][][]
+  | [number, number, number, number][][][]
+  ;
 
 export interface IPlugin {
   source: string;
@@ -538,7 +543,7 @@ export class Input {
 
 export type input = (value: number[], size: OutputDimensions) => Input;
 
-export function alias(name: string, source: KernelFunction):KernelFunction;
+export function alias(name: string, source: KernelFunction): KernelFunction;
 
 export class KernelValue {
   constructor(value: KernelValue, settings: IKernelValueSettings);
