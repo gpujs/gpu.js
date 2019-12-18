@@ -37,6 +37,12 @@ Matrix multiplication (perform matrix multiplication on 2 matrices of size 512 x
 </script>
 ```
 
+## CDN
+``` 
+https://unpkg.com/gpu.js@latest/dist/gpu-browser.min.js
+https://cdn.jsdelivr.net/npm/gpu.js@latest/dist/gpu-browser.min.js
+```
+
 ## Node
 ```js
 const { GPU } = require('gpu.js');
@@ -71,6 +77,7 @@ const c = multiplyMatrix(a, b) as number[][];
 
 NOTE: documentation is slightly out of date for the upcoming release of v2.  We will fix it!  In the mean time, if you'd like to assist (PLEASE) let us know.
 
+* [Demos](#demos)
 * [Installation](#installation)
 * [`GPU` Settings](#gpu-settings)
 * [`gpu.createKernel` Settings](#gpucreatekernel-settings)
@@ -105,6 +112,31 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [Contributing](#contributing)
 * [Terms Explained](#terms-explained)
 * [License](#license)
+
+## Demos
+GPU.js in the wild, all around the net.  Add yours here!
+* [Temperature interpolation using GPU.js](https://observablehq.com/@rveciana/temperature-interpolation-using-gpu-js)
+* [Julia Set Fractal using GPU.js](https://observablehq.com/@ukabuer/julia-set-fractal-using-gpu-js)
+* [Hello, gpu.js v2](https://observablehq.com/@fil/hello-gpu-js-v2)
+* [Basic gpu.js canvas example](https://observablehq.com/@rveciana/basic-gpu-js-canvas-example)
+* [Raster projection with GPU.js](https://observablehq.com/@fil/raster-projection-with-gpu-js)
+* [GPU.js Example: Slow Fade](https://observablehq.com/@robertleeplummerjr/gpu-js-example-slow-fade)
+* [GPU.JS CA Proof of Concept](https://observablehq.com/@alexlamb/gpu-js-ca-proof-of-concept)
+* [Image Convolution using GPU.js](https://observablehq.com/@ukabuer/image-convolution-using-gpu-js)
+* [Leaflet + gpu.js canvas](https://observablehq.com/@rveciana/leaflet-gpu-js-canvas)
+* [Image to GPU.js](https://observablehq.com/@fil/image-to-gpu)
+* [GPU Accelerated Heatmap using gpu.js](https://observablehq.com/@tracyhenry/gpu-accelerated-heatmap-using-gpu-js)
+* [Dijkstra’s algorithm in gpu.js](https://observablehq.com/@fil/dijkstras-algorithm-in-gpu-js)
+* [Voronoi with gpu.js](https://observablehq.com/@fil/voronoi-with-gpu-js)
+* [The gpu.js loop](https://observablehq.com/@fil/the-gpu-js-loop)
+* [GPU.js Example: Mandelbrot Set](https://observablehq.com/@robertleeplummerjr/gpu-js-example-mandelbrot-set)
+* [GPU.js Example: Mandelbulb](https://observablehq.com/@robertleeplummerjr/gpu-js-example-mandelbulb)
+* [Inverse of the distance with gpu.js](https://observablehq.com/@rveciana/inverse-of-the-distance-with-gpu-js)
+* [gpu.js laser detection v2](https://observablehq.com/@robertleeplummerjr/gpu-js-laser-detection-v2)
+* [GPU.js Canvas](https://observablehq.com/@hubgit/gpu-js-canvas)
+* [Video Convolution using GPU.js](https://observablehq.com/@robertleeplummerjr/video-convolution-using-gpu-js)
+* [GPU Rock Paper Scissors](https://observablehq.com/@alexlamb/gpu-rock-paper-scissors)
+* [Shaded relief with gpujs and d3js](https://observablehq.com/@rveciana/shaded-relief-with-gpujs-and-d3js/2)
 
 ## Installation
 On Linux, ensure you have the correct header files installed: `sudo apt install mesa-common-dev libxi-dev` (adjust for your distribution)
@@ -437,11 +469,13 @@ const kernel = gpu.createKernel(function(image) {
   .setGraphical(true)
   .setOutput([100, 100]);
 
-const image = new document.createElement('img');
+const image = document.createElement('img');
 image.src = 'my/image/source.png';
 image.onload = () => {
   kernel(image);
   // Result: colorful image
+  
+  document.getElementsByTagName('body')[0].appendChild(kernel.canvas);
 };
 ```
 
@@ -455,13 +489,13 @@ const kernel = gpu.createKernel(function(image) {
   .setGraphical(true)
   .setOutput([100, 100]);
 
-const image1 = new document.createElement('img');
+const image1 = document.createElement('img');
 image1.src = 'my/image/source1.png';
 image1.onload = onload;
-const image2 = new document.createElement('img');
+const image2 = document.createElement('img');
 image2.src = 'my/image/source2.png';
 image2.onload = onload;
-const image3 = new document.createElement('img');
+const image3 = document.createElement('img');
 image3.src = 'my/image/source3.png';
 image3.onload = onload;
 const totalImages = 3;
@@ -471,6 +505,8 @@ function onload() {
   if (loadedImages === totalImages) {
     kernel([image1, image2, image3]);
     // Result: colorful image composed of many images
+
+     document.getElementsByTagName('body')[0].appendChild(kernel.canvas);
   }
 };
 ```
@@ -947,6 +983,75 @@ To assist with mostly unit tests, but perhaps in scenarios outside of GPU.js, th
 
 ## Typescript Typings
 Typescript is supported!  Typings can be found [here](src/index.d.ts)!
+For strongly typed kernels:
+```ts
+import { GPU, IKernelFunctionThis } from './src';
+const gpu = new GPU();
+
+function kernelFunction(this: IKernelFunctionThis): number {
+  return 1 + this.thread.x;
+}
+
+const kernelMap = gpu.createKernel<typeof kernelFunction>(kernelFunction)
+  .setOutput([3,3,3]);
+
+const result = kernelMap();
+
+console.log(result as number[][][]);
+```
+
+For strongly typed mapped kernels:
+```ts
+import { GPU, Texture, IKernelFunctionThis } from './src';
+const gpu = new GPU();
+
+function kernelFunction(this: IKernelFunctionThis): [number, number] {
+  return [1, 1];
+}
+
+function subKernel(): [number, number] {
+  return [1, 1];
+}
+
+const kernelMap = gpu.createKernelMap<typeof kernelFunction>({
+  test: subKernel,
+}, kernelFunction)
+  .setOutput([1])
+  .setPipeline(true);
+
+const result = kernelMap();
+
+console.log((result.test as Texture).toArray() as [number, number][]);
+```
+
+For extending constants:
+```ts
+import { GPU, IKernelFunctionThis } from './src';
+const gpu = new GPU();
+
+interface IConstants {
+  screen: [number, number];
+}
+
+type This = {
+  constants: IConstants
+} & IKernelFunctionThis;
+
+function kernelFunction(this: This): number {
+  const { screen } = this.constants;
+  return 1 + screen[0];
+}
+
+const kernelMap = gpu.createKernel<typeof kernelFunction>(kernelFunction)
+  .setOutput([3,3,3])
+  .setConstants<IConstants>({
+    screen: [1, 1]
+  });
+
+const result = kernelMap();
+
+console.log(result as number[][][]);
+```
 
 ## Destructured Assignments **New in V2!**
 Destructured Objects and Arrays work in GPU.js.
