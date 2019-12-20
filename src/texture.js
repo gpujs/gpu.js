@@ -17,6 +17,8 @@ class Texture {
     } = settings;
     if (!output) throw new Error('settings property "output" required.');
     if (!context) throw new Error('settings property "context" required.');
+    if (!texture) throw new Error('settings property "texture" required.');
+    if (!kernel) throw new Error('settings property "kernel" required.');
     this.texture = texture;
     if (texture.refs) {
       texture.refs++;

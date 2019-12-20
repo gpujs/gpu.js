@@ -37,18 +37,40 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
       throw new Error(`Value ${this.name} (${this.type}) must be from same context`);
     }
 
-    if (kernel.outputTexture.texture === inputTexture.texture) {
-      const prev = kernel.prevInput;
-      if (prev) {
-        if (prev.ref === 1) {
-          if (kernel.outputTexture) {
-            kernel.outputTexture.delete();
-            kernel.outputTexture = prev.clone();
+    if (kernel.pipeline) {
+      if (kernel.texture.texture === inputTexture.texture) {
+        const { prevInput } = kernel;
+        if (prevInput) {
+          if (prevInput.texture.refs === 1) {
+            if (kernel.texture) {
+              kernel.texture.delete();
+              kernel.texture = prevInput.clone();
+            }
+          }
+          prevInput.delete();
+        }
+        kernel.prevInput = inputTexture.clone();
+      } else if (kernel.mappedTextures && kernel.mappedTextures.length > 0) {
+        const { mappedTextures, prevMappedInputs } = kernel;
+        for (let i = 0; i < mappedTextures.length; i++) {
+          const mappedTexture = mappedTextures[i];
+          if (mappedTexture.texture === inputTexture.texture) {
+            const prevMappedInput = prevMappedInputs[i];
+            if (prevMappedInput) {
+              if (prevMappedInput.texture.refs === 1) {
+                if (mappedTexture) {
+                  mappedTexture.delete();
+                  mappedTextures[i] = prevMappedInput.clone();
+                }
+              }
+              prevMappedInput.delete();
+            }
+            debugger;
+            prevMappedInputs[i] = inputTexture.clone();
+            break;
           }
         }
-        prev.delete();
       }
-      kernel.prevInput = inputTexture.clone();
     }
 
     gl.activeTexture(this.contextHandle);

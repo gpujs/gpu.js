@@ -142,6 +142,10 @@ class WebGLKernelValue extends KernelValue {
   getVariablePrecisionString() {
     return this.kernel.getVariablePrecisionString(this.textureSize || undefined, this.tactic || undefined);
   }
+
+  destroy() {
+    this.context.deleteTexture(this.texture);
+  }
 }
 
 module.exports = {

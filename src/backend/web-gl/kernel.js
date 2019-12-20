@@ -125,7 +125,6 @@ class WebGLKernel extends GLKernel {
     this.pipeline = settings.pipeline;
     this.endianness = utils.systemEndianness();
     this.extensions = {};
-    this.subKernelOutputTextures = null;
     this.argumentTextureCount = 0;
     this.constantTextureCount = 0;
     this.fragShader = null;
@@ -150,6 +149,8 @@ class WebGLKernel extends GLKernel {
     this.threadDim = null;
     this.framebuffer = null;
     this.buffer = null;
+    this.texture = null;
+    this.mappedTextures = [];
     this.textureCache = [];
     this.programUniformLocationCache = {};
     this.uniform1fCache = {};
@@ -440,7 +441,7 @@ class WebGLKernel extends GLKernel {
         kernel: this,
         strictIntegers: this.strictIntegers,
         onRequestTexture: () => {
-          return this.createTexture();
+          this.createTexture();
         },
         onRequestIndex: () => {
           return textureIndexes++;
@@ -557,14 +558,12 @@ class WebGLKernel extends GLKernel {
       this.kernelConstants[i++].updateValue(this.constants[p]);
     }
 
-    if (!this.immutable) {
-      this._setupOutputTexture();
-      if (
-        this.subKernels !== null &&
-        this.subKernels.length > 0
-      ) {
-        this._setupSubOutputTextures();
-      }
+    this._setupOutputTexture();
+    if (
+      this.subKernels !== null &&
+      this.subKernels.length > 0
+    ) {
+      this._setupSubOutputTextures();
     }
     this.built = true;
   }
@@ -630,7 +629,7 @@ class WebGLKernel extends GLKernel {
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
         this._setupOutputTexture();
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        return this.outputTexture.clone();
+        return this.texture.clone();
       }
       gl.bindRenderbuffer(gl.RENDERBUFFER, null);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -642,13 +641,14 @@ class WebGLKernel extends GLKernel {
     this._setupOutputTexture();
 
     if (this.subKernels !== null) {
-      if (this.immutable) {
-        this._setupSubOutputTextures();
-      }
+      this._setupSubOutputTextures();
       this.drawBuffers();
     }
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    if (gl.getError() > 0) {
+      debugger;
+    }
   }
 
   drawBuffers() {
@@ -667,16 +667,17 @@ class WebGLKernel extends GLKernel {
         throw new Error('Unknown internal format');
     }
   }
+
   /**
    * @desc Setup and replace output texture
    */
   _setupOutputTexture() {
-    if (this.outputTexture) {
-      this.outputTexture.beforeMutate();
+    const { context: gl, texSize } = this;
+    if (this.texture) {
+      this.texture.beforeMutate();
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture.texture, 0);
       return;
     }
-    const gl = this.context;
-    const texSize = this.texSize;
     const texture = this.createTexture();
     gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -691,7 +692,7 @@ class WebGLKernel extends GLKernel {
       gl.texImage2D(gl.TEXTURE_2D, 0, format, texSize[0], texSize[1], 0, format, gl.UNSIGNED_BYTE, null);
     }
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-    this.outputTexture = new this.TextureConstructor({
+    this.texture = new this.TextureConstructor({
       texture,
       size: texSize,
       dimensions: this.threadDim,
@@ -699,6 +700,7 @@ class WebGLKernel extends GLKernel {
       context: this.context,
       internalFormat: this.getInternalFormat(),
       textureFormat: this.getTextureFormat(),
+      kernel: this,
     });
   }
 
@@ -706,13 +708,21 @@ class WebGLKernel extends GLKernel {
    * @desc Setup and replace sub-output textures
    */
   _setupSubOutputTextures() {
-    const gl = this.context;
+    const { context: gl } = this;
+    if (this.mappedTextures.length > 0) {
+      for (let i = 0; i < this.mappedTextures.length; i++) {
+        const mappedTexture = this.mappedTextures[i];
+        mappedTexture.beforeMutate();
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, mappedTexture.texture, 0);
+      }
+      return;
+    }
     const texSize = this.texSize;
     this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
-    this.subKernelOutputTextures = [];
+    this.mappedTextures = [];
+    this.prevMappedInputs = {};
     for (let i = 0; i < this.subKernels.length; i++) {
       const texture = this.createTexture();
-      this.subKernelOutputTextures.push(texture);
       this.drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
       gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount + i);
       gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -726,6 +736,17 @@ class WebGLKernel extends GLKernel {
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
       }
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, texture, 0);
+
+      this.mappedTextures.push(new this.TextureConstructor({
+        texture,
+        size: texSize,
+        dimensions: this.threadDim,
+        output: this.output,
+        context: this.context,
+        internalFormat: this.getInternalFormat(),
+        textureFormat: this.getTextureFormat(),
+        kernel: this,
+      }));
     }
   }
 
@@ -1423,6 +1444,28 @@ class WebGLKernel extends GLKernel {
     if (this.program) {
       this.context.deleteProgram(this.program);
     }
+    if (this.prevInput) {
+      this.prevInput.delete();
+    }
+    if (this.texture) {
+      this.texture.delete();
+      const textureCacheIndex = this.textureCache.indexOf(this.texture.texture);
+      if (textureCacheIndex > -1) {
+        this.textureCache.splice(textureCacheIndex, 1);
+      }
+      delete this.texture;
+    }
+    if (this.mappedTextures && this.mappedTextures.length) {
+      for (let i = 0; i < this.mappedTextures.length; i++) {
+        const mappedTexture = this.mappedTextures[i];
+        mappedTexture.delete();
+        const textureCacheIndex = this.textureCache.indexOf(mappedTexture.texture);
+        if (textureCacheIndex > -1) {
+          this.textureCache.splice(textureCacheIndex, 1);
+        }
+      }
+      delete this.mappedTextures;
+    }
     while (this.textureCache.length > 0) {
       const texture = this.textureCache.pop();
       this.context.deleteTexture(texture);
@@ -1435,12 +1478,6 @@ class WebGLKernel extends GLKernel {
       }
     }
     this.destroyExtensions();
-    if (this.prevInput) {
-      this.prevInput.delete();
-    }
-    if (this.outputTexture) {
-      this.outputTexture.delete();
-    }
     delete this.context;
     delete this.canvas;
   }
@@ -1460,7 +1497,7 @@ class WebGLKernel extends GLKernel {
   }
 
   /**
-   * @return {IJSON}
+   * @return {IKernelJSON}
    */
   toJSON() {
     const json = super.toJSON();

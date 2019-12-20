@@ -10,7 +10,7 @@ function toStringWithoutUtils(fn) {
 
 /**
  *
- * @param {Kernel} Kernel
+ * @param {GLKernel} Kernel
  * @param {KernelVariable[]} args
  * @param {Kernel} originKernel
  * @param {string} [setupContextString]
@@ -192,19 +192,19 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
     context.reset();
     if (kernel.renderKernels) {
       const results = kernel.renderKernels();
-      const textureName = context.getContextVariableName(kernel.outputTexture);
+      const textureName = context.getContextVariableName(kernel.texture.texture);
       result.push(`    return {
       result: {
         texture: ${ textureName },
         type: '${ results.result.type }',
         toArray: ${ getToArrayString(results.result, textureName) }
       },`);
-      const { subKernels, subKernelOutputTextures } = kernel;
+      const { subKernels, mappedTextures } = kernel;
       for (let i = 0; i < subKernels.length; i++) {
-        const texture = subKernelOutputTextures[i];
+        const texture = mappedTextures[i];
         const subKernel = subKernels[i];
         const subKernelResult = results[subKernel.property];
-        const subKernelTextureName = context.getContextVariableName(texture);
+        const subKernelTextureName = context.getContextVariableName(texture.texture);
         result.push(`
       ${subKernel.property}: {
         texture: ${ subKernelTextureName },
@@ -215,7 +215,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       result.push(`    };`);
     } else {
       const rendered = kernel.renderOutput();
-      const textureName = context.getContextVariableName(kernel.outputTexture);
+      const textureName = context.getContextVariableName(kernel.texture.texture);
       result.push(`    return {
         texture: ${ textureName },
         type: '${ rendered.type }',
