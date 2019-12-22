@@ -329,7 +329,8 @@ test('setOutput() when does not need to trigger recompile', () => {
       width: 0,
       height: 0,
     },
-    _setupOutputTexture: sinon.spy(),
+    texture: {},
+    mappedTextures: {}
   };
   GLKernel.prototype.setOutput.call(mockInstance, [100, 100]);
   assert.equal(mockContext.bindFramebuffer.callCount, 1);
@@ -345,7 +346,8 @@ test('setOutput() when does not need to trigger recompile', () => {
   assert.equal(mockContext.viewport.args[0][3], 321);
   assert.equal(mockInstance.canvas.width, 123);
   assert.equal(mockInstance.canvas.height, 321);
-  assert.equal(mockInstance._setupOutputTexture.callCount, 1);
+  assert.equal(mockInstance.texture, null);
+  assert.equal(mockInstance.mappedTextures, null);
 });
 
 test('setOutput() when needs to trigger recompile', () => {

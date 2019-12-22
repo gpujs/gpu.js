@@ -150,7 +150,7 @@ export abstract class Kernel {
   static destroyContext(context: any): void;
   static features: IKernelFeatures;
   static getFeatures(): IKernelFeatures;
-  source: string | IJSON;
+  source: string | IKernelJSON;
   Kernel: Kernel;
   output: number[];
   debug: boolean;
@@ -170,15 +170,19 @@ export abstract class Kernel {
   tactic: Tactic;
   built: boolean;
   texSize: [number, number];
+  texture: Texture;
+  mappedTextures?: Texture[];
+  TextureConstructor: typeof Texture;
   getPixels(flip?: boolean): Uint8ClampedArray[];
+  getVariablePrecisionString(texSize: number[], tactic: Tactic): string;
   prependString(value: string): void;
   hasPrependString(value: string): boolean;
-  constructor(kernel: KernelFunction|IJSON|string, settings?: IDirectKernelSettings);
+  constructor(kernel: KernelFunction|IKernelJSON|string, settings?: IDirectKernelSettings);
   onRequestSwitchKernel?: Kernel;
   build(...args: KernelVariable[]): void;
   run(...args: KernelVariable[]): KernelVariable;
   toString(...args: KernelVariable[]): string;
-  toJSON(): IJSON;
+  toJSON(): IKernelJSON;
   setOutput(flag: number[]): this;
   setWarnVarUsage(flag: boolean): this;
   setOptimizeFloatMemory(flag: boolean): this;
@@ -257,6 +261,8 @@ export interface IKernelValueTypes {
 export interface IWebGLKernelValueSettings extends IKernelValueSettings {
   onRequestTexture: () => object;
   onRequestIndex: () => number;
+  onRequestContextHandle: () => number;
+  texture: any;
 }
 
 export interface IKernelValueSettings {
@@ -557,10 +563,6 @@ export class WebGLKernelValue {
   constructor(value: any, settings: IWebGLKernelValueSettings);
 }
 
-export interface IWebGLKernelValueSettings extends IKernelValueSettings {
-  texture: any;
-}
-
 export interface IFunctionNodeMemberExpressionDetails {
   xProperty: object;
   yProperty: object;
@@ -571,7 +573,7 @@ export interface IFunctionNodeMemberExpressionDetails {
   signature: string;
 }
 
-export interface IJSON {
+export interface IKernelJSON {
   settings: IJSONSettings;
   functionNodes?: object;
 }

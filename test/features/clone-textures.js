@@ -17,7 +17,7 @@ function copy1DTexture(precision, mode) {
   const texture = makeTexture();
   const clone = texture.clone();
   assert.notEqual(texture, clone);
-  assert.notEqual(texture.texture, clone.texture);
+  assert.equal(texture.texture, clone.texture);
   assert.deepEqual(texture.toArray(), clone.toArray());
   gpu.destroy();
 }
@@ -68,7 +68,7 @@ function copy2DTexture(precision, mode) {
   const texture = makeTexture();
   const clone = texture.clone();
   assert.notEqual(texture, clone);
-  assert.notEqual(texture.texture, clone.texture);
+  assert.equal(texture.texture, clone.texture);
   assert.deepEqual(texture.toArray(), clone.toArray());
   gpu.destroy();
 }
@@ -119,7 +119,7 @@ function copy3DTexture(precision, mode) {
   const texture = makeTexture();
   const clone = texture.clone();
   assert.notEqual(texture, clone);
-  assert.notEqual(texture.texture, clone.texture);
+  assert.equal(texture.texture, clone.texture);
   assert.deepEqual(texture.toArray(), clone.toArray());
   gpu.destroy();
 }

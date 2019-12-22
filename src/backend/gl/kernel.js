@@ -305,6 +305,10 @@ class GLKernel extends Kernel {
     super(source, settings);
     this.transferValues = null;
     this.formatValues = null;
+    /**
+     *
+     * @type {Texture}
+     */
     this.TextureConstructor = null;
     this.renderOutput = null;
     this.renderRawOutput = null;
@@ -314,6 +318,8 @@ class GLKernel extends Kernel {
     this.compiledFragmentShader = null;
     this.compiledVertexShader = null;
     this.switchingKernels = null;
+    this.prevInput = null;
+    this.prevMappedInputs = null;
   }
 
   checkTextureSize() {
@@ -483,7 +489,7 @@ class GLKernel extends Kernel {
           case 'LiteralInteger':
           case 'Float':
           case 'Number':
-          case 'Integer':
+          case 'Integer': {
             if (this.output[2] > 0) {
               this.TextureConstructor = GLTextureMemoryOptimized3D;
               this.renderStrategy = renderStrategy.MemoryOptimizedFloatPixelToMemoryOptimized3DFloat;
@@ -500,64 +506,68 @@ class GLKernel extends Kernel {
               this.formatValues = utils.erectMemoryOptimizedFloat;
               return null;
             }
-            case 'Array(2)':
-              if (this.output[2] > 0) {
-                this.TextureConstructor = GLTextureArray2Float3D;
-                this.renderStrategy = renderStrategy.FloatPixelTo3DArray2;
-                this.formatValues = utils.erect3DArray2;
-                return null;
-              } else if (this.output[1] > 0) {
-                this.TextureConstructor = GLTextureArray2Float2D;
-                this.renderStrategy = renderStrategy.FloatPixelTo2DArray2;
-                this.formatValues = utils.erect2DArray2;
-                return null;
-              } else {
-                this.TextureConstructor = GLTextureArray2Float;
-                this.renderStrategy = renderStrategy.FloatPixelToArray2;
-                this.formatValues = utils.erectArray2;
-                return null;
-              }
-              case 'Array(3)':
-                if (this.output[2] > 0) {
-                  this.TextureConstructor = GLTextureArray3Float3D;
-                  this.renderStrategy = renderStrategy.FloatPixelTo3DArray3;
-                  this.formatValues = utils.erect3DArray3;
-                  return null;
-                } else if (this.output[1] > 0) {
-                  this.TextureConstructor = GLTextureArray3Float2D;
-                  this.renderStrategy = renderStrategy.FloatPixelTo2DArray3;
-                  this.formatValues = utils.erect2DArray3;
-                  return null;
-                } else {
-                  this.TextureConstructor = GLTextureArray3Float;
-                  this.renderStrategy = renderStrategy.FloatPixelToArray3;
-                  this.formatValues = utils.erectArray3;
-                  return null;
-                }
-                case 'Array(4)':
-                  if (this.output[2] > 0) {
-                    this.TextureConstructor = GLTextureArray4Float3D;
-                    this.renderStrategy = renderStrategy.FloatPixelTo3DArray4;
-                    this.formatValues = utils.erect3DArray4;
-                    return null;
-                  } else if (this.output[1] > 0) {
-                    this.TextureConstructor = GLTextureArray4Float2D;
-                    this.renderStrategy = renderStrategy.FloatPixelTo2DArray4;
-                    this.formatValues = utils.erect2DArray4;
-                    return null;
-                  } else {
-                    this.TextureConstructor = GLTextureArray4Float;
-                    this.renderStrategy = renderStrategy.FloatPixelToArray4;
-                    this.formatValues = utils.erectArray4;
-                    return null;
-                  }
+          }
+          case 'Array(2)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray2Float3D;
+              this.renderStrategy = renderStrategy.FloatPixelTo3DArray2;
+              this.formatValues = utils.erect3DArray2;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray2Float2D;
+              this.renderStrategy = renderStrategy.FloatPixelTo2DArray2;
+              this.formatValues = utils.erect2DArray2;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray2Float;
+              this.renderStrategy = renderStrategy.FloatPixelToArray2;
+              this.formatValues = utils.erectArray2;
+              return null;
+            }
+          }
+          case 'Array(3)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray3Float3D;
+              this.renderStrategy = renderStrategy.FloatPixelTo3DArray3;
+              this.formatValues = utils.erect3DArray3;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray3Float2D;
+              this.renderStrategy = renderStrategy.FloatPixelTo2DArray3;
+              this.formatValues = utils.erect2DArray3;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray3Float;
+              this.renderStrategy = renderStrategy.FloatPixelToArray3;
+              this.formatValues = utils.erectArray3;
+              return null;
+            }
+          }
+          case 'Array(4)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray4Float3D;
+              this.renderStrategy = renderStrategy.FloatPixelTo3DArray4;
+              this.formatValues = utils.erect3DArray4;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray4Float2D;
+              this.renderStrategy = renderStrategy.FloatPixelTo2DArray4;
+              this.formatValues = utils.erect2DArray4;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray4Float;
+              this.renderStrategy = renderStrategy.FloatPixelToArray4;
+              this.formatValues = utils.erectArray4;
+              return null;
+            }
+          }
         }
       } else {
         switch (this.returnType) {
           case 'LiteralInteger':
           case 'Float':
           case 'Number':
-          case 'Integer':
+          case 'Integer': {
             if (this.output[2] > 0) {
               this.TextureConstructor = GLTextureFloat3D;
               this.renderStrategy = renderStrategy.FloatPixelTo3DFloat;
@@ -574,57 +584,61 @@ class GLKernel extends Kernel {
               this.formatValues = utils.erectFloat;
               return null;
             }
-            case 'Array(2)':
-              if (this.output[2] > 0) {
-                this.TextureConstructor = GLTextureArray2Float3D;
-                this.renderStrategy = renderStrategy.FloatPixelTo3DArray2;
-                this.formatValues = utils.erect3DArray2;
-                return null;
-              } else if (this.output[1] > 0) {
-                this.TextureConstructor = GLTextureArray2Float2D;
-                this.renderStrategy = renderStrategy.FloatPixelTo2DArray2;
-                this.formatValues = utils.erect2DArray2;
-                return null;
-              } else {
-                this.TextureConstructor = GLTextureArray2Float;
-                this.renderStrategy = renderStrategy.FloatPixelToArray2;
-                this.formatValues = utils.erectArray2;
-                return null;
-              }
-              case 'Array(3)':
-                if (this.output[2] > 0) {
-                  this.TextureConstructor = GLTextureArray3Float3D;
-                  this.renderStrategy = renderStrategy.FloatPixelTo3DArray3;
-                  this.formatValues = utils.erect3DArray3;
-                  return null;
-                } else if (this.output[1] > 0) {
-                  this.TextureConstructor = GLTextureArray3Float2D;
-                  this.renderStrategy = renderStrategy.FloatPixelTo2DArray3;
-                  this.formatValues = utils.erect2DArray3;
-                  return null;
-                } else {
-                  this.TextureConstructor = GLTextureArray3Float;
-                  this.renderStrategy = renderStrategy.FloatPixelToArray3;
-                  this.formatValues = utils.erectArray3;
-                  return null;
-                }
-                case 'Array(4)':
-                  if (this.output[2] > 0) {
-                    this.TextureConstructor = GLTextureArray4Float3D;
-                    this.renderStrategy = renderStrategy.FloatPixelTo3DArray4;
-                    this.formatValues = utils.erect3DArray4;
-                    return null;
-                  } else if (this.output[1] > 0) {
-                    this.TextureConstructor = GLTextureArray4Float2D;
-                    this.renderStrategy = renderStrategy.FloatPixelTo2DArray4;
-                    this.formatValues = utils.erect2DArray4;
-                    return null;
-                  } else {
-                    this.TextureConstructor = GLTextureArray4Float;
-                    this.renderStrategy = renderStrategy.FloatPixelToArray4;
-                    this.formatValues = utils.erectArray4;
-                    return null;
-                  }
+          }
+          case 'Array(2)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray2Float3D;
+              this.renderStrategy = renderStrategy.FloatPixelTo3DArray2;
+              this.formatValues = utils.erect3DArray2;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray2Float2D;
+              this.renderStrategy = renderStrategy.FloatPixelTo2DArray2;
+              this.formatValues = utils.erect2DArray2;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray2Float;
+              this.renderStrategy = renderStrategy.FloatPixelToArray2;
+              this.formatValues = utils.erectArray2;
+              return null;
+            }
+          }
+          case 'Array(3)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray3Float3D;
+              this.renderStrategy = renderStrategy.FloatPixelTo3DArray3;
+              this.formatValues = utils.erect3DArray3;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray3Float2D;
+              this.renderStrategy = renderStrategy.FloatPixelTo2DArray3;
+              this.formatValues = utils.erect2DArray3;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray3Float;
+              this.renderStrategy = renderStrategy.FloatPixelToArray3;
+              this.formatValues = utils.erectArray3;
+              return null;
+            }
+          }
+          case 'Array(4)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray4Float3D;
+              this.renderStrategy = renderStrategy.FloatPixelTo3DArray4;
+              this.formatValues = utils.erect3DArray4;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray4Float2D;
+              this.renderStrategy = renderStrategy.FloatPixelTo2DArray4;
+              this.formatValues = utils.erect2DArray4;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray4Float;
+              this.renderStrategy = renderStrategy.FloatPixelToArray4;
+              this.formatValues = utils.erectArray4;
+              return null;
+            }
+          }
         }
       }
     } else {
@@ -801,16 +815,7 @@ class GLKernel extends Kernel {
   }
 
   renderTexture() {
-    return new this.TextureConstructor({
-      texture: this.outputTexture,
-      size: this.texSize,
-      dimensions: this.threadDim,
-      output: this.output,
-      context: this.context,
-      kernel: this,
-      internalFormat: this.getInternalFormat(),
-      textureFormat: this.getTextureFormat(),
-    });
+    return this.texture.clone();
   }
   readPackedPixelsToUint8Array() {
     if (this.precision !== 'unsigned') throw new Error('Requires this.precision to be "unsigned"');
@@ -862,15 +867,7 @@ class GLKernel extends Kernel {
       result: this.renderOutput(),
     };
     for (let i = 0; i < this.subKernels.length; i++) {
-      result[this.subKernels[i].property] = new this.TextureConstructor({
-        texture: this.subKernelOutputTextures[i],
-        size: this.texSize,
-        dimensions: this.threadDim,
-        output: this.output,
-        context: this.context,
-        internalFormat: this.getInternalFormat(),
-        textureFormat: this.getTextureFormat(),
-      }).toArray();
+      result[this.subKernels[i].property] = this.mappedTextures[i].toArray();
     }
     return result;
   }
@@ -880,15 +877,7 @@ class GLKernel extends Kernel {
       result: this.renderOutput(),
     };
     for (let i = 0; i < this.subKernels.length; i++) {
-      result[this.subKernels[i].property] = new this.TextureConstructor({
-        texture: this.subKernelOutputTextures[i],
-        size: this.texSize,
-        dimensions: this.threadDim,
-        output: this.output,
-        context: this.context,
-        internalFormat: this.getInternalFormat(),
-        textureFormat: this.getTextureFormat(),
-      });
+      result[this.subKernels[i].property] = this.mappedTextures[i].clone();
     }
     return result;
   }
@@ -935,10 +924,16 @@ class GLKernel extends Kernel {
       gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
       this.canvas.width = this.maxTexSize[0];
       this.canvas.height = this.maxTexSize[1];
-      this._setupOutputTexture();
-      if (this.subKernels && this.subKernels.length > 0) {
-        this._setupSubOutputTextures();
+      if (this.texture) {
+        this.texture.delete();
       }
+      this.texture = null;
+      if (this.mappedTextures) {
+        for (let i = 0; i < this.mappedTextures.length; i++) {
+          this.mappedTextures[i].delete();
+        }
+      }
+      this.mappedTextures = null;
     } else {
       this.output = newOutput;
     }
@@ -984,6 +979,43 @@ class GLKernel extends Kernel {
         return 'highp';
       default:
         throw new Error(`Unknown tactic "${tactic}" use "speed", "balanced", "precision", or empty for auto`);
+    }
+  }
+
+  /**
+   *
+   * @param {GLTexture} arg
+   */
+  updateTextureArgumentRefs(arg) {
+    if (this.texture.texture === arg.texture) {
+      const { prevInput } = this;
+      if (prevInput) {
+        if (prevInput.texture.refs === 1) {
+          this.texture.delete();
+          this.texture = prevInput.clone();
+        }
+        prevInput.delete();
+      }
+      this.prevInput = arg.clone();
+    } else if (this.mappedTextures && this.mappedTextures.length > 0) {
+      const { mappedTextures, prevMappedInputs } = this;
+      for (let i = 0; i < mappedTextures.length; i++) {
+        const mappedTexture = mappedTextures[i];
+        if (mappedTexture.texture === arg.texture) {
+          const prevMappedInput = prevMappedInputs[i];
+          if (prevMappedInput) {
+            if (prevMappedInput.texture.refs === 1) {
+              if (mappedTexture) {
+                mappedTexture.delete();
+                mappedTextures[i] = prevMappedInput.clone();
+              }
+            }
+            prevMappedInput.delete();
+          }
+          prevMappedInputs[i] = arg.clone();
+          break;
+        }
+      }
     }
   }
 }

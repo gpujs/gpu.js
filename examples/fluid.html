@@ -735,20 +735,6 @@
       });
 
       /*
-          Copier
-       */
-
-      const makeCopy = (isize) => {
-        return gpu.createKernel(function(parray) {
-          return parray[this.thread.x];
-        }, {
-          pipeline: true,
-          output: [isize],
-          tactic: 'speed',
-        })
-      };
-
-      /*
        * Seed Particles
        */
       this.reset = () => {
@@ -783,14 +769,6 @@
 
       this.reset();
 
-      /*
-          Make copy
-       */
-      this.posCopy = makeCopy(3 * this.particleCount);
-      this.velCopy = makeCopy(3 * this.particleCount);
-      this.camPCopy = makeCopy(3);
-      this.camDirCopy = makeCopy(3);
-      this.crossvCopy = makeCopy(3);
       this.hash = [];
       for (let i=0; i<this.hashLength; i++) {
         for (let j=0; j<this.hashBinLen; j++) {
@@ -844,9 +822,10 @@
 
       for (let i=0; i<SUBSTEPS; i++) {
         // Update velocities via gravity & pressure
+        const prevVel = this.data.vel;
         this.data.vel = this.updateVelocity(
           this.data.pos,
-          this.velCopy(this.data.vel),
+          this.data.vel,
           this.data.attr,
           this.move.tPull,
           this.cam.p,
@@ -858,13 +837,16 @@
           this.sIncomp[this.sIncompI],
           this.dt / SUBSTEPS
         );
+        deleteTexture(prevVel);
 
         // Update positions
+        const prevPos = this.data.pos;
         this.data.pos = this.updatePosition(
-          this.posCopy(this.data.pos),
+          this.data.pos,
           this.data.vel,
           this.dt / SUBSTEPS
         );
+        deleteTexture(prevPos);
       }
 
       // Render
@@ -920,19 +902,23 @@
       }
 
       if (this.keys[32] && !keys[32]) {
+        const prevPos = this.data.pos;
         this.data.pos = this.setPosition(
-          this.posCopy(this.data.pos),
+          this.data.pos,
           (this.particleCount-1) - this.shootIndex,
           this.cam.p,
           this.cam.dir,
           0.5
         );
+        deleteTexture(prevPos);
+        const prevVel = this.data.vel;
         this.data.vel = this.setVelocity(
-          this.velCopy(this.data.vel),
+          this.data.vel,
           (this.particleCount-1) - this.shootIndex,
           this.cam.dir,
           15
         );
+        deleteTexture(prevVel);
         this.shootIndex = (this.shootIndex + 1) % 32;
       }
       if (keys[69]) {
@@ -955,31 +941,35 @@
     };
 
     XSSPS.prototype.updateCamera = function() {
+      const prevUp = this.cam.up;
       this.cam.up = this.normv(
         this.crossv(
-          this.crossvCopy(
-            this.crossv(
-              this.cam.dir,
-              this.cam.up
-            )
+          this.crossv(
+            this.cam.dir,
+            this.cam.up
           ),
           this.cam.dir
         )
       );
+      deleteTexture(prevUp);
+      const prevDir = this.cam.dir;
       this.cam.dir = this.rotateCamera(
         this.move.tLR / 35,
         -this.move.tUD / 35,
         this.cam.p,
-        this.camDirCopy(this.cam.dir),
+        this.cam.dir,
         this.cam.up,
         1, 3.5, 2
       );
+      deleteTexture(prevDir);
+      const prevP = this.cam.p;
       this.cam.p = this.updateCameraPosition(
         this.cam.dir,
-        this.camPCopy(this.cam.p),
+        this.cam.p,
         this.move.tFR,
         this.dt
       );
+      deleteTexture(prevP);
     };
   </script>
   <script>
@@ -1108,6 +1098,12 @@
     Date.timeStamp = function() {
       return new Date().getTime() / 1000.0;
     };
+
+    function deleteTexture(texture) {
+      if (texture && texture.delete) {
+        texture.delete();
+      }
+    }
   </script>
 </head>
 <body style="background-color: black; padding: 0; margin: 0;"></body>
