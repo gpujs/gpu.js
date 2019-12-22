@@ -87,3 +87,66 @@ test('mapped kernel gpu', () => {
 (GPU.isHeadlessGLSupported ? test : skip)('mapped kernel headlessgl', () => {
   testMappedKernelTextureRecycling('headlessgl');
 });
+
+function testTextureDelete(mode, done) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function() {
+    return this.thread.x;
+  }, {
+    output: [1],
+    pipeline: true
+  });
+  const result = kernel();
+  assert.equal(result.texture.refs, 2);
+  const clone1 = result.clone();
+  assert.equal(result.texture.refs, 3);
+  const clone2 = result.clone();
+  assert.equal(result.texture.refs, 4);
+  const clone3 = result.clone();
+  assert.equal(result.texture.refs, 5);
+  const clone4 = result.clone();
+  assert.equal(result.texture.refs, 6);
+  const clone5 = result.clone();
+  assert.equal(result.texture.refs, 7);
+
+  clone1.delete();
+  assert.equal(result.texture.refs, 6);
+  clone2.delete();
+  assert.equal(result.texture.refs, 5);
+  clone3.delete();
+  assert.equal(result.texture.refs, 4);
+  clone4.delete();
+  assert.equal(result.texture.refs, 3);
+  clone5.delete();
+  assert.equal(result.texture.refs, 2);
+  result.delete();
+  assert.equal(result.texture.refs, 1);
+  gpu.destroy();
+  const spy = sinon.spy(kernel.kernel.context, 'deleteTexture');
+  setTimeout(() => {
+    assert.equal(result.texture.refs, 0);
+    assert.equal(spy.callCount, 1);
+    assert.ok(spy.calledWith(result.texture));
+    done();
+  }, 2);
+}
+
+test('texture delete auto', t => {
+  testTextureDelete(null, t.async());
+});
+
+test('texture delete gpu', t => {
+  testTextureDelete('gpu', t.async());
+});
+
+(GPU.isWebGLSupported ? test : skip)('texture delete webgl', t => {
+  testTextureDelete('webgl', t.async());
+});
+
+(GPU.isWebGL2Supported ? test : skip)('texture delete webgl2', t => {
+  testTextureDelete('webgl2', t.async());
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('texture delete headlessgl', t => {
+  testTextureDelete('headlessgl', t.async());
+});

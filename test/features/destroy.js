@@ -83,3 +83,66 @@ test('textures are destroyed', (t) => {
   const done = t.async();
   testTexturesAreDestroyed(done);
 });
+
+function testKernelTextureIsDeleted(done) {
+  const webGLTexture = {};
+  const mockTextureDelete = sinon.spy();
+  const kernelTexture = {
+    texture: webGLTexture,
+    delete: mockTextureDelete,
+  };
+  const mockContext = {};
+  const mockKernelInstance = {
+    texture: kernelTexture,
+    textureCache: [],
+    context: mockContext,
+    destroyExtensions: () => {},
+  };
+  mockKernelInstance.destroy = WebGLKernel.prototype.destroy.bind(mockKernelInstance);
+  GPU.prototype.destroy.call({ kernels: [mockKernelInstance] });
+  setTimeout(() => {
+    assert.equal(mockTextureDelete.callCount, 1);
+    assert.ok(true);
+    done();
+  }, 2);
+}
+
+test('kernel.texture is deleted', (t) => {
+  const done = t.async();
+  testKernelTextureIsDeleted(done);
+});
+
+function testKernelMappedTexturesAreDeleted(done) {
+  const webGLTexture1 = {};
+  const mockTextureDelete1 = sinon.spy();
+  const kernelTexture1 = {
+    texture: webGLTexture1,
+    delete: mockTextureDelete1,
+  };
+  const webGLTexture2 = {};
+  const mockTextureDelete2 = sinon.spy();
+  const kernelTexture2 = {
+    texture: webGLTexture2,
+    delete: mockTextureDelete2,
+  };
+  const mockContext = {};
+  const mockKernelInstance = {
+    mappedTextures: [kernelTexture1, kernelTexture2],
+    textureCache: [],
+    context: mockContext,
+    destroyExtensions: () => {},
+  };
+  mockKernelInstance.destroy = WebGLKernel.prototype.destroy.bind(mockKernelInstance);
+  GPU.prototype.destroy.call({ kernels: [mockKernelInstance] });
+  setTimeout(() => {
+    assert.equal(mockTextureDelete1.callCount, 1);
+    assert.equal(mockTextureDelete2.callCount, 1);
+    assert.ok(true);
+    done();
+  }, 2);
+}
+
+test('kernel.mappedTextures are deleted', (t) => {
+  const done = t.async();
+  testKernelMappedTexturesAreDeleted(done);
+});

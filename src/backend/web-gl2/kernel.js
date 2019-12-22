@@ -279,9 +279,14 @@ class WebGL2Kernel extends WebGLKernel {
   }
 
   _setupOutputTexture() {
-    const { texSize } = this;
-    const gl = this.context;
+    const { context: gl } = this;
+    if (this.texture) {
+      this.texture.beforeMutate();
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture.texture, 0);
+      return;
+    }
     const texture = this.outputTexture = gl.createTexture();
+    const { texSize } = this;
     gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
@@ -295,12 +300,32 @@ class WebGL2Kernel extends WebGLKernel {
       gl.texImage2D(gl.TEXTURE_2D, 0, format, texSize[0], texSize[1], 0, format, gl.UNSIGNED_BYTE, null);
     }
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    this.texture = new this.TextureConstructor({
+      texture,
+      size: texSize,
+      dimensions: this.threadDim,
+      output: this.output,
+      context: this.context,
+      internalFormat: this.getInternalFormat(),
+      textureFormat: this.getTextureFormat(),
+      kernel: this,
+    });
   }
 
   _setupSubOutputTextures() {
+    const { context: gl } = this;
+    if (this.mappedTextures && this.mappedTextures.length > 0) {
+      for (let i = 0; i < this.mappedTextures.length; i++) {
+        const mappedTexture = this.mappedTextures[i];
+        mappedTexture.beforeMutate();
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, mappedTexture.texture, 0);
+      }
+      return;
+    }
     const { texSize } = this;
-    const gl = this.context;
     this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
+    this.mappedTextures = [];
+    this.prevMappedInputs = {};
     for (let i = 0; i < this.subKernels.length; i++) {
       const texture = this.createTexture();
       this.drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
@@ -311,12 +336,25 @@ class WebGL2Kernel extends WebGLKernel {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       // TODO: upgrade this
+      const format = this.getInternalFormat();
       if (this.precision === 'single') {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
+        gl.texStorage2D(gl.TEXTURE_2D, 1, format, texSize[0], texSize[1]);
+        // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texSize[0], texSize[1], 0, gl.RGBA, gl.FLOAT, null);
       } else {
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize[0], texSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
       }
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, texture, 0);
+
+      this.mappedTextures.push(new this.TextureConstructor({
+        texture,
+        size: texSize,
+        dimensions: this.threadDim,
+        output: this.output,
+        context: this.context,
+        internalFormat: this.getInternalFormat(),
+        textureFormat: this.getTextureFormat(),
+        kernel: this,
+      }));
     }
   }
 

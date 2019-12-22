@@ -523,7 +523,7 @@ class Kernel {
    * @return {Kernel}
    */
   setImmutable(flag) {
-    this.immutable = flag;
+    utils.warnDeprecated('method', 'setImmutable');
     return this;
   }
 
@@ -701,7 +701,7 @@ class Kernel {
    */
   getBitRatio(value) {
     if (this.precision === 'single') {
-      // 8 and 16 are upconverted to float32
+      // 8 and 16 are up-converted to float32
       return 4;
     } else if (Array.isArray(value[0])) {
       return this.getBitRatio(value[0]);

@@ -924,10 +924,16 @@ class GLKernel extends Kernel {
       gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
       this.canvas.width = this.maxTexSize[0];
       this.canvas.height = this.maxTexSize[1];
-      this._setupOutputTexture();
-      if (this.subKernels && this.subKernels.length > 0) {
-        this._setupSubOutputTextures();
+      if (this.texture) {
+        this.texture.delete();
       }
+      this.texture = null;
+      if (this.mappedTextures) {
+        for (let i = 0; i < this.mappedTextures.length; i++) {
+          this.mappedTextures[i].delete();
+        }
+      }
+      this.mappedTextures = null;
     } else {
       this.output = newOutput;
     }
@@ -973,6 +979,43 @@ class GLKernel extends Kernel {
         return 'highp';
       default:
         throw new Error(`Unknown tactic "${tactic}" use "speed", "balanced", "precision", or empty for auto`);
+    }
+  }
+
+  /**
+   *
+   * @param {GLTexture} arg
+   */
+  updateTextureArgumentRefs(arg) {
+    if (this.texture.texture === arg.texture) {
+      const { prevInput } = this;
+      if (prevInput) {
+        if (prevInput.texture.refs === 1) {
+          this.texture.delete();
+          this.texture = prevInput.clone();
+        }
+        prevInput.delete();
+      }
+      this.prevInput = arg.clone();
+    } else if (this.mappedTextures && this.mappedTextures.length > 0) {
+      const { mappedTextures, prevMappedInputs } = this;
+      for (let i = 0; i < mappedTextures.length; i++) {
+        const mappedTexture = mappedTextures[i];
+        if (mappedTexture.texture === arg.texture) {
+          const prevMappedInput = prevMappedInputs[i];
+          if (prevMappedInput) {
+            if (prevMappedInput.texture.refs === 1) {
+              if (mappedTexture) {
+                mappedTexture.delete();
+                mappedTextures[i] = prevMappedInput.clone();
+              }
+            }
+            prevMappedInput.delete();
+          }
+          prevMappedInputs[i] = arg.clone();
+          break;
+        }
+      }
     }
   }
 }

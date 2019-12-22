@@ -261,6 +261,8 @@ export interface IKernelValueTypes {
 export interface IWebGLKernelValueSettings extends IKernelValueSettings {
   onRequestTexture: () => object;
   onRequestIndex: () => number;
+  onRequestContextHandle: () => number;
+  texture: any;
 }
 
 export interface IKernelValueSettings {
@@ -559,10 +561,6 @@ export class KernelValue {
 
 export class WebGLKernelValue {
   constructor(value: any, settings: IWebGLKernelValueSettings);
-}
-
-export interface IWebGLKernelValueSettings extends IKernelValueSettings {
-  texture: any;
 }
 
 export interface IFunctionNodeMemberExpressionDetails {

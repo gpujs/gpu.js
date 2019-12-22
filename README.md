@@ -93,6 +93,7 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [Loops](#loops)
 * [Pipelining](#pipelining)
   * [Cloning Textures](#cloning-textures-new-in-v2)
+  * [Cleanup pipeline texture memory](#cleanup-pipeline-texture-memory-new-in-v2)
 * [Offscreen Canvas](#offscreen-canvas)
 * [Cleanup](#cleanup)
 * [Flattened typed array support](#flattened-typed-array-support)
@@ -236,7 +237,7 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
   * VERY IMPORTANT! - Use this to add special native functions to your environment when you need specific functionality is needed.
 * `injectedNative` or `kernel.setInjectedNative(string)` **New in V2!**: string, defined as: `{ functionName: functionSource }`.  This is for injecting native code before translated kernel functions.
 * `subKernels` or `kernel.setSubKernels(array)`: array, generally inherited from `GPU` instance.
-* `immutable` or `kernel.setImmutable(boolean)`: boolean, default = `false`
+* ~~`immutable` or `kernel.setImmutable(boolean)`: boolean, default = `false`~~ Deprecated
 * `strictIntegers` or `kernel.setStrictIntegers(boolean)`: boolean, default = `false` - allows undefined argumentTypes and function return values to use strict integer declarations.
 * `useLegacyEncoder` or `kernel.setUseLegacyEncoder(boolean)`: boolean, default `false` - more info [here](https://github.com/gpujs/gpu.js/wiki/Encoder-details).
 * `warnVarUsage` or `kernel.setWarnVarUsage(boolean)`: turn off var usage warnings, they can be irritating, and in transpiled environments, there is nothing we can do about it.
@@ -794,6 +795,12 @@ const result2 = kernel2(result1);
 // Result: Float32Array[0, 1, 2, 3, ... 99]
 ```
 
+### Cleanup pipeline texture memory **New in V2.4!**
+Handling minimal amounts of GPU memory is handled internally, but a good practice is to clean up memory you no longer need.
+Cleanup kernel outputs by using `texture.delete()` to keep GPU memory as small as possible.
+
+NOTE: Internally textures will only release from memory if there are no references to them,  
+
 ## Offscreen Canvas
 GPU.js supports offscreen canvas where available.  Here is an example of how to use it with two files, `gpu-worker.js`, and `index.js`:
 
@@ -831,6 +838,7 @@ worker.onmessage = function(e) {
 ## Cleanup
 * for instances of `GPU` use the `destroy` method.  Example: `gpu.destroy()`
 * for instances of `Kernel` use the `destroy` method.  Example: `kernel.destroy()`
+* for instances of `Texture` use the `delete` method. Example: `texture.delete()`
 
 ## Flattened typed array support
 To use the useful `x`, `y`, `z` `thread` lookup api inside of GPU.js, and yet use flattened arrays, there is the `Input` type.
@@ -984,8 +992,8 @@ To assist with mostly unit tests, but perhaps in scenarios outside of GPU.js, th
 ## Typescript Typings
 Typescript is supported!  Typings can be found [here](src/index.d.ts)!
 For strongly typed kernels:
-```ts
-import { GPU, IKernelFunctionThis } from './src';
+```typescript
+import { GPU, IKernelFunctionThis } from 'gpu.js';
 const gpu = new GPU();
 
 function kernelFunction(this: IKernelFunctionThis): number {
@@ -1001,8 +1009,8 @@ console.log(result as number[][][]);
 ```
 
 For strongly typed mapped kernels:
-```ts
-import { GPU, Texture, IKernelFunctionThis } from './src';
+```typescript
+import { GPU, Texture, IKernelFunctionThis } from 'gpu.js';
 const gpu = new GPU();
 
 function kernelFunction(this: IKernelFunctionThis): [number, number] {
@@ -1025,8 +1033,8 @@ console.log((result.test as Texture).toArray() as [number, number][]);
 ```
 
 For extending constants:
-```ts
-import { GPU, IKernelFunctionThis } from './src';
+```typescript
+import { GPU, IKernelFunctionThis } from 'gpu.js';
 const gpu = new GPU();
 
 interface IConstants {

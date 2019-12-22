@@ -150,7 +150,7 @@ class WebGLKernel extends GLKernel {
     this.framebuffer = null;
     this.buffer = null;
     this.texture = null;
-    this.mappedTextures = [];
+    this.mappedTextures = null;
     this.textureCache = [];
     this.programUniformLocationCache = {};
     this.uniform1fCache = {};
@@ -441,7 +441,7 @@ class WebGLKernel extends GLKernel {
         kernel: this,
         strictIntegers: this.strictIntegers,
         onRequestTexture: () => {
-          this.createTexture();
+          return this.createTexture();
         },
         onRequestIndex: () => {
           return textureIndexes++;
@@ -646,9 +646,6 @@ class WebGLKernel extends GLKernel {
     }
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    if (gl.getError() > 0) {
-      debugger;
-    }
   }
 
   drawBuffers() {
@@ -709,7 +706,7 @@ class WebGLKernel extends GLKernel {
    */
   _setupSubOutputTextures() {
     const { context: gl } = this;
-    if (this.mappedTextures.length > 0) {
+    if (this.mappedTextures && this.mappedTextures.length > 0) {
       for (let i = 0; i < this.mappedTextures.length; i++) {
         const mappedTexture = this.mappedTextures[i];
         mappedTexture.beforeMutate();
@@ -1453,7 +1450,7 @@ class WebGLKernel extends GLKernel {
       if (textureCacheIndex > -1) {
         this.textureCache.splice(textureCacheIndex, 1);
       }
-      delete this.texture;
+      this.texture = null;
     }
     if (this.mappedTextures && this.mappedTextures.length) {
       for (let i = 0; i < this.mappedTextures.length; i++) {
@@ -1464,7 +1461,7 @@ class WebGLKernel extends GLKernel {
           this.textureCache.splice(textureCacheIndex, 1);
         }
       }
-      delete this.mappedTextures;
+      this.mappedTextures = null;
     }
     while (this.textureCache.length > 0) {
       const texture = this.textureCache.pop();
