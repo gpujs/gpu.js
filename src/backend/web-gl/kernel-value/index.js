@@ -17,6 +17,7 @@ class WebGLKernelValue extends KernelValue {
     this.uploadValue = null;
     this.textureSize = null;
     this.bitRatio = null;
+    this.prevArg = null;
   }
 
   /**
@@ -144,6 +145,9 @@ class WebGLKernelValue extends KernelValue {
   }
 
   destroy() {
+    if (this.prevArg) {
+      this.prevArg.delete();
+    }
     this.context.deleteTexture(this.texture);
   }
 }

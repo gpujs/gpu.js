@@ -314,12 +314,9 @@ class GLKernel extends Kernel {
     this.renderRawOutput = null;
     this.texSize = null;
     this.translatedSource = null;
-    this.renderStrategy = null;
     this.compiledFragmentShader = null;
     this.compiledVertexShader = null;
     this.switchingKernels = null;
-    this.prevInput = null;
-    this.prevMappedInputs = null;
   }
 
   checkTextureSize() {
@@ -360,15 +357,12 @@ class GLKernel extends Kernel {
           case 'Integer':
             if (this.output[2] > 0) {
               this.TextureConstructor = GLTextureUnsigned3D;
-              this.renderStrategy = renderStrategy.PackedPixelTo3DFloat;
               return null;
             } else if (this.output[1] > 0) {
               this.TextureConstructor = GLTextureUnsigned2D;
-              this.renderStrategy = renderStrategy.PackedPixelTo2DFloat;
               return null;
             } else {
               this.TextureConstructor = GLTextureUnsigned;
-              this.renderStrategy = renderStrategy.PackedPixelToFloat;
               return null;
             }
             case 'Array(2)':
@@ -388,17 +382,14 @@ class GLKernel extends Kernel {
             this.renderOutput = this.renderValues;
             if (this.output[2] > 0) {
               this.TextureConstructor = GLTextureUnsigned3D;
-              this.renderStrategy = renderStrategy.PackedPixelTo3DFloat;
               this.formatValues = utils.erect3DPackedFloat;
               return null;
             } else if (this.output[1] > 0) {
               this.TextureConstructor = GLTextureUnsigned2D;
-              this.renderStrategy = renderStrategy.PackedPixelTo2DFloat;
               this.formatValues = utils.erect2DPackedFloat;
               return null;
             } else {
               this.TextureConstructor = GLTextureUnsigned;
-              this.renderStrategy = renderStrategy.PackedPixelToFloat;
               this.formatValues = utils.erectPackedFloat;
               return null;
             }
@@ -412,7 +403,6 @@ class GLKernel extends Kernel {
       this.renderRawOutput = this.readFloatPixelsToFloat32Array;
       this.transferValues = this.readFloatPixelsToFloat32Array;
       if (this.pipeline) {
-        this.renderStrategy = renderStrategy.FloatTexture;
         this.renderOutput = this.renderTexture;
         if (this.subKernels !== null) {
           this.renderKernels = this.renderKernelsToTextures;
@@ -421,7 +411,7 @@ class GLKernel extends Kernel {
           case 'LiteralInteger':
           case 'Float':
           case 'Number':
-          case 'Integer':
+          case 'Integer': {
             if (this.optimizeFloatMemory) {
               if (this.output[2] > 0) {
                 this.TextureConstructor = GLTextureMemoryOptimized3D;
@@ -445,39 +435,43 @@ class GLKernel extends Kernel {
                 return null;
               }
             }
-            case 'Array(2)':
-              if (this.output[2] > 0) {
-                this.TextureConstructor = GLTextureArray2Float3D;
-                return null;
-              } else if (this.output[1] > 0) {
-                this.TextureConstructor = GLTextureArray2Float2D;
-                return null;
-              } else {
-                this.TextureConstructor = GLTextureArray2Float;
-                return null;
-              }
-              case 'Array(3)':
-                if (this.output[2] > 0) {
-                  this.TextureConstructor = GLTextureArray3Float3D;
-                  return null;
-                } else if (this.output[1] > 0) {
-                  this.TextureConstructor = GLTextureArray3Float2D;
-                  return null;
-                } else {
-                  this.TextureConstructor = GLTextureArray3Float;
-                  return null;
-                }
-                case 'Array(4)':
-                  if (this.output[2] > 0) {
-                    this.TextureConstructor = GLTextureArray4Float3D;
-                    return null;
-                  } else if (this.output[1] > 0) {
-                    this.TextureConstructor = GLTextureArray4Float2D;
-                    return null;
-                  } else {
-                    this.TextureConstructor = GLTextureArray4Float;
-                    return null;
-                  }
+          }
+          case 'Array(2)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray2Float3D;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray2Float2D;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray2Float;
+              return null;
+            }
+          }
+          case 'Array(3)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray3Float3D;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray3Float2D;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray3Float;
+              return null;
+            }
+          }
+          case 'Array(4)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray4Float3D;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray4Float2D;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray4Float;
+              return null;
+            }
+          }
         }
       }
       this.renderOutput = this.renderValues;
@@ -492,17 +486,14 @@ class GLKernel extends Kernel {
           case 'Integer': {
             if (this.output[2] > 0) {
               this.TextureConstructor = GLTextureMemoryOptimized3D;
-              this.renderStrategy = renderStrategy.MemoryOptimizedFloatPixelToMemoryOptimized3DFloat;
               this.formatValues = utils.erectMemoryOptimized3DFloat;
               return null;
             } else if (this.output[1] > 0) {
               this.TextureConstructor = GLTextureMemoryOptimized2D;
-              this.renderStrategy = renderStrategy.MemoryOptimizedFloatPixelToMemoryOptimized2DFloat;
               this.formatValues = utils.erectMemoryOptimized2DFloat;
               return null;
             } else {
               this.TextureConstructor = GLTextureMemoryOptimized;
-              this.renderStrategy = renderStrategy.MemoryOptimizedFloatPixelToMemoryOptimizedFloat;
               this.formatValues = utils.erectMemoryOptimizedFloat;
               return null;
             }
@@ -510,17 +501,14 @@ class GLKernel extends Kernel {
           case 'Array(2)': {
             if (this.output[2] > 0) {
               this.TextureConstructor = GLTextureArray2Float3D;
-              this.renderStrategy = renderStrategy.FloatPixelTo3DArray2;
               this.formatValues = utils.erect3DArray2;
               return null;
             } else if (this.output[1] > 0) {
               this.TextureConstructor = GLTextureArray2Float2D;
-              this.renderStrategy = renderStrategy.FloatPixelTo2DArray2;
               this.formatValues = utils.erect2DArray2;
               return null;
             } else {
               this.TextureConstructor = GLTextureArray2Float;
-              this.renderStrategy = renderStrategy.FloatPixelToArray2;
               this.formatValues = utils.erectArray2;
               return null;
             }
@@ -528,17 +516,14 @@ class GLKernel extends Kernel {
           case 'Array(3)': {
             if (this.output[2] > 0) {
               this.TextureConstructor = GLTextureArray3Float3D;
-              this.renderStrategy = renderStrategy.FloatPixelTo3DArray3;
               this.formatValues = utils.erect3DArray3;
               return null;
             } else if (this.output[1] > 0) {
               this.TextureConstructor = GLTextureArray3Float2D;
-              this.renderStrategy = renderStrategy.FloatPixelTo2DArray3;
               this.formatValues = utils.erect2DArray3;
               return null;
             } else {
               this.TextureConstructor = GLTextureArray3Float;
-              this.renderStrategy = renderStrategy.FloatPixelToArray3;
               this.formatValues = utils.erectArray3;
               return null;
             }
@@ -546,17 +531,14 @@ class GLKernel extends Kernel {
           case 'Array(4)': {
             if (this.output[2] > 0) {
               this.TextureConstructor = GLTextureArray4Float3D;
-              this.renderStrategy = renderStrategy.FloatPixelTo3DArray4;
               this.formatValues = utils.erect3DArray4;
               return null;
             } else if (this.output[1] > 0) {
               this.TextureConstructor = GLTextureArray4Float2D;
-              this.renderStrategy = renderStrategy.FloatPixelTo2DArray4;
               this.formatValues = utils.erect2DArray4;
               return null;
             } else {
               this.TextureConstructor = GLTextureArray4Float;
-              this.renderStrategy = renderStrategy.FloatPixelToArray4;
               this.formatValues = utils.erectArray4;
               return null;
             }
@@ -570,17 +552,14 @@ class GLKernel extends Kernel {
           case 'Integer': {
             if (this.output[2] > 0) {
               this.TextureConstructor = GLTextureFloat3D;
-              this.renderStrategy = renderStrategy.FloatPixelTo3DFloat;
               this.formatValues = utils.erect3DFloat;
               return null;
             } else if (this.output[1] > 0) {
               this.TextureConstructor = GLTextureFloat2D;
-              this.renderStrategy = renderStrategy.FloatPixelTo2DFloat;
               this.formatValues = utils.erect2DFloat;
               return null;
             } else {
               this.TextureConstructor = GLTextureFloat;
-              this.renderStrategy = renderStrategy.FloatPixelToFloat;
               this.formatValues = utils.erectFloat;
               return null;
             }
@@ -588,17 +567,14 @@ class GLKernel extends Kernel {
           case 'Array(2)': {
             if (this.output[2] > 0) {
               this.TextureConstructor = GLTextureArray2Float3D;
-              this.renderStrategy = renderStrategy.FloatPixelTo3DArray2;
               this.formatValues = utils.erect3DArray2;
               return null;
             } else if (this.output[1] > 0) {
               this.TextureConstructor = GLTextureArray2Float2D;
-              this.renderStrategy = renderStrategy.FloatPixelTo2DArray2;
               this.formatValues = utils.erect2DArray2;
               return null;
             } else {
               this.TextureConstructor = GLTextureArray2Float;
-              this.renderStrategy = renderStrategy.FloatPixelToArray2;
               this.formatValues = utils.erectArray2;
               return null;
             }
@@ -606,17 +582,14 @@ class GLKernel extends Kernel {
           case 'Array(3)': {
             if (this.output[2] > 0) {
               this.TextureConstructor = GLTextureArray3Float3D;
-              this.renderStrategy = renderStrategy.FloatPixelTo3DArray3;
               this.formatValues = utils.erect3DArray3;
               return null;
             } else if (this.output[1] > 0) {
               this.TextureConstructor = GLTextureArray3Float2D;
-              this.renderStrategy = renderStrategy.FloatPixelTo2DArray3;
               this.formatValues = utils.erect2DArray3;
               return null;
             } else {
               this.TextureConstructor = GLTextureArray3Float;
-              this.renderStrategy = renderStrategy.FloatPixelToArray3;
               this.formatValues = utils.erectArray3;
               return null;
             }
@@ -624,17 +597,14 @@ class GLKernel extends Kernel {
           case 'Array(4)': {
             if (this.output[2] > 0) {
               this.TextureConstructor = GLTextureArray4Float3D;
-              this.renderStrategy = renderStrategy.FloatPixelTo3DArray4;
               this.formatValues = utils.erect3DArray4;
               return null;
             } else if (this.output[1] > 0) {
               this.TextureConstructor = GLTextureArray4Float2D;
-              this.renderStrategy = renderStrategy.FloatPixelTo2DArray4;
               this.formatValues = utils.erect2DArray4;
               return null;
             } else {
               this.TextureConstructor = GLTextureArray4Float;
-              this.renderStrategy = renderStrategy.FloatPixelToArray4;
               this.formatValues = utils.erectArray4;
               return null;
             }
@@ -904,7 +874,9 @@ class GLKernel extends Kernel {
         const oldPrecision = this.getVariablePrecisionString(oldTexSize, this.tactic);
         const newPrecision = this.getVariablePrecisionString(newTexSize, this.tactic);
         if (oldPrecision !== newPrecision) {
-          console.warn('Precision requirement changed, asking GPU instance to recompile');
+          if (this.debug) {
+            console.warn('Precision requirement changed, asking GPU instance to recompile');
+          }
           this.switchKernels({
             type: 'outputPrecisionMismatch',
             precision: newPrecision,
@@ -984,66 +956,43 @@ class GLKernel extends Kernel {
 
   /**
    *
+   * @param {WebGLKernelValue} kernelValue
    * @param {GLTexture} arg
    */
-  updateTextureArgumentRefs(arg) {
+  updateTextureArgumentRefs(kernelValue, arg) {
     if (this.texture.texture === arg.texture) {
-      const { prevInput } = this;
-      if (prevInput) {
-        if (prevInput.texture.refs === 1) {
+      const { prevArg } = kernelValue;
+      if (prevArg) {
+        if (prevArg.texture.refs === 1) {
           this.texture.delete();
-          this.texture = prevInput.clone();
+          this.texture = prevArg.clone();
         }
-        prevInput.delete();
+        prevArg.delete();
       }
-      this.prevInput = arg.clone();
+      kernelValue.prevArg = arg.clone();
     } else if (this.mappedTextures && this.mappedTextures.length > 0) {
-      const { mappedTextures, prevMappedInputs } = this;
+      const { mappedTextures } = this;
       for (let i = 0; i < mappedTextures.length; i++) {
         const mappedTexture = mappedTextures[i];
         if (mappedTexture.texture === arg.texture) {
-          const prevMappedInput = prevMappedInputs[i];
-          if (prevMappedInput) {
-            if (prevMappedInput.texture.refs === 1) {
-              if (mappedTexture) {
-                mappedTexture.delete();
-                mappedTextures[i] = prevMappedInput.clone();
-              }
+          const { prevArg } = kernelValue;
+          if (prevArg) {
+            if (prevArg.texture.refs === 1) {
+              mappedTexture.delete();
+              mappedTextures[i] = prevArg.clone();
             }
-            prevMappedInput.delete();
+            prevArg.delete();
           }
-          prevMappedInputs[i] = arg.clone();
-          break;
+          kernelValue.prevArg = arg.clone();
+          return;
         }
       }
     }
   }
-}
 
-const renderStrategy = Object.freeze({
-  PackedPixelToUint8Array: Symbol('PackedPixelToUint8Array'),
-  PackedPixelToFloat: Symbol('PackedPixelToFloat'),
-  PackedPixelTo2DFloat: Symbol('PackedPixelTo2DFloat'),
-  PackedPixelTo3DFloat: Symbol('PackedPixelTo3DFloat'),
-  PackedTexture: Symbol('PackedTexture'),
-  FloatPixelToFloat32Array: Symbol('FloatPixelToFloat32Array'),
-  FloatPixelToFloat: Symbol('FloatPixelToFloat'),
-  FloatPixelTo2DFloat: Symbol('FloatPixelTo2DFloat'),
-  FloatPixelTo3DFloat: Symbol('FloatPixelTo3DFloat'),
-  FloatPixelToArray2: Symbol('FloatPixelToArray2'),
-  FloatPixelTo2DArray2: Symbol('FloatPixelTo2DArray2'),
-  FloatPixelTo3DArray2: Symbol('FloatPixelTo3DArray2'),
-  FloatPixelToArray3: Symbol('FloatPixelToArray3'),
-  FloatPixelTo2DArray3: Symbol('FloatPixelTo2DArray3'),
-  FloatPixelTo3DArray3: Symbol('FloatPixelTo3DArray3'),
-  FloatPixelToArray4: Symbol('FloatPixelToArray4'),
-  FloatPixelTo2DArray4: Symbol('FloatPixelTo2DArray4'),
-  FloatPixelTo3DArray4: Symbol('FloatPixelTo3DArray4'),
-  FloatTexture: Symbol('FloatTexture'),
-  MemoryOptimizedFloatPixelToMemoryOptimizedFloat: Symbol('MemoryOptimizedFloatPixelToFloat'),
-  MemoryOptimizedFloatPixelToMemoryOptimized2DFloat: Symbol('MemoryOptimizedFloatPixelTo2DFloat'),
-  MemoryOptimizedFloatPixelToMemoryOptimized3DFloat: Symbol('MemoryOptimizedFloatPixelTo3DFloat'),
-});
+  initCanvas() {
+  }
+}
 
 const typeMap = {
   int: 'Integer',
@@ -1054,6 +1003,5 @@ const typeMap = {
 };
 
 module.exports = {
-  GLKernel,
-  renderStrategy
+  GLKernel
 };

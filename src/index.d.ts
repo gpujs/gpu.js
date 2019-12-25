@@ -65,7 +65,7 @@ export class GPU {
       }
     )
     & IKernelRunShortcutBase;
-  destroy(): void;
+  destroy(): Promise<void>;
   Kernel: typeof Kernel;
   mode: string;
   canvas: any;
@@ -150,6 +150,7 @@ export abstract class Kernel {
   static destroyContext(context: any): void;
   static features: IKernelFeatures;
   static getFeatures(): IKernelFeatures;
+  static mode: GPUMode | GPUInternalMode;
   source: string | IKernelJSON;
   Kernel: Kernel;
   output: number[];
@@ -174,7 +175,7 @@ export abstract class Kernel {
   mappedTextures?: Texture[];
   TextureConstructor: typeof Texture;
   getPixels(flip?: boolean): Uint8ClampedArray[];
-  getVariablePrecisionString(texSize: number[], tactic: Tactic): string;
+  getVariablePrecisionString(textureSize: number[], tactic: Tactic, isInt: boolean): string;
   prependString(value: string): void;
   hasPrependString(value: string): boolean;
   constructor(kernel: KernelFunction|IKernelJSON|string, settings?: IDirectKernelSettings);

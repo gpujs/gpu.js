@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "GPU Accelerated JavaScript",
   "engines": {
     "node": ">=8.0.0"
@@ -45,7 +45,8 @@
   "scripts": {
     "test": "qunit",
     "setup": "npm i -g gulp-cli",
-    "make": "gulp make"
+    "make": "gulp make",
+    "docs": "doxdox ./src --layout bootstrap --output docs.html"
   },
   "repository": {
     "type": "git",

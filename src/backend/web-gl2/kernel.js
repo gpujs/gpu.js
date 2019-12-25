@@ -285,7 +285,7 @@ class WebGL2Kernel extends WebGLKernel {
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture.texture, 0);
       return;
     }
-    const texture = this.outputTexture = gl.createTexture();
+    const texture = gl.createTexture();
     const { texSize } = this;
     gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -325,7 +325,6 @@ class WebGL2Kernel extends WebGLKernel {
     const { texSize } = this;
     this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
     this.mappedTextures = [];
-    this.prevMappedInputs = {};
     for (let i = 0; i < this.subKernels.length; i++) {
       const texture = this.createTexture();
       this.drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
@@ -602,7 +601,7 @@ class WebGL2Kernel extends WebGLKernel {
   }
 
   /**
-   * @return {IJSON}
+   * @return {IKernelJSON}
    */
   toJSON() {
     const json = super.toJSON();

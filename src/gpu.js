@@ -9,7 +9,7 @@ const { kernelRunShortcut } = require('./kernel-run-shortcut');
 
 /**
  *
- * @type {typeof Kernel[]}
+ * @type {Array.<Kernel>}
  */
 const kernelOrder = [HeadlessGLKernel, WebGL2Kernel, WebGLKernel];
 
@@ -29,6 +29,8 @@ let validate = true;
 
 /**
  * The GPU.js library class which manages the GPU context for the creating kernels
+ * @class
+ * @return {GPU}
  */
 class GPU {
   static disableValidation() {
@@ -105,6 +107,7 @@ class GPU {
   /**
    * Creates an instance of GPU.
    * @param {IGPUSettings} [settings] - Settings to set mode, and other properties
+   * @constructor
    */
   constructor(settings) {
     settings = settings || {};
@@ -142,6 +145,10 @@ class GPU {
   chooseKernel() {
     if (this.Kernel) return;
 
+    /**
+     *
+     * @type {WebGLKernel|WebGL2Kernel|HeadlessGLKernel|CPUKernel}
+     */
     let Kernel = null;
 
     if (this.context) {
@@ -253,7 +260,9 @@ class GPU {
     }
 
     function onRequestSwitchKernel(reasons, args, kernel) {
-      console.warn('Switching kernels');
+      if (kernel.debug) {
+        console.warn('Switching kernels');
+      }
       let newOutput = null;
       if (kernel.dynamicOutput) {
         for (let i = reasons.length - 1; i >= 0; i--) {
@@ -529,27 +538,39 @@ class GPU {
 
   /**
    * @desc Destroys all memory associated with gpu.js & the webGl if we created it
+   * @return {Promise}
+   * @resolve {void}
+   * @reject {Error}
    */
   destroy() {
-    if (!this.kernels) return;
-    // perform on next run loop - for some reason we dont get lose context events
-    // if webGl is created and destroyed in the same run loop.
-    setTimeout(() => {
-      for (let i = 0; i < this.kernels.length; i++) {
-        this.kernels[i].destroy(true); // remove canvas if exists
+    return new Promise((resolve, reject) => {
+      if (!this.kernels) {
+        resolve();
       }
-      // all kernels are associated with one context, go ahead and take care of it here
-      let firstKernel = this.kernels[0];
-      if (firstKernel) {
-        // if it is shortcut
-        if (firstKernel.kernel) {
-          firstKernel = firstKernel.kernel;
+      // perform on next run loop - for some reason we dont get lose context events
+      // if webGl is created and destroyed in the same run loop.
+      setTimeout(() => {
+        try {
+          for (let i = 0; i < this.kernels.length; i++) {
+            this.kernels[i].destroy(true); // remove canvas if exists
+          }
+          // all kernels are associated with one context, go ahead and take care of it here
+          let firstKernel = this.kernels[0];
+          if (firstKernel) {
+            // if it is shortcut
+            if (firstKernel.kernel) {
+              firstKernel = firstKernel.kernel;
+            }
+            if (firstKernel.constructor.destroyContext) {
+              firstKernel.constructor.destroyContext(this.context);
+            }
+          }
+        } catch (e) {
+          reject(e);
         }
-        if (firstKernel.constructor.destroyContext) {
-          firstKernel.constructor.destroyContext(this.context);
-        }
-      }
-    }, 0);
+        resolve();
+      }, 0);
+    });
   }
 }
 

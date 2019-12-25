@@ -3,40 +3,10 @@ const { GPU, CPUKernel, WebGLKernel, WebGL2Kernel, HeadlessGLKernel } = require(
 
 describe('internal: kernel');
 
-const mockGl = {
-  COMPILE_STATUS: 'COMPILE_STATUS',
-  enable: () => {},
-  viewport: () => {},
-  createShader: () => {},
-  shaderSource: () => {},
-  compileShader: () => {},
-  getShaderParameter: (shader, prop) => {
-    if (prop === 'COMPILE_STATUS') return true;
-  },
-  getShaderInfoLog: () => {},
-  createProgram: () => {},
-  attachShader: () => {},
-  linkProgram: () => {},
-  createFramebuffer: () => { return {}; },
-  createBuffer: () => { return {}; },
-  bindFramebuffer: () => {},
-  bindBuffer: () => {},
-  bufferData: () => {},
-  bufferSubData: () => {},
-  getAttribLocation: () => Math.random(),
-  enableVertexAttribArray: () => {},
-  vertexAttribPointer: () => {},
-  createTexture: () => {},
-  activeTexture: () => {},
-  bindTexture: () => {},
-  texParameteri: () => {},
-  texImage2D: () => {},
-  framebufferTexture2D: () => {},
-  deleteBuffer: () => {},
-  deleteFramebuffer: () => {},
-  getExtension: () => true
-};
-
+/**
+ *
+ * @param {Kernel} Kernel
+ */
 function argumentTypesTest(Kernel) {
   const kernel = new Kernel(`function(value) { return value[this.thread.x]; }`, {
     output: [1],
@@ -69,6 +39,10 @@ test('CPUKernel argumentTypes', () => {
   argumentTypesTest(HeadlessGLKernel);
 });
 
+/**
+ *
+ * @param {Kernel} Kernel
+ */
 function setUniform1fTest(Kernel) {
   const canvas = {};
   const context = {
@@ -104,6 +78,10 @@ test('WebGL2Kernel.setUniform1f only calls context when values change', () => {
   setUniform1fTest(HeadlessGLKernel);
 });
 
+/**
+ *
+ * @param {Kernel} Kernel
+ */
 function setUniform1iTest(Kernel) {
   const canvas = {};
   const context = {
@@ -139,6 +117,10 @@ test('WebGL2Kernel.setUniform1i only calls context when values change', () => {
   setUniform1iTest(HeadlessGLKernel);
 });
 
+/**
+ *
+ * @param {Kernel} Kernel
+ */
 function setUniform2fTest(Kernel) {
   const canvas = {};
   const context = {
@@ -173,6 +155,10 @@ test('WebGL2Kernel.setUniform2f only calls context when values change', () => {
   setUniform2fTest(HeadlessGLKernel);
 });
 
+/**
+ *
+ * @param {Kernel} Kernel
+ */
 function setUniform2fvTest(Kernel) {
   const canvas = {};
   const context = {
@@ -207,6 +193,10 @@ test('HeadlessGLKernel.setUniform2fv only calls context when values change', () 
   setUniform2fvTest(HeadlessGLKernel);
 });
 
+/**
+ *
+ * @param {Kernel} Kernel
+ */
 function setUniform3fvTest(Kernel) {
   const canvas = {};
   const context = {
@@ -241,6 +231,10 @@ test('HeadlessGLKernel.setUniform3fv only calls context when values change', () 
   setUniform3fvTest(HeadlessGLKernel);
 });
 
+/**
+ *
+ * @param {Kernel} Kernel
+ */
 function setUniform4ivTest(Kernel) {
   const canvas = {};
   const context = {
@@ -275,6 +269,10 @@ test('HeadlessGLKernel.setUniform4iv only calls context when values change', () 
   setUniform4ivTest(HeadlessGLKernel);
 });
 
+/**
+ *
+ * @param {Kernel} Kernel
+ */
 function setUniform4fvTest(Kernel) {
   const canvas = {};
   const context = {

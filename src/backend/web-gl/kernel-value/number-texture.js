@@ -42,7 +42,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelValue {
 
     const { kernel, context: gl } = this;
     if (kernel.pipeline) {
-      kernel.updateTextureArgumentRefs(inputTexture);
+      kernel.updateTextureArgumentRefs(this, inputTexture);
     }
 
     gl.activeTexture(this.contextHandle);

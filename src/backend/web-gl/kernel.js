@@ -9,7 +9,15 @@ const { glKernelString } = require('../gl/kernel-string');
 const { lookupKernelValueType } = require('./kernel-value-maps');
 
 let isSupported = null;
+/**
+ *
+ * @type {HTMLCanvasElement|OffscreenCanvas|null}
+ */
 let testCanvas = null;
+/**
+ *
+ * @type {WebGLRenderingContext|null}
+ */
 let testContext = null;
 let testExtensions = null;
 let features = null;
@@ -24,17 +32,17 @@ const maxTexSizes = {};
  * <p>This builds the shaders and runs them on the GPU,
  * the outputs the result back as float(enabled by default) and Texture.</p>
  *
- * @prop {Object} textureCache - webGl Texture cache
- * @prop {Object} programUniformLocationCache - Location of program variables in memory
- * @prop {Object} framebuffer - Webgl frameBuffer
- * @prop {Object} buffer - WebGL buffer
- * @prop {Object} program - The webGl Program
- * @prop {Object} functionBuilder - Function Builder instance bound to this Kernel
- * @prop {Boolean} pipeline - Set output type to FAST mode (GPU to GPU via Textures), instead of float
- * @prop {String} endianness - Endian information like Little-endian, Big-endian.
- * @prop {Array} argumentTypes - Types of parameters sent to the Kernel
- * @prop {String} compiledFragmentShader - Compiled fragment shader string
- * @prop {String} compiledVertexShader - Compiled Vertical shader string
+ * @property {WebGLTexture[]} textureCache - webGl Texture cache
+ * @property {Object.<string, WebGLUniformLocation>} programUniformLocationCache - Location of program variables in memory
+ * @property {WebGLFramebuffer} framebuffer - Webgl frameBuffer
+ * @property {WebGLBuffer} buffer - WebGL buffer
+ * @property {WebGLProgram} program - The webGl Program
+ * @property {FunctionBuilder} functionBuilder - Function Builder instance bound to this Kernel
+ * @property {Boolean} pipeline - Set output type to FAST mode (GPU to GPU via Textures), instead of float
+ * @property {string} endianness - Endian information like Little-endian, Big-endian.
+ * @property {string[]} argumentTypes - Types of parameters sent to the Kernel
+ * @property {string|null} compiledFragmentShader - Compiled fragment shader string
+ * @property {string|null} compiledVertexShader - Compiled Vertical shader string
  * @extends GLKernel
  */
 class WebGLKernel extends GLKernel {
@@ -116,7 +124,7 @@ class WebGLKernel extends GLKernel {
 
   /**
    *
-   * @param {String|IJSON} source
+   * @param {String|IKernelJSON} source
    * @param {IDirectKernelSettings} settings
    */
   constructor(source, settings) {
@@ -130,7 +138,6 @@ class WebGLKernel extends GLKernel {
     this.fragShader = null;
     this.vertShader = null;
     this.drawBuffersMap = null;
-    this.outputTexture = null;
 
     /**
      *
@@ -717,7 +724,6 @@ class WebGLKernel extends GLKernel {
     const texSize = this.texSize;
     this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
     this.mappedTextures = [];
-    this.prevMappedInputs = {};
     for (let i = 0; i < this.subKernels.length; i++) {
       const texture = this.createTexture();
       this.drawBuffersMap.push(gl.COLOR_ATTACHMENT0 + i + 1);
@@ -1441,9 +1447,6 @@ class WebGLKernel extends GLKernel {
     if (this.program) {
       this.context.deleteProgram(this.program);
     }
-    if (this.prevInput) {
-      this.prevInput.delete();
-    }
     if (this.texture) {
       this.texture.delete();
       const textureCacheIndex = this.textureCache.indexOf(this.texture.texture);
@@ -1462,6 +1465,16 @@ class WebGLKernel extends GLKernel {
         }
       }
       this.mappedTextures = null;
+    }
+    if (this.kernelArguments) {
+      for (let i = 0; i < this.kernelArguments.length; i++) {
+        this.kernelArguments[i].destroy();
+      }
+    }
+    if (this.kernelConstants) {
+      for (let i = 0; i < this.kernelConstants.length; i++) {
+        this.kernelConstants[i].destroy();
+      }
     }
     while (this.textureCache.length > 0) {
       const texture = this.textureCache.pop();

@@ -60,7 +60,6 @@ test('.updateValue() checks ok height & width', () => {
     setUniform3iv: () => {},
     setUniform2iv: () => {},
     setUniform1i: () => {},
-    outputTexture: {}
   };
   const mockContext = {
     activeTexture: () => {},

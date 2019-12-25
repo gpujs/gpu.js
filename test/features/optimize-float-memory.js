@@ -12,7 +12,6 @@ function whenEnabledCallsCorrectRenderFunction(mode) {
   });
   const result = fn();
   assert.equal(fn.TextureConstructor.name, 'GLTextureMemoryOptimized');
-  assert.equal(fn.renderStrategy.toString(), 'Symbol(MemoryOptimizedFloatPixelToFloat)');
   assert.equal(fn.formatValues, utils.erectMemoryOptimizedFloat);
   assert.equal(result[0], 1);
 }
@@ -40,7 +39,6 @@ function whenEnabledCallsCorrectRenderFunction2D(mode) {
   });
   const result = fn();
   assert.equal(fn.TextureConstructor.name, 'GLTextureMemoryOptimized2D');
-  assert.equal(fn.renderStrategy.toString(), 'Symbol(MemoryOptimizedFloatPixelTo2DFloat)');
   assert.equal(fn.formatValues, utils.erectMemoryOptimized2DFloat);
   assert.deepEqual(result.map(row => Array.from(row)), [[1,1],[1,1]]);
 }
@@ -67,7 +65,6 @@ function whenEnabledCallsCorrectRenderFunction3D(mode) {
   });
   const result = fn();
   assert.equal(fn.TextureConstructor.name, 'GLTextureMemoryOptimized3D');
-  assert.equal(fn.renderStrategy.toString(), 'Symbol(MemoryOptimizedFloatPixelTo3DFloat)');
   assert.equal(fn.formatValues, utils.erectMemoryOptimized3DFloat);
   assert.deepEqual(result.map(matrix => matrix.map(row => Array.from(row))), [[[1,1],[1,1]],[[1,1],[1,1]]]);
 }

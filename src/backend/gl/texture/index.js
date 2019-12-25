@@ -1,5 +1,10 @@
 const { Texture } = require('../../../texture');
 
+/**
+ * @class
+ * @property framebuffer
+ * @extends Texture
+ */
 class GLTexture extends Texture {
   /**
    * @returns {Number}
@@ -52,7 +57,7 @@ class GLTexture extends Texture {
 
   delete() {
     super.delete();
-    if (this.framebuffer && this.texture && this.texture.refs < 1) {
+    if (this.framebuffer) {
       this.context.deleteFramebuffer(this.framebuffer);
     }
   }

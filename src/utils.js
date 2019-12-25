@@ -893,7 +893,7 @@ const utils = {
    *
    * @param {GPU} gpu
    * @param image
-   * @return {[*, *, *, *]}
+   * @return {Array}
    */
   splitHTMLImageToRGB: (gpu, image) => {
     const rKernel = gpu.createKernel(function(a) {

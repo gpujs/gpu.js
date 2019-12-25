@@ -10,7 +10,8 @@ class Kernel {
   }
 
   /**
-   * @type {Boolean}
+   * @abstract
+   * @returns {Boolean}
    */
   static isContextMatch(context) {
     throw new Error(`"isContextMatch" not implemented on ${ this.name }`);
@@ -42,7 +43,7 @@ class Kernel {
 
   /**
    *
-   * @param {string|IJSON} source
+   * @param {string|IKernelJSON} source
    * @param [settings]
    */
   constructor(source, settings) {
@@ -73,7 +74,7 @@ class Kernel {
 
     /**
      * The function source
-     * @type {String|IJSON}
+     * @type {String|IKernelJSON}
      */
     this.source = source;
 
@@ -106,9 +107,29 @@ class Kernel {
      * @type {Object}
      */
     this.constants = null;
+
+    /**
+     *
+     * @type {Object.<string, string>}
+     */
     this.constantTypes = null;
+
+    /**
+     *
+     * @type {Object.<string, number>}
+     */
     this.constantBitRatios = null;
+
+    /**
+     *
+     * @type {boolean}
+     */
     this.dynamicArguments = false;
+
+    /**
+     *
+     * @type {boolean}
+     */
     this.dynamicOutput = false;
 
     /**
@@ -178,7 +199,7 @@ class Kernel {
     this.pipeline = false;
 
     /**
-     * Make GPU use single precison or unsigned.  Acceptable values: 'single' or 'unsigned'
+     * Make GPU use single precision or unsigned.  Acceptable values: 'single' or 'unsigned'
      * @type {String|null}
      * @enum 'single' | 'unsigned'
      */
@@ -759,7 +780,7 @@ class Kernel {
   }
 
   /**
-   * @return {IJSON}
+   * @return {IKernelJSON}
    */
   toJSON() {
     return {

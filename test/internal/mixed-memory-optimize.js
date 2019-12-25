@@ -10,7 +10,6 @@ function getOffKernel(gpu) {
     .setPrecision('single')
     .setOutput([10])
     .setPipeline(true)
-    .setImmutable(true)
     .setOptimizeFloatMemory(false);
 }
 
@@ -21,7 +20,6 @@ function getOnKernel(gpu) {
     .setPrecision('single')
     .setOutput([10])
     .setPipeline(true)
-    .setImmutable(true)
     .setOptimizeFloatMemory(true);
 }
 

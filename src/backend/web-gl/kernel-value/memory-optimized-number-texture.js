@@ -39,7 +39,7 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelValue {
 
     const { context: gl, kernel } = this;
     if (kernel.pipeline) {
-      kernel.updateTextureArgumentRefs(inputTexture);
+      kernel.updateTextureArgumentRefs(this, inputTexture);
     }
 
     gl.activeTexture(this.contextHandle);

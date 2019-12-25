@@ -16,12 +16,12 @@ function testWithoutDestroyContext(done, mode) {
     destroy: destroyKernel
   });
   gpu.destroy();
-  gpu.destroy();
-  setTimeout(() => {
-    assert.equal(destroyKernel.callCount, 2);
-    assert.ok(true);
-    done();
-  }, 2);
+  gpu.destroy()
+    .then(() => {
+      assert.equal(destroyKernel.callCount, 2);
+      assert.ok(true);
+      done();
+    });
 }
 
 test('without destroy context', (t) => {
@@ -42,13 +42,13 @@ function testWithDestroyContext(done, mode) {
     destroy: destroyKernel
   });
   gpu.destroy();
-  gpu.destroy();
-  setTimeout(() => {
-    assert.equal(destroyKernel.callCount, 2);
-    assert.equal(destroyContextSpy.callCount, 2);
-    assert.ok(true);
-    done();
-  }, 2);
+  gpu.destroy()
+    .then(() => {
+      assert.equal(destroyKernel.callCount, 2);
+      assert.equal(destroyContextSpy.callCount, 2);
+      assert.ok(true);
+      done();
+    });
 }
 
 test('with destroy context', (t) => {
@@ -71,12 +71,12 @@ function testTexturesAreDestroyed(done, mode) {
     destroyExtensions: () => {},
   };
   mockKernelInstance.destroy = WebGLKernel.prototype.destroy.bind(mockKernelInstance);
-  GPU.prototype.destroy.call({ kernels: [mockKernelInstance] });
-  setTimeout(() => {
-    assert.equal(deleteTextureMock.callCount, 3);
-    assert.ok(true);
-    done();
-  }, 2);
+  GPU.prototype.destroy.call({ kernels: [mockKernelInstance] })
+    .then(() => {
+      assert.equal(deleteTextureMock.callCount, 3);
+      assert.ok(true);
+      done();
+    });
 }
 
 test('textures are destroyed', (t) => {
@@ -99,12 +99,12 @@ function testKernelTextureIsDeleted(done) {
     destroyExtensions: () => {},
   };
   mockKernelInstance.destroy = WebGLKernel.prototype.destroy.bind(mockKernelInstance);
-  GPU.prototype.destroy.call({ kernels: [mockKernelInstance] });
-  setTimeout(() => {
-    assert.equal(mockTextureDelete.callCount, 1);
-    assert.ok(true);
-    done();
-  }, 2);
+  GPU.prototype.destroy.call({ kernels: [mockKernelInstance] })
+    .then(() => {
+      assert.equal(mockTextureDelete.callCount, 1);
+      assert.ok(true);
+      done();
+    });
 }
 
 test('kernel.texture is deleted', (t) => {
@@ -133,13 +133,13 @@ function testKernelMappedTexturesAreDeleted(done) {
     destroyExtensions: () => {},
   };
   mockKernelInstance.destroy = WebGLKernel.prototype.destroy.bind(mockKernelInstance);
-  GPU.prototype.destroy.call({ kernels: [mockKernelInstance] });
-  setTimeout(() => {
-    assert.equal(mockTextureDelete1.callCount, 1);
-    assert.equal(mockTextureDelete2.callCount, 1);
-    assert.ok(true);
-    done();
-  }, 2);
+  GPU.prototype.destroy.call({ kernels: [mockKernelInstance] })
+    .then(() => {
+      assert.equal(mockTextureDelete1.callCount, 1);
+      assert.equal(mockTextureDelete2.callCount, 1);
+      assert.ok(true);
+      done();
+    });
 }
 
 test('kernel.mappedTextures are deleted', (t) => {
