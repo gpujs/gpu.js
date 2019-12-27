@@ -5,9 +5,21 @@ for (const p in lib) {
   if (p === 'GPU') continue; //prevent recursive reference
   GPU[p] = lib[p];
 }
-Object.defineProperty(window, 'GPU', {
-  get() {
-    return GPU;
-  }
-});
+
+if (typeof window !== 'undefined') {
+  bindTo(window);
+}
+if (typeof self !== 'undefined') {
+  bindTo(self);
+}
+
+function bindTo(target) {
+  if (target.GPU) return;
+  Object.defineProperty(target, 'GPU', {
+    get() {
+      return GPU;
+    }
+  });
+}
+
 module.exports = lib;

@@ -1,8 +1,13 @@
 const { utils } = require('../utils');
 
+function last(array) {
+  return array.length > 0 ? array[array.length - 1] : null;
+}
+
 class FunctionTracer {
   constructor(ast) {
     this.runningContexts = [];
+    this.functionContexts = [];
     this.contexts = [];
     this.functionCalls = [];
     this.declarations = [];
@@ -10,17 +15,40 @@ class FunctionTracer {
     this.functions = [];
     this.returnStatements = [];
     this.inLoopInit = false;
+    this.newFunctionContext();
     this.scan(ast);
   }
 
+  get currentFunctionContext() {
+    return last(this.functionContexts);
+  }
+
   get currentContext() {
-    return this.runningContexts.length > 0 ? this.runningContexts[this.runningContexts.length - 1] : null;
+    return last(this.runningContexts);
+  }
+
+  newFunctionContext() {
+    const newContext = { '@contextType': 'var' };
+    this.contexts.push(newContext);
+    this.functionContexts.push(newContext);
   }
 
   newContext(run) {
-    const newContext = Object.assign({}, this.currentContext);
+    const newContext = Object.assign({ '@contextType': 'var/const/let' }, this.currentContext);
     this.contexts.push(newContext);
     this.runningContexts.push(newContext);
+    run();
+    const { currentFunctionContext } = this;
+    for (const p in currentFunctionContext) {
+      if (!currentFunctionContext.hasOwnProperty(p) || newContext.hasOwnProperty(p)) continue;
+      newContext[p] = currentFunctionContext[p];
+    }
+    this.runningContexts.pop();
+  }
+
+  useFunctionContext(run) {
+    const functionContext = last(this.functionContexts);
+    this.runningContexts.push(functionContext);
     run();
     this.runningContexts.pop();
   }
@@ -60,8 +88,15 @@ class FunctionTracer {
         this.scan(ast.argument);
         break;
       case 'VariableDeclaration':
-        ast.declarations = utils.normalizeDeclarations(ast);
-        this.scan(ast.declarations);
+        if (ast.kind === 'var') {
+          this.useFunctionContext(() => {
+            ast.declarations = utils.normalizeDeclarations(ast);
+            this.scan(ast.declarations);
+          });
+        } else {
+          ast.declarations = utils.normalizeDeclarations(ast);
+          this.scan(ast.declarations);
+        }
         break;
       case 'VariableDeclarator':
         const { currentContext } = this;
@@ -71,7 +106,7 @@ class FunctionTracer {
           name: ast.id.name,
           origin: 'declaration',
           forceInteger: this.inLoopInit,
-          assignable: !this.inLoopInit && !currentContext.hasOwnProperty(ast.id.name),
+          assignable: currentContext === this.currentFunctionContext || (!this.inLoopInit && !currentContext.hasOwnProperty(ast.id.name)),
         };
         currentContext[ast.id.name] = declaration;
         this.declarations.push(declaration);

@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.4.2
- * @date Fri Dec 27 2019 08:17:30 GMT-0500 (Eastern Standard Time)
+ * @version 2.4.3
+ * @date Fri Dec 27 2019 16:33:11 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -8263,9 +8263,14 @@ module.exports = {
 },{"../utils":113,"./function-tracer":11,"acorn":1}],11:[function(require,module,exports){
 const { utils } = require('../utils');
 
+function last(array) {
+  return array.length > 0 ? array[array.length - 1] : null;
+}
+
 class FunctionTracer {
   constructor(ast) {
     this.runningContexts = [];
+    this.functionContexts = [];
     this.contexts = [];
     this.functionCalls = [];
     this.declarations = [];
@@ -8273,17 +8278,40 @@ class FunctionTracer {
     this.functions = [];
     this.returnStatements = [];
     this.inLoopInit = false;
+    this.newFunctionContext();
     this.scan(ast);
   }
 
+  get currentFunctionContext() {
+    return last(this.functionContexts);
+  }
+
   get currentContext() {
-    return this.runningContexts.length > 0 ? this.runningContexts[this.runningContexts.length - 1] : null;
+    return last(this.runningContexts);
+  }
+
+  newFunctionContext() {
+    const newContext = { '@contextType': 'var' };
+    this.contexts.push(newContext);
+    this.functionContexts.push(newContext);
   }
 
   newContext(run) {
-    const newContext = Object.assign({}, this.currentContext);
+    const newContext = Object.assign({ '@contextType': 'var/const/let' }, this.currentContext);
     this.contexts.push(newContext);
     this.runningContexts.push(newContext);
+    run();
+    const { currentFunctionContext } = this;
+    for (const p in currentFunctionContext) {
+      if (!currentFunctionContext.hasOwnProperty(p) || newContext.hasOwnProperty(p)) continue;
+      newContext[p] = currentFunctionContext[p];
+    }
+    this.runningContexts.pop();
+  }
+
+  useFunctionContext(run) {
+    const functionContext = last(this.functionContexts);
+    this.runningContexts.push(functionContext);
     run();
     this.runningContexts.pop();
   }
@@ -8319,8 +8347,15 @@ class FunctionTracer {
         this.scan(ast.argument);
         break;
       case 'VariableDeclaration':
-        ast.declarations = utils.normalizeDeclarations(ast);
-        this.scan(ast.declarations);
+        if (ast.kind === 'var') {
+          this.useFunctionContext(() => {
+            ast.declarations = utils.normalizeDeclarations(ast);
+            this.scan(ast.declarations);
+          });
+        } else {
+          ast.declarations = utils.normalizeDeclarations(ast);
+          this.scan(ast.declarations);
+        }
         break;
       case 'VariableDeclarator':
         const { currentContext } = this;
@@ -8330,7 +8365,7 @@ class FunctionTracer {
           name: ast.id.name,
           origin: 'declaration',
           forceInteger: this.inLoopInit,
-          assignable: !this.inLoopInit && !currentContext.hasOwnProperty(ast.id.name),
+          assignable: currentContext === this.currentFunctionContext || (!this.inLoopInit && !currentContext.hasOwnProperty(ast.id.name)),
         };
         currentContext[ast.id.name] = declaration;
         this.declarations.push(declaration);
@@ -11717,19 +11752,25 @@ class WebGLFunctionNode extends FunctionNode {
     let isSafe = null;
 
     if (forNode.init) {
-      this.pushState('in-for-loop-init');
-      this.astGeneric(forNode.init, initArr);
-      const { declarations } = forNode.init;
+      const { declarations, kind } = forNode.init;
+      if (
+        kind === 'var' &&
+        declarations.length > 1 &&
+        declarations.every(declaration => declaration.id.name.length === 1)
+      ) {
+        console.warn('Multiple 1 letter long var declarations in loop init caused minification detection. Adapting for safety and using LOOP_MAX.');
+        this.pushState('in-pre-for-loop-init');
+        this.astGeneric(forNode.init, initArr);
+        this.popState('in-pre-for-loop-init');
+        this.pushState('in-for-loop-init');
+        isSafe = false;
+      } else {
+        this.pushState('in-for-loop-init');
+        this.astGeneric(forNode.init, initArr);
+      }
       for (let i = 0; i < declarations.length; i++) {
         if (declarations[i].init && declarations[i].init.type !== 'Literal') {
           isSafe = false;
-        }
-      }
-      if (isSafe) {
-        for (let i = 0; i < initArr.length; i++) {
-          if (initArr[i].includes && initArr[i].includes(',')) {
-            isSafe = false;
-          }
         }
       }
       this.popState('in-for-loop-init');
@@ -11931,7 +11972,7 @@ class WebGLFunctionNode extends FunctionNode {
     }
 
     retArr.push(result.join(''));
-    if (!inForLoopInit) {
+    if (!inForLoopInit && !this.isState('in-pre-for-loop-init')) {
       retArr.push(';');
     }
     return retArr;
@@ -17099,11 +17140,23 @@ for (const p in lib) {
   if (p === 'GPU') continue; 
   GPU[p] = lib[p];
 }
-Object.defineProperty(window, 'GPU', {
-  get() {
-    return GPU;
-  }
-});
+
+if (typeof window !== 'undefined') {
+  bindTo(window);
+}
+if (typeof self !== 'undefined') {
+  bindTo(self);
+}
+
+function bindTo(target) {
+  if (target.GPU) return;
+  Object.defineProperty(target, 'GPU', {
+    get() {
+      return GPU;
+    }
+  });
+}
+
 module.exports = lib;
 },{"./index":108}],107:[function(require,module,exports){
 const { gpuMock } = require('gpu-mock.js');

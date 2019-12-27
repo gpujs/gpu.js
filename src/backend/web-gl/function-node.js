@@ -618,19 +618,25 @@ class WebGLFunctionNode extends FunctionNode {
     let isSafe = null;
 
     if (forNode.init) {
-      this.pushState('in-for-loop-init');
-      this.astGeneric(forNode.init, initArr);
-      const { declarations } = forNode.init;
+      const { declarations, kind } = forNode.init;
+      if (
+        kind === 'var' &&
+        declarations.length > 1 &&
+        declarations.every(declaration => declaration.id.name.length === 1)
+      ) {
+        console.warn('Multiple 1 letter long var declarations in loop init caused minification detection. Adapting for safety and using LOOP_MAX.');
+        this.pushState('in-pre-for-loop-init');
+        this.astGeneric(forNode.init, initArr);
+        this.popState('in-pre-for-loop-init');
+        this.pushState('in-for-loop-init');
+        isSafe = false;
+      } else {
+        this.pushState('in-for-loop-init');
+        this.astGeneric(forNode.init, initArr);
+      }
       for (let i = 0; i < declarations.length; i++) {
         if (declarations[i].init && declarations[i].init.type !== 'Literal') {
           isSafe = false;
-        }
-      }
-      if (isSafe) {
-        for (let i = 0; i < initArr.length; i++) {
-          if (initArr[i].includes && initArr[i].includes(',')) {
-            isSafe = false;
-          }
         }
       }
       this.popState('in-for-loop-init');
@@ -867,7 +873,7 @@ class WebGLFunctionNode extends FunctionNode {
     }
 
     retArr.push(result.join(''));
-    if (!inForLoopInit) {
+    if (!inForLoopInit && !this.isState('in-pre-for-loop-init')) {
       retArr.push(';');
     }
     return retArr;
