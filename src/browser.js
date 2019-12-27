@@ -5,4 +5,9 @@ for (const p in lib) {
   if (p === 'GPU') continue; //prevent recursive reference
   GPU[p] = lib[p];
 }
-module.exports = GPU;
+Object.defineProperty(window, 'GPU', {
+  get() {
+    return GPU;
+  }
+});
+module.exports = lib;

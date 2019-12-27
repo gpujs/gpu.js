@@ -19,46 +19,39 @@ class GLTexture extends Texture {
   }
 
   beforeMutate() {
-    if (this.texture.refs > 1) {
+    if (this.texture._refs > 1) {
       this.cloneTexture();
     }
   }
 
   cloneTexture() {
-    this.texture.refs--;
+    this.texture._refs--;
     const { context: gl, size, texture } = this;
     const existingFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-    const existingActiveTexture = gl.getParameter(gl.ACTIVE_TEXTURE);
-    const existingTexture2DBinding = gl.getParameter(gl.TEXTURE_BINDING_2D);
-    if (!this.framebuffer) {
-      this.framebuffer = gl.createFramebuffer();
+    if (!texture._framebuffer) {
+      texture._framebuffer = gl.createFramebuffer();
     }
-    this.framebuffer.width = size[0];
-    this.framebuffer.height = size[1];
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+    texture._framebuffer.width = size[0];
+    texture._framebuffer.width = size[1];
+    gl.bindFramebuffer(gl.FRAMEBUFFER, texture._framebuffer);
     selectTexture(gl, texture);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
     const target = gl.createTexture();
     selectTexture(gl, target);
     gl.texImage2D(gl.TEXTURE_2D, 0, this.internalFormat, size[0], size[1], 0, this.textureFormat, this.textureType, null);
     gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, size[0], size[1]);
-    target.refs = 1;
+    target._refs = 1;
+    target._framebuffer = texture._framebuffer;
     this.texture = target;
     if (existingFramebuffer) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, existingFramebuffer);
-    }
-    if (existingActiveTexture) {
-      gl.activeTexture(existingActiveTexture);
-    }
-    if (existingTexture2DBinding) {
-      gl.bindTexture(gl.TEXTURE_2D, existingTexture2DBinding);
     }
   }
 
   delete() {
     super.delete();
-    if (this.framebuffer) {
-      this.context.deleteFramebuffer(this.framebuffer);
+    if (this.texture._refs === 0 && this.texture._framebuffer) {
+      this.context.deleteFramebuffer(this.texture._framebuffer);
     }
   }
 }

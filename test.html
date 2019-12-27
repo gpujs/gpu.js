@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="dist/gpu-browser.min.js"></script>
+    <script>
+        const gpu = new GPU();
+        const kernel = gpu.createKernel(function(value) {
+          return value[this.thread.x] + 1;
+        }, { output: [1], pipeline: true });
+        const result = kernel([1]);
+        console.log(result.toArray());
+    </script>
+</head>
+<body></body>
+</html>

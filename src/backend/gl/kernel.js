@@ -963,7 +963,7 @@ class GLKernel extends Kernel {
     if (this.texture.texture === arg.texture) {
       const { prevArg } = kernelValue;
       if (prevArg) {
-        if (prevArg.texture.refs === 1) {
+        if (prevArg.texture._refs === 1) {
           this.texture.delete();
           this.texture = prevArg.clone();
         }
@@ -977,7 +977,7 @@ class GLKernel extends Kernel {
         if (mappedTexture.texture === arg.texture) {
           const { prevArg } = kernelValue;
           if (prevArg) {
-            if (prevArg.texture.refs === 1) {
+            if (prevArg.texture._refs === 1) {
               mappedTexture.delete();
               mappedTextures[i] = prevArg.clone();
             }
@@ -990,8 +990,7 @@ class GLKernel extends Kernel {
     }
   }
 
-  initCanvas() {
-  }
+  initCanvas() {}
 }
 
 const typeMap = {

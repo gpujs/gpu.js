@@ -146,34 +146,34 @@ function testTextureDelete(precision, done, mode) {
     precision,
   });
   const result = kernel();
-  assert.equal(result.texture.refs, 2);
+  assert.equal(result.texture._refs, 2);
   const clone1 = result.clone();
-  assert.equal(result.texture.refs, 3);
+  assert.equal(result.texture._refs, 3);
   const clone2 = result.clone();
-  assert.equal(result.texture.refs, 4);
+  assert.equal(result.texture._refs, 4);
   const clone3 = result.clone();
-  assert.equal(result.texture.refs, 5);
+  assert.equal(result.texture._refs, 5);
   const clone4 = result.clone();
-  assert.equal(result.texture.refs, 6);
+  assert.equal(result.texture._refs, 6);
   const clone5 = result.clone();
-  assert.equal(result.texture.refs, 7);
+  assert.equal(result.texture._refs, 7);
 
   clone1.delete();
-  assert.equal(result.texture.refs, 6);
+  assert.equal(result.texture._refs, 6);
   clone2.delete();
-  assert.equal(result.texture.refs, 5);
+  assert.equal(result.texture._refs, 5);
   clone3.delete();
-  assert.equal(result.texture.refs, 4);
+  assert.equal(result.texture._refs, 4);
   clone4.delete();
-  assert.equal(result.texture.refs, 3);
+  assert.equal(result.texture._refs, 3);
   clone5.delete();
-  assert.equal(result.texture.refs, 2);
+  assert.equal(result.texture._refs, 2);
   result.delete();
-  assert.equal(result.texture.refs, 1);
+  assert.equal(result.texture._refs, 1);
   const spy = sinon.spy(kernel.kernel.context, 'deleteTexture');
   gpu.destroy()
     .then(() => {
-      assert.equal(result.texture.refs, 0);
+      assert.equal(result.texture._refs, 0);
       assert.equal(spy.callCount, 1);
       assert.ok(spy.calledWith(result.texture));
       spy.restore();
@@ -231,23 +231,23 @@ function testKernelTextureDoesNotLeak(precision, done, mode) {
     precision,
   });
   const one = toTexture([1]);
-  assert.equal(one.texture.refs, 2); // one's texture will be used in two places at first, in one and toTexture.texture
+  assert.equal(one.texture._refs, 2); // one's texture will be used in two places at first, in one and toTexture.texture
   assert.equal(toTexture.texture.texture, one.texture); // very important, a clone was mode, but not a deep clone
   assert.notEqual(one, toTexture.texture);
   const two = toTexture([2]);
-  assert.equal(one.texture.refs, 1); // was tracked on toTexture.texture, and deleted
+  assert.equal(one.texture._refs, 1); // was tracked on toTexture.texture, and deleted
   assert.equal(toTexture.texture.texture, two.texture);
   assert.notEqual(toTexture.texture.texture, one.texture);
-  assert.equal(two.texture.refs, 2);
+  assert.equal(two.texture._refs, 2);
   one.delete();
   two.delete();
-  assert.equal(one.texture.refs, 0);
-  assert.equal(two.texture.refs, 1); // still used by toTexture.texture
+  assert.equal(one.texture._refs, 0);
+  assert.equal(two.texture._refs, 1); // still used by toTexture.texture
   two.delete(); // already deleted
-  assert.equal(two.texture.refs, 1); // still used by toTexture
+  assert.equal(two.texture._refs, 1); // still used by toTexture
   gpu.destroy()
     .then(() => {
-      assert.equal(two.texture.refs, 0);
+      assert.equal(two.texture._refs, 0);
       done();
     });
 }
@@ -306,39 +306,39 @@ function testKernelMappedTexturesDoesNotLeak(precision, done, mode) {
     precision,
   });
   const { result: one, 0: two } = toTextures([1], [2]);
-  assert.equal(one.texture.refs, 2); // one's texture will be used in two places at first, in one and toTexture.texture
-  assert.equal(two.texture.refs, 2); // one's texture will be used in two places at first, in one and toTexture.mappedTextures[0]
+  assert.equal(one.texture._refs, 2); // one's texture will be used in two places at first, in one and toTexture.texture
+  assert.equal(two.texture._refs, 2); // one's texture will be used in two places at first, in one and toTexture.mappedTextures[0]
   assert.equal(toTextures.texture.texture, one.texture); // very important, a clone was mode, but not a deep clone
   assert.equal(toTextures.mappedTextures[0].texture, two.texture); // very important, a clone was mode, but not a deep clone
   assert.notEqual(one, toTextures.texture);
   assert.notEqual(one, toTextures.mappedTextures[0]);
   const { result: three, 0: four } = toTextures([3], [4]);
-  assert.equal(one.texture.refs, 1); // was tracked on toTexture.texture, and deleted
-  assert.equal(two.texture.refs, 1); // was tracked on toTexture.mappedTextures[0], and deleted
+  assert.equal(one.texture._refs, 1); // was tracked on toTexture.texture, and deleted
+  assert.equal(two.texture._refs, 1); // was tracked on toTexture.mappedTextures[0], and deleted
   assert.equal(toTextures.texture.texture, three.texture);
   assert.equal(toTextures.mappedTextures[0].texture, four.texture);
   assert.notEqual(toTextures.texture.texture, one.texture);
   assert.notEqual(toTextures.mappedTextures[0].texture, two.texture);
-  assert.equal(three.texture.refs, 2);
-  assert.equal(four.texture.refs, 2);
+  assert.equal(three.texture._refs, 2);
+  assert.equal(four.texture._refs, 2);
   one.delete();
   two.delete();
   three.delete();
   four.delete();
-  assert.equal(one.texture.refs, 0);
-  assert.equal(two.texture.refs, 0);
-  assert.equal(three.texture.refs, 1); // still used by toTexture.texture
-  assert.equal(four.texture.refs, 1); // still used by toTexture.mappedTextures[0]
+  assert.equal(one.texture._refs, 0);
+  assert.equal(two.texture._refs, 0);
+  assert.equal(three.texture._refs, 1); // still used by toTexture.texture
+  assert.equal(four.texture._refs, 1); // still used by toTexture.mappedTextures[0]
   three.delete(); // already deleted
   four.delete(); // already deleted
-  assert.equal(three.texture.refs, 1); // still used by toTexture
-  assert.equal(four.texture.refs, 1); // still used by toTexture
+  assert.equal(three.texture._refs, 1); // still used by toTexture
+  assert.equal(four.texture._refs, 1); // still used by toTexture
   gpu.destroy()
     .then(() => {
-      assert.equal(one.texture.refs, 0);
-      assert.equal(two.texture.refs, 0);
-      assert.equal(three.texture.refs, 0);
-      assert.equal(four.texture.refs, 0);
+      assert.equal(one.texture._refs, 0);
+      assert.equal(two.texture._refs, 0);
+      assert.equal(three.texture._refs, 0);
+      assert.equal(four.texture._refs, 0);
       done();
     });
 }

@@ -20,10 +20,10 @@ class Texture {
     if (!texture) throw new Error('settings property "texture" required.');
     if (!kernel) throw new Error('settings property "kernel" required.');
     this.texture = texture;
-    if (texture.refs) {
-      texture.refs++;
+    if (texture._refs) {
+      texture._refs++;
     } else {
-      texture.refs = 1;
+      texture._refs = 1;
     }
     this.size = size;
     this.dimensions = dimensions;
@@ -61,9 +61,9 @@ class Texture {
   delete() {
     if (this._deleted) return;
     this._deleted = true;
-    if (this.texture.refs) {
-      this.texture.refs--;
-      if (this.texture.refs) return;
+    if (this.texture._refs) {
+      this.texture._refs--;
+      if (this.texture._refs) return;
     }
     return this.context.deleteTexture(this.texture);
   }
