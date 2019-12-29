@@ -1,4 +1,4 @@
-[![Logo](http://gpu.rocks/img/ogimage.png)](http://gpu.rocks/)
+[![Logo](http://gpu.rocks/static/media/jelly.3587de60.png)](http://gpu.rocks/)
 
 
 # GPU.js
@@ -16,7 +16,6 @@ For some more quick concepts, see [Quick Concepts](https://github.com/gpujs/gpu.
 Creates a GPU accelerated kernel transpiled from a javascript function that computes a single element in the 512 x 512 matrix (2D array).
 The kernel functions are ran in tandem on the GPU often resulting in very fast computations!
 You can run a benchmark of this [here](http://gpu.rocks). Typically, it will run 1-15x faster depending on your hardware.
-You can experiment around with the [kernel playground here](http://gpu.rocks/playground)
 Matrix multiplication (perform matrix multiplication on 2 matrices of size 512 x 512) written in GPU.js:
 
 ## Browser
