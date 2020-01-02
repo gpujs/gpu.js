@@ -224,12 +224,12 @@ class FunctionNode {
     this.functions = functions;
     for (let i = 0; i < declarations.length; i++) {
       const declaration = declarations[i];
-      const { ast, context, name, origin, forceInteger, assignable } = declaration;
+      const { ast, context, name, origin, inForLoopInit, inForLoopTest, assignable } = declaration;
       const { init } = ast;
       const dependencies = this.getDependencies(init);
       let valueType = null;
 
-      if (forceInteger) {
+      if (inForLoopInit && inForLoopTest) {
         valueType = 'Integer';
       } else {
         if (init) {
@@ -254,6 +254,8 @@ class FunctionNode {
       }
       this.declarations.push({
         valueType,
+        inForLoopInit,
+        inForLoopTest,
         dependencies,
         isSafe: this.isSafeDependencies(dependencies),
         ast,

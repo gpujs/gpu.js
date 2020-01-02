@@ -397,7 +397,8 @@ class GPU {
   createKernelMap() {
     let fn;
     let settings;
-    if (typeof arguments[arguments.length - 2] === 'function') {
+    const argument2Type = typeof arguments[arguments.length - 2];
+    if (argument2Type === 'function' || argument2Type === 'string') {
       fn = arguments[arguments.length - 2];
       settings = arguments[arguments.length - 1];
     } else {

@@ -9,6 +9,7 @@ const ARGUMENT_NAMES = /([^\s,]+)/g;
 /**
  *
  * @desc Various utility functions / snippets of code that GPU.JS uses internally.
+ * @type {utils}
  * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
  */
 const utils = {
@@ -996,6 +997,14 @@ const utils = {
       visualKernelB.canvas,
       visualKernelA.canvas,
     ];
+  },
+
+  getMinifySafeName: (fn) => {
+    const ast = acorn.parse(fn.toString());
+    if (!ast.body || !ast.body[0] || !ast.body[0].expression || !ast.body[0].expression.body || !ast.body[0].expression.body.name) {
+      throw new Error('Unrecognized function type.  Please use `() => yourFunctionVariableHere`');
+    }
+    return ast.body[0].expression.body.name;
   }
 };
 

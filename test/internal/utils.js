@@ -608,3 +608,15 @@ test('flattenFunctionToString', () => {
   })));
   assert.ok(true);
 });
+
+test('improper getMinifySafeName usage', () => {
+  assert.throws(() => {
+    utils.getMinifySafeName(() => {});
+  });
+});
+
+test('proper getMinifySafeName usage', () => {
+  function n() {}
+  const safeName = utils.getMinifySafeName(() => n);
+  assert.equal(safeName, 'n');
+});

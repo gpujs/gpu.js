@@ -821,8 +821,12 @@ class WebGLFunctionNode extends FunctionNode {
       const actualType = this.getType(declaration.init);
       let type = inForLoopInit ? 'Integer' : actualType;
       if (type === 'LiteralInteger') {
-        // We had the choice to go either float or int, choosing float
-        type = 'Number';
+        if (info.inForLoopInit && info.inForLoopTest) {
+          type = 'Integer';
+        } else {
+          // We had the choice to go either float or int, choosing float
+          type = 'Number';
+        }
       }
       const markupType = typeMap[type];
       if (!markupType) {
@@ -865,6 +869,8 @@ class WebGLFunctionNode extends FunctionNode {
             this.astGeneric(init, declarationResult);
             declarationResult.push(')');
           }
+        } else if (actualType === 'LiteralInteger' && type === 'Integer') {
+          this.castLiteralToInteger(init, declarationResult);
         } else {
           this.astGeneric(init, declarationResult);
         }

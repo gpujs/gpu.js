@@ -436,7 +436,7 @@ export interface IFunctionSettings {
   name?: string;
   debug?: boolean;
   argumentNames?: string[];
-  argumentTypes?: string[];
+  argumentTypes?: string[] | { [argumentName: string]: string };
   argumentSizes?: number[];
 
   constants?: IConstants;
@@ -589,4 +589,8 @@ export interface IJSONSettings {
   pluginNames?: string[];
   tactic?: Tactic;
   threadDim?: number[];
+}
+
+export type utils = {
+  getMinifySafeName(arrowReference: () => Function): string;
 }

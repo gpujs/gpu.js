@@ -1,21 +1,14 @@
 const { assert, test, skip, module: describe, only } = require('qunit');
+const sinon = require('sinon');
+const acorn = require('acorn');
 const { FunctionTracer } = require('../../src');
 
 describe('internal: FunctionTracer');
 
 test('works with Program', () => {
-  const mockBody = {};
-  let called = false;
-  let calledBody = null;
-  const mockInstance = {
-    scan: (body) => {
-      called = true;
-      calledBody = body;
-    }
-  };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'Program', body: mockBody });
-  assert.ok(called);
-  assert.equal(calledBody, mockBody);
+  const ast = acorn.parse(`var i;`);
+  const functionTracer = new FunctionTracer(ast);
+  assert.ok(functionTracer.functionContexts.length > 0);
 });
 
 test('works with BlockStatement', () => {
@@ -130,43 +123,35 @@ test('works with VariableDeclaration', () => {
   assert.deepEqual(calledDeclarations, mockDeclarations);
 });
 
-test('works with VariableDeclarator', () => {
-  const mockDeclarations = {};
-  const mockCurrentContext = {};
-  let called = false;
-  let calledDeclarators = [];
-  const mockInstance = {
-    inLoopInit: false,
-    declarations: [],
-    currentContext: mockCurrentContext,
-    scan: (declarator) => {
-      called = true;
-      calledDeclarators.push(declarator);
-    }
-  };
-  const mockId =  {
-    name: 'bob'
-  };
-  const mockInit = {};
-  const mockAst = {
-    type: 'VariableDeclarator',
-    declarations: mockDeclarations,
-    id: mockId,
-    init: mockInit
-  };
-  FunctionTracer.prototype.scan.call(mockInstance, mockAst);
-  assert.ok(called);
-  assert.deepEqual(calledDeclarators, [mockId, mockInit]);
-  const expecting = {
-    ast: mockAst,
-    context: mockCurrentContext,
-    name: 'bob',
-    origin: 'declaration',
-    forceInteger: false,
-    assignable: true,
-  };
-  assert.deepEqual(mockCurrentContext.bob, expecting);
-  assert.deepEqual(mockInstance.declarations[0], expecting);
+test('works with generic VariableDeclarator', () => {
+  const ast = acorn.parse('var bob = 0;');
+
+  const functionTracer = new FunctionTracer(ast);
+  const { bob } = functionTracer.contexts[0];
+  assert.equal(bob.ast, ast.body[0].declarations[0]);
+  assert.equal(bob.context, functionTracer.contexts[0]);
+  assert.equal(bob.name, 'bob');
+  assert.equal(bob.origin, 'declaration');
+  assert.equal(bob.assignable, true);
+  assert.equal(bob.inForLoopTest, null);
+  assert.equal(bob.inForLoopInit, false);
+  assert.equal(functionTracer.declarations[0], bob);
+});
+
+test('works with var VariableDeclarator', () => {
+  const ast = acorn.parse('var bob = 0;');
+
+  const functionTracer = new FunctionTracer(ast);
+  const { bob } = functionTracer.contexts[0];
+  assert.equal(bob.context['@contextType'], 'function');
+});
+
+test('works with let VariableDeclarator', () => {
+  const ast = acorn.parse('let bob = 0;');
+
+  const functionTracer = new FunctionTracer(ast);
+  const { bob } = functionTracer.contexts[0];
+  assert.equal(bob.context['@contextType'], 'function');
 });
 
 test('works with FunctionExpression when runningContexts.length = 0', () => {
@@ -259,31 +244,12 @@ test('works with IfStatement', () => {
 });
 
 test('works with ForStatement', () => {
-  const mockInit = {};
-  const mockTest = {};
-  const mockUpdate = {};
-  const mockBody = {};
-  let called = false;
-  let calledArgs = [];
-  const mockInstance = {
-    contexts: [],
-    runningContexts: [],
-    newContext: FunctionTracer.prototype.newContext,
-    scan: (arg) => {
-      called = true;
-      calledArgs.push(arg);
-    }
-  };
-  FunctionTracer.prototype.scan.call(mockInstance, {
-    type: 'ForStatement',
-    init: mockInit,
-    test: mockTest,
-    update: mockUpdate,
-    body: mockBody,
-  });
-  assert.ok(called);
-  assert.deepEqual(calledArgs, [mockInit, mockTest, mockUpdate, mockBody]);
-  assert.equal(mockInstance.contexts.length, 2);
+  const ast = acorn.parse(`for (let i = 0; i < 1; i++) {
+  call();
+}`);
+  const functionTracer = new FunctionTracer(ast.body[0]);
+  assert.equal(functionTracer.declarations[0].name, 'i');
+  assert.equal(functionTracer.contexts.length, 4);
 });
 
 test('works with DoWhileStatement', () => {
@@ -326,9 +292,11 @@ test('works with WhileStatement', () => {
 
 test('works with Identifier', () => {
   const mockCurrentContext = {};
+  const mockIsState = sinon.spy();
   const mockInstance = {
     identifiers: [],
     currentContext: mockCurrentContext,
+    isState: mockIsState,
   };
   const mockAst = { type: 'Identifier' };
   FunctionTracer.prototype.scan.call(mockInstance, mockAst);
@@ -338,6 +306,7 @@ test('works with Identifier', () => {
       ast: mockAst
     }
   ]);
+  assert.equal(mockIsState.args[0][0], 'trackIdentifiers');
 });
 
 test('works with ReturnStatement', () => {
@@ -362,17 +331,20 @@ test('works with ReturnStatement', () => {
 test('works with MemberExpression', () => {
   const mockBody = {};
   const mockProperty = {};
-  let called = false;
-  let calledArgs = [];
+  const mockPushState = sinon.spy();
+  const mockPopState = sinon.spy();
+  const mockScan = sinon.spy();
   const mockInstance = {
-    scan: (arg) => {
-      called = true;
-      calledArgs.push(arg);
-    }
+    scan: mockScan,
+    pushState: mockPushState,
+    popState: mockPopState,
   };
   FunctionTracer.prototype.scan.call(mockInstance, { type: 'MemberExpression', object: mockBody, property: mockProperty });
-  assert.ok(called);
-  assert.deepEqual(calledArgs, [mockBody, mockProperty]);
+  assert.ok(mockScan.called);
+  assert.equal(mockScan.args[0][0], mockBody);
+  assert.equal(mockScan.args[1][0], mockProperty);
+  assert.equal(mockPushState.args[0][0], 'memberExpression');
+  assert.equal(mockPopState.args[0][0], 'memberExpression');
 });
 
 

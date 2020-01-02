@@ -28,12 +28,14 @@
     if (module.match(/[.][.]\/src$/)) return browserGPU;
     if (module === 'sinon') return sinon;
     if (module === 'qunit') return QUnit;
+    if (module === 'acorn') return acorn;
     if (module.match(/[.][.]\/browser-test-utils$/)) return browserTestUtils;
     throw new Error('cannot find ' + module);
   };
 </script>
 <script src="../node_modules/sinon/pkg/sinon.js"></script>
 <script src="../node_modules/qunit/qunit/qunit.js"></script>
+<script src="../node_modules/acorn/dist/acorn.js"></script>
 {{test-files}}
 </body>
 </html>
