@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.4.4
- * @date Thu Jan 02 2020 12:26:36 GMT-0500 (Eastern Standard Time)
+ * @version 2.4.5
+ * @date Thu Jan 02 2020 13:02:31 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -18845,11 +18845,13 @@ const utils = {
   },
 
   getMinifySafeName: (fn) => {
-    const ast = acorn.parse(fn.toString());
-    if (!ast.body || !ast.body[0] || !ast.body[0].expression || !ast.body[0].expression.body || !ast.body[0].expression.body.name) {
-      throw new Error('Unrecognized function type.  Please use `() => yourFunctionVariableHere`');
+    try {
+      const ast = acorn.parse(`const value = ${fn.toString()}`);
+      const { init } = ast.body[0].declarations[0];
+      return init.body.name || init.body.body[0].argument.name;
+    } catch (e) {
+      throw new Error('Unrecognized function type.  Please use `() => yourFunctionVariableHere` or function() { return yourFunctionVariableHere; }');
     }
-    return ast.body[0].expression.body.name;
   }
 };
 

@@ -609,14 +609,28 @@ test('flattenFunctionToString', () => {
   assert.ok(true);
 });
 
-test('improper getMinifySafeName usage', () => {
+test('improper getMinifySafeName usage with arrow function', () => {
   assert.throws(() => {
     utils.getMinifySafeName(() => {});
-  });
+  }, 'Unrecognized function type.');
 });
 
-test('proper getMinifySafeName usage', () => {
+test('improper getMinifySafeName usage with regular function', () => {
+  assert.throws(() => {
+    utils.getMinifySafeName(function() {});
+  }, 'Unrecognized function type.');
+});
+
+test('proper getMinifySafeName usage with arrow function', () => {
   function n() {}
   const safeName = utils.getMinifySafeName(() => n);
+  assert.equal(safeName, 'n');
+});
+
+test('proper getMinifySafeName usage with regular function', () => {
+  function n() {}
+  const safeName = utils.getMinifySafeName(function () {
+    return n;
+  });
   assert.equal(safeName, 'n');
 });

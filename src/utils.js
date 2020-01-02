@@ -1000,11 +1000,13 @@ const utils = {
   },
 
   getMinifySafeName: (fn) => {
-    const ast = acorn.parse(fn.toString());
-    if (!ast.body || !ast.body[0] || !ast.body[0].expression || !ast.body[0].expression.body || !ast.body[0].expression.body.name) {
-      throw new Error('Unrecognized function type.  Please use `() => yourFunctionVariableHere`');
+    try {
+      const ast = acorn.parse(`const value = ${fn.toString()}`);
+      const { init } = ast.body[0].declarations[0];
+      return init.body.name || init.body.body[0].argument.name;
+    } catch (e) {
+      throw new Error('Unrecognized function type.  Please use `() => yourFunctionVariableHere` or function() { return yourFunctionVariableHere; }');
     }
-    return ast.body[0].expression.body.name;
   }
 };
 
