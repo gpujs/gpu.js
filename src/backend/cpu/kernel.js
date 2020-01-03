@@ -43,6 +43,10 @@ class CPUKernel extends Kernel {
     return combinedKernel;
   }
 
+  static getSignature(kernel, argumentTypes) {
+    return 'cpu' + (argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '');
+  }
+
   constructor(source, settings) {
     super(source, settings);
     this.mergeSettings(source.settings || settings);
@@ -166,6 +170,7 @@ class CPUKernel extends Kernel {
     } catch (e) {
       console.error('An error occurred compiling the javascript: ', e);
     }
+    this.buildSignature(arguments);
     this.built = true;
   }
 

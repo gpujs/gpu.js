@@ -175,7 +175,7 @@ export abstract class Kernel {
   mappedTextures?: Texture[];
   TextureConstructor: typeof Texture;
   getPixels(flip?: boolean): Uint8ClampedArray[];
-  getVariablePrecisionString(textureSize: number[], tactic: Tactic, isInt: boolean): string;
+  getVariablePrecisionString(textureSize?: number[], tactic?: Tactic, isInt?: boolean): string;
   prependString(value: string): void;
   hasPrependString(value: string): boolean;
   constructor(kernel: KernelFunction|IKernelJSON|string, settings?: IDirectKernelSettings);
@@ -377,6 +377,10 @@ export type KernelVariable =
   | HTMLImageElement
   | HTMLVideoElement
   | HTMLImageElement[]
+  | Float32Array
+  | Uint8Array
+  | Uint16Array
+  | Uint32Array
   | KernelOutput;
 
 export type ThreadKernelVariable
@@ -593,4 +597,9 @@ export interface IJSONSettings {
 
 export type utils = {
   getMinifySafeName(arrowReference: () => Function): string;
+}
+
+export interface IReason{
+  type: 'argumentMismatch' | 'outputPrecisionMismatch';
+  needed: any;
 }

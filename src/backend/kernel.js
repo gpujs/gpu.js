@@ -224,6 +224,7 @@ class Kernel {
     this.onIstanbulCoverageVariable = null;
     this.removeIstanbulCoverage = false;
     this.built = false;
+    this.signature = null;
   }
 
   /**
@@ -794,6 +795,53 @@ class Kernel {
         returnType: this.returnType,
       }
     };
+  }
+
+  /**
+   * @param {IArguments} args
+   */
+  buildSignature(args) {
+    const Constructor = this.constructor;
+    this.signature = Constructor.getSignature(this, Constructor.getArgumentTypes(this, args));
+  }
+
+  /**
+   * @param {Kernel} kernel
+   * @param {IArguments} args
+   * @returns GPUVariableType[]
+   */
+  static getArgumentTypes(kernel, args) {
+    const argumentTypes = new Array(args.length);
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const type = kernel.argumentTypes[i];
+      if (arg.type) {
+        argumentTypes[i] = arg.type;
+      } else {
+        switch (type) {
+          case 'Number':
+          case 'Integer':
+          case 'Float':
+          case 'ArrayTexture(1)':
+            argumentTypes[i] = utils.getVariableType(arg);
+            break;
+          default:
+            argumentTypes[i] = type;
+        }
+      }
+    }
+    return argumentTypes;
+  }
+
+  /**
+   *
+   * @param {Kernel} kernel
+   * @param {GPUVariableType[]} argumentTypes
+   * @abstract
+   */
+  static getSignature(kernel, argumentTypes) {
+    throw new Error(`"getSignature" not implemented on ${ this.name }`);
+    return argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '';
   }
 }
 

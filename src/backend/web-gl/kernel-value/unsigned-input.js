@@ -34,7 +34,7 @@ class WebGLKernelValueUnsignedInput extends WebGLKernelValue {
 
   updateValue(input) {
     if (input.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(value.constructor);
       return;
     }
     const { context: gl } = this;

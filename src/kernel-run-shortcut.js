@@ -13,6 +13,7 @@ function kernelRunShortcut(kernel) {
       if (kernel.switchingKernels) {
         const reasons = kernel.resetSwitchingKernels();
         const newKernel = kernel.onRequestSwitchKernel(reasons, arguments, kernel);
+        shortcut.kernel = kernel = newKernel;
         result = newKernel.run.apply(newKernel, arguments);
       }
       if (kernel.renderKernels) {
@@ -44,15 +45,17 @@ function kernelRunShortcut(kernel) {
   shortcut.replaceKernel = function(replacementKernel) {
     kernel = replacementKernel;
     bindKernelToShortcut(kernel, shortcut);
-    shortcut.kernel = kernel;
   };
 
   bindKernelToShortcut(kernel, shortcut);
-  shortcut.kernel = kernel;
   return shortcut;
 }
 
 function bindKernelToShortcut(kernel, shortcut) {
+  if (shortcut.kernel) {
+    shortcut.kernel = kernel;
+    return;
+  }
   const properties = utils.allPropertiesOf(kernel);
   for (let i = 0; i < properties.length; i++) {
     const property = properties[i];
@@ -60,27 +63,22 @@ function bindKernelToShortcut(kernel, shortcut) {
     if (typeof kernel[property] === 'function') {
       if (property.substring(0, 3) === 'add' || property.substring(0, 3) === 'set') {
         shortcut[property] = function() {
-          kernel[property].apply(kernel, arguments);
+          shortcut.kernel[property].apply(shortcut.kernel, arguments);
           return shortcut;
         };
       } else {
-        if (property === 'toString') {
-          shortcut.toString = function() {
-            return kernel.toString.apply(kernel, arguments);
-          };
-        } else {
-          shortcut[property] = kernel[property].bind(kernel);
-        }
+        shortcut[property] = function() {
+          return shortcut.kernel[property].apply(shortcut.kernel, arguments);
+        };
       }
     } else {
-      shortcut.__defineGetter__(property, () => {
-        return kernel[property];
-      });
+      shortcut.__defineGetter__(property, () => shortcut.kernel[property]);
       shortcut.__defineSetter__(property, (value) => {
-        kernel[property] = value;
+        shortcut.kernel[property] = value;
       });
     }
   }
+  shortcut.kernel = kernel;
 }
 module.exports = {
   kernelRunShortcut

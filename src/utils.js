@@ -116,7 +116,8 @@ const utils = {
 
   /**
    * @desc Evaluate the argument type, to apply respective logic for it
-   * @param {Object} value - The argument object to evaluate type
+   * @param {*} value - The argument object to evaluate type
+   * @param {boolean} [strictIntegers]
    * @returns {String}  Argument type Array/Number/Float/Texture/Unknown
    */
   getVariableType(value, strictIntegers) {

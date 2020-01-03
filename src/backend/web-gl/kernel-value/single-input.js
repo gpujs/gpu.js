@@ -31,7 +31,7 @@ class WebGLKernelValueSingleInput extends WebGLKernelValue {
 
   updateValue(input) {
     if (input.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(input.constructor);
       return;
     }
     const { context: gl } = this;

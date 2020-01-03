@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.4.5
- * @date Thu Jan 02 2020 13:02:31 GMT-0500 (Eastern Standard Time)
+ * @version 2.4.6
+ * @date Thu Jan 02 2020 19:46:21 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -1406,6 +1406,10 @@ class CPUKernel extends Kernel {
     return combinedKernel;
   }
 
+  static getSignature(kernel, argumentTypes) {
+    return 'cpu' + (argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '');
+  }
+
   constructor(source, settings) {
     super(source, settings);
     this.mergeSettings(source.settings || settings);
@@ -1518,6 +1522,7 @@ class CPUKernel extends Kernel {
     } catch (e) {
       console.error('An error occurred compiling the javascript: ', e);
     }
+    this.buildSignature(arguments);
     this.built = true;
   }
 
@@ -4535,6 +4540,10 @@ class GLKernel extends Kernel {
     throw new Error(`"setupFeatureChecks" not defined on ${ this.name }`);
   }
 
+  static getSignature(kernel, argumentTypes) {
+    return kernel.getVariablePrecisionString() + (argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '');
+  }
+
   setFixIntegerDivisionAccuracy(fix) {
     this.fixIntegerDivisionAccuracy = fix;
     return this;
@@ -6058,6 +6067,7 @@ class Kernel {
     this.onIstanbulCoverageVariable = null;
     this.removeIstanbulCoverage = false;
     this.built = false;
+    this.signature = null;
   }
 
   mergeSettings(settings) {
@@ -6426,6 +6436,39 @@ class Kernel {
         returnType: this.returnType,
       }
     };
+  }
+
+  buildSignature(args) {
+    const Constructor = this.constructor;
+    this.signature = Constructor.getSignature(this, Constructor.getArgumentTypes(this, args));
+  }
+
+  static getArgumentTypes(kernel, args) {
+    const argumentTypes = new Array(args.length);
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      const type = kernel.argumentTypes[i];
+      if (arg.type) {
+        argumentTypes[i] = arg.type;
+      } else {
+        switch (type) {
+          case 'Number':
+          case 'Integer':
+          case 'Float':
+          case 'ArrayTexture(1)':
+            argumentTypes[i] = utils.getVariableType(arg);
+            break;
+          default:
+            argumentTypes[i] = type;
+        }
+      }
+    }
+    return argumentTypes;
+  }
+
+  static getSignature(kernel, argumentTypes) {
+    throw new Error(`"getSignature" not implemented on ${ this.name }`);
+    return argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '';
   }
 }
 
@@ -9102,7 +9145,7 @@ class WebGLKernelValueSingleArray extends WebGLKernelValue {
 
   updateValue(value) {
     if (value.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(value.constructor);
       return;
     }
     const { context: gl } = this;
@@ -9333,7 +9376,7 @@ class WebGLKernelValueSingleArray3DI extends WebGLKernelValue {
 
   updateValue(value) {
     if (value.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(value.constructor);
       return;
     }
     const { context: gl } = this;
@@ -9416,7 +9459,7 @@ class WebGLKernelValueSingleInput extends WebGLKernelValue {
 
   updateValue(input) {
     if (input.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(input.constructor);
       return;
     }
     const { context: gl } = this;
@@ -9471,7 +9514,7 @@ class WebGLKernelValueUnsignedArray extends WebGLKernelValue {
 
   updateValue(value) {
     if (value.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(value.constructor);
       return;
     }
     const { context: gl } = this;
@@ -9527,7 +9570,7 @@ class WebGLKernelValueUnsignedInput extends WebGLKernelValue {
 
   updateValue(input) {
     if (input.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(value.constructor);
       return;
     }
     const { context: gl } = this;
@@ -10064,6 +10107,7 @@ class WebGLKernel extends GLKernel {
     ) {
       this._setupSubOutputTextures();
     }
+    this.buildSignature(arguments);
     this.built = true;
   }
 
@@ -12004,7 +12048,7 @@ class WebGL2KernelValueSingleArray extends WebGLKernelValueSingleArray {
 
   updateValue(value) {
     if (value.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(value.constructor);
       return;
     }
     const { context: gl } = this;
@@ -12030,7 +12074,7 @@ const { WebGLKernelValueSingleArray1DI } = require('../../web-gl/kernel-value/si
 class WebGL2KernelValueSingleArray1DI extends WebGLKernelValueSingleArray1DI {
   updateValue(value) {
     if (value.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(value.constructor);
       return;
     }
     const { context: gl } = this;
@@ -12064,7 +12108,7 @@ const { WebGLKernelValueSingleArray2DI } = require('../../web-gl/kernel-value/si
 class WebGL2KernelValueSingleArray2DI extends WebGLKernelValueSingleArray2DI {
   updateValue(value) {
     if (value.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(value.constructor);
       return;
     }
     const { context: gl } = this;
@@ -12098,7 +12142,7 @@ const { WebGLKernelValueSingleArray3DI } = require('../../web-gl/kernel-value/si
 class WebGL2KernelValueSingleArray3DI extends WebGLKernelValueSingleArray3DI {
   updateValue(value) {
     if (value.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(value.constructor);
       return;
     }
     const { context: gl } = this;
@@ -12795,6 +12839,7 @@ module.exports = lib;
 },{"./index":107}],106:[function(require,module,exports){
 const { gpuMock } = require('gpu-mock.js');
 const { utils } = require('./utils');
+const { Kernel } = require('./backend/kernel');
 const { CPUKernel } = require('./backend/cpu/kernel');
 const { HeadlessGLKernel } = require('./backend/headless-gl/kernel');
 const { WebGL2Kernel } = require('./backend/web-gl2/kernel');
@@ -12998,6 +13043,9 @@ class GPU {
         console.warn('Switching kernels');
       }
       let newOutput = null;
+      if (kernel.signature && !switchableKernels[kernel.signature]) {
+        switchableKernels[kernel.signature] = kernel;
+      }
       if (kernel.dynamicOutput) {
         for (let i = reasons.length - 1; i >= 0; i--) {
           const reason = reasons[i];
@@ -13006,32 +13054,16 @@ class GPU {
           }
         }
       }
-      const argumentTypes = new Array(args.length);
-      for (let i = 0; i < args.length; i++) {
-        const arg = args[i];
-        const type = kernel.argumentTypes[i];
-        if (arg.type) {
-          argumentTypes[i] = arg.type;
-        } else {
-          switch (type) {
-            case 'Number':
-            case 'Integer':
-            case 'Float':
-            case 'ArrayTexture(1)':
-              argumentTypes[i] = utils.getVariableType(arg);
-              break;
-            default:
-              argumentTypes[i] = type;
-          }
-        }
-      }
-      const signature = kernel.getVariablePrecisionString() + (argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '');
+
+      const Constructor = kernel.constructor;
+      const argumentTypes = Constructor.getArgumentTypes(kernel, args);
+      const signature = Constructor.getSignature(kernel, argumentTypes);
       const existingKernel = switchableKernels[signature];
       if (existingKernel) {
         return existingKernel;
       }
 
-      const newKernel = switchableKernels[signature] = new kernel.constructor(source, {
+      const newKernel = switchableKernels[signature] = new Constructor(source, {
         argumentTypes,
         constantTypes: kernel.constantTypes,
         graphical: kernel.graphical,
@@ -13258,7 +13290,7 @@ module.exports = {
   kernelOrder,
   kernelTypes
 };
-},{"./backend/cpu/kernel":7,"./backend/headless-gl/kernel":33,"./backend/web-gl/kernel":68,"./backend/web-gl2/kernel":103,"./kernel-run-shortcut":109,"./utils":112,"gpu-mock.js":3}],107:[function(require,module,exports){
+},{"./backend/cpu/kernel":7,"./backend/headless-gl/kernel":33,"./backend/kernel":35,"./backend/web-gl/kernel":68,"./backend/web-gl2/kernel":103,"./kernel-run-shortcut":109,"./utils":112,"gpu-mock.js":3}],107:[function(require,module,exports){
 const { GPU } = require('./gpu');
 const { alias } = require('./alias');
 const { utils } = require('./utils');
@@ -13382,6 +13414,7 @@ function kernelRunShortcut(kernel) {
       if (kernel.switchingKernels) {
         const reasons = kernel.resetSwitchingKernels();
         const newKernel = kernel.onRequestSwitchKernel(reasons, arguments, kernel);
+        shortcut.kernel = kernel = newKernel;
         result = newKernel.run.apply(newKernel, arguments);
       }
       if (kernel.renderKernels) {
@@ -13409,15 +13442,17 @@ function kernelRunShortcut(kernel) {
   shortcut.replaceKernel = function(replacementKernel) {
     kernel = replacementKernel;
     bindKernelToShortcut(kernel, shortcut);
-    shortcut.kernel = kernel;
   };
 
   bindKernelToShortcut(kernel, shortcut);
-  shortcut.kernel = kernel;
   return shortcut;
 }
 
 function bindKernelToShortcut(kernel, shortcut) {
+  if (shortcut.kernel) {
+    shortcut.kernel = kernel;
+    return;
+  }
   const properties = utils.allPropertiesOf(kernel);
   for (let i = 0; i < properties.length; i++) {
     const property = properties[i];
@@ -13425,27 +13460,22 @@ function bindKernelToShortcut(kernel, shortcut) {
     if (typeof kernel[property] === 'function') {
       if (property.substring(0, 3) === 'add' || property.substring(0, 3) === 'set') {
         shortcut[property] = function() {
-          kernel[property].apply(kernel, arguments);
+          shortcut.kernel[property].apply(shortcut.kernel, arguments);
           return shortcut;
         };
       } else {
-        if (property === 'toString') {
-          shortcut.toString = function() {
-            return kernel.toString.apply(kernel, arguments);
-          };
-        } else {
-          shortcut[property] = kernel[property].bind(kernel);
-        }
+        shortcut[property] = function() {
+          return shortcut.kernel[property].apply(shortcut.kernel, arguments);
+        };
       }
     } else {
-      shortcut.__defineGetter__(property, () => {
-        return kernel[property];
-      });
+      shortcut.__defineGetter__(property, () => shortcut.kernel[property]);
       shortcut.__defineSetter__(property, (value) => {
-        kernel[property] = value;
+        shortcut.kernel[property] = value;
       });
     }
   }
+  shortcut.kernel = kernel;
 }
 module.exports = {
   kernelRunShortcut

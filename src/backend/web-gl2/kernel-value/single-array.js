@@ -13,7 +13,7 @@ class WebGL2KernelValueSingleArray extends WebGLKernelValueSingleArray {
 
   updateValue(value) {
     if (value.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(value.constructor);
       return;
     }
     const { context: gl } = this;

@@ -4,7 +4,7 @@ const { WebGLKernelValueSingleArray1DI } = require('../../web-gl/kernel-value/si
 class WebGL2KernelValueSingleArray1DI extends WebGLKernelValueSingleArray1DI {
   updateValue(value) {
     if (value.constructor !== this.initialValueConstructor) {
-      this.onUpdateValueMismatch();
+      this.onUpdateValueMismatch(value.constructor);
       return;
     }
     const { context: gl } = this;

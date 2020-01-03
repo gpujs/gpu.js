@@ -116,6 +116,10 @@ class GLKernel extends Kernel {
     throw new Error(`"setupFeatureChecks" not defined on ${ this.name }`);
   }
 
+  static getSignature(kernel, argumentTypes) {
+    return kernel.getVariablePrecisionString() + (argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '');
+  }
+
   /**
    * @desc Fix division by factor of 3 FP accuracy bug
    * @param {Boolean} fix - should fix

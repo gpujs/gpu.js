@@ -1,5 +1,6 @@
 const { gpuMock } = require('gpu-mock.js');
 const { utils } = require('./utils');
+const { Kernel } = require('./backend/kernel');
 const { CPUKernel } = require('./backend/cpu/kernel');
 const { HeadlessGLKernel } = require('./backend/headless-gl/kernel');
 const { WebGL2Kernel } = require('./backend/web-gl2/kernel');
@@ -259,11 +260,21 @@ class GPU {
       return result;
     }
 
+    /**
+     *
+     * @param {IReason[]} reasons
+     * @param {IArguments} args
+     * @param {Kernel} kernel
+     * @returns {*}
+     */
     function onRequestSwitchKernel(reasons, args, kernel) {
       if (kernel.debug) {
         console.warn('Switching kernels');
       }
       let newOutput = null;
+      if (kernel.signature && !switchableKernels[kernel.signature]) {
+        switchableKernels[kernel.signature] = kernel;
+      }
       if (kernel.dynamicOutput) {
         for (let i = reasons.length - 1; i >= 0; i--) {
           const reason = reasons[i];
@@ -272,32 +283,16 @@ class GPU {
           }
         }
       }
-      const argumentTypes = new Array(args.length);
-      for (let i = 0; i < args.length; i++) {
-        const arg = args[i];
-        const type = kernel.argumentTypes[i];
-        if (arg.type) {
-          argumentTypes[i] = arg.type;
-        } else {
-          switch (type) {
-            case 'Number':
-            case 'Integer':
-            case 'Float':
-            case 'ArrayTexture(1)':
-              argumentTypes[i] = utils.getVariableType(arg);
-              break;
-            default:
-              argumentTypes[i] = type;
-          }
-        }
-      }
-      const signature = kernel.getVariablePrecisionString() + (argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '');
+
+      const Constructor = kernel.constructor;
+      const argumentTypes = Constructor.getArgumentTypes(kernel, args);
+      const signature = Constructor.getSignature(kernel, argumentTypes);
       const existingKernel = switchableKernels[signature];
       if (existingKernel) {
         return existingKernel;
       }
 
-      const newKernel = switchableKernels[signature] = new kernel.constructor(source, {
+      const newKernel = switchableKernels[signature] = new Constructor(source, {
         argumentTypes,
         constantTypes: kernel.constantTypes,
         graphical: kernel.graphical,

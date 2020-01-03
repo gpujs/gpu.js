@@ -572,6 +572,7 @@ class WebGLKernel extends GLKernel {
     ) {
       this._setupSubOutputTextures();
     }
+    this.buildSignature(arguments);
     this.built = true;
   }
 
