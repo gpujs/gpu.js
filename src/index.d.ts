@@ -390,6 +390,8 @@ export type ThreadKernelVariable
   | number[][]
   | number[][][]
 
+  | Pixel[][]
+
   | [number, number]
   | [number, number][]
   | [number, number][][]
@@ -405,6 +407,13 @@ export type ThreadKernelVariable
   | [number, number, number, number][][]
   | [number, number, number, number][][][]
   ;
+
+export type Pixel = {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+};
 
 export type KernelFunction = ((
   this: IKernelFunctionThis,

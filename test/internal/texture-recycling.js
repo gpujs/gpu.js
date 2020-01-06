@@ -382,3 +382,31 @@ test('single precision kernel.mappedTextures does not leak gpu', t => {
 (GPU.isHeadlessGLSupported ? test : skip)('single precision kernel.mappedTextures does not leak headlessgl', t => {
   testKernelMappedTexturesDoesNotLeak('single', t.async(), 'headlessgl');
 });
+
+function testCloning(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function(value) {
+    return value[0] + 1;
+  }, { output: [1], pipeline: true });
+  const texture = kernel([1]);
+  const { size } = texture;
+
+  // set size to something unique, for tracking
+  texture.size = [size[0] + 0.1, size[1] + 0.2];
+  texture.cloneTexture();
+  assert.equal(texture._framebuffer.width, size[0] + 0.1);
+  assert.equal(texture._framebuffer.height, size[1] + 0.2);
+  gpu.destroy();
+}
+
+(GPU.isWebGLSupported ? test : skip)('cloning sets up framebuffer with correct size webgl', () => {
+  testCloning('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('cloning sets up framebuffer with correct size webgl2', () => {
+  testCloning('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('cloning sets up framebuffer with correct size headlessgl', () => {
+  testCloning('headlessgl');
+});

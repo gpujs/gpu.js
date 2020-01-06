@@ -1,10 +1,9 @@
 const { utils } = require('../../../utils');
-const { WebGLKernelValue } = require('./index');
+const { WebGLKernelArray } = require('./array');
 
-class WebGLKernelValueSingleArray1DI extends WebGLKernelValue {
+class WebGLKernelValueSingleArray1DI extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
-    this.requestTexture();
     this.bitRatio = 4;
     this.setShape(value);
   }
@@ -42,10 +41,7 @@ class WebGLKernelValueSingleArray1DI extends WebGLKernelValue {
     utils.flatten2dArrayTo(value, this.uploadValue);
     gl.activeTexture(this.contextHandle);
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.textureSize[0], this.textureSize[1], 0, gl.RGBA, gl.FLOAT, this.uploadValue);
     this.kernel.setUniform1i(this.id, this.index);
   }

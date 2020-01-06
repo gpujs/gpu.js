@@ -77,7 +77,7 @@ function sumAB(mode) {
   const a = [1, 2, 3, 5, 6, 7];
   const b = [1, 1, 1, 1, 1, 1];
 
-  const result = kernel(a , b);
+  const result = kernel(a, b);
   const expected = [12, 18, 24, 36, 42, 48];
 
   assert.deepEqual(Array.from(result), expected);

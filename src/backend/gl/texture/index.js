@@ -24,16 +24,19 @@ class GLTexture extends Texture {
     }
   }
 
+  /**
+   * @private
+   */
   cloneTexture() {
     this.texture._refs--;
     const { context: gl, size, texture } = this;
     const existingFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-    if (!texture._framebuffer) {
-      texture._framebuffer = gl.createFramebuffer();
+    if (!this._framebuffer) {
+      this._framebuffer = gl.createFramebuffer();
     }
-    texture._framebuffer.width = size[0];
-    texture._framebuffer.width = size[1];
-    gl.bindFramebuffer(gl.FRAMEBUFFER, texture._framebuffer);
+    this._framebuffer.width = size[0];
+    this._framebuffer.height = size[1];
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this._framebuffer);
     selectTexture(gl, texture);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
     const target = gl.createTexture();
@@ -41,7 +44,6 @@ class GLTexture extends Texture {
     gl.texImage2D(gl.TEXTURE_2D, 0, this.internalFormat, size[0], size[1], 0, this.textureFormat, this.textureType, null);
     gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, size[0], size[1]);
     target._refs = 1;
-    target._framebuffer = texture._framebuffer;
     this.texture = target;
     if (existingFramebuffer) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, existingFramebuffer);
@@ -50,8 +52,9 @@ class GLTexture extends Texture {
 
   delete() {
     super.delete();
-    if (this.texture._refs === 0 && this.texture._framebuffer) {
-      this.context.deleteFramebuffer(this.texture._framebuffer);
+    if (this.texture._refs === 0 && this._framebuffer) {
+      this.context.deleteFramebuffer(this._framebuffer);
+      this._framebuffer = null;
     }
   }
 }

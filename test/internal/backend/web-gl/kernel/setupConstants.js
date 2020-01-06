@@ -13,7 +13,8 @@ const gl = {
   TEXTURE_WRAP_T: 'TEXTURE_WRAP_T',
   TEXTURE_MIN_FILTER: 'TEXTURE_MIN_FILTER',
   TEXTURE_MAG_FILTER: 'TEXTURE_MAG_FILTER',
-  NEAREST: 'NEAREST'
+  NEAREST: 'NEAREST',
+  UNPACK_FLIP_Y_WEBGL: 'UNPACK_FLIP_Y_WEBGL',
 };
 function setupConstantsTestSuite(testSuiteSettings) {
   const {
@@ -25,6 +26,7 @@ function setupConstantsTestSuite(testSuiteSettings) {
     expectedSize,
     expectedType,
     expectedConstantTextureCount,
+    expectedPixelStorei,
   } = testSuiteSettings;
   let texImage2DCalled = false;
   let activeTextureCalled = false;
@@ -73,6 +75,10 @@ function setupConstantsTestSuite(testSuiteSettings) {
         default:
           throw new Error('called too many times');
       }
+    },
+    pixelStorei: (pname, param) => {
+      assert.equal(pname, 'UNPACK_FLIP_Y_WEBGL');
+      assert.equal(param, expectedPixelStorei);
     },
     createTexture: () => 'TEXTURE',
     getUniformLocation: (program, name) => {
@@ -168,6 +174,7 @@ test('Array with unsigned precision 5 length', () => {
     expectedSize: new Int32Array([4,2]), // 4 * 2 = 8
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 test('Float32Array with unsigned precision 5 length', () => {
@@ -193,6 +200,7 @@ test('Float32Array with unsigned precision 5 length', () => {
     expectedSize: new Int32Array([4,2]), // 4 * 2 * 1 = 8
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 test('Uint16Array with unsigned precision 5 length', () => {
@@ -218,6 +226,7 @@ test('Uint16Array with unsigned precision 5 length', () => {
     expectedSize: new Int32Array([2,2]), // 2 * 2 * 2 = 8
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 test('Uint8Array with unsigned precision 5 length', () => {
@@ -240,6 +249,7 @@ test('Uint8Array with unsigned precision 5 length', () => {
     expectedSize: new Int32Array([1,2]), // 1 * 2 * 4 = 8
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -266,6 +276,7 @@ test('Array with single precision', () => {
     expectedTextureWidth: 1,
     expectedTextureHeight: 2,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 test('Float32Array with single precision', () => {
@@ -291,6 +302,7 @@ test('Float32Array with single precision', () => {
     expectedTextureWidth: 1,
     expectedTextureHeight: 2,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 test('Uint16Array with single precision', () => {
@@ -315,6 +327,7 @@ test('Uint16Array with single precision', () => {
     expectedSize: new Int32Array([1,2]),
     expectedType: gl.FLOAT,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 test('Uint8Array with single precision', () => {
@@ -339,6 +352,7 @@ test('Uint8Array with single precision', () => {
     expectedSize: new Int32Array([1,2]),
     expectedType: gl.FLOAT,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -377,6 +391,7 @@ test('Array with unsigned precision length 33', () => {
     expectedSize: new Int32Array([6,6]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -415,6 +430,7 @@ test('Float32Array with unsigned precision length 33', () => {
     expectedSize: new Int32Array([6,6]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -451,6 +467,7 @@ test('Uint16Array with unsigned precision length 33', () => {
     expectedSize: new Int32Array([4,5]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -482,6 +499,7 @@ test('Uint8Array with unsigned precision length 33', () => {
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -512,6 +530,7 @@ test('Array with single precision length 33', () => {
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.FLOAT,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -542,6 +561,7 @@ test('Float32Array with single precision length 33', () => {
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.FLOAT,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -573,6 +593,7 @@ test('Uint16Array with single precision length 33', () => {
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 36
     expectedType: gl.FLOAT,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -604,6 +625,7 @@ test('Uint8Array with single precision length 33', () => {
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 36
     expectedType: gl.FLOAT,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -630,6 +652,7 @@ test('Input(Array) with unsigned precision 5 length', () => {
     expectedSize: new Int32Array([4,2]), // 4 * 2 = 8
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 test('Input(Float32Array) with unsigned precision 5 length', () => {
@@ -655,6 +678,7 @@ test('Input(Float32Array) with unsigned precision 5 length', () => {
     expectedSize: new Int32Array([4,2]), // 4 * 2 * 1 = 8
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 test('Input(Uint16Array) with unsigned precision 5 length', () => {
@@ -680,6 +704,7 @@ test('Input(Uint16Array) with unsigned precision 5 length', () => {
     expectedSize: new Int32Array([2,2]), // 2 * 2 * 2 = 8
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 test('Input(Uint8Array) with unsigned precision 5 length', () => {
@@ -702,6 +727,7 @@ test('Input(Uint8Array) with unsigned precision 5 length', () => {
     expectedSize: new Int32Array([1,2]), // 1 * 2 * 4 = 8
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -728,6 +754,7 @@ test('Input(Array) with single precision', () => {
     expectedTextureWidth: 1,
     expectedTextureHeight: 2,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 test('Input(Float32Array) with single precision', () => {
@@ -753,6 +780,7 @@ test('Input(Float32Array) with single precision', () => {
     expectedTextureWidth: 1,
     expectedTextureHeight: 2,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 test('Input(Uint16Array) with single precision', () => {
@@ -777,6 +805,7 @@ test('Input(Uint16Array) with single precision', () => {
     expectedSize: new Int32Array([1,2]),
     expectedType: gl.FLOAT,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 test('Input(Uint8Array) with single precision', () => {
@@ -801,6 +830,7 @@ test('Input(Uint8Array) with single precision', () => {
     expectedSize: new Int32Array([1,2]),
     expectedType: gl.FLOAT,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -839,6 +869,7 @@ test('Input(Array) with unsigned precision length 33', () => {
     expectedSize: new Int32Array([6,6]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -877,6 +908,7 @@ test('Input(Float32Array) with unsigned precision length 33', () => {
     expectedSize: new Int32Array([6,6]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -913,6 +945,7 @@ test('Input(Uint16Array) with unsigned precision length 33', () => {
     expectedSize: new Int32Array([4,5]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -944,6 +977,7 @@ test('Input(Uint8Array) with unsigned precision length 33', () => {
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.UNSIGNED_BYTE,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -974,6 +1008,7 @@ test('Input(Array) with single precision length 33', () => {
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.FLOAT,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -1004,6 +1039,7 @@ test('Input(Float32Array) with single precision length 33', () => {
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 34
     expectedType: gl.FLOAT,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -1035,6 +1071,7 @@ test('Input(Uint16Array) with single precision length 33', () => {
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 36
     expectedType: gl.FLOAT,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });
 
@@ -1066,5 +1103,6 @@ test('Input(Uint8Array) with single precision length 33', () => {
     expectedSize: new Int32Array([3,3]), // 3 * 3 = 9 * 4 = 36
     expectedType: gl.FLOAT,
     expectedConstantTextureCount: 1,
+    expectedPixelStorei: false,
   });
 });

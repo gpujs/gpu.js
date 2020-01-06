@@ -1,13 +1,12 @@
 const { utils } = require('../../../utils');
-const { WebGLKernelValue } = require('./index');
+const { WebGLKernelArray } = require('./array');
 
-class WebGLKernelValueHTMLImage extends WebGLKernelValue {
+class WebGLKernelValueHTMLImage extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
     const { width, height } = value;
     this.checkSize(width, height);
     this.dimensions = [width, height, 1];
-    this.requestTexture();
     this.textureSize = [width, height];
     this.uploadValue = value;
   }
@@ -32,10 +31,6 @@ class WebGLKernelValueHTMLImage extends WebGLKernelValue {
     const { context: gl } = this;
     gl.activeTexture(this.contextHandle);
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.uploadValue = inputImage);
     this.kernel.setUniform1i(this.id, this.index);

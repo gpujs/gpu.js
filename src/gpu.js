@@ -206,7 +206,7 @@ class GPU {
    * @desc This creates a callable function object to call the kernel function with the argument parameter set
    * @param {Function|String|object} source - The calling to perform the conversion
    * @param {IGPUKernelSettings} [settings] - The parameter configuration object
-   * @return {Kernel} callable function to run
+   * @return {IKernelRunShortcut} callable function to run
    */
   createKernel(source, settings) {
     if (typeof source === 'undefined') {

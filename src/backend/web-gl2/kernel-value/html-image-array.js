@@ -1,14 +1,21 @@
 const { utils } = require('../../../utils');
-const { WebGLKernelValue } = require('../../web-gl/kernel-value/index');
+const { WebGLKernelArray } = require('../../web-gl/kernel-value/array');
 
-class WebGL2KernelValueHTMLImageArray extends WebGLKernelValue {
+class WebGL2KernelValueHTMLImageArray extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
     this.checkSize(value[0].width, value[0].height);
-    this.requestTexture();
     this.dimensions = [value[0].width, value[0].height, value.length];
     this.textureSize = [value[0].width, value[0].height];
   }
+  defineTexture() {
+    const { context: gl } = this;
+    gl.activeTexture(this.contextHandle);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.texture);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  }
+
   getStringValueHandler() {
     return `const uploadValue_${this.name} = ${this.varName};\n`;
   }
@@ -25,8 +32,6 @@ class WebGL2KernelValueHTMLImageArray extends WebGLKernelValue {
     const { context: gl } = this;
     gl.activeTexture(this.contextHandle);
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.texture);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     // Upload the images into the texture.
     gl.texImage3D(

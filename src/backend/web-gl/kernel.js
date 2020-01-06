@@ -404,6 +404,7 @@ class WebGLKernel extends GLKernel {
         onRequestContextHandle,
       });
       this.kernelArguments.push(kernelArgument);
+      kernelArgument.setup();
       this.argumentSizes.push(kernelArgument.textureSize);
       this.argumentBitRatios[index] = kernelArgument.bitRatio;
     }
@@ -459,6 +460,7 @@ class WebGLKernel extends GLKernel {
       });
       this.constantBitRatios[name] = kernelValue.bitRatio;
       this.kernelConstants.push(kernelValue);
+      kernelValue.setup();
       if (kernelValue.forceUploadEachRun) {
         this.forceUploadKernelConstants.push(kernelValue);
       }

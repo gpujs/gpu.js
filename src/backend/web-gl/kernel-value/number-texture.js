@@ -1,18 +1,21 @@
 const { utils } = require('../../../utils');
-const { WebGLKernelValue } = require('./index');
+const { WebGLKernelArray } = require('./array');
 
-class WebGLKernelValueNumberTexture extends WebGLKernelValue {
+class WebGLKernelValueNumberTexture extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
     const [width, height] = value.size;
     this.checkSize(width, height);
-    this.setupTexture();
     const { size: textureSize, dimensions } = value;
     this.bitRatio = this.getBitRatio(value);
     this.dimensions = dimensions;
     this.textureSize = textureSize;
     this.uploadValue = value.texture;
     this.forceUploadEachRun = true;
+  }
+
+  setup() {
+    this.setupTexture();
   }
 
   getStringValueHandler() {

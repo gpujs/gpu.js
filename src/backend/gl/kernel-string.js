@@ -321,6 +321,7 @@ function getToArrayString(kernelResult, textureName) {
  */
 function findKernelValue(argument, kernelValues, values, context, uploadedValues) {
   if (argument === null) return null;
+  if (kernelValues === null) return null;
   switch (typeof argument) {
     case 'boolean':
     case 'number':
