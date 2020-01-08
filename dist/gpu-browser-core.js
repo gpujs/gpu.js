@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.4.7
- * @date Mon Jan 06 2020 13:35:02 GMT-0500 (Eastern Standard Time)
+ * @version 2.4.8
+ * @date Wed Jan 08 2020 07:08:29 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -4387,6 +4387,9 @@ function getToArrayString(kernelResult, textureName) {
       if (property === 'context') {
         return null;
       }
+      if (property === '_framebuffer') {
+        return '_framebuffer';
+      }
       if (kernelResult.hasOwnProperty(property)) {
         return JSON.stringify(kernelResult[property]);
       }
@@ -4394,6 +4397,7 @@ function getToArrayString(kernelResult, textureName) {
     }
   });
   return `() => {
+  let _framebuffer;
   ${flattenedFunctions}
   return toArray();
   }`;
@@ -5526,9 +5530,11 @@ class GLTextureFloat extends GLTexture {
     this.type = 'ArrayTexture(1)';
   }
   renderRawOutput() {
-    const { context: gl } = this;
-    const framebuffer = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    const { context: gl, size } = this;
+    if (!this._framebuffer) {
+      this._framebuffer = gl.createFramebuffer();
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this._framebuffer);
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
@@ -5536,8 +5542,8 @@ class GLTextureFloat extends GLTexture {
       this.texture,
       0
     );
-    const result = new Float32Array(this.size[0] * this.size[1] * 4);
-    gl.readPixels(0, 0, this.size[0], this.size[1], gl.RGBA, gl.FLOAT, result);
+    const result = new Float32Array(size[0] * size[1] * 4);
+    gl.readPixels(0, 0, size[0], size[1], gl.RGBA, gl.FLOAT, result);
     return result;
   }
   renderValues() {
@@ -8467,9 +8473,11 @@ class WebGLKernelArray extends WebGLKernelValue {
     const { maxTextureSize } = this.kernel.constructor.features;
     if (width > maxTextureSize || height > maxTextureSize) {
       if (width > height) {
-        throw new Error(`Argument width of ${width} larger than maximum size of ${maxTextureSize} for your GPU`);
+        throw new Error(`Argument texture width of ${width} larger than maximum size of ${maxTextureSize} for your GPU`);
+      } else if (width < height) {
+        throw new Error(`Argument texture height of ${height} larger than maximum size of ${maxTextureSize} for your GPU`);
       } else {
-        throw new Error(`Argument height of ${height} larger than maximum size of ${maxTextureSize} for your GPU`);
+        throw new Error(`Argument texture height and width of ${height} larger than maximum size of ${maxTextureSize} for your GPU`);
       }
     }
   }
@@ -8666,7 +8674,7 @@ class WebGLKernelValueDynamicSingleArray extends WebGLKernelValueSingleArray {
     this.dimensions = utils.getDimensions(value, true);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
-    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
+    this.checkSize(this.textureSize[0], this.textureSize[1]);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
@@ -8767,7 +8775,7 @@ class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
-    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
+    this.checkSize(this.textureSize[0], this.textureSize[1]);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
@@ -8795,7 +8803,7 @@ class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray
     this.dimensions = utils.getDimensions(value, true);
     this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
-    this.checkSize(this.textureSize[0] * (4 / this.bitRatio), this.textureSize[1] * (4 / this.bitRatio));
+    this.checkSize(this.textureSize[0], this.textureSize[1]);
     const Type = this.getTransferArrayType(value);
     this.preUploadValue = new Type(this.uploadArrayLength);
     this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
@@ -8826,7 +8834,7 @@ class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
-    this.checkSize(this.textureSize[0] * (4 / this.bitRatio), this.textureSize[1] * (4 / this.bitRatio));
+    this.checkSize(this.textureSize[0], this.textureSize[1]);
     const Type = this.getTransferArrayType(value.value);
     this.preUploadValue = new Type(this.uploadArrayLength);
     this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
@@ -9125,7 +9133,7 @@ class WebGLKernelValueSingleArray extends WebGLKernelArray {
     this.dimensions = utils.getDimensions(value, true);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
-    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
+    this.checkSize(this.textureSize[0], this.textureSize[1]);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
 
@@ -9178,7 +9186,7 @@ class WebGLKernelValueSingleArray1DI extends WebGLKernelArray {
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
     this.dimensions = new Int32Array([valueDimensions[1], 1, 1]);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
-    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
+    this.checkSize(this.textureSize[0], this.textureSize[1]);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
 
@@ -9261,7 +9269,7 @@ class WebGLKernelValueSingleArray2DI extends WebGLKernelArray {
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
     this.dimensions = new Int32Array([valueDimensions[1], valueDimensions[2], 1]);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
-    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
+    this.checkSize(this.textureSize[0], this.textureSize[1]);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
 
@@ -9344,7 +9352,7 @@ class WebGLKernelValueSingleArray3DI extends WebGLKernelArray {
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(valueDimensions, this.bitRatio);
     this.dimensions = new Int32Array([valueDimensions[1], valueDimensions[2], valueDimensions[3]]);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
-    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
+    this.checkSize(this.textureSize[0], this.textureSize[1]);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
 
@@ -9423,7 +9431,7 @@ class WebGLKernelValueSingleInput extends WebGLKernelArray {
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
-    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
+    this.checkSize(this.textureSize[0], this.textureSize[1]);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
   }
 
@@ -9471,7 +9479,7 @@ class WebGLKernelValueUnsignedArray extends WebGLKernelArray {
     this.dimensions = utils.getDimensions(value, true);
     this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
-    this.checkSize(this.textureSize[0] * (4 / this.bitRatio), this.textureSize[1] * (4 / this.bitRatio));
+    this.checkSize(this.textureSize[0], this.textureSize[1]);
     this.TranserArrayType = this.getTransferArrayType(value);
     this.preUploadValue = new this.TranserArrayType(this.uploadArrayLength);
     this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
@@ -9523,7 +9531,7 @@ class WebGLKernelValueUnsignedInput extends WebGLKernelArray {
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
-    this.checkSize(this.textureSize[0] * (4 / this.bitRatio), this.textureSize[1] * (4 / this.bitRatio));
+    this.checkSize(this.textureSize[0], this.textureSize[1]);
     this.TranserArrayType = this.getTransferArrayType(value.value);
     this.preUploadValue = new this.TranserArrayType(this.uploadArrayLength);
     this.uploadValue = new Uint8Array(this.preUploadValue.buffer);
@@ -11693,7 +11701,7 @@ class WebGL2KernelValueDynamicSingleArray extends WebGL2KernelValueSingleArray {
     this.dimensions = utils.getDimensions(value, true);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
-    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
+    this.checkSize(this.textureSize[0], this.textureSize[1]);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);
@@ -11798,7 +11806,7 @@ class WebGL2KernelValueDynamicSingleInput extends WebGL2KernelValueSingleInput {
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
     this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
     this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
-    this.checkSize(this.textureSize[0] * this.bitRatio, this.textureSize[1] * this.bitRatio);
+    this.checkSize(this.textureSize[0], this.textureSize[1]);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
     this.kernel.setUniform2iv(this.sizeId, this.textureSize);

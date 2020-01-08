@@ -6,7 +6,7 @@ describe('internal: WebGLKernelValueDynamicSingleInput');
 test('.updateValue() checks too large height', () => {
   const mockKernel = {
     constructor: {
-      features: { maxTextureSize: 4 },
+      features: { maxTextureSize: 1 },
     },
     validate: true,
   };
@@ -23,13 +23,13 @@ test('.updateValue() checks too large height', () => {
 
   assert.throws(() => {
     v.updateValue({ size: [4,4] });
-  }, new Error('Argument height of 8 larger than maximum size of 4 for your GPU'));
+  }, new Error('Argument texture height and width of 2 larger than maximum size of 1 for your GPU'));
 });
 
 test('.updateValue() checks too large width', () => {
   const mockKernel = {
     constructor: {
-      features: { maxTextureSize: 4 },
+      features: { maxTextureSize: 1 },
     },
     validate: true,
   };
@@ -48,7 +48,7 @@ test('.updateValue() checks too large width', () => {
     v.updateValue({
       size: [3,3]
     })
-  }, new Error('Argument width of 12 larger than maximum size of 4 for your GPU'));
+  }, new Error('Argument texture width of 3 larger than maximum size of 1 for your GPU'));
 });
 
 test('.updateValue() checks ok height & width', () => {

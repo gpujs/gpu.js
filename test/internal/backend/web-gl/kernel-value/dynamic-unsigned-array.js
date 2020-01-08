@@ -23,7 +23,7 @@ test('.updateValue() checks too large', () => {
 
   assert.throws(() => {
     v.updateValue(new Array([1,2,3,4,5,6,7,8]));
-  }, new Error('Argument width of 4 larger than maximum size of 2 for your GPU'));
+  }, new Error('Argument texture width of 4 larger than maximum size of 2 for your GPU'));
 });
 
 test('.updateValue() checks ok', () => {

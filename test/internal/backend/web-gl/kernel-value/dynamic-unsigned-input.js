@@ -26,7 +26,7 @@ test('.updateValue() checks too large', () => {
       size: [8,8],
       value: [0]
     });
-  }, new Error('Argument height of 8 larger than maximum size of 4 for your GPU'));
+  }, new Error('Argument texture height and width of 8 larger than maximum size of 4 for your GPU'));
 });
 
 test('.updateValue() checks ok', () => {

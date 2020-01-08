@@ -11,7 +11,7 @@ test('.constructor() checks too large height', () => {
     validate: true,
   };
   assert.throws(() => {
-    new webGL2KernelValueMaps.single.static.Input({ size: [2,1], value: [1,2] }, {
+    new webGL2KernelValueMaps.single.static.Input({ size: [8,1], value: [1,2] }, {
       kernel: mockKernel,
       name: 'test',
       type: 'Array',
@@ -21,7 +21,7 @@ test('.constructor() checks too large height', () => {
       onRequestTexture: () => null,
       onRequestIndex: () => 1
     });
-  }, new Error('Argument height of 4 larger than maximum size of 1 for your GPU'));
+  }, new Error('Argument texture height of 2 larger than maximum size of 1 for your GPU'));
 });
 
 test('.constructor() checks ok height & width', () => {

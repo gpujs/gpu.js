@@ -10,7 +10,7 @@ test('.updateValue() checks too large height', () => {
     },
     validate: true,
   };
-  const v = new webGL2KernelValueMaps.single.dynamic.Input({ size: [1, 1], value: [0] }, {
+  const v = new webGL2KernelValueMaps.single.dynamic.Input({ size: [5, 5], value: [0] }, {
     kernel: mockKernel,
     name: 'test',
     type: 'Input',
@@ -22,8 +22,8 @@ test('.updateValue() checks too large height', () => {
   });
 
   assert.throws(() => {
-    v.updateValue({ size: [4,4] });
-  }, new Error('Argument height of 8 larger than maximum size of 4 for your GPU'));
+    v.updateValue({ size: [16,16] });
+  }, new Error('Argument texture height and width of 8 larger than maximum size of 4 for your GPU'));
 });
 
 test('.updateValue() checks too large width', () => {
@@ -46,9 +46,9 @@ test('.updateValue() checks too large width', () => {
   });
   assert.throws(() => {
     v.updateValue({
-      size: [3,3]
+      size: [12,12]
     })
-  }, new Error('Argument width of 12 larger than maximum size of 4 for your GPU'));
+  }, new Error('Argument texture height and width of 6 larger than maximum size of 4 for your GPU'));
 });
 
 test('.updateValue() checks ok height & width', () => {

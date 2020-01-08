@@ -21,7 +21,7 @@ test('.constructor() checks too large height', () => {
       onRequestTexture: () => null,
       onRequestIndex: () => 1
     });
-  }, new Error('Argument height of 2 larger than maximum size of 1 for your GPU'));
+  }, new Error('Argument texture height of 2 larger than maximum size of 1 for your GPU'));
 });
 
 test('.constructor() checks too large width', () => {
@@ -43,7 +43,7 @@ test('.constructor() checks too large width', () => {
       onRequestTexture: () => null,
       onRequestIndex: () => 1
     });
-  }, new Error('Argument width of 2 larger than maximum size of 1 for your GPU'));
+  }, new Error('Argument texture width of 2 larger than maximum size of 1 for your GPU'));
 });
 
 test('.constructor() checks ok height & width', () => {

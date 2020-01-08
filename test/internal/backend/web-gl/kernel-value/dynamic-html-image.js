@@ -23,7 +23,7 @@ test('.updateValue() checks too large height', () => {
 
   assert.throws(() => {
     v.updateValue({ width: 1, height: 2 });
-  }, new Error('Argument height of 2 larger than maximum size of 1 for your GPU'));
+  }, new Error('Argument texture height of 2 larger than maximum size of 1 for your GPU'));
 });
 
 test('.updateValue() checks too large width', () => {
@@ -49,7 +49,7 @@ test('.updateValue() checks too large width', () => {
       height: 1,
       width: 2,
     })
-  }, new Error('Argument width of 2 larger than maximum size of 1 for your GPU'));
+  }, new Error('Argument texture width of 2 larger than maximum size of 1 for your GPU'));
 });
 
 test('.updateValue() checks ok height & width', () => {

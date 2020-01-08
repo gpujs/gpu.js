@@ -15,9 +15,11 @@ class WebGLKernelArray extends WebGLKernelValue {
     const { maxTextureSize } = this.kernel.constructor.features;
     if (width > maxTextureSize || height > maxTextureSize) {
       if (width > height) {
-        throw new Error(`Argument width of ${width} larger than maximum size of ${maxTextureSize} for your GPU`);
+        throw new Error(`Argument texture width of ${width} larger than maximum size of ${maxTextureSize} for your GPU`);
+      } else if (width < height) {
+        throw new Error(`Argument texture height of ${height} larger than maximum size of ${maxTextureSize} for your GPU`);
       } else {
-        throw new Error(`Argument height of ${height} larger than maximum size of ${maxTextureSize} for your GPU`);
+        throw new Error(`Argument texture height and width of ${height} larger than maximum size of ${maxTextureSize} for your GPU`);
       }
     }
   }

@@ -298,6 +298,9 @@ function getToArrayString(kernelResult, textureName) {
       if (property === 'context') {
         return null;
       }
+      if (property === '_framebuffer') {
+        return '_framebuffer';
+      }
       if (kernelResult.hasOwnProperty(property)) {
         return JSON.stringify(kernelResult[property]);
       }
@@ -305,6 +308,7 @@ function getToArrayString(kernelResult, textureName) {
     }
   });
   return `() => {
+  let _framebuffer;
   ${flattenedFunctions}
   return toArray();
   }`;

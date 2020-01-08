@@ -6,7 +6,7 @@ describe('internal: WebGL2KernelValueDynamicSingleArray');
 test('.updateValue() checks too large', () => {
   const mockKernel = {
     constructor: {
-      features: { maxTextureSize: 4 },
+      features: { maxTextureSize: 1 },
     },
     validate: true,
   };
@@ -23,7 +23,7 @@ test('.updateValue() checks too large', () => {
 
   assert.throws(() => {
     v.updateValue(new Array([1,2,3,4,5,6,7,8]));
-  }, new Error('Argument height of 8 larger than maximum size of 4 for your GPU'));
+  }, new Error('Argument texture height of 2 larger than maximum size of 1 for your GPU'));
 });
 
 test('.updateValue() checks ok', () => {
