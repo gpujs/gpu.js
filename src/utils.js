@@ -144,6 +144,8 @@ const utils = {
     switch (value.nodeName) {
       case 'IMG':
         return 'HTMLImage';
+      case 'CANVAS':
+        return 'HTMLImage';
       case 'VIDEO':
         return 'HTMLVideo';
     }
