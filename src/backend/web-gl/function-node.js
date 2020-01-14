@@ -2,8 +2,6 @@ const { FunctionNode } = require('../function-node');
 
 /**
  * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective WebGL code
- * @extends FunctionNode
- * @returns the converted WebGL function string
  */
 class WebGLFunctionNode extends FunctionNode {
   constructor(source, settings) {
@@ -11,6 +9,35 @@ class WebGLFunctionNode extends FunctionNode {
     if (settings && settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
       this.fixIntegerDivisionAccuracy = settings.fixIntegerDivisionAccuracy;
     }
+  }
+
+  astConditionalExpression(ast, retArr) {
+    if (ast.type !== 'ConditionalExpression') {
+      throw this.astErrorOutput('Not a conditional expression', ast);
+    }
+    const consequentType = this.getType(ast.consequent);
+    const alternateType = this.getType(ast.alternate);
+    // minification handling if void
+    if (consequentType === null && alternateType === null) {
+      retArr.push('if (');
+      this.astGeneric(ast.test, retArr);
+      retArr.push(') {');
+      this.astGeneric(ast.consequent, retArr);
+      retArr.push(';');
+      retArr.push('} else {');
+      this.astGeneric(ast.alternate, retArr);
+      retArr.push(';');
+      retArr.push('}');
+      return retArr;
+    }
+    retArr.push('(');
+    this.astGeneric(ast.test, retArr);
+    retArr.push('?');
+    this.astGeneric(ast.consequent, retArr);
+    retArr.push(':');
+    this.astGeneric(ast.alternate, retArr);
+    retArr.push(')');
+    return retArr;
   }
 
   /**
@@ -194,7 +221,7 @@ class WebGLFunctionNode extends FunctionNode {
 
     const key = this.astKey(ast);
     if (Number.isInteger(ast.value)) {
-      if (this.isState('in-for-loop-init') || this.isState('casting-to-integer') || this.isState('building-integer')) {
+      if (this.isState('casting-to-integer') || this.isState('building-integer')) {
         this.literalTypes[key] = 'Integer';
         retArr.push(`${ast.value}`);
       } else if (this.isState('casting-to-float') || this.isState('building-float')) {
@@ -346,25 +373,15 @@ class WebGLFunctionNode extends FunctionNode {
         break;
       case 'Float & LiteralInteger':
       case 'Number & LiteralInteger':
-        if (this.isState('in-for-loop-test')) {
-          this.pushState('building-integer');
-          retArr.push('int(');
-          this.astGeneric(ast.left, retArr);
-          retArr.push(')');
-          retArr.push(operatorMap[ast.operator] || ast.operator);
-          this.castLiteralToInteger(ast.right, retArr);
-          this.popState('building-integer');
-        } else {
-          this.pushState('building-float');
-          this.astGeneric(ast.left, retArr);
-          retArr.push(operatorMap[ast.operator] || ast.operator);
-          this.castLiteralToFloat(ast.right, retArr);
-          this.popState('building-float');
-        }
+        this.pushState('building-float');
+        this.astGeneric(ast.left, retArr);
+        retArr.push(operatorMap[ast.operator] || ast.operator);
+        this.castLiteralToFloat(ast.right, retArr);
+        this.popState('building-float');
         break;
       case 'LiteralInteger & Float':
       case 'LiteralInteger & Number':
-        if (this.isState('in-for-loop-test') || this.isState('in-for-loop-init') || this.isState('casting-to-integer')) {
+        if (this.isState('casting-to-integer')) {
           this.pushState('building-integer');
           this.castLiteralToInteger(ast.left, retArr);
           retArr.push(operatorMap[ast.operator] || ast.operator);
@@ -618,36 +635,22 @@ class WebGLFunctionNode extends FunctionNode {
     let isSafe = null;
 
     if (forNode.init) {
-      const { declarations, kind } = forNode.init;
-      if (
-        kind === 'var' &&
-        declarations.length > 1 &&
-        declarations.every(declaration => declaration.id.name.length === 1)
-      ) {
-        console.warn('Multiple 1 letter long var declarations in loop init caused minification detection. Adapting for safety and using LOOP_MAX.');
-        this.pushState('in-pre-for-loop-init');
-        this.astGeneric(forNode.init, initArr);
-        this.popState('in-pre-for-loop-init');
-        this.pushState('in-for-loop-init');
+      const { declarations } = forNode.init;
+      if (declarations.length > 1) {
         isSafe = false;
-      } else {
-        this.pushState('in-for-loop-init');
-        this.astGeneric(forNode.init, initArr);
       }
+      this.astGeneric(forNode.init, initArr);
       for (let i = 0; i < declarations.length; i++) {
         if (declarations[i].init && declarations[i].init.type !== 'Literal') {
           isSafe = false;
         }
       }
-      this.popState('in-for-loop-init');
     } else {
       isSafe = false;
     }
 
     if (forNode.test) {
-      this.pushState('in-for-loop-test');
       this.astGeneric(forNode.test, testArr);
-      this.popState('in-for-loop-test');
     } else {
       isSafe = false;
     }
@@ -670,13 +673,15 @@ class WebGLFunctionNode extends FunctionNode {
     }
 
     if (isSafe) {
-      retArr.push(`for (${initArr.join('')};${testArr.join('')};${updateArr.join('')}){\n`);
+      const initString = initArr.join('');
+      const initNeedsSemiColon = initString[initString.length - 1] !== ';';
+      retArr.push(`for (${initString}${initNeedsSemiColon ? ';' : ''}${testArr.join('')};${updateArr.join('')}){\n`);
       retArr.push(bodyArr.join(''));
       retArr.push('}\n');
     } else {
       const iVariableName = this.getInternalVariableName('safeI');
       if (initArr.length > 0) {
-        retArr.push(initArr.join(''), ';\n');
+        retArr.push(initArr.join(''), '\n');
       }
       retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
       if (testArr.length > 0) {
@@ -804,24 +809,22 @@ class WebGLFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astVariableDeclaration(varDecNode, retArr) {
-    if (varDecNode.kind === 'var' && this.warnVarUsage) {
-      this.varWarn();
-    }
     const declarations = varDecNode.declarations;
     if (!declarations || !declarations[0] || !declarations[0].init) {
       throw this.astErrorOutput('Unexpected expression', varDecNode);
     }
     const result = [];
     let lastType = null;
-    const inForLoopInit = this.isState('in-for-loop-init');
+    const declarationSets = [];
+    let declarationSet = [];
     for (let i = 0; i < declarations.length; i++) {
       const declaration = declarations[i];
       const init = declaration.init;
       const info = this.getDeclaration(declaration.id);
       const actualType = this.getType(declaration.init);
-      let type = inForLoopInit ? 'Integer' : actualType;
+      let type = actualType;
       if (type === 'LiteralInteger') {
-        if (info.inForLoopInit && info.inForLoopTest) {
+        if (info.suggestedType === 'Integer') {
           type = 'Integer';
         } else {
           // We had the choice to go either float or int, choosing float
@@ -833,15 +836,13 @@ class WebGLFunctionNode extends FunctionNode {
         throw this.astErrorOutput(`Markup type ${ markupType } not handled`, varDecNode);
       }
       const declarationResult = [];
-      if (actualType === 'Integer' && type === 'Integer' && !inForLoopInit) {
+      if (actualType === 'Integer' && type === 'Integer') {
         // Since we are assigning to a float, ensure valueType is reset to that
         info.valueType = 'Number';
         if (i === 0 || lastType === null) {
           declarationResult.push('float ');
         } else if (type !== lastType) {
           throw new Error('Unhandled declaration');
-        } else {
-          declarationResult.push(',');
         }
         lastType = type;
         declarationResult.push(`user_${declaration.id.name}=`);
@@ -854,10 +855,9 @@ class WebGLFunctionNode extends FunctionNode {
         if (i === 0 || lastType === null) {
           declarationResult.push(`${markupType} `);
         } else if (type !== lastType) {
-          result.push(';');
+          declarationSets.push(declarationSet.join(','));
+          declarationSet = [];
           declarationResult.push(`${markupType} `);
-        } else {
-          declarationResult.push(',');
         }
         lastType = type;
         declarationResult.push(`user_${declaration.id.name}=`);
@@ -875,13 +875,17 @@ class WebGLFunctionNode extends FunctionNode {
           this.astGeneric(init, declarationResult);
         }
       }
-      result.push(declarationResult.join(''));
+      declarationSet.push(declarationResult.join(''));
     }
 
-    retArr.push(result.join(''));
-    if (!inForLoopInit && !this.isState('in-pre-for-loop-init')) {
-      retArr.push(';');
+    if (declarationSet.length > 0) {
+      declarationSets.push(declarationSet.join(','));
     }
+
+    result.push(declarationSets.join(';'));
+
+    retArr.push(result.join(''));
+    retArr.push(';');
     return retArr;
   }
 

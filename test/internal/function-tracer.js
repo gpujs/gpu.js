@@ -293,17 +293,22 @@ test('works with WhileStatement', () => {
 test('works with Identifier', () => {
   const mockCurrentContext = {};
   const mockIsState = sinon.spy();
+  const mockGetDeclaration = sinon.spy(() => 123);
   const mockInstance = {
     identifiers: [],
     currentContext: mockCurrentContext,
     isState: mockIsState,
+    getDeclaration: mockGetDeclaration,
   };
-  const mockAst = { type: 'Identifier' };
+  const mockAst = { type: 'Identifier', name: 'x' };
   FunctionTracer.prototype.scan.call(mockInstance, mockAst);
+  assert.ok(mockGetDeclaration.called);
+  assert.equal(mockGetDeclaration.args[0][0], 'x');
   assert.deepEqual(mockInstance.identifiers, [
     {
       context: mockInstance.currentContext,
-      ast: mockAst
+      ast: mockAst,
+      declaration: 123
     }
   ]);
   assert.equal(mockIsState.args[0][0], 'trackIdentifiers');

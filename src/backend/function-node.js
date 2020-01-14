@@ -30,7 +30,6 @@ class FunctionNode {
     this.isRootKernel = false;
     this.isSubKernel = false;
     this.debug = null;
-    this.declarations = null;
     this.functions = null;
     this.identifiers = null;
     this.contexts = null;
@@ -61,7 +60,6 @@ class FunctionNode {
     this.dynamicArguments = null;
     this.strictTypingChecking = false;
     this.fixIntegerDivisionAccuracy = null;
-    this.warnVarUsage = true;
     this.onIstanbulCoverageVariable = null;
     this.removeIstanbulCoverage = false;
 
@@ -220,11 +218,10 @@ class FunctionNode {
     this.contexts = contexts;
     this.identifiers = identifiers;
     this.functionCalls = functionCalls;
-    this.declarations = [];
     this.functions = functions;
     for (let i = 0; i < declarations.length; i++) {
       const declaration = declarations[i];
-      const { ast, context, name, origin, inForLoopInit, inForLoopTest, assignable } = declaration;
+      const { ast, inForLoopInit, inForLoopTest } = declaration;
       const { init } = ast;
       const dependencies = this.getDependencies(init);
       let valueType = null;
@@ -252,18 +249,9 @@ class FunctionNode {
           }
         }
       }
-      this.declarations.push({
-        valueType,
-        inForLoopInit,
-        inForLoopTest,
-        dependencies,
-        isSafe: this.isSafeDependencies(dependencies),
-        ast,
-        name,
-        context,
-        origin,
-        assignable,
-      });
+      declaration.valueType = valueType;
+      declaration.dependencies = dependencies;
+      declaration.isSafe = this.isSafeDependencies(dependencies);
     }
 
     for (let i = 0; i < functions.length; i++) {
@@ -274,13 +262,8 @@ class FunctionNode {
   getDeclaration(ast) {
     for (let i = 0; i < this.identifiers.length; i++) {
       const identifier = this.identifiers[i];
-      if (ast === identifier.ast && identifier.context.hasOwnProperty(ast.name)) {
-        for (let j = 0; j < this.declarations.length; j++) {
-          const declaration = this.declarations[j];
-          if (declaration.name === ast.name && declaration.context[ast.name] === identifier.context[ast.name]) {
-            return declaration;
-          }
-        }
+      if (ast === identifier.ast) {
+        return identifier.declaration;
       }
     }
     return null;
@@ -405,6 +388,9 @@ class FunctionNode {
               const functionName = ast.callee.expressions[ast.callee.expressions.length - 1].property.name;
               this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
               return this.lookupReturnType(functionName, ast, this);
+            }
+            if (this.getVariableSignature(ast.callee, true) === 'this.color') {
+              return null;
             }
             throw this.astErrorOutput('Unknown call expression', ast);
           }
@@ -785,7 +771,7 @@ class FunctionNode {
     return dependencies;
   }
 
-  getVariableSignature(ast) {
+  getVariableSignature(ast, returnRawValue) {
     if (!this.isAstVariable(ast)) {
       throw new Error(`ast of type "${ ast.type }" is not a variable signature`);
     }
@@ -805,7 +791,7 @@ class FunctionNode {
           ast.property.name === 'y' ||
           ast.property.name === 'z'
         ) {
-          signature.unshift('.value');
+          signature.unshift(returnRawValue ? '.' + ast.property.name : '.value');
         } else if (
           ast.property.name === 'constants' ||
           ast.property.name === 'thread' ||
@@ -813,12 +799,12 @@ class FunctionNode {
         ) {
           signature.unshift('.' + ast.property.name);
         } else {
-          signature.unshift('.value');
+          signature.unshift(returnRawValue ? '.' + ast.property.name : '.value');
         }
       } else if (ast.name) {
-        signature.unshift('value');
+        signature.unshift(returnRawValue ? ast.name : 'value');
       } else if (ast.callee && ast.callee.name) {
-        signature.unshift('fn()');
+        signature.unshift(returnRawValue ? ast.callee.name + '()' : 'fn()');
       } else if (ast.elements) {
         signature.unshift('[]');
       } else {
@@ -828,6 +814,10 @@ class FunctionNode {
     }
 
     const signatureString = signature.join('');
+    if (returnRawValue) {
+      return signatureString;
+    }
+
     const allowedExpressions = [
       'value',
       'value[]',
@@ -1084,57 +1074,6 @@ class FunctionNode {
     return retArr;
   }
   astDoWhileStatement(ast, retArr) {
-    return retArr;
-  }
-  /**
-   * @desc Parses the abstract syntax tree for *Variable Declaration*
-   * @param {Object} varDecNode - An ast Node
-   * @param {Array} retArr - return array string
-   * @returns {Array} the append retArr
-   */
-  astVariableDeclaration(varDecNode, retArr) {
-    const declarations = varDecNode.declarations;
-    if (!declarations || !declarations[0] || !declarations[0].init) {
-      throw this.astErrorOutput('Unexpected expression', varDecNode);
-    }
-    const result = [];
-    const firstDeclaration = declarations[0];
-    const init = firstDeclaration.init;
-    let type = this.isState('in-for-loop-init') ? 'Integer' : this.getType(init);
-    if (type === 'LiteralInteger') {
-      // We had the choice to go either float or int, choosing float
-      type = 'Number';
-    }
-    const markupType = typeMap[type];
-    if (!markupType) {
-      throw this.astErrorOutput(`Markup type ${ markupType } not handled`, varDecNode);
-    }
-    let dependencies = this.getDependencies(firstDeclaration.init);
-    throw new Error('remove me');
-    this.declarations[firstDeclaration.id.name] = Object.freeze({
-      type,
-      dependencies,
-      isSafe: dependencies.every(dependency => dependency.isSafe)
-    });
-    const initResult = [`${type} user_${firstDeclaration.id.name}=`];
-    this.astGeneric(init, initResult);
-    result.push(initResult.join(''));
-
-    // first declaration is done, now any added ones setup
-    for (let i = 1; i < declarations.length; i++) {
-      const declaration = declarations[i];
-      dependencies = this.getDependencies(declaration);
-      throw new Error('Remove me');
-      this.declarations[declaration.id.name] = Object.freeze({
-        type,
-        dependencies,
-        isSafe: false
-      });
-      this.astGeneric(declaration, result);
-    }
-
-    retArr.push(retArr, result.join(','));
-    retArr.push(';');
     return retArr;
   }
   /**
@@ -1518,10 +1457,6 @@ class FunctionNode {
       return name;
     }
     return name + this._internalVariableNames[name];
-  }
-
-  varWarn() {
-    console.warn('var declarations are deprecated, weird things happen when falling back to CPU because var scope differs in javascript than in most languages.  Use const or let');
   }
 
   astKey(ast, separator = ',') {

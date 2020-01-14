@@ -252,7 +252,6 @@ class GPU {
         subKernels: kernelRun.subKernels,
         strictIntegers: kernelRun.strictIntegers,
         debug: kernelRun.debug,
-        warnVarUsage: kernelRun.warnVarUsage,
       });
       fallbackKernel.build.apply(fallbackKernel, args);
       const result = fallbackKernel.run.apply(fallbackKernel, args);
@@ -316,7 +315,6 @@ class GPU {
         debug: kernel.debug,
         gpu: kernel.gpu,
         validate,
-        warnVarUsage: kernel.warnVarUsage,
         returnType: kernel.returnType,
         onIstanbulCoverageVariable: kernel.onIstanbulCoverageVariable,
         removeIstanbulCoverage: kernel.removeIstanbulCoverage,

@@ -16,12 +16,13 @@ test('Issue #390 - thread assignment webgl', function(assert) {
     + '\nfloat user_sum=(user_x+user_y);'
     + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations[0].name, 'x');
-  assert.equal(node.declarations[0].valueType, 'Number');
-  assert.equal(node.declarations[1].name, 'y');
-  assert.equal(node.declarations[1].valueType, 'Number');
-  assert.equal(node.declarations[2].name, 'sum');
-  assert.equal(node.declarations[2].valueType, 'Number');
+  const { x, y, sum } = node.contexts[1];
+  assert.equal(x.name, 'x');
+  assert.equal(x.valueType, 'Number');
+  assert.equal(y.name, 'y');
+  assert.equal(y.valueType, 'Number');
+  assert.equal(sum.name, 'sum');
+  assert.equal(sum.valueType, 'Number');
 });
 
 test('Issue #390 - thread assignment webgl2', function(assert) {
@@ -37,12 +38,13 @@ test('Issue #390 - thread assignment webgl2', function(assert) {
     + '\nfloat user_sum=(user_x+user_y);'
     + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations[0].name, 'x');
-  assert.equal(node.declarations[0].valueType, 'Number');
-  assert.equal(node.declarations[1].name, 'y');
-  assert.equal(node.declarations[1].valueType, 'Number');
-  assert.equal(node.declarations[2].name, 'sum');
-  assert.equal(node.declarations[2].valueType, 'Number');
+  const { x, y, sum } = node.contexts[1];
+  assert.equal(x.name, 'x');
+  assert.equal(x.valueType, 'Number');
+  assert.equal(y.name, 'y');
+  assert.equal(y.valueType, 'Number');
+  assert.equal(sum.name, 'sum');
+  assert.equal(sum.valueType, 'Number');
 });
 
 test('Issue #390 - thread assignment cpu', function(assert) {
@@ -58,12 +60,13 @@ test('Issue #390 - thread assignment cpu', function(assert) {
     + '\nconst user_sum=(user_x+user_y);'
     + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations[0].name, 'x');
-  assert.equal(node.declarations[0].valueType, 'Integer');
-  assert.equal(node.declarations[1].name, 'y');
-  assert.equal(node.declarations[1].valueType, 'Integer');
-  assert.equal(node.declarations[2].name, 'sum');
-  assert.equal(node.declarations[2].valueType, 'Number');
+  const { x, y, z, sum } = node.contexts[1];
+  assert.equal(x.name, 'x');
+  assert.equal(x.valueType, 'Integer');
+  assert.equal(y.name, 'y');
+  assert.equal(y.valueType, 'Integer');
+  assert.equal(sum.name, 'sum');
+  assert.equal(sum.valueType, 'Number');
 });
 
 
@@ -84,14 +87,15 @@ test('Issue #390 (related) - output assignment webgl', function(assert) {
     + '\nfloat user_sum=((user_x+user_y)+user_z);'
     + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations[0].name, 'x');
-  assert.equal(node.declarations[0].valueType, 'Number');
-  assert.equal(node.declarations[1].name, 'y');
-  assert.equal(node.declarations[1].valueType, 'Number');
-  assert.equal(node.declarations[2].name, 'z');
-  assert.equal(node.declarations[2].valueType, 'Number');
-  assert.equal(node.declarations[3].name, 'sum');
-  assert.equal(node.declarations[3].valueType, 'Number');
+  const { x, y, z, sum } = node.contexts[1];
+  assert.equal(x.name, 'x');
+  assert.equal(x.valueType, 'Number');
+  assert.equal(y.name, 'y');
+  assert.equal(y.valueType, 'Number');
+  assert.equal(z.name, 'z');
+  assert.equal(z.valueType, 'Number');
+  assert.equal(sum.name, 'sum');
+  assert.equal(sum.valueType, 'Number');
 });
 
 test('Issue #390 (related) - output assignment webgl2', function(assert) {
@@ -111,24 +115,26 @@ test('Issue #390 (related) - output assignment webgl2', function(assert) {
     + '\nfloat user_sum=((user_x+user_y)+user_z);'
     + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations[0].name, 'x');
-  assert.equal(node.declarations[0].valueType, 'Number');
-  assert.equal(node.declarations[1].name, 'y');
-  assert.equal(node.declarations[1].valueType, 'Number');
-  assert.equal(node.declarations[2].name, 'z');
-  assert.equal(node.declarations[2].valueType, 'Number');
-  assert.equal(node.declarations[3].name, 'sum');
-  assert.equal(node.declarations[3].valueType, 'Number');
+  const context = node.contexts[1];
+  const { x, y, z, sum } = context;
+  assert.equal(x.name, 'x');
+  assert.equal(x.valueType, 'Number');
+  assert.equal(y.name, 'y');
+  assert.equal(y.valueType, 'Number');
+  assert.equal(z.name, 'z');
+  assert.equal(z.valueType, 'Number');
+  assert.equal(sum.name, 'sum');
+  assert.equal(sum.valueType, 'Number');
 });
 
 test('Issue #390 (related) - output assignment cpu', function(assert) {
-  const node = new CPUFunctionNode(function assignThreadToVar() {
+  const node = new CPUFunctionNode(`function assignThreadToVar() {
     const x = this.output.x;
     const y = this.output.y;
     const z = this.output.z;
     const sum = x + y + z;
     return sum;
-  }.toString(), {
+  }`, {
     output: [1,2,3]
   });
   assert.equal(node.toString(), 'function assignThreadToVar() {'
@@ -138,13 +144,20 @@ test('Issue #390 (related) - output assignment cpu', function(assert) {
     + '\nconst user_sum=((user_x+user_y)+user_z);'
     + '\nreturn user_sum;'
     + '\n}');
-  assert.equal(node.declarations[0].name, 'x');
-  assert.equal(node.declarations[0].valueType, 'Number');
-  assert.equal(node.declarations[1].name, 'y');
-  assert.equal(node.declarations[1].valueType, 'Number');
-  assert.equal(node.declarations[2].name, 'z');
-  assert.equal(node.declarations[2].valueType, 'Number');
-  assert.equal(node.declarations[3].name, 'sum');
-  assert.equal(node.declarations[3].valueType, 'Number');
+  const context = node.contexts[1];
+  const { x, y, z, sum } = context;
+  assert.equal(context['@contextType'], 'const/let');
+
+  assert.equal(x.name, 'x');
+  assert.equal(x.valueType, 'Number');
+
+  assert.equal(y.name, 'y');
+  assert.equal(y.valueType, 'Number');
+
+  assert.equal(z.name, 'z');
+  assert.equal(z.valueType, 'Number');
+
+  assert.equal(sum.name, 'sum');
+  assert.equal(sum.valueType, 'Number');
 });
 

@@ -320,9 +320,6 @@ class CPUFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astVariableDeclaration(varDecNode, retArr) {
-    if (varDecNode.kind === 'var' && this.warnVarUsage) {
-      this.varWarn();
-    }
     retArr.push(`${varDecNode.kind} `);
     const { declarations } = varDecNode;
     for (let i = 0; i < declarations.length; i++) {

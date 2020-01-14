@@ -15,11 +15,11 @@ test('with safe loop with init', () => {
   });
 
   assert.equal(node.toString(), 'float kernel() {'
-    + '\nfloat user_sum=0.0;'
+    + '\nint user_sum=0;'
     + '\nfor (int user_i=0;(user_i<100);user_i++){'
     + '\nuser_sum++;}'
     + '\n'
-    + '\nreturn user_sum;'
+    + '\nreturn float(user_sum);'
     + '\n}');
 });
 
@@ -37,13 +37,13 @@ test('with safe loop with init and if', () => {
   });
 
   assert.equal(node.toString(), 'float kernel() {'
-    + '\nfloat user_sum=0.0;'
+    + '\nint user_sum=0;'
     + '\nfor (int user_i=0;(user_i<100);user_i++){'
     + '\nif ((user_i>50)){'
     + '\nuser_sum++;}'
     + '\n}'
     + '\n'
-    + '\nreturn user_sum;'
+    + '\nreturn float(user_sum);'
     + '\n}');
 });
 
@@ -60,14 +60,14 @@ test('with safe loop with no init', () => {
   });
 
   assert.equal(node.toString(), 'float kernel() {'
-    + '\nfloat user_sum=0.0;'
-    + '\nfloat user_i=0.0;'
+    + '\nint user_sum=0;'
+    + '\nint user_i=0;'
     + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){'
-    + '\nif (!(int(user_i)<100)) break;' // <-- casted here to int for compatibility
+    + '\nif (!(user_i<100)) break;'
     + '\nuser_sum++;'
     + '\nuser_i++;}'
     + '\n'
-    + '\nreturn user_sum;'
+    + '\nreturn float(user_sum);'
     + '\n}');
 });
 
@@ -84,7 +84,7 @@ test('with safe loop with no test', () => {
   });
 
   assert.equal(node.toString(), 'float kernel() {'
-    + '\nfloat user_sum=0.0;'
+    + '\nint user_sum=0;'
     + '\nint user_i=0;'
     + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){'
     + '\nif ((user_i>100)) {'
@@ -93,7 +93,7 @@ test('with safe loop with no test', () => {
     + '\nuser_sum++;'
     + '\nuser_i++;}'
     + '\n'
-    + '\nreturn user_sum;'
+    + '\nreturn float(user_sum);'
     + '\n}');
 });
 
@@ -110,21 +110,21 @@ test('with unsafe loop with init', () => {
   });
 
   assert.equal(node.toString(), 'float kernel(float user_arg1) {'
-    + '\nfloat user_sum=0.0;'
-    + '\nint user_i=(0+int(user_arg1));'
+    + '\nint user_sum=0;'
+    + '\nfloat user_i=(0.0+user_arg1);'
     + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){'
-    + '\nif (!(user_i<100)) break;'
+    + '\nif (!(user_i<100.0)) break;'
     + '\nuser_sum++;'
     + '\nuser_i++;}'
     + '\n'
-    + '\nreturn user_sum;'
+    + '\nreturn float(user_sum);'
     + '\n}');
 });
 
 test('with unsafe loop with no init', () => {
   const node = new WebGLFunctionNode(`function kernel(arg1) {
     let sum = 0;
-    const i = 0 + arg1;
+    let i = 0 + arg1;
     for (;i < 100; i++) {
       sum++;
     }
@@ -135,21 +135,21 @@ test('with unsafe loop with no init', () => {
   });
 
   assert.equal(node.toString(), 'float kernel(float user_arg1) {'
-    + '\nfloat user_sum=0.0;'
+    + '\nint user_sum=0;'
     + '\nfloat user_i=(0.0+user_arg1);'
     + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){'
-    + '\nif (!(int(user_i)<100)) break;'
+    + '\nif (!(user_i<100.0)) break;'
     + '\nuser_sum++;'
     + '\nuser_i++;}'
     + '\n'
-    + '\nreturn user_sum;'
+    + '\nreturn float(user_sum);'
     + '\n}');
 });
 
 test('with unsafe loop with no init reversed', () => {
   const node = new WebGLFunctionNode(`function kernel(arg1) {
     let sum = 0;
-    const i = 0 + arg1;
+    let i = 0 + arg1;
     for (;100 > i; i++) {
       sum++;
     }
@@ -160,14 +160,14 @@ test('with unsafe loop with no init reversed', () => {
   });
 
   assert.equal(node.toString(), 'float kernel(float user_arg1) {'
-    + '\nfloat user_sum=0.0;'
+    + '\nint user_sum=0;'
     + '\nfloat user_i=(0.0+user_arg1);'
     + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){'
-    + '\nif (!(100>int(user_i))) break;'
+    + '\nif (!(100.0>user_i)) break;'
     + '\nuser_sum++;'
     + '\nuser_i++;}'
     + '\n'
-    + '\nreturn user_sum;'
+    + '\nreturn float(user_sum);'
     + '\n}');
 });
 
@@ -186,13 +186,13 @@ test('nested safe loop', () => {
   });
 
   assert.equal(node.toString(), 'float kernel() {'
-    + '\nfloat user_sum=0.0;'
+    + '\nint user_sum=0;'
     + '\nfor (int user_i=0;(user_i<100);user_i++){'
     + '\nfor (int user_j=0;(user_j<100);user_j++){'
     + '\nuser_sum++;}'
     + '\n}'
     + '\n'
-    + '\nreturn user_sum;'
+    + '\nreturn float(user_sum);'
     + '\n}');
 });
 
@@ -211,19 +211,19 @@ test('nested unsafe loop', () => {
   });
 
   assert.equal(node.toString(), 'float kernel(float user_arg1, float user_arg2) {'
-    + '\nfloat user_sum=0.0;'
-    + '\nint user_i=int(user_arg1);'
+    + '\nint user_sum=0;'
+    + '\nfloat user_i=user_arg1;'
     + '\nfor (int safeI2=0;safeI2<LOOP_MAX;safeI2++){'
-    + '\nif (!(user_i<100)) break;'
-    + '\nint user_j=int(user_arg2);'
+    + '\nif (!(user_i<100.0)) break;'
+    + '\nfloat user_j=user_arg2;'
     + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){'
-    + '\nif (!(user_j<100)) break;'
+    + '\nif (!(user_j<100.0)) break;'
     + '\nuser_sum++;'
     + '\nuser_j++;}'
     + '\n'
     + '\nuser_i++;}'
     + '\n'
-    + '\nreturn user_sum;'
+    + '\nreturn float(user_sum);'
     + '\n}');
 });
 

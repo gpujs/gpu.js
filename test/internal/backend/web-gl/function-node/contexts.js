@@ -1,7 +1,7 @@
 const { assert, test, module: describe, only } = require('qunit');
 const { WebGLFunctionNode } = require(process.cwd() + '/src');
 
-describe('WebGLFunctionNode.getDependencies()');
+describe('WebGLFunctionNode.contexts');
 
 test('safe from literal 1', () => {
   const node = new WebGLFunctionNode(`function kernel() {
@@ -15,16 +15,17 @@ test('safe from literal 1', () => {
   }`, { output: [1] });
 
   node.toString();
-  assert.equal(node.declarations[0].isSafe, true);
-  assert.deepEqual(node.declarations[0].dependencies, [
+  const { const1, const2, const3 } = node.contexts[1];
+  assert.equal(const1.isSafe, true);
+  assert.deepEqual(const1.dependencies, [
     {
       origin: 'literal',
       value: 1,
       isSafe: true,
     }
   ]);
-  assert.equal(node.declarations[1].isSafe, true);
-  assert.deepEqual(node.declarations[1].dependencies, [
+  assert.equal(const2.isSafe, true);
+  assert.deepEqual(const2.dependencies, [
     {
       name: 'const1',
       origin: 'declaration',
@@ -35,8 +36,8 @@ test('safe from literal 1', () => {
       isSafe: true,
     }
   ]);
-  assert.equal(node.declarations[2].isSafe, true);
-  assert.deepEqual(node.declarations[2].dependencies, [
+  assert.equal(const3.isSafe, true);
+  assert.deepEqual(const3.dependencies, [
     {
       name: 'const2',
       origin: 'declaration',
@@ -62,8 +63,9 @@ test('safe from argument', () => {
   }`, { output: [1], argumentTypes: ['Number'] });
 
   node.toString();
-  assert.equal(node.declarations[0].isSafe, false);
-  assert.deepEqual(node.declarations[0].dependencies, [
+  const { const1, const2, const3 } = node.contexts[1];
+  assert.equal(const1.isSafe, false);
+  assert.deepEqual(const1.dependencies, [
     {
       name: 'arg1',
       origin: 'argument',
@@ -74,8 +76,8 @@ test('safe from argument', () => {
       isSafe: true,
     }
   ]);
-  assert.equal(node.declarations[1].isSafe, false);
-  assert.deepEqual(node.declarations[1].dependencies, [
+  assert.equal(const2.isSafe, false);
+  assert.deepEqual(const2.dependencies, [
     {
       name: 'const1',
       origin: 'declaration',
@@ -86,8 +88,8 @@ test('safe from argument', () => {
       isSafe: true,
     }
   ]);
-  assert.equal(node.declarations[2].isSafe, false);
-  assert.deepEqual(node.declarations[2].dependencies, [
+  assert.equal(const3.isSafe, false);
+  assert.deepEqual(const3.dependencies, [
     {
       name: 'const2',
       origin: 'declaration',
@@ -113,14 +115,15 @@ test('safe from multiplication', () => {
   }`, { output: [1] });
 
   node.toString();
-  assert.deepEqual(node.declarations[0].dependencies, [
+  const { const1, const2, const3 } = node.contexts[1];
+  assert.deepEqual(const1.dependencies, [
     {
       origin: 'literal',
       value: 555,
       isSafe: true,
     }
   ]);
-  assert.deepEqual(node.declarations[1].dependencies, [
+  assert.deepEqual(const2.dependencies, [
     {
       name: 'const1',
       origin: 'declaration',
@@ -131,7 +134,7 @@ test('safe from multiplication', () => {
       isSafe: true,
     }
   ]);
-  assert.deepEqual(node.declarations[2].dependencies, [
+  assert.deepEqual(const3.dependencies, [
     {
       name: 'const2',
       origin: 'declaration',
@@ -164,8 +167,9 @@ test('safe from multiplication deep', () => {
   }`, { output: [1] });
 
   node.toString();
-  assert.ok(node.declarations[0].dependencies.every(dependency => dependency.isSafe === false));
-  assert.deepEqual(node.declarations[9].dependencies, [
+  const { const1, const10 } = node.contexts[1];
+  assert.ok(const1.dependencies.every(dependency => dependency.isSafe === false));
+  assert.deepEqual(const10.dependencies, [
     {
       name: 'const9',
       origin: 'declaration',
@@ -191,14 +195,15 @@ test('safe from division', () => {
   }`, { output: [1] });
 
   node.toString();
-  assert.deepEqual(node.declarations[0].dependencies, [
+  const { const1, const2, const3 } = node.contexts[1];
+  assert.deepEqual(const1.dependencies, [
     {
       origin: 'literal',
       value: 555,
       isSafe: true,
     }
   ]);
-  assert.deepEqual(node.declarations[1].dependencies, [
+  assert.deepEqual(const2.dependencies, [
     {
       name: 'const1',
       origin: 'declaration',
@@ -209,7 +214,7 @@ test('safe from division', () => {
       isSafe: true,
     }
   ]);
-  assert.deepEqual(node.declarations[2].dependencies, [
+  assert.deepEqual(const3.dependencies, [
     {
       name: 'const2',
       origin: 'declaration',
@@ -242,8 +247,9 @@ test('safe from division deep', () => {
   }`, { output: [1] });
 
   node.toString();
-  assert.ok(node.declarations[0].dependencies.every(dependency => dependency.isSafe === false));
-  assert.deepEqual(node.declarations[9].dependencies, [
+  const { const1, const10 } = node.contexts[1];
+  assert.ok(const1.dependencies.every(dependency => dependency.isSafe === false));
+  assert.deepEqual(const10.dependencies, [
     {
       name: 'const9',
       origin: 'declaration',

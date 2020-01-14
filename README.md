@@ -78,6 +78,7 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [Installation](#installation)
 * [`GPU` Settings](#gpu-settings)
 * [`gpu.createKernel` Settings](#gpucreatekernel-settings)
+  * [Declaring variables/functions within kernels](#declaring-variablesfunctions-within-kernels)
 * [Creating and Running Functions](#creating-and-running-functions)
 * [Debugging](#debugging)
 * [Accepting Input](#accepting-input)
@@ -237,7 +238,6 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
 * ~~`immutable` or `kernel.setImmutable(boolean)`: boolean, default = `false`~~ Deprecated
 * `strictIntegers` or `kernel.setStrictIntegers(boolean)`: boolean, default = `false` - allows undefined argumentTypes and function return values to use strict integer declarations.
 * `useLegacyEncoder` or `kernel.setUseLegacyEncoder(boolean)`: boolean, default `false` - more info [here](https://github.com/gpujs/gpu.js/wiki/Encoder-details).
-* `warnVarUsage` or `kernel.setWarnVarUsage(boolean)`: turn off var usage warnings, they can be irritating, and in transpiled environments, there is nothing we can do about it.
 * `tactic` or `kernel.setTactic('speed' | 'balanced' | 'precision')` **New in V2!**: Set the kernel's tactic for compilation.  Allows for compilation to better fit how GPU.js is being used (internally uses `lowp` for 'speed', `mediump` for 'balanced', and `highp` for 'precision').  Default is lowest resolution supported for output.
 
 
@@ -292,70 +292,93 @@ kernel();
 // Result: Float32Array[0, 1, 2, 3, ... 99]
 ```
 
-### Declaring variables
+### Declaring variables/functions within kernels
 
 GPU.js makes variable declaration inside kernel functions easy.  Variable types supported are:
-Numbers
-Array(2)
-Array(3)
-Array(4)
+* `Number` (Integer or Number), example: `let value = 1` or `let value = 1.1` 
+* `Boolean`, example: `let value = true`
+* `Array(2)`, example: `let value = [1, 1]`
+* `Array(3)`, example: `let value = [1, 1, 1]`
+* `Array(4)`, example: `let value = [1, 1, 1, 1]`
+* `private Function`, example: `function myFunction(value) { return value + 1; }`
 
-Numbers example:
+`Number` kernel example:
 ```js
- const kernel = gpu.createKernel(function() {
-     const i = 1;
-     const j = 0.89;
-     return i + j;
- }).setOutput([100]);
+const kernel = gpu.createKernel(function() {
+ const i = 1;
+ const j = 0.89;
+ return i + j;
+}).setOutput([100]);
 ```
 
-Array(2) examples:
+`Boolean` kernel example:
+```js
+const kernel = gpu.createKernel(function() {
+  const i = true;
+  if (i) return 1;
+  return 0;
+}).setOutput([100]);
+```
+
+`Array(2)` kernel examples:
 Using declaration
 ```js
- const kernel = gpu.createKernel(function() {
-     const array2 = [0.08, 2];
-     return array2;
- }).setOutput([100]);
+const kernel = gpu.createKernel(function() {
+ const array2 = [0.08, 2];
+ return array2;
+}).setOutput([100]);
 ```
 
 Directly returned
 ```js
- const kernel = gpu.createKernel(function() {
-     return [0.08, 2];
- }).setOutput([100]);
+const kernel = gpu.createKernel(function() {
+ return [0.08, 2];
+}).setOutput([100]);
 ```
 
-Array(3) example:
+`Array(3)` kernel example:
 Using declaration
 ```js
- const kernel = gpu.createKernel(function() {
-     const array2 = [0.08, 2, 0.1];
-     return array2;
- }).setOutput([100]);
+const kernel = gpu.createKernel(function() {
+ const array2 = [0.08, 2, 0.1];
+ return array2;
+}).setOutput([100]);
 ```
 
 Directly returned
 ```js
- const kernel = gpu.createKernel(function() {
-     return [0.08, 2, 0.1];
- }).setOutput([100]);
+const kernel = gpu.createKernel(function() {
+ return [0.08, 2, 0.1];
+}).setOutput([100]);
 ```
 
-Array(4) example:
+`Array(4)` kernel example:
 Using declaration
 ```js
- const kernel = gpu.createKernel(function() {
-     const array2 = [0.08, 2, 0.1, 3];
-     return array2;
- }).setOutput([100]);
+const kernel = gpu.createKernel(function() {
+ const array2 = [0.08, 2, 0.1, 3];
+ return array2;
+}).setOutput([100]);
 ```
 
 Directly returned
 ```js
- const kernel = gpu.createKernel(function() {
-     return [0.08, 2, 0.1, 3];
- }).setOutput([100]);
+const kernel = gpu.createKernel(function() {
+ return [0.08, 2, 0.1, 3];
+}).setOutput([100]);
 ```
+
+`private Function` kernel example:
+```js
+const kernel = gpu.createKernel(function() {
+  function myPrivateFunction() {
+    return [0.08, 2, 0.1, 3];
+  }
+  
+  return myPrivateFunction(); // <-- type inherited here
+}).setOutput([100]);
+```
+
 ## Debugging
 Debugging can be done in a variety of ways, and there are different levels of debugging.
 * Debugging kernels with breakpoints can be done with `new GPU({ mode: 'dev' })`
@@ -1087,17 +1110,6 @@ Transpilation doesn't do the best job of keeping code beautiful.  To aid in this
 Here is a list of a few things that GPU.js does to fix transpilation:
 
 * When a transpiler such as [Babel](https://babeljs.io/) changes `myCall()` to `(0, _myCall.myCall)`, it is gracefully handled.
-* Using `var` will have a lot of warnings by default, this can be irritating because sometimes there is nothing we can do about this in transpiled environment.
-  To aid in the irritation, there is an option to alleviate the irritation.
-  When `const` and `let` are converted to `var`, and you'r prefer not to see it, use the following:
-  ```js
-  const kernel = gpu.createKernel(myKernelFunction)
-    .setWarnVarUsage(false);
-  ```
-  or:
-  ```js
-  const kernel = gpu.createKernel(myKernelFunction, { output: [1], warnVarUsage: false });
-  ```
 
 ## Full API Reference
 

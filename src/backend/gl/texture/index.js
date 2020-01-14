@@ -29,7 +29,10 @@ class GLTexture extends Texture {
    */
   cloneTexture() {
     this.texture._refs--;
-    const { context: gl, size, texture } = this;
+    const { context: gl, size, texture, kernel } = this;
+    if (kernel.debug) {
+      console.warn('cloning internal texture');
+    }
     const existingFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
     if (!this._framebuffer) {
       this._framebuffer = gl.createFramebuffer();

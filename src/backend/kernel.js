@@ -220,7 +220,6 @@ class Kernel {
     this.optimizeFloatMemory = null;
     this.strictIntegers = false;
     this.fixIntegerDivisionAccuracy = null;
-    this.warnVarUsage = true;
     this.onIstanbulCoverageVariable = null;
     this.removeIstanbulCoverage = false;
     this.built = false;
@@ -614,7 +613,7 @@ class Kernel {
    * @return {Kernel}
    */
   setWarnVarUsage(flag) {
-    this.warnVarUsage = flag;
+    utils.warnDeprecated('method', 'setWarnVarUsage');
     return this;
   }
 

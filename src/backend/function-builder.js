@@ -35,7 +35,6 @@ class FunctionBuilder {
       followingReturnStatement,
       dynamicArguments,
       dynamicOutput,
-      warnVarUsage,
       onIstanbulCoverageVariable,
       removeIstanbulCoverage,
     } = kernel;
@@ -107,7 +106,6 @@ class FunctionBuilder {
         triggerImplyArgumentType,
         triggerImplyArgumentBitRatio,
         onFunctionCall,
-        warnVarUsage,
       }));
       nestedFunction.traceFunctionAST(ast);
       functionBuilder.addFunctionNode(nestedFunction);
@@ -125,7 +123,6 @@ class FunctionBuilder {
       triggerImplyArgumentType,
       triggerImplyArgumentBitRatio,
       onFunctionCall,
-      warnVarUsage,
       onIstanbulCoverageVariable: onIstanbulCoverageVariable ? (name) => onIstanbulCoverageVariable(name, kernel) : null,
       removeIstanbulCoverage,
       optimizeFloatMemory,

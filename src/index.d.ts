@@ -501,7 +501,11 @@ export interface IFunctionBuilderSettings {
 
 // These are mostly internal
 export class FunctionNode implements IFunctionSettings {
-  constructor(source: string, settings?: IFunctionSettings);
+  constructor(source: string, settings?: IFunctionNodeSettings);
+}
+
+export interface IFunctionNodeSettings extends IFunctionSettings {
+  argumentTypes: string[]
 }
 
 export class WebGLFunctionNode extends FunctionNode {}
@@ -608,7 +612,21 @@ export type utils = {
   getMinifySafeName(arrowReference: () => Function): string;
 }
 
-export interface IReason{
+export interface IReason {
   type: 'argumentMismatch' | 'outputPrecisionMismatch';
   needed: any;
+}
+
+export interface IDeclaration {
+  ast: object;
+  context: object;
+  name: string;
+  origin: 'declaration';
+  inForLoopInit: boolean;
+  inForLoopTest: boolean;
+  assignable: boolean;
+  suggestedType: string;
+  valueType: string;
+  dependencies: any;
+  isSafe: boolean;
 }

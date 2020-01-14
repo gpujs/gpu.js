@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8">
   <title>SSPS - Chadams Studios (slightly upgraded)</title>
-  <script src="../dist/gpu-browser.js"></script>
+  <script src="../dist/gpu-browser.min.js"></script>
   <script>
-    function XSSPS(particleCount, renderSize) {
+    function XSSPS(particleCount, renderSize, onAfterInput) {
       this.dt = 0;
       this.renderSize = renderSize || 512;
       this.particleCount = particleCount || 512;
+      this.onAfterInput = onAfterInput;
 
       this.hashLength = 128;
       this.hashWSize = 3.0;
@@ -938,19 +939,23 @@
       this.move.tPull += (this.move.toPull - this.move.tPull) * this.dt * 1.5;
       this.move.tPullR += (this.move.toPullR - this.move.tPullR) * this.dt * 1.5;
       this.updateCamera();
+      if (this.onAfterInput) this.onAfterInput();
     };
 
     XSSPS.prototype.updateCamera = function() {
       const prevUp = this.cam.up;
-      this.cam.up = this.normv(
-        this.crossv(
-          this.crossv(
-            this.cam.dir,
-            this.cam.up
-          ),
-          this.cam.dir
-        )
+      const crossv1 = this.crossv(
+        this.cam.dir,
+        this.cam.up
       );
+      const crossv2 = this.crossv(
+        crossv1,
+        this.cam.dir
+      );
+      deleteTexture(this.cam.up);
+      this.cam.up = this.normv(crossv2);
+      deleteTexture(crossv1);
+      deleteTexture(crossv2);
       deleteTexture(prevUp);
       const prevDir = this.cam.dir;
       this.cam.dir = this.rotateCamera(
@@ -1025,8 +1030,11 @@
       return ret;
     };
 
-    SSPS.prototype.updateControls = function() {
+    SSPS.prototype.updateFPS = function() {
       this.controls.fps.innerHTML = Math.round(1 / this.dt);
+    };
+
+    SSPS.prototype.updateControls = function() {
       this.controls.renderMode.innerHTML = this.mkOpt([1, 2], this.psim.renderMode);
       this.controls.particleDensity.innerHTML = this.mkOpt(this.psim.sDensity, this.psim.sDensityI);
       this.controls.particleViscosity.innerHTML = this.mkOpt(this.psim.sVisc, this.psim.sViscI);
@@ -1036,7 +1044,7 @@
 
     SSPS.prototype.updateRender = function() {
       this.psim.updateRender(this.keys, this.dt);
-      this.updateControls();
+      this.updateFPS();
     };
 
     SSPS.prototype.start = function(tick) {
@@ -1108,7 +1116,9 @@
 </head>
 <body style="background-color: black; padding: 0; margin: 0;"></body>
 <script>
-  const psim = new XSSPS(64, 256);
+  const psim = new XSSPS(64, 256, () => {
+    inst.updateControls();
+  });
   const inst = new SSPS(psim);
   const { html } = inst.controls;
   html.style.color = '#78788b';
