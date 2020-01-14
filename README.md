@@ -819,7 +819,10 @@ const result2 = kernel2(result1);
 Handling minimal amounts of GPU memory is handled internally, but a good practice is to clean up memory you no longer need.
 Cleanup kernel outputs by using `texture.delete()` to keep GPU memory as small as possible.
 
-NOTE: Internally textures will only release from memory if there are no references to them,  
+NOTE: Internally textures will only release from memory if there are no references to them.
+When using pipeline mode on a kernel K the output for each call will be a newly allocated texture T.
+If, after getting texture T as an output, T.delete() is called, the next call to K will reuse T as its output texture.
+
 
 ## Offscreen Canvas
 GPU.js supports offscreen canvas where available.  Here is an example of how to use it with two files, `gpu-worker.js`, and `index.js`:
