@@ -1,5 +1,5 @@
 const { assert, test, module: describe, skip } = require('qunit');
-const { GPU, CPUKernel, WebGLKernel, WebGL2Kernel, HeadlessGLKernel } = require('../../src');
+const { GPU, CPUKernel, WebGLKernel, WebGL2Kernel, HeadlessGLKernel, Kernel } = require('../../src');
 
 describe('internal: kernel');
 
@@ -305,4 +305,50 @@ test('WebGL2Kernel.setUniform4fv only calls context when values change', () => {
 });
 test('HeadlessGLKernel.setUniform4fv only calls context when values change', () => {
   setUniform4fvTest(HeadlessGLKernel);
+});
+
+test('functionToIFunction with function', () => {
+  const fn = function name() {};
+  const result = Kernel.prototype.functionToIGPUFunction(fn);
+  assert.deepEqual(result, {
+    name: 'name',
+    source: fn.toString(),
+    argumentTypes: [],
+    returnType: null
+  });
+});
+
+test('functionToIFunction with function and argumentTypes array', () => {
+  const fn = function name(a, b) {};
+  const argumentTypes = ['number','string'];
+  const result = Kernel.prototype.functionToIGPUFunction(fn, { argumentTypes });
+  assert.deepEqual(result, {
+    name: 'name',
+    source: fn.toString(),
+    argumentTypes: ['number', 'string'],
+    returnType: null,
+  });
+});
+
+test('functionToIFunction with function and argumentTypes object', () => {
+  const fn = function name(a, b) {};
+  const argumentTypes = { a: 'number', b: 'string' };
+  const result = Kernel.prototype.functionToIGPUFunction(fn, { argumentTypes });
+  assert.deepEqual(result, {
+    name: 'name',
+    source: fn.toString(),
+    argumentTypes: ['number', 'string'],
+    returnType: null,
+  });
+});
+
+test('functionToIGPUFunction with function and returnType', () => {
+  const fn = function name(a, b) {};
+  const result = Kernel.prototype.functionToIGPUFunction(fn, { returnType: 'string' });
+  assert.deepEqual(result, {
+    name: 'name',
+    source: fn.toString(),
+    argumentTypes: [],
+    returnType: 'string',
+  });
 });

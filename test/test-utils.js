@@ -39,7 +39,7 @@ const testUtils = {
       visualKernelB.getPixels(),
       visualKernelA.getPixels(),
     ];
-  }
+  },
 };
 
 module.exports = testUtils;

@@ -36,7 +36,7 @@ class CPUKernel extends Kernel {
   }
 
   static nativeFunctionReturnType() {
-    return null;
+    throw new Error(`Looking up native function return type not supported on ${this.name}`);
   }
 
   static combineKernels(combinedKernel) {
@@ -262,6 +262,7 @@ class CPUKernel extends Kernel {
     for (let p in this.constants) {
       const type = this.constantTypes[p];
       switch (type) {
+        case 'HTMLCanvas':
         case 'HTMLImage':
         case 'HTMLVideo':
           result.push(`    const constants_${p} = this._mediaTo2DArray(this.constants.${p});\n`);
@@ -284,6 +285,7 @@ class CPUKernel extends Kernel {
     for (let i = 0; i < this.argumentTypes.length; i++) {
       const variableName = `user_${this.argumentNames[i]}`;
       switch (this.argumentTypes[i]) {
+        case 'HTMLCanvas':
         case 'HTMLImage':
         case 'HTMLVideo':
           result.push(`    ${variableName} = this._mediaTo2DArray(${variableName});\n`);

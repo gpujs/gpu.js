@@ -435,7 +435,7 @@ class WebGLFunctionNode extends FunctionNode {
       return bitwiseResult;
     }
     const upconvertableOperators = {
-      '%': 'mod',
+      '%': 'modulo',
       '**': 'pow',
     };
     const foundOperator = upconvertableOperators[ast.operator];
@@ -1237,6 +1237,7 @@ class WebGLFunctionNode extends FunctionNode {
         retArr.push(')');
         break;
       case 'ArrayTexture(4)':
+      case 'HTMLCanvas':
       case 'HTMLImage':
       case 'HTMLVideo':
         retArr.push(`getVec4FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
@@ -1384,6 +1385,9 @@ class WebGLFunctionNode extends FunctionNode {
           targetType = argumentType;
         }
         switch (argumentType) {
+          case 'Boolean':
+            this.astGeneric(argument, retArr);
+            continue;
           case 'Number':
           case 'Float':
             if (targetType === 'Integer') {
@@ -1436,6 +1440,7 @@ class WebGLFunctionNode extends FunctionNode {
               continue;
             }
             break;
+          case 'HTMLCanvas':
           case 'HTMLImage':
           case 'HTMLImageArray':
           case 'HTMLVideo':
@@ -1540,6 +1545,7 @@ const typeMap = {
   'ArrayTexture(3)': 'sampler2D',
   'ArrayTexture(4)': 'sampler2D',
   'HTMLVideo': 'sampler2D',
+  'HTMLCanvas': 'sampler2D',
   'HTMLImage': 'sampler2D',
   'HTMLImageArray': 'sampler2DArray',
 };

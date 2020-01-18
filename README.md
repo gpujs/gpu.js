@@ -230,8 +230,8 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
 * `optimizeFloatMemory` or `kernel.setOptimizeFloatMemory(boolean)` **New in V2!**: boolean - causes a float32 texture to use all 4 channels rather than 1, using less memory, but consuming more GPU.
 * `precision` or `kernel.setPrecision('unsigned' | 'single')` **New in V2!**: 'single' or 'unsigned' - if 'single' output texture uses float32 for each colour channel rather than 8
 * `fixIntegerDivisionAccuracy` or `kernel.setFixIntegerDivisionAccuracy(boolean)` : boolean - some cards have accuracy issues dividing by factors of three and some other primes (most apple kit?). Default on for affected cards, disable if accuracy not required.
-* `functions` or `kernel.setFunctions(object)`: array, array of functions to be used inside kernel.  If undefined, inherits from `GPU` instance.
-* `nativeFunctions` or `kernel.setNativeFunctions(object)`: object, defined as: `{ name: string, source: string, settings: object }`.  This is generally set via using GPU.addNativeFunction()
+* `functions` or `kernel.setFunctions(array)`: array, array of functions to be used inside kernel.  If undefined, inherits from `GPU` instance. Can also be an array of `{ source: function, argumentTypes: object, returnType: string }`.
+* `nativeFunctions` or `kernel.setNativeFunctions(array)`: object, defined as: `{ name: string, source: string, settings: object }`.  This is generally set via using GPU.addNativeFunction()
   * VERY IMPORTANT! - Use this to add special native functions to your environment when you need specific functionality is needed.
 * `injectedNative` or `kernel.setInjectedNative(string)` **New in V2!**: string, defined as: `{ functionName: functionSource }`.  This is for injecting native code before translated kernel functions.
 * `subKernels` or `kernel.setSubKernels(array)`: array, generally inherited from `GPU` instance.
@@ -667,7 +667,8 @@ megaKernel(a, b, c);
 This gives you the flexibility of using parts of a single transformation without the performance penalty, resulting in much much _MUCH_ faster operation.
 
 ## Adding custom functions
-use `gpu.addFunction(function() {}, settings)` for adding custom functions.  Example:
+### To `GPU` instance
+use `gpu.addFunction(function() {}, settings)` for adding custom functions to all kernels.  Example:
 
 
 ```js
@@ -683,6 +684,23 @@ const kernel = gpu.createKernel(function(a, b) {
 }).setOutput([20]);
 ```
 
+### To `Kernel` instance
+use `kernel.addFunction(function() {}, settings)` for adding custom functions to all kernels.  Example:
+
+
+```js
+kernel.addFunction(function mySuperFunction(a, b) {
+  return a - b;
+});
+function anotherFunction(value) {
+  return value + 1;
+}
+kernel.addFunction(anotherFunction);
+const kernel = gpu.createKernel(function(a, b) {
+  return anotherFunction(mySuperFunction(a[this.thread.x], b[this.thread.x]));
+}).setOutput([20]);
+```
+
 ### Adding strongly typed functions
 
 To manually strongly type a function you may use settings.
@@ -691,13 +709,23 @@ Settings take an optional hash values:
 * `returnType`: optional, defaults to inference from `FunctionBuilder`, the value you'd like to return from the function.
 * `argumentTypes`: optional, defaults to inference from `FunctionBuilder` for each param, a hash of param names with values of the return types.
 
-Example:
+Example on `GPU` instance:
 ```js
 gpu.addFunction(function mySuperFunction(a, b) {
   return [a - b[1], b[0] - a];
 }, { argumentTypes: { a: 'Number', b: 'Array(2)'}, returnType: 'Array(2)' });
 ```
 
+Example on `Kernel` instance:
+```js
+kernel.addFunction(function mySuperFunction(a, b) {
+  return [a - b[1], b[0] - a];
+}, { argumentTypes: { a: 'Number', b: 'Array(2)'}, returnType: 'Array(2)' });
+```
+
+NOTE: GPU.js infers types if they are not defined and is generally able to detect the types you need, however
+'Array(2)', 'Array(3)', and 'Array(4)' are exceptions, at least on the kernel level.  Also, it is nice to have power
+over the automatic type inference system.
 
 ## Adding custom functions directly to kernel
 ```js
@@ -732,6 +760,7 @@ Types that can be used with GPU.js are as follows:
 * 'Array3D(2)' **New in V2!**
 * 'Array3D(3)' **New in V2!**
 * 'Array3D(4)' **New in V2!**
+* 'HTMLCanvas' **New in V2.6**
 * 'HTMLImage'
 * 'HTMLImageArray'
 * 'HTMLVideo' **New in V2!**

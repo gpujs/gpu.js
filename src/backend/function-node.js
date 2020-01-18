@@ -400,6 +400,8 @@ class FunctionNode {
             return this.lookupReturnType(functionName, ast, this);
           }
           throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
+        case 'LogicalExpression':
+          return 'Boolean';
         case 'BinaryExpression':
           // modulos is Number
           switch (ast.operator) {
@@ -705,6 +707,7 @@ class FunctionNode {
       case 'ReturnStatement':
         return this.getDependencies(ast.argument, dependencies);
       case 'BinaryExpression':
+      case 'LogicalExpression':
         isNotSafe = (ast.operator === '/' || ast.operator === '*');
         this.getDependencies(ast.left, dependencies, isNotSafe);
         this.getDependencies(ast.right, dependencies, isNotSafe);
@@ -1476,6 +1479,7 @@ const typeLookupMap = {
   'Array2D': 'Number',
   'Array3D': 'Number',
   'Input': 'Number',
+  'HTMLCanvas': 'Array(4)',
   'HTMLImage': 'Array(4)',
   'HTMLVideo': 'Array(4)',
   'HTMLImageArray': 'Array(4)',

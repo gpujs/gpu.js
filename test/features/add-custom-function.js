@@ -3,7 +3,7 @@ const { GPU } = require('../../src');
 
 describe('features: add custom function');
 
-function addAB(mode) {
+function inGPUInstanceSettings(mode) {
   function customAdder(a, b) {
     return a + b;
   }
@@ -25,32 +25,176 @@ function addAB(mode) {
   gpu.destroy();
 }
 
-test('addAB auto', () => {
-  addAB(null);
+test('in GPU instance settings auto', () => {
+  inGPUInstanceSettings(null);
 });
 
-test('addAB gpu', () => {
-  addAB('gpu');
+test('in GPU instance settings gpu', () => {
+  inGPUInstanceSettings('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('addAB webgl', () => {
-  addAB('webgl');
+(GPU.isWebGLSupported ? test : skip)('in GPU instance settings webgl', () => {
+  inGPUInstanceSettings('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('addAB webgl2', () => {
-  addAB('webgl2');
+(GPU.isWebGL2Supported ? test : skip)('in GPU instance settings webgl2', () => {
+  inGPUInstanceSettings('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('addAB headlessgl', () => {
-  addAB('headlessgl');
+(GPU.isHeadlessGLSupported ? test : skip)('in GPU instance settings headlessgl', () => {
+  inGPUInstanceSettings('headlessgl');
 });
 
-test('addAB cpu', () => {
-  addAB('cpu');
+test('in GPU instance settings cpu', () => {
+  inGPUInstanceSettings('cpu');
 });
 
+
+function withGPUAddFunctionMethod(mode) {
+  function customAdder(a, b) {
+    return a + b;
+  }
+  const gpu = new GPU({ mode })
+    .addFunction(customAdder);
+  const kernel = gpu.createKernel(function (a, b) {
+    return customAdder(a[this.thread.x], b[this.thread.x]);
+  }, {
+    output: [6]
+  });
+
+  const a = [1, 2, 3, 5, 6, 7];
+  const b = [4, 5, 6, 1, 2, 3];
+
+  const result = kernel(a, b);
+
+  const expected = [5, 7, 9, 6, 8, 10];
+
+  assert.deepEqual(Array.from(result), expected);
+  gpu.destroy();
+}
+
+test('with GPU addFunction method auto', () => {
+  withGPUAddFunctionMethod(null);
+});
+
+test('with GPU addFunction method gpu', () => {
+  withGPUAddFunctionMethod('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('with GPU addFunction method webgl', () => {
+  withGPUAddFunctionMethod('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('with GPU addFunction method webgl2', () => {
+  withGPUAddFunctionMethod('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('with GPU addFunction method headlessgl', () => {
+  withGPUAddFunctionMethod('headlessgl');
+});
+
+test('with GPU addFunction method cpu', () => {
+  withGPUAddFunctionMethod('cpu');
+});
+
+function inKernelInstanceSettings(mode) {
+  function customAdder(a, b) {
+    return a + b;
+  }
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function (a, b) {
+    return customAdder(a[this.thread.x], b[this.thread.x]);
+  }, {
+    output: [6],
+    functions: [
+      customAdder
+    ],
+  });
+
+  const a = [1, 2, 3, 5, 6, 7];
+  const b = [4, 5, 6, 1, 2, 3];
+
+  const result = kernel(a, b);
+
+  const expected = [5, 7, 9, 6, 8, 10];
+
+  assert.deepEqual(Array.from(result), expected);
+  gpu.destroy();
+}
+
+test('in Kernel instance settings auto', () => {
+  inKernelInstanceSettings(null);
+});
+
+test('in Kernel instance settings gpu', () => {
+  inKernelInstanceSettings('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('in Kernel instance settings webgl', () => {
+  inKernelInstanceSettings('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('in Kernel instance settings webgl2', () => {
+  inKernelInstanceSettings('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('in Kernel instance settings headlessgl', () => {
+  inKernelInstanceSettings('headlessgl');
+});
+
+test('in Kernel instance settings cpu', () => {
+  inKernelInstanceSettings('cpu');
+});
+
+function withKernelAddFunctionMethod(mode) {
+  function customAdder(a, b) {
+    return a + b;
+  }
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function (a, b) {
+    return customAdder(a[this.thread.x], b[this.thread.x]);
+  }, {
+    output: [6]
+  })
+    .addFunction(customAdder);
+
+  const a = [1, 2, 3, 5, 6, 7];
+  const b = [4, 5, 6, 1, 2, 3];
+
+  const result = kernel(a, b);
+
+  const expected = [5, 7, 9, 6, 8, 10];
+
+  assert.deepEqual(Array.from(result), expected);
+  gpu.destroy();
+}
+
+test('with Kernel addFunction method auto', () => {
+  withKernelAddFunctionMethod(null);
+});
+
+test('with Kernel addFunction method gpu', () => {
+  withKernelAddFunctionMethod('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('with Kernel addFunction method webgl', () => {
+  withKernelAddFunctionMethod('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('with Kernel addFunction method webgl2', () => {
+  withKernelAddFunctionMethod('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('with Kernel addFunction method headlessgl', () => {
+  withKernelAddFunctionMethod('headlessgl');
+});
+
+test('with Kernel addFunction method cpu', () => {
+  withKernelAddFunctionMethod('cpu');
+});
 
 describe('features: add custom function with `this.constants.width` in loop');
+
 function sumAB(mode) {
   const gpu = new GPU({mode});
 
@@ -160,4 +304,164 @@ test('sumABThisOutputX gpu', () => {
 
 test('sumABThisOutputX cpu', () => {
   sumABThisOutputX('cpu');
+});
+
+
+describe('features: add custom private');
+function addCustomPrivate(mode) {
+  const gpu = new GPU({ mode });
+
+  const kernel = gpu.createKernel(function(a, b) {
+    function customAdder(a, b) {
+      let sum = 0;
+      for (let i = 0; i < this.output.x; i++) {
+        sum += a[this.thread.x] + b[this.thread.x];
+      }
+      return sum;
+    }
+    return customAdder(a, b);
+  }, {
+    output : [6],
+  });
+
+  assert.ok(kernel !== null, 'function generated test');
+
+  const a = [1, 2, 3, 5, 6, 7];
+  const b = [1, 1, 1, 1, 1, 1];
+
+  const result = kernel(a,b);
+  const expected = [12, 18, 24, 36, 42, 48];
+
+  assert.deepEqual(Array.from(result), expected);
+  gpu.destroy();
+}
+
+test('auto', () => {
+  addCustomPrivate(null);
+});
+
+test('gpu', () => {
+  addCustomPrivate('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('webgl', () => {
+  addCustomPrivate('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
+  addCustomPrivate('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
+  addCustomPrivate('headlessgl');
+});
+
+test('cpu', () => {
+  addCustomPrivate('cpu');
+});
+
+describe('features: setFunctions from array on kernel');
+
+function testSetFunctionsFromArrayOnKernel(mode) {
+  const gpu = new GPU({ mode });
+  function custom() {
+    return 1;
+  }
+  const kernel = gpu.createKernel(function() {
+    return custom();
+  }, { output: [1] });
+  kernel.setFunctions([custom]);
+  assert.equal(kernel()[0], 1);
+  gpu.destroy();
+}
+
+test('auto', () => {
+  testSetFunctionsFromArrayOnKernel();
+});
+
+test('gpu', () => {
+  testSetFunctionsFromArrayOnKernel('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('webgl', () => {
+  testSetFunctionsFromArrayOnKernel('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
+  testSetFunctionsFromArrayOnKernel('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
+  testSetFunctionsFromArrayOnKernel('headlessgl');
+});
+
+test('cpu', () => {
+  testSetFunctionsFromArrayOnKernel('cpu');
+});
+
+describe('features: setFunctions from array on kernel');
+
+function testSetFunctionsFromArrayOnGPU(nativeFunction, mode) {
+  const gpu = new GPU({ mode });
+  assert.equal(gpu.setNativeFunctions([nativeFunction]), gpu);
+  const kernel = gpu.createKernel(function() {
+    return custom();
+  }, { output: [1] });
+  assert.equal(kernel()[0], 1);
+  gpu.destroy();
+}
+
+test('auto', () => {
+  testSetFunctionsFromArrayOnGPU({
+    name: 'custom',
+    source: `float custom() {
+      return 1.0;
+    }`,
+  });
+});
+
+test('gpu', () => {
+  testSetFunctionsFromArrayOnGPU({
+    name: 'custom',
+    source: `float custom() {
+      return 1.0;
+    }`,
+  }, 'gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('webgl', () => {
+  testSetFunctionsFromArrayOnGPU({
+    name: 'custom',
+    source: `float custom() {
+      return 1.0;
+    }`,
+  }, 'webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
+  testSetFunctionsFromArrayOnGPU({
+    name: 'custom',
+    source: `float custom() {
+      return 1.0;
+    }`,
+  }, 'webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
+  testSetFunctionsFromArrayOnGPU({
+    name: 'custom',
+    source: `float custom() {
+      return 1.0;
+    }`,
+  }, 'headlessgl');
+});
+
+test('cpu', () => {
+  testSetFunctionsFromArrayOnGPU({
+    name: 'custom',
+    source: `function custom() {
+      return 1.0;
+    }`,
+    returnType: 'Number'
+  }, 'cpu');
 });

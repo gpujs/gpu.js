@@ -135,7 +135,9 @@ class GPU {
     if (settings.nativeFunctions) {
       for (const p in settings.nativeFunctions) {
         if (!settings.nativeFunctions.hasOwnProperty(p)) continue;
-        this.addNativeFunction(p, settings.nativeFunctions[p]);
+        const s = settings.nativeFunctions[p];
+        const { name, source } = s;
+        this.addNativeFunction(name, source, s);
       }
     }
   }
@@ -485,6 +487,16 @@ class GPU {
     };
   }
 
+  setFunctions(functions) {
+    this.functions = functions;
+    return this;
+  }
+
+  setNativeFunctions(nativeFunctions) {
+    this.nativeFunctions = nativeFunctions;
+    return this;
+  }
+
   /**
    * @desc Adds additional functions, that the kernel may call.
    * @param {Function|String} source - Javascript function to convert
@@ -492,7 +504,7 @@ class GPU {
    * @returns {GPU} returns itself
    */
   addFunction(source, settings) {
-    this.functions.push(utils.functionToIFunction(source, settings));
+    this.functions.push({ source, settings });
     return this;
   }
 
@@ -507,16 +519,7 @@ class GPU {
     if (this.kernels.length > 0) {
       throw new Error('Cannot call "addNativeFunction" after "createKernels" has been called.');
     }
-    settings = settings || {};
-    const { argumentTypes, argumentNames } = this.Kernel.nativeFunctionArguments(source) || {};
-    this.nativeFunctions.push({
-      name,
-      source,
-      settings,
-      argumentTypes,
-      argumentNames,
-      returnType: settings.returnType || this.Kernel.nativeFunctionReturnType(source),
-    });
+    this.nativeFunctions.push(Object.assign({ name, source }, settings));
     return this;
   }
 

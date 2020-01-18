@@ -11,8 +11,10 @@ export class GPU {
   constructor(settings?: IGPUSettings);
   functions: IGPUFunction[];
   nativeFunctions: IGPUNativeFunction[];
+  setFunctions(flag: IFunction[]|KernelFunction[]): this;
+  setNativeFunctions(flag: IGPUNativeFunction[]): this;
   addFunction(kernel: KernelFunction, settings?: IGPUFunctionSettings): this;
-  addNativeFunction(name: string, source: string): this;
+  addNativeFunction(name: string, source: string, settings?: IGPUFunctionSettings): this;
   combineKernels(...kernels: KernelFunction[]): IKernelRunShortcut;
   combineKernels<KF extends KernelFunction>(...kernels: KF[]):
     ((...args: Parameters<KF>) => 
@@ -79,7 +81,6 @@ export interface IGPUFunction extends IFunctionSettings {
 export interface IGPUNativeFunction extends IGPUFunctionSettings {
   name: string;
   source: string;
-  settings: object;
 }
 
 export interface IMappedKernelResult {
@@ -87,8 +88,18 @@ export interface IMappedKernelResult {
   [targetLocation: string]: KernelVariable
 }
 
+export interface INativeFunction extends IGPUFunctionSettings {
+  name: string;
+  source: string;
+}
+
+export interface IInternalNativeFunction extends IArgumentTypes {
+  name: string;
+  source: string;
+}
+
 export interface INativeFunctionList {
-  [functionName: string]: string
+  [name: string]: INativeFunction
 }
 
 export type GPUMode = 'gpu' | 'cpu' | 'dev';
@@ -99,7 +110,7 @@ export interface IGPUSettings {
   canvas?: object;
   context?: object;
   functions?: KernelFunction[];
-  nativeFunctions?: INativeFunctionList;
+  nativeFunctions?: IInternalNativeFunction[];
   onIstanbulCoverageVariable?: (value: string, kernel: Kernel) => void;
   removeIstanbulCoverage?: boolean;
   // format: 'Float32Array' | 'Float16Array' | 'Float' // WE WANT THIS!
@@ -120,6 +131,7 @@ export type GPUVariableType
   | 'Array2D(4)'
   | 'Array3D(4)'
   | 'Boolean'
+  | 'HTMLCanvas'
   | 'HTMLImage'
   | 'HTMLImageArray'
   | 'Number'
@@ -137,10 +149,10 @@ export interface IGPUArgumentTypes {
 
 export interface IGPUFunctionSettings {
   argumentTypes?: IGPUArgumentTypes | string[],
-  returnType: GPUVariableType;
+  returnType?: GPUVariableType;
 }
 
-export abstract class Kernel {
+export class Kernel {
   static isSupported: boolean;
   static isContextMatch(context: any): boolean;
   static disableValidation(): void;
@@ -161,7 +173,7 @@ export abstract class Kernel {
   canvas: any;
   context: WebGLRenderingContext | any;
   functions: IFunction[];
-  nativeFunctions: INativeFunctionList[];
+  nativeFunctions: IInternalNativeFunction[];
   subKernels: ISubKernel[];
   validate: boolean;
   immutable: boolean;
@@ -201,7 +213,9 @@ export abstract class Kernel {
   setImmutable(flag: boolean): this;
   setCanvas(flag: any): this;
   setContext(flag: any): this;
+  addFunction(flag: KernelFunction|string, settings?: IFunctionSettings): this;
   setFunctions(flag: IFunction[]|KernelFunction[]): this;
+  setNativeFunctions(flag: IGPUNativeFunction[]): this;
   setStrictIntegers(flag: boolean): this;
   setTactic(flag: Tactic): this;
   setUseLegacyEncoder(flag: boolean): this;
@@ -321,6 +335,8 @@ export interface IKernelSettings {
   dynamicArguments?: boolean;
   constantTypes?: ITypesList;
   useLegacyEncoder?: boolean;
+  nativeFunctions?: IGPUNativeFunction[],
+  strictIntegers?: boolean;
 }
 
 export interface IDirectKernelSettings extends IKernelSettings {

@@ -63,7 +63,9 @@ const utils = {
    * @returns {String} Function name string (if found)
    */
   getFunctionNameFromString(funcStr) {
-    return FUNCTION_NAME.exec(funcStr)[1].trim();
+    const result = FUNCTION_NAME.exec(funcStr);
+    if (!result || result.length === 0) return null;
+    return result[1].trim();
   },
 
   getFunctionBodyFromString(funcStr) {
@@ -375,34 +377,6 @@ const utils = {
     } else {
       console.warn(`You are using a deprecated ${ type } "${ oldName }". It has been removed. Fixing, but please upgrade as it will soon be removed.`);
     }
-  },
-  /**
-   *
-   * @param {String|Function} source
-   * @param {IFunctionSettings} [settings]
-   * @returns {IFunction}
-   */
-  functionToIFunction(source, settings) {
-    settings = settings || {};
-    if (typeof source !== 'string' && typeof source !== 'function') throw new Error('source not a string or function');
-    const sourceString = typeof source === 'string' ? source : source.toString();
-
-    let argumentTypes = [];
-
-    if (Array.isArray(settings.argumentTypes)) {
-      argumentTypes = settings.argumentTypes;
-    } else if (typeof settings.argumentTypes === 'object') {
-      argumentTypes = utils.getArgumentNamesFromString(sourceString)
-        .map(name => settings.argumentTypes[name]) || [];
-    } else {
-      argumentTypes = settings.argumentTypes || [];
-    }
-
-    return {
-      source: sourceString,
-      argumentTypes,
-      returnType: settings.returnType || null,
-    };
   },
   flipPixels: (pixels, width, height) => {
     // https://stackoverflow.com/a/41973289/1324039
@@ -1010,7 +984,7 @@ const utils = {
     } catch (e) {
       throw new Error('Unrecognized function type.  Please use `() => yourFunctionVariableHere` or function() { return yourFunctionVariableHere; }');
     }
-  }
+  },
 };
 
 const _systemEndianness = utils.getSystemEndianness();

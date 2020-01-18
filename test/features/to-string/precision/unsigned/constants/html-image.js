@@ -8,21 +8,26 @@ function testArgument(mode, done) {
   loadImages(['jellyfish-1.jpeg', 'jellyfish-2.jpeg'])
     .then(([image1, image2]) => {
       const gpu = new GPU({mode});
-      const originalKernel = gpu.createKernel(function (a) {
-        const pixel = a[0][0];
+      const originalKernel = gpu.createKernel(function () {
+        const pixel = this.constants.a[0][0];
         return pixel.b * 255;
       }, {
         output: [1],
         precision: 'unsigned',
-        argumentTypes: ['HTMLImage'],
+        constants: { a: image1 }
       });
       const canvas = originalKernel.canvas;
       const context = originalKernel.context;
-      assert.deepEqual(originalKernel(image1)[0], 253);
-      const kernelString = originalKernel.toString(image1);
-      const newKernel = new Function('return ' + kernelString)()({context, canvas});
-      assert.deepEqual(newKernel(image1)[0], 253);
-      assert.deepEqual(newKernel(image2)[0], 255);
+      assert.deepEqual(originalKernel()[0], 253);
+      const kernelString = originalKernel.toString();
+      const newKernel = new Function('return ' + kernelString)()({
+        context,
+        canvas,
+        constants: {
+          a: image2
+        }
+      });
+      assert.deepEqual(newKernel()[0], 255);
       gpu.destroy();
       done();
     });

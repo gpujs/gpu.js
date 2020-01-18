@@ -57,7 +57,19 @@ function check2DImage(result, expected, channel) {
   return true;
 }
 
+function greenCanvas(mode, width, height) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function() {
+    this.color(0, 1, 0, 1);
+  }, { output: [width, height], graphical: true });
+  kernel();
+  const canvas = kernel.canvas;
+  gpu.destroy();
+  return canvas;
+}
+
 const _exports = {
+  greenCanvas,
   imageToArray,
   loadImage,
   check2DImage,

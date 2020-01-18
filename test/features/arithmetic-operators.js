@@ -176,11 +176,16 @@ test('division cpu', () => {
 
 function modulus(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
+  const kernel1 = gpu.createKernel(function() {
     return 3 % 2;
   }, { output: [1] });
-  const result = kernel();
-  assert.equal(result[0], 3 % 2);
+  assert.equal(kernel1()[0], 3 % 2);
+
+  const kernel2 = gpu.createKernel(function() {
+    return -126 % 63.5;
+  }, { output: [1] });
+  assert.equal(kernel2()[0], -126 % 63.5);
+
   gpu.destroy();
 }
 
@@ -206,6 +211,19 @@ test('modulus auto', () => {
 
 test('modulus cpu', () => {
   modulus('cpu');
+});
+
+function modulusVariable(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function(v) {
+    return 91 % 7;
+  }, { output: [1] });
+  assert.equal(kernel(7)[0], 0);
+  gpu.destroy();
+}
+
+test('modulus variable auto', () => {
+  modulusVariable();
 });
 
 

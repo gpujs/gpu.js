@@ -128,6 +128,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       case 'Array(2)':
       case 'Array(3)':
       case 'Array(4)':
+      case 'HTMLCanvas':
       case 'HTMLImage':
       case 'HTMLVideo':
         context.insertVariable(`uploadValue_${kernelArgument.name}`, kernelArgument.uploadValue);
@@ -337,7 +338,7 @@ function findKernelValue(argument, kernelValues, values, context, uploadedValues
   ) {
     for (let i = 0; i < kernelValues.length; i++) {
       const kernelValue = kernelValues[i];
-      if (kernelValue.type !== 'HTMLImageArray') continue;
+      if (kernelValue.type !== 'HTMLImageArray' && kernelValue) continue;
       if (kernelValue.uploadValue !== argument) continue;
       // TODO: if we send two of the same image, the parser could get confused, and short circuit to the first, handle that here
       const variableIndex = values[i].indexOf(argument);
@@ -346,7 +347,6 @@ function findKernelValue(argument, kernelValues, values, context, uploadedValues
       context.insertVariable(variableName, argument);
       return variableName;
     }
-    return null;
   }
 
   for (let i = 0; i < kernelValues.length; i++) {

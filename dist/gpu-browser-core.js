@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.5.0
- * @date Mon Jan 13 2020 16:11:12 GMT-0500 (Eastern Standard Time)
+ * @version 2.6.0
+ * @date Sat Jan 18 2020 08:34:13 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -1396,7 +1396,7 @@ class CPUKernel extends Kernel {
   }
 
   static nativeFunctionReturnType() {
-    return null;
+    throw new Error(`Looking up native function return type not supported on ${this.name}`);
   }
 
   static combineKernels(combinedKernel) {
@@ -1594,6 +1594,7 @@ class CPUKernel extends Kernel {
     for (let p in this.constants) {
       const type = this.constantTypes[p];
       switch (type) {
+        case 'HTMLCanvas':
         case 'HTMLImage':
         case 'HTMLVideo':
           result.push(`    const constants_${p} = this._mediaTo2DArray(this.constants.${p});\n`);
@@ -1616,6 +1617,7 @@ class CPUKernel extends Kernel {
     for (let i = 0; i < this.argumentTypes.length; i++) {
       const variableName = `user_${this.argumentNames[i]}`;
       switch (this.argumentTypes[i]) {
+        case 'HTMLCanvas':
         case 'HTMLImage':
         case 'HTMLVideo':
           result.push(`    ${variableName} = this._mediaTo2DArray(${variableName});\n`);
@@ -2756,6 +2758,8 @@ class FunctionNode {
             return this.lookupReturnType(functionName, ast, this);
           }
           throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
+        case 'LogicalExpression':
+          return 'Boolean';
         case 'BinaryExpression':
           switch (ast.operator) {
             case '%':
@@ -3052,6 +3056,7 @@ class FunctionNode {
       case 'ReturnStatement':
         return this.getDependencies(ast.argument, dependencies);
       case 'BinaryExpression':
+      case 'LogicalExpression':
         isNotSafe = (ast.operator === '/' || ast.operator === '*');
         this.getDependencies(ast.left, dependencies, isNotSafe);
         this.getDependencies(ast.right, dependencies, isNotSafe);
@@ -3747,6 +3752,7 @@ const typeLookupMap = {
   'Array2D': 'Number',
   'Array3D': 'Number',
   'Input': 'Number',
+  'HTMLCanvas': 'Array(4)',
   'HTMLImage': 'Array(4)',
   'HTMLVideo': 'Array(4)',
   'HTMLImageArray': 'Array(4)',
@@ -4177,6 +4183,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       case 'Array(2)':
       case 'Array(3)':
       case 'Array(4)':
+      case 'HTMLCanvas':
       case 'HTMLImage':
       case 'HTMLVideo':
         context.insertVariable(`uploadValue_${kernelArgument.name}`, kernelArgument.uploadValue);
@@ -4377,7 +4384,7 @@ function findKernelValue(argument, kernelValues, values, context, uploadedValues
   ) {
     for (let i = 0; i < kernelValues.length; i++) {
       const kernelValue = kernelValues[i];
-      if (kernelValue.type !== 'HTMLImageArray') continue;
+      if (kernelValue.type !== 'HTMLImageArray' && kernelValue) continue;
       if (kernelValue.uploadValue !== argument) continue;
       const variableIndex = values[i].indexOf(argument);
       if (variableIndex === -1) continue;
@@ -4385,7 +4392,6 @@ function findKernelValue(argument, kernelValues, values, context, uploadedValues
       context.insertVariable(variableName, argument);
       return variableName;
     }
-    return null;
   }
 
   for (let i = 0; i < kernelValues.length; i++) {
@@ -6050,11 +6056,11 @@ class Kernel {
           }
           break;
         case 'functions':
-          if (typeof settings.functions[0] === 'function') {
-            this.functions = settings.functions.map(source => utils.functionToIFunction(source));
-            continue;
+          this.functions = [];
+          for (let i = 0; i < settings.functions.length; i++) {
+            this.addFunction(settings.functions[i]);
           }
-          break;
+          continue;
         case 'graphical':
           if (settings[p] && !settings.hasOwnProperty('precision')) {
             this.precision = 'unsigned';
@@ -6064,6 +6070,15 @@ class Kernel {
         case 'removeIstanbulCoverage':
           if (settings[p] !== null) {
             this[p] = settings[p];
+          }
+          continue;
+        case 'nativeFunctions':
+          if (!settings.nativeFunctions) continue;
+          this.nativeFunctions = [];
+          for (let i = 0; i < settings.nativeFunctions.length; i++) {
+            const s = settings.nativeFunctions[i];
+            const { name, source } = s;
+            this.addNativeFunction(name, source, s);
           }
           continue;
       }
@@ -6092,6 +6107,32 @@ class Kernel {
 
   initPlugins(settings) {
     throw new Error(`"initPlugins" not defined on ${ this.constructor.name }`);
+  }
+
+  addFunction(source, settings = {}) {
+    if ('settings' in source && 'source' in source) {
+      this.functions.push(this.functionToIGPUFunction(source.source, source.settings));
+    } else if (typeof source === 'string' || typeof source === 'function') {
+      this.functions.push(this.functionToIGPUFunction(source, settings));
+    } else {
+      throw new Error(`function not properly defined`);
+    }
+    return this;
+  }
+
+  addNativeFunction(name, source, settings = {}) {
+    const { argumentTypes, argumentNames } = settings.argumentTypes ?
+      splitArgumentTypes(settings.argumentTypes) :
+      this.constructor.nativeFunctionArguments(source) || {};
+    this.nativeFunctions.push({
+      name,
+      source,
+      settings,
+      argumentTypes,
+      argumentNames,
+      returnType: settings.returnType || this.constructor.nativeFunctionReturnType(source)
+    });
+    return this;
   }
 
   setupArguments(args) {
@@ -6210,16 +6251,18 @@ class Kernel {
   }
 
   setFunctions(functions) {
-    if (typeof functions[0] === 'function') {
-      this.functions = functions.map(source => utils.functionToIFunction(source));
-    } else {
-      this.functions = functions;
+    for (let i = 0; i < functions.length; i++) {
+      this.addFunction(functions[i]);
     }
     return this;
   }
 
   setNativeFunctions(nativeFunctions) {
-    this.nativeFunctions = nativeFunctions;
+    for (let i = 0; i < nativeFunctions.length; i++) {
+      const settings = nativeFunctions[i];
+      const { name, source } = settings;
+      this.addNativeFunction(name, source, settings);
+    }
     return this;
   }
 
@@ -6439,6 +6482,38 @@ class Kernel {
     throw new Error(`"getSignature" not implemented on ${ this.name }`);
     return argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '';
   }
+
+  functionToIGPUFunction(source, settings = {}) {
+    if (typeof source !== 'string' && typeof source !== 'function') throw new Error('source not a string or function');
+    const sourceString = typeof source === 'string' ? source : source.toString();
+    let argumentTypes = [];
+
+    if (Array.isArray(settings.argumentTypes)) {
+      argumentTypes = settings.argumentTypes;
+    } else if (typeof settings.argumentTypes === 'object') {
+      argumentTypes = utils.getArgumentNamesFromString(sourceString)
+        .map(name => settings.argumentTypes[name]) || [];
+    } else {
+      argumentTypes = settings.argumentTypes || [];
+    }
+
+    return {
+      name: utils.getFunctionNameFromString(sourceString) || null,
+      source: sourceString,
+      argumentTypes,
+      returnType: settings.returnType || null,
+    };
+  }
+}
+
+function splitArgumentTypes(argumentTypesObject) {
+  const argumentNames = Object.keys(argumentTypesObject);
+  const argumentTypes = [];
+  for (let i = 0; i < argumentNames.length; i++) {
+    const argumentName = argumentNames[i];
+    argumentTypes.push(argumentTypesObject[argumentName]);
+  }
+  return { argumentTypes, argumentNames };
 }
 
 module.exports = {
@@ -6836,6 +6911,20 @@ void color(float r, float g, float b) {
 
 void color(sampler2D image) {
   actualColor = texture2D(image, vTexCoord);
+}
+
+float modulo(float num1, float num2) {
+  if (num2 == 0.0) {
+    return 0.0;
+  }
+  bool isPositive = num1 >= 0.0;
+  num1 = abs(num1);
+  num2 = abs(num2);
+  for (int i = 0; i < LOOP_MAX; i++) {
+    if (num1 < num2) break;
+    num1 = num1 - num2;
+  }
+  return isPositive ? num1 : -num1;
 }
 
 __INJECTED_NATIVE__;
@@ -7247,7 +7336,7 @@ class WebGLFunctionNode extends FunctionNode {
       return bitwiseResult;
     }
     const upconvertableOperators = {
-      '%': 'mod',
+      '%': 'modulo',
       '**': 'pow',
     };
     const foundOperator = upconvertableOperators[ast.operator];
@@ -7951,6 +8040,7 @@ class WebGLFunctionNode extends FunctionNode {
         retArr.push(')');
         break;
       case 'ArrayTexture(4)':
+      case 'HTMLCanvas':
       case 'HTMLImage':
       case 'HTMLVideo':
         retArr.push(`getVec4FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
@@ -8082,6 +8172,9 @@ class WebGLFunctionNode extends FunctionNode {
           targetType = argumentType;
         }
         switch (argumentType) {
+          case 'Boolean':
+            this.astGeneric(argument, retArr);
+            continue;
           case 'Number':
           case 'Float':
             if (targetType === 'Integer') {
@@ -8134,6 +8227,7 @@ class WebGLFunctionNode extends FunctionNode {
               continue;
             }
             break;
+          case 'HTMLCanvas':
           case 'HTMLImage':
           case 'HTMLImageArray':
           case 'HTMLVideo':
@@ -8231,6 +8325,7 @@ const typeMap = {
   'ArrayTexture(3)': 'sampler2D',
   'ArrayTexture(4)': 'sampler2D',
   'HTMLVideo': 'sampler2D',
+  'HTMLCanvas': 'sampler2D',
   'HTMLImage': 'sampler2D',
   'HTMLImageArray': 'sampler2DArray',
 };
@@ -8311,6 +8406,7 @@ const kernelValueMaps = {
       'ArrayTexture(3)': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(4)': WebGLKernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
+      'HTMLCanvas': WebGLKernelValueDynamicHTMLImage,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
@@ -8339,6 +8435,7 @@ const kernelValueMaps = {
       'ArrayTexture(3)': WebGLKernelValueNumberTexture,
       'ArrayTexture(4)': WebGLKernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGLKernelValueMemoryOptimizedNumberTexture,
+      'HTMLCanvas': WebGLKernelValueHTMLImage,
       'HTMLImage': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueHTMLVideo,
@@ -8369,6 +8466,7 @@ const kernelValueMaps = {
       'ArrayTexture(3)': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(4)': WebGLKernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
+      'HTMLCanvas': WebGLKernelValueDynamicHTMLImage,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
@@ -8397,6 +8495,7 @@ const kernelValueMaps = {
       'ArrayTexture(3)': WebGLKernelValueNumberTexture,
       'ArrayTexture(4)': WebGLKernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGLKernelValueMemoryOptimizedNumberTexture,
+      'HTMLCanvas': WebGLKernelValueHTMLImage,
       'HTMLImage': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueHTMLVideo,
@@ -11315,6 +11414,20 @@ void color(float r, float g, float b) {
   color(r,g,b,1.0);
 }
 
+float modulo(float num1, float num2) {
+  if (num2 == 0.0) {
+    return 0.0;
+  }
+  bool isPositive = num1 >= 0.0;
+  num1 = abs(num1);
+  num2 = abs(num2);
+  for (int i = 0; i < LOOP_MAX; i++) {
+    if (num1 < num2) break;
+    num1 = num1 - num2;
+  }
+  return isPositive ? num1 : -num1;
+}
+
 __INJECTED_NATIVE__;
 __MAIN_CONSTANTS__;
 __MAIN_ARGUMENTS__;
@@ -11433,6 +11546,7 @@ const kernelValueMaps = {
       'ArrayTexture(3)': WebGL2KernelValueDynamicNumberTexture,
       'ArrayTexture(4)': WebGL2KernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
+      'HTMLCanvas': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
@@ -11461,6 +11575,7 @@ const kernelValueMaps = {
       'ArrayTexture(3)': WebGL2KernelValueNumberTexture,
       'ArrayTexture(4)': WebGL2KernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
+      'HTMLCanvas': WebGL2KernelValueHTMLImage,
       'HTMLImage': WebGL2KernelValueHTMLImage,
       'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
@@ -11491,6 +11606,7 @@ const kernelValueMaps = {
       'ArrayTexture(3)': WebGL2KernelValueDynamicNumberTexture,
       'ArrayTexture(4)': WebGL2KernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
+      'HTMLCanvas': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
@@ -11519,6 +11635,7 @@ const kernelValueMaps = {
       'ArrayTexture(3)': WebGL2KernelValueNumberTexture,
       'ArrayTexture(4)': WebGL2KernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueMemoryOptimizedNumberTexture,
+      'HTMLCanvas': WebGL2KernelValueHTMLImage,
       'HTMLImage': WebGL2KernelValueHTMLImage,
       'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
@@ -12868,7 +12985,9 @@ class GPU {
     if (settings.nativeFunctions) {
       for (const p in settings.nativeFunctions) {
         if (!settings.nativeFunctions.hasOwnProperty(p)) continue;
-        this.addNativeFunction(p, settings.nativeFunctions[p]);
+        const s = settings.nativeFunctions[p];
+        const { name, source } = s;
+        this.addNativeFunction(name, source, s);
       }
     }
   }
@@ -13143,8 +13262,18 @@ class GPU {
     };
   }
 
+  setFunctions(functions) {
+    this.functions = functions;
+    return this;
+  }
+
+  setNativeFunctions(nativeFunctions) {
+    this.nativeFunctions = nativeFunctions;
+    return this;
+  }
+
   addFunction(source, settings) {
-    this.functions.push(utils.functionToIFunction(source, settings));
+    this.functions.push({ source, settings });
     return this;
   }
 
@@ -13152,16 +13281,7 @@ class GPU {
     if (this.kernels.length > 0) {
       throw new Error('Cannot call "addNativeFunction" after "createKernels" has been called.');
     }
-    settings = settings || {};
-    const { argumentTypes, argumentNames } = this.Kernel.nativeFunctionArguments(source) || {};
-    this.nativeFunctions.push({
-      name,
-      source,
-      settings,
-      argumentTypes,
-      argumentNames,
-      returnType: settings.returnType || this.Kernel.nativeFunctionReturnType(source),
-    });
+    this.nativeFunctions.push(Object.assign({ name, source }, settings));
     return this;
   }
 
@@ -13554,7 +13674,9 @@ const utils = {
   },
 
   getFunctionNameFromString(funcStr) {
-    return FUNCTION_NAME.exec(funcStr)[1].trim();
+    const result = FUNCTION_NAME.exec(funcStr);
+    if (!result || result.length === 0) return null;
+    return result[1].trim();
   },
 
   getFunctionBodyFromString(funcStr) {
@@ -13613,6 +13735,8 @@ const utils = {
     }
     switch (value.nodeName) {
       case 'IMG':
+        return 'HTMLImage';
+      case 'CANVAS':
         return 'HTMLImage';
       case 'VIDEO':
         return 'HTMLVideo';
@@ -13785,28 +13909,6 @@ const utils = {
     } else {
       console.warn(`You are using a deprecated ${ type } "${ oldName }". It has been removed. Fixing, but please upgrade as it will soon be removed.`);
     }
-  },
-  functionToIFunction(source, settings) {
-    settings = settings || {};
-    if (typeof source !== 'string' && typeof source !== 'function') throw new Error('source not a string or function');
-    const sourceString = typeof source === 'string' ? source : source.toString();
-
-    let argumentTypes = [];
-
-    if (Array.isArray(settings.argumentTypes)) {
-      argumentTypes = settings.argumentTypes;
-    } else if (typeof settings.argumentTypes === 'object') {
-      argumentTypes = utils.getArgumentNamesFromString(sourceString)
-        .map(name => settings.argumentTypes[name]) || [];
-    } else {
-      argumentTypes = settings.argumentTypes || [];
-    }
-
-    return {
-      source: sourceString,
-      argumentTypes,
-      returnType: settings.returnType || null,
-    };
   },
   flipPixels: (pixels, width, height) => {
     const halfHeight = height / 2 | 0; 
@@ -14387,7 +14489,7 @@ const utils = {
     } catch (e) {
       throw new Error('Unrecognized function type.  Please use `() => yourFunctionVariableHere` or function() { return yourFunctionVariableHere; }');
     }
-  }
+  },
 };
 
 const _systemEndianness = utils.getSystemEndianness();

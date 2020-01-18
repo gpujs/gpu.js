@@ -241,11 +241,11 @@ class Kernel {
           }
           break;
         case 'functions':
-          if (typeof settings.functions[0] === 'function') {
-            this.functions = settings.functions.map(source => utils.functionToIFunction(source));
-            continue;
+          this.functions = [];
+          for (let i = 0; i < settings.functions.length; i++) {
+            this.addFunction(settings.functions[i]);
           }
-          break;
+          continue;
         case 'graphical':
           if (settings[p] && !settings.hasOwnProperty('precision')) {
             this.precision = 'unsigned';
@@ -255,6 +255,15 @@ class Kernel {
         case 'removeIstanbulCoverage':
           if (settings[p] !== null) {
             this[p] = settings[p];
+          }
+          continue;
+        case 'nativeFunctions':
+          if (!settings.nativeFunctions) continue;
+          this.nativeFunctions = [];
+          for (let i = 0; i < settings.nativeFunctions.length; i++) {
+            const s = settings.nativeFunctions[i];
+            const { name, source } = s;
+            this.addNativeFunction(name, source, s);
           }
           continue;
       }
@@ -307,6 +316,44 @@ class Kernel {
    */
   initPlugins(settings) {
     throw new Error(`"initPlugins" not defined on ${ this.constructor.name }`);
+  }
+
+  /**
+   *
+   * @param {KernelFunction|string} source
+   * @param {IFunctionSettings} [settings]
+   * @return {Kernel}
+   */
+  addFunction(source, settings = {}) {
+    if ('settings' in source && 'source' in source) {
+      this.functions.push(this.functionToIGPUFunction(source.source, source.settings));
+    } else if (typeof source === 'string' || typeof source === 'function') {
+      this.functions.push(this.functionToIGPUFunction(source, settings));
+    } else {
+      throw new Error(`function not properly defined`);
+    }
+    return this;
+  }
+
+  /**
+   *
+   * @param {string} name
+   * @param {string} source
+   * @param {IGPUFunctionSettings} [settings]
+   */
+  addNativeFunction(name, source, settings = {}) {
+    const { argumentTypes, argumentNames } = settings.argumentTypes ?
+      splitArgumentTypes(settings.argumentTypes) :
+      this.constructor.nativeFunctionArguments(source) || {};
+    this.nativeFunctions.push({
+      name,
+      source,
+      settings,
+      argumentTypes,
+      argumentNames,
+      returnType: settings.returnType || this.constructor.nativeFunctionReturnType(source)
+    });
+    return this;
   }
 
   /**
@@ -385,7 +432,7 @@ class Kernel {
   /**
    *
    * @param flag
-   * @return {Kernel}
+   * @return {this}
    */
   setOptimizeFloatMemory(flag) {
     this.optimizeFloatMemory = flag;
@@ -416,7 +463,7 @@ class Kernel {
   /**
    * @desc Set output dimensions of the kernel function
    * @param {Array|Object} output - The output array to set the kernel output size to
-   * @return {Kernel}
+   * @return {this}
    */
   setOutput(output) {
     this.output = this.toKernelOutput(output);
@@ -426,7 +473,7 @@ class Kernel {
   /**
    * @desc Toggle debug mode
    * @param {Boolean} flag - true to enable debug
-   * @return {Kernel}
+   * @return {this}
    */
   setDebug(flag) {
     this.debug = flag;
@@ -436,7 +483,7 @@ class Kernel {
   /**
    * @desc Toggle graphical output mode
    * @param {Boolean} flag - true to enable graphical output
-   * @return {Kernel}
+   * @return {this}
    */
   setGraphical(flag) {
     this.graphical = flag;
@@ -447,7 +494,7 @@ class Kernel {
   /**
    * @desc Set the maximum number of loop iterations
    * @param {number} max - iterations count
-   * @return {Kernel}
+   * @return {this}
    */
   setLoopMaxIterations(max) {
     this.loopMaxIterations = max;
@@ -456,7 +503,7 @@ class Kernel {
 
   /**
    * @desc Set Constants
-   * @return {Kernel}
+   * @return {this}
    */
   setConstants(constants) {
     this.constants = constants;
@@ -466,7 +513,7 @@ class Kernel {
   /**
    *
    * @param {IKernelValueTypes} constantTypes
-   * @return {Kernel}
+   * @return {this}
    */
   setConstantTypes(constantTypes) {
     this.constantTypes = constantTypes;
@@ -476,31 +523,33 @@ class Kernel {
   /**
    *
    * @param {IFunction[]|KernelFunction[]} functions
-   * @return {Kernel}
+   * @return {this}
    */
   setFunctions(functions) {
-    if (typeof functions[0] === 'function') {
-      this.functions = functions.map(source => utils.functionToIFunction(source));
-    } else {
-      this.functions = functions;
+    for (let i = 0; i < functions.length; i++) {
+      this.addFunction(functions[i]);
     }
     return this;
   }
 
   /**
    *
-   * @param {IGPUNativeFunction} nativeFunctions
-   * @return {Kernel}
+   * @param {IGPUNativeFunction[]} nativeFunctions
+   * @return {this}
    */
   setNativeFunctions(nativeFunctions) {
-    this.nativeFunctions = nativeFunctions;
+    for (let i = 0; i < nativeFunctions.length; i++) {
+      const settings = nativeFunctions[i];
+      const { name, source } = settings;
+      this.addNativeFunction(name, source, settings);
+    }
     return this;
   }
 
   /**
    *
    * @param {String} injectedNative
-   * @return {Kernel}
+   * @return {this}
    */
   setInjectedNative(injectedNative) {
     this.injectedNative = injectedNative;
@@ -510,7 +559,7 @@ class Kernel {
   /**
    * Set writing to texture on/off
    * @param flag
-   * @return {Kernel}
+   * @return {this}
    */
   setPipeline(flag) {
     this.pipeline = flag;
@@ -520,7 +569,7 @@ class Kernel {
   /**
    * Set precision to 'unsigned' or 'single'
    * @param {String} flag 'unsigned' or 'single'
-   * @return {Kernel}
+   * @return {this}
    */
   setPrecision(flag) {
     this.precision = flag;
@@ -529,7 +578,7 @@ class Kernel {
 
   /**
    * @param flag
-   * @return {Kernel}
+   * @return {this}
    * @deprecated
    */
   setOutputToTexture(flag) {
@@ -541,7 +590,7 @@ class Kernel {
   /**
    * Set to immutable
    * @param flag
-   * @return {Kernel}
+   * @return {this}
    */
   setImmutable(flag) {
     utils.warnDeprecated('method', 'setImmutable');
@@ -551,6 +600,7 @@ class Kernel {
   /**
    * @desc Bind the canvas to kernel
    * @param {Object} canvas
+   * @return {this}
    */
   setCanvas(canvas) {
     this.canvas = canvas;
@@ -559,7 +609,7 @@ class Kernel {
 
   /**
    * @param {Boolean} flag
-   * @return {Kernel}
+   * @return {this}
    */
   setStrictIntegers(flag) {
     this.strictIntegers = flag;
@@ -569,7 +619,7 @@ class Kernel {
   /**
    *
    * @param flag
-   * @return {Kernel}
+   * @return {this}
    */
   setDynamicOutput(flag) {
     this.dynamicOutput = flag;
@@ -579,7 +629,7 @@ class Kernel {
   /**
    * @deprecated
    * @param flag
-   * @return {Kernel}
+   * @return {this}
    */
   setHardcodeConstants(flag) {
     utils.warnDeprecated('method', 'setHardcodeConstants');
@@ -591,7 +641,7 @@ class Kernel {
   /**
    *
    * @param flag
-   * @return {Kernel}
+   * @return {this}
    */
   setDynamicArguments(flag) {
     this.dynamicArguments = flag;
@@ -600,7 +650,7 @@ class Kernel {
 
   /**
    * @param {Boolean} flag
-   * @return {Kernel}
+   * @return {this}
    */
   setUseLegacyEncoder(flag) {
     this.useLegacyEncoder = flag;
@@ -610,7 +660,7 @@ class Kernel {
   /**
    *
    * @param {Boolean} flag
-   * @return {Kernel}
+   * @return {this}
    */
   setWarnVarUsage(flag) {
     utils.warnDeprecated('method', 'setWarnVarUsage');
@@ -647,7 +697,7 @@ class Kernel {
   /**
    *
    * @param {IKernelValueTypes|GPUVariableType[]} argumentTypes
-   * @return {Kernel}
+   * @return {this}
    */
   setArgumentTypes(argumentTypes) {
     if (Array.isArray(argumentTypes)) {
@@ -667,7 +717,7 @@ class Kernel {
   /**
    *
    * @param {Tactic} tactic
-   * @return {Kernel}
+   * @return {this}
    */
   setTactic(tactic) {
     this.tactic = tactic;
@@ -842,6 +892,44 @@ class Kernel {
     throw new Error(`"getSignature" not implemented on ${ this.name }`);
     return argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '';
   }
+
+  /**
+   *
+   * @param {String|Function} source
+   * @param {IFunctionSettings} [settings]
+   * @returns {IGPUFunction}
+   */
+  functionToIGPUFunction(source, settings = {}) {
+    if (typeof source !== 'string' && typeof source !== 'function') throw new Error('source not a string or function');
+    const sourceString = typeof source === 'string' ? source : source.toString();
+    let argumentTypes = [];
+
+    if (Array.isArray(settings.argumentTypes)) {
+      argumentTypes = settings.argumentTypes;
+    } else if (typeof settings.argumentTypes === 'object') {
+      argumentTypes = utils.getArgumentNamesFromString(sourceString)
+        .map(name => settings.argumentTypes[name]) || [];
+    } else {
+      argumentTypes = settings.argumentTypes || [];
+    }
+
+    return {
+      name: utils.getFunctionNameFromString(sourceString) || null,
+      source: sourceString,
+      argumentTypes,
+      returnType: settings.returnType || null,
+    };
+  }
+}
+
+function splitArgumentTypes(argumentTypesObject) {
+  const argumentNames = Object.keys(argumentTypesObject);
+  const argumentTypes = [];
+  for (let i = 0; i < argumentNames.length; i++) {
+    const argumentName = argumentNames[i];
+    argumentTypes.push(argumentTypesObject[argumentName]);
+  }
+  return { argumentTypes, argumentNames };
 }
 
 module.exports = {

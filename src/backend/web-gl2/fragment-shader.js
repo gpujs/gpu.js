@@ -380,6 +380,20 @@ void color(float r, float g, float b) {
   color(r,g,b,1.0);
 }
 
+float modulo(float num1, float num2) {
+  if (num2 == 0.0) {
+    return 0.0;
+  }
+  bool isPositive = num1 >= 0.0;
+  num1 = abs(num1);
+  num2 = abs(num2);
+  for (int i = 0; i < LOOP_MAX; i++) {
+    if (num1 < num2) break;
+    num1 = num1 - num2;
+  }
+  return isPositive ? num1 : -num1;
+}
+
 __INJECTED_NATIVE__;
 __MAIN_CONSTANTS__;
 __MAIN_ARGUMENTS__;
