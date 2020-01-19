@@ -401,9 +401,11 @@ test('cpu', () => {
 
 describe('features: setFunctions from array on kernel');
 
-function testSetFunctionsFromArrayOnGPU(nativeFunction, mode) {
+function testSetFunctionsFromArrayOnGPU(mode) {
   const gpu = new GPU({ mode });
-  assert.equal(gpu.setNativeFunctions([nativeFunction]), gpu);
+  assert.equal(gpu.setFunctions([function custom() {
+    return 1;
+  }]), gpu);
   const kernel = gpu.createKernel(function() {
     return custom();
   }, { output: [1] });
@@ -412,56 +414,69 @@ function testSetFunctionsFromArrayOnGPU(nativeFunction, mode) {
 }
 
 test('auto', () => {
-  testSetFunctionsFromArrayOnGPU({
-    name: 'custom',
-    source: `float custom() {
-      return 1.0;
-    }`,
-  });
+  testSetFunctionsFromArrayOnGPU();
 });
 
 test('gpu', () => {
-  testSetFunctionsFromArrayOnGPU({
-    name: 'custom',
-    source: `float custom() {
-      return 1.0;
-    }`,
-  }, 'gpu');
+  testSetFunctionsFromArrayOnGPU('gpu');
 });
 
 (GPU.isWebGLSupported ? test : skip)('webgl', () => {
-  testSetFunctionsFromArrayOnGPU({
-    name: 'custom',
-    source: `float custom() {
-      return 1.0;
-    }`,
-  }, 'webgl');
+  testSetFunctionsFromArrayOnGPU('webgl');
 });
 
 (GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
-  testSetFunctionsFromArrayOnGPU({
-    name: 'custom',
-    source: `float custom() {
-      return 1.0;
-    }`,
-  }, 'webgl2');
+  testSetFunctionsFromArrayOnGPU('webgl2');
 });
 
 (GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
-  testSetFunctionsFromArrayOnGPU({
-    name: 'custom',
-    source: `float custom() {
-      return 1.0;
-    }`,
-  }, 'headlessgl');
+  testSetFunctionsFromArrayOnGPU('headlessgl');
 });
 
 test('cpu', () => {
-  testSetFunctionsFromArrayOnGPU({
-    name: 'custom',
-    source: `function custom() {
-      return 1.0;
+  testSetFunctionsFromArrayOnGPU('cpu');
+});
+
+describe('features: setFunctions from array on kernel');
+
+function testAddIGPUFunction(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function(value) {
+    return custom(value);
+  })
+    .setOutput([1])
+    .addFunction({
+      name: 'custom',
+      argumentTypes: { value: 'Number' },
+      source: `function custom(value) {
+      return value + 1.0;
     }`,
-    returnType: 'Number'
-  }, 'cpu');
+      returnType: 'Number',
+    });
+  assert.equal(kernel(1)[0], 2);
+  gpu.destroy();
+}
+
+test('auto', () => {
+  testAddIGPUFunction();
+});
+
+test('gpu', () => {
+  testAddIGPUFunction('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('webgl', () => {
+  testAddIGPUFunction('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
+  testAddIGPUFunction('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
+  testAddIGPUFunction('headlessgl');
+});
+
+test('cpu', () => {
+  testAddIGPUFunction('cpu');
 });

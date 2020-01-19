@@ -320,12 +320,14 @@ class Kernel {
 
   /**
    *
-   * @param {KernelFunction|string} source
+   * @param {KernelFunction|string|IGPUFunction} source
    * @param {IFunctionSettings} [settings]
    * @return {Kernel}
    */
   addFunction(source, settings = {}) {
-    if ('settings' in source && 'source' in source) {
+    if (source.name && source.source && source.argumentTypes && 'returnType' in source) {
+      this.functions.push(source);
+    } else if ('settings' in source && 'source' in source) {
       this.functions.push(this.functionToIGPUFunction(source.source, source.settings));
     } else if (typeof source === 'string' || typeof source === 'function') {
       this.functions.push(this.functionToIGPUFunction(source, settings));

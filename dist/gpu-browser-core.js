@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.6.0
- * @date Sat Jan 18 2020 08:34:13 GMT-0500 (Eastern Standard Time)
+ * @version 2.6.2
+ * @date Sun Jan 19 2020 07:44:58 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -6110,7 +6110,9 @@ class Kernel {
   }
 
   addFunction(source, settings = {}) {
-    if ('settings' in source && 'source' in source) {
+    if (source.name && source.source && source.argumentTypes && 'returnType' in source) {
+      this.functions.push(source);
+    } else if ('settings' in source && 'source' in source) {
       this.functions.push(this.functionToIGPUFunction(source.source, source.settings));
     } else if (typeof source === 'string' || typeof source === 'function') {
       this.functions.push(this.functionToIGPUFunction(source, settings));

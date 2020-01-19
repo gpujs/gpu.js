@@ -13,7 +13,7 @@ export class GPU {
   nativeFunctions: IGPUNativeFunction[];
   setFunctions(flag: IFunction[]|KernelFunction[]): this;
   setNativeFunctions(flag: IGPUNativeFunction[]): this;
-  addFunction(kernel: KernelFunction, settings?: IGPUFunctionSettings): this;
+  addFunction(kernel: KernelFunction|IGPUFunction|string, settings?: IGPUFunctionSettings): this;
   addNativeFunction(name: string, source: string, settings?: IGPUFunctionSettings): this;
   combineKernels(...kernels: KernelFunction[]): IKernelRunShortcut;
   combineKernels<KF extends KernelFunction>(...kernels: KF[]):
@@ -213,8 +213,8 @@ export class Kernel {
   setImmutable(flag: boolean): this;
   setCanvas(flag: any): this;
   setContext(flag: any): this;
-  addFunction(flag: KernelFunction|string, settings?: IFunctionSettings): this;
-  setFunctions(flag: IFunction[]|KernelFunction[]): this;
+  addFunction(flag: KernelFunction|IGPUFunction|string, settings?: IFunctionSettings): this;
+  setFunctions(flag: IFunction[]|KernelFunction[]|IGPUFunction[]|string[]): this;
   setNativeFunctions(flag: IGPUNativeFunction[]): this;
   setStrictIntegers(flag: boolean): this;
   setTactic(flag: Tactic): this;
