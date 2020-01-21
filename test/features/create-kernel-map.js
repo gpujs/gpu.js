@@ -237,3 +237,150 @@ function createKernelMap3DAuto(mode) {
 test('createKernelMap 3d cpu', () => {
   createKernelMap3DAuto('cpu');
 });
+
+function createKernelMapArray2(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernelMap(
+    {
+      mapFunc: function mapFunc(mapFuncVal) {
+        return mapFuncVal;
+      }
+    },
+    function main() {
+      const mapFuncVal = [1, 2];
+      mapFunc(mapFuncVal);
+      const returnValue = [3, 4];
+      return returnValue;
+    },
+    {
+      output: [1],
+      returnType: 'Array(2)',
+    }
+  );
+  const { result, mapFunc } = kernel();
+  assert.deepEqual(Array.from(mapFunc[0]), [1, 2]);
+  assert.deepEqual(Array.from(result[0]), [3, 4]);
+  gpu.destroy();
+}
+
+test('createKernelMap Array(2) auto', () => {
+  createKernelMapArray2();
+});
+
+test('createKernelMap Array(2) gpu', () => {
+  createKernelMapArray2('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('createKernelMap Array(2) webgl', () => {
+  createKernelMapArray2('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('createKernelMap Array(2) webgl2', () => {
+  createKernelMapArray2('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('createKernelMap Array(2) headlessgl', () => {
+  createKernelMapArray2('headlessgl');
+});
+
+test('createKernelMap Array(2) cpu', () => {
+  createKernelMapArray2('cpu');
+});
+
+function createKernelMapArray3(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernelMap(
+    {
+      mapFunc: function mapFunc(mapFuncVal) {
+        return mapFuncVal;
+      }
+    },
+    function main() {
+      const mapFuncVal = [1, 2, 3];
+      mapFunc(mapFuncVal);
+      const returnValue = [4, 5, 6];
+      return returnValue;
+    },
+    {
+      output: [1],
+      returnType: 'Array(3)',
+    }
+  );
+  const { result, mapFunc } = kernel();
+  assert.deepEqual(Array.from(mapFunc[0]), [1, 2, 3]);
+  assert.deepEqual(Array.from(result[0]), [4, 5, 6]);
+  gpu.destroy();
+}
+
+test('createKernelMap Array(3) auto', () => {
+  createKernelMapArray3();
+});
+
+test('createKernelMap Array(3) gpu', () => {
+  createKernelMapArray3('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('createKernelMap Array(3) webgl', () => {
+  createKernelMapArray3('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('createKernelMap Array(3) webgl2', () => {
+  createKernelMapArray3('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('createKernelMap Array(3) headlessgl', () => {
+  createKernelMapArray3('headlessgl');
+});
+
+test('createKernelMap Array(3) cpu', () => {
+  createKernelMapArray3('cpu');
+});
+
+function createKernelMapArray4(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernelMap(
+    {
+      mapFunc: function mapFunc(mapFuncVal) {
+        return mapFuncVal;
+      }
+    },
+    function main() {
+      const mapFuncVal = [1, 2, 3, 4];
+      mapFunc(mapFuncVal);
+      const returnValue = [5, 6, 7, 8];
+      return returnValue;
+    },
+    {
+      output: [1],
+      returnType: 'Array(4)',
+    }
+  );
+  const { result, mapFunc } = kernel();
+  assert.deepEqual(Array.from(mapFunc[0]), [1, 2, 3, 4]);
+  assert.deepEqual(Array.from(result[0]), [5, 6, 7, 8]);
+  gpu.destroy();
+}
+
+test('createKernelMap Array(4) auto', () => {
+  createKernelMapArray4();
+});
+
+test('createKernelMap Array(4) gpu', () => {
+  createKernelMapArray4('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('createKernelMap Array(4) webgl', () => {
+  createKernelMapArray4('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('createKernelMap Array(4) webgl2', () => {
+  createKernelMapArray4('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('createKernelMap Array(4) headlessgl', () => {
+  createKernelMapArray4('headlessgl');
+});
+
+test('createKernelMap Array(4) cpu', () => {
+  createKernelMapArray4('cpu');
+});

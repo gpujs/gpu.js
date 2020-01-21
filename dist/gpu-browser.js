@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.6.3
- * @date Tue Jan 21 2020 07:26:16 GMT-0500 (Eastern Standard Time)
+ * @version 2.6.4
+ * @date Tue Jan 21 2020 08:05:29 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -17099,26 +17099,54 @@ class WebGL2Kernel extends WebGLKernel {
   }
 
   getKernelString() {
-    const result = [];
+    const result = [this.getKernelResultDeclaration()];
     const subKernels = this.subKernels;
     if (subKernels !== null) {
       result.push(
-        this.getKernelResultDeclaration(),
         'layout(location = 0) out vec4 data0'
       );
-      for (let i = 0; i < subKernels.length; i++) {
-        const subKernel = subKernels[i];
-        result.push(
-          subKernel.returnType === 'Integer' ?
-          `int subKernelResult_${ subKernel.name } = 0` :
-          `float subKernelResult_${ subKernel.name } = 0.0`,
-          `layout(location = ${ i + 1 }) out vec4 data${ i + 1 }`
-        );
+      switch (this.returnType) {
+        case 'Number':
+        case 'Float':
+        case 'Integer':
+          for (let i = 0; i < subKernels.length; i++) {
+            const subKernel = subKernels[i];
+            result.push(
+              subKernel.returnType === 'Integer' ?
+              `int subKernelResult_${ subKernel.name } = 0` :
+              `float subKernelResult_${ subKernel.name } = 0.0`,
+              `layout(location = ${ i + 1 }) out vec4 data${ i + 1 }`
+            );
+          }
+          break;
+        case 'Array(2)':
+          for (let i = 0; i < subKernels.length; i++) {
+            result.push(
+              `vec2 subKernelResult_${ subKernels[i].name }`,
+              `layout(location = ${ i + 1 }) out vec4 data${ i + 1 }`
+            );
+          }
+          break;
+        case 'Array(3)':
+          for (let i = 0; i < subKernels.length; i++) {
+            result.push(
+              `vec3 subKernelResult_${ subKernels[i].name }`,
+              `layout(location = ${ i + 1 }) out vec4 data${ i + 1 }`
+            );
+          }
+          break;
+        case 'Array(4)':
+          for (let i = 0; i < subKernels.length; i++) {
+            result.push(
+              `vec4 subKernelResult_${ subKernels[i].name }`,
+              `layout(location = ${ i + 1 }) out vec4 data${ i + 1 }`
+            );
+          }
+          break;
       }
     } else {
       result.push(
-        'out vec4 data0',
-        this.getKernelResultDeclaration()
+        'out vec4 data0'
       );
     }
 
