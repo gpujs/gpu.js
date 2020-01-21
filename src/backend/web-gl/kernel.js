@@ -1042,11 +1042,25 @@ class WebGLKernel extends GLKernel {
    */
   _getDivideWithIntegerCheckString() {
     return this.fixIntegerDivisionAccuracy ?
-      `float div_with_int_check(float x, float y) {
+      `float divWithIntCheck(float x, float y) {
   if (floor(x) == x && floor(y) == y && integerMod(x, y) == 0.0) {
-    return float(int(x)/int(y));
+    return float(int(x) / int(y));
   }
   return x / y;
+}
+
+float integerCorrectionModulo(float number, float divisor) {
+  if (number < 0.0) {
+    number = abs(number);
+    if (divisor < 0.0) {
+      divisor = abs(divisor);
+    }
+    return -(number - (divisor * floor(divWithIntCheck(number, divisor))));
+  }
+  if (divisor < 0.0) {
+    divisor = abs(divisor);
+  }
+  return number - (divisor * floor(divWithIntCheck(number, divisor)));
 }` :
       '';
   }

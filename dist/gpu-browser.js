@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.6.2
- * @date Sun Jan 19 2020 07:44:57 GMT-0500 (Eastern Standard Time)
+ * @version 2.6.3
+ * @date Tue Jan 21 2020 07:26:16 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -5330,7 +5330,12 @@ class CPUFunctionNode extends FunctionNode {
       if (i > 0) {
         retArr.push(',');
       }
-      this.astGeneric(declarations[i], retArr);
+      const declaration = declarations[i];
+      const info = this.getDeclaration(declaration.id);
+      if (!info.valueType) {
+        info.valueType = this.getType(declaration.init);
+      }
+      this.astGeneric(declaration, retArr);
     }
     if (!this.isState('in-for-loop-init')) {
       retArr.push(';');
@@ -11349,18 +11354,18 @@ void color(sampler2D image) {
   actualColor = texture2D(image, vTexCoord);
 }
 
-float modulo(float num1, float num2) {
-  if (num2 == 0.0) {
-    return 0.0;
+float modulo(float number, float divisor) {
+  if (number < 0.0) {
+    number = abs(number);
+    if (divisor < 0.0) {
+      divisor = abs(divisor);
+    }
+    return -mod(number, divisor);
   }
-  bool isPositive = num1 >= 0.0;
-  num1 = abs(num1);
-  num2 = abs(num2);
-  for (int i = 0; i < LOOP_MAX; i++) {
-    if (num1 < num2) break;
-    num1 = num1 - num2;
+  if (divisor < 0.0) {
+    divisor = abs(divisor);
   }
-  return isPositive ? num1 : -num1;
+  return mod(number, divisor);
 }
 
 __INJECTED_NATIVE__;
@@ -11591,7 +11596,7 @@ class WebGLFunctionNode extends FunctionNode {
     }
 
     if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
-      retArr.push('div_with_int_check(');
+      retArr.push('divWithIntCheck(');
       this.pushState('building-float');
       switch (this.getType(ast.left)) {
         case 'Integer':
@@ -11772,7 +11777,7 @@ class WebGLFunctionNode extends FunctionNode {
       return bitwiseResult;
     }
     const upconvertableOperators = {
-      '%': 'modulo',
+      '%': this.fixIntegerDivisionAccuracy ? 'integerCorrectionModulo' : 'modulo',
       '**': 'pow',
     };
     const foundOperator = upconvertableOperators[ast.operator];
@@ -12655,7 +12660,7 @@ class WebGLFunctionNode extends FunctionNode {
             if (targetType === argumentType) {
               if (argument.type === 'Identifier') {
                 retArr.push(`user_${argument.name}`);
-              } else if (argument.type === 'ArrayExpression') {
+              } else if (argument.type === 'ArrayExpression' || argument.type === 'MemberExpression') {
                 this.astGeneric(argument, retArr);
               } else {
                 throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
@@ -15006,11 +15011,25 @@ class WebGLKernel extends GLKernel {
 
   _getDivideWithIntegerCheckString() {
     return this.fixIntegerDivisionAccuracy ?
-      `float div_with_int_check(float x, float y) {
+      `float divWithIntCheck(float x, float y) {
   if (floor(x) == x && floor(y) == y && integerMod(x, y) == 0.0) {
-    return float(int(x)/int(y));
+    return float(int(x) / int(y));
   }
   return x / y;
+}
+
+float integerCorrectionModulo(float number, float divisor) {
+  if (number < 0.0) {
+    number = abs(number);
+    if (divisor < 0.0) {
+      divisor = abs(divisor);
+    }
+    return -(number - (divisor * floor(divWithIntCheck(number, divisor))));
+  }
+  if (divisor < 0.0) {
+    divisor = abs(divisor);
+  }
+  return number - (divisor * floor(divWithIntCheck(number, divisor)));
 }` :
       '';
   }
@@ -15850,18 +15869,18 @@ void color(float r, float g, float b) {
   color(r,g,b,1.0);
 }
 
-float modulo(float num1, float num2) {
-  if (num2 == 0.0) {
-    return 0.0;
+float modulo(float number, float divisor) {
+  if (number < 0.0) {
+    number = abs(number);
+    if (divisor < 0.0) {
+      divisor = abs(divisor);
+    }
+    return -mod(number, divisor);
   }
-  bool isPositive = num1 >= 0.0;
-  num1 = abs(num1);
-  num2 = abs(num2);
-  for (int i = 0; i < LOOP_MAX; i++) {
-    if (num1 < num2) break;
-    num1 = num1 - num2;
+  if (divisor < 0.0) {
+    divisor = abs(divisor);
   }
-  return isPositive ? num1 : -num1;
+  return mod(number, divisor);
 }
 
 __INJECTED_NATIVE__;

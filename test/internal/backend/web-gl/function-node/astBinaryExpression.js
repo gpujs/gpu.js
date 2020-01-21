@@ -316,7 +316,7 @@ test('divide this.thread.x by this.output.x and multiple, integer, integer, and 
   });
 
   assert.equal(node.toString(), 'float kernel() {'
-    + '\nreturn (div_with_int_check(float(threadId.x), 1.0)*4.0);'
+    + '\nreturn (divWithIntCheck(float(threadId.x), 1.0)*4.0);'
     + '\n}');
 });
 

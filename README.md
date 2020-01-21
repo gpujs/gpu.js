@@ -668,7 +668,7 @@ This gives you the flexibility of using parts of a single transformation without
 
 ## Adding custom functions
 ### To `GPU` instance
-use `gpu.addFunction(function() {}, settings)` for adding custom functions to all kernels.  Example:
+use `gpu.addFunction(function() {}, settings)` for adding custom functions to all kernels.  Needs to be called BEFORE `gpu.createKernel`. Example:
 
 
 ```js

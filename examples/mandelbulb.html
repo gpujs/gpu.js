@@ -336,7 +336,7 @@
 
     let m = v-c;
 
-    return [r+m,g+m,b+m]
+    return [r+m,g+m,b+m];
   }
 
   // x,y,z - point on ray (marching)
@@ -432,18 +432,17 @@
     document.addEventListener('pointerlockchange', lockChange, false);
 
     const gl = canvas.getContext('webgl2', { premultipliedAlpha: false });
-    const gpu = new GPU({ canvas, webGl: gl });
-
-    const raytracer = gpu.createKernel(kernelMarchingRays)
+    const gpu = new GPU({ canvas, webGl: gl })
+      .addFunction(sdPlane)
+      .addFunction(mandelbulb)
+      .addFunction(distScene)
+      .addFunction(hsv2rgb);
+    return gpu.createKernel(kernelMarchingRays)
+      .setDebug(true)
       .setConstants({ pxWidth, pxHeight, iterations: 100 })
       .setOutput([pxWidth, pxHeight])
       .setGraphical(true)
       .setLoopMaxIterations(10000);
-    gpu.addFunction(sdPlane);
-    gpu.addFunction(mandelbulb);
-    gpu.addFunction(distScene);
-    gpu.addFunction(hsv2rgb);
-    return raytracer;
   }
 
   // ----------------------------------------------------

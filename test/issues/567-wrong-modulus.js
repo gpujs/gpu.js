@@ -10,27 +10,34 @@ function testWrongModulus(mode) {
   }, {
     output: [1]
   });
-  assert.equal(kernel1()[0].toFixed(2), '0.00');
+  assert.equal(kernel1()[0], 91 % 7);
 
-  const kernel2 = gpu.createKernel(function (value) {
-    return 91 % value;
+  const kernel2 = gpu.createKernel(function (value1, value2) {
+    return value1 % value2;
   }, {
-    output: [1]
+    output: [1],
   });
-  assert.equal(kernel2(7)[0].toFixed(2), '0.00');
+  assert.equal(kernel2(91, 7)[0], 91 % 7);
 
-  const kernel3 = gpu.createKernel(function () {
-    return 91 % this.constants.value;
+  const kernel3 = gpu.createKernel(function (value1, value2) {
+    return value1 % value2;
+  }, {
+    output: [1],
+  });
+  assert.equal(kernel3(91, 7)[0], 91 % 7);
+
+  const kernel4 = gpu.createKernel(function () {
+    return this.constants.value1 % this.constants.value2;
   }, {
     output: [1],
     constants: {
-      value: 7
+      value1: 91,
+      value2: 7,
     }
   });
-  assert.equal(kernel3()[0].toFixed(2), '0.00');
+  assert.equal(kernel4()[0].toFixed(2), 91 % 7);
 
-
-  const kernel4 = gpu.createKernel(function () {
+  const kernel5 = gpu.createKernel(function () {
     return 91 % this.constants.value;
   }, {
     output: [1],
@@ -39,7 +46,7 @@ function testWrongModulus(mode) {
     },
     strictIntegers: true
   });
-  assert.equal(kernel4()[0].toFixed(2), '0.00');
+  assert.equal(kernel5()[0], 91 % 7);
 
   gpu.destroy();
 }

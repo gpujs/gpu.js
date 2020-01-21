@@ -186,6 +186,11 @@ function modulus(mode) {
   }, { output: [1] });
   assert.equal(kernel2()[0], -126 % 63.5);
 
+  const kernel3 = gpu.createKernel(function() {
+    return 126 % -63.5;
+  }, { output: [1] });
+  assert.equal(kernel3()[0], 126 % -63.5);
+
   gpu.destroy();
 }
 

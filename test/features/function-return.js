@@ -157,3 +157,44 @@ function functionReturnArray4( mode ) {
 test('Array(4) cpu', () => {
   functionReturnArray4('cpu');
 });
+
+function functionReturnArray4MemberExpression(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function(value) {
+    let pixel = toIntArray4(value[this.thread.y][this.thread.x]);
+    return pixel;
+    function toIntArray4(pixel) {
+      return [pixel[0] * 255, pixel[1] * 255, pixel[2] * 255, pixel[3] * 255];
+    }
+  }, {
+    output: [1, 1],
+    argumentTypes: { value: 'Array2D(4)' },
+  });
+  const result = kernel([[[1,1,1,1]]]);
+  assert.deepEqual(Array.from(result[0][0]), [255,255,255,255]);
+  gpu.destroy();
+}
+
+test('auto', () => {
+  functionReturnArray4MemberExpression();
+});
+
+test('gpu', () => {
+  functionReturnArray4MemberExpression('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('webgl', () => {
+  functionReturnArray4MemberExpression('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
+  functionReturnArray4MemberExpression('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
+  functionReturnArray4MemberExpression('headlessgl');
+});
+
+test('cpu', () => {
+  functionReturnArray4MemberExpression('cpu');
+});

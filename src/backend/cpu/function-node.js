@@ -326,7 +326,12 @@ class CPUFunctionNode extends FunctionNode {
       if (i > 0) {
         retArr.push(',');
       }
-      this.astGeneric(declarations[i], retArr);
+      const declaration = declarations[i];
+      const info = this.getDeclaration(declaration.id);
+      if (!info.valueType) {
+        info.valueType = this.getType(declaration.init);
+      }
+      this.astGeneric(declaration, retArr);
     }
     if (!this.isState('in-for-loop-init')) {
       retArr.push(';');

@@ -253,7 +253,7 @@ class WebGLFunctionNode extends FunctionNode {
     }
 
     if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
-      retArr.push('div_with_int_check(');
+      retArr.push('divWithIntCheck(');
       this.pushState('building-float');
       switch (this.getType(ast.left)) {
         case 'Integer':
@@ -435,7 +435,7 @@ class WebGLFunctionNode extends FunctionNode {
       return bitwiseResult;
     }
     const upconvertableOperators = {
-      '%': 'modulo',
+      '%': this.fixIntegerDivisionAccuracy ? 'integerCorrectionModulo' : 'modulo',
       '**': 'pow',
     };
     const foundOperator = upconvertableOperators[ast.operator];
@@ -1432,7 +1432,7 @@ class WebGLFunctionNode extends FunctionNode {
             if (targetType === argumentType) {
               if (argument.type === 'Identifier') {
                 retArr.push(`user_${argument.name}`);
-              } else if (argument.type === 'ArrayExpression') {
+              } else if (argument.type === 'ArrayExpression' || argument.type === 'MemberExpression') {
                 this.astGeneric(argument, retArr);
               } else {
                 throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);

@@ -392,18 +392,18 @@ void color(sampler2D image) {
   actualColor = texture2D(image, vTexCoord);
 }
 
-float modulo(float num1, float num2) {
-  if (num2 == 0.0) {
-    return 0.0;
+float modulo(float number, float divisor) {
+  if (number < 0.0) {
+    number = abs(number);
+    if (divisor < 0.0) {
+      divisor = abs(divisor);
+    }
+    return -mod(number, divisor);
   }
-  bool isPositive = num1 >= 0.0;
-  num1 = abs(num1);
-  num2 = abs(num2);
-  for (int i = 0; i < LOOP_MAX; i++) {
-    if (num1 < num2) break;
-    num1 = num1 - num2;
+  if (divisor < 0.0) {
+    divisor = abs(divisor);
   }
-  return isPositive ? num1 : -num1;
+  return mod(number, divisor);
 }
 
 __INJECTED_NATIVE__;
