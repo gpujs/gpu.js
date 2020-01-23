@@ -985,7 +985,22 @@ const utils = {
       throw new Error('Unrecognized function type.  Please use `() => yourFunctionVariableHere` or function() { return yourFunctionVariableHere; }');
     }
   },
+  sanitizeName: function(name) {
+    if (dollarSign.test(name)) {
+      name = name.replace(dollarSign, 'S_S');
+    }
+    if (doubleUnderscore.test(name)) {
+      name = name.replace(doubleUnderscore, 'U_U');
+    } else if (singleUnderscore.test(name)) {
+      name = name.replace(singleUnderscore, 'u_u');
+    }
+    return name;
+  }
 };
+
+const dollarSign = /\$/;
+const doubleUnderscore = /__/;
+const singleUnderscore = /_/;
 
 const _systemEndianness = utils.getSystemEndianness();
 

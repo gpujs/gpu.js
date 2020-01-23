@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.6.4
- * @date Tue Jan 21 2020 08:05:29 GMT-0500 (Eastern Standard Time)
+ * @version 2.6.5
+ * @date Thu Jan 23 2020 07:17:48 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -11382,6 +11382,7 @@ module.exports = {
   fragmentShader
 };
 },{}],38:[function(require,module,exports){
+const { utils } = require('../../utils');
 const { FunctionNode } = require('../function-node');
 
 class WebGLFunctionNode extends FunctionNode {
@@ -11467,11 +11468,11 @@ class WebGLFunctionNode extends FunctionNode {
         if (!type) {
           throw this.astErrorOutput('Unexpected expression', ast);
         }
-
+        const name = utils.sanitizeName(argumentName);
         if (type === 'sampler2D' || type === 'sampler2DArray') {
-          retArr.push(`${type} user_${argumentName},ivec2 user_${argumentName}Size,ivec3 user_${argumentName}Dim`);
+          retArr.push(`${type} user_${name},ivec2 user_${name}Size,ivec3 user_${name}Dim`);
         } else {
-          retArr.push(`${type} user_${argumentName}`);
+          retArr.push(`${type} user_${name}`);
         }
       }
     }
@@ -11913,16 +11914,17 @@ class WebGLFunctionNode extends FunctionNode {
 
     const type = this.getType(idtNode);
 
+    const name = utils.sanitizeName(idtNode.name);
     if (idtNode.name === 'Infinity') {
       retArr.push('3.402823466e+38');
     } else if (type === 'Boolean') {
-      if (this.argumentNames.indexOf(idtNode.name) > -1) {
-        retArr.push(`bool(user_${idtNode.name})`);
+      if (this.argumentNames.indexOf(name) > -1) {
+        retArr.push(`bool(user_${name})`);
       } else {
-        retArr.push(`user_${idtNode.name}`);
+        retArr.push(`user_${name}`);
       }
     } else {
-      retArr.push(`user_${idtNode.name}`);
+      retArr.push(`user_${name}`);
     }
 
     return retArr;
@@ -12116,7 +12118,7 @@ class WebGLFunctionNode extends FunctionNode {
           throw new Error('Unhandled declaration');
         }
         lastType = type;
-        declarationResult.push(`user_${declaration.id.name}=`);
+        declarationResult.push(`user_${utils.sanitizeName(declaration.id.name)}=`);
         declarationResult.push('float(');
         this.astGeneric(init, declarationResult);
         declarationResult.push(')');
@@ -12130,7 +12132,7 @@ class WebGLFunctionNode extends FunctionNode {
           declarationResult.push(`${markupType} `);
         }
         lastType = type;
-        declarationResult.push(`user_${declaration.id.name}=`);
+        declarationResult.push(`user_${utils.sanitizeName(declaration.id.name)}=`);
         if (actualType === 'Number' && type === 'Integer') {
           if (init.left && init.left.type === 'Literal') {
             this.astGeneric(init, declarationResult);
@@ -12366,18 +12368,19 @@ class WebGLFunctionNode extends FunctionNode {
           retArr.push(Math[name]);
           return retArr;
         }
+        const cleanName = utils.sanitizeName(name);
         switch (property) {
           case 'r':
-            retArr.push(`user_${ name }.r`);
+            retArr.push(`user_${ cleanName }.r`);
             return retArr;
           case 'g':
-            retArr.push(`user_${ name }.g`);
+            retArr.push(`user_${ cleanName }.g`);
             return retArr;
           case 'b':
-            retArr.push(`user_${ name }.b`);
+            retArr.push(`user_${ cleanName }.b`);
             return retArr;
           case 'a':
-            retArr.push(`user_${ name }.a`);
+            retArr.push(`user_${ cleanName }.a`);
             return retArr;
         }
         break;
@@ -12659,7 +12662,7 @@ class WebGLFunctionNode extends FunctionNode {
           case 'Array(4)':
             if (targetType === argumentType) {
               if (argument.type === 'Identifier') {
-                retArr.push(`user_${argument.name}`);
+                retArr.push(`user_${utils.sanitizeName(argument.name)}`);
               } else if (argument.type === 'ArrayExpression' || argument.type === 'MemberExpression') {
                 this.astGeneric(argument, retArr);
               } else {
@@ -12681,7 +12684,8 @@ class WebGLFunctionNode extends FunctionNode {
             if (targetType === argumentType) {
               if (argument.type !== 'Identifier') throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
               this.triggerImplyArgumentBitRatio(this.name, argument.name, functionName, i);
-              retArr.push(`user_${argument.name},user_${argument.name}Size,user_${argument.name}Dim`);
+              const name = utils.sanitizeName(argument.name);
+              retArr.push(`user_${name},user_${name}Size,user_${name}Dim`);
               continue;
             }
             break;
@@ -12779,7 +12783,7 @@ const operatorMap = {
 module.exports = {
   WebGLFunctionNode
 };
-},{"../function-node":10}],39:[function(require,module,exports){
+},{"../../utils":114,"../function-node":10}],39:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGLKernelValueFloat } = require('./kernel-value/float');
 const { WebGLKernelValueInteger } = require('./kernel-value/integer');
@@ -14401,7 +14405,7 @@ class WebGLKernel extends GLKernel {
 
     for (let index = 0; index < args.length; index++) {
       const value = args[index];
-      const name = this.argumentNames[index];
+      const name = utils.sanitizeName(this.argumentNames[index]);
       let type;
       if (needsArgumentTypes) {
         type = utils.getVariableType(value, this.strictIntegers);
@@ -14450,7 +14454,8 @@ class WebGLKernel extends GLKernel {
     }
     this.constantBitRatios = {};
     let textureIndexes = 0;
-    for (const name in this.constants) {
+    for (const p in this.constants) {
+      const name = utils.sanitizeName(p);
       const value = this.constants[name];
       let type;
       if (needsConstantTypes) {
@@ -15897,6 +15902,7 @@ module.exports = {
   fragmentShader
 };
 },{}],73:[function(require,module,exports){
+const { utils } = require('../../utils');
 const { WebGLFunctionNode } = require('../web-gl/function-node');
 
 class WebGL2FunctionNode extends WebGLFunctionNode {
@@ -15911,16 +15917,17 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 
     const type = this.getType(idtNode);
 
+    const name = utils.sanitizeName(idtNode.name);
     if (idtNode.name === 'Infinity') {
       retArr.push('intBitsToFloat(2139095039)');
     } else if (type === 'Boolean') {
-      if (this.argumentNames.indexOf(idtNode.name) > -1) {
-        retArr.push(`bool(user_${idtNode.name})`);
+      if (this.argumentNames.indexOf(name) > -1) {
+        retArr.push(`bool(user_${name})`);
       } else {
-        retArr.push(`user_${idtNode.name}`);
+        retArr.push(`user_${name}`);
       }
     } else {
-      retArr.push(`user_${idtNode.name}`);
+      retArr.push(`user_${name}`);
     }
 
     return retArr;
@@ -15930,7 +15937,7 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 module.exports = {
   WebGL2FunctionNode
 };
-},{"../web-gl/function-node":38}],74:[function(require,module,exports){
+},{"../../utils":114,"../web-gl/function-node":38}],74:[function(require,module,exports){
 const { WebGL2KernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGL2KernelValueFloat } = require('./kernel-value/float');
 const { WebGL2KernelValueInteger } = require('./kernel-value/integer');
@@ -18973,7 +18980,22 @@ const utils = {
       throw new Error('Unrecognized function type.  Please use `() => yourFunctionVariableHere` or function() { return yourFunctionVariableHere; }');
     }
   },
+  sanitizeName: function(name) {
+    if (dollarSign.test(name)) {
+      name = name.replace(dollarSign, 'S_S');
+    }
+    if (doubleUnderscore.test(name)) {
+      name = name.replace(doubleUnderscore, 'U_U');
+    } else if (singleUnderscore.test(name)) {
+      name = name.replace(singleUnderscore, 'u_u');
+    }
+    return name;
+  }
 };
+
+const dollarSign = /\$/;
+const doubleUnderscore = /__/;
+const singleUnderscore = /_/;
 
 const _systemEndianness = utils.getSystemEndianness();
 

@@ -1,4 +1,4 @@
-export class GPU {
+export class GPU<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[]> {
   static isGPUSupported: boolean;
   static isCanvasSupported: boolean;
   static isHeadlessGLSupported: boolean;
@@ -9,11 +9,11 @@ export class GPU {
   static isGPUHTMLImageArraySupported: boolean;
   static isSinglePrecisionSupported: boolean;
   constructor(settings?: IGPUSettings);
-  functions: IGPUFunction[];
+  functions: GPUFunction<ArgTypes>[];
   nativeFunctions: IGPUNativeFunction[];
-  setFunctions(flag: IFunction[]|KernelFunction[]): this;
+  setFunctions(flag: any): this;
   setNativeFunctions(flag: IGPUNativeFunction[]): this;
-  addFunction(kernel: KernelFunction|IGPUFunction|string, settings?: IGPUFunctionSettings): this;
+  addFunction(kernel: GPUFunction<ArgTypes>, settings?: IGPUFunctionSettings): this;
   addNativeFunction(name: string, source: string, settings?: IGPUFunctionSettings): this;
   combineKernels(...kernels: KernelFunction[]): IKernelRunShortcut;
   combineKernels<KF extends KernelFunction>(...kernels: KF[]):
@@ -25,9 +25,9 @@ export class GPU {
       | void
     )
     & IKernelRunShortcutBase;
-  createKernel(kernel: KernelFunction, settings?: IGPUKernelSettings): IKernelRunShortcut;
-  createKernel<KF extends KernelFunction>(kernel: KF, settings?: IGPUKernelSettings): 
-    ((...args: Parameters<KF>) => 
+  createKernel<MethodArgTypes extends ArgTypes>(kernel: KernelFunction<MethodArgTypes>, settings?: IGPUKernelSettings): IKernelRunShortcut;
+  createKernel<KF extends KernelFunction>(kernel: KF, settings?: IGPUKernelSettings):
+    ((...args: Parameters<KF>) =>
       ReturnType<KF>[]
       | ReturnType<KF>[][]
       | ReturnType<KF>[][][]
@@ -213,8 +213,8 @@ export class Kernel {
   setImmutable(flag: boolean): this;
   setCanvas(flag: any): this;
   setContext(flag: any): this;
-  addFunction(flag: KernelFunction|IGPUFunction|string, settings?: IFunctionSettings): this;
-  setFunctions(flag: IFunction[]|KernelFunction[]|IGPUFunction[]|string[]): this;
+  addFunction<MethodArgTypes extends ThreadKernelVariable[]>(flag: GPUFunction<MethodArgTypes>, settings?: IFunctionSettings): this;
+  setFunctions(flag: any): this;
   setNativeFunctions(flag: IGPUNativeFunction[]): this;
   setStrictIntegers(flag: boolean): this;
   setTactic(flag: Tactic): this;
@@ -241,6 +241,16 @@ export class Kernel {
   setUniform3iv(name: string, value: [number, number, number]): void;
   setUniform4iv(name: string, value: [number, number, number, number]): void;
 }
+
+
+export type GPUFunction<ArgTypes extends ThreadKernelVariable[]>
+  = ThreadFunction<ArgTypes>
+  | IFunction
+  | IGPUFunction
+  |  string[];
+
+export type ThreadFunction<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[]> =
+    ((...args: ArgTypes) => ThreadFunctionResult);
 
 export type Precision = 'single' | 'unsigned';
 
@@ -399,6 +409,14 @@ export type KernelVariable =
   | Uint32Array
   | KernelOutput;
 
+export type ThreadFunctionResult
+  = number
+  | [number, number]
+  | [number, number, number]
+  | [number, number, number, number]
+  | Pixel
+  | Boolean;
+
 export type ThreadKernelVariable
   = boolean
   | number
@@ -406,6 +424,7 @@ export type ThreadKernelVariable
   | number[][]
   | number[][][]
 
+  | Pixel
   | Pixel[][]
 
   | [number, number]
@@ -431,9 +450,9 @@ export type Pixel = {
   a: number;
 };
 
-export type KernelFunction = ((
+export type KernelFunction<ArgT extends ThreadKernelVariable[] = ThreadKernelVariable[]> = ((
   this: IKernelFunctionThis,
-  ...args: ThreadKernelVariable[]
+  ...args: ArgT
 ) => KernelOutput);
 
 export type KernelOutput = void
@@ -587,7 +606,7 @@ export type input = (value: number[], size: OutputDimensions) => Input;
 export function alias(name: string, source: KernelFunction): KernelFunction;
 
 export class KernelValue {
-  constructor(value: KernelValue, settings: IKernelValueSettings);
+  constructor(value: KernelVariable, settings: IKernelValueSettings);
   getSource(): string;
   setup(): void;
   updateValue(value: KernelVariable): void;

@@ -1,3 +1,4 @@
+const { utils } = require('../../utils');
 const { WebGLFunctionNode } = require('../web-gl/function-node');
 
 /**
@@ -24,16 +25,17 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 
     const type = this.getType(idtNode);
 
+    const name = utils.sanitizeName(idtNode.name);
     if (idtNode.name === 'Infinity') {
       retArr.push('intBitsToFloat(2139095039)');
     } else if (type === 'Boolean') {
-      if (this.argumentNames.indexOf(idtNode.name) > -1) {
-        retArr.push(`bool(user_${idtNode.name})`);
+      if (this.argumentNames.indexOf(name) > -1) {
+        retArr.push(`bool(user_${name})`);
       } else {
-        retArr.push(`user_${idtNode.name}`);
+        retArr.push(`user_${name}`);
       }
     } else {
-      retArr.push(`user_${idtNode.name}`);
+      retArr.push(`user_${name}`);
     }
 
     return retArr;
