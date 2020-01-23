@@ -377,7 +377,7 @@ class WebGLKernel extends GLKernel {
 
     for (let index = 0; index < args.length; index++) {
       const value = args[index];
-      const name = this.argumentNames[index];
+      const name = utils.sanitizeName(this.argumentNames[index]);
       let type;
       if (needsArgumentTypes) {
         type = utils.getVariableType(value, this.strictIntegers);
@@ -426,7 +426,8 @@ class WebGLKernel extends GLKernel {
     }
     this.constantBitRatios = {};
     let textureIndexes = 0;
-    for (const name in this.constants) {
+    for (const p in this.constants) {
+      const name = utils.sanitizeName(p);
       const value = this.constants[name];
       let type;
       if (needsConstantTypes) {
