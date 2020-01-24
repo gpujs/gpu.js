@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.6.5
- * @date Thu Jan 23 2020 07:17:48 GMT-0500 (Eastern Standard Time)
+ * @version 2.6.6
+ * @date Fri Jan 24 2020 10:39:16 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -6285,6 +6285,12 @@ class Kernel {
 
   setPrecision(flag) {
     this.precision = flag;
+    return this;
+  }
+
+  setDimensions(flag) {
+    utils.warnDeprecated('method', 'setDimensions', 'setOutput');
+    this.output = flag;
     return this;
   }
 

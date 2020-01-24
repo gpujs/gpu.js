@@ -580,6 +580,17 @@ class Kernel {
 
   /**
    * @param flag
+   * @return {Kernel}
+   * @deprecated
+   */
+  setDimensions(flag) {
+    utils.warnDeprecated('method', 'setDimensions', 'setOutput');
+    this.output = flag;
+    return this;
+  }
+
+  /**
+   * @param flag
    * @return {this}
    * @deprecated
    */
