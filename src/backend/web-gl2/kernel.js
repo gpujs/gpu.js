@@ -264,13 +264,13 @@ class WebGL2Kernel extends WebGLKernel {
             } else {
               return gl.R32F;
             }
-            case 'Array(2)':
-              return gl.RG32F;
-            case 'Array(3)': // there is _no_ 3 channel format which is guaranteed to be color-renderable
-            case 'Array(4)':
-              return gl.RGBA32F;
-            default:
-              throw new Error('Unhandled return type');
+          case 'Array(2)':
+            return gl.RG32F;
+          case 'Array(3)': // there is _no_ 3 channel format which is guaranteed to be color-renderable
+          case 'Array(4)':
+            return gl.RGBA32F;
+          default:
+            throw new Error('Unhandled return type');
         }
       }
       return gl.RGBA32F;

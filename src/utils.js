@@ -640,18 +640,19 @@ const utils = {
           return flatten(ast.body) + (ast.body[0].type === 'VariableDeclaration' ? ';' : '');
         case 'FunctionDeclaration':
           return `function ${ast.id.name}(${ast.params.map(flatten).join(', ')}) ${ flatten(ast.body) }`;
-        case 'BlockStatement': {
-          const result = [];
-          indent += 2;
-          for (let i = 0; i < ast.body.length; i++) {
-            const flat = flatten(ast.body[i]);
-            if (flat) {
-              result.push(' '.repeat(indent) + flat, ';\n');
+        case 'BlockStatement':
+          {
+            const result = [];
+            indent += 2;
+            for (let i = 0; i < ast.body.length; i++) {
+              const flat = flatten(ast.body[i]);
+              if (flat) {
+                result.push(' '.repeat(indent) + flat, ';\n');
+              }
             }
+            indent -= 2;
+            return `{\n${result.join('')}}`;
           }
-          indent -= 2;
-          return `{\n${result.join('')}}`;
-        }
         case 'VariableDeclaration':
           const declarations = utils.normalizeDeclarations(ast)
             .map(flatten)
@@ -661,97 +662,98 @@ const utils = {
           } else {
             return `${ast.kind} ${declarations.join(',')}`;
           }
-          case 'VariableDeclarator':
-            if (ast.init.object && ast.init.object.type === 'ThisExpression') {
-              const lookup = thisLookup(ast.init.property.name);
-              if (lookup) {
-                return `${ast.id.name} = ${flatten(ast.init)}`;
-              } else {
-                return null;
-              }
-            } else {
+        case 'VariableDeclarator':
+          if (ast.init.object && ast.init.object.type === 'ThisExpression') {
+            const lookup = thisLookup(ast.init.property.name);
+            if (lookup) {
               return `${ast.id.name} = ${flatten(ast.init)}`;
+            } else {
+              return null;
             }
-            case 'CallExpression': {
-              if (ast.callee.property.name === 'subarray') {
-                return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              }
-              if (ast.callee.object.name === 'gl' || ast.callee.object.name === 'context') {
-                return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              }
-              if (ast.callee.object.type === 'ThisExpression') {
-                functionDependencies.push(findDependency('this', ast.callee.property.name));
+          } else {
+            return `${ast.id.name} = ${flatten(ast.init)}`;
+          }
+        case 'CallExpression':
+          {
+            if (ast.callee.property.name === 'subarray') {
+              return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+            }
+            if (ast.callee.object.name === 'gl' || ast.callee.object.name === 'context') {
+              return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+            }
+            if (ast.callee.object.type === 'ThisExpression') {
+              functionDependencies.push(findDependency('this', ast.callee.property.name));
+              return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+            } else if (ast.callee.object.name) {
+              const foundSource = findDependency(ast.callee.object.name, ast.callee.property.name);
+              if (foundSource === null) {
+                // we're not flattening it
+                return `${ast.callee.object.name}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              } else {
+                functionDependencies.push(foundSource);
+                // we're flattening it
                 return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              } else if (ast.callee.object.name) {
-                const foundSource = findDependency(ast.callee.object.name, ast.callee.property.name);
-                if (foundSource === null) {
-                  // we're not flattening it
-                  return `${ast.callee.object.name}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-                } else {
-                  functionDependencies.push(foundSource);
-                  // we're flattening it
-                  return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-                }
-              } else if (ast.callee.object.type === 'MemberExpression') {
-                return `${flatten(ast.callee.object)}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              } else {
-                throw new Error('unknown ast.callee');
               }
+            } else if (ast.callee.object.type === 'MemberExpression') {
+              return `${flatten(ast.callee.object)}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+            } else {
+              throw new Error('unknown ast.callee');
             }
-            case 'ReturnStatement':
-              return `return ${flatten(ast.argument)}`;
-            case 'BinaryExpression':
-              return `(${flatten(ast.left)}${ast.operator}${flatten(ast.right)})`;
-            case 'UnaryExpression':
-              if (ast.prefix) {
-                return `${ast.operator} ${flatten(ast.argument)}`;
-              } else {
-                return `${flatten(ast.argument)} ${ast.operator}`;
-              }
-              case 'ExpressionStatement':
-                return `${flatten(ast.expression)}`;
-              case 'SequenceExpression':
-                return `(${flatten(ast.expressions)})`;
-              case 'ArrowFunctionExpression':
-                return `(${ast.params.map(flatten).join(', ')}) => ${flatten(ast.body)}`;
-              case 'Literal':
-                return ast.raw;
-              case 'Identifier':
-                return ast.name;
-              case 'MemberExpression':
-                if (ast.object.type === 'ThisExpression') {
-                  return thisLookup(ast.property.name);
-                }
-                if (ast.computed) {
-                  return `${flatten(ast.object)}[${flatten(ast.property)}]`;
-                }
-                return flatten(ast.object) + '.' + flatten(ast.property);
-              case 'ThisExpression':
-                return 'this';
-              case 'NewExpression':
-                return `new ${flatten(ast.callee)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              case 'ForStatement':
-                return `for (${flatten(ast.init)};${flatten(ast.test)};${flatten(ast.update)}) ${flatten(ast.body)}`;
-              case 'AssignmentExpression':
-                return `${flatten(ast.left)}${ast.operator}${flatten(ast.right)}`;
-              case 'UpdateExpression':
-                return `${flatten(ast.argument)}${ast.operator}`;
-              case 'IfStatement':
-                return `if (${flatten(ast.test)}) ${flatten(ast.consequent)}`;
-              case 'ThrowStatement':
-                return `throw ${flatten(ast.argument)}`;
-              case 'ObjectPattern':
-                return ast.properties.map(flatten).join(', ');
-              case 'ArrayPattern':
-                return ast.elements.map(flatten).join(', ');
-              case 'DebuggerStatement':
-                return 'debugger;';
-              case 'ConditionalExpression':
-                return `${flatten(ast.test)}?${flatten(ast.consequent)}:${flatten(ast.alternate)}`;
-              case 'Property':
-                if (ast.kind === 'init') {
-                  return flatten(ast.key);
-                }
+          }
+        case 'ReturnStatement':
+          return `return ${flatten(ast.argument)}`;
+        case 'BinaryExpression':
+          return `(${flatten(ast.left)}${ast.operator}${flatten(ast.right)})`;
+        case 'UnaryExpression':
+          if (ast.prefix) {
+            return `${ast.operator} ${flatten(ast.argument)}`;
+          } else {
+            return `${flatten(ast.argument)} ${ast.operator}`;
+          }
+        case 'ExpressionStatement':
+          return `${flatten(ast.expression)}`;
+        case 'SequenceExpression':
+          return `(${flatten(ast.expressions)})`;
+        case 'ArrowFunctionExpression':
+          return `(${ast.params.map(flatten).join(', ')}) => ${flatten(ast.body)}`;
+        case 'Literal':
+          return ast.raw;
+        case 'Identifier':
+          return ast.name;
+        case 'MemberExpression':
+          if (ast.object.type === 'ThisExpression') {
+            return thisLookup(ast.property.name);
+          }
+          if (ast.computed) {
+            return `${flatten(ast.object)}[${flatten(ast.property)}]`;
+          }
+          return flatten(ast.object) + '.' + flatten(ast.property);
+        case 'ThisExpression':
+          return 'this';
+        case 'NewExpression':
+          return `new ${flatten(ast.callee)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+        case 'ForStatement':
+          return `for (${flatten(ast.init)};${flatten(ast.test)};${flatten(ast.update)}) ${flatten(ast.body)}`;
+        case 'AssignmentExpression':
+          return `${flatten(ast.left)}${ast.operator}${flatten(ast.right)}`;
+        case 'UpdateExpression':
+          return `${flatten(ast.argument)}${ast.operator}`;
+        case 'IfStatement':
+          return `if (${flatten(ast.test)}) ${flatten(ast.consequent)}`;
+        case 'ThrowStatement':
+          return `throw ${flatten(ast.argument)}`;
+        case 'ObjectPattern':
+          return ast.properties.map(flatten).join(', ');
+        case 'ArrayPattern':
+          return ast.elements.map(flatten).join(', ');
+        case 'DebuggerStatement':
+          return 'debugger;';
+        case 'ConditionalExpression':
+          return `${flatten(ast.test)}?${flatten(ast.consequent)}:${flatten(ast.alternate)}`;
+        case 'Property':
+          if (ast.kind === 'init') {
+            return flatten(ast.key);
+          }
       }
       throw new Error(`unhandled ast.type of ${ ast.type }`);
     }

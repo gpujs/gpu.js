@@ -1146,30 +1146,30 @@ class WebGLFunctionNode extends FunctionNode {
               return retArr;
           }
         }
-        case 'this.constants.value[]':
-        case 'this.constants.value[][]':
-        case 'this.constants.value[][][]':
-        case 'this.constants.value[][][][]':
-          break;
-        case 'fn()[]':
-          this.astCallExpression(mNode.object, retArr);
-          retArr.push('[');
-          retArr.push(this.memberExpressionPropertyMarkup(property));
-          retArr.push(']');
+      case 'this.constants.value[]':
+      case 'this.constants.value[][]':
+      case 'this.constants.value[][][]':
+      case 'this.constants.value[][][][]':
+        break;
+      case 'fn()[]':
+        this.astCallExpression(mNode.object, retArr);
+        retArr.push('[');
+        retArr.push(this.memberExpressionPropertyMarkup(property));
+        retArr.push(']');
+        return retArr;
+      case '[][]':
+        this.astArrayExpression(mNode.object, retArr);
+        retArr.push('[');
+        retArr.push(this.memberExpressionPropertyMarkup(property));
+        retArr.push(']');
+        return retArr;
+      case 'value.value[]':
+      case 'value.value[][]':
+        if (this.removeIstanbulCoverage) {
           return retArr;
-        case '[][]':
-          this.astArrayExpression(mNode.object, retArr);
-          retArr.push('[');
-          retArr.push(this.memberExpressionPropertyMarkup(property));
-          retArr.push(']');
-          return retArr;
-        case 'value.value[]':
-        case 'value.value[][]':
-          if (this.removeIstanbulCoverage) {
-            return retArr;
-          }
-          default:
-            throw this.astErrorOutput('Unexpected expression', mNode);
+        }
+      default:
+        throw this.astErrorOutput('Unexpected expression', mNode);
     }
 
     if (mNode.computed === false) {
@@ -1435,7 +1435,7 @@ class WebGLFunctionNode extends FunctionNode {
             if (targetType === argumentType) {
               if (argument.type === 'Identifier') {
                 retArr.push(`user_${utils.sanitizeName(argument.name)}`);
-              } else if (argument.type === 'ArrayExpression' || argument.type === 'MemberExpression') {
+              } else if (argument.type === 'ArrayExpression' || argument.type === 'MemberExpression' || argument.type === 'CallExpression') {
                 this.astGeneric(argument, retArr);
               } else {
                 throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
