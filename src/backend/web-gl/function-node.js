@@ -1142,7 +1142,7 @@ class WebGLFunctionNode extends FunctionNode {
             case 'Array(2)':
             case 'Array(3)':
             case 'Array(4)':
-              retArr.push(`constants_${ name }`);
+              retArr.push(`constants_${ utils.sanitizeName(name) }`);
               return retArr;
           }
         }
@@ -1179,14 +1179,14 @@ class WebGLFunctionNode extends FunctionNode {
         case 'Integer':
         case 'Float':
         case 'Boolean':
-          retArr.push(`${origin}_${name}`);
+          retArr.push(`${origin}_${utils.sanitizeName(name)}`);
           return retArr;
       }
     }
 
     // handle more complex types
     // argument may have come from a parent
-    const markupName = `${origin}_${name}`;
+    const markupName = `${origin}_${utils.sanitizeName(name)}`;
 
     switch (type) {
       case 'Array(2)':

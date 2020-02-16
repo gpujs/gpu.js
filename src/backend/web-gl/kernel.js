@@ -377,7 +377,7 @@ class WebGLKernel extends GLKernel {
 
     for (let index = 0; index < args.length; index++) {
       const value = args[index];
-      const name = utils.sanitizeName(this.argumentNames[index]);
+      const name = this.argumentNames[index];
       let type;
       if (needsArgumentTypes) {
         type = utils.getVariableType(value, this.strictIntegers);

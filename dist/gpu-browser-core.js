@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.6.8
- * @date Sun Feb 16 2020 14:37:32 GMT-0500 (Eastern Standard Time)
+ * @version 2.6.9
+ * @date Sun Feb 16 2020 15:57:16 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -5908,7 +5908,6 @@ class KernelValue {
     this.name = name;
     this.origin = origin;
     this.tactic = tactic;
-    this.id = `${this.origin}_${name}`;
     this.varName = origin === 'constants' ? `constants.${name}` : name;
     this.kernel = kernel;
     this.strictIntegers = strictIntegers;
@@ -5921,6 +5920,10 @@ class KernelValue {
     this.onRequestContextHandle = onRequestContextHandle;
     this.onUpdateValueMismatch = onUpdateValueMismatch;
     this.forceUploadEachRun = null;
+  }
+
+  get id() {
+    return `${this.origin}_${name}`;
   }
 
   getSource() {
@@ -7962,7 +7965,7 @@ class WebGLFunctionNode extends FunctionNode {
             case 'Array(2)':
             case 'Array(3)':
             case 'Array(4)':
-              retArr.push(`constants_${ name }`);
+              retArr.push(`constants_${ utils.sanitizeName(name) }`);
               return retArr;
           }
         }
@@ -7998,12 +8001,12 @@ class WebGLFunctionNode extends FunctionNode {
         case 'Integer':
         case 'Float':
         case 'Boolean':
-          retArr.push(`${origin}_${name}`);
+          retArr.push(`${origin}_${utils.sanitizeName(name)}`);
           return retArr;
       }
     }
 
-    const markupName = `${origin}_${name}`;
+    const markupName = `${origin}_${utils.sanitizeName(name)}`;
 
     switch (type) {
       case 'Array(2)':
@@ -9013,6 +9016,7 @@ module.exports = {
   WebGLKernelValueHTMLVideo
 };
 },{"./html-image":53}],55:[function(require,module,exports){
+const { utils } = require('../../../utils');
 const { KernelValue } = require('../../kernel-value');
 
 class WebGLKernelValue extends KernelValue {
@@ -9027,6 +9031,10 @@ class WebGLKernelValue extends KernelValue {
     this.textureSize = null;
     this.bitRatio = null;
     this.prevArg = null;
+  }
+
+  get id() {
+    return `${this.origin}_${utils.sanitizeName(this.name)}`;
   }
 
   setup() {}
@@ -9067,7 +9075,7 @@ class WebGLKernelValue extends KernelValue {
 module.exports = {
   WebGLKernelValue
 };
-},{"../../kernel-value":34}],56:[function(require,module,exports){
+},{"../../../utils":113,"../../kernel-value":34}],56:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -9977,7 +9985,7 @@ class WebGLKernel extends GLKernel {
 
     for (let index = 0; index < args.length; index++) {
       const value = args[index];
-      const name = utils.sanitizeName(this.argumentNames[index]);
+      const name = this.argumentNames[index];
       let type;
       if (needsArgumentTypes) {
         type = utils.getVariableType(value, this.strictIntegers);
