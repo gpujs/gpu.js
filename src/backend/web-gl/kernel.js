@@ -426,8 +426,7 @@ class WebGLKernel extends GLKernel {
     }
     this.constantBitRatios = {};
     let textureIndexes = 0;
-    for (const p in this.constants) {
-      const name = utils.sanitizeName(p);
+    for (const name in this.constants) {
       const value = this.constants[name];
       let type;
       if (needsConstantTypes) {

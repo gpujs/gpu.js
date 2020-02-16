@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "2.6.7",
+  "version": "2.6.8",
   "description": "GPU Accelerated JavaScript",
   "engines": {
     "node": ">=8.0.0"
@@ -27,6 +27,7 @@
     "benchmark": "^2.1.4",
     "browser-sync": "^2.26.7",
     "browserify": "^16.2.3",
+    "c8": "^7.0.1",
     "gulp": "^4.0.0",
     "gulp-concat": "^2.6.0",
     "gulp-header": "^1.7.1",
@@ -44,6 +45,7 @@
   },
   "scripts": {
     "test": "qunit",
+    "coverage": "c8 qunit",
     "setup": "npm i -g gulp-cli",
     "make": "gulp make",
     "docs": "doxdox ./src --layout bootstrap --output docs.html"

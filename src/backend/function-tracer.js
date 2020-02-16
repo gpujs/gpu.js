@@ -158,31 +158,30 @@ class FunctionTracer {
           this.scan(ast.declarations);
         }
         break;
-      case 'VariableDeclarator':
-        {
-          const { currentContext } = this;
-          const inForLoopInit = this.hasState(states.inForLoopInit);
-          const declaration = {
-            ast: ast,
-            context: currentContext,
-            name: ast.id.name,
-            origin: 'declaration',
-            inForLoopInit,
-            inForLoopTest: null,
-            assignable: currentContext === this.currentFunctionContext || (!inForLoopInit && !currentContext.hasOwnProperty(ast.id.name)),
-            suggestedType: null,
-            valueType: null,
-            dependencies: null,
-            isSafe: null,
-          };
-          if (!currentContext[ast.id.name]) {
-            currentContext[ast.id.name] = declaration;
-          }
-          this.declarations.push(declaration);
-          this.scan(ast.id);
-          this.scan(ast.init);
-          break;
+      case 'VariableDeclarator': {
+        const { currentContext } = this;
+        const inForLoopInit = this.hasState(states.inForLoopInit);
+        const declaration = {
+          ast: ast,
+          context: currentContext,
+          name: ast.id.name,
+          origin: 'declaration',
+          inForLoopInit,
+          inForLoopTest: null,
+          assignable: currentContext === this.currentFunctionContext || (!inForLoopInit && !currentContext.hasOwnProperty(ast.id.name)),
+          suggestedType: null,
+          valueType: null,
+          dependencies: null,
+          isSafe: null,
+        };
+        if (!currentContext[ast.id.name]) {
+          currentContext[ast.id.name] = declaration;
         }
+        this.declarations.push(declaration);
+        this.scan(ast.id);
+        this.scan(ast.init);
+        break;
+      }
       case 'FunctionExpression':
       case 'FunctionDeclaration':
         if (this.runningContexts.length === 0) {
@@ -196,34 +195,33 @@ class FunctionTracer {
         this.scan(ast.consequent);
         if (ast.alternate) this.scan(ast.alternate);
         break;
-      case 'ForStatement':
-        {
-          let testIdentifiers;
-          const context = this.newContext(() => {
-            this.pushState(states.inForLoopInit);
-            this.scan(ast.init);
-            this.popState(states.inForLoopInit);
+      case 'ForStatement': {
+        let testIdentifiers;
+        const context = this.newContext(() => {
+          this.pushState(states.inForLoopInit);
+          this.scan(ast.init);
+          this.popState(states.inForLoopInit);
 
-            testIdentifiers = this.getIdentifiers(() => {
-              this.scan(ast.test);
-            });
-
-            this.scan(ast.update);
-            this.newContext(() => {
-              this.scan(ast.body);
-            });
+          testIdentifiers = this.getIdentifiers(() => {
+            this.scan(ast.test);
           });
 
-          if (testIdentifiers) {
-            for (const p in context) {
-              if (p === '@contextType') continue;
-              if (testIdentifiers.indexOf(p) > -1) {
-                context[p].inForLoopTest = true;
-              }
+          this.scan(ast.update);
+          this.newContext(() => {
+            this.scan(ast.body);
+          });
+        });
+
+        if (testIdentifiers) {
+          for (const p in context) {
+            if (p === '@contextType') continue;
+            if (testIdentifiers.indexOf(p) > -1) {
+              context[p].inForLoopTest = true;
             }
           }
-          break;
         }
+        break;
+      }
       case 'DoWhileStatement':
       case 'WhileStatement':
         this.newContext(() => {
@@ -231,18 +229,17 @@ class FunctionTracer {
           this.scan(ast.test);
         });
         break;
-      case 'Identifier':
-        {
-          if (this.isState(states.trackIdentifiers)) {
-            this.trackedIdentifiers.push(ast.name);
-          }
-          this.identifiers.push({
-            context: this.currentContext,
-            declaration: this.getDeclaration(ast.name),
-            ast,
-          });
-          break;
+      case 'Identifier': {
+        if (this.isState(states.trackIdentifiers)) {
+          this.trackedIdentifiers.push(ast.name);
         }
+        this.identifiers.push({
+          context: this.currentContext,
+          declaration: this.getDeclaration(ast.name),
+          ast,
+        });
+        break;
+      }
       case 'ReturnStatement':
         this.returnStatements.push(ast);
         this.scan(ast.argument);

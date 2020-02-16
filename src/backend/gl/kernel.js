@@ -369,10 +369,10 @@ class GLKernel extends Kernel {
               this.TextureConstructor = GLTextureUnsigned;
               return null;
             }
-          case 'Array(2)':
-          case 'Array(3)':
-          case 'Array(4)':
-            return this.requestFallback(args);
+            case 'Array(2)':
+            case 'Array(3)':
+            case 'Array(4)':
+              return this.requestFallback(args);
         }
       } else {
         if (this.subKernels !== null) {
@@ -397,10 +397,10 @@ class GLKernel extends Kernel {
               this.formatValues = utils.erectPackedFloat;
               return null;
             }
-          case 'Array(2)':
-          case 'Array(3)':
-          case 'Array(4)':
-            return this.requestFallback(args);
+            case 'Array(2)':
+            case 'Array(3)':
+            case 'Array(4)':
+              return this.requestFallback(args);
         }
       }
     } else if (this.precision === 'single') {
@@ -415,71 +415,67 @@ class GLKernel extends Kernel {
           case 'LiteralInteger':
           case 'Float':
           case 'Number':
-          case 'Integer':
-            {
-              if (this.optimizeFloatMemory) {
-                if (this.output[2] > 0) {
-                  this.TextureConstructor = GLTextureMemoryOptimized3D;
-                  return null;
-                } else if (this.output[1] > 0) {
-                  this.TextureConstructor = GLTextureMemoryOptimized2D;
-                  return null;
-                } else {
-                  this.TextureConstructor = GLTextureMemoryOptimized;
-                  return null;
-                }
-              } else {
-                if (this.output[2] > 0) {
-                  this.TextureConstructor = GLTextureFloat3D;
-                  return null;
-                } else if (this.output[1] > 0) {
-                  this.TextureConstructor = GLTextureFloat2D;
-                  return null;
-                } else {
-                  this.TextureConstructor = GLTextureFloat;
-                  return null;
-                }
-              }
-            }
-          case 'Array(2)':
-            {
+          case 'Integer': {
+            if (this.optimizeFloatMemory) {
               if (this.output[2] > 0) {
-                this.TextureConstructor = GLTextureArray2Float3D;
+                this.TextureConstructor = GLTextureMemoryOptimized3D;
                 return null;
               } else if (this.output[1] > 0) {
-                this.TextureConstructor = GLTextureArray2Float2D;
+                this.TextureConstructor = GLTextureMemoryOptimized2D;
                 return null;
               } else {
-                this.TextureConstructor = GLTextureArray2Float;
+                this.TextureConstructor = GLTextureMemoryOptimized;
                 return null;
               }
-            }
-          case 'Array(3)':
-            {
+            } else {
               if (this.output[2] > 0) {
-                this.TextureConstructor = GLTextureArray3Float3D;
+                this.TextureConstructor = GLTextureFloat3D;
                 return null;
               } else if (this.output[1] > 0) {
-                this.TextureConstructor = GLTextureArray3Float2D;
+                this.TextureConstructor = GLTextureFloat2D;
                 return null;
               } else {
-                this.TextureConstructor = GLTextureArray3Float;
+                this.TextureConstructor = GLTextureFloat;
                 return null;
               }
             }
-          case 'Array(4)':
-            {
-              if (this.output[2] > 0) {
-                this.TextureConstructor = GLTextureArray4Float3D;
-                return null;
-              } else if (this.output[1] > 0) {
-                this.TextureConstructor = GLTextureArray4Float2D;
-                return null;
-              } else {
-                this.TextureConstructor = GLTextureArray4Float;
-                return null;
-              }
+          }
+          case 'Array(2)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray2Float3D;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray2Float2D;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray2Float;
+              return null;
             }
+          }
+          case 'Array(3)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray3Float3D;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray3Float2D;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray3Float;
+              return null;
+            }
+          }
+          case 'Array(4)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray4Float3D;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray4Float2D;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray4Float;
+              return null;
+            }
+          }
         }
       }
       this.renderOutput = this.renderValues;
@@ -491,140 +487,132 @@ class GLKernel extends Kernel {
           case 'LiteralInteger':
           case 'Float':
           case 'Number':
-          case 'Integer':
-            {
-              if (this.output[2] > 0) {
-                this.TextureConstructor = GLTextureMemoryOptimized3D;
-                this.formatValues = utils.erectMemoryOptimized3DFloat;
-                return null;
-              } else if (this.output[1] > 0) {
-                this.TextureConstructor = GLTextureMemoryOptimized2D;
-                this.formatValues = utils.erectMemoryOptimized2DFloat;
-                return null;
-              } else {
-                this.TextureConstructor = GLTextureMemoryOptimized;
-                this.formatValues = utils.erectMemoryOptimizedFloat;
-                return null;
-              }
+          case 'Integer': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureMemoryOptimized3D;
+              this.formatValues = utils.erectMemoryOptimized3DFloat;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureMemoryOptimized2D;
+              this.formatValues = utils.erectMemoryOptimized2DFloat;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureMemoryOptimized;
+              this.formatValues = utils.erectMemoryOptimizedFloat;
+              return null;
             }
-          case 'Array(2)':
-            {
-              if (this.output[2] > 0) {
-                this.TextureConstructor = GLTextureArray2Float3D;
-                this.formatValues = utils.erect3DArray2;
-                return null;
-              } else if (this.output[1] > 0) {
-                this.TextureConstructor = GLTextureArray2Float2D;
-                this.formatValues = utils.erect2DArray2;
-                return null;
-              } else {
-                this.TextureConstructor = GLTextureArray2Float;
-                this.formatValues = utils.erectArray2;
-                return null;
-              }
+          }
+          case 'Array(2)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray2Float3D;
+              this.formatValues = utils.erect3DArray2;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray2Float2D;
+              this.formatValues = utils.erect2DArray2;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray2Float;
+              this.formatValues = utils.erectArray2;
+              return null;
             }
-          case 'Array(3)':
-            {
-              if (this.output[2] > 0) {
-                this.TextureConstructor = GLTextureArray3Float3D;
-                this.formatValues = utils.erect3DArray3;
-                return null;
-              } else if (this.output[1] > 0) {
-                this.TextureConstructor = GLTextureArray3Float2D;
-                this.formatValues = utils.erect2DArray3;
-                return null;
-              } else {
-                this.TextureConstructor = GLTextureArray3Float;
-                this.formatValues = utils.erectArray3;
-                return null;
-              }
+          }
+          case 'Array(3)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray3Float3D;
+              this.formatValues = utils.erect3DArray3;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray3Float2D;
+              this.formatValues = utils.erect2DArray3;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray3Float;
+              this.formatValues = utils.erectArray3;
+              return null;
             }
-          case 'Array(4)':
-            {
-              if (this.output[2] > 0) {
-                this.TextureConstructor = GLTextureArray4Float3D;
-                this.formatValues = utils.erect3DArray4;
-                return null;
-              } else if (this.output[1] > 0) {
-                this.TextureConstructor = GLTextureArray4Float2D;
-                this.formatValues = utils.erect2DArray4;
-                return null;
-              } else {
-                this.TextureConstructor = GLTextureArray4Float;
-                this.formatValues = utils.erectArray4;
-                return null;
-              }
+          }
+          case 'Array(4)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray4Float3D;
+              this.formatValues = utils.erect3DArray4;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray4Float2D;
+              this.formatValues = utils.erect2DArray4;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray4Float;
+              this.formatValues = utils.erectArray4;
+              return null;
             }
+          }
         }
       } else {
         switch (this.returnType) {
           case 'LiteralInteger':
           case 'Float':
           case 'Number':
-          case 'Integer':
-            {
-              if (this.output[2] > 0) {
-                this.TextureConstructor = GLTextureFloat3D;
-                this.formatValues = utils.erect3DFloat;
-                return null;
-              } else if (this.output[1] > 0) {
-                this.TextureConstructor = GLTextureFloat2D;
-                this.formatValues = utils.erect2DFloat;
-                return null;
-              } else {
-                this.TextureConstructor = GLTextureFloat;
-                this.formatValues = utils.erectFloat;
-                return null;
-              }
+          case 'Integer': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureFloat3D;
+              this.formatValues = utils.erect3DFloat;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureFloat2D;
+              this.formatValues = utils.erect2DFloat;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureFloat;
+              this.formatValues = utils.erectFloat;
+              return null;
             }
-          case 'Array(2)':
-            {
-              if (this.output[2] > 0) {
-                this.TextureConstructor = GLTextureArray2Float3D;
-                this.formatValues = utils.erect3DArray2;
-                return null;
-              } else if (this.output[1] > 0) {
-                this.TextureConstructor = GLTextureArray2Float2D;
-                this.formatValues = utils.erect2DArray2;
-                return null;
-              } else {
-                this.TextureConstructor = GLTextureArray2Float;
-                this.formatValues = utils.erectArray2;
-                return null;
-              }
+          }
+          case 'Array(2)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray2Float3D;
+              this.formatValues = utils.erect3DArray2;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray2Float2D;
+              this.formatValues = utils.erect2DArray2;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray2Float;
+              this.formatValues = utils.erectArray2;
+              return null;
             }
-          case 'Array(3)':
-            {
-              if (this.output[2] > 0) {
-                this.TextureConstructor = GLTextureArray3Float3D;
-                this.formatValues = utils.erect3DArray3;
-                return null;
-              } else if (this.output[1] > 0) {
-                this.TextureConstructor = GLTextureArray3Float2D;
-                this.formatValues = utils.erect2DArray3;
-                return null;
-              } else {
-                this.TextureConstructor = GLTextureArray3Float;
-                this.formatValues = utils.erectArray3;
-                return null;
-              }
+          }
+          case 'Array(3)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray3Float3D;
+              this.formatValues = utils.erect3DArray3;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray3Float2D;
+              this.formatValues = utils.erect2DArray3;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray3Float;
+              this.formatValues = utils.erectArray3;
+              return null;
             }
-          case 'Array(4)':
-            {
-              if (this.output[2] > 0) {
-                this.TextureConstructor = GLTextureArray4Float3D;
-                this.formatValues = utils.erect3DArray4;
-                return null;
-              } else if (this.output[1] > 0) {
-                this.TextureConstructor = GLTextureArray4Float2D;
-                this.formatValues = utils.erect2DArray4;
-                return null;
-              } else {
-                this.TextureConstructor = GLTextureArray4Float;
-                this.formatValues = utils.erectArray4;
-                return null;
-              }
+          }
+          case 'Array(4)': {
+            if (this.output[2] > 0) {
+              this.TextureConstructor = GLTextureArray4Float3D;
+              this.formatValues = utils.erect3DArray4;
+              return null;
+            } else if (this.output[1] > 0) {
+              this.TextureConstructor = GLTextureArray4Float2D;
+              this.formatValues = utils.erect2DArray4;
+              return null;
+            } else {
+              this.TextureConstructor = GLTextureArray4Float;
+              this.formatValues = utils.erectArray4;
+              return null;
             }
+          }
         }
       }
     } else {
