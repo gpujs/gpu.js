@@ -1034,8 +1034,8 @@ To assist with mostly unit tests, but perhaps in scenarios outside of GPU.js, th
 * `GPU.isGPUSupported`: `boolean` - checks if GPU is in-fact supported
 * `GPU.isKernelMapSupported`: `boolean` - checks if kernel maps are supported
 * `GPU.isOffscreenCanvasSupported`: `boolean` - checks if offscreen canvas is supported
-* `GOU.isWebGLSupported`: `boolean` - checks if WebGL v1 is supported
-* `GOU.isWebGL2Supported`: `boolean` - checks if WebGL v2 is supported
+* `GPU.isWebGLSupported`: `boolean` - checks if WebGL v1 is supported
+* `GPU.isWebGL2Supported`: `boolean` - checks if WebGL v2 is supported
 * `GPU.isHeadlessGLSupported`: `boolean` - checks if headlessgl is supported
 * `GPU.isCanvasSupported`: `boolean` - checks if canvas is supported
 * `GPU.isGPUHTMLImageArraySupported`: `boolean` - checks if the platform supports HTMLImageArray's
