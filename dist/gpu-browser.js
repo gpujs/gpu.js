@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.6.9
- * @date Sun Feb 16 2020 15:57:16 GMT-0500 (Eastern Standard Time)
+ * @version 2.6.10
+ * @date Mon Mar 09 2020 05:45:42 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -7418,6 +7418,7 @@ class FunctionNode {
       'sin',
       'sqrt',
       'tan',
+      'tanh'
     ];
     return ast.type === 'CallExpression' &&
       ast.callee &&

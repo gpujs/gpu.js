@@ -260,3 +260,7 @@ test('Math.sqrt(value)', () => {
 test('Math.tan(value)', () => {
   assert.equal(run('Math.tan(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
 });
+
+test('Math.tanh(value)', () => {
+  assert.equal(run('Math.tanh(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+});

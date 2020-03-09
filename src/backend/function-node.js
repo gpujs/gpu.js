@@ -623,6 +623,7 @@ class FunctionNode {
       'sin',
       'sqrt',
       'tan',
+      'tanh'
     ];
     return ast.type === 'CallExpression' &&
       ast.callee &&
