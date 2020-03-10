@@ -34,12 +34,7 @@ class GLTexture extends Texture {
       console.warn('cloning internal texture');
     }
     const existingFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-    if (!this._framebuffer) {
-      this._framebuffer = gl.createFramebuffer();
-    }
-    this._framebuffer.width = size[0];
-    this._framebuffer.height = size[1];
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this._framebuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
     selectTexture(gl, texture);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
     const target = gl.createTexture();
@@ -53,12 +48,31 @@ class GLTexture extends Texture {
     }
   }
 
+  clear() {
+    const { context: gl, size, texture } = this;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    selectTexture(gl, texture);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  }
+
   delete() {
     super.delete();
     if (this.texture._refs === 0 && this._framebuffer) {
       this.context.deleteFramebuffer(this._framebuffer);
       this._framebuffer = null;
     }
+  }
+
+  framebuffer() {
+    if (!this._framebuffer) {
+      this._framebuffer = this.context.createFramebuffer();
+    }
+    this._framebuffer.width = this.size[0];
+    this._framebuffer.height = this.size[1];
+    return this._framebuffer;
   }
 }
 

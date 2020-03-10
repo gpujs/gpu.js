@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "2.6.6",
+  "version": "2.7.0",
   "description": "GPU Accelerated JavaScript",
   "engines": {
     "node": ">=8.0.0"
@@ -18,7 +18,7 @@
     "test": "test"
   },
   "dependencies": {
-    "acorn": "^7.1.0",
+    "acorn": "^7.1.1",
     "gl": "^4.4.1",
     "gl-wiretap": "^0.6.2",
     "gpu-mock.js": "^1.1.1"
@@ -27,6 +27,7 @@
     "benchmark": "^2.1.4",
     "browser-sync": "^2.26.7",
     "browserify": "^16.2.3",
+    "c8": "^7.0.1",
     "gulp": "^4.0.0",
     "gulp-concat": "^2.6.0",
     "gulp-header": "^1.7.1",
@@ -44,6 +45,7 @@
   },
   "scripts": {
     "test": "qunit",
+    "coverage": "c8 qunit",
     "setup": "npm i -g gulp-cli",
     "make": "gulp make",
     "docs": "doxdox ./src --layout bootstrap --output docs.html"

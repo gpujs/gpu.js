@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.6.6
- * @date Fri Jan 24 2020 10:39:16 GMT-0500 (Eastern Standard Time)
+ * @version 2.7.0
+ * @date Tue Mar 10 2020 15:46:55 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -2984,6 +2984,7 @@ class FunctionNode {
       'sin',
       'sqrt',
       'tan',
+      'tanh'
     ];
     return ast.type === 'CallExpression' &&
       ast.callee &&
@@ -4352,12 +4353,13 @@ function getToArrayString(kernelResult, textureName) {
         throw new Error('unhandled fromObject');
       }
     },
-    thisLookup: (property) => {
+    thisLookup: (property, isDeclaration) => {
       if (property === 'texture') {
         return textureName;
       }
       if (property === 'context') {
-        return null;
+        if (isDeclaration) return null;
+        return 'gl';
       }
       if (property === '_framebuffer') {
         return '_framebuffer';
@@ -5502,10 +5504,7 @@ class GLTextureFloat extends GLTexture {
   }
   renderRawOutput() {
     const { context: gl, size } = this;
-    if (!this._framebuffer) {
-      this._framebuffer = gl.createFramebuffer();
-    }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this._framebuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
@@ -5570,12 +5569,7 @@ class GLTexture extends Texture {
       console.warn('cloning internal texture');
     }
     const existingFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-    if (!this._framebuffer) {
-      this._framebuffer = gl.createFramebuffer();
-    }
-    this._framebuffer.width = size[0];
-    this._framebuffer.height = size[1];
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this._framebuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
     selectTexture(gl, texture);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
     const target = gl.createTexture();
@@ -5589,12 +5583,31 @@ class GLTexture extends Texture {
     }
   }
 
+  clear() {
+    const { context: gl, size, texture } = this;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    selectTexture(gl, texture);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  }
+
   delete() {
     super.delete();
     if (this.texture._refs === 0 && this._framebuffer) {
       this.context.deleteFramebuffer(this._framebuffer);
       this._framebuffer = null;
     }
+  }
+
+  framebuffer() {
+    if (!this._framebuffer) {
+      this._framebuffer = this.context.createFramebuffer();
+    }
+    this._framebuffer.width = this.size[0];
+    this._framebuffer.height = this.size[1];
+    return this._framebuffer;
   }
 }
 
@@ -5908,7 +5921,6 @@ class KernelValue {
     this.name = name;
     this.origin = origin;
     this.tactic = tactic;
-    this.id = `${this.origin}_${name}`;
     this.varName = origin === 'constants' ? `constants.${name}` : name;
     this.kernel = kernel;
     this.strictIntegers = strictIntegers;
@@ -5921,6 +5933,10 @@ class KernelValue {
     this.onRequestContextHandle = onRequestContextHandle;
     this.onUpdateValueMismatch = onUpdateValueMismatch;
     this.forceUploadEachRun = null;
+  }
+
+  get id() {
+    return `${this.origin}_${name}`;
   }
 
   getSource() {
@@ -7962,7 +7978,7 @@ class WebGLFunctionNode extends FunctionNode {
             case 'Array(2)':
             case 'Array(3)':
             case 'Array(4)':
-              retArr.push(`constants_${ name }`);
+              retArr.push(`constants_${ utils.sanitizeName(name) }`);
               return retArr;
           }
         }
@@ -7998,12 +8014,12 @@ class WebGLFunctionNode extends FunctionNode {
         case 'Integer':
         case 'Float':
         case 'Boolean':
-          retArr.push(`${origin}_${name}`);
+          retArr.push(`${origin}_${utils.sanitizeName(name)}`);
           return retArr;
       }
     }
 
-    const markupName = `${origin}_${name}`;
+    const markupName = `${origin}_${utils.sanitizeName(name)}`;
 
     switch (type) {
       case 'Array(2)':
@@ -8235,7 +8251,7 @@ class WebGLFunctionNode extends FunctionNode {
             if (targetType === argumentType) {
               if (argument.type === 'Identifier') {
                 retArr.push(`user_${utils.sanitizeName(argument.name)}`);
-              } else if (argument.type === 'ArrayExpression' || argument.type === 'MemberExpression') {
+              } else if (argument.type === 'ArrayExpression' || argument.type === 'MemberExpression' || argument.type === 'CallExpression') {
                 this.astGeneric(argument, retArr);
               } else {
                 throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
@@ -9013,6 +9029,7 @@ module.exports = {
   WebGLKernelValueHTMLVideo
 };
 },{"./html-image":53}],55:[function(require,module,exports){
+const { utils } = require('../../../utils');
 const { KernelValue } = require('../../kernel-value');
 
 class WebGLKernelValue extends KernelValue {
@@ -9027,6 +9044,10 @@ class WebGLKernelValue extends KernelValue {
     this.textureSize = null;
     this.bitRatio = null;
     this.prevArg = null;
+  }
+
+  get id() {
+    return `${this.origin}_${utils.sanitizeName(this.name)}`;
   }
 
   setup() {}
@@ -9067,7 +9088,7 @@ class WebGLKernelValue extends KernelValue {
 module.exports = {
   WebGLKernelValue
 };
-},{"../../kernel-value":34}],56:[function(require,module,exports){
+},{"../../../utils":113,"../../kernel-value":34}],56:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -9977,7 +9998,7 @@ class WebGLKernel extends GLKernel {
 
     for (let index = 0; index < args.length; index++) {
       const value = args[index];
-      const name = utils.sanitizeName(this.argumentNames[index]);
+      const name = this.argumentNames[index];
       let type;
       if (needsArgumentTypes) {
         type = utils.getVariableType(value, this.strictIntegers);
@@ -10026,8 +10047,7 @@ class WebGLKernel extends GLKernel {
     }
     this.constantBitRatios = {};
     let textureIndexes = 0;
-    for (const p in this.constants) {
-      const name = utils.sanitizeName(p);
+    for (const name in this.constants) {
       const value = this.constants[name];
       let type;
       if (needsConstantTypes) {
@@ -14246,7 +14266,7 @@ const utils = {
           }
           case 'VariableDeclarator':
             if (ast.init.object && ast.init.object.type === 'ThisExpression') {
-              const lookup = thisLookup(ast.init.property.name);
+              const lookup = thisLookup(ast.init.property.name, true);
               if (lookup) {
                 return `${ast.id.name} = ${flatten(ast.init)}`;
               } else {

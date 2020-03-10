@@ -115,3 +115,21 @@ test('handles argument of type HTMLImageArray', () => {
   assert.equal(lookupReturnTypeCalls, 2);
   assert.equal(lookupFunctionArgumentTypes, 1);
 });
+test('handles argument types of CallExpression that return arrays', () => {
+  const node = new WebGLFunctionNode(`function kernel() {
+    const p = [this.thread.x, this.thread.y];
+    const z = array2(array2(p, 0.01), 0.02);
+    return 1.0;
+  }`, {
+    output: [1, 1],
+    lookupReturnType: () => 'Number',
+    needsArgumentType: () => false,
+    lookupFunctionArgumentTypes: () => [],
+    triggerImplyArgumentType: () => {}
+  });
+  assert.equal(node.toString(), `float kernel() {
+vec2 user_p=vec2(threadId.x, threadId.y);
+float user_z=array2(array2(user_p, 0.01), 0.02);
+return 1.0;
+}`);
+});

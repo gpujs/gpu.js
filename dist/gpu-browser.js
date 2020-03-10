@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.6.6
- * @date Fri Jan 24 2020 10:39:16 GMT-0500 (Eastern Standard Time)
+ * @version 2.7.0
+ * @date Tue Mar 10 2020 15:46:55 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -1618,8 +1618,10 @@
     if (this.options.ecmaVersion >= 6) {
       if (name === "__proto__" && kind === "init") {
         if (propHash.proto) {
-          if (refDestructuringErrors && refDestructuringErrors.doubleProto < 0) { refDestructuringErrors.doubleProto = key.start; }
-          else { this.raiseRecoverable(key.start, "Redefinition of __proto__ property"); }
+          if (refDestructuringErrors) {
+            if (refDestructuringErrors.doubleProto < 0)
+              { refDestructuringErrors.doubleProto = key.start; }
+          } else { this.raiseRecoverable(key.start, "Redefinition of __proto__ property"); }
         }
         propHash.proto = true;
       }
@@ -1668,12 +1670,11 @@
       else { this.exprAllowed = false; }
     }
 
-    var ownDestructuringErrors = false, oldParenAssign = -1, oldTrailingComma = -1, oldShorthandAssign = -1;
+    var ownDestructuringErrors = false, oldParenAssign = -1, oldTrailingComma = -1;
     if (refDestructuringErrors) {
       oldParenAssign = refDestructuringErrors.parenthesizedAssign;
       oldTrailingComma = refDestructuringErrors.trailingComma;
-      oldShorthandAssign = refDestructuringErrors.shorthandAssign;
-      refDestructuringErrors.parenthesizedAssign = refDestructuringErrors.trailingComma = refDestructuringErrors.shorthandAssign = -1;
+      refDestructuringErrors.parenthesizedAssign = refDestructuringErrors.trailingComma = -1;
     } else {
       refDestructuringErrors = new DestructuringErrors;
       ownDestructuringErrors = true;
@@ -1688,8 +1689,11 @@
       var node = this.startNodeAt(startPos, startLoc);
       node.operator = this.value;
       node.left = this.type === types.eq ? this.toAssignable(left, false, refDestructuringErrors) : left;
-      if (!ownDestructuringErrors) { DestructuringErrors.call(refDestructuringErrors); }
-      refDestructuringErrors.shorthandAssign = -1; 
+      if (!ownDestructuringErrors) {
+        refDestructuringErrors.parenthesizedAssign = refDestructuringErrors.trailingComma = refDestructuringErrors.doubleProto = -1;
+      }
+      if (refDestructuringErrors.shorthandAssign >= node.left.start)
+        { refDestructuringErrors.shorthandAssign = -1; } 
       this.checkLVal(left);
       this.next();
       node.right = this.parseMaybeAssign(noIn);
@@ -1699,7 +1703,6 @@
     }
     if (oldParenAssign > -1) { refDestructuringErrors.parenthesizedAssign = oldParenAssign; }
     if (oldTrailingComma > -1) { refDestructuringErrors.trailingComma = oldTrailingComma; }
-    if (oldShorthandAssign > -1) { refDestructuringErrors.shorthandAssign = oldShorthandAssign; }
     return left
   };
 
@@ -1795,8 +1798,8 @@
   pp$3.parseExprSubscripts = function(refDestructuringErrors) {
     var startPos = this.start, startLoc = this.startLoc;
     var expr = this.parseExprAtom(refDestructuringErrors);
-    var skipArrowSubscripts = expr.type === "ArrowFunctionExpression" && this.input.slice(this.lastTokStart, this.lastTokEnd) !== ")";
-    if (this.checkExpressionErrors(refDestructuringErrors) || skipArrowSubscripts) { return expr }
+    if (expr.type === "ArrowFunctionExpression" && this.input.slice(this.lastTokStart, this.lastTokEnd) !== ")")
+      { return expr }
     var result = this.parseSubscripts(expr, startPos, startLoc);
     if (refDestructuringErrors && result.type === "MemberExpression") {
       if (refDestructuringErrors.parenthesizedAssign >= result.start) { refDestructuringErrors.parenthesizedAssign = -1; }
@@ -2074,6 +2077,7 @@
   var empty$1 = [];
 
   pp$3.parseNew = function() {
+    if (this.containsEsc) { this.raiseRecoverable(this.start, "Escape sequence in keyword new"); }
     var node = this.startNode();
     var meta = this.parseIdent(true);
     if (this.options.ecmaVersion >= 6 && this.eat(types.dot)) {
@@ -2442,7 +2446,7 @@
     } else {
       this.unexpected();
     }
-    this.next();
+    this.next(!!liberal);
     this.finishNode(node, "Identifier");
     if (!liberal) {
       this.checkUnreserved(node);
@@ -2473,7 +2477,7 @@
 
     var node = this.startNode();
     this.next();
-    node.argument = this.parseMaybeUnary(null, true);
+    node.argument = this.parseMaybeUnary(null, false);
     return this.finishNode(node, "AwaitExpression")
   };
 
@@ -2841,7 +2845,8 @@
     if (!this.switchU || c <= 0xD7FF || c >= 0xE000 || i + 1 >= l) {
       return c
     }
-    return (c << 10) + s.charCodeAt(i + 1) - 0x35FDC00
+    var next = s.charCodeAt(i + 1);
+    return next >= 0xDC00 && next <= 0xDFFF ? (c << 10) + next - 0x35FDC00 : c
   };
 
   RegExpValidationState.prototype.nextIndex = function nextIndex (i) {
@@ -2850,8 +2855,9 @@
     if (i >= l) {
       return l
     }
-    var c = s.charCodeAt(i);
-    if (!this.switchU || c <= 0xD7FF || c >= 0xE000 || i + 1 >= l) {
+    var c = s.charCodeAt(i), next;
+    if (!this.switchU || c <= 0xD7FF || c >= 0xE000 || i + 1 >= l ||
+        (next = s.charCodeAt(i + 1)) < 0xDC00 || next > 0xDFFF) {
       return i + 1
     }
     return i + 2
@@ -3750,7 +3756,9 @@
   var pp$9 = Parser.prototype;
 
 
-  pp$9.next = function() {
+  pp$9.next = function(ignoreEscapeSequenceInKeyword) {
+    if (!ignoreEscapeSequenceInKeyword && this.type.keyword && this.containsEsc)
+      { this.raiseRecoverable(this.start, "Escape sequence in keyword " + this.type.keyword); }
     if (this.options.onToken)
       { this.options.onToken(new Token(this)); }
 
@@ -4127,7 +4135,6 @@
     if (!startsWithDot && this.readInt(10) === null) { this.raise(start, "Invalid number"); }
     var octal = this.pos - start >= 2 && this.input.charCodeAt(start) === 48;
     if (octal && this.strict) { this.raise(start, "Invalid number"); }
-    if (octal && /[89]/.test(this.input.slice(start, this.pos))) { octal = false; }
     var next = this.input.charCodeAt(this.pos);
     if (!octal && !startsWithDot && this.options.ecmaVersion >= 11 && next === 110) {
       var str$1 = this.input.slice(start, this.pos);
@@ -4136,6 +4143,7 @@
       if (isIdentifierStart(this.fullCharCodeAtPos())) { this.raise(this.pos, "Identifier directly after number"); }
       return this.finishToken(types.num, val$1)
     }
+    if (octal && /[89]/.test(this.input.slice(start, this.pos))) { octal = false; }
     if (next === 46 && !octal) { 
       ++this.pos;
       this.readInt(10);
@@ -4303,6 +4311,18 @@
     case 10: 
       if (this.options.locations) { this.lineStart = this.pos; ++this.curLine; }
       return ""
+    case 56:
+    case 57:
+      if (inTemplate) {
+        var codePos = this.pos - 1;
+
+        this.invalidStringToken(
+          codePos,
+          "Invalid escape sequence in template string"
+        );
+
+        return null
+      }
     default:
       if (ch >= 48 && ch <= 55) {
         var octalStr = this.input.substr(this.pos - 1, 3).match(/^[0-7]+/)[0];
@@ -4372,7 +4392,6 @@
     var word = this.readWord1();
     var type = types.name;
     if (this.keywords.test(word)) {
-      if (this.containsEsc) { this.raiseRecoverable(this.start, "Escape sequence in keyword " + word); }
       type = keywords$1[word];
     }
     return this.finishToken(type, word)
@@ -7418,6 +7437,7 @@ class FunctionNode {
       'sin',
       'sqrt',
       'tan',
+      'tanh'
     ];
     return ast.type === 'CallExpression' &&
       ast.callee &&
@@ -8786,12 +8806,13 @@ function getToArrayString(kernelResult, textureName) {
         throw new Error('unhandled fromObject');
       }
     },
-    thisLookup: (property) => {
+    thisLookup: (property, isDeclaration) => {
       if (property === 'texture') {
         return textureName;
       }
       if (property === 'context') {
-        return null;
+        if (isDeclaration) return null;
+        return 'gl';
       }
       if (property === '_framebuffer') {
         return '_framebuffer';
@@ -9936,10 +9957,7 @@ class GLTextureFloat extends GLTexture {
   }
   renderRawOutput() {
     const { context: gl, size } = this;
-    if (!this._framebuffer) {
-      this._framebuffer = gl.createFramebuffer();
-    }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this._framebuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
@@ -10004,12 +10022,7 @@ class GLTexture extends Texture {
       console.warn('cloning internal texture');
     }
     const existingFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-    if (!this._framebuffer) {
-      this._framebuffer = gl.createFramebuffer();
-    }
-    this._framebuffer.width = size[0];
-    this._framebuffer.height = size[1];
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this._framebuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
     selectTexture(gl, texture);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
     const target = gl.createTexture();
@@ -10023,12 +10036,31 @@ class GLTexture extends Texture {
     }
   }
 
+  clear() {
+    const { context: gl, size, texture } = this;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    selectTexture(gl, texture);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  }
+
   delete() {
     super.delete();
     if (this.texture._refs === 0 && this._framebuffer) {
       this.context.deleteFramebuffer(this._framebuffer);
       this._framebuffer = null;
     }
+  }
+
+  framebuffer() {
+    if (!this._framebuffer) {
+      this._framebuffer = this.context.createFramebuffer();
+    }
+    this._framebuffer.width = this.size[0];
+    this._framebuffer.height = this.size[1];
+    return this._framebuffer;
   }
 }
 
@@ -10342,7 +10374,6 @@ class KernelValue {
     this.name = name;
     this.origin = origin;
     this.tactic = tactic;
-    this.id = `${this.origin}_${name}`;
     this.varName = origin === 'constants' ? `constants.${name}` : name;
     this.kernel = kernel;
     this.strictIntegers = strictIntegers;
@@ -10355,6 +10386,10 @@ class KernelValue {
     this.onRequestContextHandle = onRequestContextHandle;
     this.onUpdateValueMismatch = onUpdateValueMismatch;
     this.forceUploadEachRun = null;
+  }
+
+  get id() {
+    return `${this.origin}_${name}`;
   }
 
   getSource() {
@@ -12396,7 +12431,7 @@ class WebGLFunctionNode extends FunctionNode {
             case 'Array(2)':
             case 'Array(3)':
             case 'Array(4)':
-              retArr.push(`constants_${ name }`);
+              retArr.push(`constants_${ utils.sanitizeName(name) }`);
               return retArr;
           }
         }
@@ -12432,12 +12467,12 @@ class WebGLFunctionNode extends FunctionNode {
         case 'Integer':
         case 'Float':
         case 'Boolean':
-          retArr.push(`${origin}_${name}`);
+          retArr.push(`${origin}_${utils.sanitizeName(name)}`);
           return retArr;
       }
     }
 
-    const markupName = `${origin}_${name}`;
+    const markupName = `${origin}_${utils.sanitizeName(name)}`;
 
     switch (type) {
       case 'Array(2)':
@@ -12669,7 +12704,7 @@ class WebGLFunctionNode extends FunctionNode {
             if (targetType === argumentType) {
               if (argument.type === 'Identifier') {
                 retArr.push(`user_${utils.sanitizeName(argument.name)}`);
-              } else if (argument.type === 'ArrayExpression' || argument.type === 'MemberExpression') {
+              } else if (argument.type === 'ArrayExpression' || argument.type === 'MemberExpression' || argument.type === 'CallExpression') {
                 this.astGeneric(argument, retArr);
               } else {
                 throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
@@ -13447,6 +13482,7 @@ module.exports = {
   WebGLKernelValueHTMLVideo
 };
 },{"./html-image":54}],56:[function(require,module,exports){
+const { utils } = require('../../../utils');
 const { KernelValue } = require('../../kernel-value');
 
 class WebGLKernelValue extends KernelValue {
@@ -13461,6 +13497,10 @@ class WebGLKernelValue extends KernelValue {
     this.textureSize = null;
     this.bitRatio = null;
     this.prevArg = null;
+  }
+
+  get id() {
+    return `${this.origin}_${utils.sanitizeName(this.name)}`;
   }
 
   setup() {}
@@ -13501,7 +13541,7 @@ class WebGLKernelValue extends KernelValue {
 module.exports = {
   WebGLKernelValue
 };
-},{"../../kernel-value":35}],57:[function(require,module,exports){
+},{"../../../utils":114,"../../kernel-value":35}],57:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -14411,7 +14451,7 @@ class WebGLKernel extends GLKernel {
 
     for (let index = 0; index < args.length; index++) {
       const value = args[index];
-      const name = utils.sanitizeName(this.argumentNames[index]);
+      const name = this.argumentNames[index];
       let type;
       if (needsArgumentTypes) {
         type = utils.getVariableType(value, this.strictIntegers);
@@ -14460,8 +14500,7 @@ class WebGLKernel extends GLKernel {
     }
     this.constantBitRatios = {};
     let textureIndexes = 0;
-    for (const p in this.constants) {
-      const name = utils.sanitizeName(p);
+    for (const name in this.constants) {
       const value = this.constants[name];
       let type;
       if (needsConstantTypes) {
@@ -18680,7 +18719,7 @@ const utils = {
           }
           case 'VariableDeclarator':
             if (ast.init.object && ast.init.object.type === 'ThisExpression') {
-              const lookup = thisLookup(ast.init.property.name);
+              const lookup = thisLookup(ast.init.property.name, true);
               if (lookup) {
                 return `${ast.id.name} = ${flatten(ast.init)}`;
               } else {

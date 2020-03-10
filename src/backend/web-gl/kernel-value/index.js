@@ -1,3 +1,4 @@
+const { utils } = require('../../../utils');
 const { KernelValue } = require('../../kernel-value');
 
 class WebGLKernelValue extends KernelValue {
@@ -16,6 +17,10 @@ class WebGLKernelValue extends KernelValue {
     this.textureSize = null;
     this.bitRatio = null;
     this.prevArg = null;
+  }
+
+  get id() {
+    return `${this.origin}_${utils.sanitizeName(this.name)}`;
   }
 
   setup() {}

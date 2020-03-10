@@ -37,7 +37,6 @@ class KernelValue {
     this.name = name;
     this.origin = origin;
     this.tactic = tactic;
-    this.id = `${this.origin}_${name}`;
     this.varName = origin === 'constants' ? `constants.${name}` : name;
     this.kernel = kernel;
     this.strictIntegers = strictIntegers;
@@ -51,6 +50,10 @@ class KernelValue {
     this.onRequestContextHandle = onRequestContextHandle;
     this.onUpdateValueMismatch = onUpdateValueMismatch;
     this.forceUploadEachRun = null;
+  }
+
+  get id() {
+    return `${this.origin}_${name}`;
   }
 
   getSource() {
