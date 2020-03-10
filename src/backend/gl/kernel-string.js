@@ -292,12 +292,13 @@ function getToArrayString(kernelResult, textureName) {
         throw new Error('unhandled fromObject');
       }
     },
-    thisLookup: (property) => {
+    thisLookup: (property, isDeclaration) => {
       if (property === 'texture') {
         return textureName;
       }
       if (property === 'context') {
-        return null;
+        if (isDeclaration) return null;
+        return 'gl';
       }
       if (property === '_framebuffer') {
         return '_framebuffer';
