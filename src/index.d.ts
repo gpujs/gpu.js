@@ -17,7 +17,7 @@ export class GPU<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[
   addNativeFunction(name: string, source: string, settings?: IGPUFunctionSettings): this;
   combineKernels(...kernels: KernelFunction[]): IKernelRunShortcut;
   combineKernels<KF extends KernelFunction>(...kernels: KF[]):
-    ((...args: Parameters<KF>) => 
+    ((...args: Parameters<KF>) =>
       ReturnType<KF>[]
       | ReturnType<KF>[][]
       | ReturnType<KF>[][][]
@@ -562,6 +562,7 @@ export class Texture {
   toArray(): TextureArrayOutput;
   clone(): Texture;
   delete(): void;
+  clear(): void;
   kernel: Kernel;
 }
 
