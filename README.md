@@ -897,7 +897,7 @@ worker.onmessage = function(e) {
 * for instances of `GPU` use the `destroy` method.  Example: `gpu.destroy()`
 * for instances of `Kernel` use the `destroy` method.  Example: `kernel.destroy()`
 * for instances of `Texture` use the `delete` method. Example: `texture.delete()`
-* for instances of `Texture` that you might want to reuse/reset to zeros, use the `empty` method. Example: `texture.empty()`
+* for instances of `Texture` that you might want to reuse/reset to zeros, use the `clear` method. Example: `texture.clear()`
 
 ## Flattened typed array support
 To use the useful `x`, `y`, `z` `thread` lookup api inside of GPU.js, and yet use flattened arrays, there is the `Input` type.
