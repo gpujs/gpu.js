@@ -4,13 +4,14 @@ const { GPU } = require('../../src');
 
 describe('internal: texture recycling');
 
-function testKernelTextureRecycling(precision, mode) {
+function testImmutableKernelTextureRecycling(precision, mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(v) {
     return v[0] + 1;
   }, {
     output: [1],
     pipeline: true,
+    immutable: true,
     precision,
   });
   let result = kernel([0]);
@@ -26,47 +27,47 @@ function testKernelTextureRecycling(precision, mode) {
   gpu.destroy();
 }
 
-test('single precision kernel auto', () => {
-  testKernelTextureRecycling('single')
+test('immutable single precision kernel auto', () => {
+  testImmutableKernelTextureRecycling('single')
 });
 
-test('single precision kernel gpu', () => {
-  testKernelTextureRecycling('single', 'gpu');
+test('immutable single precision kernel gpu', () => {
+  testImmutableKernelTextureRecycling('single', 'gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('single precision kernel webgl', () => {
-  testKernelTextureRecycling('single', 'webgl');
+(GPU.isWebGLSupported ? test : skip)('immutable single precision kernel webgl', () => {
+  testImmutableKernelTextureRecycling('single', 'webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('single precision kernel webgl2', () => {
-  testKernelTextureRecycling('single', 'webgl2');
+(GPU.isWebGL2Supported ? test : skip)('immutable single precision kernel webgl2', () => {
+  testImmutableKernelTextureRecycling('single', 'webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('kernel precision headlessgl', () => {
-  testKernelTextureRecycling('single', 'headlessgl');
+(GPU.isHeadlessGLSupported ? test : skip)('immutable single precision kernel headlessgl', () => {
+  testImmutableKernelTextureRecycling('single', 'headlessgl');
 });
 
-test('unsigned precision kernel auto', () => {
-  testKernelTextureRecycling('unsigned')
+test('immutable unsigned precision kernel auto', () => {
+  testImmutableKernelTextureRecycling('unsigned')
 });
 
-test('unsigned precision kernel gpu', () => {
-  testKernelTextureRecycling('unsigned', 'gpu');
+test('immutable unsigned precision kernel gpu', () => {
+  testImmutableKernelTextureRecycling('unsigned', 'gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('unsigned precision kernel webgl', () => {
-  testKernelTextureRecycling('unsigned', 'webgl');
+(GPU.isWebGLSupported ? test : skip)('immutable unsigned precision kernel webgl', () => {
+  testImmutableKernelTextureRecycling('unsigned', 'webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('unsigned precision kernel webgl2', () => {
-  testKernelTextureRecycling('unsigned', 'webgl2');
+(GPU.isWebGL2Supported ? test : skip)('immutable unsigned precision kernel webgl2', () => {
+  testImmutableKernelTextureRecycling('unsigned', 'webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('unsigned precision headlessgl', () => {
-  testKernelTextureRecycling('unsigned', 'headlessgl');
+(GPU.isHeadlessGLSupported ? test : skip)('immutable unsigned precision headlessgl', () => {
+  testImmutableKernelTextureRecycling('unsigned', 'headlessgl');
 });
 
-function testMappedKernelTextureRecycling(precision, mode) {
+function testImmutableMappedKernelTextureRecycling(precision, mode) {
   const gpu = new GPU({ mode });
   function oneOff(value) {
     return value;
@@ -79,6 +80,7 @@ function testMappedKernelTextureRecycling(precision, mode) {
   }, {
     output: [1],
     pipeline: true,
+    immutable: true,
     precision,
   });
   let map = kernel([0], [11]);
@@ -96,53 +98,54 @@ function testMappedKernelTextureRecycling(precision, mode) {
   gpu.destroy();
 }
 
-test('single precision mapped kernel auto', () => {
-  testMappedKernelTextureRecycling('single')
+test('immutable single precision mapped kernel auto', () => {
+  testImmutableMappedKernelTextureRecycling('single')
 });
 
-test('single precision mapped kernel gpu', () => {
-  testMappedKernelTextureRecycling('single', 'gpu');
+test('immutable single precision mapped kernel gpu', () => {
+  testImmutableMappedKernelTextureRecycling('single', 'gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('single precision mapped kernel webgl', () => {
-  testMappedKernelTextureRecycling('single', 'webgl');
+(GPU.isWebGLSupported ? test : skip)('immutable single precision mapped kernel webgl', () => {
+  testImmutableMappedKernelTextureRecycling('single', 'webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('single precision mapped kernel webgl2', () => {
-  testMappedKernelTextureRecycling('single', 'webgl2');
+(GPU.isWebGL2Supported ? test : skip)('immutable single precision mapped kernel webgl2', () => {
+  testImmutableMappedKernelTextureRecycling('single', 'webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('single precision mapped kernel headlessgl', () => {
-  testMappedKernelTextureRecycling('single', 'headlessgl');
+(GPU.isHeadlessGLSupported ? test : skip)('immutable single precision mapped kernel headlessgl', () => {
+  testImmutableMappedKernelTextureRecycling('single', 'headlessgl');
 });
 
-test('unsigned precision mapped kernel auto', () => {
-  testMappedKernelTextureRecycling('unsigned')
+test('immutable unsigned precision mapped kernel auto', () => {
+  testImmutableMappedKernelTextureRecycling('unsigned')
 });
 
-test('unsigned precision mapped kernel gpu', () => {
-  testMappedKernelTextureRecycling('unsigned', 'gpu');
+test('immutable unsigned precision mapped kernel gpu', () => {
+  testImmutableMappedKernelTextureRecycling('unsigned', 'gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('unsigned precision mapped kernel webgl', () => {
-  testMappedKernelTextureRecycling('unsigned', 'webgl');
+(GPU.isWebGLSupported ? test : skip)('immutable unsigned precision mapped kernel webgl', () => {
+  testImmutableMappedKernelTextureRecycling('unsigned', 'webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('unsigned precision mapped kernel webgl2', () => {
-  testMappedKernelTextureRecycling('unsigned', 'webgl2');
+(GPU.isWebGL2Supported ? test : skip)('immutable unsigned precision mapped kernel webgl2', () => {
+  testImmutableMappedKernelTextureRecycling('unsigned', 'webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('unsigned precision mapped kernel headlessgl', () => {
-  testMappedKernelTextureRecycling('unsigned', 'headlessgl');
+(GPU.isHeadlessGLSupported ? test : skip)('immutable unsigned precision mapped kernel headlessgl', () => {
+  testImmutableMappedKernelTextureRecycling('unsigned', 'headlessgl');
 });
 
-function testTextureDelete(precision, done, mode) {
+function testImmutableTextureDelete(precision, done, mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return this.thread.x;
   }, {
     output: [1],
     pipeline: true,
+    immutable: true,
     precision,
   });
   const result = kernel();
@@ -181,53 +184,54 @@ function testTextureDelete(precision, done, mode) {
     });
 }
 
-test('single precision texture delete auto', t => {
-  testTextureDelete('single', t.async());
+test('immutable single precision texture delete auto', t => {
+  testImmutableTextureDelete('single', t.async());
 });
 
-test('single precision texture delete gpu', t => {
-  testTextureDelete('single', t.async(), 'gpu');
+test('immutable single precision texture delete gpu', t => {
+  testImmutableTextureDelete('single', t.async(), 'gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('single precision texture delete webgl', t => {
-  testTextureDelete('single', t.async(), 'webgl');
+(GPU.isWebGLSupported ? test : skip)('immutable single precision texture delete webgl', t => {
+  testImmutableTextureDelete('single', t.async(), 'webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('single precision texture delete webgl2', t => {
-  testTextureDelete('single', t.async(), 'webgl2');
+(GPU.isWebGL2Supported ? test : skip)('immutable single precision texture delete webgl2', t => {
+  testImmutableTextureDelete('single', t.async(), 'webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('single precision texture delete headlessgl', t => {
-  testTextureDelete('single', t.async(), 'headlessgl');
+(GPU.isHeadlessGLSupported ? test : skip)('immutable single precision texture delete headlessgl', t => {
+  testImmutableTextureDelete('single', t.async(), 'headlessgl');
 });
 
-test('unsigned precision texture delete auto', t => {
-  testTextureDelete('unsigned', t.async() );
+test('immutable unsigned precision texture delete auto', t => {
+  testImmutableTextureDelete('unsigned', t.async() );
 });
 
-test('unsigned precision texture delete gpu', t => {
-  testTextureDelete('unsigned', t.async(), 'gpu');
+test('immutable unsigned precision texture delete gpu', t => {
+  testImmutableTextureDelete('unsigned', t.async(), 'gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('unsigned precision texture delete webgl', t => {
-  testTextureDelete('unsigned', t.async(), 'webgl');
+(GPU.isWebGLSupported ? test : skip)('immutable unsigned precision texture delete webgl', t => {
+  testImmutableTextureDelete('unsigned', t.async(), 'webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('unsigned precision texture delete webgl2', t => {
-  testTextureDelete('unsigned', t.async(), 'webgl2');
+(GPU.isWebGL2Supported ? test : skip)('immutable unsigned precision texture delete webgl2', t => {
+  testImmutableTextureDelete('unsigned', t.async(), 'webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('unsigned precision texture delete headlessgl', t => {
-  testTextureDelete('unsigned', t.async(), 'headlessgl');
+(GPU.isHeadlessGLSupported ? test : skip)('immutable unsigned precision texture delete headlessgl', t => {
+  testImmutableTextureDelete('unsigned', t.async(), 'headlessgl');
 });
 
-function testKernelTextureDoesNotLeak(precision, done, mode) {
+function testImmutableKernelTextureDoesNotLeak(precision, done, mode) {
   const gpu = new GPU({ mode });
   const toTexture = gpu.createKernel(function(value) {
     return value[this.thread.x];
   }, {
     output: [1],
     pipeline: true,
+    immutable: true,
     precision,
   });
   const one = toTexture([1]);
@@ -252,47 +256,47 @@ function testKernelTextureDoesNotLeak(precision, done, mode) {
     });
 }
 
-test('unsigned precision kernel.texture does not leak auto', t => {
-  testKernelTextureDoesNotLeak('unsigned', t.async());
+test('immutable unsigned precision kernel.texture does not leak auto', t => {
+  testImmutableKernelTextureDoesNotLeak('unsigned', t.async());
 });
 
-test('unsigned precision kernel.texture does not leak gpu', t => {
-  testKernelTextureDoesNotLeak('unsigned', t.async(), 'gpu');
+test('immutable unsigned precision kernel.texture does not leak gpu', t => {
+  testImmutableKernelTextureDoesNotLeak('unsigned', t.async(), 'gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('unsigned precision kernel.texture does not leak webgl', t => {
-  testKernelTextureDoesNotLeak('unsigned', t.async(), 'webgl');
+(GPU.isWebGLSupported ? test : skip)('immutable unsigned precision kernel.texture does not leak webgl', t => {
+  testImmutableKernelTextureDoesNotLeak('unsigned', t.async(), 'webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('unsigned precision kernel.texture does not leak webgl2', t => {
-  testKernelTextureDoesNotLeak('unsigned', t.async(), 'webgl2');
+(GPU.isWebGL2Supported ? test : skip)('immutable unsigned precision kernel.texture does not leak webgl2', t => {
+  testImmutableKernelTextureDoesNotLeak('unsigned', t.async(), 'webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('unsigned precision kernel.texture does not leak headlessgl', t => {
-  testKernelTextureDoesNotLeak('unsigned', t.async(), 'headlessgl');
+(GPU.isHeadlessGLSupported ? test : skip)('immutable unsigned precision kernel.texture does not leak headlessgl', t => {
+  testImmutableKernelTextureDoesNotLeak('unsigned', t.async(), 'headlessgl');
 });
 
-test('single precision kernel.texture does not leak auto', t => {
-  testKernelTextureDoesNotLeak('single', t.async());
+test('immutable single precision kernel.texture does not leak auto', t => {
+  testImmutableKernelTextureDoesNotLeak('single', t.async());
 });
 
-test('single precision kernel.texture does not leak gpu', t => {
-  testKernelTextureDoesNotLeak('single', t.async(), 'gpu');
+test('immutable single precision kernel.texture does not leak gpu', t => {
+  testImmutableKernelTextureDoesNotLeak('single', t.async(), 'gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('single precision kernel.texture does not leak webgl', t => {
-  testKernelTextureDoesNotLeak('single', t.async(), 'webgl');
+(GPU.isWebGLSupported ? test : skip)('immutable single precision kernel.texture does not leak webgl', t => {
+  testImmutableKernelTextureDoesNotLeak('single', t.async(), 'webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('single precision kernel.texture does not leak webgl2', t => {
-  testKernelTextureDoesNotLeak('single', t.async(), 'webgl2');
+(GPU.isWebGL2Supported ? test : skip)('immutable single precision kernel.texture does not leak webgl2', t => {
+  testImmutableKernelTextureDoesNotLeak('single', t.async(), 'webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('single precision kernel.texture does not leak headlessgl', t => {
-  testKernelTextureDoesNotLeak('single', t.async(), 'headlessgl');
+(GPU.isHeadlessGLSupported ? test : skip)('immutable single precision kernel.texture does not leak headlessgl', t => {
+  testImmutableKernelTextureDoesNotLeak('single', t.async(), 'headlessgl');
 });
 
-function testKernelMappedTexturesDoesNotLeak(precision, done, mode) {
+function testImmutableKernelMappedTexturesDoesNotLeak(precision, done, mode) {
   const gpu = new GPU({ mode });
   function saveValue(value) {
     return value;
@@ -303,6 +307,7 @@ function testKernelMappedTexturesDoesNotLeak(precision, done, mode) {
   }, {
     output: [1],
     pipeline: true,
+    immutable: true,
     precision,
   });
   const { result: one, 0: two } = toTextures([1], [2]);
@@ -343,44 +348,44 @@ function testKernelMappedTexturesDoesNotLeak(precision, done, mode) {
     });
 }
 
-test('unsigned precision kernel.mappedTextures does not leak auto', t => {
-  testKernelMappedTexturesDoesNotLeak('unsigned', t.async());
+test('immutable unsigned precision kernel.mappedTextures does not leak auto', t => {
+  testImmutableKernelMappedTexturesDoesNotLeak('unsigned', t.async());
 });
 
-test('unsigned precision kernel.mappedTextures does not leak gpu', t => {
-  testKernelMappedTexturesDoesNotLeak('unsigned', t.async(), 'gpu');
+test('immutable unsigned precision kernel.mappedTextures does not leak gpu', t => {
+  testImmutableKernelMappedTexturesDoesNotLeak('unsigned', t.async(), 'gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('unsigned precision kernel.mappedTextures does not leak webgl', t => {
-  testKernelMappedTexturesDoesNotLeak('unsigned', t.async(), 'webgl');
+(GPU.isWebGLSupported ? test : skip)('immutable unsigned precision kernel.mappedTextures does not leak webgl', t => {
+  testImmutableKernelMappedTexturesDoesNotLeak('unsigned', t.async(), 'webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('unsigned precision kernel.mappedTextures does not leak webgl2', t => {
-  testKernelMappedTexturesDoesNotLeak('unsigned', t.async(), 'webgl2');
+(GPU.isWebGL2Supported ? test : skip)('immutable unsigned precision kernel.mappedTextures does not leak webgl2', t => {
+  testImmutableKernelMappedTexturesDoesNotLeak('unsigned', t.async(), 'webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('unsigned precision kernel.mappedTextures does not leak headlessgl', t => {
-  testKernelMappedTexturesDoesNotLeak('unsigned', t.async(), 'headlessgl');
+(GPU.isHeadlessGLSupported ? test : skip)('immutable unsigned precision kernel.mappedTextures does not leak headlessgl', t => {
+  testImmutableKernelMappedTexturesDoesNotLeak('unsigned', t.async(), 'headlessgl');
 });
 
-test('single precision kernel.mappedTextures does not leak auto', t => {
-  testKernelMappedTexturesDoesNotLeak('single', t.async());
+test('immutable single precision kernel.mappedTextures does not leak auto', t => {
+  testImmutableKernelMappedTexturesDoesNotLeak('single', t.async());
 });
 
-test('single precision kernel.mappedTextures does not leak gpu', t => {
-  testKernelMappedTexturesDoesNotLeak('single', t.async(), 'gpu');
+test('immutable single precision kernel.mappedTextures does not leak gpu', t => {
+  testImmutableKernelMappedTexturesDoesNotLeak('single', t.async(), 'gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('single precision kernel.mappedTextures does not leak webgl', t => {
-  testKernelMappedTexturesDoesNotLeak('single', t.async(), 'webgl');
+(GPU.isWebGLSupported ? test : skip)('immutable single precision kernel.mappedTextures does not leak webgl', t => {
+  testImmutableKernelMappedTexturesDoesNotLeak('single', t.async(), 'webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('single precision kernel.mappedTextures does not leak webgl2', t => {
-  testKernelMappedTexturesDoesNotLeak('single', t.async(), 'webgl2');
+(GPU.isWebGL2Supported ? test : skip)('immutable single precision kernel.mappedTextures does not leak webgl2', t => {
+  testImmutableKernelMappedTexturesDoesNotLeak('single', t.async(), 'webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('single precision kernel.mappedTextures does not leak headlessgl', t => {
-  testKernelMappedTexturesDoesNotLeak('single', t.async(), 'headlessgl');
+(GPU.isHeadlessGLSupported ? test : skip)('immutable single precision kernel.mappedTextures does not leak headlessgl', t => {
+  testImmutableKernelMappedTexturesDoesNotLeak('single', t.async(), 'headlessgl');
 });
 
 function testCloning(mode) {

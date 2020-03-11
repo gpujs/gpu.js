@@ -606,7 +606,7 @@ class Kernel {
    * @return {this}
    */
   setImmutable(flag) {
-    utils.warnDeprecated('method', 'setImmutable');
+    this.immutable = flag;
     return this;
   }
 

@@ -789,7 +789,7 @@ class GLKernel extends Kernel {
   }
 
   renderTexture() {
-    return this.texture.clone();
+    return this.immutable ? this.texture.clone() : this.texture;
   }
   readPackedPixelsToUint8Array() {
     if (this.precision !== 'unsigned') throw new Error('Requires this.precision to be "unsigned"');
@@ -850,8 +850,14 @@ class GLKernel extends Kernel {
     const result = {
       result: this.renderOutput(),
     };
-    for (let i = 0; i < this.subKernels.length; i++) {
-      result[this.subKernels[i].property] = this.mappedTextures[i].clone();
+    if (this.immutable) {
+      for (let i = 0; i < this.subKernels.length; i++) {
+        result[this.subKernels[i].property] = this.mappedTextures[i].clone();
+      }
+    } else {
+      for (let i = 0; i < this.subKernels.length; i++) {
+        result[this.subKernels[i].property] = this.mappedTextures[i];
+      }
     }
     return result;
   }
@@ -964,6 +970,7 @@ class GLKernel extends Kernel {
    * @param {GLTexture} arg
    */
   updateTextureArgumentRefs(kernelValue, arg) {
+    if (!this.immutable) return;
     if (this.texture.texture === arg.texture) {
       const { prevArg } = kernelValue;
       if (prevArg) {

@@ -294,6 +294,7 @@
         output: [ this.particleCount*3 ],
         pipeline: true,
         tactic: 'speed',
+        immutable: true,
       });
 
       /*
@@ -312,6 +313,7 @@
         constants: { particleCount: this.particleCount, pitch: 3 },
         loopMaxIterations: this.particleCount,
         tactic: 'speed',
+        immutable: true,
       });
 
       this.setVelocity = gpu.createKernel(function(list, index, camDir, amount) {
@@ -326,6 +328,7 @@
         constants: { particleCount: this.particleCount, pitch: 3 },
         loopMaxIterations: this.particleCount,
         tactic: 'speed',
+        immutable: true,
       });
 
       /*
@@ -339,6 +342,7 @@
         pipeline: true,
         loopMaxIterations: this.particleCount,
         tactic: 'speed',
+        immutable: true,
       });
 
       this.rotateCamera = gpu.createKernel(function(rotLR, rotUD, camCenter, camDir, camUp, camNearWidth, camFarWidth, camDist) {
@@ -360,7 +364,8 @@
       }, {
         output: [ 3 ],
         tactic: 'speed',
-        pipeline: true
+        pipeline: true,
+        immutable: true,
       });
 
       this.updateCameraPosition = gpu.createKernel(function(camDir, camP, moveTFR, dt) {
@@ -373,7 +378,8 @@
       }, {
         output: [3],
         tactic: 'speed',
-        pipeline: true
+        pipeline: true,
+        immutable: true,
       });
 
       /*
@@ -784,6 +790,7 @@
         output: [3],
         pipeline: true,
         tactic: 'speed',
+        immutable: true,
       });
 
       this.crossv = gpu.createKernel(function(a, b) {
@@ -800,6 +807,7 @@
         output: [3],
         pipeline: true,
         tactic: 'speed',
+        immutable: true,
       });
     }
 

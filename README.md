@@ -70,9 +70,12 @@ const multiplyMatrix = gpu.createKernel(function(a: number[][], b: number[][]) {
 const c = multiplyMatrix(a, b) as number[][];
 ```
 
+[Click here](/examples) for more typescript examples.
+
 # Table of Contents
 
-NOTE: documentation is slightly out of date for the upcoming release of v2.  We will fix it!  In the mean time, if you'd like to assist (PLEASE) let us know.
+Notice documentation is off?  We do try our hardest, but if you find something,
+  [please bring it to our attention](https://github.com/gpujs/gpu.js/issues), or _[become a contributor](#contributors)_!
 
 * [Demos](#demos)
 * [Installation](#installation)
@@ -91,7 +94,7 @@ NOTE: documentation is slightly out of date for the upcoming release of v2.  We 
 * [Loops](#loops)
 * [Pipelining](#pipelining)
   * [Cloning Textures](#cloning-textures-new-in-v2)
-  * [Cleanup pipeline texture memory](#cleanup-pipeline-texture-memory-new-in-v2)
+  * [Cleanup pipeline texture memory](#cleanup-pipeline-texture-memory-new-in-v24)
 * [Offscreen Canvas](#offscreen-canvas)
 * [Cleanup](#cleanup)
 * [Flattened typed array support](#flattened-typed-array-support)
@@ -235,7 +238,8 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
   * VERY IMPORTANT! - Use this to add special native functions to your environment when you need specific functionality is needed.
 * `injectedNative` or `kernel.setInjectedNative(string)` **New in V2!**: string, defined as: `{ functionName: functionSource }`.  This is for injecting native code before translated kernel functions.
 * `subKernels` or `kernel.setSubKernels(array)`: array, generally inherited from `GPU` instance.
-* ~~`immutable` or `kernel.setImmutable(boolean)`: boolean, default = `false`~~ Deprecated
+* `immutable` or `kernel.setImmutable(boolean)`: boolean, default = `false`
+  * VERY IMPORTANT! - This was removed in v2.4.0 - v2.7.0, and brought back in v2.8.0 [by popular demand](https://github.com/gpujs/gpu.js/issues/572), please upgrade to get the feature
 * `strictIntegers` or `kernel.setStrictIntegers(boolean)`: boolean, default = `false` - allows undefined argumentTypes and function return values to use strict integer declarations.
 * `useLegacyEncoder` or `kernel.setUseLegacyEncoder(boolean)`: boolean, default `false` - more info [here](https://github.com/gpujs/gpu.js/wiki/Encoder-details).
 * `tactic` or `kernel.setTactic('speed' | 'balanced' | 'precision')` **New in V2!**: Set the kernel's tactic for compilation.  Allows for compilation to better fit how GPU.js is being used (internally uses `lowp` for 'speed', `mediump` for 'balanced', and `highp` for 'precision').  Default is lowest resolution supported for output.
@@ -845,13 +849,15 @@ const result2 = kernel2(result1);
 ```
 
 ### Cleanup pipeline texture memory **New in V2.4!**
-Handling minimal amounts of GPU memory is handled internally, but a good practice is to clean up memory you no longer need.
+When using `kernel.immutable = true` recycling GPU memory is handled internally, but a good practice is to clean up memory you no longer need it.
 Cleanup kernel outputs by using `texture.delete()` to keep GPU memory as small as possible.
 
 NOTE: Internally textures will only release from memory if there are no references to them.
-When using pipeline mode on a kernel K the output for each call will be a newly allocated texture T.
-If, after getting texture T as an output, T.delete() is called, the next call to K will reuse T as its output texture.
+When using pipeline mode on a kernel `K` the output for each call will be a newly allocated texture `T`.
+If, after getting texture `T` as an output, `T.delete()` is called, the next call to K will reuse `T` as its output texture.
 
+Alternatively, if you'd like to clear out a `texture` and yet keep it in memory, you may use `texture.clear()`, which
+will cause the `texture` to persist in memory, but its internal values to become all zeros.
 
 ## Offscreen Canvas
 GPU.js supports offscreen canvas where available.  Here is an example of how to use it with two files, `gpu-worker.js`, and `index.js`:
@@ -1113,6 +1119,8 @@ const result = kernelMap();
 
 console.log(result as number[][][]);
 ```
+
+[Click here](/examples) for more typescript examples.
 
 ## Destructured Assignments **New in V2!**
 Destructured Objects and Arrays work in GPU.js.
