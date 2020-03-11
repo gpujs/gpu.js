@@ -639,7 +639,7 @@ class WebGLKernel extends GLKernel {
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
         this._setupOutputTexture();
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        return this.texture.clone();
+        return this.immutable ? this.texture.clone() : this.texture;
       }
       gl.bindRenderbuffer(gl.RENDERBUFFER, null);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);

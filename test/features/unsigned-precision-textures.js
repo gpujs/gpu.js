@@ -648,7 +648,7 @@ test('with Uint8ClampedArray3D cpu', () => {
   unsignedPrecisionTexturesWithUint8ClampedArray3D('headlessgl');
 });
 
-function testDoesNotCollideWithKernelTexture(mode) {
+function testImmutableDoesNotCollideWithKernelTexture(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(v) {
     return v[this.thread.x] + 1;
@@ -656,6 +656,7 @@ function testDoesNotCollideWithKernelTexture(mode) {
     output: [1],
     precision: 'unsigned',
     pipeline: true,
+    immutable: true,
   });
   const v = [1];
   const result1 = kernel(v);
@@ -669,22 +670,22 @@ function testDoesNotCollideWithKernelTexture(mode) {
   gpu.destroy();
 }
 
-test('does not collide with kernel texture auto', () => {
-  testDoesNotCollideWithKernelTexture();
+test('immutable does not collide with kernel texture auto', () => {
+  testImmutableDoesNotCollideWithKernelTexture();
 });
 
-test('does not collide with kernel texture gpu', () => {
-  testDoesNotCollideWithKernelTexture('gpu');
+test('immutable does not collide with kernel texture gpu', () => {
+  testImmutableDoesNotCollideWithKernelTexture('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('does not collide with kernel texture webgl', () => {
-  testDoesNotCollideWithKernelTexture('webgl');
+(GPU.isWebGLSupported ? test : skip)('immutable does not collide with kernel texture webgl', () => {
+  testImmutableDoesNotCollideWithKernelTexture('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('does not collide with kernel texture webgl2', () => {
-  testDoesNotCollideWithKernelTexture('webgl2');
+(GPU.isWebGL2Supported ? test : skip)('immutable does not collide with kernel texture webgl2', () => {
+  testImmutableDoesNotCollideWithKernelTexture('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('does not collide with kernel texture headlessgl', () => {
-  testDoesNotCollideWithKernelTexture('headlessgl');
+(GPU.isHeadlessGLSupported ? test : skip)('immutable does not collide with kernel texture headlessgl', () => {
+  testImmutableDoesNotCollideWithKernelTexture('headlessgl');
 });

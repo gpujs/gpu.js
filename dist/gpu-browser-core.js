@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.7.0
- * @date Tue Mar 10 2020 15:46:55 GMT-0400 (Eastern Daylight Time)
+ * @version 2.8.0
+ * @date Wed Mar 11 2020 07:33:36 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -5095,7 +5095,7 @@ class GLKernel extends Kernel {
   }
 
   renderTexture() {
-    return this.texture.clone();
+    return this.immutable ? this.texture.clone() : this.texture;
   }
   readPackedPixelsToUint8Array() {
     if (this.precision !== 'unsigned') throw new Error('Requires this.precision to be "unsigned"');
@@ -5150,8 +5150,14 @@ class GLKernel extends Kernel {
     const result = {
       result: this.renderOutput(),
     };
-    for (let i = 0; i < this.subKernels.length; i++) {
-      result[this.subKernels[i].property] = this.mappedTextures[i].clone();
+    if (this.immutable) {
+      for (let i = 0; i < this.subKernels.length; i++) {
+        result[this.subKernels[i].property] = this.mappedTextures[i].clone();
+      }
+    } else {
+      for (let i = 0; i < this.subKernels.length; i++) {
+        result[this.subKernels[i].property] = this.mappedTextures[i];
+      }
     }
     return result;
   }
@@ -5259,6 +5265,7 @@ class GLKernel extends Kernel {
   }
 
   updateTextureArgumentRefs(kernelValue, arg) {
+    if (!this.immutable) return;
     if (this.texture.texture === arg.texture) {
       const { prevArg } = kernelValue;
       if (prevArg) {
@@ -6317,7 +6324,7 @@ class Kernel {
   }
 
   setImmutable(flag) {
-    utils.warnDeprecated('method', 'setImmutable');
+    this.immutable = flag;
     return this;
   }
 
@@ -10260,7 +10267,7 @@ class WebGLKernel extends GLKernel {
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
         this._setupOutputTexture();
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        return this.texture.clone();
+        return this.immutable ? this.texture.clone() : this.texture;
       }
       gl.bindRenderbuffer(gl.RENDERBUFFER, null);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
