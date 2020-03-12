@@ -251,7 +251,7 @@ class WebGL2Kernel extends WebGLKernel {
     }
   }
   getInternalFormat() {
-    const { context: gl, optimizeFloatMemory, pipeline, precision } = this;
+    const { context: gl } = this;
 
     if (this.precision === 'single') {
       if (this.pipeline) {

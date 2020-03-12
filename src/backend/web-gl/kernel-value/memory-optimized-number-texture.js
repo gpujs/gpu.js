@@ -37,11 +37,11 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
       return;
     }
     if (this.checkContext && inputTexture.context !== this.context) {
-      throw new Error(`Value ${this.name} (${this.type }) must be from same context`);
+      throw new Error(`Value ${this.name} (${this.type}) must be from same context`);
     }
 
-    const { context: gl, kernel } = this;
-    if (kernel.pipeline) {
+    const { kernel, context: gl } = this;
+    if (kernel.pipeline && kernel.immutable) {
       kernel.updateTextureArgumentRefs(this, inputTexture);
     }
 

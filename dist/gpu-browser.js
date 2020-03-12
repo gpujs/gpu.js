@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.8.0
- * @date Wed Mar 11 2020 07:33:35 GMT-0400 (Eastern Daylight Time)
+ * @version 2.8.1
+ * @date Thu Mar 12 2020 07:32:26 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -13613,11 +13613,11 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
       return;
     }
     if (this.checkContext && inputTexture.context !== this.context) {
-      throw new Error(`Value ${this.name} (${this.type }) must be from same context`);
+      throw new Error(`Value ${this.name} (${this.type}) must be from same context`);
     }
 
-    const { context: gl, kernel } = this;
-    if (kernel.pipeline) {
+    const { kernel, context: gl } = this;
+    if (kernel.pipeline && kernel.immutable) {
       kernel.updateTextureArgumentRefs(this, inputTexture);
     }
 
@@ -13673,7 +13673,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelArray {
     }
 
     const { kernel, context: gl } = this;
-    if (kernel.pipeline) {
+    if (kernel.pipeline && kernel.immutable) {
       kernel.updateTextureArgumentRefs(this, inputTexture);
     }
 
@@ -17030,7 +17030,7 @@ class WebGL2Kernel extends WebGLKernel {
     }
   }
   getInternalFormat() {
-    const { context: gl, optimizeFloatMemory, pipeline, precision } = this;
+    const { context: gl } = this;
 
     if (this.precision === 'single') {
       if (this.pipeline) {

@@ -44,7 +44,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelArray {
     }
 
     const { kernel, context: gl } = this;
-    if (kernel.pipeline) {
+    if (kernel.pipeline && kernel.immutable) {
       kernel.updateTextureArgumentRefs(this, inputTexture);
     }
 
