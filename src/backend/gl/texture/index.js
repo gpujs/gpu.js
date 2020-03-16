@@ -49,7 +49,16 @@ class GLTexture extends Texture {
   }
 
   clear() {
-    const { context: gl, size, texture } = this;
+    if (this.texture._refs) {
+      this.texture._refs--;
+      const gl = this.context;
+      const target = this.texture = gl.createTexture();
+      selectTexture(gl, target);
+      const size = this.size;
+      target._refs = 1;
+      gl.texImage2D(gl.TEXTURE_2D, 0, this.internalFormat, size[0], size[1], 0, this.textureFormat, this.textureType, null);
+    }
+    const { context: gl, texture } = this;
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
     gl.bindTexture(gl.TEXTURE_2D, texture);
     selectTexture(gl, texture);
