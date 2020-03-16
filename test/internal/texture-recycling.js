@@ -415,3 +415,42 @@ function testCloning(mode) {
 (GPU.isHeadlessGLSupported ? test : skip)('cloning sets up framebuffer with correct size headlessgl', () => {
   testCloning('headlessgl');
 });
+
+function testMutableLeak(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function() {
+    return 1;
+  }, {
+    output: [1],
+    pipeline: true
+  });
+  kernel.build();
+  const cloneTextureSpy = sinon.spy(kernel.texture.constructor.prototype, 'beforeMutate');
+  const texture1 = kernel();
+  const texture2 = kernel();
+  assert.equal(cloneTextureSpy.callCount, 0);
+  assert.equal(texture1.texture._refs, 1);
+  assert.ok(texture1 === texture2);
+  cloneTextureSpy.restore();
+  gpu.destroy();
+}
+
+test('test mutable leak auto', () => {
+  testMutableLeak();
+});
+
+test('test mutable leak gpu', () => {
+  testMutableLeak('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('test mutable leak webgl', () => {
+  testMutableLeak('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('test mutable leak webgl2', () => {
+  testMutableLeak('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('test mutable leak headlessgl', () => {
+  testMutableLeak('headlessgl');
+});

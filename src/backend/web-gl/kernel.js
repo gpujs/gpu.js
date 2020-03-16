@@ -679,12 +679,15 @@ class WebGLKernel extends GLKernel {
    * @desc Setup and replace output texture
    */
   _setupOutputTexture() {
-    const { context: gl, texSize } = this;
+    const gl = this.context;
     if (this.texture) {
-      this.texture.beforeMutate();
+      if (this.immutable) {
+        this.texture.beforeMutate();
+      }
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture.texture, 0);
       return;
     }
+    const texSize = this.texSize;
     const texture = this.createTexture();
     gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -719,7 +722,9 @@ class WebGLKernel extends GLKernel {
     if (this.mappedTextures && this.mappedTextures.length > 0) {
       for (let i = 0; i < this.mappedTextures.length; i++) {
         const mappedTexture = this.mappedTextures[i];
-        mappedTexture.beforeMutate();
+        if (this.immutable) {
+          mappedTexture.beforeMutate();
+        }
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, mappedTexture.texture, 0);
       }
       return;

@@ -279,14 +279,16 @@ class WebGL2Kernel extends WebGLKernel {
   }
 
   _setupOutputTexture() {
-    const { context: gl } = this;
+    const gl = this.context;
     if (this.texture) {
-      this.texture.beforeMutate();
+      if (this.immutable) {
+        this.texture.beforeMutate();
+      }
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture.texture, 0);
       return;
     }
     const texture = gl.createTexture();
-    const { texSize } = this;
+    const texSize = this.texSize;
     gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
@@ -313,16 +315,18 @@ class WebGL2Kernel extends WebGLKernel {
   }
 
   _setupSubOutputTextures() {
-    const { context: gl } = this;
+    const gl = this.context;
     if (this.mappedTextures && this.mappedTextures.length > 0) {
       for (let i = 0; i < this.mappedTextures.length; i++) {
         const mappedTexture = this.mappedTextures[i];
-        mappedTexture.beforeMutate();
+        if (this.immutable) {
+          mappedTexture.beforeMutate();
+        }
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, mappedTexture.texture, 0);
       }
       return;
     }
-    const { texSize } = this;
+    const texSize = this.texSize;
     this.drawBuffersMap = [gl.COLOR_ATTACHMENT0];
     this.mappedTextures = [];
     for (let i = 0; i < this.subKernels.length; i++) {
