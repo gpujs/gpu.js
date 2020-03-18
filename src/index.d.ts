@@ -407,6 +407,7 @@ export type KernelVariable =
   | Uint8Array
   | Uint16Array
   | Uint32Array
+  | Uint8ClampedArray
   | KernelOutput;
 
 export type ThreadFunctionResult
