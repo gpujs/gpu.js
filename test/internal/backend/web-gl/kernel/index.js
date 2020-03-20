@@ -1,3 +1,4 @@
+const sinon = require('sinon');
 const { assert, skip, test, module: describe, only } = require('qunit');
 const { WebGLKernel } = require('../../../../../src');
 
@@ -54,4 +55,13 @@ test('.validateSettings() checks output texture size - ok', () => {
   };
   WebGLKernel.prototype.validateSettings.apply(mockContext, []);
   assert.ok(true);
+});
+
+test('.build() checks if already built, and returns early if true', () => {
+  const mockContext = {
+    built: true,
+    initExtensions: sinon.spy(),
+  };
+  WebGLKernel.prototype.build.apply(mockContext);
+  assert.equal(mockContext.initExtensions.callCount, 0);
 });

@@ -265,18 +265,18 @@ class GPU {
      *
      * @param {IReason[]} reasons
      * @param {IArguments} args
-     * @param {Kernel} kernel
+     * @param {Kernel} _kernel
      * @returns {*}
      */
-    function onRequestSwitchKernel(reasons, args, kernel) {
-      if (kernel.debug) {
+    function onRequestSwitchKernel(reasons, args, _kernel) {
+      if (_kernel.debug) {
         console.warn('Switching kernels');
       }
       let newOutput = null;
-      if (kernel.signature && !switchableKernels[kernel.signature]) {
-        switchableKernels[kernel.signature] = kernel;
+      if (_kernel.signature && !switchableKernels[_kernel.signature]) {
+        switchableKernels[_kernel.signature] = _kernel;
       }
-      if (kernel.dynamicOutput) {
+      if (_kernel.dynamicOutput) {
         for (let i = reasons.length - 1; i >= 0; i--) {
           const reason = reasons[i];
           if (reason.type === 'outputPrecisionMismatch') {
@@ -285,9 +285,9 @@ class GPU {
         }
       }
 
-      const Constructor = kernel.constructor;
-      const argumentTypes = Constructor.getArgumentTypes(kernel, args);
-      const signature = Constructor.getSignature(kernel, argumentTypes);
+      const Constructor = _kernel.constructor;
+      const argumentTypes = Constructor.getArgumentTypes(_kernel, args);
+      const signature = Constructor.getSignature(_kernel, argumentTypes);
       const existingKernel = switchableKernels[signature];
       if (existingKernel) {
         return existingKernel;
@@ -295,32 +295,32 @@ class GPU {
 
       const newKernel = switchableKernels[signature] = new Constructor(source, {
         argumentTypes,
-        constantTypes: kernel.constantTypes,
-        graphical: kernel.graphical,
-        loopMaxIterations: kernel.loopMaxIterations,
-        constants: kernel.constants,
-        dynamicOutput: kernel.dynamicOutput,
-        dynamicArgument: kernel.dynamicArguments,
-        context: kernel.context,
-        canvas: kernel.canvas,
-        output: newOutput || kernel.output,
-        precision: kernel.precision,
-        pipeline: kernel.pipeline,
-        immutable: kernel.immutable,
-        optimizeFloatMemory: kernel.optimizeFloatMemory,
-        fixIntegerDivisionAccuracy: kernel.fixIntegerDivisionAccuracy,
-        functions: kernel.functions,
-        nativeFunctions: kernel.nativeFunctions,
-        injectedNative: kernel.injectedNative,
-        subKernels: kernel.subKernels,
-        strictIntegers: kernel.strictIntegers,
-        debug: kernel.debug,
-        gpu: kernel.gpu,
+        constantTypes: _kernel.constantTypes,
+        graphical: _kernel.graphical,
+        loopMaxIterations: _kernel.loopMaxIterations,
+        constants: _kernel.constants,
+        dynamicOutput: _kernel.dynamicOutput,
+        dynamicArgument: _kernel.dynamicArguments,
+        context: _kernel.context,
+        canvas: _kernel.canvas,
+        output: newOutput || _kernel.output,
+        precision: _kernel.precision,
+        pipeline: _kernel.pipeline,
+        immutable: _kernel.immutable,
+        optimizeFloatMemory: _kernel.optimizeFloatMemory,
+        fixIntegerDivisionAccuracy: _kernel.fixIntegerDivisionAccuracy,
+        functions: _kernel.functions,
+        nativeFunctions: _kernel.nativeFunctions,
+        injectedNative: _kernel.injectedNative,
+        subKernels: _kernel.subKernels,
+        strictIntegers: _kernel.strictIntegers,
+        debug: _kernel.debug,
+        gpu: _kernel.gpu,
         validate,
-        returnType: kernel.returnType,
-        onIstanbulCoverageVariable: kernel.onIstanbulCoverageVariable,
-        removeIstanbulCoverage: kernel.removeIstanbulCoverage,
-        tactic: kernel.tactic,
+        returnType: _kernel.returnType,
+        onIstanbulCoverageVariable: _kernel.onIstanbulCoverageVariable,
+        removeIstanbulCoverage: _kernel.removeIstanbulCoverage,
+        tactic: _kernel.tactic,
         onRequestFallback,
         onRequestSwitchKernel,
       });
@@ -342,19 +342,20 @@ class GPU {
       onRequestSwitchKernel
     }, settingsCopy);
 
-    const kernelRun = kernelRunShortcut(new this.Kernel(source, mergedSettings));
+    const kernel = new this.Kernel(source, mergedSettings);
+    const kernelRun = kernelRunShortcut(kernel);
 
     //if canvas didn't come from this, propagate from kernel
     if (!this.canvas) {
-      this.canvas = kernelRun.canvas;
+      this.canvas = kernel.canvas;
     }
 
     //if context didn't come from this, propagate from kernel
     if (!this.context) {
-      this.context = kernelRun.context;
+      this.context = kernel.context;
     }
 
-    this.kernels.push(kernelRun);
+    this.kernels.push(kernel);
 
     return kernelRun;
   }

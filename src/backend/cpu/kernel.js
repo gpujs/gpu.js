@@ -136,6 +136,7 @@ class CPUKernel extends Kernel {
    * <p>If the graphical flag is enabled, canvas is used.</p>
    */
   build() {
+    if (this.built) return;
     this.setupConstants();
     this.setupArguments(arguments);
     this.validateSettings(arguments);

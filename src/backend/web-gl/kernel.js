@@ -468,6 +468,7 @@ class WebGLKernel extends GLKernel {
   }
 
   build() {
+    if (this.built) return;
     this.initExtensions();
     this.validateSettings(arguments);
     this.setupConstants(arguments);
@@ -1454,6 +1455,7 @@ float integerCorrectionModulo(float number, float divisor) {
   }
 
   destroy(removeCanvasReferences) {
+    if (!this.context) return;
     if (this.buffer) {
       this.context.deleteBuffer(this.buffer);
     }
@@ -1512,6 +1514,10 @@ float integerCorrectionModulo(float number, float divisor) {
     this.destroyExtensions();
     delete this.context;
     delete this.canvas;
+    if (!this.gpu) return;
+    const i = this.gpu.kernels.indexOf(this);
+    if (i === -1) return;
+    this.gpu.kernels.splice(i, 1);
   }
 
   destroyExtensions() {

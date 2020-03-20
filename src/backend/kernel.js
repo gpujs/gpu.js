@@ -903,7 +903,6 @@ class Kernel {
    */
   static getSignature(kernel, argumentTypes) {
     throw new Error(`"getSignature" not implemented on ${ this.name }`);
-    return argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '';
   }
 
   /**
