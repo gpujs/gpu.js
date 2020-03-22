@@ -35,7 +35,6 @@ function testMinificationMadness(mode, canvas) {
     graphical: true,
   });
   kernel(1,2,3,4,[5]);
-  console.log(kernel.getPixels());
   assert.ok(kernel.getPixels());
   if (kernel.context && kernel.context.getError)
   assert.ok(kernel.context.getError() === 0);

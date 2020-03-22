@@ -147,6 +147,8 @@ class WebGLKernel extends GLKernel {
     this.onRequestSwitchKernel = null;
     this.removeIstanbulCoverage = true;
 
+    this.texture = null;
+    this.mappedTextures = null;
     this.mergeSettings(source.settings || settings);
 
     /**
@@ -156,8 +158,7 @@ class WebGLKernel extends GLKernel {
     this.threadDim = null;
     this.framebuffer = null;
     this.buffer = null;
-    this.texture = null;
-    this.mappedTextures = null;
+
     this.textureCache = [];
     this.programUniformLocationCache = {};
     this.uniform1fCache = {};
@@ -482,7 +483,9 @@ class WebGLKernel extends GLKernel {
       return failureResult;
     }
     const { texSize, context: gl, canvas } = this;
-    gl.enable(gl.SCISSOR_TEST);
+    if (!this.pipeline) {
+      gl.enable(gl.SCISSOR_TEST);
+    }
     if (this.pipeline && this.precision === 'single') {
       gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
       canvas.width = this.maxTexSize[0];
@@ -573,6 +576,7 @@ class WebGLKernel extends GLKernel {
       this.subKernels !== null &&
       this.subKernels.length > 0
     ) {
+      this._mappedTextureSwitched = {};
       this._setupSubOutputTextures();
     }
     this.buildSignature(arguments);
@@ -606,8 +610,9 @@ class WebGLKernel extends GLKernel {
     const { kernelArguments, texSize, forceUploadKernelConstants, context: gl } = this;
 
     gl.useProgram(this.program);
-    gl.scissor(0, 0, texSize[0], texSize[1]);
-
+    if (!this.pipeline) {
+      gl.scissor(0, 0, texSize[0], texSize[1]);
+    }
     if (this.dynamicOutput) {
       this.setUniform3iv('uOutputDim', new Int32Array(this.threadDim));
       this.setUniform2iv('uTexSize', texSize);
@@ -638,7 +643,9 @@ class WebGLKernel extends GLKernel {
       if (this.pipeline) {
         gl.bindRenderbuffer(gl.RENDERBUFFER, null);
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-        this._setupOutputTexture();
+        if (this.immutable) {
+          this._replaceOutputTexture();
+        }
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         return this.immutable ? this.texture.clone() : this.texture;
       }
@@ -649,10 +656,14 @@ class WebGLKernel extends GLKernel {
     }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-    this._setupOutputTexture();
+    if (this.immutable) {
+      this._replaceOutputTexture();
+    }
 
     if (this.subKernels !== null) {
-      this._setupSubOutputTextures();
+      if (this.immutable) {
+        this._replaceSubOutputTextures();
+      }
       this.drawBuffers();
     }
 
@@ -677,18 +688,28 @@ class WebGLKernel extends GLKernel {
   }
 
   /**
-   * @desc Setup and replace output texture
+   *
+   * @desc replace output textures where arguments my be the same values
+   */
+  _replaceOutputTexture() {
+    if (this.texture.beforeMutate() || this._textureSwitched) {
+      const gl = this.context;
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture.texture, 0);
+      this._textureSwitched = false;
+    }
+  }
+
+  /**
+   * @desc Setup output texture
    */
   _setupOutputTexture() {
     const gl = this.context;
+    const texSize = this.texSize;
     if (this.texture) {
-      if (this.immutable) {
-        this.texture.beforeMutate();
-      }
+      // here we inherit from an already existing kernel, so go ahead and just bind textures to the framebuffer
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture.texture, 0);
       return;
     }
-    const texSize = this.texSize;
     const texture = this.createTexture();
     gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -716,17 +737,29 @@ class WebGLKernel extends GLKernel {
   }
 
   /**
-   * @desc Setup and replace sub-output textures
+   *
+   * @desc replace sub-output textures where arguments my be the same values
+   */
+  _replaceSubOutputTextures() {
+    const gl = this.context;
+    for (let i = 0; i < this.mappedTextures.length; i++) {
+      const mappedTexture = this.mappedTextures[i];
+      if (mappedTexture.beforeMutate() || this._mappedTextureSwitched[i]) {
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, mappedTexture.texture, 0);
+        this._mappedTextureSwitched[i] = false;
+      }
+    }
+  }
+
+  /**
+   * @desc Setup on inherit sub-output textures
    */
   _setupSubOutputTextures() {
-    const { context: gl } = this;
-    if (this.mappedTextures && this.mappedTextures.length > 0) {
-      for (let i = 0; i < this.mappedTextures.length; i++) {
-        const mappedTexture = this.mappedTextures[i];
-        if (this.immutable) {
-          mappedTexture.beforeMutate();
-        }
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, mappedTexture.texture, 0);
+    const gl = this.context;
+    if (this.mappedTextures) {
+      // here we inherit from an already existing kernel, so go ahead and just bind textures to the framebuffer
+      for (let i = 0; i < this.subKernels.length; i++) {
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, this.mappedTextures[i].texture, 0);
       }
       return;
     }

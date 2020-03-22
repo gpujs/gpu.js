@@ -1,6 +1,8 @@
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
 
+const sameError = `Source and destination textures are the same.  Use immutable = true and manually cleanup kernel output texture memory with texture.delete()`;
+
 class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
@@ -41,8 +43,21 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
     }
 
     const { kernel, context: gl } = this;
-    if (kernel.pipeline && kernel.immutable) {
-      kernel.updateTextureArgumentRefs(this, inputTexture);
+    if (kernel.pipeline) {
+      if (kernel.immutable) {
+        kernel.updateTextureArgumentRefs(this, inputTexture);
+      } else {
+        if (kernel.texture.texture === inputTexture.texture) {
+          throw new Error(sameError);
+        } else if (kernel.mappedTextures) {
+          const { mappedTextures } = kernel;
+          for (let i = 0; i < mappedTextures.length; i++) {
+            if (mappedTextures[i].texture === inputTexture.texture) {
+              throw new Error(sameError);
+            }
+          }
+        }
+      }
     }
 
     gl.activeTexture(this.contextHandle);
@@ -52,5 +67,6 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
 }
 
 module.exports = {
-  WebGLKernelValueMemoryOptimizedNumberTexture
+  WebGLKernelValueMemoryOptimizedNumberTexture,
+  sameError
 };

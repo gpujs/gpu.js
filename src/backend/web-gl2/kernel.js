@@ -281,12 +281,11 @@ class WebGL2Kernel extends WebGLKernel {
   _setupOutputTexture() {
     const gl = this.context;
     if (this.texture) {
-      if (this.immutable) {
-        this.texture.beforeMutate();
-      }
+      // here we inherit from an already existing kernel, so go ahead and just bind textures to the framebuffer
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture.texture, 0);
       return;
     }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
     const texture = gl.createTexture();
     const texSize = this.texSize;
     gl.activeTexture(gl.TEXTURE0 + this.constantTextureCount + this.argumentTextureCount);
@@ -316,13 +315,10 @@ class WebGL2Kernel extends WebGLKernel {
 
   _setupSubOutputTextures() {
     const gl = this.context;
-    if (this.mappedTextures && this.mappedTextures.length > 0) {
-      for (let i = 0; i < this.mappedTextures.length; i++) {
-        const mappedTexture = this.mappedTextures[i];
-        if (this.immutable) {
-          mappedTexture.beforeMutate();
-        }
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, mappedTexture.texture, 0);
+    if (this.mappedTextures) {
+      // here we inherit from an already existing kernel, so go ahead and just bind textures to the framebuffer
+      for (let i = 0; i < this.subKernels.length; i++) {
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, this.mappedTextures[i].texture, 0);
       }
       return;
     }

@@ -2,7 +2,7 @@ const sinon = require('sinon');
 const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../src');
 
-describe('internal: texture recycling');
+describe('internal: recycling');
 
 function testImmutableKernelTextureRecycling(precision, mode) {
   const gpu = new GPU({ mode });
@@ -15,15 +15,15 @@ function testImmutableKernelTextureRecycling(precision, mode) {
     precision,
   });
   let result = kernel([0]);
-  const cloneTextureSpy = sinon.spy(kernel.texture.constructor.prototype, 'cloneTexture');
+  const newTextureSpy = sinon.spy(kernel.texture.constructor.prototype, 'newTexture');
   for (let i = 0; i < 10; i++) {
     let lastResult = result;
     result = kernel(result);
     lastResult.delete();
   }
   assert.deepEqual(result.toArray(), new Float32Array([11]));
-  assert.equal(cloneTextureSpy.callCount, 1);
-  cloneTextureSpy.restore();
+  assert.equal(newTextureSpy.callCount, 1);
+  newTextureSpy.restore();
   gpu.destroy();
 }
 
@@ -84,7 +84,7 @@ function testImmutableMappedKernelTextureRecycling(precision, mode) {
     precision,
   });
   let map = kernel([0], [11]);
-  const cloneTextureSpy = sinon.spy(kernel.texture.constructor.prototype, 'cloneTexture');
+  const newTextureSpy = sinon.spy(kernel.texture.constructor.prototype, 'newTexture');
   for (let i = 0; i < 10; i++) {
     let lastResults = map;
     map = kernel(map.result, map.oneOffValue);
@@ -93,8 +93,8 @@ function testImmutableMappedKernelTextureRecycling(precision, mode) {
   }
   assert.deepEqual(map.result.toArray(), new Float32Array([11]));
   assert.deepEqual(map.oneOffValue.toArray(), new Float32Array([0]));
-  assert.equal(cloneTextureSpy.callCount, 2);
-  cloneTextureSpy.restore();
+  assert.equal(newTextureSpy.callCount, 2);
+  newTextureSpy.restore();
   gpu.destroy();
 }
 
@@ -453,4 +453,307 @@ test('test mutable leak gpu', () => {
 
 (GPU.isHeadlessGLSupported ? test : skip)('test mutable leak headlessgl', () => {
   testMutableLeak('headlessgl');
+});
+
+describe('internal: cpu recycling behaviour');
+
+test('recycle CPU array', () => {
+  const gpu = new GPU({ mode: 'cpu' });
+  const kernel = gpu.createKernel(function(v) {
+    return this.thread.x + v[0];
+  }, {
+    output: [1],
+    pipeline: true,
+    immutable: false,
+  });
+  const result1 = kernel(new Float32Array([1]));
+  assert.equal(result1[0], 1);
+  const result2 = kernel(new Float32Array([2]));
+
+  assert.equal(result1[0], 2);
+  assert.equal(result1, result2);
+  gpu.destroy();
+});
+
+test('recycle CPU matrix', () => {
+  const gpu = new GPU({ mode: 'cpu' });
+  const kernel = gpu.createKernel(function(v) {
+    return (this.thread.x + (this.thread.y * this.output.x)) + v[0];
+  }, {
+    output: [2, 2],
+    pipeline: true,
+    immutable: false,
+  });
+  const result1 = kernel(new Float32Array([1]));
+  assert.equal(result1[0][0], 1);
+  assert.equal(result1[0][1], 2);
+  assert.equal(result1[1][0], 3);
+  assert.equal(result1[1][1], 4);
+  const result2 = kernel(new Float32Array([2]));
+  assert.equal(result1[0][0], 2);
+  assert.equal(result1[0][1], 3);
+  assert.equal(result1[1][0], 4);
+  assert.equal(result1[1][1], 5);
+
+  assert.equal(result1, result2);
+  gpu.destroy();
+});
+
+test('recycle CPU cube', () => {
+  const gpu = new GPU({ mode: 'cpu' });
+  const kernel = gpu.createKernel(function(v) {
+    return (this.thread.x + (this.thread.y * this.output.x) + (this.thread.z * this.output.y * this.output.x)) + v[0];
+  }, {
+    output: [2, 2, 2],
+    pipeline: true,
+    immutable: false,
+  });
+  const result1 = kernel(new Float32Array([1]));
+  assert.equal(result1[0][0][0], 1);
+  assert.equal(result1[0][0][1], 2);
+  assert.equal(result1[0][1][0], 3);
+  assert.equal(result1[0][1][1], 4);
+  assert.equal(result1[1][0][0], 5);
+  assert.equal(result1[1][0][1], 6);
+  assert.equal(result1[1][1][0], 7);
+  assert.equal(result1[1][1][1], 8);
+  const result2 = kernel(new Float32Array([2]));
+  assert.equal(result1[0][0][0], 2);
+  assert.equal(result1[0][0][1], 3);
+  assert.equal(result1[0][1][0], 4);
+  assert.equal(result1[0][1][1], 5);
+  assert.equal(result1[1][0][0], 6);
+  assert.equal(result1[1][0][1], 7);
+  assert.equal(result1[1][1][0], 8);
+  assert.equal(result1[1][1][1], 9);
+  assert.equal(result1, result2);
+  gpu.destroy();
+});
+
+describe('internal: cpu non-recycling behaviour');
+
+test('non-recycle CPU array', () => {
+  const gpu = new GPU({ mode: 'cpu' });
+  const kernel = gpu.createKernel(function(v) {
+    return this.thread.x + v[0];
+  }, {
+    output: [1],
+    pipeline: true,
+    immutable: true,
+  });
+  const result1 = kernel(new Float32Array([1]));
+  assert.equal(result1[0], 1);
+  const result2 = kernel(new Float32Array([2]));
+
+  assert.equal(result1[0], 1);
+  assert.equal(result2[0], 2);
+  assert.notEqual(result1, result2);
+  gpu.destroy();
+});
+
+test('non-recycle CPU matrix', () => {
+  const gpu = new GPU({ mode: 'cpu' });
+  const kernel = gpu.createKernel(function(v) {
+    return (this.thread.x + (this.thread.y * this.output.x)) + v[0];
+  }, {
+    output: [2, 2],
+    pipeline: true,
+    immutable: true,
+  });
+  const result1 = kernel(new Float32Array([1]));
+  assert.equal(result1[0][0], 1);
+  assert.equal(result1[0][1], 2);
+  assert.equal(result1[1][0], 3);
+  assert.equal(result1[1][1], 4);
+  const result2 = kernel(new Float32Array([2]));
+  // untouched
+  assert.equal(result1[0][0], 1);
+  assert.equal(result1[0][1], 2);
+  assert.equal(result1[1][0], 3);
+  assert.equal(result1[1][1], 4);
+
+  assert.equal(result2[0][0], 2);
+  assert.equal(result2[0][1], 3);
+  assert.equal(result2[1][0], 4);
+  assert.equal(result2[1][1], 5);
+
+  assert.notEqual(result1, result2);
+  gpu.destroy();
+});
+
+test('non-recycle CPU cube', () => {
+  const gpu = new GPU({ mode: 'cpu' });
+  const kernel = gpu.createKernel(function(v) {
+    return (this.thread.x + (this.thread.y * this.output.x) + (this.thread.z * this.output.y * this.output.x)) + v[0];
+  }, {
+    output: [2, 2, 2],
+    pipeline: true,
+    immutable: true,
+  });
+  const result1 = kernel(new Float32Array([1]));
+  assert.equal(result1[0][0][0], 1);
+  assert.equal(result1[0][0][1], 2);
+  assert.equal(result1[0][1][0], 3);
+  assert.equal(result1[0][1][1], 4);
+  assert.equal(result1[1][0][0], 5);
+  assert.equal(result1[1][0][1], 6);
+  assert.equal(result1[1][1][0], 7);
+  assert.equal(result1[1][1][1], 8);
+  const result2 = kernel(new Float32Array([2]));
+  // untouched
+  assert.equal(result1[0][0][0], 1);
+  assert.equal(result1[0][0][1], 2);
+  assert.equal(result1[0][1][0], 3);
+  assert.equal(result1[0][1][1], 4);
+  assert.equal(result1[1][0][0], 5);
+  assert.equal(result1[1][0][1], 6);
+  assert.equal(result1[1][1][0], 7);
+  assert.equal(result1[1][1][1], 8);
+
+  assert.equal(result2[0][0][0], 2);
+  assert.equal(result2[0][0][1], 3);
+  assert.equal(result2[0][1][0], 4);
+  assert.equal(result2[0][1][1], 5);
+  assert.equal(result2[1][0][0], 6);
+  assert.equal(result2[1][0][1], 7);
+  assert.equal(result2[1][1][0], 8);
+  assert.equal(result2[1][1][1], 9);
+  assert.notEqual(result1, result2);
+  gpu.destroy();
+});
+
+function testSameSourceDestinationFromResultThrows(error, precision, mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function(value) {
+    return value[this.thread.x] + 1;
+  }, {
+    output: [1],
+    pipeline: true,
+    immutable: false,
+    precision,
+  });
+  let result = kernel([0]);
+  assert.equal((result.toArray ? result.toArray() : result)[0], 1);
+  assert.throws(() => kernel(result), error);
+  gpu.destroy();
+}
+
+const gpuError = new Error('Source and destination textures are the same.  Use immutable = true and manually cleanup kernel output texture memory with texture.delete()');
+const cpuError = new Error('Source and destination arrays are the same.  Use immutable = true');
+
+test('single precision same source and destination from result mutable throws auto', () => {
+  testSameSourceDestinationFromResultThrows(gpuError,'single');
+});
+
+test('single precision same source and destination from result mutable throws gpu', () => {
+  testSameSourceDestinationFromResultThrows(gpuError, 'single', 'gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('single precision same source and destination from result mutable throws webgl', () => {
+  testSameSourceDestinationFromResultThrows(gpuError, 'single', 'webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('single precision same source and destination from result mutable throws webgl2', () => {
+  testSameSourceDestinationFromResultThrows(gpuError, 'single', 'webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('single precision same source and destination from result mutable throws headlessgl', () => {
+  testSameSourceDestinationFromResultThrows(gpuError, 'single', 'headlessgl');
+});
+
+test('single precision same source and destination from result mutable throws cpu', () => {
+  testSameSourceDestinationFromResultThrows(cpuError, 'single', 'cpu');
+});
+
+test('unsigned precision same source and destination from result mutable throws auto', () => {
+  testSameSourceDestinationFromResultThrows(gpuError, 'unsigned');
+});
+
+test('unsigned precision same source and destination from result mutable throws gpu', () => {
+  testSameSourceDestinationFromResultThrows(gpuError, 'unsigned', 'gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('unsigned precision same source and destination from result mutable throws webgl', () => {
+  testSameSourceDestinationFromResultThrows(gpuError, 'unsigned', 'webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('unsigned precision same source and destination from result mutable throws webgl2', () => {
+  testSameSourceDestinationFromResultThrows(gpuError, 'unsigned', 'webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('unsigned precision same source and destination from result mutable throws headlessgl', () => {
+  testSameSourceDestinationFromResultThrows(gpuError, 'unsigned', 'headlessgl');
+});
+
+test('unsigned precision same source and destination from result mutable throws cpu', () => {
+  testSameSourceDestinationFromResultThrows(cpuError, 'unsigned', 'cpu');
+});
+
+function testSameSourceDestinationFromMappedResultThrows(error, precision, mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernelMap({
+    mappedResult: function map(v) {
+      return v;
+    }
+  }, function(value) {
+    return map(value[this.thread.x] + 1);
+  }, {
+    output: [1],
+    pipeline: true,
+    immutable: false,
+    precision,
+  });
+  let { result, mappedResult } = kernel([0]);
+  assert.equal((mappedResult.toArray ? mappedResult.toArray() : mappedResult)[0], 1);
+  assert.throws(() => kernel(mappedResult), error);
+  assert.throws(() => kernel(result), error);
+  gpu.destroy();
+}
+
+test('single precision same source and destination from mapped result mutable throws auto', () => {
+  testSameSourceDestinationFromMappedResultThrows(gpuError, 'single');
+});
+
+test('single precision same source and destination from mapped result mutable throws gpu', () => {
+  testSameSourceDestinationFromMappedResultThrows(gpuError, 'single', 'gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('single precision same source and destination from mapped result mutable throws webgl', () => {
+  testSameSourceDestinationFromMappedResultThrows(gpuError, 'single', 'webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('single precision same source and destination from mapped result mutable throws webgl2', () => {
+  testSameSourceDestinationFromMappedResultThrows(gpuError, 'single', 'webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('single precision same source and destination from mapped result mutable throws headlessgl', () => {
+  testSameSourceDestinationFromMappedResultThrows(gpuError, 'single', 'headlessgl');
+});
+
+test('single precision same source and destination from mapped result mutable throws cpu', () => {
+  testSameSourceDestinationFromMappedResultThrows(cpuError, 'single', 'cpu');
+});
+
+test('unsigned precision same source and destination from mapped result mutable throws auto', () => {
+  testSameSourceDestinationFromMappedResultThrows(gpuError, 'unsigned');
+});
+
+test('unsigned precision same source and destination from mapped result mutable throws gpu', () => {
+  testSameSourceDestinationFromMappedResultThrows(gpuError, 'unsigned', 'gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('unsigned precision same source and destination from mapped result mutable throws webgl', () => {
+  testSameSourceDestinationFromMappedResultThrows(gpuError, 'unsigned', 'webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('unsigned precision same source and destination from mapped result mutable throws webgl2', () => {
+  testSameSourceDestinationFromMappedResultThrows(gpuError, 'unsigned', 'webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('unsigned precision same source and destination from mapped result mutable throws headlessgl', () => {
+  testSameSourceDestinationFromMappedResultThrows(gpuError, 'unsigned', 'headlessgl');
+});
+
+test('unsigned precision same source and destination from mapped result mutable throws cpu', () => {
+  testSameSourceDestinationFromMappedResultThrows(cpuError, 'unsigned', 'cpu');
 });

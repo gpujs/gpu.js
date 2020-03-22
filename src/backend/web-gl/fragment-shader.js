@@ -11,11 +11,86 @@ __CONSTANTS__;
 
 varying vec2 vTexCoord;
 
-vec4 round(vec4 x) {
+float acosh(float x) {
+  return log(x + sqrt(x * x - 1.0));
+}
+
+float sinh(float x) {
+  return (pow(${Math.E}, x) - pow(${Math.E}, -x)) / 2.0;
+}
+
+float asinh(float x) {
+  return log(x + sqrt(x * x + 1.0));
+}
+
+float atan2(float v1, float v2) {
+  if (v1 == 0.0 || v2 == 0.0) return 0.0;
+  return atan(v1 / v2);
+}
+
+float atanh(float x) {
+  x = (x + 1.0) / (x - 1.0);
+  if (x < 0.0) {
+    return 0.5 * log(-x);
+  }
+  return 0.5 * log(x);
+}
+
+float cbrt(float x) {
+  if (x >= 0.0) {
+    return pow(x, 1.0 / 3.0);
+  } else {
+    return -pow(x, 1.0 / 3.0);
+  }
+}
+
+float cosh(float x) {
+  return (pow(${Math.E}, x) + pow(${Math.E}, -x)) / 2.0; 
+}
+
+float expm1(float x) {
+  return pow(${Math.E}, x) - 1.0; 
+}
+
+float fround(highp float x) {
+  return x;
+}
+
+float imul(float v1, float v2) {
+  return float(int(v1) * int(v2));
+}
+
+float log10(float x) {
+  return log2(x) * (1.0 / log2(10.0));
+}
+
+float log1p(float x) {
+  return log(1.0 + x);
+}
+
+float _pow(float v1, float v2) {
+  if (v2 == 0.0) return 1.0;
+  return pow(v1, v2);
+}
+
+float tanh(float x) {
+  float e = exp(2.0 * x);
+  return (e - 1.0) / (e + 1.0);
+}
+
+float trunc(float x) {
+  if (x >= 0.0) {
+    return floor(x); 
+  } else {
+    return ceil(x);
+  }
+}
+
+vec4 _round(vec4 x) {
   return floor(x + 0.5);
 }
 
-float round(float x) {
+float _round(float x) {
   return floor(x + 0.5);
 }
 
@@ -182,9 +257,9 @@ float decode32(vec4 texel) {
   gte128.x = texel.b >= 128.0 ? 1.0 : 0.0;
   gte128.y = texel.a >= 128.0 ? 1.0 : 0.0;
   float exponent = 2.0 * texel.a - 127.0 + dot(gte128, MAGIC_VEC);
-  float res = exp2(round(exponent));
+  float res = exp2(_round(exponent));
   texel.b = texel.b - 128.0 * gte128.x;
-  res = dot(texel, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;
+  res = dot(texel, SCALE_FACTOR) * exp2(_round(exponent-23.0)) + res;
   res *= gte128.y * -2.0 + 1.0;
   return res;
 }

@@ -323,6 +323,9 @@ class GPU {
         tactic: _kernel.tactic,
         onRequestFallback,
         onRequestSwitchKernel,
+        texture: _kernel.texture,
+        mappedTextures: _kernel.mappedTextures,
+        drawBuffersMap: _kernel.drawBuffersMap,
       });
       newKernel.build.apply(newKernel, args);
       kernelRun.replaceKernel(newKernel);

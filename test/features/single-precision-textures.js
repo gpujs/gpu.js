@@ -661,6 +661,7 @@ function testImmutableDoesNotCollideWithKernelTexture(mode) {
   const v = [1];
   const result1 = kernel(v);
   assert.deepEqual(result1.toArray(), new Float32Array([2]));
+
   // kernel is getting ready to recompile, because a new type of input
   const result2 = kernel(result1);
   assert.deepEqual(result2.toArray(), new Float32Array([3]));

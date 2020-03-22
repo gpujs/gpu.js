@@ -1,5 +1,6 @@
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
+const { sameError } = require('./memory-optimized-number-texture');
 
 class WebGLKernelValueNumberTexture extends WebGLKernelArray {
   constructor(value, settings) {
@@ -44,8 +45,21 @@ class WebGLKernelValueNumberTexture extends WebGLKernelArray {
     }
 
     const { kernel, context: gl } = this;
-    if (kernel.pipeline && kernel.immutable) {
-      kernel.updateTextureArgumentRefs(this, inputTexture);
+    if (kernel.pipeline) {
+      if (kernel.immutable) {
+        kernel.updateTextureArgumentRefs(this, inputTexture);
+      } else {
+        if (kernel.texture.texture === inputTexture.texture) {
+          throw new Error(sameError);
+        } else if (kernel.mappedTextures) {
+          const { mappedTextures } = kernel;
+          for (let i = 0; i < mappedTextures.length; i++) {
+            if (mappedTextures[i].texture === inputTexture.texture) {
+              throw new Error(sameError);
+            }
+          }
+        }
+      }
     }
 
     gl.activeTexture(this.contextHandle);

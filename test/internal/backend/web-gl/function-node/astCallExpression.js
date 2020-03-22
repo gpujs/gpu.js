@@ -24,7 +24,7 @@ test('handles Math.pow with floats', () => {
     return Math.pow(v, v2);
   }`, { output: [1], argumentTypes: ['Number', 'Number'] });
   assert.equal(node.toString(), 'float kernel(float user_v, float user_v2) {'
-    + '\nreturn pow(user_v, user_v2);'
+    + '\nreturn _pow(user_v, user_v2);'
     + '\n}');
 });
 test('handles Math.pow with mixed 1', () => {
@@ -32,7 +32,7 @@ test('handles Math.pow with mixed 1', () => {
     return Math.pow(v, v2);
   }`, { output: [1], argumentTypes: ['Number', 'Integer'] });
   assert.equal(node.toString(), 'float kernel(float user_v, int user_v2) {'
-    + '\nreturn pow(user_v, float(user_v2));'
+    + '\nreturn _pow(user_v, float(user_v2));'
     + '\n}');
 });
 test('handles Math.pow with mixed 2', () => {
@@ -40,7 +40,7 @@ test('handles Math.pow with mixed 2', () => {
     return Math.pow(v, v2);
   }`, { output: [1], argumentTypes: ['Integer', 'Number'] });
   assert.equal(node.toString(), 'float kernel(int user_v, float user_v2) {'
-    + '\nreturn pow(float(user_v), user_v2);'
+    + '\nreturn _pow(float(user_v), user_v2);'
     + '\n}');
 });
 test('handles Math.pow with ints', () => {
@@ -48,7 +48,7 @@ test('handles Math.pow with ints', () => {
     return Math.pow(v, v2);
   }`, { output: [1], argumentTypes: ['Integer', 'Integer'] });
   assert.equal(node.toString(), 'float kernel(int user_v, int user_v2) {'
-    + '\nreturn pow(float(user_v), float(user_v2));'
+    + '\nreturn _pow(float(user_v), float(user_v2));'
     + '\n}');
 });
 test('handles argument of type Input', () => {

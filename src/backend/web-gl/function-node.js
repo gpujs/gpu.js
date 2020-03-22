@@ -1326,8 +1326,13 @@ class WebGLFunctionNode extends FunctionNode {
     }
 
     // if this if grows to more than one, lets use a switch
-    if (functionName === 'atan2') {
-      functionName = 'atan';
+    switch (functionName) {
+      case 'pow':
+        functionName = '_pow';
+        break;
+      case 'round':
+        functionName = '_round';
+        break;
     }
 
     // Register the function into the called registry

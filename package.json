@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "2.8.5",
+  "version": "2.9.0",
   "description": "GPU Accelerated JavaScript",
   "engines": {
     "node": ">=8.0.0"
@@ -48,6 +48,7 @@
     "coverage": "c8 qunit",
     "setup": "npm i -g gulp-cli",
     "make": "gulp make",
+    "build": "gulp build",
     "docs": "doxdox ./src --layout bootstrap --output docs.html"
   },
   "repository": {

@@ -321,6 +321,8 @@ class GLKernel extends Kernel {
     this.compiledFragmentShader = null;
     this.compiledVertexShader = null;
     this.switchingKernels = null;
+    this._textureSwitched = null;
+    this._mappedTextureSwitched = null;
   }
 
   checkTextureSize() {
@@ -910,12 +912,14 @@ class GLKernel extends Kernel {
         this.texture.delete();
       }
       this.texture = null;
-      if (this.mappedTextures) {
+      this._setupOutputTexture();
+      if (this.mappedTextures && this.mappedTextures.length > 0) {
         for (let i = 0; i < this.mappedTextures.length; i++) {
           this.mappedTextures[i].delete();
         }
+        this.mappedTextures = null;
+        this._setupSubOutputTextures();
       }
-      this.mappedTextures = null;
     } else {
       this.output = newOutput;
     }
@@ -977,6 +981,7 @@ class GLKernel extends Kernel {
         if (prevArg.texture._refs === 1) {
           this.texture.delete();
           this.texture = prevArg.clone();
+          this._textureSwitched = true;
         }
         prevArg.delete();
       }
@@ -991,6 +996,7 @@ class GLKernel extends Kernel {
             if (prevArg.texture._refs === 1) {
               mappedTexture.delete();
               mappedTextures[i] = prevArg.clone();
+              this._mappedTextureSwitched[i] = true;
             }
             prevArg.delete();
           }

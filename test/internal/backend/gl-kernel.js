@@ -315,6 +315,8 @@ test('setOutput() when does not need to trigger recompile', () => {
   const mockMappedTexture = {
     delete: sinon.spy()
   };
+  const mock_setupOutputTexture = sinon.spy();
+  const mock_setupSubOutputTextures = sinon.spy();
   const mockInstance = {
     context: mockContext,
     program: {},
@@ -338,7 +340,9 @@ test('setOutput() when does not need to trigger recompile', () => {
     texture: mockTexture,
     mappedTextures: [
       mockMappedTexture
-    ]
+    ],
+    _setupOutputTexture: mock_setupOutputTexture,
+    _setupSubOutputTextures: mock_setupSubOutputTextures,
   };
   GLKernel.prototype.setOutput.call(mockInstance, [100, 100]);
   assert.equal(mockContext.bindFramebuffer.callCount, 1);
@@ -358,6 +362,8 @@ test('setOutput() when does not need to trigger recompile', () => {
   assert.equal(mockInstance.mappedTextures, null);
   assert.ok(mockTexture.delete.called);
   assert.ok(mockMappedTexture.delete.called);
+  assert.ok(mock_setupOutputTexture.called);
+  assert.ok(mock_setupSubOutputTextures.called);
 });
 
 test('setOutput() when needs to trigger recompile', () => {

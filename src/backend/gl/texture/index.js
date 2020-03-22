@@ -18,10 +18,15 @@ class GLTexture extends Texture {
     return new this.constructor(this);
   }
 
+  /**
+   * @returns {Boolean}
+   */
   beforeMutate() {
     if (this.texture._refs > 1) {
-      this.cloneTexture();
+      this.newTexture();
+      return true;
     }
+    return false;
   }
 
   /**
@@ -33,7 +38,6 @@ class GLTexture extends Texture {
     if (kernel.debug) {
       console.warn('cloning internal texture');
     }
-    const existingFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
     selectTexture(gl, texture);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
@@ -43,9 +47,24 @@ class GLTexture extends Texture {
     gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, size[0], size[1]);
     target._refs = 1;
     this.texture = target;
-    if (existingFramebuffer) {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, existingFramebuffer);
+  }
+
+  /**
+   * @private
+   */
+  newTexture() {
+    this.texture._refs--;
+    const gl = this.context;
+    const size = this.size;
+    const kernel = this.kernel;
+    if (kernel.debug) {
+      console.warn('new internal texture');
     }
+    const target = gl.createTexture();
+    selectTexture(gl, target);
+    gl.texImage2D(gl.TEXTURE_2D, 0, this.internalFormat, size[0], size[1], 0, this.textureFormat, this.textureType, null);
+    target._refs = 1;
+    this.texture = target;
   }
 
   clear() {
@@ -86,7 +105,11 @@ class GLTexture extends Texture {
 }
 
 function selectTexture(gl, texture) {
-  gl.activeTexture(gl.TEXTURE31); // Maximum a texture can be, so that collision is highly unlikely
+  /* Maximum a texture can be, so that collision is highly unlikely
+   * basically gl.TEXTURE15 + gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
+   * Was gl.TEXTURE31, but safari didn't like it
+   * */
+  gl.activeTexture(gl.TEXTURE15);
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);

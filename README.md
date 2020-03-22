@@ -823,6 +823,10 @@ const matMult = gpu.createKernel(function(a, b) {
 ## Pipelining
 [Pipeline](https://en.wikipedia.org/wiki/Pipeline_(computing)) is a feature where values are sent directly from kernel to kernel via a texture.
 This results in extremely fast computing.  This is achieved with the kernel setting `pipeline: boolean` or by calling `kernel.setPipeline(true)`
+In an effort to make the CPU and GPU work similarly, pipeline on CPU and GPU modes causes the kernel result to be reused when `immutable: false` (which is default).
+If you'd like to keep kernel results around, use `immutable: true` and ensure you cleanup memory:
+* In gpu mode using `texture.delete()` when appropriate.
+* In cpu mode allowing values to go out of context
 
 ### Cloning Textures **New in V2!**
 When using pipeline mode the outputs from kernels can be cloned using `texture.clone()`.
@@ -1006,14 +1010,24 @@ This is a list of the supported ones:
 
 * `Math.abs()`
 * `Math.acos()`
+* `Math.acosh()`
 * `Math.asin()`
+* `Math.asinh()`
 * `Math.atan()`
+* `Math.atanh()`
 * `Math.atan2()`
+* `Math.cbrt()`
 * `Math.ceil()`
 * `Math.cos()`
+* `Math.cosh()`
 * `Math.exp()`
+* `Math.expm1()`
 * `Math.floor()`
+* `Math.fround()`
+* `Math.imul()`
 * `Math.log()`
+* `Math.log10()`
+* `Math.log1p()`
 * `Math.log2()`
 * `Math.max()`
 * `Math.min()`
@@ -1030,8 +1044,15 @@ This is a list of the supported ones:
 * `Math.round()`
 * `Math.sign()`
 * `Math.sin()`
+* `Math.sinh()`
 * `Math.sqrt()`
 * `Math.tan()`
+* `Math.tanh()`
+* `Math.trunc()`
+
+This is a list and reasons of unsupported ones:
+*  `Math.clz32` - bits directly are hard
+*  `Math.hypot` - dynamically sized
 
 ## How to check what is supported
 

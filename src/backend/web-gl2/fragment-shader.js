@@ -13,6 +13,49 @@ __CONSTANTS__;
 
 in vec2 vTexCoord;
 
+float atan2(float v1, float v2) {
+  if (v1 == 0.0 || v2 == 0.0) return 0.0;
+  return atan(v1 / v2);
+}
+
+float cbrt(float x) {
+  if (x >= 0.0) {
+    return pow(x, 1.0 / 3.0);
+  } else {
+    return -pow(x, 1.0 / 3.0);
+  }
+}
+
+float expm1(float x) {
+  return pow(${Math.E}, x) - 1.0; 
+}
+
+float fround(highp float x) {
+  return x;
+}
+
+float imul(float v1, float v2) {
+  return float(int(v1) * int(v2));
+}
+
+float log10(float x) {
+  return log2(x) * (1.0 / log2(10.0));
+}
+
+float log1p(float x) {
+  return log(1.0 + x);
+}
+
+float _pow(float v1, float v2) {
+  if (v2 == 0.0) return 1.0;
+  return pow(v1, v2);
+}
+
+float _round(float x) {
+  return floor(x + 0.5);
+}
+
+
 const int BIT_COUNT = 32;
 int modi(int x, int y) {
   return x - y * (x / y);
