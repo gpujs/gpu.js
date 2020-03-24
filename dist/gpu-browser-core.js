@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.9.0
- * @date Sun Mar 22 2020 17:17:39 GMT-0400 (Eastern Daylight Time)
+ * @version 2.9.1
+ * @date Tue Mar 24 2020 07:52:55 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -10378,9 +10378,7 @@ class WebGLKernel extends GLKernel {
       return failureResult;
     }
     const { texSize, context: gl, canvas } = this;
-    if (!this.pipeline) {
-      gl.enable(gl.SCISSOR_TEST);
-    }
+    gl.enable(gl.SCISSOR_TEST);
     if (this.pipeline && this.precision === 'single') {
       gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
       canvas.width = this.maxTexSize[0];
@@ -10505,9 +10503,7 @@ class WebGLKernel extends GLKernel {
     const { kernelArguments, texSize, forceUploadKernelConstants, context: gl } = this;
 
     gl.useProgram(this.program);
-    if (!this.pipeline) {
-      gl.scissor(0, 0, texSize[0], texSize[1]);
-    }
+    gl.scissor(0, 0, texSize[0], texSize[1]);
     if (this.dynamicOutput) {
       this.setUniform3iv('uOutputDim', new Int32Array(this.threadDim));
       this.setUniform2iv('uTexSize', texSize);
