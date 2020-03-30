@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.9.1
- * @date Tue Mar 24 2020 07:52:55 GMT-0400 (Eastern Daylight Time)
+ * @version 2.9.2
+ * @date Mon Mar 30 2020 08:17:24 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -9068,6 +9068,29 @@ class GLKernel extends Kernel {
     return result[0] === 2 && result[1] === 1511;
   }
 
+  static getIsSpeedTacticSupported() {
+    function kernelFunction(value) {
+      return value[this.thread.x];
+    }
+    const kernel = new this(kernelFunction.toString(), {
+      context: this.testContext,
+      canvas: this.testCanvas,
+      validate: false,
+      output: [4],
+      returnType: 'Number',
+      precision: 'unsigned',
+      tactic: 'speed',
+    });
+    const args = [
+      [0, 1, 2, 3]
+    ];
+    kernel.build.apply(kernel, args);
+    kernel.run.apply(kernel, args);
+    const result = kernel.renderOutput();
+    kernel.destroy(true);
+    return Math.round(result[0]) === 0 && Math.round(result[1]) === 1 && Math.round(result[2]) === 2 && Math.round(result[3]) === 3;
+  }
+
   static get testCanvas() {
     throw new Error(`"testCanvas" not defined on ${ this.name }`);
   }
@@ -9082,6 +9105,7 @@ class GLKernel extends Kernel {
     return Object.freeze({
       isFloatRead: this.getIsFloatRead(),
       isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+      isSpeedTacticSupported: this.getIsSpeedTacticSupported(),
       isTextureFloat: this.getIsTextureFloat(),
       isDrawBuffers,
       kernelMap: isDrawBuffers,
@@ -9824,6 +9848,7 @@ class GLKernel extends Kernel {
   }
   getVariablePrecisionString(textureSize = this.texSize, tactic = this.tactic, isInt = false) {
     if (!tactic) {
+      if (!this.constructor.features.isSpeedTacticSupported) return 'highp';
       const low = this.constructor.features[isInt ? 'lowIntPrecision' : 'lowFloatPrecision'];
       const medium = this.constructor.features[isInt ? 'mediumIntPrecision' : 'mediumFloatPrecision'];
       const high = this.constructor.features[isInt ? 'highIntPrecision' : 'highFloatPrecision'];
@@ -17202,6 +17227,7 @@ class WebGL2Kernel extends WebGLKernel {
     return Object.freeze({
       isFloatRead: this.getIsFloatRead(),
       isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+      isSpeedTacticSupported: this.getIsSpeedTacticSupported(),
       kernelMap: true,
       isTextureFloat: true,
       isDrawBuffers: true,
@@ -17218,10 +17244,6 @@ class WebGL2Kernel extends WebGLKernel {
 
   static getIsTextureFloat() {
     return true;
-  }
-
-  static getIsIntegerDivisionAccurate() {
-    return super.getIsIntegerDivisionAccurate();
   }
 
   static getChannelCount() {

@@ -129,6 +129,7 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
         lowFloatPrecision: { rangeMax: Math.log2(3 * 3) },
         mediumFloatPrecision: { rangeMax: Math.log2(4 * 4) },
         highFloatPrecision: { rangeMax: Math.log2(5 * 5) },
+        isSpeedTacticSupported: true,
       }
     }
   };
@@ -144,6 +145,7 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
         lowFloatPrecision: { rangeMax: Math.log2(3 * 3) },
         mediumFloatPrecision: { rangeMax: Math.log2(4 * 4) },
         highFloatPrecision: { rangeMax: Math.log2(5 * 5) },
+        isSpeedTacticSupported: true,
       }
     }
   };
@@ -159,6 +161,7 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
         lowFloatPrecision: { rangeMax: Math.log2(3 * 3) },
         mediumFloatPrecision: { rangeMax: Math.log2(4 * 4) },
         highFloatPrecision: { rangeMax: Math.log2(5 * 5) },
+        isSpeedTacticSupported: true,
       }
     }
   };
@@ -174,6 +177,7 @@ test('getVariablePrecisionString() when tactic is not set and texSize is outside
         lowFloatPrecision: { rangeMax: Math.log2(3 * 3) },
         mediumFloatPrecision: { rangeMax: Math.log2(4 * 4) },
         highFloatPrecision: { rangeMax: Math.log2(5 * 5) },
+        isSpeedTacticSupported: true,
       }
     }
   };
@@ -189,6 +193,7 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
         lowIntPrecision: { rangeMax: Math.log2(3 * 3) },
         mediumIntPrecision: { rangeMax: Math.log2(4 * 4) },
         highIntPrecision: { rangeMax: Math.log2(5 * 5) },
+        isSpeedTacticSupported: true,
       }
     }
   };
@@ -204,6 +209,7 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
         lowIntPrecision: { rangeMax: Math.log2(3 * 3) },
         mediumIntPrecision: { rangeMax: Math.log2(4 * 4) },
         highIntPrecision: { rangeMax: Math.log2(5 * 5) },
+        isSpeedTacticSupported: true,
       }
     }
   };
@@ -219,6 +225,7 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
         lowIntPrecision: { rangeMax: Math.log2(3 * 3) },
         mediumIntPrecision: { rangeMax: Math.log2(4 * 4) },
         highIntPrecision: { rangeMax: Math.log2(5 * 5) },
+        isSpeedTacticSupported: true,
       }
     }
   };
@@ -234,11 +241,25 @@ test('getVariablePrecisionString() when tactic is not set and texSize is outside
         lowIntPrecision: { rangeMax: Math.log2(3 * 3) },
         mediumIntPrecision: { rangeMax: Math.log2(4 * 4) },
         highIntPrecision: { rangeMax: Math.log2(5 * 5) },
+        isSpeedTacticSupported: true,
       }
     }
   };
   const textureSize = [6, 6];
   assert.throws(() => GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize, null, true));
+});
+
+test('getVariablePrecisionString() when features.isSpeedTacticSupported is false returns "highp"', () => {
+  const mockInstance = {
+    tactic: null,
+    constructor: {
+      features: {
+        isSpeedTacticSupported: false,
+      }
+    }
+  };
+  const textureSize = [1, 1];
+  assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize, null, true), 'highp');
 });
 
 function testGetFeatures(canvas, context) {
@@ -248,6 +269,7 @@ function testGetFeatures(canvas, context) {
   const features = Kernel.getFeatures();
   assert.ok(typeof features.isFloatRead === 'boolean');
   assert.ok(typeof features.isIntegerDivisionAccurate === 'boolean');
+  assert.ok(typeof features.isSpeedTacticSupported === 'boolean');
   assert.ok(typeof features.isTextureFloat === 'boolean');
   assert.ok(typeof features.isDrawBuffers === 'boolean');
   assert.ok(typeof features.kernelMap === 'boolean');

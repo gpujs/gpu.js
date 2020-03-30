@@ -71,6 +71,7 @@ class WebGL2Kernel extends WebGLKernel {
     return Object.freeze({
       isFloatRead: this.getIsFloatRead(),
       isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+      isSpeedTacticSupported: this.getIsSpeedTacticSupported(),
       kernelMap: true,
       isTextureFloat: true,
       isDrawBuffers: true,
@@ -87,10 +88,6 @@ class WebGL2Kernel extends WebGLKernel {
 
   static getIsTextureFloat() {
     return true;
-  }
-
-  static getIsIntegerDivisionAccurate() {
-    return super.getIsIntegerDivisionAccurate();
   }
 
   static getChannelCount() {

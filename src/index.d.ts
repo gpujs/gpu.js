@@ -373,6 +373,7 @@ export interface IKernelFeatures {
   isFloatRead: boolean;
   kernelMap: boolean;
   isIntegerDivisionAccurate: boolean;
+  isSpeedTacticSupported: boolean;
   isTextureFloat: boolean;
   isDrawBuffers: boolean;
   channelCount: number;

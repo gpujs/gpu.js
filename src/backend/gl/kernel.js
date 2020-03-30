@@ -75,6 +75,29 @@ class GLKernel extends Kernel {
     return result[0] === 2 && result[1] === 1511;
   }
 
+  static getIsSpeedTacticSupported() {
+    function kernelFunction(value) {
+      return value[this.thread.x];
+    }
+    const kernel = new this(kernelFunction.toString(), {
+      context: this.testContext,
+      canvas: this.testCanvas,
+      validate: false,
+      output: [4],
+      returnType: 'Number',
+      precision: 'unsigned',
+      tactic: 'speed',
+    });
+    const args = [
+      [0, 1, 2, 3]
+    ];
+    kernel.build.apply(kernel, args);
+    kernel.run.apply(kernel, args);
+    const result = kernel.renderOutput();
+    kernel.destroy(true);
+    return Math.round(result[0]) === 0 && Math.round(result[1]) === 1 && Math.round(result[2]) === 2 && Math.round(result[3]) === 3;
+  }
+
   /**
    * @abstract
    */
@@ -95,6 +118,7 @@ class GLKernel extends Kernel {
     return Object.freeze({
       isFloatRead: this.getIsFloatRead(),
       isIntegerDivisionAccurate: this.getIsIntegerDivisionAccurate(),
+      isSpeedTacticSupported: this.getIsSpeedTacticSupported(),
       isTextureFloat: this.getIsTextureFloat(),
       isDrawBuffers,
       kernelMap: isDrawBuffers,
@@ -942,6 +966,7 @@ class GLKernel extends Kernel {
   }
   getVariablePrecisionString(textureSize = this.texSize, tactic = this.tactic, isInt = false) {
     if (!tactic) {
+      if (!this.constructor.features.isSpeedTacticSupported) return 'highp';
       const low = this.constructor.features[isInt ? 'lowIntPrecision' : 'lowFloatPrecision'];
       const medium = this.constructor.features[isInt ? 'mediumIntPrecision' : 'mediumFloatPrecision'];
       const high = this.constructor.features[isInt ? 'highIntPrecision' : 'highFloatPrecision'];
