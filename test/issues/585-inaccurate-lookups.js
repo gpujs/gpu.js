@@ -12,7 +12,6 @@ function testResize(mode) {
   });
 
   const result = kernel([0,1,2,3]);
-  console.log(result);
   assert.equal(Math.round(result[0]), 0);
   assert.equal(Math.round(result[1]), 1);
   assert.equal(Math.round(result[2]), 2);

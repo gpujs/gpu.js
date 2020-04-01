@@ -1032,6 +1032,17 @@ class GLKernel extends Kernel {
     }
   }
 
+  onActivate(previousKernel) {
+    this._textureSwitched = true;
+    this.texture = previousKernel.texture;
+    if (this.mappedTextures) {
+      for (let i = 0; i < this.mappedTextures.length; i++) {
+        this._mappedTextureSwitched[i] = true;
+      }
+      this.mappedTextures = previousKernel.mappedTextures;
+    }
+  }
+
   initCanvas() {}
 }
 

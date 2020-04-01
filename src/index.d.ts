@@ -192,6 +192,7 @@ export class Kernel {
   hasPrependString(value: string): boolean;
   constructor(kernel: KernelFunction|IKernelJSON|string, settings?: IDirectKernelSettings);
   onRequestSwitchKernel?: Kernel;
+  onActivate(previousKernel: Kernel): void;
   build(...args: KernelVariable[]): void;
   run(...args: KernelVariable[]): KernelVariable;
   toString(...args: KernelVariable[]): string;

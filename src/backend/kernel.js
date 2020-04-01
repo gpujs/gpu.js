@@ -932,6 +932,13 @@ class Kernel {
       returnType: settings.returnType || null,
     };
   }
+
+  /**
+   *
+   * @param {Kernel} previousKernel
+   * @abstract
+   */
+  onActivate(previousKernel) {}
 }
 
 function splitArgumentTypes(argumentTypesObject) {

@@ -23,6 +23,7 @@ function testImmutableKernelTextureRecycling(precision, mode) {
   }
   assert.deepEqual(result.toArray(), new Float32Array([11]));
   assert.equal(newTextureSpy.callCount, 1);
+  assert.equal(gpu.kernels.length, 2);
   newTextureSpy.restore();
   gpu.destroy();
 }
@@ -94,6 +95,7 @@ function testImmutableMappedKernelTextureRecycling(precision, mode) {
   assert.deepEqual(map.result.toArray(), new Float32Array([11]));
   assert.deepEqual(map.oneOffValue.toArray(), new Float32Array([0]));
   assert.equal(newTextureSpy.callCount, 2);
+  assert.equal(gpu.kernels.length, 2);
   newTextureSpy.restore();
   gpu.destroy();
 }
@@ -756,4 +758,98 @@ test('unsigned precision same source and destination from mapped result mutable 
 
 test('unsigned precision same source and destination from mapped result mutable throws cpu', () => {
   testSameSourceDestinationFromMappedResultThrows(cpuError, 'unsigned', 'cpu');
+});
+
+function testOutputTextureIsClonedWhenRecompiling(mode) {
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function(value) {
+    return value[this.thread.x] + 1;
+  }, { output: [1], immutable: true, pipeline: true });
+  const result1 = kernel([1]);
+  assert.equal(result1.toArray()[0], 2);
+  const result2 = kernel(result1);
+  result1.delete();
+  assert.equal(result2.toArray()[0], 3);
+  result2.delete();
+  const result3 = kernel([3]);
+  assert.equal(result3.toArray()[0], 4);
+  const result4 = kernel(result3);
+  result3.delete();
+  assert.equal(result4.toArray()[0], 5);
+  result4.delete();
+  gpu.destroy();
+}
+
+test('output texture is cloned when recompiling auto', () => {
+  testOutputTextureIsClonedWhenRecompiling();
+});
+
+test('output texture is cloned when recompiling gpu', () => {
+  testOutputTextureIsClonedWhenRecompiling('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('output texture is cloned when recompiling webgl', () => {
+  testOutputTextureIsClonedWhenRecompiling('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('output texture is cloned when recompiling webgl2', () => {
+  testOutputTextureIsClonedWhenRecompiling('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('output texture is cloned when recompiling headlessgl', () => {
+  testOutputTextureIsClonedWhenRecompiling('headlessgl');
+});
+
+function testMappedOutputTextureIsClonedWhenRecompiling(mode) {
+  const gpu = new GPU({ mode });
+  function setValue(value) {
+    return value * 10;
+  }
+  const kernel = gpu.createKernelMap({
+    value: setValue,
+  },function(value1, value2) {
+    setValue(value2[this.thread.x]);
+    return value1[this.thread.x] + 1;
+  }, { output: [1], immutable: true, pipeline: true });
+  const map1 = kernel([1], [1]);
+  assert.equal(map1.result.toArray()[0], 2);
+  assert.equal(map1.value.toArray()[0], 10);
+  const map2 = kernel(map1.result, map1.value);
+  map1.result.delete();
+  map1.value.delete();
+  assert.equal(map2.result.toArray()[0], 3);
+  assert.equal(map2.value.toArray()[0], 100);
+  map2.value.delete();
+  map2.result.delete();
+  const map3 = kernel([3], [3]);
+  assert.equal(map3.result.toArray()[0], 4);
+  assert.equal(map3.value.toArray()[0], 30);
+  const map4 = kernel(map3.result, map3.value);
+  map3.result.delete();
+  map3.value.delete();
+  assert.equal(map4.result.toArray()[0], 5);
+  assert.equal(map4.value.toArray()[0], 300);
+  map4.result.delete();
+  map4.value.delete();
+  gpu.destroy();
+}
+
+test('mapped output texture is cloned when recompiling auto', () => {
+  testMappedOutputTextureIsClonedWhenRecompiling();
+});
+
+test('mapped output texture is cloned when recompiling gpu', () => {
+  testMappedOutputTextureIsClonedWhenRecompiling('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('mapped output texture is cloned when recompiling webgl', () => {
+  testMappedOutputTextureIsClonedWhenRecompiling('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('mapped output texture is cloned when recompiling webgl2', () => {
+  testMappedOutputTextureIsClonedWhenRecompiling('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('mapped output texture is cloned when recompiling headlessgl', () => {
+  testMappedOutputTextureIsClonedWhenRecompiling('headlessgl');
 });

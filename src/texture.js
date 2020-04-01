@@ -59,13 +59,11 @@ class Texture {
    * @desc Deletes the Texture
    */
   delete() {
-    if (this._deleted) return;
-    this._deleted = true;
-    if (this.texture._refs) {
-      this.texture._refs--;
-      if (this.texture._refs) return;
-    }
-    return this.context.deleteTexture(this.texture);
+    throw new Error(`Not implemented on ${this.constructor.name}`);
+  }
+
+  clear() {
+    throw new Error(`Not implemented on ${this.constructor.name}`);
   }
 }
 

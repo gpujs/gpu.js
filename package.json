@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "2.9.2",
+  "version": "2.9.3",
   "description": "GPU Accelerated JavaScript",
   "engines": {
     "node": ">=8.0.0"
@@ -44,8 +44,8 @@
     "vinyl-source-stream": "^2.0.0"
   },
   "scripts": {
-    "test": "qunit",
-    "coverage": "c8 qunit",
+    "test": "qunit test/issues test/internal test/features",
+    "coverage": "c8 qunit test/issues test/internal test/features",
     "setup": "npm i -g gulp-cli",
     "make": "gulp make",
     "build": "gulp build",

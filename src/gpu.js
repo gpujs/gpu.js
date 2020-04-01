@@ -218,9 +218,10 @@ class GPU {
       throw new Error('source parameter not a function');
     }
 
+    const kernels = this.kernels;
     if (this.mode === 'dev') {
       const devKernel = gpuMock(source, upgradeDeprecatedCreateKernelSettings(settings));
-      this.kernels.push(devKernel);
+      kernels.push(devKernel);
       return devKernel;
     }
 
@@ -290,6 +291,7 @@ class GPU {
       const signature = Constructor.getSignature(_kernel, argumentTypes);
       const existingKernel = switchableKernels[signature];
       if (existingKernel) {
+        existingKernel.onActivate(_kernel);
         return existingKernel;
       }
 
@@ -329,6 +331,7 @@ class GPU {
       });
       newKernel.build.apply(newKernel, args);
       kernelRun.replaceKernel(newKernel);
+      kernels.push(newKernel);
       return newKernel;
     }
     const mergedSettings = Object.assign({
@@ -358,7 +361,7 @@ class GPU {
       this.context = kernel.context;
     }
 
-    this.kernels.push(kernel);
+    kernels.push(kernel);
 
     return kernelRun;
   }

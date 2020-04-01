@@ -1,5 +1,5 @@
-const { assert, test, module: describe, only } = require('qunit');
-const { WebGLFunctionNode, WebGL2FunctionNode, CPUFunctionNode } = require('../../src');
+const { assert, test, module: describe, only, skip } = require('qunit');
+const { GPU, WebGLFunctionNode, WebGL2FunctionNode, CPUFunctionNode } = require('../../src');
 
 describe('features: type management');
 
@@ -586,4 +586,64 @@ test('auto detect float, array, array2d, array3d - webgl', () => {
     + '\nuser_allValues+=get32(user_array3d, user_array3dSize, user_array3dDim, threadId.x, threadId.y, threadId.z);'
     + '\nreturn (user_allValues*random());'
     + '\n}');
+});
+
+
+function notDefined(mode) {
+  const gpu = new GPU({ mode });
+  const kernel1 = gpu.createKernel(function() {
+    return result;
+  }, { output: [1] });
+  assert.throws(() => {
+    kernel1();
+  }, new Error('Identifier is not defined on line 1, position 0:\n result'));
+  const kernel2 = gpu.createKernel(function() {
+    return result[0];
+  }, { output: [1] });
+  assert.throws(() => {
+    kernel2();
+  }, new Error('Identifier is not defined on line 1, position 0:\n result'));
+  const kernel3 = gpu.createKernel(function() {
+    return result[0][0];
+  }, { output: [1] });
+  assert.throws(() => {
+    kernel3();
+  }, new Error('Identifier is not defined on line 1, position 0:\n result'));
+  const kernel4 = gpu.createKernel(function() {
+    return result[0][0][0];
+  }, { output: [1] });
+  assert.throws(() => {
+    kernel4();
+  }, new Error('Identifier is not defined on line 1, position 0:\n result'));
+  const kernel5 = gpu.createKernel(function() {
+    return result[0][0][0][0];
+  }, { output: [1] });
+  assert.throws(() => {
+    kernel5();
+  }, new Error('Identifier is not defined on line 1, position 1:\n result'));
+  gpu.destroy();
+}
+
+test('not defined auto', () => {
+  notDefined();
+});
+
+test('not defined gpu', () => {
+  notDefined('gpu');
+});
+
+(GPU.isWebGLSupported ? test : skip)('not defined webgl', () => {
+  notDefined('webgl');
+});
+
+(GPU.isWebGL2Supported ? test : skip)('not defined webgl2', () => {
+  notDefined('webgl2');
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('not defined headlessgl', () => {
+  notDefined('headlessgl');
+});
+
+test('not defined cpu', () => {
+  notDefined('cpu');
 });

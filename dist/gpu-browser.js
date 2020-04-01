@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.9.2
- * @date Mon Mar 30 2020 08:17:24 GMT-0400 (Eastern Daylight Time)
+ * @version 2.9.3
+ * @date Wed Apr 01 2020 07:53:27 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -7405,11 +7405,7 @@ class FunctionNode {
           if (this.isAstVariable(ast)) {
             const signature = this.getVariableSignature(ast);
             if (signature === 'value') {
-              const type = this.getVariableType(ast);
-              if (!type) {
-                throw this.astErrorOutput(`Unable to find identifier valueType`, ast);
-              }
-              return type;
+              return this.getCheckVariableType(ast);
             }
           }
           const origin = this.findIdentifierOrigin(ast);
@@ -7435,13 +7431,13 @@ class FunctionNode {
             const variableSignature = this.getVariableSignature(ast);
             switch (variableSignature) {
               case 'value[]':
-                return this.getLookupType(this.getVariableType(ast.object));
+                return this.getLookupType(this.getCheckVariableType(ast.object));
               case 'value[][]':
-                return this.getLookupType(this.getVariableType(ast.object.object));
+                return this.getLookupType(this.getCheckVariableType(ast.object.object));
               case 'value[][][]':
-                return this.getLookupType(this.getVariableType(ast.object.object.object));
+                return this.getLookupType(this.getCheckVariableType(ast.object.object.object));
               case 'value[][][][]':
-                return this.getLookupType(this.getVariableType(ast.object.object.object.object));
+                return this.getLookupType(this.getCheckVariableType(ast.object.object.object.object));
               case 'value.thread.value':
               case 'this.thread.value':
                 return 'Integer';
@@ -7458,9 +7454,7 @@ class FunctionNode {
               case 'this.constants.value[][][][]':
                 return this.getLookupType(this.getConstantType(ast.object.object.object.object.property.name));
               case 'fn()[]':
-                return this.getLookupType(this.getType(ast.object));
               case 'fn()[][]':
-                return this.getLookupType(this.getType(ast.object));
               case 'fn()[][][]':
                 return this.getLookupType(this.getType(ast.object));
               case 'value.value':
@@ -7469,13 +7463,10 @@ class FunctionNode {
                 }
                 switch (ast.property.name) {
                   case 'r':
-                    return this.getLookupType(this.getVariableType(ast.object));
                   case 'g':
-                    return this.getLookupType(this.getVariableType(ast.object));
                   case 'b':
-                    return this.getLookupType(this.getVariableType(ast.object));
                   case 'a':
-                    return this.getLookupType(this.getVariableType(ast.object));
+                    return this.getLookupType(this.getCheckVariableType(ast.object));
                 }
                 case '[][]':
                   return 'Number';
@@ -7499,6 +7490,14 @@ class FunctionNode {
         default:
           throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
     }
+  }
+
+  getCheckVariableType(ast) {
+    const type = this.getVariableType(ast);
+    if (!type) {
+      throw this.astErrorOutput(`${ast.type} is not defined`, ast);
+    }
+    return type;
   }
 
   inferArgumentTypesIfNeeded(functionName, args) {
@@ -9909,6 +9908,17 @@ class GLKernel extends Kernel {
     }
   }
 
+  onActivate(previousKernel) {
+    this._textureSwitched = true;
+    this.texture = previousKernel.texture;
+    if (this.mappedTextures) {
+      for (let i = 0; i < this.mappedTextures.length; i++) {
+        this._mappedTextureSwitched[i] = true;
+      }
+      this.mappedTextures = previousKernel.mappedTextures;
+    }
+  }
+
   initCanvas() {}
 }
 
@@ -10237,7 +10247,13 @@ class GLTexture extends Texture {
   }
 
   delete() {
-    super.delete();
+    if (this._deleted) return;
+    this._deleted = true;
+    if (this.texture._refs) {
+      this.texture._refs--;
+      if (this.texture._refs) return;
+    }
+    this.context.deleteTexture(this.texture);
     if (this.texture._refs === 0 && this._framebuffer) {
       this.context.deleteFramebuffer(this._framebuffer);
       this._framebuffer = null;
@@ -11175,6 +11191,8 @@ class Kernel {
       returnType: settings.returnType || null,
     };
   }
+
+  onActivate(previousKernel) {}
 }
 
 function splitArgumentTypes(argumentTypesObject) {
@@ -17957,9 +17975,10 @@ class GPU {
       throw new Error('source parameter not a function');
     }
 
+    const kernels = this.kernels;
     if (this.mode === 'dev') {
       const devKernel = gpuMock(source, upgradeDeprecatedCreateKernelSettings(settings));
-      this.kernels.push(devKernel);
+      kernels.push(devKernel);
       return devKernel;
     }
 
@@ -18021,6 +18040,7 @@ class GPU {
       const signature = Constructor.getSignature(_kernel, argumentTypes);
       const existingKernel = switchableKernels[signature];
       if (existingKernel) {
+        existingKernel.onActivate(_kernel);
         return existingKernel;
       }
 
@@ -18060,6 +18080,7 @@ class GPU {
       });
       newKernel.build.apply(newKernel, args);
       kernelRun.replaceKernel(newKernel);
+      kernels.push(newKernel);
       return newKernel;
     }
     const mergedSettings = Object.assign({
@@ -18087,7 +18108,7 @@ class GPU {
       this.context = kernel.context;
     }
 
-    this.kernels.push(kernel);
+    kernels.push(kernel);
 
     return kernelRun;
   }
@@ -18530,13 +18551,11 @@ class Texture {
   }
 
   delete() {
-    if (this._deleted) return;
-    this._deleted = true;
-    if (this.texture._refs) {
-      this.texture._refs--;
-      if (this.texture._refs) return;
-    }
-    return this.context.deleteTexture(this.texture);
+    throw new Error(`Not implemented on ${this.constructor.name}`);
+  }
+
+  clear() {
+    throw new Error(`Not implemented on ${this.constructor.name}`);
   }
 }
 
