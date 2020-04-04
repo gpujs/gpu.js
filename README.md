@@ -54,6 +54,25 @@ const multiplyMatrix = gpu.createKernel(function(a, b) {
 
 const c = multiplyMatrix(a, b);
 ```
+```js
+// Encode a string 26 times simultaneously, once for each key of the classical Caesar Cipher.
+const { GPU } = require('gpu.js');
+const gpu = new GPU();
+
+const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+const plaintext = 'helloworld';
+const plaintextIntegerArray = plaintext.split('').map(letter => alphabet.indexOf(letter));
+
+const caesarCipher = gpu.createKernel(function (plaintextIntegerArray, alphabetLength) {
+    return (plaintextIntegerArray[this.thread.x] + this.thread.y) % alphabetLength;
+}).setOutput([plaintext.length, alphabet.length]);
+
+console.log(
+    caesarCipher(plaintextIntegerArray, alphabet.length)
+        .map(ciphertexts => [...ciphertexts]
+            .map(index => alphabet[index]).join(''))
+); // => ['helloworld', 'ifmmpxpsme', 'jgnnqyqtnf', 'khoorzruog', ... 22 more items]
+```
 
 ## Typescript
 ```typescript
