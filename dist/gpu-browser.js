@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.9.4
- * @date Sun Jul 19 2020 07:26:26 GMT-0400 (Eastern Daylight Time)
+ * @version 2.9.5
+ * @date Sun Jul 19 2020 07:39:18 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
