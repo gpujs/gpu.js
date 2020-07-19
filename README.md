@@ -139,6 +139,7 @@ GPU.js in the wild, all around the net.  Add yours here!
 * [Video Convolution using GPU.js](https://observablehq.com/@robertleeplummerjr/video-convolution-using-gpu-js)
 * [GPU Rock Paper Scissors](https://observablehq.com/@alexlamb/gpu-rock-paper-scissors)
 * [Shaded relief with gpujs and d3js](https://observablehq.com/@rveciana/shaded-relief-with-gpujs-and-d3js/2)
+* [Caesar Cipher GPU.js Example](https://observablehq.com/@robertleeplummerjr/caesar-cipher-gpu-js-example)
 
 ## Installation
 On Linux, ensure you have the correct header files installed: `sudo apt install mesa-common-dev libxi-dev` (adjust for your distribution)
