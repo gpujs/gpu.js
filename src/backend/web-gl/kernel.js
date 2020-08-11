@@ -529,6 +529,7 @@ class WebGLKernel extends GLKernel {
     this.framebuffer = gl.createFramebuffer();
     this.framebuffer.width = texSize[0];
     this.framebuffer.height = texSize[1];
+    this.rawValueFramebuffers = {};
 
     const vertices = new Float32Array([-1, -1,
       1, -1, -1, 1,
@@ -1131,6 +1132,19 @@ float integerCorrectionModulo(float number, float divisor) {
     return result.join('');
   }
 
+  getRawValueFramebuffer(width, height) {
+    if (!this.rawValueFramebuffers[width]) {
+      this.rawValueFramebuffers[width] = {};
+    }
+    if (!this.rawValueFramebuffers[width][height]) {
+      const framebuffer = this.context.createFramebuffer();
+      framebuffer.width = width;
+      framebuffer.height = height;
+      this.rawValueFramebuffers[width][height] = framebuffer;
+    }
+    return this.rawValueFramebuffers[width][height];
+  }
+
   getKernelResultDeclaration() {
     switch (this.returnType) {
       case 'Array(2)':
@@ -1490,6 +1504,13 @@ float integerCorrectionModulo(float number, float divisor) {
     }
     if (this.framebuffer) {
       this.context.deleteFramebuffer(this.framebuffer);
+    }
+    for (const width in this.rawValueFramebuffers) {
+      for (const height in this.rawValueFramebuffers[width]) {
+        this.context.deleteFramebuffer(this.rawValueFramebuffers[width][height]);
+        delete this.rawValueFramebuffers[width][height];
+      }
+      delete this.rawValueFramebuffers[width];
     }
     if (this.vertShader) {
       this.context.deleteShader(this.vertShader);
