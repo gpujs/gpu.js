@@ -16,6 +16,9 @@ function constantsToString(constants, types) {
       case 'Array(2)':
       case 'Array(3)':
       case 'Array(4)':
+      case 'Matrix(2)':
+      case 'Matrix(3)':
+      case 'Matrix(4)':
         results.push(`${name}:new ${constant.constructor.name}(${JSON.stringify(Array.from(constant))})`);
         break;
     }
@@ -155,6 +158,9 @@ ${ header.join('\n') }
       case 'Array(2)':
       case 'Array(3)':
       case 'Array(4)':
+      case 'Matrix(2)':
+      case 'Matrix(3)':
+      case 'Matrix(4)':
         if (incomingConstants.hasOwnProperty(p)) {
           console.warn('constant ' + p + ' of type ' + type + ' cannot be resigned');
         }

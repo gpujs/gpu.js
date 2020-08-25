@@ -364,6 +364,13 @@ class FunctionNode {
       case 'BlockStatement':
         return this.getType(ast.body);
       case 'ArrayExpression':
+        const childType = this.getType(ast.elements[0]);
+        switch (childType) {
+          case 'Array(2)':
+          case 'Array(3)':
+          case 'Array(4)':
+            return `Matrix(${ast.elements.length})`;
+        }
         return `Array(${ ast.elements.length })`;
       case 'Literal':
         const literalKey = this.astKey(ast);
@@ -1380,6 +1387,7 @@ class FunctionNode {
           };
         }
         case 'fn()[]':
+        case 'fn()[][]':
         case '[][]':
           return {
             signature: variableSignature,
@@ -1489,6 +1497,9 @@ const typeLookupMap = {
   'Array(2)': 'Number',
   'Array(3)': 'Number',
   'Array(4)': 'Number',
+  'Matrix(2)': 'Number',
+  'Matrix(3)': 'Number',
+  'Matrix(4)': 'Number',
   'Array2D': 'Number',
   'Array3D': 'Number',
   'Input': 'Number',

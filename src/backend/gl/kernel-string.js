@@ -191,6 +191,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   result.push(context.toString());
   if (kernel.renderOutput === kernel.renderTexture) {
     context.reset();
+    const framebufferName = context.getContextVariableName(kernel.framebuffer);
     if (kernel.renderKernels) {
       const results = kernel.renderKernels();
       const textureName = context.getContextVariableName(kernel.texture.texture);
@@ -198,7 +199,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       result: {
         texture: ${ textureName },
         type: '${ results.result.type }',
-        toArray: ${ getToArrayString(results.result, textureName) }
+        toArray: ${ getToArrayString(results.result, textureName, framebufferName) }
       },`);
       const { subKernels, mappedTextures } = kernel;
       for (let i = 0; i < subKernels.length; i++) {
@@ -210,7 +211,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       ${subKernel.property}: {
         texture: ${ subKernelTextureName },
         type: '${ subKernelResult.type }',
-        toArray: ${ getToArrayString(subKernelResult, subKernelTextureName) }
+        toArray: ${ getToArrayString(subKernelResult, subKernelTextureName, framebufferName) }
       },`);
       }
       result.push(`    };`);
@@ -220,7 +221,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       result.push(`    return {
         texture: ${ textureName },
         type: '${ rendered.type }',
-        toArray: ${ getToArrayString(rendered, textureName) }
+        toArray: ${ getToArrayString(rendered, textureName, framebufferName) }
       };`);
     }
   }
@@ -235,7 +236,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
 
   let constantsUpload = [];
   kernelConstants.forEach((kernelConstant) => {
-    constantsUpload.push(`${  kernelConstant.getStringValueHandler()}`);
+    constantsUpload.push(`${kernelConstant.getStringValueHandler()}`);
   });
   return `function kernel(settings) {
   const { context, constants } = settings;
@@ -279,7 +280,7 @@ function getGetPixelsString(kernel) {
   });
 }
 
-function getToArrayString(kernelResult, textureName) {
+function getToArrayString(kernelResult, textureName, framebufferName) {
   const toArray = kernelResult.toArray.toString();
   const useFunctionKeyword = !/^function/.test(toArray);
   const flattenedFunctions = utils.flattenFunctionToString(`${useFunctionKeyword ? 'function ' : ''}${ toArray }`, {
@@ -287,6 +288,9 @@ function getToArrayString(kernelResult, textureName) {
       if (object === 'utils') {
         return `const ${name} = ${utils[name].toString()};`;
       } else if (object === 'this') {
+        if (name === 'framebuffer') {
+          return '';
+        }
         return `${useFunctionKeyword ? 'function ' : ''}${kernelResult[name].toString()}`;
       } else {
         throw new Error('unhandled fromObject');
@@ -300,9 +304,6 @@ function getToArrayString(kernelResult, textureName) {
         if (isDeclaration) return null;
         return 'gl';
       }
-      if (property === '_framebuffer') {
-        return '_framebuffer';
-      }
       if (kernelResult.hasOwnProperty(property)) {
         return JSON.stringify(kernelResult[property]);
       }
@@ -310,7 +311,7 @@ function getToArrayString(kernelResult, textureName) {
     }
   });
   return `() => {
-  let _framebuffer;
+  function framebuffer() { return ${framebufferName}; };
   ${flattenedFunctions}
   return toArray();
   }`;
