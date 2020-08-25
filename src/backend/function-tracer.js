@@ -99,8 +99,21 @@ class FunctionTracer {
    * @returns {IDeclaration}
    */
   getDeclaration(name) {
-    const { currentContext, currentFunctionContext } = this;
-    return currentContext[name] || currentFunctionContext[name] || null;
+    const { currentContext, currentFunctionContext, runningContexts } = this;
+    const declaration = currentContext[name] || currentFunctionContext[name] || null;
+
+    if (
+      !declaration &&
+      currentContext === currentFunctionContext &&
+      runningContexts.length > 0
+    ) {
+      const previousRunningContext = runningContexts[runningContexts.length - 2];
+      if (previousRunningContext[name]) {
+        return previousRunningContext[name];
+      }
+    }
+
+    return declaration;
   }
 
   /**

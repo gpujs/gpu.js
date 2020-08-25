@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.9.3
- * @date Mon Aug 24 2020 13:12:42 GMT-0400 (Eastern Daylight Time)
+ * @version 2.10.0
+ * @date Tue Aug 25 2020 14:05:30 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -5815,7 +5815,6 @@ class CPUFunctionNode extends FunctionNode {
 module.exports = {
   CPUFunctionNode
 };
-
 },{"../function-node":10}],7:[function(require,module,exports){
 const { utils } = require('../../utils');
 
@@ -8648,8 +8647,21 @@ class FunctionTracer {
   }
 
   getDeclaration(name) {
-    const { currentContext, currentFunctionContext } = this;
-    return currentContext[name] || currentFunctionContext[name] || null;
+    const { currentContext, currentFunctionContext, runningContexts } = this;
+    const declaration = currentContext[name] || currentFunctionContext[name] || null;
+
+    if (
+      !declaration &&
+      currentContext === currentFunctionContext &&
+      runningContexts.length > 0
+    ) {
+      const previousRunningContext = runningContexts[runningContexts.length - 2];
+      if (previousRunningContext[name]) {
+        return previousRunningContext[name];
+      }
+    }
+
+    return declaration;
   }
 
   scan(ast) {
@@ -9187,7 +9199,6 @@ function findKernelValue(argument, kernelValues, values, context, uploadedValues
 module.exports = {
   glKernelString
 };
-
 },{"../../utils":114,"gl-wiretap":3}],13:[function(require,module,exports){
 const { Kernel } = require('../kernel');
 const { utils } = require('../../utils');
@@ -19677,6 +19688,5 @@ const _systemEndianness = utils.getSystemEndianness();
 module.exports = {
   utils
 };
-
 },{"./input":110,"./texture":113,"acorn":1}]},{},[107])(107)
 });
