@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.9.5
- * @date Sun Jul 19 2020 07:39:18 GMT-0400 (Eastern Daylight Time)
+ * @version 2.10.0
+ * @date Tue Aug 25 2020 14:05:30 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -1043,6 +1043,15 @@ class CPUFunctionNode extends FunctionNode {
         this.astGeneric(mNode.property, retArr);
         retArr.push(']');
         return retArr;
+      case 'fn()[][]':
+        this.astGeneric(mNode.object.object, retArr);
+        retArr.push('[');
+        this.astGeneric(mNode.object.property, retArr);
+        retArr.push(']');
+        retArr.push('[');
+        this.astGeneric(mNode.property, retArr);
+        retArr.push(']');
+        return retArr;
       default:
         throw this.astErrorOutput('Unexpected expression', mNode);
     }
@@ -1064,6 +1073,9 @@ class CPUFunctionNode extends FunctionNode {
       case 'Array(2)':
       case 'Array(3)':
       case 'Array(4)':
+      case 'Matrix(2)':
+      case 'Matrix(3)':
+      case 'Matrix(4)':
       case 'HTMLImageArray':
       case 'ArrayTexture(1)':
       case 'ArrayTexture(2)':
@@ -1165,18 +1177,23 @@ class CPUFunctionNode extends FunctionNode {
   }
 
   astArrayExpression(arrNode, retArr) {
+    const returnType = this.getType(arrNode);
     const arrLen = arrNode.elements.length;
-
-    retArr.push('new Float32Array([');
+    const elements = [];
     for (let i = 0; i < arrLen; ++i) {
-      if (i > 0) {
-        retArr.push(', ');
-      }
-      const subNode = arrNode.elements[i];
-      this.astGeneric(subNode, retArr)
+      const element = [];
+      this.astGeneric(arrNode.elements[i], element);
+      elements.push(element.join(''));
     }
-    retArr.push('])');
-
+    switch (returnType) {
+      case 'Matrix(2)':
+      case 'Matrix(3)':
+      case 'Matrix(4)':
+        retArr.push(`[${elements.join(', ')}]`);
+        break;
+      default:
+        retArr.push(`new Float32Array([${elements.join(', ')}])`);
+    }
     return retArr;
   }
 
@@ -1208,6 +1225,9 @@ function constantsToString(constants, types) {
       case 'Array(2)':
       case 'Array(3)':
       case 'Array(4)':
+      case 'Matrix(2)':
+      case 'Matrix(3)':
+      case 'Matrix(4)':
         results.push(`${name}:new ${constant.constructor.name}(${JSON.stringify(Array.from(constant))})`);
         break;
     }
@@ -1347,6 +1367,9 @@ ${ header.join('\n') }
       case 'Array(2)':
       case 'Array(3)':
       case 'Array(4)':
+      case 'Matrix(2)':
+      case 'Matrix(3)':
+      case 'Matrix(4)':
         if (incomingConstants.hasOwnProperty(p)) {
           console.warn('constant ' + p + ' of type ' + type + ' cannot be resigned');
         }
@@ -2843,6 +2866,13 @@ class FunctionNode {
       case 'BlockStatement':
         return this.getType(ast.body);
       case 'ArrayExpression':
+        const childType = this.getType(ast.elements[0]);
+        switch (childType) {
+          case 'Array(2)':
+          case 'Array(3)':
+          case 'Array(4)':
+            return `Matrix(${ast.elements.length})`;
+        }
         return `Array(${ ast.elements.length })`;
       case 'Literal':
         const literalKey = this.astKey(ast);
@@ -3774,6 +3804,7 @@ class FunctionNode {
           };
         }
         case 'fn()[]':
+        case 'fn()[][]':
         case '[][]':
           return {
             signature: variableSignature,
@@ -3883,6 +3914,9 @@ const typeLookupMap = {
   'Array(2)': 'Number',
   'Array(3)': 'Number',
   'Array(4)': 'Number',
+  'Matrix(2)': 'Number',
+  'Matrix(3)': 'Number',
+  'Matrix(4)': 'Number',
   'Array2D': 'Number',
   'Array3D': 'Number',
   'Input': 'Number',
@@ -4004,8 +4038,21 @@ class FunctionTracer {
   }
 
   getDeclaration(name) {
-    const { currentContext, currentFunctionContext } = this;
-    return currentContext[name] || currentFunctionContext[name] || null;
+    const { currentContext, currentFunctionContext, runningContexts } = this;
+    const declaration = currentContext[name] || currentFunctionContext[name] || null;
+
+    if (
+      !declaration &&
+      currentContext === currentFunctionContext &&
+      runningContexts.length > 0
+    ) {
+      const previousRunningContext = runningContexts[runningContexts.length - 2];
+      if (previousRunningContext[name]) {
+        return previousRunningContext[name];
+      }
+    }
+
+    return declaration;
   }
 
   scan(ast) {
@@ -4380,6 +4427,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   result.push(context.toString());
   if (kernel.renderOutput === kernel.renderTexture) {
     context.reset();
+    const framebufferName = context.getContextVariableName(kernel.framebuffer);
     if (kernel.renderKernels) {
       const results = kernel.renderKernels();
       const textureName = context.getContextVariableName(kernel.texture.texture);
@@ -4387,7 +4435,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       result: {
         texture: ${ textureName },
         type: '${ results.result.type }',
-        toArray: ${ getToArrayString(results.result, textureName) }
+        toArray: ${ getToArrayString(results.result, textureName, framebufferName) }
       },`);
       const { subKernels, mappedTextures } = kernel;
       for (let i = 0; i < subKernels.length; i++) {
@@ -4399,7 +4447,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       ${subKernel.property}: {
         texture: ${ subKernelTextureName },
         type: '${ subKernelResult.type }',
-        toArray: ${ getToArrayString(subKernelResult, subKernelTextureName) }
+        toArray: ${ getToArrayString(subKernelResult, subKernelTextureName, framebufferName) }
       },`);
       }
       result.push(`    };`);
@@ -4409,7 +4457,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       result.push(`    return {
         texture: ${ textureName },
         type: '${ rendered.type }',
-        toArray: ${ getToArrayString(rendered, textureName) }
+        toArray: ${ getToArrayString(rendered, textureName, framebufferName) }
       };`);
     }
   }
@@ -4424,7 +4472,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
 
   let constantsUpload = [];
   kernelConstants.forEach((kernelConstant) => {
-    constantsUpload.push(`${  kernelConstant.getStringValueHandler()}`);
+    constantsUpload.push(`${kernelConstant.getStringValueHandler()}`);
   });
   return `function kernel(settings) {
   const { context, constants } = settings;
@@ -4468,7 +4516,7 @@ function getGetPixelsString(kernel) {
   });
 }
 
-function getToArrayString(kernelResult, textureName) {
+function getToArrayString(kernelResult, textureName, framebufferName) {
   const toArray = kernelResult.toArray.toString();
   const useFunctionKeyword = !/^function/.test(toArray);
   const flattenedFunctions = utils.flattenFunctionToString(`${useFunctionKeyword ? 'function ' : ''}${ toArray }`, {
@@ -4476,6 +4524,9 @@ function getToArrayString(kernelResult, textureName) {
       if (object === 'utils') {
         return `const ${name} = ${utils[name].toString()};`;
       } else if (object === 'this') {
+        if (name === 'framebuffer') {
+          return '';
+        }
         return `${useFunctionKeyword ? 'function ' : ''}${kernelResult[name].toString()}`;
       } else {
         throw new Error('unhandled fromObject');
@@ -4489,9 +4540,6 @@ function getToArrayString(kernelResult, textureName) {
         if (isDeclaration) return null;
         return 'gl';
       }
-      if (property === '_framebuffer') {
-        return '_framebuffer';
-      }
       if (kernelResult.hasOwnProperty(property)) {
         return JSON.stringify(kernelResult[property]);
       }
@@ -4499,7 +4547,7 @@ function getToArrayString(kernelResult, textureName) {
     }
   });
   return `() => {
-  let _framebuffer;
+  function framebuffer() { return ${framebufferName}; };
   ${flattenedFunctions}
   return toArray();
   }`;
@@ -5801,18 +5849,12 @@ class GLTexture extends Texture {
       if (this.texture._refs) return;
     }
     this.context.deleteTexture(this.texture);
-    if (this.texture._refs === 0 && this._framebuffer) {
-      this.context.deleteFramebuffer(this._framebuffer);
-      this._framebuffer = null;
-    }
   }
 
   framebuffer() {
     if (!this._framebuffer) {
-      this._framebuffer = this.context.createFramebuffer();
+      this._framebuffer = this.kernel.getRawValueFramebuffer(this.size[0], this.size[1]);
     }
-    this._framebuffer.width = this.size[0];
-    this._framebuffer.height = this.size[1];
     return this._framebuffer;
   }
 }
@@ -5926,8 +5968,7 @@ class GLTextureUnsigned extends GLTexture {
   }
   renderRawOutput() {
     const { context: gl } = this;
-    const framebuffer = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
@@ -7412,6 +7453,9 @@ class WebGLFunctionNode extends FunctionNode {
       case 'Array(4)':
       case 'Array(3)':
       case 'Array(2)':
+      case 'Matrix(2)':
+      case 'Matrix(3)':
+      case 'Matrix(4)':
       case 'Input':
         this.astGeneric(ast.argument, result);
         break;
@@ -7977,7 +8021,7 @@ class WebGLFunctionNode extends FunctionNode {
       }
       const markupType = typeMap[type];
       if (!markupType) {
-        throw this.astErrorOutput(`Markup type ${ markupType } not handled`, varDecNode);
+        throw this.astErrorOutput(`Markup type ${ type } not handled`, varDecNode);
       }
       const declarationResult = [];
       if (actualType === 'Integer' && type === 'Integer') {
@@ -8275,6 +8319,15 @@ class WebGLFunctionNode extends FunctionNode {
           retArr.push(this.memberExpressionPropertyMarkup(property));
           retArr.push(']');
           return retArr;
+        case 'fn()[][]':
+          this.astCallExpression(mNode.object.object, retArr);
+          retArr.push('[');
+          retArr.push(this.memberExpressionPropertyMarkup(mNode.object.property));
+          retArr.push(']');
+          retArr.push('[');
+          retArr.push(this.memberExpressionPropertyMarkup(mNode.property));
+          retArr.push(']');
+          return retArr;
         case '[][]':
           this.astArrayExpression(mNode.object, retArr);
           retArr.push('[');
@@ -8401,6 +8454,14 @@ class WebGLFunctionNode extends FunctionNode {
         retArr.push(`getMemoryOptimized32(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
+        break;
+      case 'Matrix(2)':
+      case 'Matrix(3)':
+      case 'Matrix(4)':
+        retArr.push(`${markupName}[${this.memberExpressionPropertyMarkup(yProperty)}]`);
+        if (yProperty) {
+          retArr.push(`[${this.memberExpressionPropertyMarkup(xProperty)}]`);
+        }
         break;
       default:
         throw new Error(`unhandled member expression "${ type }"`);
@@ -8574,9 +8635,19 @@ class WebGLFunctionNode extends FunctionNode {
   }
 
   astArrayExpression(arrNode, retArr) {
+    const returnType = this.getType(arrNode);
+
     const arrLen = arrNode.elements.length;
 
-    retArr.push('vec' + arrLen + '(');
+    switch (returnType) {
+      case 'Matrix(2)':
+      case 'Matrix(3)':
+      case 'Matrix(4)':
+        retArr.push(`mat${arrLen}(`);
+        break;
+      default:
+        retArr.push(`vec${arrLen}(`);
+    }
     for (let i = 0; i < arrLen; ++i) {
       if (i > 0) {
         retArr.push(', ');
@@ -8630,6 +8701,9 @@ const typeMap = {
   'Array(2)': 'vec2',
   'Array(3)': 'vec3',
   'Array(4)': 'vec4',
+  'Matrix(2)': 'mat2',
+  'Matrix(3)': 'mat3',
+  'Matrix(4)': 'mat4',
   'Array2D': 'sampler2D',
   'Array3D': 'sampler2D',
   'Boolean': 'bool',
@@ -10467,6 +10541,7 @@ class WebGLKernel extends GLKernel {
     this.framebuffer = gl.createFramebuffer();
     this.framebuffer.width = texSize[0];
     this.framebuffer.height = texSize[1];
+    this.rawValueFramebuffers = {};
 
     const vertices = new Float32Array([-1, -1,
       1, -1, -1, 1,
@@ -10999,6 +11074,19 @@ float integerCorrectionModulo(float number, float divisor) {
     return result.join('');
   }
 
+  getRawValueFramebuffer(width, height) {
+    if (!this.rawValueFramebuffers[width]) {
+      this.rawValueFramebuffers[width] = {};
+    }
+    if (!this.rawValueFramebuffers[width][height]) {
+      const framebuffer = this.context.createFramebuffer();
+      framebuffer.width = width;
+      framebuffer.height = height;
+      this.rawValueFramebuffers[width][height] = framebuffer;
+    }
+    return this.rawValueFramebuffers[width][height];
+  }
+
   getKernelResultDeclaration() {
     switch (this.returnType) {
       case 'Array(2)':
@@ -11328,6 +11416,13 @@ float integerCorrectionModulo(float number, float divisor) {
     }
     if (this.framebuffer) {
       this.context.deleteFramebuffer(this.framebuffer);
+    }
+    for (const width in this.rawValueFramebuffers) {
+      for (const height in this.rawValueFramebuffers[width]) {
+        this.context.deleteFramebuffer(this.rawValueFramebuffers[width][height]);
+        delete this.rawValueFramebuffers[width][height];
+      }
+      delete this.rawValueFramebuffers[width];
     }
     if (this.vertShader) {
       this.context.deleteShader(this.vertShader);
@@ -14754,7 +14849,7 @@ const utils = {
         if (!flattened[functionDependency]) {
           flattened[functionDependency] = true;
         }
-        flattenedFunctionDependencies.push(utils.flattenFunctionToString(functionDependency, settings) + '\n');
+        functionDependency ? flattenedFunctionDependencies.push(utils.flattenFunctionToString(functionDependency, settings) + '\n') : '';
       }
       return flattenedFunctionDependencies.join('') + result;
     }

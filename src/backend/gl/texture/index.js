@@ -94,18 +94,17 @@ class GLTexture extends Texture {
       if (this.texture._refs) return;
     }
     this.context.deleteTexture(this.texture);
-    if (this.texture._refs === 0 && this._framebuffer) {
-      this.context.deleteFramebuffer(this._framebuffer);
-      this._framebuffer = null;
-    }
+    // TODO: Remove me
+    // if (this.texture._refs === 0 && this._framebuffer) {
+    //   this.context.deleteFramebuffer(this._framebuffer);
+    //   this._framebuffer = null;
+    // }
   }
 
   framebuffer() {
     if (!this._framebuffer) {
-      this._framebuffer = this.context.createFramebuffer();
+      this._framebuffer = this.kernel.getRawValueFramebuffer(this.size[0], this.size[1]);
     }
-    this._framebuffer.width = this.size[0];
-    this._framebuffer.height = this.size[1];
     return this._framebuffer;
   }
 }

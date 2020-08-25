@@ -763,7 +763,7 @@ const utils = {
         if (!flattened[functionDependency]) {
           flattened[functionDependency] = true;
         }
-        flattenedFunctionDependencies.push(utils.flattenFunctionToString(functionDependency, settings) + '\n');
+        functionDependency ? flattenedFunctionDependencies.push(utils.flattenFunctionToString(functionDependency, settings) + '\n') : '';
       }
       return flattenedFunctionDependencies.join('') + result;
     }

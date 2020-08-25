@@ -11,8 +11,7 @@ class GLTextureUnsigned extends GLTexture {
   }
   renderRawOutput() {
     const { context: gl } = this;
-    const framebuffer = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
