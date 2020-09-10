@@ -427,6 +427,10 @@ export type ThreadKernelVariable
   | number[][]
   | number[][][]
 
+  | Float32Array
+  | Float32Array[]
+  | Float32Array[][]
+
   | Pixel
   | Pixel[][]
 
@@ -463,6 +467,10 @@ export type KernelOutput = void
   | number[]
   | number[][]
   | number[][][]
+
+  | Float32Array
+  | Float32Array[]
+  | Float32Array[][]
 
   | [number, number][]
   | [number, number, number][]
@@ -573,6 +581,10 @@ export type TextureArrayOutput
   = number[]
   | number[][]
   | number[][][]
+
+  | Float32Array
+  | Float32Array[]
+  | Float32Array[][]
 
   | [number, number][]
   | [number, number][][]
