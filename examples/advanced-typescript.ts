@@ -10,7 +10,14 @@
  * - kernel output
  */
 
-import { GPU, Texture, IKernelFunctionThis, IConstantsThis } from '../src';
+import {
+  GPU,
+  Texture,
+  IKernelFunctionThis,
+  IConstantsThis,
+  KernelOutput,
+  ISubKernelsResults
+} from '../src';
 
 const gpu = new GPU();
 
@@ -31,7 +38,11 @@ function subKernel(value: number): [number, number] {
   return [-value, value];
 }
 
-const kernelMap = gpu.createKernelMap<typeof kernelFunction>({
+interface IKernelMapResult extends ISubKernelsResults {
+  test: KernelOutput;
+}
+
+const kernelMap = gpu.createKernelMap<IKernelMapResult, typeof kernelFunction>({
   test: subKernel,
 }, kernelFunction)
   .setConstants<IConstants>({

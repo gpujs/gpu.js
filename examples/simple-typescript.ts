@@ -1,4 +1,4 @@
-import { GPU, KernelFunction, IKernelRunShortcut } from "../src";
+import { GPU, KernelFunction, IKernelRunShortcut } from '../src';
 
 const gpu = new GPU({ mode: 'gpu' });
 

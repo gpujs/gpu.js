@@ -1,4 +1,4 @@
-export class GPU<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[]> {
+export class GPU {
   static isGPUSupported: boolean;
   static isCanvasSupported: boolean;
   static isHeadlessGLSupported: boolean;
@@ -9,11 +9,11 @@ export class GPU<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[
   static isGPUHTMLImageArraySupported: boolean;
   static isSinglePrecisionSupported: boolean;
   constructor(settings?: IGPUSettings);
-  functions: GPUFunction<ArgTypes>[];
+  functions: GPUFunction<ThreadKernelVariable[]>[];
   nativeFunctions: IGPUNativeFunction[];
   setFunctions(flag: any): this;
   setNativeFunctions(flag: IGPUNativeFunction[]): this;
-  addFunction(kernel: GPUFunction<ArgTypes>, settings?: IGPUFunctionSettings): this;
+  addFunction(kernel: GPUFunction, settings?: IGPUFunctionSettings): this;
   addNativeFunction(name: string, source: string, settings?: IGPUFunctionSettings): this;
   combineKernels(...kernels: KernelFunction[]): IKernelRunShortcut;
   combineKernels<KF extends KernelFunction>(...kernels: KF[]):
@@ -23,55 +23,43 @@ export class GPU<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[
       | ReturnType<KF>[][][]
       | Texture
       | void
-    )
+      )
     & IKernelRunShortcutBase;
-  createKernel<MethodArgTypes extends ArgTypes>(kernel: KernelFunction<MethodArgTypes>, settings?: IGPUKernelSettings): IKernelRunShortcut;
-  createKernel<KF extends KernelFunction>(kernel: KF, settings?: IGPUKernelSettings):
-    ((...args: Parameters<KF>) =>
-      ReturnType<KF>[]
-      | ReturnType<KF>[][]
-      | ReturnType<KF>[][][]
+  createKernel<ArgTypes extends ThreadKernelVariable[], ConstantsT extends IConstantsThis>(kernel: KernelFunction<ArgTypes, ConstantsT>, settings?: IGPUKernelSettings): IKernelRunShortcut;
+  createKernel<KernelType extends KernelFunction>(kernel: KernelType, settings?: IGPUKernelSettings):
+    ((...args: Parameters<KernelType>) =>
+      ReturnType<KernelType>[]
+      | ReturnType<KernelType>[][]
+      | ReturnType<KernelType>[][][]
       | Texture
       | void
-    )
+      )
     & IKernelRunShortcutBase;
-  createKernelMap(
-    subKernels: {
-      [targetLocation: string]: KernelFunction
-    }
-    | KernelFunction[],
-    rootKernel: KernelFunction,
-    settings?: IGPUKernelSettings): ((() => IMappedKernelResult) & IKernelRunShortcut);
-  // this needs further refined
-  createKernelMap<KF extends KernelFunction>(
-    subKernels: {
-        [targetLocation: string]: KF
-      }
-      | KF[],
-    rootKernel: KF,
-    settings?: IGPUKernelSettings
-  ):
-    ((...args: Parameters<KF>) => {
-      result?:
-        ReturnType<KF>[]
-        | ReturnType<KF>[][]
-        | ReturnType<KF>[][][]
-        | Texture
-        | void;
-      [targetLocation: string]:
-        ReturnType<KF>[]
-        | ReturnType<KF>[][]
-        | ReturnType<KF>[][][]
-        | Texture
-        | void
-      }
-    )
-    & IKernelRunShortcutBase;
+  createKernelMap<
+    ResultType,
+    KernelFunctionType,
+    ConstantsType = {}
+    >(
+    subKernels: ISubKernelObject | ISubKernelArray,
+    rootKernel: ThreadFunction,
+    settings?: IGPUKernelSettings): ((() => IMappedKernelResult) & IKernelMapRunShortcut<ResultType>);
   destroy(): Promise<void>;
   Kernel: typeof Kernel;
   mode: string;
   canvas: any;
   context: any;
+}
+
+export interface ISubKernelObject {
+  [targetLocation: string]: KernelFunction
+}
+
+export interface ISubKernelArray {
+  [index: number]: KernelFunction
+}
+
+export interface ISubKernelsResults {
+  [resultsLocation: string]: KernelOutput
 }
 
 export interface IGPUFunction extends IFunctionSettings {
@@ -214,7 +202,7 @@ export class Kernel {
   setImmutable(flag: boolean): this;
   setCanvas(flag: any): this;
   setContext(flag: any): this;
-  addFunction<MethodArgTypes extends ThreadKernelVariable[]>(flag: GPUFunction<MethodArgTypes>, settings?: IFunctionSettings): this;
+  addFunction<ArgTypes extends ThreadKernelVariable[]>(flag: GPUFunction<ArgTypes>, settings?: IFunctionSettings): this;
   setFunctions(flag: any): this;
   setNativeFunctions(flag: IGPUNativeFunction[]): this;
   setStrictIntegers(flag: boolean): this;
@@ -244,14 +232,14 @@ export class Kernel {
 }
 
 
-export type GPUFunction<ArgTypes extends ThreadKernelVariable[]>
-  = ThreadFunction<ArgTypes>
+export type GPUFunction<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsType extends IConstantsThis = {}>
+  = ThreadFunction<ArgTypes, ConstantsType>
   | IFunction
   | IGPUFunction
   |  string[];
 
-export type ThreadFunction<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[]> =
-    ((...args: ArgTypes) => ThreadFunctionResult);
+export type ThreadFunction<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsType extends IConstantsThis = {}> =
+  ((this: IKernelFunctionThis<ConstantsType>, ...args: ArgTypes) => ThreadFunctionResult);
 
 export type Precision = 'single' | 'unsigned';
 
@@ -315,8 +303,8 @@ export interface IConstantsThis {
 
 export interface IKernelXYZ {
   x: number;
-  y?: number;
-  z?: number;
+  y: number;
+  z: number;
 }
 
 export interface FunctionList {
@@ -370,6 +358,14 @@ export interface IKernelRunShortcut extends IKernelRunShortcutBase {
   exec(): Promise<KernelOutput>;
 }
 
+export interface IKernelMapRunShortcut<SubKernelResultTypes> extends IKernelRunShortcutBase {
+  kernel: Kernel;
+  (...args: KernelVariable[]): {
+    result: KernelOutput
+  } & SubKernelResultTypes;
+  exec(): Promise<KernelOutput>;
+}
+
 export interface IKernelFeatures {
   isFloatRead: boolean;
   kernelMap: boolean;
@@ -387,10 +383,10 @@ export interface IKernelFeatures {
   highFloatPrecision: { rangeMax: number };
 }
 
-export interface IKernelFunctionThis {
+export interface IKernelFunctionThis<ConstantsT = Object> {
   output: IKernelXYZ;
   thread: IKernelXYZ;
-  constants: IConstantsThis;
+  constants: ConstantsT;
   color(r: number): void,
   color(r: number, g: number): void,
   color(r: number, g: number, b: number): void,
@@ -414,6 +410,8 @@ export type KernelVariable =
 
 export type ThreadFunctionResult
   = number
+  | number[]
+  | number[][]
   | [number, number]
   | [number, number, number]
   | [number, number, number, number]
@@ -457,8 +455,8 @@ export type Pixel = {
   a: number;
 };
 
-export type KernelFunction<ArgT extends ThreadKernelVariable[] = ThreadKernelVariable[]> = ((
-  this: IKernelFunctionThis,
+export type KernelFunction<ArgT extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsT extends IConstantsThis = {}> = ((
+  this: IKernelFunctionThis<ConstantsT>,
   ...args: ArgT
 ) => KernelOutput);
 
@@ -608,7 +606,7 @@ export interface IPlugin {
   onBeforeRun: (kernel: Kernel) => void;
 }
 
-export type OutputDimensions = [number, number, number] | Int32Array;
+export type OutputDimensions = [number] | [number, number] | [number, number, number] | Int32Array;
 export type TextureDimensions = [number, number];
 
 export class Input {
