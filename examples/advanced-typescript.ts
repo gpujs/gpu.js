@@ -42,7 +42,7 @@ interface IKernelMapResult extends ISubKernelsResults {
   test: KernelOutput;
 }
 
-const kernelMap = gpu.createKernelMap<IKernelMapResult, typeof kernelFunction>({
+const kernelMap = gpu.createKernelMap<Parameters<typeof kernelFunction>>({
   test: subKernel,
 }, kernelFunction)
   .setConstants<IConstants>({
