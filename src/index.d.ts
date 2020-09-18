@@ -36,13 +36,12 @@ export class GPU {
       )
     & IKernelRunShortcutBase;
   createKernelMap<
-    ResultType,
-    KernelFunctionType,
-    ConstantsType = {}
+    ArgTypes extends ThreadKernelVariable[],
+    ConstantsType = null,
     >(
-    subKernels: ISubKernelObject | ISubKernelArray,
-    rootKernel: ThreadFunction,
-    settings?: IGPUKernelSettings): ((() => IMappedKernelResult) & IKernelMapRunShortcut<ResultType>);
+    subKernels: ISubKernelObject,
+    rootKernel: ThreadFunction<ArgTypes, ConstantsType>,
+    settings?: IGPUKernelSettings): (((this: IKernelFunctionThis<ConstantsType>, ...args: ArgTypes) => IMappedKernelResult) & IKernelMapRunShortcut<typeof subKernels>);
   destroy(): Promise<void>;
   Kernel: typeof Kernel;
   mode: string;
@@ -51,15 +50,19 @@ export class GPU {
 }
 
 export interface ISubKernelObject {
-  [targetLocation: string]: KernelFunction
+  [targetLocation: string]:
+    ((...args: ThreadKernelVariable[]) => ThreadFunctionResult)
+    | ((...args: any[]) => ThreadFunctionResult);
 }
 
 export interface ISubKernelArray {
-  [index: number]: KernelFunction
+  [index: number]:
+    ((...args: ThreadKernelVariable[]) => ThreadFunctionResult)
+    | ((...args: any[]) => ThreadFunctionResult);
 }
 
 export interface ISubKernelsResults {
-  [resultsLocation: string]: KernelOutput
+  [resultsLocation: string]: KernelOutput;
 }
 
 export interface IGPUFunction extends IFunctionSettings {
@@ -232,13 +235,13 @@ export class Kernel {
 }
 
 
-export type GPUFunction<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsType extends IConstantsThis = {}>
+export type GPUFunction<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsType = {}>
   = ThreadFunction<ArgTypes, ConstantsType>
   | IFunction
   | IGPUFunction
   |  string[];
 
-export type ThreadFunction<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsType extends IConstantsThis = {}> =
+export type ThreadFunction<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsType = {}> =
   ((this: IKernelFunctionThis<ConstantsType>, ...args: ArgTypes) => ThreadFunctionResult);
 
 export type Precision = 'single' | 'unsigned';
@@ -347,24 +350,18 @@ export interface ITypesList {
   [typeName: string]: GPUVariableType
 }
 
-export interface IKernelRunShortcutBase extends Kernel {
+export interface IKernelRunShortcutBase<T = KernelOutput> extends Kernel {
   kernel: Kernel;
-  exec(): Promise<KernelOutput>;
+  (...args: KernelVariable[]): T;
+  exec(): Promise<T>;
 }
 
 export interface IKernelRunShortcut extends IKernelRunShortcutBase {
-  kernel: Kernel;
-  (...args: KernelVariable[]): KernelOutput;
-  exec(): Promise<KernelOutput>;
+
 }
 
-export interface IKernelMapRunShortcut<SubKernelResultTypes> extends IKernelRunShortcutBase {
-  kernel: Kernel;
-  (...args: KernelVariable[]): {
-    result: KernelOutput
-  } & SubKernelResultTypes;
-  exec(): Promise<KernelOutput>;
-}
+export interface IKernelMapRunShortcut<SubKernelType> extends IKernelRunShortcutBase<
+  { result: KernelOutput } & { [key in keyof SubKernelType]: KernelOutput }> {}
 
 export interface IKernelFeatures {
   isFloatRead: boolean;
@@ -383,7 +380,7 @@ export interface IKernelFeatures {
   highFloatPrecision: { rangeMax: number };
 }
 
-export interface IKernelFunctionThis<ConstantsT = Object> {
+export interface IKernelFunctionThis<ConstantsT = {}> {
   output: IKernelXYZ;
   thread: IKernelXYZ;
   constants: ConstantsT;
@@ -455,10 +452,17 @@ export type Pixel = {
   a: number;
 };
 
-export type KernelFunction<ArgT extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsT extends IConstantsThis = {}> = ((
-  this: IKernelFunctionThis<ConstantsT>,
-  ...args: ArgT
-) => KernelOutput);
+// export type KernelFunction<ArgT extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsT extends IConstantsThis = {}> = ((
+//   this: IKernelFunctionThis<ConstantsT>,
+//   ...args: ArgT
+// ) => KernelOutput);
+
+export interface KernelFunction<ArgT extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsT = {}> {
+  (
+    this: IKernelFunctionThis<ConstantsT>,
+    ...args: ArgT
+  ): KernelOutput;
+}
 
 export type KernelOutput = void
   | number
