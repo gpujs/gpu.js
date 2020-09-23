@@ -566,6 +566,7 @@ export interface IGPUTextureSettings {
   dimensions: number[];
   output: number[];
   context: WebGLRenderingContext;
+  kernel: Kernel;
   gpu?: GPU;
   type?: GPUTextureType;
 }
