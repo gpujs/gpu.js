@@ -1187,8 +1187,8 @@ GPU.js is written in such a way, you can introduce your own backend.  Have a sug
 * Texture - A graphical artifact that is packed with data, in the case of GPU.js, bit shifted parts of a 32 bit floating point decimal
 
 ## Testing
-Testing is done (right now) manually, (help wanted (here)[https://github.com/gpujs/gpu.js/issues/515] if you can!), using the following:
-* For browser, setup a webserver on the root of the gpu.js project and visit htt://url/test/all.html
+Testing is done (right now) manually, (help wanted [here](https://github.com/gpujs/gpu.js/issues/515) if you can!), using the following:
+* For browser, setup a webserver on the root of the gpu.js project and visit http://url/test/all.html
 * For node, run either of the 3 commands:
   * `yarn test test/features`
   * `yarn test test/internal`
