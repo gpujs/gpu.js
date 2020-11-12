@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.10.0
- * @date Tue Aug 25 2020 14:05:30 GMT-0400 (Eastern Daylight Time)
+ * @version 2.10.5
+ * @date Thu Nov 12 2020 14:04:03 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -2091,12 +2091,12 @@ class FunctionBuilder {
       functionBuilder.trackFunctionCall(functionName, calleeFunctionName, args);
     };
 
-    const onNestedFunction = (ast, returnType) => {
+    const onNestedFunction = (ast, source) => {
       const argumentNames = [];
       for (let i = 0; i < ast.params.length; i++) {
         argumentNames.push(ast.params[i].name);
       }
-      const nestedFunction = new FunctionNode(null, Object.assign({}, nodeOptions, {
+      const nestedFunction = new FunctionNode(source, Object.assign({}, nodeOptions, {
         returnType: null,
         ast,
         name: ast.id.name,
@@ -2259,8 +2259,12 @@ class FunctionBuilder {
     retList = retList || [];
 
     if (this.nativeFunctionNames.indexOf(functionName) > -1) {
-      if (retList.indexOf(functionName) === -1) {
+      const nativeFunctionIndex = retList.indexOf(functionName);
+      if (nativeFunctionIndex === -1) {
         retList.push(functionName);
+      } else {
+        const dependantNativeFunctionName = retList.splice(nativeFunctionIndex, 1)[0];
+        retList.push(dependantNativeFunctionName);
       }
       return retList;
     }
@@ -2551,6 +2555,7 @@ class FunctionBuilder {
 module.exports = {
   FunctionBuilder
 };
+
 },{}],9:[function(require,module,exports){
 const acorn = require('acorn');
 const { utils } = require('../utils');
@@ -2772,7 +2777,7 @@ class FunctionNode {
     }
 
     for (let i = 0; i < functions.length; i++) {
-      this.onNestedFunction(functions[i]);
+      this.onNestedFunction(functions[i], this.source);
     }
   }
 

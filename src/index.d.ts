@@ -508,7 +508,7 @@ export interface IFunctionSettings {
   returnType?: string;
   isRootKernel?: boolean;
   isSubKernel?: boolean;
-  onNestedFunction?(source: string, returnType: string): void;
+  onNestedFunction?(ast: any, source: string): void;
   lookupReturnType?(functionName: string, ast: any, node: FunctionNode): void;
   plugins?: any[];
 

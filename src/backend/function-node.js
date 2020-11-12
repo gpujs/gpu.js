@@ -255,7 +255,7 @@ class FunctionNode {
     }
 
     for (let i = 0; i < functions.length; i++) {
-      this.onNestedFunction(functions[i]);
+      this.onNestedFunction(functions[i], this.source);
     }
   }
 
