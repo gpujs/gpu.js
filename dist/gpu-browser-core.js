@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.10.5
- * @date Thu Nov 12 2020 14:04:03 GMT-0500 (Eastern Standard Time)
+ * @version 2.10.6
+ * @date Wed Dec 02 2020 15:14:25 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -2555,7 +2555,6 @@ class FunctionBuilder {
 module.exports = {
   FunctionBuilder
 };
-
 },{}],9:[function(require,module,exports){
 const acorn = require('acorn');
 const { utils } = require('../utils');
@@ -10381,7 +10380,7 @@ class WebGLKernel extends GLKernel {
       return this.createTexture();
     };
     const onRequestIndex = () => {
-      return textureIndexes++;
+      return this.constantTextureCount + textureIndexes++;
     };
     const onUpdateValueMismatch = (constructor) => {
       this.switchKernels({

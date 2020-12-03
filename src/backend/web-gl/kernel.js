@@ -98,6 +98,14 @@ class WebGLKernel extends GLKernel {
     return testContext.getParameter(testContext.MAX_TEXTURE_SIZE);
   }
 
+  /**
+   *
+   * @param type
+   * @param dynamic
+   * @param precision
+   * @param value
+   * @returns {KernelValue}
+   */
   static lookupKernelValueType(type, dynamic, precision, value) {
     return lookupKernelValueType(type, dynamic, precision, value);
   }
@@ -364,7 +372,7 @@ class WebGLKernel extends GLKernel {
       return this.createTexture();
     };
     const onRequestIndex = () => {
-      return textureIndexes++;
+      return this.constantTextureCount + textureIndexes++;
     };
     const onUpdateValueMismatch = (constructor) => {
       this.switchKernels({
