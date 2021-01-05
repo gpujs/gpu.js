@@ -102,8 +102,6 @@ export interface IGPUSettings {
   context?: object;
   functions?: KernelFunction[];
   nativeFunctions?: IInternalNativeFunction[];
-  onIstanbulCoverageVariable?: (value: string, kernel: Kernel) => void;
-  removeIstanbulCoverage?: boolean;
   // format: 'Float32Array' | 'Float16Array' | 'Float' // WE WANT THIS!
 }
 
@@ -514,9 +512,6 @@ export interface IFunctionSettings {
 
   useLegacyEncoder?: boolean;
   ast?: any;
-
-  onIstanbulCoverageVariable?(name: string): void;
-  removeIstanbulCoverage?: boolean;
 }
 
 export interface ISubKernel {

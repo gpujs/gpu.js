@@ -60,8 +60,6 @@ class FunctionNode {
     this.dynamicArguments = null;
     this.strictTypingChecking = false;
     this.fixIntegerDivisionAccuracy = null;
-    this.onIstanbulCoverageVariable = null;
-    this.removeIstanbulCoverage = false;
 
     if (settings) {
       for (const p in settings) {
@@ -153,7 +151,7 @@ class FunctionNode {
     if (ast.type === 'MemberExpression') {
       if (ast.object && ast.property) {
         //babel sniffing
-        if (ast.object.hasOwnProperty('name') && ast.object.name[0] === '_') {
+        if (ast.object.hasOwnProperty('name') && ast.object.name !== 'Math') {
           return this.astMemberExpressionUnroll(ast.property);
         }
 
@@ -398,6 +396,11 @@ class FunctionNode {
             }
             if (this.getVariableSignature(ast.callee, true) === 'this.color') {
               return null;
+            }
+            if (ast.callee.type === 'MemberExpression' && ast.callee.object && ast.callee.property && ast.callee.property.name && ast.arguments) {
+              const functionName = ast.callee.property.name;
+              this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
+              return this.lookupReturnType(functionName, ast, this);
             }
             throw this.astErrorOutput('Unknown call expression', ast);
           }
@@ -848,8 +851,6 @@ class FunctionNode {
       'value[][][]',
       'value[][][][]',
       'value.value',
-      'value.value[]', // istanbul coverage
-      'value.value[][]', // istanbul coverage
       'value.thread.value',
       'this.thread.value',
       'this.output.value',
@@ -1116,20 +1117,11 @@ class FunctionNode {
   astThisExpression(ast, retArr) {
     return retArr;
   }
-  isIstanbulAST(ast) {
-    const variableSignature = this.getVariableSignature(ast);
-    return variableSignature === 'value.value[]' || variableSignature === 'value.value[][]';
-  }
   astSequenceExpression(sNode, retArr) {
     const { expressions } = sNode;
     const sequenceResult = [];
     for (let i = 0; i < expressions.length; i++) {
       const expression = expressions[i];
-      if (this.removeIstanbulCoverage) {
-        if (expression.type === 'UpdateExpression' && this.isIstanbulAST(expression.argument)) {
-          continue;
-        }
-      }
       const expressionResult = [];
       this.astGeneric(expression, expressionResult);
       sequenceResult.push(expressionResult.join(''));
@@ -1173,12 +1165,6 @@ class FunctionNode {
    * @returns {Array} the append retArr
    */
   astUpdateExpression(uNode, retArr) {
-    if (this.removeIstanbulCoverage) {
-      const signature = this.getVariableSignature(uNode.argument);
-      if (this.isIstanbulAST(uNode.argument)) {
-        return retArr;
-      }
-    }
     if (uNode.prefix) {
       retArr.push(uNode.operator);
       this.astGeneric(uNode.argument, retArr);
@@ -1393,28 +1379,8 @@ class FunctionNode {
             signature: variableSignature,
               property: ast.property,
           };
-        case 'value.value[]': // istanbul coverage
-          if (this.removeIstanbulCoverage) {
-            return { signature: variableSignature };
-          }
-          if (this.onIstanbulCoverageVariable) {
-            this.onIstanbulCoverageVariable(ast.object.object.name);
-            return {
-              signature: variableSignature
-            };
-          }
-          case 'value.value[][]': // istanbul coverage
-            if (this.removeIstanbulCoverage) {
-              return { signature: variableSignature };
-            }
-            if (this.onIstanbulCoverageVariable) {
-              this.onIstanbulCoverageVariable(ast.object.object.object.name);
-              return {
-                signature: variableSignature
-              };
-            }
-            default:
-              throw this.astErrorOutput('Unexpected expression', ast);
+        default:
+          throw this.astErrorOutput('Unexpected expression', ast);
     }
   }
 

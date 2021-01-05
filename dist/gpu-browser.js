@@ -4,13 +4,13 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.10.6
- * @date Wed Dec 02 2020 15:14:25 GMT-0500 (Eastern Standard Time)
+ * @version 2.11.0
+ * @date Tue Jan 05 2021 15:55:59 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
  *
- * Copyright (c) 2020 gpu.js Team
+ * Copyright (c) 2021 gpu.js Team
  */(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.GPU = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
@@ -5473,18 +5473,6 @@ class CPUFunctionNode extends FunctionNode {
             return retArr;
         }
         break;
-      case 'value.value[]': 
-        if (this.removeIstanbulCoverage) {
-          return retArr;
-        }
-        retArr.push(`${mNode.object.object.name}.${mNode.object.property.name}[${mNode.property.value}]`);
-        return retArr;
-      case 'value.value[][]': 
-        if (this.removeIstanbulCoverage) {
-          return retArr;
-        }
-        retArr.push(`${mNode.object.object.object.name}.${mNode.object.object.property.name}[${mNode.object.property.value}][${mNode.property.value}]`);
-        return retArr;
       case 'this.constants.value':
       case 'this.constants.value[]':
       case 'this.constants.value[][]':
@@ -6492,8 +6480,6 @@ class FunctionBuilder {
       followingReturnStatement,
       dynamicArguments,
       dynamicOutput,
-      onIstanbulCoverageVariable,
-      removeIstanbulCoverage,
     } = kernel;
 
     const argumentTypes = new Array(kernelArguments.length);
@@ -6580,8 +6566,6 @@ class FunctionBuilder {
       triggerImplyArgumentType,
       triggerImplyArgumentBitRatio,
       onFunctionCall,
-      onIstanbulCoverageVariable: onIstanbulCoverageVariable ? (name) => onIstanbulCoverageVariable(name, kernel) : null,
-      removeIstanbulCoverage,
       optimizeFloatMemory,
       precision,
       constants,
@@ -6634,8 +6618,6 @@ class FunctionBuilder {
         triggerImplyArgumentBitRatio,
         onFunctionCall,
         onNestedFunction,
-        onIstanbulCoverageVariable: onIstanbulCoverageVariable ? (name) => onIstanbulCoverageVariable(name, kernel) : null,
-        removeIstanbulCoverage,
       }));
     }
 
@@ -7061,8 +7043,6 @@ class FunctionNode {
     this.dynamicArguments = null;
     this.strictTypingChecking = false;
     this.fixIntegerDivisionAccuracy = null;
-    this.onIstanbulCoverageVariable = null;
-    this.removeIstanbulCoverage = false;
 
     if (settings) {
       for (const p in settings) {
@@ -7138,7 +7118,7 @@ class FunctionNode {
 
     if (ast.type === 'MemberExpression') {
       if (ast.object && ast.property) {
-        if (ast.object.hasOwnProperty('name') && ast.object.name[0] === '_') {
+        if (ast.object.hasOwnProperty('name') && ast.object.name !== 'Math') {
           return this.astMemberExpressionUnroll(ast.property);
         }
 
@@ -7357,6 +7337,11 @@ class FunctionNode {
             }
             if (this.getVariableSignature(ast.callee, true) === 'this.color') {
               return null;
+            }
+            if (ast.callee.type === 'MemberExpression' && ast.callee.object && ast.callee.property && ast.callee.property.name && ast.arguments) {
+              const functionName = ast.callee.property.name;
+              this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
+              return this.lookupReturnType(functionName, ast, this);
             }
             throw this.astErrorOutput('Unknown call expression', ast);
           }
@@ -7798,8 +7783,6 @@ class FunctionNode {
       'value[][][]',
       'value[][][][]',
       'value.value',
-      'value.value[]', 
-      'value.value[][]', 
       'value.thread.value',
       'this.thread.value',
       'this.output.value',
@@ -8013,20 +7996,11 @@ class FunctionNode {
   astThisExpression(ast, retArr) {
     return retArr;
   }
-  isIstanbulAST(ast) {
-    const variableSignature = this.getVariableSignature(ast);
-    return variableSignature === 'value.value[]' || variableSignature === 'value.value[][]';
-  }
   astSequenceExpression(sNode, retArr) {
     const { expressions } = sNode;
     const sequenceResult = [];
     for (let i = 0; i < expressions.length; i++) {
       const expression = expressions[i];
-      if (this.removeIstanbulCoverage) {
-        if (expression.type === 'UpdateExpression' && this.isIstanbulAST(expression.argument)) {
-          continue;
-        }
-      }
       const expressionResult = [];
       this.astGeneric(expression, expressionResult);
       sequenceResult.push(expressionResult.join(''));
@@ -8058,12 +8032,6 @@ class FunctionNode {
   checkAndUpconvertBitwiseUnary(uNode, retArr) {}
 
   astUpdateExpression(uNode, retArr) {
-    if (this.removeIstanbulCoverage) {
-      const signature = this.getVariableSignature(uNode.argument);
-      if (this.isIstanbulAST(uNode.argument)) {
-        return retArr;
-      }
-    }
     if (uNode.prefix) {
       retArr.push(uNode.operator);
       this.astGeneric(uNode.argument, retArr);
@@ -8267,28 +8235,8 @@ class FunctionNode {
             signature: variableSignature,
               property: ast.property,
           };
-        case 'value.value[]': 
-          if (this.removeIstanbulCoverage) {
-            return { signature: variableSignature };
-          }
-          if (this.onIstanbulCoverageVariable) {
-            this.onIstanbulCoverageVariable(ast.object.object.name);
-            return {
-              signature: variableSignature
-            };
-          }
-          case 'value.value[][]': 
-            if (this.removeIstanbulCoverage) {
-              return { signature: variableSignature };
-            }
-            if (this.onIstanbulCoverageVariable) {
-              this.onIstanbulCoverageVariable(ast.object.object.object.name);
-              return {
-                signature: variableSignature
-              };
-            }
-            default:
-              throw this.astErrorOutput('Unexpected expression', ast);
+        default:
+          throw this.astErrorOutput('Unexpected expression', ast);
     }
   }
 
@@ -10764,8 +10712,6 @@ class Kernel {
     this.optimizeFloatMemory = null;
     this.strictIntegers = false;
     this.fixIntegerDivisionAccuracy = null;
-    this.onIstanbulCoverageVariable = null;
-    this.removeIstanbulCoverage = false;
     this.built = false;
     this.signature = null;
   }
@@ -10791,11 +10737,6 @@ class Kernel {
             this.precision = 'unsigned';
           }
           this[p] = settings[p];
-          continue;
-        case 'removeIstanbulCoverage':
-          if (settings[p] !== null) {
-            this[p] = settings[p];
-          }
           continue;
         case 'nativeFunctions':
           if (!settings.nativeFunctions) continue;
@@ -12791,13 +12732,8 @@ class WebGLFunctionNode extends FunctionNode {
           retArr.push(this.memberExpressionPropertyMarkup(property));
           retArr.push(']');
           return retArr;
-        case 'value.value[]':
-        case 'value.value[][]':
-          if (this.removeIstanbulCoverage) {
-            return retArr;
-          }
-          default:
-            throw this.astErrorOutput('Unexpected expression', mNode);
+        default:
+          throw this.astErrorOutput('Unexpected expression', mNode);
     }
 
     if (mNode.computed === false) {
@@ -14636,7 +14572,6 @@ class WebGLKernel extends GLKernel {
 
     this.maxTexSize = null;
     this.onRequestSwitchKernel = null;
-    this.removeIstanbulCoverage = true;
 
     this.texture = null;
     this.mappedTextures = null;
@@ -17991,8 +17926,6 @@ class GPU {
     this.functions = [];
     this.nativeFunctions = [];
     this.injectedNative = null;
-    this.onIstanbulCoverageVariable = settings.onIstanbulCoverageVariable || null;
-    this.removeIstanbulCoverage = settings.hasOwnProperty('removeIstanbulCoverage') ? settings.removeIstanbulCoverage : null;
     if (this.mode === 'dev') return;
     this.chooseKernel();
     if (settings.functions) {
@@ -18168,8 +18101,6 @@ class GPU {
         gpu: _kernel.gpu,
         validate,
         returnType: _kernel.returnType,
-        onIstanbulCoverageVariable: _kernel.onIstanbulCoverageVariable,
-        removeIstanbulCoverage: _kernel.removeIstanbulCoverage,
         tactic: _kernel.tactic,
         onRequestFallback,
         onRequestSwitchKernel,
@@ -18188,8 +18119,6 @@ class GPU {
       functions: this.functions,
       nativeFunctions: this.nativeFunctions,
       injectedNative: this.injectedNative,
-      onIstanbulCoverageVariable: this.onIstanbulCoverageVariable,
-      removeIstanbulCoverage: this.removeIstanbulCoverage,
       gpu: this,
       validate,
       onRequestFallback,
