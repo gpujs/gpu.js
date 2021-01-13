@@ -13,7 +13,7 @@ export class GPU {
   nativeFunctions: IGPUNativeFunction[];
   setFunctions(flag: any): this;
   setNativeFunctions(flag: IGPUNativeFunction[]): this;
-  addFunction(kernel: GPUFunction, settings?: IGPUFunctionSettings): this;
+  addFunction<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsType = {}>(kernel: GPUFunction<ArgTypes, ConstantsType>, settings?: IGPUFunctionSettings): this;
   addNativeFunction(name: string, source: string, settings?: IGPUFunctionSettings): this;
   combineKernels(...kernels: KernelFunction[]): IKernelRunShortcut;
   combineKernels<KF extends KernelFunction>(...kernels: KF[]):
@@ -617,7 +617,7 @@ export class Input {
 
 export type input = (value: number[], size: OutputDimensions) => Input;
 
-export function alias(name: string, source: KernelFunction): KernelFunction;
+export function alias<T>(name: string, source: T): T;
 
 export class KernelValue {
   constructor(value: KernelVariable, settings: IKernelValueSettings);
@@ -657,8 +657,8 @@ export interface IJSONSettings {
   threadDim?: number[];
 }
 
-export type utils = {
-  getMinifySafeName(arrowReference: () => Function): string;
+export declare const utils: {
+  getMinifySafeName: <T>(arrowReference: () => T) => string
 }
 
 export interface IReason {
