@@ -76,3 +76,38 @@ test('.constructor() checks ok height & width', () => {
   });
   assert.equal(v.constructor.name, 'WebGLKernelValueMemoryOptimizedNumberTexture');
 });
+
+test('.updateValue() should set uploadValue when a pipeline kernel has no texture', () => {
+  const mockKernel = {
+    constructor: {
+      features: { maxTextureSize: 2 },
+    },
+    validate: true,
+    pipeline: true,
+    setUniform3iv: () => {},
+    setUniform2iv: () => {},
+    setUniform1i: () => {},
+  };
+  const mockContext = {
+    activeTexture: () => {},
+    bindTexture: () => {},
+    texParameteri: () => {},
+    pixelStorei: () => {},
+    texImage2D: () => {},
+  };
+  const v = new webGLKernelValueMaps.unsigned.static.MemoryOptimizedNumberTexture({ size: [2,2], context: mockContext }, {
+    kernel: mockKernel,
+    name: 'test',
+    type: 'MemoryOptimizedNumberTexture',
+    origin: 'user',
+    tactic: 'speed',
+    context: mockContext,
+    onRequestContextHandle: () => 1,
+    onRequestTexture: () => null,
+    onRequestIndex: () => 1
+  });
+
+  const newMockTexture = {}
+  v.updateValue({ size: [2,2], context: mockContext, texture: newMockTexture })
+  assert.equal(v.uploadValue, newMockTexture)
+});
