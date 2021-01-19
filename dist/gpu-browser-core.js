@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.11.0
- * @date Tue Jan 05 2021 15:55:59 GMT-0500 (Eastern Standard Time)
+ * @version 2.11.2
+ * @date Tue Jan 19 2021 11:27:02 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -1234,14 +1234,14 @@ function cpuKernelString(cpuKernel, name) {
     '  const { context, canvas, constants: incomingConstants } = settings;',
     `  const output = new Int32Array(${JSON.stringify(Array.from(cpuKernel.output))});`,
     `  const _constantTypes = ${JSON.stringify(cpuKernel.constantTypes)};`,
-    `  const _constants = ${constantsToString(cpuKernel.constants, cpuKernel.constantTypes)};`,
+    `  const _constants = ${constantsToString(cpuKernel.constants, cpuKernel.constantTypes)};`
   );
 
   thisProperties.push(
     '    constants: _constants,',
     '    context,',
     '    output,',
-    '    thread: {x: 0, y: 0, z: 0},',
+    '    thread: {x: 0, y: 0, z: 0},'
   );
 
   if (cpuKernel.graphical) {
@@ -1289,7 +1289,7 @@ function cpuKernelString(cpuKernel, name) {
     thisProperties.push(
       '    _imageData,',
       '    _colorData,',
-      `    color: ${colorFn},`,
+      `    color: ${colorFn},`
     );
 
     beforeReturn.push(
@@ -9464,7 +9464,7 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
       if (kernel.immutable) {
         kernel.updateTextureArgumentRefs(this, inputTexture);
       } else {
-        if (kernel.texture.texture === inputTexture.texture) {
+        if (kernel.texture && kernel.texture.texture === inputTexture.texture) {
           throw new Error(sameError);
         } else if (kernel.mappedTextures) {
           const { mappedTextures } = kernel;
@@ -9487,6 +9487,7 @@ module.exports = {
   WebGLKernelValueMemoryOptimizedNumberTexture,
   sameError
 };
+
 },{"../../../utils":113,"./array":39}],58:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
@@ -9535,7 +9536,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelArray {
       if (kernel.immutable) {
         kernel.updateTextureArgumentRefs(this, inputTexture);
       } else {
-        if (kernel.texture.texture === inputTexture.texture) {
+        if (kernel.texture && kernel.texture.texture === inputTexture.texture) {
           throw new Error(sameError);
         } else if (kernel.mappedTextures) {
           const { mappedTextures } = kernel;
@@ -9557,6 +9558,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelArray {
 module.exports = {
   WebGLKernelValueNumberTexture
 };
+
 },{"../../../utils":113,"./array":39,"./memory-optimized-number-texture":57}],59:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
