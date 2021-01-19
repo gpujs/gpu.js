@@ -49,7 +49,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelArray {
       if (kernel.immutable) {
         kernel.updateTextureArgumentRefs(this, inputTexture);
       } else {
-        if (kernel.texture.texture === inputTexture.texture) {
+        if (kernel.texture && kernel.texture.texture === inputTexture.texture) {
           throw new Error(sameError);
         } else if (kernel.mappedTextures) {
           const { mappedTextures } = kernel;
