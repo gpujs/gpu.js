@@ -15621,7 +15621,7 @@ float integerCorrectionModulo(float number, float divisor) {
     result.push(
       '  threadId = indexTo3D(index, uOutputDim)',
       '  kernel()',
-      `  gl_FragData[0].${channel} = kernelResult`,
+      `  gl_FragData[0].${channel} = kernelResult`
     );
   }
 
@@ -15631,11 +15631,11 @@ float integerCorrectionModulo(float number, float divisor) {
       const subKernel = this.subKernels[i];
       if (subKernel.returnType === 'Integer') {
         result.push(
-          `  gl_FragData[${i + 1}].${channel} = float(subKernelResult_${this.subKernels[i].name})`,
+          `  gl_FragData[${i + 1}].${channel} = float(subKernelResult_${this.subKernels[i].name})`
         );
       } else {
         result.push(
-          `  gl_FragData[${i + 1}].${channel} = subKernelResult_${this.subKernels[i].name}`,
+          `  gl_FragData[${i + 1}].${channel} = subKernelResult_${this.subKernels[i].name}`
         );
       }
     }
@@ -15656,11 +15656,11 @@ float integerCorrectionModulo(float number, float divisor) {
       const subKernel = this.subKernels[i];
       if (subKernel.returnType === 'Integer') {
         result.push(
-          `  gl_FragData[${i + 1}][0] = float(subKernelResult_${subKernel.name})`,
+          `  gl_FragData[${i + 1}][0] = float(subKernelResult_${subKernel.name})`
         );
       } else {
         result.push(
-          `  gl_FragData[${i + 1}][0] = subKernelResult_${subKernel.name}`,
+          `  gl_FragData[${i + 1}][0] = subKernelResult_${subKernel.name}`
         );
       }
     }
@@ -15682,7 +15682,7 @@ float integerCorrectionModulo(float number, float divisor) {
     for (let i = 0; i < this.subKernels.length; ++i) {
       result.push(
         `  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}[0]`,
-        `  gl_FragData[${i + 1}][1] = subKernelResult_${this.subKernels[i].name}[1]`,
+        `  gl_FragData[${i + 1}][1] = subKernelResult_${this.subKernels[i].name}[1]`
       );
     }
     return result;
@@ -15705,7 +15705,7 @@ float integerCorrectionModulo(float number, float divisor) {
       result.push(
         `  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}[0]`,
         `  gl_FragData[${i + 1}][1] = subKernelResult_${this.subKernels[i].name}[1]`,
-        `  gl_FragData[${i + 1}][2] = subKernelResult_${this.subKernels[i].name}[2]`,
+        `  gl_FragData[${i + 1}][2] = subKernelResult_${this.subKernels[i].name}[2]`
       );
     }
     return result;
@@ -15730,11 +15730,11 @@ float integerCorrectionModulo(float number, float divisor) {
           const subKernel = this.subKernels[i];
           if (subKernel.returnType === 'Integer') {
             result.push(
-              `  gl_FragData[${i + 1}] = float(subKernelResult_${this.subKernels[i].name})`,
+              `  gl_FragData[${i + 1}] = float(subKernelResult_${this.subKernels[i].name})`
             );
           } else {
             result.push(
-              `  gl_FragData[${i + 1}] = subKernelResult_${this.subKernels[i].name}`,
+              `  gl_FragData[${i + 1}] = subKernelResult_${this.subKernels[i].name}`
             );
           }
         }
@@ -15743,7 +15743,7 @@ float integerCorrectionModulo(float number, float divisor) {
         for (let i = 0; i < this.subKernels.length; ++i) {
           result.push(
             `  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}[0]`,
-            `  gl_FragData[${i + 1}][1] = subKernelResult_${this.subKernels[i].name}[1]`,
+            `  gl_FragData[${i + 1}][1] = subKernelResult_${this.subKernels[i].name}[1]`
           );
         }
         break;
@@ -15752,7 +15752,7 @@ float integerCorrectionModulo(float number, float divisor) {
           result.push(
             `  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}[0]`,
             `  gl_FragData[${i + 1}][1] = subKernelResult_${this.subKernels[i].name}[1]`,
-            `  gl_FragData[${i + 1}][2] = subKernelResult_${this.subKernels[i].name}[2]`,
+            `  gl_FragData[${i + 1}][2] = subKernelResult_${this.subKernels[i].name}[2]`
           );
         }
         break;
@@ -15762,7 +15762,7 @@ float integerCorrectionModulo(float number, float divisor) {
             `  gl_FragData[${i + 1}][0] = subKernelResult_${this.subKernels[i].name}[0]`,
             `  gl_FragData[${i + 1}][1] = subKernelResult_${this.subKernels[i].name}[1]`,
             `  gl_FragData[${i + 1}][2] = subKernelResult_${this.subKernels[i].name}[2]`,
-            `  gl_FragData[${i + 1}][3] = subKernelResult_${this.subKernels[i].name}[3]`,
+            `  gl_FragData[${i + 1}][3] = subKernelResult_${this.subKernels[i].name}[3]`
           );
         }
         break;
@@ -17675,7 +17675,7 @@ class WebGL2Kernel extends WebGLKernel {
     result.push(
       '  threadId = indexTo3D(index, uOutputDim)',
       '  kernel()',
-      `  data0.${channel} = kernelResult`,
+      `  data0.${channel} = kernelResult`
     );
   }
 
@@ -17685,11 +17685,11 @@ class WebGL2Kernel extends WebGLKernel {
       const subKernel = this.subKernels[i];
       if (subKernel.returnType === 'Integer') {
         result.push(
-          `  data${i + 1}.${channel} = float(subKernelResult_${subKernel.name})`,
+          `  data${i + 1}.${channel} = float(subKernelResult_${subKernel.name})`
         );
       } else {
         result.push(
-          `  data${i + 1}.${channel} = subKernelResult_${subKernel.name}`,
+          `  data${i + 1}.${channel} = subKernelResult_${subKernel.name}`
         );
       }
     }
@@ -17710,11 +17710,11 @@ class WebGL2Kernel extends WebGLKernel {
       const subKernel = this.subKernels[i];
       if (subKernel.returnType === 'Integer') {
         result.push(
-          `  data${i + 1}[0] = float(subKernelResult_${subKernel.name})`,
+          `  data${i + 1}[0] = float(subKernelResult_${subKernel.name})`
         );
       } else {
         result.push(
-          `  data${i + 1}[0] = subKernelResult_${subKernel.name}`,
+          `  data${i + 1}[0] = subKernelResult_${subKernel.name}`
         );
       }
     }
@@ -17737,7 +17737,7 @@ class WebGL2Kernel extends WebGLKernel {
       const subKernel = this.subKernels[i];
       result.push(
         `  data${i + 1}[0] = subKernelResult_${subKernel.name}[0]`,
-        `  data${i + 1}[1] = subKernelResult_${subKernel.name}[1]`,
+        `  data${i + 1}[1] = subKernelResult_${subKernel.name}[1]`
       );
     }
     return result;
@@ -17761,7 +17761,7 @@ class WebGL2Kernel extends WebGLKernel {
       result.push(
         `  data${i + 1}[0] = subKernelResult_${subKernel.name}[0]`,
         `  data${i + 1}[1] = subKernelResult_${subKernel.name}[1]`,
-        `  data${i + 1}[2] = subKernelResult_${subKernel.name}[2]`,
+        `  data${i + 1}[2] = subKernelResult_${subKernel.name}[2]`
       );
     }
     return result;
@@ -17780,7 +17780,7 @@ class WebGL2Kernel extends WebGLKernel {
     if (!this.subKernels) return result;
     for (let i = 0; i < this.subKernels.length; ++i) {
       result.push(
-        `  data${i + 1} = subKernelResult_${this.subKernels[i].name}`,
+        `  data${i + 1} = subKernelResult_${this.subKernels[i].name}`
       );
     }
     return result;
