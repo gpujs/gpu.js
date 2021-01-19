@@ -37,14 +37,14 @@ function cpuKernelString(cpuKernel, name) {
     '  const { context, canvas, constants: incomingConstants } = settings;',
     `  const output = new Int32Array(${JSON.stringify(Array.from(cpuKernel.output))});`,
     `  const _constantTypes = ${JSON.stringify(cpuKernel.constantTypes)};`,
-    `  const _constants = ${constantsToString(cpuKernel.constants, cpuKernel.constantTypes)};`,
+    `  const _constants = ${constantsToString(cpuKernel.constants, cpuKernel.constantTypes)};`
   );
 
   thisProperties.push(
     '    constants: _constants,',
     '    context,',
     '    output,',
-    '    thread: {x: 0, y: 0, z: 0},',
+    '    thread: {x: 0, y: 0, z: 0},'
   );
 
   if (cpuKernel.graphical) {
@@ -92,7 +92,7 @@ function cpuKernelString(cpuKernel, name) {
     thisProperties.push(
       '    _imageData,',
       '    _colorData,',
-      `    color: ${colorFn},`,
+      `    color: ${colorFn},`
     );
 
     beforeReturn.push(

@@ -509,7 +509,7 @@ class WebGL2Kernel extends WebGLKernel {
     result.push(
       '  threadId = indexTo3D(index, uOutputDim)',
       '  kernel()',
-      `  data0.${channel} = kernelResult`,
+      `  data0.${channel} = kernelResult`
     );
   }
 
@@ -519,11 +519,11 @@ class WebGL2Kernel extends WebGLKernel {
       const subKernel = this.subKernels[i];
       if (subKernel.returnType === 'Integer') {
         result.push(
-          `  data${i + 1}.${channel} = float(subKernelResult_${subKernel.name})`,
+          `  data${i + 1}.${channel} = float(subKernelResult_${subKernel.name})`
         );
       } else {
         result.push(
-          `  data${i + 1}.${channel} = subKernelResult_${subKernel.name}`,
+          `  data${i + 1}.${channel} = subKernelResult_${subKernel.name}`
         );
       }
     }
@@ -544,11 +544,11 @@ class WebGL2Kernel extends WebGLKernel {
       const subKernel = this.subKernels[i];
       if (subKernel.returnType === 'Integer') {
         result.push(
-          `  data${i + 1}[0] = float(subKernelResult_${subKernel.name})`,
+          `  data${i + 1}[0] = float(subKernelResult_${subKernel.name})`
         );
       } else {
         result.push(
-          `  data${i + 1}[0] = subKernelResult_${subKernel.name}`,
+          `  data${i + 1}[0] = subKernelResult_${subKernel.name}`
         );
       }
     }
@@ -571,7 +571,7 @@ class WebGL2Kernel extends WebGLKernel {
       const subKernel = this.subKernels[i];
       result.push(
         `  data${i + 1}[0] = subKernelResult_${subKernel.name}[0]`,
-        `  data${i + 1}[1] = subKernelResult_${subKernel.name}[1]`,
+        `  data${i + 1}[1] = subKernelResult_${subKernel.name}[1]`
       );
     }
     return result;
@@ -595,7 +595,7 @@ class WebGL2Kernel extends WebGLKernel {
       result.push(
         `  data${i + 1}[0] = subKernelResult_${subKernel.name}[0]`,
         `  data${i + 1}[1] = subKernelResult_${subKernel.name}[1]`,
-        `  data${i + 1}[2] = subKernelResult_${subKernel.name}[2]`,
+        `  data${i + 1}[2] = subKernelResult_${subKernel.name}[2]`
       );
     }
     return result;
@@ -614,7 +614,7 @@ class WebGL2Kernel extends WebGLKernel {
     if (!this.subKernels) return result;
     for (let i = 0; i < this.subKernels.length; ++i) {
       result.push(
-        `  data${i + 1} = subKernelResult_${this.subKernels[i].name}`,
+        `  data${i + 1} = subKernelResult_${this.subKernels[i].name}`
       );
     }
     return result;
