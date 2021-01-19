@@ -35,8 +35,6 @@ class FunctionBuilder {
       followingReturnStatement,
       dynamicArguments,
       dynamicOutput,
-      onIstanbulCoverageVariable,
-      removeIstanbulCoverage,
     } = kernel;
 
     const argumentTypes = new Array(kernelArguments.length);
@@ -87,12 +85,12 @@ class FunctionBuilder {
       functionBuilder.trackFunctionCall(functionName, calleeFunctionName, args);
     };
 
-    const onNestedFunction = (ast, returnType) => {
+    const onNestedFunction = (ast, source) => {
       const argumentNames = [];
       for (let i = 0; i < ast.params.length; i++) {
         argumentNames.push(ast.params[i].name);
       }
-      const nestedFunction = new FunctionNode(null, Object.assign({}, nodeOptions, {
+      const nestedFunction = new FunctionNode(source, Object.assign({}, nodeOptions, {
         returnType: null,
         ast,
         name: ast.id.name,
@@ -123,8 +121,6 @@ class FunctionBuilder {
       triggerImplyArgumentType,
       triggerImplyArgumentBitRatio,
       onFunctionCall,
-      onIstanbulCoverageVariable: onIstanbulCoverageVariable ? (name) => onIstanbulCoverageVariable(name, kernel) : null,
-      removeIstanbulCoverage,
       optimizeFloatMemory,
       precision,
       constants,
@@ -177,8 +173,6 @@ class FunctionBuilder {
         triggerImplyArgumentBitRatio,
         onFunctionCall,
         onNestedFunction,
-        onIstanbulCoverageVariable: onIstanbulCoverageVariable ? (name) => onIstanbulCoverageVariable(name, kernel) : null,
-        removeIstanbulCoverage,
       }));
     }
 
@@ -276,8 +270,17 @@ class FunctionBuilder {
     retList = retList || [];
 
     if (this.nativeFunctionNames.indexOf(functionName) > -1) {
-      if (retList.indexOf(functionName) === -1) {
+      const nativeFunctionIndex = retList.indexOf(functionName);
+      if (nativeFunctionIndex === -1) {
         retList.push(functionName);
+      } else {
+        /**
+         * https://github.com/gpujs/gpu.js/issues/207
+         * if dependent function is already in the list, because a function depends on it, and because it has
+         * already been traced, we know that we must move the dependent function to the end of the the retList.
+         * */
+        const dependantNativeFunctionName = retList.splice(nativeFunctionIndex, 1)[0];
+        retList.push(dependantNativeFunctionName);
       }
       return retList;
     }

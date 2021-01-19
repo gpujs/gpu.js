@@ -220,8 +220,6 @@ class Kernel {
     this.optimizeFloatMemory = null;
     this.strictIntegers = false;
     this.fixIntegerDivisionAccuracy = null;
-    this.onIstanbulCoverageVariable = null;
-    this.removeIstanbulCoverage = false;
     this.built = false;
     this.signature = null;
   }
@@ -251,11 +249,6 @@ class Kernel {
             this.precision = 'unsigned';
           }
           this[p] = settings[p];
-          continue;
-        case 'removeIstanbulCoverage':
-          if (settings[p] !== null) {
-            this[p] = settings[p];
-          }
           continue;
         case 'nativeFunctions':
           if (!settings.nativeFunctions) continue;

@@ -1175,13 +1175,8 @@ class WebGLFunctionNode extends FunctionNode {
           retArr.push(this.memberExpressionPropertyMarkup(property));
           retArr.push(']');
           return retArr;
-        case 'value.value[]':
-        case 'value.value[][]':
-          if (this.removeIstanbulCoverage) {
-            return retArr;
-          }
-          default:
-            throw this.astErrorOutput('Unexpected expression', mNode);
+        default:
+          throw this.astErrorOutput('Unexpected expression', mNode);
     }
 
     if (mNode.computed === false) {
