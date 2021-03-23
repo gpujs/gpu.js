@@ -24,8 +24,12 @@ float asinh(float x) {
 }
 
 float atan2(float v1, float v2) {
-  if (v1 == 0.0 || v2 == 0.0) return 0.0;
-  return atan(v1 / v2);
+  if (v2 == 0.0) {
+    if (v1 == 0.0) return 0.0;
+    if (v1 > 0.0) return 1.5707963267948966;
+    if (v1 < 0.0) return -1.5707963267948966;
+  }
+  return atan(v1, v2);
 }
 
 float atanh(float x) {
