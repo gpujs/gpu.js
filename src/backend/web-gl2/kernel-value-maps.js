@@ -35,9 +35,9 @@ const { WebGL2KernelValueDynamicSingleArray2DI } = require('./kernel-value/dynam
 const { WebGL2KernelValueSingleArray3DI } = require('./kernel-value/single-array3d-i');
 const { WebGL2KernelValueDynamicSingleArray3DI } = require('./kernel-value/dynamic-single-array3d-i');
 
-const { WebGL2KernelValueSingleArray2 } = require('./kernel-value/single-array2');
-const { WebGL2KernelValueSingleArray3 } = require('./kernel-value/single-array3');
-const { WebGL2KernelValueSingleArray4 } = require('./kernel-value/single-array4');
+const { WebGL2KernelValueArray2 } = require('./kernel-value/array2');
+const { WebGL2KernelValueArray3 } = require('./kernel-value/array3');
+const { WebGL2KernelValueArray4 } = require('./kernel-value/array4');
 
 const { WebGL2KernelValueUnsignedArray } = require('./kernel-value/unsigned-array');
 const { WebGL2KernelValueDynamicUnsignedArray } = require('./kernel-value/dynamic-unsigned-array');
@@ -49,9 +49,9 @@ const kernelValueMaps = {
       'Integer': WebGL2KernelValueInteger,
       'Float': WebGL2KernelValueFloat,
       'Array': WebGL2KernelValueDynamicUnsignedArray,
-      'Array(2)': false,
-      'Array(3)': false,
-      'Array(4)': false,
+      'Array(2)': WebGL2KernelValueArray2,
+      'Array(3)': WebGL2KernelValueArray3,
+      'Array(4)': WebGL2KernelValueArray4,
       'Array1D(2)': false,
       'Array1D(3)': false,
       'Array1D(4)': false,
@@ -78,9 +78,9 @@ const kernelValueMaps = {
       'Float': WebGL2KernelValueFloat,
       'Integer': WebGL2KernelValueInteger,
       'Array': WebGL2KernelValueUnsignedArray,
-      'Array(2)': false,
-      'Array(3)': false,
-      'Array(4)': false,
+      'Array(2)': WebGL2KernelValueArray2,
+      'Array(3)': WebGL2KernelValueArray3,
+      'Array(4)': WebGL2KernelValueArray4,
       'Array1D(2)': false,
       'Array1D(3)': false,
       'Array1D(4)': false,
@@ -109,9 +109,9 @@ const kernelValueMaps = {
       'Integer': WebGL2KernelValueInteger,
       'Float': WebGL2KernelValueFloat,
       'Array': WebGL2KernelValueDynamicSingleArray,
-      'Array(2)': WebGL2KernelValueSingleArray2,
-      'Array(3)': WebGL2KernelValueSingleArray3,
-      'Array(4)': WebGL2KernelValueSingleArray4,
+      'Array(2)': WebGL2KernelValueArray2,
+      'Array(3)': WebGL2KernelValueArray3,
+      'Array(4)': WebGL2KernelValueArray4,
       'Array1D(2)': WebGL2KernelValueDynamicSingleArray1DI,
       'Array1D(3)': WebGL2KernelValueDynamicSingleArray1DI,
       'Array1D(4)': WebGL2KernelValueDynamicSingleArray1DI,
@@ -138,9 +138,9 @@ const kernelValueMaps = {
       'Float': WebGL2KernelValueFloat,
       'Integer': WebGL2KernelValueInteger,
       'Array': WebGL2KernelValueSingleArray,
-      'Array(2)': WebGL2KernelValueSingleArray2,
-      'Array(3)': WebGL2KernelValueSingleArray3,
-      'Array(4)': WebGL2KernelValueSingleArray4,
+      'Array(2)': WebGL2KernelValueArray2,
+      'Array(3)': WebGL2KernelValueArray3,
+      'Array(4)': WebGL2KernelValueArray4,
       'Array1D(2)': WebGL2KernelValueSingleArray1DI,
       'Array1D(3)': WebGL2KernelValueSingleArray1DI,
       'Array1D(4)': WebGL2KernelValueSingleArray1DI,

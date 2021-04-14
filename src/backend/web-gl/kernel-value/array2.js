@@ -1,30 +1,29 @@
-const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
-class WebGLKernelValueSingleArray4 extends WebGLKernelValue {
+class WebGLKernelValueArray2 extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
     this.uploadValue = value;
   }
   getSource(value) {
     if (this.origin === 'constants') {
-      return `const vec4 ${this.id} = vec4(${value[0]},${value[1]},${value[2]},${value[3]});\n`;
+      return `const vec2 ${this.id} = vec2(${value[0]},${value[1]});\n`;
     }
-    return `uniform vec4 ${this.id};\n`;
+    return `uniform vec2 ${this.id};\n`;
   }
 
   getStringValueHandler() {
-    // resetting isn't supported for Array(4)
+    // resetting isn't supported for Array(2)
     if (this.origin === 'constants') return '';
     return `const uploadValue_${this.name} = ${this.varName};\n`;
   }
 
   updateValue(value) {
     if (this.origin === 'constants') return;
-    this.kernel.setUniform4fv(this.id, this.uploadValue = value);
+    this.kernel.setUniform2fv(this.id, this.uploadValue = value);
   }
 }
 
 module.exports = {
-  WebGLKernelValueSingleArray4
+  WebGLKernelValueArray2
 };
