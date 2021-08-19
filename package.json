@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "2.11.3",
+  "version": "2.11.4",
   "description": "GPU Accelerated JavaScript",
   "engines": {
     "node": ">=8.0.0"
@@ -10,8 +10,8 @@
     "src",
     "dist"
   ],
-  "unpkg": "./dist/gpu-browser.min.js",
-  "jsdelivr": "./dist/gpu-browser.min.js",
+  "unpkg": "./dist/gpu-browser.js",
+  "jsdelivr": "./dist/gpu-browser.js",
   "browser": "./dist/gpu-browser.js",
   "directories": {
     "doc": "doc",
