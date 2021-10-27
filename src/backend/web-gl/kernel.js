@@ -1086,7 +1086,7 @@ class WebGLKernel extends GLKernel {
   _getDivideWithIntegerCheckString() {
     return this.fixIntegerDivisionAccuracy ?
       `float divWithIntCheck(float x, float y) {
-  if (floor(x) == x && floor(y) == y && integerMod(x, y) == 0.0) {
+  if (int(x) == x && int(y) == y && integerMod(x, y) == 0.0) {
     return float(int(x) / int(y));
   }
   return x / y;
