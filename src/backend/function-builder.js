@@ -292,9 +292,6 @@ class FunctionBuilder {
       if (functionIndex === -1) {
         retList.push(functionName);
         functionNode.toString(); //ensure JS trace is done
-        for (let i = 0; i < functionNode.calledFunctions.length; ++i) {
-          this.traceFunctionCalls(functionNode.calledFunctions[i], retList);
-        }
       } else {
         /**
          * https://github.com/gpujs/gpu.js/issues/207
@@ -303,6 +300,9 @@ class FunctionBuilder {
          * */
         const dependantFunctionName = retList.splice(functionIndex, 1)[0];
         retList.push(dependantFunctionName);
+      }
+      for (let i = 0; i < functionNode.calledFunctions.length; ++i) {
+        this.traceFunctionCalls(functionNode.calledFunctions[i], retList);
       }
     }
 

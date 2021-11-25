@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.11.0
- * @date Tue Jan 05 2021 15:55:59 GMT-0500 (Eastern Standard Time)
+ * @version 2.11.1
+ * @date Wed Nov 24 2021 22:07:42 GMT-0700 (Mountain Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -1234,14 +1234,14 @@ function cpuKernelString(cpuKernel, name) {
     '  const { context, canvas, constants: incomingConstants } = settings;',
     `  const output = new Int32Array(${JSON.stringify(Array.from(cpuKernel.output))});`,
     `  const _constantTypes = ${JSON.stringify(cpuKernel.constantTypes)};`,
-    `  const _constants = ${constantsToString(cpuKernel.constants, cpuKernel.constantTypes)};`,
+    `  const _constants = ${constantsToString(cpuKernel.constants, cpuKernel.constantTypes)};`
   );
 
   thisProperties.push(
     '    constants: _constants,',
     '    context,',
     '    output,',
-    '    thread: {x: 0, y: 0, z: 0},',
+    '    thread: {x: 0, y: 0, z: 0},'
   );
 
   if (cpuKernel.graphical) {
@@ -1289,7 +1289,7 @@ function cpuKernelString(cpuKernel, name) {
     thisProperties.push(
       '    _imageData,',
       '    _colorData,',
-      `    color: ${colorFn},`,
+      `    color: ${colorFn},`
     );
 
     beforeReturn.push(
@@ -2257,12 +2257,12 @@ class FunctionBuilder {
       if (functionIndex === -1) {
         retList.push(functionName);
         functionNode.toString(); 
-        for (let i = 0; i < functionNode.calledFunctions.length; ++i) {
-          this.traceFunctionCalls(functionNode.calledFunctions[i], retList);
-        }
       } else {
         const dependantFunctionName = retList.splice(functionIndex, 1)[0];
         retList.push(dependantFunctionName);
+      }
+      for (let i = 0; i < functionNode.calledFunctions.length; ++i) {
+        this.traceFunctionCalls(functionNode.calledFunctions[i], retList);
       }
     }
 
@@ -9464,7 +9464,7 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
       if (kernel.immutable) {
         kernel.updateTextureArgumentRefs(this, inputTexture);
       } else {
-        if (kernel.texture.texture === inputTexture.texture) {
+        if (kernel.texture && kernel.texture.texture === inputTexture.texture) {
           throw new Error(sameError);
         } else if (kernel.mappedTextures) {
           const { mappedTextures } = kernel;
@@ -9535,7 +9535,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelArray {
       if (kernel.immutable) {
         kernel.updateTextureArgumentRefs(this, inputTexture);
       } else {
-        if (kernel.texture.texture === inputTexture.texture) {
+        if (kernel.texture && kernel.texture.texture === inputTexture.texture) {
           throw new Error(sameError);
         } else if (kernel.mappedTextures) {
           const { mappedTextures } = kernel;
