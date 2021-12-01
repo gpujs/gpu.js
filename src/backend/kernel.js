@@ -320,10 +320,10 @@ class Kernel {
   addFunction(source, settings = {}) {
     if (source.name && source.source && source.argumentTypes && 'returnType' in source) {
       this.functions.push(source);
-    } else if ('settings' in source && 'source' in source) {
-      this.functions.push(this.functionToIGPUFunction(source.source, source.settings));
     } else if (typeof source === 'string' || typeof source === 'function') {
       this.functions.push(this.functionToIGPUFunction(source, settings));
+    } else if ('settings' in source && 'source' in source) {
+      this.functions.push(this.functionToIGPUFunction(source.source, source.settings));
     } else {
       throw new Error(`function not properly defined`);
     }
