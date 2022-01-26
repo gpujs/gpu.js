@@ -399,6 +399,7 @@ export type KernelVariable =
   | HTMLImageElement
   | HTMLImageElement[]
   | ImageBitmap
+  | ImageData
   | Float32Array
   | Uint8Array
   | Uint16Array

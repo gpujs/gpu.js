@@ -1251,6 +1251,7 @@ class WebGLFunctionNode extends FunctionNode {
       case 'OffscreenCanvas':
       case 'HTMLImage':
       case 'ImageBitmap':
+      case 'ImageData':
       case 'HTMLVideo':
         retArr.push(`getVec4FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
@@ -1469,6 +1470,7 @@ class WebGLFunctionNode extends FunctionNode {
           case 'OffscreenCanvas':
           case 'HTMLImage':
           case 'ImageBitmap':
+          case 'ImageData':
           case 'HTMLImageArray':
           case 'HTMLVideo':
           case 'ArrayTexture(1)':
@@ -1590,6 +1592,7 @@ const typeMap = {
   'OffscreenCanvas': 'sampler2D',
   'HTMLImage': 'sampler2D',
   'ImageBitmap': 'sampler2D',
+  'ImageData': 'sampler2D',
   'HTMLImageArray': 'sampler2DArray',
 };
 
