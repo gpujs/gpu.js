@@ -2,7 +2,7 @@ if (typeof importScripts !== 'undefined') {
   // inside Worker
   importScripts('../../dist/gpu-browser.js');
   onmessage = function (e) {
-    const gpu = new GPU();
+    const gpu = new GPU({ mode: e.data });
     const kernel1 = gpu.createKernel(function() {
       this.color(1, 1, 1, 1);
     }, {
@@ -27,13 +27,12 @@ if (typeof importScripts !== 'undefined') {
   function testReadOffscreenCanvas(mode, done) {
     const worker = new Worker('features/read-offscreen-canvas.js');
     worker.onmessage = function (e) {
-      const mode = e.data.mode;
-      const result = e.data.result;
-      assert.equal(mode, 'gpu', 'GPU mode used in Worker');
+      const { result } = e.data;
+      if (mode) assert.equal(e.data.mode, mode, 'GPU mode used in Worker');
       assert.deepEqual(result, Float32Array.from([4]));
       done();
     };
-    worker.postMessage('test');
+    worker.postMessage(mode);
   }
 
   (GPU.isOffscreenCanvasSupported ? test : skip)('read offscreen canvas auto', t => {

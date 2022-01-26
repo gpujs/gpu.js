@@ -266,7 +266,9 @@ class CPUKernel extends Kernel {
       const type = this.constantTypes[p];
       switch (type) {
         case 'HTMLCanvas':
+        case 'OffscreenCanvas':
         case 'HTMLImage':
+        case 'ImageBitmap':
         case 'HTMLVideo':
           result.push(`    const constants_${p} = this._mediaTo2DArray(this.constants.${p});\n`);
           break;
@@ -309,7 +311,9 @@ class CPUKernel extends Kernel {
       const variableName = `user_${this.argumentNames[i]}`;
       switch (this.argumentTypes[i]) {
         case 'HTMLCanvas':
+        case 'OffscreenCanvas':
         case 'HTMLImage':
+        case 'ImageBitmap':
         case 'HTMLVideo':
           result.push(`    ${variableName} = this._mediaTo2DArray(${variableName});\n`);
           break;

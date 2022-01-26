@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.12.0
- * @date Wed Jan 26 2022 15:33:09 GMT-0500 (Eastern Standard Time)
+ * @version 2.14.0
+ * @date Wed Jan 26 2022 16:31:42 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -1614,7 +1614,9 @@ class CPUKernel extends Kernel {
       const type = this.constantTypes[p];
       switch (type) {
         case 'HTMLCanvas':
+        case 'OffscreenCanvas':
         case 'HTMLImage':
+        case 'ImageBitmap':
         case 'HTMLVideo':
           result.push(`    const constants_${p} = this._mediaTo2DArray(this.constants.${p});\n`);
           break;
@@ -1657,7 +1659,9 @@ class CPUKernel extends Kernel {
       const variableName = `user_${this.argumentNames[i]}`;
       switch (this.argumentTypes[i]) {
         case 'HTMLCanvas':
+        case 'OffscreenCanvas':
         case 'HTMLImage':
+        case 'ImageBitmap':
         case 'HTMLVideo':
           result.push(`    ${variableName} = this._mediaTo2DArray(${variableName});\n`);
           break;
@@ -3875,6 +3879,7 @@ const typeLookupMap = {
   'HTMLCanvas': 'Array(4)',
   'OffscreenCanvas': 'Array(4)',
   'HTMLImage': 'Array(4)',
+  'ImageBitmap': 'Array(4)',
   'HTMLVideo': 'Array(4)',
   'HTMLImageArray': 'Array(4)',
   'NumberTexture': 'Number',
@@ -8351,6 +8356,7 @@ class WebGLFunctionNode extends FunctionNode {
       case 'HTMLCanvas':
       case 'OffscreenCanvas':
       case 'HTMLImage':
+      case 'ImageBitmap':
       case 'HTMLVideo':
         retArr.push(`getVec4FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
@@ -8550,7 +8556,9 @@ class WebGLFunctionNode extends FunctionNode {
             }
             break;
           case 'HTMLCanvas':
+          case 'OffscreenCanvas':
           case 'HTMLImage':
+          case 'ImageBitmap':
           case 'HTMLImageArray':
           case 'HTMLVideo':
           case 'ArrayTexture(1)':
@@ -8662,7 +8670,9 @@ const typeMap = {
   'ArrayTexture(4)': 'sampler2D',
   'HTMLVideo': 'sampler2D',
   'HTMLCanvas': 'sampler2D',
+  'OffscreenCanvas': 'sampler2D',
   'HTMLImage': 'sampler2D',
+  'ImageBitmap': 'sampler2D',
   'HTMLImageArray': 'sampler2DArray',
 };
 
@@ -8674,6 +8684,7 @@ const operatorMap = {
 module.exports = {
   WebGLFunctionNode
 };
+
 },{"../../utils":113,"../function-node":9}],38:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGLKernelValueFloat } = require('./kernel-value/float');
@@ -8745,6 +8756,7 @@ const kernelValueMaps = {
       'HTMLCanvas': WebGLKernelValueDynamicHTMLImage,
       'OffscreenCanvas': WebGLKernelValueDynamicHTMLImage,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
+      'ImageBitmap': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
     },
@@ -8775,6 +8787,7 @@ const kernelValueMaps = {
       'HTMLCanvas': WebGLKernelValueHTMLImage,
       'OffscreenCanvas': WebGLKernelValueHTMLImage,
       'HTMLImage': WebGLKernelValueHTMLImage,
+      'ImageBitmap': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueHTMLVideo,
     }
@@ -8807,6 +8820,7 @@ const kernelValueMaps = {
       'HTMLCanvas': WebGLKernelValueDynamicHTMLImage,
       'OffscreenCanvas': WebGLKernelValueDynamicHTMLImage,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
+      'ImageBitmap': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
     },
@@ -8837,6 +8851,7 @@ const kernelValueMaps = {
       'HTMLCanvas': WebGLKernelValueHTMLImage,
       'OffscreenCanvas': WebGLKernelValueHTMLImage,
       'HTMLImage': WebGLKernelValueHTMLImage,
+      'ImageBitmap': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueHTMLVideo,
     }
@@ -12030,6 +12045,7 @@ const kernelValueMaps = {
       'HTMLCanvas': WebGL2KernelValueDynamicHTMLImage,
       'OffscreenCanvas': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
+      'ImageBitmap': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
@@ -12060,6 +12076,7 @@ const kernelValueMaps = {
       'HTMLCanvas': WebGL2KernelValueHTMLImage,
       'OffscreenCanvas': WebGL2KernelValueHTMLImage,
       'HTMLImage': WebGL2KernelValueHTMLImage,
+      'ImageBitmap': WebGL2KernelValueHTMLImage,
       'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
@@ -12092,6 +12109,7 @@ const kernelValueMaps = {
       'HTMLCanvas': WebGL2KernelValueDynamicHTMLImage,
       'OffscreenCanvas': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
+      'ImageBitmap': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
@@ -12122,6 +12140,7 @@ const kernelValueMaps = {
       'HTMLCanvas': WebGL2KernelValueHTMLImage,
       'OffscreenCanvas': WebGL2KernelValueHTMLImage,
       'HTMLImage': WebGL2KernelValueHTMLImage,
+      'ImageBitmap': WebGL2KernelValueHTMLImage,
       'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
@@ -14241,6 +14260,8 @@ const utils = {
         return 'Input';
       case OffscreenCanvas:
         return 'OffscreenCanvas';
+      case ImageBitmap:
+        return 'ImageBitmap';
     }
     switch (value.nodeName) {
       case 'IMG':

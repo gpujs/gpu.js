@@ -750,7 +750,9 @@ Types that can be used with GPU.js are as follows:
 * 'Array3D(3)' **New in V2!**
 * 'Array3D(4)' **New in V2!**
 * 'HTMLCanvas' **New in V2.6**
+* 'OffscreenCanvas' **New in V2.13**
 * 'HTMLImage'
+* 'ImageBitmap' **New in V2.14**
 * 'HTMLImageArray'
 * 'HTMLVideo' **New in V2!**
 * 'Number'
