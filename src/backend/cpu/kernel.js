@@ -269,6 +269,7 @@ class CPUKernel extends Kernel {
         case 'OffscreenCanvas':
         case 'HTMLImage':
         case 'ImageBitmap':
+        case 'ImageData':
         case 'HTMLVideo':
           result.push(`    const constants_${p} = this._mediaTo2DArray(this.constants.${p});\n`);
           break;
@@ -314,6 +315,7 @@ class CPUKernel extends Kernel {
         case 'OffscreenCanvas':
         case 'HTMLImage':
         case 'ImageBitmap':
+        case 'ImageData':
         case 'HTMLVideo':
           result.push(`    ${variableName} = this._mediaTo2DArray(${variableName});\n`);
           break;
@@ -361,8 +363,13 @@ class CPUKernel extends Kernel {
       canvas.height = height;
     }
     const ctx = this.context;
-    ctx.drawImage(media, 0, 0, width, height);
-    const pixelsData = ctx.getImageData(0, 0, width, height).data;
+    let pixelsData;
+    if (media.constructor === ImageData) {
+      pixelsData = media.data;
+    } else {
+      ctx.drawImage(media, 0, 0, width, height);
+      pixelsData = ctx.getImageData(0, 0, width, height).data;
+    }
     const imageArray = new Array(height);
     let index = 0;
     for (let y = height - 1; y >= 0; y--) {

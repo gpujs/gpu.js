@@ -146,6 +146,8 @@ const utils = {
         return 'OffscreenCanvas';
       case ImageBitmap:
         return 'ImageBitmap';
+      case ImageData:
+        return 'ImageData';
     }
     switch (value.nodeName) {
       case 'IMG':

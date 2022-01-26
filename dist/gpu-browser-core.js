@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.14.0
- * @date Wed Jan 26 2022 16:31:42 GMT-0500 (Eastern Standard Time)
+ * @version 2.15.0
+ * @date Wed Jan 26 2022 17:11:45 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -1617,6 +1617,7 @@ class CPUKernel extends Kernel {
         case 'OffscreenCanvas':
         case 'HTMLImage':
         case 'ImageBitmap':
+        case 'ImageData':
         case 'HTMLVideo':
           result.push(`    const constants_${p} = this._mediaTo2DArray(this.constants.${p});\n`);
           break;
@@ -1662,6 +1663,7 @@ class CPUKernel extends Kernel {
         case 'OffscreenCanvas':
         case 'HTMLImage':
         case 'ImageBitmap':
+        case 'ImageData':
         case 'HTMLVideo':
           result.push(`    ${variableName} = this._mediaTo2DArray(${variableName});\n`);
           break;
@@ -1709,8 +1711,13 @@ class CPUKernel extends Kernel {
       canvas.height = height;
     }
     const ctx = this.context;
-    ctx.drawImage(media, 0, 0, width, height);
-    const pixelsData = ctx.getImageData(0, 0, width, height).data;
+    let pixelsData;
+    if (media.constructor === ImageData) {
+      pixelsData = media.data;
+    } else {
+      ctx.drawImage(media, 0, 0, width, height);
+      pixelsData = ctx.getImageData(0, 0, width, height).data;
+    }
     const imageArray = new Array(height);
     let index = 0;
     for (let y = height - 1; y >= 0; y--) {
@@ -3880,6 +3887,7 @@ const typeLookupMap = {
   'OffscreenCanvas': 'Array(4)',
   'HTMLImage': 'Array(4)',
   'ImageBitmap': 'Array(4)',
+  'ImageData': 'Array(4)',
   'HTMLVideo': 'Array(4)',
   'HTMLImageArray': 'Array(4)',
   'NumberTexture': 'Number',
@@ -8357,6 +8365,7 @@ class WebGLFunctionNode extends FunctionNode {
       case 'OffscreenCanvas':
       case 'HTMLImage':
       case 'ImageBitmap':
+      case 'ImageData':
       case 'HTMLVideo':
         retArr.push(`getVec4FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
@@ -8559,6 +8568,7 @@ class WebGLFunctionNode extends FunctionNode {
           case 'OffscreenCanvas':
           case 'HTMLImage':
           case 'ImageBitmap':
+          case 'ImageData':
           case 'HTMLImageArray':
           case 'HTMLVideo':
           case 'ArrayTexture(1)':
@@ -8673,6 +8683,7 @@ const typeMap = {
   'OffscreenCanvas': 'sampler2D',
   'HTMLImage': 'sampler2D',
   'ImageBitmap': 'sampler2D',
+  'ImageData': 'sampler2D',
   'HTMLImageArray': 'sampler2DArray',
 };
 
@@ -8684,7 +8695,6 @@ const operatorMap = {
 module.exports = {
   WebGLFunctionNode
 };
-
 },{"../../utils":113,"../function-node":9}],38:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGLKernelValueFloat } = require('./kernel-value/float');
@@ -8757,6 +8767,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGLKernelValueDynamicHTMLImage,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
       'ImageBitmap': WebGLKernelValueDynamicHTMLImage,
+      'ImageData': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
     },
@@ -8788,6 +8799,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGLKernelValueHTMLImage,
       'HTMLImage': WebGLKernelValueHTMLImage,
       'ImageBitmap': WebGLKernelValueHTMLImage,
+      'ImageData': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueHTMLVideo,
     }
@@ -8821,6 +8833,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGLKernelValueDynamicHTMLImage,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
       'ImageBitmap': WebGLKernelValueDynamicHTMLImage,
+      'ImageData': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
     },
@@ -8852,6 +8865,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGLKernelValueHTMLImage,
       'HTMLImage': WebGLKernelValueHTMLImage,
       'ImageBitmap': WebGLKernelValueHTMLImage,
+      'ImageData': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueHTMLVideo,
     }
@@ -12046,6 +12060,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
       'ImageBitmap': WebGL2KernelValueDynamicHTMLImage,
+      'ImageData': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
@@ -12077,6 +12092,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGL2KernelValueHTMLImage,
       'HTMLImage': WebGL2KernelValueHTMLImage,
       'ImageBitmap': WebGL2KernelValueHTMLImage,
+      'ImageData': WebGL2KernelValueHTMLImage,
       'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
@@ -12110,6 +12126,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
       'ImageBitmap': WebGL2KernelValueDynamicHTMLImage,
+      'ImageData': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
@@ -12141,6 +12158,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGL2KernelValueHTMLImage,
       'HTMLImage': WebGL2KernelValueHTMLImage,
       'ImageBitmap': WebGL2KernelValueHTMLImage,
+      'ImageData': WebGL2KernelValueHTMLImage,
       'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
@@ -14262,6 +14280,8 @@ const utils = {
         return 'OffscreenCanvas';
       case ImageBitmap:
         return 'ImageBitmap';
+      case ImageData:
+        return 'ImageData';
     }
     switch (value.nodeName) {
       case 'IMG':

@@ -69,6 +69,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGLKernelValueDynamicHTMLImage,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
       'ImageBitmap': WebGLKernelValueDynamicHTMLImage,
+      'ImageData': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
     },
@@ -100,6 +101,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGLKernelValueHTMLImage,
       'HTMLImage': WebGLKernelValueHTMLImage,
       'ImageBitmap': WebGLKernelValueHTMLImage,
+      'ImageData': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueHTMLVideo,
     }
@@ -133,6 +135,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGLKernelValueDynamicHTMLImage,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
       'ImageBitmap': WebGLKernelValueDynamicHTMLImage,
+      'ImageData': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
     },
@@ -164,6 +167,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGLKernelValueHTMLImage,
       'HTMLImage': WebGLKernelValueHTMLImage,
       'ImageBitmap': WebGLKernelValueHTMLImage,
+      'ImageData': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueHTMLVideo,
     }

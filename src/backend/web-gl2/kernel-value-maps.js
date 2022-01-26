@@ -72,6 +72,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
       'ImageBitmap': WebGL2KernelValueDynamicHTMLImage,
+      'ImageData': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
@@ -103,6 +104,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGL2KernelValueHTMLImage,
       'HTMLImage': WebGL2KernelValueHTMLImage,
       'ImageBitmap': WebGL2KernelValueHTMLImage,
+      'ImageData': WebGL2KernelValueHTMLImage,
       'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }
@@ -136,6 +138,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
       'ImageBitmap': WebGL2KernelValueDynamicHTMLImage,
+      'ImageData': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
     },
@@ -167,6 +170,7 @@ const kernelValueMaps = {
       'OffscreenCanvas': WebGL2KernelValueHTMLImage,
       'HTMLImage': WebGL2KernelValueHTMLImage,
       'ImageBitmap': WebGL2KernelValueHTMLImage,
+      'ImageData': WebGL2KernelValueHTMLImage,
       'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
     }

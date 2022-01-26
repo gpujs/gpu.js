@@ -753,6 +753,7 @@ Types that can be used with GPU.js are as follows:
 * 'OffscreenCanvas' **New in V2.13**
 * 'HTMLImage'
 * 'ImageBitmap' **New in V2.14**
+* 'ImageData' **New in V2.15**
 * 'HTMLImageArray'
 * 'HTMLVideo' **New in V2!**
 * 'Number'
