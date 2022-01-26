@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.13.0
- * @date Wed Jan 26 2022 16:24:01 GMT-0500 (Eastern Standard Time)
+ * @version 2.14.0
+ * @date Wed Jan 26 2022 16:31:43 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -13009,7 +13009,9 @@ class WebGLFunctionNode extends FunctionNode {
             }
             break;
           case 'HTMLCanvas':
+          case 'OffscreenCanvas':
           case 'HTMLImage':
+          case 'ImageBitmap':
           case 'HTMLImageArray':
           case 'HTMLVideo':
           case 'ArrayTexture(1)':
@@ -13121,7 +13123,9 @@ const typeMap = {
   'ArrayTexture(4)': 'sampler2D',
   'HTMLVideo': 'sampler2D',
   'HTMLCanvas': 'sampler2D',
+  'OffscreenCanvas': 'sampler2D',
   'HTMLImage': 'sampler2D',
+  'ImageBitmap': 'sampler2D',
   'HTMLImageArray': 'sampler2DArray',
 };
 
@@ -13133,6 +13137,7 @@ const operatorMap = {
 module.exports = {
   WebGLFunctionNode
 };
+
 },{"../../utils":114,"../function-node":10}],39:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGLKernelValueFloat } = require('./kernel-value/float');
