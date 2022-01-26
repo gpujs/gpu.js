@@ -32,9 +32,9 @@ const { WebGLKernelValueDynamicSingleArray2DI } = require('./kernel-value/dynami
 const { WebGLKernelValueSingleArray3DI } = require('./kernel-value/single-array3d-i');
 const { WebGLKernelValueDynamicSingleArray3DI } = require('./kernel-value/dynamic-single-array3d-i');
 
-const { WebGLKernelValueSingleArray2 } = require('./kernel-value/single-array2');
-const { WebGLKernelValueSingleArray3 } = require('./kernel-value/single-array3');
-const { WebGLKernelValueSingleArray4 } = require('./kernel-value/single-array4');
+const { WebGLKernelValueArray2 } = require('./kernel-value/array2');
+const { WebGLKernelValueArray3 } = require('./kernel-value/array3');
+const { WebGLKernelValueArray4 } = require('./kernel-value/array4');
 
 const { WebGLKernelValueUnsignedArray } = require('./kernel-value/unsigned-array');
 const { WebGLKernelValueDynamicUnsignedArray } = require('./kernel-value/dynamic-unsigned-array');
@@ -46,9 +46,9 @@ const kernelValueMaps = {
       'Integer': WebGLKernelValueInteger,
       'Float': WebGLKernelValueFloat,
       'Array': WebGLKernelValueDynamicUnsignedArray,
-      'Array(2)': false,
-      'Array(3)': false,
-      'Array(4)': false,
+      'Array(2)': WebGLKernelValueArray2,
+      'Array(3)': WebGLKernelValueArray3,
+      'Array(4)': WebGLKernelValueArray4,
       'Array1D(2)': false,
       'Array1D(3)': false,
       'Array1D(4)': false,
@@ -66,6 +66,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGLKernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLCanvas': WebGLKernelValueDynamicHTMLImage,
+      'OffscreenCanvas': WebGLKernelValueDynamicHTMLImage,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
@@ -75,9 +76,9 @@ const kernelValueMaps = {
       'Float': WebGLKernelValueFloat,
       'Integer': WebGLKernelValueInteger,
       'Array': WebGLKernelValueUnsignedArray,
-      'Array(2)': false,
-      'Array(3)': false,
-      'Array(4)': false,
+      'Array(2)': WebGLKernelValueArray2,
+      'Array(3)': WebGLKernelValueArray3,
+      'Array(4)': WebGLKernelValueArray4,
       'Array1D(2)': false,
       'Array1D(3)': false,
       'Array1D(4)': false,
@@ -95,6 +96,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGLKernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGLKernelValueMemoryOptimizedNumberTexture,
       'HTMLCanvas': WebGLKernelValueHTMLImage,
+      'OffscreenCanvas': WebGLKernelValueHTMLImage,
       'HTMLImage': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueHTMLVideo,
@@ -106,9 +108,9 @@ const kernelValueMaps = {
       'Integer': WebGLKernelValueInteger,
       'Float': WebGLKernelValueFloat,
       'Array': WebGLKernelValueDynamicSingleArray,
-      'Array(2)': WebGLKernelValueSingleArray2,
-      'Array(3)': WebGLKernelValueSingleArray3,
-      'Array(4)': WebGLKernelValueSingleArray4,
+      'Array(2)': WebGLKernelValueArray2,
+      'Array(3)': WebGLKernelValueArray3,
+      'Array(4)': WebGLKernelValueArray4,
       'Array1D(2)': WebGLKernelValueDynamicSingleArray1DI,
       'Array1D(3)': WebGLKernelValueDynamicSingleArray1DI,
       'Array1D(4)': WebGLKernelValueDynamicSingleArray1DI,
@@ -126,6 +128,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGLKernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLCanvas': WebGLKernelValueDynamicHTMLImage,
+      'OffscreenCanvas': WebGLKernelValueDynamicHTMLImage,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
@@ -135,9 +138,9 @@ const kernelValueMaps = {
       'Float': WebGLKernelValueFloat,
       'Integer': WebGLKernelValueInteger,
       'Array': WebGLKernelValueSingleArray,
-      'Array(2)': WebGLKernelValueSingleArray2,
-      'Array(3)': WebGLKernelValueSingleArray3,
-      'Array(4)': WebGLKernelValueSingleArray4,
+      'Array(2)': WebGLKernelValueArray2,
+      'Array(3)': WebGLKernelValueArray3,
+      'Array(4)': WebGLKernelValueArray4,
       'Array1D(2)': WebGLKernelValueSingleArray1DI,
       'Array1D(3)': WebGLKernelValueSingleArray1DI,
       'Array1D(4)': WebGLKernelValueSingleArray1DI,
@@ -155,6 +158,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGLKernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGLKernelValueMemoryOptimizedNumberTexture,
       'HTMLCanvas': WebGLKernelValueHTMLImage,
+      'OffscreenCanvas': WebGLKernelValueHTMLImage,
       'HTMLImage': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueHTMLVideo,
