@@ -4,13 +4,13 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.11.3
- * @date Wed Apr 14 2021 16:49:13 GMT-0400 (Eastern Daylight Time)
+ * @version 2.12.0
+ * @date Wed Jan 26 2022 15:33:09 GMT-0500 (Eastern Standard Time)
  *
  * @license MIT
  * The MIT License
  *
- * Copyright (c) 2021 gpu.js Team
+ * Copyright (c) 2022 gpu.js Team
  */(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.GPU = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
@@ -8326,6 +8326,7 @@ const typeLookupMap = {
   'Array3D': 'Number',
   'Input': 'Number',
   'HTMLCanvas': 'Array(4)',
+  'OffscreenCanvas': 'Array(4)',
   'HTMLImage': 'Array(4)',
   'HTMLVideo': 'Array(4)',
   'HTMLImageArray': 'Array(4)',
@@ -12801,6 +12802,7 @@ class WebGLFunctionNode extends FunctionNode {
         break;
       case 'ArrayTexture(4)':
       case 'HTMLCanvas':
+      case 'OffscreenCanvas':
       case 'HTMLImage':
       case 'HTMLVideo':
         retArr.push(`getVec4FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
@@ -13194,6 +13196,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGLKernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLCanvas': WebGLKernelValueDynamicHTMLImage,
+      'OffscreenCanvas': WebGLKernelValueDynamicHTMLImage,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
@@ -13223,6 +13226,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGLKernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGLKernelValueMemoryOptimizedNumberTexture,
       'HTMLCanvas': WebGLKernelValueHTMLImage,
+      'OffscreenCanvas': WebGLKernelValueHTMLImage,
       'HTMLImage': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueHTMLVideo,
@@ -13254,6 +13258,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGLKernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLCanvas': WebGLKernelValueDynamicHTMLImage,
+      'OffscreenCanvas': WebGLKernelValueDynamicHTMLImage,
       'HTMLImage': WebGLKernelValueDynamicHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueDynamicHTMLVideo,
@@ -13283,6 +13288,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGLKernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGLKernelValueMemoryOptimizedNumberTexture,
       'HTMLCanvas': WebGLKernelValueHTMLImage,
+      'OffscreenCanvas': WebGLKernelValueHTMLImage,
       'HTMLImage': WebGLKernelValueHTMLImage,
       'HTMLImageArray': false,
       'HTMLVideo': WebGLKernelValueHTMLVideo,
@@ -16475,6 +16481,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLCanvas': WebGL2KernelValueDynamicHTMLImage,
+      'OffscreenCanvas': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
@@ -16504,6 +16511,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLCanvas': WebGL2KernelValueHTMLImage,
+      'OffscreenCanvas': WebGL2KernelValueHTMLImage,
       'HTMLImage': WebGL2KernelValueHTMLImage,
       'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
@@ -16535,6 +16543,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueDynamicNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       'HTMLCanvas': WebGL2KernelValueDynamicHTMLImage,
+      'OffscreenCanvas': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImage': WebGL2KernelValueDynamicHTMLImage,
       'HTMLImageArray': WebGL2KernelValueDynamicHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueDynamicHTMLVideo,
@@ -16564,6 +16573,7 @@ const kernelValueMaps = {
       'ArrayTexture(4)': WebGL2KernelValueNumberTexture,
       'MemoryOptimizedNumberTexture': WebGL2KernelValueMemoryOptimizedNumberTexture,
       'HTMLCanvas': WebGL2KernelValueHTMLImage,
+      'OffscreenCanvas': WebGL2KernelValueHTMLImage,
       'HTMLImage': WebGL2KernelValueHTMLImage,
       'HTMLImageArray': WebGL2KernelValueHTMLImageArray,
       'HTMLVideo': WebGL2KernelValueHTMLVideo,
@@ -18682,6 +18692,8 @@ const utils = {
         return value.type;
       case Input:
         return 'Input';
+      case OffscreenCanvas:
+        return 'OffscreenCanvas';
     }
     switch (value.nodeName) {
       case 'IMG':

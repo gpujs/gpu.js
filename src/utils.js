@@ -142,6 +142,8 @@ const utils = {
         return value.type;
       case Input:
         return 'Input';
+      case OffscreenCanvas:
+        return 'OffscreenCanvas';
     }
     switch (value.nodeName) {
       case 'IMG':
