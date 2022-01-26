@@ -393,9 +393,12 @@ export type KernelVariable =
   | number
   | Texture
   | Input
-  | HTMLImageElement
+  | HTMLCanvasElement
+  | OffscreenCanvas
   | HTMLVideoElement
+  | HTMLImageElement
   | HTMLImageElement[]
+  | ImageBitmap
   | Float32Array
   | Uint8Array
   | Uint16Array

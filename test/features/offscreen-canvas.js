@@ -2,7 +2,7 @@ if (typeof importScripts !== 'undefined') {
   // inside Worker
   importScripts('../../dist/gpu-browser.js');
   onmessage = function (e) {
-    const gpu = new GPU();
+    const gpu = new GPU({ mode: e.data });
     const a = [1,2,3];
     const b = [3,2,1];
     const kernel = gpu.createKernel(function(a, b) {
@@ -25,7 +25,7 @@ if (typeof importScripts !== 'undefined') {
       assert.deepEqual(result, Float32Array.from([-2, 0, 2]));
       done();
     };
-    worker.postMessage('test');
+    worker.postMessage(mode);
   }
 
   (GPU.isOffscreenCanvasSupported ? test : skip)('offscreen canvas auto', t => {
