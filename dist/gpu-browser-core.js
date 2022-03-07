@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.15.0
- * @date Wed Jan 26 2022 17:11:45 GMT-0500 (Eastern Standard Time)
+ * @date Mon Mar 07 2022 17:43:52 GMT+0100 (heure normale d’Europe centrale)
  *
  * @license MIT
  * The MIT License
