@@ -966,7 +966,7 @@ class FunctionNode {
     }
 
     const debugString = utils.getAstString(this.source, ast);
-    const leadingSource = this.source.substr(ast.start);
+    const leadingSource = this.source.slice(ast.start);
     const splitLines = leadingSource.split(/\n/);
     const lineBefore = splitLines.length > 0 ? splitLines[splitLines.length - 1] : 0;
     return new Error(`${error} on line ${ splitLines.length }, position ${ lineBefore.length }:\n ${ debugString }`);
