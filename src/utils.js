@@ -142,23 +142,24 @@ const utils = {
         return value.type;
       case Input:
         return 'Input';
-      case OffscreenCanvas:
-        return 'OffscreenCanvas';
-      case ImageBitmap:
-        return 'ImageBitmap';
-      case ImageData:
-        return 'ImageData';
     }
-    switch (value.nodeName) {
-      case 'IMG':
-        return 'HTMLImage';
-      case 'CANVAS':
-        return 'HTMLImage';
-      case 'VIDEO':
-        return 'HTMLVideo';
-    }
-    if (value.hasOwnProperty('type')) {
+    if (value.hasOwnProperty('nodeName')) {
+      switch (value.nodeName) {
+        case 'IMG':
+          return 'HTMLImage';
+        case 'CANVAS':
+          return 'HTMLImage';
+        case 'VIDEO':
+          return 'HTMLVideo';
+      }
+    } else if (value.hasOwnProperty('type')) {
       return value.type;
+    } else if (typeof OffscreenCanvas !== 'undefined' && value instanceof OffscreenCanvas) {
+      return 'OffscreenCanvas';
+    } else if (typeof ImageBitmap !== 'undefined' && value instanceof ImageBitmap) {
+      return 'ImageBitmap';
+    } else if (typeof ImageData !== 'undefined' && value instanceof ImageData) {
+      return 'ImageData';
     }
     return 'Unknown';
   },
