@@ -143,7 +143,7 @@ const utils = {
       case Input:
         return 'Input';
     }
-    if (value.hasOwnProperty('nodeName')) {
+    if ('nodeName' in value) {
       switch (value.nodeName) {
         case 'IMG':
           return 'HTMLImage';

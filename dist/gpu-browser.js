@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.15.1
- * @date Mon Mar 28 2022 10:33:39 GMT-0400 (Eastern Daylight Time)
+ * @version 2.15.2
+ * @date Mon Mar 28 2022 10:51:06 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -18886,7 +18886,7 @@ const utils = {
       case Input:
         return 'Input';
     }
-    if (value.hasOwnProperty('nodeName')) {
+    if ('nodeName'  in value) {
       switch (value.nodeName) {
         case 'IMG':
           return 'HTMLImage';
