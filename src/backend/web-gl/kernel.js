@@ -63,7 +63,7 @@ class WebGLKernel extends GLKernel {
     }
     if (!testCanvas) return;
     testContext = testCanvas.getContext('webgl');
-    if (!testContext && !testCanvas instanceof OffscreenCanvas) testContext = testCanvas.getContext('experimental-webgl');
+    if (!testContext && !(testCanvas instanceof OffscreenCanvas)) testContext = testCanvas.getContext('experimental-webgl');
     if (!testContext || !testContext.getExtension) return;
     testExtensions = {
       OES_texture_float: testContext.getExtension('OES_texture_float'),
