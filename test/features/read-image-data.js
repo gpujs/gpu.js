@@ -19,26 +19,26 @@ function readImageData(mode) {
   gpu.destroy();
 }
 
-test('readImageData auto', () => {
+(typeof ImageData !== 'undefined' ? test : skip)('readImageData auto', () => {
   readImageData(null);
 });
 
-test('readImageData gpu', () => {
+(typeof ImageData !== 'undefined' ? test : skip)('readImageData gpu', () => {
   readImageData('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('readImageData webgl', () => {
+(GPU.isWebGLSupported && typeof ImageData !== 'undefined' ? test : skip)('readImageData webgl', () => {
   readImageData('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('readImageData webgl2', () => {
+(GPU.isWebGL2Supported && typeof ImageData !== 'undefined' ? test : skip)('readImageData webgl2', () => {
   readImageData('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('readImageData headlessgl', () => {
+(GPU.isHeadlessGLSupported && typeof ImageData !== 'undefined' ? test : skip)('readImageData headlessgl', () => {
   readImageData('headlessgl');
 });
 
-test('readImageData cpu', () => {
+(typeof ImageData !== 'undefined' ? test : skip)('readImageData cpu', () => {
   readImageData('cpu');
 });

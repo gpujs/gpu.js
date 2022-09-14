@@ -24,26 +24,26 @@ function readImageBitmap(mode, done) {
   };
 }
 
-test('readImageBitmap auto', (assert) => {
+(typeof Image !== 'undefined' ? test : skip)('readImageBitmap auto', (assert) => {
   readImageBitmap(null, assert.async());
 });
 
-test('readImageBitmap gpu', (assert) => {
+(typeof Image !== 'undefined' ? test : skip)('readImageBitmap gpu', (assert) => {
   readImageBitmap('gpu', assert.async());
 });
 
-(GPU.isWebGLSupported ? test : skip)('readImageBitmap webgl', (assert) => {
+(GPU.isWebGLSupported && typeof Image !== 'undefined' ? test : skip)('readImageBitmap webgl', (assert) => {
   readImageBitmap('webgl', assert.async());
 });
 
-(GPU.isWebGL2Supported ? test : skip)('readImageBitmap webgl2', (assert) => {
+(GPU.isWebGL2Supported && typeof Image !== 'undefined' ? test : skip)('readImageBitmap webgl2', (assert) => {
   readImageBitmap('webgl2', assert.async());
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('readImageBitmap headlessgl', (assert) => {
+(GPU.isHeadlessGLSupported && typeof Image !== 'undefined' ? test : skip)('readImageBitmap headlessgl', (assert) => {
   readImageBitmap('headlessgl', assert.async());
 });
 
-test('readImageBitmap cpu', (assert) => {
+(typeof Image !== 'undefined' ? test : skip)('readImageBitmap cpu', (assert) => {
   readImageBitmap('cpu', assert.async());
 });

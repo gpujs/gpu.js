@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.15.0
- * @date Mon Mar 07 2022 17:43:52 GMT+0100 (heure normale d’Europe centrale)
+ * @version 2.15.2
+ * @date Mon Mar 28 2022 10:51:06 GMT-0400 (Eastern Daylight Time)
  *
  * @license MIT
  * The MIT License
@@ -14276,23 +14276,24 @@ const utils = {
         return value.type;
       case Input:
         return 'Input';
-      case OffscreenCanvas:
-        return 'OffscreenCanvas';
-      case ImageBitmap:
-        return 'ImageBitmap';
-      case ImageData:
-        return 'ImageData';
     }
-    switch (value.nodeName) {
-      case 'IMG':
-        return 'HTMLImage';
-      case 'CANVAS':
-        return 'HTMLImage';
-      case 'VIDEO':
-        return 'HTMLVideo';
-    }
-    if (value.hasOwnProperty('type')) {
+    if ('nodeName'  in value) {
+      switch (value.nodeName) {
+        case 'IMG':
+          return 'HTMLImage';
+        case 'CANVAS':
+          return 'HTMLImage';
+        case 'VIDEO':
+          return 'HTMLVideo';
+      }
+    } else if (value.hasOwnProperty('type')) {
       return value.type;
+    } else if (typeof OffscreenCanvas !== 'undefined' && value instanceof OffscreenCanvas) {
+      return 'OffscreenCanvas';
+    } else if (typeof ImageBitmap !== 'undefined' && value instanceof ImageBitmap) {
+      return 'ImageBitmap';
+    } else if (typeof ImageData !== 'undefined' && value instanceof ImageData) {
+      return 'ImageData';
     }
     return 'Unknown';
   },
@@ -15062,5 +15063,6 @@ const _systemEndianness = utils.getSystemEndianness();
 module.exports = {
   utils
 };
+
 },{"./input":109,"./texture":112,"acorn":1}]},{},[106])(106)
 });
