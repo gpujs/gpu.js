@@ -24,6 +24,6 @@ describe('issue #778 - WebGL kernel feature checks may throw an error', {
     }
 });
 
-test('Check if WebGL is supported', () => {
+test('Check that WebGL is not supported', () => {
     assert.notOk(GPU.isWebGLSupported);
 });
