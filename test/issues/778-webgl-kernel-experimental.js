@@ -1,4 +1,4 @@
-const { assert, test, module: describe, hooks } = require('qunit');
+const { assert, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
 
 const old = {};
