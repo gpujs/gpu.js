@@ -576,7 +576,7 @@ class FunctionBuilder {
       }
       return calleeBitRatio;
     }
-    calleeNode.argumentBitRatios[i] = bitRatio;
+    calleeNode.argumentBitRatios[argumentIndex] = bitRatio;
     return bitRatio;
   }
 
