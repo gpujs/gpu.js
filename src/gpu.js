@@ -1,30 +1,37 @@
-const { gpuMock } = require('gpu-mock.js');
-const { utils } = require('./utils');
-const { Kernel } = require('./backend/kernel');
-const { CPUKernel } = require('./backend/cpu/kernel');
-const { HeadlessGLKernel } = require('./backend/headless-gl/kernel');
-const { WebGL2Kernel } = require('./backend/web-gl2/kernel');
-const { WebGLKernel } = require('./backend/web-gl/kernel');
-const { kernelRunShortcut } = require('./kernel-run-shortcut');
+import { gpuMock } from 'gpu-mock.js';
+import { utils } from './utils';
+import { Kernel } from './backend/kernel';
+import { CPUKernel } from './backend/cpu/kernel';
+import { WebGL2Kernel } from './backend/web-gl2/kernel';
+import { WebGLKernel } from './backend/web-gl/kernel';
+import { kernelRunShortcut } from './kernel-run-shortcut';
 
 
 /**
  *
  * @type {Array.<Kernel>}
  */
-const kernelOrder = [HeadlessGLKernel, WebGL2Kernel, WebGLKernel];
+export const kernelOrder = [WebGL2Kernel, WebGLKernel];
 
 /**
  *
  * @type {string[]}
  */
-const kernelTypes = ['gpu', 'cpu'];
+export const kernelTypes = ['gpu', 'cpu'];
 
 const internalKernels = {
-  'headlessgl': HeadlessGLKernel,
   'webgl2': WebGL2Kernel,
   'webgl': WebGLKernel,
 };
+
+/**
+ * 
+ * @param {import('./backend/headless-gl/kernel').HeadlessGLKernel} HeadlessGLKernel 
+ */
+export function setupNode(HeadlessGLKernel) {
+    kernelOrder.unshift(HeadlessGLKernel)
+    internalKernels.headlessgl = HeadlessGLKernel
+}
 
 let validate = true;
 
@@ -33,7 +40,7 @@ let validate = true;
  * @class
  * @return {GPU}
  */
-class GPU {
+export class GPU {
   static disableValidation() {
     validate = false;
   }
@@ -79,7 +86,7 @@ class GPU {
    * @desc TRUE if platform supports HeadlessGL
    */
   static get isHeadlessGLSupported() {
-    return HeadlessGLKernel.isSupported;
+    return 'headlessgl' in internalKernels && internalKernels.headlessgl.isSupported;
   }
 
   /**
@@ -597,9 +604,3 @@ function upgradeDeprecatedCreateKernelSettings(settings) {
   }
   return upgradedSettings;
 }
-
-module.exports = {
-  GPU,
-  kernelOrder,
-  kernelTypes
-};

@@ -47,4 +47,4 @@ const plugin = {
   source
 };
 
-module.exports = plugin;
+export default plugin;

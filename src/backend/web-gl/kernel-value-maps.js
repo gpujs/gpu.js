@@ -1,45 +1,45 @@
-const { WebGLKernelValueBoolean } = require('./kernel-value/boolean');
-const { WebGLKernelValueFloat } = require('./kernel-value/float');
-const { WebGLKernelValueInteger } = require('./kernel-value/integer');
+import { WebGLKernelValueBoolean } from './kernel-value/boolean';
+import { WebGLKernelValueFloat } from './kernel-value/float';
+import { WebGLKernelValueInteger } from './kernel-value/integer';
 
-const { WebGLKernelValueHTMLImage } = require('./kernel-value/html-image');
-const { WebGLKernelValueDynamicHTMLImage } = require('./kernel-value/dynamic-html-image');
+import { WebGLKernelValueHTMLImage } from './kernel-value/html-image';
+import { WebGLKernelValueDynamicHTMLImage } from './kernel-value/dynamic-html-image';
 
-const { WebGLKernelValueHTMLVideo } = require('./kernel-value/html-video');
-const { WebGLKernelValueDynamicHTMLVideo } = require('./kernel-value/dynamic-html-video');
+import { WebGLKernelValueHTMLVideo } from './kernel-value/html-video';
+import { WebGLKernelValueDynamicHTMLVideo } from './kernel-value/dynamic-html-video';
 
-const { WebGLKernelValueSingleInput } = require('./kernel-value/single-input');
-const { WebGLKernelValueDynamicSingleInput } = require('./kernel-value/dynamic-single-input');
+import { WebGLKernelValueSingleInput } from './kernel-value/single-input';
+import { WebGLKernelValueDynamicSingleInput } from './kernel-value/dynamic-single-input';
 
-const { WebGLKernelValueUnsignedInput } = require('./kernel-value/unsigned-input');
-const { WebGLKernelValueDynamicUnsignedInput } = require('./kernel-value/dynamic-unsigned-input');
+import { WebGLKernelValueUnsignedInput } from './kernel-value/unsigned-input';
+import { WebGLKernelValueDynamicUnsignedInput } from './kernel-value/dynamic-unsigned-input';
 
-const { WebGLKernelValueMemoryOptimizedNumberTexture } = require('./kernel-value/memory-optimized-number-texture');
-const { WebGLKernelValueDynamicMemoryOptimizedNumberTexture } = require('./kernel-value/dynamic-memory-optimized-number-texture');
+import { WebGLKernelValueMemoryOptimizedNumberTexture } from './kernel-value/memory-optimized-number-texture';
+import { WebGLKernelValueDynamicMemoryOptimizedNumberTexture } from './kernel-value/dynamic-memory-optimized-number-texture';
 
-const { WebGLKernelValueNumberTexture } = require('./kernel-value/number-texture');
-const { WebGLKernelValueDynamicNumberTexture } = require('./kernel-value/dynamic-number-texture');
+import { WebGLKernelValueNumberTexture } from './kernel-value/number-texture';
+import { WebGLKernelValueDynamicNumberTexture } from './kernel-value/dynamic-number-texture';
 
-const { WebGLKernelValueSingleArray } = require('./kernel-value/single-array');
-const { WebGLKernelValueDynamicSingleArray } = require('./kernel-value/dynamic-single-array');
+import { WebGLKernelValueSingleArray } from './kernel-value/single-array';
+import { WebGLKernelValueDynamicSingleArray } from './kernel-value/dynamic-single-array';
 
-const { WebGLKernelValueSingleArray1DI } = require('./kernel-value/single-array1d-i');
-const { WebGLKernelValueDynamicSingleArray1DI } = require('./kernel-value/dynamic-single-array1d-i');
+import { WebGLKernelValueSingleArray1DI } from './kernel-value/single-array1d-i';
+import { WebGLKernelValueDynamicSingleArray1DI } from './kernel-value/dynamic-single-array1d-i';
 
-const { WebGLKernelValueSingleArray2DI } = require('./kernel-value/single-array2d-i');
-const { WebGLKernelValueDynamicSingleArray2DI } = require('./kernel-value/dynamic-single-array2d-i');
+import { WebGLKernelValueSingleArray2DI } from './kernel-value/single-array2d-i';
+import { WebGLKernelValueDynamicSingleArray2DI } from './kernel-value/dynamic-single-array2d-i';
 
-const { WebGLKernelValueSingleArray3DI } = require('./kernel-value/single-array3d-i');
-const { WebGLKernelValueDynamicSingleArray3DI } = require('./kernel-value/dynamic-single-array3d-i');
+import { WebGLKernelValueSingleArray3DI } from './kernel-value/single-array3d-i';
+import { WebGLKernelValueDynamicSingleArray3DI } from './kernel-value/dynamic-single-array3d-i';
 
-const { WebGLKernelValueArray2 } = require('./kernel-value/array2');
-const { WebGLKernelValueArray3 } = require('./kernel-value/array3');
-const { WebGLKernelValueArray4 } = require('./kernel-value/array4');
+import { WebGLKernelValueArray2 } from './kernel-value/array2';
+import { WebGLKernelValueArray3 } from './kernel-value/array3';
+import { WebGLKernelValueArray4 } from './kernel-value/array4';
 
-const { WebGLKernelValueUnsignedArray } = require('./kernel-value/unsigned-array');
-const { WebGLKernelValueDynamicUnsignedArray } = require('./kernel-value/dynamic-unsigned-array');
+import { WebGLKernelValueUnsignedArray } from './kernel-value/unsigned-array';
+import { WebGLKernelValueDynamicUnsignedArray } from './kernel-value/dynamic-unsigned-array';
 
-const kernelValueMaps = {
+export const kernelValueMaps = {
   unsigned: {
     dynamic: {
       'Boolean': WebGLKernelValueBoolean,
@@ -174,7 +174,7 @@ const kernelValueMaps = {
   },
 };
 
-function lookupKernelValueType(type, dynamic, precision, value) {
+export function lookupKernelValueType(type, dynamic, precision, value) {
   if (!type) {
     throw new Error('type missing');
   }
@@ -195,8 +195,3 @@ function lookupKernelValueType(type, dynamic, precision, value) {
   }
   return types[type];
 }
-
-module.exports = {
-  lookupKernelValueType,
-  kernelValueMaps,
-};

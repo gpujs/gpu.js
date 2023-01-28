@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { GLTextureFloat } = require('./float');
+import { utils } from '../../../utils';
+import { GLTextureFloat } from './float';
 
-class GLTextureMemoryOptimized extends GLTextureFloat {
+export class GLTextureMemoryOptimized extends GLTextureFloat {
   constructor(settings) {
     super(settings);
     this.type = 'MemoryOptimizedNumberTexture';
@@ -10,7 +10,3 @@ class GLTextureMemoryOptimized extends GLTextureFloat {
     return utils.erectMemoryOptimizedFloat(this.renderValues(), this.output[0]);
   }
 }
-
-module.exports = {
-  GLTextureMemoryOptimized
-};

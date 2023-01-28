@@ -1,10 +1,10 @@
-const { WebGLKernelValue } = require('./index');
-const { Input } = require('../../../input');
+import { WebGLKernelValue } from './index';
+import { Input } from '../../../input';
 
 /**
  * @abstract
  */
-class WebGLKernelArray extends WebGLKernelValue {
+export class WebGLKernelArray extends WebGLKernelValue {
   /**
    *
    * @param {number} width
@@ -84,7 +84,3 @@ class WebGLKernelArray extends WebGLKernelValue {
     this.context.deleteTexture(this.texture);
   }
 }
-
-module.exports = {
-  WebGLKernelArray
-};

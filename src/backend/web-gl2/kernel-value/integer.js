@@ -1,6 +1,6 @@
-const { WebGLKernelValueInteger } = require('../../web-gl/kernel-value/integer');
+import { WebGLKernelValueInteger } from '../../web-gl/kernel-value/integer';
 
-class WebGL2KernelValueInteger extends WebGLKernelValueInteger {
+export class WebGL2KernelValueInteger extends WebGLKernelValueInteger {
   getSource(value) {
     const variablePrecision = this.getVariablePrecisionString();
     if (this.origin === 'constants') {
@@ -14,7 +14,3 @@ class WebGL2KernelValueInteger extends WebGLKernelValueInteger {
     this.kernel.setUniform1i(this.id, this.uploadValue = value);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueInteger
-};

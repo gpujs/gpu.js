@@ -1,13 +1,13 @@
-const acorn = require('acorn');
-const { utils } = require('../utils');
-const { FunctionTracer } = require('./function-tracer');
+import * as acorn from 'acorn';
+import { utils } from '../utils';
+import { FunctionTracer } from './function-tracer';
 
 /**
  *
  * @desc Represents a single function, inside JS, webGL, or openGL.
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
  */
-class FunctionNode {
+export class FunctionNode {
   /**
    *
    * @param {string|object} source
@@ -1491,8 +1491,4 @@ const typeLookupMap = {
   'ArrayTexture(2)': 'Array(2)',
   'ArrayTexture(3)': 'Array(3)',
   'ArrayTexture(4)': 'Array(4)',
-};
-
-module.exports = {
-  FunctionNode
 };

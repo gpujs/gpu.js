@@ -1,6 +1,6 @@
-const acorn = require('acorn');
-const { Input } = require('./input');
-const { Texture } = require('./texture');
+import * as acorn from 'acorn';
+import { Input } from './input';
+import { Texture } from './texture';
 
 const FUNCTION_NAME = /function ([^(]*)/;
 const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
@@ -12,7 +12,7 @@ const ARGUMENT_NAMES = /([^\s,]+)/g;
  * @type {utils}
  * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
  */
-const utils = {
+export const utils = {
   /**
    *
    * @desc Gets the system endianness, and cache it
@@ -1010,7 +1010,3 @@ const doubleUnderscore = /__/;
 const singleUnderscore = /_/;
 
 const _systemEndianness = utils.getSystemEndianness();
-
-module.exports = {
-  utils
-};

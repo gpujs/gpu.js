@@ -1,6 +1,6 @@
-const { WebGLKernelValue } = require('./index');
+import { WebGLKernelValue } from './index';
 
-class WebGLKernelValueArray4 extends WebGLKernelValue {
+export class WebGLKernelValueArray4 extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
     this.uploadValue = value;
@@ -23,7 +23,3 @@ class WebGLKernelValueArray4 extends WebGLKernelValue {
     this.kernel.setUniform4fv(this.id, this.uploadValue = value);
   }
 }
-
-module.exports = {
-  WebGLKernelValueArray4
-};

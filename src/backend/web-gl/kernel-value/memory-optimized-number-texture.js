@@ -1,9 +1,9 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelArray } = require('./array');
+import { utils } from '../../../utils';
+import { WebGLKernelArray } from './array';
 
-const sameError = `Source and destination textures are the same.  Use immutable = true and manually cleanup kernel output texture memory with texture.delete()`;
+export const sameError = `Source and destination textures are the same.  Use immutable = true and manually cleanup kernel output texture memory with texture.delete()`;
 
-class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
+export class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
     const [width, height] = value.size;
@@ -65,8 +65,3 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGLKernelValueMemoryOptimizedNumberTexture,
-  sameError
-};

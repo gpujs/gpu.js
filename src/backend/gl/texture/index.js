@@ -1,11 +1,11 @@
-const { Texture } = require('../../../texture');
+import { Texture } from '../../../texture';
 
 /**
  * @class
  * @property framebuffer
  * @extends Texture
  */
-class GLTexture extends Texture {
+export class GLTexture extends Texture {
   /**
    * @returns {Number}
    * @abstract
@@ -121,5 +121,3 @@ function selectTexture(gl, texture) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 }
-
-module.exports = { GLTexture };

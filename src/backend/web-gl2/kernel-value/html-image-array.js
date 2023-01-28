@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelArray } = require('../../web-gl/kernel-value/array');
+import { utils } from '../../../utils';
+import { WebGLKernelArray } from '../../web-gl/kernel-value/array';
 
-class WebGL2KernelValueHTMLImageArray extends WebGLKernelArray {
+export class WebGL2KernelValueHTMLImageArray extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
     this.checkSize(value[0].width, value[0].height);
@@ -67,7 +67,3 @@ class WebGL2KernelValueHTMLImageArray extends WebGLKernelArray {
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueHTMLImageArray
-};

@@ -1,4 +1,4 @@
-const { utils } = require('../utils');
+import { utils } from '../utils';
 
 function last(array) {
   return array.length > 0 ? array[array.length - 1] : null;
@@ -10,7 +10,7 @@ const states = {
   inForLoopInit: 'inForLoopInit'
 };
 
-class FunctionTracer {
+export class FunctionTracer {
   constructor(ast) {
     this.runningContexts = [];
     this.functionContexts = [];
@@ -305,7 +305,3 @@ class FunctionTracer {
     }
   }
 }
-
-module.exports = {
-  FunctionTracer,
-};

@@ -1,10 +1,10 @@
-const { utils } = require('../../utils');
-const { FunctionNode } = require('../function-node');
+import { utils } from '../../utils';
+import { FunctionNode } from '../function-node';
 
 /**
  * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective WebGL code
  */
-class WebGLFunctionNode extends FunctionNode {
+export class WebGLFunctionNode extends FunctionNode {
   constructor(source, settings) {
     super(source, settings);
     if (settings && settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
@@ -1599,8 +1599,4 @@ const typeMap = {
 const operatorMap = {
   '===': '==',
   '!==': '!='
-};
-
-module.exports = {
-  WebGLFunctionNode
 };

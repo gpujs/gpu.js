@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueSingleInput } = require('./single-input');
+import { utils } from '../../../utils';
+import { WebGLKernelValueSingleInput } from './single-input';
 
-class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
+export class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
   getSource() {
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
@@ -22,7 +22,3 @@ class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
     super.updateValue(value);
   }
 }
-
-module.exports = {
-  WebGLKernelValueDynamicSingleInput
-};

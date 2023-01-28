@@ -6,6 +6,7 @@
     "node": ">=8.0.0"
   },
   "main": "./src/index.js",
+  "type": "module",
   "files": [
     "src",
     "dist"
@@ -25,6 +26,10 @@
     "webgpu": "^0.1.16"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^24.0.1",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@rollup/plugin-replace": "^5.0.2",
+    "@rollup/plugin-terser": "^0.4.0",
     "benchmark": "^2.1.4",
     "browser-sync": "^2.26.7",
     "browserify": "^17.0.0",
@@ -40,6 +45,7 @@
     "merge-stream": "^1.0.1",
     "qunit": "^2.9.1",
     "read-dir-deep": "^7.0.1",
+    "rollup": "^3.12.0",
     "sinon": "^7.3.2",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^2.0.0"
@@ -49,7 +55,7 @@
     "coverage": "c8 qunit test/issues test/internal test/features",
     "setup": "npm i -g gulp-cli",
     "make": "gulp make",
-    "build": "gulp build",
+    "build": "rollup -c",
     "docs": "doxdox ./src --layout bootstrap --output docs.html"
   },
   "repository": {

@@ -1,8 +1,8 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelArray } = require('./array');
-const { sameError } = require('./memory-optimized-number-texture');
+import { utils } from '../../../utils';
+import { WebGLKernelArray } from './array';
+import { sameError } from './memory-optimized-number-texture';
 
-class WebGLKernelValueNumberTexture extends WebGLKernelArray {
+export class WebGLKernelValueNumberTexture extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
     const [width, height] = value.size;
@@ -67,7 +67,3 @@ class WebGLKernelValueNumberTexture extends WebGLKernelArray {
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGLKernelValueNumberTexture
-};

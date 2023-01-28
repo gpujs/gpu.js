@@ -1,12 +1,12 @@
-const { GLKernel } = require('../gl/kernel');
-const { FunctionBuilder } = require('../function-builder');
-const { WebGLFunctionNode } = require('./function-node');
-const { utils } = require('../../utils');
-const mrud = require('../../plugins/math-random-uniformly-distributed');
-const { fragmentShader } = require('./fragment-shader');
-const { vertexShader } = require('./vertex-shader');
-const { glKernelString } = require('../gl/kernel-string');
-const { lookupKernelValueType } = require('./kernel-value-maps');
+import { GLKernel } from '../gl/kernel';
+import { FunctionBuilder } from '../function-builder';
+import { WebGLFunctionNode } from './function-node';
+import { utils } from '../../utils';
+import mrud from '../../plugins/math-random-uniformly-distributed';
+import { fragmentShader } from './fragment-shader';
+import { vertexShader } from './vertex-shader';
+import { glKernelString } from '../gl/kernel-string';
+import { lookupKernelValueType } from './kernel-value-maps';
 
 let isSupported = null;
 /**
@@ -45,7 +45,7 @@ const maxTexSizes = {};
  * @property {string|null} compiledVertexShader - Compiled Vertical shader string
  * @extends GLKernel
  */
-class WebGLKernel extends GLKernel {
+export class WebGLKernel extends GLKernel {
   static get isSupported() {
     if (isSupported !== null) {
       return isSupported;
@@ -1601,7 +1601,3 @@ float integerCorrectionModulo(float number, float divisor) {
     return json;
   }
 }
-
-module.exports = {
-  WebGLKernel
-};

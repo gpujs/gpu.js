@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { KernelValue } = require('../../kernel-value');
+import { utils } from '../../../utils';
+import { KernelValue } from '../../kernel-value';
 
-class WebGLKernelValue extends KernelValue {
+export class WebGLKernelValue extends KernelValue {
   /**
    * @param {KernelVariable} value
    * @param {IWebGLKernelValueSettings} settings
@@ -60,7 +60,3 @@ class WebGLKernelValue extends KernelValue {
 
   destroy() {}
 }
-
-module.exports = {
-  WebGLKernelValue
-};

@@ -1,5 +1,5 @@
-const { glWiretap } = require('gl-wiretap');
-const { utils } = require('../../utils');
+import { glWiretap } from 'gl-wiretap';
+import { utils } from '../../utils';
 
 function toStringWithoutUtils(fn) {
   return fn.toString()
@@ -17,7 +17,7 @@ function toStringWithoutUtils(fn) {
  * @param {string} [destroyContextString]
  * @returns {string}
  */
-function glKernelString(Kernel, args, originKernel, setupContextString, destroyContextString) {
+export function glKernelString(Kernel, args, originKernel, setupContextString, destroyContextString) {
   if (!originKernel.built) {
     originKernel.build.apply(originKernel, args);
   }
@@ -360,7 +360,3 @@ function findKernelValue(argument, kernelValues, values, context, uploadedValues
   }
   return null;
 }
-
-module.exports = {
-  glKernelString
-};

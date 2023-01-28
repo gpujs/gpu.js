@@ -1,5 +1,5 @@
 // language=GLSL
-const fragmentShader = `#version 300 es
+export const fragmentShader = `#version 300 es
 __HEADER__;
 __FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
@@ -446,7 +446,3 @@ void main(void) {
   index = int(vTexCoord.s * float(uTexSize.x)) + int(vTexCoord.t * float(uTexSize.y)) * uTexSize.x;
   __MAIN_RESULT__;
 }`;
-
-module.exports = {
-  fragmentShader
-};

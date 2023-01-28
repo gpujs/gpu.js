@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueDynamicNumberTexture } = require('../../web-gl/kernel-value/dynamic-number-texture');
+import { utils } from '../../../utils';
+import { WebGLKernelValueDynamicNumberTexture } from '../../web-gl/kernel-value/dynamic-number-texture';
 
-class WebGL2KernelValueDynamicNumberTexture extends WebGLKernelValueDynamicNumberTexture {
+export class WebGL2KernelValueDynamicNumberTexture extends WebGLKernelValueDynamicNumberTexture {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
@@ -11,7 +11,3 @@ class WebGL2KernelValueDynamicNumberTexture extends WebGLKernelValueDynamicNumbe
     ]);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueDynamicNumberTexture
-};

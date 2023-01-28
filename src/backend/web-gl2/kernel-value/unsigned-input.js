@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueUnsignedInput } = require('../../web-gl/kernel-value/unsigned-input');
+import { utils } from '../../../utils';
+import { WebGLKernelValueUnsignedInput } from '../../web-gl/kernel-value/unsigned-input';
 
-class WebGL2KernelValueUnsignedInput extends WebGLKernelValueUnsignedInput {
+export class WebGL2KernelValueUnsignedInput extends WebGLKernelValueUnsignedInput {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
@@ -11,7 +11,3 @@ class WebGL2KernelValueUnsignedInput extends WebGLKernelValueUnsignedInput {
     ]);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueUnsignedInput
-};

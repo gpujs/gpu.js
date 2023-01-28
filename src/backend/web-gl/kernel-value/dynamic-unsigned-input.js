@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueUnsignedInput } = require('./unsigned-input');
+import { utils } from '../../../utils';
+import { WebGLKernelValueUnsignedInput } from './unsigned-input';
 
-class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput {
+export class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput {
   getSource() {
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
@@ -24,7 +24,3 @@ class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput
     super.updateValue(value);
   }
 }
-
-module.exports = {
-  WebGLKernelValueDynamicUnsignedInput
-};

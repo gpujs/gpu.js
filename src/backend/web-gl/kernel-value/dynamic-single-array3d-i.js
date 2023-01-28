@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueSingleArray3DI } = require('./single-array3d-i');
+import { utils } from '../../../utils';
+import { WebGLKernelValueSingleArray3DI } from './single-array3d-i';
 
-class WebGLKernelValueDynamicSingleArray3DI extends WebGLKernelValueSingleArray3DI {
+export class WebGLKernelValueDynamicSingleArray3DI extends WebGLKernelValueSingleArray3DI {
   getSource() {
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
@@ -17,7 +17,3 @@ class WebGLKernelValueDynamicSingleArray3DI extends WebGLKernelValueSingleArray3
     super.updateValue(value);
   }
 }
-
-module.exports = {
-  WebGLKernelValueDynamicSingleArray3DI
-};

@@ -1,7 +1,3 @@
-const { WebGLKernelValueDynamicHTMLImage } = require('./dynamic-html-image');
+import { WebGLKernelValueDynamicHTMLImage } from './dynamic-html-image';
 
-class WebGLKernelValueDynamicHTMLVideo extends WebGLKernelValueDynamicHTMLImage {}
-
-module.exports = {
-  WebGLKernelValueDynamicHTMLVideo
-};
+export class WebGLKernelValueDynamicHTMLVideo extends WebGLKernelValueDynamicHTMLImage {}

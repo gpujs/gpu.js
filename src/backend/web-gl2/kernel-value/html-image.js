@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueHTMLImage } = require('../../web-gl/kernel-value/html-image');
+import { utils } from '../../../utils';
+import { WebGLKernelValueHTMLImage } from '../../web-gl/kernel-value/html-image';
 
-class WebGL2KernelValueHTMLImage extends WebGLKernelValueHTMLImage {
+export class WebGL2KernelValueHTMLImage extends WebGLKernelValueHTMLImage {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
@@ -11,7 +11,3 @@ class WebGL2KernelValueHTMLImage extends WebGLKernelValueHTMLImage {
     ]);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueHTMLImage
-};

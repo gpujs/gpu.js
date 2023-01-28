@@ -1,4 +1,6 @@
-class Input {
+import { utils } from "./utils";
+
+export class Input {
   constructor(value, size) {
     this.value = value;
     if (Array.isArray(size)) {
@@ -32,7 +34,6 @@ class Input {
   }
 
   toArray() {
-    const { utils } = require('./utils');
     const [w, h, d] = this.size;
     if (d) {
       return utils.erectMemoryOptimized3DFloat(this.value.subarray ? this.value : new Float32Array(this.value), w, h, d);
@@ -44,11 +45,6 @@ class Input {
   }
 }
 
-function input(value, size) {
+export function input(value, size) {
   return new Input(value, size);
 }
-
-module.exports = {
-  Input,
-  input
-};

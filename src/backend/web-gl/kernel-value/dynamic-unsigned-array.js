@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueUnsignedArray } = require('./unsigned-array');
+import { utils } from '../../../utils';
+import { WebGLKernelValueUnsignedArray } from './unsigned-array';
 
-class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray {
+export class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray {
   getSource() {
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
@@ -23,7 +23,3 @@ class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray
     super.updateValue(value);
   }
 }
-
-module.exports = {
-  WebGLKernelValueDynamicUnsignedArray
-};

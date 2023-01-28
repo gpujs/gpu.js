@@ -1,7 +1,7 @@
-const { utils } = require('../utils');
-const { Input } = require('../input');
+import { utils } from '../utils';
+import { Input } from '../input';
 
-class Kernel {
+export class Kernel {
   /**
    * @type {Boolean}
    */
@@ -943,7 +943,3 @@ function splitArgumentTypes(argumentTypesObject) {
   }
   return { argumentTypes, argumentNames };
 }
-
-module.exports = {
-  Kernel
-};

@@ -42,7 +42,7 @@ const onBeforeRun = (kernel) => {
  *
  * @type IPlugin
  */
-module.exports = {
+export default {
   name,
   onBeforeRun,
   functionMatch,

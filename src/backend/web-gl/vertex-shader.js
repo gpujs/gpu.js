@@ -1,5 +1,5 @@
 // language=GLSL
-const vertexShader = `__FLOAT_TACTIC_DECLARATION__;
+export const vertexShader = `__FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
 __SAMPLER_2D_TACTIC_DECLARATION__;
 
@@ -14,6 +14,3 @@ void main(void) {
   vTexCoord = aTexCoord;
 }`;
 
-module.exports = {
-  vertexShader
-};

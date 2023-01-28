@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueDynamicUnsignedArray } = require('../../web-gl/kernel-value/dynamic-unsigned-array');
+import { utils } from '../../../utils';
+import { WebGLKernelValueDynamicUnsignedArray } from '../../web-gl/kernel-value/dynamic-unsigned-array';
 
-class WebGL2KernelValueDynamicUnsignedArray extends WebGLKernelValueDynamicUnsignedArray {
+export class WebGL2KernelValueDynamicUnsignedArray extends WebGLKernelValueDynamicUnsignedArray {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
@@ -11,7 +11,3 @@ class WebGL2KernelValueDynamicUnsignedArray extends WebGLKernelValueDynamicUnsig
     ]);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueDynamicUnsignedArray
-};

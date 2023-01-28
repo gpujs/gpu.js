@@ -1,7 +1,6 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValue } = require('./index');
+import { WebGLKernelValue } from './index';
 
-class WebGLKernelValueBoolean extends WebGLKernelValue {
+export class WebGLKernelValueBoolean extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
     this.uploadValue = value;
@@ -22,7 +21,3 @@ class WebGLKernelValueBoolean extends WebGLKernelValue {
     this.kernel.setUniform1i(this.id, this.uploadValue = value);
   }
 }
-
-module.exports = {
-  WebGLKernelValueBoolean
-};

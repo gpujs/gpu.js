@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelArray } = require('./array');
+import { utils } from '../../../utils';
+import { WebGLKernelArray } from './array';
 
-class WebGLKernelValueHTMLImage extends WebGLKernelArray {
+export class WebGLKernelValueHTMLImage extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
     const { width, height } = value;
@@ -36,7 +36,3 @@ class WebGLKernelValueHTMLImage extends WebGLKernelArray {
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGLKernelValueHTMLImage
-};

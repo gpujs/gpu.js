@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelArray } = require('./array');
+import { utils } from '../../../utils';
+import { WebGLKernelArray } from './array';
 
-class WebGLKernelValueSingleInput extends WebGLKernelArray {
+export class WebGLKernelValueSingleInput extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
     this.bitRatio = 4;
@@ -42,7 +42,3 @@ class WebGLKernelValueSingleInput extends WebGLKernelArray {
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGLKernelValueSingleInput
-};
