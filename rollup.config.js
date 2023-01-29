@@ -1,5 +1,4 @@
 import { defineConfig } from 'rollup';
-import replace from '@rollup/plugin-replace';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
@@ -22,42 +21,52 @@ const banner = `/**
 * Copyright (c) ${new Date().getFullYear()} gpu.js Team
 */`;
 
+function createOutput(name, format, opts, minify = false) {
+  return {
+    banner,
+    file: `dist/${name}${minify ? '.min' : ''}.js`,
+    format,
+    plugins: minify ? [terser()] : [],
+    sourcemap: true,
+    ...opts,
+  };
+}
+
 function buildBrowser(isCore) {
-  function makeOutput(minify) {
-    const coreExt = isCore ? '-core' : '';
-    const ext = minify ? '.min.js' : '.js';
-    return {
-      banner,
-      file: './dist/gpu-browser' + coreExt + ext,
-      name: 'GPU',
-      format: 'umd',
-      plugins: minify ? [terser()] : [],
-      sourcemap: true,
-      globals: {
-        acorn: 'acorn',
-      },
-    };
-  }
+  const id = isCore ? 'gpu-browser-core' : 'gpu-browser';
+  const options = isCore ? { name: 'GPU', globals: { acorn: 'acorn' } } : { name: 'GPU' };
 
   return defineConfig({
     input: './src/browser.js',
-    plugins: [
-      resolve(),
-      commonjs(),
-      replace({
-        'process.version': false,
-        preventAssignment: true,
-      }),
+    plugins: [resolve(), commonjs()],
+    output: [
+      createOutput(id, 'umd', options),
+      createOutput(id, 'umd', options, true),
+      createOutput(id + '.esm', 'esm'),
     ],
-    output: [makeOutput(false), makeOutput(true)],
     onwarn(msg, warn) {
       if (!/Circular/.test(msg)) {
         warn(msg);
       }
     },
 
-    external: isCore ? ['acron'] : [],
+    external: isCore ? ['acorn'] : [],
   });
 }
 
-export default [buildBrowser(true), buildBrowser(false)];
+function buildNode() {
+  return defineConfig({
+    input: './src/index.js',
+    plugins: [resolve(), commonjs()],
+    output: [createOutput('gpu-node', 'cjs'), createOutput('gpu-node.esm', 'esm')],
+    onwarn(msg, warn) {
+      if (!/Circular/.test(msg)) {
+        warn(msg);
+      }
+    },
+
+    external: Object.keys(pkg.dependencies).filter(v => v !== 'gpu-mock.js'),
+  });
+}
+
+export default [buildBrowser(true), buildBrowser(false), buildNode()];

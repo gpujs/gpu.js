@@ -5,7 +5,15 @@
   "engines": {
     "node": ">=8.0.0"
   },
-  "main": "./src/index.js",
+  "main": "./dist/gpu-node.js",
+  "exports": {
+    ".": {
+      "require": "./dist/gpu-node.js",
+      "import": "./dist/gpu-node.esm.js",
+      "types": "./src/index.d.ts",
+      "node": "./dist/gpu-node.js"
+    }
+  },
   "files": [
     "src",
     "dist"
@@ -30,13 +38,13 @@
     "@rollup/plugin-terser": "^0.4.0",
     "benchmark": "^2.1.4",
     "c8": "^7.12.0",
+    "esno": "^0.16.3",
     "prettier": "^2.8.3",
     "qunit": "^2.9.1",
     "read-dir-deep": "^7.0.1",
     "rollup": "^3.12.0",
     "sinon": "^7.3.2",
-    "vinyl-buffer": "^1.0.0",
-    "vinyl-source-stream": "^2.0.0"
+    "source-map-support": "^0.5.21"
   },
   "scripts": {
     "test": "qunit test/issues test/internal test/features",
