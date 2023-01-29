@@ -35,15 +35,24 @@ test('Issue #313 Mismatch argument lookup - auto', () => {
 test('Issue #313 Mismatch argument lookup - gpu', () => {
   variableLookup('gpu');
 });
-(GPU.isWebGLSupported ? test : skip)('Issue #313 Mismatch argument lookup - webgl', () => {
-  variableLookup('webgl');
-});
-(GPU.isWebGL2Supported ? test : skip)('Issue #313 Mismatch argument lookup - webgl2', () => {
-  variableLookup('webgl2');
-});
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #313 Mismatch argument lookup - headlessgl', () => {
-  variableLookup('headlessgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #313 Mismatch argument lookup - webgl',
+  () => {
+    variableLookup('webgl');
+  }
+);
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #313 Mismatch argument lookup - webgl2',
+  () => {
+    variableLookup('webgl2');
+  }
+);
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #313 Mismatch argument lookup - headlessgl',
+  () => {
+    variableLookup('headlessgl');
+  }
+);
 test('Issue #313 Mismatch argument lookup - cpu', () => {
   variableLookup('cpu');
 });

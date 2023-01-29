@@ -14,7 +14,10 @@ function testObject(mode) {
     },
     { output: [2, 2] }
   );
-  assert.deepEqual(kernel(), [new Float32Array([0, 1]), new Float32Array([1, 2])]);
+  assert.deepEqual(kernel(), [
+    new Float32Array([0, 1]),
+    new Float32Array([1, 2]),
+  ]);
 }
 
 test('object auto', () => {
@@ -50,7 +53,10 @@ function testNestedObject(mode) {
     },
     { output: [2, 2] }
   );
-  assert.deepEqual(kernel(), [new Float32Array([0, 1]), new Float32Array([1, 2])]);
+  assert.deepEqual(kernel(), [
+    new Float32Array([0, 1]),
+    new Float32Array([1, 2]),
+  ]);
 }
 
 test('nested object auto', () => {

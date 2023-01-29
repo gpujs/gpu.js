@@ -10,16 +10,19 @@ test('.updateValue() checks too large', () => {
     },
     validate: true,
   };
-  const v = new webGLKernelValueMaps.single.dynamic['Array3D(2)']([[[[1, 2]]]], {
-    kernel: mockKernel,
-    name: 'test',
-    type: 'Array3D(2)',
-    origin: 'user',
-    tactic: 'speed',
-    onRequestContextHandle: () => 1,
-    onRequestTexture: () => null,
-    onRequestIndex: () => 1,
-  });
+  const v = new webGLKernelValueMaps.single.dynamic['Array3D(2)'](
+    [[[[1, 2]]]],
+    {
+      kernel: mockKernel,
+      name: 'test',
+      type: 'Array3D(2)',
+      origin: 'user',
+      tactic: 'speed',
+      onRequestContextHandle: () => 1,
+      onRequestTexture: () => null,
+      onRequestIndex: () => 1,
+    }
+  );
 
   assert.throws(() => {
     v.updateValue([
@@ -52,17 +55,20 @@ test('.updateValue() checks ok', () => {
     pixelStorei: () => {},
     texImage2D: () => {},
   };
-  const v = new webGLKernelValueMaps.single.dynamic['Array3D(2)']([[[[1, 2]]]], {
-    kernel: mockKernel,
-    name: 'test',
-    type: 'Array3D(2)',
-    origin: 'user',
-    tactic: 'speed',
-    context: mockContext,
-    onRequestContextHandle: () => 1,
-    onRequestTexture: () => null,
-    onRequestIndex: () => 1,
-  });
+  const v = new webGLKernelValueMaps.single.dynamic['Array3D(2)'](
+    [[[[1, 2]]]],
+    {
+      kernel: mockKernel,
+      name: 'test',
+      type: 'Array3D(2)',
+      origin: 'user',
+      tactic: 'speed',
+      context: mockContext,
+      onRequestContextHandle: () => 1,
+      onRequestTexture: () => null,
+      onRequestIndex: () => 1,
+    }
+  );
   v.updateValue([[[[2, 1]]]]);
 
   assert.equal(v.constructor.name, 'WebGLKernelValueDynamicSingleArray3DI');

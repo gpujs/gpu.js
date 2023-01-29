@@ -40,10 +40,26 @@ export class GLTexture extends Texture {
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
     selectTexture(gl, texture);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      texture,
+      0
+    );
     const target = gl.createTexture();
     selectTexture(gl, target);
-    gl.texImage2D(gl.TEXTURE_2D, 0, this.internalFormat, size[0], size[1], 0, this.textureFormat, this.textureType, null);
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      this.internalFormat,
+      size[0],
+      size[1],
+      0,
+      this.textureFormat,
+      this.textureType,
+      null
+    );
     gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, size[0], size[1]);
     target._refs = 1;
     this.texture = target;
@@ -62,7 +78,17 @@ export class GLTexture extends Texture {
     }
     const target = gl.createTexture();
     selectTexture(gl, target);
-    gl.texImage2D(gl.TEXTURE_2D, 0, this.internalFormat, size[0], size[1], 0, this.textureFormat, this.textureType, null);
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      this.internalFormat,
+      size[0],
+      size[1],
+      0,
+      this.textureFormat,
+      this.textureType,
+      null
+    );
     target._refs = 1;
     this.texture = target;
   }
@@ -75,13 +101,29 @@ export class GLTexture extends Texture {
       selectTexture(gl, target);
       const size = this.size;
       target._refs = 1;
-      gl.texImage2D(gl.TEXTURE_2D, 0, this.internalFormat, size[0], size[1], 0, this.textureFormat, this.textureType, null);
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        this.internalFormat,
+        size[0],
+        size[1],
+        0,
+        this.textureFormat,
+        this.textureType,
+        null
+      );
     }
     const { context: gl, texture } = this;
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
     gl.bindTexture(gl.TEXTURE_2D, texture);
     selectTexture(gl, texture);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      texture,
+      0
+    );
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   }
@@ -103,7 +145,10 @@ export class GLTexture extends Texture {
 
   framebuffer() {
     if (!this._framebuffer) {
-      this._framebuffer = this.kernel.getRawValueFramebuffer(this.size[0], this.size[1]);
+      this._framebuffer = this.kernel.getRawValueFramebuffer(
+        this.size[0],
+        this.size[1]
+      );
     }
     return this._framebuffer;
   }

@@ -12,7 +12,11 @@ export function kernelRunShortcut(kernel) {
       let result = kernel.run.apply(kernel, arguments);
       if (kernel.switchingKernels) {
         const reasons = kernel.resetSwitchingKernels();
-        const newKernel = kernel.onRequestSwitchKernel(reasons, arguments, kernel);
+        const newKernel = kernel.onRequestSwitchKernel(
+          reasons,
+          arguments,
+          kernel
+        );
         shortcut.kernel = kernel = newKernel;
         result = newKernel.run.apply(newKernel, arguments);
       }
@@ -61,7 +65,10 @@ function bindKernelToShortcut(kernel, shortcut) {
     const property = properties[i];
     if (property[0] === '_' && property[1] === '_') continue;
     if (typeof kernel[property] === 'function') {
-      if (property.substring(0, 3) === 'add' || property.substring(0, 3) === 'set') {
+      if (
+        property.substring(0, 3) === 'add' ||
+        property.substring(0, 3) === 'set'
+      ) {
         shortcut[property] = function () {
           shortcut.kernel[property].apply(shortcut.kernel, arguments);
           return shortcut;

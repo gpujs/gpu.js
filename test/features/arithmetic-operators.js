@@ -329,9 +329,12 @@ test('increment early return auto', () => {
   incrementEarlyReturn('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('increment early return headlessgl', () => {
-  incrementEarlyReturn('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'increment early return headlessgl',
+  () => {
+    incrementEarlyReturn('headlessgl');
+  }
+);
 
 test('increment early return cpu', () => {
   incrementEarlyReturn('cpu');
@@ -409,9 +412,12 @@ test('decrement early return auto', () => {
   decrementEarlyReturn('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('decrement early return headlessgl', () => {
-  decrementEarlyReturn('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'decrement early return headlessgl',
+  () => {
+    decrementEarlyReturn('headlessgl');
+  }
+);
 
 test('decrement early return cpu', () => {
   decrementEarlyReturn('cpu');

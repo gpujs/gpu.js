@@ -114,13 +114,19 @@ test('divideOverride (GPU only) gpu', () => {
   divideOverride('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('divideOverride (GPU only) webgl2', () => {
-  divideOverride('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'divideOverride (GPU only) webgl2',
+  () => {
+    divideOverride('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('divideOverride (GPU only) headlessgl', () => {
-  divideOverride('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'divideOverride (GPU only) headlessgl',
+  () => {
+    divideOverride('headlessgl');
+  }
+);
 
 describe('features: argument casting');
 
@@ -170,17 +176,26 @@ test('argumentCasting (GPU only) gpu', () => {
   argumentCasting('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('argumentCasting (GPU only) webgl', () => {
-  argumentCasting('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'argumentCasting (GPU only) webgl',
+  () => {
+    argumentCasting('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('argumentCasting (GPU only) webgl2', () => {
-  argumentCasting('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'argumentCasting (GPU only) webgl2',
+  () => {
+    argumentCasting('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('argumentCasting (GPU only) headlessgl', () => {
-  argumentCasting('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'argumentCasting (GPU only) headlessgl',
+  () => {
+    argumentCasting('headlessgl');
+  }
+);
 
 describe('features: mixed argument casting');
 
@@ -230,17 +245,26 @@ test('mixedArgumentCasting (GPU only) gpu', () => {
   mixedArgumentCasting('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('mixedArgumentCasting (GPU only) webgl', () => {
-  mixedArgumentCasting('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'mixedArgumentCasting (GPU only) webgl',
+  () => {
+    mixedArgumentCasting('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('mixedArgumentCasting (GPU only) webgl2', () => {
-  mixedArgumentCasting('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'mixedArgumentCasting (GPU only) webgl2',
+  () => {
+    mixedArgumentCasting('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('mixedArgumentCasting (GPU only) headlessgl', () => {
-  mixedArgumentCasting('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'mixedArgumentCasting (GPU only) headlessgl',
+  () => {
+    mixedArgumentCasting('headlessgl');
+  }
+);
 
 describe('features: return type casting');
 
@@ -290,17 +314,26 @@ test('returnTypeCasting (GPU only) gpu', () => {
   returnTypeCasting('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('returnTypeCasting (GPU only) webgl', () => {
-  returnTypeCasting('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'returnTypeCasting (GPU only) webgl',
+  () => {
+    returnTypeCasting('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('returnTypeCasting (GPU only) webgl2', () => {
-  returnTypeCasting('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'returnTypeCasting (GPU only) webgl2',
+  () => {
+    returnTypeCasting('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('returnTypeCasting (GPU only) headlessgl', () => {
-  returnTypeCasting('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'returnTypeCasting (GPU only) headlessgl',
+  () => {
+    returnTypeCasting('headlessgl');
+  }
+);
 
 describe('features: Adding nativeFunctions directly on kernel');
 

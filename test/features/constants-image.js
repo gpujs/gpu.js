@@ -46,13 +46,19 @@ function imageConstantTest(mode, done) {
   imageConstantTest('gpu', t.async());
 });
 
-(GPU.isWebGLSupported && typeof Image !== 'undefined' ? test : skip)('webgl', t => {
-  imageConstantTest('webgl', t.async());
-});
+(GPU.isWebGLSupported && typeof Image !== 'undefined' ? test : skip)(
+  'webgl',
+  t => {
+    imageConstantTest('webgl', t.async());
+  }
+);
 
-(GPU.isWebGL2Supported && typeof Image !== 'undefined' ? test : skip)('webgl2', t => {
-  imageConstantTest('webgl2', t.async());
-});
+(GPU.isWebGL2Supported && typeof Image !== 'undefined' ? test : skip)(
+  'webgl2',
+  t => {
+    imageConstantTest('webgl2', t.async());
+  }
+);
 
 (typeof Image !== 'undefined' ? test : skip)('cpu', t => {
   imageConstantTest('cpu', t.async());

@@ -41,5 +41,9 @@ test('Issue #401 - cpu no canvas', function (assert) {
     },
     []
   );
-  assert.equal(true, true, 'ok when canvas is not available and not using graphical output');
+  assert.equal(
+    true,
+    true,
+    'ok when canvas is not available and not using graphical output'
+  );
 });

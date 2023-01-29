@@ -5,7 +5,8 @@ const { GLKernel, GPU } = require(process.cwd() + '/src');
 describe('GLKernel');
 
 test('nativeFunctionArguments() parse simple function', () => {
-  const result = GLKernel.nativeFunctionArguments(`vec2 myFunction(vec2 longName) {
+  const result =
+    GLKernel.nativeFunctionArguments(`vec2 myFunction(vec2 longName) {
     return vec2(1, 1);
   }`);
 
@@ -16,7 +17,8 @@ test('nativeFunctionArguments() parse simple function', () => {
 });
 
 test('nativeFunctionArguments() parse simple function with argument that has number', () => {
-  const result = GLKernel.nativeFunctionArguments(`vec2 myFunction(vec2 longName123) {
+  const result =
+    GLKernel.nativeFunctionArguments(`vec2 myFunction(vec2 longName123) {
     return vec2(1, 1);
   }`);
 
@@ -27,7 +29,8 @@ test('nativeFunctionArguments() parse simple function with argument that has num
 });
 
 test('nativeFunctionArguments() parse simple function, multiple arguments', () => {
-  const result = GLKernel.nativeFunctionArguments(`vec2 myFunction(vec3 a,vec3 b,float c) {
+  const result =
+    GLKernel.nativeFunctionArguments(`vec2 myFunction(vec3 a,vec3 b,float c) {
     return vec2(1, 1);
   }`);
 
@@ -38,7 +41,8 @@ test('nativeFunctionArguments() parse simple function, multiple arguments', () =
 });
 
 test('nativeFunctionArguments() parse simple function, multiple arguments with comments', () => {
-  const result = GLKernel.nativeFunctionArguments(`vec2 myFunction(vec3 a /* vec4 b */,vec2 c, /* vec4 d */ float e) {
+  const result =
+    GLKernel.nativeFunctionArguments(`vec2 myFunction(vec3 a /* vec4 b */,vec2 c, /* vec4 d */ float e) {
     return vec2(1, 1);
   }`);
 
@@ -110,11 +114,17 @@ test('nativeFunctionArguments() parse simple function that is cut short', () => 
 });
 
 test('getVariablePrecisionString() when tactic is set to "speed" returns "lowp"', () => {
-  assert.equal(GLKernel.prototype.getVariablePrecisionString.call({ tactic: 'speed' }), 'lowp');
+  assert.equal(
+    GLKernel.prototype.getVariablePrecisionString.call({ tactic: 'speed' }),
+    'lowp'
+  );
 });
 
 test('getVariablePrecisionString() when tactic is set to "balanced" returns "mediump"', () => {
-  assert.equal(GLKernel.prototype.getVariablePrecisionString.call({ tactic: 'balanced' }), 'mediump');
+  assert.equal(
+    GLKernel.prototype.getVariablePrecisionString.call({ tactic: 'balanced' }),
+    'mediump'
+  );
 });
 
 test('getVariablePrecisionString() when tactic is set to "precision" returns "highp"', () => {
@@ -139,7 +149,13 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
     },
   };
   const textureSize = [2, 2];
-  assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize), 'lowp');
+  assert.equal(
+    GLKernel.prototype.getVariablePrecisionString.call(
+      mockInstance,
+      textureSize
+    ),
+    'lowp'
+  );
 });
 
 test('getVariablePrecisionString() when tactic is not set and texSize is within mediumFloatPrecision', () => {
@@ -155,7 +171,13 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
     },
   };
   const textureSize = [4, 4];
-  assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize), 'mediump');
+  assert.equal(
+    GLKernel.prototype.getVariablePrecisionString.call(
+      mockInstance,
+      textureSize
+    ),
+    'mediump'
+  );
 });
 
 test('getVariablePrecisionString() when tactic is not set and texSize is within highFloatPrecision', () => {
@@ -171,7 +193,13 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
     },
   };
   const textureSize = [5, 5];
-  assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize), 'highp');
+  assert.equal(
+    GLKernel.prototype.getVariablePrecisionString.call(
+      mockInstance,
+      textureSize
+    ),
+    'highp'
+  );
 });
 
 test('getVariablePrecisionString() when tactic is not set and texSize is outside highFloatPrecision', () => {
@@ -187,7 +215,12 @@ test('getVariablePrecisionString() when tactic is not set and texSize is outside
     },
   };
   const textureSize = [6, 6];
-  assert.throws(() => GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize));
+  assert.throws(() =>
+    GLKernel.prototype.getVariablePrecisionString.call(
+      mockInstance,
+      textureSize
+    )
+  );
 });
 
 test('getVariablePrecisionString() when tactic is not set and texSize is within lowIntPrecision', () => {
@@ -203,7 +236,15 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
     },
   };
   const textureSize = [2, 2];
-  assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize, null, true), 'lowp');
+  assert.equal(
+    GLKernel.prototype.getVariablePrecisionString.call(
+      mockInstance,
+      textureSize,
+      null,
+      true
+    ),
+    'lowp'
+  );
 });
 
 test('getVariablePrecisionString() when tactic is not set and texSize is within mediumIntPrecision', () => {
@@ -219,7 +260,15 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
     },
   };
   const textureSize = [4, 4];
-  assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize, null, true), 'mediump');
+  assert.equal(
+    GLKernel.prototype.getVariablePrecisionString.call(
+      mockInstance,
+      textureSize,
+      null,
+      true
+    ),
+    'mediump'
+  );
 });
 
 test('getVariablePrecisionString() when tactic is not set and texSize is within highIntPrecision', () => {
@@ -235,7 +284,15 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
     },
   };
   const textureSize = [5, 5];
-  assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize, null, true), 'highp');
+  assert.equal(
+    GLKernel.prototype.getVariablePrecisionString.call(
+      mockInstance,
+      textureSize,
+      null,
+      true
+    ),
+    'highp'
+  );
 });
 
 test('getVariablePrecisionString() when tactic is not set and texSize is outside highIntPrecision', () => {
@@ -251,7 +308,14 @@ test('getVariablePrecisionString() when tactic is not set and texSize is outside
     },
   };
   const textureSize = [6, 6];
-  assert.throws(() => GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize, null, true));
+  assert.throws(() =>
+    GLKernel.prototype.getVariablePrecisionString.call(
+      mockInstance,
+      textureSize,
+      null,
+      true
+    )
+  );
 });
 
 test('getVariablePrecisionString() when features.isSpeedTacticSupported is false returns "highp"', () => {
@@ -264,7 +328,15 @@ test('getVariablePrecisionString() when features.isSpeedTacticSupported is false
     },
   };
   const textureSize = [1, 1];
-  assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize, null, true), 'highp');
+  assert.equal(
+    GLKernel.prototype.getVariablePrecisionString.call(
+      mockInstance,
+      textureSize,
+      null,
+      true
+    ),
+    'highp'
+  );
 });
 
 function testGetFeatures(canvas, context) {
@@ -372,7 +444,10 @@ test('setOutput() when does not need to trigger recompile', () => {
   GLKernel.prototype.setOutput.call(mockInstance, [100, 100]);
   assert.equal(mockContext.bindFramebuffer.callCount, 1);
   assert.equal(mockContext.bindFramebuffer.args[0][0], 'FRAMEBUFFER');
-  assert.equal(mockContext.bindFramebuffer.args[0][1], mockInstance.framebuffer);
+  assert.equal(
+    mockContext.bindFramebuffer.args[0][1],
+    mockInstance.framebuffer
+  );
   assert.equal(mockInstance.updateMaxTexSize.callCount, 1);
   assert.equal(mockInstance.framebuffer.width, 100);
   assert.equal(mockInstance.framebuffer.height, 100);

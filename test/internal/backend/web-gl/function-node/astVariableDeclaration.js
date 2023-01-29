@@ -79,7 +79,10 @@ test('Array2 value[] from value[]', () => {
       argumentTypes: ['Array', 'Array'],
       lookupFunctionArgumentBitRatio: () => 4,
     }),
-    'vec2 user_value=vec2(' + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0)' + ');'
+    'vec2 user_value=vec2(' +
+      'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0)' +
+      ');'
   );
 });
 
@@ -90,7 +93,11 @@ test('Array3 value[] from value[]', () => {
       argumentTypes: ['Array', 'Array', 'Array'],
       lookupFunctionArgumentBitRatio: () => 4,
     }),
-    'vec3 user_value=vec3(' + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), ' + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0)' + ');'
+    'vec3 user_value=vec3(' +
+      'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), ' +
+      'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0)' +
+      ');'
   );
 });
 
@@ -101,40 +108,111 @@ test('Array4 value[] from value[]', () => {
       argumentTypes: ['Array', 'Array', 'Array', 'Array'],
       lookupFunctionArgumentBitRatio: () => 4,
     }),
-    'vec4 user_value=vec4(' + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), ' + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0), ' + 'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 0)' + ');'
+    'vec4 user_value=vec4(' +
+      'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), ' +
+      'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0), ' +
+      'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 0)' +
+      ');'
   );
 });
 
 test('float, Array2, Array3 chain values', () => {
   assert.equal(
-    run('const value1 = 1, ' + 'value2 = [arg1[0], arg2[0]], ' + 'value3 = [arg1[0], arg2[0], arg3[0]], ' + 'value4 = [arg1[0], arg2[0], arg3[0], arg4[0]];', {
-      argumentNames: ['arg1', 'arg2', 'arg3', 'arg4'],
-      argumentTypes: ['Array', 'Array', 'Array', 'Array'],
-      lookupFunctionArgumentBitRatio: () => 4,
-    }),
-    'float user_value1=1.0;' + 'vec2 user_value2=vec2(' + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0)' + ');' + 'vec3 user_value3=vec3(' + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), ' + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0)' + ');' + 'vec4 user_value4=vec4(' + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), ' + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0), ' + 'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 0)' + ');'
+    run(
+      'const value1 = 1, ' +
+        'value2 = [arg1[0], arg2[0]], ' +
+        'value3 = [arg1[0], arg2[0], arg3[0]], ' +
+        'value4 = [arg1[0], arg2[0], arg3[0], arg4[0]];',
+      {
+        argumentNames: ['arg1', 'arg2', 'arg3', 'arg4'],
+        argumentTypes: ['Array', 'Array', 'Array', 'Array'],
+        lookupFunctionArgumentBitRatio: () => 4,
+      }
+    ),
+    'float user_value1=1.0;' +
+      'vec2 user_value2=vec2(' +
+      'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0)' +
+      ');' +
+      'vec3 user_value3=vec3(' +
+      'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), ' +
+      'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0)' +
+      ');' +
+      'vec4 user_value4=vec4(' +
+      'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), ' +
+      'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0), ' +
+      'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 0)' +
+      ');'
   );
 });
 
 test('float, Array2, Array3, Array4 multiple values', () => {
   assert.equal(
-    run('const value1 = 1, ' + 'value2 = [arg1[0], arg2[0]], ' + 'value3 = [arg1[0], arg2[0], arg3[0]], ' + 'value4 = [arg1[0], arg2[0], arg3[0], arg4[0]];', {
-      argumentNames: ['arg1', 'arg2', 'arg3', 'arg4'],
-      argumentTypes: ['Array', 'Array', 'Array', 'Array'],
-      lookupFunctionArgumentBitRatio: () => 4,
-    }),
-    'float user_value1=1.0;' + 'vec2 user_value2=vec2(' + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0)' + ');' + 'vec3 user_value3=vec3(' + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), ' + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0)' + ');' + 'vec4 user_value4=vec4(' + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), ' + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0), ' + 'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 0)' + ');'
+    run(
+      'const value1 = 1, ' +
+        'value2 = [arg1[0], arg2[0]], ' +
+        'value3 = [arg1[0], arg2[0], arg3[0]], ' +
+        'value4 = [arg1[0], arg2[0], arg3[0], arg4[0]];',
+      {
+        argumentNames: ['arg1', 'arg2', 'arg3', 'arg4'],
+        argumentTypes: ['Array', 'Array', 'Array', 'Array'],
+        lookupFunctionArgumentBitRatio: () => 4,
+      }
+    ),
+    'float user_value1=1.0;' +
+      'vec2 user_value2=vec2(' +
+      'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0)' +
+      ');' +
+      'vec3 user_value3=vec3(' +
+      'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), ' +
+      'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0)' +
+      ');' +
+      'vec4 user_value4=vec4(' +
+      'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), ' +
+      'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0), ' +
+      'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 0)' +
+      ');'
   );
 });
 
 test('float, float, Array4, Array4, Array4 chain values', () => {
   assert.equal(
-    run('const value1 = 1, value2 = 1.5, ' + 'value3 = [arg1[0], arg2[0], arg3[0], arg4[0]], ' + 'value4 = [arg4[4], arg3[4], arg2[4], arg1[4]], ' + 'value5 = [arg2[1], arg2[2], arg2[3], arg2[4]];', {
-      argumentNames: ['arg1', 'arg2', 'arg3', 'arg4'],
-      argumentTypes: ['Array', 'Array', 'Array', 'Array'],
-      lookupFunctionArgumentBitRatio: () => 4,
-    }),
-    'float user_value1=1.0,user_value2=1.5;' + 'vec4 user_value3=vec4(' + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), ' + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0), ' + 'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 0)' + '),' + 'user_value4=vec4(' + 'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 4), ' + 'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 4), ' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 4), ' + 'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 4)' + '),' + 'user_value5=vec4(' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 1), ' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 2), ' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 3), ' + 'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 4)' + ');'
+    run(
+      'const value1 = 1, value2 = 1.5, ' +
+        'value3 = [arg1[0], arg2[0], arg3[0], arg4[0]], ' +
+        'value4 = [arg4[4], arg3[4], arg2[4], arg1[4]], ' +
+        'value5 = [arg2[1], arg2[2], arg2[3], arg2[4]];',
+      {
+        argumentNames: ['arg1', 'arg2', 'arg3', 'arg4'],
+        argumentTypes: ['Array', 'Array', 'Array', 'Array'],
+        lookupFunctionArgumentBitRatio: () => 4,
+      }
+    ),
+    'float user_value1=1.0,user_value2=1.5;' +
+      'vec4 user_value3=vec4(' +
+      'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 0), ' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 0), ' +
+      'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 0), ' +
+      'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 0)' +
+      '),' +
+      'user_value4=vec4(' +
+      'get32(user_arg4, user_arg4Size, user_arg4Dim, 0, 0, 4), ' +
+      'get32(user_arg3, user_arg3Size, user_arg3Dim, 0, 0, 4), ' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 4), ' +
+      'get32(user_arg1, user_arg1Size, user_arg1Dim, 0, 0, 4)' +
+      '),' +
+      'user_value5=vec4(' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 1), ' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 2), ' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 3), ' +
+      'get32(user_arg2, user_arg2Size, user_arg2Dim, 0, 0, 4)' +
+      ');'
   );
 });
 
@@ -227,15 +305,24 @@ test('this.constants.value[][][] float', () => {
 });
 
 test('this.thread.x float', () => {
-  assert.equal(run('const value = this.thread.x'), 'float user_value=float(threadId.x);');
+  assert.equal(
+    run('const value = this.thread.x'),
+    'float user_value=float(threadId.x);'
+  );
 });
 
 test('this.thread.y float', () => {
-  assert.equal(run('const value = this.thread.y'), 'float user_value=float(threadId.y);');
+  assert.equal(
+    run('const value = this.thread.y'),
+    'float user_value=float(threadId.y);'
+  );
 });
 
 test('this.thread.z float', () => {
-  assert.equal(run('const value = this.thread.z'), 'float user_value=float(threadId.z);');
+  assert.equal(
+    run('const value = this.thread.z'),
+    'float user_value=float(threadId.z);'
+  );
 });
 
 test('this.output.x float', () => {
@@ -257,9 +344,15 @@ test('this.outputs.z throws', () => {
 });
 
 test('Math.E Number float', () => {
-  assert.equal(run('const value = Math.E'), `float user_value=${Math.E.toString()};`);
+  assert.equal(
+    run('const value = Math.E'),
+    `float user_value=${Math.E.toString()};`
+  );
 });
 
 test('Math.E Number float', () => {
-  assert.equal(run('const value = Math.E'), `float user_value=${Math.E.toString()};`);
+  assert.equal(
+    run('const value = Math.E'),
+    `float user_value=${Math.E.toString()};`
+  );
 });

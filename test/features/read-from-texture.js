@@ -43,7 +43,9 @@ function readWithoutTextureKernels(mode) {
   readWithoutTextureKernels('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && HeadlessGLKernel.features.kernelMap ? test : skip)('Read without texture headlessgl', () => {
+(GPU.isHeadlessGLSupported && HeadlessGLKernel.features.kernelMap
+  ? test
+  : skip)('Read without texture headlessgl', () => {
   readWithoutTextureKernels('headlessgl');
 });
 
@@ -87,6 +89,8 @@ function readFromTextureKernels(mode) {
   readFromTextureKernels('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && HeadlessGLKernel.features.kernelMap ? test : skip)('Read from Texture headlessgl', () => {
+(GPU.isHeadlessGLSupported && HeadlessGLKernel.features.kernelMap
+  ? test
+  : skip)('Read from Texture headlessgl', () => {
   readFromTextureKernels('headlessgl');
 });

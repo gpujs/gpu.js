@@ -24,15 +24,24 @@ function castingOffsetByThreadXAndOutputX(mode) {
   gpu.destroy();
 }
 
-(GPU.isWebGLSupported ? test : skip)('casting offset by this.thread.x and this.output.x webgl', () => {
-  castingOffsetByThreadXAndOutputX('webgl');
-});
-(GPU.isWebGL2Supported ? test : skip)('casting offset by this.thread.x and this.output.x webgl2', () => {
-  castingOffsetByThreadXAndOutputX('webgl2');
-});
-(GPU.isHeadlessGLSupported ? test : skip)('casting offset by this.thread.x and this.output.x headlessgl', () => {
-  castingOffsetByThreadXAndOutputX('headlessgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'casting offset by this.thread.x and this.output.x webgl',
+  () => {
+    castingOffsetByThreadXAndOutputX('webgl');
+  }
+);
+(GPU.isWebGL2Supported ? test : skip)(
+  'casting offset by this.thread.x and this.output.x webgl2',
+  () => {
+    castingOffsetByThreadXAndOutputX('webgl2');
+  }
+);
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'casting offset by this.thread.x and this.output.x headlessgl',
+  () => {
+    castingOffsetByThreadXAndOutputX('headlessgl');
+  }
+);
 
 function handleCastingIntsWithNativeFunctions(mode) {
   const gpu = new GPU({ mode });
@@ -56,15 +65,24 @@ function handleCastingIntsWithNativeFunctions(mode) {
   gpu.destroy();
 }
 
-(GPU.isWebGLSupported ? test : skip)('handle casting ints with native functions webgl', () => {
-  handleCastingIntsWithNativeFunctions('webgl');
-});
-(GPU.isWebGL2Supported ? test : skip)('handle casting ints with native functions webgl2', () => {
-  handleCastingIntsWithNativeFunctions('webgl2');
-});
-(GPU.isHeadlessGLSupported ? test : skip)('handle casting ints with native functions headlessgl', () => {
-  handleCastingIntsWithNativeFunctions('headlessgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'handle casting ints with native functions webgl',
+  () => {
+    handleCastingIntsWithNativeFunctions('webgl');
+  }
+);
+(GPU.isWebGL2Supported ? test : skip)(
+  'handle casting ints with native functions webgl2',
+  () => {
+    handleCastingIntsWithNativeFunctions('webgl2');
+  }
+);
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'handle casting ints with native functions headlessgl',
+  () => {
+    handleCastingIntsWithNativeFunctions('headlessgl');
+  }
+);
 
 function handleCastingFloatsWithNativeFunctions(mode) {
   const gpu = new GPU({ mode });
@@ -92,15 +110,24 @@ function handleCastingFloatsWithNativeFunctions(mode) {
   gpu.destroy();
 }
 
-(GPU.isWebGLSupported ? test : skip)('handle casting floats with native functions webgl', () => {
-  handleCastingFloatsWithNativeFunctions('webgl');
-});
-(GPU.isWebGL2Supported ? test : skip)('handle casting floats with native functions webgl2', () => {
-  handleCastingFloatsWithNativeFunctions('webgl2');
-});
-(GPU.isHeadlessGLSupported ? test : skip)('handle casting floats with native functions headlessgl', () => {
-  handleCastingFloatsWithNativeFunctions('headlessgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'handle casting floats with native functions webgl',
+  () => {
+    handleCastingFloatsWithNativeFunctions('webgl');
+  }
+);
+(GPU.isWebGL2Supported ? test : skip)(
+  'handle casting floats with native functions webgl2',
+  () => {
+    handleCastingFloatsWithNativeFunctions('webgl2');
+  }
+);
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'handle casting floats with native functions headlessgl',
+  () => {
+    handleCastingFloatsWithNativeFunctions('headlessgl');
+  }
+);
 
 function handleCastingMixedWithNativeFunctions(mode) {
   const gpu = new GPU({ mode });
@@ -127,15 +154,24 @@ function handleCastingMixedWithNativeFunctions(mode) {
   gpu.destroy();
 }
 
-(GPU.isWebGLSupported ? test : skip)('handle casting mixed with native functions webgl', () => {
-  handleCastingMixedWithNativeFunctions('webgl');
-});
-(GPU.isWebGL2Supported ? test : skip)('handle casting mixed with native functions webgl2', () => {
-  handleCastingMixedWithNativeFunctions('webgl2');
-});
-(GPU.isHeadlessGLSupported ? test : skip)('handle casting mixed with native functions headlessgl', () => {
-  handleCastingMixedWithNativeFunctions('headlessgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'handle casting mixed with native functions webgl',
+  () => {
+    handleCastingMixedWithNativeFunctions('webgl');
+  }
+);
+(GPU.isWebGL2Supported ? test : skip)(
+  'handle casting mixed with native functions webgl2',
+  () => {
+    handleCastingMixedWithNativeFunctions('webgl2');
+  }
+);
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'handle casting mixed with native functions headlessgl',
+  () => {
+    handleCastingMixedWithNativeFunctions('headlessgl');
+  }
+);
 
 function handleCastingFloat(mode) {
   const gpu = new GPU({ mode });
@@ -169,9 +205,12 @@ function handleCastingFloat(mode) {
   handleCastingFloat('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('handle casting float headlessgl', () => {
-  handleCastingFloat('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'handle casting float headlessgl',
+  () => {
+    handleCastingFloat('headlessgl');
+  }
+);
 
 function handleCastingBeforeReturn(mode) {
   const gpu = new GPU({ mode });
@@ -193,14 +232,23 @@ function handleCastingBeforeReturn(mode) {
   gpu.destroy();
 }
 
-(GPU.isWebGLSupported ? test : skip)('handle casting before return webgl', () => {
-  handleCastingBeforeReturn('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'handle casting before return webgl',
+  () => {
+    handleCastingBeforeReturn('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('handle casting before return webgl2', () => {
-  handleCastingBeforeReturn('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'handle casting before return webgl2',
+  () => {
+    handleCastingBeforeReturn('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('handle casting before return headlessgl', () => {
-  handleCastingBeforeReturn('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'handle casting before return headlessgl',
+  () => {
+    handleCastingBeforeReturn('headlessgl');
+  }
+);

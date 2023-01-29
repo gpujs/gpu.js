@@ -33,9 +33,12 @@ test('Issue #259 atan2 - gpu', () => {
   buildAtan2KernelResult('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #259 atan2 - headlessgl', () => {
-  buildAtan2KernelResult('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #259 atan2 - headlessgl',
+  () => {
+    buildAtan2KernelResult('headlessgl');
+  }
+);
 
 test('Issue #259 atan2 - cpu', () => {
   buildAtan2KernelResult('cpu');

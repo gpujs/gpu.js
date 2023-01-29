@@ -43,17 +43,26 @@ test('Issue #267 immutable kernel output without floats - gpu', () => {
   immutableKernelWithoutFloats('gpu');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel output without floats - webgl', () => {
-  immutableKernelWithoutFloats('webgl');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #267 immutable kernel output without floats - webgl',
+  () => {
+    immutableKernelWithoutFloats('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel output without floats - webgl2', () => {
-  immutableKernelWithoutFloats('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #267 immutable kernel output without floats - webgl2',
+  () => {
+    immutableKernelWithoutFloats('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #267 immutable kernel output without floats - headlessgl', () => {
-  immutableKernelWithoutFloats('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #267 immutable kernel output without floats - headlessgl',
+  () => {
+    immutableKernelWithoutFloats('headlessgl');
+  }
+);
 
 function immutableKernelWithFloats(mode) {
   const gpu = new GPU({ mode });
@@ -82,25 +91,40 @@ function immutableKernelWithFloats(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('Issue #267 immutable kernel output with floats - auto', () => {
-  immutableKernelWithFloats();
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'Issue #267 immutable kernel output with floats - auto',
+  () => {
+    immutableKernelWithFloats();
+  }
+);
 
-(GPU.isSinglePrecisionSupported ? test : skip)('Issue #267 immutable kernel output with floats - gpu', () => {
-  immutableKernelWithFloats('gpu');
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'Issue #267 immutable kernel output with floats - gpu',
+  () => {
+    immutableKernelWithFloats('gpu');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel output with floats - webgl', () => {
-  immutableKernelWithFloats('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'Issue #267 immutable kernel output with floats - webgl',
+  () => {
+    immutableKernelWithFloats('webgl');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel output with floats - webgl2', () => {
-  immutableKernelWithFloats('webgl2');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'Issue #267 immutable kernel output with floats - webgl2',
+  () => {
+    immutableKernelWithFloats('webgl2');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('Issue #267 immutable kernel output with floats - headlessgl', () => {
-  immutableKernelWithFloats('headlessgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #267 immutable kernel output with floats - headlessgl',
+  () => {
+    immutableKernelWithFloats('headlessgl');
+  }
+);
 
 describe('issue #267 sub kernel');
 
@@ -148,25 +172,40 @@ function immutableSubKernelsWithoutFloats(mode) {
   assert.equal(result3, 4);
   gpu.destroy();
 }
-(GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable sub-kernel output - auto', () => {
-  immutableSubKernelsWithoutFloats();
-});
+(GPU.isKernelMapSupported ? test : skip)(
+  'Issue #267 immutable sub-kernel output - auto',
+  () => {
+    immutableSubKernelsWithoutFloats();
+  }
+);
 
-(GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable sub-kernel output - gpu', () => {
-  immutableSubKernelsWithoutFloats('gpu');
-});
+(GPU.isKernelMapSupported ? test : skip)(
+  'Issue #267 immutable sub-kernel output - gpu',
+  () => {
+    immutableSubKernelsWithoutFloats('gpu');
+  }
+);
 
-(GPU.isWebGLSupported ? test : skip)('Issue #267 immutable sub-kernel output - webgl', () => {
-  immutableSubKernelsWithoutFloats('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #267 immutable sub-kernel output - webgl',
+  () => {
+    immutableSubKernelsWithoutFloats('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable sub-kernel output - webgl2', () => {
-  immutableSubKernelsWithoutFloats('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #267 immutable sub-kernel output - webgl2',
+  () => {
+    immutableSubKernelsWithoutFloats('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable sub-kernel output - headlessgl', () => {
-  immutableSubKernelsWithoutFloats('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)(
+  'Issue #267 immutable sub-kernel output - headlessgl',
+  () => {
+    immutableSubKernelsWithoutFloats('headlessgl');
+  }
+);
 
 describe('issue #267 sub kernels mixed');
 
@@ -224,25 +263,40 @@ function immutableKernelsMixedWithoutFloats(mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable kernel & sub-kernel output without floats - auto', () => {
-  immutableKernelsMixedWithoutFloats();
-});
+(GPU.isKernelMapSupported ? test : skip)(
+  'Issue #267 immutable kernel & sub-kernel output without floats - auto',
+  () => {
+    immutableKernelsMixedWithoutFloats();
+  }
+);
 
-(GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable kernel & sub-kernel output without floats - gpu', () => {
-  immutableKernelsMixedWithoutFloats('gpu');
-});
+(GPU.isKernelMapSupported ? test : skip)(
+  'Issue #267 immutable kernel & sub-kernel output without floats - gpu',
+  () => {
+    immutableKernelsMixedWithoutFloats('gpu');
+  }
+);
 
-(GPU.isWebGLSupported ? test : skip)('Issue #267 immutable kernel & sub-kernel output without floats - webgl', () => {
-  immutableKernelsMixedWithoutFloats('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #267 immutable kernel & sub-kernel output without floats - webgl',
+  () => {
+    immutableKernelsMixedWithoutFloats('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #267 immutable kernel & sub-kernel output without floats - webgl2', () => {
-  immutableKernelsMixedWithoutFloats('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #267 immutable kernel & sub-kernel output without floats - webgl2',
+  () => {
+    immutableKernelsMixedWithoutFloats('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #267 immutable kernel & sub-kernel output without floats - headlessgl', () => {
-  immutableKernelsMixedWithoutFloats('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)(
+  'Issue #267 immutable kernel & sub-kernel output without floats - headlessgl',
+  () => {
+    immutableKernelsMixedWithoutFloats('headlessgl');
+  }
+);
 
 test('Issue #267 immutable kernel & sub-kernel output without floats - cpu', () => {
   immutableKernelsMixedWithoutFloats('cpu');

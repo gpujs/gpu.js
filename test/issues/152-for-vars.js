@@ -42,6 +42,9 @@ test('Issue #152 - for vars gpu', () => {
   forVars('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #152 - for vars headlessgl', () => {
-  forVars('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #152 - for vars headlessgl',
+  () => {
+    forVars('headlessgl');
+  }
+);

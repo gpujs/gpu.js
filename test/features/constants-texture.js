@@ -74,7 +74,10 @@ function test2D(mode) {
     )
     .setOutput([2, 2]);
   const result = tryConst();
-  const expected = [new Float32Array([200, 200]), new Float32Array([200, 200])];
+  const expected = [
+    new Float32Array([200, 200]),
+    new Float32Array([200, 200]),
+  ];
   assert.deepEqual(result, expected, 'texture constant passed test');
   gpu.destroy();
 }
@@ -117,7 +120,9 @@ function test3D(mode) {
   const tryConst = gpu
     .createKernel(
       function () {
-        return this.constants.texture[this.thread.z][this.thread.y][this.thread.x];
+        return this.constants.texture[this.thread.z][this.thread.y][
+          this.thread.x
+        ];
       },
       {
         constants: { texture },

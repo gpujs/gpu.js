@@ -61,9 +61,12 @@ describe('issue # 159');
     threeD('webgl2');
   });
 
-  (GPU.isHeadlessGLSupported ? test : skip)('Issue #159 - for vars headlessgl', () => {
-    threeD('headlessgl');
-  });
+  (GPU.isHeadlessGLSupported ? test : skip)(
+    'Issue #159 - for vars headlessgl',
+    () => {
+      threeD('headlessgl');
+    }
+  );
 
   test('Issue #159 - for vars cpu', () => {
     threeD('cpu');

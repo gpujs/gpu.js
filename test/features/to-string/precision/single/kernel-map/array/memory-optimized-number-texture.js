@@ -1,7 +1,9 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../../../../../../src');
 
-describe('feature: to-string single precision array style kernel map returns MemoryOptimizedNumberTexture');
+describe(
+  'feature: to-string single precision array style kernel map returns MemoryOptimizedNumberTexture'
+);
 
 function testReturn(mode, context, canvas) {
   const gpu = new GPU({ mode });
@@ -38,18 +40,27 @@ function testReturn(mode, context, canvas) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('webgl', () => {
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('webgl');
-  testReturn('webgl', context, canvas);
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'webgl',
+  () => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('webgl');
+    testReturn('webgl', context, canvas);
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('webgl2');
-  testReturn('webgl2', context, canvas);
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'webgl2',
+  () => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('webgl2');
+    testReturn('webgl2', context, canvas);
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
-  testReturn('headlessgl', require('gl')(1, 1), null);
-});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)(
+  'headlessgl',
+  () => {
+    testReturn('headlessgl', require('gl')(1, 1), null);
+  }
+);

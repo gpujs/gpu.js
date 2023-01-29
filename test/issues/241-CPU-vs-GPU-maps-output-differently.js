@@ -34,17 +34,26 @@ test('Issue #241 small 2d array input output test gpu', () => {
   buildIndexTestKernel('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #241 small 2d array input output test webgl', () => {
-  buildIndexTestKernel('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #241 small 2d array input output test webgl',
+  () => {
+    buildIndexTestKernel('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #241 small 2d array input output test webgl2', () => {
-  buildIndexTestKernel('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #241 small 2d array input output test webgl2',
+  () => {
+    buildIndexTestKernel('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #241 small 2d array input output test headlessgl', () => {
-  buildIndexTestKernel('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #241 small 2d array input output test headlessgl',
+  () => {
+    buildIndexTestKernel('headlessgl');
+  }
+);
 
 test('Issue #241 small 2d array input output test cpu', () => {
   buildIndexTestKernel('cpu');

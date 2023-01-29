@@ -28,22 +28,35 @@ function videoArgumentTest(mode, done) {
   }, 1000);
 }
 
-(typeof HTMLVideoElement !== 'undefined' ? test : skip)('video argument auto', t => {
-  videoArgumentTest(null, t.async());
-});
+(typeof HTMLVideoElement !== 'undefined' ? test : skip)(
+  'video argument auto',
+  t => {
+    videoArgumentTest(null, t.async());
+  }
+);
 
-(typeof HTMLVideoElement !== 'undefined' ? test : skip)('video argument gpu', t => {
-  videoArgumentTest('gpu', t.async());
-});
+(typeof HTMLVideoElement !== 'undefined' ? test : skip)(
+  'video argument gpu',
+  t => {
+    videoArgumentTest('gpu', t.async());
+  }
+);
 
-(GPU.isWebGLSupported && typeof HTMLVideoElement !== 'undefined' ? test : skip)('video argument webgl', t => {
+(GPU.isWebGLSupported && typeof HTMLVideoElement !== 'undefined'
+  ? test
+  : skip)('video argument webgl', t => {
   videoArgumentTest('webgl', t.async());
 });
 
-(GPU.isWebGL2Supported && typeof HTMLVideoElement !== 'undefined' ? test : skip)('video argument webgl2', t => {
+(GPU.isWebGL2Supported && typeof HTMLVideoElement !== 'undefined'
+  ? test
+  : skip)('video argument webgl2', t => {
   videoArgumentTest('webgl2', t.async());
 });
 
-(typeof HTMLVideoElement !== 'undefined' ? test : skip)('video argument cpu', t => {
-  videoArgumentTest('cpu', t.async());
-});
+(typeof HTMLVideoElement !== 'undefined' ? test : skip)(
+  'video argument cpu',
+  t => {
+    videoArgumentTest('cpu', t.async());
+  }
+);

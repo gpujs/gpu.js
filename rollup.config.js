@@ -34,7 +34,9 @@ function createOutput(name, format, opts, minify = false) {
 
 function buildBrowser(isCore) {
   const id = isCore ? 'gpu-browser-core' : 'gpu-browser';
-  const options = isCore ? { name: 'GPU', globals: { acorn: 'acorn' } } : { name: 'GPU' };
+  const options = isCore
+    ? { name: 'GPU', globals: { acorn: 'acorn' } }
+    : { name: 'GPU' };
 
   return defineConfig({
     input: './src/browser.js',
@@ -58,7 +60,10 @@ function buildNode() {
   return defineConfig({
     input: './src/index.js',
     plugins: [resolve(), commonjs()],
-    output: [createOutput('gpu-node', 'cjs'), createOutput('gpu-node.esm', 'esm')],
+    output: [
+      createOutput('gpu-node', 'cjs'),
+      createOutput('gpu-node.esm', 'esm'),
+    ],
     onwarn(msg, warn) {
       if (!/Circular/.test(msg)) {
         warn(msg);

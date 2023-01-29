@@ -19,11 +19,19 @@ export class Input {
     const [w, h, d] = this.size;
     if (d) {
       if (this.value.length !== w * h * d) {
-        throw new Error(`Input size ${this.value.length} does not match ${w} * ${h} * ${d} = ${h * w * d}`);
+        throw new Error(
+          `Input size ${
+            this.value.length
+          } does not match ${w} * ${h} * ${d} = ${h * w * d}`
+        );
       }
     } else if (h) {
       if (this.value.length !== w * h) {
-        throw new Error(`Input size ${this.value.length} does not match ${w} * ${h} = ${h * w}`);
+        throw new Error(
+          `Input size ${this.value.length} does not match ${w} * ${h} = ${
+            h * w
+          }`
+        );
       }
     } else {
       if (this.value.length !== w) {
@@ -35,9 +43,18 @@ export class Input {
   toArray() {
     const [w, h, d] = this.size;
     if (d) {
-      return utils.erectMemoryOptimized3DFloat(this.value.subarray ? this.value : new Float32Array(this.value), w, h, d);
+      return utils.erectMemoryOptimized3DFloat(
+        this.value.subarray ? this.value : new Float32Array(this.value),
+        w,
+        h,
+        d
+      );
     } else if (h) {
-      return utils.erectMemoryOptimized2DFloat(this.value.subarray ? this.value : new Float32Array(this.value), w, h);
+      return utils.erectMemoryOptimized2DFloat(
+        this.value.subarray ? this.value : new Float32Array(this.value),
+        w,
+        h
+      );
     } else {
       return this.value;
     }

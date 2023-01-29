@@ -48,23 +48,33 @@ function feature(mode, done) {
   };
 }
 
-(GPU.isGPUHTMLImageArraySupported && typeof Image !== 'undefined' ? test : skip)('auto', t => {
+(GPU.isGPUHTMLImageArraySupported && typeof Image !== 'undefined'
+  ? test
+  : skip)('auto', t => {
   feature(null, t.async());
 });
 
-(GPU.isGPUHTMLImageArraySupported && typeof Image !== 'undefined' ? test : skip)('gpu', t => {
+(GPU.isGPUHTMLImageArraySupported && typeof Image !== 'undefined'
+  ? test
+  : skip)('gpu', t => {
   feature('gpu', t.async());
 });
 
-(GPU.isWebGLSupported && typeof Image !== 'undefined' ? test : skip)('webgl', t => {
-  assert.throws(() => {
-    feature('webgl');
-  }, 'imageArray are not compatible with webgl');
-});
+(GPU.isWebGLSupported && typeof Image !== 'undefined' ? test : skip)(
+  'webgl',
+  t => {
+    assert.throws(() => {
+      feature('webgl');
+    }, 'imageArray are not compatible with webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && typeof Image !== 'undefined' ? test : skip)('webgl2', t => {
-  feature('webgl2', t.async());
-});
+(GPU.isWebGL2Supported && typeof Image !== 'undefined' ? test : skip)(
+  'webgl2',
+  t => {
+    feature('webgl2', t.async());
+  }
+);
 
 (typeof Image !== 'undefined' ? test : skip)('cpu', t => {
   feature('cpu', t.async());

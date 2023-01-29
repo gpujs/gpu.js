@@ -35,7 +35,11 @@ function manyKernels(mode, kernelCount, t) {
   );
   kernel(input);
   kernel2();
-  assert.strictEqual(kernel.context, kernel2.context, 'contexts should be the same object');
+  assert.strictEqual(
+    kernel.context,
+    kernel2.context,
+    'contexts should be the same object'
+  );
   manyKernels(mode, kernelCount, t);
   const canvas = kernel.canvas;
   const eventListener = canvas.addEventListener('webglcontextlost', e => {
@@ -46,10 +50,16 @@ function manyKernels(mode, kernelCount, t) {
   gpu.destroy();
 }
 
-(GPU.isWebGLSupported ? test : skip)('Issue #174 - webgl context leak webgl', t => {
-  manyKernels('webgl', 10, t);
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #174 - webgl context leak webgl',
+  t => {
+    manyKernels('webgl', 10, t);
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #174 - webgl context leak webgl2', t => {
-  manyKernels('webgl2', 10, t);
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #174 - webgl context leak webgl2',
+  t => {
+    manyKernels('webgl2', 10, t);
+  }
+);

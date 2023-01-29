@@ -47,13 +47,19 @@ function testHTMLImage(done, mode) {
   testHTMLImage(t.async());
 });
 
-(typeof Image !== 'undefined' && GPU.isWebGLSupported ? test : skip)('HTML Image webgl', t => {
-  testHTMLImage(t.async(), 'webgl');
-});
+(typeof Image !== 'undefined' && GPU.isWebGLSupported ? test : skip)(
+  'HTML Image webgl',
+  t => {
+    testHTMLImage(t.async(), 'webgl');
+  }
+);
 
-(typeof Image !== 'undefined' && GPU.isWebGL2Supported ? test : skip)('HTML Image webgl2', t => {
-  testHTMLImage(t.async(), 'webgl2');
-});
+(typeof Image !== 'undefined' && GPU.isWebGL2Supported ? test : skip)(
+  'HTML Image webgl2',
+  t => {
+    testHTMLImage(t.async(), 'webgl2');
+  }
+);
 
 (typeof Image !== 'undefined' ? test : skip)('HTML Image cpu', t => {
   testHTMLImage(t.async(), 'cpu');
@@ -112,38 +118,69 @@ function testMemoryOptimizedNumberTexture(mode) {
     .setOptimizeFloatMemory(true)
     .setOutput([4, 4]);
 
-  assert.deepEqual(kernel(texture4X4), [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8]), new Float32Array([9, 10, 11, 12]), new Float32Array([13, 14, 15, 16])]);
+  assert.deepEqual(kernel(texture4X4), [
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+    new Float32Array([9, 10, 11, 12]),
+    new Float32Array([13, 14, 15, 16]),
+  ]);
 
   kernel.setOutput([3, 3]);
-  assert.deepEqual(kernel(texture3X3), [new Float32Array([1, 2, 3]), new Float32Array([4, 5, 6]), new Float32Array([7, 8, 9])]);
+  assert.deepEqual(kernel(texture3X3), [
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
+    new Float32Array([7, 8, 9]),
+  ]);
 
   kernel.setOutput([2, 2]);
-  assert.deepEqual(kernel(texture2X2), [new Float32Array([1, 2]), new Float32Array([3, 4])]);
+  assert.deepEqual(kernel(texture2X2), [
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4]),
+  ]);
 
-  assert.ok(kernel.kernelArguments[0].constructor.name.match('DynamicMemoryOptimizedNumberTexture'));
+  assert.ok(
+    kernel.kernelArguments[0].constructor.name.match(
+      'DynamicMemoryOptimizedNumberTexture'
+    )
+  );
 
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('MemoryOptimizedNumberTexture (GPU only) auto', () => {
-  testMemoryOptimizedNumberTexture();
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'MemoryOptimizedNumberTexture (GPU only) auto',
+  () => {
+    testMemoryOptimizedNumberTexture();
+  }
+);
 
-(GPU.isSinglePrecisionSupported ? test : skip)('MemoryOptimizedNumberTexture (GPU only) gpu', () => {
-  testMemoryOptimizedNumberTexture('gpu');
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'MemoryOptimizedNumberTexture (GPU only) gpu',
+  () => {
+    testMemoryOptimizedNumberTexture('gpu');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('MemoryOptimizedNumberTexture (GPU only) webgl', () => {
-  testMemoryOptimizedNumberTexture('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'MemoryOptimizedNumberTexture (GPU only) webgl',
+  () => {
+    testMemoryOptimizedNumberTexture('webgl');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('MemoryOptimizedNumberTexture (GPU only) webgl2', () => {
-  testMemoryOptimizedNumberTexture('webgl2');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'MemoryOptimizedNumberTexture (GPU only) webgl2',
+  () => {
+    testMemoryOptimizedNumberTexture('webgl2');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('MemoryOptimizedNumberTexture (GPU only) headlessgl', () => {
-  testMemoryOptimizedNumberTexture('headlessgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)(
+  'MemoryOptimizedNumberTexture (GPU only) headlessgl',
+  () => {
+    testMemoryOptimizedNumberTexture('headlessgl');
+  }
+);
 
 function testNumberTexture(mode) {
   const gpu = new GPU({ mode });
@@ -194,38 +231,65 @@ function testNumberTexture(mode) {
     .setDynamicOutput(true)
     .setOutput([4, 4]);
 
-  assert.deepEqual(kernel(texture4X4), [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8]), new Float32Array([9, 10, 11, 12]), new Float32Array([13, 14, 15, 16])]);
+  assert.deepEqual(kernel(texture4X4), [
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+    new Float32Array([9, 10, 11, 12]),
+    new Float32Array([13, 14, 15, 16]),
+  ]);
 
   kernel.setOutput([3, 3]);
-  assert.deepEqual(kernel(texture3X3), [new Float32Array([1, 2, 3]), new Float32Array([4, 5, 6]), new Float32Array([7, 8, 9])]);
+  assert.deepEqual(kernel(texture3X3), [
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
+    new Float32Array([7, 8, 9]),
+  ]);
 
   kernel.setOutput([2, 2]);
-  assert.deepEqual(kernel(texture2X2), [new Float32Array([1, 2]), new Float32Array([3, 4])]);
+  assert.deepEqual(kernel(texture2X2), [
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4]),
+  ]);
 
   assert.ok(kernel.kernelArguments[0].constructor.name.match('NumberTexture'));
 
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('NumberTexture (GPU only) auto', () => {
-  testNumberTexture();
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'NumberTexture (GPU only) auto',
+  () => {
+    testNumberTexture();
+  }
+);
 
-(GPU.isSinglePrecisionSupported ? test : skip)('NumberTexture (GPU only) gpu', () => {
-  testNumberTexture('gpu');
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'NumberTexture (GPU only) gpu',
+  () => {
+    testNumberTexture('gpu');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('NumberTexture (GPU only) webgl', () => {
-  testNumberTexture('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'NumberTexture (GPU only) webgl',
+  () => {
+    testNumberTexture('webgl');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('NumberTexture (GPU only) webgl2', () => {
-  testNumberTexture('webgl2');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'NumberTexture (GPU only) webgl2',
+  () => {
+    testNumberTexture('webgl2');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('NumberTexture (GPU only) headlessgl', () => {
-  testNumberTexture('headlessgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)(
+  'NumberTexture (GPU only) headlessgl',
+  () => {
+    testNumberTexture('headlessgl');
+  }
+);
 
 function testMixedNumberTexture(mode) {
   const gpu = new GPU({ mode });
@@ -278,38 +342,65 @@ function testMixedNumberTexture(mode) {
     .setDynamicOutput(true)
     .setOutput([4, 4]);
 
-  assert.deepEqual(kernel(texture4X4), [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8]), new Float32Array([9, 10, 11, 12]), new Float32Array([13, 14, 15, 16])]);
+  assert.deepEqual(kernel(texture4X4), [
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+    new Float32Array([9, 10, 11, 12]),
+    new Float32Array([13, 14, 15, 16]),
+  ]);
 
   kernel.setOutput([3, 3]);
-  assert.deepEqual(kernel(texture3X3), [new Float32Array([1, 2, 3]), new Float32Array([4, 5, 6]), new Float32Array([7, 8, 9])]);
+  assert.deepEqual(kernel(texture3X3), [
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
+    new Float32Array([7, 8, 9]),
+  ]);
 
   kernel.setOutput([2, 2]);
-  assert.deepEqual(kernel(texture2X2), [new Float32Array([1, 2]), new Float32Array([3, 4])]);
+  assert.deepEqual(kernel(texture2X2), [
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4]),
+  ]);
 
   assert.ok(kernel.kernelArguments[0].constructor.name.match('NumberTexture'));
 
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('Mixed NumberTexture (GPU only) auto', () => {
-  testMixedNumberTexture();
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'Mixed NumberTexture (GPU only) auto',
+  () => {
+    testMixedNumberTexture();
+  }
+);
 
-(GPU.isSinglePrecisionSupported ? test : skip)('Mixed NumberTexture (GPU only) gpu', () => {
-  testMixedNumberTexture('gpu');
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'Mixed NumberTexture (GPU only) gpu',
+  () => {
+    testMixedNumberTexture('gpu');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('Mixed NumberTexture (GPU only) webgl', () => {
-  testMixedNumberTexture('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'Mixed NumberTexture (GPU only) webgl',
+  () => {
+    testMixedNumberTexture('webgl');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('Mixed NumberTexture (GPU only) webgl2', () => {
-  testMixedNumberTexture('webgl2');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'Mixed NumberTexture (GPU only) webgl2',
+  () => {
+    testMixedNumberTexture('webgl2');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('Mixed NumberTexture (GPU only) headlessgl', () => {
-  testMixedNumberTexture('headlessgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)(
+  'Mixed NumberTexture (GPU only) headlessgl',
+  () => {
+    testMixedNumberTexture('headlessgl');
+  }
+);
 
 function testSingleArray1D2(mode) {
   const gpu = new GPU({ mode });
@@ -326,7 +417,12 @@ function testSingleArray1D2(mode) {
   const expected1 = [new Float32Array([1, 2]), new Float32Array([3, 4])];
   kernel.setOutput([expected1.length]);
   assert.deepEqual(kernel(expected1), expected1);
-  const expected2 = [new Float32Array([1, 2]), new Float32Array([3, 4]), new Float32Array([5, 6]), new Float32Array([7, 8])];
+  const expected2 = [
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4]),
+    new Float32Array([5, 6]),
+    new Float32Array([7, 8]),
+  ];
   kernel.setOutput([expected2.length]);
   assert.deepEqual(kernel(expected2), expected2);
   gpu.destroy();
@@ -371,7 +467,12 @@ function testSingleArray1D3(mode) {
   const expected1 = [new Float32Array([1, 2, 3]), new Float32Array([4, 5, 6])];
   kernel.setOutput([expected1.length]);
   assert.deepEqual(kernel(expected1), expected1);
-  const expected2 = [new Float32Array([1, 2, 3]), new Float32Array([4, 5, 6]), new Float32Array([7, 8, 9]), new Float32Array([10, 11, 12])];
+  const expected2 = [
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
+    new Float32Array([7, 8, 9]),
+    new Float32Array([10, 11, 12]),
+  ];
   kernel.setOutput([expected2.length]);
   assert.deepEqual(kernel(expected2), expected2);
   gpu.destroy();
@@ -413,10 +514,18 @@ function testSingleArray1D4(mode) {
       dynamicOutput: true,
     }
   );
-  const expected1 = [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8])];
+  const expected1 = [
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+  ];
   kernel.setOutput([expected1.length]);
   assert.deepEqual(kernel(expected1), expected1);
-  const expected2 = [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8]), new Float32Array([9, 10, 11, 12]), new Float32Array([13, 14, 15, 16])];
+  const expected2 = [
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+    new Float32Array([9, 10, 11, 12]),
+    new Float32Array([13, 14, 15, 16]),
+  ];
   kernel.setOutput([expected2.length]);
   assert.deepEqual(kernel(expected2), expected2);
   gpu.destroy();
@@ -465,8 +574,18 @@ function testSingleArray2D2(mode) {
   kernel.setOutput([expected1[0].length, expected1.length]);
   assert.deepEqual(kernel(expected1), expected1);
   const expected2 = [
-    [new Float32Array([1, 2]), new Float32Array([3, 4]), new Float32Array([5, 6]), new Float32Array([7, 8])],
-    [new Float32Array([9, 10]), new Float32Array([11, 12]), new Float32Array([13, 14]), new Float32Array([15, 16])],
+    [
+      new Float32Array([1, 2]),
+      new Float32Array([3, 4]),
+      new Float32Array([5, 6]),
+      new Float32Array([7, 8]),
+    ],
+    [
+      new Float32Array([9, 10]),
+      new Float32Array([11, 12]),
+      new Float32Array([13, 14]),
+      new Float32Array([15, 16]),
+    ],
   ];
   kernel.setOutput([expected2[0].length, expected2.length]);
   assert.deepEqual(kernel(expected2), expected2);
@@ -516,8 +635,18 @@ function testSingleArray2D3(mode) {
   kernel.setOutput([expected1[0].length, expected1.length]);
   assert.deepEqual(kernel(expected1), expected1);
   const expected2 = [
-    [new Float32Array([1, 2, 3]), new Float32Array([4, 5, 6]), new Float32Array([7, 8, 9]), new Float32Array([10, 11, 12])],
-    [new Float32Array([13, 14, 15]), new Float32Array([16, 17, 18]), new Float32Array([19, 20, 21]), new Float32Array([22, 23, 24])],
+    [
+      new Float32Array([1, 2, 3]),
+      new Float32Array([4, 5, 6]),
+      new Float32Array([7, 8, 9]),
+      new Float32Array([10, 11, 12]),
+    ],
+    [
+      new Float32Array([13, 14, 15]),
+      new Float32Array([16, 17, 18]),
+      new Float32Array([19, 20, 21]),
+      new Float32Array([22, 23, 24]),
+    ],
   ];
   kernel.setOutput([expected2[0].length, expected2.length]);
   assert.deepEqual(kernel(expected2), expected2);
@@ -567,8 +696,18 @@ function testSingleArray2D4(mode) {
   kernel.setOutput([expected1[0].length, expected1.length]);
   assert.deepEqual(kernel(expected1), expected1);
   const expected2 = [
-    [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8]), new Float32Array([9, 10, 11, 12]), new Float32Array([13, 14, 15, 16])],
-    [new Float32Array([17, 18, 19, 20]), new Float32Array([21, 22, 23, 24]), new Float32Array([25, 26, 27, 28]), new Float32Array([29, 30, 31, 32])],
+    [
+      new Float32Array([1, 2, 3, 4]),
+      new Float32Array([5, 6, 7, 8]),
+      new Float32Array([9, 10, 11, 12]),
+      new Float32Array([13, 14, 15, 16]),
+    ],
+    [
+      new Float32Array([17, 18, 19, 20]),
+      new Float32Array([21, 22, 23, 24]),
+      new Float32Array([25, 26, 27, 28]),
+      new Float32Array([29, 30, 31, 32]),
+    ],
   ];
   kernel.setOutput([expected2[0].length, expected2.length]);
   assert.deepEqual(kernel(expected2), expected2);
@@ -621,19 +760,47 @@ function testSingleArray3D2(mode) {
       [new Float32Array([13, 14]), new Float32Array([15, 16])],
     ],
   ];
-  kernel.setOutput([expected1[0][0].length, expected1[0].length, expected1.length]);
+  kernel.setOutput([
+    expected1[0][0].length,
+    expected1[0].length,
+    expected1.length,
+  ]);
   assert.deepEqual(kernel(expected1), expected1);
   const expected2 = [
     [
-      [new Float32Array([1, 2]), new Float32Array([3, 4]), new Float32Array([5, 6]), new Float32Array([7, 8])],
-      [new Float32Array([9, 10]), new Float32Array([11, 12]), new Float32Array([13, 14]), new Float32Array([15, 16])],
+      [
+        new Float32Array([1, 2]),
+        new Float32Array([3, 4]),
+        new Float32Array([5, 6]),
+        new Float32Array([7, 8]),
+      ],
+      [
+        new Float32Array([9, 10]),
+        new Float32Array([11, 12]),
+        new Float32Array([13, 14]),
+        new Float32Array([15, 16]),
+      ],
     ],
     [
-      [new Float32Array([17, 18]), new Float32Array([19, 20]), new Float32Array([21, 22]), new Float32Array([23, 24])],
-      [new Float32Array([25, 26]), new Float32Array([27, 28]), new Float32Array([29, 30]), new Float32Array([31, 32])],
+      [
+        new Float32Array([17, 18]),
+        new Float32Array([19, 20]),
+        new Float32Array([21, 22]),
+        new Float32Array([23, 24]),
+      ],
+      [
+        new Float32Array([25, 26]),
+        new Float32Array([27, 28]),
+        new Float32Array([29, 30]),
+        new Float32Array([31, 32]),
+      ],
     ],
   ];
-  kernel.setOutput([expected2[0][0].length, expected2[0].length, expected2.length]);
+  kernel.setOutput([
+    expected2[0][0].length,
+    expected2[0].length,
+    expected2.length,
+  ]);
   assert.deepEqual(kernel(expected2), expected2);
   gpu.destroy();
 }
@@ -684,19 +851,47 @@ function testSingleArray3D3(mode) {
       [new Float32Array([19, 20, 21]), new Float32Array([22, 23, 24])],
     ],
   ];
-  kernel.setOutput([expected1[0][0].length, expected1[0].length, expected1.length]);
+  kernel.setOutput([
+    expected1[0][0].length,
+    expected1[0].length,
+    expected1.length,
+  ]);
   assert.deepEqual(kernel(expected1), expected1);
   const expected2 = [
     [
-      [new Float32Array([1, 2, 3]), new Float32Array([4, 5, 6]), new Float32Array([7, 8, 9]), new Float32Array([10, 11, 12])],
-      [new Float32Array([13, 14, 15]), new Float32Array([16, 17, 18]), new Float32Array([19, 20, 21]), new Float32Array([22, 23, 24])],
+      [
+        new Float32Array([1, 2, 3]),
+        new Float32Array([4, 5, 6]),
+        new Float32Array([7, 8, 9]),
+        new Float32Array([10, 11, 12]),
+      ],
+      [
+        new Float32Array([13, 14, 15]),
+        new Float32Array([16, 17, 18]),
+        new Float32Array([19, 20, 21]),
+        new Float32Array([22, 23, 24]),
+      ],
     ],
     [
-      [new Float32Array([25, 26, 27]), new Float32Array([28, 29, 30]), new Float32Array([31, 32, 33]), new Float32Array([34, 35, 36])],
-      [new Float32Array([37, 38, 39]), new Float32Array([40, 41, 42]), new Float32Array([43, 44, 45]), new Float32Array([46, 47, 48])],
+      [
+        new Float32Array([25, 26, 27]),
+        new Float32Array([28, 29, 30]),
+        new Float32Array([31, 32, 33]),
+        new Float32Array([34, 35, 36]),
+      ],
+      [
+        new Float32Array([37, 38, 39]),
+        new Float32Array([40, 41, 42]),
+        new Float32Array([43, 44, 45]),
+        new Float32Array([46, 47, 48]),
+      ],
     ],
   ];
-  kernel.setOutput([expected2[0][0].length, expected2[0].length, expected2.length]);
+  kernel.setOutput([
+    expected2[0][0].length,
+    expected2[0].length,
+    expected2.length,
+  ]);
   assert.deepEqual(kernel(expected2), expected2);
   gpu.destroy();
 }
@@ -747,19 +942,47 @@ function testSingleArray3D4(mode) {
       [new Float32Array([25, 26, 27, 28]), new Float32Array([29, 30, 31, 32])],
     ],
   ];
-  kernel.setOutput([expected1[0][0].length, expected1[0].length, expected1.length]);
+  kernel.setOutput([
+    expected1[0][0].length,
+    expected1[0].length,
+    expected1.length,
+  ]);
   assert.deepEqual(kernel(expected1), expected1);
   const expected2 = [
     [
-      [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8]), new Float32Array([9, 10, 11, 12]), new Float32Array([13, 14, 15, 16])],
-      [new Float32Array([17, 18, 19, 20]), new Float32Array([21, 22, 23, 24]), new Float32Array([25, 26, 27, 28]), new Float32Array([29, 30, 31, 32])],
+      [
+        new Float32Array([1, 2, 3, 4]),
+        new Float32Array([5, 6, 7, 8]),
+        new Float32Array([9, 10, 11, 12]),
+        new Float32Array([13, 14, 15, 16]),
+      ],
+      [
+        new Float32Array([17, 18, 19, 20]),
+        new Float32Array([21, 22, 23, 24]),
+        new Float32Array([25, 26, 27, 28]),
+        new Float32Array([29, 30, 31, 32]),
+      ],
     ],
     [
-      [new Float32Array([33, 34, 35, 36]), new Float32Array([37, 38, 39, 40]), new Float32Array([41, 42, 43, 44]), new Float32Array([45, 46, 47, 48])],
-      [new Float32Array([49, 50, 51, 52]), new Float32Array([53, 54, 56, 57]), new Float32Array([58, 59, 60, 61]), new Float32Array([62, 63, 64, 65])],
+      [
+        new Float32Array([33, 34, 35, 36]),
+        new Float32Array([37, 38, 39, 40]),
+        new Float32Array([41, 42, 43, 44]),
+        new Float32Array([45, 46, 47, 48]),
+      ],
+      [
+        new Float32Array([49, 50, 51, 52]),
+        new Float32Array([53, 54, 56, 57]),
+        new Float32Array([58, 59, 60, 61]),
+        new Float32Array([62, 63, 64, 65]),
+      ],
     ],
   ];
-  kernel.setOutput([expected2[0][0].length, expected2[0].length, expected2.length]);
+  kernel.setOutput([
+    expected2[0][0].length,
+    expected2[0].length,
+    expected2.length,
+  ]);
   assert.deepEqual(kernel(expected2), expected2);
   gpu.destroy();
 }
@@ -821,13 +1044,19 @@ test('unsigned precision Array gpu', () => {
   testUnsignedPrecisionArray('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('unsigned precision Array webgl2', () => {
-  testUnsignedPrecisionArray('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'unsigned precision Array webgl2',
+  () => {
+    testUnsignedPrecisionArray('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('unsigned precision Array headlessgl', () => {
-  testUnsignedPrecisionArray('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'unsigned precision Array headlessgl',
+  () => {
+    testUnsignedPrecisionArray('headlessgl');
+  }
+);
 
 test('unsigned precision Array cpu', () => {
   testUnsignedPrecisionArray('cpu');
@@ -854,25 +1083,40 @@ function testSinglePrecisionArray(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('single precision Array auto', () => {
-  testSinglePrecisionArray();
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'single precision Array auto',
+  () => {
+    testSinglePrecisionArray();
+  }
+);
 
-(GPU.isSinglePrecisionSupported ? test : skip)('single precision Array gpu', () => {
-  testSinglePrecisionArray('gpu');
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'single precision Array gpu',
+  () => {
+    testSinglePrecisionArray('gpu');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('single precision Array webgl', () => {
-  testSinglePrecisionArray('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'single precision Array webgl',
+  () => {
+    testSinglePrecisionArray('webgl');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('single precision Array webgl2', () => {
-  testSinglePrecisionArray('webgl2');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'single precision Array webgl2',
+  () => {
+    testSinglePrecisionArray('webgl2');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('single precision Array headlessgl', () => {
-  testSinglePrecisionArray('headlessgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)(
+  'single precision Array headlessgl',
+  () => {
+    testSinglePrecisionArray('headlessgl');
+  }
+);
 
 test('single precision Array cpu', () => {
   testSinglePrecisionArray('cpu');
@@ -935,13 +1179,19 @@ test('unsigned precision Matrix gpu', () => {
   testUnsignedPrecisionMatrix('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('unsigned precision Matrix webgl2', () => {
-  testUnsignedPrecisionMatrix('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'unsigned precision Matrix webgl2',
+  () => {
+    testUnsignedPrecisionMatrix('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('unsigned precision Matrix headlessgl', () => {
-  testUnsignedPrecisionMatrix('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'unsigned precision Matrix headlessgl',
+  () => {
+    testUnsignedPrecisionMatrix('headlessgl');
+  }
+);
 
 test('unsigned precision Matrix cpu', () => {
   testUnsignedPrecisionMatrix('cpu');
@@ -991,25 +1241,40 @@ function testSinglePrecisionMatrix(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('single precision Matrix auto', () => {
-  testSinglePrecisionMatrix();
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'single precision Matrix auto',
+  () => {
+    testSinglePrecisionMatrix();
+  }
+);
 
-(GPU.isSinglePrecisionSupported ? test : skip)('single precision Matrix gpu', () => {
-  testSinglePrecisionMatrix('gpu');
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'single precision Matrix gpu',
+  () => {
+    testSinglePrecisionMatrix('gpu');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('single precision Matrix webgl', () => {
-  testSinglePrecisionMatrix('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'single precision Matrix webgl',
+  () => {
+    testSinglePrecisionMatrix('webgl');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('single precision Matrix webgl2', () => {
-  testSinglePrecisionMatrix('webgl2');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'single precision Matrix webgl2',
+  () => {
+    testSinglePrecisionMatrix('webgl2');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('single precision Matrix headlessgl', () => {
-  testSinglePrecisionMatrix('headlessgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)(
+  'single precision Matrix headlessgl',
+  () => {
+    testSinglePrecisionMatrix('headlessgl');
+  }
+);
 
 test('single precision Matrix cpu', () => {
   testSinglePrecisionMatrix('cpu');
@@ -1026,16 +1291,31 @@ function testUnsignedPrecisionInputMatrix(mode) {
     .setDynamicOutput(true)
     .setOutput([4, 4]);
 
-  let matrix = input([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [4, 4]);
-  assert.deepEqual(kernel(matrix), [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8]), new Float32Array([9, 10, 11, 12]), new Float32Array([13, 14, 15, 16])]);
+  let matrix = input(
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    [4, 4]
+  );
+  assert.deepEqual(kernel(matrix), [
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+    new Float32Array([9, 10, 11, 12]),
+    new Float32Array([13, 14, 15, 16]),
+  ]);
 
   kernel.setOutput([3, 3]);
   matrix = input([1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 3]);
-  assert.deepEqual(kernel(matrix), [new Float32Array([1, 2, 3]), new Float32Array([4, 5, 6]), new Float32Array([7, 8, 9])]);
+  assert.deepEqual(kernel(matrix), [
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
+    new Float32Array([7, 8, 9]),
+  ]);
 
   kernel.setOutput([2, 2]);
   matrix = input([1, 2, 3, 4], [2, 2]);
-  assert.deepEqual(kernel(matrix), [new Float32Array([1, 2]), new Float32Array([3, 4])]);
+  assert.deepEqual(kernel(matrix), [
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4]),
+  ]);
   gpu.destroy();
 }
 
@@ -1047,17 +1327,26 @@ test('unsigned precision Input Matrix gpu', () => {
   testUnsignedPrecisionInputMatrix('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('unsigned precision Input Matrix webgl', () => {
-  testUnsignedPrecisionInputMatrix('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'unsigned precision Input Matrix webgl',
+  () => {
+    testUnsignedPrecisionInputMatrix('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('unsigned precision Input Matrix webgl2', () => {
-  testUnsignedPrecisionInputMatrix('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'unsigned precision Input Matrix webgl2',
+  () => {
+    testUnsignedPrecisionInputMatrix('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('unsigned precision Input Matrix headlessgl', () => {
-  testUnsignedPrecisionInputMatrix('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'unsigned precision Input Matrix headlessgl',
+  () => {
+    testUnsignedPrecisionInputMatrix('headlessgl');
+  }
+);
 
 test('unsigned precision Input Matrix cpu', () => {
   testUnsignedPrecisionInputMatrix('cpu');
@@ -1073,38 +1362,68 @@ function testSinglePrecisionInputMatrix(mode) {
     .setDynamicOutput(true)
     .setOutput([4, 4]);
 
-  let matrix = input([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [4, 4]);
-  assert.deepEqual(kernel(matrix), [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8]), new Float32Array([9, 10, 11, 12]), new Float32Array([13, 14, 15, 16])]);
+  let matrix = input(
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    [4, 4]
+  );
+  assert.deepEqual(kernel(matrix), [
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+    new Float32Array([9, 10, 11, 12]),
+    new Float32Array([13, 14, 15, 16]),
+  ]);
 
   kernel.setOutput([3, 3]);
   matrix = input([1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 3]);
-  assert.deepEqual(kernel(matrix), [new Float32Array([1, 2, 3]), new Float32Array([4, 5, 6]), new Float32Array([7, 8, 9])]);
+  assert.deepEqual(kernel(matrix), [
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
+    new Float32Array([7, 8, 9]),
+  ]);
 
   kernel.setOutput([2, 2]);
   matrix = input([1, 2, 3, 4], [2, 2]);
-  assert.deepEqual(kernel(matrix), [new Float32Array([1, 2]), new Float32Array([3, 4])]);
+  assert.deepEqual(kernel(matrix), [
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4]),
+  ]);
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('single precision Input Matrix auto', () => {
-  testSinglePrecisionInputMatrix();
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'single precision Input Matrix auto',
+  () => {
+    testSinglePrecisionInputMatrix();
+  }
+);
 
-(GPU.isSinglePrecisionSupported ? test : skip)('single precision Input Matrix gpu', () => {
-  testSinglePrecisionInputMatrix('gpu');
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'single precision Input Matrix gpu',
+  () => {
+    testSinglePrecisionInputMatrix('gpu');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('single precision Input Matrix webgl', () => {
-  testSinglePrecisionInputMatrix('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'single precision Input Matrix webgl',
+  () => {
+    testSinglePrecisionInputMatrix('webgl');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('single precision Input Matrix webgl2', () => {
-  testSinglePrecisionInputMatrix('webgl2');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'single precision Input Matrix webgl2',
+  () => {
+    testSinglePrecisionInputMatrix('webgl2');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('single precision Input Matrix headlessgl', () => {
-  testSinglePrecisionInputMatrix('headlessgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)(
+  'single precision Input Matrix headlessgl',
+  () => {
+    testSinglePrecisionInputMatrix('headlessgl');
+  }
+);
 
 test('single precision Input Matrix cpu', () => {
   testSinglePrecisionInputMatrix('cpu');

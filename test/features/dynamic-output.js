@@ -21,7 +21,10 @@ function dynamicOutput1DGrows(mode) {
   kernel.setOutput([10]);
   result = kernel();
   assert.equal(result.length, 10);
-  assert.deepEqual(Array.from(result), [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+  assert.deepEqual(
+    Array.from(result),
+    [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+  );
   assert.deepEqual(Array.from(kernel.output), [10]);
 
   gpu.destroy();
@@ -43,9 +46,12 @@ test('dynamic output 1d grows gpu', () => {
   dynamicOutput1DGrows('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('dynamic output 1d grows headlessgl', () => {
-  dynamicOutput1DGrows('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'dynamic output 1d grows headlessgl',
+  () => {
+    dynamicOutput1DGrows('headlessgl');
+  }
+);
 
 test('dynamic output 1d grows cpu', () => {
   dynamicOutput1DGrows('cpu');
@@ -63,7 +69,10 @@ function dynamicOutput1DShrinks(mode) {
   kernel.setOutput([10]);
   let result = kernel();
   assert.equal(result.length, 10);
-  assert.deepEqual(Array.from(result), [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+  assert.deepEqual(
+    Array.from(result),
+    [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+  );
   assert.deepEqual(Array.from(kernel.output), [10]);
 
   kernel.setOutput([5]);
@@ -87,13 +96,19 @@ test('dynamic output 1d shrinks gpu', () => {
   dynamicOutput1DShrinks('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('dynamic output 1d shrinks webgl2', () => {
-  dynamicOutput1DShrinks('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'dynamic output 1d shrinks webgl2',
+  () => {
+    dynamicOutput1DShrinks('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('dynamic output 1d shrinks headlessgl', () => {
-  dynamicOutput1DShrinks('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'dynamic output 1d shrinks headlessgl',
+  () => {
+    dynamicOutput1DShrinks('headlessgl');
+  }
+);
 
 test('dynamic output 1d shrinks cpu', () => {
   dynamicOutput1DShrinks('cpu');
@@ -125,8 +140,14 @@ function dynamicOutput1DKernelMapGrows(mode) {
   result = kernel();
   assert.equal(result.result.length, 10);
   assert.equal(result.result2.length, 10);
-  assert.deepEqual(Array.from(result.result), [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
-  assert.deepEqual(Array.from(result.result2), [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+  assert.deepEqual(
+    Array.from(result.result),
+    [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+  );
+  assert.deepEqual(
+    Array.from(result.result2),
+    [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+  );
   assert.deepEqual(Array.from(kernel.output), [10]);
 
   gpu.destroy();
@@ -140,17 +161,26 @@ test('dynamic output 1d kernel map grows gpu', () => {
   dynamicOutput1DKernelMapGrows('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('dynamic output 1d kernel map grows webgl', () => {
-  dynamicOutput1DKernelMapGrows('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'dynamic output 1d kernel map grows webgl',
+  () => {
+    dynamicOutput1DKernelMapGrows('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('dynamic output 1d kernel map grows webgl2', () => {
-  dynamicOutput1DKernelMapGrows('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'dynamic output 1d kernel map grows webgl2',
+  () => {
+    dynamicOutput1DKernelMapGrows('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('dynamic output 1d kernel map grows headlessgl', () => {
-  dynamicOutput1DKernelMapGrows('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'dynamic output 1d kernel map grows headlessgl',
+  () => {
+    dynamicOutput1DKernelMapGrows('headlessgl');
+  }
+);
 
 test('dynamic output 1d kernel map grows cpu', () => {
   dynamicOutput1DKernelMapGrows('cpu');
@@ -174,8 +204,14 @@ function dynamicOutput1DKernelMapShrinks(mode) {
   let result = kernel();
   assert.equal(result.result.length, 10);
   assert.equal(result.result2.length, 10);
-  assert.deepEqual(Array.from(result.result), [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
-  assert.deepEqual(Array.from(result.result2), [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+  assert.deepEqual(
+    Array.from(result.result),
+    [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+  );
+  assert.deepEqual(
+    Array.from(result.result2),
+    [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+  );
   assert.deepEqual(Array.from(kernel.output), [10]);
 
   kernel.setOutput([5]);
@@ -197,17 +233,26 @@ test('dynamic output 1d kernel map shrinks gpu', () => {
   dynamicOutput1DKernelMapShrinks('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('dynamic output 1d kernel map shrinks webgl', () => {
-  dynamicOutput1DKernelMapShrinks('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'dynamic output 1d kernel map shrinks webgl',
+  () => {
+    dynamicOutput1DKernelMapShrinks('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('dynamic output 1d kernel map shrinks webgl2', () => {
-  dynamicOutput1DKernelMapShrinks('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'dynamic output 1d kernel map shrinks webgl2',
+  () => {
+    dynamicOutput1DKernelMapShrinks('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('dynamic output 1d kernel map shrinks headlessgl', () => {
-  dynamicOutput1DKernelMapShrinks('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'dynamic output 1d kernel map shrinks headlessgl',
+  () => {
+    dynamicOutput1DKernelMapShrinks('headlessgl');
+  }
+);
 
 test('dynamic output 1d kernel map shrinks cpu', () => {
   dynamicOutput1DKernelMapShrinks('cpu');
@@ -266,9 +311,12 @@ test('dynamic output 2d grows gpu', () => {
   dynamicOutput2DGrows('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('dynamic output 2d grows headlessgl', () => {
-  dynamicOutput2DGrows('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'dynamic output 2d grows headlessgl',
+  () => {
+    dynamicOutput2DGrows('headlessgl');
+  }
+);
 
 test('dynamic output 2d grows cpu', () => {
   dynamicOutput2DGrows('cpu');
@@ -323,13 +371,19 @@ test('dynamic output 2d shrinks gpu', () => {
   dynamicOutput2DShrinks('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('dynamic output 2d shrinks webgl2', () => {
-  dynamicOutput2DShrinks('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'dynamic output 2d shrinks webgl2',
+  () => {
+    dynamicOutput2DShrinks('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('dynamic output 2d shrinks headlessgl', () => {
-  dynamicOutput2DShrinks('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'dynamic output 2d shrinks headlessgl',
+  () => {
+    dynamicOutput2DShrinks('headlessgl');
+  }
+);
 
 test('dynamic output 2d shrinks cpu', () => {
   dynamicOutput2DShrinks('cpu');
@@ -344,7 +398,9 @@ function dynamicOutput2DKernelMapGrows(mode) {
       },
     },
     function () {
-      return map(this.output.x + this.output.y + this.thread.x + this.thread.y);
+      return map(
+        this.output.x + this.output.y + this.thread.x + this.thread.y
+      );
     },
     { dynamicOutput: true }
   );
@@ -402,17 +458,26 @@ test('dynamic output 2d kernel map grows gpu', () => {
   dynamicOutput2DKernelMapGrows('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('dynamic output 2d kernel map grows webgl', () => {
-  dynamicOutput2DKernelMapGrows('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'dynamic output 2d kernel map grows webgl',
+  () => {
+    dynamicOutput2DKernelMapGrows('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('dynamic output 2d kernel map grows webgl2', () => {
-  dynamicOutput2DKernelMapGrows('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'dynamic output 2d kernel map grows webgl2',
+  () => {
+    dynamicOutput2DKernelMapGrows('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('dynamic output 2d kernel map grows headlessgl', () => {
-  dynamicOutput2DKernelMapGrows('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'dynamic output 2d kernel map grows headlessgl',
+  () => {
+    dynamicOutput2DKernelMapGrows('headlessgl');
+  }
+);
 
 test('dynamic output 2d kernel map grows cpu', () => {
   dynamicOutput2DKernelMapGrows('cpu');
@@ -427,7 +492,9 @@ function dynamicOutput2DKernelMapShrinks(mode) {
       },
     },
     function () {
-      return map(this.output.x + this.output.y + this.thread.x + this.thread.y);
+      return map(
+        this.output.x + this.output.y + this.thread.x + this.thread.y
+      );
     },
     { dynamicOutput: true }
   );
@@ -489,13 +556,19 @@ test('dynamic output 2d shrinks gpu', () => {
   dynamicOutput2DShrinks('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('dynamic output 2d shrinks webgl2', () => {
-  dynamicOutput2DShrinks('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'dynamic output 2d shrinks webgl2',
+  () => {
+    dynamicOutput2DShrinks('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('dynamic output 2d shrinks headlessgl', () => {
-  dynamicOutput2DShrinks('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'dynamic output 2d shrinks headlessgl',
+  () => {
+    dynamicOutput2DShrinks('headlessgl');
+  }
+);
 
 test('dynamic output 2d shrinks cpu', () => {
   dynamicOutput2DShrinks('cpu');
@@ -515,14 +588,27 @@ function dynamicOutput2DGraphicalGrows(mode) {
   kernel();
   let result = kernel.getPixels();
   assert.equal(result.length, 2 * 2 * 4);
-  assert.deepEqual(Array.from(result), [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]);
+  assert.deepEqual(
+    Array.from(result),
+    [
+      255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+      255, 255,
+    ]
+  );
   assert.deepEqual(Array.from(kernel.output), [2, 2]);
 
   kernel.setOutput([3, 3]);
   kernel();
   result = kernel.getPixels();
   assert.equal(result.length, 3 * 3 * 4);
-  assert.deepEqual(Array.from(result), [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]);
+  assert.deepEqual(
+    Array.from(result),
+    [
+      255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+      255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+      255, 255, 255, 255, 255, 255, 255, 255,
+    ]
+  );
   assert.deepEqual(Array.from(kernel.output), [3, 3]);
 
   gpu.destroy();
@@ -536,21 +622,33 @@ test('dynamic output 2d graphical grows gpu', () => {
   dynamicOutput2DGraphicalGrows('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('dynamic output 2d graphical grows webgl', () => {
-  dynamicOutput2DGraphicalGrows('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'dynamic output 2d graphical grows webgl',
+  () => {
+    dynamicOutput2DGraphicalGrows('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('dynamic output 2d graphical grows webgl2', () => {
-  dynamicOutput2DGraphicalGrows('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'dynamic output 2d graphical grows webgl2',
+  () => {
+    dynamicOutput2DGraphicalGrows('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('dynamic output 2d graphical grows headlessgl', () => {
-  dynamicOutput2DGraphicalGrows('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'dynamic output 2d graphical grows headlessgl',
+  () => {
+    dynamicOutput2DGraphicalGrows('headlessgl');
+  }
+);
 
-(GPU.isCanvasSupported ? test : skip)('dynamic output 2d graphical grows cpu', () => {
-  dynamicOutput2DGraphicalGrows('cpu');
-});
+(GPU.isCanvasSupported ? test : skip)(
+  'dynamic output 2d graphical grows cpu',
+  () => {
+    dynamicOutput2DGraphicalGrows('cpu');
+  }
+);
 
 function dynamicOutput2DGraphicalShrinks(mode) {
   const gpu = new GPU({ mode });
@@ -565,14 +663,27 @@ function dynamicOutput2DGraphicalShrinks(mode) {
   kernel();
   let result = kernel.getPixels();
   assert.equal(result.length, 3 * 3 * 4);
-  assert.deepEqual(Array.from(result), [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]);
+  assert.deepEqual(
+    Array.from(result),
+    [
+      255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+      255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+      255, 255, 255, 255, 255, 255, 255, 255,
+    ]
+  );
   assert.deepEqual(Array.from(kernel.output), [3, 3]);
 
   kernel.setOutput([2, 2]);
   kernel();
   result = kernel.getPixels();
   assert.equal(result.length, 2 * 2 * 4);
-  assert.deepEqual(Array.from(result), [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]);
+  assert.deepEqual(
+    Array.from(result),
+    [
+      255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+      255, 255,
+    ]
+  );
   assert.deepEqual(Array.from(kernel.output), [2, 2]);
 
   gpu.destroy();
@@ -586,27 +697,46 @@ test('dynamic output 2d graphical shrinks gpu', () => {
   dynamicOutput2DGraphicalShrinks('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('dynamic output 2d graphical shrinks webgl', () => {
-  dynamicOutput2DGraphicalShrinks('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'dynamic output 2d graphical shrinks webgl',
+  () => {
+    dynamicOutput2DGraphicalShrinks('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('dynamic output 2d graphical shrinks webgl2', () => {
-  dynamicOutput2DGraphicalShrinks('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'dynamic output 2d graphical shrinks webgl2',
+  () => {
+    dynamicOutput2DGraphicalShrinks('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('dynamic output 2d graphical shrinks headlessgl', () => {
-  dynamicOutput2DGraphicalShrinks('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'dynamic output 2d graphical shrinks headlessgl',
+  () => {
+    dynamicOutput2DGraphicalShrinks('headlessgl');
+  }
+);
 
-(GPU.isCanvasSupported ? test : skip)('dynamic output 2d graphical  shrinks cpu', () => {
-  dynamicOutput2DGraphicalShrinks('cpu');
-});
+(GPU.isCanvasSupported ? test : skip)(
+  'dynamic output 2d graphical  shrinks cpu',
+  () => {
+    dynamicOutput2DGraphicalShrinks('cpu');
+  }
+);
 
 function dynamicOutput3DGrows(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(
     function () {
-      return this.output.x + this.output.y + this.thread.z + this.thread.x + this.thread.y + this.thread.z;
+      return (
+        this.output.x +
+        this.output.y +
+        this.thread.z +
+        this.thread.x +
+        this.thread.y +
+        this.thread.z
+      );
     },
     { dynamicOutput: true }
   );
@@ -673,9 +803,12 @@ test('dynamic output 3d grows gpu', () => {
   dynamicOutput3DGrows('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('dynamic output 3d grows headlessgl', () => {
-  dynamicOutput3DGrows('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'dynamic output 3d grows headlessgl',
+  () => {
+    dynamicOutput3DGrows('headlessgl');
+  }
+);
 
 test('dynamic output 3d grows cpu', () => {
   dynamicOutput3DGrows('cpu');
@@ -685,7 +818,14 @@ function dynamicOutput3DShrinks(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(
     function () {
-      return this.output.x + this.output.y + this.thread.z + this.thread.x + this.thread.y + this.thread.z;
+      return (
+        this.output.x +
+        this.output.y +
+        this.thread.z +
+        this.thread.x +
+        this.thread.y +
+        this.thread.z
+      );
     },
     { dynamicOutput: true }
   );
@@ -748,13 +888,19 @@ test('dynamic output 3d shrinks gpu', () => {
   dynamicOutput3DShrinks('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('dynamic output 3d shrinks webgl2', () => {
-  dynamicOutput3DShrinks('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'dynamic output 3d shrinks webgl2',
+  () => {
+    dynamicOutput3DShrinks('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('dynamic output 3d shrinks headlessgl', () => {
-  dynamicOutput3DShrinks('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'dynamic output 3d shrinks headlessgl',
+  () => {
+    dynamicOutput3DShrinks('headlessgl');
+  }
+);
 
 test('dynamic output 3d shrinks cpu', () => {
   dynamicOutput3DShrinks('cpu');
@@ -769,7 +915,14 @@ function dynamicOutput3DKernelMapGrows(mode) {
       },
     },
     function () {
-      return map(this.output.x + this.output.y + this.thread.z + this.thread.x + this.thread.y + this.thread.z);
+      return map(
+        this.output.x +
+          this.output.y +
+          this.thread.z +
+          this.thread.x +
+          this.thread.y +
+          this.thread.z
+      );
     },
     { dynamicOutput: true }
   );
@@ -863,17 +1016,26 @@ test('dynamic output 3d kernel map grows gpu', () => {
   dynamicOutput3DKernelMapGrows('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('dynamic output 3d kernel map grows webgl', () => {
-  dynamicOutput3DKernelMapGrows('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'dynamic output 3d kernel map grows webgl',
+  () => {
+    dynamicOutput3DKernelMapGrows('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('dynamic output 3d kernel map grows webgl2', () => {
-  dynamicOutput3DKernelMapGrows('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'dynamic output 3d kernel map grows webgl2',
+  () => {
+    dynamicOutput3DKernelMapGrows('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('dynamic output 3d kernel map grows headlessgl', () => {
-  dynamicOutput3DKernelMapGrows('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'dynamic output 3d kernel map grows headlessgl',
+  () => {
+    dynamicOutput3DKernelMapGrows('headlessgl');
+  }
+);
 
 test('dynamic output 3d kernel map grows cpu', () => {
   dynamicOutput3DKernelMapGrows('cpu');
@@ -888,7 +1050,14 @@ function dynamicOutput3DKernelMapShrinks(mode) {
       },
     },
     function () {
-      return map(this.output.x + this.output.y + this.thread.z + this.thread.x + this.thread.y + this.thread.z);
+      return map(
+        this.output.x +
+          this.output.y +
+          this.thread.z +
+          this.thread.x +
+          this.thread.y +
+          this.thread.z
+      );
     },
     { dynamicOutput: true }
   );
@@ -982,17 +1151,26 @@ test('dynamic output 3d kernel map shrinks gpu', () => {
   dynamicOutput3DKernelMapShrinks('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('dynamic output 3d kernel map shrinks webgl', () => {
-  dynamicOutput3DKernelMapShrinks('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'dynamic output 3d kernel map shrinks webgl',
+  () => {
+    dynamicOutput3DKernelMapShrinks('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('dynamic output 3d kernel map shrinks webgl2', () => {
-  dynamicOutput3DKernelMapShrinks('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'dynamic output 3d kernel map shrinks webgl2',
+  () => {
+    dynamicOutput3DKernelMapShrinks('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('dynamic output 3d kernel map shrinks headlessgl', () => {
-  dynamicOutput3DKernelMapShrinks('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'dynamic output 3d kernel map shrinks headlessgl',
+  () => {
+    dynamicOutput3DKernelMapShrinks('headlessgl');
+  }
+);
 
 test('dynamic output 3d kernel map shrinks cpu', () => {
   dynamicOutput3DKernelMapShrinks('cpu');

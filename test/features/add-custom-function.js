@@ -40,13 +40,19 @@ test('in GPU instance settings gpu', () => {
   inGPUInstanceSettings('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('in GPU instance settings webgl2', () => {
-  inGPUInstanceSettings('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'in GPU instance settings webgl2',
+  () => {
+    inGPUInstanceSettings('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('in GPU instance settings headlessgl', () => {
-  inGPUInstanceSettings('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'in GPU instance settings headlessgl',
+  () => {
+    inGPUInstanceSettings('headlessgl');
+  }
+);
 
 test('in GPU instance settings cpu', () => {
   inGPUInstanceSettings('cpu');
@@ -85,17 +91,26 @@ test('with GPU addFunction method gpu', () => {
   withGPUAddFunctionMethod('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('with GPU addFunction method webgl', () => {
-  withGPUAddFunctionMethod('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'with GPU addFunction method webgl',
+  () => {
+    withGPUAddFunctionMethod('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('with GPU addFunction method webgl2', () => {
-  withGPUAddFunctionMethod('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'with GPU addFunction method webgl2',
+  () => {
+    withGPUAddFunctionMethod('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('with GPU addFunction method headlessgl', () => {
-  withGPUAddFunctionMethod('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'with GPU addFunction method headlessgl',
+  () => {
+    withGPUAddFunctionMethod('headlessgl');
+  }
+);
 
 test('with GPU addFunction method cpu', () => {
   withGPUAddFunctionMethod('cpu');
@@ -135,17 +150,26 @@ test('in Kernel instance settings gpu', () => {
   inKernelInstanceSettings('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('in Kernel instance settings webgl', () => {
-  inKernelInstanceSettings('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'in Kernel instance settings webgl',
+  () => {
+    inKernelInstanceSettings('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('in Kernel instance settings webgl2', () => {
-  inKernelInstanceSettings('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'in Kernel instance settings webgl2',
+  () => {
+    inKernelInstanceSettings('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('in Kernel instance settings headlessgl', () => {
-  inKernelInstanceSettings('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'in Kernel instance settings headlessgl',
+  () => {
+    inKernelInstanceSettings('headlessgl');
+  }
+);
 
 test('in Kernel instance settings cpu', () => {
   inKernelInstanceSettings('cpu');
@@ -186,17 +210,26 @@ test('with Kernel addFunction method gpu', () => {
   withKernelAddFunctionMethod('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('with Kernel addFunction method webgl', () => {
-  withKernelAddFunctionMethod('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'with Kernel addFunction method webgl',
+  () => {
+    withKernelAddFunctionMethod('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('with Kernel addFunction method webgl2', () => {
-  withKernelAddFunctionMethod('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'with Kernel addFunction method webgl2',
+  () => {
+    withKernelAddFunctionMethod('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('with Kernel addFunction method headlessgl', () => {
-  withKernelAddFunctionMethod('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'with Kernel addFunction method headlessgl',
+  () => {
+    withKernelAddFunctionMethod('headlessgl');
+  }
+);
 
 test('with Kernel addFunction method cpu', () => {
   withKernelAddFunctionMethod('cpu');
@@ -314,9 +347,12 @@ test('sumABThisOutputX gpu', () => {
   sumABThisOutputX('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('sumABThisOutputX headlessgl', () => {
-  sumABThisOutputX('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'sumABThisOutputX headlessgl',
+  () => {
+    sumABThisOutputX('headlessgl');
+  }
+);
 
 test('sumABThisOutputX cpu', () => {
   sumABThisOutputX('cpu');

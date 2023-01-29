@@ -33,13 +33,19 @@ function imageArgumentTest(mode, done) {
   imageArgumentTest('gpu', t.async());
 });
 
-(GPU.isWebGLSupported && typeof Image !== 'undefined' ? test : skip)('image argument webgl', t => {
-  imageArgumentTest('webgl', t.async());
-});
+(GPU.isWebGLSupported && typeof Image !== 'undefined' ? test : skip)(
+  'image argument webgl',
+  t => {
+    imageArgumentTest('webgl', t.async());
+  }
+);
 
-(GPU.isWebGL2Supported && typeof Image !== 'undefined' ? test : skip)('image argument webgl2', t => {
-  imageArgumentTest('webgl2', t.async());
-});
+(GPU.isWebGL2Supported && typeof Image !== 'undefined' ? test : skip)(
+  'image argument webgl2',
+  t => {
+    imageArgumentTest('webgl2', t.async());
+  }
+);
 
 (typeof Image !== 'undefined' ? test : skip)('image argument cpu', t => {
   imageArgumentTest('cpu', t.async());

@@ -21,18 +21,30 @@ function testOnlyFirstIterationSafari(mode) {
 
   const result = kernel(5);
 
-  assert.deepEqual(Array.from(result), [18, 18, 18, 18, 18, 18, 18, 18, 18, 18]);
+  assert.deepEqual(
+    Array.from(result),
+    [18, 18, 18, 18, 18, 18, 18, 18, 18, 18]
+  );
   gpu.destroy();
 }
 
-(GPU.isWebGLSupported ? test : skip)('Issue #378 - only first iteration safari webgl', () => {
-  testOnlyFirstIterationSafari('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #378 - only first iteration safari webgl',
+  () => {
+    testOnlyFirstIterationSafari('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #378 - only first iteration safari webgl2', () => {
-  testOnlyFirstIterationSafari('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #378 - only first iteration safari webgl2',
+  () => {
+    testOnlyFirstIterationSafari('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #378 - only first iteration safari headlessgl', () => {
-  testOnlyFirstIterationSafari('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #378 - only first iteration safari headlessgl',
+  () => {
+    testOnlyFirstIterationSafari('headlessgl');
+  }
+);

@@ -31,9 +31,12 @@ test('cpu', () => {
   singlePrecisionKernel('gpu');
 });
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('webgl', () => {
-  singlePrecisionKernel('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'webgl',
+  () => {
+    singlePrecisionKernel('webgl');
+  }
+);
 
 (GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
   singlePrecisionKernel('webgl2');

@@ -40,9 +40,12 @@ test('can detect Number gpu', () => {
   canDetectNumberFromAddedFunction('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('can detect Number headlessgl', () => {
-  canDetectNumberFromAddedFunction('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'can detect Number headlessgl',
+  () => {
+    canDetectNumberFromAddedFunction('headlessgl');
+  }
+);
 
 test('can detect Number cpu', () => {
   canDetectNumberFromAddedFunction('cpu');
@@ -85,9 +88,12 @@ test('can detect Array(2) gpu', () => {
   canDetectArray2FromAddedFunction('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('can detect Array(2) headlessgl', () => {
-  canDetectArray2FromAddedFunction('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'can detect Array(2) headlessgl',
+  () => {
+    canDetectArray2FromAddedFunction('headlessgl');
+  }
+);
 
 test('can detect Array(2) cpu', () => {
   canDetectArray2FromAddedFunction('cpu');
@@ -130,9 +136,12 @@ test('can detect Array(3) gpu', () => {
   canDetectArray3FromAddedFunction('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('can detect Array(3) headlessgl', () => {
-  canDetectArray3FromAddedFunction('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'can detect Array(3) headlessgl',
+  () => {
+    canDetectArray3FromAddedFunction('headlessgl');
+  }
+);
 
 test('can detect Array(3) cpu', () => {
   canDetectArray3FromAddedFunction('cpu');
@@ -175,9 +184,12 @@ test('can detect Array(4) gpu', () => {
   canDetectArray4FromAddedFunction('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('can detect Array(4) headlessgl', () => {
-  canDetectArray4FromAddedFunction('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'can detect Array(4) headlessgl',
+  () => {
+    canDetectArray4FromAddedFunction('headlessgl');
+  }
+);
 
 test('can detect Array(4) cpu', () => {
   canDetectArray4FromAddedFunction('cpu');

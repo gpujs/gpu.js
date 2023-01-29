@@ -105,9 +105,12 @@ test('forConstantLoopTest gpu', () => {
   forWithConstantTest('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('forConstantLoopTest headlessgl', () => {
-  forWithConstantTest('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'forConstantLoopTest headlessgl',
+  () => {
+    forWithConstantTest('headlessgl');
+  }
+);
 
 test('forConstantLoopTest cpu', () => {
   forWithConstantTest('cpu');
@@ -241,10 +244,13 @@ function evilWhileLoopTest(mode) {
   const evil_while_a = [1, 2, 3, 5, 6, 7];
   const evil_while_b = [4, 5, 6, 1, 2, 3];
   const evil_while_cpuRef = new GPU({ mode: 'cpu' });
-  const evil_while_cpuRef_f = evil_while_cpuRef.createKernel(evilWhileKernelFunction, {
-    output: [6],
-    loopMaxIterations: 10000,
-  });
+  const evil_while_cpuRef_f = evil_while_cpuRef.createKernel(
+    evilWhileKernelFunction,
+    {
+      output: [6],
+      loopMaxIterations: 10000,
+    }
+  );
 
   const evil_while_exp = evil_while_cpuRef_f(evil_while_a, evil_while_b);
   const gpu = new GPU({ mode });

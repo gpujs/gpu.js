@@ -67,7 +67,8 @@ export const kernelValueMaps = {
       'ArrayTexture(2)': WebGL2KernelValueDynamicNumberTexture,
       'ArrayTexture(3)': WebGL2KernelValueDynamicNumberTexture,
       'ArrayTexture(4)': WebGL2KernelValueDynamicNumberTexture,
-      MemoryOptimizedNumberTexture: WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
+      MemoryOptimizedNumberTexture:
+        WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       HTMLCanvas: WebGL2KernelValueDynamicHTMLImage,
       OffscreenCanvas: WebGL2KernelValueDynamicHTMLImage,
       HTMLImage: WebGL2KernelValueDynamicHTMLImage,
@@ -99,7 +100,8 @@ export const kernelValueMaps = {
       'ArrayTexture(2)': WebGL2KernelValueNumberTexture,
       'ArrayTexture(3)': WebGL2KernelValueNumberTexture,
       'ArrayTexture(4)': WebGL2KernelValueNumberTexture,
-      MemoryOptimizedNumberTexture: WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
+      MemoryOptimizedNumberTexture:
+        WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       HTMLCanvas: WebGL2KernelValueHTMLImage,
       OffscreenCanvas: WebGL2KernelValueHTMLImage,
       HTMLImage: WebGL2KernelValueHTMLImage,
@@ -133,7 +135,8 @@ export const kernelValueMaps = {
       'ArrayTexture(2)': WebGL2KernelValueDynamicNumberTexture,
       'ArrayTexture(3)': WebGL2KernelValueDynamicNumberTexture,
       'ArrayTexture(4)': WebGL2KernelValueDynamicNumberTexture,
-      MemoryOptimizedNumberTexture: WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
+      MemoryOptimizedNumberTexture:
+        WebGL2KernelValueDynamicMemoryOptimizedNumberTexture,
       HTMLCanvas: WebGL2KernelValueDynamicHTMLImage,
       OffscreenCanvas: WebGL2KernelValueDynamicHTMLImage,
       HTMLImage: WebGL2KernelValueDynamicHTMLImage,
@@ -165,7 +168,8 @@ export const kernelValueMaps = {
       'ArrayTexture(2)': WebGL2KernelValueNumberTexture,
       'ArrayTexture(3)': WebGL2KernelValueNumberTexture,
       'ArrayTexture(4)': WebGL2KernelValueNumberTexture,
-      MemoryOptimizedNumberTexture: WebGL2KernelValueMemoryOptimizedNumberTexture,
+      MemoryOptimizedNumberTexture:
+        WebGL2KernelValueMemoryOptimizedNumberTexture,
       HTMLCanvas: WebGL2KernelValueHTMLImage,
       OffscreenCanvas: WebGL2KernelValueHTMLImage,
       HTMLImage: WebGL2KernelValueHTMLImage,

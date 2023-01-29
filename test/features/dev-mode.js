@@ -105,7 +105,10 @@ test('works with input array', () => {
     },
     { output: [4] }
   );
-  assert.deepEqual(kernel(input([1, 2, 3, 4], [4])), new Float32Array([1, 2, 3, 4]));
+  assert.deepEqual(
+    kernel(input([1, 2, 3, 4], [4])),
+    new Float32Array([1, 2, 3, 4])
+  );
   gpu.destroy();
 });
 
@@ -117,7 +120,10 @@ test('works with input matrix', () => {
     },
     { output: [4, 2] }
   );
-  assert.deepEqual(kernel(input([1, 2, 3, 4, 5, 6, 7, 8], [4, 2])), [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8])]);
+  assert.deepEqual(kernel(input([1, 2, 3, 4, 5, 6, 7, 8], [4, 2])), [
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+  ]);
   gpu.destroy();
 });
 
@@ -129,10 +135,15 @@ test('works with input cube', () => {
     },
     { output: [4, 2, 2] }
   );
-  assert.deepEqual(kernel(input([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [4, 2, 2])), [
-    [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8])],
-    [new Float32Array([9, 10, 11, 12]), new Float32Array([13, 14, 15, 16])],
-  ]);
+  assert.deepEqual(
+    kernel(
+      input([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [4, 2, 2])
+    ),
+    [
+      [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8])],
+      [new Float32Array([9, 10, 11, 12]), new Float32Array([13, 14, 15, 16])],
+    ]
+  );
   gpu.destroy();
 });
 

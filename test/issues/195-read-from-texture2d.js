@@ -53,14 +53,23 @@ test('Issue #195 Read from Texture 2D (GPU only) gpu', () => {
   readFromTexture('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #195 Read from Texture 2D (GPU only) webgl', () => {
-  readFromTexture('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #195 Read from Texture 2D (GPU only) webgl',
+  () => {
+    readFromTexture('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #195 Read from Texture 2D (GPU Only) webgl2', () => {
-  readFromTexture('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #195 Read from Texture 2D (GPU Only) webgl2',
+  () => {
+    readFromTexture('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #195 Read from Texture 2D (GPU Only) headlessgl', () => {
-  readFromTexture('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #195 Read from Texture 2D (GPU Only) headlessgl',
+  () => {
+    readFromTexture('headlessgl');
+  }
+);

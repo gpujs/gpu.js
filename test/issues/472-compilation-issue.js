@@ -20,7 +20,13 @@ function testCompilationIssue(mode) {
     output: [2, 2],
     graphical: true,
   });
-  render(new Uint8ClampedArray([230, 233, 240, 255, 231, 234, 241, 255, 232, 235, 242, 255, 233, 236, 243, 255]), 14 * Math.sin(Date.now() / 400));
+  render(
+    new Uint8ClampedArray([
+      230, 233, 240, 255, 231, 234, 241, 255, 232, 235, 242, 255, 233, 236,
+      243, 255,
+    ]),
+    14 * Math.sin(Date.now() / 400)
+  );
   assert.equal(render.getPixels().length, 2 * 2 * 4);
   gpu.destroy();
 }

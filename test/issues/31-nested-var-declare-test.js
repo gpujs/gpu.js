@@ -1,5 +1,11 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU, FunctionBuilder, WebGLFunctionNode, WebGL2FunctionNode, CPUFunctionNode } = require('../../src');
+const {
+  GPU,
+  FunctionBuilder,
+  WebGLFunctionNode,
+  WebGL2FunctionNode,
+  CPUFunctionNode,
+} = require('../../src');
 
 describe('issue #31 redeclare');
 
@@ -37,17 +43,26 @@ test('Issue #31 - nestedVarRedeclare gpu', () => {
   nestedVarRedeclareTest('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #31 - nestedVarRedeclare webgl', () => {
-  nestedVarRedeclareTest('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #31 - nestedVarRedeclare webgl',
+  () => {
+    nestedVarRedeclareTest('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #31 - nestedVarRedeclare webgl2', () => {
-  nestedVarRedeclareTest('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #31 - nestedVarRedeclare webgl2',
+  () => {
+    nestedVarRedeclareTest('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #31 - nestedVarRedeclare headlessgl', () => {
-  nestedVarRedeclareTest('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #31 - nestedVarRedeclare headlessgl',
+  () => {
+    nestedVarRedeclareTest('headlessgl');
+  }
+);
 
 test('Issue #31 - nestedVarRedeclare cpu', () => {
   nestedVarRedeclareTest('cpu');
@@ -129,17 +144,26 @@ test('Issue #31 - nestedVarDeclare gpu', () => {
   nestedVarDeclareTest('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #31 - nestedVarDeclare webgl', () => {
-  nestedVarDeclareTest('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #31 - nestedVarDeclare webgl',
+  () => {
+    nestedVarDeclareTest('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #31 - nestedVarDeclare webgl2', () => {
-  nestedVarDeclareTest('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #31 - nestedVarDeclare webgl2',
+  () => {
+    nestedVarDeclareTest('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #31 - nestedVarDeclare headlessgl', () => {
-  nestedVarDeclareTest('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #31 - nestedVarDeclare headlessgl',
+  () => {
+    nestedVarDeclareTest('headlessgl');
+  }
+);
 
 test('Issue #31 - nestedVarDeclare cpu', () => {
   nestedVarDeclareTest('cpu');
@@ -200,5 +224,16 @@ test('Issue #31 - nestedVarDeclare : AST handling cpu', () => {
     ],
   });
 
-  assert.equal(builder.getStringFromFunctionNames(['nestedVarDeclareFunction']), 'function nestedVarDeclareFunction() {' + '\nlet user_result=0;' + '\nfor (let user_i=0;(user_i<10);++user_i){' + '\nfor (let user_i=0;(user_i<20);++user_i){' + '\nuser_result+=1;}' + '\n}' + '\n' + '\nreturn user_result;' + '\n}');
+  assert.equal(
+    builder.getStringFromFunctionNames(['nestedVarDeclareFunction']),
+    'function nestedVarDeclareFunction() {' +
+      '\nlet user_result=0;' +
+      '\nfor (let user_i=0;(user_i<10);++user_i){' +
+      '\nfor (let user_i=0;(user_i<20);++user_i){' +
+      '\nuser_result+=1;}' +
+      '\n}' +
+      '\n' +
+      '\nreturn user_result;' +
+      '\n}'
+  );
 });

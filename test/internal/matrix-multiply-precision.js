@@ -79,17 +79,26 @@ test('512x512 unsigned precision gpu', () => {
   test512x512Matrix('unsigned', 'gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('512x512 unsigned precision webgl', () => {
-  test512x512Matrix('unsigned', 'webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  '512x512 unsigned precision webgl',
+  () => {
+    test512x512Matrix('unsigned', 'webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('512x512 unsigned precision webgl2', () => {
-  test512x512Matrix('unsigned', 'webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  '512x512 unsigned precision webgl2',
+  () => {
+    test512x512Matrix('unsigned', 'webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('512x512 unsigned precision headlessgl', () => {
-  test512x512Matrix('unsigned', 'headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  '512x512 unsigned precision headlessgl',
+  () => {
+    test512x512Matrix('unsigned', 'headlessgl');
+  }
+);
 
 test('512x512 unsigned precision cpu', () => {
   test512x512Matrix('unsigned', 'cpu');
@@ -146,61 +155,97 @@ test('10x512 unsigned precision gpu', () => {
   test10x512Matrix('unsigned', 'webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('10x512 unsigned precision webgl2', () => {
-  test10x512Matrix('unsigned', 'webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  '10x512 unsigned precision webgl2',
+  () => {
+    test10x512Matrix('unsigned', 'webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('10x512 unsigned precision headlessgl', () => {
-  test10x512Matrix('unsigned', 'headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  '10x512 unsigned precision headlessgl',
+  () => {
+    test10x512Matrix('unsigned', 'headlessgl');
+  }
+);
 
 test('10x512 unsigned precision cpu', () => {
   test10x512Matrix('unsigned', 'cpu');
 });
 
-(GPU.isSinglePrecisionSupported ? test : skip)('512x512 single precision auto', () => {
-  test512x512Matrix('single');
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  '512x512 single precision auto',
+  () => {
+    test512x512Matrix('single');
+  }
+);
 
-(GPU.isSinglePrecisionSupported ? test : skip)('512x512 single precision gpu', () => {
-  test512x512Matrix('single', 'gpu');
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  '512x512 single precision gpu',
+  () => {
+    test512x512Matrix('single', 'gpu');
+  }
+);
 
-(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('512x512 single precision webgl', () => {
-  test512x512Matrix('single', 'webgl');
-});
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  '512x512 single precision webgl',
+  () => {
+    test512x512Matrix('single', 'webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('512x512 single precision webgl2', () => {
-  test512x512Matrix('single', 'webgl2');
-});
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)(
+  '512x512 single precision webgl2',
+  () => {
+    test512x512Matrix('single', 'webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('512x512 single precision headlessgl', () => {
-  test512x512Matrix('single', 'headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  '512x512 single precision headlessgl',
+  () => {
+    test512x512Matrix('single', 'headlessgl');
+  }
+);
 
 test('512x512 single precision cpu', () => {
   test512x512Matrix('single', 'cpu');
 });
 
-(GPU.isSinglePrecisionSupported ? test : skip)('10x512 single precision auto', () => {
-  test10x512Matrix('single');
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  '10x512 single precision auto',
+  () => {
+    test10x512Matrix('single');
+  }
+);
 
-(GPU.isSinglePrecisionSupported ? test : skip)('10x512 single precision gpu', () => {
-  test10x512Matrix('single', 'gpu');
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  '10x512 single precision gpu',
+  () => {
+    test10x512Matrix('single', 'gpu');
+  }
+);
 
-(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('10x512 single precision webgl', () => {
-  test10x512Matrix('single', 'webgl');
-});
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  '10x512 single precision webgl',
+  () => {
+    test10x512Matrix('single', 'webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('10x512 single precision webgl2', () => {
-  test10x512Matrix('single', 'webgl2');
-});
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)(
+  '10x512 single precision webgl2',
+  () => {
+    test10x512Matrix('single', 'webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('10x512 single precision headlessgl', () => {
-  test10x512Matrix('single', 'headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  '10x512 single precision headlessgl',
+  () => {
+    test10x512Matrix('single', 'headlessgl');
+  }
+);
 
 test('10x512 single precision cpu', () => {
   test10x512Matrix('precision', 'cpu');

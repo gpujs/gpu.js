@@ -89,7 +89,10 @@ export class CPUFunctionNode extends FunctionNode {
   astLiteral(ast, retArr) {
     // Reject non numeric literals
     if (isNaN(ast.value)) {
-      throw this.astErrorOutput('Non-numeric literal not supported : ' + ast.value, ast);
+      throw this.astErrorOutput(
+        'Non-numeric literal not supported : ' + ast.value,
+        ast
+      );
     }
 
     retArr.push(ast.value);
@@ -120,7 +123,10 @@ export class CPUFunctionNode extends FunctionNode {
    */
   astIdentifierExpression(idtNode, retArr) {
     if (idtNode.type !== 'Identifier') {
-      throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode);
+      throw this.astErrorOutput(
+        'IdentifierExpression - not an Identifier',
+        idtNode
+      );
     }
 
     switch (idtNode.name) {
@@ -192,7 +198,11 @@ export class CPUFunctionNode extends FunctionNode {
     }
 
     if (isSafe) {
-      retArr.push(`for (${initArr.join('')};${testArr.join('')};${updateArr.join('')}){\n`);
+      retArr.push(
+        `for (${initArr.join('')};${testArr.join('')};${updateArr.join(
+          ''
+        )}){\n`
+      );
       retArr.push(bodyArr.join(''));
       retArr.push('}\n');
     } else {
@@ -200,7 +210,9 @@ export class CPUFunctionNode extends FunctionNode {
       if (initArr.length > 0) {
         retArr.push(initArr.join(''), ';\n');
       }
-      retArr.push(`for (let ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
+      retArr.push(
+        `for (let ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`
+      );
       if (testArr.length > 0) {
         retArr.push(`if (!${testArr.join('')}) break;\n`);
       }
@@ -267,7 +279,10 @@ export class CPUFunctionNode extends FunctionNode {
   astAssignmentExpression(assNode, retArr) {
     const declaration = this.getDeclaration(assNode.left);
     if (declaration && !declaration.assignable) {
-      throw this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
+      throw this.astErrorOutput(
+        `Variable ${assNode.left.name} is not assignable here`,
+        assNode
+      );
     }
     this.astGeneric(assNode.left, retArr);
     retArr.push(assNode.operator);
@@ -344,7 +359,10 @@ export class CPUFunctionNode extends FunctionNode {
 
     if (ifNode.alternate) {
       retArr.push('else ');
-      if (ifNode.alternate.type === 'BlockStatement' || ifNode.alternate.type === 'IfStatement') {
+      if (
+        ifNode.alternate.type === 'BlockStatement' ||
+        ifNode.alternate.type === 'IfStatement'
+      ) {
         this.astGeneric(ifNode.alternate, retArr);
       } else {
         retArr.push(' {\n');
@@ -398,7 +416,16 @@ export class CPUFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astMemberExpression(mNode, retArr) {
-    const { signature, type, property, xProperty, yProperty, zProperty, name, origin } = this.getMemberExpressionDetails(mNode);
+    const {
+      signature,
+      type,
+      property,
+      xProperty,
+      yProperty,
+      zProperty,
+      name,
+      origin,
+    } = this.getMemberExpressionDetails(mNode);
     switch (signature) {
       case 'this.thread.value':
         retArr.push(`_this.thread.${name}`);
@@ -505,14 +532,22 @@ export class CPUFunctionNode extends FunctionNode {
           size = isInput ? constant.size : null;
         } else {
           isInput = this.isInput(name);
-          size = isInput ? this.argumentSizes[this.argumentNames.indexOf(name)] : null;
+          size = isInput
+            ? this.argumentSizes[this.argumentNames.indexOf(name)]
+            : null;
         }
         retArr.push(`${markupName}`);
         if (zProperty && yProperty) {
           if (isInput) {
             retArr.push('[(');
             this.astGeneric(zProperty, retArr);
-            retArr.push(`*${this.dynamicArguments ? '(outputY * outputX)' : size[1] * size[0]})+(`);
+            retArr.push(
+              `*${
+                this.dynamicArguments
+                  ? '(outputY * outputX)'
+                  : size[1] * size[0]
+              })+(`
+            );
             this.astGeneric(yProperty, retArr);
             retArr.push(`*${this.dynamicArguments ? 'outputX' : size[0]})+`);
             this.astGeneric(xProperty, retArr);

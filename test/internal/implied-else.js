@@ -27,17 +27,26 @@ test('never reached when early return gpu', () => {
   neverReachedWhenEarlyReturn('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('never reached when early return webgl', () => {
-  neverReachedWhenEarlyReturn('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'never reached when early return webgl',
+  () => {
+    neverReachedWhenEarlyReturn('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('never reached when early return webgl2', () => {
-  neverReachedWhenEarlyReturn('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'never reached when early return webgl2',
+  () => {
+    neverReachedWhenEarlyReturn('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('never reached when early return headlessgl', () => {
-  neverReachedWhenEarlyReturn('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'never reached when early return headlessgl',
+  () => {
+    neverReachedWhenEarlyReturn('headlessgl');
+  }
+);
 
 test('never reached when early return cpu', () => {
   neverReachedWhenEarlyReturn('cpu');
@@ -75,9 +84,12 @@ test('handles implied else gpu', () => {
   handlesImpliedElse('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('handles implied else headlessgl', () => {
-  handlesImpliedElse('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'handles implied else headlessgl',
+  () => {
+    handlesImpliedElse('headlessgl');
+  }
+);
 
 test('handles implied else cpu', () => {
   handlesImpliedElse('cpu');

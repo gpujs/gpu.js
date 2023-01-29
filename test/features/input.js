@@ -187,7 +187,9 @@ function inputYXOffsetPlus1(mode) {
     })
     .setOutput([2, 8]);
 
-  const a = new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+  const a = new Float32Array([
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+  ]);
 
   const result = kernel(input(a, [8, 2]));
   assert.deepEqual(
@@ -224,9 +226,12 @@ test('inputYXOffsetPlus1 gpu', () => {
   inputYXOffsetPlus1('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('inputYXOffsetPlus1 headlessgl', () => {
-  inputYXOffsetPlus1('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'inputYXOffsetPlus1 headlessgl',
+  () => {
+    inputYXOffsetPlus1('headlessgl');
+  }
+);
 
 test('inputYXOffsetPlus1 cpu', () => {
   inputYXOffsetPlus1('cpu');
@@ -241,7 +246,10 @@ function inputZYX(mode) {
     .setOutput([2, 4, 4]);
 
   const a = new Float32Array(32);
-  a.set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
+  a.set([
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+    22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+  ]);
 
   const result = kernel(input(a, [2, 4, 4]));
   assert.deepEqual(
@@ -313,7 +321,10 @@ function inputZYXVariables(mode) {
     .setOutput([1]);
 
   const a = new Float32Array(32);
-  a.set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
+  a.set([
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+    22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+  ]);
   const aInput = input(a, [2, 4, 4]);
   assert.deepEqual(Array.from(kernel(aInput, 1, 2, 3)), [30]);
   assert.deepEqual(Array.from(kernel(aInput, 0, 2, 3)), [29]);
@@ -339,9 +350,12 @@ test('inputZYXVariables gpu', () => {
   inputZYXVariables('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('inputZYXVariables headlessgl', () => {
-  inputZYXVariables('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'inputZYXVariables headlessgl',
+  () => {
+    inputZYXVariables('headlessgl');
+  }
+);
 
 test('inputZYXVariables cpu', () => {
   inputZYXVariables('cpu');
@@ -386,11 +400,20 @@ test('.toArray() with array', () => {
   assert.deepEqual(input([1, 2, 3, 4], [4]).toArray(), [1, 2, 3, 4]);
 });
 test('.toArray() with matrix', () => {
-  assert.deepEqual(input([1, 2, 3, 4, 5, 6, 7, 8], [4, 2]).toArray(), [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8])]);
+  assert.deepEqual(input([1, 2, 3, 4, 5, 6, 7, 8], [4, 2]).toArray(), [
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+  ]);
 });
 test('.toArray() with grid', () => {
-  assert.deepEqual(input([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [4, 2, 2]).toArray(), [
-    [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8])],
-    [new Float32Array([9, 10, 11, 12]), new Float32Array([13, 14, 15, 16])],
-  ]);
+  assert.deepEqual(
+    input(
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+      [4, 2, 2]
+    ).toArray(),
+    [
+      [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8])],
+      [new Float32Array([9, 10, 11, 12]), new Float32Array([13, 14, 15, 16])],
+    ]
+  );
 });

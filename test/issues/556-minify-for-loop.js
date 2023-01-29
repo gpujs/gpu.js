@@ -3,7 +3,8 @@ const { GPU, WebGLFunctionNode } = require('../../src');
 
 describe('issue #556 - minify for loop');
 
-const source = 'function w(t,e){for(var r=0,i=0;i<this.constants.size;i++)r+=t[this.thread.y][i]*e[i][this.thread.x];return r}';
+const source =
+  'function w(t,e){for(var r=0,i=0;i<this.constants.size;i++)r+=t[this.thread.y][i]*e[i][this.thread.x];return r}';
 
 function testWebGLFunctionNode() {
   const node = new WebGLFunctionNode(source, {

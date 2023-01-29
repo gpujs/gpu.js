@@ -15,7 +15,12 @@ function imageToArray(image) {
     const row = [];
     result.unshift(row);
     for (let x = 0; x < image.width; x++) {
-      const pixel = new Float32Array([data[i++], data[i++], data[i++], data[i++]]);
+      const pixel = new Float32Array([
+        data[i++],
+        data[i++],
+        data[i++],
+        data[i++],
+      ]);
       row.push(pixel);
     }
   }
@@ -45,7 +50,9 @@ function check2DImage(result, expected, channel) {
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       if (result[y][x] !== expected[y][x][channel]) {
-        throw new Error(`result[${y}][${x}] value does not match expected value of ${expected[y][x][channel]}`);
+        throw new Error(
+          `result[${y}][${x}] value does not match expected value of ${expected[y][x][channel]}`
+        );
       }
     }
   }

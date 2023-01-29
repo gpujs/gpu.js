@@ -86,16 +86,25 @@ test('this.constants.value[][]', () => {
   assert.equal(run('this.constants.value[0][0]'), 'this.constants.value[][]');
 });
 test('this.constants.value[][][]', () => {
-  assert.equal(run('this.constants.value[0][0][0]'), 'this.constants.value[][][]');
+  assert.equal(
+    run('this.constants.value[0][0][0]'),
+    'this.constants.value[][][]'
+  );
 });
 test('this.constants.texture[this.thread.z][this.thread.y][this.thread.x]', () => {
-  assert.equal(run('this.constants.texture[this.thread.z][this.thread.y][this.thread.x]'), 'this.constants.value[][][]');
+  assert.equal(
+    run('this.constants.texture[this.thread.z][this.thread.y][this.thread.x]'),
+    'this.constants.value[][][]'
+  );
 });
 test('this.whatever.value', () => {
   assert.equal(run('this.whatever.value'), null);
 });
 test('this.constants.value[][][][]', () => {
-  assert.equal(run('this.constants.value[0][0][0][0]'), 'this.constants.value[][][][]');
+  assert.equal(
+    run('this.constants.value[0][0][0][0]'),
+    'this.constants.value[][][][]'
+  );
 });
 test('this.constants.value.something', () => {
   assert.equal(run('this.constants.value.something'), null);

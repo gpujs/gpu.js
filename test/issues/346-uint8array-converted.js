@@ -36,26 +36,44 @@ function buildUintArrayInputKernel(mode, data) {
   gpu.destroy();
 }
 
-(GPU.isWebGLSupported ? test : skip)('Issue #346 uint8 input array - webgl', () => {
-  buildUintArrayInputKernel('webgl', uint8data);
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #346 uint8 input array - webgl',
+  () => {
+    buildUintArrayInputKernel('webgl', uint8data);
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #346 uint8 input array - webgl2', () => {
-  buildUintArrayInputKernel('webgl2', uint8data);
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #346 uint8 input array - webgl2',
+  () => {
+    buildUintArrayInputKernel('webgl2', uint8data);
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #346 uint8 input array - headlessgl', () => {
-  buildUintArrayInputKernel('headlessgl', uint8data);
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #346 uint8 input array - headlessgl',
+  () => {
+    buildUintArrayInputKernel('headlessgl', uint8data);
+  }
+);
 
-(GPU.isWebGLSupported ? test : skip)('Issue #346 uint16 input array - webgl', () => {
-  buildUintArrayInputKernel('webgl', uint16data);
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #346 uint16 input array - webgl',
+  () => {
+    buildUintArrayInputKernel('webgl', uint16data);
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #346 uint16 input array - webgl2', () => {
-  buildUintArrayInputKernel('webgl2', uint16data);
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #346 uint16 input array - webgl2',
+  () => {
+    buildUintArrayInputKernel('webgl2', uint16data);
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #346 uint16 input array - headlessgl', () => {
-  buildUintArrayInputKernel('headlessgl', uint16data);
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #346 uint16 input array - headlessgl',
+  () => {
+    buildUintArrayInputKernel('headlessgl', uint16data);
+  }
+);

@@ -34,25 +34,40 @@ function testSinglePrecisionArray3D2(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('single precision Array3D(2) auto', () => {
-  testSinglePrecisionArray3D2();
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'single precision Array3D(2) auto',
+  () => {
+    testSinglePrecisionArray3D2();
+  }
+);
 
-(GPU.isSinglePrecisionSupported ? test : skip)('single precision Array3D(2) gpu', () => {
-  testSinglePrecisionArray3D2('gpu');
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'single precision Array3D(2) gpu',
+  () => {
+    testSinglePrecisionArray3D2('gpu');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('single precision Array3D(2) webgl', () => {
-  testSinglePrecisionArray3D2('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'single precision Array3D(2) webgl',
+  () => {
+    testSinglePrecisionArray3D2('webgl');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('single precision Array3D(2) webgl2', () => {
-  testSinglePrecisionArray3D2('webgl2');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'single precision Array3D(2) webgl2',
+  () => {
+    testSinglePrecisionArray3D2('webgl2');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('single precision Array3D(2) headlessgl', () => {
-  testSinglePrecisionArray3D2('headlessgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)(
+  'single precision Array3D(2) headlessgl',
+  () => {
+    testSinglePrecisionArray3D2('headlessgl');
+  }
+);
 
 test('single precision Array3D(2) cpu', () => {
   testSinglePrecisionArray3D2('cpu');
@@ -97,17 +112,26 @@ test('fallback unsigned precision Array3D(3) gpu', () => {
   testUnsignedPrecisionArray3D2('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('fallback unsigned precision Array3D(3) webgl', () => {
-  testUnsignedPrecisionArray3D2('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'fallback unsigned precision Array3D(3) webgl',
+  () => {
+    testUnsignedPrecisionArray3D2('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('fallback unsigned precision Array3D(3) webgl2', () => {
-  testUnsignedPrecisionArray3D2('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'fallback unsigned precision Array3D(3) webgl2',
+  () => {
+    testUnsignedPrecisionArray3D2('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('fallback unsigned precision Array3D(3) headlessgl', () => {
-  testUnsignedPrecisionArray3D2('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'fallback unsigned precision Array3D(3) headlessgl',
+  () => {
+    testUnsignedPrecisionArray3D2('headlessgl');
+  }
+);
 
 test('fallback unsigned precision Array3D(3) cpu', () => {
   testUnsignedPrecisionArray3D2('cpu');
@@ -144,25 +168,40 @@ function testSinglePrecisionArray3D3(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('single precision Array3D(3) auto', () => {
-  testSinglePrecisionArray3D3();
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'single precision Array3D(3) auto',
+  () => {
+    testSinglePrecisionArray3D3();
+  }
+);
 
-(GPU.isSinglePrecisionSupported ? test : skip)('single precision Array3D(3) gpu', () => {
-  testSinglePrecisionArray3D3('gpu');
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'single precision Array3D(3) gpu',
+  () => {
+    testSinglePrecisionArray3D3('gpu');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('single precision Array3D(3) webgl', () => {
-  testSinglePrecisionArray3D3('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'single precision Array3D(3) webgl',
+  () => {
+    testSinglePrecisionArray3D3('webgl');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('single precision Array3D(3) webgl2', () => {
-  testSinglePrecisionArray3D3('webgl2');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'single precision Array3D(3) webgl2',
+  () => {
+    testSinglePrecisionArray3D3('webgl2');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('single precision Array3D(3) headlessgl', () => {
-  testSinglePrecisionArray3D3('headlessgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)(
+  'single precision Array3D(3) headlessgl',
+  () => {
+    testSinglePrecisionArray3D3('headlessgl');
+  }
+);
 
 test('single precision Array3D(3) cpu', () => {
   testSinglePrecisionArray3D3('cpu');
@@ -207,17 +246,26 @@ test('fallback unsigned precision Array3D(3) gpu', () => {
   testUnsignedPrecisionArray3D3('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('fallback unsigned precision Array3D(3) webgl', () => {
-  testUnsignedPrecisionArray3D3('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'fallback unsigned precision Array3D(3) webgl',
+  () => {
+    testUnsignedPrecisionArray3D3('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('fallback unsigned precision Array3D(3) webgl2', () => {
-  testUnsignedPrecisionArray3D3('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'fallback unsigned precision Array3D(3) webgl2',
+  () => {
+    testUnsignedPrecisionArray3D3('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('fallback unsigned precision Array3D(3) headlessgl', () => {
-  testUnsignedPrecisionArray3D3('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'fallback unsigned precision Array3D(3) headlessgl',
+  () => {
+    testUnsignedPrecisionArray3D3('headlessgl');
+  }
+);
 
 test('fallback unsigned precision Array3D(3) cpu', () => {
   testUnsignedPrecisionArray3D3('cpu');
@@ -254,25 +302,40 @@ function testSinglePrecisionArray3D4(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('single precision Array3D(4) auto', () => {
-  testSinglePrecisionArray3D4();
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'single precision Array3D(4) auto',
+  () => {
+    testSinglePrecisionArray3D4();
+  }
+);
 
-(GPU.isSinglePrecisionSupported ? test : skip)('single precision Array3D(4) gpu', () => {
-  testSinglePrecisionArray3D4('gpu');
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'single precision Array3D(4) gpu',
+  () => {
+    testSinglePrecisionArray3D4('gpu');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('single precision Array3D(4) webgl', () => {
-  testSinglePrecisionArray3D4('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'single precision Array3D(4) webgl',
+  () => {
+    testSinglePrecisionArray3D4('webgl');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('single precision Array3D(4) webgl2', () => {
-  testSinglePrecisionArray3D4('webgl2');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'single precision Array3D(4) webgl2',
+  () => {
+    testSinglePrecisionArray3D4('webgl2');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('single precision Array3D(4) headlessgl', () => {
-  testSinglePrecisionArray3D4('headlessgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)(
+  'single precision Array3D(4) headlessgl',
+  () => {
+    testSinglePrecisionArray3D4('headlessgl');
+  }
+);
 
 test('single precision Array3D(4) cpu', () => {
   testSinglePrecisionArray3D4('cpu');
@@ -317,17 +380,26 @@ test('fallback unsigned precision Array3D(4) gpu', () => {
   testUnsignedPrecisionArray3D4('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('fallback unsigned precision Array3D(4) webgl', () => {
-  testUnsignedPrecisionArray3D4('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'fallback unsigned precision Array3D(4) webgl',
+  () => {
+    testUnsignedPrecisionArray3D4('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('fallback unsigned precision Array3D(4) webgl2', () => {
-  testUnsignedPrecisionArray3D4('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'fallback unsigned precision Array3D(4) webgl2',
+  () => {
+    testUnsignedPrecisionArray3D4('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('fallback unsigned precision Array3D(4) headlessgl', () => {
-  testUnsignedPrecisionArray3D4('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'fallback unsigned precision Array3D(4) headlessgl',
+  () => {
+    testUnsignedPrecisionArray3D4('headlessgl');
+  }
+);
 
 test('fallback unsigned precision Array3D(4) cpu', () => {
   testUnsignedPrecisionArray3D4('cpu');

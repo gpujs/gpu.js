@@ -29,10 +29,16 @@ function toStringAsFileTest(mode) {
   gpu.destroy();
 }
 
-(GPU.isHeadlessGLSupported ? test : skip)('can save and restore function headlessgl', () => {
-  toStringAsFileTest('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'can save and restore function headlessgl',
+  () => {
+    toStringAsFileTest('headlessgl');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('can save and restore function cpu', () => {
-  toStringAsFileTest('cpu');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'can save and restore function cpu',
+  () => {
+    toStringAsFileTest('cpu');
+  }
+);

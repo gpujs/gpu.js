@@ -21,7 +21,19 @@ test('loop max output webgl', () => {
     }
   );
 
-  assert.equal(functionNode.toString(), 'void kernel() {' + '\nfloat user_sum=0.0;' + '\nint user_i=0;' + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' + '\nif (!(user_i<int(user_a))) break;' + '\nuser_sum+=get32(user_b, user_bSize, user_bDim, 0, threadId.x, user_i);' + '\nuser_i++;}' + '\n' + '\nkernelResult = user_sum;return;' + '\n}');
+  assert.equal(
+    functionNode.toString(),
+    'void kernel() {' +
+      '\nfloat user_sum=0.0;' +
+      '\nint user_i=0;' +
+      '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
+      '\nif (!(user_i<int(user_a))) break;' +
+      '\nuser_sum+=get32(user_b, user_bSize, user_bDim, 0, threadId.x, user_i);' +
+      '\nuser_i++;}' +
+      '\n' +
+      '\nkernelResult = user_sum;return;' +
+      '\n}'
+  );
 });
 
 test('loop max output webgl2', () => {
@@ -42,7 +54,19 @@ test('loop max output webgl2', () => {
     }
   );
 
-  assert.equal(functionNode.toString(), 'void kernel() {' + '\nfloat user_sum=0.0;' + '\nint user_i=0;' + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' + '\nif (!(user_i<int(user_a))) break;' + '\nuser_sum+=get32(user_b, user_bSize, user_bDim, 0, threadId.x, user_i);' + '\nuser_i++;}' + '\n' + '\nkernelResult = user_sum;return;' + '\n}');
+  assert.equal(
+    functionNode.toString(),
+    'void kernel() {' +
+      '\nfloat user_sum=0.0;' +
+      '\nint user_i=0;' +
+      '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
+      '\nif (!(user_i<int(user_a))) break;' +
+      '\nuser_sum+=get32(user_b, user_bSize, user_bDim, 0, threadId.x, user_i);' +
+      '\nuser_i++;}' +
+      '\n' +
+      '\nkernelResult = user_sum;return;' +
+      '\n}'
+  );
 });
 
 (GPU.isWebGLSupported ? test : skip)('loop max webgl', () => {

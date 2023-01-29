@@ -30,17 +30,26 @@ test('Issue #147 - missing constant gpu', () => {
   missingConstant('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #147 - missing constant webgl', () => {
-  missingConstant('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #147 - missing constant webgl',
+  () => {
+    missingConstant('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #147 - missing constant webgl2', () => {
-  missingConstant('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #147 - missing constant webgl2',
+  () => {
+    missingConstant('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #147 - missing constant headlessgl', () => {
-  missingConstant('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #147 - missing constant headlessgl',
+  () => {
+    missingConstant('headlessgl');
+  }
+);
 
 test('Issue #147 - missing constant cpu', () => {
   missingConstant('cpu');

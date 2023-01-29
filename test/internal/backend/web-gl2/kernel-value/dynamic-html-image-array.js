@@ -10,16 +10,19 @@ test('.updateValue() checks too large height', () => {
     },
     validate: true,
   };
-  const v = new webGL2KernelValueMaps.unsigned.dynamic.HTMLImageArray([{ width: 1, height: 1 }], {
-    kernel: mockKernel,
-    name: 'test',
-    type: 'HTMLImage',
-    origin: 'user',
-    tactic: 'speed',
-    onRequestContextHandle: () => 1,
-    onRequestTexture: () => null,
-    onRequestIndex: () => 1,
-  });
+  const v = new webGL2KernelValueMaps.unsigned.dynamic.HTMLImageArray(
+    [{ width: 1, height: 1 }],
+    {
+      kernel: mockKernel,
+      name: 'test',
+      type: 'HTMLImage',
+      origin: 'user',
+      tactic: 'speed',
+      onRequestContextHandle: () => 1,
+      onRequestTexture: () => null,
+      onRequestIndex: () => 1,
+    }
+  );
 
   assert.throws(() => {
     v.updateValue([{ width: 1, height: 2 }]);
@@ -34,16 +37,19 @@ test('.updateValue() checks too large width', () => {
     validate: true,
   };
 
-  const v = new webGL2KernelValueMaps.unsigned.dynamic.HTMLImageArray([{ width: 1, height: 1 }], {
-    kernel: mockKernel,
-    name: 'test',
-    type: 'HTMLImageArray',
-    origin: 'user',
-    tactic: 'speed',
-    onRequestContextHandle: () => 1,
-    onRequestTexture: () => null,
-    onRequestIndex: () => 1,
-  });
+  const v = new webGL2KernelValueMaps.unsigned.dynamic.HTMLImageArray(
+    [{ width: 1, height: 1 }],
+    {
+      kernel: mockKernel,
+      name: 'test',
+      type: 'HTMLImageArray',
+      origin: 'user',
+      tactic: 'speed',
+      onRequestContextHandle: () => 1,
+      onRequestTexture: () => null,
+      onRequestIndex: () => 1,
+    }
+  );
   assert.throws(() => {
     v.updateValue([
       {
@@ -72,17 +78,20 @@ test('.updateValue() checks ok height & width', () => {
     texImage3D: () => {},
     texSubImage3D: () => {},
   };
-  const v = new webGL2KernelValueMaps.unsigned.dynamic.HTMLImageArray([{ width: 2, height: 2 }], {
-    kernel: mockKernel,
-    name: 'test',
-    type: 'HTMLImageArray',
-    origin: 'user',
-    tactic: 'speed',
-    context: mockContext,
-    onRequestContextHandle: () => 1,
-    onRequestTexture: () => null,
-    onRequestIndex: () => 1,
-  });
+  const v = new webGL2KernelValueMaps.unsigned.dynamic.HTMLImageArray(
+    [{ width: 2, height: 2 }],
+    {
+      kernel: mockKernel,
+      name: 'test',
+      type: 'HTMLImageArray',
+      origin: 'user',
+      tactic: 'speed',
+      context: mockContext,
+      onRequestContextHandle: () => 1,
+      onRequestTexture: () => null,
+      onRequestIndex: () => 1,
+    }
+  );
   v.updateValue([
     {
       height: 1,

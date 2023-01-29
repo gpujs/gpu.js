@@ -29,11 +29,15 @@ function canvasArgumentTest(mode) {
   canvasArgumentTest('gpu');
 });
 
-(GPU.isWebGLSupported && typeof HTMLCanvasElement !== 'undefined' ? test : skip)('webgl', () => {
+(GPU.isWebGLSupported && typeof HTMLCanvasElement !== 'undefined'
+  ? test
+  : skip)('webgl', () => {
   canvasArgumentTest('webgl');
 });
 
-(GPU.isWebGL2Supported && typeof HTMLCanvasElement !== 'undefined' ? test : skip)('webgl2', () => {
+(GPU.isWebGL2Supported && typeof HTMLCanvasElement !== 'undefined'
+  ? test
+  : skip)('webgl2', () => {
   canvasArgumentTest('webgl2');
 });
 
@@ -59,22 +63,35 @@ function canvasManuallyDefinedArgumentTest(mode) {
   gpu.destroy();
 }
 
-(typeof HTMLCanvasElement !== 'undefined' ? test : skip)('manually defined auto', () => {
-  canvasManuallyDefinedArgumentTest();
-});
+(typeof HTMLCanvasElement !== 'undefined' ? test : skip)(
+  'manually defined auto',
+  () => {
+    canvasManuallyDefinedArgumentTest();
+  }
+);
 
-(typeof HTMLCanvasElement !== 'undefined' ? test : skip)('manually defined gpu', () => {
-  canvasManuallyDefinedArgumentTest('gpu');
-});
+(typeof HTMLCanvasElement !== 'undefined' ? test : skip)(
+  'manually defined gpu',
+  () => {
+    canvasManuallyDefinedArgumentTest('gpu');
+  }
+);
 
-(GPU.isWebGLSupported && typeof HTMLCanvasElement !== 'undefined' ? test : skip)('manually defined webgl', () => {
+(GPU.isWebGLSupported && typeof HTMLCanvasElement !== 'undefined'
+  ? test
+  : skip)('manually defined webgl', () => {
   canvasManuallyDefinedArgumentTest('webgl');
 });
 
-(GPU.isWebGL2Supported && typeof HTMLCanvasElement !== 'undefined' ? test : skip)('manually defined webgl2', () => {
+(GPU.isWebGL2Supported && typeof HTMLCanvasElement !== 'undefined'
+  ? test
+  : skip)('manually defined webgl2', () => {
   canvasManuallyDefinedArgumentTest('webgl2');
 });
 
-(typeof HTMLCanvasElement !== 'undefined' ? test : skip)('manually defined cpu', () => {
-  canvasManuallyDefinedArgumentTest('cpu');
-});
+(typeof HTMLCanvasElement !== 'undefined' ? test : skip)(
+  'manually defined cpu',
+  () => {
+    canvasManuallyDefinedArgumentTest('cpu');
+  }
+);

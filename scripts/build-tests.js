@@ -10,7 +10,8 @@ try {
 } catch (e) {}
 
 const rootPath = path.resolve(process.cwd(), folder);
-const warning = '<!-- the following list of javascript files is built automatically -->\n  ';
+const warning =
+  '<!-- the following list of javascript files is built automatically -->\n  ';
 const tags = readDirDeepSync(rootPath, {
   patterns: ['**/*.js'],
   ignore: ['*.js'],

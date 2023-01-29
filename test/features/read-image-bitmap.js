@@ -27,25 +27,37 @@ function readImageBitmap(mode, done) {
   };
 }
 
-(typeof Image !== 'undefined' ? test : skip)('readImageBitmap auto', assert => {
-  readImageBitmap(null, assert.async());
-});
+(typeof Image !== 'undefined' ? test : skip)(
+  'readImageBitmap auto',
+  assert => {
+    readImageBitmap(null, assert.async());
+  }
+);
 
 (typeof Image !== 'undefined' ? test : skip)('readImageBitmap gpu', assert => {
   readImageBitmap('gpu', assert.async());
 });
 
-(GPU.isWebGLSupported && typeof Image !== 'undefined' ? test : skip)('readImageBitmap webgl', assert => {
-  readImageBitmap('webgl', assert.async());
-});
+(GPU.isWebGLSupported && typeof Image !== 'undefined' ? test : skip)(
+  'readImageBitmap webgl',
+  assert => {
+    readImageBitmap('webgl', assert.async());
+  }
+);
 
-(GPU.isWebGL2Supported && typeof Image !== 'undefined' ? test : skip)('readImageBitmap webgl2', assert => {
-  readImageBitmap('webgl2', assert.async());
-});
+(GPU.isWebGL2Supported && typeof Image !== 'undefined' ? test : skip)(
+  'readImageBitmap webgl2',
+  assert => {
+    readImageBitmap('webgl2', assert.async());
+  }
+);
 
-(GPU.isHeadlessGLSupported && typeof Image !== 'undefined' ? test : skip)('readImageBitmap headlessgl', assert => {
-  readImageBitmap('headlessgl', assert.async());
-});
+(GPU.isHeadlessGLSupported && typeof Image !== 'undefined' ? test : skip)(
+  'readImageBitmap headlessgl',
+  assert => {
+    readImageBitmap('headlessgl', assert.async());
+  }
+);
 
 (typeof Image !== 'undefined' ? test : skip)('readImageBitmap cpu', assert => {
   readImageBitmap('cpu', assert.async());

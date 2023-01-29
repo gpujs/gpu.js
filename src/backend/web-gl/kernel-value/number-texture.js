@@ -24,7 +24,11 @@ export class WebGLKernelValueNumberTexture extends WebGLKernelArray {
   }
 
   getSource() {
-    return utils.linesToString([`uniform sampler2D ${this.id}`, `ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`, `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`]);
+    return utils.linesToString([
+      `uniform sampler2D ${this.id}`,
+      `ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
+      `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+    ]);
   }
 
   /**
@@ -37,7 +41,9 @@ export class WebGLKernelValueNumberTexture extends WebGLKernelArray {
       return;
     }
     if (this.checkContext && inputTexture.context !== this.context) {
-      throw new Error(`Value ${this.name} (${this.type}) must be from same context`);
+      throw new Error(
+        `Value ${this.name} (${this.type}) must be from same context`
+      );
     }
 
     const { kernel, context: gl } = this;
@@ -45,7 +51,10 @@ export class WebGLKernelValueNumberTexture extends WebGLKernelArray {
       if (kernel.immutable) {
         kernel.updateTextureArgumentRefs(this, inputTexture);
       } else {
-        if (kernel.texture && kernel.texture.texture === inputTexture.texture) {
+        if (
+          kernel.texture &&
+          kernel.texture.texture === inputTexture.texture
+        ) {
           throw new Error(sameError);
         } else if (kernel.mappedTextures) {
           const { mappedTextures } = kernel;

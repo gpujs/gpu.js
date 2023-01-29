@@ -36,17 +36,26 @@ test('Issue #300 nested array index - gpu', () => {
   nestedArrayIndex('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #300 nested array index - webgl', () => {
-  nestedArrayIndex('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #300 nested array index - webgl',
+  () => {
+    nestedArrayIndex('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #300 nested array index - webgl2', () => {
-  nestedArrayIndex('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #300 nested array index - webgl2',
+  () => {
+    nestedArrayIndex('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #300 nested array index - headlessgl', () => {
-  nestedArrayIndex('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #300 nested array index - headlessgl',
+  () => {
+    nestedArrayIndex('headlessgl');
+  }
+);
 
 test('Issue #300 nested array index - cpu', () => {
   nestedArrayIndex('cpu');

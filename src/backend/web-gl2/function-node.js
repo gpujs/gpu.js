@@ -16,7 +16,10 @@ export class WebGL2FunctionNode extends WebGLFunctionNode {
    */
   astIdentifierExpression(idtNode, retArr) {
     if (idtNode.type !== 'Identifier') {
-      throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode);
+      throw this.astErrorOutput(
+        'IdentifierExpression - not an Identifier',
+        idtNode
+      );
     }
 
     const type = this.getType(idtNode);

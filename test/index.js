@@ -31,7 +31,10 @@ describe('Test Node GPU', () => {
       const result = kernel();
 
       expect(gpu.runner.constructor).to.equal(GPU.HeadlessGLRunner);
-      expect(result).to.deep.equal([Float32Array.from([0, 0]), Float32Array.from([0, 1])]);
+      expect(result).to.deep.equal([
+        Float32Array.from([0, 0]),
+        Float32Array.from([0, 1]),
+      ]);
     });
   });
 
@@ -63,7 +66,10 @@ describe('Test Node GPU', () => {
       const result = kernel();
 
       expect(gpu.runner.constructor).to.equal(GPU.CPURunner);
-      expect(result).to.deep.equal([Float32Array.from([0, 0]), Float32Array.from([0, 1])]);
+      expect(result).to.deep.equal([
+        Float32Array.from([0, 0]),
+        Float32Array.from([0, 1]),
+      ]);
     });
   });
 });

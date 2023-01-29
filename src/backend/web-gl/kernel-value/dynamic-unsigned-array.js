@@ -3,13 +3,21 @@ import { WebGLKernelValueUnsignedArray } from './unsigned-array';
 
 export class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray {
   getSource() {
-    return utils.linesToString([`uniform sampler2D ${this.id}`, `uniform ivec2 ${this.sizeId}`, `uniform ivec3 ${this.dimensionsId}`]);
+    return utils.linesToString([
+      `uniform sampler2D ${this.id}`,
+      `uniform ivec2 ${this.sizeId}`,
+      `uniform ivec3 ${this.dimensionsId}`,
+    ]);
   }
 
   updateValue(value) {
     this.dimensions = utils.getDimensions(value, true);
-    this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
-    this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.textureSize = utils.getMemoryOptimizedPackedTextureSize(
+      this.dimensions,
+      this.bitRatio
+    );
+    this.uploadArrayLength =
+      this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
     this.checkSize(this.textureSize[0], this.textureSize[1]);
     const Type = this.getTransferArrayType(value);
     this.preUploadValue = new Type(this.uploadArrayLength);

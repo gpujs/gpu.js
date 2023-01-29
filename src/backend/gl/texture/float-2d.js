@@ -7,6 +7,10 @@ export class GLTextureFloat2D extends GLTextureFloat {
     this.type = 'ArrayTexture(1)';
   }
   toArray() {
-    return utils.erect2DFloat(this.renderValues(), this.output[0], this.output[1]);
+    return utils.erect2DFloat(
+      this.renderValues(),
+      this.output[0],
+      this.output[1]
+    );
   }
 }

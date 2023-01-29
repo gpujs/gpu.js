@@ -1,5 +1,12 @@
 const { assert, test, module: describe, skip } = require('qunit');
-const { GPU, CPUKernel, WebGLKernel, WebGL2Kernel, HeadlessGLKernel, Kernel } = require('../../src');
+const {
+  GPU,
+  CPUKernel,
+  WebGLKernel,
+  WebGL2Kernel,
+  HeadlessGLKernel,
+  Kernel,
+} = require('../../src');
 
 describe('internal: kernel');
 
@@ -8,17 +15,20 @@ describe('internal: kernel');
  * @param {Kernel} Kernel
  */
 function argumentTypesTest(Kernel) {
-  const kernel = new Kernel(`function(value) { return value[this.thread.x]; }`, {
-    output: [1],
-    functionBuilder: {
-      addKernel: function () {},
-      addFunctions: function () {},
-      getPrototypes: function () {
-        return [];
+  const kernel = new Kernel(
+    `function(value) { return value[this.thread.x]; }`,
+    {
+      output: [1],
+      functionBuilder: {
+        addKernel: function () {},
+        addFunctions: function () {},
+        getPrototypes: function () {
+          return [];
+        },
+        addNativeFunctions: function () {},
       },
-      addNativeFunctions: function () {},
-    },
-  });
+    }
+  );
   kernel.build([1]);
   assert.equal(kernel.argumentTypes.length, 1);
   assert.equal(kernel.argumentTypes[0], 'Array');
@@ -37,9 +47,12 @@ test('CPUKernel argumentTypes', () => {
   argumentTypesTest(WebGL2Kernel);
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('HeadlessGLKernel argumentTypes', () => {
-  argumentTypesTest(HeadlessGLKernel);
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'HeadlessGLKernel argumentTypes',
+  () => {
+    argumentTypesTest(HeadlessGLKernel);
+  }
+);
 
 /**
  *
@@ -76,9 +89,12 @@ test('WebGLKernel.setUniform1f only calls context when values change', () => {
 test('WebGL2Kernel.setUniform1f only calls context when values change', () => {
   setUniform1fTest(WebGL2Kernel);
 });
-(GPU.isHeadlessGLSupported ? test : skip)('HeadlessGLKernel.setUniform1f only calls context when values change', () => {
-  setUniform1fTest(HeadlessGLKernel);
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'HeadlessGLKernel.setUniform1f only calls context when values change',
+  () => {
+    setUniform1fTest(HeadlessGLKernel);
+  }
+);
 
 /**
  *
@@ -115,9 +131,12 @@ test('WebGLKernel.setUniform1i only calls context when values change', () => {
 test('WebGL2Kernel.setUniform1i only calls context when values change', () => {
   setUniform1iTest(WebGL2Kernel);
 });
-(GPU.isHeadlessGLSupported ? test : skip)('HeadlessGLKernel.setUniform1i only calls context when values change', () => {
-  setUniform1iTest(HeadlessGLKernel);
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'HeadlessGLKernel.setUniform1i only calls context when values change',
+  () => {
+    setUniform1iTest(HeadlessGLKernel);
+  }
+);
 
 /**
  *
@@ -153,9 +172,12 @@ test('WebGLKernel.setUniform2f only calls context when values change', () => {
 test('WebGL2Kernel.setUniform2f only calls context when values change', () => {
   setUniform2fTest(WebGL2Kernel);
 });
-(GPU.isHeadlessGLSupported ? test : skip)('HeadlessGLKernel.setUniform2f only calls context when values change', () => {
-  setUniform2fTest(HeadlessGLKernel);
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'HeadlessGLKernel.setUniform2f only calls context when values change',
+  () => {
+    setUniform2fTest(HeadlessGLKernel);
+  }
+);
 
 /**
  *

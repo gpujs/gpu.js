@@ -42,21 +42,33 @@ function offOnOff(mode) {
   offOnOff();
 });
 
-(GPU.isGPUSupported && GPU.isSinglePrecisionSupported ? test : skip)('off on off gpu', () => {
-  offOnOff('gpu');
-});
+(GPU.isGPUSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'off on off gpu',
+  () => {
+    offOnOff('gpu');
+  }
+);
 
-(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('off on off webgl', () => {
-  offOnOff('webgl');
-});
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'off on off webgl',
+  () => {
+    offOnOff('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('off on off webgl2', () => {
-  offOnOff('webgl2');
-});
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'off on off webgl2',
+  () => {
+    offOnOff('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('off on off headlessgl', () => {
-  offOnOff('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'off on off headlessgl',
+  () => {
+    offOnOff('headlessgl');
+  }
+);
 
 test('off on off cpu', () => {
   assert.throws(() => {
@@ -88,21 +100,33 @@ function onOffOn(mode) {
   onOffOn();
 });
 
-(GPU.isGPUSupported && GPU.isSinglePrecisionSupported ? test : skip)('on off on gpu', () => {
-  onOffOn('gpu');
-});
+(GPU.isGPUSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'on off on gpu',
+  () => {
+    onOffOn('gpu');
+  }
+);
 
-(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('on off on webgl', () => {
-  onOffOn('webgl');
-});
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'on off on webgl',
+  () => {
+    onOffOn('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('on off on webgl2', () => {
-  onOffOn('webgl2');
-});
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'on off on webgl2',
+  () => {
+    onOffOn('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('on off on headlessgl', () => {
-  onOffOn('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'on off on headlessgl',
+  () => {
+    onOffOn('headlessgl');
+  }
+);
 
 test('on off on cpu', () => {
   assert.throws(() => {

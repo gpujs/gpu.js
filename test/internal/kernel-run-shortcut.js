@@ -72,14 +72,23 @@ test('immutable saves switched kernel gpu', () => {
   testImmutableSavesSwitchedKernel('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('immutable saves switched kernel webgl', () => {
-  testImmutableSavesSwitchedKernel('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'immutable saves switched kernel webgl',
+  () => {
+    testImmutableSavesSwitchedKernel('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('immutable saves switched kernel webgl2', () => {
-  testImmutableSavesSwitchedKernel('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'immutable saves switched kernel webgl2',
+  () => {
+    testImmutableSavesSwitchedKernel('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('immutable saves switched kernel headlessgl', () => {
-  testImmutableSavesSwitchedKernel('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'immutable saves switched kernel headlessgl',
+  () => {
+    testImmutableSavesSwitchedKernel('headlessgl');
+  }
+);

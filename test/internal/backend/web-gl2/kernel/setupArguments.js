@@ -18,7 +18,17 @@ const gl = {
   UNPACK_FLIP_Y_WEBGL: 'UNPACK_FLIP_Y_WEBGL',
 };
 function setupArgumentsTestSuite(testSuiteSettings) {
-  const { gpuSettings, argument, expectedPixels, expectedBitRatio, expectedDim, expectedSize, expectedType, expectedArgumentTextureCount, expectedPixelStorei } = testSuiteSettings;
+  const {
+    gpuSettings,
+    argument,
+    expectedPixels,
+    expectedBitRatio,
+    expectedDim,
+    expectedSize,
+    expectedType,
+    expectedArgumentTextureCount,
+    expectedPixelStorei,
+  } = testSuiteSettings;
   let texImage2DCalled = false;
   let activeTextureCalled = false;
   let bindTextureCalled = false;
@@ -100,10 +110,23 @@ function setupArgumentsTestSuite(testSuiteSettings) {
         assert.equal(value, 0);
         uniform1iCalled = true;
       },
-      texImage2D: (target, level, internalFormat, width, height, border, format, type, pixels) => {
+      texImage2D: (
+        target,
+        level,
+        internalFormat,
+        width,
+        height,
+        border,
+        format,
+        type,
+        pixels
+      ) => {
         assert.equal(target, gl.TEXTURE_2D);
         assert.equal(level, 0);
-        assert.equal(internalFormat, gpuSettings.precision === 'single' ? gl.RGBA32F : gl.RGBA);
+        assert.equal(
+          internalFormat,
+          gpuSettings.precision === 'single' ? gl.RGBA32F : gl.RGBA
+        );
         assert.equal(width, expectedSize[0]);
         assert.equal(height, expectedSize[1]);
         assert.equal(border, 0);
@@ -120,7 +143,10 @@ function setupArgumentsTestSuite(testSuiteSettings) {
   const settings = {
     context: mockContext,
   };
-  const kernel = new WebGL2Kernel(source, Object.assign({}, settings, gpuSettings));
+  const kernel = new WebGL2Kernel(
+    source,
+    Object.assign({}, settings, gpuSettings)
+  );
   kernel.constructor = {
     lookupKernelValueType: WebGL2Kernel.lookupKernelValueType,
     features: {
@@ -156,13 +182,15 @@ test('Array with unsigned precision 5 length', () => {
     },
     argument: [
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5,
+      1,
+      2, 3, 4, 5,
     ],
     expectedBitRatio: 4,
     expectedPixels: new Uint8Array(
       new Float32Array([
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-        1, 2, 3, 4, 5, 0, 0, 0,
+        1,
+        2, 3, 4, 5, 0, 0, 0,
       ]).buffer
     ),
     expectedDim: new Int32Array([5, 1, 1]),
@@ -180,13 +208,15 @@ test('Float32Array with unsigned precision 5 length', () => {
     },
     argument: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5,
+      1,
+      2, 3, 4, 5,
     ]),
     expectedBitRatio: 4,
     expectedPixels: new Uint8Array(
       new Float32Array([
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-        1, 2, 3, 4, 5, 0, 0, 0,
+        1,
+        2, 3, 4, 5, 0, 0, 0,
       ]).buffer
     ),
     expectedDim: new Int32Array([5, 1, 1]),
@@ -204,13 +234,15 @@ test('Uint16Array with unsigned precision 5 length', () => {
     },
     argument: new Uint16Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5,
+      1,
+      2, 3, 4, 5,
     ]),
     expectedBitRatio: 2,
     expectedPixels: new Uint8Array(
       new Uint16Array([
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-        1, 2, 3, 4, 5, 0, 0, 0,
+        1,
+        2, 3, 4, 5, 0, 0, 0,
       ]).buffer
     ),
     expectedDim: new Int32Array([5, 1, 1]),
@@ -230,7 +262,8 @@ test('Uint8Array with unsigned precision 5 length', () => {
     expectedBitRatio: 1,
     expectedPixels: new Uint8Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([5, 1, 1]),
     expectedSize: new Int32Array([1, 2]), // 1 * 2 * 4 = 8
@@ -248,12 +281,14 @@ test('Array with single precision', () => {
     },
     argument: [
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5,
+      1,
+      2, 3, 4, 5,
     ],
     expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([5, 1, 1]),
     expectedSize: new Int32Array([1, 2]),
@@ -272,12 +307,14 @@ test('Float32Array with single precision', () => {
     },
     argument: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5,
+      1,
+      2, 3, 4, 5,
     ]),
     expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([5, 1, 1]),
     expectedSize: new Int32Array([1, 2]),
@@ -296,13 +333,15 @@ test('Uint16Array with single precision', () => {
     },
     argument: new Uint16Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5,
+      1,
+      2, 3, 4, 5,
     ]),
     // upconverted from 2
     expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([5, 1, 1]),
     expectedSize: new Int32Array([1, 2]),
@@ -319,13 +358,15 @@ test('Uint8Array with single precision', () => {
     },
     argument: new Uint8Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5,
+      1,
+      2, 3, 4, 5,
     ]),
     // upconverted from 1
     expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([5, 1, 1]),
     expectedSize: new Int32Array([1, 2]),
@@ -345,7 +386,9 @@ test('Array with unsigned precision length 33', () => {
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 1 per RGBA, so only 1 of the 4 channels is used
       // NOTE: 6x6
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
     ],
     expectedBitRatio: 4,
     expectedPixels: new Uint8Array(
@@ -353,7 +396,9 @@ test('Array with unsigned precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 1 per RGBA, so only 1 of the 4 channels is used
         // NOTE: 6x6
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
       ]).buffer
     ),
     expectedDim: new Int32Array([33, 1, 1]),
@@ -374,7 +419,9 @@ test('Float32Array with unsigned precision length 33', () => {
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 1 per RGBA, so only 1 of the 4 channels is used
       // NOTE: 6x6
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
     ]),
     expectedBitRatio: 4,
     expectedPixels: new Uint8Array(
@@ -382,7 +429,9 @@ test('Float32Array with unsigned precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 1 per RGBA, so only 1 of the 4 channels is used
         // NOTE: 6x6
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
       ]).buffer
     ),
     expectedDim: new Int32Array([33, 1, 1]),
@@ -403,7 +452,9 @@ test('Uint16Array with unsigned precision length 33', () => {
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 2 per RGBA, so only 2 of the 4 channels is used
       // NOTE: 4x5
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
     ]),
     expectedBitRatio: 2,
     expectedPixels: new Uint8Array(
@@ -411,7 +462,9 @@ test('Uint16Array with unsigned precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 2 per RGBA, so only 2 of the 4 channels is used
         // NOTE: 4x5
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0, 0, 0, 0, 0,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0, 0, 0, 0, 0,
       ]).buffer
     ),
     expectedDim: new Int32Array([33, 1, 1]),
@@ -432,7 +485,9 @@ test('Uint8Array with unsigned precision length 33', () => {
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 4 per RGBA, so only 2 of the 4 channels is used
       // NOTE: 3x3
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
     ]),
     expectedBitRatio: 1,
     expectedPixels: new Uint8Array(
@@ -440,7 +495,9 @@ test('Uint8Array with unsigned precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 4 per RGBA, so only 2 of the 4 channels is used
         // NOTE: 3x3
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
       ]).buffer
     ),
     expectedDim: new Int32Array([33, 1, 1]),
@@ -461,14 +518,18 @@ test('Array with single precision length 33', () => {
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
       // NOTE: 3x3
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
     ],
     expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
       // NOTE: 3x3
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([33, 1, 1]),
     expectedSize: new Int32Array([3, 3]), // 3 * 3 = 9 * 4 = 34
@@ -488,14 +549,18 @@ test('Float32Array with single precision length 33', () => {
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
       // NOTE: 3x3
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
     ]),
     expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
       // NOTE: 3x3
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([33, 1, 1]),
     expectedSize: new Int32Array([3, 3]), // 3 * 3 = 9 * 4 = 36
@@ -515,7 +580,9 @@ test('Uint16Array with single precision length 33', () => {
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
       // NOTE: 3x3
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
     ]),
     // upconverted from 2
     expectedBitRatio: 4,
@@ -523,7 +590,9 @@ test('Uint16Array with single precision length 33', () => {
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
       // NOTE: 3x3
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([33, 1, 1]),
     expectedSize: new Int32Array([3, 3]), // 3 * 3 = 9 * 4 = 36
@@ -543,7 +612,9 @@ test('Uint8Array with single precision length 33', () => {
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
       // NOTE: 3x3
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
     ]),
     // upconverted from 1
     expectedBitRatio: 4,
@@ -551,7 +622,9 @@ test('Uint8Array with single precision length 33', () => {
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
       // NOTE: 3x3
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([33, 1, 1]),
     expectedSize: new Int32Array([3, 3]), // 3 * 3 = 9 * 4 = 36
@@ -572,7 +645,8 @@ test('Input(Array) with unsigned precision 5 length', () => {
     argument: input(
       [
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-        1, 2, 3, 4, 5, 0,
+        1,
+        2, 3, 4, 5, 0,
       ],
       [2, 3]
     ),
@@ -580,7 +654,8 @@ test('Input(Array) with unsigned precision 5 length', () => {
     expectedPixels: new Uint8Array(
       new Float32Array([
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-        1, 2, 3, 4, 5, 0, 0, 0,
+        1,
+        2, 3, 4, 5, 0, 0, 0,
       ]).buffer
     ),
     expectedDim: new Int32Array([2, 3, 1]),
@@ -599,7 +674,8 @@ test('Input(Float32Array) with unsigned precision 5 length', () => {
     argument: input(
       new Float32Array([
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-        1, 2, 3, 4, 5,
+        1,
+        2, 3, 4, 5,
       ]),
       [5]
     ),
@@ -607,7 +683,8 @@ test('Input(Float32Array) with unsigned precision 5 length', () => {
     expectedPixels: new Uint8Array(
       new Float32Array([
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-        1, 2, 3, 4, 5, 0, 0, 0,
+        1,
+        2, 3, 4, 5, 0, 0, 0,
       ]).buffer
     ),
     expectedDim: new Int32Array([5, 1, 1]),
@@ -626,7 +703,8 @@ test('Input(Uint16Array) with unsigned precision 5 length', () => {
     argument: input(
       new Uint16Array([
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-        1, 2, 3, 4, 5, 0,
+        1,
+        2, 3, 4, 5, 0,
       ]),
       [2, 3]
     ),
@@ -634,7 +712,8 @@ test('Input(Uint16Array) with unsigned precision 5 length', () => {
     expectedPixels: new Uint8Array(
       new Uint16Array([
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-        1, 2, 3, 4, 5, 0, 0, 0,
+        1,
+        2, 3, 4, 5, 0, 0, 0,
       ]).buffer
     ),
     expectedDim: new Int32Array([2, 3, 1]),
@@ -654,7 +733,8 @@ test('Input(Uint8Array) with unsigned precision 5 length', () => {
     expectedBitRatio: 1,
     expectedPixels: new Uint8Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([2, 3, 1]),
     expectedSize: new Int32Array([1, 2]), // 1 * 2 * 4 = 8
@@ -673,14 +753,16 @@ test('Input(Array) with single precision', () => {
     argument: input(
       [
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-        1, 2, 3, 4, 5, 0,
+        1,
+        2, 3, 4, 5, 0,
       ],
       [2, 3]
     ),
     expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([2, 3, 1]),
     expectedSize: new Int32Array([1, 2]),
@@ -700,14 +782,16 @@ test('Input(Float32Array) with single precision', () => {
     argument: input(
       new Float32Array([
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-        1, 2, 3, 4, 5, 0,
+        1,
+        2, 3, 4, 5, 0,
       ]),
       [2, 3]
     ),
     expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([2, 3, 1]),
     expectedSize: new Int32Array([1, 2]),
@@ -727,7 +811,8 @@ test('Input(Uint16Array) with single precision', () => {
     argument: input(
       new Uint16Array([
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-        1, 2, 3, 4, 5, 0,
+        1,
+        2, 3, 4, 5, 0,
       ]),
       [2, 3]
     ),
@@ -735,7 +820,8 @@ test('Input(Uint16Array) with single precision', () => {
     expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([2, 3, 1]),
     expectedSize: new Int32Array([1, 2]),
@@ -753,7 +839,8 @@ test('Input(Uint8Array) with single precision', () => {
     argument: input(
       new Uint8Array([
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-        1, 2, 3, 4, 5, 0,
+        1,
+        2, 3, 4, 5, 0,
       ]),
       [2, 3]
     ),
@@ -761,7 +848,8 @@ test('Input(Uint8Array) with single precision', () => {
     expectedBitRatio: 4,
     expectedPixels: new Float32Array([
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
-      1, 2, 3, 4, 5, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([2, 3, 1]),
     expectedSize: new Int32Array([1, 2]),
@@ -782,7 +870,9 @@ test('Input(Array) with unsigned precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 1 per RGBA, so only 1 of the 4 channels is used
         // NOTE: 6x6
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
       ],
       [33]
     ),
@@ -792,7 +882,9 @@ test('Input(Array) with unsigned precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 1 per RGBA, so only 1 of the 4 channels is used
         // NOTE: 6x6
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
       ]).buffer
     ),
     expectedDim: new Int32Array([33, 1, 1]),
@@ -814,7 +906,9 @@ test('Input(Float32Array) with unsigned precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 1 per RGBA, so only 1 of the 4 channels is used
         // NOTE: 6x6
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
       ]),
       [33]
     ),
@@ -824,7 +918,9 @@ test('Input(Float32Array) with unsigned precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 1 per RGBA, so only 1 of the 4 channels is used
         // NOTE: 6x6
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
       ]).buffer
     ),
     expectedDim: new Int32Array([33, 1, 1]),
@@ -846,7 +942,9 @@ test('Input(Uint16Array) with unsigned precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 2 per RGBA, so only 2 of the 4 channels is used
         // NOTE: 4x5
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
       ]),
       [33]
     ),
@@ -856,7 +954,9 @@ test('Input(Uint16Array) with unsigned precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 2 per RGBA, so only 2 of the 4 channels is used
         // NOTE: 4x5
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0, 0, 0, 0, 0,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0, 0, 0, 0, 0,
       ]).buffer
     ),
     expectedDim: new Int32Array([33, 1, 1]),
@@ -878,7 +978,9 @@ test('Input(Uint8Array) with unsigned precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 4 per RGBA, so only 2 of the 4 channels is used
         // NOTE: 3x3
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
       ]),
       [33]
     ),
@@ -888,7 +990,9 @@ test('Input(Uint8Array) with unsigned precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 4 per RGBA, so only 2 of the 4 channels is used
         // NOTE: 3x3
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
       ]).buffer
     ),
     expectedDim: new Int32Array([33, 1, 1]),
@@ -910,7 +1014,9 @@ test('Input(Array) with single precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
         // NOTE: 3x3
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
       ],
       [33]
     ),
@@ -919,7 +1025,9 @@ test('Input(Array) with single precision length 33', () => {
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
       // NOTE: 3x3
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([33, 1, 1]),
     expectedSize: new Int32Array([3, 3]), // 3 * 3 = 9 * 4 = 34
@@ -940,7 +1048,9 @@ test('Input(Float32Array) with single precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
         // NOTE: 3x3
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
       ]),
       [33]
     ),
@@ -949,7 +1059,9 @@ test('Input(Float32Array) with single precision length 33', () => {
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
       // NOTE: 3x3
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([33, 1, 1]),
     expectedSize: new Int32Array([3, 3]), // 3 * 3 = 9 * 4 = 34
@@ -970,7 +1082,9 @@ test('Input(Uint16Array) with single precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
         // NOTE: 3x3
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
       ]),
       [33]
     ),
@@ -980,7 +1094,9 @@ test('Input(Uint16Array) with single precision length 33', () => {
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 4 per RGBA, so 4 of the 4 channels is used
       // NOTE: 3x3
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([33, 1, 1]),
     expectedSize: new Int32Array([3, 3]), // 3 * 3 = 9 * 4 = 36
@@ -1001,7 +1117,9 @@ test('Input(Uint8Array) with single precision length 33', () => {
         // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
         // NOTE: Packing is 4 per RGBA (8 bit, but upconverted to float32), so only 4 of the 4 channels is used
         // NOTE: 3x3
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+        1,
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
       ]),
       [33]
     ),
@@ -1011,7 +1129,9 @@ test('Input(Uint8Array) with single precision length 33', () => {
       // NOTE: formatted like rectangle on purpose, so you can see how the texture should look
       // NOTE: Packing is 4 per RGBA (8 bit, but upconverted to float32), so only 4 of the 4 channels is used
       // NOTE: 3x3
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
+      1,
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0, 0, 0,
     ]),
     expectedDim: new Int32Array([33, 1, 1]),
     expectedSize: new Int32Array([3, 3]), // 3 * 3 = 9 * 4 = 36

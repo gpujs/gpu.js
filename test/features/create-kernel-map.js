@@ -17,7 +17,10 @@ function createPropertyKernels(gpu, output) {
         divideResult: divide,
       },
       function (k1, k2, k3) {
-        return divide(adder(k1[this.thread.x], k2[this.thread.x]), k3[this.thread.x]);
+        return divide(
+          adder(k1[this.thread.x], k2[this.thread.x]),
+          k3[this.thread.x]
+        );
       }
     )
     .setOutput(output);
@@ -33,7 +36,10 @@ function createArrayKernels(gpu, output) {
   }
   return gpu
     .createKernelMap([add, divide], function (k1, k2, k3) {
-      return divide(add(k1[this.thread.x], k2[this.thread.x]), k3[this.thread.x]);
+      return divide(
+        add(k1[this.thread.x], k2[this.thread.x]),
+        k3[this.thread.x]
+      );
     })
     .setOutput(output);
 }
@@ -60,25 +66,40 @@ function createKernelMapObject1Dimension1Length(mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('createKernelMap object 1 dimension 1 length auto', () => {
-  createKernelMapObject1Dimension1Length();
-});
+(GPU.isKernelMapSupported ? test : skip)(
+  'createKernelMap object 1 dimension 1 length auto',
+  () => {
+    createKernelMapObject1Dimension1Length();
+  }
+);
 
-(GPU.isKernelMapSupported ? test : skip)('createKernelMap object 1 dimension 1 length gpu', () => {
-  createKernelMapObject1Dimension1Length('gpu');
-});
+(GPU.isKernelMapSupported ? test : skip)(
+  'createKernelMap object 1 dimension 1 length gpu',
+  () => {
+    createKernelMapObject1Dimension1Length('gpu');
+  }
+);
 
-(GPU.isWebGLSupported ? test : skip)('createKernelMap object 1 dimension 1 length webgl', () => {
-  createKernelMapObject1Dimension1Length('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'createKernelMap object 1 dimension 1 length webgl',
+  () => {
+    createKernelMapObject1Dimension1Length('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('createKernelMap object 1 dimension 1 length webgl2', () => {
-  createKernelMapObject1Dimension1Length('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'createKernelMap object 1 dimension 1 length webgl2',
+  () => {
+    createKernelMapObject1Dimension1Length('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('createKernelMap object 1 dimension 1 length headlessgl', () => {
-  createKernelMapObject1Dimension1Length('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)(
+  'createKernelMap object 1 dimension 1 length headlessgl',
+  () => {
+    createKernelMapObject1Dimension1Length('headlessgl');
+  }
+);
 
 test('createKernelMap object 1 dimension 1 length cpu', () => {
   createKernelMapObject1Dimension1Length('cpu');
@@ -98,25 +119,40 @@ function createKernelMapArray1Dimension1Length(mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('createKernelMap array 1 dimension 1 length auto', () => {
-  createKernelMapArray1Dimension1Length();
-});
+(GPU.isKernelMapSupported ? test : skip)(
+  'createKernelMap array 1 dimension 1 length auto',
+  () => {
+    createKernelMapArray1Dimension1Length();
+  }
+);
 
-(GPU.isKernelMapSupported ? test : skip)('createKernelMap array 1 dimension 1 length gpu', () => {
-  createKernelMapArray1Dimension1Length('gpu');
-});
+(GPU.isKernelMapSupported ? test : skip)(
+  'createKernelMap array 1 dimension 1 length gpu',
+  () => {
+    createKernelMapArray1Dimension1Length('gpu');
+  }
+);
 
-(GPU.isWebGLSupported ? test : skip)('createKernelMap array 1 dimension 1 length webgl', () => {
-  createKernelMapArray1Dimension1Length('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'createKernelMap array 1 dimension 1 length webgl',
+  () => {
+    createKernelMapArray1Dimension1Length('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('createKernelMap array 1 dimension 1 length webgl2', () => {
-  createKernelMapArray1Dimension1Length('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'createKernelMap array 1 dimension 1 length webgl2',
+  () => {
+    createKernelMapArray1Dimension1Length('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('createKernelMap array 1 dimension 1 length headlessgl', () => {
-  createKernelMapArray1Dimension1Length('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)(
+  'createKernelMap array 1 dimension 1 length headlessgl',
+  () => {
+    createKernelMapArray1Dimension1Length('headlessgl');
+  }
+);
 
 test('createKernelMap array 1 dimension 1 length cpu', () => {
   createKernelMapArray1Dimension1Length('cpu');
@@ -126,7 +162,11 @@ function createKernelMapObject1Dimension5Length(mode) {
   const gpu = new GPU({ mode });
   const superKernel = createPropertyKernels(gpu, [5]);
   const kernel = createKernel(gpu, [5]);
-  const output = superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]);
+  const output = superKernel(
+    [1, 2, 3, 4, 5],
+    [1, 2, 3, 4, 5],
+    [1, 2, 3, 4, 5]
+  );
   const result = Array.from(output.result);
   const addResult = Array.from(kernel(output.addResult));
   const divideResult = Array.from(kernel(output.divideResult));
@@ -136,25 +176,40 @@ function createKernelMapObject1Dimension5Length(mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('createKernelMap object 1 dimension 5 length auto', () => {
-  createKernelMapObject1Dimension5Length();
-});
+(GPU.isKernelMapSupported ? test : skip)(
+  'createKernelMap object 1 dimension 5 length auto',
+  () => {
+    createKernelMapObject1Dimension5Length();
+  }
+);
 
-(GPU.isKernelMapSupported ? test : skip)('createKernelMap object 1 dimension 5 length gpu', () => {
-  createKernelMapObject1Dimension5Length('gpu');
-});
+(GPU.isKernelMapSupported ? test : skip)(
+  'createKernelMap object 1 dimension 5 length gpu',
+  () => {
+    createKernelMapObject1Dimension5Length('gpu');
+  }
+);
 
-(GPU.isWebGLSupported ? test : skip)('createKernelMap object 1 dimension 5 length webgl', () => {
-  createKernelMapObject1Dimension5Length('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'createKernelMap object 1 dimension 5 length webgl',
+  () => {
+    createKernelMapObject1Dimension5Length('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('createKernelMap object 1 dimension 5 length webgl2', () => {
-  createKernelMapObject1Dimension5Length('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'createKernelMap object 1 dimension 5 length webgl2',
+  () => {
+    createKernelMapObject1Dimension5Length('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('createKernelMap object 1 dimension 5 length headlessgl', () => {
-  createKernelMapObject1Dimension5Length('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)(
+  'createKernelMap object 1 dimension 5 length headlessgl',
+  () => {
+    createKernelMapObject1Dimension5Length('headlessgl');
+  }
+);
 
 test('createKernelMap object 1 dimension 5 length cpu', () => {
   createKernelMapObject1Dimension5Length('cpu');
@@ -164,7 +219,11 @@ function createKernelMapArrayAuto(mode) {
   const gpu = new GPU({ mode });
   const superKernel = createArrayKernels(gpu, [5]);
   const kernel = createKernel(gpu, [5]);
-  const output = superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]);
+  const output = superKernel(
+    [1, 2, 3, 4, 5],
+    [1, 2, 3, 4, 5],
+    [1, 2, 3, 4, 5]
+  );
   const result = Array.from(output.result);
   const addResult = Array.from(kernel(output[0]));
   const divideResult = Array.from(kernel(output[1]));
@@ -189,9 +248,12 @@ function createKernelMapArrayAuto(mode) {
   createKernelMapArrayAuto('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('createKernelMap array headlessgl', () => {
-  createKernelMapArrayAuto('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)(
+  'createKernelMap array headlessgl',
+  () => {
+    createKernelMapArrayAuto('headlessgl');
+  }
+);
 
 test('createKernelMap array cpu', () => {
   createKernelMapArrayAuto('cpu');
@@ -233,17 +295,23 @@ function createKernelMap3DAuto(mode) {
   createKernelMap3DAuto('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)('createKernelMap 3d webgl', () => {
-  createKernelMap3DAuto('webgl');
-});
+(GPU.isWebGLSupported && GPU.isKernelMapSupported ? test : skip)(
+  'createKernelMap 3d webgl',
+  () => {
+    createKernelMap3DAuto('webgl');
+  }
+);
 
 (GPU.isWebGL2Supported ? test : skip)('createKernelMap 3d webgl2', () => {
   createKernelMap3DAuto('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('createKernelMap 3d headlessgl', () => {
-  createKernelMap3DAuto('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)(
+  'createKernelMap 3d headlessgl',
+  () => {
+    createKernelMap3DAuto('headlessgl');
+  }
+);
 
 test('createKernelMap 3d cpu', () => {
   createKernelMap3DAuto('cpu');
@@ -286,13 +354,19 @@ test('createKernelMap Array(2) gpu', () => {
   createKernelMapArray2('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('createKernelMap Array(2) webgl2', () => {
-  createKernelMapArray2('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'createKernelMap Array(2) webgl2',
+  () => {
+    createKernelMapArray2('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('createKernelMap Array(2) headlessgl', () => {
-  createKernelMapArray2('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'createKernelMap Array(2) headlessgl',
+  () => {
+    createKernelMapArray2('headlessgl');
+  }
+);
 
 test('createKernelMap Array(2) cpu', () => {
   createKernelMapArray2('cpu');
@@ -335,13 +409,19 @@ test('createKernelMap Array(3) gpu', () => {
   createKernelMapArray3('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('createKernelMap Array(3) webgl2', () => {
-  createKernelMapArray3('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'createKernelMap Array(3) webgl2',
+  () => {
+    createKernelMapArray3('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('createKernelMap Array(3) headlessgl', () => {
-  createKernelMapArray3('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'createKernelMap Array(3) headlessgl',
+  () => {
+    createKernelMapArray3('headlessgl');
+  }
+);
 
 test('createKernelMap Array(3) cpu', () => {
   createKernelMapArray3('cpu');
@@ -384,13 +464,19 @@ test('createKernelMap Array(4) gpu', () => {
   createKernelMapArray4('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('createKernelMap Array(4) webgl2', () => {
-  createKernelMapArray4('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'createKernelMap Array(4) webgl2',
+  () => {
+    createKernelMapArray4('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('createKernelMap Array(4) headlessgl', () => {
-  createKernelMapArray4('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'createKernelMap Array(4) headlessgl',
+  () => {
+    createKernelMapArray4('headlessgl');
+  }
+);
 
 test('createKernelMap Array(4) cpu', () => {
   createKernelMapArray4('cpu');

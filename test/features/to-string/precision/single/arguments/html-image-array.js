@@ -4,7 +4,12 @@ const { GPU, CPUKernel } = require('../../../../../../src');
 describe('feature: to-string single precision arguments HTMLImageArray');
 
 function testArgument(mode, done) {
-  loadImages(['jellyfish-1.jpeg', 'jellyfish-2.jpeg', 'jellyfish-3.jpeg', 'jellyfish-4.jpeg']).then(([image1, image2, image3, image4]) => {
+  loadImages([
+    'jellyfish-1.jpeg',
+    'jellyfish-2.jpeg',
+    'jellyfish-3.jpeg',
+    'jellyfish-4.jpeg',
+  ]).then(([image1, image2, image3, image4]) => {
     const imagesArray1 = [image1, image2];
     const imagesArray2 = [image3, image4];
     const gpu = new GPU({ mode });
@@ -49,15 +54,21 @@ function testArgument(mode, done) {
   });
 }
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('webgl', t => {
-  const done = t.async();
-  testArgument('webgl', kernel => {
-    // They aren't supported, so test that kernel falls back
-    assert.equal(kernel.kernel.constructor, CPUKernel);
-    done();
-  });
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'webgl',
+  t => {
+    const done = t.async();
+    testArgument('webgl', kernel => {
+      // They aren't supported, so test that kernel falls back
+      assert.equal(kernel.kernel.constructor, CPUKernel);
+      done();
+    });
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('webgl2', t => {
-  testArgument('webgl2', t.async());
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'webgl2',
+  t => {
+    testArgument('webgl2', t.async());
+  }
+);

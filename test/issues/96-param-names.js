@@ -43,9 +43,12 @@ function getResult(mode) {
   gpu.destroy();
   return result;
 }
-(GPU.isKernelMapSupported ? test : skip)('Issue #96 - param names auto', () => {
-  getResult();
-});
+(GPU.isKernelMapSupported ? test : skip)(
+  'Issue #96 - param names auto',
+  () => {
+    getResult();
+  }
+);
 (GPU.isKernelMapSupported ? test : skip)('Issue #96 - param names gpu', () => {
   getResult('gpu');
 });
@@ -55,9 +58,12 @@ function getResult(mode) {
 (GPU.isWebGL2Supported ? test : skip)('Issue #96 - param names webgl2', () => {
   getResult('webgl2');
 });
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #96 - param names headlessgl', () => {
-  getResult('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)(
+  'Issue #96 - param names headlessgl',
+  () => {
+    getResult('headlessgl');
+  }
+);
 test('Issue #96 - param names cpu', () => {
   getResult('cpu');
 });

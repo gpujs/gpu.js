@@ -32,25 +32,37 @@ function wrongCanvasSizeOptimized(mode) {
   gpu.destroy();
 }
 
-(GPU.isCanvasSupported ? test : skip)('Issue #279 wrong canvas size optimized - cpu', () => {
-  wrongCanvasSizeOptimized('cpu');
-});
+(GPU.isCanvasSupported ? test : skip)(
+  'Issue #279 wrong canvas size optimized - cpu',
+  () => {
+    wrongCanvasSizeOptimized('cpu');
+  }
+);
 
 test('Issue #279 wrong canvas size optimized - gpu', () => {
   wrongCanvasSizeOptimized('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #279 wrong canvas size optimized - webgl', () => {
-  wrongCanvasSizeOptimized('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #279 wrong canvas size optimized - webgl',
+  () => {
+    wrongCanvasSizeOptimized('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #279 wrong canvas size optimized - webgl2', () => {
-  wrongCanvasSizeOptimized('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #279 wrong canvas size optimized - webgl2',
+  () => {
+    wrongCanvasSizeOptimized('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #279 wrong canvas size optimized - headlessgl', () => {
-  wrongCanvasSizeOptimized('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #279 wrong canvas size optimized - headlessgl',
+  () => {
+    wrongCanvasSizeOptimized('headlessgl');
+  }
+);
 
 function wrongCanvasSizeUnoptimized(mode) {
   const gpu = new GPU({ mode });
@@ -78,22 +90,34 @@ function wrongCanvasSizeUnoptimized(mode) {
   gpu.destroy();
 }
 
-(GPU.isCanvasSupported ? test : skip)('Issue #279 wrong canvas size unoptimized - cpu', () => {
-  wrongCanvasSizeUnoptimized('cpu');
-});
+(GPU.isCanvasSupported ? test : skip)(
+  'Issue #279 wrong canvas size unoptimized - cpu',
+  () => {
+    wrongCanvasSizeUnoptimized('cpu');
+  }
+);
 
 test('Issue #279 wrong canvas size unoptimized - gpu', () => {
   wrongCanvasSizeUnoptimized('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #279 wrong canvas size unoptimized - webgl', () => {
-  wrongCanvasSizeUnoptimized('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #279 wrong canvas size unoptimized - webgl',
+  () => {
+    wrongCanvasSizeUnoptimized('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #279 wrong canvas size unoptimized - webgl2', () => {
-  wrongCanvasSizeUnoptimized('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #279 wrong canvas size unoptimized - webgl2',
+  () => {
+    wrongCanvasSizeUnoptimized('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #279 wrong canvas size unoptimized - headlessgl', () => {
-  wrongCanvasSizeUnoptimized('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #279 wrong canvas size unoptimized - headlessgl',
+  () => {
+    wrongCanvasSizeUnoptimized('headlessgl');
+  }
+);

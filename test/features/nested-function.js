@@ -90,9 +90,12 @@ test('nested in custom gpu', () => {
   testNestedInCustomFunction('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('nested in custom headlessgl', () => {
-  testNestedInCustomFunction('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'nested in custom headlessgl',
+  () => {
+    testNestedInCustomFunction('headlessgl');
+  }
+);
 
 test('nested in custom cpu', () => {
   testNestedInCustomFunction('cpu');

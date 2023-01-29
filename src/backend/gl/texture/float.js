@@ -13,7 +13,13 @@ export class GLTextureFloat extends GLTexture {
     const gl = this.context;
     const size = this.size;
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture, 0);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      this.texture,
+      0
+    );
     const result = new Float32Array(size[0] * size[1] * 4);
     gl.readPixels(0, 0, size[0], size[1], gl.RGBA, gl.FLOAT, result);
     return result;

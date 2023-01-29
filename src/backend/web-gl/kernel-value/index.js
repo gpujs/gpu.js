@@ -43,7 +43,9 @@ export class WebGLKernelValue extends KernelValue {
       case Float64Array:
         return value.constructor;
     }
-    console.warn('Unfamiliar constructor type.  Will go ahead and use, but likley this may result in a transfer of zeros');
+    console.warn(
+      'Unfamiliar constructor type.  Will go ahead and use, but likley this may result in a transfer of zeros'
+    );
     return value.constructor;
   }
 
@@ -51,11 +53,16 @@ export class WebGLKernelValue extends KernelValue {
    * Used for when we want a string output of our kernel, so we can still input values to the kernel
    */
   getStringValueHandler() {
-    throw new Error(`"getStringValueHandler" not implemented on ${this.constructor.name}`);
+    throw new Error(
+      `"getStringValueHandler" not implemented on ${this.constructor.name}`
+    );
   }
 
   getVariablePrecisionString() {
-    return this.kernel.getVariablePrecisionString(this.textureSize || undefined, this.tactic || undefined);
+    return this.kernel.getVariablePrecisionString(
+      this.textureSize || undefined,
+      this.tactic || undefined
+    );
   }
 
   destroy() {}

@@ -30,17 +30,26 @@ function readImageData(mode) {
   readImageData('gpu');
 });
 
-(GPU.isWebGLSupported && typeof ImageData !== 'undefined' ? test : skip)('readImageData webgl', () => {
-  readImageData('webgl');
-});
+(GPU.isWebGLSupported && typeof ImageData !== 'undefined' ? test : skip)(
+  'readImageData webgl',
+  () => {
+    readImageData('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && typeof ImageData !== 'undefined' ? test : skip)('readImageData webgl2', () => {
-  readImageData('webgl2');
-});
+(GPU.isWebGL2Supported && typeof ImageData !== 'undefined' ? test : skip)(
+  'readImageData webgl2',
+  () => {
+    readImageData('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && typeof ImageData !== 'undefined' ? test : skip)('readImageData headlessgl', () => {
-  readImageData('headlessgl');
-});
+(GPU.isHeadlessGLSupported && typeof ImageData !== 'undefined' ? test : skip)(
+  'readImageData headlessgl',
+  () => {
+    readImageData('headlessgl');
+  }
+);
 
 (typeof ImageData !== 'undefined' ? test : skip)('readImageData cpu', () => {
   readImageData('cpu');

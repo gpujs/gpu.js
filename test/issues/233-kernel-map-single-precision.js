@@ -57,25 +57,40 @@ function kernelMapSinglePrecision(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision auto', () => {
-  kernelMapSinglePrecision();
-});
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)(
+  'Issue #233 - kernel map with single precision auto',
+  () => {
+    kernelMapSinglePrecision();
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision gpu', () => {
-  kernelMapSinglePrecision('gpu');
-});
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)(
+  'Issue #233 - kernel map with single precision gpu',
+  () => {
+    kernelMapSinglePrecision('gpu');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('Issue #233 - kernel map with single precision webgl', () => {
-  kernelMapSinglePrecision('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'Issue #233 - kernel map with single precision webgl',
+  () => {
+    kernelMapSinglePrecision('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #233 - kernel map with single precision webgl2', () => {
-  kernelMapSinglePrecision('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #233 - kernel map with single precision webgl2',
+  () => {
+    kernelMapSinglePrecision('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision headlessgl', () => {
-  kernelMapSinglePrecision('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)(
+  'Issue #233 - kernel map with single precision headlessgl',
+  () => {
+    kernelMapSinglePrecision('headlessgl');
+  }
+);
 
 test('Issue #233 - kernel map with single precision cpu', () => {
   kernelMapSinglePrecision('cpu');
@@ -163,25 +178,40 @@ function kernelMapSinglePrecision2D(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision 2d auto', () => {
-  kernelMapSinglePrecision2D();
-});
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)(
+  'Issue #233 - kernel map with single precision 2d auto',
+  () => {
+    kernelMapSinglePrecision2D();
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision 2d gpu', () => {
-  kernelMapSinglePrecision2D('gpu');
-});
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)(
+  'Issue #233 - kernel map with single precision 2d gpu',
+  () => {
+    kernelMapSinglePrecision2D('gpu');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('Issue #233 - kernel map with single precision 2d webgl', () => {
-  kernelMapSinglePrecision2D('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'Issue #233 - kernel map with single precision 2d webgl',
+  () => {
+    kernelMapSinglePrecision2D('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #233 - kernel map with single precision 2d webgl2', () => {
-  kernelMapSinglePrecision2D('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #233 - kernel map with single precision 2d webgl2',
+  () => {
+    kernelMapSinglePrecision2D('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision 2d headlessgl', () => {
-  kernelMapSinglePrecision2D('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)(
+  'Issue #233 - kernel map with single precision 2d headlessgl',
+  () => {
+    kernelMapSinglePrecision2D('headlessgl');
+  }
+);
 
 test('Issue #233 - kernel map with single precision 2d cpu', () => {
   kernelMapSinglePrecision2D('cpu');
@@ -276,25 +306,40 @@ function kernelMapSinglePrecision3D(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision 3d auto', () => {
-  kernelMapSinglePrecision3D();
-});
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)(
+  'Issue #233 - kernel map with single precision 3d auto',
+  () => {
+    kernelMapSinglePrecision3D();
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision 3d gpu', () => {
-  kernelMapSinglePrecision3D('gpu');
-});
+(GPU.isSinglePrecisionSupported && GPU.isKernelMapSupported ? test : skip)(
+  'Issue #233 - kernel map with single precision 3d gpu',
+  () => {
+    kernelMapSinglePrecision3D('gpu');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('Issue #233 - kernel map with single precision 3d webgl', () => {
-  kernelMapSinglePrecision3D('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'Issue #233 - kernel map with single precision 3d webgl',
+  () => {
+    kernelMapSinglePrecision3D('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #233 - kernel map with single precision 3d webgl2', () => {
-  kernelMapSinglePrecision3D('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #233 - kernel map with single precision 3d webgl2',
+  () => {
+    kernelMapSinglePrecision3D('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #233 - kernel map with single precision 3d headlessgl', () => {
-  kernelMapSinglePrecision3D('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)(
+  'Issue #233 - kernel map with single precision 3d headlessgl',
+  () => {
+    kernelMapSinglePrecision3D('headlessgl');
+  }
+);
 
 test('Issue #233 - kernel map with single precision 3d cpu', () => {
   kernelMapSinglePrecision3D('cpu');

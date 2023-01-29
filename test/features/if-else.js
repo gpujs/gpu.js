@@ -69,7 +69,11 @@ function ifElseLookupTest(mode) {
   );
 
   assert.ok(f !== null, 'function generated test');
-  assert.deepEqual(Array.from(f([1, 1, 0, 0])), [0, 0, 1, 1], 'basic return function test');
+  assert.deepEqual(
+    Array.from(f([1, 1, 0, 0])),
+    [0, 0, 1, 1],
+    'basic return function test'
+  );
   gpu.destroy();
 }
 
@@ -115,7 +119,11 @@ function ifElseIfTest(mode) {
       output: [2],
     }
   );
-  assert.deepEqual(Array.from(f([-1, 1])), [0.5, 0], 'basic return function test');
+  assert.deepEqual(
+    Array.from(f([-1, 1])),
+    [0.5, 0],
+    'basic return function test'
+  );
   gpu.destroy();
 }
 

@@ -36,25 +36,40 @@ function multipleKernels(mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)('Issue #116 - multiple kernels run again auto', () => {
-  multipleKernels();
-});
+(GPU.isKernelMapSupported ? test : skip)(
+  'Issue #116 - multiple kernels run again auto',
+  () => {
+    multipleKernels();
+  }
+);
 
-(GPU.isKernelMapSupported ? test : skip)('Issue #116 - multiple kernels run again gpu', () => {
-  multipleKernels('gpu');
-});
+(GPU.isKernelMapSupported ? test : skip)(
+  'Issue #116 - multiple kernels run again gpu',
+  () => {
+    multipleKernels('gpu');
+  }
+);
 
-(GPU.isWebGLSupported ? test : skip)('Issue #116 - multiple kernels run again webgl', () => {
-  multipleKernels('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #116 - multiple kernels run again webgl',
+  () => {
+    multipleKernels('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #116 - multiple kernels run again webgl2', () => {
-  multipleKernels('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #116 - multiple kernels run again webgl2',
+  () => {
+    multipleKernels('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #116 - multiple kernels run again headlessgl', () => {
-  multipleKernels('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)(
+  'Issue #116 - multiple kernels run again headlessgl',
+  () => {
+    multipleKernels('headlessgl');
+  }
+);
 
 test('Issue #116 - multiple kernels run again cpu', () => {
   multipleKernels('cpu');

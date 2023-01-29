@@ -183,21 +183,45 @@ test('works with var & let VariableDeclarator together', () => {
   for (let i = 0; i < 1; i++) { let pop = 0; }`);
   const functionTracer = new FunctionTracer(ast);
 
-  assert.equal(functionTracer.contexts[0].bob.context['@contextType'], 'function');
+  assert.equal(
+    functionTracer.contexts[0].bob.context['@contextType'],
+    'function'
+  );
   assert.equal(functionTracer.contexts[0].i, undefined);
   assert.equal(functionTracer.contexts[0].pop, undefined);
 
-  assert.equal(functionTracer.contexts[1].bob.context['@contextType'], 'function');
-  assert.equal(functionTracer.contexts[1].i.context['@contextType'], 'function');
+  assert.equal(
+    functionTracer.contexts[1].bob.context['@contextType'],
+    'function'
+  );
+  assert.equal(
+    functionTracer.contexts[1].i.context['@contextType'],
+    'function'
+  );
   assert.equal(functionTracer.contexts[1].pop, undefined);
 
-  assert.equal(functionTracer.contexts[2].bob.context['@contextType'], 'function');
-  assert.equal(functionTracer.contexts[2].i.context['@contextType'], 'function');
+  assert.equal(
+    functionTracer.contexts[2].bob.context['@contextType'],
+    'function'
+  );
+  assert.equal(
+    functionTracer.contexts[2].i.context['@contextType'],
+    'function'
+  );
   assert.equal(functionTracer.contexts[2].pop, undefined);
 
-  assert.equal(functionTracer.contexts[3].bob.context['@contextType'], 'function');
-  assert.equal(functionTracer.contexts[3].i.context['@contextType'], 'function');
-  assert.equal(functionTracer.contexts[3].pop.context['@contextType'], 'function');
+  assert.equal(
+    functionTracer.contexts[3].bob.context['@contextType'],
+    'function'
+  );
+  assert.equal(
+    functionTracer.contexts[3].i.context['@contextType'],
+    'function'
+  );
+  assert.equal(
+    functionTracer.contexts[3].pop.context['@contextType'],
+    'function'
+  );
 });
 
 test('works with FunctionExpression when runningContexts.length = 0', () => {
@@ -563,7 +587,14 @@ test('does nothing with un-scan-ables', () => {
       called = true;
     },
   };
-  ['ThisExpression', 'Literal', 'DebuggerStatement', 'EmptyStatement', 'BreakStatement', 'ContinueStatement'].forEach(type => {
+  [
+    'ThisExpression',
+    'Literal',
+    'DebuggerStatement',
+    'EmptyStatement',
+    'BreakStatement',
+    'ContinueStatement',
+  ].forEach(type => {
     FunctionTracer.prototype.scan.call(mockInstance, { type });
   });
   assert.ok(!called);

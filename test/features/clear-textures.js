@@ -39,25 +39,37 @@ test('unsigned precision auto', () => {
   clearTexture('unsigned', 'webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('unsigned precision headlessgl', () => {
-  clearTexture('unsigned', 'headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'unsigned precision headlessgl',
+  () => {
+    clearTexture('unsigned', 'headlessgl');
+  }
+);
 
 (GPU.isSinglePrecisionSupported ? test : skip)('single precision auto', () => {
   clearTexture('single');
 });
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('single precision webgl', () => {
-  clearTexture('single', 'webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'single precision webgl',
+  () => {
+    clearTexture('single', 'webgl');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('single precision webgl2', () => {
-  clearTexture('single', 'webgl2');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'single precision webgl2',
+  () => {
+    clearTexture('single', 'webgl2');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('single precision headlessgl', () => {
-  clearTexture('single', 'headlessgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)(
+  'single precision headlessgl',
+  () => {
+    clearTexture('single', 'headlessgl');
+  }
+);
 
 function clearClonedTexture(mode) {
   const gpu = new GPU({ mode });
@@ -95,6 +107,9 @@ test('clear cloned texture gpu', () => {
   clearClonedTexture('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('clear cloned texture headlessgl', () => {
-  clearClonedTexture('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'clear cloned texture headlessgl',
+  () => {
+    clearClonedTexture('headlessgl');
+  }
+);

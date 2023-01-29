@@ -159,7 +159,8 @@ test('unknown function call', () => {
 test('function call', () => {
   assert.equal(
     run('value()', {
-      lookupReturnType: (name, ast, node) => (name === 'value' ? 'Fake Type' : null),
+      lookupReturnType: (name, ast, node) =>
+        name === 'value' ? 'Fake Type' : null,
     }),
     'Fake Type'
   );
@@ -194,7 +195,8 @@ test('simple right expression', () => {
 test('function call expression', () => {
   assert.equal(
     run('otherFunction() + value', {
-      lookupReturnType: (name, ast, node) => (name === 'otherFunction' ? 'Fake Type' : null),
+      lookupReturnType: (name, ast, node) =>
+        name === 'otherFunction' ? 'Fake Type' : null,
     }),
     'Fake Type'
   );
@@ -233,15 +235,24 @@ test('Math.LOG10E', () => {
 });
 
 test('Math.abs(value)', () => {
-  assert.equal(run('Math.abs(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.abs(value)', { argumentTypes: ['Number', 'Number', 'Number'] }),
+    'Number'
+  );
 });
 
 test('Math.acos(value)', () => {
-  assert.equal(run('Math.acos(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.acos(value)', { argumentTypes: ['Number', 'Number', 'Number'] }),
+    'Number'
+  );
 });
 
 test('Math.atan(value)', () => {
-  assert.equal(run('Math.atan(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.atan(value)', { argumentTypes: ['Number', 'Number', 'Number'] }),
+    'Number'
+  );
 });
 
 test('Math.atan2(value, value2)', () => {
@@ -254,15 +265,24 @@ test('Math.atan2(value, value2)', () => {
 });
 
 test('Math.ceil(value)', () => {
-  assert.equal(run('Math.ceil(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.ceil(value)', { argumentTypes: ['Number', 'Number', 'Number'] }),
+    'Number'
+  );
 });
 
 test('Math.cos(value)', () => {
-  assert.equal(run('Math.cos(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.cos(value)', { argumentTypes: ['Number', 'Number', 'Number'] }),
+    'Number'
+  );
 });
 
 test('Math.exp(value)', () => {
-  assert.equal(run('Math.exp(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.exp(value)', { argumentTypes: ['Number', 'Number', 'Number'] }),
+    'Number'
+  );
 });
 
 test('Math.floor(value)', () => {
@@ -275,7 +295,10 @@ test('Math.floor(value)', () => {
 });
 
 test('Math.log(value)', () => {
-  assert.equal(run('Math.log(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.log(value)', { argumentTypes: ['Number', 'Number', 'Number'] }),
+    'Number'
+  );
 });
 
 test('Math.max(value, value2, value3)', () => {
@@ -306,7 +329,10 @@ test('Math.pow(value, value2)', () => {
 });
 
 test('Math.random()', () => {
-  assert.equal(run('Math.random()', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.random()', { argumentTypes: ['Number', 'Number', 'Number'] }),
+    'Number'
+  );
 });
 
 test('Math.round(value)', () => {
@@ -319,17 +345,29 @@ test('Math.round(value)', () => {
 });
 
 test('Math.sin(value)', () => {
-  assert.equal(run('Math.sin(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.sin(value)', { argumentTypes: ['Number', 'Number', 'Number'] }),
+    'Number'
+  );
 });
 
 test('Math.sqrt(value)', () => {
-  assert.equal(run('Math.sqrt(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.sqrt(value)', { argumentTypes: ['Number', 'Number', 'Number'] }),
+    'Number'
+  );
 });
 
 test('Math.tan(value)', () => {
-  assert.equal(run('Math.tan(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.tan(value)', { argumentTypes: ['Number', 'Number', 'Number'] }),
+    'Number'
+  );
 });
 
 test('Math.tanh(value)', () => {
-  assert.equal(run('Math.tanh(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.tanh(value)', { argumentTypes: ['Number', 'Number', 'Number'] }),
+    'Number'
+  );
 });

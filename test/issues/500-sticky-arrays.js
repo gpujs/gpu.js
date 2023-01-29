@@ -12,7 +12,11 @@ function testStickyArrays(mode) {
   gpu.addFunction(processImage);
   const kernel = gpu.createKernel(
     function (image1, image2, image3) {
-      return [processImage(image1), processImage(image2), processImage(image3)];
+      return [
+        processImage(image1),
+        processImage(image2),
+        processImage(image3),
+      ];
     },
     { output: [1] }
   );

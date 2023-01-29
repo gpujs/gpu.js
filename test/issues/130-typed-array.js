@@ -32,13 +32,19 @@ test('Issue #130 - typed array gpu', () => {
   typedArrays('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #130 - typed array webgl2', () => {
-  typedArrays('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #130 - typed array webgl2',
+  () => {
+    typedArrays('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #130 - typed array headlessgl', () => {
-  typedArrays('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #130 - typed array headlessgl',
+  () => {
+    typedArrays('headlessgl');
+  }
+);
 
 test('Issue #130 - typed array cpu', () => {
   typedArrays('cpu');

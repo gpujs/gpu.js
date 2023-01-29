@@ -18,7 +18,10 @@ function testGraphical(mode, context, canvas) {
     }
   );
 
-  const expected = new Uint8ClampedArray([255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]);
+  const expected = new Uint8ClampedArray([
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255,
+  ]);
   originalKernel();
   assert.deepEqual(originalKernel.getPixels(), expected);
   const kernelString = originalKernel.toString();
@@ -31,21 +34,30 @@ function testGraphical(mode, context, canvas) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('webgl', () => {
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('webgl');
-  testGraphical('webgl', context, canvas);
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'webgl',
+  () => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('webgl');
+    testGraphical('webgl', context, canvas);
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('webgl2');
-  testGraphical('webgl2', context, canvas);
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'webgl2',
+  () => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('webgl2');
+    testGraphical('webgl2', context, canvas);
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
-  testGraphical('headlessgl', require('gl')(1, 1), null);
-});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)(
+  'headlessgl',
+  () => {
+    testGraphical('headlessgl', require('gl')(1, 1), null);
+  }
+);
 
 (GPU.isCanvasSupported ? test : skip)('cpu', () => {
   const canvas = document.createElement('canvas');

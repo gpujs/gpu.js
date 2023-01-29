@@ -7,6 +7,9 @@ export class GLTextureMemoryOptimized extends GLTextureFloat {
     this.type = 'MemoryOptimizedNumberTexture';
   }
   toArray() {
-    return utils.erectMemoryOptimizedFloat(this.renderValues(), this.output[0]);
+    return utils.erectMemoryOptimizedFloat(
+      this.renderValues(),
+      this.output[0]
+    );
   }
 }

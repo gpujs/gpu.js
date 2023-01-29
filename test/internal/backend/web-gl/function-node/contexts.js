@@ -184,7 +184,9 @@ test('safe from multiplication deep', () => {
 
   node.toString();
   const { const1, const10 } = node.contexts[1];
-  assert.ok(const1.dependencies.every(dependency => dependency.isSafe === false));
+  assert.ok(
+    const1.dependencies.every(dependency => dependency.isSafe === false)
+  );
   assert.deepEqual(const10.dependencies, [
     {
       name: 'const9',
@@ -271,7 +273,9 @@ test('safe from division deep', () => {
 
   node.toString();
   const { const1, const10 } = node.contexts[1];
-  assert.ok(const1.dependencies.every(dependency => dependency.isSafe === false));
+  assert.ok(
+    const1.dependencies.every(dependency => dependency.isSafe === false)
+  );
   assert.deepEqual(const10.dependencies, [
     {
       name: 'const9',

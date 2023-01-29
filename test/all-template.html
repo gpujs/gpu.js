@@ -29,7 +29,8 @@
         if (module === 'sinon') return sinon;
         if (module === 'qunit') return QUnit;
         if (module === 'acorn') return acorn;
-        if (module.match(/[.][.]\/browser-test-utils$/)) return browserTestUtils;
+        if (module.match(/[.][.]\/browser-test-utils$/))
+          return browserTestUtils;
         throw new Error('cannot find ' + module);
       };
     </script>

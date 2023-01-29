@@ -13,13 +13,61 @@ export class GPU {
   nativeFunctions: IGPUNativeFunction[];
   setFunctions(flag: any): this;
   setNativeFunctions(flag: IGPUNativeFunction[]): this;
-  addFunction<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsType = {}>(kernel: GPUFunction<ArgTypes, ConstantsType>, settings?: IGPUFunctionSettings): this;
-  addNativeFunction(name: string, source: string, settings?: IGPUFunctionSettings): this;
+  addFunction<
+    ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[],
+    ConstantsType = {}
+  >(
+    kernel: GPUFunction<ArgTypes, ConstantsType>,
+    settings?: IGPUFunctionSettings
+  ): this;
+  addNativeFunction(
+    name: string,
+    source: string,
+    settings?: IGPUFunctionSettings
+  ): this;
   combineKernels(...kernels: KernelFunction[]): IKernelRunShortcut;
-  combineKernels<KF extends KernelFunction>(...kernels: KF[]): ((...args: Parameters<KF>) => ReturnType<KF>[] | ReturnType<KF>[][] | ReturnType<KF>[][][] | Texture | void) & IKernelRunShortcutBase;
-  createKernel<ArgTypes extends ThreadKernelVariable[], ConstantsT extends IConstantsThis>(kernel: KernelFunction<ArgTypes, ConstantsT>, settings?: IGPUKernelSettings): IKernelRunShortcut;
-  createKernel<KernelType extends KernelFunction>(kernel: KernelType, settings?: IGPUKernelSettings): ((...args: Parameters<KernelType>) => ReturnType<KernelType>[] | ReturnType<KernelType>[][] | ReturnType<KernelType>[][][] | Texture | void) & IKernelRunShortcutBase;
-  createKernelMap<ArgTypes extends ThreadKernelVariable[], ConstantsType = null>(subKernels: ISubKernelObject, rootKernel: ThreadFunction<ArgTypes, ConstantsType>, settings?: IGPUKernelSettings): ((this: IKernelFunctionThis<ConstantsType>, ...args: ArgTypes) => IMappedKernelResult) & IKernelMapRunShortcut<typeof subKernels>;
+  combineKernels<KF extends KernelFunction>(
+    ...kernels: KF[]
+  ): ((
+    ...args: Parameters<KF>
+  ) =>
+    | ReturnType<KF>[]
+    | ReturnType<KF>[][]
+    | ReturnType<KF>[][][]
+    | Texture
+    | void) &
+    IKernelRunShortcutBase;
+  createKernel<
+    ArgTypes extends ThreadKernelVariable[],
+    ConstantsT extends IConstantsThis
+  >(
+    kernel: KernelFunction<ArgTypes, ConstantsT>,
+    settings?: IGPUKernelSettings
+  ): IKernelRunShortcut;
+  createKernel<KernelType extends KernelFunction>(
+    kernel: KernelType,
+    settings?: IGPUKernelSettings
+  ): ((
+    ...args: Parameters<KernelType>
+  ) =>
+    | ReturnType<KernelType>[]
+    | ReturnType<KernelType>[][]
+    | ReturnType<KernelType>[][][]
+    | Texture
+    | void) &
+    IKernelRunShortcutBase;
+  createKernelMap<
+    ArgTypes extends ThreadKernelVariable[],
+    ConstantsType = null
+  >(
+    subKernels: ISubKernelObject,
+    rootKernel: ThreadFunction<ArgTypes, ConstantsType>,
+    settings?: IGPUKernelSettings
+  ): ((
+    this: IKernelFunctionThis<ConstantsType>,
+    ...args: ArgTypes
+  ) => IMappedKernelResult) &
+    IKernelMapRunShortcut<typeof subKernels>;
   destroy(): Promise<void>;
   Kernel: typeof Kernel;
   mode: string;
@@ -28,11 +76,15 @@ export class GPU {
 }
 
 export interface ISubKernelObject {
-  [targetLocation: string]: ((...args: ThreadKernelVariable[]) => ThreadFunctionResult) | ((...args: any[]) => ThreadFunctionResult);
+  [targetLocation: string]:
+    | ((...args: ThreadKernelVariable[]) => ThreadFunctionResult)
+    | ((...args: any[]) => ThreadFunctionResult);
 }
 
 export interface ISubKernelArray {
-  [index: number]: ((...args: ThreadKernelVariable[]) => ThreadFunctionResult) | ((...args: any[]) => ThreadFunctionResult);
+  [index: number]:
+    | ((...args: ThreadKernelVariable[]) => ThreadFunctionResult)
+    | ((...args: any[]) => ThreadFunctionResult);
 }
 
 export interface ISubKernelsResults {
@@ -79,7 +131,28 @@ export interface IGPUSettings {
   // format: 'Float32Array' | 'Float16Array' | 'Float' // WE WANT THIS!
 }
 
-export type GPUVariableType = 'Array' | 'Array(2)' | 'Array(3)' | 'Array(4)' | 'Array1D(2)' | 'Array2D(2)' | 'Array3D(2)' | 'Array1D(3)' | 'Array2D(3)' | 'Array3D(3)' | 'Array1D(4)' | 'Array2D(4)' | 'Array3D(4)' | 'Boolean' | 'HTMLCanvas' | 'HTMLImage' | 'HTMLImageArray' | 'Number' | 'Float' | 'Integer' | GPUTextureType;
+export type GPUVariableType =
+  | 'Array'
+  | 'Array(2)'
+  | 'Array(3)'
+  | 'Array(4)'
+  | 'Array1D(2)'
+  | 'Array2D(2)'
+  | 'Array3D(2)'
+  | 'Array1D(3)'
+  | 'Array2D(3)'
+  | 'Array3D(3)'
+  | 'Array1D(4)'
+  | 'Array2D(4)'
+  | 'Array3D(4)'
+  | 'Boolean'
+  | 'HTMLCanvas'
+  | 'HTMLImage'
+  | 'HTMLImageArray'
+  | 'Number'
+  | 'Float'
+  | 'Integer'
+  | GPUTextureType;
 
 export type GPUTextureType = 'NumberTexture' | 'ArrayTexture(4)';
 
@@ -127,10 +200,17 @@ export class Kernel {
   mappedTextures?: Texture[];
   TextureConstructor: typeof Texture;
   getPixels(flip?: boolean): Uint8ClampedArray[];
-  getVariablePrecisionString(textureSize?: number[], tactic?: Tactic, isInt?: boolean): string;
+  getVariablePrecisionString(
+    textureSize?: number[],
+    tactic?: Tactic,
+    isInt?: boolean
+  ): string;
   prependString(value: string): void;
   hasPrependString(value: string): boolean;
-  constructor(kernel: KernelFunction | IKernelJSON | string, settings?: IDirectKernelSettings);
+  constructor(
+    kernel: KernelFunction | IKernelJSON | string,
+    settings?: IDirectKernelSettings
+  );
   onRequestSwitchKernel?: Kernel;
   onActivate(previousKernel: Kernel): void;
   build(...args: KernelVariable[]): void;
@@ -154,7 +234,10 @@ export class Kernel {
   setImmutable(flag: boolean): this;
   setCanvas(flag: any): this;
   setContext(flag: any): this;
-  addFunction<ArgTypes extends ThreadKernelVariable[]>(flag: GPUFunction<ArgTypes>, settings?: IFunctionSettings): this;
+  addFunction<ArgTypes extends ThreadKernelVariable[]>(
+    flag: GPUFunction<ArgTypes>,
+    settings?: IFunctionSettings
+  ): this;
   setFunctions(flag: any): this;
   setNativeFunctions(flag: IGPUNativeFunction[]): this;
   setStrictIntegers(flag: boolean): this;
@@ -166,8 +249,19 @@ export class Kernel {
 
   setUniform1f(name: string, value: number): void;
   setUniform2f(name: string, value1: number, value2: number): void;
-  setUniform3f(name: string, value1: number, value2: number, value3: number): void;
-  setUniform4f(name: string, value1: number, value2: number, value3: number, value4: number): void;
+  setUniform3f(
+    name: string,
+    value1: number,
+    value2: number,
+    value3: number
+  ): void;
+  setUniform4f(
+    name: string,
+    value1: number,
+    value2: number,
+    value3: number,
+    value4: number
+  ): void;
 
   setUniform2fv(name: string, value: [number, number]): void;
   setUniform3fv(name: string, value: [number, number, number]): void;
@@ -175,17 +269,41 @@ export class Kernel {
 
   setUniform1i(name: string, value: number): void;
   setUniform2i(name: string, value1: number, value2: number): void;
-  setUniform3i(name: string, value1: number, value2: number, value3: number): void;
-  setUniform4i(name: string, value1: number, value2: number, value3: number, value4: number): void;
+  setUniform3i(
+    name: string,
+    value1: number,
+    value2: number,
+    value3: number
+  ): void;
+  setUniform4i(
+    name: string,
+    value1: number,
+    value2: number,
+    value3: number,
+    value4: number
+  ): void;
 
   setUniform2iv(name: string, value: [number, number]): void;
   setUniform3iv(name: string, value: [number, number, number]): void;
   setUniform4iv(name: string, value: [number, number, number, number]): void;
 }
 
-export type GPUFunction<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsType = {}> = ThreadFunction<ArgTypes, ConstantsType> | IFunction | IGPUFunction | string[];
+export type GPUFunction<
+  ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[],
+  ConstantsType = {}
+> =
+  | ThreadFunction<ArgTypes, ConstantsType>
+  | IFunction
+  | IGPUFunction
+  | string[];
 
-export type ThreadFunction<ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsType = {}> = (this: IKernelFunctionThis<ConstantsType>, ...args: ArgTypes) => ThreadFunctionResult;
+export type ThreadFunction<
+  ArgTypes extends ThreadKernelVariable[] = ThreadKernelVariable[],
+  ConstantsType = {}
+> = (
+  this: IKernelFunctionThis<ConstantsType>,
+  ...args: ArgTypes
+) => ThreadFunctionResult;
 
 export type Precision = 'single' | 'unsigned';
 
@@ -291,7 +409,10 @@ export interface IKernelRunShortcutBase<T = KernelOutput> extends Kernel {
 
 export interface IKernelRunShortcut extends IKernelRunShortcutBase {}
 
-export interface IKernelMapRunShortcut<SubKernelType> extends IKernelRunShortcutBase<{ result: KernelOutput } & { [key in keyof SubKernelType]: KernelOutput }> {}
+export interface IKernelMapRunShortcut<SubKernelType>
+  extends IKernelRunShortcutBase<
+    { result: KernelOutput } & { [key in keyof SubKernelType]: KernelOutput }
+  > {}
 
 export interface IKernelFeatures {
   isFloatRead: boolean;
@@ -320,11 +441,58 @@ export interface IKernelFunctionThis<ConstantsT = {}> {
   color(r: number, g: number, b: number, a: number): void;
 }
 
-export type KernelVariable = boolean | number | Texture | Input | HTMLCanvasElement | OffscreenCanvas | HTMLVideoElement | HTMLImageElement | HTMLImageElement[] | ImageBitmap | ImageData | Float32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | KernelOutput;
+export type KernelVariable =
+  | boolean
+  | number
+  | Texture
+  | Input
+  | HTMLCanvasElement
+  | OffscreenCanvas
+  | HTMLVideoElement
+  | HTMLImageElement
+  | HTMLImageElement[]
+  | ImageBitmap
+  | ImageData
+  | Float32Array
+  | Uint8Array
+  | Uint16Array
+  | Uint32Array
+  | Uint8ClampedArray
+  | KernelOutput;
 
-export type ThreadFunctionResult = number | number[] | number[][] | [number, number] | [number, number, number] | [number, number, number, number] | Pixel | Boolean;
+export type ThreadFunctionResult =
+  | number
+  | number[]
+  | number[][]
+  | [number, number]
+  | [number, number, number]
+  | [number, number, number, number]
+  | Pixel
+  | Boolean;
 
-export type ThreadKernelVariable = boolean | number | number[] | number[][] | number[][][] | Float32Array | Float32Array[] | Float32Array[][] | Pixel | Pixel[][] | [number, number] | [number, number][] | [number, number][][] | [number, number][][][] | [number, number, number] | [number, number, number][] | [number, number, number][][] | [number, number, number][][][] | [number, number, number, number] | [number, number, number, number][] | [number, number, number, number][][] | [number, number, number, number][][][];
+export type ThreadKernelVariable =
+  | boolean
+  | number
+  | number[]
+  | number[][]
+  | number[][][]
+  | Float32Array
+  | Float32Array[]
+  | Float32Array[][]
+  | Pixel
+  | Pixel[][]
+  | [number, number]
+  | [number, number][]
+  | [number, number][][]
+  | [number, number][][][]
+  | [number, number, number]
+  | [number, number, number][]
+  | [number, number, number][][]
+  | [number, number, number][][][]
+  | [number, number, number, number]
+  | [number, number, number, number][]
+  | [number, number, number, number][][]
+  | [number, number, number, number][][][];
 
 export type Pixel = {
   r: number;
@@ -338,11 +506,32 @@ export type Pixel = {
 //   ...args: ArgT
 // ) => KernelOutput);
 
-export interface KernelFunction<ArgT extends ThreadKernelVariable[] = ThreadKernelVariable[], ConstantsT = {}> {
+export interface KernelFunction<
+  ArgT extends ThreadKernelVariable[] = ThreadKernelVariable[],
+  ConstantsT = {}
+> {
   (this: IKernelFunctionThis<ConstantsT>, ...args: ArgT): KernelOutput;
 }
 
-export type KernelOutput = void | number | number[] | number[][] | number[][][] | Float32Array | Float32Array[] | Float32Array[][] | [number, number][] | [number, number, number][] | [number, number, number, number][] | [number, number][][] | [number, number, number][][] | [number, number, number, number][][] | [number, number][][][] | [number, number, number][][][] | [number, number, number, number][][][] | Texture;
+export type KernelOutput =
+  | void
+  | number
+  | number[]
+  | number[][]
+  | number[][][]
+  | Float32Array
+  | Float32Array[]
+  | Float32Array[][]
+  | [number, number][]
+  | [number, number, number][]
+  | [number, number, number, number][]
+  | [number, number][][]
+  | [number, number, number][][]
+  | [number, number, number, number][][]
+  | [number, number][][][]
+  | [number, number, number][][][]
+  | [number, number, number, number][][][]
+  | Texture;
 
 export interface IFunction {
   source: string;
@@ -380,7 +569,11 @@ export interface ISubKernel {
 }
 
 export class FunctionBuilder {
-  static fromKernel(kernel: Kernel, FunctionNode: FunctionNode, extraNodeOptions?: any): FunctionBuilder;
+  static fromKernel(
+    kernel: Kernel,
+    FunctionNode: FunctionNode,
+    extraNodeOptions?: any
+  ): FunctionBuilder;
   constructor(settings: IFunctionBuilderSettings);
   addFunctionNode(functionNode: FunctionNode): void;
   traceFunctionCalls(functionName: string, retList?: string[]): string[];
@@ -431,7 +624,22 @@ export class Texture {
   kernel: Kernel;
 }
 
-export type TextureArrayOutput = number[] | number[][] | number[][][] | Float32Array | Float32Array[] | Float32Array[][] | [number, number][] | [number, number][][] | [number, number][][][] | [number, number, number][] | [number, number, number][][] | [number, number, number][][][] | [number, number, number, number][] | [number, number, number, number][][] | [number, number, number, number][][][];
+export type TextureArrayOutput =
+  | number[]
+  | number[][]
+  | number[][][]
+  | Float32Array
+  | Float32Array[]
+  | Float32Array[][]
+  | [number, number][]
+  | [number, number][][]
+  | [number, number][][][]
+  | [number, number, number][]
+  | [number, number, number][][]
+  | [number, number, number][][][]
+  | [number, number, number, number][]
+  | [number, number, number, number][][]
+  | [number, number, number, number][][][];
 
 export interface IPlugin {
   source: string;
@@ -442,7 +650,11 @@ export interface IPlugin {
   onBeforeRun: (kernel: Kernel) => void;
 }
 
-export type OutputDimensions = [number] | [number, number] | [number, number, number] | Int32Array;
+export type OutputDimensions =
+  | [number]
+  | [number, number]
+  | [number, number, number]
+  | Int32Array;
 export type TextureDimensions = [number, number];
 
 export class Input {

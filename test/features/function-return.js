@@ -66,17 +66,26 @@ function functionReturnArray2(mode) {
   functionReturnArray2('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(2) webgl', () => {
-  functionReturnArray2('webgl');
-});
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(2) webgl',
+  () => {
+    functionReturnArray2('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('Array(2) webgl2', () => {
-  functionReturnArray2('webgl2');
-});
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(2) webgl2',
+  () => {
+    functionReturnArray2('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(2) headlessgl', () => {
-  functionReturnArray2('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(2) headlessgl',
+  () => {
+    functionReturnArray2('headlessgl');
+  }
+);
 
 test('Array(2) cpu', () => {
   functionReturnArray2('cpu');
@@ -108,17 +117,26 @@ function functionReturnArray3(mode) {
   functionReturnArray3('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(3) webgl', () => {
-  functionReturnArray3('webgl');
-});
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(3) webgl',
+  () => {
+    functionReturnArray3('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('Array(3) webgl2', () => {
-  functionReturnArray3('webgl2');
-});
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(3) webgl2',
+  () => {
+    functionReturnArray3('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(3) headlessgl', () => {
-  functionReturnArray3('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(3) headlessgl',
+  () => {
+    functionReturnArray3('headlessgl');
+  }
+);
 
 test('Array(3) cpu', () => {
   functionReturnArray3('cpu');
@@ -152,17 +170,26 @@ function functionReturnArray4(mode) {
   functionReturnArray4('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(4) webgl', () => {
-  functionReturnArray4('webgl');
-});
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(4) webgl',
+  () => {
+    functionReturnArray4('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('Array(4) webgl2', () => {
-  functionReturnArray4('webgl2');
-});
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(4) webgl2',
+  () => {
+    functionReturnArray4('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(4) headlessgl', () => {
-  functionReturnArray4('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(4) headlessgl',
+  () => {
+    functionReturnArray4('headlessgl');
+  }
+);
 
 test('Array(4) cpu', () => {
   functionReturnArray4('cpu');
@@ -176,7 +203,12 @@ function functionReturnArray4MemberExpression(mode) {
       return pixel;
 
       function toIntArray4(pixel) {
-        return [pixel[0] * 255, pixel[1] * 255, pixel[2] * 255, pixel[3] * 255];
+        return [
+          pixel[0] * 255,
+          pixel[1] * 255,
+          pixel[2] * 255,
+          pixel[3] * 255,
+        ];
       }
     },
     {

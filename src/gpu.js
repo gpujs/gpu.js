@@ -57,14 +57,20 @@ export class GPU {
    * @returns {boolean}
    */
   static get isKernelMapSupported() {
-    return kernelOrder.some(Kernel => Kernel.isSupported && Kernel.features.kernelMap);
+    return kernelOrder.some(
+      Kernel => Kernel.isSupported && Kernel.features.kernelMap
+    );
   }
 
   /**
    * @desc TRUE is platform supports OffscreenCanvas
    */
   static get isOffscreenCanvasSupported() {
-    return (typeof Worker !== 'undefined' && typeof OffscreenCanvas !== 'undefined') || typeof importScripts !== 'undefined';
+    return (
+      (typeof Worker !== 'undefined' &&
+        typeof OffscreenCanvas !== 'undefined') ||
+      typeof importScripts !== 'undefined'
+    );
   }
 
   /**
@@ -85,7 +91,9 @@ export class GPU {
    * @desc TRUE if platform supports HeadlessGL
    */
   static get isHeadlessGLSupported() {
-    return 'headlessgl' in internalKernels && internalKernels.headlessgl.isSupported;
+    return (
+      'headlessgl' in internalKernels && internalKernels.headlessgl.isSupported
+    );
   }
 
   /**
@@ -108,7 +116,12 @@ export class GPU {
    * @returns {boolean}
    */
   static get isSinglePrecisionSupported() {
-    return kernelOrder.some(Kernel => Kernel.isSupported && Kernel.features.isFloatRead && Kernel.features.isTextureFloat);
+    return kernelOrder.some(
+      Kernel =>
+        Kernel.isSupported &&
+        Kernel.features.isFloatRead &&
+        Kernel.features.isTextureFloat
+    );
   }
 
   /**
@@ -163,7 +176,9 @@ export class GPU {
         const ExternalKernel = kernelOrder[i];
         if (ExternalKernel.isContextMatch(this.context)) {
           if (!ExternalKernel.isSupported) {
-            throw new Error(`Kernel type ${ExternalKernel.name} not supported`);
+            throw new Error(
+              `Kernel type ${ExternalKernel.name} not supported`
+            );
           }
           Kernel = ExternalKernel;
           break;
@@ -188,7 +203,9 @@ export class GPU {
         Kernel = CPUKernel;
       }
       if (!Kernel) {
-        throw new Error(`A requested mode of "${this.mode}" and is not supported`);
+        throw new Error(
+          `A requested mode of "${this.mode}" and is not supported`
+        );
       }
     } else {
       for (let i = 0; i < kernelOrder.length; i++) {
@@ -218,13 +235,20 @@ export class GPU {
     if (typeof source === 'undefined') {
       throw new Error('Missing source parameter');
     }
-    if (typeof source !== 'object' && !utils.isFunction(source) && typeof source !== 'string') {
+    if (
+      typeof source !== 'object' &&
+      !utils.isFunction(source) &&
+      typeof source !== 'string'
+    ) {
       throw new Error('source parameter not a function');
     }
 
     const kernels = this.kernels;
     if (this.mode === 'dev') {
-      const devKernel = gpuMock(source, upgradeDeprecatedCreateKernelSettings(settings));
+      const devKernel = gpuMock(
+        source,
+        upgradeDeprecatedCreateKernelSettings(settings)
+      );
       kernels.push(devKernel);
       return devKernel;
     }
@@ -234,7 +258,9 @@ export class GPU {
     const settingsCopy = upgradeDeprecatedCreateKernelSettings(settings) || {};
     // handle conversion of argumentTypes
     if (settings && typeof settings.argumentTypes === 'object') {
-      settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
+      settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(
+        argumentName => settings.argumentTypes[argumentName]
+      );
     }
 
     function onRequestFallback(args) {
@@ -299,38 +325,41 @@ export class GPU {
         return existingKernel;
       }
 
-      const newKernel = (switchableKernels[signature] = new Constructor(source, {
-        argumentTypes,
-        constantTypes: _kernel.constantTypes,
-        graphical: _kernel.graphical,
-        loopMaxIterations: _kernel.loopMaxIterations,
-        constants: _kernel.constants,
-        dynamicOutput: _kernel.dynamicOutput,
-        dynamicArgument: _kernel.dynamicArguments,
-        context: _kernel.context,
-        canvas: _kernel.canvas,
-        output: newOutput || _kernel.output,
-        precision: _kernel.precision,
-        pipeline: _kernel.pipeline,
-        immutable: _kernel.immutable,
-        optimizeFloatMemory: _kernel.optimizeFloatMemory,
-        fixIntegerDivisionAccuracy: _kernel.fixIntegerDivisionAccuracy,
-        functions: _kernel.functions,
-        nativeFunctions: _kernel.nativeFunctions,
-        injectedNative: _kernel.injectedNative,
-        subKernels: _kernel.subKernels,
-        strictIntegers: _kernel.strictIntegers,
-        debug: _kernel.debug,
-        gpu: _kernel.gpu,
-        validate,
-        returnType: _kernel.returnType,
-        tactic: _kernel.tactic,
-        onRequestFallback,
-        onRequestSwitchKernel,
-        texture: _kernel.texture,
-        mappedTextures: _kernel.mappedTextures,
-        drawBuffersMap: _kernel.drawBuffersMap,
-      }));
+      const newKernel = (switchableKernels[signature] = new Constructor(
+        source,
+        {
+          argumentTypes,
+          constantTypes: _kernel.constantTypes,
+          graphical: _kernel.graphical,
+          loopMaxIterations: _kernel.loopMaxIterations,
+          constants: _kernel.constants,
+          dynamicOutput: _kernel.dynamicOutput,
+          dynamicArgument: _kernel.dynamicArguments,
+          context: _kernel.context,
+          canvas: _kernel.canvas,
+          output: newOutput || _kernel.output,
+          precision: _kernel.precision,
+          pipeline: _kernel.pipeline,
+          immutable: _kernel.immutable,
+          optimizeFloatMemory: _kernel.optimizeFloatMemory,
+          fixIntegerDivisionAccuracy: _kernel.fixIntegerDivisionAccuracy,
+          functions: _kernel.functions,
+          nativeFunctions: _kernel.nativeFunctions,
+          injectedNative: _kernel.injectedNative,
+          subKernels: _kernel.subKernels,
+          strictIntegers: _kernel.strictIntegers,
+          debug: _kernel.debug,
+          gpu: _kernel.gpu,
+          validate,
+          returnType: _kernel.returnType,
+          tactic: _kernel.tactic,
+          onRequestFallback,
+          onRequestSwitchKernel,
+          texture: _kernel.texture,
+          mappedTextures: _kernel.mappedTextures,
+          drawBuffersMap: _kernel.drawBuffersMap,
+        }
+      ));
       newKernel.build.apply(newKernel, args);
       kernelRun.replaceKernel(newKernel);
       kernels.push(newKernel);
@@ -421,7 +450,9 @@ export class GPU {
     const settingsCopy = upgradeDeprecatedCreateKernelSettings(settings);
     // handle conversion of argumentTypes
     if (settings && typeof settings.argumentTypes === 'object') {
-      settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
+      settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(
+        argumentName => settings.argumentTypes[argumentName]
+      );
     }
 
     if (Array.isArray(arguments[0])) {
@@ -524,7 +555,9 @@ export class GPU {
    */
   addNativeFunction(name, source, settings) {
     if (this.kernels.length > 0) {
-      throw new Error('Cannot call "addNativeFunction" after "createKernels" has been called.');
+      throw new Error(
+        'Cannot call "addNativeFunction" after "createKernels" has been called.'
+      );
     }
     this.nativeFunctions.push(Object.assign({ name, source }, settings));
     return this;

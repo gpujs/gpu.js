@@ -31,11 +31,15 @@ function canvasConstantTest(mode) {
   canvasConstantTest('gpu');
 });
 
-(GPU.isWebGLSupported && typeof HTMLCanvasElement !== 'undefined' ? test : skip)('webgl', () => {
+(GPU.isWebGLSupported && typeof HTMLCanvasElement !== 'undefined'
+  ? test
+  : skip)('webgl', () => {
   canvasConstantTest('webgl');
 });
 
-(GPU.isWebGL2Supported && typeof HTMLCanvasElement !== 'undefined' ? test : skip)('webgl2', () => {
+(GPU.isWebGL2Supported && typeof HTMLCanvasElement !== 'undefined'
+  ? test
+  : skip)('webgl2', () => {
   canvasConstantTest('webgl2');
 });
 

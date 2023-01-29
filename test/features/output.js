@@ -205,9 +205,12 @@ test('graphical output array gpu', () => {
   outputGraphicalArray('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('graphical output array headlessgl', () => {
-  outputGraphicalArray('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'graphical output array headlessgl',
+  () => {
+    outputGraphicalArray('headlessgl');
+  }
+);
 
 test('graphical output array cpu', () => {
   outputGraphicalArray('cpu');
@@ -242,25 +245,55 @@ function outputGraphicalMatrix(mode, canvas, context) {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('webgl', { premultipliedAlpha: false });
   const pixels = outputGraphicalMatrix('webgl', canvas, context);
-  assert.deepEqual(pixels, [191, 191, 191, 191, 255, 255, 255, 255, 64, 64, 64, 64, 128, 128, 128, 128]);
+  assert.deepEqual(
+    pixels,
+    [
+      191, 191, 191, 191, 255, 255, 255, 255, 64, 64, 64, 64, 128, 128, 128,
+      128,
+    ]
+  );
 });
 
 (GPU.isWebGL2Supported ? test : skip)('graphical output matrix webgl2', () => {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('webgl2', { premultipliedAlpha: false });
   const pixels = outputGraphicalMatrix('webgl2', canvas, context);
-  assert.deepEqual(pixels, [191, 191, 191, 191, 255, 255, 255, 255, 64, 64, 64, 64, 128, 128, 128, 128]);
+  assert.deepEqual(
+    pixels,
+    [
+      191, 191, 191, 191, 255, 255, 255, 255, 64, 64, 64, 64, 128, 128, 128,
+      128,
+    ]
+  );
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('graphical output matrix headlessgl', () => {
-  const pixels = outputGraphicalMatrix('headlessgl');
-  assert.deepEqual(pixels, [191, 191, 191, 191, 255, 255, 255, 255, 64, 64, 64, 64, 128, 128, 128, 128]);
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'graphical output matrix headlessgl',
+  () => {
+    const pixels = outputGraphicalMatrix('headlessgl');
+    assert.deepEqual(
+      pixels,
+      [
+        191, 191, 191, 191, 255, 255, 255, 255, 64, 64, 64, 64, 128, 128, 128,
+        128,
+      ]
+    );
+  }
+);
 
-(GPU.isCanvasSupported ? test : skip)('graphical output matrix cpu with real canvas', () => {
-  const pixels = outputGraphicalMatrix('cpu');
-  assert.deepEqual(pixels, [191, 191, 191, 191, 255, 255, 255, 255, 63, 63, 63, 63, 127, 127, 127, 127]);
-});
+(GPU.isCanvasSupported ? test : skip)(
+  'graphical output matrix cpu with real canvas',
+  () => {
+    const pixels = outputGraphicalMatrix('cpu');
+    assert.deepEqual(
+      pixels,
+      [
+        191, 191, 191, 191, 255, 255, 255, 255, 63, 63, 63, 63, 127, 127, 127,
+        127,
+      ]
+    );
+  }
+);
 
 test('graphical output matrix cpu with mocked canvas', () => {
   // allow tests on node or browser
@@ -283,7 +316,13 @@ test('graphical output matrix cpu with mocked canvas', () => {
     getContext: () => mockContext,
   };
   const pixels = outputGraphicalMatrix('cpu', mockCanvas, mockContext);
-  assert.deepEqual(pixels, [191, 191, 191, 191, 255, 255, 255, 255, 63, 63, 63, 63, 127, 127, 127, 127]);
+  assert.deepEqual(
+    pixels,
+    [
+      191, 191, 191, 191, 255, 255, 255, 255, 63, 63, 63, 63, 127, 127, 127,
+      127,
+    ]
+  );
 });
 
 function outputGraphicalCube(mode) {
@@ -326,9 +365,12 @@ test('graphical output array gpu', () => {
   outputGraphicalCube('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('graphical output array headlessgl', () => {
-  outputGraphicalCube('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'graphical output array headlessgl',
+  () => {
+    outputGraphicalCube('headlessgl');
+  }
+);
 
 test('graphical output array cpu', () => {
   outputGraphicalCube('cpu');

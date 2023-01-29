@@ -7,7 +7,12 @@ function colorSyntaxTest(mode) {
   const gpu = new GPU({ mode });
   const createTexture = gpu
     .createKernel(function (value) {
-      this.color(value[this.thread.y][this.thread.x], value[this.thread.y][this.thread.x], value[this.thread.y][this.thread.x], value[this.thread.y][this.thread.x]);
+      this.color(
+        value[this.thread.y][this.thread.x],
+        value[this.thread.y][this.thread.x],
+        value[this.thread.y][this.thread.x],
+        value[this.thread.y][this.thread.x]
+      );
     })
     .setOutput([4, 4])
     .setGraphical(true)

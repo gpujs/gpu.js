@@ -279,9 +279,12 @@ test('exponential equal auto', () => {
   exponentialEqual('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('exponential equal headlessgl', () => {
-  exponentialEqual('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'exponential equal headlessgl',
+  () => {
+    exponentialEqual('headlessgl');
+  }
+);
 
 test('exponential equal cpu', () => {
   exponentialEqual('cpu');

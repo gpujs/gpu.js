@@ -31,14 +31,23 @@ function testAddFunctionKernel(mode) {
   gpu.destroy();
 }
 
-(GPU.isWebGLSupported ? test : skip)('Issue #359 - addFunction calls addFunction issue webgl', () => {
-  testAddFunctionKernel('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #359 - addFunction calls addFunction issue webgl',
+  () => {
+    testAddFunctionKernel('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #359 - addFunction calls addFunction issue webgl2', () => {
-  testAddFunctionKernel('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #359 - addFunction calls addFunction issue webgl2',
+  () => {
+    testAddFunctionKernel('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #359 - addFunction calls addFunction issue headlessgl', () => {
-  testAddFunctionKernel('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #359 - addFunction calls addFunction issue headlessgl',
+  () => {
+    testAddFunctionKernel('headlessgl');
+  }
+);

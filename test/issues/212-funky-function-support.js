@@ -44,17 +44,26 @@ test('Issue #212 - funky function support gpu', () => {
   funky('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #212 - funky function support webgl', () => {
-  funky('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #212 - funky function support webgl',
+  () => {
+    funky('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #212 - funky function support webgl2', () => {
-  funky('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #212 - funky function support webgl2',
+  () => {
+    funky('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #212 - funky function support headlessgl', () => {
-  funky('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #212 - funky function support headlessgl',
+  () => {
+    funky('headlessgl');
+  }
+);
 
 test('Issue #212 - funky function support cpu', () => {
   funky('cpu');

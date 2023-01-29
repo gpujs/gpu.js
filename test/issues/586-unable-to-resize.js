@@ -22,7 +22,12 @@ function testResize(convert, mode) {
   var t1 = createTexture1();
   var t2 = createTexture2();
 
-  assert.deepEqual(convert(t2), [new Float32Array([1, 1, 1, 1]), new Float32Array([1, 1, 1, 1]), new Float32Array([1, 1, 1, 1]), new Float32Array([1, 1, 1, 1])]);
+  assert.deepEqual(convert(t2), [
+    new Float32Array([1, 1, 1, 1]),
+    new Float32Array([1, 1, 1, 1]),
+    new Float32Array([1, 1, 1, 1]),
+    new Float32Array([1, 1, 1, 1]),
+  ]);
 
   gpu.destroy();
 }

@@ -22,17 +22,26 @@ function doubleDefinitionUnsignedPrecision(mode) {
   gpu.destroy();
 }
 
-(GPU.isWebGLSupported ? test : skip)('Issue #399 - double definition unsigned precision webgl', () => {
-  doubleDefinitionUnsignedPrecision('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #399 - double definition unsigned precision webgl',
+  () => {
+    doubleDefinitionUnsignedPrecision('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #399 - double definition unsigned precision webgl2', () => {
-  doubleDefinitionUnsignedPrecision('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #399 - double definition unsigned precision webgl2',
+  () => {
+    doubleDefinitionUnsignedPrecision('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #399 - double definition unsigned precision headlessgl', () => {
-  doubleDefinitionUnsignedPrecision('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #399 - double definition unsigned precision headlessgl',
+  () => {
+    doubleDefinitionUnsignedPrecision('headlessgl');
+  }
+);
 
 function doubleDefinitionSinglePrecision(mode) {
   const gpu = new GPU({ mode });
@@ -53,14 +62,23 @@ function doubleDefinitionSinglePrecision(mode) {
   gpu.destroy();
 }
 
-(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Issue #399 - double definition single precision webgl', () => {
-  doubleDefinitionSinglePrecision('webgl');
-});
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Issue #399 - double definition single precision webgl',
+  () => {
+    doubleDefinitionSinglePrecision('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('Issue #399 - double definition single precision webgl2', () => {
-  doubleDefinitionSinglePrecision('webgl2');
-});
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Issue #399 - double definition single precision webgl2',
+  () => {
+    doubleDefinitionSinglePrecision('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Issue #399 - double definition single precision headlessgl', () => {
-  doubleDefinitionSinglePrecision('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Issue #399 - double definition single precision headlessgl',
+  () => {
+    doubleDefinitionSinglePrecision('headlessgl');
+  }
+);

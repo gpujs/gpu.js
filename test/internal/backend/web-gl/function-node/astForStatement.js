@@ -17,7 +17,16 @@ test('with safe loop with init', () => {
     }
   );
 
-  assert.equal(node.toString(), 'float kernel() {' + '\nint user_sum=0;' + '\nfor (int user_i=0;(user_i<100);user_i++){' + '\nuser_sum++;}' + '\n' + '\nreturn float(user_sum);' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel() {' +
+      '\nint user_sum=0;' +
+      '\nfor (int user_i=0;(user_i<100);user_i++){' +
+      '\nuser_sum++;}' +
+      '\n' +
+      '\nreturn float(user_sum);' +
+      '\n}'
+  );
 });
 
 test('with safe loop with init and if', () => {
@@ -36,7 +45,18 @@ test('with safe loop with init and if', () => {
     }
   );
 
-  assert.equal(node.toString(), 'float kernel() {' + '\nint user_sum=0;' + '\nfor (int user_i=0;(user_i<100);user_i++){' + '\nif ((user_i>50)){' + '\nuser_sum++;}' + '\n}' + '\n' + '\nreturn float(user_sum);' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel() {' +
+      '\nint user_sum=0;' +
+      '\nfor (int user_i=0;(user_i<100);user_i++){' +
+      '\nif ((user_i>50)){' +
+      '\nuser_sum++;}' +
+      '\n}' +
+      '\n' +
+      '\nreturn float(user_sum);' +
+      '\n}'
+  );
 });
 
 test('with safe loop with no init', () => {
@@ -54,7 +74,19 @@ test('with safe loop with no init', () => {
     }
   );
 
-  assert.equal(node.toString(), 'float kernel() {' + '\nint user_sum=0;' + '\nint user_i=0;' + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' + '\nif (!(user_i<100)) break;' + '\nuser_sum++;' + '\nuser_i++;}' + '\n' + '\nreturn float(user_sum);' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel() {' +
+      '\nint user_sum=0;' +
+      '\nint user_i=0;' +
+      '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
+      '\nif (!(user_i<100)) break;' +
+      '\nuser_sum++;' +
+      '\nuser_i++;}' +
+      '\n' +
+      '\nreturn float(user_sum);' +
+      '\n}'
+  );
 });
 
 test('with safe loop with no test', () => {
@@ -72,7 +104,21 @@ test('with safe loop with no test', () => {
     }
   );
 
-  assert.equal(node.toString(), 'float kernel() {' + '\nint user_sum=0;' + '\nint user_i=0;' + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' + '\nif ((user_i>100)) {' + '\nbreak;' + '\n}' + '\nuser_sum++;' + '\nuser_i++;}' + '\n' + '\nreturn float(user_sum);' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel() {' +
+      '\nint user_sum=0;' +
+      '\nint user_i=0;' +
+      '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
+      '\nif ((user_i>100)) {' +
+      '\nbreak;' +
+      '\n}' +
+      '\nuser_sum++;' +
+      '\nuser_i++;}' +
+      '\n' +
+      '\nreturn float(user_sum);' +
+      '\n}'
+  );
 });
 
 test('with unsafe loop with init', () => {
@@ -90,7 +136,19 @@ test('with unsafe loop with init', () => {
     }
   );
 
-  assert.equal(node.toString(), 'float kernel(float user_arg1) {' + '\nint user_sum=0;' + '\nfloat user_i=(0.0+user_arg1);' + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' + '\nif (!(user_i<100.0)) break;' + '\nuser_sum++;' + '\nuser_i++;}' + '\n' + '\nreturn float(user_sum);' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel(float user_arg1) {' +
+      '\nint user_sum=0;' +
+      '\nfloat user_i=(0.0+user_arg1);' +
+      '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
+      '\nif (!(user_i<100.0)) break;' +
+      '\nuser_sum++;' +
+      '\nuser_i++;}' +
+      '\n' +
+      '\nreturn float(user_sum);' +
+      '\n}'
+  );
 });
 
 test('with unsafe loop with no init', () => {
@@ -109,7 +167,19 @@ test('with unsafe loop with no init', () => {
     }
   );
 
-  assert.equal(node.toString(), 'float kernel(float user_arg1) {' + '\nint user_sum=0;' + '\nfloat user_i=(0.0+user_arg1);' + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' + '\nif (!(user_i<100.0)) break;' + '\nuser_sum++;' + '\nuser_i++;}' + '\n' + '\nreturn float(user_sum);' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel(float user_arg1) {' +
+      '\nint user_sum=0;' +
+      '\nfloat user_i=(0.0+user_arg1);' +
+      '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
+      '\nif (!(user_i<100.0)) break;' +
+      '\nuser_sum++;' +
+      '\nuser_i++;}' +
+      '\n' +
+      '\nreturn float(user_sum);' +
+      '\n}'
+  );
 });
 
 test('with unsafe loop with no init reversed', () => {
@@ -128,7 +198,19 @@ test('with unsafe loop with no init reversed', () => {
     }
   );
 
-  assert.equal(node.toString(), 'float kernel(float user_arg1) {' + '\nint user_sum=0;' + '\nfloat user_i=(0.0+user_arg1);' + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' + '\nif (!(100.0>user_i)) break;' + '\nuser_sum++;' + '\nuser_i++;}' + '\n' + '\nreturn float(user_sum);' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel(float user_arg1) {' +
+      '\nint user_sum=0;' +
+      '\nfloat user_i=(0.0+user_arg1);' +
+      '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
+      '\nif (!(100.0>user_i)) break;' +
+      '\nuser_sum++;' +
+      '\nuser_i++;}' +
+      '\n' +
+      '\nreturn float(user_sum);' +
+      '\n}'
+  );
 });
 
 test('nested safe loop', () => {
@@ -147,7 +229,18 @@ test('nested safe loop', () => {
     }
   );
 
-  assert.equal(node.toString(), 'float kernel() {' + '\nint user_sum=0;' + '\nfor (int user_i=0;(user_i<100);user_i++){' + '\nfor (int user_j=0;(user_j<100);user_j++){' + '\nuser_sum++;}' + '\n}' + '\n' + '\nreturn float(user_sum);' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel() {' +
+      '\nint user_sum=0;' +
+      '\nfor (int user_i=0;(user_i<100);user_i++){' +
+      '\nfor (int user_j=0;(user_j<100);user_j++){' +
+      '\nuser_sum++;}' +
+      '\n}' +
+      '\n' +
+      '\nreturn float(user_sum);' +
+      '\n}'
+  );
 });
 
 test('nested unsafe loop', () => {
@@ -167,7 +260,24 @@ test('nested unsafe loop', () => {
     }
   );
 
-  assert.equal(node.toString(), 'float kernel(float user_arg1, float user_arg2) {' + '\nint user_sum=0;' + '\nfloat user_i=user_arg1;' + '\nfor (int safeI2=0;safeI2<LOOP_MAX;safeI2++){' + '\nif (!(user_i<100.0)) break;' + '\nfloat user_j=user_arg2;' + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' + '\nif (!(user_j<100.0)) break;' + '\nuser_sum++;' + '\nuser_j++;}' + '\n' + '\nuser_i++;}' + '\n' + '\nreturn float(user_sum);' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel(float user_arg1, float user_arg2) {' +
+      '\nint user_sum=0;' +
+      '\nfloat user_i=user_arg1;' +
+      '\nfor (int safeI2=0;safeI2<LOOP_MAX;safeI2++){' +
+      '\nif (!(user_i<100.0)) break;' +
+      '\nfloat user_j=user_arg2;' +
+      '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
+      '\nif (!(user_j<100.0)) break;' +
+      '\nuser_sum++;' +
+      '\nuser_j++;}' +
+      '\n' +
+      '\nuser_i++;}' +
+      '\n' +
+      '\nreturn float(user_sum);' +
+      '\n}'
+  );
 });
 
 test('this.output.x usage inside loop', () => {
@@ -185,7 +295,16 @@ test('this.output.x usage inside loop', () => {
     }
   );
 
-  assert.equal(node.toString(), 'float kernel() {' + '\nfloat user_sum=0.0;' + '\nfor (int user_i=0;(user_i<1);user_i++){' + '\nuser_sum+=1.0;}' + '\n' + '\nreturn user_sum;' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel() {' +
+      '\nfloat user_sum=0.0;' +
+      '\nfor (int user_i=0;(user_i<1);user_i++){' +
+      '\nuser_sum+=1.0;}' +
+      '\n' +
+      '\nreturn user_sum;' +
+      '\n}'
+  );
 });
 
 test('this.thread.x usage inside loop', () => {
@@ -203,7 +322,16 @@ test('this.thread.x usage inside loop', () => {
     }
   );
 
-  assert.equal(node.toString(), 'float kernel() {' + '\nfloat user_sum=0.0;' + '\nfor (int user_i=0;(user_i<threadId.x);user_i++){' + '\nuser_sum+=1.0;}' + '\n' + '\nreturn user_sum;' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel() {' +
+      '\nfloat user_sum=0.0;' +
+      '\nfor (int user_i=0;(user_i<threadId.x);user_i++){' +
+      '\nuser_sum+=1.0;}' +
+      '\n' +
+      '\nreturn user_sum;' +
+      '\n}'
+  );
 });
 
 test('this.thread.x usage outside loop', () => {
@@ -222,5 +350,15 @@ test('this.thread.x usage outside loop', () => {
     }
   );
 
-  assert.equal(node.toString(), 'float kernel() {' + '\nfloat user_sum=0.0;' + '\nfloat user_x=float(threadId.x);' + '\nfor (int user_i=0;(user_i<int(user_x));user_i++){' + '\nuser_sum+=1.0;}' + '\n' + '\nreturn user_sum;' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel() {' +
+      '\nfloat user_sum=0.0;' +
+      '\nfloat user_x=float(threadId.x);' +
+      '\nfor (int user_i=0;(user_i<int(user_x));user_i++){' +
+      '\nuser_sum+=1.0;}' +
+      '\n' +
+      '\nreturn user_sum;' +
+      '\n}'
+  );
 });

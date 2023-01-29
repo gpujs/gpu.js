@@ -16,7 +16,10 @@ function testFixPermanentFlip(precision, mode) {
   );
   const arr = [1, 2, 3, 4];
   for (let i = 0; i < 4; i++) {
-    assert.deepEqual(kernel(999, arr, new Image(2, 2), 999), new Float32Array(arr));
+    assert.deepEqual(
+      kernel(999, arr, new Image(2, 2), 999),
+      new Float32Array(arr)
+    );
   }
 
   gpu.destroy();

@@ -29,21 +29,30 @@ if (typeof importScripts !== 'undefined') {
     worker.postMessage(mode);
   }
 
-  (GPU.isOffscreenCanvasSupported ? test : skip)('offscreen canvas auto', t => {
-    testOffscreenCanvas(null, t.async());
-  });
+  (GPU.isOffscreenCanvasSupported ? test : skip)(
+    'offscreen canvas auto',
+    t => {
+      testOffscreenCanvas(null, t.async());
+    }
+  );
 
   (GPU.isOffscreenCanvasSupported ? test : skip)('offscreen canvas gpu', t => {
     testOffscreenCanvas('gpu', t.async());
   });
 
-  (GPU.isOffscreenCanvasSupported ? test : skip)('offscreen canvas webgl', t => {
-    testOffscreenCanvas('webgl', t.async());
-  });
+  (GPU.isOffscreenCanvasSupported ? test : skip)(
+    'offscreen canvas webgl',
+    t => {
+      testOffscreenCanvas('webgl', t.async());
+    }
+  );
 
-  (GPU.isOffscreenCanvasSupported ? test : skip)('offscreen canvas webgl2', t => {
-    testOffscreenCanvas('webgl2', t.async());
-  });
+  (GPU.isOffscreenCanvasSupported ? test : skip)(
+    'offscreen canvas webgl2',
+    t => {
+      testOffscreenCanvas('webgl2', t.async());
+    }
+  );
 
   (GPU.isOffscreenCanvasSupported ? test : skip)('offscreen canvas cpu', t => {
     testOffscreenCanvas('cpu', t.async());

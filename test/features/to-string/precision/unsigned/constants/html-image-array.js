@@ -4,7 +4,12 @@ const { GPU, CPUKernel } = require('../../../../../../src');
 describe('feature: to-string unsigned precision constants HTMLImageArray');
 
 function testArgument(mode, done) {
-  loadImages(['jellyfish-1.jpeg', 'jellyfish-2.jpeg', 'jellyfish-3.jpeg', 'jellyfish-4.jpeg']).then(([image1, image2, image3, image4]) => {
+  loadImages([
+    'jellyfish-1.jpeg',
+    'jellyfish-2.jpeg',
+    'jellyfish-3.jpeg',
+    'jellyfish-4.jpeg',
+  ]).then(([image1, image2, image3, image4]) => {
     const images1 = [image1, image2];
     const images2 = [image3, image4];
     const gpu = new GPU({ mode });

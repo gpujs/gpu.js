@@ -25,14 +25,23 @@ function testModKernel(mode) {
   gpu.destroy();
 }
 
-(GPU.isWebGLSupported ? test : skip)('Issue #357 - modulus issue webgl', () => {
-  testModKernel('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #357 - modulus issue webgl',
+  () => {
+    testModKernel('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #357 - modulus issue webgl2', () => {
-  testModKernel('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #357 - modulus issue webgl2',
+  () => {
+    testModKernel('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #357 - modulus issue headlessgl', () => {
-  testModKernel('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #357 - modulus issue headlessgl',
+  () => {
+    testModKernel('headlessgl');
+  }
+);

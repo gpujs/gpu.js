@@ -80,9 +80,12 @@ test('boolean argument true gpu', () => {
   booleanArgumentTrue('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('boolean argument true headlessgl', () => {
-  booleanArgumentTrue('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'boolean argument true headlessgl',
+  () => {
+    booleanArgumentTrue('headlessgl');
+  }
+);
 
 test('boolean argument true cpu', () => {
   booleanArgumentTrue('cpu');
@@ -122,9 +125,12 @@ test('boolean argument false gpu', () => {
   booleanArgumentFalse('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('boolean argument false headlessgl', () => {
-  booleanArgumentFalse('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'boolean argument false headlessgl',
+  () => {
+    booleanArgumentFalse('headlessgl');
+  }
+);
 
 test('boolean argument false cpu', () => {
   booleanArgumentFalse('cpu');
@@ -165,9 +171,12 @@ test('boolean variable true gpu', () => {
   booleanVariableTrue('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('boolean variable true headlessgl', () => {
-  booleanVariableTrue('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'boolean variable true headlessgl',
+  () => {
+    booleanVariableTrue('headlessgl');
+  }
+);
 
 test('boolean variable true cpu', () => {
   booleanVariableTrue('cpu');
@@ -208,9 +217,12 @@ test('boolean variable false gpu', () => {
   booleanVariableFalse('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('boolean variable false headlessgl', () => {
-  booleanVariableFalse('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'boolean variable false headlessgl',
+  () => {
+    booleanVariableFalse('headlessgl');
+  }
+);
 
 test('boolean variable false cpu', () => {
   booleanVariableFalse('cpu');
@@ -251,9 +263,12 @@ test('boolean expression true gpu', () => {
   booleanExpressionTrue('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('boolean expression true headlessgl', () => {
-  booleanExpressionTrue('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'boolean expression true headlessgl',
+  () => {
+    booleanExpressionTrue('headlessgl');
+  }
+);
 
 test('boolean expression true cpu', () => {
   booleanExpressionTrue('cpu');
@@ -290,13 +305,19 @@ test('boolean expression false gpu', () => {
   booleanExpressionFalse('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('boolean expression false webgl2', () => {
-  booleanExpressionFalse('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'boolean expression false webgl2',
+  () => {
+    booleanExpressionFalse('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('boolean expression false headlessgl', () => {
-  booleanExpressionFalse('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'boolean expression false headlessgl',
+  () => {
+    booleanExpressionFalse('headlessgl');
+  }
+);
 
 test('boolean expression false cpu', () => {
   booleanExpressionFalse('cpu');

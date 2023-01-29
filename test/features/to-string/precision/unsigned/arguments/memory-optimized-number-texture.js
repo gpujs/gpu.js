@@ -1,7 +1,9 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../../../../../src');
 
-describe('feature: to-string unsigned precision arguments MemoryOptimizedNumberTexture');
+describe(
+  'feature: to-string unsigned precision arguments MemoryOptimizedNumberTexture'
+);
 
 function testArgument(mode, context, canvas) {
   const gpu = new GPU({ mode, context, canvas });

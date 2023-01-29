@@ -63,7 +63,10 @@ export class Kernel {
      * Name of the arguments found from parsing source argument
      * @type {String[]}
      */
-    this.argumentNames = typeof source === 'string' ? utils.getArgumentNamesFromString(source) : null;
+    this.argumentNames =
+      typeof source === 'string'
+        ? utils.getArgumentNamesFromString(source)
+        : null;
     this.argumentTypes = null;
     this.argumentSizes = null;
     this.argumentBitRatios = null;
@@ -317,10 +320,17 @@ export class Kernel {
    * @return {Kernel}
    */
   addFunction(source, settings = {}) {
-    if (source.name && source.source && source.argumentTypes && 'returnType' in source) {
+    if (
+      source.name &&
+      source.source &&
+      source.argumentTypes &&
+      'returnType' in source
+    ) {
       this.functions.push(source);
     } else if ('settings' in source && 'source' in source) {
-      this.functions.push(this.functionToIGPUFunction(source.source, source.settings));
+      this.functions.push(
+        this.functionToIGPUFunction(source.source, source.settings)
+      );
     } else if (typeof source === 'string' || typeof source === 'function') {
       this.functions.push(this.functionToIGPUFunction(source, settings));
     } else {
@@ -336,14 +346,18 @@ export class Kernel {
    * @param {IGPUFunctionSettings} [settings]
    */
   addNativeFunction(name, source, settings = {}) {
-    const { argumentTypes, argumentNames } = settings.argumentTypes ? splitArgumentTypes(settings.argumentTypes) : this.constructor.nativeFunctionArguments(source) || {};
+    const { argumentTypes, argumentNames } = settings.argumentTypes
+      ? splitArgumentTypes(settings.argumentTypes)
+      : this.constructor.nativeFunctionArguments(source) || {};
     this.nativeFunctions.push({
       name,
       source,
       settings,
       argumentTypes,
       argumentNames,
-      returnType: settings.returnType || this.constructor.nativeFunctionReturnType(source),
+      returnType:
+        settings.returnType ||
+        this.constructor.nativeFunctionReturnType(source),
     });
     return this;
   }
@@ -404,7 +418,10 @@ export class Kernel {
     if (this.constants) {
       for (let name in this.constants) {
         if (needsConstantTypes) {
-          const type = utils.getVariableType(this.constants[name], this.strictIntegers);
+          const type = utils.getVariableType(
+            this.constants[name],
+            this.strictIntegers
+          );
           this.constantTypes[name] = type;
           this.kernelConstants.push({
             name,
@@ -710,7 +727,8 @@ export class Kernel {
       for (const p in argumentTypes) {
         if (!argumentTypes.hasOwnProperty(p)) continue;
         const argumentIndex = this.argumentNames.indexOf(p);
-        if (argumentIndex === -1) throw new Error(`unable to find argument ${p}`);
+        if (argumentIndex === -1)
+          throw new Error(`unable to find argument ${p}`);
         this.argumentTypes[argumentIndex] = argumentTypes[p];
       }
     }
@@ -729,7 +747,9 @@ export class Kernel {
 
   requestFallback(args) {
     if (!this.onRequestFallback) {
-      throw new Error(`"onRequestFallback" not defined on ${this.constructor.name}`);
+      throw new Error(
+        `"onRequestFallback" not defined on ${this.constructor.name}`
+      );
     }
     this.fallbackRequested = true;
     return this.onRequestFallback(args);
@@ -740,7 +760,9 @@ export class Kernel {
    * @abstract
    */
   validateSettings() {
-    throw new Error(`"validateSettings" not defined on ${this.constructor.name}`);
+    throw new Error(
+      `"validateSettings" not defined on ${this.constructor.name}`
+    );
   }
 
   /**
@@ -753,8 +775,10 @@ export class Kernel {
     if (this.subKernels === null) {
       this.subKernels = [];
     }
-    if (!subKernel.source) throw new Error('subKernel missing "source" property');
-    if (!subKernel.property && isNaN(subKernel.property)) throw new Error('subKernel missing "property" property');
+    if (!subKernel.source)
+      throw new Error('subKernel missing "source" property');
+    if (!subKernel.property && isNaN(subKernel.property))
+      throw new Error('subKernel missing "property" property');
     if (!subKernel.name) throw new Error('subKernel missing "name" property');
     this.subKernels.push(subKernel);
     return this;
@@ -806,11 +830,15 @@ export class Kernel {
   }
 
   checkOutput() {
-    if (!this.output || !utils.isArray(this.output)) throw new Error('kernel.output not an array');
-    if (this.output.length < 1) throw new Error('kernel.output is empty, needs at least 1 value');
+    if (!this.output || !utils.isArray(this.output))
+      throw new Error('kernel.output not an array');
+    if (this.output.length < 1)
+      throw new Error('kernel.output is empty, needs at least 1 value');
     for (let i = 0; i < this.output.length; i++) {
       if (isNaN(this.output[i]) || this.output[i] < 1) {
-        throw new Error(`${this.constructor.name}.output[${i}] incorrectly defined as \`${this.output[i]}\`, needs to be numeric, and greater than 0`);
+        throw new Error(
+          `${this.constructor.name}.output[${i}] incorrectly defined as \`${this.output[i]}\`, needs to be numeric, and greater than 0`
+        );
       }
     }
   }
@@ -843,7 +871,9 @@ export class Kernel {
         argumentNames: this.argumentNames,
         argumentsTypes: this.argumentTypes,
         constants: this.constants,
-        pluginNames: this.plugins ? this.plugins.map(plugin => plugin.name) : null,
+        pluginNames: this.plugins
+          ? this.plugins.map(plugin => plugin.name)
+          : null,
         returnType: this.returnType,
       },
     };
@@ -854,7 +884,10 @@ export class Kernel {
    */
   buildSignature(args) {
     const Constructor = this.constructor;
-    this.signature = Constructor.getSignature(this, Constructor.getArgumentTypes(this, args));
+    this.signature = Constructor.getSignature(
+      this,
+      Constructor.getArgumentTypes(this, args)
+    );
   }
 
   /**
@@ -902,14 +935,19 @@ export class Kernel {
    * @returns {IGPUFunction}
    */
   functionToIGPUFunction(source, settings = {}) {
-    if (typeof source !== 'string' && typeof source !== 'function') throw new Error('source not a string or function');
-    const sourceString = typeof source === 'string' ? source : source.toString();
+    if (typeof source !== 'string' && typeof source !== 'function')
+      throw new Error('source not a string or function');
+    const sourceString =
+      typeof source === 'string' ? source : source.toString();
     let argumentTypes = [];
 
     if (Array.isArray(settings.argumentTypes)) {
       argumentTypes = settings.argumentTypes;
     } else if (typeof settings.argumentTypes === 'object') {
-      argumentTypes = utils.getArgumentNamesFromString(sourceString).map(name => settings.argumentTypes[name]) || [];
+      argumentTypes =
+        utils
+          .getArgumentNamesFromString(sourceString)
+          .map(name => settings.argumentTypes[name]) || [];
     } else {
       argumentTypes = settings.argumentTypes || [];
     }

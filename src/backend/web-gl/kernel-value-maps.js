@@ -64,7 +64,8 @@ export const kernelValueMaps = {
       'ArrayTexture(2)': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(3)': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(4)': WebGLKernelValueDynamicNumberTexture,
-      MemoryOptimizedNumberTexture: WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
+      MemoryOptimizedNumberTexture:
+        WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
       HTMLCanvas: WebGLKernelValueDynamicHTMLImage,
       OffscreenCanvas: WebGLKernelValueDynamicHTMLImage,
       HTMLImage: WebGLKernelValueDynamicHTMLImage,
@@ -96,7 +97,8 @@ export const kernelValueMaps = {
       'ArrayTexture(2)': WebGLKernelValueNumberTexture,
       'ArrayTexture(3)': WebGLKernelValueNumberTexture,
       'ArrayTexture(4)': WebGLKernelValueNumberTexture,
-      MemoryOptimizedNumberTexture: WebGLKernelValueMemoryOptimizedNumberTexture,
+      MemoryOptimizedNumberTexture:
+        WebGLKernelValueMemoryOptimizedNumberTexture,
       HTMLCanvas: WebGLKernelValueHTMLImage,
       OffscreenCanvas: WebGLKernelValueHTMLImage,
       HTMLImage: WebGLKernelValueHTMLImage,
@@ -130,7 +132,8 @@ export const kernelValueMaps = {
       'ArrayTexture(2)': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(3)': WebGLKernelValueDynamicNumberTexture,
       'ArrayTexture(4)': WebGLKernelValueDynamicNumberTexture,
-      MemoryOptimizedNumberTexture: WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
+      MemoryOptimizedNumberTexture:
+        WebGLKernelValueDynamicMemoryOptimizedNumberTexture,
       HTMLCanvas: WebGLKernelValueDynamicHTMLImage,
       OffscreenCanvas: WebGLKernelValueDynamicHTMLImage,
       HTMLImage: WebGLKernelValueDynamicHTMLImage,
@@ -162,7 +165,8 @@ export const kernelValueMaps = {
       'ArrayTexture(2)': WebGLKernelValueNumberTexture,
       'ArrayTexture(3)': WebGLKernelValueNumberTexture,
       'ArrayTexture(4)': WebGLKernelValueNumberTexture,
-      MemoryOptimizedNumberTexture: WebGLKernelValueMemoryOptimizedNumberTexture,
+      MemoryOptimizedNumberTexture:
+        WebGLKernelValueMemoryOptimizedNumberTexture,
       HTMLCanvas: WebGLKernelValueHTMLImage,
       OffscreenCanvas: WebGLKernelValueHTMLImage,
       HTMLImage: WebGLKernelValueHTMLImage,

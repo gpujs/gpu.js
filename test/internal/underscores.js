@@ -95,9 +95,12 @@ test('texture argument gpu', () => {
 (GPU.isWebGL2Supported ? test : skip)('texture argument webgl2', () => {
   testTextureArgument('webgl2');
 });
-(GPU.isHeadlessGLSupported ? test : skip)('texture argument headlessgl', () => {
-  testTextureArgument('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'texture argument headlessgl',
+  () => {
+    testTextureArgument('headlessgl');
+  }
+);
 test('texture argument cpu', () => {
   testTextureArgument('cpu');
 });
@@ -133,9 +136,12 @@ test('array2 texture argument gpu', () => {
 (GPU.isWebGL2Supported ? test : skip)('array2 texture argument webgl2', () => {
   testArray2TextureArgument('webgl2');
 });
-(GPU.isHeadlessGLSupported ? test : skip)('array2 texture argument headlessgl', () => {
-  testArray2TextureArgument('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'array2 texture argument headlessgl',
+  () => {
+    testArray2TextureArgument('headlessgl');
+  }
+);
 
 function testNumberConstant(mode) {
   const gpu = new GPU({ mode });
@@ -244,6 +250,9 @@ test('texture constant gpu', () => {
 (GPU.isWebGL2Supported ? test : skip)('texture constant webgl2', () => {
   testTextureConstant('webgl2');
 });
-(GPU.isHeadlessGLSupported ? test : skip)('texture constant headlessgl', () => {
-  testTextureConstant('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'texture constant headlessgl',
+  () => {
+    testTextureConstant('headlessgl');
+  }
+);

@@ -26,7 +26,12 @@ test('Native function > detects same native argument type float, and no cast', (
     }
   );
 
-  assert.equal(node.toString(), 'float kernel(float user_value) {' + '\nreturn nativeFunction(user_value);' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel(float user_value) {' +
+      '\nreturn nativeFunction(user_value);' +
+      '\n}'
+  );
 });
 
 test('Native function > detects same native argument type int, and no cast', () => {
@@ -52,7 +57,12 @@ test('Native function > detects same native argument type int, and no cast', () 
     }
   );
 
-  assert.equal(node.toString(), 'float kernel(int user_value) {' + '\nreturn nativeFunction(user_value);' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel(int user_value) {' +
+      '\nreturn nativeFunction(user_value);' +
+      '\n}'
+  );
 });
 
 test('Native function > detects different native argument type int from literal, and cast to it from float', () => {
@@ -78,7 +88,12 @@ test('Native function > detects different native argument type int from literal,
     }
   );
 
-  assert.equal(node.toString(), 'float kernel(float user_value) {' + '\nreturn nativeFunction(int(1.5));' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel(float user_value) {' +
+      '\nreturn nativeFunction(int(1.5));' +
+      '\n}'
+  );
 });
 
 test('Native function > detects different native argument type float from literal, and cast to it from int', () => {
@@ -104,7 +119,10 @@ test('Native function > detects different native argument type float from litera
     }
   );
 
-  assert.equal(node.toString(), 'float kernel(float user_value) {' + '\nreturn nativeFunction(1);' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel(float user_value) {' + '\nreturn nativeFunction(1);' + '\n}'
+  );
 });
 
 test('Native function > detects different native argument type int, and cast to it from float', () => {
@@ -130,7 +148,12 @@ test('Native function > detects different native argument type int, and cast to 
     }
   );
 
-  assert.equal(node.toString(), 'float kernel(float user_value) {' + '\nreturn nativeFunction(int(user_value));' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel(float user_value) {' +
+      '\nreturn nativeFunction(int(user_value));' +
+      '\n}'
+  );
 });
 
 test('Native function > detects different native argument type float, and cast to it from int', () => {
@@ -156,5 +179,10 @@ test('Native function > detects different native argument type float, and cast t
     }
   );
 
-  assert.equal(node.toString(), 'float kernel(int user_value) {' + '\nreturn nativeFunction(float(user_value));' + '\n}');
+  assert.equal(
+    node.toString(),
+    'float kernel(int user_value) {' +
+      '\nreturn nativeFunction(float(user_value));' +
+      '\n}'
+  );
 });

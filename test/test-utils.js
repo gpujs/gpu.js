@@ -60,7 +60,12 @@ const testUtils = {
     );
     visualKernelA(rgba);
 
-    return [visualKernelR.getPixels(), visualKernelG.getPixels(), visualKernelB.getPixels(), visualKernelA.getPixels()];
+    return [
+      visualKernelR.getPixels(),
+      visualKernelG.getPixels(),
+      visualKernelB.getPixels(),
+      visualKernelA.getPixels(),
+    ];
   },
 };
 

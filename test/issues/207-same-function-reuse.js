@@ -19,7 +19,10 @@ function sameFunctionReuse(mode) {
       function customAdder(customAdderArg1, customAdderArg2) {
         return customAdderArg1 + customAdderArg2;
       }
-      return someFun1(1, 2) + someFun2(kernelArg1[this.thread.x], kernelArg2[this.thread.x]);
+      return (
+        someFun1(1, 2) +
+        someFun2(kernelArg1[this.thread.x], kernelArg2[this.thread.x])
+      );
     })
     .setOutput([6]);
 
@@ -38,17 +41,26 @@ test('Issue #207 - same function reuse gpu', () => {
   sameFunctionReuse('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #207 - same function reuse webgl', () => {
-  sameFunctionReuse('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #207 - same function reuse webgl',
+  () => {
+    sameFunctionReuse('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #207 - same function reuse webgl2', () => {
-  sameFunctionReuse('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #207 - same function reuse webgl2',
+  () => {
+    sameFunctionReuse('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #207 - same function reuse headlessgl', () => {
-  sameFunctionReuse('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #207 - same function reuse headlessgl',
+  () => {
+    sameFunctionReuse('headlessgl');
+  }
+);
 
 test('Issue #207 - same function reuse cpu', () => {
   sameFunctionReuse('cpu');

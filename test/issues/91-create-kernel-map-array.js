@@ -1,5 +1,11 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU, HeadlessGLKernel, WebGLKernel, WebGL2Kernel, CPUKernel } = require('../../src');
+const {
+  GPU,
+  HeadlessGLKernel,
+  WebGLKernel,
+  WebGL2Kernel,
+  CPUKernel,
+} = require('../../src');
 
 describe('issue #91');
 
@@ -41,24 +47,51 @@ function getResult(mode) {
   gpu.destroy();
   return kernels;
 }
-(GPU.isWebGL2Supported || (GPU.isHeadlessGLSupported && HeadlessGLKernel.features.kernelMap) ? test : skip)('Issue #91 - type detection auto', () => {
+(GPU.isWebGL2Supported ||
+  (GPU.isHeadlessGLSupported && HeadlessGLKernel.features.kernelMap)
+  ? test
+  : skip)('Issue #91 - type detection auto', () => {
   getResult();
 });
-(GPU.isWebGL2Supported || (GPU.isHeadlessGLSupported && HeadlessGLKernel.features.kernelMap) ? test : skip)('Issue #91 - type detection gpu', () => {
+(GPU.isWebGL2Supported ||
+  (GPU.isHeadlessGLSupported && HeadlessGLKernel.features.kernelMap)
+  ? test
+  : skip)('Issue #91 - type detection gpu', () => {
   getResult('gpu');
 });
-(GPU.isWebGLSupported ? test : skip)('Issue #91 - type detection webgl', () => {
-  const kernel = getResult('webgl');
-  assert.equal(kernel.kernel.constructor, WebGLKernel, 'kernel type is wrong');
-});
-(GPU.isWebGL2Supported ? test : skip)('Issue #91 - type detection webgl2', () => {
-  const kernel = getResult('webgl2');
-  assert.equal(kernel.kernel.constructor, WebGL2Kernel, 'kernel type is wrong');
-});
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #91 - type detection headlessgl', () => {
-  const kernel = getResult('headlessgl');
-  assert.equal(kernel.kernel.constructor, HeadlessGLKernel, 'kernel type is wrong');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #91 - type detection webgl',
+  () => {
+    const kernel = getResult('webgl');
+    assert.equal(
+      kernel.kernel.constructor,
+      WebGLKernel,
+      'kernel type is wrong'
+    );
+  }
+);
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #91 - type detection webgl2',
+  () => {
+    const kernel = getResult('webgl2');
+    assert.equal(
+      kernel.kernel.constructor,
+      WebGL2Kernel,
+      'kernel type is wrong'
+    );
+  }
+);
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #91 - type detection headlessgl',
+  () => {
+    const kernel = getResult('headlessgl');
+    assert.equal(
+      kernel.kernel.constructor,
+      HeadlessGLKernel,
+      'kernel type is wrong'
+    );
+  }
+);
 test('Issue #91 - type detection cpu', () => {
   const kernel = getResult('cpu');
   assert.equal(kernel.kernel.constructor, CPUKernel, 'kernel type is wrong');

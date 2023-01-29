@@ -73,9 +73,12 @@ test('with variable usage gpu', () => {
   ternaryWithVariableUsage('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('with variable usage headlessgl', () => {
-  ternaryWithVariableUsage('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'with variable usage headlessgl',
+  () => {
+    ternaryWithVariableUsage('headlessgl');
+  }
+);
 
 test('with variable usage cpu', () => {
   ternaryWithVariableUsage('cpu');

@@ -26,21 +26,33 @@ test('raw unsigned precision render output auto', () => {
   rawUnsignedPrecisionRenderOutput();
 });
 
-(GPU.isGPUSupported ? test : skip)('raw unsigned precision render output gpu', () => {
-  rawUnsignedPrecisionRenderOutput('gpu');
-});
+(GPU.isGPUSupported ? test : skip)(
+  'raw unsigned precision render output gpu',
+  () => {
+    rawUnsignedPrecisionRenderOutput('gpu');
+  }
+);
 
-(GPU.isWebGLSupported ? test : skip)('raw unsigned precision render output webgl', () => {
-  rawUnsignedPrecisionRenderOutput('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'raw unsigned precision render output webgl',
+  () => {
+    rawUnsignedPrecisionRenderOutput('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('raw unsigned precision render output webgl2', () => {
-  rawUnsignedPrecisionRenderOutput('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'raw unsigned precision render output webgl2',
+  () => {
+    rawUnsignedPrecisionRenderOutput('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('raw unsigned precision render output headlessgl', () => {
-  rawUnsignedPrecisionRenderOutput('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'raw unsigned precision render output headlessgl',
+  () => {
+    rawUnsignedPrecisionRenderOutput('headlessgl');
+  }
+);
 
 test('raw unsigned precision render output cpu', () => {
   assert.throws(() => {
@@ -75,25 +87,40 @@ function rawSinglePrecisionRenderOutput(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('raw single precision render output auto', () => {
-  rawSinglePrecisionRenderOutput();
-});
+(GPU.isSinglePrecisionSupported ? test : skip)(
+  'raw single precision render output auto',
+  () => {
+    rawSinglePrecisionRenderOutput();
+  }
+);
 
-(GPU.isGPUSupported && GPU.isSinglePrecisionSupported ? test : skip)('raw single precision render output gpu', () => {
-  rawSinglePrecisionRenderOutput('gpu');
-});
+(GPU.isGPUSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'raw single precision render output gpu',
+  () => {
+    rawSinglePrecisionRenderOutput('gpu');
+  }
+);
 
-(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('raw single precision render output webgl', () => {
-  rawSinglePrecisionRenderOutput('webgl');
-});
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'raw single precision render output webgl',
+  () => {
+    rawSinglePrecisionRenderOutput('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('raw single precision render output webgl2', () => {
-  rawSinglePrecisionRenderOutput('webgl2');
-});
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'raw single precision render output webgl2',
+  () => {
+    rawSinglePrecisionRenderOutput('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('raw single precision render output headlessgl', () => {
-  rawSinglePrecisionRenderOutput('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'raw single precision render output headlessgl',
+  () => {
+    rawSinglePrecisionRenderOutput('headlessgl');
+  }
+);
 
 test('raw single precision render output cpu', () => {
   assert.throws(() => {

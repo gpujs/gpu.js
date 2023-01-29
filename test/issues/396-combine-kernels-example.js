@@ -21,7 +21,11 @@ function combineKernelsExample(mode) {
     return multiply(add(a, b), c);
   });
 
-  const result = superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]);
+  const result = superKernel(
+    [1, 2, 3, 4, 5],
+    [1, 2, 3, 4, 5],
+    [1, 2, 3, 4, 5]
+  );
   assert.deepEqual(Array.from(result), [2, 8, 18, 32, 50]);
   gpu.destroy();
 }

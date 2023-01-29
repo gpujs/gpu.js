@@ -1,7 +1,9 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../../../../../src');
 
-describe('feature: to-string unsigned precision constants MemoryOptimizedNumberTexture');
+describe(
+  'feature: to-string unsigned precision constants MemoryOptimizedNumberTexture'
+);
 
 function testConstant(mode, context, canvas) {
   const gpu = new GPU({ mode, context, canvas });
@@ -44,8 +46,14 @@ function testConstant(mode, context, canvas) {
   const Kernel = new Function('return ' + kernelString)();
   const newKernel = Kernel({ context, constants: { a: texture } });
   const newKernel2 = Kernel({ context, constants: { a: texture2 } });
-  assert.deepEqual(texture2.toArray ? texture2.toArray() : texture2, new Float32Array([4, 3, 2, 1]));
-  assert.deepEqual(texture.toArray ? texture.toArray() : texture, new Float32Array([0, 1, 2, 3]));
+  assert.deepEqual(
+    texture2.toArray ? texture2.toArray() : texture2,
+    new Float32Array([4, 3, 2, 1])
+  );
+  assert.deepEqual(
+    texture.toArray ? texture.toArray() : texture,
+    new Float32Array([0, 1, 2, 3])
+  );
   assert.deepEqual(newKernel(), new Float32Array([0, 1, 2, 3]));
   assert.deepEqual(newKernel2(), new Float32Array([4, 3, 2, 1]));
   gpu.destroy();

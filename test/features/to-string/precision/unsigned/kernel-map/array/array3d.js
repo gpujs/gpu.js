@@ -1,7 +1,9 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../../../../../../src');
 
-describe('feature: to-string unsigned precision array style kernel map returns Array3d');
+describe(
+  'feature: to-string unsigned precision array style kernel map returns Array3d'
+);
 
 function testReturn(mode, context, canvas) {
   const gpu = new GPU({ mode });

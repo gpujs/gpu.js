@@ -33,7 +33,12 @@ function mathRandomUnique(mode) {
     const results = [];
     for (let i = 0; i < checkCount; i++) {
       const result = kernel();
-      assert.ok(results.indexOf(result[0]) === -1, `duplication at index ${results.indexOf(result[0])} from new value ${result[0]}.  Values ${JSON.stringify(results)}`);
+      assert.ok(
+        results.indexOf(result[0]) === -1,
+        `duplication at index ${results.indexOf(result[0])} from new value ${
+          result[0]
+        }.  Values ${JSON.stringify(results)}`
+      );
       results.push(result[0]);
       seed2 = result[0];
       assert.ok(stub.called);
@@ -65,9 +70,12 @@ test('unique every time gpu', () => {
   mathRandomUnique('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('unique every time headlessgl', () => {
-  mathRandomUnique('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'unique every time headlessgl',
+  () => {
+    mathRandomUnique('headlessgl');
+  }
+);
 
 describe('never above 1');
 
@@ -111,13 +119,19 @@ test('never above 1 every time gpu', () => {
   mathRandomNeverAboveOne('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('never above 1 every time webgl2', () => {
-  mathRandomNeverAboveOne('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'never above 1 every time webgl2',
+  () => {
+    mathRandomNeverAboveOne('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('never above 1 every time headlessgl', () => {
-  mathRandomNeverAboveOne('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'never above 1 every time headlessgl',
+  () => {
+    mathRandomNeverAboveOne('headlessgl');
+  }
+);
 
 test('never above 1 every time cpu', () => {
   mathRandomNeverAboveOne('cpu');

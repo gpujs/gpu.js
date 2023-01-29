@@ -67,7 +67,10 @@ export const utils = {
   },
 
   getFunctionBodyFromString(funcStr) {
-    return funcStr.substring(funcStr.indexOf('{') + 1, funcStr.lastIndexOf('}'));
+    return funcStr.substring(
+      funcStr.indexOf('{') + 1,
+      funcStr.lastIndexOf('}')
+    );
   },
 
   /**
@@ -77,7 +80,9 @@ export const utils = {
    */
   getArgumentNamesFromString(fn) {
     const fnStr = fn.replace(STRIP_COMMENTS, '');
-    let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
+    let result = fnStr
+      .slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')'))
+      .match(ARGUMENT_NAMES);
     if (result === null) {
       result = [];
     }
@@ -90,7 +95,12 @@ export const utils = {
    * @returns {Object|Array} Cloned object
    */
   clone(obj) {
-    if (obj === null || typeof obj !== 'object' || obj.hasOwnProperty('isActiveClone')) return obj;
+    if (
+      obj === null ||
+      typeof obj !== 'object' ||
+      obj.hasOwnProperty('isActiveClone')
+    )
+      return obj;
 
     const temp = obj.constructor(); // changed
 
@@ -152,11 +162,20 @@ export const utils = {
       }
     } else if (value.hasOwnProperty('type')) {
       return value.type;
-    } else if (typeof OffscreenCanvas !== 'undefined' && value instanceof OffscreenCanvas) {
+    } else if (
+      typeof OffscreenCanvas !== 'undefined' &&
+      value instanceof OffscreenCanvas
+    ) {
       return 'OffscreenCanvas';
-    } else if (typeof ImageBitmap !== 'undefined' && value instanceof ImageBitmap) {
+    } else if (
+      typeof ImageBitmap !== 'undefined' &&
+      value instanceof ImageBitmap
+    ) {
       return 'ImageBitmap';
-    } else if (typeof ImageData !== 'undefined' && value instanceof ImageData) {
+    } else if (
+      typeof ImageData !== 'undefined' &&
+      value instanceof ImageData
+    ) {
       return 'ImageData';
     }
     return 'Unknown';
@@ -199,7 +218,13 @@ export const utils = {
    * @returns {TextureDimensions}
    */
   getMemoryOptimizedFloatTextureSize(dimensions, bitRatio) {
-    const totalArea = utils.roundTo((dimensions[0] || 1) * (dimensions[1] || 1) * (dimensions[2] || 1) * (dimensions[3] || 1), 4);
+    const totalArea = utils.roundTo(
+      (dimensions[0] || 1) *
+        (dimensions[1] || 1) *
+        (dimensions[2] || 1) *
+        (dimensions[3] || 1),
+      4
+    );
     const texelCount = totalArea / bitRatio;
     return utils.closestSquareDimensions(texelCount);
   },
@@ -333,7 +358,9 @@ export const utils = {
   splitArray(array, part) {
     const result = [];
     for (let i = 0; i < array.length; i += part) {
-      result.push(new array.constructor(array.buffer, i * 4 + array.byteOffset, part));
+      result.push(
+        new array.constructor(array.buffer, i * 4 + array.byteOffset, part)
+      );
     }
     return result;
   },
@@ -378,9 +405,13 @@ export const utils = {
   },
   warnDeprecated(type, oldName, newName) {
     if (newName) {
-      console.warn(`You are using a deprecated ${type} "${oldName}". It has been replaced with "${newName}". Fixing, but please upgrade as it will soon be removed.`);
+      console.warn(
+        `You are using a deprecated ${type} "${oldName}". It has been replaced with "${newName}". Fixing, but please upgrade as it will soon be removed.`
+      );
     } else {
-      console.warn(`You are using a deprecated ${type} "${oldName}". It has been removed. Fixing, but please upgrade as it will soon be removed.`);
+      console.warn(
+        `You are using a deprecated ${type} "${oldName}". It has been removed. Fixing, but please upgrade as it will soon be removed.`
+      );
     }
   },
   flipPixels: (pixels, width, height) => {
@@ -642,9 +673,14 @@ export const utils = {
       }
       switch (ast.type) {
         case 'Program':
-          return flatten(ast.body) + (ast.body[0].type === 'VariableDeclaration' ? ';' : '');
+          return (
+            flatten(ast.body) +
+            (ast.body[0].type === 'VariableDeclaration' ? ';' : '')
+          );
         case 'FunctionDeclaration':
-          return `function ${ast.id.name}(${ast.params.map(flatten).join(', ')}) ${flatten(ast.body)}`;
+          return `function ${ast.id.name}(${ast.params
+            .map(flatten)
+            .join(', ')}) ${flatten(ast.body)}`;
         case 'BlockStatement': {
           const result = [];
           indent += 2;
@@ -680,26 +716,46 @@ export const utils = {
           }
         case 'CallExpression': {
           if (ast.callee.property.name === 'subarray') {
-            return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+            return `${flatten(ast.callee.object)}.${flatten(
+              ast.callee.property
+            )}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
           }
-          if (ast.callee.object.name === 'gl' || ast.callee.object.name === 'context') {
-            return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          if (
+            ast.callee.object.name === 'gl' ||
+            ast.callee.object.name === 'context'
+          ) {
+            return `${flatten(ast.callee.object)}.${flatten(
+              ast.callee.property
+            )}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
           }
           if (ast.callee.object.type === 'ThisExpression') {
-            functionDependencies.push(findDependency('this', ast.callee.property.name));
-            return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+            functionDependencies.push(
+              findDependency('this', ast.callee.property.name)
+            );
+            return `${ast.callee.property.name}(${ast.arguments
+              .map(value => flatten(value))
+              .join(', ')})`;
           } else if (ast.callee.object.name) {
-            const foundSource = findDependency(ast.callee.object.name, ast.callee.property.name);
+            const foundSource = findDependency(
+              ast.callee.object.name,
+              ast.callee.property.name
+            );
             if (foundSource === null) {
               // we're not flattening it
-              return `${ast.callee.object.name}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              return `${ast.callee.object.name}.${
+                ast.callee.property.name
+              }(${ast.arguments.map(value => flatten(value)).join(', ')})`;
             } else {
               functionDependencies.push(foundSource);
               // we're flattening it
-              return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+              return `${ast.callee.property.name}(${ast.arguments
+                .map(value => flatten(value))
+                .join(', ')})`;
             }
           } else if (ast.callee.object.type === 'MemberExpression') {
-            return `${flatten(ast.callee.object)}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+            return `${flatten(ast.callee.object)}.${
+              ast.callee.property.name
+            }(${ast.arguments.map(value => flatten(value)).join(', ')})`;
           } else {
             throw new Error('unknown ast.callee');
           }
@@ -719,7 +775,9 @@ export const utils = {
         case 'SequenceExpression':
           return `(${flatten(ast.expressions)})`;
         case 'ArrowFunctionExpression':
-          return `(${ast.params.map(flatten).join(', ')}) => ${flatten(ast.body)}`;
+          return `(${ast.params.map(flatten).join(', ')}) => ${flatten(
+            ast.body
+          )}`;
         case 'Literal':
           return ast.raw;
         case 'Identifier':
@@ -735,9 +793,13 @@ export const utils = {
         case 'ThisExpression':
           return 'this';
         case 'NewExpression':
-          return `new ${flatten(ast.callee)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          return `new ${flatten(ast.callee)}(${ast.arguments
+            .map(value => flatten(value))
+            .join(', ')})`;
         case 'ForStatement':
-          return `for (${flatten(ast.init)};${flatten(ast.test)};${flatten(ast.update)}) ${flatten(ast.body)}`;
+          return `for (${flatten(ast.init)};${flatten(ast.test)};${flatten(
+            ast.update
+          )}) ${flatten(ast.body)}`;
         case 'AssignmentExpression':
           return `${flatten(ast.left)}${ast.operator}${flatten(ast.right)}`;
         case 'UpdateExpression':
@@ -753,7 +815,9 @@ export const utils = {
         case 'DebuggerStatement':
           return 'debugger;';
         case 'ConditionalExpression':
-          return `${flatten(ast.test)}?${flatten(ast.consequent)}:${flatten(ast.alternate)}`;
+          return `${flatten(ast.test)}?${flatten(ast.consequent)}:${flatten(
+            ast.alternate
+          )}`;
         case 'Property':
           if (ast.kind === 'init') {
             return flatten(ast.key);
@@ -769,7 +833,12 @@ export const utils = {
         if (!flattened[functionDependency]) {
           flattened[functionDependency] = true;
         }
-        functionDependency ? flattenedFunctionDependencies.push(utils.flattenFunctionToString(functionDependency, settings) + '\n') : '';
+        functionDependency
+          ? flattenedFunctionDependencies.push(
+              utils.flattenFunctionToString(functionDependency, settings) +
+                '\n'
+            )
+          : '';
       }
       return flattenedFunctionDependencies.join('') + result;
     }
@@ -777,16 +846,36 @@ export const utils = {
   },
 
   normalizeDeclarations: ast => {
-    if (ast.type !== 'VariableDeclaration') throw new Error('Ast is not of type "VariableDeclaration"');
+    if (ast.type !== 'VariableDeclaration')
+      throw new Error('Ast is not of type "VariableDeclaration"');
     const normalizedDeclarations = [];
-    for (let declarationIndex = 0; declarationIndex < ast.declarations.length; declarationIndex++) {
+    for (
+      let declarationIndex = 0;
+      declarationIndex < ast.declarations.length;
+      declarationIndex++
+    ) {
       const declaration = ast.declarations[declarationIndex];
-      if (declaration.id && declaration.id.type === 'ObjectPattern' && declaration.id.properties) {
+      if (
+        declaration.id &&
+        declaration.id.type === 'ObjectPattern' &&
+        declaration.id.properties
+      ) {
         const { properties } = declaration.id;
-        for (let propertyIndex = 0; propertyIndex < properties.length; propertyIndex++) {
+        for (
+          let propertyIndex = 0;
+          propertyIndex < properties.length;
+          propertyIndex++
+        ) {
           const property = properties[propertyIndex];
-          if (property.value.type === 'ObjectPattern' && property.value.properties) {
-            for (let subPropertyIndex = 0; subPropertyIndex < property.value.properties.length; subPropertyIndex++) {
+          if (
+            property.value.type === 'ObjectPattern' &&
+            property.value.properties
+          ) {
+            for (
+              let subPropertyIndex = 0;
+              subPropertyIndex < property.value.properties.length;
+              subPropertyIndex++
+            ) {
               const subProperty = property.value.properties[subPropertyIndex];
               if (subProperty.type === 'Property') {
                 normalizedDeclarations.push({
@@ -822,7 +911,10 @@ export const utils = {
               type: 'VariableDeclarator',
               id: {
                 type: 'Identifier',
-                name: property.value && property.value.name ? property.value.name : property.key.name,
+                name:
+                  property.value && property.value.name
+                    ? property.value.name
+                    : property.key.name,
               },
               init: {
                 type: 'MemberExpression',
@@ -838,9 +930,17 @@ export const utils = {
             throw new Error('unexpected state');
           }
         }
-      } else if (declaration.id && declaration.id.type === 'ArrayPattern' && declaration.id.elements) {
+      } else if (
+        declaration.id &&
+        declaration.id.type === 'ArrayPattern' &&
+        declaration.id.elements
+      ) {
         const { elements } = declaration.id;
-        for (let elementIndex = 0; elementIndex < elements.length; elementIndex++) {
+        for (
+          let elementIndex = 0;
+          elementIndex < elements.length;
+          elementIndex++
+        ) {
           const element = elements[elementIndex];
           if (element.type === 'Identifier') {
             normalizedDeclarations.push({
@@ -924,7 +1024,12 @@ export const utils = {
         argumentTypes: { a: 'HTMLImage' },
       }
     );
-    const result = [rKernel(image), gKernel(image), bKernel(image), aKernel(image)];
+    const result = [
+      rKernel(image),
+      gKernel(image),
+      bKernel(image),
+      aKernel(image),
+    ];
     result.rKernel = rKernel;
     result.gKernel = gKernel;
     result.bKernel = bKernel;
@@ -993,7 +1098,12 @@ export const utils = {
       }
     );
     visualKernelA(rgba);
-    return [visualKernelR.canvas, visualKernelG.canvas, visualKernelB.canvas, visualKernelA.canvas];
+    return [
+      visualKernelR.canvas,
+      visualKernelG.canvas,
+      visualKernelB.canvas,
+      visualKernelA.canvas,
+    ];
   },
 
   getMinifySafeName: fn => {
@@ -1002,7 +1112,9 @@ export const utils = {
       const { init } = ast.body[0].declarations[0];
       return init.body.name || init.body.body[0].argument.name;
     } catch (e) {
-      throw new Error('Unrecognized function type.  Please use `() => yourFunctionVariableHere` or function() { return yourFunctionVariableHere; }');
+      throw new Error(
+        'Unrecognized function type.  Please use `() => yourFunctionVariableHere` or function() { return yourFunctionVariableHere; }'
+      );
     }
   },
   sanitizeName: function (name) {

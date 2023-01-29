@@ -18,7 +18,10 @@ function testGraphical(mode, context, canvas) {
     }
   );
 
-  const expected = new Uint8ClampedArray([255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]);
+  const expected = new Uint8ClampedArray([
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255,
+  ]);
   originalKernel();
   assert.deepEqual(originalKernel.getPixels(), expected);
   const kernelString = originalKernel.toString();

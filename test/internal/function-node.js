@@ -1,5 +1,9 @@
 const { assert, test, module: describe, only } = require('qunit');
-const { CPUFunctionNode, WebGLFunctionNode, WebGL2FunctionNode } = require('../../src');
+const {
+  CPUFunctionNode,
+  WebGLFunctionNode,
+  WebGL2FunctionNode,
+} = require('../../src');
 
 describe('internal: function node');
 
@@ -15,7 +19,11 @@ test('hello_world: just return magic 42 cpu', () => {
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
-  assert.equal(node.toString(), 'function hello_world() {' + '\nreturn 42;' + '\n}', 'function conversion check');
+  assert.equal(
+    node.toString(),
+    'function hello_world() {' + '\nreturn 42;' + '\n}',
+    'function conversion check'
+  );
 });
 
 test('hello_world: just return magic 42 webgl', () => {
@@ -29,7 +37,11 @@ test('hello_world: just return magic 42 webgl', () => {
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
-  assert.equal(node.toString(), 'float hello_world() {' + '\nreturn 42.0;' + '\n}', 'function conversion check');
+  assert.equal(
+    node.toString(),
+    'float hello_world() {' + '\nreturn 42.0;' + '\n}',
+    'function conversion check'
+  );
 });
 
 test('hello_world: just return magic 42 webgl2', () => {
@@ -43,7 +55,11 @@ test('hello_world: just return magic 42 webgl2', () => {
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
-  assert.equal(node.toString(), 'float hello_world() {' + '\nreturn 42.0;' + '\n}', 'function conversion check');
+  assert.equal(
+    node.toString(),
+    'float hello_world() {' + '\nreturn 42.0;' + '\n}',
+    'function conversion check'
+  );
 });
 
 /// Test creation of function, that calls another function
@@ -67,7 +83,11 @@ test('hello_inner: call a function inside a function cpu', () => {
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
-  assert.equal(node.toString(), 'function hello_inner() {' + '\nreturn inner();' + '\n}', 'function conversion check');
+  assert.equal(
+    node.toString(),
+    'function hello_inner() {' + '\nreturn inner();' + '\n}',
+    'function conversion check'
+  );
 
   assert.deepEqual(node.calledFunctions, ['inner']);
 });
@@ -92,7 +112,11 @@ test('hello_inner: call a function inside a function webgl', () => {
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
-  assert.equal(node.toString(), 'float hello_inner() {' + '\nreturn inner();' + '\n}', 'function conversion check');
+  assert.equal(
+    node.toString(),
+    'float hello_inner() {' + '\nreturn inner();' + '\n}',
+    'function conversion check'
+  );
 
   assert.deepEqual(node.calledFunctions, ['inner']);
 });
@@ -118,7 +142,11 @@ test('hello_inner: call a function inside a function webgl2', () => {
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
-  assert.equal(node.toString(), 'float hello_inner() {' + '\nreturn inner();' + '\n}', 'function conversion check');
+  assert.equal(
+    node.toString(),
+    'float hello_inner() {' + '\nreturn inner();' + '\n}',
+    'function conversion check'
+  );
 
   assert.deepEqual(node.calledFunctions, ['inner']);
 });
@@ -141,7 +169,11 @@ test('Math.round implementation: A function with arguments cpu', () => {
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
-  assert.equal(node.toString(), 'function foo(user_a) {' + '\nreturn Math.floor((user_a+0.5));' + '\n}', 'function conversion check');
+  assert.equal(
+    node.toString(),
+    'function foo(user_a) {' + '\nreturn Math.floor((user_a+0.5));' + '\n}',
+    'function conversion check'
+  );
 
   assert.deepEqual(node.calledFunctions, ['Math.floor']);
 });
@@ -161,7 +193,11 @@ test('Math.round implementation: A function with arguments webgl', () => {
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
-  assert.equal(node.toString(), 'float foo(float user_a) {' + '\nreturn floor((user_a+0.5));' + '\n}', 'function conversion check');
+  assert.equal(
+    node.toString(),
+    'float foo(float user_a) {' + '\nreturn floor((user_a+0.5));' + '\n}',
+    'function conversion check'
+  );
 
   assert.deepEqual(node.calledFunctions, ['floor']);
 });
@@ -181,7 +217,11 @@ test('Math.round implementation: A function with arguments webgl2', () => {
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
-  assert.equal(node.toString(), 'float foo(float user_a) {' + '\nreturn floor((user_a+0.5));' + '\n}', 'function conversion check');
+  assert.equal(
+    node.toString(),
+    'float foo(float user_a) {' + '\nreturn floor((user_a+0.5));' + '\n}',
+    'function conversion check'
+  );
 
   assert.deepEqual(node.calledFunctions, ['floor']);
 });
@@ -201,7 +241,13 @@ test('Two arguments test webgl', function (assert) {
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
-  assert.equal(node.toString(), 'float add_together(float user_a, float user_b) {' + '\nreturn (user_a+user_b);' + '\n}', 'function conversion check');
+  assert.equal(
+    node.toString(),
+    'float add_together(float user_a, float user_b) {' +
+      '\nreturn (user_a+user_b);' +
+      '\n}',
+    'function conversion check'
+  );
 });
 
 test('Two arguments test webgl2', function (assert) {
@@ -218,7 +264,13 @@ test('Two arguments test webgl2', function (assert) {
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
-  assert.equal(node.toString(), 'float add_together(float user_a, float user_b) {' + '\nreturn (user_a+user_b);' + '\n}', 'function conversion check');
+  assert.equal(
+    node.toString(),
+    'float add_together(float user_a, float user_b) {' +
+      '\nreturn (user_a+user_b);' +
+      '\n}',
+    'function conversion check'
+  );
 });
 
 /// Test the creation of a hello_world function

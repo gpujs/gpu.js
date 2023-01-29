@@ -3,7 +3,11 @@ import { WebGLKernelValueMemoryOptimizedNumberTexture } from './memory-optimized
 
 export class WebGLKernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelValueMemoryOptimizedNumberTexture {
   getSource() {
-    return utils.linesToString([`uniform sampler2D ${this.id}`, `uniform ivec2 ${this.sizeId}`, `uniform ivec3 ${this.dimensionsId}`]);
+    return utils.linesToString([
+      `uniform sampler2D ${this.id}`,
+      `uniform ivec2 ${this.sizeId}`,
+      `uniform ivec3 ${this.dimensionsId}`,
+    ]);
   }
 
   updateValue(inputTexture) {

@@ -7,6 +7,10 @@ export class GLTextureUnsigned2D extends GLTextureUnsigned {
     this.type = 'NumberTexture';
   }
   toArray() {
-    return utils.erect2DPackedFloat(this.renderValues(), this.output[0], this.output[1]);
+    return utils.erect2DPackedFloat(
+      this.renderValues(),
+      this.output[0],
+      this.output[1]
+    );
   }
 }

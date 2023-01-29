@@ -16,7 +16,11 @@ function feature(mode) {
     }
   );
   const result = tryConst();
-  assert.deepEqual(Array.from(result), [200, 200], 'array constant passed test');
+  assert.deepEqual(
+    Array.from(result),
+    [200, 200],
+    'array constant passed test'
+  );
   gpu.destroy();
 }
 

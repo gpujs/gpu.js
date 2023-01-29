@@ -23,7 +23,10 @@ function testReturn(mode, context, canvas) {
   const originalResult = originalKernel(a, b);
   assert.deepEqual(originalResult, expected);
   const kernelString = originalKernel.toString(a, b);
-  const newResult = new Function('return ' + kernelString)()({ context })(a, b);
+  const newResult = new Function('return ' + kernelString)()({ context })(
+    a,
+    b
+  );
   assert.deepEqual(newResult, expected);
   gpu.destroy();
 }

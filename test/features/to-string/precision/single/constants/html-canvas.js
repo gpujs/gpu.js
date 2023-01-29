@@ -38,10 +38,16 @@ function testArgument(mode, done) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('webgl', () => {
-  testArgument('webgl');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'webgl',
+  () => {
+    testArgument('webgl');
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
-  testArgument('webgl2');
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'webgl2',
+  () => {
+    testArgument('webgl2');
+  }
+);
