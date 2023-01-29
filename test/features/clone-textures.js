@@ -7,13 +7,16 @@ function copy1DTexture(precision, mode) {
   const gpu = new GPU({ mode });
 
   function makeTexture() {
-    return (gpu.createKernel(function() {
-      return this.thread.x;
-    }, {
-      output: [5],
-      pipeline: true,
-      precision
-    }))();
+    return gpu.createKernel(
+      function () {
+        return this.thread.x;
+      },
+      {
+        output: [5],
+        pipeline: true,
+        precision,
+      }
+    )();
   }
   const texture = makeTexture();
   const clone = texture.clone();
@@ -59,13 +62,16 @@ function copy2DTexture(precision, mode) {
   const gpu = new GPU({ mode });
 
   function makeTexture() {
-    return (gpu.createKernel(function() {
-      return this.thread.x + (this.thread.y * this.output.x);
-    }, {
-      output: [5, 5],
-      pipeline: true,
-      precision
-    }))();
+    return gpu.createKernel(
+      function () {
+        return this.thread.x + this.thread.y * this.output.x;
+      },
+      {
+        output: [5, 5],
+        pipeline: true,
+        precision,
+      }
+    )();
   }
   const texture = makeTexture();
   const clone = texture.clone();
@@ -111,13 +117,16 @@ function copy3DTexture(precision, mode) {
   const gpu = new GPU({ mode });
 
   function makeTexture() {
-    return (gpu.createKernel(function() {
-      return this.thread.x + (this.thread.y * this.output.x) * (this.output.x * this.output.y * this.thread.z);
-    }, {
-      output: [5, 5, 5],
-      pipeline: true,
-      precision
-    }))();
+    return gpu.createKernel(
+      function () {
+        return this.thread.x + this.thread.y * this.output.x * (this.output.x * this.output.y * this.thread.z);
+      },
+      {
+        output: [5, 5, 5],
+        pipeline: true,
+        precision,
+      }
+    )();
   }
   const texture = makeTexture();
   const clone = texture.clone();

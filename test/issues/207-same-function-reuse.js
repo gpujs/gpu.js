@@ -6,7 +6,8 @@ describe('issue #207');
 function sameFunctionReuse(mode) {
   const gpu = new GPU({ mode });
 
-  const kernel = gpu.createKernel(function(kernelArg1, kernelArg2) {
+  const kernel = gpu
+    .createKernel(function (kernelArg1, kernelArg2) {
       function someFun1(someFun1Arg1, someFun1Arg2) {
         return customAdder(someFun1Arg1, someFun1Arg2);
       }

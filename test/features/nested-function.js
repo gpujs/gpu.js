@@ -5,15 +5,18 @@ describe('nested function');
 
 function nestedSumABTest(mode) {
   const gpu = new GPU({ mode });
-  const f = gpu.createKernel(function(a, b) {
-    function custom_adder(a, b) {
-      return a + b;
-    }
+  const f = gpu.createKernel(
+    function (a, b) {
+      function custom_adder(a, b) {
+        return a + b;
+      }
 
-    return custom_adder(a[this.thread.x], b[this.thread.x]);
-  }, {
-    output: [6]
-  });
+      return custom_adder(a[this.thread.x], b[this.thread.x]);
+    },
+    {
+      output: [6],
+    }
+  );
 
   assert.ok(f !== null, 'function generated test');
 
@@ -61,9 +64,12 @@ function testNestedInCustomFunction(mode) {
   }
   const gpu = new GPU({ mode });
   gpu.addFunction(custom1);
-  const kernel = gpu.createKernel(function() {
-    return custom1();
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      return custom1();
+    },
+    { output: [1] }
+  );
   assert.deepEqual(kernel(), new Float32Array([1]));
   gpu.destroy();
 }

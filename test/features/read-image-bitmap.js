@@ -7,13 +7,16 @@ function readImageBitmap(mode, done) {
   const gpu = new GPU({ mode });
   const image = new Image();
   image.src = 'jellyfish.jpeg';
-  const kernel = gpu.createKernel(function(image) {
-    const pixel = image[this.thread.y][this.thread.x];
-    return pixel[0] + pixel[1] + pixel[2] + pixel[3];
-  }, {
-    output: [1]
-  });
-  image.onload = async function() {
+  const kernel = gpu.createKernel(
+    function (image) {
+      const pixel = image[this.thread.y][this.thread.x];
+      return pixel[0] + pixel[1] + pixel[2] + pixel[3];
+    },
+    {
+      output: [1],
+    }
+  );
+  image.onload = async function () {
     const imageBitmapPromise = createImageBitmap(image, 0, 0, 1, 1);
     const imageBitmap = await imageBitmapPromise;
     const result = kernel(imageBitmap);
@@ -24,26 +27,26 @@ function readImageBitmap(mode, done) {
   };
 }
 
-(typeof Image !== 'undefined' ? test : skip)('readImageBitmap auto', (assert) => {
+(typeof Image !== 'undefined' ? test : skip)('readImageBitmap auto', assert => {
   readImageBitmap(null, assert.async());
 });
 
-(typeof Image !== 'undefined' ? test : skip)('readImageBitmap gpu', (assert) => {
+(typeof Image !== 'undefined' ? test : skip)('readImageBitmap gpu', assert => {
   readImageBitmap('gpu', assert.async());
 });
 
-(GPU.isWebGLSupported && typeof Image !== 'undefined' ? test : skip)('readImageBitmap webgl', (assert) => {
+(GPU.isWebGLSupported && typeof Image !== 'undefined' ? test : skip)('readImageBitmap webgl', assert => {
   readImageBitmap('webgl', assert.async());
 });
 
-(GPU.isWebGL2Supported && typeof Image !== 'undefined' ? test : skip)('readImageBitmap webgl2', (assert) => {
+(GPU.isWebGL2Supported && typeof Image !== 'undefined' ? test : skip)('readImageBitmap webgl2', assert => {
   readImageBitmap('webgl2', assert.async());
 });
 
-(GPU.isHeadlessGLSupported && typeof Image !== 'undefined' ? test : skip)('readImageBitmap headlessgl', (assert) => {
+(GPU.isHeadlessGLSupported && typeof Image !== 'undefined' ? test : skip)('readImageBitmap headlessgl', assert => {
   readImageBitmap('headlessgl', assert.async());
 });
 
-(typeof Image !== 'undefined' ? test : skip)('readImageBitmap cpu', (assert) => {
+(typeof Image !== 'undefined' ? test : skip)('readImageBitmap cpu', assert => {
   readImageBitmap('cpu', assert.async());
 });

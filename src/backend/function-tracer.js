@@ -7,7 +7,7 @@ function last(array) {
 const states = {
   trackIdentifiers: 'trackIdentifiers',
   memberExpression: 'memberExpression',
-  inForLoopInit: 'inForLoopInit'
+  inForLoopInit: 'inForLoopInit',
 };
 
 export class FunctionTracer {
@@ -86,7 +86,7 @@ export class FunctionTracer {
   }
 
   getIdentifiers(run) {
-    const trackedIdentifiers = this.trackedIdentifiers = [];
+    const trackedIdentifiers = (this.trackedIdentifiers = []);
     this.pushState(states.trackIdentifiers);
     run();
     this.trackedIdentifiers = null;
@@ -102,11 +102,7 @@ export class FunctionTracer {
     const { currentContext, currentFunctionContext, runningContexts } = this;
     const declaration = currentContext[name] || currentFunctionContext[name] || null;
 
-    if (
-      !declaration &&
-      currentContext === currentFunctionContext &&
-      runningContexts.length > 0
-    ) {
+    if (!declaration && currentContext === currentFunctionContext && runningContexts.length > 0) {
       const previousRunningContext = runningContexts[runningContexts.length - 2];
       if (previousRunningContext[name]) {
         return previousRunningContext[name];

@@ -6,7 +6,7 @@ export class Kernel {
    * @type {Boolean}
    */
   static get isSupported() {
-    throw new Error(`"isSupported" not implemented on ${ this.name }`);
+    throw new Error(`"isSupported" not implemented on ${this.name}`);
   }
 
   /**
@@ -14,7 +14,7 @@ export class Kernel {
    * @returns {Boolean}
    */
   static isContextMatch(context) {
-    throw new Error(`"isContextMatch" not implemented on ${ this.name }`);
+    throw new Error(`"isContextMatch" not implemented on ${this.name}`);
   }
 
   /**
@@ -22,23 +22,23 @@ export class Kernel {
    * Used internally to populate the kernel.feature, which is a getter for the output of this value
    */
   static getFeatures() {
-    throw new Error(`"getFeatures" not implemented on ${ this.name }`);
+    throw new Error(`"getFeatures" not implemented on ${this.name}`);
   }
 
   static destroyContext(context) {
-    throw new Error(`"destroyContext" called on ${ this.name }`);
+    throw new Error(`"destroyContext" called on ${this.name}`);
   }
 
   static nativeFunctionArguments() {
-    throw new Error(`"nativeFunctionArguments" called on ${ this.name }`);
+    throw new Error(`"nativeFunctionArguments" called on ${this.name}`);
   }
 
   static nativeFunctionReturnType() {
-    throw new Error(`"nativeFunctionReturnType" called on ${ this.name }`);
+    throw new Error(`"nativeFunctionReturnType" called on ${this.name}`);
   }
 
   static combineKernels() {
-    throw new Error(`"combineKernels" called on ${ this.name }`);
+    throw new Error(`"combineKernels" called on ${this.name}`);
   }
 
   /**
@@ -70,7 +70,6 @@ export class Kernel {
     this.kernelArguments = null;
     this.kernelConstants = null;
     this.forceUploadKernelConstants = null;
-
 
     /**
      * The function source
@@ -273,7 +272,7 @@ export class Kernel {
    * @abstract
    */
   build() {
-    throw new Error(`"build" not defined on ${ this.constructor.name }`);
+    throw new Error(`"build" not defined on ${this.constructor.name}`);
   }
 
   /**
@@ -283,7 +282,7 @@ export class Kernel {
    * @abstract
    */
   run() {
-    throw new Error(`"run" not defined on ${ this.constructor.name }`)
+    throw new Error(`"run" not defined on ${this.constructor.name}`);
   }
 
   /**
@@ -291,7 +290,7 @@ export class Kernel {
    * @return {Object}
    */
   initCanvas() {
-    throw new Error(`"initCanvas" not defined on ${ this.constructor.name }`);
+    throw new Error(`"initCanvas" not defined on ${this.constructor.name}`);
   }
 
   /**
@@ -299,7 +298,7 @@ export class Kernel {
    * @return {Object}
    */
   initContext() {
-    throw new Error(`"initContext" not defined on ${ this.constructor.name }`);
+    throw new Error(`"initContext" not defined on ${this.constructor.name}`);
   }
 
   /**
@@ -308,7 +307,7 @@ export class Kernel {
    * @abstract
    */
   initPlugins(settings) {
-    throw new Error(`"initPlugins" not defined on ${ this.constructor.name }`);
+    throw new Error(`"initPlugins" not defined on ${this.constructor.name}`);
   }
 
   /**
@@ -337,16 +336,14 @@ export class Kernel {
    * @param {IGPUFunctionSettings} [settings]
    */
   addNativeFunction(name, source, settings = {}) {
-    const { argumentTypes, argumentNames } = settings.argumentTypes ?
-      splitArgumentTypes(settings.argumentTypes) :
-      this.constructor.nativeFunctionArguments(source) || {};
+    const { argumentTypes, argumentNames } = settings.argumentTypes ? splitArgumentTypes(settings.argumentTypes) : this.constructor.nativeFunctionArguments(source) || {};
     this.nativeFunctions.push({
       name,
       source,
       settings,
       argumentTypes,
       argumentNames,
-      returnType: settings.returnType || this.constructor.nativeFunctionReturnType(source)
+      returnType: settings.returnType || this.constructor.nativeFunctionReturnType(source),
     });
     return this;
   }
@@ -367,14 +364,14 @@ export class Kernel {
           const type = argType === 'Integer' ? 'Number' : argType;
           this.argumentTypes.push(type);
           this.kernelArguments.push({
-            type
+            type,
           });
         }
       }
     } else {
       for (let i = 0; i < this.argumentTypes.length; i++) {
         this.kernelArguments.push({
-          type: this.argumentTypes[i]
+          type: this.argumentTypes[i],
         });
       }
     }
@@ -411,12 +408,12 @@ export class Kernel {
           this.constantTypes[name] = type;
           this.kernelConstants.push({
             name,
-            type
+            type,
           });
         } else {
           this.kernelConstants.push({
             name,
-            type: this.constantTypes[name]
+            type: this.constantTypes[name],
           });
         }
         this.constantBitRatios[name] = this.getBitRatio(this.constants[name]);
@@ -713,7 +710,7 @@ export class Kernel {
       for (const p in argumentTypes) {
         if (!argumentTypes.hasOwnProperty(p)) continue;
         const argumentIndex = this.argumentNames.indexOf(p);
-        if (argumentIndex === -1) throw new Error(`unable to find argument ${ p }`);
+        if (argumentIndex === -1) throw new Error(`unable to find argument ${p}`);
         this.argumentTypes[argumentIndex] = argumentTypes[p];
       }
     }
@@ -732,7 +729,7 @@ export class Kernel {
 
   requestFallback(args) {
     if (!this.onRequestFallback) {
-      throw new Error(`"onRequestFallback" not defined on ${ this.constructor.name }`);
+      throw new Error(`"onRequestFallback" not defined on ${this.constructor.name}`);
     }
     this.fallbackRequested = true;
     return this.onRequestFallback(args);
@@ -743,7 +740,7 @@ export class Kernel {
    * @abstract
    */
   validateSettings() {
-    throw new Error(`"validateSettings" not defined on ${ this.constructor.name }`);
+    throw new Error(`"validateSettings" not defined on ${this.constructor.name}`);
   }
 
   /**
@@ -768,7 +765,7 @@ export class Kernel {
    * @param {Boolean} [removeCanvasReferences] remove any associated canvas references
    */
   destroy(removeCanvasReferences) {
-    throw new Error(`"destroy" called on ${ this.constructor.name }`);
+    throw new Error(`"destroy" called on ${this.constructor.name}`);
   }
 
   /**
@@ -805,7 +802,7 @@ export class Kernel {
    * @returns {Uint8ClampedArray}
    */
   getPixels(flip) {
-    throw new Error(`"getPixels" called on ${ this.constructor.name }`);
+    throw new Error(`"getPixels" called on ${this.constructor.name}`);
   }
 
   checkOutput() {
@@ -813,7 +810,7 @@ export class Kernel {
     if (this.output.length < 1) throw new Error('kernel.output is empty, needs at least 1 value');
     for (let i = 0; i < this.output.length; i++) {
       if (isNaN(this.output[i]) || this.output[i] < 1) {
-        throw new Error(`${ this.constructor.name }.output[${ i }] incorrectly defined as \`${ this.output[i] }\`, needs to be numeric, and greater than 0`);
+        throw new Error(`${this.constructor.name}.output[${i}] incorrectly defined as \`${this.output[i]}\`, needs to be numeric, and greater than 0`);
       }
     }
   }
@@ -823,7 +820,7 @@ export class Kernel {
    * @param {String} value
    */
   prependString(value) {
-    throw new Error(`"prependString" called on ${ this.constructor.name }`);
+    throw new Error(`"prependString" called on ${this.constructor.name}`);
   }
 
   /**
@@ -832,7 +829,7 @@ export class Kernel {
    * @return Boolean
    */
   hasPrependString(value) {
-    throw new Error(`"hasPrependString" called on ${ this.constructor.name }`);
+    throw new Error(`"hasPrependString" called on ${this.constructor.name}`);
   }
 
   /**
@@ -848,7 +845,7 @@ export class Kernel {
         constants: this.constants,
         pluginNames: this.plugins ? this.plugins.map(plugin => plugin.name) : null,
         returnType: this.returnType,
-      }
+      },
     };
   }
 
@@ -895,7 +892,7 @@ export class Kernel {
    * @abstract
    */
   static getSignature(kernel, argumentTypes) {
-    throw new Error(`"getSignature" not implemented on ${ this.name }`);
+    throw new Error(`"getSignature" not implemented on ${this.name}`);
   }
 
   /**
@@ -912,8 +909,7 @@ export class Kernel {
     if (Array.isArray(settings.argumentTypes)) {
       argumentTypes = settings.argumentTypes;
     } else if (typeof settings.argumentTypes === 'object') {
-      argumentTypes = utils.getArgumentNamesFromString(sourceString)
-        .map(name => settings.argumentTypes[name]) || [];
+      argumentTypes = utils.getArgumentNamesFromString(sourceString).map(name => settings.argumentTypes[name]) || [];
     } else {
       argumentTypes = settings.argumentTypes || [];
     }

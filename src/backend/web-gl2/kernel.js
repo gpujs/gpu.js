@@ -133,7 +133,7 @@ export class WebGL2Kernel extends WebGLKernel {
     const settings = {
       alpha: false,
       depth: false,
-      antialias: false
+      antialias: false,
     };
     return this.canvas.getContext('webgl2', settings);
   }
@@ -151,10 +151,13 @@ export class WebGL2Kernel extends WebGLKernel {
    */
   validateSettings(args) {
     if (!this.validate) {
-      this.texSize = utils.getKernelTextureSize({
-        optimizeFloatMemory: this.optimizeFloatMemory,
-        precision: this.precision,
-      }, this.output);
+      this.texSize = utils.getKernelTextureSize(
+        {
+          optimizeFloatMemory: this.optimizeFloatMemory,
+          precision: this.precision,
+        },
+        this.output
+      );
       return;
     }
 
@@ -212,17 +215,20 @@ export class WebGL2Kernel extends WebGLKernel {
       this.precision = 'single';
     }
 
-    this.texSize = utils.getKernelTextureSize({
-      optimizeFloatMemory: this.optimizeFloatMemory,
-      precision: this.precision,
-    }, this.output);
+    this.texSize = utils.getKernelTextureSize(
+      {
+        optimizeFloatMemory: this.optimizeFloatMemory,
+        precision: this.precision,
+      },
+      this.output
+    );
 
     this.checkTextureSize();
   }
 
   translateSource() {
     const functionBuilder = FunctionBuilder.fromKernel(this, WebGL2FunctionNode, {
-      fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy
+      fixIntegerDivisionAccuracy: this.fixIntegerDivisionAccuracy,
     });
     this.translatedSource = functionBuilder.getPrototypeString('kernel');
     this.setupReturnTypes(functionBuilder);
@@ -341,16 +347,18 @@ export class WebGL2Kernel extends WebGLKernel {
       }
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i + 1, gl.TEXTURE_2D, texture, 0);
 
-      this.mappedTextures.push(new this.TextureConstructor({
-        texture,
-        size: texSize,
-        dimensions: this.threadDim,
-        output: this.output,
-        context: this.context,
-        internalFormat: this.getInternalFormat(),
-        textureFormat: this.getTextureFormat(),
-        kernel: this,
-      }));
+      this.mappedTextures.push(
+        new this.TextureConstructor({
+          texture,
+          size: texSize,
+          dimensions: this.threadDim,
+          output: this.output,
+          context: this.context,
+          internalFormat: this.getInternalFormat(),
+          textureFormat: this.getTextureFormat(),
+          kernel: this,
+        })
+      );
     }
   }
 
@@ -373,9 +381,9 @@ export class WebGL2Kernel extends WebGLKernel {
     const subKernels = this.subKernels;
     const variablePrecision = this.getVariablePrecisionString(this.texSize, this.tactic);
     if (subKernels === null || subKernels.length < 1) {
-      return `in ${ variablePrecision } vec2 vTexCoord;\n`;
+      return `in ${variablePrecision} vec2 vTexCoord;\n`;
     } else {
-      return `out ${ variablePrecision } vec2 vTexCoord;\n`;
+      return `out ${variablePrecision} vec2 vTexCoord;\n`;
     }
   }
 
@@ -401,63 +409,41 @@ export class WebGL2Kernel extends WebGLKernel {
     const result = [this.getKernelResultDeclaration()];
     const subKernels = this.subKernels;
     if (subKernels !== null) {
-      result.push(
-        'layout(location = 0) out vec4 data0'
-      );
+      result.push('layout(location = 0) out vec4 data0');
       switch (this.returnType) {
         case 'Number':
         case 'Float':
         case 'Integer':
           for (let i = 0; i < subKernels.length; i++) {
             const subKernel = subKernels[i];
-            result.push(
-              subKernel.returnType === 'Integer' ?
-              `int subKernelResult_${ subKernel.name } = 0` :
-              `float subKernelResult_${ subKernel.name } = 0.0`,
-              `layout(location = ${ i + 1 }) out vec4 data${ i + 1 }`
-            );
+            result.push(subKernel.returnType === 'Integer' ? `int subKernelResult_${subKernel.name} = 0` : `float subKernelResult_${subKernel.name} = 0.0`, `layout(location = ${i + 1}) out vec4 data${i + 1}`);
           }
           break;
         case 'Array(2)':
           for (let i = 0; i < subKernels.length; i++) {
-            result.push(
-              `vec2 subKernelResult_${ subKernels[i].name }`,
-              `layout(location = ${ i + 1 }) out vec4 data${ i + 1 }`
-            );
+            result.push(`vec2 subKernelResult_${subKernels[i].name}`, `layout(location = ${i + 1}) out vec4 data${i + 1}`);
           }
           break;
         case 'Array(3)':
           for (let i = 0; i < subKernels.length; i++) {
-            result.push(
-              `vec3 subKernelResult_${ subKernels[i].name }`,
-              `layout(location = ${ i + 1 }) out vec4 data${ i + 1 }`
-            );
+            result.push(`vec3 subKernelResult_${subKernels[i].name}`, `layout(location = ${i + 1}) out vec4 data${i + 1}`);
           }
           break;
         case 'Array(4)':
           for (let i = 0; i < subKernels.length; i++) {
-            result.push(
-              `vec4 subKernelResult_${ subKernels[i].name }`,
-              `layout(location = ${ i + 1 }) out vec4 data${ i + 1 }`
-            );
+            result.push(`vec4 subKernelResult_${subKernels[i].name}`, `layout(location = ${i + 1}) out vec4 data${i + 1}`);
           }
           break;
       }
     } else {
-      result.push(
-        'out vec4 data0'
-      );
+      result.push('out vec4 data0');
     }
 
     return utils.linesToString(result) + this.translatedSource;
   }
 
   getMainResultGraphical() {
-    return utils.linesToString([
-      '  threadId = indexTo3D(index, uOutputDim)',
-      '  kernel()',
-      '  data0 = actualColor',
-    ]);
+    return utils.linesToString(['  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  data0 = actualColor']);
   }
 
   getMainResultPackedPixels() {
@@ -466,8 +452,7 @@ export class WebGL2Kernel extends WebGLKernel {
       case 'Number':
       case 'Integer':
       case 'Float':
-        return this.getMainResultKernelPackedPixels() +
-          this.getMainResultSubKernelPackedPixels();
+        return this.getMainResultKernelPackedPixels() + this.getMainResultSubKernelPackedPixels();
       default:
         throw new Error(`packed output only usable with Numbers, "${this.returnType}" specified`);
     }
@@ -477,11 +462,7 @@ export class WebGL2Kernel extends WebGLKernel {
    * @return {String}
    */
   getMainResultKernelPackedPixels() {
-    return utils.linesToString([
-      '  threadId = indexTo3D(index, uOutputDim)',
-      '  kernel()',
-      `  data0 = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(kernelResult)`
-    ]);
+    return utils.linesToString(['  threadId = indexTo3D(index, uOutputDim)', '  kernel()', `  data0 = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(kernelResult)`]);
   }
 
   /**
@@ -493,24 +474,16 @@ export class WebGL2Kernel extends WebGLKernel {
     for (let i = 0; i < this.subKernels.length; i++) {
       const subKernel = this.subKernels[i];
       if (subKernel.returnType === 'Integer') {
-        result.push(
-          `  data${i + 1} = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(float(subKernelResult_${this.subKernels[i].name}))`
-        );
+        result.push(`  data${i + 1} = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(float(subKernelResult_${this.subKernels[i].name}))`);
       } else {
-        result.push(
-          `  data${i + 1} = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(subKernelResult_${this.subKernels[i].name})`
-        );
+        result.push(`  data${i + 1} = ${this.useLegacyEncoder ? 'legacyEncode32' : 'encode32'}(subKernelResult_${this.subKernels[i].name})`);
       }
     }
     return utils.linesToString(result);
   }
 
   getMainResultKernelMemoryOptimizedFloats(result, channel) {
-    result.push(
-      '  threadId = indexTo3D(index, uOutputDim)',
-      '  kernel()',
-      `  data0.${channel} = kernelResult`
-    );
+    result.push('  threadId = indexTo3D(index, uOutputDim)', '  kernel()', `  data0.${channel} = kernelResult`);
   }
 
   getMainResultSubKernelMemoryOptimizedFloats(result, channel) {
@@ -518,23 +491,15 @@ export class WebGL2Kernel extends WebGLKernel {
     for (let i = 0; i < this.subKernels.length; i++) {
       const subKernel = this.subKernels[i];
       if (subKernel.returnType === 'Integer') {
-        result.push(
-          `  data${i + 1}.${channel} = float(subKernelResult_${subKernel.name})`
-        );
+        result.push(`  data${i + 1}.${channel} = float(subKernelResult_${subKernel.name})`);
       } else {
-        result.push(
-          `  data${i + 1}.${channel} = subKernelResult_${subKernel.name}`
-        );
+        result.push(`  data${i + 1}.${channel} = subKernelResult_${subKernel.name}`);
       }
     }
   }
 
   getMainResultKernelNumberTexture() {
-    return [
-      '  threadId = indexTo3D(index, uOutputDim)',
-      '  kernel()',
-      '  data0[0] = kernelResult',
-    ];
+    return ['  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  data0[0] = kernelResult'];
   }
 
   getMainResultSubKernelNumberTexture() {
@@ -543,25 +508,16 @@ export class WebGL2Kernel extends WebGLKernel {
     for (let i = 0; i < this.subKernels.length; ++i) {
       const subKernel = this.subKernels[i];
       if (subKernel.returnType === 'Integer') {
-        result.push(
-          `  data${i + 1}[0] = float(subKernelResult_${subKernel.name})`
-        );
+        result.push(`  data${i + 1}[0] = float(subKernelResult_${subKernel.name})`);
       } else {
-        result.push(
-          `  data${i + 1}[0] = subKernelResult_${subKernel.name}`
-        );
+        result.push(`  data${i + 1}[0] = subKernelResult_${subKernel.name}`);
       }
     }
     return result;
   }
 
   getMainResultKernelArray2Texture() {
-    return [
-      '  threadId = indexTo3D(index, uOutputDim)',
-      '  kernel()',
-      '  data0[0] = kernelResult[0]',
-      '  data0[1] = kernelResult[1]',
-    ];
+    return ['  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  data0[0] = kernelResult[0]', '  data0[1] = kernelResult[1]'];
   }
 
   getMainResultSubKernelArray2Texture() {
@@ -569,22 +525,13 @@ export class WebGL2Kernel extends WebGLKernel {
     if (!this.subKernels) return result;
     for (let i = 0; i < this.subKernels.length; ++i) {
       const subKernel = this.subKernels[i];
-      result.push(
-        `  data${i + 1}[0] = subKernelResult_${subKernel.name}[0]`,
-        `  data${i + 1}[1] = subKernelResult_${subKernel.name}[1]`
-      );
+      result.push(`  data${i + 1}[0] = subKernelResult_${subKernel.name}[0]`, `  data${i + 1}[1] = subKernelResult_${subKernel.name}[1]`);
     }
     return result;
   }
 
   getMainResultKernelArray3Texture() {
-    return [
-      '  threadId = indexTo3D(index, uOutputDim)',
-      '  kernel()',
-      '  data0[0] = kernelResult[0]',
-      '  data0[1] = kernelResult[1]',
-      '  data0[2] = kernelResult[2]',
-    ];
+    return ['  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  data0[0] = kernelResult[0]', '  data0[1] = kernelResult[1]', '  data0[2] = kernelResult[2]'];
   }
 
   getMainResultSubKernelArray3Texture() {
@@ -592,30 +539,20 @@ export class WebGL2Kernel extends WebGLKernel {
     if (!this.subKernels) return result;
     for (let i = 0; i < this.subKernels.length; ++i) {
       const subKernel = this.subKernels[i];
-      result.push(
-        `  data${i + 1}[0] = subKernelResult_${subKernel.name}[0]`,
-        `  data${i + 1}[1] = subKernelResult_${subKernel.name}[1]`,
-        `  data${i + 1}[2] = subKernelResult_${subKernel.name}[2]`
-      );
+      result.push(`  data${i + 1}[0] = subKernelResult_${subKernel.name}[0]`, `  data${i + 1}[1] = subKernelResult_${subKernel.name}[1]`, `  data${i + 1}[2] = subKernelResult_${subKernel.name}[2]`);
     }
     return result;
   }
 
   getMainResultKernelArray4Texture() {
-    return [
-      '  threadId = indexTo3D(index, uOutputDim)',
-      '  kernel()',
-      '  data0 = kernelResult',
-    ];
+    return ['  threadId = indexTo3D(index, uOutputDim)', '  kernel()', '  data0 = kernelResult'];
   }
 
   getMainResultSubKernelArray4Texture() {
     const result = [];
     if (!this.subKernels) return result;
     for (let i = 0; i < this.subKernels.length; ++i) {
-      result.push(
-        `  data${i + 1} = subKernelResult_${this.subKernels[i].name}`
-      );
+      result.push(`  data${i + 1} = subKernelResult_${this.subKernels[i].name}`);
     }
     return result;
   }

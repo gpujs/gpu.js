@@ -8,11 +8,14 @@ function inGPUInstanceSettings(mode) {
     return a + b;
   }
   const gpu = new GPU({ mode, functions: [customAdder] });
-  const kernel = gpu.createKernel(function(a, b) {
-    return customAdder(a[this.thread.x], b[this.thread.x]);
-  }, {
-    output: [6]
-  });
+  const kernel = gpu.createKernel(
+    function (a, b) {
+      return customAdder(a[this.thread.x], b[this.thread.x]);
+    },
+    {
+      output: [6],
+    }
+  );
 
   const a = [1, 2, 3, 5, 6, 7];
   const b = [4, 5, 6, 1, 2, 3];
@@ -49,18 +52,19 @@ test('in GPU instance settings cpu', () => {
   inGPUInstanceSettings('cpu');
 });
 
-
 function withGPUAddFunctionMethod(mode) {
   function customAdder(a, b) {
     return a + b;
   }
-  const gpu = new GPU({ mode })
-    .addFunction(customAdder);
-  const kernel = gpu.createKernel(function(a, b) {
-    return customAdder(a[this.thread.x], b[this.thread.x]);
-  }, {
-    output: [6]
-  });
+  const gpu = new GPU({ mode }).addFunction(customAdder);
+  const kernel = gpu.createKernel(
+    function (a, b) {
+      return customAdder(a[this.thread.x], b[this.thread.x]);
+    },
+    {
+      output: [6],
+    }
+  );
 
   const a = [1, 2, 3, 5, 6, 7];
   const b = [4, 5, 6, 1, 2, 3];
@@ -102,14 +106,15 @@ function inKernelInstanceSettings(mode) {
     return a + b;
   }
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(a, b) {
-    return customAdder(a[this.thread.x], b[this.thread.x]);
-  }, {
-    output: [6],
-    functions: [
-      customAdder
-    ],
-  });
+  const kernel = gpu.createKernel(
+    function (a, b) {
+      return customAdder(a[this.thread.x], b[this.thread.x]);
+    },
+    {
+      output: [6],
+      functions: [customAdder],
+    }
+  );
 
   const a = [1, 2, 3, 5, 6, 7];
   const b = [4, 5, 6, 1, 2, 3];
@@ -151,11 +156,15 @@ function withKernelAddFunctionMethod(mode) {
     return a + b;
   }
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(a, b) {
-      return customAdder(a[this.thread.x], b[this.thread.x]);
-    }, {
-      output: [6]
-    })
+  const kernel = gpu
+    .createKernel(
+      function (a, b) {
+        return customAdder(a[this.thread.x], b[this.thread.x]);
+      },
+      {
+        output: [6],
+      }
+    )
     .addFunction(customAdder);
 
   const a = [1, 2, 3, 5, 6, 7];
@@ -208,13 +217,16 @@ function sumAB(mode) {
 
   gpu.addFunction(customAdder);
 
-  const kernel = gpu.createKernel(function(a, b) {
-    return customAdder(a, b);
-  }, {
-    output: [6],
-    constants: { width: 6 },
-    precision: 'unsigned',
-  });
+  const kernel = gpu.createKernel(
+    function (a, b) {
+      return customAdder(a, b);
+    },
+    {
+      output: [6],
+      constants: { width: 6 },
+      precision: 'unsigned',
+    }
+  );
 
   assert.ok(kernel !== null, 'function generated test');
 
@@ -265,11 +277,14 @@ function sumABThisOutputX(mode) {
     return sum;
   }
 
-  const kernel = gpu.createKernel(function(a, b) {
-    return customAdder(a, b);
-  }, {
-    output: [6],
-  });
+  const kernel = gpu.createKernel(
+    function (a, b) {
+      return customAdder(a, b);
+    },
+    {
+      output: [6],
+    }
+  );
 
   assert.ok(kernel !== null, 'function generated test');
 
@@ -307,24 +322,26 @@ test('sumABThisOutputX cpu', () => {
   sumABThisOutputX('cpu');
 });
 
-
 describe('features: add custom private');
 
 function addCustomPrivate(mode) {
   const gpu = new GPU({ mode });
 
-  const kernel = gpu.createKernel(function(a, b) {
-    function customAdder(a, b) {
-      let sum = 0;
-      for (let i = 0; i < this.output.x; i++) {
-        sum += a[this.thread.x] + b[this.thread.x];
+  const kernel = gpu.createKernel(
+    function (a, b) {
+      function customAdder(a, b) {
+        let sum = 0;
+        for (let i = 0; i < this.output.x; i++) {
+          sum += a[this.thread.x] + b[this.thread.x];
+        }
+        return sum;
       }
-      return sum;
+      return customAdder(a, b);
+    },
+    {
+      output: [6],
     }
-    return customAdder(a, b);
-  }, {
-    output: [6],
-  });
+  );
 
   assert.ok(kernel !== null, 'function generated test');
 
@@ -370,9 +387,12 @@ function testSetFunctionsFromArrayOnKernel(mode) {
   function custom() {
     return 1;
   }
-  const kernel = gpu.createKernel(function() {
-    return custom();
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      return custom();
+    },
+    { output: [1] }
+  );
   kernel.setFunctions([custom]);
   assert.equal(kernel()[0], 1);
   gpu.destroy();
@@ -406,12 +426,20 @@ describe('features: setFunctions from array on kernel');
 
 function testSetFunctionsFromArrayOnGPU(mode) {
   const gpu = new GPU({ mode });
-  assert.equal(gpu.setFunctions([function custom() {
-    return 1;
-  }]), gpu);
-  const kernel = gpu.createKernel(function() {
-    return custom();
-  }, { output: [1] });
+  assert.equal(
+    gpu.setFunctions([
+      function custom() {
+        return 1;
+      },
+    ]),
+    gpu
+  );
+  const kernel = gpu.createKernel(
+    function () {
+      return custom();
+    },
+    { output: [1] }
+  );
   assert.equal(kernel()[0], 1);
   gpu.destroy();
 }
@@ -444,7 +472,8 @@ describe('features: setFunctions from array on kernel');
 
 function testAddIGPUFunction(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
+  const kernel = gpu
+    .createKernel(function (value) {
       return custom(value);
     })
     .setOutput([1])

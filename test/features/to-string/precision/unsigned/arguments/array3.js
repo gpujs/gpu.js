@@ -5,18 +5,21 @@ describe('feature: to-string unsigned precision arguments Array(3)');
 
 function testArgument(mode, context, canvas) {
   const gpu = new GPU({ mode });
-  const originalKernel = gpu.createKernel(function(a) {
-    return a;
-  }, {
-    canvas,
-    context,
-    output: [1],
-    precision: 'unsigned',
-    argumentTypes: { a: 'Array(3)' }
-  });
+  const originalKernel = gpu.createKernel(
+    function (a) {
+      return a;
+    },
+    {
+      canvas,
+      context,
+      output: [1],
+      precision: 'unsigned',
+      argumentTypes: { a: 'Array(3)' },
+    }
+  );
 
   const a = new Float32Array([1, 2, 3]);
-  const expected = [new Float32Array([1,2,3])];
+  const expected = [new Float32Array([1, 2, 3])];
   const originalResult = originalKernel(a);
   assert.deepEqual(originalResult, expected);
   const kernelString = originalKernel.toString(a);
@@ -25,7 +28,7 @@ function testArgument(mode, context, canvas) {
   assert.deepEqual(newResult, expected);
 
   const b = new Float32Array([1, 1, 1]);
-  const expected2 = [new Float32Array([1,1,1])];
+  const expected2 = [new Float32Array([1, 1, 1])];
   const newResult2 = newKernel(b);
   assert.deepEqual(newResult2, expected2);
   gpu.destroy();

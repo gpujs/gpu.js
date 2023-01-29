@@ -10,10 +10,13 @@ function canDetectNumberFromAddedFunction(mode) {
     return 1;
   }
   gpu.addFunction(number);
-  const kernel = gpu.createKernel(function() {
-    const values = number();
-    return values + values;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      const values = number();
+      return values + values;
+    },
+    { output: [1] }
+  );
 
   const result = kernel();
   assert.equal(result[0], 2);
@@ -52,10 +55,13 @@ function canDetectArray2FromAddedFunction(mode) {
     return [1, 2];
   }
   gpu.addFunction(array2);
-  const kernel = gpu.createKernel(function() {
-    const values = array2();
-    return values[0] + values[1];
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      const values = array2();
+      return values[0] + values[1];
+    },
+    { output: [1] }
+  );
 
   const result = kernel();
   assert.equal(result[0], 3);
@@ -87,7 +93,6 @@ test('can detect Array(2) cpu', () => {
   canDetectArray2FromAddedFunction('cpu');
 });
 
-
 function canDetectArray3FromAddedFunction(mode) {
   const gpu = new GPU({ mode });
 
@@ -95,10 +100,13 @@ function canDetectArray3FromAddedFunction(mode) {
     return [1, 2, 3];
   }
   gpu.addFunction(array2);
-  const kernel = gpu.createKernel(function() {
-    const values = array2();
-    return values[0] + values[1] + values[2];
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      const values = array2();
+      return values[0] + values[1] + values[2];
+    },
+    { output: [1] }
+  );
 
   const result = kernel();
   assert.equal(result[0], 6);
@@ -130,7 +138,6 @@ test('can detect Array(3) cpu', () => {
   canDetectArray3FromAddedFunction('cpu');
 });
 
-
 function canDetectArray4FromAddedFunction(mode) {
   const gpu = new GPU({ mode });
 
@@ -138,10 +145,13 @@ function canDetectArray4FromAddedFunction(mode) {
     return [1, 2, 3, 4];
   }
   gpu.addFunction(array2);
-  const kernel = gpu.createKernel(function() {
-    const values = array2();
-    return values[0] + values[1] + values[2] + values[3];
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      const values = array2();
+      return values[0] + values[1] + values[2] + values[3];
+    },
+    { output: [1] }
+  );
 
   const result = kernel();
   assert.equal(result[0], 10);

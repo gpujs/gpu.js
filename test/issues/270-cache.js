@@ -8,7 +8,7 @@ test('Issue #270 WebGlKernel getUniformLocation caches falsey - gpu', () => {
   const context = {
     getUniformLocation() {
       throw new Error('tried to get getUniformLocation when falsey');
-    }
+    },
   };
   const kernel = new WebGLKernel('function() {}', { canvas, context });
   kernel.programUniformLocationCache.test = false;

@@ -5,16 +5,19 @@ describe('internal: casting');
 
 function castingOffsetByThreadXAndOutputX(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    // value will be a number
-    // this.thread.x is an integer
-    // this.output.x is treated as a literal, so can be either integer or float
-    // return value will be float
-    return this.thread.x + (this.output.x * value);
-  }, {
-    output: [1],
-    strictIntegers: true,
-  });
+  const kernel = gpu.createKernel(
+    function (value) {
+      // value will be a number
+      // this.thread.x is an integer
+      // this.output.x is treated as a literal, so can be either integer or float
+      // return value will be float
+      return this.thread.x + this.output.x * value;
+    },
+    {
+      output: [1],
+      strictIntegers: true,
+    }
+  );
   const result = kernel(1);
   assert.equal(result[0], 1);
   assert.deepEqual(kernel.argumentTypes, ['Integer']);
@@ -33,14 +36,20 @@ function castingOffsetByThreadXAndOutputX(mode) {
 
 function handleCastingIntsWithNativeFunctions(mode) {
   const gpu = new GPU({ mode });
-  gpu.addNativeFunction('add', `
+  gpu.addNativeFunction(
+    'add',
+    `
     int add(int value1, int value2) {
       return value1 + value2;
     }
-  `);
-  const kernel = gpu.createKernel(function(value1, value2) {
-    return add(value1, value2);
-  }, { output: [1] });
+  `
+  );
+  const kernel = gpu.createKernel(
+    function (value1, value2) {
+      return add(value1, value2);
+    },
+    { output: [1] }
+  );
   const result = kernel(0.5, 2.5);
   assert.deepEqual(Array.from(result), [2]);
   assert.deepEqual(kernel.argumentTypes, ['Float', 'Float']);
@@ -57,21 +66,26 @@ function handleCastingIntsWithNativeFunctions(mode) {
   handleCastingIntsWithNativeFunctions('headlessgl');
 });
 
-
 function handleCastingFloatsWithNativeFunctions(mode) {
   const gpu = new GPU({ mode });
-  gpu.addNativeFunction('add', `
+  gpu.addNativeFunction(
+    'add',
+    `
     float add(float value1, float value2) {
       return value1 + value2;
     }
-  `);
-  const kernel = gpu.createKernel(function(value1, value2) {
-    return add(value1, value2);
-  }, {
-    argumentTypes: ['Integer', 'Integer'],
-    output: [1],
-    strictIntegers: true,
-  });
+  `
+  );
+  const kernel = gpu.createKernel(
+    function (value1, value2) {
+      return add(value1, value2);
+    },
+    {
+      argumentTypes: ['Integer', 'Integer'],
+      output: [1],
+      strictIntegers: true,
+    }
+  );
   const result = kernel(1, 2);
   assert.deepEqual(Array.from(result), [3]);
   assert.deepEqual(kernel.argumentTypes, ['Integer', 'Integer']);
@@ -88,20 +102,25 @@ function handleCastingFloatsWithNativeFunctions(mode) {
   handleCastingFloatsWithNativeFunctions('headlessgl');
 });
 
-
 function handleCastingMixedWithNativeFunctions(mode) {
   const gpu = new GPU({ mode });
-  gpu.addNativeFunction('add', `
+  gpu.addNativeFunction(
+    'add',
+    `
     float add(float value1, int value2) {
       return value1 + float(value2);
     }
-  `);
-  const kernel = gpu.createKernel(function(value1, value2) {
-    return add(value1, value2);
-  }, {
-    output: [1],
-    strictIntegers: true,
-  });
+  `
+  );
+  const kernel = gpu.createKernel(
+    function (value1, value2) {
+      return add(value1, value2);
+    },
+    {
+      output: [1],
+      strictIntegers: true,
+    }
+  );
   const result = kernel(1, 2.5);
   assert.deepEqual(Array.from(result), [3]);
   assert.deepEqual(kernel.argumentTypes, ['Integer', 'Float']);
@@ -126,14 +145,17 @@ function handleCastingFloat(mode) {
   }
   gpu.addFunction(add, {
     argumentTypes: ['Float', 'Float'],
-    returnType: 'Float'
+    returnType: 'Float',
   });
-  const kernel = gpu.createKernel(function(value1, value2) {
-    return add(value1, value2);
-  }, {
-    output: [1],
-    argumentTypes: ['Integer', 'Integer'],
-  });
+  const kernel = gpu.createKernel(
+    function (value1, value2) {
+      return add(value1, value2);
+    },
+    {
+      output: [1],
+      argumentTypes: ['Integer', 'Integer'],
+    }
+  );
   const result = kernel(1, 2);
   assert.equal(result[0], 3);
   gpu.destroy();
@@ -151,7 +173,6 @@ function handleCastingFloat(mode) {
   handleCastingFloat('headlessgl');
 });
 
-
 function handleCastingBeforeReturn(mode) {
   const gpu = new GPU({ mode });
 
@@ -162,9 +183,12 @@ function handleCastingBeforeReturn(mode) {
     argumentTypes: { v: 'Float' },
     returnType: 'Integer',
   });
-  const kernel = gpu.createKernel(function(v) {
-    return addOne(v);
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function (v) {
+      return addOne(v);
+    },
+    { output: [1] }
+  );
   assert.equal(kernel(1)[0], 2);
   gpu.destroy();
 }

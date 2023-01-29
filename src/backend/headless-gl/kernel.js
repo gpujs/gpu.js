@@ -20,9 +20,10 @@ export class HeadlessGLKernel extends WebGLKernel {
     testCanvas = null;
     testExtensions = null;
     if (typeof getContext !== 'function') return;
-    try { // just in case, edge cases
+    try {
+      // just in case, edge cases
       testContext = getContext(2, 2, {
-        preserveDrawingBuffer: true
+        preserveDrawingBuffer: true,
       });
       if (!testContext || !testContext.getExtension) return;
       testExtensions = {
@@ -57,9 +58,7 @@ export class HeadlessGLKernel extends WebGLKernel {
   }
 
   static getChannelCount() {
-    return testExtensions.WEBGL_draw_buffers ?
-      testContext.getParameter(testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL) :
-      1;
+    return testExtensions.WEBGL_draw_buffers ? testContext.getParameter(testExtensions.WEBGL_draw_buffers.MAX_DRAW_BUFFERS_WEBGL) : 1;
   }
 
   static getMaxTextureSize() {
@@ -84,7 +83,7 @@ export class HeadlessGLKernel extends WebGLKernel {
 
   initContext() {
     return getContext(2, 2, {
-      preserveDrawingBuffer: true
+      preserveDrawingBuffer: true,
     });
   }
 

@@ -5,12 +5,15 @@ describe('features: raw output');
 
 function rawUnsignedPrecisionRenderOutput(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v) {
-    return v[this.thread.x];
-  }, {
-    output: [1],
-    precision: 'unsigned',
-  });
+  const kernel = gpu.createKernel(
+    function (v) {
+      return v[this.thread.x];
+    },
+    {
+      output: [1],
+      precision: 'unsigned',
+    }
+  );
   kernel.build([1]);
   kernel.run([1]);
   const result = kernel.renderRawOutput();
@@ -45,15 +48,17 @@ test('raw unsigned precision render output cpu', () => {
   });
 });
 
-
 function rawSinglePrecisionRenderOutput(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v) {
-    return v[this.thread.x];
-  }, {
-    output: [1],
-    precision: 'single',
-  });
+  const kernel = gpu.createKernel(
+    function (v) {
+      return v[this.thread.x];
+    },
+    {
+      output: [1],
+      precision: 'single',
+    }
+  );
   kernel.build([1]);
   kernel.run([1]);
   const result = kernel.renderRawOutput();

@@ -13,29 +13,7 @@ export class FunctionBuilder {
    * @static
    */
   static fromKernel(kernel, FunctionNode, extraNodeOptions) {
-    const {
-      kernelArguments,
-      kernelConstants,
-      argumentNames,
-      argumentSizes,
-      argumentBitRatios,
-      constants,
-      constantBitRatios,
-      debug,
-      loopMaxIterations,
-      nativeFunctions,
-      output,
-      optimizeFloatMemory,
-      precision,
-      plugins,
-      source,
-      subKernels,
-      functions,
-      leadingReturnStatement,
-      followingReturnStatement,
-      dynamicArguments,
-      dynamicOutput,
-    } = kernel;
+    const { kernelArguments, kernelConstants, argumentNames, argumentSizes, argumentBitRatios, constants, constantBitRatios, debug, loopMaxIterations, nativeFunctions, output, optimizeFloatMemory, precision, plugins, source, subKernels, functions, leadingReturnStatement, followingReturnStatement, dynamicArguments, dynamicOutput } = kernel;
 
     const argumentTypes = new Array(kernelArguments.length);
     const constantTypes = {};
@@ -61,7 +39,7 @@ export class FunctionBuilder {
       return functionBuilder.lookupReturnType(functionName, ast, requestingNode);
     };
 
-    const lookupFunctionArgumentTypes = (functionName) => {
+    const lookupFunctionArgumentTypes = functionName => {
       return functionBuilder.lookupFunctionArgumentTypes(functionName);
     };
 
@@ -90,11 +68,32 @@ export class FunctionBuilder {
       for (let i = 0; i < ast.params.length; i++) {
         argumentNames.push(ast.params[i].name);
       }
-      const nestedFunction = new FunctionNode(source, Object.assign({}, nodeOptions, {
-        returnType: null,
-        ast,
-        name: ast.id.name,
-        argumentNames,
+      const nestedFunction = new FunctionNode(
+        source,
+        Object.assign({}, nodeOptions, {
+          returnType: null,
+          ast,
+          name: ast.id.name,
+          argumentNames,
+          lookupReturnType,
+          lookupFunctionArgumentTypes,
+          lookupFunctionArgumentName,
+          lookupFunctionArgumentBitRatio,
+          needsArgumentType,
+          assignArgumentType,
+          triggerImplyArgumentType,
+          triggerImplyArgumentBitRatio,
+          onFunctionCall,
+        })
+      );
+      nestedFunction.traceFunctionAST(ast);
+      functionBuilder.addFunctionNode(nestedFunction);
+    };
+
+    const nodeOptions = Object.assign(
+      {
+        isRootKernel: false,
+        onNestedFunction,
         lookupReturnType,
         lookupFunctionArgumentTypes,
         lookupFunctionArgumentName,
@@ -104,35 +103,20 @@ export class FunctionBuilder {
         triggerImplyArgumentType,
         triggerImplyArgumentBitRatio,
         onFunctionCall,
-      }));
-      nestedFunction.traceFunctionAST(ast);
-      functionBuilder.addFunctionNode(nestedFunction);
-    };
-
-    const nodeOptions = Object.assign({
-      isRootKernel: false,
-      onNestedFunction,
-      lookupReturnType,
-      lookupFunctionArgumentTypes,
-      lookupFunctionArgumentName,
-      lookupFunctionArgumentBitRatio,
-      needsArgumentType,
-      assignArgumentType,
-      triggerImplyArgumentType,
-      triggerImplyArgumentBitRatio,
-      onFunctionCall,
-      optimizeFloatMemory,
-      precision,
-      constants,
-      constantTypes,
-      constantBitRatios,
-      debug,
-      loopMaxIterations,
-      output,
-      plugins,
-      dynamicArguments,
-      dynamicOutput,
-    }, extraNodeOptions || {});
+        optimizeFloatMemory,
+        precision,
+        constants,
+        constantTypes,
+        constantBitRatios,
+        debug,
+        loopMaxIterations,
+        output,
+        plugins,
+        dynamicArguments,
+        dynamicOutput,
+      },
+      extraNodeOptions || {}
+    );
 
     const rootNodeOptions = Object.assign({}, nodeOptions, {
       isRootKernel: true,
@@ -153,38 +137,44 @@ export class FunctionBuilder {
 
     let functionNodes = null;
     if (functions) {
-      functionNodes = functions.map((fn) => new FunctionNode(fn.source, {
-        returnType: fn.returnType,
-        argumentTypes: fn.argumentTypes,
-        output,
-        plugins,
-        constants,
-        constantTypes,
-        constantBitRatios,
-        optimizeFloatMemory,
-        precision,
-        lookupReturnType,
-        lookupFunctionArgumentTypes,
-        lookupFunctionArgumentName,
-        lookupFunctionArgumentBitRatio,
-        needsArgumentType,
-        assignArgumentType,
-        triggerImplyArgumentType,
-        triggerImplyArgumentBitRatio,
-        onFunctionCall,
-        onNestedFunction,
-      }));
+      functionNodes = functions.map(
+        fn =>
+          new FunctionNode(fn.source, {
+            returnType: fn.returnType,
+            argumentTypes: fn.argumentTypes,
+            output,
+            plugins,
+            constants,
+            constantTypes,
+            constantBitRatios,
+            optimizeFloatMemory,
+            precision,
+            lookupReturnType,
+            lookupFunctionArgumentTypes,
+            lookupFunctionArgumentName,
+            lookupFunctionArgumentBitRatio,
+            needsArgumentType,
+            assignArgumentType,
+            triggerImplyArgumentType,
+            triggerImplyArgumentBitRatio,
+            onFunctionCall,
+            onNestedFunction,
+          })
+      );
     }
 
     let subKernelNodes = null;
     if (subKernels) {
-      subKernelNodes = subKernels.map((subKernel) => {
+      subKernelNodes = subKernels.map(subKernel => {
         const { name, source } = subKernel;
-        return new FunctionNode(source, Object.assign({}, nodeOptions, {
-          name,
-          isSubKernel: true,
-          isRootKernel: false,
-        }));
+        return new FunctionNode(
+          source,
+          Object.assign({}, nodeOptions, {
+            name,
+            isSubKernel: true,
+            isRootKernel: false,
+          })
+        );
       });
     }
 
@@ -193,7 +183,7 @@ export class FunctionBuilder {
       rootNode,
       functionNodes,
       nativeFunctions,
-      subKernelNodes
+      subKernelNodes,
     });
 
     return functionBuilder;
@@ -372,19 +362,21 @@ export class FunctionBuilder {
   }
 
   toJSON() {
-    return this.traceFunctionCalls(this.rootNode.name).reverse().map(name => {
-      const nativeIndex = this.nativeFunctions.indexOf(name);
-      if (nativeIndex > -1) {
-        return {
-          name,
-          source: this.nativeFunctions[nativeIndex].source
-        };
-      } else if (this.functionMap[name]) {
-        return this.functionMap[name].toJSON();
-      } else {
-        throw new Error(`function ${ name } not found`);
-      }
-    });
+    return this.traceFunctionCalls(this.rootNode.name)
+      .reverse()
+      .map(name => {
+        const nativeIndex = this.nativeFunctions.indexOf(name);
+        if (nativeIndex > -1) {
+          return {
+            name,
+            source: this.nativeFunctions[nativeIndex].source,
+          };
+        } else if (this.functionMap[name]) {
+          return this.functionMap[name].toJSON();
+        } else {
+          throw new Error(`function ${name} not found`);
+        }
+      });
   }
 
   fromJSON(jsonFunctionNodes, FunctionNode) {
@@ -410,7 +402,7 @@ export class FunctionBuilder {
 
   lookupReturnType(functionName, ast, requestingNode) {
     if (ast.type !== 'CallExpression') {
-      throw new Error(`expected ast type of "CallExpression", but is ${ ast.type }`);
+      throw new Error(`expected ast type of "CallExpression", but is ${ast.type}`);
     }
     if (this._isNativeFunction(functionName)) {
       return this._lookupNativeFunctionReturnType(functionName);
@@ -430,12 +422,12 @@ export class FunctionBuilder {
                 this.lookupChain.push({
                   name: requestingNode.name,
                   ast: args[i],
-                  requestingNode
+                  requestingNode,
                 });
                 node.argumentTypes[j] = requestingNode.getType(args[j]);
                 this.lookupChain.pop();
               }
-              return node.returnType = node.getType(node.getJsAST());
+              return (node.returnType = node.getType(node.getJsAST()));
             }
 
             throw new Error('circlical logic detected!');
@@ -445,11 +437,11 @@ export class FunctionBuilder {
         this.lookupChain.push({
           name: requestingNode.name,
           ast,
-          requestingNode
+          requestingNode,
         });
         const type = node.getType(node.getJsAST());
         this.lookupChain.pop();
-        return node.returnType = type;
+        return (node.returnType = type);
       }
     }
 
@@ -489,7 +481,7 @@ export class FunctionBuilder {
     if (nativeFunction) {
       return nativeFunction.returnType;
     }
-    throw new Error(`Native function ${ functionName } not found`);
+    throw new Error(`Native function ${functionName} not found`);
   }
 
   lookupFunctionArgumentTypes(functionName) {
@@ -603,7 +595,7 @@ export class FunctionBuilder {
       }
     }
     if (!called) {
-      throw new Error(`SubKernel ${ subKernelNode.name } never called by kernel`);
+      throw new Error(`SubKernel ${subKernelNode.name} never called by kernel`);
     }
     return subKernelNode.returnType || subKernelNode.getType(subKernelNode.getJsAST());
   }

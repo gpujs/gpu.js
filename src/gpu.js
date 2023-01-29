@@ -6,7 +6,6 @@ import { WebGL2Kernel } from './backend/web-gl2/kernel';
 import { WebGLKernel } from './backend/web-gl/kernel';
 import { kernelRunShortcut } from './kernel-run-shortcut';
 
-
 /**
  *
  * @type {Array.<Kernel>}
@@ -20,17 +19,17 @@ export const kernelOrder = [WebGL2Kernel, WebGLKernel];
 export const kernelTypes = ['gpu', 'cpu'];
 
 const internalKernels = {
-  'webgl2': WebGL2Kernel,
-  'webgl': WebGLKernel,
+  webgl2: WebGL2Kernel,
+  webgl: WebGLKernel,
 };
 
 /**
- * 
- * @param {import('./backend/headless-gl/kernel').HeadlessGLKernel} HeadlessGLKernel 
+ *
+ * @param {import('./backend/headless-gl/kernel').HeadlessGLKernel} HeadlessGLKernel
  */
 export function setupNode(HeadlessGLKernel) {
-  kernelOrder.unshift(HeadlessGLKernel)
-  internalKernels.headlessgl = HeadlessGLKernel
+  kernelOrder.unshift(HeadlessGLKernel);
+  internalKernels.headlessgl = HeadlessGLKernel;
 }
 
 let validate = true;
@@ -300,7 +299,7 @@ export class GPU {
         return existingKernel;
       }
 
-      const newKernel = switchableKernels[signature] = new Constructor(source, {
+      const newKernel = (switchableKernels[signature] = new Constructor(source, {
         argumentTypes,
         constantTypes: _kernel.constantTypes,
         graphical: _kernel.graphical,
@@ -331,23 +330,26 @@ export class GPU {
         texture: _kernel.texture,
         mappedTextures: _kernel.mappedTextures,
         drawBuffersMap: _kernel.drawBuffersMap,
-      });
+      }));
       newKernel.build.apply(newKernel, args);
       kernelRun.replaceKernel(newKernel);
       kernels.push(newKernel);
       return newKernel;
     }
-    const mergedSettings = Object.assign({
-      context: this.context,
-      canvas: this.canvas,
-      functions: this.functions,
-      nativeFunctions: this.nativeFunctions,
-      injectedNative: this.injectedNative,
-      gpu: this,
-      validate,
-      onRequestFallback,
-      onRequestSwitchKernel
-    }, settingsCopy);
+    const mergedSettings = Object.assign(
+      {
+        context: this.context,
+        canvas: this.canvas,
+        functions: this.functions,
+        nativeFunctions: this.nativeFunctions,
+        injectedNative: this.injectedNative,
+        gpu: this,
+        validate,
+        onRequestFallback,
+        onRequestSwitchKernel,
+      },
+      settingsCopy
+    );
 
     const kernel = new this.Kernel(source, mergedSettings);
     const kernelRun = kernelRunShortcut(kernel);
@@ -480,13 +482,10 @@ export class GPU {
     const context = arguments[0].context;
     const max = arguments.length - 1;
     for (let i = 0; i < max; i++) {
-      arguments[i]
-        .setCanvas(canvas)
-        .setContext(context)
-        .setPipeline(true);
+      arguments[i].setCanvas(canvas).setContext(context).setPipeline(true);
     }
 
-    return function() {
+    return function () {
       const texture = combinedKernel.apply(this, arguments);
       if (texture.toArray) {
         return texture.toArray();
@@ -578,7 +577,6 @@ export class GPU {
     });
   }
 }
-
 
 function upgradeDeprecatedCreateKernelSettings(settings) {
   if (!settings) {

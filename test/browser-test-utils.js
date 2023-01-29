@@ -15,12 +15,7 @@ function imageToArray(image) {
     const row = [];
     result.unshift(row);
     for (let x = 0; x < image.width; x++) {
-      const pixel = new Float32Array([
-        data[i++],
-        data[i++],
-        data[i++],
-        data[i++],
-      ]);
+      const pixel = new Float32Array([data[i++], data[i++], data[i++], data[i++]]);
       row.push(pixel);
     }
   }
@@ -28,7 +23,7 @@ function imageToArray(image) {
 }
 
 function loadImage(image) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     if (typeof image === 'string') {
       const src = image;
       image = new Image();
@@ -59,9 +54,12 @@ function check2DImage(result, expected, channel) {
 
 function greenCanvas(mode, width, height) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    this.color(0, 1, 0, 1);
-  }, { output: [width, height], graphical: true });
+  const kernel = gpu.createKernel(
+    function () {
+      this.color(0, 1, 0, 1);
+    },
+    { output: [width, height], graphical: true }
+  );
   kernel();
   const canvas = kernel.canvas;
   gpu.destroy();
@@ -80,4 +78,3 @@ if (typeof window !== 'undefined') {
 } else {
   module.exports = _exports;
 }
-

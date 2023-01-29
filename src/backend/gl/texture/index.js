@@ -11,7 +11,7 @@ export class GLTexture extends Texture {
    * @abstract
    */
   get textureType() {
-    throw new Error(`"textureType" not implemented on ${ this.name }`);
+    throw new Error(`"textureType" not implemented on ${this.name}`);
   }
 
   clone() {
@@ -71,7 +71,7 @@ export class GLTexture extends Texture {
     if (this.texture._refs) {
       this.texture._refs--;
       const gl = this.context;
-      const target = this.texture = gl.createTexture();
+      const target = (this.texture = gl.createTexture());
       selectTexture(gl, target);
       const size = this.size;
       target._refs = 1;

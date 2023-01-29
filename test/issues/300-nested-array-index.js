@@ -8,12 +8,14 @@ function nestedArrayIndex(mode) {
   const gpu2 = new GPU({ mode });
 
   // these 2 should be equivalent
-  const broken = gpu1.createKernel(function(input, lookup) {
+  const broken = gpu1
+    .createKernel(function (input, lookup) {
       return lookup[input[this.thread.x]];
     })
     .setOutput([1]);
 
-  const working = gpu2.createKernel(function(input, lookup) {
+  const working = gpu2
+    .createKernel(function (input, lookup) {
       const idx = input[this.thread.x];
       return lookup[idx];
     })

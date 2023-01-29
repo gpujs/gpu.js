@@ -17,7 +17,8 @@ function multipleKernels(mode) {
   const layerForward = [];
 
   for (let i = 0; i < 2; i++) {
-    const kernels = gpu.createKernelMap([add], function(a, b) {
+    const kernels = gpu
+      .createKernelMap([add], function (a, b) {
         return add(a, b, this.thread.x);
       })
       .setOutput([sizes[i + 1]]); // First: 5. Second: 1.
@@ -35,26 +36,26 @@ function multipleKernels(mode) {
   gpu.destroy();
 }
 
-(GPU.isKernelMapSupported ? test : skip)("Issue #116 - multiple kernels run again auto", () => {
+(GPU.isKernelMapSupported ? test : skip)('Issue #116 - multiple kernels run again auto', () => {
   multipleKernels();
 });
 
-(GPU.isKernelMapSupported ? test : skip)("Issue #116 - multiple kernels run again gpu", () => {
+(GPU.isKernelMapSupported ? test : skip)('Issue #116 - multiple kernels run again gpu', () => {
   multipleKernels('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)("Issue #116 - multiple kernels run again webgl", () => {
+(GPU.isWebGLSupported ? test : skip)('Issue #116 - multiple kernels run again webgl', () => {
   multipleKernels('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)("Issue #116 - multiple kernels run again webgl2", () => {
+(GPU.isWebGL2Supported ? test : skip)('Issue #116 - multiple kernels run again webgl2', () => {
   multipleKernels('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)("Issue #116 - multiple kernels run again headlessgl", () => {
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #116 - multiple kernels run again headlessgl', () => {
   multipleKernels('headlessgl');
 });
 
-test("Issue #116 - multiple kernels run again cpu", () => {
+test('Issue #116 - multiple kernels run again cpu', () => {
   multipleKernels('cpu');
 });

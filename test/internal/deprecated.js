@@ -5,7 +5,7 @@ describe('internal: deprecated');
 
 test('GPU.createKernel settings floatOutput true', () => {
   const gpu = new GPU();
-  const kernel = gpu.createKernel(function() {}, { floatOutput: true });
+  const kernel = gpu.createKernel(function () {}, { floatOutput: true });
   assert.equal(kernel.precision, 'single');
   assert.notOk(kernel.kernel.hasOwnProperty('floatOutput'));
   gpu.destroy();
@@ -13,7 +13,7 @@ test('GPU.createKernel settings floatOutput true', () => {
 
 test('GPU.createKernel settings floatOutput false', () => {
   const gpu = new GPU();
-  const kernel = gpu.createKernel(function() {}, { floatOutput: false });
+  const kernel = gpu.createKernel(function () {}, { floatOutput: false });
   assert.equal(kernel.precision, 'unsigned');
   assert.notOk(kernel.kernel.hasOwnProperty('floatOutput'));
   gpu.destroy();
@@ -21,7 +21,7 @@ test('GPU.createKernel settings floatOutput false', () => {
 
 test('GPU.createKernel settings outputToTexture true', () => {
   const gpu = new GPU();
-  const kernel = gpu.createKernel(function() {}, { outputToTexture: true });
+  const kernel = gpu.createKernel(function () {}, { outputToTexture: true });
   assert.equal(kernel.pipeline, true);
   assert.notOk(kernel.kernel.hasOwnProperty('outputToTexture'));
   gpu.destroy();
@@ -29,7 +29,7 @@ test('GPU.createKernel settings outputToTexture true', () => {
 
 test('GPU.createKernel settings outputToTexture false', () => {
   const gpu = new GPU();
-  const kernel = gpu.createKernel(function() {}, { outputToTexture: false });
+  const kernel = gpu.createKernel(function () {}, { outputToTexture: false });
   assert.equal(kernel.pipeline, false);
   assert.notOk(kernel.kernel.hasOwnProperty('outputToTexture'));
   gpu.destroy();
@@ -37,7 +37,7 @@ test('GPU.createKernel settings outputToTexture false', () => {
 
 test('GPU.createKernel settings outputImmutable true', () => {
   const gpu = new GPU();
-  const kernel = gpu.createKernel(function() {}, { outputImmutable: true });
+  const kernel = gpu.createKernel(function () {}, { outputImmutable: true });
   assert.equal(kernel.immutable, true);
   assert.notOk(kernel.kernel.hasOwnProperty('outputImmutable'));
   gpu.destroy();
@@ -45,7 +45,7 @@ test('GPU.createKernel settings outputImmutable true', () => {
 
 test('GPU.createKernel settings outputImmutable false', () => {
   const gpu = new GPU();
-  const kernel = gpu.createKernel(function() {}, { outputImmutable: false });
+  const kernel = gpu.createKernel(function () {}, { outputImmutable: false });
   assert.equal(kernel.immutable, false);
   assert.notOk(kernel.kernel.hasOwnProperty('outputImmutable'));
   gpu.destroy();
@@ -53,7 +53,7 @@ test('GPU.createKernel settings outputImmutable false', () => {
 
 test('GPU.createKernel settings floatTextures true', () => {
   const gpu = new GPU();
-  const kernel = gpu.createKernel(function() {}, { floatTextures: true });
+  const kernel = gpu.createKernel(function () {}, { floatTextures: true });
   assert.equal(kernel.optimizeFloatMemory, true);
   assert.notOk(kernel.kernel.hasOwnProperty('floatTextures'));
   gpu.destroy();
@@ -61,7 +61,7 @@ test('GPU.createKernel settings floatTextures true', () => {
 
 test('GPU.createKernel settings floatTextures false', () => {
   const gpu = new GPU();
-  const kernel = gpu.createKernel(function() {}, { floatTextures: false });
+  const kernel = gpu.createKernel(function () {}, { floatTextures: false });
   assert.equal(kernel.optimizeFloatMemory, false);
   assert.notOk(kernel.kernel.hasOwnProperty('floatTextures'));
   gpu.destroy();
@@ -73,7 +73,7 @@ test('Kernel.getCanvas', () => {
   kernel.initContext = () => {};
   kernel.initPlugins = () => {};
   kernel.mergeSettings({
-    canvas
+    canvas,
   });
   assert.equal(kernel.getCanvas(), canvas);
 });
@@ -86,7 +86,7 @@ test('Kernel.getWebGl', () => {
   kernel.initPlugins = () => {};
   kernel.mergeSettings({
     canvas,
-    context
+    context,
   });
   assert.equal(kernel.getWebGl(), context);
 });

@@ -19,11 +19,15 @@ for (let i = 0; i < DATA_MAX / divisor; i++) {
 
 function buildLargeArrayAddressKernel(mode) {
   const gpu = new GPU({ mode });
-  const largeArrayAddressKernel = gpu.createKernel(function(data) {
-      return data[this.thread.x];
-    }, {
-      precision: 'unsigned',
-    })
+  const largeArrayAddressKernel = gpu
+    .createKernel(
+      function (data) {
+        return data[this.thread.x];
+      },
+      {
+        precision: 'unsigned',
+      }
+    )
     .setOutput([DATA_MAX]);
 
   const result = largeArrayAddressKernel(data);
@@ -36,7 +40,7 @@ function buildLargeArrayAddressKernel(mode) {
       break;
     }
   }
-  assert.ok(same, "not all elements are the same, failed on index:" + i);
+  assert.ok(same, 'not all elements are the same, failed on index:' + i);
   gpu.destroy();
 }
 

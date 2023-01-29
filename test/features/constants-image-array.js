@@ -28,7 +28,7 @@ function feature(mode, done) {
   }
   const settings = {
     constants: { imageArray },
-    output: [1, 1, 4]
+    output: [1, 1, 4],
   };
 
   if (mode === 'webgl' || gpu.Kernel === WebGLKernel) {
@@ -58,7 +58,7 @@ function feature(mode, done) {
 
 (GPU.isWebGLSupported && typeof Image !== 'undefined' ? test : skip)('webgl', t => {
   assert.throws(() => {
-    feature('webgl')
+    feature('webgl');
   }, 'imageArray are not compatible with webgl');
 });
 

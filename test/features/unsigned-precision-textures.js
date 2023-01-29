@@ -6,12 +6,15 @@ describe('features: unsigned precision textures');
 function unsignedPrecisionTexturesWithArray(mode) {
   const original = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.x];
-  }, {
-    output: [9],
-    precision: 'unsigned'
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.x];
+    },
+    {
+      output: [9],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
   assert.deepEqual(Array.from(result), original);
@@ -45,12 +48,15 @@ test('with Array cpu', () => {
 function unsignedPrecisionTexturesWithFloat32Array(mode) {
   const original = new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.x];
-  }, {
-    output: [9],
-    precision: 'unsigned'
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.x];
+    },
+    {
+      output: [9],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
   assert.deepEqual(Array.from(result), Array.from(original));
@@ -84,12 +90,15 @@ test('with Float32Array cpu', () => {
 function unsignedPrecisionTexturesWithUint16Array(mode) {
   const original = new Uint16Array([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.x];
-  }, {
-    output: [9],
-    precision: 'unsigned',
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.x];
+    },
+    {
+      output: [9],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
   assert.deepEqual(Array.from(result), Array.from(original));
@@ -123,12 +132,15 @@ test('with Uint16Array cpu', () => {
 function unsignedPrecisionTexturesWithUint8Array(mode) {
   const original = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.x];
-  }, {
-    output: [9],
-    precision: 'unsigned'
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.x];
+    },
+    {
+      output: [9],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
   assert.deepEqual(Array.from(result), Array.from(original));
@@ -162,12 +174,15 @@ test('with Uint8Array cpu', () => {
 function unsignedPrecisionTexturesWithUint8ClampedArray(mode) {
   const original = new Uint8ClampedArray([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.x];
-  }, {
-    output: [9],
-    precision: 'unsigned'
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.x];
+    },
+    {
+      output: [9],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
   assert.deepEqual(Array.from(result), Array.from(original));
@@ -204,15 +219,21 @@ function unsignedPrecisionTexturesWithArray2D(mode) {
     [10, 11, 12, 13, 14, 15, 16, 18, 19],
   ];
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.y][this.thread.x];
-  }, {
-    output: [9, 2],
-    precision: 'unsigned'
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.y][this.thread.x];
+    },
+    {
+      output: [9, 2],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
-  assert.deepEqual(result.map(array => Array.from(array)), original.map(array => Array.from(array)));
+  assert.deepEqual(
+    result.map(array => Array.from(array)),
+    original.map(array => Array.from(array))
+  );
   gpu.destroy();
 }
 
@@ -241,20 +262,23 @@ test('with Array2D cpu', () => {
 });
 
 function unsignedPrecisionTexturesWithFloat32Array2D(mode) {
-  const original = [
-    new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    new Float32Array([10, 11, 12, 13, 14, 15, 16, 18, 19]),
-  ];
+  const original = [new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]), new Float32Array([10, 11, 12, 13, 14, 15, 16, 18, 19])];
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.y][this.thread.x];
-  }, {
-    output: [9, 2],
-    precision: 'unsigned'
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.y][this.thread.x];
+    },
+    {
+      output: [9, 2],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
-  assert.deepEqual(result.map(array => Array.from(array)), original.map(array => Array.from(array)));
+  assert.deepEqual(
+    result.map(array => Array.from(array)),
+    original.map(array => Array.from(array))
+  );
   gpu.destroy();
 }
 
@@ -283,20 +307,23 @@ test('with Float32Array2D cpu', () => {
 });
 
 function unsignedPrecisionTexturesWithUint16Array2D(mode) {
-  const original = [
-    new Uint16Array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    new Uint16Array([10, 11, 12, 13, 14, 15, 16, 18, 19]),
-  ];
+  const original = [new Uint16Array([1, 2, 3, 4, 5, 6, 7, 8, 9]), new Uint16Array([10, 11, 12, 13, 14, 15, 16, 18, 19])];
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.y][this.thread.x];
-  }, {
-    output: [9, 2],
-    precision: 'unsigned'
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.y][this.thread.x];
+    },
+    {
+      output: [9, 2],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
-  assert.deepEqual(result.map(array => Array.from(array)), original.map(array => Array.from(array)));
+  assert.deepEqual(
+    result.map(array => Array.from(array)),
+    original.map(array => Array.from(array))
+  );
   gpu.destroy();
 }
 
@@ -325,20 +352,23 @@ test('with Uint16Array2D cpu', () => {
 });
 
 function unsignedPrecisionTexturesWithUint8Array2D(mode) {
-  const original = [
-    new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    new Uint8Array([10, 11, 12, 13, 14, 15, 16, 18, 19]),
-  ];
+  const original = [new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]), new Uint8Array([10, 11, 12, 13, 14, 15, 16, 18, 19])];
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.y][this.thread.x];
-  }, {
-    output: [9, 2],
-    precision: 'unsigned'
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.y][this.thread.x];
+    },
+    {
+      output: [9, 2],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
-  assert.deepEqual(result.map(array => Array.from(array)), original.map(array => Array.from(array)));
+  assert.deepEqual(
+    result.map(array => Array.from(array)),
+    original.map(array => Array.from(array))
+  );
   gpu.destroy();
 }
 
@@ -367,20 +397,23 @@ test('with Uint8Array2D cpu', () => {
 });
 
 function unsignedPrecisionTexturesWithUint8ClampedArray2D(mode) {
-  const original = [
-    new Uint8ClampedArray([1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    new Uint8ClampedArray([10, 11, 12, 13, 14, 15, 16, 18, 19]),
-  ];
+  const original = [new Uint8ClampedArray([1, 2, 3, 4, 5, 6, 7, 8, 9]), new Uint8ClampedArray([10, 11, 12, 13, 14, 15, 16, 18, 19])];
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.y][this.thread.x];
-  }, {
-    output: [9, 2],
-    precision: 'unsigned'
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.y][this.thread.x];
+    },
+    {
+      output: [9, 2],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
-  assert.deepEqual(result.map(array => Array.from(array)), original.map(array => Array.from(array)));
+  assert.deepEqual(
+    result.map(array => Array.from(array)),
+    original.map(array => Array.from(array))
+  );
   gpu.destroy();
 }
 
@@ -417,18 +450,24 @@ function unsignedPrecisionTexturesWithArray3D(mode) {
     [
       [20, 21, 22, 23, 24, 25, 26, 27, 28],
       [29, 30, 31, 32, 33, 34, 35, 36, 37],
-    ]
+    ],
   ];
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.z][this.thread.y][this.thread.x];
-  }, {
-    output: [9, 2, 2],
-    precision: 'unsigned'
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.z][this.thread.y][this.thread.x];
+    },
+    {
+      output: [9, 2, 2],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
-  assert.deepEqual(result.map(matrix => matrix.map(array => Array.from(array))), original);
+  assert.deepEqual(
+    result.map(matrix => matrix.map(array => Array.from(array))),
+    original
+  );
   gpu.destroy();
 }
 
@@ -458,25 +497,25 @@ test('with Array3D cpu', () => {
 
 function unsignedPrecisionTexturesWithFloat32Array3D(mode) {
   const original = [
-    [
-      new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
-      new Float32Array([10, 11, 12, 13, 14, 15, 16, 18, 19]),
-    ],
-    [
-      new Float32Array([20, 21, 22, 23, 24, 25, 26, 27, 28]),
-      new Float32Array([29, 30, 31, 32, 33, 34, 35, 36, 37]),
-    ]
+    [new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]), new Float32Array([10, 11, 12, 13, 14, 15, 16, 18, 19])],
+    [new Float32Array([20, 21, 22, 23, 24, 25, 26, 27, 28]), new Float32Array([29, 30, 31, 32, 33, 34, 35, 36, 37])],
   ];
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.z][this.thread.y][this.thread.x];
-  }, {
-    output: [9, 2, 2],
-    precision: 'unsigned'
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.z][this.thread.y][this.thread.x];
+    },
+    {
+      output: [9, 2, 2],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
-  assert.deepEqual(result.map(matrix => matrix.map(array => Array.from(array))), original.map(matrix => matrix.map(array => Array.from(array))));
+  assert.deepEqual(
+    result.map(matrix => matrix.map(array => Array.from(array))),
+    original.map(matrix => matrix.map(array => Array.from(array)))
+  );
   gpu.destroy();
 }
 
@@ -506,25 +545,25 @@ test('with Float32Array3D cpu', () => {
 
 function unsignedPrecisionTexturesWithUint16Array3D(mode) {
   const original = [
-    [
-      new Uint16Array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
-      new Uint16Array([10, 11, 12, 13, 14, 15, 16, 18, 19]),
-    ],
-    [
-      new Uint16Array([20, 21, 22, 23, 24, 25, 26, 27, 28]),
-      new Uint16Array([29, 30, 31, 32, 33, 34, 35, 36, 37]),
-    ]
+    [new Uint16Array([1, 2, 3, 4, 5, 6, 7, 8, 9]), new Uint16Array([10, 11, 12, 13, 14, 15, 16, 18, 19])],
+    [new Uint16Array([20, 21, 22, 23, 24, 25, 26, 27, 28]), new Uint16Array([29, 30, 31, 32, 33, 34, 35, 36, 37])],
   ];
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.z][this.thread.y][this.thread.x];
-  }, {
-    output: [9, 2, 2],
-    precision: 'unsigned'
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.z][this.thread.y][this.thread.x];
+    },
+    {
+      output: [9, 2, 2],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
-  assert.deepEqual(result.map(matrix => matrix.map(array => Array.from(array))), original.map(matrix => matrix.map(array => Array.from(array))));
+  assert.deepEqual(
+    result.map(matrix => matrix.map(array => Array.from(array))),
+    original.map(matrix => matrix.map(array => Array.from(array)))
+  );
   gpu.destroy();
 }
 
@@ -554,25 +593,25 @@ test('with Uint16Array3D cpu', () => {
 
 function unsignedPrecisionTexturesWithUint8Array3D(mode) {
   const original = [
-    [
-      new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]),
-      new Uint8Array([10, 11, 12, 13, 14, 15, 16, 18, 19]),
-    ],
-    [
-      new Uint8Array([20, 21, 22, 23, 24, 25, 26, 27, 28]),
-      new Uint8Array([29, 30, 31, 32, 33, 34, 35, 36, 37]),
-    ]
+    [new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]), new Uint8Array([10, 11, 12, 13, 14, 15, 16, 18, 19])],
+    [new Uint8Array([20, 21, 22, 23, 24, 25, 26, 27, 28]), new Uint8Array([29, 30, 31, 32, 33, 34, 35, 36, 37])],
   ];
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.z][this.thread.y][this.thread.x];
-  }, {
-    output: [9, 2, 2],
-    precision: 'unsigned'
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.z][this.thread.y][this.thread.x];
+    },
+    {
+      output: [9, 2, 2],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
-  assert.deepEqual(result.map(matrix => matrix.map(array => Array.from(array))), original.map(matrix => matrix.map(array => Array.from(array))));
+  assert.deepEqual(
+    result.map(matrix => matrix.map(array => Array.from(array))),
+    original.map(matrix => matrix.map(array => Array.from(array)))
+  );
   gpu.destroy();
 }
 
@@ -602,25 +641,25 @@ test('with Uint8Array3D cpu', () => {
 
 function unsignedPrecisionTexturesWithUint8ClampedArray3D(mode) {
   const original = [
-    [
-      new Uint8ClampedArray([1, 2, 3, 4, 5, 6, 7, 8, 9]),
-      new Uint8ClampedArray([10, 11, 12, 13, 14, 15, 16, 18, 19]),
-    ],
-    [
-      new Uint8ClampedArray([20, 21, 22, 23, 24, 25, 26, 27, 28]),
-      new Uint8ClampedArray([29, 30, 31, 32, 33, 34, 35, 36, 37]),
-    ]
+    [new Uint8ClampedArray([1, 2, 3, 4, 5, 6, 7, 8, 9]), new Uint8ClampedArray([10, 11, 12, 13, 14, 15, 16, 18, 19])],
+    [new Uint8ClampedArray([20, 21, 22, 23, 24, 25, 26, 27, 28]), new Uint8ClampedArray([29, 30, 31, 32, 33, 34, 35, 36, 37])],
   ];
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(packed) {
-    return packed[this.thread.z][this.thread.y][this.thread.x];
-  }, {
-    output: [9, 2, 2],
-    precision: 'unsigned'
-  });
+  const kernel = gpu.createKernel(
+    function (packed) {
+      return packed[this.thread.z][this.thread.y][this.thread.x];
+    },
+    {
+      output: [9, 2, 2],
+      precision: 'unsigned',
+    }
+  );
 
   const result = kernel(original);
-  assert.deepEqual(result.map(matrix => matrix.map(array => Array.from(array))), original.map(matrix => matrix.map(array => Array.from(array))));
+  assert.deepEqual(
+    result.map(matrix => matrix.map(array => Array.from(array))),
+    original.map(matrix => matrix.map(array => Array.from(array)))
+  );
   gpu.destroy();
 }
 
@@ -650,14 +689,17 @@ test('with Uint8ClampedArray3D cpu', () => {
 
 function testImmutableDoesNotCollideWithKernelTexture(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v) {
-    return v[this.thread.x] + 1;
-  }, {
-    output: [1],
-    precision: 'unsigned',
-    pipeline: true,
-    immutable: true,
-  });
+  const kernel = gpu.createKernel(
+    function (v) {
+      return v[this.thread.x] + 1;
+    },
+    {
+      output: [1],
+      precision: 'unsigned',
+      pipeline: true,
+      immutable: true,
+    }
+  );
   const v = [1];
   const result1 = kernel(v);
   assert.deepEqual(result1.toArray(), new Float32Array([2]));

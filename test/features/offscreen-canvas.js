@@ -1,11 +1,12 @@
 if (typeof importScripts !== 'undefined') {
   // inside Worker
   importScripts('../../dist/gpu-browser.js');
-  onmessage = function(e) {
+  onmessage = function (e) {
     const gpu = new GPU({ mode: e.data });
     const a = [1, 2, 3];
     const b = [3, 2, 1];
-    const kernel = gpu.createKernel(function(a, b) {
+    const kernel = gpu
+      .createKernel(function (a, b) {
         return a[this.thread.x] - b[this.thread.x];
       })
       .setOutput([3]);
@@ -18,7 +19,7 @@ if (typeof importScripts !== 'undefined') {
 
   function testOffscreenCanvas(mode, done) {
     const worker = new Worker('features/offscreen-canvas.js');
-    worker.onmessage = function(e) {
+    worker.onmessage = function (e) {
       const mode = e.data.mode;
       const result = e.data.result;
       assert.equal(mode, 'gpu', 'GPU mode used in Worker');

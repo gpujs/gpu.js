@@ -5,18 +5,21 @@ describe('feature: to-string single precision arguments Array2D(2)');
 
 function testArgument(mode, context, canvas) {
   const gpu = new GPU({ mode });
-  const originalKernel = gpu.createKernel(function(a) {
-    const array2 = a[this.thread.y][this.thread.x];
-    return [array2[0] + 1, array2[1] + 1];
-  }, {
-    canvas,
-    context,
-    output: [2,2],
-    precision: 'single',
-    argumentTypes: {
-      a: 'Array2D(2)'
+  const originalKernel = gpu.createKernel(
+    function (a) {
+      const array2 = a[this.thread.y][this.thread.x];
+      return [array2[0] + 1, array2[1] + 1];
+    },
+    {
+      canvas,
+      context,
+      output: [2, 2],
+      precision: 'single',
+      argumentTypes: {
+        a: 'Array2D(2)',
+      },
     }
-  });
+  );
 
   const a = [
     [
@@ -26,22 +29,16 @@ function testArgument(mode, context, canvas) {
     [
       [5, 6],
       [7, 8],
-    ]
+    ],
   ];
   const expected = [
-    [
-      new Float32Array([2, 3]),
-      new Float32Array([4, 5]),
-    ],
-    [
-      new Float32Array([6, 7]),
-      new Float32Array([8, 9]),
-    ]
+    [new Float32Array([2, 3]), new Float32Array([4, 5])],
+    [new Float32Array([6, 7]), new Float32Array([8, 9])],
   ];
   const originalResult = originalKernel(a);
   assert.deepEqual(originalResult, expected);
   const kernelString = originalKernel.toString(a);
-  const newKernel = new Function('return ' + kernelString)()({ context })
+  const newKernel = new Function('return ' + kernelString)()({ context });
   const newResult = newKernel(a);
   assert.deepEqual(newResult, expected);
 
@@ -53,17 +50,11 @@ function testArgument(mode, context, canvas) {
     [
       [1, 1],
       [1, 1],
-    ]
+    ],
   ];
   const expected2 = [
-    [
-      new Float32Array([2, 2]),
-      new Float32Array([2, 2]),
-    ],
-    [
-      new Float32Array([2, 2]),
-      new Float32Array([2, 2]),
-    ]
+    [new Float32Array([2, 2]), new Float32Array([2, 2])],
+    [new Float32Array([2, 2]), new Float32Array([2, 2])],
   ];
   const newResult2 = newKernel(b);
   assert.deepEqual(newResult2, expected2);

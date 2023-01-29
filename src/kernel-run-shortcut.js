@@ -6,9 +6,9 @@ import { utils } from './utils';
  * @returns {function()}
  */
 export function kernelRunShortcut(kernel) {
-  let run = function() {
+  let run = function () {
     kernel.build.apply(kernel, arguments);
-    run = function() {
+    run = function () {
       let result = kernel.run.apply(kernel, arguments);
       if (kernel.switchingKernels) {
         const reasons = kernel.resetSwitchingKernels();
@@ -26,14 +26,14 @@ export function kernelRunShortcut(kernel) {
     };
     return run.apply(kernel, arguments);
   };
-  const shortcut = function() {
+  const shortcut = function () {
     return run.apply(kernel, arguments);
   };
   /**
    * Run kernel in async mode
    * @returns {Promise<KernelOutput>}
    */
-  shortcut.exec = function() {
+  shortcut.exec = function () {
     return new Promise((accept, reject) => {
       try {
         accept(run.apply(this, arguments));
@@ -42,7 +42,7 @@ export function kernelRunShortcut(kernel) {
       }
     });
   };
-  shortcut.replaceKernel = function(replacementKernel) {
+  shortcut.replaceKernel = function (replacementKernel) {
     kernel = replacementKernel;
     bindKernelToShortcut(kernel, shortcut);
   };
@@ -62,18 +62,18 @@ function bindKernelToShortcut(kernel, shortcut) {
     if (property[0] === '_' && property[1] === '_') continue;
     if (typeof kernel[property] === 'function') {
       if (property.substring(0, 3) === 'add' || property.substring(0, 3) === 'set') {
-        shortcut[property] = function() {
+        shortcut[property] = function () {
           shortcut.kernel[property].apply(shortcut.kernel, arguments);
           return shortcut;
         };
       } else {
-        shortcut[property] = function() {
+        shortcut[property] = function () {
           return shortcut.kernel[property].apply(shortcut.kernel, arguments);
         };
       }
     } else {
       shortcut.__defineGetter__(property, () => shortcut.kernel[property]);
-      shortcut.__defineSetter__(property, (value) => {
+      shortcut.__defineSetter__(property, value => {
         shortcut.kernel[property] = value;
       });
     }

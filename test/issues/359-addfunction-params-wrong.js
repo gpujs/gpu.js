@@ -17,11 +17,14 @@ function testAddFunctionKernel(mode) {
   gpu.addFunction(clcC);
   gpu.addFunction(intermediate);
 
-  const nestFunctionsKernel = gpu.createKernel(function() {
-    return intermediate(-1);
-  }, {
-    output: [1]
-  });
+  const nestFunctionsKernel = gpu.createKernel(
+    function () {
+      return intermediate(-1);
+    },
+    {
+      output: [1],
+    }
+  );
 
   assert.equal(nestFunctionsKernel()[0], 1);
 
@@ -29,13 +32,13 @@ function testAddFunctionKernel(mode) {
 }
 
 (GPU.isWebGLSupported ? test : skip)('Issue #359 - addFunction calls addFunction issue webgl', () => {
-  testAddFunctionKernel('webgl')
+  testAddFunctionKernel('webgl');
 });
 
 (GPU.isWebGL2Supported ? test : skip)('Issue #359 - addFunction calls addFunction issue webgl2', () => {
-  testAddFunctionKernel('webgl2')
+  testAddFunctionKernel('webgl2');
 });
 
 (GPU.isHeadlessGLSupported ? test : skip)('Issue #359 - addFunction calls addFunction issue headlessgl', () => {
-  testAddFunctionKernel('headlessgl')
+  testAddFunctionKernel('headlessgl');
 });

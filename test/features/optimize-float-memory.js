@@ -5,11 +5,16 @@ describe('feature: optimizeFloatMemory');
 
 function whenEnabledCallsCorrectRenderFunction(mode) {
   const gpu = new GPU({ mode });
-  const fn = gpu.createKernel(function() { return 1 }, {
-    output: [1],
-    precision: 'single',
-    optimizeFloatMemory: true,
-  });
+  const fn = gpu.createKernel(
+    function () {
+      return 1;
+    },
+    {
+      output: [1],
+      precision: 'single',
+      optimizeFloatMemory: true,
+    }
+  );
   const result = fn();
   assert.equal(fn.TextureConstructor.name, 'GLTextureMemoryOptimized');
   assert.equal(fn.formatValues, utils.erectMemoryOptimizedFloat);
@@ -29,21 +34,28 @@ function whenEnabledCallsCorrectRenderFunction(mode) {
   whenEnabledCallsCorrectRenderFunction('headlessgl');
 });
 
-
 function whenEnabledCallsCorrectRenderFunction2D(mode) {
   const gpu = new GPU({ mode });
-  const fn = gpu.createKernel(function() { return 1 }, {
-    output: [2, 2],
-    precision: 'single',
-    optimizeFloatMemory: true,
-  });
+  const fn = gpu.createKernel(
+    function () {
+      return 1;
+    },
+    {
+      output: [2, 2],
+      precision: 'single',
+      optimizeFloatMemory: true,
+    }
+  );
   const result = fn();
   assert.equal(fn.TextureConstructor.name, 'GLTextureMemoryOptimized2D');
   assert.equal(fn.formatValues, utils.erectMemoryOptimized2DFloat);
-  assert.deepEqual(result.map(row => Array.from(row)), [
-    [1, 1],
-    [1, 1]
-  ]);
+  assert.deepEqual(
+    result.map(row => Array.from(row)),
+    [
+      [1, 1],
+      [1, 1],
+    ]
+  );
 }
 
 (GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('when enabled calls correct render function 2d gpu (GPU ONLY)', () => {
@@ -61,24 +73,32 @@ function whenEnabledCallsCorrectRenderFunction2D(mode) {
 
 function whenEnabledCallsCorrectRenderFunction3D(mode) {
   const gpu = new GPU({ mode });
-  const fn = gpu.createKernel(function() { return 1 }, {
-    output: [2, 2, 2],
-    precision: 'single',
-    optimizeFloatMemory: true,
-  });
+  const fn = gpu.createKernel(
+    function () {
+      return 1;
+    },
+    {
+      output: [2, 2, 2],
+      precision: 'single',
+      optimizeFloatMemory: true,
+    }
+  );
   const result = fn();
   assert.equal(fn.TextureConstructor.name, 'GLTextureMemoryOptimized3D');
   assert.equal(fn.formatValues, utils.erectMemoryOptimized3DFloat);
-  assert.deepEqual(result.map(matrix => matrix.map(row => Array.from(row))), [
+  assert.deepEqual(
+    result.map(matrix => matrix.map(row => Array.from(row))),
     [
-      [1, 1],
-      [1, 1]
-    ],
-    [
-      [1, 1],
-      [1, 1]
+      [
+        [1, 1],
+        [1, 1],
+      ],
+      [
+        [1, 1],
+        [1, 1],
+      ],
     ]
-  ]);
+  );
 }
 
 (GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('when enabled calls correct render function 3d gpu (GPU ONLY)', () => {
@@ -97,13 +117,16 @@ function whenEnabledCallsCorrectRenderFunction3D(mode) {
 function singlePrecision(mode) {
   const gpu = new GPU({ mode });
   const array = [1, 2, 3, 4, 5];
-  const kernel = gpu.createKernel(function(array) {
-    return array[this.thread.x];
-  }, {
-    output: [5],
-    optimizeFloatMemory: true,
-    precision: 'single',
-  });
+  const kernel = gpu.createKernel(
+    function (array) {
+      return array[this.thread.x];
+    },
+    {
+      output: [5],
+      optimizeFloatMemory: true,
+      precision: 'single',
+    }
+  );
   const result = kernel(array);
   assert.deepEqual(Array.from(result), array);
   gpu.destroy();
@@ -133,7 +156,6 @@ test('single precision cpu', () => {
   singlePrecision('cpu');
 });
 
-
 function float2DOutput(mode) {
   const gpu = new GPU({ mode });
   const matrix = [
@@ -141,15 +163,21 @@ function float2DOutput(mode) {
     [6, 7, 8, 9, 10],
     [11, 12, 13, 14, 15],
   ];
-  const kernel = gpu.createKernel(function(matrix) {
-    return matrix[this.thread.y][this.thread.x];
-  }, {
-    output: [5, 3],
-    optimizeFloatMemory: true,
-    precision: 'single',
-  });
+  const kernel = gpu.createKernel(
+    function (matrix) {
+      return matrix[this.thread.y][this.thread.x];
+    },
+    {
+      output: [5, 3],
+      optimizeFloatMemory: true,
+      precision: 'single',
+    }
+  );
   const result = kernel(matrix);
-  assert.deepEqual(result.map(row => Array.from(row)), matrix);
+  assert.deepEqual(
+    result.map(row => Array.from(row)),
+    matrix
+  );
   gpu.destroy();
 }
 
@@ -177,7 +205,6 @@ test('float 2d output cpu', () => {
   float2DOutput('cpu');
 });
 
-
 function float3DOutput(mode) {
   const gpu = new GPU({ mode });
   const cube = [
@@ -190,17 +217,23 @@ function float3DOutput(mode) {
       [16, 17, 18, 19, 20],
       [21, 22, 23, 24, 25],
       [26, 27, 28, 29, 30],
-    ]
+    ],
   ];
-  const kernel = gpu.createKernel(function(cube) {
-    return cube[this.thread.z][this.thread.y][this.thread.x];
-  }, {
-    output: [5, 3, 2],
-    optimizeFloatMemory: true,
-    precision: 'single',
-  });
+  const kernel = gpu.createKernel(
+    function (cube) {
+      return cube[this.thread.z][this.thread.y][this.thread.x];
+    },
+    {
+      output: [5, 3, 2],
+      optimizeFloatMemory: true,
+      precision: 'single',
+    }
+  );
   const result = kernel(cube);
-  assert.deepEqual(result.map(matrix => matrix.map(row => Array.from(row))), cube);
+  assert.deepEqual(
+    result.map(matrix => matrix.map(row => Array.from(row))),
+    cube
+  );
   gpu.destroy();
 }
 
@@ -231,14 +264,17 @@ test('float 3d output cpu', () => {
 function floatPipelineOutput(mode) {
   const gpu = new GPU({ mode });
   const array = [1, 2, 3, 4, 5];
-  const kernel = gpu.createKernel(function(array) {
-    return array[this.thread.x];
-  }, {
-    output: [5],
-    optimizeFloatMemory: true,
-    precision: 'single',
-    pipeline: true,
-  });
+  const kernel = gpu.createKernel(
+    function (array) {
+      return array[this.thread.x];
+    },
+    {
+      output: [5],
+      optimizeFloatMemory: true,
+      precision: 'single',
+      pipeline: true,
+    }
+  );
   const result = kernel(array).toArray();
   assert.deepEqual(Array.from(result), array);
   gpu.destroy();
@@ -260,7 +296,6 @@ function floatPipelineOutput(mode) {
   floatPipelineOutput('headlessgl');
 });
 
-
 function floatPipeline2DOutput(mode) {
   const gpu = new GPU({ mode });
   const matrix = [
@@ -268,20 +303,25 @@ function floatPipeline2DOutput(mode) {
     [6, 7, 8, 9, 10],
     [11, 12, 13, 14, 15],
   ];
-  const kernel = gpu.createKernel(function(matrix) {
-    return matrix[this.thread.y][this.thread.x];
-  }, {
-    output: [5, 3],
-    optimizeFloatMemory: true,
-    precision: 'single',
-    pipeline: true,
-  });
+  const kernel = gpu.createKernel(
+    function (matrix) {
+      return matrix[this.thread.y][this.thread.x];
+    },
+    {
+      output: [5, 3],
+      optimizeFloatMemory: true,
+      precision: 'single',
+      pipeline: true,
+    }
+  );
   const texture = kernel(matrix);
   const result = texture.toArray();
-  assert.deepEqual(result.map(row => Array.from(row)), matrix);
+  assert.deepEqual(
+    result.map(row => Array.from(row)),
+    matrix
+  );
   gpu.destroy();
 }
-
 
 (GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('float pipeline 2d output gpu (GPU Only)', () => {
   floatPipeline2DOutput('gpu');
@@ -299,7 +339,6 @@ function floatPipeline2DOutput(mode) {
   floatPipeline2DOutput('headlessgl');
 });
 
-
 function floatPipeline3DOutput(mode) {
   const gpu = new GPU({ mode });
   const cube = [
@@ -312,21 +351,26 @@ function floatPipeline3DOutput(mode) {
       [16, 17, 18, 19, 20],
       [21, 22, 23, 24, 25],
       [26, 27, 28, 29, 30],
-    ]
+    ],
   ];
-  const kernel = gpu.createKernel(function(cube) {
-    return cube[this.thread.z][this.thread.y][this.thread.x];
-  }, {
-    output: [5, 3, 2],
-    optimizeFloatMemory: true,
-    precision: 'single',
-    pipeline: true,
-  });
+  const kernel = gpu.createKernel(
+    function (cube) {
+      return cube[this.thread.z][this.thread.y][this.thread.x];
+    },
+    {
+      output: [5, 3, 2],
+      optimizeFloatMemory: true,
+      precision: 'single',
+      pipeline: true,
+    }
+  );
   const result = kernel(cube).toArray();
-  assert.deepEqual(result.map(matrix => matrix.map(row => Array.from(row))), cube);
+  assert.deepEqual(
+    result.map(matrix => matrix.map(row => Array.from(row))),
+    cube
+  );
   gpu.destroy();
 }
-
 
 (GPU.isSinglePrecisionSupported && GPU.isGPUSupported ? test : skip)('float pipeline 3d output gpu (GPU only)', () => {
   floatPipeline3DOutput('gpu');

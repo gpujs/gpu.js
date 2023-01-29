@@ -5,11 +5,14 @@ describe('issue #259');
 
 function buildAtan2KernelResult(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return Math.atan2(1, 2);
-  }, {
-    output: [1],
-  });
+  const kernel = gpu.createKernel(
+    function () {
+      return Math.atan2(1, 2);
+    },
+    {
+      output: [1],
+    }
+  );
   assert.equal(kernel()[0].toFixed(7), 0.4636476);
   gpu.destroy();
 }

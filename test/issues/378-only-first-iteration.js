@@ -6,7 +6,8 @@ describe('issue #378');
 function testOnlyFirstIterationSafari(mode) {
   const gpu = new GPU({ mode: mode });
   const conflictingName = 0.4;
-  const kernel = gpu.createKernel(function(iter) {
+  const kernel = gpu
+    .createKernel(function (iter) {
       let sum = 0;
       for (let i = 2; i < iter; i++) {
         sum = sum + i;
@@ -15,7 +16,7 @@ function testOnlyFirstIterationSafari(mode) {
     })
     .setOutput([10])
     .setConstants({
-      conflictingName: conflictingName
+      conflictingName: conflictingName,
     });
 
   const result = kernel(5);

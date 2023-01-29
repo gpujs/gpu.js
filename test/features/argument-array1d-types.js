@@ -5,19 +5,17 @@ describe('argument array 1 types');
 
 function testSinglePrecisionArray1D2(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.x];
-  }, {
-    output: [4],
-    argumentTypes: { value: 'Array1D(2)' },
-    precision: 'single',
-  });
-  const value = [
-    new Float32Array([1, 2]),
-    new Float32Array([3, 4]),
-    new Float32Array([5, 6]),
-    new Float32Array([7, 8]),
-  ];
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value[this.thread.x];
+    },
+    {
+      output: [4],
+      argumentTypes: { value: 'Array1D(2)' },
+      precision: 'single',
+    }
+  );
+  const value = [new Float32Array([1, 2]), new Float32Array([3, 4]), new Float32Array([5, 6]), new Float32Array([7, 8])];
   const result = kernel(value);
   assert.deepEqual(result, value);
   gpu.destroy();
@@ -49,19 +47,17 @@ test('single precision Array1D(2) cpu', () => {
 
 function testUnsignedPrecisionArray1D2(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.x];
-  }, {
-    output: [4],
-    argumentTypes: { value: 'Array1D(2)' },
-    precision: 'unsigned',
-  });
-  const value = [
-    new Float32Array([1, 2]),
-    new Float32Array([3, 4]),
-    new Float32Array([5, 6]),
-    new Float32Array([7, 8]),
-  ];
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value[this.thread.x];
+    },
+    {
+      output: [4],
+      argumentTypes: { value: 'Array1D(2)' },
+      precision: 'unsigned',
+    }
+  );
+  const value = [new Float32Array([1, 2]), new Float32Array([3, 4]), new Float32Array([5, 6]), new Float32Array([7, 8])];
   const result = kernel(value);
   assert.deepEqual(result, value);
   gpu.destroy();
@@ -93,19 +89,17 @@ test('fallback unsigned precision Array1D(2) cpu', () => {
 
 function testSinglePrecisionArray1D3(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.x];
-  }, {
-    output: [4],
-    argumentTypes: { value: 'Array1D(3)' },
-    precision: 'single',
-  });
-  const value = [
-    new Float32Array([1, 2, 3]),
-    new Float32Array([4, 5, 6]),
-    new Float32Array([7, 8, 9]),
-    new Float32Array([10, 11, 12]),
-  ];
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value[this.thread.x];
+    },
+    {
+      output: [4],
+      argumentTypes: { value: 'Array1D(3)' },
+      precision: 'single',
+    }
+  );
+  const value = [new Float32Array([1, 2, 3]), new Float32Array([4, 5, 6]), new Float32Array([7, 8, 9]), new Float32Array([10, 11, 12])];
   const result = kernel(value);
   assert.deepEqual(result, value);
   gpu.destroy();
@@ -137,19 +131,17 @@ test('single precision Array1D(3) cpu', () => {
 
 function testUnsignedPrecisionArray1D3(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.x];
-  }, {
-    output: [4],
-    argumentTypes: { value: 'Array1D(3)' },
-    precision: 'unsigned',
-  });
-  const value = [
-    new Float32Array([1, 2, 3]),
-    new Float32Array([4, 5, 6]),
-    new Float32Array([7, 8, 9]),
-    new Float32Array([10, 11, 12]),
-  ];
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value[this.thread.x];
+    },
+    {
+      output: [4],
+      argumentTypes: { value: 'Array1D(3)' },
+      precision: 'unsigned',
+    }
+  );
+  const value = [new Float32Array([1, 2, 3]), new Float32Array([4, 5, 6]), new Float32Array([7, 8, 9]), new Float32Array([10, 11, 12])];
   const result = kernel(value);
   assert.deepEqual(result, value);
   assert.deepEqual(result, value);
@@ -182,19 +174,17 @@ test('fallback unsigned precision Array1D(3) cpu', () => {
 
 function testUnsignedPrecisionArray1D4(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.x];
-  }, {
-    output: [4],
-    argumentTypes: { value: 'Array1D(4)' },
-    precision: 'unsigned',
-  });
-  const value = [
-    new Float32Array([1, 2, 3, 4]),
-    new Float32Array([5, 6, 7, 8]),
-    new Float32Array([9, 10, 11, 12]),
-    new Float32Array([13, 14, 15, 16]),
-  ];
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value[this.thread.x];
+    },
+    {
+      output: [4],
+      argumentTypes: { value: 'Array1D(4)' },
+      precision: 'unsigned',
+    }
+  );
+  const value = [new Float32Array([1, 2, 3, 4]), new Float32Array([5, 6, 7, 8]), new Float32Array([9, 10, 11, 12]), new Float32Array([13, 14, 15, 16])];
   const result = kernel(value);
   assert.deepEqual(result, value);
   assert.deepEqual(result, value);

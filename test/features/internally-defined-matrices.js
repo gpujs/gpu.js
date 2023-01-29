@@ -9,14 +9,17 @@ function testMatrix2(mode) {
   function getMatrix() {
     const matrix = [
       [1, 2],
-      [3, 4]
+      [3, 4],
     ];
     return matrix;
   }
   gpu.addFunction(getMatrix);
-  const kernel = gpu.createKernel(function(y, x) {
-    return getMatrix()[y][x];
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function (y, x) {
+      return getMatrix()[y][x];
+    },
+    { output: [1] }
+  );
 
   assert.equal(kernel(0, 0)[0], 1);
   assert.equal(kernel(0, 1)[0], 2);
@@ -62,9 +65,12 @@ function testMatrix3(mode) {
     return matrix;
   }
   gpu.addFunction(getMatrix);
-  const kernel = gpu.createKernel(function(y, x) {
-    return getMatrix()[y][x];
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function (y, x) {
+      return getMatrix()[y][x];
+    },
+    { output: [1] }
+  );
 
   assert.equal(kernel(0, 0)[0], 1);
   assert.equal(kernel(0, 1)[0], 2);
@@ -116,9 +122,12 @@ function testMatrix4(mode) {
     return matrix;
   }
   gpu.addFunction(getMatrix);
-  const kernel = gpu.createKernel(function(y, x) {
-    return getMatrix()[y][x];
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function (y, x) {
+      return getMatrix()[y][x];
+    },
+    { output: [1] }
+  );
 
   assert.equal(kernel(0, 0)[0], 1);
   assert.equal(kernel(0, 1)[0], 2);

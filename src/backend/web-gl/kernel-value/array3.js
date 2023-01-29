@@ -20,6 +20,6 @@ export class WebGLKernelValueArray3 extends WebGLKernelValue {
 
   updateValue(value) {
     if (this.origin === 'constants') return;
-    this.kernel.setUniform3fv(this.id, this.uploadValue = value);
+    this.kernel.setUniform3fv(this.id, (this.uploadValue = value));
   }
 }

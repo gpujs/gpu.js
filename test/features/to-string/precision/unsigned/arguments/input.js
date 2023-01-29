@@ -5,22 +5,25 @@ describe('feature: to-string unsigned precision arguments Input');
 
 function testArgument(mode, context, canvas) {
   const gpu = new GPU({ mode });
-  const originalKernel = gpu.createKernel(function(a) {
-    let sum = 0;
-    for (let y = 0; y < 2; y++) {
-      for (let x = 0; x < 2; x++) {
-        sum += a[y][x];
+  const originalKernel = gpu.createKernel(
+    function (a) {
+      let sum = 0;
+      for (let y = 0; y < 2; y++) {
+        for (let x = 0; x < 2; x++) {
+          sum += a[y][x];
+        }
       }
+      return sum;
+    },
+    {
+      canvas,
+      context,
+      output: [1],
+      precision: 'unsigned',
     }
-    return sum;
-  }, {
-    canvas,
-    context,
-    output: [1],
-    precision: 'unsigned',
-  });
-  const arg1 = input([1,2,3,4],[2,2]);
-  const arg2 = input([5,6,7,8],[2,2]);
+  );
+  const arg1 = input([1, 2, 3, 4], [2, 2]);
+  const arg2 = input([5, 6, 7, 8], [2, 2]);
   assert.deepEqual(originalKernel(arg1)[0], 10);
   assert.deepEqual(originalKernel(arg2)[0], 26);
   const kernelString = originalKernel.toString(arg1);

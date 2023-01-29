@@ -4,9 +4,12 @@ const { WebGLFunctionNode } = require(process.cwd() + '/src');
 describe('WebGLFunctionNode.getType()');
 
 function run(value, settings) {
-  const node = new WebGLFunctionNode(`function fn(value, value2, value3) {
-    ${ value };
-  }`, Object.assign({ output: [1] }, settings));
+  const node = new WebGLFunctionNode(
+    `function fn(value, value2, value3) {
+    ${value};
+  }`,
+    Object.assign({ output: [1] }, settings)
+  );
 
   const ast = node.getJsAST();
   node.traceFunctionAST(ast);
@@ -32,59 +35,83 @@ test('unknown value from arguments', () => {
 });
 
 test('value Number from arguments', () => {
-  assert.equal(run('value', {
-    argumentNames: ['value'],
-    argumentTypes: ['Fake Type']
-  }), 'Fake Type');
+  assert.equal(
+    run('value', {
+      argumentNames: ['value'],
+      argumentTypes: ['Fake Type'],
+    }),
+    'Fake Type'
+  );
 });
 
 test('value[] Number from arguments', () => {
-  assert.equal(run('value[0]', {
-    argumentNames: ['value'],
-    argumentTypes: ['Array']
-  }), 'Number');
+  assert.equal(
+    run('value[0]', {
+      argumentNames: ['value'],
+      argumentTypes: ['Array'],
+    }),
+    'Number'
+  );
 });
 
 test('value[][] Number from arguments', () => {
-  assert.equal(run('value[0][0]', {
-    argumentNames: ['value'],
-    argumentTypes: ['Array']
-  }), 'Number');
+  assert.equal(
+    run('value[0][0]', {
+      argumentNames: ['value'],
+      argumentTypes: ['Array'],
+    }),
+    'Number'
+  );
 });
 
 test('value[][][] Number from arguments', () => {
-  assert.equal(run('value[0][0][0]', {
-    argumentNames: ['value'],
-    argumentTypes: ['Array']
-  }), 'Number');
+  assert.equal(
+    run('value[0][0][0]', {
+      argumentNames: ['value'],
+      argumentTypes: ['Array'],
+    }),
+    'Number'
+  );
 });
 
 test('this.constants.value Integer', () => {
-  assert.equal(run('this.constants.value', {
-    constants: { value: 1 },
-    constantTypes: { value: 'Integer' }
-  }), 'Integer');
+  assert.equal(
+    run('this.constants.value', {
+      constants: { value: 1 },
+      constantTypes: { value: 'Integer' },
+    }),
+    'Integer'
+  );
 });
 
 test('this.constants.value[] Number', () => {
-  assert.equal(run('this.constants.value[0]', {
-    constants: { value: [1] },
-    constantTypes: { value: 'Array' }
-  }), 'Number');
+  assert.equal(
+    run('this.constants.value[0]', {
+      constants: { value: [1] },
+      constantTypes: { value: 'Array' },
+    }),
+    'Number'
+  );
 });
 
 test('this.constants.value[][] Number', () => {
-  assert.equal(run('this.constants.value[0][0]', {
-    constants: { value: [[1]] },
-    constantTypes: { value: 'Array' }
-  }), 'Number');
+  assert.equal(
+    run('this.constants.value[0][0]', {
+      constants: { value: [[1]] },
+      constantTypes: { value: 'Array' },
+    }),
+    'Number'
+  );
 });
 
 test('this.constants.value[][][] Number', () => {
-  assert.equal(run('this.constants.value[0][0][0]', {
-    constants: { value: [[[1]]] },
-    constantTypes: { value: 'Array' }
-  }), 'Number');
+  assert.equal(
+    run('this.constants.value[0][0][0]', {
+      constants: { value: [[[1]]] },
+      constantTypes: { value: 'Array' },
+    }),
+    'Number'
+  );
 });
 
 test('this.thread.x', () => {
@@ -130,9 +157,12 @@ test('unknown function call', () => {
 });
 
 test('function call', () => {
-  assert.equal(run('value()', {
-    lookupReturnType: (name, ast, node) => name === 'value' ? 'Fake Type' : null,
-  }), 'Fake Type');
+  assert.equal(
+    run('value()', {
+      lookupReturnType: (name, ast, node) => (name === 'value' ? 'Fake Type' : null),
+    }),
+    'Fake Type'
+  );
 });
 
 test('simple unknown expression', () => {
@@ -142,23 +172,32 @@ test('simple unknown expression', () => {
 });
 
 test('simple expression', () => {
-  assert.equal(run('value + otherValue', {
-    argumentNames: ['value'],
-    argumentTypes: ['Number']
-  }), 'Number');
+  assert.equal(
+    run('value + otherValue', {
+      argumentNames: ['value'],
+      argumentTypes: ['Number'],
+    }),
+    'Number'
+  );
 });
 
 test('simple right expression', () => {
-  assert.equal(run('value + value2', {
-    argumentNames: ['value', 'value2'],
-    argumentTypes: ['Number', 'Number']
-  }), 'Number');
+  assert.equal(
+    run('value + value2', {
+      argumentNames: ['value', 'value2'],
+      argumentTypes: ['Number', 'Number'],
+    }),
+    'Number'
+  );
 });
 
 test('function call expression', () => {
-  assert.equal(run('otherFunction() + value', {
-    lookupReturnType: (name, ast, node) => name === 'otherFunction' ? 'Fake Type' : null,
-  }), 'Fake Type');
+  assert.equal(
+    run('otherFunction() + value', {
+      lookupReturnType: (name, ast, node) => (name === 'otherFunction' ? 'Fake Type' : null),
+    }),
+    'Fake Type'
+  );
 });
 
 test('Math.E', () => {
@@ -206,7 +245,12 @@ test('Math.atan(value)', () => {
 });
 
 test('Math.atan2(value, value2)', () => {
-  assert.equal(run('Math.atan2(value, value2)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.atan2(value, value2)', {
+      argumentTypes: ['Number', 'Number', 'Number'],
+    }),
+    'Number'
+  );
 });
 
 test('Math.ceil(value)', () => {
@@ -222,7 +266,12 @@ test('Math.exp(value)', () => {
 });
 
 test('Math.floor(value)', () => {
-  assert.equal(run('Math.floor(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.floor(value)', {
+      argumentTypes: ['Number', 'Number', 'Number'],
+    }),
+    'Number'
+  );
 });
 
 test('Math.log(value)', () => {
@@ -230,15 +279,30 @@ test('Math.log(value)', () => {
 });
 
 test('Math.max(value, value2, value3)', () => {
-  assert.equal(run('Math.max(value, value2, value3)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.max(value, value2, value3)', {
+      argumentTypes: ['Number', 'Number', 'Number'],
+    }),
+    'Number'
+  );
 });
 
 test('Math.min(value, value2, value3)', () => {
-  assert.equal(run('Math.min(value, value2, value3)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.min(value, value2, value3)', {
+      argumentTypes: ['Number', 'Number', 'Number'],
+    }),
+    'Number'
+  );
 });
 
 test('Math.pow(value, value2)', () => {
-  assert.equal(run('Math.pow(value, value2)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.pow(value, value2)', {
+      argumentTypes: ['Number', 'Number', 'Number'],
+    }),
+    'Number'
+  );
 });
 
 test('Math.random()', () => {
@@ -246,7 +310,12 @@ test('Math.random()', () => {
 });
 
 test('Math.round(value)', () => {
-  assert.equal(run('Math.random(value)', { argumentTypes: ['Number', 'Number', 'Number'] }), 'Number');
+  assert.equal(
+    run('Math.random(value)', {
+      argumentTypes: ['Number', 'Number', 'Number'],
+    }),
+    'Number'
+  );
 });
 
 test('Math.sin(value)', () => {

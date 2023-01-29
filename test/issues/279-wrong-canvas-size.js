@@ -9,13 +9,15 @@ const HEIGHT = 400;
 function wrongCanvasSizeOptimized(mode) {
   const gpu = new GPU({ mode });
 
-  const initMatrix = gpu.createKernel(function(value) {
+  const initMatrix = gpu
+    .createKernel(function (value) {
       return value;
     })
     .setOptimizeFloatMemory(true)
     .setOutput([WIDTH, HEIGHT]);
 
-  const render = gpu.createKernel(function(matrix) {
+  const render = gpu
+    .createKernel(function (matrix) {
       const i = matrix[this.thread.y][this.thread.x];
       this.color(i, i, i, 1);
     })
@@ -50,17 +52,18 @@ test('Issue #279 wrong canvas size optimized - gpu', () => {
   wrongCanvasSizeOptimized('headlessgl');
 });
 
-
 function wrongCanvasSizeUnoptimized(mode) {
   const gpu = new GPU({ mode });
 
-  const initMatrix = gpu.createKernel(function(value) {
+  const initMatrix = gpu
+    .createKernel(function (value) {
       return value;
     })
     .setOptimizeFloatMemory(false)
     .setOutput([WIDTH, HEIGHT]);
 
-  const render = gpu.createKernel(function(matrix) {
+  const render = gpu
+    .createKernel(function (matrix) {
       const i = matrix[this.thread.y][this.thread.x];
       this.color(i, i, i, 1);
     })

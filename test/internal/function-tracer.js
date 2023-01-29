@@ -19,12 +19,15 @@ test('works with BlockStatement', () => {
     contexts: [],
     runningContexts: [],
     newContext: FunctionTracer.prototype.newContext,
-    scan: (body) => {
+    scan: body => {
       called = true;
       calledBody = body;
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'BlockStatement', body: mockBody });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'BlockStatement',
+    body: mockBody,
+  });
   assert.ok(called);
   assert.equal(calledBody, mockBody);
   assert.equal(mockInstance.contexts.length, 1);
@@ -36,12 +39,16 @@ test('works with AssignmentExpression', () => {
   let called = false;
   let calledSides = [];
   const mockInstance = {
-    scan: (side) => {
+    scan: side => {
       called = true;
       calledSides.push(side);
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'AssignmentExpression', left: mockLeft, right: mockRight });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'AssignmentExpression',
+    left: mockLeft,
+    right: mockRight,
+  });
   assert.ok(called);
   assert.deepEqual(calledSides, [mockLeft, mockRight]);
 });
@@ -52,12 +59,16 @@ test('works with LogicalExpression', () => {
   let called = false;
   let calledSides = [];
   const mockInstance = {
-    scan: (side) => {
+    scan: side => {
       called = true;
       calledSides.push(side);
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'LogicalExpression', left: mockLeft, right: mockRight });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'LogicalExpression',
+    left: mockLeft,
+    right: mockRight,
+  });
   assert.ok(called);
   assert.deepEqual(calledSides, [mockLeft, mockRight]);
 });
@@ -68,12 +79,16 @@ test('works with BinaryExpression', () => {
   let called = false;
   let calledSides = [];
   const mockInstance = {
-    scan: (side) => {
+    scan: side => {
       called = true;
       calledSides.push(side);
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'BinaryExpression', left: mockLeft, right: mockRight });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'BinaryExpression',
+    left: mockLeft,
+    right: mockRight,
+  });
   assert.ok(called);
   assert.deepEqual(calledSides, [mockLeft, mockRight]);
 });
@@ -83,12 +98,15 @@ test('works with UpdateExpression', () => {
   let called = false;
   let calledBody = null;
   const mockInstance = {
-    scan: (argument) => {
+    scan: argument => {
       called = true;
       calledBody = argument;
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'UpdateExpression', argument: mockArgument });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'UpdateExpression',
+    argument: mockArgument,
+  });
   assert.ok(called);
   assert.equal(calledBody, mockArgument);
 });
@@ -98,12 +116,15 @@ test('works with UnaryExpression', () => {
   let called = false;
   let calledArgument = null;
   const mockInstance = {
-    scan: (argument) => {
+    scan: argument => {
       called = true;
       calledArgument = argument;
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'UpdateExpression', argument: mockArgument });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'UpdateExpression',
+    argument: mockArgument,
+  });
   assert.ok(called);
   assert.equal(calledArgument, mockArgument);
 });
@@ -113,12 +134,15 @@ test('works with VariableDeclaration', () => {
   let called = false;
   let calledDeclarations = null;
   const mockInstance = {
-    scan: (declarations) => {
+    scan: declarations => {
       called = true;
       calledDeclarations = declarations;
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'VariableDeclaration', declarations: mockDeclarations });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'VariableDeclaration',
+    declarations: mockDeclarations,
+  });
   assert.ok(called);
   assert.deepEqual(calledDeclarations, mockDeclarations);
 });
@@ -183,12 +207,15 @@ test('works with FunctionExpression when runningContexts.length = 0', () => {
   const mockInstance = {
     runningContexts: [],
     functions: [],
-    scan: (body) => {
+    scan: body => {
       called = true;
       calledBody = body;
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'FunctionExpression', body: mockBody });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'FunctionExpression',
+    body: mockBody,
+  });
   assert.ok(called);
   assert.equal(calledBody, mockBody);
   assert.equal(mockInstance.functions.length, 0);
@@ -201,12 +228,15 @@ test('works with FunctionDeclaration when runningContexts.length = 0', () => {
   const mockInstance = {
     runningContexts: [],
     functions: [],
-    scan: (body) => {
+    scan: body => {
       called = true;
       calledBody = body;
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'FunctionDeclaration', body: mockBody });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'FunctionDeclaration',
+    body: mockBody,
+  });
   assert.ok(called);
   assert.equal(calledBody, mockBody);
   assert.equal(mockInstance.functions.length, 0);
@@ -219,7 +249,7 @@ test('works with FunctionExpression when runningContexts.length > 0', () => {
     runningContexts: [null],
     scan: () => {
       throw new Error('should not be called');
-    }
+    },
   };
   const mockAst = { type: 'FunctionExpression', body: mockBody };
   FunctionTracer.prototype.scan.call(mockInstance, mockAst);
@@ -234,14 +264,13 @@ test('works with FunctionDeclaration when runningContexts.length > 0', () => {
     runningContexts: [null],
     scan: () => {
       throw new Error('should not be called');
-    }
+    },
   };
   const mockAst = { type: 'FunctionDeclaration', body: mockBody };
   FunctionTracer.prototype.scan.call(mockInstance, mockAst);
   assert.equal(mockInstance.functions.length, 1);
   assert.equal(mockInstance.functions[0], mockAst);
 });
-
 
 test('works with IfStatement', () => {
   const mockTest = {};
@@ -250,10 +279,10 @@ test('works with IfStatement', () => {
   let called = false;
   let calledArgs = [];
   const mockInstance = {
-    scan: (arg) => {
+    scan: arg => {
       called = true;
       calledArgs.push(arg);
-    }
+    },
   };
   FunctionTracer.prototype.scan.call(mockInstance, {
     type: 'IfStatement',
@@ -283,12 +312,16 @@ test('works with DoWhileStatement', () => {
     contexts: [],
     runningContexts: [],
     newContext: FunctionTracer.prototype.newContext,
-    scan: (arg) => {
+    scan: arg => {
       called = true;
       calledArgs.push(arg);
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'DoWhileStatement', body: mockBody, test: mockTest });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'DoWhileStatement',
+    body: mockBody,
+    test: mockTest,
+  });
   assert.ok(called);
   assert.deepEqual(calledArgs, [mockBody, mockTest]);
 });
@@ -302,12 +335,16 @@ test('works with WhileStatement', () => {
     contexts: [],
     runningContexts: [],
     newContext: FunctionTracer.prototype.newContext,
-    scan: (arg) => {
+    scan: arg => {
       called = true;
       calledArgs.push(arg);
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'WhileStatement', body: mockBody, test: mockTest });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'WhileStatement',
+    body: mockBody,
+    test: mockTest,
+  });
   assert.ok(called);
   assert.deepEqual(calledArgs, [mockBody, mockTest]);
 });
@@ -326,11 +363,13 @@ test('works with Identifier', () => {
   FunctionTracer.prototype.scan.call(mockInstance, mockAst);
   assert.ok(mockGetDeclaration.called);
   assert.equal(mockGetDeclaration.args[0][0], 'x');
-  assert.deepEqual(mockInstance.identifiers, [{
-    context: mockInstance.currentContext,
-    ast: mockAst,
-    declaration: 123
-  }]);
+  assert.deepEqual(mockInstance.identifiers, [
+    {
+      context: mockInstance.currentContext,
+      ast: mockAst,
+      declaration: 123,
+    },
+  ]);
   assert.equal(mockIsState.args[0][0], 'trackIdentifiers');
 });
 
@@ -340,10 +379,10 @@ test('works with ReturnStatement', () => {
   let calledArgument = null;
   const mockInstance = {
     returnStatements: [],
-    scan: (argument) => {
+    scan: argument => {
       called = true;
       calledArgument = argument;
-    }
+    },
   };
   const mockAst = { type: 'ReturnStatement', argument: mockArgument };
   FunctionTracer.prototype.scan.call(mockInstance, mockAst);
@@ -351,7 +390,6 @@ test('works with ReturnStatement', () => {
   assert.equal(calledArgument, mockArgument);
   assert.equal(mockInstance.returnStatements[0], mockAst);
 });
-
 
 test('works with MemberExpression', () => {
   const mockBody = {};
@@ -364,7 +402,11 @@ test('works with MemberExpression', () => {
     pushState: mockPushState,
     popState: mockPopState,
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'MemberExpression', object: mockBody, property: mockProperty });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'MemberExpression',
+    object: mockBody,
+    property: mockProperty,
+  });
   assert.ok(mockScan.called);
   assert.equal(mockScan.args[0][0], mockBody);
   assert.equal(mockScan.args[1][0], mockProperty);
@@ -372,18 +414,20 @@ test('works with MemberExpression', () => {
   assert.equal(mockPopState.args[0][0], 'memberExpression');
 });
 
-
 test('works with ExpressionStatement', () => {
   const mockExpression = {};
   let called = false;
   let calledExpression = null;
   const mockInstance = {
-    scan: (body) => {
+    scan: body => {
       called = true;
       calledExpression = body;
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'ExpressionStatement', expression: mockExpression });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'ExpressionStatement',
+    expression: mockExpression,
+  });
   assert.ok(called);
   assert.equal(calledExpression, mockExpression);
 });
@@ -394,12 +438,15 @@ test('works with SequenceExpression', () => {
   let called = false;
   let calledExpression = null;
   const mockInstance = {
-    scan: (body) => {
+    scan: body => {
       called = true;
       calledExpression = body;
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'SequenceExpression', expressions: mockExpressions });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'SequenceExpression',
+    expressions: mockExpressions,
+  });
   assert.ok(called);
   assert.equal(calledExpression, mockExpressions);
 });
@@ -412,19 +459,21 @@ test('works with CallExpression', () => {
   const mockInstance = {
     currentContext: mockCurrentContext,
     functionCalls: [],
-    scan: (_arguments) => {
+    scan: _arguments => {
       called = true;
       calledArguments = _arguments;
-    }
+    },
   };
   const mockAst = { type: 'CallExpression', arguments: mockArguments };
   FunctionTracer.prototype.scan.call(mockInstance, mockAst);
   assert.ok(called);
   assert.equal(calledArguments, mockArguments);
-  assert.deepEqual(mockInstance.functionCalls, [{
-    context: mockCurrentContext,
-    ast: mockAst
-  }]);
+  assert.deepEqual(mockInstance.functionCalls, [
+    {
+      context: mockCurrentContext,
+      ast: mockAst,
+    },
+  ]);
 });
 
 test('works with ArrayExpression', () => {
@@ -432,12 +481,15 @@ test('works with ArrayExpression', () => {
   let called = false;
   let calledElements = null;
   const mockInstance = {
-    scan: (elements) => {
+    scan: elements => {
       called = true;
       calledElements = elements;
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'ArrayExpression', elements: mockElements });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'ArrayExpression',
+    elements: mockElements,
+  });
   assert.ok(called);
   assert.equal(calledElements, mockElements);
 });
@@ -449,12 +501,17 @@ test('works with ConditionalExpression', () => {
   let called = false;
   let calledArgs = [];
   const mockInstance = {
-    scan: (arg) => {
+    scan: arg => {
       called = true;
       calledArgs.push(arg);
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'ConditionalExpression', test: mockTest, alternate: mockAlternate, consequent: mockConsequent });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'ConditionalExpression',
+    test: mockTest,
+    alternate: mockAlternate,
+    consequent: mockConsequent,
+  });
   assert.ok(called);
   assert.deepEqual(calledArgs, [mockTest, mockConsequent, mockConsequent]);
 });
@@ -465,12 +522,16 @@ test('works with SwitchStatement', () => {
   let called = false;
   let calledArgs = [];
   const mockInstance = {
-    scan: (arg) => {
+    scan: arg => {
       called = true;
       calledArgs.push(arg);
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'SwitchStatement', discriminant: mockDiscriminant, cases: mockCases });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'SwitchStatement',
+    discriminant: mockDiscriminant,
+    cases: mockCases,
+  });
   assert.ok(called);
   assert.deepEqual(calledArgs, [mockDiscriminant, mockCases]);
 });
@@ -481,12 +542,16 @@ test('works with SwitchCase', () => {
   let called = false;
   let calledArgs = [];
   const mockInstance = {
-    scan: (arg) => {
+    scan: arg => {
       called = true;
       calledArgs.push(arg);
-    }
+    },
   };
-  FunctionTracer.prototype.scan.call(mockInstance, { type: 'SwitchCase', test: mockTest, consequent: mockConsequent });
+  FunctionTracer.prototype.scan.call(mockInstance, {
+    type: 'SwitchCase',
+    test: mockTest,
+    consequent: mockConsequent,
+  });
   assert.ok(called);
   assert.deepEqual(calledArgs, [mockTest, mockConsequent]);
 });
@@ -496,16 +561,9 @@ test('does nothing with un-scan-ables', () => {
   const mockInstance = {
     scan: () => {
       called = true;
-    }
+    },
   };
-  [
-    'ThisExpression',
-    'Literal',
-    'DebuggerStatement',
-    'EmptyStatement',
-    'BreakStatement',
-    'ContinueStatement'
-  ].forEach(type => {
+  ['ThisExpression', 'Literal', 'DebuggerStatement', 'EmptyStatement', 'BreakStatement', 'ContinueStatement'].forEach(type => {
     FunctionTracer.prototype.scan.call(mockInstance, { type });
   });
   assert.ok(!called);
@@ -520,15 +578,12 @@ test('when called with fake type, throws', () => {
 test('can handle direct arrays', () => {
   const mockBlockBody = {};
   const mockProgramBody = {};
-  const asts = [
-    { type: 'BlockStatement' },
-    { type: 'Program' },
-  ];
+  const asts = [{ type: 'BlockStatement' }, { type: 'Program' }];
   const calledAsts = [];
   const mockInstance = {
-    scan: (ast) => {
+    scan: ast => {
       calledAsts.push(ast);
-    }
+    },
   };
   FunctionTracer.prototype.scan.call(mockInstance, asts);
   assert.deepEqual(calledAsts, asts);

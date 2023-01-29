@@ -5,7 +5,8 @@ describe('internal: tactic');
 
 function speedTest(mode) {
   const gpu = new GPU({ mode });
-  const add = gpu.createKernel(function(a, b) {
+  const add = gpu
+    .createKernel(function (a, b) {
       return a + b;
     })
     .setOutput([1])
@@ -41,7 +42,8 @@ test('speed cpu', () => {
 
 function balancedTest(mode) {
   const gpu = new GPU({ mode });
-  const add = gpu.createKernel(function(a, b) {
+  const add = gpu
+    .createKernel(function (a, b) {
       return a + b;
     })
     .setOutput([1])
@@ -77,7 +79,8 @@ test('balanced cpu', () => {
 
 function precisionTest(mode) {
   const gpu = new GPU({ mode });
-  const add = gpu.createKernel(function(a, b) {
+  const add = gpu
+    .createKernel(function (a, b) {
       return a + b;
     })
     .setOutput([1])

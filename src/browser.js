@@ -22,29 +22,29 @@ import { FunctionTracer } from './backend/function-tracer';
 
 import mathRandom from './plugins/math-random-uniformly-distributed';
 
-GPU.alias = alias
-GPU.utils = utils
-GPU.Input = Input
-GPU.input = input
-GPU.Texture = Texture
-GPU.FunctionBuilder = FunctionBuilder
-GPU.FunctionNode = FunctionNode
-GPU.CPUFunctionNode = CPUFunctionNode
-GPU.CPUKernel = CPUKernel
+GPU.alias = alias;
+GPU.utils = utils;
+GPU.Input = Input;
+GPU.input = input;
+GPU.Texture = Texture;
+GPU.FunctionBuilder = FunctionBuilder;
+GPU.FunctionNode = FunctionNode;
+GPU.CPUFunctionNode = CPUFunctionNode;
+GPU.CPUKernel = CPUKernel;
 
-GPU.WebGLFunctionNode = WebGLFunctionNode
-GPU.WebGLKernel = WebGLKernel
-GPU.webGLKernelValueMaps = webGLKernelValueMaps
+GPU.WebGLFunctionNode = WebGLFunctionNode;
+GPU.WebGLKernel = WebGLKernel;
+GPU.webGLKernelValueMaps = webGLKernelValueMaps;
 
-GPU.WebGL2FunctionNode = WebGL2FunctionNode
-GPU.WebGL2Kernel = WebGL2Kernel
-GPU.webGL2KernelValueMaps = webGL2KernelValueMaps
+GPU.WebGL2FunctionNode = WebGL2FunctionNode;
+GPU.WebGL2Kernel = WebGL2Kernel;
+GPU.webGL2KernelValueMaps = webGL2KernelValueMaps;
 
-GPU.Kernel = Kernel
-GPU.FunctionTracer = FunctionTracer
+GPU.Kernel = Kernel;
+GPU.FunctionTracer = FunctionTracer;
 
 GPU.plugins = {
   mathRandom,
-}
+};
 
-export default GPU
+export default GPU;

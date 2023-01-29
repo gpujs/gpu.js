@@ -11,10 +11,12 @@ function argumentTypesTest(Kernel) {
   const kernel = new Kernel(`function(value) { return value[this.thread.x]; }`, {
     output: [1],
     functionBuilder: {
-      addKernel: function() {},
-      addFunctions: function() {},
-      getPrototypes: function() { return []; },
-      addNativeFunctions: function() {}
+      addKernel: function () {},
+      addFunctions: function () {},
+      getPrototypes: function () {
+        return [];
+      },
+      addNativeFunctions: function () {},
     },
   });
   kernel.build([1]);
@@ -49,9 +51,9 @@ function setUniform1fTest(Kernel) {
     uniform1f: () => {
       if (throws) new Error('This should not get called');
     },
-    getUniformLocation: (name) => {
+    getUniformLocation: name => {
       return name;
-    }
+    },
   };
   const kernel = new Kernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
@@ -88,9 +90,9 @@ function setUniform1iTest(Kernel) {
     uniform1i: () => {
       if (throws) new Error('This should not get called');
     },
-    getUniformLocation: (name) => {
+    getUniformLocation: name => {
       return name;
-    }
+    },
   };
   const kernel = new Kernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
@@ -127,9 +129,9 @@ function setUniform2fTest(Kernel) {
     uniform2f: () => {
       if (throws) new Error('This should not get called');
     },
-    getUniformLocation: (name) => {
+    getUniformLocation: name => {
       return name;
-    }
+    },
   };
   const kernel = new Kernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
@@ -165,9 +167,9 @@ function setUniform2fvTest(Kernel) {
     uniform2fv: () => {
       if (throws) new Error('This should not get called');
     },
-    getUniformLocation: (name) => {
+    getUniformLocation: name => {
       return name;
-    }
+    },
   };
   const kernel = new Kernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
@@ -203,9 +205,9 @@ function setUniform3fvTest(Kernel) {
     uniform3fv: () => {
       if (throws) new Error('This should not get called');
     },
-    getUniformLocation: (name) => {
+    getUniformLocation: name => {
       return name;
-    }
+    },
   };
   const kernel = new Kernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
@@ -241,9 +243,9 @@ function setUniform4ivTest(Kernel) {
     uniform4iv: () => {
       if (throws) new Error('This should not get called');
     },
-    getUniformLocation: (name) => {
+    getUniformLocation: name => {
       return name;
-    }
+    },
   };
   const kernel = new Kernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
@@ -279,9 +281,9 @@ function setUniform4fvTest(Kernel) {
     uniform4fv: () => {
       if (throws) new Error('This should not get called');
     },
-    getUniformLocation: (name) => {
+    getUniformLocation: name => {
       return name;
-    }
+    },
   };
   const kernel = new Kernel('function() {}', { canvas, context, output: [1] });
   let throws = false;
@@ -314,14 +316,16 @@ test('functionToIFunction with function', () => {
     name: 'name',
     source: fn.toString(),
     argumentTypes: [],
-    returnType: null
+    returnType: null,
   });
 });
 
 test('functionToIFunction with function and argumentTypes array', () => {
   const fn = function name(a, b) {};
   const argumentTypes = ['number', 'string'];
-  const result = Kernel.prototype.functionToIGPUFunction(fn, { argumentTypes });
+  const result = Kernel.prototype.functionToIGPUFunction(fn, {
+    argumentTypes,
+  });
   assert.deepEqual(result, {
     name: 'name',
     source: fn.toString(),
@@ -333,7 +337,9 @@ test('functionToIFunction with function and argumentTypes array', () => {
 test('functionToIFunction with function and argumentTypes object', () => {
   const fn = function name(a, b) {};
   const argumentTypes = { a: 'number', b: 'string' };
-  const result = Kernel.prototype.functionToIGPUFunction(fn, { argumentTypes });
+  const result = Kernel.prototype.functionToIGPUFunction(fn, {
+    argumentTypes,
+  });
   assert.deepEqual(result, {
     name: 'name',
     source: fn.toString(),
@@ -344,7 +350,9 @@ test('functionToIFunction with function and argumentTypes object', () => {
 
 test('functionToIGPUFunction with function and returnType', () => {
   const fn = function name(a, b) {};
-  const result = Kernel.prototype.functionToIGPUFunction(fn, { returnType: 'string' });
+  const result = Kernel.prototype.functionToIGPUFunction(fn, {
+    returnType: 'string',
+  });
   assert.deepEqual(result, {
     name: 'name',
     source: fn.toString(),

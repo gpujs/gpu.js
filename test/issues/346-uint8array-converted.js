@@ -14,9 +14,13 @@ for (let i = 0; i < DATA_MAX; i++) {
 
 function buildUintArrayInputKernel(mode, data) {
   const gpu = new GPU({ mode });
-  const largeArrayAddressKernel = gpu.createKernel(function(data) {
-      return data[this.thread.x];
-    }, { precision: 'unsigned' })
+  const largeArrayAddressKernel = gpu
+    .createKernel(
+      function (data) {
+        return data[this.thread.x];
+      },
+      { precision: 'unsigned' }
+    )
     .setOutput([DATA_MAX]);
 
   const result = largeArrayAddressKernel(data);
@@ -28,7 +32,7 @@ function buildUintArrayInputKernel(mode, data) {
       break;
     }
   }
-  assert.ok(same, "not all elements are the same, failed on index:" + i);
+  assert.ok(same, 'not all elements are the same, failed on index:' + i);
   gpu.destroy();
 }
 

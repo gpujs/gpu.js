@@ -10,16 +10,19 @@ test('.updateValue() checks too large height', () => {
     },
     validate: true,
   };
-  const v = new webGLKernelValueMaps.unsigned.dynamic.MemoryOptimizedNumberTexture({ size: [1, 1] }, {
-    kernel: mockKernel,
-    name: 'test',
-    type: 'MemoryOptimizedNumberTexture',
-    origin: 'user',
-    tactic: 'speed',
-    onRequestContextHandle: () => 1,
-    onRequestTexture: () => null,
-    onRequestIndex: () => 1
-  });
+  const v = new webGLKernelValueMaps.unsigned.dynamic.MemoryOptimizedNumberTexture(
+    { size: [1, 1] },
+    {
+      kernel: mockKernel,
+      name: 'test',
+      type: 'MemoryOptimizedNumberTexture',
+      origin: 'user',
+      tactic: 'speed',
+      onRequestContextHandle: () => 1,
+      onRequestTexture: () => null,
+      onRequestIndex: () => 1,
+    }
+  );
 
   assert.throws(() => {
     v.updateValue({ size: [1, 2] });
@@ -34,20 +37,23 @@ test('.updateValue() checks too large width', () => {
     validate: true,
   };
 
-  const v = new webGLKernelValueMaps.unsigned.dynamic.MemoryOptimizedNumberTexture({ size: [1, 1] }, {
-    kernel: mockKernel,
-    name: 'test',
-    type: 'MemoryOptimizedNumberTexture',
-    origin: 'user',
-    tactic: 'speed',
-    onRequestContextHandle: () => 1,
-    onRequestTexture: () => null,
-    onRequestIndex: () => 1
-  });
+  const v = new webGLKernelValueMaps.unsigned.dynamic.MemoryOptimizedNumberTexture(
+    { size: [1, 1] },
+    {
+      kernel: mockKernel,
+      name: 'test',
+      type: 'MemoryOptimizedNumberTexture',
+      origin: 'user',
+      tactic: 'speed',
+      onRequestContextHandle: () => 1,
+      onRequestTexture: () => null,
+      onRequestIndex: () => 1,
+    }
+  );
   assert.throws(() => {
     v.updateValue({
-      size: [2,1]
-    })
+      size: [2, 1],
+    });
   }, new Error('Argument texture width of 2 larger than maximum size of 1 for your GPU'));
 });
 
@@ -68,21 +74,24 @@ test('.updateValue() checks ok height & width', () => {
     pixelStorei: () => {},
     texImage2D: () => {},
   };
-  const v = new webGLKernelValueMaps.unsigned.dynamic.MemoryOptimizedNumberTexture({ size: [2,2], context: mockContext }, {
-    kernel: mockKernel,
-    name: 'test',
-    type: 'MemoryOptimizedNumberTexture',
-    origin: 'user',
-    tactic: 'speed',
-    context: mockContext,
-    onRequestContextHandle: () => 1,
-    onRequestTexture: () => null,
-    onRequestIndex: () => 1
-  });
+  const v = new webGLKernelValueMaps.unsigned.dynamic.MemoryOptimizedNumberTexture(
+    { size: [2, 2], context: mockContext },
+    {
+      kernel: mockKernel,
+      name: 'test',
+      type: 'MemoryOptimizedNumberTexture',
+      origin: 'user',
+      tactic: 'speed',
+      context: mockContext,
+      onRequestContextHandle: () => 1,
+      onRequestTexture: () => null,
+      onRequestIndex: () => 1,
+    }
+  );
   v.updateValue({
-    size: [1,1],
+    size: [1, 1],
     context: mockContext,
-    texture: {}
+    texture: {},
   });
 
   assert.equal(v.constructor.name, 'WebGLKernelValueDynamicMemoryOptimizedNumberTexture');

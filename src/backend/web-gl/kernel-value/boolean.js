@@ -18,6 +18,6 @@ export class WebGLKernelValueBoolean extends WebGLKernelValue {
 
   updateValue(value) {
     if (this.origin === 'constants') return;
-    this.kernel.setUniform1i(this.id, this.uploadValue = value);
+    this.kernel.setUniform1i(this.id, (this.uploadValue = value));
   }
 }

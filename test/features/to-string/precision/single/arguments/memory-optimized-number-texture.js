@@ -5,37 +5,46 @@ describe('feature: to-string single precision arguments MemoryOptimizedNumberTex
 
 function testArgument(mode, context, canvas) {
   const gpu = new GPU({ mode, context, canvas });
-  const texture1 = gpu.createKernel(function() {
-    return this.thread.x;
-  }, {
-    output: [4],
-    optimizeFloatMemory: true,
-    precision: 'single',
-    pipeline: true,
-  })();
-  const texture2 = gpu.createKernel(function() {
-    return 4 - this.thread.x;
-  }, {
-    output: [4],
-    optimizeFloatMemory: true,
-    precision: 'single',
-    pipeline: true,
-  })();
-  const originalKernel = gpu.createKernel(function(a) {
-    return a[this.thread.x];
-  }, {
-    canvas,
-    context,
-    output: [4],
-    precision: 'single'
-  });
-  assert.deepEqual(originalKernel(texture1), new Float32Array([0,1,2,3]));
-  assert.deepEqual(originalKernel(texture2), new Float32Array([4,3,2,1]));
+  const texture1 = gpu.createKernel(
+    function () {
+      return this.thread.x;
+    },
+    {
+      output: [4],
+      optimizeFloatMemory: true,
+      precision: 'single',
+      pipeline: true,
+    }
+  )();
+  const texture2 = gpu.createKernel(
+    function () {
+      return 4 - this.thread.x;
+    },
+    {
+      output: [4],
+      optimizeFloatMemory: true,
+      precision: 'single',
+      pipeline: true,
+    }
+  )();
+  const originalKernel = gpu.createKernel(
+    function (a) {
+      return a[this.thread.x];
+    },
+    {
+      canvas,
+      context,
+      output: [4],
+      precision: 'single',
+    }
+  );
+  assert.deepEqual(originalKernel(texture1), new Float32Array([0, 1, 2, 3]));
+  assert.deepEqual(originalKernel(texture2), new Float32Array([4, 3, 2, 1]));
 
   const kernelString = originalKernel.toString(texture1);
   const newKernel = new Function('return ' + kernelString)()({ context });
-  assert.deepEqual(newKernel(texture1), new Float32Array([0,1,2,3]));
-  assert.deepEqual(newKernel(texture2), new Float32Array([4,3,2,1]));
+  assert.deepEqual(newKernel(texture1), new Float32Array([0, 1, 2, 3]));
+  assert.deepEqual(newKernel(texture2), new Float32Array([4, 3, 2, 1]));
   gpu.destroy();
 }
 

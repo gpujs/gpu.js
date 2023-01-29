@@ -4,17 +4,7 @@
  */
 export class Texture {
   constructor(settings) {
-    const {
-      texture,
-      size,
-      dimensions,
-      output,
-      context,
-      type = 'NumberTexture',
-      kernel,
-      internalFormat,
-      textureFormat
-    } = settings;
+    const { texture, size, dimensions, output, context, type = 'NumberTexture', kernel, internalFormat, textureFormat } = settings;
     if (!output) throw new Error('settings property "output" required.');
     if (!context) throw new Error('settings property "context" required.');
     if (!texture) throw new Error('settings property "texture" required.');

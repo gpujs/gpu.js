@@ -3,10 +3,6 @@ import { WebGLKernelValueDynamicMemoryOptimizedNumberTexture } from '../../web-g
 
 export class WebGL2KernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelValueDynamicMemoryOptimizedNumberTexture {
   getSource() {
-    return utils.linesToString([
-      `uniform sampler2D ${this.id}`,
-      `uniform ivec2 ${this.sizeId}`,
-      `uniform ivec3 ${this.dimensionsId}`,
-    ]);
+    return utils.linesToString([`uniform sampler2D ${this.id}`, `uniform ivec2 ${this.sizeId}`, `uniform ivec3 ${this.dimensionsId}`]);
   }
 }

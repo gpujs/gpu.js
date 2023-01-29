@@ -11,7 +11,7 @@ test('nativeFunctionArguments() parse simple function', () => {
 
   assert.deepEqual(result, {
     argumentNames: ['longName'],
-    argumentTypes: ['Array(2)']
+    argumentTypes: ['Array(2)'],
   });
 });
 
@@ -22,7 +22,7 @@ test('nativeFunctionArguments() parse simple function with argument that has num
 
   assert.deepEqual(result, {
     argumentNames: ['longName123'],
-    argumentTypes: ['Array(2)']
+    argumentTypes: ['Array(2)'],
   });
 });
 
@@ -33,7 +33,7 @@ test('nativeFunctionArguments() parse simple function, multiple arguments', () =
 
   assert.deepEqual(result, {
     argumentNames: ['a', 'b', 'c'],
-    argumentTypes: ['Array(3)', 'Array(3)', 'Number']
+    argumentTypes: ['Array(3)', 'Array(3)', 'Number'],
   });
 });
 
@@ -44,7 +44,7 @@ test('nativeFunctionArguments() parse simple function, multiple arguments with c
 
   assert.deepEqual(result, {
     argumentNames: ['a', 'c', 'e'],
-    argumentTypes: ['Array(3)', 'Array(2)', 'Number']
+    argumentTypes: ['Array(3)', 'Array(2)', 'Number'],
   });
 });
 
@@ -59,7 +59,7 @@ test('nativeFunctionArguments() parse simple function, multiple arguments on mul
 
   assert.deepEqual(result, {
     argumentNames: ['a', 'b', 'c'],
-    argumentTypes: ['Array(4)', 'Array(3)', 'Number']
+    argumentTypes: ['Array(4)', 'Array(3)', 'Number'],
   });
 });
 
@@ -77,7 +77,7 @@ test('nativeFunctionArguments() parse simple function, multiple arguments on mul
 
   assert.deepEqual(result, {
     argumentNames: ['a', 'b', 'c'],
-    argumentTypes: ['Array(2)', 'Array(3)', 'Number']
+    argumentTypes: ['Array(2)', 'Array(3)', 'Number'],
   });
 });
 
@@ -92,7 +92,7 @@ test('nativeFunctionArguments() parse simple function, multiple arguments on mul
 
   assert.deepEqual(result, {
     argumentNames: ['a', 'b', 'c'],
-    argumentTypes: ['Array(2)', 'Array(4)', 'Integer']
+    argumentTypes: ['Array(2)', 'Array(4)', 'Integer'],
   });
 });
 
@@ -105,7 +105,7 @@ test('nativeFunctionArguments() parse simple function that is cut short', () => 
 
   assert.deepEqual(result, {
     argumentNames: ['a', 'b', 'c'],
-    argumentTypes: ['Array(2)', 'Array(3)', 'Number']
+    argumentTypes: ['Array(2)', 'Array(3)', 'Number'],
   });
 });
 
@@ -118,7 +118,12 @@ test('getVariablePrecisionString() when tactic is set to "balanced" returns "med
 });
 
 test('getVariablePrecisionString() when tactic is set to "precision" returns "highp"', () => {
-  assert.equal(GLKernel.prototype.getVariablePrecisionString.call({ tactic: 'precision' }), 'highp');
+  assert.equal(
+    GLKernel.prototype.getVariablePrecisionString.call({
+      tactic: 'precision',
+    }),
+    'highp'
+  );
 });
 
 test('getVariablePrecisionString() when tactic is not set and texSize is within lowFloatPrecision', () => {
@@ -130,8 +135,8 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
         mediumFloatPrecision: { rangeMax: Math.log2(4 * 4) },
         highFloatPrecision: { rangeMax: Math.log2(5 * 5) },
         isSpeedTacticSupported: true,
-      }
-    }
+      },
+    },
   };
   const textureSize = [2, 2];
   assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize), 'lowp');
@@ -146,8 +151,8 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
         mediumFloatPrecision: { rangeMax: Math.log2(4 * 4) },
         highFloatPrecision: { rangeMax: Math.log2(5 * 5) },
         isSpeedTacticSupported: true,
-      }
-    }
+      },
+    },
   };
   const textureSize = [4, 4];
   assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize), 'mediump');
@@ -162,8 +167,8 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
         mediumFloatPrecision: { rangeMax: Math.log2(4 * 4) },
         highFloatPrecision: { rangeMax: Math.log2(5 * 5) },
         isSpeedTacticSupported: true,
-      }
-    }
+      },
+    },
   };
   const textureSize = [5, 5];
   assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize), 'highp');
@@ -178,8 +183,8 @@ test('getVariablePrecisionString() when tactic is not set and texSize is outside
         mediumFloatPrecision: { rangeMax: Math.log2(4 * 4) },
         highFloatPrecision: { rangeMax: Math.log2(5 * 5) },
         isSpeedTacticSupported: true,
-      }
-    }
+      },
+    },
   };
   const textureSize = [6, 6];
   assert.throws(() => GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize));
@@ -194,8 +199,8 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
         mediumIntPrecision: { rangeMax: Math.log2(4 * 4) },
         highIntPrecision: { rangeMax: Math.log2(5 * 5) },
         isSpeedTacticSupported: true,
-      }
-    }
+      },
+    },
   };
   const textureSize = [2, 2];
   assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize, null, true), 'lowp');
@@ -210,8 +215,8 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
         mediumIntPrecision: { rangeMax: Math.log2(4 * 4) },
         highIntPrecision: { rangeMax: Math.log2(5 * 5) },
         isSpeedTacticSupported: true,
-      }
-    }
+      },
+    },
   };
   const textureSize = [4, 4];
   assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize, null, true), 'mediump');
@@ -226,8 +231,8 @@ test('getVariablePrecisionString() when tactic is not set and texSize is within 
         mediumIntPrecision: { rangeMax: Math.log2(4 * 4) },
         highIntPrecision: { rangeMax: Math.log2(5 * 5) },
         isSpeedTacticSupported: true,
-      }
-    }
+      },
+    },
   };
   const textureSize = [5, 5];
   assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize, null, true), 'highp');
@@ -242,8 +247,8 @@ test('getVariablePrecisionString() when tactic is not set and texSize is outside
         mediumIntPrecision: { rangeMax: Math.log2(4 * 4) },
         highIntPrecision: { rangeMax: Math.log2(5 * 5) },
         isSpeedTacticSupported: true,
-      }
-    }
+      },
+    },
   };
   const textureSize = [6, 6];
   assert.throws(() => GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize, null, true));
@@ -255,8 +260,8 @@ test('getVariablePrecisionString() when features.isSpeedTacticSupported is false
     constructor: {
       features: {
         isSpeedTacticSupported: false,
-      }
-    }
+      },
+    },
   };
   const textureSize = [1, 1];
   assert.equal(GLKernel.prototype.getVariablePrecisionString.call(mockInstance, textureSize, null, true), 'highp');
@@ -310,7 +315,7 @@ test('setOutput() throws when not dynamicOutput and already compiled', () => {
     GLKernel.prototype.setOutput.call({
       program: {},
       toKernelOutput: () => {},
-      dynamicOutput: false
+      dynamicOutput: false,
     });
   }, new Error('Resizing a kernel with dynamicOutput: false is not possible'));
 });
@@ -329,13 +334,13 @@ test('setOutput() when does not need to trigger recompile', () => {
   const mockContext = {
     bindFramebuffer: sinon.spy(),
     FRAMEBUFFER: 'FRAMEBUFFER',
-    viewport: sinon.spy()
+    viewport: sinon.spy(),
   };
   const mockTexture = {
     delete: sinon.spy(),
   };
   const mockMappedTexture = {
-    delete: sinon.spy()
+    delete: sinon.spy(),
   };
   const mock_setupOutputTexture = sinon.spy();
   const mock_setupSubOutputTextures = sinon.spy();
@@ -360,9 +365,7 @@ test('setOutput() when does not need to trigger recompile', () => {
       height: 0,
     },
     texture: mockTexture,
-    mappedTextures: [
-      mockMappedTexture
-    ],
+    mappedTextures: [mockMappedTexture],
     _setupOutputTexture: mock_setupOutputTexture,
     _setupSubOutputTextures: mock_setupSubOutputTextures,
   };
@@ -394,11 +397,11 @@ test('setOutput() when needs to trigger recompile', () => {
     texSize: [1, 1],
     toKernelOutput: GLKernel.prototype.toKernelOutput,
     dynamicOutput: true,
-    getVariablePrecisionString: (textureSize) => {
+    getVariablePrecisionString: textureSize => {
       if (textureSize[0] === 1) return 'lowp';
       return 'highp';
     },
-    switchKernels: sinon.spy()
+    switchKernels: sinon.spy(),
   };
   GLKernel.prototype.setOutput.call(mockInstance, [100, 100]);
   assert.ok(mockInstance.switchKernels.callCount, 1);

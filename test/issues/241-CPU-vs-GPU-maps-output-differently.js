@@ -8,17 +8,20 @@ describe('issue #241');
 const input = [
   [0, 1, 2],
   [3, 4, 5],
-  [6, 7, 8]
+  [6, 7, 8],
 ];
 
 function buildIndexTestKernel(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(inp) {
-    return inp[this.thread.y][this.thread.x];
-  }, {
-    output: [3, 3]
-  });
-  const result = kernel(input).map((v) => Array.from(v));
+  const kernel = gpu.createKernel(
+    function (inp) {
+      return inp[this.thread.y][this.thread.x];
+    },
+    {
+      output: [3, 3],
+    }
+  );
+  const result = kernel(input).map(v => Array.from(v));
   assert.deepEqual(result, input);
   gpu.destroy();
 }

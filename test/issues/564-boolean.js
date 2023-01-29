@@ -7,10 +7,11 @@ function testBooleanHandled(fft, mode) {
   const gpu = new GPU({ mode });
   gpu.addNativeFunction('fft', fft, { returnType: 'Array(4)' });
   const kernel = gpu.createKernel(
-    function() {
+    function () {
       let s = true;
       return fft(s);
-    }, {
+    },
+    {
       output: [1],
     }
   );
@@ -43,7 +44,10 @@ test('gpu', () => {
 });
 
 test('cpu', () => {
-  testBooleanHandled(`function fft(horizontal){
+  testBooleanHandled(
+    `function fft(horizontal){
   return [1,1,horizontal?1:0,1];
-}`, 'cpu');
+}`,
+    'cpu'
+  );
 });

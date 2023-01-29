@@ -7,14 +7,17 @@ function imageArgumentTest(mode, done) {
   const gpu = new GPU({ mode });
   const image = document.createElement('img');
   image.src = 'jellyfish-1.jpeg';
-  image.onload = function() {
-    const imageKernel = gpu.createKernel(function(image) {
-      const pixel = image[this.thread.y][this.thread.x];
-      this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
-    }, {
-      graphical: true,
-      output: [image.width, image.height]
-    });
+  image.onload = function () {
+    const imageKernel = gpu.createKernel(
+      function (image) {
+        const pixel = image[this.thread.y][this.thread.x];
+        this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
+      },
+      {
+        graphical: true,
+        output: [image.width, image.height],
+      }
+    );
     imageKernel(image);
     assert.equal(true, true, 'does not throw');
     gpu.destroy();

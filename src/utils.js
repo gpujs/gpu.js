@@ -3,7 +3,7 @@ import { Input } from './input';
 import { Texture } from './texture';
 
 const FUNCTION_NAME = /function ([^(]*)/;
-const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/gm;
 const ARGUMENT_NAMES = /([^\s,]+)/g;
 
 /**
@@ -38,7 +38,7 @@ export const utils = {
    * @returns  {Boolean} TRUE if the object is a JS function
    */
   isFunction(funcObj) {
-    return typeof(funcObj) === 'function';
+    return typeof funcObj === 'function';
   },
 
   /**
@@ -50,9 +50,7 @@ export const utils = {
    */
   isFunctionString(fn) {
     if (typeof fn === 'string') {
-      return (fn
-        .slice(0, 'function'.length)
-        .toLowerCase() === 'function');
+      return fn.slice(0, 'function'.length).toLowerCase() === 'function';
     }
     return false;
   },
@@ -362,7 +360,7 @@ export const utils = {
 
     do {
       props.push.apply(props, Object.getOwnPropertyNames(obj));
-    } while (obj = Object.getPrototypeOf(obj));
+    } while ((obj = Object.getPrototypeOf(obj)));
 
     return props;
   },
@@ -380,14 +378,14 @@ export const utils = {
   },
   warnDeprecated(type, oldName, newName) {
     if (newName) {
-      console.warn(`You are using a deprecated ${ type } "${ oldName }". It has been replaced with "${ newName }". Fixing, but please upgrade as it will soon be removed.`);
+      console.warn(`You are using a deprecated ${type} "${oldName}". It has been replaced with "${newName}". Fixing, but please upgrade as it will soon be removed.`);
     } else {
-      console.warn(`You are using a deprecated ${ type } "${ oldName }". It has been removed. Fixing, but please upgrade as it will soon be removed.`);
+      console.warn(`You are using a deprecated ${type} "${oldName}". It has been removed. Fixing, but please upgrade as it will soon be removed.`);
     }
   },
   flipPixels: (pixels, width, height) => {
     // https://stackoverflow.com/a/41973289/1324039
-    const halfHeight = height / 2 | 0; // the | 0 keeps the result an int
+    const halfHeight = (height / 2) | 0; // the | 0 keeps the result an int
     const bytesPerRow = width * 4;
     // make a temp buffer to hold one row
     const temp = new Uint8ClampedArray(width * 4);
@@ -424,7 +422,7 @@ export const utils = {
     for (let z = 0; z < depth; z++) {
       const yResults = new Array(height);
       for (let y = 0; y < height; y++) {
-        const xStart = (z * height * width) + y * width;
+        const xStart = z * height * width + y * width;
         const xEnd = xStart + width;
         yResults[y] = array.subarray(xStart, xEnd);
       }
@@ -448,7 +446,7 @@ export const utils = {
     for (let z = 0; z < depth; z++) {
       const yResults = new Array(height);
       for (let y = 0; y < height; y++) {
-        const offset = (z * height * width) + (y * width);
+        const offset = z * height * width + y * width;
         yResults[y] = array.subarray(offset, offset + width);
       }
       zResults[z] = yResults;
@@ -524,7 +522,7 @@ export const utils = {
       const yResults = new Array(height);
       for (let y = 0; y < height; y++) {
         const xResults = new Array(width);
-        const offset = (z * xResultsMax * height) + (y * xResultsMax);
+        const offset = z * xResultsMax * height + y * xResultsMax;
         let i = 0;
         for (let x = 0; x < xResultsMax; x += 4) {
           xResults[i++] = array.subarray(x + offset, x + offset + 2);
@@ -565,7 +563,7 @@ export const utils = {
       const yResults = new Array(height);
       for (let y = 0; y < height; y++) {
         const xResults = new Array(width);
-        const offset = (z * xResultsMax * height) + (y * xResultsMax);
+        const offset = z * xResultsMax * height + y * xResultsMax;
         let i = 0;
         for (let x = 0; x < xResultsMax; x += 4) {
           xResults[i++] = array.subarray(x + offset, x + offset + 3);
@@ -606,7 +604,7 @@ export const utils = {
       const yResults = new Array(height);
       for (let y = 0; y < height; y++) {
         const xResults = new Array(width);
-        const offset = (z * xResultsMax * height) + (y * xResultsMax);
+        const offset = z * xResultsMax * height + y * xResultsMax;
         let i = 0;
         for (let x = 0; x < xResultsMax; x += 4) {
           xResults[i++] = array.subarray(x + offset, x + offset + 4);
@@ -646,7 +644,7 @@ export const utils = {
         case 'Program':
           return flatten(ast.body) + (ast.body[0].type === 'VariableDeclaration' ? ';' : '');
         case 'FunctionDeclaration':
-          return `function ${ast.id.name}(${ast.params.map(flatten).join(', ')}) ${ flatten(ast.body) }`;
+          return `function ${ast.id.name}(${ast.params.map(flatten).join(', ')}) ${flatten(ast.body)}`;
         case 'BlockStatement': {
           const result = [];
           indent += 2;
@@ -660,7 +658,8 @@ export const utils = {
           return `{\n${result.join('')}}`;
         }
         case 'VariableDeclaration':
-          const declarations = utils.normalizeDeclarations(ast)
+          const declarations = utils
+            .normalizeDeclarations(ast)
             .map(flatten)
             .filter(r => r !== null);
           if (declarations.length < 1) {
@@ -760,7 +759,7 @@ export const utils = {
             return flatten(ast.key);
           }
       }
-      throw new Error(`unhandled ast.type of ${ ast.type }`);
+      throw new Error(`unhandled ast.type of ${ast.type}`);
     }
     const result = flatten(ast);
     if (functionDependencies.length > 0) {
@@ -777,7 +776,7 @@ export const utils = {
     return result;
   },
 
-  normalizeDeclarations: (ast) => {
+  normalizeDeclarations: ast => {
     if (ast.type !== 'VariableDeclaration') throw new Error('Ast is not of type "VariableDeclaration"');
     const normalizedDeclarations = [];
     for (let declarationIndex = 0; declarationIndex < ast.declarations.length; declarationIndex++) {
@@ -794,7 +793,7 @@ export const utils = {
                   type: 'VariableDeclarator',
                   id: {
                     type: 'Identifier',
-                    name: subProperty.key.name
+                    name: subProperty.key.name,
                   },
                   init: {
                     type: 'MemberExpression',
@@ -803,16 +802,16 @@ export const utils = {
                       object: declaration.init,
                       property: {
                         type: 'Identifier',
-                        name: property.key.name
+                        name: property.key.name,
                       },
-                      computed: false
+                      computed: false,
                     },
                     property: {
                       type: 'Identifier',
-                      name: subProperty.key.name
+                      name: subProperty.key.name,
                     },
-                    computed: false
-                  }
+                    computed: false,
+                  },
                 });
               } else {
                 throw new Error('unexpected state');
@@ -823,17 +822,17 @@ export const utils = {
               type: 'VariableDeclarator',
               id: {
                 type: 'Identifier',
-                name: property.value && property.value.name ? property.value.name : property.key.name
+                name: property.value && property.value.name ? property.value.name : property.key.name,
               },
               init: {
                 type: 'MemberExpression',
                 object: declaration.init,
                 property: {
                   type: 'Identifier',
-                  name: property.key.name
+                  name: property.key.name,
                 },
-                computed: false
-              }
+                computed: false,
+              },
             });
           } else {
             throw new Error('unexpected state');
@@ -848,7 +847,7 @@ export const utils = {
               type: 'VariableDeclarator',
               id: {
                 type: 'Identifier',
-                name: element.name
+                name: element.name,
               },
               init: {
                 type: 'MemberExpression',
@@ -858,10 +857,10 @@ export const utils = {
                   value: elementIndex,
                   raw: elementIndex.toString(),
                   start: element.start,
-                  end: element.end
+                  end: element.end,
                 },
-                computed: true
-              }
+                computed: true,
+              },
             });
           } else {
             throw new Error('unexpected state');
@@ -881,44 +880,51 @@ export const utils = {
    * @return {Array}
    */
   splitHTMLImageToRGB: (gpu, image) => {
-    const rKernel = gpu.createKernel(function(a) {
-      const pixel = a[this.thread.y][this.thread.x];
-      return pixel.r * 255;
-    }, {
-      output: [image.width, image.height],
-      precision: 'unsigned',
-      argumentTypes: { a: 'HTMLImage' },
-    });
-    const gKernel = gpu.createKernel(function(a) {
-      const pixel = a[this.thread.y][this.thread.x];
-      return pixel.g * 255;
-    }, {
-      output: [image.width, image.height],
-      precision: 'unsigned',
-      argumentTypes: { a: 'HTMLImage' },
-    });
-    const bKernel = gpu.createKernel(function(a) {
-      const pixel = a[this.thread.y][this.thread.x];
-      return pixel.b * 255;
-    }, {
-      output: [image.width, image.height],
-      precision: 'unsigned',
-      argumentTypes: { a: 'HTMLImage' },
-    });
-    const aKernel = gpu.createKernel(function(a) {
-      const pixel = a[this.thread.y][this.thread.x];
-      return pixel.a * 255;
-    }, {
-      output: [image.width, image.height],
-      precision: 'unsigned',
-      argumentTypes: { a: 'HTMLImage' },
-    });
-    const result = [
-      rKernel(image),
-      gKernel(image),
-      bKernel(image),
-      aKernel(image),
-    ];
+    const rKernel = gpu.createKernel(
+      function (a) {
+        const pixel = a[this.thread.y][this.thread.x];
+        return pixel.r * 255;
+      },
+      {
+        output: [image.width, image.height],
+        precision: 'unsigned',
+        argumentTypes: { a: 'HTMLImage' },
+      }
+    );
+    const gKernel = gpu.createKernel(
+      function (a) {
+        const pixel = a[this.thread.y][this.thread.x];
+        return pixel.g * 255;
+      },
+      {
+        output: [image.width, image.height],
+        precision: 'unsigned',
+        argumentTypes: { a: 'HTMLImage' },
+      }
+    );
+    const bKernel = gpu.createKernel(
+      function (a) {
+        const pixel = a[this.thread.y][this.thread.x];
+        return pixel.b * 255;
+      },
+      {
+        output: [image.width, image.height],
+        precision: 'unsigned',
+        argumentTypes: { a: 'HTMLImage' },
+      }
+    );
+    const aKernel = gpu.createKernel(
+      function (a) {
+        const pixel = a[this.thread.y][this.thread.x];
+        return pixel.a * 255;
+      },
+      {
+        output: [image.width, image.height],
+        precision: 'unsigned',
+        argumentTypes: { a: 'HTMLImage' },
+      }
+    );
+    const result = [rKernel(image), gKernel(image), bKernel(image), aKernel(image)];
     result.rKernel = rKernel;
     result.gKernel = gKernel;
     result.bKernel = bKernel;
@@ -936,54 +942,61 @@ export const utils = {
    * @return {Object[]}
    */
   splitRGBAToCanvases: (gpu, rgba, width, height) => {
-    const visualKernelR = gpu.createKernel(function(v) {
-      const pixel = v[this.thread.y][this.thread.x];
-      this.color(pixel.r / 255, 0, 0, 255);
-    }, {
-      output: [width, height],
-      graphical: true,
-      argumentTypes: { v: 'Array2D(4)' }
-    });
+    const visualKernelR = gpu.createKernel(
+      function (v) {
+        const pixel = v[this.thread.y][this.thread.x];
+        this.color(pixel.r / 255, 0, 0, 255);
+      },
+      {
+        output: [width, height],
+        graphical: true,
+        argumentTypes: { v: 'Array2D(4)' },
+      }
+    );
     visualKernelR(rgba);
 
-    const visualKernelG = gpu.createKernel(function(v) {
-      const pixel = v[this.thread.y][this.thread.x];
-      this.color(0, pixel.g / 255, 0, 255);
-    }, {
-      output: [width, height],
-      graphical: true,
-      argumentTypes: { v: 'Array2D(4)' }
-    });
+    const visualKernelG = gpu.createKernel(
+      function (v) {
+        const pixel = v[this.thread.y][this.thread.x];
+        this.color(0, pixel.g / 255, 0, 255);
+      },
+      {
+        output: [width, height],
+        graphical: true,
+        argumentTypes: { v: 'Array2D(4)' },
+      }
+    );
     visualKernelG(rgba);
 
-    const visualKernelB = gpu.createKernel(function(v) {
-      const pixel = v[this.thread.y][this.thread.x];
-      this.color(0, 0, pixel.b / 255, 255);
-    }, {
-      output: [width, height],
-      graphical: true,
-      argumentTypes: { v: 'Array2D(4)' }
-    });
+    const visualKernelB = gpu.createKernel(
+      function (v) {
+        const pixel = v[this.thread.y][this.thread.x];
+        this.color(0, 0, pixel.b / 255, 255);
+      },
+      {
+        output: [width, height],
+        graphical: true,
+        argumentTypes: { v: 'Array2D(4)' },
+      }
+    );
     visualKernelB(rgba);
 
-    const visualKernelA = gpu.createKernel(function(v) {
-      const pixel = v[this.thread.y][this.thread.x];
-      this.color(255, 255, 255, pixel.a / 255);
-    }, {
-      output: [width, height],
-      graphical: true,
-      argumentTypes: { v: 'Array2D(4)' }
-    });
+    const visualKernelA = gpu.createKernel(
+      function (v) {
+        const pixel = v[this.thread.y][this.thread.x];
+        this.color(255, 255, 255, pixel.a / 255);
+      },
+      {
+        output: [width, height],
+        graphical: true,
+        argumentTypes: { v: 'Array2D(4)' },
+      }
+    );
     visualKernelA(rgba);
-    return [
-      visualKernelR.canvas,
-      visualKernelG.canvas,
-      visualKernelB.canvas,
-      visualKernelA.canvas,
-    ];
+    return [visualKernelR.canvas, visualKernelG.canvas, visualKernelB.canvas, visualKernelA.canvas];
   },
 
-  getMinifySafeName: (fn) => {
+  getMinifySafeName: fn => {
     try {
       const ast = acorn.parse(`const value = ${fn.toString()}`);
       const { init } = ast.body[0].declarations[0];
@@ -992,7 +1005,7 @@ export const utils = {
       throw new Error('Unrecognized function type.  Please use `() => yourFunctionVariableHere` or function() { return yourFunctionVariableHere; }');
     }
   },
-  sanitizeName: function(name) {
+  sanitizeName: function (name) {
     if (dollarSign.test(name)) {
       name = name.replace(dollarSign, 'S_S');
     }
@@ -1002,7 +1015,7 @@ export const utils = {
       name = name.replace(singleUnderscore, 'u_u');
     }
     return name;
-  }
+  },
 };
 
 const dollarSign = /\$/;

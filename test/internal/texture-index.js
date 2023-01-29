@@ -5,9 +5,12 @@ describe('internal: texture index');
 
 function createKernelWithNumberConstants(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return this.constants.v1 + this.constants.v2;
-  }, { output: [1], constants: { v1: 1, v2: 1 } });
+  const kernel = gpu.createKernel(
+    function () {
+      return this.constants.v1 + this.constants.v2;
+    },
+    { output: [1], constants: { v1: 1, v2: 1 } }
+  );
 
   kernel();
   assert.equal(kernel.kernelConstants.length, 2);
@@ -35,12 +38,14 @@ test('createKernel with number constants auto', () => {
   createKernelWithNumberConstants('headlessgl');
 });
 
-
 function createKernelWithArrayConstants(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return this.constants.v1[this.thread.x] + this.constants.v2[this.thread.x];
-  }, { output: [1], constants: { v1: [1], v2: [1] } });
+  const kernel = gpu.createKernel(
+    function () {
+      return this.constants.v1[this.thread.x] + this.constants.v2[this.thread.x];
+    },
+    { output: [1], constants: { v1: [1], v2: [1] } }
+  );
 
   kernel();
   const gl = kernel.context;
@@ -70,14 +75,20 @@ test('createKernel with array constants auto', () => {
 
 function creatKernelWithNumberConstantsAndArrayArguments(mode) {
   const gpu = new GPU({ mode });
-  const textureGetter = gpu.createKernel(function() {
-    return 1;
-  }, { output: [1], pipeline: true });
+  const textureGetter = gpu.createKernel(
+    function () {
+      return 1;
+    },
+    { output: [1], pipeline: true }
+  );
   const texture1 = textureGetter();
   const texture2 = textureGetter();
-  const kernel = gpu.createKernel(function(value1, value2) {
-    return value1[this.thread.x] + value2[this.thread.x] + this.constants.v1 + this.constants.v2;
-  }, { output: [1], constants: { v1: 1, v2: 1 } });
+  const kernel = gpu.createKernel(
+    function (value1, value2) {
+      return value1[this.thread.x] + value2[this.thread.x] + this.constants.v1 + this.constants.v2;
+    },
+    { output: [1], constants: { v1: 1, v2: 1 } }
+  );
 
   const output = kernel(texture1, texture2);
 
@@ -118,17 +129,24 @@ function createKernelMapWithArrayConstantsAndTextureArguments(mode) {
   function calcValue2(v) {
     return v;
   }
-  const textureGetter = gpu.createKernel(function() {
-    return 1;
-  }, { output: [1], pipeline: true });
+  const textureGetter = gpu.createKernel(
+    function () {
+      return 1;
+    },
+    { output: [1], pipeline: true }
+  );
   const texture1 = textureGetter();
   const texture2 = textureGetter();
-  const kernel = gpu.createKernelMap({
-    mappedValue1: calcValue1,
-    mappedValue2: calcValue2,
-  }, function(value1, value2) {
-    return calcValue1(value1[this.thread.x] + value2[this.thread.x]) + calcValue2(this.constants.v1[this.thread.x] + this.constants.v2[this.thread.x]);
-  }, { output: [1], constants: { v1: [1], v2: [1] } });
+  const kernel = gpu.createKernelMap(
+    {
+      mappedValue1: calcValue1,
+      mappedValue2: calcValue2,
+    },
+    function (value1, value2) {
+      return calcValue1(value1[this.thread.x] + value2[this.thread.x]) + calcValue2(this.constants.v1[this.thread.x] + this.constants.v2[this.thread.x]);
+    },
+    { output: [1], constants: { v1: [1], v2: [1] } }
+  );
 
   kernel(texture1, texture2);
   const gl = kernel.context;

@@ -3,11 +3,7 @@ import { WebGLKernelValueSingleArray } from './single-array';
 
 export class WebGLKernelValueDynamicSingleArray extends WebGLKernelValueSingleArray {
   getSource() {
-    return utils.linesToString([
-      `uniform sampler2D ${this.id}`,
-      `uniform ivec2 ${this.sizeId}`,
-      `uniform ivec3 ${this.dimensionsId}`,
-    ]);
+    return utils.linesToString([`uniform sampler2D ${this.id}`, `uniform ivec2 ${this.sizeId}`, `uniform ivec3 ${this.dimensionsId}`]);
   }
 
   updateValue(value) {

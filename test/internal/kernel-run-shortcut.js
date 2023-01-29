@@ -6,13 +6,16 @@ describe('internal: kernelRunShortcut');
 
 function testImmutableSavesSwitchedKernel(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    return value[0] + 1;
-  }, {
-    output: [1],
-    pipeline: true,
-    immutable: true,
-  });
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value[0] + 1;
+    },
+    {
+      output: [1],
+      pipeline: true,
+      immutable: true,
+    }
+  );
   const one = kernel(new Float32Array([0]));
   const arrayKernel = kernel.kernel;
   const arrayKernelSpy = sinon.spy(arrayKernel, 'onRequestSwitchKernel');

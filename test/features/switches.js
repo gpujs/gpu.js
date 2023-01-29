@@ -5,20 +5,23 @@ describe('features: switches');
 
 function testBasic(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    switch (value) {
-      case 1:
-        return 1;
-      case 2:
-        return 2;
-      case 3:
-        return 3;
+  const kernel = gpu.createKernel(
+    function (value) {
+      switch (value) {
+        case 1:
+          return 1;
+        case 2:
+          return 2;
+        case 3:
+          return 3;
+      }
+      return 0;
+    },
+    {
+      argumentTypes: ['Integer'],
+      output: [1],
     }
-    return 0;
-  }, {
-    argumentTypes: ['Integer'],
-    output: [1],
-  });
+  );
   assert.equal(kernel(1)[0], 1);
   assert.equal(kernel(2)[0], 2);
   assert.equal(kernel(3)[0], 3);
@@ -50,18 +53,20 @@ test('basic cpu', () => {
   testBasic('cpu');
 });
 
-
 function testOnlyDefault(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    switch (value) {
-      default:
-        return 3;
+  const kernel = gpu.createKernel(
+    function (value) {
+      switch (value) {
+        default:
+          return 3;
+      }
+    },
+    {
+      argumentTypes: ['Integer'],
+      output: [1],
     }
-  }, {
-    argumentTypes: ['Integer'],
-    output: [1]
-  });
+  );
   assert.equal(kernel(1)[0], 3);
   assert.equal(kernel(2)[0], 3);
   assert.equal(kernel(3)[0], 3);
@@ -95,19 +100,22 @@ test('only default cpu', () => {
 
 function testDefault(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    switch (value) {
-      case 1:
-        return 1;
-      case 2:
-        return 2;
-      default:
-        return 3;
+  const kernel = gpu.createKernel(
+    function (value) {
+      switch (value) {
+        case 1:
+          return 1;
+        case 2:
+          return 2;
+        default:
+          return 3;
+      }
+    },
+    {
+      argumentTypes: ['Integer'],
+      output: [1],
     }
-  }, {
-    argumentTypes: ['Integer'],
-    output: [1]
-  });
+  );
   assert.equal(kernel(1)[0], 1);
   assert.equal(kernel(2)[0], 2);
   assert.equal(kernel(3)[0], 3);
@@ -139,22 +147,24 @@ test('default cpu', () => {
   testDefault('cpu');
 });
 
-
 function testEarlyDefault(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    switch (value) {
-      default:
-        return 3;
-      case 1:
-        return 1;
-      case 2:
-        return 2;
+  const kernel = gpu.createKernel(
+    function (value) {
+      switch (value) {
+        default:
+          return 3;
+        case 1:
+          return 1;
+        case 2:
+          return 2;
+      }
+    },
+    {
+      argumentTypes: ['Integer'],
+      output: [1],
     }
-  }, {
-    argumentTypes: ['Integer'],
-    output: [1],
-  });
+  );
   assert.equal(kernel(1)[0], 1);
   assert.equal(kernel(2)[0], 2);
   assert.equal(kernel(3)[0], 3);
@@ -186,21 +196,23 @@ test('early default cpu', () => {
   testEarlyDefault('cpu');
 });
 
-
 function testFallThrough(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    switch (value) {
-      case 1:
-      case 2:
-        return 1;
-      default:
-        return 3;
+  const kernel = gpu.createKernel(
+    function (value) {
+      switch (value) {
+        case 1:
+        case 2:
+          return 1;
+        default:
+          return 3;
+      }
+    },
+    {
+      argumentTypes: ['Integer'],
+      output: [1],
     }
-  }, {
-    argumentTypes: ['Integer'],
-    output: [1]
-  });
+  );
   assert.equal(kernel(1)[0], 1);
   assert.equal(kernel(2)[0], 1);
   assert.equal(kernel(3)[0], 3);

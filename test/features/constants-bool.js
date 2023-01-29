@@ -7,12 +7,13 @@ function boolTrueConstantTest(mode) {
   const gpu = new GPU({ mode });
   const bool = true;
   const tryConst = gpu.createKernel(
-    function() {
+    function () {
       return this.constants.bool ? 1 : 0;
-    }, {
-      constants: { bool },
-      output: [1]
     },
+    {
+      constants: { bool },
+      output: [1],
+    }
   );
   const result = tryConst();
   assert.equal(result[0], 1, 'bool constant passed test');
@@ -43,17 +44,17 @@ test('true cpu', () => {
   boolTrueConstantTest('cpu');
 });
 
-
 function boolFalseConstantTest(mode) {
   const gpu = new GPU({ mode });
   const bool = false;
   const tryConst = gpu.createKernel(
-    function() {
+    function () {
       return this.constants.bool ? 1 : 0;
-    }, {
-      constants: { bool },
-      output: [1]
     },
+    {
+      constants: { bool },
+      output: [1],
+    }
   );
   const result = tryConst();
   assert.equal(result[0], 0, 'bool constant passed test');

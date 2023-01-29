@@ -8,14 +8,17 @@ function videoArgumentTest(mode, done) {
   video.src = 'jellyfish.webm';
   setTimeout(() => {
     const gpu = new GPU({ mode });
-    const videoKernel = gpu.createKernel(function(a) {
-      const pixel = a[this.thread.y][this.thread.x];
-      return pixel.g * 255;
-    }, {
-      output: [200],
-      precision: 'unsigned',
-      argumentTypes: ['HTMLVideo'],
-    });
+    const videoKernel = gpu.createKernel(
+      function (a) {
+        const pixel = a[this.thread.y][this.thread.x];
+        return pixel.g * 255;
+      },
+      {
+        output: [200],
+        precision: 'unsigned',
+        argumentTypes: ['HTMLVideo'],
+      }
+    );
     const pixelResult = videoKernel(video)[0];
     // CPU captures a bit different of a color
     assert.ok(pixelResult <= 127 && pixelResult >= 121);

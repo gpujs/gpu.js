@@ -4,11 +4,7 @@ import { WebGL2KernelValueSingleArray } from '../../web-gl2/kernel-value/single-
 export class WebGL2KernelValueDynamicSingleArray extends WebGL2KernelValueSingleArray {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
-    return utils.linesToString([
-      `uniform ${ variablePrecision } sampler2D ${this.id}`,
-      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
-      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
-    ]);
+    return utils.linesToString([`uniform ${variablePrecision} sampler2D ${this.id}`, `uniform ${variablePrecision} ivec2 ${this.sizeId}`, `uniform ${variablePrecision} ivec3 ${this.dimensionsId}`]);
   }
 
   updateValue(value) {

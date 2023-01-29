@@ -25,7 +25,8 @@ function demo(mode) {
     return result;
   }
   const gpu = new GPU({ mode });
-  const multiplyMatrix = gpu.createKernel(function(a, b) {
+  const multiplyMatrix = gpu
+    .createKernel(function (a, b) {
       let sum = 0;
       for (let i = 0; i < 6; i++) {
         sum += a[this.thread.y][i] * b[i][this.thread.x];
@@ -34,31 +35,31 @@ function demo(mode) {
     })
     .setOutput([6, 6]);
 
-  assert.ok(multiplyMatrix !== null, "function generated test");
-  assert.equal(multiplyMatrix(a, b).length, 6, "basic return function test");
+  assert.ok(multiplyMatrix !== null, 'function generated test');
+  assert.equal(multiplyMatrix(a, b).length, 6, 'basic return function test');
   gpu.destroy();
 }
 
-test("auto", () => {
+test('auto', () => {
   demo();
 });
 
-test("gpu", () => {
+test('gpu', () => {
   demo('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)("webgl", function() {
+(GPU.isWebGLSupported ? test : skip)('webgl', function () {
   demo('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)("webgl2", function() {
+(GPU.isWebGL2Supported ? test : skip)('webgl2', function () {
   demo('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)("headlessgl", function() {
+(GPU.isHeadlessGLSupported ? test : skip)('headlessgl', function () {
   demo('headlessgl');
 });
 
-test("cpu", () => {
+test('cpu', () => {
   demo('cpu');
 });

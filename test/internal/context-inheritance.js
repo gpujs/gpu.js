@@ -7,11 +7,14 @@ describe('internal: context inheritance');
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('webgl');
   const gpu = new GPU({ context: context });
-  const simpleKernel = gpu.createKernel(function() {
-    return 1 + 1;
-  }, {
-    output: [1]
-  });
+  const simpleKernel = gpu.createKernel(
+    function () {
+      return 1 + 1;
+    },
+    {
+      output: [1],
+    }
+  );
   assert.equal(simpleKernel()[0], 2);
   assert.equal(gpu.Kernel, WebGLKernel);
   assert.equal(simpleKernel.context, context);
@@ -21,11 +24,14 @@ describe('internal: context inheritance');
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('webgl2');
   const gpu = new GPU({ context: context });
-  const simpleKernel = gpu.createKernel(function() {
-    return 1 + 1;
-  }, {
-    output: [1]
-  });
+  const simpleKernel = gpu.createKernel(
+    function () {
+      return 1 + 1;
+    },
+    {
+      output: [1],
+    }
+  );
   assert.equal(simpleKernel()[0], 2);
   assert.equal(gpu.Kernel, WebGL2Kernel);
   assert.equal(simpleKernel.context, context);
@@ -34,11 +40,14 @@ describe('internal: context inheritance');
 (GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
   const context = require('gl')(1, 1);
   const gpu = new GPU({ context: context });
-  const simpleKernel = gpu.createKernel(function() {
-    return 1 + 1;
-  }, {
-    output: [1]
-  });
+  const simpleKernel = gpu.createKernel(
+    function () {
+      return 1 + 1;
+    },
+    {
+      output: [1],
+    }
+  );
   assert.equal(simpleKernel()[0], 2);
   assert.equal(gpu.Kernel, HeadlessGLKernel);
   assert.equal(simpleKernel.context, context);

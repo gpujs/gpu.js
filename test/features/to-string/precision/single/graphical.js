@@ -5,26 +5,27 @@ describe('feature: to-string single precision graphical');
 
 function testGraphical(mode, context, canvas) {
   const gpu = new GPU({ mode });
-  const originalKernel = gpu.createKernel(function() {
-    this.color(1,1,1,1);
-  }, {
-    canvas,
-    context,
-    output: [2,2],
-    precision: 'single',
-    graphical: true,
-  });
+  const originalKernel = gpu.createKernel(
+    function () {
+      this.color(1, 1, 1, 1);
+    },
+    {
+      canvas,
+      context,
+      output: [2, 2],
+      precision: 'single',
+      graphical: true,
+    }
+  );
 
-  const expected = new Uint8ClampedArray([
-    255, 255, 255, 255,
-    255, 255, 255, 255,
-    255, 255, 255, 255,
-    255, 255, 255, 255,
-  ]);
+  const expected = new Uint8ClampedArray([255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]);
   originalKernel();
   assert.deepEqual(originalKernel.getPixels(), expected);
   const kernelString = originalKernel.toString();
-  const newKernel = new Function('return ' + kernelString)()({ canvas, context });
+  const newKernel = new Function('return ' + kernelString)()({
+    canvas,
+    context,
+  });
   newKernel();
   assert.deepEqual(newKernel.getPixels(), expected);
   gpu.destroy();

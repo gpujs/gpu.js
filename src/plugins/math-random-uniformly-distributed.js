@@ -29,7 +29,7 @@ const functionReturnType = 'Number';
  *
  * @param {Kernel} kernel
  */
-const onBeforeRun = (kernel) => {
+const onBeforeRun = kernel => {
   kernel.setUniform1f('randomSeed1', Math.random());
   kernel.setUniform1f('randomSeed2', Math.random());
 };
@@ -44,7 +44,7 @@ const plugin = {
   functionMatch,
   functionReplace,
   functionReturnType,
-  source
+  source,
 };
 
 export default plugin;

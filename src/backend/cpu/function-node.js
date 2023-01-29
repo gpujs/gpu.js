@@ -13,7 +13,6 @@ export class CPUFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astFunction(ast, retArr) {
-
     // Setup function return type and name
     if (!this.isRootKernel) {
       retArr.push('function');
@@ -69,10 +68,10 @@ export class CPUFunctionNode extends FunctionNode {
       retArr.push(this.followingReturnStatement);
       retArr.push('continue;\n');
     } else if (this.isSubKernel) {
-      retArr.push(`subKernelResult_${ this.name } = `);
+      retArr.push(`subKernelResult_${this.name} = `);
       this.astGeneric(ast.argument, retArr);
       retArr.push(';');
-      retArr.push(`return subKernelResult_${ this.name };`);
+      retArr.push(`return subKernelResult_${this.name};`);
     } else {
       retArr.push('return ');
       this.astGeneric(ast.argument, retArr);
@@ -88,13 +87,9 @@ export class CPUFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astLiteral(ast, retArr) {
-
     // Reject non numeric literals
     if (isNaN(ast.value)) {
-      throw this.astErrorOutput(
-        'Non-numeric literal not supported : ' + ast.value,
-        ast
-      );
+      throw this.astErrorOutput('Non-numeric literal not supported : ' + ast.value, ast);
     }
 
     retArr.push(ast.value);
@@ -125,10 +120,7 @@ export class CPUFunctionNode extends FunctionNode {
    */
   astIdentifierExpression(idtNode, retArr) {
     if (idtNode.type !== 'Identifier') {
-      throw this.astErrorOutput(
-        'IdentifierExpression - not an Identifier',
-        idtNode
-      );
+      throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode);
     }
 
     switch (idtNode.name) {
@@ -227,10 +219,7 @@ export class CPUFunctionNode extends FunctionNode {
    */
   astWhileStatement(whileNode, retArr) {
     if (whileNode.type !== 'WhileStatement') {
-      throw this.astErrorOutput(
-        'Invalid while statement',
-        whileNode
-      );
+      throw this.astErrorOutput('Invalid while statement', whileNode);
     }
 
     retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
@@ -254,10 +243,7 @@ export class CPUFunctionNode extends FunctionNode {
    */
   astDoWhileStatement(doWhileNode, retArr) {
     if (doWhileNode.type !== 'DoWhileStatement') {
-      throw this.astErrorOutput(
-        'Invalid while statement',
-        doWhileNode
-      );
+      throw this.astErrorOutput('Invalid while statement', doWhileNode);
     }
 
     retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
@@ -270,7 +256,6 @@ export class CPUFunctionNode extends FunctionNode {
     retArr.push('}\n');
 
     return retArr;
-
   }
 
   /**
@@ -368,7 +353,6 @@ export class CPUFunctionNode extends FunctionNode {
       }
     }
     return retArr;
-
   }
 
   astSwitchStatement(ast, retArr) {
@@ -414,19 +398,10 @@ export class CPUFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astMemberExpression(mNode, retArr) {
-    const {
-      signature,
-      type,
-      property,
-      xProperty,
-      yProperty,
-      zProperty,
-      name,
-      origin
-    } = this.getMemberExpressionDetails(mNode);
+    const { signature, type, property, xProperty, yProperty, zProperty, name, origin } = this.getMemberExpressionDetails(mNode);
     switch (signature) {
       case 'this.thread.value':
-        retArr.push(`_this.thread.${ name }`);
+        retArr.push(`_this.thread.${name}`);
         return retArr;
       case 'this.output.value':
         switch (name) {
@@ -455,16 +430,16 @@ export class CPUFunctionNode extends FunctionNode {
         }
         switch (property) {
           case 'r':
-            retArr.push(`user_${ name }[0]`);
+            retArr.push(`user_${name}[0]`);
             return retArr;
           case 'g':
-            retArr.push(`user_${ name }[1]`);
+            retArr.push(`user_${name}[1]`);
             return retArr;
           case 'b':
-            retArr.push(`user_${ name }[2]`);
+            retArr.push(`user_${name}[2]`);
             return retArr;
           case 'a':
-            retArr.push(`user_${ name }[3]`);
+            retArr.push(`user_${name}[3]`);
             return retArr;
         }
         break;
@@ -532,14 +507,14 @@ export class CPUFunctionNode extends FunctionNode {
           isInput = this.isInput(name);
           size = isInput ? this.argumentSizes[this.argumentNames.indexOf(name)] : null;
         }
-        retArr.push(`${ markupName }`);
+        retArr.push(`${markupName}`);
         if (zProperty && yProperty) {
           if (isInput) {
             retArr.push('[(');
             this.astGeneric(zProperty, retArr);
-            retArr.push(`*${ this.dynamicArguments ? '(outputY * outputX)' : size[1] * size[0] })+(`);
+            retArr.push(`*${this.dynamicArguments ? '(outputY * outputX)' : size[1] * size[0]})+(`);
             this.astGeneric(yProperty, retArr);
-            retArr.push(`*${ this.dynamicArguments ? 'outputX' : size[0] })+`);
+            retArr.push(`*${this.dynamicArguments ? 'outputX' : size[0]})+`);
             this.astGeneric(xProperty, retArr);
             retArr.push(']');
           } else {
@@ -557,7 +532,7 @@ export class CPUFunctionNode extends FunctionNode {
           if (isInput) {
             retArr.push('[(');
             this.astGeneric(yProperty, retArr);
-            retArr.push(`*${ this.dynamicArguments ? 'outputX' : size[0] })+`);
+            retArr.push(`*${this.dynamicArguments ? 'outputX' : size[0]})+`);
             this.astGeneric(xProperty, retArr);
             retArr.push(']');
           } else {

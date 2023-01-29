@@ -7,19 +7,17 @@ function floatConstantTest(mode) {
   const gpu = new GPU({ mode });
   const float = 200.01;
   const tryConst = gpu.createKernel(
-    function() {
+    function () {
       return this.constants.float;
-    }, {
-      constants: { float },
-      output: [2]
     },
+    {
+      constants: { float },
+      output: [2],
+    }
   );
   const result = tryConst();
   const match = new Float32Array([200.01, 200.01]);
-  const test = (
-    result[0].toFixed(1) === match[0].toFixed(1) &&
-    result[1].toFixed(1) === match[1].toFixed(1)
-  );
+  const test = result[0].toFixed(1) === match[0].toFixed(1) && result[1].toFixed(1) === match[1].toFixed(1);
   assert.ok(test, 'float constant passed test');
   gpu.destroy();
 }

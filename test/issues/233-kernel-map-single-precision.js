@@ -8,38 +8,51 @@ describe('issue # 233');
 function kernelMapSinglePrecision(mode) {
   const lst = [1, 2, 3, 4, 5, 6, 7];
   const gpu = new GPU({ mode });
-  const kernels = gpu.createKernelMap({
-    stepA: function(x) {
-      return x * x;
+  const kernels = gpu.createKernelMap(
+    {
+      stepA: function (x) {
+        return x * x;
+      },
+      stepB: function (x) {
+        return x + 1;
+      },
     },
-    stepB: function(x) {
-      return x + 1;
+    function (lst) {
+      const val = lst[this.thread.x];
+
+      stepA(val);
+      stepB(val);
+
+      return val;
+    },
+    {
+      precision: 'single',
+      output: [lst.length],
     }
-  }, function(lst) {
-    const val = lst[this.thread.x];
-
-    stepA(val);
-    stepB(val);
-
-    return val;
-  }, {
-    precision: 'single',
-    output: [lst.length]
-  });
+  );
 
   const result = kernels(lst);
-  const unwrap = gpu.createKernel(function(x) {
-    return x[this.thread.x];
-  }, {
-    output: [lst.length],
-    precision: 'single',
-    optimizeFloatMemory: true,
-  });
+  const unwrap = gpu.createKernel(
+    function (x) {
+      return x[this.thread.x];
+    },
+    {
+      output: [lst.length],
+      precision: 'single',
+      optimizeFloatMemory: true,
+    }
+  );
   const stepAResult = unwrap(result.stepA);
   const stepBResult = unwrap(result.stepB);
 
-  assert.deepEqual(Array.from(stepAResult), lst.map((x) => x * x));
-  assert.deepEqual(Array.from(stepBResult), lst.map((x) => x + 1));
+  assert.deepEqual(
+    Array.from(stepAResult),
+    lst.map(x => x * x)
+  );
+  assert.deepEqual(
+    Array.from(stepBResult),
+    lst.map(x => x + 1)
+  );
   assert.deepEqual(Array.from(result.result), lst);
   gpu.destroy();
 }
@@ -68,12 +81,11 @@ test('Issue #233 - kernel map with single precision cpu', () => {
   kernelMapSinglePrecision('cpu');
 });
 
-
 function kernelMapSinglePrecision2D(mode) {
   const lst = [
     [1, 2, 3],
     [4, 5, 6],
-    [7, 8, 9]
+    [7, 8, 9],
   ];
   const stepAExpected = [
     [1, 4, 9],
@@ -83,46 +95,71 @@ function kernelMapSinglePrecision2D(mode) {
   const stepBExpected = [
     [2, 3, 4],
     [5, 6, 7],
-    [8, 9, 10]
+    [8, 9, 10],
   ];
   const gpu = new GPU({ mode });
-  const kernels = gpu.createKernelMap({
-    stepA: function(x) {
-      return x * x;
+  const kernels = gpu.createKernelMap(
+    {
+      stepA: function (x) {
+        return x * x;
+      },
+      stepB: function (x) {
+        return x + 1;
+      },
     },
-    stepB: function(x) {
-      return x + 1;
+    function (lst) {
+      const val = lst[this.thread.y][this.thread.x];
+
+      stepA(val);
+      stepB(val);
+
+      return val;
+    },
+    {
+      precision: 'single',
+      output: [3, 3],
     }
-  }, function(lst) {
-    const val = lst[this.thread.y][this.thread.x];
-
-    stepA(val);
-    stepB(val);
-
-    return val;
-  }, {
-    precision: 'single',
-    output: [3, 3]
-  });
+  );
 
   const result = kernels(lst);
-  assert.deepEqual(result.stepA.map(v => Array.from(v)), stepAExpected);
-  assert.deepEqual(result.stepB.map(v => Array.from(v)), stepBExpected);
-  assert.deepEqual(result.result.map(v => Array.from(v)), lst);
-  const memoryOptimize = gpu.createKernel(function(x) {
-    return x[this.thread.y][this.thread.x];
-  }, {
-    output: [3, 3],
-    precision: 'single',
-    optimizeFloatMemory: true,
-  });
+  assert.deepEqual(
+    result.stepA.map(v => Array.from(v)),
+    stepAExpected
+  );
+  assert.deepEqual(
+    result.stepB.map(v => Array.from(v)),
+    stepBExpected
+  );
+  assert.deepEqual(
+    result.result.map(v => Array.from(v)),
+    lst
+  );
+  const memoryOptimize = gpu.createKernel(
+    function (x) {
+      return x[this.thread.y][this.thread.x];
+    },
+    {
+      output: [3, 3],
+      precision: 'single',
+      optimizeFloatMemory: true,
+    }
+  );
   const stepAOptimized = memoryOptimize(result.stepA);
   const stepBOptimized = memoryOptimize(result.stepB);
   const resultOptimized = memoryOptimize(result.result);
 
-  assert.deepEqual(stepAOptimized.map(v => Array.from(v)), stepAExpected);
-  assert.deepEqual(stepBOptimized.map(v => Array.from(v)), stepBExpected);
-  assert.deepEqual(resultOptimized.map(v => Array.from(v)), lst);
+  assert.deepEqual(
+    stepAOptimized.map(v => Array.from(v)),
+    stepAExpected
+  );
+  assert.deepEqual(
+    stepBOptimized.map(v => Array.from(v)),
+    stepBExpected
+  );
+  assert.deepEqual(
+    resultOptimized.map(v => Array.from(v)),
+    lst
+  );
   gpu.destroy();
 }
 
@@ -155,13 +192,13 @@ function kernelMapSinglePrecision3D(mode) {
     [
       [1, 2, 3],
       [4, 5, 6],
-      [7, 8, 9]
+      [7, 8, 9],
     ],
     [
       [10, 11, 12],
       [13, 14, 15],
-      [16, 17, 18]
-    ]
+      [16, 17, 18],
+    ],
   ];
   const stepAExpected = [
     [
@@ -173,51 +210,58 @@ function kernelMapSinglePrecision3D(mode) {
       [100, 121, 144],
       [169, 196, 225],
       [256, 289, 324],
-    ]
+    ],
   ];
   const stepBExpected = [
     [
       [2, 3, 4],
       [5, 6, 7],
-      [8, 9, 10]
+      [8, 9, 10],
     ],
     [
       [11, 12, 13],
       [14, 15, 16],
-      [17, 18, 19]
-    ]
+      [17, 18, 19],
+    ],
   ];
   const gpu = new GPU({ mode });
-  const kernels = gpu.createKernelMap({
-    stepA: function(x) {
-      return x * x;
+  const kernels = gpu.createKernelMap(
+    {
+      stepA: function (x) {
+        return x * x;
+      },
+      stepB: function (x) {
+        return x + 1;
+      },
     },
-    stepB: function(x) {
-      return x + 1;
+    function (lst) {
+      const val = lst[this.thread.z][this.thread.y][this.thread.x];
+
+      stepA(val);
+      stepB(val);
+
+      return val;
+    },
+    {
+      precision: 'single',
+      output: [3, 3, 2],
     }
-  }, function(lst) {
-    const val = lst[this.thread.z][this.thread.y][this.thread.x];
-
-    stepA(val);
-    stepB(val);
-
-    return val;
-  }, {
-    precision: 'single',
-    output: [3, 3, 2]
-  });
+  );
 
   const result = kernels(lst);
   assert.deepEqual(arrayFromCube(result.stepA), stepAExpected);
   assert.deepEqual(arrayFromCube(result.stepB), stepBExpected);
   assert.deepEqual(arrayFromCube(result.result), lst);
-  const memoryOptimize = gpu.createKernel(function(x) {
-    return x[this.thread.z][this.thread.y][this.thread.x];
-  }, {
-    output: [3, 3, 2],
-    precision: 'single',
-    optimizeFloatMemory: true,
-  });
+  const memoryOptimize = gpu.createKernel(
+    function (x) {
+      return x[this.thread.z][this.thread.y][this.thread.x];
+    },
+    {
+      output: [3, 3, 2],
+      precision: 'single',
+      optimizeFloatMemory: true,
+    }
+  );
   const stepAOptimized = memoryOptimize(result.stepA);
   const stepBOptimized = memoryOptimize(result.stepB);
   const resultOptimized = memoryOptimize(result.result);

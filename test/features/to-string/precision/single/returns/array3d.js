@@ -5,26 +5,24 @@ describe('feature: to-string single precision returns Array3d');
 
 function testReturn(mode, context, canvas) {
   const gpu = new GPU({ mode });
-  const originalKernel = gpu.createKernel(function(a, b, c) {
-    return a[this.thread.x] + b[this.thread.y] + c[this.thread.z];
-  }, {
-    canvas,
-    context,
-    output: [2, 2, 2],
-    precision: 'single',
-  });
+  const originalKernel = gpu.createKernel(
+    function (a, b, c) {
+      return a[this.thread.x] + b[this.thread.y] + c[this.thread.z];
+    },
+    {
+      canvas,
+      context,
+      output: [2, 2, 2],
+      precision: 'single',
+    }
+  );
 
   const a = [1, 2];
   const b = [3, 4];
   const c = [5, 6];
   const expected = [
-    [
-      new Float32Array([9,10]),
-      new Float32Array([10,11]),
-    ],[
-      new Float32Array([10,11]),
-      new Float32Array([11,12]),
-    ]
+    [new Float32Array([9, 10]), new Float32Array([10, 11])],
+    [new Float32Array([10, 11]), new Float32Array([11, 12])],
   ];
   const originalResult = originalKernel(a, b, c);
   assert.deepEqual(originalResult, expected);

@@ -10,16 +10,18 @@ function variableLookup(mode) {
 
   const gpu = new GPU({
     mode,
-    functions: [mult2]
+    functions: [mult2],
   });
 
-  const render1 = gpu.createKernel(function(input) {
-      return (mult2(input) + mult2(input * 2) + mult2(input * 1)) // RIGHT
+  const render1 = gpu
+    .createKernel(function (input) {
+      return mult2(input) + mult2(input * 2) + mult2(input * 1); // RIGHT
     })
     .setOutput([1]);
 
-  const render2 = gpu.createKernel(function(input) {
-      return (mult2(input) + mult2(input * 2) + mult2(input)); // WRONG
+  const render2 = gpu
+    .createKernel(function (input) {
+      return mult2(input) + mult2(input * 2) + mult2(input); // WRONG
     })
     .setOutput([1]);
 

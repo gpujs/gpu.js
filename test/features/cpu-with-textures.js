@@ -5,20 +5,26 @@ describe('features: CPU with Textures');
 
 function cpuWithTexturesNumberWithSinglePrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return this.thread.x;
-  }, {
-    output: [2],
-    pipeline: true,
-    precision: 'single',
-  });
+  const kernel = gpu.createKernel(
+    function () {
+      return this.thread.x;
+    },
+    {
+      output: [2],
+      pipeline: true,
+      precision: 'single',
+    }
+  );
   const texture = kernel();
   assert.ok(texture.toArray);
   assert.deepEqual(Array.from(texture.toArray()), [0, 1]);
   const cpu = new GPU({ mode: 'cpu' });
-  const cpuKernel = cpu.createKernel(function(v) {
-    return v[this.thread.x];
-  }, { output: [2] });
+  const cpuKernel = cpu.createKernel(
+    function (v) {
+      return v[this.thread.x];
+    },
+    { output: [2] }
+  );
   assert.notOk(cpuKernel.kernel.textureCache);
   const result = cpuKernel(texture);
   assert.ok(cpuKernel.kernel.textureCache);
@@ -54,21 +60,27 @@ function cpuWithTexturesNumberWithSinglePrecision(mode) {
 
 function cpuWithTexturesMemoryOptimizedNumberWithSinglePrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return this.thread.x;
-  }, {
-    output: [2],
-    pipeline: true,
-    precision: 'single',
-    optimizeFloatMemory: true,
-  });
+  const kernel = gpu.createKernel(
+    function () {
+      return this.thread.x;
+    },
+    {
+      output: [2],
+      pipeline: true,
+      precision: 'single',
+      optimizeFloatMemory: true,
+    }
+  );
   const texture = kernel();
   assert.ok(texture.toArray);
   assert.deepEqual(Array.from(texture.toArray()), [0, 1]);
   const cpu = new GPU({ mode: 'cpu' });
-  const cpuKernel = cpu.createKernel(function(v) {
-    return v[this.thread.x];
-  }, { output: [2] });
+  const cpuKernel = cpu.createKernel(
+    function (v) {
+      return v[this.thread.x];
+    },
+    { output: [2] }
+  );
   assert.notOk(cpuKernel.kernel.textureCache);
   const result = cpuKernel(texture);
   assert.ok(cpuKernel.kernel.textureCache);
@@ -104,38 +116,53 @@ function cpuWithTexturesMemoryOptimizedNumberWithSinglePrecision(mode) {
 
 function cpuWithTexturesArray2WithSinglePrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return [this.thread.x, this.thread.x];
-  }, {
-    output: [2],
-    pipeline: true,
-    precision: 'single',
-  });
+  const kernel = gpu.createKernel(
+    function () {
+      return [this.thread.x, this.thread.x];
+    },
+    {
+      output: [2],
+      pipeline: true,
+      precision: 'single',
+    }
+  );
   const texture = kernel();
   assert.ok(texture.toArray);
-  assert.deepEqual(texture.toArray().map(value => Array.from(value)), [
-    [0, 0],
-    [1, 1]
-  ]);
+  assert.deepEqual(
+    texture.toArray().map(value => Array.from(value)),
+    [
+      [0, 0],
+      [1, 1],
+    ]
+  );
   const cpu = new GPU({ mode: 'cpu' });
-  const cpuKernel = cpu.createKernel(function(v) {
-    return v[this.thread.x];
-  }, { output: [2] });
+  const cpuKernel = cpu.createKernel(
+    function (v) {
+      return v[this.thread.x];
+    },
+    { output: [2] }
+  );
   assert.notOk(cpuKernel.kernel.textureCache);
   const result = cpuKernel(texture);
   assert.ok(cpuKernel.kernel.textureCache);
-  assert.deepEqual(result.map(value => Array.from(value)), [
-    [0, 0],
-    [1, 1]
-  ]);
+  assert.deepEqual(
+    result.map(value => Array.from(value)),
+    [
+      [0, 0],
+      [1, 1],
+    ]
+  );
   let calledTwice = false;
   texture.toArray = () => {
     calledTwice = true;
   };
-  assert.deepEqual(cpuKernel(texture).map(value => Array.from(value)), [
-    [0, 0],
-    [1, 1]
-  ]);
+  assert.deepEqual(
+    cpuKernel(texture).map(value => Array.from(value)),
+    [
+      [0, 0],
+      [1, 1],
+    ]
+  );
   assert.equal(calledTwice, false);
   gpu.destroy();
 }
@@ -162,38 +189,53 @@ function cpuWithTexturesArray2WithSinglePrecision(mode) {
 
 function cpuWithTexturesArray3WithSinglePrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return [this.thread.x, this.thread.x, this.thread.x];
-  }, {
-    output: [2],
-    pipeline: true,
-    precision: 'single',
-  });
+  const kernel = gpu.createKernel(
+    function () {
+      return [this.thread.x, this.thread.x, this.thread.x];
+    },
+    {
+      output: [2],
+      pipeline: true,
+      precision: 'single',
+    }
+  );
   const texture = kernel();
   assert.ok(texture.toArray);
-  assert.deepEqual(texture.toArray().map(value => Array.from(value)), [
-    [0, 0, 0],
-    [1, 1, 1]
-  ]);
+  assert.deepEqual(
+    texture.toArray().map(value => Array.from(value)),
+    [
+      [0, 0, 0],
+      [1, 1, 1],
+    ]
+  );
   const cpu = new GPU({ mode: 'cpu' });
-  const cpuKernel = cpu.createKernel(function(v) {
-    return v[this.thread.x];
-  }, { output: [2] });
+  const cpuKernel = cpu.createKernel(
+    function (v) {
+      return v[this.thread.x];
+    },
+    { output: [2] }
+  );
   assert.notOk(cpuKernel.kernel.textureCache);
   const result = cpuKernel(texture);
   assert.ok(cpuKernel.kernel.textureCache);
-  assert.deepEqual(result.map(value => Array.from(value)), [
-    [0, 0, 0],
-    [1, 1, 1]
-  ]);
+  assert.deepEqual(
+    result.map(value => Array.from(value)),
+    [
+      [0, 0, 0],
+      [1, 1, 1],
+    ]
+  );
   let calledTwice = false;
   texture.toArray = () => {
     calledTwice = true;
   };
-  assert.deepEqual(cpuKernel(texture).map(value => Array.from(value)), [
-    [0, 0, 0],
-    [1, 1, 1]
-  ]);
+  assert.deepEqual(
+    cpuKernel(texture).map(value => Array.from(value)),
+    [
+      [0, 0, 0],
+      [1, 1, 1],
+    ]
+  );
   assert.equal(calledTwice, false);
   gpu.destroy();
 }
@@ -220,38 +262,53 @@ function cpuWithTexturesArray3WithSinglePrecision(mode) {
 
 function cpuWithTexturesArray4WithSinglePrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return [this.thread.x, this.thread.x, this.thread.x, this.thread.x];
-  }, {
-    output: [2],
-    pipeline: true,
-    precision: 'single',
-  });
+  const kernel = gpu.createKernel(
+    function () {
+      return [this.thread.x, this.thread.x, this.thread.x, this.thread.x];
+    },
+    {
+      output: [2],
+      pipeline: true,
+      precision: 'single',
+    }
+  );
   const texture = kernel();
   assert.ok(texture.toArray);
-  assert.deepEqual(texture.toArray().map(value => Array.from(value)), [
-    [0, 0, 0, 0],
-    [1, 1, 1, 1]
-  ]);
+  assert.deepEqual(
+    texture.toArray().map(value => Array.from(value)),
+    [
+      [0, 0, 0, 0],
+      [1, 1, 1, 1],
+    ]
+  );
   const cpu = new GPU({ mode: 'cpu' });
-  const cpuKernel = cpu.createKernel(function(v) {
-    return v[this.thread.x];
-  }, { output: [2] });
+  const cpuKernel = cpu.createKernel(
+    function (v) {
+      return v[this.thread.x];
+    },
+    { output: [2] }
+  );
   assert.notOk(cpuKernel.kernel.textureCache);
   const result = cpuKernel(texture);
   assert.ok(cpuKernel.kernel.textureCache);
-  assert.deepEqual(result.map(value => Array.from(value)), [
-    [0, 0, 0, 0],
-    [1, 1, 1, 1]
-  ]);
+  assert.deepEqual(
+    result.map(value => Array.from(value)),
+    [
+      [0, 0, 0, 0],
+      [1, 1, 1, 1],
+    ]
+  );
   let calledTwice = false;
   texture.toArray = () => {
     calledTwice = true;
   };
-  assert.deepEqual(cpuKernel(texture).map(value => Array.from(value)), [
-    [0, 0, 0, 0],
-    [1, 1, 1, 1]
-  ]);
+  assert.deepEqual(
+    cpuKernel(texture).map(value => Array.from(value)),
+    [
+      [0, 0, 0, 0],
+      [1, 1, 1, 1],
+    ]
+  );
   assert.equal(calledTwice, false);
   gpu.destroy();
 }
@@ -278,20 +335,26 @@ function cpuWithTexturesArray4WithSinglePrecision(mode) {
 
 function cpuWithTexturesNumberWithUnsignedPrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return this.thread.x;
-  }, {
-    output: [2],
-    pipeline: true,
-    precision: 'unsigned',
-  });
+  const kernel = gpu.createKernel(
+    function () {
+      return this.thread.x;
+    },
+    {
+      output: [2],
+      pipeline: true,
+      precision: 'unsigned',
+    }
+  );
   const texture = kernel();
   assert.ok(texture.toArray);
   assert.deepEqual(Array.from(texture.toArray()), [0, 1]);
   const cpu = new GPU({ mode: 'cpu' });
-  const cpuKernel = cpu.createKernel(function(v) {
-    return v[this.thread.x];
-  }, { output: [2] });
+  const cpuKernel = cpu.createKernel(
+    function (v) {
+      return v[this.thread.x];
+    },
+    { output: [2] }
+  );
   assert.notOk(cpuKernel.kernel.textureCache);
   const result = cpuKernel(texture);
   assert.ok(cpuKernel.kernel.textureCache);

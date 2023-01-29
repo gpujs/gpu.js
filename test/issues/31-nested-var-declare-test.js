@@ -55,8 +55,12 @@ test('Issue #31 - nestedVarRedeclare cpu', () => {
 
 test('Issue #31 - nestedVarRedeclare : AST handling webgl', () => {
   const builder = new FunctionBuilder({
-    functionNodes: [new WebGLFunctionNode(nestedVarRedeclareFunction.toString(), { output: [1] })],
-    output: [1]
+    functionNodes: [
+      new WebGLFunctionNode(nestedVarRedeclareFunction.toString(), {
+        output: [1],
+      }),
+    ],
+    output: [1],
   });
   assert.throws(() => {
     builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
@@ -65,8 +69,12 @@ test('Issue #31 - nestedVarRedeclare : AST handling webgl', () => {
 
 test('Issue #31 - nestedVarRedeclare : AST handling webgl2', () => {
   const builder = new FunctionBuilder({
-    functionNodes: [new WebGL2FunctionNode(nestedVarRedeclareFunction.toString(), { output: [1] })],
-    output: [1]
+    functionNodes: [
+      new WebGL2FunctionNode(nestedVarRedeclareFunction.toString(), {
+        output: [1],
+      }),
+    ],
+    output: [1],
   });
   assert.throws(() => {
     builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
@@ -75,14 +83,17 @@ test('Issue #31 - nestedVarRedeclare : AST handling webgl2', () => {
 
 test('Issue #31 - nestedVarRedeclare : AST handling cpu', () => {
   const builder = new FunctionBuilder({
-    functionNodes: [new CPUFunctionNode(nestedVarRedeclareFunction.toString(), { output: [1] })],
-    output: [1]
+    functionNodes: [
+      new CPUFunctionNode(nestedVarRedeclareFunction.toString(), {
+        output: [1],
+      }),
+    ],
+    output: [1],
   });
   assert.throws(() => {
     builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
   });
 });
-
 
 describe('issue #31 nested declare');
 // nested declare
@@ -103,7 +114,7 @@ function nestedVarDeclareFunction() {
 function nestedVarDeclareTest(mode) {
   const gpu = new GPU({ mode });
   const f = gpu.createKernel(nestedVarDeclareFunction, {
-    output: [1]
+    output: [1],
   });
 
   assert.equal(f(), 200, 'basic return function test');
@@ -136,59 +147,58 @@ test('Issue #31 - nestedVarDeclare cpu', () => {
 
 test('Issue #31 - nestedVarDeclare : AST handling webgl', () => {
   const builder = new FunctionBuilder({
-    functionNodes: [new WebGLFunctionNode(nestedVarDeclareFunction.toString(), { output: [1] })]
+    functionNodes: [
+      new WebGLFunctionNode(nestedVarDeclareFunction.toString(), {
+        output: [1],
+      }),
+    ],
   });
 
   assert.equal(
     builder.getStringFromFunctionNames(['nestedVarDeclareFunction']),
     'float nestedVarDeclareFunction() {' +
-    '\nfloat user_result=0.0;' +
-    '\nfor (int user_i=0;(user_i<10);++user_i){' +
-    '\nfor (int user_i=0;(user_i<20);++user_i){' //<-- Note: don't do this in real life!
-    +
-    '\nuser_result+=1.0;}' +
-    '\n}' +
-    '\n' +
-    '\nreturn user_result;' +
-    '\n}'
+      '\nfloat user_result=0.0;' +
+      '\nfor (int user_i=0;(user_i<10);++user_i){' +
+      '\nfor (int user_i=0;(user_i<20);++user_i){' + //<-- Note: don't do this in real life!
+      '\nuser_result+=1.0;}' +
+      '\n}' +
+      '\n' +
+      '\nreturn user_result;' +
+      '\n}'
   );
 });
 
 test('Issue #31 - nestedVarDeclare : AST handling webgl2', () => {
   const builder = new FunctionBuilder({
-    functionNodes: [new WebGL2FunctionNode(nestedVarDeclareFunction.toString(), { output: [1] })]
+    functionNodes: [
+      new WebGL2FunctionNode(nestedVarDeclareFunction.toString(), {
+        output: [1],
+      }),
+    ],
   });
 
   assert.equal(
     builder.getStringFromFunctionNames(['nestedVarDeclareFunction']),
     'float nestedVarDeclareFunction() {' +
-    '\nfloat user_result=0.0;' +
-    '\nfor (int user_i=0;(user_i<10);++user_i){' +
-    '\nfor (int user_i=0;(user_i<20);++user_i){' //<-- Note: don't do this in real life!
-    +
-    '\nuser_result+=1.0;}' +
-    '\n}' +
-    '\n' +
-    '\nreturn user_result;' +
-    '\n}'
+      '\nfloat user_result=0.0;' +
+      '\nfor (int user_i=0;(user_i<10);++user_i){' +
+      '\nfor (int user_i=0;(user_i<20);++user_i){' + //<-- Note: don't do this in real life!
+      '\nuser_result+=1.0;}' +
+      '\n}' +
+      '\n' +
+      '\nreturn user_result;' +
+      '\n}'
   );
 });
 
 test('Issue #31 - nestedVarDeclare : AST handling cpu', () => {
   const builder = new FunctionBuilder({
-    functionNodes: [new CPUFunctionNode(nestedVarDeclareFunction.toString(), { output: [1] })]
+    functionNodes: [
+      new CPUFunctionNode(nestedVarDeclareFunction.toString(), {
+        output: [1],
+      }),
+    ],
   });
 
-  assert.equal(
-    builder.getStringFromFunctionNames(['nestedVarDeclareFunction']),
-    'function nestedVarDeclareFunction() {' +
-    '\nlet user_result=0;' +
-    '\nfor (let user_i=0;(user_i<10);++user_i){' +
-    '\nfor (let user_i=0;(user_i<20);++user_i){' +
-    '\nuser_result+=1;}' +
-    '\n}' +
-    '\n' +
-    '\nreturn user_result;' +
-    '\n}'
-  );
+  assert.equal(builder.getStringFromFunctionNames(['nestedVarDeclareFunction']), 'function nestedVarDeclareFunction() {' + '\nlet user_result=0;' + '\nfor (let user_i=0;(user_i<10);++user_i){' + '\nfor (let user_i=0;(user_i<20);++user_i){' + '\nuser_result+=1;}' + '\n}' + '\n' + '\nreturn user_result;' + '\n}');
 });

@@ -8,7 +8,6 @@ import { WebGLFunctionNode } from '../web-gl/function-node';
  * @returns the converted webGL function string
  */
 export class WebGL2FunctionNode extends WebGLFunctionNode {
-
   /**
    * @desc Parses the abstract syntax tree for *identifier* expression
    * @param {Object} idtNode - An ast Node
@@ -17,10 +16,7 @@ export class WebGL2FunctionNode extends WebGLFunctionNode {
    */
   astIdentifierExpression(idtNode, retArr) {
     if (idtNode.type !== 'Identifier') {
-      throw this.astErrorOutput(
-        'IdentifierExpression - not an Identifier',
-        idtNode
-      );
+      throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode);
     }
 
     const type = this.getType(idtNode);

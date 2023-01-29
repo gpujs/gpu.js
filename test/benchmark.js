@@ -12,7 +12,7 @@ const b = randomMatrix(size, size);
 function randomMatrix(width, height) {
   const matrix = new Array(height);
   for (let y = 0; y < height; y++) {
-    const row = matrix[y] = new Float32Array(width);
+    const row = (matrix[y] = new Float32Array(width));
     for (let x = 0; x < width; x++) {
       row[x] = Math.random();
     }
@@ -21,7 +21,7 @@ function randomMatrix(width, height) {
 }
 
 const gpuKernel = gpu
-  .createKernel(function(a, b) {
+  .createKernel(function (a, b) {
     let sum = 0;
     for (let i = 0; i < this.constants.size; i++) {
       sum += a[this.thread.y][i] * b[i][this.thread.x];
@@ -29,14 +29,14 @@ const gpuKernel = gpu
     return sum;
   })
   .setConstants({
-    size
+    size,
   })
   .setPipeline(false)
   .setPrecision('unsigned')
   .setOutput([size, size]);
 
 const cpuKernel = cpu
-  .createKernel(function(a, b) {
+  .createKernel(function (a, b) {
     let sum = 0;
     for (let i = 0; i < this.constants.size; i++) {
       sum += a[this.thread.y][i] * b[i][this.thread.x];
@@ -44,7 +44,7 @@ const cpuKernel = cpu
     return sum;
   })
   .setConstants({
-    size
+    size,
   })
   .setOutput([size, size]);
 
@@ -61,7 +61,7 @@ suite
     cpuKernel(a, b);
   })
   // add listeners
-  .on('cycle', (event) => {
+  .on('cycle', event => {
     console.log(String(event.target));
   })
   .on('complete', function () {

@@ -64,7 +64,7 @@ export class GLKernel extends Kernel {
     });
     const args = [
       [6, 6030401],
-      [3, 3991]
+      [3, 3991],
     ];
     kernel.build.apply(kernel, args);
     kernel.run.apply(kernel, args);
@@ -88,9 +88,7 @@ export class GLKernel extends Kernel {
       precision: 'unsigned',
       tactic: 'speed',
     });
-    const args = [
-      [0, 1, 2, 3]
-    ];
+    const args = [[0, 1, 2, 3]];
     kernel.build.apply(kernel, args);
     kernel.run.apply(kernel, args);
     const result = kernel.renderOutput();
@@ -102,14 +100,14 @@ export class GLKernel extends Kernel {
    * @abstract
    */
   static get testCanvas() {
-    throw new Error(`"testCanvas" not defined on ${ this.name }`);
+    throw new Error(`"testCanvas" not defined on ${this.name}`);
   }
 
   /**
    * @abstract
    */
   static get testContext() {
-    throw new Error(`"testContext" not defined on ${ this.name }`);
+    throw new Error(`"testContext" not defined on ${this.name}`);
   }
 
   static getFeatures() {
@@ -137,7 +135,7 @@ export class GLKernel extends Kernel {
    * @abstract
    */
   static setupFeatureChecks() {
-    throw new Error(`"setupFeatureChecks" not defined on ${ this.name }`);
+    throw new Error(`"setupFeatureChecks" not defined on ${this.name}`);
   }
 
   static getSignature(kernel, argumentTypes) {
@@ -298,11 +296,7 @@ export class GLKernel extends Kernel {
 
   static combineKernels(combinedKernel, lastKernel) {
     combinedKernel.apply(null, arguments);
-    const {
-      texSize,
-      context,
-      threadDim
-    } = lastKernel.texSize;
+    const { texSize, context, threadDim } = lastKernel.texSize;
     let result;
     if (lastKernel.precision === 'single') {
       const w = texSize[0];
@@ -323,7 +317,7 @@ export class GLKernel extends Kernel {
       return utils.splitArray(result, lastKernel.output[0]);
     } else if (lastKernel.output.length === 3) {
       const cube = utils.splitArray(result, lastKernel.output[0] * lastKernel.output[1]);
-      return cube.map(function(x) {
+      return cube.map(function (x) {
         return utils.splitArray(x, lastKernel.output[0]);
       });
     }
@@ -368,7 +362,7 @@ export class GLKernel extends Kernel {
   pickRenderStrategy(args) {
     if (this.graphical) {
       this.renderRawOutput = this.readPackedPixelsToUint8Array;
-      this.transferValues = (pixels) => pixels;
+      this.transferValues = pixels => pixels;
       this.TextureConstructor = GLTextureGraphical;
       return null;
     }
@@ -670,7 +664,7 @@ export class GLKernel extends Kernel {
       case 'Array(4)':
         return this.getMainResultArray4Texture();
       default:
-        throw new Error(`unhandled returnType type ${ this.returnType }`);
+        throw new Error(`unhandled returnType type ${this.returnType}`);
     }
   }
 
@@ -766,23 +760,19 @@ export class GLKernel extends Kernel {
   }
 
   getMainResultNumberTexture() {
-    return utils.linesToString(this.getMainResultKernelNumberTexture()) +
-      utils.linesToString(this.getMainResultSubKernelNumberTexture());
+    return utils.linesToString(this.getMainResultKernelNumberTexture()) + utils.linesToString(this.getMainResultSubKernelNumberTexture());
   }
 
   getMainResultArray2Texture() {
-    return utils.linesToString(this.getMainResultKernelArray2Texture()) +
-      utils.linesToString(this.getMainResultSubKernelArray2Texture());
+    return utils.linesToString(this.getMainResultKernelArray2Texture()) + utils.linesToString(this.getMainResultSubKernelArray2Texture());
   }
 
   getMainResultArray3Texture() {
-    return utils.linesToString(this.getMainResultKernelArray3Texture()) +
-      utils.linesToString(this.getMainResultSubKernelArray3Texture());
+    return utils.linesToString(this.getMainResultKernelArray3Texture()) + utils.linesToString(this.getMainResultSubKernelArray3Texture());
   }
 
   getMainResultArray4Texture() {
-    return utils.linesToString(this.getMainResultKernelArray4Texture()) +
-      utils.linesToString(this.getMainResultSubKernelArray4Texture());
+    return utils.linesToString(this.getMainResultKernelArray4Texture()) + utils.linesToString(this.getMainResultSubKernelArray4Texture());
   }
 
   /**
@@ -819,10 +809,7 @@ export class GLKernel extends Kernel {
   }
   readPackedPixelsToUint8Array() {
     if (this.precision !== 'unsigned') throw new Error('Requires this.precision to be "unsigned"');
-    const {
-      texSize,
-      context: gl
-    } = this;
+    const { texSize, context: gl } = this;
     const result = new Uint8Array(texSize[0] * texSize[1] * 4);
     gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, result);
     return result;
@@ -834,10 +821,7 @@ export class GLKernel extends Kernel {
 
   readFloatPixelsToFloat32Array() {
     if (this.precision !== 'single') throw new Error('Requires this.precision to be "single"');
-    const {
-      texSize,
-      context: gl
-    } = this;
+    const { texSize, context: gl } = this;
     const w = texSize[0];
     const h = texSize[1];
     const result = new Float32Array(w * h * 4);
@@ -851,10 +835,7 @@ export class GLKernel extends Kernel {
    * @return {Uint8ClampedArray}
    */
   getPixels(flip) {
-    const {
-      context: gl,
-      output
-    } = this;
+    const { context: gl, output } = this;
     const [width, height] = output;
     const pixels = new Uint8Array(width * height * 4);
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
@@ -901,10 +882,13 @@ export class GLKernel extends Kernel {
         throw new Error('Resizing a kernel with dynamicOutput: false is not possible');
       }
       const newThreadDim = [newOutput[0], newOutput[1] || 1, newOutput[2] || 1];
-      const newTexSize = utils.getKernelTextureSize({
-        optimizeFloatMemory: this.optimizeFloatMemory,
-        precision: this.precision,
-      }, newThreadDim);
+      const newTexSize = utils.getKernelTextureSize(
+        {
+          optimizeFloatMemory: this.optimizeFloatMemory,
+          precision: this.precision,
+        },
+        newThreadDim
+      );
       const oldTexSize = this.texSize;
       if (oldTexSize) {
         const oldPrecision = this.getVariablePrecisionString(oldTexSize, this.tactic);
@@ -916,7 +900,7 @@ export class GLKernel extends Kernel {
           this.switchKernels({
             type: 'outputPrecisionMismatch',
             precision: newPrecision,
-            needed: output
+            needed: output,
           });
           return;
         }
@@ -950,12 +934,7 @@ export class GLKernel extends Kernel {
     return this;
   }
   renderValues() {
-    return this.formatValues(
-      this.transferValues(),
-      this.output[0],
-      this.output[1],
-      this.output[2]
-    );
+    return this.formatValues(this.transferValues(), this.output[0], this.output[1], this.output[2]);
   }
   switchKernels(reason) {
     if (this.switchingKernels) {

@@ -14,18 +14,11 @@ export class WebGLKernelValueSingleInput extends WebGLKernelArray {
   }
 
   getStringValueHandler() {
-    return utils.linesToString([
-      `const uploadValue_${this.name} = new Float32Array(${this.uploadArrayLength})`,
-      `flattenTo(${this.varName}.value, uploadValue_${this.name})`,
-    ]);
+    return utils.linesToString([`const uploadValue_${this.name} = new Float32Array(${this.uploadArrayLength})`, `flattenTo(${this.varName}.value, uploadValue_${this.name})`]);
   }
 
   getSource() {
-    return utils.linesToString([
-      `uniform sampler2D ${this.id}`,
-      `ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
-    ]);
+    return utils.linesToString([`uniform sampler2D ${this.id}`, `ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`, `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`]);
   }
 
   updateValue(input) {

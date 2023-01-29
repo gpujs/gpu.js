@@ -10,9 +10,10 @@ function vec2Test(mode) {
     return [1, 2];
   }
   gpu.addFunction(typedFunction, {
-    returnType: 'Array(2)'
+    returnType: 'Array(2)',
   });
-  const kernel = gpu.createKernel(function() {
+  const kernel = gpu
+    .createKernel(function () {
       const result = typedFunction();
       return result[0] + result[1];
     })
@@ -39,7 +40,6 @@ test('Array(2) - gpu', () => {
   vec2Test('headlessgl');
 });
 
-
 describe('features: add typed functions vec3Test');
 
 function vec3Test(mode) {
@@ -49,9 +49,10 @@ function vec3Test(mode) {
     return [1, 2, 3];
   }
   gpu.addFunction(typedFunction, {
-    returnType: 'Array(3)'
+    returnType: 'Array(3)',
   });
-  const kernel = gpu.createKernel(function() {
+  const kernel = gpu
+    .createKernel(function () {
       const result = typedFunction();
       return result[0] + result[1] + result[2];
     })
@@ -86,9 +87,10 @@ function vec4Test(mode) {
     return [1, 2, 3, 4];
   }
   gpu.addFunction(typedFunction, {
-    returnType: 'Array(4)'
+    returnType: 'Array(4)',
   });
-  const kernel = gpu.createKernel(function() {
+  const kernel = gpu
+    .createKernel(function () {
       const result = typedFunction();
       return result[0] + result[1] + result[2] + result[3];
     })

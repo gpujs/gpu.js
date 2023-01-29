@@ -8,16 +8,20 @@ function testReturn(mode, context, canvas) {
   function addOne(value) {
     return value + 1;
   }
-  const originalKernel = gpu.createKernelMap({ addOneResult: addOne }, function(a) {
-    const result = a[this.thread.x] + 1;
-    addOne(result);
-    return result;
-  }, {
-    canvas,
-    context,
-    output: [6],
-    precision: 'unsigned',
-  });
+  const originalKernel = gpu.createKernelMap(
+    { addOneResult: addOne },
+    function (a) {
+      const result = a[this.thread.x] + 1;
+      addOne(result);
+      return result;
+    },
+    {
+      canvas,
+      context,
+      output: [6],
+      precision: 'unsigned',
+    }
+  );
 
   const a = [1, 2, 3, 4, 5, 6];
   const expected = new Float32Array([2, 3, 4, 5, 6, 7]);

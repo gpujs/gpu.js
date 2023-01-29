@@ -6,9 +6,10 @@ describe('issue #473 - only 4 pixels are shown');
 function testOnly4PixelsAreShownRGBStaticOutput(mode) {
   const gpu = new GPU({ mode });
   const render = gpu.createKernel(
-    function() {
+    function () {
       this.color(1, 1, 1);
-    }, {
+    },
+    {
       output: [20, 20],
       graphical: true,
     }
@@ -49,9 +50,10 @@ test('RGB static output gpu', () => {
 function testOnly4PixelsAreShownRGBAStaticOutput(mode) {
   const gpu = new GPU({ mode });
   const render = gpu.createKernel(
-    function() {
+    function () {
       this.color(1, 1, 1, 1);
-    }, {
+    },
+    {
       output: [20, 20],
       graphical: true,
     }
@@ -92,9 +94,10 @@ test('RGBA static output gpu', () => {
 function testOnly4PixelsAreShownRGBDynamicOutput(mode) {
   const gpu = new GPU({ mode });
   const render = gpu.createKernel(
-    function() {
+    function () {
       this.color(1, 1, 1);
-    }, {
+    },
+    {
       output: [20, 20],
       graphical: true,
       dynamicOutput: true,
@@ -143,9 +146,10 @@ test('rgb dynamic output gpu', () => {
 function testOnly4PixelsAreShownRGBADynamicOutput(mode) {
   const gpu = new GPU({ mode });
   const render = gpu.createKernel(
-    function() {
+    function () {
       this.color(1, 1, 1, 1);
-    }, {
+    },
+    {
       output: [20, 20],
       graphical: true,
       dynamicOutput: true,

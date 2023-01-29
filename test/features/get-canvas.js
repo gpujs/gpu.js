@@ -9,12 +9,17 @@ function getCanvasTest(mode) {
   assert.ok(gpu.context === null, 'context is initially null');
   assert.ok(gpu.canvas === null, 'canvas is initially null');
 
-  const render = gpu.createKernel(function() {
-    this.color(0, 0, 0, 1);
-  }, {
-    output: [30, 30],
-    mode: mode
-  }).setGraphical(true);
+  const render = gpu
+    .createKernel(
+      function () {
+        this.color(0, 0, 0, 1);
+      },
+      {
+        output: [30, 30],
+        mode: mode,
+      }
+    )
+    .setGraphical(true);
 
   assert.ok(render !== null, 'function generated test');
   assert.ok(render.canvas, 'testing for canvas after createKernel');

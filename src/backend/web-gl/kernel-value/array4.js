@@ -20,6 +20,6 @@ export class WebGLKernelValueArray4 extends WebGLKernelValue {
 
   updateValue(value) {
     if (this.origin === 'constants') return;
-    this.kernel.setUniform4fv(this.id, this.uploadValue = value);
+    this.kernel.setUniform4fv(this.id, (this.uploadValue = value));
   }
 }

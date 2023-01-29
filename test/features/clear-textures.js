@@ -7,13 +7,16 @@ function clearTexture(precision, mode) {
   const gpu = new GPU({ mode });
 
   function makeTexture() {
-    return (gpu.createKernel(function() {
-      return this.thread.x;
-    }, {
-      output: [5],
-      pipeline: true,
-      precision
-    }))();
+    return gpu.createKernel(
+      function () {
+        return this.thread.x;
+      },
+      {
+        output: [5],
+        pipeline: true,
+        precision,
+      }
+    )();
   }
   const texture = makeTexture();
   assert.deepEqual(texture.toArray(), new Float32Array([0, 1, 2, 3, 4]));
@@ -56,12 +59,14 @@ test('unsigned precision auto', () => {
   clearTexture('single', 'headlessgl');
 });
 
-
 function clearClonedTexture(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return 1;
-  }, { output: [1], pipeline: true, immutable: true });
+  const kernel = gpu.createKernel(
+    function () {
+      return 1;
+    },
+    { output: [1], pipeline: true, immutable: true }
+  );
   const result = kernel();
   assert.equal(result.toArray()[0], 1);
   const result2 = result.clone();

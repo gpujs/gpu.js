@@ -11,22 +11,25 @@ function testConstant(mode, context, canvas) {
     [9, 10, 11, 12],
     [13, 14, 15, 16],
   ];
-  const originalKernel = gpu.createKernel(function() {
-    let sum = 0;
-    for (let y = 0; y < 4; y++) {
-      sum += this.constants.a[y][this.thread.x];
+  const originalKernel = gpu.createKernel(
+    function () {
+      let sum = 0;
+      for (let y = 0; y < 4; y++) {
+        sum += this.constants.a[y][this.thread.x];
+      }
+      return sum;
+    },
+    {
+      canvas,
+      context,
+      output: [4],
+      precision: 'unsigned',
+      constants: {
+        a,
+      },
     }
-    return sum;
-  }, {
-    canvas,
-    context,
-    output: [4],
-    precision: 'unsigned',
-    constants: {
-      a
-    }
-  });
-  const expected = new Float32Array([28,32,36,40]);
+  );
+  const expected = new Float32Array([28, 32, 36, 40]);
   const originalResult = originalKernel();
   assert.deepEqual(originalResult, expected);
   const kernelString = originalKernel.toString();
@@ -40,7 +43,7 @@ function testConstant(mode, context, canvas) {
     [1, 1, 1, 1],
     [1, 1, 1, 1],
   ];
-  const expected2 = new Float32Array([4,4,4,4]);
+  const expected2 = new Float32Array([4, 4, 4, 4]);
   const newResult2 = Kernel({ context, constants: { a: b } })();
   assert.deepEqual(newResult2, expected2);
   gpu.destroy();

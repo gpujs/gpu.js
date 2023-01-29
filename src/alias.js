@@ -8,7 +8,7 @@ import { utils } from './utils';
  */
 export function alias(name, source) {
   const fnString = source.toString();
-  return new Function(`return function ${ name } (${ utils.getArgumentNamesFromString(fnString).join(', ') }) {
-  ${ utils.getFunctionBodyFromString(fnString) }
+  return new Function(`return function ${name} (${utils.getArgumentNamesFromString(fnString).join(', ')}) {
+  ${utils.getFunctionBodyFromString(fnString)}
 }`)();
 }

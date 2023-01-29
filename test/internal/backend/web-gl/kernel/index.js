@@ -6,7 +6,7 @@ describe('internal: WebGLKernel');
 
 (typeof global !== 'undefined' ? test : skip)('.setupFeatureChecks() if context is available, but .getExtension() is falsey', () => {
   const mockContext = {
-    getExtension: null // this is important
+    getExtension: null, // this is important
   };
   const mockElement = {
     getContext: () => mockContext,
@@ -14,7 +14,7 @@ describe('internal: WebGLKernel');
   const mockDocument = {
     createElement: () => {
       return mockElement;
-    }
+    },
   };
   global.document = mockDocument;
 

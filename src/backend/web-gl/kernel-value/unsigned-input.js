@@ -16,19 +16,11 @@ export class WebGLKernelValueUnsignedInput extends WebGLKernelArray {
   }
 
   getStringValueHandler() {
-    return utils.linesToString([
-      `const preUploadValue_${this.name} = new ${this.TranserArrayType.name}(${this.uploadArrayLength})`,
-      `const uploadValue_${this.name} = new Uint8Array(preUploadValue_${this.name}.buffer)`,
-      `flattenTo(${this.varName}.value, preUploadValue_${this.name})`,
-    ]);
+    return utils.linesToString([`const preUploadValue_${this.name} = new ${this.TranserArrayType.name}(${this.uploadArrayLength})`, `const uploadValue_${this.name} = new Uint8Array(preUploadValue_${this.name}.buffer)`, `flattenTo(${this.varName}.value, preUploadValue_${this.name})`]);
   }
 
   getSource() {
-    return utils.linesToString([
-      `uniform sampler2D ${this.id}`,
-      `ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
-    ]);
+    return utils.linesToString([`uniform sampler2D ${this.id}`, `ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`, `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`]);
   }
 
   updateValue(input) {

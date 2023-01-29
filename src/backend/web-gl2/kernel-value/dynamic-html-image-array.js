@@ -4,11 +4,7 @@ import { WebGL2KernelValueHTMLImageArray } from './html-image-array';
 export class WebGL2KernelValueDynamicHTMLImageArray extends WebGL2KernelValueHTMLImageArray {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
-    return utils.linesToString([
-      `uniform ${ variablePrecision } sampler2DArray ${this.id}`,
-      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
-      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
-    ]);
+    return utils.linesToString([`uniform ${variablePrecision} sampler2DArray ${this.id}`, `uniform ${variablePrecision} ivec2 ${this.sizeId}`, `uniform ${variablePrecision} ivec3 ${this.dimensionsId}`]);
   }
 
   updateValue(images) {

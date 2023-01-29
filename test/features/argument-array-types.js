@@ -5,13 +5,16 @@ describe('argument array types');
 
 function testSinglePrecisionArray2(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    return value[0] + value[1];
-  }, {
-    output: [1],
-    argumentTypes: { value: 'Array(2)' },
-    precision: 'single',
-  });
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value[0] + value[1];
+    },
+    {
+      output: [1],
+      argumentTypes: { value: 'Array(2)' },
+      precision: 'single',
+    }
+  );
   const result = kernel(new Float32Array([1, 2]));
   assert.equal(result[0], 3);
   gpu.destroy();
@@ -43,13 +46,16 @@ test('single precision Array(2) cpu', () => {
 
 function testUnsignedPrecisionArray2(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    return value[0] + value[1];
-  }, {
-    output: [1],
-    argumentTypes: { value: 'Array(2)' },
-    precision: 'unsigned',
-  });
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value[0] + value[1];
+    },
+    {
+      output: [1],
+      argumentTypes: { value: 'Array(2)' },
+      precision: 'unsigned',
+    }
+  );
   const result = kernel(new Float32Array([1, 2]));
   assert.equal(result[0], 3);
   gpu.destroy();
@@ -81,13 +87,16 @@ test('unsigned precision Array(2) cpu', () => {
 
 function testSinglePrecisionArray3(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    return value[0] + value[1] + value[2];
-  }, {
-    output: [1],
-    argumentTypes: { value: 'Array(3)' },
-    precision: 'single',
-  });
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value[0] + value[1] + value[2];
+    },
+    {
+      output: [1],
+      argumentTypes: { value: 'Array(3)' },
+      precision: 'single',
+    }
+  );
   const result = kernel(new Float32Array([1, 2, 3]));
   assert.equal(result[0], 6);
   gpu.destroy();
@@ -119,13 +128,16 @@ test('single precision Array(3) cpu', () => {
 
 function testUnsignedPrecisionArray3(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    return value[0] + value[1] + value[2];
-  }, {
-    output: [1],
-    argumentTypes: { value: 'Array(3)' },
-    precision: 'unsigned',
-  });
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value[0] + value[1] + value[2];
+    },
+    {
+      output: [1],
+      argumentTypes: { value: 'Array(3)' },
+      precision: 'unsigned',
+    }
+  );
   const result = kernel(new Float32Array([1, 2, 3]));
   assert.equal(result[0], 6);
   gpu.destroy();
@@ -157,13 +169,16 @@ test('unsigned precision Array(3) cpu', () => {
 
 function testSinglePrecisionArray4(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    return value[0] + value[1] + value[2] + value[3];
-  }, {
-    output: [1],
-    argumentTypes: { value: 'Array(4)' },
-    precision: 'single',
-  });
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value[0] + value[1] + value[2] + value[3];
+    },
+    {
+      output: [1],
+      argumentTypes: { value: 'Array(4)' },
+      precision: 'single',
+    }
+  );
   const result = kernel(new Float32Array([1, 2, 3, 4]));
   assert.equal(result[0], 10);
   gpu.destroy();
@@ -195,13 +210,16 @@ test('single precision Array(4) cpu', () => {
 
 function testUnsignedPrecisionArray4(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    return value[0] + value[1] + value[2] + value[3];
-  }, {
-    output: [1],
-    argumentTypes: { value: 'Array(4)' },
-    precision: 'unsigned',
-  });
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value[0] + value[1] + value[2] + value[3];
+    },
+    {
+      output: [1],
+      argumentTypes: { value: 'Array(4)' },
+      precision: 'unsigned',
+    }
+  );
   const result = kernel(new Float32Array([1, 2, 3, 4]));
   assert.equal(result[0], 10);
   gpu.destroy();

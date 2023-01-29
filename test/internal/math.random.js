@@ -1,6 +1,9 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
 const sinon = require('sinon');
-const { GPU, plugins: { mathRandom } } = require('../../src');
+const {
+  GPU,
+  plugins: { mathRandom },
+} = require('../../src');
 
 describe('Math.random() unique');
 
@@ -9,18 +12,24 @@ function mathRandomUnique(mode) {
   const checkCount = 20;
   let seed1 = Math.random();
   let seed2 = Math.random();
-  let stub = sinon.stub(mathRandom, 'onBeforeRun').callsFake((kernel) => {
+  let stub = sinon.stub(mathRandom, 'onBeforeRun').callsFake(kernel => {
     kernel.setUniform1f('randomSeed1', seed1);
     kernel.setUniform1f('randomSeed2', seed2);
   });
   try {
-    gpu.addNativeFunction('getSeed', `highp float getSeed() {
+    gpu.addNativeFunction(
+      'getSeed',
+      `highp float getSeed() {
     return randomSeedShift;
-  }`);
-    const kernel = gpu.createKernel(function() {
-      const v = Math.random();
-      return getSeed();
-    }, { output: [1] });
+  }`
+    );
+    const kernel = gpu.createKernel(
+      function () {
+        const v = Math.random();
+        return getSeed();
+      },
+      { output: [1] }
+    );
     const results = [];
     for (let i = 0; i < checkCount; i++) {
       const result = kernel();
@@ -29,7 +38,7 @@ function mathRandomUnique(mode) {
       seed2 = result[0];
       assert.ok(stub.called);
       stub.restore();
-      stub.callsFake((kernel) => {
+      stub.callsFake(kernel => {
         kernel.setUniform1f('randomSeed1', seed1);
         kernel.setUniform1f('randomSeed2', seed2);
       });
@@ -68,7 +77,7 @@ function mathRandomNeverAboveOne(mode) {
   const checkSource = [];
 
   for (let i = 0; i < checkCount; i++) {
-    checkSource.push(`const check${ i } = Math.random();`);
+    checkSource.push(`const check${i} = Math.random();`);
   }
 
   for (let i = 0; i < checkCount; i++) {
@@ -78,10 +87,13 @@ function mathRandomNeverAboveOne(mode) {
     }
   }
 
-  const kernel = gpu.createKernel(`function() {
+  const kernel = gpu.createKernel(
+    `function() {
     ${checkSource.join('\n')}
     return 0;
-  }`, { output: [1] });
+  }`,
+    { output: [1] }
+  );
 
   const result = kernel();
   assert.ok(result.every(value => value === 0));

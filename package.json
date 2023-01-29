@@ -30,7 +30,7 @@
     "@rollup/plugin-terser": "^0.4.0",
     "benchmark": "^2.1.4",
     "c8": "^7.12.0",
-    "js-beautify": "^1.14.7",
+    "prettier": "^2.8.3",
     "qunit": "^2.9.1",
     "read-dir-deep": "^7.0.1",
     "rollup": "^3.12.0",
@@ -42,7 +42,7 @@
     "test": "qunit test/issues test/internal test/features",
     "test:browser": "node scripts/build-tests.js",
     "coverage": "c8 qunit test/issues test/internal test/features",
-    "lint": "js-beautify --config .jsbeautify -f *.js src/**/*.js test/**/*.js",
+    "lint": "prettier -w *.js *.json src test scripts",
     "build": "rollup -c --bundleConfigAsCjs"
   },
   "repository": {

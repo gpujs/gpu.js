@@ -6,7 +6,8 @@ describe('issue #152');
 function forVars(mode) {
   const gpu = new GPU({ mode });
 
-  const kernel = gpu.createKernel(function() {
+  const kernel = gpu
+    .createKernel(function () {
       let sum = 0;
       for (let i = 0; i < 2; i++) {
         sum += i;

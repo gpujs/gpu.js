@@ -195,13 +195,13 @@ export class WebGLFunctionNode extends FunctionNode {
     }
 
     if (this.isRootKernel) {
-      retArr.push(`kernelResult = ${ result.join('') };`);
+      retArr.push(`kernelResult = ${result.join('')};`);
       retArr.push('return;');
     } else if (this.isSubKernel) {
-      retArr.push(`subKernelResult_${ this.name } = ${ result.join('') };`);
-      retArr.push(`return subKernelResult_${ this.name };`);
+      retArr.push(`subKernelResult_${this.name} = ${result.join('')};`);
+      retArr.push(`return subKernelResult_${this.name};`);
     } else {
-      retArr.push(`return ${ result.join('') };`);
+      retArr.push(`return ${result.join('')};`);
     }
     return retArr;
   }
@@ -217,10 +217,7 @@ export class WebGLFunctionNode extends FunctionNode {
   astLiteral(ast, retArr) {
     // Reject non numeric literals
     if (isNaN(ast.value)) {
-      throw this.astErrorOutput(
-        'Non-numeric literal not supported : ' + ast.value,
-        ast
-      );
+      throw this.astErrorOutput('Non-numeric literal not supported : ' + ast.value, ast);
     }
 
     const key = this.astKey(ast);
@@ -328,7 +325,7 @@ export class WebGLFunctionNode extends FunctionNode {
 
       case 'Integer & Float':
       case 'Integer & Number':
-        if (ast.operator === '>' || ast.operator === '<' && ast.right.type === 'Literal') {
+        if (ast.operator === '>' || (ast.operator === '<' && ast.right.type === 'Literal')) {
           // if right value is actually a float, don't loose that information, cast left to right rather than the usual right to left
           if (!Number.isInteger(ast.right.value)) {
             this.pushState('building-float');
@@ -743,7 +740,6 @@ export class WebGLFunctionNode extends FunctionNode {
     return retArr;
   }
 
-
   /**
    * @desc Parses the abstract syntax tree for *Assignment* Expression
    * @param {Object} assNode - An ast Node
@@ -838,7 +834,7 @@ export class WebGLFunctionNode extends FunctionNode {
       }
       const markupType = typeMap[type];
       if (!markupType) {
-        throw this.astErrorOutput(`Markup type ${ type } not handled`, varDecNode);
+        throw this.astErrorOutput(`Markup type ${type} not handled`, varDecNode);
       }
       const declarationResult = [];
       if (actualType === 'Integer' && type === 'Integer') {
@@ -1039,16 +1035,7 @@ export class WebGLFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astMemberExpression(mNode, retArr) {
-    const {
-      property,
-      name,
-      signature,
-      origin,
-      type,
-      xProperty,
-      yProperty,
-      zProperty
-    } = this.getMemberExpressionDetails(mNode);
+    const { property, name, signature, origin, type, xProperty, yProperty, zProperty } = this.getMemberExpressionDetails(mNode);
     switch (signature) {
       case 'value.thread.value':
       case 'this.thread.value':
@@ -1126,16 +1113,16 @@ export class WebGLFunctionNode extends FunctionNode {
         const cleanName = utils.sanitizeName(name);
         switch (property) {
           case 'r':
-            retArr.push(`user_${ cleanName }.r`);
+            retArr.push(`user_${cleanName}.r`);
             return retArr;
           case 'g':
-            retArr.push(`user_${ cleanName }.g`);
+            retArr.push(`user_${cleanName}.g`);
             return retArr;
           case 'b':
-            retArr.push(`user_${ cleanName }.b`);
+            retArr.push(`user_${cleanName}.b`);
             return retArr;
           case 'a':
-            retArr.push(`user_${ cleanName }.a`);
+            retArr.push(`user_${cleanName}.a`);
             return retArr;
         }
         break;
@@ -1145,7 +1132,7 @@ export class WebGLFunctionNode extends FunctionNode {
             case 'Array(2)':
             case 'Array(3)':
             case 'Array(4)':
-              retArr.push(`constants_${ utils.sanitizeName(name) }`);
+              retArr.push(`constants_${utils.sanitizeName(name)}`);
               return retArr;
           }
         }
@@ -1206,43 +1193,43 @@ export class WebGLFunctionNode extends FunctionNode {
         retArr.push(']');
         break;
       case 'HTMLImageArray':
-        retArr.push(`getImage3D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(`getImage3D(${markupName}, ${markupName}Size, ${markupName}Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
       case 'ArrayTexture(1)':
-        retArr.push(`getFloatFromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(`getFloatFromSampler2D(${markupName}, ${markupName}Size, ${markupName}Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
       case 'Array1D(2)':
       case 'Array2D(2)':
       case 'Array3D(2)':
-        retArr.push(`getMemoryOptimizedVec2(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(`getMemoryOptimizedVec2(${markupName}, ${markupName}Size, ${markupName}Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
       case 'ArrayTexture(2)':
-        retArr.push(`getVec2FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(`getVec2FromSampler2D(${markupName}, ${markupName}Size, ${markupName}Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
       case 'Array1D(3)':
       case 'Array2D(3)':
       case 'Array3D(3)':
-        retArr.push(`getMemoryOptimizedVec3(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(`getMemoryOptimizedVec3(${markupName}, ${markupName}Size, ${markupName}Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
       case 'ArrayTexture(3)':
-        retArr.push(`getVec3FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(`getVec3FromSampler2D(${markupName}, ${markupName}Size, ${markupName}Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
       case 'Array1D(4)':
       case 'Array2D(4)':
       case 'Array3D(4)':
-        retArr.push(`getMemoryOptimizedVec4(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(`getMemoryOptimizedVec4(${markupName}, ${markupName}Size, ${markupName}Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
@@ -1253,7 +1240,7 @@ export class WebGLFunctionNode extends FunctionNode {
       case 'ImageBitmap':
       case 'ImageData':
       case 'HTMLVideo':
-        retArr.push(`getVec4FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(`getVec4FromSampler2D(${markupName}, ${markupName}Size, ${markupName}Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
@@ -1273,10 +1260,7 @@ export class WebGLFunctionNode extends FunctionNode {
           this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
           retArr.push(')');
         } else {
-          const bitRatio = (origin === 'user' ?
-            this.lookupFunctionArgumentBitRatio(this.name, name) :
-            this.constantBitRatios[name]
-          );
+          const bitRatio = origin === 'user' ? this.lookupFunctionArgumentBitRatio(this.name, name) : this.constantBitRatios[name];
           switch (bitRatio) {
             case 1:
               retArr.push(`get8(${markupName}, ${markupName}Size, ${markupName}Dim, `);
@@ -1296,7 +1280,7 @@ export class WebGLFunctionNode extends FunctionNode {
         }
         break;
       case 'MemoryOptimizedNumberTexture':
-        retArr.push(`getMemoryOptimized32(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(`getMemoryOptimized32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
@@ -1309,7 +1293,7 @@ export class WebGLFunctionNode extends FunctionNode {
         }
         break;
       default:
-        throw new Error(`unhandled member expression "${ type }"`);
+        throw new Error(`unhandled member expression "${type}"`);
     }
     return retArr;
   }
@@ -1461,7 +1445,7 @@ export class WebGLFunctionNode extends FunctionNode {
               } else if (argument.type === 'ArrayExpression' || argument.type === 'MemberExpression' || argument.type === 'CallExpression') {
                 this.astGeneric(argument, retArr);
               } else {
-                throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
+                throw this.astErrorOutput(`Unhandled argument type ${argument.type}`, ast);
               }
               continue;
             }
@@ -1480,7 +1464,7 @@ export class WebGLFunctionNode extends FunctionNode {
           case 'Array':
           case 'Input':
             if (targetType === argumentType) {
-              if (argument.type !== 'Identifier') throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
+              if (argument.type !== 'Identifier') throw this.astErrorOutput(`Unhandled argument type ${argument.type}`, ast);
               this.triggerImplyArgumentBitRatio(this.name, argument.name, functionName, i);
               const name = utils.sanitizeName(argument.name);
               retArr.push(`user_${name},user_${name}Size,user_${name}Dim`);
@@ -1488,7 +1472,7 @@ export class WebGLFunctionNode extends FunctionNode {
             }
             break;
         }
-        throw this.astErrorOutput(`Unhandled argument combination of ${ argumentType } and ${ targetType } for argument named "${ argument.name }"`, ast);
+        throw this.astErrorOutput(`Unhandled argument combination of ${argumentType} and ${targetType} for argument named "${argument.name}"`, ast);
       }
     }
     // Close arguments space
@@ -1522,7 +1506,7 @@ export class WebGLFunctionNode extends FunctionNode {
         retArr.push(', ');
       }
       const subNode = arrNode.elements[i];
-      this.astGeneric(subNode, retArr)
+      this.astGeneric(subNode, retArr);
     }
     retArr.push(')');
 
@@ -1566,37 +1550,37 @@ export class WebGLFunctionNode extends FunctionNode {
 }
 
 const typeMap = {
-  'Array': 'sampler2D',
+  Array: 'sampler2D',
   'Array(2)': 'vec2',
   'Array(3)': 'vec3',
   'Array(4)': 'vec4',
   'Matrix(2)': 'mat2',
   'Matrix(3)': 'mat3',
   'Matrix(4)': 'mat4',
-  'Array2D': 'sampler2D',
-  'Array3D': 'sampler2D',
-  'Boolean': 'bool',
-  'Float': 'float',
-  'Input': 'sampler2D',
-  'Integer': 'int',
-  'Number': 'float',
-  'LiteralInteger': 'float',
-  'NumberTexture': 'sampler2D',
-  'MemoryOptimizedNumberTexture': 'sampler2D',
+  Array2D: 'sampler2D',
+  Array3D: 'sampler2D',
+  Boolean: 'bool',
+  Float: 'float',
+  Input: 'sampler2D',
+  Integer: 'int',
+  Number: 'float',
+  LiteralInteger: 'float',
+  NumberTexture: 'sampler2D',
+  MemoryOptimizedNumberTexture: 'sampler2D',
   'ArrayTexture(1)': 'sampler2D',
   'ArrayTexture(2)': 'sampler2D',
   'ArrayTexture(3)': 'sampler2D',
   'ArrayTexture(4)': 'sampler2D',
-  'HTMLVideo': 'sampler2D',
-  'HTMLCanvas': 'sampler2D',
-  'OffscreenCanvas': 'sampler2D',
-  'HTMLImage': 'sampler2D',
-  'ImageBitmap': 'sampler2D',
-  'ImageData': 'sampler2D',
-  'HTMLImageArray': 'sampler2DArray',
+  HTMLVideo: 'sampler2D',
+  HTMLCanvas: 'sampler2D',
+  OffscreenCanvas: 'sampler2D',
+  HTMLImage: 'sampler2D',
+  ImageBitmap: 'sampler2D',
+  ImageData: 'sampler2D',
+  HTMLImageArray: 'sampler2DArray',
 };
 
 const operatorMap = {
   '===': '==',
-  '!==': '!='
+  '!==': '!=',
 };

@@ -5,14 +5,17 @@ describe('feature: to-string single precision arguments Boolean');
 
 function testArgument(mode, context, canvas) {
   const gpu = new GPU({ mode });
-  const originalKernel = gpu.createKernel(function(a) {
-    return a ? 42 : -42;
-  }, {
-    canvas,
-    context,
-    output: [1],
-    precision: 'single',
-  });
+  const originalKernel = gpu.createKernel(
+    function (a) {
+      return a ? 42 : -42;
+    },
+    {
+      canvas,
+      context,
+      output: [1],
+      precision: 'single',
+    }
+  );
   assert.deepEqual(originalKernel(true)[0], 42);
   assert.deepEqual(originalKernel(false)[0], -42);
   const kernelString = originalKernel.toString(true);

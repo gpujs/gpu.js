@@ -5,28 +5,34 @@ describe('feature: to-string unsigned precision constants Boolean');
 
 function testConstant(mode, context, canvas) {
   const gpu = new GPU({ mode });
-  const originalKernel1 = gpu.createKernel(function() {
-    return this.constants.a ? 42 : -42;
-  }, {
-    canvas,
-    context,
-    output: [1],
-    precision: 'unsigned',
-    constants: {
-      a: true
+  const originalKernel1 = gpu.createKernel(
+    function () {
+      return this.constants.a ? 42 : -42;
+    },
+    {
+      canvas,
+      context,
+      output: [1],
+      precision: 'unsigned',
+      constants: {
+        a: true,
+      },
     }
-  });
-  const originalKernel2 = gpu.createKernel(function() {
-    return this.constants.a ? 42 : -42;
-  }, {
-    canvas,
-    context,
-    output: [1],
-    precision: 'unsigned',
-    constants: {
-      a: false
+  );
+  const originalKernel2 = gpu.createKernel(
+    function () {
+      return this.constants.a ? 42 : -42;
+    },
+    {
+      canvas,
+      context,
+      output: [1],
+      precision: 'unsigned',
+      constants: {
+        a: false,
+      },
     }
-  });
+  );
   assert.deepEqual(originalKernel1()[0], 42);
   assert.deepEqual(originalKernel2()[0], -42);
   const kernelString1 = originalKernel1.toString();

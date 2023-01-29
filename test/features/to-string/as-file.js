@@ -10,9 +10,12 @@ function toStringAsFileTest(mode) {
     fs.unlinkSync(path);
   }
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v) {
-    return v[this.thread.y][this.thread.x] + 1;
-  }, { output: [1, 1] });
+  const kernel = gpu.createKernel(
+    function (v) {
+      return v[this.thread.y][this.thread.x] + 1;
+    },
+    { output: [1, 1] }
+  );
   const a = [[1]];
   const expected = kernel(a);
   assert.deepEqual(expected, [new Float32Array([2])]);
@@ -33,5 +36,3 @@ function toStringAsFileTest(mode) {
 (GPU.isHeadlessGLSupported ? test : skip)('can save and restore function cpu', () => {
   toStringAsFileTest('cpu');
 });
-
-

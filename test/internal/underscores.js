@@ -5,9 +5,12 @@ describe('internal: underscores');
 
 function testNumberArgument(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value_1) {
-    return value_1;
-  }, { output: [1], });
+  const kernel = gpu.createKernel(
+    function (value_1) {
+      return value_1;
+    },
+    { output: [1] }
+  );
   assert.equal(kernel(1)[0], 1);
   gpu.destroy();
 }
@@ -33,9 +36,12 @@ test('number argument cpu', () => {
 
 function testArrayArgument(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value_1) {
-    return value_1[this.thread.x];
-  }, { output: [1], });
+  const kernel = gpu.createKernel(
+    function (value_1) {
+      return value_1[this.thread.x];
+    },
+    { output: [1] }
+  );
   assert.equal(kernel([1])[0], 1);
   gpu.destroy();
 }
@@ -61,10 +67,18 @@ test('array argument cpu', () => {
 
 function testTextureArgument(mode) {
   const gpu = new GPU({ mode });
-  const texture = gpu.createKernel(function() { return 1; }, { output: [1], pipeline: true })();
-  const kernel = gpu.createKernel(function(value_1) {
-    return value_1[this.thread.x];
-  }, { output: [1], });
+  const texture = gpu.createKernel(
+    function () {
+      return 1;
+    },
+    { output: [1], pipeline: true }
+  )();
+  const kernel = gpu.createKernel(
+    function (value_1) {
+      return value_1[this.thread.x];
+    },
+    { output: [1] }
+  );
   assert.equal(kernel(texture)[0], 1);
   gpu.destroy();
 }
@@ -88,14 +102,21 @@ test('texture argument cpu', () => {
   testTextureArgument('cpu');
 });
 
-
 function testArray2TextureArgument(mode) {
   const gpu = new GPU({ mode });
-  const texture = gpu.createKernel(function() { return [1, 1]; }, { output: [1], pipeline: true })();
-  const kernel = gpu.createKernel(function(value_1) {
-    debugger;
-    return value_1[this.thread.x];
-  }, { output: [1], });
+  const texture = gpu.createKernel(
+    function () {
+      return [1, 1];
+    },
+    { output: [1], pipeline: true }
+  )();
+  const kernel = gpu.createKernel(
+    function (value_1) {
+      debugger;
+      return value_1[this.thread.x];
+    },
+    { output: [1] }
+  );
   assert.deepEqual(kernel(texture)[0], new Float32Array([1, 1]));
   gpu.destroy();
 }
@@ -116,17 +137,19 @@ test('array2 texture argument gpu', () => {
   testArray2TextureArgument('headlessgl');
 });
 
-
 function testNumberConstant(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return this.constants.value_1;
-  }, {
-    output: [1],
-    constants: {
-      value_1: 1
+  const kernel = gpu.createKernel(
+    function () {
+      return this.constants.value_1;
     },
-  });
+    {
+      output: [1],
+      constants: {
+        value_1: 1,
+      },
+    }
+  );
   assert.equal(kernel()[0], 1);
   gpu.destroy();
 }
@@ -152,14 +175,17 @@ test('number constant cpu', () => {
 
 function testArrayConstant(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return this.constants.value_1[0];
-  }, {
-    output: [1],
-    constants: {
-      value_1: [1]
+  const kernel = gpu.createKernel(
+    function () {
+      return this.constants.value_1[0];
     },
-  });
+    {
+      output: [1],
+      constants: {
+        value_1: [1],
+      },
+    }
+  );
   assert.equal(kernel()[0], 1);
   gpu.destroy();
 }
@@ -183,18 +209,25 @@ test('array constant cpu', () => {
   testArrayConstant('cpu');
 });
 
-
 function testTextureConstant(mode) {
   const gpu = new GPU({ mode });
-  const texture = gpu.createKernel(function() { return 1; }, { output: [1], pipeline: true })();
-  const kernel = gpu.createKernel(function() {
-    return this.constants.value_1[0];
-  }, {
-    output: [1],
-    constants: {
-      value_1: texture
+  const texture = gpu.createKernel(
+    function () {
+      return 1;
     },
-  });
+    { output: [1], pipeline: true }
+  )();
+  const kernel = gpu.createKernel(
+    function () {
+      return this.constants.value_1[0];
+    },
+    {
+      output: [1],
+      constants: {
+        value_1: texture,
+      },
+    }
+  );
   assert.equal(kernel()[0], 1);
   gpu.destroy();
 }

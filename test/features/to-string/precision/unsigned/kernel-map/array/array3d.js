@@ -8,37 +8,29 @@ function testReturn(mode, context, canvas) {
   function addOne(value) {
     return value + 1;
   }
-  const originalKernel = gpu.createKernelMap([addOne], function(a) {
-    const result = a[this.thread.x] + 1;
-    addOne(result);
-    return result;
-  }, {
-    canvas,
-    context,
-    output: [2, 2, 2],
-    precision: 'unsigned',
-  });
+  const originalKernel = gpu.createKernelMap(
+    [addOne],
+    function (a) {
+      const result = a[this.thread.x] + 1;
+      addOne(result);
+      return result;
+    },
+    {
+      canvas,
+      context,
+      output: [2, 2, 2],
+      precision: 'unsigned',
+    }
+  );
 
   const a = [1, 2];
   const expected = [
-    [
-      new Float32Array([2, 3]),
-      new Float32Array([2, 3]),
-    ],
-    [
-      new Float32Array([2, 3]),
-      new Float32Array([2, 3]),
-    ]
+    [new Float32Array([2, 3]), new Float32Array([2, 3])],
+    [new Float32Array([2, 3]), new Float32Array([2, 3])],
   ];
   const expectedZero = [
-    [
-      new Float32Array([3, 4]),
-      new Float32Array([3, 4]),
-    ],
-    [
-      new Float32Array([3, 4]),
-      new Float32Array([3, 4]),
-    ]
+    [new Float32Array([3, 4]), new Float32Array([3, 4])],
+    [new Float32Array([3, 4]), new Float32Array([3, 4])],
   ];
   const originalResult = originalKernel(a);
   assert.deepEqual(originalResult.result, expected);

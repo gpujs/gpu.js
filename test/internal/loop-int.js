@@ -14,20 +14,12 @@ test('loop int constant output webgl', () => {
     isRootKernel: true,
     output: [1],
     constantTypes: {
-      max: 'Integer'
+      max: 'Integer',
     },
     argumentTypes: ['Array'],
     lookupFunctionArgumentBitRatio: () => 4,
   });
-  assert.equal(
-    functionNode.toString(),
-    'void kernel() {' +
-    '\nfloat user_sum=0.0;' +
-    '\nfor (int user_i=0;(user_i<constants_max);user_i++){' +
-    '\nuser_sum+=get32(user_a, user_aSize, user_aDim, 0, threadId.x, user_i);}' +
-    '\n' +
-    '\nkernelResult = user_sum;return;' +
-    '\n}');
+  assert.equal(functionNode.toString(), 'void kernel() {' + '\nfloat user_sum=0.0;' + '\nfor (int user_i=0;(user_i<constants_max);user_i++){' + '\nuser_sum+=get32(user_a, user_aSize, user_aDim, 0, threadId.x, user_i);}' + '\n' + '\nkernelResult = user_sum;return;' + '\n}');
 });
 
 test('loop int constant output webgl2', () => {
@@ -45,15 +37,7 @@ test('loop int constant output webgl2', () => {
     argumentTypes: ['Array'],
     lookupFunctionArgumentBitRatio: () => 4,
   });
-  assert.equal(
-    functionNode.toString(),
-    'void kernel() {' +
-    '\nfloat user_sum=0.0;' +
-    '\nfor (int user_i=0;(user_i<constants_max);user_i++){' +
-    '\nuser_sum+=get32(user_a, user_aSize, user_aDim, 0, threadId.x, user_i);}' +
-    '\n' +
-    '\nkernelResult = user_sum;return;' +
-    '\n}');
+  assert.equal(functionNode.toString(), 'void kernel() {' + '\nfloat user_sum=0.0;' + '\nfor (int user_i=0;(user_i<constants_max);user_i++){' + '\nuser_sum+=get32(user_a, user_aSize, user_aDim, 0, threadId.x, user_i);}' + '\n' + '\nkernelResult = user_sum;return;' + '\n}');
 });
 
 (GPU.isWebGLSupported ? test : skip)('loop int constant webgl', () => {
@@ -67,15 +51,10 @@ test('loop int constant output webgl2', () => {
   const gpu = new GPU({ mode: 'webgl' });
   const output = gpu.createKernel(kernel, {
     constants: { max: 3 },
-    output: [1]
-  })([
-    [1, 2, 3]
-  ]);
+    output: [1],
+  })([[1, 2, 3]]);
 
-  assert.equal(
-    output,
-    6
-  );
+  assert.equal(output, 6);
   gpu.destroy();
 });
 
@@ -90,15 +69,10 @@ test('loop int constant output webgl2', () => {
   const gpu = new GPU({ mode: 'webgl2' });
   const output = gpu.createKernel(kernel, {
     constants: { max: 3 },
-    output: [1]
-  })([
-    [1, 2, 3]
-  ]);
+    output: [1],
+  })([[1, 2, 3]]);
 
-  assert.equal(
-    output,
-    6
-  );
+  assert.equal(output, 6);
   gpu.destroy();
 });
 
@@ -113,15 +87,10 @@ test('loop int constant output webgl2', () => {
   const gpu = new GPU({ mode: 'headlessgl' });
   const output = gpu.createKernel(kernel, {
     constants: { max: 3 },
-    output: [1]
-  })([
-    [1, 2, 3]
-  ]);
+    output: [1],
+  })([[1, 2, 3]]);
 
-  assert.equal(
-    output,
-    6
-  );
+  assert.equal(output, 6);
   gpu.destroy();
 });
 
@@ -139,15 +108,7 @@ test('loop int literal output webgl', () => {
     argumentTypes: ['Array'],
     lookupFunctionArgumentBitRatio: () => 4,
   });
-  assert.equal(
-    functionNode.toString(),
-    'void kernel() {' +
-    '\nfloat user_sum=0.0;' +
-    '\nfor (int user_i=0;(user_i<10);user_i++){' +
-    '\nuser_sum+=get32(user_a, user_aSize, user_aDim, 0, threadId.x, user_i);}' +
-    '\n' +
-    '\nkernelResult = user_sum;return;' +
-    '\n}');
+  assert.equal(functionNode.toString(), 'void kernel() {' + '\nfloat user_sum=0.0;' + '\nfor (int user_i=0;(user_i<10);user_i++){' + '\nuser_sum+=get32(user_a, user_aSize, user_aDim, 0, threadId.x, user_i);}' + '\n' + '\nkernelResult = user_sum;return;' + '\n}');
 });
 
 test('loop int literal output webgl2', () => {
@@ -164,15 +125,7 @@ test('loop int literal output webgl2', () => {
     argumentTypes: ['Array'],
     lookupFunctionArgumentBitRatio: () => 4,
   });
-  assert.equal(
-    functionNode.toString(),
-    'void kernel() {' +
-    '\nfloat user_sum=0.0;' +
-    '\nfor (int user_i=0;(user_i<10);user_i++){' +
-    '\nuser_sum+=get32(user_a, user_aSize, user_aDim, 0, threadId.x, user_i);}' +
-    '\n' +
-    '\nkernelResult = user_sum;return;' +
-    '\n}');
+  assert.equal(functionNode.toString(), 'void kernel() {' + '\nfloat user_sum=0.0;' + '\nfor (int user_i=0;(user_i<10);user_i++){' + '\nuser_sum+=get32(user_a, user_aSize, user_aDim, 0, threadId.x, user_i);}' + '\n' + '\nkernelResult = user_sum;return;' + '\n}');
 });
 
 (GPU.isWebGLSupported ? test : skip)('loop int literal webgl', () => {
@@ -184,13 +137,8 @@ test('loop int literal output webgl2', () => {
     return sum;
   }
   const gpu = new GPU({ mode: 'webgl' });
-  const output = gpu.createKernel(kernel, { output: [1] })([
-    [1, 2, 3]
-  ]);
-  assert.equal(
-    output,
-    6
-  );
+  const output = gpu.createKernel(kernel, { output: [1] })([[1, 2, 3]]);
+  assert.equal(output, 6);
   gpu.destroy();
 });
 
@@ -203,13 +151,8 @@ test('loop int literal output webgl2', () => {
     return sum;
   }
   const gpu = new GPU({ mode: 'webgl2' });
-  const output = gpu.createKernel(kernel, { output: [1] })([
-    [1, 2, 3]
-  ]);
-  assert.equal(
-    output,
-    6
-  );
+  const output = gpu.createKernel(kernel, { output: [1] })([[1, 2, 3]]);
+  assert.equal(output, 6);
   gpu.destroy();
 });
 
@@ -222,13 +165,8 @@ test('loop int literal output webgl2', () => {
     return sum;
   }
   const gpu = new GPU({ mode: 'headlessgl' });
-  const output = gpu.createKernel(kernel, { output: [1] })([
-    [1, 2, 3]
-  ]);
-  assert.equal(
-    output,
-    6
-  );
+  const output = gpu.createKernel(kernel, { output: [1] })([[1, 2, 3]]);
+  assert.equal(output, 6);
   gpu.destroy();
 });
 
@@ -244,20 +182,9 @@ test('loop int parameter output webgl', () => {
     isRootKernel: true,
     output: [1],
     argumentTypes: ['Number', 'Array'],
-    lookupFunctionArgumentBitRatio: () => 4
+    lookupFunctionArgumentBitRatio: () => 4,
   });
-  assert.equal(
-    functionNode.toString(),
-    'void kernel() {' +
-    '\nfloat user_sum=0.0;' +
-    '\nint user_i=0;' +
-    '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
-    '\nif (!(user_i<int(user_a))) break;' +
-    '\nuser_sum+=get32(user_b, user_bSize, user_bDim, 0, threadId.x, user_i);' +
-    '\nuser_i++;}' +
-    '\n' +
-    '\nkernelResult = user_sum;return;' +
-    '\n}');
+  assert.equal(functionNode.toString(), 'void kernel() {' + '\nfloat user_sum=0.0;' + '\nint user_i=0;' + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' + '\nif (!(user_i<int(user_a))) break;' + '\nuser_sum+=get32(user_b, user_bSize, user_bDim, 0, threadId.x, user_i);' + '\nuser_i++;}' + '\n' + '\nkernelResult = user_sum;return;' + '\n}');
 });
 
 test('loop int parameter output webgl2', () => {
@@ -274,18 +201,7 @@ test('loop int parameter output webgl2', () => {
     argumentTypes: ['Number', 'Array'],
     lookupFunctionArgumentBitRatio: () => 4,
   });
-  assert.equal(
-    functionNode.toString(),
-    'void kernel() {' +
-    '\nfloat user_sum=0.0;' +
-    '\nint user_i=0;' +
-    '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
-    '\nif (!(user_i<int(user_a))) break;' +
-    '\nuser_sum+=get32(user_b, user_bSize, user_bDim, 0, threadId.x, user_i);' +
-    '\nuser_i++;}' +
-    '\n' +
-    '\nkernelResult = user_sum;return;' +
-    '\n}');
+  assert.equal(functionNode.toString(), 'void kernel() {' + '\nfloat user_sum=0.0;' + '\nint user_i=0;' + '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' + '\nif (!(user_i<int(user_a))) break;' + '\nuser_sum+=get32(user_b, user_bSize, user_bDim, 0, threadId.x, user_i);' + '\nuser_i++;}' + '\n' + '\nkernelResult = user_sum;return;' + '\n}');
 });
 
 (GPU.isWebGLSupported ? test : skip)('loop int parameter webgl', () => {
@@ -297,13 +213,8 @@ test('loop int parameter output webgl2', () => {
     return sum;
   }
   const gpu = new GPU({ mode: 'webgl' });
-  const output = gpu.createKernel(kernel, { output: [1] })(3, [
-    [1, 2, 3]
-  ]);
-  assert.equal(
-    output,
-    6
-  );
+  const output = gpu.createKernel(kernel, { output: [1] })(3, [[1, 2, 3]]);
+  assert.equal(output, 6);
   gpu.destroy();
 });
 
@@ -316,13 +227,8 @@ test('loop int parameter output webgl2', () => {
     return sum;
   }
   const gpu = new GPU({ mode: 'webgl2' });
-  const output = gpu.createKernel(kernel, { output: [1] })(3, [
-    [1, 2, 3]
-  ]);
-  assert.equal(
-    output,
-    6
-  );
+  const output = gpu.createKernel(kernel, { output: [1] })(3, [[1, 2, 3]]);
+  assert.equal(output, 6);
   gpu.destroy();
 });
 
@@ -335,13 +241,8 @@ test('loop int parameter output webgl2', () => {
     return sum;
   }
   const gpu = new GPU({ mode: 'headlessgl' });
-  const output = gpu.createKernel(kernel, { output: [1] })(3, [
-    [1, 2, 3]
-  ]);
-  assert.equal(
-    output,
-    6
-  );
+  const output = gpu.createKernel(kernel, { output: [1] })(3, [[1, 2, 3]]);
+  assert.equal(output, 6);
   gpu.destroy();
 });
 
@@ -357,14 +258,9 @@ test('loop int parameter output webgl2', () => {
   const output = gpu.createKernel(kernel, {
     dynamicOutput: true,
     output: [1],
-  })([
-    [3]
-  ]);
+  })([[3]]);
 
-  assert.deepEqual(
-    Array.from(output),
-    [3]
-  );
+  assert.deepEqual(Array.from(output), [3]);
   gpu.destroy();
 });
 
@@ -379,15 +275,10 @@ test('loop int parameter output webgl2', () => {
   const gpu = new GPU({ mode: 'webgl2' });
   const output = gpu.createKernel(kernel, {
     dynamicOutput: true,
-    output: [1]
-  })([
-    [3]
-  ]);
+    output: [1],
+  })([[3]]);
 
-  assert.deepEqual(
-    Array.from(output),
-    [3]
-  );
+  assert.deepEqual(Array.from(output), [3]);
   gpu.destroy();
 });
 
@@ -403,13 +294,8 @@ test('loop int parameter output webgl2', () => {
   const output = gpu.createKernel(kernel, {
     dynamicOutput: true,
     output: [1],
-  })([
-    [3]
-  ]);
+  })([[3]]);
 
-  assert.deepEqual(
-    Array.from(output),
-    [3]
-  );
+  assert.deepEqual(Array.from(output), [3]);
   gpu.destroy();
 });

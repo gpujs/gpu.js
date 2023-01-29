@@ -5,9 +5,12 @@ describe('features: arithmetic operators');
 
 function addition(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return 3 + 2;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      return 3 + 2;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   assert.equal(result[0], 3 + 2);
   gpu.destroy();
@@ -37,12 +40,14 @@ test('addition cpu', () => {
   addition('cpu');
 });
 
-
 function subtraction(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return 3 - 2;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      return 3 - 2;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   assert.equal(result[0], 3 - 2);
   gpu.destroy();
@@ -74,9 +79,12 @@ test('subtraction cpu', () => {
 
 function multiplication(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return 3 * 2;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      return 3 * 2;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   assert.equal(result[0], 3 * 2);
   gpu.destroy();
@@ -108,9 +116,12 @@ test('multiplication cpu', () => {
 
 function exponential(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return 3 ** 2;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      return 3 ** 2;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   assert.equal(result[0], 3 ** 2);
   gpu.destroy();
@@ -142,9 +153,12 @@ test('exponential cpu', () => {
 
 function division(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return 3 / 2;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      return 3 / 2;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   assert.equal(result[0], 3 / 2);
   gpu.destroy();
@@ -176,19 +190,28 @@ test('division cpu', () => {
 
 function modulus(mode) {
   const gpu = new GPU({ mode });
-  const kernel1 = gpu.createKernel(function() {
-    return 3 % 2;
-  }, { output: [1] });
+  const kernel1 = gpu.createKernel(
+    function () {
+      return 3 % 2;
+    },
+    { output: [1] }
+  );
   assert.equal(kernel1()[0], 3 % 2);
 
-  const kernel2 = gpu.createKernel(function() {
-    return -126 % 63.5;
-  }, { output: [1] });
+  const kernel2 = gpu.createKernel(
+    function () {
+      return -126 % 63.5;
+    },
+    { output: [1] }
+  );
   assert.equal(kernel2()[0], -126 % 63.5);
 
-  const kernel3 = gpu.createKernel(function() {
-    return 126 % -63.5;
-  }, { output: [1] });
+  const kernel3 = gpu.createKernel(
+    function () {
+      return 126 % -63.5;
+    },
+    { output: [1] }
+  );
   assert.equal(kernel3()[0], 126 % -63.5);
 
   gpu.destroy();
@@ -220,9 +243,12 @@ test('modulus cpu', () => {
 
 function modulusVariable(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v) {
-    return 91 % 7;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function (v) {
+      return 91 % 7;
+    },
+    { output: [1] }
+  );
   assert.equal(kernel(7)[0], 0);
   gpu.destroy();
 }
@@ -231,14 +257,16 @@ test('modulus variable auto', () => {
   modulusVariable();
 });
 
-
 function increment(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    let i = 3;
-    i++;
-    return i;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      let i = 3;
+      i++;
+      return i;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   let i = 3;
   i++;
@@ -272,10 +300,13 @@ test('increment cpu', () => {
 
 function incrementEarlyReturn(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    let i = 3;
-    return i++;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      let i = 3;
+      return i++;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   let i = 3;
   assert.equal(result[0], i++);
@@ -308,11 +339,14 @@ test('increment early return cpu', () => {
 
 function decrement(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    let i = 3;
-    i--;
-    return i;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      let i = 3;
+      i--;
+      return i;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   let i = 3;
   i--;
@@ -346,10 +380,13 @@ test('decrement cpu', () => {
 
 function decrementEarlyReturn(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    let i = 3;
-    return i--;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      let i = 3;
+      return i--;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   let i = 3;
   assert.equal(result[0], i--);

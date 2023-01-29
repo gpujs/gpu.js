@@ -18,7 +18,7 @@ test('.updateValue() checks too large height', () => {
     tactic: 'speed',
     onRequestContextHandle: () => 1,
     onRequestTexture: () => null,
-    onRequestIndex: () => 1
+    onRequestIndex: () => 1,
   });
 
   assert.throws(() => {
@@ -42,13 +42,15 @@ test('.updateValue() checks too large width', () => {
     tactic: 'speed',
     onRequestContextHandle: () => 1,
     onRequestTexture: () => null,
-    onRequestIndex: () => 1
+    onRequestIndex: () => 1,
   });
   assert.throws(() => {
-    v.updateValue([{
-      height: 1,
-      width: 2,
-    }])
+    v.updateValue([
+      {
+        height: 1,
+        width: 2,
+      },
+    ]);
   }, new Error('Argument texture width of 2 larger than maximum size of 1 for your GPU'));
 });
 
@@ -79,12 +81,14 @@ test('.updateValue() checks ok height & width', () => {
     context: mockContext,
     onRequestContextHandle: () => 1,
     onRequestTexture: () => null,
-    onRequestIndex: () => 1
+    onRequestIndex: () => 1,
   });
-  v.updateValue([{
-    height: 1,
-    width: 1,
-  }]);
+  v.updateValue([
+    {
+      height: 1,
+      width: 1,
+    },
+  ]);
 
   assert.equal(v.constructor.name, 'WebGL2KernelValueDynamicHTMLImageArray');
 });

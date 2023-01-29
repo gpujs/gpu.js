@@ -12,7 +12,7 @@ test('.constructor() checks too large height', () => {
   };
   const row = new Float32Array(5);
   assert.throws(() => {
-    new webGLKernelValueMaps.single.static["Array2D(2)"]([[row]], {
+    new webGLKernelValueMaps.single.static['Array2D(2)']([[row]], {
       kernel: mockKernel,
       name: 'test',
       type: 'Array2D(2)',
@@ -20,7 +20,7 @@ test('.constructor() checks too large height', () => {
       tactic: 'speed',
       onRequestContextHandle: () => 1,
       onRequestTexture: () => null,
-      onRequestIndex: () => 1
+      onRequestIndex: () => 1,
     });
   }, new Error('Argument texture height of 2 larger than maximum size of 1 for your GPU'));
 });
@@ -42,7 +42,7 @@ test('.constructor() checks ok height & width', () => {
     pixelStorei: () => {},
     texImage2D: () => {},
   };
-  const v = new webGLKernelValueMaps.single.static["Array2D(2)"]([[[1,2]]], {
+  const v = new webGLKernelValueMaps.single.static['Array2D(2)']([[[1, 2]]], {
     kernel: mockKernel,
     name: 'test',
     type: 'Array2D(2)',
@@ -51,7 +51,7 @@ test('.constructor() checks ok height & width', () => {
     context: mockContext,
     onRequestContextHandle: () => 1,
     onRequestTexture: () => null,
-    onRequestIndex: () => 1
+    onRequestIndex: () => 1,
   });
   assert.equal(v.constructor.name, 'WebGLKernelValueSingleArray2DI');
 });

@@ -5,18 +5,21 @@ describe('feature: to-string single precision arguments Array(4)');
 
 function testArgument(mode, context, canvas) {
   const gpu = new GPU({ mode });
-  const originalKernel = gpu.createKernel(function(a) {
-    return a;
-  }, {
-    canvas,
-    context,
-    output: [1],
-    precision: 'single',
-    argumentTypes: { a: 'Array(4)' }
-  });
+  const originalKernel = gpu.createKernel(
+    function (a) {
+      return a;
+    },
+    {
+      canvas,
+      context,
+      output: [1],
+      precision: 'single',
+      argumentTypes: { a: 'Array(4)' },
+    }
+  );
 
   const a = new Float32Array([1, 2, 3, 4]);
-  const expected = [new Float32Array([1,2,3,4])];
+  const expected = [new Float32Array([1, 2, 3, 4])];
   const originalResult = originalKernel(a);
   assert.deepEqual(originalResult, expected);
   const kernelString = originalKernel.toString(a);
@@ -25,7 +28,7 @@ function testArgument(mode, context, canvas) {
   assert.deepEqual(newResult, expected);
 
   const b = new Float32Array([1, 1, 1, 1]);
-  const expected2 = [new Float32Array([1,1,1,1])];
+  const expected2 = [new Float32Array([1, 1, 1, 1])];
   const newResult2 = newKernel(b);
   assert.deepEqual(newResult2, expected2);
   gpu.destroy();

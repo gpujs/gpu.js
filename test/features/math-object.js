@@ -8,9 +8,12 @@ function mathProps(mode) {
   const gpu = new GPU({ mode });
   for (let i = 0; i < props.length; i++) {
     const prop = props[i];
-    const kernel = gpu.createKernel(`function() {
+    const kernel = gpu.createKernel(
+      `function() {
       return Math.${prop};
-    }`, { output: [1] });
+    }`,
+      { output: [1] }
+    );
     assert.equal(kernel()[0].toFixed(6), Math[prop].toFixed(6));
   }
   gpu.destroy();
@@ -76,9 +79,12 @@ function singleArgumentMathMethods(mode) {
   const gpu = new GPU({ mode });
   for (let i = 0; i < methods.length; i++) {
     const method = methods[i];
-    const kernel = gpu.createKernel(`function(value) {
+    const kernel = gpu.createKernel(
+      `function(value) {
       return Math.${method}(value);
-    }`, { output: [1] });
+    }`,
+      { output: [1] }
+    );
     for (let j = 0; j < 10; j++) {
       assert.equal(kernel(j / 10)[0].toFixed(3), Math[method](j / 10).toFixed(3), `Math.${method}(${j / 10})`);
     }
@@ -111,20 +117,17 @@ test('Single argument Math methods cpu', () => {
 });
 
 function twoArgumentMathMethods(mode) {
-  const methods = [
-    'atan2',
-    'imul',
-    'max',
-    'min',
-    'pow',
-  ];
+  const methods = ['atan2', 'imul', 'max', 'min', 'pow'];
 
   const gpu = new GPU({ mode });
   for (let i = 0; i < methods.length; i++) {
     const method = methods[i];
-    const kernel = gpu.createKernel(`function(value1, value2) {
+    const kernel = gpu.createKernel(
+      `function(value1, value2) {
       return Math.${method}(value1, value2);
-    }`, { output: [1] });
+    }`,
+      { output: [1] }
+    );
     for (let j = 0; j < 10; j++) {
       const value1 = j / 10;
       const value2 = value1;
@@ -160,11 +163,14 @@ test('Two argument Math methods cpu', () => {
 
 function sqrtABTest(mode) {
   const gpu = new GPU({ mode });
-  const f = gpu.createKernel(function(a, b) {
-    return Math.sqrt(a[this.thread.x] * b[this.thread.x]);
-  }, {
-    output: [6]
-  });
+  const f = gpu.createKernel(
+    function (a, b) {
+      return Math.sqrt(a[this.thread.x] * b[this.thread.x]);
+    },
+    {
+      output: [6],
+    }
+  );
   const a = [3, 4, 5, 6, 7, 8];
   const b = [3, 4, 5, 6, 7, 8];
 
@@ -199,12 +205,14 @@ test('sqrtAB cpu', () => {
   sqrtABTest('cpu');
 });
 
-
 function mathRandom(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return Math.random();
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      return Math.random();
+    },
+    { output: [1] }
+  );
 
   const result = kernel();
   assert.ok(result[0] > 0 && result[0] < 1, `value was expected to be between o and 1, but was ${result[0]}`);

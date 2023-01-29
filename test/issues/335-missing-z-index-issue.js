@@ -6,16 +6,13 @@ describe('issue #335');
 function missingZIndexIssue(mode) {
   const gpu = new GPU({ mode });
 
-  const kernel = gpu.createKernel(function(value) {
+  const kernel = gpu
+    .createKernel(function (value) {
       return value[this.thread.z][this.thread.y][this.thread.x];
     })
     .setOutput([1, 1, undefined]);
 
-  kernel([
-    [
-      [1]
-    ]
-  ]);
+  kernel([[[1]]]);
   gpu.destroy();
 }
 

@@ -5,14 +5,17 @@ describe('issue #267 kernel');
 
 function immutableKernelWithoutFloats(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v) {
-    return v[this.thread.x] + 1;
-  }, {
-    output: [1],
-    immutable: true,
-    pipeline: true,
-    precision: 'unsigned',
-  });
+  const kernel = gpu.createKernel(
+    function (v) {
+      return v[this.thread.x] + 1;
+    },
+    {
+      output: [1],
+      immutable: true,
+      pipeline: true,
+      precision: 'unsigned',
+    }
+  );
 
   // start with a value on CPU
   const output1 = kernel([1]);
@@ -54,14 +57,17 @@ test('Issue #267 immutable kernel output without floats - gpu', () => {
 
 function immutableKernelWithFloats(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v) {
-    return v[this.thread.x] + 1;
-  }, {
-    output: [1],
-    immutable: true,
-    pipeline: true,
-    precision: 'single',
-  });
+  const kernel = gpu.createKernel(
+    function (v) {
+      return v[this.thread.x] + 1;
+    },
+    {
+      output: [1],
+      immutable: true,
+      pipeline: true,
+      precision: 'single',
+    }
+  );
 
   // start with a value on CPU
   // reuse that output, simulating that this value will be monitored, and updated via the same kernel
@@ -96,7 +102,6 @@ function immutableKernelWithFloats(mode) {
   immutableKernelWithFloats('headlessgl');
 });
 
-
 describe('issue #267 sub kernel');
 
 function immutableSubKernelsWithoutFloats(mode) {
@@ -109,14 +114,16 @@ function immutableSubKernelsWithoutFloats(mode) {
   }
 
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernelMap({
+  const kernel = gpu.createKernelMap(
+    {
       valueOutput1: value1,
-      valueOutput2: value2
+      valueOutput2: value2,
     },
-    function(a, b) {
+    function (a, b) {
       value1(a[this.thread.x]);
       return value2(b[this.thread.x]);
-    }, {
+    },
+    {
       output: [1],
       immutable: true,
       pipeline: true,
@@ -161,8 +168,6 @@ function immutableSubKernelsWithoutFloats(mode) {
   immutableSubKernelsWithoutFloats('headlessgl');
 });
 
-
-
 describe('issue #267 sub kernels mixed');
 
 function immutableKernelsMixedWithoutFloats(mode) {
@@ -175,14 +180,16 @@ function immutableKernelsMixedWithoutFloats(mode) {
   }
 
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernelMap({
+  const kernel = gpu.createKernelMap(
+    {
       valueOutput1: value1,
       valueOutput2: value2,
     },
-    function(a, b) {
+    function (a, b) {
       value1(a[this.thread.x]);
       return value2(b[this.thread.x]) + 100;
-    }, {
+    },
+    {
       output: [1],
       immutable: true,
       pipeline: true,

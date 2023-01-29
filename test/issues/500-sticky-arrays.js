@@ -10,9 +10,12 @@ function testStickyArrays(mode) {
     return image[0];
   }
   gpu.addFunction(processImage);
-  const kernel = gpu.createKernel(function(image1, image2, image3) {
-    return [processImage(image1), processImage(image2), processImage(image3)];
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function (image1, image2, image3) {
+      return [processImage(image1), processImage(image2), processImage(image3)];
+    },
+    { output: [1] }
+  );
 
   assert.deepEqual(kernel([1], [2], [3]), [new Float32Array([1, 2, 3])]);
 }

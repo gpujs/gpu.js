@@ -7,16 +7,19 @@ describe('feature: to-string unsigned precision constants HTMLCanvas');
 function testArgument(mode, done) {
   const canvasInput1 = greenCanvas(mode, 1, 1);
   const canvasInput2 = greenCanvas(mode, 1, 1);
-  const gpu = new GPU({mode});
-  const originalKernel = gpu.createKernel(function () {
-    const pixel1 = this.constants.canvas1[this.thread.y][this.thread.x];
-    const pixel2 = this.constants.canvas2[this.thread.y][this.thread.x];
-    return pixel1[1] + pixel2[1];
-  }, {
-    output: [1],
-    precision: 'unsigned',
-    constants: { canvas1: canvasInput1, canvas2: canvasInput2 }
-  });
+  const gpu = new GPU({ mode });
+  const originalKernel = gpu.createKernel(
+    function () {
+      const pixel1 = this.constants.canvas1[this.thread.y][this.thread.x];
+      const pixel2 = this.constants.canvas2[this.thread.y][this.thread.x];
+      return pixel1[1] + pixel2[1];
+    },
+    {
+      output: [1],
+      precision: 'unsigned',
+      constants: { canvas1: canvasInput1, canvas2: canvasInput2 },
+    }
+  );
   const canvas = originalKernel.canvas;
   const context = originalKernel.context;
   assert.deepEqual(originalKernel()[0], 2);
@@ -28,8 +31,8 @@ function testArgument(mode, done) {
     canvas,
     constants: {
       canvas1: canvasInput3,
-      canvas2: canvasInput4
-    }
+      canvas2: canvasInput4,
+    },
   });
   assert.deepEqual(newKernel()[0], 2);
   gpu.destroy();
@@ -42,5 +45,3 @@ function testArgument(mode, done) {
 (GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
   testArgument('webgl2');
 });
-
-

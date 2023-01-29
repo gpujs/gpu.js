@@ -1,4 +1,4 @@
-import { utils } from "./utils";
+import { utils } from './utils';
 
 export class Input {
   constructor(value, size) {
@@ -18,19 +18,18 @@ export class Input {
 
     const [w, h, d] = this.size;
     if (d) {
-      if (this.value.length !== (w * h * d)) {
-        throw new Error(`Input size ${this.value.length} does not match ${w} * ${h} * ${d} = ${(h * w * d)}`);
+      if (this.value.length !== w * h * d) {
+        throw new Error(`Input size ${this.value.length} does not match ${w} * ${h} * ${d} = ${h * w * d}`);
       }
     } else if (h) {
-      if (this.value.length !== (w * h)) {
-        throw new Error(`Input size ${this.value.length} does not match ${w} * ${h} = ${(h * w)}`);
+      if (this.value.length !== w * h) {
+        throw new Error(`Input size ${this.value.length} does not match ${w} * ${h} = ${h * w}`);
       }
     } else {
       if (this.value.length !== w) {
         throw new Error(`Input size ${this.value.length} does not match ${w}`);
       }
     }
-
   }
 
   toArray() {

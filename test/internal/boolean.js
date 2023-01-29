@@ -5,15 +5,18 @@ describe('internal: boolean');
 
 function booleanLiteral(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    const v = true === true;
-    if (v) {
-      return 1;
+  const kernel = gpu.createKernel(
+    function () {
+      const v = true === true;
+      if (v) {
+        return 1;
+      }
+      return 0;
+    },
+    {
+      output: [1],
     }
-    return 0;
-  }, {
-    output: [1],
-  });
+  );
   const result = kernel();
   assert.ok(result[0]);
   gpu.destroy();
@@ -43,17 +46,19 @@ test('boolean literal cpu', () => {
   booleanLiteral('cpu');
 });
 
-
 function booleanArgumentTrue(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v) {
-    if (v) {
-      return 1;
+  const kernel = gpu.createKernel(
+    function (v) {
+      if (v) {
+        return 1;
+      }
+      return 0;
+    },
+    {
+      output: [1],
     }
-    return 0;
-  }, {
-    output: [1],
-  });
+  );
   const result = kernel(true);
   assert.ok(result[0]);
   gpu.destroy();
@@ -83,17 +88,19 @@ test('boolean argument true cpu', () => {
   booleanArgumentTrue('cpu');
 });
 
-
 function booleanArgumentFalse(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v) {
-    if (v) {
-      return 1;
+  const kernel = gpu.createKernel(
+    function (v) {
+      if (v) {
+        return 1;
+      }
+      return 0;
+    },
+    {
+      output: [1],
     }
-    return 0;
-  }, {
-    output: [1],
-  });
+  );
   const result = kernel(false);
   assert.notOk(result[0]);
   gpu.destroy();
@@ -123,18 +130,20 @@ test('boolean argument false cpu', () => {
   booleanArgumentFalse('cpu');
 });
 
-
 function booleanVariableTrue(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    const v = true;
-    if (v) {
-      return 1;
+  const kernel = gpu.createKernel(
+    function () {
+      const v = true;
+      if (v) {
+        return 1;
+      }
+      return 0;
+    },
+    {
+      output: [1],
     }
-    return 0;
-  }, {
-    output: [1],
-  });
+  );
   const result = kernel();
   assert.ok(result[0]);
   gpu.destroy();
@@ -166,15 +175,18 @@ test('boolean variable true cpu', () => {
 
 function booleanVariableFalse(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    const v = false;
-    if (v) {
-      return 1;
+  const kernel = gpu.createKernel(
+    function () {
+      const v = false;
+      if (v) {
+        return 1;
+      }
+      return 0;
+    },
+    {
+      output: [1],
     }
-    return 0;
-  }, {
-    output: [1],
-  });
+  );
   const result = kernel();
   assert.notOk(result[0]);
   gpu.destroy();
@@ -206,15 +218,18 @@ test('boolean variable false cpu', () => {
 
 function booleanExpressionTrue(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    const v = 1 > 0;
-    if (v) {
-      return 1;
+  const kernel = gpu.createKernel(
+    function () {
+      const v = 1 > 0;
+      if (v) {
+        return 1;
+      }
+      return 0;
+    },
+    {
+      output: [1],
     }
-    return 0;
-  }, {
-    output: [1],
-  });
+  );
   const result = kernel();
   assert.ok(result[0]);
   gpu.destroy();
@@ -244,18 +259,20 @@ test('boolean expression true cpu', () => {
   booleanExpressionTrue('cpu');
 });
 
-
 function booleanExpressionFalse(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    const v = 1 < 0;
-    if (v) {
-      return 1;
+  const kernel = gpu.createKernel(
+    function () {
+      const v = 1 < 0;
+      if (v) {
+        return 1;
+      }
+      return 0;
+    },
+    {
+      output: [1],
     }
-    return 0;
-  }, {
-    output: [1],
-  });
+  );
   const result = kernel();
   assert.notOk(result[0]);
   gpu.destroy();

@@ -5,20 +5,23 @@ describe('feature: to-string unsigned precision arguments Array3D');
 
 function testArgument(mode, context, canvas) {
   const gpu = new GPU({ mode });
-  const originalKernel = gpu.createKernel(function(a) {
-    let sum = 0;
-    for (let z = 0; z < 2; z++) {
-      for (let y = 0; y < 2; y++) {
-        sum += a[z][y][this.thread.x];
+  const originalKernel = gpu.createKernel(
+    function (a) {
+      let sum = 0;
+      for (let z = 0; z < 2; z++) {
+        for (let y = 0; y < 2; y++) {
+          sum += a[z][y][this.thread.x];
+        }
       }
+      return sum;
+    },
+    {
+      canvas,
+      context,
+      output: [2],
+      precision: 'unsigned',
     }
-    return sum;
-  }, {
-    canvas,
-    context,
-    output: [2],
-    precision: 'unsigned',
-  });
+  );
 
   const a = [
     [
@@ -28,7 +31,7 @@ function testArgument(mode, context, canvas) {
     [
       [5, 6],
       [7, 8],
-    ]
+    ],
   ];
   const expected = new Float32Array([16, 20]);
   const originalResult = originalKernel(a);
@@ -46,7 +49,7 @@ function testArgument(mode, context, canvas) {
     [
       [1, 1],
       [1, 1],
-    ]
+    ],
   ];
   const expected2 = new Float32Array([4, 4]);
   const newResult2 = newKernel(b);

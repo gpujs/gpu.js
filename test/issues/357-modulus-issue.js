@@ -8,9 +8,11 @@ function testModKernel(mode) {
   const gpu = new GPU({ mode });
   const nValues = 100;
 
-  const myFunc3 = gpu.createKernel(function(x) {
-    return x[this.thread.x % 3];
-  }).setOutput([nValues]);
+  const myFunc3 = gpu
+    .createKernel(function (x) {
+      return x[this.thread.x % 3];
+    })
+    .setOutput([nValues]);
 
   const input = [1, 2, 3];
   myFunc3(input);

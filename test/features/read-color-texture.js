@@ -5,57 +5,47 @@ describe('features: read color texture');
 
 function colorSyntaxTest(mode) {
   const gpu = new GPU({ mode });
-  const createTexture = gpu.createKernel(
-      function(value) {
-        this.color(
-          value[this.thread.y][this.thread.x],
-          value[this.thread.y][this.thread.x],
-          value[this.thread.y][this.thread.x],
-          value[this.thread.y][this.thread.x]
-        );
-      }
-    )
+  const createTexture = gpu
+    .createKernel(function (value) {
+      this.color(value[this.thread.y][this.thread.x], value[this.thread.y][this.thread.x], value[this.thread.y][this.thread.x], value[this.thread.y][this.thread.x]);
+    })
     .setOutput([4, 4])
     .setGraphical(true)
     .setPipeline(true);
 
-  const readRTexture = gpu.createKernel(
-      function(texture) {
-        const pixel = texture[this.thread.y][this.thread.x];
-        return pixel.r;
-      }
-    )
+  const readRTexture = gpu
+    .createKernel(function (texture) {
+      const pixel = texture[this.thread.y][this.thread.x];
+      return pixel.r;
+    })
     .setOutput([4, 4]);
 
-  const readGTexture = gpu.createKernel(
-      function(texture) {
-        const pixel = texture[this.thread.y][this.thread.x];
-        return pixel.g;
-      }
-    )
+  const readGTexture = gpu
+    .createKernel(function (texture) {
+      const pixel = texture[this.thread.y][this.thread.x];
+      return pixel.g;
+    })
     .setOutput([4, 4]);
 
-  const readBTexture = gpu.createKernel(
-      function(texture) {
-        const pixel = texture[this.thread.y][this.thread.x];
-        return pixel.b;
-      }
-    )
+  const readBTexture = gpu
+    .createKernel(function (texture) {
+      const pixel = texture[this.thread.y][this.thread.x];
+      return pixel.b;
+    })
     .setOutput([4, 4]);
 
-  const readATexture = gpu.createKernel(
-      function(texture) {
-        const pixel = texture[this.thread.y][this.thread.x];
-        return pixel.a;
-      }
-    )
+  const readATexture = gpu
+    .createKernel(function (texture) {
+      const pixel = texture[this.thread.y][this.thread.x];
+      return pixel.a;
+    })
     .setOutput([4, 4]);
 
   const texture = createTexture([
-    [.01, .02, .03, .04],
-    [.05, .06, .07, .08],
-    [.09, .10, .11, .12],
-    [.13, .14, .15, .16]
+    [0.01, 0.02, 0.03, 0.04],
+    [0.05, 0.06, 0.07, 0.08],
+    [0.09, 0.1, 0.11, 0.12],
+    [0.13, 0.14, 0.15, 0.16],
   ]);
   const resultR = readRTexture(texture);
   const resultG = readGTexture(texture);

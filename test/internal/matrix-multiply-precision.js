@@ -24,7 +24,7 @@ function vanillaMatrixMultiply(a, b) {
 function filledMatrix(width, height) {
   const matrix = new Array(height);
   for (let y = 0; y < height; y++) {
-    const row = matrix[y] = new Float32Array(width);
+    const row = (matrix[y] = new Float32Array(width));
     for (let x = 0; x < width; x++) {
       row[x] = Math.random() * 10;
     }
@@ -38,19 +38,22 @@ function test512x512Matrix(precision, mode) {
   const a = filledMatrix(width, height);
   const b = filledMatrix(width, height);
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(a, b) {
-    let sum = 0;
-    for (let i = 0; i < this.constants.width; i++) {
-      sum += a[this.thread.y][i] * b[i][this.thread.x];
+  const kernel = gpu.createKernel(
+    function (a, b) {
+      let sum = 0;
+      for (let i = 0; i < this.constants.width; i++) {
+        sum += a[this.thread.y][i] * b[i][this.thread.x];
+      }
+      return sum;
+    },
+    {
+      output: [width, height],
+      precision,
+      constants: {
+        width,
+      },
     }
-    return sum;
-  }, {
-    output: [width, height],
-    precision,
-    constants: {
-      width
-    }
-  });
+  );
   const cpuResult = vanillaMatrixMultiply(a, b, width, height);
   const gpuResult = kernel(a, b);
   let closeEnough = true;
@@ -98,19 +101,22 @@ function test10x512Matrix(precision, mode) {
   const a = filledMatrix(width, height);
   const b = filledMatrix(width, height);
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(a, b) {
-    let sum = 0;
-    for (let i = 0; i < this.constants.width; i++) {
-      sum += a[this.thread.y][i] * b[i][this.thread.x];
+  const kernel = gpu.createKernel(
+    function (a, b) {
+      let sum = 0;
+      for (let i = 0; i < this.constants.width; i++) {
+        sum += a[this.thread.y][i] * b[i][this.thread.x];
+      }
+      return sum;
+    },
+    {
+      output: [width, height],
+      precision,
+      constants: {
+        width,
+      },
     }
-    return sum;
-  }, {
-    output: [width, height],
-    precision,
-    constants: {
-      width
-    }
-  });
+  );
   const cpuResult = vanillaMatrixMultiply(a, b, width, height);
   const gpuResult = kernel(a, b);
   let closeEnough = true;
@@ -175,7 +181,6 @@ test('10x512 unsigned precision cpu', () => {
 test('512x512 single precision cpu', () => {
   test512x512Matrix('single', 'cpu');
 });
-
 
 (GPU.isSinglePrecisionSupported ? test : skip)('10x512 single precision auto', () => {
   test10x512Matrix('single');

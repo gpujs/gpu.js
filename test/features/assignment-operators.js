@@ -5,10 +5,13 @@ describe('features: assignment operators');
 
 function equal(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    let i = 3;
-    return i;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      let i = 3;
+      return i;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   assert.equal(result[0], 3);
   gpu.destroy();
@@ -40,11 +43,14 @@ test('equal cpu', () => {
 
 function plusEqual(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    let i = 3;
-    i += 3;
-    return i;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      let i = 3;
+      i += 3;
+      return i;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   let i = 3;
   i += 3;
@@ -78,11 +84,14 @@ test('plus equal cpu', () => {
 
 function minusEqual(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    let i = 6;
-    i -= 3;
-    return i;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      let i = 6;
+      i -= 3;
+      return i;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   let i = 6;
   i -= 3;
@@ -116,11 +125,14 @@ test('minus equal cpu', () => {
 
 function multiplyEqual(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    let i = 6;
-    i *= 3;
-    return i;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      let i = 6;
+      i *= 3;
+      return i;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   let i = 6;
   i *= 3;
@@ -154,11 +166,14 @@ test('multiply equal cpu', () => {
 
 function divideEqual(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    let i = 6;
-    i /= 3;
-    return i;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      let i = 6;
+      i /= 3;
+      return i;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   let i = 6;
   i /= 3;
@@ -190,14 +205,16 @@ test('divide equal cpu', () => {
   divideEqual('cpu');
 });
 
-
 function modulusEqual(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    let i = 2;
-    i %= 3;
-    return i;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      let i = 2;
+      i %= 3;
+      return i;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   let i = 2;
   i %= 3;
@@ -231,11 +248,14 @@ test('modulus equal cpu', () => {
 
 function exponentialEqual(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    let i = 2;
-    i **= 3;
-    return i;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      let i = 2;
+      i **= 3;
+      return i;
+    },
+    { output: [1] }
+  );
   const result = kernel();
   let i = 2;
   i **= 3;

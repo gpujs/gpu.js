@@ -11,7 +11,8 @@ function secondKernelMap(mode) {
   function add(a, b) {
     return a + b;
   }
-  const kernels = gpu.createKernelMap([add], function(a, b) {
+  const kernels = gpu
+    .createKernelMap([add], function (a, b) {
       return add(a[this.thread.x], b[this.thread.x]);
     })
     .setOutput([5]);
@@ -25,18 +26,18 @@ function secondKernelMap(mode) {
   assert.deepEqual(Array.from(G), [2, 4, 6, 8, 10]);
   gpu.destroy();
 }
-(GPU.isKernelMapSupported ? test : skip)("Issue #114 - run createKernelMap the second time auto", () => {
+(GPU.isKernelMapSupported ? test : skip)('Issue #114 - run createKernelMap the second time auto', () => {
   secondKernelMap();
 });
-(GPU.isKernelMapSupported ? test : skip)("Issue #114 - run createKernelMap the second time gpu", () => {
+(GPU.isKernelMapSupported ? test : skip)('Issue #114 - run createKernelMap the second time gpu', () => {
   secondKernelMap('gpu');
 });
-(GPU.isWebGLSupported ? test : skip)("Issue #114 - run createKernelMap the second time webgl", () => {
+(GPU.isWebGLSupported ? test : skip)('Issue #114 - run createKernelMap the second time webgl', () => {
   secondKernelMap('webgl');
 });
-(GPU.isWebGL2Supported ? test : skip)("Issue #114 - run createKernelMap the second time webgl2", () => {
+(GPU.isWebGL2Supported ? test : skip)('Issue #114 - run createKernelMap the second time webgl2', () => {
   secondKernelMap('webgl2');
 });
-(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)("Issue #114 - run createKernelMap the second time headlessgl", () => {
+(GPU.isHeadlessGLSupported && GPU.isKernelMapSupported ? test : skip)('Issue #114 - run createKernelMap the second time headlessgl', () => {
   secondKernelMap('headlessgl');
 });

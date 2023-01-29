@@ -7,12 +7,15 @@ function readImageData(mode) {
   const gpu = new GPU({ mode });
   const dataArray = new Uint8ClampedArray([255, 255, 255, 255]);
   const imageData = new ImageData(dataArray, 1, 1);
-  const kernel = gpu.createKernel(function(imageData) {
-    const pixel = imageData[this.thread.y][this.thread.x];
-    return pixel[0] + pixel[1] + pixel[2] + pixel[3];
-  }, {
-    output: [1]
-  });
+  const kernel = gpu.createKernel(
+    function (imageData) {
+      const pixel = imageData[this.thread.y][this.thread.x];
+      return pixel[0] + pixel[1] + pixel[2] + pixel[3];
+    },
+    {
+      output: [1],
+    }
+  );
   const result = kernel(imageData);
   assert.equal(result.length, 1);
   assert.equal(result[0], 4);

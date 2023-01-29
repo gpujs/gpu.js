@@ -5,11 +5,14 @@ describe('issue #263');
 
 function toString(mode, context, canvas) {
   const gpu = new GPU({ mode, context, canvas });
-  const kernel = gpu.createKernel(function() {
-    return 1;
-  }, {
-    output: [1]
-  });
+  const kernel = gpu.createKernel(
+    function () {
+      return 1;
+    },
+    {
+      output: [1],
+    }
+  );
   kernel.build();
   const string = kernel.toString();
   const kernel2 = new Function('return ' + string)()({ context, canvas });

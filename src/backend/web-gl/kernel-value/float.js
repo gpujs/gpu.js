@@ -21,6 +21,6 @@ export class WebGLKernelValueFloat extends WebGLKernelValue {
 
   updateValue(value) {
     if (this.origin === 'constants') return;
-    this.kernel.setUniform1f(this.id, this.uploadValue = value);
+    this.kernel.setUniform1f(this.id, (this.uploadValue = value));
   }
 }

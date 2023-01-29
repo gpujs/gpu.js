@@ -8,10 +8,11 @@ function canvasConstantTest(mode) {
   const gpu = new GPU({ mode });
   const canvas = greenCanvas(mode, 1, 1);
   const kernel = gpu.createKernel(
-    function() {
+    function () {
       const pixel = this.constants.canvas[this.thread.y][this.thread.x];
       return pixel.g;
-    }, {
+    },
+    {
       constants: { canvas },
       output: [1, 1],
     }

@@ -5,12 +5,15 @@ describe('issue #349 divide by 3');
 
 function testDivideByThree(mode) {
   const gpu = new GPU({ mode });
-  const k = gpu.createKernel(function(v1, v2) {
-    return v1 / v2;
-  }, {
-    output: [1],
-    precision: 'single'
-  });
+  const k = gpu.createKernel(
+    function (v1, v2) {
+      return v1 / v2;
+    },
+    {
+      output: [1],
+      precision: 'single',
+    }
+  );
   assert.equal(k(6, 3)[0], 2);
   gpu.destroy();
 }
@@ -39,7 +42,6 @@ test('Issue #349 - divide by three cpu', () => {
   testDivideByThree('cpu');
 });
 
-
 describe('issue #349 divide by random numbers');
 
 function someRandomWholeNumberDivisions(mode) {
@@ -54,12 +56,15 @@ function someRandomWholeNumberDivisions(mode) {
     dividendData[i] = divisorData[i] * expectedResults[i];
   }
   const gpu = new GPU({ mode });
-  const k = gpu.createKernel(function(v1, v2) {
-    return v1[this.thread.x] / v2[this.thread.x];
-  }, {
-    output: [DATA_MAX],
-    precision: 'single'
-  });
+  const k = gpu.createKernel(
+    function (v1, v2) {
+      return v1[this.thread.x] / v2[this.thread.x];
+    },
+    {
+      output: [DATA_MAX],
+      precision: 'single',
+    }
+  );
   const result = k(dividendData, divisorData);
   let same = true;
   let i = 0;
@@ -69,7 +74,7 @@ function someRandomWholeNumberDivisions(mode) {
       break;
     }
   }
-  assert.ok(same, same ? "" : "not all elements are the same, failed on index:" + i + " " + dividendData[i] + "/" + divisorData[i]);
+  assert.ok(same, same ? '' : 'not all elements are the same, failed on index:' + i + ' ' + dividendData[i] + '/' + divisorData[i]);
   gpu.destroy();
 }
 
@@ -92,32 +97,30 @@ test('Issue #349 - some random whole number divisions cpu', () => {
   someRandomWholeNumberDivisions('cpu');
 });
 
-
 describe('issue #349 disable integer division bug');
 
 function testDisableFixIntegerDivisionBug(mode) {
   const gpu = new GPU({ mode });
-  const idFix = gpu.createKernel(function(v1, v2) {
-    return v1 / v2;
-  }, { precision: 'single', output: [1] });
+  const idFix = gpu.createKernel(
+    function (v1, v2) {
+      return v1 / v2;
+    },
+    { precision: 'single', output: [1] }
+  );
 
-  const idDixOff = gpu.createKernel(function(v1, v2) {
-    return v1 / v2;
-  }, {
-    output: [1],
-    precision: 'single',
-    fixIntegerDivisionAccuracy: false
-  });
+  const idDixOff = gpu.createKernel(
+    function (v1, v2) {
+      return v1 / v2;
+    },
+    {
+      output: [1],
+      precision: 'single',
+      fixIntegerDivisionAccuracy: false,
+    }
+  );
 
   if (!gpu.Kernel.features.isIntegerDivisionAccurate) {
-    assert.ok(
-      (
-        idFix(6, 3)[0] === 2 &&
-        idFix(6030401, 3991)[0] === 1511
-      ) && (
-        idDixOff(6, 3)[0] !== 2 ||
-        idDixOff(6030401, 3991)[0] !== 1511
-      ), "when bug is present should show bug!");
+    assert.ok(idFix(6, 3)[0] === 2 && idFix(6030401, 3991)[0] === 1511 && (idDixOff(6, 3)[0] !== 2 || idDixOff(6030401, 3991)[0] !== 1511), 'when bug is present should show bug!');
   } else {
     assert.ok(idFix(6, 3)[0] === 2 && idDixOff(6, 3)[0] === 2, "when bug isn't present should not show bug!");
   }

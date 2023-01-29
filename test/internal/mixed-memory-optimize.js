@@ -4,7 +4,8 @@ const { GPU } = require('../../src');
 describe('internal: mixed memory optimize');
 
 function getOffKernel(gpu) {
-  return gpu.createKernel(function(value) {
+  return gpu
+    .createKernel(function (value) {
       return value[this.thread.x];
     }) // getFloatFromSampler2D
     .setPrecision('single')
@@ -14,7 +15,8 @@ function getOffKernel(gpu) {
 }
 
 function getOnKernel(gpu) {
-  return gpu.createKernel(function(value) {
+  return gpu
+    .createKernel(function (value) {
       return value[this.thread.x];
     }) // getMemoryOptimized32
     .setPrecision('single')
@@ -61,7 +63,6 @@ test('off on off cpu', () => {
     offOnOff('cpu');
   });
 });
-
 
 function onOffOn(mode) {
   const gpu = new GPU({ mode });

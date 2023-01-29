@@ -23,9 +23,9 @@ test('.createKernelMap() object map with settings', () => {
   gpu.Kernel = MockKernel;
   const subKernels = {
     bobResult: bob,
-    tomResult: tom
+    tomResult: tom,
   };
-  const kernelSource = function() {};
+  const kernelSource = function () {};
   const masterSettings = {};
   const kernel = gpu.createKernelMap(subKernels, kernelSource, masterSettings);
   assert.equal(source, kernelSource.toString());
@@ -36,16 +36,17 @@ test('.createKernelMap() object map with settings', () => {
   assert.equal(settings.nativeFunctions, gpu.nativeFunctions);
   assert.equal(settings.gpu, gpu);
   assert.equal(settings.validate, true);
-  assert.deepEqual(kernel.subKernels, [{
+  assert.deepEqual(kernel.subKernels, [
+    {
       name: 'bob',
       source: bob.toString(),
-      property: 'bobResult'
+      property: 'bobResult',
     },
     {
       name: 'tom',
       source: tom.toString(),
-      property: 'tomResult'
-    }
+      property: 'tomResult',
+    },
   ]);
 });
 
@@ -68,7 +69,7 @@ test('.createKernelMap() array map with settings', () => {
   }
   gpu.Kernel = MockKernel;
   const subKernels = [bob, tom];
-  const kernelSource = function() {};
+  const kernelSource = function () {};
   const masterSettings = {};
   const kernel = gpu.createKernelMap(subKernels, kernelSource, masterSettings);
   assert.equal(source, kernelSource.toString());
@@ -79,15 +80,16 @@ test('.createKernelMap() array map with settings', () => {
   assert.equal(settings.nativeFunctions, gpu.nativeFunctions);
   assert.equal(settings.gpu, gpu);
   assert.equal(settings.validate, true);
-  assert.deepEqual(kernel.subKernels, [{
+  assert.deepEqual(kernel.subKernels, [
+    {
       name: 'bob',
       source: bob.toString(),
-      property: 0
+      property: 0,
     },
     {
       name: 'tom',
       source: tom.toString(),
-      property: 1
-    }
+      property: 1,
+    },
   ]);
 });

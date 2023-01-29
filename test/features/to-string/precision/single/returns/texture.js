@@ -5,15 +5,18 @@ describe('feature: to-string single precision returns Texture');
 
 function testReturn(mode, context, canvas) {
   const gpu = new GPU({ mode });
-  const originalKernel = gpu.createKernel(function(a) {
-    return a[this.thread.x] + 1;
-  }, {
-    canvas,
-    context,
-    output: [6],
-    precision: 'single',
-    pipeline: true,
-  });
+  const originalKernel = gpu.createKernel(
+    function (a) {
+      return a[this.thread.x] + 1;
+    },
+    {
+      canvas,
+      context,
+      output: [6],
+      precision: 'single',
+      pipeline: true,
+    }
+  );
 
   const a = [1, 2, 3, 4, 5, 6];
   const expected = new Float32Array([2, 3, 4, 5, 6, 7]);

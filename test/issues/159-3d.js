@@ -2,19 +2,23 @@ const { assert, skip, test, module: describe } = require('qunit');
 
 describe('issue # 159');
 
-(function() {
+(function () {
   const { GPU } = require('../../src');
 
   function threeD(mode) {
     const gpu = new GPU({ mode });
 
-    const kernel = gpu.createKernel(function(grid) {
+    const kernel = gpu
+      .createKernel(function (grid) {
         return grid[this.thread.y][this.thread.x];
       })
       .setOutput([5, 5]);
 
     //This would cause the above to fail
-    gpu.createKernel(function() { return 0; })
+    gpu
+      .createKernel(function () {
+        return 0;
+      })
       .setOutput([5, 5, 5])
       .build();
 
@@ -23,16 +27,21 @@ describe('issue # 159');
       [1, 2, 3, 4, 5],
       [2, 3, 4, 5, 6],
       [3, 4, 5, 6, 7],
-      [4, 5, 6, 7, 8]
+      [4, 5, 6, 7, 8],
     ]);
     assert.equal(result.length, 5);
-    assert.deepEqual(result.map(function(v) { return Array.from(v); }), [
-      [0, 1, 2, 3, 4],
-      [1, 2, 3, 4, 5],
-      [2, 3, 4, 5, 6],
-      [3, 4, 5, 6, 7],
-      [4, 5, 6, 7, 8]
-    ]);
+    assert.deepEqual(
+      result.map(function (v) {
+        return Array.from(v);
+      }),
+      [
+        [0, 1, 2, 3, 4],
+        [1, 2, 3, 4, 5],
+        [2, 3, 4, 5, 6],
+        [3, 4, 5, 6, 7],
+        [4, 5, 6, 7, 8],
+      ]
+    );
     gpu.destroy();
   }
 

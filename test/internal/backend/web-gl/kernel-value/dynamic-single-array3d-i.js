@@ -10,7 +10,7 @@ test('.updateValue() checks too large', () => {
     },
     validate: true,
   };
-  const v = new webGLKernelValueMaps.single.dynamic["Array3D(2)"]([[[[1,2]]]], {
+  const v = new webGLKernelValueMaps.single.dynamic['Array3D(2)']([[[[1, 2]]]], {
     kernel: mockKernel,
     name: 'test',
     type: 'Array3D(2)',
@@ -18,11 +18,20 @@ test('.updateValue() checks too large', () => {
     tactic: 'speed',
     onRequestContextHandle: () => 1,
     onRequestTexture: () => null,
-    onRequestIndex: () => 1
+    onRequestIndex: () => 1,
   });
 
   assert.throws(() => {
-    v.updateValue([[[[1,2],[3,4],[5,6],[7,8]]]]);
+    v.updateValue([
+      [
+        [
+          [1, 2],
+          [3, 4],
+          [5, 6],
+          [7, 8],
+        ],
+      ],
+    ]);
   }, new Error('Argument texture height of 2 larger than maximum size of 1 for your GPU'));
 });
 
@@ -43,7 +52,7 @@ test('.updateValue() checks ok', () => {
     pixelStorei: () => {},
     texImage2D: () => {},
   };
-  const v = new webGLKernelValueMaps.single.dynamic["Array3D(2)"]([[[[1,2]]]], {
+  const v = new webGLKernelValueMaps.single.dynamic['Array3D(2)']([[[[1, 2]]]], {
     kernel: mockKernel,
     name: 'test',
     type: 'Array3D(2)',
@@ -52,9 +61,9 @@ test('.updateValue() checks ok', () => {
     context: mockContext,
     onRequestContextHandle: () => 1,
     onRequestTexture: () => null,
-    onRequestIndex: () => 1
+    onRequestIndex: () => 1,
   });
-  v.updateValue([[[[2,1]]]]);
+  v.updateValue([[[[2, 1]]]]);
 
   assert.equal(v.constructor.name, 'WebGLKernelValueDynamicSingleArray3DI');
 });

@@ -12,13 +12,7 @@ export class GLTextureUnsigned extends GLTexture {
   renderRawOutput() {
     const { context: gl } = this;
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer());
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D,
-      this.texture,
-      0
-    );
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture, 0);
     const result = new Uint8Array(this.size[0] * this.size[1] * 4);
     gl.readPixels(0, 0, this.size[0], this.size[1], gl.RGBA, gl.UNSIGNED_BYTE, result);
     return result;

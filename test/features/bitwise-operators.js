@@ -5,7 +5,8 @@ describe('feature: bitwise operators');
 
 function testBitwiseAndSinglePrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v1, v2) {
+  const kernel = gpu
+    .createKernel(function (v1, v2) {
       return v1 & v2;
     })
     .setOutput([1])
@@ -46,7 +47,8 @@ test('bitwise AND single precision cpu', () => {
 
 function testBitwiseAndUnsignedPrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v1, v2) {
+  const kernel = gpu
+    .createKernel(function (v1, v2) {
       return v1 & v2;
     })
     .setOutput([1])
@@ -87,7 +89,8 @@ test('bitwise AND unsigned precision cpu', () => {
 
 function testBitwiseOrSinglePrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v1, v2) {
+  const kernel = gpu
+    .createKernel(function (v1, v2) {
       return v1 | v2;
     })
     .setOutput([1])
@@ -128,7 +131,8 @@ test('bitwise OR single precision cpu', () => {
 
 function testBitwiseOrUnsignedPrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v1, v2) {
+  const kernel = gpu
+    .createKernel(function (v1, v2) {
       return v1 | v2;
     })
     .setOutput([1])
@@ -169,7 +173,8 @@ test('bitwise OR unsigned precision cpu', () => {
 
 function testBitwiseXORSinglePrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v1, v2) {
+  const kernel = gpu
+    .createKernel(function (v1, v2) {
       return v1 ^ v2;
     })
     .setOutput([1])
@@ -210,7 +215,8 @@ test('bitwise XOR single precision cpu', () => {
 
 function testBitwiseXORUnsignedPrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v1, v2) {
+  const kernel = gpu
+    .createKernel(function (v1, v2) {
       return v1 ^ v2;
     })
     .setOutput([1])
@@ -251,7 +257,8 @@ test('bitwise XOR unsigned precision cpu', () => {
 
 function testBitwiseNotSinglePrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v1) {
+  const kernel = gpu
+    .createKernel(function (v1) {
       return ~v1;
     })
     .setOutput([1])
@@ -290,7 +297,8 @@ test('bitwise NOT single precision cpu', () => {
 
 function testBitwiseNotUnsignedPrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v1) {
+  const kernel = gpu
+    .createKernel(function (v1) {
       return ~v1;
     })
     .setOutput([1])
@@ -329,7 +337,8 @@ test('bitwise NOT unsigned precision cpu', () => {
 
 function testBitwiseZeroFillLeftShiftSinglePrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v1, v2) {
+  const kernel = gpu
+    .createKernel(function (v1, v2) {
       return v1 << v2;
     })
     .setOutput([1])
@@ -370,7 +379,8 @@ test('bitwise zero fill left shift single precision cpu', () => {
 
 function testBitwiseZeroFillLeftShiftUnsignedPrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v1, v2) {
+  const kernel = gpu
+    .createKernel(function (v1, v2) {
       return v1 << v2;
     })
     .setOutput([1])
@@ -411,7 +421,8 @@ test('bitwise zero fill left shift unsigned precision cpu', () => {
 
 function testBitwiseSignedRightShiftSinglePrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v1, v2) {
+  const kernel = gpu
+    .createKernel(function (v1, v2) {
       return v1 >> v2;
     })
     .setOutput([1])
@@ -452,7 +463,8 @@ test('bitwise signed fill right shift single precision cpu', () => {
 
 function testBitwiseSignedRightShiftUnsignedPrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v1, v2) {
+  const kernel = gpu
+    .createKernel(function (v1, v2) {
       return v1 >> v2;
     })
     .setOutput([1])
@@ -493,7 +505,8 @@ test('bitwise signed fill right shift unsigned precision cpu', () => {
 
 function testBitwiseZeroFillRightShiftSinglePrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v1, v2) {
+  const kernel = gpu
+    .createKernel(function (v1, v2) {
       return v1 >>> v2;
     })
     .setOutput([1])
@@ -534,7 +547,8 @@ test('bitwise zero fill right shift single precision cpu', () => {
 
 function testBitwiseZeroFillRightShiftUnsignedPrecision(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v1, v2) {
+  const kernel = gpu
+    .createKernel(function (v1, v2) {
       return v1 >>> v2;
     })
     .setOutput([1])
