@@ -1,16 +1,16 @@
 import { gpuMock } from 'gpu-mock.js';
-import { utils } from './utils';
-import { Kernel } from './backend/kernel';
 import { CPUKernel } from './backend/cpu/kernel';
-import { WebGL2Kernel } from './backend/web-gl2/kernel';
+import { HeadlessGLKernel } from './backend/headless-gl/kernel';
+import { Kernel } from './backend/kernel';
 import { WebGLKernel } from './backend/web-gl/kernel';
+import { WebGL2Kernel } from './backend/web-gl2/kernel';
 import { kernelRunShortcut } from './kernel-run-shortcut';
-
+import { utils } from './utils';
 /**
  *
  * @type {Array.<Kernel>}
  */
-export const kernelOrder = [WebGL2Kernel, WebGLKernel];
+export const kernelOrder = [HeadlessGLKernel, WebGL2Kernel, WebGLKernel];
 
 /**
  *
@@ -19,18 +19,10 @@ export const kernelOrder = [WebGL2Kernel, WebGLKernel];
 export const kernelTypes = ['gpu', 'cpu'];
 
 const internalKernels = {
+  headlessgl: HeadlessGLKernel,
   webgl2: WebGL2Kernel,
   webgl: WebGLKernel,
 };
-
-/**
- *
- * @param {import('./backend/headless-gl/kernel').HeadlessGLKernel} HeadlessGLKernel
- */
-export function setupNode(HeadlessGLKernel) {
-  kernelOrder.unshift(HeadlessGLKernel);
-  internalKernels.headlessgl = HeadlessGLKernel;
-}
 
 let validate = true;
 
@@ -91,9 +83,7 @@ export class GPU {
    * @desc TRUE if platform supports HeadlessGL
    */
   static get isHeadlessGLSupported() {
-    return (
-      'headlessgl' in internalKernels && internalKernels.headlessgl.isSupported
-    );
+    return HeadlessGLKernel.isSupported;
   }
 
   /**

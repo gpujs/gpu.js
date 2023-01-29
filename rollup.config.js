@@ -2,6 +2,7 @@ import { defineConfig } from 'rollup';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
+import json from '@rollup/plugin-json';
 
 import fs from 'fs';
 
@@ -20,6 +21,39 @@ const banner = `/**
 *
 * Copyright (c) ${new Date().getFullYear()} gpu.js Team
 */`;
+
+/**
+ *
+ * @returns {import('rollup').Plugin}
+ */
+function pluginReplaceGL() {
+  const glID = 'gl?replaceEntry';
+  const content = `export { default } from 'gl/src/javascript/browser-index';`;
+
+  return {
+    resolveId(id) {
+      if (id === 'gl') {
+        return glID;
+      }
+    },
+    load(id) {
+      if (id === glID) {
+        return content;
+      }
+    },
+  };
+}
+
+function commonConfig(plugins = []) {
+  return defineConfig({
+    plugins: [resolve(), commonjs(), json(), ...plugins],
+    onwarn(msg, warn) {
+      if (!/Circular/.test(msg)) {
+        warn(msg);
+      }
+    },
+  });
+}
 
 function createOutput(name, format, opts, minify = false) {
   return {
@@ -40,37 +74,29 @@ function buildBrowser(isCore) {
 
   return defineConfig({
     input: './src/browser.js',
-    plugins: [resolve(), commonjs()],
     output: [
       createOutput(id, 'umd', options),
       createOutput(id, 'umd', options, true),
       createOutput(id + '.esm', 'esm'),
     ],
-    onwarn(msg, warn) {
-      if (!/Circular/.test(msg)) {
-        warn(msg);
-      }
-    },
 
     external: isCore ? ['acorn'] : [],
+
+    ...commonConfig([pluginReplaceGL()]),
   });
 }
 
 function buildNode() {
   return defineConfig({
     input: './src/index.js',
-    plugins: [resolve(), commonjs()],
     output: [
       createOutput('gpu-node', 'cjs'),
       createOutput('gpu-node.esm', 'esm'),
     ],
-    onwarn(msg, warn) {
-      if (!/Circular/.test(msg)) {
-        warn(msg);
-      }
-    },
 
     external: Object.keys(pkg.dependencies).filter(v => v !== 'gpu-mock.js'),
+
+    ...commonConfig(),
   });
 }
 

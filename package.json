@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^24.0.1",
+    "@rollup/plugin-json": "^6.0.0",
     "@rollup/plugin-node-resolve": "^15.0.1",
     "@rollup/plugin-replace": "^5.0.2",
     "@rollup/plugin-terser": "^0.4.0",
@@ -50,7 +51,7 @@
     "test": "qunit test/issues test/internal test/features",
     "test:browser": "node scripts/build-tests.js",
     "coverage": "c8 qunit test/issues test/internal test/features",
-    "lint": "prettier -w *.js *.json src test scripts examples",
+    "lint": "prettier -w . --cache --no-color --loglevel warn",
     "build": "rollup -c --bundleConfigAsCjs",
     "watch": "pnpm run build --watch"
   },

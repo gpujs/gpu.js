@@ -29,8 +29,3 @@ import mathRandom from './plugins/math-random-uniformly-distributed';
 export const plugins = {
   mathRandom,
 };
-
-import { setupNode } from './gpu';
-import { HeadlessGLKernel } from './backend/headless-gl/kernel';
-
-setupNode(HeadlessGLKernel);
