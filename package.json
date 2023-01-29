@@ -50,7 +50,7 @@
     "test": "qunit test/issues test/internal test/features",
     "test:browser": "node scripts/build-tests.js",
     "coverage": "c8 qunit test/issues test/internal test/features",
-    "lint": "prettier -w *.js *.json src test scripts",
+    "lint": "prettier -w *.js *.json src test scripts examples",
     "build": "rollup -c --bundleConfigAsCjs"
   },
   "repository": {

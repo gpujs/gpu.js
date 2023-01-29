@@ -16,20 +16,24 @@ import {
   IKernelFunctionThis,
   IConstantsThis,
   KernelOutput,
-  ISubKernelsResults
-} from '../src';
+  ISubKernelsResults,
+} from '..';
 
 const gpu = new GPU();
 
 interface IConstants extends IConstantsThis {
-  rotation: number,
+  rotation: number;
 }
 
 interface IThis extends IKernelFunctionThis {
-  constants: IConstants,
+  constants: IConstants;
 }
 
-function kernelFunction(this: IThis, degrees: number, divisors: [number, number]): [number, number] {
+function kernelFunction(
+  this: IThis,
+  degrees: number,
+  divisors: [number, number]
+): [number, number] {
   const bounds = subKernel(this.constants.rotation * degrees);
   return [bounds[0] / divisors[0], bounds[1] / divisors[1]];
 }
@@ -42,9 +46,13 @@ interface IKernelMapResult extends ISubKernelsResults {
   test: KernelOutput;
 }
 
-const kernelMap = gpu.createKernelMap<Parameters<typeof kernelFunction>>({
-  test: subKernel,
-}, kernelFunction)
+const kernelMap = gpu
+  .createKernelMap<Parameters<typeof kernelFunction>>(
+    {
+      test: subKernel,
+    },
+    kernelFunction
+  )
   .setConstants<IConstants>({
     rotation: 45,
   })
