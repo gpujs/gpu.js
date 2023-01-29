@@ -1,69 +1,36 @@
-const { expect } = require('chai');
+export { GPU } from './gpu';
+export { alias } from './alias';
+export { utils } from './utils';
+export { Input, input } from './input';
+export { Texture } from './texture';
+export { FunctionBuilder } from './backend/function-builder';
+export { FunctionNode } from './backend/function-node';
+export { CPUFunctionNode } from './backend/cpu/function-node';
+export { CPUKernel } from './backend/cpu/kernel';
 
-const GPU = require('../src/index.js');
+export { HeadlessGLKernel } from './backend/headless-gl/kernel';
 
-describe('Test Node GPU', () => {
-  describe('gpu mode', () => {
-    it('should find and use gpu runner', () => {
-      const gpu = new GPU({ mode: 'gpu' });
+export { WebGLFunctionNode } from './backend/web-gl/function-node';
+export { WebGLKernel } from './backend/web-gl/kernel';
+export { kernelValueMaps as webGLKernelValueMaps } from './backend/web-gl/kernel-value-maps';
 
-      const kernel = gpu
-        .createKernel(function () {
-          return 1;
-        })
-        .setOutput([1]);
+export { WebGL2FunctionNode } from './backend/web-gl2/function-node';
+export { WebGL2Kernel } from './backend/web-gl2/kernel';
+export { kernelValueMaps as webGL2KernelValueMaps } from './backend/web-gl2/kernel-value-maps';
 
-      const result = kernel();
+export { GLKernel } from './backend/gl/kernel';
 
-      expect(gpu.runner.constructor).to.equal(GPU.HeadlessGLRunner);
-      expect(result[0]).to.equal(1);
-    });
+export { Kernel } from './backend/kernel';
 
-    it('supports 2x2 size', () => {
-      const gpu = new GPU({ mode: 'gpu' });
+export { FunctionTracer } from './backend/function-tracer';
 
-      const kernel = gpu
-        .createKernel(function () {
-          return this.thread.x * this.thread.y;
-        })
-        .setOutput([2, 2]);
+import mathRandom from './plugins/math-random-uniformly-distributed';
 
-      const result = kernel();
+export const plugins = {
+  mathRandom,
+};
 
-      expect(gpu.runner.constructor).to.equal(GPU.HeadlessGLRunner);
-      expect(result).to.deep.equal([Float32Array.from([0, 0]), Float32Array.from([0, 1])]);
-    });
-  });
+import { setupNode } from './gpu';
+import { HeadlessGLKernel } from './backend/headless-gl/kernel';
 
-  describe('cpu mode', () => {
-    it('should find and use gpu runner', () => {
-      const gpu = new GPU({ mode: 'cpu' });
-
-      const kernel = gpu
-        .createKernel(function () {
-          return 1;
-        })
-        .setOutput([1]);
-
-      const result = kernel();
-
-      expect(gpu.runner.constructor).to.equal(GPU.CPURunner);
-      expect(result[0]).to.equal(1);
-    });
-
-    it('supports 2x2 size', () => {
-      const gpu = new GPU({ mode: 'cpu' });
-
-      const kernel = gpu
-        .createKernel(function () {
-          return this.thread.x * this.thread.y;
-        })
-        .setOutput([2, 2]);
-
-      const result = kernel();
-
-      expect(gpu.runner.constructor).to.equal(GPU.CPURunner);
-      expect(result).to.deep.equal([Float32Array.from([0, 0]), Float32Array.from([0, 1])]);
-    });
-  });
-});
+setupNode(HeadlessGLKernel);
