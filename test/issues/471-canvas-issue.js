@@ -4,9 +4,9 @@ const { GPU } = require('../../src');
 describe('issue #471 - canvas issue');
 
 function testCanvasIssue(mode) {
-  const gpu = new GPU({mode});
+  const gpu = new GPU({ mode });
   const render = gpu
-    .createKernel(function () {
+    .createKernel(function() {
       this.color(0, 0, 0, 1);
     })
     .setOutput([200, 200])

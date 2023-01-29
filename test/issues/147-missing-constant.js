@@ -5,13 +5,14 @@ describe('issue #147');
 
 function missingConstant(mode) {
   const gpu = new GPU({ mode });
+
   function getPi() {
     return this.constants.pi;
   }
   gpu.addFunction(getPi);
   const kernel = gpu.createKernel(function() {
-    return getPi();
-  })
+      return getPi();
+    })
     .setOutput([1])
     .setConstants({ pi: Math.PI });
 

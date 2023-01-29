@@ -2,6 +2,7 @@ const { assert, skip, test, module: describe } = require('qunit');
 const { GPU, HeadlessGLKernel, WebGLKernel, WebGL2Kernel, CPUKernel } = require('../../src');
 
 describe('issue #91');
+
 function getResult(mode) {
   const A = [
     [1, 2],
@@ -25,14 +26,14 @@ function getResult(mode) {
   }
 
   const kernels = gpu.createKernelMap({
-    multiplyResult: multiply
-  }, function (a, b) {
-    return multiply(b, a, this.thread.y, this.thread.x);
-  })
+      multiplyResult: multiply
+    }, function(a, b) {
+      return multiply(b, a, this.thread.y, this.thread.x);
+    })
     .setOutput([2, 2]);
   const result = kernels(A, B).result;
-  assert.deepEqual(Array.from(result[0]), [21,32]);
-  assert.deepEqual(Array.from(result[1]), [9,14]);
+  assert.deepEqual(Array.from(result[0]), [21, 32]);
+  assert.deepEqual(Array.from(result[1]), [9, 14]);
   gpu.destroy();
   return kernels;
 }

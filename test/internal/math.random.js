@@ -17,10 +17,10 @@ function mathRandomUnique(mode) {
     gpu.addNativeFunction('getSeed', `highp float getSeed() {
     return randomSeedShift;
   }`);
-    const kernel = gpu.createKernel(function () {
+    const kernel = gpu.createKernel(function() {
       const v = Math.random();
       return getSeed();
-    }, {output: [1]});
+    }, { output: [1] });
     const results = [];
     for (let i = 0; i < checkCount; i++) {
       const result = kernel();

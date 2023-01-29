@@ -75,21 +75,21 @@ test('webglString: 3 layer test cpu', () => {
   );
 
   assert.equal(
-    builder.getStringFromFunctionNames(['layerOne','layerTwo']),
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo']),
     'function layerOne() {\nreturn 42;\n}\nfunction layerTwo() {\nreturn (layerOne()*2);\n}'
   );
   assert.equal(
     builder.getString('layerTwo'),
-    builder.getStringFromFunctionNames(['layerOne','layerTwo'])
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo'])
   );
 
   assert.equal(
-    builder.getStringFromFunctionNames(['layerOne','layerTwo','layerThree']),
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo', 'layerThree']),
     'function layerOne() {\nreturn 42;\n}\nfunction layerTwo() {\nreturn (layerOne()*2);\n}\nfunction layerThree() {\nreturn (layerTwo()*2);\n}'
   );
   assert.equal(
     builder.getString('layerThree'),
-    builder.getStringFromFunctionNames(['layerOne','layerTwo','layerThree'])
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo', 'layerThree'])
   );
   assert.equal(
     builder.getString(null),
@@ -109,21 +109,21 @@ test('webglString: 3 layer test webgl', () => {
   );
 
   assert.equal(
-    builder.getStringFromFunctionNames(['layerOne','layerTwo']),
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo']),
     'float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}'
   );
   assert.equal(
     builder.getString('layerTwo'),
-    builder.getStringFromFunctionNames(['layerOne','layerTwo'])
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo'])
   );
 
   assert.equal(
-    builder.getStringFromFunctionNames(['layerOne','layerTwo','layerThree']),
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo', 'layerThree']),
     'float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}\nfloat layerThree() {\nreturn (layerTwo()*2.0);\n}'
   );
   assert.equal(
     builder.getString('layerThree'),
-    builder.getStringFromFunctionNames(['layerOne','layerTwo','layerThree'])
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo', 'layerThree'])
   );
   assert.equal(
     builder.getString(null),
@@ -145,21 +145,21 @@ test('webglString: 3 layer test webgl2', () => {
   );
 
   assert.equal(
-    builder.getStringFromFunctionNames(['layerOne','layerTwo']),
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo']),
     'float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}'
   );
   assert.equal(
     builder.getString('layerTwo'),
-    builder.getStringFromFunctionNames(['layerOne','layerTwo'])
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo'])
   );
 
   assert.equal(
-    builder.getStringFromFunctionNames(['layerOne','layerTwo','layerThree']),
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo', 'layerThree']),
     'float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}\nfloat layerThree() {\nreturn (layerTwo()*2.0);\n}'
   );
   assert.equal(
     builder.getString('layerThree'),
-    builder.getStringFromFunctionNames(['layerOne','layerTwo','layerThree'])
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo', 'layerThree'])
   );
   assert.equal(
     builder.getString(null),

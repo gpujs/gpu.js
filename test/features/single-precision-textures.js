@@ -690,4 +690,3 @@ function testImmutableDoesNotCollideWithKernelTexture(mode) {
 (GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('immutable does not collide with kernel texture headlessgl', () => {
   testImmutableDoesNotCollideWithKernelTexture('headlessgl');
 });
-

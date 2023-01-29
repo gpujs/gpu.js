@@ -5,6 +5,7 @@ describe('features: clone textures');
 
 function copy1DTexture(precision, mode) {
   const gpu = new GPU({ mode });
+
   function makeTexture() {
     return (gpu.createKernel(function() {
       return this.thread.x;
@@ -56,6 +57,7 @@ test('1D unsigned precision auto', () => {
 
 function copy2DTexture(precision, mode) {
   const gpu = new GPU({ mode });
+
   function makeTexture() {
     return (gpu.createKernel(function() {
       return this.thread.x + (this.thread.y * this.output.x);
@@ -107,6 +109,7 @@ test('2D unsigned precision auto', () => {
 
 function copy3DTexture(precision, mode) {
   const gpu = new GPU({ mode });
+
   function makeTexture() {
     return (gpu.createKernel(function() {
       return this.thread.x + (this.thread.y * this.output.x) * (this.output.x * this.output.y * this.thread.z);

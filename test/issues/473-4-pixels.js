@@ -8,8 +8,7 @@ function testOnly4PixelsAreShownRGBStaticOutput(mode) {
   const render = gpu.createKernel(
     function() {
       this.color(1, 1, 1);
-    },
-    {
+    }, {
       output: [20, 20],
       graphical: true,
     }
@@ -52,8 +51,7 @@ function testOnly4PixelsAreShownRGBAStaticOutput(mode) {
   const render = gpu.createKernel(
     function() {
       this.color(1, 1, 1, 1);
-    },
-    {
+    }, {
       output: [20, 20],
       graphical: true,
     }
@@ -96,8 +94,7 @@ function testOnly4PixelsAreShownRGBDynamicOutput(mode) {
   const render = gpu.createKernel(
     function() {
       this.color(1, 1, 1);
-    },
-    {
+    }, {
       output: [20, 20],
       graphical: true,
       dynamicOutput: true,
@@ -148,8 +145,7 @@ function testOnly4PixelsAreShownRGBADynamicOutput(mode) {
   const render = gpu.createKernel(
     function() {
       this.color(1, 1, 1, 1);
-    },
-    {
+    }, {
       output: [20, 20],
       graphical: true,
       dynamicOutput: true,

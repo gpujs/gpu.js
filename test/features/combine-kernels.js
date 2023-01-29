@@ -2,6 +2,7 @@ const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('features: combine kernels');
+
 function combineKernels(mode) {
   const gpu = new GPU({ mode });
 
@@ -17,7 +18,7 @@ function combineKernels(mode) {
     return kernel2(kernel1(array1, array2), array3);
   });
 
-  const result = superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]);
+  const result = superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]);
   assert.deepEqual(Array.from(result), [2, 8, 18, 32, 50]);
   gpu.destroy()
 }
@@ -62,7 +63,7 @@ function combineKernelsSinglePrecision(mode) {
     return kernel2(kernel1(array1, array2), array3);
   });
 
-  const result = superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]);
+  const result = superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]);
   assert.deepEqual(Array.from(result), [2, 8, 18, 32, 50]);
   gpu.destroy()
 }
@@ -115,7 +116,7 @@ function combineKernelsOptimizeFloatMemory(mode) {
     return kernel2(kernel1(array1, array2), array3);
   });
 
-  const result = superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]);
+  const result = superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]);
   assert.deepEqual(Array.from(result), [2, 8, 18, 32, 50]);
   gpu.destroy()
 }

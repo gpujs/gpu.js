@@ -2,6 +2,7 @@ const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU, alias } = require('../../src');
 
 describe('features: create kernel map');
+
 function createPropertyKernels(gpu, output) {
   function divide(d1, d2) {
     return d1 / d2;
@@ -12,7 +13,7 @@ function createPropertyKernels(gpu, output) {
   return gpu.createKernelMap({
     addResult: adder,
     divideResult: divide
-  }, function (k1, k2, k3) {
+  }, function(k1, k2, k3) {
     return divide(adder(k1[this.thread.x], k2[this.thread.x]), k3[this.thread.x]);
   }).setOutput(output);
 }
@@ -21,19 +22,20 @@ function createArrayKernels(gpu, output) {
   function add(a1, a2) {
     return a1 + a2;
   }
+
   function divide(d1, d2) {
     return d1 / d2;
   }
   return gpu.createKernelMap([
     add, divide
-  ], function (k1, k2, k3) {
+  ], function(k1, k2, k3) {
     return divide(add(k1[this.thread.x], k2[this.thread.x]), k3[this.thread.x]);
   }).setOutput(output)
 }
 
 
 function createKernel(gpu, output) {
-  return gpu.createKernel(function (a) {
+  return gpu.createKernel(function(a) {
     return a[this.thread.x];
   }).setOutput(output);
 }
@@ -120,7 +122,7 @@ function createKernelMapObject1Dimension5Length(mode) {
   const gpu = new GPU({ mode });
   const superKernel = createPropertyKernels(gpu, [5]);
   const kernel = createKernel(gpu, [5]);
-  const output = superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]);
+  const output = superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]);
   const result = Array.from(output.result);
   const addResult = Array.from(kernel(output.addResult));
   const divideResult = Array.from(kernel(output.divideResult));
@@ -156,10 +158,10 @@ test('createKernelMap object 1 dimension 5 length cpu', () => {
 
 
 function createKernelMapArrayAuto(mode) {
-  const gpu = new GPU({mode});
+  const gpu = new GPU({ mode });
   const superKernel = createArrayKernels(gpu, [5]);
   const kernel = createKernel(gpu, [5]);
-  const output = superKernel([1,2,3,4,5], [1,2,3,4,5], [1,2,3,4,5]);
+  const output = superKernel([1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5]);
   const result = Array.from(output.result);
   const addResult = Array.from(kernel(output[0]));
   const divideResult = Array.from(kernel(output[1]));
@@ -194,6 +196,7 @@ test('createKernelMap array cpu', () => {
 
 function createKernelMap3DAuto(mode) {
   const gpu = new GPU({ mode });
+
   function saveTarget(value) {
     return value;
   }
@@ -201,9 +204,9 @@ function createKernelMap3DAuto(mode) {
     target: saveTarget
   }, function(value) {
     return saveTarget(value);
-  }).setOutput([3,3,3]);
+  }).setOutput([3, 3, 3]);
   const result = kernel(1);
-  const target = createKernel(gpu, [3,3,3])(result.target);
+  const target = createKernel(gpu, [3, 3, 3])(result.target);
   assert.equal(result.result.length, 3);
   assert.equal(result.result[0].length, 3);
   assert.equal(result.result[0][0].length, 3);
@@ -240,8 +243,7 @@ test('createKernelMap 3d cpu', () => {
 
 function createKernelMapArray2(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernelMap(
-    {
+  const kernel = gpu.createKernelMap({
       mapFunc: function mapFunc(mapFuncVal) {
         return mapFuncVal;
       }
@@ -251,8 +253,7 @@ function createKernelMapArray2(mode) {
       mapFunc(mapFuncVal);
       const returnValue = [3, 4];
       return returnValue;
-    },
-    {
+    }, {
       output: [1],
       returnType: 'Array(2)',
     }
@@ -289,8 +290,7 @@ test('createKernelMap Array(2) cpu', () => {
 
 function createKernelMapArray3(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernelMap(
-    {
+  const kernel = gpu.createKernelMap({
       mapFunc: function mapFunc(mapFuncVal) {
         return mapFuncVal;
       }
@@ -300,8 +300,7 @@ function createKernelMapArray3(mode) {
       mapFunc(mapFuncVal);
       const returnValue = [4, 5, 6];
       return returnValue;
-    },
-    {
+    }, {
       output: [1],
       returnType: 'Array(3)',
     }
@@ -338,8 +337,7 @@ test('createKernelMap Array(3) cpu', () => {
 
 function createKernelMapArray4(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernelMap(
-    {
+  const kernel = gpu.createKernelMap({
       mapFunc: function mapFunc(mapFuncVal) {
         return mapFuncVal;
       }
@@ -349,8 +347,7 @@ function createKernelMapArray4(mode) {
       mapFunc(mapFuncVal);
       const returnValue = [5, 6, 7, 8];
       return returnValue;
-    },
-    {
+    }, {
       output: [1],
       returnType: 'Array(4)',
     }

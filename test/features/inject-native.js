@@ -4,7 +4,7 @@ const { GPU } = require('../../src');
 describe('features: inject native');
 
 function gpuAddAB(mode) {
-  const gpu = new GPU({mode});
+  const gpu = new GPU({ mode });
   gpu
     .injectNative(`
 int customAdder(int a, int b) {
@@ -14,7 +14,7 @@ int customAdder(int a, int b) {
     .addNativeFunction('customAdderLink', `int customAdderLink(int a, int b) {
   return customAdder(a, b);
 }`);
-  const kernel = gpu.createKernel(function (a, b) {
+  const kernel = gpu.createKernel(function(a, b) {
     return customAdderLink(a[this.thread.x], b[this.thread.x]);
   }, {
     output: [6],
@@ -56,10 +56,10 @@ function cpuAddAB(mode) {
   function customAdder(a, b) {
     return a + b;
   }
-  const gpu = new GPU({mode});
+  const gpu = new GPU({ mode });
   gpu
     .injectNative(customAdder.toString());
-  const kernel = gpu.createKernel(function (a, b) {
+  const kernel = gpu.createKernel(function(a, b) {
     return customAdder(a[this.thread.x], b[this.thread.x]);
   }, {
     output: [6],

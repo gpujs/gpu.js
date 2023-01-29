@@ -2,10 +2,12 @@ const { assert, skip, test, module: describe } = require('qunit');
 const { GPU, WebGLKernel } = require('../../src');
 
 describe('features: constants image array');
+
 function feature(mode, done) {
   const gpu = new GPU({ mode });
   const image = new Image();
   const imageArray = [image, image];
+
   function fn() {
     const pixel1 = this.constants.imageArray[0][this.thread.y][this.thread.x];
     const pixel2 = this.constants.imageArray[1][this.thread.y][this.thread.x];

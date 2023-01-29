@@ -2,8 +2,10 @@ const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('features: add typed functions vec2Test');
+
 function vec2Test(mode) {
   const gpu = new GPU({ mode });
+
   function typedFunction() {
     return [1, 2];
   }
@@ -11,9 +13,9 @@ function vec2Test(mode) {
     returnType: 'Array(2)'
   });
   const kernel = gpu.createKernel(function() {
-    const result = typedFunction();
-    return result[0] + result[1];
-  })
+      const result = typedFunction();
+      return result[0] + result[1];
+    })
     .setOutput([1]);
 
   const result = kernel();
@@ -39,8 +41,10 @@ test('Array(2) - gpu', () => {
 
 
 describe('features: add typed functions vec3Test');
+
 function vec3Test(mode) {
   const gpu = new GPU({ mode });
+
   function typedFunction() {
     return [1, 2, 3];
   }
@@ -48,9 +52,9 @@ function vec3Test(mode) {
     returnType: 'Array(3)'
   });
   const kernel = gpu.createKernel(function() {
-    const result = typedFunction();
-    return result[0] + result[1] + result[2];
-  })
+      const result = typedFunction();
+      return result[0] + result[1] + result[2];
+    })
     .setOutput([1]);
   const result = kernel();
   assert.equal(result[0], 6);
@@ -74,8 +78,10 @@ test('Array(3) - gpu', () => {
 });
 
 describe('features: add typed functions vec4Test');
+
 function vec4Test(mode) {
   const gpu = new GPU({ mode });
+
   function typedFunction() {
     return [1, 2, 3, 4];
   }
@@ -83,9 +89,9 @@ function vec4Test(mode) {
     returnType: 'Array(4)'
   });
   const kernel = gpu.createKernel(function() {
-    const result = typedFunction();
-    return result[0] + result[1] + result[2] + result[3];
-  })
+      const result = typedFunction();
+      return result[0] + result[1] + result[2] + result[3];
+    })
     .setOutput([1]);
   const result = kernel();
   assert.equal(result[0], 10);

@@ -4,7 +4,7 @@ const { GPU } = require('../../src');
 describe('features: math object');
 
 function mathProps(mode) {
-  const props = ['E','LN10','LN2','LOG10E','LOG2E','PI','SQRT1_2','SQRT2'];
+  const props = ['E', 'LN10', 'LN2', 'LOG10E', 'LOG2E', 'PI', 'SQRT1_2', 'SQRT2'];
   const gpu = new GPU({ mode });
   for (let i = 0; i < props.length; i++) {
     const prop = props[i];
@@ -163,12 +163,12 @@ function sqrtABTest(mode) {
   const f = gpu.createKernel(function(a, b) {
     return Math.sqrt(a[this.thread.x] * b[this.thread.x]);
   }, {
-    output : [6]
+    output: [6]
   });
   const a = [3, 4, 5, 6, 7, 8];
   const b = [3, 4, 5, 6, 7, 8];
 
-  const res = f(a,b);
+  const res = f(a, b);
   const exp = [3, 4, 5, 6, 7, 8];
 
   assert.deepEqual(Array.from(res), exp);
@@ -233,5 +233,3 @@ test('random gpu', () => {
 test('random cpu', () => {
   mathRandom('cpu');
 });
-
-

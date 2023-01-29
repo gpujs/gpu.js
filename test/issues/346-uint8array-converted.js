@@ -11,11 +11,12 @@ for (let i = 0; i < DATA_MAX; i++) {
   uint8data[i] = Math.random() * 255;
   uint16data[i] = Math.random() * 255 * 255;
 }
+
 function buildUintArrayInputKernel(mode, data) {
   const gpu = new GPU({ mode });
   const largeArrayAddressKernel = gpu.createKernel(function(data) {
-    return data[this.thread.x];
-  }, { precision: 'unsigned' })
+      return data[this.thread.x];
+    }, { precision: 'unsigned' })
     .setOutput([DATA_MAX]);
 
   const result = largeArrayAddressKernel(data);

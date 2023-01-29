@@ -3,12 +3,12 @@ const { GPU } = require('../../src');
 
 describe('features: function return');
 
-function functionReturnFloat( mode ) {
+function functionReturnFloat(mode) {
   const gpu = new GPU({ mode });
   const f = gpu.createKernel(function() {
     return 42;
   }, {
-    output : [1]
+    output: [1]
   });
   assert.equal(f()[0], 42);
   gpu.destroy();
@@ -39,12 +39,12 @@ test('float cpu', () => {
 });
 
 
-function functionReturnArray2( mode ) {
+function functionReturnArray2(mode) {
   const gpu = new GPU({ mode });
   const f = gpu.createKernel(function() {
     return [42, 43];
   }, {
-    output : [1]
+    output: [1]
   });
   const result = f();
   assert.equal(result[0].constructor, Float32Array);
@@ -77,12 +77,12 @@ test('Array(2) cpu', () => {
   functionReturnArray2('cpu');
 });
 
-function functionReturnArray3( mode ) {
+function functionReturnArray3(mode) {
   const gpu = new GPU({ mode });
   const f = gpu.createKernel(function() {
     return [42, 43, 44];
   }, {
-    output : [1]
+    output: [1]
   });
   const result = f();
   assert.equal(result[0].constructor, Float32Array);
@@ -117,12 +117,12 @@ test('Array(3) cpu', () => {
 });
 
 
-function functionReturnArray4( mode ) {
+function functionReturnArray4(mode) {
   const gpu = new GPU({ mode });
   const f = gpu.createKernel(function() {
     return [42, 43, 44, 45];
   }, {
-    output : [1]
+    output: [1]
   });
 
   const result = f();
@@ -163,6 +163,7 @@ function functionReturnArray4MemberExpression(mode) {
   const kernel = gpu.createKernel(function(value) {
     let pixel = toIntArray4(value[this.thread.y][this.thread.x]);
     return pixel;
+
     function toIntArray4(pixel) {
       return [pixel[0] * 255, pixel[1] * 255, pixel[2] * 255, pixel[3] * 255];
     }
@@ -170,8 +171,12 @@ function functionReturnArray4MemberExpression(mode) {
     output: [1, 1],
     argumentTypes: { value: 'Array2D(4)' },
   });
-  const result = kernel([[[1,1,1,1]]]);
-  assert.deepEqual(Array.from(result[0][0]), [255,255,255,255]);
+  const result = kernel([
+    [
+      [1, 1, 1, 1]
+    ]
+  ]);
+  assert.deepEqual(Array.from(result[0][0]), [255, 255, 255, 255]);
   gpu.destroy();
 }
 

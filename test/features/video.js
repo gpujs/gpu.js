@@ -2,12 +2,13 @@ const { assert, skip, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('video');
+
 function videoArgumentTest(mode, done) {
   const video = document.createElement('video');
   video.src = 'jellyfish.webm';
   setTimeout(() => {
-    const gpu = new GPU({mode});
-    const videoKernel = gpu.createKernel(function (a) {
+    const gpu = new GPU({ mode });
+    const videoKernel = gpu.createKernel(function(a) {
       const pixel = a[this.thread.y][this.thread.x];
       return pixel.g * 255;
     }, {

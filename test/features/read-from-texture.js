@@ -11,10 +11,10 @@ function readWithoutTextureKernels(mode) {
   }
 
   const kernels = gpu.createKernelMap({
-    addResult: add
-  }, function (a, b) {
-    return add(a[this.thread.x], b[this.thread.x]);
-  })
+      addResult: add
+    }, function(a, b) {
+      return add(a[this.thread.x], b[this.thread.x]);
+    })
     .setOutput([5]);
   const result = kernels([1, 2, 3, 4, 5], [1, 2, 3, 4, 5]);
   const nonTextureResult = result.addResult;
@@ -45,14 +45,15 @@ function readWithoutTextureKernels(mode) {
 
 function readFromTextureKernels(mode) {
   const gpu = new GPU({ mode });
+
   function add(m, n) {
     return m + n;
   }
   const kernels = gpu.createKernelMap({
-    addResult: add
-  }, function (a, b) {
-    return add(a[this.thread.x], b[this.thread.x]);
-  })
+      addResult: add
+    }, function(a, b) {
+      return add(a[this.thread.x], b[this.thread.x]);
+    })
     .setPipeline(true)
     .setOutput([5]);
   const result = kernels([1, 2, 3, 4, 5], [1, 2, 3, 4, 5]);

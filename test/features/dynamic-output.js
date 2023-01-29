@@ -12,13 +12,13 @@ function dynamicOutput1DGrows(mode) {
   kernel.setOutput([5]);
   let result = kernel();
   assert.equal(result.length, 5);
-  assert.deepEqual(Array.from(result), [5,6,7,8,9]);
+  assert.deepEqual(Array.from(result), [5, 6, 7, 8, 9]);
   assert.deepEqual(Array.from(kernel.output), [5]);
 
   kernel.setOutput([10]);
   result = kernel();
   assert.equal(result.length, 10);
-  assert.deepEqual(Array.from(result), [10,11,12,13,14,15,16,17,18,19]);
+  assert.deepEqual(Array.from(result), [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
   assert.deepEqual(Array.from(kernel.output), [10]);
 
   gpu.destroy();
@@ -58,13 +58,13 @@ function dynamicOutput1DShrinks(mode) {
   kernel.setOutput([10]);
   let result = kernel();
   assert.equal(result.length, 10);
-  assert.deepEqual(Array.from(result), [10,11,12,13,14,15,16,17,18,19]);
+  assert.deepEqual(Array.from(result), [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
   assert.deepEqual(Array.from(kernel.output), [10]);
 
   kernel.setOutput([5]);
   result = kernel();
   assert.equal(result.length, 5);
-  assert.deepEqual(Array.from(result), [5,6,7,8,9]);
+  assert.deepEqual(Array.from(result), [5, 6, 7, 8, 9]);
   assert.deepEqual(Array.from(kernel.output), [5]);
 
   gpu.destroy();
@@ -108,16 +108,16 @@ function dynamicOutput1DKernelMapGrows(mode) {
   let result = kernel();
   assert.equal(result.result.length, 5);
   assert.equal(result.result2.length, 5);
-  assert.deepEqual(Array.from(result.result), [5,6,7,8,9]);
-  assert.deepEqual(Array.from(result.result2), [5,6,7,8,9]);
+  assert.deepEqual(Array.from(result.result), [5, 6, 7, 8, 9]);
+  assert.deepEqual(Array.from(result.result2), [5, 6, 7, 8, 9]);
   assert.deepEqual(Array.from(kernel.output), [5]);
 
   kernel.setOutput([10]);
   result = kernel();
   assert.equal(result.result.length, 10);
   assert.equal(result.result2.length, 10);
-  assert.deepEqual(Array.from(result.result), [10,11,12,13,14,15,16,17,18,19]);
-  assert.deepEqual(Array.from(result.result2), [10,11,12,13,14,15,16,17,18,19]);
+  assert.deepEqual(Array.from(result.result), [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+  assert.deepEqual(Array.from(result.result2), [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
   assert.deepEqual(Array.from(kernel.output), [10]);
 
   gpu.destroy();
@@ -162,16 +162,16 @@ function dynamicOutput1DKernelMapShrinks(mode) {
   let result = kernel();
   assert.equal(result.result.length, 10);
   assert.equal(result.result2.length, 10);
-  assert.deepEqual(Array.from(result.result), [10,11,12,13,14,15,16,17,18,19]);
-  assert.deepEqual(Array.from(result.result2), [10,11,12,13,14,15,16,17,18,19]);
+  assert.deepEqual(Array.from(result.result), [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+  assert.deepEqual(Array.from(result.result2), [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
   assert.deepEqual(Array.from(kernel.output), [10]);
 
   kernel.setOutput([5]);
   result = kernel();
   assert.equal(result.result.length, 5);
   assert.equal(result.result2.length, 5);
-  assert.deepEqual(Array.from(result.result), [5,6,7,8,9]);
-  assert.deepEqual(Array.from(result.result2), [5,6,7,8,9]);
+  assert.deepEqual(Array.from(result.result), [5, 6, 7, 8, 9]);
+  assert.deepEqual(Array.from(result.result2), [5, 6, 7, 8, 9]);
   assert.deepEqual(Array.from(kernel.output), [5]);
 
   gpu.destroy();
@@ -207,17 +207,24 @@ function dynamicOutput2DGrows(mode) {
     return this.output.x + this.output.y + this.thread.x + this.thread.y;
   }, { dynamicOutput: true });
 
-  kernel.setOutput([2,2]);
+  kernel.setOutput([2, 2]);
   let result = kernel();
   assert.equal(result.length, 2);
-  assert.deepEqual(result.map(row => Array.from(row)), [[4,5],[5,6]]);
-  assert.deepEqual(Array.from(kernel.output), [2,2]);
+  assert.deepEqual(result.map(row => Array.from(row)), [
+    [4, 5],
+    [5, 6]
+  ]);
+  assert.deepEqual(Array.from(kernel.output), [2, 2]);
 
-  kernel.setOutput([3,3]);
+  kernel.setOutput([3, 3]);
   result = kernel();
   assert.equal(result.length, 3);
-  assert.deepEqual(result.map(row => Array.from(row)), [[6,7,8],[7,8,9],[8,9,10]]);
-  assert.deepEqual(Array.from(kernel.output), [3,3]);
+  assert.deepEqual(result.map(row => Array.from(row)), [
+    [6, 7, 8],
+    [7, 8, 9],
+    [8, 9, 10]
+  ]);
+  assert.deepEqual(Array.from(kernel.output), [3, 3]);
 
   gpu.destroy();
 }
@@ -253,17 +260,24 @@ function dynamicOutput2DShrinks(mode) {
     return this.output.x + this.output.y + this.thread.x + this.thread.y;
   }, { dynamicOutput: true });
 
-  kernel.setOutput([3,3]);
+  kernel.setOutput([3, 3]);
   let result = kernel();
   assert.equal(result.length, 3);
-  assert.deepEqual(result.map(row => Array.from(row)), [[6,7,8],[7,8,9],[8,9,10]]);
-  assert.deepEqual(Array.from(kernel.output), [3,3]);
+  assert.deepEqual(result.map(row => Array.from(row)), [
+    [6, 7, 8],
+    [7, 8, 9],
+    [8, 9, 10]
+  ]);
+  assert.deepEqual(Array.from(kernel.output), [3, 3]);
 
-  kernel.setOutput([2,2]);
+  kernel.setOutput([2, 2]);
   result = kernel();
   assert.equal(result.length, 2);
-  assert.deepEqual(result.map(row => Array.from(row)), [[4,5],[5,6]]);
-  assert.deepEqual(Array.from(kernel.output), [2,2]);
+  assert.deepEqual(result.map(row => Array.from(row)), [
+    [4, 5],
+    [5, 6]
+  ]);
+  assert.deepEqual(Array.from(kernel.output), [2, 2]);
 
   gpu.destroy();
 }
@@ -302,21 +316,35 @@ function dynamicOutput2DKernelMapGrows(mode) {
     return map(this.output.x + this.output.y + this.thread.x + this.thread.y);
   }, { dynamicOutput: true });
 
-  kernel.setOutput([2,2]);
+  kernel.setOutput([2, 2]);
   let result = kernel();
   assert.equal(result.result.length, 2);
   assert.equal(result.result1.length, 2);
-  assert.deepEqual(result.result.map(row => Array.from(row)), [[4,5],[5,6]]);
-  assert.deepEqual(result.result1.map(row => Array.from(row)), [[4,5],[5,6]]);
-  assert.deepEqual(Array.from(kernel.output), [2,2]);
+  assert.deepEqual(result.result.map(row => Array.from(row)), [
+    [4, 5],
+    [5, 6]
+  ]);
+  assert.deepEqual(result.result1.map(row => Array.from(row)), [
+    [4, 5],
+    [5, 6]
+  ]);
+  assert.deepEqual(Array.from(kernel.output), [2, 2]);
 
-  kernel.setOutput([3,3]);
+  kernel.setOutput([3, 3]);
   result = kernel();
   assert.equal(result.result.length, 3);
   assert.equal(result.result1.length, 3);
-  assert.deepEqual(result.result.map(row => Array.from(row)), [[6,7,8],[7,8,9],[8,9,10]]);
-  assert.deepEqual(result.result1.map(row => Array.from(row)), [[6,7,8],[7,8,9],[8,9,10]]);
-  assert.deepEqual(Array.from(kernel.output), [3,3]);
+  assert.deepEqual(result.result.map(row => Array.from(row)), [
+    [6, 7, 8],
+    [7, 8, 9],
+    [8, 9, 10]
+  ]);
+  assert.deepEqual(result.result1.map(row => Array.from(row)), [
+    [6, 7, 8],
+    [7, 8, 9],
+    [8, 9, 10]
+  ]);
+  assert.deepEqual(Array.from(kernel.output), [3, 3]);
 
   gpu.destroy();
 }
@@ -356,21 +384,35 @@ function dynamicOutput2DKernelMapShrinks(mode) {
     return map(this.output.x + this.output.y + this.thread.x + this.thread.y);
   }, { dynamicOutput: true });
 
-  kernel.setOutput([3,3]);
+  kernel.setOutput([3, 3]);
   let result = kernel();
   assert.equal(result.result.length, 3);
   assert.equal(result.result1.length, 3);
-  assert.deepEqual(result.result.map(row => Array.from(row)), [[6,7,8],[7,8,9],[8,9,10]]);
-  assert.deepEqual(result.result1.map(row => Array.from(row)), [[6,7,8],[7,8,9],[8,9,10]]);
-  assert.deepEqual(Array.from(kernel.output), [3,3]);
+  assert.deepEqual(result.result.map(row => Array.from(row)), [
+    [6, 7, 8],
+    [7, 8, 9],
+    [8, 9, 10]
+  ]);
+  assert.deepEqual(result.result1.map(row => Array.from(row)), [
+    [6, 7, 8],
+    [7, 8, 9],
+    [8, 9, 10]
+  ]);
+  assert.deepEqual(Array.from(kernel.output), [3, 3]);
 
-  kernel.setOutput([2,2]);
+  kernel.setOutput([2, 2]);
   result = kernel();
   assert.equal(result.result.length, 2);
   assert.equal(result.result1.length, 2);
-  assert.deepEqual(result.result.map(row => Array.from(row)), [[4,5],[5,6]]);
-  assert.deepEqual(result.result1.map(row => Array.from(row)), [[4,5],[5,6]]);
-  assert.deepEqual(Array.from(kernel.output), [2,2]);
+  assert.deepEqual(result.result.map(row => Array.from(row)), [
+    [4, 5],
+    [5, 6]
+  ]);
+  assert.deepEqual(result.result1.map(row => Array.from(row)), [
+    [4, 5],
+    [5, 6]
+  ]);
+  assert.deepEqual(Array.from(kernel.output), [2, 2]);
 
   gpu.destroy();
 }
@@ -403,10 +445,10 @@ test('dynamic output 2d shrinks cpu', () => {
 function dynamicOutput2DGraphicalGrows(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
-    this.color(1,1,1,1);
+    this.color(1, 1, 1, 1);
   }, { graphical: true, dynamicOutput: true });
 
-  kernel.setOutput([2,2]);
+  kernel.setOutput([2, 2]);
   kernel();
   let result = kernel.getPixels();
   assert.equal(result.length, 2 * 2 * 4);
@@ -416,9 +458,9 @@ function dynamicOutput2DGraphicalGrows(mode) {
     255, 255, 255, 255,
     255, 255, 255, 255
   ]);
-  assert.deepEqual(Array.from(kernel.output), [2,2]);
+  assert.deepEqual(Array.from(kernel.output), [2, 2]);
 
-  kernel.setOutput([3,3]);
+  kernel.setOutput([3, 3]);
   kernel();
   result = kernel.getPixels();
   assert.equal(result.length, 3 * 3 * 4);
@@ -433,7 +475,7 @@ function dynamicOutput2DGraphicalGrows(mode) {
     255, 255, 255, 255,
     255, 255, 255, 255,
   ]);
-  assert.deepEqual(Array.from(kernel.output), [3,3]);
+  assert.deepEqual(Array.from(kernel.output), [3, 3]);
 
   gpu.destroy();
 }
@@ -466,10 +508,10 @@ test('dynamic output 2d graphical grows gpu', () => {
 function dynamicOutput2DGraphicalShrinks(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
-    this.color(1,1,1,1);
+    this.color(1, 1, 1, 1);
   }, { graphical: true, dynamicOutput: true });
 
-  kernel.setOutput([3,3]);
+  kernel.setOutput([3, 3]);
   kernel();
   let result = kernel.getPixels();
   assert.equal(result.length, 3 * 3 * 4);
@@ -484,9 +526,9 @@ function dynamicOutput2DGraphicalShrinks(mode) {
     255, 255, 255, 255,
     255, 255, 255, 255,
   ]);
-  assert.deepEqual(Array.from(kernel.output), [3,3]);
+  assert.deepEqual(Array.from(kernel.output), [3, 3]);
 
-  kernel.setOutput([2,2]);
+  kernel.setOutput([2, 2]);
   kernel();
   result = kernel.getPixels();
   assert.equal(result.length, 2 * 2 * 4);
@@ -496,7 +538,7 @@ function dynamicOutput2DGraphicalShrinks(mode) {
     255, 255, 255, 255,
     255, 255, 255, 255
   ]);
-  assert.deepEqual(Array.from(kernel.output), [2,2]);
+  assert.deepEqual(Array.from(kernel.output), [2, 2]);
 
   gpu.destroy();
 }
@@ -531,33 +573,42 @@ function dynamicOutput3DGrows(mode) {
     return this.output.x + this.output.y + this.thread.z + this.thread.x + this.thread.y + this.thread.z;
   }, { dynamicOutput: true });
 
-  kernel.setOutput([2,2,2]);
+  kernel.setOutput([2, 2, 2]);
   let result = kernel();
   assert.equal(result.length, 2);
-  assert.deepEqual(result.map(matrix => matrix.map(row => Array.from(row))), [[[4,5],[5,6]],[[6,7],[7,8]]]);
-  assert.deepEqual(Array.from(kernel.output), [2,2,2]);
+  assert.deepEqual(result.map(matrix => matrix.map(row => Array.from(row))), [
+    [
+      [4, 5],
+      [5, 6]
+    ],
+    [
+      [6, 7],
+      [7, 8]
+    ]
+  ]);
+  assert.deepEqual(Array.from(kernel.output), [2, 2, 2]);
 
-  kernel.setOutput([3,3,3]);
+  kernel.setOutput([3, 3, 3]);
   result = kernel();
   assert.equal(result.length, 3);
   assert.deepEqual(result.map(matrix => matrix.map(row => Array.from(row))), [
     [
-      [6,7,8],
-      [7,8,9],
-      [8,9,10]
+      [6, 7, 8],
+      [7, 8, 9],
+      [8, 9, 10]
     ],
     [
-      [8,9,10],
-      [9,10,11],
-      [10,11,12]
+      [8, 9, 10],
+      [9, 10, 11],
+      [10, 11, 12]
     ],
     [
-      [10,11,12],
-      [11,12,13],
-      [12,13,14]
+      [10, 11, 12],
+      [11, 12, 13],
+      [12, 13, 14]
     ]
   ]);
-  assert.deepEqual(Array.from(kernel.output), [3,3,3]);
+  assert.deepEqual(Array.from(kernel.output), [3, 3, 3]);
 
   gpu.destroy();
 }
@@ -593,33 +644,42 @@ function dynamicOutput3DShrinks(mode) {
     return this.output.x + this.output.y + this.thread.z + this.thread.x + this.thread.y + this.thread.z;
   }, { dynamicOutput: true });
 
-  kernel.setOutput([3,3,3]);
+  kernel.setOutput([3, 3, 3]);
   let result = kernel();
   assert.equal(result.length, 3);
   assert.deepEqual(result.map(matrix => matrix.map(row => Array.from(row))), [
     [
-      [6,7,8],
-      [7,8,9],
-      [8,9,10]
+      [6, 7, 8],
+      [7, 8, 9],
+      [8, 9, 10]
     ],
     [
-      [8,9,10],
-      [9,10,11],
-      [10,11,12]
+      [8, 9, 10],
+      [9, 10, 11],
+      [10, 11, 12]
     ],
     [
-      [10,11,12],
-      [11,12,13],
-      [12,13,14]
+      [10, 11, 12],
+      [11, 12, 13],
+      [12, 13, 14]
     ]
   ]);
-  assert.deepEqual(Array.from(kernel.output), [3,3,3]);
+  assert.deepEqual(Array.from(kernel.output), [3, 3, 3]);
 
-  kernel.setOutput([2,2,2]);
+  kernel.setOutput([2, 2, 2]);
   result = kernel();
   assert.equal(result.length, 2);
-  assert.deepEqual(result.map(matrix => matrix.map(row => Array.from(row))), [[[4,5],[5,6]],[[6,7],[7,8]]]);
-  assert.deepEqual(Array.from(kernel.output), [2,2,2]);
+  assert.deepEqual(result.map(matrix => matrix.map(row => Array.from(row))), [
+    [
+      [4, 5],
+      [5, 6]
+    ],
+    [
+      [6, 7],
+      [7, 8]
+    ]
+  ]);
+  assert.deepEqual(Array.from(kernel.output), [2, 2, 2]);
 
   gpu.destroy();
 }
@@ -658,53 +718,71 @@ function dynamicOutput3DKernelMapGrows(mode) {
     return map(this.output.x + this.output.y + this.thread.z + this.thread.x + this.thread.y + this.thread.z);
   }, { dynamicOutput: true });
 
-  kernel.setOutput([2,2,2]);
+  kernel.setOutput([2, 2, 2]);
   let result = kernel();
   assert.equal(result.result.length, 2);
   assert.equal(result.result1.length, 2);
-  assert.deepEqual(result.result.map(matrix => matrix.map(row => Array.from(row))), [[[4,5],[5,6]],[[6,7],[7,8]]]);
-  assert.deepEqual(result.result1.map(matrix => matrix.map(row => Array.from(row))), [[[4,5],[5,6]],[[6,7],[7,8]]]);
-  assert.deepEqual(Array.from(kernel.output), [2,2,2]);
+  assert.deepEqual(result.result.map(matrix => matrix.map(row => Array.from(row))), [
+    [
+      [4, 5],
+      [5, 6]
+    ],
+    [
+      [6, 7],
+      [7, 8]
+    ]
+  ]);
+  assert.deepEqual(result.result1.map(matrix => matrix.map(row => Array.from(row))), [
+    [
+      [4, 5],
+      [5, 6]
+    ],
+    [
+      [6, 7],
+      [7, 8]
+    ]
+  ]);
+  assert.deepEqual(Array.from(kernel.output), [2, 2, 2]);
 
-  kernel.setOutput([3,3,3]);
+  kernel.setOutput([3, 3, 3]);
   result = kernel();
   assert.equal(result.result.length, 3);
   assert.equal(result.result1.length, 3);
   assert.deepEqual(result.result.map(matrix => matrix.map(row => Array.from(row))), [
     [
-      [6,7,8],
-      [7,8,9],
-      [8,9,10]
+      [6, 7, 8],
+      [7, 8, 9],
+      [8, 9, 10]
     ],
     [
-      [8,9,10],
-      [9,10,11],
-      [10,11,12]
+      [8, 9, 10],
+      [9, 10, 11],
+      [10, 11, 12]
     ],
     [
-      [10,11,12],
-      [11,12,13],
-      [12,13,14]
+      [10, 11, 12],
+      [11, 12, 13],
+      [12, 13, 14]
     ]
   ]);
   assert.deepEqual(result.result1.map(matrix => matrix.map(row => Array.from(row))), [
     [
-      [6,7,8],
-      [7,8,9],
-      [8,9,10]
+      [6, 7, 8],
+      [7, 8, 9],
+      [8, 9, 10]
     ],
     [
-      [8,9,10],
-      [9,10,11],
-      [10,11,12]
+      [8, 9, 10],
+      [9, 10, 11],
+      [10, 11, 12]
     ],
     [
-      [10,11,12],
-      [11,12,13],
-      [12,13,14]
+      [10, 11, 12],
+      [11, 12, 13],
+      [12, 13, 14]
     ]
   ]);
-  assert.deepEqual(Array.from(kernel.output), [3,3,3]);
+  assert.deepEqual(Array.from(kernel.output), [3, 3, 3]);
 
   gpu.destroy();
 }
@@ -744,53 +822,71 @@ function dynamicOutput3DKernelMapShrinks(mode) {
     return map(this.output.x + this.output.y + this.thread.z + this.thread.x + this.thread.y + this.thread.z);
   }, { dynamicOutput: true });
 
-  kernel.setOutput([3,3,3]);
+  kernel.setOutput([3, 3, 3]);
   let result = kernel();
   assert.equal(result.result.length, 3);
   assert.equal(result.result1.length, 3);
   assert.deepEqual(result.result.map(matrix => matrix.map(row => Array.from(row))), [
     [
-      [6,7,8],
-      [7,8,9],
-      [8,9,10]
+      [6, 7, 8],
+      [7, 8, 9],
+      [8, 9, 10]
     ],
     [
-      [8,9,10],
-      [9,10,11],
-      [10,11,12]
+      [8, 9, 10],
+      [9, 10, 11],
+      [10, 11, 12]
     ],
     [
-      [10,11,12],
-      [11,12,13],
-      [12,13,14]
+      [10, 11, 12],
+      [11, 12, 13],
+      [12, 13, 14]
     ]
   ]);
   assert.deepEqual(result.result1.map(matrix => matrix.map(row => Array.from(row))), [
     [
-      [6,7,8],
-      [7,8,9],
-      [8,9,10]
+      [6, 7, 8],
+      [7, 8, 9],
+      [8, 9, 10]
     ],
     [
-      [8,9,10],
-      [9,10,11],
-      [10,11,12]
+      [8, 9, 10],
+      [9, 10, 11],
+      [10, 11, 12]
     ],
     [
-      [10,11,12],
-      [11,12,13],
-      [12,13,14]
+      [10, 11, 12],
+      [11, 12, 13],
+      [12, 13, 14]
     ]
   ]);
-  assert.deepEqual(Array.from(kernel.output), [3,3,3]);
+  assert.deepEqual(Array.from(kernel.output), [3, 3, 3]);
 
-  kernel.setOutput([2,2,2]);
+  kernel.setOutput([2, 2, 2]);
   result = kernel();
   assert.equal(result.result.length, 2);
   assert.equal(result.result1.length, 2);
-  assert.deepEqual(result.result.map(matrix => matrix.map(row => Array.from(row))), [[[4,5],[5,6]],[[6,7],[7,8]]]);
-  assert.deepEqual(result.result1.map(matrix => matrix.map(row => Array.from(row))), [[[4,5],[5,6]],[[6,7],[7,8]]]);
-  assert.deepEqual(Array.from(kernel.output), [2,2,2]);
+  assert.deepEqual(result.result.map(matrix => matrix.map(row => Array.from(row))), [
+    [
+      [4, 5],
+      [5, 6]
+    ],
+    [
+      [6, 7],
+      [7, 8]
+    ]
+  ]);
+  assert.deepEqual(result.result1.map(matrix => matrix.map(row => Array.from(row))), [
+    [
+      [4, 5],
+      [5, 6]
+    ],
+    [
+      [6, 7],
+      [7, 8]
+    ]
+  ]);
+  assert.deepEqual(Array.from(kernel.output), [2, 2, 2]);
 
   gpu.destroy();
 }

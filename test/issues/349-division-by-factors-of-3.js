@@ -4,8 +4,8 @@ const { GPU } = require('../../src');
 describe('issue #349 divide by 3');
 
 function testDivideByThree(mode) {
-  const gpu = new GPU({mode});
-  const k = gpu.createKernel(function (v1, v2) {
+  const gpu = new GPU({ mode });
+  const k = gpu.createKernel(function(v1, v2) {
     return v1 / v2;
   }, {
     output: [1],
@@ -41,6 +41,7 @@ test('Issue #349 - divide by three cpu', () => {
 
 
 describe('issue #349 divide by random numbers');
+
 function someRandomWholeNumberDivisions(mode) {
   const DATA_MAX = 1024 * 1024;
   const dividendData = new Float32Array(DATA_MAX);
@@ -52,8 +53,8 @@ function someRandomWholeNumberDivisions(mode) {
     expectedResults[i] = parseInt(Math.random() * maxWholeNumberRepresentation + 1, 10);
     dividendData[i] = divisorData[i] * expectedResults[i];
   }
-  const gpu = new GPU({mode});
-  const k = gpu.createKernel(function (v1, v2) {
+  const gpu = new GPU({ mode });
+  const k = gpu.createKernel(function(v1, v2) {
     return v1[this.thread.x] / v2[this.thread.x];
   }, {
     output: [DATA_MAX],
@@ -93,8 +94,9 @@ test('Issue #349 - some random whole number divisions cpu', () => {
 
 
 describe('issue #349 disable integer division bug');
+
 function testDisableFixIntegerDivisionBug(mode) {
-  const gpu = new GPU({mode});
+  const gpu = new GPU({ mode });
   const idFix = gpu.createKernel(function(v1, v2) {
     return v1 / v2;
   }, { precision: 'single', output: [1] });
@@ -110,11 +112,11 @@ function testDisableFixIntegerDivisionBug(mode) {
   if (!gpu.Kernel.features.isIntegerDivisionAccurate) {
     assert.ok(
       (
-        idFix(6, 3)[0] === 2
-        && idFix(6030401, 3991)[0] === 1511
+        idFix(6, 3)[0] === 2 &&
+        idFix(6030401, 3991)[0] === 1511
       ) && (
-        idDixOff(6, 3)[0] !== 2
-        || idDixOff(6030401, 3991)[0] !== 1511
+        idDixOff(6, 3)[0] !== 2 ||
+        idDixOff(6030401, 3991)[0] !== 1511
       ), "when bug is present should show bug!");
   } else {
     assert.ok(idFix(6, 3)[0] === 2 && idDixOff(6, 3)[0] === 2, "when bug isn't present should not show bug!");
@@ -129,7 +131,7 @@ function testDisableFixIntegerDivisionBug(mode) {
   testDisableFixIntegerDivisionBug('gpu');
 });
 
-(GPU.isSinglePrecisionSupported  && GPU.isWebGLSupported ? test : skip)('Issue #349 - test disable fix integer division bug webgl', () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('Issue #349 - test disable fix integer division bug webgl', () => {
   testDisableFixIntegerDivisionBug('webgl');
 });
 

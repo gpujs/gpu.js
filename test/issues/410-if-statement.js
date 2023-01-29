@@ -6,12 +6,12 @@ describe('issue #410 - if statement when unsigned on NVidia');
 function ifStatement(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(a) {
-    const paramDenom = a[this.thread.x][1] - a[this.thread.x][0];
-    if(paramDenom === 0) {
-      return 100;
-    }
-    return 200;
-  })
+      const paramDenom = a[this.thread.x][1] - a[this.thread.x][0];
+      if (paramDenom === 0) {
+        return 100;
+      }
+      return 200;
+    })
     .setPrecision('unsigned')
     .setOutput([2]);
 
@@ -23,7 +23,7 @@ function ifStatement(mode) {
       ]
     );
 
-  assert.deepEqual(Array.from(result), [100,200]);
+  assert.deepEqual(Array.from(result), [100, 200]);
   gpu.destroy();
 }
 

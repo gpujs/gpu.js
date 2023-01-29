@@ -5,6 +5,7 @@ describe('internal: Function return type detection');
 
 function canDetectNumberFromAddedFunction(mode) {
   const gpu = new GPU({ mode });
+
   function number() {
     return 1;
   }
@@ -46,6 +47,7 @@ test('can detect Number cpu', () => {
 
 function canDetectArray2FromAddedFunction(mode) {
   const gpu = new GPU({ mode });
+
   function array2() {
     return [1, 2];
   }
@@ -88,6 +90,7 @@ test('can detect Array(2) cpu', () => {
 
 function canDetectArray3FromAddedFunction(mode) {
   const gpu = new GPU({ mode });
+
   function array2() {
     return [1, 2, 3];
   }
@@ -130,6 +133,7 @@ test('can detect Array(3) cpu', () => {
 
 function canDetectArray4FromAddedFunction(mode) {
   const gpu = new GPU({ mode });
+
   function array2() {
     return [1, 2, 3, 4];
   }

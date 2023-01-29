@@ -68,7 +68,9 @@ test('loop int constant output webgl2', () => {
   const output = gpu.createKernel(kernel, {
     constants: { max: 3 },
     output: [1]
-  })([[1,2,3]]);
+  })([
+    [1, 2, 3]
+  ]);
 
   assert.equal(
     output,
@@ -89,7 +91,9 @@ test('loop int constant output webgl2', () => {
   const output = gpu.createKernel(kernel, {
     constants: { max: 3 },
     output: [1]
-  })([[1,2,3]]);
+  })([
+    [1, 2, 3]
+  ]);
 
   assert.equal(
     output,
@@ -110,7 +114,9 @@ test('loop int constant output webgl2', () => {
   const output = gpu.createKernel(kernel, {
     constants: { max: 3 },
     output: [1]
-  })([[1,2,3]]);
+  })([
+    [1, 2, 3]
+  ]);
 
   assert.equal(
     output,
@@ -178,7 +184,9 @@ test('loop int literal output webgl2', () => {
     return sum;
   }
   const gpu = new GPU({ mode: 'webgl' });
-  const output = gpu.createKernel(kernel, { output: [1] })([[1,2,3]]);
+  const output = gpu.createKernel(kernel, { output: [1] })([
+    [1, 2, 3]
+  ]);
   assert.equal(
     output,
     6
@@ -195,7 +203,9 @@ test('loop int literal output webgl2', () => {
     return sum;
   }
   const gpu = new GPU({ mode: 'webgl2' });
-  const output = gpu.createKernel(kernel, { output: [1] })([[1,2,3]]);
+  const output = gpu.createKernel(kernel, { output: [1] })([
+    [1, 2, 3]
+  ]);
   assert.equal(
     output,
     6
@@ -212,7 +222,9 @@ test('loop int literal output webgl2', () => {
     return sum;
   }
   const gpu = new GPU({ mode: 'headlessgl' });
-  const output = gpu.createKernel(kernel, { output: [1] })([[1,2,3]]);
+  const output = gpu.createKernel(kernel, { output: [1] })([
+    [1, 2, 3]
+  ]);
   assert.equal(
     output,
     6
@@ -285,7 +297,9 @@ test('loop int parameter output webgl2', () => {
     return sum;
   }
   const gpu = new GPU({ mode: 'webgl' });
-  const output = gpu.createKernel(kernel, { output: [1] })(3, [[1,2,3]]);
+  const output = gpu.createKernel(kernel, { output: [1] })(3, [
+    [1, 2, 3]
+  ]);
   assert.equal(
     output,
     6
@@ -302,7 +316,9 @@ test('loop int parameter output webgl2', () => {
     return sum;
   }
   const gpu = new GPU({ mode: 'webgl2' });
-  const output = gpu.createKernel(kernel, { output: [1] })(3, [[1,2,3]]);
+  const output = gpu.createKernel(kernel, { output: [1] })(3, [
+    [1, 2, 3]
+  ]);
   assert.equal(
     output,
     6
@@ -319,7 +335,9 @@ test('loop int parameter output webgl2', () => {
     return sum;
   }
   const gpu = new GPU({ mode: 'headlessgl' });
-  const output = gpu.createKernel(kernel, { output: [1] })(3, [[1,2,3]]);
+  const output = gpu.createKernel(kernel, { output: [1] })(3, [
+    [1, 2, 3]
+  ]);
   assert.equal(
     output,
     6
@@ -339,7 +357,9 @@ test('loop int parameter output webgl2', () => {
   const output = gpu.createKernel(kernel, {
     dynamicOutput: true,
     output: [1],
-  })([[3]]);
+  })([
+    [3]
+  ]);
 
   assert.deepEqual(
     Array.from(output),
@@ -360,7 +380,9 @@ test('loop int parameter output webgl2', () => {
   const output = gpu.createKernel(kernel, {
     dynamicOutput: true,
     output: [1]
-  })([[3]]);
+  })([
+    [3]
+  ]);
 
   assert.deepEqual(
     Array.from(output),
@@ -381,7 +403,9 @@ test('loop int parameter output webgl2', () => {
   const output = gpu.createKernel(kernel, {
     dynamicOutput: true,
     output: [1],
-  })([[3]]);
+  })([
+    [3]
+  ]);
 
   assert.deepEqual(
     Array.from(output),

@@ -5,6 +5,7 @@ describe('feature: Ternary');
 
 function ternaryTest(mode) {
   const gpu = new GPU({ mode });
+
   function ternaryFunction(value) {
     return (value > 1 ? 1 : 0);
   }

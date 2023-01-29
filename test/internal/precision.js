@@ -4,7 +4,7 @@ const { GPU } = require('../../src');
 describe('internal: precision');
 
 (GPU.isWebGLSupported ? test : skip)('WebGL Decimal Precision', () => {
-  const gpu = new GPU({mode: 'webgl'});
+  const gpu = new GPU({ mode: 'webgl' });
   const add = gpu.createKernel(function(a, b) {
     return a + b;
   }).setOutput([1]);
@@ -25,7 +25,7 @@ describe('internal: precision');
 });
 
 (GPU.isWebGL2Supported ? test : skip)('WebGL2 Decimal Precision', () => {
-  const gpu = new GPU({mode: 'webgl2'});
+  const gpu = new GPU({ mode: 'webgl2' });
   const add = gpu.createKernel(function(a, b) {
     return a + b;
   }).setOutput([1]);
@@ -46,7 +46,7 @@ describe('internal: precision');
 });
 
 (GPU.isHeadlessGLSupported ? test : skip)('HeadlessGL Decimal Precision', () => {
-  const gpu = new GPU({mode: 'headlessgl'});
+  const gpu = new GPU({ mode: 'headlessgl' });
   const add = gpu.createKernel(function(a, b) {
     return a + b;
   }).setOutput([1]);

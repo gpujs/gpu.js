@@ -7,12 +7,12 @@ function forVars(mode) {
   const gpu = new GPU({ mode });
 
   const kernel = gpu.createKernel(function() {
-    let sum = 0;
-    for (let i = 0; i < 2; i++) {
-      sum += i;
-    }
-    return sum;
-  })
+      let sum = 0;
+      for (let i = 0; i < 2; i++) {
+        sum += i;
+      }
+      return sum;
+    })
     .setOutput([1, 1]);
 
   const result = kernel();

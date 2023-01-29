@@ -5,6 +5,7 @@ describe('internal: different texture cloning');
 
 function testArrayThenArray1D4(mode) {
   const gpu = new GPU({ mode });
+
   function createTextureOf(value, type) {
     return (gpu.createKernel(function(value) {
       return value[this.thread.x];
@@ -16,11 +17,13 @@ function testArrayThenArray1D4(mode) {
   }
   const arrayTexture = createTextureOf([1], 'Array');
   const arrayTextureClone = arrayTexture.clone();
-  const array4Texture = createTextureOf([[1,2,3,4]], 'Array1D(4)');
+  const array4Texture = createTextureOf([
+    [1, 2, 3, 4]
+  ], 'Array1D(4)');
   const array4TextureClone = array4Texture.clone();
   assert.notEqual(arrayTextureClone, array4TextureClone);
   assert.deepEqual(arrayTextureClone.toArray(), new Float32Array([1]));
-  assert.deepEqual(array4TextureClone.toArray(), [new Float32Array([1,2,3,4])]);
+  assert.deepEqual(array4TextureClone.toArray(), [new Float32Array([1, 2, 3, 4])]);
   gpu.destroy();
 }
 
@@ -42,6 +45,7 @@ test('Array then Array1D(4) auto', () => {
 
 function testArray1D4ThenArray(mode) {
   const gpu = new GPU({ mode });
+
   function createTextureOf(value, type) {
     return (gpu.createKernel(function(value) {
       return value[this.thread.x];
@@ -51,12 +55,14 @@ function testArray1D4ThenArray(mode) {
       argumentTypes: { value: type }
     }))(value);
   }
-  const array4Texture = createTextureOf([[1,2,3,4]], 'Array1D(4)');
+  const array4Texture = createTextureOf([
+    [1, 2, 3, 4]
+  ], 'Array1D(4)');
   const array4TextureClone = array4Texture.clone();
   const arrayTexture = createTextureOf([1], 'Array');
   const arrayTextureClone = arrayTexture.clone();
   assert.notEqual(array4TextureClone, arrayTextureClone);
-  assert.deepEqual(array4TextureClone.toArray(), [new Float32Array([1,2,3,4])]);
+  assert.deepEqual(array4TextureClone.toArray(), [new Float32Array([1, 2, 3, 4])]);
   assert.deepEqual(arrayTextureClone.toArray(), new Float32Array([1]));
   gpu.destroy();
 }

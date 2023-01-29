@@ -7,22 +7,23 @@ describe('issue #314');
 // after this fix max addressing is 2^31 which is the max a int32 can handle
 // run out of heap before being able to create a butter that big!
 // wanted to use uints but caused more problems than it solved
-const DATA_MAX = (GPU.isHeadlessGLSupported ? HeadlessGLKernel : WebGLKernel).features.maxTextureSize*8;
+const DATA_MAX = (GPU.isHeadlessGLSupported ? HeadlessGLKernel : WebGLKernel).features.maxTextureSize * 8;
 const divisor = 100;
 const data = new Uint16Array(DATA_MAX);
 let v = 0;
-for (let i = 0; i < DATA_MAX/divisor; i++) {
+for (let i = 0; i < DATA_MAX / divisor; i++) {
   for (let j = 0; j < divisor; j++) {
-    data[i*divisor + j] = v++;
+    data[i * divisor + j] = v++;
   }
 }
+
 function buildLargeArrayAddressKernel(mode) {
   const gpu = new GPU({ mode });
   const largeArrayAddressKernel = gpu.createKernel(function(data) {
-    return data[this.thread.x];
-  }, {
-    precision: 'unsigned',
-  })
+      return data[this.thread.x];
+    }, {
+      precision: 'unsigned',
+    })
     .setOutput([DATA_MAX]);
 
   const result = largeArrayAddressKernel(data);

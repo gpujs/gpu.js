@@ -5,7 +5,7 @@ describe('internal: casting');
 
 function castingOffsetByThreadXAndOutputX(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function (value) {
+  const kernel = gpu.createKernel(function(value) {
     // value will be a number
     // this.thread.x is an integer
     // this.output.x is treated as a literal, so can be either integer or float
@@ -120,6 +120,7 @@ function handleCastingMixedWithNativeFunctions(mode) {
 
 function handleCastingFloat(mode) {
   const gpu = new GPU({ mode });
+
   function add(value1, value2) {
     return value1 + value2;
   }
@@ -153,6 +154,7 @@ function handleCastingFloat(mode) {
 
 function handleCastingBeforeReturn(mode) {
   const gpu = new GPU({ mode });
+
   function addOne(v) {
     return v + v;
   }

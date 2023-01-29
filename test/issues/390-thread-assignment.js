@@ -10,12 +10,12 @@ test('Issue #390 - thread assignment webgl', function(assert) {
     const sum = x + y;
     return sum;
   }.toString(), { output: [1], returnType: 'Number' });
-  assert.equal(node.toString(), 'float assignThreadToVar() {'
-    + '\nfloat user_x=float(threadId.x);'
-    + '\nfloat user_y=float(threadId.y);'
-    + '\nfloat user_sum=(user_x+user_y);'
-    + '\nreturn user_sum;'
-    + '\n}');
+  assert.equal(node.toString(), 'float assignThreadToVar() {' +
+    '\nfloat user_x=float(threadId.x);' +
+    '\nfloat user_y=float(threadId.y);' +
+    '\nfloat user_sum=(user_x+user_y);' +
+    '\nreturn user_sum;' +
+    '\n}');
   const { x, y, sum } = node.contexts[1];
   assert.equal(x.name, 'x');
   assert.equal(x.valueType, 'Number');
@@ -32,12 +32,12 @@ test('Issue #390 - thread assignment webgl2', function(assert) {
     const sum = x + y;
     return sum;
   }.toString(), { output: [1], returnType: 'Number' });
-  assert.equal(node.toString(), 'float assignThreadToVar() {'
-    + '\nfloat user_x=float(threadId.x);'
-    + '\nfloat user_y=float(threadId.y);'
-    + '\nfloat user_sum=(user_x+user_y);'
-    + '\nreturn user_sum;'
-    + '\n}');
+  assert.equal(node.toString(), 'float assignThreadToVar() {' +
+    '\nfloat user_x=float(threadId.x);' +
+    '\nfloat user_y=float(threadId.y);' +
+    '\nfloat user_sum=(user_x+user_y);' +
+    '\nreturn user_sum;' +
+    '\n}');
   const { x, y, sum } = node.contexts[1];
   assert.equal(x.name, 'x');
   assert.equal(x.valueType, 'Number');
@@ -54,12 +54,12 @@ test('Issue #390 - thread assignment cpu', function(assert) {
     const sum = x + y;
     return sum;
   }.toString(), { output: [1] });
-  assert.equal(node.toString(), 'function assignThreadToVar() {'
-    + '\nconst user_x=_this.thread.x;'
-    + '\nconst user_y=_this.thread.y;'
-    + '\nconst user_sum=(user_x+user_y);'
-    + '\nreturn user_sum;'
-    + '\n}');
+  assert.equal(node.toString(), 'function assignThreadToVar() {' +
+    '\nconst user_x=_this.thread.x;' +
+    '\nconst user_y=_this.thread.y;' +
+    '\nconst user_sum=(user_x+user_y);' +
+    '\nreturn user_sum;' +
+    '\n}');
   const { x, y, z, sum } = node.contexts[1];
   assert.equal(x.name, 'x');
   assert.equal(x.valueType, 'Integer');
@@ -78,15 +78,15 @@ test('Issue #390 (related) - output assignment webgl', function(assert) {
     const sum = x + y + z;
     return sum;
   }.toString(), {
-    output: [1,2,3]
+    output: [1, 2, 3]
   });
-  assert.equal(node.toString(), 'float assignThreadToVar() {'
-    + '\nfloat user_x=1.0;'
-    + '\nfloat user_y=2.0;'
-    + '\nfloat user_z=3.0;'
-    + '\nfloat user_sum=((user_x+user_y)+user_z);'
-    + '\nreturn user_sum;'
-    + '\n}');
+  assert.equal(node.toString(), 'float assignThreadToVar() {' +
+    '\nfloat user_x=1.0;' +
+    '\nfloat user_y=2.0;' +
+    '\nfloat user_z=3.0;' +
+    '\nfloat user_sum=((user_x+user_y)+user_z);' +
+    '\nreturn user_sum;' +
+    '\n}');
   const { x, y, z, sum } = node.contexts[1];
   assert.equal(x.name, 'x');
   assert.equal(x.valueType, 'Number');
@@ -106,15 +106,15 @@ test('Issue #390 (related) - output assignment webgl2', function(assert) {
     const sum = x + y + z;
     return sum;
   }.toString(), {
-    output: [1,2,3]
+    output: [1, 2, 3]
   });
-  assert.equal(node.toString(), 'float assignThreadToVar() {'
-    + '\nfloat user_x=1.0;'
-    + '\nfloat user_y=2.0;'
-    + '\nfloat user_z=3.0;'
-    + '\nfloat user_sum=((user_x+user_y)+user_z);'
-    + '\nreturn user_sum;'
-    + '\n}');
+  assert.equal(node.toString(), 'float assignThreadToVar() {' +
+    '\nfloat user_x=1.0;' +
+    '\nfloat user_y=2.0;' +
+    '\nfloat user_z=3.0;' +
+    '\nfloat user_sum=((user_x+user_y)+user_z);' +
+    '\nreturn user_sum;' +
+    '\n}');
   const context = node.contexts[1];
   const { x, y, z, sum } = context;
   assert.equal(x.name, 'x');
@@ -135,15 +135,15 @@ test('Issue #390 (related) - output assignment cpu', function(assert) {
     const sum = x + y + z;
     return sum;
   }`, {
-    output: [1,2,3]
+    output: [1, 2, 3]
   });
-  assert.equal(node.toString(), 'function assignThreadToVar() {'
-    + '\nconst user_x=outputX;'
-    + '\nconst user_y=outputY;'
-    + '\nconst user_z=outputZ;'
-    + '\nconst user_sum=((user_x+user_y)+user_z);'
-    + '\nreturn user_sum;'
-    + '\n}');
+  assert.equal(node.toString(), 'function assignThreadToVar() {' +
+    '\nconst user_x=outputX;' +
+    '\nconst user_y=outputY;' +
+    '\nconst user_z=outputZ;' +
+    '\nconst user_sum=((user_x+user_y)+user_z);' +
+    '\nreturn user_sum;' +
+    '\n}');
   const context = node.contexts[1];
   const { x, y, z, sum } = context;
   assert.equal(context['@contextType'], 'const/let');
@@ -160,4 +160,3 @@ test('Issue #390 (related) - output assignment cpu', function(assert) {
   assert.equal(sum.name, 'sum');
   assert.equal(sum.valueType, 'Number');
 });
-

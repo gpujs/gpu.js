@@ -70,12 +70,13 @@ test('immutable unsigned precision kernel gpu', () => {
 
 function testImmutableMappedKernelTextureRecycling(precision, mode) {
   const gpu = new GPU({ mode });
+
   function oneOff(value) {
     return value;
   }
   const kernel = gpu.createKernelMap({
     oneOffValue: oneOff
-  },function(value1, value2) {
+  }, function(value1, value2) {
     oneOff(value2[0] - 1);
     return value1[0] + 1;
   }, {
@@ -207,7 +208,7 @@ test('immutable single precision texture delete gpu', t => {
 });
 
 test('immutable unsigned precision texture delete auto', t => {
-  testImmutableTextureDelete('unsigned', t.async() );
+  testImmutableTextureDelete('unsigned', t.async());
 });
 
 test('immutable unsigned precision texture delete gpu', t => {
@@ -300,10 +301,11 @@ test('immutable single precision kernel.texture does not leak gpu', t => {
 
 function testImmutableKernelMappedTexturesDoesNotLeak(precision, done, mode) {
   const gpu = new GPU({ mode });
+
   function saveValue(value) {
     return value;
   }
-  const toTextures = gpu.createKernelMap([saveValue],function(value1, value2) {
+  const toTextures = gpu.createKernelMap([saveValue], function(value1, value2) {
     saveValue(value1[this.thread.x]);
     return value2[this.thread.x];
   }, {
@@ -644,7 +646,7 @@ const gpuError = new Error('Source and destination textures are the same.  Use i
 const cpuError = new Error('Source and destination arrays are the same.  Use immutable = true');
 
 test('single precision same source and destination from result mutable throws auto', () => {
-  testSameSourceDestinationFromResultThrows(gpuError,'single');
+  testSameSourceDestinationFromResultThrows(gpuError, 'single');
 });
 
 test('single precision same source and destination from result mutable throws gpu', () => {
@@ -802,12 +804,13 @@ test('output texture is cloned when recompiling gpu', () => {
 
 function testMappedOutputTextureIsClonedWhenRecompiling(mode) {
   const gpu = new GPU({ mode });
+
   function setValue(value) {
     return value * 10;
   }
   const kernel = gpu.createKernelMap({
     value: setValue,
-  },function(value1, value2) {
+  }, function(value1, value2) {
     setValue(value2[this.thread.x]);
     return value1[this.thread.x] + 1;
   }, { output: [1], immutable: true, pipeline: true });

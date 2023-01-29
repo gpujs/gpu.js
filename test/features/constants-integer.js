@@ -9,8 +9,7 @@ function integerConstantTest(mode) {
   const tryConst = gpu.createKernel(
     function() {
       return this.constants.int;
-    },
-    {
+    }, {
       constants: { int }
     }
   ).setOutput([2]);

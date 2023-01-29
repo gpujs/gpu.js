@@ -4,10 +4,12 @@ const { GPU } = require('../../src');
 describe('issue #359');
 
 function testAddFunctionKernel(mode) {
-  const gpu = new GPU({mode});
+  const gpu = new GPU({ mode });
+
   function clcC(xx) {
     return Math.abs(xx);
   }
+
   function intermediate(c1) {
     return clcC(c1);
   }

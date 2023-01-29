@@ -7,8 +7,8 @@ function inGPUInstanceSettings(mode) {
   function customAdder(a, b) {
     return a + b;
   }
-  const gpu = new GPU({mode, functions: [customAdder] });
-  const kernel = gpu.createKernel(function (a, b) {
+  const gpu = new GPU({ mode, functions: [customAdder] });
+  const kernel = gpu.createKernel(function(a, b) {
     return customAdder(a[this.thread.x], b[this.thread.x]);
   }, {
     output: [6]
@@ -56,7 +56,7 @@ function withGPUAddFunctionMethod(mode) {
   }
   const gpu = new GPU({ mode })
     .addFunction(customAdder);
-  const kernel = gpu.createKernel(function (a, b) {
+  const kernel = gpu.createKernel(function(a, b) {
     return customAdder(a[this.thread.x], b[this.thread.x]);
   }, {
     output: [6]
@@ -102,7 +102,7 @@ function inKernelInstanceSettings(mode) {
     return a + b;
   }
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function (a, b) {
+  const kernel = gpu.createKernel(function(a, b) {
     return customAdder(a[this.thread.x], b[this.thread.x]);
   }, {
     output: [6],
@@ -151,11 +151,11 @@ function withKernelAddFunctionMethod(mode) {
     return a + b;
   }
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function (a, b) {
-    return customAdder(a[this.thread.x], b[this.thread.x]);
-  }, {
-    output: [6]
-  })
+  const kernel = gpu.createKernel(function(a, b) {
+      return customAdder(a[this.thread.x], b[this.thread.x]);
+    }, {
+      output: [6]
+    })
     .addFunction(customAdder);
 
   const a = [1, 2, 3, 5, 6, 7];
@@ -196,7 +196,7 @@ test('with Kernel addFunction method cpu', () => {
 describe('features: add custom function with `this.constants.width` in loop');
 
 function sumAB(mode) {
-  const gpu = new GPU({mode});
+  const gpu = new GPU({ mode });
 
   function customAdder(a, b) {
     let sum = 0;
@@ -208,11 +208,11 @@ function sumAB(mode) {
 
   gpu.addFunction(customAdder);
 
-  const kernel = gpu.createKernel(function (a, b) {
+  const kernel = gpu.createKernel(function(a, b) {
     return customAdder(a, b);
   }, {
     output: [6],
-    constants: {width: 6},
+    constants: { width: 6 },
     precision: 'unsigned',
   });
 
@@ -253,6 +253,7 @@ test('sumAB cpu', () => {
 });
 
 describe('features: add custom function with `this.output.x` in loop');
+
 function sumABThisOutputX(mode) {
   const gpu = new GPU({ mode, functions: [customAdder] });
 
@@ -267,7 +268,7 @@ function sumABThisOutputX(mode) {
   const kernel = gpu.createKernel(function(a, b) {
     return customAdder(a, b);
   }, {
-    output : [6],
+    output: [6],
   });
 
   assert.ok(kernel !== null, 'function generated test');
@@ -275,7 +276,7 @@ function sumABThisOutputX(mode) {
   const a = [1, 2, 3, 5, 6, 7];
   const b = [1, 1, 1, 1, 1, 1];
 
-  const result = kernel(a,b);
+  const result = kernel(a, b);
   const expected = [12, 18, 24, 36, 42, 48];
 
   assert.deepEqual(Array.from(result), expected);
@@ -308,6 +309,7 @@ test('sumABThisOutputX cpu', () => {
 
 
 describe('features: add custom private');
+
 function addCustomPrivate(mode) {
   const gpu = new GPU({ mode });
 
@@ -321,7 +323,7 @@ function addCustomPrivate(mode) {
     }
     return customAdder(a, b);
   }, {
-    output : [6],
+    output: [6],
   });
 
   assert.ok(kernel !== null, 'function generated test');
@@ -329,7 +331,7 @@ function addCustomPrivate(mode) {
   const a = [1, 2, 3, 5, 6, 7];
   const b = [1, 1, 1, 1, 1, 1];
 
-  const result = kernel(a,b);
+  const result = kernel(a, b);
   const expected = [12, 18, 24, 36, 42, 48];
 
   assert.deepEqual(Array.from(result), expected);
@@ -364,6 +366,7 @@ describe('features: setFunctions from array on kernel');
 
 function testSetFunctionsFromArrayOnKernel(mode) {
   const gpu = new GPU({ mode });
+
   function custom() {
     return 1;
   }
@@ -442,8 +445,8 @@ describe('features: setFunctions from array on kernel');
 function testAddIGPUFunction(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(value) {
-    return custom(value);
-  })
+      return custom(value);
+    })
     .setOutput([1])
     .addFunction({
       name: 'custom',

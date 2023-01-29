@@ -62,7 +62,7 @@ test('loop max output webgl2', () => {
 });
 
 (GPU.isWebGLSupported ? test : skip)('loop max webgl', () => {
-  const gpu = new GPU({mode: 'webgl'});
+  const gpu = new GPU({ mode: 'webgl' });
   const add = gpu.createKernel(function(a, b) {
     let sum = 0;
     for (let i = 0; i < a; i++) {
@@ -71,7 +71,9 @@ test('loop max output webgl2', () => {
     return sum;
   }).setOutput([1]);
 
-  const output = add(1, [[1]]);
+  const output = add(1, [
+    [1]
+  ]);
   assert.equal(
     output[0],
     1
@@ -80,7 +82,7 @@ test('loop max output webgl2', () => {
 });
 
 (GPU.isWebGL2Supported ? test : skip)('loop max webgl2', () => {
-  const gpu = new GPU({mode: 'webgl2'});
+  const gpu = new GPU({ mode: 'webgl2' });
   const add = gpu.createKernel(function(a, b) {
     let sum = 0;
     for (let i = 0; i < a; i++) {
@@ -89,7 +91,9 @@ test('loop max output webgl2', () => {
     return sum;
   }).setOutput([1]);
 
-  const output = add(1, [[1]]);
+  const output = add(1, [
+    [1]
+  ]);
   assert.equal(
     output[0],
     1
@@ -100,19 +104,20 @@ test('loop max output webgl2', () => {
 (GPU.isHeadlessGLSupported ? test : skip)('loop max headlessgl', () => {
   const gpu = new GPU({ mode: 'headlessgl' });
   const add = gpu.createKernel(function(a, b) {
-    let sum = 0;
-    for (let i = 0; i < a; i++) {
-      sum += b[this.thread.x][i];
-    }
-    return sum;
-  })
+      let sum = 0;
+      for (let i = 0; i < a; i++) {
+        sum += b[this.thread.x][i];
+      }
+      return sum;
+    })
     .setOutput([1]);
 
-  const output = add(1, [[1]]);
+  const output = add(1, [
+    [1]
+  ]);
   assert.equal(
     output[0],
     1
   );
   gpu.destroy();
 });
-

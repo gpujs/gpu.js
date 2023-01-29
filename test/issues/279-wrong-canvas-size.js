@@ -4,20 +4,21 @@ const { GPU } = require('../../src');
 describe('issue #279');
 
 const WIDTH = 600;
-const HEIGHT =   400;
+const HEIGHT = 400;
+
 function wrongCanvasSizeOptimized(mode) {
   const gpu = new GPU({ mode });
 
   const initMatrix = gpu.createKernel(function(value) {
-    return value;
-  })
+      return value;
+    })
     .setOptimizeFloatMemory(true)
     .setOutput([WIDTH, HEIGHT]);
 
   const render = gpu.createKernel(function(matrix) {
-    const i = matrix[this.thread.y][this.thread.x];
-    this.color(i, i, i, 1);
-  })
+      const i = matrix[this.thread.y][this.thread.x];
+      this.color(i, i, i, 1);
+    })
     .setOutput([WIDTH, HEIGHT])
     .setGraphical(true);
 
@@ -54,15 +55,15 @@ function wrongCanvasSizeUnoptimized(mode) {
   const gpu = new GPU({ mode });
 
   const initMatrix = gpu.createKernel(function(value) {
-    return value;
-  })
+      return value;
+    })
     .setOptimizeFloatMemory(false)
     .setOutput([WIDTH, HEIGHT]);
 
   const render = gpu.createKernel(function(matrix) {
-    const i = matrix[this.thread.y][this.thread.x];
-    this.color(i, i, i, 1);
-  })
+      const i = matrix[this.thread.y][this.thread.x];
+      this.color(i, i, i, 1);
+    })
     .setOutput([WIDTH, HEIGHT])
     .setGraphical(true);
 

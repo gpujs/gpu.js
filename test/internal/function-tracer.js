@@ -326,13 +326,11 @@ test('works with Identifier', () => {
   FunctionTracer.prototype.scan.call(mockInstance, mockAst);
   assert.ok(mockGetDeclaration.called);
   assert.equal(mockGetDeclaration.args[0][0], 'x');
-  assert.deepEqual(mockInstance.identifiers, [
-    {
-      context: mockInstance.currentContext,
-      ast: mockAst,
-      declaration: 123
-    }
-  ]);
+  assert.deepEqual(mockInstance.identifiers, [{
+    context: mockInstance.currentContext,
+    ast: mockAst,
+    declaration: 123
+  }]);
   assert.equal(mockIsState.args[0][0], 'trackIdentifiers');
 });
 
@@ -423,12 +421,10 @@ test('works with CallExpression', () => {
   FunctionTracer.prototype.scan.call(mockInstance, mockAst);
   assert.ok(called);
   assert.equal(calledArguments, mockArguments);
-  assert.deepEqual(mockInstance.functionCalls, [
-    {
-      context: mockCurrentContext,
-      ast: mockAst
-    }
-  ]);
+  assert.deepEqual(mockInstance.functionCalls, [{
+    context: mockCurrentContext,
+    ast: mockAst
+  }]);
 });
 
 test('works with ArrayExpression', () => {

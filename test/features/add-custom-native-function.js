@@ -18,7 +18,7 @@ function nativeDivide(mode, fn) {
   const f = gpu.createKernel(function(a, b) {
     return divide(a[this.thread.x], b[this.thread.x]);
   }, {
-    output : [6]
+    output: [6]
   });
 
   assert.ok(f !== null, 'function generated test');
@@ -26,11 +26,11 @@ function nativeDivide(mode, fn) {
   const a = [1, 4, 3, 5, 6, 3];
   const b = [4, 2, 6, 1, 2, 3];
 
-  const res = f(a,b);
+  const res = f(a, b);
   const exp = [0.25, 2, 0.5, 5, 3, 1];
 
-  for(let i = 0; i < exp.length; ++i) {
-    assert.equal(res[i], exp[i], 'Result arr idx: '+i);
+  for (let i = 0; i < exp.length; ++i) {
+    assert.equal(res[i], exp[i], 'Result arr idx: ' + i);
   }
   gpu.destroy();
 }
@@ -75,20 +75,20 @@ function divideOverride(mode) {
     }]
   });
 
-  function divide(a,b) {
+  function divide(a, b) {
     return a / b;
   }
 
   const kernel = gpu.createKernel(function(a, b) {
     return divide(a[this.thread.x], b[this.thread.x]);
   }, {
-    output : [6]
+    output: [6]
   });
 
   const a = [1, 4, 3, 5, 6, 3];
   const b = [4, 2, 6, 1, 2, 3];
 
-  const res = kernel(a,b);
+  const res = kernel(a, b);
   const exp = [5, 6, 9, 6, 8, 6];
 
   assert.deepEqual(Array.from(res), exp);
@@ -130,20 +130,20 @@ function argumentCasting(mode) {
     }]
   });
 
-  function divide(a,b) {
+  function divide(a, b) {
     return a / b;
   }
 
   const kernel = gpu.createKernel(function(a, b) {
     return divide(a[this.thread.x], b[this.thread.x]);
   }, {
-    output : [6]
+    output: [6]
   });
 
   const a = [1, 4, 3, 5, 6, 3];
   const b = [4, 2, 6, 1, 2, 3];
 
-  const res = kernel(a,b);
+  const res = kernel(a, b);
   const exp = [5, 6, 9, 6, 8, 6];
 
   assert.deepEqual(Array.from(res), exp);
@@ -186,20 +186,20 @@ function mixedArgumentCasting(mode) {
     }]
   });
 
-  function divide(a,b) {
+  function divide(a, b) {
     return a / b;
   }
 
   const kernel = gpu.createKernel(function(a, b) {
     return divide(a[this.thread.x], b[this.thread.x]);
   }, {
-    output : [6]
+    output: [6]
   });
 
   const a = [1, 4, 3, 5, 6, 3];
   const b = [4, 2, 6, 1, 2, 3];
 
-  const res = kernel(a,b);
+  const res = kernel(a, b);
   const exp = [5, 6, 9, 6, 8, 6];
 
   assert.deepEqual(Array.from(res), exp);
@@ -241,20 +241,20 @@ function returnTypeCasting(mode) {
     }]
   });
 
-  function divide(a,b) {
+  function divide(a, b) {
     return a / b;
   }
 
   const kernel = gpu.createKernel(function(a, b) {
     return divide(a[this.thread.x], b[this.thread.x]);
   }, {
-    output : [6]
+    output: [6]
   });
 
   const a = [1, 4, 3, 5, 6, 3];
   const b = [4, 2, 6, 1, 2, 3];
 
-  const res = kernel(a,b);
+  const res = kernel(a, b);
   const exp = [5, 6, 9, 6, 8, 6];
 
   assert.deepEqual(Array.from(res), exp);
@@ -285,7 +285,7 @@ describe('features: Adding nativeFunctions directly on kernel');
 
 function testDirectlyOnKernelViaSettings(nativeFunctions, mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function (v) {
+  const kernel = gpu.createKernel(function(v) {
     return native(v[this.thread.x]);
   }, {
     output: [1],
@@ -296,70 +296,58 @@ function testDirectlyOnKernelViaSettings(nativeFunctions, mode) {
 }
 
 test('via settings auto', () => {
-  testDirectlyOnKernelViaSettings([
-    {
-      name: 'native',
-      source: `float native(float value) {
+  testDirectlyOnKernelViaSettings([{
+    name: 'native',
+    source: `float native(float value) {
         return 1.0 + value;
       }`
-    }
-  ])
+  }])
 });
 
 test('via settings gpu', () => {
-  testDirectlyOnKernelViaSettings([
-    {
-      name: 'native',
-      source: `float native(float value) {
+  testDirectlyOnKernelViaSettings([{
+    name: 'native',
+    source: `float native(float value) {
         return 1.0 + value;
       }`
-    }
-  ], 'gpu')
+  }], 'gpu')
 });
 
 (GPU.isWebGLSupported ? test : skip)('via settings webgl', () => {
-  testDirectlyOnKernelViaSettings([
-    {
-      name: 'native',
-      source: `float native(float value) {
+  testDirectlyOnKernelViaSettings([{
+    name: 'native',
+    source: `float native(float value) {
         return 1.0 + value;
       }`
-    }
-  ], 'webgl')
+  }], 'webgl')
 });
 
 (GPU.isWebGL2Supported ? test : skip)('via settings webgl2', () => {
-  testDirectlyOnKernelViaSettings([
-    {
-      name: 'native',
-      source: `float native(float value) {
+  testDirectlyOnKernelViaSettings([{
+    name: 'native',
+    source: `float native(float value) {
         return 1.0 + value;
       }`
-    }
-  ], 'webgl2')
+  }], 'webgl2')
 });
 
 (GPU.isHeadlessGLSupported ? test : skip)('via settings headlessgl', () => {
-  testDirectlyOnKernelViaSettings([
-    {
-      name: 'native',
-      source: `float native(float value) {
+  testDirectlyOnKernelViaSettings([{
+    name: 'native',
+    source: `float native(float value) {
         return 1.0 + value;
       }`
-    }
-  ], 'headlessgl')
+  }], 'headlessgl')
 });
 
 test('via settings cpu', () => {
-  testDirectlyOnKernelViaSettings([
-    {
-      name: 'native',
-      source: `function native(value) {
+  testDirectlyOnKernelViaSettings([{
+    name: 'native',
+    source: `function native(value) {
         return 1.0 + value;
       }`,
-      returnType: 'Float'
-    }
-  ], 'cpu')
+    returnType: 'Float'
+  }], 'cpu')
 });
 
 
@@ -372,81 +360,69 @@ describe('features: Adding nativeFunctions directly on kernel');
  */
 function testDirectlyOnKernelViaMethod(nativeFunctions, mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function (v) {
-    return native(v[this.thread.x]);
-  }, {
-    output: [1]
-  })
+  const kernel = gpu.createKernel(function(v) {
+      return native(v[this.thread.x]);
+    }, {
+      output: [1]
+    })
     .setNativeFunctions(nativeFunctions);
   assert.equal(kernel([1])[0], 2);
   gpu.destroy();
 }
 
 test('via method auto', () => {
-  testDirectlyOnKernelViaMethod([
-    {
-      name: 'native',
-      source: `float native(float value) {
+  testDirectlyOnKernelViaMethod([{
+    name: 'native',
+    source: `float native(float value) {
         return 1.0 + value;
       }`
-    }
-  ])
+  }])
 });
 
 test('via method gpu', () => {
-  testDirectlyOnKernelViaMethod([
-    {
-      name: 'native',
-      source: `float native(float value) {
+  testDirectlyOnKernelViaMethod([{
+    name: 'native',
+    source: `float native(float value) {
         return 1.0 + value;
       }`
-    }
-  ], 'gpu')
+  }], 'gpu')
 });
 
 (GPU.isWebGLSupported ? test : skip)('via method webgl', () => {
-  testDirectlyOnKernelViaMethod([
-    {
-      name: 'native',
-      source: `float native(float value) {
+  testDirectlyOnKernelViaMethod([{
+    name: 'native',
+    source: `float native(float value) {
         return 1.0 + value;
       }`
-    }
-  ], 'webgl')
+  }], 'webgl')
 });
 
 (GPU.isWebGL2Supported ? test : skip)('via method webgl2', () => {
-  testDirectlyOnKernelViaMethod([
-    {
-      name: 'native',
-      source: `float native(float value) {
+  testDirectlyOnKernelViaMethod([{
+    name: 'native',
+    source: `float native(float value) {
         return 1.0 + value;
       }`
-    }
-  ], 'webgl2')
+  }], 'webgl2')
 });
 
 (GPU.isHeadlessGLSupported ? test : skip)('via method headlessgl', () => {
-  testDirectlyOnKernelViaMethod([
-    {
-      name: 'native',
-      source: `float native(float value) {
+  testDirectlyOnKernelViaMethod([{
+    name: 'native',
+    source: `float native(float value) {
         return 1.0 + value;
       }`
-    }
-  ], 'headlessgl')
+  }], 'headlessgl')
 });
 
 test('via method cpu', () => {
-  testDirectlyOnKernelViaMethod([
-    {
-      name: 'native',
-      source: `function native(value) {
+  testDirectlyOnKernelViaMethod([{
+    name: 'native',
+    source: `function native(value) {
         return 1.0 + value;
       }`,
-      returnType: 'Float'
-    }
-  ], 'cpu')
+    returnType: 'Float'
+  }], 'cpu')
 });
 
 
@@ -475,7 +451,7 @@ test('gpu', () => {
     source: `float custom() {
       return 1.0;
     }`
-  },'gpu');
+  }, 'gpu');
 });
 
 (GPU.isWebGLSupported ? test : skip)('webgl', () => {
@@ -484,7 +460,7 @@ test('gpu', () => {
     source: `float custom() {
       return 1.0;
     }`
-  },'webgl');
+  }, 'webgl');
 });
 
 (GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
@@ -502,7 +478,7 @@ test('gpu', () => {
     source: `float custom() {
       return 1.0;
     }`
-  },'headlessgl');
+  }, 'headlessgl');
 });
 
 test('cpu', () => {
@@ -512,5 +488,5 @@ test('cpu', () => {
       return 1.0;
     }`,
     returnType: 'Number'
-  },'cpu');
+  }, 'cpu');
 });

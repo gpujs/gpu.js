@@ -2,6 +2,7 @@ const { assert, skip, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('image');
+
 function imageArgumentTest(mode, done) {
   const gpu = new GPU({ mode });
   const image = document.createElement('img');
@@ -12,7 +13,7 @@ function imageArgumentTest(mode, done) {
       this.color(pixel[0], pixel[1], pixel[2], pixel[3]);
     }, {
       graphical: true,
-      output : [image.width, image.height]
+      output: [image.width, image.height]
     });
     imageKernel(image);
     assert.equal(true, true, 'does not throw');

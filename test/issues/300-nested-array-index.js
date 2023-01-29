@@ -9,14 +9,14 @@ function nestedArrayIndex(mode) {
 
   // these 2 should be equivalent
   const broken = gpu1.createKernel(function(input, lookup) {
-    return lookup[input[this.thread.x]];
-  })
+      return lookup[input[this.thread.x]];
+    })
     .setOutput([1]);
 
   const working = gpu2.createKernel(function(input, lookup) {
-    const idx = input[this.thread.x];
-    return lookup[idx];
-  })
+      const idx = input[this.thread.x];
+      return lookup[idx];
+    })
     .setOutput([1]);
 
   assert.equal(broken([2], [7, 13, 19, 23])[0], 19);

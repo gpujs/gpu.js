@@ -21,6 +21,7 @@ specifiers:
   gulp-replace: ^1.0.0
   gulp-strip-comments: ^2.4.5
   gulp-uglify-es: ^3.0.0
+  js-beautify: ^1.14.7
   merge-stream: ^1.0.1
   qunit: ^2.9.1
   read-dir-deep: ^7.0.1
@@ -54,6 +55,7 @@ devDependencies:
   gulp-replace: 1.1.4
   gulp-strip-comments: 2.5.2
   gulp-uglify-es: 3.0.0
+  js-beautify: 1.14.7
   merge-stream: 1.0.1
   qunit: 2.19.4
   read-dir-deep: 7.0.1

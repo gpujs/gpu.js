@@ -2,16 +2,18 @@ const { assert, skip, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('issue # 114');
+
 function secondKernelMap(mode) {
   const gpu = new GPU({ mode });
   const A = [1, 2, 3, 4, 5];
   const B = [1, 2, 3, 4, 5];
-  function add(a,b){
+
+  function add(a, b) {
     return a + b;
   }
   const kernels = gpu.createKernelMap([add], function(a, b) {
-    return add(a[this.thread.x], b[this.thread.x]);
-  })
+      return add(a[this.thread.x], b[this.thread.x]);
+    })
     .setOutput([5]);
 
   const E = kernels(A, B).result;

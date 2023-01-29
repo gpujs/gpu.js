@@ -3,7 +3,7 @@ const { GPU } = require('../../src');
 
 describe('get canvas');
 
-function getCanvasTest(mode ) {
+function getCanvasTest(mode) {
   const gpu = new GPU();
 
   assert.ok(gpu.context === null, 'context is initially null');
@@ -12,22 +12,22 @@ function getCanvasTest(mode ) {
   const render = gpu.createKernel(function() {
     this.color(0, 0, 0, 1);
   }, {
-    output : [30,30],
-    mode : mode
+    output: [30, 30],
+    mode: mode
   }).setGraphical(true);
 
   assert.ok(render !== null, 'function generated test');
-  assert.ok(render.canvas, 'testing for canvas after createKernel' );
-  assert.ok(render.context, 'testing for context after createKernel' );
-  assert.ok(gpu.canvas, 'testing for canvas after createKernel' );
-  assert.ok(gpu.context, 'testing for context after createKernel' );
+  assert.ok(render.canvas, 'testing for canvas after createKernel');
+  assert.ok(render.context, 'testing for context after createKernel');
+  assert.ok(gpu.canvas, 'testing for canvas after createKernel');
+  assert.ok(gpu.context, 'testing for context after createKernel');
 
   render();
 
-  assert.ok(render.canvas, 'testing for canvas after render' );
-  assert.ok(render.context, 'testing for context after render' );
-  assert.ok(gpu.canvas, 'testing for canvas after render' );
-  assert.ok(gpu.context, 'testing for context after render' );
+  assert.ok(render.canvas, 'testing for canvas after render');
+  assert.ok(render.context, 'testing for context after render');
+  assert.ok(gpu.canvas, 'testing for canvas after render');
+  assert.ok(gpu.context, 'testing for context after render');
 
   assert.equal(render.canvas, gpu.canvas);
   assert.equal(render.context, gpu.context);

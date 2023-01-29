@@ -57,6 +57,5 @@ test('modes cpu', () => {
 });
 (GPU.isHeadlessGLSupported ? test : skip)('modes headlessgl', () => {
   const gpu = new GPU({ mode: 'headlessgl' });
-  assert.equal(gpu.Kernel, HeadlessGLKernel
-  );
+  assert.equal(gpu.Kernel, HeadlessGLKernel);
 });

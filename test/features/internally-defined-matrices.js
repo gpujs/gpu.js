@@ -5,10 +5,11 @@ describe('features: internally defined matrices');
 
 function testMatrix2(mode) {
   const gpu = new GPU({ mode });
+
   function getMatrix() {
     const matrix = [
-      [1,2],
-      [3,4]
+      [1, 2],
+      [3, 4]
     ];
     return matrix;
   }
@@ -51,11 +52,12 @@ test('matrix2 cpu', () => {
 
 function testMatrix3(mode) {
   const gpu = new GPU({ mode });
+
   function getMatrix() {
     const matrix = [
-      [1,2,3],
-      [4,5,6],
-      [7,8,9],
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9],
     ];
     return matrix;
   }
@@ -103,12 +105,13 @@ test('matrix3 cpu', () => {
 
 function testMatrix4(mode) {
   const gpu = new GPU({ mode });
+
   function getMatrix() {
     const matrix = [
-      [1,2,3,4],
-      [5,6,7,8],
-      [9,10,11,12],
-      [13,14,15,16],
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+      [13, 14, 15, 16],
     ];
     return matrix;
   }

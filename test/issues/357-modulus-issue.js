@@ -5,7 +5,7 @@ describe('issue #357');
 
 // complimentary tests in features/arithmetic-operators.js & features/assignment-operators.js
 function testModKernel(mode) {
-  const gpu = new GPU({mode});
+  const gpu = new GPU({ mode });
   const nValues = 100;
 
   const myFunc3 = gpu.createKernel(function(x) {
@@ -34,4 +34,3 @@ function testModKernel(mode) {
 (GPU.isHeadlessGLSupported ? test : skip)('Issue #357 - modulus issue headlessgl', () => {
   testModKernel('headlessgl');
 });
-

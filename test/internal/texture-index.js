@@ -2,6 +2,7 @@ const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('internal: texture index');
+
 function createKernelWithNumberConstants(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
@@ -109,9 +110,11 @@ test('createKernel with number constants & array arguments auto', () => {
 
 function createKernelMapWithArrayConstantsAndTextureArguments(mode) {
   const gpu = new GPU({ mode });
+
   function calcValue1(v) {
     return v;
   }
+
   function calcValue2(v) {
     return v;
   }

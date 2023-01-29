@@ -5,6 +5,7 @@ describe('issue #500 - strange literal');
 
 function testStickyArrays(mode) {
   const gpu = new GPU({ mode });
+
   function processImage(image) {
     return image[0];
   }
@@ -13,7 +14,7 @@ function testStickyArrays(mode) {
     return [processImage(image1), processImage(image2), processImage(image3)];
   }, { output: [1] });
 
-  assert.deepEqual(kernel([1], [2], [3]), [new Float32Array([1,2,3])]);
+  assert.deepEqual(kernel([1], [2], [3]), [new Float32Array([1, 2, 3])]);
 }
 
 test('auto', () => {

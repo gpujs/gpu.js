@@ -7,8 +7,8 @@ function testModKernel(mode) {
   const gpu = new GPU({ mode: mode });
   const conflictingName = 0.4;
   const kernel = gpu.createKernel(function(a, conflictingName) {
-    return a[this.thread.x] + this.constants.conflictingName + conflictingName;
-  })
+      return a[this.thread.x] + this.constants.conflictingName + conflictingName;
+    })
     .setOutput([1])
     .setConstants({
       conflictingName: conflictingName

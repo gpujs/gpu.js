@@ -13,10 +13,10 @@ function testSinglePrecisionArray1D2(mode) {
     precision: 'single',
   });
   const value = [
-    new Float32Array([1,2]),
-    new Float32Array([3,4]),
-    new Float32Array([5,6]),
-    new Float32Array([7,8]),
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4]),
+    new Float32Array([5, 6]),
+    new Float32Array([7, 8]),
   ];
   const result = kernel(value);
   assert.deepEqual(result, value);
@@ -57,10 +57,10 @@ function testUnsignedPrecisionArray1D2(mode) {
     precision: 'unsigned',
   });
   const value = [
-    new Float32Array([1,2]),
-    new Float32Array([3,4]),
-    new Float32Array([5,6]),
-    new Float32Array([7,8]),
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4]),
+    new Float32Array([5, 6]),
+    new Float32Array([7, 8]),
   ];
   const result = kernel(value);
   assert.deepEqual(result, value);
@@ -101,10 +101,10 @@ function testSinglePrecisionArray1D3(mode) {
     precision: 'single',
   });
   const value = [
-    new Float32Array([1,2,3]),
-    new Float32Array([4,5,6]),
-    new Float32Array([7,8,9]),
-    new Float32Array([10,11,12]),
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
+    new Float32Array([7, 8, 9]),
+    new Float32Array([10, 11, 12]),
   ];
   const result = kernel(value);
   assert.deepEqual(result, value);
@@ -145,10 +145,10 @@ function testUnsignedPrecisionArray1D3(mode) {
     precision: 'unsigned',
   });
   const value = [
-    new Float32Array([1,2,3]),
-    new Float32Array([4,5,6]),
-    new Float32Array([7,8,9]),
-    new Float32Array([10,11,12]),
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
+    new Float32Array([7, 8, 9]),
+    new Float32Array([10, 11, 12]),
   ];
   const result = kernel(value);
   assert.deepEqual(result, value);
@@ -190,10 +190,10 @@ function testUnsignedPrecisionArray1D4(mode) {
     precision: 'unsigned',
   });
   const value = [
-    new Float32Array([1,2,3,4]),
-    new Float32Array([5,6,7,8]),
-    new Float32Array([9,10,11,12]),
-    new Float32Array([13,14,15,16]),
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+    new Float32Array([9, 10, 11, 12]),
+    new Float32Array([13, 14, 15, 16]),
   ];
   const result = kernel(value);
   assert.deepEqual(result, value);

@@ -27,7 +27,7 @@ GPU.utils = utils
 GPU.Input = Input
 GPU.input = input
 GPU.Texture = Texture
-GPU.FunctionBuilder =  FunctionBuilder
+GPU.FunctionBuilder = FunctionBuilder
 GPU.FunctionNode = FunctionNode
 GPU.CPUFunctionNode = CPUFunctionNode
 GPU.CPUKernel = CPUKernel
@@ -44,7 +44,7 @@ GPU.Kernel = Kernel
 GPU.FunctionTracer = FunctionTracer
 
 GPU.plugins = {
-    mathRandom,
+  mathRandom,
 }
 
 export default GPU

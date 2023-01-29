@@ -1149,34 +1149,34 @@ export class WebGLFunctionNode extends FunctionNode {
               return retArr;
           }
         }
-        case 'this.constants.value[]':
-        case 'this.constants.value[][]':
-        case 'this.constants.value[][][]':
-        case 'this.constants.value[][][][]':
-          break;
-        case 'fn()[]':
-          this.astCallExpression(mNode.object, retArr);
-          retArr.push('[');
-          retArr.push(this.memberExpressionPropertyMarkup(property));
-          retArr.push(']');
-          return retArr;
-        case 'fn()[][]':
-          this.astCallExpression(mNode.object.object, retArr);
-          retArr.push('[');
-          retArr.push(this.memberExpressionPropertyMarkup(mNode.object.property));
-          retArr.push(']');
-          retArr.push('[');
-          retArr.push(this.memberExpressionPropertyMarkup(mNode.property));
-          retArr.push(']');
-          return retArr;
-        case '[][]':
-          this.astArrayExpression(mNode.object, retArr);
-          retArr.push('[');
-          retArr.push(this.memberExpressionPropertyMarkup(property));
-          retArr.push(']');
-          return retArr;
-        default:
-          throw this.astErrorOutput('Unexpected expression', mNode);
+      case 'this.constants.value[]':
+      case 'this.constants.value[][]':
+      case 'this.constants.value[][][]':
+      case 'this.constants.value[][][][]':
+        break;
+      case 'fn()[]':
+        this.astCallExpression(mNode.object, retArr);
+        retArr.push('[');
+        retArr.push(this.memberExpressionPropertyMarkup(property));
+        retArr.push(']');
+        return retArr;
+      case 'fn()[][]':
+        this.astCallExpression(mNode.object.object, retArr);
+        retArr.push('[');
+        retArr.push(this.memberExpressionPropertyMarkup(mNode.object.property));
+        retArr.push(']');
+        retArr.push('[');
+        retArr.push(this.memberExpressionPropertyMarkup(mNode.property));
+        retArr.push(']');
+        return retArr;
+      case '[][]':
+        this.astArrayExpression(mNode.object, retArr);
+        retArr.push('[');
+        retArr.push(this.memberExpressionPropertyMarkup(property));
+        retArr.push(']');
+        return retArr;
+      default:
+        throw this.astErrorOutput('Unexpected expression', mNode);
     }
 
     if (mNode.computed === false) {

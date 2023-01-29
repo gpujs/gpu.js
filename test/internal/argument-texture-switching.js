@@ -7,14 +7,14 @@ function testArrayWithoutTypeDefined(mode) {
   const gpu = new GPU({ mode });
   const texture = (
     gpu.createKernel(function() { return this.thread.x; })
-      .setOutput([10])
-      .setPipeline(true)
-      .setPrecision('single')
+    .setOutput([10])
+    .setPipeline(true)
+    .setPrecision('single')
   )();
   const expected = texture.toArray();
   const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.x];
-  })
+      return value[this.thread.x];
+    })
     .setOutput([10])
     .setPipeline(false)
     .setPrecision('single');
@@ -50,14 +50,14 @@ function testArrayWithTypeDefined(mode) {
   const gpu = new GPU({ mode });
   const texture = (
     gpu.createKernel(function() { return this.thread.x; })
-      .setOutput([10])
-      .setPipeline(true)
-      .setPrecision('single')
+    .setOutput([10])
+    .setPipeline(true)
+    .setPrecision('single')
   )();
   const expected = texture.toArray();
   const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.x];
-  })
+      return value[this.thread.x];
+    })
     .setArgumentTypes({
       value: 'Array'
     })
@@ -96,14 +96,14 @@ function testArray1D2(mode) {
   const gpu = new GPU({ mode });
   const texture = (
     gpu.createKernel(function() { return [this.thread.x, this.thread.x + 1]; })
-      .setOutput([10])
-      .setPipeline(true)
-      .setPrecision('single')
+    .setOutput([10])
+    .setPipeline(true)
+    .setPrecision('single')
   )();
   const expected = texture.toArray();
   const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.x];
-  })
+      return value[this.thread.x];
+    })
     .setArgumentTypes({
       value: 'Array1D(2)'
     })
@@ -142,14 +142,14 @@ function testArray1D3(mode) {
   const gpu = new GPU({ mode });
   const texture = (
     gpu.createKernel(function() { return [this.thread.x, this.thread.x + 1, this.thread.x + 2]; })
-      .setOutput([10])
-      .setPipeline(true)
-      .setPrecision('single')
+    .setOutput([10])
+    .setPipeline(true)
+    .setPrecision('single')
   )();
   const expected = texture.toArray();
   const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.x];
-  })
+      return value[this.thread.x];
+    })
     .setArgumentTypes({
       value: 'Array1D(3)'
     })
@@ -188,14 +188,14 @@ function testArray1D4(mode) {
   const gpu = new GPU({ mode });
   const texture = (
     gpu.createKernel(function() { return [this.thread.x, this.thread.x + 1, this.thread.x + 2, this.thread.x + 3]; })
-      .setOutput([10])
-      .setPipeline(true)
-      .setPrecision('single')
+    .setOutput([10])
+    .setPipeline(true)
+    .setPrecision('single')
   )();
   const expected = texture.toArray();
   const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.x];
-  })
+      return value[this.thread.x];
+    })
     .setArgumentTypes({
       value: 'Array1D(4)'
     })
@@ -234,14 +234,14 @@ function testArray2D2(mode) {
   const gpu = new GPU({ mode });
   const texture = (
     gpu.createKernel(function() { return [this.thread.x, this.thread.y]; })
-      .setOutput([10, 10])
-      .setPipeline(true)
-      .setPrecision('single')
+    .setOutput([10, 10])
+    .setPipeline(true)
+    .setPrecision('single')
   )();
   const expected = texture.toArray();
   const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.y][this.thread.x];
-  })
+      return value[this.thread.y][this.thread.x];
+    })
     .setArgumentTypes({
       value: 'Array2D(2)'
     })
@@ -280,14 +280,14 @@ function testArray2D3(mode) {
   const gpu = new GPU({ mode });
   const texture = (
     gpu.createKernel(function() { return [this.thread.x, this.thread.y, this.thread.x * this.thread.y]; })
-      .setOutput([10, 10])
-      .setPipeline(true)
-      .setPrecision('single')
+    .setOutput([10, 10])
+    .setPipeline(true)
+    .setPrecision('single')
   )();
   const expected = texture.toArray();
   const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.y][this.thread.x];
-  })
+      return value[this.thread.y][this.thread.x];
+    })
     .setArgumentTypes({
       value: 'Array2D(3)'
     })
@@ -333,14 +333,14 @@ function testArray2D4(mode) {
         this.thread.x / this.thread.y
       ];
     })
-      .setOutput([10, 10])
-      .setPipeline(true)
-      .setPrecision('single')
+    .setOutput([10, 10])
+    .setPipeline(true)
+    .setPrecision('single')
   )();
   const expected = texture.toArray();
   const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.y][this.thread.x];
-  })
+      return value[this.thread.y][this.thread.x];
+    })
     .setArgumentTypes({
       value: 'Array2D(4)'
     })
@@ -379,14 +379,14 @@ function testArray3D2(mode) {
   const gpu = new GPU({ mode });
   const texture = (
     gpu.createKernel(function() { return [this.thread.x, this.thread.x * this.thread.y * this.thread.z]; })
-      .setOutput([10, 10, 10])
-      .setPipeline(true)
-      .setPrecision('single')
+    .setOutput([10, 10, 10])
+    .setPipeline(true)
+    .setPrecision('single')
   )();
   const expected = texture.toArray();
   const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.z][this.thread.y][this.thread.x];
-  })
+      return value[this.thread.z][this.thread.y][this.thread.x];
+    })
     .setArgumentTypes({
       value: 'Array3D(2)'
     })
@@ -425,14 +425,14 @@ function testArray3D3(mode) {
   const gpu = new GPU({ mode });
   const texture = (
     gpu.createKernel(function() { return [this.thread.x, this.thread.y, this.thread.z]; })
-      .setOutput([10, 10, 10])
-      .setPipeline(true)
-      .setPrecision('single')
+    .setOutput([10, 10, 10])
+    .setPipeline(true)
+    .setPrecision('single')
   )();
   const expected = texture.toArray();
   const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.z][this.thread.y][this.thread.x];
-  })
+      return value[this.thread.z][this.thread.y][this.thread.x];
+    })
     .setArgumentTypes({
       value: 'Array3D(3)'
     })
@@ -478,14 +478,14 @@ function testArray3D4(mode) {
         this.thread.x * this.thread.y * this.thread.z
       ];
     })
-      .setOutput([10, 10, 10])
-      .setPipeline(true)
-      .setPrecision('single')
+    .setOutput([10, 10, 10])
+    .setPipeline(true)
+    .setPrecision('single')
   )();
   const expected = texture.toArray();
   const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.z][this.thread.y][this.thread.x];
-  })
+      return value[this.thread.z][this.thread.y][this.thread.x];
+    })
     .setArgumentTypes({
       value: 'Array3D(4)'
     })

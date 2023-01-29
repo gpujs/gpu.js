@@ -7,14 +7,14 @@ function testBooleanHandled(fft, mode) {
   const gpu = new GPU({ mode });
   gpu.addNativeFunction('fft', fft, { returnType: 'Array(4)' });
   const kernel = gpu.createKernel(
-    function(){
+    function() {
       let s = true;
       return fft(s);
-    },{
-      output:[1],
+    }, {
+      output: [1],
     }
   );
-  assert.deepEqual(Array.from(kernel()[0]), [1,1,1,1]);
+  assert.deepEqual(Array.from(kernel()[0]), [1, 1, 1, 1]);
 
   gpu.destroy();
 }

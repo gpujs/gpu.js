@@ -10,16 +10,16 @@ function multipleKernels(mode) {
 
   const sizes = [2, 5, 1];
 
-  function add(a, b, x){
+  function add(a, b, x) {
     return a[x] + b[x];
   }
 
   const layerForward = [];
 
-  for (let i = 0;  i < 2; i++) {
-    const kernels = gpu.createKernelMap([add],function(a, b){
-      return add(a,b, this.thread.x);
-    })
+  for (let i = 0; i < 2; i++) {
+    const kernels = gpu.createKernelMap([add], function(a, b) {
+        return add(a, b, this.thread.x);
+      })
       .setOutput([sizes[i + 1]]); // First: 5. Second: 1.
 
     layerForward.push(kernels);

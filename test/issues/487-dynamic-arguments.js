@@ -4,20 +4,20 @@ const { GPU } = require('../../src');
 describe('issue #487 - pipeline dynamic arguments');
 
 function testPipelineDynamicArguments(mode) {
-  const gpu = new GPU({mode: mode});
+  const gpu = new GPU({ mode: mode });
 
-  const kernel = gpu.createKernel(function (w) {
-    return this.thread.x + this.thread.y * w;
-  })
+  const kernel = gpu.createKernel(function(w) {
+      return this.thread.x + this.thread.y * w;
+    })
     .setPipeline(true)
     .setDynamicOutput(true);
 
-  const sumRow = gpu.createKernel(function (texture, w) {
-    let sum = 0;
-    for (let i = 0; i < w; i++)
-      sum = sum + texture[this.thread.x][i];
-    return sum;
-  })
+  const sumRow = gpu.createKernel(function(texture, w) {
+      let sum = 0;
+      for (let i = 0; i < w; i++)
+        sum = sum + texture[this.thread.x][i];
+      return sum;
+    })
     .setDynamicArguments(true)
     .setDynamicOutput(true);
 

@@ -320,7 +320,7 @@ test('functionToIFunction with function', () => {
 
 test('functionToIFunction with function and argumentTypes array', () => {
   const fn = function name(a, b) {};
-  const argumentTypes = ['number','string'];
+  const argumentTypes = ['number', 'string'];
   const result = Kernel.prototype.functionToIGPUFunction(fn, { argumentTypes });
   assert.deepEqual(result, {
     name: 'name',

@@ -9,13 +9,13 @@ function kernelMapSinglePrecision(mode) {
   const lst = [1, 2, 3, 4, 5, 6, 7];
   const gpu = new GPU({ mode });
   const kernels = gpu.createKernelMap({
-    stepA: function (x) {
+    stepA: function(x) {
       return x * x;
     },
-    stepB: function (x) {
+    stepB: function(x) {
       return x + 1;
     }
-  }, function (lst) {
+  }, function(lst) {
     const val = lst[this.thread.x];
 
     stepA(val);
@@ -71,29 +71,29 @@ test('Issue #233 - kernel map with single precision cpu', () => {
 
 function kernelMapSinglePrecision2D(mode) {
   const lst = [
-    [1,2,3],
-    [4,5,6],
-    [7,8,9]
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
   ];
   const stepAExpected = [
-    [1,4,9],
-    [16,25,36],
-    [49,64,81],
+    [1, 4, 9],
+    [16, 25, 36],
+    [49, 64, 81],
   ];
   const stepBExpected = [
-    [2,3,4],
-    [5,6,7],
-    [8,9,10]
+    [2, 3, 4],
+    [5, 6, 7],
+    [8, 9, 10]
   ];
   const gpu = new GPU({ mode });
   const kernels = gpu.createKernelMap({
-    stepA: function (x) {
+    stepA: function(x) {
       return x * x;
     },
-    stepB: function (x) {
+    stepB: function(x) {
       return x + 1;
     }
-  }, function (lst) {
+  }, function(lst) {
     const val = lst[this.thread.y][this.thread.x];
 
     stepA(val);
@@ -153,49 +153,49 @@ test('Issue #233 - kernel map with single precision 2d cpu', () => {
 function kernelMapSinglePrecision3D(mode) {
   const lst = [
     [
-      [1,2,3],
-      [4,5,6],
-      [7,8,9]
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9]
     ],
     [
-      [10,11,12],
-      [13,14,15],
-      [16,17,18]
+      [10, 11, 12],
+      [13, 14, 15],
+      [16, 17, 18]
     ]
   ];
   const stepAExpected = [
     [
-      [1,4,9],
-      [16,25,36],
-      [49,64,81],
+      [1, 4, 9],
+      [16, 25, 36],
+      [49, 64, 81],
     ],
     [
-      [100,121,144],
-      [169,196,225],
-      [256,289,324],
+      [100, 121, 144],
+      [169, 196, 225],
+      [256, 289, 324],
     ]
   ];
   const stepBExpected = [
     [
-      [2,3,4],
-      [5,6,7],
-      [8,9,10]
+      [2, 3, 4],
+      [5, 6, 7],
+      [8, 9, 10]
     ],
     [
-      [11,12,13],
-      [14,15,16],
-      [17,18,19]
+      [11, 12, 13],
+      [14, 15, 16],
+      [17, 18, 19]
     ]
   ];
   const gpu = new GPU({ mode });
   const kernels = gpu.createKernelMap({
-    stepA: function (x) {
+    stepA: function(x) {
       return x * x;
     },
-    stepB: function (x) {
+    stepB: function(x) {
       return x + 1;
     }
-  }, function (lst) {
+  }, function(lst) {
     const val = lst[this.thread.z][this.thread.y][this.thread.x];
 
     stepA(val);

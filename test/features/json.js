@@ -4,11 +4,11 @@ const { GPU } = require('../../src');
 describe('json serialize');
 
 function testJSONSerialize(mode) {
-  const gpu = new GPU({mode});
+  const gpu = new GPU({ mode });
 
-  const kernel = gpu.createKernel(function (value) {
+  const kernel = gpu.createKernel(function(value) {
     return value;
-  }, {output: [1]});
+  }, { output: [1] });
 
   kernel(1);
 

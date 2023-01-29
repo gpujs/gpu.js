@@ -3,7 +3,11 @@ const { GPU } = require('../../src');
 
 describe('issue # 174');
 
-const input = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
+const input = [
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8]
+];
 
 // recursive!
 function manyKernels(mode, kernelCount, t) {

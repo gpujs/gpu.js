@@ -12,17 +12,17 @@ function getPixelsStandard(mode) {
       v[this.thread.y][this.thread.x][2]
     );
   }, {
-    output: [2,2],
+    output: [2, 2],
     graphical: true,
   });
   kernel([
     [
-      [.02,.04,.06,.08],
-      [.10,.12,.14,.16]
+      [.02, .04, .06, .08],
+      [.10, .12, .14, .16]
     ],
     [
-      [.18,.20,.22,.24],
-      [.26,.28,.30,.32]
+      [.18, .20, .22, .24],
+      [.26, .28, .30, .32]
     ]
   ]);
   const pixels = Array.from(kernel.getPixels());
@@ -173,17 +173,17 @@ function getPixelsFlipped(mode) {
       v[this.thread.y][this.thread.x][2]
     );
   }, {
-    output: [2,2],
+    output: [2, 2],
     graphical: true,
   });
   kernel([
     [
-      [.02,.04,.06,.08],
-      [.10,.12,.14,.16]
+      [.02, .04, .06, .08],
+      [.10, .12, .14, .16]
     ],
     [
-      [.18,.20,.22,.24],
-      [.26,.28,.30,.32]
+      [.18, .20, .22, .24],
+      [.26, .28, .30, .32]
     ]
   ]);
   const pixels = Array.from(kernel.getPixels(true));

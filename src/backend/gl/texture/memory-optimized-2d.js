@@ -1,5 +1,5 @@
 import { utils } from '../../../utils';
-import {GLTextureFloat} from './float';
+import { GLTextureFloat } from './float';
 
 export class GLTextureMemoryOptimized2D extends GLTextureFloat {
   constructor(settings) {

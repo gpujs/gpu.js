@@ -5,8 +5,8 @@ describe('internal: mixed memory optimize');
 
 function getOffKernel(gpu) {
   return gpu.createKernel(function(value) {
-    return value[this.thread.x];
-  }) // getFloatFromSampler2D
+      return value[this.thread.x];
+    }) // getFloatFromSampler2D
     .setPrecision('single')
     .setOutput([10])
     .setPipeline(true)
@@ -15,8 +15,8 @@ function getOffKernel(gpu) {
 
 function getOnKernel(gpu) {
   return gpu.createKernel(function(value) {
-    return value[this.thread.x];
-  }) // getMemoryOptimized32
+      return value[this.thread.x];
+    }) // getMemoryOptimized32
     .setPrecision('single')
     .setOutput([10])
     .setPipeline(true)
@@ -27,7 +27,7 @@ function offOnOff(mode) {
   const gpu = new GPU({ mode });
   const offKernel = getOffKernel(gpu);
   const onKernel = getOnKernel(gpu);
-  const value = [1,2,3,4,5,6,7,8,9,10];
+  const value = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   const textureResult = offKernel(value);
   assert.deepEqual(Array.from(textureResult.toArray()), value);
   assert.deepEqual(Array.from(onKernel(offKernel(value)).toArray()), value);
@@ -67,7 +67,7 @@ function onOffOn(mode) {
   const gpu = new GPU({ mode });
   const onKernel = getOnKernel(gpu);
   const offKernel = getOffKernel(gpu);
-  const value = [1,2,3,4,5,6,7,8,9,10];
+  const value = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   const textureResult1 = onKernel(value);
   const textureResult2 = offKernel(onKernel(value));

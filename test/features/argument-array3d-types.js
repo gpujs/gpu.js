@@ -8,34 +8,39 @@ function testSinglePrecisionArray3D2(mode) {
   const kernel = gpu.createKernel(function(value) {
     return value[this.thread.z][this.thread.y][this.thread.x];
   }, {
-    output: [2,2,3],
+    output: [2, 2, 3],
     argumentTypes: { value: 'Array3D(2)' },
     precision: 'single',
   });
   const value = [
     [
       [
-        new Float32Array([1,2]),
-        new Float32Array([3,4]),
-      ],[
-      new Float32Array([5,6]),
-      new Float32Array([7,8]),
-    ]
-    ],[
+        new Float32Array([1, 2]),
+        new Float32Array([3, 4]),
+      ],
       [
-        new Float32Array([9,10]),
-        new Float32Array([11,12]),
-      ],[
-        new Float32Array([13,14]),
-        new Float32Array([15,16]),
+        new Float32Array([5, 6]),
+        new Float32Array([7, 8]),
       ]
-    ],[
+    ],
+    [
       [
-        new Float32Array([17,18]),
-        new Float32Array([19,20]),
-      ],[
-        new Float32Array([21,22]),
-        new Float32Array([23,24]),
+        new Float32Array([9, 10]),
+        new Float32Array([11, 12]),
+      ],
+      [
+        new Float32Array([13, 14]),
+        new Float32Array([15, 16]),
+      ]
+    ],
+    [
+      [
+        new Float32Array([17, 18]),
+        new Float32Array([19, 20]),
+      ],
+      [
+        new Float32Array([21, 22]),
+        new Float32Array([23, 24]),
       ]
     ]
   ];
@@ -73,34 +78,39 @@ function testUnsignedPrecisionArray3D2(mode) {
   const kernel = gpu.createKernel(function(value) {
     return value[this.thread.z][this.thread.y][this.thread.x];
   }, {
-    output: [2,2,3],
+    output: [2, 2, 3],
     argumentTypes: { value: 'Array2D(2)' },
     precision: 'unsigned',
   });
   const value = [
     [
       [
-        new Float32Array([1,2]),
-        new Float32Array([3,4]),
-      ],[
-      new Float32Array([5,6]),
-      new Float32Array([7,8]),
-    ]
-    ],[
+        new Float32Array([1, 2]),
+        new Float32Array([3, 4]),
+      ],
       [
-        new Float32Array([9,10]),
-        new Float32Array([11,12]),
-      ],[
-        new Float32Array([13,14]),
-        new Float32Array([15,16]),
+        new Float32Array([5, 6]),
+        new Float32Array([7, 8]),
       ]
-    ],[
+    ],
+    [
       [
-        new Float32Array([17,18]),
-        new Float32Array([19,20]),
-      ],[
-        new Float32Array([21,22]),
-        new Float32Array([23,24]),
+        new Float32Array([9, 10]),
+        new Float32Array([11, 12]),
+      ],
+      [
+        new Float32Array([13, 14]),
+        new Float32Array([15, 16]),
+      ]
+    ],
+    [
+      [
+        new Float32Array([17, 18]),
+        new Float32Array([19, 20]),
+      ],
+      [
+        new Float32Array([21, 22]),
+        new Float32Array([23, 24]),
       ]
     ]
   ];
@@ -138,34 +148,39 @@ function testSinglePrecisionArray3D3(mode) {
   const kernel = gpu.createKernel(function(value) {
     return value[this.thread.z][this.thread.y][this.thread.x];
   }, {
-    output: [2,2,3],
+    output: [2, 2, 3],
     argumentTypes: { value: 'Array3D(3)' },
     precision: 'single',
   });
   const value = [
     [
       [
-        new Float32Array([1,2,3]),
-        new Float32Array([4,5,6]),
-      ],[
-        new Float32Array([7,8,9]),
-        new Float32Array([10,11,12]),
-      ]
-    ],[
+        new Float32Array([1, 2, 3]),
+        new Float32Array([4, 5, 6]),
+      ],
       [
-        new Float32Array([13,14,15]),
-        new Float32Array([16,17,18]),
-      ],[
-        new Float32Array([19,20,21]),
-        new Float32Array([22,23,24]),
+        new Float32Array([7, 8, 9]),
+        new Float32Array([10, 11, 12]),
       ]
-    ],[
+    ],
+    [
       [
-        new Float32Array([25,26,27]),
-        new Float32Array([28,29,30]),
-      ],[
-        new Float32Array([31,32,33]),
-        new Float32Array([34,35,36]),
+        new Float32Array([13, 14, 15]),
+        new Float32Array([16, 17, 18]),
+      ],
+      [
+        new Float32Array([19, 20, 21]),
+        new Float32Array([22, 23, 24]),
+      ]
+    ],
+    [
+      [
+        new Float32Array([25, 26, 27]),
+        new Float32Array([28, 29, 30]),
+      ],
+      [
+        new Float32Array([31, 32, 33]),
+        new Float32Array([34, 35, 36]),
       ]
     ]
   ];
@@ -203,34 +218,39 @@ function testUnsignedPrecisionArray3D3(mode) {
   const kernel = gpu.createKernel(function(value) {
     return value[this.thread.z][this.thread.y][this.thread.x];
   }, {
-    output: [2,2,3],
+    output: [2, 2, 3],
     argumentTypes: { value: 'Array2D(3)' },
     precision: 'unsigned',
   });
   const value = [
     [
       [
-        new Float32Array([1,2,3]),
-        new Float32Array([4,5,6]),
-      ],[
-      new Float32Array([7,8,9]),
-      new Float32Array([10,11,12]),
-    ]
-    ],[
+        new Float32Array([1, 2, 3]),
+        new Float32Array([4, 5, 6]),
+      ],
       [
-        new Float32Array([13,14,15]),
-        new Float32Array([16,17,18]),
-      ],[
-        new Float32Array([19,20,21]),
-        new Float32Array([22,23,24]),
+        new Float32Array([7, 8, 9]),
+        new Float32Array([10, 11, 12]),
       ]
-    ],[
+    ],
+    [
       [
-        new Float32Array([25,26,27]),
-        new Float32Array([28,29,30]),
-      ],[
-        new Float32Array([31,32,33]),
-        new Float32Array([34,35,36]),
+        new Float32Array([13, 14, 15]),
+        new Float32Array([16, 17, 18]),
+      ],
+      [
+        new Float32Array([19, 20, 21]),
+        new Float32Array([22, 23, 24]),
+      ]
+    ],
+    [
+      [
+        new Float32Array([25, 26, 27]),
+        new Float32Array([28, 29, 30]),
+      ],
+      [
+        new Float32Array([31, 32, 33]),
+        new Float32Array([34, 35, 36]),
       ]
     ]
   ];
@@ -268,34 +288,39 @@ function testSinglePrecisionArray3D4(mode) {
   const kernel = gpu.createKernel(function(value) {
     return value[this.thread.z][this.thread.y][this.thread.x];
   }, {
-    output: [2,2,3],
+    output: [2, 2, 3],
     argumentTypes: { value: 'Array3D(4)' },
     precision: 'single',
   });
   const value = [
     [
       [
-        new Float32Array([1,2,3,4]),
-        new Float32Array([5,6,7,8]),
-      ],[
-        new Float32Array([9,10,11,12]),
-        new Float32Array([13,14,15,16]),
-      ]
-    ],[
+        new Float32Array([1, 2, 3, 4]),
+        new Float32Array([5, 6, 7, 8]),
+      ],
       [
-        new Float32Array([17,18,19,20]),
-        new Float32Array([21,22,23,24]),
-      ],[
-        new Float32Array([25,26,27,28]),
-        new Float32Array([29,30,31,32]),
+        new Float32Array([9, 10, 11, 12]),
+        new Float32Array([13, 14, 15, 16]),
       ]
-    ],[
+    ],
+    [
       [
-        new Float32Array([33,34,35,36]),
-        new Float32Array([37,38,39,40]),
-      ],[
-        new Float32Array([41,42,43,44]),
-        new Float32Array([45,46,47,48]),
+        new Float32Array([17, 18, 19, 20]),
+        new Float32Array([21, 22, 23, 24]),
+      ],
+      [
+        new Float32Array([25, 26, 27, 28]),
+        new Float32Array([29, 30, 31, 32]),
+      ]
+    ],
+    [
+      [
+        new Float32Array([33, 34, 35, 36]),
+        new Float32Array([37, 38, 39, 40]),
+      ],
+      [
+        new Float32Array([41, 42, 43, 44]),
+        new Float32Array([45, 46, 47, 48]),
       ]
     ]
   ];
@@ -333,34 +358,39 @@ function testUnsignedPrecisionArray3D4(mode) {
   const kernel = gpu.createKernel(function(value) {
     return value[this.thread.z][this.thread.y][this.thread.x];
   }, {
-    output: [2,2,3],
+    output: [2, 2, 3],
     argumentTypes: { value: 'Array2D(3)' },
     precision: 'unsigned',
   });
   const value = [
     [
       [
-        new Float32Array([1,2,3,4]),
-        new Float32Array([5,6,7,8]),
-      ],[
-        new Float32Array([9,10,11,12]),
-        new Float32Array([13,14,15,16]),
-      ]
-    ],[
+        new Float32Array([1, 2, 3, 4]),
+        new Float32Array([5, 6, 7, 8]),
+      ],
       [
-        new Float32Array([17,18,19,20]),
-        new Float32Array([21,22,23,24]),
-      ],[
-        new Float32Array([25,26,27,28]),
-        new Float32Array([29,30,31,32]),
+        new Float32Array([9, 10, 11, 12]),
+        new Float32Array([13, 14, 15, 16]),
       ]
-    ],[
+    ],
+    [
       [
-        new Float32Array([33,34,35,36]),
-        new Float32Array([37,38,39,40]),
-      ],[
-        new Float32Array([41,42,43,44]),
-        new Float32Array([45,46,47,48]),
+        new Float32Array([17, 18, 19, 20]),
+        new Float32Array([21, 22, 23, 24]),
+      ],
+      [
+        new Float32Array([25, 26, 27, 28]),
+        new Float32Array([29, 30, 31, 32]),
+      ]
+    ],
+    [
+      [
+        new Float32Array([33, 34, 35, 36]),
+        new Float32Array([37, 38, 39, 40]),
+      ],
+      [
+        new Float32Array([41, 42, 43, 44]),
+        new Float32Array([45, 46, 47, 48]),
       ]
     ]
   ];

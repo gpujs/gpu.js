@@ -9,8 +9,7 @@ function boolTrueConstantTest(mode) {
   const tryConst = gpu.createKernel(
     function() {
       return this.constants.bool ? 1 : 0;
-    },
-    {
+    }, {
       constants: { bool },
       output: [1]
     },
@@ -51,8 +50,7 @@ function boolFalseConstantTest(mode) {
   const tryConst = gpu.createKernel(
     function() {
       return this.constants.bool ? 1 : 0;
-    },
-    {
+    }, {
       constants: { bool },
       output: [1]
     },

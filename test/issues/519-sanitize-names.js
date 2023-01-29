@@ -5,7 +5,7 @@ describe('issue #519 - sanitize names');
 
 function testSanitizeNames(mode) {
   const gpu = new GPU({ mode });
-  const kernel1 = gpu.createKernel(function (value__$, value__, value$, _) {
+  const kernel1 = gpu.createKernel(function(value__$, value__, value$, _) {
     return value__$ + value__ + value$ + _ + 1;
   }, {
     output: [1]

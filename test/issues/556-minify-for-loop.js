@@ -7,8 +7,7 @@ const source = 'function w(t,e){for(var r=0,i=0;i<this.constants.size;i++)r+=t[t
 
 function testWebGLFunctionNode() {
   const node = new WebGLFunctionNode(
-    source,
-    {
+    source, {
       constantTypes: {
         size: 'Number',
       },
@@ -42,7 +41,11 @@ function testKernel(mode) {
       size: 1
     },
   });
-  const result = kernel([[1]], [[1]]);
+  const result = kernel([
+    [1]
+  ], [
+    [1]
+  ]);
   assert.deepEqual(result, [new Float32Array([1])]);
 
 }

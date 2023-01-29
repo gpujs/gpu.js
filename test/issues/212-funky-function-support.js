@@ -14,15 +14,15 @@ function funky(mode) {
     .setOutput([2, 2]);
 
   const result = kernel([
-    [0,1],
-    [1,2]
+    [0, 1],
+    [1, 2]
   ], [
-    [0,1],
-    [1,2]
+    [0, 1],
+    [1, 2]
   ]);
   assert.deepEqual(result.map((v) => Array.from(v)), [
-    [0,2],
-    [2,4]
+    [0, 2],
+    [2, 4]
   ]);
   gpu.destroy();
 }

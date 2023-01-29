@@ -7,12 +7,12 @@ function testOnlyFirstIterationSafari(mode) {
   const gpu = new GPU({ mode: mode });
   const conflictingName = 0.4;
   const kernel = gpu.createKernel(function(iter) {
-    let sum = 0;
-    for(let i=2; i<iter; i++) {
-      sum = sum + i;
-    }
-    return 2*sum ; //+ this.thread.x;
-  })
+      let sum = 0;
+      for (let i = 2; i < iter; i++) {
+        sum = sum + i;
+      }
+      return 2 * sum; //+ this.thread.x;
+    })
     .setOutput([10])
     .setConstants({
       conflictingName: conflictingName
@@ -20,7 +20,7 @@ function testOnlyFirstIterationSafari(mode) {
 
   const result = kernel(5);
 
-  assert.deepEqual(Array.from(result), [18,18,18,18,18,18,18,18,18,18]);
+  assert.deepEqual(Array.from(result), [18, 18, 18, 18, 18, 18, 18, 18, 18, 18]);
   gpu.destroy();
 }
 

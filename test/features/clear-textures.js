@@ -5,6 +5,7 @@ describe('features: clear textures');
 
 function clearTexture(precision, mode) {
   const gpu = new GPU({ mode });
+
   function makeTexture() {
     return (gpu.createKernel(function() {
       return this.thread.x;
@@ -15,11 +16,11 @@ function clearTexture(precision, mode) {
     }))();
   }
   const texture = makeTexture();
-  assert.deepEqual(texture.toArray(), new Float32Array([0,1,2,3,4]));
+  assert.deepEqual(texture.toArray(), new Float32Array([0, 1, 2, 3, 4]));
   texture.clear();
   const texture2 = makeTexture(); // put another texture in the way
-  assert.deepEqual(texture.toArray(), new Float32Array([0,0,0,0,0]));
-  assert.deepEqual(texture2.toArray(), new Float32Array([0,1,2,3,4]));
+  assert.deepEqual(texture.toArray(), new Float32Array([0, 0, 0, 0, 0]));
+  assert.deepEqual(texture2.toArray(), new Float32Array([0, 1, 2, 3, 4]));
   gpu.destroy();
 }
 

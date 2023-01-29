@@ -9,7 +9,9 @@ function returnArray2FromKernel(mode) {
     return [1, 2];
   }, { output: [1], precision: 'single' });
   const result = kernel();
-  assert.deepEqual(result.map(v => Array.from(v)), [[1, 2]]);
+  assert.deepEqual(result.map(v => Array.from(v)), [
+    [1, 2]
+  ]);
   gpu.destroy();
 }
 
@@ -41,12 +43,12 @@ function returnArray2D2FromKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return [this.thread.x, this.thread.y];
-  }, { output : [3, 7], precision: 'single' });
+  }, { output: [3, 7], precision: 'single' });
   const res = kernel();
   for (let y = 0; y < 7; ++y) {
     for (let x = 0; x < 3; ++x) {
-        assert.equal(res[y][x][0], x);
-        assert.equal(res[y][x][1], y);
+      assert.equal(res[y][x][0], x);
+      assert.equal(res[y][x][1], y);
     }
   }
   gpu.destroy();
@@ -78,9 +80,9 @@ test('return Array2D(2) from kernel cpu', () => {
 
 function returnArray3D2FromKernel(mode) {
   const gpu = new GPU({ mode });
-const kernel = gpu.createKernel(function() {
+  const kernel = gpu.createKernel(function() {
     return [this.thread.y, this.thread.z];
-  }, { output : [3, 5, 7], precision: 'single' });
+  }, { output: [3, 5, 7], precision: 'single' });
   const res = kernel();
   for (let z = 0; z < 7; ++z) {
     for (let y = 0; y < 5; ++y) {
@@ -124,7 +126,9 @@ function returnArray3FromKernel(mode) {
     return [1, 2, 3];
   }, { output: [1], precision: 'single' });
   const result = kernel();
-  assert.deepEqual(Array.from(result.map(v => Array.from(v))), [[1, 2, 3]]);
+  assert.deepEqual(Array.from(result.map(v => Array.from(v))), [
+    [1, 2, 3]
+  ]);
   gpu.destroy();
 }
 
@@ -156,13 +160,13 @@ function returnArray2D3FromKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return [this.thread.x, this.thread.y, this.thread.x * this.thread.y];
-  }, { output : [3, 7] ,precision: 'single' });
+  }, { output: [3, 7], precision: 'single' });
   const res = kernel();
   for (let y = 0; y < 7; ++y) {
     for (let x = 0; x < 3; ++x) {
-        assert.equal(res[y][x][0], x);
-        assert.equal(res[y][x][1], y);
-        assert.equal(res[y][x][2], x * y);
+      assert.equal(res[y][x][0], x);
+      assert.equal(res[y][x][1], y);
+      assert.equal(res[y][x][2], x * y);
     }
   }
   gpu.destroy();
@@ -196,7 +200,7 @@ function returnArray3D3FromKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return [this.thread.x, this.thread.y, this.thread.z];
-  }, { output : [3, 5, 7] ,precision: 'single' });
+  }, { output: [3, 5, 7], precision: 'single' });
   const res = kernel();
   for (let z = 0; z < 7; ++z) {
     for (let y = 0; y < 5; ++y) {
@@ -240,7 +244,9 @@ function returnArray4FromKernel(mode) {
     return [1, 2, 3, 4];
   }, { output: [1], precision: 'single' });
   const result = kernel();
-  assert.deepEqual(result.map(v => Array.from(v)), [[1, 2, 3, 4]]);
+  assert.deepEqual(result.map(v => Array.from(v)), [
+    [1, 2, 3, 4]
+  ]);
   gpu.destroy();
 }
 
@@ -272,14 +278,14 @@ function returnArray2D4FromKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return [this.thread.x, this.thread.y, this.thread.x * this.thread.y, this.thread.x - this.thread.y];
-  }, { output : [3, 7], precision: 'single' });
+  }, { output: [3, 7], precision: 'single' });
   const res = kernel();
   for (let y = 0; y < 3; ++y) {
     for (let x = 0; x < 3; ++x) {
-        assert.equal(res[y][x][0], x);
-        assert.equal(res[y][x][1], y);
-        assert.equal(res[y][x][2], x * y);
-        assert.equal(res[y][x][3], x - y);
+      assert.equal(res[y][x][0], x);
+      assert.equal(res[y][x][1], y);
+      assert.equal(res[y][x][2], x * y);
+      assert.equal(res[y][x][3], x - y);
     }
   }
   gpu.destroy();
@@ -313,7 +319,7 @@ function returnArray3D4FromKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function() {
     return [this.thread.x, this.thread.y, this.thread.z, this.thread.x * this.thread.y * this.thread.z];
-  }, { output : [3, 5, 7], precision: 'single' });
+  }, { output: [3, 5, 7], precision: 'single' });
   const res = kernel();
   for (let z = 0; z < 7; ++z) {
     for (let y = 0; y < 5; ++y) {
@@ -354,9 +360,10 @@ test('return Array3D(4) from kernel cpu', () => {
 
 function returnArray2FromKernelVariables33Length(mode) {
   const array = [
-    1,2,3,4,       5,6,7,8,    9,10,11,12,    13,14,15,16,
-    17,18,19,20,   21,22,23,   24,25,26,27,   28,29,30,31,
-    32,33];
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+    17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+    32, 33
+  ];
   const sixteen = new Uint16Array(array);
   const eight = new Uint8Array(array);
   const gpu = new GPU({ mode });
@@ -364,7 +371,7 @@ function returnArray2FromKernelVariables33Length(mode) {
     return [v1[this.thread.x], v2[this.thread.x]];
   }, { output: [33] });
   const result = kernel(sixteen, eight);
-  assert.deepEqual(result.map(v => Array.from(v)), array.map(v => [v,v]));
+  assert.deepEqual(result.map(v => Array.from(v)), array.map(v => [v, v]));
   gpu.destroy();
 }
 
@@ -394,7 +401,7 @@ test('return Array(2) from kernel variables 33 in length cpu', () => {
 
 
 function returnArray3FromKernelVariables33Length(mode) {
-  const array = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33];
+  const array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33];
   const thirtyTwo = new Float32Array(array);
   const sixteen = new Uint16Array(array);
   const eight = new Uint8Array(array);
@@ -403,7 +410,7 @@ function returnArray3FromKernelVariables33Length(mode) {
     return [v1[this.thread.x], v2[this.thread.x], v3[this.thread.x]];
   }, { output: [33] });
   const result = kernel(thirtyTwo, sixteen, eight);
-  assert.deepEqual(result.map(v => Array.from(v)), array.map(v => [v,v,v]));
+  assert.deepEqual(result.map(v => Array.from(v)), array.map(v => [v, v, v]));
   gpu.destroy();
 }
 
@@ -433,7 +440,7 @@ test('return Array(3) from kernel variables 33 in length cpu', () => {
 
 
 function returnArray4FromKernelVariables33Length(mode) {
-  const array = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33];
+  const array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33];
   const thirtyTwo = new Float32Array(array);
   const sixteen = new Uint16Array(array);
   const eight = new Uint8Array(array);
@@ -442,7 +449,7 @@ function returnArray4FromKernelVariables33Length(mode) {
     return [v1[this.thread.x], v2[this.thread.x], v3[this.thread.x], v4[this.thread.x]];
   }, { output: [33] });
   const result = kernel(array, thirtyTwo, sixteen, eight);
-  assert.deepEqual(result.map(v => Array.from(v)), array.map(v => [v,v,v,v]));
+  assert.deepEqual(result.map(v => Array.from(v)), array.map(v => [v, v, v, v]));
   gpu.destroy();
 }
 

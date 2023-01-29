@@ -7,9 +7,12 @@ function testBasic(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(value) {
     switch (value) {
-      case 1: return 1;
-      case 2: return 2;
-      case 3: return 3;
+      case 1:
+        return 1;
+      case 2:
+        return 2;
+      case 3:
+        return 3;
     }
     return 0;
   }, {
@@ -52,7 +55,8 @@ function testOnlyDefault(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(value) {
     switch (value) {
-      default: return 3;
+      default:
+        return 3;
     }
   }, {
     argumentTypes: ['Integer'],
@@ -93,9 +97,12 @@ function testDefault(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(value) {
     switch (value) {
-      case 1: return 1;
-      case 2: return 2;
-      default: return 3;
+      case 1:
+        return 1;
+      case 2:
+        return 2;
+      default:
+        return 3;
     }
   }, {
     argumentTypes: ['Integer'],
@@ -137,9 +144,12 @@ function testEarlyDefault(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(value) {
     switch (value) {
-      default: return 3;
-      case 1: return 1;
-      case 2: return 2;
+      default:
+        return 3;
+      case 1:
+        return 1;
+      case 2:
+        return 2;
     }
   }, {
     argumentTypes: ['Integer'],
@@ -184,7 +194,8 @@ function testFallThrough(mode) {
       case 1:
       case 2:
         return 1;
-      default: return 3;
+      default:
+        return 3;
     }
   }, {
     argumentTypes: ['Integer'],

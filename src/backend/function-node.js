@@ -382,192 +382,192 @@ export class FunctionNode {
         } else {
           return 'Number';
         }
-        case 'AssignmentExpression':
-          return this.getType(ast.left);
-        case 'CallExpression':
-          if (this.isAstMathFunction(ast)) {
-            return 'Number';
-          }
-          if (!ast.callee || !ast.callee.name) {
-            if (ast.callee.type === 'SequenceExpression' && ast.callee.expressions[ast.callee.expressions.length - 1].property.name) {
-              const functionName = ast.callee.expressions[ast.callee.expressions.length - 1].property.name;
-              this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
-              return this.lookupReturnType(functionName, ast, this);
-            }
-            if (this.getVariableSignature(ast.callee, true) === 'this.color') {
-              return null;
-            }
-            if (ast.callee.type === 'MemberExpression' && ast.callee.object && ast.callee.property && ast.callee.property.name && ast.arguments) {
-              const functionName = ast.callee.property.name;
-              this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
-              return this.lookupReturnType(functionName, ast, this);
-            }
-            throw this.astErrorOutput('Unknown call expression', ast);
-          }
-          if (ast.callee && ast.callee.name) {
-            const functionName = ast.callee.name;
+      case 'AssignmentExpression':
+        return this.getType(ast.left);
+      case 'CallExpression':
+        if (this.isAstMathFunction(ast)) {
+          return 'Number';
+        }
+        if (!ast.callee || !ast.callee.name) {
+          if (ast.callee.type === 'SequenceExpression' && ast.callee.expressions[ast.callee.expressions.length - 1].property.name) {
+            const functionName = ast.callee.expressions[ast.callee.expressions.length - 1].property.name;
             this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
             return this.lookupReturnType(functionName, ast, this);
           }
-          throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
-        case 'LogicalExpression':
-          return 'Boolean';
-        case 'BinaryExpression':
-          // modulos is Number
-          switch (ast.operator) {
-            case '%':
-            case '/':
-              if (this.fixIntegerDivisionAccuracy) {
-                return 'Number';
-              } else {
-                break;
-              }
-              case '>':
-              case '<':
-                return 'Boolean';
-              case '&':
-              case '|':
-              case '^':
-              case '<<':
-              case '>>':
-              case '>>>':
-                return 'Integer';
+          if (this.getVariableSignature(ast.callee, true) === 'this.color') {
+            return null;
           }
-          const type = this.getType(ast.left);
-          if (this.isState('skip-literal-correction')) return type;
-          if (type === 'LiteralInteger') {
-            const rightType = this.getType(ast.right);
-            if (rightType === 'LiteralInteger') {
-              if (ast.left.value % 1 === 0) {
-                return 'Integer';
-              } else {
-                return 'Float';
-              }
-            }
-            return rightType;
+          if (ast.callee.type === 'MemberExpression' && ast.callee.object && ast.callee.property && ast.callee.property.name && ast.arguments) {
+            const functionName = ast.callee.property.name;
+            this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
+            return this.lookupReturnType(functionName, ast, this);
           }
-          return typeLookupMap[type] || type;
-        case 'UpdateExpression':
-          return this.getType(ast.argument);
-        case 'UnaryExpression':
-          if (ast.operator === '~') {
-            return 'Integer';
-          }
-          return this.getType(ast.argument);
-        case 'VariableDeclaration': {
-          const declarations = ast.declarations;
-          let lastType;
-          for (let i = 0; i < declarations.length; i++) {
-            const declaration = declarations[i];
-            lastType = this.getType(declaration);
-          }
-          if (!lastType) {
-            throw this.astErrorOutput(`Unable to find type for declaration`, ast);
-          }
-          return lastType;
+          throw this.astErrorOutput('Unknown call expression', ast);
         }
-        case 'VariableDeclarator':
-          const declaration = this.getDeclaration(ast.id);
-          if (!declaration) {
-            throw this.astErrorOutput(`Unable to find declarator`, ast);
+        if (ast.callee && ast.callee.name) {
+          const functionName = ast.callee.name;
+          this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
+          return this.lookupReturnType(functionName, ast, this);
+        }
+        throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
+      case 'LogicalExpression':
+        return 'Boolean';
+      case 'BinaryExpression':
+        // modulos is Number
+        switch (ast.operator) {
+          case '%':
+          case '/':
+            if (this.fixIntegerDivisionAccuracy) {
+              return 'Number';
+            } else {
+              break;
+            }
+          case '>':
+          case '<':
+            return 'Boolean';
+          case '&':
+          case '|':
+          case '^':
+          case '<<':
+          case '>>':
+          case '>>>':
+            return 'Integer';
+        }
+        const type = this.getType(ast.left);
+        if (this.isState('skip-literal-correction')) return type;
+        if (type === 'LiteralInteger') {
+          const rightType = this.getType(ast.right);
+          if (rightType === 'LiteralInteger') {
+            if (ast.left.value % 1 === 0) {
+              return 'Integer';
+            } else {
+              return 'Float';
+            }
           }
+          return rightType;
+        }
+        return typeLookupMap[type] || type;
+      case 'UpdateExpression':
+        return this.getType(ast.argument);
+      case 'UnaryExpression':
+        if (ast.operator === '~') {
+          return 'Integer';
+        }
+        return this.getType(ast.argument);
+      case 'VariableDeclaration': {
+        const declarations = ast.declarations;
+        let lastType;
+        for (let i = 0; i < declarations.length; i++) {
+          const declaration = declarations[i];
+          lastType = this.getType(declaration);
+        }
+        if (!lastType) {
+          throw this.astErrorOutput(`Unable to find type for declaration`, ast);
+        }
+        return lastType;
+      }
+      case 'VariableDeclarator':
+        const declaration = this.getDeclaration(ast.id);
+        if (!declaration) {
+          throw this.astErrorOutput(`Unable to find declarator`, ast);
+        }
 
-          if (!declaration.valueType) {
-            throw this.astErrorOutput(`Unable to find declarator valueType`, ast);
-          }
+        if (!declaration.valueType) {
+          throw this.astErrorOutput(`Unable to find declarator valueType`, ast);
+        }
 
-          return declaration.valueType;
-        case 'Identifier':
-          if (ast.name === 'Infinity') {
-            return 'Number';
+        return declaration.valueType;
+      case 'Identifier':
+        if (ast.name === 'Infinity') {
+          return 'Number';
+        }
+        if (this.isAstVariable(ast)) {
+          const signature = this.getVariableSignature(ast);
+          if (signature === 'value') {
+            return this.getCheckVariableType(ast);
           }
-          if (this.isAstVariable(ast)) {
-            const signature = this.getVariableSignature(ast);
-            if (signature === 'value') {
-              return this.getCheckVariableType(ast);
-            }
+        }
+        const origin = this.findIdentifierOrigin(ast);
+        if (origin && origin.init) {
+          return this.getType(origin.init);
+        }
+        return null;
+      case 'ReturnStatement':
+        return this.getType(ast.argument);
+      case 'MemberExpression':
+        if (this.isAstMathFunction(ast)) {
+          switch (ast.property.name) {
+            case 'ceil':
+              return 'Integer';
+            case 'floor':
+              return 'Integer';
+            case 'round':
+              return 'Integer';
           }
-          const origin = this.findIdentifierOrigin(ast);
-          if (origin && origin.init) {
-            return this.getType(origin.init);
-          }
-          return null;
-        case 'ReturnStatement':
-          return this.getType(ast.argument);
-        case 'MemberExpression':
-          if (this.isAstMathFunction(ast)) {
-            switch (ast.property.name) {
-              case 'ceil':
-                return 'Integer';
-              case 'floor':
-                return 'Integer';
-              case 'round':
-                return 'Integer';
-            }
-            return 'Number';
-          }
-          if (this.isAstVariable(ast)) {
-            const variableSignature = this.getVariableSignature(ast);
-            switch (variableSignature) {
-              case 'value[]':
-                return this.getLookupType(this.getCheckVariableType(ast.object));
-              case 'value[][]':
-                return this.getLookupType(this.getCheckVariableType(ast.object.object));
-              case 'value[][][]':
-                return this.getLookupType(this.getCheckVariableType(ast.object.object.object));
-              case 'value[][][][]':
-                return this.getLookupType(this.getCheckVariableType(ast.object.object.object.object));
-              case 'value.thread.value':
-              case 'this.thread.value':
-                return 'Integer';
-              case 'this.output.value':
-                return this.dynamicOutput ? 'Integer' : 'LiteralInteger';
-              case 'this.constants.value':
-                return this.getConstantType(ast.property.name);
-              case 'this.constants.value[]':
-                return this.getLookupType(this.getConstantType(ast.object.property.name));
-              case 'this.constants.value[][]':
-                return this.getLookupType(this.getConstantType(ast.object.object.property.name));
-              case 'this.constants.value[][][]':
-                return this.getLookupType(this.getConstantType(ast.object.object.object.property.name));
-              case 'this.constants.value[][][][]':
-                return this.getLookupType(this.getConstantType(ast.object.object.object.object.property.name));
-              case 'fn()[]':
-              case 'fn()[][]':
-              case 'fn()[][][]':
-                return this.getLookupType(this.getType(ast.object));
-              case 'value.value':
-                if (this.isAstMathVariable(ast)) {
-                  return 'Number';
-                }
-                switch (ast.property.name) {
-                  case 'r':
-                  case 'g':
-                  case 'b':
-                  case 'a':
-                    return this.getLookupType(this.getCheckVariableType(ast.object));
-                }
-                case '[][]':
-                  return 'Number';
-            }
-            throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
+          return 'Number';
+        }
+        if (this.isAstVariable(ast)) {
+          const variableSignature = this.getVariableSignature(ast);
+          switch (variableSignature) {
+            case 'value[]':
+              return this.getLookupType(this.getCheckVariableType(ast.object));
+            case 'value[][]':
+              return this.getLookupType(this.getCheckVariableType(ast.object.object));
+            case 'value[][][]':
+              return this.getLookupType(this.getCheckVariableType(ast.object.object.object));
+            case 'value[][][][]':
+              return this.getLookupType(this.getCheckVariableType(ast.object.object.object.object));
+            case 'value.thread.value':
+            case 'this.thread.value':
+              return 'Integer';
+            case 'this.output.value':
+              return this.dynamicOutput ? 'Integer' : 'LiteralInteger';
+            case 'this.constants.value':
+              return this.getConstantType(ast.property.name);
+            case 'this.constants.value[]':
+              return this.getLookupType(this.getConstantType(ast.object.property.name));
+            case 'this.constants.value[][]':
+              return this.getLookupType(this.getConstantType(ast.object.object.property.name));
+            case 'this.constants.value[][][]':
+              return this.getLookupType(this.getConstantType(ast.object.object.object.property.name));
+            case 'this.constants.value[][][][]':
+              return this.getLookupType(this.getConstantType(ast.object.object.object.object.property.name));
+            case 'fn()[]':
+            case 'fn()[][]':
+            case 'fn()[][][]':
+              return this.getLookupType(this.getType(ast.object));
+            case 'value.value':
+              if (this.isAstMathVariable(ast)) {
+                return 'Number';
+              }
+              switch (ast.property.name) {
+                case 'r':
+                case 'g':
+                case 'b':
+                case 'a':
+                  return this.getLookupType(this.getCheckVariableType(ast.object));
+              }
+            case '[][]':
+              return 'Number';
           }
           throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
-        case 'ConditionalExpression':
-          return this.getType(ast.consequent);
-        case 'FunctionDeclaration':
-        case 'FunctionExpression':
-          const lastReturn = this.findLastReturn(ast.body);
-          if (lastReturn) {
-            return this.getType(lastReturn);
-          }
-          return null;
-        case 'IfStatement':
-          return this.getType(ast.consequent);
-        case 'SequenceExpression':
-          return this.getType(ast.expressions[ast.expressions.length - 1]);
-        default:
-          throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
+        }
+        throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
+      case 'ConditionalExpression':
+        return this.getType(ast.consequent);
+      case 'FunctionDeclaration':
+      case 'FunctionExpression':
+        const lastReturn = this.findLastReturn(ast.body);
+        if (lastReturn) {
+          return this.getType(lastReturn);
+        }
+        return null;
+      case 'IfStatement':
+        return this.getType(ast.consequent);
+      case 'SequenceExpression':
+        return this.getType(ast.expressions[ast.expressions.length - 1]);
+      default:
+        throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
     }
   }
 
@@ -789,10 +789,10 @@ export class FunctionNode {
           }
           return dependencies;
         }
-        case 'SequenceExpression':
-          return this.getDependencies(ast.expressions, dependencies, isNotSafe);
-        default:
-          throw this.astErrorOutput(`Unhandled type ${ ast.type } in getDependencies`, ast);
+      case 'SequenceExpression':
+        return this.getDependencies(ast.expressions, dependencies, isNotSafe);
+      default:
+        throw this.astErrorOutput(`Unhandled type ${ ast.type } in getDependencies`, ast);
     }
     return dependencies;
   }
@@ -1304,83 +1304,83 @@ export class FunctionNode {
           default:
             throw this.astErrorOutput('Unexpected expression', ast);
         }
-        case 'this.constants.value':
-          if (typeof ast.property.name !== 'string') {
-            throw this.astErrorOutput('Unexpected expression', ast);
-          }
-          name = ast.property.name;
-          type = this.getConstantType(name);
-          if (!type) {
-            throw this.astErrorOutput('Constant has no type', ast);
-          }
-          return {
-            name,
-            type,
-            origin: 'constants',
-              signature: variableSignature,
-          };
-        case 'this.constants.value[]':
-          if (typeof ast.object.property.name !== 'string') {
-            throw this.astErrorOutput('Unexpected expression', ast);
-          }
-          name = ast.object.property.name;
-          type = this.getConstantType(name);
-          if (!type) {
-            throw this.astErrorOutput('Constant has no type', ast);
-          }
-          return {
-            name,
-            type,
-            origin: 'constants',
-              signature: variableSignature,
-              xProperty: ast.property,
-          };
-        case 'this.constants.value[][]': {
-          if (typeof ast.object.object.property.name !== 'string') {
-            throw this.astErrorOutput('Unexpected expression', ast);
-          }
-          name = ast.object.object.property.name;
-          type = this.getConstantType(name);
-          if (!type) {
-            throw this.astErrorOutput('Constant has no type', ast);
-          }
-          return {
-            name,
-            type,
-            origin: 'constants',
-            signature: variableSignature,
-            yProperty: ast.object.property,
-            xProperty: ast.property,
-          };
-        }
-        case 'this.constants.value[][][]': {
-          if (typeof ast.object.object.object.property.name !== 'string') {
-            throw this.astErrorOutput('Unexpected expression', ast);
-          }
-          name = ast.object.object.object.property.name;
-          type = this.getConstantType(name);
-          if (!type) {
-            throw this.astErrorOutput('Constant has no type', ast);
-          }
-          return {
-            name,
-            type,
-            origin: 'constants',
-            signature: variableSignature,
-            zProperty: ast.object.object.property,
-            yProperty: ast.object.property,
-            xProperty: ast.property,
-          };
-        }
-        case 'fn()[]':
-        case 'fn()[][]':
-        case '[][]':
-          return {
-            signature: variableSignature,
-              property: ast.property,
-          };
-        default:
+      case 'this.constants.value':
+        if (typeof ast.property.name !== 'string') {
           throw this.astErrorOutput('Unexpected expression', ast);
+        }
+        name = ast.property.name;
+        type = this.getConstantType(name);
+        if (!type) {
+          throw this.astErrorOutput('Constant has no type', ast);
+        }
+        return {
+          name,
+          type,
+          origin: 'constants',
+            signature: variableSignature,
+        };
+      case 'this.constants.value[]':
+        if (typeof ast.object.property.name !== 'string') {
+          throw this.astErrorOutput('Unexpected expression', ast);
+        }
+        name = ast.object.property.name;
+        type = this.getConstantType(name);
+        if (!type) {
+          throw this.astErrorOutput('Constant has no type', ast);
+        }
+        return {
+          name,
+          type,
+          origin: 'constants',
+            signature: variableSignature,
+            xProperty: ast.property,
+        };
+      case 'this.constants.value[][]': {
+        if (typeof ast.object.object.property.name !== 'string') {
+          throw this.astErrorOutput('Unexpected expression', ast);
+        }
+        name = ast.object.object.property.name;
+        type = this.getConstantType(name);
+        if (!type) {
+          throw this.astErrorOutput('Constant has no type', ast);
+        }
+        return {
+          name,
+          type,
+          origin: 'constants',
+          signature: variableSignature,
+          yProperty: ast.object.property,
+          xProperty: ast.property,
+        };
+      }
+      case 'this.constants.value[][][]': {
+        if (typeof ast.object.object.object.property.name !== 'string') {
+          throw this.astErrorOutput('Unexpected expression', ast);
+        }
+        name = ast.object.object.object.property.name;
+        type = this.getConstantType(name);
+        if (!type) {
+          throw this.astErrorOutput('Constant has no type', ast);
+        }
+        return {
+          name,
+          type,
+          origin: 'constants',
+          signature: variableSignature,
+          zProperty: ast.object.object.property,
+          yProperty: ast.object.property,
+          xProperty: ast.property,
+        };
+      }
+      case 'fn()[]':
+      case 'fn()[][]':
+      case '[][]':
+        return {
+          signature: variableSignature,
+            property: ast.property,
+        };
+      default:
+        throw this.astErrorOutput('Unexpected expression', ast);
     }
   }
 

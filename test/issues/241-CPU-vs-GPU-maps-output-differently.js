@@ -5,7 +5,12 @@ describe('issue #241');
 
 // this is actually equiv to
 // return this.thread.y * 3 + this.thread.x;
-const input = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
+const input = [
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8]
+];
+
 function buildIndexTestKernel(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(inp) {

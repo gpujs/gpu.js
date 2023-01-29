@@ -12,7 +12,7 @@ function testSinglePrecisionArray2(mode) {
     argumentTypes: { value: 'Array(2)' },
     precision: 'single',
   });
-  const result = kernel(new Float32Array([1,2]));
+  const result = kernel(new Float32Array([1, 2]));
   assert.equal(result[0], 3);
   gpu.destroy();
 }
@@ -50,7 +50,7 @@ function testUnsignedPrecisionArray2(mode) {
     argumentTypes: { value: 'Array(2)' },
     precision: 'unsigned',
   });
-  const result = kernel(new Float32Array([1,2]));
+  const result = kernel(new Float32Array([1, 2]));
   assert.equal(result[0], 3);
   gpu.destroy();
 }
@@ -88,7 +88,7 @@ function testSinglePrecisionArray3(mode) {
     argumentTypes: { value: 'Array(3)' },
     precision: 'single',
   });
-  const result = kernel(new Float32Array([1,2,3]));
+  const result = kernel(new Float32Array([1, 2, 3]));
   assert.equal(result[0], 6);
   gpu.destroy();
 }
@@ -126,7 +126,7 @@ function testUnsignedPrecisionArray3(mode) {
     argumentTypes: { value: 'Array(3)' },
     precision: 'unsigned',
   });
-  const result = kernel(new Float32Array([1,2,3]));
+  const result = kernel(new Float32Array([1, 2, 3]));
   assert.equal(result[0], 6);
   gpu.destroy();
 }
@@ -164,7 +164,7 @@ function testSinglePrecisionArray4(mode) {
     argumentTypes: { value: 'Array(4)' },
     precision: 'single',
   });
-  const result = kernel(new Float32Array([1,2,3,4]));
+  const result = kernel(new Float32Array([1, 2, 3, 4]));
   assert.equal(result[0], 10);
   gpu.destroy();
 }
@@ -202,7 +202,7 @@ function testUnsignedPrecisionArray4(mode) {
     argumentTypes: { value: 'Array(4)' },
     precision: 'unsigned',
   });
-  const result = kernel(new Float32Array([1,2,3,4]));
+  const result = kernel(new Float32Array([1, 2, 3, 4]));
   assert.equal(result[0], 10);
   gpu.destroy();
 }

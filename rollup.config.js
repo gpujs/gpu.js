@@ -23,47 +23,47 @@ const banner = `/**
 */`
 
 function buildBrowser(isCore) {
-    function makeOutput(minify) {
-        const coreExt = isCore ? '-core' : ''
-        const ext = minify ? '.min.js' : '.js'
-        return {
-            banner,
-            file: './dist/gpu-browser' + coreExt + ext,
-            name: 'GPU',
-            format: 'umd',
-            plugins: minify ? [terser()] : [],
-            sourcemap: true,
-            globals: {
-                acorn: 'acorn'
-            }
-        }
+  function makeOutput(minify) {
+    const coreExt = isCore ? '-core' : ''
+    const ext = minify ? '.min.js' : '.js'
+    return {
+      banner,
+      file: './dist/gpu-browser' + coreExt + ext,
+      name: 'GPU',
+      format: 'umd',
+      plugins: minify ? [terser()] : [],
+      sourcemap: true,
+      globals: {
+        acorn: 'acorn'
+      }
     }
+  }
 
-    return defineConfig({
-        input: './src/browser.js',
-        plugins: [
-            resolve(),
-            commonjs(),
-            replace({
-                'process.version': false,
-                preventAssignment: true,
-            })
-        ],
-        output: [
-            makeOutput(false),
-            makeOutput(true),
-        ],
-        onwarn(msg, warn) {
-            if (!/Circular/.test(msg)) {
-                warn(msg)
-            }
-        },
+  return defineConfig({
+    input: './src/browser.js',
+    plugins: [
+      resolve(),
+      commonjs(),
+      replace({
+        'process.version': false,
+        preventAssignment: true,
+      })
+    ],
+    output: [
+      makeOutput(false),
+      makeOutput(true),
+    ],
+    onwarn(msg, warn) {
+      if (!/Circular/.test(msg)) {
+        warn(msg)
+      }
+    },
 
-        external: isCore ? ['acron'] : [],
-    })
+    external: isCore ? ['acron'] : [],
+  })
 }
 
 export default [
-    buildBrowser(true),
-    buildBrowser(false)
+  buildBrowser(true),
+  buildBrowser(false)
 ]

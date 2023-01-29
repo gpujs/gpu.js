@@ -214,4 +214,3 @@ test('texture constant gpu', () => {
 (GPU.isHeadlessGLSupported ? test : skip)('texture constant headlessgl', () => {
   testTextureConstant('headlessgl');
 });
-

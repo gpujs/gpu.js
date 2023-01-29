@@ -2,22 +2,23 @@ const { assert, skip, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('issue #195');
+
 function makeKernel(gpu) {
-  return gpu.createKernel(function(a){
-    return a[this.thread.y][this.thread.x];
-  })
+  return gpu.createKernel(function(a) {
+      return a[this.thread.y][this.thread.x];
+    })
     .setOutput([matrixSize, matrixSize]);
 }
 
 function splitArray(array, part) {
   const result = [];
-  for(let i = 0; i < array.length; i += part) {
+  for (let i = 0; i < array.length; i += part) {
     result.push(array.slice(i, i + part));
   }
   return result;
 }
 
-const matrixSize =  4;
+const matrixSize = 4;
 const A = splitArray(Array.apply(null, Array(matrixSize * matrixSize)).map((_, i) => i), matrixSize);
 
 function readFromTexture(mode) {
@@ -54,4 +55,3 @@ test("Issue #195 Read from Texture 2D (GPU only) gpu", () => {
 (GPU.isHeadlessGLSupported ? test : skip)("Issue #195 Read from Texture 2D (GPU Only) headlessgl", () => {
   readFromTexture('headlessgl');
 });
-

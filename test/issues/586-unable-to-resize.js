@@ -7,20 +7,20 @@ function testResize(convert, mode) {
   const gpu = new GPU({ mode });
   const createTexture1 = gpu.createKernel(function() {
     return 1;
-  }, { output: [2, 2], pipeline: false});
+  }, { output: [2, 2], pipeline: false });
 
   const createTexture2 = gpu.createKernel(function() {
     return 1;
-  }, { output: [4, 4], pipeline: true});
+  }, { output: [4, 4], pipeline: true });
 
   var t1 = createTexture1();
   var t2 = createTexture2();
 
   assert.deepEqual(convert(t2), [
-    new Float32Array([1,1,1,1]),
-    new Float32Array([1,1,1,1]),
-    new Float32Array([1,1,1,1]),
-    new Float32Array([1,1,1,1]),
+    new Float32Array([1, 1, 1, 1]),
+    new Float32Array([1, 1, 1, 1]),
+    new Float32Array([1, 1, 1, 1]),
+    new Float32Array([1, 1, 1, 1]),
   ]);
 
   gpu.destroy();

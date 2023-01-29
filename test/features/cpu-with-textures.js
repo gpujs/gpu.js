@@ -113,7 +113,10 @@ function cpuWithTexturesArray2WithSinglePrecision(mode) {
   });
   const texture = kernel();
   assert.ok(texture.toArray);
-  assert.deepEqual(texture.toArray().map(value => Array.from(value)), [[0,0], [1,1]]);
+  assert.deepEqual(texture.toArray().map(value => Array.from(value)), [
+    [0, 0],
+    [1, 1]
+  ]);
   const cpu = new GPU({ mode: 'cpu' });
   const cpuKernel = cpu.createKernel(function(v) {
     return v[this.thread.x];
@@ -121,12 +124,18 @@ function cpuWithTexturesArray2WithSinglePrecision(mode) {
   assert.notOk(cpuKernel.kernel.textureCache);
   const result = cpuKernel(texture);
   assert.ok(cpuKernel.kernel.textureCache);
-  assert.deepEqual(result.map(value => Array.from(value)), [[0,0], [1,1]]);
+  assert.deepEqual(result.map(value => Array.from(value)), [
+    [0, 0],
+    [1, 1]
+  ]);
   let calledTwice = false;
   texture.toArray = () => {
     calledTwice = true;
   };
-  assert.deepEqual(cpuKernel(texture).map(value => Array.from(value)), [[0,0], [1,1]]);
+  assert.deepEqual(cpuKernel(texture).map(value => Array.from(value)), [
+    [0, 0],
+    [1, 1]
+  ]);
   assert.equal(calledTwice, false);
   gpu.destroy();
 }
@@ -162,7 +171,10 @@ function cpuWithTexturesArray3WithSinglePrecision(mode) {
   });
   const texture = kernel();
   assert.ok(texture.toArray);
-  assert.deepEqual(texture.toArray().map(value => Array.from(value)), [[0,0,0], [1,1,1]]);
+  assert.deepEqual(texture.toArray().map(value => Array.from(value)), [
+    [0, 0, 0],
+    [1, 1, 1]
+  ]);
   const cpu = new GPU({ mode: 'cpu' });
   const cpuKernel = cpu.createKernel(function(v) {
     return v[this.thread.x];
@@ -170,12 +182,18 @@ function cpuWithTexturesArray3WithSinglePrecision(mode) {
   assert.notOk(cpuKernel.kernel.textureCache);
   const result = cpuKernel(texture);
   assert.ok(cpuKernel.kernel.textureCache);
-  assert.deepEqual(result.map(value => Array.from(value)), [[0,0,0], [1,1,1]]);
+  assert.deepEqual(result.map(value => Array.from(value)), [
+    [0, 0, 0],
+    [1, 1, 1]
+  ]);
   let calledTwice = false;
   texture.toArray = () => {
     calledTwice = true;
   };
-  assert.deepEqual(cpuKernel(texture).map(value => Array.from(value)), [[0,0,0], [1,1,1]]);
+  assert.deepEqual(cpuKernel(texture).map(value => Array.from(value)), [
+    [0, 0, 0],
+    [1, 1, 1]
+  ]);
   assert.equal(calledTwice, false);
   gpu.destroy();
 }
@@ -211,7 +229,10 @@ function cpuWithTexturesArray4WithSinglePrecision(mode) {
   });
   const texture = kernel();
   assert.ok(texture.toArray);
-  assert.deepEqual(texture.toArray().map(value => Array.from(value)), [[0,0,0,0], [1,1,1,1]]);
+  assert.deepEqual(texture.toArray().map(value => Array.from(value)), [
+    [0, 0, 0, 0],
+    [1, 1, 1, 1]
+  ]);
   const cpu = new GPU({ mode: 'cpu' });
   const cpuKernel = cpu.createKernel(function(v) {
     return v[this.thread.x];
@@ -219,12 +240,18 @@ function cpuWithTexturesArray4WithSinglePrecision(mode) {
   assert.notOk(cpuKernel.kernel.textureCache);
   const result = cpuKernel(texture);
   assert.ok(cpuKernel.kernel.textureCache);
-  assert.deepEqual(result.map(value => Array.from(value)), [[0,0,0,0], [1,1,1,1]]);
+  assert.deepEqual(result.map(value => Array.from(value)), [
+    [0, 0, 0, 0],
+    [1, 1, 1, 1]
+  ]);
   let calledTwice = false;
   texture.toArray = () => {
     calledTwice = true;
   };
-  assert.deepEqual(cpuKernel(texture).map(value => Array.from(value)), [[0,0,0,0], [1,1,1,1]]);
+  assert.deepEqual(cpuKernel(texture).map(value => Array.from(value)), [
+    [0, 0, 0, 0],
+    [1, 1, 1, 1]
+  ]);
   assert.equal(calledTwice, false);
   gpu.destroy();
 }

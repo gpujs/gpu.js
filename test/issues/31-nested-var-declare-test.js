@@ -8,9 +8,9 @@ function nestedVarRedeclareFunction() {
   let result = 0;
 
   // outer loop limit is effectively skipped in CPU
-  for(let i=0; i<10; ++i) {
+  for (let i = 0; i < 10; ++i) {
     // inner loop limit should be higher, to avoid infinite loops
-    for(i=0; i<20; ++i) {
+    for (i = 0; i < 20; ++i) {
       result += 1;
     }
   }
@@ -90,9 +90,9 @@ function nestedVarDeclareFunction() {
   let result = 0.0;
 
   // outer loop limit is effectively skipped in CPU
-  for(let i=0; i<10; ++i) {
+  for (let i = 0; i < 10; ++i) {
     // inner loop limit should be higher, to avoid infinite loops
-    for(let i=0; i<20; ++i) {
+    for (let i = 0; i < 20; ++i) {
       result += 1;
     }
   }
@@ -100,10 +100,10 @@ function nestedVarDeclareFunction() {
   return result;
 }
 
-function nestedVarDeclareTest(mode ) {
+function nestedVarDeclareTest(mode) {
   const gpu = new GPU({ mode });
   const f = gpu.createKernel(nestedVarDeclareFunction, {
-    output : [1]
+    output: [1]
   });
 
   assert.equal(f(), 200, 'basic return function test');
@@ -141,15 +141,16 @@ test('Issue #31 - nestedVarDeclare : AST handling webgl', () => {
 
   assert.equal(
     builder.getStringFromFunctionNames(['nestedVarDeclareFunction']),
-    'float nestedVarDeclareFunction() {'
-    + '\nfloat user_result=0.0;'
-    + '\nfor (int user_i=0;(user_i<10);++user_i){'
-    + '\nfor (int user_i=0;(user_i<20);++user_i){' //<-- Note: don't do this in real life!
-    + '\nuser_result+=1.0;}'
-    + '\n}'
-    + '\n'
-    + '\nreturn user_result;'
-    + '\n}'
+    'float nestedVarDeclareFunction() {' +
+    '\nfloat user_result=0.0;' +
+    '\nfor (int user_i=0;(user_i<10);++user_i){' +
+    '\nfor (int user_i=0;(user_i<20);++user_i){' //<-- Note: don't do this in real life!
+    +
+    '\nuser_result+=1.0;}' +
+    '\n}' +
+    '\n' +
+    '\nreturn user_result;' +
+    '\n}'
   );
 });
 
@@ -160,15 +161,16 @@ test('Issue #31 - nestedVarDeclare : AST handling webgl2', () => {
 
   assert.equal(
     builder.getStringFromFunctionNames(['nestedVarDeclareFunction']),
-    'float nestedVarDeclareFunction() {'
-    + '\nfloat user_result=0.0;'
-    + '\nfor (int user_i=0;(user_i<10);++user_i){'
-    + '\nfor (int user_i=0;(user_i<20);++user_i){' //<-- Note: don't do this in real life!
-    + '\nuser_result+=1.0;}'
-    + '\n}'
-    + '\n'
-    + '\nreturn user_result;'
-    + '\n}'
+    'float nestedVarDeclareFunction() {' +
+    '\nfloat user_result=0.0;' +
+    '\nfor (int user_i=0;(user_i<10);++user_i){' +
+    '\nfor (int user_i=0;(user_i<20);++user_i){' //<-- Note: don't do this in real life!
+    +
+    '\nuser_result+=1.0;}' +
+    '\n}' +
+    '\n' +
+    '\nreturn user_result;' +
+    '\n}'
   );
 });
 
@@ -179,14 +181,14 @@ test('Issue #31 - nestedVarDeclare : AST handling cpu', () => {
 
   assert.equal(
     builder.getStringFromFunctionNames(['nestedVarDeclareFunction']),
-    'function nestedVarDeclareFunction() {'
-    + '\nlet user_result=0;'
-    + '\nfor (let user_i=0;(user_i<10);++user_i){'
-    + '\nfor (let user_i=0;(user_i<20);++user_i){'
-    + '\nuser_result+=1;}'
-    + '\n}'
-    + '\n'
-    + '\nreturn user_result;'
-    + '\n}'
+    'function nestedVarDeclareFunction() {' +
+    '\nlet user_result=0;' +
+    '\nfor (let user_i=0;(user_i<10);++user_i){' +
+    '\nfor (let user_i=0;(user_i<20);++user_i){' +
+    '\nuser_result+=1;}' +
+    '\n}' +
+    '\n' +
+    '\nreturn user_result;' +
+    '\n}'
   );
 });

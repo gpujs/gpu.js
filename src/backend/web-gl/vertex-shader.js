@@ -13,4 +13,3 @@ void main(void) {
   gl_Position = vec4((aPos + vec2(1)) * ratio + vec2(-1), 0, 1);
   vTexCoord = aTexCoord;
 }`;
-

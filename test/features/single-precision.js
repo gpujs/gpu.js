@@ -2,6 +2,7 @@ const { assert, skip, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('features: single precision');
+
 function singlePrecisionKernel(mode) {
   const lst = new Float32Array([1, 2, 3, 4, 5, 6, 7, 8]);
   const gpu = new GPU({ mode });

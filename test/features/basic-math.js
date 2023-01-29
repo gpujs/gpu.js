@@ -8,20 +8,20 @@ function sumABTest(mode) {
   const f = gpu.createKernel(function(a, b) {
     return (a[this.thread.x] + b[this.thread.x]);
   }, {
-    output : [6],
-    mode : mode,
+    output: [6],
+    mode: mode,
   });
 
-  assert.ok( f !== null, 'function generated test');
+  assert.ok(f !== null, 'function generated test');
 
   const a = [1, 2, 3, 5, 6, 7];
   const b = [4, 5, 6, 1, 2, 3];
 
-  const res = f(a,b);
+  const res = f(a, b);
   const exp = [5, 7, 9, 6, 8, 10];
 
-  for(let i = 0; i < exp.length; ++i) {
-    assert.equal(res[i], exp[i], 'Result arr idx: '+i);
+  for (let i = 0; i < exp.length; ++i) {
+    assert.equal(res[i], exp[i], 'Result arr idx: ' + i);
   }
   gpu.destroy();
 }
@@ -60,21 +60,21 @@ function multABTest(mode) {
     sum += a[this.thread.y][2] * b[2][this.thread.x];
     return sum;
   }, {
-    output : [3, 3]
+    output: [3, 3]
   });
 
   assert.ok(f !== null, 'function generated test');
   assert.deepEqual(f(
-    [
-      [1, 2, 3],
-      [4, 5, 6],
-      [7, 8, 9]
-    ],
-    [
-      [1, 2, 3],
-      [4, 5, 6],
-      [7, 8, 9]
-    ]).map((object) => { return Array.from(object); }),
+      [
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9]
+      ],
+      [
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9]
+      ]).map((object) => { return Array.from(object); }),
     [
       [30, 36, 42],
       [66, 81, 96],
@@ -103,4 +103,3 @@ test('multAB gpu', () => {
 test('multAB cpu', () => {
   multABTest('cpu');
 });
-

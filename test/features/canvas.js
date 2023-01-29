@@ -3,6 +3,7 @@ const { GPU } = require('../../src');
 const { greenCanvas } = require('../browser-test-utils');
 
 describe('features: canvas argument');
+
 function canvasArgumentTest(mode) {
   const gpu = new GPU({ mode });
   const canvas = greenCanvas(mode, 1, 1);
@@ -10,7 +11,7 @@ function canvasArgumentTest(mode) {
     const pixel = canvas[this.thread.y][this.thread.x];
     return pixel[1];
   }, {
-    output : [canvas.width, canvas.height]
+    output: [canvas.width, canvas.height]
   });
   const result = kernel(canvas);
   assert.equal(result[0][0], 1);
@@ -44,7 +45,7 @@ function canvasManuallyDefinedArgumentTest(mode) {
     const pixel = canvas[this.thread.y][this.thread.x];
     return pixel[1];
   }, {
-    output : [canvas.width, canvas.height],
+    output: [canvas.width, canvas.height],
     argumentTypes: { canvas: 'HTMLCanvas' }
   });
   const result = kernel(canvas);

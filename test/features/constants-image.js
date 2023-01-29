@@ -2,6 +2,7 @@ const { assert, skip, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('features: constants image');
+
 function imageConstantTest(mode, done) {
   const gpu = new GPU({ mode });
   const image = new Image();
@@ -23,8 +24,7 @@ function imageConstantTest(mode, done) {
           color = pixel.b;
         }
         return 255 * color;
-      },
-      {
+      }, {
         constants: { image },
         output: [width, height, 3],
       }

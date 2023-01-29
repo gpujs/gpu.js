@@ -5,7 +5,7 @@ describe('issue #608 - rewritten arrays');
 
 function testRewrittenArrays(mode) {
   const gpu = new GPU({ mode });
-  const kernel1 = gpu.createKernel(function (a, b) {
+  const kernel1 = gpu.createKernel(function(a, b) {
     return a[this.thread.y][this.thread.x];
   }, {
     constants: {
@@ -13,7 +13,7 @@ function testRewrittenArrays(mode) {
     },
     output: [2, 2]
   });
-  const kernel2 = gpu.createKernel(function (a, b) {
+  const kernel2 = gpu.createKernel(function(a, b) {
     return b[this.thread.y][this.thread.x];
   }, {
     constants: {
@@ -21,7 +21,7 @@ function testRewrittenArrays(mode) {
     },
     output: [2, 2]
   });
-  const kernel3 = gpu.createKernel(function (a, b) {
+  const kernel3 = gpu.createKernel(function(a, b) {
     return this.constants.c[this.thread.x];
   }, {
     constants: {

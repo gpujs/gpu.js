@@ -5,7 +5,7 @@ describe('features: output');
 
 function outputArray(mode) {
   const gpu = new GPU({ mode });
-  const input = [1,2,3,4,5];
+  const input = [1, 2, 3, 4, 5];
   const kernel = gpu.createKernel(function(input) {
     return input[this.thread.x];
   }, { output: [5] });
@@ -41,11 +41,11 @@ test('output array cpu', () => {
 function outputMatrix(mode) {
   const gpu = new GPU({ mode });
   const input = [
-    [1,2,3,4,5],
-    [1,2,3,4,5],
-    [1,2,3,4,5],
-    [1,2,3,4,5],
-    [1,2,3,4,5],
+    [1, 2, 3, 4, 5],
+    [1, 2, 3, 4, 5],
+    [1, 2, 3, 4, 5],
+    [1, 2, 3, 4, 5],
+    [1, 2, 3, 4, 5],
   ];
   const kernel = gpu.createKernel(function(input) {
     return input[this.thread.y][this.thread.x];
@@ -83,39 +83,39 @@ function outputCube(mode) {
   const gpu = new GPU({ mode });
   const input = [
     [
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
     ],
     [
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
     ],
     [
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
     ],
     [
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
     ],
     [
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
     ]
   ];
   const kernel = gpu.createKernel(function(input) {
@@ -198,8 +198,8 @@ test('graphical output array cpu', () => {
 function outputGraphicalMatrix(mode, canvas, context) {
   const gpu = new GPU({ mode });
   const input = [
-    [0.25,.50],
-    [.75,1],
+    [0.25, .50],
+    [.75, 1],
   ];
   const kernel = gpu.createKernel(function(input) {
     const color = input[this.thread.y][this.thread.x];
@@ -363,7 +363,7 @@ function outputGraphicalCube(mode) {
       return input[this.thread.x];
     }, {
       canvas: mockCanvas,
-      output: [5,5,5],
+      output: [5, 5, 5],
       graphical: true
     });
     kernel([1]);

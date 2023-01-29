@@ -6,6 +6,7 @@ describe('internal: deep types');
 
 function oneLayerDeepFloat(mode) {
   const gpu = new GPU({ mode });
+
   function childFunction(childFunctionArgument1) {
     return childFunctionArgument1 + 1;
   }
@@ -37,9 +38,11 @@ function oneLayerDeepFloat(mode) {
 
 function twoLayerDeepFloat(mode) {
   const gpu = new GPU({ mode });
+
   function child1Function(child1FunctionArgument1) {
     return child2Function(child1FunctionArgument1);
   }
+
   function child2Function(child2FunctionArgument1) {
     return child2FunctionArgument1 + 1;
   }
@@ -74,9 +77,11 @@ function twoLayerDeepFloat(mode) {
 
 function twoArgumentLayerDeepFloat(mode) {
   const gpu = new GPU({ mode });
+
   function child1Function(child1FunctionArgument1) {
     return child1FunctionArgument1 + 1;
   }
+
   function child2Function(child2FunctionArgument1) {
     return child2FunctionArgument1 + 1;
   }
@@ -113,12 +118,15 @@ function twoArgumentLayerDeepFloat(mode) {
 
 function threeLayerDeepFloat(mode) {
   const gpu = new GPU({ mode });
+
   function child1Function(child1FunctionArgument1) {
     return child2Function(child1FunctionArgument1);
   }
+
   function child2Function(child2FunctionArgument1) {
     return child3Function(child2FunctionArgument1 + 1);
   }
+
   function child3Function(child3FunctionArgument1) {
     return child3FunctionArgument1 + 1;
   }
@@ -156,12 +164,15 @@ function threeLayerDeepFloat(mode) {
 
 function threeArgumentLayerDeepFloat(mode) {
   const gpu = new GPU({ mode });
+
   function child1Function(child1FunctionArgument1) {
     return child1FunctionArgument1 + 1;
   }
+
   function child2Function(child2FunctionArgument1) {
     return child2FunctionArgument1 + 1;
   }
+
   function child3Function(child3FunctionArgument1) {
     return child3FunctionArgument1 + 1;
   }
@@ -202,12 +213,15 @@ function threeArgumentLayerDeepNumberTexture1(mode) {
   const texture = gpu.createKernel(function() {
     return 1.5;
   }, { output: [1], pipeline: true, precision: 'single' })();
+
   function child1Function(child1FunctionArgument1) {
     return child1FunctionArgument1 + 1;
   }
+
   function child2Function(child2FunctionArgument1) {
     return child2FunctionArgument1 + 1;
   }
+
   function child3Function(child3FunctionArgument1) {
     return child3FunctionArgument1[this.thread.x] + 1;
   }
@@ -245,6 +259,7 @@ function threeArgumentLayerDeepNumberTexture1(mode) {
 
 function circlicalLogic(mode) {
   const gpu = new GPU({ mode });
+
   function child1Function(child1FunctionArgument1) {
     return child1Function(child1FunctionArgument1);
   }
@@ -270,6 +285,7 @@ function circlicalLogic(mode) {
 
 function arrayTexture1(mode) {
   const gpu = new GPU({ mode });
+
   function addOne(functionValue) {
     return functionValue[this.thread.x] + 1;
   }
@@ -293,34 +309,35 @@ function arrayTexture1(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(1) auto', ()=> {
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(1) auto', () => {
   arrayTexture1();
 });
-(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(1) gpu', ()=> {
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(1) gpu', () => {
   arrayTexture1('gpu');
 });
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('ArrayTexture(1) webgl', ()=> {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('ArrayTexture(1) webgl', () => {
   arrayTexture1('webgl');
 });
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('ArrayTexture(1) webgl2', ()=> {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('ArrayTexture(1) webgl2', () => {
   arrayTexture1('webgl2');
 });
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('ArrayTexture(1) headlessgl', ()=> {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('ArrayTexture(1) headlessgl', () => {
   arrayTexture1('headlessgl');
 });
-(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(1) cpu', ()=> {
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(1) cpu', () => {
   arrayTexture1('cpu');
 });
 
 function arrayTexture2(mode) {
   const gpu = new GPU({ mode });
+
   function addOne(functionValue) {
     const declaredValue = functionValue[this.thread.x];
     return declaredValue[0] + 1 + declaredValue[1] + 1;
   }
   gpu.addFunction(addOne);
   const texture1 = gpu.createKernel(function() {
-    return [1,2];
+    return [1, 2];
   }, {
     output: [1],
     precision: 'single',
@@ -338,36 +355,37 @@ function arrayTexture2(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(2) auto', ()=> {
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(2) auto', () => {
   arrayTexture2();
 });
-(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(2) gpu', ()=> {
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(2) gpu', () => {
   arrayTexture2('gpu');
 });
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('ArrayTexture(2) webgl', ()=> {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('ArrayTexture(2) webgl', () => {
   arrayTexture2('webgl');
 });
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('ArrayTexture(2) webgl2', ()=> {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('ArrayTexture(2) webgl2', () => {
   arrayTexture2('webgl2');
 });
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('ArrayTexture(2) headlessgl', ()=> {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('ArrayTexture(2) headlessgl', () => {
   arrayTexture2('headlessgl');
 });
-(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(2) cpu', ()=> {
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(2) cpu', () => {
   arrayTexture2('cpu');
 });
 
 function arrayTexture3(mode) {
   const gpu = new GPU({ mode });
+
   function addOne(functionValue) {
     const declaredValue = functionValue[this.thread.x];
-    return declaredValue[0] + 1
-      + declaredValue[1] + 1
-      + declaredValue[2] + 1;
+    return declaredValue[0] + 1 +
+      declaredValue[1] + 1 +
+      declaredValue[2] + 1;
   }
   gpu.addFunction(addOne);
   const texture1 = gpu.createKernel(function() {
-    return [1,2,3];
+    return [1, 2, 3];
   }, {
     output: [1],
     precision: 'single',
@@ -385,37 +403,38 @@ function arrayTexture3(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(3) auto', ()=> {
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(3) auto', () => {
   arrayTexture3();
 });
-(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(3) gpu', ()=> {
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(3) gpu', () => {
   arrayTexture3('gpu');
 });
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('ArrayTexture(3) webgl', ()=> {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('ArrayTexture(3) webgl', () => {
   arrayTexture3('webgl');
 });
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('ArrayTexture(3) webgl2', ()=> {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('ArrayTexture(3) webgl2', () => {
   arrayTexture3('webgl2');
 });
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('ArrayTexture(3) headlessgl', ()=> {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('ArrayTexture(3) headlessgl', () => {
   arrayTexture3('headlessgl');
 });
-(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(3) cpu', ()=> {
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(3) cpu', () => {
   arrayTexture3('cpu');
 });
 
 function arrayTexture4(mode) {
   const gpu = new GPU({ mode });
+
   function addOne(functionValue) {
     const declaredValue = functionValue[this.thread.x];
-    return declaredValue[0] + 1
-     + declaredValue[1] + 1
-     + declaredValue[2] + 1
-     + declaredValue[3] + 1;
+    return declaredValue[0] + 1 +
+      declaredValue[1] + 1 +
+      declaredValue[2] + 1 +
+      declaredValue[3] + 1;
   }
   gpu.addFunction(addOne);
   const texture1 = gpu.createKernel(function() {
-    return [1,2,3,4];
+    return [1, 2, 3, 4];
   }, {
     output: [1],
     precision: 'single',
@@ -433,36 +452,40 @@ function arrayTexture4(mode) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(4) auto', ()=> {
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(4) auto', () => {
   arrayTexture4();
 });
-(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(4) gpu', ()=> {
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(4) gpu', () => {
   arrayTexture4('gpu');
 });
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('ArrayTexture(4) webgl', ()=> {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('ArrayTexture(4) webgl', () => {
   arrayTexture4('webgl');
 });
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('ArrayTexture(4) webgl2', ()=> {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('ArrayTexture(4) webgl2', () => {
   arrayTexture4('webgl2');
 });
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('ArrayTexture(4) headlessgl', ()=> {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('ArrayTexture(4) headlessgl', () => {
   arrayTexture4('headlessgl');
 });
-(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(4) cpu', ()=> {
+(GPU.isSinglePrecisionSupported ? test : skip)('ArrayTexture(4) cpu', () => {
   arrayTexture4('cpu');
 });
 
 function testTortureTest(mode) {
   const gpu = new GPU({ mode });
+
   function addFloatArray(addFloatArrayArgument1, addFloatArrayArgument2) {
     return addFloatArrayArgument1 + addFloatArrayArgument2[this.thread.x];
   }
+
   function addArrayFloat(addArrayFloatArgument1, addArrayFloatArgument2) {
     return addArrayFloatArgument1[this.thread.x] + addArrayFloatArgument2;
   }
+
   function addArrayArray(addArrayArrayArgument1, addArrayArrayArgument2) {
     return addArrayArrayArgument1[this.thread.x] + addArrayArrayArgument2[this.thread.x];
   }
+
   function addFloatFloat(addFloatFloatArgument1, addFloatFloatArgument2) {
     return addFloatFloatArgument1 + addFloatFloatArgument2;
   }
@@ -477,9 +500,9 @@ function testTortureTest(mode) {
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
 
   try {
-    const kernel = gpu.createKernel(function (v1, v2, v3, v4, v5) {
+    const kernel = gpu.createKernel(function(v1, v2, v3, v4, v5) {
       return addFloatFloat(v4, addArrayFloat(v3, addFloatArray(addArrayArray(v1, v5), v2)));
-    }, {output: [1]});
+    }, { output: [1] });
 
     const result = kernel([1], texture, [3], 4, new Float32Array([5]));
     assert.equal(result[0], 1 + 2 + 3 + 4 + 5);
@@ -530,16 +553,18 @@ test('torture test cpu', () => {
 
 function testKernelMap(mode) {
   const gpu = new GPU({ mode });
+
   function calc1(v1, v2) {
     return v2[this.thread.x] - v1;
   }
+
   function calc2(v1, v2) {
     return v1 * v2;
   }
   const kernelMap = gpu.createKernelMap({
     calc1,
     calc2,
-  }, function (outputs, targets) {
+  }, function(outputs, targets) {
     const output = outputs[this.thread.x];
     return calc2(calc1(output, targets), output);
   }, { output: [1], pipeline: true });

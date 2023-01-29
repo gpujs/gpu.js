@@ -3,6 +3,7 @@ const { GPU } = require('../../src');
 const { greenCanvas } = require('../browser-test-utils');
 
 describe('features: constants canvas');
+
 function canvasConstantTest(mode) {
   const gpu = new GPU({ mode });
   const canvas = greenCanvas(mode, 1, 1);
@@ -10,8 +11,7 @@ function canvasConstantTest(mode) {
     function() {
       const pixel = this.constants.canvas[this.thread.y][this.thread.x];
       return pixel.g;
-    },
-    {
+    }, {
       constants: { canvas },
       output: [1, 1],
     }

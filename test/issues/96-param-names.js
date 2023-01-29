@@ -26,15 +26,15 @@ function getResult(mode) {
   }
 
   const kernels = gpu.createKernelMap({
-    multiplyResult: multiply
-  }, function (a, b) {
-    return multiply(b, a, this.thread.y, this.thread.x);
-  })
+      multiplyResult: multiply
+    }, function(a, b) {
+      return multiply(b, a, this.thread.y, this.thread.x);
+    })
     .setOutput([B.length, A.length]);
 
   const result = kernels(A, B).result;
-  assert.deepEqual(Array.from(result[0]), [2,2,2]);
-  assert.deepEqual(Array.from(result[1]), [2,2,2]);
+  assert.deepEqual(Array.from(result[0]), [2, 2, 2]);
+  assert.deepEqual(Array.from(result[1]), [2, 2, 2]);
   assert.deepEqual(result.length, 2);
   gpu.destroy();
   return result;

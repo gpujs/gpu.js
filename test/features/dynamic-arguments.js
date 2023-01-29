@@ -17,9 +17,9 @@ function testHTMLImage(done, mode) {
   function loaded() {
     const gpu = new GPU({ mode });
     const kernel = gpu.createKernel(function(image) {
-      const pixel = image[this.thread.y][this.thread.x];
-      return (pixel[0] + pixel[1] + pixel[2]) / 3;
-    })
+        const pixel = image[this.thread.y][this.thread.x];
+        return (pixel[0] + pixel[1] + pixel[2]) / 3;
+      })
       .setDynamicArguments(true)
       .setDynamicOutput(true)
       .setOutput([276, 183]);
@@ -61,76 +61,76 @@ function testHTMLImage(done, mode) {
 function testMemoryOptimizedNumberTexture(mode) {
   const gpu = new GPU({ mode });
   const matrix4X4 = [
-    [1,2,3,4],
-    [5,6,7,8],
-    [9,10,11,12],
-    [13,14,15,16],
+    [1, 2, 3, 4],
+    [5, 6, 7, 8],
+    [9, 10, 11, 12],
+    [13, 14, 15, 16],
   ];
   const texture4X4 = (
     gpu.createKernel(function(value) {
       return value[this.thread.y][this.thread.x];
     })
-      .setOutput([4, 4])
-      .setPrecision('single')
-      .setOptimizeFloatMemory(true)
-      .setPipeline(true)
+    .setOutput([4, 4])
+    .setPrecision('single')
+    .setOptimizeFloatMemory(true)
+    .setPipeline(true)
   )(matrix4X4);
 
   const matrix3X3 = [
-    [1,2,3],
-    [4,5,6],
-    [7,8,9]
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
   ];
   const texture3X3 = (
     gpu.createKernel(function(value) {
       return value[this.thread.y][this.thread.x];
     })
-      .setOutput([3, 3])
-      .setPrecision('single')
-      .setOptimizeFloatMemory(true)
-      .setPipeline(true)
+    .setOutput([3, 3])
+    .setPrecision('single')
+    .setOptimizeFloatMemory(true)
+    .setPipeline(true)
   )(matrix3X3);
 
   const matrix2X2 = [
-    [1,2],
-    [3,4]
+    [1, 2],
+    [3, 4]
   ];
   const texture2X2 = (
     gpu.createKernel(function(value) {
       return value[this.thread.y][this.thread.x];
     })
-      .setOutput([2, 2])
-      .setPrecision('single')
-      .setOptimizeFloatMemory(true)
-      .setPipeline(true)
+    .setOutput([2, 2])
+    .setPrecision('single')
+    .setOptimizeFloatMemory(true)
+    .setPipeline(true)
   )(matrix2X2);
 
   const kernel = gpu.createKernel(function(texture) {
-    return texture[this.thread.y][this.thread.x];
-  })
+      return texture[this.thread.y][this.thread.x];
+    })
     .setDynamicArguments(true)
     .setDynamicOutput(true)
     .setOptimizeFloatMemory(true)
-    .setOutput([4,4]);
+    .setOutput([4, 4]);
 
   assert.deepEqual(kernel(texture4X4), [
-    new Float32Array([1,2,3,4]),
-    new Float32Array([5,6,7,8]),
-    new Float32Array([9,10,11,12]),
-    new Float32Array([13,14,15,16]),
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+    new Float32Array([9, 10, 11, 12]),
+    new Float32Array([13, 14, 15, 16]),
   ]);
 
   kernel.setOutput([3, 3]);
   assert.deepEqual(kernel(texture3X3), [
-    new Float32Array([1,2,3]),
-    new Float32Array([4,5,6]),
-    new Float32Array([7,8,9]),
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
+    new Float32Array([7, 8, 9]),
   ]);
 
   kernel.setOutput([2, 2]);
   assert.deepEqual(kernel(texture2X2), [
-    new Float32Array([1,2]),
-    new Float32Array([3,4]),
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4]),
   ]);
 
   assert.ok(kernel.kernelArguments[0].constructor.name.match('DynamicMemoryOptimizedNumberTexture'));
@@ -161,72 +161,72 @@ function testMemoryOptimizedNumberTexture(mode) {
 function testNumberTexture(mode) {
   const gpu = new GPU({ mode });
   const matrix4X4 = [
-    [1,2,3,4],
-    [5,6,7,8],
-    [9,10,11,12],
-    [13,14,15,16],
+    [1, 2, 3, 4],
+    [5, 6, 7, 8],
+    [9, 10, 11, 12],
+    [13, 14, 15, 16],
   ];
   const texture4X4 = (
     gpu.createKernel(function(value) {
       return value[this.thread.y][this.thread.x];
     })
-      .setOutput([4, 4])
-      .setPrecision('single')
-      .setPipeline(true)
+    .setOutput([4, 4])
+    .setPrecision('single')
+    .setPipeline(true)
   )(matrix4X4);
 
   const matrix3X3 = [
-    [1,2,3],
-    [4,5,6],
-    [7,8,9]
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
   ];
   const texture3X3 = (
     gpu.createKernel(function(value) {
       return value[this.thread.y][this.thread.x];
     })
-      .setOutput([3, 3])
-      .setPrecision('single')
-      .setPipeline(true)
+    .setOutput([3, 3])
+    .setPrecision('single')
+    .setPipeline(true)
   )(matrix3X3);
 
   const matrix2X2 = [
-    [1,2],
-    [3,4]
+    [1, 2],
+    [3, 4]
   ];
   const texture2X2 = (
     gpu.createKernel(function(value) {
       return value[this.thread.y][this.thread.x];
     })
-      .setOutput([2, 2])
-      .setPrecision('single')
-      .setPipeline(true)
+    .setOutput([2, 2])
+    .setPrecision('single')
+    .setPipeline(true)
   )(matrix2X2);
 
   const kernel = gpu.createKernel(function(texture) {
-    return texture[this.thread.y][this.thread.x];
-  })
+      return texture[this.thread.y][this.thread.x];
+    })
     .setDynamicArguments(true)
     .setDynamicOutput(true)
-    .setOutput([4,4]);
+    .setOutput([4, 4]);
 
   assert.deepEqual(kernel(texture4X4), [
-    new Float32Array([1,2,3,4]),
-    new Float32Array([5,6,7,8]),
-    new Float32Array([9,10,11,12]),
-    new Float32Array([13,14,15,16]),
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+    new Float32Array([9, 10, 11, 12]),
+    new Float32Array([13, 14, 15, 16]),
   ]);
 
   kernel.setOutput([3, 3]);
   assert.deepEqual(kernel(texture3X3), [
-    new Float32Array([1,2,3]),
-    new Float32Array([4,5,6]),
-    new Float32Array([7,8,9]),
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
+    new Float32Array([7, 8, 9]),
   ]);
 
   kernel.setOutput([2, 2]);
   assert.deepEqual(kernel(texture2X2), [
-    new Float32Array([1,2]),
-    new Float32Array([3,4]),
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4]),
   ]);
 
   assert.ok(kernel.kernelArguments[0].constructor.name.match('NumberTexture'));
@@ -257,74 +257,74 @@ function testNumberTexture(mode) {
 function testMixedNumberTexture(mode) {
   const gpu = new GPU({ mode });
   const matrix4X4 = [
-    [1,2,3,4],
-    [5,6,7,8],
-    [9,10,11,12],
-    [13,14,15,16],
+    [1, 2, 3, 4],
+    [5, 6, 7, 8],
+    [9, 10, 11, 12],
+    [13, 14, 15, 16],
   ];
   const texture4X4 = (
     gpu.createKernel(function(value) {
       return value[this.thread.y][this.thread.x];
     })
-      .setOutput([4, 4])
-      .setPrecision('single')
-      .setOptimizeFloatMemory(true)
-      .setPipeline(true)
+    .setOutput([4, 4])
+    .setPrecision('single')
+    .setOptimizeFloatMemory(true)
+    .setPipeline(true)
   )(matrix4X4);
 
   const matrix3X3 = [
-    [1,2,3],
-    [4,5,6],
-    [7,8,9]
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
   ];
   const texture3X3 = (
     gpu.createKernel(function(value) {
       return value[this.thread.y][this.thread.x];
     })
-      .setOutput([3, 3])
-      .setPrecision('single')
-      .setOptimizeFloatMemory(true)
-      .setPipeline(true)
+    .setOutput([3, 3])
+    .setPrecision('single')
+    .setOptimizeFloatMemory(true)
+    .setPipeline(true)
   )(matrix3X3);
 
   const matrix2X2 = [
-    [1,2],
-    [3,4]
+    [1, 2],
+    [3, 4]
   ];
   const texture2X2 = (
     gpu.createKernel(function(value) {
       return value[this.thread.y][this.thread.x];
     })
-      .setOutput([2, 2])
-      .setPrecision('single')
-      .setPipeline(true)
+    .setOutput([2, 2])
+    .setPrecision('single')
+    .setPipeline(true)
   )(matrix2X2);
 
   const kernel = gpu.createKernel(function(texture) {
-    return texture[this.thread.y][this.thread.x];
-  })
+      return texture[this.thread.y][this.thread.x];
+    })
     .setDynamicArguments(true)
     .setDynamicOutput(true)
-    .setOutput([4,4]);
+    .setOutput([4, 4]);
 
   assert.deepEqual(kernel(texture4X4), [
-    new Float32Array([1,2,3,4]),
-    new Float32Array([5,6,7,8]),
-    new Float32Array([9,10,11,12]),
-    new Float32Array([13,14,15,16]),
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+    new Float32Array([9, 10, 11, 12]),
+    new Float32Array([13, 14, 15, 16]),
   ]);
 
   kernel.setOutput([3, 3]);
   assert.deepEqual(kernel(texture3X3), [
-    new Float32Array([1,2,3]),
-    new Float32Array([4,5,6]),
-    new Float32Array([7,8,9]),
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
+    new Float32Array([7, 8, 9]),
   ]);
 
   kernel.setOutput([2, 2]);
   assert.deepEqual(kernel(texture2X2), [
-    new Float32Array([1,2]),
-    new Float32Array([3,4]),
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4]),
   ]);
 
   assert.ok(kernel.kernelArguments[0].constructor.name.match('NumberTexture'));
@@ -362,16 +362,16 @@ function testSingleArray1D2(mode) {
     dynamicOutput: true
   });
   const expected1 = [
-    new Float32Array([1,2]),
-    new Float32Array([3,4]),
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4]),
   ];
   kernel.setOutput([expected1.length]);
   assert.deepEqual(kernel(expected1), expected1);
   const expected2 = [
-    new Float32Array([1,2]),
-    new Float32Array([3,4]),
-    new Float32Array([5,6]),
-    new Float32Array([7,8]),
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4]),
+    new Float32Array([5, 6]),
+    new Float32Array([7, 8]),
   ];
   kernel.setOutput([expected2.length]);
   assert.deepEqual(kernel(expected2), expected2);
@@ -412,16 +412,16 @@ function testSingleArray1D3(mode) {
     dynamicOutput: true
   });
   const expected1 = [
-    new Float32Array([1,2,3]),
-    new Float32Array([4,5,6]),
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
   ];
   kernel.setOutput([expected1.length]);
   assert.deepEqual(kernel(expected1), expected1);
   const expected2 = [
-    new Float32Array([1,2,3]),
-    new Float32Array([4,5,6]),
-    new Float32Array([7,8,9]),
-    new Float32Array([10,11,12]),
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
+    new Float32Array([7, 8, 9]),
+    new Float32Array([10, 11, 12]),
   ];
   kernel.setOutput([expected2.length]);
   assert.deepEqual(kernel(expected2), expected2);
@@ -462,16 +462,16 @@ function testSingleArray1D4(mode) {
     dynamicOutput: true
   });
   const expected1 = [
-    new Float32Array([1,2,3,4]),
-    new Float32Array([5,6,7,8]),
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
   ];
   kernel.setOutput([expected1.length]);
   assert.deepEqual(kernel(expected1), expected1);
   const expected2 = [
-    new Float32Array([1,2,3,4]),
-    new Float32Array([5,6,7,8]),
-    new Float32Array([9,10,11,12]),
-    new Float32Array([13,14,15,16]),
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+    new Float32Array([9, 10, 11, 12]),
+    new Float32Array([13, 14, 15, 16]),
   ];
   kernel.setOutput([expected2.length]);
   assert.deepEqual(kernel(expected2), expected2);
@@ -513,26 +513,28 @@ function testSingleArray2D2(mode) {
   });
   const expected1 = [
     [
-      new Float32Array([1,2]),
-      new Float32Array([3,4]),
-    ],[
-      new Float32Array([5,6]),
-      new Float32Array([7,8]),
+      new Float32Array([1, 2]),
+      new Float32Array([3, 4]),
+    ],
+    [
+      new Float32Array([5, 6]),
+      new Float32Array([7, 8]),
     ]
   ];
   kernel.setOutput([expected1[0].length, expected1.length]);
   assert.deepEqual(kernel(expected1), expected1);
   const expected2 = [
     [
-      new Float32Array([1,2]),
-      new Float32Array([3,4]),
-      new Float32Array([5,6]),
-      new Float32Array([7,8]),
-    ],[
-      new Float32Array([9,10]),
-      new Float32Array([11,12]),
-      new Float32Array([13,14]),
-      new Float32Array([15,16]),
+      new Float32Array([1, 2]),
+      new Float32Array([3, 4]),
+      new Float32Array([5, 6]),
+      new Float32Array([7, 8]),
+    ],
+    [
+      new Float32Array([9, 10]),
+      new Float32Array([11, 12]),
+      new Float32Array([13, 14]),
+      new Float32Array([15, 16]),
     ]
   ];
   kernel.setOutput([expected2[0].length, expected2.length]);
@@ -575,26 +577,28 @@ function testSingleArray2D3(mode) {
   });
   const expected1 = [
     [
-      new Float32Array([1,2,3]),
-      new Float32Array([4,5,6]),
-    ],[
-      new Float32Array([7,8,9]),
-      new Float32Array([10,11,12]),
+      new Float32Array([1, 2, 3]),
+      new Float32Array([4, 5, 6]),
+    ],
+    [
+      new Float32Array([7, 8, 9]),
+      new Float32Array([10, 11, 12]),
     ]
   ];
   kernel.setOutput([expected1[0].length, expected1.length]);
   assert.deepEqual(kernel(expected1), expected1);
   const expected2 = [
     [
-      new Float32Array([1,2,3]),
-      new Float32Array([4,5,6]),
-      new Float32Array([7,8,9]),
-      new Float32Array([10,11,12]),
-    ],[
-      new Float32Array([13,14,15]),
-      new Float32Array([16,17,18]),
-      new Float32Array([19,20,21]),
-      new Float32Array([22,23,24]),
+      new Float32Array([1, 2, 3]),
+      new Float32Array([4, 5, 6]),
+      new Float32Array([7, 8, 9]),
+      new Float32Array([10, 11, 12]),
+    ],
+    [
+      new Float32Array([13, 14, 15]),
+      new Float32Array([16, 17, 18]),
+      new Float32Array([19, 20, 21]),
+      new Float32Array([22, 23, 24]),
     ]
   ];
   kernel.setOutput([expected2[0].length, expected2.length]);
@@ -637,26 +641,28 @@ function testSingleArray2D4(mode) {
   });
   const expected1 = [
     [
-      new Float32Array([1,2,3,4]),
-      new Float32Array([5,6,7,8]),
-    ],[
-      new Float32Array([9,10,11,12]),
-      new Float32Array([13,14,15,16]),
+      new Float32Array([1, 2, 3, 4]),
+      new Float32Array([5, 6, 7, 8]),
+    ],
+    [
+      new Float32Array([9, 10, 11, 12]),
+      new Float32Array([13, 14, 15, 16]),
     ]
   ];
   kernel.setOutput([expected1[0].length, expected1.length]);
   assert.deepEqual(kernel(expected1), expected1);
   const expected2 = [
     [
-      new Float32Array([1,2,3,4]),
-      new Float32Array([5,6,7,8]),
-      new Float32Array([9,10,11,12]),
-      new Float32Array([13,14,15,16]),
-    ],[
-      new Float32Array([17,18,19,20]),
-      new Float32Array([21,22,23,24]),
-      new Float32Array([25,26,27,28]),
-      new Float32Array([29,30,31,32]),
+      new Float32Array([1, 2, 3, 4]),
+      new Float32Array([5, 6, 7, 8]),
+      new Float32Array([9, 10, 11, 12]),
+      new Float32Array([13, 14, 15, 16]),
+    ],
+    [
+      new Float32Array([17, 18, 19, 20]),
+      new Float32Array([21, 22, 23, 24]),
+      new Float32Array([25, 26, 27, 28]),
+      new Float32Array([29, 30, 31, 32]),
     ]
   ];
   kernel.setOutput([expected2[0].length, expected2.length]);
@@ -700,19 +706,22 @@ function testSingleArray3D2(mode) {
   const expected1 = [
     [
       [
-        new Float32Array([1,2]),
-        new Float32Array([3,4]),
-      ],[
-        new Float32Array([5,6]),
-        new Float32Array([7,8]),
-      ]
-    ],[
+        new Float32Array([1, 2]),
+        new Float32Array([3, 4]),
+      ],
       [
-        new Float32Array([9,10]),
-        new Float32Array([11,12]),
-      ],[
-        new Float32Array([13,14]),
-        new Float32Array([15,16]),
+        new Float32Array([5, 6]),
+        new Float32Array([7, 8]),
+      ]
+    ],
+    [
+      [
+        new Float32Array([9, 10]),
+        new Float32Array([11, 12]),
+      ],
+      [
+        new Float32Array([13, 14]),
+        new Float32Array([15, 16]),
       ]
     ]
   ];
@@ -721,27 +730,30 @@ function testSingleArray3D2(mode) {
   const expected2 = [
     [
       [
-        new Float32Array([1,2]),
-        new Float32Array([3,4]),
-        new Float32Array([5,6]),
-        new Float32Array([7,8]),
-      ],[
-        new Float32Array([9,10]),
-        new Float32Array([11,12]),
-        new Float32Array([13,14]),
-        new Float32Array([15,16]),
-      ]
-    ],[
+        new Float32Array([1, 2]),
+        new Float32Array([3, 4]),
+        new Float32Array([5, 6]),
+        new Float32Array([7, 8]),
+      ],
       [
-        new Float32Array([17,18]),
-        new Float32Array([19,20]),
-        new Float32Array([21,22]),
-        new Float32Array([23,24]),
-      ],[
-        new Float32Array([25,26]),
-        new Float32Array([27,28]),
-        new Float32Array([29,30]),
-        new Float32Array([31,32]),
+        new Float32Array([9, 10]),
+        new Float32Array([11, 12]),
+        new Float32Array([13, 14]),
+        new Float32Array([15, 16]),
+      ]
+    ],
+    [
+      [
+        new Float32Array([17, 18]),
+        new Float32Array([19, 20]),
+        new Float32Array([21, 22]),
+        new Float32Array([23, 24]),
+      ],
+      [
+        new Float32Array([25, 26]),
+        new Float32Array([27, 28]),
+        new Float32Array([29, 30]),
+        new Float32Array([31, 32]),
       ]
     ]
   ];
@@ -786,19 +798,22 @@ function testSingleArray3D3(mode) {
   const expected1 = [
     [
       [
-        new Float32Array([1,2,3]),
-        new Float32Array([4,5,6]),
-      ],[
-        new Float32Array([7,8,9]),
-        new Float32Array([10,11,12]),
-      ]
-    ],[
+        new Float32Array([1, 2, 3]),
+        new Float32Array([4, 5, 6]),
+      ],
       [
-        new Float32Array([13,14,15]),
-        new Float32Array([16,17,18]),
-      ],[
-        new Float32Array([19,20,21]),
-        new Float32Array([22,23,24]),
+        new Float32Array([7, 8, 9]),
+        new Float32Array([10, 11, 12]),
+      ]
+    ],
+    [
+      [
+        new Float32Array([13, 14, 15]),
+        new Float32Array([16, 17, 18]),
+      ],
+      [
+        new Float32Array([19, 20, 21]),
+        new Float32Array([22, 23, 24]),
       ]
     ]
   ];
@@ -807,27 +822,30 @@ function testSingleArray3D3(mode) {
   const expected2 = [
     [
       [
-        new Float32Array([1,2,3]),
-        new Float32Array([4,5,6]),
-        new Float32Array([7,8,9]),
-        new Float32Array([10,11,12]),
-      ],[
-        new Float32Array([13,14,15]),
-        new Float32Array([16,17,18]),
-        new Float32Array([19,20,21]),
-        new Float32Array([22,23,24]),
-      ]
-    ],[
+        new Float32Array([1, 2, 3]),
+        new Float32Array([4, 5, 6]),
+        new Float32Array([7, 8, 9]),
+        new Float32Array([10, 11, 12]),
+      ],
       [
-        new Float32Array([25,26,27]),
-        new Float32Array([28,29,30]),
-        new Float32Array([31,32,33]),
-        new Float32Array([34,35,36]),
-      ],[
-        new Float32Array([37,38,39]),
-        new Float32Array([40,41,42]),
-        new Float32Array([43,44,45]),
-        new Float32Array([46,47,48]),
+        new Float32Array([13, 14, 15]),
+        new Float32Array([16, 17, 18]),
+        new Float32Array([19, 20, 21]),
+        new Float32Array([22, 23, 24]),
+      ]
+    ],
+    [
+      [
+        new Float32Array([25, 26, 27]),
+        new Float32Array([28, 29, 30]),
+        new Float32Array([31, 32, 33]),
+        new Float32Array([34, 35, 36]),
+      ],
+      [
+        new Float32Array([37, 38, 39]),
+        new Float32Array([40, 41, 42]),
+        new Float32Array([43, 44, 45]),
+        new Float32Array([46, 47, 48]),
       ]
     ]
   ];
@@ -872,19 +890,22 @@ function testSingleArray3D4(mode) {
   const expected1 = [
     [
       [
-        new Float32Array([1,2,3,4]),
-        new Float32Array([5,6,7,8]),
-      ],[
-        new Float32Array([9,10,11,12]),
-        new Float32Array([13,14,15,16]),
-      ]
-    ],[
+        new Float32Array([1, 2, 3, 4]),
+        new Float32Array([5, 6, 7, 8]),
+      ],
       [
-        new Float32Array([17,18,19,20]),
-        new Float32Array([21,22,23,24]),
-      ],[
-        new Float32Array([25,26,27,28]),
-        new Float32Array([29,30,31,32]),
+        new Float32Array([9, 10, 11, 12]),
+        new Float32Array([13, 14, 15, 16]),
+      ]
+    ],
+    [
+      [
+        new Float32Array([17, 18, 19, 20]),
+        new Float32Array([21, 22, 23, 24]),
+      ],
+      [
+        new Float32Array([25, 26, 27, 28]),
+        new Float32Array([29, 30, 31, 32]),
       ]
     ]
   ];
@@ -893,27 +914,30 @@ function testSingleArray3D4(mode) {
   const expected2 = [
     [
       [
-        new Float32Array([1,2,3,4]),
-        new Float32Array([5,6,7,8]),
-        new Float32Array([9,10,11,12]),
-        new Float32Array([13,14,15,16]),
-      ],[
-        new Float32Array([17,18,19,20]),
-        new Float32Array([21,22,23,24]),
-        new Float32Array([25,26,27,28]),
-        new Float32Array([29,30,31,32]),
-      ]
-    ],[
+        new Float32Array([1, 2, 3, 4]),
+        new Float32Array([5, 6, 7, 8]),
+        new Float32Array([9, 10, 11, 12]),
+        new Float32Array([13, 14, 15, 16]),
+      ],
       [
-        new Float32Array([33,34,35,36]),
-        new Float32Array([37,38,39,40]),
-        new Float32Array([41,42,43,44]),
-        new Float32Array([45,46,47,48]),
-      ],[
-        new Float32Array([49,50,51,52]),
-        new Float32Array([53,54,56,57]),
-        new Float32Array([58,59,60,61]),
-        new Float32Array([62,63,64,65]),
+        new Float32Array([17, 18, 19, 20]),
+        new Float32Array([21, 22, 23, 24]),
+        new Float32Array([25, 26, 27, 28]),
+        new Float32Array([29, 30, 31, 32]),
+      ]
+    ],
+    [
+      [
+        new Float32Array([33, 34, 35, 36]),
+        new Float32Array([37, 38, 39, 40]),
+        new Float32Array([41, 42, 43, 44]),
+        new Float32Array([45, 46, 47, 48]),
+      ],
+      [
+        new Float32Array([49, 50, 51, 52]),
+        new Float32Array([53, 54, 56, 57]),
+        new Float32Array([58, 59, 60, 61]),
+        new Float32Array([62, 63, 64, 65]),
       ]
     ]
   ];
@@ -949,20 +973,20 @@ test('Single Array3D4 cpu', () => {
 function testUnsignedPrecisionArray(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(input) {
-    return input[this.thread.x];
-  })
+      return input[this.thread.x];
+    })
     .setPrecision('unsigned')
     .setDynamicArguments(true)
     .setDynamicOutput(true)
     .setOutput([5]);
 
-  assert.deepEqual(kernel([1,2,3,4,5]), new Float32Array([1,2,3,4,5]));
+  assert.deepEqual(kernel([1, 2, 3, 4, 5]), new Float32Array([1, 2, 3, 4, 5]));
   kernel.setOutput([4]);
-  assert.deepEqual(kernel([1,2,3,4]), new Float32Array([1,2,3,4]));
+  assert.deepEqual(kernel([1, 2, 3, 4]), new Float32Array([1, 2, 3, 4]));
   kernel.setOutput([3]);
-  assert.deepEqual(kernel([1,2,3]), new Float32Array([1,2,3]));
+  assert.deepEqual(kernel([1, 2, 3]), new Float32Array([1, 2, 3]));
   kernel.setOutput([2]);
-  assert.deepEqual(kernel([1,2]), new Float32Array([1,2]));
+  assert.deepEqual(kernel([1, 2]), new Float32Array([1, 2]));
   gpu.destroy();
 }
 
@@ -993,20 +1017,20 @@ test('unsigned precision Array cpu', () => {
 function testSinglePrecisionArray(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(input) {
-    return input[this.thread.x];
-  })
+      return input[this.thread.x];
+    })
     .setPrecision('single')
     .setDynamicArguments(true)
     .setDynamicOutput(true)
     .setOutput([5]);
 
-  assert.deepEqual(kernel([1,2,3,4,5]), new Float32Array([1,2,3,4,5]));
+  assert.deepEqual(kernel([1, 2, 3, 4, 5]), new Float32Array([1, 2, 3, 4, 5]));
   kernel.setOutput([4]);
-  assert.deepEqual(kernel([1,2,3,4]), new Float32Array([1,2,3,4]));
+  assert.deepEqual(kernel([1, 2, 3, 4]), new Float32Array([1, 2, 3, 4]));
   kernel.setOutput([3]);
-  assert.deepEqual(kernel([1,2,3]), new Float32Array([1,2,3]));
+  assert.deepEqual(kernel([1, 2, 3]), new Float32Array([1, 2, 3]));
   kernel.setOutput([2]);
-  assert.deepEqual(kernel([1,2]), new Float32Array([1,2]));
+  assert.deepEqual(kernel([1, 2]), new Float32Array([1, 2]));
   gpu.destroy();
 }
 
@@ -1037,33 +1061,33 @@ test('single precision Array cpu', () => {
 function testUnsignedPrecisionMatrix(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(input) {
-    return input[this.thread.y][this.thread.x];
-  })
+      return input[this.thread.y][this.thread.x];
+    })
     .setPrecision('unsigned')
     .setDynamicArguments(true)
     .setDynamicOutput(true)
-    .setOutput([4,4]);
+    .setOutput([4, 4]);
 
   let matrix = [
-    [1,2,3,4],
-    [5,6,7,8],
-    [9,10,11,12],
-    [13,14,15,16]
+    [1, 2, 3, 4],
+    [5, 6, 7, 8],
+    [9, 10, 11, 12],
+    [13, 14, 15, 16]
   ];
   assert.deepEqual(kernel(matrix), matrix.map(row => new Float32Array(row)));
 
-  kernel.setOutput([3,3]);
+  kernel.setOutput([3, 3]);
   matrix = [
-    [1,2,3],
-    [4,5,6],
-    [7,8,9]
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
   ];
   assert.deepEqual(kernel(matrix), matrix.map(row => new Float32Array(row)));
 
-  kernel.setOutput([2,2]);
+  kernel.setOutput([2, 2]);
   matrix = [
-    [1,2],
-    [3,4]
+    [1, 2],
+    [3, 4]
   ];
   assert.deepEqual(kernel(matrix), matrix.map(row => new Float32Array(row)));
   gpu.destroy();
@@ -1096,32 +1120,32 @@ test('unsigned precision Matrix cpu', () => {
 function testSinglePrecisionMatrix(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(input) {
-    return input[this.thread.y][this.thread.x];
-  })
+      return input[this.thread.y][this.thread.x];
+    })
     .setDynamicArguments(true)
     .setDynamicOutput(true)
-    .setOutput([4,4]);
+    .setOutput([4, 4]);
 
   let matrix = [
-    [1,2,3,4],
-    [5,6,7,8],
-    [9,10,11,12],
-    [13,14,15,16]
+    [1, 2, 3, 4],
+    [5, 6, 7, 8],
+    [9, 10, 11, 12],
+    [13, 14, 15, 16]
   ];
   assert.deepEqual(kernel(matrix), matrix.map(row => new Float32Array(row)));
 
-  kernel.setOutput([3,3]);
+  kernel.setOutput([3, 3]);
   matrix = [
-    [1,2,3],
-    [4,5,6],
-    [7,8,9]
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
   ];
   assert.deepEqual(kernel(matrix), matrix.map(row => new Float32Array(row)));
 
-  kernel.setOutput([2,2]);
+  kernel.setOutput([2, 2]);
   matrix = [
-    [1,2],
-    [3,4]
+    [1, 2],
+    [3, 4]
   ];
   assert.deepEqual(kernel(matrix), matrix.map(row => new Float32Array(row)));
   gpu.destroy();
@@ -1154,46 +1178,46 @@ test('single precision Matrix cpu', () => {
 function testUnsignedPrecisionInputMatrix(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(input) {
-    return input[this.thread.y][this.thread.x];
-  })
+      return input[this.thread.y][this.thread.x];
+    })
     .setPrecision('unsigned')
     .setDynamicArguments(true)
     .setDynamicOutput(true)
-    .setOutput([4,4]);
+    .setOutput([4, 4]);
 
   let matrix = input([
-    1,2,3,4,
-    5,6,7,8,
-    9,10,11,12,
-    13,14,15,16
+    1, 2, 3, 4,
+    5, 6, 7, 8,
+    9, 10, 11, 12,
+    13, 14, 15, 16
   ], [4, 4]);
   assert.deepEqual(kernel(matrix), [
-    new Float32Array([1,2,3,4]),
-    new Float32Array([5,6,7,8]),
-    new Float32Array([9,10,11,12]),
-    new Float32Array([13,14,15,16]),
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+    new Float32Array([9, 10, 11, 12]),
+    new Float32Array([13, 14, 15, 16]),
   ]);
 
-  kernel.setOutput([3,3]);
+  kernel.setOutput([3, 3]);
   matrix = input([
-    1,2,3,
-    4,5,6,
-    7,8,9
-  ], [3,3]);
+    1, 2, 3,
+    4, 5, 6,
+    7, 8, 9
+  ], [3, 3]);
   assert.deepEqual(kernel(matrix), [
-    new Float32Array([1,2,3]),
-    new Float32Array([4,5,6]),
-    new Float32Array([7,8,9])
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
+    new Float32Array([7, 8, 9])
   ]);
 
-  kernel.setOutput([2,2]);
+  kernel.setOutput([2, 2]);
   matrix = input([
-    1,2,
-    3,4
-  ], [2,2]);
+    1, 2,
+    3, 4
+  ], [2, 2]);
   assert.deepEqual(kernel(matrix), [
-    new Float32Array([1,2]),
-    new Float32Array([3,4])
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4])
   ]);
   gpu.destroy();
 }
@@ -1225,45 +1249,45 @@ test('unsigned precision Input Matrix cpu', () => {
 function testSinglePrecisionInputMatrix(mode) {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function(input) {
-    return input[this.thread.y][this.thread.x];
-  })
+      return input[this.thread.y][this.thread.x];
+    })
     .setDynamicArguments(true)
     .setDynamicOutput(true)
-    .setOutput([4,4]);
+    .setOutput([4, 4]);
 
   let matrix = input([
-    1,2,3,4,
-    5,6,7,8,
-    9,10,11,12,
-    13,14,15,16
+    1, 2, 3, 4,
+    5, 6, 7, 8,
+    9, 10, 11, 12,
+    13, 14, 15, 16
   ], [4, 4]);
   assert.deepEqual(kernel(matrix), [
-    new Float32Array([1,2,3,4]),
-    new Float32Array([5,6,7,8]),
-    new Float32Array([9,10,11,12]),
-    new Float32Array([13,14,15,16])
+    new Float32Array([1, 2, 3, 4]),
+    new Float32Array([5, 6, 7, 8]),
+    new Float32Array([9, 10, 11, 12]),
+    new Float32Array([13, 14, 15, 16])
   ]);
 
-  kernel.setOutput([3,3]);
+  kernel.setOutput([3, 3]);
   matrix = input([
-    1,2,3,
-    4,5,6,
-    7,8,9
+    1, 2, 3,
+    4, 5, 6,
+    7, 8, 9
   ], [3, 3]);
   assert.deepEqual(kernel(matrix), [
-    new Float32Array([1,2,3]),
-    new Float32Array([4,5,6]),
-    new Float32Array([7,8,9])
+    new Float32Array([1, 2, 3]),
+    new Float32Array([4, 5, 6]),
+    new Float32Array([7, 8, 9])
   ]);
 
-  kernel.setOutput([2,2]);
+  kernel.setOutput([2, 2]);
   matrix = input([
-    1,2,
-    3,4
-  ], [2,2]);
+    1, 2,
+    3, 4
+  ], [2, 2]);
   assert.deepEqual(kernel(matrix), [
-    new Float32Array([1,2]),
-    new Float32Array([3,4])
+    new Float32Array([1, 2]),
+    new Float32Array([3, 4])
   ]);
   gpu.destroy();
 }

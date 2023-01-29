@@ -11,7 +11,7 @@ function promiseApiFunctionReturn(mode, done) {
   };
 
   const settings = {
-    output : [1]
+    output: [1]
   };
 
   // Setup kernel
@@ -21,7 +21,7 @@ function promiseApiFunctionReturn(mode, done) {
   assert.ok(promiseObj !== null, 'Promise object generated test');
   promiseObj
     .then((res) => {
-      assert.equal(res[0], 42.0 );
+      assert.equal(res[0], 42.0);
       gpu.destroy();
       done();
     })

@@ -67,6 +67,7 @@ test('on cpu', () => {
 
 function testSubKernelsLegacyEncoderOff(mode) {
   const gpu = new GPU({ mode });
+
   function addOne(value) {
     return value + 1;
   }
@@ -103,6 +104,7 @@ test('subKernels off cpu', () => {
 
 function testSubKernelsLegacyEncoderOn(mode) {
   const gpu = new GPU({ mode });
+
   function addOne(value) {
     return value + 1;
   }

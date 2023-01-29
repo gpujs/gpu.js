@@ -29,8 +29,8 @@ const internalKernels = {
  * @param {import('./backend/headless-gl/kernel').HeadlessGLKernel} HeadlessGLKernel 
  */
 export function setupNode(HeadlessGLKernel) {
-    kernelOrder.unshift(HeadlessGLKernel)
-    internalKernels.headlessgl = HeadlessGLKernel
+  kernelOrder.unshift(HeadlessGLKernel)
+  internalKernels.headlessgl = HeadlessGLKernel
 }
 
 let validate = true;

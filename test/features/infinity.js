@@ -2,11 +2,12 @@ const { assert, skip, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
 
 describe('infinity');
+
 function inputWithoutFloat(checks, mode) {
   const gpu = new GPU({ mode });
   checks(gpu.createKernel(function() {
-    return Infinity;
-  }, { precision: 'unsigned' })
+      return Infinity;
+    }, { precision: 'unsigned' })
     .setOutput([1])());
   gpu.destroy();
 }
@@ -39,8 +40,8 @@ test("Infinity without float gpu", () => {
 function inputWithFloat(checks, mode) {
   const gpu = new GPU({ mode });
   checks(gpu.createKernel(function() {
-    return Infinity;
-  }, { precision: 'single' })
+      return Infinity;
+    }, { precision: 'single' })
     .setOutput([1])());
   gpu.destroy();
 }
@@ -57,14 +58,14 @@ function inputWithFloat(checks, mode) {
   inputWithFloat((v) => assert.deepEqual(v[0], 3.4028234663852886e+38), 'gpu');
 });
 
-(GPU.isSinglePrecisionSupported  && GPU.isWebGLSupported ? test : skip)("Infinity with float webgl", () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)("Infinity with float webgl", () => {
   inputWithFloat((v) => assert.deepEqual(v[0], 3.4028234663852886e+38), 'webgl');
 });
 
-(GPU.isSinglePrecisionSupported  && GPU.isWebGL2Supported ? test : skip)("Infinity with float webgl2", () => {
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)("Infinity with float webgl2", () => {
   inputWithFloat((v) => assert.deepEqual(v[0], 3.4028234663852886e+38), 'webgl2');
 });
 
-(GPU.isSinglePrecisionSupported  && GPU.isHeadlessGLSupported ? test : skip)("Infinity with float headlessgl", () => {
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)("Infinity with float headlessgl", () => {
   inputWithFloat((v) => assert.deepEqual(v[0], 3.4028234663852886e+38), 'headlessgl');
 });

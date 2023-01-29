@@ -395,10 +395,10 @@ export class GLKernel extends Kernel {
               this.TextureConstructor = GLTextureUnsigned;
               return null;
             }
-            case 'Array(2)':
-            case 'Array(3)':
-            case 'Array(4)':
-              return this.requestFallback(args);
+          case 'Array(2)':
+          case 'Array(3)':
+          case 'Array(4)':
+            return this.requestFallback(args);
         }
       } else {
         if (this.subKernels !== null) {
@@ -423,10 +423,10 @@ export class GLKernel extends Kernel {
               this.formatValues = utils.erectPackedFloat;
               return null;
             }
-            case 'Array(2)':
-            case 'Array(3)':
-            case 'Array(4)':
-              return this.requestFallback(args);
+          case 'Array(2)':
+          case 'Array(3)':
+          case 'Array(4)':
+            return this.requestFallback(args);
         }
       }
     } else if (this.precision === 'single') {
