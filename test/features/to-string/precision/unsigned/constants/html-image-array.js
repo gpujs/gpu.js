@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU, CPUKernel } = require('../../../../../../src');
+const { GPU, CPUKernel } = require('../../../../../..');
 
 describe('feature: to-string unsigned precision constants HTMLImageArray');
 

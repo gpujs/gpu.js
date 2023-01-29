@@ -1,10 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const {
-  GPU,
-  WebGLKernel,
-  WebGL2Kernel,
-  HeadlessGLKernel,
-} = require('../../src');
+const { GPU, WebGLKernel, WebGL2Kernel, HeadlessGLKernel } = require('../..');
 
 describe('internal: context inheritance');
 

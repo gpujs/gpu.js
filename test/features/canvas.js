@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 const { greenCanvas } = require('../browser-test-utils');
 
 describe('features: canvas argument');

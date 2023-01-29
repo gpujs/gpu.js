@@ -1,5 +1,5 @@
 const { assert, test, module: describe, only } = require('qunit');
-const { WebGLFunctionNode } = require(process.cwd() + '/src');
+const { WebGLFunctionNode } = require('../../../../..');
 
 describe('WebGLFunctionNode.getVariableSignature()');
 

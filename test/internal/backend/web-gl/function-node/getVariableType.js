@@ -1,5 +1,5 @@
 const { assert, test, module: describe, only } = require('qunit');
-const { WebGLFunctionNode, GLKernel } = require(process.cwd() + '/src');
+const { WebGLFunctionNode, GLKernel } = require('../../../../..');
 
 describe('WebGLFunctionNode.getVariableType()');
 

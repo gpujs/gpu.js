@@ -1,6 +1,6 @@
 const { assert, test, module: describe, only, skip } = require('qunit');
 const sinon = require('sinon');
-const { GLKernel, GPU } = require(process.cwd() + '/src');
+const { GLKernel, GPU } = require('../../..');
 
 describe('GLKernel');
 

@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU, WebGLFunctionNode } = require('../../src');
+const { GPU, WebGLFunctionNode } = require('../..');
 
 describe('issue #556 - minify for loop');
 

@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU, input } = require('../../../../../../src');
+const { GPU, input } = require('../../../../../..');
 
 describe('feature: to-string single precision arguments Input');
 

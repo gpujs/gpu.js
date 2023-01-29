@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU, utils } = require('../../src');
+const { GPU, utils } = require('../..');
 
 describe('feature: optimizeFloatMemory');
 

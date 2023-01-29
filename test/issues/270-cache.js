@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { WebGLKernel } = require('../../src');
+const { WebGLKernel } = require('../..');
 
 describe('issue # 270');
 

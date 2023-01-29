@@ -6,7 +6,7 @@ const {
   WebGL2Kernel,
   HeadlessGLKernel,
   Kernel,
-} = require('../../src');
+} = require('../..');
 
 describe('internal: kernel');
 

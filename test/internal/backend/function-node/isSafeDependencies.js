@@ -1,5 +1,5 @@
 const { assert, test, module: describe, only } = require('qunit');
-const { FunctionNode } = require(process.cwd() + '/src');
+const { FunctionNode } = require('../../../..');
 
 describe('FunctionNode.isSafeDependencies()');
 

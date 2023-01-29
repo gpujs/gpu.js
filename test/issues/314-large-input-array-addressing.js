@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU, WebGLKernel, HeadlessGLKernel } = require('../../src');
+const { GPU, WebGLKernel, HeadlessGLKernel } = require('../..');
 
 describe('issue #314');
 

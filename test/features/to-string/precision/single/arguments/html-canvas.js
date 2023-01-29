@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../../../../../src');
+const { GPU } = require('../../../../../..');
 const { greenCanvas } = require('../../../../../browser-test-utils');
 
 describe('feature: to-string single precision arguments HTMLCanvas');

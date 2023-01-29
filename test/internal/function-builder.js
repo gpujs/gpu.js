@@ -4,7 +4,7 @@ const {
   CPUFunctionNode,
   WebGL2FunctionNode,
   WebGLFunctionNode,
-} = require('../../src');
+} = require('../..');
 
 describe('internal: function builder');
 

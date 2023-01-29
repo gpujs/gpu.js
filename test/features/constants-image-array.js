@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU, WebGLKernel } = require('../../src');
+const { GPU, WebGLKernel } = require('../..');
 
 describe('features: constants image array');
 

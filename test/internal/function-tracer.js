@@ -1,7 +1,7 @@
 const { assert, test, skip, module: describe, only } = require('qunit');
 const sinon = require('sinon');
 const acorn = require('acorn');
-const { FunctionTracer } = require('../../src');
+const { FunctionTracer } = require('../..');
 
 describe('internal: FunctionTracer');
 

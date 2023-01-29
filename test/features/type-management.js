@@ -4,7 +4,7 @@ const {
   WebGLFunctionNode,
   WebGL2FunctionNode,
   CPUFunctionNode,
-} = require('../../src');
+} = require('../..');
 
 describe('features: type management');
 

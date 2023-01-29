@@ -25,7 +25,7 @@
         },
       };
       window.require = module => {
-        if (module.match(/[.][.]\/src$/)) return browserGPU;
+        if (module.match(/^[\.\/]+$/)) return browserGPU;
         if (module === 'sinon') return sinon;
         if (module === 'qunit') return QUnit;
         if (module === 'acorn') return acorn;

@@ -47,4 +47,19 @@ GPU.plugins = {
   mathRandom,
 };
 
+Object.defineProperties(GPU, {
+  GLKernel: {
+    get() {
+      console.warn('The browser build does not support GLKernel');
+      return CPUKernel;
+    },
+  },
+  HeadlessGLKernel: {
+    get() {
+      console.warn('The browser build does not support HeadlessGLKernel');
+      return CPUKernel;
+    },
+  },
+});
+
 export default GPU;

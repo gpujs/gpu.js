@@ -659,7 +659,7 @@ export const utils = {
     if (!flattened) {
       flattened = settings.flattened = {};
     }
-    const ast = acorn.parse(source);
+    const ast = acorn.parse(source, { ecmaVersion: 'latest' });
     const functionDependencies = [];
     let indent = 0;
 
@@ -1108,7 +1108,9 @@ export const utils = {
 
   getMinifySafeName: fn => {
     try {
-      const ast = acorn.parse(`const value = ${fn.toString()}`);
+      const ast = acorn.parse(`const value = ${fn.toString()}`, {
+        ecmaVersion: 'latest',
+      });
       const { init } = ast.body[0].declarations[0];
       return init.body.name || init.body.body[0].argument.name;
     } catch (e) {

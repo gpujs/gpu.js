@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { webGLKernelValueMaps } = require('../../../../../src');
+const { webGLKernelValueMaps } = require('../../../../..');
 
 describe('internal: WebGLKernelValueDynamicHTMLImage');
 

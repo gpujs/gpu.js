@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU, CPUKernel } = require('../../src');
+const { GPU, CPUKernel } = require('../..');
 
 describe('issue #401');
 

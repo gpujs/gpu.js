@@ -5,7 +5,7 @@ const {
   WebGLFunctionNode,
   WebGL2FunctionNode,
   CPUFunctionNode,
-} = require('../../src');
+} = require('../..');
 
 describe('issue #31 redeclare');
 

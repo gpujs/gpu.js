@@ -1,5 +1,5 @@
 const { assert, test, skip, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('internal: GPU methods');
 

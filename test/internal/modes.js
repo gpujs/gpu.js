@@ -5,7 +5,7 @@ const {
   WebGL2Kernel,
   HeadlessGLKernel,
   CPUKernel,
-} = require('../../src');
+} = require('../..');
 
 describe('internal: modes');
 

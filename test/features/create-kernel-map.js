@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU, alias } = require('../../src');
+const { GPU, alias } = require('../..');
 
 describe('features: create kernel map');
 

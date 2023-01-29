@@ -1,6 +1,6 @@
 const { assert, test, module: describe, skip } = require('qunit');
 const sinon = require('sinon');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('internal: kernelRunShortcut');
 

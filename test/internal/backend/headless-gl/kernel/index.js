@@ -12,7 +12,7 @@ describe('internal: HeadlessGLKernel');
       },
     };
     // this is done late on purpose!  Do not change this, as it causes HeadlessGL to initialize with certain values
-    const { HeadlessGLKernel } = require('../../../../../src');
+    const { HeadlessGLKernel } = require('../../../../..');
     HeadlessGLKernel.setupFeatureChecks();
     assert.ok(true);
     delete global.document;

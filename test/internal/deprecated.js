@@ -1,5 +1,5 @@
 const { assert, test, module: describe, only, skip } = require('qunit');
-const { GPU, Kernel } = require('../../src');
+const { GPU, Kernel } = require('../..');
 
 describe('internal: deprecated');
 

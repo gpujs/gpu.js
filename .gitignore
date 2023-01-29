@@ -37,3 +37,4 @@ yarn.lock
 
 # build result
 dist
+test/all.html

@@ -5,13 +5,13 @@ specifiers:
   '@rollup/plugin-node-resolve': ^15.0.1
   '@rollup/plugin-replace': ^5.0.2
   '@rollup/plugin-terser': ^0.4.0
-  acorn: ^7.1.1
+  acorn: ^8.8.2
   benchmark: ^2.1.4
   c8: ^7.12.0
   esno: ^0.16.3
-  gl: ^5.0.3
+  gl: ^6.0.2
   gl-wiretap: ^0.6.2
-  gpu-mock.js: ^1.3.0
+  gpu-mock.js: ^1.3.1
   prettier: ^2.8.3
   qunit: ^2.9.1
   read-dir-deep: ^7.0.1
@@ -20,8 +20,8 @@ specifiers:
   source-map-support: ^0.5.21
 
 dependencies:
-  acorn: 7.4.1
-  gl: 5.0.3
+  acorn: 8.8.2
+  gl: 6.0.2
   gl-wiretap: 0.6.2
   gpu-mock.js: 1.3.1
 
@@ -310,17 +310,10 @@ packages:
     resolution: {integrity: sha512-nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==}
     dev: false
 
-  /acorn/7.4.1:
-    resolution: {integrity: sha512-nQyp0o1/mNdbTO1PO6kHkwSrmgZ0MT/jCCpNiwbUjGoRN4dlBhqJtoQuCnEOKzgTVwg0ZWiCoQy6SxMebQVh8A==}
-    engines: {node: '>=0.4.0'}
-    hasBin: true
-    dev: false
-
   /acorn/8.8.2:
     resolution: {integrity: sha512-xjIYgE8HBrkpd/sJqOGNspf8uHG+NOHGOw6a/Urj8taM2EXfdNAH2oFcPeIFfsv3+kz/mJrS5VuMqbNLjCa2vw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
-    dev: true
 
   /agent-base/6.0.2:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
@@ -981,9 +974,9 @@ packages:
     resolution: {integrity: sha512-fxy1XGiPkfzK+T3XKDbY7yaqMBmozCGvAFyTwaZA3imeZH83w7Hr3r3bYlMRWIyzMI/lDUvUMM/92LE2OwqFyQ==}
     dev: false
 
-  /gl/5.0.3:
-    resolution: {integrity: sha512-toWmb3Rgli5Wl9ygjZeglFBVLDYMOomy+rXlVZVDCoIRV+6mQE5nY4NgQgokYIc5oQzc1pvWY9lQJ0hGn61ZUg==}
-    engines: {node: '>=12.0.0'}
+  /gl/6.0.2:
+    resolution: {integrity: sha512-yBbfpChOtFvg5D+KtMaBFvj6yt3vUnheNAH+UrQH2TfDB8kr0tERdL0Tjhe0W7xJ6jR6ftQBluTZR9jXUnKe8g==}
+    engines: {node: '>=14.0.0'}
     requiresBuild: true
     dependencies:
       bindings: 1.5.0

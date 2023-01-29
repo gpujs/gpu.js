@@ -1,6 +1,6 @@
 const sinon = require('sinon');
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { CPUKernel } = require('../../../src');
+const { CPUKernel } = require('../../..');
 
 describe('internal: CPUKernel');
 

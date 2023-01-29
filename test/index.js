@@ -1,6 +1,6 @@
 const { expect } = require('chai');
 
-const GPU = require('../src/index.js');
+const GPU = require('..');
 
 describe('Test Node GPU', () => {
   describe('gpu mode', () => {

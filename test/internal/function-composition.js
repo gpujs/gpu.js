@@ -6,7 +6,7 @@ const {
   GPU,
   WebGL2FunctionNode,
   WebGLFunctionNode,
-} = require('../../src');
+} = require('../..');
 
 describe('internal: function composition return values');
 

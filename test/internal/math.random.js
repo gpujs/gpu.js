@@ -3,7 +3,7 @@ const sinon = require('sinon');
 const {
   GPU,
   plugins: { mathRandom },
-} = require('../../src');
+} = require('../..');
 
 describe('Math.random() unique');
 

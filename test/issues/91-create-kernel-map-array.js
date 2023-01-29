@@ -5,7 +5,7 @@ const {
   WebGLKernel,
   WebGL2Kernel,
   CPUKernel,
-} = require('../../src');
+} = require('../..');
 
 describe('issue #91');
 

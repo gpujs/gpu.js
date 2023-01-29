@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { webGL2KernelValueMaps } = require('../../../../../src');
+const { webGL2KernelValueMaps } = require('../../../../..');
 
 describe('internal: WebGL2KernelValueDynamicHTMLImage');
 

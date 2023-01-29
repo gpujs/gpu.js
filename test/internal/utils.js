@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { utils } = require('../../src');
+const { utils } = require('../..');
 
 describe('internal: utils');
 

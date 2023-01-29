@@ -3,7 +3,7 @@ const { assert, skip, test, module: describe } = require('qunit');
 describe('issue # 159');
 
 (function () {
-  const { GPU } = require('../../src');
+  const { GPU } = require('../..');
 
   function threeD(mode) {
     const gpu = new GPU({ mode });

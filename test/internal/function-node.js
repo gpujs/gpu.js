@@ -3,7 +3,7 @@ const {
   CPUFunctionNode,
   WebGLFunctionNode,
   WebGL2FunctionNode,
-} = require('../../src');
+} = require('../..');
 
 describe('internal: function node');
 

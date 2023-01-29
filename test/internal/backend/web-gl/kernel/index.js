@@ -1,6 +1,6 @@
 const sinon = require('sinon');
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { WebGLKernel } = require('../../../../../src');
+const { WebGLKernel } = require('../../../../..');
 
 describe('internal: WebGLKernel');
 
