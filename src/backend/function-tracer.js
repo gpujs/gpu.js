@@ -1,4 +1,4 @@
-const { utils } = require('../utils');
+import { utils } from '../utils';
 
 function last(array) {
   return array.length > 0 ? array[array.length - 1] : null;
@@ -7,10 +7,10 @@ function last(array) {
 const states = {
   trackIdentifiers: 'trackIdentifiers',
   memberExpression: 'memberExpression',
-  inForLoopInit: 'inForLoopInit'
+  inForLoopInit: 'inForLoopInit',
 };
 
-class FunctionTracer {
+export class FunctionTracer {
   constructor(ast) {
     this.runningContexts = [];
     this.functionContexts = [];
@@ -65,13 +65,20 @@ class FunctionTracer {
   }
 
   newContext(run) {
-    const newContext = Object.assign({ '@contextType': 'const/let' }, this.currentContext);
+    const newContext = Object.assign(
+      { '@contextType': 'const/let' },
+      this.currentContext
+    );
     this.contexts.push(newContext);
     this.runningContexts.push(newContext);
     run();
     const { currentFunctionContext } = this;
     for (const p in currentFunctionContext) {
-      if (!currentFunctionContext.hasOwnProperty(p) || newContext.hasOwnProperty(p)) continue;
+      if (
+        !currentFunctionContext.hasOwnProperty(p) ||
+        newContext.hasOwnProperty(p)
+      )
+        continue;
       newContext[p] = currentFunctionContext[p];
     }
     this.runningContexts.pop();
@@ -86,7 +93,7 @@ class FunctionTracer {
   }
 
   getIdentifiers(run) {
-    const trackedIdentifiers = this.trackedIdentifiers = [];
+    const trackedIdentifiers = (this.trackedIdentifiers = []);
     this.pushState(states.trackIdentifiers);
     run();
     this.trackedIdentifiers = null;
@@ -100,14 +107,16 @@ class FunctionTracer {
    */
   getDeclaration(name) {
     const { currentContext, currentFunctionContext, runningContexts } = this;
-    const declaration = currentContext[name] || currentFunctionContext[name] || null;
+    const declaration =
+      currentContext[name] || currentFunctionContext[name] || null;
 
     if (
       !declaration &&
       currentContext === currentFunctionContext &&
       runningContexts.length > 0
     ) {
-      const previousRunningContext = runningContexts[runningContexts.length - 2];
+      const previousRunningContext =
+        runningContexts[runningContexts.length - 2];
       if (previousRunningContext[name]) {
         return previousRunningContext[name];
       }
@@ -181,7 +190,9 @@ class FunctionTracer {
           origin: 'declaration',
           inForLoopInit,
           inForLoopTest: null,
-          assignable: currentContext === this.currentFunctionContext || (!inForLoopInit && !currentContext.hasOwnProperty(ast.id.name)),
+          assignable:
+            currentContext === this.currentFunctionContext ||
+            (!inForLoopInit && !currentContext.hasOwnProperty(ast.id.name)),
           suggestedType: null,
           valueType: null,
           dependencies: null,
@@ -305,7 +316,3 @@ class FunctionTracer {
     }
   }
 }
-
-module.exports = {
-  FunctionTracer,
-};

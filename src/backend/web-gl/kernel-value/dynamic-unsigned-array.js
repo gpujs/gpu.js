@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueUnsignedArray } = require('./unsigned-array');
+import { utils } from '../../../utils';
+import { WebGLKernelValueUnsignedArray } from './unsigned-array';
 
-class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray {
+export class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray {
   getSource() {
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
@@ -12,8 +12,12 @@ class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray
 
   updateValue(value) {
     this.dimensions = utils.getDimensions(value, true);
-    this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
-    this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.textureSize = utils.getMemoryOptimizedPackedTextureSize(
+      this.dimensions,
+      this.bitRatio
+    );
+    this.uploadArrayLength =
+      this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
     this.checkSize(this.textureSize[0], this.textureSize[1]);
     const Type = this.getTransferArrayType(value);
     this.preUploadValue = new Type(this.uploadArrayLength);
@@ -23,7 +27,3 @@ class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray
     super.updateValue(value);
   }
 }
-
-module.exports = {
-  WebGLKernelValueDynamicUnsignedArray
-};

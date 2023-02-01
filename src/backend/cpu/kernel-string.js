@@ -1,4 +1,4 @@
-const { utils } = require('../../utils');
+import { utils } from '../../utils';
 
 function constantsToString(constants, types) {
   const results = [];
@@ -19,14 +19,18 @@ function constantsToString(constants, types) {
       case 'Matrix(2)':
       case 'Matrix(3)':
       case 'Matrix(4)':
-        results.push(`${name}:new ${constant.constructor.name}(${JSON.stringify(Array.from(constant))})`);
+        results.push(
+          `${name}:new ${constant.constructor.name}(${JSON.stringify(
+            Array.from(constant)
+          )})`
+        );
         break;
     }
   }
-  return `{ ${ results.join() } }`;
+  return `{ ${results.join()} }`;
 }
 
-function cpuKernelString(cpuKernel, name) {
+export function cpuKernelString(cpuKernel, name) {
   const header = [];
   const thisProperties = [];
   const beforeReturn = [];
@@ -35,9 +39,14 @@ function cpuKernelString(cpuKernel, name) {
 
   header.push(
     '  const { context, canvas, constants: incomingConstants } = settings;',
-    `  const output = new Int32Array(${JSON.stringify(Array.from(cpuKernel.output))});`,
+    `  const output = new Int32Array(${JSON.stringify(
+      Array.from(cpuKernel.output)
+    )});`,
     `  const _constantTypes = ${JSON.stringify(cpuKernel.constantTypes)};`,
-    `  const _constants = ${constantsToString(cpuKernel.constants, cpuKernel.constantTypes)};`
+    `  const _constants = ${constantsToString(
+      cpuKernel.constants,
+      cpuKernel.constantTypes
+    )};`
   );
 
   thisProperties.push(
@@ -48,46 +57,56 @@ function cpuKernelString(cpuKernel, name) {
   );
 
   if (cpuKernel.graphical) {
-    header.push(`  const _imageData = context.createImageData(${cpuKernel.output[0]}, ${cpuKernel.output[1]});`);
-    header.push(`  const _colorData = new Uint8ClampedArray(${cpuKernel.output[0]} * ${cpuKernel.output[1]} * 4);`);
+    header.push(
+      `  const _imageData = context.createImageData(${cpuKernel.output[0]}, ${cpuKernel.output[1]});`
+    );
+    header.push(
+      `  const _colorData = new Uint8ClampedArray(${cpuKernel.output[0]} * ${cpuKernel.output[1]} * 4);`
+    );
 
-    const colorFn = utils.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel.color.toString(), {
-      thisLookup: (propertyName) => {
-        switch (propertyName) {
-          case '_colorData':
-            return '_colorData';
-          case '_imageData':
-            return '_imageData';
-          case 'output':
-            return 'output';
-          case 'thread':
-            return 'this.thread';
-        }
-        return JSON.stringify(cpuKernel[propertyName]);
-      },
-      findDependency: (object, name) => {
-        return null;
+    const colorFn = utils.flattenFunctionToString(
+      (useFunctionKeyword ? 'function ' : '') + cpuKernel.color.toString(),
+      {
+        thisLookup: propertyName => {
+          switch (propertyName) {
+            case '_colorData':
+              return '_colorData';
+            case '_imageData':
+              return '_imageData';
+            case 'output':
+              return 'output';
+            case 'thread':
+              return 'this.thread';
+          }
+          return JSON.stringify(cpuKernel[propertyName]);
+        },
+        findDependency: (object, name) => {
+          return null;
+        },
       }
-    });
+    );
 
-    const getPixelsFn = utils.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel.getPixels.toString(), {
-      thisLookup: (propertyName) => {
-        switch (propertyName) {
-          case '_colorData':
-            return '_colorData';
-          case '_imageData':
-            return '_imageData';
-          case 'output':
-            return 'output';
-          case 'thread':
-            return 'this.thread';
-        }
-        return JSON.stringify(cpuKernel[propertyName]);
-      },
-      findDependency: () => {
-        return null;
+    const getPixelsFn = utils.flattenFunctionToString(
+      (useFunctionKeyword ? 'function ' : '') + cpuKernel.getPixels.toString(),
+      {
+        thisLookup: propertyName => {
+          switch (propertyName) {
+            case '_colorData':
+              return '_colorData';
+            case '_imageData':
+              return '_imageData';
+            case 'output':
+              return 'output';
+            case 'thread':
+              return 'this.thread';
+          }
+          return JSON.stringify(cpuKernel[propertyName]);
+        },
+        findDependency: () => {
+          return null;
+        },
       }
-    });
+    );
 
     thisProperties.push(
       '    _imageData,',
@@ -95,9 +114,7 @@ function cpuKernelString(cpuKernel, name) {
       `    color: ${colorFn},`
     );
 
-    beforeReturn.push(
-      `  kernel.getPixels = ${getPixelsFn};`
-    );
+    beforeReturn.push(`  kernel.getPixels = ${getPixelsFn};`);
   }
 
   const constantTypes = [];
@@ -105,48 +122,65 @@ function cpuKernelString(cpuKernel, name) {
   for (let i = 0; i < constantKeys.length; i++) {
     constantTypes.push(cpuKernel.constantTypes[constantKeys]);
   }
-  if (cpuKernel.argumentTypes.indexOf('HTMLImageArray') !== -1 || constantTypes.indexOf('HTMLImageArray') !== -1) {
-    const flattenedImageTo3DArray = utils.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel._imageTo3DArray.toString(), {
-      doNotDefine: ['canvas'],
-      findDependency: (object, name) => {
-        if (object === 'this') {
-          return (useFunctionKeyword ? 'function ' : '') + cpuKernel[name].toString();
-        }
-        return null;
-      },
-      thisLookup: (propertyName) => {
-        switch (propertyName) {
-          case 'canvas':
-            return;
-          case 'context':
-            return 'context';
-        }
+  if (
+    cpuKernel.argumentTypes.indexOf('HTMLImageArray') !== -1 ||
+    constantTypes.indexOf('HTMLImageArray') !== -1
+  ) {
+    const flattenedImageTo3DArray = utils.flattenFunctionToString(
+      (useFunctionKeyword ? 'function ' : '') +
+        cpuKernel._imageTo3DArray.toString(),
+      {
+        doNotDefine: ['canvas'],
+        findDependency: (object, name) => {
+          if (object === 'this') {
+            return (
+              (useFunctionKeyword ? 'function ' : '') +
+              cpuKernel[name].toString()
+            );
+          }
+          return null;
+        },
+        thisLookup: propertyName => {
+          switch (propertyName) {
+            case 'canvas':
+              return;
+            case 'context':
+              return 'context';
+          }
+        },
       }
-    });
+    );
     beforeReturn.push(flattenedImageTo3DArray);
     thisProperties.push(`    _mediaTo2DArray,`);
     thisProperties.push(`    _imageTo3DArray,`);
-  } else if (cpuKernel.argumentTypes.indexOf('HTMLImage') !== -1 || constantTypes.indexOf('HTMLImage') !== -1) {
-    const flattenedImageTo2DArray = utils.flattenFunctionToString((useFunctionKeyword ? 'function ' : '') + cpuKernel._mediaTo2DArray.toString(), {
-      findDependency: (object, name) => {
-        return null;
-      },
-      thisLookup: (propertyName) => {
-        switch (propertyName) {
-          case 'canvas':
-            return 'settings.canvas';
-          case 'context':
-            return 'settings.context';
-        }
-        throw new Error('unhandled thisLookup');
+  } else if (
+    cpuKernel.argumentTypes.indexOf('HTMLImage') !== -1 ||
+    constantTypes.indexOf('HTMLImage') !== -1
+  ) {
+    const flattenedImageTo2DArray = utils.flattenFunctionToString(
+      (useFunctionKeyword ? 'function ' : '') +
+        cpuKernel._mediaTo2DArray.toString(),
+      {
+        findDependency: (object, name) => {
+          return null;
+        },
+        thisLookup: propertyName => {
+          switch (propertyName) {
+            case 'canvas':
+              return 'settings.canvas';
+            case 'context':
+              return 'settings.context';
+          }
+          throw new Error('unhandled thisLookup');
+        },
       }
-    });
+    );
     beforeReturn.push(flattenedImageTo2DArray);
     thisProperties.push(`    _mediaTo2DArray,`);
   }
 
   return `function(settings) {
-${ header.join('\n') }
+${header.join('\n')}
   for (const p in _constantTypes) {
     if (!_constantTypes.hasOwnProperty(p)) continue;
     const type = _constantTypes[p];
@@ -175,11 +209,7 @@ ${ header.join('\n') }
 ${cpuKernel._kernelString}
   })
     .apply({ ${thisProperties.join('\n')} });
-  ${ beforeReturn.join('\n') }
+  ${beforeReturn.join('\n')}
   return kernel;
 }`;
 }
-
-module.exports = {
-  cpuKernelString
-};

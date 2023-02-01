@@ -1,25 +1,26 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU, WebGLFunctionNode } = require('../../src');
+const { GPU, WebGLFunctionNode } = require('../..');
 
 describe('issue #556 - minify for loop');
 
-const source = 'function w(t,e){for(var r=0,i=0;i<this.constants.size;i++)r+=t[this.thread.y][i]*e[i][this.thread.x];return r}';
+const source =
+  'function w(t,e){for(var r=0,i=0;i<this.constants.size;i++)r+=t[this.thread.y][i]*e[i][this.thread.x];return r}';
 
 function testWebGLFunctionNode() {
-  const node = new WebGLFunctionNode(
-    source,
-    {
-      constantTypes: {
-        size: 'Number',
-      },
-      output: [1],
-      argumentNames: ['t', 'e'],
-      argumentTypes: ['Array', 'Array'],
-      lookupFunctionArgumentBitRatio: () => 4,
-      returnType: 'Number'
-    });
+  const node = new WebGLFunctionNode(source, {
+    constantTypes: {
+      size: 'Number',
+    },
+    output: [1],
+    argumentNames: ['t', 'e'],
+    argumentTypes: ['Array', 'Array'],
+    lookupFunctionArgumentBitRatio: () => 4,
+    returnType: 'Number',
+  });
 
-  assert.equal(node.toString(), `float w(sampler2D user_t,ivec2 user_tSize,ivec3 user_tDim, sampler2D user_e,ivec2 user_eSize,ivec3 user_eDim) {
+  assert.equal(
+    node.toString(),
+    `float w(sampler2D user_t,ivec2 user_tSize,ivec3 user_tDim, sampler2D user_e,ivec2 user_eSize,ivec3 user_eDim) {
 float user_r=0.0;int user_i=0;
 for (int safeI=0;safeI<LOOP_MAX;safeI++){
 if (!(user_i<int(constants_size))) break;
@@ -27,7 +28,8 @@ user_r+=(get32(user_t, user_tSize, user_tDim, 0, threadId.y, user_i)*get32(user_
 user_i++;}
 
 return user_r;
-}`);
+}`
+  );
 }
 
 test('WebGLFunctionNode', () => {
@@ -39,12 +41,11 @@ function testKernel(mode) {
   const kernel = gpu.createKernel(source, {
     output: [1, 1],
     constants: {
-      size: 1
+      size: 1,
     },
   });
   const result = kernel([[1]], [[1]]);
   assert.deepEqual(result, [new Float32Array([1])]);
-
 }
 
 test('kernel auto', () => {

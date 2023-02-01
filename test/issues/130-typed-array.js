@@ -1,12 +1,14 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('issue #130');
+
 function typedArrays(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(changes) {
-    return changes[this.thread.y][this.thread.x];
-  })
+  const kernel = gpu
+    .createKernel(function (changes) {
+      return changes[this.thread.y][this.thread.x];
+    })
     .setOutput([2, 1]);
 
   const values = [new Float32Array(2)];
@@ -18,26 +20,32 @@ function typedArrays(mode) {
   gpu.destroy();
 }
 
-test("Issue #130 - typed array auto", () => {
+test('Issue #130 - typed array auto', () => {
   typedArrays(null);
 });
 
-test("Issue #130 - typed array gpu", () => {
+test('Issue #130 - typed array gpu', () => {
   typedArrays('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)("Issue #130 - typed array webgl", () => {
+(GPU.isWebGLSupported ? test : skip)('Issue #130 - typed array webgl', () => {
   typedArrays('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)("Issue #130 - typed array webgl2", () => {
-  typedArrays('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #130 - typed array webgl2',
+  () => {
+    typedArrays('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)("Issue #130 - typed array headlessgl", () => {
-  typedArrays('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #130 - typed array headlessgl',
+  () => {
+    typedArrays('headlessgl');
+  }
+);
 
-test("Issue #130 - typed array cpu", () => {
+test('Issue #130 - typed array cpu', () => {
   typedArrays('cpu');
 });

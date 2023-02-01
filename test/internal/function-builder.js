@@ -1,5 +1,10 @@
 const { assert, test, module: describe, only } = require('qunit');
-const { FunctionBuilder, CPUFunctionNode, WebGL2FunctionNode, WebGLFunctionNode } = require('../../src');
+const {
+  FunctionBuilder,
+  CPUFunctionNode,
+  WebGL2FunctionNode,
+  WebGLFunctionNode,
+} = require('../..');
 
 describe('internal: function builder');
 
@@ -23,20 +28,20 @@ function threeLayerTemplate(FunctionNode) {
       new FunctionNode(layerOne.toString(), {
         output: [1],
         lookupReturnType: () => 'Number',
-        lookupFunctionArgumentTypes: () => {}
+        lookupFunctionArgumentTypes: () => {},
       }),
       new FunctionNode(layerTwo.toString(), {
         output: [1],
         lookupReturnType: () => 'Number',
-        lookupFunctionArgumentTypes: () => {}
+        lookupFunctionArgumentTypes: () => {},
       }),
       new FunctionNode(layerThree.toString(), {
         output: [1],
         lookupReturnType: () => 'Number',
-        lookupFunctionArgumentTypes: () => {}
+        lookupFunctionArgumentTypes: () => {},
       }),
     ],
-    output: [1]
+    output: [1],
   });
 }
 
@@ -44,22 +49,43 @@ function threeLayerTemplate(FunctionNode) {
 test('traceFunctionCalls: 3 layer test cpu', () => {
   const builder = threeLayerTemplate(CPUFunctionNode);
   assert.deepEqual(builder.traceFunctionCalls('layerOne'), ['layerOne']);
-  assert.deepEqual(builder.traceFunctionCalls('layerTwo'), ['layerTwo', 'layerOne']);
-  assert.deepEqual(builder.traceFunctionCalls('layerThree'), ['layerThree', 'layerTwo', 'layerOne']);
+  assert.deepEqual(builder.traceFunctionCalls('layerTwo'), [
+    'layerTwo',
+    'layerOne',
+  ]);
+  assert.deepEqual(builder.traceFunctionCalls('layerThree'), [
+    'layerThree',
+    'layerTwo',
+    'layerOne',
+  ]);
 });
 
 test('traceFunctionCalls: 3 layer test webgl', () => {
   const builder = threeLayerTemplate(WebGLFunctionNode);
   assert.deepEqual(builder.traceFunctionCalls('layerOne'), ['layerOne']);
-  assert.deepEqual(builder.traceFunctionCalls('layerTwo'), ['layerTwo', 'layerOne']);
-  assert.deepEqual(builder.traceFunctionCalls('layerThree'), ['layerThree', 'layerTwo', 'layerOne']);
+  assert.deepEqual(builder.traceFunctionCalls('layerTwo'), [
+    'layerTwo',
+    'layerOne',
+  ]);
+  assert.deepEqual(builder.traceFunctionCalls('layerThree'), [
+    'layerThree',
+    'layerTwo',
+    'layerOne',
+  ]);
 });
 
 test('traceFunctionCalls: 3 layer test webgl2', () => {
   const builder = threeLayerTemplate(WebGL2FunctionNode);
   assert.deepEqual(builder.traceFunctionCalls('layerOne'), ['layerOne']);
-  assert.deepEqual(builder.traceFunctionCalls('layerTwo'), ['layerTwo', 'layerOne']);
-  assert.deepEqual(builder.traceFunctionCalls('layerThree'), ['layerThree', 'layerTwo', 'layerOne']);
+  assert.deepEqual(builder.traceFunctionCalls('layerTwo'), [
+    'layerTwo',
+    'layerOne',
+  ]);
+  assert.deepEqual(builder.traceFunctionCalls('layerThree'), [
+    'layerThree',
+    'layerTwo',
+    'layerOne',
+  ]);
 });
 
 /// Test the function tracing of 3 layers
@@ -75,26 +101,23 @@ test('webglString: 3 layer test cpu', () => {
   );
 
   assert.equal(
-    builder.getStringFromFunctionNames(['layerOne','layerTwo']),
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo']),
     'function layerOne() {\nreturn 42;\n}\nfunction layerTwo() {\nreturn (layerOne()*2);\n}'
   );
   assert.equal(
     builder.getString('layerTwo'),
-    builder.getStringFromFunctionNames(['layerOne','layerTwo'])
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo'])
   );
 
   assert.equal(
-    builder.getStringFromFunctionNames(['layerOne','layerTwo','layerThree']),
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo', 'layerThree']),
     'function layerOne() {\nreturn 42;\n}\nfunction layerTwo() {\nreturn (layerOne()*2);\n}\nfunction layerThree() {\nreturn (layerTwo()*2);\n}'
   );
   assert.equal(
     builder.getString('layerThree'),
-    builder.getStringFromFunctionNames(['layerOne','layerTwo','layerThree'])
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo', 'layerThree'])
   );
-  assert.equal(
-    builder.getString(null),
-    builder.getString('layerThree')
-  );
+  assert.equal(builder.getString(null), builder.getString('layerThree'));
 });
 
 test('webglString: 3 layer test webgl', () => {
@@ -109,26 +132,23 @@ test('webglString: 3 layer test webgl', () => {
   );
 
   assert.equal(
-    builder.getStringFromFunctionNames(['layerOne','layerTwo']),
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo']),
     'float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}'
   );
   assert.equal(
     builder.getString('layerTwo'),
-    builder.getStringFromFunctionNames(['layerOne','layerTwo'])
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo'])
   );
 
   assert.equal(
-    builder.getStringFromFunctionNames(['layerOne','layerTwo','layerThree']),
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo', 'layerThree']),
     'float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}\nfloat layerThree() {\nreturn (layerTwo()*2.0);\n}'
   );
   assert.equal(
     builder.getString('layerThree'),
-    builder.getStringFromFunctionNames(['layerOne','layerTwo','layerThree'])
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo', 'layerThree'])
   );
-  assert.equal(
-    builder.getString(null),
-    builder.getString('layerThree')
-  );
+  assert.equal(builder.getString(null), builder.getString('layerThree'));
 });
 
 test('webglString: 3 layer test webgl2', () => {
@@ -145,24 +165,21 @@ test('webglString: 3 layer test webgl2', () => {
   );
 
   assert.equal(
-    builder.getStringFromFunctionNames(['layerOne','layerTwo']),
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo']),
     'float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}'
   );
   assert.equal(
     builder.getString('layerTwo'),
-    builder.getStringFromFunctionNames(['layerOne','layerTwo'])
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo'])
   );
 
   assert.equal(
-    builder.getStringFromFunctionNames(['layerOne','layerTwo','layerThree']),
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo', 'layerThree']),
     'float layerOne() {\nreturn 42.0;\n}\nfloat layerTwo() {\nreturn (layerOne()*2.0);\n}\nfloat layerThree() {\nreturn (layerTwo()*2.0);\n}'
   );
   assert.equal(
     builder.getString('layerThree'),
-    builder.getStringFromFunctionNames(['layerOne','layerTwo','layerThree'])
+    builder.getStringFromFunctionNames(['layerOne', 'layerTwo', 'layerThree'])
   );
-  assert.equal(
-    builder.getString(null),
-    builder.getString('layerThree')
-  );
+  assert.equal(builder.getString(null), builder.getString('layerThree'));
 });

@@ -1,11 +1,13 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU, WebGLKernel } = require('../../src');
+const { GPU, WebGLKernel } = require('../..');
 
 describe('features: constants image array');
+
 function feature(mode, done) {
   const gpu = new GPU({ mode });
   const image = new Image();
   const imageArray = [image, image];
+
   function fn() {
     const pixel1 = this.constants.imageArray[0][this.thread.y][this.thread.x];
     const pixel2 = this.constants.imageArray[1][this.thread.y][this.thread.x];
@@ -26,7 +28,7 @@ function feature(mode, done) {
   }
   const settings = {
     constants: { imageArray },
-    output: [1, 1, 4]
+    output: [1, 1, 4],
   };
 
   if (mode === 'webgl' || gpu.Kernel === WebGLKernel) {
@@ -46,23 +48,33 @@ function feature(mode, done) {
   };
 }
 
-(GPU.isGPUHTMLImageArraySupported && typeof Image !== 'undefined' ? test : skip)('auto', t => {
+(GPU.isGPUHTMLImageArraySupported && typeof Image !== 'undefined'
+  ? test
+  : skip)('auto', t => {
   feature(null, t.async());
 });
 
-(GPU.isGPUHTMLImageArraySupported && typeof Image !== 'undefined' ? test : skip)('gpu', t => {
+(GPU.isGPUHTMLImageArraySupported && typeof Image !== 'undefined'
+  ? test
+  : skip)('gpu', t => {
   feature('gpu', t.async());
 });
 
-(GPU.isWebGLSupported && typeof Image !== 'undefined' ? test : skip)('webgl', t => {
-  assert.throws(() => {
-    feature('webgl')
-  }, 'imageArray are not compatible with webgl');
-});
+(GPU.isWebGLSupported && typeof Image !== 'undefined' ? test : skip)(
+  'webgl',
+  t => {
+    assert.throws(() => {
+      feature('webgl');
+    }, 'imageArray are not compatible with webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && typeof Image !== 'undefined' ? test : skip)('webgl2', t => {
-  feature('webgl2', t.async());
-});
+(GPU.isWebGL2Supported && typeof Image !== 'undefined' ? test : skip)(
+  'webgl2',
+  t => {
+    feature('webgl2', t.async());
+  }
+);
 
 (typeof Image !== 'undefined' ? test : skip)('cpu', t => {
   feature('cpu', t.async());

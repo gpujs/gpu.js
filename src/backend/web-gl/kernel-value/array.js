@@ -1,10 +1,10 @@
-const { WebGLKernelValue } = require('./index');
-const { Input } = require('../../../input');
+import { WebGLKernelValue } from './index';
+import { Input } from '../../../input';
 
 /**
  * @abstract
  */
-class WebGLKernelArray extends WebGLKernelValue {
+export class WebGLKernelArray extends WebGLKernelValue {
   /**
    *
    * @param {number} width
@@ -15,11 +15,17 @@ class WebGLKernelArray extends WebGLKernelValue {
     const { maxTextureSize } = this.kernel.constructor.features;
     if (width > maxTextureSize || height > maxTextureSize) {
       if (width > height) {
-        throw new Error(`Argument texture width of ${width} larger than maximum size of ${maxTextureSize} for your GPU`);
+        throw new Error(
+          `Argument texture width of ${width} larger than maximum size of ${maxTextureSize} for your GPU`
+        );
       } else if (width < height) {
-        throw new Error(`Argument texture height of ${height} larger than maximum size of ${maxTextureSize} for your GPU`);
+        throw new Error(
+          `Argument texture height of ${height} larger than maximum size of ${maxTextureSize} for your GPU`
+        );
       } else {
-        throw new Error(`Argument texture height and width of ${height} larger than maximum size of ${maxTextureSize} for your GPU`);
+        throw new Error(
+          `Argument texture height and width of ${height} larger than maximum size of ${maxTextureSize} for your GPU`
+        );
       }
     }
   }
@@ -84,7 +90,3 @@ class WebGLKernelArray extends WebGLKernelValue {
     this.context.deleteTexture(this.texture);
   }
 }
-
-module.exports = {
-  WebGLKernelArray
-};

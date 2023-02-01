@@ -1,13 +1,14 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('internal: tactic');
 
 function speedTest(mode) {
   const gpu = new GPU({ mode });
-  const add = gpu.createKernel(function(a, b) {
-    return a + b;
-  })
+  const add = gpu
+    .createKernel(function (a, b) {
+      return a + b;
+    })
     .setOutput([1])
     .setTactic('speed');
   let addResult = add(0.1, 0.2)[0];
@@ -41,9 +42,10 @@ test('speed cpu', () => {
 
 function balancedTest(mode) {
   const gpu = new GPU({ mode });
-  const add = gpu.createKernel(function(a, b) {
-    return a + b;
-  })
+  const add = gpu
+    .createKernel(function (a, b) {
+      return a + b;
+    })
     .setOutput([1])
     .setTactic('balanced');
   let addResult = add(0.1, 0.2)[0];
@@ -77,9 +79,10 @@ test('balanced cpu', () => {
 
 function precisionTest(mode) {
   const gpu = new GPU({ mode });
-  const add = gpu.createKernel(function(a, b) {
-    return a + b;
-  })
+  const add = gpu
+    .createKernel(function (a, b) {
+      return a + b;
+    })
     .setOutput([1])
     .setTactic('precision');
   let addResult = add(0.1, 0.2)[0];

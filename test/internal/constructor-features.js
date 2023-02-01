@@ -1,13 +1,16 @@
 const { assert, test, module: describe, only, skip } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('internal: constructor features');
 
 function channelCount(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return 1;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      return 1;
+    },
+    { output: [1] }
+  );
   kernel();
   assert.ok(kernel.kernel.constructor.features.channelCount >= 1);
   gpu.destroy();

@@ -1,17 +1,17 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('features: promise api');
 
 function promiseApiFunctionReturn(mode, done) {
   const gpu = new GPU({ mode });
 
-  const kernelFn = function() {
+  const kernelFn = function () {
     return 42.0;
   };
 
   const settings = {
-    output : [1]
+    output: [1],
   };
 
   // Setup kernel
@@ -20,12 +20,12 @@ function promiseApiFunctionReturn(mode, done) {
   const promiseObj = kernel.exec();
   assert.ok(promiseObj !== null, 'Promise object generated test');
   promiseObj
-    .then((res) => {
-      assert.equal(res[0], 42.0 );
+    .then(res => {
+      assert.equal(res[0], 42.0);
       gpu.destroy();
       done();
     })
-    .catch((err) => {
+    .catch(err => {
       throw err;
     });
 }

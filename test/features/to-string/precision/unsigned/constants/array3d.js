@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../../../../../src');
+const { GPU } = require('../../../../../..');
 
 describe('feature: to-string unsigned precision constants Array3D');
 
@@ -13,25 +13,28 @@ function testConstant(mode, context, canvas) {
     [
       [5, 6],
       [7, 8],
-    ]
+    ],
   ];
-  const originalKernel = gpu.createKernel(function() {
-    let sum = 0;
-    for (let z = 0; z < 2; z++) {
-      for (let y = 0; y < 2; y++) {
-        sum += this.constants.a[z][y][this.thread.x];
+  const originalKernel = gpu.createKernel(
+    function () {
+      let sum = 0;
+      for (let z = 0; z < 2; z++) {
+        for (let y = 0; y < 2; y++) {
+          sum += this.constants.a[z][y][this.thread.x];
+        }
       }
+      return sum;
+    },
+    {
+      canvas,
+      context,
+      output: [2],
+      precision: 'unsigned',
+      constants: {
+        a,
+      },
     }
-    return sum;
-  }, {
-    canvas,
-    context,
-    output: [2],
-    precision: 'unsigned',
-    constants: {
-      a
-    }
-  });
+  );
 
   const expected = new Float32Array([16, 20]);
   const originalResult = originalKernel();
@@ -41,7 +44,6 @@ function testConstant(mode, context, canvas) {
   const newResult = Kernel({ context, constants: { a } })();
   assert.deepEqual(newResult, expected);
 
-
   const b = [
     [
       [1, 1],
@@ -50,7 +52,7 @@ function testConstant(mode, context, canvas) {
     [
       [1, 1],
       [1, 1],
-    ]
+    ],
   ];
   const newResult2 = Kernel({ context, constants: { a: b } })();
   const expected2 = new Float32Array([4, 4]);

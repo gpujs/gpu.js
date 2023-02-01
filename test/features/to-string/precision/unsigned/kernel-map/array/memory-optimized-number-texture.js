@@ -1,25 +1,31 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../../../../../../src');
+const { GPU } = require('../../../../../../..');
 
-describe('feature: to-string unsigned precision array style kernel map returns MemoryOptimizedNumberTexture');
+describe(
+  'feature: to-string unsigned precision array style kernel map returns MemoryOptimizedNumberTexture'
+);
 
 function testReturn(mode, context, canvas) {
   const gpu = new GPU({ mode });
   function addOne(value) {
     return value + 1;
   }
-  const originalKernel = gpu.createKernelMap([addOne], function(a) {
-    const result = a[this.thread.x] + 1;
-    addOne(result);
-    return result;
-  }, {
-    canvas,
-    context,
-    output: [6],
-    precision: 'unsigned',
-    pipeline: true,
-    optimizeFloatMemory: true,
-  });
+  const originalKernel = gpu.createKernelMap(
+    [addOne],
+    function (a) {
+      const result = a[this.thread.x] + 1;
+      addOne(result);
+      return result;
+    },
+    {
+      canvas,
+      context,
+      output: [6],
+      precision: 'unsigned',
+      pipeline: true,
+      optimizeFloatMemory: true,
+    }
+  );
 
   const a = [1, 2, 3, 4, 5, 6];
   const expected = new Float32Array([2, 3, 4, 5, 6, 7]);

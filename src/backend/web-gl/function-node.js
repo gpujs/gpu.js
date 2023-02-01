@@ -1,10 +1,10 @@
-const { utils } = require('../../utils');
-const { FunctionNode } = require('../function-node');
+import { utils } from '../../utils';
+import { FunctionNode } from '../function-node';
 
 /**
  * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective WebGL code
  */
-class WebGLFunctionNode extends FunctionNode {
+export class WebGLFunctionNode extends FunctionNode {
   constructor(source, settings) {
     super(source, settings);
     if (settings && settings.hasOwnProperty('fixIntegerDivisionAccuracy')) {
@@ -86,10 +86,14 @@ class WebGLFunctionNode extends FunctionNode {
         if (i > 0) {
           retArr.push(', ');
         }
-        let argumentType = this.argumentTypes[this.argumentNames.indexOf(argumentName)];
+        let argumentType =
+          this.argumentTypes[this.argumentNames.indexOf(argumentName)];
         // The type is too loose ended, here we decide to solidify a type, lets go with float
         if (!argumentType) {
-          throw this.astErrorOutput(`Unknown argument ${argumentName} type`, ast);
+          throw this.astErrorOutput(
+            `Unknown argument ${argumentName} type`,
+            ast
+          );
         }
         if (argumentType === 'LiteralInteger') {
           this.argumentTypes[i] = argumentType = 'Number';
@@ -101,7 +105,9 @@ class WebGLFunctionNode extends FunctionNode {
         const name = utils.sanitizeName(argumentName);
         if (type === 'sampler2D' || type === 'sampler2DArray') {
           // mash needed arguments together, since now we have end to end inference
-          retArr.push(`${type} user_${name},ivec2 user_${name}Size,ivec3 user_${name}Dim`);
+          retArr.push(
+            `${type} user_${name},ivec2 user_${name}Size,ivec3 user_${name}Dim`
+          );
         } else {
           retArr.push(`${type} user_${name}`);
         }
@@ -129,7 +135,8 @@ class WebGLFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astReturnStatement(ast, retArr) {
-    if (!ast.argument) throw this.astErrorOutput('Unexpected return statement', ast);
+    if (!ast.argument)
+      throw this.astErrorOutput('Unexpected return statement', ast);
     this.pushState('skip-literal-correction');
     const type = this.getType(ast.argument);
     this.popState('skip-literal-correction');
@@ -191,17 +198,20 @@ class WebGLFunctionNode extends FunctionNode {
         this.astGeneric(ast.argument, result);
         break;
       default:
-        throw this.astErrorOutput(`unhandled return type ${this.returnType}`, ast);
+        throw this.astErrorOutput(
+          `unhandled return type ${this.returnType}`,
+          ast
+        );
     }
 
     if (this.isRootKernel) {
-      retArr.push(`kernelResult = ${ result.join('') };`);
+      retArr.push(`kernelResult = ${result.join('')};`);
       retArr.push('return;');
     } else if (this.isSubKernel) {
-      retArr.push(`subKernelResult_${ this.name } = ${ result.join('') };`);
-      retArr.push(`return subKernelResult_${ this.name };`);
+      retArr.push(`subKernelResult_${this.name} = ${result.join('')};`);
+      retArr.push(`return subKernelResult_${this.name};`);
     } else {
-      retArr.push(`return ${ result.join('') };`);
+      retArr.push(`return ${result.join('')};`);
     }
     return retArr;
   }
@@ -225,17 +235,26 @@ class WebGLFunctionNode extends FunctionNode {
 
     const key = this.astKey(ast);
     if (Number.isInteger(ast.value)) {
-      if (this.isState('casting-to-integer') || this.isState('building-integer')) {
+      if (
+        this.isState('casting-to-integer') ||
+        this.isState('building-integer')
+      ) {
         this.literalTypes[key] = 'Integer';
         retArr.push(`${ast.value}`);
-      } else if (this.isState('casting-to-float') || this.isState('building-float')) {
+      } else if (
+        this.isState('casting-to-float') ||
+        this.isState('building-float')
+      ) {
         this.literalTypes[key] = 'Number';
         retArr.push(`${ast.value}.0`);
       } else {
         this.literalTypes[key] = 'Number';
         retArr.push(`${ast.value}.0`);
       }
-    } else if (this.isState('casting-to-integer') || this.isState('building-integer')) {
+    } else if (
+      this.isState('casting-to-integer') ||
+      this.isState('building-integer')
+    ) {
       this.literalTypes[key] = 'Integer';
       retArr.push(Math.round(ast.value));
     } else {
@@ -311,7 +330,10 @@ class WebGLFunctionNode extends FunctionNode {
         this.popState('building-float');
         break;
       case 'LiteralInteger & LiteralInteger':
-        if (this.isState('casting-to-integer') || this.isState('building-integer')) {
+        if (
+          this.isState('casting-to-integer') ||
+          this.isState('building-integer')
+        ) {
           this.pushState('building-integer');
           this.astGeneric(ast.left, retArr);
           retArr.push(operatorMap[ast.operator] || ast.operator);
@@ -328,7 +350,10 @@ class WebGLFunctionNode extends FunctionNode {
 
       case 'Integer & Float':
       case 'Integer & Number':
-        if (ast.operator === '>' || ast.operator === '<' && ast.right.type === 'Literal') {
+        if (
+          ast.operator === '>' ||
+          (ast.operator === '<' && ast.right.type === 'Literal')
+        ) {
           // if right value is actually a float, don't loose that information, cast left to right rather than the usual right to left
           if (!Number.isInteger(ast.right.value)) {
             this.pushState('building-float');
@@ -350,7 +375,10 @@ class WebGLFunctionNode extends FunctionNode {
           if (literalType === 'Integer') {
             retArr.push(literalResult.join(''));
           } else {
-            throw this.astErrorOutput(`Unhandled binary expression with literal`, ast);
+            throw this.astErrorOutput(
+              `Unhandled binary expression with literal`,
+              ast
+            );
           }
         } else {
           retArr.push('int(');
@@ -426,7 +454,10 @@ class WebGLFunctionNode extends FunctionNode {
         break;
 
       default:
-        throw this.astErrorOutput(`Unhandled binary expression between ${key}`, ast);
+        throw this.astErrorOutput(
+          `Unhandled binary expression between ${key}`,
+          ast
+        );
     }
     retArr.push(')');
 
@@ -439,7 +470,9 @@ class WebGLFunctionNode extends FunctionNode {
       return bitwiseResult;
     }
     const upconvertableOperators = {
-      '%': this.fixIntegerDivisionAccuracy ? 'integerCorrectionModulo' : 'modulo',
+      '%': this.fixIntegerDivisionAccuracy
+        ? 'integerCorrectionModulo'
+        : 'modulo',
       '**': 'pow',
     };
     const foundOperator = upconvertableOperators[ast.operator];
@@ -600,7 +633,10 @@ class WebGLFunctionNode extends FunctionNode {
    */
   astIdentifierExpression(idtNode, retArr) {
     if (idtNode.type !== 'Identifier') {
-      throw this.astErrorOutput('IdentifierExpression - not an Identifier', idtNode);
+      throw this.astErrorOutput(
+        'IdentifierExpression - not an Identifier',
+        idtNode
+      );
     }
 
     const type = this.getType(idtNode);
@@ -680,7 +716,11 @@ class WebGLFunctionNode extends FunctionNode {
     if (isSafe) {
       const initString = initArr.join('');
       const initNeedsSemiColon = initString[initString.length - 1] !== ';';
-      retArr.push(`for (${initString}${initNeedsSemiColon ? ';' : ''}${testArr.join('')};${updateArr.join('')}){\n`);
+      retArr.push(
+        `for (${initString}${initNeedsSemiColon ? ';' : ''}${testArr.join(
+          ''
+        )};${updateArr.join('')}){\n`
+      );
       retArr.push(bodyArr.join(''));
       retArr.push('}\n');
     } else {
@@ -688,7 +728,9 @@ class WebGLFunctionNode extends FunctionNode {
       if (initArr.length > 0) {
         retArr.push(initArr.join(''), '\n');
       }
-      retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
+      retArr.push(
+        `for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`
+      );
       if (testArr.length > 0) {
         retArr.push(`if (!${testArr.join('')}) break;\n`);
       }
@@ -711,7 +753,9 @@ class WebGLFunctionNode extends FunctionNode {
     }
 
     const iVariableName = this.getInternalVariableName('safeI');
-    retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
+    retArr.push(
+      `for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`
+    );
     retArr.push('if (!');
     this.astGeneric(whileNode.test, retArr);
     retArr.push(') break;\n');
@@ -733,7 +777,9 @@ class WebGLFunctionNode extends FunctionNode {
     }
 
     const iVariableName = this.getInternalVariableName('safeI');
-    retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
+    retArr.push(
+      `for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`
+    );
     this.astGeneric(doWhileNode.body, retArr);
     retArr.push('if (!');
     this.astGeneric(doWhileNode.test, retArr);
@@ -742,7 +788,6 @@ class WebGLFunctionNode extends FunctionNode {
 
     return retArr;
   }
-
 
   /**
    * @desc Parses the abstract syntax tree for *Assignment* Expression
@@ -838,7 +883,10 @@ class WebGLFunctionNode extends FunctionNode {
       }
       const markupType = typeMap[type];
       if (!markupType) {
-        throw this.astErrorOutput(`Markup type ${ type } not handled`, varDecNode);
+        throw this.astErrorOutput(
+          `Markup type ${type} not handled`,
+          varDecNode
+        );
       }
       const declarationResult = [];
       if (actualType === 'Integer' && type === 'Integer') {
@@ -850,7 +898,9 @@ class WebGLFunctionNode extends FunctionNode {
           throw new Error('Unhandled declaration');
         }
         lastType = type;
-        declarationResult.push(`user_${utils.sanitizeName(declaration.id.name)}=`);
+        declarationResult.push(
+          `user_${utils.sanitizeName(declaration.id.name)}=`
+        );
         declarationResult.push('float(');
         this.astGeneric(init, declarationResult);
         declarationResult.push(')');
@@ -865,7 +915,9 @@ class WebGLFunctionNode extends FunctionNode {
           declarationResult.push(`${markupType} `);
         }
         lastType = type;
-        declarationResult.push(`user_${utils.sanitizeName(declaration.id.name)}=`);
+        declarationResult.push(
+          `user_${utils.sanitizeName(declaration.id.name)}=`
+        );
         if (actualType === 'Number' && type === 'Integer') {
           if (init.left && init.left.type === 'Literal') {
             this.astGeneric(init, declarationResult);
@@ -914,7 +966,10 @@ class WebGLFunctionNode extends FunctionNode {
 
     if (ifNode.alternate) {
       retArr.push('else ');
-      if (ifNode.alternate.type === 'BlockStatement' || ifNode.alternate.type === 'IfStatement') {
+      if (
+        ifNode.alternate.type === 'BlockStatement' ||
+        ifNode.alternate.type === 'IfStatement'
+      ) {
         this.astGeneric(ifNode.alternate, retArr);
       } else {
         retArr.push(' {\n');
@@ -1047,13 +1102,16 @@ class WebGLFunctionNode extends FunctionNode {
       type,
       xProperty,
       yProperty,
-      zProperty
+      zProperty,
     } = this.getMemberExpressionDetails(mNode);
     switch (signature) {
       case 'value.thread.value':
       case 'this.thread.value':
         if (name !== 'x' && name !== 'y' && name !== 'z') {
-          throw this.astErrorOutput('Unexpected expression, expected `this.thread.x`, `this.thread.y`, or `this.thread.z`', mNode);
+          throw this.astErrorOutput(
+            'Unexpected expression, expected `this.thread.x`, `this.thread.y`, or `this.thread.z`',
+            mNode
+          );
         }
         retArr.push(`threadId.${name}`);
         return retArr;
@@ -1126,16 +1184,16 @@ class WebGLFunctionNode extends FunctionNode {
         const cleanName = utils.sanitizeName(name);
         switch (property) {
           case 'r':
-            retArr.push(`user_${ cleanName }.r`);
+            retArr.push(`user_${cleanName}.r`);
             return retArr;
           case 'g':
-            retArr.push(`user_${ cleanName }.g`);
+            retArr.push(`user_${cleanName}.g`);
             return retArr;
           case 'b':
-            retArr.push(`user_${ cleanName }.b`);
+            retArr.push(`user_${cleanName}.b`);
             return retArr;
           case 'a':
-            retArr.push(`user_${ cleanName }.a`);
+            retArr.push(`user_${cleanName}.a`);
             return retArr;
         }
         break;
@@ -1145,38 +1203,40 @@ class WebGLFunctionNode extends FunctionNode {
             case 'Array(2)':
             case 'Array(3)':
             case 'Array(4)':
-              retArr.push(`constants_${ utils.sanitizeName(name) }`);
+              retArr.push(`constants_${utils.sanitizeName(name)}`);
               return retArr;
           }
         }
-        case 'this.constants.value[]':
-        case 'this.constants.value[][]':
-        case 'this.constants.value[][][]':
-        case 'this.constants.value[][][][]':
-          break;
-        case 'fn()[]':
-          this.astCallExpression(mNode.object, retArr);
-          retArr.push('[');
-          retArr.push(this.memberExpressionPropertyMarkup(property));
-          retArr.push(']');
-          return retArr;
-        case 'fn()[][]':
-          this.astCallExpression(mNode.object.object, retArr);
-          retArr.push('[');
-          retArr.push(this.memberExpressionPropertyMarkup(mNode.object.property));
-          retArr.push(']');
-          retArr.push('[');
-          retArr.push(this.memberExpressionPropertyMarkup(mNode.property));
-          retArr.push(']');
-          return retArr;
-        case '[][]':
-          this.astArrayExpression(mNode.object, retArr);
-          retArr.push('[');
-          retArr.push(this.memberExpressionPropertyMarkup(property));
-          retArr.push(']');
-          return retArr;
-        default:
-          throw this.astErrorOutput('Unexpected expression', mNode);
+      case 'this.constants.value[]':
+      case 'this.constants.value[][]':
+      case 'this.constants.value[][][]':
+      case 'this.constants.value[][][][]':
+        break;
+      case 'fn()[]':
+        this.astCallExpression(mNode.object, retArr);
+        retArr.push('[');
+        retArr.push(this.memberExpressionPropertyMarkup(property));
+        retArr.push(']');
+        return retArr;
+      case 'fn()[][]':
+        this.astCallExpression(mNode.object.object, retArr);
+        retArr.push('[');
+        retArr.push(
+          this.memberExpressionPropertyMarkup(mNode.object.property)
+        );
+        retArr.push(']');
+        retArr.push('[');
+        retArr.push(this.memberExpressionPropertyMarkup(mNode.property));
+        retArr.push(']');
+        return retArr;
+      case '[][]':
+        this.astArrayExpression(mNode.object, retArr);
+        retArr.push('[');
+        retArr.push(this.memberExpressionPropertyMarkup(property));
+        retArr.push(']');
+        return retArr;
+      default:
+        throw this.astErrorOutput('Unexpected expression', mNode);
     }
 
     if (mNode.computed === false) {
@@ -1206,43 +1266,57 @@ class WebGLFunctionNode extends FunctionNode {
         retArr.push(']');
         break;
       case 'HTMLImageArray':
-        retArr.push(`getImage3D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(
+          `getImage3D(${markupName}, ${markupName}Size, ${markupName}Dim, `
+        );
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
       case 'ArrayTexture(1)':
-        retArr.push(`getFloatFromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(
+          `getFloatFromSampler2D(${markupName}, ${markupName}Size, ${markupName}Dim, `
+        );
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
       case 'Array1D(2)':
       case 'Array2D(2)':
       case 'Array3D(2)':
-        retArr.push(`getMemoryOptimizedVec2(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(
+          `getMemoryOptimizedVec2(${markupName}, ${markupName}Size, ${markupName}Dim, `
+        );
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
       case 'ArrayTexture(2)':
-        retArr.push(`getVec2FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(
+          `getVec2FromSampler2D(${markupName}, ${markupName}Size, ${markupName}Dim, `
+        );
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
       case 'Array1D(3)':
       case 'Array2D(3)':
       case 'Array3D(3)':
-        retArr.push(`getMemoryOptimizedVec3(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(
+          `getMemoryOptimizedVec3(${markupName}, ${markupName}Size, ${markupName}Dim, `
+        );
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
       case 'ArrayTexture(3)':
-        retArr.push(`getVec3FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(
+          `getVec3FromSampler2D(${markupName}, ${markupName}Size, ${markupName}Dim, `
+        );
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
       case 'Array1D(4)':
       case 'Array2D(4)':
       case 'Array3D(4)':
-        retArr.push(`getMemoryOptimizedVec4(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(
+          `getMemoryOptimizedVec4(${markupName}, ${markupName}Size, ${markupName}Dim, `
+        );
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
@@ -1253,7 +1327,9 @@ class WebGLFunctionNode extends FunctionNode {
       case 'ImageBitmap':
       case 'ImageData':
       case 'HTMLVideo':
-        retArr.push(`getVec4FromSampler2D(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(
+          `getVec4FromSampler2D(${markupName}, ${markupName}Size, ${markupName}Dim, `
+        );
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
@@ -1269,24 +1345,32 @@ class WebGLFunctionNode extends FunctionNode {
         if (this.precision === 'single') {
           // bitRatio is always 4 here, javascript doesn't yet have 8 or 16 bit support
           // TODO: make 8 or 16 bit work anyway!
-          retArr.push(`getMemoryOptimized32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+          retArr.push(
+            `getMemoryOptimized32(${markupName}, ${markupName}Size, ${markupName}Dim, `
+          );
           this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
           retArr.push(')');
         } else {
-          const bitRatio = (origin === 'user' ?
-            this.lookupFunctionArgumentBitRatio(this.name, name) :
-            this.constantBitRatios[name]
-          );
+          const bitRatio =
+            origin === 'user'
+              ? this.lookupFunctionArgumentBitRatio(this.name, name)
+              : this.constantBitRatios[name];
           switch (bitRatio) {
             case 1:
-              retArr.push(`get8(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+              retArr.push(
+                `get8(${markupName}, ${markupName}Size, ${markupName}Dim, `
+              );
               break;
             case 2:
-              retArr.push(`get16(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+              retArr.push(
+                `get16(${markupName}, ${markupName}Size, ${markupName}Dim, `
+              );
               break;
             case 4:
             case 0:
-              retArr.push(`get32(${markupName}, ${markupName}Size, ${markupName}Dim, `);
+              retArr.push(
+                `get32(${markupName}, ${markupName}Size, ${markupName}Dim, `
+              );
               break;
             default:
               throw new Error(`unhandled bit ratio of ${bitRatio}`);
@@ -1296,20 +1380,24 @@ class WebGLFunctionNode extends FunctionNode {
         }
         break;
       case 'MemoryOptimizedNumberTexture':
-        retArr.push(`getMemoryOptimized32(${ markupName }, ${ markupName }Size, ${ markupName }Dim, `);
+        retArr.push(
+          `getMemoryOptimized32(${markupName}, ${markupName}Size, ${markupName}Dim, `
+        );
         this.memberExpressionXYZ(xProperty, yProperty, zProperty, retArr);
         retArr.push(')');
         break;
       case 'Matrix(2)':
       case 'Matrix(3)':
       case 'Matrix(4)':
-        retArr.push(`${markupName}[${this.memberExpressionPropertyMarkup(yProperty)}]`);
+        retArr.push(
+          `${markupName}[${this.memberExpressionPropertyMarkup(yProperty)}]`
+        );
         if (yProperty) {
           retArr.push(`[${this.memberExpressionPropertyMarkup(xProperty)}]`);
         }
         break;
       default:
-        throw new Error(`unhandled member expression "${ type }"`);
+        throw new Error(`unhandled member expression "${type}"`);
     }
     return retArr;
   }
@@ -1329,11 +1417,18 @@ class WebGLFunctionNode extends FunctionNode {
     const isMathFunction = this.isAstMathFunction(ast);
 
     // Its a math operator or this.something(), remove the prefix
-    if (isMathFunction || (ast.callee.object && ast.callee.object.type === 'ThisExpression')) {
+    if (
+      isMathFunction ||
+      (ast.callee.object && ast.callee.object.type === 'ThisExpression')
+    ) {
       functionName = ast.callee.property.name;
     }
     // Issue #212, BABEL!
-    else if (ast.callee.type === 'SequenceExpression' && ast.callee.expressions[0].type === 'Literal' && !isNaN(ast.callee.expressions[0].raw)) {
+    else if (
+      ast.callee.type === 'SequenceExpression' &&
+      ast.callee.expressions[0].type === 'Literal' &&
+      !isNaN(ast.callee.expressions[0].raw)
+    ) {
       functionName = ast.callee.expressions[1].property.name;
     } else {
       functionName = ast.callee.name;
@@ -1361,7 +1456,10 @@ class WebGLFunctionNode extends FunctionNode {
     if (functionName === 'random' && this.plugins && this.plugins.length > 0) {
       for (let i = 0; i < this.plugins.length; i++) {
         const plugin = this.plugins[i];
-        if (plugin.functionMatch === 'Math.random()' && plugin.functionReplace) {
+        if (
+          plugin.functionMatch === 'Math.random()' &&
+          plugin.functionReplace
+        ) {
           retArr.push(plugin.functionReplace);
           return retArr;
         }
@@ -1458,10 +1556,17 @@ class WebGLFunctionNode extends FunctionNode {
             if (targetType === argumentType) {
               if (argument.type === 'Identifier') {
                 retArr.push(`user_${utils.sanitizeName(argument.name)}`);
-              } else if (argument.type === 'ArrayExpression' || argument.type === 'MemberExpression' || argument.type === 'CallExpression') {
+              } else if (
+                argument.type === 'ArrayExpression' ||
+                argument.type === 'MemberExpression' ||
+                argument.type === 'CallExpression'
+              ) {
                 this.astGeneric(argument, retArr);
               } else {
-                throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
+                throw this.astErrorOutput(
+                  `Unhandled argument type ${argument.type}`,
+                  ast
+                );
               }
               continue;
             }
@@ -1480,15 +1585,27 @@ class WebGLFunctionNode extends FunctionNode {
           case 'Array':
           case 'Input':
             if (targetType === argumentType) {
-              if (argument.type !== 'Identifier') throw this.astErrorOutput(`Unhandled argument type ${ argument.type }`, ast);
-              this.triggerImplyArgumentBitRatio(this.name, argument.name, functionName, i);
+              if (argument.type !== 'Identifier')
+                throw this.astErrorOutput(
+                  `Unhandled argument type ${argument.type}`,
+                  ast
+                );
+              this.triggerImplyArgumentBitRatio(
+                this.name,
+                argument.name,
+                functionName,
+                i
+              );
               const name = utils.sanitizeName(argument.name);
               retArr.push(`user_${name},user_${name}Size,user_${name}Dim`);
               continue;
             }
             break;
         }
-        throw this.astErrorOutput(`Unhandled argument combination of ${ argumentType } and ${ targetType } for argument named "${ argument.name }"`, ast);
+        throw this.astErrorOutput(
+          `Unhandled argument combination of ${argumentType} and ${targetType} for argument named "${argument.name}"`,
+          ast
+        );
       }
     }
     // Close arguments space
@@ -1522,7 +1639,7 @@ class WebGLFunctionNode extends FunctionNode {
         retArr.push(', ');
       }
       const subNode = arrNode.elements[i];
-      this.astGeneric(subNode, retArr)
+      this.astGeneric(subNode, retArr);
     }
     retArr.push(')');
 
@@ -1566,41 +1683,37 @@ class WebGLFunctionNode extends FunctionNode {
 }
 
 const typeMap = {
-  'Array': 'sampler2D',
+  Array: 'sampler2D',
   'Array(2)': 'vec2',
   'Array(3)': 'vec3',
   'Array(4)': 'vec4',
   'Matrix(2)': 'mat2',
   'Matrix(3)': 'mat3',
   'Matrix(4)': 'mat4',
-  'Array2D': 'sampler2D',
-  'Array3D': 'sampler2D',
-  'Boolean': 'bool',
-  'Float': 'float',
-  'Input': 'sampler2D',
-  'Integer': 'int',
-  'Number': 'float',
-  'LiteralInteger': 'float',
-  'NumberTexture': 'sampler2D',
-  'MemoryOptimizedNumberTexture': 'sampler2D',
+  Array2D: 'sampler2D',
+  Array3D: 'sampler2D',
+  Boolean: 'bool',
+  Float: 'float',
+  Input: 'sampler2D',
+  Integer: 'int',
+  Number: 'float',
+  LiteralInteger: 'float',
+  NumberTexture: 'sampler2D',
+  MemoryOptimizedNumberTexture: 'sampler2D',
   'ArrayTexture(1)': 'sampler2D',
   'ArrayTexture(2)': 'sampler2D',
   'ArrayTexture(3)': 'sampler2D',
   'ArrayTexture(4)': 'sampler2D',
-  'HTMLVideo': 'sampler2D',
-  'HTMLCanvas': 'sampler2D',
-  'OffscreenCanvas': 'sampler2D',
-  'HTMLImage': 'sampler2D',
-  'ImageBitmap': 'sampler2D',
-  'ImageData': 'sampler2D',
-  'HTMLImageArray': 'sampler2DArray',
+  HTMLVideo: 'sampler2D',
+  HTMLCanvas: 'sampler2D',
+  OffscreenCanvas: 'sampler2D',
+  HTMLImage: 'sampler2D',
+  ImageBitmap: 'sampler2D',
+  ImageData: 'sampler2D',
+  HTMLImageArray: 'sampler2DArray',
 };
 
 const operatorMap = {
   '===': '==',
-  '!==': '!='
-};
-
-module.exports = {
-  WebGLFunctionNode
+  '!==': '!=',
 };

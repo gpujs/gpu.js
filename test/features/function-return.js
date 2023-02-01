@@ -1,15 +1,18 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('features: function return');
 
-function functionReturnFloat( mode ) {
+function functionReturnFloat(mode) {
   const gpu = new GPU({ mode });
-  const f = gpu.createKernel(function() {
-    return 42;
-  }, {
-    output : [1]
-  });
+  const f = gpu.createKernel(
+    function () {
+      return 42;
+    },
+    {
+      output: [1],
+    }
+  );
   assert.equal(f()[0], 42);
   gpu.destroy();
 }
@@ -38,14 +41,16 @@ test('float cpu', () => {
   functionReturnFloat('cpu');
 });
 
-
-function functionReturnArray2( mode ) {
+function functionReturnArray2(mode) {
   const gpu = new GPU({ mode });
-  const f = gpu.createKernel(function() {
-    return [42, 43];
-  }, {
-    output : [1]
-  });
+  const f = gpu.createKernel(
+    function () {
+      return [42, 43];
+    },
+    {
+      output: [1],
+    }
+  );
   const result = f();
   assert.equal(result[0].constructor, Float32Array);
   assert.equal(result[0][0], 42);
@@ -61,29 +66,41 @@ function functionReturnArray2( mode ) {
   functionReturnArray2('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(2) webgl', () => {
-  functionReturnArray2('webgl');
-});
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(2) webgl',
+  () => {
+    functionReturnArray2('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('Array(2) webgl2', () => {
-  functionReturnArray2('webgl2');
-});
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(2) webgl2',
+  () => {
+    functionReturnArray2('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(2) headlessgl', () => {
-  functionReturnArray2('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(2) headlessgl',
+  () => {
+    functionReturnArray2('headlessgl');
+  }
+);
 
 test('Array(2) cpu', () => {
   functionReturnArray2('cpu');
 });
 
-function functionReturnArray3( mode ) {
+function functionReturnArray3(mode) {
   const gpu = new GPU({ mode });
-  const f = gpu.createKernel(function() {
-    return [42, 43, 44];
-  }, {
-    output : [1]
-  });
+  const f = gpu.createKernel(
+    function () {
+      return [42, 43, 44];
+    },
+    {
+      output: [1],
+    }
+  );
   const result = f();
   assert.equal(result[0].constructor, Float32Array);
   assert.equal(result[0][0], 42);
@@ -100,30 +117,41 @@ function functionReturnArray3( mode ) {
   functionReturnArray3('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(3) webgl', () => {
-  functionReturnArray3('webgl');
-});
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(3) webgl',
+  () => {
+    functionReturnArray3('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('Array(3) webgl2', () => {
-  functionReturnArray3('webgl2');
-});
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(3) webgl2',
+  () => {
+    functionReturnArray3('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(3) headlessgl', () => {
-  functionReturnArray3('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(3) headlessgl',
+  () => {
+    functionReturnArray3('headlessgl');
+  }
+);
 
 test('Array(3) cpu', () => {
   functionReturnArray3('cpu');
 });
 
-
-function functionReturnArray4( mode ) {
+function functionReturnArray4(mode) {
   const gpu = new GPU({ mode });
-  const f = gpu.createKernel(function() {
-    return [42, 43, 44, 45];
-  }, {
-    output : [1]
-  });
+  const f = gpu.createKernel(
+    function () {
+      return [42, 43, 44, 45];
+    },
+    {
+      output: [1],
+    }
+  );
 
   const result = f();
   assert.equal(result[0].constructor, Float32Array);
@@ -142,17 +170,26 @@ function functionReturnArray4( mode ) {
   functionReturnArray4('gpu');
 });
 
-(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(4) webgl', () => {
-  functionReturnArray4('webgl');
-});
+(GPU.isWebGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(4) webgl',
+  () => {
+    functionReturnArray4('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)('Array(4) webgl2', () => {
-  functionReturnArray4('webgl2');
-});
+(GPU.isWebGL2Supported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(4) webgl2',
+  () => {
+    functionReturnArray4('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)('Array(4) headlessgl', () => {
-  functionReturnArray4('headlessgl');
-});
+(GPU.isHeadlessGLSupported && GPU.isSinglePrecisionSupported ? test : skip)(
+  'Array(4) headlessgl',
+  () => {
+    functionReturnArray4('headlessgl');
+  }
+);
 
 test('Array(4) cpu', () => {
   functionReturnArray4('cpu');
@@ -160,18 +197,27 @@ test('Array(4) cpu', () => {
 
 function functionReturnArray4MemberExpression(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    let pixel = toIntArray4(value[this.thread.y][this.thread.x]);
-    return pixel;
-    function toIntArray4(pixel) {
-      return [pixel[0] * 255, pixel[1] * 255, pixel[2] * 255, pixel[3] * 255];
+  const kernel = gpu.createKernel(
+    function (value) {
+      let pixel = toIntArray4(value[this.thread.y][this.thread.x]);
+      return pixel;
+
+      function toIntArray4(pixel) {
+        return [
+          pixel[0] * 255,
+          pixel[1] * 255,
+          pixel[2] * 255,
+          pixel[3] * 255,
+        ];
+      }
+    },
+    {
+      output: [1, 1],
+      argumentTypes: { value: 'Array2D(4)' },
     }
-  }, {
-    output: [1, 1],
-    argumentTypes: { value: 'Array2D(4)' },
-  });
-  const result = kernel([[[1,1,1,1]]]);
-  assert.deepEqual(Array.from(result[0][0]), [255,255,255,255]);
+  );
+  const result = kernel([[[1, 1, 1, 1]]]);
+  assert.deepEqual(Array.from(result[0][0]), [255, 255, 255, 255]);
   gpu.destroy();
 }
 

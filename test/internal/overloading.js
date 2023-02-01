@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('internal: overloading');
 // TODO: planned for after v2, overload generated functions so as to cut down on casting
@@ -8,20 +8,26 @@ describe('internal: overloading');
 // TODO: Look into
 test('with Han', () => {
   const gpu = new GPU();
-  gpu.addFunction(function dbl(v) {
-    return v + v;
-  }, { returnType: "Float", argumentTypes: { v: "Float" } });
+  gpu.addFunction(
+    function dbl(v) {
+      return v + v;
+    },
+    { returnType: 'Float', argumentTypes: { v: 'Float' } }
+  );
   try {
-    const kernel = gpu.createKernel(function(v) {
-      // const output2 = dbl(2);
-      let sum = 0;
-      for (let i = 0; i < 1; i++) {
-        dbl(i);
-      }
-      // const output1
-      dbl(Math.PI);
-      return sum;
-    }, { output: [1] });
+    const kernel = gpu.createKernel(
+      function (v) {
+        // const output2 = dbl(2);
+        let sum = 0;
+        for (let i = 0; i < 1; i++) {
+          dbl(i);
+        }
+        // const output1
+        dbl(Math.PI);
+        return sum;
+      },
+      { output: [1] }
+    );
   } finally {
     gpu.destroy();
   }

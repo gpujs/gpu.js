@@ -1,9 +1,9 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelArray } = require('./array');
+import { utils } from '../../../utils';
+import { WebGLKernelArray } from './array';
 
-const sameError = `Source and destination textures are the same.  Use immutable = true and manually cleanup kernel output texture memory with texture.delete()`;
+export const sameError = `Source and destination textures are the same.  Use immutable = true and manually cleanup kernel output texture memory with texture.delete()`;
 
-class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
+export class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
     const [width, height] = value.size;
@@ -39,7 +39,9 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
       return;
     }
     if (this.checkContext && inputTexture.context !== this.context) {
-      throw new Error(`Value ${this.name} (${this.type}) must be from same context`);
+      throw new Error(
+        `Value ${this.name} (${this.type}) must be from same context`
+      );
     }
 
     const { kernel, context: gl } = this;
@@ -47,7 +49,10 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
       if (kernel.immutable) {
         kernel.updateTextureArgumentRefs(this, inputTexture);
       } else {
-        if (kernel.texture && kernel.texture.texture === inputTexture.texture) {
+        if (
+          kernel.texture &&
+          kernel.texture.texture === inputTexture.texture
+        ) {
           throw new Error(sameError);
         } else if (kernel.mappedTextures) {
           const { mappedTextures } = kernel;
@@ -61,12 +66,7 @@ class WebGLKernelValueMemoryOptimizedNumberTexture extends WebGLKernelArray {
     }
 
     gl.activeTexture(this.contextHandle);
-    gl.bindTexture(gl.TEXTURE_2D, this.uploadValue = inputTexture.texture);
+    gl.bindTexture(gl.TEXTURE_2D, (this.uploadValue = inputTexture.texture));
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGLKernelValueMemoryOptimizedNumberTexture,
-  sameError
-};

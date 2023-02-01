@@ -1,8 +1,8 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelArray } = require('./array');
-const { sameError } = require('./memory-optimized-number-texture');
+import { utils } from '../../../utils';
+import { WebGLKernelArray } from './array';
+import { sameError } from './memory-optimized-number-texture';
 
-class WebGLKernelValueNumberTexture extends WebGLKernelArray {
+export class WebGLKernelValueNumberTexture extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
     const [width, height] = value.size;
@@ -41,7 +41,9 @@ class WebGLKernelValueNumberTexture extends WebGLKernelArray {
       return;
     }
     if (this.checkContext && inputTexture.context !== this.context) {
-      throw new Error(`Value ${this.name} (${this.type}) must be from same context`);
+      throw new Error(
+        `Value ${this.name} (${this.type}) must be from same context`
+      );
     }
 
     const { kernel, context: gl } = this;
@@ -49,7 +51,10 @@ class WebGLKernelValueNumberTexture extends WebGLKernelArray {
       if (kernel.immutable) {
         kernel.updateTextureArgumentRefs(this, inputTexture);
       } else {
-        if (kernel.texture && kernel.texture.texture === inputTexture.texture) {
+        if (
+          kernel.texture &&
+          kernel.texture.texture === inputTexture.texture
+        ) {
           throw new Error(sameError);
         } else if (kernel.mappedTextures) {
           const { mappedTextures } = kernel;
@@ -63,11 +68,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelArray {
     }
 
     gl.activeTexture(this.contextHandle);
-    gl.bindTexture(gl.TEXTURE_2D, this.uploadValue = inputTexture.texture);
+    gl.bindTexture(gl.TEXTURE_2D, (this.uploadValue = inputTexture.texture));
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGLKernelValueNumberTexture
-};

@@ -1,19 +1,26 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('features: constants array');
 
 function feature(mode) {
   const gpu = new GPU({ mode });
   const array = [200, 200];
-  const tryConst = gpu.createKernel(function() {
-    return this.constants.array[this.thread.x];
-  }, {
-    constants: { array },
-    output: [2]
-  });
+  const tryConst = gpu.createKernel(
+    function () {
+      return this.constants.array[this.thread.x];
+    },
+    {
+      constants: { array },
+      output: [2],
+    }
+  );
   const result = tryConst();
-  assert.deepEqual(Array.from(result), [200, 200], 'array constant passed test');
+  assert.deepEqual(
+    Array.from(result),
+    [200, 200],
+    'array constant passed test'
+  );
   gpu.destroy();
 }
 

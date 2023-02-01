@@ -1,13 +1,17 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelArray } = require('./array');
+import { utils } from '../../../utils';
+import { WebGLKernelArray } from './array';
 
-class WebGLKernelValueUnsignedArray extends WebGLKernelArray {
+export class WebGLKernelValueUnsignedArray extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
     this.bitRatio = this.getBitRatio(value);
     this.dimensions = utils.getDimensions(value, true);
-    this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
-    this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.textureSize = utils.getMemoryOptimizedPackedTextureSize(
+      this.dimensions,
+      this.bitRatio
+    );
+    this.uploadArrayLength =
+      this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
     this.checkSize(this.textureSize[0], this.textureSize[1]);
     this.TranserArrayType = this.getTransferArrayType(value);
     this.preUploadValue = new this.TranserArrayType(this.uploadArrayLength);
@@ -40,11 +44,17 @@ class WebGLKernelValueUnsignedArray extends WebGLKernelArray {
     gl.activeTexture(this.contextHandle);
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.textureSize[0], this.textureSize[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, this.uploadValue);
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      this.textureSize[0],
+      this.textureSize[1],
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      this.uploadValue
+    );
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGLKernelValueUnsignedArray
-};

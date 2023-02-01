@@ -1,24 +1,25 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('issue #553 - permanent flip');
 
 function testFixPermanentFlip(precision, mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(a1, a2, a3, a4) {
-    return a2[this.thread.x];
-  }, {
-    precision,
-    output: [4]
-  });
+  const kernel = gpu.createKernel(
+    function (a1, a2, a3, a4) {
+      return a2[this.thread.x];
+    },
+    {
+      precision,
+      output: [4],
+    }
+  );
   const arr = [1, 2, 3, 4];
   for (let i = 0; i < 4; i++) {
-    assert.deepEqual(kernel(
-      999,
-      arr,
-      new Image(2, 2),
-      999,
-    ), new Float32Array(arr));
+    assert.deepEqual(
+      kernel(999, arr, new Image(2, 2), 999),
+      new Float32Array(arr)
+    );
   }
 
   gpu.destroy();

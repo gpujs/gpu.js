@@ -1,9 +1,12 @@
-const { GPU } = require('../src');
+const { GPU } = require('..');
 const gpu1 = new GPU();
 
-const kernel1 = gpu1.createKernel(function(value) {
-  return value * 100;
-}, { output: [1] });
+const kernel1 = gpu1.createKernel(
+  function (value) {
+    return value * 100;
+  },
+  { output: [1] }
+);
 
 const resultFromRegularKernel = kernel1(42);
 const json = kernel1.toJSON();
@@ -14,4 +17,3 @@ const gpu2 = new GPU();
 const kernel2 = gpu2.createKernel(json);
 const resultFromJsonKernel = kernel2(42);
 console.log(resultFromJsonKernel);
-

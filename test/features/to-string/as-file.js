@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../../src');
+const { GPU } = require('../../..');
 
 describe('features: to-string as file');
 
@@ -10,9 +10,12 @@ function toStringAsFileTest(mode) {
     fs.unlinkSync(path);
   }
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(v) {
-    return v[this.thread.y][this.thread.x] + 1;
-  }, { output: [1, 1] });
+  const kernel = gpu.createKernel(
+    function (v) {
+      return v[this.thread.y][this.thread.x] + 1;
+    },
+    { output: [1, 1] }
+  );
   const a = [[1]];
   const expected = kernel(a);
   assert.deepEqual(expected, [new Float32Array([2])]);
@@ -26,12 +29,16 @@ function toStringAsFileTest(mode) {
   gpu.destroy();
 }
 
-(GPU.isHeadlessGLSupported ? test : skip)('can save and restore function headlessgl', () => {
-  toStringAsFileTest('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'can save and restore function headlessgl',
+  () => {
+    toStringAsFileTest('headlessgl');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('can save and restore function cpu', () => {
-  toStringAsFileTest('cpu');
-});
-
-
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'can save and restore function cpu',
+  () => {
+    toStringAsFileTest('cpu');
+  }
+);

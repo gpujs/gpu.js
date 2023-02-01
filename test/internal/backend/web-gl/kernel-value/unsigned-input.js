@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { webGLKernelValueMaps } = require('../../../../../src');
+const { webGLKernelValueMaps } = require('../../../../..');
 
 describe('internal: WebGLKernelValueUnsignedInput');
 
@@ -11,16 +11,19 @@ test('.constructor() checks too large height', () => {
     validate: true,
   };
   assert.throws(() => {
-    new webGLKernelValueMaps.unsigned.static.Input({ size: [2,1], value: [1,2] }, {
-      kernel: mockKernel,
-      name: 'test',
-      type: 'Array',
-      origin: 'user',
-      tactic: 'speed',
-      onRequestContextHandle: () => 1,
-      onRequestTexture: () => null,
-      onRequestIndex: () => 1
-    });
+    new webGLKernelValueMaps.unsigned.static.Input(
+      { size: [2, 1], value: [1, 2] },
+      {
+        kernel: mockKernel,
+        name: 'test',
+        type: 'Array',
+        origin: 'user',
+        tactic: 'speed',
+        onRequestContextHandle: () => 1,
+        onRequestTexture: () => null,
+        onRequestIndex: () => 1,
+      }
+    );
   }, new Error('Argument texture height and width of 2 larger than maximum size of 1 for your GPU'));
 });
 
@@ -41,16 +44,19 @@ test('.constructor() checks ok height & width', () => {
     pixelStorei: () => {},
     texImage2D: () => {},
   };
-  const v = new webGLKernelValueMaps.unsigned.static.Input({ size: [1,2], value: [1,2] }, {
-    kernel: mockKernel,
-    name: 'test',
-    type: 'Array',
-    origin: 'user',
-    tactic: 'speed',
-    context: mockContext,
-    onRequestContextHandle: () => 1,
-    onRequestTexture: () => null,
-    onRequestIndex: () => 1
-  });
+  const v = new webGLKernelValueMaps.unsigned.static.Input(
+    { size: [1, 2], value: [1, 2] },
+    {
+      kernel: mockKernel,
+      name: 'test',
+      type: 'Array',
+      origin: 'user',
+      tactic: 'speed',
+      context: mockContext,
+      onRequestContextHandle: () => 1,
+      onRequestTexture: () => null,
+      onRequestIndex: () => 1,
+    }
+  );
   assert.equal(v.constructor.name, 'WebGLKernelValueUnsignedInput');
 });

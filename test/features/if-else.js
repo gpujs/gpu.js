@@ -1,24 +1,28 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('if else boolean');
+
 function ifElseBooleanTest(mode) {
   const gpu = new GPU({
-    mode
+    mode,
   });
-  const f = gpu.createKernel(function() {
-    let result = 0;
-    if (true) {
-      result = 4;
-    } else {
-      result = 2;
+  const f = gpu.createKernel(
+    function () {
+      let result = 0;
+      if (true) {
+        result = 4;
+      } else {
+        result = 2;
+      }
+      return result;
+    },
+    {
+      output: [1],
     }
-    return result;
-  }, {
-    output : [1]
-  });
+  );
 
-  assert.ok( f !== null, 'function generated test');
+  assert.ok(f !== null, 'function generated test');
   assert.equal(f()[0], 4, 'basic return function test');
   gpu.destroy();
 }
@@ -47,22 +51,29 @@ test('cpu', () => {
   ifElseBooleanTest('cpu');
 });
 
-
 describe('if else lookup');
-function ifElseLookupTest( mode ) {
-  const gpu = new GPU({ mode });
-  const f = gpu.createKernel(function(x) {
-    if (x[this.thread.x] > 0) {
-      return 0;
-    } else {
-      return 1;
-    }
-  }, {
-    output : [4]
-  });
 
-  assert.ok( f !== null, 'function generated test');
-  assert.deepEqual(Array.from(f([1, 1, 0, 0])), [0, 0, 1, 1], 'basic return function test');
+function ifElseLookupTest(mode) {
+  const gpu = new GPU({ mode });
+  const f = gpu.createKernel(
+    function (x) {
+      if (x[this.thread.x] > 0) {
+        return 0;
+      } else {
+        return 1;
+      }
+    },
+    {
+      output: [4],
+    }
+  );
+
+  assert.ok(f !== null, 'function generated test');
+  assert.deepEqual(
+    Array.from(f([1, 1, 0, 0])),
+    [0, 0, 1, 1],
+    'basic return function test'
+  );
   gpu.destroy();
 }
 
@@ -91,20 +102,28 @@ test('cpu', () => {
 });
 
 describe('if else if');
-function ifElseIfTest( mode ) {
+
+function ifElseIfTest(mode) {
   const gpu = new GPU({ mode });
-  const f = gpu.createKernel(function(x) {
-    const v = x[this.thread.x];
-    if (v > 0) {
-      return 0;
-    } else if (v < 1) {
-      return .5;
+  const f = gpu.createKernel(
+    function (x) {
+      const v = x[this.thread.x];
+      if (v > 0) {
+        return 0;
+      } else if (v < 1) {
+        return 0.5;
+      }
+      return 1;
+    },
+    {
+      output: [2],
     }
-    return 1;
-  }, {
-    output : [2]
-  });
-  assert.deepEqual(Array.from(f([-1, 1])), [.5, 0], 'basic return function test');
+  );
+  assert.deepEqual(
+    Array.from(f([-1, 1])),
+    [0.5, 0],
+    'basic return function test'
+  );
   gpu.destroy();
 }
 

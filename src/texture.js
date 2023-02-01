@@ -2,7 +2,7 @@
  * @desc WebGl Texture implementation in JS
  * @param {IGPUTextureSettings} settings
  */
-class Texture {
+export class Texture {
   constructor(settings) {
     const {
       texture,
@@ -13,7 +13,7 @@ class Texture {
       type = 'NumberTexture',
       kernel,
       internalFormat,
-      textureFormat
+      textureFormat,
     } = settings;
     if (!output) throw new Error('settings property "output" required.');
     if (!context) throw new Error('settings property "context" required.');
@@ -66,7 +66,3 @@ class Texture {
     throw new Error(`Not implemented on ${this.constructor.name}`);
   }
 }
-
-module.exports = {
-  Texture
-};

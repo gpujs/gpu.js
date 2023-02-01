@@ -1,17 +1,20 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('issue #585 - inaccurate lookups');
 
 function testResize(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    return value[this.thread.x];
-  }, {
-    output: [4],
-  });
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value[this.thread.x];
+    },
+    {
+      output: [4],
+    }
+  );
 
-  const result = kernel([0,1,2,3]);
+  const result = kernel([0, 1, 2, 3]);
   assert.equal(Math.round(result[0]), 0);
   assert.equal(Math.round(result[1]), 1);
   assert.equal(Math.round(result[2]), 2);

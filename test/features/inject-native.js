@@ -1,25 +1,33 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('features: inject native');
 
 function gpuAddAB(mode) {
-  const gpu = new GPU({mode});
+  const gpu = new GPU({ mode });
   gpu
-    .injectNative(`
+    .injectNative(
+      `
 int customAdder(int a, int b) {
   return a + b;
 }  
-`)
-    .addNativeFunction('customAdderLink', `int customAdderLink(int a, int b) {
+`
+    )
+    .addNativeFunction(
+      'customAdderLink',
+      `int customAdderLink(int a, int b) {
   return customAdder(a, b);
-}`);
-  const kernel = gpu.createKernel(function (a, b) {
-    return customAdderLink(a[this.thread.x], b[this.thread.x]);
-  }, {
-    output: [6],
-    returnType: 'Integer'
-  });
+}`
+    );
+  const kernel = gpu.createKernel(
+    function (a, b) {
+      return customAdderLink(a[this.thread.x], b[this.thread.x]);
+    },
+    {
+      output: [6],
+      returnType: 'Integer',
+    }
+  );
 
   const a = [1, 2, 3, 5, 6, 7];
   const b = [4, 5, 6, 1, 2, 3];
@@ -56,15 +64,17 @@ function cpuAddAB(mode) {
   function customAdder(a, b) {
     return a + b;
   }
-  const gpu = new GPU({mode});
-  gpu
-    .injectNative(customAdder.toString());
-  const kernel = gpu.createKernel(function (a, b) {
-    return customAdder(a[this.thread.x], b[this.thread.x]);
-  }, {
-    output: [6],
-    returnType: 'Integer'
-  });
+  const gpu = new GPU({ mode });
+  gpu.injectNative(customAdder.toString());
+  const kernel = gpu.createKernel(
+    function (a, b) {
+      return customAdder(a[this.thread.x], b[this.thread.x]);
+    },
+    {
+      output: [6],
+      returnType: 'Integer',
+    }
+  );
 
   const a = [1, 2, 3, 5, 6, 7];
   const b = [4, 5, 6, 1, 2, 3];

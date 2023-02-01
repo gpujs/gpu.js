@@ -1,16 +1,19 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('internal: Implied else');
 
 function neverReachedWhenEarlyReturn(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(check, v1, v2) {
-    if (check) {
-      return v1;
-    }
-    return v2;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function (check, v1, v2) {
+      if (check) {
+        return v1;
+      }
+      return v2;
+    },
+    { output: [1] }
+  );
   const result = kernel(true, 123, 321);
   assert.equal(result[0], 123);
   gpu.destroy();
@@ -24,17 +27,26 @@ test('never reached when early return gpu', () => {
   neverReachedWhenEarlyReturn('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('never reached when early return webgl', () => {
-  neverReachedWhenEarlyReturn('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'never reached when early return webgl',
+  () => {
+    neverReachedWhenEarlyReturn('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('never reached when early return webgl2', () => {
-  neverReachedWhenEarlyReturn('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'never reached when early return webgl2',
+  () => {
+    neverReachedWhenEarlyReturn('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('never reached when early return headlessgl', () => {
-  neverReachedWhenEarlyReturn('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'never reached when early return headlessgl',
+  () => {
+    neverReachedWhenEarlyReturn('headlessgl');
+  }
+);
 
 test('never reached when early return cpu', () => {
   neverReachedWhenEarlyReturn('cpu');
@@ -42,12 +54,15 @@ test('never reached when early return cpu', () => {
 
 function handlesImpliedElse(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(check, v1, v2) {
-    if (check) {
-      return v1;
-    }
-    return v2;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function (check, v1, v2) {
+      if (check) {
+        return v1;
+      }
+      return v2;
+    },
+    { output: [1] }
+  );
   const result = kernel(true, 123, 321);
   assert.equal(result[0], 123);
   gpu.destroy();
@@ -69,9 +84,12 @@ test('handles implied else gpu', () => {
   handlesImpliedElse('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('handles implied else headlessgl', () => {
-  handlesImpliedElse('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'handles implied else headlessgl',
+  () => {
+    handlesImpliedElse('headlessgl');
+  }
+);
 
 test('handles implied else cpu', () => {
   handlesImpliedElse('cpu');

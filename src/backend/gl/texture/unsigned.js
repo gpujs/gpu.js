@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { GLTexture } = require('./index');
+import { utils } from '../../../utils';
+import { GLTexture } from './index';
 
-class GLTextureUnsigned extends GLTexture {
+export class GLTextureUnsigned extends GLTexture {
   get textureType() {
     return this.context.UNSIGNED_BYTE;
   }
@@ -20,7 +20,15 @@ class GLTextureUnsigned extends GLTexture {
       0
     );
     const result = new Uint8Array(this.size[0] * this.size[1] * 4);
-    gl.readPixels(0, 0, this.size[0], this.size[1], gl.RGBA, gl.UNSIGNED_BYTE, result);
+    gl.readPixels(
+      0,
+      0,
+      this.size[0],
+      this.size[1],
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      result
+    );
     return result;
   }
   renderValues() {
@@ -31,7 +39,3 @@ class GLTextureUnsigned extends GLTexture {
     return utils.erectPackedFloat(this.renderValues(), this.output[0]);
   }
 }
-
-module.exports = {
-  GLTextureUnsigned
-};

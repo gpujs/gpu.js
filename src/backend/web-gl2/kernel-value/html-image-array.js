@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelArray } = require('../../web-gl/kernel-value/array');
+import { utils } from '../../../utils';
+import { WebGLKernelArray } from '../../web-gl/kernel-value/array';
 
-class WebGL2KernelValueHTMLImageArray extends WebGLKernelArray {
+export class WebGL2KernelValueHTMLImageArray extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
     this.checkSize(value[0].width, value[0].height);
@@ -22,9 +22,9 @@ class WebGL2KernelValueHTMLImageArray extends WebGLKernelArray {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform ${ variablePrecision } sampler2DArray ${this.id}`,
-      `${ variablePrecision } ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
-      `${ variablePrecision } ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
+      `uniform ${variablePrecision} sampler2DArray ${this.id}`,
+      `${variablePrecision} ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`,
+      `${variablePrecision} ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})`,
     ]);
   }
 
@@ -61,13 +61,9 @@ class WebGL2KernelValueHTMLImageArray extends WebGLKernelArray {
         imageDepth,
         gl.RGBA,
         gl.UNSIGNED_BYTE,
-        this.uploadValue = images[i]
+        (this.uploadValue = images[i])
       );
     }
     this.kernel.setUniform1i(this.id, this.index);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueHTMLImageArray
-};

@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueSingleInput } = require('./single-input');
+import { utils } from '../../../utils';
+import { WebGLKernelValueSingleInput } from './single-input';
 
-class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
+export class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
   getSource() {
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
@@ -13,8 +13,12 @@ class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
   updateValue(value) {
     let [w, h, d] = value.size;
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
-    this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
-    this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.textureSize = utils.getMemoryOptimizedFloatTextureSize(
+      this.dimensions,
+      this.bitRatio
+    );
+    this.uploadArrayLength =
+      this.textureSize[0] * this.textureSize[1] * this.bitRatio;
     this.checkSize(this.textureSize[0], this.textureSize[1]);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
@@ -22,7 +26,3 @@ class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
     super.updateValue(value);
   }
 }
-
-module.exports = {
-  WebGLKernelValueDynamicSingleInput
-};

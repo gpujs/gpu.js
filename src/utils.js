@@ -1,9 +1,9 @@
-const acorn = require('acorn');
-const { Input } = require('./input');
-const { Texture } = require('./texture');
+import * as acorn from 'acorn';
+import { Input } from './input';
+import { Texture } from './texture';
 
 const FUNCTION_NAME = /function ([^(]*)/;
-const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/gm;
 const ARGUMENT_NAMES = /([^\s,]+)/g;
 
 /**
@@ -12,7 +12,7 @@ const ARGUMENT_NAMES = /([^\s,]+)/g;
  * @type {utils}
  * This covers various snippets of code that is not entirely gpu.js specific (ie. may find uses elsewhere)
  */
-const utils = {
+export const utils = {
   /**
    *
    * @desc Gets the system endianness, and cache it
@@ -38,7 +38,7 @@ const utils = {
    * @returns  {Boolean} TRUE if the object is a JS function
    */
   isFunction(funcObj) {
-    return typeof(funcObj) === 'function';
+    return typeof funcObj === 'function';
   },
 
   /**
@@ -50,9 +50,7 @@ const utils = {
    */
   isFunctionString(fn) {
     if (typeof fn === 'string') {
-      return (fn
-        .slice(0, 'function'.length)
-        .toLowerCase() === 'function');
+      return fn.slice(0, 'function'.length).toLowerCase() === 'function';
     }
     return false;
   },
@@ -69,7 +67,10 @@ const utils = {
   },
 
   getFunctionBodyFromString(funcStr) {
-    return funcStr.substring(funcStr.indexOf('{') + 1, funcStr.lastIndexOf('}'));
+    return funcStr.substring(
+      funcStr.indexOf('{') + 1,
+      funcStr.lastIndexOf('}')
+    );
   },
 
   /**
@@ -79,7 +80,9 @@ const utils = {
    */
   getArgumentNamesFromString(fn) {
     const fnStr = fn.replace(STRIP_COMMENTS, '');
-    let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
+    let result = fnStr
+      .slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')'))
+      .match(ARGUMENT_NAMES);
     if (result === null) {
       result = [];
     }
@@ -92,7 +95,12 @@ const utils = {
    * @returns {Object|Array} Cloned object
    */
   clone(obj) {
-    if (obj === null || typeof obj !== 'object' || obj.hasOwnProperty('isActiveClone')) return obj;
+    if (
+      obj === null ||
+      typeof obj !== 'object' ||
+      obj.hasOwnProperty('isActiveClone')
+    )
+      return obj;
 
     const temp = obj.constructor(); // changed
 
@@ -154,11 +162,20 @@ const utils = {
       }
     } else if (value.hasOwnProperty('type')) {
       return value.type;
-    } else if (typeof OffscreenCanvas !== 'undefined' && value instanceof OffscreenCanvas) {
+    } else if (
+      typeof OffscreenCanvas !== 'undefined' &&
+      value instanceof OffscreenCanvas
+    ) {
       return 'OffscreenCanvas';
-    } else if (typeof ImageBitmap !== 'undefined' && value instanceof ImageBitmap) {
+    } else if (
+      typeof ImageBitmap !== 'undefined' &&
+      value instanceof ImageBitmap
+    ) {
       return 'ImageBitmap';
-    } else if (typeof ImageData !== 'undefined' && value instanceof ImageData) {
+    } else if (
+      typeof ImageData !== 'undefined' &&
+      value instanceof ImageData
+    ) {
       return 'ImageData';
     }
     return 'Unknown';
@@ -201,7 +218,13 @@ const utils = {
    * @returns {TextureDimensions}
    */
   getMemoryOptimizedFloatTextureSize(dimensions, bitRatio) {
-    const totalArea = utils.roundTo((dimensions[0] || 1) * (dimensions[1] || 1) * (dimensions[2] || 1) * (dimensions[3] || 1), 4);
+    const totalArea = utils.roundTo(
+      (dimensions[0] || 1) *
+        (dimensions[1] || 1) *
+        (dimensions[2] || 1) *
+        (dimensions[3] || 1),
+      4
+    );
     const texelCount = totalArea / bitRatio;
     return utils.closestSquareDimensions(texelCount);
   },
@@ -335,7 +358,9 @@ const utils = {
   splitArray(array, part) {
     const result = [];
     for (let i = 0; i < array.length; i += part) {
-      result.push(new array.constructor(array.buffer, i * 4 + array.byteOffset, part));
+      result.push(
+        new array.constructor(array.buffer, i * 4 + array.byteOffset, part)
+      );
     }
     return result;
   },
@@ -362,7 +387,7 @@ const utils = {
 
     do {
       props.push.apply(props, Object.getOwnPropertyNames(obj));
-    } while (obj = Object.getPrototypeOf(obj));
+    } while ((obj = Object.getPrototypeOf(obj)));
 
     return props;
   },
@@ -380,14 +405,18 @@ const utils = {
   },
   warnDeprecated(type, oldName, newName) {
     if (newName) {
-      console.warn(`You are using a deprecated ${ type } "${ oldName }". It has been replaced with "${ newName }". Fixing, but please upgrade as it will soon be removed.`);
+      console.warn(
+        `You are using a deprecated ${type} "${oldName}". It has been replaced with "${newName}". Fixing, but please upgrade as it will soon be removed.`
+      );
     } else {
-      console.warn(`You are using a deprecated ${ type } "${ oldName }". It has been removed. Fixing, but please upgrade as it will soon be removed.`);
+      console.warn(
+        `You are using a deprecated ${type} "${oldName}". It has been removed. Fixing, but please upgrade as it will soon be removed.`
+      );
     }
   },
   flipPixels: (pixels, width, height) => {
     // https://stackoverflow.com/a/41973289/1324039
-    const halfHeight = height / 2 | 0; // the | 0 keeps the result an int
+    const halfHeight = (height / 2) | 0; // the | 0 keeps the result an int
     const bytesPerRow = width * 4;
     // make a temp buffer to hold one row
     const temp = new Uint8ClampedArray(width * 4);
@@ -424,7 +453,7 @@ const utils = {
     for (let z = 0; z < depth; z++) {
       const yResults = new Array(height);
       for (let y = 0; y < height; y++) {
-        const xStart = (z * height * width) + y * width;
+        const xStart = z * height * width + y * width;
         const xEnd = xStart + width;
         yResults[y] = array.subarray(xStart, xEnd);
       }
@@ -448,7 +477,7 @@ const utils = {
     for (let z = 0; z < depth; z++) {
       const yResults = new Array(height);
       for (let y = 0; y < height; y++) {
-        const offset = (z * height * width) + (y * width);
+        const offset = z * height * width + y * width;
         yResults[y] = array.subarray(offset, offset + width);
       }
       zResults[z] = yResults;
@@ -524,7 +553,7 @@ const utils = {
       const yResults = new Array(height);
       for (let y = 0; y < height; y++) {
         const xResults = new Array(width);
-        const offset = (z * xResultsMax * height) + (y * xResultsMax);
+        const offset = z * xResultsMax * height + y * xResultsMax;
         let i = 0;
         for (let x = 0; x < xResultsMax; x += 4) {
           xResults[i++] = array.subarray(x + offset, x + offset + 2);
@@ -565,7 +594,7 @@ const utils = {
       const yResults = new Array(height);
       for (let y = 0; y < height; y++) {
         const xResults = new Array(width);
-        const offset = (z * xResultsMax * height) + (y * xResultsMax);
+        const offset = z * xResultsMax * height + y * xResultsMax;
         let i = 0;
         for (let x = 0; x < xResultsMax; x += 4) {
           xResults[i++] = array.subarray(x + offset, x + offset + 3);
@@ -606,7 +635,7 @@ const utils = {
       const yResults = new Array(height);
       for (let y = 0; y < height; y++) {
         const xResults = new Array(width);
-        const offset = (z * xResultsMax * height) + (y * xResultsMax);
+        const offset = z * xResultsMax * height + y * xResultsMax;
         let i = 0;
         for (let x = 0; x < xResultsMax; x += 4) {
           xResults[i++] = array.subarray(x + offset, x + offset + 4);
@@ -630,7 +659,7 @@ const utils = {
     if (!flattened) {
       flattened = settings.flattened = {};
     }
-    const ast = acorn.parse(source);
+    const ast = acorn.parse(source, { ecmaVersion: 'latest' });
     const functionDependencies = [];
     let indent = 0;
 
@@ -644,9 +673,14 @@ const utils = {
       }
       switch (ast.type) {
         case 'Program':
-          return flatten(ast.body) + (ast.body[0].type === 'VariableDeclaration' ? ';' : '');
+          return (
+            flatten(ast.body) +
+            (ast.body[0].type === 'VariableDeclaration' ? ';' : '')
+          );
         case 'FunctionDeclaration':
-          return `function ${ast.id.name}(${ast.params.map(flatten).join(', ')}) ${ flatten(ast.body) }`;
+          return `function ${ast.id.name}(${ast.params
+            .map(flatten)
+            .join(', ')}) ${flatten(ast.body)}`;
         case 'BlockStatement': {
           const result = [];
           indent += 2;
@@ -660,7 +694,8 @@ const utils = {
           return `{\n${result.join('')}}`;
         }
         case 'VariableDeclaration':
-          const declarations = utils.normalizeDeclarations(ast)
+          const declarations = utils
+            .normalizeDeclarations(ast)
             .map(flatten)
             .filter(r => r !== null);
           if (declarations.length < 1) {
@@ -668,99 +703,127 @@ const utils = {
           } else {
             return `${ast.kind} ${declarations.join(',')}`;
           }
-          case 'VariableDeclarator':
-            if (ast.init.object && ast.init.object.type === 'ThisExpression') {
-              const lookup = thisLookup(ast.init.property.name, true);
-              if (lookup) {
-                return `${ast.id.name} = ${flatten(ast.init)}`;
-              } else {
-                return null;
-              }
-            } else {
+        case 'VariableDeclarator':
+          if (ast.init.object && ast.init.object.type === 'ThisExpression') {
+            const lookup = thisLookup(ast.init.property.name, true);
+            if (lookup) {
               return `${ast.id.name} = ${flatten(ast.init)}`;
+            } else {
+              return null;
             }
-            case 'CallExpression': {
-              if (ast.callee.property.name === 'subarray') {
-                return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              }
-              if (ast.callee.object.name === 'gl' || ast.callee.object.name === 'context') {
-                return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              }
-              if (ast.callee.object.type === 'ThisExpression') {
-                functionDependencies.push(findDependency('this', ast.callee.property.name));
-                return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              } else if (ast.callee.object.name) {
-                const foundSource = findDependency(ast.callee.object.name, ast.callee.property.name);
-                if (foundSource === null) {
-                  // we're not flattening it
-                  return `${ast.callee.object.name}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-                } else {
-                  functionDependencies.push(foundSource);
-                  // we're flattening it
-                  return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-                }
-              } else if (ast.callee.object.type === 'MemberExpression') {
-                return `${flatten(ast.callee.object)}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              } else {
-                throw new Error('unknown ast.callee');
-              }
+          } else {
+            return `${ast.id.name} = ${flatten(ast.init)}`;
+          }
+        case 'CallExpression': {
+          if (ast.callee.property.name === 'subarray') {
+            return `${flatten(ast.callee.object)}.${flatten(
+              ast.callee.property
+            )}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          }
+          if (
+            ast.callee.object.name === 'gl' ||
+            ast.callee.object.name === 'context'
+          ) {
+            return `${flatten(ast.callee.object)}.${flatten(
+              ast.callee.property
+            )}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          }
+          if (ast.callee.object.type === 'ThisExpression') {
+            functionDependencies.push(
+              findDependency('this', ast.callee.property.name)
+            );
+            return `${ast.callee.property.name}(${ast.arguments
+              .map(value => flatten(value))
+              .join(', ')})`;
+          } else if (ast.callee.object.name) {
+            const foundSource = findDependency(
+              ast.callee.object.name,
+              ast.callee.property.name
+            );
+            if (foundSource === null) {
+              // we're not flattening it
+              return `${ast.callee.object.name}.${
+                ast.callee.property.name
+              }(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+            } else {
+              functionDependencies.push(foundSource);
+              // we're flattening it
+              return `${ast.callee.property.name}(${ast.arguments
+                .map(value => flatten(value))
+                .join(', ')})`;
             }
-            case 'ReturnStatement':
-              return `return ${flatten(ast.argument)}`;
-            case 'BinaryExpression':
-              return `(${flatten(ast.left)}${ast.operator}${flatten(ast.right)})`;
-            case 'UnaryExpression':
-              if (ast.prefix) {
-                return `${ast.operator} ${flatten(ast.argument)}`;
-              } else {
-                return `${flatten(ast.argument)} ${ast.operator}`;
-              }
-              case 'ExpressionStatement':
-                return `${flatten(ast.expression)}`;
-              case 'SequenceExpression':
-                return `(${flatten(ast.expressions)})`;
-              case 'ArrowFunctionExpression':
-                return `(${ast.params.map(flatten).join(', ')}) => ${flatten(ast.body)}`;
-              case 'Literal':
-                return ast.raw;
-              case 'Identifier':
-                return ast.name;
-              case 'MemberExpression':
-                if (ast.object.type === 'ThisExpression') {
-                  return thisLookup(ast.property.name);
-                }
-                if (ast.computed) {
-                  return `${flatten(ast.object)}[${flatten(ast.property)}]`;
-                }
-                return flatten(ast.object) + '.' + flatten(ast.property);
-              case 'ThisExpression':
-                return 'this';
-              case 'NewExpression':
-                return `new ${flatten(ast.callee)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              case 'ForStatement':
-                return `for (${flatten(ast.init)};${flatten(ast.test)};${flatten(ast.update)}) ${flatten(ast.body)}`;
-              case 'AssignmentExpression':
-                return `${flatten(ast.left)}${ast.operator}${flatten(ast.right)}`;
-              case 'UpdateExpression':
-                return `${flatten(ast.argument)}${ast.operator}`;
-              case 'IfStatement':
-                return `if (${flatten(ast.test)}) ${flatten(ast.consequent)}`;
-              case 'ThrowStatement':
-                return `throw ${flatten(ast.argument)}`;
-              case 'ObjectPattern':
-                return ast.properties.map(flatten).join(', ');
-              case 'ArrayPattern':
-                return ast.elements.map(flatten).join(', ');
-              case 'DebuggerStatement':
-                return 'debugger;';
-              case 'ConditionalExpression':
-                return `${flatten(ast.test)}?${flatten(ast.consequent)}:${flatten(ast.alternate)}`;
-              case 'Property':
-                if (ast.kind === 'init') {
-                  return flatten(ast.key);
-                }
+          } else if (ast.callee.object.type === 'MemberExpression') {
+            return `${flatten(ast.callee.object)}.${
+              ast.callee.property.name
+            }(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          } else {
+            throw new Error('unknown ast.callee');
+          }
+        }
+        case 'ReturnStatement':
+          return `return ${flatten(ast.argument)}`;
+        case 'BinaryExpression':
+          return `(${flatten(ast.left)}${ast.operator}${flatten(ast.right)})`;
+        case 'UnaryExpression':
+          if (ast.prefix) {
+            return `${ast.operator} ${flatten(ast.argument)}`;
+          } else {
+            return `${flatten(ast.argument)} ${ast.operator}`;
+          }
+        case 'ExpressionStatement':
+          return `${flatten(ast.expression)}`;
+        case 'SequenceExpression':
+          return `(${flatten(ast.expressions)})`;
+        case 'ArrowFunctionExpression':
+          return `(${ast.params.map(flatten).join(', ')}) => ${flatten(
+            ast.body
+          )}`;
+        case 'Literal':
+          return ast.raw;
+        case 'Identifier':
+          return ast.name;
+        case 'MemberExpression':
+          if (ast.object.type === 'ThisExpression') {
+            return thisLookup(ast.property.name);
+          }
+          if (ast.computed) {
+            return `${flatten(ast.object)}[${flatten(ast.property)}]`;
+          }
+          return flatten(ast.object) + '.' + flatten(ast.property);
+        case 'ThisExpression':
+          return 'this';
+        case 'NewExpression':
+          return `new ${flatten(ast.callee)}(${ast.arguments
+            .map(value => flatten(value))
+            .join(', ')})`;
+        case 'ForStatement':
+          return `for (${flatten(ast.init)};${flatten(ast.test)};${flatten(
+            ast.update
+          )}) ${flatten(ast.body)}`;
+        case 'AssignmentExpression':
+          return `${flatten(ast.left)}${ast.operator}${flatten(ast.right)}`;
+        case 'UpdateExpression':
+          return `${flatten(ast.argument)}${ast.operator}`;
+        case 'IfStatement':
+          return `if (${flatten(ast.test)}) ${flatten(ast.consequent)}`;
+        case 'ThrowStatement':
+          return `throw ${flatten(ast.argument)}`;
+        case 'ObjectPattern':
+          return ast.properties.map(flatten).join(', ');
+        case 'ArrayPattern':
+          return ast.elements.map(flatten).join(', ');
+        case 'DebuggerStatement':
+          return 'debugger;';
+        case 'ConditionalExpression':
+          return `${flatten(ast.test)}?${flatten(ast.consequent)}:${flatten(
+            ast.alternate
+          )}`;
+        case 'Property':
+          if (ast.kind === 'init') {
+            return flatten(ast.key);
+          }
       }
-      throw new Error(`unhandled ast.type of ${ ast.type }`);
+      throw new Error(`unhandled ast.type of ${ast.type}`);
     }
     const result = flatten(ast);
     if (functionDependencies.length > 0) {
@@ -770,31 +833,56 @@ const utils = {
         if (!flattened[functionDependency]) {
           flattened[functionDependency] = true;
         }
-        functionDependency ? flattenedFunctionDependencies.push(utils.flattenFunctionToString(functionDependency, settings) + '\n') : '';
+        functionDependency
+          ? flattenedFunctionDependencies.push(
+              utils.flattenFunctionToString(functionDependency, settings) +
+                '\n'
+            )
+          : '';
       }
       return flattenedFunctionDependencies.join('') + result;
     }
     return result;
   },
 
-  normalizeDeclarations: (ast) => {
-    if (ast.type !== 'VariableDeclaration') throw new Error('Ast is not of type "VariableDeclaration"');
+  normalizeDeclarations: ast => {
+    if (ast.type !== 'VariableDeclaration')
+      throw new Error('Ast is not of type "VariableDeclaration"');
     const normalizedDeclarations = [];
-    for (let declarationIndex = 0; declarationIndex < ast.declarations.length; declarationIndex++) {
+    for (
+      let declarationIndex = 0;
+      declarationIndex < ast.declarations.length;
+      declarationIndex++
+    ) {
       const declaration = ast.declarations[declarationIndex];
-      if (declaration.id && declaration.id.type === 'ObjectPattern' && declaration.id.properties) {
+      if (
+        declaration.id &&
+        declaration.id.type === 'ObjectPattern' &&
+        declaration.id.properties
+      ) {
         const { properties } = declaration.id;
-        for (let propertyIndex = 0; propertyIndex < properties.length; propertyIndex++) {
+        for (
+          let propertyIndex = 0;
+          propertyIndex < properties.length;
+          propertyIndex++
+        ) {
           const property = properties[propertyIndex];
-          if (property.value.type === 'ObjectPattern' && property.value.properties) {
-            for (let subPropertyIndex = 0; subPropertyIndex < property.value.properties.length; subPropertyIndex++) {
+          if (
+            property.value.type === 'ObjectPattern' &&
+            property.value.properties
+          ) {
+            for (
+              let subPropertyIndex = 0;
+              subPropertyIndex < property.value.properties.length;
+              subPropertyIndex++
+            ) {
               const subProperty = property.value.properties[subPropertyIndex];
               if (subProperty.type === 'Property') {
                 normalizedDeclarations.push({
                   type: 'VariableDeclarator',
                   id: {
                     type: 'Identifier',
-                    name: subProperty.key.name
+                    name: subProperty.key.name,
                   },
                   init: {
                     type: 'MemberExpression',
@@ -803,16 +891,16 @@ const utils = {
                       object: declaration.init,
                       property: {
                         type: 'Identifier',
-                        name: property.key.name
+                        name: property.key.name,
                       },
-                      computed: false
+                      computed: false,
                     },
                     property: {
                       type: 'Identifier',
-                      name: subProperty.key.name
+                      name: subProperty.key.name,
                     },
-                    computed: false
-                  }
+                    computed: false,
+                  },
                 });
               } else {
                 throw new Error('unexpected state');
@@ -823,32 +911,43 @@ const utils = {
               type: 'VariableDeclarator',
               id: {
                 type: 'Identifier',
-                name: property.value && property.value.name ? property.value.name : property.key.name
+                name:
+                  property.value && property.value.name
+                    ? property.value.name
+                    : property.key.name,
               },
               init: {
                 type: 'MemberExpression',
                 object: declaration.init,
                 property: {
                   type: 'Identifier',
-                  name: property.key.name
+                  name: property.key.name,
                 },
-                computed: false
-              }
+                computed: false,
+              },
             });
           } else {
             throw new Error('unexpected state');
           }
         }
-      } else if (declaration.id && declaration.id.type === 'ArrayPattern' && declaration.id.elements) {
+      } else if (
+        declaration.id &&
+        declaration.id.type === 'ArrayPattern' &&
+        declaration.id.elements
+      ) {
         const { elements } = declaration.id;
-        for (let elementIndex = 0; elementIndex < elements.length; elementIndex++) {
+        for (
+          let elementIndex = 0;
+          elementIndex < elements.length;
+          elementIndex++
+        ) {
           const element = elements[elementIndex];
           if (element.type === 'Identifier') {
             normalizedDeclarations.push({
               type: 'VariableDeclarator',
               id: {
                 type: 'Identifier',
-                name: element.name
+                name: element.name,
               },
               init: {
                 type: 'MemberExpression',
@@ -858,10 +957,10 @@ const utils = {
                   value: elementIndex,
                   raw: elementIndex.toString(),
                   start: element.start,
-                  end: element.end
+                  end: element.end,
                 },
-                computed: true
-              }
+                computed: true,
+              },
             });
           } else {
             throw new Error('unexpected state');
@@ -881,38 +980,50 @@ const utils = {
    * @return {Array}
    */
   splitHTMLImageToRGB: (gpu, image) => {
-    const rKernel = gpu.createKernel(function(a) {
-      const pixel = a[this.thread.y][this.thread.x];
-      return pixel.r * 255;
-    }, {
-      output: [image.width, image.height],
-      precision: 'unsigned',
-      argumentTypes: { a: 'HTMLImage' },
-    });
-    const gKernel = gpu.createKernel(function(a) {
-      const pixel = a[this.thread.y][this.thread.x];
-      return pixel.g * 255;
-    }, {
-      output: [image.width, image.height],
-      precision: 'unsigned',
-      argumentTypes: { a: 'HTMLImage' },
-    });
-    const bKernel = gpu.createKernel(function(a) {
-      const pixel = a[this.thread.y][this.thread.x];
-      return pixel.b * 255;
-    }, {
-      output: [image.width, image.height],
-      precision: 'unsigned',
-      argumentTypes: { a: 'HTMLImage' },
-    });
-    const aKernel = gpu.createKernel(function(a) {
-      const pixel = a[this.thread.y][this.thread.x];
-      return pixel.a * 255;
-    }, {
-      output: [image.width, image.height],
-      precision: 'unsigned',
-      argumentTypes: { a: 'HTMLImage' },
-    });
+    const rKernel = gpu.createKernel(
+      function (a) {
+        const pixel = a[this.thread.y][this.thread.x];
+        return pixel.r * 255;
+      },
+      {
+        output: [image.width, image.height],
+        precision: 'unsigned',
+        argumentTypes: { a: 'HTMLImage' },
+      }
+    );
+    const gKernel = gpu.createKernel(
+      function (a) {
+        const pixel = a[this.thread.y][this.thread.x];
+        return pixel.g * 255;
+      },
+      {
+        output: [image.width, image.height],
+        precision: 'unsigned',
+        argumentTypes: { a: 'HTMLImage' },
+      }
+    );
+    const bKernel = gpu.createKernel(
+      function (a) {
+        const pixel = a[this.thread.y][this.thread.x];
+        return pixel.b * 255;
+      },
+      {
+        output: [image.width, image.height],
+        precision: 'unsigned',
+        argumentTypes: { a: 'HTMLImage' },
+      }
+    );
+    const aKernel = gpu.createKernel(
+      function (a) {
+        const pixel = a[this.thread.y][this.thread.x];
+        return pixel.a * 255;
+      },
+      {
+        output: [image.width, image.height],
+        precision: 'unsigned',
+        argumentTypes: { a: 'HTMLImage' },
+      }
+    );
     const result = [
       rKernel(image),
       gKernel(image),
@@ -936,44 +1047,56 @@ const utils = {
    * @return {Object[]}
    */
   splitRGBAToCanvases: (gpu, rgba, width, height) => {
-    const visualKernelR = gpu.createKernel(function(v) {
-      const pixel = v[this.thread.y][this.thread.x];
-      this.color(pixel.r / 255, 0, 0, 255);
-    }, {
-      output: [width, height],
-      graphical: true,
-      argumentTypes: { v: 'Array2D(4)' }
-    });
+    const visualKernelR = gpu.createKernel(
+      function (v) {
+        const pixel = v[this.thread.y][this.thread.x];
+        this.color(pixel.r / 255, 0, 0, 255);
+      },
+      {
+        output: [width, height],
+        graphical: true,
+        argumentTypes: { v: 'Array2D(4)' },
+      }
+    );
     visualKernelR(rgba);
 
-    const visualKernelG = gpu.createKernel(function(v) {
-      const pixel = v[this.thread.y][this.thread.x];
-      this.color(0, pixel.g / 255, 0, 255);
-    }, {
-      output: [width, height],
-      graphical: true,
-      argumentTypes: { v: 'Array2D(4)' }
-    });
+    const visualKernelG = gpu.createKernel(
+      function (v) {
+        const pixel = v[this.thread.y][this.thread.x];
+        this.color(0, pixel.g / 255, 0, 255);
+      },
+      {
+        output: [width, height],
+        graphical: true,
+        argumentTypes: { v: 'Array2D(4)' },
+      }
+    );
     visualKernelG(rgba);
 
-    const visualKernelB = gpu.createKernel(function(v) {
-      const pixel = v[this.thread.y][this.thread.x];
-      this.color(0, 0, pixel.b / 255, 255);
-    }, {
-      output: [width, height],
-      graphical: true,
-      argumentTypes: { v: 'Array2D(4)' }
-    });
+    const visualKernelB = gpu.createKernel(
+      function (v) {
+        const pixel = v[this.thread.y][this.thread.x];
+        this.color(0, 0, pixel.b / 255, 255);
+      },
+      {
+        output: [width, height],
+        graphical: true,
+        argumentTypes: { v: 'Array2D(4)' },
+      }
+    );
     visualKernelB(rgba);
 
-    const visualKernelA = gpu.createKernel(function(v) {
-      const pixel = v[this.thread.y][this.thread.x];
-      this.color(255, 255, 255, pixel.a / 255);
-    }, {
-      output: [width, height],
-      graphical: true,
-      argumentTypes: { v: 'Array2D(4)' }
-    });
+    const visualKernelA = gpu.createKernel(
+      function (v) {
+        const pixel = v[this.thread.y][this.thread.x];
+        this.color(255, 255, 255, pixel.a / 255);
+      },
+      {
+        output: [width, height],
+        graphical: true,
+        argumentTypes: { v: 'Array2D(4)' },
+      }
+    );
     visualKernelA(rgba);
     return [
       visualKernelR.canvas,
@@ -983,16 +1106,20 @@ const utils = {
     ];
   },
 
-  getMinifySafeName: (fn) => {
+  getMinifySafeName: fn => {
     try {
-      const ast = acorn.parse(`const value = ${fn.toString()}`);
+      const ast = acorn.parse(`const value = ${fn.toString()}`, {
+        ecmaVersion: 'latest',
+      });
       const { init } = ast.body[0].declarations[0];
       return init.body.name || init.body.body[0].argument.name;
     } catch (e) {
-      throw new Error('Unrecognized function type.  Please use `() => yourFunctionVariableHere` or function() { return yourFunctionVariableHere; }');
+      throw new Error(
+        'Unrecognized function type.  Please use `() => yourFunctionVariableHere` or function() { return yourFunctionVariableHere; }'
+      );
     }
   },
-  sanitizeName: function(name) {
+  sanitizeName: function (name) {
     if (dollarSign.test(name)) {
       name = name.replace(dollarSign, 'S_S');
     }
@@ -1002,7 +1129,7 @@ const utils = {
       name = name.replace(singleUnderscore, 'u_u');
     }
     return name;
-  }
+  },
 };
 
 const dollarSign = /\$/;
@@ -1010,7 +1137,3 @@ const doubleUnderscore = /__/;
 const singleUnderscore = /_/;
 
 const _systemEndianness = utils.getSystemEndianness();
-
-module.exports = {
-  utils
-};

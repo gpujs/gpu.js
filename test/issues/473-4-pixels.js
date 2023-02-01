@@ -1,12 +1,12 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('issue #473 - only 4 pixels are shown');
 
 function testOnly4PixelsAreShownRGBStaticOutput(mode) {
   const gpu = new GPU({ mode });
   const render = gpu.createKernel(
-    function() {
+    function () {
       this.color(1, 1, 1);
     },
     {
@@ -39,9 +39,12 @@ test('RGB static output gpu', () => {
   testOnly4PixelsAreShownRGBStaticOutput('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('RGB static output headlessgl', () => {
-  testOnly4PixelsAreShownRGBStaticOutput('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'RGB static output headlessgl',
+  () => {
+    testOnly4PixelsAreShownRGBStaticOutput('headlessgl');
+  }
+);
 
 (GPU.isCanvasSupported ? test : skip)('RGB static output cpu', () => {
   testOnly4PixelsAreShownRGBStaticOutput('cpu');
@@ -50,7 +53,7 @@ test('RGB static output gpu', () => {
 function testOnly4PixelsAreShownRGBAStaticOutput(mode) {
   const gpu = new GPU({ mode });
   const render = gpu.createKernel(
-    function() {
+    function () {
       this.color(1, 1, 1, 1);
     },
     {
@@ -83,9 +86,12 @@ test('RGBA static output gpu', () => {
   testOnly4PixelsAreShownRGBAStaticOutput('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('RGBA static output headlessgl', () => {
-  testOnly4PixelsAreShownRGBAStaticOutput('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'RGBA static output headlessgl',
+  () => {
+    testOnly4PixelsAreShownRGBAStaticOutput('headlessgl');
+  }
+);
 
 (GPU.isCanvasSupported ? test : skip)('RGBA static output cpu', () => {
   testOnly4PixelsAreShownRGBAStaticOutput('cpu');
@@ -94,7 +100,7 @@ test('RGBA static output gpu', () => {
 function testOnly4PixelsAreShownRGBDynamicOutput(mode) {
   const gpu = new GPU({ mode });
   const render = gpu.createKernel(
-    function() {
+    function () {
       this.color(1, 1, 1);
     },
     {
@@ -135,9 +141,12 @@ test('rgb dynamic output gpu', () => {
   testOnly4PixelsAreShownRGBDynamicOutput('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('rgb dynamic output headlessgl', () => {
-  testOnly4PixelsAreShownRGBDynamicOutput('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'rgb dynamic output headlessgl',
+  () => {
+    testOnly4PixelsAreShownRGBDynamicOutput('headlessgl');
+  }
+);
 
 (GPU.isCanvasSupported ? test : skip)('rgb dynamic output cpu', () => {
   testOnly4PixelsAreShownRGBDynamicOutput('cpu');
@@ -146,7 +155,7 @@ test('rgb dynamic output gpu', () => {
 function testOnly4PixelsAreShownRGBADynamicOutput(mode) {
   const gpu = new GPU({ mode });
   const render = gpu.createKernel(
-    function() {
+    function () {
       this.color(1, 1, 1, 1);
     },
     {
@@ -187,9 +196,12 @@ test('rgba dynamic output gpu', () => {
   testOnly4PixelsAreShownRGBADynamicOutput('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('rgba dynamic output headlessgl', () => {
-  testOnly4PixelsAreShownRGBADynamicOutput('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'rgba dynamic output headlessgl',
+  () => {
+    testOnly4PixelsAreShownRGBADynamicOutput('headlessgl');
+  }
+);
 
 (GPU.isCanvasSupported ? test : skip)('rgba dynamic output cpu', () => {
   testOnly4PixelsAreShownRGBADynamicOutput('cpu');

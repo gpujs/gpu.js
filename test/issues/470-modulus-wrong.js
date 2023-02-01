@@ -1,18 +1,21 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('issue #470 - modulus wrong');
 
 function testModulusWrong(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(mod) {
-    return this.thread.x % mod;
-  }, {
-    output: [10],
-    argumentTypes: {
-      mod: 'Integer',
+  const kernel = gpu.createKernel(
+    function (mod) {
+      return this.thread.x % mod;
     },
-  });
+    {
+      output: [10],
+      argumentTypes: {
+        mod: 'Integer',
+      },
+    }
+  );
 
   const result = kernel(6);
   assert.equal(kernel.argumentTypes[0], 'Integer');

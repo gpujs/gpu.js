@@ -1,13 +1,14 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 const { greenCanvas } = require('../browser-test-utils');
 
 describe('features: constants canvas');
+
 function canvasConstantTest(mode) {
   const gpu = new GPU({ mode });
   const canvas = greenCanvas(mode, 1, 1);
   const kernel = gpu.createKernel(
-    function() {
+    function () {
       const pixel = this.constants.canvas[this.thread.y][this.thread.x];
       return pixel.g;
     },
@@ -30,11 +31,15 @@ function canvasConstantTest(mode) {
   canvasConstantTest('gpu');
 });
 
-(GPU.isWebGLSupported && typeof HTMLCanvasElement !== 'undefined' ? test : skip)('webgl', () => {
+(GPU.isWebGLSupported && typeof HTMLCanvasElement !== 'undefined'
+  ? test
+  : skip)('webgl', () => {
   canvasConstantTest('webgl');
 });
 
-(GPU.isWebGL2Supported && typeof HTMLCanvasElement !== 'undefined' ? test : skip)('webgl2', () => {
+(GPU.isWebGL2Supported && typeof HTMLCanvasElement !== 'undefined'
+  ? test
+  : skip)('webgl2', () => {
   canvasConstantTest('webgl2');
 });
 

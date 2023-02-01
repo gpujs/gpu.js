@@ -1,69 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Cat image with GPU.js</title>
-  <script src="../../dist/gpu-browser.min.js"></script>
-</head>
-<body>
-<h1>Image to GPU.js from <a href="https://observablehq.com/@fil/image-to-gpu">https://observablehq.com/@fil/image-to-gpu</a></h1>
-<div id="log-fps"></div>
-</body>
-<script>
-  const gpu = new GPU();
-  function imageToArray(image) {
-    const kernel = gpu.createKernel(function(image) {
-      const pixel = image[this.thread.y][this.thread.x];
-      this.color(pixel.r, pixel.g, pixel.b, pixel.a);
-    }, {
-      output: [image.width, image.height],
-      graphical: true,
-      pipeline: true,
-    });
-    kernel(image);
-    const result = kernel.getPixels(true);
-    kernel.destroy();
-    return result;
-  }
-  const kernel = function(data, wobble) {
-    let x = this.thread.x,
-      y = this.thread.y;
-
-    //var data = this.constants.data;
-    // wouldn't be fun if the kernel did _nothing_
-    x = Math.floor(x + wobble * Math.sin(y / 10));
-    y = Math.floor(y + wobble * Math.cos(x / 10));
-
-    const n = 4 * (x + (this.constants.w * y));
-    this.color(data[n]/256, data[n+1]/256,data[n+2]/256,1);
-  };
-
-  const logFps = document.querySelector('#log-fps');
-  const image = new Image();
-  image.src = './cat.jpg';
-  image.onload = () => {
-    const array = imageToArray(image);
-    const render = (new GPU({mode: "gpu"}))
-      .createKernel(kernel)
-      .setConstants({ w: image.width, h: image.height })
-      .setOutput([image.width, image.height])
-      .setGraphical(true);
-    const canvas = render.canvas;
-    document.body.appendChild(canvas);
-    let lastCalledTime;
-    let fps;
-    function callRender() {
-      const wobble = 14 * Math.sin(Date.now() / 400);
-      render(array, wobble);
-      const delta = (Date.now() - lastCalledTime)/1000;
-      lastCalledTime = Date.now();
-      fps = 1 / delta;
-      logFps.innerHTML = fps.toFixed(0) + ' FPS';
-      window.requestAnimationFrame(() => {
-        callRender();
-      });
+  <head>
+    <meta charset="utf-8" />
+    <title>Cat image with GPU.js</title>
+    <script src="../../dist/gpu-browser.js"></script>
+  </head>
+  <body>
+    <h1>
+      Image to GPU.js from
+      <a href="https://observablehq.com/@fil/image-to-gpu"
+        >https://observablehq.com/@fil/image-to-gpu</a
+      >
+    </h1>
+    <div id="log-fps"></div>
+  </body>
+  <script>
+    const gpu = new GPU();
+    function imageToArray(image) {
+      const kernel = gpu.createKernel(
+        function (image) {
+          const pixel = image[this.thread.y][this.thread.x];
+          this.color(pixel.r, pixel.g, pixel.b, pixel.a);
+        },
+        {
+          output: [image.width, image.height],
+          graphical: true,
+          pipeline: true,
+        }
+      );
+      kernel(image);
+      const result = kernel.getPixels(true);
+      kernel.destroy();
+      return result;
     }
-    callRender();
-  };
-</script>
+    const kernel = function (data, wobble) {
+      let x = this.thread.x,
+        y = this.thread.y;
+
+      //var data = this.constants.data;
+      // wouldn't be fun if the kernel did _nothing_
+      x = Math.floor(x + wobble * Math.sin(y / 10));
+      y = Math.floor(y + wobble * Math.cos(x / 10));
+
+      const n = 4 * (x + this.constants.w * y);
+      this.color(data[n] / 256, data[n + 1] / 256, data[n + 2] / 256, 1);
+    };
+
+    const logFps = document.querySelector('#log-fps');
+    const image = new Image();
+    image.src = './cat.jpg';
+    image.onload = () => {
+      const array = imageToArray(image);
+      const render = new GPU({ mode: 'gpu' })
+        .createKernel(kernel)
+        .setConstants({ w: image.width, h: image.height })
+        .setOutput([image.width, image.height])
+        .setGraphical(true);
+      const canvas = render.canvas;
+      document.body.appendChild(canvas);
+      let lastCalledTime;
+      let fps;
+      function callRender() {
+        const wobble = 14 * Math.sin(Date.now() / 400);
+        render(array, wobble);
+        const delta = (Date.now() - lastCalledTime) / 1000;
+        lastCalledTime = Date.now();
+        fps = 1 / delta;
+        logFps.innerHTML = fps.toFixed(0) + ' FPS';
+        window.requestAnimationFrame(() => {
+          callRender();
+        });
+      }
+      callRender();
+    };
+  </script>
 </html>

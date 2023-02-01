@@ -1,18 +1,21 @@
 const { assert, test, module: describe, skip } = require('qunit');
 const sinon = require('sinon');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('internal: kernelRunShortcut');
 
 function testImmutableSavesSwitchedKernel(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value) {
-    return value[0] + 1;
-  }, {
-    output: [1],
-    pipeline: true,
-    immutable: true,
-  });
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value[0] + 1;
+    },
+    {
+      output: [1],
+      pipeline: true,
+      immutable: true,
+    }
+  );
   const one = kernel(new Float32Array([0]));
   const arrayKernel = kernel.kernel;
   const arrayKernelSpy = sinon.spy(arrayKernel, 'onRequestSwitchKernel');
@@ -69,14 +72,23 @@ test('immutable saves switched kernel gpu', () => {
   testImmutableSavesSwitchedKernel('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('immutable saves switched kernel webgl', () => {
-  testImmutableSavesSwitchedKernel('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'immutable saves switched kernel webgl',
+  () => {
+    testImmutableSavesSwitchedKernel('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('immutable saves switched kernel webgl2', () => {
-  testImmutableSavesSwitchedKernel('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'immutable saves switched kernel webgl2',
+  () => {
+    testImmutableSavesSwitchedKernel('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('immutable saves switched kernel headlessgl', () => {
-  testImmutableSavesSwitchedKernel('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'immutable saves switched kernel headlessgl',
+  () => {
+    testImmutableSavesSwitchedKernel('headlessgl');
+  }
+);

@@ -1,25 +1,31 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../../../../../../src');
+const { GPU } = require('../../../../../../..');
 
-describe('feature: to-string single precision array style kernel map returns MemoryOptimizedNumberTexture');
+describe(
+  'feature: to-string single precision array style kernel map returns MemoryOptimizedNumberTexture'
+);
 
 function testReturn(mode, context, canvas) {
   const gpu = new GPU({ mode });
   function addOne(value) {
     return value + 1;
   }
-  const originalKernel = gpu.createKernelMap([addOne], function(a) {
-    const result = a[this.thread.x] + 1;
-    addOne(result);
-    return result;
-  }, {
-    canvas,
-    context,
-    output: [6],
-    precision: 'single',
-    pipeline: true,
-    optimizeFloatMemory: true,
-  });
+  const originalKernel = gpu.createKernelMap(
+    [addOne],
+    function (a) {
+      const result = a[this.thread.x] + 1;
+      addOne(result);
+      return result;
+    },
+    {
+      canvas,
+      context,
+      output: [6],
+      precision: 'single',
+      pipeline: true,
+      optimizeFloatMemory: true,
+    }
+  );
 
   const a = [1, 2, 3, 4, 5, 6];
   const expected = new Float32Array([2, 3, 4, 5, 6, 7]);
@@ -34,18 +40,27 @@ function testReturn(mode, context, canvas) {
   gpu.destroy();
 }
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)('webgl', () => {
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('webgl');
-  testReturn('webgl', context, canvas);
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGLSupported ? test : skip)(
+  'webgl',
+  () => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('webgl');
+    testReturn('webgl', context, canvas);
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)('webgl2', () => {
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('webgl2');
-  testReturn('webgl2', context, canvas);
-});
+(GPU.isSinglePrecisionSupported && GPU.isWebGL2Supported ? test : skip)(
+  'webgl2',
+  () => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('webgl2');
+    testReturn('webgl2', context, canvas);
+  }
+);
 
-(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)('headlessgl', () => {
-  testReturn('headlessgl', require('gl')(1, 1), null);
-});
+(GPU.isSinglePrecisionSupported && GPU.isHeadlessGLSupported ? test : skip)(
+  'headlessgl',
+  () => {
+    testReturn('headlessgl', require('gl')(1, 1), null);
+  }
+);

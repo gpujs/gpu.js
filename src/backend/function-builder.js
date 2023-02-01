@@ -3,7 +3,7 @@
  * [INTERNAL] A collection of functionNodes.
  * @class
  */
-class FunctionBuilder {
+export class FunctionBuilder {
   /**
    *
    * @param {Kernel} kernel
@@ -58,31 +58,65 @@ class FunctionBuilder {
     };
 
     const lookupReturnType = (functionName, ast, requestingNode) => {
-      return functionBuilder.lookupReturnType(functionName, ast, requestingNode);
+      return functionBuilder.lookupReturnType(
+        functionName,
+        ast,
+        requestingNode
+      );
     };
 
-    const lookupFunctionArgumentTypes = (functionName) => {
+    const lookupFunctionArgumentTypes = functionName => {
       return functionBuilder.lookupFunctionArgumentTypes(functionName);
     };
 
     const lookupFunctionArgumentName = (functionName, argumentIndex) => {
-      return functionBuilder.lookupFunctionArgumentName(functionName, argumentIndex);
+      return functionBuilder.lookupFunctionArgumentName(
+        functionName,
+        argumentIndex
+      );
     };
 
     const lookupFunctionArgumentBitRatio = (functionName, argumentName) => {
-      return functionBuilder.lookupFunctionArgumentBitRatio(functionName, argumentName);
+      return functionBuilder.lookupFunctionArgumentBitRatio(
+        functionName,
+        argumentName
+      );
     };
 
-    const triggerImplyArgumentType = (functionName, i, argumentType, requestingNode) => {
-      functionBuilder.assignArgumentType(functionName, i, argumentType, requestingNode);
+    const triggerImplyArgumentType = (
+      functionName,
+      i,
+      argumentType,
+      requestingNode
+    ) => {
+      functionBuilder.assignArgumentType(
+        functionName,
+        i,
+        argumentType,
+        requestingNode
+      );
     };
 
-    const triggerImplyArgumentBitRatio = (functionName, argumentName, calleeFunctionName, argumentIndex) => {
-      functionBuilder.assignArgumentBitRatio(functionName, argumentName, calleeFunctionName, argumentIndex);
+    const triggerImplyArgumentBitRatio = (
+      functionName,
+      argumentName,
+      calleeFunctionName,
+      argumentIndex
+    ) => {
+      functionBuilder.assignArgumentBitRatio(
+        functionName,
+        argumentName,
+        calleeFunctionName,
+        argumentIndex
+      );
     };
 
     const onFunctionCall = (functionName, calleeFunctionName, args) => {
-      functionBuilder.trackFunctionCall(functionName, calleeFunctionName, args);
+      functionBuilder.trackFunctionCall(
+        functionName,
+        calleeFunctionName,
+        args
+      );
     };
 
     const onNestedFunction = (ast, source) => {
@@ -90,11 +124,32 @@ class FunctionBuilder {
       for (let i = 0; i < ast.params.length; i++) {
         argumentNames.push(ast.params[i].name);
       }
-      const nestedFunction = new FunctionNode(source, Object.assign({}, nodeOptions, {
-        returnType: null,
-        ast,
-        name: ast.id.name,
-        argumentNames,
+      const nestedFunction = new FunctionNode(
+        source,
+        Object.assign({}, nodeOptions, {
+          returnType: null,
+          ast,
+          name: ast.id.name,
+          argumentNames,
+          lookupReturnType,
+          lookupFunctionArgumentTypes,
+          lookupFunctionArgumentName,
+          lookupFunctionArgumentBitRatio,
+          needsArgumentType,
+          assignArgumentType,
+          triggerImplyArgumentType,
+          triggerImplyArgumentBitRatio,
+          onFunctionCall,
+        })
+      );
+      nestedFunction.traceFunctionAST(ast);
+      functionBuilder.addFunctionNode(nestedFunction);
+    };
+
+    const nodeOptions = Object.assign(
+      {
+        isRootKernel: false,
+        onNestedFunction,
         lookupReturnType,
         lookupFunctionArgumentTypes,
         lookupFunctionArgumentName,
@@ -104,35 +159,20 @@ class FunctionBuilder {
         triggerImplyArgumentType,
         triggerImplyArgumentBitRatio,
         onFunctionCall,
-      }));
-      nestedFunction.traceFunctionAST(ast);
-      functionBuilder.addFunctionNode(nestedFunction);
-    };
-
-    const nodeOptions = Object.assign({
-      isRootKernel: false,
-      onNestedFunction,
-      lookupReturnType,
-      lookupFunctionArgumentTypes,
-      lookupFunctionArgumentName,
-      lookupFunctionArgumentBitRatio,
-      needsArgumentType,
-      assignArgumentType,
-      triggerImplyArgumentType,
-      triggerImplyArgumentBitRatio,
-      onFunctionCall,
-      optimizeFloatMemory,
-      precision,
-      constants,
-      constantTypes,
-      constantBitRatios,
-      debug,
-      loopMaxIterations,
-      output,
-      plugins,
-      dynamicArguments,
-      dynamicOutput,
-    }, extraNodeOptions || {});
+        optimizeFloatMemory,
+        precision,
+        constants,
+        constantTypes,
+        constantBitRatios,
+        debug,
+        loopMaxIterations,
+        output,
+        plugins,
+        dynamicArguments,
+        dynamicOutput,
+      },
+      extraNodeOptions || {}
+    );
 
     const rootNodeOptions = Object.assign({}, nodeOptions, {
       isRootKernel: true,
@@ -146,45 +186,54 @@ class FunctionBuilder {
     });
 
     if (typeof source === 'object' && source.functionNodes) {
-      return new FunctionBuilder().fromJSON(source.functionNodes, FunctionNode);
+      return new FunctionBuilder().fromJSON(
+        source.functionNodes,
+        FunctionNode
+      );
     }
 
     const rootNode = new FunctionNode(source, rootNodeOptions);
 
     let functionNodes = null;
     if (functions) {
-      functionNodes = functions.map((fn) => new FunctionNode(fn.source, {
-        returnType: fn.returnType,
-        argumentTypes: fn.argumentTypes,
-        output,
-        plugins,
-        constants,
-        constantTypes,
-        constantBitRatios,
-        optimizeFloatMemory,
-        precision,
-        lookupReturnType,
-        lookupFunctionArgumentTypes,
-        lookupFunctionArgumentName,
-        lookupFunctionArgumentBitRatio,
-        needsArgumentType,
-        assignArgumentType,
-        triggerImplyArgumentType,
-        triggerImplyArgumentBitRatio,
-        onFunctionCall,
-        onNestedFunction,
-      }));
+      functionNodes = functions.map(
+        fn =>
+          new FunctionNode(fn.source, {
+            returnType: fn.returnType,
+            argumentTypes: fn.argumentTypes,
+            output,
+            plugins,
+            constants,
+            constantTypes,
+            constantBitRatios,
+            optimizeFloatMemory,
+            precision,
+            lookupReturnType,
+            lookupFunctionArgumentTypes,
+            lookupFunctionArgumentName,
+            lookupFunctionArgumentBitRatio,
+            needsArgumentType,
+            assignArgumentType,
+            triggerImplyArgumentType,
+            triggerImplyArgumentBitRatio,
+            onFunctionCall,
+            onNestedFunction,
+          })
+      );
     }
 
     let subKernelNodes = null;
     if (subKernels) {
-      subKernelNodes = subKernels.map((subKernel) => {
+      subKernelNodes = subKernels.map(subKernel => {
         const { name, source } = subKernel;
-        return new FunctionNode(source, Object.assign({}, nodeOptions, {
-          name,
-          isSubKernel: true,
-          isRootKernel: false,
-        }));
+        return new FunctionNode(
+          source,
+          Object.assign({}, nodeOptions, {
+            name,
+            isSubKernel: true,
+            isRootKernel: false,
+          })
+        );
       });
     }
 
@@ -193,7 +242,7 @@ class FunctionBuilder {
       rootNode,
       functionNodes,
       nativeFunctions,
-      subKernelNodes
+      subKernelNodes,
     });
 
     return functionBuilder;
@@ -279,7 +328,10 @@ class FunctionBuilder {
          * if dependent function is already in the list, because a function depends on it, and because it has
          * already been traced, we know that we must move the dependent function to the end of the the retList.
          * */
-        const dependantNativeFunctionName = retList.splice(nativeFunctionIndex, 1)[0];
+        const dependantNativeFunctionName = retList.splice(
+          nativeFunctionIndex,
+          1
+        )[0];
         retList.push(dependantNativeFunctionName);
       }
       return retList;
@@ -328,7 +380,9 @@ class FunctionBuilder {
       this.rootNode.toString();
     }
     if (functionName) {
-      return this.getPrototypesFromFunctionNames(this.traceFunctionCalls(functionName, []).reverse());
+      return this.getPrototypesFromFunctionNames(
+        this.traceFunctionCalls(functionName, []).reverse()
+      );
     }
     return this.getPrototypesFromFunctionNames(Object.keys(this.functionMap));
   }
@@ -372,26 +426,31 @@ class FunctionBuilder {
   }
 
   toJSON() {
-    return this.traceFunctionCalls(this.rootNode.name).reverse().map(name => {
-      const nativeIndex = this.nativeFunctions.indexOf(name);
-      if (nativeIndex > -1) {
-        return {
-          name,
-          source: this.nativeFunctions[nativeIndex].source
-        };
-      } else if (this.functionMap[name]) {
-        return this.functionMap[name].toJSON();
-      } else {
-        throw new Error(`function ${ name } not found`);
-      }
-    });
+    return this.traceFunctionCalls(this.rootNode.name)
+      .reverse()
+      .map(name => {
+        const nativeIndex = this.nativeFunctions.indexOf(name);
+        if (nativeIndex > -1) {
+          return {
+            name,
+            source: this.nativeFunctions[nativeIndex].source,
+          };
+        } else if (this.functionMap[name]) {
+          return this.functionMap[name].toJSON();
+        } else {
+          throw new Error(`function ${name} not found`);
+        }
+      });
   }
 
   fromJSON(jsonFunctionNodes, FunctionNode) {
     this.functionMap = {};
     for (let i = 0; i < jsonFunctionNodes.length; i++) {
       const jsonFunctionNode = jsonFunctionNodes[i];
-      this.functionMap[jsonFunctionNode.settings.name] = new FunctionNode(jsonFunctionNode.ast, jsonFunctionNode.settings);
+      this.functionMap[jsonFunctionNode.settings.name] = new FunctionNode(
+        jsonFunctionNode.ast,
+        jsonFunctionNode.settings
+      );
     }
     return this;
   }
@@ -403,14 +462,18 @@ class FunctionBuilder {
    */
   getString(functionName) {
     if (functionName) {
-      return this.getStringFromFunctionNames(this.traceFunctionCalls(functionName).reverse());
+      return this.getStringFromFunctionNames(
+        this.traceFunctionCalls(functionName).reverse()
+      );
     }
     return this.getStringFromFunctionNames(Object.keys(this.functionMap));
   }
 
   lookupReturnType(functionName, ast, requestingNode) {
     if (ast.type !== 'CallExpression') {
-      throw new Error(`expected ast type of "CallExpression", but is ${ ast.type }`);
+      throw new Error(
+        `expected ast type of "CallExpression", but is ${ast.type}`
+      );
     }
     if (this._isNativeFunction(functionName)) {
       return this._lookupNativeFunctionReturnType(functionName);
@@ -430,12 +493,12 @@ class FunctionBuilder {
                 this.lookupChain.push({
                   name: requestingNode.name,
                   ast: args[i],
-                  requestingNode
+                  requestingNode,
                 });
                 node.argumentTypes[j] = requestingNode.getType(args[j]);
                 this.lookupChain.pop();
               }
-              return node.returnType = node.getType(node.getJsAST());
+              return (node.returnType = node.getType(node.getJsAST()));
             }
 
             throw new Error('circlical logic detected!');
@@ -445,11 +508,11 @@ class FunctionBuilder {
         this.lookupChain.push({
           name: requestingNode.name,
           ast,
-          requestingNode
+          requestingNode,
         });
         const type = node.getType(node.getJsAST());
         this.lookupChain.pop();
-        return node.returnType = type;
+        return (node.returnType = type);
       }
     }
 
@@ -475,7 +538,8 @@ class FunctionBuilder {
 
   _getNativeFunction(functionName) {
     for (let i = 0; i < this.nativeFunctions.length; i++) {
-      if (this.nativeFunctions[i].name === functionName) return this.nativeFunctions[i];
+      if (this.nativeFunctions[i].name === functionName)
+        return this.nativeFunctions[i];
     }
     return null;
   }
@@ -489,7 +553,7 @@ class FunctionBuilder {
     if (nativeFunction) {
       return nativeFunction.returnType;
     }
-    throw new Error(`Native function ${ functionName } not found`);
+    throw new Error(`Native function ${functionName} not found`);
   }
 
   lookupFunctionArgumentTypes(functionName) {
@@ -554,25 +618,38 @@ class FunctionBuilder {
    * @param {number} argumentIndex
    * @return {number|null}
    */
-  assignArgumentBitRatio(functionName, argumentName, calleeFunctionName, argumentIndex) {
+  assignArgumentBitRatio(
+    functionName,
+    argumentName,
+    calleeFunctionName,
+    argumentIndex
+  ) {
     const node = this._getFunction(functionName);
     if (this._isNativeFunction(calleeFunctionName)) return null;
     const calleeNode = this._getFunction(calleeFunctionName);
     const i = node.argumentNames.indexOf(argumentName);
     if (i === -1) {
-      throw new Error(`Argument ${argumentName} not found in arguments from function ${functionName}`);
+      throw new Error(
+        `Argument ${argumentName} not found in arguments from function ${functionName}`
+      );
     }
     const bitRatio = node.argumentBitRatios[i];
     if (typeof bitRatio !== 'number') {
-      throw new Error(`Bit ratio for argument ${argumentName} not found in function ${functionName}`);
+      throw new Error(
+        `Bit ratio for argument ${argumentName} not found in function ${functionName}`
+      );
     }
     if (!calleeNode.argumentBitRatios) {
-      calleeNode.argumentBitRatios = new Array(calleeNode.argumentNames.length);
+      calleeNode.argumentBitRatios = new Array(
+        calleeNode.argumentNames.length
+      );
     }
     const calleeBitRatio = calleeNode.argumentBitRatios[i];
     if (typeof calleeBitRatio === 'number') {
       if (calleeBitRatio !== bitRatio) {
-        throw new Error(`Incompatible bit ratio found at function ${functionName} at argument ${argumentName}`);
+        throw new Error(
+          `Incompatible bit ratio found at function ${functionName} at argument ${argumentName}`
+        );
       }
       return calleeBitRatio;
     }
@@ -590,22 +667,33 @@ class FunctionBuilder {
   }
 
   getKernelResultType() {
-    return this.rootNode.returnType || this.rootNode.getType(this.rootNode.ast);
+    return (
+      this.rootNode.returnType || this.rootNode.getType(this.rootNode.ast)
+    );
   }
 
   getSubKernelResultType(index) {
     const subKernelNode = this.subKernelNodes[index];
     let called = false;
-    for (let functionCallIndex = 0; functionCallIndex < this.rootNode.functionCalls.length; functionCallIndex++) {
+    for (
+      let functionCallIndex = 0;
+      functionCallIndex < this.rootNode.functionCalls.length;
+      functionCallIndex++
+    ) {
       const functionCall = this.rootNode.functionCalls[functionCallIndex];
       if (functionCall.ast.callee.name === subKernelNode.name) {
         called = true;
       }
     }
     if (!called) {
-      throw new Error(`SubKernel ${ subKernelNode.name } never called by kernel`);
+      throw new Error(
+        `SubKernel ${subKernelNode.name} never called by kernel`
+      );
     }
-    return subKernelNode.returnType || subKernelNode.getType(subKernelNode.getJsAST());
+    return (
+      subKernelNode.returnType ||
+      subKernelNode.getType(subKernelNode.getJsAST())
+    );
   }
 
   getReturnTypes() {
@@ -621,7 +709,3 @@ class FunctionBuilder {
     return result;
   }
 }
-
-module.exports = {
-  FunctionBuilder
-};

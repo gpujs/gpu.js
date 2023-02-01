@@ -1,5 +1,5 @@
 const { assert, test, skip, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('internal: GPU methods');
 
@@ -7,7 +7,9 @@ test('.createKernelMap() object map with settings', () => {
   const gpu = new GPU();
   let source = null;
   let settings = null;
+
   function bob() {}
+
   function tom() {}
   class MockKernel {
     constructor(_source, _settings) {
@@ -21,9 +23,9 @@ test('.createKernelMap() object map with settings', () => {
   gpu.Kernel = MockKernel;
   const subKernels = {
     bobResult: bob,
-    tomResult: tom
+    tomResult: tom,
   };
-  const kernelSource = function() {};
+  const kernelSource = function () {};
   const masterSettings = {};
   const kernel = gpu.createKernelMap(subKernels, kernelSource, masterSettings);
   assert.equal(source, kernelSource.toString());
@@ -38,13 +40,13 @@ test('.createKernelMap() object map with settings', () => {
     {
       name: 'bob',
       source: bob.toString(),
-      property: 'bobResult'
+      property: 'bobResult',
     },
     {
       name: 'tom',
       source: tom.toString(),
-      property: 'tomResult'
-    }
+      property: 'tomResult',
+    },
   ]);
 });
 
@@ -52,7 +54,9 @@ test('.createKernelMap() array map with settings', () => {
   const gpu = new GPU();
   let source = null;
   let settings = null;
+
   function bob() {}
+
   function tom() {}
   class MockKernel {
     constructor(_source, _settings) {
@@ -65,7 +69,7 @@ test('.createKernelMap() array map with settings', () => {
   }
   gpu.Kernel = MockKernel;
   const subKernels = [bob, tom];
-  const kernelSource = function() {};
+  const kernelSource = function () {};
   const masterSettings = {};
   const kernel = gpu.createKernelMap(subKernels, kernelSource, masterSettings);
   assert.equal(source, kernelSource.toString());
@@ -80,12 +84,12 @@ test('.createKernelMap() array map with settings', () => {
     {
       name: 'bob',
       source: bob.toString(),
-      property: 0
+      property: 0,
     },
     {
       name: 'tom',
       source: tom.toString(),
-      property: 1
-    }
+      property: 1,
+    },
   ]);
 });

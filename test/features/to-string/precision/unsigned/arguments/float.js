@@ -1,19 +1,22 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../../../../../src');
+const { GPU } = require('../../../../../..');
 
 describe('feature: to-string unsigned precision arguments Float');
 
 function testArgument(mode, context, canvas) {
   const gpu = new GPU({ mode });
-  const originalKernel = gpu.createKernel(function(a) {
-    return Math.floor(a) === 100 ? 42 : -42;
-  }, {
-    canvas,
-    context,
-    output: [1],
-    precision: 'unsigned',
-    argumentTypes: { a: 'Float' },
-  });
+  const originalKernel = gpu.createKernel(
+    function (a) {
+      return Math.floor(a) === 100 ? 42 : -42;
+    },
+    {
+      canvas,
+      context,
+      output: [1],
+      precision: 'unsigned',
+      argumentTypes: { a: 'Float' },
+    }
+  );
   assert.equal(originalKernel.argumentTypes[0], 'Float');
   assert.deepEqual(originalKernel(100)[0], 42);
   assert.deepEqual(originalKernel(10)[0], -42);

@@ -1,27 +1,30 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { WebGL2Kernel } = require('../../../../../src');
+const { WebGL2Kernel } = require('../../../../..');
 
 describe('internal: WebGL2Kernel');
 
-(typeof global !== 'undefined' ? test : skip)('.setupFeatureChecks() if context is available, but .getExtension() is falsey', () => {
-  const mockContext = {
-    getExtension: null // this is important
-  };
-  const mockElement = {
-    getContext: () => mockContext,
-  };
-  const mockDocument = {
-    createElement: () => {
-      return mockElement;
-    }
-  };
-  global.document = mockDocument;
+(typeof global !== 'undefined' ? test : skip)(
+  '.setupFeatureChecks() if context is available, but .getExtension() is falsey',
+  () => {
+    const mockContext = {
+      getExtension: null, // this is important
+    };
+    const mockElement = {
+      getContext: () => mockContext,
+    };
+    const mockDocument = {
+      createElement: () => {
+        return mockElement;
+      },
+    };
+    global.document = mockDocument;
 
-  WebGL2Kernel.setupFeatureChecks();
-  assert.ok(true);
+    WebGL2Kernel.setupFeatureChecks();
+    assert.ok(true);
 
-  delete global.document;
-});
+    delete global.document;
+  }
+);
 
 test('.validateSettings() checks output texture size - too large', () => {
   const mockContext = {

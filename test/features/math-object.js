@@ -1,16 +1,28 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('features: math object');
 
 function mathProps(mode) {
-  const props = ['E','LN10','LN2','LOG10E','LOG2E','PI','SQRT1_2','SQRT2'];
+  const props = [
+    'E',
+    'LN10',
+    'LN2',
+    'LOG10E',
+    'LOG2E',
+    'PI',
+    'SQRT1_2',
+    'SQRT2',
+  ];
   const gpu = new GPU({ mode });
   for (let i = 0; i < props.length; i++) {
     const prop = props[i];
-    const kernel = gpu.createKernel(`function() {
+    const kernel = gpu.createKernel(
+      `function() {
       return Math.${prop};
-    }`, { output: [1] });
+    }`,
+      { output: [1] }
+    );
     assert.equal(kernel()[0].toFixed(6), Math[prop].toFixed(6));
   }
   gpu.destroy();
@@ -32,9 +44,12 @@ test('All Math properties gpu', () => {
   mathProps('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('All Math properties headlessgl', () => {
-  mathProps('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'All Math properties headlessgl',
+  () => {
+    mathProps('headlessgl');
+  }
+);
 
 test('All Math properties cpu', () => {
   mathProps('cpu');
@@ -76,11 +91,18 @@ function singleArgumentMathMethods(mode) {
   const gpu = new GPU({ mode });
   for (let i = 0; i < methods.length; i++) {
     const method = methods[i];
-    const kernel = gpu.createKernel(`function(value) {
+    const kernel = gpu.createKernel(
+      `function(value) {
       return Math.${method}(value);
-    }`, { output: [1] });
+    }`,
+      { output: [1] }
+    );
     for (let j = 0; j < 10; j++) {
-      assert.equal(kernel(j / 10)[0].toFixed(3), Math[method](j / 10).toFixed(3), `Math.${method}(${j / 10})`);
+      assert.equal(
+        kernel(j / 10)[0].toFixed(3),
+        Math[method](j / 10).toFixed(3),
+        `Math.${method}(${j / 10})`
+      );
     }
   }
   gpu.destroy();
@@ -94,41 +116,51 @@ test('Single argument Math methods gpu', () => {
   singleArgumentMathMethods('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Single argument Math methods webgl', () => {
-  singleArgumentMathMethods('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Single argument Math methods webgl',
+  () => {
+    singleArgumentMathMethods('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Single argument Math methods webgl2', () => {
-  singleArgumentMathMethods('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Single argument Math methods webgl2',
+  () => {
+    singleArgumentMathMethods('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Single argument Math methods headlessgl', () => {
-  singleArgumentMathMethods('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Single argument Math methods headlessgl',
+  () => {
+    singleArgumentMathMethods('headlessgl');
+  }
+);
 
 test('Single argument Math methods cpu', () => {
   singleArgumentMathMethods('cpu');
 });
 
 function twoArgumentMathMethods(mode) {
-  const methods = [
-    'atan2',
-    'imul',
-    'max',
-    'min',
-    'pow',
-  ];
+  const methods = ['atan2', 'imul', 'max', 'min', 'pow'];
 
   const gpu = new GPU({ mode });
   for (let i = 0; i < methods.length; i++) {
     const method = methods[i];
-    const kernel = gpu.createKernel(`function(value1, value2) {
+    const kernel = gpu.createKernel(
+      `function(value1, value2) {
       return Math.${method}(value1, value2);
-    }`, { output: [1] });
+    }`,
+      { output: [1] }
+    );
     for (let j = 0; j < 10; j++) {
       const value1 = j / 10;
       const value2 = value1;
-      assert.equal(kernel(value1, value2)[0].toFixed(3), Math[method](value1, value2).toFixed(3), `Math.${method}(${value1}, ${value2})`);
+      assert.equal(
+        kernel(value1, value2)[0].toFixed(3),
+        Math[method](value1, value2).toFixed(3),
+        `Math.${method}(${value1}, ${value2})`
+      );
     }
   }
   gpu.destroy();
@@ -146,13 +178,19 @@ test('Two argument Math methods gpu', () => {
   twoArgumentMathMethods('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('Two argument Math methods webgl2', () => {
-  twoArgumentMathMethods('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Two argument Math methods webgl2',
+  () => {
+    twoArgumentMathMethods('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Two argument Math methods headlessgl', () => {
-  twoArgumentMathMethods('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Two argument Math methods headlessgl',
+  () => {
+    twoArgumentMathMethods('headlessgl');
+  }
+);
 
 test('Two argument Math methods cpu', () => {
   twoArgumentMathMethods('cpu');
@@ -160,15 +198,18 @@ test('Two argument Math methods cpu', () => {
 
 function sqrtABTest(mode) {
   const gpu = new GPU({ mode });
-  const f = gpu.createKernel(function(a, b) {
-    return Math.sqrt(a[this.thread.x] * b[this.thread.x]);
-  }, {
-    output : [6]
-  });
+  const f = gpu.createKernel(
+    function (a, b) {
+      return Math.sqrt(a[this.thread.x] * b[this.thread.x]);
+    },
+    {
+      output: [6],
+    }
+  );
   const a = [3, 4, 5, 6, 7, 8];
   const b = [3, 4, 5, 6, 7, 8];
 
-  const res = f(a,b);
+  const res = f(a, b);
   const exp = [3, 4, 5, 6, 7, 8];
 
   assert.deepEqual(Array.from(res), exp);
@@ -199,15 +240,20 @@ test('sqrtAB cpu', () => {
   sqrtABTest('cpu');
 });
 
-
 function mathRandom(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    return Math.random();
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function () {
+      return Math.random();
+    },
+    { output: [1] }
+  );
 
   const result = kernel();
-  assert.ok(result[0] > 0 && result[0] < 1, `value was expected to be between o and 1, but was ${result[0]}`);
+  assert.ok(
+    result[0] > 0 && result[0] < 1,
+    `value was expected to be between o and 1, but was ${result[0]}`
+  );
 }
 
 test('random auto', () => {
@@ -233,5 +279,3 @@ test('random gpu', () => {
 test('random cpu', () => {
   mathRandom('cpu');
 });
-
-

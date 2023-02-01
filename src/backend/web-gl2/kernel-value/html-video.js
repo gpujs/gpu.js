@@ -1,8 +1,4 @@
-const { utils } = require('../../../utils');
-const { WebGL2KernelValueHTMLImage } = require('./html-image');
+import { utils } from '../../../utils';
+import { WebGL2KernelValueHTMLImage } from './html-image';
 
-class WebGL2KernelValueHTMLVideo extends WebGL2KernelValueHTMLImage {}
-
-module.exports = {
-  WebGL2KernelValueHTMLVideo
-};
+export class WebGL2KernelValueHTMLVideo extends WebGL2KernelValueHTMLImage {}

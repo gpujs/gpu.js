@@ -1,25 +1,15 @@
-const lib = require('./index');
+import * as lib from './index';
 const GPU = lib.GPU;
+
 for (const p in lib) {
-  if (!lib.hasOwnProperty(p)) continue;
-  if (p === 'GPU') continue; //prevent recursive reference
+  if (!Object.prototype.hasOwnProperty.call(lib, p)) {
+    continue;
+  }
+  if (p === 'GPU') {
+    //prevent recursive reference
+    continue;
+  }
   GPU[p] = lib[p];
 }
 
-if (typeof window !== 'undefined') {
-  bindTo(window);
-}
-if (typeof self !== 'undefined') {
-  bindTo(self);
-}
-
-function bindTo(target) {
-  if (target.GPU) return;
-  Object.defineProperty(target, 'GPU', {
-    get() {
-      return GPU;
-    }
-  });
-}
-
-module.exports = lib;
+export default lib;

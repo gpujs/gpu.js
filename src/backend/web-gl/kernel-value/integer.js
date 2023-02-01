@@ -1,7 +1,6 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValue } = require('./index');
+import { WebGLKernelValue } from './index';
 
-class WebGLKernelValueInteger extends WebGLKernelValue {
+export class WebGLKernelValueInteger extends WebGLKernelValue {
   constructor(value, settings) {
     super(value, settings);
     this.uploadValue = value;
@@ -11,17 +10,13 @@ class WebGLKernelValueInteger extends WebGLKernelValue {
   }
   getSource(value) {
     if (this.origin === 'constants') {
-      return `const int ${this.id} = ${ parseInt(value) };\n`;
+      return `const int ${this.id} = ${parseInt(value)};\n`;
     }
     return `uniform int ${this.id};\n`;
   }
 
   updateValue(value) {
     if (this.origin === 'constants') return;
-    this.kernel.setUniform1i(this.id, this.uploadValue = value);
+    this.kernel.setUniform1i(this.id, (this.uploadValue = value));
   }
 }
-
-module.exports = {
-  WebGLKernelValueInteger
-};

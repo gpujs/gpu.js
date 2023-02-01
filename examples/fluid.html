@@ -1,43 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>SSPS - Chadams Studios (slightly upgraded)</title>
-  <script src="../dist/gpu-browser.min.js"></script>
-  <script>
-    function XSSPS(particleCount, renderSize, onAfterInput) {
-      this.dt = 0;
-      this.renderSize = renderSize || 512;
-      this.particleCount = particleCount || 512;
-      this.onAfterInput = onAfterInput;
+  <head>
+    <meta charset="utf-8" />
+    <title>SSPS - Chadams Studios (slightly upgraded)</title>
+    <script src="../dist/gpu-browser.js"></script>
+    <script>
+      function XSSPS(particleCount, renderSize, onAfterInput) {
+        this.dt = 0;
+        this.renderSize = renderSize || 512;
+        this.particleCount = particleCount || 512;
+        this.onAfterInput = onAfterInput;
 
-      this.hashLength = 128;
-      this.hashWSize = 3.0;
-      this.hashBinLen = 128;
-      this.rayCount = 128;
-      this.rayDist = 20;
-      this.rfScale = 2.0;
+        this.hashLength = 128;
+        this.hashWSize = 3.0;
+        this.hashBinLen = 128;
+        this.rayCount = 128;
+        this.rayDist = 20;
+        this.rfScale = 2.0;
 
-      this.restDensity = 0.1;
-      this.fieldLen = 4;
-      this.gConst = 0.02;
-      this.bound = 8;
+        this.restDensity = 0.1;
+        this.fieldLen = 4;
+        this.gConst = 0.02;
+        this.bound = 8;
 
-      this.shootIndex = 0;
-      this.keys = {};
+        this.shootIndex = 0;
+        this.keys = {};
 
-      this.canvas = document.createElement('canvas');
-      const gpu = this.gpu = new GPU({
-        canvas: this.canvas,
-        mode: 'gpu'
-      });
+        this.canvas = document.createElement('canvas');
+        const gpu = (this.gpu = new GPU({
+          canvas: this.canvas,
+          mode: 'gpu',
+        }));
 
-      /*
+        /*
           RENDER SUPPORT FUNCTIONS (GLSL)
        */
 
-      gpu.addNativeFunction('raySphere',
-        `vec2 raySphere(vec3 r0, vec3 rd, vec3 s0, float sr) {
+        gpu.addNativeFunction(
+          'raySphere',
+          `vec2 raySphere(vec3 r0, vec3 rd, vec3 s0, float sr) {
           float a = dot(rd, rd);
           vec3 s0_r0 = r0 - s0;
           float b = 2.0 * dot(rd, s0_r0);
@@ -54,10 +55,11 @@
               Y-X
           );
         }`
-      );
+        );
 
-      gpu.addNativeFunction('getRay0',
-        `vec3 getRay0(vec2 uv,  vec3 c0, vec3 cd, vec3 up, float s0, float s1, float slen) {
+        gpu.addNativeFunction(
+          'getRay0',
+          `vec3 getRay0(vec2 uv,  vec3 c0, vec3 cd, vec3 up, float s0, float s1, float slen) {
           up = normalize(cross(cross(cd, up), cd));
 
           vec3 vup = normalize(cross(cd, up));
@@ -67,10 +69,11 @@
 
           return c0 + vup * X.y + vleft * X.x;
         }`
-      );
+        );
 
-      gpu.addNativeFunction('getRayDir',
-        `vec3 getRayDir(vec3 R0,  vec2 uv,  vec3 c0, vec3 cd, vec3 up, float s0, float s1, float slen) {
+        gpu.addNativeFunction(
+          'getRayDir',
+          `vec3 getRayDir(vec3 R0,  vec2 uv,  vec3 c0, vec3 cd, vec3 up, float s0, float s1, float slen) {
           up = normalize(cross(cross(cd, up), cd));
 
           vec3 vup = normalize(cross(cd, up));
@@ -82,34 +85,38 @@
 
           return normalize((normalize(cd) * slen + far + c0) - R0);
         }`
-      );
+        );
 
-      gpu.addNativeFunction('reflectWrap',
-        `vec3 reflectWrap(vec3 I, vec3 N) {
+        gpu.addNativeFunction(
+          'reflectWrap',
+          `vec3 reflectWrap(vec3 I, vec3 N) {
           return normalize(reflect(normalize(I), normalize(N)));
 
         }`
-      );
+        );
 
-      gpu.addNativeFunction('refractWrap',
-        `vec3 refractWrap(vec3 I, vec3 N, float eta) {
+        gpu.addNativeFunction(
+          'refractWrap',
+          `vec3 refractWrap(vec3 I, vec3 N, float eta) {
           return normalize(refract(normalize(I), normalize(N), eta));
 
         }`
-      );
+        );
 
-      gpu.addNativeFunction('distanceWrap',
-        `float distanceWrap(vec3 A, vec3 B) {
+        gpu.addNativeFunction(
+          'distanceWrap',
+          `float distanceWrap(vec3 A, vec3 B) {
           return length(A - B);
         }`
-      );
+        );
 
-      /*
+        /*
           UPDATE SUPPORT FUNCTIONS (GLSL)
        */
 
-      gpu.addNativeFunction('compGravity',
-        `vec3 compGravity(vec3 M, vec3 J, float jMass, float f) {
+        gpu.addNativeFunction(
+          'compGravity',
+          `vec3 compGravity(vec3 M, vec3 J, float jMass, float f) {
           vec3 delta = J - M;
           float dlen = length(delta);
 
@@ -119,10 +126,11 @@
           }
           return vec3(0., 0., 0.);
         }`
-      );
+        );
 
-      gpu.addNativeFunction('partDensity',
-        `vec2 partDensity(vec3 M, vec3 J, float fLen) {
+        gpu.addNativeFunction(
+          'partDensity',
+          `vec2 partDensity(vec3 M, vec3 J, float fLen) {
           vec3 delta = J - M;
           float len = length(delta);
 
@@ -132,10 +140,11 @@
           }
           return vec2(0., 0.);
         }`
-      );
+        );
 
-      gpu.addNativeFunction('pressForce',
-        `vec3 pressForce(vec3 M, vec3 J, vec3 Mv, vec3 Jv, float fLen, float dt, float spressure, float snpressure, float viscdt) {
+        gpu.addNativeFunction(
+          'pressForce',
+          `vec3 pressForce(vec3 M, vec3 J, vec3 Mv, vec3 Jv, float fLen, float dt, float spressure, float snpressure, float viscdt) {
           vec3 delta = J - M;
           float len = length(delta);
           if (len < fLen) {
@@ -147,855 +156,1087 @@
           }
           return vec3(0., 0., 0.);
         }`
-      );
+        );
 
-      /*
+        /*
           INIT SUPPORT FUNCTIONS
        */
 
-      gpu.addNativeFunction('random',
-        `float random(float sequence, float seed) {
+        gpu.addNativeFunction(
+          'random',
+          `float random(float sequence, float seed) {
           return fract(sin(dot(vec2(seed, sequence), vec2(12.9898, 78.233))) * 43758.5453);
         }`
-      );
+        );
 
-      /*
+        /*
           VELOCITY UPDATE KERNEL
        */
 
-      this.updateVelocity = gpu.createKernel(function(
-        positions,
-        velocities,
-        attrs,
-        pullMass,
-        camP,
-        camDir,
-        moveTPullR,
-        oDensity,
-        oVisc,
-        oMass,
-        oIncomp,
-        dt
-      ) {
-        var playerPos = [
-          camP[0] + camDir[0] * moveTPullR,
-          camP[1] + camDir[1] * moveTPullR,
-          camP[2] + camDir[2] * moveTPullR,
-        ];
-        // Unpack particle
-        var comp = this.thread.x % 3;
-        var me = (this.thread.x - comp) / 3;
-        var mx = positions[me*3],
-          my = positions[me*3+1],
-          mz = positions[me*3+2];
-        var mpos = [mx, my, mz];
-        var mvx = velocities[me*3],
-          mvy = velocities[me*3+1],
-          mvz = velocities[me*3+2];
-        var mvel = [mvx, mvy, mvz];
-        var mmass = oMass;
-        var incomp = oIncomp;
-        var viscdt = oVisc;
-        var ddensity = 0.0,
-          nddensity = 0.0;
+        this.updateVelocity = gpu.createKernel(
+          function (
+            positions,
+            velocities,
+            attrs,
+            pullMass,
+            camP,
+            camDir,
+            moveTPullR,
+            oDensity,
+            oVisc,
+            oMass,
+            oIncomp,
+            dt
+          ) {
+            var playerPos = [
+              camP[0] + camDir[0] * moveTPullR,
+              camP[1] + camDir[1] * moveTPullR,
+              camP[2] + camDir[2] * moveTPullR,
+            ];
+            // Unpack particle
+            var comp = this.thread.x % 3;
+            var me = (this.thread.x - comp) / 3;
+            var mx = positions[me * 3],
+              my = positions[me * 3 + 1],
+              mz = positions[me * 3 + 2];
+            var mpos = [mx, my, mz];
+            var mvx = velocities[me * 3],
+              mvy = velocities[me * 3 + 1],
+              mvz = velocities[me * 3 + 2];
+            var mvel = [mvx, mvy, mvz];
+            var mmass = oMass;
+            var incomp = oIncomp;
+            var viscdt = oVisc;
+            var ddensity = 0.0,
+              nddensity = 0.0;
 
-        // Compute pressure on this particle
-        for (var i=0; i<this.constants.particleCount; i++) {
-          var opos = [positions[i*3], positions[i*3+1], positions[i*3+2]];
-          var density = oDensity;
-          var dret = partDensity(mpos, opos, this.constants.fieldLen);
-          ddensity += dret[0] * density;
-          nddensity += dret[1] * density;
-        }
+            // Compute pressure on this particle
+            for (var i = 0; i < this.constants.particleCount; i++) {
+              var opos = [
+                positions[i * 3],
+                positions[i * 3 + 1],
+                positions[i * 3 + 2],
+              ];
+              var density = oDensity;
+              var dret = partDensity(mpos, opos, this.constants.fieldLen);
+              ddensity += dret[0] * density;
+              nddensity += dret[1] * density;
+            }
 
-        // Interact with player by adding pressure
-        var opos = [playerPos[0], playerPos[1], playerPos[2]];
-        var fl2 = this.constants.fieldLen;
-        var pf = [0, 0];
-        if (pullMass > 0.0) {
-          pf = partDensity(mpos, opos, fl2);
-        }
-        ddensity += pf[0] * (pullMass / 10.0 * this.constants.restDensity);
-        nddensity += pf[1] * (pullMass / 10.0 * this.constants.restDensity);
+            // Interact with player by adding pressure
+            var opos = [playerPos[0], playerPos[1], playerPos[2]];
+            var fl2 = this.constants.fieldLen;
+            var pf = [0, 0];
+            if (pullMass > 0.0) {
+              pf = partDensity(mpos, opos, fl2);
+            }
+            ddensity +=
+              pf[0] * ((pullMass / 10.0) * this.constants.restDensity);
+            nddensity +=
+              pf[1] * ((pullMass / 10.0) * this.constants.restDensity);
 
-        var spressure = (ddensity - this.constants.restDensity) * incomp;
-        var snpressure = nddensity * incomp;
+            var spressure = (ddensity - this.constants.restDensity) * incomp;
+            var snpressure = nddensity * incomp;
 
-        // Compute force from pressure on this particle
-        var ret = [mvx, mvy, mvz];
+            // Compute force from pressure on this particle
+            var ret = [mvx, mvy, mvz];
 
-        for (var i=0; i<this.constants.particleCount; i++) {
-          if (i - me > 0.01) {
-            var opos = [positions[i*3], positions[i*3+1], positions[i*3+2]];
-            var ovel = [velocities[i*3], velocities[i*3+1], velocities[i*3+2]];
-            var mass = oMass;
-            var jmf = (2. * mass) / (mass + mmass);
-            var dret = pressForce(mpos, opos, mvel, ovel, this.constants.fieldLen, dt, spressure, snpressure, viscdt);
-            ret[0] += dret[0] * jmf; ret[1] += dret[1] * jmf; ret[2] += dret[2] * jmf;
+            for (var i = 0; i < this.constants.particleCount; i++) {
+              if (i - me > 0.01) {
+                var opos = [
+                  positions[i * 3],
+                  positions[i * 3 + 1],
+                  positions[i * 3 + 2],
+                ];
+                var ovel = [
+                  velocities[i * 3],
+                  velocities[i * 3 + 1],
+                  velocities[i * 3 + 2],
+                ];
+                var mass = oMass;
+                var jmf = (2 * mass) / (mass + mmass);
+                var dret = pressForce(
+                  mpos,
+                  opos,
+                  mvel,
+                  ovel,
+                  this.constants.fieldLen,
+                  dt,
+                  spressure,
+                  snpressure,
+                  viscdt
+                );
+                ret[0] += dret[0] * jmf;
+                ret[1] += dret[1] * jmf;
+                ret[2] += dret[2] * jmf;
+              }
+            }
+
+            // Player pressure
+            if (pullMass > 0.0) {
+              var opos = [playerPos[0], playerPos[1], playerPos[2]];
+              var ovel = [0, 0, 0];
+              var mass = 1.0;
+              var jmf = (2 * mass) / (mass + mmass);
+              var dret = pressForce(
+                mpos,
+                opos,
+                mvel,
+                ovel,
+                this.constants.fieldLen,
+                dt,
+                spressure,
+                snpressure,
+                viscdt
+              );
+              ret[0] += dret[0] * jmf;
+              ret[1] += dret[1] * jmf;
+              ret[2] += dret[2] * jmf;
+            }
+
+            // Compute gravitational force on this particle
+            var gf = this.constants.gConst * dt * 0.1;
+            for (var i = 0; i < this.constants.particleCount; i++) {
+              var opos = [
+                positions[i * 3],
+                positions[i * 3 + 1],
+                positions[i * 3 + 2],
+              ];
+              var mass = attrs[i * 6 + 2];
+              var dret = compGravity(mpos, opos, mass, gf);
+              ret[0] += dret[0];
+              ret[1] += dret[1];
+              ret[2] += dret[2];
+            }
+
+            // Enforce scene boundaries
+            if (ret[0] < 0 && mpos[0] < -this.constants.bound) {
+              ret[0] = -ret[0];
+            } else if (ret[0] > 0 && mpos[0] > this.constants.bound) {
+              ret[0] = -ret[0];
+            }
+
+            if (ret[1] < 0 && mpos[1] < -this.constants.bound) {
+              ret[1] = -ret[1];
+            } else if (ret[1] > 0 && mpos[1] > this.constants.bound) {
+              ret[1] = -ret[1];
+            }
+
+            if (ret[2] < 0 && mpos[2] < -this.constants.bound) {
+              ret[2] = -ret[2];
+            } else if (ret[2] > 0 && mpos[2] > this.constants.bound) {
+              ret[2] = -ret[2];
+            }
+
+            if (comp < 0.01) {
+              return ret[0];
+            } else if (comp < 1.01) {
+              return ret[1];
+            } else if (comp < 2.01) {
+              return ret[2];
+            }
+          },
+          {
+            constants: {
+              particleCount: this.particleCount,
+              bound: this.bound,
+              fieldLen: this.fieldLen,
+              gConst: this.gConst,
+              restDensity:
+                (4 / 3) *
+                Math.PI *
+                Math.pow(this.fieldLen, 3) *
+                this.restDensity,
+            },
+            loopMaxIterations: this.particleCount,
+            output: [this.particleCount * 3],
+            pipeline: true,
+            tactic: 'speed',
+            immutable: true,
           }
-        }
+        );
 
-        // Player pressure
-        if (pullMass > 0.0) {
-          var opos = [playerPos[0], playerPos[1], playerPos[2]];
-          var ovel = [0, 0, 0];
-          var mass = 1.0;
-          var jmf = (2. * mass) / (mass + mmass);
-          var dret = pressForce(mpos, opos, mvel, ovel, this.constants.fieldLen, dt, spressure, snpressure, viscdt);
-          ret[0] += dret[0] * jmf;
-          ret[1] += dret[1] * jmf;
-          ret[2] += dret[2] * jmf;
-        }
-
-        // Compute gravitational force on this particle
-        var gf = this.constants.gConst * dt * 0.1;
-        for (var i=0; i<this.constants.particleCount; i++) {
-          var opos = [positions[i*3], positions[i*3+1], positions[i*3+2]];
-          var mass = attrs[i*6+2];
-          var dret = compGravity(mpos, opos, mass, gf);
-          ret[0] += dret[0]; ret[1] += dret[1]; ret[2] += dret[2];
-        }
-
-        // Enforce scene boundaries
-        if (ret[0] < 0 && mpos[0] < -this.constants.bound) {
-          ret[0] = -ret[0];
-        } else if (ret[0] > 0 && mpos[0] > this.constants.bound) {
-          ret[0] = -ret[0];
-        }
-
-        if (ret[1] < 0 && mpos[1] < -this.constants.bound) {
-          ret[1] = -ret[1];
-        } else if (ret[1] > 0 && mpos[1] > this.constants.bound) {
-          ret[1] = -ret[1];
-        }
-
-        if (ret[2] < 0 && mpos[2] < -this.constants.bound) {
-          ret[2] = -ret[2];
-        } else if (ret[2] > 0 && mpos[2] > this.constants.bound) {
-          ret[2] = -ret[2];
-        }
-
-        if (comp < 0.01) {
-          return ret[0];
-        } else if (comp < 1.01) {
-          return ret[1];
-        } else if (comp < 2.01) {
-          return ret[2];
-        }
-      }, {
-        constants: {
-          particleCount: this.particleCount,
-          bound: this.bound,
-          fieldLen: this.fieldLen,
-          gConst: this.gConst,
-          restDensity: ((4 / 3) * Math.PI * Math.pow(this.fieldLen, 3)) * this.restDensity
-        },
-        loopMaxIterations: this.particleCount,
-        output: [ this.particleCount*3 ],
-        pipeline: true,
-        tactic: 'speed',
-        immutable: true,
-      });
-
-      /*
+        /*
           SET POSITION/VELOCITES
        */
-      this.setPosition = gpu.createKernel(function(list, index, camP, camDir, amount) {
-        if (Math.abs(index - Math.floor(this.thread.x / this.constants.pitch)) < 0.01) {
-          const i = this.thread.x % this.constants.pitch;
-          return camP[i] + camDir[i] * amount;
-        } else {
-          return list[this.thread.x];
-        }
-      }, {
-        output: [ this.particleCount * 3 ],
-        pipeline: true,
-        constants: { particleCount: this.particleCount, pitch: 3 },
-        loopMaxIterations: this.particleCount,
-        tactic: 'speed',
-        immutable: true,
-      });
+        this.setPosition = gpu.createKernel(
+          function (list, index, camP, camDir, amount) {
+            if (
+              Math.abs(
+                index - Math.floor(this.thread.x / this.constants.pitch)
+              ) < 0.01
+            ) {
+              const i = this.thread.x % this.constants.pitch;
+              return camP[i] + camDir[i] * amount;
+            } else {
+              return list[this.thread.x];
+            }
+          },
+          {
+            output: [this.particleCount * 3],
+            pipeline: true,
+            constants: { particleCount: this.particleCount, pitch: 3 },
+            loopMaxIterations: this.particleCount,
+            tactic: 'speed',
+            immutable: true,
+          }
+        );
 
-      this.setVelocity = gpu.createKernel(function(list, index, camDir, amount) {
-        if (Math.abs(index - Math.floor(this.thread.x / this.constants.pitch)) < 0.01) {
-          return camDir[this.thread.x % this.constants.pitch] * amount;
-        } else {
-          return list[this.thread.x];
-        }
-      }, {
-        output: [ this.particleCount * 3 ],
-        pipeline: true,
-        constants: { particleCount: this.particleCount, pitch: 3 },
-        loopMaxIterations: this.particleCount,
-        tactic: 'speed',
-        immutable: true,
-      });
+        this.setVelocity = gpu.createKernel(
+          function (list, index, camDir, amount) {
+            if (
+              Math.abs(
+                index - Math.floor(this.thread.x / this.constants.pitch)
+              ) < 0.01
+            ) {
+              return camDir[this.thread.x % this.constants.pitch] * amount;
+            } else {
+              return list[this.thread.x];
+            }
+          },
+          {
+            output: [this.particleCount * 3],
+            pipeline: true,
+            constants: { particleCount: this.particleCount, pitch: 3 },
+            loopMaxIterations: this.particleCount,
+            tactic: 'speed',
+            immutable: true,
+          }
+        );
 
-      /*
+        /*
           POSITION UPDATE KERNEL
        */
 
-      this.updatePosition = gpu.createKernel(function(positions, velocities, dt) {
-        return positions[this.thread.x] + velocities[this.thread.x] * dt;
-      }, {
-        output: [ this.particleCount * 3 ],
-        pipeline: true,
-        loopMaxIterations: this.particleCount,
-        tactic: 'speed',
-        immutable: true,
-      });
-
-      this.rotateCamera = gpu.createKernel(function(rotLR, rotUD, camCenter, camDir, camUp, camNearWidth, camFarWidth, camDist) {
-        var uv = [0.5+rotLR, 0.5+rotUD];
-
-        var CC = [camCenter[0], camCenter[1], camCenter[2]],
-          CD = [camDir[0], camDir[1], camDir[2]],
-          CU = [camUp[0], camUp[1], camUp[2]];
-        var ray0 = getRay0(uv, CC, CD, CU, camNearWidth, camFarWidth, camDist);
-        var rayDir = getRayDir(ray0, uv, CC, CD, CU, camNearWidth, camFarWidth, camDist);
-
-        if (this.thread.x === 0) {
-          return rayDir[0];
-        } else if (this.thread.x === 1) {
-          return rayDir[1];
-        } else {
-          return rayDir[2];
-        }
-      }, {
-        output: [ 3 ],
-        tactic: 'speed',
-        pipeline: true,
-        immutable: true,
-      });
-
-      this.updateCameraPosition = gpu.createKernel(function(camDir, camP, moveTFR, dt) {
-        var dlen = Math.sqrt(
-          (camDir[0] * camDir[0])
-          + (camDir[1] * camDir[1])
-          + (camDir[2] * camDir[2])
+        this.updatePosition = gpu.createKernel(
+          function (positions, velocities, dt) {
+            return positions[this.thread.x] + velocities[this.thread.x] * dt;
+          },
+          {
+            output: [this.particleCount * 3],
+            pipeline: true,
+            loopMaxIterations: this.particleCount,
+            tactic: 'speed',
+            immutable: true,
+          }
         );
-        return camP[this.thread.x] + (camDir[this.thread.x] / dlen) * moveTFR * dt * 6;
-      }, {
-        output: [3],
-        tactic: 'speed',
-        pipeline: true,
-        immutable: true,
-      });
 
-      /*
+        this.rotateCamera = gpu.createKernel(
+          function (
+            rotLR,
+            rotUD,
+            camCenter,
+            camDir,
+            camUp,
+            camNearWidth,
+            camFarWidth,
+            camDist
+          ) {
+            var uv = [0.5 + rotLR, 0.5 + rotUD];
+
+            var CC = [camCenter[0], camCenter[1], camCenter[2]],
+              CD = [camDir[0], camDir[1], camDir[2]],
+              CU = [camUp[0], camUp[1], camUp[2]];
+            var ray0 = getRay0(
+              uv,
+              CC,
+              CD,
+              CU,
+              camNearWidth,
+              camFarWidth,
+              camDist
+            );
+            var rayDir = getRayDir(
+              ray0,
+              uv,
+              CC,
+              CD,
+              CU,
+              camNearWidth,
+              camFarWidth,
+              camDist
+            );
+
+            if (this.thread.x === 0) {
+              return rayDir[0];
+            } else if (this.thread.x === 1) {
+              return rayDir[1];
+            } else {
+              return rayDir[2];
+            }
+          },
+          {
+            output: [3],
+            tactic: 'speed',
+            pipeline: true,
+            immutable: true,
+          }
+        );
+
+        this.updateCameraPosition = gpu.createKernel(
+          function (camDir, camP, moveTFR, dt) {
+            var dlen = Math.sqrt(
+              camDir[0] * camDir[0] +
+                camDir[1] * camDir[1] +
+                camDir[2] * camDir[2]
+            );
+            return (
+              camP[this.thread.x] +
+              (camDir[this.thread.x] / dlen) * moveTFR * dt * 6
+            );
+          },
+          {
+            output: [3],
+            tactic: 'speed',
+            pipeline: true,
+            immutable: true,
+          }
+        );
+
+        /*
           RENDER KERNEL
        */
 
-      this.renderMode = 0;
+        this.renderMode = 0;
 
-      this.renderKernel = [
-        gpu.createKernel(function(positions, camCenter, camDir, camUp, camNearWidth, camFarWidth, camDist) {
-
-          let uv = [this.thread.x / (this.constants.renderSize-1), this.thread.y / (this.constants.renderSize-1)];
-
-          let CC = [camCenter[0], camCenter[1], camCenter[2]],
-            CD = [camDir[0], camDir[1], camDir[2]],
-            CU = [camUp[0], camUp[1], camUp[2]];
-
-          let ray0 = getRay0(uv, CC, CD, CU, camNearWidth, camFarWidth, camDist);
-          let rayDir = getRayDir(ray0, uv, CC, CD, CU, camNearWidth, camFarWidth, camDist);
-
-          this.color(0., 0., 0., 1.);
-
-          let outClr = [
-            0., 0., 0.
-          ];
-
-          let ds = 0.0;
-          let done = 0.0;
-          let norm = [0., 0., 0.];
-          for (let i=0; i<this.constants.ICOUNT; i++) {
-            if (done < 0.5) {
-              let rnow = [
-                ray0[0] + rayDir[0] * ds,
-                ray0[1] + rayDir[1] * ds,
-                ray0[2] + rayDir[2] * ds
+        this.renderKernel = [
+          gpu.createKernel(
+            function (
+              positions,
+              camCenter,
+              camDir,
+              camUp,
+              camNearWidth,
+              camFarWidth,
+              camDist
+            ) {
+              let uv = [
+                this.thread.x / (this.constants.renderSize - 1),
+                this.thread.y / (this.constants.renderSize - 1),
               ];
 
-              norm[0] = 0.; norm[1] = 0.; norm[2] = 0.;
+              let CC = [camCenter[0], camCenter[1], camCenter[2]],
+                CD = [camDir[0], camDir[1], camDir[2]],
+                CU = [camUp[0], camUp[1], camUp[2]];
 
-              let m = 0.0;
-              let fq = 0.0;
-              let nt = 0.0;
-              let dmin = 1000.0;
-              for (let j=0; j<this.constants.particleCount; j++) {
-                let off = j * 3;
-                let dx  = positions[off], dy  = positions[off+1.], dz  = positions[off+2.];
-                dx -= rnow[0];        dy -= rnow[1];           dz -= rnow[2];
-                let r = Math.sqrt(dx*dx + dy*dy + dz*dz);
-                let x = r / this.constants.rfScale;
-                if (x < 1.0) {
-                  let q = 1.0 - x*x*x*(x*(x*6.0-15.0)+10.0);
-                  norm[0] += (dx/r) * q;
-                  norm[1] += (dy/r) * q;
-                  norm[2] += (dz/r) * q;
-                  fq += q;
-                  nt += q;
-                  m += 1.0;
-                }
-                else {
-                  dmin = Math.min(dmin, r - this.constants.rfScale);
-                }
-              }
-              let dist = dmin + 0.1;
+              let ray0 = getRay0(
+                uv,
+                CC,
+                CD,
+                CU,
+                camNearWidth,
+                camFarWidth,
+                camDist
+              );
+              let rayDir = getRayDir(
+                ray0,
+                uv,
+                CC,
+                CD,
+                CU,
+                camNearWidth,
+                camFarWidth,
+                camDist
+              );
 
-              norm[0] /= nt; norm[1] /= nt; norm[2] /= nt;
+              this.color(0, 0, 0, 1);
 
-              if (m > 0.5) {
-                dist = (0.5333 * this.constants.rfScale) * (0.5 - fq);
-              }
+              let outClr = [0, 0, 0];
 
-              ds += dist;
-              if (dist < 0.01) {
-                done = 1.0;
-              }
-              if (ds >= this.constants.rayDist) {
-                done = 1.0;
-              }
-            }
-          }
-          ds = Math.min(ds, this.constants.rayDist);
+              let ds = 0.0;
+              let done = 0.0;
+              let norm = [0, 0, 0];
+              for (let i = 0; i < this.constants.ICOUNT; i++) {
+                if (done < 0.5) {
+                  let rnow = [
+                    ray0[0] + rayDir[0] * ds,
+                    ray0[1] + rayDir[1] * ds,
+                    ray0[2] + rayDir[2] * ds,
+                  ];
 
-          let ref = refractWrap(norm, rayDir, 1./1.5);
-          let dot = ref[0] * rayDir[0] + ref[1] * rayDir[1] + ref[2] * rayDir[2];
-          let int = (1. - Math.pow(ds / this.constants.rayDist, 1.5));
-          let light = Math.min(1., Math.max(dot*dot, 0.)) * int;
+                  norm[0] = 0;
+                  norm[1] = 0;
+                  norm[2] = 0;
 
-          outClr[2] = int + light;
-          outClr[1] = light;
-          outClr[0] = light;
+                  let m = 0.0;
+                  let fq = 0.0;
+                  let nt = 0.0;
+                  let dmin = 1000.0;
+                  for (let j = 0; j < this.constants.particleCount; j++) {
+                    let off = j * 3;
+                    let dx = positions[off],
+                      dy = positions[off + 1],
+                      dz = positions[off + 2];
+                    dx -= rnow[0];
+                    dy -= rnow[1];
+                    dz -= rnow[2];
+                    let r = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    let x = r / this.constants.rfScale;
+                    if (x < 1.0) {
+                      let q = 1.0 - x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
+                      norm[0] += (dx / r) * q;
+                      norm[1] += (dy / r) * q;
+                      norm[2] += (dz / r) * q;
+                      fq += q;
+                      nt += q;
+                      m += 1.0;
+                    } else {
+                      dmin = Math.min(dmin, r - this.constants.rfScale);
+                    }
+                  }
+                  let dist = dmin + 0.1;
 
-          this.color(Math.min(outClr[0], 1.), Math.min(outClr[1], 1.), Math.min(outClr[2], 1.), 1.);
+                  norm[0] /= nt;
+                  norm[1] /= nt;
+                  norm[2] /= nt;
 
-        }, {
-          graphical: true,
+                  if (m > 0.5) {
+                    dist = 0.5333 * this.constants.rfScale * (0.5 - fq);
+                  }
 
-          constants: {
-            rayDist: this.rayDist,
-            rfScale: this.rfScale,
-            bound: this.bound,
-            renderSize: this.renderSize,
-            particleCount: this.particleCount,
-            ICOUNT: 48
-          },
-          loopMaxIterations: 48 * this.particleCount,
-          output: [this.renderSize, this.renderSize],
-          tactic: 'speed',
-        }),
-        gpu.createKernel(function(positions, camCenter, camDir, camUp, camNearWidth, camFarWidth, camDist) {
-          let uv = [this.thread.x / (this.constants.renderSize-1), this.thread.y / (this.constants.renderSize-1)];
-
-          let CC = [camCenter[0], camCenter[1], camCenter[2]],
-            CD = [camDir[0], camDir[1], camDir[2]],
-            CU = [camUp[0], camUp[1], camUp[2]];
-
-          let ray0 = getRay0(uv, CC, CD, CU, camNearWidth, camFarWidth, camDist);
-          let rayDir = getRayDir(ray0, uv, CC, CD, CU, camNearWidth, camFarWidth, camDist);
-
-          this.color(0., 0., 0., 1.);
-
-          let outClr = [
-            0., 0., 0.
-          ];
-
-          let ds = 0.0;
-          let done = 0.0;
-          let norm = [0., 0., 0.];
-          for (let i=0; i<this.constants.ICOUNT; i++) {
-            if (done < 0.5) {
-              let rnow = [
-                ray0[0] + rayDir[0] * ds,
-                ray0[1] + rayDir[1] * ds,
-                ray0[2] + rayDir[2] * ds
-              ];
-
-              norm[0] = 0.; norm[1] = 0.; norm[2] = 0.;
-
-              let m = 0.0;
-              let fq = 0.0;
-              let nt = 0.0;
-              let dmin = 1000.0;
-              for (let j=0; j<this.constants.particleCount; j++) {
-                let off = j * 3;
-                let dx  = positions[off], dy  = positions[off+1.], dz  = positions[off+2.];
-                dx -= rnow[0];        dy -= rnow[1];           dz -= rnow[2];
-                let r = Math.sqrt(dx*dx + dy*dy + dz*dz);
-                let x = r / this.constants.rfScale;
-                if (x < 1.0) {
-                  let q = 1.0 - x*x*x*(x*(x*6.0-15.0)+10.0);
-                  norm[0] += (dx/r) * q;
-                  norm[1] += (dy/r) * q;
-                  norm[2] += (dz/r) * q;
-                  fq += q;
-                  nt += q;
-                  m += 1.0;
-                }
-                else {
-                  dmin = Math.min(dmin, r - this.constants.rfScale);
-                }
-              }
-              let dist = dmin + 0.1;
-
-              norm[0] /= nt; norm[1] /= nt; norm[2] /= nt;
-
-              if (m > 0.5) {
-                dist = (0.5333 * this.constants.rfScale) * (0.5 - fq);
-              }
-
-              ds += dist;
-              if (dist < 0.01) {
-                done = 1.0;
-              }
-              if (ds >= this.constants.rayDist) {
-                done = 1.0;
-              }
-            }
-          }
-          ds = Math.min(ds, this.constants.rayDist);
-
-          let ref = refractWrap(norm, rayDir, 1./1.5);
-          let dot = ref[0] * rayDir[0] + ref[1] * rayDir[1] + ref[2] * rayDir[2];
-          let int = (1. - Math.pow(ds / this.constants.rayDist, 1.5));
-          let light = Math.min(1., Math.max(dot*dot, 0.)) * int;
-
-          outClr[2] = int + light;
-          outClr[1] = light;
-          outClr[0] = light;
-
-          if (ds < (this.constants.rayDist - 0.001)) {
-            ray0[0] += rayDir[0] * ds;
-            ray0[1] += rayDir[1] * ds;
-            ray0[2] += rayDir[2] * ds;
-            let ds = 0.00;
-            let done = 0.0;
-            let nrayDir = [-norm[0], -norm[1], -norm[2]];
-            nrayDir = reflectWrap(nrayDir, rayDir);
-            norm = [0., 0., 0.];
-            ray0[0] += nrayDir[0] * 0.01;
-            ray0[1] += nrayDir[1] * 0.01;
-            ray0[2] += nrayDir[2] * 0.01;
-            for (let i=0; i<this.constants.ICOUNTR; i++) {
-              if (done < 0.5) {
-                let rnow = [
-                  ray0[0] + nrayDir[0] * ds,
-                  ray0[1] + nrayDir[1] * ds,
-                  ray0[2] + nrayDir[2] * ds
-                ];
-
-                norm[0] = 0.; norm[1] = 0.; norm[2] = 0.;
-
-                let m = 0.0;
-                let fq = 0.0;
-                let nt = 0.0;
-                let dmin = 1000.0;
-                for (let j=0; j<this.constants.particleCount; j++) {
-                  let off = j * 3;
-                  let dx  = positions[off], dy  = positions[off+1.], dz  = positions[off+2.];
-                  dx -= rnow[0];        dy -= rnow[1];           dz -= rnow[2];
-                  let r = Math.sqrt(dx*dx + dy*dy + dz*dz);
-                  let x = r / this.constants.rfScale;
-                  if (x < 1.0) {
-                    let q = 1.0 - x*x*x*(x*(x*6.0-15.0)+10.0);
-                    norm[0] += (dx/r) * q;
-                    norm[1] += (dy/r) * q;
-                    norm[2] += (dz/r) * q;
-                    fq += q;
-                    nt += q;
-                    m += 1.0;
-                  } else {
-                    dmin = Math.min(dmin, r - this.constants.rfScale);
+                  ds += dist;
+                  if (dist < 0.01) {
+                    done = 1.0;
+                  }
+                  if (ds >= this.constants.rayDist) {
+                    done = 1.0;
                   }
                 }
-                let dist = dmin + 0.1;
+              }
+              ds = Math.min(ds, this.constants.rayDist);
 
-                norm[0] /= nt; norm[1] /= nt; norm[2] /= nt;
+              let ref = refractWrap(norm, rayDir, 1 / 1.5);
+              let dot =
+                ref[0] * rayDir[0] + ref[1] * rayDir[1] + ref[2] * rayDir[2];
+              let int = 1 - Math.pow(ds / this.constants.rayDist, 1.5);
+              let light = Math.min(1, Math.max(dot * dot, 0)) * int;
 
-                if (m > 0.5) {
-                  dist = (0.5333 * this.constants.rfScale) * (0.5 - fq);
-                }
+              outClr[2] = int + light;
+              outClr[1] = light;
+              outClr[0] = light;
 
-                ds += dist;
-                if (dist < 0.001) {
-                  done = 1.0;
-                }
-                if (ds >= this.constants.rayDistRef) {
-                  done = 1.0;
+              this.color(
+                Math.min(outClr[0], 1),
+                Math.min(outClr[1], 1),
+                Math.min(outClr[2], 1),
+                1
+              );
+            },
+            {
+              graphical: true,
+
+              constants: {
+                rayDist: this.rayDist,
+                rfScale: this.rfScale,
+                bound: this.bound,
+                renderSize: this.renderSize,
+                particleCount: this.particleCount,
+                ICOUNT: 48,
+              },
+              loopMaxIterations: 48 * this.particleCount,
+              output: [this.renderSize, this.renderSize],
+              tactic: 'speed',
+            }
+          ),
+          gpu.createKernel(
+            function (
+              positions,
+              camCenter,
+              camDir,
+              camUp,
+              camNearWidth,
+              camFarWidth,
+              camDist
+            ) {
+              let uv = [
+                this.thread.x / (this.constants.renderSize - 1),
+                this.thread.y / (this.constants.renderSize - 1),
+              ];
+
+              let CC = [camCenter[0], camCenter[1], camCenter[2]],
+                CD = [camDir[0], camDir[1], camDir[2]],
+                CU = [camUp[0], camUp[1], camUp[2]];
+
+              let ray0 = getRay0(
+                uv,
+                CC,
+                CD,
+                CU,
+                camNearWidth,
+                camFarWidth,
+                camDist
+              );
+              let rayDir = getRayDir(
+                ray0,
+                uv,
+                CC,
+                CD,
+                CU,
+                camNearWidth,
+                camFarWidth,
+                camDist
+              );
+
+              this.color(0, 0, 0, 1);
+
+              let outClr = [0, 0, 0];
+
+              let ds = 0.0;
+              let done = 0.0;
+              let norm = [0, 0, 0];
+              for (let i = 0; i < this.constants.ICOUNT; i++) {
+                if (done < 0.5) {
+                  let rnow = [
+                    ray0[0] + rayDir[0] * ds,
+                    ray0[1] + rayDir[1] * ds,
+                    ray0[2] + rayDir[2] * ds,
+                  ];
+
+                  norm[0] = 0;
+                  norm[1] = 0;
+                  norm[2] = 0;
+
+                  let m = 0.0;
+                  let fq = 0.0;
+                  let nt = 0.0;
+                  let dmin = 1000.0;
+                  for (let j = 0; j < this.constants.particleCount; j++) {
+                    let off = j * 3;
+                    let dx = positions[off],
+                      dy = positions[off + 1],
+                      dz = positions[off + 2];
+                    dx -= rnow[0];
+                    dy -= rnow[1];
+                    dz -= rnow[2];
+                    let r = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    let x = r / this.constants.rfScale;
+                    if (x < 1.0) {
+                      let q = 1.0 - x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
+                      norm[0] += (dx / r) * q;
+                      norm[1] += (dy / r) * q;
+                      norm[2] += (dz / r) * q;
+                      fq += q;
+                      nt += q;
+                      m += 1.0;
+                    } else {
+                      dmin = Math.min(dmin, r - this.constants.rfScale);
+                    }
+                  }
+                  let dist = dmin + 0.1;
+
+                  norm[0] /= nt;
+                  norm[1] /= nt;
+                  norm[2] /= nt;
+
+                  if (m > 0.5) {
+                    dist = 0.5333 * this.constants.rfScale * (0.5 - fq);
+                  }
+
+                  ds += dist;
+                  if (dist < 0.01) {
+                    done = 1.0;
+                  }
+                  if (ds >= this.constants.rayDist) {
+                    done = 1.0;
+                  }
                 }
               }
+              ds = Math.min(ds, this.constants.rayDist);
+
+              let ref = refractWrap(norm, rayDir, 1 / 1.5);
+              let dot =
+                ref[0] * rayDir[0] + ref[1] * rayDir[1] + ref[2] * rayDir[2];
+              let int = 1 - Math.pow(ds / this.constants.rayDist, 1.5);
+              let light = Math.min(1, Math.max(dot * dot, 0)) * int;
+
+              outClr[2] = int + light;
+              outClr[1] = light;
+              outClr[0] = light;
+
+              if (ds < this.constants.rayDist - 0.001) {
+                ray0[0] += rayDir[0] * ds;
+                ray0[1] += rayDir[1] * ds;
+                ray0[2] += rayDir[2] * ds;
+                let ds = 0.0;
+                let done = 0.0;
+                let nrayDir = [-norm[0], -norm[1], -norm[2]];
+                nrayDir = reflectWrap(nrayDir, rayDir);
+                norm = [0, 0, 0];
+                ray0[0] += nrayDir[0] * 0.01;
+                ray0[1] += nrayDir[1] * 0.01;
+                ray0[2] += nrayDir[2] * 0.01;
+                for (let i = 0; i < this.constants.ICOUNTR; i++) {
+                  if (done < 0.5) {
+                    let rnow = [
+                      ray0[0] + nrayDir[0] * ds,
+                      ray0[1] + nrayDir[1] * ds,
+                      ray0[2] + nrayDir[2] * ds,
+                    ];
+
+                    norm[0] = 0;
+                    norm[1] = 0;
+                    norm[2] = 0;
+
+                    let m = 0.0;
+                    let fq = 0.0;
+                    let nt = 0.0;
+                    let dmin = 1000.0;
+                    for (let j = 0; j < this.constants.particleCount; j++) {
+                      let off = j * 3;
+                      let dx = positions[off],
+                        dy = positions[off + 1],
+                        dz = positions[off + 2];
+                      dx -= rnow[0];
+                      dy -= rnow[1];
+                      dz -= rnow[2];
+                      let r = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                      let x = r / this.constants.rfScale;
+                      if (x < 1.0) {
+                        let q =
+                          1.0 - x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
+                        norm[0] += (dx / r) * q;
+                        norm[1] += (dy / r) * q;
+                        norm[2] += (dz / r) * q;
+                        fq += q;
+                        nt += q;
+                        m += 1.0;
+                      } else {
+                        dmin = Math.min(dmin, r - this.constants.rfScale);
+                      }
+                    }
+                    let dist = dmin + 0.1;
+
+                    norm[0] /= nt;
+                    norm[1] /= nt;
+                    norm[2] /= nt;
+
+                    if (m > 0.5) {
+                      dist = 0.5333 * this.constants.rfScale * (0.5 - fq);
+                    }
+
+                    ds += dist;
+                    if (dist < 0.001) {
+                      done = 1.0;
+                    }
+                    if (ds >= this.constants.rayDistRef) {
+                      done = 1.0;
+                    }
+                  }
+                }
+                ds = Math.min(ds, this.constants.rayDistRef);
+
+                if (ds < this.constants.rayDistRef - 0.001) {
+                  let ref = refractWrap(norm, nrayDir, 1 / 1.5);
+                  let dot =
+                    ref[0] * nrayDir[0] +
+                    ref[1] * nrayDir[1] +
+                    ref[2] * nrayDir[2];
+                  let int =
+                    1 -
+                    Math.pow(Math.abs(ds) / this.constants.rayDistRef, 1.5);
+                  let light = Math.min(1, Math.max(dot * dot, 0)) * int;
+                  outClr[2] += (int + light) * 0.1;
+                  outClr[1] += light * 0.1;
+                  outClr[0] += light * 0.1;
+                }
+              }
+
+              this.color(
+                Math.min(outClr[0], 1),
+                Math.min(outClr[1], 1),
+                Math.min(outClr[2], 1),
+                1
+              );
+            },
+            {
+              graphical: true,
+              constants: {
+                rayCount: this.rayCount,
+                rayDist: this.rayDist,
+                rayDistRef: Math.floor(this.rayDist / 4),
+                rfScale: this.rfScale,
+                bound: this.bound,
+                renderSize: this.renderSize,
+                particleCount: this.particleCount,
+                ICOUNT: 48,
+                ICOUNTR: 24,
+              },
+              loopMaxIterations: 48 * this.particleCount,
+              output: [this.renderSize, this.renderSize],
+              tactic: 'speed',
             }
-            ds = Math.min(ds, this.constants.rayDistRef);
+          ),
+        ];
 
-            if (ds < (this.constants.rayDistRef - 0.001)) {
-              let ref = refractWrap(norm, nrayDir, 1./1.5);
-              let dot = ref[0] * nrayDir[0] + ref[1] * nrayDir[1] + ref[2] * nrayDir[2];
-              let int = 1. - Math.pow(Math.abs(ds) / this.constants.rayDistRef, 1.5);
-              let light = Math.min(1., Math.max(dot*dot, 0.)) * int;
-              outClr[2] += (int + light) * 0.1;
-              outClr[1] += (light) * 0.1;
-              outClr[0] += (light) * 0.1;
-            }
-          }
-
-          this.color(Math.min(outClr[0], 1.), Math.min(outClr[1], 1.), Math.min(outClr[2], 1.), 1.);
-        }, {
-          graphical: true,
-          constants: {
-            rayCount: this.rayCount,
-            rayDist: this.rayDist,
-            rayDistRef: Math.floor(this.rayDist / 4),
-            rfScale: this.rfScale,
-            bound: this.bound,
-            renderSize: this.renderSize,
-            particleCount: this.particleCount,
-            ICOUNT: 48,
-            ICOUNTR: 24
-          },
-          loopMaxIterations: 48 * this.particleCount,
-          output: [this.renderSize, this.renderSize],
-          tactic: 'speed',
-        })
-      ];
-
-      /*
+        /*
           INIT KERNEL
        */
-      const seedPositions = gpu.createKernel(function(){
-        var t = random(Math.floor(this.thread.x / 3), this.constants.seed + 0.5);
-        var r = t * this.constants.maxr;
-        var a = 3.141592 * 2.0 * random(Math.floor(this.thread.x / 3), this.constants.seed + 1.5);
-        var comp = this.thread.x % 3;
-        if (comp < 0.01) {
-          return Math.cos(a) * r;
-        } else if (comp < 1.01) {
-          return Math.sin(a) * r;
-        } else {
-          return 0.0;
-        }
-      }, {
-        constants: {
-          maxr: 25,
-          seed: Math.random() * 1e6,
-          particleCount: this.particleCount
-        },
-        pipeline: true,
-        output: [this.particleCount * 3],
-        tactic: 'speed',
-      });
+        const seedPositions = gpu.createKernel(
+          function () {
+            var t = random(
+              Math.floor(this.thread.x / 3),
+              this.constants.seed + 0.5
+            );
+            var r = t * this.constants.maxr;
+            var a =
+              3.141592 *
+              2.0 *
+              random(Math.floor(this.thread.x / 3), this.constants.seed + 1.5);
+            var comp = this.thread.x % 3;
+            if (comp < 0.01) {
+              return Math.cos(a) * r;
+            } else if (comp < 1.01) {
+              return Math.sin(a) * r;
+            } else {
+              return 0.0;
+            }
+          },
+          {
+            constants: {
+              maxr: 25,
+              seed: Math.random() * 1e6,
+              particleCount: this.particleCount,
+            },
+            pipeline: true,
+            output: [this.particleCount * 3],
+            tactic: 'speed',
+          }
+        );
 
-      const seedVelocities = gpu.createKernel(function(){
-        var t = random(this.thread.x, this.constants.seed + 0.5);
-        return (t - 0.5) * this.constants.iv;
-      }, {
-        constants: {
-          iv: 1.5,
-          seed: Math.random() * 1e6,
-          particleCount: this.particleCount,
-        },
-        pipeline: true,
-        output: [this.particleCount * 3],
-        tactic: 'speed',
-      });
+        const seedVelocities = gpu.createKernel(
+          function () {
+            var t = random(this.thread.x, this.constants.seed + 0.5);
+            return (t - 0.5) * this.constants.iv;
+          },
+          {
+            constants: {
+              iv: 1.5,
+              seed: Math.random() * 1e6,
+              particleCount: this.particleCount,
+            },
+            pipeline: true,
+            output: [this.particleCount * 3],
+            tactic: 'speed',
+          }
+        );
 
-      this.sDensity = [0.125, 0.25, 0.5, 1.0, 1.5, 2.0];
-      this.sDensityI = 5;
-      this.sMass = [0.05, 0.1, 0.2, 0.4, 0.8];
-      this.sMassI = 2;
-      this.sIncomp = [1.0, 0.8, 0.6, 0.4, 0.2];
-      this.sIncompI = 3;
-      this.sVisc = [0.05, 0.1, 0.25, 0.35, 0.5, 0.75, 0.95];
-      this.sViscI = 0;
+        this.sDensity = [0.125, 0.25, 0.5, 1.0, 1.5, 2.0];
+        this.sDensityI = 5;
+        this.sMass = [0.05, 0.1, 0.2, 0.4, 0.8];
+        this.sMassI = 2;
+        this.sIncomp = [1.0, 0.8, 0.6, 0.4, 0.2];
+        this.sIncompI = 3;
+        this.sVisc = [0.05, 0.1, 0.25, 0.35, 0.5, 0.75, 0.95];
+        this.sViscI = 0;
 
-      const seedAttrs = gpu.createKernel(function(){
-        var comp = this.thread.x % 6;
-        if (comp < 0.01) {
-          return 0.25; // radius
-        } else if (comp < 1.01) {
-          return 0.5; // density
-        } else if (comp < 2.01) {
-          return 0.2; // mass
-        } else if (comp < 3.01) {
-          return 0.8; // incompress
-        } else if (comp < 4.01) {
-          return 0.35; // visc
-        } else {
-          // type
-          if (Math.floor(this.thread.x / 6) > (this.constants.particleCount-33)) {
-            return 1.0;
-          } else {
-            return 0.0;
+        const seedAttrs = gpu.createKernel(
+          function () {
+            var comp = this.thread.x % 6;
+            if (comp < 0.01) {
+              return 0.25; // radius
+            } else if (comp < 1.01) {
+              return 0.5; // density
+            } else if (comp < 2.01) {
+              return 0.2; // mass
+            } else if (comp < 3.01) {
+              return 0.8; // incompress
+            } else if (comp < 4.01) {
+              return 0.35; // visc
+            } else {
+              // type
+              if (
+                Math.floor(this.thread.x / 6) >
+                this.constants.particleCount - 33
+              ) {
+                return 1.0;
+              } else {
+                return 0.0;
+              }
+            }
+          },
+          {
+            constants: {
+              iv: 50,
+              seed: Math.random() * 1e6,
+              particleCount: this.particleCount,
+            },
+            pipeline: true,
+            output: [this.particleCount * 6],
+            tactic: 'speed',
+          }
+        );
+
+        /*
+         * Seed Particles
+         */
+        this.reset = () => {
+          this.cam = {
+            p: [0, 0, 17.5],
+            dir: [0, 0, -1],
+            up: [0, 1, 0],
+            nearW: 0.0001,
+            farW: 1000,
+            farDist: 1000,
+          };
+
+          this.move = {
+            toLR: 0,
+            toUD: 0,
+            toFR: 0,
+            tLR: 0,
+            tUD: 0,
+            tFR: 0,
+            toPull: 0,
+            tPull: 0,
+            toPullR: 0,
+            tPullR: 0,
+          };
+
+          this.data = {
+            pos: seedPositions(),
+            vel: seedVelocities(),
+            attr: seedAttrs(),
+          };
+        };
+
+        this.reset();
+
+        this.hash = [];
+        for (let i = 0; i < this.hashLength; i++) {
+          for (let j = 0; j < this.hashBinLen; j++) {
+            this.hash.push(0);
+            this.hash.push(0);
+            this.hash.push(0);
+            this.hash.push(-1);
           }
         }
-      }, {
-        constants: {
-          iv: 50,
-          seed: Math.random() * 1e6,
-          particleCount: this.particleCount
-        },
-        pipeline: true,
-        output: [this.particleCount * 6],
-        tactic: 'speed',
-      });
 
-      /*
-       * Seed Particles
-       */
-      this.reset = () => {
-        this.cam = {
-          p: [0, 0, 17.5],
-          dir: [0, 0, -1],
-          up: [0, 1, 0],
-          nearW: 0.0001,
-          farW: 1000,
-          farDist: 1000
-        };
+        this.normv = gpu.createKernel(
+          function (a) {
+            const length = Math.sqrt(
+              Math.abs(a[0] * a[0]) +
+                Math.abs(a[1] * a[1]) +
+                Math.abs(a[2] * a[2])
+            );
+            return a[this.thread.x] / length;
+          },
+          {
+            output: [3],
+            pipeline: true,
+            tactic: 'speed',
+            immutable: true,
+          }
+        );
 
-        this.move = {
-          toLR: 0,
-          toUD: 0,
-          toFR: 0,
-          tLR: 0,
-          tUD: 0,
-          tFR: 0,
-          toPull: 0,
-          tPull: 0,
-          toPullR: 0,
-          tPullR: 0
-        };
+        this.crossv = gpu.createKernel(
+          function (a, b) {
+            const a1 = a[0],
+              a2 = a[1],
+              a3 = a[2];
+            const b1 = b[0],
+              b2 = b[1],
+              b3 = b[2];
+            if (this.thread.x === 0) {
+              return a2 * b3 - a3 * b2;
+            } else if (this.thread.x === 1) {
+              return a3 * b1 - a1 * b3;
+            } else {
+              return a1 * b2 - a2 * b1;
+            }
+          },
+          {
+            output: [3],
+            pipeline: true,
+            tactic: 'speed',
+            immutable: true,
+          }
+        );
+      }
 
-        this.data = {
-          pos: seedPositions(),
-          vel: seedVelocities(),
-          attr: seedAttrs()
-        };
+      XSSPS.prototype.hashFn = function (x, y, z) {
+        const max2 = Math.floor(this.bound * 2);
+        const ix = Math.floor(x / this.hashWSize) + max2,
+          iy = Math.floor(y / this.hashWSize) + max2,
+          iz = Math.floor(z / this.hashWSize) + max2;
+        return (ix * 137 + iy * 197 + iz * 167) % this.hashLength;
       };
 
-      this.reset();
+      XSSPS.prototype.updateRender = function (keys, dt) {
+        this.dt = dt;
+        this.handleInput(keys);
+        this.sDensityI = this.sDensityI % this.sDensity.length;
+        this.sViscI = this.sViscI % this.sVisc.length;
+        this.sMassI = this.sMassI % this.sMass.length;
+        this.sIncompI = this.sIncompI % this.sIncomp.length;
 
-      this.hash = [];
-      for (let i=0; i<this.hashLength; i++) {
-        for (let j=0; j<this.hashBinLen; j++) {
-          this.hash.push(0); this.hash.push(0); this.hash.push(0); this.hash.push(-1);
+        const SUBSTEPS = 2;
+
+        for (let i = 0; i < SUBSTEPS; i++) {
+          // Update velocities via gravity & pressure
+          const prevVel = this.data.vel;
+          this.data.vel = this.updateVelocity(
+            this.data.pos,
+            this.data.vel,
+            this.data.attr,
+            this.move.tPull,
+            this.cam.p,
+            this.cam.dir,
+            this.move.tPullR,
+            this.sDensity[this.sDensityI],
+            this.sVisc[this.sViscI],
+            this.sMass[this.sMassI],
+            this.sIncomp[this.sIncompI],
+            this.dt / SUBSTEPS
+          );
+          deleteTexture(prevVel);
+
+          // Update positions
+          const prevPos = this.data.pos;
+          this.data.pos = this.updatePosition(
+            this.data.pos,
+            this.data.vel,
+            this.dt / SUBSTEPS
+          );
+          deleteTexture(prevPos);
         }
-      }
 
-      this.normv = gpu.createKernel(function(a) {
-        const length = Math.sqrt(Math.abs(a[0]*a[0]) + Math.abs(a[1]*a[1]) + Math.abs(a[2]*a[2]));
-        return a[this.thread.x] / length;
-      }, {
-        output: [3],
-        pipeline: true,
-        tactic: 'speed',
-        immutable: true,
-      });
+        // Render
+        this.renderMode = this.renderMode % this.renderKernel.length;
+        this.renderKernel[this.renderMode](
+          this.data.pos,
+          this.cam.p,
+          this.cam.dir,
+          this.cam.up,
+          this.cam.nearW,
+          this.cam.farW,
+          this.cam.farDist
+        );
+      };
 
-      this.crossv = gpu.createKernel(function(a, b) {
-        const a1 = a[0], a2 = a[1], a3 = a[2];
-        const b1 = b[0], b2 = b[1], b3 = b[2];
-        if (this.thread.x === 0) {
-          return a2 * b3 - a3 * b2;
-        } else if (this.thread.x === 1) {
-          return a3 * b1 - a1 * b3;
+      XSSPS.prototype.handleInput = function (keys) {
+        this.move.toLR = this.move.toFR = this.move.toUD = 0;
+
+        if (keys[37]) {
+          this.move.toLR -= 1;
+        }
+        if (keys[39]) {
+          this.move.toLR += 1;
+        }
+        if (keys[38]) {
+          this.move.toUD -= 1;
+        }
+        if (keys[40]) {
+          this.move.toUD += 1;
+        }
+        if (keys[83]) {
+          this.move.toFR -= 1;
+        }
+        if (keys[87]) {
+          this.move.toFR += 1;
+        }
+
+        if (this.keys[82] && !keys[82]) {
+          this.renderMode += 1;
+        }
+        if (this.keys[27] && !keys[27]) {
+          this.reset();
+        }
+        if (this.keys[49] && !keys[49]) {
+          this.sDensityI += 1;
+        }
+        if (this.keys[50] && !keys[50]) {
+          this.sViscI += 1;
+        }
+        if (this.keys[51] && !keys[51]) {
+          this.sMassI += 1;
+        }
+        if (this.keys[52] && !keys[52]) {
+          this.sIncompI += 1;
+        }
+
+        if (this.keys[32] && !keys[32]) {
+          const prevPos = this.data.pos;
+          this.data.pos = this.setPosition(
+            this.data.pos,
+            this.particleCount - 1 - this.shootIndex,
+            this.cam.p,
+            this.cam.dir,
+            0.5
+          );
+          deleteTexture(prevPos);
+          const prevVel = this.data.vel;
+          this.data.vel = this.setVelocity(
+            this.data.vel,
+            this.particleCount - 1 - this.shootIndex,
+            this.cam.dir,
+            15
+          );
+          deleteTexture(prevVel);
+          this.shootIndex = (this.shootIndex + 1) % 32;
+        }
+        if (keys[69]) {
+          this.move.toPull = 10;
+          this.move.toPullR = 5;
         } else {
-          return a1 * b2 - a2 * b1;
+          this.move.toPull = -1;
+          this.move.toPullR = 0.25;
         }
-      }, {
-        output: [3],
-        pipeline: true,
-        tactic: 'speed',
-        immutable: true,
-      });
-    }
 
-    XSSPS.prototype.hashFn = function(x, y, z) {
-      const max2 = Math.floor(this.bound * 2);
-      const ix = (Math.floor(x/this.hashWSize)) + max2,
-        iy = (Math.floor(y/this.hashWSize)) + max2,
-        iz = (Math.floor(z/this.hashWSize)) + max2;
-      return ((ix * 137) + (iy * 197) + (iz * 167)) % this.hashLength;
-    };
+        this.keys = { ...keys };
 
-    XSSPS.prototype.updateRender = function(keys, dt) {
-      this.dt = dt;
-      this.handleInput(keys);
-      this.sDensityI = this.sDensityI % this.sDensity.length;
-      this.sViscI = this.sViscI % this.sVisc.length;
-      this.sMassI = this.sMassI % this.sMass.length;
-      this.sIncompI = this.sIncompI % this.sIncomp.length;
+        this.move.tLR += (this.move.toLR - this.move.tLR) * this.dt * 1.5;
+        this.move.tUD += (this.move.toUD - this.move.tUD) * this.dt * 1.5;
+        this.move.tFR += (this.move.toFR - this.move.tFR) * this.dt * 1.5;
+        this.move.tPull +=
+          (this.move.toPull - this.move.tPull) * this.dt * 1.5;
+        this.move.tPullR +=
+          (this.move.toPullR - this.move.tPullR) * this.dt * 1.5;
+        this.updateCamera();
+        if (this.onAfterInput) this.onAfterInput();
+      };
 
-      const SUBSTEPS = 2;
-
-      for (let i=0; i<SUBSTEPS; i++) {
-        // Update velocities via gravity & pressure
-        const prevVel = this.data.vel;
-        this.data.vel = this.updateVelocity(
-          this.data.pos,
-          this.data.vel,
-          this.data.attr,
-          this.move.tPull,
+      XSSPS.prototype.updateCamera = function () {
+        const prevUp = this.cam.up;
+        const crossv1 = this.crossv(this.cam.dir, this.cam.up);
+        const crossv2 = this.crossv(crossv1, this.cam.dir);
+        deleteTexture(this.cam.up);
+        this.cam.up = this.normv(crossv2);
+        deleteTexture(crossv1);
+        deleteTexture(crossv2);
+        deleteTexture(prevUp);
+        const prevDir = this.cam.dir;
+        this.cam.dir = this.rotateCamera(
+          this.move.tLR / 35,
+          -this.move.tUD / 35,
           this.cam.p,
           this.cam.dir,
-          this.move.tPullR,
-          this.sDensity[this.sDensityI],
-          this.sVisc[this.sViscI],
-          this.sMass[this.sMassI],
-          this.sIncomp[this.sIncompI],
-          this.dt / SUBSTEPS
+          this.cam.up,
+          1,
+          3.5,
+          2
         );
-        deleteTexture(prevVel);
-
-        // Update positions
-        const prevPos = this.data.pos;
-        this.data.pos = this.updatePosition(
-          this.data.pos,
-          this.data.vel,
-          this.dt / SUBSTEPS
-        );
-        deleteTexture(prevPos);
-      }
-
-      // Render
-      this.renderMode = this.renderMode % this.renderKernel.length;
-      this.renderKernel[this.renderMode](
-        this.data.pos,
-        this.cam.p,
-        this.cam.dir,
-        this.cam.up,
-        this.cam.nearW, this.cam.farW, this.cam.farDist
-      );
-    };
-
-    XSSPS.prototype.handleInput = function(keys) {
-      this.move.toLR = this.move.toFR = this.move.toUD = 0;
-
-      if (keys[37]) {
-        this.move.toLR -= 1;
-      }
-      if (keys[39]) {
-        this.move.toLR += 1;
-      }
-      if (keys[38]) {
-        this.move.toUD -= 1;
-      }
-      if (keys[40]) {
-        this.move.toUD += 1;
-      }
-      if (keys[83]) {
-        this.move.toFR -= 1;
-      }
-      if (keys[87]) {
-        this.move.toFR += 1;
-      }
-
-      if (this.keys[82] && !keys[82]) {
-        this.renderMode += 1;
-      }
-      if (this.keys[27] && !keys[27]) {
-        this.reset();
-      }
-      if (this.keys[49] && !keys[49]) {
-        this.sDensityI += 1;
-      }
-      if (this.keys[50] && !keys[50]) {
-        this.sViscI += 1;
-      }
-      if (this.keys[51] && !keys[51]) {
-        this.sMassI += 1;
-      }
-      if (this.keys[52] && !keys[52]) {
-        this.sIncompI += 1;
-      }
-
-      if (this.keys[32] && !keys[32]) {
-        const prevPos = this.data.pos;
-        this.data.pos = this.setPosition(
-          this.data.pos,
-          (this.particleCount-1) - this.shootIndex,
+        deleteTexture(prevDir);
+        const prevP = this.cam.p;
+        this.cam.p = this.updateCameraPosition(
+          this.cam.dir,
           this.cam.p,
-          this.cam.dir,
-          0.5
+          this.move.tFR,
+          this.dt
         );
-        deleteTexture(prevPos);
-        const prevVel = this.data.vel;
-        this.data.vel = this.setVelocity(
-          this.data.vel,
-          (this.particleCount-1) - this.shootIndex,
-          this.cam.dir,
-          15
-        );
-        deleteTexture(prevVel);
-        this.shootIndex = (this.shootIndex + 1) % 32;
-      }
-      if (keys[69]) {
-        this.move.toPull = 10;
-        this.move.toPullR = 5;
-      }
-      else {
-        this.move.toPull = -1;
-        this.move.toPullR = 0.25;
+        deleteTexture(prevP);
+      };
+    </script>
+    <script>
+      function SSPS(psim) {
+        this.dt = 0;
+        this.psim = psim;
+        this.keys = {};
+        this.controls = {};
+        this.buildControls();
       }
 
-      this.keys = {...keys};
-
-      this.move.tLR += (this.move.toLR - this.move.tLR) * this.dt * 1.5;
-      this.move.tUD += (this.move.toUD - this.move.tUD) * this.dt * 1.5;
-      this.move.tFR += (this.move.toFR - this.move.tFR) * this.dt * 1.5;
-      this.move.tPull += (this.move.toPull - this.move.tPull) * this.dt * 1.5;
-      this.move.tPullR += (this.move.toPullR - this.move.tPullR) * this.dt * 1.5;
-      this.updateCamera();
-      if (this.onAfterInput) this.onAfterInput();
-    };
-
-    XSSPS.prototype.updateCamera = function() {
-      const prevUp = this.cam.up;
-      const crossv1 = this.crossv(
-        this.cam.dir,
-        this.cam.up
-      );
-      const crossv2 = this.crossv(
-        crossv1,
-        this.cam.dir
-      );
-      deleteTexture(this.cam.up);
-      this.cam.up = this.normv(crossv2);
-      deleteTexture(crossv1);
-      deleteTexture(crossv2);
-      deleteTexture(prevUp);
-      const prevDir = this.cam.dir;
-      this.cam.dir = this.rotateCamera(
-        this.move.tLR / 35,
-        -this.move.tUD / 35,
-        this.cam.p,
-        this.cam.dir,
-        this.cam.up,
-        1, 3.5, 2
-      );
-      deleteTexture(prevDir);
-      const prevP = this.cam.p;
-      this.cam.p = this.updateCameraPosition(
-        this.cam.dir,
-        this.cam.p,
-        this.move.tFR,
-        this.dt
-      );
-      deleteTexture(prevP);
-    };
-  </script>
-  <script>
-    function SSPS(psim) {
-      this.dt = 0;
-      this.psim = psim;
-      this.keys = {};
-      this.controls = {};
-      this.buildControls();
-    }
-
-    SSPS.prototype.buildControls = function() {
-      let html = `<div>
+      SSPS.prototype.buildControls = function () {
+        let html = `<div>
       SSPS by Chadams - <span id="fps"></span> fps - <span id="particle-count"></span> particles @ <span id="size"></span><br />
       [W] - Forward, [S] - Reverse, [ARROWS] - Look<br />
       [E] - Grab, [SPACE] - Shoot Particle<br />
@@ -1007,136 +1248,159 @@
       [ESC] - Reset Particles & Camera<br />
       [P] - Pause<br />
       </div>`;
-      const renderer = document.createElement('div');
-      renderer.innerHTML = html;
-      html = this.controls.html = renderer.children[0];
+        const renderer = document.createElement('div');
+        renderer.innerHTML = html;
+        html = this.controls.html = renderer.children[0];
 
-      this.controls.fps = html.querySelector('#fps');
-      this.controls.particleCount = html.querySelector('#particle-count');
-      this.controls.particleCount.innerHTML = this.psim.particleCount;
-      this.controls.size = html.querySelector('#size');
-      this.controls.size.innerHTML = this.psim.renderSize + 'x' + this.psim.renderSize;
-      this.controls.renderMode = html.querySelector('#render-mode');
-      this.controls.particleDensity = html.querySelector('#particle-density');
-      this.controls.particleViscosity = html.querySelector('#particle-viscosity');
-      this.controls.particleMass = html.querySelector('#particle-mass');
-      this.controls.particleIncompressiveness = html.querySelector('#particle-incompressiveness');
-      this.updateControls();
-    };
+        this.controls.fps = html.querySelector('#fps');
+        this.controls.particleCount = html.querySelector('#particle-count');
+        this.controls.particleCount.innerHTML = this.psim.particleCount;
+        this.controls.size = html.querySelector('#size');
+        this.controls.size.innerHTML =
+          this.psim.renderSize + 'x' + this.psim.renderSize;
+        this.controls.renderMode = html.querySelector('#render-mode');
+        this.controls.particleDensity =
+          html.querySelector('#particle-density');
+        this.controls.particleViscosity = html.querySelector(
+          '#particle-viscosity'
+        );
+        this.controls.particleMass = html.querySelector('#particle-mass');
+        this.controls.particleIncompressiveness = html.querySelector(
+          '#particle-incompressiveness'
+        );
+        this.updateControls();
+      };
 
-    SSPS.prototype.mkOpt = function(lst, i) {
-      i = i % lst.length;
-      let ret = '';
-      for (let j=0; j<lst.length; j++) {
-        if (j === i) {
-          ret += '>>' + lst[j] + '<< ';
-        }
-        else {
-          ret += ' ' + lst[j] + ' ';
-        }
-      }
-      return ret;
-    };
-
-    SSPS.prototype.updateFPS = function() {
-      this.controls.fps.innerHTML = Math.round(1 / this.dt);
-    };
-
-    SSPS.prototype.updateControls = function() {
-      this.controls.renderMode.innerHTML = this.mkOpt([1, 2], this.psim.renderMode);
-      this.controls.particleDensity.innerHTML = this.mkOpt(this.psim.sDensity, this.psim.sDensityI);
-      this.controls.particleViscosity.innerHTML = this.mkOpt(this.psim.sVisc, this.psim.sViscI);
-      this.controls.particleMass.innerHTML = this.mkOpt(this.psim.sMass, this.psim.sMassI);
-      this.controls.particleIncompressiveness.innerHTML = this.mkOpt(this.psim.sIncomp, this.psim.sIncompI);
-    };
-
-    SSPS.prototype.updateRender = function() {
-      this.psim.updateRender(this.keys, this.dt);
-      this.updateFPS();
-    };
-
-    SSPS.prototype.start = function(tick) {
-      if (this.running) return;
-      document.title = 'SSPS - Chadams Studios (slightly upgraded)';
-      this.running = true;
-      requestAnimationFrame(tick);
-    };
-
-    SSPS.prototype.init = function () {
-      let lTime = Date.timeStamp();
-      let lDt = 1/60;
-      this.time = 0;
-
-      document.body.addEventListener('keydown', (e) => {
-        e = e || window.event;
-        this.keys[e.keyCode] = true;
-      });
-
-      document.body.addEventListener('keyup', (e) => {
-        e = e || window.event;
-        if (e.keyCode === 80) {
-          if (this.running) {
-            this.stop();
+      SSPS.prototype.mkOpt = function (lst, i) {
+        i = i % lst.length;
+        let ret = '';
+        for (let j = 0; j < lst.length; j++) {
+          if (j === i) {
+            ret += '>>' + lst[j] + '<< ';
           } else {
-            this.start(tick);
+            ret += ' ' + lst[j] + ' ';
           }
-          return;
         }
-        this.keys[e.keyCode] = false;
-      });
+        return ret;
+      };
 
-      const tick = () => {
-        if (!this.running) {
-          return;
-        }
+      SSPS.prototype.updateFPS = function () {
+        this.controls.fps.innerHTML = Math.round(1 / this.dt);
+      };
 
-        const cTime = Date.timeStamp();
-        const dt = (Math.max(Math.min(cTime - lTime, 1/10), 1/240) || (1/60)) * 0.1 + lDt * 0.9;
-        this.dt = dt;
-        lDt = dt;
-        lTime = cTime;
+      SSPS.prototype.updateControls = function () {
+        this.controls.renderMode.innerHTML = this.mkOpt(
+          [1, 2],
+          this.psim.renderMode
+        );
+        this.controls.particleDensity.innerHTML = this.mkOpt(
+          this.psim.sDensity,
+          this.psim.sDensityI
+        );
+        this.controls.particleViscosity.innerHTML = this.mkOpt(
+          this.psim.sVisc,
+          this.psim.sViscI
+        );
+        this.controls.particleMass.innerHTML = this.mkOpt(
+          this.psim.sMass,
+          this.psim.sMassI
+        );
+        this.controls.particleIncompressiveness.innerHTML = this.mkOpt(
+          this.psim.sIncomp,
+          this.psim.sIncompI
+        );
+      };
 
-        this.time += dt;
+      SSPS.prototype.updateRender = function () {
+        this.psim.updateRender(this.keys, this.dt);
+        this.updateFPS();
+      };
 
-        this.updateRender();
-
+      SSPS.prototype.start = function (tick) {
+        if (this.running) return;
+        document.title = 'SSPS - Chadams Studios (slightly upgraded)';
+        this.running = true;
         requestAnimationFrame(tick);
       };
-      this.start(tick);
-    };
 
-    SSPS.prototype.stop = function () {
-      this.running = false;
+      SSPS.prototype.init = function () {
+        let lTime = Date.timeStamp();
+        let lDt = 1 / 60;
+        this.time = 0;
 
-      document.title = 'SSPS Stopped - Chadams Studios (slightly upgraded)';
-    };
+        document.body.addEventListener('keydown', e => {
+          e = e || window.event;
+          this.keys[e.keyCode] = true;
+        });
 
-    Date.timeStamp = function() {
-      return new Date().getTime() / 1000.0;
-    };
+        document.body.addEventListener('keyup', e => {
+          e = e || window.event;
+          if (e.keyCode === 80) {
+            if (this.running) {
+              this.stop();
+            } else {
+              this.start(tick);
+            }
+            return;
+          }
+          this.keys[e.keyCode] = false;
+        });
 
-    function deleteTexture(texture) {
-      if (texture && texture.delete) {
-        texture.delete();
+        const tick = () => {
+          if (!this.running) {
+            return;
+          }
+
+          const cTime = Date.timeStamp();
+          const dt =
+            (Math.max(Math.min(cTime - lTime, 1 / 10), 1 / 240) || 1 / 60) *
+              0.1 +
+            lDt * 0.9;
+          this.dt = dt;
+          lDt = dt;
+          lTime = cTime;
+
+          this.time += dt;
+
+          this.updateRender();
+
+          requestAnimationFrame(tick);
+        };
+        this.start(tick);
+      };
+
+      SSPS.prototype.stop = function () {
+        this.running = false;
+
+        document.title = 'SSPS Stopped - Chadams Studios (slightly upgraded)';
+      };
+
+      Date.timeStamp = function () {
+        return new Date().getTime() / 1000.0;
+      };
+
+      function deleteTexture(texture) {
+        if (texture && texture.delete) {
+          texture.delete();
+        }
       }
-    }
+    </script>
+  </head>
+  <body style="background-color: black; padding: 0; margin: 0"></body>
+  <script>
+    const psim = new XSSPS(64, 256, () => {
+      inst.updateControls();
+    });
+    const inst = new SSPS(psim);
+    const { html } = inst.controls;
+    html.style.color = '#78788b';
+    html.style.position = 'absolute';
+    document.body.appendChild(html);
+    psim.canvas.style.margin = '0 auto';
+    psim.canvas.style.display = 'block';
+    psim.canvas.style.width = '100vh';
+    psim.canvas.style.padding = '0';
+    document.body.appendChild(psim.canvas);
+    inst.init();
   </script>
-</head>
-<body style="background-color: black; padding: 0; margin: 0;"></body>
-<script>
-  const psim = new XSSPS(64, 256, () => {
-    inst.updateControls();
-  });
-  const inst = new SSPS(psim);
-  const { html } = inst.controls;
-  html.style.color = '#78788b';
-  html.style.position = 'absolute';
-  document.body.appendChild(html);
-  psim.canvas.style.margin = '0 auto';
-  psim.canvas.style.display = 'block';
-  psim.canvas.style.width = '100vh';
-  psim.canvas.style.padding = '0';
-  document.body.appendChild(psim.canvas);
-  inst.init();
-</script>
 </html>

@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueUnsignedInput } = require('./unsigned-input');
+import { utils } from '../../../utils';
+import { WebGLKernelValueUnsignedInput } from './unsigned-input';
 
-class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput {
+export class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput {
   getSource() {
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
@@ -13,8 +13,12 @@ class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput
   updateValue(value) {
     let [w, h, d] = value.size;
     this.dimensions = new Int32Array([w || 1, h || 1, d || 1]);
-    this.textureSize = utils.getMemoryOptimizedPackedTextureSize(this.dimensions, this.bitRatio);
-    this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
+    this.textureSize = utils.getMemoryOptimizedPackedTextureSize(
+      this.dimensions,
+      this.bitRatio
+    );
+    this.uploadArrayLength =
+      this.textureSize[0] * this.textureSize[1] * (4 / this.bitRatio);
     this.checkSize(this.textureSize[0], this.textureSize[1]);
     const Type = this.getTransferArrayType(value.value);
     this.preUploadValue = new Type(this.uploadArrayLength);
@@ -24,7 +28,3 @@ class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput
     super.updateValue(value);
   }
 }
-
-module.exports = {
-  WebGLKernelValueDynamicUnsignedInput
-};

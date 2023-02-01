@@ -1,66 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>GPU.js Random Examples</title>
-</head>
-<body>
-  <h2>CPU Random</h2>
-  <canvas id="cpu-random-output"></canvas>
-  <h2>WebGL1 Random</h2>
-  <canvas id="web-gl-random-output"></canvas>
-  <h2>WebGL2 Random</h2>
-  <canvas id="web-gl2-random-output"></canvas>
-</body>
-<script src="../dist/gpu-browser.min.js"></script>
-<script>
-  let cpu, webGL, webGL2;
+  <head>
+    <meta charset="utf-8" />
+    <title>GPU.js Random Examples</title>
+  </head>
+  <body>
+    <h2>CPU Random</h2>
+    <canvas id="cpu-random-output"></canvas>
+    <h2>WebGL1 Random</h2>
+    <canvas id="web-gl-random-output"></canvas>
+    <h2>WebGL2 Random</h2>
+    <canvas id="web-gl2-random-output"></canvas>
+  </body>
+  <script src="../dist/gpu-browser.js"></script>
+  <script>
+    let cpu, webGL, webGL2;
 
-  cpu = new GPU({
-    mode: 'cpu',
-    canvas: document.getElementById('cpu-random-output')
-  });
-  try {
-    webGL = new GPU({
-      mode: 'webgl',
-      canvas: document.getElementById('web-gl-random-output')
+    cpu = new GPU({
+      mode: 'cpu',
+      canvas: document.getElementById('cpu-random-output'),
     });
-  } catch (e) {}
-  try {
-    webGL2 = new GPU({
-      mode: 'webgl2',
-      canvas: document.getElementById('web-gl2-random-output')
-    });
-  } catch (e) {}
+    try {
+      webGL = new GPU({
+        mode: 'webgl',
+        canvas: document.getElementById('web-gl-random-output'),
+      });
+    } catch (e) {}
+    try {
+      webGL2 = new GPU({
+        mode: 'webgl2',
+        canvas: document.getElementById('web-gl2-random-output'),
+      });
+    } catch (e) {}
 
-  function drawRandomFunction() {
-    this.color(Math.random(), Math.random(), Math.random());
-  }
+    function drawRandomFunction() {
+      this.color(Math.random(), Math.random(), Math.random());
+    }
 
-  const cpuDrawRandom = cpu.createKernel(drawRandomFunction)
-    .setGraphical(true)
-    .setOutput([100, 100]);
-
-  const webGLDrawRandom = webGL
-    ? webGL.createKernel(drawRandomFunction)
+    const cpuDrawRandom = cpu
+      .createKernel(drawRandomFunction)
       .setGraphical(true)
-      .setOutput([100, 100])
-    : () => {};
+      .setOutput([100, 100]);
 
-  const webGL2DrawRandom = webGL2
-    ? webGL2.createKernel(drawRandomFunction)
-      .setGraphical(true)
-      .setOutput([100, 100])
-    : () => {};
+    const webGLDrawRandom = webGL
+      ? webGL
+          .createKernel(drawRandomFunction)
+          .setGraphical(true)
+          .setOutput([100, 100])
+      : () => {};
 
-  function draw() {
-    cpuDrawRandom();
-    webGLDrawRandom();
-    webGL2DrawRandom();
+    const webGL2DrawRandom = webGL2
+      ? webGL2
+          .createKernel(drawRandomFunction)
+          .setGraphical(true)
+          .setOutput([100, 100])
+      : () => {};
+
+    function draw() {
+      cpuDrawRandom();
+      webGLDrawRandom();
+      webGL2DrawRandom();
+
+      requestAnimationFrame(draw);
+    }
 
     requestAnimationFrame(draw);
-  }
-
-  requestAnimationFrame(draw);
-</script>
+  </script>
 </html>

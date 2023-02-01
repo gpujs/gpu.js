@@ -1,5 +1,11 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU, WebGLKernel, WebGL2Kernel, HeadlessGLKernel, CPUKernel } = require('../../src');
+const {
+  GPU,
+  WebGLKernel,
+  WebGL2Kernel,
+  HeadlessGLKernel,
+  CPUKernel,
+} = require('../..');
 
 describe('internal: modes');
 
@@ -57,6 +63,5 @@ test('modes cpu', () => {
 });
 (GPU.isHeadlessGLSupported ? test : skip)('modes headlessgl', () => {
   const gpu = new GPU({ mode: 'headlessgl' });
-  assert.equal(gpu.Kernel, HeadlessGLKernel
-  );
+  assert.equal(gpu.Kernel, HeadlessGLKernel);
 });

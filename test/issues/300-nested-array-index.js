@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('issue #300');
 
@@ -8,15 +8,17 @@ function nestedArrayIndex(mode) {
   const gpu2 = new GPU({ mode });
 
   // these 2 should be equivalent
-  const broken = gpu1.createKernel(function(input, lookup) {
-    return lookup[input[this.thread.x]];
-  })
+  const broken = gpu1
+    .createKernel(function (input, lookup) {
+      return lookup[input[this.thread.x]];
+    })
     .setOutput([1]);
 
-  const working = gpu2.createKernel(function(input, lookup) {
-    const idx = input[this.thread.x];
-    return lookup[idx];
-  })
+  const working = gpu2
+    .createKernel(function (input, lookup) {
+      const idx = input[this.thread.x];
+      return lookup[idx];
+    })
     .setOutput([1]);
 
   assert.equal(broken([2], [7, 13, 19, 23])[0], 19);
@@ -34,17 +36,26 @@ test('Issue #300 nested array index - gpu', () => {
   nestedArrayIndex('gpu');
 });
 
-(GPU.isWebGLSupported ? test : skip)('Issue #300 nested array index - webgl', () => {
-  nestedArrayIndex('webgl');
-});
+(GPU.isWebGLSupported ? test : skip)(
+  'Issue #300 nested array index - webgl',
+  () => {
+    nestedArrayIndex('webgl');
+  }
+);
 
-(GPU.isWebGL2Supported ? test : skip)('Issue #300 nested array index - webgl2', () => {
-  nestedArrayIndex('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'Issue #300 nested array index - webgl2',
+  () => {
+    nestedArrayIndex('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #300 nested array index - headlessgl', () => {
-  nestedArrayIndex('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #300 nested array index - headlessgl',
+  () => {
+    nestedArrayIndex('headlessgl');
+  }
+);
 
 test('Issue #300 nested array index - cpu', () => {
   nestedArrayIndex('cpu');

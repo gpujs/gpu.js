@@ -1,21 +1,24 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../../../../../src');
+const { GPU } = require('../../../../../..');
 
 describe('feature: to-string unsigned precision arguments Array');
 
 function testArgument(mode, context, canvas) {
   const gpu = new GPU({ mode });
-  const originalKernel = gpu.createKernel(function(a) {
-    return a[this.thread.x];
-  }, {
-    canvas,
-    context,
-    output: [4],
-    precision: 'unsigned',
-  });
+  const originalKernel = gpu.createKernel(
+    function (a) {
+      return a[this.thread.x];
+    },
+    {
+      canvas,
+      context,
+      output: [4],
+      precision: 'unsigned',
+    }
+  );
 
   const a = [1, 2, 3, 4];
-  const expected = new Float32Array([1,2,3,4]);
+  const expected = new Float32Array([1, 2, 3, 4]);
   const originalResult = originalKernel(a);
   assert.deepEqual(originalResult, expected);
   const kernelString = originalKernel.toString(a);
@@ -23,8 +26,8 @@ function testArgument(mode, context, canvas) {
   const newResult = newKernel(a);
   assert.deepEqual(newResult, expected);
 
-  const b = [4,3,2,1];
-  const expected2 = new Float32Array([4,3,2,1]);
+  const b = [4, 3, 2, 1];
+  const expected2 = new Float32Array([4, 3, 2, 1]);
   const newResult2 = newKernel(b);
   assert.deepEqual(newResult2, expected2);
   gpu.destroy();

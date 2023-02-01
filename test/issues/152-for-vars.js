@@ -1,18 +1,19 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('issue #152');
 
 function forVars(mode) {
   const gpu = new GPU({ mode });
 
-  const kernel = gpu.createKernel(function() {
-    let sum = 0;
-    for (let i = 0; i < 2; i++) {
-      sum += i;
-    }
-    return sum;
-  })
+  const kernel = gpu
+    .createKernel(function () {
+      let sum = 0;
+      for (let i = 0; i < 2; i++) {
+        sum += i;
+      }
+      return sum;
+    })
     .setOutput([1, 1]);
 
   const result = kernel();
@@ -41,6 +42,9 @@ test('Issue #152 - for vars gpu', () => {
   forVars('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('Issue #152 - for vars headlessgl', () => {
-  forVars('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'Issue #152 - for vars headlessgl',
+  () => {
+    forVars('headlessgl');
+  }
+);

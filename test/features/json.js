@@ -1,14 +1,17 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('json serialize');
 
 function testJSONSerialize(mode) {
-  const gpu = new GPU({mode});
+  const gpu = new GPU({ mode });
 
-  const kernel = gpu.createKernel(function (value) {
-    return value;
-  }, {output: [1]});
+  const kernel = gpu.createKernel(
+    function (value) {
+      return value;
+    },
+    { output: [1] }
+  );
 
   kernel(1);
 

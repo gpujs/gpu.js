@@ -1,13 +1,13 @@
-const { utils } = require('../../../utils');
-const { WebGL2KernelValueHTMLImageArray } = require('./html-image-array');
+import { utils } from '../../../utils';
+import { WebGL2KernelValueHTMLImageArray } from './html-image-array';
 
-class WebGL2KernelValueDynamicHTMLImageArray extends WebGL2KernelValueHTMLImageArray {
+export class WebGL2KernelValueDynamicHTMLImageArray extends WebGL2KernelValueHTMLImageArray {
   getSource() {
     const variablePrecision = this.getVariablePrecisionString();
     return utils.linesToString([
-      `uniform ${ variablePrecision } sampler2DArray ${this.id}`,
-      `uniform ${ variablePrecision } ivec2 ${this.sizeId}`,
-      `uniform ${ variablePrecision } ivec3 ${this.dimensionsId}`,
+      `uniform ${variablePrecision} sampler2DArray ${this.id}`,
+      `uniform ${variablePrecision} ivec2 ${this.sizeId}`,
+      `uniform ${variablePrecision} ivec3 ${this.dimensionsId}`,
     ]);
   }
 
@@ -21,7 +21,3 @@ class WebGL2KernelValueDynamicHTMLImageArray extends WebGL2KernelValueHTMLImageA
     super.updateValue(images);
   }
 }
-
-module.exports = {
-  WebGL2KernelValueDynamicHTMLImageArray
-};

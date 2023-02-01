@@ -28,7 +28,7 @@ function imageToArray(image) {
 }
 
 function loadImage(image) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     if (typeof image === 'string') {
       const src = image;
       image = new Image();
@@ -50,7 +50,9 @@ function check2DImage(result, expected, channel) {
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       if (result[y][x] !== expected[y][x][channel]) {
-        throw new Error(`result[${y}][${x}] value does not match expected value of ${expected[y][x][channel]}`);
+        throw new Error(
+          `result[${y}][${x}] value does not match expected value of ${expected[y][x][channel]}`
+        );
       }
     }
   }
@@ -59,9 +61,12 @@ function check2DImage(result, expected, channel) {
 
 function greenCanvas(mode, width, height) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    this.color(0, 1, 0, 1);
-  }, { output: [width, height], graphical: true });
+  const kernel = gpu.createKernel(
+    function () {
+      this.color(0, 1, 0, 1);
+    },
+    { output: [width, height], graphical: true }
+  );
   kernel();
   const canvas = kernel.canvas;
   gpu.destroy();
@@ -80,4 +85,3 @@ if (typeof window !== 'undefined') {
 } else {
   module.exports = _exports;
 }
-

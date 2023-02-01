@@ -1,11 +1,11 @@
-const { FunctionNode } = require('../function-node');
+import { FunctionNode } from '../function-node';
 
 /**
  * @desc [INTERNAL] Represents a single function, inside JS
  *
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
  */
-class CPUFunctionNode extends FunctionNode {
+export class CPUFunctionNode extends FunctionNode {
   /**
    * @desc Parses the abstract syntax tree for to its *named function*
    * @param {Object} ast - the AST object to parse
@@ -13,7 +13,6 @@ class CPUFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astFunction(ast, retArr) {
-
     // Setup function return type and name
     if (!this.isRootKernel) {
       retArr.push('function');
@@ -69,10 +68,10 @@ class CPUFunctionNode extends FunctionNode {
       retArr.push(this.followingReturnStatement);
       retArr.push('continue;\n');
     } else if (this.isSubKernel) {
-      retArr.push(`subKernelResult_${ this.name } = `);
+      retArr.push(`subKernelResult_${this.name} = `);
       this.astGeneric(ast.argument, retArr);
       retArr.push(';');
-      retArr.push(`return subKernelResult_${ this.name };`);
+      retArr.push(`return subKernelResult_${this.name};`);
     } else {
       retArr.push('return ');
       this.astGeneric(ast.argument, retArr);
@@ -88,7 +87,6 @@ class CPUFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astLiteral(ast, retArr) {
-
     // Reject non numeric literals
     if (isNaN(ast.value)) {
       throw this.astErrorOutput(
@@ -200,7 +198,11 @@ class CPUFunctionNode extends FunctionNode {
     }
 
     if (isSafe) {
-      retArr.push(`for (${initArr.join('')};${testArr.join('')};${updateArr.join('')}){\n`);
+      retArr.push(
+        `for (${initArr.join('')};${testArr.join('')};${updateArr.join(
+          ''
+        )}){\n`
+      );
       retArr.push(bodyArr.join(''));
       retArr.push('}\n');
     } else {
@@ -208,7 +210,9 @@ class CPUFunctionNode extends FunctionNode {
       if (initArr.length > 0) {
         retArr.push(initArr.join(''), ';\n');
       }
-      retArr.push(`for (let ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
+      retArr.push(
+        `for (let ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`
+      );
       if (testArr.length > 0) {
         retArr.push(`if (!${testArr.join('')}) break;\n`);
       }
@@ -227,10 +231,7 @@ class CPUFunctionNode extends FunctionNode {
    */
   astWhileStatement(whileNode, retArr) {
     if (whileNode.type !== 'WhileStatement') {
-      throw this.astErrorOutput(
-        'Invalid while statement',
-        whileNode
-      );
+      throw this.astErrorOutput('Invalid while statement', whileNode);
     }
 
     retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
@@ -254,10 +255,7 @@ class CPUFunctionNode extends FunctionNode {
    */
   astDoWhileStatement(doWhileNode, retArr) {
     if (doWhileNode.type !== 'DoWhileStatement') {
-      throw this.astErrorOutput(
-        'Invalid while statement',
-        doWhileNode
-      );
+      throw this.astErrorOutput('Invalid while statement', doWhileNode);
     }
 
     retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
@@ -270,7 +268,6 @@ class CPUFunctionNode extends FunctionNode {
     retArr.push('}\n');
 
     return retArr;
-
   }
 
   /**
@@ -282,7 +279,10 @@ class CPUFunctionNode extends FunctionNode {
   astAssignmentExpression(assNode, retArr) {
     const declaration = this.getDeclaration(assNode.left);
     if (declaration && !declaration.assignable) {
-      throw this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
+      throw this.astErrorOutput(
+        `Variable ${assNode.left.name} is not assignable here`,
+        assNode
+      );
     }
     this.astGeneric(assNode.left, retArr);
     retArr.push(assNode.operator);
@@ -359,7 +359,10 @@ class CPUFunctionNode extends FunctionNode {
 
     if (ifNode.alternate) {
       retArr.push('else ');
-      if (ifNode.alternate.type === 'BlockStatement' || ifNode.alternate.type === 'IfStatement') {
+      if (
+        ifNode.alternate.type === 'BlockStatement' ||
+        ifNode.alternate.type === 'IfStatement'
+      ) {
         this.astGeneric(ifNode.alternate, retArr);
       } else {
         retArr.push(' {\n');
@@ -368,7 +371,6 @@ class CPUFunctionNode extends FunctionNode {
       }
     }
     return retArr;
-
   }
 
   astSwitchStatement(ast, retArr) {
@@ -422,11 +424,11 @@ class CPUFunctionNode extends FunctionNode {
       yProperty,
       zProperty,
       name,
-      origin
+      origin,
     } = this.getMemberExpressionDetails(mNode);
     switch (signature) {
       case 'this.thread.value':
-        retArr.push(`_this.thread.${ name }`);
+        retArr.push(`_this.thread.${name}`);
         return retArr;
       case 'this.output.value':
         switch (name) {
@@ -455,16 +457,16 @@ class CPUFunctionNode extends FunctionNode {
         }
         switch (property) {
           case 'r':
-            retArr.push(`user_${ name }[0]`);
+            retArr.push(`user_${name}[0]`);
             return retArr;
           case 'g':
-            retArr.push(`user_${ name }[1]`);
+            retArr.push(`user_${name}[1]`);
             return retArr;
           case 'b':
-            retArr.push(`user_${ name }[2]`);
+            retArr.push(`user_${name}[2]`);
             return retArr;
           case 'a':
-            retArr.push(`user_${ name }[3]`);
+            retArr.push(`user_${name}[3]`);
             return retArr;
         }
         break;
@@ -530,16 +532,24 @@ class CPUFunctionNode extends FunctionNode {
           size = isInput ? constant.size : null;
         } else {
           isInput = this.isInput(name);
-          size = isInput ? this.argumentSizes[this.argumentNames.indexOf(name)] : null;
+          size = isInput
+            ? this.argumentSizes[this.argumentNames.indexOf(name)]
+            : null;
         }
-        retArr.push(`${ markupName }`);
+        retArr.push(`${markupName}`);
         if (zProperty && yProperty) {
           if (isInput) {
             retArr.push('[(');
             this.astGeneric(zProperty, retArr);
-            retArr.push(`*${ this.dynamicArguments ? '(outputY * outputX)' : size[1] * size[0] })+(`);
+            retArr.push(
+              `*${
+                this.dynamicArguments
+                  ? '(outputY * outputX)'
+                  : size[1] * size[0]
+              })+(`
+            );
             this.astGeneric(yProperty, retArr);
-            retArr.push(`*${ this.dynamicArguments ? 'outputX' : size[0] })+`);
+            retArr.push(`*${this.dynamicArguments ? 'outputX' : size[0]})+`);
             this.astGeneric(xProperty, retArr);
             retArr.push(']');
           } else {
@@ -557,7 +567,7 @@ class CPUFunctionNode extends FunctionNode {
           if (isInput) {
             retArr.push('[(');
             this.astGeneric(yProperty, retArr);
-            retArr.push(`*${ this.dynamicArguments ? 'outputX' : size[0] })+`);
+            retArr.push(`*${this.dynamicArguments ? 'outputX' : size[0]})+`);
             this.astGeneric(xProperty, retArr);
             retArr.push(']');
           } else {
@@ -662,7 +672,3 @@ class CPUFunctionNode extends FunctionNode {
     return retArr;
   }
 }
-
-module.exports = {
-  CPUFunctionNode
-};

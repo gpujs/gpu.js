@@ -1,28 +1,31 @@
 const sinon = require('sinon');
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { WebGLKernel } = require('../../../../../src');
+const { WebGLKernel } = require('../../../../..');
 
 describe('internal: WebGLKernel');
 
-(typeof global !== 'undefined' ? test : skip)('.setupFeatureChecks() if context is available, but .getExtension() is falsey', () => {
-  const mockContext = {
-    getExtension: null // this is important
-  };
-  const mockElement = {
-    getContext: () => mockContext,
-  };
-  const mockDocument = {
-    createElement: () => {
-      return mockElement;
-    }
-  };
-  global.document = mockDocument;
+(typeof global !== 'undefined' ? test : skip)(
+  '.setupFeatureChecks() if context is available, but .getExtension() is falsey',
+  () => {
+    const mockContext = {
+      getExtension: null, // this is important
+    };
+    const mockElement = {
+      getContext: () => mockContext,
+    };
+    const mockDocument = {
+      createElement: () => {
+        return mockElement;
+      },
+    };
+    global.document = mockDocument;
 
-  WebGLKernel.setupFeatureChecks();
-  assert.ok(true);
+    WebGLKernel.setupFeatureChecks();
+    assert.ok(true);
 
-  delete global.document;
-});
+    delete global.document;
+  }
+);
 
 test('.validateSettings() checks output texture size - too large', () => {
   const mockContext = {

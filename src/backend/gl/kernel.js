@@ -1,30 +1,30 @@
-const { Kernel } = require('../kernel');
-const { utils } = require('../../utils');
-const { GLTextureArray2Float } = require('./texture/array-2-float');
-const { GLTextureArray2Float2D } = require('./texture/array-2-float-2d');
-const { GLTextureArray2Float3D } = require('./texture/array-2-float-3d');
-const { GLTextureArray3Float } = require('./texture/array-3-float');
-const { GLTextureArray3Float2D } = require('./texture/array-3-float-2d');
-const { GLTextureArray3Float3D } = require('./texture/array-3-float-3d');
-const { GLTextureArray4Float } = require('./texture/array-4-float');
-const { GLTextureArray4Float2D } = require('./texture/array-4-float-2d');
-const { GLTextureArray4Float3D } = require('./texture/array-4-float-3d');
-const { GLTextureFloat } = require('./texture/float');
-const { GLTextureFloat2D } = require('./texture/float-2d');
-const { GLTextureFloat3D } = require('./texture/float-3d');
-const { GLTextureMemoryOptimized } = require('./texture/memory-optimized');
-const { GLTextureMemoryOptimized2D } = require('./texture/memory-optimized-2d');
-const { GLTextureMemoryOptimized3D } = require('./texture/memory-optimized-3d');
-const { GLTextureUnsigned } = require('./texture/unsigned');
-const { GLTextureUnsigned2D } = require('./texture/unsigned-2d');
-const { GLTextureUnsigned3D } = require('./texture/unsigned-3d');
-const { GLTextureGraphical } = require('./texture/graphical');
+import { Kernel } from '../kernel';
+import { utils } from '../../utils';
+import { GLTextureArray2Float } from './texture/array-2-float';
+import { GLTextureArray2Float2D } from './texture/array-2-float-2d';
+import { GLTextureArray2Float3D } from './texture/array-2-float-3d';
+import { GLTextureArray3Float } from './texture/array-3-float';
+import { GLTextureArray3Float2D } from './texture/array-3-float-2d';
+import { GLTextureArray3Float3D } from './texture/array-3-float-3d';
+import { GLTextureArray4Float } from './texture/array-4-float';
+import { GLTextureArray4Float2D } from './texture/array-4-float-2d';
+import { GLTextureArray4Float3D } from './texture/array-4-float-3d';
+import { GLTextureFloat } from './texture/float';
+import { GLTextureFloat2D } from './texture/float-2d';
+import { GLTextureFloat3D } from './texture/float-3d';
+import { GLTextureMemoryOptimized } from './texture/memory-optimized';
+import { GLTextureMemoryOptimized2D } from './texture/memory-optimized-2d';
+import { GLTextureMemoryOptimized3D } from './texture/memory-optimized-3d';
+import { GLTextureUnsigned } from './texture/unsigned';
+import { GLTextureUnsigned2D } from './texture/unsigned-2d';
+import { GLTextureUnsigned3D } from './texture/unsigned-3d';
+import { GLTextureGraphical } from './texture/graphical';
 
 /**
  * @abstract
  * @extends Kernel
  */
-class GLKernel extends Kernel {
+export class GLKernel extends Kernel {
   static get mode() {
     return 'gpu';
   }
@@ -64,7 +64,7 @@ class GLKernel extends Kernel {
     });
     const args = [
       [6, 6030401],
-      [3, 3991]
+      [3, 3991],
     ];
     kernel.build.apply(kernel, args);
     kernel.run.apply(kernel, args);
@@ -88,28 +88,31 @@ class GLKernel extends Kernel {
       precision: 'unsigned',
       tactic: 'speed',
     });
-    const args = [
-      [0, 1, 2, 3]
-    ];
+    const args = [[0, 1, 2, 3]];
     kernel.build.apply(kernel, args);
     kernel.run.apply(kernel, args);
     const result = kernel.renderOutput();
     kernel.destroy(true);
-    return Math.round(result[0]) === 0 && Math.round(result[1]) === 1 && Math.round(result[2]) === 2 && Math.round(result[3]) === 3;
+    return (
+      Math.round(result[0]) === 0 &&
+      Math.round(result[1]) === 1 &&
+      Math.round(result[2]) === 2 &&
+      Math.round(result[3]) === 3
+    );
   }
 
   /**
    * @abstract
    */
   static get testCanvas() {
-    throw new Error(`"testCanvas" not defined on ${ this.name }`);
+    throw new Error(`"testCanvas" not defined on ${this.name}`);
   }
 
   /**
    * @abstract
    */
   static get testContext() {
-    throw new Error(`"testContext" not defined on ${ this.name }`);
+    throw new Error(`"testContext" not defined on ${this.name}`);
   }
 
   static getFeatures() {
@@ -124,12 +127,30 @@ class GLKernel extends Kernel {
       kernelMap: isDrawBuffers,
       channelCount: this.getChannelCount(),
       maxTextureSize: this.getMaxTextureSize(),
-      lowIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.LOW_INT),
-      lowFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.LOW_FLOAT),
-      mediumIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.MEDIUM_INT),
-      mediumFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.MEDIUM_FLOAT),
-      highIntPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_INT),
-      highFloatPrecision: gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT),
+      lowIntPrecision: gl.getShaderPrecisionFormat(
+        gl.FRAGMENT_SHADER,
+        gl.LOW_INT
+      ),
+      lowFloatPrecision: gl.getShaderPrecisionFormat(
+        gl.FRAGMENT_SHADER,
+        gl.LOW_FLOAT
+      ),
+      mediumIntPrecision: gl.getShaderPrecisionFormat(
+        gl.FRAGMENT_SHADER,
+        gl.MEDIUM_INT
+      ),
+      mediumFloatPrecision: gl.getShaderPrecisionFormat(
+        gl.FRAGMENT_SHADER,
+        gl.MEDIUM_FLOAT
+      ),
+      highIntPrecision: gl.getShaderPrecisionFormat(
+        gl.FRAGMENT_SHADER,
+        gl.HIGH_INT
+      ),
+      highFloatPrecision: gl.getShaderPrecisionFormat(
+        gl.FRAGMENT_SHADER,
+        gl.HIGH_FLOAT
+      ),
     });
   }
 
@@ -137,11 +158,14 @@ class GLKernel extends Kernel {
    * @abstract
    */
   static setupFeatureChecks() {
-    throw new Error(`"setupFeatureChecks" not defined on ${ this.name }`);
+    throw new Error(`"setupFeatureChecks" not defined on ${this.name}`);
   }
 
   static getSignature(kernel, argumentTypes) {
-    return kernel.getVariablePrecisionString() + (argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '');
+    return (
+      kernel.getVariablePrecisionString() +
+      (argumentTypes.length > 0 ? ':' + argumentTypes.join(',') : '')
+    );
   }
 
   /**
@@ -168,7 +192,11 @@ class GLKernel extends Kernel {
    * @deprecated
    */
   setFloatTextures(flag) {
-    utils.warnDeprecated('method', 'setFloatTextures', 'setOptimizeFloatMemory');
+    utils.warnDeprecated(
+      'method',
+      'setFloatTextures',
+      'setOptimizeFloatMemory'
+    );
     this.floatTextures = flag;
     return this;
   }
@@ -197,7 +225,11 @@ class GLKernel extends Kernel {
         states.push('MULTI_LINE_COMMENT');
         i += 2;
         continue;
-      } else if (state === 'MULTI_LINE_COMMENT' && char === '*' && nextChar === '/') {
+      } else if (
+        state === 'MULTI_LINE_COMMENT' &&
+        char === '*' &&
+        nextChar === '/'
+      ) {
         states.pop();
         i += 2;
         continue;
@@ -205,7 +237,11 @@ class GLKernel extends Kernel {
       // end MULTI_LINE_COMMENT handling
 
       // begin COMMENT handling
-      else if (state === 'FUNCTION_ARGUMENTS' && char === '/' && nextChar === '/') {
+      else if (
+        state === 'FUNCTION_ARGUMENTS' &&
+        char === '/' &&
+        nextChar === '/'
+      ) {
         states.push('COMMENT');
         i += 2;
         continue;
@@ -226,31 +262,61 @@ class GLKernel extends Kernel {
           states.pop();
           break;
         }
-        if (char === 'f' && nextChar === 'l' && source[i + 2] === 'o' && source[i + 3] === 'a' && source[i + 4] === 't' && source[i + 5] === ' ') {
+        if (
+          char === 'f' &&
+          nextChar === 'l' &&
+          source[i + 2] === 'o' &&
+          source[i + 3] === 'a' &&
+          source[i + 4] === 't' &&
+          source[i + 5] === ' '
+        ) {
           states.push('DECLARE_VARIABLE');
           argumentType = 'float';
           argumentName = '';
           i += 6;
           continue;
-        } else if (char === 'i' && nextChar === 'n' && source[i + 2] === 't' && source[i + 3] === ' ') {
+        } else if (
+          char === 'i' &&
+          nextChar === 'n' &&
+          source[i + 2] === 't' &&
+          source[i + 3] === ' '
+        ) {
           states.push('DECLARE_VARIABLE');
           argumentType = 'int';
           argumentName = '';
           i += 4;
           continue;
-        } else if (char === 'v' && nextChar === 'e' && source[i + 2] === 'c' && source[i + 3] === '2' && source[i + 4] === ' ') {
+        } else if (
+          char === 'v' &&
+          nextChar === 'e' &&
+          source[i + 2] === 'c' &&
+          source[i + 3] === '2' &&
+          source[i + 4] === ' '
+        ) {
           states.push('DECLARE_VARIABLE');
           argumentType = 'vec2';
           argumentName = '';
           i += 5;
           continue;
-        } else if (char === 'v' && nextChar === 'e' && source[i + 2] === 'c' && source[i + 3] === '3' && source[i + 4] === ' ') {
+        } else if (
+          char === 'v' &&
+          nextChar === 'e' &&
+          source[i + 2] === 'c' &&
+          source[i + 3] === '3' &&
+          source[i + 4] === ' '
+        ) {
           states.push('DECLARE_VARIABLE');
           argumentType = 'vec3';
           argumentName = '';
           i += 5;
           continue;
-        } else if (char === 'v' && nextChar === 'e' && source[i + 2] === 'c' && source[i + 3] === '4' && source[i + 4] === ' ') {
+        } else if (
+          char === 'v' &&
+          nextChar === 'e' &&
+          source[i + 2] === 'c' &&
+          source[i + 3] === '4' &&
+          source[i + 4] === ' '
+        ) {
           states.push('DECLARE_VARIABLE');
           argumentType = 'vec4';
           argumentName = '';
@@ -298,11 +364,7 @@ class GLKernel extends Kernel {
 
   static combineKernels(combinedKernel, lastKernel) {
     combinedKernel.apply(null, arguments);
-    const {
-      texSize,
-      context,
-      threadDim
-    } = lastKernel.texSize;
+    const { texSize, context, threadDim } = lastKernel.texSize;
     let result;
     if (lastKernel.precision === 'single') {
       const w = texSize[0];
@@ -311,7 +373,15 @@ class GLKernel extends Kernel {
       context.readPixels(0, 0, w, h * 4, context.RGBA, context.FLOAT, result);
     } else {
       const bytes = new Uint8Array(texSize[0] * texSize[1] * 4);
-      context.readPixels(0, 0, texSize[0], texSize[1], context.RGBA, context.UNSIGNED_BYTE, bytes);
+      context.readPixels(
+        0,
+        0,
+        texSize[0],
+        texSize[1],
+        context.RGBA,
+        context.UNSIGNED_BYTE,
+        bytes
+      );
       result = new Float32Array(bytes.buffer);
     }
 
@@ -322,8 +392,11 @@ class GLKernel extends Kernel {
     } else if (lastKernel.output.length === 2) {
       return utils.splitArray(result, lastKernel.output[0]);
     } else if (lastKernel.output.length === 3) {
-      const cube = utils.splitArray(result, lastKernel.output[0] * lastKernel.output[1]);
-      return cube.map(function(x) {
+      const cube = utils.splitArray(
+        result,
+        lastKernel.output[0] * lastKernel.output[1]
+      );
+      return cube.map(function (x) {
         return utils.splitArray(x, lastKernel.output[0]);
       });
     }
@@ -351,13 +424,20 @@ class GLKernel extends Kernel {
 
   checkTextureSize() {
     const { features } = this.constructor;
-    if (this.texSize[0] > features.maxTextureSize || this.texSize[1] > features.maxTextureSize) {
-      throw new Error(`Texture size [${this.texSize[0]},${this.texSize[1]}] generated by kernel is larger than supported size [${features.maxTextureSize},${features.maxTextureSize}]`);
+    if (
+      this.texSize[0] > features.maxTextureSize ||
+      this.texSize[1] > features.maxTextureSize
+    ) {
+      throw new Error(
+        `Texture size [${this.texSize[0]},${this.texSize[1]}] generated by kernel is larger than supported size [${features.maxTextureSize},${features.maxTextureSize}]`
+      );
     }
   }
 
   translateSource() {
-    throw new Error(`"translateSource" not defined on ${this.constructor.name}`);
+    throw new Error(
+      `"translateSource" not defined on ${this.constructor.name}`
+    );
   }
 
   /**
@@ -368,7 +448,7 @@ class GLKernel extends Kernel {
   pickRenderStrategy(args) {
     if (this.graphical) {
       this.renderRawOutput = this.readPackedPixelsToUint8Array;
-      this.transferValues = (pixels) => pixels;
+      this.transferValues = pixels => pixels;
       this.TextureConstructor = GLTextureGraphical;
       return null;
     }
@@ -395,10 +475,10 @@ class GLKernel extends Kernel {
               this.TextureConstructor = GLTextureUnsigned;
               return null;
             }
-            case 'Array(2)':
-            case 'Array(3)':
-            case 'Array(4)':
-              return this.requestFallback(args);
+          case 'Array(2)':
+          case 'Array(3)':
+          case 'Array(4)':
+            return this.requestFallback(args);
         }
       } else {
         if (this.subKernels !== null) {
@@ -423,10 +503,10 @@ class GLKernel extends Kernel {
               this.formatValues = utils.erectPackedFloat;
               return null;
             }
-            case 'Array(2)':
-            case 'Array(3)':
-            case 'Array(4)':
-              return this.requestFallback(args);
+          case 'Array(2)':
+          case 'Array(3)':
+          case 'Array(4)':
+            return this.requestFallback(args);
         }
       }
     } else if (this.precision === 'single') {
@@ -670,7 +750,7 @@ class GLKernel extends Kernel {
       case 'Array(4)':
         return this.getMainResultArray4Texture();
       default:
-        throw new Error(`unhandled returnType type ${ this.returnType }`);
+        throw new Error(`unhandled returnType type ${this.returnType}`);
     }
   }
 
@@ -766,23 +846,31 @@ class GLKernel extends Kernel {
   }
 
   getMainResultNumberTexture() {
-    return utils.linesToString(this.getMainResultKernelNumberTexture()) +
-      utils.linesToString(this.getMainResultSubKernelNumberTexture());
+    return (
+      utils.linesToString(this.getMainResultKernelNumberTexture()) +
+      utils.linesToString(this.getMainResultSubKernelNumberTexture())
+    );
   }
 
   getMainResultArray2Texture() {
-    return utils.linesToString(this.getMainResultKernelArray2Texture()) +
-      utils.linesToString(this.getMainResultSubKernelArray2Texture());
+    return (
+      utils.linesToString(this.getMainResultKernelArray2Texture()) +
+      utils.linesToString(this.getMainResultSubKernelArray2Texture())
+    );
   }
 
   getMainResultArray3Texture() {
-    return utils.linesToString(this.getMainResultKernelArray3Texture()) +
-      utils.linesToString(this.getMainResultSubKernelArray3Texture());
+    return (
+      utils.linesToString(this.getMainResultKernelArray3Texture()) +
+      utils.linesToString(this.getMainResultSubKernelArray3Texture())
+    );
   }
 
   getMainResultArray4Texture() {
-    return utils.linesToString(this.getMainResultKernelArray4Texture()) +
-      utils.linesToString(this.getMainResultSubKernelArray4Texture());
+    return (
+      utils.linesToString(this.getMainResultKernelArray4Texture()) +
+      utils.linesToString(this.getMainResultSubKernelArray4Texture())
+    );
   }
 
   /**
@@ -790,7 +878,10 @@ class GLKernel extends Kernel {
    * @return {string}
    */
   getFloatTacticDeclaration() {
-    const variablePrecision = this.getVariablePrecisionString(this.texSize, this.tactic);
+    const variablePrecision = this.getVariablePrecisionString(
+      this.texSize,
+      this.tactic
+    );
     return `precision ${variablePrecision} float;\n`;
   }
 
@@ -799,7 +890,11 @@ class GLKernel extends Kernel {
    * @return {string}
    */
   getIntTacticDeclaration() {
-    return `precision ${this.getVariablePrecisionString(this.texSize, this.tactic, true)} int;\n`;
+    return `precision ${this.getVariablePrecisionString(
+      this.texSize,
+      this.tactic,
+      true
+    )} int;\n`;
   }
 
   /**
@@ -807,24 +902,36 @@ class GLKernel extends Kernel {
    * @return {string}
    */
   getSampler2DTacticDeclaration() {
-    return `precision ${this.getVariablePrecisionString(this.texSize, this.tactic)} sampler2D;\n`;
+    return `precision ${this.getVariablePrecisionString(
+      this.texSize,
+      this.tactic
+    )} sampler2D;\n`;
   }
 
   getSampler2DArrayTacticDeclaration() {
-    return `precision ${this.getVariablePrecisionString(this.texSize, this.tactic)} sampler2DArray;\n`;
+    return `precision ${this.getVariablePrecisionString(
+      this.texSize,
+      this.tactic
+    )} sampler2DArray;\n`;
   }
 
   renderTexture() {
     return this.immutable ? this.texture.clone() : this.texture;
   }
   readPackedPixelsToUint8Array() {
-    if (this.precision !== 'unsigned') throw new Error('Requires this.precision to be "unsigned"');
-    const {
-      texSize,
-      context: gl
-    } = this;
+    if (this.precision !== 'unsigned')
+      throw new Error('Requires this.precision to be "unsigned"');
+    const { texSize, context: gl } = this;
     const result = new Uint8Array(texSize[0] * texSize[1] * 4);
-    gl.readPixels(0, 0, texSize[0], texSize[1], gl.RGBA, gl.UNSIGNED_BYTE, result);
+    gl.readPixels(
+      0,
+      0,
+      texSize[0],
+      texSize[1],
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      result
+    );
     return result;
   }
 
@@ -833,11 +940,9 @@ class GLKernel extends Kernel {
   }
 
   readFloatPixelsToFloat32Array() {
-    if (this.precision !== 'single') throw new Error('Requires this.precision to be "single"');
-    const {
-      texSize,
-      context: gl
-    } = this;
+    if (this.precision !== 'single')
+      throw new Error('Requires this.precision to be "single"');
+    const { texSize, context: gl } = this;
     const w = texSize[0];
     const h = texSize[1];
     const result = new Float32Array(w * h * 4);
@@ -851,15 +956,14 @@ class GLKernel extends Kernel {
    * @return {Uint8ClampedArray}
    */
   getPixels(flip) {
-    const {
-      context: gl,
-      output
-    } = this;
+    const { context: gl, output } = this;
     const [width, height] = output;
     const pixels = new Uint8Array(width * height * 4);
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     // flipped by default, so invert
-    return new Uint8ClampedArray((flip ? pixels : utils.flipPixels(pixels, width, height)).buffer);
+    return new Uint8ClampedArray(
+      (flip ? pixels : utils.flipPixels(pixels, width, height)).buffer
+    );
   }
 
   renderKernelsToArrays() {
@@ -898,25 +1002,42 @@ class GLKernel extends Kernel {
     const newOutput = this.toKernelOutput(output);
     if (this.program) {
       if (!this.dynamicOutput) {
-        throw new Error('Resizing a kernel with dynamicOutput: false is not possible');
+        throw new Error(
+          'Resizing a kernel with dynamicOutput: false is not possible'
+        );
       }
-      const newThreadDim = [newOutput[0], newOutput[1] || 1, newOutput[2] || 1];
-      const newTexSize = utils.getKernelTextureSize({
-        optimizeFloatMemory: this.optimizeFloatMemory,
-        precision: this.precision,
-      }, newThreadDim);
+      const newThreadDim = [
+        newOutput[0],
+        newOutput[1] || 1,
+        newOutput[2] || 1,
+      ];
+      const newTexSize = utils.getKernelTextureSize(
+        {
+          optimizeFloatMemory: this.optimizeFloatMemory,
+          precision: this.precision,
+        },
+        newThreadDim
+      );
       const oldTexSize = this.texSize;
       if (oldTexSize) {
-        const oldPrecision = this.getVariablePrecisionString(oldTexSize, this.tactic);
-        const newPrecision = this.getVariablePrecisionString(newTexSize, this.tactic);
+        const oldPrecision = this.getVariablePrecisionString(
+          oldTexSize,
+          this.tactic
+        );
+        const newPrecision = this.getVariablePrecisionString(
+          newTexSize,
+          this.tactic
+        );
         if (oldPrecision !== newPrecision) {
           if (this.debug) {
-            console.warn('Precision requirement changed, asking GPU instance to recompile');
+            console.warn(
+              'Precision requirement changed, asking GPU instance to recompile'
+            );
           }
           this.switchKernels({
             type: 'outputPrecisionMismatch',
             precision: newPrecision,
-            needed: output
+            needed: output,
           });
           return;
         }
@@ -964,12 +1085,25 @@ class GLKernel extends Kernel {
       this.switchingKernels = [reason];
     }
   }
-  getVariablePrecisionString(textureSize = this.texSize, tactic = this.tactic, isInt = false) {
+  getVariablePrecisionString(
+    textureSize = this.texSize,
+    tactic = this.tactic,
+    isInt = false
+  ) {
     if (!tactic) {
       if (!this.constructor.features.isSpeedTacticSupported) return 'highp';
-      const low = this.constructor.features[isInt ? 'lowIntPrecision' : 'lowFloatPrecision'];
-      const medium = this.constructor.features[isInt ? 'mediumIntPrecision' : 'mediumFloatPrecision'];
-      const high = this.constructor.features[isInt ? 'highIntPrecision' : 'highFloatPrecision'];
+      const low =
+        this.constructor.features[
+          isInt ? 'lowIntPrecision' : 'lowFloatPrecision'
+        ];
+      const medium =
+        this.constructor.features[
+          isInt ? 'mediumIntPrecision' : 'mediumFloatPrecision'
+        ];
+      const high =
+        this.constructor.features[
+          isInt ? 'highIntPrecision' : 'highFloatPrecision'
+        ];
       const requiredSize = Math.log2(textureSize[0] * textureSize[1]);
       if (requiredSize <= low.rangeMax) {
         return 'lowp';
@@ -978,7 +1112,9 @@ class GLKernel extends Kernel {
       } else if (requiredSize <= high.rangeMax) {
         return 'highp';
       } else {
-        throw new Error(`The required size exceeds that of the ability of your system`);
+        throw new Error(
+          `The required size exceeds that of the ability of your system`
+        );
       }
     }
     switch (tactic) {
@@ -989,7 +1125,9 @@ class GLKernel extends Kernel {
       case 'precision':
         return 'highp';
       default:
-        throw new Error(`Unknown tactic "${tactic}" use "speed", "balanced", "precision", or empty for auto`);
+        throw new Error(
+          `Unknown tactic "${tactic}" use "speed", "balanced", "precision", or empty for auto`
+        );
     }
   }
 
@@ -1052,8 +1190,4 @@ const typeMap = {
   vec2: 'Array(2)',
   vec3: 'Array(3)',
   vec4: 'Array(4)',
-};
-
-module.exports = {
-  GLKernel
 };

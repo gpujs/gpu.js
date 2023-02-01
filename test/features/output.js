@@ -1,14 +1,17 @@
 const { assert, test, module: describe, only, skip } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('features: output');
 
 function outputArray(mode) {
   const gpu = new GPU({ mode });
-  const input = [1,2,3,4,5];
-  const kernel = gpu.createKernel(function(input) {
-    return input[this.thread.x];
-  }, { output: [5] });
+  const input = [1, 2, 3, 4, 5];
+  const kernel = gpu.createKernel(
+    function (input) {
+      return input[this.thread.x];
+    },
+    { output: [5] }
+  );
   const result = kernel(input);
   assert.deepEqual(Array.from(result), input);
   gpu.destroy();
@@ -41,17 +44,23 @@ test('output array cpu', () => {
 function outputMatrix(mode) {
   const gpu = new GPU({ mode });
   const input = [
-    [1,2,3,4,5],
-    [1,2,3,4,5],
-    [1,2,3,4,5],
-    [1,2,3,4,5],
-    [1,2,3,4,5],
+    [1, 2, 3, 4, 5],
+    [1, 2, 3, 4, 5],
+    [1, 2, 3, 4, 5],
+    [1, 2, 3, 4, 5],
+    [1, 2, 3, 4, 5],
   ];
-  const kernel = gpu.createKernel(function(input) {
-    return input[this.thread.y][this.thread.x];
-  }, { output: [5, 5] });
+  const kernel = gpu.createKernel(
+    function (input) {
+      return input[this.thread.y][this.thread.x];
+    },
+    { output: [5, 5] }
+  );
   const result = kernel(input);
-  assert.deepEqual(result.map(array => Array.from(array)), input);
+  assert.deepEqual(
+    result.map(array => Array.from(array)),
+    input
+  );
   gpu.destroy();
 }
 
@@ -83,46 +92,52 @@ function outputCube(mode) {
   const gpu = new GPU({ mode });
   const input = [
     [
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
     ],
     [
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
     ],
     [
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
     ],
     [
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
     ],
     [
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-      [1,2,3,4,5],
-    ]
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+      [1, 2, 3, 4, 5],
+    ],
   ];
-  const kernel = gpu.createKernel(function(input) {
-    return input[this.thread.z][this.thread.y][this.thread.x];
-  }, { output: [5, 5, 5] });
+  const kernel = gpu.createKernel(
+    function (input) {
+      return input[this.thread.z][this.thread.y][this.thread.x];
+    },
+    { output: [5, 5, 5] }
+  );
   const result = kernel(input);
-  assert.deepEqual(result.map(matrix => matrix.map(array => Array.from(array))), input);
+  assert.deepEqual(
+    result.map(matrix => matrix.map(array => Array.from(array))),
+    input
+  );
   gpu.destroy();
 }
 
@@ -153,19 +168,22 @@ test('output cube cpu', () => {
 function outputGraphicalArray(mode) {
   const gpu = new GPU({ mode });
   const mockContext = {
-    getExtension: () => {}
+    getExtension: () => {},
   };
   const mockCanvas = {
     getContext: () => mockContext,
   };
   assert.throws(() => {
-    const kernel = gpu.createKernel(function(input) {
-      return input[this.thread.x];
-    }, {
-      canvas: mockCanvas,
-      output: [5],
-      graphical: true
-    });
+    const kernel = gpu.createKernel(
+      function (input) {
+        return input[this.thread.x];
+      },
+      {
+        canvas: mockCanvas,
+        output: [5],
+        graphical: true,
+      }
+    );
     kernel([1]);
   }, new Error('Output must have 2 dimensions on graphical mode'));
   gpu.destroy();
@@ -187,9 +205,12 @@ test('graphical output array gpu', () => {
   outputGraphicalArray('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('graphical output array headlessgl', () => {
-  outputGraphicalArray('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'graphical output array headlessgl',
+  () => {
+    outputGraphicalArray('headlessgl');
+  }
+);
 
 test('graphical output array cpu', () => {
   outputGraphicalArray('cpu');
@@ -198,18 +219,21 @@ test('graphical output array cpu', () => {
 function outputGraphicalMatrix(mode, canvas, context) {
   const gpu = new GPU({ mode });
   const input = [
-    [0.25,.50],
-    [.75,1],
+    [0.25, 0.5],
+    [0.75, 1],
   ];
-  const kernel = gpu.createKernel(function(input) {
-    const color = input[this.thread.y][this.thread.x];
-    this.color(color, color, color, color);
-  }, {
-    context,
-    canvas,
-    output: [2, 2],
-    graphical: true
-  });
+  const kernel = gpu.createKernel(
+    function (input) {
+      const color = input[this.thread.y][this.thread.x];
+      this.color(color, color, color, color);
+    },
+    {
+      context,
+      canvas,
+      output: [2, 2],
+      graphical: true,
+    }
+  );
   const result = kernel(input);
   assert.equal(result, undefined);
   const pixels = Array.from(kernel.getPixels());
@@ -221,93 +245,55 @@ function outputGraphicalMatrix(mode, canvas, context) {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('webgl', { premultipliedAlpha: false });
   const pixels = outputGraphicalMatrix('webgl', canvas, context);
-  assert.deepEqual(pixels, [
-    191,
-    191,
-    191,
-    191,
-    255,
-    255,
-    255,
-    255,
-    64,
-    64,
-    64,
-    64,
-    128,
-    128,
-    128,
-    128
-  ]);
+  assert.deepEqual(
+    pixels,
+    [
+      191, 191, 191, 191, 255, 255, 255, 255, 64, 64, 64, 64, 128, 128, 128,
+      128,
+    ]
+  );
 });
 
 (GPU.isWebGL2Supported ? test : skip)('graphical output matrix webgl2', () => {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('webgl2', { premultipliedAlpha: false });
   const pixels = outputGraphicalMatrix('webgl2', canvas, context);
-  assert.deepEqual(pixels, [
-    191,
-    191,
-    191,
-    191,
-    255,
-    255,
-    255,
-    255,
-    64,
-    64,
-    64,
-    64,
-    128,
-    128,
-    128,
-    128
-  ]);
+  assert.deepEqual(
+    pixels,
+    [
+      191, 191, 191, 191, 255, 255, 255, 255, 64, 64, 64, 64, 128, 128, 128,
+      128,
+    ]
+  );
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('graphical output matrix headlessgl', () => {
-  const pixels = outputGraphicalMatrix('headlessgl');
-  assert.deepEqual(pixels, [
-    191,
-    191,
-    191,
-    191,
-    255,
-    255,
-    255,
-    255,
-    64,
-    64,
-    64,
-    64,
-    128,
-    128,
-    128,
-    128
-  ]);
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'graphical output matrix headlessgl',
+  () => {
+    const pixels = outputGraphicalMatrix('headlessgl');
+    assert.deepEqual(
+      pixels,
+      [
+        191, 191, 191, 191, 255, 255, 255, 255, 64, 64, 64, 64, 128, 128, 128,
+        128,
+      ]
+    );
+  }
+);
 
-(GPU.isCanvasSupported ? test : skip)('graphical output matrix cpu with real canvas', () => {
-  const pixels = outputGraphicalMatrix('cpu');
-  assert.deepEqual(pixels, [
-    191,
-    191,
-    191,
-    191,
-    255,
-    255,
-    255,
-    255,
-    63,
-    63,
-    63,
-    63,
-    127,
-    127,
-    127,
-    127
-  ]);
-});
+(GPU.isCanvasSupported ? test : skip)(
+  'graphical output matrix cpu with real canvas',
+  () => {
+    const pixels = outputGraphicalMatrix('cpu');
+    assert.deepEqual(
+      pixels,
+      [
+        191, 191, 191, 191, 255, 255, 255, 255, 63, 63, 63, 63, 127, 127, 127,
+        127,
+      ]
+    );
+  }
+);
 
 test('graphical output matrix cpu with mocked canvas', () => {
   // allow tests on node or browser
@@ -316,7 +302,7 @@ test('graphical output matrix cpu with mocked canvas', () => {
     createImageData: () => {
       return { data: new Uint8ClampedArray(2 * 2 * 4) };
     },
-    putImageData: (_outputImageData) => {
+    putImageData: _outputImageData => {
       outputImageData = _outputImageData;
     },
     getImageData: () => {
@@ -324,48 +310,40 @@ test('graphical output matrix cpu with mocked canvas', () => {
     },
     getExtension: () => {
       return null;
-    }
+    },
   };
   const mockCanvas = {
     getContext: () => mockContext,
   };
   const pixels = outputGraphicalMatrix('cpu', mockCanvas, mockContext);
-  assert.deepEqual(pixels, [
-    191,
-    191,
-    191,
-    191,
-    255,
-    255,
-    255,
-    255,
-    63,
-    63,
-    63,
-    63,
-    127,
-    127,
-    127,
-    127
-  ]);
+  assert.deepEqual(
+    pixels,
+    [
+      191, 191, 191, 191, 255, 255, 255, 255, 63, 63, 63, 63, 127, 127, 127,
+      127,
+    ]
+  );
 });
 
 function outputGraphicalCube(mode) {
   const gpu = new GPU({ mode });
   const mockContext = {
-    getExtension: () => {}
+    getExtension: () => {},
   };
   const mockCanvas = {
-    getContext: () => mockContext
+    getContext: () => mockContext,
   };
   assert.throws(() => {
-    const kernel = gpu.createKernel(function(input) {
-      return input[this.thread.x];
-    }, {
-      canvas: mockCanvas,
-      output: [5,5,5],
-      graphical: true
-    });
+    const kernel = gpu.createKernel(
+      function (input) {
+        return input[this.thread.x];
+      },
+      {
+        canvas: mockCanvas,
+        output: [5, 5, 5],
+        graphical: true,
+      }
+    );
     kernel([1]);
   }, new Error('Output must have 2 dimensions on graphical mode'));
   gpu.destroy();
@@ -387,9 +365,12 @@ test('graphical output array gpu', () => {
   outputGraphicalCube('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('graphical output array headlessgl', () => {
-  outputGraphicalCube('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'graphical output array headlessgl',
+  () => {
+    outputGraphicalCube('headlessgl');
+  }
+);
 
 test('graphical output array cpu', () => {
   outputGraphicalCube('cpu');

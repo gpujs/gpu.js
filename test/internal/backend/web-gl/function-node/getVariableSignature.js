@@ -1,18 +1,21 @@
 const { assert, test, module: describe, only } = require('qunit');
-const { WebGLFunctionNode } = require(process.cwd() + '/src');
+const { WebGLFunctionNode } = require('../../../../..');
 
 describe('WebGLFunctionNode.getVariableSignature()');
 
 function run(value) {
   const mockInstance = {
     source: `function() { ${value}; }`,
-    traceFunctionAST: () => {}
+    traceFunctionAST: () => {},
   };
   const ast = WebGLFunctionNode.prototype.getJsAST.call(mockInstance);
   const expression = ast.body.body[0].expression;
-  return WebGLFunctionNode.prototype.getVariableSignature.call({
-    isAstVariable: WebGLFunctionNode.prototype.isAstVariable
-  }, expression);
+  return WebGLFunctionNode.prototype.getVariableSignature.call(
+    {
+      isAstVariable: WebGLFunctionNode.prototype.isAstVariable,
+    },
+    expression
+  );
 }
 
 test('value', () => {
@@ -83,16 +86,25 @@ test('this.constants.value[][]', () => {
   assert.equal(run('this.constants.value[0][0]'), 'this.constants.value[][]');
 });
 test('this.constants.value[][][]', () => {
-  assert.equal(run('this.constants.value[0][0][0]'), 'this.constants.value[][][]');
+  assert.equal(
+    run('this.constants.value[0][0][0]'),
+    'this.constants.value[][][]'
+  );
 });
 test('this.constants.texture[this.thread.z][this.thread.y][this.thread.x]', () => {
-  assert.equal(run('this.constants.texture[this.thread.z][this.thread.y][this.thread.x]'), 'this.constants.value[][][]');
+  assert.equal(
+    run('this.constants.texture[this.thread.z][this.thread.y][this.thread.x]'),
+    'this.constants.value[][][]'
+  );
 });
 test('this.whatever.value', () => {
   assert.equal(run('this.whatever.value'), null);
 });
 test('this.constants.value[][][][]', () => {
-  assert.equal(run('this.constants.value[0][0][0][0]'), 'this.constants.value[][][][]');
+  assert.equal(
+    run('this.constants.value[0][0][0][0]'),
+    'this.constants.value[][][][]'
+  );
 });
 test('this.constants.value.something', () => {
   assert.equal(run('this.constants.value.something'), null);
@@ -107,7 +119,8 @@ test('this.constants.value[][][][]', () => {
   assert.equal(run('this.constants.value[0][0][0].something'), null);
 });
 test('complex nested this.constants.value[][][]', () => {
-  assert.equal(run(`
+  assert.equal(
+    run(`
   this.constants.value[
     this.constants.value[i + 1]
   ]
@@ -117,10 +130,13 @@ test('complex nested this.constants.value[][][]', () => {
   [
     this.thread.x - 100
   ]
-`), 'this.constants.value[][][]');
+`),
+    'this.constants.value[][][]'
+  );
 });
 test('complex nested with function call this.constants.value[][][]', () => {
-  assert.equal(run(`
+  assert.equal(
+    run(`
   this.constants.value[
     something()
   ]
@@ -130,7 +146,9 @@ test('complex nested with function call this.constants.value[][][]', () => {
   [
     this.thread.x - 100
   ]
-`), 'this.constants.value[][][]')
+`),
+    'this.constants.value[][][]'
+  );
 });
 test('non-existent something', () => {
   assert.equal(run('this.constants.value[0][0].something'), null);

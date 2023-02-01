@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { webGLKernelValueMaps } = require('../../../../../src');
+const { webGLKernelValueMaps } = require('../../../../..');
 
 describe('internal: WebGLKernelValueMemoryOptimizedNumberTexture');
 
@@ -11,16 +11,19 @@ test('.constructor() checks too large height', () => {
     validate: true,
   };
   assert.throws(() => {
-    new webGLKernelValueMaps.unsigned.static.MemoryOptimizedNumberTexture({ size: [1, 2] }, {
-      kernel: mockKernel,
-      name: 'test',
-      type: 'MemoryOptimizedNumberTexture',
-      origin: 'user',
-      tactic: 'speed',
-      onRequestContextHandle: () => 1,
-      onRequestTexture: () => null,
-      onRequestIndex: () => 1
-    });
+    new webGLKernelValueMaps.unsigned.static.MemoryOptimizedNumberTexture(
+      { size: [1, 2] },
+      {
+        kernel: mockKernel,
+        name: 'test',
+        type: 'MemoryOptimizedNumberTexture',
+        origin: 'user',
+        tactic: 'speed',
+        onRequestContextHandle: () => 1,
+        onRequestTexture: () => null,
+        onRequestIndex: () => 1,
+      }
+    );
   }, new Error('Argument texture height of 2 larger than maximum size of 1 for your GPU'));
 });
 
@@ -33,16 +36,19 @@ test('.constructor() checks too large width', () => {
   };
 
   assert.throws(() => {
-    new webGLKernelValueMaps.unsigned.static.MemoryOptimizedNumberTexture({ size: [2, 1] }, {
-      kernel: mockKernel,
-      name: 'test',
-      type: 'MemoryOptimizedNumberTexture',
-      origin: 'user',
-      tactic: 'speed',
-      onRequestContextHandle: () => 1,
-      onRequestTexture: () => null,
-      onRequestIndex: () => 1
-    });
+    new webGLKernelValueMaps.unsigned.static.MemoryOptimizedNumberTexture(
+      { size: [2, 1] },
+      {
+        kernel: mockKernel,
+        name: 'test',
+        type: 'MemoryOptimizedNumberTexture',
+        origin: 'user',
+        tactic: 'speed',
+        onRequestContextHandle: () => 1,
+        onRequestTexture: () => null,
+        onRequestIndex: () => 1,
+      }
+    );
   }, new Error('Argument texture width of 2 larger than maximum size of 1 for your GPU'));
 });
 
@@ -63,18 +69,25 @@ test('.constructor() checks ok height & width', () => {
     pixelStorei: () => {},
     texImage2D: () => {},
   };
-  const v = new webGLKernelValueMaps.unsigned.static.MemoryOptimizedNumberTexture({ size: [2,2], context: mockContext }, {
-    kernel: mockKernel,
-    name: 'test',
-    type: 'MemoryOptimizedNumberTexture',
-    origin: 'user',
-    tactic: 'speed',
-    context: mockContext,
-    onRequestContextHandle: () => 1,
-    onRequestTexture: () => null,
-    onRequestIndex: () => 1
-  });
-  assert.equal(v.constructor.name, 'WebGLKernelValueMemoryOptimizedNumberTexture');
+  const v =
+    new webGLKernelValueMaps.unsigned.static.MemoryOptimizedNumberTexture(
+      { size: [2, 2], context: mockContext },
+      {
+        kernel: mockKernel,
+        name: 'test',
+        type: 'MemoryOptimizedNumberTexture',
+        origin: 'user',
+        tactic: 'speed',
+        context: mockContext,
+        onRequestContextHandle: () => 1,
+        onRequestTexture: () => null,
+        onRequestIndex: () => 1,
+      }
+    );
+  assert.equal(
+    v.constructor.name,
+    'WebGLKernelValueMemoryOptimizedNumberTexture'
+  );
 });
 
 test('.updateValue() should set uploadValue when a pipeline kernel has no texture', () => {
@@ -95,19 +108,27 @@ test('.updateValue() should set uploadValue when a pipeline kernel has no textur
     pixelStorei: () => {},
     texImage2D: () => {},
   };
-  const v = new webGLKernelValueMaps.unsigned.static.MemoryOptimizedNumberTexture({ size: [2,2], context: mockContext }, {
-    kernel: mockKernel,
-    name: 'test',
-    type: 'MemoryOptimizedNumberTexture',
-    origin: 'user',
-    tactic: 'speed',
-    context: mockContext,
-    onRequestContextHandle: () => 1,
-    onRequestTexture: () => null,
-    onRequestIndex: () => 1
-  });
+  const v =
+    new webGLKernelValueMaps.unsigned.static.MemoryOptimizedNumberTexture(
+      { size: [2, 2], context: mockContext },
+      {
+        kernel: mockKernel,
+        name: 'test',
+        type: 'MemoryOptimizedNumberTexture',
+        origin: 'user',
+        tactic: 'speed',
+        context: mockContext,
+        onRequestContextHandle: () => 1,
+        onRequestTexture: () => null,
+        onRequestIndex: () => 1,
+      }
+    );
 
-  const newMockTexture = {}
-  v.updateValue({ size: [2,2], context: mockContext, texture: newMockTexture })
-  assert.equal(v.uploadValue, newMockTexture)
+  const newMockTexture = {};
+  v.updateValue({
+    size: [2, 2],
+    context: mockContext,
+    texture: newMockTexture,
+  });
+  assert.equal(v.uploadValue, newMockTexture);
 });

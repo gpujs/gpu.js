@@ -1,7 +1,7 @@
-const { utils } = require('../../../utils');
-const { WebGLKernelValueSingleArray } = require('./single-array');
+import { utils } from '../../../utils';
+import { WebGLKernelValueSingleArray } from './single-array';
 
-class WebGLKernelValueDynamicSingleArray extends WebGLKernelValueSingleArray {
+export class WebGLKernelValueDynamicSingleArray extends WebGLKernelValueSingleArray {
   getSource() {
     return utils.linesToString([
       `uniform sampler2D ${this.id}`,
@@ -12,8 +12,12 @@ class WebGLKernelValueDynamicSingleArray extends WebGLKernelValueSingleArray {
 
   updateValue(value) {
     this.dimensions = utils.getDimensions(value, true);
-    this.textureSize = utils.getMemoryOptimizedFloatTextureSize(this.dimensions, this.bitRatio);
-    this.uploadArrayLength = this.textureSize[0] * this.textureSize[1] * this.bitRatio;
+    this.textureSize = utils.getMemoryOptimizedFloatTextureSize(
+      this.dimensions,
+      this.bitRatio
+    );
+    this.uploadArrayLength =
+      this.textureSize[0] * this.textureSize[1] * this.bitRatio;
     this.checkSize(this.textureSize[0], this.textureSize[1]);
     this.uploadValue = new Float32Array(this.uploadArrayLength);
     this.kernel.setUniform3iv(this.dimensionsId, this.dimensions);
@@ -21,7 +25,3 @@ class WebGLKernelValueDynamicSingleArray extends WebGLKernelValueSingleArray {
     super.updateValue(value);
   }
 }
-
-module.exports = {
-  WebGLKernelValueDynamicSingleArray
-};

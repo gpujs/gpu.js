@@ -1,8 +1,9 @@
-const { glWiretap } = require('gl-wiretap');
-const { utils } = require('../../utils');
+import { glWiretap } from 'gl-wiretap';
+import { utils } from '../../utils';
 
 function toStringWithoutUtils(fn) {
-  return fn.toString()
+  return fn
+    .toString()
     .replace('=>', '')
     .replace(/^function /, '')
     .replace(/utils[.]/g, '/*utils.*/');
@@ -17,32 +18,49 @@ function toStringWithoutUtils(fn) {
  * @param {string} [destroyContextString]
  * @returns {string}
  */
-function glKernelString(Kernel, args, originKernel, setupContextString, destroyContextString) {
+export function glKernelString(
+  Kernel,
+  args,
+  originKernel,
+  setupContextString,
+  destroyContextString
+) {
   if (!originKernel.built) {
     originKernel.build.apply(originKernel, args);
   }
-  args = args ? Array.from(args).map(arg => {
-    switch (typeof arg) {
-      case 'boolean':
-        return new Boolean(arg);
-      case 'number':
-        return new Number(arg);
-      default:
-        return arg;
-    }
-  }) : null;
+  args = args
+    ? Array.from(args).map(arg => {
+        switch (typeof arg) {
+          case 'boolean':
+            return new Boolean(arg);
+          case 'number':
+            return new Number(arg);
+          default:
+            return arg;
+        }
+      })
+    : null;
   const uploadedValues = [];
   const postResult = [];
   const context = glWiretap(originKernel.context, {
     useTrackablePrimitives: true,
-    onReadPixels: (targetName) => {
+    onReadPixels: targetName => {
       if (kernel.subKernels) {
         if (!subKernelsResultVariableSetup) {
-          postResult.push(`    const result = { result: ${getRenderString(targetName, kernel)} };`);
+          postResult.push(
+            `    const result = { result: ${getRenderString(
+              targetName,
+              kernel
+            )} };`
+          );
           subKernelsResultVariableSetup = true;
         } else {
           const property = kernel.subKernels[subKernelsResultIndex++].property;
-          postResult.push(`    result${isNaN(property) ? '.' + property : `[${property}]`} = ${getRenderString(targetName, kernel)};`);
+          postResult.push(
+            `    result${
+              isNaN(property) ? '.' + property : `[${property}]`
+            } = ${getRenderString(targetName, kernel)};`
+          );
         }
         if (subKernelsResultIndex === kernel.subKernels.length) {
           postResult.push('    return result;');
@@ -55,17 +73,29 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
         postResult.push(`    return null;`);
       }
     },
-    onUnrecognizedArgumentLookup: (argument) => {
-      const argumentName = findKernelValue(argument, kernel.kernelArguments, [], context, uploadedValues);
+    onUnrecognizedArgumentLookup: argument => {
+      const argumentName = findKernelValue(
+        argument,
+        kernel.kernelArguments,
+        [],
+        context,
+        uploadedValues
+      );
       if (argumentName) {
         return argumentName;
       }
-      const constantName = findKernelValue(argument, kernel.kernelConstants, constants ? Object.keys(constants).map(key => constants[key]) : [], context, uploadedValues);
+      const constantName = findKernelValue(
+        argument,
+        kernel.kernelConstants,
+        constants ? Object.keys(constants).map(key => constants[key]) : [],
+        context,
+        uploadedValues
+      );
       if (constantName) {
         return constantName;
       }
       return null;
-    }
+    },
   });
   let subKernelsResultVariableSetup = false;
   let subKernelsResultIndex = 0;
@@ -123,7 +153,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       case 'Boolean':
       case 'Number':
       case 'Float':
-        // non-primitives
+      // non-primitives
       case 'Array':
       case 'Array(2)':
       case 'Array(3)':
@@ -131,16 +161,25 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       case 'HTMLCanvas':
       case 'HTMLImage':
       case 'HTMLVideo':
-        context.insertVariable(`uploadValue_${kernelArgument.name}`, kernelArgument.uploadValue);
+        context.insertVariable(
+          `uploadValue_${kernelArgument.name}`,
+          kernelArgument.uploadValue
+        );
         break;
       case 'HTMLImageArray':
         for (let imageIndex = 0; imageIndex < args[i].length; imageIndex++) {
           const arg = args[i];
-          context.insertVariable(`uploadValue_${kernelArgument.name}[${imageIndex}]`, arg[imageIndex]);
+          context.insertVariable(
+            `uploadValue_${kernelArgument.name}[${imageIndex}]`,
+            arg[imageIndex]
+          );
         }
         break;
       case 'Input':
-        context.insertVariable(`uploadValue_${kernelArgument.name}`, kernelArgument.uploadValue);
+        context.insertVariable(
+          `uploadValue_${kernelArgument.name}`,
+          kernelArgument.uploadValue
+        );
         break;
       case 'MemoryOptimizedNumberTexture':
       case 'NumberTexture':
@@ -157,10 +196,15 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       case 'ArrayTexture(2)':
       case 'ArrayTexture(3)':
       case 'ArrayTexture(4)':
-        context.insertVariable(`uploadValue_${kernelArgument.name}`, args[i].texture);
+        context.insertVariable(
+          `uploadValue_${kernelArgument.name}`,
+          args[i].texture
+        );
         break;
       default:
-        throw new Error(`unhandled kernelArgumentType insertion for glWiretap of type ${kernelArgument.type}`);
+        throw new Error(
+          `unhandled kernelArgumentType insertion for glWiretap of type ${kernelArgument.type}`
+        );
     }
   });
   result.push('/** start of injected functions **/');
@@ -171,11 +215,17 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   result.push(`function ${toStringWithoutUtils(utils.isArray)}`);
   if (kernel.renderOutput !== kernel.renderTexture && kernel.formatValues) {
     result.push(
-      `  const renderOutput = function ${toStringWithoutUtils(kernel.formatValues)};`
+      `  const renderOutput = function ${toStringWithoutUtils(
+        kernel.formatValues
+      )};`
     );
   }
   result.push('/** end of injected functions **/');
-  result.push(`  const innerKernel = function (${kernel.kernelArguments.map(kernelArgument => kernelArgument.varName).join(', ')}) {`);
+  result.push(
+    `  const innerKernel = function (${kernel.kernelArguments
+      .map(kernelArgument => kernelArgument.varName)
+      .join(', ')}) {`
+  );
   context.setIndent(4);
   kernel.run.apply(kernel, args);
   if (kernel.renderKernels) {
@@ -185,7 +235,10 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   }
   result.push('    /** start setup uploads for kernel values **/');
   kernel.kernelArguments.forEach(kernelArgument => {
-    result.push('    ' + kernelArgument.getStringValueHandler().split('\n').join('\n    '));
+    result.push(
+      '    ' +
+        kernelArgument.getStringValueHandler().split('\n').join('\n    ')
+    );
   });
   result.push('    /** end setup uploads for kernel values **/');
   result.push(context.toString());
@@ -194,38 +247,54 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
     const framebufferName = context.getContextVariableName(kernel.framebuffer);
     if (kernel.renderKernels) {
       const results = kernel.renderKernels();
-      const textureName = context.getContextVariableName(kernel.texture.texture);
+      const textureName = context.getContextVariableName(
+        kernel.texture.texture
+      );
       result.push(`    return {
       result: {
-        texture: ${ textureName },
-        type: '${ results.result.type }',
-        toArray: ${ getToArrayString(results.result, textureName, framebufferName) }
+        texture: ${textureName},
+        type: '${results.result.type}',
+        toArray: ${getToArrayString(
+          results.result,
+          textureName,
+          framebufferName
+        )}
       },`);
       const { subKernels, mappedTextures } = kernel;
       for (let i = 0; i < subKernels.length; i++) {
         const texture = mappedTextures[i];
         const subKernel = subKernels[i];
         const subKernelResult = results[subKernel.property];
-        const subKernelTextureName = context.getContextVariableName(texture.texture);
+        const subKernelTextureName = context.getContextVariableName(
+          texture.texture
+        );
         result.push(`
       ${subKernel.property}: {
-        texture: ${ subKernelTextureName },
-        type: '${ subKernelResult.type }',
-        toArray: ${ getToArrayString(subKernelResult, subKernelTextureName, framebufferName) }
+        texture: ${subKernelTextureName},
+        type: '${subKernelResult.type}',
+        toArray: ${getToArrayString(
+          subKernelResult,
+          subKernelTextureName,
+          framebufferName
+        )}
       },`);
       }
       result.push(`    };`);
     } else {
       const rendered = kernel.renderOutput();
-      const textureName = context.getContextVariableName(kernel.texture.texture);
+      const textureName = context.getContextVariableName(
+        kernel.texture.texture
+      );
       result.push(`    return {
-        texture: ${ textureName },
-        type: '${ rendered.type }',
-        toArray: ${ getToArrayString(rendered, textureName, framebufferName) }
+        texture: ${textureName},
+        type: '${rendered.type}',
+        toArray: ${getToArrayString(rendered, textureName, framebufferName)}
       };`);
     }
   }
-  result.push(`    ${destroyContextString ? '\n' + destroyContextString + '    ': ''}`);
+  result.push(
+    `    ${destroyContextString ? '\n' + destroyContextString + '    ' : ''}`
+  );
   result.push(postResult.join('\n'));
   result.push('  };');
   if (kernel.graphical) {
@@ -235,7 +304,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   result.push('  return innerKernel;');
 
   let constantsUpload = [];
-  kernelConstants.forEach((kernelConstant) => {
+  kernelConstants.forEach(kernelConstant => {
     constantsUpload.push(`${kernelConstant.getStringValueHandler()}`);
   });
   return `function kernel(settings) {
@@ -247,7 +316,10 @@ ${result.join('\n')}
 }
 
 function getRenderString(targetName, kernel) {
-  const readBackValue = kernel.precision === 'single' ? targetName : `new Float32Array(${targetName}.buffer)`;
+  const readBackValue =
+    kernel.precision === 'single'
+      ? targetName
+      : `new Float32Array(${targetName}.buffer)`;
   if (kernel.output[2]) {
     return `renderOutput(${readBackValue}, ${kernel.output[0]}, ${kernel.output[1]}, ${kernel.output[2]})`;
   }
@@ -261,55 +333,63 @@ function getRenderString(targetName, kernel) {
 function getGetPixelsString(kernel) {
   const getPixels = kernel.getPixels.toString();
   const useFunctionKeyword = !/^function/.test(getPixels);
-  return utils.flattenFunctionToString(`${useFunctionKeyword ? 'function ' : ''}${ getPixels }`, {
-    findDependency: (object, name) => {
-      if (object === 'utils') {
-        return `const ${name} = ${utils[name].toString()};`;
-      }
-      return null;
-    },
-    thisLookup: (property) => {
-      if (property === 'context') {
+  return utils.flattenFunctionToString(
+    `${useFunctionKeyword ? 'function ' : ''}${getPixels}`,
+    {
+      findDependency: (object, name) => {
+        if (object === 'utils') {
+          return `const ${name} = ${utils[name].toString()};`;
+        }
         return null;
-      }
-      if (kernel.hasOwnProperty(property)) {
-        return JSON.stringify(kernel[property]);
-      }
-      throw new Error(`unhandled thisLookup ${ property }`);
+      },
+      thisLookup: property => {
+        if (property === 'context') {
+          return null;
+        }
+        if (kernel.hasOwnProperty(property)) {
+          return JSON.stringify(kernel[property]);
+        }
+        throw new Error(`unhandled thisLookup ${property}`);
+      },
     }
-  });
+  );
 }
 
 function getToArrayString(kernelResult, textureName, framebufferName) {
   const toArray = kernelResult.toArray.toString();
   const useFunctionKeyword = !/^function/.test(toArray);
-  const flattenedFunctions = utils.flattenFunctionToString(`${useFunctionKeyword ? 'function ' : ''}${ toArray }`, {
-    findDependency: (object, name) => {
-      if (object === 'utils') {
-        return `const ${name} = ${utils[name].toString()};`;
-      } else if (object === 'this') {
-        if (name === 'framebuffer') {
-          return '';
+  const flattenedFunctions = utils.flattenFunctionToString(
+    `${useFunctionKeyword ? 'function ' : ''}${toArray}`,
+    {
+      findDependency: (object, name) => {
+        if (object === 'utils') {
+          return `const ${name} = ${utils[name].toString()};`;
+        } else if (object === 'this') {
+          if (name === 'framebuffer') {
+            return '';
+          }
+          return `${useFunctionKeyword ? 'function ' : ''}${kernelResult[
+            name
+          ].toString()}`;
+        } else {
+          throw new Error('unhandled fromObject');
         }
-        return `${useFunctionKeyword ? 'function ' : ''}${kernelResult[name].toString()}`;
-      } else {
-        throw new Error('unhandled fromObject');
-      }
-    },
-    thisLookup: (property, isDeclaration) => {
-      if (property === 'texture') {
-        return textureName;
-      }
-      if (property === 'context') {
-        if (isDeclaration) return null;
-        return 'gl';
-      }
-      if (kernelResult.hasOwnProperty(property)) {
-        return JSON.stringify(kernelResult[property]);
-      }
-      throw new Error(`unhandled thisLookup ${ property }`);
+      },
+      thisLookup: (property, isDeclaration) => {
+        if (property === 'texture') {
+          return textureName;
+        }
+        if (property === 'context') {
+          if (isDeclaration) return null;
+          return 'gl';
+        }
+        if (kernelResult.hasOwnProperty(property)) {
+          return JSON.stringify(kernelResult[property]);
+        }
+        throw new Error(`unhandled thisLookup ${property}`);
+      },
     }
-  });
+  );
   return `() => {
   function framebuffer() { return ${framebufferName}; };
   ${flattenedFunctions}
@@ -326,7 +406,13 @@ function getToArrayString(kernelResult, textureName, framebufferName) {
  * @param {KernelVariable[]} uploadedValues
  * @return {string|null}
  */
-function findKernelValue(argument, kernelValues, values, context, uploadedValues) {
+function findKernelValue(
+  argument,
+  kernelValues,
+  values,
+  context,
+  uploadedValues
+) {
   if (argument === null) return null;
   if (kernelValues === null) return null;
   switch (typeof argument) {
@@ -360,7 +446,3 @@ function findKernelValue(argument, kernelValues, values, context, uploadedValues
   }
   return null;
 }
-
-module.exports = {
-  glKernelString
-};

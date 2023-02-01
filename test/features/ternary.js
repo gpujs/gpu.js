@@ -1,12 +1,13 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('feature: Ternary');
 
 function ternaryTest(mode) {
   const gpu = new GPU({ mode });
+
   function ternaryFunction(value) {
-    return (value > 1 ? 1 : 0);
+    return value > 1 ? 1 : 0;
   }
   const kernel = gpu.createKernel(ternaryFunction, { output: [1] });
   const truthyResult = kernel(100);
@@ -42,10 +43,13 @@ test('cpu', () => {
 
 function ternaryWithVariableUsage(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(value1) {
-    const value2 = value1 + 1;
-    return value2 > 10 ? 1 : 0;
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function (value1) {
+      const value2 = value1 + 1;
+      return value2 > 10 ? 1 : 0;
+    },
+    { output: [1] }
+  );
 
   assert.equal(kernel(9)[0], 0);
   assert.equal(kernel(10)[0], 1);
@@ -69,9 +73,12 @@ test('with variable usage gpu', () => {
   ternaryWithVariableUsage('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('with variable usage headlessgl', () => {
-  ternaryWithVariableUsage('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'with variable usage headlessgl',
+  () => {
+    ternaryWithVariableUsage('headlessgl');
+  }
+);
 
 test('with variable usage cpu', () => {
   ternaryWithVariableUsage('cpu');

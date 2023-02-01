@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU, HeadlessGLKernel } = require('../../src');
+const { GPU, HeadlessGLKernel } = require('../..');
 
 describe('features: read from texture');
 
@@ -10,11 +10,15 @@ function readWithoutTextureKernels(mode) {
     return m + n;
   }
 
-  const kernels = gpu.createKernelMap({
-    addResult: add
-  }, function (a, b) {
-    return add(a[this.thread.x], b[this.thread.x]);
-  })
+  const kernels = gpu
+    .createKernelMap(
+      {
+        addResult: add,
+      },
+      function (a, b) {
+        return add(a[this.thread.x], b[this.thread.x]);
+      }
+    )
     .setOutput([5]);
   const result = kernels([1, 2, 3, 4, 5], [1, 2, 3, 4, 5]);
   const nonTextureResult = result.addResult;
@@ -39,20 +43,27 @@ function readWithoutTextureKernels(mode) {
   readWithoutTextureKernels('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && HeadlessGLKernel.features.kernelMap ? test : skip)('Read without texture headlessgl', () => {
+(GPU.isHeadlessGLSupported && HeadlessGLKernel.features.kernelMap
+  ? test
+  : skip)('Read without texture headlessgl', () => {
   readWithoutTextureKernels('headlessgl');
 });
 
 function readFromTextureKernels(mode) {
   const gpu = new GPU({ mode });
+
   function add(m, n) {
     return m + n;
   }
-  const kernels = gpu.createKernelMap({
-    addResult: add
-  }, function (a, b) {
-    return add(a[this.thread.x], b[this.thread.x]);
-  })
+  const kernels = gpu
+    .createKernelMap(
+      {
+        addResult: add,
+      },
+      function (a, b) {
+        return add(a[this.thread.x], b[this.thread.x]);
+      }
+    )
     .setPipeline(true)
     .setOutput([5]);
   const result = kernels([1, 2, 3, 4, 5], [1, 2, 3, 4, 5]);
@@ -78,6 +89,8 @@ function readFromTextureKernels(mode) {
   readFromTextureKernels('webgl2');
 });
 
-(GPU.isHeadlessGLSupported && HeadlessGLKernel.features.kernelMap ? test : skip)('Read from Texture headlessgl', () => {
+(GPU.isHeadlessGLSupported && HeadlessGLKernel.features.kernelMap
+  ? test
+  : skip)('Read from Texture headlessgl', () => {
   readFromTextureKernels('headlessgl');
 });

@@ -1,33 +1,33 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../../../../../../src');
+const { GPU } = require('../../../../../../..');
 
-describe('feature: to-string unsigned precision array style kernel map returns Array2D');
+describe(
+  'feature: to-string unsigned precision array style kernel map returns Array2D'
+);
 
 function testReturn(mode, context, canvas) {
   const gpu = new GPU({ mode });
   function addOne(value) {
     return value + 1;
   }
-  const originalKernel = gpu.createKernelMap([addOne], function(a) {
-    const result = a[this.thread.x] + 1;
-    addOne(result);
-    return result;
-  }, {
-    canvas,
-    context,
-    output: [2, 2],
-    precision: 'unsigned',
-  });
+  const originalKernel = gpu.createKernelMap(
+    [addOne],
+    function (a) {
+      const result = a[this.thread.x] + 1;
+      addOne(result);
+      return result;
+    },
+    {
+      canvas,
+      context,
+      output: [2, 2],
+      precision: 'unsigned',
+    }
+  );
 
   const a = [1, 2, 3, 4, 5, 6];
-  const expected = [
-    new Float32Array([2, 3]),
-    new Float32Array([2, 3]),
-  ];
-  const expectedZero = [
-    new Float32Array([3, 4]),
-    new Float32Array([3, 4]),
-  ];
+  const expected = [new Float32Array([2, 3]), new Float32Array([2, 3])];
+  const expectedZero = [new Float32Array([3, 4]), new Float32Array([3, 4])];
   const originalResult = originalKernel(a);
   assert.deepEqual(originalResult.result, expected);
   assert.deepEqual(originalResult[0], expectedZero);

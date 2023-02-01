@@ -1,6 +1,9 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
 const sinon = require('sinon');
-const { GPU, plugins: { mathRandom } } = require('../../src');
+const {
+  GPU,
+  plugins: { mathRandom },
+} = require('../..');
 
 describe('Math.random() unique');
 
@@ -9,27 +12,38 @@ function mathRandomUnique(mode) {
   const checkCount = 20;
   let seed1 = Math.random();
   let seed2 = Math.random();
-  let stub = sinon.stub(mathRandom, 'onBeforeRun').callsFake((kernel) => {
+  let stub = sinon.stub(mathRandom, 'onBeforeRun').callsFake(kernel => {
     kernel.setUniform1f('randomSeed1', seed1);
     kernel.setUniform1f('randomSeed2', seed2);
   });
   try {
-    gpu.addNativeFunction('getSeed', `highp float getSeed() {
+    gpu.addNativeFunction(
+      'getSeed',
+      `highp float getSeed() {
     return randomSeedShift;
-  }`);
-    const kernel = gpu.createKernel(function () {
-      const v = Math.random();
-      return getSeed();
-    }, {output: [1]});
+  }`
+    );
+    const kernel = gpu.createKernel(
+      function () {
+        const v = Math.random();
+        return getSeed();
+      },
+      { output: [1] }
+    );
     const results = [];
     for (let i = 0; i < checkCount; i++) {
       const result = kernel();
-      assert.ok(results.indexOf(result[0]) === -1, `duplication at index ${results.indexOf(result[0])} from new value ${result[0]}.  Values ${JSON.stringify(results)}`);
+      assert.ok(
+        results.indexOf(result[0]) === -1,
+        `duplication at index ${results.indexOf(result[0])} from new value ${
+          result[0]
+        }.  Values ${JSON.stringify(results)}`
+      );
       results.push(result[0]);
       seed2 = result[0];
       assert.ok(stub.called);
       stub.restore();
-      stub.callsFake((kernel) => {
+      stub.callsFake(kernel => {
         kernel.setUniform1f('randomSeed1', seed1);
         kernel.setUniform1f('randomSeed2', seed2);
       });
@@ -56,9 +70,12 @@ test('unique every time gpu', () => {
   mathRandomUnique('webgl2');
 });
 
-(GPU.isHeadlessGLSupported ? test : skip)('unique every time headlessgl', () => {
-  mathRandomUnique('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'unique every time headlessgl',
+  () => {
+    mathRandomUnique('headlessgl');
+  }
+);
 
 describe('never above 1');
 
@@ -68,7 +85,7 @@ function mathRandomNeverAboveOne(mode) {
   const checkSource = [];
 
   for (let i = 0; i < checkCount; i++) {
-    checkSource.push(`const check${ i } = Math.random();`);
+    checkSource.push(`const check${i} = Math.random();`);
   }
 
   for (let i = 0; i < checkCount; i++) {
@@ -78,10 +95,13 @@ function mathRandomNeverAboveOne(mode) {
     }
   }
 
-  const kernel = gpu.createKernel(`function() {
+  const kernel = gpu.createKernel(
+    `function() {
     ${checkSource.join('\n')}
     return 0;
-  }`, { output: [1] });
+  }`,
+    { output: [1] }
+  );
 
   const result = kernel();
   assert.ok(result.every(value => value === 0));
@@ -99,13 +119,19 @@ test('never above 1 every time gpu', () => {
   mathRandomNeverAboveOne('webgl');
 });
 
-(GPU.isWebGL2Supported ? test : skip)('never above 1 every time webgl2', () => {
-  mathRandomNeverAboveOne('webgl2');
-});
+(GPU.isWebGL2Supported ? test : skip)(
+  'never above 1 every time webgl2',
+  () => {
+    mathRandomNeverAboveOne('webgl2');
+  }
+);
 
-(GPU.isHeadlessGLSupported ? test : skip)('never above 1 every time headlessgl', () => {
-  mathRandomNeverAboveOne('headlessgl');
-});
+(GPU.isHeadlessGLSupported ? test : skip)(
+  'never above 1 every time headlessgl',
+  () => {
+    mathRandomNeverAboveOne('headlessgl');
+  }
+);
 
 test('never above 1 every time cpu', () => {
   mathRandomNeverAboveOne('cpu');

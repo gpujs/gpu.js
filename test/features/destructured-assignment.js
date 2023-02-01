@@ -1,15 +1,23 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('features: destructured assignment');
 
 function testObject(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    const { thread: { x, y } } = this;
-    return x + y;
-  }, { output: [2, 2] });
-  assert.deepEqual(kernel(), [new Float32Array([0, 1]), new Float32Array([1, 2])]);
+  const kernel = gpu.createKernel(
+    function () {
+      const {
+        thread: { x, y },
+      } = this;
+      return x + y;
+    },
+    { output: [2, 2] }
+  );
+  assert.deepEqual(kernel(), [
+    new Float32Array([0, 1]),
+    new Float32Array([1, 2]),
+  ]);
 }
 
 test('object auto', () => {
@@ -38,11 +46,17 @@ test('object cpu', () => {
 
 function testNestedObject(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function() {
-    const { x, y } = this.thread;
-    return x + y;
-  }, { output: [2, 2] });
-  assert.deepEqual(kernel(), [new Float32Array([0, 1]), new Float32Array([1, 2])]);
+  const kernel = gpu.createKernel(
+    function () {
+      const { x, y } = this.thread;
+      return x + y;
+    },
+    { output: [2, 2] }
+  );
+  assert.deepEqual(kernel(), [
+    new Float32Array([0, 1]),
+    new Float32Array([1, 2]),
+  ]);
 }
 
 test('nested object auto', () => {
@@ -71,10 +85,13 @@ test('nested object cpu', () => {
 
 function testArray(mode) {
   const gpu = new GPU({ mode });
-  const kernel = gpu.createKernel(function(array) {
-    const [first, second] = array;
-    return first + second;
-  }, { output: [1], argumentTypes: { array: 'Array(2)' } });
+  const kernel = gpu.createKernel(
+    function (array) {
+      const [first, second] = array;
+      return first + second;
+    },
+    { output: [1], argumentTypes: { array: 'Array(2)' } }
+  );
   assert.deepEqual(kernel([1, 2]), new Float32Array([3]));
 }
 

@@ -1,10 +1,11 @@
 const { assert, test, module: describe, only } = require('qunit');
-const { WebGLFunctionNode } = require(process.cwd() + '/src');
+const { WebGLFunctionNode } = require('../../../../..');
 
 describe('WebGLFunctionNode.contexts');
 
 test('safe from literal 1', () => {
-  const node = new WebGLFunctionNode(`function kernel() {
+  const node = new WebGLFunctionNode(
+    `function kernel() {
     const const1 = 1;
     const const2 = const1 + 2;
     const const3 = const2 + 3;
@@ -12,7 +13,9 @@ test('safe from literal 1', () => {
     for (let i = 0; i < const3; i++) {
       sum += const3;
     }
-  }`, { output: [1] });
+  }`,
+    { output: [1] }
+  );
 
   node.toString();
   const { const1, const2, const3 } = node.contexts[1];
@@ -22,37 +25,39 @@ test('safe from literal 1', () => {
       origin: 'literal',
       value: 1,
       isSafe: true,
-    }
+    },
   ]);
   assert.equal(const2.isSafe, true);
   assert.deepEqual(const2.dependencies, [
     {
       name: 'const1',
       origin: 'declaration',
-      isSafe: true
-    },{
+      isSafe: true,
+    },
+    {
       origin: 'literal',
       value: 2,
       isSafe: true,
-    }
+    },
   ]);
   assert.equal(const3.isSafe, true);
   assert.deepEqual(const3.dependencies, [
     {
       name: 'const2',
       origin: 'declaration',
-      isSafe: true
-    },{
+      isSafe: true,
+    },
+    {
       origin: 'literal',
       value: 3,
       isSafe: true,
-    }
+    },
   ]);
 });
 
-
 test('safe from argument', () => {
-  const node = new WebGLFunctionNode(`function kernel(arg1) {
+  const node = new WebGLFunctionNode(
+    `function kernel(arg1) {
     const const1 = arg1 + 3;
     const const2 = const1 + 2;
     const const3 = const2 + 1;
@@ -60,7 +65,9 @@ test('safe from argument', () => {
     for (let i = 0; i < const3; i++) {
       sum += const3;
     }
-  }`, { output: [1], argumentTypes: ['Number'] });
+  }`,
+    { output: [1], argumentTypes: ['Number'] }
+  );
 
   node.toString();
   const { const1, const2, const3 } = node.contexts[1];
@@ -69,42 +76,45 @@ test('safe from argument', () => {
     {
       name: 'arg1',
       origin: 'argument',
-      isSafe: false
-    },{
+      isSafe: false,
+    },
+    {
       origin: 'literal',
       value: 3,
       isSafe: true,
-    }
+    },
   ]);
   assert.equal(const2.isSafe, false);
   assert.deepEqual(const2.dependencies, [
     {
       name: 'const1',
       origin: 'declaration',
-      isSafe: false
-    },{
+      isSafe: false,
+    },
+    {
       origin: 'literal',
       value: 2,
       isSafe: true,
-    }
+    },
   ]);
   assert.equal(const3.isSafe, false);
   assert.deepEqual(const3.dependencies, [
     {
       name: 'const2',
       origin: 'declaration',
-      isSafe: false
-    },{
+      isSafe: false,
+    },
+    {
       origin: 'literal',
       value: 1,
       isSafe: true,
-    }
+    },
   ]);
 });
 
-
 test('safe from multiplication', () => {
-  const node = new WebGLFunctionNode(`function kernel() {
+  const node = new WebGLFunctionNode(
+    `function kernel() {
     const const1 = 555;
     const const2 = const1 + .555;
     const const3 = const2 * .1;
@@ -112,7 +122,9 @@ test('safe from multiplication', () => {
     for (let i = 0; i < const3; i++) {
       sum += const3;
     }
-  }`, { output: [1] });
+  }`,
+    { output: [1] }
+  );
 
   node.toString();
   const { const1, const2, const3 } = node.contexts[1];
@@ -121,35 +133,37 @@ test('safe from multiplication', () => {
       origin: 'literal',
       value: 555,
       isSafe: true,
-    }
+    },
   ]);
   assert.deepEqual(const2.dependencies, [
     {
       name: 'const1',
       origin: 'declaration',
       isSafe: true,
-    },{
+    },
+    {
       origin: 'literal',
-      value: .555,
+      value: 0.555,
       isSafe: true,
-    }
+    },
   ]);
   assert.deepEqual(const3.dependencies, [
     {
       name: 'const2',
       origin: 'declaration',
       isSafe: false,
-    },{
+    },
+    {
       origin: 'literal',
-      value: .1,
+      value: 0.1,
       isSafe: false,
-    }
+    },
   ]);
 });
 
-
 test('safe from multiplication deep', () => {
-  const node = new WebGLFunctionNode(`function kernel() {
+  const node = new WebGLFunctionNode(
+    `function kernel() {
     const const1 = 555 * 1;
     const const2 = const1 + .555;
     const const3 = .1 - const2;
@@ -164,27 +178,32 @@ test('safe from multiplication deep', () => {
     for (let i = 0; i < const3; i++) {
       sum += const3;
     }
-  }`, { output: [1] });
+  }`,
+    { output: [1] }
+  );
 
   node.toString();
   const { const1, const10 } = node.contexts[1];
-  assert.ok(const1.dependencies.every(dependency => dependency.isSafe === false));
+  assert.ok(
+    const1.dependencies.every(dependency => dependency.isSafe === false)
+  );
   assert.deepEqual(const10.dependencies, [
     {
       name: 'const9',
       origin: 'declaration',
       isSafe: false,
-    },{
+    },
+    {
       origin: 'literal',
       value: 10,
       isSafe: true,
-    }
+    },
   ]);
 });
 
-
 test('safe from division', () => {
-  const node = new WebGLFunctionNode(`function kernel() {
+  const node = new WebGLFunctionNode(
+    `function kernel() {
     const const1 = 555;
     const const2 = const1 + .555;
     const const3 = const2 / .1;
@@ -192,7 +211,9 @@ test('safe from division', () => {
     for (let i = 0; i < const3; i++) {
       sum += const3;
     }
-  }`, { output: [1] });
+  }`,
+    { output: [1] }
+  );
 
   node.toString();
   const { const1, const2, const3 } = node.contexts[1];
@@ -201,35 +222,37 @@ test('safe from division', () => {
       origin: 'literal',
       value: 555,
       isSafe: true,
-    }
+    },
   ]);
   assert.deepEqual(const2.dependencies, [
     {
       name: 'const1',
       origin: 'declaration',
       isSafe: true,
-    },{
+    },
+    {
       origin: 'literal',
-      value: .555,
+      value: 0.555,
       isSafe: true,
-    }
+    },
   ]);
   assert.deepEqual(const3.dependencies, [
     {
       name: 'const2',
       origin: 'declaration',
       isSafe: false,
-    },{
+    },
+    {
       origin: 'literal',
-      value: .1,
+      value: 0.1,
       isSafe: false,
-    }
+    },
   ]);
 });
 
-
 test('safe from division deep', () => {
-  const node = new WebGLFunctionNode(`function kernel() {
+  const node = new WebGLFunctionNode(
+    `function kernel() {
     const const1 = 555 / 1;
     const const2 = const1 + .555;
     const const3 = .1 - const2;
@@ -244,20 +267,25 @@ test('safe from division deep', () => {
     for (let i = 0; i < const3; i++) {
       sum += const3;
     }
-  }`, { output: [1] });
+  }`,
+    { output: [1] }
+  );
 
   node.toString();
   const { const1, const10 } = node.contexts[1];
-  assert.ok(const1.dependencies.every(dependency => dependency.isSafe === false));
+  assert.ok(
+    const1.dependencies.every(dependency => dependency.isSafe === false)
+  );
   assert.deepEqual(const10.dependencies, [
     {
       name: 'const9',
       origin: 'declaration',
       isSafe: false,
-    },{
+    },
+    {
       origin: 'literal',
       value: 10,
       isSafe: true,
-    }
+    },
   ]);
 });

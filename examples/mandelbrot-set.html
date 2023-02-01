@@ -1,123 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
-<script src="../dist/gpu-browser.min.js"></script>
-<style>
-  body {
-    text-align: center;
-    margin: 0;
-  }
-  canvas {
-    padding: 0;
-    margin: 0;
-  }
-  div {
-    position: absolute;
-    color: white;
-    margin-left: auto;
-    margin-right: auto;
-    left: 0;
-    right: 0;
-  }
-</style>
-<body>
-  <div>Left click to zoom in, right click to zoom out.</div>
-</body>
-<script>
-  function f(x, c) {
-    return [
-      (x[0] * x[0]) - (x[1] * x[1]) + c[0],
-      (x[0] * x[1]) + (x[0] * x[1]) + c[1],
-    ];
-  }
-
-  function palette(t, a, b, c, d) {
-    return [
-      a[0] + b[0] * Math.cos(6.28318 * (c[0] * t + d[0])),
-      a[1] + b[1] * Math.cos(6.28318 * (c[1] * t + d[1])),
-      a[2] + b[2] * Math.cos(6.28318 * (c[2] * t + d[2]))
-    ];
-  }
-
-  function vectorLength(vector) {
-    return Math.sqrt(vector[0]*vector[0]+vector[1]*vector[1]);
-  }
-
-  const gpu = new GPU();
-
-  gpu
-    .addFunction(f)
-    .addFunction(palette)
-    .addFunction(vectorLength);
-
-  const calculateMandelbrotSet = gpu.createKernel(function(zoomCenter, zoomSize, maxIterations) {
-    let x = [0, 0];
-    let c = [
-      zoomCenter[0] + ((this.thread.x / this.output.x) * 4 - 2) * (zoomSize / 4),
-      zoomCenter[1] + ((this.thread.y / this.output.y) * 4 - 2) * (zoomSize / 4)
-    ];
-    let escaped = false;
-    let iterations = 0;
-    for (let i = 0; i < maxIterations; i++) {
-      iterations = i;
-      x = f(x, c);
-      if (vectorLength(x) > 2) {
-        escaped = true;
-        break;
-      }
+  <script src="../dist/gpu-browser.js"></script>
+  <style>
+    body {
+      text-align: center;
+      margin: 0;
     }
-    if (escaped) {
-      const pixel = palette(iterations / maxIterations, [0, 0, 0], [.59, .55, .75], [.1, .2, .3], [.75, .75, .75]);
-      this.color(pixel[0], pixel[1], pixel[2], 1);
-    } else {
-      this.color(.85, .99, 1, 1);
+    canvas {
+      padding: 0;
+      margin: 0;
     }
-  })
-    .setGraphical(true)
-    .setOutput([800, 800]);
+    div {
+      position: absolute;
+      color: white;
+      margin-left: auto;
+      margin-right: auto;
+      left: 0;
+      right: 0;
+    }
+  </style>
+  <body>
+    <div>Left click to zoom in, right click to zoom out.</div>
+  </body>
+  <script>
+    function f(x, c) {
+      return [
+        x[0] * x[0] - x[1] * x[1] + c[0],
+        x[0] * x[1] + x[0] * x[1] + c[1],
+      ];
+    }
 
-  let targetZoomCenter = [0, 0],
-    zoomFactor = 1,
-    zoomCenter = [0, 0],
-    zoomSize = 4,
-    maxIterations = 500,
-    stopZooming = true;
+    function palette(t, a, b, c, d) {
+      return [
+        a[0] + b[0] * Math.cos(6.28318 * (c[0] * t + d[0])),
+        a[1] + b[1] * Math.cos(6.28318 * (c[1] * t + d[1])),
+        a[2] + b[2] * Math.cos(6.28318 * (c[2] * t + d[2])),
+      ];
+    }
 
-  calculateMandelbrotSet(zoomCenter, zoomSize, maxIterations);
-  const canvas = calculateMandelbrotSet.canvas;
-  document.body.appendChild(canvas);
+    function vectorLength(vector) {
+      return Math.sqrt(vector[0] * vector[0] + vector[1] * vector[1]);
+    }
 
-  canvas.onmousedown = (e) => {
-    let x = e.offsetX / canvas.width,
-      y = e.offsetY / canvas.height;
-    targetZoomCenter[0] = zoomCenter[0] - zoomSize / 2.0 + x * zoomSize;
-    targetZoomCenter[1] = zoomCenter[1] + zoomSize / 2.0 - y * zoomSize;
-    stopZooming = false;
-    zoomFactor = e.buttons & 1 ? 0.99 : 1.01;
-    render();
-    return true;
-  };
-  canvas.oncontextmenu = () => { return false; };
-  canvas.onmouseup = () => { stopZooming = true; };
+    const gpu = new GPU();
 
-  function render() {
+    gpu.addFunction(f).addFunction(palette).addFunction(vectorLength);
+
+    const calculateMandelbrotSet = gpu
+      .createKernel(function (zoomCenter, zoomSize, maxIterations) {
+        let x = [0, 0];
+        let c = [
+          zoomCenter[0] +
+            ((this.thread.x / this.output.x) * 4 - 2) * (zoomSize / 4),
+          zoomCenter[1] +
+            ((this.thread.y / this.output.y) * 4 - 2) * (zoomSize / 4),
+        ];
+        let escaped = false;
+        let iterations = 0;
+        for (let i = 0; i < maxIterations; i++) {
+          iterations = i;
+          x = f(x, c);
+          if (vectorLength(x) > 2) {
+            escaped = true;
+            break;
+          }
+        }
+        if (escaped) {
+          const pixel = palette(
+            iterations / maxIterations,
+            [0, 0, 0],
+            [0.59, 0.55, 0.75],
+            [0.1, 0.2, 0.3],
+            [0.75, 0.75, 0.75]
+          );
+          this.color(pixel[0], pixel[1], pixel[2], 1);
+        } else {
+          this.color(0.85, 0.99, 1, 1);
+        }
+      })
+      .setGraphical(true)
+      .setOutput([800, 800]);
+
+    let targetZoomCenter = [0, 0],
+      zoomFactor = 1,
+      zoomCenter = [0, 0],
+      zoomSize = 4,
+      maxIterations = 500,
+      stopZooming = true;
+
     calculateMandelbrotSet(zoomCenter, zoomSize, maxIterations);
-    if (!stopZooming) {
-      maxIterations -= 10;
-      if (maxIterations < 50) {
-        maxIterations = 50;
+    const canvas = calculateMandelbrotSet.canvas;
+    document.body.appendChild(canvas);
+
+    canvas.onmousedown = e => {
+      let x = e.offsetX / canvas.width,
+        y = e.offsetY / canvas.height;
+      targetZoomCenter[0] = zoomCenter[0] - zoomSize / 2.0 + x * zoomSize;
+      targetZoomCenter[1] = zoomCenter[1] + zoomSize / 2.0 - y * zoomSize;
+      stopZooming = false;
+      zoomFactor = e.buttons & 1 ? 0.99 : 1.01;
+      render();
+      return true;
+    };
+    canvas.oncontextmenu = () => {
+      return false;
+    };
+    canvas.onmouseup = () => {
+      stopZooming = true;
+    };
+
+    function render() {
+      calculateMandelbrotSet(zoomCenter, zoomSize, maxIterations);
+      if (!stopZooming) {
+        maxIterations -= 10;
+        if (maxIterations < 50) {
+          maxIterations = 50;
+        }
+
+        zoomSize *= zoomFactor;
+
+        zoomCenter[0] += 0.1 * (targetZoomCenter[0] - zoomCenter[0]);
+        zoomCenter[1] += 0.1 * (targetZoomCenter[1] - zoomCenter[1]);
+
+        window.requestAnimationFrame(render);
+      } else if (maxIterations < 500) {
+        maxIterations += 10;
+        window.requestAnimationFrame(render);
       }
-
-      zoomSize *= zoomFactor;
-
-      zoomCenter[0] += 0.1 * (targetZoomCenter[0] - zoomCenter[0]);
-      zoomCenter[1] += 0.1 * ( targetZoomCenter[1] - zoomCenter[1]);
-
-      window.requestAnimationFrame(render);
-    } else if (maxIterations < 500) {
-      maxIterations += 10;
-      window.requestAnimationFrame(render);
     }
-  }
-  window.requestAnimationFrame(render);
-</script>
+    window.requestAnimationFrame(render);
+  </script>
 </html>

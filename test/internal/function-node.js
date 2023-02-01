@@ -1,5 +1,9 @@
 const { assert, test, module: describe, only } = require('qunit');
-const { CPUFunctionNode, WebGLFunctionNode, WebGL2FunctionNode } = require('../../src');
+const {
+  CPUFunctionNode,
+  WebGLFunctionNode,
+  WebGL2FunctionNode,
+} = require('../..');
 
 describe('internal: function node');
 
@@ -7,18 +11,17 @@ describe('internal: function node');
 test('hello_world: just return magic 42 cpu', () => {
   // Create a function hello node
   const node = new CPUFunctionNode(
-    (function() {
+    function () {
       return 42;
-    }).toString(), { name: 'hello_world', output: [1] }
+    }.toString(),
+    { name: 'hello_world', output: [1] }
   );
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
   assert.equal(
     node.toString(),
-    'function hello_world() {'
-    + '\nreturn 42;'
-    + '\n}',
+    'function hello_world() {' + '\nreturn 42;' + '\n}',
     'function conversion check'
   );
 });
@@ -26,18 +29,17 @@ test('hello_world: just return magic 42 cpu', () => {
 test('hello_world: just return magic 42 webgl', () => {
   // Create a function hello node
   const node = new WebGLFunctionNode(
-    (function() {
+    function () {
       return 42;
-    }).toString(), { name: 'hello_world', output: [1] }
+    }.toString(),
+    { name: 'hello_world', output: [1] }
   );
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
   assert.equal(
     node.toString(),
-    'float hello_world() {'
-    + '\nreturn 42.0;'
-    + '\n}',
+    'float hello_world() {' + '\nreturn 42.0;' + '\n}',
     'function conversion check'
   );
 });
@@ -45,18 +47,17 @@ test('hello_world: just return magic 42 webgl', () => {
 test('hello_world: just return magic 42 webgl2', () => {
   // Create a function hello node
   const node = new WebGL2FunctionNode(
-    (function() {
+    function () {
       return 42;
-    }).toString(), { name: 'hello_world', output: [1] }
+    }.toString(),
+    { name: 'hello_world', output: [1] }
   );
 
   assert.notEqual(node.getJsAST(), null, 'AST fetch check');
 
   assert.equal(
     node.toString(),
-    'float hello_world() {'
-    + '\nreturn 42.0;'
-    + '\n}',
+    'float hello_world() {' + '\nreturn 42.0;' + '\n}',
     'function conversion check'
   );
 });
@@ -69,14 +70,14 @@ test('hello_inner: call a function inside a function cpu', () => {
 
   // Create a function hello node
   const node = new CPUFunctionNode(
-    (function() {
+    function () {
       return inner();
-    }).toString(),
+    }.toString(),
     {
       name: 'hello_inner',
       output: [1],
       lookupReturnType: () => 'Number',
-      lookupFunctionArgumentTypes: () => {}
+      lookupFunctionArgumentTypes: () => {},
     }
   );
 
@@ -84,13 +85,11 @@ test('hello_inner: call a function inside a function cpu', () => {
 
   assert.equal(
     node.toString(),
-    'function hello_inner() {'
-    + '\nreturn inner();'
-    + '\n}',
+    'function hello_inner() {' + '\nreturn inner();' + '\n}',
     'function conversion check'
   );
 
-  assert.deepEqual(node.calledFunctions, ['inner'] );
+  assert.deepEqual(node.calledFunctions, ['inner']);
 });
 
 test('hello_inner: call a function inside a function webgl', () => {
@@ -100,13 +99,14 @@ test('hello_inner: call a function inside a function webgl', () => {
 
   // Create a function hello node
   const node = new WebGLFunctionNode(
-    (function() {
+    function () {
       return inner();
-    }).toString(), {
+    }.toString(),
+    {
       name: 'hello_inner',
       output: [1],
       lookupReturnType: () => 'Number',
-      lookupFunctionArgumentTypes: () => {}
+      lookupFunctionArgumentTypes: () => {},
     }
   );
 
@@ -114,13 +114,11 @@ test('hello_inner: call a function inside a function webgl', () => {
 
   assert.equal(
     node.toString(),
-    'float hello_inner() {'
-    + '\nreturn inner();'
-    + '\n}',
+    'float hello_inner() {' + '\nreturn inner();' + '\n}',
     'function conversion check'
   );
 
-  assert.deepEqual(node.calledFunctions, ['inner'] );
+  assert.deepEqual(node.calledFunctions, ['inner']);
 });
 
 /// Test creation of function, that calls another function
@@ -131,13 +129,14 @@ test('hello_inner: call a function inside a function webgl2', () => {
 
   // Create a function hello node
   const node = new WebGL2FunctionNode(
-    (function() {
+    function () {
       return inner();
-    }).toString(), {
+    }.toString(),
+    {
       name: 'hello_inner',
       output: [1],
       lookupReturnType: () => 'Number',
-      lookupFunctionArgumentTypes: () => {}
+      lookupFunctionArgumentTypes: () => {},
     }
   );
 
@@ -145,22 +144,20 @@ test('hello_inner: call a function inside a function webgl2', () => {
 
   assert.equal(
     node.toString(),
-    'float hello_inner() {'
-    + '\nreturn inner();'
-    + '\n}',
+    'float hello_inner() {' + '\nreturn inner();' + '\n}',
     'function conversion check'
   );
 
-  assert.deepEqual(node.calledFunctions, ['inner'] );
+  assert.deepEqual(node.calledFunctions, ['inner']);
 });
 
 /// Test creation of function, that calls another function, with ARGS
 test('Math.round implementation: A function with arguments cpu', () => {
   // Math.round node
   const node = new CPUFunctionNode(
-    (function(a) {
+    function (a) {
       return Math.floor(a + 0.5);
-    }).toString(),
+    }.toString(),
     {
       name: 'foo',
       output: [1],
@@ -174,9 +171,7 @@ test('Math.round implementation: A function with arguments cpu', () => {
 
   assert.equal(
     node.toString(),
-    'function foo(user_a) {'
-    + '\nreturn Math.floor((user_a+0.5));'
-    + '\n}',
+    'function foo(user_a) {' + '\nreturn Math.floor((user_a+0.5));' + '\n}',
     'function conversion check'
   );
 
@@ -186,12 +181,13 @@ test('Math.round implementation: A function with arguments cpu', () => {
 test('Math.round implementation: A function with arguments webgl', () => {
   // Math.round node
   const node = new WebGLFunctionNode(
-    (function(a) {
+    function (a) {
       return Math.floor(a + 0.5);
-    }).toString(), {
+    }.toString(),
+    {
       name: 'foo',
       output: [1],
-      argumentTypes: ['Number']
+      argumentTypes: ['Number'],
     }
   );
 
@@ -199,24 +195,23 @@ test('Math.round implementation: A function with arguments webgl', () => {
 
   assert.equal(
     node.toString(),
-    'float foo(float user_a) {'
-    + '\nreturn floor((user_a+0.5));'
-    + '\n}',
+    'float foo(float user_a) {' + '\nreturn floor((user_a+0.5));' + '\n}',
     'function conversion check'
   );
 
-  assert.deepEqual(node.calledFunctions, ['floor'] );
+  assert.deepEqual(node.calledFunctions, ['floor']);
 });
 
 test('Math.round implementation: A function with arguments webgl2', () => {
   // Math.round node
   const node = new WebGL2FunctionNode(
-    (function(a) {
+    function (a) {
       return Math.floor(a + 0.5);
-    }).toString(), {
+    }.toString(),
+    {
       name: 'foo',
       output: [1],
-      argumentTypes: ['Number']
+      argumentTypes: ['Number'],
     }
   );
 
@@ -224,24 +219,23 @@ test('Math.round implementation: A function with arguments webgl2', () => {
 
   assert.equal(
     node.toString(),
-    'float foo(float user_a) {'
-    + '\nreturn floor((user_a+0.5));'
-    + '\n}',
+    'float foo(float user_a) {' + '\nreturn floor((user_a+0.5));' + '\n}',
     'function conversion check'
   );
 
-  assert.deepEqual(node.calledFunctions, ['floor'] );
+  assert.deepEqual(node.calledFunctions, ['floor']);
 });
 
 /// Test creation of function, that calls another function, with ARGS
-test('Two arguments test webgl', function(assert){
+test('Two arguments test webgl', function (assert) {
   const node = new WebGLFunctionNode(
-    (function(a,b) {
-      return a+b;
-    }).toString(), {
+    function (a, b) {
+      return a + b;
+    }.toString(),
+    {
       name: 'add_together',
       output: [1],
-      argumentTypes: ['Number', 'Number']
+      argumentTypes: ['Number', 'Number'],
     }
   );
 
@@ -249,21 +243,22 @@ test('Two arguments test webgl', function(assert){
 
   assert.equal(
     node.toString(),
-    'float add_together(float user_a, float user_b) {'
-    + '\nreturn (user_a+user_b);'
-    + '\n}',
+    'float add_together(float user_a, float user_b) {' +
+      '\nreturn (user_a+user_b);' +
+      '\n}',
     'function conversion check'
   );
 });
 
-test('Two arguments test webgl2', function(assert){
+test('Two arguments test webgl2', function (assert) {
   const node = new WebGL2FunctionNode(
-    (function(a,b) {
-      return a+b;
-    }).toString(), {
+    function (a, b) {
+      return a + b;
+    }.toString(),
+    {
       name: 'add_together',
       output: [1],
-      argumentTypes: ['Number', 'Number']
+      argumentTypes: ['Number', 'Number'],
     }
   );
 
@@ -271,9 +266,9 @@ test('Two arguments test webgl2', function(assert){
 
   assert.equal(
     node.toString(),
-    'float add_together(float user_a, float user_b) {'
-    + '\nreturn (user_a+user_b);'
-    + '\n}',
+    'float add_together(float user_a, float user_b) {' +
+      '\nreturn (user_a+user_b);' +
+      '\n}',
     'function conversion check'
   );
 });

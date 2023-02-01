@@ -1,21 +1,25 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
-const { GPU } = require('../../src');
+const { GPU } = require('../..');
 
 describe('features: internally defined matrices');
 
 function testMatrix2(mode) {
   const gpu = new GPU({ mode });
+
   function getMatrix() {
     const matrix = [
-      [1,2],
-      [3,4]
+      [1, 2],
+      [3, 4],
     ];
     return matrix;
   }
   gpu.addFunction(getMatrix);
-  const kernel = gpu.createKernel(function(y, x) {
-    return getMatrix()[y][x];
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function (y, x) {
+      return getMatrix()[y][x];
+    },
+    { output: [1] }
+  );
 
   assert.equal(kernel(0, 0)[0], 1);
   assert.equal(kernel(0, 1)[0], 2);
@@ -51,18 +55,22 @@ test('matrix2 cpu', () => {
 
 function testMatrix3(mode) {
   const gpu = new GPU({ mode });
+
   function getMatrix() {
     const matrix = [
-      [1,2,3],
-      [4,5,6],
-      [7,8,9],
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9],
     ];
     return matrix;
   }
   gpu.addFunction(getMatrix);
-  const kernel = gpu.createKernel(function(y, x) {
-    return getMatrix()[y][x];
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function (y, x) {
+      return getMatrix()[y][x];
+    },
+    { output: [1] }
+  );
 
   assert.equal(kernel(0, 0)[0], 1);
   assert.equal(kernel(0, 1)[0], 2);
@@ -103,19 +111,23 @@ test('matrix3 cpu', () => {
 
 function testMatrix4(mode) {
   const gpu = new GPU({ mode });
+
   function getMatrix() {
     const matrix = [
-      [1,2,3,4],
-      [5,6,7,8],
-      [9,10,11,12],
-      [13,14,15,16],
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+      [13, 14, 15, 16],
     ];
     return matrix;
   }
   gpu.addFunction(getMatrix);
-  const kernel = gpu.createKernel(function(y, x) {
-    return getMatrix()[y][x];
-  }, { output: [1] });
+  const kernel = gpu.createKernel(
+    function (y, x) {
+      return getMatrix()[y][x];
+    },
+    { output: [1] }
+  );
 
   assert.equal(kernel(0, 0)[0], 1);
   assert.equal(kernel(0, 1)[0], 2);
