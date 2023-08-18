@@ -929,9 +929,9 @@ class GLKernel extends Kernel {
       this.updateMaxTexSize();
       this.framebuffer.width = this.texSize[0];
       this.framebuffer.height = this.texSize[1];
-      gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
       this.canvas.width = this.maxTexSize[0];
       this.canvas.height = this.maxTexSize[1];
+      gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
       if (this.texture) {
         this.texture.delete();
       }
