@@ -491,15 +491,9 @@ class WebGLKernel extends GLKernel {
     }
     const { texSize, context: gl, canvas } = this;
     gl.enable(gl.SCISSOR_TEST);
-    if (this.pipeline && this.precision === 'single') {
-      gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
-      canvas.width = this.maxTexSize[0];
-      canvas.height = this.maxTexSize[1];
-    } else {
-      gl.viewport(0, 0, this.maxTexSize[0], this.maxTexSize[1]);
-      canvas.width = this.maxTexSize[0];
-      canvas.height = this.maxTexSize[1];
-    }
+    canvas.width = this.maxTexSize[0];
+    canvas.height = this.maxTexSize[1];
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     const threadDim = this.threadDim = Array.from(this.output);
     while (threadDim.length < 3) {
       threadDim.push(1);
