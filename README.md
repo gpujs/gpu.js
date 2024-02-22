@@ -142,6 +142,7 @@ GPU.js in the wild, all around the net.  Add yours here!
 * [Caesar Cipher GPU.js Example](https://observablehq.com/@robertleeplummerjr/caesar-cipher-gpu-js-example)
 * [Matrix Multiplication GPU.js + Angular Example](https://ng-gpu.surge.sh/)
 * [Conway's game of life](https://observablehq.com/@brakdag/conway-game-of-life-gpu-js)
+* [Animated parallel raytracer in TypeScript and GPU.js](https://raytracer.crypt.sg)
 
 ## Installation
 On Linux, ensure you have the correct header files installed: `sudo apt install mesa-common-dev libxi-dev` (adjust for your distribution)
