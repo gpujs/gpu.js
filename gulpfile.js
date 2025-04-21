@@ -12,7 +12,7 @@ const uglify = require('gulp-uglify-es').default;
 const pkg = require('./package.json');
 const jsprettify = require('gulp-jsbeautifier');
 const stripComments = require('gulp-strip-comments');
-const merge = require('merge-stream');
+const merge = require('ordered-read-streams');
 const { readDirDeepSync } = require('read-dir-deep');
 
 gulp.task('build', () => {
