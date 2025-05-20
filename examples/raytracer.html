@@ -137,8 +137,8 @@
       tactic: 'precision',
     };
   };
-  const gpu = new GPU();
-  const cpu = new GPU({ mode: 'cpu'});
+  const gpu = new GPU.GPU();
+  const cpu = new GPU.GPU({ mode: 'cpu'});
   function vectorDotProduct(V1x, V1y, V1z, V2x, V2y, V2z) {
     return (V1x * V2x) + (V1y * V2y) + (V1z * V2z);
   }

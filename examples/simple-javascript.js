@@ -1,7 +1,5 @@
 const { GPU } = require('../src');
-
-const gpu = new GPU({ mode: 'gpu' });
-
+const gpu = new GPU();
 // Look ma! I can javascript on my GPU!
 function kernelFunction(anInt, anArray, aNestedArray) {
   const x = .25 + anInt + anArray[this.thread.x] + aNestedArray[this.thread.x][this.thread.y];

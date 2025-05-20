@@ -1036,7 +1036,7 @@
         LIGHTSPHERE: Entity.Type.LIGHTSPHERE
       }
     };
-    var gpu = new GPU({ mode });
+    var gpu = new GPU.GPU({ mode });
     addFunctions(gpu, vectorFunctions);
     addFunctions(gpu, utilityFunctions);
     return gpu.createKernel(function(camera, lights, entities, eyeVector, vpRight, vpUp, canvasHeight, canvasWidth, fovRadians, heightWidthRatio, halfWidth, halfHeight, cameraWidth, cameraHeight, pixelWidth, pixelHeight, xOffset, yOffset) {

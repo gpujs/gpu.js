@@ -432,7 +432,7 @@
     document.addEventListener('pointerlockchange', lockChange, false);
 
     const gl = canvas.getContext('webgl2', { premultipliedAlpha: false });
-    const gpu = new GPU({ canvas, webGl: gl })
+    const gpu = new GPU.GPU({ canvas, webGl: gl })
       .addFunction(sdPlane)
       .addFunction(mandelbulb)
       .addFunction(distScene)
