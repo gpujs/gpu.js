@@ -569,14 +569,14 @@ class FunctionBuilder {
     if (!calleeNode.argumentBitRatios) {
       calleeNode.argumentBitRatios = new Array(calleeNode.argumentNames.length);
     }
-    const calleeBitRatio = calleeNode.argumentBitRatios[i];
+    const calleeBitRatio = calleeNode.argumentBitRatios[argumentIndex];
     if (typeof calleeBitRatio === 'number') {
       if (calleeBitRatio !== bitRatio) {
         throw new Error(`Incompatible bit ratio found at function ${functionName} at argument ${argumentName}`);
       }
       return calleeBitRatio;
     }
-    calleeNode.argumentBitRatios[i] = bitRatio;
+    calleeNode.argumentBitRatios[argumentIndex] = bitRatio;
     return bitRatio;
   }
 
