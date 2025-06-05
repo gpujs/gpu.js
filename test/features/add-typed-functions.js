@@ -10,7 +10,7 @@ function vec2Test(mode) {
   gpu.addFunction(typedFunction, {
     returnType: 'Array(2)'
   });
-  const kernel = gpu.createKernel(function() {
+  const kernel = gpu.createKernel(function () {
     const result = typedFunction();
     return result[0] + result[1];
   })
@@ -47,7 +47,7 @@ function vec3Test(mode) {
   gpu.addFunction(typedFunction, {
     returnType: 'Array(3)'
   });
-  const kernel = gpu.createKernel(function() {
+  const kernel = gpu.createKernel(function () {
     const result = typedFunction();
     return result[0] + result[1] + result[2];
   })
@@ -82,7 +82,7 @@ function vec4Test(mode) {
   gpu.addFunction(typedFunction, {
     returnType: 'Array(4)'
   });
-  const kernel = gpu.createKernel(function() {
+  const kernel = gpu.createKernel(function () {
     const result = typedFunction();
     return result[0] + result[1] + result[2] + result[3];
   })
@@ -106,4 +106,64 @@ test('Array(4) - gpu', () => {
 });
 (GPU.isHeadlessGLSupported ? test : skip)('Array(4) - headlessgl', () => {
   vec4Test('headlessgl');
+});
+
+
+describe('features: get the argument bitRatio correctly when argumentTypes is declared.');
+function getArgumentBitRatioTest(mode) {
+  const gpu = new GPU({ mode });
+  function getColor(array1, array2, index) {
+    const start = index;
+    const r = array1[start + 0];
+    const g = array1[start + 1];
+    const b = array1[start + 2];
+    const a = array2[start + 3];
+    return [r, g, b, a];
+  }
+  gpu.addFunction(getColor, {
+    argumentTypes: {
+      array1: 'Array',
+      array2: 'Array',
+      index: 'Number',
+    },
+    returnType: 'Array(4)',
+  });
+  const kernel = gpu.createKernel(function (array1, array2, array3, array4) {
+    const result = getColor(array4, array1, 0);
+    return result;
+  }, {
+    argumentTypes: {
+      array1: 'Array',
+      array2: 'Array',
+      array3: 'Array',
+      array4: 'Array',
+    },
+    precision: 'unsigned',
+  })
+    .setOutput([1, 1]);
+  const inputArray = [
+    1, 0, 0, 1,
+    0, 1, 0, 1,
+    0, 0, 1, 1,
+  ];
+  const result = kernel(inputArray, inputArray, inputArray, inputArray);
+  const expected = [1, 0, 0, 1,];
+  assert.deepEqual(Array.from(result[0][0]), expected);
+  gpu.destroy();
+}
+
+test('myTest - auto', () => {
+  getArgumentBitRatioTest(null);
+});
+test('myTest - gpu', () => {
+  getArgumentBitRatioTest('gpu');
+});
+(GPU.isWebGLSupported ? test : skip)('Array(4) - webgl', () => {
+  getArgumentBitRatioTest('webgl');
+});
+(GPU.isWebGL2Supported ? test : skip)('Array(4) - webgl2', () => {
+  getArgumentBitRatioTest('webgl2');
+});
+(GPU.isHeadlessGLSupported ? test : skip)('Array(4) - headlessgl', () => {
+  getArgumentBitRatioTest('headlessgl');
 });
