@@ -9,8 +9,9 @@ on:
 jobs:
   ci:
     strategy:
+      fail-fast: false
       matrix:  # Remove 24.x until dependencies are compatible
-        node-version: ['20.x', '22.x']  # , 'lts/*']
+        node-version: ['20.x', '22.x', 'lts/*']
     runs-on: ubuntu-latest
     steps:
       - run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libglx-dev libx11-dev libxext-dev libxi-dev
