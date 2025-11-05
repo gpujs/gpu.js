@@ -14,11 +14,12 @@ jobs:
         node-version: ['20.x', '22.x', 'lts/*']
     runs-on: ubuntu-latest
     steps:
-      - run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libglx-dev libx11-dev libxext-dev libxi-dev
+      - run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libgles2-mesa-dev libglx-dev libx11-dev libxext-dev libxi-dev
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
+      - run: npm install canvas gl --unsafe-perm
       - run: npm ci
       - run: npm run build --if-present
-      - run: npm test
+      - run: xvfb-run -a npm test
