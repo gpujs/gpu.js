@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - run: sudo apt-get update && sudo apt-get install -y libx11-dev libxi-dev libxext-dev
+      - run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libglx-dev libx11-dev libxext-dev libxi-dev
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v6
         with:
