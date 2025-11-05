@@ -1,0 +1,19 @@
+# https://docs.github.com/en/actions/tutorials/build-and-test-code/nodejs
+# https://github.com/actions/setup-node
+
+name: ci
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+      - run: npm ci
+      - run: npm run build --if-present
+      - run: npm test
