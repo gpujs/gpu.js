@@ -424,6 +424,19 @@ class WebGLKernel extends GLKernel {
     return texture;
   }
 
+  /**
+   * @desc Delete a texture, and remove it from the cache that would otherwise
+   * retain it until the kernel is destroyed
+   * @param {WebGLTexture} texture
+   */
+  deleteTexture(texture) {
+    const index = this.textureCache.indexOf(texture);
+    if (index !== -1) {
+      this.textureCache.splice(index, 1);
+    }
+    this.context.deleteTexture(texture);
+  }
+
   setupConstants(args) {
     const { context: gl } = this;
     this.kernelConstants = [];
