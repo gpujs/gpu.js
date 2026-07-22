@@ -2,6 +2,75 @@ const acorn = require('acorn');
 const { utils } = require('../utils');
 const { FunctionTracer } = require('./function-tracer');
 
+const mathProperties = [
+  'E',
+  'PI',
+  'SQRT2',
+  'SQRT1_2',
+  'LN2',
+  'LN10',
+  'LOG2E',
+  'LOG10E',
+];
+
+const mathFunctions = [
+  'abs',
+  'acos',
+  'acosh',
+  'asin',
+  'asinh',
+  'atan',
+  'atan2',
+  'atanh',
+  'cbrt',
+  'ceil',
+  'clz32',
+  'cos',
+  'cosh',
+  'expm1',
+  'exp',
+  'floor',
+  'fround',
+  'imul',
+  'log',
+  'log2',
+  'log10',
+  'log1p',
+  'max',
+  'min',
+  'pow',
+  'random',
+  'round',
+  'sign',
+  'sin',
+  'sinh',
+  'sqrt',
+  'tan',
+  'tanh',
+  'trunc',
+];
+
+const allowedExpressions = [
+  'value',
+  'value[]',
+  'value[][]',
+  'value[][][]',
+  'value[][][][]',
+  'value.value',
+  'value.thread.value',
+  'this.thread.value',
+  'this.output.value',
+  'this.constants.value',
+  'this.constants.value[]',
+  'this.constants.value[][]',
+  'this.constants.value[][][]',
+  'this.constants.value[][][][]',
+  'fn()[]',
+  'fn()[][]',
+  'fn()[][][]',
+  '[][]',
+];
+
 /**
  *
  * @desc Represents a single function, inside JS, webGL, or openGL.
@@ -592,61 +661,15 @@ class FunctionNode {
   }
 
   isAstMathVariable(ast) {
-    const mathProperties = [
-      'E',
-      'PI',
-      'SQRT2',
-      'SQRT1_2',
-      'LN2',
-      'LN10',
-      'LOG2E',
-      'LOG10E',
-    ];
     return ast.type === 'MemberExpression' &&
       ast.object && ast.object.type === 'Identifier' &&
       ast.object.name === 'Math' &&
       ast.property &&
       ast.property.type === 'Identifier' &&
-      mathProperties.indexOf(ast.property.name) > -1;
+      mathProperties.includes(ast.property.name);
   }
 
   isAstMathFunction(ast) {
-    const mathFunctions = [
-      'abs',
-      'acos',
-      'acosh',
-      'asin',
-      'asinh',
-      'atan',
-      'atan2',
-      'atanh',
-      'cbrt',
-      'ceil',
-      'clz32',
-      'cos',
-      'cosh',
-      'expm1',
-      'exp',
-      'floor',
-      'fround',
-      'imul',
-      'log',
-      'log2',
-      'log10',
-      'log1p',
-      'max',
-      'min',
-      'pow',
-      'random',
-      'round',
-      'sign',
-      'sin',
-      'sinh',
-      'sqrt',
-      'tan',
-      'tanh',
-      'trunc',
-    ];
     return ast.type === 'CallExpression' &&
       ast.callee &&
       ast.callee.type === 'MemberExpression' &&
@@ -655,7 +678,7 @@ class FunctionNode {
       ast.callee.object.name === 'Math' &&
       ast.callee.property &&
       ast.callee.property.type === 'Identifier' &&
-      mathFunctions.indexOf(ast.callee.property.name) > -1;
+      mathFunctions.includes(ast.callee.property.name);
   }
 
   isAstVariable(ast) {
@@ -844,27 +867,7 @@ class FunctionNode {
       return signatureString;
     }
 
-    const allowedExpressions = [
-      'value',
-      'value[]',
-      'value[][]',
-      'value[][][]',
-      'value[][][][]',
-      'value.value',
-      'value.thread.value',
-      'this.thread.value',
-      'this.output.value',
-      'this.constants.value',
-      'this.constants.value[]',
-      'this.constants.value[][]',
-      'this.constants.value[][][]',
-      'this.constants.value[][][][]',
-      'fn()[]',
-      'fn()[][]',
-      'fn()[][][]',
-      '[][]',
-    ];
-    if (allowedExpressions.indexOf(signatureString) > -1) {
+    if (allowedExpressions.includes(signatureString)) {
       return signatureString;
     }
     return null;
