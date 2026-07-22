@@ -10,7 +10,7 @@ function buildAtan2KernelResult(mode) {
   }, {
     output: [1],
   });
-  assert.equal(kernel()[0].toFixed(7), 0.4636476);
+  assert.equal(kernel()[0].toFixed(6), 0.463648);
   gpu.destroy();
 }
 

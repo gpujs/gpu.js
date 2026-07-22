@@ -89,9 +89,6 @@ internal: recycling > immutable unsigned precision kernel gpu
 internal: recycling > immutable unsigned precision mapped kernel auto
 internal: recycling > immutable unsigned precision mapped kernel gpu
 internal: recycling > immutable unsigned precision mapped kernel headlessgl
-issue #259 > Issue #259 atan2 - auto
-issue #259 > Issue #259 atan2 - gpu
-issue #259 > Issue #259 atan2 - headlessgl
 issue #314 > Issue #314 Large array addressing - auto
 issue #314 > Issue #314 Large array addressing - gpu
 issue #314 > Issue #314 Large array addressing - headlessgl
