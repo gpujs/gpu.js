@@ -8,7 +8,6 @@ For some more quick concepts, see [Quick Concepts](https://github.com/gpujs/gpu.
 
 [![CI](https://github.com/gpujs/gpu.js/actions/workflows/ci.yml/badge.svg)](https://github.com/gpujs/gpu.js/actions/workflows/ci.yml)
 [![Join the chat at https://gitter.im/gpujs/gpu.js](https://badges.gitter.im/gpujs/gpu.js.svg)](https://gitter.im/gpujs/gpu.js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Slack](https://slack.bri.im/badge.svg)](https://slack.bri.im)
 
 # What is this sorcery?
 
