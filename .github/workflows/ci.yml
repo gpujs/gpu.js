@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install headless-gl runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb mesa-utils libgl1-mesa-dri libglu1-mesa libxi6 libxext6
+
+      - name: Install packages
+        run: npm ci
+
+      - name: Build
+        run: npx gulp make
+
+      - name: Run tests
+        # the suite has known platform-dependent failures on Mesa (see
+        # .github/known-test-failures.txt), so the raw exit code is not the
+        # signal; the compare step below fails the job on NEW failures only
+        run: xvfb-run -a --server-args="-ac -screen 0 1280x1024x24" npm test | tee test-output.tap || true
+
+      - name: Compare failures against known baseline
+        run: node .github/compare-test-failures.js test-output.tap .github/known-test-failures.txt
