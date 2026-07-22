@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.17.0
- * @date Wed Jul 22 2026 19:37:13 GMT+0800 (Singapore Standard Time)
+ * @date Wed Jul 22 2026 19:57:12 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -13421,6 +13421,7 @@ for (const p in lib) {
   if (p === 'GPU') continue; 
   GPU[p] = lib[p];
 }
+GPU.GPU = GPU;
 
 if (typeof window !== 'undefined') {
   bindTo(window);
@@ -13430,15 +13431,17 @@ if (typeof self !== 'undefined') {
 }
 
 function bindTo(target) {
-  if (target.GPU) return;
+  if (target.GPU && target.GPU.prototype && target.GPU.prototype.createKernel) return;
   Object.defineProperty(target, 'GPU', {
+    configurable: true,
     get() {
       return GPU;
     }
   });
 }
 
-module.exports = lib;
+module.exports = GPU;
+
 },{"./index":108}],107:[function(require,module,exports){
 const { gpuMock } = require('gpu-mock.js');
 const { utils } = require('./utils');
