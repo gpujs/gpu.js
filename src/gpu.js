@@ -252,6 +252,7 @@ class GPU {
         injectedNative: kernelRun.injectedNative,
         subKernels: kernelRun.subKernels,
         strictIntegers: kernelRun.strictIntegers,
+        randomSeed: kernelRun.randomSeed,
         debug: kernelRun.debug,
       });
       fallbackKernel.build.apply(fallbackKernel, args);
@@ -314,6 +315,7 @@ class GPU {
         injectedNative: _kernel.injectedNative,
         subKernels: _kernel.subKernels,
         strictIntegers: _kernel.strictIntegers,
+        randomSeed: _kernel.randomSeed,
         debug: _kernel.debug,
         gpu: _kernel.gpu,
         validate,

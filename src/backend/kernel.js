@@ -220,6 +220,12 @@ class Kernel {
     this.optimizeFloatMemory = null;
     this.strictIntegers = false;
     this.fixIntegerDivisionAccuracy = null;
+
+    /**
+     * Seed for Math.random() so kernel runs are reproducible; null seeds from Math.random()
+     * @type {Number|null}
+     */
+    this.randomSeed = null;
     this.built = false;
     this.signature = null;
   }
@@ -629,6 +635,18 @@ class Kernel {
    */
   setDynamicOutput(flag) {
     this.dynamicOutput = flag;
+    return this;
+  }
+
+  /**
+   * Set a seed for Math.random(), so kernel runs are reproducible
+   * @param {Number|null} seed
+   * @return {this}
+   */
+  setRandomSeed(seed) {
+    this.randomSeed = seed;
+    // restart the math-random plugin's stream even when the seed value is unchanged
+    this._mathRandomGenerator = null;
     return this;
   }
 

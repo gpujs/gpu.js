@@ -1029,6 +1029,14 @@ This is a list of the supported ones:
   Which is still not as good as CPU, but closer.
   While this isn't perfect, it should suffice in most scenarios.
   In any case, we must give thanks to [RandomPower](https://www.randompower.eu/), and this [issue](https://github.com/gpujs/gpu.js/issues/498), for assisting in improving our implementation of random.
+  * **Seeding random**: for reproducible results, give a kernel your own seed with `kernel.setRandomSeed(seed)` or the `randomSeed` kernel setting:
+    ```js
+    const kernel = gpu.createKernel(function() {
+      return Math.random();
+    }, { output: [64], randomSeed: 42 });
+    ```
+    A seeded kernel draws from a deterministic stream: consecutive runs still produce different values, but recreating the kernel (or calling `setRandomSeed` again) with the same seed replays the exact same sequence of runs.
+    Seeding requires a GPU mode (`gpu`, `webgl`, `webgl2`, `headlessgl`); in `cpu` mode `Math.random()` stays unseeded and a warning is logged.
 * `Math.round()`
 * `Math.sign()`
 * `Math.sin()`

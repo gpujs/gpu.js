@@ -198,6 +198,7 @@ export class Kernel {
   setConstantTypes(flag: IKernelValueTypes): this;
   setDynamicOutput(flag: boolean): this;
   setDynamicArguments(flag: boolean): this;
+  setRandomSeed(seed: number): this;
   setPipeline(flag: boolean): this;
   setPrecision(flag: Precision): this;
   setImmutable(flag: boolean): this;
@@ -337,6 +338,7 @@ export interface IKernelSettings {
   useLegacyEncoder?: boolean;
   nativeFunctions?: IGPUNativeFunction[],
   strictIntegers?: boolean;
+  randomSeed?: number;
 }
 
 export interface IDirectKernelSettings extends IKernelSettings {

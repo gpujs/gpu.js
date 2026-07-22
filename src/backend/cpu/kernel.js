@@ -137,6 +137,9 @@ class CPUKernel extends Kernel {
    */
   build() {
     if (this.built) return;
+    if (this.randomSeed !== null) {
+      console.warn('randomSeed is not supported in cpu mode; Math.random() will be unseeded');
+    }
     this.setupConstants();
     this.setupArguments(arguments);
     this.validateSettings(arguments);
