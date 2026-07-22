@@ -4,13 +4,13 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.16.0
- * @date Thu Feb 13 2025 11:46:48 GMT-0800 (Pacific Standard Time)
+ * @version 2.17.0
+ * @date Wed Jul 22 2026 19:37:13 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
  *
- * Copyright (c) 2025 gpu.js Team
+ * Copyright (c) 2026 gpu.js Team
  */(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.GPU = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 
 },{}],2:[function(require,module,exports){
@@ -2881,191 +2881,191 @@ class FunctionNode {
         } else {
           return 'Number';
         }
-        case 'AssignmentExpression':
-          return this.getType(ast.left);
-        case 'CallExpression':
-          if (this.isAstMathFunction(ast)) {
-            return 'Number';
-          }
-          if (!ast.callee || !ast.callee.name) {
-            if (ast.callee.type === 'SequenceExpression' && ast.callee.expressions[ast.callee.expressions.length - 1].property.name) {
-              const functionName = ast.callee.expressions[ast.callee.expressions.length - 1].property.name;
-              this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
-              return this.lookupReturnType(functionName, ast, this);
-            }
-            if (this.getVariableSignature(ast.callee, true) === 'this.color') {
-              return null;
-            }
-            if (ast.callee.type === 'MemberExpression' && ast.callee.object && ast.callee.property && ast.callee.property.name && ast.arguments) {
-              const functionName = ast.callee.property.name;
-              this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
-              return this.lookupReturnType(functionName, ast, this);
-            }
-            throw this.astErrorOutput('Unknown call expression', ast);
-          }
-          if (ast.callee && ast.callee.name) {
-            const functionName = ast.callee.name;
+      case 'AssignmentExpression':
+        return this.getType(ast.left);
+      case 'CallExpression':
+        if (this.isAstMathFunction(ast)) {
+          return 'Number';
+        }
+        if (!ast.callee || !ast.callee.name) {
+          if (ast.callee.type === 'SequenceExpression' && ast.callee.expressions[ast.callee.expressions.length - 1].property.name) {
+            const functionName = ast.callee.expressions[ast.callee.expressions.length - 1].property.name;
             this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
             return this.lookupReturnType(functionName, ast, this);
           }
-          throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
-        case 'LogicalExpression':
-          return 'Boolean';
-        case 'BinaryExpression':
-          switch (ast.operator) {
-            case '%':
-            case '/':
-              if (this.fixIntegerDivisionAccuracy) {
-                return 'Number';
-              } else {
-                break;
-              }
-              case '>':
-              case '<':
-                return 'Boolean';
-              case '&':
-              case '|':
-              case '^':
-              case '<<':
-              case '>>':
-              case '>>>':
-                return 'Integer';
+          if (this.getVariableSignature(ast.callee, true) === 'this.color') {
+            return null;
           }
-          const type = this.getType(ast.left);
-          if (this.isState('skip-literal-correction')) return type;
-          if (type === 'LiteralInteger') {
-            const rightType = this.getType(ast.right);
-            if (rightType === 'LiteralInteger') {
-              if (ast.left.value % 1 === 0) {
-                return 'Integer';
-              } else {
-                return 'Float';
-              }
-            }
-            return rightType;
+          if (ast.callee.type === 'MemberExpression' && ast.callee.object && ast.callee.property && ast.callee.property.name && ast.arguments) {
+            const functionName = ast.callee.property.name;
+            this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
+            return this.lookupReturnType(functionName, ast, this);
           }
-          return typeLookupMap[type] || type;
-        case 'UpdateExpression':
-          return this.getType(ast.argument);
-        case 'UnaryExpression':
-          if (ast.operator === '~') {
-            return 'Integer';
-          }
-          return this.getType(ast.argument);
-        case 'VariableDeclaration': {
-          const declarations = ast.declarations;
-          let lastType;
-          for (let i = 0; i < declarations.length; i++) {
-            const declaration = declarations[i];
-            lastType = this.getType(declaration);
-          }
-          if (!lastType) {
-            throw this.astErrorOutput(`Unable to find type for declaration`, ast);
-          }
-          return lastType;
+          throw this.astErrorOutput('Unknown call expression', ast);
         }
-        case 'VariableDeclarator':
-          const declaration = this.getDeclaration(ast.id);
-          if (!declaration) {
-            throw this.astErrorOutput(`Unable to find declarator`, ast);
+        if (ast.callee && ast.callee.name) {
+          const functionName = ast.callee.name;
+          this.inferArgumentTypesIfNeeded(functionName, ast.arguments);
+          return this.lookupReturnType(functionName, ast, this);
+        }
+        throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
+      case 'LogicalExpression':
+        return 'Boolean';
+      case 'BinaryExpression':
+        switch (ast.operator) {
+          case '%':
+          case '/':
+            if (this.fixIntegerDivisionAccuracy) {
+              return 'Number';
+            } else {
+              break;
+            }
+          case '>':
+          case '<':
+            return 'Boolean';
+          case '&':
+          case '|':
+          case '^':
+          case '<<':
+          case '>>':
+          case '>>>':
+            return 'Integer';
+        }
+        const type = this.getType(ast.left);
+        if (this.isState('skip-literal-correction')) return type;
+        if (type === 'LiteralInteger') {
+          const rightType = this.getType(ast.right);
+          if (rightType === 'LiteralInteger') {
+            if (ast.left.value % 1 === 0) {
+              return 'Integer';
+            } else {
+              return 'Float';
+            }
           }
+          return rightType;
+        }
+        return typeLookupMap[type] || type;
+      case 'UpdateExpression':
+        return this.getType(ast.argument);
+      case 'UnaryExpression':
+        if (ast.operator === '~') {
+          return 'Integer';
+        }
+        return this.getType(ast.argument);
+      case 'VariableDeclaration': {
+        const declarations = ast.declarations;
+        let lastType;
+        for (let i = 0; i < declarations.length; i++) {
+          const declaration = declarations[i];
+          lastType = this.getType(declaration);
+        }
+        if (!lastType) {
+          throw this.astErrorOutput(`Unable to find type for declaration`, ast);
+        }
+        return lastType;
+      }
+      case 'VariableDeclarator':
+        const declaration = this.getDeclaration(ast.id);
+        if (!declaration) {
+          throw this.astErrorOutput(`Unable to find declarator`, ast);
+        }
 
-          if (!declaration.valueType) {
-            throw this.astErrorOutput(`Unable to find declarator valueType`, ast);
-          }
+        if (!declaration.valueType) {
+          throw this.astErrorOutput(`Unable to find declarator valueType`, ast);
+        }
 
-          return declaration.valueType;
-        case 'Identifier':
-          if (ast.name === 'Infinity') {
-            return 'Number';
+        return declaration.valueType;
+      case 'Identifier':
+        if (ast.name === 'Infinity') {
+          return 'Number';
+        }
+        if (this.isAstVariable(ast)) {
+          const signature = this.getVariableSignature(ast);
+          if (signature === 'value') {
+            return this.getCheckVariableType(ast);
           }
-          if (this.isAstVariable(ast)) {
-            const signature = this.getVariableSignature(ast);
-            if (signature === 'value') {
-              return this.getCheckVariableType(ast);
-            }
+        }
+        const origin = this.findIdentifierOrigin(ast);
+        if (origin && origin.init) {
+          return this.getType(origin.init);
+        }
+        return null;
+      case 'ReturnStatement':
+        return this.getType(ast.argument);
+      case 'MemberExpression':
+        if (this.isAstMathFunction(ast)) {
+          switch (ast.property.name) {
+            case 'ceil':
+              return 'Integer';
+            case 'floor':
+              return 'Integer';
+            case 'round':
+              return 'Integer';
           }
-          const origin = this.findIdentifierOrigin(ast);
-          if (origin && origin.init) {
-            return this.getType(origin.init);
-          }
-          return null;
-        case 'ReturnStatement':
-          return this.getType(ast.argument);
-        case 'MemberExpression':
-          if (this.isAstMathFunction(ast)) {
-            switch (ast.property.name) {
-              case 'ceil':
-                return 'Integer';
-              case 'floor':
-                return 'Integer';
-              case 'round':
-                return 'Integer';
-            }
-            return 'Number';
-          }
-          if (this.isAstVariable(ast)) {
-            const variableSignature = this.getVariableSignature(ast);
-            switch (variableSignature) {
-              case 'value[]':
-                return this.getLookupType(this.getCheckVariableType(ast.object));
-              case 'value[][]':
-                return this.getLookupType(this.getCheckVariableType(ast.object.object));
-              case 'value[][][]':
-                return this.getLookupType(this.getCheckVariableType(ast.object.object.object));
-              case 'value[][][][]':
-                return this.getLookupType(this.getCheckVariableType(ast.object.object.object.object));
-              case 'value.thread.value':
-              case 'this.thread.value':
-                return 'Integer';
-              case 'this.output.value':
-                return this.dynamicOutput ? 'Integer' : 'LiteralInteger';
-              case 'this.constants.value':
-                return this.getConstantType(ast.property.name);
-              case 'this.constants.value[]':
-                return this.getLookupType(this.getConstantType(ast.object.property.name));
-              case 'this.constants.value[][]':
-                return this.getLookupType(this.getConstantType(ast.object.object.property.name));
-              case 'this.constants.value[][][]':
-                return this.getLookupType(this.getConstantType(ast.object.object.object.property.name));
-              case 'this.constants.value[][][][]':
-                return this.getLookupType(this.getConstantType(ast.object.object.object.object.property.name));
-              case 'fn()[]':
-              case 'fn()[][]':
-              case 'fn()[][][]':
-                return this.getLookupType(this.getType(ast.object));
-              case 'value.value':
-                if (this.isAstMathVariable(ast)) {
-                  return 'Number';
-                }
-                switch (ast.property.name) {
-                  case 'r':
-                  case 'g':
-                  case 'b':
-                  case 'a':
-                    return this.getLookupType(this.getCheckVariableType(ast.object));
-                }
-                case '[][]':
-                  return 'Number';
-            }
-            throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
+          return 'Number';
+        }
+        if (this.isAstVariable(ast)) {
+          const variableSignature = this.getVariableSignature(ast);
+          switch (variableSignature) {
+            case 'value[]':
+              return this.getLookupType(this.getCheckVariableType(ast.object));
+            case 'value[][]':
+              return this.getLookupType(this.getCheckVariableType(ast.object.object));
+            case 'value[][][]':
+              return this.getLookupType(this.getCheckVariableType(ast.object.object.object));
+            case 'value[][][][]':
+              return this.getLookupType(this.getCheckVariableType(ast.object.object.object.object));
+            case 'value.thread.value':
+            case 'this.thread.value':
+              return 'Integer';
+            case 'this.output.value':
+              return this.dynamicOutput ? 'Integer' : 'LiteralInteger';
+            case 'this.constants.value':
+              return this.getConstantType(ast.property.name);
+            case 'this.constants.value[]':
+              return this.getLookupType(this.getConstantType(ast.object.property.name));
+            case 'this.constants.value[][]':
+              return this.getLookupType(this.getConstantType(ast.object.object.property.name));
+            case 'this.constants.value[][][]':
+              return this.getLookupType(this.getConstantType(ast.object.object.object.property.name));
+            case 'this.constants.value[][][][]':
+              return this.getLookupType(this.getConstantType(ast.object.object.object.object.property.name));
+            case 'fn()[]':
+            case 'fn()[][]':
+            case 'fn()[][][]':
+              return this.getLookupType(this.getType(ast.object));
+            case 'value.value':
+              if (this.isAstMathVariable(ast)) {
+                return 'Number';
+              }
+              switch (ast.property.name) {
+                case 'r':
+                case 'g':
+                case 'b':
+                case 'a':
+                  return this.getLookupType(this.getCheckVariableType(ast.object));
+              }
+            case '[][]':
+              return 'Number';
           }
           throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
-        case 'ConditionalExpression':
-          return this.getType(ast.consequent);
-        case 'FunctionDeclaration':
-        case 'FunctionExpression':
-          const lastReturn = this.findLastReturn(ast.body);
-          if (lastReturn) {
-            return this.getType(lastReturn);
-          }
-          return null;
-        case 'IfStatement':
-          return this.getType(ast.consequent);
-        case 'SequenceExpression':
-          return this.getType(ast.expressions[ast.expressions.length - 1]);
-        default:
-          throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
+        }
+        throw this.astErrorOutput('Unhandled getType MemberExpression', ast);
+      case 'ConditionalExpression':
+        return this.getType(ast.consequent);
+      case 'FunctionDeclaration':
+      case 'FunctionExpression':
+        const lastReturn = this.findLastReturn(ast.body);
+        if (lastReturn) {
+          return this.getType(lastReturn);
+        }
+        return null;
+      case 'IfStatement':
+        return this.getType(ast.consequent);
+      case 'SequenceExpression':
+        return this.getType(ast.expressions[ast.expressions.length - 1]);
+      default:
+        throw this.astErrorOutput(`Unhandled getType Type "${ ast.type }"`, ast);
     }
   }
 
@@ -3279,10 +3279,10 @@ class FunctionNode {
           }
           return dependencies;
         }
-        case 'SequenceExpression':
-          return this.getDependencies(ast.expressions, dependencies, isNotSafe);
-        default:
-          throw this.astErrorOutput(`Unhandled type ${ ast.type } in getDependencies`, ast);
+      case 'SequenceExpression':
+        return this.getDependencies(ast.expressions, dependencies, isNotSafe);
+      default:
+        throw this.astErrorOutput(`Unhandled type ${ ast.type } in getDependencies`, ast);
     }
     return dependencies;
   }
@@ -3718,83 +3718,83 @@ class FunctionNode {
           default:
             throw this.astErrorOutput('Unexpected expression', ast);
         }
-        case 'this.constants.value':
-          if (typeof ast.property.name !== 'string') {
-            throw this.astErrorOutput('Unexpected expression', ast);
-          }
-          name = ast.property.name;
-          type = this.getConstantType(name);
-          if (!type) {
-            throw this.astErrorOutput('Constant has no type', ast);
-          }
-          return {
-            name,
-            type,
-            origin: 'constants',
-              signature: variableSignature,
-          };
-        case 'this.constants.value[]':
-          if (typeof ast.object.property.name !== 'string') {
-            throw this.astErrorOutput('Unexpected expression', ast);
-          }
-          name = ast.object.property.name;
-          type = this.getConstantType(name);
-          if (!type) {
-            throw this.astErrorOutput('Constant has no type', ast);
-          }
-          return {
-            name,
-            type,
-            origin: 'constants',
-              signature: variableSignature,
-              xProperty: ast.property,
-          };
-        case 'this.constants.value[][]': {
-          if (typeof ast.object.object.property.name !== 'string') {
-            throw this.astErrorOutput('Unexpected expression', ast);
-          }
-          name = ast.object.object.property.name;
-          type = this.getConstantType(name);
-          if (!type) {
-            throw this.astErrorOutput('Constant has no type', ast);
-          }
-          return {
-            name,
-            type,
-            origin: 'constants',
-            signature: variableSignature,
-            yProperty: ast.object.property,
-            xProperty: ast.property,
-          };
-        }
-        case 'this.constants.value[][][]': {
-          if (typeof ast.object.object.object.property.name !== 'string') {
-            throw this.astErrorOutput('Unexpected expression', ast);
-          }
-          name = ast.object.object.object.property.name;
-          type = this.getConstantType(name);
-          if (!type) {
-            throw this.astErrorOutput('Constant has no type', ast);
-          }
-          return {
-            name,
-            type,
-            origin: 'constants',
-            signature: variableSignature,
-            zProperty: ast.object.object.property,
-            yProperty: ast.object.property,
-            xProperty: ast.property,
-          };
-        }
-        case 'fn()[]':
-        case 'fn()[][]':
-        case '[][]':
-          return {
-            signature: variableSignature,
-              property: ast.property,
-          };
-        default:
+      case 'this.constants.value':
+        if (typeof ast.property.name !== 'string') {
           throw this.astErrorOutput('Unexpected expression', ast);
+        }
+        name = ast.property.name;
+        type = this.getConstantType(name);
+        if (!type) {
+          throw this.astErrorOutput('Constant has no type', ast);
+        }
+        return {
+          name,
+          type,
+          origin: 'constants',
+            signature: variableSignature,
+        };
+      case 'this.constants.value[]':
+        if (typeof ast.object.property.name !== 'string') {
+          throw this.astErrorOutput('Unexpected expression', ast);
+        }
+        name = ast.object.property.name;
+        type = this.getConstantType(name);
+        if (!type) {
+          throw this.astErrorOutput('Constant has no type', ast);
+        }
+        return {
+          name,
+          type,
+          origin: 'constants',
+            signature: variableSignature,
+            xProperty: ast.property,
+        };
+      case 'this.constants.value[][]': {
+        if (typeof ast.object.object.property.name !== 'string') {
+          throw this.astErrorOutput('Unexpected expression', ast);
+        }
+        name = ast.object.object.property.name;
+        type = this.getConstantType(name);
+        if (!type) {
+          throw this.astErrorOutput('Constant has no type', ast);
+        }
+        return {
+          name,
+          type,
+          origin: 'constants',
+          signature: variableSignature,
+          yProperty: ast.object.property,
+          xProperty: ast.property,
+        };
+      }
+      case 'this.constants.value[][][]': {
+        if (typeof ast.object.object.object.property.name !== 'string') {
+          throw this.astErrorOutput('Unexpected expression', ast);
+        }
+        name = ast.object.object.object.property.name;
+        type = this.getConstantType(name);
+        if (!type) {
+          throw this.astErrorOutput('Constant has no type', ast);
+        }
+        return {
+          name,
+          type,
+          origin: 'constants',
+          signature: variableSignature,
+          zProperty: ast.object.object.property,
+          yProperty: ast.object.property,
+          xProperty: ast.property,
+        };
+      }
+      case 'fn()[]':
+      case 'fn()[][]':
+      case '[][]':
+        return {
+          signature: variableSignature,
+            property: ast.property,
+        };
+      default:
+        throw this.astErrorOutput('Unexpected expression', ast);
     }
   }
 
@@ -4903,10 +4903,10 @@ class GLKernel extends Kernel {
               this.TextureConstructor = GLTextureUnsigned;
               return null;
             }
-            case 'Array(2)':
-            case 'Array(3)':
-            case 'Array(4)':
-              return this.requestFallback(args);
+          case 'Array(2)':
+          case 'Array(3)':
+          case 'Array(4)':
+            return this.requestFallback(args);
         }
       } else {
         if (this.subKernels !== null) {
@@ -4931,10 +4931,10 @@ class GLKernel extends Kernel {
               this.formatValues = utils.erectPackedFloat;
               return null;
             }
-            case 'Array(2)':
-            case 'Array(3)':
-            case 'Array(4)':
-              return this.requestFallback(args);
+          case 'Array(2)':
+          case 'Array(3)':
+          case 'Array(4)':
+            return this.requestFallback(args);
         }
       }
     } else if (this.precision === 'single') {
@@ -8267,34 +8267,34 @@ class WebGLFunctionNode extends FunctionNode {
               return retArr;
           }
         }
-        case 'this.constants.value[]':
-        case 'this.constants.value[][]':
-        case 'this.constants.value[][][]':
-        case 'this.constants.value[][][][]':
-          break;
-        case 'fn()[]':
-          this.astCallExpression(mNode.object, retArr);
-          retArr.push('[');
-          retArr.push(this.memberExpressionPropertyMarkup(property));
-          retArr.push(']');
-          return retArr;
-        case 'fn()[][]':
-          this.astCallExpression(mNode.object.object, retArr);
-          retArr.push('[');
-          retArr.push(this.memberExpressionPropertyMarkup(mNode.object.property));
-          retArr.push(']');
-          retArr.push('[');
-          retArr.push(this.memberExpressionPropertyMarkup(mNode.property));
-          retArr.push(']');
-          return retArr;
-        case '[][]':
-          this.astArrayExpression(mNode.object, retArr);
-          retArr.push('[');
-          retArr.push(this.memberExpressionPropertyMarkup(property));
-          retArr.push(']');
-          return retArr;
-        default:
-          throw this.astErrorOutput('Unexpected expression', mNode);
+      case 'this.constants.value[]':
+      case 'this.constants.value[][]':
+      case 'this.constants.value[][][]':
+      case 'this.constants.value[][][][]':
+        break;
+      case 'fn()[]':
+        this.astCallExpression(mNode.object, retArr);
+        retArr.push('[');
+        retArr.push(this.memberExpressionPropertyMarkup(property));
+        retArr.push(']');
+        return retArr;
+      case 'fn()[][]':
+        this.astCallExpression(mNode.object.object, retArr);
+        retArr.push('[');
+        retArr.push(this.memberExpressionPropertyMarkup(mNode.object.property));
+        retArr.push(']');
+        retArr.push('[');
+        retArr.push(this.memberExpressionPropertyMarkup(mNode.property));
+        retArr.push(']');
+        return retArr;
+      case '[][]':
+        this.astArrayExpression(mNode.object, retArr);
+        retArr.push('[');
+        retArr.push(this.memberExpressionPropertyMarkup(property));
+        retArr.push(']');
+        return retArr;
+      default:
+        throw this.astErrorOutput('Unexpected expression', mNode);
     }
 
     if (mNode.computed === false) {
@@ -13048,13 +13048,13 @@ class WebGL2Kernel extends WebGLKernel {
             } else {
               return gl.R32F;
             }
-            case 'Array(2)':
-              return gl.RG32F;
-            case 'Array(3)': 
-            case 'Array(4)':
-              return gl.RGBA32F;
-            default:
-              throw new Error('Unhandled return type');
+          case 'Array(2)':
+            return gl.RG32F;
+          case 'Array(3)': 
+          case 'Array(4)':
+            return gl.RGBA32F;
+          default:
+            throw new Error('Unhandled return type');
         }
       }
       return gl.RGBA32F;
@@ -14733,95 +14733,95 @@ const utils = {
           } else {
             return `${ast.kind} ${declarations.join(',')}`;
           }
-          case 'VariableDeclarator':
-            if (ast.init.object && ast.init.object.type === 'ThisExpression') {
-              const lookup = thisLookup(ast.init.property.name, true);
-              if (lookup) {
-                return `${ast.id.name} = ${flatten(ast.init)}`;
-              } else {
-                return null;
-              }
-            } else {
+        case 'VariableDeclarator':
+          if (ast.init.object && ast.init.object.type === 'ThisExpression') {
+            const lookup = thisLookup(ast.init.property.name, true);
+            if (lookup) {
               return `${ast.id.name} = ${flatten(ast.init)}`;
+            } else {
+              return null;
             }
-            case 'CallExpression': {
-              if (ast.callee.property.name === 'subarray') {
-                return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              }
-              if (ast.callee.object.name === 'gl' || ast.callee.object.name === 'context') {
-                return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              }
-              if (ast.callee.object.type === 'ThisExpression') {
-                functionDependencies.push(findDependency('this', ast.callee.property.name));
-                return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              } else if (ast.callee.object.name) {
-                const foundSource = findDependency(ast.callee.object.name, ast.callee.property.name);
-                if (foundSource === null) {
-                  return `${ast.callee.object.name}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-                } else {
-                  functionDependencies.push(foundSource);
-                  return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-                }
-              } else if (ast.callee.object.type === 'MemberExpression') {
-                return `${flatten(ast.callee.object)}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              } else {
-                throw new Error('unknown ast.callee');
-              }
+          } else {
+            return `${ast.id.name} = ${flatten(ast.init)}`;
+          }
+        case 'CallExpression': {
+          if (ast.callee.property.name === 'subarray') {
+            return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          }
+          if (ast.callee.object.name === 'gl' || ast.callee.object.name === 'context') {
+            return `${flatten(ast.callee.object)}.${flatten(ast.callee.property)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          }
+          if (ast.callee.object.type === 'ThisExpression') {
+            functionDependencies.push(findDependency('this', ast.callee.property.name));
+            return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          } else if (ast.callee.object.name) {
+            const foundSource = findDependency(ast.callee.object.name, ast.callee.property.name);
+            if (foundSource === null) {
+              return `${ast.callee.object.name}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+            } else {
+              functionDependencies.push(foundSource);
+              return `${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
             }
-            case 'ReturnStatement':
-              return `return ${flatten(ast.argument)}`;
-            case 'BinaryExpression':
-              return `(${flatten(ast.left)}${ast.operator}${flatten(ast.right)})`;
-            case 'UnaryExpression':
-              if (ast.prefix) {
-                return `${ast.operator} ${flatten(ast.argument)}`;
-              } else {
-                return `${flatten(ast.argument)} ${ast.operator}`;
-              }
-              case 'ExpressionStatement':
-                return `${flatten(ast.expression)}`;
-              case 'SequenceExpression':
-                return `(${flatten(ast.expressions)})`;
-              case 'ArrowFunctionExpression':
-                return `(${ast.params.map(flatten).join(', ')}) => ${flatten(ast.body)}`;
-              case 'Literal':
-                return ast.raw;
-              case 'Identifier':
-                return ast.name;
-              case 'MemberExpression':
-                if (ast.object.type === 'ThisExpression') {
-                  return thisLookup(ast.property.name);
-                }
-                if (ast.computed) {
-                  return `${flatten(ast.object)}[${flatten(ast.property)}]`;
-                }
-                return flatten(ast.object) + '.' + flatten(ast.property);
-              case 'ThisExpression':
-                return 'this';
-              case 'NewExpression':
-                return `new ${flatten(ast.callee)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
-              case 'ForStatement':
-                return `for (${flatten(ast.init)};${flatten(ast.test)};${flatten(ast.update)}) ${flatten(ast.body)}`;
-              case 'AssignmentExpression':
-                return `${flatten(ast.left)}${ast.operator}${flatten(ast.right)}`;
-              case 'UpdateExpression':
-                return `${flatten(ast.argument)}${ast.operator}`;
-              case 'IfStatement':
-                return `if (${flatten(ast.test)}) ${flatten(ast.consequent)}`;
-              case 'ThrowStatement':
-                return `throw ${flatten(ast.argument)}`;
-              case 'ObjectPattern':
-                return ast.properties.map(flatten).join(', ');
-              case 'ArrayPattern':
-                return ast.elements.map(flatten).join(', ');
-              case 'DebuggerStatement':
-                return 'debugger;';
-              case 'ConditionalExpression':
-                return `${flatten(ast.test)}?${flatten(ast.consequent)}:${flatten(ast.alternate)}`;
-              case 'Property':
-                if (ast.kind === 'init') {
-                  return flatten(ast.key);
-                }
+          } else if (ast.callee.object.type === 'MemberExpression') {
+            return `${flatten(ast.callee.object)}.${ast.callee.property.name}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+          } else {
+            throw new Error('unknown ast.callee');
+          }
+        }
+        case 'ReturnStatement':
+          return `return ${flatten(ast.argument)}`;
+        case 'BinaryExpression':
+          return `(${flatten(ast.left)}${ast.operator}${flatten(ast.right)})`;
+        case 'UnaryExpression':
+          if (ast.prefix) {
+            return `${ast.operator} ${flatten(ast.argument)}`;
+          } else {
+            return `${flatten(ast.argument)} ${ast.operator}`;
+          }
+        case 'ExpressionStatement':
+          return `${flatten(ast.expression)}`;
+        case 'SequenceExpression':
+          return `(${flatten(ast.expressions)})`;
+        case 'ArrowFunctionExpression':
+          return `(${ast.params.map(flatten).join(', ')}) => ${flatten(ast.body)}`;
+        case 'Literal':
+          return ast.raw;
+        case 'Identifier':
+          return ast.name;
+        case 'MemberExpression':
+          if (ast.object.type === 'ThisExpression') {
+            return thisLookup(ast.property.name);
+          }
+          if (ast.computed) {
+            return `${flatten(ast.object)}[${flatten(ast.property)}]`;
+          }
+          return flatten(ast.object) + '.' + flatten(ast.property);
+        case 'ThisExpression':
+          return 'this';
+        case 'NewExpression':
+          return `new ${flatten(ast.callee)}(${ast.arguments.map(value => flatten(value)).join(', ')})`;
+        case 'ForStatement':
+          return `for (${flatten(ast.init)};${flatten(ast.test)};${flatten(ast.update)}) ${flatten(ast.body)}`;
+        case 'AssignmentExpression':
+          return `${flatten(ast.left)}${ast.operator}${flatten(ast.right)}`;
+        case 'UpdateExpression':
+          return `${flatten(ast.argument)}${ast.operator}`;
+        case 'IfStatement':
+          return `if (${flatten(ast.test)}) ${flatten(ast.consequent)}`;
+        case 'ThrowStatement':
+          return `throw ${flatten(ast.argument)}`;
+        case 'ObjectPattern':
+          return ast.properties.map(flatten).join(', ');
+        case 'ArrayPattern':
+          return ast.elements.map(flatten).join(', ');
+        case 'DebuggerStatement':
+          return 'debugger;';
+        case 'ConditionalExpression':
+          return `${flatten(ast.test)}?${flatten(ast.consequent)}:${flatten(ast.alternate)}`;
+        case 'Property':
+          if (ast.kind === 'init') {
+            return flatten(ast.key);
+          }
       }
       throw new Error(`unhandled ast.type of ${ ast.type }`);
     }
