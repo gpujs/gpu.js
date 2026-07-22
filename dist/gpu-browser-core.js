@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.18.0
- * @date Wed Jul 22 2026 20:23:59 GMT+0800 (Singapore Standard Time)
+ * @version 2.18.1
+ * @date Wed Jul 22 2026 20:32:54 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -5817,7 +5817,11 @@ class GLTexture extends Texture {
       this.texture._refs--;
       if (this.texture._refs) return;
     }
-    this.context.deleteTexture(this.texture);
+    if (this.kernel && this.kernel.deleteTexture) {
+      this.kernel.deleteTexture(this.texture);
+    } else {
+      this.context.deleteTexture(this.texture);
+    }
   }
 
   framebuffer() {
@@ -10409,6 +10413,14 @@ class WebGLKernel extends GLKernel {
     const texture = this.context.createTexture();
     this.textureCache.push(texture);
     return texture;
+  }
+
+  deleteTexture(texture) {
+    const index = this.textureCache.indexOf(texture);
+    if (index !== -1) {
+      this.textureCache.splice(index, 1);
+    }
+    this.context.deleteTexture(texture);
   }
 
   setupConstants(args) {
