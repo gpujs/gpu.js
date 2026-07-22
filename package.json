@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "benchmark": "2.1.4",
-    "browser-sync": "3.0.2",
+    "browser-sync": "^3.0.4",
     "browserify": "17.0.0",
     "c8": "10.1.2",
     "gulp": "5.0.0",
@@ -67,5 +67,11 @@
     "url": "https://github.com/gpujs/gpu.js/issues"
   },
   "homepage": "http://gpu.rocks/",
-  "typings": "./src/index.d.ts"
+  "typings": "./src/index.d.ts",
+  "overrides": {
+    "gl": {
+      "node-gyp": "^11.4.2"
+    },
+    "immutable": "^4.3.9"
+  }
 }
