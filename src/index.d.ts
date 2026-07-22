@@ -175,7 +175,7 @@ export class Kernel {
   texture: Texture;
   mappedTextures?: Texture[];
   TextureConstructor: typeof Texture;
-  getPixels(flip?: boolean): Uint8ClampedArray[];
+  getPixels(flip?: boolean): Uint8ClampedArray;
   getVariablePrecisionString(textureSize?: number[], tactic?: Tactic, isInt?: boolean): string;
   prependString(value: string): void;
   hasPrependString(value: string): boolean;
