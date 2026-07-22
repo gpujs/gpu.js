@@ -10,7 +10,10 @@ function buildAtan2KernelResult(mode) {
   }, {
     output: [1],
   });
-  assert.equal(kernel()[0].toFixed(6), 0.463648);
+  const result = kernel()[0];
+  // GPU atan implementations differ from Math.atan2 in the last ulps of
+  // single precision (observed: 0.4636474..0.4636477 across drivers)
+  assert.ok(Math.abs(result - Math.atan2(1, 2)) < 1e-5, `${result} deviates from ${Math.atan2(1, 2)}`);
   gpu.destroy();
 }
 
