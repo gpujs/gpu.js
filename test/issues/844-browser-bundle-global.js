@@ -4,8 +4,10 @@ const { assert, test, module: describe } = require('qunit');
 
 describe('issue #844 - browser bundle global GPU');
 
-function loadBundle(file, window) {
-  const code = fs.readFileSync(path.join(__dirname, '../../dist', file), 'utf8');
+function loadBundle(file, window, strict) {
+  let code = fs.readFileSync(path.join(__dirname, '../../dist', file), 'utf8');
+  // an ES module load evaluates the bundle in strict mode (#639)
+  if (strict) code = '"use strict";' + code;
   // shadow the CommonJS/AMD/global bindings so the UMD wrapper takes the
   // same branch it takes in a real browser
   new Function('window', 'self', 'exports', 'module', 'define', 'global', code)(window, window);
@@ -62,5 +64,19 @@ function nativeWebGPUStub() {
     const first = window.GPU;
     loadBundle(file, window);
     assert.strictEqual(window.GPU, first);
+  });
+
+  // issue #639: a strict-mode (ES module) load must not throw
+  // "Cannot set property GPU of #<Window> which has only a getter"
+  test(`strict-mode load works without native WebGPU - ${file}`, () => {
+    const window = loadBundle(file, {}, true);
+    const gpu = new window.GPU({ mode: 'cpu' });
+    assert.ok(gpu instanceof window.GPU);
+  });
+
+  test(`strict-mode load works with native WebGPU present - ${file}`, () => {
+    const window = loadBundle(file, nativeWebGPUStub(), true);
+    const gpu = new window.GPU({ mode: 'cpu' });
+    assert.ok(gpu instanceof window.GPU);
   });
 });

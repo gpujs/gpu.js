@@ -24,6 +24,11 @@ function bindTo(target) {
     configurable: true,
     get() {
       return GPU;
+    },
+    set() {
+      // swallow writes instead of leaving a getter-only property: the UMD
+      // wrapper assigns its export right after this binding, which throws a
+      // TypeError in strict-mode (ES module) loads when no setter exists (#639)
     }
   });
 }

@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.18.1
- * @date Wed Jul 22 2026 20:32:54 GMT+0800 (Singapore Standard Time)
+ * @date Wed Jul 22 2026 20:37:45 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -13459,6 +13459,8 @@ function bindTo(target) {
     configurable: true,
     get() {
       return GPU;
+    },
+    set() {
     }
   });
 }
