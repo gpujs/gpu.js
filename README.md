@@ -1163,7 +1163,9 @@ Here is a list of a few things that GPU.js does to fix transpilation:
 
 ## Full API Reference
 
-You can find a [complete API reference here](https://doxdox.org/gpujs/gpu.js/).
+You can find a [complete API reference here](https://gpujs.github.io/gpu.js/).
+
+The reference is generated from the source with `npm run docs` and published from the `gh-pages` branch.
 
 ## How possible in node?
 GPU.js uses [HeadlessGL](https://github.com/stackgl/headless-gl) in node for GPU acceleration.

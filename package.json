@@ -51,7 +51,7 @@
     "setup": "npm i -g gulp-cli",
     "make": "gulp make",
     "build": "gulp build",
-    "docs": "doxdox ./src --layout bootstrap --output docs.html"
+    "docs": "npx --yes doxdox@3 ./src --layout bootstrap --output index.html"
   },
   "repository": {
     "type": "git",
