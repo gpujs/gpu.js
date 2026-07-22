@@ -40,17 +40,23 @@ gulp.task('build', () => {
   return merge(gpu, gpuCore);
 });
 
+const uglifyOptions = {
+  output: {
+    ascii_only: true,
+  }
+}
+
 /// Minify the build script, after building it
 gulp.task('minify', () => {
   const gpu = gulp.src('dist/gpu-browser.js')
-    .pipe(uglify())
+    .pipe(uglify(uglifyOptions))
     .pipe(rename('gpu-browser.min.js'))
     .pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
     .pipe(gulp.dest('./dist'))
     .on('error', console.error);
 
   const gpuCore = gulp.src('dist/gpu-browser-core.js')
-    .pipe(uglify())
+    .pipe(uglify(uglifyOptions))
     .pipe(rename('gpu-browser-core.min.js'))
     .pipe(header(fs.readFileSync('./src/browser-header.txt', 'utf8'), { pkg : pkg }))
     .pipe(gulp.dest('./dist'))
