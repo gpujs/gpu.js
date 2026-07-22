@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.17.0
- * @date Wed Jul 22 2026 19:57:12 GMT+0800 (Singapore Standard Time)
+ * @version 2.17.1
+ * @date Wed Jul 22 2026 19:58:50 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -13441,7 +13441,6 @@ function bindTo(target) {
 }
 
 module.exports = GPU;
-
 },{"./index":108}],107:[function(require,module,exports){
 const { gpuMock } = require('gpu-mock.js');
 const { utils } = require('./utils');
