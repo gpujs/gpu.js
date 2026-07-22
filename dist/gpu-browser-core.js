@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.18.2
- * @date Wed Jul 22 2026 20:38:20 GMT+0800 (Singapore Standard Time)
+ * @version 2.18.3
+ * @date Wed Jul 22 2026 21:02:51 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -6796,8 +6796,12 @@ float asinh(float x) {
 }
 
 float atan2(float v1, float v2) {
-  if (v1 == 0.0 || v2 == 0.0) return 0.0;
-  return atan(v1 / v2);
+  if (v2 == 0.0) {
+    if (v1 == 0.0) return 0.0;
+    if (v1 > 0.0) return 1.5707963267948966;
+    if (v1 < 0.0) return -1.5707963267948966;
+  }
+  return atan(v1, v2);
 }
 
 float atanh(float x) {
@@ -11536,8 +11540,12 @@ __CONSTANTS__;
 in vec2 vTexCoord;
 
 float atan2(float v1, float v2) {
-  if (v1 == 0.0 || v2 == 0.0) return 0.0;
-  return atan(v1 / v2);
+  if (v2 == 0.0) {
+    if (v1 == 0.0) return 0.0;
+    if (v1 > 0.0) return 1.5707963267948966;
+    if (v1 < 0.0) return -1.5707963267948966;
+  }
+  return atan(v1, v2);
 }
 
 float cbrt(float x) {
