@@ -1,12 +1,7 @@
 # Known test failures on Linux/Mesa (llvmpipe software rendering).
-# These are platform-dependent, mostly float-packing precision in
-# 'unsigned precision' modes, and predate CI (verified pre-existing
-# against the pre-#840 dependency tree). CI fails only on failures
-# NOT listed here — see compare-test-failures.js.
-# The 'Math.random() unique' entries are a flaky test (seed collisions).
-Math.random() unique > unique every time auto
-Math.random() unique > unique every time gpu
-Math.random() unique > unique every time headlessgl
+# Platform-dependent and pre-existing (verified against the pre-#840
+# dependency tree). CI fails only on failures NOT listed here — see
+# compare-test-failures.js. The Math.random entries are a flaky test.
 feature: to-string unsigned precision array style kernel map returns Array > headlessgl
 feature: to-string unsigned precision array style kernel map returns MemoryOptimizedNumberTexture > headlessgl
 feature: to-string unsigned precision array style kernel map returns NumberTexture > headlessgl
@@ -24,12 +19,6 @@ features: dynamic arguments > unsigned precision Input Matrix headlessgl
 features: dynamic arguments > unsigned precision Matrix auto
 features: dynamic arguments > unsigned precision Matrix gpu
 features: dynamic arguments > unsigned precision Matrix headlessgl
-features: getPixels > flipped auto
-features: getPixels > flipped gpu
-features: getPixels > flipped headlessgl
-features: getPixels > standard auto
-features: getPixels > standard gpu
-features: getPixels > standard headlessgl
 features: math object > Single argument Math methods auto
 features: math object > Single argument Math methods gpu
 features: math object > Single argument Math methods headlessgl
@@ -97,3 +86,6 @@ issue #346 > Issue #346 uint8 input array - headlessgl
 issue #349 disable integer division bug > Issue #349 - test disable fix integer division bug auto
 issue #349 disable integer division bug > Issue #349 - test disable fix integer division bug gpu
 issue #349 disable integer division bug > Issue #349 - test disable fix integer division bug headlessgl
+Math.random() unique > unique every time auto
+Math.random() unique > unique every time gpu
+Math.random() unique > unique every time headlessgl
