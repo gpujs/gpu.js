@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.18.3
- * @date Wed Jul 22 2026 21:02:51 GMT+0800 (Singapore Standard Time)
+ * @version 2.19.0
+ * @date Wed Jul 22 2026 21:21:35 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -12477,6 +12477,23 @@ __DIVIDE_WITH_INTEGER_CHECK__;
 // DO NOT OPTIMIZE THIS CODE
 // YOU WILL BREAK SOMETHING ON SOMEBODY\'S MACHINE
 // LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME
+// Exact powers of two built from exact constant multiplies: exp2/log2/pow
+// are approximate on some GPUs (notably Apple silicon), and 1-2 ulp there
+// corrupts the packed bytes (#659)
+float _pow2(float e) {
+  float r = 1.0;
+  float a = abs(e);
+  bool n = e < 0.0;
+  if (a >= 64.0) { r *= n ? 5.421010862427522e-20 : 18446744073709551616.0; a -= 64.0; }
+  if (a >= 64.0) { r *= n ? 5.421010862427522e-20 : 18446744073709551616.0; a -= 64.0; }
+  if (a >= 32.0) { r *= n ? 2.3283064365386963e-10 : 4294967296.0; a -= 32.0; }
+  if (a >= 16.0) { r *= n ? 0.0000152587890625 : 65536.0; a -= 16.0; }
+  if (a >= 8.0) { r *= n ? 0.00390625 : 256.0; a -= 8.0; }
+  if (a >= 4.0) { r *= n ? 0.0625 : 16.0; a -= 4.0; }
+  if (a >= 2.0) { r *= n ? 0.25 : 4.0; a -= 2.0; }
+  if (a >= 1.0) { r *= n ? 0.5 : 2.0; }
+  return r;
+}
 const vec2 MAGIC_VEC = vec2(1.0, -256.0);
 const vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);
 const vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536
@@ -12487,9 +12504,9 @@ float decode32(vec4 texel) {
   gte128.x = texel.b >= 128.0 ? 1.0 : 0.0;
   gte128.y = texel.a >= 128.0 ? 1.0 : 0.0;
   float exponent = 2.0 * texel.a - 127.0 + dot(gte128, MAGIC_VEC);
-  float res = exp2(_round(exponent));
+  float res = _pow2(_round(exponent));
   texel.b = texel.b - 128.0 * gte128.x;
-  res = dot(texel, SCALE_FACTOR) * exp2(_round(exponent-23.0)) + res;
+  res = dot(texel, SCALE_FACTOR) * _pow2(_round(exponent-23.0)) + res;
   res *= gte128.y * -2.0 + 1.0;
   return res;
 }
@@ -12540,8 +12557,12 @@ vec4 encode32(float value) {
   value = abs(value);
 
   exponent = floor(log2(value));
+  float p2 = _pow2(exponent);
+  // approximate log2 can land one off; correct by direct comparison
+  if (p2 > value) { exponent -= 1.0; p2 *= 0.5; }
+  else if (p2 * 2.0 <= value) { exponent += 1.0; p2 *= 2.0; }
 
-  mantissa = value*pow(2.0, -exponent)-1.0;
+  mantissa = value / p2 - 1.0;
   exponent = exponent+127.0;
   result   = vec4(0,0,0,0);
 
@@ -16478,8 +16499,11 @@ class WebGLKernel extends GLKernel {
   _getDivideWithIntegerCheckString() {
     return this.fixIntegerDivisionAccuracy ?
       `float divWithIntCheck(float x, float y) {
-  if (floor(x) == x && floor(y) == y && integerMod(x, y) == 0.0) {
-    return float(int(x) / int(y));
+  if (floor(x) == x && floor(y) == y) {
+    float q = floor(x / y + 0.5);
+    if (y * q == x) {
+      return q;
+    }
   }
   return x / y;
 }
@@ -17193,6 +17217,23 @@ __DIVIDE_WITH_INTEGER_CHECK__;
 // DO NOT OPTIMIZE THIS CODE
 // YOU WILL BREAK SOMETHING ON SOMEBODY\'S MACHINE
 // LEAVE IT AS IT IS, LEST YOU WASTE YOUR OWN TIME
+// Exact powers of two built from exact constant multiplies: exp2/log2/pow
+// are approximate on some GPUs (notably Apple silicon), and 1-2 ulp there
+// corrupts the packed bytes (#659)
+float _pow2(float e) {
+  float r = 1.0;
+  float a = abs(e);
+  bool n = e < 0.0;
+  if (a >= 64.0) { r *= n ? 5.421010862427522e-20 : 18446744073709551616.0; a -= 64.0; }
+  if (a >= 64.0) { r *= n ? 5.421010862427522e-20 : 18446744073709551616.0; a -= 64.0; }
+  if (a >= 32.0) { r *= n ? 2.3283064365386963e-10 : 4294967296.0; a -= 32.0; }
+  if (a >= 16.0) { r *= n ? 0.0000152587890625 : 65536.0; a -= 16.0; }
+  if (a >= 8.0) { r *= n ? 0.00390625 : 256.0; a -= 8.0; }
+  if (a >= 4.0) { r *= n ? 0.0625 : 16.0; a -= 4.0; }
+  if (a >= 2.0) { r *= n ? 0.25 : 4.0; a -= 2.0; }
+  if (a >= 1.0) { r *= n ? 0.5 : 2.0; }
+  return r;
+}
 const vec2 MAGIC_VEC = vec2(1.0, -256.0);
 const vec4 SCALE_FACTOR = vec4(1.0, 256.0, 65536.0, 0.0);
 const vec4 SCALE_FACTOR_INV = vec4(1.0, 0.00390625, 0.0000152587890625, 0.0); // 1, 1/256, 1/65536
@@ -17203,9 +17244,9 @@ float decode32(vec4 texel) {
   gte128.x = texel.b >= 128.0 ? 1.0 : 0.0;
   gte128.y = texel.a >= 128.0 ? 1.0 : 0.0;
   float exponent = 2.0 * texel.a - 127.0 + dot(gte128, MAGIC_VEC);
-  float res = exp2(round(exponent));
+  float res = _pow2(round(exponent));
   texel.b = texel.b - 128.0 * gte128.x;
-  res = dot(texel, SCALE_FACTOR) * exp2(round(exponent-23.0)) + res;
+  res = dot(texel, SCALE_FACTOR) * _pow2(round(exponent-23.0)) + res;
   res *= gte128.y * -2.0 + 1.0;
   return res;
 }
@@ -17250,8 +17291,12 @@ vec4 encode32(float value) {
   value = abs(value);
 
   exponent = floor(log2(value));
+  float p2 = _pow2(exponent);
+  // approximate log2 can land one off; correct by direct comparison
+  if (p2 > value) { exponent -= 1.0; p2 *= 0.5; }
+  else if (p2 * 2.0 <= value) { exponent += 1.0; p2 *= 2.0; }
 
-  mantissa = value*pow(2.0, -exponent)-1.0;
+  mantissa = value / p2 - 1.0;
   exponent = exponent+127.0;
   result   = vec4(0,0,0,0);
 
