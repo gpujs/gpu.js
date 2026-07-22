@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.19.0
- * @date Wed Jul 22 2026 21:21:35 GMT+0800 (Singapore Standard Time)
+ * @version 2.19.1
+ * @date Wed Jul 22 2026 21:26:41 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -7949,14 +7949,14 @@ class FunctionBuilder {
     if (!calleeNode.argumentBitRatios) {
       calleeNode.argumentBitRatios = new Array(calleeNode.argumentNames.length);
     }
-    const calleeBitRatio = calleeNode.argumentBitRatios[i];
+    const calleeBitRatio = calleeNode.argumentBitRatios[argumentIndex];
     if (typeof calleeBitRatio === 'number') {
       if (calleeBitRatio !== bitRatio) {
         throw new Error(`Incompatible bit ratio found at function ${functionName} at argument ${argumentName}`);
       }
       return calleeBitRatio;
     }
-    calleeNode.argumentBitRatios[i] = bitRatio;
+    calleeNode.argumentBitRatios[argumentIndex] = bitRatio;
     return bitRatio;
   }
 
@@ -8009,6 +8009,75 @@ module.exports = {
 const acorn = require('acorn');
 const { utils } = require('../utils');
 const { FunctionTracer } = require('./function-tracer');
+
+const mathProperties = [
+  'E',
+  'PI',
+  'SQRT2',
+  'SQRT1_2',
+  'LN2',
+  'LN10',
+  'LOG2E',
+  'LOG10E',
+];
+
+const mathFunctions = [
+  'abs',
+  'acos',
+  'acosh',
+  'asin',
+  'asinh',
+  'atan',
+  'atan2',
+  'atanh',
+  'cbrt',
+  'ceil',
+  'clz32',
+  'cos',
+  'cosh',
+  'expm1',
+  'exp',
+  'floor',
+  'fround',
+  'imul',
+  'log',
+  'log2',
+  'log10',
+  'log1p',
+  'max',
+  'min',
+  'pow',
+  'random',
+  'round',
+  'sign',
+  'sin',
+  'sinh',
+  'sqrt',
+  'tan',
+  'tanh',
+  'trunc',
+];
+
+const allowedExpressions = [
+  'value',
+  'value[]',
+  'value[][]',
+  'value[][][]',
+  'value[][][][]',
+  'value.value',
+  'value.thread.value',
+  'this.thread.value',
+  'this.output.value',
+  'this.constants.value',
+  'this.constants.value[]',
+  'this.constants.value[][]',
+  'this.constants.value[][][]',
+  'this.constants.value[][][][]',
+  'fn()[]',
+  'fn()[][]',
+  'fn()[][][]',
+  '[][]',
+];
 
 class FunctionNode {
   constructor(source, settings) {
@@ -8546,61 +8615,15 @@ class FunctionNode {
   }
 
   isAstMathVariable(ast) {
-    const mathProperties = [
-      'E',
-      'PI',
-      'SQRT2',
-      'SQRT1_2',
-      'LN2',
-      'LN10',
-      'LOG2E',
-      'LOG10E',
-    ];
     return ast.type === 'MemberExpression' &&
       ast.object && ast.object.type === 'Identifier' &&
       ast.object.name === 'Math' &&
       ast.property &&
       ast.property.type === 'Identifier' &&
-      mathProperties.indexOf(ast.property.name) > -1;
+      mathProperties.includes(ast.property.name);
   }
 
   isAstMathFunction(ast) {
-    const mathFunctions = [
-      'abs',
-      'acos',
-      'acosh',
-      'asin',
-      'asinh',
-      'atan',
-      'atan2',
-      'atanh',
-      'cbrt',
-      'ceil',
-      'clz32',
-      'cos',
-      'cosh',
-      'expm1',
-      'exp',
-      'floor',
-      'fround',
-      'imul',
-      'log',
-      'log2',
-      'log10',
-      'log1p',
-      'max',
-      'min',
-      'pow',
-      'random',
-      'round',
-      'sign',
-      'sin',
-      'sinh',
-      'sqrt',
-      'tan',
-      'tanh',
-      'trunc',
-    ];
     return ast.type === 'CallExpression' &&
       ast.callee &&
       ast.callee.type === 'MemberExpression' &&
@@ -8609,7 +8632,7 @@ class FunctionNode {
       ast.callee.object.name === 'Math' &&
       ast.callee.property &&
       ast.callee.property.type === 'Identifier' &&
-      mathFunctions.indexOf(ast.callee.property.name) > -1;
+      mathFunctions.includes(ast.callee.property.name);
   }
 
   isAstVariable(ast) {
@@ -8791,27 +8814,7 @@ class FunctionNode {
       return signatureString;
     }
 
-    const allowedExpressions = [
-      'value',
-      'value[]',
-      'value[][]',
-      'value[][][]',
-      'value[][][][]',
-      'value.value',
-      'value.thread.value',
-      'this.thread.value',
-      'this.output.value',
-      'this.constants.value',
-      'this.constants.value[]',
-      'this.constants.value[][]',
-      'this.constants.value[][][]',
-      'this.constants.value[][][][]',
-      'fn()[]',
-      'fn()[][]',
-      'fn()[][][]',
-      '[][]',
-    ];
-    if (allowedExpressions.indexOf(signatureString) > -1) {
+    if (allowedExpressions.includes(signatureString)) {
       return signatureString;
     }
     return null;
@@ -8902,7 +8905,7 @@ class FunctionNode {
     }
 
     const debugString = utils.getAstString(this.source, ast);
-    const leadingSource = this.source.substr(ast.start);
+    const leadingSource = this.source.slice(ast.start);
     const splitLines = leadingSource.split(/\n/);
     const lineBefore = splitLines.length > 0 ? splitLines[splitLines.length - 1] : 0;
     return new Error(`${error} on line ${ splitLines.length }, position ${ lineBefore.length }:\n ${ debugString }`);
@@ -11802,10 +11805,10 @@ class Kernel {
   addFunction(source, settings = {}) {
     if (source.name && source.source && source.argumentTypes && 'returnType' in source) {
       this.functions.push(source);
-    } else if ('settings' in source && 'source' in source) {
-      this.functions.push(this.functionToIGPUFunction(source.source, source.settings));
     } else if (typeof source === 'string' || typeof source === 'function') {
       this.functions.push(this.functionToIGPUFunction(source, settings));
+    } else if ('settings' in source && 'source' in source) {
+      this.functions.push(this.functionToIGPUFunction(source.source, source.settings));
     } else {
       throw new Error(`function not properly defined`);
     }
@@ -15571,7 +15574,8 @@ class WebGLKernel extends GLKernel {
       testCanvas = new OffscreenCanvas(0, 0);
     }
     if (!testCanvas) return;
-    testContext = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+    testContext = testCanvas.getContext('webgl');
+    if (!testContext && !(testCanvas instanceof OffscreenCanvas)) testContext = testCanvas.getContext('experimental-webgl');
     if (!testContext || !testContext.getExtension) return;
     testExtensions = {
       OES_texture_float: testContext.getExtension('OES_texture_float'),
