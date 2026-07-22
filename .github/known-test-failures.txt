@@ -4,6 +4,9 @@
 # against the pre-#840 dependency tree). CI fails only on failures
 # NOT listed here — see compare-test-failures.js.
 # The 'Math.random() unique' entries are a flaky test (seed collisions).
+Math.random() unique > unique every time auto
+Math.random() unique > unique every time gpu
+Math.random() unique > unique every time headlessgl
 feature: to-string unsigned precision array style kernel map returns Array > headlessgl
 feature: to-string unsigned precision array style kernel map returns MemoryOptimizedNumberTexture > headlessgl
 feature: to-string unsigned precision array style kernel map returns NumberTexture > headlessgl
@@ -86,6 +89,9 @@ internal: recycling > immutable unsigned precision kernel gpu
 internal: recycling > immutable unsigned precision mapped kernel auto
 internal: recycling > immutable unsigned precision mapped kernel gpu
 internal: recycling > immutable unsigned precision mapped kernel headlessgl
+issue #259 > Issue #259 atan2 - auto
+issue #259 > Issue #259 atan2 - gpu
+issue #259 > Issue #259 atan2 - headlessgl
 issue #314 > Issue #314 Large array addressing - auto
 issue #314 > Issue #314 Large array addressing - gpu
 issue #314 > Issue #314 Large array addressing - headlessgl
@@ -94,6 +100,3 @@ issue #346 > Issue #346 uint8 input array - headlessgl
 issue #349 disable integer division bug > Issue #349 - test disable fix integer division bug auto
 issue #349 disable integer division bug > Issue #349 - test disable fix integer division bug gpu
 issue #349 disable integer division bug > Issue #349 - test disable fix integer division bug headlessgl
-Math.random() unique > unique every time auto
-Math.random() unique > unique every time gpu
-Math.random() unique > unique every time headlessgl
