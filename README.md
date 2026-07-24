@@ -455,6 +455,11 @@ Debugging can be done in a variety of ways, and there are different levels of de
   const { input } = require('gpu.js');
   const value = input(flattenedArray, [width, height, depth]);
   ```
+  * **Memory layout**: the dimensions are `[x, y, z]` where `x` is the fastest-varying (innermost) index — element `(x, y, z)` lives at `flattenedArray[x + width * (y + height * z)]`. A kernel access `arg[i][j][k]` reads `z = i`, `y = j`, `x = k`, so `input(flat, [X, Y, Z])` is equivalent to a nested array of shape `[Z][Y][X]`:
+  ```js
+  input(new Float32Array([1,2, 3,4, 5,6, 7,8]), [2, 2, 2])
+  // same as: [ [[1,2],[3,4]], [[5,6],[7,8]] ]
+  ```
 * HTML Image
 * Array of HTML Images
 * Video Element **New in V2!**

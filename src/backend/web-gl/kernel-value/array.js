@@ -65,11 +65,14 @@ class WebGLKernelArray extends WebGLKernelValue {
     switch (value.constructor) {
       case Uint8ClampedArray:
       case Uint8Array:
-      case Int8Array:
         return 1;
       case Uint16Array:
-      case Int16Array:
         return 2;
+      // signed arrays transfer as Float32Array (see getTransferArrayType),
+      // since the unsigned decode cannot represent negative values, so they
+      // occupy 4 bytes per element like Float32Array (#701)
+      case Int8Array:
+      case Int16Array:
       case Float32Array:
       case Int32Array:
       default:
