@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.19.2
- * @date Wed Jul 22 2026 21:34:54 GMT+0800 (Singapore Standard Time)
+ * @version 2.19.3
+ * @date Fri Jul 24 2026 08:57:21 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -392,12 +392,16 @@ function setupArguments(args) {
 
 function mock1D() {
   const args = setupArguments(arguments);
-  const row = new Float32Array(this.output.x);
+  let row = null;
   for (let x = 0; x < this.output.x; x++) {
     this.thread.x = x;
     this.thread.y = 0;
     this.thread.z = 0;
-    row[x] = this._fn.apply(this, args);
+    const value = this._fn.apply(this, args);
+    if (row === null) {
+      row = typeof value === 'number' || typeof value === 'boolean' ? new Float32Array(this.output.x) : new Array(this.output.x);
+    }
+    row[x] = typeof value === 'object' ? new Float32Array(value) : value;
   }
   return row;
 }
@@ -406,12 +410,16 @@ function mock2D() {
   const args = setupArguments(arguments);
   const matrix = new Array(this.output.y);
   for (let y = 0; y < this.output.y; y++) {
-    const row = new Float32Array(this.output.x);
+    let row = null;
     for (let x = 0; x < this.output.x; x++) {
       this.thread.x = x;
       this.thread.y = y;
       this.thread.z = 0;
-      row[x] = this._fn.apply(this, args);
+      const value = this._fn.apply(this, args);
+      if (row === null) {
+        row = typeof value === 'number' || typeof value === 'boolean' ? new Float32Array(this.output.x) : new Array(this.output.x);
+      }
+      row[x] = typeof value === 'object' ? new Float32Array(value) : value;
     }
     matrix[y] = row;
   }
@@ -436,12 +444,16 @@ function mock3D() {
   for (let z = 0; z < this.output.z; z++) {
     const matrix = new Array(this.output.y);
     for (let y = 0; y < this.output.y; y++) {
-      const row = new Float32Array(this.output.x);
+      let row = null;
       for (let x = 0; x < this.output.x; x++) {
         this.thread.x = x;
         this.thread.y = y;
         this.thread.z = z;
-        row[x] = this._fn.apply(this, args);
+        const value = this._fn.apply(this, args);
+        if (row === null) {
+          row = typeof value === 'number' || typeof value === 'boolean' ? new Float32Array(this.output.x) : new Array(this.output.x);
+        }
+        row[x] = typeof value === 'object' ? new Float32Array(value) : value;
       }
       matrix[y] = row;
     }
@@ -8996,11 +9008,11 @@ class WebGLKernelArray extends WebGLKernelValue {
     switch (value.constructor) {
       case Uint8ClampedArray:
       case Uint8Array:
-      case Int8Array:
         return 1;
       case Uint16Array:
-      case Int16Array:
         return 2;
+      case Int8Array:
+      case Int16Array:
       case Float32Array:
       case Int32Array:
       default:
