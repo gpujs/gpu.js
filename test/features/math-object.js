@@ -171,7 +171,17 @@ function sqrtABTest(mode) {
   const res = f(a,b);
   const exp = [3, 4, 5, 6, 7, 8];
 
-  assert.deepEqual(Array.from(res), exp);
+  // GLSL ES allows sqrt up to 2 ULP of error — unlike + - * / it is not
+  // required to be correctly rounded — so exact equality is not a property
+  // gpu.js can offer here. headless-gl returns 7.000000476837158 for
+  // sqrt(49.0), which is 1 ULP above 7.0 and entirely conforming.
+  Array.from(res).forEach((actual, i) => {
+    const ulp = Math.pow(2, Math.floor(Math.log2(exp[i])) - 23);
+    assert.ok(
+      Math.abs(actual - exp[i]) <= 2 * ulp,
+      `index ${i}: expected ${exp[i]} within 2 ULP, got ${actual}`
+    );
+  });
   gpu.destroy();
 }
 
