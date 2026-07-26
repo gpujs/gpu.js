@@ -1,0 +1,47 @@
+name: BrowserStack
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      browsers:
+        description: Target set
+        required: false
+        default: real-devices
+        type: choice
+        options: [real-devices, desktop, all]
+
+jobs:
+  browserstack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Forks do not get the org's BrowserStack secrets, so skip rather than fail.
+    if: github.event_name == 'workflow_dispatch' || github.repository == 'gpujs/gpu.js'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install packages
+        run: npm ci
+
+      - name: Build
+        # the devices load dist/, so it has to come from this commit
+        run: npx gulp make
+
+      - name: Run smoke suite on real devices
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        run: node test/browserstack/run.js --browsers=${{ inputs.browsers || 'real-devices' }}
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserstack-results
+          path: browserstack-results.json
+          if-no-files-found: ignore
