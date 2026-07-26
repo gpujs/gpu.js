@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "2.19.5",
+  "version": "2.19.6",
   "description": "GPU Accelerated JavaScript",
   "engines": {
     "node": ">=8.0.0"
