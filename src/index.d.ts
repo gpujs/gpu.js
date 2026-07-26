@@ -25,6 +25,13 @@ export class GPU {
       | void
       )
     & IKernelRunShortcutBase;
+  /**
+   * A kernel may also be given as source text. This is the only form available
+   * where the engine does not retain function source — React Native's Hermes,
+   * for instance, returns "function name(a0, a1) { [bytecode] }" from
+   * Function.prototype.toString().
+   */
+  createKernel(kernel: string, settings?: IGPUKernelSettings): IKernelRunShortcut;
   createKernel<ArgTypes extends ThreadKernelVariable[], ConstantsT extends IConstantsThis>(kernel: KernelFunction<ArgTypes, ConstantsT>, settings?: IGPUKernelSettings): IKernelRunShortcut;
   createKernel<KernelType extends KernelFunction>(kernel: KernelType, settings?: IGPUKernelSettings):
     ((...args: Parameters<KernelType>) =>
