@@ -168,3 +168,65 @@ test('works with adding functions', () => {
   assert.deepEqual(kernel(1), new Float32Array([2]));
   gpu.destroy();
 });
+
+// issue #719: kernels returning an array produced NaN in dev mode, because
+// gpu-mock.js assigned the returned array into a Float32Array slot
+test('works with array return', () => {
+  const gpu = new GPU({ mode: 'dev' });
+  const kernel = gpu.createKernel(function() {
+    return [1, 2];
+  }, { output: [2] });
+  assert.deepEqual(kernel(), [
+    new Float32Array([1, 2]),
+    new Float32Array([1, 2]),
+  ]);
+  gpu.destroy();
+});
+
+test('works with array return in matrix', () => {
+  const gpu = new GPU({ mode: 'dev' });
+  const kernel = gpu.createKernel(function() {
+    return [this.thread.x, this.thread.y];
+  }, { output: [2, 2] });
+  assert.deepEqual(kernel(), [
+    [new Float32Array([0, 0]), new Float32Array([1, 0])],
+    [new Float32Array([0, 1]), new Float32Array([1, 1])],
+  ]);
+  gpu.destroy();
+});
+
+test('works with array return in cube', () => {
+  const gpu = new GPU({ mode: 'dev' });
+  const kernel = gpu.createKernel(function() {
+    return [this.thread.z, 9];
+  }, { output: [1, 1, 2] });
+  assert.deepEqual(kernel(), [
+    [[new Float32Array([0, 9])]],
+    [[new Float32Array([1, 9])]],
+  ]);
+  gpu.destroy();
+});
+
+test('array returns match cpu mode', () => {
+  function build(mode) {
+    const gpu = new GPU({ mode });
+    const kernel = gpu.createKernel(function() {
+      return [1, 2, 3];
+    }, { output: [2, 2] });
+    const result = kernel();
+    gpu.destroy();
+    return result;
+  }
+  assert.deepEqual(build('dev'), build('cpu'));
+});
+
+test('number returns stay a flat Float32Array', () => {
+  const gpu = new GPU({ mode: 'dev' });
+  const kernel = gpu.createKernel(function() {
+    return 7;
+  }, { output: [3] });
+  const result = kernel();
+  assert.ok(result instanceof Float32Array, 'expected a Float32Array, got ' + result.constructor.name);
+  assert.deepEqual(result, new Float32Array([7, 7, 7]));
+  gpu.destroy();
+});
