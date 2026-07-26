@@ -265,8 +265,11 @@ class WebGLKernel extends GLKernel {
       throw new Error('Float textures are not supported');
     } else if (this.precision === 'single' && !features.isFloatRead) {
       throw new Error('Single precision not supported');
-    } else if (!this.graphical && this.precision === null && features.isTextureFloat) {
-      this.precision = features.isFloatRead ? 'single' : 'unsigned';
+    } else if (!this.graphical && this.precision === null) {
+      // a context without OES_texture_float cannot do single precision, but it
+      // can still do unsigned; leaving precision null here made every kernel on
+      // such a device throw "precision missing" from lookupKernelValueType
+      this.precision = features.isTextureFloat && features.isFloatRead ? 'single' : 'unsigned';
     }
 
     if (this.subKernels && this.subKernels.length > 0 && !this.extensions.WEBGL_draw_buffers) {

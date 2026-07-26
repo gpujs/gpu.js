@@ -68,9 +68,9 @@ class WebGLKernelArray extends WebGLKernelValue {
         return 1;
       case Uint16Array:
         return 2;
-      // signed arrays transfer as Float32Array (see getTransferArrayType),
-      // since the unsigned decode cannot represent negative values, so they
-      // occupy 4 bytes per element like Float32Array (#701)
+        // signed arrays transfer as Float32Array (see getTransferArrayType),
+        // since the unsigned decode cannot represent negative values, so they
+        // occupy 4 bytes per element like Float32Array (#701)
       case Int8Array:
       case Int16Array:
       case Float32Array:

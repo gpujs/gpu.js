@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.7
- * @date Sun Jul 26 2026 22:27:03 GMT+0800 (Singapore Standard Time)
+ * @date Sun Jul 26 2026 23:59:37 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -15389,8 +15389,8 @@ class WebGLKernel extends GLKernel {
       throw new Error('Float textures are not supported');
     } else if (this.precision === 'single' && !features.isFloatRead) {
       throw new Error('Single precision not supported');
-    } else if (!this.graphical && this.precision === null && features.isTextureFloat) {
-      this.precision = features.isFloatRead ? 'single' : 'unsigned';
+    } else if (!this.graphical && this.precision === null) {
+      this.precision = features.isTextureFloat && features.isFloatRead ? 'single' : 'unsigned';
     }
 
     if (this.subKernels && this.subKernels.length > 0 && !this.extensions.WEBGL_draw_buffers) {
