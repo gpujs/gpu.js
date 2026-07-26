@@ -189,6 +189,22 @@
         assertClose(kernel()[0], 5, 'loop total');
       });
 
+      test(label('modulo in a comparison'), function (track) {
+        const gpu = track(new GPU({ mode: mode }));
+        // used to fail to compile wherever fixIntegerDivisionAccuracy is off,
+        // since `%` was typed Integer but lowers to a float-returning helper
+        const kernel = gpu.createKernel(function () {
+          let total = 0;
+          for (let i = 0; i < 10; i++) {
+            if (i % 2 === 0) {
+              total += i;
+            }
+          }
+          return total;
+        }, { output: [1] });
+        assertClose(kernel()[0], 20, 'even sum');
+      });
+
       test(label('modulo and division'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         const kernel = gpu.createKernel(function (a) {

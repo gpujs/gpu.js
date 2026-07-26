@@ -482,9 +482,14 @@ class FunctionNode {
       case 'LogicalExpression':
         return 'Boolean';
       case 'BinaryExpression':
-        // modulos is Number
         switch (ast.operator) {
           case '%':
+            // `%` never yields an Integer, whatever its operands are: both GLSL
+            // helpers it lowers to (modulo, integerCorrectionModulo) return
+            // float, and on cpu it stays a JS `%`, which is fractional too.
+            // Reporting the left operand's type here made `i % 2 === 0` emit a
+            // float/int comparison that GLSL refuses to compile.
+            return 'Number';
           case '/':
             if (this.fixIntegerDivisionAccuracy) {
               return 'Number';

@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.7
- * @date Sun Jul 26 2026 23:59:37 GMT+0800 (Singapore Standard Time)
+ * @date Mon Jul 27 2026 00:05:27 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -2635,6 +2635,7 @@ class FunctionNode {
       case 'BinaryExpression':
         switch (ast.operator) {
           case '%':
+            return 'Number';
           case '/':
             if (this.fixIntegerDivisionAccuracy) {
               return 'Number';
