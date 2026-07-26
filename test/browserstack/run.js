@@ -145,6 +145,7 @@ function buildCapabilities(target, context) {
   const bstack = {
     projectName: context.projectName,
     buildName: context.buildName,
+    buildIdentifier: context.buildIdentifier,
     sessionName: target.name,
     local: 'true',
     localIdentifier: context.localIdentifier,
@@ -287,9 +288,13 @@ async function main() {
 
   const { server, port } = await startServer();
   const localIdentifier = `gpujs-${process.pid}-${Date.now()}`;
-  const buildName = process.env.GITHUB_RUN_ID
-    ? `gpu.js CI #${process.env.GITHUB_RUN_ID}`
-    : `gpu.js local ${new Date().toISOString().replace('T', ' ').slice(0, 19)}`;
+  // BrowserStack groups runs under a single build when the name is stable and
+  // the identifier varies. A unique name per run instead creates a separate
+  // build entry every time, which buries the project in the dashboard.
+  const buildName = process.env.BROWSERSTACK_BUILD || 'gpu.js';
+  const buildIdentifier = process.env.GITHUB_RUN_ID
+    ? `CI ${process.env.GITHUB_RUN_ID}`
+    : `local ${new Date().toISOString().replace('T', ' ').slice(0, 19)}`;
 
   const suitePath = args.suite === 'qunit'
     ? `/test/all.html${args.filter ? `?filter=${encodeURIComponent(args.filter)}` : ''}`
@@ -298,13 +303,13 @@ async function main() {
 
   console.log(`suite:    ${args.suite}`);
   console.log(`url:      ${url}`);
-  console.log(`build:    ${buildName}`);
+  console.log(`build:    ${buildName} (${buildIdentifier})`);
   console.log(`targets:  ${targets.length} (${args.browsers}), concurrency ${args.concurrency}\n`);
 
   if (args['dry-run']) {
     targets.forEach(target => {
       const caps = buildCapabilities(target, {
-        user, key, localIdentifier, buildName, projectName: args.project
+        user, key, localIdentifier, buildName, buildIdentifier, projectName: args.project
       });
       // never print the access key, even locally
       const shown = JSON.parse(JSON.stringify(caps));
@@ -320,7 +325,7 @@ async function main() {
   console.log('tunnel up\n');
 
   const context = {
-    user, key, localIdentifier, buildName, url,
+    user, key, localIdentifier, buildName, buildIdentifier, url,
     projectName: args.project,
     suite: args.suite,
     timeout: args.timeout
@@ -361,7 +366,7 @@ async function main() {
   console.log(`\n${results.length - failed.length}/${results.length} targets passed`);
 
   const reportPath = path.join(REPO_ROOT, 'browserstack-results.json');
-  fs.writeFileSync(reportPath, JSON.stringify({ buildName, suite: args.suite, results }, null, 2));
+  fs.writeFileSync(reportPath, JSON.stringify({ buildName, buildIdentifier, suite: args.suite, results }, null, 2));
   console.log(`report written to ${path.relative(REPO_ROOT, reportPath)}`);
 
   process.exitCode = failed.length ? 1 : 0;
