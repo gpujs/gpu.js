@@ -189,6 +189,21 @@
         assertClose(kernel()[0], 5, 'loop total');
       });
 
+      test(label('signed right shift'), function (track) {
+        const gpu = track(new GPU({ mode: mode }));
+        // emulated in GLSL for both webgl and webgl2; used to use an
+        // approximate pow(2.0, n), so exact left operands shifted one too far
+        const kernel = gpu.createKernel(function (a, b) {
+          return a[this.thread.x] >> b[this.thread.x];
+        }, { output: [6] });
+        const left = [2, 4, 8, 8, 1024, -8];
+        const right = [1, 1, 3, 2, 5, 1];
+        const out = kernel(left, right);
+        left.forEach(function (value, i) {
+          assertClose(out[i], value >> right[i], value + ' >> ' + right[i], 0.001);
+        });
+      });
+
       test(label('modulo in a comparison'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         // used to fail to compile wherever fixIntegerDivisionAccuracy is off,

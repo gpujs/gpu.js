@@ -192,8 +192,14 @@ int bitwiseZeroFillLeftShift(int n, int shift) {
   return result;
 }
 
+// _pow2 is defined further down, alongside encode32/decode32
+float _pow2(float e);
 int bitwiseSignedRightShift(int num, int shifts) {
-  return int(floor(float(num) / pow(2.0, float(shifts))));
+  // pow(2.0, n) is approximate on many GPUs, and landing 1 ulp high makes the
+  // division fall just under a whole number, which floor() then rounds away:
+  // 2 >> 1 came out 0, 8 >> 1 came out 3. Only exact left operands were
+  // affected, odd ones having enough slack to survive. _pow2 is exact.
+  return int(floor(float(num) / _pow2(float(shifts))));
 }
 
 int bitwiseZeroFillRightShift(int n, int shift) {
