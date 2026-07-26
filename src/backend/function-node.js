@@ -491,11 +491,13 @@ class FunctionNode {
             // float/int comparison that GLSL refuses to compile.
             return 'Number';
           case '/':
-            if (this.fixIntegerDivisionAccuracy) {
-              return 'Number';
-            } else {
-              break;
-            }
+            // JavaScript has no integer division — `a / b` is always
+            // fractional — so reporting Integer here made GLSL emit an integer
+            // divide and silently truncate. `this.thread.x / 64` came out 0 on
+            // every GPU whose integer division is already accurate, which is
+            // most desktop hardware. Math.floor(a / b) remains the way to ask
+            // for truncation, exactly as in JS.
+            return 'Number';
           case '>':
           case '<':
             return 'Boolean';

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GPU.JS : visual rendering probe</title>
+  <style>
+    body { font: 13px -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 8px; }
+    canvas { border: 1px solid #ccc; image-rendering: pixelated; }
+    .scene { display: inline-block; margin: 4px; }
+  </style>
+  <script src="../../dist/gpu-browser.js"></script>
+</head>
+<body>
+<div id="scenes"></div>
+<script>
+(function () {
+  'use strict';
+
+  const results = window.__gpujsVisual = { done: false, error: null, env: {}, scenes: [] };
+
+  // FNV-1a over the raw pixel bytes. Exact-match across devices is the strict
+  // bar; the per-channel stats below are what a tolerant comparison would use.
+  function hash(bytes) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < bytes.length; i++) {
+      h ^= bytes[i];
+      h = (h * 0x01000193) >>> 0;
+    }
+    return h.toString(16).padStart(8, '0');
+  }
+
+  function summarise(pixels) {
+    let sum = 0;
+    let nonZero = 0;
+    for (let i = 0; i < pixels.length; i++) {
+      sum += pixels[i];
+      if (pixels[i] !== 0) nonZero++;
+    }
+    return { mean: +(sum / pixels.length).toFixed(4), nonZero };
+  }
+
+  const SIZE = 64;
+
+  const scenes = {
+    // flat fill: any device disagreeing here has a colour-management problem
+    flat: function () {
+      return function () {
+        this.color(0.2, 0.6, 0.9, 1);
+      };
+    },
+    // linear gradient: exercises thread indexing and float->byte quantisation
+    gradient: function () {
+      return function () {
+        this.color(this.thread.x / 64, this.thread.y / 64, 0.5, 1);
+      };
+    },
+    // iterative float math: the scene most likely to diverge between GPUs
+    mandelbrot: function () {
+      return function () {
+        const cx = (this.thread.x / 64) * 3.0 - 2.0;
+        const cy = (this.thread.y / 64) * 2.4 - 1.2;
+        let zx = 0.0;
+        let zy = 0.0;
+        let iter = 0.0;
+        for (let i = 0; i < 48; i++) {
+          if (zx * zx + zy * zy < 4.0) {
+            const t = zx * zx - zy * zy + cx;
+            zy = 2.0 * zx * zy + cy;
+            zx = t;
+            iter = iter + 1.0;
+          }
+        }
+        const shade = iter / 48.0;
+        this.color(shade, shade * shade, 1.0 - shade, 1);
+      };
+    }
+  };
+
+  try {
+    results.env = {
+      userAgent: navigator.userAgent,
+      devicePixelRatio: window.devicePixelRatio,
+      isWebGLSupported: GPU.isWebGLSupported,
+      isWebGL2Supported: GPU.isWebGL2Supported
+    };
+
+    const modes = [];
+    if (GPU.isWebGLSupported) modes.push('webgl');
+    if (GPU.isWebGL2Supported) modes.push('webgl2');
+    modes.push('cpu');
+
+    modes.forEach(function (mode) {
+      Object.keys(scenes).forEach(function (name) {
+        const entry = { mode: mode, scene: name };
+        let gpu = null;
+        try {
+          gpu = new GPU({ mode: mode });
+          const kernel = gpu.createKernel(scenes[name](), {
+            output: [SIZE, SIZE],
+            graphical: true
+          });
+          kernel();
+
+          const pixels = kernel.getPixels();
+          entry.pixelHash = hash(pixels);
+          entry.stats = summarise(pixels);
+          entry.corners = [
+            Array.from(pixels.slice(0, 4)),
+            Array.from(pixels.slice((SIZE - 1) * 4, SIZE * 4)),
+            Array.from(pixels.slice(pixels.length - 4))
+          ];
+
+          // does the canvas itself read back, independently of getPixels?
+          const canvas = kernel.canvas;
+          if (canvas) {
+            const wrap = document.createElement('div');
+            wrap.className = 'scene';
+            wrap.appendChild(canvas);
+            document.getElementById('scenes').appendChild(wrap);
+            try {
+              const url = canvas.toDataURL('image/png');
+              entry.dataUrlLength = url.length;
+              entry.dataUrlHash = hash(url.slice(22));
+            } catch (e) {
+              entry.dataUrlError = e.message;
+            }
+          }
+        } catch (e) {
+          entry.error = (e && e.message) || String(e);
+        } finally {
+          if (gpu) { try { gpu.destroy(); } catch (e) {} }
+        }
+        results.scenes.push(entry);
+      });
+    });
+  } catch (e) {
+    results.error = (e && e.stack) || String(e);
+  }
+
+  results.done = true;
+})();
+</script>
+</body>
+</html>

@@ -256,8 +256,13 @@ class WebGLFunctionNode extends FunctionNode {
       return retArr;
     }
 
-    if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
-      retArr.push('divWithIntCheck(');
+    // `/` is always fractional in JavaScript, so both operands go to float
+    // whatever their own types are — otherwise GLSL emits an integer divide and
+    // truncates, and `this.thread.x / 64` comes out 0. Only the accuracy
+    // wrapper is conditional; the casting is not.
+    if (ast.operator === '/') {
+      const wrap = this.fixIntegerDivisionAccuracy;
+      retArr.push(wrap ? 'divWithIntCheck(' : '(');
       this.pushState('building-float');
       switch (this.getType(ast.left)) {
         case 'Integer':
@@ -269,7 +274,7 @@ class WebGLFunctionNode extends FunctionNode {
         default:
           this.astGeneric(ast.left, retArr);
       }
-      retArr.push(', ');
+      retArr.push(wrap ? ', ' : '/');
       switch (this.getType(ast.right)) {
         case 'Integer':
           this.castValueToFloat(ast.right, retArr);

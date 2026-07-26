@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.8
- * @date Mon Jul 27 2026 00:26:46 GMT+0800 (Singapore Standard Time)
+ * @date Mon Jul 27 2026 01:10:46 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -8091,11 +8091,7 @@ class FunctionNode {
           case '%':
             return 'Number';
           case '/':
-            if (this.fixIntegerDivisionAccuracy) {
-              return 'Number';
-            } else {
-              break;
-            }
+            return 'Number';
           case '>':
           case '<':
             return 'Boolean';
@@ -12622,8 +12618,9 @@ class WebGLFunctionNode extends FunctionNode {
       return retArr;
     }
 
-    if (this.fixIntegerDivisionAccuracy && ast.operator === '/') {
-      retArr.push('divWithIntCheck(');
+    if (ast.operator === '/') {
+      const wrap = this.fixIntegerDivisionAccuracy;
+      retArr.push(wrap ? 'divWithIntCheck(' : '(');
       this.pushState('building-float');
       switch (this.getType(ast.left)) {
         case 'Integer':
@@ -12635,7 +12632,7 @@ class WebGLFunctionNode extends FunctionNode {
         default:
           this.astGeneric(ast.left, retArr);
       }
-      retArr.push(', ');
+      retArr.push(wrap ? ', ' : '/');
       switch (this.getType(ast.right)) {
         case 'Integer':
           this.castValueToFloat(ast.right, retArr);

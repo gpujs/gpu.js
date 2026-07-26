@@ -85,7 +85,7 @@ test('divide int & float', () => {
   });
 
   assert.equal(node.toString(), 'float kernel(int user_left, float user_right) {'
-    + '\nreturn float((user_left/int(user_right)));'
+    + '\nreturn (float(user_left)/user_right);'
     + '\n}');
 });
 
@@ -99,7 +99,7 @@ test('divide int & int', () => {
   });
 
   assert.equal(node.toString(), 'float kernel(int user_left, int user_right) {'
-    + '\nreturn float((user_left/user_right));'
+    + '\nreturn (float(user_left)/float(user_right));'
     + '\n}');
 });
 
@@ -113,7 +113,7 @@ test('divide int & literal float', () => {
   });
 
   assert.equal(node.toString(), 'float kernel(int user_left) {'
-    + '\nreturn float((user_left/1));'
+    + '\nreturn (float(user_left)/1.1);'
     + '\n}');
 });
 
@@ -127,7 +127,7 @@ test('divide int & literal integer', () => {
   });
 
   assert.equal(node.toString(), 'float kernel(int user_left) {'
-    + '\nreturn float((user_left/1));'
+    + '\nreturn (float(user_left)/1.0);'
     + '\n}');
 });
 
@@ -142,7 +142,7 @@ test('divide int & Input', () => {
   });
 
   assert.equal(node.toString(), 'float kernel(int user_left, sampler2D user_right,ivec2 user_rightSize,ivec3 user_rightDim) {'
-    + '\nreturn float((user_left/int(get32(user_right, user_rightSize, user_rightDim, 0, 0, threadId.x))));'
+    + '\nreturn (float(user_left)/get32(user_right, user_rightSize, user_rightDim, 0, 0, threadId.x));'
     + '\n}');
 });
 
@@ -170,7 +170,7 @@ test('divide literal integer & int', () => {
   });
 
   assert.equal(node.toString(), 'float kernel(int user_left) {'
-    + '\nreturn float((1/user_left));'
+    + '\nreturn (1.0/float(user_left));'
     + '\n}');
 });
 
@@ -288,6 +288,9 @@ test('divide literal float & Input', () => {
     + '\n}');
 });
 
+// Both flag states divide in float now: `/` is fractional in JavaScript, so an
+// integer divide here truncated and `this.thread.x / this.output.x` came out 0.
+// The flag only decides whether the divide is wrapped in divWithIntCheck.
 test('divide this.thread.x by this.output.x and multiple, integer, integer, and float with this.fixIntegerDivisionAccuracy = false', () => {
   const node = new WebGLFunctionNode(`function kernel() {
     return (this.thread.x / this.output.x) * 4;
@@ -300,7 +303,7 @@ test('divide this.thread.x by this.output.x and multiple, integer, integer, and 
   });
 
   assert.equal(node.toString(), 'float kernel() {'
-    + '\nreturn float(((threadId.x/1)*4));'
+    + '\nreturn ((float(threadId.x)/1.0)*4.0);'
     + '\n}');
 });
 
