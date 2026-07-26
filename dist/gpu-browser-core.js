@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.19.4
- * @date Sun Jul 26 2026 19:12:32 GMT+0800 (Singapore Standard Time)
+ * @version 2.19.5
+ * @date Sun Jul 26 2026 19:14:05 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -14824,12 +14824,12 @@ module.exports = {
 function glWiretap(gl, options = {}) {
   const {
     contextName = 'gl',
-    throwGetError,
-    useTrackablePrimitives,
-    recording = [],
-    variables = {},
-    onReadPixels,
-    onUnrecognizedArgumentLookup,
+      throwGetError,
+      useTrackablePrimitives,
+      recording = [],
+      variables = {},
+      onReadPixels,
+      onUnrecognizedArgumentLookup,
   } = options;
   const proxy = new Proxy(gl, { get: listen });
   const contextVariables = [];
@@ -14837,16 +14837,25 @@ function glWiretap(gl, options = {}) {
   let indent = '';
   let readPixelsVariableName;
   return proxy;
+
   function listen(obj, property) {
     switch (property) {
-      case 'addComment': return addComment;
-      case 'checkThrowError': return checkThrowError;
-      case 'getReadPixelsVariableName': return readPixelsVariableName;
-      case 'insertVariable': return insertVariable;
-      case 'reset': return reset;
-      case 'setIndent': return setIndent;
-      case 'toString': return toString;
-      case 'getContextVariableName': return getContextVariableName;
+      case 'addComment':
+        return addComment;
+      case 'checkThrowError':
+        return checkThrowError;
+      case 'getReadPixelsVariableName':
+        return readPixelsVariableName;
+      case 'insertVariable':
+        return insertVariable;
+      case 'reset':
+        return reset;
+      case 'setIndent':
+        return setIndent;
+      case 'toString':
+        return toString;
+      case 'getContextVariableName':
+        return getContextVariableName;
     }
     if (typeof gl[property] === 'function') {
       return function() { 
@@ -14942,17 +14951,21 @@ function glWiretap(gl, options = {}) {
     entityNames[gl[property]] = property;
     return gl[property];
   }
+
   function toString() {
     return recording.join('\n');
   }
+
   function reset() {
     while (recording.length > 0) {
       recording.pop();
     }
   }
+
   function insertVariable(name, value) {
     variables[name] = value;
   }
+
   function getEntity(value) {
     const name = entityNames[value];
     if (name) {
@@ -14960,18 +14973,22 @@ function glWiretap(gl, options = {}) {
     }
     return value;
   }
+
   function setIndent(spaces) {
     indent = ' '.repeat(spaces);
   }
+
   function addVariable(value, source) {
     const variableName = `${contextName}Variable${contextVariables.length}`;
     recording.push(`${indent}const ${variableName} = ${source};`);
     contextVariables.push(value);
     return variableName;
   }
+
   function addComment(value) {
     recording.push(`${indent}// ${value}`);
   }
+
   function checkThrowError() {
     recording.push(`${indent}(() => {
 ${indent}const error = ${contextName}.getError();
@@ -14986,6 +15003,7 @@ ${indent}  }
 ${indent}}
 ${indent}})();`);
   }
+
   function methodCallToString(method, args) {
     return `${contextName}.${method}(${argumentsToString(args, { contextName, contextVariables, getEntity, addVariable, variables, onUnrecognizedArgumentLookup })})`;
   }
@@ -15024,6 +15042,7 @@ function glExtensionWiretap(extension, options) {
     onUnrecognizedArgumentLookup,
   } = options;
   return proxy;
+
   function listen(obj, property) {
     if (typeof obj[property] === 'function') {
       return function() {
@@ -15133,8 +15152,10 @@ function argumentToString(arg, options) {
       } else {
         return '\'' + arg + '\'';
       }
-    case 'Number': return getEntity(arg);
-    case 'Boolean': return getEntity(arg);
+    case 'Number':
+      return getEntity(arg);
+    case 'Boolean':
+      return getEntity(arg);
     case 'Array':
       return addVariable(arg, `new ${arg.constructor.name}([${Array.from(arg).join(',')}])`);
     case 'Float32Array':
@@ -15165,6 +15186,5 @@ if (typeof window !== 'undefined') {
   glWiretap.glExtensionWiretap = glExtensionWiretap;
   window.glWiretap = glWiretap;
 }
-
 },{}]},{},[105])(105)
 });
