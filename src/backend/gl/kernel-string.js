@@ -1,4 +1,4 @@
-const { glWiretap } = require('gl-wiretap');
+const { glWiretap } = require('../../vendor/gl-wiretap');
 const { utils } = require('../../utils');
 
 function toStringWithoutUtils(fn) {

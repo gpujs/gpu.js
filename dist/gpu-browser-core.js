@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.4
- * @date Sun Jul 26 2026 18:37:16 GMT+0800 (Singapore Standard Time)
+ * @date Sun Jul 26 2026 19:12:32 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -14,369 +14,6 @@
  */(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.GPU = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 
 },{}],2:[function(require,module,exports){
-function glWiretap(gl, options = {}) {
-  const {
-    contextName = 'gl',
-    throwGetError,
-    useTrackablePrimitives,
-    readPixelsFile,
-    recording = [],
-    variables = {},
-    onReadPixels,
-    onUnrecognizedArgumentLookup,
-  } = options;
-  const proxy = new Proxy(gl, { get: listen });
-  const contextVariables = [];
-  const entityNames = {};
-  let imageCount = 0;
-  let indent = '';
-  let readPixelsVariableName;
-  return proxy;
-  function listen(obj, property) {
-    switch (property) {
-      case 'addComment': return addComment;
-      case 'checkThrowError': return checkThrowError;
-      case 'getReadPixelsVariableName': return readPixelsVariableName;
-      case 'insertVariable': return insertVariable;
-      case 'reset': return reset;
-      case 'setIndent': return setIndent;
-      case 'toString': return toString;
-      case 'getContextVariableName': return getContextVariableName;
-    }
-    if (typeof gl[property] === 'function') {
-      return function() { 
-        switch (property) {
-          case 'getError':
-            if (throwGetError) {
-              recording.push(`${indent}if (${contextName}.getError() !== ${contextName}.NONE) throw new Error('error');`);
-            } else {
-              recording.push(`${indent}${contextName}.getError();`); 
-            }
-            return gl.getError();
-          case 'getExtension': {
-            const variableName = `${contextName}Variables${contextVariables.length}`;
-            recording.push(`${indent}const ${variableName} = ${contextName}.getExtension('${arguments[0]}');`);
-            const extension = gl.getExtension(arguments[0]);
-            if (extension && typeof extension === 'object') {
-              const tappedExtension = glExtensionWiretap(extension, {
-                getEntity,
-                useTrackablePrimitives,
-                recording,
-                contextName: variableName,
-                contextVariables,
-                variables,
-                indent,
-                onUnrecognizedArgumentLookup,
-              });
-              contextVariables.push(tappedExtension);
-              return tappedExtension;
-            } else {
-              contextVariables.push(null);
-            }
-            return extension;
-          }
-          case 'readPixels':
-            const i = contextVariables.indexOf(arguments[6]);
-            let targetVariableName;
-            if (i === -1) {
-              const variableName = getVariableName(arguments[6]);
-              if (variableName) {
-                targetVariableName = variableName;
-                recording.push(`${indent}${variableName}`);
-              } else {
-                targetVariableName = `${contextName}Variable${contextVariables.length}`;
-                contextVariables.push(arguments[6]);
-                recording.push(`${indent}const ${targetVariableName} = new ${arguments[6].constructor.name}(${arguments[6].length});`);
-              }
-            } else {
-              targetVariableName = `${contextName}Variable${i}`;
-            }
-            readPixelsVariableName = targetVariableName;
-            const argumentAsStrings = [
-              arguments[0],
-              arguments[1],
-              arguments[2],
-              arguments[3],
-              getEntity(arguments[4]),
-              getEntity(arguments[5]),
-              targetVariableName
-            ];
-            recording.push(`${indent}${contextName}.readPixels(${argumentAsStrings.join(', ')});`);
-            if (readPixelsFile) {
-              writePPM(arguments[2], arguments[3]);
-            }
-            if (onReadPixels) {
-              onReadPixels(targetVariableName, argumentAsStrings);
-            }
-            return gl.readPixels.apply(gl, arguments);
-          case 'drawBuffers':
-            recording.push(`${indent}${contextName}.drawBuffers([${argumentsToString(arguments[0], { contextName, contextVariables, getEntity, addVariable, variables, onUnrecognizedArgumentLookup } )}]);`);
-            return gl.drawBuffers(arguments[0]);
-        }
-        let result = gl[property].apply(gl, arguments);
-        switch (typeof result) {
-          case 'undefined':
-            recording.push(`${indent}${methodCallToString(property, arguments)};`);
-            return;
-          case 'number':
-          case 'boolean':
-            if (useTrackablePrimitives && contextVariables.indexOf(trackablePrimitive(result)) === -1) {
-              recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
-              contextVariables.push(result = trackablePrimitive(result));
-              break;
-            }
-          default:
-            if (result === null) {
-              recording.push(`${methodCallToString(property, arguments)};`);
-            } else {
-              recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
-            }
-
-            contextVariables.push(result);
-        }
-        return result;
-      }
-    }
-    entityNames[gl[property]] = property;
-    return gl[property];
-  }
-  function toString() {
-    return recording.join('\n');
-  }
-  function reset() {
-    while (recording.length > 0) {
-      recording.pop();
-    }
-  }
-  function insertVariable(name, value) {
-    variables[name] = value;
-  }
-  function getEntity(value) {
-    const name = entityNames[value];
-    if (name) {
-      return contextName + '.' + name;
-    }
-    return value;
-  }
-  function setIndent(spaces) {
-    indent = ' '.repeat(spaces);
-  }
-  function addVariable(value, source) {
-    const variableName = `${contextName}Variable${contextVariables.length}`;
-    recording.push(`${indent}const ${variableName} = ${source};`);
-    contextVariables.push(value);
-    return variableName;
-  }
-  function writePPM(width, height) {
-    const sourceVariable = `${contextName}Variable${contextVariables.length}`;
-    const imageVariable = `imageDatum${imageCount}`;
-    recording.push(`${indent}let ${imageVariable} = ["P3\\n# ${readPixelsFile}.ppm\\n", ${width}, ' ', ${height}, "\\n255\\n"].join("");`);
-    recording.push(`${indent}for (let i = 0; i < ${imageVariable}.length; i += 4) {`);
-    recording.push(`${indent}  ${imageVariable} += ${sourceVariable}[i] + ' ' + ${sourceVariable}[i + 1] + ' ' + ${sourceVariable}[i + 2] + ' ';`);
-    recording.push(`${indent}}`);
-    recording.push(`${indent}if (typeof require !== "undefined") {`);
-    recording.push(`${indent}  require('fs').writeFileSync('./${readPixelsFile}.ppm', ${imageVariable});`);
-    recording.push(`${indent}}`);
-    imageCount++;
-  }
-  function addComment(value) {
-    recording.push(`${indent}// ${value}`);
-  }
-  function checkThrowError() {
-    recording.push(`${indent}(() => {
-${indent}const error = ${contextName}.getError();
-${indent}if (error !== ${contextName}.NONE) {
-${indent}  const names = Object.getOwnPropertyNames(gl);
-${indent}  for (let i = 0; i < names.length; i++) {
-${indent}    const name = names[i];
-${indent}    if (${contextName}[name] === error) {
-${indent}      throw new Error('${contextName} threw ' + name);
-${indent}    }
-${indent}  }
-${indent}}
-${indent}})();`);
-  }
-  function methodCallToString(method, args) {
-    return `${contextName}.${method}(${argumentsToString(args, { contextName, contextVariables, getEntity, addVariable, variables, onUnrecognizedArgumentLookup })})`;
-  }
-
-  function getVariableName(value) {
-    if (variables) {
-      for (const name in variables) {
-        if (variables[name] === value) {
-          return name;
-        }
-      }
-    }
-    return null;
-  }
-
-  function getContextVariableName(value) {
-    const i = contextVariables.indexOf(value);
-    if (i !== -1) {
-      return `${contextName}Variable${i}`;
-    }
-    return null;
-  }
-}
-
-function glExtensionWiretap(extension, options) {
-  const proxy = new Proxy(extension, { get: listen });
-  const extensionEntityNames = {};
-  const {
-    contextName,
-    contextVariables,
-    getEntity,
-    useTrackablePrimitives,
-    recording,
-    variables,
-    indent,
-    onUnrecognizedArgumentLookup,
-  } = options;
-  return proxy;
-  function listen(obj, property) {
-    if (typeof obj[property] === 'function') {
-      return function() {
-        switch (property) {
-          case 'drawBuffersWEBGL':
-            recording.push(`${indent}${contextName}.drawBuffersWEBGL([${argumentsToString(arguments[0], { contextName, contextVariables, getEntity: getExtensionEntity, addVariable, variables, onUnrecognizedArgumentLookup })}]);`);
-            return extension.drawBuffersWEBGL(arguments[0]);
-        }
-        let result = extension[property].apply(extension, arguments);
-        switch (typeof result) {
-          case 'undefined':
-            recording.push(`${indent}${methodCallToString(property, arguments)};`);
-            return;
-          case 'number':
-          case 'boolean':
-            if (useTrackablePrimitives && contextVariables.indexOf(trackablePrimitive(result)) === -1) {
-              recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
-              contextVariables.push(result = trackablePrimitive(result));
-            } else {
-              recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
-              contextVariables.push(result);
-            }
-            break;
-          default:
-            if (result === null) {
-              recording.push(`${methodCallToString(property, arguments)};`);
-            } else {
-              recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
-            }
-            contextVariables.push(result);
-        }
-        return result;
-      };
-    }
-    extensionEntityNames[extension[property]] = property;
-    return extension[property];
-  }
-
-  function getExtensionEntity(value) {
-    if (extensionEntityNames.hasOwnProperty(value)) {
-      return `${contextName}.${extensionEntityNames[value]}`;
-    }
-    return getEntity(value);
-  }
-
-  function methodCallToString(method, args) {
-    return `${contextName}.${method}(${argumentsToString(args, { contextName, contextVariables, getEntity: getExtensionEntity, addVariable, variables, onUnrecognizedArgumentLookup })})`;
-  }
-
-  function addVariable(value, source) {
-    const variableName = `${contextName}Variable${contextVariables.length}`;
-    contextVariables.push(value);
-    recording.push(`${indent}const ${variableName} = ${source};`);
-    return variableName;
-  }
-}
-
-function argumentsToString(args, options) {
-  const { variables, onUnrecognizedArgumentLookup } = options;
-  return (Array.from(args).map((arg) => {
-    const variableName = getVariableName(arg);
-    if (variableName) {
-      return variableName;
-    }
-    return argumentToString(arg, options);
-  }).join(', '));
-
-  function getVariableName(value) {
-    if (variables) {
-      for (const name in variables) {
-        if (!variables.hasOwnProperty(name)) continue;
-        if (variables[name] === value) {
-          return name;
-        }
-      }
-    }
-    if (onUnrecognizedArgumentLookup) {
-      return onUnrecognizedArgumentLookup(value);
-    }
-    return null;
-  }
-}
-
-function argumentToString(arg, options) {
-  const { contextName, contextVariables, getEntity, addVariable, onUnrecognizedArgumentLookup } = options;
-  if (typeof arg === 'undefined') {
-    return 'undefined';
-  }
-  if (arg === null) {
-    return 'null';
-  }
-  const i = contextVariables.indexOf(arg);
-  if (i > -1) {
-    return `${contextName}Variable${i}`;
-  }
-  switch (arg.constructor.name) {
-    case 'String':
-      const hasLines = /\n/.test(arg);
-      const hasSingleQuotes = /'/.test(arg);
-      const hasDoubleQuotes = /"/.test(arg);
-      if (hasLines) {
-        return '`' + arg + '`';
-      } else if (hasSingleQuotes && !hasDoubleQuotes) {
-        return '"' + arg + '"';
-      } else if (!hasSingleQuotes && hasDoubleQuotes) {
-        return "'" + arg + "'";
-      } else {
-        return '\'' + arg + '\'';
-      }
-    case 'Number': return getEntity(arg);
-    case 'Boolean': return getEntity(arg);
-    case 'Array':
-      return addVariable(arg, `new ${arg.constructor.name}([${Array.from(arg).join(',')}])`);
-    case 'Float32Array':
-    case 'Uint8Array':
-    case 'Uint16Array':
-    case 'Int32Array':
-      return addVariable(arg, `new ${arg.constructor.name}(${JSON.stringify(Array.from(arg))})`);
-    default:
-      if (onUnrecognizedArgumentLookup) {
-        const instantiationString = onUnrecognizedArgumentLookup(arg);
-        if (instantiationString) {
-          return instantiationString;
-        }
-      }
-      throw new Error(`unrecognized argument type ${arg.constructor.name}`);
-  }
-}
-
-function trackablePrimitive(value) {
-  return new value.constructor(value);
-}
-
-if (typeof module !== 'undefined') {
-  module.exports = { glWiretap, glExtensionWiretap };
-}
-
-if (typeof window !== 'undefined') {
-  glWiretap.glExtensionWiretap = glExtensionWiretap;
-  window.glWiretap = glWiretap;
-}
-
-},{}],3:[function(require,module,exports){
 function setupArguments(args) {
   const newArguments = new Array(args.length);
   for (let i = 0; i < args.length; i++) {
@@ -644,7 +281,7 @@ module.exports = {
   gpuMock
 };
 
-},{}],4:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 const { utils } = require('./utils');
 
 function alias(name, source) {
@@ -657,7 +294,7 @@ function alias(name, source) {
 module.exports = {
   alias
 };
-},{"./utils":113}],5:[function(require,module,exports){
+},{"./utils":112}],4:[function(require,module,exports){
 const { FunctionNode } = require('../function-node');
 
 class CPUFunctionNode extends FunctionNode {
@@ -1206,7 +843,7 @@ class CPUFunctionNode extends FunctionNode {
 module.exports = {
   CPUFunctionNode
 };
-},{"../function-node":9}],6:[function(require,module,exports){
+},{"../function-node":8}],5:[function(require,module,exports){
 const { utils } = require('../../utils');
 
 function constantsToString(constants, types) {
@@ -1392,7 +1029,7 @@ ${cpuKernel._kernelString}
 module.exports = {
   cpuKernelString
 };
-},{"../../utils":113}],7:[function(require,module,exports){
+},{"../../utils":112}],6:[function(require,module,exports){
 const { Kernel } = require('../kernel');
 const { FunctionBuilder } = require('../function-builder');
 const { CPUFunctionNode } = require('./function-node');
@@ -2028,7 +1665,7 @@ class CPUKernel extends Kernel {
 module.exports = {
   CPUKernel
 };
-},{"../../utils":113,"../function-builder":8,"../kernel":35,"./function-node":5,"./kernel-string":6}],8:[function(require,module,exports){
+},{"../../utils":112,"../function-builder":7,"../kernel":34,"./function-node":4,"./kernel-string":5}],7:[function(require,module,exports){
 class FunctionBuilder {
   static fromKernel(kernel, FunctionNode, extraNodeOptions) {
     const {
@@ -2563,7 +2200,7 @@ class FunctionBuilder {
 module.exports = {
   FunctionBuilder
 };
-},{}],9:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 const acorn = require('acorn');
 const { utils } = require('../utils');
 const { FunctionTracer } = require('./function-tracer');
@@ -3928,7 +3565,7 @@ const typeLookupMap = {
 module.exports = {
   FunctionNode
 };
-},{"../utils":113,"./function-tracer":10,"acorn":1}],10:[function(require,module,exports){
+},{"../utils":112,"./function-tracer":9,"acorn":1}],9:[function(require,module,exports){
 const { utils } = require('../utils');
 
 function last(array) {
@@ -4228,8 +3865,8 @@ class FunctionTracer {
 module.exports = {
   FunctionTracer,
 };
-},{"../utils":113}],11:[function(require,module,exports){
-const { glWiretap } = require('gl-wiretap');
+},{"../utils":112}],10:[function(require,module,exports){
+const { glWiretap } = require('../../vendor/gl-wiretap');
 const { utils } = require('../../utils');
 
 function toStringWithoutUtils(fn) {
@@ -4574,7 +4211,7 @@ function findKernelValue(argument, kernelValues, values, context, uploadedValues
 module.exports = {
   glKernelString
 };
-},{"../../utils":113,"gl-wiretap":2}],12:[function(require,module,exports){
+},{"../../utils":112,"../../vendor/gl-wiretap":113}],11:[function(require,module,exports){
 const { Kernel } = require('../kernel');
 const { utils } = require('../../utils');
 const { GLTextureArray2Float } = require('./texture/array-2-float');
@@ -5512,7 +5149,7 @@ const typeMap = {
 module.exports = {
   GLKernel
 };
-},{"../../utils":113,"../kernel":35,"./texture/array-2-float":15,"./texture/array-2-float-2d":13,"./texture/array-2-float-3d":14,"./texture/array-3-float":18,"./texture/array-3-float-2d":16,"./texture/array-3-float-3d":17,"./texture/array-4-float":21,"./texture/array-4-float-2d":19,"./texture/array-4-float-3d":20,"./texture/float":24,"./texture/float-2d":22,"./texture/float-3d":23,"./texture/graphical":25,"./texture/memory-optimized":29,"./texture/memory-optimized-2d":27,"./texture/memory-optimized-3d":28,"./texture/unsigned":32,"./texture/unsigned-2d":30,"./texture/unsigned-3d":31}],13:[function(require,module,exports){
+},{"../../utils":112,"../kernel":34,"./texture/array-2-float":14,"./texture/array-2-float-2d":12,"./texture/array-2-float-3d":13,"./texture/array-3-float":17,"./texture/array-3-float-2d":15,"./texture/array-3-float-3d":16,"./texture/array-4-float":20,"./texture/array-4-float-2d":18,"./texture/array-4-float-3d":19,"./texture/float":23,"./texture/float-2d":21,"./texture/float-3d":22,"./texture/graphical":24,"./texture/memory-optimized":28,"./texture/memory-optimized-2d":26,"./texture/memory-optimized-3d":27,"./texture/unsigned":31,"./texture/unsigned-2d":29,"./texture/unsigned-3d":30}],12:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5529,7 +5166,7 @@ class GLTextureArray2Float2D extends GLTextureFloat {
 module.exports = {
   GLTextureArray2Float2D
 };
-},{"../../../utils":113,"./float":24}],14:[function(require,module,exports){
+},{"../../../utils":112,"./float":23}],13:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5546,7 +5183,7 @@ class GLTextureArray2Float3D extends GLTextureFloat {
 module.exports = {
   GLTextureArray2Float3D
 };
-},{"../../../utils":113,"./float":24}],15:[function(require,module,exports){
+},{"../../../utils":112,"./float":23}],14:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5563,7 +5200,7 @@ class GLTextureArray2Float extends GLTextureFloat {
 module.exports = {
   GLTextureArray2Float
 };
-},{"../../../utils":113,"./float":24}],16:[function(require,module,exports){
+},{"../../../utils":112,"./float":23}],15:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5580,7 +5217,7 @@ class GLTextureArray3Float2D extends GLTextureFloat {
 module.exports = {
   GLTextureArray3Float2D
 };
-},{"../../../utils":113,"./float":24}],17:[function(require,module,exports){
+},{"../../../utils":112,"./float":23}],16:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5597,7 +5234,7 @@ class GLTextureArray3Float3D extends GLTextureFloat {
 module.exports = {
   GLTextureArray3Float3D
 };
-},{"../../../utils":113,"./float":24}],18:[function(require,module,exports){
+},{"../../../utils":112,"./float":23}],17:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5614,7 +5251,7 @@ class GLTextureArray3Float extends GLTextureFloat {
 module.exports = {
   GLTextureArray3Float
 };
-},{"../../../utils":113,"./float":24}],19:[function(require,module,exports){
+},{"../../../utils":112,"./float":23}],18:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5631,7 +5268,7 @@ class GLTextureArray4Float2D extends GLTextureFloat {
 module.exports = {
   GLTextureArray4Float2D
 };
-},{"../../../utils":113,"./float":24}],20:[function(require,module,exports){
+},{"../../../utils":112,"./float":23}],19:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5648,7 +5285,7 @@ class GLTextureArray4Float3D extends GLTextureFloat {
 module.exports = {
   GLTextureArray4Float3D
 };
-},{"../../../utils":113,"./float":24}],21:[function(require,module,exports){
+},{"../../../utils":112,"./float":23}],20:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5665,7 +5302,7 @@ class GLTextureArray4Float extends GLTextureFloat {
 module.exports = {
   GLTextureArray4Float
 };
-},{"../../../utils":113,"./float":24}],22:[function(require,module,exports){
+},{"../../../utils":112,"./float":23}],21:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5682,7 +5319,7 @@ class GLTextureFloat2D extends GLTextureFloat {
 module.exports = {
   GLTextureFloat2D
 };
-},{"../../../utils":113,"./float":24}],23:[function(require,module,exports){
+},{"../../../utils":112,"./float":23}],22:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5699,7 +5336,7 @@ class GLTextureFloat3D extends GLTextureFloat {
 module.exports = {
   GLTextureFloat3D
 };
-},{"../../../utils":113,"./float":24}],24:[function(require,module,exports){
+},{"../../../utils":112,"./float":23}],23:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTexture } = require('./index');
 
@@ -5738,7 +5375,7 @@ class GLTextureFloat extends GLTexture {
 module.exports = {
   GLTextureFloat
 };
-},{"../../../utils":113,"./index":26}],25:[function(require,module,exports){
+},{"../../../utils":112,"./index":25}],24:[function(require,module,exports){
 const { GLTextureUnsigned } = require('./unsigned');
 
 class GLTextureGraphical extends GLTextureUnsigned {
@@ -5754,7 +5391,7 @@ class GLTextureGraphical extends GLTextureUnsigned {
 module.exports = {
   GLTextureGraphical
 };
-},{"./unsigned":32}],26:[function(require,module,exports){
+},{"./unsigned":31}],25:[function(require,module,exports){
 const { Texture } = require('../../../texture');
 
 class GLTexture extends Texture {
@@ -5857,7 +5494,7 @@ function selectTexture(gl, texture) {
 }
 
 module.exports = { GLTexture };
-},{"../../../texture":112}],27:[function(require,module,exports){
+},{"../../../texture":111}],26:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5874,7 +5511,7 @@ class GLTextureMemoryOptimized2D extends GLTextureFloat {
 module.exports = {
   GLTextureMemoryOptimized2D
 };
-},{"../../../utils":113,"./float":24}],28:[function(require,module,exports){
+},{"../../../utils":112,"./float":23}],27:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5891,7 +5528,7 @@ class GLTextureMemoryOptimized3D extends GLTextureFloat {
 module.exports = {
   GLTextureMemoryOptimized3D
 };
-},{"../../../utils":113,"./float":24}],29:[function(require,module,exports){
+},{"../../../utils":112,"./float":23}],28:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureFloat } = require('./float');
 
@@ -5908,7 +5545,7 @@ class GLTextureMemoryOptimized extends GLTextureFloat {
 module.exports = {
   GLTextureMemoryOptimized
 };
-},{"../../../utils":113,"./float":24}],30:[function(require,module,exports){
+},{"../../../utils":112,"./float":23}],29:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureUnsigned } = require('./unsigned');
 
@@ -5925,7 +5562,7 @@ class GLTextureUnsigned2D extends GLTextureUnsigned {
 module.exports = {
   GLTextureUnsigned2D
 };
-},{"../../../utils":113,"./unsigned":32}],31:[function(require,module,exports){
+},{"../../../utils":112,"./unsigned":31}],30:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTextureUnsigned } = require('./unsigned');
 
@@ -5942,7 +5579,7 @@ class GLTextureUnsigned3D extends GLTextureUnsigned {
 module.exports = {
   GLTextureUnsigned3D
 };
-},{"../../../utils":113,"./unsigned":32}],32:[function(require,module,exports){
+},{"../../../utils":112,"./unsigned":31}],31:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { GLTexture } = require('./index');
 
@@ -5980,7 +5617,7 @@ class GLTextureUnsigned extends GLTexture {
 module.exports = {
   GLTextureUnsigned
 };
-},{"../../../utils":113,"./index":26}],33:[function(require,module,exports){
+},{"../../../utils":112,"./index":25}],32:[function(require,module,exports){
 const getContext = require('gl');
 const { WebGLKernel } = require('../web-gl/kernel');
 const { glKernelString } = require('../gl/kernel-string');
@@ -6123,7 +5760,7 @@ class HeadlessGLKernel extends WebGLKernel {
 module.exports = {
   HeadlessGLKernel
 };
-},{"../gl/kernel-string":11,"../web-gl/kernel":69,"gl":1}],34:[function(require,module,exports){
+},{"../gl/kernel-string":10,"../web-gl/kernel":68,"gl":1}],33:[function(require,module,exports){
 class KernelValue {
   constructor(value, settings) {
     const {
@@ -6186,7 +5823,7 @@ class KernelValue {
 module.exports = {
   KernelValue
 };
-},{}],35:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 const { utils } = require('../utils');
 const { Input } = require('../input');
 
@@ -6785,7 +6422,7 @@ function splitArgumentTypes(argumentTypesObject) {
 module.exports = {
   Kernel
 };
-},{"../input":109,"../utils":113}],36:[function(require,module,exports){
+},{"../input":108,"../utils":112}],35:[function(require,module,exports){
 const fragmentShader = `__HEADER__;
 __FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
@@ -7306,7 +6943,7 @@ void main(void) {
 module.exports = {
   fragmentShader
 };
-},{}],37:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 const { utils } = require('../../utils');
 const { FunctionNode } = require('../function-node');
 
@@ -8750,7 +8387,7 @@ const operatorMap = {
 module.exports = {
   WebGLFunctionNode
 };
-},{"../../utils":113,"../function-node":9}],38:[function(require,module,exports){
+},{"../../utils":112,"../function-node":8}],37:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGLKernelValueFloat } = require('./kernel-value/float');
 const { WebGLKernelValueInteger } = require('./kernel-value/integer');
@@ -8953,7 +8590,7 @@ module.exports = {
   lookupKernelValueType,
   kernelValueMaps,
 };
-},{"./kernel-value/array2":40,"./kernel-value/array3":41,"./kernel-value/array4":42,"./kernel-value/boolean":43,"./kernel-value/dynamic-html-image":44,"./kernel-value/dynamic-html-video":45,"./kernel-value/dynamic-memory-optimized-number-texture":46,"./kernel-value/dynamic-number-texture":47,"./kernel-value/dynamic-single-array":48,"./kernel-value/dynamic-single-array1d-i":49,"./kernel-value/dynamic-single-array2d-i":50,"./kernel-value/dynamic-single-array3d-i":51,"./kernel-value/dynamic-single-input":52,"./kernel-value/dynamic-unsigned-array":53,"./kernel-value/dynamic-unsigned-input":54,"./kernel-value/float":55,"./kernel-value/html-image":56,"./kernel-value/html-video":57,"./kernel-value/integer":59,"./kernel-value/memory-optimized-number-texture":60,"./kernel-value/number-texture":61,"./kernel-value/single-array":62,"./kernel-value/single-array1d-i":63,"./kernel-value/single-array2d-i":64,"./kernel-value/single-array3d-i":65,"./kernel-value/single-input":66,"./kernel-value/unsigned-array":67,"./kernel-value/unsigned-input":68}],39:[function(require,module,exports){
+},{"./kernel-value/array2":39,"./kernel-value/array3":40,"./kernel-value/array4":41,"./kernel-value/boolean":42,"./kernel-value/dynamic-html-image":43,"./kernel-value/dynamic-html-video":44,"./kernel-value/dynamic-memory-optimized-number-texture":45,"./kernel-value/dynamic-number-texture":46,"./kernel-value/dynamic-single-array":47,"./kernel-value/dynamic-single-array1d-i":48,"./kernel-value/dynamic-single-array2d-i":49,"./kernel-value/dynamic-single-array3d-i":50,"./kernel-value/dynamic-single-input":51,"./kernel-value/dynamic-unsigned-array":52,"./kernel-value/dynamic-unsigned-input":53,"./kernel-value/float":54,"./kernel-value/html-image":55,"./kernel-value/html-video":56,"./kernel-value/integer":58,"./kernel-value/memory-optimized-number-texture":59,"./kernel-value/number-texture":60,"./kernel-value/single-array":61,"./kernel-value/single-array1d-i":62,"./kernel-value/single-array2d-i":63,"./kernel-value/single-array3d-i":64,"./kernel-value/single-input":65,"./kernel-value/unsigned-array":66,"./kernel-value/unsigned-input":67}],38:[function(require,module,exports){
 const { WebGLKernelValue } = require('./index');
 const { Input } = require('../../../input');
 
@@ -9031,7 +8668,7 @@ class WebGLKernelArray extends WebGLKernelValue {
 module.exports = {
   WebGLKernelArray
 };
-},{"../../../input":109,"./index":58}],40:[function(require,module,exports){
+},{"../../../input":108,"./index":57}],39:[function(require,module,exports){
 const { WebGLKernelValue } = require('./index');
 
 class WebGLKernelValueArray2 extends WebGLKernelValue {
@@ -9060,7 +8697,7 @@ class WebGLKernelValueArray2 extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueArray2
 };
-},{"./index":58}],41:[function(require,module,exports){
+},{"./index":57}],40:[function(require,module,exports){
 const { WebGLKernelValue } = require('./index');
 
 class WebGLKernelValueArray3 extends WebGLKernelValue {
@@ -9089,7 +8726,7 @@ class WebGLKernelValueArray3 extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueArray3
 };
-},{"./index":58}],42:[function(require,module,exports){
+},{"./index":57}],41:[function(require,module,exports){
 const { WebGLKernelValue } = require('./index');
 
 class WebGLKernelValueArray4 extends WebGLKernelValue {
@@ -9118,7 +8755,7 @@ class WebGLKernelValueArray4 extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueArray4
 };
-},{"./index":58}],43:[function(require,module,exports){
+},{"./index":57}],42:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -9147,7 +8784,7 @@ class WebGLKernelValueBoolean extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueBoolean
 };
-},{"../../../utils":113,"./index":58}],44:[function(require,module,exports){
+},{"../../../utils":112,"./index":57}],43:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueHTMLImage } = require('./html-image');
 
@@ -9174,7 +8811,7 @@ class WebGLKernelValueDynamicHTMLImage extends WebGLKernelValueHTMLImage {
 module.exports = {
   WebGLKernelValueDynamicHTMLImage
 };
-},{"../../../utils":113,"./html-image":56}],45:[function(require,module,exports){
+},{"../../../utils":112,"./html-image":55}],44:[function(require,module,exports){
 const { WebGLKernelValueDynamicHTMLImage } = require('./dynamic-html-image');
 
 class WebGLKernelValueDynamicHTMLVideo extends WebGLKernelValueDynamicHTMLImage {}
@@ -9182,7 +8819,7 @@ class WebGLKernelValueDynamicHTMLVideo extends WebGLKernelValueDynamicHTMLImage 
 module.exports = {
   WebGLKernelValueDynamicHTMLVideo
 };
-},{"./dynamic-html-image":44}],46:[function(require,module,exports){
+},{"./dynamic-html-image":43}],45:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueMemoryOptimizedNumberTexture } = require('./memory-optimized-number-texture');
 
@@ -9208,7 +8845,7 @@ class WebGLKernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelVal
 module.exports = {
   WebGLKernelValueDynamicMemoryOptimizedNumberTexture
 };
-},{"../../../utils":113,"./memory-optimized-number-texture":60}],47:[function(require,module,exports){
+},{"../../../utils":112,"./memory-optimized-number-texture":59}],46:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueNumberTexture } = require('./number-texture');
 
@@ -9234,7 +8871,7 @@ class WebGLKernelValueDynamicNumberTexture extends WebGLKernelValueNumberTexture
 module.exports = {
   WebGLKernelValueDynamicNumberTexture
 };
-},{"../../../utils":113,"./number-texture":61}],48:[function(require,module,exports){
+},{"../../../utils":112,"./number-texture":60}],47:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray } = require('./single-array');
 
@@ -9262,7 +8899,7 @@ class WebGLKernelValueDynamicSingleArray extends WebGLKernelValueSingleArray {
 module.exports = {
   WebGLKernelValueDynamicSingleArray
 };
-},{"../../../utils":113,"./single-array":62}],49:[function(require,module,exports){
+},{"../../../utils":112,"./single-array":61}],48:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray1DI } = require('./single-array1d-i');
 
@@ -9286,7 +8923,7 @@ class WebGLKernelValueDynamicSingleArray1DI extends WebGLKernelValueSingleArray1
 module.exports = {
   WebGLKernelValueDynamicSingleArray1DI
 };
-},{"../../../utils":113,"./single-array1d-i":63}],50:[function(require,module,exports){
+},{"../../../utils":112,"./single-array1d-i":62}],49:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray2DI } = require('./single-array2d-i');
 
@@ -9310,7 +8947,7 @@ class WebGLKernelValueDynamicSingleArray2DI extends WebGLKernelValueSingleArray2
 module.exports = {
   WebGLKernelValueDynamicSingleArray2DI
 };
-},{"../../../utils":113,"./single-array2d-i":64}],51:[function(require,module,exports){
+},{"../../../utils":112,"./single-array2d-i":63}],50:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray3DI } = require('./single-array3d-i');
 
@@ -9334,7 +8971,7 @@ class WebGLKernelValueDynamicSingleArray3DI extends WebGLKernelValueSingleArray3
 module.exports = {
   WebGLKernelValueDynamicSingleArray3DI
 };
-},{"../../../utils":113,"./single-array3d-i":65}],52:[function(require,module,exports){
+},{"../../../utils":112,"./single-array3d-i":64}],51:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleInput } = require('./single-input');
 
@@ -9363,7 +9000,7 @@ class WebGLKernelValueDynamicSingleInput extends WebGLKernelValueSingleInput {
 module.exports = {
   WebGLKernelValueDynamicSingleInput
 };
-},{"../../../utils":113,"./single-input":66}],53:[function(require,module,exports){
+},{"../../../utils":112,"./single-input":65}],52:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedArray } = require('./unsigned-array');
 
@@ -9393,7 +9030,7 @@ class WebGLKernelValueDynamicUnsignedArray extends WebGLKernelValueUnsignedArray
 module.exports = {
   WebGLKernelValueDynamicUnsignedArray
 };
-},{"../../../utils":113,"./unsigned-array":67}],54:[function(require,module,exports){
+},{"../../../utils":112,"./unsigned-array":66}],53:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedInput } = require('./unsigned-input');
 
@@ -9424,7 +9061,7 @@ class WebGLKernelValueDynamicUnsignedInput extends WebGLKernelValueUnsignedInput
 module.exports = {
   WebGLKernelValueDynamicUnsignedInput
 };
-},{"../../../utils":113,"./unsigned-input":68}],55:[function(require,module,exports){
+},{"../../../utils":112,"./unsigned-input":67}],54:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -9455,7 +9092,7 @@ class WebGLKernelValueFloat extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueFloat
 };
-},{"../../../utils":113,"./index":58}],56:[function(require,module,exports){
+},{"../../../utils":112,"./index":57}],55:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
 
@@ -9498,7 +9135,7 @@ class WebGLKernelValueHTMLImage extends WebGLKernelArray {
 module.exports = {
   WebGLKernelValueHTMLImage
 };
-},{"../../../utils":113,"./array":39}],57:[function(require,module,exports){
+},{"../../../utils":112,"./array":38}],56:[function(require,module,exports){
 const { WebGLKernelValueHTMLImage } = require('./html-image');
 
 class WebGLKernelValueHTMLVideo extends WebGLKernelValueHTMLImage {}
@@ -9506,7 +9143,7 @@ class WebGLKernelValueHTMLVideo extends WebGLKernelValueHTMLImage {}
 module.exports = {
   WebGLKernelValueHTMLVideo
 };
-},{"./html-image":56}],58:[function(require,module,exports){
+},{"./html-image":55}],57:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { KernelValue } = require('../../kernel-value');
 
@@ -9566,7 +9203,7 @@ class WebGLKernelValue extends KernelValue {
 module.exports = {
   WebGLKernelValue
 };
-},{"../../../utils":113,"../../kernel-value":34}],59:[function(require,module,exports){
+},{"../../../utils":112,"../../kernel-value":33}],58:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValue } = require('./index');
 
@@ -9594,7 +9231,7 @@ class WebGLKernelValueInteger extends WebGLKernelValue {
 module.exports = {
   WebGLKernelValueInteger
 };
-},{"../../../utils":113,"./index":58}],60:[function(require,module,exports){
+},{"../../../utils":112,"./index":57}],59:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
 
@@ -9664,7 +9301,7 @@ module.exports = {
   WebGLKernelValueMemoryOptimizedNumberTexture,
   sameError
 };
-},{"../../../utils":113,"./array":39}],61:[function(require,module,exports){
+},{"../../../utils":112,"./array":38}],60:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
 const { sameError } = require('./memory-optimized-number-texture');
@@ -9734,7 +9371,7 @@ class WebGLKernelValueNumberTexture extends WebGLKernelArray {
 module.exports = {
   WebGLKernelValueNumberTexture
 };
-},{"../../../utils":113,"./array":39,"./memory-optimized-number-texture":60}],62:[function(require,module,exports){
+},{"../../../utils":112,"./array":38,"./memory-optimized-number-texture":59}],61:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
 
@@ -9782,7 +9419,7 @@ class WebGLKernelValueSingleArray extends WebGLKernelArray {
 module.exports = {
   WebGLKernelValueSingleArray
 };
-},{"../../../utils":113,"./array":39}],63:[function(require,module,exports){
+},{"../../../utils":112,"./array":38}],62:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
 
@@ -9835,7 +9472,7 @@ class WebGLKernelValueSingleArray1DI extends WebGLKernelArray {
 module.exports = {
   WebGLKernelValueSingleArray1DI
 };
-},{"../../../utils":113,"./array":39}],64:[function(require,module,exports){
+},{"../../../utils":112,"./array":38}],63:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
 
@@ -9888,7 +9525,7 @@ class WebGLKernelValueSingleArray2DI extends WebGLKernelArray {
 module.exports = {
   WebGLKernelValueSingleArray2DI
 };
-},{"../../../utils":113,"./array":39}],65:[function(require,module,exports){
+},{"../../../utils":112,"./array":38}],64:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
 
@@ -9941,7 +9578,7 @@ class WebGLKernelValueSingleArray3DI extends WebGLKernelArray {
 module.exports = {
   WebGLKernelValueSingleArray3DI
 };
-},{"../../../utils":113,"./array":39}],66:[function(require,module,exports){
+},{"../../../utils":112,"./array":38}],65:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
 
@@ -9990,7 +9627,7 @@ class WebGLKernelValueSingleInput extends WebGLKernelArray {
 module.exports = {
   WebGLKernelValueSingleInput
 };
-},{"../../../utils":113,"./array":39}],67:[function(require,module,exports){
+},{"../../../utils":112,"./array":38}],66:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
 
@@ -10041,7 +9678,7 @@ class WebGLKernelValueUnsignedArray extends WebGLKernelArray {
 module.exports = {
   WebGLKernelValueUnsignedArray
 };
-},{"../../../utils":113,"./array":39}],68:[function(require,module,exports){
+},{"../../../utils":112,"./array":38}],67:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
 
@@ -10093,7 +9730,7 @@ class WebGLKernelValueUnsignedInput extends WebGLKernelArray {
 module.exports = {
   WebGLKernelValueUnsignedInput
 };
-},{"../../../utils":113,"./array":39}],69:[function(require,module,exports){
+},{"../../../utils":112,"./array":38}],68:[function(require,module,exports){
 const { GLKernel } = require('../gl/kernel');
 const { FunctionBuilder } = require('../function-builder');
 const { WebGLFunctionNode } = require('./function-node');
@@ -11545,7 +11182,7 @@ float integerCorrectionModulo(float number, float divisor) {
 module.exports = {
   WebGLKernel
 };
-},{"../../plugins/math-random-uniformly-distributed":111,"../../utils":113,"../function-builder":8,"../gl/kernel":12,"../gl/kernel-string":11,"./fragment-shader":36,"./function-node":37,"./kernel-value-maps":38,"./vertex-shader":70}],70:[function(require,module,exports){
+},{"../../plugins/math-random-uniformly-distributed":110,"../../utils":112,"../function-builder":7,"../gl/kernel":11,"../gl/kernel-string":10,"./fragment-shader":35,"./function-node":36,"./kernel-value-maps":37,"./vertex-shader":69}],69:[function(require,module,exports){
 const vertexShader = `__FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
 __SAMPLER_2D_TACTIC_DECLARATION__;
@@ -11564,7 +11201,7 @@ void main(void) {
 module.exports = {
   vertexShader
 };
-},{}],71:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 const fragmentShader = `#version 300 es
 __HEADER__;
 __FLOAT_TACTIC_DECLARATION__;
@@ -12041,7 +11678,7 @@ void main(void) {
 module.exports = {
   fragmentShader
 };
-},{}],72:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 const { utils } = require('../../utils');
 const { WebGLFunctionNode } = require('../web-gl/function-node');
 
@@ -12077,7 +11714,7 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
 module.exports = {
   WebGL2FunctionNode
 };
-},{"../../utils":113,"../web-gl/function-node":37}],73:[function(require,module,exports){
+},{"../../utils":112,"../web-gl/function-node":36}],72:[function(require,module,exports){
 const { WebGL2KernelValueBoolean } = require('./kernel-value/boolean');
 const { WebGL2KernelValueFloat } = require('./kernel-value/float');
 const { WebGL2KernelValueInteger } = require('./kernel-value/integer');
@@ -12283,7 +11920,7 @@ module.exports = {
   kernelValueMaps,
   lookupKernelValueType
 };
-},{"./kernel-value/array2":74,"./kernel-value/array3":75,"./kernel-value/array4":76,"./kernel-value/boolean":77,"./kernel-value/dynamic-html-image":79,"./kernel-value/dynamic-html-image-array":78,"./kernel-value/dynamic-html-video":80,"./kernel-value/dynamic-memory-optimized-number-texture":81,"./kernel-value/dynamic-number-texture":82,"./kernel-value/dynamic-single-array":83,"./kernel-value/dynamic-single-array1d-i":84,"./kernel-value/dynamic-single-array2d-i":85,"./kernel-value/dynamic-single-array3d-i":86,"./kernel-value/dynamic-single-input":87,"./kernel-value/dynamic-unsigned-array":88,"./kernel-value/dynamic-unsigned-input":89,"./kernel-value/float":90,"./kernel-value/html-image":92,"./kernel-value/html-image-array":91,"./kernel-value/html-video":93,"./kernel-value/integer":94,"./kernel-value/memory-optimized-number-texture":95,"./kernel-value/number-texture":96,"./kernel-value/single-array":97,"./kernel-value/single-array1d-i":98,"./kernel-value/single-array2d-i":99,"./kernel-value/single-array3d-i":100,"./kernel-value/single-input":101,"./kernel-value/unsigned-array":102,"./kernel-value/unsigned-input":103}],74:[function(require,module,exports){
+},{"./kernel-value/array2":73,"./kernel-value/array3":74,"./kernel-value/array4":75,"./kernel-value/boolean":76,"./kernel-value/dynamic-html-image":78,"./kernel-value/dynamic-html-image-array":77,"./kernel-value/dynamic-html-video":79,"./kernel-value/dynamic-memory-optimized-number-texture":80,"./kernel-value/dynamic-number-texture":81,"./kernel-value/dynamic-single-array":82,"./kernel-value/dynamic-single-array1d-i":83,"./kernel-value/dynamic-single-array2d-i":84,"./kernel-value/dynamic-single-array3d-i":85,"./kernel-value/dynamic-single-input":86,"./kernel-value/dynamic-unsigned-array":87,"./kernel-value/dynamic-unsigned-input":88,"./kernel-value/float":89,"./kernel-value/html-image":91,"./kernel-value/html-image-array":90,"./kernel-value/html-video":92,"./kernel-value/integer":93,"./kernel-value/memory-optimized-number-texture":94,"./kernel-value/number-texture":95,"./kernel-value/single-array":96,"./kernel-value/single-array1d-i":97,"./kernel-value/single-array2d-i":98,"./kernel-value/single-array3d-i":99,"./kernel-value/single-input":100,"./kernel-value/unsigned-array":101,"./kernel-value/unsigned-input":102}],73:[function(require,module,exports){
 const { WebGLKernelValueArray2 } = require('../../web-gl/kernel-value/array2');
 
 class WebGL2KernelValueArray2 extends WebGLKernelValueArray2 {}
@@ -12291,7 +11928,7 @@ class WebGL2KernelValueArray2 extends WebGLKernelValueArray2 {}
 module.exports = {
   WebGL2KernelValueArray2
 };
-},{"../../web-gl/kernel-value/array2":40}],75:[function(require,module,exports){
+},{"../../web-gl/kernel-value/array2":39}],74:[function(require,module,exports){
 const { WebGLKernelValueArray3 } = require('../../web-gl/kernel-value/array3');
 
 class WebGL2KernelValueArray3 extends WebGLKernelValueArray3 {}
@@ -12299,7 +11936,7 @@ class WebGL2KernelValueArray3 extends WebGLKernelValueArray3 {}
 module.exports = {
   WebGL2KernelValueArray3
 };
-},{"../../web-gl/kernel-value/array3":41}],76:[function(require,module,exports){
+},{"../../web-gl/kernel-value/array3":40}],75:[function(require,module,exports){
 const { WebGLKernelValueArray4 } = require('../../web-gl/kernel-value/array4');
 
 class WebGL2KernelValueArray4 extends WebGLKernelValueArray4 {}
@@ -12307,7 +11944,7 @@ class WebGL2KernelValueArray4 extends WebGLKernelValueArray4 {}
 module.exports = {
   WebGL2KernelValueArray4
 };
-},{"../../web-gl/kernel-value/array4":42}],77:[function(require,module,exports){
+},{"../../web-gl/kernel-value/array4":41}],76:[function(require,module,exports){
 const { WebGLKernelValueBoolean } = require('../../web-gl/kernel-value/boolean');
 
 class WebGL2KernelValueBoolean extends WebGLKernelValueBoolean {}
@@ -12315,7 +11952,7 @@ class WebGL2KernelValueBoolean extends WebGLKernelValueBoolean {}
 module.exports = {
   WebGL2KernelValueBoolean
 };
-},{"../../web-gl/kernel-value/boolean":43}],78:[function(require,module,exports){
+},{"../../web-gl/kernel-value/boolean":42}],77:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueHTMLImageArray } = require('./html-image-array');
 
@@ -12343,7 +11980,7 @@ class WebGL2KernelValueDynamicHTMLImageArray extends WebGL2KernelValueHTMLImageA
 module.exports = {
   WebGL2KernelValueDynamicHTMLImageArray
 };
-},{"../../../utils":113,"./html-image-array":91}],79:[function(require,module,exports){
+},{"../../../utils":112,"./html-image-array":90}],78:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicHTMLImage } = require('../../web-gl/kernel-value/dynamic-html-image');
 
@@ -12361,7 +11998,7 @@ class WebGL2KernelValueDynamicHTMLImage extends WebGLKernelValueDynamicHTMLImage
 module.exports = {
   WebGL2KernelValueDynamicHTMLImage
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/dynamic-html-image":44}],80:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/dynamic-html-image":43}],79:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueDynamicHTMLImage } = require('./dynamic-html-image');
 
@@ -12370,7 +12007,7 @@ class WebGL2KernelValueDynamicHTMLVideo extends WebGL2KernelValueDynamicHTMLImag
 module.exports = {
   WebGL2KernelValueDynamicHTMLVideo
 };
-},{"../../../utils":113,"./dynamic-html-image":79}],81:[function(require,module,exports){
+},{"../../../utils":112,"./dynamic-html-image":78}],80:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicMemoryOptimizedNumberTexture } = require('../../web-gl/kernel-value/dynamic-memory-optimized-number-texture');
 
@@ -12387,7 +12024,7 @@ class WebGL2KernelValueDynamicMemoryOptimizedNumberTexture extends WebGLKernelVa
 module.exports = {
   WebGL2KernelValueDynamicMemoryOptimizedNumberTexture
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/dynamic-memory-optimized-number-texture":46}],82:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/dynamic-memory-optimized-number-texture":45}],81:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicNumberTexture } = require('../../web-gl/kernel-value/dynamic-number-texture');
 
@@ -12405,7 +12042,7 @@ class WebGL2KernelValueDynamicNumberTexture extends WebGLKernelValueDynamicNumbe
 module.exports = {
   WebGL2KernelValueDynamicNumberTexture
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/dynamic-number-texture":47}],83:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/dynamic-number-texture":46}],82:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleArray } = require('../../web-gl2/kernel-value/single-array');
 
@@ -12434,7 +12071,7 @@ class WebGL2KernelValueDynamicSingleArray extends WebGL2KernelValueSingleArray {
 module.exports = {
   WebGL2KernelValueDynamicSingleArray
 };
-},{"../../../utils":113,"../../web-gl2/kernel-value/single-array":97}],84:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl2/kernel-value/single-array":96}],83:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleArray1DI } = require('../../web-gl2/kernel-value/single-array1d-i');
 
@@ -12459,7 +12096,7 @@ class WebGL2KernelValueDynamicSingleArray1DI extends WebGL2KernelValueSingleArra
 module.exports = {
   WebGL2KernelValueDynamicSingleArray1DI
 };
-},{"../../../utils":113,"../../web-gl2/kernel-value/single-array1d-i":98}],85:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl2/kernel-value/single-array1d-i":97}],84:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleArray2DI } = require('../../web-gl2/kernel-value/single-array2d-i');
 
@@ -12484,7 +12121,7 @@ class WebGL2KernelValueDynamicSingleArray2DI extends WebGL2KernelValueSingleArra
 module.exports = {
   WebGL2KernelValueDynamicSingleArray2DI
 };
-},{"../../../utils":113,"../../web-gl2/kernel-value/single-array2d-i":99}],86:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl2/kernel-value/single-array2d-i":98}],85:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleArray3DI } = require('../../web-gl2/kernel-value/single-array3d-i');
 
@@ -12509,7 +12146,7 @@ class WebGL2KernelValueDynamicSingleArray3DI extends WebGL2KernelValueSingleArra
 module.exports = {
   WebGL2KernelValueDynamicSingleArray3DI
 };
-},{"../../../utils":113,"../../web-gl2/kernel-value/single-array3d-i":100}],87:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl2/kernel-value/single-array3d-i":99}],86:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueSingleInput } = require('../../web-gl2/kernel-value/single-input');
 
@@ -12539,7 +12176,7 @@ class WebGL2KernelValueDynamicSingleInput extends WebGL2KernelValueSingleInput {
 module.exports = {
   WebGL2KernelValueDynamicSingleInput
 };
-},{"../../../utils":113,"../../web-gl2/kernel-value/single-input":101}],88:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl2/kernel-value/single-input":100}],87:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicUnsignedArray } = require('../../web-gl/kernel-value/dynamic-unsigned-array');
 
@@ -12557,7 +12194,7 @@ class WebGL2KernelValueDynamicUnsignedArray extends WebGLKernelValueDynamicUnsig
 module.exports = {
   WebGL2KernelValueDynamicUnsignedArray
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/dynamic-unsigned-array":53}],89:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/dynamic-unsigned-array":52}],88:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueDynamicUnsignedInput } = require('../../web-gl/kernel-value/dynamic-unsigned-input');
 
@@ -12575,7 +12212,7 @@ class WebGL2KernelValueDynamicUnsignedInput extends WebGLKernelValueDynamicUnsig
 module.exports = {
   WebGL2KernelValueDynamicUnsignedInput
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/dynamic-unsigned-input":54}],90:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/dynamic-unsigned-input":53}],89:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueFloat } = require('../../web-gl/kernel-value/float');
 
@@ -12584,7 +12221,7 @@ class WebGL2KernelValueFloat extends WebGLKernelValueFloat {}
 module.exports = {
   WebGL2KernelValueFloat
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/float":55}],91:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/float":54}],90:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('../../web-gl/kernel-value/array');
 
@@ -12657,7 +12294,7 @@ class WebGL2KernelValueHTMLImageArray extends WebGLKernelArray {
 module.exports = {
   WebGL2KernelValueHTMLImageArray
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/array":39}],92:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/array":38}],91:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueHTMLImage } = require('../../web-gl/kernel-value/html-image');
 
@@ -12675,7 +12312,7 @@ class WebGL2KernelValueHTMLImage extends WebGLKernelValueHTMLImage {
 module.exports = {
   WebGL2KernelValueHTMLImage
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/html-image":56}],93:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/html-image":55}],92:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGL2KernelValueHTMLImage } = require('./html-image');
 
@@ -12684,7 +12321,7 @@ class WebGL2KernelValueHTMLVideo extends WebGL2KernelValueHTMLImage {}
 module.exports = {
   WebGL2KernelValueHTMLVideo
 };
-},{"../../../utils":113,"./html-image":92}],94:[function(require,module,exports){
+},{"../../../utils":112,"./html-image":91}],93:[function(require,module,exports){
 const { WebGLKernelValueInteger } = require('../../web-gl/kernel-value/integer');
 
 class WebGL2KernelValueInteger extends WebGLKernelValueInteger {
@@ -12705,7 +12342,7 @@ class WebGL2KernelValueInteger extends WebGLKernelValueInteger {
 module.exports = {
   WebGL2KernelValueInteger
 };
-},{"../../web-gl/kernel-value/integer":59}],95:[function(require,module,exports){
+},{"../../web-gl/kernel-value/integer":58}],94:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueMemoryOptimizedNumberTexture } = require('../../web-gl/kernel-value/memory-optimized-number-texture');
 
@@ -12724,7 +12361,7 @@ class WebGL2KernelValueMemoryOptimizedNumberTexture extends WebGLKernelValueMemo
 module.exports = {
   WebGL2KernelValueMemoryOptimizedNumberTexture
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/memory-optimized-number-texture":60}],96:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/memory-optimized-number-texture":59}],95:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueNumberTexture } = require('../../web-gl/kernel-value/number-texture');
 
@@ -12743,7 +12380,7 @@ class WebGL2KernelValueNumberTexture extends WebGLKernelValueNumberTexture {
 module.exports = {
   WebGL2KernelValueNumberTexture
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/number-texture":61}],97:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/number-texture":60}],96:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray } = require('../../web-gl/kernel-value/single-array');
 
@@ -12775,7 +12412,7 @@ class WebGL2KernelValueSingleArray extends WebGLKernelValueSingleArray {
 module.exports = {
   WebGL2KernelValueSingleArray
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/single-array":62}],98:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/single-array":61}],97:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray1DI } = require('../../web-gl/kernel-value/single-array1d-i');
 
@@ -12798,7 +12435,7 @@ class WebGL2KernelValueSingleArray1DI extends WebGLKernelValueSingleArray1DI {
 module.exports = {
   WebGL2KernelValueSingleArray1DI
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/single-array1d-i":63}],99:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/single-array1d-i":62}],98:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray2DI } = require('../../web-gl/kernel-value/single-array2d-i');
 
@@ -12821,7 +12458,7 @@ class WebGL2KernelValueSingleArray2DI extends WebGLKernelValueSingleArray2DI {
 module.exports = {
   WebGL2KernelValueSingleArray2DI
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/single-array2d-i":64}],100:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/single-array2d-i":63}],99:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleArray3DI } = require('../../web-gl/kernel-value/single-array3d-i');
 
@@ -12844,7 +12481,7 @@ class WebGL2KernelValueSingleArray3DI extends WebGLKernelValueSingleArray3DI {
 module.exports = {
   WebGL2KernelValueSingleArray3DI
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/single-array3d-i":65}],101:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/single-array3d-i":64}],100:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueSingleInput } = require('../../web-gl/kernel-value/single-input');
 
@@ -12872,7 +12509,7 @@ class WebGL2KernelValueSingleInput extends WebGLKernelValueSingleInput {
 module.exports = {
   WebGL2KernelValueSingleInput
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/single-input":66}],102:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/single-input":65}],101:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedArray } = require('../../web-gl/kernel-value/unsigned-array');
 
@@ -12890,7 +12527,7 @@ class WebGL2KernelValueUnsignedArray extends WebGLKernelValueUnsignedArray {
 module.exports = {
   WebGL2KernelValueUnsignedArray
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/unsigned-array":67}],103:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/unsigned-array":66}],102:[function(require,module,exports){
 const { utils } = require('../../../utils');
 const { WebGLKernelValueUnsignedInput } = require('../../web-gl/kernel-value/unsigned-input');
 
@@ -12908,7 +12545,7 @@ class WebGL2KernelValueUnsignedInput extends WebGLKernelValueUnsignedInput {
 module.exports = {
   WebGL2KernelValueUnsignedInput
 };
-},{"../../../utils":113,"../../web-gl/kernel-value/unsigned-input":68}],104:[function(require,module,exports){
+},{"../../../utils":112,"../../web-gl/kernel-value/unsigned-input":67}],103:[function(require,module,exports){
 const { WebGLKernel } = require('../web-gl/kernel');
 const { WebGL2FunctionNode } = require('./function-node');
 const { FunctionBuilder } = require('../function-builder');
@@ -13485,7 +13122,7 @@ class WebGL2Kernel extends WebGLKernel {
 module.exports = {
   WebGL2Kernel
 };
-},{"../../utils":113,"../function-builder":8,"../web-gl/kernel":69,"./fragment-shader":71,"./function-node":72,"./kernel-value-maps":73,"./vertex-shader":105}],105:[function(require,module,exports){
+},{"../../utils":112,"../function-builder":7,"../web-gl/kernel":68,"./fragment-shader":70,"./function-node":71,"./kernel-value-maps":72,"./vertex-shader":104}],104:[function(require,module,exports){
 const vertexShader = `#version 300 es
 __FLOAT_TACTIC_DECLARATION__;
 __INT_TACTIC_DECLARATION__;
@@ -13505,7 +13142,7 @@ void main(void) {
 module.exports = {
   vertexShader
 };
-},{}],106:[function(require,module,exports){
+},{}],105:[function(require,module,exports){
 const lib = require('./index');
 const GPU = lib.GPU;
 for (const p in lib) {
@@ -13535,7 +13172,7 @@ function bindTo(target) {
 }
 
 module.exports = GPU;
-},{"./index":108}],107:[function(require,module,exports){
+},{"./index":107}],106:[function(require,module,exports){
 const { gpuMock } = require('gpu-mock.js');
 const { utils } = require('./utils');
 const { Kernel } = require('./backend/kernel');
@@ -13993,7 +13630,7 @@ module.exports = {
   kernelOrder,
   kernelTypes
 };
-},{"./backend/cpu/kernel":7,"./backend/headless-gl/kernel":33,"./backend/kernel":35,"./backend/web-gl/kernel":69,"./backend/web-gl2/kernel":104,"./kernel-run-shortcut":110,"./utils":113,"gpu-mock.js":3}],108:[function(require,module,exports){
+},{"./backend/cpu/kernel":6,"./backend/headless-gl/kernel":32,"./backend/kernel":34,"./backend/web-gl/kernel":68,"./backend/web-gl2/kernel":103,"./kernel-run-shortcut":109,"./utils":112,"gpu-mock.js":2}],107:[function(require,module,exports){
 const { GPU } = require('./gpu');
 const { alias } = require('./alias');
 const { utils } = require('./utils');
@@ -14051,7 +13688,7 @@ module.exports = {
     mathRandom
   }
 };
-},{"./alias":4,"./backend/cpu/function-node":5,"./backend/cpu/kernel":7,"./backend/function-builder":8,"./backend/function-node":9,"./backend/function-tracer":10,"./backend/gl/kernel":12,"./backend/headless-gl/kernel":33,"./backend/kernel":35,"./backend/web-gl/function-node":37,"./backend/web-gl/kernel":69,"./backend/web-gl/kernel-value-maps":38,"./backend/web-gl2/function-node":72,"./backend/web-gl2/kernel":104,"./backend/web-gl2/kernel-value-maps":73,"./gpu":107,"./input":109,"./plugins/math-random-uniformly-distributed":111,"./texture":112,"./utils":113}],109:[function(require,module,exports){
+},{"./alias":3,"./backend/cpu/function-node":4,"./backend/cpu/kernel":6,"./backend/function-builder":7,"./backend/function-node":8,"./backend/function-tracer":9,"./backend/gl/kernel":11,"./backend/headless-gl/kernel":32,"./backend/kernel":34,"./backend/web-gl/function-node":36,"./backend/web-gl/kernel":68,"./backend/web-gl/kernel-value-maps":37,"./backend/web-gl2/function-node":71,"./backend/web-gl2/kernel":103,"./backend/web-gl2/kernel-value-maps":72,"./gpu":106,"./input":108,"./plugins/math-random-uniformly-distributed":110,"./texture":111,"./utils":112}],108:[function(require,module,exports){
 class Input {
   constructor(value, size) {
     this.value = value;
@@ -14106,7 +13743,7 @@ module.exports = {
   Input,
   input
 };
-},{"./utils":113}],110:[function(require,module,exports){
+},{"./utils":112}],109:[function(require,module,exports){
 const { utils } = require('./utils');
 
 function kernelRunShortcut(kernel) {
@@ -14183,7 +13820,7 @@ function bindKernelToShortcut(kernel, shortcut) {
 module.exports = {
   kernelRunShortcut
 };
-},{"./utils":113}],111:[function(require,module,exports){
+},{"./utils":112}],110:[function(require,module,exports){
 const source = `// https://www.shadertoy.com/view/4t2SDh
 //note: uniformly distributed, normalized rand, [0,1]
 highp float randomSeedShift = 1.0;
@@ -14245,7 +13882,7 @@ const plugin = {
 };
 
 module.exports = plugin;
-},{}],112:[function(require,module,exports){
+},{}],111:[function(require,module,exports){
 class Texture {
   constructor(settings) {
     const {
@@ -14300,7 +13937,7 @@ class Texture {
 module.exports = {
   Texture
 };
-},{}],113:[function(require,module,exports){
+},{}],112:[function(require,module,exports){
 const acorn = require('acorn');
 const { Input } = require('./input');
 const { Texture } = require('./texture');
@@ -15182,5 +14819,352 @@ const _systemEndianness = utils.getSystemEndianness();
 module.exports = {
   utils
 };
-},{"./input":109,"./texture":112,"acorn":1}]},{},[106])(106)
+},{"./input":108,"./texture":111,"acorn":1}],113:[function(require,module,exports){
+
+function glWiretap(gl, options = {}) {
+  const {
+    contextName = 'gl',
+    throwGetError,
+    useTrackablePrimitives,
+    recording = [],
+    variables = {},
+    onReadPixels,
+    onUnrecognizedArgumentLookup,
+  } = options;
+  const proxy = new Proxy(gl, { get: listen });
+  const contextVariables = [];
+  const entityNames = {};
+  let indent = '';
+  let readPixelsVariableName;
+  return proxy;
+  function listen(obj, property) {
+    switch (property) {
+      case 'addComment': return addComment;
+      case 'checkThrowError': return checkThrowError;
+      case 'getReadPixelsVariableName': return readPixelsVariableName;
+      case 'insertVariable': return insertVariable;
+      case 'reset': return reset;
+      case 'setIndent': return setIndent;
+      case 'toString': return toString;
+      case 'getContextVariableName': return getContextVariableName;
+    }
+    if (typeof gl[property] === 'function') {
+      return function() { 
+        switch (property) {
+          case 'getError':
+            if (throwGetError) {
+              recording.push(`${indent}if (${contextName}.getError() !== ${contextName}.NONE) throw new Error('error');`);
+            } else {
+              recording.push(`${indent}${contextName}.getError();`); 
+            }
+            return gl.getError();
+          case 'getExtension': {
+            const variableName = `${contextName}Variables${contextVariables.length}`;
+            recording.push(`${indent}const ${variableName} = ${contextName}.getExtension('${arguments[0]}');`);
+            const extension = gl.getExtension(arguments[0]);
+            if (extension && typeof extension === 'object') {
+              const tappedExtension = glExtensionWiretap(extension, {
+                getEntity,
+                useTrackablePrimitives,
+                recording,
+                contextName: variableName,
+                contextVariables,
+                variables,
+                indent,
+                onUnrecognizedArgumentLookup,
+              });
+              contextVariables.push(tappedExtension);
+              return tappedExtension;
+            } else {
+              contextVariables.push(null);
+            }
+            return extension;
+          }
+          case 'readPixels':
+            const i = contextVariables.indexOf(arguments[6]);
+            let targetVariableName;
+            if (i === -1) {
+              const variableName = getVariableName(arguments[6]);
+              if (variableName) {
+                targetVariableName = variableName;
+                recording.push(`${indent}${variableName}`);
+              } else {
+                targetVariableName = `${contextName}Variable${contextVariables.length}`;
+                contextVariables.push(arguments[6]);
+                recording.push(`${indent}const ${targetVariableName} = new ${arguments[6].constructor.name}(${arguments[6].length});`);
+              }
+            } else {
+              targetVariableName = `${contextName}Variable${i}`;
+            }
+            readPixelsVariableName = targetVariableName;
+            const argumentAsStrings = [
+              arguments[0],
+              arguments[1],
+              arguments[2],
+              arguments[3],
+              getEntity(arguments[4]),
+              getEntity(arguments[5]),
+              targetVariableName
+            ];
+            recording.push(`${indent}${contextName}.readPixels(${argumentAsStrings.join(', ')});`);
+            if (onReadPixels) {
+              onReadPixels(targetVariableName, argumentAsStrings);
+            }
+            return gl.readPixels.apply(gl, arguments);
+          case 'drawBuffers':
+            recording.push(`${indent}${contextName}.drawBuffers([${argumentsToString(arguments[0], { contextName, contextVariables, getEntity, addVariable, variables, onUnrecognizedArgumentLookup } )}]);`);
+            return gl.drawBuffers(arguments[0]);
+        }
+        let result = gl[property].apply(gl, arguments);
+        switch (typeof result) {
+          case 'undefined':
+            recording.push(`${indent}${methodCallToString(property, arguments)};`);
+            return;
+          case 'number':
+          case 'boolean':
+            if (useTrackablePrimitives && contextVariables.indexOf(trackablePrimitive(result)) === -1) {
+              recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
+              contextVariables.push(result = trackablePrimitive(result));
+              break;
+            }
+          default:
+            if (result === null) {
+              recording.push(`${methodCallToString(property, arguments)};`);
+            } else {
+              recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
+            }
+
+            contextVariables.push(result);
+        }
+        return result;
+      }
+    }
+    entityNames[gl[property]] = property;
+    return gl[property];
+  }
+  function toString() {
+    return recording.join('\n');
+  }
+  function reset() {
+    while (recording.length > 0) {
+      recording.pop();
+    }
+  }
+  function insertVariable(name, value) {
+    variables[name] = value;
+  }
+  function getEntity(value) {
+    const name = entityNames[value];
+    if (name) {
+      return contextName + '.' + name;
+    }
+    return value;
+  }
+  function setIndent(spaces) {
+    indent = ' '.repeat(spaces);
+  }
+  function addVariable(value, source) {
+    const variableName = `${contextName}Variable${contextVariables.length}`;
+    recording.push(`${indent}const ${variableName} = ${source};`);
+    contextVariables.push(value);
+    return variableName;
+  }
+  function addComment(value) {
+    recording.push(`${indent}// ${value}`);
+  }
+  function checkThrowError() {
+    recording.push(`${indent}(() => {
+${indent}const error = ${contextName}.getError();
+${indent}if (error !== ${contextName}.NONE) {
+${indent}  const names = Object.getOwnPropertyNames(gl);
+${indent}  for (let i = 0; i < names.length; i++) {
+${indent}    const name = names[i];
+${indent}    if (${contextName}[name] === error) {
+${indent}      throw new Error('${contextName} threw ' + name);
+${indent}    }
+${indent}  }
+${indent}}
+${indent}})();`);
+  }
+  function methodCallToString(method, args) {
+    return `${contextName}.${method}(${argumentsToString(args, { contextName, contextVariables, getEntity, addVariable, variables, onUnrecognizedArgumentLookup })})`;
+  }
+
+  function getVariableName(value) {
+    if (variables) {
+      for (const name in variables) {
+        if (variables[name] === value) {
+          return name;
+        }
+      }
+    }
+    return null;
+  }
+
+  function getContextVariableName(value) {
+    const i = contextVariables.indexOf(value);
+    if (i !== -1) {
+      return `${contextName}Variable${i}`;
+    }
+    return null;
+  }
+}
+
+function glExtensionWiretap(extension, options) {
+  const proxy = new Proxy(extension, { get: listen });
+  const extensionEntityNames = {};
+  const {
+    contextName,
+    contextVariables,
+    getEntity,
+    useTrackablePrimitives,
+    recording,
+    variables,
+    indent,
+    onUnrecognizedArgumentLookup,
+  } = options;
+  return proxy;
+  function listen(obj, property) {
+    if (typeof obj[property] === 'function') {
+      return function() {
+        switch (property) {
+          case 'drawBuffersWEBGL':
+            recording.push(`${indent}${contextName}.drawBuffersWEBGL([${argumentsToString(arguments[0], { contextName, contextVariables, getEntity: getExtensionEntity, addVariable, variables, onUnrecognizedArgumentLookup })}]);`);
+            return extension.drawBuffersWEBGL(arguments[0]);
+        }
+        let result = extension[property].apply(extension, arguments);
+        switch (typeof result) {
+          case 'undefined':
+            recording.push(`${indent}${methodCallToString(property, arguments)};`);
+            return;
+          case 'number':
+          case 'boolean':
+            if (useTrackablePrimitives && contextVariables.indexOf(trackablePrimitive(result)) === -1) {
+              recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
+              contextVariables.push(result = trackablePrimitive(result));
+            } else {
+              recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
+              contextVariables.push(result);
+            }
+            break;
+          default:
+            if (result === null) {
+              recording.push(`${methodCallToString(property, arguments)};`);
+            } else {
+              recording.push(`${indent}const ${contextName}Variable${contextVariables.length} = ${methodCallToString(property, arguments)};`);
+            }
+            contextVariables.push(result);
+        }
+        return result;
+      };
+    }
+    extensionEntityNames[extension[property]] = property;
+    return extension[property];
+  }
+
+  function getExtensionEntity(value) {
+    if (extensionEntityNames.hasOwnProperty(value)) {
+      return `${contextName}.${extensionEntityNames[value]}`;
+    }
+    return getEntity(value);
+  }
+
+  function methodCallToString(method, args) {
+    return `${contextName}.${method}(${argumentsToString(args, { contextName, contextVariables, getEntity: getExtensionEntity, addVariable, variables, onUnrecognizedArgumentLookup })})`;
+  }
+
+  function addVariable(value, source) {
+    const variableName = `${contextName}Variable${contextVariables.length}`;
+    contextVariables.push(value);
+    recording.push(`${indent}const ${variableName} = ${source};`);
+    return variableName;
+  }
+}
+
+function argumentsToString(args, options) {
+  const { variables, onUnrecognizedArgumentLookup } = options;
+  return (Array.from(args).map((arg) => {
+    const variableName = getVariableName(arg);
+    if (variableName) {
+      return variableName;
+    }
+    return argumentToString(arg, options);
+  }).join(', '));
+
+  function getVariableName(value) {
+    if (variables) {
+      for (const name in variables) {
+        if (!variables.hasOwnProperty(name)) continue;
+        if (variables[name] === value) {
+          return name;
+        }
+      }
+    }
+    if (onUnrecognizedArgumentLookup) {
+      return onUnrecognizedArgumentLookup(value);
+    }
+    return null;
+  }
+}
+
+function argumentToString(arg, options) {
+  const { contextName, contextVariables, getEntity, addVariable, onUnrecognizedArgumentLookup } = options;
+  if (typeof arg === 'undefined') {
+    return 'undefined';
+  }
+  if (arg === null) {
+    return 'null';
+  }
+  const i = contextVariables.indexOf(arg);
+  if (i > -1) {
+    return `${contextName}Variable${i}`;
+  }
+  switch (arg.constructor.name) {
+    case 'String':
+      const hasLines = /\n/.test(arg);
+      const hasSingleQuotes = /'/.test(arg);
+      const hasDoubleQuotes = /"/.test(arg);
+      if (hasLines) {
+        return '`' + arg + '`';
+      } else if (hasSingleQuotes && !hasDoubleQuotes) {
+        return '"' + arg + '"';
+      } else if (!hasSingleQuotes && hasDoubleQuotes) {
+        return "'" + arg + "'";
+      } else {
+        return '\'' + arg + '\'';
+      }
+    case 'Number': return getEntity(arg);
+    case 'Boolean': return getEntity(arg);
+    case 'Array':
+      return addVariable(arg, `new ${arg.constructor.name}([${Array.from(arg).join(',')}])`);
+    case 'Float32Array':
+    case 'Uint8Array':
+    case 'Uint16Array':
+    case 'Int32Array':
+      return addVariable(arg, `new ${arg.constructor.name}(${JSON.stringify(Array.from(arg))})`);
+    default:
+      if (onUnrecognizedArgumentLookup) {
+        const instantiationString = onUnrecognizedArgumentLookup(arg);
+        if (instantiationString) {
+          return instantiationString;
+        }
+      }
+      throw new Error(`unrecognized argument type ${arg.constructor.name}`);
+  }
+}
+
+function trackablePrimitive(value) {
+  return new value.constructor(value);
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = { glWiretap, glExtensionWiretap };
+}
+
+if (typeof window !== 'undefined') {
+  glWiretap.glExtensionWiretap = glExtensionWiretap;
+  window.glWiretap = glWiretap;
+}
+
+},{}]},{},[105])(105)
 });
