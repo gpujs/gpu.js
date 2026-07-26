@@ -34,3 +34,8 @@ yarn.lock
 
 # OSX .DS_Store
 .DS_Store
+
+# BrowserStack
+test/browserstack/.credentials.json
+browserstack-results.json
+local.log

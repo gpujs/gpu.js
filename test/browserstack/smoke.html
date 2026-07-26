@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GPU.JS : BrowserStack smoke test</title>
+  <style>
+    body { font: 14px/1.5 -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 12px; }
+    h1 { font-size: 16px; margin: 0 0 8px; }
+    #env { background: #f4f4f4; padding: 8px; white-space: pre-wrap; word-break: break-word; }
+    #summary { font-weight: bold; padding: 8px 0; }
+    ol { padding-left: 22px; }
+    li { word-break: break-word; }
+    .pass { color: #1a7f37; }
+    .fail { color: #cf222e; }
+    .skip { color: #888; }
+  </style>
+  <script src="../../dist/gpu-browser.js"></script>
+</head>
+<body>
+<h1>GPU.JS smoke test</h1>
+<div id="env">running&hellip;</div>
+<div id="summary">running&hellip;</div>
+<ol id="results"></ol>
+<script>
+(function () {
+  'use strict';
+
+  // The Selenium runner polls window.__gpujsResults until `done` flips to true.
+  const results = window.__gpujsResults = {
+    done: false,
+    error: null,
+    env: {},
+    total: 0,
+    passed: 0,
+    failed: 0,
+    skipped: 0,
+    tests: []
+  };
+
+  const resultsEl = document.getElementById('results');
+
+  function record(name, status, message) {
+    results.total++;
+    results[status === 'pass' ? 'passed' : status === 'fail' ? 'failed' : 'skipped']++;
+    results.tests.push({ name: name, status: status, message: message || '' });
+    const li = document.createElement('li');
+    li.className = status;
+    li.textContent = name + (message ? ' — ' + message : '');
+    resultsEl.appendChild(li);
+  }
+
+  function test(name, fn) {
+    let gpu = null;
+    try {
+      const made = fn(function track(instance) { gpu = instance; return instance; });
+      if (made === 'skip') {
+        record(name, 'skip', 'not supported here');
+      } else {
+        record(name, 'pass');
+      }
+    } catch (e) {
+      record(name, 'fail', (e && e.message) || String(e));
+    } finally {
+      if (gpu) { try { gpu.destroy(); } catch (e) { /* teardown noise is not a failure */ } }
+    }
+  }
+
+  function assert(condition, message) {
+    if (!condition) throw new Error(message || 'assertion failed');
+  }
+
+  // Mobile GPUs frequently fall back to lower-precision floats, so exact
+  // equality is the wrong bar for anything that round-trips through a texture.
+  function assertClose(actual, expected, message, tolerance) {
+    const tol = tolerance === undefined ? 0.01 : tolerance;
+    if (typeof actual !== 'number' || isNaN(actual) || Math.abs(actual - expected) > tol) {
+      throw new Error((message || 'value mismatch') + ': expected ~' + expected + ', got ' + actual);
+    }
+  }
+
+  try {
+    results.env = {
+      userAgent: navigator.userAgent,
+      isGPUSupported: GPU.isGPUSupported,
+      isCanvasSupported: GPU.isCanvasSupported,
+      isWebGLSupported: GPU.isWebGLSupported,
+      isWebGL2Supported: GPU.isWebGL2Supported,
+      isKernelMapSupported: GPU.isKernelMapSupported,
+      isOffscreenCanvasSupported: GPU.isOffscreenCanvasSupported,
+      isSinglePrecisionSupported: GPU.isSinglePrecisionSupported,
+      isGPUHTMLImageArraySupported: GPU.isGPUHTMLImageArraySupported
+    };
+    document.getElementById('env').textContent = JSON.stringify(results.env, null, 2);
+
+    const modes = ['cpu'];
+    if (GPU.isWebGLSupported) modes.push('webgl');
+    if (GPU.isWebGL2Supported) modes.push('webgl2');
+    results.env.modes = modes;
+
+    // ---- library-level checks -------------------------------------------
+    test('GPU global is constructable', function () {
+      assert(typeof GPU === 'function', 'GPU is not a function');
+      const gpu = new GPU({ mode: 'cpu' });
+      assert(gpu instanceof GPU, 'new GPU() did not produce a GPU');
+      gpu.destroy();
+    });
+
+    test('a GPU-backed mode is available', function () {
+      assert(GPU.isGPUSupported, 'no WebGL/WebGL2 backend on this device');
+    });
+
+    // ---- per-mode checks -------------------------------------------------
+    modes.forEach(function (mode) {
+      const isGPUMode = mode !== 'cpu';
+      const label = function (name) { return '[' + mode + '] ' + name; };
+
+      test(label('1D kernel adds two arrays'), function (track) {
+        const gpu = track(new GPU({ mode: mode }));
+        const kernel = gpu.createKernel(function (a, b) {
+          return a[this.thread.x] + b[this.thread.x];
+        }, { output: [5] });
+        const out = kernel([1, 2, 3, 4, 5], [10, 20, 30, 40, 50]);
+        assert(out.length === 5, 'expected 5 results, got ' + out.length);
+        [11, 22, 33, 44, 55].forEach(function (expected, i) {
+          assertClose(out[i], expected, 'index ' + i);
+        });
+      });
+
+      test(label('2D kernel multiplies 32x32 matrices'), function (track) {
+        const gpu = track(new GPU({ mode: mode }));
+        const size = 32;
+        const a = [];
+        const b = [];
+        for (let y = 0; y < size; y++) {
+          const rowA = [];
+          const rowB = [];
+          for (let x = 0; x < size; x++) {
+            rowA.push((x + y) % 4);
+            rowB.push((x * y) % 3);
+          }
+          a.push(rowA);
+          b.push(rowB);
+        }
+        const kernel = gpu.createKernel(function (m1, m2) {
+          let sum = 0;
+          for (let i = 0; i < 32; i++) {
+            sum += m1[this.thread.y][i] * m2[i][this.thread.x];
+          }
+          return sum;
+        }, { output: [size, size] });
+        const out = kernel(a, b);
+        assert(out.length === size, 'expected ' + size + ' rows');
+        assert(out[0].length === size, 'expected ' + size + ' columns');
+        // spot-check against a CPU-side reference
+        [[0, 0], [5, 7], [31, 31]].forEach(function (pair) {
+          const y = pair[0];
+          const x = pair[1];
+          let expected = 0;
+          for (let i = 0; i < size; i++) expected += a[y][i] * b[i][x];
+          assertClose(out[y][x], expected, 'out[' + y + '][' + x + ']', 1);
+        });
+      });
+
+      test(label('3D output'), function (track) {
+        const gpu = track(new GPU({ mode: mode }));
+        const kernel = gpu.createKernel(function () {
+          return this.thread.z * 100 + this.thread.y * 10 + this.thread.x;
+        }, { output: [2, 3, 4] });
+        const out = kernel();
+        assert(out.length === 4 && out[0].length === 3 && out[0][0].length === 2, 'unexpected output shape');
+        assertClose(out[3][2][1], 321, 'out[3][2][1]');
+      });
+
+      test(label('branching and loops'), function (track) {
+        const gpu = track(new GPU({ mode: mode }));
+        const kernel = gpu.createKernel(function () {
+          let total = 0;
+          for (let i = 0; i < 10; i++) {
+            if (i < 5) {
+              total += i;
+            } else {
+              total -= 1;
+            }
+          }
+          return total;
+        }, { output: [1] });
+        // 0+1+2+3+4 = 10, minus 5 iterations of -1 = 5
+        assertClose(kernel()[0], 5, 'loop total');
+      });
+
+      test(label('modulo and division'), function (track) {
+        const gpu = track(new GPU({ mode: mode }));
+        const kernel = gpu.createKernel(function (a) {
+          return (a[this.thread.x] % 3) + a[this.thread.x] / 2;
+        }, { output: [4] });
+        const out = kernel([4, 6, 9, 10]);
+        [4, 6, 9, 10].forEach(function (value, i) {
+          assertClose(out[i], (value % 3) + value / 2, 'index ' + i, 0.02);
+        });
+      });
+
+      test(label('Math built-ins'), function (track) {
+        const gpu = track(new GPU({ mode: mode }));
+        const kernel = gpu.createKernel(function () {
+          const s = Math.sqrt(16.0);
+          const a = Math.abs(-3.0);
+          const f = Math.floor(2.7);
+          const mn = Math.min(5.0, 2.0);
+          const mx = Math.max(5.0, 2.0);
+          const p = Math.pow(2.0, 3.0);
+          return s + a + f + mn + mx + p;
+        }, { output: [1] });
+        // 4 + 3 + 2 + 2 + 5 + 8
+        assertClose(kernel()[0], 24, 'math total');
+      });
+
+      test(label('constants and custom functions'), function (track) {
+        const gpu = track(new GPU({ mode: mode }));
+        gpu.addFunction(function triple(x) {
+          return x * 3;
+        });
+        const kernel = gpu.createKernel(function () {
+          return triple(this.constants.base) + this.output.x;
+        }, { output: [4], constants: { base: 7 } });
+        const out = kernel();
+        assertClose(out[0], 25, 'triple(7) + output.x');
+        assert(out.length === 4, 'expected 4 results');
+      });
+
+      test(label('Float32Array input'), function (track) {
+        const gpu = track(new GPU({ mode: mode }));
+        const kernel = gpu.createKernel(function (a) {
+          return a[this.thread.x] * 2;
+        }, { output: [4] });
+        const out = kernel(new Float32Array([1.5, 2.5, 3.5, 4.5]));
+        [3, 5, 7, 9].forEach(function (expected, i) {
+          assertClose(out[i], expected, 'index ' + i);
+        });
+      });
+
+      test(label('flattened input() argument'), function (track) {
+        const gpu = track(new GPU({ mode: mode }));
+        const kernel = gpu.createKernel(function (a) {
+          return a[this.thread.y][this.thread.x];
+        }, { output: [3, 2] });
+        const out = kernel(GPU.input(new Float32Array([1, 2, 3, 4, 5, 6]), [3, 2]));
+        assertClose(out[0][0], 1, 'out[0][0]');
+        assertClose(out[1][2], 6, 'out[1][2]');
+      });
+
+      test(label('dynamic output resizing'), function (track) {
+        const gpu = track(new GPU({ mode: mode }));
+        const kernel = gpu.createKernel(function (a) {
+          return a[this.thread.x] + 1;
+        }, { output: [3], dynamicOutput: true, dynamicArguments: true });
+        let out = kernel([1, 2, 3]);
+        assert(out.length === 3, 'expected 3 results');
+        kernel.setOutput([5]);
+        out = kernel([1, 2, 3, 4, 5]);
+        assert(out.length === 5, 'expected 5 results after resize, got ' + out.length);
+        assertClose(out[4], 6, 'resized index 4');
+      });
+
+      test(label('texture pipeline round-trip'), function (track) {
+        if (!isGPUMode) return 'skip';
+        const gpu = track(new GPU({ mode: mode }));
+        const kernel = gpu.createKernel(function (a) {
+          return a[this.thread.x] * 2;
+        }, { output: [4], pipeline: true });
+        const texture = kernel([1, 2, 3, 4]);
+        assert(texture && typeof texture.toArray === 'function', 'kernel did not return a Texture');
+        const out = texture.toArray();
+        [2, 4, 6, 8].forEach(function (expected, i) {
+          assertClose(out[i], expected, 'index ' + i);
+        });
+        texture.delete();
+      });
+
+      test(label('texture feeds a second kernel'), function (track) {
+        if (!isGPUMode) return 'skip';
+        const gpu = track(new GPU({ mode: mode }));
+        const first = gpu.createKernel(function (a) {
+          return a[this.thread.x] * 2;
+        }, { output: [4], pipeline: true });
+        const second = gpu.createKernel(function (a) {
+          return a[this.thread.x] + 1;
+        }, { output: [4] });
+        const out = second(first([1, 2, 3, 4]));
+        [3, 5, 7, 9].forEach(function (expected, i) {
+          assertClose(out[i], expected, 'index ' + i);
+        });
+      });
+
+      test(label('graphical kernel paints pixels'), function (track) {
+        const gpu = track(new GPU({ mode: mode }));
+        const kernel = gpu.createKernel(function () {
+          this.color(0, 1, 0, 1);
+        }, { output: [4, 4], graphical: true });
+        kernel();
+        const pixels = kernel.getPixels();
+        assert(pixels && pixels.length === 4 * 4 * 4, 'expected 64 RGBA bytes, got ' + (pixels && pixels.length));
+        assert(pixels[0] === 0 && pixels[1] === 255 && pixels[2] === 0 && pixels[3] === 255,
+          'expected opaque green, got rgba(' + pixels[0] + ',' + pixels[1] + ',' + pixels[2] + ',' + pixels[3] + ')');
+      });
+
+      test(label('kernel map / sub-kernels'), function (track) {
+        if (!isGPUMode) return 'skip';
+        const gpu = track(new GPU({ mode: mode }));
+        // GPU.isKernelMapSupported answers for the best available backend, so it
+        // says yes on a WebGL2 device even while this kernel runs on WebGL1.
+        if (!gpu.Kernel.features.kernelMap) return 'skip';
+        const kernel = gpu.createKernelMap({
+          doubled: function doubled(v) { return v * 2; }
+        }, function (a) {
+          return doubled(a[this.thread.x]) + 1;
+        }, { output: [3] });
+        const out = kernel([1, 2, 3]);
+        assert(out.result, 'missing result');
+        assert(out.doubled, 'missing doubled sub-kernel output');
+        assertClose(out.result[2], 7, 'result[2]');
+        assertClose(out.doubled[2], 6, 'doubled[2]');
+      });
+
+      test(label('unsigned precision'), function (track) {
+        if (!isGPUMode) return 'skip';
+        const gpu = track(new GPU({ mode: mode }));
+        const kernel = gpu.createKernel(function (a) {
+          return a[this.thread.x] / 2;
+        }, { output: [4], precision: 'unsigned' });
+        const out = kernel([2, 4, 6, 8]);
+        [1, 2, 3, 4].forEach(function (expected, i) {
+          assertClose(out[i], expected, 'index ' + i, 0.05);
+        });
+      });
+
+      test(label('single precision'), function (track) {
+        if (!isGPUMode) return 'skip';
+        const gpu = track(new GPU({ mode: mode }));
+        const features = gpu.Kernel.features;
+        // Same caveat as kernelMap: the static flag answers for the best backend.
+        if (!features.isFloatRead || !features.isTextureFloat) return 'skip';
+        const kernel = gpu.createKernel(function (a) {
+          return a[this.thread.x] * 1.5;
+        }, { output: [2], precision: 'single' });
+        // Negative and fractional values are the point of single precision —
+        // unsigned cannot represent either. Magnitudes stay small because some
+        // mobile GPUs back "float" textures with half floats (max 65504).
+        const out = kernel([-8.5, 123.25]);
+        assertClose(out[0], -12.75, 'index 0', 0.05);
+        assertClose(out[1], 184.875, 'index 1', 0.05);
+      });
+    });
+  } catch (e) {
+    results.error = (e && e.stack) || String(e);
+    record('harness', 'fail', results.error);
+  }
+
+  results.done = true;
+  document.getElementById('summary').textContent =
+    results.failed + ' failed, ' + results.passed + ' passed, ' +
+    results.skipped + ' skipped (' + results.total + ' total)';
+})();
+</script>
+</body>
+</html>

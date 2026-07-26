@@ -7,6 +7,7 @@ For some more quick concepts, see [Quick Concepts](https://github.com/gpujs/gpu.
 
 
 [![CI](https://github.com/gpujs/gpu.js/actions/workflows/ci.yml/badge.svg)](https://github.com/gpujs/gpu.js/actions/workflows/ci.yml)
+[![Tested with BrowserStack](https://img.shields.io/badge/Tested%20with-BrowserStack-informational)](https://www.browserstack.com/)
 [![Join the chat at https://gitter.im/gpujs/gpu.js](https://badges.gitter.im/gpujs/gpu.js.svg)](https://gitter.im/gpujs/gpu.js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # What is this sorcery?
@@ -1201,12 +1202,49 @@ GPU.js is written in such a way, you can introduce your own backend.  Have a sug
 * Texture - A graphical artifact that is packed with data, in the case of GPU.js, bit shifted parts of a 32 bit floating point decimal
 
 ## Testing
-Testing is done (right now) manually, (help wanted [here](https://github.com/gpujs/gpu.js/issues/515) if you can!), using the following:
-* For browser, setup a webserver on the root of the gpu.js project and visit http://url/test/all.html
-* For node, run either of the 3 commands:
-  * `yarn test test/features`
-  * `yarn test test/internal`
-  * `yarn test test/issues`
+* For node, run `npm test`, or narrow it down with one of:
+  * `npx qunit test/features`
+  * `npx qunit test/internal`
+  * `npx qunit test/issues`
+* For browser, set up a webserver on the root of the gpu.js project and visit http://url/test/all.html
+
+### Real browsers and devices
+
+Because gpu.js ultimately depends on whatever the GPU driver behind a WebGL
+context does, it is also tested on real browsers and real mobile devices on
+[BrowserStack](https://www.browserstack.com/).
+
+<a href="https://www.browserstack.com/"><img src="https://d98b8t1nnulk5.cloudfront.net/production/images/layout/logo-header.png?1469004780" alt="BrowserStack" height="40"></a>
+
+**This project is tested with BrowserStack.**
+
+To run it yourself you need a BrowserStack Automate account:
+
+```bash
+npx gulp make                  # the devices test dist/, so build it first
+export BROWSERSTACK_USERNAME=...
+export BROWSERSTACK_ACCESS_KEY=...
+npm run test:browserstack      # smoke suite on real iOS/Android devices
+```
+
+The runner serves this checkout over a BrowserStack Local tunnel, so the
+devices exercise your working copy rather than a published build. Options:
+
+| Command | What it does |
+| --- | --- |
+| `npm run test:browserstack` | Smoke suite on the real-device set |
+| `npm run test:browserstack:desktop` | Smoke suite on desktop Chrome/Firefox/Edge/Safari |
+| `node test/browserstack/run.js --browsers=all` | Both sets |
+| `node test/browserstack/run.js --only=iPhone` | Only targets whose name matches |
+| `node test/browserstack/run.js --suite=qunit` | The full `test/all.html` suite instead of the smoke suite |
+
+The smoke suite (`test/browserstack/smoke.html`) covers kernel compilation and
+execution in `cpu`, `webgl` and `webgl2` modes: 1D/2D/3D output, loops and
+branching, `Math` built-ins, constants and custom functions, typed-array and
+`input()` arguments, dynamic output, texture pipelines, graphical output,
+kernel maps, and both precision modes. Targets live in
+`test/browserstack/browsers.js`. Results are written to
+`browserstack-results.json`.
 
 ## Building
 Building isn't required on node, but is for browser.  To build the browser's files, run: `yarn make`

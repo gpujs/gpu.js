@@ -36,6 +36,47 @@
 <script src="../node_modules/sinon/pkg/sinon.js"></script>
 <script src="../node_modules/qunit/qunit/qunit.js"></script>
 <script src="../node_modules/acorn/dist/acorn.js"></script>
+<script>
+  // Machine-readable results for automated browser runs (test/browserstack/run.js).
+  // QUnit's HTML output alone is not enough: a test that fails after its own
+  // testDone leaves no failing <li> behind, so failures can go unreported.
+  (function () {
+    const results = window.__qunitResults = {
+      done: false,
+      total: 0,
+      passed: 0,
+      failed: 0,
+      skipped: 0,
+      tests: []
+    };
+    QUnit.on('testEnd', testEnd => {
+      if (testEnd.status !== 'failed') return;
+      results.tests.push({
+        name: testEnd.fullName.join(': '),
+        status: 'fail',
+        message: testEnd.errors
+          .map(error => error.message || (error.stack || '').split('\n')[0] || 'failed')
+          .join(' | ')
+          .slice(0, 500)
+      });
+    });
+    QUnit.on('error', error => {
+      results.tests.push({
+        name: 'global failure',
+        status: 'fail',
+        message: String((error && error.message) || error).slice(0, 500)
+      });
+    });
+    QUnit.on('runEnd', runEnd => {
+      const counts = runEnd.testCounts;
+      results.total = counts.total;
+      results.passed = counts.passed;
+      results.failed = counts.failed;
+      results.skipped = counts.skipped;
+      results.done = true;
+    });
+  })();
+</script>
 {{test-files}}
 </body>
 </html>

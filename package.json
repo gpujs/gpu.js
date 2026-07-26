@@ -28,6 +28,7 @@
     "benchmark": "2.1.4",
     "browser-sync": "^3.0.4",
     "browserify": "17.0.0",
+    "browserstack-local": "^1.5.6",
     "c8": "10.1.2",
     "gulp": "5.0.0",
     "gulp-concat": "2.6.1",
@@ -40,12 +41,15 @@
     "merge-stream": "2.0.0",
     "qunit": "2.22.0",
     "read-dir-deep": "8.0.0",
+    "selenium-webdriver": "^4.27.0",
     "sinon": "18.0.0",
     "vinyl-buffer": "1.0.1",
     "vinyl-source-stream": "2.0.0"
   },
   "scripts": {
     "test": "qunit test/issues test/internal test/features",
+    "test:browserstack": "node test/browserstack/run.js --browsers=real-devices",
+    "test:browserstack:desktop": "node test/browserstack/run.js --browsers=desktop",
     "coverage": "c8 qunit test/issues test/internal test/features",
     "setup": "npm i -g gulp-cli",
     "make": "gulp make",
