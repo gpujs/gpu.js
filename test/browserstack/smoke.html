@@ -214,6 +214,20 @@
           'expected red to climb across x, got ' + JSON.stringify(reds));
       });
 
+      test(label('bitwise NOT'), function (track) {
+        const gpu = track(new GPU({ mode: mode }));
+        // the GLSL emulation used to ignore the sign of its input, so ~(-1)
+        // gave -2 and ~~x never round-tripped
+        const kernel = gpu.createKernel(function (a) {
+          return ~a[this.thread.x];
+        }, { output: [4] });
+        const values = [-1, -5, 3, 3.5];
+        const out = kernel(values);
+        values.forEach(function (value, i) {
+          assertClose(out[i], ~value, '~' + value, 0.001);
+        });
+      });
+
       test(label('signed right shift'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         // emulated in GLSL for both webgl and webgl2; used to use an

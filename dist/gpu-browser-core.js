@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.8
- * @date Mon Jul 27 2026 01:10:46 GMT+0800 (Singapore Standard Time)
+ * @date Mon Jul 27 2026 01:14:09 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -6575,17 +6575,12 @@ int bitwiseAnd(int a, int b) {
   return result;
 }
 int bitwiseNot(int a) {
-  int result = 0;
-  int n = 1;
-  
-  for (int i = 0; i < BIT_COUNT; i++) {
-    if (modi(a, 2) == 0) {
-      result += n;    
-    }
-    a = a / 2;
-    n = n * 2;
-  }
-  return result;
+  // ~a is identically -a - 1 in two's complement, for every value including
+  // negatives. The previous bit-by-bit loop only worked for a >= 0, where it
+  // leaned on 32-bit overflow wrapping to reach the negative answer; given a
+  // negative input it computed ~abs(a), so ~(-1) gave -2 and ~~x never
+  // returned x.
+  return -a - 1;
 }
 int bitwiseZeroFillLeftShift(int n, int shift) {
   int maxBytes = BIT_COUNT;
@@ -11323,17 +11318,12 @@ int bitwiseAnd(int a, int b) {
   return result;
 }
 int bitwiseNot(int a) {
-  int result = 0;
-  int n = 1;
-  
-  for (int i = 0; i < BIT_COUNT; i++) {
-    if (modi(a, 2) == 0) {
-      result += n;    
-    }
-    a = a / 2;
-    n = n * 2;
-  }
-  return result;
+  // ~a is identically -a - 1 in two's complement, for every value including
+  // negatives. The previous bit-by-bit loop only worked for a >= 0, where it
+  // leaned on 32-bit overflow wrapping to reach the negative answer; given a
+  // negative input it computed ~abs(a), so ~(-1) gave -2 and ~~x never
+  // returned x.
+  return -a - 1;
 }
 int bitwiseZeroFillLeftShift(int n, int shift) {
   int maxBytes = BIT_COUNT;
