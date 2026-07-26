@@ -12,10 +12,14 @@
  *   --suite=smoke|qunit     smoke (default) runs test/browserstack/smoke.html,
  *                           qunit runs the full test/all.html suite
  *   --browsers=real-devices|desktop|all
+ *   --project=NAME          BrowserStack project to group builds under
+ *                           (default gpu.js, or $BROWSERSTACK_PROJECT)
  *   --only=TEXT             keep only targets whose name contains TEXT
  *   --concurrency=N         parallel sessions (default 5, the free-plan limit)
  *   --timeout=SECONDS       per-session budget (default 300)
  *   --filter=TEXT           QUnit filter, only meaningful with --suite=qunit
+ *   --dry-run               print the resolved capabilities and exit without
+ *                           opening any session
  */
 
 'use strict';
@@ -51,10 +55,12 @@ function parseArgs(argv) {
   const args = {
     suite: 'smoke',
     browsers: 'real-devices',
+    project: process.env.BROWSERSTACK_PROJECT || 'gpu.js',
     only: '',
     concurrency: 5,
     timeout: 300,
-    filter: ''
+    filter: '',
+    'dry-run': false
   };
   argv.forEach(arg => {
     const match = /^--([^=]+)=?(.*)$/.exec(arg);
@@ -63,6 +69,8 @@ function parseArgs(argv) {
     const value = match[2];
     if (key === 'concurrency' || key === 'timeout') {
       args[key] = parseInt(value, 10);
+    } else if (key === 'dry-run') {
+      args[key] = true;
     } else if (key in args) {
       args[key] = value;
     } else {
@@ -135,7 +143,7 @@ function buildCapabilities(target, context) {
   const source = target.capabilities;
   const caps = {};
   const bstack = {
-    projectName: 'gpu.js',
+    projectName: context.projectName,
     buildName: context.buildName,
     sessionName: target.name,
     local: 'true',
@@ -293,11 +301,30 @@ async function main() {
   console.log(`build:    ${buildName}`);
   console.log(`targets:  ${targets.length} (${args.browsers}), concurrency ${args.concurrency}\n`);
 
+  if (args['dry-run']) {
+    targets.forEach(target => {
+      const caps = buildCapabilities(target, {
+        user, key, localIdentifier, buildName, projectName: args.project
+      });
+      // never print the access key, even locally
+      const shown = JSON.parse(JSON.stringify(caps));
+      shown['bstack:options'].accessKey = '***';
+      console.log(`--- ${target.name}\n${JSON.stringify(shown, null, 2)}\n`);
+    });
+    server.close();
+    return;
+  }
+
   console.log('starting BrowserStack Local tunnel...');
   const tunnel = await startTunnel(key, localIdentifier);
   console.log('tunnel up\n');
 
-  const context = { user, key, localIdentifier, buildName, url, suite: args.suite, timeout: args.timeout };
+  const context = {
+    user, key, localIdentifier, buildName, url,
+    projectName: args.project,
+    suite: args.suite,
+    timeout: args.timeout
+  };
   let results;
   try {
     results = await runPool(targets, args.concurrency, async target => {
