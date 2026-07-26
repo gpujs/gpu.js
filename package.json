@@ -20,7 +20,7 @@
   "dependencies": {
     "acorn": "8.14.0",
     "gl": "8.1.6",
-    "gpu-mock.js": "^1.4.0",
+    "gpu-mock.js": "^1.4.1",
     "ordered-read-streams": "^2.0.0",
     "webgpu": "0.2.9"
   },
