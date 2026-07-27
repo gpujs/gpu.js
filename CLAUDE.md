@@ -2,12 +2,8 @@
 
 ## Build environment
 
-Use Node 22.23.1 via `~/.asdf/installs/nodejs/22.23.1/bin`. Node 23 breaks
-headless-gl.
-
-```bash
-export PATH="$HOME/.asdf/installs/nodejs/22.23.1/bin:$PATH"
-```
+Node 22. Node 23 breaks headless-gl, and early 22.x hits a vinyl-fs bug, so
+pin something recent within 22.
 
 `npm run make` runs build → beautify → minify → build-tests, from plain Node
 scripts in `scripts/`. It rewrites `dist/` and regenerates `test/all.html`, so
@@ -78,8 +74,6 @@ Every step below is required; skipping the npm publish is the usual mistake —
 their release notes tell people to install a version that does not exist.
 
 ```bash
-export PATH="$HOME/.asdf/installs/nodejs/22.23.1/bin:$PATH"
-
 npm version <version> --no-git-tag-version   # package.json only
 npm run make                                 # dist/ carries the version header
 npm test                                     # expect the known baseline
@@ -91,40 +85,18 @@ git push origin develop && git push origin <version>
 gh release create <version> --title "<version>" --notes-file <notes>
 ```
 
-### npm publish without an OTP code
+### Publishing
 
-Publishing needs 2FA. Run it under a pty and npm offers **web** auth — it
-prints a URL to approve in a browser, and no authenticator code changes hands:
+`npm publish` requires 2FA and prompts for a one-time code. Two things that
+otherwise waste time:
 
-```bash
-script -q /tmp/npm-publish.log npm publish --auth-type=web &
-# then read /tmp/npm-publish.log for:
-#   Authenticate your account at:
-#   https://www.npmjs.com/auth/cli/<uuid>
-```
-
-Without a pty this fails immediately with `EOTP` and no URL: npm's `otplease`
-gates on `process.stdin.isTTY` and rethrows before it ever reaches the web
-flow. `--auth-type=web` alone is not enough.
-
-Two things that will waste time otherwise:
-
-- Do not pipe the command through `tail`/`head` — the output buffers until
-  exit and the URL never appears while you need it. Let `script` write its own
-  transcript and read that.
-- `npm view gpu.js version` lags behind a publish by up to a minute. Check
-  `curl -s https://registry.npmjs.org/gpu.js` for the truth.
-
-If publish fails with `E404 PUT ... not found`, the npm token expired — run
-`npm login`.
+- `npm view gpu.js version` lags a publish by up to a minute. `curl -s
+  https://registry.npmjs.org/gpu.js` is authoritative.
+- `E404 PUT ... not found` on publish means the npm token expired, not that
+  anything is wrong with the package. Run `npm login`.
 
 ### Pushing workflow files
 
-`git push` rejects changes under `.github/workflows/` because the PAT in
-`GITHUB_TOKEN` lacks the `workflow` scope. Either use the keyring credential:
-
-```bash
-env -u GITHUB_TOKEN git push
-```
-
-or push everything else and add the workflow file through the GitHub API.
+Changes under `.github/workflows/` are rejected unless the credential pushing
+them carries the `workflow` scope. Push with one that does, or add the file
+through the GitHub API.
