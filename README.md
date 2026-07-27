@@ -7,7 +7,7 @@ For some more quick concepts, see [Quick Concepts](https://github.com/gpujs/gpu.
 
 
 [![CI](https://github.com/gpujs/gpu.js/actions/workflows/ci.yml/badge.svg)](https://github.com/gpujs/gpu.js/actions/workflows/ci.yml)
-[![Tested with BrowserStack](https://img.shields.io/badge/Tested%20with-BrowserStack-informational)](https://www.browserstack.com/)
+[![BrowserStack](https://automate.browserstack.com/badge.svg?badge_key=RHFnb0dPTWdmUlZKRFdMb3lZWFdGSDcwU1dEL0tGZC9HT21BVVJPeGZ1az0tLW43V3JMeGtjdjlhWHlpZ2dZRk5ZclE9PQ%3D%3D--a13f87b6ab74da0caa0381873de301faed81c914)](https://automate.browserstack.com/public-build/RHFnb0dPTWdmUlZKRFdMb3lZWFdGSDcwU1dEL0tGZC9HT21BVVJPeGZ1az0tLW43V3JMeGtjdjlhWHlpZ2dZRk5ZclE9PQ%3D%3D--a13f87b6ab74da0caa0381873de301faed81c914)
 [![Join the chat at https://gitter.im/gpujs/gpu.js](https://badges.gitter.im/gpujs/gpu.js.svg)](https://gitter.im/gpujs/gpu.js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # What is this sorcery?
