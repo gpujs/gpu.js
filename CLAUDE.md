@@ -15,6 +15,16 @@ run it before anything that loads the browser bundle, and commit `dist/` with
 the change. Individual steps are available as `npm run build`, `minify`,
 `beautify`, `build-tests`; `npm run dev` serves the repo for test/all.html.
 
+Bundling is rolldown, minifying is terser. Two things there are load-bearing:
+
+- `gl` and (for the core build) `acorn` are aliased to `scripts/empty-module.js`.
+  That is browserify's old `.ignore()`. They must be aliased, not `external` —
+  external leaves a live `require()` that throws in a browser.
+- both the bundle and the minified bundle are run through terser with
+  `ascii_only`. acorn ships its unicode tables already escaped, but rolldown
+  decodes string literals and prints the characters, which puts ~68k raw UTF-8
+  bytes in the bundle. Serving that without a matching charset is #743/#744.
+
 The banner interpolates `new Date()`, so two builds are never byte-identical —
 compare `dist/` with the `@date` lines normalized. Note the minified bundles
 carry the banner twice: terser preserves the original because it contains
