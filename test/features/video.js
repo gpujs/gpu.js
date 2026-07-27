@@ -1,11 +1,13 @@
 const { assert, skip, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
+const { loadVideo } = require('../browser-test-utils');
 
 describe('video');
 function videoArgumentTest(mode, done) {
-  const video = document.createElement('video');
-  video.src = 'jellyfish.webm';
-  setTimeout(() => {
+  // Waiting a fixed second for the video to decode and hoping is what this used
+  // to do, and whenever decoding took longer the kernel sampled a video with no
+  // frame in it and the assertion below failed. Wait for the frame instead.
+  loadVideo('jellyfish.webm').then(video => {
     const gpu = new GPU({mode});
     const videoKernel = gpu.createKernel(function (a) {
       const pixel = a[this.thread.y][this.thread.x];
@@ -16,12 +18,20 @@ function videoArgumentTest(mode, done) {
       argumentTypes: ['HTMLVideo'],
     });
     const pixelResult = videoKernel(video)[0];
-    // CPU captures a bit different of a color
-    assert.ok(pixelResult <= 127 && pixelResult >= 121);
+    // CPU captures a bit different of a color, hence the band rather than a
+    // value. Report what came back: a bare "expected argument to be truthy"
+    // says nothing about which pixel was read.
+    assert.ok(
+      pixelResult <= 127 && pixelResult >= 121,
+      `green channel ${pixelResult} within 121..127`
+    );
     assert.equal(true, true, 'does not throw');
     gpu.destroy();
     done();
-  }, 1000);
+  }).catch(error => {
+    assert.ok(false, error.message);
+    done();
+  });
 }
 
 (typeof HTMLVideoElement !== 'undefined' ? test : skip)('video argument auto', t => {

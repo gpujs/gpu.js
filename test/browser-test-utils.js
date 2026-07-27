@@ -44,6 +44,28 @@ function loadImages(images) {
   return Promise.all(images.map(image => loadImage(image)));
 }
 
+// A video can only be sampled once it has decoded a frame for the position we
+// want. Waiting a fixed number of milliseconds and hoping is what these tests
+// used to do, and it is why they failed intermittently.
+function loadVideo(src, currentTime) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.preload = 'auto';
+    video.muted = true;
+    video.playsInline = true;
+    video.onerror = () => reject(new Error(`could not load ${src}`));
+    if (currentTime) {
+      // seeking needs the duration, which arrives with the metadata; `seeked`
+      // then means readyState is back to at least HAVE_CURRENT_DATA
+      video.onloadedmetadata = () => { video.currentTime = currentTime; };
+      video.onseeked = () => resolve(video);
+    } else {
+      video.onloadeddata = () => resolve(video);
+    }
+    video.src = src;
+  });
+}
+
 function check2DImage(result, expected, channel) {
   const height = result.length;
   const width = result[0].length;
@@ -72,6 +94,8 @@ const _exports = {
   greenCanvas,
   imageToArray,
   loadImage,
+  loadImages,
+  loadVideo,
   check2DImage,
 };
 

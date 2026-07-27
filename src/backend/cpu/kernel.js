@@ -73,7 +73,13 @@ class CPUKernel extends Kernel {
 
   initContext() {
     if (!this.canvas) return null;
-    return this.canvas.getContext('2d');
+    // This context exists only to draw media and read it straight back with
+    // getImageData. Without the hint the browser keeps the canvas on the GPU,
+    // and reading it back is not bit-exact with the decoded image: a pixel that
+    // decodes to 253 comes back as 252, so the CPU backend disagreed with the
+    // WebGL ones, which upload the media as a texture and never round-trip it
+    // through a canvas.
+    return this.canvas.getContext('2d', { willReadFrequently: true });
   }
 
   initPlugins(settings) {

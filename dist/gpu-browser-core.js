@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.8
- * @date Mon Jul 27 2026 20:17:47 GMT+0800 (Singapore Standard Time)
+ * @date Mon Jul 27 2026 20:45:40 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -3732,7 +3732,9 @@
       }
       initContext() {
         if (!this.canvas) return null;
-        return this.canvas.getContext("2d");
+        return this.canvas.getContext("2d", {
+          willReadFrequently: true
+        });
       }
       initPlugins(settings) {
         return [];
