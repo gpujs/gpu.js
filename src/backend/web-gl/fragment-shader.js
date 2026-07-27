@@ -246,6 +246,41 @@ int integerMod(int x, int y) {
   return x - (y * int(x / y));
 }
 
+// GLSL ES 1.00 accepts only a constant or a loop symbol inside an index
+// expression, so m[y][x] does not compile when y and x come from kernel
+// arguments -- the error is "Index expression can only contain const or loop
+// symbols". Loop counters are legal indices, so walk the matrix with them
+// instead. These are 2x2 to 4x4, so it costs at most sixteen comparisons.
+float getMatrix2(mat2 m, int y, int x) {
+  float result = 0.0;
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 2; j++) {
+      if (i == y && j == x) result = m[i][j];
+    }
+  }
+  return result;
+}
+
+float getMatrix3(mat3 m, int y, int x) {
+  float result = 0.0;
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      if (i == y && j == x) result = m[i][j];
+    }
+  }
+  return result;
+}
+
+float getMatrix4(mat4 m, int y, int x) {
+  float result = 0.0;
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      if (i == y && j == x) result = m[i][j];
+    }
+  }
+  return result;
+}
+
 __DIVIDE_WITH_INTEGER_CHECK__;
 
 // Here be dragons!

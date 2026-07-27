@@ -1165,15 +1165,34 @@ class WebGLFunctionNode extends FunctionNode {
         retArr.push(this.memberExpressionPropertyMarkup(property));
         retArr.push(']');
         return retArr;
-      case 'fn()[][]':
+      case 'fn()[][]': {
+        const yProperty = mNode.object.property;
+        const xProperty = mNode.property;
+        // A matrix indexed by anything but a constant cannot be written
+        // m[y][x] in GLSL ES 1.00; getMatrixN walks it with loop counters,
+        // which are legal index expressions. Constant indices keep the direct
+        // form, which every version accepts and which costs nothing.
+        const matrixSize = matrixSizes[this.getType(mNode.object.object)];
+        const isConstantIndex = property => this.getType(property) === 'LiteralInteger';
+        if (matrixSize && !(isConstantIndex(yProperty) && isConstantIndex(xProperty))) {
+          retArr.push(`getMatrix${matrixSize}(`);
+          this.astCallExpression(mNode.object.object, retArr);
+          retArr.push(', ');
+          retArr.push(this.memberExpressionPropertyMarkup(yProperty));
+          retArr.push(', ');
+          retArr.push(this.memberExpressionPropertyMarkup(xProperty));
+          retArr.push(')');
+          return retArr;
+        }
         this.astCallExpression(mNode.object.object, retArr);
         retArr.push('[');
-        retArr.push(this.memberExpressionPropertyMarkup(mNode.object.property));
+        retArr.push(this.memberExpressionPropertyMarkup(yProperty));
         retArr.push(']');
         retArr.push('[');
-        retArr.push(this.memberExpressionPropertyMarkup(mNode.property));
+        retArr.push(this.memberExpressionPropertyMarkup(xProperty));
         retArr.push(']');
         return retArr;
+      }
       case '[][]':
         this.astArrayExpression(mNode.object, retArr);
         retArr.push('[');
@@ -1569,6 +1588,13 @@ class WebGLFunctionNode extends FunctionNode {
     return result.join('');
   }
 }
+
+// the square float matrices GLSL has, and their dimension
+const matrixSizes = {
+  'Matrix(2)': 2,
+  'Matrix(3)': 3,
+  'Matrix(4)': 4,
+};
 
 const typeMap = {
   'Array': 'sampler2D',
